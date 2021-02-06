@@ -46,10 +46,11 @@ asAtom ACTIONRECORD::PeekStack(std::stack<asAtom>& stack)
 		throw RunTimeException("AVM1: empty stack");
 	return stack.top();
 }
-
+Mutex executeactionmutex;
 void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, const std::vector<uint8_t> &actionlist, uint32_t startactionpos, std::map<uint32_t, asAtom> &scopevariables, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
 								  bool preloadParent, bool preloadRoot, bool suppressSuper, bool preloadSuper, bool suppressArguments, bool preloadArguments, bool suppressThis, bool preloadThis, bool preloadGlobal, AVM1Function *caller, AVM1Function *callee, Activation_object *actobj, asAtom *superobj)
 {
+	Locker l(executeactionmutex);
 	assert(!clip->needsActionScript3());
 	Log::calls_indent++;
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" executeActions "<<preloadParent<<preloadRoot<<suppressSuper<<preloadSuper<<suppressArguments<<preloadArguments<<suppressThis<<preloadThis<<preloadGlobal<<" "<<startactionpos<<" "<<num_args);
@@ -555,6 +556,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					auto it = locals.find(clip->getSystemState()->getUniqueStringId(s.lowercase()));
 					if (it != locals.end()) // local variable
 					{
+						ASATOM_INCREF(value);
 						ASATOM_DECREF(it->second);
 						it->second = value;
 					}
@@ -1026,15 +1028,13 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineLocal "<<asAtomHandler::toDebugString(name)<<" " <<asAtomHandler::toDebugString(value));
 				if (context->keepLocals)
 				{
+					ASATOM_INCREF(value);
 					tiny_string s =asAtomHandler::toString(name,clip->getSystemState()).lowercase();
 					clip->AVM1SetVariable(s,value,false);
 				}
-				else
-				{
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(asAtomHandler::toString(name,clip->getSystemState()).lowercase());
-					ASATOM_DECREF(locals[nameID]);
-					locals[nameID] = value;
-				}
+				uint32_t nameID = clip->getSystemState()->getUniqueStringId(asAtomHandler::toString(name,clip->getSystemState()).lowercase());
+				ASATOM_DECREF(locals[nameID]);
+				locals[nameID] = value;
 				ASATOM_DECREF(name);
 				break;
 			}

@@ -517,8 +517,8 @@ public:
 	static bool Boolean_concrete(asAtom& a);
 	static bool Boolean_concrete_object(asAtom& a);
 	static void convert_b(asAtom& a, bool refcounted);
-	static FORCE_INLINE int32_t getInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_INTEGER); return a.intval>>3; }
-	static FORCE_INLINE uint32_t getUInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_UINTEGER); return a.uintval>>3; }
+	static FORCE_INLINE int32_t getInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_INTEGER || (a.uintval&0x3) == ATOM_UINTEGER); return a.intval>>3; }
+	static FORCE_INLINE uint32_t getUInt(const asAtom& a) { assert((a.uintval&0x3) == ATOM_UINTEGER || (a.uintval&0x3) == ATOM_INTEGER); return a.uintval>>3; }
 	static FORCE_INLINE uint32_t getStringId(const asAtom& a) { assert((a.uintval&0x3) == ATOM_STRINGID); return a.uintval>>3; }
 	static FORCE_INLINE void setInt(asAtom& a,SystemState* sys, int64_t val);
 	static FORCE_INLINE void setUInt(asAtom& a,SystemState* sys, uint32_t val);

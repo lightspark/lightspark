@@ -3954,8 +3954,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x10://jump
 			{
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				uint32_t pstart= code.tellg();
 				int32_t j = code.reads24();
+				if (state.preloadedcode.size()
+						&& state.preloadedcode.back().opcode == 0x03 //throw
+						&& state.jumptargets.find(pstart) == state.jumptargets.end())
+				{
+					// jump follows throw opcode and is no jump target -> unreachable, jump can be skipped
+					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					opcode_skipped=true;
+					break;
+				}
+				state.oldnewpositions[pstart] = (int32_t)state.preloadedcode.size();
 				uint32_t p = code.tellg();
 				bool hastargets = j < 0;
 				int32_t nextreachable = j;

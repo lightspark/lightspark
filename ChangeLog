@@ -1,6 +1,6 @@
 lightspark: An open source flash player implementation
 
-Version NEXT:
+Version 0.8.4:
 
 	* improved handling of mixed AVM1/AVM2 files
 	* implement streaming of videos embedded in the swf file

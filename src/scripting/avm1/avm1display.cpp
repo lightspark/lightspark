@@ -109,6 +109,8 @@ void AVM1Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("displayState","",Class<IFunction>::getFunction(c->getSystemState(),_setDisplayState),SETTER_METHOD,false);
 	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleMode),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_setScaleMode),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("showMenu","",Class<IFunction>::getFunction(c->getSystemState(),_getShowMenu),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("showMenu","",Class<IFunction>::getFunction(c->getSystemState(),_setShowMenu),SETTER_METHOD,false);
 	c->setDeclaredMethodByQName("align","",Class<IFunction>::getFunction(c->getSystemState(),getAlign),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("align","",Class<IFunction>::getFunction(c->getSystemState(),setAlign),SETTER_METHOD,false);
 	c->setDeclaredMethodByQName("addListener","",Class<IFunction>::getFunction(c->getSystemState(),addResizeListener),NORMAL_METHOD,false);
@@ -122,6 +124,14 @@ ASFUNCTIONBODY_ATOM(AVM1Stage,_setDisplayState)
 {
 	ARG_UNPACK_ATOM(sys->stage->displayState);
 	sys->stage->onDisplayState(sys->stage->displayState);
+}
+ASFUNCTIONBODY_ATOM(AVM1Stage,_getShowMenu)
+{
+	ret = asAtomHandler::fromBool(sys->stage->showDefaultContextMenu);
+}
+ASFUNCTIONBODY_ATOM(AVM1Stage,_setShowMenu)
+{
+	ARG_UNPACK_ATOM(sys->stage->showDefaultContextMenu);
 }
 ASFUNCTIONBODY_ATOM(AVM1Stage,getAlign)
 {

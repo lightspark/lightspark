@@ -69,6 +69,8 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_getDisplayState);
 	ASFUNCTION_ATOM(_setDisplayState);
+	ASFUNCTION_ATOM(_getShowMenu);
+	ASFUNCTION_ATOM(_setShowMenu);
 	ASFUNCTION_ATOM(getAlign);
 	ASFUNCTION_ATOM(setAlign);
 	ASFUNCTION_ATOM(addResizeListener);

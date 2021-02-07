@@ -628,7 +628,7 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		if(onStage==true)
 		{
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"addedToStage"));
-			if(!force && isVmThread())
+			if(isVmThread())
 				ABCVm::publicHandleEvent(this,e);
 			else
 			{

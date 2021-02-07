@@ -4534,14 +4534,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						coercereturnvalue = true;
 					}
 				}
-				if (checkresulttype && dynamic_cast<const Class_base*>(mi->returnType) == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
+				if (checkresulttype)
 				{
-					if (!typestack.back().obj
+					if (dynamic_cast<const Class_base*>(mi->returnType) == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
+							(!typestack.back().obj
 							|| !typestack.back().obj->is<Class_base>() 
-							|| (dynamic_cast<const Class_base*>(mi->returnType) && !typestack.back().obj->as<Class_base>()->isSubClass(dynamic_cast<const Class_base*>(mi->returnType))))
+							|| (dynamic_cast<const Class_base*>(mi->returnType) && !typestack.back().obj->as<Class_base>()->isSubClass(dynamic_cast<const Class_base*>(mi->returnType)))))
 					{
 						coercereturnvalue = !checkmatchingLastObjtype(state,(Class_base*)(dynamic_cast<const Class_base*>(mi->returnType)),Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr());
 					}
+					else
+						coercereturnvalue = true;
 				}
 				if (state.operandlist.size() > 0 && state.operandlist.back().type == OP_LOCAL && state.operandlist.back().index == (int32_t)mi->body->getReturnValuePos())
 				{

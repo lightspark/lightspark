@@ -59,8 +59,12 @@ EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdl
 EngineData::~EngineData()
 {
 	if (currentPixelBufPtr) {
+#ifdef _WIN32
+		_aligned_free(currentPixelBufPtr);
+#else
 		free(currentPixelBufPtr);
-		currentPixelBufPtr = 0;
+#endif
+		currentPixelBufPtr = nullptr;
 	}
 }
 bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
@@ -693,8 +697,12 @@ void EngineData::resizePixelBuffers(uint32_t w, uint32_t h)
 	pixelBufferWidth=w;
 	pixelBufferHeight=h;
 	if (currentPixelBufPtr) {
+#ifdef _WIN32
+		_aligned_free(currentPixelBufPtr);
+#else
 		free(currentPixelBufPtr);
-		currentPixelBufPtr = 0;
+#endif
+		currentPixelBufPtr = nullptr;
 	}
 }
 

@@ -1072,7 +1072,8 @@ void TextField::updateText(const tiny_string& new_text)
 
 void TextField::avm1SyncTagVar()
 {
-	if (!tagvarname.empty())
+	if (!tagvarname.empty()
+		&& tagvarname != "_url") // "_url" is readonly and always read from root movie, no need to update
 	{
 		DisplayObject* par = getParent();
 		while (par)

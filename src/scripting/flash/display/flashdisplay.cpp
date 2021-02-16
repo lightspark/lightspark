@@ -1605,7 +1605,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		advanceFrame();
 }
 
-void MovieClip::AVM1gotoFrameLabel(const tiny_string& label)
+void MovieClip::AVM1gotoFrameLabel(const tiny_string& label,bool stop)
 {
 	uint32_t dest=getFrameIdByLabel(label, "");
 	if(dest==FRAME_NOT_FOUND)
@@ -1613,7 +1613,7 @@ void MovieClip::AVM1gotoFrameLabel(const tiny_string& label)
 		LOG(LOG_ERROR, "gotoFrameLabel: label not found:" <<label);
 		return;
 	}
-	AVM1gotoFrame(dest, true, true);
+	AVM1gotoFrame(dest, stop, true);
 }
 void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 {

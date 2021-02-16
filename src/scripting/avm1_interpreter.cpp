@@ -2037,7 +2037,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				tiny_string s((const char*)&(*it));
 				it += s.numBytes()+1;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGotoLabel "<<s);
-				clip->as<MovieClip>()->AVM1gotoFrameLabel(s);
+				clip->as<MovieClip>()->AVM1gotoFrameLabel(s,true);
 				break;
 			}
 			case 0x8e: // ActionDefineFunction2
@@ -2388,7 +2388,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (biasframe)
 						LOG(LOG_NOT_IMPLEMENTED,"AVM1: GotFrame2 with bias and label:"<<asAtomHandler::toDebugString(a));
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGotoFrame2 label "<<s);
-					clip->as<MovieClip>()->AVM1gotoFrameLabel(s);
+					clip->as<MovieClip>()->AVM1gotoFrameLabel(s,!playflag);
 					
 				}
 				else

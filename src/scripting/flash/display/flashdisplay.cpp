@@ -1532,7 +1532,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,stop)
 	if (!th->state.stop_FP)
 	{
 		th->state.stop_FP=true;
-		th->state.avm1ScriptExecutedAfterStop=false;
 	}
 	th->state.next_FP=th->state.FP;
 }
@@ -1541,7 +1540,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	th->state.stop_FP=false;
-	th->state.avm1ScriptExecutedAfterStop=false;
 }
 
 void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
@@ -1590,7 +1588,6 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
-	state.avm1ScriptExecutedAfterStop=false;
 	if (inExecuteFramescript)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 
@@ -1631,7 +1628,6 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 			advance = false;
 		}
 		state.stop_FP = stop;
-		state.avm1ScriptExecutedAfterStop=false;
 	}
 	if (advance) 
 		advanceFrame();
@@ -5081,16 +5077,14 @@ void MovieClip::executeFrameScript()
 	}
 	if (!needsActionScript3())
 	{
-		uint32_t currFP = state.FP;
-		if (!state.stop_FP || !state.avm1ScriptExecutedAfterStop)
+		if (!state.avm1ScriptExecuted)
 		{
 			auto iter=frames.begin();
 			for(uint32_t i=0;i<state.FP;i++)
 				++iter;
 			iter->AVM1executeActions(this);
 		}
-		if (state.stop_FP && currFP == state.FP)
-			state.avm1ScriptExecutedAfterStop=true;
+		state.avm1ScriptExecuted=true;
 	}
 
 	if (frameScriptToExecute != UINT32_MAX)
@@ -5181,6 +5175,7 @@ void MovieClip::advanceFrame()
 	if (state.next_FP != state.FP)
 	{
 		state.FP=state.next_FP;
+		state.avm1ScriptExecuted=false;
 	}
 	if(!state.stop_FP && getFramesLoaded()>0)
 	{
@@ -5251,7 +5246,7 @@ void MovieClip::resetLegacyState()
 	state.explicit_FP=false;
 	state.creatingframe=false;
 	state.frameadvanced=false;
-	state.avm1ScriptExecutedAfterStop=false;
+	state.avm1ScriptExecuted=false;
 }
 
 Frame *MovieClip::getCurrentFrame()

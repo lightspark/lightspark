@@ -44,3 +44,12 @@ void AVM1LocalConnection::sinit(Class_base *c)
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("domain","",Class<IFunction>::getFunction(c->getSystemState(),domain),GETTER_METHOD,true);
 }
+void AVM1LoadVars::sinit(Class_base *c)
+{
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+}
+ASFUNCTIONBODY_ATOM(AVM1LoadVars,_constructor)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"LoadVars class not implemented");
+}
+

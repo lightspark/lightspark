@@ -362,6 +362,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("Video","",Class<AVM1Video>::getRef(m_sys));
 	builtinavm1->registerBuiltin("AsBroadcaster","",Class<AVM1Broadcaster>::getRef(m_sys));
 	builtinavm1->registerBuiltin("LocalConnection","",Class<AVM1LocalConnection>::getRef(m_sys));
+	builtinavm1->registerBuiltin("LoadVars","",Class<AVM1LoadVars>::getRef(m_sys));
 
 	if (m_sys->getSwfVersion() >= 6)
 	{

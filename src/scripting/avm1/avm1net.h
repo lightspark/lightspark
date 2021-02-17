@@ -40,5 +40,13 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class AVM1LoadVars: public ASObject
+{
+public:
+	AVM1LoadVars(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(_constructor);
+};
+
 }
 #endif // SCRIPTING_AVM1_AVM1NET_H

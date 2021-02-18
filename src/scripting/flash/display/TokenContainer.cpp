@@ -63,6 +63,9 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 			
 	ShapesBuilder shapesBuilder;
 
+	cursor.x= -shapebounds.Xmin;
+	cursor.y= -shapebounds.Ymin;
+	
 	for(unsigned int i=0;i<shapeRecords.size();i++)
 	{
 		const SHAPERECORD* cur=&shapeRecords[i];

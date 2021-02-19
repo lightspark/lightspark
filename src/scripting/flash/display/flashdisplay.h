@@ -647,7 +647,7 @@ public:
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 	
-	void AVM1gotoFrameLabel(const tiny_string &label, bool stop);
+	void AVM1gotoFrameLabel(const tiny_string &label, bool stop, bool switchplaystate);
 	void AVM1gotoFrame(int frame, bool stop, bool switchplaystate=false);
 	static void AVM1SetupMethods(Class_base* c);
 	void AVM1ExecuteFrameActionsFromLabel(const tiny_string &label);

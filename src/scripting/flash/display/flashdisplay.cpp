@@ -1602,7 +1602,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		advanceFrame();
 }
 
-void MovieClip::AVM1gotoFrameLabel(const tiny_string& label,bool stop)
+void MovieClip::AVM1gotoFrameLabel(const tiny_string& label,bool stop, bool switchplaystate)
 {
 	uint32_t dest=getFrameIdByLabel(label, "");
 	if(dest==FRAME_NOT_FOUND)
@@ -1610,7 +1610,7 @@ void MovieClip::AVM1gotoFrameLabel(const tiny_string& label,bool stop)
 		LOG(LOG_ERROR, "gotoFrameLabel: label not found:" <<label);
 		return;
 	}
-	AVM1gotoFrame(dest, stop, true);
+	AVM1gotoFrame(dest, stop, switchplaystate);
 }
 void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 {
@@ -1629,7 +1629,7 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 		}
 		state.stop_FP = stop;
 	}
-	if (advance) 
+	if (advance)
 		advanceFrame();
 }
 
@@ -5075,16 +5075,17 @@ void MovieClip::executeFrameScript()
 		(*itbind).second->UpdateVariableBinding(v);
 		itbind++;
 	}
+	state.explicit_FP=false;
 	if (!needsActionScript3())
 	{
 		if (!state.avm1ScriptExecuted)
 		{
+			state.avm1ScriptExecuted=true;
 			auto iter=frames.begin();
 			for(uint32_t i=0;i<state.FP;i++)
 				++iter;
 			iter->AVM1executeActions(this);
 		}
-		state.avm1ScriptExecuted=true;
 	}
 
 	if (frameScriptToExecute != UINT32_MAX)
@@ -5099,7 +5100,6 @@ void MovieClip::executeFrameScript()
 		inExecuteFramescript = false;
 	}
 	Sprite::executeFrameScript();
-	state.explicit_FP=false;
 }
 
 void MovieClip::checkRatio(uint32_t ratio)

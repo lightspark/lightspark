@@ -124,8 +124,10 @@ void BitmapData::notifyUsers() const
 
 	if (!pixels.isNull())
 	{
-		pixels->checkTexture();
-		getSystemState()->getRenderThread()->addUploadJob(this->pixels.getPtr());
+		if (pixels->checkTexture())
+        {
+		    getSystemState()->getRenderThread()->addUploadJob(this->pixels.getPtr());
+        }
 	}
 	for(auto it=users.begin();it!=users.end();it++)
 		(*it)->updatedData();

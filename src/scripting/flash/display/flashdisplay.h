@@ -887,7 +887,7 @@ public:
 	static void sinit(Class_base* c);
 };
 
-class Bitmap: public DisplayObject, public TokenContainer
+class Bitmap: public DisplayObject
 {
 friend class CairoTokenRenderer;
 private:
@@ -896,7 +896,7 @@ private:
 	void onPixelSnappingChanged(tiny_string snapping);
 protected:
 	bool renderImpl(RenderContext& ctxt) const override
-		{ return TokenContainer::renderImpl(ctxt); }
+		{ return defaultRender(ctxt); }
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
@@ -912,9 +912,8 @@ public:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	virtual IntSize getBitmapSize() const;
-	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
-	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
+	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
 };
 
 class AVM1Movie: public DisplayObject

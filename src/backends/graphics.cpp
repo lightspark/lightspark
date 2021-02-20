@@ -1047,3 +1047,20 @@ IDrawable::~IDrawable()
 		it++;
 	}
 }
+
+BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, bool _hm,
+		float _a, const std::vector<MaskData>& _ms,
+		float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
+		float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset)
+	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _im, _hm,_a, _ms,
+				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
+				_redOffset,_greenOffset,_blueOffset,_alphaOffset)
+	, data(_data)
+{
+}
+
+uint8_t *BitmapRenderer::getPixelBuffer(float scalex, float scaley)
+{
+	return data->getData();
+}
+

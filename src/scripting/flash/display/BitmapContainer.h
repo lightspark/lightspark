@@ -25,11 +25,12 @@
 #include "smartrefs.h"
 #include "swftypes.h"
 #include <vector>
+#include "backends/graphics.h"
 
 namespace lightspark
 {
 
-class BitmapContainer : public RefCountable
+class BitmapContainer : public RefCountable, public ITextureUploadable
 {
 public:
 	enum BITMAP_FORMAT { RGB15, RGB24, RGB32, ARGB32 };
@@ -45,6 +46,7 @@ protected:
 	std::vector<uint8_t> data_colortransformed;
 	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y) const;
 public:
+	TextureChunk bitmaptexture;
 	BitmapContainer(MemoryAccount* m);
 	uint8_t* getData() { return &data[0]; }
 	const uint8_t* getData() const { return &data[0]; }
@@ -83,6 +85,14 @@ public:
 	int getHeight() const { return height; }
 	bool isEmpty() const { return data.empty(); }
 	void clear();
+
+	//ITextureUploadable interface
+	void sizeNeeded(uint32_t& w, uint32_t& h) const override { w=width; h=height; }
+	void upload(uint8_t* data, uint32_t w, uint32_t h) const override;
+	const TextureChunk& getTexture() override;
+	void uploadFence() override {}
+
+	void checkTexture();
 };
 
 }

@@ -234,14 +234,14 @@ public:
 	AsyncDrawJob(IDrawable* d, _R<DisplayObject> o);
 	~AsyncDrawJob();
 	//IThreadJob interface
-	void execute();
-	void threadAbort();
-	void jobFence();
+	void execute() override;
+	void threadAbort() override;
+	void jobFence() override;
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) const;
-	void sizeNeeded(uint32_t& w, uint32_t& h) const;
-	const TextureChunk& getTexture();
-	void uploadFence();
+	void upload(uint8_t* data, uint32_t w, uint32_t h) const override;
+	void sizeNeeded(uint32_t& w, uint32_t& h) const override;
+	const TextureChunk& getTexture() override;
+	void uploadFence() override;
 	DisplayObject* getOwner() { return owner.getPtr(); }
 };
 
@@ -305,8 +305,8 @@ private:
 	/*
 	 * This is run by CairoRenderer::execute()
 	 */
-	void executeDraw(cairo_t* cr, float scalex, float scaley);
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const;
+	void executeDraw(cairo_t* cr, float scalex, float scaley) override;
+	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const override;
 public:
 	/*
 	   CairoTokenRenderer constructor
@@ -427,6 +427,24 @@ public:
 	static std::vector<LineData> getLineData(const TextData& _textData);
 };
 
+class BitmapRenderer: public IDrawable
+{
+protected:
+	_NR<BitmapContainer> data;
+public:
+	BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _y, int32_t _w, int32_t _h
+				  , int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r
+				  , float _xs, float _ys
+				  , bool _im, bool _hm
+				  , float _a, const std::vector<MaskData>& m
+				  , float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier
+				  , float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset
+				  );
+	//IDrawable interface
+	uint8_t* getPixelBuffer(float scalex, float scaley) override;
+	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const override {}
+};
+
 class InvalidateQueue
 {
 public:
@@ -439,8 +457,9 @@ class SoftwareInvalidateQueue: public InvalidateQueue
 {
 public:
 	std::list<_R<DisplayObject>> queue;
-	void addToInvalidateQueue(_R<DisplayObject> d);
+	void addToInvalidateQueue(_R<DisplayObject> d) override;
 };
+
 
 }
 #endif /* BACKENDS_GRAPHICS_H */

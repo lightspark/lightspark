@@ -20,8 +20,9 @@
 #include <stack>
 #include "scripting/flash/display/BitmapContainer.h"
 #include "scripting/flash/display/flashdisplay.h"
-#include "backends/rendering_context.h"
+#include "backends/rendering.h"
 #include "backends/image.h"
+#include "swf.h"
 
 using namespace std;
 using namespace lightspark;
@@ -118,6 +119,25 @@ void BitmapContainer::clear()
 	stride=0;
 	width=0;
 	height=0;
+	bitmaptexture.makeEmpty();
+}
+
+void BitmapContainer::upload(uint8_t *data, uint32_t w, uint32_t h) const
+{
+	memcpy(data, getData(), w*h*4);
+}
+
+const TextureChunk &BitmapContainer::getTexture()
+{
+	return bitmaptexture;
+}
+
+void BitmapContainer::checkTexture()
+{
+	if (!bitmaptexture.isValid())
+	{
+		bitmaptexture=getSys()->getRenderThread()->allocateTexture(width, height, true);
+	}
 }
 
 void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)

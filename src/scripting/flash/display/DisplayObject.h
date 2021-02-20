@@ -47,6 +47,7 @@ friend class ParseThread;
 friend class Loader;
 friend class TextField;
 friend class Shape;
+friend class Bitmap;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 public:
 	enum HIT_TYPE { GENERIC_HIT, // point is over the object

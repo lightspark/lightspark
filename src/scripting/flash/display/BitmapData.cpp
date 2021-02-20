@@ -26,7 +26,7 @@
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/filters/flashfilters.h"
-#include "backends/rendering_context.h"
+#include "backends/rendering.h"
 #include "3rdparty/perlinnoise/PerlinNoise.hpp"
 
 #include <cstdlib> 
@@ -122,6 +122,11 @@ void BitmapData::notifyUsers() const
 	if (locked > 0)
 		return;
 
+	if (!pixels.isNull())
+	{
+		pixels->checkTexture();
+		getSystemState()->getRenderThread()->addUploadJob(this->pixels.getPtr());
+	}
 	for(auto it=users.begin();it!=users.end();it++)
 		(*it)->updatedData();
 }

@@ -4028,7 +4028,7 @@ void StageDisplayState::sinit(Class_base* c)
 }
 
 Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
-	DisplayObject(c),TokenContainer(this, this->getSystemState()->bitmapTokenMemory),smoothing(false)
+	DisplayObject(c),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	if(li)
@@ -4073,7 +4073,7 @@ Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE typ
 	afterConstruction();
 }
 
-Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),TokenContainer(this, this->getSystemState()->bitmapTokenMemory),smoothing(false)
+Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	bitmapData = data;
@@ -4152,31 +4152,23 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged);
 
 void Bitmap::updatedData()
 {
-	tokens.clear();
-
 	if(bitmapData.isNull() || bitmapData->getBitmapContainer().isNull())
 		return;
-
-	FILLSTYLE style(0xff);
-	if (smoothing)
-		style.FillStyleType=CLIPPED_BITMAP;
-	else
-		style.FillStyleType=NON_SMOOTHED_CLIPPED_BITMAP;
-	style.bitmap=bitmapData->getBitmapContainer();
-	tokens.filltokens.emplace_back(_MR(new GeomToken(SET_FILL, style)));
-	tokens.filltokens.emplace_back(_MR(new GeomToken(MOVE, Vector2(0, 0))));
-	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(0, style.bitmap->getHeight()))));
-	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), style.bitmap->getHeight()))));
-	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(style.bitmap->getWidth(), 0))));
-	tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(0, 0))));
+	cachedSurface.tex = &bitmapData->getBitmapContainer()->bitmaptexture;
+	cachedSurface.isChunkOwner=false;
 	hasChanged=true;
-	setNeedsTextureRecalculation();
 	if(onStage)
 		requestInvalidation(getSystemState());
 }
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
+	if (bitmapData.isNull())
+		return false;
+	xmin = 0;
+	ymin = 0;
+	xmax = bitmapData->getWidth();
+	ymax = bitmapData->getHeight();
+	return true;
 }
 
 _NR<DisplayObject> Bitmap::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
@@ -4204,6 +4196,96 @@ IntSize Bitmap::getBitmapSize() const
 		return IntSize(0, 0);
 	else
 		return IntSize(bitmapData->getWidth(), bitmapData->getHeight());
+}
+
+void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
+{
+	if(skipRender())
+		return;
+	incRef();
+	// texture recalculation is never needed for bitmaps
+	resetNeedsTextureRecalculation();
+	q->addToInvalidateQueue(_MR(this));
+}
+
+IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing)
+{
+	int32_t x,y,rx,ry;
+	uint32_t width,height;
+	uint32_t rwidth,rheight;
+	number_t bxmin,bxmax,bymin,bymax;
+	if(!boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax))
+	{
+		//No contents, nothing to do
+		return nullptr;
+	}
+	//Compute the matrix and the masks that are relevant
+	MATRIX totalMatrix;
+	std::vector<IDrawable::MaskData> masks;
+
+	float scalex;
+	float scaley;
+	int offx,offy;
+	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
+
+	bool isMask;
+	bool hasMask;
+	if (target)
+	{
+		computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
+		totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
+	}
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
+
+	width = bxmax-bxmin;
+	height = bymax-bymin;
+	float rotation = getConcatenatedMatrix().getRotation();
+	float xscale = getConcatenatedMatrix().getScaleX();
+	float yscale = getConcatenatedMatrix().getScaleY();
+	float redMultiplier=1.0;
+	float greenMultiplier=1.0;
+	float blueMultiplier=1.0;
+	float alphaMultiplier=1.0;
+	float redOffset=0.0;
+	float greenOffset=0.0;
+	float blueOffset=0.0;
+	float alphaOffset=0.0;
+	MATRIX totalMatrix2;
+	std::vector<IDrawable::MaskData> masks2;
+	if (target)
+	{
+		computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
+		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
+	}
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
+	ColorTransform* ct = colorTransform.getPtr();
+	DisplayObjectContainer* p = getParent();
+	while (!ct && p)
+	{
+		ct = p->colorTransform.getPtr();
+		p = p->getParent();
+	}
+	if(width==0 || height==0)
+		return nullptr;
+	if (ct)
+	{
+		redMultiplier=ct->redMultiplier;
+		greenMultiplier=ct->greenMultiplier;
+		blueMultiplier=ct->blueMultiplier;
+		alphaMultiplier=ct->alphaMultiplier;
+		redOffset=ct->redOffset;
+		greenOffset=ct->greenOffset;
+		blueOffset=ct->blueOffset;
+		alphaOffset=ct->alphaOffset;
+	}
+	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
+				, x*scalex, y*scaley, width*scalex, height*scaley
+				, rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,rotation
+				, xscale, yscale
+				, isMask, hasMask
+				, getConcatenatedAlpha(), masks
+				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
+				, redOffset,greenOffset,blueOffset,alphaOffset);
 }
 
 void SimpleButton::sinit(Class_base* c)

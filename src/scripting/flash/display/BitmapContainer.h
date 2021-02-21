@@ -92,7 +92,7 @@ public:
 	const TextureChunk& getTexture() override;
 	void uploadFence() override {}
 
-	void checkTexture();
+	bool checkTexture();
 };
 
 }

@@ -132,12 +132,18 @@ const TextureChunk &BitmapContainer::getTexture()
 	return bitmaptexture;
 }
 
-void BitmapContainer::checkTexture()
+bool BitmapContainer::checkTexture()
 {
+    if (isEmpty()) {
+        return false;
+    }
+
 	if (!bitmaptexture.isValid())
 	{
 		bitmaptexture=getSys()->getRenderThread()->allocateTexture(width, height, true);
 	}
+
+    return true;
 }
 
 void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)

@@ -3248,10 +3248,6 @@ _NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t 
 {
 	number_t xmin, xmax, ymin, ymax;
 	boundsRect(xmin, xmax, ymin, ymax);
-	xmin = (xmin+this->getMatrix().getTranslateX())*this->getMatrix().getScaleX();
-	ymin = (ymin+this->getMatrix().getTranslateY())*this->getMatrix().getScaleY();
-	xmax = (xmax+this->getMatrix().getTranslateX())*this->getMatrix().getScaleX();
-	ymax = (ymax+this->getMatrix().getTranslateY())*this->getMatrix().getScaleY();
 	if (x<xmin || x>xmax || y<ymin || y>ymax)
 		return NullRef;
 	if (!interactiveObjectsOnly)
@@ -4567,8 +4563,13 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 	_NR<DisplayObject> ret = NullRef;
 	if(hitTestState)
 	{
+		if(!hitTestState->getMatrix().isInvertible())
+			return NullRef;
+
+		number_t localX, localY;
+		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		this->incRef();
-		ret = hitTestState->hitTest(_MR(this), x, y, type,false);
+		ret = hitTestState->hitTest(_MR(this), localX,localY, type,false);
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been

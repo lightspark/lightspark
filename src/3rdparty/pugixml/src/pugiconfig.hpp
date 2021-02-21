@@ -21,7 +21,7 @@
 // #define PUGIXML_COMPACT
 
 // Uncomment this to disable XPath
-// #define PUGIXML_NO_XPATH
+#define PUGIXML_NO_XPATH
 
 // Uncomment this to disable STL
 // #define PUGIXML_NO_STL
@@ -49,6 +49,8 @@
 // Uncomment this to enable long long support
 // #define PUGIXML_HAS_LONG_LONG
 
+// this enables parser quirks required for lightspark
+#define PUGIXML_LIGHTSPARK_MODE
 #endif
 
 /**

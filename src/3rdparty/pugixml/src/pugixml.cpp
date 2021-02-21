@@ -3167,7 +3167,10 @@ PUGI__NS_BEGIN
 			// read PI target
 			char_t* target = s;
 
+// flash xml allows PI with whitespace after <?
+#ifndef PUGIXML_LIGHTSPARK_MODE
 			if (!PUGI__IS_CHARTYPE(*s, ct_start_symbol)) PUGI__THROW_ERROR(status_bad_pi, s);
+#endif
 
 			PUGI__SCANWHILE(PUGI__IS_CHARTYPE(*s, ct_symbol));
 			PUGI__CHECK_ERROR(status_bad_pi, s);

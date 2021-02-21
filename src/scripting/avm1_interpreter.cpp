@@ -1342,139 +1342,147 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom scriptobject = PopStack(stack);
 				asAtom ret=asAtomHandler::invalidAtom;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
-				uint32_t nameID = asAtomHandler::toStringId(name,clip->getSystemState());
-				ASObject* o = asAtomHandler::toObject(scriptobject,clip->getSystemState());
-				int step = 2; // we search in two steps, first with the normal name, then with name in lowercase (TODO find some faster method for case insensitive check for members)
-				while (step)
+				if (asAtomHandler::isNull(scriptobject) || asAtomHandler::isUndefined(scriptobject))
 				{
-					multiname m(nullptr);
-					m.isAttribute = false;
-					switch (asAtomHandler::getObjectType(name))
+					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember called on Null/Undefined, ignored "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
+					asAtomHandler::setUndefined(ret);
+				}
+				else
+				{
+					uint32_t nameID = asAtomHandler::toStringId(name,clip->getSystemState());
+					ASObject* o = asAtomHandler::toObject(scriptobject,clip->getSystemState());
+					int step = 2; // we search in two steps, first with the normal name, then with name in lowercase (TODO find some faster method for case insensitive check for members)
+					while (step)
 					{
-						case T_INTEGER:
-							m.name_type=multiname::NAME_INT;
-							m.name_i=asAtomHandler::getInt(name);
-							break;
-						case T_UINTEGER:
-							m.name_type=multiname::NAME_UINT;
-							m.name_ui=asAtomHandler::getUInt(name);
-							break;
-						case T_NUMBER:
-							m.name_type=multiname::NAME_NUMBER;
-							m.name_d=asAtomHandler::toNumber(name);
-							break;
-						default:
-							m.name_type=multiname::NAME_STRING;
-							m.name_s_id=nameID;
-							break;
-					}
-					if(o)
-					{
-						o->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CHECK_CLASS);
-						if (!asAtomHandler::isValid(ret))
+						multiname m(nullptr);
+						m.isAttribute = false;
+						switch (asAtomHandler::getObjectType(name))
 						{
-							ASObject* pr = o->is<Class_base>() && !o->as<Class_base>()->prototype.isNull() ? o->as<Class_base>()->prototype->getObj() : o->getprop_prototype();
-							// search the prototype before searching the AS3 class
-							while (pr)
+							case T_INTEGER:
+								m.name_type=multiname::NAME_INT;
+								m.name_i=asAtomHandler::getInt(name);
+								break;
+							case T_UINTEGER:
+								m.name_type=multiname::NAME_UINT;
+								m.name_ui=asAtomHandler::getUInt(name);
+								break;
+							case T_NUMBER:
+								m.name_type=multiname::NAME_NUMBER;
+								m.name_d=asAtomHandler::toNumber(name);
+								break;
+							default:
+								m.name_type=multiname::NAME_STRING;
+								m.name_s_id=nameID;
+								break;
+						}
+						if(o)
+						{
+							o->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CHECK_CLASS);
+							if (!asAtomHandler::isValid(ret))
 							{
-								bool isGetter = pr->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CALL_GETTER) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
-								if (isGetter) // getter from prototype has to be called with o as target
+								ASObject* pr = o->is<Class_base>() && !o->as<Class_base>()->prototype.isNull() ? o->as<Class_base>()->prototype->getObj() : o->getprop_prototype();
+								// search the prototype before searching the AS3 class
+								while (pr)
 								{
-									IFunction* f = asAtomHandler::as<IFunction>(ret);
-									ret = asAtom();
-									f->callGetter(ret,o);
-									break;
+									bool isGetter = pr->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CALL_GETTER) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+									if (isGetter) // getter from prototype has to be called with o as target
+									{
+										IFunction* f = asAtomHandler::as<IFunction>(ret);
+										ret = asAtom();
+										f->callGetter(ret,o);
+										break;
+									}
+									else if (!asAtomHandler::isInvalid(ret))
+										break;
+									pr = pr->getprop_prototype();
 								}
-								else if (!asAtomHandler::isInvalid(ret))
-									break;
-								pr = pr->getprop_prototype();
+							}
+							if (!asAtomHandler::isValid(ret))
+								o->getVariableByMultiname(ret,m);
+						}
+						if (asAtomHandler::isInvalid(ret))
+						{
+							step--;
+							if (step)
+							{
+								tiny_string namelower = asAtomHandler::toString(name,clip->getSystemState()).lowercase();
+								nameID = clip->getSystemState()->getUniqueStringId(namelower);
 							}
 						}
-						if (!asAtomHandler::isValid(ret))
-							o->getVariableByMultiname(ret,m);
+						else
+							break;
+					}
+					
+					if (asAtomHandler::isInvalid(ret))
+					{
+						switch (asAtomHandler::getObjectType(scriptobject))
+						{
+							case T_FUNCTION:
+								if (nameID == BUILTIN_STRINGS::PROTOTYPE)
+									ret = asAtomHandler::fromObject(o->as<IFunction>()->prototype.getPtr());
+								break;
+							case T_OBJECT:
+							case T_ARRAY:
+							case T_CLASS:
+								switch (nameID)
+								{
+									case BUILTIN_STRINGS::PROTOTYPE:
+									{
+										if (o->is<Class_base>())
+											ret = asAtomHandler::fromObject(o->as<Class_base>()->prototype.getPtr()->getObj());
+										else if (o->getClass())
+											ret = asAtomHandler::fromObject(o->getClass()->prototype.getPtr()->getObj());
+										else
+											LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember for scriptobject without class "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
+										break;
+									}
+									case BUILTIN_STRINGS::STRING_AVM1_TARGET:
+										if (o->is<DisplayObject>())
+											ret = asAtomHandler::fromString(clip->getSystemState(),o->as<DisplayObject>()->AVM1GetPath());
+										else
+											asAtomHandler::setUndefined(ret);
+										break;
+									default:
+									{
+										multiname m(nullptr);
+										m.isAttribute = false;
+										switch (asAtomHandler::getObjectType(name))
+										{
+											case T_INTEGER:
+												m.name_type=multiname::NAME_INT;
+												m.name_i=asAtomHandler::getInt(name);
+												break;
+											case T_UINTEGER:
+												m.name_type=multiname::NAME_UINT;
+												m.name_ui=asAtomHandler::getUInt(name);
+												break;
+											case T_NUMBER:
+												m.name_type=multiname::NAME_NUMBER;
+												m.name_d=asAtomHandler::toNumber(name);
+												break;
+											default:
+												m.name_type=multiname::NAME_STRING;
+												m.name_s_id=nameID;
+												break;
+										}
+										o->getVariableByMultiname(ret,m);
+										break;
+									}
+								}
+								break;
+							default:
+								LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember for scriptobject type "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
+								break;
+						}
 					}
 					if (asAtomHandler::isInvalid(ret))
 					{
-						step--;
-						if (step)
-						{
-							tiny_string namelower = asAtomHandler::toString(name,clip->getSystemState()).lowercase();
-							nameID = clip->getSystemState()->getUniqueStringId(namelower);
-						}
+						if (o && o->is<DisplayObject>())
+							ret = o->as<DisplayObject>()->AVM1GetVariable(asAtomHandler::toString(name,clip->getSystemState()));
 					}
-					else
-						break;
+					if (asAtomHandler::isInvalid(ret))
+						asAtomHandler::setUndefined(ret);
 				}
-				
-				if (asAtomHandler::isInvalid(ret))
-				{
-					switch (asAtomHandler::getObjectType(scriptobject))
-					{
-						case T_FUNCTION:
-							if (nameID == BUILTIN_STRINGS::PROTOTYPE)
-								ret = asAtomHandler::fromObject(o->as<IFunction>()->prototype.getPtr());
-							break;
-						case T_OBJECT:
-						case T_ARRAY:
-						case T_CLASS:
-							switch (nameID)
-							{
-								case BUILTIN_STRINGS::PROTOTYPE:
-								{
-									if (o->is<Class_base>())
-										ret = asAtomHandler::fromObject(o->as<Class_base>()->prototype.getPtr()->getObj());
-									else if (o->getClass())
-										ret = asAtomHandler::fromObject(o->getClass()->prototype.getPtr()->getObj());
-									else
-										LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember for scriptobject without class "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
-									break;
-								}
-								case BUILTIN_STRINGS::STRING_AVM1_TARGET:
-									if (o->is<DisplayObject>())
-										ret = asAtomHandler::fromString(clip->getSystemState(),o->as<DisplayObject>()->AVM1GetPath());
-									else
-										asAtomHandler::setUndefined(ret);
-									break;
-								default:
-								{
-									multiname m(nullptr);
-									m.isAttribute = false;
-									switch (asAtomHandler::getObjectType(name))
-									{
-										case T_INTEGER:
-											m.name_type=multiname::NAME_INT;
-											m.name_i=asAtomHandler::getInt(name);
-											break;
-										case T_UINTEGER:
-											m.name_type=multiname::NAME_UINT;
-											m.name_ui=asAtomHandler::getUInt(name);
-											break;
-										case T_NUMBER:
-											m.name_type=multiname::NAME_NUMBER;
-											m.name_d=asAtomHandler::toNumber(name);
-											break;
-										default:
-											m.name_type=multiname::NAME_STRING;
-											m.name_s_id=nameID;
-											break;
-									}
-									o->getVariableByMultiname(ret,m);
-									break;
-								}
-							}
-							break;
-						default:
-							LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember for scriptobject type "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
-							break;
-					}
-				}
-				if (asAtomHandler::isInvalid(ret))
-				{
-					if (o && o->is<DisplayObject>())
-						ret = o->as<DisplayObject>()->AVM1GetVariable(asAtomHandler::toString(name,clip->getSystemState()));
-				}
-				if (asAtomHandler::isInvalid(ret))
-					asAtomHandler::setUndefined(ret);
 				ASATOM_DECREF(name);
 				ASATOM_DECREF(scriptobject);
 				PushStack(stack,ret);
@@ -1654,7 +1662,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				if (asAtomHandler::isNull(scriptobject) || asAtomHandler::isUndefined(scriptobject))
 				{
-					PushStack(stack,asAtomHandler::undefinedAtom);
+					ret=asAtomHandler::undefinedAtom;
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod from undefined/null ignored "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 					done=true;
 				}

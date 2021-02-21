@@ -41,11 +41,11 @@ static void* custom_allocate(size_t size)
 	else
 	{
 		void* ptr = memory_allocate(size);
-		assert(ptr);
+		if (!ptr) return 0;
 
 		g_memory_total_size += memory_size(ptr);
 		g_memory_total_count++;
-		
+
 		return ptr;
 	}
 }
@@ -68,7 +68,7 @@ static void custom_deallocate(void* ptr)
 
 	g_memory_total_size -= memory_size(ptr);
 	g_memory_total_count--;
-	
+
 	memory_deallocate(ptr);
 }
 
@@ -105,9 +105,9 @@ static bool run_test(test_runner* test, const char* test_name, pugi::allocation_
 		g_memory_fail_triggered = false;
 		test_runner::_memory_fail_threshold = 0;
 		test_runner::_memory_fail_triggered = false;
-	
+
 		pugi::set_memory_management_functions(allocate, custom_deallocate);
-		
+
 #ifdef _MSC_VER
 #	pragma warning(push)
 #	pragma warning(disable: 4611) // interaction between _setjmp and C++ object destruction is non-portable
@@ -115,7 +115,7 @@ static bool run_test(test_runner* test, const char* test_name, pugi::allocation_
 #endif
 
 		volatile int result = setjmp(test_runner::_failure_buffer);
-	
+
 #ifdef _MSC_VER
 #	pragma warning(pop)
 #endif
@@ -177,7 +177,7 @@ int main(int, char** argv)
 	temp.erase((slash != std::string::npos) ? slash + 1 : 0);
 
 	test_runner::_temp_path = temp.c_str();
-	
+
 	replace_memory_management();
 
 	unsigned int total = 0;
@@ -190,13 +190,14 @@ int main(int, char** argv)
 		total++;
 		passed += run_test(test, test->_name, custom_allocate);
 
-	#ifndef PUGIXML_NO_EXCEPTIONS
 		if (g_memory_fail_triggered)
 		{
+			// run tests that trigger memory failures twice - with an allocator that returns NULL and with an allocator that throws
+		#ifndef PUGIXML_NO_EXCEPTIONS
 			total++;
 			passed += run_test(test, (test->_name + std::string(" (throw)")).c_str(), custom_allocate_throw);
+		#endif
 		}
-	#endif
 	}
 
 	unsigned int failed = total - passed;

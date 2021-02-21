@@ -1,10 +1,12 @@
-#include "common.hpp"
+#include "test.hpp"
 
 #include "writer_string.hpp"
 #include "allocator.hpp"
 
 #include <string>
 #include <vector>
+
+using namespace pugi;
 
 namespace
 {
@@ -48,7 +50,7 @@ TEST(memory_custom_memory_management)
 		CHECK(page_allocs == 0 && page_deallocs == 0);
 
 		CHECK(doc.load_string(STR("<node />")));
-	
+
 		CHECK(page_allocs == 1 && page_deallocs == 0);
 
 		// modify document (no new page)
@@ -56,7 +58,7 @@ TEST(memory_custom_memory_management)
 		CHECK(page_allocs == 1 && page_deallocs == 0);
 
 		// modify document (new page)
-		std::basic_string<pugi::char_t> s(65536, 'x');
+		std::basic_string<char_t> s(65536, 'x');
 
 		CHECK(doc.first_child().set_name(s.c_str()));
 		CHECK(page_allocs == 2 && page_deallocs == 0);
@@ -93,7 +95,7 @@ TEST(memory_large_allocations)
 		// initial fill
 		for (size_t i = 0; i < 128; ++i)
 		{
-			std::basic_string<pugi::char_t> s(i * 128, 'x');
+			std::basic_string<char_t> s(i * 128, 'x');
 
 			CHECK(doc.append_child(node_pcdata).set_value(s.c_str()));
 		}
@@ -103,12 +105,12 @@ TEST(memory_large_allocations)
 		// grow-prune loop
 		while (doc.first_child())
 		{
-			pugi::xml_node node;
+			xml_node node;
 
 			// grow
 			for (node = doc.first_child(); node; node = node.next_sibling())
 			{
-				std::basic_string<pugi::char_t> s = node.value();
+				std::basic_string<char_t> s = node.value();
 
 				CHECK(node.set_value((s + s).c_str()));
 			}
@@ -116,7 +118,7 @@ TEST(memory_large_allocations)
 			// prune
 			for (node = doc.first_child(); node; )
 			{
-				pugi::xml_node next = node.next_sibling().next_sibling();
+				xml_node next = node.next_sibling().next_sibling();
 
 				node.parent().remove_child(node);
 
@@ -159,7 +161,7 @@ TEST(memory_page_management)
 
 		for (size_t i = 0; i < 4000; ++i)
 		{
-			xml_node node = doc.append_child(STR("node"));
+			xml_node node = doc.append_child(STR("n"));
 			CHECK(node);
 
 			nodes.push_back(node);

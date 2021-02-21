@@ -1,12 +1,16 @@
 #ifndef PUGIXML_NO_XPATH
 
-#include "common.hpp"
+#include "test.hpp"
+
+#include <string>
+
+using namespace pugi;
 
 TEST_XML(xpath_number_number, "<node>123</node>")
 {
 	xml_node c;
 	xml_node n = doc.child(STR("node")).first_child();
-	
+
 	// number with 0 arguments
 	CHECK_XPATH_NUMBER_NAN(c, STR("number()"));
 	CHECK_XPATH_NUMBER(n, STR("number()"), 123);
@@ -35,7 +39,7 @@ TEST_XML(xpath_number_number, "<node>123</node>")
 
 	// number with 1 number argument
 	CHECK_XPATH_NUMBER(c, STR("number(1)"), 1);
-	
+
 	// number with 2 arguments
 	CHECK_XPATH_FAIL(STR("number(1, 2)"));
 }
@@ -44,21 +48,21 @@ TEST_XML(xpath_number_sum, "<node>123<child>789</child></node><node/>")
 {
 	xml_node c;
 	xml_node n = doc.child(STR("node"));
-	
+
 	// sum with 0 arguments
 	CHECK_XPATH_FAIL(STR("sum()"));
 
 	// sum with 1 argument
 	CHECK_XPATH_NUMBER(c, STR("sum(.)"), 0);
 	CHECK_XPATH_NUMBER(n, STR("sum(.)"), 123789); // 123 .. 789
-	
+
 	CHECK_XPATH_NUMBER(n, STR("sum(./descendant-or-self::node())"), 125490); // node + 123 + child + 789 = 123789 + 123 + 789 + 789 = 125490
 	CHECK_XPATH_NUMBER(n, STR("sum(.//node())"), 1701); // 123 + child + 789 = 123 + 789 + 789
 	CHECK_XPATH_NUMBER_NAN(doc.last_child(), STR("sum(.)"));
 
 	// sum with 2 arguments
 	CHECK_XPATH_FAIL(STR("sum(1, 2)"));
-	
+
 	// sum with 1 non-node-set argument
 	CHECK_XPATH_FAIL(STR("sum(1)"));
 }
@@ -155,7 +159,7 @@ TEST(xpath_number_round)
 TEST_XML(xpath_boolean_boolean, "<node />")
 {
 	xml_node c;
-	
+
 	// boolean with 0 arguments
 	CHECK_XPATH_FAIL(STR("boolean()"));
 
@@ -182,14 +186,14 @@ TEST_XML(xpath_boolean_boolean, "<node />")
 TEST(xpath_boolean_not)
 {
 	xml_node c;
-	
+
 	// not with 0 arguments
 	CHECK_XPATH_FAIL(STR("not()"));
 
 	// not with 1 argument
 	CHECK_XPATH_BOOLEAN(c, STR("not(true())"), false);
 	CHECK_XPATH_BOOLEAN(c, STR("not(false())"), true);
-	
+
 	// boolean with 2 arguments
 	CHECK_XPATH_FAIL(STR("not(1, 2)"));
 }
@@ -197,7 +201,7 @@ TEST(xpath_boolean_not)
 TEST(xpath_boolean_true)
 {
 	xml_node c;
-	
+
 	// true with 0 arguments
 	CHECK_XPATH_BOOLEAN(c, STR("true()"), true);
 
@@ -208,7 +212,7 @@ TEST(xpath_boolean_true)
 TEST(xpath_boolean_false)
 {
 	xml_node c;
-	
+
 	// false with 0 arguments
 	CHECK_XPATH_BOOLEAN(c, STR("false()"), false);
 
@@ -219,7 +223,7 @@ TEST(xpath_boolean_false)
 TEST_XML(xpath_boolean_lang, "<node xml:lang='en'><child xml:lang='zh-UK'><subchild attr=''/></child></node><foo><bar/></foo>")
 {
 	xml_node c;
-	
+
 	// lang with 0 arguments
 	CHECK_XPATH_FAIL(STR("lang()"));
 
@@ -228,7 +232,7 @@ TEST_XML(xpath_boolean_lang, "<node xml:lang='en'><child xml:lang='zh-UK'><subch
 	CHECK_XPATH_BOOLEAN(doc.child(STR("foo")), STR("lang('en')"), false);
 	CHECK_XPATH_BOOLEAN(doc.child(STR("foo")), STR("lang('')"), false);
 	CHECK_XPATH_BOOLEAN(doc.child(STR("foo")).child(STR("bar")), STR("lang('en')"), false);
-	
+
 	// lang with 1 argument, same language/prefix
 	CHECK_XPATH_BOOLEAN(doc.child(STR("node")), STR("lang('en')"), true);
 	CHECK_XPATH_BOOLEAN(doc.child(STR("node")).child(STR("child")), STR("lang('zh-uk')"), true);
@@ -373,7 +377,7 @@ TEST(xpath_string_substring_before)
 
 	// substring-before with 1 argument
 	CHECK_XPATH_FAIL(STR("substring-before('a')"));
-	
+
 	// substring-before with 2 arguments
 	CHECK_XPATH_STRING(c, STR("substring-before('abc', 'abc')"), STR(""));
 	CHECK_XPATH_STRING(c, STR("substring-before('abc', 'a')"), STR(""));
@@ -382,7 +386,7 @@ TEST(xpath_string_substring_before)
 	CHECK_XPATH_STRING(c, STR("substring-before('abc', 'c')"), STR("ab"));
 	CHECK_XPATH_STRING(c, STR("substring-before('abc', '')"), STR(""));
 	CHECK_XPATH_STRING(c, STR("substring-before('', '')"), STR(""));
-	
+
 	// substring-before with 2 arguments, from W3C standard
 	CHECK_XPATH_STRING(c, STR("substring-before(\"1999/04/01\",\"/\")"), STR("1999"));
 
@@ -399,7 +403,7 @@ TEST(xpath_string_substring_after)
 
 	// substring-after with 1 argument
 	CHECK_XPATH_FAIL(STR("substring-after('a')"));
-	
+
 	// substring-after with 2 arguments
 	CHECK_XPATH_STRING(c, STR("substring-after('abc', 'abc')"), STR(""));
 	CHECK_XPATH_STRING(c, STR("substring-after('abc', 'a')"), STR("bc"));
@@ -430,10 +434,10 @@ TEST(xpath_string_substring)
 
 	// substring with 0 arguments
 	CHECK_XPATH_FAIL(STR("substring()"));
-	
+
 	// substring with 1 argument
 	CHECK_XPATH_FAIL(STR("substring('')"));
-	
+
 	// substring with 2 arguments
 	CHECK_XPATH_STRING(c, STR("substring('abcd', 2)"), STR("bcd"));
 	CHECK_XPATH_STRING(c, STR("substring('abcd', 1)"), STR("abcd"));
@@ -517,7 +521,7 @@ TEST_XML_FLAGS(xpath_string_normalize_space, "<node> \t\r\rval1  \rval2\r\nval3\
 	// normalize-space with 0 arguments
 	CHECK_XPATH_STRING(c, STR("normalize-space()"), STR(""));
 	CHECK_XPATH_STRING(n, STR("normalize-space()"), STR("val1 val2 val3 val4"));
-	
+
 	// normalize-space with 1 argument
 	CHECK_XPATH_STRING(c, STR("normalize-space('')"), STR(""));
 	CHECK_XPATH_STRING(c, STR("normalize-space('abcd')"), STR("abcd"));
@@ -526,7 +530,7 @@ TEST_XML_FLAGS(xpath_string_normalize_space, "<node> \t\r\rval1  \rval2\r\nval3\
 	CHECK_XPATH_STRING(c, STR("normalize-space('ab\r\n\tcd')"), STR("ab cd"));
 	CHECK_XPATH_STRING(c, STR("normalize-space('ab    cd')"), STR("ab cd"));
 	CHECK_XPATH_STRING(c, STR("normalize-space('\07')"), STR("\07"));
-	
+
 	// normalize-space with 2 arguments
 	CHECK_XPATH_FAIL(STR("normalize-space(1, 2)"));
 }
@@ -537,13 +541,13 @@ TEST(xpath_string_translate)
 
 	// translate with 0 arguments
 	CHECK_XPATH_FAIL(STR("translate()"));
-	
+
 	// translate with 1 argument
 	CHECK_XPATH_FAIL(STR("translate('a')"));
 
 	// translate with 2 arguments
 	CHECK_XPATH_FAIL(STR("translate('a', 'b')"));
-	
+
 	// translate with 3 arguments
 	CHECK_XPATH_STRING(c, STR("translate('abc', '', '')"), STR("abc"));
 	CHECK_XPATH_STRING(c, STR("translate('abc', '', 'foo')"), STR("abc"));
@@ -566,6 +570,7 @@ TEST(xpath_string_translate_table)
 
 	CHECK_XPATH_STRING(c, STR("translate('abcd\xe9 ', 'abc', 'ABC')"), STR("ABCd\xe9 "));
 	CHECK_XPATH_STRING(c, STR("translate('abcd\xe9 ', 'abc\xe9', 'ABC!')"), STR("ABCd! "));
+	CHECK_XPATH_STRING(c, STR("translate('abcd! ', 'abc!', 'ABC\xe9')"), STR("ABCd\xe9 "));
 	CHECK_XPATH_STRING(c, STR("translate('abcde', concat('abc', 'd'), 'ABCD')"), STR("ABCDe"));
 	CHECK_XPATH_STRING(c, STR("translate('abcde', 'abcd', concat('ABC', 'D'))"), STR("ABCDe"));
 }
@@ -604,7 +609,7 @@ TEST_XML(xpath_nodeset_position, "<node><c1/><c1/><c2/><c3/><c3/><c3/><c3/></nod
 	CHECK_XPATH_NODESET(n, STR("c1[position() = 3]"));
 	CHECK_XPATH_NODESET(n, STR("c2/preceding-sibling::node()[position() = 1]")) % 4;
 	CHECK_XPATH_NODESET(n, STR("c2/preceding-sibling::node()[position() = 2]")) % 3;
-	
+
 	// position with 1 argument
 	CHECK_XPATH_FAIL(STR("position(c)"));
 }
@@ -640,7 +645,7 @@ TEST_XML(xpath_nodeset_id, "<node id='foo'/>")
 
 	// id with 0 arguments
 	CHECK_XPATH_FAIL(STR("id()"));
-	
+
 	// id with 1 argument - no DTD => no id
 	CHECK_XPATH_NODESET(n, STR("id('foo')"));
 
@@ -656,7 +661,7 @@ TEST_XML_FLAGS(xpath_nodeset_local_name, "<node xmlns:foo='http://foo'><c1>text<
 	// local-name with 0 arguments
 	CHECK_XPATH_STRING(c, STR("local-name()"), STR(""));
 	CHECK_XPATH_STRING(n, STR("local-name()"), STR("node"));
-	
+
 	// local-name with 1 non-node-set argument
 	CHECK_XPATH_FAIL(STR("local-name(1)"));
 
@@ -681,7 +686,7 @@ TEST_XML_FLAGS(xpath_nodeset_namespace_uri, "<node xmlns:foo='http://foo'><c1>te
 	// namespace-uri with 0 arguments
 	CHECK_XPATH_STRING(c, STR("namespace-uri()"), STR(""));
 	CHECK_XPATH_STRING(n.child(STR("c2")).child(STR("foo:child")), STR("namespace-uri()"), STR("http://foo2"));
-	
+
 	// namespace-uri with 1 non-node-set argument
 	CHECK_XPATH_FAIL(STR("namespace-uri(1)"));
 
@@ -710,7 +715,7 @@ TEST_XML_FLAGS(xpath_nodeset_name, "<node xmlns:foo='http://foo'><c1>text</c1><c
 	// name with 0 arguments
 	CHECK_XPATH_STRING(c, STR("name()"), STR(""));
 	CHECK_XPATH_STRING(n, STR("name()"), STR("node"));
-	
+
 	// name with 1 non-node-set argument
 	CHECK_XPATH_FAIL(STR("name(1)"));
 
@@ -733,7 +738,7 @@ TEST(xpath_function_arguments)
 
 	// conversion to string
 	CHECK_XPATH_NUMBER(c, STR("string-length(12)"), 2);
-	
+
 	// conversion to number
 	CHECK_XPATH_NUMBER(c, STR("round('1.2')"), 1);
 	CHECK_XPATH_NUMBER(c, STR("round('1.7')"), 2);
@@ -741,13 +746,13 @@ TEST(xpath_function_arguments)
 	// conversion to boolean
 	CHECK_XPATH_BOOLEAN(c, STR("not('1')"), false);
 	CHECK_XPATH_BOOLEAN(c, STR("not('')"), true);
-	
+
 	// conversion to node set
 	CHECK_XPATH_FAIL(STR("sum(1)"));
 
 	// expression evaluation
 	CHECK_XPATH_NUMBER(c, STR("round((2 + 2 * 2) div 4)"), 2);
-	
+
 	// empty expressions
 	CHECK_XPATH_FAIL(STR("round(,)"));
 	CHECK_XPATH_FAIL(STR("substring(,)"));
@@ -799,4 +804,41 @@ TEST_XML(xpath_string_concat_translate, "<node>foobar</node>")
 	CHECK_XPATH_STRING(doc, STR("concat('a', 'b', 'c', translate(node, 'o', 'a'), 'd')"), STR("abcfaabard"));
 }
 
+TEST(xpath_unknown_functions)
+{
+	char_t query[] = STR("a()");
+
+	for (char ch = 'a'; ch <= 'z'; ++ch)
+	{
+		query[0] = ch;
+		CHECK_XPATH_FAIL(query);
+
+		query[0] = char_t(ch - 32);
+		CHECK_XPATH_FAIL(query);
+	}
+}
+
+TEST(xpath_string_translate_table_out_of_memory)
+{
+	xml_node c;
+
+	// our goal is to generate translate table OOM without generating query OOM
+	std::basic_string<char_t> query = STR("concat(");
+
+	size_t count = 20;
+
+	for (size_t i = 0; i < count; ++i)
+	{
+		if (i != 0) query += STR(",");
+		query += STR("translate('a','a','A')");
+	}
+
+	query += STR(")");
+
+	std::basic_string<char_t> result(count, 'A');
+
+	test_runner::_memory_fail_threshold = 5000;
+
+	CHECK_ALLOC_FAIL(CHECK_XPATH_STRING(c, query.c_str(), result.c_str()));
+}
 #endif

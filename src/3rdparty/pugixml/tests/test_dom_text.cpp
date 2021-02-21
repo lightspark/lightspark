@@ -1,6 +1,10 @@
-#include "common.hpp"
+#include "test.hpp"
 
 #include "helpers.hpp"
+
+#include <limits.h>
+
+using namespace pugi;
 
 TEST_XML_FLAGS(dom_text_empty, "<node><a>foo</a><b><![CDATA[bar]]></b><c><?pi value?></c><d/></node>", parse_default | parse_pi)
 {
@@ -120,12 +124,12 @@ TEST_XML(dom_text_as_float, "<node><text1>0</text1><text2>1</text2><text3>0.12</
 	xml_node node = doc.child(STR("node"));
 
 	CHECK(xml_text().as_float() == 0);
-	CHECK_DOUBLE(node.child(STR("text1")).text().as_float(), 0);
-	CHECK_DOUBLE(node.child(STR("text2")).text().as_float(), 1);
-	CHECK_DOUBLE(node.child(STR("text3")).text().as_float(), 0.12);
-	CHECK_DOUBLE(node.child(STR("text4")).text().as_float(), -5.1);
-	CHECK_DOUBLE(node.child(STR("text5")).text().as_float(), 3e-4);
-	CHECK_DOUBLE(node.child(STR("text6")).text().as_float(), 3.14159265358979323846);
+	CHECK_DOUBLE(double(node.child(STR("text1")).text().as_float()), 0);
+	CHECK_DOUBLE(double(node.child(STR("text2")).text().as_float()), 1);
+	CHECK_DOUBLE(double(node.child(STR("text3")).text().as_float()), 0.12);
+	CHECK_DOUBLE(double(node.child(STR("text4")).text().as_float()), -5.1);
+	CHECK_DOUBLE(double(node.child(STR("text5")).text().as_float()), 3e-4);
+	CHECK_DOUBLE(double(node.child(STR("text6")).text().as_float()), 3.14159265358979323846);
 }
 
 TEST_XML(dom_text_as_double, "<node><text1>0</text1><text2>1</text2><text3>0.12</text3><text4>-5.1</text4><text5>3e-4</text5><text6>3.14159265358979323846</text6></node>")
@@ -299,11 +303,73 @@ TEST_XML(dom_text_set_value, "<node/>")
 	CHECK_NODE(node, STR("<node><text1>v1</text1><text2>-2147483647</text2><text3>-2147483648</text3><text4>4294967295</text4><text5>4294967294</text5><text6>0.5</text6><text7>0.25</text7><text8>true</text8></node>"));
 }
 
+#if LONG_MAX > 2147483647
+TEST_XML(dom_text_assign_long, "<node/>")
+{
+	xml_node node = doc.child(STR("node"));
+
+	node.append_child(STR("text1")).text() = -9223372036854775807l;
+	node.append_child(STR("text2")).text() = -9223372036854775807l - 1;
+	xml_text() = -9223372036854775807l - 1;
+
+	node.append_child(STR("text3")).text() = 18446744073709551615ul;
+	node.append_child(STR("text4")).text() = 18446744073709551614ul;
+	xml_text() = 18446744073709551615ul;
+
+	CHECK_NODE(node, STR("<node><text1>-9223372036854775807</text1><text2>-9223372036854775808</text2><text3>18446744073709551615</text3><text4>18446744073709551614</text4></node>"));
+}
+
+TEST_XML(dom_text_set_value_long, "<node/>")
+{
+	xml_node node = doc.child(STR("node"));
+
+	CHECK(node.append_child(STR("text1")).text().set(-9223372036854775807l));
+	CHECK(node.append_child(STR("text2")).text().set(-9223372036854775807l - 1));
+	CHECK(!xml_text().set(-9223372036854775807l - 1));
+
+	CHECK(node.append_child(STR("text3")).text().set(18446744073709551615ul));
+	CHECK(node.append_child(STR("text4")).text().set(18446744073709551614ul));
+	CHECK(!xml_text().set(18446744073709551615ul));
+
+	CHECK_NODE(node, STR("<node><text1>-9223372036854775807</text1><text2>-9223372036854775808</text2><text3>18446744073709551615</text3><text4>18446744073709551614</text4></node>"));
+}
+#else
+TEST_XML(dom_text_assign_long, "<node/>")
+{
+	xml_node node = doc.child(STR("node"));
+
+	node.append_child(STR("text1")).text() = -2147483647l;
+	node.append_child(STR("text2")).text() = -2147483647l - 1;
+	xml_text() = -2147483647l - 1;
+
+	node.append_child(STR("text3")).text() = 4294967295ul;
+	node.append_child(STR("text4")).text() = 4294967294ul;
+	xml_text() = 4294967295ul;
+
+	CHECK_NODE(node, STR("<node><text1>-2147483647</text1><text2>-2147483648</text2><text3>4294967295</text3><text4>4294967294</text4></node>"));
+}
+
+TEST_XML(dom_text_set_value_long, "<node/>")
+{
+	xml_node node = doc.child(STR("node"));
+
+	CHECK(node.append_child(STR("text1")).text().set(-2147483647l));
+	CHECK(node.append_child(STR("text2")).text().set(-2147483647l - 1));
+	CHECK(!xml_text().set(-2147483647l - 1));
+
+	CHECK(node.append_child(STR("text3")).text().set(4294967295ul));
+	CHECK(node.append_child(STR("text4")).text().set(4294967294ul));
+	CHECK(!xml_text().set(4294967295ul));
+
+	CHECK_NODE(node, STR("<node><text1>-2147483647</text1><text2>-2147483648</text2><text3>4294967295</text3><text4>4294967294</text4></node>"));
+}
+#endif
+
 #ifdef PUGIXML_HAS_LONG_LONG
 TEST_XML(dom_text_assign_llong, "<node/>")
 {
 	xml_node node = doc.child(STR("node"));
-	
+
 	node.append_child(STR("text1")).text() = -9223372036854775807ll;
 	node.append_child(STR("text2")).text() = -9223372036854775807ll - 1;
 	xml_text() = -9223372036854775807ll - 1;
@@ -311,14 +377,14 @@ TEST_XML(dom_text_assign_llong, "<node/>")
 	node.append_child(STR("text3")).text() = 18446744073709551615ull;
 	node.append_child(STR("text4")).text() = 18446744073709551614ull;
 	xml_text() = 18446744073709551615ull;
-	
+
 	CHECK_NODE(node, STR("<node><text1>-9223372036854775807</text1><text2>-9223372036854775808</text2><text3>18446744073709551615</text3><text4>18446744073709551614</text4></node>"));
 }
 
 TEST_XML(dom_text_set_value_llong, "<node/>")
 {
 	xml_node node = doc.child(STR("node"));
-	
+
 	CHECK(node.append_child(STR("text1")).text().set(-9223372036854775807ll));
 	CHECK(node.append_child(STR("text2")).text().set(-9223372036854775807ll - 1));
 	CHECK(!xml_text().set(-9223372036854775807ll - 1));
@@ -339,16 +405,16 @@ TEST_XML(dom_text_middle, "<node><c1>notthisone</c1>text<c2/></node>")
     CHECK_STRING(t.get(), STR("text"));
     t.set(STR("notext"));
 
-    CHECK_NODE(node, STR("<node><c1>notthisone</c1>notext<c2 /></node>"));
+    CHECK_NODE(node, STR("<node><c1>notthisone</c1>notext<c2/></node>"));
     CHECK(node.remove_child(t.data()));
 
     CHECK(!t);
-    CHECK_NODE(node, STR("<node><c1>notthisone</c1><c2 /></node>"));
+    CHECK_NODE(node, STR("<node><c1>notthisone</c1><c2/></node>"));
 
     t.set(STR("yestext"));
 
     CHECK(t);
-    CHECK_NODE(node, STR("<node><c1>notthisone</c1><c2 />yestext</node>"));
+    CHECK_NODE(node, STR("<node><c1>notthisone</c1><c2/>yestext</node>"));
     CHECK(t.data() == node.last_child());
 }
 

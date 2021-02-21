@@ -1,6 +1,8 @@
 #ifndef PUGIXML_NO_XPATH
 
-#include "common.hpp"
+#include "test.hpp"
+
+using namespace pugi;
 
 TEST_XML(xpath_paths_axes_child, "<node attr='value'><child attr='value'><subchild/></child><another/><last/></node>")
 {
@@ -358,6 +360,13 @@ TEST_XML_FLAGS(xpath_paths_nodetest_principal, "<node attr='value'>pcdata<child/
 	CHECK_XPATH_NODESET(doc, STR("child::abra:*/attribute::abra:*/descendant-or-self::abra:*")); // attribute is not of element type
 }
 
+TEST_XML(xpath_paths_nodetest_attribute_namespace, "<node a1='v1' xmlns:x='?' />")
+{
+	CHECK_XPATH_NODESET(doc, STR("node/attribute::node()")) % 3;
+	CHECK_XPATH_NODESET(doc, STR("node/attribute::xmlns:x"));
+	CHECK_XPATH_NODESET(doc, STR("node/attribute::xmlns:*"));
+}
+
 TEST_XML(xpath_paths_absolute, "<node attr='value'><foo><foo/><foo/></foo></node>")
 {
 	xml_node c;
@@ -695,5 +704,80 @@ TEST_XML(xpath_paths_null_nodeset_entries, "<node attr='value'/>")
     CHECK(rs.size() == 2);
     CHECK(rs[0] == nodes[0]);
     CHECK(rs[1] == nodes[2]);
+}
+
+TEST_XML(xpath_paths_step_leaf_coverage, "<n><n1/><n2 a='v'><child/></n2><n3/></n>")
+{
+	xml_node n = doc.child(STR("n")).child(STR("n2"));
+
+	CHECK_XPATH_NODESET(n, STR("ancestor::node()")) % 2 % 1;
+	CHECK_XPATH_NODESET(n, STR("ancestor-or-self::node()")) % 4 % 2 % 1;
+	CHECK_XPATH_NODESET(n, STR("attribute::node()")) % 5;
+	CHECK_XPATH_NODESET(n, STR("child::node()")) % 6;
+	CHECK_XPATH_NODESET(n, STR("descendant::node()")) % 6;
+	CHECK_XPATH_NODESET(n, STR("descendant-or-self::node()")) % 4 % 6;
+	CHECK_XPATH_NODESET(n, STR("following::node()")) % 7;
+	CHECK_XPATH_NODESET(n, STR("following-sibling::node()")) % 7;
+	CHECK_XPATH_NODESET(n, STR("namespace::node()"));
+	CHECK_XPATH_NODESET(n, STR("parent::node()")) % 2;
+	CHECK_XPATH_NODESET(n, STR("preceding::node()")) % 3;
+	CHECK_XPATH_NODESET(n, STR("preceding-sibling::node()")) % 3;
+	CHECK_XPATH_NODESET(n, STR("self::node()")) % 4;
+}
+TEST_XML(xpath_paths_step_leaf_predicate_coverage, "<n><n1/><n2 a='v'><child/></n2><n3/></n>")
+{
+	xml_node n = doc.child(STR("n")).child(STR("n2"));
+
+	CHECK_XPATH_NODESET(n, STR("ancestor::node()[1]")) % 2;
+	CHECK_XPATH_NODESET(n, STR("ancestor-or-self::node()[1]")) % 4;
+	CHECK_XPATH_NODESET(n, STR("attribute::node()[1]")) % 5;
+	CHECK_XPATH_NODESET(n, STR("child::node()[1]")) % 6;
+	CHECK_XPATH_NODESET(n, STR("descendant::node()[1]")) % 6;
+	CHECK_XPATH_NODESET(n, STR("descendant-or-self::node()[1]")) % 4;
+	CHECK_XPATH_NODESET(n, STR("following::node()[1]")) % 7;
+	CHECK_XPATH_NODESET(n, STR("following-sibling::node()[1]")) % 7;
+	CHECK_XPATH_NODESET(n, STR("namespace::node()[1]"));
+	CHECK_XPATH_NODESET(n, STR("parent::node()[1]")) % 2;
+	CHECK_XPATH_NODESET(n, STR("preceding::node()[1]")) % 3;
+	CHECK_XPATH_NODESET(n, STR("preceding-sibling::node()[1]")) % 3;
+	CHECK_XPATH_NODESET(n, STR("self::node()[1]")) % 4;
+}
+
+TEST_XML(xpath_paths_step_step_coverage, "<n><n1/><n2 a='v'><child/></n2><n3/></n>")
+{
+	xml_node n = doc.child(STR("n")).child(STR("n2"));
+
+	CHECK_XPATH_NODESET(n, STR("./ancestor::node()")) % 2 % 1;
+	CHECK_XPATH_NODESET(n, STR("./ancestor-or-self::node()")) % 4 % 2 % 1;
+	CHECK_XPATH_NODESET(n, STR("./attribute::node()")) % 5;
+	CHECK_XPATH_NODESET(n, STR("./child::node()")) % 6;
+	CHECK_XPATH_NODESET(n, STR("./descendant::node()")) % 6;
+	CHECK_XPATH_NODESET(n, STR("./descendant-or-self::node()")) % 4 % 6;
+	CHECK_XPATH_NODESET(n, STR("./following::node()")) % 7;
+	CHECK_XPATH_NODESET(n, STR("./following-sibling::node()")) % 7;
+	CHECK_XPATH_NODESET(n, STR("./namespace::node()"));
+	CHECK_XPATH_NODESET(n, STR("./parent::node()")) % 2;
+	CHECK_XPATH_NODESET(n, STR("./preceding::node()")) % 3;
+	CHECK_XPATH_NODESET(n, STR("./preceding-sibling::node()")) % 3;
+	CHECK_XPATH_NODESET(n, STR("./self::node()")) % 4;
+}
+
+TEST_XML(xpath_paths_step_step_predicate_coverage, "<n><n1/><n2 a='v'><child/></n2><n3/></n>")
+{
+	xml_node n = doc.child(STR("n")).child(STR("n2"));
+
+	CHECK_XPATH_NODESET(n, STR("./ancestor::node()[1]")) % 2;
+	CHECK_XPATH_NODESET(n, STR("./ancestor-or-self::node()[1]")) % 4;
+	CHECK_XPATH_NODESET(n, STR("./attribute::node()[1]")) % 5;
+	CHECK_XPATH_NODESET(n, STR("./child::node()[1]")) % 6;
+	CHECK_XPATH_NODESET(n, STR("./descendant::node()[1]")) % 6;
+	CHECK_XPATH_NODESET(n, STR("./descendant-or-self::node()[1]")) % 4;
+	CHECK_XPATH_NODESET(n, STR("./following::node()[1]")) % 7;
+	CHECK_XPATH_NODESET(n, STR("./following-sibling::node()[1]")) % 7;
+	CHECK_XPATH_NODESET(n, STR("./namespace::node()[1]"));
+	CHECK_XPATH_NODESET(n, STR("./parent::node()[1]")) % 2;
+	CHECK_XPATH_NODESET(n, STR("./preceding::node()[1]")) % 3;
+	CHECK_XPATH_NODESET(n, STR("./preceding-sibling::node()[1]")) % 3;
+	CHECK_XPATH_NODESET(n, STR("./self::node()[1]")) % 4;
 }
 #endif

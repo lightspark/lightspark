@@ -1,6 +1,8 @@
-#include "common.hpp"
+#include "test.hpp"
 
 #include "writer_string.hpp"
+
+using namespace pugi;
 
 TEST(parse_pi_skip)
 {
@@ -82,10 +84,20 @@ TEST(parse_pi_error)
 		CHECK(doc.load_string(STR("<?name&"), flags).status == status_bad_pi);
 		CHECK(doc.load_string(STR("<?name&?"), flags).status == status_bad_pi);
 	}
-	
+
 	CHECK(doc.load_string(STR("<?xx#?>"), parse_fragment | parse_pi).status == status_bad_pi);
 	CHECK(doc.load_string(STR("<?name&?>"), parse_fragment | parse_pi).status == status_bad_pi);
 	CHECK(doc.load_string(STR("<?name& x?>"), parse_fragment | parse_pi).status == status_bad_pi);
+}
+
+TEST(parse_pi_error_buffer_boundary)
+{
+	char buf1[] = "<?name?>";
+	char buf2[] = "<?name?x";
+
+	xml_document doc;
+	CHECK(doc.load_buffer_inplace(buf1, 8, parse_fragment | parse_pi));
+	CHECK(doc.load_buffer_inplace(buf2, 8, parse_fragment | parse_pi).status == status_bad_pi);
 }
 
 TEST(parse_comments_skip)
@@ -235,9 +247,9 @@ TEST(parse_ws_pcdata_skip)
 	CHECK(!doc.first_child());
 
 	CHECK(doc.load_string(STR("<root>  <node>  </node>  </root>"), parse_minimal));
-	
+
 	xml_node root = doc.child(STR("root"));
-	
+
 	CHECK(root.first_child() == root.last_child());
 	CHECK(!root.first_child().first_child());
 }
@@ -280,46 +292,46 @@ TEST(parse_ws_pcdata_permutations)
     struct test_data_t
     {
         unsigned int mask; // 1 = default flags, 2 = parse_ws_pcdata, 4 = parse_ws_pcdata_single
-        const pugi::char_t* source;
-        const pugi::char_t* result;
+        const char_t* source;
+        const char_t* result;
         int nodes; // negative if parsing should fail
     };
 
     test_data_t test_data[] =
     {
         // external pcdata should be discarded (whitespace or not)
-        {7, STR("ext1<node/>"), STR("<node />"), 2},
-        {7, STR("ext1<node/>ext2"), STR("<node />"), 2},
-        {7, STR(" <node/>"), STR("<node />"), 2},
-        {7, STR("<node/> "), STR("<node />"), 2},
-        {7, STR(" <node/> "), STR("<node />"), 2},
+        {7, STR("ext1<node/>"), STR("<node/>"), 2},
+        {7, STR("ext1<node/>ext2"), STR("<node/>"), 2},
+        {7, STR(" <node/>"), STR("<node/>"), 2},
+        {7, STR("<node/> "), STR("<node/>"), 2},
+        {7, STR(" <node/> "), STR("<node/>"), 2},
         // inner pcdata should be preserved
         {7, STR("<node>inner</node>"), STR("<node>inner</node>"), 3},
-        {7, STR("<node>inner1<child/>inner2</node>"), STR("<node>inner1<child />inner2</node>"), 5},
+        {7, STR("<node>inner1<child/>inner2</node>"), STR("<node>inner1<child/>inner2</node>"), 5},
         {7, STR("<node>inner1<child>deep</child>inner2</node>"), STR("<node>inner1<child>deep</child>inner2</node>"), 6},
         // empty pcdata nodes should never be created
-        {7, STR("<node>inner1<child></child>inner2</node>"), STR("<node>inner1<child />inner2</node>"), 5},
-        {7, STR("<node><child></child>inner2</node>"), STR("<node><child />inner2</node>"), 4},
-        {7, STR("<node>inner1<child></child></node>"), STR("<node>inner1<child /></node>"), 4},
-        {7, STR("<node><child></child></node>"), STR("<node><child /></node>"), 3},
+        {7, STR("<node>inner1<child></child>inner2</node>"), STR("<node>inner1<child/>inner2</node>"), 5},
+        {7, STR("<node><child></child>inner2</node>"), STR("<node><child/>inner2</node>"), 4},
+        {7, STR("<node>inner1<child></child></node>"), STR("<node>inner1<child/></node>"), 4},
+        {7, STR("<node><child></child></node>"), STR("<node><child/></node>"), 3},
         // comments, pi or other nodes should not cause pcdata creation either
-        {7, STR("<node><!----><child><?pi?></child><![CDATA[x]]></node>"), STR("<node><child /><![CDATA[x]]></node>"), 4},
+        {7, STR("<node><!----><child><?pi?></child><![CDATA[x]]></node>"), STR("<node><child/><![CDATA[x]]></node>"), 4},
         // leading/trailing pcdata whitespace should be preserved (note: this will change if parse_ws_pcdata_trim is introduced)
         {7, STR("<node>\t \tinner1<child> deep   </child>\t\ninner2\n\t</node>"), STR("<node>\t \tinner1<child> deep   </child>\t\ninner2\n\t</node>"), 6},
         // whitespace-only pcdata preservation depends on the parsing mode
-        {1, STR("<node>\n\t<child>   </child>\n\t<child> <deep>  </deep> </child>\n\t<!---->\n\t</node>"), STR("<node><child /><child><deep /></child></node>"), 5},
+        {1, STR("<node>\n\t<child>   </child>\n\t<child> <deep>  </deep> </child>\n\t<!---->\n\t</node>"), STR("<node><child/><child><deep/></child></node>"), 5},
         {2, STR("<node>\n\t<child>   </child>\n\t<child> <deep>  </deep> </child>\n\t<!---->\n\t</node>"), STR("<node>\n\t<child>   </child>\n\t<child> <deep>  </deep> </child>\n\t\n\t</node>"), 13},
         {4, STR("<node>\n\t<child>   </child>\n\t<child> <deep>  </deep> </child>\n\t<!---->\n\t</node>"), STR("<node><child>   </child><child><deep>  </deep></child></node>"), 7},
         // current implementation of parse_ws_pcdata_single has an unfortunate bug; reproduce it here
         {4, STR("<node>\t\t<!---->\n\n</node>"), STR("<node>\n\n</node>"), 3},
         // error case: terminate PCDATA in the middle
         {7, STR("<node>abcdef"), STR("<node>abcdef</node>"), -3},
-        {5, STR("<node>      "), STR("<node />"), -2},
+        {5, STR("<node>      "), STR("<node/>"), -2},
         {2, STR("<node>      "), STR("<node>      </node>"), -3},
         // error case: terminate PCDATA as early as possible
-        {7, STR("<node>"), STR("<node />"), -2},
+        {7, STR("<node>"), STR("<node/>"), -2},
         {7, STR("<node>a"), STR("<node>a</node>"), -3},
-        {5, STR("<node> "), STR("<node />"), -2},
+        {5, STR("<node> "), STR("<node/>"), -2},
         {2, STR("<node> "), STR("<node> </node>"), -3},
     };
 
@@ -349,8 +361,8 @@ TEST(parse_ws_pcdata_fragment_permutations)
     struct test_data_t
     {
         unsigned int mask; // 1 = default flags, 2 = parse_ws_pcdata, 4 = parse_ws_pcdata_single
-        const pugi::char_t* source;
-        const pugi::char_t* result;
+        const char_t* source;
+        const char_t* result;
         int nodes; // negative if parsing should fail
     };
 
@@ -360,18 +372,18 @@ TEST(parse_ws_pcdata_fragment_permutations)
         {7, STR("ext1"), STR("ext1"), 2},
         {5, STR("    "), STR(""), 1},
         {2, STR("    "), STR("    "), 2},
-        {7, STR("ext1<node/>"), STR("ext1<node />"), 3},
-        {7, STR("<node/>ext2"), STR("<node />ext2"), 3},
-        {7, STR("ext1<node/>ext2"), STR("ext1<node />ext2"), 4},
-        {7, STR("ext1<node1/>ext2<node2/>ext3"), STR("ext1<node1 />ext2<node2 />ext3"), 6},
-        {5, STR(" <node/>"), STR("<node />"), 2},
-        {2, STR(" <node/>"), STR(" <node />"), 3},
-        {5, STR("<node/> "), STR("<node />"), 2},
-        {2, STR("<node/> "), STR("<node /> "), 3},
-        {5, STR(" <node/> "), STR("<node />"), 2},
-        {2, STR(" <node/> "), STR(" <node /> "), 4},
-        {5, STR(" <node1/> <node2/> "), STR("<node1 /><node2 />"), 3},
-        {2, STR(" <node1/> <node2/> "), STR(" <node1 /> <node2 /> "), 6},
+        {7, STR("ext1<node/>"), STR("ext1<node/>"), 3},
+        {7, STR("<node/>ext2"), STR("<node/>ext2"), 3},
+        {7, STR("ext1<node/>ext2"), STR("ext1<node/>ext2"), 4},
+        {7, STR("ext1<node1/>ext2<node2/>ext3"), STR("ext1<node1/>ext2<node2/>ext3"), 6},
+        {5, STR(" <node/>"), STR("<node/>"), 2},
+        {2, STR(" <node/>"), STR(" <node/>"), 3},
+        {5, STR("<node/> "), STR("<node/>"), 2},
+        {2, STR("<node/> "), STR("<node/> "), 3},
+        {5, STR(" <node/> "), STR("<node/>"), 2},
+        {2, STR(" <node/> "), STR(" <node/> "), 4},
+        {5, STR(" <node1/> <node2/> "), STR("<node1/><node2/>"), 3},
+        {2, STR(" <node1/> <node2/> "), STR(" <node1/> <node2/> "), 6},
     };
 
     for (size_t i = 0; i < sizeof(test_data) / sizeof(test_data[0]); ++i)
@@ -429,8 +441,8 @@ TEST(parse_pcdata_trim)
 {
     struct test_data_t
     {
-        const pugi::char_t* source;
-        const pugi::char_t* result;
+        const char_t* source;
+        const char_t* result;
         unsigned int flags;
     };
 
@@ -462,7 +474,7 @@ TEST(parse_pcdata_trim)
         xml_document doc;
         CHECK(doc.load_string(td.source, td.flags | parse_trim_pcdata));
 
-        const pugi::char_t* value = doc.child(STR("node")) ? doc.child_value(STR("node")) : doc.text().get();
+        const char_t* value = doc.child(STR("node")) ? doc.child_value(STR("node")) : doc.text().get();
         CHECK_STRING(value, td.result);
     }
 }
@@ -551,7 +563,7 @@ TEST(parse_escapes_unicode)
 	CHECK(doc.load_string(STR("<node>&#x03B3;&#x03b3;&#x24B62;</node>"), parse_minimal | parse_escapes));
 
 #ifdef PUGIXML_WCHAR_MODE
-	const pugi::char_t* v = doc.child_value(STR("node"));
+	const char_t* v = doc.child_value(STR("node"));
 
 	size_t wcharsize = sizeof(wchar_t);
 
@@ -746,18 +758,48 @@ TEST(parse_attribute_quot_inside)
 			}
 }
 
+TEST(parse_attribute_wnorm_coverage)
+{
+	xml_document doc;
+	CHECK(doc.load_string(STR("<n a1='v' a2=' ' a3='x y' a4='x  y' a5='x   y' />"), parse_wnorm_attribute));
+	CHECK_NODE(doc, STR("<n a1=\"v\" a2=\"\" a3=\"x y\" a4=\"x y\" a5=\"x y\"/>"));
+
+	CHECK(doc.load_string(STR("<n a1='v' a2=' ' a3='x y' a4='x  y' a5='x   y' />"), parse_wnorm_attribute | parse_escapes));
+	CHECK_NODE(doc, STR("<n a1=\"v\" a2=\"\" a3=\"x y\" a4=\"x y\" a5=\"x y\"/>"));
+}
+
+TEST(parse_attribute_wconv_coverage)
+{
+	xml_document doc;
+	CHECK(doc.load_string(STR("<n a1='v' a2='\r' a3='\r\n\n' a4='\n' />"), parse_wconv_attribute));
+	CHECK_NODE(doc, STR("<n a1=\"v\" a2=\" \" a3=\"  \" a4=\" \"/>"));
+
+	CHECK(doc.load_string(STR("<n a1='v' a2='\r' a3='\r\n\n' a4='\n' />"), parse_wconv_attribute | parse_escapes));
+	CHECK_NODE(doc, STR("<n a1=\"v\" a2=\" \" a3=\"  \" a4=\" \"/>"));
+}
+
+TEST(parse_attribute_eol_coverage)
+{
+	xml_document doc;
+	CHECK(doc.load_string(STR("<n a1='v' a2='\r' a3='\r\n\n' a4='\n' />"), parse_eol));
+	CHECK_NODE(doc, STR("<n a1=\"v\" a2=\"&#10;\" a3=\"&#10;&#10;\" a4=\"&#10;\"/>"));
+
+	CHECK(doc.load_string(STR("<n a1='v' a2='\r' a3='\r\n\n' a4='\n' />"), parse_eol | parse_escapes));
+	CHECK_NODE(doc, STR("<n a1=\"v\" a2=\"&#10;\" a3=\"&#10;&#10;\" a4=\"&#10;\"/>"));
+}
+
 TEST(parse_tag_single)
 {
 	xml_document doc;
 	CHECK(doc.load_string(STR("<node/><node /><node\n/>"), parse_minimal));
-	CHECK_NODE(doc, STR("<node /><node /><node />"));
+	CHECK_NODE(doc, STR("<node/><node/><node/>"));
 }
 
 TEST(parse_tag_hierarchy)
 {
 	xml_document doc;
 	CHECK(doc.load_string(STR("<node><n1><n2/></n1><n3><n4><n5></n5></n4></n3 \r\n></node>"), parse_minimal));
-	CHECK_NODE(doc, STR("<node><n1><n2 /></n1><n3><n4><n5 /></n4></n3></node>"));
+	CHECK_NODE(doc, STR("<node><n1><n2/></n1><n3><n4><n5/></n4></n3></node>"));
 }
 
 TEST(parse_tag_error)
@@ -855,7 +897,7 @@ TEST(parse_declaration_error)
 		CHECK(doc.load_string(STR("<?xml>"), flags).status == status_bad_pi);
 		CHECK(doc.load_string(STR("<?xml version='1>"), flags).status == status_bad_pi);
 	}
-	
+
 	CHECK(doc.load_string(STR("<?xml version='1?>"), parse_fragment | parse_declaration).status == status_bad_attribute);
 	CHECK(doc.load_string(STR("<foo><?xml version='1'?></foo>"), parse_fragment | parse_declaration).status == status_bad_pi);
 }
@@ -893,8 +935,8 @@ TEST(parse_out_of_memory_halfway_node)
 	test_runner::_memory_fail_threshold = 65536;
 
 	xml_document doc;
-	CHECK_ALLOC_FAIL(CHECK(doc.load_buffer_inplace(text, count * 4).status == status_out_of_memory));
-	CHECK_NODE(doc.first_child(), STR("<n />"));
+	CHECK_ALLOC_FAIL(CHECK(doc.load_buffer_inplace(text, sizeof(text)).status == status_out_of_memory));
+	CHECK_NODE(doc.first_child(), STR("<n/>"));
 }
 
 TEST(parse_out_of_memory_halfway_attr)
@@ -920,7 +962,7 @@ TEST(parse_out_of_memory_halfway_attr)
 	test_runner::_memory_fail_threshold = 65536;
 
 	xml_document doc;
-	CHECK_ALLOC_FAIL(CHECK(doc.load_buffer_inplace(text, count * 5 + 4).status == status_out_of_memory));
+	CHECK_ALLOC_FAIL(CHECK(doc.load_buffer_inplace(text, sizeof(text)).status == status_out_of_memory));
 	CHECK_STRING(doc.first_child().name(), STR("n"));
 	CHECK_STRING(doc.first_child().first_attribute().name(), STR("a"));
 	CHECK_STRING(doc.first_child().last_attribute().name(), STR("a"));
@@ -928,7 +970,7 @@ TEST(parse_out_of_memory_halfway_attr)
 
 TEST(parse_out_of_memory_conversion)
 {
-	test_runner::_memory_fail_threshold = 256;
+	test_runner::_memory_fail_threshold = 1;
 
 	xml_document doc;
 	CHECK_ALLOC_FAIL(CHECK(doc.load_buffer("<foo\x90/>", 7, parse_default, encoding_latin1).status == status_out_of_memory));
@@ -951,8 +993,8 @@ TEST(parse_out_of_memory_allocator_state_sync)
 	test_runner::_memory_fail_threshold = 65536;
 
 	xml_document doc;
-	CHECK_ALLOC_FAIL(CHECK(doc.load_buffer_inplace(text, count * 4).status == status_out_of_memory));
-	CHECK_NODE(doc.first_child(), STR("<n />"));
+	CHECK_ALLOC_FAIL(CHECK(doc.load_buffer_inplace(text, sizeof(text)).status == status_out_of_memory));
+	CHECK_NODE(doc.first_child(), STR("<n/>"));
 
 	test_runner::_memory_fail_threshold = 0;
 
@@ -960,7 +1002,7 @@ TEST(parse_out_of_memory_allocator_state_sync)
 		CHECK(doc.append_child(STR("n")));
 }
 
-static bool test_offset(const char_t* contents, unsigned int options, pugi::xml_parse_status status, ptrdiff_t offset)
+static bool test_offset(const char_t* contents, unsigned int options, xml_parse_status status, ptrdiff_t offset)
 {
 	xml_document doc;
 	xml_parse_result res = doc.load_string(contents, options);
@@ -1005,8 +1047,8 @@ TEST(parse_error_offset)
 	CHECK_OFFSET("<n></n $>", parse_default, status_bad_end_element, 7);
 	CHECK_OFFSET("<n></n", parse_default, status_bad_end_element, 5);
 
-	CHECK_OFFSET("<no></na>", parse_default, status_end_element_mismatch, 8);
-	CHECK_OFFSET("<no></nod>", parse_default, status_end_element_mismatch, 9);
+	CHECK_OFFSET("<no></na>", parse_default, status_end_element_mismatch, 6);
+	CHECK_OFFSET("<no></nod>", parse_default, status_end_element_mismatch, 6);
 }
 
 TEST(parse_result_default)
@@ -1138,4 +1180,178 @@ TEST(parse_fuzz_doctype)
 
 	xml_document doc;
 	CHECK(doc.load_buffer(data, sizeof(data)).status == status_bad_doctype);
+}
+
+TEST(parse_embed_pcdata)
+{
+	// parse twice - once with default and once with embed_pcdata flags
+	for (int i = 0; i < 2; ++i)
+	{
+		unsigned int flags = (i == 0) ? parse_default : parse_default | parse_embed_pcdata;
+
+		xml_document doc;
+		xml_parse_result res = doc.load_string(STR("<node><key>value</key><child><inner1>value1</inner1><inner2>value2</inner2>outer</child><two>text<data /></two></node>"), flags);
+		CHECK(res);
+
+		xml_node child = doc.child(STR("node")).child(STR("child"));
+
+		// parse_embed_pcdata omits PCDATA nodes so DOM is different
+		if (flags & parse_embed_pcdata)
+		{
+			CHECK_STRING(doc.child(STR("node")).child(STR("key")).value(), STR("value"));
+			CHECK(!doc.child(STR("node")).child(STR("key")).first_child());
+		}
+		else
+		{
+			CHECK_STRING(doc.child(STR("node")).child(STR("key")).value(), STR(""));
+			CHECK(doc.child(STR("node")).child(STR("key")).first_child());
+			CHECK_STRING(doc.child(STR("node")).child(STR("key")).first_child().value(), STR("value"));
+		}
+
+		// higher-level APIs work the same though
+		CHECK_STRING(child.text().get(), STR("outer"));
+		CHECK_STRING(child.child(STR("inner1")).text().get(), STR("value1"));
+
+		CHECK_STRING(child.child_value(), STR("outer"));
+		CHECK_STRING(child.child_value(STR("inner2")), STR("value2"));
+
+	#ifndef PUGIXML_NO_XPATH
+		CHECK_XPATH_NUMBER(doc, STR("count(node/child/*[starts-with(., 'value')])"), 2);
+	#endif
+
+		CHECK_NODE(doc, STR("<node><key>value</key><child><inner1>value1</inner1><inner2>value2</inner2>outer</child><two>text<data/></two></node>"));
+		CHECK_NODE_EX(doc, STR("<node>\n<key>value</key>\n<child>\n<inner1>value1</inner1>\n<inner2>value2</inner2>outer</child>\n<two>text<data />\n</two>\n</node>\n"), STR("\t"), 0);
+		CHECK_NODE_EX(doc, STR("<node>\n\t<key>value</key>\n\t<child>\n\t\t<inner1>value1</inner1>\n\t\t<inner2>value2</inner2>outer</child>\n\t<two>text<data />\n\t</two>\n</node>\n"), STR("\t"), format_indent);
+	}
+}
+
+TEST_XML_FLAGS(parse_embed_pcdata_fragment, "text", parse_fragment | parse_embed_pcdata)
+{
+	CHECK_NODE(doc, STR("text"));
+	CHECK(doc.first_child().type() == node_pcdata);
+	CHECK_STRING(doc.first_child().value(), STR("text"));
+}
+
+TEST_XML_FLAGS(parse_embed_pcdata_child, "<n><child/>text</n>", parse_embed_pcdata)
+{
+	xml_node n = doc.child(STR("n"));
+
+	CHECK_NODE(doc, STR("<n><child/>text</n>"));
+	CHECK(n.last_child().type() == node_pcdata);
+	CHECK_STRING(n.last_child().value(), STR("text"));
+}
+
+TEST_XML_FLAGS(parse_embed_pcdata_comment, "<n>text1<!---->text2</n>", parse_embed_pcdata)
+{
+	xml_node n = doc.child(STR("n"));
+
+	CHECK_NODE(doc, STR("<n>text1text2</n>"));
+	CHECK_STRING(n.value(), STR("text1"));
+	CHECK(n.first_child() == n.last_child());
+	CHECK(n.last_child().type() == node_pcdata);
+	CHECK_STRING(n.last_child().value(), STR("text2"));
+}
+
+TEST(parse_encoding_detect)
+{
+	char test[] = "<?xml version='1.0' encoding='utf-8'?><n/>";
+
+	xml_document doc;
+	CHECK(doc.load_buffer(test, sizeof(test)));
+}
+
+TEST(parse_encoding_detect_latin1)
+{
+	char test0[] = "<?xml version='1.0' encoding='utf-8'?><n/>";
+	char test1[] = "<?xml version='1.0' encoding='iso-8859-1'?><n/>";
+	char test2[] = "<?xml version='1.0' encoding = \"latin1\"?><n/>";
+	char test3[] = "<?xml version='1.0' encoding='ISO-8859-1'?><n/>";
+	char test4[] = "<?xml version='1.0' encoding = \"LATIN1\"?><n/>";
+
+	xml_document doc;
+	CHECK(doc.load_buffer(test0, sizeof(test0)).encoding == encoding_utf8);
+	CHECK(doc.load_buffer(test1, sizeof(test1)).encoding == encoding_latin1);
+	CHECK(doc.load_buffer(test2, sizeof(test2)).encoding == encoding_latin1);
+	CHECK(doc.load_buffer(test3, sizeof(test3)).encoding == encoding_latin1);
+	CHECK(doc.load_buffer(test4, sizeof(test4)).encoding == encoding_latin1);
+}
+
+TEST(parse_encoding_detect_auto)
+{
+	struct data_t
+	{
+		const char* contents;
+		size_t size;
+		xml_encoding encoding;
+	};
+
+	const data_t data[] =
+	{
+		// BOM
+		{ "\x00\x00\xfe\xff", 4, encoding_utf32_be },
+		{ "\xff\xfe\x00\x00", 4, encoding_utf32_le },
+		{ "\xfe\xff  ", 4, encoding_utf16_be },
+		{ "\xff\xfe  ", 4, encoding_utf16_le },
+		{ "\xef\xbb\xbf ", 4, encoding_utf8 },
+		// automatic tag detection for < or <?
+		{ "\x00\x00\x00<\x00\x00\x00n\x00\x00\x00/\x00\x00\x00>", 16, encoding_utf32_be },
+		{ "<\x00\x00\x00n\x00\x00\x00/\x00\x00\x00>\x00\x00\x00", 16, encoding_utf32_le },
+		{ "\x00<\x00?\x00n\x00?\x00>", 10, encoding_utf16_be },
+		{ "<\x00?\x00n\x00?\x00>\x00", 10, encoding_utf16_le },
+		{ "\x00<\x00n\x00/\x00>", 8, encoding_utf16_be },
+		{ "<\x00n\x00/\x00>\x00", 8, encoding_utf16_le },
+		// <?xml encoding
+		{ "<?xml encoding='latin1'?>", 25, encoding_latin1 },
+	};
+
+	for (size_t i = 0; i < sizeof(data) / sizeof(data[0]); ++i)
+	{
+		xml_document doc;
+		xml_parse_result result = doc.load_buffer(data[i].contents, data[i].size, parse_fragment);
+
+		CHECK(result);
+		CHECK(result.encoding == data[i].encoding);
+	}
+}
+
+TEST(parse_encoding_detect_auto_incomplete)
+{
+	struct data_t
+	{
+		const char* contents;
+		size_t size;
+		xml_encoding encoding;
+	};
+
+	const data_t data[] =
+	{
+		// BOM
+		{ "\x00\x00\xfe ", 4, encoding_utf8 },
+		{ "\x00\x00  ", 4, encoding_utf8 },
+		{ "\xff\xfe\x00 ", 4, encoding_utf16_le },
+		{ "\xfe   ", 4, encoding_utf8 },
+		{ "\xff   ", 4, encoding_utf8 },
+		{ "\xef\xbb  ", 4, encoding_utf8 },
+		{ "\xef   ", 4, encoding_utf8 },
+		// automatic tag detection for < or <?
+		{ "\x00\x00\x00 ", 4, encoding_utf8 },
+		{ "<\x00\x00n/\x00>\x00", 8, encoding_utf16_le },
+		{ "\x00<n\x00\x00/\x00>", 8, encoding_utf16_be },
+		{ "<\x00?n/\x00>\x00", 8, encoding_utf16_le },
+		{ "\x00 ", 2, encoding_utf8 },
+		// <?xml encoding
+		{ "<?xmC encoding='latin1'?>", 25, encoding_utf8 },
+		{ "<?xBC encoding='latin1'?>", 25, encoding_utf8 },
+		{ "<?ABC encoding='latin1'?>", 25, encoding_utf8 },
+		{ "<_ABC encoding='latin1'/>", 25, encoding_utf8 },
+	};
+
+	for (size_t i = 0; i < sizeof(data) / sizeof(data[0]); ++i)
+	{
+		xml_document doc;
+		xml_parse_result result = doc.load_buffer(data[i].contents, data[i].size, parse_fragment);
+
+		CHECK(result);
+		CHECK(result.encoding == data[i].encoding);
+	}
 }

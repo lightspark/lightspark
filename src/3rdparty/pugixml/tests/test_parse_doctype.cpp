@@ -1,10 +1,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 
-#include "common.hpp"
+#include "test.hpp"
 
 #include <string.h>
 #include <wchar.h>
 #include <string>
+
+using namespace pugi;
 
 static xml_parse_result load_concat(xml_document& doc, const char_t* a, const char_t* b = STR(""), const char_t* c = STR(""))
 {
@@ -36,9 +38,9 @@ static bool test_doctype_wf(const char_t* decl)
 	if (!load_concat(doc, STR("a"), decl, STR("b")) || !test_node(doc, STR("ab"), STR(""), format_raw)) return false;
 
 	// node pre/postfix
-	if (!load_concat(doc, STR("<nodea/>"), decl) || !test_node(doc, STR("<nodea />"), STR(""), format_raw)) return false;
-	if (!load_concat(doc, decl, STR("<nodeb/>")) || !test_node(doc, STR("<nodeb />"), STR(""), format_raw)) return false;
-	if (!load_concat(doc, STR("<nodea/>"), decl, STR("<nodeb/>")) || !test_node(doc, STR("<nodea /><nodeb />"), STR(""), format_raw)) return false;
+	if (!load_concat(doc, STR("<nodea/>"), decl) || !test_node(doc, STR("<nodea/>"), STR(""), format_raw)) return false;
+	if (!load_concat(doc, decl, STR("<nodeb/>")) || !test_node(doc, STR("<nodeb/>"), STR(""), format_raw)) return false;
+	if (!load_concat(doc, STR("<nodea/>"), decl, STR("<nodeb/>")) || !test_node(doc, STR("<nodea/><nodeb/>"), STR(""), format_raw)) return false;
 
     // check load-store contents preservation
     CHECK(doc.load_string(decl, parse_doctype | parse_fragment));
@@ -219,7 +221,7 @@ TEST(parse_doctype_xmlconf_ibm_2)
 	TEST_DOCTYPE_NWF("<!DOCTYPE animal [ <!ELEMENT animal ANY> <!ENTITY % parameterE \"A music file ?>\"> <?music %parameterE; ]>");
 	TEST_DOCTYPE_NWF("<!DOCTYPE animal [ <!ELEMENT animal ANY> <!ENTITY % parameterE \"leopard EMPTY>\"> <!ELEMENT %parameterE; ]>");
 	TEST_DOCTYPE_WF("<!DOCTYPE root [ <!ELEMENT root ANY> <!ATTLIST root attr1 CDATA #IMPLIED> <!ATTLIST root attr2 CDATA #IMPLIED> <!ENTITY withlt \"have <lessthan> inside\"> <!ENTITY aIndirect \"&withlt;\"> ]>");
-	TEST_DOCTYPE_WF("<!DOCTYPE root [ <!ELEMENT root (#PCDATA)> <!--* Mising Name S contentspec in elementdecl *--> <!ELEMENT > ]>");
+	TEST_DOCTYPE_WF("<!DOCTYPE root [ <!ELEMENT root (#PCDATA)> <!--* Missing Name S contentspec in elementdecl *--> <!ELEMENT > ]>");
 	TEST_DOCTYPE_WF("<!DOCTYPE root [ <!ELEMENT root (#PCDATA)> <!ELEMENT a ANY> <!ELEMENT b ANY> <!--* extra separator in seq *--> <!ELEMENT aElement ((a|b),,a)? > ]>");
 	TEST_DOCTYPE_WF("<!DOCTYPE root [ <!ELEMENT root (#PCDATA)> <!ELEMENT a ANY> <!--* Missing white space before Name in AttDef *--> <!ATTLIST a attr1 CDATA \"default\"attr2 ID #required> ]>");
 	TEST_DOCTYPE_WF("<!DOCTYPE test [ <!ELEMENT test ANY> <!ELEMENT one EMPTY> <!ELEMENT two EMPTY> <!NOTATION this SYSTEM \"alpha\"> <!ATTLIST three attr NOTATION (\"this\") #IMPLIED> ]>");

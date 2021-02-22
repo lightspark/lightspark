@@ -19,7 +19,7 @@
 #**************************************************************************
 
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6...3.19)
 
 # Name & Version
 PROJECT(LIGHTSPARK)

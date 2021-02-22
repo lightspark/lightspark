@@ -61,6 +61,6 @@ ELSE()
   TARGET_LINK_LIBRARIES(lightsparkplugin ${X11_LIBRARIES})
 ENDIF()
 
-PACK_LIBRARY(lightsparkplugin)
+PACK_LIBRARY(lightsparkplugin $<TARGET_FILE:lightsparkplugin>)
 INSTALL(TARGETS lightsparkplugin DESTINATION ${PLUGIN_DIRECTORY})
 

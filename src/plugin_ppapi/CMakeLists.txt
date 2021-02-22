@@ -38,7 +38,7 @@ IF(WIN32)
   TARGET_LINK_LIBRARIES(pepflashplayer -lopengl32 spark)
 ENDIF()
 
-PACK_LIBRARY(pepflashplayer)
+PACK_LIBRARY(pepflashplayer $<TARGET_FILE:pepflashplayer>)
 INSTALL(TARGETS pepflashplayer DESTINATION ${PPAPI_PLUGIN_DIRECTORY})
 INSTALL(FILES manifest.json DESTINATION ${PPAPI_PLUGIN_DIRECTORY})
 

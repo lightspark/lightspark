@@ -110,6 +110,14 @@ void BitmapData::sinit(Class_base* c)
 void BitmapData::addUser(Bitmap* b)
 {
 	users.insert(b);
+	if (!pixels.isNull())
+	{
+		if (pixels->checkTexture())
+		{
+			getSystemState()->getRenderThread()->addUploadJob(this->pixels.getPtr());
+		}
+	}
+	b->updatedData();
 }
 
 void BitmapData::removeUser(Bitmap* b)
@@ -119,7 +127,7 @@ void BitmapData::removeUser(Bitmap* b)
 
 void BitmapData::notifyUsers() const
 {
-	if (locked > 0)
+	if (locked > 0 || users.empty())
 		return;
 
 	if (!pixels.isNull())

@@ -22,7 +22,8 @@ Makefile
 !conf/*
 
 CMakeCache.txt
-obj/
+obj-release/
+obj-build/
 build/
 version.h
 

@@ -1749,7 +1749,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root, AdditionalDataTag *datatag):DisplayListTag(h),ClipActions(root->version,datatag),placedTag(nullptr)
 {
 	LOG(LOG_TRACE,_("PlaceObject2"));
-
+	uint32_t startpos = in.tellg();
 	BitStream bs(in);
 	PlaceFlagHasClipAction=UB(1,bs);
 	PlaceFlagHasClipDepth=UB(1,bs);
@@ -1784,7 +1784,10 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		in >> ClipDepth;
 
 	if(PlaceFlagHasClipAction)
+	{
+		ClipActions.dataskipbytes = (uint32_t(in.tellg())-startpos)+h.getHeaderSize();
 		in >> ClipActions;
+	}
 
 	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0));
 

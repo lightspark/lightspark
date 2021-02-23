@@ -1430,21 +1430,23 @@ class ACTIONRECORD;
 class CLIPACTIONRECORD
 {
 public:
-	CLIPACTIONRECORD(uint32_t v, AdditionalDataTag* _datatag):EventFlags(v),startactionpos(0),datatag( _datatag) {}
+	CLIPACTIONRECORD(uint32_t v, uint32_t _dataskipbytes,AdditionalDataTag* _datatag):EventFlags(v),startactionpos(0),dataskipbytes(_dataskipbytes),datatag( _datatag) {}
 	CLIPEVENTFLAGS EventFlags;
 	UI32_SWF ActionRecordSize;
 	UI8 KeyCode;
 	std::vector<uint8_t> actions;
 	bool isLast();
 	uint32_t startactionpos;
+	uint32_t dataskipbytes;
 	AdditionalDataTag* datatag;
 };
 class CLIPACTIONS
 {
 public:
-	CLIPACTIONS(uint32_t v, AdditionalDataTag* _datatag=nullptr):AllEventFlags(v),datatag(_datatag) {}
+	CLIPACTIONS(uint32_t v, AdditionalDataTag* _datatag=nullptr):AllEventFlags(v),dataskipbytes(0),datatag(_datatag) {}
 	std::vector<CLIPACTIONRECORD> ClipActionRecords;
 	CLIPEVENTFLAGS AllEventFlags;
+	uint32_t dataskipbytes;
 	AdditionalDataTag* datatag;
 };
 

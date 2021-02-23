@@ -1504,7 +1504,7 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 	s >> Reserved >> v.AllEventFlags;
 	while(1)
 	{
-		CLIPACTIONRECORD t(v.AllEventFlags.getSWFVersion(),v.dataskipbytes+(s.tellg()-startpos),v.datatag);
+		CLIPACTIONRECORD t(v.AllEventFlags.getSWFVersion(),v.dataskipbytes+(uint32_t(s.tellg())-startpos),v.datatag);
 		// use datatag only on first clipaction
 		v.datatag=nullptr;
 		s >> t;

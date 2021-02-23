@@ -46,6 +46,13 @@ public:
 	AVM1LoadVars(Class_base* c):ASObject(c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(sendAndLoad);
+};
+class AVM1NetConnection: public NetConnection
+{
+public:
+	AVM1NetConnection(Class_base* c):NetConnection(c){}
+	static void sinit(Class_base* c);
 };
 
 }

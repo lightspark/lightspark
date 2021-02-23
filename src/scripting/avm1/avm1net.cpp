@@ -47,9 +47,46 @@ void AVM1LocalConnection::sinit(Class_base *c)
 void AVM1LoadVars::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	c->setDeclaredMethodByQName("sendAndLoad","",Class<IFunction>::getFunction(c->getSystemState(),sendAndLoad),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1LoadVars,_constructor)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"LoadVars class not implemented");
+}
+ASFUNCTIONBODY_ATOM(AVM1LoadVars,sendAndLoad)
+{
+	AVM1LoadVars* th = asAtomHandler::as<AVM1LoadVars>(obj);
+	tiny_string strurl;
+	_NR<ASObject> target;
+	tiny_string method;
+	ARG_UNPACK_ATOM (strurl)(target)(method,"POST");
+	LOG(LOG_NOT_IMPLEMENTED,"LoadVars.sendAndLoad does only call onLoad with parameter false(unsuccessful) "<<strurl);
+
+	if (target)
+	{
+		// TODO generate a loader and realy start a request to the provided url
+		asAtom func=asAtomHandler::invalidAtom;
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
+		target->getVariableByMultiname(func,m);
+		if (asAtomHandler::is<AVM1Function>(func))
+		{
+			asAtom ret=asAtomHandler::invalidAtom;
+			asAtom obj = asAtomHandler::fromObject(th);
+			
+			asAtom args[1];
+			args[0] = asAtomHandler::falseAtom;
+			Log::setLogLevel(LOG_CALLS);
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
+			Log::setLogLevel(LOG_INFO);
+		}
+	}
+}
+
+void AVM1NetConnection::sinit(Class_base *c)
+{
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),connect),NORMAL_METHOD,true);
 }
 

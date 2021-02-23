@@ -357,7 +357,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("TextFormat","",Class<TextFormat>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XML","",Class<AVM1XMLDocument>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XMLNode","",Class<XMLNode>::getRef(m_sys));
-	builtinavm1->registerBuiltin("NetConnection","",Class<NetConnection>::getRef(m_sys));
+	builtinavm1->registerBuiltin("NetConnection","",Class<AVM1NetConnection>::getRef(m_sys));
 	builtinavm1->registerBuiltin("NetStream","",Class<NetStream>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Video","",Class<AVM1Video>::getRef(m_sys));
 	builtinavm1->registerBuiltin("AsBroadcaster","",Class<AVM1Broadcaster>::getRef(m_sys));

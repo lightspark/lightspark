@@ -1867,21 +1867,27 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 		this->globalToLocal(xg,yg,x,y);
 		this->incRef();
 		_NR<DisplayObject> dispobj=hitTest(_MR(this),x,y, DisplayObject::MOUSE_CLICK,true);
-		if (!dispobj && ((e->type == "click")|| (e->type == "releaseOutside")))
-			return false;
-		if (dispobj && this->actions)
+		if (this->actions)
 		{
 			for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
 			{
+				// according to https://docstore.mik.ua/orelly/web2/action/ch10_09.htm
+				// mouseUp/mouseDown/mouseMove events are sent to all MovieClips on the Stage
 				if( (e->type == "mouseDown" && it->EventFlags.ClipEventMouseDown)
 					|| (e->type == "mouseUp" && it->EventFlags.ClipEventMouseUp)
-					|| (e->type == "click" && it->EventFlags.ClipEventRelease)
 					|| (e->type == "mouseDown" && it->EventFlags.ClipEventPress)
 					|| (e->type == "mouseMove" && it->EventFlags.ClipEventMouseMove)
+					)
+				{
+					std::map<uint32_t,asAtom> m;
+					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+				}
+				if( dispobj &&
+					((e->type == "click" && it->EventFlags.ClipEventRelease)
 					|| (e->type == "rollOver" && it->EventFlags.ClipEventRollOver)
 					|| (e->type == "rollOut" && it->EventFlags.ClipEventRollOut)
 					|| (e->type == "releaseOutside" && it->EventFlags.ClipEventReleaseOutside)
-					)
+					))
 				{
 					std::map<uint32_t,asAtom> m;
 					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);

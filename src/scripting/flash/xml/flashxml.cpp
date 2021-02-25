@@ -384,7 +384,12 @@ ASFUNCTIONBODY_ATOM(XMLDocument,firstChild)
 {
 	XMLDocument* th=asAtomHandler::as<XMLDocument>(obj);
 	assert_and_throw(argslen==0);
-	pugi::xml_node newNode=th->rootNode;
+	pugi::xml_node newNode=th->rootNode.first_child();
+	if(newNode.type() == pugi::node_null)
+	{
+		asAtomHandler::setNull(ret);
+		return;
+	}
 	th->incRef();
 	ret = asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(sys,_MR(th),newNode));
 }

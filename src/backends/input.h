@@ -56,6 +56,7 @@ private:
 	_NR<InteractiveObject> currentMouseOver;
 	_NR<InteractiveObject> lastMouseDownTarget;
 	SDL_Keymod lastKeymod;
+	set<AS3KeyCode> keyDownSet;
 	SDL_Keycode lastKeyDown;
 	SDL_Keycode lastKeyUp;
 	const RECT* dragLimit;
@@ -115,6 +116,9 @@ public:
 	AS3KeyCode getLastKeyUp();
 	SDL_Keycode getLastKeyCode();
 	SDL_Keymod getLastKeyMod();
+	bool isKeyDown(AS3KeyCode key);
+	void setLastKeyDown(KeyboardEvent* e);
+	void setLastKeyUp(KeyboardEvent* e);
 };
 
 }

@@ -3715,15 +3715,11 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 	{
 		if (e->type =="keyDown")
 		{
-			getSystemState()->getInputThread()->lastKeymod = SDL_Keymod(e->as<KeyboardEvent>()->getModifiers());
-			getSystemState()->getInputThread()->lastKeyDown = e->as<KeyboardEvent>()->getSDLKeyCode();
-			getSystemState()->getInputThread()->lastKeyUp = 0;
+			getSystemState()->getInputThread()->setLastKeyDown(e->as<KeyboardEvent>());
 		}
 		else if (e->type =="keyUp")
 		{
-			getSystemState()->getInputThread()->lastKeymod = SDL_Keymod(e->as<KeyboardEvent>()->getModifiers());
-			getSystemState()->getInputThread()->lastKeyUp = e->as<KeyboardEvent>()->getSDLKeyCode();
-			getSystemState()->getInputThread()->lastKeyDown = 0;
+			getSystemState()->getInputThread()->setLastKeyUp(e->as<KeyboardEvent>());
 		}
 		avm1listenerMutex.lock();
 		vector<_R<ASObject>> tmplisteners = avm1KeyboardListeners;

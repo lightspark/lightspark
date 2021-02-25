@@ -33,7 +33,7 @@ using namespace std;
 
 InputThread::InputThread(SystemState* s):m_sys(s),engineData(nullptr),terminated(false),
 	curDragged(),currentMouseOver(),lastMouseDownTarget(),
-	lastKeyDown(SDLK_UNKNOWN),lastKeyUp(SDLK_UNKNOWN), dragLimit(nullptr),button1pressed(false)
+	lastKeyUp(SDLK_UNKNOWN), dragLimit(nullptr),button1pressed(false)
 {
 	LOG(LOG_INFO,_("Creating input thread"));
 }
@@ -761,4 +761,29 @@ SDL_Keymod InputThread::getLastKeyMod()
 {
 	Locker locker(mutexListeners);
 	return lastKeymod;
+}
+
+bool InputThread::isKeyDown(AS3KeyCode key)
+{
+	Locker locker(mutexListeners);
+	return keyDownSet.count(key);
+}
+
+void InputThread::setLastKeyDown(KeyboardEvent *e)
+{
+	Locker locker(mutexListeners);
+	lastKeymod = SDL_Keymod(e->getModifiers());
+	lastKeyDown = e->getSDLKeyCode();
+	keyDownSet.insert(getAS3KeyCode(e->getSDLKeyCode()));
+	lastKeyUp = 0;
+}
+
+void InputThread::setLastKeyUp(KeyboardEvent *e)
+{
+	Locker locker(mutexListeners);
+	lastKeymod = SDL_Keymod(e->getModifiers());
+	lastKeyUp = e->getSDLKeyCode();
+	keyDownSet.erase(getAS3KeyCode(e->getSDLKeyCode()));
+	lastKeyDown = 0;
+	
 }

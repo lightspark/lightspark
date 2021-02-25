@@ -58,9 +58,7 @@ ASFUNCTIONBODY_ATOM(AVM1Key,isDown)
 {
 	int key;
 	ARG_UNPACK_ATOM (key);
-	AS3KeyCode c = sys->getInputThread()->getLastKeyDown();
-	bool b= c == key;
-	asAtomHandler::setBool(ret,b);
+	asAtomHandler::setBool(ret,sys->getInputThread()->isKeyDown((AS3KeyCode)key));
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,addListener)
 {

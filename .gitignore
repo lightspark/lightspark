@@ -25,7 +25,6 @@ CMakeCache.txt
 obj/
 obj-release/
 obj-debug/
-obj-build/
 build/
 version.h
 

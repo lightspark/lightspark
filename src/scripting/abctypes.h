@@ -328,7 +328,7 @@ struct method_body_info
 	uint16_t hit_count;
 	uint16_t returnvaluepos;
 	//The code status
-	enum CODE_STATUS { ORIGINAL = 0, USED, OPTIMIZED, JITTED, PRELOADED };
+	enum CODE_STATUS { ORIGINAL = 0, USED, OPTIMIZED, JITTED, PRELOADING, PRELOADED };
 	CODE_STATUS codeStatus;
 	// list of local/slot pairs that were optimized away
 	std::vector<localconstantslot> localconstantslots;

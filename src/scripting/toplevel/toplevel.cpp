@@ -340,9 +340,15 @@ SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,S
 void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs,bool coerceresult, bool coercearguments)
 {
 	const method_body_info::CODE_STATUS& codeStatus = mi->body->codeStatus;
+	if (codeStatus == method_body_info::PRELOADING)
+	{
+		// this is a call to this method during preloading, it can happen when constructing objects for optimization detection
+		return;
+	}
 	call_context* saved_cc = getVm(getSystemState())->incStack(obj,this->functionname);
 	if (codeStatus != method_body_info::PRELOADED && codeStatus != method_body_info::USED)
 	{
+		mi->body->codeStatus = method_body_info::PRELOADING;
 		ABCVm::preloadFunction(this);
 		mi->body->codeStatus = method_body_info::PRELOADED;
 		mi->cc.exec_pos = mi->body->preloadedcode.data();

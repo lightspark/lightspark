@@ -662,6 +662,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	number_t val;
 	ARG_UNPACK_ATOM (val);
+	if (!th->loadedFrom->usesActionScript3) // AVM1 uses alpha values from 0-100
+		val /= 100.0;
 	
 	/* The stored value is not clipped, _getAlpha will return the
 	 * stored value even if it is outside the [0, 1] range. */
@@ -677,7 +679,10 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getAlpha)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->alpha);
+	if (th->loadedFrom->usesActionScript3)
+		asAtomHandler::setNumber(ret,sys,th->alpha);
+	else // AVM1 uses alpha values from 0-100
+		asAtomHandler::setNumber(ret,sys,th->alpha*100.0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMask)

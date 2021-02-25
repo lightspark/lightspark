@@ -2287,6 +2287,27 @@ void removetypestack(std::vector<typestackentry>& typestack,int n)
 	}
 	
 }
+void skipunreachablecode(preloadstate& state, memorystream& code)
+{
+	while (!code.atend() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
+	{
+		uint8_t b = code.readbyte();
+		switch (b)
+		{
+			case 0x10://jump
+			{
+				// make sure that anreachable jumps get erased from jumptargets
+				int32_t p1 = code.reads24()+code.tellg()+1;
+				if (state.jumptargets.count(p1) > 1)
+					state.jumptargets[p1]--;
+				else
+					state.jumptargets.erase(p1);
+				break;
+			}
+		}
+	}
+	
+}
 void ABCVm::preloadFunction(SyntheticFunction* function)
 {
 	method_info* mi=function->mi;
@@ -4020,9 +4041,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					if (j > 0 && prevopcode==0x26) //pushtrue
 					{
 						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-						// skip unreachable code
-						while (!code.atend() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
-							code.readbyte();
+						skipunreachablecode(state,code);
 						auto it = state.jumptargets.find(code.tellg()+1);
 						if (it != state.jumptargets.end() && it->second > 1)
 							state.jumptargets[code.tellg()+1]--;
@@ -4069,9 +4088,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					if (j > 0 && prevopcode==0x27) //pushfalse
 					{
 						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-						// skip unreachable code
-						while (!code.atend() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
-							code.readbyte();
+						skipunreachablecode(state,code);
 						auto it = state.jumptargets.find(code.tellg()+1);
 						if (it != state.jumptargets.end() && it->second > 1)
 							state.jumptargets[code.tellg()+1]--;
@@ -4513,9 +4530,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);
-				// skip unreachable code
-				while (!code.atend() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
-					code.readbyte();
+				skipunreachablecode(state,code);
 				break;
 			}
 			case 0x48://returnvalue
@@ -4554,9 +4569,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				}
 				else
 					setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_RETURNVALUE,opcode,code,p);
-				// skip unreachable code
-				while (!code.atend() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
-					code.readbyte();
+				skipunreachablecode(state,code);
 				removetypestack(typestack,1);
 				break;
 			}

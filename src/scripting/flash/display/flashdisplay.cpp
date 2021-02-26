@@ -1540,6 +1540,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	th->state.stop_FP=false;
+	th->advanceFrame();
 }
 
 void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
@@ -2304,7 +2305,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	th->_removeAllChildren();
+	th->setOnStage(false);
 	th->tokens.clear();
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)

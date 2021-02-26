@@ -311,6 +311,13 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 			if (pr)
 				pr->getVariableByMultiname(func,m);
 		}
+		if (asAtomHandler::isInvalid(func) && oref->is<DisplayObject>())
+		{
+			uint32_t nameidlower = sys->getUniqueStringId(asAtomHandler::toString(args[1],sys).lowercase());
+			AVM1Function* f = oref->as<DisplayObject>()->AVM1GetFunction(nameidlower);
+			if (f)
+				func = asAtomHandler::fromObjectNoPrimitive(f);
+		}
 		assert_and_throw (asAtomHandler::isFunction(func));
 	}
 	if (!asAtomHandler::is<AVM1Function>(func))

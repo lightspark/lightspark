@@ -132,6 +132,10 @@ const TextureChunk &BitmapContainer::getTexture()
 	return bitmaptexture;
 }
 
+void BitmapContainer::uploadFence()
+{
+	decRef();// is increffed in checkTexture
+}
 bool BitmapContainer::checkTexture()
 {
     if (isEmpty()) {
@@ -142,7 +146,7 @@ bool BitmapContainer::checkTexture()
 	{
 		bitmaptexture=getSys()->getRenderThread()->allocateTexture(width, height, true);
 	}
-
+	incRef();// is decreffed in uploadFence
     return true;
 }
 

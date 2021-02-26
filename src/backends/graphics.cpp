@@ -36,8 +36,8 @@ using namespace lightspark;
 
 TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 {
-	width=w+(w/CHUNKSIZE_REAL+1)*2;
-	height=h+(h/CHUNKSIZE_REAL+1)*2;
+	width=w+(w/CHUNKSIZE_REAL)*2;
+	height=h+(h/CHUNKSIZE_REAL)*2;
 	if(w==0 || h==0)
 	{
 		chunks=nullptr;

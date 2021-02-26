@@ -23,6 +23,8 @@ Makefile
 
 CMakeCache.txt
 obj/
+obj-release/
+obj-debug/
 build/
 version.h
 

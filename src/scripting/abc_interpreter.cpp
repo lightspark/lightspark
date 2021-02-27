@@ -4830,14 +4830,25 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											}
 										}
 									}
+									// remember operand for intGenerator
+									operands op = state.operandlist.back();
+									bool reuseoperand = prevopcode == 0x62//getlocal
+											|| prevopcode == 0xd0//getlocal_0
+											|| prevopcode == 0xd1//getlocal_1
+											|| prevopcode == 0xd2//getlocal_2
+											|| prevopcode == 0xd3//getlocal_3
+											;
 									if ((opcode == 0x4f && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code)) ||
-									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,true,p,resulttype))))
+									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,!reuseoperand || !isIntGenerator,p,resulttype))))
 									{
 										// generator for Integer can be skipped if argument is already an integer and the result will be used as local result
-										if (state.operandlist.size()>1 && isIntGenerator)
+										if (state.operandlist.size()>0 && isIntGenerator)
 										{
 											// remove caller
 											state.preloadedcode.pop_back();
+											// re-add last operand if it is not the result of the previous operation
+											if (reuseoperand)
+												state.operandlist.push_back(operands(op.type, op.objtype,op.index,0, 0));
 											state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 											break;
 										}

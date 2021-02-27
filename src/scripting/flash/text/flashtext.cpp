@@ -242,10 +242,18 @@ void TextField::buildTraits(ASObject* o)
 
 bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
+	if (!this->legacy || (tag==nullptr) || autoSize!=AS_NONE)
+	{
+		xmin=0;
+		xmax=textWidth+autosizeposition;
+		ymin=0;
+		ymax=textHeight;
+		return true;
+	}
 	xmin=0;
-	xmax=width;
+	xmax=max(0.0,textWidth+tag->Bounds.Xmin/20.0);
 	ymin=0;
-	ymax=height;
+	ymax=max(0.0,textHeight+tag->Bounds.Ymin/20.0);
 	return true;
 }
 
@@ -361,10 +369,10 @@ ASFUNCTIONBODY_ATOM(TextField,_getWidth)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	// it seems that Adobe returns the textwidth if in autoSize mode
-	if ((th->autoSize == AS_NONE)||(th->autoSize == AS_CENTER)||(th->wordWrap == true))
-		asAtomHandler::setUInt(ret,sys,th->width);
-	else
+	if (th->autoSize != AS_NONE || th->wordWrap)
 		asAtomHandler::setUInt(ret,sys,th->textWidth);
+	else
+		asAtomHandler::setUInt(ret,sys,th->width);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_setWidth)
@@ -383,13 +391,18 @@ ASFUNCTIONBODY_ATOM(TextField,_setWidth)
 			th->requestInvalidation(sys);
 		else
 			th->updateSizes();
+		th->legacy=false;
 	}
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getHeight)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	asAtomHandler::setUInt(ret,sys,th->height);
+	// it seems that Adobe returns the textHeight if in autoSize mode
+	if (th->autoSize != AS_NONE || th->wordWrap)
+		asAtomHandler::setUInt(ret,sys,th->textHeight);
+	else
+		asAtomHandler::setUInt(ret,sys,th->height);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_setHeight)
@@ -407,6 +420,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setHeight)
 			th->requestInvalidation(th->getSystemState());
 		else
 			th->updateSizes();
+		th->legacy=false;
 	}
 	//else do nothing as the height is determined by autoSize
 }
@@ -435,6 +449,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setHtmlText)
 	tiny_string value;
 	ARG_UNPACK_ATOM(value);
 	th->setHtmlText(value);
+	th->legacy=false;
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getText)
@@ -448,6 +463,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setText)
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	assert_and_throw(argslen==1);
 	th->updateText(asAtomHandler::toString(args[0],sys));
+	th->legacy=false;
 }
 
 ASFUNCTIONBODY_ATOM(TextField, appendText)

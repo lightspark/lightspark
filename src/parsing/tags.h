@@ -219,6 +219,7 @@ public:
 
 class DefineEditTextTag: public DictionaryTag
 {
+friend class TextField;
 private:
 	UI16_SWF CharacterID;
 	RECT Bounds;

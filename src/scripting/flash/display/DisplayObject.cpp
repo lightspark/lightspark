@@ -1348,7 +1348,7 @@ void DisplayObject::afterConstruction()
 
 void DisplayObject::setNeedsTextureRecalculation(bool skippable)
 {
-	textureRecalculationSkippable=!needsTextureRecalculation && skippable;
+	textureRecalculationSkippable=skippable;
 	needsTextureRecalculation=true;
 	if (!cachedSurface.isChunkOwner)
 		cachedSurface.tex=nullptr;

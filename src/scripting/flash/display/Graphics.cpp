@@ -688,7 +688,7 @@ void Graphics::dorender(bool closepath)
 		}
 		owner->owner->legacy=false;
 		owner->owner->hasChanged=true;
-		owner->owner->setNeedsTextureRecalculation();
+		owner->owner->setNeedsTextureRecalculation(true);
 		owner->owner->requestInvalidation(getSystemState());
 		hasChanged = false;
 	}

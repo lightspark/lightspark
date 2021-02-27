@@ -251,9 +251,9 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 		return true;
 	}
 	xmin=0;
-	xmax=max(0.0,textWidth+tag->Bounds.Xmin/20.0);
+	xmax=max(0.0,textWidth+tag->getBounds().Xmin/20.0);
 	ymin=0;
-	ymax=max(0.0,textHeight+tag->Bounds.Ymin/20.0);
+	ymax=max(0.0,textHeight+tag->getBounds().Ymin/20.0);
 	return true;
 }
 

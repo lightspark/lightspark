@@ -245,9 +245,9 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	if (!this->legacy || (tag==nullptr) || autoSize!=AS_NONE)
 	{
 		xmin=0;
-		xmax=textWidth+autosizeposition;
+		xmax=max(0.0,textWidth+autosizeposition);
 		ymin=0;
-		ymax=textHeight;
+		ymax=max(0.0,number_t(textHeight));
 		return true;
 	}
 	xmin=0;
@@ -345,10 +345,10 @@ void TextField::setSizeAndPositionFromAutoSize()
 	switch (autoSize)
 	{
 		case AS_RIGHT:
-			autosizeposition = width-textWidth;
+			autosizeposition = max(0.0,number_t(width)-textWidth);
 			break;
 		case AS_CENTER:
-			autosizeposition = (width - textWidth)/2.0;
+			autosizeposition = max(0.0,(number_t(width) - textWidth)/2.0);
 			break;
 		default:
 			autosizeposition = 0;

@@ -46,7 +46,7 @@ void AVM1LocalConnection::sinit(Class_base *c)
 }
 void AVM1LoadVars::sinit(Class_base *c)
 {
-	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	CLASS_SETUP(c, URLVariables, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->setDeclaredMethodByQName("sendAndLoad","",Class<IFunction>::getFunction(c->getSystemState(),sendAndLoad),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1LoadVars,_constructor)
@@ -56,34 +56,65 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,sendAndLoad)
 {
 	AVM1LoadVars* th = asAtomHandler::as<AVM1LoadVars>(obj);
 	tiny_string strurl;
-	_NR<ASObject> target;
 	tiny_string method;
+	_NR<ASObject> target;
 	ARG_UNPACK_ATOM (strurl)(target)(method,"POST");
-	LOG(LOG_NOT_IMPLEMENTED,"LoadVars.sendAndLoad does only call onLoad with parameter false(unsuccessful) "<<strurl);
 
 	if (target)
 	{
-		// TODO generate a loader and realy start a request to the provided url
-		asAtom func=asAtomHandler::invalidAtom;
-		multiname m(nullptr);
-		m.name_type=multiname::NAME_STRING;
-		m.isAttribute = false;
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
-		target->getVariableByMultiname(func,m);
-		if (asAtomHandler::is<AVM1Function>(func))
+		if (target->is<AVM1LoadVars>())
 		{
-			asAtom ret=asAtomHandler::invalidAtom;
-			asAtom obj = asAtomHandler::fromObject(th);
-			
-			asAtom args[1];
-			args[0] = asAtomHandler::falseAtom;
-			Log::setLogLevel(LOG_CALLS);
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
-			Log::setLogLevel(LOG_INFO);
+			AVM1LoadVars* t = target->as<AVM1LoadVars>();
+			th->copyValues(t);
+			if (t->loader.isNull())
+				t->loader = _MR(Class<URLLoader>::getInstanceS(sys));
+			t->incRef();
+			URLRequest* req = Class<URLRequest>::getInstanceS(sys,strurl,method,_MR(t));
+			asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
+			asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(t->loader.getPtr());
+			URLLoader::load(ret,sys,loaderobj,&urlarg,1);
+		}
+		else
+			LOG(LOG_NOT_IMPLEMENTED,"LoadVars.sendAndLoad with target "<<target->toDebugString());
+	}
+	else
+		LOG(LOG_ERROR,"LoadVars.sendAndLoad called without target");
+}
+multiname* AVM1LoadVars::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+{
+	multiname* res = URLVariables::setVariableByMultiname(name,o,allowConst,alreadyset);
+	if (name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
+	{
+		this->incRef();
+		getSystemState()->stage->AVM1AddEventListener(this);
+		setIsEnumerable(name, false);
+	}
+	return res;
+}
+
+void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
+{
+	if (dispatcher == loader.getPtr())
+	{
+		if (e->type == "complete" || e->type == "ioError")
+		{
+			asAtom func=asAtomHandler::invalidAtom;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
+			getVariableByMultiname(func,m);
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtom ret=asAtomHandler::invalidAtom;
+				asAtom obj = asAtomHandler::fromObject(this);
+				asAtom args[1];
+				args[0] = e->type == "complete" ? asAtomHandler::trueAtom : asAtomHandler::falseAtom;
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
+			}
 		}
 	}
 }
-
 void AVM1NetConnection::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);

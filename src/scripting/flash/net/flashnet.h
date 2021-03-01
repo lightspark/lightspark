@@ -48,7 +48,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(tiny_string,contentType);
 	ASPROPERTY_GETTER_SETTER(_R<Array>,requestHeaders);
 public:
-	URLRequest(Class_base* c, const tiny_string u="");
+	URLRequest(Class_base* c, const tiny_string u="", const tiny_string m="GET", _NR<ASObject> d = NullRef);
 	void finalize();
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);

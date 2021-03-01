@@ -37,7 +37,7 @@
 using namespace std;
 using namespace lightspark;
 
-URLRequest::URLRequest(Class_base* c, const tiny_string u):ASObject(c),method(GET),url(u),contentType("application/x-www-form-urlencoded"),
+URLRequest::URLRequest(Class_base* c, const tiny_string u, const tiny_string m, _NR<ASObject> d):ASObject(c),method(m=="POST" ? POST : GET),url(u),data(d),contentType("application/x-www-form-urlencoded"),
 	requestHeaders(Class<Array>::getInstanceSNoArgs(c->getSystemState()))
 {
 }
@@ -2360,15 +2360,19 @@ ASFUNCTIONBODY_ATOM(URLVariables,_constructor)
 
 tiny_string URLVariables::toString_priv()
 {
-	int size=numVariables();
 	tiny_string tmp;
-	for(int i=0;i<size;i++)
+	uint32_t index=0;
+	while ((index = nextNameIndex(index))!= 0)
 	{
-		const tiny_string& name=getSystemState()->getStringFromUniqueId(getNameAt(i));
+		if (!tmp.empty())
+			tmp+="&";
+		asAtom nameAtom = asAtomHandler::invalidAtom;
+		nextName(nameAtom,index);
+		const tiny_string& name=asAtomHandler::toString(nameAtom,getSystemState());
 		//TODO: check if the allow_unicode flag should be true or false in g_uri_escape_string
 
 		asAtom val=asAtomHandler::invalidAtom;
-		getValueAt(val,i);
+		nextValue(val,index);
 		if(asAtomHandler::isArray(val))
 		{
 			//Print using multiple properties
@@ -2407,8 +2411,6 @@ tiny_string URLVariables::toString_priv()
 			tmp+=escapedValue;
 			g_free(escapedValue);
 		}
-		if(i!=size-1)
-			tmp+="&";
 	}
 	return tmp;
 }

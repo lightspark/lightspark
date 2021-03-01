@@ -40,13 +40,16 @@ public:
 	static void sinit(Class_base* c);
 };
 
-class AVM1LoadVars: public ASObject
+class AVM1LoadVars: public URLVariables
 {
+	_NR<URLLoader> loader;
 public:
-	AVM1LoadVars(Class_base* c):ASObject(c){}
+	AVM1LoadVars(Class_base* c):URLVariables(c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(sendAndLoad);
+	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
+	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 };
 class AVM1NetConnection: public NetConnection
 {

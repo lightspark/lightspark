@@ -121,7 +121,7 @@ TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, 
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
 	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),alwaysShowSelection(false),
 	  condenseWhite(false), displayAsPassword(false),
-	  embedFonts(false), maxChars(0), mouseWheelEnabled(true),
+	  embedFonts(false), maxChars(_tag ? int32_t(_tag->MaxLength) : 0), mouseWheelEnabled(true),
 	  selectable(_selectable), selectionBeginIndex(0), selectionEndIndex(0),
 	  sharpness(0), thickness(0), useRichTextClipboard(false)
 {
@@ -1175,9 +1175,12 @@ void TextField::textInputChanged(const tiny_string &newtext)
 	if (this->type != ET_EDITABLE)
 		return;
 	tiny_string tmptext = text;
-	tmptext.replace(caretIndex,0,newtext);
+	if (maxChars == 0 || tmptext.numChars()+newtext.numChars() <= uint32_t(maxChars))
+	{
+		tmptext.replace(caretIndex,0,newtext);
+		caretIndex+= newtext.numChars();
+	}
 	this->updateText(tmptext);
-	caretIndex+= newtext.numChars();
 }
 
 void TextField::tick()

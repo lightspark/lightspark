@@ -389,12 +389,13 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 #ifdef LLVM_ENABLED
 	//Temporarily disable JITting
 	const uint32_t jit_hit_threshold=20;
-	if(getSystemState()->useJit && mi->body->exceptions.size()==0 && ((hit_count>=jit_hit_threshold && codeStatus==method_body_info::OPTIMIZED) || getSystemState()->useInterpreter==false))
+	if(getSystemState()->useJit && mi->body->exceptions.size()==0 && ((mi->body->hit_count>=jit_hit_threshold && codeStatus==method_body_info::OPTIMIZED) || getSystemState()->useInterpreter==false))
 	{
 		//We passed the hot function threshold, synt the function
 		val=mi->synt_method(getSystemState());
 		assert(val);
 	}
+	++mi->body->hit_count;
 #endif
 
 	//Prepare arguments

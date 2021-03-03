@@ -2296,9 +2296,10 @@ void skipunreachablecode(preloadstate& state, memorystream& code)
 		{
 			case 0x10://jump
 			{
-				// make sure that anreachable jumps get erased from jumptargets
+				// make sure that unreachable jumps get erased from jumptargets
 				int32_t p1 = code.reads24()+code.tellg()+1;
-				if (state.jumptargets.count(p1) > 1)
+				auto it = state.jumptargets.find(p1);
+				if (it != state.jumptargets.end() && it->second > 1)
 					state.jumptargets[p1]--;
 				else
 					state.jumptargets.erase(p1);

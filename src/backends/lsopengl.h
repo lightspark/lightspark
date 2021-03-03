@@ -27,13 +27,13 @@
 	//Texture formats
 	#ifdef GL_EXT_texture_format_BGRA8888
 		#define GL_RGBA8 GL_RGBA
-		#define GL_BGRA GL_RGBA
+		#define GL_BGRA GL_BGRA_EXT
 	#else
 		#error GL_EXT_texture_format_BGRA8888 extension needed
 	#endif
 
 	//there are no multiple buffers in GLES 2.0
-	#define glDrawBuffer(x)
+	#define glDrawBuffer(x) {}
 //	#define glBindBuffer(...)
 //	#define glBufferData(...)
 	#define glPixelStorei(...)

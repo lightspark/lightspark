@@ -277,8 +277,12 @@ void EngineData::initGLEW()
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
 	{
-		LOG(LOG_ERROR,_("Cannot initialize GLEW: cause ") << glewGetErrorString(err));
-		throw RunTimeException("Rendering: Cannot initialize GLEW!");
+		char* videodriver = getenv("SDL_VIDEODRIVER"); // ignore GLEW_ERROR_NO_GLX_DISPLAY when running on wayland
+		if (!videodriver || strcmp(videodriver,"wayland")!= 0 || err != GLEW_ERROR_NO_GLX_DISPLAY)
+		{
+			LOG(LOG_ERROR,_("Cannot initialize GLEW: cause ") << glewGetErrorString(err));
+			throw RunTimeException("Rendering: Cannot initialize GLEW!");
+		}
 	}
 
 	if(!GLEW_VERSION_2_0)

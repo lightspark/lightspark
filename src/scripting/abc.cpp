@@ -148,6 +148,7 @@
 #include "scripting/flash/globalization/localeid.h"
 #include "scripting/flash/globalization/currencyformatter.h"
 #include "scripting/flash/globalization/numberformatter.h"
+#include "scripting/flash/globalization/numberparseresult.h"
 #include "scripting/flash/globalization/stringtools.h"
 #include "scripting/flash/external/ExternalInterface.h"
 #include "scripting/flash/media/flashmedia.h"
@@ -840,6 +841,7 @@ void ABCVm::registerClasses()
 	builtin->registerBuiltin("LastOperationStatus","flash.globalization",Class<LastOperationStatus>::getRef(m_sys));
 	builtin->registerBuiltin("CurrencyFormatter","flash.globalization",Class<CurrencyFormatter>::getRef(m_sys));
 	builtin->registerBuiltin("NumberFormatter","flash.globalization",Class<NumberFormatter>::getRef(m_sys));
+	builtin->registerBuiltin("NumberParseResult","flash.globalization",Class<NumberParseResult>::getRef(m_sys));
 	builtin->registerBuiltin("Collator","flash.globalization",Class<Collator>::getRef(m_sys));
 	builtin->registerBuiltin("CollatorMode","flash.globalization",Class<CollatorMode>::getRef(m_sys));
 	builtin->registerBuiltin("DateTimeNameContext","flash.globalization",Class<DateTimeNameContext>::getRef(m_sys));

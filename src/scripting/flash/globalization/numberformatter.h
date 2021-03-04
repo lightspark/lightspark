@@ -46,7 +46,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(int, fractionalDigits);
 	ASPROPERTY_GETTER_SETTER(tiny_string, decimalSeparator);
 	ASPROPERTY_GETTER_SETTER(uint32_t, digitsType);
-	ASPROPERTY_GETTER_SETTER(int32_t, groupingPattern);
+	ASPROPERTY_GETTER_SETTER(tiny_string, groupingPattern);
 	ASPROPERTY_GETTER_SETTER(tiny_string, groupingSeparator);
 	ASPROPERTY_GETTER_SETTER(bool, leadingZero);
 	ASPROPERTY_GETTER_SETTER(uint32_t, negativeNumberFormat);

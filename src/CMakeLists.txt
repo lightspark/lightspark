@@ -115,6 +115,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/globalization/localeid.cpp
   scripting/flash/globalization/currencyformatter.cpp
   scripting/flash/globalization/numberformatter.cpp
+  scripting/flash/globalization/numberparseresult.cpp
   scripting/flash/globalization/collator.cpp
   scripting/flash/globalization/collatormode.cpp
   scripting/flash/globalization/datetimenamecontext.cpp

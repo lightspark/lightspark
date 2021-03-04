@@ -470,7 +470,7 @@ IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	   "${CMAKE_CXX_FLAGS} -mms-bitfields -mthreads -fexceptions -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -std=c++11 -Wdisabled-optimization -Wextra -Wno-unused-parameter -Wno-invalid-offsetof")
   ELSE()
    SET(CMAKE_CXX_FLAGS
-	  "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++11 -Wdisabled-optimization -Wextra -Wno-unused-parameter -Wno-invalid-offsetof")
+          "${CMAKE_CXX_FLAGS}  -ljemalloc -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++11 -Wdisabled-optimization -Wextra -Wno-unused-parameter -Wno-invalid-offsetof")
   ENDIF()
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
   SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")

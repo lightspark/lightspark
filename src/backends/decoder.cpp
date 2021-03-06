@@ -86,6 +86,7 @@ const TextureChunk& VideoDecoder::getTexture()
 
 void VideoDecoder::uploadFence()
 {
+	inUploading=false;
 	assert(fenceCount);
 	ATOMIC_DECREMENT(fenceCount);
 	if (markedForDeletion && fenceCount==0)
@@ -100,6 +101,7 @@ void VideoDecoder::markForDestruction()
 void VideoDecoder::waitForFencing()
 {
 	ATOMIC_INCREMENT(fenceCount);
+	inUploading=true;
 }
 
 #ifdef ENABLE_LIBAVCODEC
@@ -323,6 +325,13 @@ void FFMpegVideoDecoder::skipAll()
 	while(!buffers.isEmpty())
 		discardFrame();
 }
+uint32_t FFMpegVideoDecoder::currentFrameTime()
+{
+	if(buffers.isEmpty())
+		return UINT32_MAX;
+	return buffers.front().time;
+}
+
 
 bool FFMpegVideoDecoder::discardFrame()
 {
@@ -357,6 +366,11 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 			if (ret != AVERROR(EAGAIN))
 			{
 				LOG(LOG_INFO,"not decoded:"<<ret);
+#ifdef HAVE_AV_PACKET_UNREF
+				av_packet_unref(&pkt);
+#else
+				av_free_packet(&pkt);
+#endif
 				return false;
 			}
 		}
@@ -370,6 +384,11 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 			copyFrameToBuffers(frameIn, time);
 		}
 	}
+#ifdef HAVE_AV_PACKET_UNREF
+	av_packet_unref(&pkt);
+#else
+	av_free_packet(&pkt);
+#endif
 #else
 	int frameOk=0;
 #if HAVE_AVCODEC_DECODE_VIDEO2
@@ -880,6 +899,11 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 			overflowBuffer.assign(tmpdata , tmpdata+tmpsize);
 		}
 	}
+#ifdef HAVE_AV_PACKET_UNREF
+	av_packet_unref(&pkt);
+#else
+	av_free_packet(&pkt);
+#endif
 	return maxLen;
 #else
 	FrameSamples& curTail=samplesBuffer.acquireLast();

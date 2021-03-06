@@ -2400,14 +2400,14 @@ void DisplayObjectContainer::setupClipActionsAt(int32_t depth,const CLIPACTIONS&
 		o->as<MovieClip>()->setupActions(actions);
 }
 
-void DisplayObjectContainer::checkRatioForLegacyChildAt(int32_t depth,uint32_t ratio)
+void DisplayObjectContainer::checkRatioForLegacyChildAt(int32_t depth,uint32_t ratio,bool inskipping)
 {
 	if(!hasLegacyChildAt(depth))
 	{
 		LOG(LOG_ERROR,"checkRatioForLegacyChildAt: no child at that depth "<<depth<<" "<<this->toDebugString()<<" "<<this->getTagID());
 		return;
 	}
-	mapDepthToLegacyChild.at(depth)->checkRatio(ratio);
+	mapDepthToLegacyChild.at(depth)->checkRatio(ratio,inskipping);
 	this->hasChanged=true;
 }
 void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,const CXFORMWITHALPHA& colortransform)
@@ -3345,8 +3345,10 @@ void MorphShape::buildTraits(ASObject* o)
 	//No traits
 }
 
-void MorphShape::checkRatio(uint32_t ratio)
+void MorphShape::checkRatio(uint32_t ratio, bool inskipping)
 {
+	if (inskipping)
+		return;
 	TokenContainer::FromDefineMorphShapeTagToShapeVector(getSystemState(),this->morphshapetag,tokens,ratio);
 	this->hasChanged = true;
 	this->setNeedsTextureRecalculation(ratio != 0 && ratio != 65535);
@@ -5188,7 +5190,7 @@ void MovieClip::executeFrameScript()
 	Sprite::executeFrameScript();
 }
 
-void MovieClip::checkRatio(uint32_t ratio)
+void MovieClip::checkRatio(uint32_t ratio, bool inskipping)
 {
 	// according to http://wahlers.com.br/claus/blog/hacking-swf-2-placeobject-and-ratio/
 	// if the ratio value is different from the previous ratio value for this MovieClip, this clip is resetted to frame 0

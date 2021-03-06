@@ -101,13 +101,14 @@ public:
 class VideoDecoder: public Decoder, public ITextureUploadable
 {
 public:
-	VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false){}
+	VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false),inUploading(false){}
 	virtual ~VideoDecoder(){}
 	virtual void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint)=0;
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
 	virtual uint32_t skipUntil(uint32_t time)=0;
 	virtual void skipAll()=0;
+	virtual uint32_t currentFrameTime()=0;
 	uint32_t getWidth()
 	{
 		return frameWidth;
@@ -128,6 +129,7 @@ public:
 	const TextureChunk& getTexture();
 	void uploadFence();
 	void markForDestruction();
+	bool isUploading() { return inUploading; }
 protected:
 	TextureChunk videoTexture;
 	uint32_t frameWidth;
@@ -142,6 +144,7 @@ protected:
 private:
 	bool resizeGLBuffers;
 	bool markedForDeletion;
+	bool inUploading;
 };
 
 class NullVideoDecoder: public VideoDecoder
@@ -154,6 +157,7 @@ public:
 	bool discardFrame() override {return false;}
 	uint32_t skipUntil(uint32_t time) override { return 0;}
 	void skipAll() override {}
+	uint32_t currentFrameTime() override { return UINT32_MAX; }
 	void setFlushing() override
 	{
 		flushing=true;
@@ -225,6 +229,7 @@ public:
 	bool discardFrame() override;
 	uint32_t skipUntil(uint32_t time) override;
 	void skipAll() override;
+	uint32_t currentFrameTime() override;
 	void setFlushing() override
 	{
 		flushing=true;

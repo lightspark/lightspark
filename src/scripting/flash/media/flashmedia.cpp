@@ -88,13 +88,17 @@ bool Video::destruct()
 		embeddedVideoDecoder->markForDestruction();
 		embeddedVideoDecoder=nullptr;
 	}
+	videotag=nullptr;
+	embeddedlastuploadedframe=UINT32_MAX;
+	embeddedframesdecoded.clear();
+	embeddedframesbuffered=0;
 	netStream.reset();
 	return DisplayObject::destruct();
 }
 
 Video::Video(Class_base* c, uint32_t w, uint32_t h, DefineVideoStreamTag *v)
 	: DisplayObject(c),width(w),height(h),videoWidth(0),videoHeight(0),
-	  netStream(NullRef),deblocking(v ? v->VideoFlagsDeblocking:0),smoothing(v ? v->VideoFlagsSmoothing : false),embeddedVideoDecoder(nullptr),videotag(v),embeddedframesbuffered(0)
+	  netStream(NullRef),deblocking(v ? v->VideoFlagsDeblocking:0),smoothing(v ? v->VideoFlagsSmoothing : false),embeddedVideoDecoder(nullptr),videotag(v),embeddedframesbuffered(0),embeddedlastuploadedframe(UINT32_MAX)
 {
 	subtype=SUBTYPE_VIDEO;
 }
@@ -103,10 +107,16 @@ void Video::setVideoFrame(uint32_t FrameNum, uint8_t *framedata, uint32_t numbyt
 {
 	if (getSystemState()->isShuttingDown())
 		return;
-	Locker l(mutex);
+	mutex.lock();
 	if (videotag == nullptr)
 	{
 		LOG(LOG_ERROR,"setting embedded video frame without DefineVideoStreamTag, ignored");
+		mutex.unlock();
+		return;
+	}
+	if (embeddedframesdecoded.find(FrameNum) != embeddedframesdecoded.end())
+	{
+		mutex.unlock();
 		return;
 	}
 #ifdef ENABLE_LIBAVCODEC
@@ -136,29 +146,53 @@ void Video::setVideoFrame(uint32_t FrameNum, uint8_t *framedata, uint32_t numbyt
 	if (embeddedframesbuffered == FFMPEGVIDEODECODERBUFFERSIZE)
 	{
 		embeddedVideoDecoder->discardFrame();
+		uint32_t currtime = embeddedVideoDecoder->currentFrameTime();
+		if (currtime != UINT32_MAX)
+		{
+			for (uint32_t i=0; i < currtime; i++)
+				embeddedframesdecoded.erase(i);
+		}
 		embeddedframesbuffered--;
 	}
 	if (embeddedVideoDecoder->decodeData(framedata,numbytes, FrameNum+1))
+	{
+		embeddedframesdecoded.insert(FrameNum);
 		embeddedframesbuffered++;
+	}
 #endif
+	mutex.unlock();
 }
 
-void Video::checkRatio(uint32_t ratio)
+void Video::checkRatio(uint32_t ratio, bool inskipping)
 {
-	Locker l(mutex);
-	if (embeddedVideoDecoder==nullptr)
+	if (inskipping)
 		return;
-	uint32_t skipped = embeddedVideoDecoder->skipUntil(ratio);
+	Locker l(mutex);
+	if (embeddedVideoDecoder==nullptr || embeddedlastuploadedframe==ratio || ratio == 0)
+		return;
+	if (videotag->NumFrames <= ratio)
+	{
+		embeddedVideoDecoder->setFlushing();
+		embeddedframesdecoded.clear();
+		embeddedlastuploadedframe=UINT32_MAX;
+		return;
+	}
+	embeddedlastuploadedframe=ratio;
+	uint32_t skipped = embeddedVideoDecoder->skipUntil(ratio-1);
+	uint32_t currtime = embeddedVideoDecoder->currentFrameTime();
+	if (currtime != UINT32_MAX)
+	{
+		for (uint32_t i=0; i < currtime; i++)
+			embeddedframesdecoded.erase(i);
+	}
 	if (embeddedframesbuffered > skipped)
 		embeddedframesbuffered-=skipped;
 	else
 		embeddedframesbuffered=0;
+	if (embeddedVideoDecoder->isUploading())
+		return;
 	embeddedVideoDecoder->waitForFencing();
 	getSystemState()->getRenderThread()->addUploadJob(embeddedVideoDecoder);
-	this->setNeedsTextureRecalculation(true);
-	this->hasChanged=true;
-	if (videotag->NumFrames == ratio+1)
-		embeddedVideoDecoder->setFlushing();
 }
 
 uint32_t Video::getTagID() const

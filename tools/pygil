@@ -64,28 +64,57 @@ curClass = ""
 curClassConstructor = ""
 
 #1. Step: parse scripting/abc.cpp to map the AS3 names to our class names
-f = open('../src/scripting/abc.cpp','r')
-for line in f.read().replace("\n","").replace("\t"," ").split(";"):
-	m = rclass.match(line)
-	if m:
-		fullname = getFullname(m.group(2),m.group(1))
-		internalToExternal[m.group(3)] = fullname
-		classes.add(fullname)
-	m = rtemplateclass.match(line)
-	if m:
-		fullname = getFullname("",m.group(1))
-		internalToExternal[m.group(3)] = fullname
-		classes.add(fullname)
-	m = rinterfaceclass.match(line)
-	if m:
-		fullname = getFullname(m.group(2),m.group(1))
-		internalToExternal[m.group(3)] = fullname
-		classes.add(fullname)
-	m = rclassavm1.match(line)
-	if m:
-		fullname = getFullname(m.group(2),m.group(1))
-		internalToExternal[m.group(3)] = fullname
-f.close()
+for fname in [
+	'../src/scripting/abc.cpp',
+	'../src/scripting/abc_flashaccessibility.cpp',
+	'../src/scripting/abc_flashdesktop.cpp',
+	'../src/scripting/abc_flashconcurrent.cpp',
+	'../src/scripting/abc_flashcrypto.cpp',
+	'../src/scripting/abc_flashdisplay.cpp',
+	'../src/scripting/abc_flashdisplay3d.cpp',
+	'../src/scripting/abc_flashevents.cpp',
+	'../src/scripting/abc_flasherrors.cpp',
+	'../src/scripting/abc_flashexternal.cpp',
+	'../src/scripting/abc_flashfilesystem.cpp',
+	'../src/scripting/abc_flashfilters.cpp',
+	'../src/scripting/abc_flashgeom.cpp',
+	'../src/scripting/abc_flashglobalization.cpp',
+	'../src/scripting/abc_flashmedia.cpp',
+	'../src/scripting/abc_flashnet.cpp',
+	'../src/scripting/abc_flashprinting.cpp',
+	'../src/scripting/abc_flashsampler.cpp',
+	'../src/scripting/abc_flashsecurity.cpp',
+	'../src/scripting/abc_flashsensors.cpp',
+	'../src/scripting/abc_flashsystem.cpp',
+	'../src/scripting/abc_flashtext.cpp',
+	'../src/scripting/abc_flashui.cpp',
+	'../src/scripting/abc_flashutils.cpp',
+	'../src/scripting/abc_flashxml.cpp',
+	'../src/scripting/abc_avmplus.cpp',
+	'../src/scripting/abc_toplevel.cpp'
+	]:
+	f = open(fname,'r')
+	for line in f.read().replace("\n","").replace("\t"," ").split(";"):
+		m = rclass.match(line)
+		if m:
+			fullname = getFullname(m.group(2),m.group(1))
+			internalToExternal[m.group(3)] = fullname
+			classes.add(fullname)
+		m = rtemplateclass.match(line)
+		if m:
+			fullname = getFullname("",m.group(1))
+			internalToExternal[m.group(3)] = fullname
+			classes.add(fullname)
+		m = rinterfaceclass.match(line)
+		if m:
+			fullname = getFullname(m.group(2),m.group(1))
+			internalToExternal[m.group(3)] = fullname
+			classes.add(fullname)
+		m = rclassavm1.match(line)
+		if m:
+			fullname = getFullname(m.group(2),m.group(1))
+			internalToExternal[m.group(3)] = fullname
+	f.close()
 
 #print internalToExternal
 

@@ -1,0 +1,37 @@
+/**************************************************************************
+    Lightspark, a free flash player implementation
+
+    Copyright (C) 2009-2013  Alessandro Pignotti (a.pignotti@sssup.it)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+**************************************************************************/
+
+#include "scripting/flash/errors/flasherrors.h"
+
+#include "scripting/class.h"
+#include "scripting/abc.h"
+using namespace lightspark;
+
+
+void ABCVm::registerClassesFlashErrors(Global* builtin)
+{
+	builtin->registerBuiltin("IOError","flash.errors",Class<IOError>::getRef(m_sys));
+	builtin->registerBuiltin("EOFError","flash.errors",Class<EOFError>::getRef(m_sys));
+	builtin->registerBuiltin("IllegalOperationError","flash.errors",Class<IllegalOperationError>::getRef(m_sys));
+	builtin->registerBuiltin("InvalidSWFError","flash.errors",Class<InvalidSWFError>::getRef(m_sys));
+	builtin->registerBuiltin("MemoryError","flash.errors",Class<MemoryError>::getRef(m_sys));
+	builtin->registerBuiltin("ScriptTimeoutError","flash.errors",Class<ScriptTimeoutError>::getRef(m_sys));
+	builtin->registerBuiltin("StackOverflowError","flash.errors",Class<StackOverflowError>::getRef(m_sys));
+
+}

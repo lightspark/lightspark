@@ -86,12 +86,10 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,_constructor)
 		th->lastOperationStatus="usingDefaultWarning";
 	}
 
-	// TODO: Set locale
-	std::locale l =  std::locale::global(th->currlocale);
+    std::locale l =  std::locale::global(th->currlocale);
+
 	char localSeparatorChar = std::use_facet< std::numpunct<char> >(std::cout.getloc()).thousands_sep();
 	char localDecimalChar = std::use_facet< std::numpunct<char> >(std::cout.getloc()).decimal_point();
-	std::locale::global(l);
-	// TODO: Unset locale
 
 	th->fractionalDigits = 2;
 	th->decimalSeparator = std::to_string(localDecimalChar);
@@ -100,6 +98,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,_constructor)
 	th->negativeNumberFormat = 1;
 	th->negativeSymbol = "-";
 	th->useGrouping = false;
+    std::locale::global(l);
 }
 
 ASFUNCTIONBODY_ATOM(NumberFormatter,formatInt)
@@ -120,7 +119,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,formatInt)
 		return;
 	}
 	std::stringstream ss;
-	//ss.imbue(th->currlocale);
+    ss.imbue(th->currlocale);
 	res = ss.str();
 	if (res == "nan")
 	{
@@ -433,7 +432,6 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,parseNumber)
 	number_t num;
 	if((ss >> num).fail())
 	{
-        //throwError<TypeError>(kCheckTypeFailedError);
 	}
 	else
 	{

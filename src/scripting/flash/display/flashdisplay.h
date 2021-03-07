@@ -104,7 +104,7 @@ private:
 	bool mouseChildren;
 	map<int32_t,DisplayObject*> mapDepthToLegacyChild;
 	unordered_map<DisplayObject*,int32_t> mapLegacyChildToDepth;
-	map<int32_t,DisplayObject*> namedRemovedLegacyChildren;
+	map<int32_t,_NR<DisplayObject>> namedRemovedLegacyChildren;
 	set<int32_t> legacyChildrenMarkedForDeletion;
 	bool _contains(_R<DisplayObject> child);
 	void getObjectsFromPoint(Point* point, Array* ar);

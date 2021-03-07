@@ -1621,10 +1621,14 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			// check if an object with this name was already created and removed earlier
 			nameID = NameID;
 			toAdd = parent->findRemovedLegacyChild(nameID);
-			if (toAdd && toAdd->getTagID() != CharacterId)
-				toAdd=nullptr;
-			else if (toAdd)
+			if (toAdd)
+			{	
+				if (toAdd->getTagID() != CharacterId)
+					toAdd=nullptr;
+				else
+					toAdd->incRef();
 				parent->eraseRemovedLegacyChild(nameID);
+			}
 		}
 		if (!toAdd)
 		{
@@ -2755,6 +2759,7 @@ AdditionalDataTag::AdditionalDataTag(RECORDHEADER h, istream &in):Tag(h)
 VideoFrameTag::VideoFrameTag(RECORDHEADER h, istream &in):DisplayListTag(h)
 {
 	in >> StreamID >> FrameNum;
+	framedata=nullptr;
 	numbytes = h.getLength()-4;
 	if (numbytes)
 	{
@@ -2762,6 +2767,12 @@ VideoFrameTag::VideoFrameTag(RECORDHEADER h, istream &in):DisplayListTag(h)
 		memset(framedata+numbytes,0,AV_INPUT_BUFFER_PADDING_SIZE);
 		in.read((char*)framedata,numbytes);
 	}
+}
+
+VideoFrameTag::~VideoFrameTag() 
+{
+	if (framedata)
+		delete[] framedata;
 }
 
 void VideoFrameTag::execute(DisplayObjectContainer *parent, bool inskipping)

@@ -86,6 +86,8 @@ bool Video::destruct()
 		embeddedVideoDecoder->setFlushing();
 		embeddedVideoDecoder->skipAll();
 		embeddedVideoDecoder->markForDestruction();
+		if (!embeddedVideoDecoder->isUploading())
+			delete embeddedVideoDecoder;
 		embeddedVideoDecoder=nullptr;
 	}
 	videotag=nullptr;

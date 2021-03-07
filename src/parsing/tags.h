@@ -753,6 +753,7 @@ private:
 	uint32_t numbytes;
 public:
 	VideoFrameTag(RECORDHEADER h, std::istream& in);
+	~VideoFrameTag();
 	void execute(DisplayObjectContainer* parent,bool inskipping) override;
 };
 class MetadataTag: public Tag

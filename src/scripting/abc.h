@@ -325,7 +325,32 @@ private:
 	STATUS status;
 	bool isIdle;
 
+	void registerClassesFlashAccessibility(Global* builtin);
+	void registerClassesFlashConcurrent(Global* builtin);
+	void registerClassesFlashCrypto(Global* builtin);
+	void registerClassesFlashDesktop(Global* builtin);
+	void registerClassesFlashDisplay(Global* builtin);
+	void registerClassesFlashDisplay3D(Global* builtin);
+	void registerClassesFlashEvents(Global* builtin);
+	void registerClassesFlashErrors(Global* builtin);
+	void registerClassesFlashExternal(Global* builtin);
+	void registerClassesFlashFilters(Global* builtin);
+	void registerClassesFlashFilesystem(Global* builtin);
+	void registerClassesFlashText(Global* builtin);
+	void registerClassesFlashUtils(Global* builtin);
+	void registerClassesFlashGeom(Global* builtin);
+	void registerClassesFlashGlobalization(Global* builtin);
+	void registerClassesFlashNet(Global* builtin);
+	void registerClassesFlashPrinting(Global* builtin);
+	void registerClassesFlashSampler(Global* builtin);
+	void registerClassesFlashSecurity(Global* builtin);
+	void registerClassesFlashSensors(Global* builtin);
+	void registerClassesFlashSystem(Global* builtin);
+	void registerClassesFlashMedia(Global* builtin);
+	void registerClassesFlashUI(Global* builtin);
+	void registerClassesFlashXML(Global* builtin);
 	void registerClassesToplevel(Global* builtin);
+	void registerClassesAvmplus(Global* builtin);
 	void registerClasses();
 
 	void registerFunctions();

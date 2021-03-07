@@ -197,8 +197,8 @@ public:
 	bool deleteVariableByMultiname(const multiname& name) override;
 	virtual void removeAVM1Listeners();
 
-	// used by MorphShapes
-	virtual void checkRatio(uint32_t ratio) {}
+	// used by MorphShapes and embedded video
+	virtual void checkRatio(uint32_t ratio, bool inskipping) {}
 	void onNewEvent(Event *ev) override;
 	void afterHandleEvent(Event* ev) override;
 	

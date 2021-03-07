@@ -1715,7 +1715,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		parent->setupClipActionsAt(LEGACY_DEPTH_START+Depth,ClipActions);
 	}
 	if (PlaceFlagHasRatio)
-		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START+Depth,Ratio);
+		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START+Depth,Ratio,inskipping);
 	if(PlaceFlagHasColorTransform)
 		parent->checkColorTransformForLegacyChildAt(LEGACY_DEPTH_START+Depth,ColorTransformWithAlpha);
 	if (newInstance && this->ClipActions.AllEventFlags.ClipEventConstruct && currchar)
@@ -2766,8 +2766,6 @@ VideoFrameTag::VideoFrameTag(RECORDHEADER h, istream &in):DisplayListTag(h)
 
 void VideoFrameTag::execute(DisplayObjectContainer *parent, bool inskipping)
 {
-	if (inskipping)
-		return;
 	DisplayObject* d = parent->findLegacyChildByTagID(StreamID);
 	if (d && d->is<Video>())
 		d->as<Video>()->setVideoFrame(FrameNum,framedata,numbytes+AV_INPUT_BUFFER_PADDING_SIZE);

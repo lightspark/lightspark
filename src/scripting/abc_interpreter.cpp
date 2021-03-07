@@ -999,6 +999,7 @@ struct operands
 	int32_t index;
 	uint32_t codecount;
 	uint32_t preloadedcodepos;
+	operands():type(OP_UNDEFINED),modified(false),duparg1(false),objtype(nullptr),index(-1),codecount(0),preloadedcodepos(0) {}
 	operands(OPERANDTYPES _t, Class_base* _o,int32_t _i,uint32_t _c, uint32_t _p):type(_t),modified(false),duparg1(false),objtype(_o),index(_i),codecount(_c),preloadedcodepos(_p) {}
 	void removeArg(preloadstate& state)
 	{
@@ -4832,7 +4833,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										}
 									}
 									// remember operand for intGenerator
-									operands op = state.operandlist.back();
+									operands op;
+									if (state.operandlist.size()>0)
+										op = state.operandlist.back();
 									bool reuseoperand = prevopcode == 0x62//getlocal
 											|| prevopcode == 0xd0//getlocal_0
 											|| prevopcode == 0xd1//getlocal_1

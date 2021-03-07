@@ -59,6 +59,33 @@ SET(LIBSPARK_SOURCES
   parsing/tags_stub.cpp
   parsing/textfile.cpp
   scripting/abc.cpp
+  scripting/abc_avm1.cpp
+  scripting/abc_flashaccessibility.cpp
+  scripting/abc_flashdesktop.cpp
+  scripting/abc_flashconcurrent.cpp
+  scripting/abc_flashcrypto.cpp
+  scripting/abc_flashdisplay.cpp
+  scripting/abc_flashdisplay3d.cpp
+  scripting/abc_flashevents.cpp
+  scripting/abc_flasherrors.cpp
+  scripting/abc_flashexternal.cpp
+  scripting/abc_flashfilesystem.cpp
+  scripting/abc_flashfilters.cpp
+  scripting/abc_flashgeom.cpp
+  scripting/abc_flashglobalization.cpp
+  scripting/abc_flashmedia.cpp
+  scripting/abc_flashnet.cpp
+  scripting/abc_flashprinting.cpp
+  scripting/abc_flashsampler.cpp
+  scripting/abc_flashsecurity.cpp
+  scripting/abc_flashsensors.cpp
+  scripting/abc_flashsystem.cpp
+  scripting/abc_flashtext.cpp
+  scripting/abc_flashui.cpp
+  scripting/abc_flashutils.cpp
+  scripting/abc_flashxml.cpp
+  scripting/abc_avmplus.cpp
+  scripting/abc_toplevel.cpp
   scripting/abc_codesynt.cpp
   scripting/abc_fast_interpreter.cpp
   scripting/abc_interpreter.cpp

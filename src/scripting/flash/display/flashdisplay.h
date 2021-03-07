@@ -143,7 +143,7 @@ public:
 	// this does not test if a DisplayObject exists at the provided depth
 	DisplayObject* getLegacyChildAt(int32_t depth);
 	void setupClipActionsAt(int32_t depth, const CLIPACTIONS& actions);
-	void checkRatioForLegacyChildAt(int32_t depth, uint32_t ratio);
+	void checkRatioForLegacyChildAt(int32_t depth, uint32_t ratio, bool inskipping);
 	void checkColorTransformForLegacyChildAt(int32_t depth, const CXFORMWITHALPHA& colortransform);
 	void deleteLegacyChildAt(int32_t depth);
 	void insertLegacyChildAt(int32_t depth, DisplayObject* obj);
@@ -289,7 +289,7 @@ public:
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
-	void checkRatio(uint32_t ratio) override;
+	void checkRatio(uint32_t ratio, bool inskipping) override;
 };
 
 class Loader;
@@ -634,7 +634,7 @@ public:
 	void declareFrame() override;
 	void initFrame() override;
 	void executeFrameScript() override;
-	void checkRatio(uint32_t ratio) override;
+	void checkRatio(uint32_t ratio, bool inskipping) override;
 
 	void afterLegacyInsert() override;
 	void afterLegacyDelete(DisplayObjectContainer* par) override;

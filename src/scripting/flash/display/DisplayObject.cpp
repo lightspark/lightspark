@@ -628,7 +628,10 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		if(onStage==true)
 		{
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"addedToStage"));
-			if(isVmThread())
+			// the main clip is added to stage after the base class is constructed,
+			// but there may be addedToStage event handlers added in the constructor of the derived class,
+			// so we can't execute the event directly for the main clip
+			if(isVmThread() && this != getSystemState()->mainClip)
 				ABCVm::publicHandleEvent(this,e);
 			else
 			{

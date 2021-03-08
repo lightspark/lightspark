@@ -1890,19 +1890,15 @@ void RootMovieClip::constructionComplete()
 		return;
 	}
 	MovieClip::constructionComplete();
+	incRef();
+	getSystemState()->stage->_addChildAt(_MR(this),0);
+	this->setOnStage(true,true);
 	if (!loaderInfo.isNull())
 		loaderInfo->setComplete();
 	getSystemState()->addTick(1000/frameRate,getSystemState());
 }
 void RootMovieClip::afterConstruction()
 {
-	if (this==getSystemState()->mainClip)
-	{
-		// add the main clip to the stage after it is constructed completely, as the constructor may have added ADDED_TO_STAGE event handlers
-		incRef();
-		getSystemState()->stage->_addChildAt(_MR(this),0);
-		this->setOnStage(true,true);
-	}
 	DisplayObject::afterConstruction();
 	checkFrameScriptToExecute();
 }
@@ -1974,7 +1970,7 @@ _NR<RootMovieClip> RootMovieClip::getRoot()
 
 _NR<Stage> RootMovieClip::getStage()
 {
-	if (!onStage)
+	if (!isConstructed())
 		return NullRef;
 	getSystemState()->stage->incRef();
 	return _MR(getSystemState()->stage);

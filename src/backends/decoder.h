@@ -108,7 +108,6 @@ public:
 	virtual bool discardFrame()=0;
 	virtual uint32_t skipUntil(uint32_t time)=0;
 	virtual void skipAll()=0;
-	virtual uint32_t currentFrameTime()=0;
 	uint32_t getWidth()
 	{
 		return frameWidth;
@@ -157,7 +156,6 @@ public:
 	bool discardFrame() override {return false;}
 	uint32_t skipUntil(uint32_t time) override { return 0;}
 	void skipAll() override {}
-	uint32_t currentFrameTime() override { return UINT32_MAX; }
 	void setFlushing() override
 	{
 		flushing=true;
@@ -178,9 +176,9 @@ private:
 	YUVBuffer(const YUVBuffer&); /* no impl */
 	YUVBuffer& operator=(const YUVBuffer&); /* no impl */
 	public:
-		uint8_t* ch[3];
+		uint8_t* ch[4];
 		uint32_t time;
-		YUVBuffer():time(0){ch[0]=nullptr;ch[1]=nullptr;ch[2]=nullptr;}
+		YUVBuffer():time(0){ch[0]=nullptr;ch[1]=nullptr;ch[2]=nullptr;ch[3]=nullptr;}
 		~YUVBuffer()
 		{
 			if(ch[0])
@@ -188,6 +186,8 @@ private:
 				aligned_free(ch[0]);
 				aligned_free(ch[1]);
 				aligned_free(ch[2]);
+				if (ch[3])
+					aligned_free(ch[3]);
 			}
 		}
 	};
@@ -195,8 +195,9 @@ private:
 	{
 	private:
 		uint32_t bufferSize;
+		bool hasAlpha;
 	public:
-		YUVBufferGenerator(uint32_t b):bufferSize(b){}
+		YUVBufferGenerator(uint32_t b, bool _hasalpha):bufferSize(b),hasAlpha(_hasalpha){}
 		void init(YUVBuffer& buf) const;
 	};
 	bool ownedContext;
@@ -209,8 +210,13 @@ private:
 	void setSize(uint32_t w, uint32_t h);
 	bool fillDataAndCheckValidity();
 	uint32_t curBufferOffset;
+	// used for embedded video where number of frames is known and the decoded frames are cached
+	uint32_t totalFrameCount;
+	uint32_t currentcachedframe;
+	YUVBuffer* cachedbuffers;
 public:
-	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, double frameRateHint);
+	// if framecount is > 0, the decoded frames will be cached
+	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, double frameRateHint,int framecount=UINT32_MAX);
 	/*
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
@@ -229,7 +235,6 @@ public:
 	bool discardFrame() override;
 	uint32_t skipUntil(uint32_t time) override;
 	void skipAll() override;
-	uint32_t currentFrameTime() override;
 	void setFlushing() override
 	{
 		flushing=true;

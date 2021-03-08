@@ -134,15 +134,10 @@ private:
 	_NR<NetStream> netStream;
 	ASPROPERTY_GETTER_SETTER(int32_t, deblocking);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
-	VideoDecoder* embeddedVideoDecoder;
 	DefineVideoStreamTag* videotag;
-	uint32_t embeddedframesbuffered;
-	uint32_t embeddedlastuploadedframe;
-	std::set<uint32_t> embeddedframesdecoded;
 public:
 	Video(Class_base* c, uint32_t w=320, uint32_t h=240, DefineVideoStreamTag* v=nullptr);
 	bool destruct() override;
-	void setVideoFrame(uint32_t FrameNum, uint8_t* framedata, uint32_t numbytes);
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 	uint32_t getTagID() const override;
 	~Video();

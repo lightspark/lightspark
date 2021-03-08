@@ -2139,7 +2139,37 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in, Roo
 	UB(4,bs);
 	VideoFlagsDeblocking=UB(3,bs);
 	VideoFlagsSmoothing=UB(1,bs);
-	in >> VideoCodecID;;
+	in >> VideoCodecID;
+	lastuploadedframe=UINT32_MAX;
+#ifdef ENABLE_LIBAVCODEC
+	LS_VIDEO_CODEC lscodec;
+	switch (VideoCodecID)
+	{
+		case 2:
+			lscodec = LS_VIDEO_CODEC::H263;
+			break;
+		case 3:
+			LOG(LOG_ERROR,"video codec SCREEN not implemented for embedded video");
+			return;
+		case 4:
+			lscodec = LS_VIDEO_CODEC::VP6;
+			break;
+		case 5:
+			lscodec = LS_VIDEO_CODEC::VP6A;
+			break;
+		default:
+			LOG(LOG_ERROR,"invalid video codec id for embedded video:"<<VideoCodecID);
+			return;
+	}
+	embeddedVideoDecoder = new FFMpegVideoDecoder(lscodec,nullptr,0,root->getFrameRate(),NumFrames);
+#endif
+	framesdecoded.resize(NumFrames);
+}
+
+DefineVideoStreamTag::~DefineVideoStreamTag()
+{
+	if (embeddedVideoDecoder)
+		delete embeddedVideoDecoder;
 }
 
 ASObject* DefineVideoStreamTag::instance(Class_base* c)
@@ -2158,6 +2188,29 @@ ASObject* DefineVideoStreamTag::instance(Class_base* c)
 		return new (classRet->memoryAccount) AVM1Video(classRet, Width, Height,this);
 	else
 		return new (classRet->memoryAccount) Video(classRet, Width, Height,this);
+}
+
+bool DefineVideoStreamTag::decodeData(uint8_t *data, uint32_t datalen, uint32_t frame)
+{
+	if (framesdecoded[frame])
+		return true;
+	if (embeddedVideoDecoder)
+	{
+		framesdecoded[frame]=true;
+		return embeddedVideoDecoder->decodeData(data,datalen,frame);
+	}
+	return false;
+}
+
+void DefineVideoStreamTag::uploadFrame(SystemState *sys, uint32_t frame)
+{
+	if (framesdecoded[frame] && frame != lastuploadedframe)
+	{
+		lastuploadedframe = frame;
+		embeddedVideoDecoder->skipUntil(frame);
+		embeddedVideoDecoder->waitForFencing();
+		sys->getRenderThread()->addUploadJob(embeddedVideoDecoder);
+	}
 }
 
 DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s,RootMovieClip* root):DictionaryTag(h,root)
@@ -2777,9 +2830,11 @@ VideoFrameTag::~VideoFrameTag()
 
 void VideoFrameTag::execute(DisplayObjectContainer *parent, bool inskipping)
 {
-	DisplayObject* d = parent->findLegacyChildByTagID(StreamID);
-	if (d && d->is<Video>())
-		d->as<Video>()->setVideoFrame(FrameNum,framedata,numbytes+AV_INPUT_BUFFER_PADDING_SIZE);
+	DefineVideoStreamTag* videotag=dynamic_cast<DefineVideoStreamTag*>(parent->loadedFrom->dictionaryLookup(StreamID));
+	if (videotag)
+	{
+		videotag->decodeData(framedata,numbytes+AV_INPUT_BUFFER_PADDING_SIZE, FrameNum);
+	}
 	else
 		LOG(LOG_ERROR,"VideoFrameTag: no corresponding video found "<<StreamID);
 }

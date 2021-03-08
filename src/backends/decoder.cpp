@@ -125,13 +125,15 @@ bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 	return true;
 }
 
-FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint):
-	ownedContext(true),curBuffer(0),codecContext(NULL),curBufferOffset(0)
+FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint, int framecount):
+	ownedContext(true),curBuffer(0),codecContext(nullptr),curBufferOffset(0),totalFrameCount(framecount),currentcachedframe(UINT32_MAX),cachedbuffers(nullptr)
 {
 	//The tag is the header, initialize decoding
 	switchCodec(codecId, initdata, datalen, frameRateHint);
 
 	frameIn=av_frame_alloc();
+	if (totalFrameCount != UINT32_MAX)
+		cachedbuffers = new YUVBuffer[totalFrameCount];
 }
 
 void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, uint32_t datalen, double frameRateHint)
@@ -286,6 +288,8 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint)
 FFMpegVideoDecoder::~FFMpegVideoDecoder()
 {
 	while(fenceCount);
+	if (cachedbuffers)
+		delete[] cachedbuffers;
 	avcodec_close(codecContext);
 	if(ownedContext)
 		av_free(codecContext);
@@ -297,17 +301,34 @@ void FFMpegVideoDecoder::setSize(uint32_t w, uint32_t h)
 {
 	if(VideoDecoder::setSize(w,h))
 	{
-		//Discard all the frames
-		while(discardFrame());
-
-		//As the size chaged, reset the buffer
-		uint32_t bufferSize=frameWidth*frameHeight/**4*/;
-		buffers.regen(YUVBufferGenerator(bufferSize));
+		if (totalFrameCount != UINT32_MAX)
+		{
+			uint32_t bufferSize=frameWidth*frameHeight/**4*/;
+			YUVBufferGenerator gen(bufferSize,this->codecContext->pix_fmt==AV_PIX_FMT_YUVA420P);
+			for (uint32_t i = 0; i < totalFrameCount; i++)
+			{
+				gen.init(cachedbuffers[i]);
+			}
+		}
+		else
+		{
+			//Discard all the frames
+			while(discardFrame());
+	
+			//As the size chaged, reset the buffer
+			uint32_t bufferSize=frameWidth*frameHeight/**4*/;
+			buffers.regen(YUVBufferGenerator(bufferSize,this->codecContext->pix_fmt==AV_PIX_FMT_YUVA420P));
+		}
 	}
 }
 
 uint32_t FFMpegVideoDecoder::skipUntil(uint32_t time)
 {
+	if (totalFrameCount != UINT32_MAX)
+	{
+		currentcachedframe=time;
+		return 0;
+	}
 	uint32_t ret=0;
 	while(1)
 	{
@@ -325,13 +346,6 @@ void FFMpegVideoDecoder::skipAll()
 	while(!buffers.isEmpty())
 		discardFrame();
 }
-uint32_t FFMpegVideoDecoder::currentFrameTime()
-{
-	if(buffers.isEmpty())
-		return UINT32_MAX;
-	return buffers.front().time;
-}
-
 
 bool FFMpegVideoDecoder::discardFrame()
 {
@@ -380,7 +394,6 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 				status=VALID;
 	
 			assert(frameIn->pts==(int64_t)AV_NOPTS_VALUE || frameIn->pts==0);
-	
 			copyFrameToBuffers(frameIn, time);
 		}
 	}
@@ -487,35 +500,74 @@ bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 
 void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t time)
 {
-	YUVBuffer& curTail=buffers.acquireLast();
+	YUVBuffer* curTail=nullptr;
+	if (totalFrameCount != UINT32_MAX)
+		curTail=&cachedbuffers[time];
+	else
+		curTail=&buffers.acquireLast();
 	//Only one thread may access the tail
 	int offset[3]={0,0,0};
 	for(uint32_t y=0;y<frameHeight;y++)
 	{
-		memcpy(curTail.ch[0]+offset[0],frameIn->data[0]+(y*frameIn->linesize[0]),frameWidth);
+		memcpy(curTail->ch[0]+offset[0],frameIn->data[0]+(y*frameIn->linesize[0]),frameWidth);
+		if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)
+			memcpy(curTail->ch[3]+offset[0],frameIn->data[3]+(y*frameIn->linesize[0]),frameWidth);
 		offset[0]+=frameWidth;
 	}
 	for(uint32_t y=0;y<frameHeight/2;y++)
 	{
-		memcpy(curTail.ch[1]+offset[1],frameIn->data[1]+(y*frameIn->linesize[1]),frameWidth/2);
-		memcpy(curTail.ch[2]+offset[2],frameIn->data[2]+(y*frameIn->linesize[2]),frameWidth/2);
+		memcpy(curTail->ch[1]+offset[1],frameIn->data[1]+(y*frameIn->linesize[1]),frameWidth/2);
+		memcpy(curTail->ch[2]+offset[2],frameIn->data[2]+(y*frameIn->linesize[2]),frameWidth/2);
 		offset[1]+=frameWidth/2;
 		offset[2]+=frameWidth/2;
 	}
-	curTail.time=time;
+	curTail->time=time;
 
-	buffers.commitLast();
+	if (totalFrameCount == UINT32_MAX)
+		buffers.commitLast();
+}
+// todo do this using assembler (see fastYUV420ChannelsToYUV0Buffer)
+void YUV420ChannelsToYUV0BufferWithAlpha(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* a, uint8_t* out, uint32_t width, uint32_t height)
+{
+	uint32_t texw= (width+15)&0xfffffff0;
+	for(uint32_t i=0;i<height;i++)
+	{
+		for(uint32_t j=0;j<width;j++)
+		{
+			uint32_t pixelCoordFull=i*texw+j;
+			uint32_t pixelCoordHalf=(i/2)*(width/2)+(j/2);
+			out[pixelCoordFull*4+0]=y[i*width+j];
+			out[pixelCoordFull*4+1]=u[pixelCoordHalf];
+			out[pixelCoordFull*4+2]=v[pixelCoordHalf];
+			out[pixelCoordFull*4+3]=a[i*width+j];
+		}
+	}
 }
 
 void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h) const
 {
+	if (totalFrameCount != UINT32_MAX)
+	{
+		if (currentcachedframe >= totalFrameCount)
+			return;
+		const YUVBuffer& cur=cachedbuffers[currentcachedframe];
+		if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)
+			YUV420ChannelsToYUV0BufferWithAlpha(cur.ch[0],cur.ch[1],cur.ch[2],cur.ch[3],data,frameWidth,frameHeight);
+		else
+			fastYUV420ChannelsToYUV0Buffer(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
+		return;
+	}
+	
 	if(buffers.isEmpty())
 		return;
 	//Verify that the size are right
 	assert_and_throw(w==((frameWidth+15)&0xfffffff0) && h==frameHeight);
 	//At least a frame is available
 	const YUVBuffer& cur=buffers.front();
-	fastYUV420ChannelsToYUV0Buffer(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
+	if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)
+		YUV420ChannelsToYUV0BufferWithAlpha(cur.ch[0],cur.ch[1],cur.ch[2],cur.ch[3],data,frameWidth,frameHeight);
+	else
+		fastYUV420ChannelsToYUV0Buffer(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
 }
 
 void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
@@ -525,10 +577,14 @@ void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
 		aligned_free(buf.ch[0]);
 		aligned_free(buf.ch[1]);
 		aligned_free(buf.ch[2]);
+		if (buf.ch[3])
+			aligned_free(buf.ch[3]);
 	}
 	aligned_malloc((void**)&buf.ch[0], 16, bufferSize);
 	aligned_malloc((void**)&buf.ch[1], 16, bufferSize/4);
 	aligned_malloc((void**)&buf.ch[2], 16, bufferSize/4);
+	if (hasAlpha)
+		aligned_malloc((void**)&buf.ch[3], 16, bufferSize);
 }
 #endif //ENABLE_LIBAVCODEC
 

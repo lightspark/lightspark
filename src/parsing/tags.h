@@ -739,10 +739,17 @@ private:
 	UB VideoFlagsDeblocking;
 	UB VideoFlagsSmoothing;
 	UI8 VideoCodecID;
+	VideoDecoder* embeddedVideoDecoder;
+	vector<bool> framesdecoded;
+	uint32_t lastuploadedframe;
 public:
 	DefineVideoStreamTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
+	~DefineVideoStreamTag();
 	int getId() const override { return CharacterID; }
 	ASObject* instance(Class_base* c=nullptr) override;
+	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t frame);
+	void uploadFrame(SystemState* sys, uint32_t frame);
+	VideoDecoder* getVideoDecoder() const { return embeddedVideoDecoder; }
 };
 class VideoFrameTag: public DisplayListTag
 {

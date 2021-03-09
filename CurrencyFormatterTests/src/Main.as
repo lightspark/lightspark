@@ -61,6 +61,16 @@ package
 				trace(cf.format(input, true));
 				
 			}
+			
+			var currencyResult:CurrencyParseResult = new CurrencyParseResult(123, "£");
+			if (currencyResult.currencyString == "£" &&  currencyResult.value == 123)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed");
+			}
 		}
 	}
 }

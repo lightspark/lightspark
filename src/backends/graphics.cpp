@@ -79,7 +79,9 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 
 TextureChunk::~TextureChunk()
 {
-	delete[] chunks;
+	if (chunks)
+		delete[] chunks;
+	chunks=nullptr;
 }
 
 void TextureChunk::makeEmpty()
@@ -515,8 +517,10 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr, float scalex, float scaley)
 	cairoPathFromTokens(cr, tokens, scaleFactor, false,scalex, scaley,xstart,ystart,isMask);
 }
 
-uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley)
+uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley, bool *isBufferOwner)
 {
+	if (isBufferOwner)
+		*isBufferOwner=true;
 	if(width==0 || height==0 || !Config::getConfig()->isRenderingEnabled())
 		return nullptr;
 
@@ -1059,8 +1063,10 @@ BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _
 {
 }
 
-uint8_t *BitmapRenderer::getPixelBuffer(float scalex, float scaley)
+uint8_t *BitmapRenderer::getPixelBuffer(float scalex, float scaley, bool *isBufferOwner)
 {
+	if (isBufferOwner)
+		*isBufferOwner=false;
 	return data->getData();
 }
 

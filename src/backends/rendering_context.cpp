@@ -300,12 +300,6 @@ CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t he
 
 CairoRenderContext::~CairoRenderContext()
 {
-	for(auto it=customSurfaces.begin();it!=customSurfaces.end();it++)
-	{
-		//Delete and reset here the buffer memory stored in chunks
-		delete[] it->second.tex->chunks;
-		it->second.tex->chunks=nullptr;
-	}
 	cairo_destroy(cr);
 }
 
@@ -428,7 +422,7 @@ void CairoRenderContext::setProperties(AS_BLENDMODE blendmode)
 	}
 }
 
-CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf)
+CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf, bool isBufferOwner)
 {
 	auto ret=customSurfaces.insert(make_pair(d, CachedSurface()));
 //	assert(ret.second);
@@ -436,5 +430,6 @@ CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d,
 	if (surface.tex==nullptr)
 		surface.tex=new TextureChunk();
 	surface.tex->chunks=(uint32_t*)texBuf;
+	surface.isChunkOwner=isBufferOwner;
 	return surface;
 }

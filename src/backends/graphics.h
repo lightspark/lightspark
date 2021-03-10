@@ -183,7 +183,7 @@ public:
 	 * The various implementation are responsible for applying the
 	 * masks
 	 */
-	virtual uint8_t* getPixelBuffer(float scalex,float scaley)=0;
+	virtual uint8_t* getPixelBuffer(float scalex,float scaley, bool* isBufferOwner=nullptr)=0;
 	/*
 	 * This method creates a cairo path that can be used as a mask for
 	 * another object
@@ -279,7 +279,7 @@ public:
 				  , float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset
 				  , bool _smoothing,number_t _xstart,number_t _ystart);
 	//IDrawable interface
-	uint8_t* getPixelBuffer(float scalex, float scaley);
+	uint8_t* getPixelBuffer(float scalex, float scaley, bool* isBufferOwner=nullptr) override;
 	/*
 	 * Converts data (which is in RGB format) to the format internally used by cairo.
 	 */
@@ -441,7 +441,7 @@ public:
 				  , float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset
 				  );
 	//IDrawable interface
-	uint8_t* getPixelBuffer(float scalex, float scaley) override;
+	uint8_t* getPixelBuffer(float scalex, float scaley, bool* isBufferOwner=nullptr) override;
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const override {}
 };
 

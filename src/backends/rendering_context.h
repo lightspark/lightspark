@@ -165,7 +165,7 @@ public:
 	 * The CairoRenderContext acquires the ownership of the buffer
 	 * it will be freed on destruction
 	 */
-	CachedSurface& allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf);
+	CachedSurface& allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf, bool isBufferOwner);
 	/**
 	 * Do a fast non filtered, non scaled blit of ARGB data
 	 */

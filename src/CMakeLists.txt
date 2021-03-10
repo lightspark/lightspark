@@ -141,6 +141,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/globalization/lastoperationstatus.cpp
   scripting/flash/globalization/localeid.cpp
   scripting/flash/globalization/currencyformatter.cpp
+  scripting/flash/globalization/currencyparseresult.cpp
   scripting/flash/globalization/numberformatter.cpp
   scripting/flash/globalization/numberparseresult.cpp
   scripting/flash/globalization/collator.cpp

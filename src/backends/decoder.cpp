@@ -206,7 +206,7 @@ void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, 
 }
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
 FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecParameters* codecPar, double frameRateHint):
-	ownedContext(true),curBuffer(0),codecContext(NULL),curBufferOffset(0)
+	ownedContext(true),curBuffer(0),codecContext(NULL),curBufferOffset(0),cachedbuffers(nullptr)
 {
 	status=INIT;
 #ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -247,7 +247,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecParameters* codecPar, double frame
 }
 #else
 FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint):
-	ownedContext(false),curBuffer(0),codecContext(_c),curBufferOffset(0)
+	ownedContext(false),curBuffer(0),codecContext(_c),curBufferOffset(0),cachedbuffers(nullptr)
 {
 	frameIn=av_frame_alloc();
 	status=INIT;

@@ -2132,6 +2132,40 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 	return ret;
 }
 
+void DefineVideoStreamTag::checkDecoder()
+{
+#ifdef ENABLE_LIBAVCODEC
+	if (embeddedVideoDecoder==nullptr)
+	{
+		LS_VIDEO_CODEC lscodec;
+		bool ok=false;
+		switch (VideoCodecID)
+		{
+			case 2:
+				lscodec = LS_VIDEO_CODEC::H263;
+				ok=true;
+				break;
+			case 3:
+				LOG(LOG_ERROR,"video codec SCREEN not implemented for embedded video");
+				break;
+			case 4:
+				lscodec = LS_VIDEO_CODEC::VP6;
+				ok=true;
+				break;
+			case 5:
+				lscodec = LS_VIDEO_CODEC::VP6A;
+				ok=true;
+				break;
+			default:
+				LOG(LOG_ERROR,"invalid video codec id for embedded video:"<<VideoCodecID);
+				break;
+		}
+		if (ok)
+			embeddedVideoDecoder = new FFMpegVideoDecoder(lscodec,nullptr,0,loadedFrom->getFrameRate(),NumFrames);
+	}
+#endif
+}
+
 DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h, root)
 {
 	in >> CharacterID >> NumFrames >> Width >> Height;
@@ -2141,35 +2175,20 @@ DefineVideoStreamTag::DefineVideoStreamTag(RECORDHEADER h, std::istream& in, Roo
 	VideoFlagsSmoothing=UB(1,bs);
 	in >> VideoCodecID;
 	lastuploadedframe=UINT32_MAX;
-#ifdef ENABLE_LIBAVCODEC
-	LS_VIDEO_CODEC lscodec;
-	switch (VideoCodecID)
-	{
-		case 2:
-			lscodec = LS_VIDEO_CODEC::H263;
-			break;
-		case 3:
-			LOG(LOG_ERROR,"video codec SCREEN not implemented for embedded video");
-			return;
-		case 4:
-			lscodec = LS_VIDEO_CODEC::VP6;
-			break;
-		case 5:
-			lscodec = LS_VIDEO_CODEC::VP6A;
-			break;
-		default:
-			LOG(LOG_ERROR,"invalid video codec id for embedded video:"<<VideoCodecID);
-			return;
-	}
-	embeddedVideoDecoder = new FFMpegVideoDecoder(lscodec,nullptr,0,root->getFrameRate(),NumFrames);
-#endif
+	visiblecount=0;
 	framesdecoded.resize(NumFrames);
+	embeddedVideoDecoder=nullptr;
 }
 
 DefineVideoStreamTag::~DefineVideoStreamTag()
 {
 	if (embeddedVideoDecoder)
-		delete embeddedVideoDecoder;
+	{
+		if (embeddedVideoDecoder->isUploading())
+			embeddedVideoDecoder->markForDestruction();
+		else
+			delete embeddedVideoDecoder;
+	}
 }
 
 ASObject* DefineVideoStreamTag::instance(Class_base* c)
@@ -2184,6 +2203,8 @@ ASObject* DefineVideoStreamTag::instance(Class_base* c)
 	else
 		classRet=Class<Video>::getClass(loadedFrom->getSystemState());
 
+	visiblecount++;
+	checkDecoder();
 	if (!loadedFrom->usesActionScript3)
 		return new (classRet->memoryAccount) AVM1Video(classRet, Width, Height,this);
 	else
@@ -2194,6 +2215,7 @@ bool DefineVideoStreamTag::decodeData(uint8_t *data, uint32_t datalen, uint32_t 
 {
 	if (framesdecoded[frame])
 		return true;
+	checkDecoder();
 	if (embeddedVideoDecoder)
 	{
 		framesdecoded[frame]=true;
@@ -2204,12 +2226,30 @@ bool DefineVideoStreamTag::decodeData(uint8_t *data, uint32_t datalen, uint32_t 
 
 void DefineVideoStreamTag::uploadFrame(SystemState *sys, uint32_t frame)
 {
-	if (framesdecoded[frame] && frame != lastuploadedframe)
+	if (framesdecoded[frame] && frame != lastuploadedframe && !embeddedVideoDecoder->isUploading())
 	{
 		lastuploadedframe = frame;
 		embeddedVideoDecoder->skipUntil(frame);
 		embeddedVideoDecoder->waitForFencing();
 		sys->getRenderThread()->addUploadJob(embeddedVideoDecoder);
+	}
+}
+
+void DefineVideoStreamTag::onVideoDestruct()
+{
+	visiblecount--;
+	if (visiblecount == 0)
+	{
+		for (uint32_t i= 0; i < NumFrames; i++)
+			framesdecoded[i]=false;
+		if (embeddedVideoDecoder)
+		{
+			if (embeddedVideoDecoder->isUploading())
+				embeddedVideoDecoder->markForDestruction();
+			else
+				delete embeddedVideoDecoder;
+			embeddedVideoDecoder=nullptr;
+		}
 	}
 }
 

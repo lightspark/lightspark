@@ -742,6 +742,8 @@ private:
 	VideoDecoder* embeddedVideoDecoder;
 	vector<bool> framesdecoded;
 	uint32_t lastuploadedframe;
+	ATOMIC_INT32(visiblecount);
+	void checkDecoder();
 public:
 	DefineVideoStreamTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	~DefineVideoStreamTag();
@@ -750,6 +752,7 @@ public:
 	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t frame);
 	void uploadFrame(SystemState* sys, uint32_t frame);
 	VideoDecoder* getVideoDecoder() const { return embeddedVideoDecoder; }
+	void onVideoDestruct();
 };
 class VideoFrameTag: public DisplayListTag
 {

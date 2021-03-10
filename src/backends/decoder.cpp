@@ -86,7 +86,6 @@ const TextureChunk& VideoDecoder::getTexture()
 
 void VideoDecoder::uploadFence()
 {
-	inUploading=false;
 	assert(fenceCount);
 	ATOMIC_DECREMENT(fenceCount);
 	if (markedForDeletion && fenceCount==0)
@@ -101,7 +100,6 @@ void VideoDecoder::markForDestruction()
 void VideoDecoder::waitForFencing()
 {
 	ATOMIC_INCREMENT(fenceCount);
-	inUploading=true;
 }
 
 #ifdef ENABLE_LIBAVCODEC
@@ -498,6 +496,24 @@ bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	return true;
 }
 
+// todo do this using assembler (see fastYUV420ChannelsToYUV0Buffer)
+void YUV420ChannelsToYUV0BufferWithAlpha(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* a, uint8_t* out, uint32_t width, uint32_t height)
+{
+	uint32_t texw= (width+15)&0xfffffff0;
+	for(uint32_t i=0;i<height;i++)
+	{
+		for(uint32_t j=0;j<width;j++)
+		{
+			uint32_t pixelCoordFull=i*texw+j;
+			uint32_t pixelCoordHalf=(i/2)*(width/2)+(j/2);
+			out[pixelCoordFull*4+0]=y[i*width+j];
+			out[pixelCoordFull*4+1]=u[pixelCoordHalf];
+			out[pixelCoordFull*4+2]=v[pixelCoordHalf];
+			out[pixelCoordFull*4+3]=a[i*width+j];
+		}
+	}
+}
+
 void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t time)
 {
 	YUVBuffer* curTail=nullptr;
@@ -522,46 +538,37 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t tim
 		offset[2]+=frameWidth/2;
 	}
 	curTail->time=time;
+	if (totalFrameCount != UINT32_MAX)
+	{
+		// cache the decoded frame
+		uint8_t* data = new uint8_t[frameWidth*frameHeight*4];
+		if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)
+			YUV420ChannelsToYUV0BufferWithAlpha(curTail->ch[0],curTail->ch[1],curTail->ch[2],curTail->ch[3],data,frameWidth,frameHeight);
+		else
+			fastYUV420ChannelsToYUV0Buffer(curTail->ch[0],curTail->ch[1],curTail->ch[2],data,frameWidth,frameHeight);
+		curTail->setDecodedData(data);
+		return;
+	}
 
 	if (totalFrameCount == UINT32_MAX)
 		buffers.commitLast();
 }
-// todo do this using assembler (see fastYUV420ChannelsToYUV0Buffer)
-void YUV420ChannelsToYUV0BufferWithAlpha(uint8_t* y, uint8_t* u, uint8_t* v, uint8_t* a, uint8_t* out, uint32_t width, uint32_t height)
-{
-	uint32_t texw= (width+15)&0xfffffff0;
-	for(uint32_t i=0;i<height;i++)
-	{
-		for(uint32_t j=0;j<width;j++)
-		{
-			uint32_t pixelCoordFull=i*texw+j;
-			uint32_t pixelCoordHalf=(i/2)*(width/2)+(j/2);
-			out[pixelCoordFull*4+0]=y[i*width+j];
-			out[pixelCoordFull*4+1]=u[pixelCoordHalf];
-			out[pixelCoordFull*4+2]=v[pixelCoordHalf];
-			out[pixelCoordFull*4+3]=a[i*width+j];
-		}
-	}
-}
 
 void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h) const
 {
+	//Verify that the size are right
+	assert_and_throw(w==((frameWidth+15)&0xfffffff0) && h==frameHeight);
 	if (totalFrameCount != UINT32_MAX)
 	{
 		if (currentcachedframe >= totalFrameCount)
 			return;
 		const YUVBuffer& cur=cachedbuffers[currentcachedframe];
-		if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)
-			YUV420ChannelsToYUV0BufferWithAlpha(cur.ch[0],cur.ch[1],cur.ch[2],cur.ch[3],data,frameWidth,frameHeight);
-		else
-			fastYUV420ChannelsToYUV0Buffer(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
+		memcpy(data,cur.ch[0],w*h*4);
 		return;
 	}
 	
 	if(buffers.isEmpty())
 		return;
-	//Verify that the size are right
-	assert_and_throw(w==((frameWidth+15)&0xfffffff0) && h==frameHeight);
 	//At least a frame is available
 	const YUVBuffer& cur=buffers.front();
 	if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)

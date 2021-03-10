@@ -81,6 +81,8 @@ ASFUNCTIONBODY_GETTER_SETTER(Video, smoothing);
 
 bool Video::destruct()
 {
+	if (videotag)
+		videotag->onVideoDestruct();
 	videotag=nullptr;
 	netStream.reset();
 	return DisplayObject::destruct();

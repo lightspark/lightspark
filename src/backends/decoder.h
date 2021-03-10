@@ -101,7 +101,7 @@ public:
 class VideoDecoder: public Decoder, public ITextureUploadable
 {
 public:
-	VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false),inUploading(false){}
+	VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false){}
 	virtual ~VideoDecoder(){}
 	virtual void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint)=0;
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
@@ -128,7 +128,7 @@ public:
 	const TextureChunk& getTexture();
 	void uploadFence();
 	void markForDestruction();
-	bool isUploading() { return inUploading; }
+	bool isUploading() { return fenceCount; }
 protected:
 	TextureChunk videoTexture;
 	uint32_t frameWidth;
@@ -143,7 +143,6 @@ protected:
 private:
 	bool resizeGLBuffers;
 	bool markedForDeletion;
-	bool inUploading;
 };
 
 class NullVideoDecoder: public VideoDecoder
@@ -181,14 +180,22 @@ private:
 		YUVBuffer():time(0){ch[0]=nullptr;ch[1]=nullptr;ch[2]=nullptr;ch[3]=nullptr;}
 		~YUVBuffer()
 		{
+			setDecodedData(nullptr);
+		}
+		void setDecodedData(uint8_t* data)
+		{
 			if(ch[0])
-			{
 				aligned_free(ch[0]);
+			if(ch[1])
 				aligned_free(ch[1]);
+			if(ch[2])
 				aligned_free(ch[2]);
-				if (ch[3])
-					aligned_free(ch[3]);
-			}
+			if(ch[3])
+				aligned_free(ch[3]);
+			ch[0]=data;
+			ch[1]=nullptr;
+			ch[2]=nullptr;
+			ch[3]=nullptr;
 		}
 	};
 	class YUVBufferGenerator

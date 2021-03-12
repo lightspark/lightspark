@@ -122,7 +122,7 @@ void BitmapContainer::clear()
 	bitmaptexture.makeEmpty();
 }
 
-void BitmapContainer::upload(uint8_t *data, uint32_t w, uint32_t h) const
+void BitmapContainer::upload(uint8_t *data, uint32_t w, uint32_t h)
 {
 	memcpy(data, getData(), w*h*4);
 }

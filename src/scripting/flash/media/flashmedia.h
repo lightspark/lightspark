@@ -135,10 +135,13 @@ private:
 	ASPROPERTY_GETTER_SETTER(int32_t, deblocking);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
 	DefineVideoStreamTag* videotag;
+	VideoDecoder* embeddedVideoDecoder;
+	uint32_t lastuploadedframe;
 public:
 	Video(Class_base* c, uint32_t w=320, uint32_t h=240, DefineVideoStreamTag* v=nullptr);
 	bool destruct() override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
+	void afterLegacyDelete(DisplayObjectContainer* par) override;
 	uint32_t getTagID() const override;
 	~Video();
 	static void sinit(Class_base*);

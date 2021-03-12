@@ -58,6 +58,7 @@ extern "C"
 // Correct size? 192000?
 // TODO: a real plugins system
 #define MAX_AUDIO_FRAME_SIZE 20
+#define AV_INPUT_BUFFER_PADDING_SIZE 0
 #endif
 
 namespace lightspark
@@ -97,11 +98,11 @@ public:
 		flushed.wait();
 	}
 };
-
+class DefineVideoStreamTag;
 class VideoDecoder: public Decoder, public ITextureUploadable
 {
 public:
-	VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false){}
+	VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),lastframe(UINT32_MAX),currentframe(UINT32_MAX),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false){}
 	virtual ~VideoDecoder(){}
 	virtual void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint)=0;
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
@@ -129,10 +130,13 @@ public:
 	void uploadFence();
 	void markForDestruction();
 	bool isUploading() { return fenceCount; }
+	void setVideoFrameToDecode(uint32_t frame) { currentframe=frame; }
 protected:
 	TextureChunk videoTexture;
 	uint32_t frameWidth;
 	uint32_t frameHeight;
+	uint32_t lastframe;
+	uint32_t currentframe;
 	/*
 		Derived classes must spinwaits on this to become false before deleting
 	*/
@@ -160,11 +164,10 @@ public:
 		flushing=true;
 	}
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) const override
+	void upload(uint8_t* data, uint32_t w, uint32_t h) override
 	{
 	}
 };
-
 #ifdef ENABLE_LIBAVCODEC
 #define FFMPEGVIDEODECODERBUFFERSIZE 80
 class FFMpegVideoDecoder: public VideoDecoder
@@ -217,13 +220,11 @@ private:
 	void setSize(uint32_t w, uint32_t h);
 	bool fillDataAndCheckValidity();
 	uint32_t curBufferOffset;
-	// used for embedded video where number of frames is known and the decoded frames are cached
-	uint32_t totalFrameCount;
+	// used for embedded video
 	uint32_t currentcachedframe;
-	YUVBuffer* cachedbuffers;
+	DefineVideoStreamTag* embeddedvideotag;
 public:
-	// if framecount is > 0, the decoded frames will be cached
-	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, double frameRateHint,int framecount=UINT32_MAX);
+	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, double frameRateHint,DefineVideoStreamTag* tag=nullptr);
 	/*
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
@@ -252,7 +253,7 @@ public:
 		}
 	}
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) const override;
+	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
 };
 #endif
 

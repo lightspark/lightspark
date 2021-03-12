@@ -112,7 +112,7 @@ public:
 	/*
 		Upload data to memory mapped to the graphics card (note: size is guaranteed to be enough
 	*/
-	virtual void upload(uint8_t* data, uint32_t w, uint32_t h) const=0;
+	virtual void upload(uint8_t* data, uint32_t w, uint32_t h)=0;
 	virtual const TextureChunk& getTexture()=0;
 	/*
 		Signal the completion of the upload to the texture
@@ -238,7 +238,7 @@ public:
 	void threadAbort() override;
 	void jobFence() override;
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) const override;
+	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
 	void sizeNeeded(uint32_t& w, uint32_t& h) const override;
 	const TextureChunk& getTexture() override;
 	void uploadFence() override;

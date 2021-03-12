@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* better support for embedded video
 	* lightspark now runs directly on wayland (with SDL_VIDEODRIVER=wayland)
 	* better support for obfuscated AVM1 files
 	* significantly faster rendering of bitmaps

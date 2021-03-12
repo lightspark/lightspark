@@ -81,16 +81,23 @@ ASFUNCTIONBODY_GETTER_SETTER(Video, smoothing);
 
 bool Video::destruct()
 {
-	if (videotag)
-		videotag->onVideoDestruct();
 	videotag=nullptr;
+	lastuploadedframe=UINT32_MAX;
+	if (embeddedVideoDecoder)
+	{
+		if (embeddedVideoDecoder->isUploading())
+			embeddedVideoDecoder->markForDestruction();
+		else
+			delete embeddedVideoDecoder;
+		embeddedVideoDecoder=nullptr;
+	}
 	netStream.reset();
 	return DisplayObject::destruct();
 }
 
 Video::Video(Class_base* c, uint32_t w, uint32_t h, DefineVideoStreamTag *v)
 	: DisplayObject(c),width(w),height(h),videoWidth(0),videoHeight(0),
-	  netStream(NullRef),deblocking(v ? v->VideoFlagsDeblocking:0),smoothing(v ? v->VideoFlagsSmoothing : false),videotag(v)
+	  netStream(NullRef),deblocking(v ? v->VideoFlagsDeblocking:0),smoothing(v ? v->VideoFlagsSmoothing : false),videotag(v),embeddedVideoDecoder(nullptr),lastuploadedframe(UINT32_MAX)
 {
 	subtype=SUBTYPE_VIDEO;
 }
@@ -100,7 +107,68 @@ void Video::checkRatio(uint32_t ratio, bool inskipping)
 	if (inskipping)
 		return;
 	if (videotag)
-		videotag->uploadFrame(getSystemState(),ratio);
+	{
+#ifdef ENABLE_LIBAVCODEC
+		if (embeddedVideoDecoder==nullptr)
+		{
+			LS_VIDEO_CODEC lscodec;
+			bool ok=false;
+			switch (videotag->VideoCodecID)
+			{
+				case 2:
+					lscodec = LS_VIDEO_CODEC::H263;
+					ok=true;
+					break;
+				case 3:
+					LOG(LOG_ERROR,"video codec SCREEN not implemented for embedded video");
+					break;
+				case 4:
+					lscodec = LS_VIDEO_CODEC::VP6;
+					ok=true;
+					break;
+				case 5:
+					lscodec = LS_VIDEO_CODEC::VP6A;
+					ok=true;
+					break;
+				default:
+					LOG(LOG_ERROR,"invalid video codec id for embedded video:"<<int(videotag->VideoCodecID));
+					break;
+			}
+			if (ok)
+				embeddedVideoDecoder = new FFMpegVideoDecoder(lscodec,nullptr,0,videotag->loadedFrom->getFrameRate(),videotag);
+		}
+#endif
+		if (embeddedVideoDecoder && !embeddedVideoDecoder->isUploading() && ratio > 0 && ratio <= videotag->NumFrames && videotag->frames[ratio-1])
+		{
+			if (lastuploadedframe == UINT32_MAX)
+			{
+				embeddedVideoDecoder->decodeData(videotag->frames[ratio-1]->getData(),videotag->frames[ratio-1]->getNumBytes(),ratio);
+				embeddedVideoDecoder->waitForFencing();
+				lastuploadedframe = ratio;
+				getSystemState()->getRenderThread()->addUploadJob(embeddedVideoDecoder);
+			}
+			if (ratio != lastuploadedframe && !embeddedVideoDecoder->isUploading())
+			{
+				embeddedVideoDecoder->waitForFencing();
+				embeddedVideoDecoder->setVideoFrameToDecode(ratio-1);
+				lastuploadedframe = ratio;
+				getSystemState()->getRenderThread()->addUploadJob(embeddedVideoDecoder);
+			}
+		}
+	}
+}
+
+void Video::afterLegacyDelete(DisplayObjectContainer *par)
+{
+	lastuploadedframe=UINT32_MAX;
+	if (embeddedVideoDecoder)
+	{
+		if (embeddedVideoDecoder->isUploading())
+			embeddedVideoDecoder->markForDestruction();
+		else
+			delete embeddedVideoDecoder;
+		embeddedVideoDecoder=nullptr;
+	}
 }
 
 uint32_t Video::getTagID() const
@@ -138,7 +206,7 @@ bool Video::renderImpl(RenderContext& ctxt) const
 	{
 		videoWidth=videotag->Width;
 		videoHeight=videotag->Height;
-		valid=true;
+		valid=embeddedVideoDecoder!= nullptr;
 	}
 	if (valid)
 	{
@@ -156,7 +224,7 @@ bool Video::renderImpl(RenderContext& ctxt) const
 
 		//Enable YUV to RGB conversion
 		//width and height will not change now (the Video mutex is acquired)
-		ctxt.renderTextured(videotag ? videotag->getVideoDecoder()->getTexture() : netStream->getTexture(),
+		ctxt.renderTextured(embeddedVideoDecoder ? embeddedVideoDecoder->getTexture() : netStream->getTexture(),
 			0, 0, width*scalex, height*scaley,
 			clippedAlpha(), RenderContext::YUV_MODE,totalMatrix.getRotation(),
 			0, 0, // transformed position is already set through lsglLoadMatrixf above

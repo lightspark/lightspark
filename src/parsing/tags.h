@@ -726,7 +726,7 @@ class DefineFontAlignZonesTag: public Tag
 public:
 	DefineFontAlignZonesTag(RECORDHEADER h, std::istream& in);
 };
-
+class VideoFrameTag;
 class DefineVideoStreamTag: public DictionaryTag
 {
 friend class Video;
@@ -739,20 +739,14 @@ private:
 	UB VideoFlagsDeblocking;
 	UB VideoFlagsSmoothing;
 	UI8 VideoCodecID;
-	VideoDecoder* embeddedVideoDecoder;
-	vector<bool> framesdecoded;
-	uint32_t lastuploadedframe;
-	ATOMIC_INT32(visiblecount);
-	void checkDecoder();
+	vector<VideoFrameTag*> frames;
 public:
 	DefineVideoStreamTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	~DefineVideoStreamTag();
 	int getId() const override { return CharacterID; }
 	ASObject* instance(Class_base* c=nullptr) override;
-	bool decodeData(uint8_t* data, uint32_t datalen, uint32_t frame);
-	void uploadFrame(SystemState* sys, uint32_t frame);
-	VideoDecoder* getVideoDecoder() const { return embeddedVideoDecoder; }
-	void onVideoDestruct();
+	void setFrameData(VideoFrameTag* tag);
+	VideoFrameTag* getFrame(uint32_t frame) const { return frames[frame]; }
 };
 class VideoFrameTag: public DisplayListTag
 {
@@ -765,6 +759,9 @@ public:
 	VideoFrameTag(RECORDHEADER h, std::istream& in);
 	~VideoFrameTag();
 	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+	uint8_t* getData() { return framedata; }
+	uint32_t getNumBytes() { return numbytes+AV_INPUT_BUFFER_PADDING_SIZE; }
+	uint32_t getFrameNumber() { return FrameNum; }
 };
 class MetadataTag: public Tag
 {

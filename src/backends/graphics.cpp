@@ -975,7 +975,7 @@ void AsyncDrawJob::jobFence()
 		delete this;
 }
 
-void AsyncDrawJob::upload(uint8_t* data, uint32_t w, uint32_t h) const
+void AsyncDrawJob::upload(uint8_t* data, uint32_t w, uint32_t h)
 {
 	assert(surfaceBytes);
 	memcpy(data, surfaceBytes, w*h*4);

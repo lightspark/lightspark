@@ -2444,10 +2444,10 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
 	}
 
 	obj->incRef();
+	obj->afterLegacyDelete(this);
 	//this also removes it from depthToLegacyChild
 	bool ret = _removeChild(obj);
 	assert_and_throw(ret);
-
 }
 
 void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* obj)

@@ -5122,6 +5122,8 @@ void MovieClip::declareFrame()
 				++iter;
 			}
 		}
+		if (newFrame)
+			state.frameadvanced=true;
 	}
 	// remove all legacy objects that have not been handled in the PlaceObject/RemoveObject tags
 	LegacyChildEraseDeletionMarked();

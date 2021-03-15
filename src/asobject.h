@@ -1003,6 +1003,9 @@ public:
 	   The finalize method must be callable multiple time with the same effects (no double frees).
 	*/
 	inline virtual void finalize() {}
+	// use this to mark an ASObject as constant, instead of RefCountable->setConstant()
+	// because otherwise it will not be properly deleted on application exit.
+	void setRefConstant();
 
 	virtual GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{

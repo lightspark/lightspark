@@ -825,7 +825,7 @@ WorkerDomain::WorkerDomain(Class_base* c):
 	Template<Vector>::getInstanceS(v,getSystemState(),Class<ASWorker>::getClass(getSystemState()),NullRef);
 	workerlist = _R<Vector>(asAtomHandler::as<Vector>(v));
 	workerSharedObject = _MR(Class<ASObject>::getInstanceS(getSystemState()));
-	workerSharedObject->setConstant();
+	workerSharedObject->setRefConstant();
 }
 
 void WorkerDomain::sinit(Class_base* c)

@@ -738,14 +738,14 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):scriptsdecla
 	{
 		constantAtoms_integer[i] = asAtomHandler::fromInt(constant_pool.integer[i]);
 		if (asAtomHandler::getObject(constantAtoms_integer[i]))
-			asAtomHandler::getObject(constantAtoms_integer[i])->setConstant();
+			asAtomHandler::getObject(constantAtoms_integer[i])->setRefConstant();
 	}
 	constantAtoms_uinteger.resize(constant_pool.uinteger.size());
 	for (uint32_t i = 0; i < constant_pool.uinteger.size(); i++)
 	{
 		constantAtoms_uinteger[i] = asAtomHandler::fromUInt(constant_pool.uinteger[i]);
 		if (asAtomHandler::getObject(constantAtoms_uinteger[i]))
-			asAtomHandler::getObject(constantAtoms_uinteger[i])->setConstant();
+			asAtomHandler::getObject(constantAtoms_uinteger[i])->setRefConstant();
 	}
 	constantAtoms_doubles.resize(constant_pool.doubles.size());
 	for (uint32_t i = 0; i < constant_pool.doubles.size(); i++)
@@ -764,7 +764,7 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):scriptsdecla
 		Namespace* res = Class<Namespace>::getInstanceS(root->getSystemState(),getString(constant_pool.namespaces[i].name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)constant_pool.namespaces[i].kind);
 		if (constant_pool.namespaces[i].kind != 0)
 			res->nskind =(NS_KIND)(int)(constant_pool.namespaces[i].kind);
-		res->setConstant();
+		res->setRefConstant();
 		constantAtoms_namespaces[i] = asAtomHandler::fromObject(res);
 	}
 	constantAtoms_byte.resize(0x100);
@@ -1616,6 +1616,7 @@ void ABCContext::declareScripts()
 
 		//Creating a new global for this script
 		Global* global=Class<Global>::getInstanceS(root->getSystemState(),this, i);
+		global->setRefConstant();
 #ifndef NDEBUG
 		global->initialized=false;
 #endif

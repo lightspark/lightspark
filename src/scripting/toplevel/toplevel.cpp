@@ -1004,22 +1004,25 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 	return typeObject ? typeObject->as<Type>() : NULL;
 }
 
-Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(NULL),
+Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),
 	borrowedVariables(m),
-	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
+	context(nullptr),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
 {
-	setConstant();
+	setSystemState(getSys());
+	setRefConstant();
 }
 
-Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(NULL),
-	borrowedVariables(NULL),
-	context(NULL),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
+Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)nullptr),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(nullptr),
+	borrowedVariables(nullptr),
+	context(nullptr),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(nullptr),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
 {
-	setConstant();
 	type=T_CLASS;
 	//We have tested that (Class is Class == true) so the classdef is 'this'
 	setClass(this);
 	//The super is Class<ASObject> but we set it in SystemState constructor to avoid an infinite loop
+
+	setSystemState(getSys());
+	setRefConstant();
 }
 
 /*
@@ -1279,7 +1282,15 @@ void Class_base::finalize()
 	super.reset();
 	prototype.reset();
 	protected_ns = nsNameAndKind(getSystemState(),"",NAMESPACE);
-	constructor = nullptr;
+	ASObject* p =constructorprop.getPtr();
+	constructorprop.reset();
+	if (p)
+		p->decRef();
+	if(constructor)
+	{
+		constructor->decRef();
+		constructor=nullptr;
+	}
 	context = nullptr;
 	length = 1;
 	class_index = -1;
@@ -2571,7 +2582,6 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 		ret->addPrototypeGetter();
 		IFunction::sinit(ret);
 		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,ret->length));
-		ret->constructorprop->incRef();
 
 		ret->addConstructorGetter();
 
@@ -3251,3 +3261,17 @@ asAtom AVM1context::AVM1GetConstant(uint16_t index)
 	return asAtomHandler::undefinedAtom;
 }
 
+
+void Prototype::setVariableByQName(const tiny_string &name, const tiny_string &ns, ASObject *o, TRAIT_KIND traitKind)
+{
+	if (o->is<Function>())
+		o->as<Function>()->setRefConstant();
+	getObj()->setVariableByQName(name,ns,o,traitKind);
+}
+
+void Prototype::setVariableAtomByQName(const tiny_string &name, const nsNameAndKind &ns, asAtom o, TRAIT_KIND traitKind)
+{
+	if (asAtomHandler::is<Function>(o))
+		asAtomHandler::as<Function>(o)->setRefConstant();
+	getObj()->setVariableAtomByQName(name,ns,o,traitKind);
+}

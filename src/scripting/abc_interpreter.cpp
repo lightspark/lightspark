@@ -2069,7 +2069,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 			state.operandlist.pop_back();
 			state.operandlist.pop_back();
 			if (asAtomHandler::isObject(res))
-				asAtomHandler::getObjectNoCheck(res)->setConstant();
+				asAtomHandler::getObjectNoCheck(res)->setRefConstant();
 			uint32_t value = state.mi->context->addCachedConstantAtom(res);
 			state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
 			state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
@@ -2226,7 +2226,7 @@ bool checkmatchingLastObjtype(preloadstate& state, const Class_base* resulttype,
 void addCachedConstant(preloadstate& state,method_info* mi, asAtom& val,memorystream& code)
 {
 	if (asAtomHandler::isObject(val))
-		asAtomHandler::getObject(val)->setConstant();
+		asAtomHandler::getObject(val)->setRefConstant();
 	uint32_t value = mi->context->addCachedConstantAtom(val);
 	state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
 	state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();

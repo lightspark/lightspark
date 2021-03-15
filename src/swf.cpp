@@ -266,10 +266,10 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 
 	null=_MR(new (unaccountedMemory) Null);
 	null->setSystemState(this);
-	null->setConstant();
+	null->setRefConstant();
 	undefined=_MR(new (unaccountedMemory) Undefined);
 	undefined->setSystemState(this);
-	undefined->setConstant();
+	undefined->setRefConstant();
 
 	builtinClasses = new Class_base*[asClassCount];
 	memset(builtinClasses,0,asClassCount*sizeof(Class_base*));
@@ -285,23 +285,25 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	objClassRef = asobjectClass.getPtr();
 
 	trueRef=_MR(Class<Boolean>::getInstanceS(this,true));
-	trueRef->setConstant();
+	trueRef->setRefConstant();
 	falseRef=_MR(Class<Boolean>::getInstanceS(this,false));
-	falseRef->setConstant();
+	falseRef->setRefConstant();
 	
 	nanAtom = asAtomHandler::fromNumber(this,Number::NaN,true);
 
 	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS(this));
+	systemDomain->setRefConstant();
 	_NR<ApplicationDomain> applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(this,systemDomain));
 	_NR<SecurityDomain> securityDomain = _MR(Class<SecurityDomain>::getInstanceS(this));
 
     static_SoundMixer_soundTransform  = _MR(Class<SoundTransform>::getInstanceS(this));
+	static_SoundMixer_soundTransform->setRefConstant();
 	threadPool=new ThreadPool(this);
 	downloadThreadPool=new ThreadPool(this);
 
 	timerThread=new TimerThread(this);
 	frameTimerThread=new TimerThread(this);
-	audioManager=NULL;
+	audioManager=nullptr;
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
 	localeManager = new LocaleManager();
@@ -311,8 +313,9 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	loaderInfo->setBytesLoaded(0);
 	loaderInfo->setBytesTotal(0);
 	mainClip=RootMovieClip::getInstance(loaderInfo, applicationDomain, securityDomain);
+	mainClip->setRefConstant();
 	stage=Class<Stage>::getInstanceS(this);
-	mainClip->incRef();
+	stage->setRefConstant();
 	stage->setRoot(_MR(mainClip));
 	//Get starting time
 	startTime=compat_msectiming();
@@ -503,18 +506,18 @@ void SystemState::stopEngines()
 	if(currentVm)
 		currentVm->shutdown();
 	delete downloadManager;
-	downloadManager=NULL;
+	downloadManager=nullptr;
 	delete securityManager;
-	securityManager=NULL;
+	securityManager=nullptr;
 	delete localeManager;
-	localeManager=NULL;
+	localeManager=nullptr;
 	delete threadPool;
-	threadPool=NULL;
+	threadPool=nullptr;
 	delete downloadThreadPool;
-	downloadThreadPool=NULL;
+	downloadThreadPool=nullptr;
 	//Now stop the managers
 	delete audioManager;
-	audioManager=NULL;
+	audioManager=nullptr;
 }
 
 #ifdef PROFILING_SUPPORT
@@ -587,14 +590,16 @@ void SystemState::systemFinalize()
 
 SystemState::~SystemState()
 {
+	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
+	{
+		(*it)->destroyContents();
+		(*it)->finalize();
+	}
 	delete[] builtinClasses;
-	null.forceDestruct();
-	undefined.forceDestruct();
-	trueRef.forceDestruct();
-	falseRef.forceDestruct();
-	workerDomain.forceDestruct();
-	worker.forceDestruct();
-	delete asAtomHandler::getObject(nanAtom);
+	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
+	{
+		delete (*it);
+	}
 }
 
 void SystemState::destroy()
@@ -703,9 +708,9 @@ void SystemState::destroy()
 	delete renderThread;
 	renderThread=nullptr;
 	delete inputThread;
-	inputThread=NULL;
+	inputThread=nullptr;
 	delete engineData;
-	engineData=NULL;
+	engineData=nullptr;
 
 	for(auto it=profilingData.begin();it!=profilingData.end();it++)
 		delete *it;
@@ -854,7 +859,7 @@ void SystemState::delayedStopping()
 	//This is called from the plugin, also kill the stream
 	engineData->stopMainDownload();
 	stopEngines();
-	setTLSSys(NULL);
+	setTLSSys(nullptr);
 }
 
 void SystemState::createEngines()
@@ -1076,11 +1081,11 @@ void SystemState::needsAVM2(bool avm2)
 		MemoryAccount* vmDataMemory=this->allocateMemoryAccount("VM_Data");
 		currentVm=new ABCVm(this, vmDataMemory);
 		workerDomain = _MR(Class<WorkerDomain>::getInstanceS(this));
-		workerDomain->setConstant();
+		workerDomain->setRefConstant();
 		worker = _MR(Class<ASWorker>::getInstanceS(this));
 		worker->isPrimordial = true;
 		worker->state ="running";
-		worker->setConstant();
+		worker->setRefConstant();
 		addWorker(worker.getPtr());
 		setTLSWorker(worker.getPtr());
 	}

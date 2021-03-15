@@ -303,6 +303,7 @@ private:
 	Cond mainsignalCond;
 	void systemFinalize();
 	std::map<tiny_string, Class_base *> classnamemap;
+	set<ASObject*> constantrefs;
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	tiny_string getDumpedSWFPath() const { return dumpedSWFPath;}
@@ -336,6 +337,10 @@ public:
 	std::map<tiny_string, _R<SharedObject> > sharedobjectmap;
 	bool localStorageAllowed() const { return localstorageallowed; }
 	void setLocalStorageAllowed(bool allowed);
+	void registerConstantRef(ASObject* obj)
+	{
+		constantrefs.insert(obj);
+	}
 	void tick() override;
 	void tickFence() override;
 	RenderThread* getRenderThread() const { return renderThread; }

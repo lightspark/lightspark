@@ -579,7 +579,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 		assert(this->is<Class_base>());
 		obj=this->as<Class_base>()->borrowedVariables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
 		if (!this->is<Class_inherit>() || this->as<Class_base>()->isSealed || this->as<Class_base>()->isFinal)
-			o->setConstant();
+			o->setRefConstant();
 	}
 	else
 	{
@@ -647,7 +647,7 @@ void ASObject::setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind
 		assert(this->is<Class_base>());
 		obj=this->as<Class_base>()->borrowedVariables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
 		if (!this->is<Class_inherit>())
-			o->setConstant();
+			o->setRefConstant();
 	}
 	else
 	{
@@ -838,7 +838,7 @@ multiname *ASObject::setVariableByMultiname_intern(const multiname& name, asAtom
 		if (asAtomHandler::is<SyntheticFunction>(o))
 		{
 			if (obj->kind == CONSTANT_TRAIT)
-				asAtomHandler::getObjectNoCheck(o)->setConstant();
+				asAtomHandler::getObjectNoCheck(o)->setRefConstant();
 			else
 				checkFunctionScope(asAtomHandler::getObjectNoCheck(o)->as<SyntheticFunction>());
 		}
@@ -868,7 +868,7 @@ multiname *ASObject::setVariableByMultiname_intern(const multiname& name, asAtom
 		if (isfunc)
 		{
 			if (obj->kind == CONSTANT_TRAIT)
-				asAtomHandler::getObject(o)->setConstant();
+				asAtomHandler::getObject(o)->setRefConstant();
 			else
 				checkFunctionScope(asAtomHandler::getObject(o)->as<SyntheticFunction>());
 		}
@@ -1555,7 +1555,13 @@ void ASObject::check() const
 #ifndef NDEBUG
 	assert(getConstant() || (getRefCount()>0));
 #endif
-//	Variables.check();
+	//	Variables.check();
+}
+
+void ASObject::setRefConstant()
+{
+	getSystemState()->registerConstantRef(this);
+	setConstant();
 }
 
 void variables_map::check() const
@@ -3845,6 +3851,6 @@ ASObject *asAtomHandler::toObject(asAtom& a, SystemState *sys, bool isconstant)
 			break;
 	}
 	if (isconstant)
-		getObjectNoCheck(a)->setConstant();
+		getObjectNoCheck(a)->setRefConstant();
 	return getObjectNoCheck(a);
 }

@@ -213,9 +213,9 @@ class NullableRef
 private:
 	T* m;
 public:
-	NullableRef(): m(NULL) {}
+	NullableRef(): m(nullptr) {}
 	explicit NullableRef(T* o):m(o){}
-	NullableRef(NullRef_t):m(NULL){}
+	NullableRef(NullRef_t):m(nullptr){}
 	NullableRef(const NullableRef& r):m(r.m)
 	{
 		if(m)
@@ -279,7 +279,7 @@ public:
 	}
 	inline bool operator==(NullRef_t) const
 	{
-		return m==NULL;
+		return m==nullptr;
 	}
 	template<class D> inline bool operator!=(const NullableRef<D>& r) const
 	{
@@ -296,11 +296,11 @@ public:
 	}
 	inline bool operator!=(NullRef_t) const
 	{
-		return m!=NULL;
+		return m!=nullptr;
 	}
 	/*explicit*/ operator bool() const
 	{
-		return m != NULL;
+		return m != nullptr;
 	}
 	~NullableRef()
 	{
@@ -309,30 +309,23 @@ public:
 	}
 	inline T* operator->() const
 	{
-		if(m != NULL)
+		if(m != nullptr)
 			return m;
 		else
 			throw std::runtime_error("LS smart pointer: NULL pointer access");
 	}
 	inline T* getPtr() const { return m; }
-	inline bool isNull() const { return m==NULL; }
+	inline bool isNull() const { return m==nullptr; }
 	inline void reset()
 	{
 		T* old=m;
-		m=NULL;
+		m=nullptr;
 		if(old)
 			old->decRef();
 	}
 	inline void fakeRelease()
 	{
-		m=NULL;
-	}
-	inline void forceDestruct()
-	{
-		assert(m->getConstant());
-		if (m)
-			delete m;
-		m = NULL;
+		m=nullptr;
 	}
 	template<class D> inline NullableRef<D> cast() const
 	{
@@ -380,6 +373,6 @@ template<class T> template<class D> bool Ref<T>::operator==(const NullableRef<D>
 	return m==r.getPtr();
 }
 
-};
+}
 
 #endif /* SMARTREFS_H */

@@ -1569,7 +1569,7 @@ ASObject* lightspark::abstract_d_constant(SystemState* sys,number_t i)
 	Number* ret=new (sys->unaccountedMemory) Number(Class<Number>::getRef(sys).getPtr());
 	ret->dval = i;
 	ret->isfloat = true;
-	ret->setConstant();
+	ret->setRefConstant();
 	return ret;
 }
 ASObject* lightspark::abstract_di(SystemState* sys,int64_t i)

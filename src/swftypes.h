@@ -1044,7 +1044,7 @@ public:
 class LINESTYLE2
 {
 public:
-	LINESTYLE2(uint8_t v):HasFillFlag(false),FillType(v),version(v){}
+	LINESTYLE2(uint8_t v):StartCapStyle(0),JointStyle(0),HasFillFlag(false),NoHScaleFlag(false),NoVScaleFlag(false),PixelHintingFlag(0),FillType(v),version(v){}
 	int StartCapStyle;
 	int JointStyle;
 	bool HasFillFlag;

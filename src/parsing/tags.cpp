@@ -1722,7 +1722,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START+Depth,Ratio,inskipping);
 	if(PlaceFlagHasColorTransform)
 		parent->checkColorTransformForLegacyChildAt(LEGACY_DEPTH_START+Depth,ColorTransformWithAlpha);
-	if (newInstance && this->ClipActions.AllEventFlags.ClipEventConstruct && currchar)
+	if (newInstance && PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventConstruct && currchar)
 	{
 		// TODO not sure if this is the right place to handle Construct events
 		std::map<uint32_t,asAtom> m;
@@ -1735,7 +1735,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			}
 		}
 	}
-	if (this->ClipActions.AllEventFlags.ClipEventInitialize && currchar)
+	if (PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventInitialize && currchar)
 	{
 		// TODO not sure if this is the right place to handle Initialize events
 		std::map<uint32_t,asAtom> m;

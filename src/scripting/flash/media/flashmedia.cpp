@@ -104,8 +104,6 @@ Video::Video(Class_base* c, uint32_t w, uint32_t h, DefineVideoStreamTag *v)
 
 void Video::checkRatio(uint32_t ratio, bool inskipping)
 {
-	if (inskipping)
-		return;
 	if (videotag)
 	{
 #ifdef ENABLE_LIBAVCODEC
@@ -136,6 +134,7 @@ void Video::checkRatio(uint32_t ratio, bool inskipping)
 			}
 			if (ok)
 				embeddedVideoDecoder = new FFMpegVideoDecoder(lscodec,nullptr,0,videotag->loadedFrom->getFrameRate(),videotag);
+			lastuploadedframe=UINT32_MAX;
 		}
 #endif
 		if (embeddedVideoDecoder && !embeddedVideoDecoder->isUploading() && ratio > 0 && ratio <= videotag->NumFrames && videotag->frames[ratio-1])
@@ -154,6 +153,18 @@ void Video::checkRatio(uint32_t ratio, bool inskipping)
 				lastuploadedframe = ratio;
 				getSystemState()->getRenderThread()->addUploadJob(embeddedVideoDecoder);
 			}
+		}
+		if (lastuploadedframe==uint32_t(videotag->NumFrames-1))
+		{
+			if (embeddedVideoDecoder)
+			{
+				if (embeddedVideoDecoder->isUploading())
+					embeddedVideoDecoder->markForDestruction();
+				else
+					delete embeddedVideoDecoder;
+				embeddedVideoDecoder=nullptr;
+			}
+			lastuploadedframe=UINT32_MAX;
 		}
 	}
 }

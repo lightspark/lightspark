@@ -238,10 +238,10 @@ private:
 #endif
 
 	//shared null, undefined, true and false instances
-	_NR<Null> null;
-	_NR<Undefined> undefined;
-	_NR<Boolean> trueRef;
-	_NR<Boolean> falseRef;
+	Null* null;
+	Undefined* undefined;
+	Boolean* trueRef;
+	Boolean* falseRef;
 	Class_base* objClassRef;
 
 	//Parameters/FlashVars
@@ -371,22 +371,22 @@ public:
 	
 	inline Null* getNullRef() const
 	{
-		return null.getPtr();
+		return null;
 	}
 	
 	inline Undefined* getUndefinedRef() const
 	{
-		return undefined.getPtr();
+		return undefined;
 	}
 	
 	inline Boolean* getTrueRef() const
 	{
-		return trueRef.getPtr();
+		return trueRef;
 	}
 	
 	inline Boolean* getFalseRef() const
 	{
-		return falseRef.getPtr();
+		return falseRef;
 	}
 
 	inline Class_base* getObjectClassRef() const
@@ -445,10 +445,10 @@ public:
 	/*
 	 * The application domain for the system
 	 */
-	_NR<ApplicationDomain> systemDomain;
+	ApplicationDomain* systemDomain;
 
-	_NR<ASWorker> worker;
-	_NR<WorkerDomain> workerDomain;
+	ASWorker* worker;
+	WorkerDomain* workerDomain;
 	bool singleworker;
 	Mutex workerMutex;
 	void addWorker(ASWorker* w);

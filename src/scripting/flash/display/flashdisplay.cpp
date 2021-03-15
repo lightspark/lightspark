@@ -595,7 +595,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	else
 	{
 		//Different domain
-		_NR<ApplicationDomain> parentDomain =  this->getSystemState()->systemDomain;
+		_NR<ApplicationDomain> parentDomain = _MR(this->getSystemState()->systemDomain);
 		this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getSystemState(),parentDomain));
 		this->contentLoaderInfo->securityDomain = _MR(Class<SecurityDomain>::getInstanceS(this->getSystemState()));
 	}

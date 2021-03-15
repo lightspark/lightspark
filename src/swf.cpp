@@ -264,10 +264,10 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	bitmapTokenMemory = allocateMemoryAccount("Tokens.Bitmap");
 	spriteTokenMemory = allocateMemoryAccount("Tokens.Sprite");
 
-	null=_MR(new (unaccountedMemory) Null);
+	null=new (unaccountedMemory) Null;
 	null->setSystemState(this);
 	null->setRefConstant();
-	undefined=_MR(new (unaccountedMemory) Undefined);
+	undefined=new (unaccountedMemory) Undefined;
 	undefined->setSystemState(this);
 	undefined->setRefConstant();
 
@@ -284,16 +284,16 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	classObject->decRef();
 	objClassRef = asobjectClass.getPtr();
 
-	trueRef=_MR(Class<Boolean>::getInstanceS(this,true));
+	trueRef=Class<Boolean>::getInstanceS(this,true);
 	trueRef->setRefConstant();
-	falseRef=_MR(Class<Boolean>::getInstanceS(this,false));
+	falseRef=Class<Boolean>::getInstanceS(this,false);
 	falseRef->setRefConstant();
 	
 	nanAtom = asAtomHandler::fromNumber(this,Number::NaN,true);
 
-	systemDomain = _MR(Class<ApplicationDomain>::getInstanceS(this));
+	systemDomain = Class<ApplicationDomain>::getInstanceS(this);
 	systemDomain->setRefConstant();
-	_NR<ApplicationDomain> applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(this,systemDomain));
+	_NR<ApplicationDomain> applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(this,_MR(systemDomain)));
 	_NR<SecurityDomain> securityDomain = _MR(Class<SecurityDomain>::getInstanceS(this));
 
     static_SoundMixer_soundTransform  = _MR(Class<SoundTransform>::getInstanceS(this));
@@ -579,7 +579,6 @@ void SystemState::systemFinalize()
 	invalidateQueueTail.reset();
 	parameters.reset();
 	frameListeners.clear();
-	systemDomain.reset();
 	for(auto it = sharedobjectmap.begin(); it != sharedobjectmap.end(); it++)
 		it->second->doFlush();
 
@@ -714,6 +713,7 @@ void SystemState::destroy()
 
 	for(auto it=profilingData.begin();it!=profilingData.end();it++)
 		delete *it;
+	uniqueStringMap.clear();
 }
 
 bool SystemState::isOnError() const
@@ -1080,14 +1080,14 @@ void SystemState::needsAVM2(bool avm2)
 		LOG(LOG_INFO,_("Creating VM"));
 		MemoryAccount* vmDataMemory=this->allocateMemoryAccount("VM_Data");
 		currentVm=new ABCVm(this, vmDataMemory);
-		workerDomain = _MR(Class<WorkerDomain>::getInstanceS(this));
+		workerDomain = Class<WorkerDomain>::getInstanceS(this);
 		workerDomain->setRefConstant();
-		worker = _MR(Class<ASWorker>::getInstanceS(this));
+		worker = Class<ASWorker>::getInstanceS(this);
 		worker->isPrimordial = true;
 		worker->state ="running";
 		worker->setRefConstant();
-		addWorker(worker.getPtr());
-		setTLSWorker(worker.getPtr());
+		addWorker(worker);
+		setTLSWorker(worker);
 	}
 	else
 		vmVersion=AVM1;

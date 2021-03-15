@@ -523,7 +523,7 @@ public:
 		
 		// if type is a builtin class, it is handled in the systemDomain
 		if (appdomain.isNull() || (types.size() > 0 && types[0]->isBuiltin()))
-			appdomain = getSys()->systemDomain;
+			appdomain = _MR(getSys()->systemDomain);
 		QName instantiatedQName = getQName(appdomain->getSystemState(),types);
 
 		std::map<QName, Class_base*>::iterator it=appdomain->instantiatedTemplates.find(instantiatedQName);

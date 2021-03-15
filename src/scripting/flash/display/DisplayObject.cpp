@@ -117,6 +117,7 @@ void DisplayObject::finalize()
 	mask.reset();
 	matrix.reset();
 	loaderInfo.reset();
+	colorTransform.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
 	loadedFrom=getSystemState()->mainClip;

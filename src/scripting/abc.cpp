@@ -1651,7 +1651,7 @@ void ABCContext::exec(bool lazy)
 	//Creating a new global for the last script
 	Global* global=root->applicationDomain->getLastGlobalScope();
 	root->getSystemState()->worker->state ="running";
-	getVm(root->getSystemState())->addEvent(root->getSystemState()->worker,_MR(Class<Event>::getInstanceS(root->getSystemState(),"workerState")));
+	getVm(root->getSystemState())->addEvent(_MR(root->getSystemState()->worker),_MR(Class<Event>::getInstanceS(root->getSystemState(),"workerState")));
 
 	//the script init of the last script is the main entry point
 	if(!lazy)

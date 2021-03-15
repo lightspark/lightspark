@@ -251,7 +251,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 		// C++ constructor
 		return;
 	else if(parentDomain.isNull())
-		th->parentDomain =  sys->systemDomain;
+		th->parentDomain = _MR(sys->systemDomain);
 	else
 		th->parentDomain = parentDomain;
 }
@@ -736,7 +736,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,_getCurrent)
 {
 	ASWorker* w = getWorker();
 	if(!w)
-		w=sys->worker.getPtr();
+		w=sys->worker;
 	w->incRef();
 	ret = asAtomHandler::fromObject(w);
 }
@@ -849,7 +849,7 @@ ASFUNCTIONBODY_ATOM(WorkerDomain,_constructor)
 
 ASFUNCTIONBODY_ATOM(WorkerDomain,_getCurrent)
 {
-	ret = asAtomHandler::fromObject(sys->workerDomain.getPtr());
+	ret = asAtomHandler::fromObject(sys->workerDomain);
 }
 ASFUNCTIONBODY_ATOM(WorkerDomain,_isSupported)
 {

@@ -996,8 +996,7 @@ public:
 			o->decRef();
 	}
 	/*
-	   The finalize function is used only for classes that don't have the reusable flag set
-	   if a class is made reusable, it should implement destruct() instead
+	   The finalize function is used only for classes that don't have the reusable flag set and on destruction at application exit
 	   It should decRef all referenced objects.
 	   It has to reset all data to their default state.
 	   The finalize method must be callable multiple time with the same effects (no double frees).

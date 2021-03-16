@@ -104,6 +104,12 @@ RootMovieClip::~RootMovieClip()
 		delete it->second;
 }
 
+void RootMovieClip::destroyTags()
+{
+	for(auto it=frames.begin();it!=frames.end();++it)
+		it->destroyTags();
+}
+
 void RootMovieClip::parsingFailed()
 {
 	//The parsing is failed, we have no change to be ever valid
@@ -578,23 +584,25 @@ void SystemState::systemFinalize()
 	invalidateQueueHead.reset();
 	invalidateQueueTail.reset();
 	parameters.reset();
+	static_SoundMixer_soundTransform.reset();
 	frameListeners.clear();
 	for(auto it = sharedobjectmap.begin(); it != sharedobjectmap.end(); it++)
 		it->second->doFlush();
-
-	mainClip->decRef();
-	//Free the stage. This should free all objects on the displaylist
-	stage->decRef();
+	sharedobjectmap.clear();
+	mainClip->destroyTags();
 }
 
 SystemState::~SystemState()
 {
+	// 1) remove all references to variables as they might point to other constant reffed objects
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
 		(*it)->destroyContents();
 		(*it)->finalize();
 	}
+	// 2) delete builtin classes
 	delete[] builtinClasses;
+	// 3) delete the constant reffed objects
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
 		delete (*it);
@@ -658,7 +666,7 @@ void SystemState::destroy()
 	systemFinalize();
 
 	/*
-	 * 1) call finalize on all objects, this will free all referenced objects and thereby
+	 * 1) call finalize on all objects, this will free all non constant referenced objects and thereby
 	 * cut circular references. After that, all ASObjects but classes and templates should
 	 * have been deleted through decRef. Else it is an error.
 	 * 2) decRef all the classes and templates to which we hold a reference through the
@@ -1179,6 +1187,8 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 
 void SystemState::flushInvalidationQueue()
 {
+	if (isShuttingDown())
+		return;
 	Locker l(invalidateQueueLock);
 	_NR<DisplayObject> cur=invalidateQueueHead;
 	while(!cur.isNull())
@@ -2416,6 +2426,12 @@ bool RootMovieClip::destruct()
 	securityDomain.reset();
 	waitingforparser=false;
 	return MovieClip::destruct();
+}
+void RootMovieClip::finalize()
+{
+	applicationDomain.reset();
+	securityDomain.reset();
+	MovieClip::finalize();
 }
 
 void RootMovieClip::addBinding(const tiny_string& name, DictionaryTag *tag)

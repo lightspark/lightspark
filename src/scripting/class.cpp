@@ -69,6 +69,20 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_i
 	subtype = SUBTYPE_INHERIT;
 }
 
+void Class_inherit::finalize()
+{
+	instancefactory.reset();
+	auto it = class_scope.begin();
+	while (it != class_scope.end())
+	{
+		ASATOM_DECREF((*it).object);
+		it++;
+	}
+	class_scope.clear();
+	Class_base::finalize();
+	
+}
+
 void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	//We override the classdef

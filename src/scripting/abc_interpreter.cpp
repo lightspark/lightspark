@@ -5156,6 +5156,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 												addCachedSlot(state,index,v->slotid,code,resulttype);
 												removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
 												typestack.push_back(typestackentry(resulttype,false));
+												ASATOM_DECREF(o);
 												break;
 											}
 										}

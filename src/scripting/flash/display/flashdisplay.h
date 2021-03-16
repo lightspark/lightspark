@@ -87,6 +87,7 @@ public:
 	ASFUNCTION_ATOM(_setDoubleClickEnabled);
 	ASFUNCTION_ATOM(_getDoubleClickEnabled);
 	bool destruct() override;
+	void finalize() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	virtual void lostFocus() {}
@@ -138,6 +139,7 @@ public:
 	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer(Class_base* c);
 	bool destruct() override;
+	void finalize() override;
 	void resetLegacyState() override;
 	bool hasLegacyChildAt(int32_t depth);
 	// this does not test if a DisplayObject exists at the provided depth
@@ -257,6 +259,7 @@ public:
 	void setupShape(lightspark::DefineShapeTag *tag, float _scaling);
 	uint32_t getTagID() const override;
 	bool destruct() override;
+	void finalize() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -459,6 +462,7 @@ public:
 	void appendSound(unsigned char* buf, int len, uint32_t frame);
 	void setSoundStartFrame(uint32_t frame) { soundstartframe=frame; }
 	bool destruct() override;
+	void finalize() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -603,6 +607,7 @@ public:
 	MovieClip(Class_base* c);
 	MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID);
 	bool destruct() override;
+	void finalize() override;
 	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -713,6 +718,7 @@ public:
 	void addHiddenObject(_R<DisplayObject> o) { hiddenobjects.push_back(o);}
 	void initFrame() override;
 	void executeFrameScript() override;
+	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getAllowFullScreen);
 	ASFUNCTION_ATOM(_getAllowFullScreenInteractive);

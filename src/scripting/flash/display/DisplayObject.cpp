@@ -1098,7 +1098,7 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 	{
 		parent=p;
 		hasChanged=true;
-		if(onStage)
+		if(onStage && !getSystemState()->isShuttingDown())
 			requestInvalidation(getSystemState());
 	}
 }

@@ -95,6 +95,20 @@ bool Video::destruct()
 	return DisplayObject::destruct();
 }
 
+void Video::finalize()
+{
+	if (embeddedVideoDecoder)
+	{
+		if (embeddedVideoDecoder->isUploading())
+			embeddedVideoDecoder->markForDestruction();
+		else
+			delete embeddedVideoDecoder;
+		embeddedVideoDecoder=nullptr;
+	}
+	netStream.reset();
+	DisplayObject::finalize();
+}
+
 Video::Video(Class_base* c, uint32_t w, uint32_t h, DefineVideoStreamTag *v)
 	: DisplayObject(c),width(w),height(h),videoWidth(0),videoHeight(0),
 	  netStream(NullRef),deblocking(v ? v->VideoFlagsDeblocking:0),smoothing(v ? v->VideoFlagsSmoothing : false),videotag(v),embeddedVideoDecoder(nullptr),lastuploadedframe(UINT32_MAX)

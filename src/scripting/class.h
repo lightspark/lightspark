@@ -75,6 +75,7 @@ public:
 		class_scope.clear();
 		return Class_base::destruct();
 	}
+	void finalize() override;
 	void buildInstanceTraits(ASObject* o) const;
 	void setupDeclaredTraits(ASObject *target, bool checkclone=true);
 	void bindToTag(DictionaryTag* t)

@@ -817,6 +817,16 @@ bool Sprite::destruct()
 	return DisplayObjectContainer::destruct();
 }
 
+void Sprite::finalize()
+{
+	resetToStart();
+	graphics.reset();
+	hitArea.reset();
+	hitTarget.reset();
+	tokens.clear();
+	DisplayObjectContainer::finalize();
+}
+
 void Sprite::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_SEALED);
@@ -1414,7 +1424,6 @@ bool MovieClip::destruct()
 	totalFrames_unreliable = 1;
 	inExecuteFramescript=false;
 
-	frames.clear();
 	scenes.clear();
 	setFramesLoaded(0);
 	frames.emplace_back(Frame());
@@ -1424,6 +1433,21 @@ bool MovieClip::destruct()
 
 	enabled = true;
 	return Sprite::destruct();
+}
+
+void MovieClip::finalize()
+{
+	frames.clear();
+	auto it = frameScripts.begin();
+	while (it != frameScripts.end())
+	{
+		ASATOM_DECREF(it->second);
+		it++;
+	}
+	frameScripts.clear();
+	scenes.clear();
+	state.reset();
+	Sprite::finalize();
 }
 
 /* Returns a Scene_data pointer for a scene called sceneName, or for
@@ -2579,6 +2603,16 @@ bool DisplayObjectContainer::destruct()
 	return InteractiveObject::destruct();
 }
 
+void DisplayObjectContainer::finalize()
+{
+	dynamicDisplayList.clear();
+	legacyChildrenMarkedForDeletion.clear();
+	mapDepthToLegacyChild.clear();
+	mapLegacyChildToDepth.clear();
+	namedRemovedLegacyChildren.clear();
+	InteractiveObject::finalize();
+}
+
 void DisplayObjectContainer::resetLegacyState()
 {
 	auto i = mapDepthToLegacyChild.begin();
@@ -2601,7 +2635,7 @@ InteractiveObject::~InteractiveObject()
 ASFUNCTIONBODY_ATOM(InteractiveObject,_constructor)
 {
 	InteractiveObject* th=asAtomHandler::as<InteractiveObject>(obj);
-	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
+	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
 	//Object registered very early are not supported this way (Stage for example)
 	if(sys->getInputThread())
 		sys->getInputThread()->addListener(th);
@@ -2644,6 +2678,12 @@ bool InteractiveObject::destruct()
 	tabEnabled = false;
 	tabIndex = -1;
 	return DisplayObject::destruct();
+}
+void InteractiveObject::finalize()
+{
+	contextMenu.reset();
+	accessibilityImplementation.reset();
+	DisplayObject::finalize();
 }
 
 void InteractiveObject::buildTraits(ASObject* o)
@@ -3292,6 +3332,12 @@ bool Shape::destruct()
 	return 	DisplayObject::destruct();
 }
 
+void Shape::finalize()
+{
+	graphics.reset();
+	DisplayObject::finalize();
+}
+
 void Shape::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
@@ -3707,6 +3753,18 @@ void Stage::executeFrameScript()
 	}
 	// only execute first frame of hidden objects (?)
 	hiddenobjects.clear();
+}
+
+void Stage::finalize()
+{
+	focus.reset();
+	root.reset();
+	hiddenobjects.clear();
+	avm1KeyboardListeners.clear();
+	avm1MouseListeners.clear();
+	avm1EventListeners.clear();
+	avm1ResizeListeners.clear();
+	DisplayObjectContainer::finalize();
 }
 
 void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
@@ -4724,7 +4782,7 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 	/* This _must_ not call the DisplayObjectContainer
 	 * see note at the class declaration.
 	 */
-	InteractiveObject::_constructor(ret,sys,obj,NULL,0);
+	InteractiveObject::_constructor(ret,sys,obj,nullptr,0);
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
 	_NR<DisplayObject> upState;
 	_NR<DisplayObject> overState;

@@ -140,6 +140,7 @@ private:
 public:
 	Video(Class_base* c, uint32_t w=320, uint32_t h=240, DefineVideoStreamTag* v=nullptr);
 	bool destruct() override;
+	void finalize() override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 	void afterLegacyDelete(DisplayObjectContainer* par) override;
 	uint32_t getTagID() const override;

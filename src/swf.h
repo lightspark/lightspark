@@ -95,7 +95,9 @@ private:
 public:
 	RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
 	~RootMovieClip();
+	void destroyTags();
 	bool destruct() override;
+	void finalize() override;
 	bool hasFinishedLoading() override { return ACQUIRE_READ(finishedLoading); }
 	bool isWaitingForParser() { return waitingforparser; }
 	void constructionComplete() override;

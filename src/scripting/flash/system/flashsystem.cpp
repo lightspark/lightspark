@@ -232,13 +232,12 @@ void ApplicationDomain::finalize()
 {
 	ASObject::finalize();
 	domainMemory.reset();
-	for(auto i = globalScopes.begin(); i != globalScopes.end(); ++i)
-		(*i)->decRef();
 	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
 		it->second->finalize();
 	//Free template instantations by decRef'ing them
 	for(auto i = instantiatedTemplates.begin(); i != instantiatedTemplates.end(); ++i)
 		i->second->decRef();
+	globalScopes.clear();
 }
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
@@ -681,6 +680,12 @@ ASWorker::ASWorker(Class_base* c):
 	subtype = SUBTYPE_WORKER;
 }
 
+void ASWorker::finalize()
+{
+	loader.reset();
+	swf.reset();
+}
+
 void ASWorker::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
@@ -826,6 +831,11 @@ WorkerDomain::WorkerDomain(Class_base* c):
 	workerlist = _R<Vector>(asAtomHandler::as<Vector>(v));
 	workerSharedObject = _MR(Class<ASObject>::getInstanceS(getSystemState()));
 	workerSharedObject->setRefConstant();
+}
+
+void WorkerDomain::finalize()
+{
+	workerlist.reset();
 }
 
 void WorkerDomain::sinit(Class_base* c)

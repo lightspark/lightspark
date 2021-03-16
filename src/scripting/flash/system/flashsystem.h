@@ -173,13 +173,14 @@ class ASWorker: public EventDispatcher, public IThreadJob
 friend class WorkerDomain;
 private:
 	Mutex parsemutex;
-	_R<Loader> loader;
+	_NR<Loader> loader;
 	_NR<ByteArray> swf;
 	ParseThread* parser;
 	bool giveAppPrivileges;
 	bool started;
 public:
 	ASWorker(Class_base* c);
+	void finalize() override;
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_getCurrent);
 	ASFUNCTION_ATOM(getSharedProperty);
@@ -192,8 +193,8 @@ public:
 	ASFUNCTION_ATOM(setSharedProperty);
 	ASFUNCTION_ATOM(start);
 	ASFUNCTION_ATOM(terminate);
-	virtual void execute();
-	virtual void jobFence();
+	void execute() override;
+	void jobFence() override;
 };
 class WorkerDomain: public ASObject
 {
@@ -205,6 +206,7 @@ private:
 	_NR<ASObject> workerSharedObject;
 public:
 	WorkerDomain(Class_base* c);
+	void finalize() override;
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getCurrent);

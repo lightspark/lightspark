@@ -235,6 +235,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		while (it != surfacesToRefresh.end())
 		{
 			it->displayobject->updateCachedSurface(it->drawable);
+			delete it->drawable;
 			it = surfacesToRefresh.erase(it);
 		}
 		refreshNeeded=false;

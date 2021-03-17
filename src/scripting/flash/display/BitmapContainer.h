@@ -48,6 +48,7 @@ protected:
 public:
 	TextureChunk bitmaptexture;
 	BitmapContainer(MemoryAccount* m);
+	~BitmapContainer();
 	uint32_t getDataSize() const { return data.size(); }
 	uint8_t* getData() { return &data[0]; }
 	const uint8_t* getData() const { return &data[0]; }

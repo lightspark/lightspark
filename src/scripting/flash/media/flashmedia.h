@@ -137,12 +137,14 @@ private:
 	DefineVideoStreamTag* videotag;
 	VideoDecoder* embeddedVideoDecoder;
 	uint32_t lastuploadedframe;
+	void resetDecoder();
 public:
 	Video(Class_base* c, uint32_t w=320, uint32_t h=240, DefineVideoStreamTag* v=nullptr);
 	bool destruct() override;
 	void finalize() override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 	void afterLegacyDelete(DisplayObjectContainer* par) override;
+	void setOnStage(bool staged, bool force = false) override;
 	uint32_t getTagID() const override;
 	~Video();
 	static void sinit(Class_base*);

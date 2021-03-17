@@ -97,6 +97,15 @@ void VideoDecoder::markForDestruction()
 {
 	markedForDeletion=true;
 }
+VideoDecoder::VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),lastframe(UINT32_MAX),currentframe(UINT32_MAX),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false)
+{
+}
+
+VideoDecoder::~VideoDecoder()
+{
+	if (videoTexture.isValid())
+		getSys()->getRenderThread()->releaseTexture(getTexture());
+}
 
 void VideoDecoder::waitForFencing()
 {
@@ -301,29 +310,49 @@ void FFMpegVideoDecoder::setSize(uint32_t w, uint32_t h)
 		//Discard all the frames
 		while(discardFrame());
 	
-		//As the size chaged, reset the buffer
+		//As the size changed, reset the buffer
 		uint32_t bufferSize=frameWidth*frameHeight/**4*/;
-		buffers.regen(YUVBufferGenerator(bufferSize,this->codecContext->pix_fmt==AV_PIX_FMT_YUVA420P));
+		if (embeddedvideotag)
+			embeddedbuffers.regen(YUVBufferGenerator(bufferSize,this->codecContext->pix_fmt==AV_PIX_FMT_YUVA420P));
+		else
+			streamingbuffers.regen(YUVBufferGenerator(bufferSize,this->codecContext->pix_fmt==AV_PIX_FMT_YUVA420P));
 	}
 }
 
 uint32_t FFMpegVideoDecoder::skipUntil(uint32_t time)
 {
 	uint32_t ret=0;
-	while(1)
+	if (embeddedvideotag)
 	{
-		if(buffers.isEmpty())
-			break;
-		if(buffers.front().time>=time)
-			break;
-		discardFrame();
-		ret++;
+		while(1)
+		{
+			if(embeddedbuffers.isEmpty())
+				break;
+			if(embeddedbuffers.front().time>=time)
+				break;
+			discardFrame();
+			ret++;
+		}
+	}
+	else
+	{
+		while(1)
+		{
+			if(streamingbuffers.isEmpty())
+				break;
+			if(streamingbuffers.front().time>=time)
+				break;
+			discardFrame();
+			ret++;
+		}
 	}
 	return ret;
 }
 void FFMpegVideoDecoder::skipAll()
 {
-	while(!buffers.isEmpty())
+	while(!streamingbuffers.isEmpty())
+		discardFrame();
+	while(!embeddedbuffers.isEmpty())
 		discardFrame();
 }
 
@@ -331,19 +360,35 @@ bool FFMpegVideoDecoder::discardFrame()
 {
 	Locker locker(mutex);
 	//We don't want ot block if no frame is available
-	bool ret=buffers.nonBlockingPopFront();
-	if(flushing && buffers.isEmpty()) //End of our work
+	if (embeddedvideotag)
 	{
-		status=FLUSHED;
-		flushed.signal();
+		bool ret=embeddedbuffers.nonBlockingPopFront();
+		if(flushing && embeddedbuffers.isEmpty()) //End of our work
+		{
+			status=FLUSHED;
+			flushed.signal();
+		}
+		framesdropped++;
+	
+		return ret;
 	}
-	framesdropped++;
-
-	return ret;
+	else
+	{
+		bool ret=streamingbuffers.nonBlockingPopFront();
+		if(flushing && streamingbuffers.isEmpty()) //End of our work
+		{
+			status=FLUSHED;
+			flushed.signal();
+		}
+		framesdropped++;
+	
+		return ret;
+	}
 }
 
 bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t time)
 {
+	Locker locker(mutex);
 	if(datalen==0)
 		return false;
 #if defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME
@@ -483,7 +528,7 @@ bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t time)
 {
 	YUVBuffer* curTail=nullptr;
-	curTail=&buffers.acquireLast();
+	curTail=embeddedvideotag ?  &embeddedbuffers.acquireLast() : &streamingbuffers.acquireLast();
 	//Only one thread may access the tail
 	int offset[3]={0,0,0};
 	for(uint32_t y=0;y<frameHeight;y++)
@@ -501,38 +546,46 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t tim
 		offset[2]+=frameWidth/2;
 	}
 	curTail->time=time;
-	buffers.commitLast();
+	if (embeddedvideotag)
+		embeddedbuffers.commitLast();
+	else
+		streamingbuffers.commitLast();
 }
 
 void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h)
 {
+	Locker l(mutex);
 	//Verify that the size are right
 	assert_and_throw(w==((frameWidth+15)&0xfffffff0) && h==frameHeight);
 	if (embeddedvideotag) // on embedded video we decode the frames during upload
 	{
 		if (currentframe != UINT32_MAX)
 		{
+			skipAll();
 			for (uint32_t i = lastframe+1; i <currentframe; i++)
 			{
 				VideoFrameTag* t = embeddedvideotag->getFrame(i);
 				if (t)
 					decodeData(t->getData(),t->getNumBytes(),UINT32_MAX);
 			}
+			decodeData(embeddedvideotag->getFrame(currentframe)->getData(),embeddedvideotag->getFrame(currentframe)->getNumBytes(), 0);
+			lastframe=currentframe;
 		}
 		else
 			currentframe=0;
+		if(embeddedbuffers.isEmpty())
+			return;
 
-		while (!buffers.isEmpty())
-			buffers.nonBlockingPopFront();
-		decodeData(embeddedvideotag->getFrame(currentframe)->getData(),embeddedvideotag->getFrame(currentframe)->getNumBytes(), 0);
-		lastframe=currentframe;
 	}
-	if(buffers.isEmpty())
-		return;
+	else
+	{
+		if(streamingbuffers.isEmpty())
+			return;
+	}
 	
 	//At least a frame is available
-	const YUVBuffer& cur=buffers.front();
-	fastYUV420ChannelsToYUV0Buffer(cur.ch[0],cur.ch[1],cur.ch[2],data,frameWidth,frameHeight);
+	YUVBuffer* cur=embeddedvideotag ? &embeddedbuffers.front() : &streamingbuffers.front();
+	fastYUV420ChannelsToYUV0Buffer(cur->ch[0],cur->ch[1],cur->ch[2],data,frameWidth,frameHeight);
 	if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)
 	{
 		uint32_t texw= (frameWidth+15)&0xfffffff0;
@@ -541,7 +594,7 @@ void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h)
 			for(uint32_t j=0;j<frameWidth;j++)
 			{
 				uint32_t pixelCoordFull=i*texw+j;
-				data[pixelCoordFull*4+3]=cur.ch[3][i*frameWidth+j];
+				data[pixelCoordFull*4+3]=cur->ch[3][i*frameWidth+j];
 			}
 		}
 	}

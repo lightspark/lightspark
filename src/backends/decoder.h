@@ -102,8 +102,8 @@ class DefineVideoStreamTag;
 class VideoDecoder: public Decoder, public ITextureUploadable
 {
 public:
-	VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),lastframe(UINT32_MAX),currentframe(UINT32_MAX),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false){}
-	virtual ~VideoDecoder(){}
+	VideoDecoder();
+	virtual ~VideoDecoder();
 	virtual void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint)=0;
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
@@ -213,7 +213,8 @@ private:
 	bool ownedContext;
 	uint32_t curBuffer;
 	AVCodecContext* codecContext;
-	BlockingCircularQueue<YUVBuffer,FFMPEGVIDEODECODERBUFFERSIZE> buffers;
+	BlockingCircularQueue<YUVBuffer,FFMPEGVIDEODECODERBUFFERSIZE> streamingbuffers;
+	BlockingCircularQueue<YUVBuffer,2> embeddedbuffers;
 	Mutex mutex;
 	AVFrame* frameIn;
 	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t time);
@@ -246,10 +247,21 @@ public:
 	void setFlushing() override
 	{
 		flushing=true;
-		if(buffers.isEmpty())
+		if (embeddedvideotag)
 		{
-			status=FLUSHED;
-			flushed.signal();
+			if(embeddedbuffers.isEmpty())
+			{
+				status=FLUSHED;
+				flushed.signal();
+			}
+		}
+		else
+		{
+			if(streamingbuffers.isEmpty())
+			{
+				status=FLUSHED;
+				flushed.signal();
+			}
 		}
 	}
 	//ITextureUploadable interface

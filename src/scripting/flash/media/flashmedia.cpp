@@ -82,6 +82,21 @@ ASFUNCTIONBODY_GETTER_SETTER(Video, smoothing);
 bool Video::destruct()
 {
 	videotag=nullptr;
+	resetDecoder();
+	netStream.reset();
+	return DisplayObject::destruct();
+}
+
+void Video::finalize()
+{
+	resetDecoder();
+	netStream.reset();
+	DisplayObject::finalize();
+}
+
+void Video::resetDecoder()
+{
+	Locker l(mutex);
 	lastuploadedframe=UINT32_MAX;
 	if (embeddedVideoDecoder)
 	{
@@ -91,22 +106,6 @@ bool Video::destruct()
 			delete embeddedVideoDecoder;
 		embeddedVideoDecoder=nullptr;
 	}
-	netStream.reset();
-	return DisplayObject::destruct();
-}
-
-void Video::finalize()
-{
-	if (embeddedVideoDecoder)
-	{
-		if (embeddedVideoDecoder->isUploading())
-			embeddedVideoDecoder->markForDestruction();
-		else
-			delete embeddedVideoDecoder;
-		embeddedVideoDecoder=nullptr;
-	}
-	netStream.reset();
-	DisplayObject::finalize();
 }
 
 Video::Video(Class_base* c, uint32_t w, uint32_t h, DefineVideoStreamTag *v)
@@ -118,6 +117,7 @@ Video::Video(Class_base* c, uint32_t w, uint32_t h, DefineVideoStreamTag *v)
 
 void Video::checkRatio(uint32_t ratio, bool inskipping)
 {
+	Locker l(mutex);
 	if (videotag)
 	{
 #ifdef ENABLE_LIBAVCODEC
@@ -170,30 +170,28 @@ void Video::checkRatio(uint32_t ratio, bool inskipping)
 		}
 		if (lastuploadedframe==uint32_t(videotag->NumFrames-1))
 		{
-			if (embeddedVideoDecoder)
-			{
-				if (embeddedVideoDecoder->isUploading())
-					embeddedVideoDecoder->markForDestruction();
-				else
-					delete embeddedVideoDecoder;
-				embeddedVideoDecoder=nullptr;
-			}
-			lastuploadedframe=UINT32_MAX;
+			resetDecoder();
 		}
 	}
 }
 
 void Video::afterLegacyDelete(DisplayObjectContainer *par)
 {
-	lastuploadedframe=UINT32_MAX;
-	if (embeddedVideoDecoder)
+	Locker l(mutex);
+	resetDecoder();
+}
+
+void Video::setOnStage(bool staged, bool force)
+{
+	if(staged!=onStage||force)
 	{
-		if (embeddedVideoDecoder->isUploading())
-			embeddedVideoDecoder->markForDestruction();
-		else
-			delete embeddedVideoDecoder;
-		embeddedVideoDecoder=nullptr;
+		if (!staged)
+		{
+			Locker l(mutex);
+			resetDecoder();
+		}
 	}
+	DisplayObject::setOnStage(staged,force);
 }
 
 uint32_t Video::getTagID() const
@@ -231,7 +229,7 @@ bool Video::renderImpl(RenderContext& ctxt) const
 	{
 		videoWidth=videotag->Width;
 		videoHeight=videotag->Height;
-		valid=embeddedVideoDecoder!= nullptr;
+		valid=embeddedVideoDecoder!= nullptr && embeddedVideoDecoder->getTexture().isValid();
 	}
 	if (valid)
 	{

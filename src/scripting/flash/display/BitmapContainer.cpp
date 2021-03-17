@@ -32,6 +32,12 @@ BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
 {
 }
 
+BitmapContainer::~BitmapContainer()
+{
+	if (bitmaptexture.isValid())
+		getSys()->getRenderThread()->releaseTexture(bitmaptexture);
+}
+
 bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMAT format, bool frompng)
 {
 	if(!rgb)

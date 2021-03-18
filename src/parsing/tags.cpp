@@ -2358,12 +2358,14 @@ void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
 void StartSoundTag::play(DefineSoundTag *soundTag)
 {
 	if (soundTag->soundchanel.isNull())
+	{
 		soundTag->soundchanel = _NR<SoundChannel>(Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getSystemState(),
 			soundTag->getSoundData(),
 			AudioFormat(soundTag->getAudioCodec(),
 			    soundTag->getSampleRate(),
 			    soundTag->getChannels()),false));
-
+		soundTag->soundchanel->setConstant();
+	}
 	if (this->SoundInfo.SyncNoMultiple && soundTag->soundchanel->isPlaying())
 		return;
 	soundTag->soundchanel->play(0);

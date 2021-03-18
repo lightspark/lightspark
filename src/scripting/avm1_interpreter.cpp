@@ -665,7 +665,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							DisplayObject::_getter_name(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
 						case 15:// url
-							ret = asAtomHandler::fromString(clip->getSystemState(),clip->getRoot()->getOrigin().getURL());
+							ret = asAtomHandler::fromString(clip->getSystemState(),clip->getSystemState()->mainClip->getOrigin().getURL());
 							break;
 						case 19:// quality
 							DisplayObject::AVM1_getQuality(ret,clip->getSystemState(),obj,nullptr,0);

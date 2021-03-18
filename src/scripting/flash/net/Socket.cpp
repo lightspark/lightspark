@@ -97,10 +97,14 @@ bool SocketIO::connect(const tiny_string& hostname, int port, int timeoutseconds
 
 		if (timeoutseconds != 0)
 		{
+#ifdef _WIN32
+			::setsockopt(fd,SOL_SOCKET,SO_SNDTIMEO,(const char *)&timeoutseconds,sizeof(timeoutseconds));
+#else
 			timeval tv;
 			tv.tv_sec=timeoutseconds;
 			tv.tv_usec=0;
 			::setsockopt(fd,SOL_SOCKET,SO_SNDTIMEO,&tv,sizeof(tv));
+#endif
 		}
 
 		if (::connect(fd, p->ai_addr, p->ai_addrlen) == -1)

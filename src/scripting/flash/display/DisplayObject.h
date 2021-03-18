@@ -196,6 +196,7 @@ public:
 	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
 	bool deleteVariableByMultiname(const multiname& name) override;
 	virtual void removeAVM1Listeners();
+	void AVM1registerPrototypeListeners();
 
 	// used by MorphShapes and embedded video
 	virtual void checkRatio(uint32_t ratio, bool inskipping) {}

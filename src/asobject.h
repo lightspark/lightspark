@@ -1014,6 +1014,8 @@ public:
 	{
 		return getVariableByIntegerIntern(ret,index,opt);
 	}
+	// AVM1 needs to check the "protoype" variable in addition to the normal behaviour
+	GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code

@@ -5382,6 +5382,7 @@ void MovieClip::afterConstruction()
 			asAtom ret = asAtomHandler::invalidAtom;
 			asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 			constr->call(&ret,&obj,nullptr,0);
+			AVM1registerPrototypeListeners();
 		}
 	}
 }

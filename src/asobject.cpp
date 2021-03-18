@@ -1563,6 +1563,22 @@ void ASObject::setRefConstant()
 	getSystemState()->registerConstantRef(this);
 	setConstant();
 }
+GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+{
+	GET_VARIABLE_RESULT res = getVariableByMultiname(ret,name,opt);
+	if (asAtomHandler::isInvalid(ret))
+	{
+		ASObject* pr = getprop_prototype();
+		while (pr)
+		{
+			res = pr->getVariableByMultiname(ret,name,opt);
+			if (asAtomHandler::isValid(ret))
+				break;
+			pr = pr->getprop_prototype();
+		}
+	}
+	return res;
+}
 
 void variables_map::check() const
 {
@@ -1745,7 +1761,7 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 		m.name_type = multiname::NAME_STRING;
 		m.name_s_id = getSystemState()->getUniqueStringId("onKeyDown");
 		asAtom f=asAtomHandler::invalidAtom;
-		getVariableByMultiname(f,m);
+		AVM1getVariableByMultiname(f,m);
 		if (asAtomHandler::is<AVM1Function>(f))
 			asAtomHandler::as<AVM1Function>(f)->call(nullptr,nullptr,nullptr,0);
 	}
@@ -1755,7 +1771,7 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 		m.name_type = multiname::NAME_STRING;
 		m.name_s_id = getSystemState()->getUniqueStringId("onKeyUp");
 		asAtom f=asAtomHandler::invalidAtom;
-		getVariableByMultiname(f,m);
+		AVM1getVariableByMultiname(f,m);
 		if (asAtomHandler::is<AVM1Function>(f))
 			asAtomHandler::as<AVM1Function>(f)->call(nullptr,nullptr,nullptr,0);
 	}
@@ -1778,7 +1794,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	if (e->type == "mouseMove")
 	{
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
-		getVariableByMultiname(func,m);
+		AVM1getVariableByMultiname(func,m);
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
@@ -1791,7 +1807,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
-			getVariableByMultiname(func,m);
+			AVM1getVariableByMultiname(func,m);
 			if (asAtomHandler::is<AVM1Function>(func))
 			{
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
@@ -1805,7 +1821,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONPRESS;
-			getVariableByMultiname(func,m);
+			AVM1getVariableByMultiname(func,m);
 			if (asAtomHandler::is<AVM1Function>(func))
 			{
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
@@ -1814,7 +1830,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 		}
 		func=asAtomHandler::invalidAtom;
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
-		getVariableByMultiname(func,m);
+		AVM1getVariableByMultiname(func,m);
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
@@ -1824,7 +1840,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	else if (e->type == "mouseUp")
 	{
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEUP;
-		getVariableByMultiname(func,m);
+		AVM1getVariableByMultiname(func,m);
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
@@ -1834,7 +1850,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	else if (e->type == "mouseWheel")
 	{
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEWHEEL;
-		getVariableByMultiname(func,m);
+		AVM1getVariableByMultiname(func,m);
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
@@ -1844,7 +1860,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	else if (e->type == "releaseOutside")
 	{
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE;
-		getVariableByMultiname(func,m);
+		AVM1getVariableByMultiname(func,m);
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
@@ -1854,7 +1870,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	else if (e->type == "rollOver")
 	{
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOVER;
-		getVariableByMultiname(func,m);
+		AVM1getVariableByMultiname(func,m);
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
@@ -1864,7 +1880,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	else if (e->type == "rollOut")
 	{
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOUT;
-		getVariableByMultiname(func,m);
+		AVM1getVariableByMultiname(func,m);
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);

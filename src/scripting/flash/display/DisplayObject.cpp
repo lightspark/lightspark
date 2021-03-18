@@ -1580,6 +1580,70 @@ multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& 
 	}
 	return res;
 }
+void DisplayObject::AVM1registerPrototypeListeners()
+{
+	assert(!needsActionScript3());
+	ASObject* pr = this->getprop_prototype();
+	while (pr)
+	{
+		multiname name(nullptr);
+		name.name_type = multiname::NAME_STRING;
+		name.name_s_id = BUILTIN_STRINGS::STRING_ONENTERFRAME;
+		if (pr->hasPropertyByMultiname(name,true,false))
+		{
+			this->incRef();
+			getSystemState()->registerFrameListener(_MR(this));
+			getSystemState()->stage->AVM1AddEventListener(this);
+		}
+		name.name_s_id = BUILTIN_STRINGS::STRING_ONLOAD;
+		if (pr->hasPropertyByMultiname(name,true,false))
+		{
+			this->incRef();
+			getSystemState()->registerFrameListener(_MR(this));
+			getSystemState()->stage->AVM1AddEventListener(this);
+		}
+		if (this->is<InteractiveObject>())
+		{
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEUP;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONPRESS;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEWHEEL;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASE;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+		}
+		pr = pr->getprop_prototype();
+	}
+}
 bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 {
 	bool res = EventDispatcher::deleteVariableByMultiname(name);

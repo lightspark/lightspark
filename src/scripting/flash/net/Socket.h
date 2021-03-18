@@ -38,7 +38,7 @@ public:
 	SocketIO();
 	~SocketIO();
 
-	bool connect(const tiny_string& hostname, int port);
+	bool connect(const tiny_string& hostname, int port, int timeoutseconds=0);
 	bool connected() const;
 	void close();
 	ssize_t receive(void *buf, size_t count) const;

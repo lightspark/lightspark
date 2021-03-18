@@ -1282,7 +1282,8 @@ bool SocketPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 	tiny_string hostname = url.getHostname();
 	uint16_t port = url.getPort();
 	SocketIO sock;
-	if (!sock.connect(hostname, port))
+	// according to http://www.lightsphere.com/dev/articles/flash_socket_policy.html adobe has a 3 second timeout when retrieving the socket policy file
+	if (!sock.connect(hostname, port,3))
 	{
 		if (isMaster())
 		{

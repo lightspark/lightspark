@@ -149,7 +149,7 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 	// if the swf file also has a SymbolClass, we just ignore them and execute all abc tags lazy.
 	// the real start of the main class is done when the symbol with id 0 is detected in SymbolClass tag
 	bool lazy = root->hasSymbolClass || ((int32_t)Flags)&1;
-	if (root == root->getSystemState()->mainClip && (!getWorker() || getWorker()->isPrimordial))
+	if (!getWorker() || getWorker()->isPrimordial)
 		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,lazy)));
 	else
 		context->exec(lazy);

@@ -46,6 +46,8 @@ protected:
 	Downloader* downloader;
 	_R<StreamCache> soundData;
 	_NR<SoundChannel> soundChannel;
+	StreamDecoder* rawDataStreamDecoder;
+	int32_t rawDataStartPosition;
 	// If container is true, audio format is parsed from
 	// soundData. If container is false, soundData is raw samples
 	// and format is defined by format member.
@@ -67,6 +69,7 @@ public:
 	ASFUNCTION_ATOM(load);
 	ASFUNCTION_ATOM(play);
 	ASFUNCTION_ATOM(close);
+	ASFUNCTION_ATOM(extract);
 	ASFUNCTION_ATOM(loadCompressedDataFromByteArray);
 	void afterExecution(_R<Event> e);
 };

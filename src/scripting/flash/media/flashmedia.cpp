@@ -358,14 +358,14 @@ _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 }
 
 Sound::Sound(Class_base* c)
-	:EventDispatcher(c),downloader(NULL),soundData(new MemoryStreamCache(c->getSystemState())),
+	:EventDispatcher(c),downloader(nullptr),soundData(new MemoryStreamCache(c->getSystemState())),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),
 	 container(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(-1)
 {
 	subtype=SUBTYPE_SOUND;
 }
 
 Sound::Sound(Class_base* c, _R<StreamCache> data, AudioFormat _format, number_t duration_in_ms)
-	:EventDispatcher(c),downloader(NULL),soundData(data),
+	:EventDispatcher(c),downloader(nullptr),soundData(data),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),
 	 container(false),format(_format),
 	 bytesLoaded(soundData->getReceivedLength()),
 	 bytesTotal(soundData->getReceivedLength()),length(duration_in_ms)
@@ -377,6 +377,9 @@ Sound::~Sound()
 {
 	if(downloader && getSystemState()->downloadManager)
 		getSystemState()->downloadManager->destroy(downloader);
+	if (rawDataStreamDecoder)
+		delete rawDataStreamDecoder;
+	rawDataStreamDecoder=nullptr;
 }
 
 void Sound::sinit(Class_base* c)
@@ -385,6 +388,7 @@ void Sound::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("extract","",Class<IFunction>::getFunction(c->getSystemState(),extract),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("loadCompressedDataFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),loadCompressedDataFromByteArray),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,bytesLoaded);
 	REGISTER_GETTER(c,bytesTotal);
@@ -393,7 +397,7 @@ void Sound::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Sound,_constructor)
 {
-	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,sys,obj, nullptr, 0);
 
 	if (argslen>0)
 		Sound::load(ret,sys,obj, args, argslen);
@@ -491,7 +495,74 @@ ASFUNCTIONBODY_ATOM(Sound,close)
 		th->decRef();
 	}
 }
-
+ASFUNCTIONBODY_ATOM(Sound,extract)
+{
+	Sound* th=asAtomHandler::as<Sound>(obj);
+	_NR<ByteArray> target;
+	int32_t length;
+	int32_t startPosition;
+	ARG_UNPACK_ATOM(target)(length)(startPosition,-1);
+	int32_t readcount=0;
+	if (!target.isNull())
+	{
+		std::streambuf *sbuf = th->soundData->createReader();
+		istream s(sbuf);
+		s.exceptions ( istream::failbit | istream::badbit );
+		
+		int32_t readcount=0;
+		try
+		{
+#ifdef ENABLE_LIBAVCODEC
+			if (th->rawDataStreamDecoder && startPosition >= 0)
+			{
+				delete th->rawDataStreamDecoder;
+				th->rawDataStreamDecoder= nullptr;
+			}
+			if (startPosition < 0)
+				startPosition = th->rawDataStartPosition;
+			if (th->rawDataStreamDecoder== nullptr)
+				th->rawDataStreamDecoder=new FFMpegStreamDecoder(nullptr,sys->getEngineData(),s,&th->format,th->soundData->hasTerminated() ? th->soundData->getReceivedLength() : -1);
+			if(!th->rawDataStreamDecoder->isValid())
+			{
+				LOG(LOG_ERROR,"invalid streamDecoder");
+				delete th->rawDataStreamDecoder;
+				th->rawDataStreamDecoder=nullptr;
+			}
+			else
+			{
+				uint8_t* data = new uint8_t[length];
+				while(true)
+				{
+					bool decodingSuccess=th->rawDataStreamDecoder->decodeNextFrame();
+					if(decodingSuccess==false || !th->rawDataStreamDecoder->audioDecoder)
+						break;
+					if(th->rawDataStreamDecoder->audioDecoder)
+					{
+						uint8_t buf[MAX_AUDIO_FRAME_SIZE];
+						uint32_t read = th->rawDataStreamDecoder->audioDecoder->copyFrame((int16_t *)buf, MAX_AUDIO_FRAME_SIZE);
+						th->rawDataStartPosition += min(read,uint32_t(length-readcount));
+						if (th->rawDataStartPosition > startPosition)
+						{
+							memcpy(data+readcount,buf,min(read,uint32_t(length-readcount)));
+							readcount+=read;
+						}
+						if (th->rawDataStartPosition-startPosition >= length)
+							break;
+					}
+				}
+				target->writeBytes(data,readcount);
+				delete[] data;
+			}
+#endif //ENABLE_LIBAVCODEC
+		}
+		catch(exception& e)
+		{
+			LOG(LOG_ERROR, _("Exception in extracting sound data: ")<<e.what());
+		}
+		delete sbuf;
+	}
+	ret = asAtomHandler::fromInt(readcount);
+}
 
 ASFUNCTIONBODY_ATOM(Sound,loadCompressedDataFromByteArray)
 {
@@ -636,7 +707,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
 SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay)
-	: EventDispatcher(c),stream(_stream),stopped(true),terminated(true),audioDecoder(NULL),audioStream(NULL),
+	: EventDispatcher(c),stream(_stream),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
 	format(_format),oldVolume(-1.0),startTime(0),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
 	leftPeak(1),rightPeak(1)
 {
@@ -756,7 +827,7 @@ void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)
 
 ASFUNCTIONBODY_ATOM(SoundChannel,_constructor)
 {
-	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,sys,obj, nullptr, 0);
 }
 
 ASFUNCTIONBODY_ATOM(SoundChannel, stop)

@@ -962,7 +962,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 		&& mn->ns.size() == 1 && mn->hasEmptyNS)
 		return Type::voidType;
 
-	ASObject* typeObject = NULL;
+	ASObject* typeObject = nullptr;
 	/*
 	 * During the newClass opcode, the class is added to context->root->applicationDomain->classesBeingDefined.
 	 * The class variable in the global scope is only set a bit later.
@@ -989,6 +989,24 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 			if (mn->templateinstancenames.size() == 1)
 			{
 				const Type* instancetype = getTypeFromMultiname(mn->templateinstancenames.front(),context);
+				if (instancetype==nullptr)
+				{
+					multiname* mti = mn->templateinstancenames.front();
+					auto it = context->root->applicationDomain->classesBeingDefined.begin();
+					while(it != context->root->applicationDomain->classesBeingDefined.end())
+					{
+						const multiname* m = it->first;
+						if (mti->name_type == multiname::NAME_STRING && m->name_type == multiname::NAME_STRING
+								&& mti->name_s_id == m->name_s_id
+								&& mti->ns == m->ns)
+						{
+							instancetype = it->second;
+							break;
+						}
+						it++;
+					}
+				}
+				assert_and_throw(instancetype);
 				typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),instancetype,context->root->applicationDomain).getPtr();
 			}
 			else
@@ -1001,7 +1019,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 		if (!typeObject)
 			LOG(LOG_ERROR,"not found:"<<*mn);
 	}
-	return typeObject ? typeObject->as<Type>() : NULL;
+	return typeObject ? typeObject->as<Type>() : nullptr;
 }
 
 Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),

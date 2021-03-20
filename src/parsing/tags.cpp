@@ -1086,6 +1086,7 @@ ASObject* DefineFont4Tag::instance(Class_base* c)
 
 BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),bitmap(_MR(new BitmapContainer(root->getSystemState()->tagsMemory)))
 {
+	bitmap->setConstant();
 }
 
 _R<BitmapContainer> BitmapTag::getBitmap() const {

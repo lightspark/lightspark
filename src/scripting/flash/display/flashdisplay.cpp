@@ -462,6 +462,13 @@ void LoaderThread::execute()
 		loaderInfo->setBytesLoaded(bytes->getLength());
 
 		sbuf = new bytes_buf(bytes->bytes,bytes->getLength());
+
+// extract embedded swf to separate file
+//		char* name_used=nullptr;
+//		int fd = g_file_open_tmp("lightsparkXXXXXX.swf",&name_used,nullptr);
+//		write(fd,bytes->bytes,bytes->getLength());
+//		close(fd);
+//		g_free(name_used);
 	}
 
 	istream s(sbuf);
@@ -1086,7 +1093,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 		}
 	}
 	// only check interactive objects
-	if(ret && interactiveObjectsOnly && !ret->is<InteractiveObject>())
+	if(ret && interactiveObjectsOnly && !ret->is<InteractiveObject>() && mouseChildren)
 		ret.reset();
 	
 	/* When mouseChildren is false, we should get all events of our children */

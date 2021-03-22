@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/flash/text/flashtext.h"
+#include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/ui/keycodes.h"
 #include "scripting/class.h"
 #include "compat.h"
@@ -150,6 +151,7 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("replaceSelectedText","",Class<IFunction>::getFunction(c->getSystemState(),_replaceSelectedText),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("replaceText","",Class<IFunction>::getFunction(c->getSystemState(),_replaceText),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setSelection","",Class<IFunction>::getFunction(c->getSystemState(),_setSelection),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getCharBoundaries","",Class<IFunction>::getFunction(c->getSystemState(),_getCharBoundaries),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getAntiAliasType),GETTER_METHOD,true);
@@ -885,6 +887,43 @@ void TextField::replaceText(unsigned int begin, unsigned int end, const tiny_str
 	}
 
 	textUpdated();
+}
+
+void TextField::getTextBounds(const tiny_string& txt,number_t &xmin,number_t &xmax,number_t &ymin,number_t &ymax)
+{
+	FontTag* embeddedfont = (fontID != UINT32_MAX ? loadedFrom->getEmbeddedFontByID(fontID) : loadedFrom->getEmbeddedFont(font));
+	if (embeddedfont && embeddedfont->hasGlyphs(text))
+	{
+		scaling = 1.0f/1024.0f/20.0f;
+		TokenContainer container(nullptr,nullptr);
+		embeddedfont->fillTextTokens(container.tokens,txt,fontSize,textColor,leading,autosizeposition);
+		container.boundsRect(xmin,xmax,ymin,ymax);
+	}
+	else
+		LOG(LOG_NOT_IMPLEMENTED,"TextFields: computing of textbounds not implemented for non-embedded fonts");
+}
+
+ASFUNCTIONBODY_ATOM(TextField,_getCharBoundaries)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+
+	int32_t charIndex;
+	ARG_UNPACK_ATOM(charIndex);
+
+	Rectangle* rect = Class<Rectangle>::getInstanceSNoArgs(sys);
+	if (charIndex >= 0 && charIndex < (int32_t)th->text.numChars())
+	{
+		number_t xmin=0,xmax=0,ymin=0,ymax=0;
+		if (charIndex > 0)
+			th->getTextBounds(th->text.substr(0,charIndex-1),xmin,xmax,ymin,ymax);
+		number_t xmin2=0,xmax2=0,ymin2=0,ymax2=0;
+		th->getTextBounds(th->text.substr(0,charIndex),xmin2,xmax2,ymin2,ymax2);
+		rect->x = xmin;
+		rect->y = ymin2;
+		rect->width = xmax2-xmax;
+		rect->height = ymax2-ymin2;
+	}
+	ret = asAtomHandler::fromObjectNoPrimitive(rect);
 }
 
 void TextField::afterSetLegacyMatrix()

@@ -121,6 +121,7 @@ private:
 	tiny_string tagvarname;
 	Mutex invalidatemutex;
 	DefineEditTextTag* tag;
+	void getTextBounds(const tiny_string &txt, number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax);
 protected:
 	void afterSetLegacyMatrix() override;
 public:
@@ -180,6 +181,7 @@ public:
 	ASFUNCTION_ATOM(_setSelection);
 	ASFUNCTION_ATOM(_replaceText);
 	ASFUNCTION_ATOM(_replaceSelectedText);
+	ASFUNCTION_ATOM(_getCharBoundaries);
 	ASPROPERTY_GETTER_SETTER(bool, alwaysShowSelection);
 	ASFUNCTION_GETTER_SETTER(background);
 	ASFUNCTION_GETTER_SETTER(backgroundColor);

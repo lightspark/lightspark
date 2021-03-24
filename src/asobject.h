@@ -1044,14 +1044,14 @@ public:
 	 * thrown.
 	 */
 	void executeASMethod(asAtom &ret, const tiny_string& methodName, std::list<tiny_string> namespaces, asAtom *args, uint32_t num_args);
-	virtual void setVariableByMultiname_i(const multiname& name, int32_t value);
+	virtual void setVariableByMultiname_i(multiname &name, int32_t value);
 	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
 	/*
 	 * If alreadyset is not null, it has to be initialized to false by the caller.
 	 * It will be set to true if the old and new value are the same.
 	 * In that case the old value will not be decReffed.
-	 */ 
-	virtual multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr)
+	 */
+	virtual multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr)
 	{
 		return setVariableByMultiname_intern(name,o,allowConst,classdef,alreadyset);
 	}
@@ -1066,7 +1066,7 @@ public:
 	 * If no property is found, an instance variable is created.
 	 * Setting CONSTANT_TRAIT is only allowed if allowConst is true
 	 */
-	multiname* setVariableByMultiname_intern(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls,bool *alreadyset);
+	multiname* setVariableByMultiname_intern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset);
 	void setVariableByInteger_intern(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst)
 	{
 		multiname m(nullptr);

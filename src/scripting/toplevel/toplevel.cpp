@@ -132,7 +132,7 @@ void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 		out->writeByte(undefined_marker);
 }
 
-multiname *Undefined::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset)
+multiname *Undefined::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	LOG(LOG_ERROR,"trying to set variable on undefined:"<<name <<" "<<asAtomHandler::toDebugString(o));
 	throwError<TypeError>(kConvertUndefinedToObjectError);
@@ -908,7 +908,7 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 		out->writeByte(null_marker);
 }
 
-multiname *Null::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *Null::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	LOG(LOG_ERROR,"trying to set variable on null:"<<name<<" value:"<<asAtomHandler::toDebugString(o));
 	ASATOM_DECREF(o);
@@ -916,7 +916,7 @@ multiname *Null::setVariableByMultiname(const multiname& name, asAtom& o, CONST_
 	return nullptr;
 }
 
-const Type* Type::getBuiltinType(SystemState *sys, const multiname* mn)
+const Type* Type::getBuiltinType(SystemState* sys, multiname* mn)
 {
 	if(mn->isStatic && mn->cachedType)
 		return mn->cachedType;
@@ -936,9 +936,13 @@ const Type* Type::getBuiltinType(SystemState *sys, const multiname* mn)
 	asAtom tmp=asAtomHandler::invalidAtom;
 	sys->systemDomain->getVariableAndTargetByMultiname(tmp,*mn, target);
 	if(asAtomHandler::isClass(tmp))
-		return static_cast<const Class_base*>(asAtomHandler::toObject(tmp,sys));
+	{
+		if (mn->isStatic)
+			mn->cachedType = static_cast<const Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
+		return static_cast<const Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
+	}
 	else
-		return NULL;
+		return nullptr;
 }
 
 /*
@@ -946,7 +950,7 @@ const Type* Type::getBuiltinType(SystemState *sys, const multiname* mn)
  * by running ABCContext::exec() for all ABCContexts.
  * Therefore, all classes are at least declared.
  */
-const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
+const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context)
 {
 	if(mn == 0) //multiname idx zero indicates any type
 		return Type::anyType;
@@ -1016,13 +1020,13 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 				typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),qname,context,context->root->applicationDomain).getPtr();
 			}
 		}
-		if (!typeObject)
-			LOG(LOG_ERROR,"not found:"<<*mn);
 	}
+	if (typeObject)
+		mn->cachedType = typeObject->as<Type>();
 	return typeObject ? typeObject->as<Type>() : nullptr;
 }
 
-Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),
+Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),global(nullptr),
 	borrowedVariables(m),
 	context(nullptr),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
 {
@@ -1030,7 +1034,7 @@ Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_objec
 	setRefConstant();
 }
 
-Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)nullptr),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(nullptr),
+Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)nullptr),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(nullptr),global(nullptr),
 	borrowedVariables(nullptr),
 	context(nullptr),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(nullptr),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
 {
@@ -2643,7 +2647,7 @@ GET_VARIABLE_RESULT Global::getVariableByMultiname(asAtom& ret, const multiname&
 	return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 }
 
-multiname *Global::setVariableByMultiname(const multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname *Global::setVariableByMultiname(multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {
 	if (context && !context->hasRunScriptInit[scriptId])
 	{
@@ -2657,6 +2661,8 @@ multiname *Global::setVariableByMultiname(const multiname &name, asAtom &o, ASOb
 void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o, NS_KIND nskind)
 {
 	o->incRef();
+	if (o->is<Class_base>())
+		o->as<Class_base>()->setGlobalScope(this);
 	setVariableByQName(name,nsNameAndKind(getSystemState(),ns,nskind),o.getPtr(),CONSTANT_TRAIT);
 }
 
@@ -3134,7 +3140,7 @@ GET_VARIABLE_RESULT ObjectPrototype::getVariableByMultiname(asAtom& ret, const m
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
 }
 
-multiname *ObjectPrototype::setVariableByMultiname(const multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *ObjectPrototype::setVariableByMultiname(multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	if (this->isSealed && this->hasPropertyByMultiname(name,false,true))
 		throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), "");
@@ -3170,7 +3176,7 @@ GET_VARIABLE_RESULT ArrayPrototype::getVariableByMultiname(asAtom& ret, const mu
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
 }
 
-multiname *ArrayPrototype::setVariableByMultiname(const multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *ArrayPrototype::setVariableByMultiname(multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	if (this->isSealed && this->hasPropertyByMultiname(name,false,true))
 		throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), "");

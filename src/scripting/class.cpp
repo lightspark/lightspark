@@ -61,8 +61,9 @@ Activation_object* lightspark::new_activationObject(SystemState* sys)
 }
 
 
-Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_defobj):Class_base(name, m),tag(nullptr),bindedToRoot(false),classtrait(_classtrait),definitionobject(_defobj)
+Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_global):Class_base(name, m),tag(nullptr),bindedToRoot(false),classtrait(_classtrait)
 {
+	this->global=_global;
 	this->incRef(); //create on reference for the classes map
 	this->getSystemState()->customClasses.insert(this);
 	isReusable = true;

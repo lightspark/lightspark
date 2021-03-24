@@ -2439,7 +2439,11 @@ void RootMovieClip::addBinding(const tiny_string& name, DictionaryTag *tag)
 	// This function will be called only be the parsing thread,
 	// and will only access the last frame, so no locking needed.
 	tag->bindingclassname = name;
-	classesToBeBound.push_back(make_pair(name, tag));
+	uint32_t pos = name.rfind(".");
+	if (pos== tiny_string::npos)
+		classesToBeBound[QName(getSystemState()->getUniqueStringId(name),BUILTIN_STRINGS::EMPTY)] =  tag;
+	else
+		classesToBeBound[QName(getSystemState()->getUniqueStringId(name.substr(pos+1,name.numChars()-(pos+1))),getSystemState()->getUniqueStringId(name.substr(0,pos)))] = tag;
 }
 
 void RootMovieClip::bindClass(const QName& classname, Class_inherit* cls)
@@ -2447,23 +2451,11 @@ void RootMovieClip::bindClass(const QName& classname, Class_inherit* cls)
 	if (cls->isBinded() || classesToBeBound.empty())
 		return;
 
-	tiny_string clsname;
-	if (classname.nsStringId != BUILTIN_STRINGS::EMPTY)
-		clsname = getSystemState()->getStringFromUniqueId(classname.nsStringId) + ".";
-	clsname += getSystemState()->getStringFromUniqueId(classname.nameId);
-
-	auto it=classesToBeBound.begin();
-	for(;it!=classesToBeBound.end();++it)
+	auto it=classesToBeBound.find(classname);
+	if(it!=classesToBeBound.end())
 	{
-		if (it->first == clsname)
-		{
-			if(it->second->bindedTo==NULL)
-				it->second->bindedTo=cls;
-			
-			cls->bindToTag(it->second);
-			classesToBeBound.erase(it);
-			break;
-		}
+		cls->bindToTag(it->second);
+		classesToBeBound.erase(it);
 	}
 }
 
@@ -2491,7 +2483,7 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 	clsname.name_s_id=getSystemState()->getUniqueStringId(nm);
 	clsname.ns.push_back(nsNameAndKind(getSystemState(),ns,NAMESPACE));
 	
-	ASObject* typeObject = NULL;
+	ASObject* typeObject = nullptr;
 	auto i = applicationDomain->classesBeingDefined.cbegin();
 	while (i != applicationDomain->classesBeingDefined.cend())
 	{
@@ -2502,7 +2494,7 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 		}
 		i++;
 	}
-	if (typeObject == NULL)
+	if (typeObject == nullptr)
 	{
 		ASObject* target;
 		asAtom o=asAtomHandler::invalidAtom;
@@ -2510,7 +2502,7 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 		if (asAtomHandler::isValid(o))
 			typeObject=asAtomHandler::getObject(o);
 	}
-	if (typeObject != NULL)
+	if (typeObject != nullptr)
 	{
 		Class_inherit* cls = typeObject->as<Class_inherit>();
 		if (cls)

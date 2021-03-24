@@ -1681,7 +1681,13 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 			}
 		}
 	}
-
+	if(asAtomHandler::isInvalid(o))
+	{
+		if (name->cachedType && dynamic_cast<const Class_base*>(name->cachedType))
+		{
+			o = asAtomHandler::fromObjectNoPrimitive((Class_base*)dynamic_cast<const Class_base*>(name->cachedType));
+		}
+	}
 	if(asAtomHandler::isInvalid(o))
 	{
 		ASObject* target;
@@ -2799,6 +2805,7 @@ void ABCVm::newClass(call_context* th, int n)
 	//Class init functions are called with global as this
 	method_info* m=&th->mi->context->methods[th->mi->context->classes[n].cinit];
 	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(ret->getSystemState(),m,m->numArgs());
+	cinit->inClass = ret;
 	//cinit must inherit the current scope
 	if (th->parent_scope_stack)
 		cinit->acquireScope(th->parent_scope_stack->scope);
@@ -2830,8 +2837,8 @@ void ABCVm::newClass(call_context* th, int n)
 	LOG_CALL(_("End of Class init ") << *mname <<" " <<ret);
 	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObjectNoPrimitive(ret));
 	cinit->decRef();
-	if (ret->getDefinitionObject()) // the variable on the Definition Object was set to null in class definition, but can be set to the real object now that the class init function was called
-		ret->getDefinitionObject()->setVariableByQName(mname->name_s_id,mname->ns[0], ret,DECLARED_TRAIT);
+	if (ret->getGlobalScope()) // the variable on the Definition Object was set to null in class definition, but can be set to the real object now that the class init function was called
+		ret->getGlobalScope()->setVariableByQName(mname->name_s_id,mname->ns[0], ret,DECLARED_TRAIT);
 	th->mi->context->root->bindClass(className,ret);
 
 	auto j = th->mi->context->root->applicationDomain->classesSuperNotFilled.cbegin();

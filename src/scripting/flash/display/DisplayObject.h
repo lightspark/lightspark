@@ -193,7 +193,7 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
-	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
 	bool deleteVariableByMultiname(const multiname& name) override;
 	virtual void removeAVM1Listeners();
 	void AVM1registerPrototypeListeners();

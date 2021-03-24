@@ -37,15 +37,15 @@ public:
 	ASFUNCTION_ATOM(_stringify);
 	static ASObject* doParse(const tiny_string &jsonstring, asAtom reviver);
 private:
-	static void parseAll(const tiny_string &jsonstring, ASObject** parent , const multiname& key, asAtom reviver);
-	static int parse(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key,asAtom reviver);
-	static int parseTrue(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key);
-	static int parseFalse(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key);
-	static int parseNull(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key);
-	static int parseString(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key, tiny_string *result = NULL);
-	static int parseNumber(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key);
-	static int parseObject(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key, asAtom reviver);
-	static int parseArray(const tiny_string &jsonstring, int pos, ASObject **parent, const multiname &key, asAtom reviver);
+	static void parseAll(const tiny_string &jsonstring, ASObject** parent , multiname &key, asAtom reviver);
+	static int parse(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key, asAtom reviver);
+	static int parseTrue(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key);
+	static int parseFalse(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key);
+	static int parseNull(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key);
+	static int parseString(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key, tiny_string *result = nullptr);
+	static int parseNumber(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key);
+	static int parseObject(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key, asAtom reviver);
+	static int parseArray(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key, asAtom reviver);
 };
 
 }

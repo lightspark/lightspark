@@ -836,7 +836,7 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 	return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
 }
 
-multiname *XMLList::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset)
+multiname *XMLList::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	return setVariableByMultinameIntern(name, o, allowConst, false);
 }
@@ -874,7 +874,7 @@ void XMLList::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED
 	}
 }
 
-multiname* XMLList::setVariableByMultinameIntern(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext)
+multiname* XMLList::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;

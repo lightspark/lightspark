@@ -43,8 +43,8 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Proxy");
 	}
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr);
-	void setVariableByMultiname_i(const multiname& name, int32_t value)
+	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr);
+	void setVariableByMultiname_i(multiname& name, int32_t value)
 	{
 		asAtom v = asAtomHandler::fromInt(value);
 		setVariableByMultiname(name,v,CONST_NOT_ALLOWED);

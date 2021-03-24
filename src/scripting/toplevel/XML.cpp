@@ -1576,7 +1576,7 @@ GET_VARIABLE_RESULT XML::getVariableByInteger(asAtom &ret, int index, GET_VARIAB
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
-multiname *XML::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *XML::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	return setVariableByMultinameIntern(name, o, allowConst, false);
 }
@@ -1589,7 +1589,7 @@ void XML::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLA
 	}
 	childrenlist->setVariableByInteger(index,o,allowConst);
 }
-multiname* XML::setVariableByMultinameIntern(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext)
+multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext)
 {
 	unsigned int index=0;
 	bool isAttr=name.isAttribute;

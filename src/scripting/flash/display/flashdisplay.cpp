@@ -5082,7 +5082,7 @@ void DisplayObjectContainer::executeFrameScript()
 		(*it)->executeFrameScript();
 }
 
-multiname *DisplayObjectContainer::setVariableByMultiname(const multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname *DisplayObjectContainer::setVariableByMultiname(multiname& name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {
 // TODO I disable this for now as gamesmenu from homestarrunner doesn't work with it (I don't know which swf file required this...)
 //	if (asAtomHandler::is<DisplayObject>(o))

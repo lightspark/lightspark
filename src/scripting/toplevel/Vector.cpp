@@ -1152,7 +1152,7 @@ GET_VARIABLE_RESULT Vector::getVariableByInteger(asAtom &ret, int index, GET_VAR
 		return getVariableByIntegerIntern(ret,index,opt);
 }
 
-multiname *Vector::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset)
+multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset)
 {
 	assert_and_throw(name.ns.size()>0);
 	if(!name.hasEmptyNS)

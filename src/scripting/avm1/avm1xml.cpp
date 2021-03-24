@@ -44,7 +44,7 @@ ASFUNCTIONBODY_ATOM(AVM1XMLDocument,load)
 	URLLoader::load(ret,sys,loaderobj,&urlarg,1);
 }
 
-multiname* AVM1XMLDocument::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname* AVM1XMLDocument::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {
 	multiname* res = XMLDocument::setVariableByMultiname(name,o,allowConst,alreadyset);
 	if (!getSystemState()->mainClip->usesActionScript3)

@@ -1549,7 +1549,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	}
 }
 
-multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {
 	multiname* res = EventDispatcher::setVariableByMultiname(name,o,allowConst,alreadyset);
 	if (!needsActionScript3())

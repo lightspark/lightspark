@@ -97,9 +97,9 @@ public:
 	ASFUNCTION_ATOM(_hasOwnProperty);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt) override;
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr) override;
 	void setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst) override;
-	multiname *setVariableByMultinameIntern(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext);
+	multiname *setVariableByMultinameIntern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
 	bool deleteVariableByMultiname(const multiname& name) override;
 	void getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAttribute, XML::XMLVector& ret);

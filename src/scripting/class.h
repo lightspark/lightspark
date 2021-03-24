@@ -51,17 +51,12 @@ private:
 	void recursiveBuild(ASObject* target) const;
 	const traits_info* classtrait;
 	_NR<ASObject> instancefactory;
-	Global* definitionobject;
 public:
-	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait, Global* _defobj);
-	inline Global* getDefinitionObject() const
-	{
-		return definitionobject;
-	}
+	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait, Global* _global);
 	void checkScriptInit()
 	{
-		if (definitionobject)
-			definitionobject->checkScriptInit();
+		if (global)
+			global->checkScriptInit();
 	}
 	bool destruct()
 	{
@@ -216,9 +211,9 @@ public:
 	inline static Class<T>* getClass(SystemState* sys)
 	{
 		uint32_t classId=ClassName<T>::id;
-		Class<T>* ret=NULL;
+		Class<T>* ret=nullptr;
 		Class_base** retAddr= &sys->builtinClasses[classId];
-		if(*retAddr==NULL)
+		if(*retAddr==nullptr)
 		{
 			//Create the class
 			QName name(sys->getUniqueStringId(ClassName<T>::name),sys->getUniqueStringId(ClassName<T>::ns));

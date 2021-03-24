@@ -711,7 +711,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name)
 }
 
 //In all setter we first pass the value to the interface to see if special handling is possible
-void ASObject::setVariableByMultiname_i(const multiname& name, int32_t value)
+void ASObject::setVariableByMultiname_i(multiname& name, int32_t value)
 {
 	check();
 	asAtom v = asAtomHandler::fromInt(value);
@@ -741,7 +741,7 @@ variable* ASObject::findSettable(const multiname& name, bool* has_getter)
 }
 
 
-multiname *ASObject::setVariableByMultiname_intern(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset)
+multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset)
 {
 	multiname *retval = nullptr;
 	check();
@@ -1041,7 +1041,7 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 
 void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id,bool isenumerable)
 {
-	const Type* type = NULL;
+	const Type* type = nullptr;
 	if (typemname->isStatic)
 		type = typemname->cachedType;
 	
@@ -1049,11 +1049,11 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 	 /* If typename is a builtin type, we coerce obj.
 	  * It it's not it must be a user defined class,
 	  * so we try to find the class it is derived from and create an apropriate uninitialized instance */
-	if (type == NULL)
+	if (type == nullptr)
 		type = Type::getBuiltinType(mainObj->getSystemState(),typemname);
-	if (type == NULL)
+	if (type == nullptr)
 		type = Type::getTypeFromMultiname(typemname,context);
-	if(type==NULL)
+	if(type==nullptr)
 	{
 		if (asAtomHandler::isInvalid(obj)) // create dynamic object
 		{
@@ -1092,7 +1092,7 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 		else
 			value = obj;
 
-		if (typemname->isStatic && typemname->cachedType == NULL)
+		if (typemname->isStatic && typemname->cachedType == nullptr)
 			typemname->cachedType = type;
 	}
 	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT || traitKind == INSTANCE_TRAIT);

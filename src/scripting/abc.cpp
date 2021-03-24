@@ -2347,6 +2347,8 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				root->applicationDomain->classesBeingDefined.insert(make_pair(mname, c));
 				ret=c;
 				c->setIsInitialized();
+				assert(mname->isStatic);
+				mname->cachedType = c;
 			}
 			// the variable on the Definition object is set to null now (it will be set to the real value after the class init function was executed in newclass opcode)
 			// testing for class==null in actionscript code is used to determine if the class initializer function has been called
@@ -2469,13 +2471,13 @@ void method_info::getOptional(asAtom& ret, unsigned int i)
 	context->getConstant(ret,info.options[i].kind,info.options[i].val);
 }
 
-const multiname* method_info::paramTypeName(unsigned int i) const
+multiname* method_info::paramTypeName(unsigned int i) const
 {
 	assert_and_throw(i<info.param_type.size());
 	return context->getMultiname(info.param_type[i],NULL);
 }
 
-const multiname* method_info::returnTypeName() const
+multiname* method_info::returnTypeName() const
 {
 	return context->getMultiname(info.return_type,NULL);
 }

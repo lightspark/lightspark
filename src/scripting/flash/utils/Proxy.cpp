@@ -53,7 +53,7 @@ ASFUNCTIONBODY_ATOM(Proxy,_isAttribute)
 	asAtomHandler::setBool(ret,mname.isAttribute);
 }
 
-multiname *Proxy::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset)
+multiname *Proxy::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	//If a variable named like this already exist, use that
 	if(ASObject::hasPropertyByMultiname(name, true, false) || !implEnable)

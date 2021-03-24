@@ -1668,7 +1668,7 @@ GET_VARIABLE_RESULT Array::getVariableByInteger(asAtom &ret, int index, GET_VARI
 		return getVariableByIntegerIntern(ret,index,opt);
 }
 
-void Array::setVariableByMultiname_i(const multiname& name, int32_t value)
+void Array::setVariableByMultiname_i(multiname& name, int32_t value)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
@@ -1760,7 +1760,7 @@ bool Array::isIntegerWithoutLeadingZeros(const tiny_string& value)
 	return true;
 }
 
-multiname *Array::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *Array::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	assert_and_throw(implEnable);
 	uint32_t index=0;

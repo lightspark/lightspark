@@ -122,8 +122,8 @@ public:
 	void getOptional(asAtom &ret, unsigned int i);
 	uint32_t numOptions() { return info.option_count; }
 	uint32_t numArgs() { return info.param_count; }
-	const multiname* paramTypeName(uint32_t i) const;
-	const multiname* returnTypeName() const;
+	multiname* paramTypeName(uint32_t i) const;
+	multiname* returnTypeName() const;
 
 	std::vector<const Type*> paramTypes;
 	const Type* returnType;

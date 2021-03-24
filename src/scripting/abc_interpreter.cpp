@@ -3229,10 +3229,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						}
 						if (!found)
 						{
-							ASObject* target;
-							if (mi->context->root->applicationDomain->findTargetByMultiname(*name, target))
+							ASObject* target=nullptr;
+							if (name->cachedType)
+								target = name->cachedType->getGlobalScope();
+							if (!target)
+								mi->context->root->applicationDomain->findTargetByMultiname(*name, target);
+							if (target)
 							{
-								o=asAtomHandler::fromObject(target);
+								o=asAtomHandler::fromObjectNoPrimitive(target);
 								addCachedConstant(state,mi, o,code);
 								typestack.push_back(typestackentry(target,false));
 								break;
@@ -3378,6 +3382,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					}
 					if(asAtomHandler::isInvalid(o))
 					{
+						ASObject* cls = (ASObject*)dynamic_cast<const Class_base*>(name->cachedType);
+						if (cls)
+							o = asAtomHandler::fromObjectNoPrimitive(cls);
+					}
+					if(asAtomHandler::isInvalid(o))
+					{
+						ASObject* cls = mi->context->root->getSystemState()->systemDomain->getVariableByMultinameOpportunistic(*name);
+						if (cls)
+							o = asAtomHandler::fromObject(cls);
+					}
+					if(asAtomHandler::isInvalid(o))
+					{
 						ASObject* cls = mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
 						if (cls)
 							o = asAtomHandler::fromObject(cls);
@@ -3418,6 +3434,44 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							typestack.push_back(typestackentry(nullptr,false));
 							break;
 						}
+					}
+				}
+				else
+				{
+					asAtom o=asAtomHandler::invalidAtom;
+					if(!function->func_scope.isNull()) // check scope stack
+					{
+						auto it=function->func_scope->scope.rbegin();
+						while(it!=function->func_scope->scope.rend())
+						{
+							GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF);
+							if(!it->considerDynamic)
+								opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
+							else
+								break;
+							asAtomHandler::toObject(it->object,mi->context->root->getSystemState())->getVariableByMultiname(o,*name, opt);
+							if(asAtomHandler::isValid(o))
+								break;
+							++it;
+						}
+					}
+					if(asAtomHandler::isInvalid(o))
+					{
+						const Type* tp = Type::getTypeFromMultiname(name,mi->context);
+						if (dynamic_cast<const Class_base*>(tp))
+						{
+							resulttype = (Class_base*)dynamic_cast<const Class_base*>(tp);
+							if (resulttype->is<Class_inherit>())
+								resulttype->as<Class_inherit>()->checkScriptInit();
+							if (resulttype->isConstructed() || resulttype->isBuiltin())
+								o = asAtomHandler::fromObjectNoPrimitive(resulttype);
+						}
+					}
+					if (asAtomHandler::isValid(o))
+					{
+						addCachedConstant(state,mi, o,code);
+						typestack.push_back(typestackentry(resulttype,true));
+						break;
 					}
 				}
 				state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX);

@@ -69,13 +69,19 @@ ASFUNCTIONBODY_ATOM(ASString,_constructor)
 ASFUNCTIONBODY_ATOM(ASString,_getLength)
 {
 	// fast path if obj is ASString
-	if (asAtomHandler::isString(obj) && asAtomHandler::getObject(obj))
+	if (asAtomHandler::isStringID(obj))
 	{
-		ASString* th = asAtomHandler::getObject(obj)->as<ASString>();
-		asAtomHandler::setInt(ret,sys,(int32_t)th->getData().numChars());
+		asAtomHandler::setInt(ret,sys,int32_t(sys->getStringFromUniqueId(asAtomHandler::toStringId(obj,sys)).numChars()));
+	}
+	else if (asAtomHandler::isString(obj))
+	{
+		ASString* th = asAtomHandler::getObjectNoCheck(obj)->as<ASString>();
+		asAtomHandler::setInt(ret,sys,int32_t(th->getData().numChars()));
 	}
 	else
-		asAtomHandler::setInt(ret,sys,(int32_t)asAtomHandler::toString(obj,sys).numChars());
+	{
+		asAtomHandler::setInt(ret,sys,int32_t(tiny_string(asAtomHandler::toString(obj,sys)).numChars()));
+	}
 }
 
 void ASString::sinit(Class_base* c)
@@ -686,9 +692,21 @@ ASFUNCTIONBODY_ATOM(ASString,charAt)
 {
 	number_t index;
 	ARG_UNPACK_ATOM (index, 0);
-
 	// fast path if obj is ASString
-	if (asAtomHandler::is<ASString>(obj) && asAtomHandler::getObject(obj))
+	if (asAtomHandler::isStringID(obj))
+	{
+		const tiny_string& s = sys->getStringFromUniqueId(asAtomHandler::toStringId(obj,sys));
+		int maxIndex=s.numChars();
+		if(index<0 || index>=maxIndex || std::isinf(index))
+		{
+			ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
+			return;
+		}
+		uint32_t c = s.charAt(index);
+		ret = c < BUILTIN_STRINGS_CHAR_MAX ? asAtomHandler::fromStringID(c) : asAtomHandler::fromObject(abstract_s(sys, tiny_string::fromChar(c) ));
+		return;
+	}
+	else if (asAtomHandler::isString(obj))
 	{
 		ASString* th = asAtomHandler::as<ASString>(obj);
 		int maxIndex=th->getData().numChars();

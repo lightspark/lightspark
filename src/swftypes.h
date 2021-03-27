@@ -878,7 +878,7 @@ public:
 };
 
 template<class T> class Vector2Tmpl;
-typedef Vector2Tmpl<int> Vector2;
+typedef Vector2Tmpl<int32_t> Vector2;
 typedef Vector2Tmpl<double> Vector2f;
 
 class MATRIX: public cairo_matrix_t

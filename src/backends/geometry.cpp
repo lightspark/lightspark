@@ -87,23 +87,12 @@ void ShapesBuilder::joinOutlines()
 	}
 }
 
-unsigned int ShapesBuilder::makeVertex(const Vector2& v) {
-	map<Vector2, unsigned int>::const_iterator it=verticesMap.find(v);
-	if(it!=verticesMap.end())
-		return it->second;
-
-	unsigned int i = verticesMap.size();
-	verticesMap.insert(make_pair(v, i));
-	verticesVector.push_back(v);
-	return i;
-}
-
 void ShapesBuilder::extendFilledOutlineForColor(unsigned int color, const Vector2& v1, const Vector2& v2)
 {
 	assert_and_throw(color);
 	//Find the indices of the vertex
-	unsigned int v1Index = makeVertex(v1);
-	unsigned int v2Index = makeVertex(v2);
+	uint64_t v1Index = makeVertex(v1);
+	uint64_t v2Index = makeVertex(v2);
 
 	vector< vector<ShapePathSegment> >& outlinesForColor=filledShapesMap[color];
 	//Search a suitable outline to attach this new vertex
@@ -131,9 +120,9 @@ void ShapesBuilder::extendFilledOutlineForColorCurve(unsigned int color, const V
 {
 	assert_and_throw(color);
 	//Find the indices of the vertex
-	unsigned int v1Index = makeVertex(v1);
-	unsigned int v2Index = makeVertex(v2);
-	unsigned int v3Index = makeVertex(v3);
+	uint64_t v1Index = makeVertex(v1);
+	uint64_t v2Index = makeVertex(v2);
+	uint64_t v3Index = makeVertex(v3);
 
 	vector< vector<ShapePathSegment> >& outlinesForColor=filledShapesMap[color];
 	//Search a suitable outline to attach this new vertex
@@ -163,8 +152,8 @@ void ShapesBuilder::extendStrokeOutline(unsigned int stroke, const Vector2 &v1, 
 {
 	assert_and_throw(stroke);
 	//Find the indices of the vertex
-	unsigned int v1Index = makeVertex(v1);
-	unsigned int v2Index = makeVertex(v2);
+	uint64_t v1Index = makeVertex(v1);
+	uint64_t v2Index = makeVertex(v2);
 
 	vector< vector<ShapePathSegment> >& outlinesForStroke=strokeShapesMap[stroke];
 	//Search a suitable outline to attach this new vertex
@@ -192,9 +181,9 @@ void ShapesBuilder::extendStrokeOutlineCurve(unsigned int color, const Vector2& 
 {
 	assert_and_throw(color);
 	//Find the indices of the vertex
-	unsigned int v1Index = makeVertex(v1);
-	unsigned int v2Index = makeVertex(v2);
-	unsigned int v3Index = makeVertex(v3);
+	uint64_t v1Index = makeVertex(v1);
+	uint64_t v2Index = makeVertex(v2);
+	uint64_t v3Index = makeVertex(v3);
 
 	vector< vector<ShapePathSegment> >& outlinesForColor=strokeShapesMap[color];
 	//Search a suitable outline to attach this new vertex
@@ -218,22 +207,6 @@ void ShapesBuilder::extendStrokeOutlineCurve(unsigned int color, const Vector2& 
 	vertices.emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v2Index));
 	vertices.emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v3Index));
 	outlinesForColor.push_back(vertices);
-}
-
-const Vector2& ShapesBuilder::getVertex(unsigned int index)
-{
-	if (index < verticesVector.size())
-		return verticesVector[index];
-	/*
-	//Linear lookup
-	map<Vector2, unsigned int>::const_iterator it=verticesMap.begin();
-	for(;it!=verticesMap.end();++it)
-	{
-		if(it->second==index)
-			return it->first;
-	}
-	*/
-	::abort();
 }
 
 void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles,const std::list<LINESTYLE2>& linestyles, tokensVector& tokens)
@@ -260,14 +233,14 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles,const std::l
 		{
 			vector<ShapePathSegment>& segments=outlinesForColor[i];
 			assert (segments[0].type == PATH_START);
-			tokens.filltokens.push_back(_MR(new GeomToken(MOVE, getVertex(segments[0].i))));
+			tokens.filltokens.push_back(_MR(new GeomToken(MOVE, segments[0].i)));
 			for(unsigned int j=1;j<segments.size();j++) {
 				ShapePathSegment segment = segments[j];
 				assert(segment.type != PATH_START);
 				if (segment.type == PATH_STRAIGHT)
-					tokens.filltokens.push_back(_MR(new GeomToken(STRAIGHT, getVertex(segment.i))));
+					tokens.filltokens.push_back(_MR(new GeomToken(STRAIGHT, segment.i)));
 				if (segment.type == PATH_CURVE_QUADRATIC)
-					tokens.filltokens.push_back(_MR(new GeomToken(CURVE_QUADRATIC, getVertex(segment.i), getVertex(segments[++j].i))));
+					tokens.filltokens.push_back(_MR(new GeomToken(CURVE_QUADRATIC, segment.i, segments[++j].i)));
 			}
 		}
 	}
@@ -294,14 +267,14 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles,const std::l
 			{
 				vector<ShapePathSegment>& segments=outlinesForStroke[i];
 				assert (segments[0].type == PATH_START);
-				tokens.stroketokens.push_back(_MR(new GeomToken(MOVE, getVertex(segments[0].i))));
+				tokens.stroketokens.push_back(_MR(new GeomToken(MOVE, segments[0].i)));
 				for(unsigned int j=1;j<segments.size();j++) {
 					ShapePathSegment segment = segments[j];
 					assert(segment.type != PATH_START);
 					if (segment.type == PATH_STRAIGHT)
-						tokens.stroketokens.push_back(_MR(new GeomToken(STRAIGHT, getVertex(segment.i))));
+						tokens.stroketokens.push_back(_MR(new GeomToken(STRAIGHT, segment.i)));
 					if (segment.type == PATH_CURVE_QUADRATIC)
-						tokens.stroketokens.push_back(_MR(new GeomToken(CURVE_QUADRATIC, getVertex(segment.i), getVertex(segments[++j].i))));
+						tokens.stroketokens.push_back(_MR(new GeomToken(CURVE_QUADRATIC, segment.i, segments[++j].i)));
 				}
 			}
 		}
@@ -394,14 +367,14 @@ void ShapesBuilder::outputMorphTokens(const std::list<MORPHFILLSTYLE> &styles, c
 		{
 			vector<ShapePathSegment>& segments=outlinesForColor[i];
 			assert (segments[0].type == PATH_START);
-			tokens.filltokens.push_back(_MR(new GeomToken(MOVE, getVertex(segments[0].i))));
+			tokens.filltokens.push_back(_MR(new GeomToken(MOVE, segments[0].i)));
 			for(unsigned int j=1;j<segments.size();j++) {
 				ShapePathSegment segment = segments[j];
 				assert(segment.type != PATH_START);
 				if (segment.type == PATH_STRAIGHT)
-					tokens.filltokens.push_back(_MR(new GeomToken(STRAIGHT, getVertex(segment.i))));
+					tokens.filltokens.push_back(_MR(new GeomToken(STRAIGHT, segment.i)));
 				if (segment.type == PATH_CURVE_QUADRATIC)
-					tokens.filltokens.push_back(_MR(new GeomToken(CURVE_QUADRATIC, getVertex(segment.i), getVertex(segments[++j].i))));
+					tokens.filltokens.push_back(_MR(new GeomToken(CURVE_QUADRATIC, segment.i, segments[++j].i)));
 			}
 		}
 	}
@@ -429,14 +402,14 @@ void ShapesBuilder::outputMorphTokens(const std::list<MORPHFILLSTYLE> &styles, c
 			{
 				vector<ShapePathSegment>& segments=outlinesForStroke[i];
 				assert (segments[0].type == PATH_START);
-				tokens.stroketokens.push_back(_MR(new GeomToken(MOVE, getVertex(segments[0].i))));
+				tokens.stroketokens.push_back(_MR(new GeomToken(MOVE, segments[0].i)));
 				for(unsigned int j=1;j<segments.size();j++) {
 					ShapePathSegment segment = segments[j];
 					assert(segment.type != PATH_START);
 					if (segment.type == PATH_STRAIGHT)
-						tokens.stroketokens.push_back(_MR(new GeomToken(STRAIGHT, getVertex(segment.i))));
+						tokens.stroketokens.push_back(_MR(new GeomToken(STRAIGHT, segment.i)));
 					if (segment.type == PATH_CURVE_QUADRATIC)
-						tokens.stroketokens.push_back(_MR(new GeomToken(CURVE_QUADRATIC, getVertex(segment.i), getVertex(segments[++j].i))));
+						tokens.stroketokens.push_back(_MR(new GeomToken(CURVE_QUADRATIC, segment.i,segments[++j].i)));
 				}
 			}
 		}

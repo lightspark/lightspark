@@ -31,10 +31,10 @@ using namespace lightspark;
 
 void IEventDispatcher::linkTraits(Class_base* c)
 {
-	lookupAndLink(c,"addEventListener","flash.events:IEventDispatcher");
-	lookupAndLink(c,"removeEventListener","flash.events:IEventDispatcher");
-	lookupAndLink(c,"dispatchEvent","flash.events:IEventDispatcher");
-	lookupAndLink(c,"hasEventListener","flash.events:IEventDispatcher");
+	lookupAndLink(c,STRING_ADDEVENTLISTENER,STRING_FLASH_EVENTS_IEVENTDISPATCHER);
+	lookupAndLink(c,STRING_REMOVEEVENTLISTENER,STRING_FLASH_EVENTS_IEVENTDISPATCHER);
+	lookupAndLink(c,STRING_DISPATCHEVENT,STRING_FLASH_EVENTS_IEVENTDISPATCHER);
+	lookupAndLink(c,STRING_HASEVENTLISTENER,STRING_FLASH_EVENTS_IEVENTDISPATCHER);
 }
 
 Event::Event(Class_base* cb, const tiny_string& t, bool b, bool c, CLASS_SUBTYPE st):
@@ -700,7 +700,10 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 	// Must call the AS getter, because the getter may have been
 	// overridden
 	asAtom target=asAtomHandler::invalidAtom;
-	e->getVariableByMultiname(target,"target", {""});
+	multiname m(nullptr);
+	m.name_type = multiname::NAME_STRING;
+	m.name_s_id = BUILTIN_STRINGS::STRING_TARGET;
+	e->getVariableByMultiname(target,m);
 	if(asAtomHandler::isValid(target) && !asAtomHandler::isNull(target) && !asAtomHandler::isUndefined(target))
 	{
 		//Object must be cloned, cloning is implemented with the clone AS method

@@ -2606,7 +2606,7 @@ void ABCVm::newClass(call_context* th, int n)
 {
 	int name_index=th->mi->context->instances[n].name;
 	assert_and_throw(name_index);
-	const multiname* mname=th->mi->context->getMultiname(name_index,NULL);
+	const multiname* mname=th->mi->context->getMultiname(name_index,nullptr);
 	LOG_CALL( "newClass " << *mname );
 
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,baseClass, th->mi->context->root->getSystemState());
@@ -2614,7 +2614,7 @@ void ABCVm::newClass(call_context* th, int n)
 	assert_and_throw(mname->ns.size()==1);
 	QName className(mname->name_s_id,mname->ns[0].nsNameId);
 
-	Class_inherit* ret = NULL;
+	Class_inherit* ret = nullptr;
 	auto i = th->mi->context->root->applicationDomain->classesBeingDefined.cbegin();
 	while (i != th->mi->context->root->applicationDomain->classesBeingDefined.cend())
 	{
@@ -2711,7 +2711,7 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->initializeProtectedNamespace(th->mi->context->getString(ns_info.name),ns_info,th->mi->context->root.getPtr());
 	}
 
-	ret->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(ret->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
+	ret->setDeclaredMethodByQName(BUILTIN_STRINGS::STRING_TOSTRING,nsNameAndKind(ret->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),Class<IFunction>::getFunction(ret->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
 
 	if (th->parent_scope_stack)
 		ret->class_scope = th->parent_scope_stack->scope;
@@ -2762,7 +2762,7 @@ void ABCVm::newClass(call_context* th, int n)
 	//Add prototype variable
 	ret->prototype = _MNR(new_objectPrototype(ret->getSystemState()));
 	//Add the constructor variable to the class prototype
-	ret->prototype->setVariableByQName("constructor","",ret, DECLARED_TRAIT);
+	ret->prototype->setVariableByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),ret, DECLARED_TRAIT);
 	if(ret->super)
 		ret->prototype->prevPrototype=ret->super->prototype;
 	ret->addPrototypeGetter();

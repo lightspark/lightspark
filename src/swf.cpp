@@ -207,7 +207,7 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 									   "_target","this","_root","_parent","_global","super",
 									   "onEnterFrame","onMouseMove","onMouseDown","onMouseUp","onPress","onRelease","onReleaseOutside","onMouseWheel","onLoad",
 									   "object","undefined","boolean","number","string","function","onRollOver","onRollOut",
-									   "__proto__"
+									   "__proto__","target","flash.events:IEventDispatcher","addEventListener","removeEventListener","dispatchEvent","hasEventListener"
 									  };
 
 extern uint32_t asClassCount;
@@ -2463,7 +2463,7 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 {
 	if (tag->bindingclassname.empty())
 		return;
-	multiname clsname(NULL);
+	multiname clsname(nullptr);
 	clsname.name_type=multiname::NAME_STRING;
 	clsname.isAttribute = false;
 

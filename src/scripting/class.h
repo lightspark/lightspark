@@ -370,6 +370,7 @@ public:
  * TODO: InterfaceClass should derive from Type, not from Class_base!
  */
 void lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs);
+void lookupAndLink(Class_base* c, uint32_t nameID, uint32_t interfaceNsID);
 template<class T>
 class InterfaceClass: public Class_base
 {

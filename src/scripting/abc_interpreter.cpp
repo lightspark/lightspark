@@ -3347,6 +3347,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								typestack.push_back(typestackentry(resulttype,false));
 								break;
 							}
+							else if (v->kind == TRAIT_KIND::CONSTANT_TRAIT)
+							{
+								addCachedConstant(state,mi, v->var,code);
+								if (v->isResolved && dynamic_cast<const Class_base*>(v->type))
+									resulttype = (Class_base*)v->type;
+								typestack.push_back(typestackentry(resulttype,false));
+								break;
+							}
 						}
 					}
 					if ((simple_getter_opcode_pos != UINT32_MAX) // function is simple getter

@@ -3292,6 +3292,18 @@ void Prototype::setVariableByQName(const tiny_string &name, const tiny_string &n
 		o->as<Function>()->setRefConstant();
 	getObj()->setVariableByQName(name,ns,o,traitKind);
 }
+void Prototype::setVariableByQName(const tiny_string &name, const nsNameAndKind &ns, ASObject *o, TRAIT_KIND traitKind)
+{
+	if (o->is<Function>())
+		o->as<Function>()->setRefConstant();
+	getObj()->setVariableByQName(name,ns,o,traitKind);
+}
+void Prototype::setVariableByQName(uint32_t nameID, const nsNameAndKind &ns, ASObject *o, TRAIT_KIND traitKind)
+{
+	if (o->is<Function>())
+		o->as<Function>()->setRefConstant();
+	getObj()->setVariableByQName(nameID,ns,o,traitKind);
+}
 
 void Prototype::setVariableAtomByQName(const tiny_string &name, const nsNameAndKind &ns, asAtom o, TRAIT_KIND traitKind)
 {

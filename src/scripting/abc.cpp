@@ -2030,7 +2030,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var = c->borrowedVariables.findObjVar(nameId,nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
+			var = c->borrowedVariables.findObjVar(nameId,nsNameAndKind(),NO_CREATE_TRAIT,DECLARED_TRAIT);
 			if(var && asAtomHandler::isValid(var->var))
 			{
 				assert_and_throw(asAtomHandler::isFunction(var->var));
@@ -2054,7 +2054,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
+			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind(),NO_CREATE_TRAIT,DECLARED_TRAIT);
 			if(var && asAtomHandler::isValid(var->getter))
 			{
 				ASATOM_INCREF(var->getter);
@@ -2076,7 +2076,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				throw ParseException("Interface trait has to be a NULL body");
 
 			variable* var=NULL;
-			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
+			var=c->borrowedVariables.findObjVar(nameId,nsNameAndKind(),NO_CREATE_TRAIT,DECLARED_TRAIT);
 			if(var && asAtomHandler::isValid(var->setter))
 			{
 				ASATOM_INCREF(var->setter);
@@ -2200,7 +2200,7 @@ uint32_t ABCContext::addCachedConstantAtom(asAtom a)
 
 void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslots, const traits_info* t, bool isBorrowed, int scriptid, bool checkExisting)
 {
-	multiname* mname=getMultiname(t->name,NULL);
+	multiname* mname=getMultiname(t->name,nullptr);
 	//Should be a Qname
 	assert_and_throw(mname->name_type==multiname::NAME_STRING);
 #ifndef NDEBUG

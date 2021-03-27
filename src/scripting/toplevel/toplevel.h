@@ -326,6 +326,8 @@ public:
 	 * This method is actually forwarded to the object. It's here as a shorthand.
 	 */
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind);
+	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind);
+	void setVariableByQName(uint32_t nameID, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind);
 	void setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind);
 };
 

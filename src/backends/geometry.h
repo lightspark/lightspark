@@ -133,7 +133,7 @@ private:
 	void joinOutlines();
 	static bool isOutlineEmpty(const std::vector<ShapePathSegment>& outline);
 	static void extendOutlineForColor(std::map< unsigned int, std::vector< std::vector<Vector2> > >& map);
-	inline uint64_t makeVertex(const Vector2& v) const { return (uint64_t(v.y)<<32) | uint64_t(v.x); }
+	inline uint64_t makeVertex(const Vector2& v) const { return (uint64_t(v.y)<<32) | (uint64_t(v.x)&0xffffffff); }
 public:
 	void extendFilledOutlineForColor(unsigned int fillColor, const Vector2& v1, const Vector2& v2);
 	void extendFilledOutlineForColorCurve(unsigned int color, const Vector2& start, const Vector2& control, const Vector2& end);
@@ -151,6 +151,6 @@ public:
 
 std::ostream& operator<<(std::ostream& s, const Vector2& p);
 
-};
+}
 
 #endif /* BACKENDS_GEOMETRY_H */

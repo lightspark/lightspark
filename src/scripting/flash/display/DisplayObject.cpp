@@ -513,7 +513,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 			surface.rotation,surface.xOffsetTransformed,surface.yOffsetTransformed,surface.widthTransformed,surface.heightTransformed,surface.xscale, surface.yscale,
 			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
 			surface.redOffset, surface.greenOffset, surface.blueOffset, surface.alphaOffset,
-			surface.isMask, surface.hasMask);
+			surface.isMask, surface.hasMask,0.0,RGB());
 	return false;
 }
 
@@ -1419,7 +1419,7 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 	}
 }
 
-void DisplayObject::computeMasksAndMatrix(DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, bool &hasMask) const
+void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, bool &hasMask) const
 {
 	const DisplayObject* cur=this;
 	bool gatherMasks = true;

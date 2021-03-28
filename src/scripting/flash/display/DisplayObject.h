@@ -163,7 +163,7 @@ public:
 	 * cacheAsBitmap is true also if any filter is used
 	 */
 	bool computeCacheAsBitmap() const;
-	void computeMasksAndMatrix(DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, bool &hasMask) const;
+	void computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, bool &hasMask) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	DisplayObjectContainer* getParent() const { return parent; }
 	bool findParent(DisplayObject* d) const;

@@ -175,7 +175,6 @@ public:
 	volatile uint32_t windowWidth;
 	volatile uint32_t windowHeight;
 	int fragmentTexScaleUniform;
-	int directUniform;
 
 	void renderErrorPage(RenderThread *rt, bool standalone);
 	void renderSettingsPage();

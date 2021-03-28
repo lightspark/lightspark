@@ -578,6 +578,7 @@ void RenderThread::commonGLInit(int width, int height)
 	scaleUniform=engineData->exec_glGetUniformLocation(gpu_program,"scale");
 	colortransMultiplyUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformMultiply");
 	colortransAddUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformAdd");
+	directColorUniform=engineData->exec_glGetUniformLocation(gpu_program,"directColor");
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	engineData->exec_glEnable_GL_TEXTURE_2D();

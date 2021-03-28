@@ -150,7 +150,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
 									 float redMultiplier,float greenMultiplier,float blueMultiplier,float alphaMultiplier,
 									 float redOffset,float greenOffset,float blueOffset,float alphaOffset,
-									 bool isMask, bool hasMask)
+									 bool isMask, bool hasMask, float directMode, RGB directColor)
 {
 	if (isMask)
 	{
@@ -176,6 +176,13 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 	engineData->exec_glUniform2f(scaleUniform, xscale,yscale);
 	engineData->exec_glUniform4f(colortransMultiplyUniform, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier);
 	engineData->exec_glUniform4f(colortransAddUniform, redOffset/255.0,greenOffset/255.0,blueOffset/255.0,alphaOffset/255.0);
+	// set mode for direct coloring:
+	// 0.0:no coloring
+	// 1.0 coloring for profiling/error message (?)
+	// 2.0:set color for every non transparent pixel (used for text rendering)
+	// 3.0 set color for every pixel (renders a filled rectangle)
+	engineData->exec_glUniform1f(directUniform, directMode);
+	engineData->exec_glUniform4f(directColorUniform,float(directColor.Red)/255.0,float(directColor.Green)/255.0,float(directColor.Blue)/255.0,1.0);
 	//Set matrix
 	setMatrixUniform(LSGL_MODELVIEW);
 
@@ -346,7 +353,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask)
+			bool isMask, bool hasMask, float directMode, RGB directColor)
 {
 	if (alpha != 1.0)
 		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured alpha not implemented:"<<alpha);

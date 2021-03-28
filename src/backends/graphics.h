@@ -460,6 +460,21 @@ public:
 	void addToInvalidateQueue(_R<DisplayObject> d) override;
 };
 
+class CharacterRenderer : public ITextureUploadable
+{
+	uint8_t* data;
+	uint32_t width;
+	uint32_t height;
+	TextureChunk chunk;
+public:
+	CharacterRenderer(uint8_t *d, uint32_t w, uint32_t h):data(d),width(w),height(h) {}
+	virtual ~CharacterRenderer() { delete[] data; }
+	//ITextureUploadable interface
+	void sizeNeeded(uint32_t& w, uint32_t& h) const override { w=width; h=height;}
+	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
+	const TextureChunk& getTexture() override;
+	virtual void uploadFence() {}
+};
 
 }
 #endif /* BACKENDS_GRAPHICS_H */

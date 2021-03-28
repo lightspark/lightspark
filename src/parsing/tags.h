@@ -464,6 +464,7 @@ protected:
 	bool FontFlagsANSI;
 	bool FontFlagsItalic;
 	bool FontFlagsBold;
+	virtual number_t getRenderCharStartYPos() const =0;
 public:
 	/* Multiply the coordinates of the SHAPEs by this
 	 * value to get a resolution of 1024*20th pixel
@@ -471,25 +472,29 @@ public:
 	 */
 	const int scaling;
 	FontTag(RECORDHEADER h, int _scaling,RootMovieClip* root):DictionaryTag(h,root), scaling(_scaling) {}
-	const std::vector<SHAPE>& getGlyphShapes() const
+	std::vector<SHAPE>& getGlyphShapes()
 	{
 		return GlyphShapeTable;
 	}
 	int getId() const { return FontID; }
-	ASObject* instance(Class_base* c=NULL);
+	ASObject* instance(Class_base* c=nullptr);
 	const tiny_string getFontname() const { return fontname;}
-	virtual void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) const=0;
+	virtual void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos)=0;
+	virtual number_t getRenderCharAdvance(uint32_t index) const =0;
+	const TextureChunk *getCharTexture(const CharIterator& chrIt, int fontpixelsize, uint32_t &codetableindex);
 	bool hasGlyphs(const tiny_string text) const;
 };
 
 class DefineFontTag: public FontTag
 {
-	friend class DefineTextTag; 
+	friend class DefineTextTag;
 protected:
 	std::vector<uint16_t> OffsetTable;
+	number_t getRenderCharStartYPos() const override;
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
-	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) const;
+	number_t getRenderCharAdvance(uint32_t index) const override;
+	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) override;
 };
 
 class DefineFontInfoTag: public Tag
@@ -516,10 +521,12 @@ private:
 	std::vector < RECT > FontBoundsTable;
 	UI16_SWF KerningCount;
 	std::vector <KERNINGRECORD> FontKerningTable;
-
+protected:
+	number_t getRenderCharStartYPos() const override;
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
-	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) const;
+	number_t getRenderCharAdvance(uint32_t index) const override;
+	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) override;
 };
 
 class DefineFont3Tag: public FontTag
@@ -539,10 +546,12 @@ private:
 	std::vector < RECT > FontBoundsTable;
 	UI16_SWF KerningCount;
 	std::vector <KERNINGRECORD> FontKerningTable;
-
+protected:
+	number_t getRenderCharStartYPos() const override;
 public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
-	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) const;
+	number_t getRenderCharAdvance(uint32_t index) const override;
+	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) override;
 };
 
 class DefineFont4Tag : public DictionaryTag
@@ -570,7 +579,7 @@ private:
 	UI8 AdvanceBits;
 	std::vector < TEXTRECORD > TextRecords;
 	mutable tokensVector tokens;
-	void computeCached() const;
+	void computeCached();
 public:
 	int version;
 	DefineTextTag(RECORDHEADER h, std::istream& in,RootMovieClip* root,int v=1);

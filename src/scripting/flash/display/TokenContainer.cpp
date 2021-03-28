@@ -306,7 +306,7 @@ _NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t
 	return NullRef;
 }
 
-bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scaling, number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 
 	#define VECTOR_BOUNDS(v) \

@@ -591,6 +591,7 @@ uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley, bool *isBuffe
 		delete[] maskRawData;
 	}
 
+//	cairo_surface_write_to_png(cairoSurface,"/tmp/cairo.png");
 	cairo_destroy(cr);
 	return ret;
 }
@@ -1070,3 +1071,15 @@ uint8_t *BitmapRenderer::getPixelBuffer(float scalex, float scaley, bool *isBuff
 	return data->getData();
 }
 
+
+void CharacterRenderer::upload(uint8_t *data, uint32_t w, uint32_t h)
+{
+	memcpy(data, this->data, w*h*4);
+}
+
+const TextureChunk& CharacterRenderer::getTexture()
+{
+	if(!chunk.resizeIfLargeEnough(width, height))
+	chunk=getSys()->getRenderThread()->allocateTexture(width, height,false);
+	return chunk;
+}

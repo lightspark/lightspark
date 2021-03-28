@@ -648,6 +648,55 @@ ASObject* FontTag::instance(Class_base* c)
 	return ret;
 }
 
+const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontpixelsize,uint32_t& codetableindex)
+{
+	std::list<FILLSTYLE> fillStyles;
+	FILLSTYLE fs(1);
+	fs.FillStyleType = SOLID_FILL;
+	fs.Color = RGBA(0,0,0,255);
+	fillStyles.push_back(fs);
+	assert (*chrIt != 13 && *chrIt != 10 && *chrIt != 20);
+	int tokenscaling = fontpixelsize * this->scaling;
+	codetableindex=UINT32_MAX;
+
+	for (unsigned int i = 0; i < CodeTable.size(); i++)
+	{
+		if (CodeTable[i] == *chrIt)
+		{
+			auto it = getGlyphShapes().at(i).scaledtexturecache.find(tokenscaling);
+			if (it == getGlyphShapes().at(i).scaledtexturecache.end())
+			{
+				const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
+				number_t ystart = getRenderCharStartYPos();
+				ystart *=number_t(tokenscaling);
+				MATRIX glyphMatrix(number_t(tokenscaling)/1024.0f, number_t(tokenscaling)/1024.0f, 0, 0,0,ystart/1024.0f);
+				tokensVector tmptokens(getSys()->tagsMemory);
+				TokenContainer::FromShaperecordListToShapeVector(sr,tmptokens,fillStyles,glyphMatrix);
+				number_t xmin, xmax, ymin, ymax;
+				TokenContainer::boundsRectFromTokens(tmptokens,scaling,xmin,xmax,ymin,ymax);
+				std::vector<IDrawable::MaskData> masks;
+				CairoTokenRenderer r(tmptokens,MATRIX()
+							, 0, 0, xmax-xmin, ymax-ymin
+							, 0, 0, xmax-xmin, ymax-ymin,0
+							, 1, 1
+							, false, false
+							, 0.05,1.0, masks
+							, 1.0,1.0,1.0,1.0
+							, 0,0,0,0
+							, false
+							,0,0);
+				uint8_t* buf = r.getPixelBuffer(1.0,1.0);
+				CharacterRenderer* renderer = new CharacterRenderer(buf,xmax-xmin,ymax-ymin);
+				getSys()->getRenderThread()->addUploadJob(renderer);
+				it = getGlyphShapes().at(i).scaledtexturecache.insert(make_pair(tokenscaling,renderer)).first;
+			}
+			codetableindex=i;
+			return &(*it).second->getTexture();
+		}
+	}
+	return nullptr;
+}
+
 bool FontTag::hasGlyphs(const tiny_string text) const
 {
 	for (CharIterator it = text.begin(); it != text.end(); it++)
@@ -667,6 +716,16 @@ bool FontTag::hasGlyphs(const tiny_string text) const
 			return false;
 	}
 	return true;
+}
+
+number_t DefineFontTag::getRenderCharStartYPos() const 
+{
+	return 1024;
+}
+
+number_t DefineFontTag::getRenderCharAdvance(uint32_t index) const
+{
+	return 0;
 }
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 20, root)
@@ -695,7 +754,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* ro
 	root->registerEmbeddedFont("",this);
 }
 
-void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading, uint32_t startpos) const
+void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading, uint32_t startpos)
 {
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
@@ -705,7 +764,7 @@ void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text,
 	fillStyles.push_back(fs);
 
 	int tokenscaling = fontpixelsize * this->scaling;
-	curPos.y = (1024);
+	curPos.y = 1024;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
@@ -740,6 +799,18 @@ void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text,
 		}
 	}
 }
+number_t DefineFont2Tag::getRenderCharStartYPos() const
+{
+	return (1024+this->FontLeading/2.0);
+}
+
+number_t DefineFont2Tag::getRenderCharAdvance(uint32_t index) const
+{
+	if (index < FontAdvanceTable.size())
+		return FontAdvanceTable[index]/1024.0;
+	return 0;
+}
+
 DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 20, root)
 {
 	LOG(LOG_TRACE,_("DefineFont2"));
@@ -834,7 +905,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	root->registerEmbeddedFont(getFontname(),this);
 }
 
-void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading, uint32_t startpos) const
+void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading, uint32_t startpos)
 {
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
@@ -881,6 +952,18 @@ void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 				LOG(LOG_INFO,"DefineFont2Tag:Character not found:"<<(int)*it<<" "<<text<<" "<<this->getFontname()<<" "<<CodeTable.size());
 		}
 	}
+}
+
+number_t DefineFont3Tag::getRenderCharStartYPos() const
+{
+	return 1024.0*20.0+FontLeading/2.0;
+}
+
+number_t DefineFont3Tag::getRenderCharAdvance(uint32_t index) const
+{
+	if (index < FontAdvanceTable.size())
+		return FontAdvanceTable[index]/1024.0/20.0;
+	return 0;
 }
 
 DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root),CodeTableOffset(0)
@@ -1002,7 +1085,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 
 }
 
-void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading, uint32_t startpos) const
+void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading, uint32_t startpos)
 {
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
@@ -1030,13 +1113,10 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 				{
 					const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
 					Vector2 glyphPos = curPos*tokenscaling;
-	
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
 							   glyphPos.x+startpos*1024*20* this->scaling,
 							   glyphPos.y);
-	
 					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
-	
 					if (FontFlagsHasLayout)
 						curPos.x += FontAdvanceTable[i];
 					found = true;
@@ -1249,12 +1329,12 @@ ASObject* DefineTextTag::instance(Class_base* c)
 	return ret;
 }
 
-void DefineTextTag::computeCached() const
+void DefineTextTag::computeCached()
 {
 	if(!tokens.empty())
 		return;
 
-	const FontTag* curFont = nullptr;
+	FontTag* curFont = nullptr;
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
 	FILLSTYLE fs(1);
@@ -1279,8 +1359,8 @@ void DefineTextTag::computeCached() const
 	{
 		if(TextRecords[i].StyleFlagsHasFont)
 		{
-			const DictionaryTag* it3=loadedFrom->dictionaryLookup(TextRecords[i].FontID);
-			curFont=dynamic_cast<const FontTag*>(it3);
+			DictionaryTag* it3=loadedFrom->dictionaryLookup(TextRecords[i].FontID);
+			curFont=dynamic_cast<FontTag*>(it3);
 			assert_and_throw(curFont);
 		}
 		assert_and_throw(curFont);
@@ -1306,7 +1386,7 @@ void DefineTextTag::computeCached() const
 		for(uint32_t j=0;j<TextRecords[i].GlyphEntries.size();++j)
 		{
 			const GLYPHENTRY& ge = TextRecords[i].GlyphEntries[j];
-			const std::vector<SHAPERECORD>& sr = curFont->getGlyphShapes().at(ge.GlyphIndex).ShapeRecords;
+			std::vector<SHAPERECORD>& sr = curFont->getGlyphShapes().at(ge.GlyphIndex).ShapeRecords;
 			Vector2 glyphPos = curPos*twipsScaling;
 
 			MATRIX glyphMatrix(scaling, scaling, 0, 0, 

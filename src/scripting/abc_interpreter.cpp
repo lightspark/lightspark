@@ -3263,10 +3263,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					clearOperands(state,true,&lastlocalresulttype);
 				uint32_t t =code.readu30();
 				multiname* name=mi->context->getMultiname(t,nullptr);
-				if (name->normalizedNameUnresolved(getSys())=="Boot")
-				{
-					int x=0;
-				}
 				if (!name || !name->isStatic)
 					throwError<VerifyError>(kIllegalOpMultinameError,"getlex","multiname not static");
 				if (function->inClass) // class method

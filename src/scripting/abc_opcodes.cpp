@@ -193,19 +193,17 @@ ASObject* ABCVm::coerce_s(ASObject* o)
 
 void ABCVm::coerce(call_context* th, int n)
 {
-	multiname* mn = th->mi->context->getMultiname(n,NULL);
+	multiname* mn = th->mi->context->getMultiname(n,nullptr);
 	LOG_CALL("coerce " << *mn);
 
 	RUNTIME_STACK_POINTER_CREATE(th,o);
 
-	const Type* type = mn->cachedType != NULL ? mn->cachedType : Type::getTypeFromMultiname(mn, th->mi->context);
-	if (type == NULL)
+	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, th->mi->context);
+	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
 		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
 	}
-	if (mn->isStatic && mn->cachedType == NULL)
-		mn->cachedType = type;
 	asAtom v= *o;
 	if (type->coerce(th->mi->context->root->getSystemState(),*o))
 		ASATOM_DECREF(v);
@@ -2992,6 +2990,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	method_info* m=&th->mi->context->methods[n];
 	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->mi->context->root->applicationDomain->getSystemState(),m,m->numArgs());
 	f->func_scope = _R<scope_entry_list>(new scope_entry_list());
+	f->fromNewFunction=true;
 	if (th->parent_scope_stack)
 	{
 		f->func_scope->scope=th->parent_scope_stack->scope;

@@ -393,6 +393,12 @@ GET_VARIABLE_RESULT ApplicationDomain::getVariableAndTargetByMultiname(asAtom& r
 			return res;
 		}
 	}
+	auto it = classesBeingDefined.find(&name);
+	if (it != classesBeingDefined.end())
+	{
+		target =((*it).second);
+		return res;
+	}
 	if(!parentDomain.isNull())
 	{
 		res = parentDomain->getVariableAndTargetByMultiname(ret,name, target);

@@ -2347,9 +2347,6 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				root->applicationDomain->classesBeingDefined.insert(make_pair(mname, c));
 				ret=c;
 				c->setIsInitialized();
-				assert(mname->isStatic);
-// TODO this optimization does not always work during class initialization, e.g. on AimBooster.swf
-//				mname->cachedType = c;
 			}
 			// the variable on the Definition object is set to null now (it will be set to the real value after the class init function was executed in newclass opcode)
 			// testing for class==null in actionscript code is used to determine if the class initializer function has been called

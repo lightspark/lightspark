@@ -575,6 +575,7 @@ private:
 	synt_function val;
 	/* Pointer to multiname, if this function is a simple getter or setter */
 	multiname* simpleGetterOrSetterName;
+	bool fromNewFunction;
 	SyntheticFunction(Class_base* c,method_info* m);
 protected:
 	IFunction* clone() override
@@ -593,6 +594,7 @@ protected:
 			ret->inClass = inClass;
 			ret->func_scope = func_scope;
 			ret->functionname = functionname;
+			ret->fromNewFunction = fromNewFunction;
 		}
 		ret->subtype = this->subtype;
 		ret->objfreelist = &getClass()->freelist[1];

@@ -324,7 +324,7 @@ std::string IFunction::toDebugString()
 	return ret;
 }
 
-SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(nullptr),simpleGetterOrSetterName(nullptr),func_scope(NullRef)
+SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(nullptr),simpleGetterOrSetterName(nullptr),fromNewFunction(false),func_scope(NullRef)
 {
 	if(mi)
 		length = mi->numArgs();
@@ -690,6 +690,7 @@ bool SyntheticFunction::destruct()
 	func_scope.reset();
 	val = nullptr;
 	mi = nullptr;
+	fromNewFunction = false;
 	return IFunction::destruct();
 }
 
@@ -1021,7 +1022,7 @@ const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context)
 			}
 		}
 	}
-	if (typeObject)
+	if (typeObject && typeObject->is<Class_base>())
 		mn->cachedType = typeObject->as<Type>();
 	return typeObject ? typeObject->as<Type>() : nullptr;
 }

@@ -673,7 +673,8 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 				tokensVector tmptokens(getSys()->tagsMemory);
 				TokenContainer::FromShaperecordListToShapeVector(sr,tmptokens,fillStyles,glyphMatrix);
 				number_t xmin, xmax, ymin, ymax;
-				TokenContainer::boundsRectFromTokens(tmptokens,scaling,xmin,xmax,ymin,ymax);
+				if (!TokenContainer::boundsRectFromTokens(tmptokens,scaling,xmin,xmax,ymin,ymax))
+					return nullptr;
 				std::vector<IDrawable::MaskData> masks;
 				CairoTokenRenderer r(tmptokens,MATRIX()
 							, 0, 0, xmax-xmin, ymax-ymin

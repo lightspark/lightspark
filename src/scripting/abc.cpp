@@ -1422,11 +1422,11 @@ Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)
 	LOG(LOG_CALLS,_("Setting class name to ") << s);
 	ASObject* target;
 	ASObject* derived_class=root->applicationDomain->getVariableByString(s,target);
-	if(derived_class==NULL)
+	if(derived_class==nullptr)
 	{
 		//LOG(LOG_ERROR,_("Class ") << s << _(" not found in global for ")<<root->getOrigin());
 		//throw RunTimeException("Class not found in global");
-		return NULL;
+		return nullptr;
 	}
 
 	assert_and_throw(derived_class->getObjectType()==T_CLASS);
@@ -1437,7 +1437,7 @@ Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)
 	if(derived_class_tmp->isBinded())
 	{
 		//LOG(LOG_ERROR, "Class already binded to a tag. Not binding:"<<s<< " class:"<<derived_class_tmp->getQualifiedClassName());
-		return NULL;
+		return nullptr;
 	}
 	return derived_class_tmp;
 }
@@ -1459,17 +1459,17 @@ void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
 	base->setConstructorCallComplete();
 }
 
-bool ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t)
+bool ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t, Class_inherit* derived_cls)
 {
-	Class_inherit* derived_class_tmp = findClassInherit(s, t->loadedFrom);
+	Class_inherit* derived_class_tmp = derived_cls? derived_cls : findClassInherit(s, t->loadedFrom);
 	if(!derived_class_tmp)
 		return false;
-
+	derived_class_tmp->checkScriptInit();
 	//It seems to be acceptable for the same base to be binded multiple times.
 	//In such cases the first binding is bidirectional (instances created using PlaceObject
 	//use the binded class and instances created using 'new' use the binded tag). Any other
 	//bindings will be unidirectional (only instances created using new will use the binded tag)
-	if(t->bindedTo==NULL)
+	if(t->bindedTo==nullptr)
 		t->bindedTo=derived_class_tmp;
 
 	derived_class_tmp->bindToTag(t);
@@ -2347,6 +2347,8 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				root->applicationDomain->classesBeingDefined.insert(make_pair(mname, c));
 				ret=c;
 				c->setIsInitialized();
+				assert(mname->isStatic);
+				mname->cachedType = c;
 			}
 			// the variable on the Definition object is set to null now (it will be set to the real value after the class init function was executed in newclass opcode)
 			// testing for class==null in actionscript code is used to determine if the class initializer function has been called

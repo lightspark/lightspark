@@ -1304,7 +1304,7 @@ public:
 	tiny_string getDefaultXMLNamespace();
 	uint32_t getDefaultXMLNamespaceID();
 
-	bool buildClassAndBindTag(const std::string& s, DictionaryTag* t);
+	bool buildClassAndBindTag(const std::string& s, DictionaryTag* t, Class_inherit *derived_cls=nullptr);
 	void checkExternalCallEvent() DLL_PUBLIC;
 	void setIdle(bool isidle) { isIdle = isidle; }
 };

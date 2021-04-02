@@ -2508,8 +2508,7 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 		if (cls)
 		{
 			ABCVm *vm = getVm(getSystemState());
-			vm->buildClassAndBindTag(tag->bindingclassname.raw_buf(), tag);
-			
+			vm->buildClassAndBindTag(tag->bindingclassname.raw_buf(), tag,cls);
 			tag->bindedTo=cls;
 			tag->bindingclassname = "";
 			cls->bindToTag(tag);

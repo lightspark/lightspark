@@ -383,8 +383,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setWidth)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	assert_and_throw(argslen==1);
-	//The width needs to be updated only if autoSize is off or wordWrap is on TODO:check this, adobe's behavior is not clear
-	if(((th->autoSize == AS_NONE)||(th->wordWrap == true))
+	if((th->width != asAtomHandler::toUInt(args[0]))
 			&& (th->width != asAtomHandler::toUInt(args[0]))
 			&&  (asAtomHandler::toInt(args[0]) >= 0))
 	{
@@ -567,6 +566,20 @@ ASFUNCTIONBODY_ATOM(TextField,_setDefaultTextFormat)
 	}
 	if (!asAtomHandler::isNull(tf->size))
 		th->fontSize = asAtomHandler::toUInt(tf->size);
+	AUTO_SIZE newAutoSize = th->autoSize;
+	if(tf->align == "none")
+		newAutoSize = AS_NONE;
+	else if (tf->align == "left")
+		newAutoSize = AS_LEFT;
+	else if (tf->align == "right")
+		newAutoSize = AS_RIGHT;
+	else if (tf->align == "center")
+		newAutoSize = AS_CENTER;
+	if (th->autoSize != newAutoSize)
+	{
+		th->autoSize = newAutoSize;
+		th->setSizeAndPositionFromAutoSize();
+	}
 	LOG(LOG_NOT_IMPLEMENTED,"setDefaultTextFormat does not set all fields of TextFormat");
 }
 

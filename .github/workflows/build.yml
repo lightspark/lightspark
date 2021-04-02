@@ -9,12 +9,12 @@ on:
 jobs:
 
   compilers:
-    name: Compiler Compatibility / ${{ matrix.cc }}
+    name: Compiler Compatibility / ${{ matrix.config.cc }}
     runs-on: ubuntu-20.04
     continue-on-error: true
     env:
-      CC: ${{ matrix.cc }}
-      CXX: ${{ matrix.cxx }}
+      CC: ${{ matrix.config.cc }}
+      CXX: ${{ matrix.config.cxx }}
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
     strategy:

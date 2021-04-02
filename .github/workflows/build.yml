@@ -14,12 +14,36 @@ jobs:
     continue-on-error: true
     env:
       CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
     strategy:
       matrix:
-        cc: [clang-8, clang-10, clang-11, gcc-7, gcc-9, gcc-10]
-
+        config:
+        - {
+            cc: clang-8
+            cxx: clang++-8
+          }
+        - {
+            cc: clang-10
+            cxx: clang++-10
+          }
+        - {
+            cc: clang-11
+            cxx: clang++-11
+          }
+        - {
+            cc: gcc-7
+            cxx: g++-7
+          }
+        - {
+            cc: gcc-9
+            cxx: g++-9
+          }
+        - {
+            cc: gcc-10
+            cxx: g++-10
+          }
     steps:
     - uses: actions/checkout@v2
 
@@ -31,6 +55,7 @@ jobs:
           cmake \
           nasm \
           $CC \
+          $CXX \
           gettext \
           libcurl4-gnutls-dev \
           libedit-dev \

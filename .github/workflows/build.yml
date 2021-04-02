@@ -21,27 +21,27 @@ jobs:
       matrix:
         config:
         - {
-            cc: clang-8
+            cc: clang-8,
             cxx: clang++-8
           }
         - {
-            cc: clang-10
+            cc: clang-10,
             cxx: clang++-10
           }
         - {
-            cc: clang-11
+            cc: clang-11,
             cxx: clang++-11
           }
         - {
-            cc: gcc-7
+            cc: gcc-7,
             cxx: g++-7
           }
         - {
-            cc: gcc-9
+            cc: gcc-9,
             cxx: g++-9
           }
         - {
-            cc: gcc-10
+            cc: gcc-10,
             cxx: g++-10
           }
     steps:

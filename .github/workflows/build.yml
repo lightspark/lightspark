@@ -38,7 +38,7 @@ jobs:
           }
         - {
             cc: gcc-7,
-            cxx: g++-7
+            cxx: g++-7,
             cxxpackage: g++-7
           }
         - {

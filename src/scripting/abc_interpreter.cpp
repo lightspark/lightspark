@@ -3347,7 +3347,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								typestack.push_back(typestackentry(resulttype,false));
 								break;
 							}
-							else if (v->kind == TRAIT_KIND::CONSTANT_TRAIT)
+							else if (v->kind == TRAIT_KIND::CONSTANT_TRAIT && !asAtomHandler::isNull(v->var)) // class may not be constructed yet, so the result is null and we do not cache
 							{
 								addCachedConstant(state,mi, v->var,code);
 								if (v->isResolved && dynamic_cast<const Class_base*>(v->type))

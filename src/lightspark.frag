@@ -45,7 +45,7 @@ void main()
 	} else if (direct == 2.0) {
 		if (vbase.a == 0.0)
 			discard;
-		gl_FragColor.rgb = directColor.rgb;
+		gl_FragColor.rgb = directColor.rgb*(vbase.rgb);
 		gl_FragColor.a = vbase.a;
 	} else if (direct == 3.0) {
 		gl_FragColor.rgb = directColor.rgb;

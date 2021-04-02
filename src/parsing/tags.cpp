@@ -653,9 +653,9 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 	std::list<FILLSTYLE> fillStyles;
 	FILLSTYLE fs(1);
 	fs.FillStyleType = SOLID_FILL;
-	fs.Color = RGBA(0,0,0,255);
+	fs.Color = RGBA(255,255,255,255);
 	fillStyles.push_back(fs);
-	assert (*chrIt != 13 && *chrIt != 10 && *chrIt != 20);
+	assert (*chrIt != 13 && *chrIt != 10);
 	int tokenscaling = fontpixelsize * this->scaling;
 	codetableindex=UINT32_MAX;
 
@@ -663,6 +663,7 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 	{
 		if (CodeTable[i] == *chrIt)
 		{
+			codetableindex=i;
 			auto it = getGlyphShapes().at(i).scaledtexturecache.find(tokenscaling);
 			if (it == getGlyphShapes().at(i).scaledtexturecache.end())
 			{
@@ -673,25 +674,24 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 				tokensVector tmptokens(getSys()->tagsMemory);
 				TokenContainer::FromShaperecordListToShapeVector(sr,tmptokens,fillStyles,glyphMatrix);
 				number_t xmin, xmax, ymin, ymax;
-				if (!TokenContainer::boundsRectFromTokens(tmptokens,scaling,xmin,xmax,ymin,ymax))
+				if (!TokenContainer::boundsRectFromTokens(tmptokens,0.05,xmin,xmax,ymin,ymax))
 					return nullptr;
 				std::vector<IDrawable::MaskData> masks;
 				CairoTokenRenderer r(tmptokens,MATRIX()
-							, 0, 0, xmax-xmin, ymax-ymin
-							, 0, 0, xmax-xmin, ymax-ymin,0
+							, xmin, ymin, xmax, ymax
+							, xmin, ymin, xmax, ymax,0
 							, 1, 1
 							, false, false
 							, 0.05,1.0, masks
 							, 1.0,1.0,1.0,1.0
 							, 0,0,0,0
-							, false
+							, true
 							,0,0);
 				uint8_t* buf = r.getPixelBuffer(1.0,1.0);
-				CharacterRenderer* renderer = new CharacterRenderer(buf,xmax-xmin,ymax-ymin);
+				CharacterRenderer* renderer = new CharacterRenderer(buf,xmax,ymax);
 				getSys()->getRenderThread()->addUploadJob(renderer);
 				it = getGlyphShapes().at(i).scaledtexturecache.insert(make_pair(tokenscaling,renderer)).first;
 			}
-			codetableindex=i;
 			return &(*it).second->getTexture();
 		}
 	}

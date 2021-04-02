@@ -854,6 +854,7 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 				0,y);
 	}
 
+	engineData->exec_glUniform1f(directUniform, 0);
 	engineData->exec_glUniform1f(alphaUniform, 1);
 	engineData->exec_glUniform1f(rotateUniform, 0);
 	engineData->exec_glUniform2f(beforeRotateUniform, windowWidth, windowHeight);

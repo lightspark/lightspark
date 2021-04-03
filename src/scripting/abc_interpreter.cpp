@@ -851,23 +851,23 @@ abc_function ABCVm::abcfunctions[]={
 	abc_setPropertyIntegerVector_local_local_constant,
 	abc_setPropertyIntegerVector_local_constant_local,
 	abc_setPropertyIntegerVector_local_local_local,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_istypelate_constant_constant,// 0x2b8 ABC_OP_OPTIMZED_ISTYPELATE
+	abc_istypelate_local_constant,
+	abc_istypelate_constant_local,
+	abc_istypelate_local_local,
+	abc_istypelate_constant_constant_localresult,
+	abc_istypelate_local_constant_localresult,
+	abc_istypelate_constant_local_localresult,
+	abc_istypelate_local_local_localresult,
 
-	abc_invalidinstruction, // 0x2c0
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_astypelate_constant_constant,// 0x2c0 ABC_OP_OPTIMZED_ASTYPELATE
+	abc_astypelate_local_constant,
+	abc_astypelate_constant_local,
+	abc_astypelate_local_local,
+	abc_astypelate_constant_constant_localresult,
+	abc_astypelate_local_constant_localresult,
+	abc_astypelate_constant_local_localresult,
+	abc_astypelate_local_local_localresult,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1169,6 +1169,8 @@ struct operands
 #define ABC_OP_OPTIMZED_DUP 0x000002a6
 #define ABC_OP_OPTIMZED_DUP_INCDEC 0x000002a8
 #define ABC_OP_OPTIMZED_SETPROPERTY_INTEGER_VECTOR 0x000002b0
+#define ABC_OP_OPTIMZED_ISTYPELATE 0x000002b8
+#define ABC_OP_OPTIMZED_ASTYPELATE 0x000002c0
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -1825,6 +1827,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x19://ifstricteq
 		case 0x1a://ifstrictne
 		case 0x6d://setslot
+		case 0x87://astypelate
 		case 0xa0://add
 		case 0xa1://subtract
 		case 0xa2://multiply
@@ -1835,6 +1838,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0xae://lessequals
 		case 0xaf://greaterthan
 		case 0xb0://greaterequals
+		case 0xb3://istypelate
 		case 0x3a://si8
 		case 0x3b://si16
 		case 0x3c://si32
@@ -5709,6 +5713,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x87://astypelate
+			{
+				ASObject* restype = typestack.back().classvar ? typestack.back().obj : nullptr;
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_ASTYPELATE,opcode,code,false,false,true,code.tellg(),restype && restype->is<Class_base>() ? restype->as<Class_base>() : nullptr);
+				removetypestack(typestack,2);
+				typestack.push_back(typestackentry(restype,restype && restype->is<Class_base>()));
+				break;
+			}
 			case 0xc6://subtract_i
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
@@ -5725,9 +5736,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0xb3://istypelate
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				clearOperands(state,true,&lastlocalresulttype);
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_ISTYPELATE,opcode,code,false,false,true,code.tellg(),Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;

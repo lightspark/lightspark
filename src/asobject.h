@@ -503,6 +503,7 @@ public:
 	static FORCE_INLINE bool checkArgumentConversion(const asAtom& a,const asAtom& obj);
 	static asAtom asTypelate(asAtom& a, asAtom& b);
 	static bool isTypelate(asAtom& a,ASObject* type);
+	static bool isTypelate(asAtom& a,asAtom& t);
 	static FORCE_INLINE number_t toNumber(const asAtom& a);
 	static FORCE_INLINE number_t AVM1toNumber(asAtom& a,bool usesActionScript3);
 	static FORCE_INLINE bool AVM1toBool(asAtom& a);

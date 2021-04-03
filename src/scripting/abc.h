@@ -944,6 +944,14 @@ private:
 	static void abc_coerce_s(call_context* context);
 	static void abc_astype(call_context* context);
 	static void abc_astypelate(call_context* context);
+	static void abc_astypelate_constant_constant(call_context* context);
+	static void abc_astypelate_local_constant(call_context* context);
+	static void abc_astypelate_constant_local(call_context* context);
+	static void abc_astypelate_local_local(call_context* context);
+	static void abc_astypelate_constant_constant_localresult(call_context* context);
+	static void abc_astypelate_local_constant_localresult(call_context* context);
+	static void abc_astypelate_constant_local_localresult(call_context* context);
+	static void abc_astypelate_local_local_localresult(call_context* context);
 
 	static void abc_negate(call_context* context); // 0x90
 	static void abc_increment(call_context* context);
@@ -1114,6 +1122,14 @@ private:
 	static void abc_instanceof(call_context* context);
 	static void abc_istype(call_context* context);
 	static void abc_istypelate(call_context* context);
+	static void abc_istypelate_constant_constant(call_context* context);
+	static void abc_istypelate_local_constant(call_context* context);
+	static void abc_istypelate_constant_local(call_context* context);
+	static void abc_istypelate_local_local(call_context* context);
+	static void abc_istypelate_constant_constant_localresult(call_context* context);
+	static void abc_istypelate_local_constant_localresult(call_context* context);
+	static void abc_istypelate_constant_local_localresult(call_context* context);
+	static void abc_istypelate_local_local_localresult(call_context* context);
 	static void abc_in(call_context* context);
 	
 	static void abc_increment_i(call_context* context); // 0xc0

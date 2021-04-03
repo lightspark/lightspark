@@ -2794,8 +2794,8 @@ bool asAtomHandler::isTypelate(asAtom& a,ASObject *type)
 	LOG_CALL(_("isTypelate"));
 	bool real_ret=false;
 
-	Class_base* objc=NULL;
-	Class_base* c=NULL;
+	Class_base* objc=nullptr;
+	Class_base* c=nullptr;
 	switch (type->getObjectType())
 	{
 		case T_INTEGER:
@@ -2853,6 +2853,69 @@ bool asAtomHandler::isTypelate(asAtom& a,ASObject *type)
 	return real_ret;
 }
 
+bool asAtomHandler::isTypelate(asAtom& a,asAtom& t)
+{
+	LOG_CALL(_("isTypelate"));
+	bool real_ret=false;
+
+	Class_base* objc=nullptr;
+	Class_base* c=nullptr;
+	switch (asAtomHandler::getObjectType(t))
+	{
+		case T_INTEGER:
+		case T_UINTEGER:
+		case T_NUMBER:
+		case T_OBJECT:
+		case T_STRING:
+			LOG(LOG_ERROR,"trying to call isTypelate on object:"<<toDebugString(a));
+			throwError<TypeError>(kIsTypeMustBeClassError);
+			break;
+		case T_NULL:
+			LOG(LOG_ERROR,"trying to call isTypelate on null:"<<toDebugString(a));
+			throwError<TypeError>(kConvertNullToObjectError);
+			break;
+		case T_UNDEFINED:
+			LOG(LOG_ERROR,"trying to call isTypelate on undefined:"<<toDebugString(a));
+			throwError<TypeError>(kConvertUndefinedToObjectError);
+			break;
+		case T_CLASS:
+			break;
+		default:
+			throwError<TypeError>(kIsTypeMustBeClassError);
+	}
+
+	c=asAtomHandler::as<Class_base>(t);
+	//Special case numeric types
+	if(isNumeric(a))
+	{
+		if(c==Class<Number>::getClass(c->getSystemState()) || c==c->getSystemState()->getObjectClassRef())
+			real_ret=true;
+		else if(c==Class<Integer>::getClass(c->getSystemState()))
+			real_ret=(toNumber(a)==toInt(a));
+		else if(c==Class<UInteger>::getClass(c->getSystemState()))
+			real_ret=(toNumber(a)==toUInt(a));
+		else
+			real_ret=false;
+		LOG_CALL(_("Numeric type is ") << ((real_ret)?"":_("not ")) << _("subclass of ") << c->class_name);
+		c->decRef();
+		return real_ret;
+	}
+
+	objc = getClass(a,c->getSystemState(),false);
+	if(!objc)
+	{
+		real_ret=getObjectType(a)==asAtomHandler::getObjectType(t);
+		LOG_CALL(_("isTypelate on non classed object ") << real_ret);
+		c->decRef();
+		return real_ret;
+	}
+
+	real_ret=objc->isSubClass(c);
+	LOG_CALL(_("Type ") << objc->class_name << _(" is ") << ((real_ret)?"":_("not ")) 
+			<< "subclass of " << c->class_name);
+	c->decRef();
+	return real_ret;
+}
 
 tiny_string asAtomHandler::toString(const asAtom& a,SystemState* sys)
 {

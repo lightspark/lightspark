@@ -3962,6 +3962,72 @@ void ABCVm::abc_convert_b_local_localresult(call_context* context)
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
 	++(context->exec_pos);
 }
+
+void ABCVm::abc_astypelate_constant_constant(call_context* context)
+{
+	LOG_CALL("astypelate_cc");
+	asAtom ret = asAtomHandler::asTypelate(*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant);
+	ASATOM_INCREF(ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_astypelate_local_constant(call_context* context)
+{
+	LOG_CALL("astypelate_lc");
+	asAtom ret = asAtomHandler::asTypelate(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant);
+	ASATOM_INCREF(ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_astypelate_constant_local(call_context* context)
+{
+	LOG_CALL("astypelate_cl");
+	asAtom ret = asAtomHandler::asTypelate(*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	ASATOM_INCREF(ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_astypelate_local_local(call_context* context)
+{
+	LOG_CALL("astypelate_ll");
+	asAtom ret = asAtomHandler::asTypelate(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	ASATOM_INCREF(ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_astypelate_constant_constant_localresult(call_context* context)
+{
+	LOG_CALL("astypelate_ccl");
+	asAtom ret = asAtomHandler::asTypelate(*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant);
+	ASATOM_INCREF(ret);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_astypelate_local_constant_localresult(call_context* context)
+{
+	LOG_CALL("astypelate_lcl");
+	asAtom ret = asAtomHandler::asTypelate(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant);
+	ASATOM_INCREF(ret);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_astypelate_constant_local_localresult(call_context* context)
+{
+	LOG_CALL("astypelate_cll");
+	asAtom ret = asAtomHandler::asTypelate(*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	ASATOM_INCREF(ret);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_astypelate_local_local_localresult(call_context* context)
+{
+	LOG_CALL("astypelate_lll");
+	asAtom ret = asAtomHandler::asTypelate(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	ASATOM_INCREF(ret);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),ret);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_increment_local(call_context* context)
 {
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
@@ -5207,6 +5273,76 @@ void ABCVm::abc_greaterequals_local_local_localresult(call_context* context)
 	asAtomHandler::setBool(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),ret);
 	++(context->exec_pos);
 }
+
+void ABCVm::abc_istypelate_constant_constant(call_context* context)
+{
+	bool ret=asAtomHandler::isTypelate(*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant);
+	LOG_CALL("istypelate_cc "<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_istypelate_local_constant(call_context* context)
+{
+	bool ret=asAtomHandler::isTypelate(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant);
+	LOG_CALL("istypelate_lc "<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_istypelate_constant_local(call_context* context)
+{
+	bool ret=asAtomHandler::isTypelate(*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	LOG_CALL("istypelate_cl "<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_istypelate_local_local(call_context* context)
+{
+	bool ret=asAtomHandler::isTypelate(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	LOG_CALL("istypelate_ll "<<ret);
+
+	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
+	++(context->exec_pos);
+}
+void ABCVm::abc_istypelate_constant_constant_localresult(call_context* context)
+{
+	bool ret=asAtomHandler::isTypelate(*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant);
+	LOG_CALL("istypelate_ccl "<<ret);
+
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
+	asAtomHandler::setBool(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_istypelate_local_constant_localresult(call_context* context)
+{
+	bool ret=asAtomHandler::isTypelate(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant);
+	LOG_CALL("istypelate_lcl "<<ret);
+
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
+	asAtomHandler::setBool(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_istypelate_constant_local_localresult(call_context* context)
+{
+	bool ret=asAtomHandler::isTypelate(*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	LOG_CALL("istypelate_cll "<<ret);
+
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
+	asAtomHandler::setBool(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_istypelate_local_local_localresult(call_context* context)
+{
+	bool ret=asAtomHandler::isTypelate(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+	LOG_CALL("istypelate_lll "<<ret<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
+
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
+	asAtomHandler::setBool(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),ret);
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_increment_i_local(call_context* context)
 {
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);

@@ -280,6 +280,95 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles,const std::l
 		}
 	}
 }
+void ShapesBuilder::outputTokens2(const std::list<FILLSTYLE> &styles, const std::list<LINESTYLE2> &linestyles, tokensVector& tokens)
+{
+	joinOutlines();
+	//Try to greedily condense as much as possible the output
+	map< unsigned int, vector< vector<ShapePathSegment> > >::iterator it=filledShapesMap.begin();
+	//For each color
+	for(;it!=filledShapesMap.end();++it)
+	{
+		assert(!it->second.empty());
+		//Find the style given the index
+		auto stylesIt=styles.begin();
+		assert(it->first);
+		for(unsigned int i=0;i<it->first-1;i++)
+		{
+			++stylesIt;
+			assert(stylesIt!=styles.end());
+		}
+		//Set the fill style
+		tokens.filltokens2.emplace_back(SET_FILL);
+		tokens.filltokens2.emplace_back(*stylesIt);
+		vector<vector<ShapePathSegment> >& outlinesForColor=it->second;
+		for(unsigned int i=0;i<outlinesForColor.size();i++)
+		{
+			vector<ShapePathSegment>& segments=outlinesForColor[i];
+			assert (segments[0].type == PATH_START);
+			tokens.filltokens2.emplace_back(MOVE);
+			tokens.filltokens2.emplace_back(segments[0].i);
+			for(unsigned int j=1;j<segments.size();j++) {
+				ShapePathSegment segment = segments[j];
+				assert(segment.type != PATH_START);
+				if (segment.type == PATH_STRAIGHT)
+				{
+					tokens.filltokens2.emplace_back(STRAIGHT);
+					tokens.filltokens2.emplace_back(segment.i);
+				}
+				if (segment.type == PATH_CURVE_QUADRATIC)
+				{
+					tokens.filltokens2.emplace_back(CURVE_QUADRATIC);
+					tokens.filltokens2.emplace_back(segment.i);
+					tokens.filltokens2.emplace_back(segments[++j].i);
+				}
+			}
+		}
+	}
+	if (strokeShapesMap.size() > 0)
+	{
+		tokens.stroketokens2.emplace_back(CLEAR_FILL);
+		it=strokeShapesMap.begin();
+		//For each stroke
+		for(;it!=strokeShapesMap.end();++it)
+		{
+			assert(!it->second.empty());
+			//Find the style given the index
+			auto stylesIt=linestyles.begin();
+			assert(it->first);
+			for(unsigned int i=0;i<it->first-1;i++)
+			{
+				++stylesIt;
+				assert(stylesIt!=linestyles.end());
+			}
+			//Set the line style
+			vector<vector<ShapePathSegment> >& outlinesForStroke=it->second;
+			tokens.stroketokens2.emplace_back(SET_STROKE);
+			tokens.stroketokens2.emplace_back(*stylesIt);
+			for(unsigned int i=0;i<outlinesForStroke.size();i++)
+			{
+				vector<ShapePathSegment>& segments=outlinesForStroke[i];
+				assert (segments[0].type == PATH_START);
+				tokens.stroketokens2.emplace_back(MOVE);
+				tokens.stroketokens2.emplace_back(segments[0].i);
+				for(unsigned int j=1;j<segments.size();j++) {
+					ShapePathSegment segment = segments[j];
+					assert(segment.type != PATH_START);
+					if (segment.type == PATH_STRAIGHT)
+					{
+						tokens.stroketokens2.emplace_back(STRAIGHT);
+						tokens.stroketokens2.emplace_back(segment.i);
+					}
+					if (segment.type == PATH_CURVE_QUADRATIC)
+					{
+						tokens.stroketokens2.emplace_back(CURVE_QUADRATIC);
+						tokens.stroketokens2.emplace_back(segment.i);
+						tokens.stroketokens2.emplace_back(segments[++j].i);
+					}
+				}
+			}
+		}
+	}
+}
 
 void ShapesBuilder::outputMorphTokens(const std::list<MORPHFILLSTYLE> &styles, const std::list<MORPHLINESTYLE2> &linestyles, tokensVector &tokens, uint16_t ratio)
 {

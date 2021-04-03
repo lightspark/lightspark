@@ -38,6 +38,8 @@ TokenContainer::TokenContainer(DisplayObject* _o, MemoryAccount* _m, const token
 {
 	tokens.filltokens.assign(_tokens.filltokens.begin(),_tokens.filltokens.end());
 	tokens.stroketokens.assign(_tokens.stroketokens.begin(),_tokens.stroketokens.end());
+	tokens.filltokens2.assign(_tokens.filltokens2.begin(),_tokens.filltokens2.end());
+	tokens.stroketokens2.assign(_tokens.stroketokens2.begin(),_tokens.stroketokens2.end());
 }
 
 bool TokenContainer::renderImpl(RenderContext& ctxt) const
@@ -126,6 +128,85 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 	}
 
 	shapesBuilder.outputTokens(fillStyles,lineStyles, tokens);
+}
+
+void TokenContainer::FromShaperecordListToShapeVector2(const std::vector<SHAPERECORD>& shapeRecords,
+								  tokensVector& tokens,
+								  const std::list<FILLSTYLE>& fillStyles,
+								  const MATRIX& matrix,
+								  const std::list<LINESTYLE2>& lineStyles,
+								  const RECT& shapebounds)
+{
+	Vector2 cursor;
+	unsigned int color0=0;
+	unsigned int color1=0;
+	unsigned int linestyle=0;
+			
+	ShapesBuilder shapesBuilder;
+
+	cursor.x= -shapebounds.Xmin;
+	cursor.y= -shapebounds.Ymin;
+	
+	for(unsigned int i=0;i<shapeRecords.size();i++)
+	{
+		const SHAPERECORD* cur=&shapeRecords[i];
+		if(cur->TypeFlag)
+		{
+			if(cur->StraightFlag)
+			{
+				Vector2 p1(matrix.multiply2D(cursor));
+				cursor.x += cur->DeltaX;
+				cursor.y += cur->DeltaY;
+				Vector2 p2(matrix.multiply2D(cursor));
+
+				if(color0)
+					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
+				if(color1)
+					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
+				if(linestyle)
+					shapesBuilder.extendStrokeOutline(linestyle,p1,p2);
+			}
+			else
+			{
+				Vector2 p1(matrix.multiply2D(cursor));
+				cursor.x += cur->ControlDeltaX;
+				cursor.y += cur->ControlDeltaY;
+				Vector2 p2(matrix.multiply2D(cursor));
+				cursor.x += cur->AnchorDeltaX;
+				cursor.y += cur->AnchorDeltaY;
+				Vector2 p3(matrix.multiply2D(cursor));
+
+				if(color0)
+					shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
+				if(color1)
+					shapesBuilder.extendFilledOutlineForColorCurve(color1,p1,p2,p3);
+				if(linestyle)
+					shapesBuilder.extendStrokeOutlineCurve(linestyle,p1,p2,p3);
+			}
+		}
+		else
+		{
+			if(cur->StateMoveTo)
+			{
+				cursor.x= cur->MoveDeltaX-shapebounds.Xmin;
+				cursor.y= cur->MoveDeltaY-shapebounds.Ymin;
+			}
+			if(cur->StateLineStyle)
+			{
+				linestyle = cur->LineStyle;
+			}
+			if(cur->StateFillStyle1)
+			{
+				color1=cur->FillStyle1;
+			}
+			if(cur->StateFillStyle0)
+			{
+				color0=cur->FillStyle0;
+			}
+		}
+	}
+
+	shapesBuilder.outputTokens2(fillStyles,lineStyles, tokens);
 }
 
 void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,DefineMorphShapeTag *tag, tokensVector &tokens, uint16_t ratio)
@@ -395,6 +476,89 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 				strokeWidth = (double)(tokens.stroketokens[i]->lineStyle.Width / 20.0);
 				break;
 		}
+	}
+
+	auto it = tokens.filltokens2.begin();
+	while(it != tokens.filltokens2.end())
+	{
+		switch((*it).type)
+		{
+			case CURVE_CUBIC:
+			{
+				it++;
+				VECTOR_BOUNDS((*it).vec);
+			}
+			// falls through
+			case CURVE_QUADRATIC:
+			{
+				it++;
+				VECTOR_BOUNDS((*it).vec);
+			}
+			// falls through
+			case STRAIGHT:
+			{
+				hasContent = true;
+			}
+			// falls through
+			case MOVE:
+			{
+				it++;
+				VECTOR_BOUNDS((*it).vec);
+				break;
+			}
+			case CLEAR_FILL:
+			case CLEAR_STROKE:
+			case SET_FILL:
+			case FILL_KEEP_SOURCE:
+			case FILL_TRANSFORM_TEXTURE:
+				break;
+			case SET_STROKE:
+				it++;
+				strokeWidth = (double)((*it).lineStyle->Width / 20.0);
+				break;
+		}
+		it++;
+	}
+	auto it2 = tokens.stroketokens2.begin();
+	while(it2 != tokens.stroketokens2.end())
+	{
+		switch((*it2).type)
+		{
+			case CURVE_CUBIC:
+			{
+				it2++;
+				VECTOR_BOUNDS((*it2).vec);
+			}
+			// falls through
+			case CURVE_QUADRATIC:
+			{
+				it2++;
+				VECTOR_BOUNDS((*it2).vec);
+			}
+			// falls through
+			case STRAIGHT:
+			{
+				hasContent = true;
+			}
+			// falls through
+			case MOVE:
+			{
+				it2++;
+				VECTOR_BOUNDS((*it2).vec);
+				break;
+			}
+			case CLEAR_FILL:
+			case CLEAR_STROKE:
+			case SET_FILL:
+			case FILL_KEEP_SOURCE:
+			case FILL_TRANSFORM_TEXTURE:
+				break;
+			case SET_STROKE:
+				it2++;
+				strokeWidth = (double)((*it2).lineStyle->Width / 20.0);
+				break;
+		}
+		it2++;
 	}
 	if(hasContent)
 	{

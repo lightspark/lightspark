@@ -399,7 +399,7 @@ private:
 
 public:
 	PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
-	void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
+	void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const override;
 };
 
 class FrameLabelTag: public Tag
@@ -416,7 +416,7 @@ private:
 	RGB BackgroundColor;
 public:
 	SetBackgroundColorTag(RECORDHEADER h, std::istream& in);
-	void execute(RootMovieClip* root) const;
+	void execute(RootMovieClip* root) const override;
 };
 
 class DefineButtonTag: public DictionaryTag
@@ -429,8 +429,8 @@ private:
 public:
 	std::vector<BUTTONCONDACTION> condactions;
 	DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root, AdditionalDataTag* datatag);
-	virtual int getId() const { return ButtonId; }
-	ASObject* instance(Class_base* c=NULL);
+	int getId() const override { return ButtonId; }
+	ASObject* instance(Class_base* c=nullptr);
 };
 
 class KERNINGRECORD
@@ -448,7 +448,7 @@ public:
 	DefineBinaryDataTag(RECORDHEADER h,std::istream& s,RootMovieClip* root);
 	~DefineBinaryDataTag() { delete[] bytes; }
 	virtual int getId() const {return Tag;}
-	ASObject* instance(Class_base* c=NULL);
+	ASObject* instance(Class_base* c=nullptr) override;
 };
 
 class FontTag: public DictionaryTag
@@ -465,19 +465,20 @@ protected:
 	bool FontFlagsItalic;
 	bool FontFlagsBold;
 	virtual number_t getRenderCharStartYPos() const =0;
+	std::list<FILLSTYLE> fillStyles;
 public:
 	/* Multiply the coordinates of the SHAPEs by this
 	 * value to get a resolution of 1024*20th pixel
 	 * DefineFont3Tag sets 1 here, the rest set 20
 	 */
 	const int scaling;
-	FontTag(RECORDHEADER h, int _scaling,RootMovieClip* root):DictionaryTag(h,root), scaling(_scaling) {}
+	FontTag(RECORDHEADER h, int _scaling,RootMovieClip* root);
 	std::vector<SHAPE>& getGlyphShapes()
 	{
 		return GlyphShapeTable;
 	}
-	int getId() const { return FontID; }
-	ASObject* instance(Class_base* c=nullptr);
+	int getId() const override { return FontID; }
+	ASObject* instance(Class_base* c=nullptr) override;
 	const tiny_string getFontname() const { return fontname;}
 	virtual void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos)=0;
 	virtual number_t getRenderCharAdvance(uint32_t index) const =0;

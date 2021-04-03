@@ -632,9 +632,17 @@ DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in,RootMovieC
 	root->registerEmbeddedFont(fonttag->getFontname(),fonttag);
 }
 
+FontTag::FontTag(RECORDHEADER h, int _scaling, RootMovieClip* root):DictionaryTag(h,root), scaling(_scaling)
+{
+	FILLSTYLE fs(1);
+	fs.FillStyleType = SOLID_FILL;
+	fs.Color = RGBA(255,255,255,255);
+	fillStyles.push_back(fs);
+}
+
 ASObject* FontTag::instance(Class_base* c)
 { 
-	Class_base* retClass=NULL;
+	Class_base* retClass=nullptr;
 	if(c)
 		retClass=c;
 	else if(bindedTo)
@@ -650,11 +658,6 @@ ASObject* FontTag::instance(Class_base* c)
 
 const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontpixelsize,uint32_t& codetableindex)
 {
-	std::list<FILLSTYLE> fillStyles;
-	FILLSTYLE fs(1);
-	fs.FillStyleType = SOLID_FILL;
-	fs.Color = RGBA(255,255,255,255);
-	fillStyles.push_back(fs);
 	assert (*chrIt != 13 && *chrIt != 10);
 	int tokenscaling = fontpixelsize * this->scaling;
 	codetableindex=UINT32_MAX;
@@ -672,7 +675,7 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 				ystart *=number_t(tokenscaling);
 				MATRIX glyphMatrix(number_t(tokenscaling)/1024.0f, number_t(tokenscaling)/1024.0f, 0, 0,0,ystart/1024.0f);
 				tokensVector tmptokens(getSys()->tagsMemory);
-				TokenContainer::FromShaperecordListToShapeVector(sr,tmptokens,fillStyles,glyphMatrix);
+				TokenContainer::FromShaperecordListToShapeVector2(sr,tmptokens,fillStyles,glyphMatrix);
 				number_t xmin, xmax, ymin, ymax;
 				if (!TokenContainer::boundsRectFromTokens(tmptokens,0.05,xmin,xmax,ymin,ymax))
 					return nullptr;
@@ -1428,7 +1431,7 @@ ASObject *DefineShapeTag::instance(Class_base *c)
 		{
 			it->ShapeBounds = ShapeBounds;
 		}
-		TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,*tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2,ShapeBounds);
+		TokenContainer::FromShaperecordListToShapeVector2(Shapes.ShapeRecords,*tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2,ShapeBounds);
 	}
 	Shape* ret=nullptr;
 	if(c==nullptr)

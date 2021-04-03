@@ -95,23 +95,52 @@ public:
 	GeomToken(GEOM_TOKEN_TYPE _t, const MORPHLINESTYLE2& _s);
 };
 
+struct GeomToken2
+{
+	union
+	{
+		GEOM_TOKEN_TYPE type;
+		struct
+		{
+			int32_t x;
+			int32_t y;
+		} vec;
+		const FILLSTYLE*  fillStyle; // make sure the pointer is valid until rendering is done
+		const LINESTYLE2* lineStyle; // make sure the pointer is valid until rendering is done
+		number_t value;
+	};
+	GeomToken2(GEOM_TOKEN_TYPE t):type(t) {}
+	GeomToken2(uint64_t v)
+	{
+		vec.x = (int32_t(v&0xffffffff));
+		vec.y = (int32_t(v>>32));
+	}
+	GeomToken2(const FILLSTYLE& fs):fillStyle(&fs) {}
+	GeomToken2(const LINESTYLE2& ls):lineStyle(&ls) {}
+	GeomToken2(number_t val):value(val) {}
+};
+
 struct tokensVector
 {
 	std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>> filltokens;
 	std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>> stroketokens;
+	std::vector<GeomToken2> filltokens2;
+	std::vector<GeomToken2> stroketokens2;
 	tokensVector(reporter_allocator<_NR<GeomToken>> m):filltokens(m),stroketokens(m) {}
-	void clear() 
+	void clear()
 	{
 		filltokens.clear();
 		stroketokens.clear();
+		filltokens2.clear();
+		stroketokens2.clear();
 	}
 	uint32_t size() const
 	{
-		return filltokens.size()+stroketokens.size();
+		return filltokens.size()+stroketokens.size()+filltokens2.size()+stroketokens2.size();
 	}
 	bool empty() const
 	{
-		return filltokens.empty() && stroketokens.empty();
+		return filltokens.empty() && stroketokens.empty() && filltokens2.empty() && stroketokens2.empty();
 	}
 };
 
@@ -144,7 +173,8 @@ public:
 		@param styles This list is supposed to survive until as long as the returned tokens array
 		@param tokens A vector that will be filled with tokens
 	*/
-	void outputTokens(const std::list<FILLSTYLE>& styles, const std::list<LINESTYLE2> &linestyles, tokensVector& tokens);
+	void outputTokens(const std::list<FILLSTYLE>& styles, const std::list<LINESTYLE2>& linestyles, tokensVector& tokens);
+	void outputTokens2(const std::list<FILLSTYLE>& styles, const std::list<LINESTYLE2>& linestyles, tokensVector& tokens);
 	void outputMorphTokens(const std::list<MORPHFILLSTYLE>& styles, const std::list<MORPHLINESTYLE2> &linestyles, tokensVector& tokens, uint16_t ratio);
 	void clear();
 };

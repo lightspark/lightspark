@@ -910,9 +910,9 @@ void TextField::getTextBounds(const tiny_string& txt,number_t &xmin,number_t &xm
 	if (embeddedfont && embeddedfont->hasGlyphs(text))
 	{
 		scaling = 1.0f/1024.0f/20.0f;
-		TokenContainer container(nullptr,nullptr);
-		embeddedfont->fillTextTokens(container.tokens,txt,fontSize,textColor,leading,autosizeposition);
-		container.boundsRect(xmin,xmax,ymin,ymax);
+		embeddedfont->getTextBounds(txt,fontSize,xmax,ymax);
+		xmin = autosizeposition;
+		xmax += autosizeposition;
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"TextFields: computing of textbounds not implemented for non-embedded fonts");
@@ -1029,15 +1029,12 @@ void TextField::updateSizes()
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	if (embeddedfont && embeddedfont->hasGlyphs(text))
 	{
-		tokens.clear();
 		scaling = 1.0f/1024.0f/20.0f;
-		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading,0);
-		number_t x1,x2,y1,y2;
-		if (TokenContainer::boundsRect(x1,x2,y1,y2))
-		{
-			tw = x2-x1;
-			th = y2-y1;
-		}
+		
+		number_t w,h;
+		embeddedfont->getTextBounds(text,fontSize,w,h);
+		tw = w;
+		th = h;
 	}
 	else
 	{
@@ -1373,19 +1370,13 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		if (this->caretblinkstate)
 		{
 			uint32_t tw=0;
-			TokenContainer container(nullptr,nullptr);
 			if (!text.empty())
 			{
 				tiny_string tmptxt = text.substr(0,caretIndex);
-				embeddedfont->fillTextTokens(container.tokens,tmptxt,fontSize,textColor,leading,autosizeposition);
-				number_t x1,x2,y1,y2;
-				if (container.boundsRect(x1,x2,y1,y2))
-				{
-					tw = x2-x1;
-					tw += autosizeposition/scaling;
-				}
-				else
-					tw = autosizeposition/scaling;
+				number_t w,h;
+				embeddedfont->getTextBounds(tmptxt,fontSize,w,h);
+				tw = w;
+				tw += autosizeposition/scaling;
 			}
 			else
 			{
@@ -1559,11 +1550,9 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 				if (!text.empty())
 				{
 					tiny_string tmptxt = text.substr(0,caretIndex);
-					tokensVector tmptokens(nullptr);
-					embeddedfont->fillTextTokens(tmptokens,tmptxt,fontSize,textColor,leading,autosizeposition);
-					number_t x1,x2,y1,y2;
-					if (boundsRect(x1,x2,y1,y2))
-						tw = x2-x1;
+					number_t w,h;
+					embeddedfont->getTextBounds(tmptxt,fontSize,w,h);
+					tw = w;
 				}
 				MATRIX totalMatrix;
 				std::vector<IDrawable::MaskData> masks;

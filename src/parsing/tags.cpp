@@ -732,6 +732,38 @@ number_t DefineFontTag::getRenderCharAdvance(uint32_t index) const
 	return 0;
 }
 
+void DefineFontTag::getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height)
+{
+	int tokenscaling = fontpixelsize * this->scaling;
+	width=0;
+	height=tokenscaling;
+	number_t tmpwidth=0;
+
+	for (CharIterator it = text.begin(); it != text.end(); it++)
+	{
+		if (*it == 13 || *it == 10)
+		{
+			if (width < tmpwidth)
+				width = tmpwidth;
+			tmpwidth = 0;
+			height+=tokenscaling;
+		}
+		else
+		{
+			for (unsigned int i = 0; i < CodeTable.size(); i++)
+			{
+				if (CodeTable[i] == *it)
+				{
+					tmpwidth += tokenscaling;
+					break;
+				}
+			}
+		}
+	}
+	if (width < tmpwidth)
+		width = tmpwidth;
+}
+
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 20, root)
 {
 	LOG(LOG_TRACE,_("DefineFont"));
@@ -813,6 +845,41 @@ number_t DefineFont2Tag::getRenderCharAdvance(uint32_t index) const
 	if (index < FontAdvanceTable.size())
 		return FontAdvanceTable[index]/1024.0;
 	return 0;
+}
+
+void DefineFont2Tag::getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height)
+{
+	int tokenscaling = fontpixelsize * this->scaling;
+	width=0;
+	height= tokenscaling;
+	number_t tmpwidth=0;
+
+	for (CharIterator it = text.begin(); it != text.end(); it++)
+	{
+		if (*it == 13 || *it == 10)
+		{
+			if (width < tmpwidth)
+				width = tmpwidth;
+			tmpwidth = 0;
+			height+=tokenscaling;
+		}
+		else
+		{
+			for (unsigned int i = 0; i < CodeTable.size(); i++)
+			{
+				if (CodeTable[i] == *it)
+				{
+					if (FontFlagsHasLayout)
+						tmpwidth += FontAdvanceTable[i];
+					else
+						tmpwidth += tokenscaling;
+					break;
+				}
+			}
+		}
+	}
+	if (width < tmpwidth)
+		width = tmpwidth;
 }
 
 DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 20, root)
@@ -968,6 +1035,41 @@ number_t DefineFont3Tag::getRenderCharAdvance(uint32_t index) const
 	if (index < FontAdvanceTable.size())
 		return FontAdvanceTable[index]/1024.0/20.0;
 	return 0;
+}
+
+void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height)
+{
+	int tokenscaling = fontpixelsize * this->scaling;
+	width=0;
+	height= tokenscaling;
+	number_t tmpwidth=0;
+
+	for (CharIterator it = text.begin(); it != text.end(); it++)
+	{
+		if (*it == 13 || *it == 10)
+		{
+			if (width < tmpwidth)
+				width = tmpwidth;
+			tmpwidth = 0;
+			height+=tokenscaling;
+		}
+		else
+		{
+			for (unsigned int i = 0; i < CodeTable.size(); i++)
+			{
+				if (CodeTable[i] == *it)
+				{
+					if (FontFlagsHasLayout)
+						tmpwidth += FontAdvanceTable[i];
+					else
+						tmpwidth += tokenscaling;
+					break;
+				}
+			}
+		}
+	}
+	if (width < tmpwidth)
+		width = tmpwidth;
 }
 
 DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root),CodeTableOffset(0)

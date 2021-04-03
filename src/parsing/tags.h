@@ -482,6 +482,7 @@ public:
 	const tiny_string getFontname() const { return fontname;}
 	virtual void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos)=0;
 	virtual number_t getRenderCharAdvance(uint32_t index) const =0;
+	virtual void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height)=0;
 	const TextureChunk *getCharTexture(const CharIterator& chrIt, int fontpixelsize, uint32_t &codetableindex);
 	bool hasGlyphs(const tiny_string text) const;
 };
@@ -495,6 +496,7 @@ protected:
 public:
 	DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	number_t getRenderCharAdvance(uint32_t index) const override;
+	void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height) override;
 	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) override;
 };
 
@@ -527,6 +529,7 @@ protected:
 public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	number_t getRenderCharAdvance(uint32_t index) const override;
+	void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height) override;
 	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) override;
 };
 
@@ -552,6 +555,7 @@ protected:
 public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	number_t getRenderCharAdvance(uint32_t index) const override;
+	void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height) override;
 	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, RGB textColor, uint32_t leading,uint32_t startpos) override;
 };
 

@@ -584,6 +584,7 @@ private:
 	UI8 AdvanceBits;
 	std::vector < TEXTRECORD > TextRecords;
 	mutable tokensVector tokens;
+	std::list<FILLSTYLE> fillStyles;
 	void computeCached();
 public:
 	int version;

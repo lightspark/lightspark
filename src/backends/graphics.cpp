@@ -475,8 +475,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	tokentype = 1;
 	while (tokentype)
 	{
-		std::vector<GeomToken2>::const_iterator it;
-		std::vector<GeomToken2>::const_iterator itend;
+		std::vector<uint64_t>::const_iterator it;
+		std::vector<uint64_t>::const_iterator itend;
 		switch(tokentype)
 		{
 			case 1:
@@ -497,25 +497,26 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 			break;
 		while (it != itend)
 		{
-			switch((*it).type)
+			GeomToken2 p(*it,false);
+			switch(p.type)
 			{
 				case MOVE:
 				{
-					GeomToken2 p1 = *(++it);
+					GeomToken2 p1(*(++it),false);
 					PATH(cairo_move_to, (p1.vec.x)*scalex-xstart*scalex, (p1.vec.y)*scaley-ystart*scaley);
 					break;
 				}
 				case STRAIGHT:
 				{
-					GeomToken2 p1 = *(++it);
+					GeomToken2 p1(*(++it),false);
 					PATH(cairo_line_to, (p1.vec.x)*scalex-xstart*scalex, (p1.vec.y)*scaley-ystart*scaley);
 					empty = false;
 					break;
 				}
 				case CURVE_QUADRATIC:
 				{
-					GeomToken2 p1 = *(++it);
-					GeomToken2 p2 = *(++it);
+					GeomToken2 p1(*(++it),false);
+					GeomToken2 p2(*(++it),false);
 					PATH(quadraticBezier,
 					   (p1.vec.x)*scalex-xstart*scalex, (p1.vec.y)*scaley-ystart*scaley,
 					   (p2.vec.x)*scalex-xstart*scalex, (p2.vec.y)*scaley-ystart*scaley);
@@ -524,9 +525,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				}
 				case CURVE_CUBIC:
 				{
-					GeomToken2 p1 = *(++it);
-					GeomToken2 p2 = *(++it);
-					GeomToken2 p3 = *(++it);
+					GeomToken2 p1(*(++it),false);
+					GeomToken2 p2(*(++it),false);
+					GeomToken2 p3(*(++it),false);
 					PATH(cairo_curve_to,
 					   (p1.vec.x)*scalex-xstart*scalex, (p1.vec.y)*scaley-ystart*scaley,
 					   (p2.vec.x)*scalex-xstart*scalex, (p2.vec.y)*scaley-ystart*scaley,
@@ -536,12 +537,12 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				}
 				case SET_FILL:
 				{
-					++it;
+					GeomToken2 p1(*(++it),false);
 					if(skipPaint)
 						break;
 					cairo_fill(cr);
 					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-					const FILLSTYLE* style = (*it).fillStyle;
+					const FILLSTYLE* style = p1.fillStyle;
 					if (style->FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
 						style->FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
 						cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
@@ -556,12 +557,12 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				}
 				case SET_STROKE:
 				{
-					++it;
+					GeomToken2 p1(*(++it),false);
 					instroke = true;
 					if(skipPaint)
 						break;
 					cairo_stroke(stroke_cr);
-					const LINESTYLE2* style = (*it).lineStyle;
+					const LINESTYLE2* style = p1.lineStyle;
 					cairo_set_operator(stroke_cr, CAIRO_OPERATOR_OVER);
 					if (style->HasFillFlag)
 					{
@@ -621,7 +622,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					if(skipPaint)
 						break;
 					cairo_fill(cr);
-					if((*it).type==CLEAR_FILL)
+					if(p.type==CLEAR_FILL)
 						// Clear source.
 						cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 					break;
@@ -635,12 +636,12 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					break;
 				case FILL_TRANSFORM_TEXTURE:
 				{
-					GeomToken2 p1 = *(++it);
-					GeomToken2 p2 = *(++it);
-					GeomToken2 p3 = *(++it);
-					GeomToken2 p4 = *(++it);
-					GeomToken2 p5 = *(++it);
-					GeomToken2 p6 = *(++it);
+					GeomToken2 p1(*(++it),false);
+					GeomToken2 p2(*(++it),false);
+					GeomToken2 p3(*(++it),false);
+					GeomToken2 p4(*(++it),false);
+					GeomToken2 p5(*(++it),false);
+					GeomToken2 p6(*(++it),false);
 					if(skipPaint)
 						break;
 					cairo_matrix_t origmat;

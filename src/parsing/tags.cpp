@@ -1441,7 +1441,6 @@ void DefineTextTag::computeCached()
 		return;
 
 	FontTag* curFont = nullptr;
-	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
 	FILLSTYLE fs(1);
 	fs.FillStyleType = SOLID_FILL;
@@ -1502,7 +1501,7 @@ void DefineTextTag::computeCached()
 			//Apply glyphMatrix first, then scaledTextMatrix
 			glyphMatrix = scaledTextMatrix.multiplyMatrix(glyphMatrix);
 
-			TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
+			TokenContainer::FromShaperecordListToShapeVector2(sr,tokens,fillStyles,glyphMatrix);
 			curPos.x += ge.GlyphAdvance;
 		}
 	}

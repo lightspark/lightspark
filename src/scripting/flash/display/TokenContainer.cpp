@@ -481,18 +481,19 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 	auto it = tokens.filltokens2.begin();
 	while(it != tokens.filltokens2.end())
 	{
-		switch((*it).type)
+		GeomToken2 p(*it,false);
+		switch(p.type)
 		{
 			case CURVE_CUBIC:
 			{
-				it++;
-				VECTOR_BOUNDS((*it).vec);
+				GeomToken2 p1(*(++it),false);
+				VECTOR_BOUNDS(p1.vec);
 			}
 			// falls through
 			case CURVE_QUADRATIC:
 			{
-				it++;
-				VECTOR_BOUNDS((*it).vec);
+				GeomToken2 p1(*(++it),false);
+				VECTOR_BOUNDS(p1.vec);
 			}
 			// falls through
 			case STRAIGHT:
@@ -502,8 +503,8 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			// falls through
 			case MOVE:
 			{
-				it++;
-				VECTOR_BOUNDS((*it).vec);
+				GeomToken2 p1(*(++it),false);
+				VECTOR_BOUNDS(p1.vec);
 				break;
 			}
 			case CLEAR_FILL:
@@ -513,8 +514,8 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			case FILL_TRANSFORM_TEXTURE:
 				break;
 			case SET_STROKE:
-				it++;
-				strokeWidth = (double)((*it).lineStyle->Width / 20.0);
+				GeomToken2 p1(*(++it),false);
+				strokeWidth = (double)(p1.lineStyle->Width / 20.0);
 				break;
 		}
 		it++;
@@ -522,18 +523,19 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 	auto it2 = tokens.stroketokens2.begin();
 	while(it2 != tokens.stroketokens2.end())
 	{
-		switch((*it2).type)
+		GeomToken2 p(*it2,false);
+		switch(p.type)
 		{
 			case CURVE_CUBIC:
 			{
-				it2++;
-				VECTOR_BOUNDS((*it2).vec);
+				GeomToken2 p1(*(++it2),false);
+				VECTOR_BOUNDS(p1.vec);
 			}
 			// falls through
 			case CURVE_QUADRATIC:
 			{
-				it2++;
-				VECTOR_BOUNDS((*it2).vec);
+				GeomToken2 p1(*(++it2),false);
+				VECTOR_BOUNDS(p1.vec);
 			}
 			// falls through
 			case STRAIGHT:
@@ -543,8 +545,8 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			// falls through
 			case MOVE:
 			{
-				it2++;
-				VECTOR_BOUNDS((*it2).vec);
+				GeomToken2 p1(*(++it2),false);
+				VECTOR_BOUNDS(p1.vec);
 				break;
 			}
 			case CLEAR_FILL:
@@ -554,8 +556,8 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			case FILL_TRANSFORM_TEXTURE:
 				break;
 			case SET_STROKE:
-				it2++;
-				strokeWidth = (double)((*it2).lineStyle->Width / 20.0);
+				GeomToken2 p1(*(++it2),false);
+				strokeWidth = (double)(p1.lineStyle->Width / 20.0);
 				break;
 		}
 		it2++;

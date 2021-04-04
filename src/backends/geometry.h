@@ -107,25 +107,33 @@ struct GeomToken2
 		} vec;
 		const FILLSTYLE*  fillStyle; // make sure the pointer is valid until rendering is done
 		const LINESTYLE2* lineStyle; // make sure the pointer is valid until rendering is done
+		const MORPHLINESTYLE2* morphlineStyle; // make sure the pointer is valid until rendering is done
 		number_t value;
+		uint64_t uval;// this is used to have direct access to the value as it is stored in a vector<uint64_t> for performance
 	};
 	GeomToken2(GEOM_TOKEN_TYPE t):type(t) {}
-	GeomToken2(uint64_t v)
+	GeomToken2(uint64_t v, bool isvec)
 	{
-		vec.x = (int32_t(v&0xffffffff));
-		vec.y = (int32_t(v>>32));
+		if (isvec)
+		{
+			vec.x = (int32_t(v&0xffffffff));
+			vec.y = (int32_t(v>>32));
+		}
+		else
+			uval = v;
 	}
 	GeomToken2(const FILLSTYLE& fs):fillStyle(&fs) {}
 	GeomToken2(const LINESTYLE2& ls):lineStyle(&ls) {}
 	GeomToken2(number_t val):value(val) {}
+	GeomToken2(const MORPHLINESTYLE2& mls):morphlineStyle(&mls) {}
 };
 
 struct tokensVector
 {
 	std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>> filltokens;
 	std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>> stroketokens;
-	std::vector<GeomToken2> filltokens2;
-	std::vector<GeomToken2> stroketokens2;
+	std::vector<uint64_t> filltokens2;
+	std::vector<uint64_t> stroketokens2;
 	tokensVector(reporter_allocator<_NR<GeomToken>> m):filltokens(m),stroketokens(m) {}
 	void clear()
 	{

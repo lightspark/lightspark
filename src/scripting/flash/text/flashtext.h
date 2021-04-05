@@ -121,6 +121,12 @@ private:
 	tiny_string tagvarname;
 	Mutex invalidatemutex;
 	DefineEditTextTag* tag;
+
+	// these are only used when drawing to DisplayObject, so they are guarranteed not to be destroyed during rendering
+	FILLSTYLE fillstyleTextColor;
+	FILLSTYLE fillstyleBackgroundColor;
+	LINESTYLE2 lineStyleBorder;
+	LINESTYLE2 lineStyleCaret;
 	void getTextBounds(const tiny_string &txt, number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax);
 protected:
 	void afterSetLegacyMatrix() override;

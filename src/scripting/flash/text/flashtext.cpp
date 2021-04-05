@@ -122,7 +122,9 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname, DefineEditTextTag *_tag)
 	: InteractiveObject(c), TextData(textData), TokenContainer(this, this->getSystemState()->textTokenMemory), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),alwaysShowSelection(false),
+	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),
+	  fillstyleTextColor(0xff),fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),
+	  alwaysShowSelection(false),
 	  condenseWhite(false), displayAsPassword(false),
 	  embedFonts(false), maxChars(_tag ? int32_t(_tag->MaxLength) : 0), mouseWheelEnabled(true),
 	  selectable(_selectable), selectionBeginIndex(0), selectionEndIndex(0),
@@ -1343,29 +1345,39 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		scaling = 1.0f/1024.0f/20.0f;
 		if (this->border || this->background)
 		{
-			FILLSTYLE fillstyle(0xff);
-			fillstyle.FillStyleType=SOLID_FILL;
-			fillstyle.Color=this->backgroundColor;
-			tokens.filltokens.emplace_back(_MR(new GeomToken(SET_FILL, fillstyle)));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(MOVE, Vector2(bxmin/scaling, bymin/scaling))));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(bxmin/scaling, (bymax-bymin)/scaling))));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling))));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, bymin/scaling))));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(bxmin/scaling, bymin/scaling))));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(CLEAR_FILL)));
+			fillstyleBackgroundColor.FillStyleType=SOLID_FILL;
+			fillstyleBackgroundColor.Color=this->backgroundColor;
+			tokens.filltokens2.push_back(GeomToken2(SET_FILL).uval);
+			tokens.filltokens2.push_back(GeomToken2(fillstyleBackgroundColor).uval);
+			tokens.filltokens2.push_back(GeomToken2(MOVE).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
+			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens2.push_back(GeomToken2(CLEAR_FILL).uval);
 		}
 		if (this->border)
 		{
-			LINESTYLE2 linestyle(0xff);
-			linestyle.Color=this->borderColor;
-			linestyle.Width=20;
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(SET_STROKE, linestyle)));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(MOVE, Vector2(bxmin/scaling, bymin/scaling))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(bxmin/scaling, (bymax-bymin)/scaling))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, bymin/scaling))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(bxmin/scaling, bymin/scaling))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(CLEAR_STROKE)));
+			lineStyleBorder.Color=this->borderColor;
+			lineStyleBorder.Width=20;
+			tokens.filltokens2.push_back(GeomToken2(SET_STROKE).uval);
+			tokens.filltokens2.push_back(GeomToken2(lineStyleBorder).uval);
+			tokens.filltokens2.push_back(GeomToken2(MOVE).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
+			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens2.push_back(GeomToken2(CLEAR_STROKE).uval);
 		}
 		if (this->caretblinkstate)
 		{
@@ -1383,16 +1395,20 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				tw += autosizeposition;
 				tw /=scaling;
 			}
-			LINESTYLE2 linestyle(0xff);
-			linestyle.Color=RGB(0,0,0);
-			linestyle.Width=40;
+			lineStyleCaret.Color=RGB(0,0,0);
+			lineStyleCaret.Width=40;
 			int ypadding = (bymax-bymin-2)/scaling;
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(SET_STROKE, linestyle)));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(MOVE, Vector2(tw, bymin/scaling+ypadding))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(tw, (bymax-bymin)/scaling-ypadding))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(CLEAR_STROKE)));
+			tokens.filltokens2.push_back(GeomToken2(SET_STROKE).uval);
+			tokens.filltokens2.push_back(GeomToken2(lineStyleCaret).uval);
+			tokens.filltokens2.push_back(GeomToken2(MOVE).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2(tw, bymin/scaling+ypadding)).uval);
+			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
+			tokens.filltokens2.push_back(GeomToken2(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
+			tokens.filltokens2.push_back(GeomToken2(CLEAR_STROKE).uval);
 		}
-		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading,autosizeposition);
+		fillstyleTextColor.FillStyleType=SOLID_FILL;
+		fillstyleTextColor.Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
+		embeddedfont->fillTextTokens(tokens,text,fontSize,fillstyleTextColor,leading,autosizeposition);
 		return TokenContainer::invalidate(target, totalMatrix,smoothing);
 	}
 	std::vector<IDrawable::MaskData> masks;

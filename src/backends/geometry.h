@@ -126,6 +126,11 @@ struct GeomToken2
 	GeomToken2(const LINESTYLE2& ls):lineStyle(&ls) {}
 	GeomToken2(number_t val):value(val) {}
 	GeomToken2(const MORPHLINESTYLE2& mls):morphlineStyle(&mls) {}
+	GeomToken2(const Vector2& _vec)
+	{
+		vec.x=_vec.x;
+		vec.y=_vec.y;
+	}
 };
 
 struct tokensVector

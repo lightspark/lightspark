@@ -87,126 +87,134 @@ void ShapesBuilder::joinOutlines()
 	}
 }
 
-void ShapesBuilder::extendFilledOutlineForColor(unsigned int color, const Vector2& v1, const Vector2& v2)
+void ShapesBuilder::extendFilledOutlineForColor(std::vector< std::vector<ShapePathSegment> >* outlinesForColor, const Vector2& v1, const Vector2& v2)
 {
-	assert_and_throw(color);
+	assert_and_throw(outlinesForColor);
 	//Find the indices of the vertex
 	uint64_t v1Index = makeVertex(v1);
 	uint64_t v2Index = makeVertex(v2);
 
-	vector< vector<ShapePathSegment> >& outlinesForColor=filledShapesMap[color];
 	//Search a suitable outline to attach this new vertex
-	for(unsigned int i=outlinesForColor.size();i;)
+	auto it = outlinesForColor->rbegin();
+	while (it !=outlinesForColor->rend())
 	{
-		--i;
-		assert_and_throw(outlinesForColor[i].size()>=2);
-		if(outlinesForColor[i].front()==outlinesForColor[i].back())
-			continue;
-		if(outlinesForColor[i].back().i==v1Index)
+		assert(it->size()>=2);
+		if(it->front()==it->back())
 		{
-			outlinesForColor[i].push_back(ShapePathSegment(PATH_STRAIGHT, v2Index));
+			++it;
+			continue;
+		}
+		if(it->back().i==v1Index)
+		{
+			it->push_back(ShapePathSegment(PATH_STRAIGHT, v2Index));
 			return;
 		}
+		++it;
 	}
 	//No suitable outline found, create one
 	vector<ShapePathSegment> vertices;
-	vertices.reserve(2);
 	vertices.push_back(ShapePathSegment(PATH_START, v1Index));
 	vertices.push_back(ShapePathSegment(PATH_STRAIGHT, v2Index));
-	outlinesForColor.push_back(vertices);
+	outlinesForColor->push_back(vertices);
 }
 
-void ShapesBuilder::extendFilledOutlineForColorCurve(unsigned int color, const Vector2& v1, const Vector2& v2, const Vector2& v3)
+void ShapesBuilder::extendFilledOutlineForColorCurve(std::vector< std::vector<ShapePathSegment> >* outlinesForColor, const Vector2& v1, const Vector2& v2, const Vector2& v3)
 {
-	assert_and_throw(color);
+	assert_and_throw(outlinesForColor);
 	//Find the indices of the vertex
 	uint64_t v1Index = makeVertex(v1);
 	uint64_t v2Index = makeVertex(v2);
 	uint64_t v3Index = makeVertex(v3);
 
-	vector< vector<ShapePathSegment> >& outlinesForColor=filledShapesMap[color];
 	//Search a suitable outline to attach this new vertex
-	for(unsigned int i=outlinesForColor.size();i;)
+	auto it = outlinesForColor->rbegin();
+	while (it !=outlinesForColor->rend())
 	{
-		--i;
-		assert_and_throw(outlinesForColor[i].size()>=2);
-		if(outlinesForColor[i].front()==outlinesForColor[i].back())
-			continue;
-		if(outlinesForColor[i].back().i==v1Index)
+		assert(it->size()>=2);
+		if(it->front()==it->back())
 		{
-			outlinesForColor[i].emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v2Index));
-			outlinesForColor[i].emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v3Index));
+			++it;
+			continue;
+		}
+		if(it->back().i==v1Index)
+		{
+			it->emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v2Index));
+			it->emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v3Index));
 			return;
 		}
+		++it;
 	}
 	//No suitable outline found, create one
 	vector<ShapePathSegment> vertices;
-	vertices.reserve(2);
 	vertices.emplace_back(ShapePathSegment(PATH_START, v1Index));
 	vertices.emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v2Index));
 	vertices.emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v3Index));
-	outlinesForColor.push_back(vertices);
+	outlinesForColor->push_back(vertices);
 }
 
-void ShapesBuilder::extendStrokeOutline(unsigned int stroke, const Vector2 &v1, const Vector2 &v2)
+void ShapesBuilder::extendStrokeOutline(std::vector<std::vector<ShapePathSegment> >* outlinesForStroke, const Vector2 &v1, const Vector2 &v2)
 {
-	assert_and_throw(stroke);
+	assert_and_throw(outlinesForStroke);
 	//Find the indices of the vertex
 	uint64_t v1Index = makeVertex(v1);
 	uint64_t v2Index = makeVertex(v2);
 
-	vector< vector<ShapePathSegment> >& outlinesForStroke=strokeShapesMap[stroke];
 	//Search a suitable outline to attach this new vertex
-	for(unsigned int i=outlinesForStroke.size();i;)
+	auto it = outlinesForStroke->rbegin();
+	while (it !=outlinesForStroke->rend())
 	{
-		--i;
-		assert_and_throw(outlinesForStroke[i].size()>=2);
-		if(outlinesForStroke[i].front()==outlinesForStroke[i].back())
-			continue;
-		if(outlinesForStroke[i].back().i==v1Index)
+		assert(it->size()>=2);
+		if(it->front()==it->back())
 		{
-			outlinesForStroke[i].push_back(ShapePathSegment(PATH_STRAIGHT, v2Index));
+			++it;
+			continue;
+		}
+		if(it->back().i==v1Index)
+		{
+			it->push_back(ShapePathSegment(PATH_STRAIGHT, v2Index));
 			return;
 		}
+		++it;
 	}
 	//No suitable outline found, create one
 	vector<ShapePathSegment> vertices;
-	vertices.reserve(2);
 	vertices.push_back(ShapePathSegment(PATH_START, v1Index));
 	vertices.push_back(ShapePathSegment(PATH_STRAIGHT, v2Index));
-	outlinesForStroke.push_back(vertices);
+	outlinesForStroke->push_back(vertices);
 }
 
-void ShapesBuilder::extendStrokeOutlineCurve(unsigned int color, const Vector2& v1, const Vector2& v2, const Vector2& v3)
+void ShapesBuilder::extendStrokeOutlineCurve(std::vector<std::vector<ShapePathSegment> >* outlinesForStroke, const Vector2& v1, const Vector2& v2, const Vector2& v3)
 {
-	assert_and_throw(color);
+	assert_and_throw(outlinesForStroke);
 	//Find the indices of the vertex
 	uint64_t v1Index = makeVertex(v1);
 	uint64_t v2Index = makeVertex(v2);
 	uint64_t v3Index = makeVertex(v3);
 
-	vector< vector<ShapePathSegment> >& outlinesForColor=strokeShapesMap[color];
 	//Search a suitable outline to attach this new vertex
-	for(unsigned int i=outlinesForColor.size();i;)
+	auto it = outlinesForStroke->rbegin();
+	while (it !=outlinesForStroke->rend())
 	{
-		--i;
-		assert_and_throw(outlinesForColor[i].size()>=2);
-		if(outlinesForColor[i].front()==outlinesForColor[i].back())
-			continue;
-		if(outlinesForColor[i].back().i==v1Index)
+		assert(it->size()>=2);
+		if(it->front()==it->back())
 		{
-			outlinesForColor[i].emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v2Index));
-			outlinesForColor[i].emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v3Index));
+			++it;
+			continue;
+		}
+		if(it->back().i==v1Index)
+		{
+			it->emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v2Index));
+			it->emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v3Index));
 			return;
 		}
+		++it;
 	}
 	//No suitable outline found, create one
 	vector<ShapePathSegment> vertices;
-	vertices.reserve(2);
 	vertices.emplace_back(ShapePathSegment(PATH_START, v1Index));
 	vertices.emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v2Index));
 	vertices.emplace_back(ShapePathSegment(PATH_CURVE_QUADRATIC, v3Index));
-	outlinesForColor.push_back(vertices);
+	outlinesForStroke->push_back(vertices);
 }
 
 void ShapesBuilder::outputTokens(const std::list<FILLSTYLE>& styles,const std::list<LINESTYLE2>& linestyles, tokensVector& tokens)

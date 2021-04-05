@@ -165,17 +165,17 @@ public:
 class ShapesBuilder
 {
 private:
-	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > filledShapesMap;
-	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > strokeShapesMap;
 	void joinOutlines();
 	static bool isOutlineEmpty(const std::vector<ShapePathSegment>& outline);
 	static void extendOutlineForColor(std::map< unsigned int, std::vector< std::vector<Vector2> > >& map);
 	inline uint64_t makeVertex(const Vector2& v) const { return (uint64_t(v.y)<<32) | (uint64_t(v.x)&0xffffffff); }
 public:
-	void extendFilledOutlineForColor(unsigned int fillColor, const Vector2& v1, const Vector2& v2);
-	void extendFilledOutlineForColorCurve(unsigned int color, const Vector2& start, const Vector2& control, const Vector2& end);
-	void extendStrokeOutline(unsigned int stroke, const Vector2& v1, const Vector2& v2);
-	void extendStrokeOutlineCurve(unsigned int color, const Vector2& v1, const Vector2& v2, const Vector2& v3);
+	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > filledShapesMap;
+	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > strokeShapesMap;
+	void extendFilledOutlineForColor(std::vector<std::vector<ShapePathSegment> >* outlinesForColor, const Vector2& v1, const Vector2& v2);
+	void extendFilledOutlineForColorCurve(std::vector<std::vector<ShapePathSegment> >* outlinesForColor, const Vector2& start, const Vector2& control, const Vector2& end);
+	void extendStrokeOutline(std::vector<std::vector<ShapePathSegment> >* outlinesForStroke, const Vector2& v1, const Vector2& v2);
+	void extendStrokeOutlineCurve(std::vector<std::vector<ShapePathSegment> >* outlinesForStroke, const Vector2& v1, const Vector2& v2, const Vector2& v3);
 	/**
 		Generate a sequence of cachable tokens that defines the geomtries
 		@param styles This list is supposed to survive until as long as the returned tokens array

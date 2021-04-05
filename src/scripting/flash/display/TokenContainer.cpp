@@ -62,7 +62,10 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 	unsigned int color0=0;
 	unsigned int color1=0;
 	unsigned int linestyle=0;
-			
+	vector< vector<ShapePathSegment> >* outlinesForColor0=nullptr;
+	vector< vector<ShapePathSegment> >* outlinesForColor1=nullptr;
+	vector< vector<ShapePathSegment> >* outlinesForStroke=nullptr;
+
 	ShapesBuilder shapesBuilder;
 
 	cursor.x= -shapebounds.Xmin;
@@ -81,11 +84,11 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 				Vector2 p2(matrix.multiply2D(cursor));
 
 				if(color0)
-					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(outlinesForColor0,p1,p2);
 				if(color1)
-					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(outlinesForColor1,p1,p2);
 				if(linestyle)
-					shapesBuilder.extendStrokeOutline(linestyle,p1,p2);
+					shapesBuilder.extendStrokeOutline(outlinesForStroke,p1,p2);
 			}
 			else
 			{
@@ -98,11 +101,11 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 				Vector2 p3(matrix.multiply2D(cursor));
 
 				if(color0)
-					shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
+					shapesBuilder.extendFilledOutlineForColorCurve(outlinesForColor0,p1,p2,p3);
 				if(color1)
-					shapesBuilder.extendFilledOutlineForColorCurve(color1,p1,p2,p3);
+					shapesBuilder.extendFilledOutlineForColorCurve(outlinesForColor1,p1,p2,p3);
 				if(linestyle)
-					shapesBuilder.extendStrokeOutlineCurve(linestyle,p1,p2,p3);
+					shapesBuilder.extendStrokeOutlineCurve(outlinesForStroke,p1,p2,p3);
 			}
 		}
 		else
@@ -115,14 +118,20 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 			if(cur->StateLineStyle)
 			{
 				linestyle = cur->LineStyle;
+				if (linestyle)
+					outlinesForStroke=&shapesBuilder.strokeShapesMap[linestyle];
 			}
 			if(cur->StateFillStyle1)
 			{
 				color1=cur->FillStyle1;
+				if (color1)
+					outlinesForColor1=&shapesBuilder.filledShapesMap[color1];
 			}
 			if(cur->StateFillStyle0)
 			{
 				color0=cur->FillStyle0;
+				if (color0)
+					outlinesForColor0=&shapesBuilder.filledShapesMap[color0];
 			}
 		}
 	}
@@ -141,7 +150,10 @@ void TokenContainer::FromShaperecordListToShapeVector2(const std::vector<SHAPERE
 	unsigned int color0=0;
 	unsigned int color1=0;
 	unsigned int linestyle=0;
-			
+	vector< vector<ShapePathSegment> >* outlinesForColor0=nullptr;
+	vector< vector<ShapePathSegment> >* outlinesForColor1=nullptr;
+	vector< vector<ShapePathSegment> >* outlinesForStroke=nullptr;
+
 	ShapesBuilder shapesBuilder;
 
 	cursor.x= -shapebounds.Xmin;
@@ -160,11 +172,11 @@ void TokenContainer::FromShaperecordListToShapeVector2(const std::vector<SHAPERE
 				Vector2 p2(matrix.multiply2D(cursor));
 
 				if(color0)
-					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(outlinesForColor0,p1,p2);
 				if(color1)
-					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(outlinesForColor1,p1,p2);
 				if(linestyle)
-					shapesBuilder.extendStrokeOutline(linestyle,p1,p2);
+					shapesBuilder.extendStrokeOutline(outlinesForStroke,p1,p2);
 			}
 			else
 			{
@@ -177,11 +189,11 @@ void TokenContainer::FromShaperecordListToShapeVector2(const std::vector<SHAPERE
 				Vector2 p3(matrix.multiply2D(cursor));
 
 				if(color0)
-					shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
+					shapesBuilder.extendFilledOutlineForColorCurve(outlinesForColor0,p1,p2,p3);
 				if(color1)
-					shapesBuilder.extendFilledOutlineForColorCurve(color1,p1,p2,p3);
+					shapesBuilder.extendFilledOutlineForColorCurve(outlinesForColor1,p1,p2,p3);
 				if(linestyle)
-					shapesBuilder.extendStrokeOutlineCurve(linestyle,p1,p2,p3);
+					shapesBuilder.extendStrokeOutlineCurve(outlinesForStroke,p1,p2,p3);
 			}
 		}
 		else
@@ -194,14 +206,20 @@ void TokenContainer::FromShaperecordListToShapeVector2(const std::vector<SHAPERE
 			if(cur->StateLineStyle)
 			{
 				linestyle = cur->LineStyle;
+				if (linestyle)
+					outlinesForStroke=&shapesBuilder.strokeShapesMap[linestyle];
 			}
 			if(cur->StateFillStyle1)
 			{
 				color1=cur->FillStyle1;
+				if (color1)
+					outlinesForColor1=&shapesBuilder.filledShapesMap[color1];
 			}
 			if(cur->StateFillStyle0)
 			{
 				color0=cur->FillStyle0;
+				if (color0)
+					outlinesForColor0=&shapesBuilder.filledShapesMap[color0];
 			}
 		}
 	}
@@ -216,6 +234,9 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 	unsigned int color0=0;
 	unsigned int color1=0;
 	unsigned int linestyle=0;
+	vector< vector<ShapePathSegment> >* outlinesForColor0=nullptr;
+	vector< vector<ShapePathSegment> >* outlinesForColor1=nullptr;
+	vector< vector<ShapePathSegment> >* outlinesForStroke=nullptr;
 
 	const MATRIX matrix;
 	ShapesBuilder shapesBuilder;
@@ -237,11 +258,11 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 				Vector2 p2(matrix.multiply2D(cursor));
 
 				if(color0)
-					shapesBuilder.extendFilledOutlineForColor(color0,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(outlinesForColor0,p1,p2);
 				if(color1)
-					shapesBuilder.extendFilledOutlineForColor(color1,p1,p2);
+					shapesBuilder.extendFilledOutlineForColor(outlinesForColor1,p1,p2);
 				if(linestyle)
-					shapesBuilder.extendStrokeOutline(linestyle,p1,p2);
+					shapesBuilder.extendStrokeOutline(outlinesForStroke,p1,p2);
 			}
 			else
 			{
@@ -254,11 +275,11 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 				Vector2 p3(matrix.multiply2D(cursor));
 
 				if(color0)
-					shapesBuilder.extendFilledOutlineForColorCurve(color0,p1,p2,p3);
+					shapesBuilder.extendFilledOutlineForColorCurve(outlinesForColor0,p1,p2,p3);
 				if(color1)
-					shapesBuilder.extendFilledOutlineForColorCurve(color1,p1,p2,p3);
+					shapesBuilder.extendFilledOutlineForColorCurve(outlinesForColor1,p1,p2,p3);
 				if(linestyle)
-					shapesBuilder.extendStrokeOutlineCurve(linestyle,p1,p2,p3);
+					shapesBuilder.extendStrokeOutlineCurve(outlinesForStroke,p1,p2,p3);
 			}
 		}
 		else
@@ -271,14 +292,20 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 			if(cur->StateLineStyle)
 			{
 				linestyle = cur->LineStyle;
+				if (linestyle)
+					outlinesForStroke=&shapesBuilder.strokeShapesMap[linestyle];
 			}
 			if(cur->StateFillStyle1)
 			{
-				color1=cur->FillStyle1;
+				color1=cur->StateFillStyle1;
+				if (color1)
+					outlinesForColor1=&shapesBuilder.filledShapesMap[color1];
 			}
 			if(cur->StateFillStyle0)
 			{
-				color0=cur->FillStyle0;
+				color0=cur->StateFillStyle0;
+				if (color0)
+					outlinesForColor0=&shapesBuilder.filledShapesMap[color0];
 			}
 		}
 	}

@@ -1269,7 +1269,7 @@ bool canCallFunctionDirect(operands& op,multiname* name)
 	return ((op.type == OP_LOCAL || op.type == OP_CACHED_CONSTANT || op.type == OP_CACHED_SLOT) &&
 		op.objtype &&
 		!op.objtype->isInterface && // it's not an interface
-		op.objtype->isSealed && // it's sealed
+//		op.objtype->isSealed && // it's sealed
 		(
 		!op.objtype->is<Class_inherit>() || // type is builtin class
 		!op.objtype->as<Class_inherit>()->hasoverriddenmethod(name) // current method is not in overridden methods
@@ -2292,7 +2292,7 @@ void removetypestack(std::vector<typestackentry>& typestack,int n)
 	}
 	
 }
-void skipunreachablecode(preloadstate& state, memorystream& code)
+void skipunreachablecode(preloadstate& state, memorystream& code, bool updatetargets=true)
 {
 	while (!code.atend() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 	{
@@ -2399,11 +2399,14 @@ void skipunreachablecode(preloadstate& state, memorystream& code)
 			{
 				// make sure that unreachable jumps get erased from jumptargets
 				int32_t p1 = code.reads24()+code.tellg()+1;
-				auto it = state.jumptargets.find(p1);
-				if (it != state.jumptargets.end() && it->second > 1)
-					state.jumptargets[p1]--;
-				else
-					state.jumptargets.erase(p1);
+				if (updatetargets)
+				{
+					auto it = state.jumptargets.find(p1);
+					if (it != state.jumptargets.end() && it->second > 1)
+						state.jumptargets[p1]--;
+					else
+						state.jumptargets.erase(p1);
+				}
 				break;
 			}
 		}
@@ -2427,7 +2430,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 
 	// first pass:
 	// - store all jump target points
-	// - compute types of the locals and detect if they don't change during execution
 	std::multimap<int32_t,int32_t> jumppoints;
 	std::set<int32_t> exceptionjumptargets;
 	std::map<int32_t,int32_t> unreachabletargets;
@@ -2478,9 +2480,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				0x47, //returnvoid
 				0x00
 			};
-	Class_base* currenttype=nullptr;
-	memorystream codejumps(mi->body->code.data(), code_len);
 	uint8_t opcode=0;
+	memorystream codejumps(mi->body->code.data(), code_len);
 	while(!codejumps.atend())
 	{
 		uint8_t prevopcode=opcode;
@@ -2493,7 +2494,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			++simple_setter_opcode_pos;
 		else
 			simple_setter_opcode_pos = UINT32_MAX;
-		//LOG(LOG_ERROR,"preload pass1:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< codejumps.tellg()-1<<" "<<currenttype<<" "<<hex<<(int)opcode);
+		//LOG(LOG_ERROR,"preload pass1:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< codejumps.tellg()-1<<" "<<" "<<hex<<(int)opcode);
 		switch(opcode)
 		{
 			case 0x04://getsuper
@@ -2525,20 +2526,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x86://astype
 			case 0xb2://istype
 				codejumps.readu30();
-				currenttype=nullptr;
 				break;
 			case 0x08://kill
 			{
 				uint32_t t = codejumps.readu30();
 				skippablekills.insert(t);
-				currenttype=nullptr;
 				break;
 			}
 			case 0x62://getlocal
 			{
 				uint32_t t = codejumps.readu30();
 				skippablekills.erase(t);
-				currenttype=nullptr;
 				break;
 			}
 			case 0xd0://getlocal_0
@@ -2546,102 +2544,25 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xd2://getlocal_2
 			case 0xd3://getlocal_3
 				skippablekills.erase(opcode-0xd0);
-				currenttype=nullptr;
 				break;
 			case 0x80://coerce
-			{
-				uint32_t t = codejumps.readu30();
-				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
-				if (name->isStatic)
-				{
-					const Type* tp = Type::getTypeFromMultiname(name, mi->context);
-					const Class_base* cls =dynamic_cast<const Class_base*>(tp);
-					currenttype = (Class_base*)cls;
-				}
-				else
-					currenttype=nullptr;
+				codejumps.readu30();
 				break;
-			}
 			case 0xf0://debugline
 			case 0xf1://debugfile
 			case 0xf2://bkptline
-				codejumps.readu30();
-				break;
-			case 0x82://coerce_a
-				break;
-			case 0x85://coerce_s
-				currenttype=Class<ASString>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x73://convert_i
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x74://convert_u
-				currenttype=Class<UInteger>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x75://convert_d
-				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x76://convert_b
-				currenttype=Class<Boolean>::getRef(function->getSystemState()).getPtr();
-				break;
 			case 0x2c://pushstring
-				codejumps.readu30();
-				currenttype=Class<ASString>::getRef(function->getSystemState()).getPtr();
-				break;
 			case 0x2d://pushint
-				codejumps.readu30();
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
-				break;
 			case 0x2e://pushuint
-				codejumps.readu30();
-				currenttype=Class<UInteger>::getRef(function->getSystemState()).getPtr();
-				break;
 			case 0x2f://pushdouble
-				codejumps.readu30();
-				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
-				break;
 			case 0x31://pushnamespace
-				codejumps.readu30();
-				currenttype=Class<Namespace>::getRef(function->getSystemState()).getPtr();
-				break;
 			case 0x63://setlocal
-			{
-				uint32_t t = codejumps.readu30();
-				state.unchangedlocals.erase(t);
-				setdefaultlocaltype(state,t,currenttype);
-				currenttype=nullptr;
-				break;
-			}
-			case 0xd4://setlocal_0
-			case 0xd5://setlocal_1
-			case 0xd6://setlocal_2
-			case 0xd7://setlocal_3
-				state.unchangedlocals.erase(opcode-0xd4);
-				setdefaultlocaltype(state,opcode-0xd4,currenttype);
-				currenttype=nullptr;
-				break;
 			case 0x92://inclocal
 			case 0x94://declocal
-			{
-				uint32_t t = codejumps.readu30();
-				state.unchangedlocals.erase(t);
-				setdefaultlocaltype(state,t,Class<Number>::getRef(function->getSystemState()).getPtr());
-				currenttype=nullptr;
-				break;
-			}
-			case 0xc0://increment_i
-			case 0xc1://decrement_i
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
-				break;
 			case 0xc2://inclocal_i
 			case 0xc3://declocal_i
-			{
-				uint32_t t = codejumps.readu30();
-				state.unchangedlocals.erase(t);
-				setdefaultlocaltype(state,t,Class<Integer>::getRef(function->getSystemState()).getPtr());
-				currenttype=nullptr;
+				codejumps.readu30();
 				break;
-			}
 			case 0x10://jump
 			{
 				int32_t p = codejumps.tellg();
@@ -2661,11 +2582,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				}
 				if (state.jumptargets.count(p1))
 					state.jumptargeteresulttypes.erase(p1);
-				else if (currenttype)
-					state.jumptargeteresulttypes[p1] = currenttype;
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
-				currenttype=nullptr;
 				break;
 			}
 			case 0x0c://ifnlt
@@ -2686,7 +2604,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.jumptargeteresulttypes.erase(p1);
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
-				currenttype=nullptr;
 				break;
 			}
 			case 0x11://iftrue
@@ -2709,7 +2626,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.jumptargeteresulttypes.erase(p1);
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
-				currenttype=nullptr;
 				break;
 			}
 			case 0x12://iffalse
@@ -2732,7 +2648,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.jumptargeteresulttypes.erase(p1);
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
-				currenttype=nullptr;
 				break;
 			}
 			case 0x1b://lookupswitch
@@ -2750,25 +2665,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					state.jumptargets[p1]++;
 					jumppoints.insert(make_pair(p,p1));
 				}
-				currenttype=nullptr;
 				break;
 			}
 			case 0x24://pushbyte
 			{
 				codejumps.readbyte();
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
 				break;
 			}
 			case 0x25://pushshort
 			{
 				codejumps.readu32();
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
-				break;
-			}
-			case 0x26://pushtrue
-			case 0x27://pushfalse
-			{
-				currenttype=Class<Boolean>::getRef(function->getSystemState()).getPtr();
 				break;
 			}
 			case 0x32://hasnext2
@@ -2783,7 +2689,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				codejumps.readu30();
 				codejumps.readu30();
-				currenttype=nullptr;
 				break;
 			}
 			case 0xef://debug
@@ -2794,17 +2699,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				codejumps.readu30();
 				break;
 			}
-			case 0xa5://lshift
-			case 0xa6://rshift
-			case 0xa8://bitand
-			case 0xa9://bitor
-			{
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
-				break;
-			}
-			case 0x09://label
-			case 0x2a://dup
-				break;
 			case 0x47://returnvoid
 			case 0x48://returnvalue
 			{
@@ -2819,11 +2713,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				if (it != state.jumptargets.end())
 					nextreachable = it->first;
 				unreachabletargets[p] = nextreachable;
-				currenttype=nullptr;
 				break;
 			}
 			default:
-				currenttype=nullptr;
 				break;
 		}
 	}
@@ -2867,7 +2759,266 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 		}
 		it++;
 	}
-	// second pass: use optimized opcode version if it doesn't interfere with a jump target
+	// second pass:
+	// - compute types of the locals and detect if they don't change during execution
+	Class_base* currenttype=nullptr;
+	memorystream codetypes(mi->body->code.data(), code_len);
+	while(!codetypes.atend())
+	{
+		uint8_t prevopcode=opcode;
+		opcode = codetypes.readbyte();
+		//LOG(LOG_ERROR,"preload pass2:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< codetypes.tellg()-1<<" "<<currenttype<<" "<<hex<<(int)opcode);
+		switch(opcode)
+		{
+			case 0x04://getsuper
+			case 0x05://setsuper
+			case 0x06://dxns
+			case 0x40://newfunction
+			case 0x41://call
+			case 0x42://construct
+			case 0x49://constructsuper
+			case 0x53://constructgenerictype
+			case 0x55://newobject
+			case 0x56://newarray
+			case 0x58://newclass
+			case 0x59://getdescendants
+			case 0x5a://newcatch
+			case 0x5d://findpropstrict
+			case 0x5e://findproperty
+			case 0x5f://finddef
+			case 0x60://getlex
+			case 0x61://setproperty
+			case 0x65://getscopeobject
+			case 0x66://getproperty
+			case 0x68://initproperty
+			case 0x6a://deleteproperty
+			case 0x6c://getslot
+			case 0x6d://setslot
+			case 0x6e://getglobalSlot
+			case 0x6f://setglobalSlot
+			case 0x86://astype
+			case 0xb2://istype
+			case 0x08://kill
+			case 0x62://getlocal
+				codetypes.readu30();
+				currenttype=nullptr;
+				break;
+			case 0x80://coerce
+			{
+				uint32_t t = codetypes.readu30();
+				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+				if (name->isStatic)
+				{
+					const Type* tp = Type::getTypeFromMultiname(name, mi->context);
+					const Class_base* cls =dynamic_cast<const Class_base*>(tp);
+					currenttype = (Class_base*)cls;
+				}
+				else
+					currenttype=nullptr;
+				break;
+			}
+			case 0xf0://debugline
+			case 0xf1://debugfile
+			case 0xf2://bkptline
+				codetypes.readu30();
+				break;
+			case 0x85://coerce_s
+				currenttype=Class<ASString>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x73://convert_i
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x74://convert_u
+				currenttype=Class<UInteger>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x75://convert_d
+				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x76://convert_b
+				currenttype=Class<Boolean>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2c://pushstring
+				codetypes.readu30();
+				currenttype=Class<ASString>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2d://pushint
+				codetypes.readu30();
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2e://pushuint
+				codetypes.readu30();
+				currenttype=Class<UInteger>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2f://pushdouble
+				codetypes.readu30();
+				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x31://pushnamespace
+				codetypes.readu30();
+				currenttype=Class<Namespace>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x63://setlocal
+			{
+				uint32_t t = codetypes.readu30();
+				state.unchangedlocals.erase(t);
+				setdefaultlocaltype(state,t,currenttype);
+				currenttype=nullptr;
+				break;
+			}
+			case 0xd4://setlocal_0
+			case 0xd5://setlocal_1
+			case 0xd6://setlocal_2
+			case 0xd7://setlocal_3
+				state.unchangedlocals.erase(opcode-0xd4);
+				setdefaultlocaltype(state,opcode-0xd4,currenttype);
+				currenttype=nullptr;
+				break;
+			case 0x92://inclocal
+			case 0x94://declocal
+			{
+				uint32_t t = codetypes.readu30();
+				state.unchangedlocals.erase(t);
+				setdefaultlocaltype(state,t,Class<Number>::getRef(function->getSystemState()).getPtr());
+				currenttype=nullptr;
+				break;
+			}
+			case 0xc0://increment_i
+			case 0xc1://decrement_i
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0xc2://inclocal_i
+			case 0xc3://declocal_i
+			{
+				uint32_t t = codetypes.readu30();
+				state.unchangedlocals.erase(t);
+				setdefaultlocaltype(state,t,Class<Integer>::getRef(function->getSystemState()).getPtr());
+				currenttype=nullptr;
+				break;
+			}
+			case 0x10://jump
+			{
+				int32_t p = codetypes.tellg();
+				int32_t p1 = codetypes.reads24()+codetypes.tellg()+1;
+				if (p1 > p)
+					skipunreachablecode(state,codetypes,false);
+				if (!state.jumptargets.count(p1) && currenttype)
+					state.jumptargeteresulttypes[p1] = currenttype;
+				currenttype=nullptr;
+				break;
+			}
+			case 0x0c://ifnlt
+			case 0x0d://ifnle
+			case 0x0e://ifngt
+			case 0x0f://ifnge
+			case 0x13://ifeq
+			case 0x14://ifne
+			case 0x15://iflt
+			case 0x16://ifle
+			case 0x17://ifgt
+			case 0x18://ifge
+			case 0x19://ifstricteq
+			case 0x1a://ifstrictne
+			{
+				codetypes.reads24();
+				currenttype=nullptr;
+				break;
+			}
+			case 0x11://iftrue
+			{
+				int32_t p = codetypes.tellg();
+				int32_t p1 = codetypes.reads24()+codetypes.tellg()+1;
+				if (p1 > p && prevopcode==0x26) //pushtrue
+				{
+					skipunreachablecode(state,codetypes,false);
+				}
+				currenttype=nullptr;
+				break;
+			}
+			case 0x12://iffalse
+			{
+				int32_t p = codetypes.tellg();
+				int32_t p1 = codetypes.reads24()+codetypes.tellg()+1;
+				if (p1 > p && prevopcode==0x27) //pushfalse
+				{
+					skipunreachablecode(state,codetypes,false);
+				}
+				currenttype=nullptr;
+				break;
+			}
+			case 0x1b://lookupswitch
+			{
+				codetypes.reads24();
+				uint32_t count = codetypes.readu30();
+				for(unsigned int i=0;i<count+1;i++)
+				{
+					codetypes.reads24();
+				}
+				currenttype=nullptr;
+				break;
+			}
+			case 0x24://pushbyte
+			{
+				codetypes.readbyte();
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			}
+			case 0x25://pushshort
+			{
+				codetypes.readu32();
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			}
+			case 0x26://pushtrue
+			case 0x27://pushfalse
+			{
+				currenttype=Class<Boolean>::getRef(function->getSystemState()).getPtr();
+				break;
+			}
+			case 0x32://hasnext2
+			case 0x43://callmethod
+			case 0x44://callstatic
+			case 0x45://callsuper
+			case 0x46://callproperty
+			case 0x4c://callproplex
+			case 0x4a://constructprop
+			case 0x4e://callsupervoid
+			case 0x4f://callpropvoid
+			{
+				codetypes.readu30();
+				codetypes.readu30();
+				currenttype=nullptr;
+				break;
+			}
+			case 0xef://debug
+			{
+				codetypes.readbyte();
+				codetypes.readu30();
+				codetypes.readbyte();
+				codetypes.readu30();
+				break;
+			}
+			case 0xa5://lshift
+			case 0xa6://rshift
+			case 0xa8://bitand
+			case 0xa9://bitor
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x09://label
+			case 0x2a://dup
+				break;
+			case 0x47://returnvoid
+			case 0x48://returnvalue
+				skipunreachablecode(state,codetypes,false);
+				currenttype=nullptr;
+				break;
+			default:
+				currenttype=nullptr;
+				break;
+		}
+	}
+
+	// third pass:
+	// - use optimized opcode version if it doesn't interfere with a jump target
 	
 	std::vector<typestackentry> typestack; // contains the type or the global object of the arguments currently on the stack
 	Class_base* lastlocalresulttype=nullptr;
@@ -2889,7 +3040,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 		}
 		uint8_t prevopcode=opcode;
 		opcode = code.readbyte();
-		//LOG(LOG_INFO,"preload opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<hex<<(int)opcode);
+		//LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<hex<<(int)opcode);
 		if (opcode_skipped)
 			opcode_skipped=false;
 		else
@@ -4755,27 +4906,31 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					switch (mi->context->constant_pool.multinames[t].runtimeargs)
 					{
 						case 0:
+						{
+							Class_base* resulttype = nullptr;
+							ASObject* constructor = nullptr;
+							if (state.operandlist.size() > argcount && state.operandlist[state.operandlist.size()-(argcount+1)].type != OP_LOCAL && state.operandlist[state.operandlist.size()-(argcount+1)].type != OP_CACHED_SLOT)
+							{
+								// common case: constructprop called to create a class instance
+								ASObject* a = asAtomHandler::getObject(*mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-(argcount+1)].type,state.operandlist[state.operandlist.size()-(argcount+1)].index));
+								if(a)
+								{
+									asAtom o;
+									a->getVariableByMultiname(o,*name);
+									if (asAtomHandler::isObject(o))
+									{
+										constructor = asAtomHandler::getObject(o);
+										if (constructor->is<Class_base>())
+											resulttype = constructor->as<Class_base>();
+										else if (constructor->is<IFunction>())
+											resulttype = constructor->as<IFunction>()->getReturnType();
+									}
+								}
+							}
 							switch (argcount)
 							{
 								case 0:
 								{
-									Class_base* resulttype = nullptr;
-									ASObject* constructor = nullptr;
-									if (state.operandlist.size() > 0 && state.operandlist.back().type != OP_LOCAL && state.operandlist.back().type != OP_CACHED_SLOT)
-									{
-										// common case: constructprop called to create a class instance
-										ASObject* a = asAtomHandler::getObject(*mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index));
-										if(a)
-										{
-											asAtom o;
-											a->getVariableByMultiname(o,*name);
-											constructor = asAtomHandler::getObject(o);
-											if (constructor->is<Class_base>())
-												resulttype = constructor->as<Class_base>();
-											else if (constructor->is<IFunction>())
-												resulttype = constructor->as<IFunction>()->getReturnType();
-										}
-									}
 									if (setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONSTRUCTPROP_STATICNAME_NOARGS,opcode,code,true,false,resulttype,p,true))
 									{
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
@@ -4796,10 +4951,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									clearOperands(state,true,&lastlocalresulttype);
 									state.preloadedcode.back().pcode.arg1_uint=t;
 									state.preloadedcode.back().pcode.arg2_uint=argcount;
-									typestack.push_back(typestackentry(nullptr,false));
+									typestack.push_back(typestackentry(resulttype,false));
 									break;
 							}
 							break;
+						}
 						default:
 							state.preloadedcode.push_back((uint32_t)opcode);
 							clearOperands(state,true,&lastlocalresulttype);
@@ -5289,6 +5445,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									if (v && asAtomHandler::is<IFunction>(v->getter))
 									{
 										Class_base* resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
+										if (!state.operandlist.back().objtype->is<Class_inherit>() && resulttype==nullptr)
+											LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method:"<<*name<<" "<<state.operandlist.back().objtype->toDebugString());
 										if (!setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS,opcode,code,true, false,resulttype,p,true))
 											lastlocalresulttype = resulttype;
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = asAtomHandler::getObject(v->getter);

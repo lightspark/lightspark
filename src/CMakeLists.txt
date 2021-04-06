@@ -35,6 +35,7 @@ SET(LIBSPARK_SOURCES
   backends/audio.cpp
   backends/builtindecoder.cpp
   backends/config.cpp
+  backends/currency.cpp
   backends/decoder.cpp
   backends/extscriptobject.cpp
   backends/geometry.cpp

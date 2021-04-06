@@ -24,6 +24,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <unordered_set>
 
 namespace lightspark
 {
@@ -42,8 +43,6 @@ public:
 	ASFUNCTION_ATOM(getAvailableLocaleIDNames);
 	ASFUNCTION_ATOM(parse);
 	ASFUNCTION_ATOM(setCurrency);
-
-	//ASPROPERTY_GETTER
 
 	ASPROPERTY_GETTER(tiny_string, actualLocaleIDName);
 	ASPROPERTY_GETTER(tiny_string, currencyISOCode);

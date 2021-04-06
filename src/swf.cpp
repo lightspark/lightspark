@@ -38,6 +38,7 @@
 #include "backends/extscriptobject.h"
 #include "backends/input.h"
 #include "backends/locale.h"
+#include "backends/currency.h"
 #include "memory_support.h"
 
 #ifdef ENABLE_CURL
@@ -305,6 +306,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
 	localeManager = new LocaleManager();
+    currencyManager = new CurrencyManager();
 
 	_NR<LoaderInfo> loaderInfo=_MR(Class<LoaderInfo>::getInstanceS(this));
 	loaderInfo->applicationDomain = applicationDomain;
@@ -508,6 +510,8 @@ void SystemState::stopEngines()
 	securityManager=NULL;
 	delete localeManager;
 	localeManager=NULL;
+    delete currencyManager;
+    currencyManager=NULL;
 	delete threadPool;
 	threadPool=NULL;
 	delete downloadThreadPool;

@@ -1048,7 +1048,7 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 				if (CodeTable[i] == *it)
 				{
 					if (FontFlagsHasLayout)
-						tmpwidth += FontAdvanceTable[i];
+						tmpwidth += FontAdvanceTable[i]/1024.0/20.0 * tokenscaling;
 					else
 						tmpwidth += tokenscaling;
 					break;

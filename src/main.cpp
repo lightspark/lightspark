@@ -487,7 +487,11 @@ int main(int argc, char* argv[])
 
 	// create path for shared object local storage
 	char absolutepath[PATH_MAX];
-	realpath(fileName,absolutepath);
+	if (realpath(fileName,absolutepath) == nullptr)
+	{
+		LOG(LOG_ERROR, "Unable to resolve file");
+		exit(1);
+	}
 	tiny_string homedir(g_get_home_dir());
 	tiny_string filedatapath = absolutepath;
 	if (filedatapath.find(homedir) == 0) // remove home dir, if file is located below home dir

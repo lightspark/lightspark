@@ -279,6 +279,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	cairo_t *stroke_cr = cairo_create(cairo_get_group_target(cr));
 	cairo_matrix_t mat;
 	cairo_get_matrix(cr,&mat);
+	cairo_matrix_translate(&mat,-xstart,-ystart);
+	cairo_set_matrix(cr, &mat);
 	cairo_set_matrix(stroke_cr, &mat);
 	cairo_push_group(stroke_cr);
 
@@ -318,23 +320,23 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 			switch((*it)->type)
 			{
 				case MOVE:
-					PATH(cairo_move_to, (*it)->p1.x*scalex-xstart*scalex, (*it)->p1.y*scaley-ystart*scaley);
+					PATH(cairo_move_to, (*it)->p1.x*scalex, (*it)->p1.y*scaley);
 					break;
 				case STRAIGHT:
-					PATH(cairo_line_to, (*it)->p1.x*scalex-xstart*scalex, (*it)->p1.y*scaley-ystart*scaley);
+					PATH(cairo_line_to, (*it)->p1.x*scalex, (*it)->p1.y*scaley);
 					empty = false;
 					break;
 				case CURVE_QUADRATIC:
 					PATH(quadraticBezier,
-					   (*it)->p1.x*scalex-xstart*scalex, (*it)->p1.y*scaley-ystart*scaley,
-					   (*it)->p2.x*scalex-xstart*scalex, (*it)->p2.y*scaley-ystart*scaley);
+					   (*it)->p1.x*scalex, (*it)->p1.y*scaley,
+					   (*it)->p2.x*scalex, (*it)->p2.y*scaley);
 					empty = false;
 					break;
 				case CURVE_CUBIC:
 					PATH(cairo_curve_to,
-					   (*it)->p1.x*scalex-xstart*scalex, (*it)->p1.y*scaley-ystart*scaley,
-					   (*it)->p2.x*scalex-xstart*scalex, (*it)->p2.y*scaley-ystart*scaley,
-					   (*it)->p3.x*scalex-xstart*scalex, (*it)->p3.y*scaley-ystart*scaley);
+					   (*it)->p1.x*scalex, (*it)->p1.y*scaley,
+					   (*it)->p2.x*scalex, (*it)->p2.y*scaley,
+					   (*it)->p3.x*scalex, (*it)->p3.y*scaley);
 					empty = false;
 					break;
 				case SET_FILL:
@@ -503,13 +505,13 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				case MOVE:
 				{
 					GeomToken2 p1(*(++it),false);
-					PATH(cairo_move_to, (p1.vec.x)*scalex-xstart*scalex, (p1.vec.y)*scaley-ystart*scaley);
+					PATH(cairo_move_to, (p1.vec.x)*scalex, (p1.vec.y)*scaley);
 					break;
 				}
 				case STRAIGHT:
 				{
 					GeomToken2 p1(*(++it),false);
-					PATH(cairo_line_to, (p1.vec.x)*scalex-xstart*scalex, (p1.vec.y)*scaley-ystart*scaley);
+					PATH(cairo_line_to, (p1.vec.x)*scalex, (p1.vec.y)*scaley);
 					empty = false;
 					break;
 				}
@@ -518,8 +520,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					GeomToken2 p1(*(++it),false);
 					GeomToken2 p2(*(++it),false);
 					PATH(quadraticBezier,
-					   (p1.vec.x)*scalex-xstart*scalex, (p1.vec.y)*scaley-ystart*scaley,
-					   (p2.vec.x)*scalex-xstart*scalex, (p2.vec.y)*scaley-ystart*scaley);
+					   (p1.vec.x)*scalex, (p1.vec.y)*scaley,
+					   (p2.vec.x)*scalex, (p2.vec.y)*scaley);
 					empty = false;
 					break;
 				}
@@ -529,9 +531,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					GeomToken2 p2(*(++it),false);
 					GeomToken2 p3(*(++it),false);
 					PATH(cairo_curve_to,
-					   (p1.vec.x)*scalex-xstart*scalex, (p1.vec.y)*scaley-ystart*scaley,
-					   (p2.vec.x)*scalex-xstart*scalex, (p2.vec.y)*scaley-ystart*scaley,
-					   (p3.vec.x)*scalex-xstart*scalex, (p3.vec.y)*scaley-ystart*scaley);
+					   (p1.vec.x)*scalex, (p1.vec.y)*scaley,
+					   (p2.vec.x)*scalex, (p2.vec.y)*scaley,
+					   (p3.vec.x)*scalex, (p3.vec.y)*scaley);
 					empty = false;
 					break;
 				}

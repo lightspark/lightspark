@@ -120,7 +120,7 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 	asAtomHandler::setBool(ret,true);
 }
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname, DefineEditTextTag *_tag)
-	: InteractiveObject(c), TextData(textData), TokenContainer(this, this->getSystemState()->textTokenMemory), type(ET_READ_ONLY),
+	: InteractiveObject(c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
 	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),
 	  fillstyleTextColor(0xff),fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),

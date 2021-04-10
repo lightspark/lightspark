@@ -805,7 +805,7 @@ void Loader::setContent(_R<DisplayObject> o)
 		o->loaderInfo->setComplete();
 }
 
-Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this, this->getSystemState()->spriteTokenMemory),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),dragged(false),buttonMode(false),useHandCursor(false)
+Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),dragged(false),buttonMode(false),useHandCursor(false)
 {
 	subtype=SUBTYPE_SPRITE;
 }
@@ -2201,8 +2201,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1DuplicateMovieClip)
 	toAdd->setLegacyMatrix(th->getMatrix());
 	toAdd->name = nameId;
 	toAdd->setMouseEnabled(false);
-	toAdd->tokens.filltokens = th->tokens.filltokens;
-	toAdd->tokens.stroketokens = th->tokens.stroketokens;
 	toAdd->tokens.filltokens2 = th->tokens.filltokens2;
 	toAdd->tokens.stroketokens2 = th->tokens.stroketokens2;
 	if (argslen > 2)
@@ -3308,19 +3306,17 @@ _NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t 
 	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? last : _NR<DisplayObject>(this),x-xmin,y-ymin, type);
 }
 
-Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory),graphics(NullRef),fromTag(nullptr)
+Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this),graphics(NullRef),fromTag(nullptr)
 {
 }
 
 Shape::Shape(Class_base* c, float scaling, DefineShapeTag* tag):
-	DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory, *tag->tokens, scaling),graphics(NullRef),fromTag(tag)
+	DisplayObject(c),TokenContainer(this, *tag->tokens, scaling),graphics(NullRef),fromTag(tag)
 {
 }
 
 void Shape::setupShape(DefineShapeTag* tag, float _scaling)
 {
-	tokens.filltokens.assign(tag->tokens->filltokens.begin(),tag->tokens->filltokens.end());
-	tokens.stroketokens.assign(tag->tokens->stroketokens.begin(),tag->tokens->stroketokens.end());
 	tokens.filltokens2.assign(tag->tokens->filltokens2.begin(),tag->tokens->filltokens2.end());
 	tokens.stroketokens2.assign(tag->tokens->stroketokens2.begin(),tag->tokens->stroketokens2.end());
 	fromTag = tag;
@@ -3379,12 +3375,12 @@ ASFUNCTIONBODY_ATOM(Shape,_getGraphics)
 	ret = asAtomHandler::fromObject(th->graphics.getPtr());
 }
 
-MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->morphShapeTokenMemory),morphshapetag(nullptr)
+MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this),morphshapetag(nullptr)
 {
 	scaling = 1.0f/20.0f;
 }
 
-MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this, this->getSystemState()->morphShapeTokenMemory),morphshapetag(_morphshapetag)
+MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this),morphshapetag(_morphshapetag)
 {
 	scaling = 1.0f/20.0f;
 }

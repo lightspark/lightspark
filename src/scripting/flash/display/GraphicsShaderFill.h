@@ -40,9 +40,9 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Matrix>, matrix);
 	ASPROPERTY_GETTER_SETTER(_NR<Shader>, shader);
 	FILLSTYLE toFillStyle();
-	void appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>& tokens);
+	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics);
 };
 
-};
+}
 
 #endif /* SCRIPTING_FLASH_DISPLAY_GRAPHICSSHADERFILL_H */

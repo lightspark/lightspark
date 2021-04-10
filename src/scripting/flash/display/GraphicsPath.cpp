@@ -184,7 +184,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideMoveTo)
 	th->data->append(y);
 }
 
-void GraphicsPath::appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>> > &tokens)
+void GraphicsPath::appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics)
 {
 	Graphics::pathToTokens(commands, data, winding, tokens);
 }

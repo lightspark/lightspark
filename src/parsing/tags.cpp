@@ -674,8 +674,8 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 				number_t ystart = getRenderCharStartYPos();
 				ystart *=number_t(tokenscaling);
 				MATRIX glyphMatrix(number_t(tokenscaling)/1024.0f, number_t(tokenscaling)/1024.0f, 0, 0,0,ystart/1024.0f);
-				tokensVector tmptokens(getSys()->tagsMemory);
-				TokenContainer::FromShaperecordListToShapeVector2(sr,tmptokens,fillStyles,glyphMatrix);
+				tokensVector tmptokens;
+				TokenContainer::FromShaperecordListToShapeVector(sr,tmptokens,fillStyles,glyphMatrix);
 				number_t xmin, xmax, ymin, ymax;
 				if (!TokenContainer::boundsRectFromTokens(tmptokens,0.05,xmin,xmax,ymin,ymax))
 					return nullptr;
@@ -818,7 +818,7 @@ void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text,
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
 							   glyphPos.x+startpos*1024*20,
 							   glyphPos.y);
-					TokenContainer::FromShaperecordListToShapeVector2(sr,tokens,fillStyles,glyphMatrix);
+					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
 					curPos.x += tokenscaling;
 					found = true;
 					break;
@@ -998,7 +998,7 @@ void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
 							   glyphPos.x+startpos*1024*20,
 							   glyphPos.y);
-					TokenContainer::FromShaperecordListToShapeVector2(sr,tokens,fillStyles,glyphMatrix);
+					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
 					if (FontFlagsHasLayout)
 						curPos.x += FontAdvanceTable[i];
 					else
@@ -1207,7 +1207,7 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
 							   glyphPos.x+startpos*1024*20* this->scaling,
 							   glyphPos.y);
-					TokenContainer::FromShaperecordListToShapeVector2(sr,tokens,fillStyles,glyphMatrix);
+					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
 					if (FontFlagsHasLayout)
 						curPos.x += FontAdvanceTable[i];
 					found = true;
@@ -1385,8 +1385,7 @@ ASObject* BitmapTag::instance(Class_base* c)
 	return new (classRet->memoryAccount) BitmapData(classRet, bitmap);
 }
 
-DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, RootMovieClip* root,int v):DictionaryTag(h,root),
-	tokens(reporter_allocator<GeomToken>(loadedFrom->getSystemState()->tagsMemory)),version(v)
+DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, RootMovieClip* root,int v):DictionaryTag(h,root),version(v)
 {
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
 	assert(v==1 || v==2);
@@ -1486,7 +1485,7 @@ void DefineTextTag::computeCached()
 			//Apply glyphMatrix first, then scaledTextMatrix
 			glyphMatrix = scaledTextMatrix.multiplyMatrix(glyphMatrix);
 
-			TokenContainer::FromShaperecordListToShapeVector2(sr,tokens,fillStyles,glyphMatrix);
+			TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
 			curPos.x += ge.GlyphAdvance;
 		}
 	}
@@ -1512,12 +1511,12 @@ ASObject *DefineShapeTag::instance(Class_base *c)
 {
 	if (!tokens)
 	{
-		tokens = new tokensVector(loadedFrom->getSystemState()->tagsMemory);
+		tokens = new tokensVector();
 		for (auto it = Shapes.FillStyles.FillStyles.begin(); it != Shapes.FillStyles.FillStyles.end(); it++)
 		{
 			it->ShapeBounds = ShapeBounds;
 		}
-		TokenContainer::FromShaperecordListToShapeVector2(Shapes.ShapeRecords,*tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2,ShapeBounds);
+		TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,*tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2,ShapeBounds);
 	}
 	Shape* ret=nullptr;
 	if(c==nullptr)

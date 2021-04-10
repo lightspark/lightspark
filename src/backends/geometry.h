@@ -65,36 +65,6 @@ public:
 
 enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE_QUADRATIC, MOVE, SET_FILL, SET_STROKE, CLEAR_FILL, CLEAR_STROKE, CURVE_CUBIC, FILL_KEEP_SOURCE, FILL_TRANSFORM_TEXTURE };
 
-class GeomToken :public RefCountable
-{
-public:
-	FILLSTYLE  fillStyle;
-	LINESTYLE2 lineStyle;
-	MATRIX textureTransform;
-	GEOM_TOKEN_TYPE type;
-	Vector2 p1;
-	Vector2 p2;
-	Vector2 p3;
-	GeomToken(GEOM_TOKEN_TYPE _t):fillStyle(0xff),lineStyle(0xff),type(_t),p1(0,0),p2(0,0),p3(0,0){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p):fillStyle(0xff),lineStyle(0xff),type(_t),p1(_p),p2(0,0),p3(0,0){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2):fillStyle(0xff),lineStyle(0xff),type(_t),p1(_p1),p2(_p2),p3(0,0){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const Vector2& _p1, const Vector2& _p2, const Vector2& _p3):fillStyle(0xff),lineStyle(0xff),type(_t),
-			p1(_p1),p2(_p2),p3(_p3){}
-
-	// construct from int vector encoded as uint64_t (low 32 bit = x, high 32 bit = y)
-	GeomToken(GEOM_TOKEN_TYPE _t, uint64_t _p1):fillStyle(0xff),lineStyle(0xff),type(_t),
-		p1(int32_t(_p1&0xffffffff),int32_t(_p1>>32)),p2(0,0),p3(0,0){}
-	GeomToken(GEOM_TOKEN_TYPE _t, uint64_t _p1, uint64_t _p2):fillStyle(0xff),lineStyle(0xff),type(_t),
-		p1(int32_t(_p1&0xffffffff),int32_t(_p1>>32)),p2(int32_t(_p2&0xffffffff),int32_t(_p2>>32)),p3(0,0){}
-	GeomToken(GEOM_TOKEN_TYPE _t, uint64_t _p1, uint64_t _p2, uint64_t _p3):fillStyle(0xff),lineStyle(0xff),type(_t),
-		p1(int32_t(_p1&0xffffffff),int32_t(_p1>>32)),p2(int32_t(_p2&0xffffffff),int32_t(_p2>>32)),p3(int32_t(_p3&0xffffffff),int32_t(_p3>>32)){}
-
-	GeomToken(GEOM_TOKEN_TYPE _t, const FILLSTYLE&  _f):fillStyle(_f),lineStyle(0xff),type(_t),p1(0,0),p2(0,0),p3(0,0){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const LINESTYLE2& _s):fillStyle(0xff),lineStyle(_s),type(_t),p1(0,0),p2(0,0),p3(0,0){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const MATRIX _m):fillStyle(0xff),lineStyle(0xff),textureTransform(_m),type(_t),p1(0,0),p2(0,0),p3(0,0){}
-	GeomToken(GEOM_TOKEN_TYPE _t, const MORPHLINESTYLE2& _s);
-};
-
 struct GeomToken2
 {
 	union
@@ -135,25 +105,21 @@ struct GeomToken2
 
 struct tokensVector
 {
-	std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>> filltokens;
-	std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>> stroketokens;
 	std::vector<uint64_t> filltokens2;
 	std::vector<uint64_t> stroketokens2;
-	tokensVector(reporter_allocator<_NR<GeomToken>> m):filltokens(m),stroketokens(m) {}
+	tokensVector() {}
 	void clear()
 	{
-		filltokens.clear();
-		stroketokens.clear();
 		filltokens2.clear();
 		stroketokens2.clear();
 	}
 	uint32_t size() const
 	{
-		return filltokens.size()+stroketokens.size()+filltokens2.size()+stroketokens2.size();
+		return filltokens2.size()+stroketokens2.size();
 	}
 	bool empty() const
 	{
-		return filltokens.empty() && stroketokens.empty() && filltokens2.empty() && stroketokens2.empty();
+		return filltokens2.empty() && stroketokens2.empty();
 	}
 };
 
@@ -172,22 +138,18 @@ class ShapesBuilder
 private:
 	void joinOutlines();
 	static bool isOutlineEmpty(const std::vector<ShapePathSegment>& outline);
-	static void extendOutlineForColor(std::map< unsigned int, std::vector< std::vector<Vector2> > >& map);
 	inline uint64_t makeVertex(const Vector2& v) const { return (uint64_t(v.y)<<32) | (uint64_t(v.x)&0xffffffff); }
 public:
 	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > filledShapesMap;
 	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > strokeShapesMap;
-	void extendFilledOutlineForColor(std::vector<std::vector<ShapePathSegment> >* outlinesForColor, const Vector2& v1, const Vector2& v2);
-	void extendFilledOutlineForColorCurve(std::vector<std::vector<ShapePathSegment> >* outlinesForColor, const Vector2& start, const Vector2& control, const Vector2& end);
-	void extendStrokeOutline(std::vector<std::vector<ShapePathSegment> >* outlinesForStroke, const Vector2& v1, const Vector2& v2);
-	void extendStrokeOutlineCurve(std::vector<std::vector<ShapePathSegment> >* outlinesForStroke, const Vector2& v1, const Vector2& v2, const Vector2& v3);
+	std::vector<ShapePathSegment>* extendOutline(std::vector<std::vector<ShapePathSegment> >* outlines, const Vector2& v1, const Vector2& v2, std::vector<ShapePathSegment>* lastOutline);
+	std::vector<ShapePathSegment>* extendOutlineCurve(std::vector<std::vector<ShapePathSegment> >* outlines, const Vector2& start, const Vector2& control, const Vector2& end, std::vector<ShapePathSegment>* lastOutline);
 	/**
 		Generate a sequence of cachable tokens that defines the geomtries
 		@param styles This list is supposed to survive until as long as the returned tokens array
 		@param tokens A vector that will be filled with tokens
 	*/
 	void outputTokens(const std::list<FILLSTYLE>& styles, const std::list<LINESTYLE2>& linestyles, tokensVector& tokens);
-	void outputTokens2(const std::list<FILLSTYLE>& styles, const std::list<LINESTYLE2>& linestyles, tokensVector& tokens);
 	void outputMorphTokens(const std::list<MORPHFILLSTYLE>& styles, const std::list<MORPHLINESTYLE2> &linestyles, tokensVector& tokens, uint16_t ratio);
 	void clear();
 };

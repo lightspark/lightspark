@@ -127,7 +127,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 			break;
 	}
 
-	ret = asAtomHandler::fromString(sys,c->getQualifiedClassName());
+	ret = asAtomHandler::fromStringID(c->getQualifiedClassNameID());
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
@@ -146,7 +146,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
 	if (!c)
 		asAtomHandler::setNull(ret);
 	else
-		ret = asAtomHandler::fromString(sys,c->getQualifiedClassName());
+		ret = asAtomHandler::fromStringID(c->getQualifiedClassNameID());
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)

@@ -1027,16 +1027,16 @@ const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context)
 	return typeObject ? typeObject->as<Type>() : nullptr;
 }
 
-Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),global(nullptr),
-	borrowedVariables(m),
+Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),
+	qualifiedClassnameID(UINT32_MAX),global(nullptr),borrowedVariables(m),
 	context(nullptr),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
 {
 	setSystemState(getSys());
 	setRefConstant();
 }
 
-Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)nullptr),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(nullptr),global(nullptr),
-	borrowedVariables(nullptr),
+Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)nullptr),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(nullptr),
+	qualifiedClassnameID(UINT32_MAX),global(nullptr),borrowedVariables(nullptr),
 	context(nullptr),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(nullptr),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
 {
 	type=T_CLASS;
@@ -1456,8 +1456,10 @@ bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) cons
 	return false;
 }
 
-tiny_string Class_base::getQualifiedClassName(bool forDescribeType) const
+const tiny_string Class_base::getQualifiedClassName(bool forDescribeType) const
 {
+	if (qualifiedClassnameID != UINT32_MAX && !forDescribeType)
+		return getSystemState()->getStringFromUniqueId(qualifiedClassnameID);
 	if(class_index==-1)
 		return class_name.getQualifiedName(getSystemState(),forDescribeType);
 	else
@@ -1465,9 +1467,28 @@ tiny_string Class_base::getQualifiedClassName(bool forDescribeType) const
 		assert_and_throw(context);
 		int name_index=context->instances[class_index].name;
 		assert_and_throw(name_index);
-		const multiname* mname=context->getMultiname(name_index,NULL);
+		const multiname* mname=context->getMultiname(name_index,nullptr);
 		return mname->qualifiedString(getSystemState(),forDescribeType);
 	}
+}
+uint32_t Class_base::getQualifiedClassNameID()
+{
+	if (qualifiedClassnameID == UINT32_MAX)
+	{
+		if(class_index==-1)
+		{
+			qualifiedClassnameID = getSystemState()->getUniqueStringId(class_name.getQualifiedName(getSystemState(),false));
+		}
+		else
+		{
+			assert_and_throw(context);
+			int name_index=context->instances[class_index].name;
+			assert_and_throw(name_index);
+			const multiname* mname=context->getMultiname(name_index,nullptr);
+			qualifiedClassnameID=getSystemState()->getUniqueStringId(mname->qualifiedString(getSystemState(),false));
+		}
+	}
+	return qualifiedClassnameID;
 }
 
 tiny_string Class_base::getName() const

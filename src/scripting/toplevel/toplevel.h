@@ -132,7 +132,7 @@ public:
 	tiny_string getName() const override { return "void"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return NOT_BINDED; }
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }
-	bool isBuiltin() const { return true; }
+	bool isBuiltin() const override { return true; }
 	Global* getGlobalScope() const override { return nullptr; }
 };
 
@@ -173,6 +173,7 @@ private:
 	void describeVariables(pugi::xml_node &root, const Class_base* c, std::map<tiny_string, pugi::xml_node *> &instanceNodes, const variables_map& map, bool isTemplate, bool forinstance) const;
 	void describeConstructor(pugi::xml_node &root) const;
 	virtual void describeClassMetadata(pugi::xml_node &root) const {}
+	uint32_t qualifiedClassnameID;
 protected:
 	Global* global;
 	void describeMetadata(pugi::xml_node &node, const traits_info& trait) const;
@@ -227,8 +228,9 @@ public:
 	 * If considerInterfaces is true, check interfaces, too.
 	 */
 	bool isSubClass(const Class_base* cls, bool considerInterfaces=true) const;
-	tiny_string getQualifiedClassName(bool forDescribeType = false) const;
-	tiny_string getName() const;
+	const tiny_string getQualifiedClassName(bool forDescribeType = false) const;
+	uint32_t getQualifiedClassNameID();
+	tiny_string getName() const override;
 	tiny_string toString();
 	virtual void generator(asAtom &ret, asAtom* args, const unsigned int argslen);
 	ASObject *describeType() const override;
@@ -294,7 +296,7 @@ private:
 	void finalize() override
 	{
 		//Remove the cyclic reference to itself
-		setClass(NULL);
+		setClass(nullptr);
 		Class_base::finalize();
 	}
 	
@@ -459,7 +461,7 @@ public:
 	ASFUNCTION_ATOM(_toString);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,prototype);
 	virtual method_info* getMethodInfo() const=0;
-	virtual ASObject *describeType() const;
+	ASObject *describeType() const override;
 	uint32_t functionname;
 	virtual multiname* callGetter(asAtom& ret, ASObject* target) =0;
 	virtual Class_base* getReturnType() =0;

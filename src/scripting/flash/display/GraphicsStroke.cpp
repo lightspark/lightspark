@@ -103,6 +103,6 @@ void GraphicsStroke::appendToTokens(std::vector<uint64_t>& tokens, Graphics* gra
 		style.FillType = gfill->toFillStyle();
 	}
 
-	tokens.emplace_back(GeomToken2(SET_STROKE).uval);
-	tokens.emplace_back(GeomToken2(graphics->addLineStyle(style)).uval);
+	tokens.emplace_back(GeomToken(SET_STROKE).uval);
+	tokens.emplace_back(GeomToken(graphics->addLineStyle(style)).uval);
 }

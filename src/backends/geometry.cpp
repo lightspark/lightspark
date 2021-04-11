@@ -181,35 +181,35 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 			assert(stylesIt!=styles.end());
 		}
 		//Set the fill style
-		tokens.filltokens2.push_back(GeomToken2(SET_FILL).uval);
-		tokens.filltokens2.push_back(GeomToken2(*stylesIt).uval);
+		tokens.filltokens.push_back(GeomToken(SET_FILL).uval);
+		tokens.filltokens.push_back(GeomToken(*stylesIt).uval);
 		vector<vector<ShapePathSegment> >& outlinesForColor=it->second;
 		for(unsigned int i=0;i<outlinesForColor.size();i++)
 		{
 			vector<ShapePathSegment>& segments=outlinesForColor[i];
 			assert (segments[0].type == PATH_START);
-			tokens.filltokens2.push_back(GeomToken2(MOVE).uval);
-			tokens.filltokens2.push_back(GeomToken2(segments[0].i,true).uval);
+			tokens.filltokens.push_back(GeomToken(MOVE).uval);
+			tokens.filltokens.push_back(GeomToken(segments[0].i,true).uval);
 			for(unsigned int j=1;j<segments.size();j++) {
 				ShapePathSegment segment = segments[j];
 				assert(segment.type != PATH_START);
 				if (segment.type == PATH_STRAIGHT)
 				{
-					tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
-					tokens.filltokens2.push_back(GeomToken2(segment.i,true).uval);
+					tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+					tokens.filltokens.push_back(GeomToken(segment.i,true).uval);
 				}
 				if (segment.type == PATH_CURVE_QUADRATIC)
 				{
-					tokens.filltokens2.push_back(GeomToken2(CURVE_QUADRATIC).uval);
-					tokens.filltokens2.push_back(GeomToken2(segment.i,true).uval);
-					tokens.filltokens2.push_back(GeomToken2(segments[++j].i,true).uval);
+					tokens.filltokens.push_back(GeomToken(CURVE_QUADRATIC).uval);
+					tokens.filltokens.push_back(GeomToken(segment.i,true).uval);
+					tokens.filltokens.push_back(GeomToken(segments[++j].i,true).uval);
 				}
 			}
 		}
 	}
 	if (strokeShapesMap.size() > 0)
 	{
-		tokens.stroketokens2.push_back(GeomToken2(CLEAR_FILL).uval);
+		tokens.stroketokens.push_back(GeomToken(CLEAR_FILL).uval);
 		it=strokeShapesMap.begin();
 		//For each stroke
 		for(;it!=strokeShapesMap.end();++it)
@@ -225,27 +225,27 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 			}
 			//Set the line style
 			vector<vector<ShapePathSegment> >& outlinesForStroke=it->second;
-			tokens.stroketokens2.push_back(GeomToken2(SET_STROKE).uval);
-			tokens.stroketokens2.push_back(GeomToken2(*stylesIt).uval);
+			tokens.stroketokens.push_back(GeomToken(SET_STROKE).uval);
+			tokens.stroketokens.push_back(GeomToken(*stylesIt).uval);
 			for(unsigned int i=0;i<outlinesForStroke.size();i++)
 			{
 				vector<ShapePathSegment>& segments=outlinesForStroke[i];
 				assert (segments[0].type == PATH_START);
-				tokens.stroketokens2.push_back(GeomToken2(MOVE).uval);
-				tokens.stroketokens2.push_back(GeomToken2(segments[0].i,true).uval);
+				tokens.stroketokens.push_back(GeomToken(MOVE).uval);
+				tokens.stroketokens.push_back(GeomToken(segments[0].i,true).uval);
 				for(unsigned int j=1;j<segments.size();j++) {
 					ShapePathSegment segment = segments[j];
 					assert(segment.type != PATH_START);
 					if (segment.type == PATH_STRAIGHT)
 					{
-						tokens.stroketokens2.push_back(GeomToken2(STRAIGHT).uval);
-						tokens.stroketokens2.push_back(GeomToken2(segment.i,true).uval);
+						tokens.stroketokens.push_back(GeomToken(STRAIGHT).uval);
+						tokens.stroketokens.push_back(GeomToken(segment.i,true).uval);
 					}
 					if (segment.type == PATH_CURVE_QUADRATIC)
 					{
-						tokens.stroketokens2.push_back(GeomToken2(CURVE_QUADRATIC).uval);
-						tokens.stroketokens2.push_back(GeomToken2(segment.i,true).uval);
-						tokens.stroketokens2.push_back(GeomToken2(segments[++j].i,true).uval);
+						tokens.stroketokens.push_back(GeomToken(CURVE_QUADRATIC).uval);
+						tokens.stroketokens.push_back(GeomToken(segment.i,true).uval);
+						tokens.stroketokens.push_back(GeomToken(segments[++j].i,true).uval);
 					}
 				}
 			}
@@ -333,35 +333,35 @@ void ShapesBuilder::outputMorphTokens(const std::list<MORPHFILLSTYLE> &styles, c
 				LOG(LOG_NOT_IMPLEMENTED,"morphing for fill style type:"<<stylesIt->FillStyleType);
 				break;
 		}
-		tokens.filltokens2.push_back(GeomToken2(SET_FILL).uval);
-		tokens.filltokens2.push_back(GeomToken2(*stylesIt).uval);
+		tokens.filltokens.push_back(GeomToken(SET_FILL).uval);
+		tokens.filltokens.push_back(GeomToken(*stylesIt).uval);
 		vector<vector<ShapePathSegment> >& outlinesForColor=it->second;
 		for(unsigned int i=0;i<outlinesForColor.size();i++)
 		{
 			vector<ShapePathSegment>& segments=outlinesForColor[i];
 			assert (segments[0].type == PATH_START);
-			tokens.filltokens2.push_back(GeomToken2(MOVE).uval);
-			tokens.filltokens2.push_back(GeomToken2(segments[0].i,true).uval);
+			tokens.filltokens.push_back(GeomToken(MOVE).uval);
+			tokens.filltokens.push_back(GeomToken(segments[0].i,true).uval);
 			for(unsigned int j=1;j<segments.size();j++) {
 				ShapePathSegment segment = segments[j];
 				assert(segment.type != PATH_START);
 				if (segment.type == PATH_STRAIGHT)
 				{
-					tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
-					tokens.filltokens2.push_back(GeomToken2(segment.i,true).uval);
+					tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+					tokens.filltokens.push_back(GeomToken(segment.i,true).uval);
 				}
 				if (segment.type == PATH_CURVE_QUADRATIC)
 				{
-					tokens.filltokens2.push_back(GeomToken2(CURVE_QUADRATIC).uval);
-					tokens.filltokens2.push_back(GeomToken2(segment.i,true).uval);
-					tokens.filltokens2.push_back(GeomToken2(segments[++j].i,true).uval);
+					tokens.filltokens.push_back(GeomToken(CURVE_QUADRATIC).uval);
+					tokens.filltokens.push_back(GeomToken(segment.i,true).uval);
+					tokens.filltokens.push_back(GeomToken(segments[++j].i,true).uval);
 				}
 			}
 		}
 	}
 	if (strokeShapesMap.size() > 0)
 	{
-		tokens.stroketokens2.push_back(GeomToken2(CLEAR_FILL).uval);
+		tokens.stroketokens.push_back(GeomToken(CLEAR_FILL).uval);
 		it=strokeShapesMap.begin();
 		//For each stroke
 		for(;it!=strokeShapesMap.end();++it)
@@ -378,27 +378,27 @@ void ShapesBuilder::outputMorphTokens(const std::list<MORPHFILLSTYLE> &styles, c
 			//Set the line style
 			LOG(LOG_NOT_IMPLEMENTED,"morphing for line styles");
 			vector<vector<ShapePathSegment> >& outlinesForStroke=it->second;
-			tokens.stroketokens2.push_back(GeomToken2(SET_STROKE).uval);
-			tokens.stroketokens2.push_back(GeomToken2(*stylesIt).uval);
+			tokens.stroketokens.push_back(GeomToken(SET_STROKE).uval);
+			tokens.stroketokens.push_back(GeomToken(*stylesIt).uval);
 			for(unsigned int i=0;i<outlinesForStroke.size();i++)
 			{
 				vector<ShapePathSegment>& segments=outlinesForStroke[i];
 				assert (segments[0].type == PATH_START);
-				tokens.stroketokens2.push_back(GeomToken2(MOVE).uval);
-				tokens.stroketokens2.push_back(GeomToken2(segments[0].i,true).uval);
+				tokens.stroketokens.push_back(GeomToken(MOVE).uval);
+				tokens.stroketokens.push_back(GeomToken(segments[0].i,true).uval);
 				for(unsigned int j=1;j<segments.size();j++) {
 					ShapePathSegment segment = segments[j];
 					assert(segment.type != PATH_START);
 					if (segment.type == PATH_STRAIGHT)
 					{
-						tokens.stroketokens2.push_back(GeomToken2(STRAIGHT).uval);
-						tokens.stroketokens2.push_back(GeomToken2(segment.i,true).uval);
+						tokens.stroketokens.push_back(GeomToken(STRAIGHT).uval);
+						tokens.stroketokens.push_back(GeomToken(segment.i,true).uval);
 					}
 					if (segment.type == PATH_CURVE_QUADRATIC)
 					{
-						tokens.stroketokens2.push_back(GeomToken2(CURVE_QUADRATIC).uval);
-						tokens.stroketokens2.push_back(GeomToken2(segment.i,true).uval);
-						tokens.stroketokens2.push_back(GeomToken2(segments[++j].i,true).uval);
+						tokens.stroketokens.push_back(GeomToken(CURVE_QUADRATIC).uval);
+						tokens.stroketokens.push_back(GeomToken(segment.i,true).uval);
+						tokens.stroketokens.push_back(GeomToken(segments[++j].i,true).uval);
 					}
 				}
 			}

@@ -59,6 +59,6 @@ void GraphicsSolidFill::appendToTokens(std::vector<uint64_t>& tokens, Graphics* 
 {
 	FILLSTYLE style = toFillStyle();
 	FILLSTYLE& styleref = graphics->addFillStyle(style);
-	tokens.emplace_back(GeomToken2(SET_FILL).uval);
-	tokens.emplace_back(GeomToken2(styleref).uval);
+	tokens.emplace_back(GeomToken(SET_FILL).uval);
+	tokens.emplace_back(GeomToken(styleref).uval);
 }

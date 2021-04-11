@@ -36,8 +36,8 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 	owner(_o), scaling(_scaling)
 
 {
-	tokens.filltokens2.assign(_tokens.filltokens2.begin(),_tokens.filltokens2.end());
-	tokens.stroketokens2.assign(_tokens.stroketokens2.begin(),_tokens.stroketokens2.end());
+	tokens.filltokens.assign(_tokens.filltokens.begin(),_tokens.filltokens.end());
+	tokens.stroketokens.assign(_tokens.stroketokens.begin(),_tokens.stroketokens.end());
 }
 
 bool TokenContainer::renderImpl(RenderContext& ctxt) const
@@ -377,21 +377,21 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 	bool hasContent = false;
 	double strokeWidth = 0;
 
-	auto it = tokens.filltokens2.begin();
-	while(it != tokens.filltokens2.end())
+	auto it = tokens.filltokens.begin();
+	while(it != tokens.filltokens.end())
 	{
-		GeomToken2 p(*it,false);
+		GeomToken p(*it,false);
 		switch(p.type)
 		{
 			case CURVE_CUBIC:
 			{
-				GeomToken2 p1(*(++it),false);
+				GeomToken p1(*(++it),false);
 				VECTOR_BOUNDS(p1.vec);
 			}
 			// falls through
 			case CURVE_QUADRATIC:
 			{
-				GeomToken2 p1(*(++it),false);
+				GeomToken p1(*(++it),false);
 				VECTOR_BOUNDS(p1.vec);
 			}
 			// falls through
@@ -402,7 +402,7 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			// falls through
 			case MOVE:
 			{
-				GeomToken2 p1(*(++it),false);
+				GeomToken p1(*(++it),false);
 				VECTOR_BOUNDS(p1.vec);
 				break;
 			}
@@ -413,27 +413,27 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			case FILL_TRANSFORM_TEXTURE:
 				break;
 			case SET_STROKE:
-				GeomToken2 p1(*(++it),false);
+				GeomToken p1(*(++it),false);
 				strokeWidth = (double)(p1.lineStyle->Width / 20.0);
 				break;
 		}
 		it++;
 	}
-	auto it2 = tokens.stroketokens2.begin();
-	while(it2 != tokens.stroketokens2.end())
+	auto it2 = tokens.stroketokens.begin();
+	while(it2 != tokens.stroketokens.end())
 	{
-		GeomToken2 p(*it2,false);
+		GeomToken p(*it2,false);
 		switch(p.type)
 		{
 			case CURVE_CUBIC:
 			{
-				GeomToken2 p1(*(++it2),false);
+				GeomToken p1(*(++it2),false);
 				VECTOR_BOUNDS(p1.vec);
 			}
 			// falls through
 			case CURVE_QUADRATIC:
 			{
-				GeomToken2 p1(*(++it2),false);
+				GeomToken p1(*(++it2),false);
 				VECTOR_BOUNDS(p1.vec);
 			}
 			// falls through
@@ -444,7 +444,7 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			// falls through
 			case MOVE:
 			{
-				GeomToken2 p1(*(++it2),false);
+				GeomToken p1(*(++it2),false);
 				VECTOR_BOUNDS(p1.vec);
 				break;
 			}
@@ -455,7 +455,7 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			case FILL_TRANSFORM_TEXTURE:
 				break;
 			case SET_STROKE:
-				GeomToken2 p1(*(++it2),false);
+				GeomToken p1(*(++it2),false);
 				strokeWidth = (double)(p1.lineStyle->Width / 20.0);
 				break;
 		}
@@ -488,7 +488,7 @@ void TokenContainer::getTextureSize(std::vector<uint64_t>& tokens, int *width, i
 
 	for(uint32_t i=0;i<tokens.size();i++)
 	{
-		switch (GeomToken2(tokens[i]).type)
+		switch (GeomToken(tokens[i]).type)
 		{
 			case SET_STROKE:
 			case STRAIGHT:
@@ -511,7 +511,7 @@ void TokenContainer::getTextureSize(std::vector<uint64_t>& tokens, int *width, i
 			case SET_FILL:
 			{
 				i++;
-				const FILLSTYLE* style=GeomToken2(tokens[i]).fillStyle;
+				const FILLSTYLE* style=GeomToken(tokens[i]).fillStyle;
 				const FILL_STYLE_TYPE& fstype=style->FillStyleType;
 				if(fstype==REPEATING_BITMAP ||
 					fstype==NON_SMOOTHED_REPEATING_BITMAP ||
@@ -533,9 +533,9 @@ void TokenContainer::getTextureSize(std::vector<uint64_t>& tokens, int *width, i
 /* Return the width of the latest SET_STROKE */
 uint16_t TokenContainer::getCurrentLineWidth() const
 {
-	for(uint32_t i=0;i<tokens.stroketokens2.size();i++)
+	for(uint32_t i=0;i<tokens.stroketokens.size();i++)
 	{
-		switch (GeomToken2(tokens.stroketokens2[i]).type)
+		switch (GeomToken(tokens.stroketokens[i]).type)
 		{
 			case SET_FILL:
 			case STRAIGHT:
@@ -558,7 +558,7 @@ uint16_t TokenContainer::getCurrentLineWidth() const
 			case SET_STROKE:
 			{
 				i++;
-				return GeomToken2(tokens.stroketokens2[i]).lineStyle->Width;
+				return GeomToken(tokens.stroketokens[i]).lineStyle->Width;
 			}
 		}
 	}

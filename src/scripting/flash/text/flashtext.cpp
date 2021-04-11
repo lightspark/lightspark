@@ -1347,37 +1347,37 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		{
 			fillstyleBackgroundColor.FillStyleType=SOLID_FILL;
 			fillstyleBackgroundColor.Color=this->backgroundColor;
-			tokens.filltokens2.push_back(GeomToken2(SET_FILL).uval);
-			tokens.filltokens2.push_back(GeomToken2(fillstyleBackgroundColor).uval);
-			tokens.filltokens2.push_back(GeomToken2(MOVE).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
-			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens2.push_back(GeomToken2(CLEAR_FILL).uval);
+			tokens.filltokens.push_back(GeomToken(SET_FILL).uval);
+			tokens.filltokens.push_back(GeomToken(fillstyleBackgroundColor).uval);
+			tokens.filltokens.push_back(GeomToken(MOVE).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(CLEAR_FILL).uval);
 		}
 		if (this->border)
 		{
 			lineStyleBorder.Color=this->borderColor;
 			lineStyleBorder.Width=20;
-			tokens.filltokens2.push_back(GeomToken2(SET_STROKE).uval);
-			tokens.filltokens2.push_back(GeomToken2(lineStyleBorder).uval);
-			tokens.filltokens2.push_back(GeomToken2(MOVE).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
-			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens2.push_back(GeomToken2(CLEAR_STROKE).uval);
+			tokens.filltokens.push_back(GeomToken(SET_STROKE).uval);
+			tokens.filltokens.push_back(GeomToken(lineStyleBorder).uval);
+			tokens.filltokens.push_back(GeomToken(MOVE).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(CLEAR_STROKE).uval);
 		}
 		if (this->caretblinkstate)
 		{
@@ -1398,13 +1398,13 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 			lineStyleCaret.Color=RGB(0,0,0);
 			lineStyleCaret.Width=40;
 			int ypadding = (bymax-bymin-2)/scaling;
-			tokens.filltokens2.push_back(GeomToken2(SET_STROKE).uval);
-			tokens.filltokens2.push_back(GeomToken2(lineStyleCaret).uval);
-			tokens.filltokens2.push_back(GeomToken2(MOVE).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2(tw, bymin/scaling+ypadding)).uval);
-			tokens.filltokens2.push_back(GeomToken2(STRAIGHT).uval);
-			tokens.filltokens2.push_back(GeomToken2(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
-			tokens.filltokens2.push_back(GeomToken2(CLEAR_STROKE).uval);
+			tokens.filltokens.push_back(GeomToken(SET_STROKE).uval);
+			tokens.filltokens.push_back(GeomToken(lineStyleCaret).uval);
+			tokens.filltokens.push_back(GeomToken(MOVE).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(tw, bymin/scaling+ypadding)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
+			tokens.filltokens.push_back(GeomToken(CLEAR_STROKE).uval);
 		}
 		fillstyleTextColor.FillStyleType=SOLID_FILL;
 		fillstyleTextColor.Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);

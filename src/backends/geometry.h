@@ -65,7 +65,7 @@ public:
 
 enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE_QUADRATIC, MOVE, SET_FILL, SET_STROKE, CLEAR_FILL, CLEAR_STROKE, CURVE_CUBIC, FILL_KEEP_SOURCE, FILL_TRANSFORM_TEXTURE };
 
-struct GeomToken2
+struct GeomToken
 {
 	union
 	{
@@ -81,8 +81,8 @@ struct GeomToken2
 		number_t value;
 		uint64_t uval;// this is used to have direct access to the value as it is stored in a vector<uint64_t> for performance
 	};
-	GeomToken2(GEOM_TOKEN_TYPE t):type(t) {}
-	GeomToken2(uint64_t v, bool isvec)
+	GeomToken(GEOM_TOKEN_TYPE t):type(t) {}
+	GeomToken(uint64_t v, bool isvec)
 	{
 		if (isvec)
 		{
@@ -92,11 +92,11 @@ struct GeomToken2
 		else
 			uval = v;
 	}
-	GeomToken2(const FILLSTYLE& fs):fillStyle(&fs) {}
-	GeomToken2(const LINESTYLE2& ls):lineStyle(&ls) {}
-	GeomToken2(number_t val):value(val) {}
-	GeomToken2(const MORPHLINESTYLE2& mls):morphlineStyle(&mls) {}
-	GeomToken2(const Vector2& _vec)
+	GeomToken(const FILLSTYLE& fs):fillStyle(&fs) {}
+	GeomToken(const LINESTYLE2& ls):lineStyle(&ls) {}
+	GeomToken(number_t val):value(val) {}
+	GeomToken(const MORPHLINESTYLE2& mls):morphlineStyle(&mls) {}
+	GeomToken(const Vector2& _vec)
 	{
 		vec.x=_vec.x;
 		vec.y=_vec.y;
@@ -105,21 +105,21 @@ struct GeomToken2
 
 struct tokensVector
 {
-	std::vector<uint64_t> filltokens2;
-	std::vector<uint64_t> stroketokens2;
+	std::vector<uint64_t> filltokens;
+	std::vector<uint64_t> stroketokens;
 	tokensVector() {}
 	void clear()
 	{
-		filltokens2.clear();
-		stroketokens2.clear();
+		filltokens.clear();
+		stroketokens.clear();
 	}
 	uint32_t size() const
 	{
-		return filltokens2.size()+stroketokens2.size();
+		return filltokens.size()+stroketokens.size();
 	}
 	bool empty() const
 	{
-		return filltokens2.empty() && stroketokens2.empty();
+		return filltokens.empty() && stroketokens.empty();
 	}
 };
 

@@ -2201,8 +2201,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1DuplicateMovieClip)
 	toAdd->setLegacyMatrix(th->getMatrix());
 	toAdd->name = nameId;
 	toAdd->setMouseEnabled(false);
-	toAdd->tokens.filltokens2 = th->tokens.filltokens2;
-	toAdd->tokens.stroketokens2 = th->tokens.stroketokens2;
+	toAdd->tokens.filltokens = th->tokens.filltokens;
+	toAdd->tokens.stroketokens = th->tokens.stroketokens;
 	if (argslen > 2)
 	{
 		ASObject* initobj = asAtomHandler::toObject(args[2],sys);
@@ -3317,8 +3317,8 @@ Shape::Shape(Class_base* c, float scaling, DefineShapeTag* tag):
 
 void Shape::setupShape(DefineShapeTag* tag, float _scaling)
 {
-	tokens.filltokens2.assign(tag->tokens->filltokens2.begin(),tag->tokens->filltokens2.end());
-	tokens.stroketokens2.assign(tag->tokens->stroketokens2.begin(),tag->tokens->stroketokens2.end());
+	tokens.filltokens.assign(tag->tokens->filltokens.begin(),tag->tokens->filltokens.end());
+	tokens.stroketokens.assign(tag->tokens->stroketokens.begin(),tag->tokens->stroketokens.end());
 	fromTag = tag;
 	cachedSurface.isChunkOwner=false;
 	cachedSurface.tex=&tag->chunk;

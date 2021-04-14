@@ -408,13 +408,19 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			}
 			case CLEAR_FILL:
 			case CLEAR_STROKE:
-			case SET_FILL:
 			case FILL_KEEP_SOURCE:
-			case FILL_TRANSFORM_TEXTURE:
 				break;
 			case SET_STROKE:
+			{
 				GeomToken p1(*(++it),false);
 				strokeWidth = (double)(p1.lineStyle->Width / 20.0);
+				break;
+			}
+			case SET_FILL:
+				it++;
+				break;
+			case FILL_TRANSFORM_TEXTURE:
+				it+=6;
 				break;
 		}
 		it++;
@@ -450,13 +456,19 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			}
 			case CLEAR_FILL:
 			case CLEAR_STROKE:
-			case SET_FILL:
 			case FILL_KEEP_SOURCE:
-			case FILL_TRANSFORM_TEXTURE:
 				break;
 			case SET_STROKE:
+			{
 				GeomToken p1(*(++it2),false);
 				strokeWidth = (double)(p1.lineStyle->Width / 20.0);
+				break;
+			}
+			case SET_FILL:
+				it2++;
+				break;
+			case FILL_TRANSFORM_TEXTURE:
+				it2+=6;
 				break;
 		}
 		it2++;
@@ -486,9 +498,10 @@ void TokenContainer::getTextureSize(std::vector<uint64_t>& tokens, int *width, i
 	*width=0;
 	*height=0;
 
+	uint32_t lastindex=UINT32_MAX;
 	for(uint32_t i=0;i<tokens.size();i++)
 	{
-		switch (GeomToken(tokens[i]).type)
+		switch (GeomToken(tokens[i],false).type)
 		{
 			case SET_STROKE:
 			case STRAIGHT:
@@ -511,31 +524,36 @@ void TokenContainer::getTextureSize(std::vector<uint64_t>& tokens, int *width, i
 			case SET_FILL:
 			{
 				i++;
-				const FILLSTYLE* style=GeomToken(tokens[i]).fillStyle;
+				const FILLSTYLE* style=GeomToken(tokens[i],false).fillStyle;
 				const FILL_STYLE_TYPE& fstype=style->FillStyleType;
 				if(fstype==REPEATING_BITMAP ||
 					fstype==NON_SMOOTHED_REPEATING_BITMAP ||
 					fstype==CLIPPED_BITMAP ||
 					fstype==NON_SMOOTHED_CLIPPED_BITMAP)
 				{
-					if (style->bitmap.isNull())
-						return;
-		
-					*width=style->bitmap->getWidth();
-					*height=style->bitmap->getHeight();
-					return;
+					lastindex=i;
 				}
+				break;
 			}
 		}
+	}
+	if (lastindex != UINT32_MAX)
+	{
+		const FILLSTYLE* style=GeomToken(tokens[lastindex],false).fillStyle;
+		if (style->bitmap.isNull())
+			return;
+		*width=style->bitmap->getWidth();
+		*height=style->bitmap->getHeight();
 	}
 }
 
 /* Return the width of the latest SET_STROKE */
 uint16_t TokenContainer::getCurrentLineWidth() const
 {
+	uint32_t lastindex=UINT32_MAX;
 	for(uint32_t i=0;i<tokens.stroketokens.size();i++)
 	{
-		switch (GeomToken(tokens.stroketokens[i]).type)
+		switch (GeomToken(tokens.stroketokens[i],false).type)
 		{
 			case SET_FILL:
 			case STRAIGHT:
@@ -558,9 +576,13 @@ uint16_t TokenContainer::getCurrentLineWidth() const
 			case SET_STROKE:
 			{
 				i++;
-				return GeomToken(tokens.stroketokens[i]).lineStyle->Width;
+				lastindex=i;
+				break;
 			}
 		}
 	}
+	if (lastindex != UINT32_MAX)
+		return GeomToken(tokens.stroketokens[lastindex],false).lineStyle->Width;
+	
 	return 0;
 }

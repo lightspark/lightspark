@@ -36,6 +36,7 @@ using namespace lightspark;
 void Graphics::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyFrom),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawRect","",Class<IFunction>::getFunction(c->getSystemState(),drawRect),NORMAL_METHOD,true);
@@ -80,6 +81,7 @@ ASFUNCTIONBODY_ATOM(Graphics,_constructor)
 ASFUNCTIONBODY_ATOM(Graphics,clear)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 	th->inFilling = false;
 	th->hasChanged = false;
@@ -94,6 +96,7 @@ ASFUNCTIONBODY_ATOM(Graphics,clear)
 ASFUNCTIONBODY_ATOM(Graphics,moveTo)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 	assert_and_throw(argslen==2);
 	if (th->inFilling)
@@ -115,6 +118,7 @@ ASFUNCTIONBODY_ATOM(Graphics,moveTo)
 ASFUNCTIONBODY_ATOM(Graphics,lineTo)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	assert_and_throw(argslen==2);
 	th->checkAndSetScaling();
 
@@ -137,6 +141,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineTo)
 ASFUNCTIONBODY_ATOM(Graphics,curveTo)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
 
@@ -164,6 +169,7 @@ ASFUNCTIONBODY_ATOM(Graphics,curveTo)
 ASFUNCTIONBODY_ATOM(Graphics,cubicCurveTo)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	assert_and_throw(argslen==6);
 	th->checkAndSetScaling();
 
@@ -205,6 +211,7 @@ const double KAPPA = 0.55228474983079356;
 ASFUNCTIONBODY_ATOM(Graphics,drawRoundRect)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	assert_and_throw(argslen==5 || argslen==6);
 	th->checkAndSetScaling();
 
@@ -336,6 +343,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Graphics.drawRoundRectComplex currently draws a normal rect");
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	assert_and_throw(argslen>=4);
 	th->checkAndSetScaling();
 
@@ -380,6 +388,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	assert_and_throw(argslen==3);
 	th->checkAndSetScaling();
 
@@ -454,6 +463,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
 ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
 
@@ -530,6 +540,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
 
@@ -574,6 +585,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 ASFUNCTIONBODY_ATOM(Graphics,drawPath)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 
 	_NR<Vector> commands;
@@ -755,9 +767,32 @@ void Graphics::dorender(bool closepath)
 	}
 }
 
+void Graphics::startDrawJob()
+{
+	drawMutex.lock();
+}
+
+void Graphics::endDrawJob()
+{
+	drawMutex.unlock();
+}
+
+bool Graphics::destruct()
+{
+	Locker l(drawMutex);
+	fillStyles.clear();
+	owner=nullptr;
+	movex=0;
+	movey=0;
+	inFilling=false;
+	hasChanged=false;
+	return ASObject::destruct();
+}
+
 ASFUNCTIONBODY_ATOM(Graphics,drawTriangles)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 
 	_NR<Vector> vertices;
@@ -904,6 +939,7 @@ void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, 
 ASFUNCTIONBODY_ATOM(Graphics,drawGraphicsData)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 
 	_NR<Vector> graphicsData;
@@ -928,6 +964,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawGraphicsData)
 ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 
 	if (argslen == 0)
@@ -993,6 +1030,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 
 	_NR<BitmapData> bitmap;
@@ -1015,6 +1053,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
 ASFUNCTIONBODY_ATOM(Graphics,lineGradientStyle)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 
 	tiny_string type;
@@ -1042,6 +1081,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineGradientStyle)
 ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 
 	tiny_string type;
@@ -1220,6 +1260,7 @@ FILLSTYLE Graphics::createSolidFill(uint32_t color, uint8_t alpha)
 ASFUNCTIONBODY_ATOM(Graphics,beginBitmapFill)
 {
 	Graphics* th = asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	_NR<BitmapData> bitmap;
 	_NR<Matrix> matrix;
 	bool repeat, smooth;
@@ -1240,6 +1281,7 @@ ASFUNCTIONBODY_ATOM(Graphics,beginBitmapFill)
 ASFUNCTIONBODY_ATOM(Graphics,beginFill)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 	th->dorender(true);
 	uint32_t color=0;
@@ -1257,6 +1299,7 @@ ASFUNCTIONBODY_ATOM(Graphics,beginFill)
 ASFUNCTIONBODY_ATOM(Graphics,endFill)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 	th->dorender(true);
 
@@ -1268,6 +1311,7 @@ ASFUNCTIONBODY_ATOM(Graphics,endFill)
 ASFUNCTIONBODY_ATOM(Graphics,copyFrom)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
+	Locker l(th->drawMutex);
 	_NR<Graphics> source;
 	ARG_UNPACK_ATOM(source);
 	if (source.isNull())

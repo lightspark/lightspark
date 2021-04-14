@@ -37,7 +37,8 @@ class Vector;
 class Graphics: public ASObject
 {
 private:
-	TokenContainer *const owner;
+	Mutex drawMutex;
+	TokenContainer *owner;
 	std::list<FILLSTYLE> fillStyles;
 	std::list<LINESTYLE2> lineStyles;
 	void checkAndSetScaling();
@@ -58,6 +59,9 @@ public:
 	}
 	Graphics(Class_base* c, TokenContainer* _o)
 		: ASObject(c),owner(_o),movex(0),movey(0),inFilling(false),hasChanged(false) {}
+	void startDrawJob();
+	void endDrawJob();
+	bool destruct() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	FILLSTYLE& addFillStyle(FILLSTYLE& fs) { fillStyles.push_back(fs); return fillStyles.back();}

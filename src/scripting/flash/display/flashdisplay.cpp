@@ -834,6 +834,18 @@ void Sprite::finalize()
 	DisplayObjectContainer::finalize();
 }
 
+void Sprite::startDrawJob()
+{
+	if (graphics)
+		graphics->startDrawJob();
+}
+
+void Sprite::endDrawJob()
+{
+	if (graphics)
+		graphics->endDrawJob();
+}
+
 void Sprite::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_SEALED);
@@ -3343,6 +3355,18 @@ void Shape::finalize()
 {
 	graphics.reset();
 	DisplayObject::finalize();
+}
+
+void Shape::startDrawJob()
+{
+	if (graphics)
+		graphics->startDrawJob();
+}
+
+void Shape::endDrawJob()
+{
+	if (graphics)
+		graphics->endDrawJob();
 }
 
 void Shape::sinit(Class_base* c)

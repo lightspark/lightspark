@@ -955,6 +955,7 @@ AsyncDrawJob::~AsyncDrawJob()
 
 void AsyncDrawJob::execute()
 {
+	owner->startDrawJob();
 	SystemState* sys = owner->getSystemState();
 	float scalex;
 	float scaley;
@@ -965,6 +966,7 @@ void AsyncDrawJob::execute()
 		surfaceBytes=drawable->getPixelBuffer(scalex,scaley);
 	if(!threadAborting && surfaceBytes)
 		uploadNeeded=true;
+	owner->endDrawJob();
 }
 
 void AsyncDrawJob::threadAbort()

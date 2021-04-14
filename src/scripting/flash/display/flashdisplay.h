@@ -260,6 +260,9 @@ public:
 	uint32_t getTagID() const override;
 	bool destruct() override;
 	void finalize() override;
+	void startDrawJob() override;
+	void endDrawJob() override;
+
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -463,6 +466,8 @@ public:
 	void setSoundStartFrame(uint32_t frame) { soundstartframe=frame; }
 	bool destruct() override;
 	void finalize() override;
+	void startDrawJob() override;
+	void endDrawJob() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);

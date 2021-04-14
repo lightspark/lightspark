@@ -210,6 +210,8 @@ public:
 	virtual void afterLegacyDelete(DisplayObjectContainer* parent) {}
 	virtual uint32_t getTagID() const { return 0;}
 	virtual void resetLegacyState() {}
+	virtual void startDrawJob() {}
+	virtual void endDrawJob() {}
 	
 	bool Render(RenderContext& ctxt,bool force=false);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;

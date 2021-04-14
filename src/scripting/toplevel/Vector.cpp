@@ -144,7 +144,7 @@ void Vector::generator(asAtom& ret,SystemState *sys, asAtom &o_class, asAtom* ar
 	if(asAtomHandler::is<Array>(args[0]))
 	{
 		//create object without calling _constructor
-		asAtomHandler::as<TemplatedClass<Vector>>(o_class)->getInstance(ret,false,NULL,0);
+		asAtomHandler::as<TemplatedClass<Vector>>(o_class)->getInstance(ret,false,nullptr,0);
 		Vector* res = asAtomHandler::as<Vector>(ret);
 
 		Array* a = asAtomHandler::as<Array>(args[0]);
@@ -156,12 +156,13 @@ void Vector::generator(asAtom& ret,SystemState *sys, asAtom &o_class, asAtom* ar
 				ASATOM_INCREF(obj);
 			res->vec.push_back(obj);
 		}
+		res->setIsInitialized(true);
 	}
 	else if(asAtomHandler::getObject(args[0])->getClass()->getTemplate() == Template<Vector>::getTemplate(sys))
 	{
 		Vector* arg = asAtomHandler::as<Vector>(args[0]);
 
-		Vector* res = NULL;
+		Vector* res = nullptr;
 		if (arg->vec_type == type)
 		{
 			// according to specs, the argument is returned if it is a vector of the same type as the provided class
@@ -172,7 +173,7 @@ void Vector::generator(asAtom& ret,SystemState *sys, asAtom &o_class, asAtom* ar
 		else
 		{
 			//create object without calling _constructor
-			asAtomHandler::as<TemplatedClass<Vector>>(o_class)->getInstance(ret,false,NULL,0);
+			asAtomHandler::as<TemplatedClass<Vector>>(o_class)->getInstance(ret,false,nullptr,0);
 			res = asAtomHandler::as<Vector>(ret);
 			for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
 			{
@@ -205,7 +206,7 @@ ASFUNCTIONBODY_ATOM(Vector,_constructor)
 ASFUNCTIONBODY_ATOM(Vector,_concat)
 {
 	Vector* th=asAtomHandler::as<Vector>(obj);
-	th->getClass()->getInstance(ret,true,NULL,0);
+	th->getClass()->getInstance(ret,true,nullptr,0);
 	Vector* res = asAtomHandler::as<Vector>(ret);
 	// copy values into new Vector
 	res->vec.resize(th->size(), th->getDefaultValue());

@@ -6034,10 +6034,26 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	auto itexc = mi->body->exceptions.begin();
 	while (itexc != mi->body->exceptions.end())
 	{
-		assert (state.oldnewpositions.find(itexc->from) != state.oldnewpositions.end());
-		itexc->from = state.oldnewpositions[itexc->from];
-		assert (state.oldnewpositions.find(itexc->to) != state.oldnewpositions.end());
-		itexc->to = state.oldnewpositions[itexc->to];
+		uint32_t excpos = itexc->from;
+		// the exception region start may be inside unreachable code, so we extend the region to the last reachable code position
+		while (state.oldnewpositions.find(excpos) == state.oldnewpositions.end())
+		{
+			excpos--;
+			if (excpos == 0)
+				break;
+		}
+		assert (state.oldnewpositions.find(excpos) != state.oldnewpositions.end());
+		itexc->from = state.oldnewpositions[excpos];
+
+		excpos = itexc->to;
+		// the exception region end may be inside unreachable code, so we extend the region to the last reachable code position
+		while (state.oldnewpositions.find(excpos) == state.oldnewpositions.end())
+		{
+			excpos--;
+			if (excpos == 0)
+				break;
+		}
+
 		assert (state.oldnewpositions.find(itexc->target) != state.oldnewpositions.end());
 		itexc->target = state.oldnewpositions[itexc->target];
 		itexc++;

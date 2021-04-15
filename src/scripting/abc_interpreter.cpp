@@ -6053,6 +6053,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			if (excpos == 0)
 				break;
 		}
+		assert (state.oldnewpositions.find(excpos) != state.oldnewpositions.end());
+		itexc->to = state.oldnewpositions[excpos];
 
 		assert (state.oldnewpositions.find(itexc->target) != state.oldnewpositions.end());
 		itexc->target = state.oldnewpositions[itexc->target];

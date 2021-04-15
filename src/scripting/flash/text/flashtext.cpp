@@ -1689,7 +1689,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 		index =v.find("&nbsp;",index);
 	}
 	textdata->text += v;
-	if (name == "br")
+	if (name == "br" || name == "sbr") // adobe seems to interpret the unknown tag <sbr /> as <br> ?
 	{
 		if (textdata->multiline)
 			textdata->text += "\n";
@@ -1699,8 +1699,10 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	{
 		if (textdata->multiline)
 		{
-			if (!textdata->text.empty() && 
-			    !textdata->text.endsWith("\n"))
+			if (!textdata->text.empty() &&
+				!textdata->text.endsWith("\n"))
+				textdata->text += "\n";
+			if (node.children().begin() ==node.children().end()) // empty paragraph
 				textdata->text += "\n";
 		}
 		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
@@ -1744,9 +1746,11 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			attrname = attrname.lowercase();
 			if (attrname == "face")
 			{
-				textdata->font = it->value();
-				textdata->fontID = UINT32_MAX;
-				
+				if (textdata->font != it->value())
+				{
+					textdata->font = it->value();
+					textdata->fontID = UINT32_MAX;
+				}
 			}
 			else if (attrname == "size")
 			{

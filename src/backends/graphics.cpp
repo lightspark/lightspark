@@ -759,6 +759,7 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 			return; // silence warning about uninitialised alignment
 	}
 	pango_layout_set_alignment(layout,alignment);
+	pango_layout_set_spacing(layout,PANGO_SCALE*tData.leading);
 
 	//In case wordWrap is true, we already have the right width
 	if(tData.wordWrap == true)
@@ -770,7 +771,7 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 	/* setup font description */
 	desc = pango_font_description_new();
 	pango_font_description_set_family(desc, tData.font.raw_buf());
-	pango_font_description_set_size(desc, PANGO_SCALE*tData.fontSize);
+	pango_font_description_set_absolute_size(desc, PANGO_SCALE*tData.fontSize);
 	pango_layout_set_font_description(layout, desc);
 	pango_font_description_free(desc);
 }

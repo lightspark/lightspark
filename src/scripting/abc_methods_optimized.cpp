@@ -3021,7 +3021,8 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 	asAtom prop=asAtomHandler::invalidAtom;
 	if(asAtomHandler::isInvalid(prop))
 	{
-		bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF | GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+		GET_VARIABLE_RESULT getvarres = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF | GET_VARIABLE_OPTION::DONT_CALL_GETTER));
+		bool isgetter = getvarres & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 		if (isgetter)
 		{
 			//Call the getter
@@ -3038,7 +3039,7 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 			}
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 		}
-		else
+		else if (!(getvarres & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
 			ASATOM_INCREF(prop);
 	}
 	if(asAtomHandler::isInvalid(prop))
@@ -3101,7 +3102,8 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 //		}
 		if(asAtomHandler::isInvalid(prop))
 		{
-			bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF| GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+			GET_VARIABLE_RESULT getvarres = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF | GET_VARIABLE_OPTION::DONT_CALL_GETTER));
+			bool isgetter = getvarres & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 			if (isgetter)
 			{
 				//Call the getter
@@ -3121,7 +3123,8 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 			else
 			{
 				LOG_CALL("getProperty_sll " << *name << ' ' << obj->toDebugString()<<" "<<instrptr->local3.pos<<" "<<asAtomHandler::toDebugString(prop));
-				ASATOM_INCREF(prop);
+				if (!(getvarres & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
+					ASATOM_INCREF(prop);
 			}
 
 		}
@@ -3144,7 +3147,8 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 	asAtom prop=asAtomHandler::invalidAtom;
 	if(asAtomHandler::isInvalid(prop))
 	{
-		bool isgetter = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF | GET_VARIABLE_OPTION::DONT_CALL_GETTER)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+		GET_VARIABLE_RESULT getvarres = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF | GET_VARIABLE_OPTION::DONT_CALL_GETTER));
+		bool isgetter = getvarres & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 		if (isgetter)
 		{
 			//Call the getter
@@ -3161,7 +3165,7 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 			}
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 		}
-		else
+		else if (!(getvarres & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
 			ASATOM_INCREF(prop);
 	}
 	if(asAtomHandler::isInvalid(prop))

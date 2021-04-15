@@ -1870,22 +1870,30 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	}
 	else if (e->type == "rollOver")
 	{
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOVER;
-		AVM1getVariableByMultiname(func,m);
-		if (asAtomHandler::is<AVM1Function>(func))
+		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>()) 
+				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
 		{
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			result=true;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOVER;
+			AVM1getVariableByMultiname(func,m);
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				result=true;
+			}
 		}
 	}
 	else if (e->type == "rollOut")
 	{
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOUT;
-		AVM1getVariableByMultiname(func,m);
-		if (asAtomHandler::is<AVM1Function>(func))
+		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>()) 
+				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
 		{
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			result=true;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOUT;
+			AVM1getVariableByMultiname(func,m);
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				result=true;
+			}
 		}
 	}
 	else if (e->type == "mouseOver" || e->type == "mouseOut")

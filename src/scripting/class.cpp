@@ -65,7 +65,7 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_i
 {
 	this->global=_global;
 	this->incRef(); //create on reference for the classes map
-	this->getSystemState()->customClasses.insert(this);
+	this->getSystemState()->customClasses.insert(make_pair(name.nameId,this));
 	isReusable = true;
 	subtype = SUBTYPE_INHERIT;
 }

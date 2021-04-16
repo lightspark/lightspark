@@ -405,8 +405,9 @@ public:
 	//Application starting time in milliseconds
 	uint64_t startTime;
 
-	//Classes set. They own one reference to each class/template
-	std::set<Class_base*> customClasses;
+	//map of all classed defined in the swf. They own one reference to each class/template
+	//key is the stringID of the class name (without namespace)
+	std::multimap<uint32_t, Class_base*> customClasses;
 	//This is an array of fixed size, we can avoid using std::vector
 	Class_base** builtinClasses;
 	std::map<QName, Template_base*> templates;

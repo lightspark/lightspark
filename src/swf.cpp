@@ -679,7 +679,7 @@ void SystemState::destroy()
 			builtinClasses[i]->finalize();
 	}
 	for(auto it = customClasses.begin(); it != customClasses.end(); ++it)
-		(*it)->finalize();
+		it->second->finalize();
 	for(auto it = templates.begin(); it != templates.end(); ++it)
 		it->second->finalize();
 
@@ -694,7 +694,7 @@ void SystemState::destroy()
 			builtinClasses[i]->decRef();
 	}
 	for(auto i = customClasses.begin(); i != customClasses.end(); ++i)
-		(*i)->decRef();
+		i->second->decRef();
 
 	//Free templates by decRef'ing them
 	for(auto i = templates.begin(); i != templates.end(); ++i)

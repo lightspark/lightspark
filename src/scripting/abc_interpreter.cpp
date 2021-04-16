@@ -3551,7 +3551,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						if (cls)
 							o = asAtomHandler::fromObjectNoPrimitive(cls);
 					}
-					if(asAtomHandler::isInvalid(o))
+					// fast check for builtin classes if no custom class with same name is defined
+					if(asAtomHandler::isInvalid(o) && mi->context->root->getSystemState()->customClasses.find(name->name_s_id) == mi->context->root->getSystemState()->customClasses.end())
 					{
 						ASObject* cls = mi->context->root->getSystemState()->systemDomain->getVariableByMultinameOpportunistic(*name);
 						if (cls)

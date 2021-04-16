@@ -550,7 +550,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 							break;
 					}
 				}
-				target->writeBytes(data,readcount);
+				target->writeBytes(data,min(readcount,length));
 				delete[] data;
 			}
 #endif //ENABLE_LIBAVCODEC

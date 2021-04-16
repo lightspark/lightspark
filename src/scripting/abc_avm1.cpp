@@ -33,7 +33,7 @@ void ABCVm::registerClassesAVM1()
 {
 	if (m_sys->avm1global)
 		return;
-	Global* builtinavm1 = Class<Global>::getInstanceS(m_sys,(ABCContext*)nullptr, 0);
+	Global* builtinavm1 = Class<Global>::getInstanceS(m_sys,(ABCContext*)nullptr, 0,true);
 	builtinavm1->setRefConstant();
 
 	registerClassesToplevel(builtinavm1);

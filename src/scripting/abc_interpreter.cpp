@@ -3387,7 +3387,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							ASObject* target=nullptr;
 							if (name->cachedType)
 								target = name->cachedType->getGlobalScope();
-							if (!target)
+							if (!target || (target->is<Global>() && target->as<Global>()->isAVM1()))
 								mi->context->root->applicationDomain->findTargetByMultiname(*name, target);
 							if (target)
 							{

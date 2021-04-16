@@ -2639,7 +2639,7 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 }
 
 
-Global::Global(Class_base* cb, ABCContext* c, int s):ASObject(cb,T_OBJECT,SUBTYPE_GLOBAL),scriptId(s),context(c)
+Global::Global(Class_base* cb, ABCContext* c, int s, bool avm1):ASObject(cb,T_OBJECT,SUBTYPE_GLOBAL),scriptId(s),context(c),isavm1(avm1)
 {
 }
 

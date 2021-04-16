@@ -898,8 +898,9 @@ class Global : public ASObject
 private:
 	int scriptId;
 	ABCContext* context;
+	bool isavm1;
 public:
-	Global(Class_base* cb, ABCContext* c, int s);
+	Global(Class_base* cb, ABCContext* c, int s, bool avm1);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {}
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
@@ -911,6 +912,7 @@ public:
 	void registerBuiltin(const char* name, const char* ns, _R<ASObject> o, NS_KIND nskind=NAMESPACE);
 	// ensures that the init script has been run
 	void checkScriptInit();
+	bool isAVM1() const { return isavm1; }
 };
 
 void eval(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);

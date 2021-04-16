@@ -1198,7 +1198,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					ret = asAtomHandler::fromObject(o);
 					f->call(nullptr,&ret, args,numargs,callee);
 				}
-				else
+				else if (asAtomHandler::isInvalid(ret))
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject class not found "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				ASATOM_DECREF(name);
 				ASATOM_DECREF(na);
@@ -1377,14 +1377,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						}
 						if(o)
 						{
-							o->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CHECK_CLASS);
+							o->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION(GET_VARIABLE_OPTION::DONT_CHECK_CLASS|GET_VARIABLE_OPTION::NO_INCREF));
 							if (!asAtomHandler::isValid(ret))
 							{
 								ASObject* pr = o->is<Class_base>() && !o->as<Class_base>()->prototype.isNull() ? o->as<Class_base>()->prototype->getObj() : o->getprop_prototype();
 								// search the prototype before searching the AS3 class
 								while (pr)
 								{
-									bool isGetter = pr->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CALL_GETTER) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+									bool isGetter = pr->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION(GET_VARIABLE_OPTION::DONT_CALL_GETTER|GET_VARIABLE_OPTION::NO_INCREF)) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 									if (isGetter) // getter from prototype has to be called with o as target
 									{
 										IFunction* f = asAtomHandler::as<IFunction>(ret);
@@ -1398,7 +1398,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 								}
 							}
 							if (!asAtomHandler::isValid(ret))
-								o->getVariableByMultiname(ret,m);
+								o->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NO_INCREF);
 						}
 						if (asAtomHandler::isInvalid(ret))
 						{
@@ -1465,7 +1465,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 												m.name_s_id=nameID;
 												break;
 										}
-										o->getVariableByMultiname(ret,m);
+										o->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NO_INCREF);
 										break;
 									}
 								}
@@ -1483,6 +1483,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (asAtomHandler::isInvalid(ret))
 						asAtomHandler::setUndefined(ret);
 				}
+				ASATOM_INCREF(ret);
 				ASATOM_DECREF(name);
 				ASATOM_DECREF(scriptobject);
 				PushStack(stack,ret);

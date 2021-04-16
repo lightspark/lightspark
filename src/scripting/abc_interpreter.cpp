@@ -4392,7 +4392,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[state.preloadedcode.size()-1] = j;
 				jumpstartpositions[state.preloadedcode.size()-1] = p1;
 				clearOperands(state,true,&lastlocalresulttype);
-				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			}
 			case 0x12://iffalse
@@ -4439,7 +4438,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				jumppositions[state.preloadedcode.size()-1] = j;
 				jumpstartpositions[state.preloadedcode.size()-1] = p1;
 				clearOperands(state,true,&lastlocalresulttype);
-				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			}
 			case 0x13://ifeq

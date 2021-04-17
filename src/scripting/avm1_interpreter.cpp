@@ -485,7 +485,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				if (asAtomHandler::isInvalid(res) && !scopevariables.empty())
 				{
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(s);
+					// scopevariables are locals of the caller, so we have to test case insensitive
+					uint32_t nameID = clip->getSystemState()->getUniqueStringId(s.lowercase());
 					auto it = scopevariables.find(nameID);
 					if (it != scopevariables.end())
 						res = it->second;

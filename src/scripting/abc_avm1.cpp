@@ -46,6 +46,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("ASSetPropFlags","",_MR(Class<IFunction>::getFunction(m_sys,AVM1_ASSetPropFlags)));
 	builtinavm1->registerBuiltin("setInterval","",_MR(Class<IFunction>::getFunction(m_sys,setInterval)));
 	builtinavm1->registerBuiltin("clearInterval","",_MR(Class<IFunction>::getFunction(m_sys,clearInterval)));
+	builtinavm1->registerBuiltin("setTimeout","",_MR(Class<IFunction>::getFunction(m_sys,setTimeout)));
 
 	builtinavm1->registerBuiltin("object","",Class<ASObject>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Button","",Class<SimpleButton>::getRef(m_sys));

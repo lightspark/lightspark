@@ -1535,7 +1535,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x66://getproperty
 			{
 				uint32_t t = code.peeku30FromPosition(pos);
-				if (argsneeded &&
+				if (argsneeded && !fromdup &&
 					(uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 0 && state.unchangedlocals.count(lastlocalpos))
 				{
 					// getproperty without runtimeargs following e.g. getlocal may produce local result
@@ -1761,7 +1761,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		{
 			uint32_t t = code.peeku30FromPosition(pos);
 			uint32_t argcount = argsneeded ? 1 : 0;
-			if (state.jumptargets.find(pos) == state.jumptargets.end() && (argsneeded<=1) &&
+			if (state.jumptargets.find(pos) == state.jumptargets.end() && (argsneeded<=1) && !fromdup &&
 					((uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == argcount
 					|| (!argsneeded && (state.operandlist.size() >= 1) && state.mi->context->constant_pool.multinames[t].runtimeargs == 1)
 					))
@@ -4778,23 +4778,28 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				typestack.push_back(typestackentry(Class<Number>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			case 0x3a://si8
-				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SI8,opcode,code);
+				if (!setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SI8,opcode,code))
+					clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,2);
 				break;
 			case 0x3b://si16
-				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SI16,opcode,code);
+				if (!setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SI16,opcode,code))
+					clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,2);
 				break;
 			case 0x3c://si32
-				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SI32,opcode,code);
+				if (!setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SI32,opcode,code))
+					clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,2);
 				break;
 			case 0x3d://sf32
-				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SF32,opcode,code);
+				if (!setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SF32,opcode,code))
+					clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,2);
 				break;
 			case 0x3e://sf64
-				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SF64,opcode,code);
+				if (!setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SF64,opcode,code))
+					clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,2);
 				break;
 			case 0xef://debug

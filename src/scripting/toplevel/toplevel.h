@@ -507,6 +507,7 @@ protected:
 			ret->returnTypeAllArgsInt = returnTypeAllArgsInt;
 		}
 		ret->subtype = this->subtype;
+		ret->isStatic = this->isStatic;
 		return ret;
 	}
 	bool destruct() override
@@ -599,6 +600,7 @@ protected:
 			ret->fromNewFunction = fromNewFunction;
 		}
 		ret->subtype = this->subtype;
+		ret->isStatic = this->isStatic;
 		ret->objfreelist = &getClass()->freelist[1];
 		return ret;
 	}

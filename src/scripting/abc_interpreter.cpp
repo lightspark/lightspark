@@ -3420,7 +3420,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				multiname* name=mi->context->getMultiname(t,nullptr);
 				if (!name || !name->isStatic)
 					throwError<VerifyError>(kIllegalOpMultinameError,"getlex","multiname not static");
-				if (function->inClass) // class method
+				if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back())) // class method
 				{
 					if (function->isStatic)
 					{
@@ -3673,7 +3673,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								auto it = state.operandlist.rbegin();
 								Class_base* contenttype = it->objtype;
 								it++;
-								if (canCallFunctionDirect((*it),name))
+								if (canCallFunctionDirect((*it),name) && !typestack[typestack.size()-2].classvar)
 								{
 									variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
 									if (v)
@@ -3703,7 +3703,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										}
 									}
 								}
-								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT) && it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
+								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT) && it->objtype && !it->objtype->isInterface && it->objtype->isInitialized() && !function->isStatic)
 								{
 									if (it->objtype->is<Class_inherit>())
 										it->objtype->as<Class_inherit>()->checkScriptInit();

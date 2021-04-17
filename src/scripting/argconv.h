@@ -70,6 +70,7 @@ public:
                         throwError<ArgumentError>(kCheckTypeFailedError,
                                                   asAtomHandler::toObject(obj,sys)->getClassName(),
                                                   "?"); // TODO
+		ASATOM_INCREF(obj);
 		return obj;
 	}
 	static void toAbstract(asAtom& ret, SystemState* sys,asAtom val)

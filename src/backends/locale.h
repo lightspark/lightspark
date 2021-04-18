@@ -58,6 +58,7 @@ namespace lightspark
 		private:
 			std::locale requestedLocale;
 			std::unordered_map<std::string, LocaleItem*> locales;
+			void init();
 		public:
 			LocaleManager();
 			~LocaleManager();

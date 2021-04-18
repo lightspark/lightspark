@@ -45,7 +45,7 @@ public:
 class Class_inherit:public Class_base
 {
 private:
-	void getInstance(asAtom& ret, bool construct, asAtom *args, const unsigned int argslen, Class_base* realClass);
+	void getInstance(asAtom& ret, bool construct, asAtom *args, const unsigned int argslen, Class_base* realClass) override;
 	DictionaryTag* tag;
 	bool bindedToRoot;
 	void recursiveBuild(ASObject* target) const;
@@ -71,8 +71,8 @@ public:
 		return Class_base::destruct();
 	}
 	void finalize() override;
-	void buildInstanceTraits(ASObject* o) const;
-	void setupDeclaredTraits(ASObject *target, bool checkclone=true);
+	void buildInstanceTraits(ASObject* o) const override;
+	void setupDeclaredTraits(ASObject *target, bool checkclone=true) override;
 	void bindToTag(DictionaryTag* t)
 	{
 		tag=t;
@@ -87,8 +87,8 @@ public:
 	}
 	//Closure stack
 	std::vector<scope_entry> class_scope;
-	virtual void describeClassMetadata(pugi::xml_node &root) const;
-	bool isBuiltin() const { return false; }
+	virtual void describeClassMetadata(pugi::xml_node &root) const override;
+	bool isBuiltin() const override { return false; }
 	bool hasoverriddenmethod(multiname* name) const;
 };
 
@@ -142,9 +142,9 @@ class Class: public Class_base
 protected:
 	Class(const QName& name, MemoryAccount* m):Class_base(name, m){}
 	//This function is instantiated always because of inheritance
-	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=NULL)
+	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr)
 	{
-		if(realClass==NULL)
+		if(realClass==nullptr)
 			realClass=this;
 		ret = asAtomHandler::fromObject(realClass->freelist[0].getObjectFromFreeList());
 		if (asAtomHandler::isInvalid(ret))
@@ -254,7 +254,7 @@ public:
 	{
 		T::generator(ret,getSystemState(), asAtomHandler::invalidAtom, args, argslen);
 	}
-	bool coerce(SystemState* sys,asAtom& o) const
+	bool coerce(SystemState* sys,asAtom& o) const override
 	{
 		return Class_base::coerce(sys,o);
 	}
@@ -317,7 +317,7 @@ class Class<ASObject>: public Class_base
 private:
 	Class<ASObject>(const QName& name, MemoryAccount* m):Class_base(name, m){}
 	//This function is instantiated always because of inheritance
-	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=NULL);
+	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr);
 public:
 	static ASObject* getInstanceS(SystemState* sys)
 	{
@@ -391,9 +391,9 @@ public:
 	static InterfaceClass<T>* getClass(SystemState* sys)
 	{
 		uint32_t classId=ClassName<T>::id;
-		InterfaceClass<T>* ret=NULL;
+		InterfaceClass<T>* ret=nullptr;
 		Class_base** retAddr=&sys->builtinClasses[classId];
-		if(*retAddr==NULL)
+		if(*retAddr==nullptr)
 		{
 			//Create the class
 			QName name(sys->getUniqueStringId(ClassName<T>::name),sys->getUniqueStringId(ClassName<T>::ns));
@@ -434,9 +434,9 @@ public:
 	{
 	}
 
-	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=NULL)
+	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr)
 	{
-		if(realClass==NULL)
+		if(realClass==nullptr)
 			realClass=this;
 		ret = asAtomHandler::fromObject(realClass->freelist[0].getObjectFromFreeList());
 		if (asAtomHandler::isInvalid(ret))
@@ -524,7 +524,7 @@ public:
 		QName instantiatedQName = getQName(appdomain->getSystemState(),types);
 
 		std::map<QName, Class_base*>::iterator it=appdomain->instantiatedTemplates.find(instantiatedQName);
-		Class<T>* ret=NULL;
+		Class<T>* ret=nullptr;
 		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
 		{
 			MemoryAccount* m = appdomain->getSystemState()->allocateMemoryAccount(instantiatedQName.getQualifiedName(appdomain->getSystemState()));
@@ -552,7 +552,7 @@ public:
 		const std::vector<const Type*> types;
 		_NR<ApplicationDomain> appdomain = applicationDomain;
 		std::map<QName, Class_base*>::iterator it=appdomain->instantiatedTemplates.find(qname);
-		Class<T>* ret=NULL;
+		Class<T>* ret=nullptr;
 		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
 		{
 			MemoryAccount* m = appdomain->getSystemState()->allocateMemoryAccount(qname.getQualifiedName(appdomain->getSystemState()));
@@ -590,13 +590,13 @@ public:
 	}
 	static void getInstanceS(asAtom& ret, SystemState* sys,const Type* type,_NR<ApplicationDomain> appdomain)
 	{
-		getTemplateInstance(sys,type,appdomain).getPtr()->getInstance(ret,true,NULL,0);
+		getTemplateInstance(sys,type,appdomain).getPtr()->getInstance(ret,true,nullptr,0);
 	}
 
 	static Template<T>* getTemplate(SystemState* sys,const QName& name)
 	{
 		std::map<QName, Template_base*>::iterator it=sys->templates.find(name);
-		Template<T>* ret=NULL;
+		Template<T>* ret=nullptr;
 		if(it==sys->templates.end()) //This class is not yet in the map, create it
 		{
 			MemoryAccount* m = sys->allocateMemoryAccount(name.getQualifiedName(sys));

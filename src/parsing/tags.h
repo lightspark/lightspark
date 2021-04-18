@@ -199,11 +199,13 @@ protected:
 	MORPHLINESTYLEARRAY MorphLineStyles;
 	SHAPE StartEdges;
 	SHAPE EndEdges;
+	std::map<uint32_t,tokensVector> tokensmap;
 	DefineMorphShapeTag(RECORDHEADER h, RootMovieClip* root, int version):DictionaryTag(h,root),MorphLineStyles(version){}
 public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	int getId() const override { return CharacterId; }
 	ASObject* instance(Class_base* c=nullptr) override;
+	void getTokensForRatio(tokensVector& tokens, uint32_t ratio);
 };
 
 class DefineMorphShape2Tag: public DefineMorphShapeTag

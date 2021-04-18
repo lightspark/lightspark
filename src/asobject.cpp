@@ -1802,20 +1802,6 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			result=true;
 		}
 	}
-	else if (e->type == "click")
-	{
-		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>()) 
-				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
-		{
-			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
-			AVM1getVariableByMultiname(func,m);
-			if (asAtomHandler::is<AVM1Function>(func))
-			{
-				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-				result=true;
-			}
-		}
-	}
 	else if (e->type == "mouseDown")
 	{
 		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>()) 
@@ -1840,6 +1826,17 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	}
 	else if (e->type == "mouseUp")
 	{
+		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>()) 
+				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
+		{
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
+			AVM1getVariableByMultiname(func,m);
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				result=true;
+			}
+		}
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEUP;
 		AVM1getVariableByMultiname(func,m);
 		if (asAtomHandler::is<AVM1Function>(func))

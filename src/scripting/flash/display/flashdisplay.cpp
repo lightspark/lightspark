@@ -1692,8 +1692,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
-	th->state.next_FP = th->state.FP+1;
+	th->state.next_FP = th->state.FP == th->getFramesLoaded()-1 ? th->state.FP : th->state.FP+1;
 	th->state.explicit_FP=true;
+	th->state.stop_FP=true;
 	if (th->inExecuteFramescript)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 	if (!th->isOnStage())
@@ -1712,8 +1713,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
-	th->state.next_FP = th->state.FP-1;
+	th->state.next_FP = th->state.FP == 0 ? th->state.FP : th->state.FP-1;
 	th->state.explicit_FP=true;
+	th->state.stop_FP=true;
 	if (th->inExecuteFramescript)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 	if (!th->isOnStage())
@@ -1918,7 +1920,6 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 				// mouseUp/mouseDown/mouseMove events are sent to all MovieClips on the Stage
 				if( (e->type == "mouseDown" && it->EventFlags.ClipEventMouseDown)
 					|| (e->type == "mouseUp" && it->EventFlags.ClipEventMouseUp)
-					|| (e->type == "mouseDown" && it->EventFlags.ClipEventPress)
 					|| (e->type == "mouseMove" && it->EventFlags.ClipEventMouseMove)
 					)
 				{
@@ -1926,7 +1927,8 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 				}
 				if( dispobj &&
-					((e->type == "click" && it->EventFlags.ClipEventRelease)
+					((e->type == "mouseUp" && it->EventFlags.ClipEventRelease)
+					|| (e->type == "mouseDown" && it->EventFlags.ClipEventPress)
 					|| (e->type == "rollOver" && it->EventFlags.ClipEventRollOver)
 					|| (e->type == "rollOut" && it->EventFlags.ClipEventRollOut)
 					|| (e->type == "releaseOutside" && it->EventFlags.ClipEventReleaseOutside)
@@ -3407,6 +3409,8 @@ MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this),morp
 MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this),morphshapetag(_morphshapetag)
 {
 	scaling = 1.0f/20.0f;
+	if (this->morphshapetag)
+		this->morphshapetag->getTokensForRatio(tokens,0);
 }
 
 void MorphShape::sinit(Class_base* c)
@@ -3423,11 +3427,17 @@ void MorphShape::checkRatio(uint32_t ratio, bool inskipping)
 {
 	if (inskipping)
 		return;
-	TokenContainer::FromDefineMorphShapeTagToShapeVector(getSystemState(),this->morphshapetag,tokens,ratio);
+	if (this->morphshapetag)
+		this->morphshapetag->getTokensForRatio(tokens,ratio);
 	this->hasChanged = true;
 	this->setNeedsTextureRecalculation(ratio != 0 && ratio != 65535);
 	if (isOnStage())
 		requestInvalidation(getSystemState());
+}
+
+uint32_t MorphShape::getTagID() const
+{
+	return morphshapetag ? morphshapetag->getId():UINT32_MAX;
 }
 
 
@@ -4670,7 +4680,7 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been
 	 * tested with the official flash player. It cannot work otherwise, as
-	 * hitTestState->parent == NULL. (This has also been verified)
+	 * hitTestState->parent == nullptr. (This has also been verified)
 	 */
 	if(ret)
 	{

@@ -296,6 +296,7 @@ public:
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 	void checkRatio(uint32_t ratio, bool inskipping) override;
+	uint32_t getTagID() const override;
 };
 
 class Loader;

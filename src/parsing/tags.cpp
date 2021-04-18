@@ -1587,11 +1587,23 @@ DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in, RootM
 
 ASObject* DefineMorphShapeTag::instance(Class_base* c)
 {
-	assert_and_throw(bindedTo==NULL);
-	if(c==NULL)
+	assert_and_throw(bindedTo==nullptr);
+	if(c==nullptr)
 		c=Class<MorphShape>::getClass(loadedFrom->getSystemState());
 	MorphShape* ret=new (c->memoryAccount) MorphShape(c, this);
 	return ret;
+}
+
+void DefineMorphShapeTag::getTokensForRatio(tokensVector& tokens, uint32_t ratio)
+{
+	auto it = tokensmap.find(ratio);
+	if (it==tokensmap.end())
+	{
+		it = tokensmap.insert(make_pair(ratio,tokensVector())).first;
+		TokenContainer::FromDefineMorphShapeTagToShapeVector(this->loadedFrom->getSystemState(),this,it->second,ratio);
+	}
+	tokens.filltokens.assign(it->second.filltokens.begin(),it->second.filltokens.end());
+	tokens.stroketokens.assign(it->second.stroketokens.begin(),it->second.stroketokens.end());
 }
 
 DefineMorphShape2Tag::DefineMorphShape2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DefineMorphShapeTag(h, root, 2)
@@ -2229,7 +2241,7 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 
 ASObject* DefineButtonTag::instance(Class_base* c)
 {
-	DisplayObject* states[4] = {NULL, NULL, NULL, NULL};
+	DisplayObject* states[4] = {nullptr, nullptr, nullptr, nullptr};
 	bool isSprite[4] = {false, false, false, false};
 	uint32_t curDepth[4];
 
@@ -2259,7 +2271,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			assert_and_throw(state);
 			//The matrix must be set before invoking the constructor
 			state->setLegacyMatrix(dict->MapToBoundsForButton(i->PlaceMatrix));
-			
+			state->legacy=true;
 			state->name = BUILTIN_STRINGS::EMPTY;
 			if (i->ButtonHasBlendMode && i->buttonVersion == 2)
 				state->setBlendMode(i->BlendMode);

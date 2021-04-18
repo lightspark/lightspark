@@ -621,6 +621,11 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 		 */
 		cairo_identity_matrix(cr);
 		ret=cairo_in_fill(cr, x, y);
+		if (!ret) // no hit, so we also check with alternative fill rule
+		{
+			cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
+			ret=cairo_in_fill(cr, x, y);
+		}
 	}
 	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);

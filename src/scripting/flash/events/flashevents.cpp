@@ -109,7 +109,7 @@ void Event::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("stopPropagation","",Class<IFunction>::getFunction(c->getSystemState(),stopPropagation),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopImmediatePropagation","",Class<IFunction>::getFunction(c->getSystemState(),stopImmediatePropagation),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,currentTarget);
-	REGISTER_GETTER(c,target);
+	REGISTER_GETTER_RESULTTYPE(c,target,ASObject);
 	REGISTER_GETTER(c,type);
 	REGISTER_GETTER(c,eventPhase);
 	REGISTER_GETTER(c,bubbles);
@@ -1498,10 +1498,10 @@ void SampleDataEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, Event, CLASS_SEALED);
 	c->setVariableAtomByQName("SAMPLE_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"sampleData"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	
-	REGISTER_GETTER_SETTER(c, data);
-	REGISTER_GETTER_SETTER(c, position);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, data,ByteArray);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, position,Number);
 }
 ASFUNCTIONBODY_GETTER_SETTER(SampleDataEvent,data)
 ASFUNCTIONBODY_GETTER_SETTER(SampleDataEvent,position)

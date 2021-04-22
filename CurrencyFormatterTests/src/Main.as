@@ -14,14 +14,55 @@ package
 		{
 			USTests();
 			GBTests();
+			EURTests();
+			BrokenTests();
 			currencyFormatterResultTests();
 			formattingWithCurrencySymbolIsSafe()
 			setCurrencyTests()
 			decimalSeparatorTests();
 			fractionalDigitsTests();
-			leadingZeroTests();
 			trailingZerosTests();
-			currencyFormatterResultTests();
+		}
+		
+		private function BrokenTests()
+		{
+			trace("BrokenTests");
+			
+			// Parse
+			var cf:CurrencyFormatter = new CurrencyFormatter("en_US");
+			var parseResult:CurrencyParseResult = cf.parse("1000 Dollar");
+			if (parseResult.currencyString == "" && parseResult.value == NaN)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed, got: " + parseResult.currencyString + "," + parseResult.value);
+			}
+			
+			var cf:CurrencyFormatter = new CurrencyFormatter("en_FR");
+			var input = 12.50;
+			var formattedResult:String = cf.format(input);
+			
+			if (formattedResult == "USD12.50")
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed, got: " + formattedResult);
+			}
+			
+			// Parse
+			var parseResult:CurrencyParseResult = cf.parse("bob 1000");
+			if (parseResult.currencyString == "bob" && parseResult.value == 1000)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed, got: " + parseResult.currencyString + "," + parseResult.value);
+			}
 		}
 		
 		private function USTests()
@@ -44,6 +85,28 @@ package
 			// Parse
 			var parseResult:CurrencyParseResult = cf.parse("1000");
 			if (parseResult.currencyString == "" && parseResult.value == 1000)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed, got: " + parseResult.currencyString + "," + parseResult.value);
+			}
+			
+			// Parse
+			var parseResult:CurrencyParseResult = cf.parse("$1000");
+			if (parseResult.currencyString == "$" && parseResult.value == 1000)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed, got: " + parseResult.currencyString + "," + parseResult.value);
+			}
+			
+			// Parse
+			var parseResult:CurrencyParseResult = cf.parse("Dollar 1000");
+			if (parseResult.currencyString == "Dollar" && parseResult.value == 1000)
 			{
 				trace("Passed");
 			}
@@ -80,6 +143,70 @@ package
 			{
 				trace("Failed, got: " + parseResult.currencyString + "," + parseResult.value);
 			}
+			
+			// Parse
+			var parseResult:CurrencyParseResult = cf.parse("£1000");
+			if (parseResult.currencyString == "£" && parseResult.value == 1000)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed, got: " + parseResult.currencyString + "," + parseResult.value);
+			}
+			
+			// Parse
+			var parseResult:CurrencyParseResult = cf.parse("Pound 1000");
+			if (parseResult.currencyString == "Pound" && parseResult.value == 1000)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed, got: " + parseResult.currencyString + "," + parseResult.value);
+			}
+		}
+		
+		private function EURTests()
+		{
+			trace("EURTests");
+			
+			var cf:CurrencyFormatter = new CurrencyFormatter("en_FR");
+			var input = 12.50;
+			var formattedResult:String = cf.format(input);
+			
+			// Parse
+			var parseResult:CurrencyParseResult = cf.parse("1000");
+			if (parseResult.currencyString == "" && parseResult.value == 1000)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed, got: " + parseResult.currencyString + "," + parseResult.value);
+			}
+			
+			// Parse
+			var parseResult:CurrencyParseResult = cf.parse("€1000");
+			if (parseResult.currencyString == "€" && parseResult.value == 1000)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed, got: " + parseResult.currencyString + "," + parseResult.value);
+			}
+			
+			// Parse
+			var parseResult:CurrencyParseResult = cf.parse("Euro 1000");
+			if (parseResult.currencyString == "Euro" && parseResult.value == 1000)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed, got: " + parseResult.currencyString + "," + parseResult.value);
+			}
 		}
 		
 		private function currencyFormatterResultTests()
@@ -93,7 +220,7 @@ package
 			}
 			else
 			{
-				trace("Failed");
+				trace("Failed, got: " + currencyResult.currencyString + "," + currencyResult.value);
 			}
 		}
 		
@@ -119,6 +246,63 @@ package
 				trace("Failed");
 			}
 			if (!cf.formattingWithCurrencySymbolIsSafe("EUR"))
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed");
+			}
+			
+			var cf:CurrencyFormatter;
+			
+			cf = new CurrencyFormatter("ja-JP");    
+			if (cf.formattingWithCurrencySymbolIsSafe("EUR") == false)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed");
+			}
+			cf = new CurrencyFormatter("en-US");    
+			if (cf.formattingWithCurrencySymbolIsSafe("EUR") == false)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed");
+			}
+			cf = new CurrencyFormatter("en-GB");    
+			if (cf.formattingWithCurrencySymbolIsSafe("EUR") == false)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed");
+			}
+			cf = new CurrencyFormatter("de-DE");    
+			if (cf.formattingWithCurrencySymbolIsSafe("EUR") == true)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed");
+			}
+			cf = new CurrencyFormatter("fr-FR");    
+			if (cf.formattingWithCurrencySymbolIsSafe("EUR") == true)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed");
+			}
+			cf = new CurrencyFormatter("es-ES");    
+			if (cf.formattingWithCurrencySymbolIsSafe("EUR") == true)
 			{
 				trace("Passed");
 			}

@@ -3882,6 +3882,15 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p = code.tellg();
 				uint32_t value =code.readu30();
 				assert_and_throw(value < mi->body->getReturnValuePos());
+				if (state.operandlist.size() && state.operandlist.back().type==OP_LOCAL && state.operandlist.back().index==(int32_t)value)
+				{
+					// getlocal followed by setlocal on same index, can be skipped
+					state.operandlist.back().removeArg(state);
+					state.operandlist.pop_back();
+					removetypestack(typestack,1);
+					opcode_skipped=true;
+					break;
+				}
 				setOperandModified(state,OP_LOCAL,value);
 				if (state.operandlist.size() && state.operandlist.back().duparg1)
 				{
@@ -5057,11 +5066,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 												state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = asAtomHandler::getObject(v->var);
 												removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);
 												if (opcode == 0x46)
+												{
+													if (resulttype == nullptr && asAtomHandler::is<Function>(v->var))
+													{
+														resulttype = asAtomHandler::as<Function>(v->var)->getReturnType();
+														if (resulttype == nullptr)
+															LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method:"<<*name<<" "<<state.operandlist.back().objtype->toDebugString());
+													}
 													typestack.push_back(typestackentry(resulttype,false));
+												}
 												break;
 											}
-											if (!state.operandlist.back().objtype->is<Class_inherit>())
-												LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method:"<<*name<<" "<<state.operandlist.back().objtype->toDebugString());
 										}
 									}
 									if ((opcode == 0x4f && setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_NOARGS,opcode,code,p)) ||

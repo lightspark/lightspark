@@ -224,7 +224,7 @@ void ABCVm::abc_ifeq_local_local(call_context* context)
 }
 void ABCVm::abc_ifne_constant_constant(call_context* context)
 {
-	bool cond=!asAtomHandler::isEqual(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant) == TTRUE;
+	bool cond=!asAtomHandler::isEqual(*context->exec_pos->arg1_constant,context->mi->context->root->getSystemState(),*context->exec_pos->arg2_constant);
 	LOG_CALL(_("ifNE_cc (") << ((cond)?_("taken)"):_("not taken)")));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
@@ -1880,7 +1880,7 @@ void ABCVm::abc_callpropvoidStaticName_local(call_context* context)
 	(++(context->exec_pos));
 
 	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	LOG_CALL( "callPropvoid_noargs_l " << *name);
+	LOG_CALL( "callPropvoid_noargs_l " << *name<<" "<<asAtomHandler::toDebugString(obj));
 	asAtom ret=asAtomHandler::invalidAtom;
 	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos,false,false,false);
 	ASATOM_DECREF(ret);

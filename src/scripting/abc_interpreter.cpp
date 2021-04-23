@@ -97,7 +97,7 @@ void ABCVm::executeFunction(call_context* context)
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=context->exec_pos- &context->mi->body->preloadedcode.front();
 #endif
-		//LOG(LOG_INFO,"stack:"<<(context->stackp-context->stack));
+		//LOG(LOG_INFO,"stack:"<<(context->stackp-context->stack)<<" code position:"<<(context->exec_pos- &context->mi->body->preloadedcode.front()));
 
 #ifndef NDEBUG
 		uint32_t c = opcodecounter[context->exec_pos->func];
@@ -2413,6 +2413,53 @@ void skipunreachablecode(preloadstate& state, memorystream& code, bool updatetar
 	}
 	
 }
+void setupInstructionComparison(preloadstate& state,int operator_start,int opcode,memorystream& code, int operator_replace,int operator_replace_reverse,std::vector<typestackentry>& typestack,Class_base** lastlocalresulttype,std::map<int32_t,int32_t>& jumppositions, std::map<int32_t,int32_t>& jumpstartpositions)
+{
+	if (setupInstructionTwoArguments(state,operator_start,opcode,code,false,false,true,code.tellg()))
+	{
+		if (state.preloadedcode.back().opcode >= uint32_t(operator_start+4)) // has localresult
+		{
+			uint32_t pos = code.tellg();
+			bool ok = state.jumptargets.find(pos) == state.jumptargets.end() && state.jumptargets.find(pos+1) == state.jumptargets.end();
+			bool isnot = code.peekbyteFromPosition(pos) == 0x96; //not
+			if (ok && isnot)
+			{
+				pos++;
+				ok = state.jumptargets.find(pos) == state.jumptargets.end();
+			}
+			if (ok && code.peekbyteFromPosition(pos) == 0x76) //convert_b
+			{
+				pos++;
+				ok = state.jumptargets.find(pos) == state.jumptargets.end();
+			}
+			if (ok && (state.jumptargets.find(pos+1) == state.jumptargets.end()) && (
+				code.peekbyteFromPosition(pos) == 0x11 || //iftrue
+				code.peekbyteFromPosition(pos) == 0x12 )) //iffalse
+			{
+				// comparison operator is followed by iftrue/iffalse, can be optimized into comparison operator with jump (e.g. equals->ifeq/ifne)
+				code.seekg(pos);
+				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				uint8_t b = code.readbyte();
+				assert(b== 0x11 || b== 0x12);
+				int j = code.reads24();
+				int32_t p1 = code.tellg();
+				uint32_t opcodeskip = state.preloadedcode.back().opcode - (operator_start+4);
+				if (isnot)
+					state.preloadedcode.back().opcode = (b==0x12 ? operator_replace : operator_replace_reverse) + opcodeskip;
+				else
+					state.preloadedcode.back().opcode = (b==0x11 ? operator_replace : operator_replace_reverse) + opcodeskip;
+				state.preloadedcode.back().pcode.func = nullptr;
+				jumppositions[state.preloadedcode.size()-1] = j;
+				jumpstartpositions[state.preloadedcode.size()-1] = p1;
+				clearOperands(state,true,lastlocalresulttype);
+				removetypestack(typestack,2);
+				return;
+			}
+		}
+	}
+	removetypestack(typestack,2);
+	typestack.push_back(typestackentry(Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr(),false));
+}
 void ABCVm::preloadFunction(SyntheticFunction* function)
 {
 	method_info* mi=function->mi;
@@ -3028,6 +3075,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	int dup_indicator=0;
 	bool opcode_skipped=false;
 	bool coercereturnvalue=false;
+	bool reverse_iftruefalse=false;
 	auto itcurEx = mi->body->exceptions.begin();
 	opcode=0;
 	while(!code.atend())
@@ -4392,10 +4440,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					{
 						state.operandlist.back().removeArg(state);
 						state.operandlist.pop_back();
-						setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_IFTRUE_DUP,opcode,code,p);
+						setupInstructionOneArgumentNoResult(state,reverse_iftruefalse ? ABC_OP_OPTIMZED_IFFALSE_DUP : ABC_OP_OPTIMZED_IFTRUE_DUP,reverse_iftruefalse ? 0x12/*iffalse*/ : opcode,code,p);
 					}
 					else
-						setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_IFTRUE,opcode,code,p);
+						setupInstructionOneArgumentNoResult(state,reverse_iftruefalse ? ABC_OP_OPTIMZED_IFFALSE : ABC_OP_OPTIMZED_IFTRUE,reverse_iftruefalse ? 0x12/*iffalse*/ : opcode,code,p);
+					reverse_iftruefalse=false;
 				}
 				else
 					state.preloadedcode.push_back((uint32_t)opcode);
@@ -4438,10 +4487,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					{
 						state.operandlist.back().removeArg(state);
 						state.operandlist.pop_back();
-						setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_IFFALSE_DUP,opcode,code,p);
+						setupInstructionOneArgumentNoResult(state,reverse_iftruefalse ? ABC_OP_OPTIMZED_IFTRUE_DUP : ABC_OP_OPTIMZED_IFFALSE_DUP,reverse_iftruefalse ? 0x11/*iftrue*/ : opcode,code,p);
 					}
 					else
-						setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_IFFALSE,opcode,code,p);
+						setupInstructionOneArgumentNoResult(state,reverse_iftruefalse ? ABC_OP_OPTIMZED_IFTRUE : ABC_OP_OPTIMZED_IFFALSE,reverse_iftruefalse ? 0x11/*iftrue*/ : opcode,code,p);
+					reverse_iftruefalse=false;
 				}
 				else
 					state.preloadedcode.push_back((uint32_t)opcode);
@@ -5059,6 +5109,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										{
 											if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this.isNull())
 											{
+												ASObject* cls = state.operandlist.back().objtype;
 												if (opcode == 0x46)
 													setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS ,opcode,code,true, false,resulttype,p,true);
 												else
@@ -5071,7 +5122,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 													{
 														resulttype = asAtomHandler::as<Function>(v->var)->getReturnType();
 														if (resulttype == nullptr)
-															LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method:"<<*name<<" "<<state.operandlist.back().objtype->toDebugString());
+															LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method:"<<*name<<" "<<cls->toDebugString());
 													}
 													typestack.push_back(typestackentry(resulttype,false));
 												}
@@ -5659,6 +5710,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				typestack.push_back(typestackentry(Class<ASString>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0x96: //not
+				if (state.jumptargets.find(code.tellg()+1) == state.jumptargets.end() && (
+					code.peekbyte() == 0x11 ||  //iftrue
+					code.peekbyte() == 0x12 ))  //iffalse
+				{
+					// "not" followed by iftrue/iffalse, can be skipped, iftrue/iffalse will be reversed
+					reverse_iftruefalse = true;
+					break;
+				}
 				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_NOT,opcode,code,true,true,Class<Boolean>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);
 				removetypestack(typestack,1);
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
@@ -5774,29 +5833,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			case 0xab://equals
-				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_EQUALS,opcode,code,false,false,true,code.tellg());
-				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				setupInstructionComparison(state,ABC_OP_OPTIMZED_EQUALS,opcode,code,ABC_OP_OPTIMZED_IFEQ,ABC_OP_OPTIMZED_IFNE,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
 				break;
 			case 0xad://lessthan
-				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_LESSTHAN,opcode,code,false,false,true,code.tellg());
-				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				setupInstructionComparison(state,ABC_OP_OPTIMZED_LESSTHAN,opcode,code,ABC_OP_OPTIMZED_IFLT,ABC_OP_OPTIMZED_IFGE,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
 				break;
 			case 0xae://lessequals
-				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,false,false,true,code.tellg());
-				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				setupInstructionComparison(state,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,ABC_OP_OPTIMZED_IFLE,ABC_OP_OPTIMZED_IFGT,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
 				break;
 			case 0xaf://greaterthan
-				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,false,false,true,code.tellg());
-				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				setupInstructionComparison(state,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,ABC_OP_OPTIMZED_IFGT,ABC_OP_OPTIMZED_IFLE,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
 				break;
 			case 0xb0://greaterequals
-				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_GREATEREQUALS,opcode,code,false,false,true,code.tellg());
-				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				setupInstructionComparison(state,ABC_OP_OPTIMZED_GREATEREQUALS,opcode,code,ABC_OP_OPTIMZED_IFGE,ABC_OP_OPTIMZED_IFLT,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
 				break;
 			case 0xc0://increment_i
 			case 0xc1://decrement_i

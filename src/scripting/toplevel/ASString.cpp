@@ -563,7 +563,15 @@ int32_t ASString::toInt()
 int32_t ASString::toIntStrict()
 {
 	assert_and_throw(implEnable);
-	return Integer::stringToASInteger(getData().raw_buf(), 0,true);
+	bool isvalid=false;
+	int32_t ret = Integer::stringToASInteger(getData().raw_buf(), 0,true,&isvalid);
+	if (!isvalid)
+	{
+		number_t n = toNumber();
+		if (!std::isnan(n))
+			return n;
+	}
+	return ret;
 }
 int64_t ASString::toInt64()
 {

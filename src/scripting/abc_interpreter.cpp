@@ -5163,7 +5163,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									break;
 								case 1:
 								{
-									bool isIntGenerator=false;
+									bool isGenerator=false;
+									bool generatorneedsconversion=false;
 									if (typestack.size() > 1 &&
 											typestack[typestack.size()-2].obj != nullptr &&
 											(typestack[typestack.size()-2].obj->is<Global>() ||
@@ -5175,10 +5176,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										{
 											// function is a class generator, we can use it as the result type
 											resulttype = asAtomHandler::as<Class_base>(func);
-											if (state.operandlist.size() > 2 && resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()
-													&& typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
+											if (resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr() || resulttype == Class<Number>::getRef(function->getSystemState()).getPtr())
 											{
-												isIntGenerator=true;
+												if (state.operandlist.size() > 2 && typestack.size() > 0 && typestack.back().obj == resulttype)
+													isGenerator=true; // generator can be skipped
+												else if (state.operandlist.size() > 1)
+												{
+													// generator will be replaced by a conversion operator
+													isGenerator=true;
+													generatorneedsconversion=true;
+												}
 											}
 										}
 										else if (asAtomHandler::is<SyntheticFunction>(func))
@@ -5235,17 +5242,30 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											|| prevopcode == 0xd3//getlocal_3
 											;
 									if ((opcode == 0x4f && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code)) ||
-									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,!reuseoperand || !isIntGenerator,p,resulttype))))
+									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,!reuseoperand || !isGenerator,p,resulttype))))
 									{
-										// generator for Integer can be skipped if argument is already an integer and the result will be used as local result
-										if (state.operandlist.size()>0 && isIntGenerator)
+										// generator for Integer/Number can be skipped if argument is already an Integer/Number and the result will be used as local result
+										if (isGenerator && (state.operandlist.size()>0 || generatorneedsconversion))
 										{
 											// remove caller
 											state.preloadedcode.pop_back();
 											// re-add last operand if it is not the result of the previous operation
-											if (reuseoperand)
+											if (reuseoperand || generatorneedsconversion)
+											{
+												if(state.operandlist.size())
+													state.operandlist.pop_back();
 												state.operandlist.push_back(operands(op.type, op.objtype,op.index,0, 0));
+											}
 											state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+											if (generatorneedsconversion)
+											{
+												// replace call to generator with optimized convert_i/convert_d
+												setupInstructionOneArgument(state
+																			,resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()? ABC_OP_OPTIMZED_CONVERTI: ABC_OP_OPTIMZED_CONVERTD
+																			,resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()? 0x73 //convert_i
+																																					  : 0x75 //convert_d
+																			,code,true,true,resulttype,code.tellg(),true);
+											}
 											break;
 										}
 										state.preloadedcode.push_back(0);

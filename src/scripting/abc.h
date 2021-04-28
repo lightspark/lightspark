@@ -381,20 +381,23 @@ private:
 		appDomain->writeToDomainMemory<T>(addr, val);
 	}
 	template<class T>
-	static void loadIntN(call_context* th,asAtom& ret, asAtom& arg1)
+	static FORCE_INLINE void loadIntN(call_context* th,asAtom& ret, asAtom& arg1)
 	{
 		uint32_t addr=asAtomHandler::toUInt(arg1);
-		ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-		T res=appDomain->readFromDomainMemory<T>(addr);
-		ret = asAtomHandler::fromInt(res);
+		ByteArray* dm = th->mi->context->root->applicationDomain->currentDomainMemory;
+		if(dm->getLength() < (addr+sizeof(T)))
+			throwError<RangeError>(kInvalidRangeError);
+		ret = asAtomHandler::fromInt(*reinterpret_cast<T*>(dm->getBufferNoCheck()+addr));
 	}
 	template<class T>
-	static void storeIntN(call_context* th, asAtom& arg1, asAtom& arg2)
+	static FORCE_INLINE void storeIntN(call_context* th, asAtom& arg1, asAtom& arg2)
 	{
 		uint32_t addr=asAtomHandler::toUInt(arg1);
 		int32_t val=asAtomHandler::toInt(arg2);
-		ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-		appDomain->writeToDomainMemory<T>(addr, val);
+		ByteArray* dm = th->mi->context->root->applicationDomain->currentDomainMemory;
+		if(dm->getLength() < (addr+sizeof(T)))
+			throwError<RangeError>(kInvalidRangeError);
+		*reinterpret_cast<T*>(dm->getBufferNoCheck()+addr)=val;
 	}
 	static void loadFloat(call_context* th);
 	static void loadFloat(call_context* th,asAtom& ret, asAtom& arg1);

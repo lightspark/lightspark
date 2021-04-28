@@ -204,8 +204,10 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getScreenDPI)
 	asAtomHandler::setNumber(ret,sys,dpi);
 }
 
-ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN),parentDomain(p)
+ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN),defaultDomainMemory(Class<ByteArray>::getInstanceSNoArgs(c->getSystemState())), parentDomain(p)
 {
+	defaultDomainMemory->setLength(MIN_DOMAIN_MEMORY_LIMIT);
+	currentDomainMemory=defaultDomainMemory.getPtr();
 }
 
 void ApplicationDomain::sinit(Class_base* c)
@@ -221,11 +223,12 @@ void ApplicationDomain::sinit(Class_base* c)
 	REGISTER_GETTER(c,parentDomain);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(ApplicationDomain,domainMemory);
+ASFUNCTIONBODY_GETTER_SETTER_CB(ApplicationDomain,domainMemory,cbDomainMemory);
 ASFUNCTIONBODY_GETTER(ApplicationDomain,parentDomain);
 
-void ApplicationDomain::buildTraits(ASObject* o)
+void ApplicationDomain::cbDomainMemory(_NR<ByteArray> oldvalue)
 {
+	checkDomainMemory();
 }
 
 void ApplicationDomain::finalize()
@@ -273,7 +276,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 	assert(argslen==1);
 	const tiny_string& tmp=asAtomHandler::toString(args[0],sys);
 
-	multiname name(NULL);
+	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 
 	tiny_string nsName;
@@ -308,7 +311,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 	assert(argslen==1);
 	const tiny_string& tmp=asAtomHandler::toString(args[0],sys);
 
-	multiname name(NULL);
+	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 
 	tiny_string nsName;
@@ -340,7 +343,7 @@ void ApplicationDomain::registerGlobalScope(Global* scope)
 ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObject*& target)
 {
 	size_t index=str.rfind('.');
-	multiname name(NULL);
+	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 	if(index==str.npos) //No dot
 	{
@@ -470,9 +473,10 @@ void ApplicationDomain::checkDomainMemory()
 {
 	if(domainMemory.isNull())
 	{
-		domainMemory = _NR<ByteArray>(Class<ByteArray>::getInstanceS(this->getSystemState()));
+		domainMemory = defaultDomainMemory;
 		domainMemory->setLength(MIN_DOMAIN_MEMORY_LIMIT);
 	}
+	currentDomainMemory=domainMemory.getPtr();
 }
 
 LoaderContext::LoaderContext(Class_base* c):

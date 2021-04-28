@@ -59,17 +59,19 @@ class ApplicationDomain: public ASObject
 {
 private:
 	std::vector<Global*> globalScopes;
+	_R<ByteArray> defaultDomainMemory;
+	void cbDomainMemory(_NR<ByteArray> oldvalue);
 public:
+	ByteArray* currentDomainMemory;
 	ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p=NullRef);
 	void finalize();
 	std::map<const multiname*, Class_base*> classesBeingDefined;
 	std::map<QName, Class_base*> instantiatedTemplates;
-	
+
 	// list of classes where super class is not defined yet 
 	std::list<Class_base*> classesSuperNotFilled;
 
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	void registerGlobalScope(Global* scope);
 	Global* getLastGlobalScope() const  { return globalScopes.back(); }
 	ASObject* getVariableByString(const std::string& name, ASObject*& target);
@@ -92,21 +94,17 @@ public:
 	template<class T>
 	T readFromDomainMemory(uint32_t addr)
 	{
-		checkDomainMemory();
-		uint32_t bufLen=domainMemory->getLength();
-		if(bufLen < (addr+sizeof(T)))
+		if(currentDomainMemory->getLength() < (addr+sizeof(T)))
 			throwError<RangeError>(kInvalidRangeError);
-		uint8_t* buf=domainMemory->getBufferNoCheck();
+		uint8_t* buf=currentDomainMemory->getBufferNoCheck();
 		return *reinterpret_cast<T*>(buf+addr);
 	}
 	template<class T>
 	void writeToDomainMemory(uint32_t addr, T val)
 	{
-		checkDomainMemory();
-		uint32_t bufLen=domainMemory->getLength();
-		if(bufLen < (addr+sizeof(T)))
+		if(currentDomainMemory->getLength() < (addr+sizeof(T)))
 			throwError<RangeError>(kInvalidRangeError);
-		uint8_t* buf=domainMemory->getBufferNoCheck();
+		uint8_t* buf=currentDomainMemory->getBufferNoCheck();
 		*reinterpret_cast<T*>(buf+addr)=val;
 	}
 	void checkDomainMemory();

@@ -68,7 +68,13 @@ void ABCVm::dumpOpcodeCounters(uint32_t threshhold)
 	while (it != opcodecounter.end())
 	{
 		if (it->second > threshhold)
-			LOG(LOG_INFO,"opcode counter:"<<hex<<it->first<<":"<<dec<<it->second);
+		{
+			for (uint32_t i = 0; i < 0x31c; i++)
+			{
+				if (abcfunctions[i] == it->first)
+					LOG(LOG_INFO,"opcode counter:"<<hex<<i<<":"<<dec<<it->second);
+			}
+		}
 		it++;
 	}
 }

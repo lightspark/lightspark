@@ -349,6 +349,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	if (codeStatus != method_body_info::PRELOADED && codeStatus != method_body_info::USED)
 	{
 		mi->body->codeStatus = method_body_info::PRELOADING;
+		mi->cc.sys = getSystemState();
 		ABCVm::preloadFunction(this);
 		mi->body->codeStatus = method_body_info::PRELOADED;
 		mi->cc.exec_pos = mi->body->preloadedcode.data();
@@ -426,6 +427,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	if (recursive_call)
 	{
 		cc = new call_context(mi);
+		cc->sys = getSystemState();
 		cc->locals= g_newa(asAtom, mi->body->getReturnValuePos()+1+mi->body->localresultcount);
 		cc->stack = g_newa(asAtom, mi->body->max_stack+1);
 		cc->scope_stack=g_newa(asAtom, mi->body->max_scope_depth);

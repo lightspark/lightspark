@@ -150,7 +150,7 @@ jobs:
       with:
         repo: deb http://pkg.mxe.cc/repos/apt bionic main
         repo-name: mxe
-        keys: C6BF758A33A3A276
+        keys: ${{ secrets.MXE_REPO_KEY }}
         key-server: keyserver.ubuntu.com
 
     - name: Install MXE Build Environment
@@ -204,7 +204,7 @@ jobs:
       with:
         repo: deb http://pkg.mxe.cc/repos/apt bionic main
         repo-name: mxe
-        keys: C6BF758A33A3A276
+        keys: ${{ secrets.MXE_REPO_KEY }}
         key-server: keyserver.ubuntu.com
 
     - name: Install MXE Build Environment

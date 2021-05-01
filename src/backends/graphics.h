@@ -473,7 +473,7 @@ public:
 	void sizeNeeded(uint32_t& w, uint32_t& h) const override { w=width; h=height;}
 	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
 	const TextureChunk& getTexture() override;
-	virtual void uploadFence() {}
+	void uploadFence() override {}
 };
 
 }

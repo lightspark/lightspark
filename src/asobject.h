@@ -763,10 +763,7 @@ public:
 		assert_and_throw(n > 0 && n <= slotcount);
 		return slots_vars[n-1]->kind;
 	}
-	FORCE_INLINE Class_base* getSlotType(unsigned int n)
-	{
-		return (Class_base*)slots_vars[n-1]->type;
-	}
+	Class_base* getSlotType(unsigned int n);
 	
 	uint32_t findInstanceSlotByMultiname(multiname* name, SystemState *sys);
 	FORCE_INLINE bool setSlot(unsigned int n, asAtom &o, ASObject* obj);

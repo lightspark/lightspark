@@ -990,6 +990,11 @@ void variables_map::killObjVar(SystemState* sys,const multiname& mname)
 	throw RunTimeException("Variable to kill not found");
 }
 
+Class_base* variables_map::getSlotType(unsigned int n)
+{
+	return (Class_base*)(dynamic_cast<const Class_base*>(slots_vars[n-1]->type));
+}
+
 variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
 {
 	uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
@@ -2717,7 +2722,7 @@ std::string asAtomHandler::toDebugString(asAtom& a)
 		case ATOM_NUMBERPTR:
 		{
 			std::string ret = Number::toString(toNumber(a))+"d";
-#ifndef _NDEBUG
+#ifndef NDEBUG
 			assert(getObject(a));
 			char buf[300];
 			sprintf(buf,"(%p / %d/%d)",getObject(a),getObject(a)->getRefCount(),getObject(a)->getConstant());

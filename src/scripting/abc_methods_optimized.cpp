@@ -3390,7 +3390,7 @@ void ABCVm::abc_callFunctionSyntheticOneArgVoid_constant_local(call_context* con
 	asAtom obj = *instrptr->arg1_constant;
 	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
-	LOG_CALL(_("callFunctionOneSyntheticArgVoid_cl ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL(_("callFunctionSyntheticOneArgVoid_cl ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
 	ASATOM_INCREF_POINTER(value);
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(ret,obj, value, 1,false,(instrptr->arg3_uint&ABC_OP_COERCED)==0);
@@ -3403,7 +3403,7 @@ void ABCVm::abc_callFunctionSyntheticOneArgVoid_local_local(call_context* contex
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
-	LOG_CALL(_("callFunctionOneSyntheticArgVoid_ll ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL(_("callFunctionSyntheticOneArgVoid_ll ") << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
 	ASATOM_INCREF_POINTER(value);
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(ret,obj, value, 1,false,(instrptr->arg3_uint&ABC_OP_COERCED)==0);
@@ -3458,6 +3458,225 @@ void ABCVm::abc_callFunctionBuiltinOneArgVoid_local_local(call_context* context)
 	ASATOM_DECREF(ret);
 	++(context->exec_pos);
 }
+
+void ABCVm::abc_callFunctionSyntheticOneArg_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom* value = instrptr->arg2_constant;
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionSyntheticOneArg_cc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(ret,obj, value, 1,false,(instrptr->arg3_uint&ABC_OP_COERCED)==0);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionSyntheticOneArg_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom* value = instrptr->arg2_constant;
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionSyntheticOneArg_lc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(ret,obj, value, 1,false,(instrptr->arg3_uint&ABC_OP_COERCED)==0);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionSyntheticOneArg_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionSyntheticOneArg_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	ASATOM_INCREF_POINTER(value);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(ret,obj, value, 1,false,(instrptr->arg3_uint&ABC_OP_COERCED)==0);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionSyntheticOneArg_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionSyntheticOneArg_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	ASATOM_INCREF_POINTER(value);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(ret,obj, value, 1,false,(instrptr->arg3_uint&ABC_OP_COERCED)==0);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionSyntheticOneArg_constant_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom* value = instrptr->arg2_constant;
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionSyntheticOneArg_ccl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(ret,obj, value, 1,false,(instrptr->arg3_uint&ABC_OP_COERCED)==0);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionSyntheticOneArg_local_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom* value = instrptr->arg2_constant;
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionSyntheticOneArg_lcl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(ret,obj, value, 1,false,(instrptr->arg3_uint&ABC_OP_COERCED)==0);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionSyntheticOneArg_constant_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionSyntheticOneArg_cll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	ASATOM_INCREF_POINTER(value);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(ret,obj, value, 1,false,(instrptr->arg3_uint&ABC_OP_COERCED)==0);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionSyntheticOneArg_local_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionSyntheticOneArg_lll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	ASATOM_INCREF_POINTER(value);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(ret,obj, value, 1,false,(instrptr->arg3_uint&ABC_OP_COERCED)==0);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+
+void ABCVm::abc_callFunctionBuiltinOneArg_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom* value = instrptr->arg2_constant;
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionBuiltinOneArg_cc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret, obj, value, 1);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionBuiltinOneArg_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom* value = instrptr->arg2_constant;
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionBuiltinOneArg_lc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret, obj, value, 1);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionBuiltinOneArg_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionOneBuiltinArg_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret, obj, value, 1);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionBuiltinOneArg_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionOneBuiltinArg_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret, obj, value, 1);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionBuiltinOneArg_constant_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom* value = instrptr->arg2_constant;
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionBuiltinOneArg_ccl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret, obj, value, 1);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionBuiltinOneArg_local_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom* value = instrptr->arg2_constant;
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionBuiltinOneArg_lcl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret, obj, value, 1);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionBuiltinOneArg_constant_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = *instrptr->arg1_constant;
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionOneBuiltinArg_cll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	ASATOM_INCREF_POINTER(value);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret, obj, value, 1);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callFunctionBuiltinOneArg_local_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom func = asAtomHandler::fromObjectNoPrimitive((++context->exec_pos)->cacheobj3);
+	LOG_CALL("callFunctionOneBuiltinArg_lll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	ASATOM_INCREF_POINTER(value);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret, obj, value, 1);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+
+
+
 void ABCVm::abc_callFunctionSyntheticMultiArgsVoid(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;

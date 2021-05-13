@@ -941,8 +941,8 @@ const Type* Type::getBuiltinType(SystemState* sys, multiname* mn)
 	if(asAtomHandler::isClass(tmp))
 	{
 		if (mn->isStatic)
-			mn->cachedType = static_cast<const Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
-		return static_cast<const Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
+			mn->cachedType = dynamic_cast<const Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
+		return dynamic_cast<const Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
 	}
 	else
 		return nullptr;

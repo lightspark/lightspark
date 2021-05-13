@@ -967,6 +967,33 @@ abc_function ABCVm::abcfunctions[]={
 	abc_dup_local_setslotnocoerce, // 0x31c ABC_OP_OPTIMZED_DUP_SETSLOT
 	abc_invalidinstruction,
 	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_callFunctionSyntheticOneArg_constant_constant, // 0x320 ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_ONEARG
+	abc_callFunctionSyntheticOneArg_local_constant,
+	abc_callFunctionSyntheticOneArg_constant_local,
+	abc_callFunctionSyntheticOneArg_local_local,
+	abc_callFunctionSyntheticOneArg_constant_constant_localresult,
+	abc_callFunctionSyntheticOneArg_local_constant_localresult,
+	abc_callFunctionSyntheticOneArg_constant_local_localresult,
+	abc_callFunctionSyntheticOneArg_local_local_localresult,
+
+	abc_callFunctionBuiltinOneArg_constant_constant, // 0x328 ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_ONEARG
+	abc_callFunctionBuiltinOneArg_local_constant,
+	abc_callFunctionBuiltinOneArg_constant_local,
+	abc_callFunctionBuiltinOneArg_local_local,
+	abc_callFunctionBuiltinOneArg_constant_constant_localresult,
+	abc_callFunctionBuiltinOneArg_local_constant_localresult,
+	abc_callFunctionBuiltinOneArg_constant_local_localresult,
+	abc_callFunctionBuiltinOneArg_local_local_localresult,
+
+	abc_invalidinstruction, // 0x330
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
 	abc_invalidinstruction
 };
 
@@ -1212,6 +1239,9 @@ struct operands
 #define ABC_OP_OPTIMZED_DECREMENT_I_SETSLOT 0x00000307
 #define ABC_OP_OPTIMZED_ASTYPELATE_SETSLOT 0x00000308
 #define ABC_OP_OPTIMZED_DUP_SETSLOT 0x0000031c
+
+#define ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_ONEARG 0x00000320
+#define ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_ONEARG 0x00000328
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -1536,6 +1566,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				}
 				lastlocalpos=-1;
 				break;
+			case 0x21://pushundefined
 			case 0x28://pushnan
 				b = code.peekbyteFromPosition(pos);
 				pos++;
@@ -4067,12 +4098,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p = code.tellg();
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
-				int32_t t =code.readu30();assert_and_throw(t);
+				int32_t t =code.readu30();
+				assert_and_throw(t);
 				Class_base* resulttype = nullptr;
-				if (!mi->needsActivation() && state.operandlist.size() > 0)
+				if (state.operandlist.size() > 0)
 				{
 					auto it = state.operandlist.rbegin();
-					if (it->type == OP_LOCAL)
+					if (!mi->needsActivation() && it->type == OP_LOCAL)
 					{
 						if (state.unchangedlocals.find(it->index) != state.unchangedlocals.end())
 						{
@@ -4095,18 +4127,25 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							break;
 						}
 					}
-					else if (it->type != OP_CACHED_SLOT)
+					else if (it->type != OP_CACHED_SLOT && it->type != OP_LOCAL)
 					{
 						asAtom* o = mi->context->getConstantAtom(it->type,it->index);
-						if (asAtomHandler::getObject(*o) && asAtomHandler::getObject(*o)->getSlotKind(t) == TRAIT_KIND::CONSTANT_TRAIT)
+						if (asAtomHandler::getObject(*o) && (
+									asAtomHandler::getObjectNoCheck(*o)->getSlotKind(t) == TRAIT_KIND::CONSTANT_TRAIT
+									|| (asAtomHandler::getObjectNoCheck(*o)->is<Global>() && asAtomHandler::getObjectNoCheck(*o)->getSlotKind(t) == TRAIT_KIND::DECLARED_TRAIT)
+									))
 						{
-							asAtom cval = asAtomHandler::getObject(*o)->getSlot(t);
-							if (!asAtomHandler::isNull(cval) && !asAtomHandler::isUndefined(cval))
+							asAtom cval = asAtomHandler::getObjectNoCheck(*o)->getSlot(t);
+							if (!asAtomHandler::isNull(cval) && !asAtomHandler::isUndefined(cval)
+									&& (asAtomHandler::getObjectNoCheck(*o)->getSlotKind(t) == TRAIT_KIND::CONSTANT_TRAIT
+										|| asAtomHandler::is<Class_base>(cval)
+										))
 							{
 								it->removeArg(state);
 								state.operandlist.pop_back();
 								addCachedConstant(state,mi, cval,code);
-								typestack.push_back(typestackentry(nullptr,false));
+								resulttype = asAtomHandler::getObject(*o)->getSlotType(t);
+								typestack.push_back(typestackentry(resulttype,resulttype ? resulttype->is<Class_base>(): false));
 								break;
 							}
 						}
@@ -4128,7 +4167,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint =t-1;
 				else
 					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint =t;
-				typestack.push_back(typestackentry(resulttype,false));
+				typestack.push_back(typestackentry(resulttype,resulttype ? resulttype->is<Class_base>(): false));
 				break;
 			}
 			case 0x6d://setslot
@@ -5143,37 +5182,52 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					bool skipcoerce = false;
 					SyntheticFunction* func= nullptr;
 					variable* v = nullptr;
-					if (typestack.size() >= argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)
+					uint32_t operationcount = argcount+mi->context->constant_pool.multinames[t].runtimeargs+1;
+					if (typestack.size() >= operationcount)
 					{
-						if (canCallFunctionDirect(typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].obj,name))
+						ASObject* cls = nullptr;
+						if (canCallFunctionDirect(typestack[typestack.size()-operationcount].obj,name))
 						{
-							v = typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].classvar ?
-										typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].obj->findVariableByMultiname(
+							cls = typestack[typestack.size()-operationcount].obj;
+							v = typestack[typestack.size()-operationcount].classvar ?
+										cls->findVariableByMultiname(
 										*name,
-										typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].obj->as<Class_base>(),
+										cls->as<Class_base>(),
 										nullptr,nullptr,false):
-										typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].obj->as<Class_base>()->getBorrowedVariableByMultiname(*name);
-							if (v)
+										cls->as<Class_base>()->getBorrowedVariableByMultiname(*name);
+						}
+						if (!v
+								&& state.operandlist.size()>=operationcount
+								&& (state.operandlist[state.operandlist.size()-operationcount].type == OP_LOCAL
+									|| state.operandlist[state.operandlist.size()-operationcount].type == OP_CACHED_CONSTANT)
+								&& state.operandlist[state.operandlist.size()-operationcount].objtype && state.operandlist[state.operandlist.size()-operationcount].objtype->is<Class_base>()
+								&& canCallFunctionDirect(state.operandlist.at(state.operandlist.size()-operationcount),name))
+						{
+							cls = state.operandlist[state.operandlist.size()-operationcount].objtype;
+							v=cls->findVariableByMultiname(*name,cls->as<Class_base>());
+							if (v && !asAtomHandler::is<SyntheticFunction>(v->var))
+								v=nullptr;
+						}
+						if (v)
+						{
+							if (asAtomHandler::is<SyntheticFunction>(v->var) && asAtomHandler::as<SyntheticFunction>(v->var)->inClass == cls)
 							{
-								if (asAtomHandler::is<SyntheticFunction>(v->var) && asAtomHandler::as<SyntheticFunction>(v->var)->inClass == typestack[typestack.size()-(argcount+mi->context->constant_pool.multinames[t].runtimeargs+1)].obj)
+								func = asAtomHandler::as<SyntheticFunction>(v->var);
+								if (!func->getMethodInfo()->returnType)
+									func->checkParamTypes();
+								resulttype = func->getReturnType();
+								if (func->getMethodInfo()->paramTypes.size() >= argcount)
 								{
-									func = asAtomHandler::as<SyntheticFunction>(v->var);
-									if (!func->getMethodInfo()->returnType)
-										func->checkParamTypes();
-									resulttype = func->getReturnType();
-									if (func->getMethodInfo()->paramTypes.size() >= argcount)
+									skipcoerce=true;
+									auto it2 = typestack.rbegin();
+									for(uint32_t i= argcount; i > 0; i--)
 									{
-										skipcoerce=true;
-										auto it2 = typestack.rbegin();
-										for(uint32_t i= argcount; i > 0; i--)
+										if (!(*it2).obj || !(*it2).obj->is<Class_base>() || !func->canSkipCoercion(i-1,(*it2).obj->as<Class_base>()))
 										{
-											if (!(*it2).obj || !(*it2).obj->is<Class_base>() || !func->canSkipCoercion(i-1,(*it2).obj->as<Class_base>()))
-											{
-												skipcoerce=false;
-												break;
-											}
-											it2++;
+											skipcoerce=false;
+											break;
 										}
+										it2++;
 									}
 								}
 							}
@@ -5254,6 +5308,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									{
 										asAtom func = asAtomHandler::invalidAtom;
 										typestack[typestack.size()-2].obj->getVariableByMultiname(func,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF));
+										if (asAtomHandler::isInvalid(func) && typestack[typestack.size()-2].obj->is<Class_base>())
+										{
+											variable* mvar = typestack[typestack.size()-2].obj->as<Class_base>()->getBorrowedVariableByMultiname(*name);
+											if (mvar)
+												func = mvar->var;
+										}
 										if (asAtomHandler::isClass(func) && asAtomHandler::as<Class_base>(func)->isBuiltin())
 										{
 											// function is a class generator, we can use it as the result type
@@ -5278,7 +5338,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											resulttype = f->getReturnType();
 										}
 									}
-									if (opcode == 0x4f && state.operandlist.size() > 1)
+									if (state.operandlist.size() > 1 && !isGenerator)
 									{
 										auto it = state.operandlist.rbegin();
 										Class_base* argtype = it->objtype;
@@ -5289,25 +5349,40 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											{
 												if (asAtomHandler::is<SyntheticFunction>(v->var))
 												{
-													setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_ONEARG_VOID,opcode,code);
+													if (opcode == 0x4f)
+														setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_ONEARG_VOID,opcode,code);
+													else
+														setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_ONEARG,opcode,code,false,false,true,p,resulttype);
 													if (argtype)
 													{
 														SyntheticFunction* f = asAtomHandler::as<SyntheticFunction>(v->var);
 														if (!f->getMethodInfo()->returnType)
 															f->checkParamTypes();
 														if (f->getMethodInfo()->paramTypes.size() && f->canSkipCoercion(0,argtype))
-															state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint = ABC_OP_COERCED;
+															state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local3.flags = ABC_OP_COERCED;
 													}
 													state.preloadedcode.push_back(0);
 													state.preloadedcode.back().pcode.cacheobj3 = asAtomHandler::getObject(v->var);
 													removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);
+													if (opcode == 0x46)
+														typestack.push_back(typestackentry(resulttype,false));
 													break;
 												}
 												if (asAtomHandler::is<Function>(v->var))
 												{
-													setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_ONEARG_VOID,opcode,code);
+													if (opcode == 0x4f)
+													{
+														setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_ONEARG_VOID,opcode,code);
+													}
+													else
+													{
+														setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_ONEARG,opcode,code,false,false,true,p,resulttype);
+														state.preloadedcode.push_back(0);
+													}
 													state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj3 = asAtomHandler::getObject(v->var);
 													removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);
+													if (opcode == 0x46)
+														typestack.push_back(typestackentry(resulttype,false));
 													break;
 												}
 											}
@@ -5535,17 +5610,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p = code.tellg();
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
+				ASObject* resulttype=nullptr;
 				if (function->func_scope.getPtr() && (scopelist.begin()==scopelist.end() || !scopelist.back()))
 				{
 					asAtom ret = function->func_scope->scope.front().object;
 					addCachedConstant(state,mi, ret,code);
+					resulttype = asAtomHandler::getObject(ret);
 				}
 				else
 				{
 					state.preloadedcode.push_back((uint32_t)opcode);
 					clearOperands(state,true,&lastlocalresulttype);
 				}
-				typestack.push_back(typestackentry(nullptr,false));
+				typestack.push_back(typestackentry(resulttype,false));
 				break;
 			}
 			case 0x66://getproperty

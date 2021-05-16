@@ -276,7 +276,9 @@ ASFUNCTIONBODY_ATOM(Math,floor)
 ASFUNCTIONBODY_ATOM(Math,round)
 {
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	// for unknown reasons Adobe allows round with zero arguments on AVM1.
+	// I have no idea what the return value should be in that case, for now we just use 1.0
+	ARG_UNPACK_ATOM (n,1.0);
 	if (std::isnan(n))
 		asAtomHandler::setNumber(ret,sys,Number::NaN);
 	else if (n < 0 && n >= -0.5)

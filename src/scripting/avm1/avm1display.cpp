@@ -621,6 +621,22 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,removeListener)
 	}
 }
 
+void AVM1BitmapData::sinit(Class_base *c)
+{
+	BitmapData::sinit(c);
+	c->setDeclaredMethodByQName("loadBitmap","",Class<IFunction>::getFunction(c->getSystemState(),loadBitmap),NORMAL_METHOD,false);
+}
+ASFUNCTIONBODY_ATOM(AVM1BitmapData,loadBitmap)
+{
+	tiny_string name;
+	ARG_UNPACK_ATOM(name);
+	BitmapTag* tag = dynamic_cast<BitmapTag*>( sys->mainClip->dictionaryLookupByName(sys->getUniqueStringId(name)));
+	if (tag)
+		ret = asAtomHandler::fromObjectNoPrimitive(tag->instance());
+	else
+		LOG(LOG_ERROR,"BitmapData.loadBitmap tag not found:"<<name);
+}
+
 void AVM1Bitmap::sinit(Class_base *c)
 {
 	Bitmap::sinit(c);

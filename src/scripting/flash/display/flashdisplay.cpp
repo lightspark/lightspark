@@ -2303,7 +2303,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
 		throw RunTimeException("AVM1: attachBitmap first parameter is no BitmapData");
 	}
 
-	BitmapData* data = asAtomHandler::as<BitmapData>(args[0]);
+	AVM1BitmapData* data = asAtomHandler::as<AVM1BitmapData>(args[0]);
 	data->incRef();
 	Bitmap* toAdd = Class<AVM1Bitmap>::getInstanceS(sys,_MR(data));
 	if (argslen > 2)

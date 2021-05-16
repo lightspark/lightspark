@@ -1314,7 +1314,7 @@ bool SocketPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 		if (nbytes > 0)
 			outData.insert(outData.end(), buf, buf + nbytes);
 	}
-	while (nbytes > 0);
+	while (nbytes == 4096);
 
 	if (nbytes < 0 && outData.size() == 0)
 	{

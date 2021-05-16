@@ -119,13 +119,25 @@ public:
 	ASFUNCTION_ATOM(removeListener);
 };
 
+class AVM1BitmapData: public BitmapData
+{
+public:
+	AVM1BitmapData(Class_base* c):BitmapData(c) {}
+	AVM1BitmapData(Class_base* c, _R<BitmapContainer> b):BitmapData(c,b) {}
+	AVM1BitmapData(Class_base* c, const BitmapData& other):BitmapData(c,other) {}
+	AVM1BitmapData(Class_base* c, uint32_t width, uint32_t height):BitmapData(c,width,height) {}
+	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(loadBitmap);
+};
+
 class AVM1Bitmap: public Bitmap
 {
 public:
 	AVM1Bitmap(Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = nullptr, FILE_TYPE type=FT_UNKNOWN):Bitmap(c,li,s,type) {}
-	AVM1Bitmap(Class_base* c, _R<BitmapData> data):Bitmap(c,data) {}
+	AVM1Bitmap(Class_base* c, _R<AVM1BitmapData> data):Bitmap(c,_R<BitmapData>(data)) {}
 	static void sinit(Class_base* c);
 };
+
 
 }
 

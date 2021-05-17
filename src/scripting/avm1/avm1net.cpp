@@ -80,7 +80,7 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,sendAndLoad)
 	else
 		LOG(LOG_ERROR,"LoadVars.sendAndLoad called without target");
 }
-multiname* AVM1LoadVars::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname* AVM1LoadVars::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {
 	multiname* res = URLVariables::setVariableByMultiname(name,o,allowConst,alreadyset);
 	if (name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)

@@ -41,7 +41,7 @@ void Date::sinit(Class_base* c)
 	c->isReusable = true;
 	c->setDeclaredMethodByQName("getTimezoneOffset",AS3,Class<IFunction>::getFunction(c->getSystemState(),getTimezoneOffset),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),valueOf),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getTime",AS3,Class<IFunction>::getFunction(c->getSystemState(),getTime),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getTime",AS3,Class<IFunction>::getFunction(c->getSystemState(),getTime,0,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getFullYear",AS3,Class<IFunction>::getFunction(c->getSystemState(),getFullYear),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getMonth",AS3,Class<IFunction>::getFunction(c->getSystemState(),getMonth),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getDate",AS3,Class<IFunction>::getFunction(c->getSystemState(),getDate),NORMAL_METHOD,true);
@@ -113,13 +113,13 @@ void Date::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("seconds","",Class<IFunction>::getFunction(c->getSystemState(),secondsSetter),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("secondsUTC","",Class<IFunction>::getFunction(c->getSystemState(),getUTCSeconds),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("secondsUTC","",Class<IFunction>::getFunction(c->getSystemState(),UTCSecondsSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("time","",Class<IFunction>::getFunction(c->getSystemState(),getTime),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("time","",Class<IFunction>::getFunction(c->getSystemState(),getTime,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("time","",Class<IFunction>::getFunction(c->getSystemState(),timeSetter),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("timezoneOffset","",Class<IFunction>::getFunction(c->getSystemState(),getTimezoneOffset),GETTER_METHOD,true);
 
 	c->prototype->setVariableByQName("getTimezoneOffset","",Class<IFunction>::getFunction(c->getSystemState(),getTimezoneOffset),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),valueOf),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getTime","",Class<IFunction>::getFunction(c->getSystemState(),getTime),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getTime","",Class<IFunction>::getFunction(c->getSystemState(),getTime,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("getFullYear","",Class<IFunction>::getFunction(c->getSystemState(),getFullYear),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("getMonth","",Class<IFunction>::getFunction(c->getSystemState(),getMonth),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("getDate","",Class<IFunction>::getFunction(c->getSystemState(),getDate),CONSTANT_TRAIT);

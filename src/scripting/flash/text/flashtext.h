@@ -121,6 +121,13 @@ private:
 	tiny_string tagvarname;
 	Mutex invalidatemutex;
 	DefineEditTextTag* tag;
+
+	// these are only used when drawing to DisplayObject, so they are guarranteed not to be destroyed during rendering
+	FILLSTYLE fillstyleTextColor;
+	FILLSTYLE fillstyleBackgroundColor;
+	LINESTYLE2 lineStyleBorder;
+	LINESTYLE2 lineStyleCaret;
+	void getTextBounds(const tiny_string &txt, number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax);
 protected:
 	void afterSetLegacyMatrix() override;
 public:
@@ -180,6 +187,7 @@ public:
 	ASFUNCTION_ATOM(_setSelection);
 	ASFUNCTION_ATOM(_replaceText);
 	ASFUNCTION_ATOM(_replaceSelectedText);
+	ASFUNCTION_ATOM(_getCharBoundaries);
 	ASPROPERTY_GETTER_SETTER(bool, alwaysShowSelection);
 	ASFUNCTION_GETTER_SETTER(background);
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
@@ -271,9 +279,9 @@ protected:
 		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
-	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory),tagID(UINT32_MAX) {}
+	StaticText(Class_base* c) : DisplayObject(c),TokenContainer(this),tagID(UINT32_MAX) {}
 	StaticText(Class_base* c, const tokensVector& tokens,const RECT& b,uint32_t _tagID):
-		DisplayObject(c),TokenContainer(this, this->getSystemState()->textTokenMemory, tokens, 1.0f/1024.0f/20.0f/20.0f),bounds(b),tagID(_tagID) {}
+		DisplayObject(c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f),bounds(b),tagID(_tagID) {}
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override

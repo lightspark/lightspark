@@ -235,6 +235,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		while (it != surfacesToRefresh.end())
 		{
 			it->displayobject->updateCachedSurface(it->drawable);
+			delete it->drawable;
 			it = surfacesToRefresh.erase(it);
 		}
 		refreshNeeded=false;
@@ -577,6 +578,7 @@ void RenderThread::commonGLInit(int width, int height)
 	scaleUniform=engineData->exec_glGetUniformLocation(gpu_program,"scale");
 	colortransMultiplyUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformMultiply");
 	colortransAddUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformAdd");
+	directColorUniform=engineData->exec_glGetUniformLocation(gpu_program,"directColor");
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	engineData->exec_glEnable_GL_TEXTURE_2D();
@@ -852,6 +854,7 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 				0,y);
 	}
 
+	engineData->exec_glUniform1f(directUniform, 0);
 	engineData->exec_glUniform1f(alphaUniform, 1);
 	engineData->exec_glUniform1f(rotateUniform, 0);
 	engineData->exec_glUniform2f(beforeRotateUniform, windowWidth, windowHeight);

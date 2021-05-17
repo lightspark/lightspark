@@ -139,7 +139,7 @@ ASFUNCTIONBODY_ATOM(JSON,_stringify)
 
 	ret = asAtomHandler::fromObject(abstract_s(sys,res));
 }
-void JSON::parseAll(const tiny_string &jsonstring, ASObject** parent , const multiname& key, asAtom reviver)
+void JSON::parseAll(const tiny_string &jsonstring, ASObject** parent , multiname& key, asAtom reviver)
 {
 	int len = jsonstring.numChars();
 	int pos = 0;
@@ -156,7 +156,7 @@ void JSON::parseAll(const tiny_string &jsonstring, ASObject** parent , const mul
 			pos++;
 	}
 }
-int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , const multiname& key, asAtom reviver)
+int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , multiname& key, asAtom reviver)
 {
 	while (jsonstring.charAt(pos) == ' ' ||
 		   jsonstring.charAt(pos) == '\t' ||
@@ -252,7 +252,7 @@ int JSON::parse(const tiny_string &jsonstring, int pos, ASObject** parent , cons
 	}
 	return pos;
 }
-int JSON::parseTrue(const tiny_string &jsonstring, int pos,ASObject** parent,const multiname& key)
+int JSON::parseTrue(const tiny_string &jsonstring, int pos, ASObject** parent, multiname &key)
 {
 	int len = jsonstring.numChars();
 	if (len >= pos+4)
@@ -278,7 +278,7 @@ int JSON::parseTrue(const tiny_string &jsonstring, int pos,ASObject** parent,con
 		throwError<SyntaxError>(kJSONInvalidParseInput);
 	return pos;
 }
-int JSON::parseFalse(const tiny_string &jsonstring, int pos,ASObject** parent,const multiname& key)
+int JSON::parseFalse(const tiny_string &jsonstring, int pos, ASObject** parent, multiname &key)
 {
 	int len = jsonstring.numChars();
 	if (len >= pos+5)
@@ -305,7 +305,7 @@ int JSON::parseFalse(const tiny_string &jsonstring, int pos,ASObject** parent,co
 		throwError<SyntaxError>(kJSONInvalidParseInput);
 	return pos;
 }
-int JSON::parseNull(const tiny_string &jsonstring, int pos,ASObject** parent,const multiname& key)
+int JSON::parseNull(const tiny_string &jsonstring, int pos, ASObject** parent, multiname &key)
 {
 	int len = jsonstring.numChars();
 	if (len >= pos+4)
@@ -328,7 +328,7 @@ int JSON::parseNull(const tiny_string &jsonstring, int pos,ASObject** parent,con
 		throwError<SyntaxError>(kJSONInvalidParseInput);
 	return pos;
 }
-int JSON::parseString(const tiny_string &jsonstring, int pos,ASObject** parent,const multiname& key, tiny_string* result)
+int JSON::parseString(const tiny_string &jsonstring, int pos, ASObject** parent, multiname &key, tiny_string* result)
 {
 	pos++; // ignore starting quotes
 	int len = jsonstring.numChars();
@@ -448,7 +448,7 @@ int JSON::parseString(const tiny_string &jsonstring, int pos,ASObject** parent,c
 		*result =res;
 	return pos;
 }
-int JSON::parseNumber(const tiny_string &jsonstring, int pos, ASObject** parent, const multiname& key)
+int JSON::parseNumber(const tiny_string &jsonstring, int pos, ASObject** parent, multiname &key)
 {
 	int len = jsonstring.numChars();
 	tiny_string res;
@@ -496,7 +496,7 @@ int JSON::parseNumber(const tiny_string &jsonstring, int pos, ASObject** parent,
 	}
 	return pos;
 }
-int JSON::parseObject(const tiny_string &jsonstring, int pos, ASObject** parent, const multiname& key, asAtom reviver)
+int JSON::parseObject(const tiny_string &jsonstring, int pos, ASObject** parent, multiname &key, asAtom reviver)
 {
 	int len = jsonstring.numChars();
 	pos++; // ignore '{' or ','
@@ -566,7 +566,7 @@ int JSON::parseObject(const tiny_string &jsonstring, int pos, ASObject** parent,
 	return pos;
 }
 
-int JSON::parseArray(const tiny_string &jsonstring, int pos, ASObject** parent, const multiname& key, asAtom reviver)
+int JSON::parseArray(const tiny_string &jsonstring, int pos, ASObject** parent, multiname &key, asAtom reviver)
 {
 	int len = jsonstring.numChars();
 	pos++; // ignore '['

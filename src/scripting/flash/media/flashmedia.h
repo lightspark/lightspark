@@ -46,6 +46,8 @@ protected:
 	Downloader* downloader;
 	_R<StreamCache> soundData;
 	_NR<SoundChannel> soundChannel;
+	StreamDecoder* rawDataStreamDecoder;
+	int32_t rawDataStartPosition;
 	// If container is true, audio format is parsed from
 	// soundData. If container is false, soundData is raw samples
 	// and format is defined by format member.
@@ -67,6 +69,7 @@ public:
 	ASFUNCTION_ATOM(load);
 	ASFUNCTION_ATOM(play);
 	ASFUNCTION_ATOM(close);
+	ASFUNCTION_ATOM(extract);
 	ASFUNCTION_ATOM(loadCompressedDataFromByteArray);
 	void afterExecution(_R<Event> e);
 };
@@ -135,10 +138,16 @@ private:
 	ASPROPERTY_GETTER_SETTER(int32_t, deblocking);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
 	DefineVideoStreamTag* videotag;
+	VideoDecoder* embeddedVideoDecoder;
+	uint32_t lastuploadedframe;
+	void resetDecoder();
 public:
 	Video(Class_base* c, uint32_t w=320, uint32_t h=240, DefineVideoStreamTag* v=nullptr);
 	bool destruct() override;
+	void finalize() override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
+	void afterLegacyDelete(DisplayObjectContainer* par) override;
+	void setOnStage(bool staged, bool force = false) override;
 	uint32_t getTagID() const override;
 	~Video();
 	static void sinit(Class_base*);

@@ -1569,7 +1569,7 @@ ASObject* lightspark::abstract_d_constant(SystemState* sys,number_t i)
 	Number* ret=new (sys->unaccountedMemory) Number(Class<Number>::getRef(sys).getPtr());
 	ret->dval = i;
 	ret->isfloat = true;
-	ret->setConstant();
+	ret->setRefConstant();
 	return ret;
 }
 ASObject* lightspark::abstract_di(SystemState* sys,int64_t i)
@@ -1666,7 +1666,7 @@ tiny_string QName::getQualifiedName(SystemState *sys,bool forDescribeType) const
 
 QName::operator multiname() const
 {
-	multiname ret(NULL);
+	multiname ret(nullptr);
 	ret.name_type = multiname::NAME_STRING;
 	ret.name_s_id = nameId;
 	ret.ns.emplace_back(getSys(),nsStringId, NAMESPACE);
@@ -1851,4 +1851,12 @@ std::istream& lightspark::operator>>(std::istream& stream, BUTTONCONDACTION& v)
 	v.CondOverDownToIdle = UB(1,bs);
 
 	return stream;
+}
+
+SHAPE::~SHAPE()
+{
+	for (auto it = scaledtexturecache.begin(); it != scaledtexturecache.begin(); it++)
+	{
+		delete (*it).second;
+	}
 }

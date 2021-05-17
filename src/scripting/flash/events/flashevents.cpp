@@ -31,10 +31,10 @@ using namespace lightspark;
 
 void IEventDispatcher::linkTraits(Class_base* c)
 {
-	lookupAndLink(c,"addEventListener","flash.events:IEventDispatcher");
-	lookupAndLink(c,"removeEventListener","flash.events:IEventDispatcher");
-	lookupAndLink(c,"dispatchEvent","flash.events:IEventDispatcher");
-	lookupAndLink(c,"hasEventListener","flash.events:IEventDispatcher");
+	lookupAndLink(c,STRING_ADDEVENTLISTENER,STRING_FLASH_EVENTS_IEVENTDISPATCHER);
+	lookupAndLink(c,STRING_REMOVEEVENTLISTENER,STRING_FLASH_EVENTS_IEVENTDISPATCHER);
+	lookupAndLink(c,STRING_DISPATCHEVENT,STRING_FLASH_EVENTS_IEVENTDISPATCHER);
+	lookupAndLink(c,STRING_HASEVENTLISTENER,STRING_FLASH_EVENTS_IEVENTDISPATCHER);
 }
 
 Event::Event(Class_base* cb, const tiny_string& t, bool b, bool c, CLASS_SUBTYPE st):
@@ -109,7 +109,7 @@ void Event::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("stopPropagation","",Class<IFunction>::getFunction(c->getSystemState(),stopPropagation),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopImmediatePropagation","",Class<IFunction>::getFunction(c->getSystemState(),stopImmediatePropagation),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,currentTarget);
-	REGISTER_GETTER(c,target);
+	REGISTER_GETTER_RESULTTYPE(c,target,ASObject);
 	REGISTER_GETTER(c,type);
 	REGISTER_GETTER(c,eventPhase);
 	REGISTER_GETTER(c,bubbles);
@@ -700,7 +700,10 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 	// Must call the AS getter, because the getter may have been
 	// overridden
 	asAtom target=asAtomHandler::invalidAtom;
-	e->getVariableByMultiname(target,"target", {""});
+	multiname m(nullptr);
+	m.name_type = multiname::NAME_STRING;
+	m.name_s_id = BUILTIN_STRINGS::STRING_TARGET;
+	e->getVariableByMultiname(target,m);
 	if(asAtomHandler::isValid(target) && !asAtomHandler::isNull(target) && !asAtomHandler::isUndefined(target))
 	{
 		//Object must be cloned, cloning is implemented with the clone AS method
@@ -1495,10 +1498,10 @@ void SampleDataEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, Event, CLASS_SEALED);
 	c->setVariableAtomByQName("SAMPLE_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"sampleData"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	
-	REGISTER_GETTER_SETTER(c, data);
-	REGISTER_GETTER_SETTER(c, position);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, data,ByteArray);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, position,Number);
 }
 ASFUNCTIONBODY_GETTER_SETTER(SampleDataEvent,data)
 ASFUNCTIONBODY_GETTER_SETTER(SampleDataEvent,position)
@@ -1552,7 +1555,7 @@ void ThrottleEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("THROTTLE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"Throttle"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	
 	REGISTER_GETTER(c, state);
 	REGISTER_GETTER(c, targetFrameRate);

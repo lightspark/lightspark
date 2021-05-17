@@ -132,7 +132,7 @@ void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 		out->writeByte(undefined_marker);
 }
 
-multiname *Undefined::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset)
+multiname *Undefined::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	LOG(LOG_ERROR,"trying to set variable on undefined:"<<name <<" "<<asAtomHandler::toDebugString(o));
 	throwError<TypeError>(kConvertUndefinedToObjectError);
@@ -324,7 +324,7 @@ std::string IFunction::toDebugString()
 	return ret;
 }
 
-SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(nullptr),simpleGetterOrSetterName(nullptr),func_scope(NullRef)
+SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(nullptr),simpleGetterOrSetterName(nullptr),fromNewFunction(false),func_scope(NullRef)
 {
 	if(mi)
 		length = mi->numArgs();
@@ -349,6 +349,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	if (codeStatus != method_body_info::PRELOADED && codeStatus != method_body_info::USED)
 	{
 		mi->body->codeStatus = method_body_info::PRELOADING;
+		mi->cc.sys = getSystemState();
 		ABCVm::preloadFunction(this);
 		mi->body->codeStatus = method_body_info::PRELOADED;
 		mi->cc.exec_pos = mi->body->preloadedcode.data();
@@ -426,6 +427,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	if (recursive_call)
 	{
 		cc = new call_context(mi);
+		cc->sys = getSystemState();
 		cc->locals= g_newa(asAtom, mi->body->getReturnValuePos()+1+mi->body->localresultcount);
 		cc->stack = g_newa(asAtom, mi->body->max_stack+1);
 		cc->scope_stack=g_newa(asAtom, mi->body->max_scope_depth);
@@ -690,6 +692,7 @@ bool SyntheticFunction::destruct()
 	func_scope.reset();
 	val = nullptr;
 	mi = nullptr;
+	fromNewFunction = false;
 	return IFunction::destruct();
 }
 
@@ -908,7 +911,7 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 		out->writeByte(null_marker);
 }
 
-multiname *Null::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *Null::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	LOG(LOG_ERROR,"trying to set variable on null:"<<name<<" value:"<<asAtomHandler::toDebugString(o));
 	ASATOM_DECREF(o);
@@ -916,7 +919,7 @@ multiname *Null::setVariableByMultiname(const multiname& name, asAtom& o, CONST_
 	return nullptr;
 }
 
-const Type* Type::getBuiltinType(SystemState *sys, const multiname* mn)
+const Type* Type::getBuiltinType(SystemState* sys, multiname* mn)
 {
 	if(mn->isStatic && mn->cachedType)
 		return mn->cachedType;
@@ -936,9 +939,13 @@ const Type* Type::getBuiltinType(SystemState *sys, const multiname* mn)
 	asAtom tmp=asAtomHandler::invalidAtom;
 	sys->systemDomain->getVariableAndTargetByMultiname(tmp,*mn, target);
 	if(asAtomHandler::isClass(tmp))
-		return static_cast<const Class_base*>(asAtomHandler::toObject(tmp,sys));
+	{
+		if (mn->isStatic)
+			mn->cachedType = dynamic_cast<const Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
+		return dynamic_cast<const Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
+	}
 	else
-		return NULL;
+		return nullptr;
 }
 
 /*
@@ -946,7 +953,7 @@ const Type* Type::getBuiltinType(SystemState *sys, const multiname* mn)
  * by running ABCContext::exec() for all ABCContexts.
  * Therefore, all classes are at least declared.
  */
-const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
+const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context)
 {
 	if(mn == 0) //multiname idx zero indicates any type
 		return Type::anyType;
@@ -962,7 +969,7 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 		&& mn->ns.size() == 1 && mn->hasEmptyNS)
 		return Type::voidType;
 
-	ASObject* typeObject = NULL;
+	ASObject* typeObject = nullptr;
 	/*
 	 * During the newClass opcode, the class is added to context->root->applicationDomain->classesBeingDefined.
 	 * The class variable in the global scope is only set a bit later.
@@ -989,6 +996,24 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 			if (mn->templateinstancenames.size() == 1)
 			{
 				const Type* instancetype = getTypeFromMultiname(mn->templateinstancenames.front(),context);
+				if (instancetype==nullptr)
+				{
+					multiname* mti = mn->templateinstancenames.front();
+					auto it = context->root->applicationDomain->classesBeingDefined.begin();
+					while(it != context->root->applicationDomain->classesBeingDefined.end())
+					{
+						const multiname* m = it->first;
+						if (mti->name_type == multiname::NAME_STRING && m->name_type == multiname::NAME_STRING
+								&& mti->name_s_id == m->name_s_id
+								&& mti->ns == m->ns)
+						{
+							instancetype = it->second;
+							break;
+						}
+						it++;
+					}
+				}
+				assert_and_throw(instancetype);
 				typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),instancetype,context->root->applicationDomain).getPtr();
 			}
 			else
@@ -998,28 +1023,31 @@ const Type* Type::getTypeFromMultiname(const multiname* mn, ABCContext* context)
 				typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),qname,context,context->root->applicationDomain).getPtr();
 			}
 		}
-		if (!typeObject)
-			LOG(LOG_ERROR,"not found:"<<*mn);
 	}
-	return typeObject ? typeObject->as<Type>() : NULL;
+	if (typeObject && typeObject->is<Class_base>())
+		mn->cachedType = typeObject->as<Type>();
+	return typeObject ? typeObject->as<Type>() : nullptr;
 }
 
-Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(NULL),
-	borrowedVariables(m),
-	context(NULL),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
+Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),
+	qualifiedClassnameID(UINT32_MAX),global(nullptr),borrowedVariables(m),
+	context(nullptr),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
 {
-	setConstant();
+	setSystemState(getSys());
+	setRefConstant();
 }
 
-Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)NULL),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(NULL),
-	borrowedVariables(NULL),
-	context(NULL),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(NULL),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
+Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)nullptr),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(nullptr),
+	qualifiedClassnameID(UINT32_MAX),global(nullptr),borrowedVariables(nullptr),
+	context(nullptr),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(nullptr),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
 {
-	setConstant();
 	type=T_CLASS;
 	//We have tested that (Class is Class == true) so the classdef is 'this'
 	setClass(this);
 	//The super is Class<ASObject> but we set it in SystemState constructor to avoid an infinite loop
+
+	setSystemState(getSys());
+	setRefConstant();
 }
 
 /*
@@ -1279,7 +1307,15 @@ void Class_base::finalize()
 	super.reset();
 	prototype.reset();
 	protected_ns = nsNameAndKind(getSystemState(),"",NAMESPACE);
-	constructor = nullptr;
+	ASObject* p =constructorprop.getPtr();
+	constructorprop.reset();
+	if (p)
+		p->decRef();
+	if(constructor)
+	{
+		constructor->decRef();
+		constructor=nullptr;
+	}
 	context = nullptr;
 	length = 1;
 	class_index = -1;
@@ -1422,8 +1458,10 @@ bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) cons
 	return false;
 }
 
-tiny_string Class_base::getQualifiedClassName(bool forDescribeType) const
+const tiny_string Class_base::getQualifiedClassName(bool forDescribeType) const
 {
+	if (qualifiedClassnameID != UINT32_MAX && !forDescribeType)
+		return getSystemState()->getStringFromUniqueId(qualifiedClassnameID);
 	if(class_index==-1)
 		return class_name.getQualifiedName(getSystemState(),forDescribeType);
 	else
@@ -1431,9 +1469,28 @@ tiny_string Class_base::getQualifiedClassName(bool forDescribeType) const
 		assert_and_throw(context);
 		int name_index=context->instances[class_index].name;
 		assert_and_throw(name_index);
-		const multiname* mname=context->getMultiname(name_index,NULL);
+		const multiname* mname=context->getMultiname(name_index,nullptr);
 		return mname->qualifiedString(getSystemState(),forDescribeType);
 	}
+}
+uint32_t Class_base::getQualifiedClassNameID()
+{
+	if (qualifiedClassnameID == UINT32_MAX)
+	{
+		if(class_index==-1)
+		{
+			qualifiedClassnameID = getSystemState()->getUniqueStringId(class_name.getQualifiedName(getSystemState(),false));
+		}
+		else
+		{
+			assert_and_throw(context);
+			int name_index=context->instances[class_index].name;
+			assert_and_throw(name_index);
+			const multiname* mname=context->getMultiname(name_index,nullptr);
+			qualifiedClassnameID=getSystemState()->getUniqueStringId(mname->qualifiedString(getSystemState(),false));
+		}
+	}
+	return qualifiedClassnameID;
 }
 
 tiny_string Class_base::getName() const
@@ -2571,7 +2628,6 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 		ret->addPrototypeGetter();
 		IFunction::sinit(ret);
 		ret->constructorprop = _NR<ObjectConstructor>(new_objectConstructor(ret,ret->length));
-		ret->constructorprop->incRef();
 
 		ret->addConstructorGetter();
 
@@ -2585,7 +2641,7 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 }
 
 
-Global::Global(Class_base* cb, ABCContext* c, int s):ASObject(cb,T_OBJECT,SUBTYPE_GLOBAL),scriptId(s),context(c)
+Global::Global(Class_base* cb, ABCContext* c, int s, bool avm1):ASObject(cb,T_OBJECT,SUBTYPE_GLOBAL),scriptId(s),context(c),isavm1(avm1)
 {
 }
 
@@ -2615,7 +2671,7 @@ GET_VARIABLE_RESULT Global::getVariableByMultiname(asAtom& ret, const multiname&
 	return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 }
 
-multiname *Global::setVariableByMultiname(const multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname *Global::setVariableByMultiname(multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {
 	if (context && !context->hasRunScriptInit[scriptId])
 	{
@@ -2629,6 +2685,8 @@ multiname *Global::setVariableByMultiname(const multiname &name, asAtom &o, ASOb
 void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o, NS_KIND nskind)
 {
 	o->incRef();
+	if (o->is<Class_base>())
+		o->as<Class_base>()->setGlobalScope(this);
 	setVariableByQName(name,nsNameAndKind(getSystemState(),ns,nskind),o.getPtr(),CONSTANT_TRAIT);
 }
 
@@ -3106,7 +3164,7 @@ GET_VARIABLE_RESULT ObjectPrototype::getVariableByMultiname(asAtom& ret, const m
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
 }
 
-multiname *ObjectPrototype::setVariableByMultiname(const multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *ObjectPrototype::setVariableByMultiname(multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	if (this->isSealed && this->hasPropertyByMultiname(name,false,true))
 		throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), "");
@@ -3142,7 +3200,7 @@ GET_VARIABLE_RESULT ArrayPrototype::getVariableByMultiname(asAtom& ret, const mu
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
 }
 
-multiname *ArrayPrototype::setVariableByMultiname(const multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *ArrayPrototype::setVariableByMultiname(multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	if (this->isSealed && this->hasPropertyByMultiname(name,false,true))
 		throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), "");
@@ -3251,3 +3309,29 @@ asAtom AVM1context::AVM1GetConstant(uint16_t index)
 	return asAtomHandler::undefinedAtom;
 }
 
+
+void Prototype::setVariableByQName(const tiny_string &name, const tiny_string &ns, ASObject *o, TRAIT_KIND traitKind)
+{
+	if (o->is<Function>())
+		o->as<Function>()->setRefConstant();
+	getObj()->setVariableByQName(name,ns,o,traitKind);
+}
+void Prototype::setVariableByQName(const tiny_string &name, const nsNameAndKind &ns, ASObject *o, TRAIT_KIND traitKind)
+{
+	if (o->is<Function>())
+		o->as<Function>()->setRefConstant();
+	getObj()->setVariableByQName(name,ns,o,traitKind);
+}
+void Prototype::setVariableByQName(uint32_t nameID, const nsNameAndKind &ns, ASObject *o, TRAIT_KIND traitKind)
+{
+	if (o->is<Function>())
+		o->as<Function>()->setRefConstant();
+	getObj()->setVariableByQName(nameID,ns,o,traitKind);
+}
+
+void Prototype::setVariableAtomByQName(const tiny_string &name, const nsNameAndKind &ns, asAtom o, TRAIT_KIND traitKind)
+{
+	if (asAtomHandler::is<Function>(o))
+		asAtomHandler::as<Function>(o)->setRefConstant();
+	getObj()->setVariableAtomByQName(name,ns,o,traitKind);
+}

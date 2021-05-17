@@ -9,17 +9,48 @@ on:
 jobs:
 
   compilers:
-    name: Compiler Compatibility / ${{ matrix.cc }}
+    name: Compiler Compatibility / ${{ matrix.config.cc }}
     runs-on: ubuntu-20.04
     continue-on-error: true
     env:
-      CC: ${{ matrix.cc }}
+      CC: ${{ matrix.config.cc }}
+      CXX: ${{ matrix.config.cxx }}
+      CXXPACKAGE: ${{ matrix.config.cxxpackage }}
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
     strategy:
       matrix:
-        cc: [clang-8, clang-10, clang-11, gcc-7, gcc-9, gcc-10]
-
+        config:
+        - {
+            cc: clang-8,
+            cxx: clang++-8,
+            cxxpackage: clang-8
+          }
+        - {
+            cc: clang-10,
+            cxx: clang++-10,
+            cxxpackage: clang-10
+          }
+        - {
+            cc: clang-11,
+            cxx: clang++-11,
+            cxxpackage: clang-11
+          }
+        - {
+            cc: gcc-7,
+            cxx: g++-7,
+            cxxpackage: g++-7
+          }
+        - {
+            cc: gcc-9,
+            cxx: g++-9,
+            cxxpackage: g++-9
+          }
+        - {
+            cc: gcc-10,
+            cxx: g++-10,
+            cxxpackage: g++-10
+          }
     steps:
     - uses: actions/checkout@v2
 
@@ -31,6 +62,7 @@ jobs:
           cmake \
           nasm \
           $CC \
+          $CXXPACKAGE \
           gettext \
           libcurl4-gnutls-dev \
           libedit-dev \
@@ -118,7 +150,7 @@ jobs:
       with:
         repo: deb http://pkg.mxe.cc/repos/apt bionic main
         repo-name: mxe
-        keys: C6BF758A33A3A276
+        keys: ${{ secrets.MXE_REPO_KEY }}
         key-server: keyserver.ubuntu.com
 
     - name: Install MXE Build Environment
@@ -172,7 +204,7 @@ jobs:
       with:
         repo: deb http://pkg.mxe.cc/repos/apt bionic main
         repo-name: mxe
-        keys: C6BF758A33A3A276
+        keys: ${{ secrets.MXE_REPO_KEY }}
         key-server: keyserver.ubuntu.com
 
     - name: Install MXE Build Environment

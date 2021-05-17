@@ -67,14 +67,14 @@ Dictionary::dictType::iterator Dictionary::findKey(ASObject *o)
 	return data.end();
 }
 
-void Dictionary::setVariableByMultiname_i(const multiname& name, int32_t value)
+void Dictionary::setVariableByMultiname_i(multiname& name, int32_t value)
 {
 	assert_and_throw(implEnable);
 	asAtom v = asAtomHandler::fromInt(value);
 	Dictionary::setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
 }
 
-multiname *Dictionary::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *Dictionary::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)

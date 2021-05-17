@@ -32,10 +32,10 @@ class GraphicsEndFill: public ASObject, public IGraphicsFill, public IGraphicsDa
 public:
 	GraphicsEndFill(Class_base* c);
 	static void sinit(Class_base* c);
-		FILLSTYLE toFillStyle();
-		void appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken> > > &tokens);
+	FILLSTYLE toFillStyle();
+	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics);
 };
 
-};
+}
 
 #endif /* SCRIPTING_FLASH_DISPLAY_GRAPHICSENDFILL_H */

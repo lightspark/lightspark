@@ -99,10 +99,10 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("merge","",Class<IFunction>::getFunction(c->getSystemState(),threshold),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("paletteMap","",Class<IFunction>::getFunction(c->getSystemState(),paletteMap),NORMAL_METHOD,true);
 	// properties
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(c->getSystemState(),getRect),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth),GETTER_METHOD,true);
-	REGISTER_GETTER(c,transparent);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rect","",Class<IFunction>::getFunction(c->getSystemState(),getRect,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	REGISTER_GETTER_RESULTTYPE(c,transparent,Boolean);
 
 	IBitmapDrawable::linkTraits(c);
 }
@@ -203,18 +203,44 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 	d->hasChanged=true;
 	d->requestInvalidation(&queue);
 	CairoRenderContext ctxt(pixels->getData(), pixels->getWidth(), pixels->getHeight(),smoothing);
+	map<uint32_t,pair<IDrawable*,uint8_t*>> drawablecache;
 	for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
 	{
 		DisplayObject* target=(*it).getPtr();
+		if (target->legacy)
+		{
+			auto it2 = drawablecache.find(target->getTagID());
+			if (it2 != drawablecache.end())
+			{
+				CachedSurface& surface=ctxt.allocateCustomSurface(target,(*it2).second.second,false);
+				IDrawable* dr = (*it2).second.first;
+				surface.tex->width=dr->getWidth();
+				surface.tex->height=dr->getHeight();
+				surface.xOffset=dr->getXOffset();
+				surface.yOffset=dr->getYOffset();
+				surface.xOffsetTransformed=dr->getXOffsetTransformed();
+				surface.yOffsetTransformed=dr->getYOffsetTransformed();
+				surface.widthTransformed=dr->getWidthTransformed();
+				surface.heightTransformed=dr->getHeightTransformed();
+				surface.rotation=dr->getRotation();
+				surface.xscale = dr->getXScale();
+				surface.yscale = dr->getYScale();
+				continue;
+			}
+		}
 		//Get the drawable from each of the added objects
 		IDrawable* drawable=target->invalidate(d, initialMatrix,smoothing);
 		if(drawable==nullptr)
 			continue;
 
 		//Compute the matrix for this object
-		uint8_t* buf=drawable->getPixelBuffer(initialMatrix.getScaleX(),initialMatrix.getScaleY());
+		bool isBufferOwner=true;
+		uint8_t* buf=drawable->getPixelBuffer(initialMatrix.getScaleX(),initialMatrix.getScaleY(),&isBufferOwner);
+		if (target->legacy)
+			drawablecache[target->getTagID()]=make_pair(drawable,buf);
+		
 		//Construct a CachedSurface using the data
-		CachedSurface& surface=ctxt.allocateCustomSurface(target,buf);
+		CachedSurface& surface=ctxt.allocateCustomSurface(target,buf,isBufferOwner);
 		surface.tex->width=drawable->getWidth();
 		surface.tex->height=drawable->getHeight();
 		surface.xOffset=drawable->getXOffset();
@@ -226,7 +252,14 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.rotation=drawable->getRotation();
 		surface.xscale = drawable->getXScale();
 		surface.yscale = drawable->getYScale();
-		delete drawable;
+		if (!target->legacy)
+			delete drawable;
+	}
+	auto it3 = drawablecache.begin();
+	while (it3 != drawablecache.end())
+	{
+		delete (*it3).second.first;
+		it3++;
 	}
 	d->Render(ctxt,true);
 }

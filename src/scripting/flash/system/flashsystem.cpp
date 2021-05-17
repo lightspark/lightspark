@@ -204,8 +204,10 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getScreenDPI)
 	asAtomHandler::setNumber(ret,sys,dpi);
 }
 
-ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN),parentDomain(p)
+ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN),defaultDomainMemory(Class<ByteArray>::getInstanceSNoArgs(c->getSystemState())), parentDomain(p)
 {
+	defaultDomainMemory->setLength(MIN_DOMAIN_MEMORY_LIMIT);
+	currentDomainMemory=defaultDomainMemory.getPtr();
 }
 
 void ApplicationDomain::sinit(Class_base* c)
@@ -221,24 +223,24 @@ void ApplicationDomain::sinit(Class_base* c)
 	REGISTER_GETTER(c,parentDomain);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(ApplicationDomain,domainMemory);
+ASFUNCTIONBODY_GETTER_SETTER_CB(ApplicationDomain,domainMemory,cbDomainMemory);
 ASFUNCTIONBODY_GETTER(ApplicationDomain,parentDomain);
 
-void ApplicationDomain::buildTraits(ASObject* o)
+void ApplicationDomain::cbDomainMemory(_NR<ByteArray> oldvalue)
 {
+	checkDomainMemory();
 }
 
 void ApplicationDomain::finalize()
 {
 	ASObject::finalize();
 	domainMemory.reset();
-	for(auto i = globalScopes.begin(); i != globalScopes.end(); ++i)
-		(*i)->decRef();
 	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
 		it->second->finalize();
 	//Free template instantations by decRef'ing them
 	for(auto i = instantiatedTemplates.begin(); i != instantiatedTemplates.end(); ++i)
 		i->second->decRef();
+	globalScopes.clear();
 }
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
@@ -251,7 +253,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 		// C++ constructor
 		return;
 	else if(parentDomain.isNull())
-		th->parentDomain =  sys->systemDomain;
+		th->parentDomain = _MR(sys->systemDomain);
 	else
 		th->parentDomain = parentDomain;
 }
@@ -274,7 +276,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 	assert(argslen==1);
 	const tiny_string& tmp=asAtomHandler::toString(args[0],sys);
 
-	multiname name(NULL);
+	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 
 	tiny_string nsName;
@@ -309,7 +311,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 	assert(argslen==1);
 	const tiny_string& tmp=asAtomHandler::toString(args[0],sys);
 
-	multiname name(NULL);
+	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 
 	tiny_string nsName;
@@ -341,7 +343,7 @@ void ApplicationDomain::registerGlobalScope(Global* scope)
 ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObject*& target)
 {
 	size_t index=str.rfind('.');
-	multiname name(NULL);
+	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 	if(index==str.npos) //No dot
 	{
@@ -393,6 +395,12 @@ GET_VARIABLE_RESULT ApplicationDomain::getVariableAndTargetByMultiname(asAtom& r
 			// No incRef, return a reference borrowed from globalScopes
 			return res;
 		}
+	}
+	auto it = classesBeingDefined.find(&name);
+	if (it != classesBeingDefined.end())
+	{
+		target =((*it).second);
+		return res;
 	}
 	if(!parentDomain.isNull())
 	{
@@ -465,9 +473,10 @@ void ApplicationDomain::checkDomainMemory()
 {
 	if(domainMemory.isNull())
 	{
-		domainMemory = _NR<ByteArray>(Class<ByteArray>::getInstanceS(this->getSystemState()));
+		domainMemory = defaultDomainMemory;
 		domainMemory->setLength(MIN_DOMAIN_MEMORY_LIMIT);
 	}
+	currentDomainMemory=domainMemory.getPtr();
 }
 
 LoaderContext::LoaderContext(Class_base* c):
@@ -681,6 +690,12 @@ ASWorker::ASWorker(Class_base* c):
 	subtype = SUBTYPE_WORKER;
 }
 
+void ASWorker::finalize()
+{
+	loader.reset();
+	swf.reset();
+}
+
 void ASWorker::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
@@ -736,7 +751,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,_getCurrent)
 {
 	ASWorker* w = getWorker();
 	if(!w)
-		w=sys->worker.getPtr();
+		w=sys->worker;
 	w->incRef();
 	ret = asAtomHandler::fromObject(w);
 }
@@ -825,7 +840,12 @@ WorkerDomain::WorkerDomain(Class_base* c):
 	Template<Vector>::getInstanceS(v,getSystemState(),Class<ASWorker>::getClass(getSystemState()),NullRef);
 	workerlist = _R<Vector>(asAtomHandler::as<Vector>(v));
 	workerSharedObject = _MR(Class<ASObject>::getInstanceS(getSystemState()));
-	workerSharedObject->setConstant();
+	workerSharedObject->setRefConstant();
+}
+
+void WorkerDomain::finalize()
+{
+	workerlist.reset();
 }
 
 void WorkerDomain::sinit(Class_base* c)
@@ -849,7 +869,7 @@ ASFUNCTIONBODY_ATOM(WorkerDomain,_constructor)
 
 ASFUNCTIONBODY_ATOM(WorkerDomain,_getCurrent)
 {
-	ret = asAtomHandler::fromObject(sys->workerDomain.getPtr());
+	ret = asAtomHandler::fromObject(sys->workerDomain);
 }
 ASFUNCTIONBODY_ATOM(WorkerDomain,_isSupported)
 {

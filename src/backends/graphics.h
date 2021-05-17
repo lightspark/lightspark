@@ -112,7 +112,7 @@ public:
 	/*
 		Upload data to memory mapped to the graphics card (note: size is guaranteed to be enough
 	*/
-	virtual void upload(uint8_t* data, uint32_t w, uint32_t h) const=0;
+	virtual void upload(uint8_t* data, uint32_t w, uint32_t h)=0;
 	virtual const TextureChunk& getTexture()=0;
 	/*
 		Signal the completion of the upload to the texture
@@ -183,7 +183,7 @@ public:
 	 * The various implementation are responsible for applying the
 	 * masks
 	 */
-	virtual uint8_t* getPixelBuffer(float scalex,float scaley)=0;
+	virtual uint8_t* getPixelBuffer(float scalex,float scaley, bool* isBufferOwner=nullptr)=0;
 	/*
 	 * This method creates a cairo path that can be used as a mask for
 	 * another object
@@ -238,7 +238,7 @@ public:
 	void threadAbort() override;
 	void jobFence() override;
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) const override;
+	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
 	void sizeNeeded(uint32_t& w, uint32_t& h) const override;
 	const TextureChunk& getTexture() override;
 	void uploadFence() override;
@@ -279,7 +279,7 @@ public:
 				  , float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset
 				  , bool _smoothing,number_t _xstart,number_t _ystart);
 	//IDrawable interface
-	uint8_t* getPixelBuffer(float scalex, float scaley);
+	uint8_t* getPixelBuffer(float scalex, float scaley, bool* isBufferOwner=nullptr) override;
 	/*
 	 * Converts data (which is in RGB format) to the format internally used by cairo.
 	 */
@@ -441,7 +441,7 @@ public:
 				  , float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset
 				  );
 	//IDrawable interface
-	uint8_t* getPixelBuffer(float scalex, float scaley) override;
+	uint8_t* getPixelBuffer(float scalex, float scaley, bool* isBufferOwner=nullptr) override;
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const override {}
 };
 
@@ -460,6 +460,21 @@ public:
 	void addToInvalidateQueue(_R<DisplayObject> d) override;
 };
 
+class CharacterRenderer : public ITextureUploadable
+{
+	uint8_t* data;
+	uint32_t width;
+	uint32_t height;
+	TextureChunk chunk;
+public:
+	CharacterRenderer(uint8_t *d, uint32_t w, uint32_t h):data(d),width(w),height(h) {}
+	virtual ~CharacterRenderer() { delete[] data; }
+	//ITextureUploadable interface
+	void sizeNeeded(uint32_t& w, uint32_t& h) const override { w=width; h=height;}
+	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
+	const TextureChunk& getTexture() override;
+	void uploadFence() override {}
+};
 
 }
 #endif /* BACKENDS_GRAPHICS_H */

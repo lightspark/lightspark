@@ -163,7 +163,7 @@ public:
 	 * cacheAsBitmap is true also if any filter is used
 	 */
 	bool computeCacheAsBitmap() const;
-	void computeMasksAndMatrix(DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, bool &hasMask) const;
+	void computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, bool &hasMask) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	DisplayObjectContainer* getParent() const { return parent; }
 	bool findParent(DisplayObject* d) const;
@@ -193,9 +193,10 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
-	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
 	bool deleteVariableByMultiname(const multiname& name) override;
 	virtual void removeAVM1Listeners();
+	void AVM1registerPrototypeListeners();
 
 	// used by MorphShapes and embedded video
 	virtual void checkRatio(uint32_t ratio, bool inskipping) {}
@@ -209,6 +210,8 @@ public:
 	virtual void afterLegacyDelete(DisplayObjectContainer* parent) {}
 	virtual uint32_t getTagID() const { return 0;}
 	virtual void resetLegacyState() {}
+	virtual void startDrawJob() {}
+	virtual void endDrawJob() {}
 	
 	bool Render(RenderContext& ctxt,bool force=false);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;

@@ -64,7 +64,7 @@ void ABCVm::abc_dxns(call_context* context)
 }
 void ABCVm::abc_dxnslate(call_context* context)
 {
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v,context->mi->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v,context->sys);
 	dxnslate(context, v);
 	++(context->exec_pos);
 }
@@ -85,7 +85,7 @@ void ABCVm::abc_ifnlt(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(asAtomHandler::isLess(*v2,context->mi->context->root->getSystemState(),*v1) == TTRUE);
+	bool cond=!(asAtomHandler::isLess(*v2,context->sys,*v1) == TTRUE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifNLT (") << ((cond)?_("taken)"):_("not taken)")));
@@ -99,7 +99,7 @@ void ABCVm::abc_ifnle(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(asAtomHandler::isLess(*v1,context->mi->context->root->getSystemState(),*v2) == TFALSE);
+	bool cond=!(asAtomHandler::isLess(*v1,context->sys,*v2) == TFALSE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifNLE (") << ((cond)?_("taken)"):_("not taken)")));
@@ -113,7 +113,7 @@ void ABCVm::abc_ifngt(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(asAtomHandler::isLess(*v1,context->mi->context->root->getSystemState(),*v2) == TTRUE);
+	bool cond=!(asAtomHandler::isLess(*v1,context->sys,*v2) == TTRUE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifNGT (") << ((cond)?_("taken)"):_("not taken)")));
@@ -127,7 +127,7 @@ void ABCVm::abc_ifnge(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(asAtomHandler::isLess(*v2,context->mi->context->root->getSystemState(),*v1) == TFALSE);
+	bool cond=!(asAtomHandler::isLess(*v2,context->sys,*v1) == TFALSE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifNGE (") << ((cond)?_("taken)"):_("not taken)")));
@@ -168,7 +168,7 @@ void ABCVm::abc_ifeq(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=(asAtomHandler::isEqual(*v1,context->mi->context->root->getSystemState(),*v2));
+	bool cond=(asAtomHandler::isEqual(*v1,context->sys,*v2));
 	LOG_CALL(_("ifEq (") << ((cond)?_("taken)"):_("not taken)")));
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
@@ -181,7 +181,7 @@ void ABCVm::abc_ifne(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=!(asAtomHandler::isEqual(*v1,context->mi->context->root->getSystemState(),*v2));
+	bool cond=!(asAtomHandler::isEqual(*v1,context->sys,*v2));
 	LOG_CALL(_("ifNE (") << ((cond)?_("taken)"):_("not taken)")));
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
@@ -194,7 +194,7 @@ void ABCVm::abc_iflt(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=asAtomHandler::isLess(*v2,context->mi->context->root->getSystemState(),*v1) == TTRUE;
+	bool cond=asAtomHandler::isLess(*v2,context->sys,*v1) == TTRUE;
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifLT (") << ((cond)?_("taken)"):_("not taken)")));
@@ -208,7 +208,7 @@ void ABCVm::abc_ifle(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=asAtomHandler::isLess(*v1,context->mi->context->root->getSystemState(),*v2) == TFALSE;
+	bool cond=asAtomHandler::isLess(*v1,context->sys,*v2) == TFALSE;
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifLE (") << ((cond)?_("taken)"):_("not taken)")));
@@ -222,7 +222,7 @@ void ABCVm::abc_ifgt(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=asAtomHandler::isLess(*v1,context->mi->context->root->getSystemState(),*v2) == TTRUE;
+	bool cond=asAtomHandler::isLess(*v1,context->sys,*v2) == TTRUE;
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifGT (") << ((cond)?_("taken)"):_("not taken)")));
@@ -236,7 +236,7 @@ void ABCVm::abc_ifge(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
-	bool cond=asAtomHandler::isLess(*v2,context->mi->context->root->getSystemState(),*v1) == TFALSE;
+	bool cond=asAtomHandler::isLess(*v2,context->sys,*v1) == TFALSE;
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
 	LOG_CALL(_("ifGE (") << ((cond)?_("taken)"):_("not taken)")));
@@ -251,7 +251,7 @@ void ABCVm::abc_ifstricteq(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 
-	bool cond=asAtomHandler::isEqualStrict(*v1,context->mi->context->root->getSystemState(),*v2);
+	bool cond=asAtomHandler::isEqualStrict(*v1,context->sys,*v2);
 	LOG_CALL(_("ifStrictEq ")<<cond);
 	ASATOM_DECREF_POINTER(v1);
 	ASATOM_DECREF_POINTER(v2);
@@ -265,7 +265,7 @@ void ABCVm::abc_ifstrictne(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POP_CREATE(context,v2);
 
-	bool cond=!asAtomHandler::isEqualStrict(*v1,context->mi->context->root->getSystemState(),*v2);
+	bool cond=!asAtomHandler::isEqualStrict(*v1,context->sys,*v2);
 	LOG_CALL(_("ifStrictNE ")<<cond <<" "<<asAtomHandler::toDebugString(*v1)<<" "<<asAtomHandler::toDebugString(*v2));
 	ASATOM_DECREF_POINTER(v1);
 	ASATOM_DECREF_POINTER(v2);
@@ -312,7 +312,7 @@ void ABCVm::abc_nextname(call_context* context)
 		throw UnsupportedException("Type mismatch in nextName");
 
 	asAtom ret=asAtomHandler::invalidAtom;
-	asAtomHandler::toObject(*pval,context->mi->context->root->getSystemState())->nextName(ret,asAtomHandler::toUInt(*v1));
+	asAtomHandler::toObject(*pval,context->sys)->nextName(ret,asAtomHandler::toUInt(*v1));
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v1);
 	*pval = ret;
@@ -326,10 +326,10 @@ void ABCVm::abc_hasnext(call_context* context)
 
 	uint32_t curIndex=asAtomHandler::toUInt(*pval);
 
-	uint32_t newIndex=asAtomHandler::toObject(*v1,context->mi->context->root->getSystemState())->nextNameIndex(curIndex);
+	uint32_t newIndex=asAtomHandler::toObject(*v1,context->sys)->nextNameIndex(curIndex);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v1);
-	asAtomHandler::setInt(*pval,context->mi->context->root->getSystemState(),newIndex);
+	asAtomHandler::setInt(*pval,context->sys,newIndex);
 	++(context->exec_pos);
 }
 void ABCVm::abc_pushnull(call_context* context)
@@ -355,7 +355,7 @@ void ABCVm::abc_nextvalue(call_context* context)
 		throw UnsupportedException("Type mismatch in nextValue");
 
 	asAtom ret=asAtomHandler::invalidAtom;
-	asAtomHandler::toObject(*pval,context->mi->context->root->getSystemState())->nextValue(ret,asAtomHandler::toUInt(*v1));
+	asAtomHandler::toObject(*pval,context->sys)->nextValue(ret,asAtomHandler::toUInt(*v1));
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v1);
 	*pval=ret;
@@ -396,7 +396,7 @@ void ABCVm::abc_pushnan(call_context* context)
 {
 	//pushnan
 	LOG_CALL("pushNaN");
-	RUNTIME_STACK_PUSH(context,context->mi->context->root->getSystemState()->nanAtom);
+	RUNTIME_STACK_PUSH(context,context->sys->nanAtom);
 	++(context->exec_pos);
 }
 void ABCVm::abc_pop(call_context* context)
@@ -432,7 +432,7 @@ void ABCVm::abc_swap(call_context* context)
 void ABCVm::abc_pushstring(call_context* context)
 {
 	uint32_t t = context->exec_pos->arg3_uint;
-	LOG_CALL( _("pushString ") << context->mi->context->root->getSystemState()->getStringFromUniqueId(context->mi->context->getString(t)) );
+	LOG_CALL( _("pushString ") << context->sys->getStringFromUniqueId(context->mi->context->getString(t)) );
 	RUNTIME_STACK_PUSH(context,asAtomHandler::fromStringID(context->mi->context->getString(t)));
 	++(context->exec_pos);
 }
@@ -647,7 +647,7 @@ void ABCVm::abc_sxi1(call_context* context)
 	RUNTIME_STACK_POINTER_CREATE(context,arg1);
 	int32_t ret=asAtomHandler::toUInt(*arg1)&0x1 ? -1 : 0;
 	ASATOM_DECREF_POINTER(arg1);
-	asAtomHandler::setInt(*arg1,context->mi->context->root->getSystemState(),ret);
+	asAtomHandler::setInt(*arg1,context->sys,ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sxi8(call_context* context)
@@ -657,7 +657,7 @@ void ABCVm::abc_sxi8(call_context* context)
 	RUNTIME_STACK_POINTER_CREATE(context,arg1);
 	int32_t ret=(int8_t)asAtomHandler::toUInt(*arg1);
 	ASATOM_DECREF_POINTER(arg1);
-	asAtomHandler::setInt(*arg1,context->mi->context->root->getSystemState(),ret);
+	asAtomHandler::setInt(*arg1,context->sys,ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sxi16(call_context* context)
@@ -666,7 +666,7 @@ void ABCVm::abc_sxi16(call_context* context)
 	RUNTIME_STACK_POINTER_CREATE(context,arg1);
 	int32_t ret=(int16_t)asAtomHandler::toUInt(*arg1);
 	ASATOM_DECREF_POINTER(arg1);
-	asAtomHandler::setInt(*arg1,context->mi->context->root->getSystemState(),ret);
+	asAtomHandler::setInt(*arg1,context->sys,ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_constructgenerictype(call_context* context)
@@ -788,7 +788,7 @@ void ABCVm::abc_setproperty(call_context* context)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 	//Do not allow to set contant traits
-	ASObject* o = asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState());
+	ASObject* o = asAtomHandler::toObject(*obj,context->sys);
 	bool alreadyset=false;
 	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
 	if (alreadyset)
@@ -842,7 +842,7 @@ void ABCVm::abc_getProperty(call_context* context)
 	ASObject* obj= nullptr;
 	if ((context->exec_pos->local3.flags&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
-		RUNTIME_STACK_POP_ASOBJECT(context,obj, context->mi->context->root->getSystemState());
+		RUNTIME_STACK_POP_ASOBJECT(context,obj, context->sys);
 		if (instrptr->cacheobj1 == obj->getClass())
 		{
 			asAtom prop=asAtomHandler::invalidAtom;
@@ -867,7 +867,7 @@ void ABCVm::abc_getProperty(call_context* context)
 
 	if (obj == nullptr)
 	{
-		RUNTIME_STACK_POP_ASOBJECT(context,obj, context->mi->context->root->getSystemState());
+		RUNTIME_STACK_POP_ASOBJECT(context,obj, context->sys);
 	}
 
 	LOG_CALL( _("getProperty ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
@@ -909,7 +909,7 @@ void ABCVm::abc_initproperty(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	LOG_CALL("initProperty "<<*name<<" on "<< asAtomHandler::toDebugString(*obj)<<" to "<<asAtomHandler::toDebugString(*value));
 	bool alreadyset=false;
-	asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset);
+	asAtomHandler::toObject(*obj,context->sys)->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	if (alreadyset)
 		ASATOM_DECREF_POINTER(value);
 	ASATOM_DECREF_POINTER(obj);
@@ -920,7 +920,7 @@ void ABCVm::abc_deleteproperty(call_context* context)
 {
 	uint32_t t = context->exec_pos->arg1_uint;
 	multiname* name = context->mi->context->getMultiname(t,context);
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->mi->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj, context->sys);
 	bool ret = deleteProperty(obj,name);
 	name->resetNameIfObject();
 	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
@@ -945,7 +945,7 @@ void ABCVm::abc_setslot(call_context* context)
 {
 	uint32_t t = context->exec_pos->arg3_uint;
 	RUNTIME_STACK_POP_CREATE(context,v1);
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2, context->mi->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2, context->sys);
 
 	LOG_CALL("setSlot " << t << " "<< v2->toDebugString() << " "<< asAtomHandler::toDebugString(*v1));
 	if (!v2->setSlot(t,*v1))
@@ -979,22 +979,22 @@ void ABCVm::abc_convert_s(call_context* context)
 	LOG_CALL( _("convert_s") );
 	if(!asAtomHandler::isString(*pval))
 	{
-		tiny_string s = asAtomHandler::toString(*pval,context->mi->context->root->getSystemState());
+		tiny_string s = asAtomHandler::toString(*pval,context->sys);
 		ASATOM_DECREF_POINTER(pval);
-		asAtomHandler::replace(*pval,(ASObject*)abstract_s(context->mi->context->root->getSystemState(),s));
+		asAtomHandler::replace(*pval,(ASObject*)abstract_s(context->sys,s));
 	}
 	++(context->exec_pos);
 }
 void ABCVm::abc_esc_xelem(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::replace(*pval,esc_xelem(asAtomHandler::toObject(*pval,context->mi->context->root->getSystemState())));
+	asAtomHandler::replace(*pval,esc_xelem(asAtomHandler::toObject(*pval,context->sys)));
 	++(context->exec_pos);
 }
 void ABCVm::abc_esc_xattr(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::replace(*pval,esc_xattr(asAtomHandler::toObject(*pval,context->mi->context->root->getSystemState())));
+	asAtomHandler::replace(*pval,esc_xattr(asAtomHandler::toObject(*pval,context->sys)));
 	++(context->exec_pos);
 }
 void ABCVm::abc_convert_i(call_context* context)
@@ -1005,7 +1005,7 @@ void ABCVm::abc_convert_i(call_context* context)
 	{
 		int32_t v= asAtomHandler::toIntStrict(*pval);
 		ASATOM_DECREF_POINTER(pval);
-		asAtomHandler::setInt(*pval,context->mi->context->root->getSystemState(),v);
+		asAtomHandler::setInt(*pval,context->sys,v);
 	}
 	++(context->exec_pos);
 }
@@ -1017,7 +1017,7 @@ void ABCVm::abc_convert_u(call_context* context)
 	{
 		uint32_t v= asAtomHandler::toUInt(*pval);
 		ASATOM_DECREF_POINTER(pval);
-		asAtomHandler::setUInt(*pval,context->mi->context->root->getSystemState(),v);
+		asAtomHandler::setUInt(*pval,context->sys,v);
 	}
 	++(context->exec_pos);
 }
@@ -1029,7 +1029,7 @@ void ABCVm::abc_convert_d(call_context* context)
 	{
 		number_t v= asAtomHandler::toNumber(*pval);
 		ASATOM_DECREF_POINTER(pval);
-		asAtomHandler::setNumber(*pval,context->mi->context->root->getSystemState(),v);
+		asAtomHandler::setNumber(*pval,context->sys,v);
 	}
 	++(context->exec_pos);
 }
@@ -1061,7 +1061,7 @@ void ABCVm::abc_checkfilter(call_context* context)
 {
 	//checkfilter
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	checkfilter(asAtomHandler::toObject(*pval,context->mi->context->root->getSystemState()));
+	checkfilter(asAtomHandler::toObject(*pval,context->sys));
 	++(context->exec_pos);
 }
 void ABCVm::abc_coerce(call_context* context)
@@ -1082,7 +1082,7 @@ void ABCVm::abc_coerce_s(call_context* context)
 	if (!asAtomHandler::isString(*pval))
 	{
 		asAtom v = *pval;
-		if (Class<ASString>::getClass(context->mi->context->root->getSystemState())->coerce(context->mi->context->root->getSystemState(),*pval))
+		if (Class<ASString>::getClass(context->sys)->coerce(context->sys,*pval))
 			ASATOM_DECREF(v);
 	}
 	++(context->exec_pos);
@@ -1093,7 +1093,7 @@ void ABCVm::abc_astype(call_context* context)
 	multiname* name=context->mi->context->getMultiname(t,NULL);
 
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::replace(*pval,asType(context->mi->context, asAtomHandler::toObject(*pval,context->mi->context->root->getSystemState()), name));
+	asAtomHandler::replace(*pval,asType(context->mi->context, asAtomHandler::toObject(*pval,context->sys), name));
 	++(context->exec_pos);
 }
 void ABCVm::abc_astypelate(call_context* context)
@@ -1111,13 +1111,13 @@ void ABCVm::abc_negate(call_context* context)
 	{
 		int32_t ret=-(asAtomHandler::toInt(*pval));
 		ASATOM_DECREF_POINTER(pval);
-		asAtomHandler::setInt(*pval,context->mi->context->root->getSystemState(), ret);
+		asAtomHandler::setInt(*pval,context->sys, ret);
 	}
 	else
 	{
 		number_t ret=-(asAtomHandler::toNumber(*pval));
 		ASATOM_DECREF_POINTER(pval);
-		asAtomHandler::setNumber(*pval,context->mi->context->root->getSystemState(), ret);
+		asAtomHandler::setNumber(*pval,context->sys, ret);
 	}
 	++(context->exec_pos);
 }
@@ -1125,7 +1125,7 @@ void ABCVm::abc_increment(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("increment "<<asAtomHandler::toDebugString(*pval));
-	asAtomHandler::increment(*pval,context->mi->context->root->getSystemState());
+	asAtomHandler::increment(*pval,context->sys);
 	++(context->exec_pos);
 }
 void ABCVm::abc_inclocal(call_context* context)
@@ -1137,7 +1137,7 @@ void ABCVm::abc_inclocal(call_context* context)
 void ABCVm::abc_decrement(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::decrement(*pval,context->mi->context->root->getSystemState());
+	asAtomHandler::decrement(*pval,context->sys);
 	++(context->exec_pos);
 }
 void ABCVm::abc_declocal(call_context* context)
@@ -1164,7 +1164,7 @@ void ABCVm::abc_not(call_context* context)
 void ABCVm::abc_bitnot(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::bitnot(*pval,context->mi->context->root->getSystemState());
+	asAtomHandler::bitnot(*pval,context->sys);
 
 	++(context->exec_pos);
 }
@@ -1174,7 +1174,7 @@ void ABCVm::abc_add(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	if (asAtomHandler::add(*pval,*v2,context->mi->context->root->getSystemState(),context->exec_pos->local3.flags & ABC_OP_FORCEINT))
+	if (asAtomHandler::add(*pval,*v2,context->sys,context->exec_pos->local3.flags & ABC_OP_FORCEINT))
 	{
 		ASATOM_DECREF_POINTER(v2);
 		if (o)
@@ -1188,7 +1188,7 @@ void ABCVm::abc_subtract(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::subtract(*pval,context->mi->context->root->getSystemState(),*v2,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
+	asAtomHandler::subtract(*pval,context->sys,*v2,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 	ASATOM_DECREF_POINTER(v2);
 	if (o)
 		o->decRef();
@@ -1199,7 +1199,7 @@ void ABCVm::abc_multiply(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::multiply(*pval,context->mi->context->root->getSystemState(),*v2,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
+	asAtomHandler::multiply(*pval,context->sys,*v2,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 	ASATOM_DECREF_POINTER(v2);
 	if (o)
 		o->decRef();
@@ -1210,7 +1210,7 @@ void ABCVm::abc_divide(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::divide(*pval,context->mi->context->root->getSystemState(),*v2,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
+	asAtomHandler::divide(*pval,context->sys,*v2,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 	ASATOM_DECREF_POINTER(v2);
 	if (o)
 		o->decRef();
@@ -1221,7 +1221,7 @@ void ABCVm::abc_modulo(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::modulo(*pval,context->mi->context->root->getSystemState(),*v2);
+	asAtomHandler::modulo(*pval,context->sys,*v2);
 	ASATOM_DECREF_POINTER(v2);
 	if (o)
 		o->decRef();
@@ -1233,7 +1233,7 @@ void ABCVm::abc_lshift(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::lshift(*pval,context->mi->context->root->getSystemState(),*v1);
+	asAtomHandler::lshift(*pval,context->sys,*v1);
 	ASATOM_DECREF_POINTER(v1);
 	if (o)
 		o->decRef();
@@ -1245,7 +1245,7 @@ void ABCVm::abc_rshift(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::rshift(*pval,context->mi->context->root->getSystemState(),*v1);
+	asAtomHandler::rshift(*pval,context->sys,*v1);
 	ASATOM_DECREF_POINTER(v1);
 	if (o)
 		o->decRef();
@@ -1257,7 +1257,7 @@ void ABCVm::abc_urshift(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::urshift(*pval,context->mi->context->root->getSystemState(),*v1);
+	asAtomHandler::urshift(*pval,context->sys,*v1);
 	ASATOM_DECREF_POINTER(v1);
 	if (o)
 		o->decRef();
@@ -1269,7 +1269,7 @@ void ABCVm::abc_bitand(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::bit_and(*pval,context->mi->context->root->getSystemState(),*v1);
+	asAtomHandler::bit_and(*pval,context->sys,*v1);
 	ASATOM_DECREF_POINTER(v1);
 	if (o)
 		o->decRef();
@@ -1281,7 +1281,7 @@ void ABCVm::abc_bitor(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::bit_or(*pval,context->mi->context->root->getSystemState(),*v1);
+	asAtomHandler::bit_or(*pval,context->sys,*v1);
 	ASATOM_DECREF_POINTER(v1);
 	if (o)
 		o->decRef();
@@ -1293,7 +1293,7 @@ void ABCVm::abc_bitxor(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::bit_xor(*pval,context->mi->context->root->getSystemState(),*v1);
+	asAtomHandler::bit_xor(*pval,context->sys,*v1);
 	ASATOM_DECREF_POINTER(v1);
 	if (o)
 		o->decRef();
@@ -1305,7 +1305,7 @@ void ABCVm::abc_equals(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
-	bool ret=asAtomHandler::isEqual(*pval,context->mi->context->root->getSystemState(),*v2);
+	bool ret=asAtomHandler::isEqual(*pval,context->sys,*v2);
 	LOG_CALL( _("equals ") << ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
@@ -1317,7 +1317,7 @@ void ABCVm::abc_strictequals(call_context* context)
 	//strictequals
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	bool ret = asAtomHandler::isEqualStrict(*pval,context->mi->context->root->getSystemState(),*v2);
+	bool ret = asAtomHandler::isEqualStrict(*pval,context->sys,*v2);
 	LOG_CALL( _("strictequals ") << ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
@@ -1329,7 +1329,7 @@ void ABCVm::abc_lessthan(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	//Real comparision demanded to object
-	bool ret=(asAtomHandler::isLess(*pval,context->mi->context->root->getSystemState(),*v2)==TTRUE);
+	bool ret=(asAtomHandler::isLess(*pval,context->sys,*v2)==TTRUE);
 	LOG_CALL(_("lessThan ")<<ret<<" "<<asAtomHandler::toDebugString(*pval)<<" "<<asAtomHandler::toDebugString(*v2));
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
@@ -1343,7 +1343,7 @@ void ABCVm::abc_lessequals(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	//Real comparision demanded to object
-	bool ret=(asAtomHandler::isLess(*v2,context->mi->context->root->getSystemState(),*pval)==TFALSE);
+	bool ret=(asAtomHandler::isLess(*v2,context->sys,*pval)==TFALSE);
 	LOG_CALL(_("lessEquals ")<<ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
@@ -1357,7 +1357,7 @@ void ABCVm::abc_greaterthan(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	//Real comparision demanded to object
-	bool ret=(asAtomHandler::isLess(*v2,context->mi->context->root->getSystemState(),*pval)==TTRUE);
+	bool ret=(asAtomHandler::isLess(*v2,context->sys,*pval)==TTRUE);
 	LOG_CALL(_("greaterThan ")<<ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
@@ -1371,7 +1371,7 @@ void ABCVm::abc_greaterequals(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	//Real comparision demanded to object
-	bool ret=(asAtomHandler::isLess(*pval,context->mi->context->root->getSystemState(),*v2)==TFALSE);
+	bool ret=(asAtomHandler::isLess(*pval,context->sys,*v2)==TFALSE);
 	LOG_CALL(_("greaterEquals ")<<ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
@@ -1382,9 +1382,9 @@ void ABCVm::abc_greaterequals(call_context* context)
 void ABCVm::abc_instanceof(call_context* context)
 {
 	//instanceof
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,type, context->mi->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,type, context->sys);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	bool ret = instanceOf(asAtomHandler::toObject(*pval,context->mi->context->root->getSystemState()),type);
+	bool ret = instanceOf(asAtomHandler::toObject(*pval,context->sys),type);
 	ASATOM_DECREF_POINTER(pval);
 	asAtomHandler::setBool(*pval,ret);
 	++(context->exec_pos);
@@ -1395,7 +1395,7 @@ void ABCVm::abc_istype(call_context* context)
 	multiname* name=context->mi->context->getMultiname(t,NULL);
 
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	ASObject* o = asAtomHandler::toObject(*pval,context->mi->context->root->getSystemState());
+	ASObject* o = asAtomHandler::toObject(*pval,context->sys);
 	asAtomHandler::setBool(*pval,isType(context->mi->context,o,name));
 	o->decRef();
 	++(context->exec_pos);
@@ -1403,7 +1403,7 @@ void ABCVm::abc_istype(call_context* context)
 void ABCVm::abc_istypelate(call_context* context)
 {
 	//istypelate
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->mi->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->sys);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
 	bool ret =asAtomHandler::isTypelate(*pval,v1);
@@ -1413,16 +1413,16 @@ void ABCVm::abc_istypelate(call_context* context)
 }
 void ABCVm::abc_in(call_context* context)
 {
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->mi->context->root->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1, context->sys);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
 	LOG_CALL( _("in") );
 	if(v1->is<Null>())
 		throwError<TypeError>(kConvertNullToObjectError);
 
-	multiname name(NULL);
-	asAtomHandler::fillMultiname(*pval,context->mi->context->root->getSystemState(),name);
-	name.ns.emplace_back(context->mi->context->root->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+	multiname name(nullptr);
+	asAtomHandler::fillMultiname(*pval,context->sys,name);
+	name.ns.emplace_back(context->sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	bool ret=v1->hasPropertyByMultiname(name, true, true);
 	ASATOM_DECREF_POINTER(pval);
 	v1->decRef();
@@ -1434,14 +1434,14 @@ void ABCVm::abc_increment_i(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("increment_i:"<<asAtomHandler::toDebugString(*pval));
-	asAtomHandler::increment_i(*pval,context->mi->context->root->getSystemState());
+	asAtomHandler::increment_i(*pval,context->sys);
 	++(context->exec_pos);
 }
 void ABCVm::abc_decrement_i(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("decrement_i:"<<asAtomHandler::toDebugString(*pval));
-	asAtomHandler::decrement_i(*pval,context->mi->context->root->getSystemState());
+	asAtomHandler::decrement_i(*pval,context->sys);
 	++(context->exec_pos);
 }
 void ABCVm::abc_inclocal_i(call_context* context)
@@ -1459,28 +1459,28 @@ void ABCVm::abc_declocal_i(call_context* context)
 void ABCVm::abc_negate_i(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::negate_i(*pval,context->mi->context->root->getSystemState());
+	asAtomHandler::negate_i(*pval,context->sys);
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_i(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::add_i(*pval,context->mi->context->root->getSystemState(),*v2);
+	asAtomHandler::add_i(*pval,context->sys,*v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract_i(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::subtract_i(*pval,context->mi->context->root->getSystemState(),*v2);
+	asAtomHandler::subtract_i(*pval,context->sys,*v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_multiply_i(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::multiply_i(*pval,context->mi->context->root->getSystemState(),*v2);
+	asAtomHandler::multiply_i(*pval,context->sys,*v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_getlocal_0(call_context* context)

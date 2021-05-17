@@ -61,12 +61,27 @@ Activation_object* lightspark::new_activationObject(SystemState* sys)
 }
 
 
-Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_defobj):Class_base(name, m),tag(nullptr),bindedToRoot(false),classtrait(_classtrait),definitionobject(_defobj)
+Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_global):Class_base(name, m),tag(nullptr),bindedToRoot(false),classtrait(_classtrait)
 {
+	this->global=_global;
 	this->incRef(); //create on reference for the classes map
-	this->getSystemState()->customClasses.insert(this);
+	this->getSystemState()->customClasses.insert(make_pair(name.nameId,this));
 	isReusable = true;
 	subtype = SUBTYPE_INHERIT;
+}
+
+void Class_inherit::finalize()
+{
+	instancefactory.reset();
+	auto it = class_scope.begin();
+	while (it != class_scope.end())
+	{
+		ASATOM_DECREF((*it).object);
+		it++;
+	}
+	class_scope.clear();
+	Class_base::finalize();
+	
 }
 
 void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
@@ -186,12 +201,12 @@ void Class<Global>::getInstance(asAtom& ret, bool construct, asAtom* args, const
 
 void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)
 {
-	variable* var=NULL;
+	variable* var=nullptr;
 	Class_base* cur=c;
 	//Find the origin
 	while(cur)
 	{
-		var=cur->borrowedVariables.findObjVar(c->getSystemState()->getUniqueStringId(name),nsNameAndKind(c->getSystemState(),"",NAMESPACE),NO_CREATE_TRAIT,DECLARED_TRAIT);
+		var=cur->borrowedVariables.findObjVar(c->getSystemState()->getUniqueStringId(name),nsNameAndKind(),NO_CREATE_TRAIT,DECLARED_TRAIT);
 		if(var)
 			break;
 		cur=cur->super.getPtr();
@@ -214,6 +229,39 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 		assert_and_throw(asAtomHandler::isFunction(var->setter));
 		ASATOM_INCREF(var->setter);
 		c->setDeclaredMethodAtomByQName(name,interfaceNs,var->setter,SETTER_METHOD,true);
+	}
+}
+
+void lightspark::lookupAndLink(Class_base* c, uint32_t nameID, uint32_t interfaceNsID)
+{
+	variable* var=nullptr;
+	Class_base* cur=c;
+	//Find the origin
+	while(cur)
+	{
+		var=cur->borrowedVariables.findObjVar(nameID,nsNameAndKind(),NO_CREATE_TRAIT,DECLARED_TRAIT);
+		if(var)
+			break;
+		cur=cur->super.getPtr();
+	}
+	assert_and_throw(var);
+	if(asAtomHandler::isValid(var->var))
+	{
+		assert_and_throw(asAtomHandler::isFunction(var->var));
+		ASATOM_INCREF(var->var);
+		c->setDeclaredMethodAtomByQName(nameID,nsNameAndKind(c->getSystemState(),interfaceNsID, NAMESPACE),var->var,NORMAL_METHOD,true);
+	}
+	if(asAtomHandler::isValid(var->getter))
+	{
+		assert_and_throw(asAtomHandler::isFunction(var->getter));
+		ASATOM_INCREF(var->getter);
+		c->setDeclaredMethodAtomByQName(nameID,nsNameAndKind(c->getSystemState(),interfaceNsID, NAMESPACE),var->getter,GETTER_METHOD,true);
+	}
+	if(asAtomHandler::isValid(var->setter))
+	{
+		assert_and_throw(asAtomHandler::isFunction(var->setter));
+		ASATOM_INCREF(var->setter);
+		c->setDeclaredMethodAtomByQName(nameID,nsNameAndKind(c->getSystemState(),interfaceNsID, NAMESPACE),var->setter,SETTER_METHOD,true);
 	}
 }
 

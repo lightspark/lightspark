@@ -79,7 +79,9 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 
 TextureChunk::~TextureChunk()
 {
-	delete[] chunks;
+	if (chunks)
+		delete[] chunks;
+	chunks=nullptr;
 }
 
 void TextureChunk::makeEmpty()
@@ -277,6 +279,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	cairo_t *stroke_cr = cairo_create(cairo_get_group_target(cr));
 	cairo_matrix_t mat;
 	cairo_get_matrix(cr,&mat);
+	cairo_matrix_translate(&mat,-xstart,-ystart);
+	cairo_set_matrix(cr, &mat);
 	cairo_set_matrix(stroke_cr, &mat);
 	cairo_push_group(stroke_cr);
 
@@ -291,8 +295,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	int tokentype = 1;
 	while (tokentype)
 	{
-		std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>::const_iterator it;
-		std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>::const_iterator itend;
+		std::vector<uint64_t>::const_iterator it;
+		std::vector<uint64_t>::const_iterator itend;
 		switch(tokentype)
 		{
 			case 1:
@@ -311,77 +315,88 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 		}
 		if (tokentype == 0)
 			break;
-		for (;it != itend; it++)
+		while (it != itend)
 		{
-			switch((*it)->type)
+			GeomToken p(*it,false);
+			switch(p.type)
 			{
 				case MOVE:
-					PATH(cairo_move_to, (*it)->p1.x*scalex-xstart*scalex, (*it)->p1.y*scaley-ystart*scaley);
+				{
+					GeomToken p1(*(++it),false);
+					PATH(cairo_move_to, (p1.vec.x)*scalex, (p1.vec.y)*scaley);
 					break;
+				}
 				case STRAIGHT:
-					PATH(cairo_line_to, (*it)->p1.x*scalex-xstart*scalex, (*it)->p1.y*scaley-ystart*scaley);
+				{
+					GeomToken p1(*(++it),false);
+					PATH(cairo_line_to, (p1.vec.x)*scalex, (p1.vec.y)*scaley);
 					empty = false;
 					break;
+				}
 				case CURVE_QUADRATIC:
+				{
+					GeomToken p1(*(++it),false);
+					GeomToken p2(*(++it),false);
 					PATH(quadraticBezier,
-					   (*it)->p1.x*scalex-xstart*scalex, (*it)->p1.y*scaley-ystart*scaley,
-					   (*it)->p2.x*scalex-xstart*scalex, (*it)->p2.y*scaley-ystart*scaley);
+					   (p1.vec.x)*scalex, (p1.vec.y)*scaley,
+					   (p2.vec.x)*scalex, (p2.vec.y)*scaley);
 					empty = false;
 					break;
+				}
 				case CURVE_CUBIC:
+				{
+					GeomToken p1(*(++it),false);
+					GeomToken p2(*(++it),false);
+					GeomToken p3(*(++it),false);
 					PATH(cairo_curve_to,
-					   (*it)->p1.x*scalex-xstart*scalex, (*it)->p1.y*scaley-ystart*scaley,
-					   (*it)->p2.x*scalex-xstart*scalex, (*it)->p2.y*scaley-ystart*scaley,
-					   (*it)->p3.x*scalex-xstart*scalex, (*it)->p3.y*scaley-ystart*scaley);
+					   (p1.vec.x)*scalex, (p1.vec.y)*scaley,
+					   (p2.vec.x)*scalex, (p2.vec.y)*scaley,
+					   (p3.vec.x)*scalex, (p3.vec.y)*scaley);
 					empty = false;
 					break;
+				}
 				case SET_FILL:
 				{
+					GeomToken p1(*(++it),false);
 					if(skipPaint)
 						break;
-	
 					cairo_fill(cr);
-	
 					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-	
-					const FILLSTYLE& style = (*it)->fillStyle;
-					if (style.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
-						style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
+					const FILLSTYLE* style = p1.fillStyle;
+					if (style->FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
+						style->FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
 						cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-					cairo_pattern_t* pattern = FILLSTYLEToCairo(style, scaleCorrection,scalex,scaley,isMask);
+					cairo_pattern_t* pattern = FILLSTYLEToCairo(*style, scaleCorrection,scalex,scaley,isMask);
 					if(pattern)
 					{
 						cairo_set_source(cr, pattern);
 						// Destroy the first reference.
 						cairo_pattern_destroy(pattern);
 					}
-	
 					break;
 				}
 				case SET_STROKE:
 				{
+					GeomToken p1(*(++it),false);
 					instroke = true;
 					if(skipPaint)
 						break;
-	
 					cairo_stroke(stroke_cr);
-	
-					const LINESTYLE2& style = (*it)->lineStyle;
-	
+					const LINESTYLE2* style = p1.lineStyle;
 					cairo_set_operator(stroke_cr, CAIRO_OPERATOR_OVER);
-					if (style.HasFillFlag)
+					if (style->HasFillFlag)
 					{
-						if (style.FillType.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
-							style.FillType.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
+						if (style->FillType.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
+							style->FillType.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
 							cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-						cairo_pattern_t* pattern = FILLSTYLEToCairo(style.FillType, scaleCorrection,scalex,scaley,isMask);
+						cairo_pattern_t* pattern = FILLSTYLEToCairo(style->FillType, scaleCorrection,scalex,scaley,isMask);
 						if (pattern)
 						{
 							cairo_set_source(stroke_cr, pattern);
 							cairo_pattern_destroy(pattern);
 						}
 					} else {
-						const RGBA& color = style.Color;
+						const RGBA& color = style->Color;
 						float r,g,b,a;
 						r = color.rf();
 						g = color.gf();
@@ -389,50 +404,45 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						a = isMask ? 1.0 : color.af();
 						cairo_set_source_rgba(stroke_cr, r, g, b, a);
 					}
-	
 					// TODO: EndCapStyle
-					if (style.StartCapStyle == 0)
+					if (style->StartCapStyle == 0)
 						cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_ROUND);
-					else if (style.StartCapStyle == 1)
+					else if (style->StartCapStyle == 1)
 						cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_BUTT);
-					else if (style.StartCapStyle == 2)
+					else if (style->StartCapStyle == 2)
 						cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_SQUARE);
-	
-					if (style.JointStyle == 0)
+
+					if (style->JointStyle == 0)
 						cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_ROUND);
-					else if (style.JointStyle == 1)
+					else if (style->JointStyle == 1)
 						cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_BEVEL);
-					else if (style.JointStyle == 2) {
+					else if (style->JointStyle == 2) {
 						cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_MITER);
-						cairo_set_miter_limit(stroke_cr, style.MiterLimitFactor);
+						cairo_set_miter_limit(stroke_cr, style->MiterLimitFactor);
 					}
-	
 					//Width == 0 should be a hairline, but
 					//cairo does not support hairlines.
 					//Line width 1 is not a perfect
 					//substitute, because it is affected
 					//by transformations.
-					if (style.Width == 0)
+					if (style->Width == 0)
 						cairo_set_line_width(stroke_cr, 1);
-					else if (style.Width < 20) // would result in line with < 1 what seems to lead to no rendering at all
+					else if (style->Width < 20) // would result in line with < 1 what seems to lead to no rendering at all
 						cairo_set_line_width(stroke_cr, 5);
 					else 
 					{
-						double linewidth = (double)(style.Width / 20.0 / scaleCorrection);
+						double linewidth = (double)(style->Width / 20.0 / scaleCorrection);
 						//cairo_device_to_user_distance(stroke_cr, &linewidth, &linewidth);
 						cairo_set_line_width(stroke_cr, linewidth);
 					}
 					break;
 				}
-	
 				case CLEAR_FILL:
 				case FILL_KEEP_SOURCE:
 					if(skipPaint)
 						break;
-	
 					cairo_fill(cr);
-	
-					if((*it)->type==CLEAR_FILL)
+					if(p.type==CLEAR_FILL)
 						// Clear source.
 						cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 					break;
@@ -440,35 +450,36 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					instroke = false;
 					if(skipPaint)
 						break;
-	
 					cairo_stroke(stroke_cr);
-	
 					// Clear source.
 					cairo_set_operator(stroke_cr, CAIRO_OPERATOR_DEST);
 					break;
 				case FILL_TRANSFORM_TEXTURE:
 				{
+					GeomToken p1(*(++it),false);
+					GeomToken p2(*(++it),false);
+					GeomToken p3(*(++it),false);
+					GeomToken p4(*(++it),false);
+					GeomToken p5(*(++it),false);
+					GeomToken p6(*(++it),false);
 					if(skipPaint)
 						break;
-	
 					cairo_matrix_t origmat;
 					cairo_pattern_t* pattern;
 					pattern=cairo_get_source(cr);
 					cairo_pattern_get_matrix(pattern, &origmat);
-	
-					cairo_pattern_set_matrix(pattern, &(*it)->textureTransform);
-	
+					MATRIX m(p1.value,p2.value,p3.value,p4.value,p5.value,p6.value);
+					cairo_pattern_set_matrix(pattern, &m);
 					cairo_fill(cr);
-	
 					cairo_pattern_set_matrix(pattern, &origmat);
 					break;
 				}
 				default:
 					assert(false);
 			}
+			it++;
 		}
 	}
-
 	#undef PATH
 
 	if(!skipPaint)
@@ -515,8 +526,10 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr, float scalex, float scaley)
 	cairoPathFromTokens(cr, tokens, scaleFactor, false,scalex, scaley,xstart,ystart,isMask);
 }
 
-uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley)
+uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley, bool *isBufferOwner)
 {
+	if (isBufferOwner)
+		*isBufferOwner=true;
 	if(width==0 || height==0 || !Config::getConfig()->isRenderingEnabled())
 		return nullptr;
 
@@ -587,6 +600,7 @@ uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley)
 		delete[] maskRawData;
 	}
 
+//	cairo_surface_write_to_png(cairoSurface,"/tmp/cairo.png");
 	cairo_destroy(cr);
 	return ret;
 }
@@ -596,7 +610,7 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(nullptr, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 	cairo_t *cr=cairo_create(cairoSurface);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
+	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
 
 	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,1.0,1.0,0,0,true);
 	bool ret=false;
@@ -607,6 +621,11 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 		 */
 		cairo_identity_matrix(cr);
 		ret=cairo_in_fill(cr, x, y);
+		if (!ret) // no hit, so we also check with alternative fill rule
+		{
+			cairo_set_fill_rule(cr, CAIRO_FILL_RULE_WINDING);
+			ret=cairo_in_fill(cr, x, y);
+		}
 	}
 	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);
@@ -745,6 +764,7 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 			return; // silence warning about uninitialised alignment
 	}
 	pango_layout_set_alignment(layout,alignment);
+	pango_layout_set_spacing(layout,PANGO_SCALE*tData.leading);
 
 	//In case wordWrap is true, we already have the right width
 	if(tData.wordWrap == true)
@@ -756,7 +776,7 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 	/* setup font description */
 	desc = pango_font_description_new();
 	pango_font_description_set_family(desc, tData.font.raw_buf());
-	pango_font_description_set_size(desc, PANGO_SCALE*tData.fontSize);
+	pango_font_description_set_absolute_size(desc, PANGO_SCALE*tData.fontSize);
 	pango_layout_set_font_description(layout, desc);
 	pango_font_description_free(desc);
 }
@@ -941,6 +961,7 @@ AsyncDrawJob::~AsyncDrawJob()
 
 void AsyncDrawJob::execute()
 {
+	owner->startDrawJob();
 	SystemState* sys = owner->getSystemState();
 	float scalex;
 	float scaley;
@@ -951,6 +972,7 @@ void AsyncDrawJob::execute()
 		surfaceBytes=drawable->getPixelBuffer(scalex,scaley);
 	if(!threadAborting && surfaceBytes)
 		uploadNeeded=true;
+	owner->endDrawJob();
 }
 
 void AsyncDrawJob::threadAbort()
@@ -971,7 +993,7 @@ void AsyncDrawJob::jobFence()
 		delete this;
 }
 
-void AsyncDrawJob::upload(uint8_t* data, uint32_t w, uint32_t h) const
+void AsyncDrawJob::upload(uint8_t* data, uint32_t w, uint32_t h)
 {
 	assert(surfaceBytes);
 	memcpy(data, surfaceBytes, w*h*4);
@@ -1059,8 +1081,22 @@ BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _
 {
 }
 
-uint8_t *BitmapRenderer::getPixelBuffer(float scalex, float scaley)
+uint8_t *BitmapRenderer::getPixelBuffer(float scalex, float scaley, bool *isBufferOwner)
 {
+	if (isBufferOwner)
+		*isBufferOwner=false;
 	return data->getData();
 }
 
+
+void CharacterRenderer::upload(uint8_t *data, uint32_t w, uint32_t h)
+{
+	memcpy(data, this->data, w*h*4);
+}
+
+const TextureChunk& CharacterRenderer::getTexture()
+{
+	if(!chunk.resizeIfLargeEnough(width, height))
+	chunk=getSys()->getRenderThread()->allocateTexture(width, height,false);
+	return chunk;
+}

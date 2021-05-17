@@ -58,6 +58,7 @@ extern "C"
 // Correct size? 192000?
 // TODO: a real plugins system
 #define MAX_AUDIO_FRAME_SIZE 20
+#define AV_INPUT_BUFFER_PADDING_SIZE 0
 #endif
 
 namespace lightspark
@@ -97,12 +98,12 @@ public:
 		flushed.wait();
 	}
 };
-
+class DefineVideoStreamTag;
 class VideoDecoder: public Decoder, public ITextureUploadable
 {
 public:
-	VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false),inUploading(false){}
-	virtual ~VideoDecoder(){}
+	VideoDecoder();
+	virtual ~VideoDecoder();
 	virtual void switchCodec(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint)=0;
 	virtual bool decodeData(uint8_t* data, uint32_t datalen, uint32_t time)=0;
 	virtual bool discardFrame()=0;
@@ -128,11 +129,14 @@ public:
 	const TextureChunk& getTexture();
 	void uploadFence();
 	void markForDestruction();
-	bool isUploading() { return inUploading; }
+	bool isUploading() { return fenceCount; }
+	void setVideoFrameToDecode(uint32_t frame) { currentframe=frame; }
 protected:
 	TextureChunk videoTexture;
 	uint32_t frameWidth;
 	uint32_t frameHeight;
+	uint32_t lastframe;
+	uint32_t currentframe;
 	/*
 		Derived classes must spinwaits on this to become false before deleting
 	*/
@@ -143,7 +147,6 @@ protected:
 private:
 	bool resizeGLBuffers;
 	bool markedForDeletion;
-	bool inUploading;
 };
 
 class NullVideoDecoder: public VideoDecoder
@@ -161,11 +164,10 @@ public:
 		flushing=true;
 	}
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) const override
+	void upload(uint8_t* data, uint32_t w, uint32_t h) override
 	{
 	}
 };
-
 #ifdef ENABLE_LIBAVCODEC
 #define FFMPEGVIDEODECODERBUFFERSIZE 80
 class FFMpegVideoDecoder: public VideoDecoder
@@ -181,14 +183,22 @@ private:
 		YUVBuffer():time(0){ch[0]=nullptr;ch[1]=nullptr;ch[2]=nullptr;ch[3]=nullptr;}
 		~YUVBuffer()
 		{
+			setDecodedData(nullptr);
+		}
+		void setDecodedData(uint8_t* data)
+		{
 			if(ch[0])
-			{
 				aligned_free(ch[0]);
+			if(ch[1])
 				aligned_free(ch[1]);
+			if(ch[2])
 				aligned_free(ch[2]);
-				if (ch[3])
-					aligned_free(ch[3]);
-			}
+			if(ch[3])
+				aligned_free(ch[3]);
+			ch[0]=data;
+			ch[1]=nullptr;
+			ch[2]=nullptr;
+			ch[3]=nullptr;
 		}
 	};
 	class YUVBufferGenerator
@@ -203,20 +213,19 @@ private:
 	bool ownedContext;
 	uint32_t curBuffer;
 	AVCodecContext* codecContext;
-	BlockingCircularQueue<YUVBuffer,FFMPEGVIDEODECODERBUFFERSIZE> buffers;
+	BlockingCircularQueue<YUVBuffer,FFMPEGVIDEODECODERBUFFERSIZE> streamingbuffers;
+	BlockingCircularQueue<YUVBuffer,2> embeddedbuffers;
 	Mutex mutex;
 	AVFrame* frameIn;
 	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t time);
 	void setSize(uint32_t w, uint32_t h);
 	bool fillDataAndCheckValidity();
 	uint32_t curBufferOffset;
-	// used for embedded video where number of frames is known and the decoded frames are cached
-	uint32_t totalFrameCount;
+	// used for embedded video
 	uint32_t currentcachedframe;
-	YUVBuffer* cachedbuffers;
+	DefineVideoStreamTag* embeddedvideotag;
 public:
-	// if framecount is > 0, the decoded frames will be cached
-	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, double frameRateHint,int framecount=UINT32_MAX);
+	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, double frameRateHint,DefineVideoStreamTag* tag=nullptr);
 	/*
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
@@ -238,14 +247,25 @@ public:
 	void setFlushing() override
 	{
 		flushing=true;
-		if(buffers.isEmpty())
+		if (embeddedvideotag)
 		{
-			status=FLUSHED;
-			flushed.signal();
+			if(embeddedbuffers.isEmpty())
+			{
+				status=FLUSHED;
+				flushed.signal();
+			}
+		}
+		else
+		{
+			if(streamingbuffers.isEmpty())
+			{
+				status=FLUSHED;
+				flushed.signal();
+			}
 		}
 	}
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) const override;
+	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
 };
 #endif
 

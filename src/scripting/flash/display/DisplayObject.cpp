@@ -117,6 +117,7 @@ void DisplayObject::finalize()
 	mask.reset();
 	matrix.reset();
 	loaderInfo.reset();
+	colorTransform.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
 	loadedFrom=getSystemState()->mainClip;
@@ -173,26 +174,26 @@ bool DisplayObject::destruct()
 void DisplayObject::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED);
-	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(c->getSystemState(),_getLoaderInfo),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(c->getSystemState(),_getLoaderInfo,0,Class<LoaderInfo>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_setWidth),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleX","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleX","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleX,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleX","",Class<IFunction>::getFunction(c->getSystemState(),_setScaleX),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleY","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleY","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleY,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleY","",Class<IFunction>::getFunction(c->getSystemState(),_setScaleY),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleZ","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleZ),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleZ","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleZ,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleZ","",Class<IFunction>::getFunction(c->getSystemState(),_setScaleZ),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_getX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_getX,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),_setX),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_getY),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_getY,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("y","",Class<IFunction>::getFunction(c->getSystemState(),_setY),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("z","",Class<IFunction>::getFunction(c->getSystemState(),_getZ),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("z","",Class<IFunction>::getFunction(c->getSystemState(),_getZ,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("z","",Class<IFunction>::getFunction(c->getSystemState(),_setZ),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_setHeight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("visible","",Class<IFunction>::getFunction(c->getSystemState(),_getVisible),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("visible","",Class<IFunction>::getFunction(c->getSystemState(),_getVisible,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("visible","",Class<IFunction>::getFunction(c->getSystemState(),_setVisible),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("rotation","",Class<IFunction>::getFunction(c->getSystemState(),_getRotation),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rotation","",Class<IFunction>::getFunction(c->getSystemState(),_getRotation,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rotation","",Class<IFunction>::getFunction(c->getSystemState(),_setRotation),SETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,name);
 	c->setDeclaredMethodByQName("parent","",Class<IFunction>::getFunction(c->getSystemState(),_getParent),GETTER_METHOD,true);
@@ -218,7 +219,7 @@ void DisplayObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(c->getSystemState(),_setTransform),SETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,accessibilityProperties);
 	REGISTER_GETTER_SETTER(c,cacheAsBitmap);
-	REGISTER_GETTER_SETTER(c,filters);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,filters,Array);
 	REGISTER_GETTER_SETTER(c,scrollRect);
 	REGISTER_GETTER_SETTER(c, rotationX);
 	REGISTER_GETTER_SETTER(c, rotationY);
@@ -512,7 +513,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 			surface.rotation,surface.xOffsetTransformed,surface.yOffsetTransformed,surface.widthTransformed,surface.heightTransformed,surface.xscale, surface.yscale,
 			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
 			surface.redOffset, surface.greenOffset, surface.blueOffset, surface.alphaOffset,
-			surface.isMask, surface.hasMask);
+			surface.isMask, surface.hasMask,0.0,RGB());
 	return false;
 }
 
@@ -1097,7 +1098,7 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 	{
 		parent=p;
 		hasChanged=true;
-		if(onStage)
+		if(onStage && !getSystemState()->isShuttingDown())
 			requestInvalidation(getSystemState());
 	}
 }
@@ -1418,7 +1419,7 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 	}
 }
 
-void DisplayObject::computeMasksAndMatrix(DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, bool &hasMask) const
+void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, bool &hasMask) const
 {
 	const DisplayObject* cur=this;
 	bool gatherMasks = true;
@@ -1548,7 +1549,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	}
 }
 
-multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {
 	multiname* res = EventDispatcher::setVariableByMultiname(name,o,allowConst,alreadyset);
 	if (!needsActionScript3())
@@ -1578,6 +1579,70 @@ multiname* DisplayObject::setVariableByMultiname(const multiname& name, asAtom& 
 		}
 	}
 	return res;
+}
+void DisplayObject::AVM1registerPrototypeListeners()
+{
+	assert(!needsActionScript3());
+	ASObject* pr = this->getprop_prototype();
+	while (pr)
+	{
+		multiname name(nullptr);
+		name.name_type = multiname::NAME_STRING;
+		name.name_s_id = BUILTIN_STRINGS::STRING_ONENTERFRAME;
+		if (pr->hasPropertyByMultiname(name,true,false))
+		{
+			this->incRef();
+			getSystemState()->registerFrameListener(_MR(this));
+			getSystemState()->stage->AVM1AddEventListener(this);
+		}
+		name.name_s_id = BUILTIN_STRINGS::STRING_ONLOAD;
+		if (pr->hasPropertyByMultiname(name,true,false))
+		{
+			this->incRef();
+			getSystemState()->registerFrameListener(_MR(this));
+			getSystemState()->stage->AVM1AddEventListener(this);
+		}
+		if (this->is<InteractiveObject>())
+		{
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEUP;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONPRESS;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEWHEEL;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASE;
+			if (pr->hasPropertyByMultiname(name,true,false))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+			}
+		}
+		pr = pr->getprop_prototype();
+	}
 }
 bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 {

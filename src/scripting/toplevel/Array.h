@@ -155,10 +155,10 @@ public:
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt=NONE) override;
 	
 	int32_t getVariableByMultiname_i(const multiname& name) override;
-	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
 	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst) override;
 	bool deleteVariableByMultiname(const multiname& name) override;
-	void setVariableByMultiname_i(const multiname& name, int32_t value) override;
+	void setVariableByMultiname_i(multiname& name, int32_t value) override;
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
 	tiny_string toString();
 	uint32_t nextNameIndex(uint32_t cur_index) override;

@@ -46,7 +46,7 @@ enum BUILTIN_STRINGS { EMPTY=0, STRING_WILDCARD='*', ANY=BUILTIN_STRINGS_CHAR_MA
 					   ,STRING_AVM1_TARGET,STRING_THIS,STRING_AVM1_ROOT,STRING_AVM1_PARENT,STRING_AVM1_GLOBAL,STRING_SUPER
 					   ,STRING_ONENTERFRAME,STRING_ONMOUSEMOVE,STRING_ONMOUSEDOWN,STRING_ONMOUSEUP,STRING_ONPRESS,STRING_ONRELEASE,STRING_ONRELEASEOUTSIDE,STRING_ONMOUSEWHEEL, STRING_ONLOAD
 					   ,STRING_OBJECT,STRING_UNDEFINED,STRING_BOOLEAN,STRING_NUMBER,STRING_STRING,STRING_FUNCTION_LOWERCASE,STRING_ONROLLOVER,STRING_ONROLLOUT
-					   ,STRING_PROTO
+					   ,STRING_PROTO,STRING_TARGET,STRING_FLASH_EVENTS_IEVENTDISPATCHER,STRING_ADDEVENTLISTENER,STRING_REMOVEEVENTLISTENER,STRING_DISPATCHEVENT,STRING_HASEVENTLISTENER
 					   ,LAST_BUILTIN_STRING };
 enum BUILTIN_NAMESPACES { EMPTY_NS=0, AS3_NS };
 
@@ -878,7 +878,7 @@ public:
 };
 
 template<class T> class Vector2Tmpl;
-typedef Vector2Tmpl<int> Vector2;
+typedef Vector2Tmpl<int32_t> Vector2;
 typedef Vector2Tmpl<double> Vector2f;
 
 class MATRIX: public cairo_matrix_t
@@ -1044,7 +1044,7 @@ public:
 class LINESTYLE2
 {
 public:
-	LINESTYLE2(uint8_t v):HasFillFlag(false),FillType(v),version(v){}
+	LINESTYLE2(uint8_t v):StartCapStyle(0),JointStyle(0),HasFillFlag(false),NoHScaleFlag(false),NoVScaleFlag(false),PixelHintingFlag(0),FillType(v),version(v){}
 	int StartCapStyle;
 	int JointStyle;
 	bool HasFillFlag;
@@ -1187,14 +1187,14 @@ public:
 	UI16_SWF FontID;
 	TEXTRECORD(DefineTextTag* p):parent(p){}
 };
-
+class CharacterRenderer;
 class SHAPE
 {
 	friend std::istream& operator>>(std::istream& stream, SHAPE& v);
 	friend std::istream& operator>>(std::istream& stream, SHAPEWITHSTYLE& v);
 public:
 	SHAPE(uint8_t v=0,bool _forfont=false):fillOffset(0),lineOffset(0),version(v),forfont(_forfont){}
-	virtual ~SHAPE(){}
+	virtual ~SHAPE();
 	UB NumFillBits;
 	UB NumLineBits;
 	unsigned int fillOffset;
@@ -1202,6 +1202,8 @@ public:
 	uint8_t version; /* version of the DefineShape tag, 0 if
 			  * DefineFont or other tag */
 	std::vector<SHAPERECORD> ShapeRecords;
+	std::map<int,CharacterRenderer*> scaledtexturecache;
+	
 	bool forfont;
 };
 

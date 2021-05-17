@@ -19,11 +19,14 @@
 
 #include "scripting/abc.h"
 #include "scripting/flash/text/flashtext.h"
+#include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/ui/keycodes.h"
 #include "scripting/class.h"
 #include "compat.h"
 #include "backends/geometry.h"
 #include "backends/graphics.h"
+#include "backends/rendering.h"
+#include "backends/rendering_context.h"
 #include "scripting/argconv.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 
@@ -117,9 +120,11 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 	asAtomHandler::setBool(ret,true);
 }
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname, DefineEditTextTag *_tag)
-	: InteractiveObject(c), TextData(textData), TokenContainer(this, this->getSystemState()->textTokenMemory), type(ET_READ_ONLY),
+	: InteractiveObject(c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),alwaysShowSelection(false),
+	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),
+	  fillstyleTextColor(0xff),fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),
+	  alwaysShowSelection(false),
 	  condenseWhite(false), displayAsPassword(false),
 	  embedFonts(false), maxChars(_tag ? int32_t(_tag->MaxLength) : 0), mouseWheelEnabled(true),
 	  selectable(_selectable), selectionBeginIndex(0), selectionEndIndex(0),
@@ -150,6 +155,7 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("replaceSelectedText","",Class<IFunction>::getFunction(c->getSystemState(),_replaceSelectedText),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("replaceText","",Class<IFunction>::getFunction(c->getSystemState(),_replaceText),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setSelection","",Class<IFunction>::getFunction(c->getSystemState(),_setSelection),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getCharBoundaries","",Class<IFunction>::getFunction(c->getSystemState(),_getCharBoundaries),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getAntiAliasType),GETTER_METHOD,true);
@@ -164,7 +170,7 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setHeight),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getHtmlText),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setHtmlText),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getLength),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getLength,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getText),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setText),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getTextHeight),GETTER_METHOD,true);
@@ -379,8 +385,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setWidth)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	assert_and_throw(argslen==1);
-	//The width needs to be updated only if autoSize is off or wordWrap is on TODO:check this, adobe's behavior is not clear
-	if(((th->autoSize == AS_NONE)||(th->wordWrap == true))
+	if((th->width != asAtomHandler::toUInt(args[0]))
 			&& (th->width != asAtomHandler::toUInt(args[0]))
 			&&  (asAtomHandler::toInt(args[0]) >= 0))
 	{
@@ -563,6 +568,20 @@ ASFUNCTIONBODY_ATOM(TextField,_setDefaultTextFormat)
 	}
 	if (!asAtomHandler::isNull(tf->size))
 		th->fontSize = asAtomHandler::toUInt(tf->size);
+	AUTO_SIZE newAutoSize = th->autoSize;
+	if(tf->align == "none")
+		newAutoSize = AS_NONE;
+	else if (tf->align == "left")
+		newAutoSize = AS_LEFT;
+	else if (tf->align == "right")
+		newAutoSize = AS_RIGHT;
+	else if (tf->align == "center")
+		newAutoSize = AS_CENTER;
+	if (th->autoSize != newAutoSize)
+	{
+		th->autoSize = newAutoSize;
+		th->setSizeAndPositionFromAutoSize();
+	}
 	LOG(LOG_NOT_IMPLEMENTED,"setDefaultTextFormat does not set all fields of TextFormat");
 }
 
@@ -887,6 +906,43 @@ void TextField::replaceText(unsigned int begin, unsigned int end, const tiny_str
 	textUpdated();
 }
 
+void TextField::getTextBounds(const tiny_string& txt,number_t &xmin,number_t &xmax,number_t &ymin,number_t &ymax)
+{
+	FontTag* embeddedfont = (fontID != UINT32_MAX ? loadedFrom->getEmbeddedFontByID(fontID) : loadedFrom->getEmbeddedFont(font));
+	if (embeddedfont && embeddedfont->hasGlyphs(text))
+	{
+		scaling = 1.0f/1024.0f/20.0f;
+		embeddedfont->getTextBounds(txt,fontSize,xmax,ymax);
+		xmin = autosizeposition;
+		xmax += autosizeposition;
+	}
+	else
+		LOG(LOG_NOT_IMPLEMENTED,"TextFields: computing of textbounds not implemented for non-embedded fonts");
+}
+
+ASFUNCTIONBODY_ATOM(TextField,_getCharBoundaries)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+
+	int32_t charIndex;
+	ARG_UNPACK_ATOM(charIndex);
+
+	Rectangle* rect = Class<Rectangle>::getInstanceSNoArgs(sys);
+	if (charIndex >= 0 && charIndex < (int32_t)th->text.numChars())
+	{
+		number_t xmin=0,xmax=0,ymin=0,ymax=0;
+		if (charIndex > 0)
+			th->getTextBounds(th->text.substr(0,charIndex-1),xmin,xmax,ymin,ymax);
+		number_t xmin2=0,xmax2=0,ymin2=0,ymax2=0;
+		th->getTextBounds(th->text.substr(0,charIndex),xmin2,xmax2,ymin2,ymax2);
+		rect->x = xmin;
+		rect->y = ymin2;
+		rect->width = xmax2-xmax;
+		rect->height = ymax2-ymin2;
+	}
+	ret = asAtomHandler::fromObjectNoPrimitive(rect);
+}
+
 void TextField::afterSetLegacyMatrix()
 {
 	textUpdated();
@@ -975,15 +1031,12 @@ void TextField::updateSizes()
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	if (embeddedfont && embeddedfont->hasGlyphs(text))
 	{
-		tokens.clear();
 		scaling = 1.0f/1024.0f/20.0f;
-		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading,0);
-		number_t x1,x2,y1,y2;
-		if (TokenContainer::boundsRect(x1,x2,y1,y2))
-		{
-			tw = x2-x1;
-			th = y2-y1;
-		}
+		
+		number_t w,h;
+		embeddedfont->getTextBounds(text,fontSize,w,h);
+		tw = w;
+		th = h;
 	}
 	else
 	{
@@ -1209,11 +1262,16 @@ void TextField::textUpdated()
 	selectionEndIndex = 0;
 	updateSizes();
 	setSizeAndPositionFromAutoSize();
-	hasChanged=true;
-	setNeedsTextureRecalculation();
+	FontTag* embeddedfont = (fontID != UINT32_MAX ? this->loadedFrom->getEmbeddedFontByID(fontID) : this->loadedFrom->getEmbeddedFont(font));
+	// TODO implement fast rendering path for not embedded fonts
+	if (!embeddedfont || !embeddedfont->hasGlyphs(text))
+	{
+		hasChanged=true;
+		setNeedsTextureRecalculation();
 
-	if(onStage && isVisible())
-		requestInvalidation(this->getSystemState());
+		if(onStage && isVisible())
+			requestInvalidation(this->getSystemState());
+	}
 }
 
 void TextField::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
@@ -1287,62 +1345,70 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		scaling = 1.0f/1024.0f/20.0f;
 		if (this->border || this->background)
 		{
-			FILLSTYLE fillstyle(0xff);
-			fillstyle.FillStyleType=SOLID_FILL;
-			fillstyle.Color=this->backgroundColor;
-			tokens.filltokens.emplace_back(_MR(new GeomToken(SET_FILL, fillstyle)));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(MOVE, Vector2(bxmin/scaling, bymin/scaling))));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(bxmin/scaling, (bymax-bymin)/scaling))));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling))));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, bymin/scaling))));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(bxmin/scaling, bymin/scaling))));
-			tokens.filltokens.emplace_back(_MR(new GeomToken(CLEAR_FILL)));
+			fillstyleBackgroundColor.FillStyleType=SOLID_FILL;
+			fillstyleBackgroundColor.Color=this->backgroundColor;
+			tokens.filltokens.push_back(GeomToken(SET_FILL).uval);
+			tokens.filltokens.push_back(GeomToken(fillstyleBackgroundColor).uval);
+			tokens.filltokens.push_back(GeomToken(MOVE).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(CLEAR_FILL).uval);
 		}
 		if (this->border)
 		{
-			LINESTYLE2 linestyle(0xff);
-			linestyle.Color=this->borderColor;
-			linestyle.Width=20;
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(SET_STROKE, linestyle)));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(MOVE, Vector2(bxmin/scaling, bymin/scaling))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(bxmin/scaling, (bymax-bymin)/scaling))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2((bxmax-bxmin)/scaling, bymin/scaling))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(bxmin/scaling, bymin/scaling))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(CLEAR_STROKE)));
+			lineStyleBorder.Color=this->borderColor;
+			lineStyleBorder.Width=20;
+			tokens.filltokens.push_back(GeomToken(SET_STROKE).uval);
+			tokens.filltokens.push_back(GeomToken(lineStyleBorder).uval);
+			tokens.filltokens.push_back(GeomToken(MOVE).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens.push_back(GeomToken(CLEAR_STROKE).uval);
 		}
 		if (this->caretblinkstate)
 		{
 			uint32_t tw=0;
-			TokenContainer container(nullptr,nullptr);
 			if (!text.empty())
 			{
 				tiny_string tmptxt = text.substr(0,caretIndex);
-				embeddedfont->fillTextTokens(container.tokens,tmptxt,fontSize,textColor,leading,autosizeposition);
-				number_t x1,x2,y1,y2;
-				if (container.boundsRect(x1,x2,y1,y2))
-				{
-					tw = x2-x1;
-					tw += autosizeposition/scaling;
-				}
-				else
-					tw = autosizeposition/scaling;
+				number_t w,h;
+				embeddedfont->getTextBounds(tmptxt,fontSize,w,h);
+				tw = w;
+				tw += autosizeposition/scaling;
 			}
 			else
 			{
 				tw += autosizeposition;
 				tw /=scaling;
 			}
-			LINESTYLE2 linestyle(0xff);
-			linestyle.Color=RGB(0,0,0);
-			linestyle.Width=40;
+			lineStyleCaret.Color=RGB(0,0,0);
+			lineStyleCaret.Width=40;
 			int ypadding = (bymax-bymin-2)/scaling;
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(SET_STROKE, linestyle)));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(MOVE, Vector2(tw, bymin/scaling+ypadding))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(STRAIGHT, Vector2(tw, (bymax-bymin)/scaling-ypadding))));
-			tokens.stroketokens.emplace_back(_MR(new GeomToken(CLEAR_STROKE)));
+			tokens.filltokens.push_back(GeomToken(SET_STROKE).uval);
+			tokens.filltokens.push_back(GeomToken(lineStyleCaret).uval);
+			tokens.filltokens.push_back(GeomToken(MOVE).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(tw, bymin/scaling+ypadding)).uval);
+			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.push_back(GeomToken(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
+			tokens.filltokens.push_back(GeomToken(CLEAR_STROKE).uval);
 		}
-		embeddedfont->fillTextTokens(tokens,text,fontSize,textColor,leading,autosizeposition);
+		fillstyleTextColor.FillStyleType=SOLID_FILL;
+		fillstyleTextColor.Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
+		embeddedfont->fillTextTokens(tokens,text,fontSize,fillstyleTextColor,leading,autosizeposition);
 		return TokenContainer::invalidate(target, totalMatrix,smoothing);
 	}
 	std::vector<IDrawable::MaskData> masks;
@@ -1394,7 +1460,192 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 {
 	if (text.empty() && !this->border && !this->background)
 		return false;
-	return defaultRender(ctxt);
+	FontTag* embeddedfont = (fontID != UINT32_MAX ? this->loadedFrom->getEmbeddedFontByID(fontID) : this->loadedFrom->getEmbeddedFont(font));
+	if (embeddedfont && embeddedfont->hasGlyphs(text))
+	{
+		// fast rendering path using pre-generated textures for every glyph
+		float rotation = getConcatenatedMatrix().getRotation();
+		float xscale = getConcatenatedMatrix().getScaleX();
+		float yscale = getConcatenatedMatrix().getScaleY();
+		float redMultiplier=1.0;
+		float greenMultiplier=1.0;
+		float blueMultiplier=1.0;
+		float alphaMultiplier=1.0;
+		float redOffset=0.0;
+		float greenOffset=0.0;
+		float blueOffset=0.0;
+		float alphaOffset=0.0;
+		ColorTransform* ct = colorTransform.getPtr();
+		DisplayObjectContainer* p = getParent();
+		while (!ct && p)
+		{
+			ct = p->colorTransform.getPtr();
+			p = p->getParent();
+		}
+		if (ct)
+		{
+			redMultiplier=ct->redMultiplier;
+			greenMultiplier=ct->greenMultiplier;
+			blueMultiplier=ct->blueMultiplier;
+			alphaMultiplier=ct->alphaMultiplier;
+			redOffset=ct->redOffset;
+			greenOffset=ct->greenOffset;
+			blueOffset=ct->blueOffset;
+			alphaOffset=ct->alphaOffset;
+		}
+		AS_BLENDMODE bl = this->blendMode;
+		if (bl == BLENDMODE_NORMAL)
+		{
+			DisplayObject* obj = this->getParent();
+			while (obj && bl == BLENDMODE_NORMAL)
+			{
+				bl = obj->getBlendMode();
+				obj = obj->getParent();
+			}
+		}
+		uint32_t codetableindex;
+		if (this->border || this->background || this->caretblinkstate)
+		{
+			number_t bxmin,bxmax,bymin,bymax;
+			boundsRect(bxmin,bxmax,bymin,bymax);
+			TextureChunk tex=getSystemState()->getRenderThread()->allocateTexture(this->width, this->height, true);
+			int32_t x,y,rx,ry;
+			uint32_t width,height;
+			uint32_t rwidth,rheight;
+			MATRIX totalMatrix;
+			std::vector<IDrawable::MaskData> masks;
+			float scalex;
+			float scaley;
+			int offx,offy;
+			getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
+		
+			bool isMask;
+			bool hasMask;
+			totalMatrix=getConcatenatedMatrix();
+			computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,hasMask);
+			computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
+			MATRIX totalMatrix2;
+			std::vector<IDrawable::MaskData> masks2;
+			totalMatrix2=getConcatenatedMatrix();
+			computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,hasMask);
+			computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
+			ctxt.setProperties(bl);
+			ctxt.lsglLoadIdentity();
+			if (this->border)
+			{
+				ctxt.renderTextured(tex, x*scalex, y*scaley,
+						tex.width*scalex, tex.height*scaley,
+						getConcatenatedAlpha(), RenderContext::RGB_MODE,
+						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,xscale, yscale,
+						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
+						redOffset, greenOffset, blueOffset, alphaOffset,
+						isMask, hasMask,3.0, this->borderColor);
+				ctxt.renderTextured(tex, (x+1)*scalex, (y+1)*scaley,
+						(tex.width-2)*scalex, (tex.height-2)*scaley,
+						getConcatenatedAlpha(), RenderContext::RGB_MODE,
+						rotation,(rx+1)*scalex,(ry+1)*scaley,(rwidth-2)*scalex,(rheight-2)*scaley,xscale, yscale,
+						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
+						redOffset, greenOffset, blueOffset, alphaOffset,
+						isMask, hasMask,3.0, this->backgroundColor);
+			}
+			else
+			{
+				ctxt.renderTextured(tex, x*scalex, y*scaley,
+						tex.width*scalex, tex.height*scaley,
+						getConcatenatedAlpha(), RenderContext::RGB_MODE,
+						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,xscale, yscale,
+						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
+						redOffset, greenOffset, blueOffset, alphaOffset,
+						isMask, hasMask,3.0, this->backgroundColor);
+			}
+			
+			if (this->caretblinkstate)
+			{
+				int ypadding = (bymax-bymin-4);
+				uint32_t tw=0;
+				if (!text.empty())
+				{
+					tiny_string tmptxt = text.substr(0,caretIndex);
+					number_t w,h;
+					embeddedfont->getTextBounds(tmptxt,fontSize,w,h);
+					tw = w;
+				}
+				MATRIX totalMatrix;
+				std::vector<IDrawable::MaskData> masks;
+				totalMatrix=getConcatenatedMatrix();
+				computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,hasMask);
+				computeBoundsForTransformedRect(tw,tw+2,bymin+ypadding,bymax-ypadding,x,y,width,height,totalMatrix);
+				MATRIX totalMatrix2;
+				std::vector<IDrawable::MaskData> masks2;
+				totalMatrix2=getConcatenatedMatrix();
+				computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,hasMask);
+				computeBoundsForTransformedRect(tw,tw+2,bymin+ypadding,bymax-ypadding,rx,ry,rwidth,rheight,totalMatrix2);
+				ctxt.renderTextured(tex, x*scalex, y*scaley,
+						width*scalex, height*scaley,
+						getConcatenatedAlpha(), RenderContext::RGB_MODE,
+						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,xscale, yscale,
+						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
+						redOffset, greenOffset, blueOffset, alphaOffset,
+						isMask, hasMask,3.0, RGB(0x00,0x00,0x00));
+			}
+		}
+		number_t xpos=autosizeposition;
+		number_t ypos=-this->leading;
+		for (auto it = text.begin(); it != text.end(); it++)
+		{
+			if (*it == 13 || *it == 10)
+			{
+				xpos = 0;
+				ypos += this->leading;
+				continue;
+			}
+			const TextureChunk* tex = embeddedfont->getCharTexture(it,this->fontSize,codetableindex);
+			if (tex)
+			{
+				int32_t x,y,rx,ry;
+				uint32_t width,height;
+				uint32_t rwidth,rheight;
+				number_t bxmin=xpos;
+				number_t bxmax=xpos+tex->width;
+				number_t bymin=ypos;
+				number_t bymax=ypos+tex->height;
+				//Compute the matrix and the masks that are relevant
+				MATRIX totalMatrix;
+				std::vector<IDrawable::MaskData> masks;
+				float scalex;
+				float scaley;
+				int offx,offy;
+				getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
+			
+				bool isMask;
+				bool hasMask;
+				totalMatrix=getConcatenatedMatrix();
+				computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,hasMask);
+				computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
+			
+				width = bxmax-bxmin;
+				height = bymax-bymin;
+				MATRIX totalMatrix2;
+				std::vector<IDrawable::MaskData> masks2;
+				totalMatrix2=getConcatenatedMatrix();
+				computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,hasMask);
+				computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
+				ctxt.setProperties(bl);
+				ctxt.lsglLoadIdentity();
+				ctxt.renderTextured(*tex, x*scalex, y*scaley,
+						tex->width*scalex, tex->height*scaley,
+						getConcatenatedAlpha(), RenderContext::RGB_MODE,
+						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,xscale, yscale,
+						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
+						redOffset, greenOffset, blueOffset, alphaOffset,
+						isMask, hasMask,2.0, this->textColor);
+			}
+			xpos += embeddedfont->getRenderCharAdvance(codetableindex)*fontSize;
+		}
+		return false;
+	}
+	else
+		return defaultRender(ctxt);
 }
 
 void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
@@ -1438,7 +1689,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 		index =v.find("&nbsp;",index);
 	}
 	textdata->text += v;
-	if (name == "br")
+	if (name == "br" || name == "sbr") // adobe seems to interpret the unknown tag <sbr /> as <br> ?
 	{
 		if (textdata->multiline)
 			textdata->text += "\n";
@@ -1448,8 +1699,10 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	{
 		if (textdata->multiline)
 		{
-			if (!textdata->text.empty() && 
-			    !textdata->text.endsWith("\n"))
+			if (!textdata->text.empty() &&
+				!textdata->text.endsWith("\n"))
+				textdata->text += "\n";
+			if (node.children().begin() ==node.children().end()) // empty paragraph
 				textdata->text += "\n";
 		}
 		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
@@ -1493,9 +1746,11 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			attrname = attrname.lowercase();
 			if (attrname == "face")
 			{
-				textdata->font = it->value();
-				textdata->fontID = UINT32_MAX;
-				
+				if (textdata->font != it->value())
+				{
+					textdata->font = it->value();
+					textdata->fontID = UINT32_MAX;
+				}
 			}
 			else if (attrname == "size")
 			{

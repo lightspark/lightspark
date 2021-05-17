@@ -24,6 +24,7 @@
 #include "scripting/avm1/avm1net.h"
 #include "scripting/avm1/avm1text.h"
 #include "scripting/avm1/avm1xml.h"
+#include "scripting/flash/net/XMLSocket.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/ui/ContextMenuItem.h"
 #include "scripting/abc.h"
@@ -33,7 +34,8 @@ void ABCVm::registerClassesAVM1()
 {
 	if (m_sys->avm1global)
 		return;
-	Global* builtinavm1 = Class<Global>::getInstanceS(m_sys,(ABCContext*)nullptr, 0);
+	Global* builtinavm1 = Class<Global>::getInstanceS(m_sys,(ABCContext*)nullptr, 0,true);
+	builtinavm1->setRefConstant();
 
 	registerClassesToplevel(builtinavm1);
 
@@ -45,6 +47,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("ASSetPropFlags","",_MR(Class<IFunction>::getFunction(m_sys,AVM1_ASSetPropFlags)));
 	builtinavm1->registerBuiltin("setInterval","",_MR(Class<IFunction>::getFunction(m_sys,setInterval)));
 	builtinavm1->registerBuiltin("clearInterval","",_MR(Class<IFunction>::getFunction(m_sys,clearInterval)));
+	builtinavm1->registerBuiltin("setTimeout","",_MR(Class<IFunction>::getFunction(m_sys,setTimeout)));
 
 	builtinavm1->registerBuiltin("object","",Class<ASObject>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Button","",Class<SimpleButton>::getRef(m_sys));
@@ -62,6 +65,8 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("TextFormat","",Class<TextFormat>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XML","",Class<AVM1XMLDocument>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XMLNode","",Class<XMLNode>::getRef(m_sys));
+	builtinavm1->registerBuiltin("XMLSocket","",Class<XMLSocket>::getRef(m_sys));
+
 	builtinavm1->registerBuiltin("NetConnection","",Class<AVM1NetConnection>::getRef(m_sys));
 	builtinavm1->registerBuiltin("NetStream","",Class<NetStream>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Video","",Class<AVM1Video>::getRef(m_sys));
@@ -85,7 +90,7 @@ void ABCVm::registerClassesAVM1()
 		ASObject* flashdisplaypackage = Class<ASObject>::getInstanceS(m_sys);
 		flashpackage->setVariableByQName("display",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashdisplaypackage,CONSTANT_TRAIT);
 
-		flashdisplaypackage->setVariableByQName("BitmapData","flash.display",Class<BitmapData>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashdisplaypackage->setVariableByQName("BitmapData","flash.display",Class<AVM1BitmapData>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 
 		ASObject* flashfilterspackage = Class<ASObject>::getInstanceS(m_sys);
 		flashpackage->setVariableByQName("filters",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashfilterspackage,CONSTANT_TRAIT);

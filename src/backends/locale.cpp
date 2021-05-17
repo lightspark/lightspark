@@ -27,6 +27,10 @@ using namespace std;
 
 LocaleManager::LocaleManager()
 {
+	init();
+}
+void LocaleManager::init()
+{
 	locales["af-ZA"] = new LocaleItem("af-ZA", "af", "ZA", "Latn", "", false);
 	locales["am-ET"] = new LocaleItem("am-ET", "am", "ET", "Ethi", "", false);
 	locales["ar-AE"] = new LocaleItem("ar-AE", "ar", "AE", "Arab", "", true);

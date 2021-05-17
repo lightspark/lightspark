@@ -55,7 +55,10 @@ FILLSTYLE GraphicsSolidFill::toFillStyle()
 	return Graphics::createSolidFill(color, static_cast<uint8_t>(255*alpha));
 }
 
-void GraphicsSolidFill::appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>& tokens)
+void GraphicsSolidFill::appendToTokens(std::vector<uint64_t>& tokens, Graphics* graphics)
 {
-	tokens.emplace_back(_MR(new GeomToken(SET_FILL, toFillStyle())));
+	FILLSTYLE style = toFillStyle();
+	FILLSTYLE& styleref = graphics->addFillStyle(style);
+	tokens.emplace_back(GeomToken(SET_FILL).uval);
+	tokens.emplace_back(GeomToken(styleref).uval);
 }

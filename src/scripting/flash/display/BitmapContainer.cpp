@@ -32,6 +32,18 @@ BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
 {
 }
 
+BitmapContainer::~BitmapContainer()
+{
+        if (bitmaptexture.isValid())
+        {
+                RenderThread* rt = getSys()->getRenderThread();
+                if (rt)
+                {
+                        getSys()->getRenderThread()->releaseTexture(bitmaptexture);
+                }
+        }
+}
+
 bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMAT format, bool frompng)
 {
 	if(!rgb)
@@ -122,7 +134,7 @@ void BitmapContainer::clear()
 	bitmaptexture.makeEmpty();
 }
 
-void BitmapContainer::upload(uint8_t *data, uint32_t w, uint32_t h) const
+void BitmapContainer::upload(uint8_t *data, uint32_t w, uint32_t h)
 {
 	memcpy(data, getData(), w*h*4);
 }

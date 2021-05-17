@@ -37,7 +37,10 @@ class Vector;
 class Graphics: public ASObject
 {
 private:
-	TokenContainer *const owner;
+	Mutex drawMutex;
+	TokenContainer *owner;
+	std::list<FILLSTYLE> fillStyles;
+	std::list<LINESTYLE2> lineStyles;
 	void checkAndSetScaling();
 	static void solveVertexMapping(double x1, double y1,
 				       double x2, double y2,
@@ -50,14 +53,19 @@ private:
 	bool hasChanged;
 	void dorender(bool closepath);
 public:
-	Graphics(Class_base* c):ASObject(c),owner(NULL),movex(0),movey(0),inFilling(false),hasChanged(false)
+	Graphics(Class_base* c):ASObject(c),owner(nullptr),movex(0),movey(0),inFilling(false),hasChanged(false)
 	{
 //		throw RunTimeException("Cannot instantiate a Graphics object");
 	}
 	Graphics(Class_base* c, TokenContainer* _o)
 		: ASObject(c),owner(_o),movex(0),movey(0),inFilling(false),hasChanged(false) {}
+	void startDrawJob();
+	void endDrawJob();
+	bool destruct() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
+	FILLSTYLE& addFillStyle(FILLSTYLE& fs) { fillStyles.push_back(fs); return fillStyles.back();}
+	LINESTYLE2& addLineStyle(LINESTYLE2& ls) { lineStyles.push_back(ls); return lineStyles.back();}
 	static FILLSTYLE createGradientFill(const tiny_string& type,
 					    _NR<Array> colors,
 					    _NR<Array> alphas,
@@ -74,12 +82,12 @@ public:
 	static void pathToTokens(_NR<Vector> commands,
 				 _NR<Vector> data,
 				 tiny_string windings,
-				 std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>> > &tokens);
+				 std::vector<uint64_t> &tokens);
 	static void drawTrianglesToTokens(_NR<Vector> vertices,
 					  _NR<Vector> indices,
 					  _NR<Vector> uvtData,
 					  tiny_string culling,
-					  std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>> &tokens);
+					  std::vector<uint64_t> &tokens);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(lineBitmapStyle);
 	ASFUNCTION_ATOM(lineGradientStyle);

@@ -84,25 +84,25 @@ void LoaderInfo::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("loaderURL","",Class<IFunction>::getFunction(c->getSystemState(),_getLoaderURL),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("loader","",Class<IFunction>::getFunction(c->getSystemState(),_getLoader),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(c->getSystemState(),_getContent),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_getURL),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesLoaded),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesTotal),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bytes","",Class<IFunction>::getFunction(c->getSystemState(),_getBytes),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("applicationDomain","",Class<IFunction>::getFunction(c->getSystemState(),_getApplicationDomain),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("sharedEvents","",Class<IFunction>::getFunction(c->getSystemState(),_getSharedEvents),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight),GETTER_METHOD,true);
-	REGISTER_GETTER(c,parameters);
-	REGISTER_GETTER(c,actionScriptVersion);
-	REGISTER_GETTER(c,swfVersion);
-	REGISTER_GETTER(c,childAllowsParent);
-	REGISTER_GETTER(c,contentType);
-	REGISTER_GETTER(c,uncaughtErrorEvents);
-	REGISTER_GETTER(c,parentAllowsChild);
-	REGISTER_GETTER(c,frameRate);
+	c->setDeclaredMethodByQName("loaderURL","",Class<IFunction>::getFunction(c->getSystemState(),_getLoaderURL,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loader","",Class<IFunction>::getFunction(c->getSystemState(),_getLoader,0,Class<Loader>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(c->getSystemState(),_getContent,0,Class<DisplayObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_getURL,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesLoaded,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesTotal,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytes","",Class<IFunction>::getFunction(c->getSystemState(),_getBytes,0,Class<ByteArray>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("applicationDomain","",Class<IFunction>::getFunction(c->getSystemState(),_getApplicationDomain,0,Class<ApplicationDomain>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("sharedEvents","",Class<IFunction>::getFunction(c->getSystemState(),_getSharedEvents,0,Class<EventDispatcher>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getWidth,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getHeight,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	REGISTER_GETTER_RESULTTYPE(c,parameters,ASObject);
+	REGISTER_GETTER_RESULTTYPE(c,actionScriptVersion,UInteger);
+	REGISTER_GETTER_RESULTTYPE(c,swfVersion,UInteger);
+	REGISTER_GETTER_RESULTTYPE(c,childAllowsParent,Boolean);
+	REGISTER_GETTER_RESULTTYPE(c,contentType,ASString);
+	REGISTER_GETTER_RESULTTYPE(c,uncaughtErrorEvents,UncaughtErrorEvents);
+	REGISTER_GETTER_RESULTTYPE(c,parentAllowsChild,Boolean);
+	REGISTER_GETTER_RESULTTYPE(c,frameRate,Number);
 }
 
 ASFUNCTIONBODY_GETTER(LoaderInfo,parameters);
@@ -183,7 +183,6 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 			{
 				this->incRef();
 				progressEvent = _MR(Class<ProgressEvent>::getInstanceS(getSystemState(),bytesLoaded,bytesTotal));
-				progressEvent->incRef();
 				getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
 			}
 			else
@@ -463,6 +462,13 @@ void LoaderThread::execute()
 		loaderInfo->setBytesLoaded(bytes->getLength());
 
 		sbuf = new bytes_buf(bytes->bytes,bytes->getLength());
+
+// extract embedded swf to separate file
+//		char* name_used=nullptr;
+//		int fd = g_file_open_tmp("lightsparkXXXXXX.swf",&name_used,nullptr);
+//		write(fd,bytes->bytes,bytes->getLength());
+//		close(fd);
+//		g_free(name_used);
 	}
 
 	istream s(sbuf);
@@ -596,7 +602,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	else
 	{
 		//Different domain
-		_NR<ApplicationDomain> parentDomain =  this->getSystemState()->systemDomain;
+		_NR<ApplicationDomain> parentDomain = _MR(this->getSystemState()->systemDomain);
 		this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getSystemState(),parentDomain));
 		this->contentLoaderInfo->securityDomain = _MR(Class<SecurityDomain>::getInstanceS(this->getSystemState()));
 	}
@@ -799,7 +805,7 @@ void Loader::setContent(_R<DisplayObject> o)
 		o->loaderInfo->setComplete();
 }
 
-Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this, this->getSystemState()->spriteTokenMemory),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),dragged(false),buttonMode(false),useHandCursor(false)
+Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),dragged(false),buttonMode(false),useHandCursor(false)
 {
 	subtype=SUBTYPE_SPRITE;
 }
@@ -816,6 +822,28 @@ bool Sprite::destruct()
 	streamingsound=false;
 	tokens.clear();
 	return DisplayObjectContainer::destruct();
+}
+
+void Sprite::finalize()
+{
+	resetToStart();
+	graphics.reset();
+	hitArea.reset();
+	hitTarget.reset();
+	tokens.clear();
+	DisplayObjectContainer::finalize();
+}
+
+void Sprite::startDrawJob()
+{
+	if (graphics)
+		graphics->startDrawJob();
+}
+
+void Sprite::endDrawJob()
+{
+	if (graphics)
+		graphics->endDrawJob();
 }
 
 void Sprite::sinit(Class_base* c)
@@ -1077,7 +1105,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 		}
 	}
 	// only check interactive objects
-	if(ret && interactiveObjectsOnly && !ret->is<InteractiveObject>())
+	if(ret && interactiveObjectsOnly && !ret->is<InteractiveObject>() && mouseChildren)
 		ret.reset();
 	
 	/* When mouseChildren is false, we should get all events of our children */
@@ -1415,7 +1443,6 @@ bool MovieClip::destruct()
 	totalFrames_unreliable = 1;
 	inExecuteFramescript=false;
 
-	frames.clear();
 	scenes.clear();
 	setFramesLoaded(0);
 	frames.emplace_back(Frame());
@@ -1425,6 +1452,21 @@ bool MovieClip::destruct()
 
 	enabled = true;
 	return Sprite::destruct();
+}
+
+void MovieClip::finalize()
+{
+	frames.clear();
+	auto it = frameScripts.begin();
+	while (it != frameScripts.end())
+	{
+		ASATOM_DECREF(it->second);
+		it++;
+	}
+	frameScripts.clear();
+	scenes.clear();
+	state.reset();
+	Sprite::finalize();
 }
 
 /* Returns a Scene_data pointer for a scene called sceneName, or for
@@ -1650,8 +1692,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
-	th->state.next_FP = th->state.FP+1;
+	th->state.next_FP = th->state.FP == th->getFramesLoaded()-1 ? th->state.FP : th->state.FP+1;
 	th->state.explicit_FP=true;
+	th->state.stop_FP=true;
 	if (th->inExecuteFramescript)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 	if (!th->isOnStage())
@@ -1670,8 +1713,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
-	th->state.next_FP = th->state.FP-1;
+	th->state.next_FP = th->state.FP == 0 ? th->state.FP : th->state.FP-1;
 	th->state.explicit_FP=true;
+	th->state.stop_FP=true;
 	if (th->inExecuteFramescript)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 	if (!th->isOnStage())
@@ -1876,7 +1920,6 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 				// mouseUp/mouseDown/mouseMove events are sent to all MovieClips on the Stage
 				if( (e->type == "mouseDown" && it->EventFlags.ClipEventMouseDown)
 					|| (e->type == "mouseUp" && it->EventFlags.ClipEventMouseUp)
-					|| (e->type == "mouseDown" && it->EventFlags.ClipEventPress)
 					|| (e->type == "mouseMove" && it->EventFlags.ClipEventMouseMove)
 					)
 				{
@@ -1884,7 +1927,8 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 				}
 				if( dispobj &&
-					((e->type == "click" && it->EventFlags.ClipEventRelease)
+					((e->type == "mouseUp" && it->EventFlags.ClipEventRelease)
+					|| (e->type == "mouseDown" && it->EventFlags.ClipEventPress)
 					|| (e->type == "rollOver" && it->EventFlags.ClipEventRollOver)
 					|| (e->type == "rollOut" && it->EventFlags.ClipEventRollOut)
 					|| (e->type == "releaseOutside" && it->EventFlags.ClipEventReleaseOutside)
@@ -2259,7 +2303,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
 		throw RunTimeException("AVM1: attachBitmap first parameter is no BitmapData");
 	}
 
-	BitmapData* data = asAtomHandler::as<BitmapData>(args[0]);
+	AVM1BitmapData* data = asAtomHandler::as<AVM1BitmapData>(args[0]);
 	data->incRef();
 	Bitmap* toAdd = Class<AVM1Bitmap>::getInstanceS(sys,_MR(data));
 	if (argslen > 2)
@@ -2444,10 +2488,10 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
 	}
 
 	obj->incRef();
+	obj->afterLegacyDelete(this);
 	//this also removes it from depthToLegacyChild
 	bool ret = _removeChild(obj);
 	assert_and_throw(ret);
-
 }
 
 void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* obj)
@@ -2580,6 +2624,16 @@ bool DisplayObjectContainer::destruct()
 	return InteractiveObject::destruct();
 }
 
+void DisplayObjectContainer::finalize()
+{
+	dynamicDisplayList.clear();
+	legacyChildrenMarkedForDeletion.clear();
+	mapDepthToLegacyChild.clear();
+	mapLegacyChildToDepth.clear();
+	namedRemovedLegacyChildren.clear();
+	InteractiveObject::finalize();
+}
+
 void DisplayObjectContainer::resetLegacyState()
 {
 	auto i = mapDepthToLegacyChild.begin();
@@ -2602,7 +2656,7 @@ InteractiveObject::~InteractiveObject()
 ASFUNCTIONBODY_ATOM(InteractiveObject,_constructor)
 {
 	InteractiveObject* th=asAtomHandler::as<InteractiveObject>(obj);
-	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
+	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
 	//Object registered very early are not supported this way (Stage for example)
 	if(sys->getInputThread())
 		sys->getInputThread()->addListener(th);
@@ -2645,6 +2699,12 @@ bool InteractiveObject::destruct()
 	tabEnabled = false;
 	tabIndex = -1;
 	return DisplayObject::destruct();
+}
+void InteractiveObject::finalize()
+{
+	contextMenu.reset();
+	accessibilityImplementation.reset();
+	DisplayObject::finalize();
 }
 
 void InteractiveObject::buildTraits(ASObject* o)
@@ -3260,12 +3320,12 @@ _NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t 
 	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? last : _NR<DisplayObject>(this),x-xmin,y-ymin, type);
 }
 
-Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory),graphics(NullRef),fromTag(nullptr)
+Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this),graphics(NullRef),fromTag(nullptr)
 {
 }
 
 Shape::Shape(Class_base* c, float scaling, DefineShapeTag* tag):
-	DisplayObject(c),TokenContainer(this, this->getSystemState()->shapeTokenMemory, *tag->tokens, scaling),graphics(NullRef),fromTag(tag)
+	DisplayObject(c),TokenContainer(this, *tag->tokens, scaling),graphics(NullRef),fromTag(tag)
 {
 }
 
@@ -3291,6 +3351,24 @@ bool Shape::destruct()
 	graphics.reset();
 	fromTag=nullptr;
 	return 	DisplayObject::destruct();
+}
+
+void Shape::finalize()
+{
+	graphics.reset();
+	DisplayObject::finalize();
+}
+
+void Shape::startDrawJob()
+{
+	if (graphics)
+		graphics->startDrawJob();
+}
+
+void Shape::endDrawJob()
+{
+	if (graphics)
+		graphics->endDrawJob();
 }
 
 void Shape::sinit(Class_base* c)
@@ -3323,14 +3401,16 @@ ASFUNCTIONBODY_ATOM(Shape,_getGraphics)
 	ret = asAtomHandler::fromObject(th->graphics.getPtr());
 }
 
-MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this, this->getSystemState()->morphShapeTokenMemory),morphshapetag(nullptr)
+MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this),morphshapetag(nullptr)
 {
 	scaling = 1.0f/20.0f;
 }
 
-MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this, this->getSystemState()->morphShapeTokenMemory),morphshapetag(_morphshapetag)
+MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this),morphshapetag(_morphshapetag)
 {
 	scaling = 1.0f/20.0f;
+	if (this->morphshapetag)
+		this->morphshapetag->getTokensForRatio(tokens,0);
 }
 
 void MorphShape::sinit(Class_base* c)
@@ -3347,11 +3427,17 @@ void MorphShape::checkRatio(uint32_t ratio, bool inskipping)
 {
 	if (inskipping)
 		return;
-	TokenContainer::FromDefineMorphShapeTagToShapeVector(getSystemState(),this->morphshapetag,tokens,ratio);
+	if (this->morphshapetag)
+		this->morphshapetag->getTokensForRatio(tokens,ratio);
 	this->hasChanged = true;
 	this->setNeedsTextureRecalculation(ratio != 0 && ratio != 65535);
 	if (isOnStage())
 		requestInvalidation(getSystemState());
+}
+
+uint32_t MorphShape::getTagID() const
+{
+	return morphshapetag ? morphshapetag->getId():UINT32_MAX;
 }
 
 
@@ -3708,6 +3794,18 @@ void Stage::executeFrameScript()
 	}
 	// only execute first frame of hidden objects (?)
 	hiddenobjects.clear();
+}
+
+void Stage::finalize()
+{
+	focus.reset();
+	root.reset();
+	hiddenobjects.clear();
+	avm1KeyboardListeners.clear();
+	avm1MouseListeners.clear();
+	avm1EventListeners.clear();
+	avm1ResizeListeners.clear();
+	DisplayObjectContainer::finalize();
 }
 
 void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
@@ -4582,7 +4680,7 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been
 	 * tested with the official flash player. It cannot work otherwise, as
-	 * hitTestState->parent == NULL. (This has also been verified)
+	 * hitTestState->parent == nullptr. (This has also been verified)
 	 */
 	if(ret)
 	{
@@ -4725,7 +4823,7 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 	/* This _must_ not call the DisplayObjectContainer
 	 * see note at the class declaration.
 	 */
-	InteractiveObject::_constructor(ret,sys,obj,NULL,0);
+	InteractiveObject::_constructor(ret,sys,obj,nullptr,0);
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
 	_NR<DisplayObject> upState;
 	_NR<DisplayObject> overState;
@@ -5018,7 +5116,7 @@ void DisplayObjectContainer::executeFrameScript()
 		(*it)->executeFrameScript();
 }
 
-multiname *DisplayObjectContainer::setVariableByMultiname(const multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname *DisplayObjectContainer::setVariableByMultiname(multiname& name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {
 // TODO I disable this for now as gamesmenu from homestarrunner doesn't work with it (I don't know which swf file required this...)
 //	if (asAtomHandler::is<DisplayObject>(o))
@@ -5122,6 +5220,8 @@ void MovieClip::declareFrame()
 				++iter;
 			}
 		}
+		if (newFrame)
+			state.frameadvanced=true;
 	}
 	// remove all legacy objects that have not been handled in the PlaceObject/RemoveObject tags
 	LegacyChildEraseDeletionMarked();
@@ -5323,6 +5423,7 @@ void MovieClip::afterConstruction()
 			asAtom ret = asAtomHandler::invalidAtom;
 			asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 			constr->call(&ret,&obj,nullptr,0);
+			AVM1registerPrototypeListeners();
 		}
 	}
 }

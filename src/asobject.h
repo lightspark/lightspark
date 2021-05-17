@@ -290,7 +290,7 @@ struct asfreelist
 
 extern SystemState* getSys();
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
-enum GET_VARIABLE_RESULT {GETVAR_NORMAL=0x00, GETVAR_CACHEABLE=0x01, GETVAR_ISGETTER=0x02, GETVAR_ISCONSTANT=0x04};
+enum GET_VARIABLE_RESULT {GETVAR_NORMAL=0x00, GETVAR_CACHEABLE=0x01, GETVAR_ISGETTER=0x02, GETVAR_ISCONSTANT=0x04, GETVAR_ISNEWOBJECT=0x08};
 enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, FROM_GETLEX=0x02, DONT_CALL_GETTER=0x04, NO_INCREF=0x08, DONT_CHECK_CLASS=0x10};
 
 #ifdef LIGHTSPARK_64
@@ -503,6 +503,7 @@ public:
 	static FORCE_INLINE bool checkArgumentConversion(const asAtom& a,const asAtom& obj);
 	static asAtom asTypelate(asAtom& a, asAtom& b);
 	static bool isTypelate(asAtom& a,ASObject* type);
+	static bool isTypelate(asAtom& a,asAtom& t);
 	static FORCE_INLINE number_t toNumber(const asAtom& a);
 	static FORCE_INLINE number_t AVM1toNumber(asAtom& a,bool usesActionScript3);
 	static FORCE_INLINE bool AVM1toBool(asAtom& a);
@@ -762,10 +763,7 @@ public:
 		assert_and_throw(n > 0 && n <= slotcount);
 		return slots_vars[n-1]->kind;
 	}
-	FORCE_INLINE Class_base* getSlotType(unsigned int n)
-	{
-		return (Class_base*)slots_vars[n-1]->type;
-	}
+	Class_base* getSlotType(unsigned int n);
 	
 	uint32_t findInstanceSlotByMultiname(multiname* name, SystemState *sys);
 	FORCE_INLINE bool setSlot(unsigned int n, asAtom &o, ASObject* obj);
@@ -996,13 +994,15 @@ public:
 			o->decRef();
 	}
 	/*
-	   The finalize function is used only for classes that don't have the reusable flag set
-	   if a class is made reusable, it should implement destruct() instead
+	   The finalize function is used only for classes that don't have the reusable flag set and on destruction at application exit
 	   It should decRef all referenced objects.
 	   It has to reset all data to their default state.
 	   The finalize method must be callable multiple time with the same effects (no double frees).
 	*/
 	inline virtual void finalize() {}
+	// use this to mark an ASObject as constant, instead of RefCountable->setConstant()
+	// because otherwise it will not be properly deleted on application exit.
+	void setRefConstant();
 
 	virtual GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE)
 	{
@@ -1012,6 +1012,8 @@ public:
 	{
 		return getVariableByIntegerIntern(ret,index,opt);
 	}
+	// AVM1 needs to check the "protoype" variable in addition to the normal behaviour
+	GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code
@@ -1040,14 +1042,14 @@ public:
 	 * thrown.
 	 */
 	void executeASMethod(asAtom &ret, const tiny_string& methodName, std::list<tiny_string> namespaces, asAtom *args, uint32_t num_args);
-	virtual void setVariableByMultiname_i(const multiname& name, int32_t value);
+	virtual void setVariableByMultiname_i(multiname &name, int32_t value);
 	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
 	/*
 	 * If alreadyset is not null, it has to be initialized to false by the caller.
 	 * It will be set to true if the old and new value are the same.
 	 * In that case the old value will not be decReffed.
-	 */ 
-	virtual multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr)
+	 */
+	virtual multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr)
 	{
 		return setVariableByMultiname_intern(name,o,allowConst,classdef,alreadyset);
 	}
@@ -1062,7 +1064,7 @@ public:
 	 * If no property is found, an instance variable is created.
 	 * Setting CONSTANT_TRAIT is only allowed if allowConst is true
 	 */
-	multiname* setVariableByMultiname_intern(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls,bool *alreadyset);
+	multiname* setVariableByMultiname_intern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset);
 	void setVariableByInteger_intern(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst)
 	{
 		multiname m(nullptr);

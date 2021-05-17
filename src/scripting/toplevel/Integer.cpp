@@ -494,11 +494,12 @@ bool Integer::fromStringFlashCompatible(const char* cur, number_t& ret, int radi
 	return parseIntECMA262(ret, s,radix,negate,strict);
 }
 
-int32_t Integer::stringToASInteger(const char* cur, int radix,bool strict)
+int32_t Integer::stringToASInteger(const char* cur, int radix, bool strict, bool* isValid)
 {
 	number_t value;
 	bool valid=Integer::fromStringFlashCompatible(cur, value, radix,strict);
-
+	if (isValid)
+		*isValid=valid;
 	if (!valid)
 		return 0;
 	else

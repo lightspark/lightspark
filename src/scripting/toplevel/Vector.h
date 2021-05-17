@@ -66,7 +66,7 @@ public:
 
 	//Overloads
 	tiny_string toString();
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr) override;
 	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst) override;
 	FORCE_INLINE void setVariableByIntegerNoCoerce(int index, asAtom &o)
 	{

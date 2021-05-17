@@ -36,9 +36,9 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, alpha);
 	ASPROPERTY_GETTER_SETTER(uint32_t, color);
 	FILLSTYLE toFillStyle();
-	void appendToTokens(std::vector<_NR<GeomToken>, reporter_allocator<_NR<GeomToken>>>& tokens);
+	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics);
 };
 
-};
+}
 
 #endif /* SCRIPTING_FLASH_DISPLAY_GRAPHICSSOLIDFILL_H */

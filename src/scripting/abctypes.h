@@ -109,7 +109,7 @@ struct namespace_info
 	u30 name;
 	bool cachefilled;
 	nsNameAndKind nscached;
-	namespace_info():cachefilled(false) {}
+	namespace_info():cachefilled(false) { kind=0; }
 	~namespace_info(){ cachefilled=false; }
 	const nsNameAndKind& getNS(ABCContext * c, uint32_t nsContextIndex)
 	{

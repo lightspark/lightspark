@@ -34,7 +34,7 @@ public:
 	typedef std::vector<_R<Namespace>> NSVector;
 private:
 	_NR<XMLList> childrenlist;
-	_NR<XML> parentNode;
+	XML* parentNode;
 	pugi::xml_node_type nodetype;
 	bool isAttribute;
 	tiny_string nodename;
@@ -81,7 +81,7 @@ private:
 public:
 	XML(Class_base* c);
 	XML(Class_base* c,const std::string& str);
-	XML(Class_base* c,const pugi::xml_node& _n, XML* parent=NULL, bool fromXMLList=false);
+	XML(Class_base* c,const pugi::xml_node& _n, XML* parent=nullptr, bool fromXMLList=false);
 	bool destruct() override;
 	
 	ASFUNCTION_ATOM(_constructor);
@@ -162,9 +162,9 @@ public:
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt) override;
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
 	bool hasProperty(const multiname& name,bool checkXMLPropsOnly, bool considerDynamic, bool considerPrototype);
-	multiname* setVariableByMultiname(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
 	void setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst) override;
-	multiname *setVariableByMultinameIntern(const multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext);
+	multiname *setVariableByMultinameIntern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext);
 	bool deleteVariableByMultiname(const multiname& name) override;
 	static bool isValidMultiname(SystemState *sys, const multiname& name, uint32_t& index);
 
@@ -188,6 +188,7 @@ public:
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap) override;
+	void dumpTreeObjects(int indent=0);
 };
 }
 #endif /* SCRIPTING_TOPLEVEL_XML_H */

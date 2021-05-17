@@ -72,7 +72,7 @@ public:
 	 * script conversion algorithm (i.e. accepts hex, skips
 	 * whitespace, zeroes). Returns 0 if conversion fails.
 	 */
-	static int32_t stringToASInteger(const char* cur, int radix, bool strict=false);
+	static int32_t stringToASInteger(const char* cur, int radix, bool strict=false, bool* isValid=nullptr);
 	
 };
 

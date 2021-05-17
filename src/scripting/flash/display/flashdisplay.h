@@ -87,6 +87,7 @@ public:
 	ASFUNCTION_ATOM(_setDoubleClickEnabled);
 	ASFUNCTION_ATOM(_getDoubleClickEnabled);
 	bool destruct() override;
+	void finalize() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	virtual void lostFocus() {}
@@ -138,6 +139,7 @@ public:
 	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer(Class_base* c);
 	bool destruct() override;
+	void finalize() override;
 	void resetLegacyState() override;
 	bool hasLegacyChildAt(int32_t depth);
 	// this does not test if a DisplayObject exists at the provided depth
@@ -157,7 +159,7 @@ public:
 	void declareFrame() override;
 	void initFrame() override;
 	void executeFrameScript() override;
-	multiname* setVariableByMultiname(const multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
 	bool deleteVariableByMultiname(const multiname& name) override;
 	
 	static void sinit(Class_base* c);
@@ -257,6 +259,10 @@ public:
 	void setupShape(lightspark::DefineShapeTag *tag, float _scaling);
 	uint32_t getTagID() const override;
 	bool destruct() override;
+	void finalize() override;
+	void startDrawJob() override;
+	void endDrawJob() override;
+
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -290,6 +296,7 @@ public:
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
 	void checkRatio(uint32_t ratio, bool inskipping) override;
+	uint32_t getTagID() const override;
 };
 
 class Loader;
@@ -459,6 +466,9 @@ public:
 	void appendSound(unsigned char* buf, int len, uint32_t frame);
 	void setSoundStartFrame(uint32_t frame) { soundstartframe=frame; }
 	bool destruct() override;
+	void finalize() override;
+	void startDrawJob() override;
+	void endDrawJob() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -603,6 +613,7 @@ public:
 	MovieClip(Class_base* c);
 	MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID);
 	bool destruct() override;
+	void finalize() override;
 	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -713,6 +724,7 @@ public:
 	void addHiddenObject(_R<DisplayObject> o) { hiddenobjects.push_back(o);}
 	void initFrame() override;
 	void executeFrameScript() override;
+	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getAllowFullScreen);
 	ASFUNCTION_ATOM(_getAllowFullScreenInteractive);

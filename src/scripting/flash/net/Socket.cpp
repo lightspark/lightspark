@@ -67,7 +67,7 @@ SocketIO::~SocketIO()
 #endif
 }
 
-bool SocketIO::connect(const tiny_string& hostname, int port)
+bool SocketIO::connect(const tiny_string& hostname, int port, int timeoutseconds)
 {
 	struct addrinfo hints;
 	struct addrinfo *servinfo;
@@ -95,7 +95,17 @@ bool SocketIO::connect(const tiny_string& hostname, int port)
 		if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
 			continue;
 
-		// TODO: timeout on connect
+		if (timeoutseconds != 0)
+		{
+#ifdef _WIN32
+			::setsockopt(fd,SOL_SOCKET,SO_SNDTIMEO,(const char *)&timeoutseconds,sizeof(timeoutseconds));
+#else
+			timeval tv;
+			tv.tv_sec=timeoutseconds;
+			tv.tv_usec=0;
+			::setsockopt(fd,SOL_SOCKET,SO_SNDTIMEO,&tv,sizeof(tv));
+#endif
+		}
 
 		if (::connect(fd, p->ai_addr, p->ai_addrlen) == -1)
 		{

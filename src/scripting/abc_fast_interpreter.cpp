@@ -36,7 +36,7 @@ struct OpcodeData
 		uint32_t uints[0];
 		double doubles[0];
 		ASObject* objs[0];
-		const multiname* names[0];
+		multiname* names[0];
 		const Type* types[0];
 	};
 };
@@ -1140,7 +1140,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x80:
 			{
 				//coerce
-				const multiname* name=data->names[0];
+				multiname* name=data->names[0];
 				char* rewriteableCode = &(mi->body->code[0]);
 				const Type* type = Type::getTypeFromMultiname(name, context->mi->context);
 				OpcodeData* rewritableData=reinterpret_cast<OpcodeData*>(rewriteableCode+instructionPointer);

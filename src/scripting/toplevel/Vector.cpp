@@ -1079,7 +1079,6 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
 	}
 
-	assert_and_throw(name.ns.size()>0);
 	if(!name.hasEmptyNS)
 	{
 		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
@@ -1155,7 +1154,6 @@ GET_VARIABLE_RESULT Vector::getVariableByInteger(asAtom &ret, int index, GET_VAR
 
 multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset)
 {
-	assert_and_throw(name.ns.size()>0);
 	if(!name.hasEmptyNS)
 		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset);
 
@@ -1305,7 +1303,6 @@ bool Vector::isValidMultiname(SystemState* sys,const multiname& name, uint32_t& 
 {
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
-	assert_and_throw(name.ns.size()!=0);
 	if(!name.hasEmptyNS)
 		return false;
 

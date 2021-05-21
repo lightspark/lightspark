@@ -1308,6 +1308,9 @@ private:
 	static void abc_decrement_i_local_localresult(call_context* context);
 	static void abc_decrement_i_local_setslotnocoerce(call_context* context);
 
+	static void abc_getfuncscopeobject(call_context* context);
+	static void abc_getfuncscopeobject_localresult(call_context* context);
+
 	static void abc_invalidinstruction(call_context* context);
 
 public:

@@ -230,16 +230,17 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,format)
     // Find dot position
     size_t decimalPos = 0;
     decimalPos = output.find(localDecimalChar);
-    if (decimalPos != std::string::npos)
+    if (decimalPos == std::string::npos)
     {
         decimalPos = output.size();
     }
 
     // Pad number with zeros if possible
-    int index = output.size() - decimalPos;
+    int index = output.size()-1 - decimalPos;
     if (th->fractionalDigits > index)
     {
-        for (int i = 0; i < index; i++)
+        int extraPaddingCount = th->fractionalDigits-index;
+        for (int i = 0; i < extraPaddingCount; i++)
         {
             output.push_back('0');
         }
@@ -255,10 +256,12 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,formattingWithCurrencySymbolIsSafe)
     tiny_string requestedISOCode;
     std::string currencyISOCode = th->currencyISOCode;
     ARG_UNPACK_ATOM(requestedISOCode);
-    /*if (requestedISOCode == nullptr) // Can't compare tiny_string to null
+
+    if (requestedISOCode.raw_buf() == nullptr)
     {
         throwError<TypeError>(kNullArgumentError);
-    }*/
+    }
+
     bool result = (requestedISOCode == currencyISOCode);
     th->lastOperationStatus = "noError";
     ret = asAtomHandler::fromBool(result);
@@ -286,10 +289,10 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,parse)
     tiny_string input;
     ARG_UNPACK_ATOM(input);
 
-    /*if (input == nullptr) // Can't compare tiny_string to null
+    if (input.raw_buf() == nullptr)
     {
         throwError<TypeError>(kNullArgumentError);
-    }*/
+    }
 
     inputString = input;
 	

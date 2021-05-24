@@ -880,7 +880,6 @@ int ppPluginInstance::worker(void* d)
 	
 	while (g_messageloop_interface->GetCurrent() != 0 && (!th->m_sys || !th->m_sys->isShuttingDown()))
 	{
-		LOG(LOG_ERROR,"pluginworker");
 		g_messageloop_interface->Run(th->m_messageloop);
 	}
 	return 0;
@@ -958,7 +957,6 @@ void ppPluginInstance::handleResize(PP_Resource view)
 			m_sys->setParamsAndEngine(e, false);
 			g_graphics_3d_interface->ResizeBuffers(m_graphics,position.size.width, position.size.height);
 			m_sys->getRenderThread()->SetEngineData(m_sys->getEngineData());
-			m_sys->getRenderThread()->init();
 		}
 		else
 		{

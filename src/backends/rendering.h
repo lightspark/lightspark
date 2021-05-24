@@ -121,6 +121,7 @@ public:
 	void deinit();
 	bool doRender(ThreadProfile *profile=nullptr, Chronometer *chronometer=nullptr);
 	void generateScreenshot();
+	bool isStarted() const { return status == STARTED; }
 	/**
 	 * @brief updates the arguments of a cachedSurface without recreating the texture
 	 * @param d IDrawable containing the new values

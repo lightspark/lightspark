@@ -1235,7 +1235,8 @@ void SystemState::flushInvalidationQueue()
 					renderThread->addRefreshableSurface(d,cur);
 			}
 			cur->hasChanged=false;
-			cur->resetNeedsTextureRecalculation();
+			if (getRenderThread()->isStarted())
+				cur->resetNeedsTextureRecalculation();
 		}
 		_NR<DisplayObject> next=cur->invalidateQueueNext;
 		cur->invalidateQueueNext=NullRef;

@@ -70,45 +70,45 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,_constructor)
 	th->fractionalDigits = 0;
 	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
 
-    std::string localeId = th->requestedLocaleIDName;
-    std::string isoCurrencyCode = "";
-    if (localeId.size() > 4)
-    {
-        isoCurrencyCode = localeId.substr(3, localeId.size());
-    }
+	std::string localeId = th->requestedLocaleIDName;
+	std::string isoCurrencyCode = "";
+	if (localeId.size() > 4)
+	{
+		isoCurrencyCode = localeId.substr(3, localeId.size());
+	}
 
-    if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
-    {
-        LOG(LOG_INFO,"unknown locale:"<<th->requestedLocaleIDName);
-        th->lastOperationStatus="usingDefaultWarning";
-    }
+	if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
+	{
+		LOG(LOG_INFO,"unknown locale:"<<th->requestedLocaleIDName);
+		th->lastOperationStatus="usingDefaultWarning";
+	}
 
-    std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
-    th->currlocale = std::locale(localeName);
-    th->actualLocaleIDName = th->requestedLocaleIDName;
-    th->lastOperationStatus="noError";
+	std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
+	th->currlocale = std::locale(localeName);
+	th->actualLocaleIDName = th->requestedLocaleIDName;
+	th->lastOperationStatus="noError";
 
-    std::string currencyIsoCode = sys->currencyManager->getCountryISOSymbol(isoCurrencyCode);
-    std::string currencySymbol = sys->currencyManager->getCurrencySymbol(currencyIsoCode);
+	std::string currencyIsoCode = sys->currencyManager->getCountryISOSymbol(isoCurrencyCode);
+	std::string currencySymbol = sys->currencyManager->getCurrencySymbol(currencyIsoCode);
 
-    th->currencyISOCode = currencyIsoCode;
-    th->currencySymbol = currencySymbol;
-    std::locale l =  std::locale::global(th->currlocale);
+	th->currencyISOCode = currencyIsoCode;
+	th->currencySymbol = currencySymbol;
+	std::locale l =  std::locale::global(th->currlocale);
 
-    char localSeparatorChar = std::use_facet< std::numpunct<char> >(std::cout.getloc()).thousands_sep();
-    char localDecimalChar = std::use_facet< std::numpunct<char> >(std::cout.getloc()).decimal_point();
+	char localSeparatorChar = std::use_facet< std::numpunct<char> >(std::cout.getloc()).thousands_sep();
+	char localDecimalChar = std::use_facet< std::numpunct<char> >(std::cout.getloc()).decimal_point();
 
-    std::string localDecimalCharString(1, localDecimalChar);
-    std::string localSeparatorCharString(1, localSeparatorChar);
+	std::string localDecimalCharString(1, localDecimalChar);
+	std::string localSeparatorCharString(1, localSeparatorChar);
 
-    th->fractionalDigits = 2;
-    th->decimalSeparator = localDecimalCharString;
-    th->digitsType = false;
-    th->groupingSeparator = localSeparatorCharString;
-    th->negativeCurrencyFormat = 1;
-    th->negativeSymbol = "-";
-    th->useGrouping = false;
-    std::locale::global(l);
+	th->fractionalDigits = 2;
+	th->decimalSeparator = localDecimalCharString;
+	th->digitsType = false;
+	th->groupingSeparator = localSeparatorCharString;
+	th->negativeCurrencyFormat = 1;
+	th->negativeSymbol = "-";
+	th->useGrouping = false;
+	std::locale::global(l);
 }
 
 ASFUNCTIONBODY_GETTER(CurrencyFormatter, actualLocaleIDName);
@@ -141,7 +141,7 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,format)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.negativeCurrencyFormat is not supported");
 	}
-    if (th->useGrouping || th->groupingPattern != "" || th->groupingSeparator != "")
+	if (th->useGrouping || th->groupingPattern != "" || th->groupingSeparator != "")
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"Grouping in CurrencyFormatter is not supported");
 	}
@@ -149,13 +149,13 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,format)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.positiveCurrencyFormat is not supported");
 	}
-    if (th->leadingZero != 0)
-    {
-        LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.leadingZero is not supported");
-    }
+	if (th->leadingZero != 0)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.leadingZero is not supported");
+	}
 	LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.digitsType is not supported");
 
-    char localDecimalChar = std::use_facet< std::numpunct<char> >(std::cout.getloc()).decimal_point();
+	char localDecimalChar = std::use_facet< std::numpunct<char> >(std::cout.getloc()).decimal_point();
 
 	double value;
 	bool withCurrencySymbol = false; // withCurrencySymbol argument not implemented
@@ -165,106 +165,106 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,format)
 	res.imbue(th->currlocale);
 	res << std::showbase << std::setprecision(th->fractionalDigits) << std::put_money(value,!withCurrencySymbol) << std::fixed;
 
-    std::string output = res.str();
+	std::string output = res.str();
 
-    // Now we format the output
+	// Now we format the output
 
-    // Replace spaces in input, get rid of the spaces generated by put_money
-    std::unordered_map<string, string> currencies = sys->currencyManager->getCurrencySymbols();
-    for (std::unordered_map<string, string>::iterator it = currencies.begin(); it != currencies.end(); ++it)
-    {
-        std::string key = it->first;
-        std::string value = it->second;
+	// Replace spaces in input, get rid of the spaces generated by put_money
+	std::unordered_map<string, string> currencies = sys->currencyManager->getCurrencySymbols();
+	for (std::unordered_map<string, string>::iterator it = currencies.begin(); it != currencies.end(); ++it)
+	{
+		std::string key = it->first;
+		std::string value = it->second;
 
-        // Find 2 spaces to remove
-        std::size_t found = output.find(key + "  ");
-        if (found != std::string::npos)
-        {
-            output.replace(found, key.length()+2, key);
-        }
+		// Find 2 spaces to remove
+		std::size_t found = output.find(key + "  ");
+		if (found != std::string::npos)
+		{
+			output.replace(found, key.length()+2, key);
+		}
 
-        // Find 1 space to remove
-        found = output.find(key + " ");
-        if (found != std::string::npos)
-        {
-            output.replace(found, key.length()+1, key);
-        }
-    }
+		// Find 1 space to remove
+		found = output.find(key + " ");
+		if (found != std::string::npos)
+		{
+			output.replace(found, key.length()+1, key);
+		}
+	}
 
-    for (std::unordered_map<string, string>::iterator it = currencies.begin(); it != currencies.end(); ++it)
-    {
-        std::string key = it->first;
-        std::string value = it->second;
+	for (std::unordered_map<string, string>::iterator it = currencies.begin(); it != currencies.end(); ++it)
+	{
+		std::string key = it->first;
+		std::string value = it->second;
 
-        // Find 2 spaces to remove
-        std::size_t found = output.find(key + "  ");
-        if (found != std::string::npos)
-        {
-            output.replace(found, key.length()+2, key);
-        }
+		// Find 2 spaces to remove
+		std::size_t found = output.find(key + "  ");
+		if (found != std::string::npos)
+		{
+			output.replace(found, key.length()+2, key);
+		}
 
-        // Find 1 space to remove
-        found = output.find(key + " ");
-        if (found != std::string::npos)
-        {
-            output.replace(found, key.length()+1, key);
-        }
-    }
+		// Find 1 space to remove
+		found = output.find(key + " ");
+		if (found != std::string::npos)
+		{
+			output.replace(found, key.length()+1, key);
+		}
+	}
 
-    // Replace decimal separator
-    std::string seperatorCharString = th->decimalSeparator;
-    char seperatorChar = seperatorCharString.at(0);
-    if (localDecimalChar != seperatorChar)
-    {
-        std::string a;
-        a.push_back(seperatorChar);
+	// Replace decimal separator
+	std::string seperatorCharString = th->decimalSeparator;
+	char seperatorChar = seperatorCharString.at(0);
+	if (localDecimalChar != seperatorChar)
+	{
+		std::string a;
+		a.push_back(seperatorChar);
 
-        size_t pos;
-        while ((pos = output.find(localDecimalChar)) != std::string::npos)
-        {
-            output.replace(pos, 1, a);
-        }
-    }
+		size_t pos;
+		while ((pos = output.find(localDecimalChar)) != std::string::npos)
+		{
+			output.replace(pos, 1, a);
+		}
+	}
 
-    // Add trailing zeros
-    // Find dot position
-    size_t decimalPos = 0;
-    decimalPos = output.find(localDecimalChar);
-    if (decimalPos == std::string::npos)
-    {
-        decimalPos = output.size();
-    }
+	// Add trailing zeros
+	// Find dot position
+	size_t decimalPos = 0;
+	decimalPos = output.find(localDecimalChar);
+	if (decimalPos == std::string::npos)
+	{
+		decimalPos = output.size();
+	}
 
-    // Pad number with zeros if possible
-    int index = output.size()-1 - decimalPos;
-    if (th->fractionalDigits > index)
-    {
-        int extraPaddingCount = th->fractionalDigits-index;
-        for (int i = 0; i < extraPaddingCount; i++)
-        {
-            output.push_back('0');
-        }
-    }
+	// Pad number with zeros if possible
+	int index = output.size()-1 - decimalPos;
+	if (th->fractionalDigits > index)
+	{
+		int extraPaddingCount = th->fractionalDigits-index;
+		for (int i = 0; i < extraPaddingCount; i++)
+		{
+			output.push_back('0');
+		}
+	}
 
-    ret = asAtomHandler::fromString(sys,output);
+	ret = asAtomHandler::fromString(sys,output);
 }
 
 ASFUNCTIONBODY_ATOM(CurrencyFormatter,formattingWithCurrencySymbolIsSafe)
 {
-    CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
-    LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.formattingWithCurrencySymbolIsSafe is not really tested for all formats");
-    tiny_string requestedISOCode;
-    std::string currencyISOCode = th->currencyISOCode;
-    ARG_UNPACK_ATOM(requestedISOCode);
+	CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.formattingWithCurrencySymbolIsSafe is not really tested for all formats");
+	tiny_string requestedISOCode;
+	std::string currencyISOCode = th->currencyISOCode;
+	ARG_UNPACK_ATOM(requestedISOCode);
 
-    if (requestedISOCode.raw_buf() == nullptr)
-    {
-        throwError<TypeError>(kNullArgumentError);
-    }
+	if (requestedISOCode.raw_buf() == nullptr)
+	{
+		throwError<TypeError>(kNullArgumentError);
+	}
 
-    bool result = (requestedISOCode == currencyISOCode);
-    th->lastOperationStatus = "noError";
-    ret = asAtomHandler::fromBool(result);
+	bool result = (requestedISOCode == currencyISOCode);
+	th->lastOperationStatus = "noError";
+	ret = asAtomHandler::fromBool(result);
 }
 
 ASFUNCTIONBODY_ATOM(CurrencyFormatter,getAvailableLocaleIDNames)
@@ -283,18 +283,18 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,getAvailableLocaleIDNames)
 
 ASFUNCTIONBODY_ATOM(CurrencyFormatter,parse)
 {
-    CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
+	CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.parse is not really tested for all formats");
-    std::string inputString;
-    tiny_string input;
-    ARG_UNPACK_ATOM(input);
+	std::string inputString;
+	tiny_string input;
+	ARG_UNPACK_ATOM(input);
 
-    if (input.raw_buf() == nullptr)
-    {
-        throwError<TypeError>(kNullArgumentError);
-    }
+	if (input.raw_buf() == nullptr)
+	{
+		throwError<TypeError>(kNullArgumentError);
+	}
 
-    inputString = input;
+	inputString = input;
 	
 	if (th->negativeCurrencyFormat != 0)
 	{
@@ -304,7 +304,7 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,parse)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.negativeCurrencyFormat is not supported");
 	}
-    if (th->useGrouping || th->groupingPattern != "" || th->groupingSeparator != "")
+	if (th->useGrouping || th->groupingPattern != "" || th->groupingSeparator != "")
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"Grouping in CurrencyFormatter is not supported");
 	}
@@ -312,94 +312,94 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,parse)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.positiveCurrencyFormat is not supported");
 	}
-    if (th->leadingZero != 0)
-    {
-        LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.leadingZero is not supported");
-    }
+	if (th->leadingZero != 0)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.leadingZero is not supported");
+	}
 	LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.digitsType is not supported");
 
-    // Trim input text
-    inputString.erase(0, inputString.find_first_not_of(' '));
-    inputString.erase(inputString.find_last_not_of(' ') + 1);
+	// Trim input text
+	inputString.erase(0, inputString.find_first_not_of(' '));
+	inputString.erase(inputString.find_last_not_of(' ') + 1);
 
 	CurrencyParseResult* cpr = Class<CurrencyParseResult>::getInstanceS(sys);
 
-    std::unordered_map<string, string> currencies = sys->currencyManager->getCurrencySymbols();
-    for (std::unordered_map<string, string>::iterator it = currencies.begin(); it != currencies.end(); ++it)
-    {
-        std::string key = it->first;
-        std::string value = it->second;
+	std::unordered_map<string, string> currencies = sys->currencyManager->getCurrencySymbols();
+	for (std::unordered_map<string, string>::iterator it = currencies.begin(); it != currencies.end(); ++it)
+	{
+		std::string key = it->first;
+		std::string value = it->second;
 
-        // Check to see if currency is at start of string
-        if (input.find(key) == 0 || input.find(value) == 0)
+		// Check to see if currency is at start of string
+		if (input.find(key) == 0 || input.find(value) == 0)
 		{
-            cpr->currencyString = key;
+			cpr->currencyString = key;
 		}
 
-        // Check to see if currency is at end of string
-        if (input.numChars() > 0 && key.size() > 0)
-        {
-            if (input.find(key) == input.numChars()-key.size()-2)
-            {
-                cpr->currencyString = key;
-            }
-        }
-        if (input.numChars() > 0 && value.size() > 0)
-        {
-            if (input.find(value) == input.numChars()-key.size()-2)
-            {
-                cpr->currencyString = key;
-            }
-        }
-    }
+		// Check to see if currency is at end of string
+		if (input.numChars() > 0 && key.size() > 0)
+		{
+			if (input.find(key) == input.numChars()-key.size()-2)
+			{
+				cpr->currencyString = key;
+			}
+		}
+		if (input.numChars() > 0 && value.size() > 0)
+		{
+			if (input.find(value) == input.numChars()-key.size()-2)
+			{
+				cpr->currencyString = key;
+			}
+		}
+	}
 
 	std::istringstream in(inputString);
-    long double value;
-    in.imbue(th->currlocale);
-    in >> std::get_money(value);
+	long double value;
+	in.imbue(th->currlocale);
+	in >> std::get_money(value);
 
-    std::string output = "";
+	std::string output = "";
 
-    if (in)
+	if (in)
 	{
-        std::string value = in.str();
+		std::string value = in.str();
 
 		// Convert text to number
-        stringstream ss(value);
+		stringstream ss(value);
 		ss.imbue(th->currlocale);
 		number_t num;
 		if((ss >> num).fail())
 		{
-            cpr->value = Number::NaN;
+			cpr->value = Number::NaN;
 		}
 		else
 		{
 			// Set end result
-            cpr->value = num;
+			cpr->value = num;
 			th->lastOperationStatus="noError";
 		}
-    }
+	}
 	else
 	{
-        th->lastOperationStatus="parseError";
-        ret = asAtomHandler::fromObject(cpr);
-        return;
-    }
+		th->lastOperationStatus="parseError";
+		ret = asAtomHandler::fromObject(cpr);
+		return;
+	}
 
-    /*
-     * TODO:
-        decimalSeparator
-        fractionalDigits
-        trailingZeros
-    */
+	/*
+	 * TODO:
+		decimalSeparator
+		fractionalDigits
+		trailingZeros
+	*/
 
-    th->lastOperationStatus="noError";
+	th->lastOperationStatus="noError";
 	ret = asAtomHandler::fromObject(cpr);
 }
 
 ASFUNCTIONBODY_ATOM(CurrencyFormatter,setCurrency)
 {
-    CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
-    ARG_UNPACK_ATOM(th->currencyISOCode)(th->currencySymbol);
+	CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
+	ARG_UNPACK_ATOM(th->currencyISOCode)(th->currencySymbol);
 	th->lastOperationStatus="noError";
 }

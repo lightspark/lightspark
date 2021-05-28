@@ -3581,7 +3581,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						}
 					}
 					if (!found && opcode == 0x5d //findpropstrict
-							&& function->inClass && function->inClass->isSealed && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
+							&& (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 					{
 						ASObject* target=nullptr;
 						if (name->cachedType)
@@ -5478,7 +5478,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											}
 										}
 									}
-									// remember operand for intGenerator
+									// remember operand for isGenerator
 									operands op;
 									if (state.operandlist.size()>0)
 										op = state.operandlist.back();
@@ -5488,19 +5488,26 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											|| prevopcode == 0xd2//getlocal_2
 											|| prevopcode == 0xd3//getlocal_3
 											;
+									uint32_t opsize=state.operandlist.size();
 									if ((opcode == 0x4f && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code)) ||
 									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,!reuseoperand || !isGenerator,p,resulttype))))
 									{
 										// generator for Integer/Number can be skipped if argument is already an Integer/Number and the result will be used as local result
 										if (isGenerator && (reuseoperand || generatorneedsconversion))
 										{
+											removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);
 											// remove caller
+											if (opcode == 0x46 && state.preloadedcode.back().opcode >= ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME+4 // caller has localresult
+													&& state.operandlist.size() > opsize-2) // localresult was added to operandlist
+											{
+												auto it =state.operandlist.end();
+												(--it)->removeArg(state);// remove arg2
+												state.operandlist.pop_back();
+											}
 											state.preloadedcode.pop_back();
 											// re-add last operand if it is not the result of the previous operation
 											if (reuseoperand || generatorneedsconversion)
 											{
-												if(state.operandlist.size())
-													state.operandlist.pop_back();
 												state.operandlist.push_back(operands(op.type, op.objtype,op.index,0, 0));
 											}
 											state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
@@ -5515,6 +5522,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 																			,resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()? ABC_OP_OPTIMZED_CONVERTI_SETSLOT: ABC_OP_OPTIMZED_CONVERTD_SETSLOT
 																			);
 											}
+											typestack.push_back(typestackentry(resulttype,false));
 											break;
 										}
 										state.preloadedcode.push_back(0);
@@ -5734,7 +5742,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								asAtom* a = mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
 								if (asAtomHandler::getObject(*a))
 								{
-									variable* v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,asAtomHandler::getObject(*a)->getClass());
+									bool isborrowed=false;
+									variable* v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,asAtomHandler::getObject(*a)->getClass(),nullptr,&isborrowed);
 									if (v && v->kind == CONSTANT_TRAIT && asAtomHandler::isInvalid(v->getter))
 									{
 										state.operandlist.back().removeArg(state);
@@ -5742,7 +5751,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										addCachedConstant(state,mi, v->var,code);
 										addname = false;
 										removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
-										typestack.push_back(typestackentry(asAtomHandler::getClass(v->var,function->getSystemState()),false));
+										typestack.push_back(typestackentry(asAtomHandler::getClass(v->var,function->getSystemState()),isborrowed|| asAtomHandler::isClass(v->var)));
 										break;
 									}
 									if (v && asAtomHandler::isValid(v->getter))

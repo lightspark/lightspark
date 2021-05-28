@@ -214,6 +214,7 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,sleep)
 ASFUNCTIONBODY_ATOM(avmplusSystem,exit)
 {
 	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.exit is unimplemented."));
+	ret = asAtomHandler::undefinedAtom;
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,canonicalizeNumber)
 {

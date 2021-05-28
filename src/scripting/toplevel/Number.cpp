@@ -645,15 +645,15 @@ void Number::sinit(Class_base* c)
 	}
 }
 
-string Number::toDebugString() 
-{ 
+string Number::toDebugString()
+{
 	string ret = toString()+(isfloat ? "d" : "di");
-#ifndef _NDEBUG
+#ifndef NDEBUG
 	char buf[300];
 	sprintf(buf,"(%p / %d/%d)",this,this->getRefCount(),this->getConstant());
 	ret += buf;
 #endif
-	return ret; 
+	return ret;
 }
 
 ASFUNCTIONBODY_ATOM(Number,_constructor)

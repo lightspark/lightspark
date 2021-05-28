@@ -163,7 +163,7 @@ ASFUNCTIONBODY_ATOM(UInteger,_valueOf)
 		return;
 	}
 
-	if(!asAtomHandler::is<UInteger>(obj))
+	if(!asAtomHandler::isUInteger(obj))
 			throw Class<TypeError>::getInstanceS(sys,"");
 
 	asAtomHandler::setUInt(ret,sys,asAtomHandler::toUInt(obj));

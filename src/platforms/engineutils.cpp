@@ -1349,7 +1349,11 @@ void EngineData::audio_ManagerCloseMixer()
 
 bool EngineData::audio_ManagerOpenMixer()
 {
-	return Mix_OpenAudio (audio_getSampleRate(), AUDIO_S16, 2, LIGHTSPARK_AUDIO_BUFFERSIZE) >= 0;
+#if __BYTE_ORDER == __BIG_ENDIAN
+	return Mix_OpenAudio (audio_getSampleRate(), AUDIO_S16MSB, 2, LIGHTSPARK_AUDIO_BUFFERSIZE) >= 0;
+#else
+	return Mix_OpenAudio (audio_getSampleRate(), AUDIO_S16LSB, 2, LIGHTSPARK_AUDIO_BUFFERSIZE) >= 0;
+#endif
 }
 
 void EngineData::audio_ManagerDeinit()

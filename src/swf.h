@@ -54,6 +54,7 @@ class PluginManager;
 class RenderThread;
 class SecurityManager;
 class LocaleManager;
+class CurrencyManager;
 class Tag;
 class ApplicationDomain;
 class ASWorker;
@@ -465,6 +466,7 @@ public:
 	IntervalManager* intervalManager;
 	SecurityManager* securityManager;
 	LocaleManager* localeManager;
+    CurrencyManager* currencyManager;
 	ExtScriptObject* extScriptObject;
 
 	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=1, NO_SCALE=2, SHOW_ALL=3 };

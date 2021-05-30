@@ -2231,6 +2231,8 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_int= asAtomHandler::toInt(*state.preloadedcode.back().pcode.arg1_constant);
 				if (op2isconstant)
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg2_int= asAtomHandler::toInt(*state.preloadedcode.back().pcode.arg2_constant);
+				if (code.peekbyte() == 0x73)//convert_i
+					state.preloadedcode.back().pcode.local3.flags |= ABC_OP_FORCEINT;
 				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_RSHIFT:

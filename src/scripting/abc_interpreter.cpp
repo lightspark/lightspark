@@ -3953,8 +3953,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 												operator_start = ABC_OP_OPTIMZED_SETSLOT_NOCOERCE;
 											}
 										}
+										bool getslotisvalue = state.preloadedcode.size() && state.preloadedcode.at(state.preloadedcode.size()-1).operator_start==ABC_OP_OPTIMZED_GETSLOT;
 										setupInstructionTwoArgumentsNoResult(state,operator_start,opcode,code);
-										if (state.preloadedcode.size() > 1 && v->slotid < ABC_OP_BITMASK_USED
+										if (getslotisvalue && state.preloadedcode.size() > 1 && v->slotid < ABC_OP_BITMASK_USED
 											&& state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func == abc_setslotNoCoerce_local_local
 											&& state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local_pos1 <0xffff // only optimize if local_pos1 fits in uint16_t
 											&& state.preloadedcode.at(state.preloadedcode.size()-2).operator_setslot != UINT32_MAX)

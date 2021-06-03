@@ -2850,7 +2850,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t nextreachable = codejumps.size();
 				// find the first jump target after the current position
 				auto it = state.jumptargets.begin();
-				while (it != state.jumptargets.end() && it->first < (int)codejumps.tellg())
+				while (it != state.jumptargets.end() && it->first <= (int)codejumps.tellg())
 				{
 					it++;
 				}

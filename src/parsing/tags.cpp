@@ -1536,11 +1536,6 @@ ASObject *DefineShapeTag::instance(Class_base *c)
 	ret->setupShape(this, 1.0f/20.0f);
 	return ret;
 }
-MATRIX DefineShapeTag::MapToBoundsForButton(const MATRIX &mat)
-{
-	MATRIX m (1,1,0,0,ShapeBounds.Xmin/20,ShapeBounds.Ymin/20);
-	return mat.multiplyMatrix(m);
-}
 
 void DefineShapeTag::resizeCompleted()
 {
@@ -2272,7 +2267,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			DisplayObject* state=dynamic_cast<DisplayObject*>(dict->instance());
 			assert_and_throw(state);
 			//The matrix must be set before invoking the constructor
-			state->setLegacyMatrix(dict->MapToBoundsForButton(i->PlaceMatrix));
+			state->setLegacyMatrix(dict->MapToBounds(i->PlaceMatrix));
 			state->legacy=true;
 			state->name = BUILTIN_STRINGS::EMPTY;
 			if (i->ButtonHasBlendMode && i->buttonVersion == 2)

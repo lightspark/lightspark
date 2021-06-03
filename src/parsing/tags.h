@@ -88,7 +88,6 @@ public:
 	virtual int getId() const=0;
 	virtual ASObject* instance(Class_base* c=nullptr) { return nullptr; }
 	virtual MATRIX MapToBounds(const MATRIX& mat) { return mat; }
-	virtual MATRIX MapToBoundsForButton(const MATRIX& mat) { return MapToBounds(mat); }
 	virtual void resizeCompleted() {}
 };
 
@@ -155,7 +154,6 @@ public:
 	~DefineShapeTag();
 	int getId() const override { return ShapeId; }
 	ASObject* instance(Class_base* c=nullptr) override;
-	MATRIX MapToBoundsForButton(const MATRIX& mat) override;
 	void resizeCompleted() override;
 };
 

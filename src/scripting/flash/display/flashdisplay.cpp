@@ -4255,7 +4255,13 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged);
 void Bitmap::updatedData()
 {
 	if(bitmapData.isNull() || bitmapData->getBitmapContainer().isNull())
+	{
+		if (cachedSurface.isChunkOwner && cachedSurface.tex)
+			cachedSurface.tex->makeEmpty();
+		else
+			cachedSurface.tex=nullptr;
 		return;
+	}
 	cachedSurface.tex = &bitmapData->getBitmapContainer()->bitmaptexture;
 	cachedSurface.isChunkOwner=false;
 	hasChanged=true;

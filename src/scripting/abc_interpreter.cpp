@@ -3917,7 +3917,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										}
 									}
 								}
-								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT) && it->objtype && !it->objtype->isInterface && it->objtype->isInitialized() && !function->isStatic)
+								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT) && it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
 								{
 									if (it->objtype->is<Class_inherit>())
 										it->objtype->as<Class_inherit>()->checkScriptInit();
@@ -4242,7 +4242,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								state.operandlist.pop_back();
 								addCachedConstant(state,mi, cval,code);
 								resulttype = asAtomHandler::getObject(*o)->getSlotType(t);
-								typestack.push_back(typestackentry(resulttype,resulttype ? resulttype->is<Class_base>(): false));
+								typestack.push_back(typestackentry(resulttype,false));
 								break;
 							}
 						}
@@ -5493,7 +5493,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											;
 									uint32_t opsize=state.operandlist.size();
 									if ((opcode == 0x4f && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code)) ||
-									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,!reuseoperand || !isGenerator,p,resulttype))))
+									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,!(reuseoperand || generatorneedsconversion) || !isGenerator,p,resulttype))))
 									{
 										// generator for Integer/Number can be skipped if argument is already an Integer/Number and the result will be used as local result
 										if (isGenerator && (reuseoperand || generatorneedsconversion))

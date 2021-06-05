@@ -313,7 +313,8 @@ struct localconstantslot
 
 struct method_body_info
 {
-	method_body_info():localresultcount(0),hit_count(0),codeStatus(ORIGINAL){}
+	method_body_info():localresultcount(0),hit_count(0),codeStatus(ORIGINAL),localsinitialvalues(nullptr){}
+	~method_body_info();
 	u30 method;
 	u30 max_stack;
 	u30 local_count;
@@ -333,6 +334,7 @@ struct method_body_info
 	// list of local/slot pairs that were optimized away
 	std::vector<localconstantslot> localconstantslots;
 	std::vector<preloadedcodedata> preloadedcode;
+	asAtom* localsinitialvalues;
 	inline uint16_t getReturnValuePos() const { return returnvaluepos; }
 };
 

@@ -1021,6 +1021,7 @@ struct preloadstate
 	std::vector<Class_base*> localtypes;
 	std::vector<Class_base*> defaultlocaltypes;
 	std::vector<bool> defaultlocaltypescacheable;
+	std::vector<bool> canlocalinitialize;
 	method_info* mi;
 	std::vector<preloadedcodebuffer> preloadedcode;
 	bool duplocalresult;
@@ -2557,6 +2558,36 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 	removetypestack(typestack,2);
 	typestack.push_back(typestackentry(Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr(),false));
 }
+
+bool checkInitializeLocalToConstant(preloadstate& state,int32_t value)
+{
+	value -= state.mi->numArgs()+1;
+	if (state.operandlist.size() && state.operandlist.back().type != OP_LOCAL && state.operandlist.back().type != OP_CACHED_SLOT
+			&& value >= 0 && value < int(state.canlocalinitialize.size()) && state.canlocalinitialize[value])
+	{
+		// local is initialized to constant value
+		if (!state.mi->body->localsinitialvalues)
+		{
+			state.mi->body->localsinitialvalues = new asAtom[state.mi->body->local_count -(state.mi->numArgs()+1)];
+			memset(state.mi->body->localsinitialvalues,ATOMTYPE_UNDEFINED_BIT,(state.mi->body->local_count -(state.mi->numArgs()+1))*sizeof(asAtom));
+		}
+		state.mi->body->localsinitialvalues[value]= *state.mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
+		state.canlocalinitialize[value]=false;
+		state.operandlist.back().removeArg(state);
+		state.operandlist.pop_back();
+		return true;
+	}
+	return false;
+}
+void removeInitializeLocalToConstant(preloadstate& state,int32_t value)
+{
+	value -= state.mi->numArgs()+1;
+	if (value >= 0 && value < int(state.canlocalinitialize.size()))
+	{
+		state.canlocalinitialize[value]=false;
+	}
+}
+
 void ABCVm::preloadFunction(SyntheticFunction* function)
 {
 	method_info* mi=function->mi;
@@ -2596,6 +2627,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			state.defaultlocaltypescacheable[i]=false;
 		if (i > 0 && i <= mi->paramTypes.size() && dynamic_cast<const Class_base*>(mi->paramTypes[i-1]))
 			state.defaultlocaltypes[i]= (Class_base*)mi->paramTypes[i-1]; // cache types of arguments
+	}
+	for (uint32_t i = state.mi->numArgs()+1; i < state.mi->body->local_count; i++)
+	{
+		state.canlocalinitialize.push_back(true);
 	}
 
 	auto itex = mi->body->exceptions.begin();
@@ -3182,6 +3217,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	while(!code.atend())
 	{
 		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		if (state.jumptargets.find(code.tellg()) != state.jumptargets.end())
+			state.canlocalinitialize.clear();
 		while (itcurEx != mi->body->exceptions.end() && itcurEx->target == code.tellg())
 		{
 			typestack.push_back(typestackentry(nullptr,false));
@@ -3917,7 +3954,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										}
 									}
 								}
-								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT) && it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
+								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT || it->type == OP_CACHED_SLOT) && it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
 								{
 									if (it->objtype->is<Class_inherit>())
 										it->objtype->as<Class_inherit>()->checkScriptInit();
@@ -3936,7 +3973,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										// - contenttype is numeric and variable type is Number
 										// - contenttype is Number and variable type is Integer and previous opcode was arithmetic with localresult
 										int operator_start = v->isResolved && ((contenttype && contenttype == v->type) || !dynamic_cast<const Class_base*>(v->type)) ? ABC_OP_OPTIMZED_SETSLOT_NOCOERCE : ABC_OP_OPTIMZED_SETSLOT;
-										if (contenttype && v->isResolved && contenttype != v->type && dynamic_cast<const Class_base*>(v->type))
+										if (contenttype && v->isResolved && dynamic_cast<const Class_base*>(v->type))
 										{
 											Class_base* vtype = (Class_base*)v->type;
 											if (contenttype->isSubClass(vtype)
@@ -3994,7 +4031,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										ASATOM_DECREF(o);
 								}
 							}
-							
 							if (setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME,opcode,code))
 								state.preloadedcode.push_back(0);
 							else
@@ -4114,6 +4150,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size()+1;
 				uint32_t value =code.readu30();
 				assert_and_throw(value < mi->body->getReturnValuePos());
+				removeInitializeLocalToConstant(state,value);
 				state.preloadedcode.push_back(opcode);
 				state.preloadedcode.back().pcode.arg3_uint=value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
@@ -4127,6 +4164,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p = code.tellg();
 				uint32_t value =code.readu30();
 				assert_and_throw(value < mi->body->getReturnValuePos());
+				if (checkInitializeLocalToConstant(state,value))
+				{
+					removetypestack(typestack,1);
+					opcode_skipped=true;
+					break;
+				}
+				removeInitializeLocalToConstant(state,value);
 				if (state.operandlist.size() && state.operandlist.back().type==OP_LOCAL && state.operandlist.back().index==(int32_t)value)
 				{
 					// getlocal followed by setlocal on same index, can be skipped
@@ -4134,6 +4178,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					state.operandlist.pop_back();
 					removetypestack(typestack,1);
 					opcode_skipped=true;
+					removeInitializeLocalToConstant(state,value);
 					break;
 				}
 				setOperandModified(state,OP_LOCAL,value);
@@ -4352,6 +4397,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xd2://getlocal_2
 			case 0xd3://getlocal_3
 			{
+				removeInitializeLocalToConstant(state,opcode-0xd0);
 				int32_t p = code.tellg();
 				if (p==1 && opcode == 0xd0) //getlocal_0
 				{
@@ -4549,6 +4595,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			}
 			case 0x0c://ifnlt
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
 				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFNLT,opcode,code);
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
@@ -4556,6 +4603,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x0f://ifnge
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
 				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFNGE,opcode,code);
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
@@ -4565,6 +4613,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x0d://ifnle
 			case 0x0e://ifngt
 			{
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				jumppositions[state.preloadedcode.size()] = code.reads24();
@@ -4575,6 +4624,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x10://jump
 			{
+				state.canlocalinitialize.clear();
 				uint32_t pstart= code.tellg();
 				int32_t j = code.reads24();
 				if (state.preloadedcode.size()
@@ -4631,6 +4681,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x11://iftrue
 			{
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,1);
 				int32_t p = code.tellg();
 				int j = code.reads24();
@@ -4678,6 +4729,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x12://iffalse
 			{
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,1);
 				int32_t p = code.tellg();
 				int j = code.reads24();
@@ -4724,6 +4776,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			}
 			case 0x13://ifeq
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
 				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFEQ,opcode,code);
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
@@ -4731,6 +4784,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x14://ifne
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
 				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFNE,opcode,code);
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
@@ -4738,6 +4792,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x15://iflt
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
 				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFLT,opcode,code);
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
@@ -4745,6 +4800,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x16://ifle
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
 				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFLE,opcode,code);
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
@@ -4752,6 +4808,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x17://ifgt
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
 				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFGT,opcode,code);
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
@@ -4759,6 +4816,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x18://ifge
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
 				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFGE,opcode,code);
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
@@ -4766,6 +4824,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x19://ifstricteq
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
 				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFSTRICTEQ,opcode,code);
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
@@ -4773,6 +4832,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x1a://ifstrictne
+				state.canlocalinitialize.clear();
 				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFSTRICTNE,opcode,code);
 				jumppositions[state.preloadedcode.size()-1] = code.reads24();
 				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
@@ -4780,6 +4840,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			case 0x1b://lookupswitch
 			{
+				state.canlocalinitialize.clear();
 				removetypestack(typestack,1);
 				state.preloadedcode.push_back((uint32_t)opcode);
 				int32_t p = code.tellg()-1;
@@ -5119,6 +5180,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x47: //returnvoid
 			{
+				state.canlocalinitialize.clear();
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);
@@ -5127,6 +5189,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x48://returnvalue
 			{
+				state.canlocalinitialize.clear();
 				if (!mi->returnType)
 					function->checkParamTypes();
 				int32_t p = code.tellg();
@@ -6193,6 +6256,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0x03://throw
+				state.canlocalinitialize.clear();
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);
@@ -6319,6 +6383,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p = code.tellg();
 				assert_and_throw(uint32_t(opcode-0xd4) < mi->body->local_count);
 				setOperandModified(state,OP_LOCAL,opcode-0xd4);
+				if (checkInitializeLocalToConstant(state,opcode-0xd4))
+				{
+					removetypestack(typestack,1);
+					opcode_skipped=true;
+					break;
+				}
 				if (state.operandlist.size() && state.operandlist.back().duparg1)
 				{
 					// the argument to set is the argument of a dup, so we just modify the localresult of the dup and skip this opcode

@@ -486,6 +486,9 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		}
 	}
 	memset(cc->locals+args_len+1,ATOMTYPE_UNDEFINED_BIT,(mi->body->getReturnValuePos()+mi->body->localresultcount-(args_len))*sizeof(asAtom));
+	if (mi->body->localsinitialvalues)
+		memcpy(cc->locals+args_len+1,mi->body->localsinitialvalues,(mi->body->local_count-(args_len+1))*sizeof(asAtom));
+
 	if(mi->needsArgs())
 	{
 		assert_and_throw(cc->mi->body->local_count>args_len);

@@ -403,3 +403,9 @@ cpool_info::cpool_info(MemoryAccount* m):
 	multinames(reporter_allocator<multiname_info>(m))
 {
 }
+
+method_body_info::~method_body_info()
+{
+	if (localsinitialvalues)
+		delete[] localsinitialvalues;
+}

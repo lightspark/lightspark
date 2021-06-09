@@ -1640,6 +1640,11 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 
 GET_VARIABLE_RESULT Array::getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt)
 {
+	if (getClass() && getClass()->isSealed)
+	{
+		tiny_string s = Integer::toString(index);
+		throwError<ReferenceError>(kReadSealedError,s,getClass()->getQualifiedClassName());
+	}
 	if (index >=0 && uint32_t(index) < size())
 	{
 		if (index < ARRAY_SIZE_THRESHOLD)
@@ -1660,6 +1665,18 @@ GET_VARIABLE_RESULT Array::getVariableByInteger(asAtom &ret, int index, GET_VARI
 			if (!(opt & NO_INCREF))
 				ASATOM_INCREF(ret);
 			return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+		}
+		//Check prototype chain
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_INT;
+		m.name_i = index;
+		Prototype* proto = this->getClass()->prototype.getPtr();
+		while(proto && proto->getObj() != this)
+		{
+			GET_VARIABLE_RESULT res = proto->getObj()->getVariableByMultiname(ret,m, opt);
+			if(asAtomHandler::isValid(ret))
+				return res;
+			proto = proto->prevPrototype.getPtr();
 		}
 		asAtomHandler::setUndefined(ret);
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;

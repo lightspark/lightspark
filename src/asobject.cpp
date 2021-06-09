@@ -1425,7 +1425,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 	assert(!cls || classdef->isSubClass(cls));
 	uint32_t nsRealId;
 	GET_VARIABLE_RESULT res = GET_VARIABLE_RESULT::GETVAR_NORMAL;
-	variable* obj=Variables.findObjVar(getSystemState(),name,((opt & FROM_GETLEX) || name.hasEmptyNS || name.hasBuiltinNS) ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId);
+	variable* obj=Variables.findObjVar(getSystemState(),name,((opt & FROM_GETLEX) || name.hasEmptyNS || name.hasBuiltinNS || name.ns.empty()) ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId);
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1648,7 +1648,7 @@ void variables_map::dumpVariables()
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<< hex<<it->first<<dec<<" "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
-			asAtomHandler::toDebugString(it->second.var) << ' ' << asAtomHandler::toDebugString(it->second.setter) << ' ' << asAtomHandler::toDebugString(it->second.getter) << ' ' <<it->second.slotid);
+			asAtomHandler::toDebugString(it->second.var) << ' ' << asAtomHandler::toDebugString(it->second.setter) << ' ' << asAtomHandler::toDebugString(it->second.getter) << ' ' <<it->second.slotid << ' ' );//<<dynamic_cast<const Class_base*>(it->second.type));
 	}
 }
 

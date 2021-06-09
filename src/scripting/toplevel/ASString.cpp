@@ -88,7 +88,7 @@ void ASString::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("split",AS3,Class<IFunction>::getFunction(c->getSystemState(),split,2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("split",AS3,Class<IFunction>::getFunction(c->getSystemState(),split,2,Class<Array>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("substr",AS3,Class<IFunction>::getFunction(c->getSystemState(),substr,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("substring",AS3,Class<IFunction>::getFunction(c->getSystemState(),substring,2,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("replace",AS3,Class<IFunction>::getFunction(c->getSystemState(),replace),NORMAL_METHOD,true);
@@ -114,7 +114,7 @@ void ASString::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
 
-	c->prototype->setVariableByQName("split","",Class<IFunction>::getFunction(c->getSystemState(),split,2),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("split","",Class<IFunction>::getFunction(c->getSystemState(),split,2,Class<Array>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("substr","",Class<IFunction>::getFunction(c->getSystemState(),substr,2),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("substring","",Class<IFunction>::getFunction(c->getSystemState(),substring,2,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("replace","",Class<IFunction>::getFunction(c->getSystemState(),replace),CONSTANT_TRAIT);

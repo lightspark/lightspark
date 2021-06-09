@@ -46,7 +46,7 @@ void ABCVm::checkPropertyException(ASObject* obj,multiname* name, asAtom& prop)
 		throwError<ReferenceError>(kWriteOnlyError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
 	if (obj->getClass() && obj->getClass()->isSealed)
 		throwError<ReferenceError>(kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
-	if (name->isEmpty() || !name->hasEmptyNS)
+	if (name->isEmpty() || (!name->hasEmptyNS && !name->ns.empty()))
 		throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
 	if (obj->is<Undefined>())
 		throwError<TypeError>(kConvertUndefinedToObjectError);
@@ -1338,7 +1338,7 @@ void setOperandModified(preloadstate& state,OPERANDTYPES type, int index)
 	}
 }
 
-bool canCallFunctionDirect(operands& op,multiname* name)
+bool canCallFunctionDirect(operands& op,multiname* name, bool ignoreoverridden=false)
 {
 	return ((op.type == OP_LOCAL || op.type == OP_CACHED_CONSTANT || op.type == OP_CACHED_SLOT) &&
 		op.objtype &&
@@ -1346,10 +1346,11 @@ bool canCallFunctionDirect(operands& op,multiname* name)
 //		op.objtype->isSealed && // it's sealed
 		(
 		!op.objtype->is<Class_inherit>() || // type is builtin class
+		ignoreoverridden ||
 		!op.objtype->as<Class_inherit>()->hasoverriddenmethod(name) // current method is not in overridden methods
 		));
 }
-bool canCallFunctionDirect(ASObject* obj,multiname* name)
+bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden)
 {
 	if (!obj || !obj->is<Class_base>())
 		return false;
@@ -1359,6 +1360,7 @@ bool canCallFunctionDirect(ASObject* obj,multiname* name)
 		objtype->isSealed && // it's sealed
 		(
 		!objtype->is<Class_inherit>() || // type is builtin class
+		ignoreoverridden || 
 		!objtype->as<Class_inherit>()->hasoverriddenmethod(name) // current method is not in overridden methods
 		);
 }
@@ -4277,9 +4279,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									|| (asAtomHandler::getObjectNoCheck(*o)->is<Global>() && asAtomHandler::getObjectNoCheck(*o)->getSlotKind(t) == TRAIT_KIND::DECLARED_TRAIT)
 									))
 						{
-							asAtom cval = asAtomHandler::getObjectNoCheck(*o)->getSlot(t);
+							variable* v = asAtomHandler::getObjectNoCheck(*o)->getSlotVar(t);
+							asAtom cval = v->var;
 							if (!asAtomHandler::isNull(cval) && !asAtomHandler::isUndefined(cval)
-									&& (asAtomHandler::getObjectNoCheck(*o)->getSlotKind(t) == TRAIT_KIND::CONSTANT_TRAIT
+									&& (v->kind == TRAIT_KIND::CONSTANT_TRAIT
 										|| asAtomHandler::is<Class_base>(cval)
 										))
 							{
@@ -5337,8 +5340,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					uint32_t operationcount = argcount+mi->context->constant_pool.multinames[t].runtimeargs+1;
 					if (typestack.size() >= operationcount)
 					{
+						bool isoverridden=false;
 						ASObject* cls = nullptr;
-						if (canCallFunctionDirect(typestack[typestack.size()-operationcount].obj,name))
+						if (canCallFunctionDirect(typestack[typestack.size()-operationcount].obj,name,false))
 						{
 							cls = typestack[typestack.size()-operationcount].obj;
 							v = typestack[typestack.size()-operationcount].classvar ?
@@ -5346,6 +5350,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										*name,
 										cls->as<Class_base>(),
 										nullptr,nullptr,false):
+										cls->as<Class_base>()->getBorrowedVariableByMultiname(*name);
+						}
+						else if (canCallFunctionDirect(typestack[typestack.size()-operationcount].obj,name,true))
+						{
+							isoverridden=true;
+							cls = typestack[typestack.size()-operationcount].obj;
+							v = typestack[typestack.size()-operationcount].classvar ?
+										cls->findVariableByMultiname(
+											*name,
+											cls->as<Class_base>(),
+											nullptr,nullptr,false):
 										cls->as<Class_base>()->getBorrowedVariableByMultiname(*name);
 						}
 						if (!v
@@ -5382,6 +5397,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										it2++;
 									}
 								}
+							}
+							if (isoverridden) // method is overridden, so we can not further optimize it
+							{
+								func=nullptr;
+								v=nullptr;
 							}
 						}
 					}
@@ -5486,12 +5506,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 												}
 											}
 										}
-										else if (asAtomHandler::is<SyntheticFunction>(func))
+										else if (asAtomHandler::is<SyntheticFunction>(func) && opcode == 0x46)
 										{
 											SyntheticFunction* f = asAtomHandler::as<SyntheticFunction>(func);
 											if (!f->getMethodInfo()->returnType)
 												f->checkParamTypes();
 											resulttype = f->getReturnType();
+										}
+										else if (asAtomHandler::is<Function>(func) && opcode == 0x46)
+										{
+											Function* f = asAtomHandler::as<Function>(func);
+											resulttype = f->getReturnType();
+											if (!resulttype)
+												LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method:"<<*name<<" "<<typestack[typestack.size()-2].obj->toDebugString());
 										}
 									}
 									if (state.operandlist.size() > 1 && !isGenerator)
@@ -5803,6 +5830,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						case 0:
 						{
 							multiname* name = mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+							Class_base* resulttype = nullptr;
 							if (state.operandlist.size() > 0 && state.operandlist.back().type != OP_LOCAL && state.operandlist.back().type != OP_CACHED_SLOT)
 							{
 								asAtom* a = mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
@@ -5860,7 +5888,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									variable* v = state.operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
 									if (v && asAtomHandler::is<IFunction>(v->getter))
 									{
-										Class_base* resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
+										resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
 										if (!state.operandlist.back().objtype->is<Class_inherit>() && resulttype==nullptr)
 											LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method:"<<*name<<" "<<state.operandlist.back().objtype->toDebugString());
 										if (!setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS,opcode,code,true, false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_SETSLOT))
@@ -5870,6 +5898,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
 										typestack.push_back(typestackentry(resulttype,false));
 										break;
+									}
+								}
+								if (canCallFunctionDirect(state.operandlist.back(),name,true))
+								{
+									variable* v = state.operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
+									if (v)
+									{
+										resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
 									}
 								}
 								if (state.operandlist.back().objtype && !state.operandlist.back().objtype->isInterface && state.operandlist.back().objtype->isInitialized())
@@ -5884,7 +5920,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr);
 									if (v && v->slotid)
 									{
-										Class_base* resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
+										resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
 										if (state.operandlist.back().type == OP_LOCAL)
 										{
 											if (state.unchangedlocals.find(state.operandlist.back().index) != state.unchangedlocals.end())
@@ -5941,7 +5977,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							}
 							state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
 							removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
-							typestack.push_back(typestackentry(nullptr,false));
+							typestack.push_back(typestackentry(resulttype,false));
 							break;
 						}
 						case 1:
@@ -5952,10 +5988,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									&& dynamic_cast<TemplatedClass<Vector>*>(state.operandlist[state.operandlist.size()-2].objtype))
 							{
 								TemplatedClass<Vector>* cls=state.operandlist[state.operandlist.size()-2].objtype->as<TemplatedClass<Vector>>();
-								resulttype = cls->getTypes().size() > 0 ? (Class_base*)cls->getTypes()[0] : nullptr;;
+								resulttype = cls->getTypes().size() > 0 ? (Class_base*)cls->getTypes()[0] : nullptr;
 							}
-							if (state.operandlist.size() > 0 && (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_CONSTANT)
-									&& state.operandlist.back().objtype == Class<Integer>::getRef(function->getSystemState()).getPtr())
+							if (state.operandlist.size() > 0
+									&& (state.operandlist.back().objtype == Class<Integer>::getRef(function->getSystemState()).getPtr() || state.operandlist.back().objtype == Class<UInteger>::getRef(function->getSystemState()).getPtr()))
 							{
 								addname = !setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_GETPROPERTY_INTEGER,opcode,code,false,false,true,p,resulttype);
 							}

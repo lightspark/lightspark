@@ -663,13 +663,12 @@ public:
 	/**
 	 * Const version of findObjVar, useful when looking for getters
 	 */
-	FORCE_INLINE const variable* findObjVarConst(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL) const
+	FORCE_INLINE const variable* findObjVarConst(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = nullptr) const
 	{
 		if (mname.isEmpty())
-			return NULL;
+			return nullptr;
 		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
-		assert(!mname.ns.empty());
-		
+		bool noNS = mname.ns.empty(); // no Namespace in multiname means we don't care about the namespace and take the first match
 		const_var_iterator ret=Variables.find(name);
 		auto nsIt=mname.ns.cbegin();
 		//Find the namespace
@@ -677,7 +676,7 @@ public:
 		{
 			//breaks when the namespace is not found
 			const nsNameAndKind& ns=ret->second.ns;
-			if(ns==*nsIt || (mname.hasEmptyNS && ns.hasEmptyName()) || (mname.hasBuiltinNS && ns.hasBuiltinName()))
+			if(noNS || ns==*nsIt || (mname.hasEmptyNS && ns.hasEmptyName()) || (mname.hasBuiltinNS && ns.hasBuiltinName()))
 			{
 				if(ret->second.kind & traitKinds)
 				{
@@ -686,7 +685,7 @@ public:
 					return &ret->second;
 				}
 				else
-					return NULL;
+					return nullptr;
 			}
 			else
 			{
@@ -699,14 +698,14 @@ public:
 			}
 		}
 	
-		return NULL;
+		return nullptr;
 	}
 
 	//
-	FORCE_INLINE variable* findObjVar(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = NULL)
+	FORCE_INLINE variable* findObjVar(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = nullptr)
 	{
 		if (mname.isEmpty())
-			return NULL;
+			return nullptr;
 		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
 		bool noNS = mname.ns.empty(); // no Namespace in multiname means we don't care about the namespace and take the first match
 
@@ -726,7 +725,7 @@ public:
 					return &ret->second;
 				}
 				else
-					return NULL;
+					return nullptr;
 			}
 			else
 			{
@@ -739,7 +738,7 @@ public:
 			}
 		}
 
-		return NULL;
+		return nullptr;
 	}
 	
 	//Initialize a new variable specifying the type (TODO: add support for const)

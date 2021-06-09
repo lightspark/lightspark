@@ -455,11 +455,12 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 {
 	Sound* th=asAtomHandler::as<Sound>(obj);
 	number_t startTime;
-	ARG_UNPACK_ATOM(startTime, 0);
+	int32_t loops;
+	_NR<SoundTransform> soundtransform;
+	
+	ARG_UNPACK_ATOM(startTime, 0)(loops,0)(soundtransform,NullRef);
 	if (!sys->mainClip->usesActionScript3) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
 		startTime *= 1000;
-	if (argslen > 1)
-		LOG(LOG_NOT_IMPLEMENTED,"Sound.play with more than one argument");
 
 	th->incRef();
 	if (th->container)
@@ -469,6 +470,8 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<SampleDataEvent>::getInstanceS(th->getSystemState(),data,0)));
 		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, AudioFormat(LINEAR_PCM_FLOAT_BE,44100,2),false));
 		th->soundChannel->setStartTime(startTime);
+		th->soundChannel->setLoops(loops);
+		th->soundChannel->soundTransform = soundtransform;
 		th->soundChannel->incRef();
 		ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
 	}
@@ -477,11 +480,16 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		if (th->soundChannel)
 		{
 			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
- 			th->soundChannel->play(startTime);
+			th->soundChannel->setLoops(loops);
+			th->soundChannel->soundTransform = soundtransform;
+			th->soundChannel->play(startTime);
 			return;
 		}
 		SoundChannel* s = Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format);
 		s->setStartTime(startTime);
+		s->setLoops(loops);
+		s->soundTransform = soundtransform;
+		s->play(startTime);
 		ret = asAtomHandler::fromObjectNoPrimitive(s);
 	}
 }
@@ -708,7 +716,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
 SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay)
 	: EventDispatcher(c),stream(_stream),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
-	format(_format),oldVolume(-1.0),startTime(0),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
+	format(_format),oldVolume(-1.0),startTime(0),loopstogo(0),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
 	leftPeak(1),rightPeak(1)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
@@ -848,7 +856,16 @@ ASFUNCTIONBODY_ATOM(SoundChannel,getPosition)
 }
 void SoundChannel::execute()
 {
-	playStream();
+	while (true)
+	{
+		playStream();
+		if (loopstogo)
+			loopstogo--;
+		else
+			break;
+		if (ACQUIRE_READ(stopped))
+			break;
+	}
 }
 
 void SoundChannel::playStream()

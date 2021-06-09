@@ -102,6 +102,7 @@ private:
 	void validateSoundTransform(_NR<SoundTransform>);
 	void playStream();
 	number_t startTime;
+	int32_t loopstogo;
 	bool restartafterabort;
 public:
 	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), bool autoplay=true);
@@ -111,6 +112,7 @@ public:
 	void resume();
 	void markFinished(); // indicates that all sound data is available
 	void setStartTime(number_t starttime) { startTime = starttime; }
+	void setLoops(int32_t loops) {loopstogo=loops;}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void finalize();

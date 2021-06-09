@@ -1583,6 +1583,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	th->state.stop_FP=false;
 	th->advanceFrame();
+	th->state.frameadvanced=false;
 }
 
 void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)

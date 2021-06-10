@@ -364,11 +364,8 @@ void TextField::setSizeAndPositionFromAutoSize()
 	{
 		if (width < textWidth)
 			width = textWidth;
-		if (height < textHeight)
-			height = textHeight;
 	}
-	else
-		height = textHeight;
+	height = textHeight;
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getWidth)
@@ -1595,8 +1592,11 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 		{
 			if (*it == 13 || *it == 10)
 			{
-				xpos = 0;
-				ypos += this->leading;
+				// TODO
+				// - calculate the starting position for every line if it is not left aligned
+				// - handle word wrapping
+				xpos = autosizeposition;
+				ypos += this->leading+this->textHeight;
 				continue;
 			}
 			const TextureChunk* tex = embeddedfont->getCharTexture(it,this->fontSize,codetableindex);
@@ -2026,7 +2026,7 @@ _NR<DisplayObject> StaticText::hitTestImpl(_NR<DisplayObject> last, number_t x, 
 {
 	number_t xmin,xmax,ymin,ymax;
 	boundsRect(xmin,xmax,ymin,ymax);
-	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax)
+	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax && type != DisplayObject::MOUSE_CLICK && type != DisplayObject::DOUBLE_CLICK)
 	{
 		if (interactiveObjectsOnly)
 			return last;

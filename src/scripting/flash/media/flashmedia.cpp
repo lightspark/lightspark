@@ -461,6 +461,8 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 	ARG_UNPACK_ATOM(startTime, 0)(loops,0)(soundtransform,NullRef);
 	if (!sys->mainClip->usesActionScript3) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
 		startTime *= 1000;
+	if (soundtransform.isNull())
+		soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(sys));
 
 	th->incRef();
 	if (th->container)

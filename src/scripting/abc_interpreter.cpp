@@ -1538,7 +1538,10 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					keepchecking=false;
 				break;
 			case 0x75://convert_d
-				if (argsneeded || restype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr())
+				if (argsneeded 
+						|| restype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr()
+						|| restype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr()
+						|| restype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr())
 				{
 					b = code.peekbyteFromPosition(pos);
 					pos++;

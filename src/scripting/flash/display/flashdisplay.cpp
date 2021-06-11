@@ -1583,7 +1583,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	th->state.stop_FP=false;
 	th->advanceFrame();
-	th->state.frameadvanced=false;
 }
 
 void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
@@ -5260,7 +5259,6 @@ void MovieClip::initFrame()
 	{
 		frameScriptToExecute=state.FP;
 	}
-	state.frameadvanced=false;
 	state.creatingframe=false;
 }
 
@@ -5336,6 +5334,7 @@ void MovieClip::advanceFrame()
 		stopSound();
 	else
 		checkSound(state.next_FP);
+	state.frameadvanced=false;
 	state.creatingframe=true;
 	if (frameScriptToExecute != UINT32_MAX)
 	{

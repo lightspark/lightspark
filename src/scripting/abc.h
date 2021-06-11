@@ -1194,6 +1194,14 @@ private:
 	static void abc_greaterequals_constant_local_localresult(call_context* context);
 	static void abc_greaterequals_local_local_localresult(call_context* context);
 	static void abc_instanceof(call_context* context);
+	static void abc_instanceof_constant_constant(call_context* context);
+	static void abc_instanceof_local_constant(call_context* context);
+	static void abc_instanceof_constant_local(call_context* context);
+	static void abc_instanceof_local_local(call_context* context);
+	static void abc_instanceof_constant_constant_localresult(call_context* context);
+	static void abc_instanceof_local_constant_localresult(call_context* context);
+	static void abc_instanceof_constant_local_localresult(call_context* context);
+	static void abc_instanceof_local_local_localresult(call_context* context);
 	static void abc_istype(call_context* context);
 	static void abc_istypelate(call_context* context);
 	static void abc_istypelate_constant_constant(call_context* context);

@@ -987,7 +987,16 @@ abc_function ABCVm::abcfunctions[]={
 	abc_callFunctionBuiltinOneArg_constant_local_localresult,
 	abc_callFunctionBuiltinOneArg_local_local_localresult,
 
-	abc_invalidinstruction, // 0x330
+	abc_instanceof_constant_constant,// 0x330 ABC_OP_OPTIMZED_INSTANCEOF
+	abc_instanceof_local_constant,
+	abc_instanceof_constant_local,
+	abc_instanceof_local_local,
+	abc_instanceof_constant_constant_localresult,
+	abc_instanceof_local_constant_localresult,
+	abc_instanceof_constant_local_localresult,
+	abc_instanceof_local_local_localresult,
+
+	abc_invalidinstruction, // 0x338
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1245,6 +1254,7 @@ struct operands
 #define ABC_OP_OPTIMZED_GETFUNCSCOPEOBJECT 0x0000031e
 #define ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_ONEARG 0x00000320
 #define ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_ONEARG 0x00000328
+#define ABC_OP_OPTIMZED_INSTANCEOF 0x00000330
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -6362,8 +6372,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
-			case 0xac://strictequals
 			case 0xb1://instanceof
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_INSTANCEOF,opcode,code,false,false,true,code.tellg(),Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr());
+				removetypestack(typestack,2);
+				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				break;
+			case 0xac://strictequals
 			case 0xb4://in
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();

@@ -352,8 +352,13 @@ _NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t
 {
 	//Masks have been already checked along the way
 
+	owner->startDrawJob(); // ensure that tokens are not changed during hitTest
 	if(CairoTokenRenderer::hitTest(tokens, scaling, x, y))
+	{
+		owner->endDrawJob();
 		return last;
+	}
+	owner->endDrawJob();
 	return NullRef;
 }
 

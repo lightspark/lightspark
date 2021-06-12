@@ -1406,7 +1406,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		fillstyleTextColor.FillStyleType=SOLID_FILL;
 		fillstyleTextColor.Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
 		embeddedfont->fillTextTokens(tokens,text,fontSize,fillstyleTextColor,leading,autosizeposition);
-		return TokenContainer::invalidate(target, totalMatrix,smoothing);
+		return TokenContainer::invalidate(target, initialMatrix,smoothing);
 	}
 	std::vector<IDrawable::MaskData> masks;
 	bool isMask;
@@ -1458,7 +1458,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 	if (text.empty() && !this->border && !this->background)
 		return false;
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? this->loadedFrom->getEmbeddedFontByID(fontID) : this->loadedFrom->getEmbeddedFont(font));
-	if (embeddedfont && embeddedfont->hasGlyphs(text))
+	if ((ctxt.contextType == RenderContext::GL) && embeddedfont && embeddedfont->hasGlyphs(text))
 	{
 		// fast rendering path using pre-generated textures for every glyph
 		float rotation = getConcatenatedMatrix().getRotation();

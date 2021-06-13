@@ -44,7 +44,7 @@ private:
 public:
 	AudioManager(EngineData* engine);
 
-	AudioStream *createStream(AudioDecoder *decoder, bool startpaused, IThreadJob *producer, uint32_t playedTime);
+	AudioStream *createStream(AudioDecoder *decoder, bool startpaused, IThreadJob *producer, uint32_t playedTime, double volume);
 
 	void toggleMuteAll() { muteAllStreams ? unmuteAll() : muteAll(); }
 	bool allMuted() { return muteAllStreams; }
@@ -72,7 +72,7 @@ private:
 	struct timeval starttime;
 	int mixer_channel;
 public:
-	bool init();
+	bool init(double volume);
 	void startMixing();
 	AudioStream(AudioManager* _manager,IThreadJob* _producer,uint64_t _playedtime):manager(_manager),decoder(NULL),producer(_producer),hasStarted(false),isPaused(true),mixingStarted(false),playedtime(_playedtime) { }
 

@@ -916,7 +916,7 @@ void SoundChannel::playStream()
 				audioDecoder=streamDecoder->audioDecoder;
 
 			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
-				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,startTime);
+				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,startTime,soundTransform ? soundTransform->volume : 1.0);
 
 			if(audioStream)
 			{

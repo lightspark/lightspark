@@ -39,9 +39,9 @@ uint32_t AudioStream::getPlayedTime()
 	ret = playedtime + (now.tv_sec * 1000 + now.tv_usec / 1000) - (starttime.tv_sec * 1000 + starttime.tv_usec / 1000);
 	return ret;
 }
-bool AudioStream::init()
+bool AudioStream::init(double volume)
 {
-	unmutevolume = curvolume = 1.0;
+	unmutevolume = curvolume = volume;
 	mixer_channel = manager->engineData->audio_StreamInit(this);
 	manager->engineData->audio_StreamSetVolume(mixer_channel, curvolume);
 	isPaused = false;
@@ -151,7 +151,7 @@ void AudioManager::stopAllSounds()
 	}
 }
 
-AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused, IThreadJob* producer, uint32_t playedTime)
+AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused, IThreadJob* producer, uint32_t playedTime, double volume)
 {
 	Locker l(streamMutex);
 	if (!audio_available)
@@ -169,7 +169,7 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 
 	AudioStream *stream = new AudioStream(this,producer,playedTime);
 	stream->decoder = decoder;
-	if (!stream->init())
+	if (!stream->init(volume))
 	{
 		delete stream;
 		return NULL;

@@ -5284,7 +5284,7 @@ void MovieClip::executeFrameScript()
 		}
 	}
 
-	if (frameScriptToExecute != UINT32_MAX)
+	if (frameScriptToExecute != UINT32_MAX && this->isOnStage()) // it seems that framescripts are only executed if the movieclip is on the stage
 	{
 		uint32_t f = frameScriptToExecute;
 		frameScriptToExecute = UINT32_MAX;

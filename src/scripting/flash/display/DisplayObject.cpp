@@ -2051,7 +2051,7 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 		return parent->AVM1GetClipFromPath(localname);
 	}
 	
-	multiname objName(NULL);
+	multiname objName(nullptr);
 	objName.name_type=multiname::NAME_STRING;
 	objName.name_s_id=getSystemState()->getUniqueStringId(subpath);
 	objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
@@ -2180,8 +2180,15 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name)
 	pos = name.find(".");
 	if (pos != tiny_string::npos)
 	{
-		tiny_string path = name.lowercase();
+		tiny_string path = name;
 		DisplayObject* clip = AVM1GetClipFromPath(path);
+		if (clip && clip != this)
+		{
+			ret = asAtomHandler::fromObjectNoPrimitive(clip);
+			return ret;
+		}
+		path = name.lowercase();
+		clip = AVM1GetClipFromPath(path);
 		if (clip && clip != this)
 		{
 			ret = asAtomHandler::fromObjectNoPrimitive(clip);

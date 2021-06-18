@@ -30,6 +30,9 @@
 #include "scripting/argconv.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 
+// according to TextLineMetrics specs, there are always 2 pixels added to each side of a textfield
+#define TEXTFIELD_PADDING 2
+
 using namespace std;
 using namespace lightspark;
 
@@ -362,10 +365,10 @@ void TextField::setSizeAndPositionFromAutoSize()
 	}
 	if (!wordWrap)
 	{
-		if (width < textWidth)
-			width = textWidth;
+		if (width < textWidth+TEXTFIELD_PADDING*2)
+			width = textWidth+TEXTFIELD_PADDING*2;
 	}
-	height = textHeight;
+	height = textHeight+TEXTFIELD_PADDING*2;
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getWidth)
@@ -1405,7 +1408,10 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		}
 		fillstyleTextColor.FillStyleType=SOLID_FILL;
 		fillstyleTextColor.Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
-		embeddedfont->fillTextTokens(tokens,text,fontSize,fillstyleTextColor,leading,autosizeposition);
+		if (!text.empty())
+			embeddedfont->fillTextTokens(tokens,text,fontSize,fillstyleTextColor,leading,autosizeposition);
+		if (tokens.empty())
+			return nullptr;
 		return TokenContainer::invalidate(target, initialMatrix,smoothing);
 	}
 	std::vector<IDrawable::MaskData> masks;
@@ -1587,7 +1593,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 			}
 		}
 		number_t xpos=autosizeposition;
-		number_t ypos=-this->leading;
+		number_t ypos=-TEXTFIELD_PADDING;
 		for (auto it = text.begin(); it != text.end(); it++)
 		{
 			if (*it == 13 || *it == 10)
@@ -1622,9 +1628,6 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 				totalMatrix=getConcatenatedMatrix();
 				computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,hasMask);
 				computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
-			
-				width = bxmax-bxmin;
-				height = bymax-bymin;
 				MATRIX totalMatrix2;
 				std::vector<IDrawable::MaskData> masks2;
 				totalMatrix2=getConcatenatedMatrix();

@@ -671,9 +671,9 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 			if (it == getGlyphShapes().at(i).scaledtexturecache.end())
 			{
 				const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
-				number_t ystart = getRenderCharStartYPos();
+				number_t ystart = getRenderCharStartYPos()/1024.0f;
 				ystart *=number_t(tokenscaling);
-				MATRIX glyphMatrix(number_t(tokenscaling)/1024.0f, number_t(tokenscaling)/1024.0f, 0, 0,0,ystart/1024.0f);
+				MATRIX glyphMatrix(number_t(tokenscaling)/1024.0f, number_t(tokenscaling)/1024.0f, 0, 0,0,ystart);
 				tokensVector tmptokens;
 				TokenContainer::FromShaperecordListToShapeVector(sr,tmptokens,fillStyles,glyphMatrix);
 				number_t xmin, xmax, ymin, ymax;
@@ -1015,7 +1015,8 @@ void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 
 number_t DefineFont3Tag::getRenderCharStartYPos() const
 {
-	return 1024.0*20.0+FontLeading/2.0;
+	// not in the specs but it seems that Adobe subtracts the FontDescent from the vertical starting point for rendering
+	return 1024.0*20.0 - ((FontAscent+FontDescent) < 1024.0*20.0 ? number_t(FontDescent) : 0);
 }
 
 number_t DefineFont3Tag::getRenderCharAdvance(uint32_t index) const
@@ -1029,7 +1030,7 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 {
 	int tokenscaling = fontpixelsize * this->scaling;
 	width=0;
-	height= tokenscaling;
+	height= ((FontAscent+FontDescent+FontLeading)/1024.0/20.0)* tokenscaling;
 	number_t tmpwidth=0;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
@@ -1039,7 +1040,7 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 			if (width < tmpwidth)
 				width = tmpwidth;
 			tmpwidth = 0;
-			height+=tokenscaling;
+			height+=tokenscaling+ (this->FontLeading/1024.0/20.0)*this->scaling;
 		}
 		else
 		{

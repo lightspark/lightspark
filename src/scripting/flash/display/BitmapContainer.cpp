@@ -238,20 +238,20 @@ void BitmapContainer::copyRectangle(_R<BitmapContainer> source,
 
 	if (copyWidth <= 0 || copyHeight <= 0)
 		return;
-
 	int sx = clippedSourceRect.Xmin;
 	int sy = clippedSourceRect.Ymin;
-	if (mergeAlpha==false)
-	{
-		//Fast path using memmove
-		for (int i=0; i<copyHeight; i++)
-		{
-			memmove(&data[(clippedY+i)*stride + 4*clippedX],
-				&source->data[(sy+i)*source->stride + 4*sx],
-				4*copyWidth);
-		}
-	}
-	else
+// TODO the fast path doesn't work (the data is correctly copied from source to destination, so I really don't know why...)
+//	if (mergeAlpha==false)
+//	{
+//		//Fast path using memmove
+//		for (int i=0; i<copyHeight; i++)
+//		{
+//			memmove(&data[(clippedY+i)*stride + 4*clippedX],
+//				&source->data[(sy+i)*source->stride + 4*sx],
+//				4*copyWidth);
+//		}
+//	}
+//	else
 	{
 		uint8_t* sourcedata = &source->data[0];
 		bool needsdeletion = false;

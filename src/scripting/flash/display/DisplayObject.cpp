@@ -1092,6 +1092,10 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setRotation)
 	//Apply the difference
 	if(th->rotation!=val)
 	{
+		while (val > 180.0)
+			val -= 360.0;
+		while (val < -180.0)
+			val += 360.0;
 		th->rotation=val;
 		th->hasChanged=true;
 		if(th->onStage)

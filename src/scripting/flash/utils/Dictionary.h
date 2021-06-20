@@ -38,7 +38,7 @@ private:
 	bool weakkeys;
 public:
 	Dictionary(Class_base* c);
-	bool destruct()
+	bool destruct() override
 	{
 		Dictionary::dictType::iterator it = data.begin();
 		while(it!=data.end())
@@ -55,24 +55,24 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toJSON);
 
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name,GET_VARIABLE_OPTION opt=NONE);
-	int32_t getVariableByMultiname_i(const multiname& name)
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name,GET_VARIABLE_OPTION opt=NONE) override;
+	int32_t getVariableByMultiname_i(const multiname& name) override
 	{
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Dictionary");
 	}
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
 	void setVariableByMultiname_i(multiname& name, int32_t value) override;
-	bool deleteVariableByMultiname(const multiname& name);
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
+	bool deleteVariableByMultiname(const multiname& name) override;
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
 	tiny_string toString();
-	uint32_t nextNameIndex(uint32_t cur_index);
-	void nextName(asAtom &ret, uint32_t index);
-	void nextValue(asAtom &ret, uint32_t index);
+	uint32_t nextNameIndex(uint32_t cur_index) override;
+	void nextName(asAtom &ret, uint32_t index) override;
+	void nextValue(asAtom &ret, uint32_t index) override;
 
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap) override;
 };
 
 }

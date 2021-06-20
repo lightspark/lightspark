@@ -116,7 +116,7 @@ public:
 	 * Uploads the current matrix as the specified type.
 	 */
 	void setMatrixUniform(LSGL_MATRIX m) const;
-	GLRenderContext() : RenderContext(GL),engineData(NULL), largeTextureSize(0)
+	GLRenderContext() : RenderContext(GL),engineData(nullptr), largeTextureSize(0)
 	{
 	}
 	void SetEngineData(EngineData* data) { engineData = data;}
@@ -131,8 +131,8 @@ public:
 	 * Get the right CachedSurface from an object
 	 * In the OpenGL case we just get the CachedSurface inside the object itself
 	 */
-	const CachedSurface& getCachedSurface(const DisplayObject* obj) const;
-	void setProperties(AS_BLENDMODE blendmode);
+	const CachedSurface& getCachedSurface(const DisplayObject* obj) const override;
+	void setProperties(AS_BLENDMODE blendmode) override;
 
 	/* Utility */
 	bool handleGLErrors() const;
@@ -160,8 +160,8 @@ public:
 	 * Get the right CachedSurface from an object
 	 * In the Cairo case we get the right CachedSurface out of the map
 	 */
-	const CachedSurface& getCachedSurface(const DisplayObject* obj) const;
-	void setProperties(AS_BLENDMODE blendmode);
+	const CachedSurface& getCachedSurface(const DisplayObject* obj) const override;
+	void setProperties(AS_BLENDMODE blendmode) override;
 
 	/**
 	 * The CairoRenderContext acquires the ownership of the buffer

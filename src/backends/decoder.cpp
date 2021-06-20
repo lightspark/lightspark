@@ -392,11 +392,12 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 	if(datalen==0)
 		return false;
 #if defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME
-	AVPacket pkt;
-	av_init_packet(&pkt);
-	pkt.data=data;
-	pkt.size=datalen;
-	int ret = avcodec_send_packet(codecContext, &pkt);
+	AVPacket* pkt = av_packet_alloc();
+	if (!pkt)
+		return 0;
+	pkt->data=data;
+	pkt->size=datalen;
+	int ret = avcodec_send_packet(codecContext, pkt);
 	while (ret == 0)
 	{
 		ret = avcodec_receive_frame(codecContext,frameIn);
@@ -406,9 +407,9 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 			{
 				LOG(LOG_INFO,"not decoded:"<<ret);
 #ifdef HAVE_AV_PACKET_UNREF
-				av_packet_unref(&pkt);
+				av_packet_unref(pkt);
 #else
-				av_free_packet(&pkt);
+				av_free_packet(pkt);
 #endif
 				return false;
 			}
@@ -424,10 +425,11 @@ bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t ti
 		}
 	}
 #ifdef HAVE_AV_PACKET_UNREF
-	av_packet_unref(&pkt);
+	av_packet_unref(pkt);
 #else
-	av_free_packet(&pkt);
+	av_free_packet(pkt);
 #endif
+	av_packet_free(&pkt);
 #else
 	int frameOk=0;
 #if HAVE_AVCODEC_DECODE_VIDEO2
@@ -922,28 +924,29 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t time)
 {
 #if defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME
-	AVPacket pkt;
-	av_init_packet(&pkt);
+	AVPacket* pkt = av_packet_alloc();
+	if (!pkt)
+		return 0;
 
 	// If some data was left unprocessed on previous call,
 	// concatenate.
 	std::vector<uint8_t> combinedBuffer;
 	if (overflowBuffer.empty())
 	{
-		pkt.data=data;
-		pkt.size=datalen;
+		pkt->data=data;
+		pkt->size=datalen;
 	}
 	else
 	{
 		combinedBuffer.assign(overflowBuffer.begin(), overflowBuffer.end());
 		if (datalen > 0)
 			combinedBuffer.insert(combinedBuffer.end(), data, data+datalen);
-		pkt.data = &combinedBuffer[0];
-		pkt.size = combinedBuffer.size();
+		pkt->data = &combinedBuffer[0];
+		pkt->size = combinedBuffer.size();
 		overflowBuffer.clear();
 	}
 	av_frame_unref(frameIn);
-	int ret = avcodec_send_packet(codecContext, &pkt);
+	int ret = avcodec_send_packet(codecContext, pkt);
 	int maxLen = 0;
 	while (ret == 0)
 	{
@@ -960,9 +963,9 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 			FrameSamples& curTail=samplesBuffer.acquireLast();
 			int len = resampleFrameToS16(curTail);
 #if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
-			maxLen = pkt.size - av_frame_get_pkt_size (frameIn);
+			maxLen = pkt->size - av_frame_get_pkt_size (frameIn);
 #else
-			maxLen = pkt.size - frameIn->pkt_size;
+			maxLen = pkt->size - frameIn->pkt_size;
 #endif
 			curTail.len=len;
 			assert(!(curTail.len&0x80000000));
@@ -976,8 +979,8 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 	}
 	if (maxLen > 0)
 	{
-		int tmpsize = pkt.size - maxLen;
-		uint8_t* tmpdata = pkt.data;
+		int tmpsize = pkt->size - maxLen;
+		uint8_t* tmpdata = pkt->data;
 		tmpdata += maxLen;
 
 		if (tmpsize > 0)
@@ -986,10 +989,11 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 		}
 	}
 #ifdef HAVE_AV_PACKET_UNREF
-	av_packet_unref(&pkt);
+	av_packet_unref(pkt);
 #else
-	av_free_packet(&pkt);
+	av_free_packet(pkt);
 #endif
+	av_packet_free(&pkt);
 	return maxLen;
 #else
 	FrameSamples& curTail=samplesBuffer.acquireLast();

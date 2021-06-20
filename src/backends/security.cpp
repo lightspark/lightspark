@@ -1395,7 +1395,7 @@ PolicyAllowAccessFrom::PolicyAllowAccessFrom(PolicyFile* _file, const string _do
 	if(!secureSpecified)
 	{
 		if(file->getType() == PolicyFile::URL &&
-				dynamic_cast<URLPolicyFile*>(file)->getSubtype() == URLPolicyFile::HTTPS)
+				static_cast<URLPolicyFile*>(file)->getSubtype() == URLPolicyFile::HTTPS)
 			secure = true;
 		if(file->getType() == PolicyFile::SOCKET)
 			secure = false;
@@ -1486,7 +1486,7 @@ bool PolicyAllowAccessFrom::allowsAccessFrom(const URLInfo& url, uint16_t toPort
 	if (bCheckHttps)
 	{
 		if(file->getType() == PolicyFile::URL && 
-				dynamic_cast<URLPolicyFile*>(file)->getSubtype() == URLPolicyFile::HTTPS && 
+				static_cast<URLPolicyFile*>(file)->getSubtype() == URLPolicyFile::HTTPS && 
 				secure && url.getProtocol() != "https")
 			return false;
 		if(file->getType() == PolicyFile::SOCKET && 

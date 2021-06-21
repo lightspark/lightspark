@@ -2025,7 +2025,7 @@ _NR<DisplayObject> StaticText::hitTestImpl(_NR<DisplayObject> last, number_t x, 
 {
 	number_t xmin,xmax,ymin,ymax;
 	boundsRect(xmin,xmax,ymin,ymax);
-	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax && type != DisplayObject::MOUSE_CLICK && type != DisplayObject::DOUBLE_CLICK)
+	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax)
 	{
 		if (interactiveObjectsOnly)
 			return last;

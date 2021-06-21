@@ -1101,6 +1101,14 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 				ret = _MNR(this);
 				return ret;
 			}
+			if (interactiveObjectsOnly && !(*j)->is<InteractiveObject>())
+			{
+				// we have hit a non-interactive object, so "this" may be the hit target
+				// but we continue to search the children as there may be an InteractiveObject that is also hit
+				this->incRef();
+				ret = _MNR(this);
+				continue;
+			}
 			break;
 		}
 	}

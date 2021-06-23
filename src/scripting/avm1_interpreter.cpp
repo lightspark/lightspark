@@ -780,7 +780,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (!source)
 				{
 					tiny_string sourcepath = asAtomHandler::toString(sp,clip->getSystemState());
-					clip->AVM1GetClipFromPath(sourcepath);
+					source = clip->AVM1GetClipFromPath(sourcepath);
 				}
 				if (source)
 				{
@@ -1311,7 +1311,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x4a: // ActionToNumber
 			{
 				asAtom arg = PopStack(stack);
-				PushStack(stack,asAtomHandler::fromNumber(clip->getSystemState(),asAtomHandler::toNumber(arg),false));
+				PushStack(stack,asAtomHandler::fromNumber(clip->getSystemState(),asAtomHandler::AVM1toNumber(arg,false),false));
 				ASATOM_DECREF(arg);
 				break;
 			}

@@ -481,10 +481,11 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 	{
 		if (th->soundChannel)
 		{
-			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
 			th->soundChannel->setLoops(loops);
 			th->soundChannel->soundTransform = soundtransform;
 			th->soundChannel->play(startTime);
+			th->soundChannel->incRef();
+			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
 			return;
 		}
 		SoundChannel* s = Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format);

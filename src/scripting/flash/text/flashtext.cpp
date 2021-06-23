@@ -324,9 +324,9 @@ ASFUNCTIONBODY_ATOM(TextField,_setAutoSize)
 	ARG_UNPACK_ATOM(autoSizeString);
 
 	AUTO_SIZE newAutoSize = AS_NONE;
-	if(autoSizeString == "none")
+	if(autoSizeString == "none" || (!th->loadedFrom->usesActionScript3 && autoSizeString=="false"))
 		newAutoSize = AS_NONE;
-	else if (autoSizeString == "left")
+	else if (autoSizeString == "left" || (!th->loadedFrom->usesActionScript3 && autoSizeString=="true"))
 		newAutoSize = AS_LEFT;
 	else if (autoSizeString == "right")
 		newAutoSize = AS_RIGHT;

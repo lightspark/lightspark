@@ -513,7 +513,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 			surface.rotation,surface.xOffsetTransformed,surface.yOffsetTransformed,surface.widthTransformed,surface.heightTransformed,surface.xscale, surface.yscale,
 			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
 			surface.redOffset, surface.greenOffset, surface.blueOffset, surface.alphaOffset,
-			surface.isMask, surface.hasMask,0.0,RGB());
+			surface.isMask, surface.hasMask,0.0,RGB(),surface.smoothing);
 	return false;
 }
 
@@ -577,6 +577,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface.yscale=d->getYScale();
 	cachedSurface.isMask=d->getIsMask();
 	cachedSurface.hasMask=d->getHasMask();
+	cachedSurface.smoothing=d->getSmoothing();
 	cachedSurface.redMultiplier=d->getRedMultiplier();
 	cachedSurface.greenMultiplier=d->getGreenMultiplier();
 	cachedSurface.blueMultiplier=d->getBlueMultiplier();

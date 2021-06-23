@@ -1384,7 +1384,7 @@ externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData
 										   bool smoothing)
 	: IDrawable(w, h, x, y,rw,rh,rx,ry,r,xs,ys,im,hm, a, m,
 				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
-				_redOffset,_greenOffset,_blueOffset,_alphaOffset),m_engine(engine)
+				_redOffset,_greenOffset,_blueOffset,_alphaOffset,smoothing),m_engine(engine)
 {
 	externalressource = engine->setupFontRenderer(_textData,a,smoothing);
 }

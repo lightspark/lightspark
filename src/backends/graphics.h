@@ -72,7 +72,7 @@ class CachedSurface
 public:
 	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0)
 	  , redMultiplier(1.0), greenMultiplier(1.0), blueMultiplier(1.0), alphaMultiplier(1.0), redOffset(0.0), greenOffset(0.0), blueOffset(0.0), alphaOffset(0.0)
-	  ,isMask(false),hasMask(false),isChunkOwner(true){}
+	  ,isMask(false),hasMask(false),smoothing(true),isChunkOwner(true){}
 	~CachedSurface()
 	{
 		if (isChunkOwner && tex)
@@ -99,6 +99,7 @@ public:
 	float alphaOffset;
 	bool isMask;
 	bool hasMask;
+	bool smoothing;
 	bool isChunkOwner;
 };
 
@@ -164,6 +165,7 @@ protected:
 	float alphaOffset;
 	bool isMask;
 	bool hasMask;
+	bool smoothing;
 public:
 	IDrawable(int32_t w, int32_t h, int32_t x, int32_t y,
 		int32_t rw, int32_t rh, int32_t rx, int32_t ry, float r,
@@ -171,12 +173,12 @@ public:
 		bool im, bool hm,
 		float a, const std::vector<MaskData>& m,
 		float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
-		float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset):
+		float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset, bool _smoothing):
 		masks(m),width(w),height(h),xOffset(x),yOffset(y),xOffsetTransformed(rx),yOffsetTransformed(ry),widthTransformed(rw),heightTransformed(rh),rotation(r),
 		alpha(a),xscale(xs),yscale(ys),
 		redMultiplier(_redMultiplier),greenMultiplier(_greenMultiplier),blueMultiplier(_blueMultiplier),alphaMultiplier(_alphaMultiplier),
 		redOffset(_redOffset),greenOffset(_greenOffset),blueOffset(_blueOffset),alphaOffset(_alphaOffset),
-		isMask(im),hasMask(hm) {}
+		isMask(im),hasMask(hm),smoothing(_smoothing) {}
 	virtual ~IDrawable();
 	/*
 	 * This method returns a raster buffer of the image
@@ -203,6 +205,7 @@ public:
 	float getYScale() const { return yscale; }
 	bool getIsMask() const { return isMask; }
 	bool getHasMask() const { return hasMask; }
+	bool getSmoothing() const { return smoothing; }
 	float getRedMultiplier() const { return redMultiplier; }
 	float getGreenMultiplier() const { return greenMultiplier; }
 	float getBlueMultiplier() const { return blueMultiplier; }
@@ -257,7 +260,6 @@ protected:
 	   Useful to adapt points defined in pixels and twips (1/20 of pixel)
 	*/
 	const float scaleFactor;
-	bool smoothing;
 	/**
 	  The whole transformation matrix that is applied to the rendered object
 	*/
@@ -439,7 +441,7 @@ public:
 				  , float _a, const std::vector<MaskData>& m
 				  , float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier
 				  , float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset
-				  );
+				  , bool _smoothing);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(float scalex, float scaley, bool* isBufferOwner=nullptr) override;
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const override {}

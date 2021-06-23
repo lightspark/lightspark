@@ -1538,14 +1538,14 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, this->borderColor);
+						isMask, hasMask,3.0, this->borderColor,false);
 				ctxt.renderTextured(tex, (x+1)*scalex, (y+1)*scaley,
 						(tex.width-2)*scalex, (tex.height-2)*scaley,
 						getConcatenatedAlpha(), RenderContext::RGB_MODE,
 						rotation,(rx+1)*scalex,(ry+1)*scaley,(rwidth-2)*scalex,(rheight-2)*scaley,xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, this->backgroundColor);
+						isMask, hasMask,3.0, this->backgroundColor,false);
 			}
 			else if (this->background)
 			{
@@ -1555,7 +1555,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, this->backgroundColor);
+						isMask, hasMask,3.0, this->backgroundColor,false);
 			}
 			
 			if (this->caretblinkstate)
@@ -1585,7 +1585,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, this->textColor);
+						isMask, hasMask,3.0, this->textColor,true);
 			}
 		}
 		number_t xpos=autosizeposition;
@@ -1637,7 +1637,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,1.0, 1.0,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,2.0, this->textColor);
+						isMask, hasMask,2.0, this->textColor,true);
 			}
 			xpos += embeddedfont->getRenderCharAdvance(codetableindex)*fontSize;
 		}

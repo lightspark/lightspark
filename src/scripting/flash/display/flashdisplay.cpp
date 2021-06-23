@@ -4401,7 +4401,7 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 				, isMask, hasMask
 				, getConcatenatedAlpha(), masks
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
-				, redOffset,greenOffset,blueOffset,alphaOffset);
+				, redOffset,greenOffset,blueOffset,alphaOffset,this->smoothing);
 }
 
 void SimpleButton::sinit(Class_base* c)

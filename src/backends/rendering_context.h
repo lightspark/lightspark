@@ -63,7 +63,7 @@ public:
 			float alpha, COLOR_MODE colorMode,float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask, float directMode, RGB directColor)=0;
+			bool isMask, bool hasMask, float directMode, RGB directColor,bool smooth)=0;
 	/**
 	 * Get the right CachedSurface from an object
 	 */
@@ -126,7 +126,7 @@ public:
 			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask, float directMode, RGB directColor) override;
+			bool isMask, bool hasMask, float directMode, RGB directColor,bool smooth) override;
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the OpenGL case we just get the CachedSurface inside the object itself
@@ -155,7 +155,7 @@ public:
 			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask, float directMode, RGB directColor) override;
+			bool isMask, bool hasMask, float directMode, RGB directColor,bool smooth) override;
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the Cairo case we get the right CachedSurface out of the map

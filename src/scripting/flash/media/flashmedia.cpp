@@ -255,7 +255,7 @@ bool Video::renderImpl(RenderContext& ctxt) const
 			1.0f,1.0f,
 			1.0f,1.0f,1.0f,1.0f,
 			0.0f,0.0f,0.0f,0.0f,
-			false,false,0.0,RGB());
+			false,false,0.0,RGB(),false);
 		if (!videotag)
 			netStream->unlock();
 		return false;

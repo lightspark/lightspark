@@ -126,8 +126,8 @@ CairoRenderer::CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _
 		bool _smoothing, number_t _xstart, number_t _ystart)
 	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _im, _hm,_a, _ms,
 				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
-				_redOffset,_greenOffset,_blueOffset,_alphaOffset)
-	, scaleFactor(_s),smoothing(_smoothing), matrix(_m),xstart(_xstart),ystart(_ystart)
+				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing)
+	, scaleFactor(_s), matrix(_m),xstart(_xstart),ystart(_ystart)
 {
 }
 
@@ -1032,6 +1032,7 @@ const TextureChunk& AsyncDrawJob::getTexture()
 	surface.yscale = drawable->getYScale();
 	surface.isMask = drawable->getIsMask();
 	surface.hasMask = drawable->getHasMask();
+	surface.smoothing = drawable->getSmoothing();
 	surface.redMultiplier=drawable->getRedMultiplier();
 	surface.greenMultiplier=drawable->getGreenMultiplier();
 	surface.blueMultiplier=drawable->getBlueMultiplier();
@@ -1073,10 +1074,10 @@ IDrawable::~IDrawable()
 BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, bool _hm,
 		float _a, const std::vector<MaskData>& _ms,
 		float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
-		float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset)
+		float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,bool _smoothing)
 	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _im, _hm,_a, _ms,
 				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
-				_redOffset,_greenOffset,_blueOffset,_alphaOffset)
+				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing)
 	, data(_data)
 {
 }

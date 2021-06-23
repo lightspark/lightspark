@@ -624,7 +624,15 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		ASATOM_INCREF(args[1]);
 		const listener newListener(args[1], priority, useCapture);
 		//Ordered insertion
-		list<listener>::iterator insertionPoint=upper_bound(listeners.begin(),listeners.end(),newListener);
+		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
+		// check if a listener that matches type, use_capture and function is already registered
+		if (insertionPoint != listeners.end() && (*insertionPoint).use_capture == newListener.use_capture)
+		{
+			IFunction* newfunc = asAtomHandler::as<IFunction>(args[1]);
+			IFunction* insertPointFunc = asAtomHandler::as<IFunction>((*insertionPoint).f);
+			if (insertPointFunc == newfunc || (insertPointFunc->clonedFrom && insertPointFunc->clonedFrom == newfunc->clonedFrom))
+				return; // don't register the same listener twice
+		}
 		listeners.insert(insertionPoint,newListener);
 	}
 	th->eventListenerAdded(eventName);

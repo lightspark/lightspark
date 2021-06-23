@@ -139,7 +139,7 @@ multiname *Undefined::setVariableByMultiname(multiname& name, asAtom& o, CONST_A
 	return nullptr;
 }
 
-IFunction::IFunction(Class_base* c,CLASS_SUBTYPE st):ASObject(c,T_FUNCTION,st),length(0),inClass(nullptr),isStatic(false),isCloned(false),functionname(0)
+IFunction::IFunction(Class_base* c,CLASS_SUBTYPE st):ASObject(c,T_FUNCTION,st),length(0),inClass(nullptr),isStatic(false),clonedFrom(nullptr),functionname(0)
 {
 }
 
@@ -312,7 +312,7 @@ ASObject *IFunction::describeType() const
 
 std::string IFunction::toDebugString()
 {
-	string ret = ASObject::toDebugString()+(closure_this ? "(closure:"+closure_this->toDebugString()+")":"")+(isCloned ?" cloned":"");
+	string ret = ASObject::toDebugString()+(closure_this ? "(closure:"+closure_this->toDebugString()+")":"")+(clonedFrom ?" cloned":"");
 #ifndef _NDEBUG
 	if (this->getActivationCount() > 1)
 	{

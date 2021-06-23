@@ -1110,7 +1110,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 		}
 		else
 		{
-			if (cacheptr->cacheobj3 && cacheptr->cacheobj3->is<Function>() && cacheptr->cacheobj3->as<IFunction>()->isCloned)
+			if (cacheptr->cacheobj3 && cacheptr->cacheobj3->is<Function>() && cacheptr->cacheobj3->as<IFunction>()->clonedFrom)
 				cacheptr->cacheobj3->decRef();
 			cacheptr->local2.flags |= ABC_OP_NOTCACHEABLE;
 			cacheptr->local2.flags &= ~ABC_OP_CACHED;
@@ -1192,7 +1192,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 			}
 			obj = asAtomHandler::getClosureAtom(o,obj);
 			asAtomHandler::callFunction(o,ret,obj,args,argsnum,refcounted,needreturn && coercearguments,coercearguments);
-			if (!(cacheptr->local2.flags & ABC_OP_CACHED) && asAtomHandler::as<IFunction>(o)->isCloned)
+			if (!(cacheptr->local2.flags & ABC_OP_CACHED) && asAtomHandler::as<IFunction>(o)->clonedFrom)
 				asAtomHandler::as<IFunction>(o)->decRef();
 			if (needreturn && asAtomHandler::isInvalid(ret))
 				ret = asAtomHandler::undefinedAtom;

@@ -353,7 +353,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		}
 		else
 		{
-			if (instrptr->cacheobj2 && instrptr->cacheobj2->is<Function>() && instrptr->cacheobj2->as<IFunction>()->isCloned)
+			if (instrptr->cacheobj2 && instrptr->cacheobj2->is<Function>() && instrptr->cacheobj2->as<IFunction>()->clonedFrom)
 				instrptr->cacheobj2->decRef();
 			instrptr->local3.flags |= ABC_OP_NOTCACHEABLE;
 			instrptr->local3.flags &= ~ABC_OP_CACHED;
@@ -439,7 +439,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 //			LOG(LOG_ERROR,"callprop caching failed:"<<canCache<<" "<<*name<<" "<<name->isStatic<<" "<<asAtomHandler::toDebugString(obj));
 		obj = asAtomHandler::getClosureAtom(o,obj);
 		callImpl(th, o, obj, args, m, keepReturn);
-		if (!(instrptr->local3.flags & ABC_OP_CACHED) && asAtomHandler::as<IFunction>(o)->isCloned)
+		if (!(instrptr->local3.flags & ABC_OP_CACHED) && asAtomHandler::as<IFunction>(o)->clonedFrom)
 			asAtomHandler::as<IFunction>(o)->decRef();
 	}
 	else
@@ -1900,7 +1900,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 				instrptr->cacheobj1 = asAtomHandler::toObject(ret,th->sys);
 				instrptr->cacheobj2 = asAtomHandler::getClosure(ret);
 				if (instrptr->cacheobj1->is<IFunction>())
-					instrptr->cacheobj1->as<IFunction>()->isCloned=false;
+					instrptr->cacheobj1->as<IFunction>()->clonedFrom=nullptr;
 			}
 			break;
 		}
@@ -1957,7 +1957,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 			instrptr->cacheobj1 = asAtomHandler::toObject(ret,th->sys);
 			instrptr->cacheobj2 = asAtomHandler::getClosure(ret);
 			if (instrptr->cacheobj1->is<IFunction>())
-				instrptr->cacheobj1->as<IFunction>()->isCloned=false;
+				instrptr->cacheobj1->as<IFunction>()->clonedFrom=nullptr;
 		}
 	}
 	name->resetNameIfObject();

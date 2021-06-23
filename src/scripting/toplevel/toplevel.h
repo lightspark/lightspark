@@ -428,7 +428,7 @@ public:
 	Class_base* inClass;
 	// if this is a class method, this indicates if it is a static or instance method
 	bool isStatic;
-	bool isCloned;
+	IFunction* clonedFrom;
 	/* returns whether this is this a method of a function */
 	bool isMethod() const { return inClass != nullptr; }
 	bool isConstructed() const override { return constructIndicator; }
@@ -436,7 +436,7 @@ public:
 	{
 		inClass=nullptr;
 		isStatic=false;
-		isCloned=false;
+		clonedFrom=nullptr;
 		functionname=0;
 		length=0;
 		closure_this.reset();
@@ -449,7 +449,7 @@ public:
 		ret=clone();
 		ret->setClass(getClass());
 		ret->closure_this=c;
-		ret->isCloned=true;
+		ret->clonedFrom=this;
 		ret->isStatic=isStatic;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;

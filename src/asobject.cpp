@@ -1501,7 +1501,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 			if (asAtomHandler::getClosure(obj->var))
 			{
 				LOG_CALL("function " << name << " is already bound to "<<asAtomHandler::toDebugString(obj->var) );
-				if (asAtomHandler::getObject(obj->var)->as<IFunction>()->isCloned)
+				if (asAtomHandler::getObject(obj->var)->as<IFunction>()->clonedFrom)
 					ASATOM_INCREF(obj->var);
 				asAtomHandler::getClosure(obj->var)->incRef();
 				asAtomHandler::set(ret,obj->var);

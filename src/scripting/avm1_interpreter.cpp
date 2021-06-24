@@ -1110,7 +1110,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							asAtomHandler::as<Class_base>(func)->generator(ret,args,numargs);
 						}
 						else
+						{
 							LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction function not found "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func)<<" "<<numargs);
+							ret = asAtomHandler::undefinedAtom;
+						}
 					}
 				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction done "<<asAtomHandler::toDebugString(name)<<" "<<numargs);

@@ -630,7 +630,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		{
 			IFunction* newfunc = asAtomHandler::as<IFunction>(args[1]);
 			IFunction* insertPointFunc = asAtomHandler::as<IFunction>((*insertionPoint).f);
-			if (insertPointFunc == newfunc || (insertPointFunc->clonedFrom && insertPointFunc->clonedFrom == newfunc->clonedFrom))
+			if (insertPointFunc == newfunc || (insertPointFunc->clonedFrom && insertPointFunc->clonedFrom == newfunc->clonedFrom && insertPointFunc->closure_this==newfunc->closure_this))
 				return; // don't register the same listener twice
 		}
 		listeners.insert(insertionPoint,newListener);

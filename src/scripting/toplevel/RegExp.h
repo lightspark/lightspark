@@ -31,7 +31,7 @@ class RegExp: public ASObject
 public:
 	RegExp(Class_base* c);
 	RegExp(Class_base* c, const tiny_string& _re);
-	pcre* compile();
+	pcre* compile(bool isutf8);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASObject *match(const tiny_string& str);

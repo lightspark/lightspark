@@ -174,6 +174,15 @@ public:
 	{
 		return isASCII;
 	}
+	inline void checkValidUTF()
+	{
+		if (!isASCII && !g_utf8_validate(buf,numBytes(),nullptr))
+		{
+			// string is not valid UTF8, we treat it as ascii
+			isASCII = true;
+			numchars = stringSize-1;
+		}
+	}
 	
 	/* start and len are indices of utf8-characters */
 	tiny_string substr(uint32_t start, uint32_t len) const;

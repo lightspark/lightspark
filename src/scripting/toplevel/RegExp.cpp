@@ -146,7 +146,7 @@ ASFUNCTIONBODY_ATOM(RegExp,exec)
 
 ASObject *RegExp::match(const tiny_string& str)
 {
-	pcre* pcreRE = compile();
+	pcre* pcreRE = compile(!str.isSinglebyte());
 	if (!pcreRE)
 		return getSystemState()->getNullRef();
 	int capturingGroups;
@@ -238,7 +238,7 @@ ASFUNCTIONBODY_ATOM(RegExp,test)
 	RegExp* th=asAtomHandler::as<RegExp>(obj);
 
 	const tiny_string& arg0 = asAtomHandler::toString(args[0],sys);
-	pcre* pcreRE = th->compile();
+	pcre* pcreRE = th->compile(!arg0.isSinglebyte());
 	if (!pcreRE)
 	{
 		asAtomHandler::setNull(ret);
@@ -290,9 +290,11 @@ ASFUNCTIONBODY_ATOM(RegExp,_toString)
 	ret = asAtomHandler::fromObject(abstract_s(sys,res));
 }
 
-pcre* RegExp::compile()
+pcre* RegExp::compile(bool isutf8)
 {
-	int options = PCRE_UTF8|PCRE_NEWLINE_ANY|PCRE_JAVASCRIPT_COMPAT;
+	int options = PCRE_NEWLINE_ANY|PCRE_JAVASCRIPT_COMPAT;
+	if(isutf8)
+		options |= PCRE_UTF8;
 	if(ignoreCase)
 		options |= PCRE_CASELESS;
 	if(extended)

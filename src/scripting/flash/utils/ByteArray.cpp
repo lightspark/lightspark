@@ -459,6 +459,7 @@ bool ByteArray::readUTFBytes(uint32_t length,tiny_string& ret)
 	strncpy(buf,(char*)bufStart,(size_t)length);
 	position+=length;
 	ret = buf;
+	ret.checkValidUTF();
 	return true;
 }
 bool ByteArray::readBytes(uint32_t offset, uint32_t length,uint8_t* ret)

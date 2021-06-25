@@ -1253,7 +1253,8 @@ tiny_string XMLList::toString()
 
 int32_t XMLList::toInt()
 {
-	if (!hasSimpleContent())
+	if (!hasSimpleContent()
+			|| this->nodes.size()==0) // not mentioned in the specs but Adobe returns 0 if the nodelist is empty
 		return 0;
 
 	tiny_string str = toString();
@@ -1261,7 +1262,8 @@ int32_t XMLList::toInt()
 }
 int64_t XMLList::toInt64()
 {
-	if (!hasSimpleContent())
+	if (!hasSimpleContent()
+			|| this->nodes.size()==0) // not mentioned in the specs but Adobe returns 0 if the nodelist is empty
 		return 0;
 
 	tiny_string str = toString_priv();
@@ -1273,7 +1275,8 @@ int64_t XMLList::toInt64()
 }
 number_t XMLList::toNumber()
 {
-	if (!hasSimpleContent())
+	if (!hasSimpleContent()
+			|| this->nodes.size()==0) // not mentioned in the specs but Adobe returns 0 if the nodelist is empty
 		return 0;
 	return parseNumber(toString_priv());
 }

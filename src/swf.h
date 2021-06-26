@@ -307,6 +307,7 @@ private:
 	void systemFinalize();
 	std::map<tiny_string, Class_base *> classnamemap;
 	set<ASObject*> constantrefs;
+	list<_R<DisplayObject>> listResetParent;
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	tiny_string getDumpedSWFPath() const { return dumpedSWFPath;}
@@ -562,6 +563,19 @@ public:
 	Cond initializedCond;
 	void waitInitialized();
 	void getClassInstanceByName(asAtom &ret, const tiny_string& clsname);
+	void addDisplayObjectToResetParentList(_R<DisplayObject> child)
+	{
+		listResetParent.push_back(child);
+	}
+	void resetParentList()
+	{
+		auto it = listResetParent.begin();
+		while (it != listResetParent.end())
+		{
+			(*it)->setParent(nullptr);
+			it = listResetParent.erase(it);
+		}
+	}
 };
 
 class ParseThread: public IThreadJob

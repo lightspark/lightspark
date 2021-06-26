@@ -2898,7 +2898,8 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 			return false;
 
 		child->setOnStage(false);
-		child->setParent(nullptr);
+		child->incRef();
+		getSystemState()->addDisplayObjectToResetParentList(_MR(child));
 		child->setMask(NullRef);
 		
 		//Erase this from the legacy child map (if it is in there)
@@ -2922,7 +2923,7 @@ void DisplayObjectContainer::_removeAllChildren()
 	{
 		_R<DisplayObject> child = *it;
 		child->setOnStage(false);
-		child->setParent(nullptr);
+		getSystemState()->addDisplayObjectToResetParentList(child);
 		child->setMask(NullRef);
 		if (!needsActionScript3())
 			child->removeAVM1Listeners();
@@ -3087,7 +3088,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 			th->mapLegacyChildToDepth.erase(it2);
 		}
 		child->setOnStage(false);
-		child->setParent(nullptr);
+		sys->addDisplayObjectToResetParentList(*it);
 		//incRef before the refrence is destroyed
 		child->incRef();
 		th->dynamicDisplayList.erase(it);

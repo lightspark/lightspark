@@ -320,9 +320,9 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 	multiname* ret;
 
 	multiname_info* m=&th->mi->context->constant_pool.multinames[n];
-	if(m->cached==NULL)
+	if(m->cached==nullptr)
 	{
-		m->cached=new (getVm(th->mi->context->root->getSystemState())->vmDataMemory) multiname(getVm(th->mi->context->root->getSystemState())->vmDataMemory);
+		m->cached=new (getVm(th->sys)->vmDataMemory) multiname(getVm(th->sys)->vmDataMemory);
 		ret=m->cached;
 		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
@@ -374,7 +374,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
 	multiname_info* m=&th->mi->context->constant_pool.multinames[n];
 	if(m->cached==NULL)
 	{
-		m->cached=new (getVm(th->mi->context->root->getSystemState())->vmDataMemory) multiname(getVm(th->mi->context->root->getSystemState())->vmDataMemory);
+		m->cached=new (getVm(th->sys)->vmDataMemory) multiname(getVm(th->sys)->vmDataMemory);
 		ret=m->cached;
 		ret->isAttribute=m->isAttributeName();
 		switch(m->kind)
@@ -1291,6 +1291,9 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case IDLE_EVENT:
 			{
 				Locker l(event_queue_mutex);
+				// DisplayObjects that are removed from the display list keep their Parent set until all removedFromStage events are handled
+				// see http://www.senocular.com/flash/tutorials/orderofoperations/#ObjectDestruction
+				m_sys->resetParentList();
 				while (!idleevents_queue.empty())
 				{
 					events_queue.push_back(idleevents_queue.front());
@@ -1678,7 +1681,7 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtom f =asAtomHandler::fromObject(entry);
-	asAtomHandler::callFunction(f,ret,g,NULL,0,false);
+	asAtomHandler::callFunction(f,ret,g,nullptr,0,false);
 
 	ASATOM_DECREF(ret);
 

@@ -576,6 +576,17 @@ public:
 			it = listResetParent.erase(it);
 		}
 	}
+	bool isInResetParentList(DisplayObject* d)
+	{
+		auto it = listResetParent.begin();
+		while (it != listResetParent.end())
+		{
+			if ((*it).getPtr()==d)
+				return true;
+			it++;
+		}
+		return false;
+	}
 };
 
 class ParseThread: public IThreadJob

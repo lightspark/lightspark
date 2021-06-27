@@ -144,6 +144,7 @@ ASFUNCTIONBODY_ATOM(lightspark,isGetterSetter)
 ASFUNCTIONBODY_ATOM(lightspark,pauseSampling)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.pauseSampling not implemented");
+	ret = asAtomHandler::undefinedAtom;
 }
 ASFUNCTIONBODY_ATOM(lightspark,sampleInternalAllocs)
 {

@@ -2865,6 +2865,7 @@ ASFUNCTIONBODY_ATOM(lightspark,unescape)
 ASFUNCTIONBODY_ATOM(lightspark,print)
 {
 	Log::print(asAtomHandler::toString(args[0],sys));
+	ret = asAtomHandler::undefinedAtom;
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,trace)
@@ -2878,6 +2879,7 @@ ASFUNCTIONBODY_ATOM(lightspark,trace)
 		s << asAtomHandler::toString(args[i],sys);
 	}
 	Log::print(s.str());
+	ret = asAtomHandler::undefinedAtom;
 }
 ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 {

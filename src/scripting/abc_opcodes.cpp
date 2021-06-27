@@ -2679,6 +2679,8 @@ void ABCVm::newClass(call_context* th, int n)
 	{
 		assert_and_throw(baseClass->is<Class_base>());
 		Class_base* base = baseClass->as<Class_base>();
+		if (base->is<Class_inherit>())
+			base->as<Class_inherit>()->checkScriptInit();
 		assert(!base->isFinal);
 		if (ret->super.isNull())
 			ret->setSuper(_MR(base));

@@ -1188,7 +1188,7 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset);
 	}
 	asAtom v = o;
-	if (this->vec_type->coerce(getSystemState(), v))
+	if (this->vec_type->coerce(getSystemState(), o))
 		ASATOM_DECREF(v);
 	if(index < vec.size())
 	{
@@ -1226,7 +1226,7 @@ void Vector::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_
 		return;
 	}
 	asAtom v = o;
-	if (this->vec_type->coerce(getSystemState(), v))
+	if (this->vec_type->coerce(getSystemState(), o))
 		ASATOM_DECREF(v);
 	if(size_t(index) < vec.size())
 	{

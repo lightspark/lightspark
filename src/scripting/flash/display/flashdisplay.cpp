@@ -2895,7 +2895,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 		Locker l(mutexDisplayList);
 		std::vector<_R<DisplayObject>>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),_MR(child));
 		if(it==dynamicDisplayList.end())
-			return false;
+			return getSystemState()->isInResetParentList(child);
 
 		child->setOnStage(false);
 		child->incRef();

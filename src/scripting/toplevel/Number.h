@@ -74,7 +74,7 @@ public:
 	}
 	unsigned int toUInt() override
 	{
-		return isfloat ? (unsigned int)(dval) : ival;
+		return (unsigned int)toInt();
 	}
 	int64_t toInt64() override
 	{

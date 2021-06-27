@@ -638,6 +638,8 @@ ASFUNCTIONBODY_ATOM(lightspark, fscommand)
 	assert_and_throw(argslen >= 1 && argslen <= 2);
 	assert_and_throw(asAtomHandler::isString(args[0]));
 	tiny_string command = asAtomHandler::toString(args[0],sys);
+	// according to specs fscommand is a void method, but the abcasm tests seem to expect a result value, so we set the result to undefined
+	ret = asAtomHandler::undefinedAtom;
 	if(command == "quit")
 	{
 		if (getWorker() && !getWorker()->isPrimordial) // only allow quit from main worker

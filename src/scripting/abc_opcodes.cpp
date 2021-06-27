@@ -2803,6 +2803,7 @@ void ABCVm::newClass(call_context* th, int n)
 	//Class init functions are called with global as this
 	method_info* m=&th->mi->context->methods[th->mi->context->classes[n].cinit];
 	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(ret->getSystemState(),m,m->numArgs());
+	cinit->fromNewFunction=true;
 	cinit->inClass = ret;
 	//cinit must inherit the current scope
 	if (th->parent_scope_stack)

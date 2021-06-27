@@ -1676,6 +1676,7 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 
 	method_info* m=get_method(scripts[i].init);
 	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(this->root->getSystemState(),m,m->numArgs());
+	entry->fromNewFunction=true;
 	
 	entry->addToScope(scope_entry(g,false));
 

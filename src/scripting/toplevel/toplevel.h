@@ -566,6 +566,7 @@ public:
 class SyntheticFunction : public IFunction
 {
 friend class ABCVm;
+friend class ABCContext;
 friend class Class<IFunction>;
 friend class Class_base;
 public:

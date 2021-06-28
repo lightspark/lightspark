@@ -4861,11 +4861,6 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 
 void SimpleButton::reflectState()
 {
-	if(currentState == OVER && !overState.isNull())
-	{
-		LOG(LOG_ERROR,"setoverstate0:"<<this->toDebugString()<<" "<<this->getTagID()<<" "<<overState->toDebugString()<<" "<<overState->getTagID());
-		this->dumpDisplayList();
-	}
 	assert(dynamicDisplayList.empty() || dynamicDisplayList.size() == 1);
 	if(!dynamicDisplayList.empty())
 		_removeChild(dynamicDisplayList.front().getPtr(),true);
@@ -4882,7 +4877,6 @@ void SimpleButton::reflectState()
 	}
 	else if(currentState == OVER && !overState.isNull())
 	{
-		LOG(LOG_ERROR,"setoverstate:"<<this->toDebugString()<<" "<<this->getTagID()<<" "<<overState->toDebugString()<<" "<<overState->getTagID());
 		overState->incRef();
 		_addChildAt(overState,0);
 	}

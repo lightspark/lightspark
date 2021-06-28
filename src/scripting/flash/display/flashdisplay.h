@@ -133,7 +133,7 @@ public:
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	void _addChildAt(_R<DisplayObject> child, unsigned int index);
 	void dumpDisplayList(unsigned int level=0);
-	bool _removeChild(DisplayObject* child);
+	bool _removeChild(DisplayObject* child, bool direct=false);
 	void _removeAllChildren();
 	void removeAVM1Listeners() override;
 	int getChildIndex(_R<DisplayObject> child);

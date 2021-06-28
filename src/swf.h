@@ -563,12 +563,15 @@ public:
 	Cond initializedCond;
 	void waitInitialized();
 	void getClassInstanceByName(asAtom &ret, const tiny_string& clsname);
+	Mutex resetParentMutex;
 	void addDisplayObjectToResetParentList(_R<DisplayObject> child)
 	{
+		Locker l(resetParentMutex);
 		listResetParent.push_back(child);
 	}
 	void resetParentList()
 	{
+		Locker l(resetParentMutex);
 		auto it = listResetParent.begin();
 		while (it != listResetParent.end())
 		{
@@ -578,6 +581,7 @@ public:
 	}
 	bool isInResetParentList(DisplayObject* d)
 	{
+		Locker l(resetParentMutex);
 		auto it = listResetParent.begin();
 		while (it != listResetParent.end())
 		{
@@ -586,6 +590,20 @@ public:
 			it++;
 		}
 		return false;
+	}
+	void removeFromResetParentList(DisplayObject* d)
+	{
+		Locker l(resetParentMutex);
+		auto it = listResetParent.begin();
+		while (it != listResetParent.end())
+		{
+			if ((*it).getPtr()==d)
+			{
+				listResetParent.erase(it);
+				break;
+			}
+			it++;
+		}
 	}
 };
 

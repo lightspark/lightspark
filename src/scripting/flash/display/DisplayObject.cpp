@@ -1106,6 +1106,8 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 	Locker locker(spinlock);
 	if(parent!=p)
 	{
+		if (p)
+			getSystemState()->removeFromResetParentList(this);
 		parent=p;
 		hasChanged=true;
 		if(onStage && !getSystemState()->isShuttingDown())

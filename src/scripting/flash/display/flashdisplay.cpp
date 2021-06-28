@@ -2884,7 +2884,7 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 		child->setOnStage(onStage);
 }
 
-bool DisplayObjectContainer::_removeChild(DisplayObject* child)
+bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct)
 {
 	if(!child->getParent() || child->getParent()!=this)
 		return false;
@@ -2899,7 +2899,10 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child)
 
 		child->setOnStage(false);
 		child->incRef();
-		getSystemState()->addDisplayObjectToResetParentList(_MR(child));
+		if (direct)
+			child->setParent(nullptr);
+		else
+			getSystemState()->addDisplayObjectToResetParentList(_MR(child));
 		child->setMask(NullRef);
 		
 		//Erase this from the legacy child map (if it is in there)
@@ -4858,9 +4861,14 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 
 void SimpleButton::reflectState()
 {
+	if(currentState == OVER && !overState.isNull())
+	{
+		LOG(LOG_ERROR,"setoverstate0:"<<this->toDebugString()<<" "<<this->getTagID()<<" "<<overState->toDebugString()<<" "<<overState->getTagID());
+		this->dumpDisplayList();
+	}
 	assert(dynamicDisplayList.empty() || dynamicDisplayList.size() == 1);
 	if(!dynamicDisplayList.empty())
-		_removeChild(dynamicDisplayList.front().getPtr());
+		_removeChild(dynamicDisplayList.front().getPtr(),true);
 
 	if((currentState == UP || currentState == STATE_OUT) && !upState.isNull())
 	{
@@ -4874,6 +4882,7 @@ void SimpleButton::reflectState()
 	}
 	else if(currentState == OVER && !overState.isNull())
 	{
+		LOG(LOG_ERROR,"setoverstate:"<<this->toDebugString()<<" "<<this->getTagID()<<" "<<overState->toDebugString()<<" "<<overState->getTagID());
 		overState->incRef();
 		_addChildAt(overState,0);
 	}

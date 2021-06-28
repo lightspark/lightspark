@@ -90,6 +90,7 @@ public:
 	void describeClassMetadata(pugi::xml_node &root) const override;
 	bool isBuiltin() const override { return false; }
 	bool hasoverriddenmethod(multiname* name) const;
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt) override;
 };
 
 /* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */

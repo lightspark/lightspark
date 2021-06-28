@@ -193,6 +193,12 @@ bool Class_inherit::hasoverriddenmethod(multiname *name) const
 	return class_index == -1 ? true : this->context->instances[this->class_index].overriddenmethods && this->context->instances[this->class_index].overriddenmethods->find(name->name_s_id) != this->context->instances[this->class_index].overriddenmethods->end();
 }
 
+GET_VARIABLE_RESULT Class_inherit::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+{
+	checkScriptInit();
+	return Class_base::getVariableByMultiname(ret,name,opt);
+}
+
 template<>
 void Class<Global>::getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {

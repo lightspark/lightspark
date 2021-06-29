@@ -2855,7 +2855,7 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 {
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
-	if(child->getParent())
+	if(child->getParent() && !getSystemState()->isInResetParentList(child.getPtr()))
 	{
 		//Child already in this container
 		if(child->getParent()==this)
@@ -2866,6 +2866,7 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 			child->getParent()->_removeChild(child.getPtr());
 		}
 	}
+	getSystemState()->removeFromResetParentList(child.getPtr());
 	child->setParent(this);
 	{
 		Locker l(mutexDisplayList);

@@ -2555,6 +2555,7 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 {
 	if (setupInstructionTwoArguments(state,operator_start,opcode,code,false,false,true,code.tellg()))
 	{
+#ifdef ENABLE_OPTIMIZATION
 		if (state.preloadedcode.back().opcode >= uint32_t(operator_start+4)) // has localresult
 		{
 			uint32_t pos = code.tellg();
@@ -2594,6 +2595,7 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 				return;
 			}
 		}
+#endif
 	}
 	removetypestack(typestack,2);
 	typestack.push_back(typestackentry(Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr(),false));
@@ -6527,9 +6529,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xd7://setlocal_3
 			{
 				int32_t p = code.tellg();
+#ifdef ENABLE_OPTIMIZATION
 				assert_and_throw(uint32_t(opcode-0xd4) < mi->body->local_count);
 				setOperandModified(state,OP_LOCAL,opcode-0xd4);
-#ifdef ENABLE_OPTIMIZATION
 				if (checkInitializeLocalToConstant(state,opcode-0xd4))
 				{
 					removetypestack(typestack,1);
@@ -6551,10 +6553,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
 					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint =(opcode-0xd4);
 				}
+#ifdef ENABLE_OPTIMIZATION
 				if (typestack.back().obj && typestack.back().obj->is<Class_base>())
 					state.localtypes[opcode-0xd4]=typestack.back().obj->as<Class_base>();
 				else
 					state.localtypes[opcode-0xd4]=nullptr;
+#endif
 				removetypestack(typestack,1);
 				break;
 			}
@@ -6567,6 +6571,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x07://dxnslate
+				state.preloadedcode.push_back((uint32_t)opcode);
+				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				clearOperands(state,true,&lastlocalresulttype);
+				removetypestack(typestack,1);
+				break;
+			case 0x1f://hasnext
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);

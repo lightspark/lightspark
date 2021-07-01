@@ -86,8 +86,9 @@ void Class_inherit::finalize()
 
 void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
+	checkScriptInit();
 	//We override the classdef
-	if(realClass==NULL)
+	if(realClass==nullptr)
 		realClass=this;
 	if (!this->isBinded()) // it seems possible that an instance of a class is constructed before the binding of the class is available, so we have to check for a binding here
 		getSystemState()->mainClip->bindClass(this->class_name,this);
@@ -101,11 +102,11 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 	{
 		assert_and_throw(super);
 		//Our super should not construct, we are going to do it ourselves
-		super->getInstance(ret,false,NULL,0,realClass);
+		super->getInstance(ret,false,nullptr,0,realClass);
 		if (instancefactory.isNull())
 		{
 			asAtom instance=asAtomHandler::invalidAtom;
-			super->getInstance(instance,false,NULL,0,realClass);
+			super->getInstance(instance,false,nullptr,0,realClass);
 			instancefactory = _MR(asAtomHandler::getObject(instance));
 		}
 	}

@@ -451,7 +451,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 
 	th->pixels->copyRectangle(source->pixels, sourceRect->getRect(),
 				  destPoint->getX(), destPoint->getY(),
-				  mergeAlpha);
+				  mergeAlpha|| !th->transparent);
 	th->notifyUsers();
 }
 

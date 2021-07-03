@@ -268,7 +268,7 @@ public:
 	void removeAllDeclaredProperties();
 };
 
-class Template_base : public ASObject
+class Template_base : public ASObject, public Type
 {
 private:
 	QName template_name;
@@ -278,6 +278,15 @@ public:
 	QName getTemplateName() { return template_name; }
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
 	void addPrototypeGetter(SystemState *sys);
+
+
+	bool coerce(SystemState* sys, asAtom& o) const override	{ return false;}
+	void coerceForTemplate(SystemState* sys, asAtom& o) const override {}
+	tiny_string getName() const override { return "template"; }
+	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return CANNOT_BIND;}
+	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }
+	bool isBuiltin() const override { return true;}
+	Global* getGlobalScope() const override	{ return nullptr; }
 };
 
 class Class_object: public Class_base

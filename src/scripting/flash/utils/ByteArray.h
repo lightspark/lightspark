@@ -43,7 +43,7 @@ protected:
 	uint32_t real_len;
 	uint32_t len;
 	void compress_zlib();
-	void uncompress_zlib();
+	void uncompress_zlib(bool raw);
 	Mutex mutex;
 	uint8_t* getBufferIntern(unsigned int size, bool enableResize);
 	

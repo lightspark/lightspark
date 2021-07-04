@@ -130,15 +130,13 @@ void MemoryStreamCache::allocateChunk(size_t minLength)
 	assert(len >= minLength);
 	nextChunkSize = len;
 
-	{
-		Locker locker(chunkListMutex);
-		writeChunk = new MemoryChunk(len);
-		chunks.push_back(writeChunk);
-	}
+	writeChunk = new MemoryChunk(len);
+	chunks.push_back(writeChunk);
 }
 
 void MemoryStreamCache::handleAppend(const unsigned char* data, size_t length)
 {
+	Locker locker(chunkListMutex);
 	assert(length > 0);
 
 	if (!writeChunk || (ACQUIRE_READ(writeChunk->used) >= writeChunk->capacity))

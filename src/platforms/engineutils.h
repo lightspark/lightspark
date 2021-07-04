@@ -292,6 +292,7 @@ public:
 	virtual int audio_StreamInit(AudioStream* s);
 	virtual void audio_StreamPause(int channel, bool dopause);
 	virtual void audio_StreamSetVolume(int channel, double volume);
+	virtual void audio_StreamSetPanning(int channel, uint16_t left, uint16_t right);
 	virtual void audio_StreamDeinit(int channel);
 	virtual bool audio_ManagerInit();
 	virtual void audio_ManagerCloseMixer();

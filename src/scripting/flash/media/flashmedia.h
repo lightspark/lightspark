@@ -37,6 +37,7 @@ class NetStream;
 class StreamCache;
 class SoundChannel;
 class DefineVideoStreamTag;
+class StartSoundTag;
 
 class Sound: public EventDispatcher, public ILoadable
 {
@@ -98,14 +99,16 @@ private:
 	AudioDecoder* audioDecoder;
 	AudioStream* audioStream;
 	AudioFormat format;
+	StartSoundTag* tag;
 	number_t oldVolume;
 	void validateSoundTransform(_NR<SoundTransform>);
 	void playStream();
 	number_t startTime;
 	int32_t loopstogo;
 	bool restartafterabort;
+	void checkEnvelope();
 public:
-	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), bool autoplay=true);
+	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), bool autoplay=true,StartSoundTag* _tag=nullptr);
 	~SoundChannel();
 	void appendStreamBlock(unsigned char* buf, int len);
 	void play(number_t starttime=0);

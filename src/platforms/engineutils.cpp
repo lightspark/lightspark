@@ -1326,6 +1326,13 @@ void EngineData::audio_StreamSetVolume(int channel, double volume)
 		Mix_Volume(channel, curvolume);
 }
 
+void EngineData::audio_StreamSetPanning(int channel, uint16_t left, uint16_t right)
+{
+	if (channel != -1)
+		Mix_SetPanning(channel,left/256,right/256);
+	
+}
+
 void EngineData::audio_StreamDeinit(int channel)
 {
 	if (channel != -1)

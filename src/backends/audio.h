@@ -85,6 +85,7 @@ public:
 	void resume() { SetPause(false); }
 	void setVolume(double volume);
 	void setPlayedTime(uint64_t p) { playedtime = p; }
+	void setPanning(uint16_t left, int16_t right);
 	inline double getVolume() const { return curvolume; }
 	inline AudioDecoder *getDecoder() const { return decoder; }
 	~AudioStream();

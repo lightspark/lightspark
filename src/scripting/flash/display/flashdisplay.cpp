@@ -1191,7 +1191,7 @@ void Sprite::appendSound(unsigned char *buf, int len, uint32_t frame)
 
 void Sprite::checkSound(uint32_t frame)
 {
-	if (sound && !sound->isPlaying() && streamingsound && soundstartframe==frame)
+	if (sound && streamingsound && soundstartframe==frame)
 		sound->play();
 }
 

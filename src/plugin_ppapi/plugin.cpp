@@ -2565,6 +2565,12 @@ void ppPluginEngineData::audio_StreamPause(int channel, bool dopause)
 
 void ppPluginEngineData::audio_StreamSetVolume(int channel, double volume)
 {
+	LOG(LOG_NOT_IMPLEMENTED, "setting volume on PPAPI plugin");
+}
+
+void ppPluginEngineData::audio_StreamSetPanning(int channel, uint16_t left, uint16_t right)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "setting panning on PPAPI plugin");
 }
 
 void ppPluginEngineData::audio_StreamDeinit(int channel)

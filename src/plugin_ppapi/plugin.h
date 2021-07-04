@@ -325,15 +325,16 @@ public:
 	void exec_glColorMask(bool red, bool green, bool blue, bool alpha) override;
 
 	// Audio handling
-	virtual int audio_StreamInit(AudioStream* s) override;
-	virtual void audio_StreamPause(int channel, bool dopause) override;
-	virtual void audio_StreamSetVolume(int channel, double volume) override;
-	virtual void audio_StreamDeinit(int channel) override;
-	virtual bool audio_ManagerInit() override;
-	virtual void audio_ManagerCloseMixer() override;
-	virtual bool audio_ManagerOpenMixer() override;
-	virtual void audio_ManagerDeinit() override;
-	virtual int audio_getSampleRate() override;
+	int audio_StreamInit(AudioStream* s) override;
+	void audio_StreamPause(int channel, bool dopause) override;
+	void audio_StreamSetVolume(int channel, double volume) override;
+	void audio_StreamSetPanning(int channel, uint16_t left,uint16_t right) override;
+	void audio_StreamDeinit(int channel) override;
+	bool audio_ManagerInit() override;
+	void audio_ManagerCloseMixer() override;
+	bool audio_ManagerOpenMixer() override;
+	void audio_ManagerDeinit() override;
+	int audio_getSampleRate() override;
 
 	// Text rendering
 	uint8_t* getFontPixelBuffer(int32_t externalressource,int width,int height) override;

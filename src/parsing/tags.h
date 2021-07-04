@@ -297,6 +297,7 @@ private:
 public:
 	StartSoundTag(RECORDHEADER h, std::istream& s);
 	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+	const SOUNDINFO* getSoundInfo() const { return &SoundInfo; }
 };
 
 class SoundStreamHeadTag: public DisplayListTag

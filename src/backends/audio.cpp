@@ -91,6 +91,11 @@ void AudioStream::setVolume(double volume)
 	curvolume = volume;
 }
 
+void AudioStream::setPanning(uint16_t left, int16_t right)
+{
+	manager->engineData->audio_StreamSetPanning(mixer_channel,left, right);
+}
+
 AudioStream::~AudioStream()
 {
 	manager->engineData->audio_StreamDeinit(mixer_channel);

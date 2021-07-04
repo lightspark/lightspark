@@ -717,9 +717,9 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
-SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay)
+SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay, StartSoundTag* _tag)
 	: EventDispatcher(c),stream(_stream),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
-	format(_format),oldVolume(-1.0),startTime(0),loopstogo(0),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
+	format(_format),tag(_tag),oldVolume(-1.0),startTime(0),loopstogo(0),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
 	leftPeak(1),rightPeak(1)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
@@ -812,8 +812,8 @@ void SoundChannel::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,soundTransform);
 }
 
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(SoundChannel,leftPeak);
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(SoundChannel,rightPeak);
+ASFUNCTIONBODY_GETTER(SoundChannel,leftPeak);
+ASFUNCTIONBODY_GETTER(SoundChannel,rightPeak);
 ASFUNCTIONBODY_GETTER_SETTER_CB(SoundChannel,soundTransform,validateSoundTransform);
 
 void SoundChannel::buildTraits(ASObject* o)
@@ -927,6 +927,7 @@ void SoundChannel::playStream()
 					audioStream->setVolume(soundTransform->volume);
 					oldVolume = soundTransform->volume;
 				}
+				checkEnvelope();
 			}
 			
 			if(threadAborting)
@@ -1021,6 +1022,24 @@ void SoundChannel::threadAbort()
 		audioDecoder=nullptr;
 	}
 	mutex.unlock();
+}
+void SoundChannel::checkEnvelope()
+{
+	if (tag && tag->getSoundInfo()->HasEnvelope)
+	{
+		uint32_t playedtime = audioStream->getPlayedTime();
+		auto itprev = tag->getSoundInfo()->SoundEnvelope.begin();
+		for (auto it = tag->getSoundInfo()->SoundEnvelope.begin(); it != tag->getSoundInfo()->SoundEnvelope.end(); it++)
+		{
+			if (it->Pos44/44>playedtime)
+				break;
+			itprev=it;
+		}
+		leftPeak= number_t(itprev->LeftLevel)/32768.0;
+		rightPeak= number_t(itprev->LeftLevel)/32768.0;
+		if (audioStream)
+			audioStream->setPanning(itprev->LeftLevel,itprev->RightLevel);
+	}
 }
 
 void StageVideo::sinit(Class_base *c)

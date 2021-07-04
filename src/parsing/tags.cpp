@@ -2543,7 +2543,8 @@ void StartSoundTag::play(DefineSoundTag *soundTag)
 			soundTag->getSoundData(),
 			AudioFormat(soundTag->getAudioCodec(),
 			    soundTag->getSampleRate(),
-			    soundTag->getChannels()),false));
+			    soundTag->getChannels()),
+			false,this));
 		soundTag->soundchanel->setConstant();
 	}
 	if (this->SoundInfo.SyncNoMultiple && soundTag->soundchanel->isPlaying())

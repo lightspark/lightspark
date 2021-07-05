@@ -624,24 +624,24 @@ void Number::sinit(Class_base* c)
 		c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtomHandler::fromNumber(c->getSystemState(),0.7071067811865476,true),CONSTANT_TRAIT,false);
 		c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtomHandler::fromNumber(c->getSystemState(),1.4142135623730951,true),CONSTANT_TRAIT,false);
 		
-		c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(c->getSystemState(),Math::abs,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("acos","",Class<IFunction>::getFunction(c->getSystemState(),Math::acos,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("asin","",Class<IFunction>::getFunction(c->getSystemState(),Math::asin,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("atan","",Class<IFunction>::getFunction(c->getSystemState(),Math::atan,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("atan2","",Class<IFunction>::getFunction(c->getSystemState(),Math::atan2,2),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("ceil","",Class<IFunction>::getFunction(c->getSystemState(),Math::ceil,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("cos","",Class<IFunction>::getFunction(c->getSystemState(),Math::cos,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("exp","",Class<IFunction>::getFunction(c->getSystemState(),Math::exp,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("floor","",Class<IFunction>::getFunction(c->getSystemState(),Math::floor,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("log","",Class<IFunction>::getFunction(c->getSystemState(),Math::log,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("max","",Class<IFunction>::getFunction(c->getSystemState(),Math::_max,2),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("min","",Class<IFunction>::getFunction(c->getSystemState(),Math::_min,2),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("pow","",Class<IFunction>::getFunction(c->getSystemState(),Math::pow,2),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("random","",Class<IFunction>::getFunction(c->getSystemState(),Math::random),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("round","",Class<IFunction>::getFunction(c->getSystemState(),Math::round,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("sin","",Class<IFunction>::getFunction(c->getSystemState(),Math::sin,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("sqrt","",Class<IFunction>::getFunction(c->getSystemState(),Math::sqrt,1),NORMAL_METHOD,false,false);
-		c->setDeclaredMethodByQName("tan","",Class<IFunction>::getFunction(c->getSystemState(),Math::tan,1),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("abs","",Class<IFunction>::getFunction(c->getSystemState(),Math::abs,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("acos","",Class<IFunction>::getFunction(c->getSystemState(),Math::acos,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("asin","",Class<IFunction>::getFunction(c->getSystemState(),Math::asin,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("atan","",Class<IFunction>::getFunction(c->getSystemState(),Math::atan,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("atan2","",Class<IFunction>::getFunction(c->getSystemState(),Math::atan2,2,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("ceil","",Class<IFunction>::getFunction(c->getSystemState(),Math::ceil,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("cos","",Class<IFunction>::getFunction(c->getSystemState(),Math::cos,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("exp","",Class<IFunction>::getFunction(c->getSystemState(),Math::exp,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("floor","",Class<IFunction>::getFunction(c->getSystemState(),Math::floor,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("log","",Class<IFunction>::getFunction(c->getSystemState(),Math::log,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("max","",Class<IFunction>::getFunction(c->getSystemState(),Math::_max,2,Class<Number>::getRef(c->getSystemState()).getPtr(),Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("min","",Class<IFunction>::getFunction(c->getSystemState(),Math::_min,2,Class<Number>::getRef(c->getSystemState()).getPtr(),Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("pow","",Class<IFunction>::getFunction(c->getSystemState(),Math::pow,2,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("random","",Class<IFunction>::getFunction(c->getSystemState(),Math::random,0,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("round","",Class<IFunction>::getFunction(c->getSystemState(),Math::round,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("sin","",Class<IFunction>::getFunction(c->getSystemState(),Math::sin,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("sqrt","",Class<IFunction>::getFunction(c->getSystemState(),Math::sqrt,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+		c->setDeclaredMethodByQName("tan","",Class<IFunction>::getFunction(c->getSystemState(),Math::tan,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
 	}
 }
 

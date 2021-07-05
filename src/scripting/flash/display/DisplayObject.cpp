@@ -452,11 +452,9 @@ MATRIX DisplayObject::getMatrix(bool includeRotation) const
 	MATRIX ret;
 	if (!matrix.isNull())
 		ret=matrix->matrix;
+	ret.scale(sx,sy);
 	if (includeRotation)
-	{
-		ret.scale(sx,sy);
 		ret.rotate(rotation*M_PI/180.0);
-	}
 	ret.translate(tx,ty);
 	return ret;
 }
@@ -1178,7 +1176,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getVisible)
 number_t DisplayObject::computeHeight()
 {
 	number_t x1,x2,y1,y2;
-	bool ret=getBounds(x1,x2,y1,y2,getMatrix());
+	bool ret=getBounds(x1,x2,y1,y2,getMatrix(false));
 
 	return (ret)?(y2-y1):0;
 }
@@ -1186,7 +1184,7 @@ number_t DisplayObject::computeHeight()
 number_t DisplayObject::computeWidth()
 {
 	number_t x1,x2,y1,y2;
-	bool ret=getBounds(x1,x2,y1,y2,getMatrix());
+	bool ret=getBounds(x1,x2,y1,y2,getMatrix(false));
 
 	return (ret)?(x2-x1):0;
 }

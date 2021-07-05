@@ -1958,7 +1958,7 @@ FORCE_INLINE void asAtomHandler::subtract(asAtom& a,SystemState* sys,asAtom &v2,
 		LOG_CALL(_("subtractI ") << num1 << '-' << num2);
 		int64_t res = num1-num2;
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
-			setInt(a,sys,res);
+			setInt(a,sys,int32_t(res));
 		else if (res >= 0 && res < UINT32_MAX>>3)
 			setUInt(a,sys,res);
 		else
@@ -1988,7 +1988,7 @@ FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret,SystemState* sys,co
 		ASATOM_DECREF(ret);
 		int64_t res = num1-num2;
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
-			setInt(ret,sys,res);
+			setInt(ret,sys,int32_t(res));
 		else if (res >= 0 && res < UINT32_MAX>>3)
 			setUInt(ret,sys,res);
 		else

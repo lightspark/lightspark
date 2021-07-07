@@ -52,6 +52,8 @@ notinherited = r'<td class="summaryTableInheritanceCol">&nbsp;</td>'
 regproperty = re.compile(notinherited + r'<td class="summaryTableSignatureCol"><a href="[^"]*" class="signatureLink">([^<]*)</a>.*?<div class="summaryTableDescription">(\[override\])?(\[static\] )?(\[read-only\])?(\[write-only\])?')
 regmethod = re.compile(notinherited + r'<td class="summaryTableSignatureCol"><div class="summarySignature"><a href="[^"]*" class="signatureLink">([^<]*)</a>\(')
 
+regIsOnlyAIR = re.compile(r'<div xmlns:xd="http://www.pnp-software.com/XSLTdoc" class="MainContent">.*<b>Runtime Versions:&nbsp;</b></td><td>AIR (\d+.\d+|\d+)</td>')
+
 for dirpath, dirnames, filenames in os.walk(langref):
 	if dirpath==langref:
 		#In the toplevel dir, just include the specified files
@@ -64,43 +66,56 @@ for dirpath, dirnames, filenames in os.walk(langref):
 			continue
 		#print os.path.join(dirpath, filename)
 		f = open(os.path.join(dirpath, filename), 'r')
+
+		isOnlyAIR = False
+
+		# Check to see if class is only supported in AIR
 		for line in f:
-			#There maybe multiple matches on one line (seen in one case)
-			while(True):
-				m = regclass.search(line)
-				if m:
-					if dirpath==langref:
-						curClass = m.group(1)
-						dclasses.add(curClass)
-						isConst = False
-					else:
-						curClass = os.path.relpath(dirpath, langref).replace("/",".") +"."+ m.group(1)
-						dclasses.add(curClass)
-						isConst = False
+			if (isOnlyAIR == False):
+				isOnlyAIR = regIsOnlyAIR.search(line) > 1
+		
+		f = open(os.path.join(dirpath, filename), 'r')
+
+		if isOnlyAIR == True:
+			print(filename + " is only AIR")	# Temp code
+		else:
+			for line in f:
+				#There maybe multiple matches on one line (seen in one case)
+				while(True):
+					m = regclass.search(line)
+					if m:
+						if dirpath==langref:
+							curClass = m.group(1)
+							dclasses.add(curClass)
+							isConst = False
+						else:
+							curClass = os.path.relpath(dirpath, langref).replace("/",".") +"."+ m.group(1)
+							dclasses.add(curClass)
+							isConst = False
+						break
+					m = regconst.search(line)
+					if m:
+						isConst = True
+						line = line[m.end():]
+						continue
+						#there may be another match on this line
+					m = regproperty.search(line)
+					if m:
+						name = m.group(1).replace("#","").replace("(","").replace(")","")
+						isOverride = m.group(2) != None
+						isStatic = m.group(3) != None
+						isReadOnly = m.group(4) != None
+						isWriteOnly = m.group(5) != None
+						dproperties.add((curClass,name,isConst,isStatic,isReadOnly,isWriteOnly,isOverride))
+						line = line[m.end():]
+						continue
+					m = regmethod.search(line)
+					if m:
+						name = m.group(1).replace("#","").replace("(","").replace(")","")
+						dmethods.add((curClass,name))
+						line = line[m.end():]
+						continue
 					break
-				m = regconst.search(line)
-				if m:
-					isConst = True
-					line = line[m.end():]
-					continue
-					#there may be another match on this line
-				m = regproperty.search(line)
-				if m:
-					name = m.group(1).replace("#","").replace("(","").replace(")","")
-					isOverride = m.group(2) != None
-					isStatic = m.group(3) != None
-					isReadOnly = m.group(4) != None
-					isWriteOnly = m.group(5) != None
-					dproperties.add((curClass,name,isConst,isStatic,isReadOnly,isWriteOnly,isOverride))
-					line = line[m.end():]
-					continue
-				m = regmethod.search(line)
-				if m:
-					name = m.group(1).replace("#","").replace("(","").replace(")","")
-					dmethods.add((curClass,name))
-					line = line[m.end():]
-					continue
-				break
 
 		f.close()
 

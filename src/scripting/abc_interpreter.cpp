@@ -2703,6 +2703,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			};
 	uint8_t opcode=0;
 	memorystream codejumps(mi->body->code.data(), code_len);
+	std::vector<asAtom> constantsstack;
 	while(!codejumps.atend())
 	{
 		uint8_t prevopcode=opcode;
@@ -2747,17 +2748,20 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x86://astype
 			case 0xb2://istype
 				codejumps.readu30();
+				constantsstack.clear();
 				break;
 			case 0x08://kill
 			{
 				uint32_t t = codejumps.readu30();
 				skippablekills.insert(t);
+				constantsstack.clear();
 				break;
 			}
 			case 0x62://getlocal
 			{
 				uint32_t t = codejumps.readu30();
 				skippablekills.erase(t);
+				constantsstack.clear();
 				break;
 			}
 			case 0xd0://getlocal_0
@@ -2765,25 +2769,53 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xd2://getlocal_2
 			case 0xd3://getlocal_3
 				skippablekills.erase(opcode-0xd0);
+				constantsstack.clear();
 				break;
 			case 0x80://coerce
 				codejumps.readu30();
+				constantsstack.clear();
 				break;
 			case 0xf0://debugline
 			case 0xf1://debugfile
 			case 0xf2://bkptline
-			case 0x2c://pushstring
-			case 0x2d://pushint
-			case 0x2e://pushuint
-			case 0x2f://pushdouble
-			case 0x31://pushnamespace
 			case 0x63://setlocal
 			case 0x92://inclocal
 			case 0x94://declocal
 			case 0xc2://inclocal_i
 			case 0xc3://declocal_i
 				codejumps.readu30();
+				constantsstack.clear();
 				break;
+			case 0x2c://pushstring
+			{
+				uint32_t value = codejumps.readu30();
+				constantsstack.push_back(*function->mi->context->getConstantAtom(OP_STRING,value));
+				break;
+			}
+			case 0x2d://pushint
+			{
+				uint32_t value = codejumps.readu30();
+				constantsstack.push_back(*function->mi->context->getConstantAtom(OP_INTEGER,value));
+				break;
+			}
+			case 0x2e://pushuint
+			{
+				uint32_t value = codejumps.readu30();
+				constantsstack.push_back(*function->mi->context->getConstantAtom(OP_UINTEGER,value));
+				break;
+			}
+			case 0x2f://pushdouble
+			{
+				uint32_t value = codejumps.readu30();
+				constantsstack.push_back(*function->mi->context->getConstantAtom(OP_DOUBLE,value));
+				break;
+			}
+			case 0x31://pushnamespace
+			{
+				uint32_t value = codejumps.readu30();
+				constantsstack.push_back(*function->mi->context->getConstantAtom(OP_NAMESPACE,value));
+				break;
+			}
 			case 0x10://jump
 			{
 				int32_t p = codejumps.tellg();
@@ -2805,14 +2837,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					state.jumptargeteresulttypes.erase(p1);
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
+				constantsstack.clear();
 				break;
 			}
 			case 0x0c://ifnlt
 			case 0x0d://ifnle
 			case 0x0e://ifngt
 			case 0x0f://ifnge
-			case 0x13://ifeq
-			case 0x14://ifne
 			case 0x15://iflt
 			case 0x16://ifle
 			case 0x17://ifgt
@@ -2820,11 +2851,67 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x19://ifstricteq
 			case 0x1a://ifstrictne
 			{
+				// TODO check for unreachable code
 				int32_t p = codejumps.tellg();
 				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
 				state.jumptargeteresulttypes.erase(p1);
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
+				constantsstack.clear();
+				break;
+			}
+			case 0x13://ifeq
+			{
+				int32_t p = codejumps.tellg();
+				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
+				if (p1 > p && constantsstack.size()>1 && 
+						asAtomHandler::isEqual(constantsstack[constantsstack.size()-1]
+												,function->getSystemState()
+												, constantsstack[constantsstack.size()-1])
+						)//opcode is preceded by two constants, so we can compare them and check for unreachable code
+				{
+					int32_t nextreachable = p1;
+					// find the first jump target after the current position
+					auto it = state.jumptargets.begin();
+					while (it != state.jumptargets.end() && it->first < nextreachable)
+					{
+						if (it->first > p && it->first <nextreachable)
+							nextreachable = it->first;
+						it++;
+					}
+					unreachabletargets[p] = nextreachable;
+				}
+				state.jumptargeteresulttypes.erase(p1);
+				state.jumptargets[p1]++;
+				jumppoints.insert(make_pair(p,p1));
+				constantsstack.clear();
+				break;
+			}
+			case 0x14://ifne
+			{
+				int32_t p = codejumps.tellg();
+				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
+				if (p1 > p && constantsstack.size()>1 && 
+						!asAtomHandler::isEqual(constantsstack[constantsstack.size()-1]
+												,function->getSystemState()
+												, constantsstack[constantsstack.size()-1])
+						)//opcode is preceded by two constants, so we can compare them and check for unreachable code
+				{
+					int32_t nextreachable = p1;
+					// find the first jump target after the current position
+					auto it = state.jumptargets.begin();
+					while (it != state.jumptargets.end() && it->first < nextreachable)
+					{
+						if (it->first > p && it->first <nextreachable)
+							nextreachable = it->first;
+						it++;
+					}
+					unreachabletargets[p] = nextreachable;
+				}
+				state.jumptargeteresulttypes.erase(p1);
+				state.jumptargets[p1]++;
+				jumppoints.insert(make_pair(p,p1));
+				constantsstack.clear();
 				break;
 			}
 			case 0x11://iftrue
@@ -2847,6 +2934,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.jumptargeteresulttypes.erase(p1);
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
+				constantsstack.clear();
 				break;
 			}
 			case 0x12://iffalse
@@ -2869,6 +2957,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.jumptargeteresulttypes.erase(p1);
 				state.jumptargets[p1]++;
 				jumppoints.insert(make_pair(p,p1));
+				constantsstack.clear();
 				break;
 			}
 			case 0x1b://lookupswitch
@@ -2886,16 +2975,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					state.jumptargets[p1]++;
 					jumppoints.insert(make_pair(p,p1));
 				}
+				constantsstack.clear();
 				break;
 			}
 			case 0x24://pushbyte
 			{
-				codejumps.readbyte();
+				int32_t value = (int32_t)(int8_t)codejumps.readbyte();
+				constantsstack.push_back(asAtomHandler::fromInt(value));
 				break;
 			}
 			case 0x25://pushshort
 			{
-				codejumps.readu32();
+				int32_t value = (int32_t)(int16_t)codejumps.readu32();
+				constantsstack.push_back(asAtomHandler::fromInt(value));
 				break;
 			}
 			case 0x32://hasnext2
@@ -2910,6 +3002,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				codejumps.readu30();
 				codejumps.readu30();
+				constantsstack.clear();
 				break;
 			}
 			case 0xef://debug
@@ -2922,6 +3015,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x47://returnvoid
 			case 0x48://returnvalue
+			case 0x03://throw
 			{
 				int32_t p = codejumps.tellg();
 				int32_t nextreachable = codejumps.size();
@@ -2934,9 +3028,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				if (it != state.jumptargets.end())
 					nextreachable = it->first;
 				unreachabletargets[p] = nextreachable;
+				constantsstack.clear();
 				break;
 			}
 			default:
+				constantsstack.clear();
 				break;
 		}
 	}
@@ -3235,6 +3331,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			case 0x47://returnvoid
 			case 0x48://returnvalue
+			case 0x03://throw
 				skipunreachablecode(state,codetypes,false);
 				currenttype=nullptr;
 				break;
@@ -3568,14 +3665,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
 				uint32_t t =code.readu30();
-				uint32_t scopepos=UINT32_MAX;
 				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs);
+				ASObject* resulttype = nullptr;
+#ifdef ENABLE_OPTIMIZATION
+				uint32_t scopepos=UINT32_MAX;
 				asAtom o=asAtomHandler::invalidAtom;
 				bool found = false;
 				bool done=false;
 				multiname* name=mi->context->getMultiname(t,nullptr);
-				ASObject* resulttype = nullptr;
-#ifdef ENABLE_OPTIMIZATION
 				if (name && name->isStatic)
 				{
 					if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
@@ -4397,10 +4494,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				int32_t t = code.readu30();
-				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
 				bool skip = false;
 				ASObject* tobj = nullptr;
 #ifdef ENABLE_OPTIMIZATION
+				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
 				if (state.jumptargets.find(p) == state.jumptargets.end() && typestack.size() > 0)
 				{
 					assert_and_throw(name->isStatic);
@@ -4859,21 +4956,109 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			}
 			case 0x13://ifeq
+			{
 				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
-				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFEQ,opcode,code);
-				jumppositions[state.preloadedcode.size()-1] = code.reads24();
-				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
+				int32_t p = code.tellg();
+				int j = code.reads24();
+				int32_t p1 = code.tellg();
+#ifdef ENABLE_OPTIMIZATION
+				if (state.jumptargets.find(p) == state.jumptargets.end())
+				{
+					// if we are comparing two constants and the result is true, the following code is unreachable
+					if (j > 0 && state.operandlist.size() > 1
+							&& state.operandlist[state.operandlist.size()-1].type != OP_LOCAL
+							&& state.operandlist[state.operandlist.size()-1].type != OP_CACHED_SLOT
+							&& state.operandlist[state.operandlist.size()-2].type != OP_LOCAL
+							&& state.operandlist[state.operandlist.size()-2].type != OP_CACHED_SLOT
+							&& asAtomHandler::isEqual(*function->mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-1].type,state.operandlist[state.operandlist.size()-1].index)
+													  ,function->getSystemState()
+													  ,*function->mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-2].type,state.operandlist[state.operandlist.size()-2].index)
+													  ))
+					{
+						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						skipunreachablecode(state,code);
+						auto it = state.jumptargets.find(code.tellg()+1);
+						if (it != state.jumptargets.end() && it->second > 1)
+							state.jumptargets[code.tellg()+1]--;
+						else
+							state.jumptargets.erase(code.tellg()+1);
+						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						if (int(code.tellg())-p1 >= j)
+						{
+							// remove the two arguments
+							opcode_skipped=true;
+							assert(state.operandlist.size() > 1);
+							state.operandlist.back().removeArg(state);
+							state.operandlist.pop_back();
+							state.operandlist.back().removeArg(state);
+							state.operandlist.pop_back();
+							clearOperands(state,true,&lastlocalresulttype);
+							break;
+						}
+					}
+					setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFEQ,opcode,code);
+				}
+				else
+#endif
+					state.preloadedcode.push_back((uint32_t)opcode);
+				jumppositions[state.preloadedcode.size()-1] = j;
+				jumpstartpositions[state.preloadedcode.size()-1] = p1;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
+			}
 			case 0x14://ifne
+			{
 				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
-				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFNE,opcode,code);
-				jumppositions[state.preloadedcode.size()-1] = code.reads24();
-				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
+				int32_t p = code.tellg();
+				int j = code.reads24();
+				int32_t p1 = code.tellg();
+#ifdef ENABLE_OPTIMIZATION
+				if (state.jumptargets.find(p) == state.jumptargets.end())
+				{
+					// if we are comparing two constants and the result is false, the following code is unreachable
+					if (j > 0 && state.operandlist.size() > 1
+							&& state.operandlist[state.operandlist.size()-1].type != OP_LOCAL
+							&& state.operandlist[state.operandlist.size()-1].type != OP_CACHED_SLOT
+							&& state.operandlist[state.operandlist.size()-2].type != OP_LOCAL
+							&& state.operandlist[state.operandlist.size()-2].type != OP_CACHED_SLOT
+							&& !asAtomHandler::isEqual(*function->mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-1].type,state.operandlist[state.operandlist.size()-1].index)
+													   ,function->getSystemState()
+													   ,*function->mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-2].type,state.operandlist[state.operandlist.size()-2].index)
+													   ))
+					{
+						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						skipunreachablecode(state,code);
+						auto it = state.jumptargets.find(code.tellg()+1);
+						if (it != state.jumptargets.end() && it->second > 1)
+							state.jumptargets[code.tellg()+1]--;
+						else
+							state.jumptargets.erase(code.tellg()+1);
+						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						if (int(code.tellg())-p1 >= j)
+						{
+							// remove the two arguments
+							opcode_skipped=true;
+							assert(state.operandlist.size() > 1);
+							state.operandlist.back().removeArg(state);
+							state.operandlist.pop_back();
+							state.operandlist.back().removeArg(state);
+							state.operandlist.pop_back();
+							clearOperands(state,true,&lastlocalresulttype);
+							break;
+						}
+					}
+					setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFNE,opcode,code);
+				}
+				else
+#endif
+					state.preloadedcode.push_back((uint32_t)opcode);
+				jumppositions[state.preloadedcode.size()-1] = j;
+				jumpstartpositions[state.preloadedcode.size()-1] = p1;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
+			}
 			case 0x15://iflt
 				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
@@ -5263,7 +5448,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				}
 				break;
 			}
-			case 0x47: //returnvoid
+			case 0x47://returnvoid
 			{
 				state.canlocalinitialize.clear();
 				state.preloadedcode.push_back((uint32_t)opcode);
@@ -6403,6 +6588,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,1);
+				skipunreachablecode(state,code);
 				break;
 			case 0x29://pop
 #ifdef ENABLE_OPTIMIZATION

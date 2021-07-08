@@ -515,8 +515,6 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,initialize)
 		listener->setVariableAtomByQName("addListener",nsNameAndKind(),asAtomHandler::fromObjectNoPrimitive(Class<IFunction>::getFunction(sys,addListener)),DYNAMIC_TRAIT);
 		listener->setVariableAtomByQName("removeListener",nsNameAndKind(),asAtomHandler::fromObjectNoPrimitive(Class<IFunction>::getFunction(sys,removeListener)),DYNAMIC_TRAIT);
 		listener->setVariableAtomByQName("_listeners",nsNameAndKind(),asAtomHandler::fromObjectNoPrimitive(listeners),DYNAMIC_TRAIT);
-		LOG(LOG_ERROR,"AVM1Broadcaster.initialize:"<<listener->toDebugString());
-		listener->dumpVariables();
 	}
 }
 ASFUNCTIONBODY_ATOM(AVM1Broadcaster,broadcastMessage)
@@ -524,7 +522,6 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,broadcastMessage)
 	ASObject* th = asAtomHandler::getObject(obj);
 	tiny_string msg;
 	ARG_UNPACK_ATOM(msg);
-	LOG(LOG_ERROR,"AVM1Broadcaster.broadcastMessage:"<<msg);
 	asAtom l = asAtomHandler::invalidAtom;
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
@@ -577,8 +574,6 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,addListener)
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=sys->getUniqueStringId("_listeners");
 	th->getVariableByMultiname(l,m);
-	LOG(LOG_ERROR,"AVM1Broadcaster.addListener"<<th->toDebugString());
-	th->dumpVariables();
 	if (asAtomHandler::isArray(l))
 	{
 		// TODO spec is not clear if listener can be added multiple times
@@ -600,8 +595,6 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,removeListener)
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=sys->getUniqueStringId("_listeners");
 	th->getVariableByMultiname(l,m);
-	LOG(LOG_ERROR,"AVM1Broadcaster.removeListener "<<th->toDebugString());
-	th->dumpVariables();
 	if (asAtomHandler::isArray(l))
 	{
 		Array* listeners = asAtomHandler::as<Array>(l);

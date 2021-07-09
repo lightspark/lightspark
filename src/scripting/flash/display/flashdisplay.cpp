@@ -5297,7 +5297,7 @@ void MovieClip::executeFrameScript()
 		}
 	}
 
-	if (frameScriptToExecute != UINT32_MAX && this->isOnStage()) // it seems that framescripts are only executed if the movieclip is on the stage
+	if (frameScriptToExecute != UINT32_MAX)
 	{
 		uint32_t f = frameScriptToExecute;
 		frameScriptToExecute = UINT32_MAX;
@@ -5430,14 +5430,12 @@ void MovieClip::constructionComplete()
 
 void MovieClip::afterConstruction()
 {
-	// execute framescript of frame 0 after construction is completed
+	// set framescript of frame 0 after construction is completed
 	// only if state.FP was not changed during construction
 	if(frameScripts.count(0) && state.FP == 0)
 	{
 		if (frameScripts.count(0))
 			frameScriptToExecute = 0;
-		this->incRef();
-		this->getSystemState()->currentVm->prependEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
 	if (!this->loadedFrom->usesActionScript3 && !this->inAVM1Attachment)
 	{

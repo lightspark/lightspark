@@ -5691,7 +5691,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											{
 												ASObject* cls = state.operandlist.back().objtype;
 												if (opcode == 0x46)
+												{
+													resulttype = asAtomHandler::as<IFunction>(v->var)->getReturnType();
+													if (!resulttype && asAtomHandler::is<Function>(v->var))
+														LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method:"<<*name<<" "<<cls->toDebugString());
 													setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS ,opcode,code,true, false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_SETSLOT);
+												}
 												else
 													setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_VOID,opcode,code,p);
 												state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = asAtomHandler::getObject(v->var);

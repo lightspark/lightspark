@@ -629,7 +629,8 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		{
 			// ensure that DisplayObject constructor is called if this was added by PlaceObjectTag
 			// so that event listeners for "addedToStage" defined in constructor are added
-			if (!this->getConstructIndicator() && this->legacy)
+			if (!this->getConstructIndicator() && this->legacy
+					&& this->getClass()->hasConstructor() && getClass()->getConstructor()->getMethodInfo() && getClass()->getConstructor()->getMethodInfo()->numArgs()==0)
 			{
 				asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 				getClass()->handleConstruction(obj,nullptr,0,true);

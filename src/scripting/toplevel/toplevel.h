@@ -211,6 +211,7 @@ public:
 	void handleConstruction(asAtom &target, asAtom *args, unsigned int argslen, bool buildAndLink);
 	void setConstructor(IFunction* c);
 	bool hasConstructor() { return constructor != nullptr; }
+	IFunction* getConstructor() { return constructor; }
 	Class_base(const QName& name, MemoryAccount* m);
 	//Special constructor for Class_object
 	Class_base(const Class_object*);

@@ -2275,7 +2275,8 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 				state->setBlendMode(i->BlendMode);
 			if (i->ButtonHasFilterList && i->FilterList.Filters.size() != 0)
 				LOG(LOG_NOT_IMPLEMENTED,"DefineButtonTag: FilterList "<<this->getId());
-			state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(state->getSystemState(),i->ColorTransform));
+			if (i->ColorTransform.isfilled())
+				state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(state->getSystemState(),i->ColorTransform));
 
 			if(states[j] == nullptr)
 			{

@@ -46,13 +46,135 @@ toplevelfiles = [ "ArgumentError.html", "Array.html", "Boolean.html", "Class.htm
                   "ReferenceError.html", "RegExp.html", "SecurityError.html", "String.html", "SyntaxError.html",
                   "TypeError.html", "uint.html", "URIError.html", "Vector.html", "VerifyError.html", "XML.html", "XMLList.html" ]
 
+airfiles = ['EncryptedLocalStore.html',
+'SQLCollationType.html',
+'SQLColumnNameStyle.html',
+'SQLColumnSchema.html',
+'SQLConnection.html',
+'SQLIndexSchema.html',
+'SQLMode.html',
+'SQLResult.html',
+'SQLSchema.html',
+'SQLSchemaResult.html',
+'SQLStatement.html',
+'SQLTableSchema.html',
+'SQLTransactionLockType.html',
+'SQLTriggerSchema.html',
+'SQLViewSchema.html',
+'DockIcon.html',
+'Icon.html',
+'InteractiveIcon.html',
+'InvokeEventReason.html',
+'NativeApplication.html',
+'NativeDragActions.html',
+'NativeDragManager.html',
+'NativeDragOptions.html',
+'NativeProcess.html',
+'NativeProcessStartupInfo.html',
+'NotificationType.html',
+'SystemIdleMode.html',
+'SystemTrayIcon.html',
+'Updater.html',
+'FocusDirection.html',
+'Screen.html',
+'NativeMenu.html',
+'NativeMenuItem.html',
+'NativeWindow.html',
+'NativeWindowDisplayState.html',
+'NativeWindowInitOptions.html',
+'NativeWindowRenderMode.html',
+'NativeWindowResize.html',
+'NativeWindowSystemChrome.html',
+'NativeWindowType.html',
+'StageAspectRatio.html',
+'StageOrientation.html',
+'DRMManagerError.html',
+'SQLError.html',
+'SQLErrorOperation.html',
+'BrowserInvokeEvent.html',
+'DatagramSocketDataEvent.html',
+'DRMAuthenticateEvent.html',
+'FileListEvent.html',
+'GameInputEvent.html',
+'GeolocationEvent.html',
+'HTMLUncaughtScriptExceptionEvent.html',
+'InvokeEvent.html',
+'LocationChangeEvent.html',
+'MediaEvent.html',
+'MouseEvent.html',
+'NativeDragEvent.html',
+'NativeProcessExitEvent.html',
+'NativeWindowBoundsEvent.html',
+'NativeWindowDisplayStateEvent.html',
+'OutputProgressEvent.html',
+'RemoteNotificationEvent.html',
+'ScreenMouseEvent.html',
+'ServerSocketConnectEvent.html',
+'SQLErrorEvent.html',
+'SQLEvent.html',
+'SQLUpdateEvent.html',
+'StageOrientationEvent.html',
+'StorageVolumeChangeEvent.html',
+'TouchEventIntent.html',
+'ExtensionContext.html',
+'File.html',
+'FileMode.html',
+'FileStream.html',
+'StorageVolume.html',
+'StorageVolumeInfo.html',
+'HTMLHistoryItem.html',
+'HTMLHost.html',
+'HTMLLoader.html',
+'HTMLPDFCapability.html',
+'HTMLSWFCapability.html',
+'HTMLWindowCreateOptions.html',
+'AudioPlaybackMode.html',
+'CameraPosition.html',
+'CameraRollBrowseOptions.html',
+'MediaPromise.html',
+'MediaType.html',
+'StageWebView.html',
+'DatagramSocket.html',
+'InterfaceAddress.html',
+'NetworkInfo.html',
+'NetworkInterface.html',
+'ServerSocket.html',
+'AAAARecord.html',
+'ARecord.html',
+'DNSResolver.html',
+'MXRecord.html',
+'PTRRecord.html',
+'ResourceRecord.html',
+'SRVRecord.html',
+'NotificationStyle.html',
+'RemoteNotifier.html',
+'RemoteNotifierSubscribeOptions.html',
+'PaperSize.html',
+'PrintUIOptions.html',
+'IURIDereferencer.html',
+'CertificateStatus.html',
+'ReferencesValidationSetting.html',
+'RevocationCheckSettings.html',
+'SignatureStatus.html',
+'SignerTrustSettings.html',
+'X500DistinguishedName.html',
+'X509Certificate.html',
+'XMLSignatureValidator.html',
+'Geolocation.html',
+'ImageDecodingPolicy.html',
+'AutoCapitalize.html',
+'ReturnKeyLabel.html',
+'StageText.html',
+'StageTextInitOptions.html',
+'GameInput.html',
+'GameInputControl.html',
+'GameInputDevice.html']
+
 regclass = re.compile(r'<title>([a-zA-Z0-9\.]*)')
 regconst = re.compile(r'Public Constants')
 notinherited = r'<td class="summaryTableInheritanceCol">&nbsp;</td>'
 regproperty = re.compile(notinherited + r'<td class="summaryTableSignatureCol"><a href="[^"]*" class="signatureLink">([^<]*)</a>.*?<div class="summaryTableDescription">(\[override\])?(\[static\] )?(\[read-only\])?(\[write-only\])?')
 regmethod = re.compile(notinherited + r'<td class="summaryTableSignatureCol"><div class="summarySignature"><a href="[^"]*" class="signatureLink">([^<]*)</a>\(')
-
-regIsOnlyAIR = re.compile(r'<div xmlns:xd="http://www.pnp-software.com/XSLTdoc" class="MainContent">.*<b>Runtime Versions:&nbsp;</b></td><td>AIR (\d+.\d+|\d+)</td>')
 
 for dirpath, dirnames, filenames in os.walk(langref):
 	if dirpath==langref:
@@ -66,18 +188,9 @@ for dirpath, dirnames, filenames in os.walk(langref):
 			continue
 		#print os.path.join(dirpath, filename)
 		f = open(os.path.join(dirpath, filename), 'r')
-
-		isOnlyAIR = False
-
-		# Check to see if class is only supported in AIR
-		for line in f:
-			if (isOnlyAIR == False):
-				isOnlyAIR = regIsOnlyAIR.search(line) > 1
 		
-		f = open(os.path.join(dirpath, filename), 'r')
-
-		if isOnlyAIR == True:
-			print(filename + " is only AIR")	# Temp code
+		if filename in airfiles:
+			print(dirpath + '\\' + filename + " is only AIR")	# Temp code
 		else:
 			for line in f:
 				#There maybe multiple matches on one line (seen in one case)

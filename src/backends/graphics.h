@@ -60,7 +60,7 @@ public:
 	TextureChunk& operator=(const TextureChunk& r);
 	~TextureChunk();
 	bool resizeIfLargeEnough(uint32_t w, uint32_t h);
-	uint32_t getNumberOfChunks() const { return ((width+CHUNKSIZE-1)/CHUNKSIZE)*((height+CHUNKSIZE-1)/CHUNKSIZE); }
+	uint32_t getNumberOfChunks() const { return ((width+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL)*((height+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL); }
 	bool isValid() const { return chunks; }
 	void makeEmpty();
 	uint32_t width;

@@ -345,7 +345,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
 				, redOffset,greenOffset,blueOffset,alphaOffset
 				, smoothing
-				,bxmin*scaling,bymin*scaling);
+				, bxmin,bymin);
 }
 
 _NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const

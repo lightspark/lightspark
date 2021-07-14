@@ -6249,7 +6249,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										ASATOM_DECREF(o);
 								}
 							}
-							bool hasoperands = setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,opcode,code,true, false,nullptr,p,true);
+							bool hasoperands = setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,opcode,code,true, false,resulttype,p,true);
 							addname = !hasoperands;
 							if (!hasoperands && checkForLocalResult(state,code,0,nullptr))
 							{

@@ -2187,7 +2187,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	if (th->getParent() && !th->legacy && !th->is<RootMovieClip>())
+	if (th->getParent() && !th->is<RootMovieClip>())
 	{
 		if (th->name != BUILTIN_STRINGS::EMPTY)
 		{

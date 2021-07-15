@@ -1813,7 +1813,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				else if (asAtomHandler::is<Class_base>(func))
 				{
-					asAtomHandler::as<Class_base>(func)->getInstance(ret,false,args,numargs);
+					asAtomHandler::as<Class_base>(func)->getInstance(ret,true,args,numargs);
 				}
 				else
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewMethod function not found "<<asAtomHandler::toDebugString(scriptobject)<<" "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func));

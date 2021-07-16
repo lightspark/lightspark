@@ -5425,6 +5425,8 @@ void MovieClip::constructionComplete()
 	{
 		advanceFrame();
 		initFrame();
+		if (!needsActionScript3())
+			executeFrameScript();
 	}
 }
 

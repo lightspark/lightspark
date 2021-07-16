@@ -1657,7 +1657,7 @@ void DisplayObject::AVM1registerPrototypeListeners()
 bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 {
 	bool res = EventDispatcher::deleteVariableByMultiname(name);
-	if (getSystemState()->getSwfVersion() < 9)
+	if (!this->loadedFrom->usesActionScript3)
 	{
 		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
@@ -1676,7 +1676,8 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 			this->as<InteractiveObject>()->setMouseEnabled(false);
 			getSystemState()->stage->AVM1RemoveMouseListener(this);
 		}
-		
+		tiny_string s = name.normalizedNameUnresolved(getSystemState()).lowercase();
+		AVM1SetVariable(s,asAtomHandler::undefinedAtom,false);
 	}
 	return res;
 }
@@ -2142,7 +2143,7 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 	}
 }
 
-asAtom DisplayObject::AVM1GetVariable(const tiny_string &name)
+asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvars)
 {
 	uint32_t pos = name.find(":");
 	if (pos == tiny_string::npos)
@@ -2199,7 +2200,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name)
 		}
 	}
 
-	if (loadedFrom->version > 4)
+	if (loadedFrom->version > 4 && checkrootvars)
 	{
 		multiname m(nullptr);
 		m.name_type=multiname::NAME_STRING;

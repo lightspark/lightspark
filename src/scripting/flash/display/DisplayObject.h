@@ -315,7 +315,7 @@ public:
 	static void AVM1SetupMethods(Class_base* c);
 	DisplayObject* AVM1GetClipFromPath(tiny_string& path);
 	void AVM1SetVariable(tiny_string& name, asAtom v, bool setMember=true);
-	asAtom AVM1GetVariable(const tiny_string &name);
+	asAtom AVM1GetVariable(const tiny_string &name, bool checkrootvars=true);
 	void AVM1UpdateVariableBindings(uint32_t nameID, asAtom &value);
 	asAtom getVariableBindingValue(const tiny_string &name) override;
 	void setVariableBinding(tiny_string& name, _NR<DisplayObject> obj);

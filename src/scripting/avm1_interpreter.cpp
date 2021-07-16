@@ -1484,7 +1484,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (asAtomHandler::isInvalid(ret))
 					{
 						if (o && o->is<DisplayObject>())
-							ret = o->as<DisplayObject>()->AVM1GetVariable(asAtomHandler::toString(name,clip->getSystemState()));
+							ret = o->as<DisplayObject>()->AVM1GetVariable(asAtomHandler::toString(name,clip->getSystemState()),false);
 					}
 					if (asAtomHandler::isInvalid(ret))
 						asAtomHandler::setUndefined(ret);

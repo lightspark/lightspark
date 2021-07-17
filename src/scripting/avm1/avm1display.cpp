@@ -379,6 +379,8 @@ ASFUNCTIONBODY_ATOM(AVM1Color,setRGB)
 	{
 		asAtom t = asAtomHandler::fromObject(th->target->colorTransform.getPtr());
 		ColorTransform::setColor(ret,sys,t,args,1);
+		th->target->hasChanged=true;
+		th->target->requestInvalidation(sys);
 	}
 }
 
@@ -490,6 +492,8 @@ ASFUNCTIONBODY_ATOM(AVM1Color,setTransform)
 		o->getVariableByMultiname(a,m);
 		if (asAtomHandler::isValid(a))
 			th->target->colorTransform->alphaOffset = asAtomHandler::toNumber(a);
+		th->target->hasChanged=true;
+		th->target->requestInvalidation(sys);
 	}
 }
 bool AVM1Color::destruct()

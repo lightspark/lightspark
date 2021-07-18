@@ -68,7 +68,6 @@ jobs:
           libedit-dev \
           zlib1g-dev \
           libgl1-mesa-dev \
-          libpcre3-dev \
           libavutil-dev \
           libx11-dev \
           libglu1-mesa-dev \
@@ -114,7 +113,6 @@ jobs:
           libedit-dev \
           zlib1g-dev \
           libgl1-mesa-dev \
-          libpcre3-dev \
           libavutil-dev \
           libx11-dev \
           libglu1-mesa-dev \

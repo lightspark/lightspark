@@ -250,7 +250,7 @@ do
 
       case OP_EXACT:       /* Fall through */
       tcode += 2;
-
+      // fall through
       case OP_CHAR:
       case OP_CHARNC:
       case OP_PLUS:

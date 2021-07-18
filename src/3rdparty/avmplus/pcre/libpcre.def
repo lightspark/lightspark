@@ -1,0 +1,24 @@
+;+# This Source Code Form is subject to the terms of the Mozilla Public
+;+# License, v. 2.0. If a copy of the MPL was not distributed with this
+;+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+LIBRARY libpcre
+EXPORTS
+pcre_malloc
+pcre_free
+pcre_config
+pcre_callout
+pcre_compile
+pcre_copy_substring
+pcre_dfa_exec
+pcre_exec
+pcre_get_substring
+pcre_get_stringnumber
+pcre_get_substring_list
+pcre_free_substring
+pcre_free_substring_list
+pcre_info
+pcre_fullinfo
+pcre_maketables
+pcre_study
+pcre_version

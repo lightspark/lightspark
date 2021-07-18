@@ -17,7 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <pcre.h>
+#include "3rdparty/avmplus/pcre/pcre.h"
 
 #include "scripting/toplevel/ASString.h"
 #include "scripting/flash/utils/ByteArray.h"
@@ -186,7 +186,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 		return;
 	}
 	pcre_extra extra;
-	extra.match_limit_recursion=200;
+	extra.match_limit_recursion=500;
 	extra.flags = PCRE_EXTRA_MATCH_LIMIT_RECURSION;
 	int ovector[(capturingGroups+1)*3];
 	int offset=0;

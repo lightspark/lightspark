@@ -21,7 +21,7 @@
 #define SCRIPTING_TOPLEVEL_REGEXP_H 1
 #include "compat.h"
 #include "asobject.h"
-#include <pcre.h>
+#include "3rdparty/avmplus/pcre/pcre.h"
 
 namespace lightspark
 {

@@ -186,11 +186,18 @@ ASObject *RegExp::match(const tiny_string& str)
 		return getSystemState()->getNullRef();
 	}
 	pcre_extra extra;
-	extra.match_limit_recursion=200;
+	extra.match_limit_recursion=500;
 	extra.flags = PCRE_EXTRA_MATCH_LIMIT_RECURSION;
 	int ovector[(capturingGroups+1)*3];
 	int offset=global?lastIndex:0;
-	int rc=pcre_exec(pcreRE,capturingGroups > 200 ? &extra : NULL, str.raw_buf(), str.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
+	if(offset<0)
+	{
+		//beyond last match
+		pcre_free(pcreRE);
+		lastIndex=0;
+		return getSystemState()->getNullRef();
+	}
+	int rc=pcre_exec(pcreRE,capturingGroups > 500 ? &extra : nullptr, str.raw_buf(), str.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
 	if(rc<0)
 	{
 		//No matches or error
@@ -292,7 +299,7 @@ ASFUNCTIONBODY_ATOM(RegExp,_toString)
 
 pcre* RegExp::compile(bool isutf8)
 {
-	int options = PCRE_NEWLINE_ANY|PCRE_JAVASCRIPT_COMPAT;
+	int options = PCRE_NEWLINE_ANY;
 	if(isutf8)
 		options |= PCRE_UTF8;
 	if(ignoreCase)
@@ -307,16 +314,16 @@ pcre* RegExp::compile(bool isutf8)
 	const char * error;
 	int errorOffset;
 	int errorcode;
-	pcre* pcreRE=pcre_compile2(source.raw_buf(), options,&errorcode,  &error, &errorOffset,NULL);
+	pcre* pcreRE=pcre_compile2(source.raw_buf(), options,&errorcode,  &error, &errorOffset,nullptr);
 	if(error)
 	{
-		if (errorcode == 64) // invalid pattern in javascript compatibility mode (we try again in normal mode to match flash behaviour)
-		{
-			options &= ~PCRE_JAVASCRIPT_COMPAT;
-			pcreRE=pcre_compile2(source.raw_buf(), options,&errorcode,  &error, &errorOffset,NULL);
-		}
+//		if (errorcode == 64) // invalid pattern in javascript compatibility mode (we try again in normal mode to match flash behaviour)
+//		{
+//			options &= ~PCRE_JAVASCRIPT_COMPAT;
+//			pcreRE=pcre_compile2(source.raw_buf(), options,&errorcode,  &error, &errorOffset,NULL);
+//		}
 		if (error)
-			return NULL;
+			return nullptr;
 	}
 	return pcreRE;
 }

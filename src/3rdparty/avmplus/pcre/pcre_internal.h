@@ -45,7 +45,7 @@ functions whose names all begin with "_pcre_". */
 #ifndef PCRE_INTERNAL_H
 #define PCRE_INTERNAL_H
 
-//#include "pcre_avmplus.h"
+#include "pcre_avmplus.h"
 #include <limits.h>
 #include <string.h>
 #include <cassert>

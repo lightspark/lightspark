@@ -282,6 +282,7 @@ SET(LIBSPARK_SOURCES
   3rdparty/avmplus/pcre/pcre_xclass.cpp
   3rdparty/avmplus/pcre/config.h
   3rdparty/avmplus/pcre/pcre.h
+  3rdparty/avmplus/pcre/pcre_avmplus.h
   3rdparty/avmplus/pcre/pcre_internal.h
   3rdparty/avmplus/pcre/pcreposix.h
   3rdparty/avmplus/pcre/pcre_scanner.h

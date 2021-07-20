@@ -39,7 +39,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #ifndef _PCRE_H
 #define _PCRE_H
 
-//#include "pcre_avmplus.h"
+#include "pcre_avmplus.h"
 #include <cstddef>
 
 /* The current PCRE version information. */

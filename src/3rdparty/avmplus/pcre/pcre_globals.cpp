@@ -64,9 +64,7 @@ void avmplus_pcre_free(void *ptr)
 {
 	free(ptr);
 }
-#ifndef __WIN32 // TODO no idea why, but windows breaks on linking when enabling this
 const pcre_callout_t pcre_callout = nullptr;
-#endif
 #if 0
 
 #ifdef __ARMCC__

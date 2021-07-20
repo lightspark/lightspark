@@ -1615,9 +1615,8 @@ while (!work_stack.isEmpty()) {
 #ifdef SUPPORT_UTF8
       case OP_XCLASS:
       cc += GET(cc, 1) - 33;
-	  // fall through
 #endif
-
+      // fall through
       case OP_CLASS:
       case OP_NCLASS:
       cc += 33;

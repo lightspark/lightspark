@@ -488,7 +488,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
 			return;
 		}
-		SoundChannel* s = Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format);
+		SoundChannel* s = Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format,false);
 		s->setStartTime(startTime);
 		s->setLoops(loops);
 		s->soundTransform = soundtransform;
@@ -1035,6 +1035,8 @@ void SoundChannel::checkEnvelope()
 				break;
 			itprev=it;
 		}
+		if (itprev == tag->getSoundInfo()->SoundEnvelope.end())
+			return;
 		leftPeak= number_t(itprev->LeftLevel)/32768.0;
 		rightPeak= number_t(itprev->LeftLevel)/32768.0;
 		if (audioStream)

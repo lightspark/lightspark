@@ -1304,7 +1304,7 @@ int EngineData::audio_StreamInit(AudioStream* s)
 
 
 	mixer_channel = Mix_PlayChannel(-1, chunk, -1);
-	Mix_RegisterEffect(mixer_channel, mixer_effect_ffmpeg_cb, NULL, s);
+	Mix_RegisterEffect(mixer_channel, mixer_effect_ffmpeg_cb, nullptr, s);
 	Mix_Resume(mixer_channel);
 	return mixer_channel;
 }
@@ -1330,13 +1330,16 @@ void EngineData::audio_StreamSetPanning(int channel, uint16_t left, uint16_t rig
 {
 	if (channel != -1)
 		Mix_SetPanning(channel,left/256,right/256);
-	
 }
 
 void EngineData::audio_StreamDeinit(int channel)
 {
 	if (channel != -1)
+	{
+		Mix_Chunk*chunk = Mix_GetChunk(channel);
 		Mix_HaltChannel(channel);
+		Mix_FreeChunk(chunk);
+	}
 }
 
 bool EngineData::audio_ManagerInit()

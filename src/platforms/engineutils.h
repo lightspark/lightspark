@@ -30,7 +30,7 @@
 #include "flash/utils/ByteArray.h"
 #include "flash/display/NativeMenuItem.h"
 
-#define LIGHTSPARK_AUDIO_BUFFERSIZE 8192
+#define LIGHTSPARK_AUDIO_BUFFERSIZE 512
 
 namespace lightspark
 {

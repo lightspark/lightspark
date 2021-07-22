@@ -277,6 +277,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	cairo_t *stroke_cr = cairo_create(cairo_get_group_target(cr));
 	cairo_matrix_t mat;
 	cairo_get_matrix(cr,&mat);
+	cairo_matrix_translate(&mat,-xstart*scalex,-ystart*scaley);
 	cairo_set_matrix(cr, &mat);
 	cairo_set_matrix(stroke_cr, &mat);
 	cairo_push_group(stroke_cr);
@@ -312,7 +313,6 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 		}
 		if (tokentype == 0)
 			break;
-		PATH(cairo_move_to, (-xstart)*scalex, (-ystart)*scaley);
 		while (it != itend)
 		{
 			GeomToken p(*it,false);

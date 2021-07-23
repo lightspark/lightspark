@@ -125,7 +125,7 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname, DefineEditTextTag *_tag)
 	: InteractiveObject(c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),
+	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),originalXPosition(0),
 	  fillstyleTextColor(0xff),fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),
 	  alwaysShowSelection(false),
 	  condenseWhite(false), displayAsPassword(false),
@@ -189,6 +189,9 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getRestrict),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setRestrict),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textInteractionMode","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getTextInteractionMode),GETTER_METHOD,true);
+
+	// special handling neccessary when setting x
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setTextFieldX),SETTER_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c, alwaysShowSelection);
 	REGISTER_GETTER_SETTER(c, background);
@@ -346,7 +349,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setAutoSize)
 	}
 }
 
-void TextField::setSizeAndPositionFromAutoSize()
+void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 {
 	if (autoSize == AS_NONE)
 		return;
@@ -361,12 +364,14 @@ void TextField::setSizeAndPositionFromAutoSize()
 		case AS_CENTER:
 			autosizeposition = 0;
 			if (!wordWrap) // not in the specs but Adobe changes x position if wordWrap is not set
-				this->setX(this->getXY().x + (int32_t((width-TEXTFIELD_PADDING*2) - textWidth)/2));
-			width = textWidth+TEXTFIELD_PADDING*2;
+				this->setX(originalXPosition + (int32_t((width-TEXTFIELD_PADDING*2) - textWidth)/2));
+			if (updatewidth)
+				width = textWidth+TEXTFIELD_PADDING*2;
 			break;
 		default:
 			autosizeposition = 0;
-			width = textWidth+TEXTFIELD_PADDING*2;
+			if (updatewidth)
+				width = textWidth+TEXTFIELD_PADDING*2;
 			break;
 	}
 	height = textHeight+TEXTFIELD_PADDING*2;
@@ -390,7 +395,8 @@ ASFUNCTIONBODY_ATOM(TextField,_setWidth)
 		th->hasChanged=true;
 		th->setNeedsTextureRecalculation();
 		th->updateSizes();
-		th->setSizeAndPositionFromAutoSize();
+		th->setSizeAndPositionFromAutoSize(false);
+		th->width -= TEXTFIELD_PADDING*2;
 		if(th->onStage && th->isVisible())
 			th->requestInvalidation(sys);
 		th->legacy=false;
@@ -425,6 +431,13 @@ ASFUNCTIONBODY_ATOM(TextField,_setHeight)
 		th->legacy=false;
 	}
 	//else do nothing as the height is determined by autoSize
+}
+
+ASFUNCTIONBODY_ATOM(TextField,_setTextFieldX)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+	DisplayObject::_setX(ret,sys,obj,args,argslen);
+	th->originalXPosition=asAtomHandler::toInt(args[0]);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getTextWidth)
@@ -942,6 +955,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getCharBoundaries)
 
 void TextField::afterSetLegacyMatrix()
 {
+	originalXPosition = getXY().x;
 	textUpdated();
 }
 

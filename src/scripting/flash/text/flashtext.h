@@ -110,7 +110,7 @@ private:
 	int32_t getMaxScrollH();
 	int32_t getMaxScrollV();
 	void textUpdated();
-	void setSizeAndPositionFromAutoSize();
+	void setSizeAndPositionFromAutoSize(bool updatewidth=true);
 	void replaceText(unsigned int begin, unsigned int end, const tiny_string& newText);
 	EDIT_TYPE type;
 	ANTI_ALIAS_TYPE antiAliasType;
@@ -121,6 +121,7 @@ private:
 	tiny_string tagvarname;
 	Mutex invalidatemutex;
 	DefineEditTextTag* tag;
+	int32_t originalXPosition;
 
 	// these are only used when drawing to DisplayObject, so they are guarranteed not to be destroyed during rendering
 	FILLSTYLE fillstyleTextColor;
@@ -211,7 +212,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, thickness);
 	ASFUNCTION_GETTER_SETTER(type);
 	ASPROPERTY_GETTER_SETTER(bool, useRichTextClipboard);
-	
+	ASFUNCTION_ATOM(_setTextFieldX);
+
 	std::string toDebugString() override;
 };
 

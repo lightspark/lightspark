@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* implement wordwrap support for textfields
 	* implement sound panning
 	* embed pcre implementation from avmplus/tamarin (removes pcre dependency and ensures 100% compatibility with adobe for regular expressions)
 

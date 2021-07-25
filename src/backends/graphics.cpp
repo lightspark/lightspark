@@ -730,11 +730,13 @@ void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator
 	}
 }
 
-void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData& tData)
+void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData& tData, uint32_t line)
 {
 	PangoFontDescription* desc;
 
-	pango_layout_set_text(layout, tData.text.raw_buf(), -1);
+	assert(line==UINT32_MAX || tData.getLineCount()>line);
+	tiny_string text = tData.getText(line);
+	pango_layout_set_text(layout, text.raw_buf(), -1);
 
 	/* setup alignment */
 	PangoAlignment alignment;
@@ -830,15 +832,18 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr, float /*scalex*/, float /*scal
 	}
 	if(textData.caretblinkstate)
 	{
-		uint32_t w,h,tw,th;
-		tw=0;
-		tiny_string currenttext = textData.text;
-		if (caretIndex < currenttext.numChars())
+		uint32_t tw=0;
+		if (!textData.textlines.empty())
 		{
-			textData.text = textData.text.substr(0,caretIndex);
+			uint32_t w,h,tw,th;
+			tiny_string currenttext = textData.getText(0);
+			if (caretIndex < currenttext.numChars())
+			{
+				textData.textlines[0].text = textData.textlines[0].text.substr(0,caretIndex);
+			}
+			getBounds(textData,w,h,tw,th,0);
+			textData.textlines[0].text = currenttext;
 		}
-		getBounds(textData,w,h,tw,th);
-		textData.text = currenttext;
 		tw+=xpos;
 		cairo_set_source_rgb(cr, 0, 0, 0);
 		cairo_set_line_width(cr, 2);
@@ -850,7 +855,7 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr, float /*scalex*/, float /*scal
 	g_object_unref(layout);
 }
 
-bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th)
+bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th, uint32_t line)
 {
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 	cairo_t *cr=cairo_create(cairoSurface);
@@ -858,7 +863,7 @@ bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint3
 	PangoLayout* layout;
 
 	layout = pango_cairo_create_layout(cr);
-	pangoLayoutFromData(layout, _textData);
+	pangoLayoutFromData(layout, _textData,line);
 
 	PangoRectangle ink_rect, logical_rect;
 	pango_layout_get_pixel_extents(layout,&ink_rect,&logical_rect);//TODO: check the rounding during pango conversion
@@ -909,6 +914,7 @@ std::vector<LineData> CairoPangoRenderer::getLineData(const TextData& _textData)
 	PangoLayout* layout;
 	layout = pango_cairo_create_layout(cr);
 	pangoLayoutFromData(layout, _textData);
+	tiny_string text = _textData.getText();
 
 	int XOffset = _textData.scrollH;
 	int YOffset = PANGO_PIXELS(lineExtents(layout, _textData.scrollV-1).y);
@@ -924,8 +930,8 @@ std::vector<LineData> CairoPangoRenderer::getLineData(const TextData& _textData)
 				  PANGO_PIXELS(rect.y) - YOffset,
 				  PANGO_PIXELS(rect.width),
 				  PANGO_PIXELS(rect.height),
-				  _textData.text.bytePosToIndex(line->start_index),
-				  _textData.text.substr_bytes(line->start_index, line->length).numChars(),
+				  text.bytePosToIndex(line->start_index),
+				  text.substr_bytes(line->start_index, line->length).numChars(),
 				  PANGO_PIXELS(PANGO_ASCENT(rect)),
 				  PANGO_PIXELS(PANGO_DESCENT(rect)),
 				  PANGO_PIXELS(PANGO_LBEARING(rect)),
@@ -1098,4 +1104,46 @@ const TextureChunk& CharacterRenderer::getTexture()
 	if(!chunk.resizeIfLargeEnough(width, height))
 	chunk=getSys()->getRenderThread()->allocateTexture(width, height,false);
 	return chunk;
+}
+
+tiny_string TextData::getText(uint32_t line) const
+{
+	tiny_string text;
+	if (line == UINT32_MAX)
+	{
+		for (auto it = textlines.begin(); it != textlines.end(); it++)
+		{
+			if (!text.empty())
+				text += "\n";
+			text += (*it).text;
+		}
+	}
+	else if (textlines.size() > line)
+		text = textlines[line].text;
+	return text;
+}
+
+void TextData::setText(const char* text)
+{
+	textlines.clear();
+	if (*text == 0x00)
+		return;
+	tiny_string t = text;
+	uint32_t index = tiny_string::npos;
+	do
+	{
+		index = t.find("\n");
+		textline line;
+		line.autosizeposition=0;
+		line.textwidth=UINT32_MAX;
+		if (index != tiny_string::npos)
+		{
+			line.text = t.substr_bytes(0,index).raw_buf();
+			t=t.substr_bytes(index+1,UINT32_MAX);
+		}
+		else
+			line.text = t.raw_buf();
+		textlines.push_back(line);
+	}
+	while (index != tiny_string::npos);
 }

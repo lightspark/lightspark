@@ -481,7 +481,7 @@ public:
 	int getId() const override { return FontID; }
 	ASObject* instance(Class_base* c=nullptr) override;
 	const tiny_string getFontname() const { return fontname;}
-	virtual void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading,uint32_t startpos)=0;
+	virtual void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading,uint32_t startposx, uint32_t startposy)=0;
 	virtual number_t getRenderCharAdvance(uint32_t index) const =0;
 	virtual void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height)=0;
 	const TextureChunk *getCharTexture(const CharIterator& chrIt, int fontpixelsize, uint32_t &codetableindex);
@@ -501,7 +501,7 @@ public:
 	DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	number_t getRenderCharAdvance(uint32_t index) const override;
 	void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height) override;
-	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading,uint32_t startpos) override;
+	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading,uint32_t startposx, uint32_t startposy) override;
 	int32_t getLeading() const override { return 1024; }
 	int32_t getAscent() const override { return 1024; }
 	int32_t getDescent() const override { return 1024; }
@@ -537,7 +537,7 @@ public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	number_t getRenderCharAdvance(uint32_t index) const override;
 	void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height) override;
-	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading,uint32_t startpos) override;
+	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading,uint32_t startposx, uint32_t startposy) override;
 	int32_t getLeading() const override { return FontLeading; }
 	int32_t getAscent() const override { return FontAscent; }
 	int32_t getDescent() const override { return FontDescent; }
@@ -566,7 +566,7 @@ public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	number_t getRenderCharAdvance(uint32_t index) const override;
 	void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height) override;
-	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading,uint32_t startpos) override;
+	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading,uint32_t startposx, uint32_t startposy) override;
 	int32_t getLeading() const override { return FontLeading/20; }
 	int32_t getAscent() const override { return FontAscent/20; }
 	int32_t getDescent() const override { return FontDescent/20; }

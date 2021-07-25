@@ -417,7 +417,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	if(HasText)
 	{
 		in >> InitialText;
-		textData.text = (const char*)InitialText;
+		textData.setText((const char*)InitialText);
 	}
 	textData.wordWrap = WordWrap;
 	textData.multiline = Multiline;
@@ -446,7 +446,7 @@ ASObject* DefineEditTextTag::instance(Class_base* c)
 			c=Class<AVM1TextField>::getClass(loadedFrom->getSystemState());
 	}
 	//TODO: check
-	assert_and_throw(bindedTo==NULL);
+	assert_and_throw(bindedTo==nullptr);
 	TextField* ret= loadedFrom->usesActionScript3 ? 
 					new (c->memoryAccount) TextField(c, textData, !NoSelect, ReadOnly,VariableName,this) :
 					new (c->memoryAccount) AVM1TextField(c, textData, !NoSelect, ReadOnly,VariableName,this);
@@ -790,14 +790,14 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* ro
 	root->registerEmbeddedFont("",this);
 }
 
-void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading, uint32_t startpos)
+void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
 {
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
 	fillStyles.push_back(fillstyleColor);
 
 	int tokenscaling = fontpixelsize * this->scaling;
-	curPos.y = 1024;
+	curPos.y = 1024 + startposy*1024;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
@@ -816,7 +816,7 @@ void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text,
 					const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
 					Vector2 glyphPos = curPos*tokenscaling;
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
-							   glyphPos.x+startpos*1024*20,
+							   glyphPos.x+startposx*1024*20,
 							   glyphPos.y);
 					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
 					curPos.x += tokenscaling;
@@ -970,14 +970,14 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	root->registerEmbeddedFont(getFontname(),this);
 }
 
-void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading, uint32_t startpos)
+void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
 {
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
 	fillStyles.push_back(fillstyleColor);
 
 	int tokenscaling = fontpixelsize * this->scaling;
-	curPos.y = (1024+this->FontLeading/2.0);
+	curPos.y = (1024+this->FontLeading/2.0)+startposy*1024;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
@@ -996,7 +996,7 @@ void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 					const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
 					Vector2 glyphPos = curPos*tokenscaling;
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
-							   glyphPos.x+startpos*1024*20,
+							   glyphPos.x+startposx*1024*20,
 							   glyphPos.y);
 					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
 					if (FontFlagsHasLayout)
@@ -1180,14 +1180,14 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 
 }
 
-void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading, uint32_t startpos)
+void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
 {
 	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
 	fillStyles.push_back(fillstyleColor);
 
 	int tokenscaling = fontpixelsize * this->scaling;
-	curPos.y = (20*1024+this->FontLeading/2.0) * this->scaling;
+	curPos.y = ((20+startposy)*1024+this->FontLeading/2.0) * this->scaling;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
@@ -1206,7 +1206,7 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 					const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
 					Vector2 glyphPos = curPos*tokenscaling;
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
-							   glyphPos.x+startpos*1024*20* this->scaling,
+							   glyphPos.x+startposx*1024*20* this->scaling,
 							   glyphPos.y);
 					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
 					if (FontFlagsHasLayout)
@@ -1878,10 +1878,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		if (placedTag)
 			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,placedTag->MapToBounds(Matrix));
 		else
-		{
-			LOG(LOG_ERROR,"transformLegacyChild for object without placedTag");
 			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
-		}
 	}
 	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
 	{

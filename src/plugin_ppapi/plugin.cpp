@@ -2629,7 +2629,7 @@ int32_t ppPluginEngineData::setupFontRenderer(const TextData &_textData,float a,
 	PP_Size size = PP_MakeSize(_textData.width, _textData.height);
 	
 	PP_BrowserFont_Trusted_TextRun text;
-	text.text = g_var_interface->VarFromUtf8(_textData.text.raw_buf(),_textData.text.numBytes());
+	text.text = g_var_interface->VarFromUtf8(_textData.getText().raw_buf(),_textData.getText().numBytes());
 	text.override_direction = PP_FALSE;
 	text.rtl = PP_FALSE;
 	

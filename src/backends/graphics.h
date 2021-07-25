@@ -342,9 +342,18 @@ public:
 	*/
 	static bool hitTest(const tokensVector& tokens, float scaleFactor, number_t x, number_t y);
 };
+struct textline
+{
+	tiny_string text;
+	number_t autosizeposition;
+	uint32_t textwidth;
+};
 
 class TextData
 {
+friend class CairoPangoRenderer;
+protected:
+	std::vector<textline> textlines;
 public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
 	TextData() : width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), background(false), backgroundColor(0xFFFFFF),
@@ -355,7 +364,6 @@ public:
 	int32_t leading;
 	uint32_t textWidth;
 	uint32_t textHeight;
-	tiny_string text;
 	tiny_string font;
 	uint32_t fontID;
 	int32_t scrollH; // pixels, 0-based
@@ -371,6 +379,9 @@ public:
 	uint32_t fontSize;
 	bool wordWrap;
 	bool caretblinkstate;
+	tiny_string getText(uint32_t line=UINT32_MAX) const;
+	void setText(const char* text);
+	uint32_t getLineCount() const { return textlines.size(); }
 };
 
 class LineData {
@@ -403,7 +414,7 @@ class CairoPangoRenderer : public CairoRenderer
 	void executeDraw(cairo_t* cr, float scalex, float scaley);
 	TextData textData;
 	uint32_t caretIndex;
-	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData);
+	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData, uint32_t line=UINT32_MAX);
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const;
 	static PangoRectangle lineExtents(PangoLayout *layout, int lineNumber);
 public:
@@ -425,7 +436,7 @@ public:
 		@param _texttData The textData being tested
 		@param w,h,tw,th are the (text)width and (text)height of the textData.
 	*/
-	static bool getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th);
+	static bool getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th, uint32_t line=UINT32_MAX);
 	static std::vector<LineData> getLineData(const TextData& _textData);
 };
 

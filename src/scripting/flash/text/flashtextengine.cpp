@@ -462,8 +462,8 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 	{
 		throwError<ArgumentError>(kInvalidArgumentError,"Invalid argument: textLine is in different textBlock");
 	}
-	if (fitSomething && textLine->text == "")
-		textLine->text = " ";
+	if (fitSomething && textLine->getText().empty())
+		textLine->setText(" ");
 	textLine->width = (uint32_t)width;
 	textLine->previousLine = previousLine;
 	textLine->updateSizes();
@@ -584,13 +584,13 @@ ASFUNCTIONBODY_ATOM(GroupElement,_constructor)
 }
 
 TextLine::TextLine(Class_base* c, tiny_string linetext, _NR<TextBlock> owner)
-  : DisplayObjectContainer(c), TextData(),nextLine(NULL),previousLine(NULL),userData(NULL)
+  : DisplayObjectContainer(c), TextData(),nextLine(nullptr),previousLine(nullptr),userData(nullptr)
   ,hasGraphicElement(false),hasTabs(false),rawTextLength(0),specifiedWidth(0),textBlockBeginIndex(0)
 {
 	subtype = SUBTYPE_TEXTLINE;
 	textBlock = owner;
 
-	text = linetext;
+	setText(linetext.raw_buf());
 	updateSizes();
 	requestInvalidation(getSys());
 }

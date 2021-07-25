@@ -125,7 +125,7 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname, DefineEditTextTag *_tag)
 	: InteractiveObject(c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),originalXPosition(0),
+	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),originalXPosition(0),originalWidth(0),
 	  fillstyleTextColor(0xff),fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),
 	  alwaysShowSelection(false),
 	  condenseWhite(false), displayAsPassword(false),
@@ -369,7 +369,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 			autosizeposition = 0;
 			if (!wordWrap) // not in the specs but Adobe changes x position if wordWrap is not set
 			{
-				this->setX(originalXPosition + (int32_t((width-TEXTFIELD_PADDING*2) - textWidth)/2));
+				this->setX(originalXPosition + (originalWidth - textWidth)/2);
 				if (updatewidth)
 					width = textWidth+TEXTFIELD_PADDING*2;
 			}
@@ -407,6 +407,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setWidth)
 			&&  (asAtomHandler::toInt(args[0]) >= 0))
 	{
 		th->width=asAtomHandler::toUInt(args[0]);
+		th->originalWidth=th->width;
 		th->hasChanged=true;
 		th->setNeedsTextureRecalculation();
 		th->updateSizes();
@@ -974,6 +975,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getCharBoundaries)
 void TextField::afterSetLegacyMatrix()
 {
 	originalXPosition = getXY().x;
+	originalWidth = width;
 	textUpdated();
 }
 

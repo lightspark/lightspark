@@ -122,6 +122,7 @@ private:
 	Mutex invalidatemutex;
 	DefineEditTextTag* tag;
 	int32_t originalXPosition;
+	int32_t originalWidth;
 
 	// these are only used when drawing to DisplayObject, so they are guarranteed not to be destroyed during rendering
 	FILLSTYLE fillstyleTextColor;

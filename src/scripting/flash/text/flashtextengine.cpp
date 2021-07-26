@@ -34,6 +34,7 @@ void ContentElement::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED);
 	REGISTER_GETTER(c,rawText);
 	REGISTER_GETTER_SETTER(c,elementFormat);
+	c->setVariableAtomByQName("GRAPHIC_ELEMENT",nsNameAndKind(),asAtomHandler::fromUInt(0xFDEF),CONSTANT_TRAIT);
 }
 ASFUNCTIONBODY_GETTER_SETTER(ContentElement,elementFormat)
 ASFUNCTIONBODY_GETTER(ContentElement,rawText)

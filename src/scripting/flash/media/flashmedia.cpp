@@ -1151,8 +1151,22 @@ ASFUNCTIONBODY_ATOM(VideoStreamSettings,setMode)
 void H264VideoStreamSettings::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, VideoStreamSettings, _constructor, CLASS_SEALED);
+	c->setDeclaredMethodByQName("setProfileLevel","",Class<IFunction>::getFunction(c->getSystemState(),setKeyFrameInterval),NORMAL_METHOD,true);
+	REGISTER_GETTER_SETTER(c, codec);
+	REGISTER_GETTER(c, level);
+	REGISTER_GETTER(c, profile);
 }
+
 ASFUNCTIONBODY_ATOM(H264VideoStreamSettings,_constructor)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"H264VideoStreamSettings is a stub");
 }
+
+ASFUNCTIONBODY_ATOM(H264VideoStreamSettings,setProfileLevel)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"H264VideoStreamSettings.setProfileLevel");
+}
+
+ASFUNCTIONBODY_GETTER_SETTER(H264VideoStreamSettings, codec);
+ASFUNCTIONBODY_GETTER(H264VideoStreamSettings, level);
+ASFUNCTIONBODY_GETTER(H264VideoStreamSettings, profile);

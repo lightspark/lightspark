@@ -36,7 +36,7 @@
 using namespace std;
 using namespace lightspark;
 
-void lightspark::AntiAliasType::sinit(Class_base* c)
+void AntiAliasType::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableAtomByQName("ADVANCED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"advanced"),CONSTANT_TRAIT);

@@ -102,6 +102,13 @@ void Event::sinit(Class_base* c)
 	c->setVariableAtomByQName("USER_IDLE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"userIdle"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("USER_PRESENT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"userPresent"),DECLARED_TRAIT);
 
+	c->setVariableAtomByQName("BROWSER_ZOOM_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"browserZoomChange"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CHANNEL_MESSAGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"channelMessage"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CHANNEL_STATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"channelState"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("FRAME_LABEL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"frameLabel"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("VIDEO_FRAME",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"videoFrame"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("WORKER_STATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"workerState"),DECLARED_TRAIT);
+
 	c->setDeclaredMethodByQName("formatToString","",Class<IFunction>::getFunction(c->getSystemState(),formatToString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(c->getSystemState(),_isDefaultPrevented),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("preventDefault","",Class<IFunction>::getFunction(c->getSystemState(),_preventDefault),NORMAL_METHOD,true);
@@ -870,6 +877,7 @@ void FullScreenEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("FULL_SCREEN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"fullScreen"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("FULL_SCREEN_INTERACTIVE_ACCEPTED",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"fullScreenInteractiveAccepted"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(FullScreenEvent,_constructor)
@@ -1022,6 +1030,7 @@ void TextEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("TEXT_INPUT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"textInput"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("LINK",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"link"),DECLARED_TRAIT);
 	REGISTER_GETTER_SETTER(c,text);
 }
 
@@ -1131,6 +1140,7 @@ void HTTPStatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("HTTP_STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"httpStatus"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("HTTP_RESPONSE_STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"httpResponseStatus"),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(HTTPStatusEvent,_constructor)

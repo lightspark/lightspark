@@ -27,6 +27,7 @@ using namespace lightspark;
 void JPEGLoaderContext::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED|CLASS_FINAL);
+	REGISTER_GETTER_SETTER(c, deblockingFilter);
 }
 
 ASFUNCTIONBODY_ATOM(JPEGLoaderContext,_constructor)
@@ -36,3 +37,5 @@ ASFUNCTIONBODY_ATOM(JPEGLoaderContext,_constructor)
 	ARG_UNPACK_ATOM(th->deblockingFilter, 0.0)(checkPolicyFile, false);
 	LOG(LOG_NOT_IMPLEMENTED,"JPEGLoaderContext is not implemented.");
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(JPEGLoaderContext, deblockingFilter);

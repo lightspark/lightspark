@@ -660,7 +660,7 @@ void CairoRenderer::convertBitmapWithAlphaToCairo(std::vector<uint8_t, reporter_
 {
 	*stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	*dataSize = *stride * height;
-	data.resize(*dataSize, 0);
+	data.resize(*dataSize);
 	uint8_t* outData=&data[0];
 
 	for(uint32_t i = 0; i < height; i++)

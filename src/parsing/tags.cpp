@@ -2735,19 +2735,23 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in, RootMov
 		istream zfstream(&zf);
 		zfstream.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 
+		vector<char> alphaDataUncompressed;
+		alphaDataUncompressed.resize(bitmap->getHeight()*bitmap->getWidth());
+		
 		//Catch the exception if the stream ends
 		try
 		{
-			//Set alpha
-			for(int32_t i=0;i<bitmap->getHeight();i++)
-			{
-				for(int32_t j=0;j<bitmap->getWidth();j++)
-					bitmap->setAlpha(j, i, zfstream.get());
-			}
+			zfstream.read(alphaDataUncompressed.data(),bitmap->getHeight()*bitmap->getWidth());
 		}
 		catch(std::exception& e)
 		{
 			LOG(LOG_ERROR, "Exception while parsing Alpha data in DefineBitsJPEG3");
+		}
+		uint8_t* d = bitmap->getData();
+		//Set alpha
+		for(int32_t i=0;i<bitmap->getHeight()*bitmap->getWidth();i++)
+		{
+			d[i*4+3]=alphaDataUncompressed[i];
 		}
 	}
 }

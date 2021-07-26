@@ -89,7 +89,7 @@ public:
 	std::vector<scope_entry> class_scope;
 	void describeClassMetadata(pugi::xml_node &root) const override;
 	bool isBuiltin() const override { return false; }
-	bool hasoverriddenmethod(multiname* name) const;
+	bool hasoverriddenmethod(multiname* name) const override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt) override;
 };
 

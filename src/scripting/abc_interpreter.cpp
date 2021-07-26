@@ -1358,9 +1358,8 @@ bool canCallFunctionDirect(operands& op,multiname* name, bool ignoreoverridden=f
 		!op.objtype->isInterface && // it's not an interface
 //		op.objtype->isSealed && // it's sealed
 		(
-		!op.objtype->is<Class_inherit>() || // type is builtin class
 		ignoreoverridden ||
-		!op.objtype->as<Class_inherit>()->hasoverriddenmethod(name) // current method is not in overridden methods
+		!op.objtype->as<Class_base>()->hasoverriddenmethod(name) // current method is not in overridden methods
 		));
 }
 bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden)

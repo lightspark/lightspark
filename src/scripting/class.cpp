@@ -191,7 +191,8 @@ bool Class_inherit::hasoverriddenmethod(multiname *name) const
 {
 	// TODO we currently only check for names, not for namespaces as there are some issues regarding protected namespaces
 	// so we may get some false positives here...
-	return class_index == -1 ? true : this->context->instances[this->class_index].overriddenmethods && this->context->instances[this->class_index].overriddenmethods->find(name->name_s_id) != this->context->instances[this->class_index].overriddenmethods->end();
+	return class_index == -1 ? true : this->context->instances[this->class_index].overriddenmethods && this->context->instances[this->class_index].overriddenmethods->find(name->name_s_id) != this->context->instances[this->class_index].overriddenmethods->end()
+			|| Class_base::hasoverriddenmethod(name);
 }
 
 GET_VARIABLE_RESULT Class_inherit::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)

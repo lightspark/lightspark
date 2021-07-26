@@ -585,6 +585,16 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	{
 		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
 	}
+	if(this->is<Class_base>() && !this->is<Class_inherit>())
+	{
+		Class_base* cls = this->as<Class_base>()->super.getPtr();
+		while (cls)
+		{
+			cls->addoverriddenmethod(nameId);
+			cls = cls->super.getPtr();
+		}
+	}
+	
 	obj->isenumerable = isEnumerable;
 	switch(type)
 	{

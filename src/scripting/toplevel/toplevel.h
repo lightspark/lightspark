@@ -166,6 +166,7 @@ template<class T> friend class Template;
 private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
+	std::unordered_set<uint32_t> overriddenmethods;
 	nsNameAndKind protected_ns;
 	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns,RootMovieClip* root);
 	IFunction* constructor;
@@ -267,6 +268,14 @@ public:
 	bool implementsInterfaces() const { return interfaces.size() || interfaces_added.size(); }
 	bool isInterfaceMethod(const multiname &name);
 	void removeAllDeclaredProperties();
+	virtual bool hasoverriddenmethod(multiname* name) const
+	{
+		return overriddenmethods.find(name->name_s_id) != overriddenmethods.end();
+	}
+	void addoverriddenmethod(uint32_t nameID)
+	{
+		overriddenmethods.insert(nameID);
+	}
 };
 
 class Template_base : public ASObject, public Type

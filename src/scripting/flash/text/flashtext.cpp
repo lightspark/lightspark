@@ -125,7 +125,7 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname, DefineEditTextTag *_tag)
 	: InteractiveObject(c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),originalXPosition(0),originalWidth(0),
+	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),originalXPosition(0),originalWidth(textData.width),
 	  fillstyleTextColor(0xff),fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),
 	  alwaysShowSelection(false),
 	  condenseWhite(false), displayAsPassword(false),
@@ -351,7 +351,11 @@ ASFUNCTIONBODY_ATOM(TextField,_setAutoSize)
 void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 {
 	if (autoSize == AS_NONE)
+	{
+		if (updatewidth)
+			width = originalWidth;
 		return;
+	}
 
 	switch (autoSize)
 	{
@@ -574,6 +578,8 @@ ASFUNCTIONBODY_ATOM(TextField,_getDefaultTextFormat)
 	
 	TextFormat* tf = Class<TextFormat>::getInstanceS(sys);
 	tf->font = th->font;
+	tf->bold = th->isBold ? asAtomHandler::trueAtom : asAtomHandler::nullAtom;
+	tf->italic = th->isItalic ? asAtomHandler::trueAtom : asAtomHandler::nullAtom;
 	LOG(LOG_NOT_IMPLEMENTED,"getDefaultTextFormat does not get all fields of TextFormat");
 	ret = asAtomHandler::fromObject(tf);
 }
@@ -603,6 +609,8 @@ ASFUNCTIONBODY_ATOM(TextField,_setDefaultTextFormat)
 		newAutoSize = AS_RIGHT;
 	else if (tf->align == "center")
 		newAutoSize = AS_CENTER;
+	th->isBold=asAtomHandler::toInt(tf->bold);
+	th->isItalic=asAtomHandler::toInt(tf->italic);
 	if (th->autoSize != newAutoSize)
 	{
 		th->autoSize = newAutoSize;

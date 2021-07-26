@@ -777,6 +777,8 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 	desc = pango_font_description_new();
 	pango_font_description_set_family(desc, tData.font.raw_buf());
 	pango_font_description_set_absolute_size(desc, PANGO_SCALE*tData.fontSize);
+	pango_font_description_set_style(desc,tData.isItalic ? PANGO_STYLE_ITALIC : PANGO_STYLE_NORMAL);
+	pango_font_description_set_weight(desc,tData.isBold ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL);
 	pango_layout_set_font_description(layout, desc);
 	pango_font_description_free(desc);
 }
@@ -873,15 +875,14 @@ bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint3
 	cairo_surface_destroy(cairoSurface);
 
 	//This should be safe check precision
-	tw = ink_rect.width;
-	th = ink_rect.height;
+	tw = ink_rect.width + ink_rect.x;
+	th = ink_rect.height + ink_rect.y;
 	if(_textData.autoSize != TextData::AUTO_SIZE::AS_NONE)
 	{
 		h = logical_rect.height;
 		if(!_textData.wordWrap)
 			w = logical_rect.width;
 	}
-
 	return (h!=0) && (w!=0);
 }
 

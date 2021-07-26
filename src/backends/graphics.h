@@ -357,7 +357,7 @@ protected:
 public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
 	TextData() : width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), background(false), backgroundColor(0xFFFFFF),
-		border(false), borderColor(0x000000), multiline(false), textColor(0x000000),
+		border(false), borderColor(0x000000), multiline(false),isBold(false),isItalic(false), textColor(0x000000),
 		autoSize(AS_NONE), fontSize(12), wordWrap(false),caretblinkstate(false) {}
 	uint32_t width;
 	uint32_t height;
@@ -373,6 +373,8 @@ public:
 	bool border;
 	RGB borderColor;
 	bool multiline;
+	bool isBold;
+	bool isItalic;
 	RGB textColor;
 	enum AUTO_SIZE {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
 	AUTO_SIZE autoSize;

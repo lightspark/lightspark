@@ -157,6 +157,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 		}
 		case LINEAR_GRADIENT:
 		case RADIAL_GRADIENT:
+		case FOCAL_RADIAL_GRADIENT:
 		{
 			const GRADIENT& grad = style.Gradient;
 
@@ -189,7 +190,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			{
 				double x0,y0; //Center of the circles
 				double x1,y1; //Point on the circle edge at 0°
-				tmp.multiply2D(0, 0,x0,y0);
+				tmp.multiply2D(style.FillStyleType == FOCAL_RADIAL_GRADIENT ? style.FocalGradient.FocalPoint*16384.0 : 0, 0,x0,y0);
 				tmp.multiply2D(16384.0, 0,x1,y1);
 				double radius=x1-x0;
 				pattern = cairo_pattern_create_radial(x0, y0, 0, x0, y0, radius);

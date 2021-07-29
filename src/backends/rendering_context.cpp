@@ -373,23 +373,14 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured colorMode not implemented:"<<(int)colorMode);
 	uint8_t* buf=(uint8_t*)chunk.chunks;
 	cairo_surface_t* chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height);
-	cairo_pattern_t* chunkPattern = cairo_pattern_create_for_surface(chunkSurface);
-	cairo_surface_destroy(chunkSurface);
-	cairo_pattern_set_filter(chunkPattern, CAIRO_FILTER_BILINEAR);
-	cairo_pattern_set_extend(chunkPattern, CAIRO_EXTEND_NONE);
 	cairo_save(cr);
 	cairo_set_antialias(cr,smooth ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
-	cairo_matrix_t matrix;
-	cairo_matrix_init_translate(&matrix,xtransformed,ytransformed);
-	cairo_matrix_scale(&matrix, xscale, yscale);
-	cairo_matrix_rotate(&matrix,rotate*M_PI/180.0);
-	cairo_set_matrix(cr,&matrix);
-
-	cairo_set_source(cr, chunkPattern);
-	cairo_pattern_destroy(chunkPattern);
-	cairo_rectangle(cr, 0, 0, w, h);
-	cairo_fill(cr);
-//	cairo_surface_write_to_png(chunkSurface,"/tmp/cairo.png");
+	cairo_translate(cr,x+(w/2),y+(w/2));
+	cairo_rotate(cr,rotate*M_PI/180.0);
+	cairo_scale(cr, xscale, yscale);
+	cairo_set_source_surface(cr, chunkSurface, -(widthtransformed/2),-(heighttransformed/2));
+	cairo_paint(cr);
+	cairo_surface_destroy(chunkSurface);
 	cairo_restore(cr);
 }
 

@@ -203,63 +203,33 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 	d->hasChanged=true;
 	d->requestInvalidation(&queue);
 	CairoRenderContext ctxt(pixels->getData(), pixels->getWidth(), pixels->getHeight(),smoothing);
-	map<uint32_t,pair<IDrawable*,uint8_t*>> drawablecache;
 	for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
 	{
 		DisplayObject* target=(*it).getPtr();
-		if (target->legacy)
-		{
-			auto it2 = drawablecache.find(target->getTagID());
-			if (it2 != drawablecache.end())
-			{
-				CachedSurface& surface=ctxt.allocateCustomSurface(target,(*it2).second.second,false);
-				IDrawable* dr = (*it2).second.first;
-				surface.tex->width=dr->getWidth();
-				surface.tex->height=dr->getHeight();
-				surface.xOffset=dr->getXOffset();
-				surface.yOffset=dr->getYOffset();
-				surface.xOffsetTransformed=dr->getXOffsetTransformed();
-				surface.yOffsetTransformed=dr->getYOffsetTransformed();
-				surface.widthTransformed=dr->getWidthTransformed();
-				surface.heightTransformed=dr->getHeightTransformed();
-				surface.rotation=dr->getRotation();
-				surface.xscale = dr->getXScale();
-				surface.yscale = dr->getYScale();
-				continue;
-			}
-		}
 		//Get the drawable from each of the added objects
 		IDrawable* drawable=target->invalidate(d, initialMatrix,smoothing);
 		if(drawable==nullptr)
 			continue;
-
 		//Compute the matrix for this object
 		bool isBufferOwner=true;
 		uint8_t* buf=drawable->getPixelBuffer(initialMatrix.getScaleX(),initialMatrix.getScaleY(),&isBufferOwner);
-		if (target->legacy)
-			drawablecache[target->getTagID()]=make_pair(drawable,buf);
-		
-		//Construct a CachedSurface using the data
-		CachedSurface& surface=ctxt.allocateCustomSurface(target,buf,isBufferOwner);
-		surface.tex->width=drawable->getWidth();
-		surface.tex->height=drawable->getHeight();
-		surface.xOffset=drawable->getXOffset();
-		surface.yOffset=drawable->getYOffset();
-		surface.xOffsetTransformed=drawable->getXOffsetTransformed();
-		surface.yOffsetTransformed=drawable->getYOffsetTransformed();
-		surface.widthTransformed=drawable->getWidthTransformed();
-		surface.heightTransformed=drawable->getHeightTransformed();
-		surface.rotation=drawable->getRotation();
-		surface.xscale = drawable->getXScale();
-		surface.yscale = drawable->getYScale();
-		if (!target->legacy)
-			delete drawable;
-	}
-	auto it3 = drawablecache.begin();
-	while (it3 != drawablecache.end())
-	{
-		delete (*it3).second.first;
-		it3++;
+		if (!drawable->getIsMask())
+		{
+			//Construct a CachedSurface using the data
+			CachedSurface& surface=ctxt.allocateCustomSurface(target,buf,isBufferOwner);
+			surface.tex->width=drawable->getWidth();
+			surface.tex->height=drawable->getHeight();
+			surface.xOffset=drawable->getXOffset();
+			surface.yOffset=drawable->getYOffset();
+			surface.xOffsetTransformed=drawable->getXOffsetTransformed();
+			surface.yOffsetTransformed=drawable->getYOffsetTransformed();
+			surface.widthTransformed=drawable->getWidthTransformed();
+			surface.heightTransformed=drawable->getHeightTransformed();
+			surface.rotation=drawable->getRotation();
+			surface.xscale = drawable->getXScale();
+			surface.yscale = drawable->getYScale();
+		}
+		delete drawable;
 	}
 	d->Render(ctxt,true);
 }

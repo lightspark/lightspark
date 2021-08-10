@@ -30,6 +30,10 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include <algorithm>
 
+// adobe seems to use twips as the base of the internal coordinate system, so we have to "round" coordinates to twips
+// TODO I think we should also use a twips-based coordinate system
+#define ROUND_TO_TWIPS(v) v = number_t(int(v*20))/20.0
+
 using namespace lightspark;
 using namespace std;
 
@@ -733,6 +737,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleX)
 
 void DisplayObject::setScaleX(number_t val)
 {
+	if (std::isnan(val))
+		return;
+	ROUND_TO_TWIPS(val);
 	//Apply the difference
 	if(sx!=val)
 	{
@@ -762,6 +769,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleY)
 
 void DisplayObject::setScaleY(number_t val)
 {
+	if (std::isnan(val))
+		return;
+	ROUND_TO_TWIPS(val);
 	//Apply the difference
 	if(sy!=val)
 	{
@@ -791,6 +801,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleZ)
 
 void DisplayObject::setScaleZ(number_t val)
 {
+	if (std::isnan(val))
+		return;
+	ROUND_TO_TWIPS(val);
 	//Apply the difference
 	if(sz!=val)
 	{
@@ -824,6 +837,9 @@ void DisplayObject::setX(number_t val)
 	//Stop using the legacy matrix
 	if(useLegacyMatrix)
 		useLegacyMatrix=false;
+	if (std::isnan(val))
+		return;
+	ROUND_TO_TWIPS(val);
 	//Apply translation, it's trivial
 	if(tx!=val)
 	{
@@ -839,6 +855,9 @@ void DisplayObject::setY(number_t val)
 	//Stop using the legacy matrix
 	if(useLegacyMatrix)
 		useLegacyMatrix=false;
+	if (std::isnan(val))
+		return;
+	ROUND_TO_TWIPS(val);
 	//Apply translation, it's trivial
 	if(ty!=val)
 	{
@@ -856,6 +875,9 @@ void DisplayObject::setZ(number_t val)
 	//Stop using the legacy matrix
 	if(useLegacyMatrix)
 		useLegacyMatrix=false;
+	if (std::isnan(val))
+		return;
+	ROUND_TO_TWIPS(val);
 	//Apply translation, it's trivial
 	if(tz!=val)
 	{
@@ -1216,6 +1238,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	number_t newwidth=asAtomHandler::toNumber(args[0]);
+	if (std::isnan(newwidth))
+		return;
+	ROUND_TO_TWIPS(newwidth);
 
 	number_t xmin,xmax,y1,y2;
 	if(!th->boundsRect(xmin,xmax,y1,y2))
@@ -1243,6 +1268,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setHeight)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	number_t newheight=asAtomHandler::toNumber(args[0]);
+	if (std::isnan(newheight))
+		return;
+	ROUND_TO_TWIPS(newheight);
 
 	number_t x1,x2,ymin,ymax;
 	if(!th->boundsRect(x1,x2,ymin,ymax))
@@ -1468,7 +1496,7 @@ bool DisplayObject::findParent(DisplayObject *d) const
 
 // Compute the minimal, axis aligned bounding box in global
 // coordinates
-bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	number_t x1, x2, y1, y2;
 	if (!boundsRect(x1, x2, y1, y2))
@@ -1477,6 +1505,15 @@ bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& y
 	localToGlobal(x1, y1, x1, y1);
 	localToGlobal(x2, y2, x2, y2);
 
+	if (!loadedFrom->usesActionScript3 && getRoot())
+	{
+		// it seems that in AVM1 adobe doesn't use the stage coordinates as reference point, instead it's the root object
+		Vector2f rxy =getRoot()->getXY();
+		x1-=rxy.x;
+		x2-=rxy.x;
+		y1-=rxy.y;
+		y2-=rxy.y;
+	}
 	// Mapping to global may swap min and max values (for example,
 	// rotation by 180 degrees)
 	xmin = dmin(x1, x2);
@@ -1548,6 +1585,13 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		number_t localX;
 		number_t localY;
 		th->globalToLocal(x, y, localX, localY);
+		if (!th->loadedFrom->usesActionScript3 && th->getRoot())
+		{
+			// it seems that in AVM1 adobe doesn't use the stage coordinates as reference point, instead it's the root object
+			Vector2f rxy =th->getRoot()->getXY();
+			localX+=rxy.x;
+			localY+=rxy.y;
+		}
 
 		// Hmm, hitTest will also check the mask, is this the
 		// right thing to do?
@@ -2209,6 +2253,15 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 		getVariableByMultiname(ret,m);
 		if (asAtomHandler::isInvalid(ret))// get Variable from root movie
 			loadedFrom->getVariableByMultiname(ret,m);
+		if (asAtomHandler::isInvalid(ret))// get lowercase Variable from root movie
+		{
+			tiny_string s = name.lowercase();
+			if (s != name)
+			{
+				m.name_s_id=getSystemState()->getUniqueStringId(s);
+				loadedFrom->getVariableByMultiname(ret,m);
+			}
+		}
 	}
 	return ret;
 }

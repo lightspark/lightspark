@@ -3273,6 +3273,10 @@ void ABCVm::abc_callFunctionNoArgs_constant(call_context* context)
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
 	asAtom ret;
 	LOG_CALL("callFunctionNoArgs_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
+	if(asAtomHandler::is<Null>(obj))
+		throwError<TypeError>(kConvertNullToObjectError);
+	if (asAtomHandler::is<Undefined>(obj))
+		throwError<TypeError>(kConvertUndefinedToObjectError);
 	asAtomHandler::callFunction(func,ret,obj,nullptr,0,false,false);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
@@ -3284,6 +3288,10 @@ void ABCVm::abc_callFunctionNoArgs_local(call_context* context)
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
 	asAtom ret;
 	LOG_CALL("callFunctionNoArgs_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
+	if(asAtomHandler::is<Null>(obj))
+		throwError<TypeError>(kConvertNullToObjectError);
+	if (asAtomHandler::is<Undefined>(obj))
+		throwError<TypeError>(kConvertUndefinedToObjectError);
 	asAtomHandler::callFunction(func,ret,obj,nullptr,0,false,false);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
@@ -3295,6 +3303,10 @@ void ABCVm::abc_callFunctionNoArgs_constant_localresult(call_context* context)
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	LOG_CALL("callFunctionNoArgs_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
+	if(asAtomHandler::is<Null>(obj))
+		throwError<TypeError>(kConvertNullToObjectError);
+	if (asAtomHandler::is<Undefined>(obj))
+		throwError<TypeError>(kConvertUndefinedToObjectError);
 	asAtomHandler::callFunction(func,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj,nullptr,0,false,false);
 	ASATOM_DECREF(oldres);
 	++(context->exec_pos);
@@ -3306,6 +3318,10 @@ void ABCVm::abc_callFunctionNoArgs_local_localresult(call_context* context)
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	LOG_CALL("callFunctionNoArgs_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
+	if(asAtomHandler::is<Null>(obj))
+		throwError<TypeError>(kConvertNullToObjectError);
+	if (asAtomHandler::is<Undefined>(obj))
+		throwError<TypeError>(kConvertUndefinedToObjectError);
 	asAtomHandler::callFunction(func,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj,nullptr,0,false,false);
 	ASATOM_DECREF(oldres);
 	++(context->exec_pos);
@@ -3317,6 +3333,10 @@ void ABCVm::abc_callFunctionNoArgs_constant_setslotnocoerce(call_context* contex
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
 	LOG_CALL("callFunctionNoArgs_cs " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	asAtom res = asAtomHandler::invalidAtom;
+	if(asAtomHandler::is<Null>(obj))
+		throwError<TypeError>(kConvertNullToObjectError);
+	if (asAtomHandler::is<Undefined>(obj))
+		throwError<TypeError>(kConvertUndefinedToObjectError);
 	asAtomHandler::callFunction(func,res,obj,nullptr,0,false,false);
 	asAtom objslot = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -3331,6 +3351,10 @@ void ABCVm::abc_callFunctionNoArgs_local_setslotnocoerce(call_context* context)
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
 	LOG_CALL("callFunctionNoArgs_ls " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	asAtom res = asAtomHandler::invalidAtom;
+	if(asAtomHandler::is<Null>(obj))
+		throwError<TypeError>(kConvertNullToObjectError);
+	if (asAtomHandler::is<Undefined>(obj))
+		throwError<TypeError>(kConvertUndefinedToObjectError);
 	asAtomHandler::callFunction(func,res,obj,nullptr,0,false,false);
 	asAtom objslot = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -3345,6 +3369,10 @@ void ABCVm::abc_callFunctionNoArgsVoid_constant(call_context* context)
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
 	LOG_CALL("callFunctionNoArgsVoid_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	asAtom ret = asAtomHandler::invalidAtom;
+	if(asAtomHandler::is<Null>(obj))
+		throwError<TypeError>(kConvertNullToObjectError);
+	if (asAtomHandler::is<Undefined>(obj))
+		throwError<TypeError>(kConvertUndefinedToObjectError);
 	asAtomHandler::callFunction(func,ret,obj,nullptr,0,false,false,false);
 	ASATOM_DECREF(ret);
 	++(context->exec_pos);
@@ -3356,6 +3384,10 @@ void ABCVm::abc_callFunctionNoArgsVoid_local(call_context* context)
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
 	LOG_CALL("callFunctionNoArgsVoid_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	asAtom ret = asAtomHandler::invalidAtom;
+	if(asAtomHandler::is<Null>(obj))
+		throwError<TypeError>(kConvertNullToObjectError);
+	if (asAtomHandler::is<Undefined>(obj))
+		throwError<TypeError>(kConvertUndefinedToObjectError);
 	asAtomHandler::callFunction(func,ret,obj,nullptr,0,false,false,false);
 	ASATOM_DECREF(ret);
 	++(context->exec_pos);

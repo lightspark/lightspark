@@ -3155,8 +3155,8 @@ bool asAtomHandler::add(asAtom& a,asAtom &v2, SystemState* sys,bool forceint)
 			}
 			else
 			{//Convert both to numbers and add
-				number_t num1=AVM1toNumber(val1p,sys->mainClip->usesActionScript3);
-				number_t num2=AVM1toNumber(val2p,sys->mainClip->usesActionScript3);
+				number_t num1=AVM1toNumber(val1p,sys->getSwfVersion());
+				number_t num2=AVM1toNumber(val2p,sys->getSwfVersion());
 				LOG_CALL("addN " << num1 << '+' << num2);
 				number_t result = num1 + num2;
 				if (forceint)
@@ -3268,8 +3268,8 @@ void asAtomHandler::addreplace(asAtom& ret, SystemState* sys,asAtom& v1, asAtom 
 			}
 			else
 			{//Convert both to numbers and add
-				number_t num1=AVM1toNumber(val1p,sys->mainClip->usesActionScript3);
-				number_t num2=AVM1toNumber(val2p,sys->mainClip->usesActionScript3);
+				number_t num1=AVM1toNumber(val1p,sys->getSwfVersion());
+				number_t num2=AVM1toNumber(val2p,sys->getSwfVersion());
 				LOG_CALL("addN " << num1 << '+' << num2);
 				ASObject* o = getObject(ret);
 				if (forceint)

@@ -631,10 +631,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							DisplayObject::_getY(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
 						case 2:// xscale
-							DisplayObject::_getScaleX(ret,clip->getSystemState(),obj,nullptr,0);
+							DisplayObject::AVM1_getScaleX(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
 						case 3:// xscale
-							DisplayObject::_getScaleY(ret,clip->getSystemState(),obj,nullptr,0);
+							DisplayObject::AVM1_getScaleY(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
 						case 4:// currentframe
 							if (o->is<MovieClip>())
@@ -645,7 +645,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 								MovieClip::_getTotalFrames(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
 						case 6:// alpha
-							DisplayObject::_getAlpha(ret,clip->getSystemState(),obj,nullptr,0);
+							DisplayObject::AVM1_getAlpha(ret,clip->getSystemState(),obj,nullptr,0);
 							break;
 						case 7:// visible
 							DisplayObject::_getVisible(ret,clip->getSystemState(),obj,nullptr,0);
@@ -722,15 +722,15 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							ASATOM_DECREF(value);
 							break;
 						case 2:// xscale
-							DisplayObject::_setScaleX(ret,clip->getSystemState(),obj,&valueInt,1);
+							DisplayObject::AVM1_setScaleX(ret,clip->getSystemState(),obj,&valueInt,1);
 							ASATOM_DECREF(value);
 							break;
 						case 3:// xscale
-							DisplayObject::_setScaleY(ret,clip->getSystemState(),obj,&valueInt,1);
+							DisplayObject::AVM1_setScaleY(ret,clip->getSystemState(),obj,&valueInt,1);
 							ASATOM_DECREF(value);
 							break;
 						case 6:// alpha
-							DisplayObject::_setAlpha(ret,clip->getSystemState(),obj,&valueInt,1);
+							DisplayObject::AVM1_setAlpha(ret,clip->getSystemState(),obj,&valueInt,1);
 							ASATOM_DECREF(value);
 							break;
 						case 7:// visible

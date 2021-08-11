@@ -1140,7 +1140,9 @@ void HTTPStatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("HTTP_STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"httpStatus"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("HTTP_RESPONSE_STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"httpResponseStatus"),DECLARED_TRAIT);
+
+	// Value is undefined and not "httpResponseStatus" like stated in documentation
+	c->setVariableAtomByQName("HTTP_RESPONSE_STATUS",nsNameAndKind(),asAtomHandler::fromObject(c->getSystemState()->getUndefinedRef()),DECLARED_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(HTTPStatusEvent,_constructor)

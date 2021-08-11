@@ -2,7 +2,7 @@ package
 {
 	import flash.display.Sprite;
 	import flash.events.Event;
-	import flash.media.VideoCodec;
+	import flash.events.TextEvent;
 	
 	/**
 	 * ...
@@ -13,7 +13,7 @@ package
 		
 		public function Main() 
 		{
-			if (VideoCodec.H264AVC == "H264Avc")
+			if (TextEvent.LINK == "link")
 			{
 				trace("Passed");
 			}
@@ -21,17 +21,7 @@ package
 			{
 				trace("Failed");
 			}
-			
-			if (VideoCodec.SORENSON == "Sorenson")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			
-			if (VideoCodec.VP6 == "VP6")
+			if (TextEvent.TEXT_INPUT == "textInput")
 			{
 				trace("Passed");
 			}

@@ -19,7 +19,16 @@ package
 			var jpegLoaderContext1 = new JPEGLoaderContext(0.0);
 			var jpegLoaderContext2 = new JPEGLoaderContext(1, false);
 			var jpegLoaderContext3 = new JPEGLoaderContext(40.5, false, new ApplicationDomain());
-			var jpegLoaderContext4 = new JPEGLoaderContext(80, false, new ApplicationDomain(),SecurityDomain.currentDomain);
+			var jpegLoaderContext4 = new JPEGLoaderContext(80, false, new ApplicationDomain(), SecurityDomain.currentDomain);
+			jpegLoaderContext1.deblockingFilter = 3;
+			if (jpegLoaderContext1.deblockingFilter == 3)
+			{
+				trace("Passed");
+			}
+			else
+			{
+				trace("Failed");
+			}
 		}
 		
 	}

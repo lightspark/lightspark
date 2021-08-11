@@ -2,7 +2,7 @@ package
 {
 	import flash.display.Sprite;
 	import flash.events.Event;
-	import flash.media.VideoCodec;
+	import flash.events.HTTPStatusEvent;
 	
 	/**
 	 * ...
@@ -13,7 +13,7 @@ package
 		
 		public function Main() 
 		{
-			if (VideoCodec.H264AVC == "H264Avc")
+			if (HTTPStatusEvent.HTTP_RESPONSE_STATUS == undefined) // Not "httpResponseStatus" as stated in documentation
 			{
 				trace("Passed");
 			}
@@ -22,7 +22,7 @@ package
 				trace("Failed");
 			}
 			
-			if (VideoCodec.SORENSON == "Sorenson")
+			if (HTTPStatusEvent.HTTP_STATUS == "httpStatus")
 			{
 				trace("Passed");
 			}
@@ -30,17 +30,7 @@ package
 			{
 				trace("Failed");
 			}
-			
-			if (VideoCodec.VP6 == "VP6")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-		}
-		
+		}		
 	}
 	
 }

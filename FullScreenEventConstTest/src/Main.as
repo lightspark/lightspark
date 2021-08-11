@@ -2,7 +2,8 @@ package
 {
 	import flash.display.Sprite;
 	import flash.events.Event;
-	import flash.media.VideoCodec;
+	import flash.events.FullScreenEvent;
+	
 	
 	/**
 	 * ...
@@ -13,7 +14,7 @@ package
 		
 		public function Main() 
 		{
-			if (VideoCodec.H264AVC == "H264Avc")
+			if (FullScreenEvent.FULL_SCREEN == "fullScreen")
 			{
 				trace("Passed");
 			}
@@ -22,16 +23,7 @@ package
 				trace("Failed");
 			}
 			
-			if (VideoCodec.SORENSON == "Sorenson")
-			{
-				trace("Passed");
-			}
-			else
-			{
-				trace("Failed");
-			}
-			
-			if (VideoCodec.VP6 == "VP6")
+			if (FullScreenEvent.FULL_SCREEN_INTERACTIVE_ACCEPTED == "fullScreenInteractiveAccepted")
 			{
 				trace("Passed");
 			}

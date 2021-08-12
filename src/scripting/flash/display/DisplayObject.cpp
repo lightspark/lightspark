@@ -457,7 +457,7 @@ MATRIX DisplayObject::getMatrix(bool includeRotation) const
 	if (!matrix.isNull())
 		ret=matrix->matrix;
 	ret.scale(sx,sy);
-	if (includeRotation)
+	if (includeRotation && !std::isnan(rotation))
 		ret.rotate(rotation*M_PI/180.0);
 	ret.translate(tx,ty);
 	return ret;

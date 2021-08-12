@@ -373,7 +373,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 			autosizeposition = 0;
 			if (!wordWrap) // not in the specs but Adobe changes x position if wordWrap is not set
 			{
-				this->setX(originalXPosition + (originalWidth - textWidth)/2);
+				this->setX(originalXPosition + (int(originalWidth - textWidth))/2);
 				if (updatewidth)
 					width = textWidth+TEXTFIELD_PADDING*2;
 			}

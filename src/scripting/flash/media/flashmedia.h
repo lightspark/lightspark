@@ -251,6 +251,10 @@ public:
 	H264VideoStreamSettings(Class_base* c):VideoStreamSettings(c){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(setProfileLevel);
+	ASPROPERTY_GETTER_SETTER(tiny_string, codec);
+	ASPROPERTY_GETTER(tiny_string, level);
+	ASPROPERTY_GETTER(tiny_string, profile);
 };
 	
 }

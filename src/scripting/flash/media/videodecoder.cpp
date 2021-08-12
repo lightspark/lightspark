@@ -29,4 +29,5 @@ void MediaVideoDecoder::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED|CLASS_FINAL);
 	c->setVariableAtomByQName("H264AVC",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"H264Avc"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("SORENSON",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"Sorenson"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("VP6",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"VP6"),CONSTANT_TRAIT);
 }

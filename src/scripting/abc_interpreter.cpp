@@ -1607,7 +1607,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				uint32_t t = code.peeku30FromPosition(pos);
 				multiname* name =  state.mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
-				if (name->isStatic)
+				if (name->isStatic && !argsneeded)
 				{
 					const Type* tp = Type::getTypeFromMultiname(name,state.mi->context);
 					if (tp && tp == restype)

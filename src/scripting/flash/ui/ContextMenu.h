@@ -35,6 +35,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(hideBuiltInItems);
+	ASFUNCTION_ATOM(clone);
 	ASPROPERTY_GETTER(bool,isSupported);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,customItems);
 	ASPROPERTY_GETTER_SETTER(_NR<ContextMenuBuiltInItems>,builtInItems);

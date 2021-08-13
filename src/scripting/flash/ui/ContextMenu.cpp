@@ -32,6 +32,7 @@ void ContextMenu::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_FINAL);
 	REGISTER_GETTER_RESULTTYPE(c,isSupported,Boolean);
 	c->setDeclaredMethodByQName("hideBuiltInItems","",Class<IFunction>::getFunction(c->getSystemState(),hideBuiltInItems),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,customItems);
 	REGISTER_GETTER_SETTER(c,builtInItems);
 }
@@ -159,5 +160,30 @@ ASFUNCTIONBODY_ATOM(ContextMenu,hideBuiltInItems)
 	th->builtInItems->save=false;
 	th->builtInItems->zoom=false;
 }
-
+ASFUNCTIONBODY_ATOM(ContextMenu,clone)
+{
+	ContextMenu* th=asAtomHandler::as<ContextMenu>(obj);
+	ContextMenu* res = Class<ContextMenu>::getInstanceSNoArgs(sys);
+	if (th->builtInItems)
+	{
+		res->builtInItems->forwardAndBack=th->builtInItems->forwardAndBack;
+		res->builtInItems->loop=th->builtInItems->loop;
+		res->builtInItems->play=th->builtInItems->play;
+		res->builtInItems->print=th->builtInItems->print;
+		res->builtInItems->quality=th->builtInItems->quality;
+		res->builtInItems->rewind=th->builtInItems->rewind;
+		res->builtInItems->save=th->builtInItems->save;
+		res->builtInItems->zoom=th->builtInItems->zoom;
+	}
+	if (th->customItems)
+	{
+		for (uint32_t i=0; i < th->customItems->size(); i++)
+		{
+			asAtom a=asAtomHandler::invalidAtom;
+			th->customItems->at_nocheck(a,i);
+			res->customItems->push(a);
+		}
+	}
+	ret = asAtomHandler::fromObjectNoPrimitive(res);
+}
 

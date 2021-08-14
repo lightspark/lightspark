@@ -1028,6 +1028,7 @@ public:
 	int InterpolationMode;
 	FIXED8 StartFocalPoint;
 	FIXED8 EndFocalPoint;
+	std::map<uint16_t,FILLSTYLE> fillstylecache;
 
 	~MORPHFILLSTYLE(){}
 };

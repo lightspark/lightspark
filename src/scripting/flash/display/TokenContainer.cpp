@@ -171,6 +171,10 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 	ShapesBuilder shapesBuilder;
 
 	// TODO compute SHAPERECORD entries based on ratio
+	int boundsx = ratio == 65535 ? tag->EndBounds.Xmin : tag->StartBounds.Xmin;
+	int boundsy = ratio == 65535 ? tag->EndBounds.Ymin : tag->StartBounds.Ymin;
+	cursor.x= -boundsx;
+	cursor.y= -boundsy;
 	auto it = ratio == 65535 ? tag->EndEdges.ShapeRecords.begin() : tag->StartEdges.ShapeRecords.begin();
 	auto last = ratio == 65535 ? tag->EndEdges.ShapeRecords.end() : tag->StartEdges.ShapeRecords.end();
 	Vector2 p1(matrix.multiply2D(cursor));
@@ -226,8 +230,8 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 			lastoutlinesForStroke=nullptr;
 			if(cur->StateMoveTo)
 			{
-				cursor.x=cur->MoveDeltaX;
-				cursor.y=cur->MoveDeltaY;
+				cursor.x=cur->MoveDeltaX-boundsx;
+				cursor.y=cur->MoveDeltaY-boundsy;
 				Vector2 tmp(matrix.multiply2D(cursor));
 				p1.x = tmp.x;
 				p1.y = tmp.y;

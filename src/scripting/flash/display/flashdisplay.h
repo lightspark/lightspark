@@ -264,7 +264,6 @@ public:
 	void endDrawJob() override;
 
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
@@ -277,8 +276,7 @@ class MorphShape: public DisplayObject, public TokenContainer
 private:
 	DefineMorphShapeTag* morphshapetag;
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override
-		{ return TokenContainer::boundsRect(xmin,xmax,ymin,ymax); }
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	bool renderImpl(RenderContext& ctxt) const override
 		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override
@@ -291,7 +289,6 @@ public:
 	MorphShape(Class_base* c);
 	MorphShape(Class_base* c, DefineMorphShapeTag* _morphshapetag);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
 	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }

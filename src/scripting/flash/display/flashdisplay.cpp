@@ -3394,10 +3394,6 @@ void Shape::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(c->getSystemState(),_getGraphics),GETTER_METHOD,true);
 }
 
-void Shape::buildTraits(ASObject* o)
-{
-}
-
 IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing)
 {
 	return TokenContainer::invalidate(target, initialMatrix,smoothing);
@@ -3434,9 +3430,16 @@ void MorphShape::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_SEALED | CLASS_FINAL);
 }
 
-void MorphShape::buildTraits(ASObject* o)
+bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax) const
 {
-	//No traits
+	if (!this->legacy || (morphshapetag==nullptr))
+		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
+	// TODO get bounds based on current ratio
+	xmin=morphshapetag->EndBounds.Xmin/20.0;
+	xmax=morphshapetag->EndBounds.Xmax/20.0;
+	ymin=morphshapetag->EndBounds.Ymin/20.0;
+	ymax=morphshapetag->EndBounds.Ymax/20.0;
+	return true;
 }
 
 void MorphShape::checkRatio(uint32_t ratio, bool inskipping)
@@ -3446,7 +3449,7 @@ void MorphShape::checkRatio(uint32_t ratio, bool inskipping)
 	if (this->morphshapetag)
 		this->morphshapetag->getTokensForRatio(tokens,ratio);
 	this->hasChanged = true;
-	this->setNeedsTextureRecalculation(ratio != 0 && ratio != 65535);
+	this->setNeedsTextureRecalculation(true);
 	if (isOnStage())
 		requestInvalidation(getSystemState());
 }

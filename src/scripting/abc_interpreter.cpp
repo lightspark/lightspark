@@ -2482,22 +2482,6 @@ void skipunreachablecode(preloadstate& state, memorystream& code, bool updatetar
 			case 0xc3://declocal_i
 				code.readu30();
 				break;
-			case 0x0c://ifnlt
-			case 0x0d://ifnle
-			case 0x0e://ifngt
-			case 0x0f://ifnge
-			case 0x13://ifeq
-			case 0x14://ifne
-			case 0x15://iflt
-			case 0x16://ifle
-			case 0x17://ifgt
-			case 0x18://ifge
-			case 0x19://ifstricteq
-			case 0x1a://ifstrictne
-			case 0x11://iftrue
-			case 0x12://iffalse
-				code.reads24();
-				break;
 			case 0x1b://lookupswitch
 			{
 				code.reads24();
@@ -2533,6 +2517,20 @@ void skipunreachablecode(preloadstate& state, memorystream& code, bool updatetar
 				code.readu30();
 				break;
 			case 0x10://jump
+			case 0x0c://ifnlt
+			case 0x0d://ifnle
+			case 0x0e://ifngt
+			case 0x0f://ifnge
+			case 0x13://ifeq
+			case 0x14://ifne
+			case 0x15://iflt
+			case 0x16://ifle
+			case 0x17://ifgt
+			case 0x18://ifge
+			case 0x19://ifstricteq
+			case 0x1a://ifstrictne
+			case 0x11://iftrue
+			case 0x12://iffalse
 			{
 				// make sure that unreachable jumps get erased from jumptargets
 				int32_t p1 = code.reads24()+code.tellg()+1;
@@ -4995,8 +4993,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							clearOperands(state,true,&lastlocalresulttype);
 							break;
 						}
+						else
+						{
+							setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFEQ,opcode,code);
+							state.oldnewpositions[p1] = (int32_t)state.preloadedcode.size();
+						}
 					}
-					setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFEQ,opcode,code);
+					else
+						setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFEQ,opcode,code);
 				}
 				else
 #endif
@@ -5047,8 +5051,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							clearOperands(state,true,&lastlocalresulttype);
 							break;
 						}
+						else
+						{
+							setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFNE,opcode,code);
+							state.oldnewpositions[p1] = (int32_t)state.preloadedcode.size();
+						}
 					}
-					setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFNE,opcode,code);
+					else
+						setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFNE,opcode,code);
 				}
 				else
 #endif

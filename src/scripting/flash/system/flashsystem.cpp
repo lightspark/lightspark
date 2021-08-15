@@ -58,6 +58,26 @@ void Capabilities::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("screenResolutionY","",Class<IFunction>::getFunction(c->getSystemState(),_getScreenResolutionY,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("hasAccessibility","",Class<IFunction>::getFunction(c->getSystemState(),_getHasAccessibility,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("screenDPI","",Class<IFunction>::getFunction(c->getSystemState(),_getScreenDPI,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasAudio","",Class<IFunction>::getFunction(c->getSystemState(),_hasAudio,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasAudioEncoder","",Class<IFunction>::getFunction(c->getSystemState(),_hasAudioEncoder,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasEmbeddedVideo","",Class<IFunction>::getFunction(c->getSystemState(),_hasEmbeddedVideo,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasIME","",Class<IFunction>::getFunction(c->getSystemState(),_hasIME,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasMP3","",Class<IFunction>::getFunction(c->getSystemState(),_hasMP3,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasPrinting","",Class<IFunction>::getFunction(c->getSystemState(),_hasPrinting,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasScreenBroadcast","",Class<IFunction>::getFunction(c->getSystemState(),_hasScreenBroadcast,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasScreenPlayback","",Class<IFunction>::getFunction(c->getSystemState(),_hasScreenPlayback,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasStreamingAudio","",Class<IFunction>::getFunction(c->getSystemState(),_hasStreamingAudio,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasStreamingVideo","",Class<IFunction>::getFunction(c->getSystemState(),_hasStreamingVideo,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasTLS","",Class<IFunction>::getFunction(c->getSystemState(),_hasTLS,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasVideoEncoder","",Class<IFunction>::getFunction(c->getSystemState(),_hasVideoEncoder,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("supports32BitProcesses","",Class<IFunction>::getFunction(c->getSystemState(),_supports32BitProcesses,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("supports64BitProcesses","",Class<IFunction>::getFunction(c->getSystemState(),_supports64BitProcesses,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("touchscreenType","",Class<IFunction>::getFunction(c->getSystemState(),_touchscreenType,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("avHardwareDisable","",Class<IFunction>::getFunction(c->getSystemState(),_avHardwareDisable,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("pixelAspectRatio","",Class<IFunction>::getFunction(c->getSystemState(),_pixelAspectRatio,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("screenColor","",Class<IFunction>::getFunction(c->getSystemState(),_screenColor,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+    c->setDeclaredMethodByQName("hasMultiChannelAudio","",Class<IFunction>::getFunction(c->getSystemState(),_hasMultiChannelAudio),NORMAL_METHOD,false);
+    c->setDeclaredMethodByQName("maxLevelIDC","",Class<IFunction>::getFunction(c->getSystemState(),_maxLevelIDC,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getPlayerType)
@@ -139,6 +159,11 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getServerString)
 		res += buf;
 	}
 
+    // Add hasAudio and hasMP3 to ServerString if available
+#ifdef ENABLE_LIBAVCODEC
+    res += "&A=t&MP3=t";
+#endif
+
 	/*
 	avHardwareDisable	AVD
 	hasAccessibility	ACC
@@ -176,6 +201,130 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getServerString)
 	*/
 	ret = asAtomHandler::fromString(sys,res);
 }
+
+ASFUNCTIONBODY_ATOM(Capabilities,_avHardwareDisable)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.avHardwareDisable always returns false");
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasAudio)
+{
+#ifdef ENABLE_LIBAVCODEC
+    ret = asAtomHandler::fromBool(true);
+#else
+	ret = asAtomHandler::fromBool(false);
+#endif
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasAudioEncoder)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.hasAudioEncoder always returns false");
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasEmbeddedVideo)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.hasEmbeddedVideo always returns false");
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasIME)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.hasIME always returns false");
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasMP3)
+{
+#ifdef ENABLE_LIBAVCODEC
+	ret = asAtomHandler::fromBool(true);
+#else
+	ret = asAtomHandler::fromBool(false);
+#endif
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasMultiChannelAudio)
+{
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasPrinting)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.hasPrinting always returns false");
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasScreenBroadcast)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.hasScreenBroadcast always returns false");
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasScreenPlayback)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.hasScreenPlayback always returns false");
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasStreamingAudio)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.hasStreamingAudio always returns false");
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasStreamingVideo)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.hasStreamingAudio always returns false");
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasTLS)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.hasTLS always returns true");
+    ret = asAtomHandler::fromBool(true);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_hasVideoEncoder)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.hasVideoEncoder always returns false");
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_maxLevelIDC)
+{
+    ret = asAtomHandler::fromString(sys,"");
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_pixelAspectRatio)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.pixelAspectRatio always returns 1");
+    asAtomHandler::setNumber(ret,sys,1);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_screenColor)
+{
+    ret = asAtomHandler::fromString(sys,"color");
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_supports32BitProcesses)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.supports32BitProcesses always returns false");
+    ret = asAtomHandler::fromBool(false);
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_supports64BitProcesses)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.supports64BitProcesses always returns \"none\"");
+    ret = asAtomHandler::fromString(sys,"none");
+}
+
+ASFUNCTIONBODY_ATOM(Capabilities,_touchscreenType)
+{
+    LOG(LOG_NOT_IMPLEMENTED,"Capabilities.touchscreenType always returns empty string");
+    ret = asAtomHandler::fromString(sys,"none");
+}
+
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenResolutionX)
 {
 	SDL_DisplayMode screen;
@@ -197,6 +346,7 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getHasAccessibility)
 	LOG(LOG_NOT_IMPLEMENTED,"hasAccessibility always returns false");
 	asAtomHandler::setBool(ret,false);
 }
+
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenDPI)
 {
 	number_t dpi = sys->getEngineData()->getScreenDPI();

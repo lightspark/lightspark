@@ -242,8 +242,8 @@ void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
 	if(!loader.isNull() && obj==waitedObject)
 		loader->setContent(obj);
 
-	if (!loader.isNull() && !loader->getParent()) // loader has no parent, ensure init/complete events are sended anyway
-		loader->getSystemState()->stage->addHiddenObject(waitedObject);
+	if (!loader.isNull() && !loader->getParent() && waitedObject->is<MovieClip>()) // loader has no parent, ensure init/complete events are sended anyway
+		loader->getSystemState()->stage->addHiddenObject(waitedObject->as<MovieClip>());
 		
 	waitedObject.reset();
 }
@@ -1435,6 +1435,7 @@ MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpri
 
 bool MovieClip::destruct()
 {
+	getSystemState()->stage->removeHiddenObject(this);
 	frames.clear();
 	setFramesLoaded(0);
 	auto it = frameScripts.begin();
@@ -1592,7 +1593,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 	if (th->state.stop_FP)
 	{
 		th->state.stop_FP=false;
-		th->advanceFrame();
+		if (th->isOnStage())
+			th->advanceFrame();
+		else
+			th->getSystemState()->stage->addHiddenObject(th);
 	}
 }
 
@@ -1647,10 +1651,15 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 
 	if (!this->isOnStage())
 	{
-		advanceFrame();
-		initFrame();
-		this->incRef();
-		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+		if (stop)
+		{
+			advanceFrame();
+			initFrame();
+			this->incRef();
+			this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+		}
+		else
+			this->getSystemState()->stage->addHiddenObject(this);
 	}
 	else if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
 		advanceFrame();
@@ -3791,6 +3800,32 @@ void Stage::setFocusTarget(_NR<InteractiveObject> f)
 		focus->gotFocus();
 }
 
+void Stage::addHiddenObject(MovieClip* o)
+{
+	auto it = hiddenobjects.find(o);
+	if (it != hiddenobjects.end())
+		return;
+	hiddenobjects.insert(o);
+}
+
+void Stage::removeHiddenObject(MovieClip* o)
+{
+	auto it = hiddenobjects.find(o);
+	if (it != hiddenobjects.end())
+		hiddenobjects.erase(it);
+}
+
+void Stage::advanceFrame()
+{
+	DisplayObjectContainer::advanceFrame();
+	auto it = hiddenobjects.begin();
+	while (it != hiddenobjects.end())
+	{
+		(*it)->advanceFrame();
+		it++;
+	}
+}
+
 void Stage::initFrame()
 {
 	DisplayObjectContainer::initFrame();
@@ -3811,8 +3846,6 @@ void Stage::executeFrameScript()
 		(*it)->executeFrameScript();
 		it++;
 	}
-	// only execute first frame of hidden objects (?)
-	hiddenobjects.clear();
 }
 
 void Stage::finalize()

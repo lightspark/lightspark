@@ -651,6 +651,8 @@ void DisplayObject::setOnStage(bool staged, bool force)
 				this->incRef();
 				getVm(getSystemState())->prependEvent(_MR(this),e);
 			}
+			if (this->is<MovieClip>())
+				getSystemState()->stage->removeHiddenObject(this->as<MovieClip>());
 		}
 		else if(onStage==false)
 		{

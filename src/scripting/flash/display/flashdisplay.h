@@ -695,8 +695,9 @@ private:
 	_NR<InteractiveObject> focus;
 	_NR<RootMovieClip> root;
 	// list of objects that are not added to stage, but need to be handled when first frame is executed
-	// currently only used when Loader contents are added and the Loader is not on stage
-	list<_R<DisplayObject>> hiddenobjects;
+	// currently used when Loader contents are added and the Loader is not on stage
+	// or a MovieClip is not on stage but set to "play" from AS3 code
+	unordered_set<MovieClip*> hiddenobjects;
 	vector<_R<ASObject>> avm1KeyboardListeners;
 	vector<_R<ASObject>> avm1MouseListeners;
 	vector<_R<ASObject>> avm1EventListeners;
@@ -718,7 +719,9 @@ public:
 	_NR<Stage> getStage() override;
 	_NR<InteractiveObject> getFocusTarget();
 	void setFocusTarget(_NR<InteractiveObject> focus);
-	void addHiddenObject(_R<DisplayObject> o) { hiddenobjects.push_back(o);}
+	void addHiddenObject(MovieClip* o);
+	void removeHiddenObject(MovieClip* o);
+	void advanceFrame() override;
 	void initFrame() override;
 	void executeFrameScript() override;
 	void finalize() override;

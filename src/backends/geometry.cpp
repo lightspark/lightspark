@@ -253,7 +253,7 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 	}
 }
 
-void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, const std::list<MORPHLINESTYLE2> &linestyles, tokensVector &tokens, uint16_t ratio)
+void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, const std::list<MORPHLINESTYLE2> &linestyles, tokensVector &tokens, uint16_t ratio, const RECT& boundsrc)
 {
 	joinOutlines();
 	//Try to greedily condense as much as possible the output
@@ -278,8 +278,19 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, const s
 			switch (stylesIt->FillStyleType)
 			{
 				case LINEAR_GRADIENT:
+				case RADIAL_GRADIENT:
+				case FOCAL_RADIAL_GRADIENT:
 				{
-					f.Matrix = stylesIt->StartGradientMatrix;
+					number_t gradratio = float(ratio)/65535.0;
+					MATRIX ratiomatrix;
+
+					ratiomatrix.scale(stylesIt->StartGradientMatrix.getScaleX()+(stylesIt->EndGradientMatrix.getScaleX()-stylesIt->StartGradientMatrix.getScaleX())*gradratio,
+									  stylesIt->StartGradientMatrix.getScaleY()+(stylesIt->EndGradientMatrix.getScaleY()-stylesIt->StartGradientMatrix.getScaleY())*gradratio);
+					ratiomatrix.rotate((stylesIt->StartGradientMatrix.getRotation()+(stylesIt->EndGradientMatrix.getRotation()-stylesIt->StartGradientMatrix.getRotation())*gradratio)*180.0/M_PI);
+					ratiomatrix.translate(stylesIt->StartGradientMatrix.getTranslateX() +(stylesIt->EndGradientMatrix.getTranslateX()-stylesIt->StartGradientMatrix.getTranslateX())*gradratio,
+										  stylesIt->StartGradientMatrix.getTranslateY() +(stylesIt->EndGradientMatrix.getTranslateY()-stylesIt->StartGradientMatrix.getTranslateY())*gradratio);
+
+					f.Matrix = ratiomatrix;
 					f.Gradient.GradientRecords.reserve(stylesIt->StartColors.size());
 					GRADRECORD gr(0xff);
 					uint8_t compratio = ratio>>8;
@@ -306,7 +317,11 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, const s
 								break;
 							}
 						}
+						f.FocalGradient.InterpolationMode=stylesIt->InterpolationMode;
+						f.FocalGradient.SpreadMode=stylesIt->SpreadMode;
+						f.FocalGradient.FocalPoint=stylesIt->StartFocalPoint + (stylesIt->EndFocalPoint-stylesIt->StartFocalPoint)*gradratio;
 						f.Gradient.GradientRecords.push_back(gr);
+						f.ShapeBounds = boundsrc;
 					}
 					break;
 				}

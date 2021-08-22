@@ -53,7 +53,7 @@ public:
 	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
 					 tokensVector& tokens, const std::list<FILLSTYLE>& fillStyles,
 					 const MATRIX& matrix = MATRIX(), const std::list<LINESTYLE2>& lineStyles = std::list<LINESTYLE2>(), const RECT &shapebounds= RECT());
-	static void FromDefineMorphShapeTagToShapeVector(SystemState *sys, DefineMorphShapeTag *tag,
+	static void FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *tag,
 					 tokensVector& tokens, uint16_t ratio);
 	static void getTextureSize(std::vector<uint64_t>& tokens, int *width, int *height);
 	static bool boundsRectFromTokens(const tokensVector& tokens,float scaling, number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);

@@ -3422,12 +3422,12 @@ ASFUNCTIONBODY_ATOM(Shape,_getGraphics)
 	ret = asAtomHandler::fromObject(th->graphics.getPtr());
 }
 
-MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this),morphshapetag(nullptr)
+MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this),morphshapetag(nullptr),currentratio(0)
 {
 	scaling = 1.0f/20.0f;
 }
 
-MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this),morphshapetag(_morphshapetag)
+MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this),morphshapetag(_morphshapetag),currentratio(0)
 {
 	scaling = 1.0f/20.0f;
 	if (this->morphshapetag)
@@ -3443,11 +3443,13 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 {
 	if (!this->legacy || (morphshapetag==nullptr))
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
-	// TODO get bounds based on current ratio
-	xmin=morphshapetag->EndBounds.Xmin/20.0;
-	xmax=morphshapetag->EndBounds.Xmax/20.0;
-	ymin=morphshapetag->EndBounds.Ymin/20.0;
-	ymax=morphshapetag->EndBounds.Ymax/20.0;
+
+	float curratiofactor = float(currentratio)/65535.0;
+	xmin=(morphshapetag->StartBounds.Xmin + (float(morphshapetag->EndBounds.Xmin - morphshapetag->StartBounds.Xmin)*curratiofactor))/20.0;
+	xmax=(morphshapetag->StartBounds.Xmax + (float(morphshapetag->EndBounds.Xmax - morphshapetag->StartBounds.Xmax)*curratiofactor))/20.0;
+	ymin=(morphshapetag->StartBounds.Ymin + (float(morphshapetag->EndBounds.Ymin - morphshapetag->StartBounds.Ymin)*curratiofactor))/20.0;
+	ymax=(morphshapetag->StartBounds.Ymax + (float(morphshapetag->EndBounds.Ymax - morphshapetag->StartBounds.Ymax)*curratiofactor))/20.0;
+
 	return true;
 }
 
@@ -3455,6 +3457,7 @@ void MorphShape::checkRatio(uint32_t ratio, bool inskipping)
 {
 	if (inskipping)
 		return;
+	currentratio = ratio;
 	if (this->morphshapetag)
 		this->morphshapetag->getTokensForRatio(tokens,ratio);
 	this->hasChanged = true;

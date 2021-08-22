@@ -275,6 +275,7 @@ class MorphShape: public DisplayObject, public TokenContainer
 {
 private:
 	DefineMorphShapeTag* morphshapetag;
+	uint16_t currentratio;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	bool renderImpl(RenderContext& ctxt) const override

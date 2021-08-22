@@ -1598,7 +1598,7 @@ void DefineMorphShapeTag::getTokensForRatio(tokensVector& tokens, uint32_t ratio
 	if (it==tokensmap.end())
 	{
 		it = tokensmap.insert(make_pair(ratio,tokensVector())).first;
-		TokenContainer::FromDefineMorphShapeTagToShapeVector(this->loadedFrom->getSystemState(),this,it->second,ratio);
+		TokenContainer::FromDefineMorphShapeTagToShapeVector(this,it->second,ratio);
 	}
 	tokens.filltokens.assign(it->second.filltokens.begin(),it->second.filltokens.end());
 	tokens.stroketokens.assign(it->second.stroketokens.begin(),it->second.stroketokens.end());

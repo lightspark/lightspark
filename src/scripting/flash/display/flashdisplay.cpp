@@ -867,6 +867,11 @@ void Sprite::buildTraits(ASObject* o)
 {
 }
 
+IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing)
+{
+	return TokenContainer::invalidate(target, initialMatrix,smoothing);
+}
+
 ASFUNCTIONBODY_ATOM(Sprite,_startDrag)
 {
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
@@ -3439,6 +3444,11 @@ void MorphShape::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_SEALED | CLASS_FINAL);
 }
 
+IDrawable* MorphShape::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing)
+{
+	return TokenContainer::invalidate(target, initialMatrix,smoothing);
+}
+
 bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax) const
 {
 	if (!this->legacy || (morphshapetag==nullptr))
@@ -4373,6 +4383,11 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 
 IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing)
 {
+	return invalidateFromSource(target, initialMatrix, this->smoothing, this, MATRIX());
+}
+
+IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, DisplayObject* source, const MATRIX& sourceMatrix)
+{
 	int32_t x,y,rx,ry;
 	uint32_t width,height;
 	uint32_t rwidth,rheight;
@@ -4395,16 +4410,18 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 	bool hasMask;
 	if (target)
 	{
-		computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
+		source->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
 		totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	}
+	totalMatrix = totalMatrix.multiplyMatrix(sourceMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 
+	MATRIX m = source->getConcatenatedMatrix();
 	width = bxmax-bxmin;
 	height = bymax-bymin;
-	float rotation = getConcatenatedMatrix().getRotation();
-	float xscale = getConcatenatedMatrix().getScaleX();
-	float yscale = getConcatenatedMatrix().getScaleY();
+	float rotation = m.getRotation();
+	float xscale = m.getScaleX();
+	float yscale = m.getScaleY();
 	float redMultiplier=1.0;
 	float greenMultiplier=1.0;
 	float blueMultiplier=1.0;
@@ -4417,12 +4434,13 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
-		computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
+		source->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
+	totalMatrix2 = totalMatrix2.multiplyMatrix(sourceMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 	ColorTransform* ct = colorTransform.getPtr();
-	DisplayObjectContainer* p = getParent();
+	DisplayObjectContainer* p = source->getParent();
 	while (!ct && p)
 	{
 		ct = p->colorTransform.getPtr();
@@ -4446,9 +4464,9 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 				, rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,rotation
 				, xscale, yscale
 				, isMask, hasMask
-				, getConcatenatedAlpha(), masks
+				, source->getConcatenatedAlpha(), masks
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
-				, redOffset,greenOffset,blueOffset,alphaOffset,this->smoothing);
+				, redOffset,greenOffset,blueOffset,alphaOffset,smoothing);
 }
 
 void SimpleButton::sinit(Class_base* c)

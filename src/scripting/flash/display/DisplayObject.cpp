@@ -28,6 +28,7 @@
 #include "scripting/flash/accessibility/flashaccessibility.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/filters/flashfilters.h"
 #include <algorithm>
 
 // adobe seems to use twips as the base of the internal coordinate system, so we have to "round" coordinates to twips
@@ -115,6 +116,7 @@ DisplayObject::~DisplayObject() {}
 void DisplayObject::finalize()
 {
 	EventDispatcher::finalize();
+	cachedBitmap.reset();
 	maskOf.reset();
 	parent=nullptr;
 	eventparentmap.clear();
@@ -135,6 +137,7 @@ void DisplayObject::finalize()
 bool DisplayObject::destruct()
 {
 	// TODO make all DisplayObject derived classes reusable
+	cachedBitmap.reset();
 	maskOf.reset();
 	parent=nullptr;
 	eventparentmap.clear();
@@ -236,9 +239,6 @@ void DisplayObject::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER_STRINGID(DisplayObject,name);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
-//TODO: Use a callback for the cacheAsBitmap getter, since it should use computeCacheAsBitmap
-ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,cacheAsBitmap);
-ASFUNCTIONBODY_SETTER(DisplayObject,filters);
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,scrollRect);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY);
@@ -257,9 +257,44 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getter_filters)
 	th->filters->incRef();
 	ret = asAtomHandler::fromObject(th->filters.getPtr());
 }
+ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
+{
+	if(!asAtomHandler::is<DisplayObject>(obj))
+		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+	if(argslen != 1)
+		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(sys,args[0],th->filters);
+	th->requestInvalidation(sys,true);
+}
 bool DisplayObject::computeCacheAsBitmap() const
 {
 	return cacheAsBitmap || (!filters.isNull() && filters->size()!=0);
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,_getter_cacheAsBitmap)
+{
+	if(!asAtomHandler::is<DisplayObject>(obj))
+		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+	if(argslen != 0)
+		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	ret = asAtomHandler::fromBool(th->computeCacheAsBitmap());
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,_setter_cacheAsBitmap)
+{
+	if(!asAtomHandler::is<DisplayObject>(obj))
+		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+	if(argslen != 1)
+		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	if (th->filters.isNull() || th->filters->size()==0)
+	{
+		if (th->cacheAsBitmap != asAtomHandler::toInt(args[0]))
+		{
+			th->cacheAsBitmap = asAtomHandler::toInt(args[0]);
+			th->requestInvalidation(sys,true);
+		}
+	}
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getTransform)
@@ -1443,7 +1478,7 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 			MATRIX m=mask->getConcatenatedMatrix();
 			m.x0 -= xmin;
 			m.y0 -= ymin;
-			data->drawDisplayObject(mask.getPtr(), m,false);
+			data->drawDisplayObject(mask.getPtr(), m,false,false);
 			_R<Bitmap> bmp(Class<Bitmap>::getInstanceS(getSystemState(),data));
 
 			//The created bitmap is already correctly scaled and rotated
@@ -1485,6 +1520,60 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 		}
 		cur=cur->getParent();
 	}
+}
+
+IDrawable* DisplayObject::getCachedBitmap(DisplayObject* target)
+{
+	if (!computeCacheAsBitmap())
+		return nullptr;
+	number_t xmin,xmax,ymin,ymax;
+	MATRIX m;
+	bool ret=getBounds(xmin,xmax,ymin,ymax,m);
+	if(ret==false)
+		return nullptr;
+	if (needsTextureRecalculation)
+	{
+		if (!cachedBitmap)
+		{
+			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getSystemState(),xmax-xmin,ymax-ymin));
+			data->incRef();
+			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getSystemState(),data));
+		}
+		MATRIX m0(1,1,0,0,-xmin,-ymin);
+		DisplayObjectContainer* origparent=this->parent;
+		number_t origrotation = this->rotation;
+		number_t origsx = this->sx;
+		number_t origsy = this->sy;
+		number_t origtx = this->tx;
+		number_t origty = this->ty;
+		// temporarily reset all position settings to avoid matrix manipulation from this DisplayObject
+		this->parent = nullptr;
+		this->rotation=0;
+		this->sx=1;
+		this->sy=1;
+		this->tx=0;
+		this->ty=0;
+		cachedBitmap->bitmapData->drawDisplayObject(this, m0,true,true);
+		// temporarily reset position to original settings
+		this->parent=origparent;
+		this->rotation=origrotation;
+		this->sx=origsx;
+		this->sy=origsy;
+		this->tx=origtx;
+		this->ty=origty;
+		if (filters)
+		{
+			for (uint32_t i = 0; i < filters->size(); i++)
+			{
+				asAtom f = asAtomHandler::invalidAtom;
+				filters->at_nocheck(f,i);
+				if (asAtomHandler::is<BitmapFilter>(f))
+					asAtomHandler::as<BitmapFilter>(f)->applyFilter(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,xmax-xmin,0,ymax-ymin),0,0);
+			}
+		}
+	}
+	MATRIX m1(1,1,0,0,xmin,ymin);
+	return cachedBitmap->invalidateFromSource(target, MATRIX(),true,this,m1);
 }
 
 bool DisplayObject::findParent(DisplayObject *d) const

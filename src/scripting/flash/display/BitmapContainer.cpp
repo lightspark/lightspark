@@ -20,6 +20,7 @@
 #include <stack>
 #include "scripting/flash/display/BitmapContainer.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/filters/flashfilters.h"
 #include "backends/rendering.h"
 #include "backends/image.h"
 #include "swf.h"
@@ -41,7 +42,27 @@ BitmapContainer::~BitmapContainer()
                 {
                         getSys()->getRenderThread()->releaseTexture(bitmaptexture);
                 }
-        }
+		}
+}
+
+uint8_t* BitmapContainer::getRectangleData(const RECT& sourceRect)
+{
+	RECT clippedSourceRect;
+	clipRect(sourceRect, clippedSourceRect);
+
+	int copyWidth = clippedSourceRect.Xmax - clippedSourceRect.Xmin;
+	int copyHeight = clippedSourceRect.Ymax - clippedSourceRect.Ymin;
+
+	int sx = clippedSourceRect.Xmin;
+	int sy = clippedSourceRect.Ymin;
+	uint8_t* res = new uint8_t[copyWidth * copyHeight * 4];
+	for (int i=0; i<copyHeight; i++)
+	{
+		memcpy(&res[i*copyWidth*4],
+				&data[(sy+i)*stride + 4*sx],
+				4*copyWidth);
+	}
+	return res;
 }
 
 bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMAT format, bool frompng)
@@ -271,6 +292,18 @@ void BitmapContainer::copyRectangle(_R<BitmapContainer> source,
 	}
 }
 
+void BitmapContainer::applyFilter(_R<BitmapContainer> source,
+				    const RECT& sourceRect,
+				    int32_t destX, int32_t destY,
+				    BitmapFilter* filter)
+{
+	RECT clippedSourceRect;
+	int32_t clippedX;
+	int32_t clippedY;
+	clipRect(source, sourceRect, destX, destY, clippedSourceRect, clippedX, clippedY);
+	filter->applyFilter(this,source.getPtr(),clippedSourceRect,destX,destY);
+}
+
 void BitmapContainer::fillRectangle(const RECT& inputRect, uint32_t color, bool useAlpha)
 {
 	RECT clippedRect;
@@ -338,7 +371,7 @@ void BitmapContainer::floodFill(int32_t startX, int32_t startY, uint32_t color)
 {
 	struct LineSegment {
 		LineSegment(int32_t _x1, int32_t _x2, int32_t _y, int32_t _dy) 
-			: x1(_x1), x2(_x2), y(_y), dy(_dy) {};
+			: x1(_x1), x2(_x2), y(_y), dy(_dy) {}
 		int32_t x1; // leftmost filled point on last line
 		int32_t x2; // rightmost filled point on last line
 		int32_t y;  // y coordinate (may be invalid!)

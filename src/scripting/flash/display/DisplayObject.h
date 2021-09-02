@@ -99,6 +99,7 @@ private:
 	std::map<uint32_t,asAtom> avm1variables;
 	std::map<uint32_t,_NR<AVM1Function>> avm1functions;
 protected:
+	_NR<Bitmap> cachedBitmap;
 	std::multimap<uint32_t,_NR<DisplayObject>> variablebindings;
 	bool onStage;
 	bool visible;
@@ -165,6 +166,7 @@ public:
 	bool computeCacheAsBitmap() const;
 	void computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, bool &hasMask) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
+	IDrawable* getCachedBitmap(DisplayObject* target);
 	DisplayObjectContainer* getParent() const { return parent; }
 	bool findParent(DisplayObject* d) const;
 	void setParent(DisplayObjectContainer* p);

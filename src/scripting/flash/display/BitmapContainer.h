@@ -29,7 +29,7 @@
 
 namespace lightspark
 {
-
+class BitmapFilter;
 class BitmapContainer : public RefCountable, public ITextureUploadable
 {
 public:
@@ -57,6 +57,8 @@ public:
 		data_colortransformed.reserve(data.size());
 		return &data_colortransformed[0];
 	}
+	// this creates a new byte array that has to be deleted by the caller
+	uint8_t* getRectangleData(const RECT& sourceRect);
 	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, BITMAP_FORMAT format, bool frompng = false);
 	bool fromJPEG(uint8_t* data, int len, const uint8_t *tablesData=NULL, int tablesLen=0);
 	bool fromJPEG(std::istream& s);
@@ -80,6 +82,10 @@ public:
 			   const RECT& sourceRect,
 			   int32_t destX, int32_t destY,
 			   bool mergeAlpha);
+	void applyFilter(_R<BitmapContainer> source,
+				const RECT& sourceRect,
+				int32_t destX, int32_t destY,
+				BitmapFilter* filter);
 	void fillRectangle(const RECT& rect, uint32_t color, bool useAlpha);
 	bool scroll(int32_t x, int32_t y);
 	void floodFill(int32_t x, int32_t y, uint32_t color);

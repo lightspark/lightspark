@@ -227,6 +227,7 @@ private:
 	_R<DisplayObject> owner;
 	uint8_t* surfaceBytes;
 	bool uploadNeeded;
+	bool isBufferOwner;
 public:
 	/*
 	 * @param o The DisplayObject that is being rendered. It is a reference to

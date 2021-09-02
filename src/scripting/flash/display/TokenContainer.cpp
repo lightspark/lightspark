@@ -155,11 +155,6 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 
 void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *tag, tokensVector &tokens, uint16_t ratio)
 {
-	if (tag->StartEdges.ShapeRecords.size() > tag->EndEdges.ShapeRecords.size())
-	{
-		LOG(LOG_ERROR,"invalid MorphShape, ShapeRecords don't match:"<<tag->StartEdges.ShapeRecords.size()<<" "<<tag->EndEdges.ShapeRecords.size());
-		return;
-	}
 	Vector2 cursor;
 	unsigned int color0=0;
 	unsigned int color1=0;
@@ -183,7 +178,7 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 	cursor.x= -boundsx;
 	cursor.y= -boundsy;
 	auto itstart = tag->StartEdges.ShapeRecords.begin();
-	auto itend = tag->EndEdges.ShapeRecords.begin();
+	auto itend = tag->StartEdges.ShapeRecords.size() > tag->EndEdges.ShapeRecords.size() ? tag->StartEdges.ShapeRecords.begin() : tag->EndEdges.ShapeRecords.begin();
 	Vector2 p1(matrix.multiply2D(cursor));
 	while (itstart != tag->StartEdges.ShapeRecords.end())
 	{
@@ -271,7 +266,7 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 
 void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	if(tokens.empty() || owner->skipRender())
+	if((tokens.empty() && !owner->computeCacheAsBitmap()) || owner->skipRender())
 		return;
 	owner->incRef();
 	if (forceTextureRefresh)

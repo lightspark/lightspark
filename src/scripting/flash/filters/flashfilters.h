@@ -30,10 +30,14 @@ class BitmapFilter: public ASObject
 {
 private:
 	virtual BitmapFilter* cloneImpl() const;
+protected:
+	void applyBlur(uint8_t* data, uint32_t width, uint32_t height, number_t blurx, number_t blury, int quality);
+	void applyDropShadowFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t blurx, number_t blury, int quality, number_t strength, uint32_t color, bool inner, bool knockout);
 public:
 	BitmapFilter(Class_base* c, CLASS_SUBTYPE st=SUBTYPE_BITMAPFILTER):ASObject(c,T_OBJECT,st){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(clone);
+	virtual void applyFilter(BitmapContainer* target, BitmapContainer* source,const RECT& sourceRect, int xpos, int ypos);
 };
 
 class GlowFilter: public BitmapFilter
@@ -53,6 +57,7 @@ public:
 	GlowFilter(Class_base* c,const GLOWFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 };
 
 class DropShadowFilter: public BitmapFilter
@@ -75,6 +80,7 @@ public:
 	DropShadowFilter(Class_base* c,const DROPSHADOWFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos);
 };
 
 class GradientGlowFilter: public BitmapFilter
@@ -131,6 +137,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, matrix);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 };
 class BlurFilter: public BitmapFilter
 {
@@ -144,6 +151,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, blurX);
 	ASPROPERTY_GETTER_SETTER(number_t, blurY);
 	ASPROPERTY_GETTER_SETTER(int, quality);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 };
 class ConvolutionFilter: public BitmapFilter
 {

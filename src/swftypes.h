@@ -505,11 +505,27 @@ public:
 	}
 };
 
-//TODO: Really implement or suppress
-typedef UI32_SWF FIXED;
+class FIXED
+{
+friend std::istream& operator>>(std::istream& s, FIXED& v);
+protected:
+	int32_t val;
+public:
+	FIXED():val(0){}
+	FIXED(int32_t v):val(v){}
+	operator number_t() const{ return number_t(val)/65536.0; }
+};
 
-//TODO: Really implement or suppress
-typedef UI16_SWF FIXED8;
+class FIXED8
+{
+friend std::istream& operator>>(std::istream& s, FIXED8& v);
+protected:
+	int16_t val;
+public:
+	FIXED8():val(0){}
+	FIXED8(int16_t v):val(v){}
+	operator number_t() const{ return number_t(val)/256.0; }
+};
 
 class RECORDHEADER
 {
@@ -738,6 +754,19 @@ inline std::istream& operator>>(std::istream& s, DOUBLE& v)
 	s.read(((char*)&dummy.dump),4);
 	dummy.dump=GINT64_FROM_LE(dummy.dump);
 	v.val=dummy.value;
+	return s;
+}
+
+inline std::istream& operator>>(std::istream& s, FIXED& v)
+{
+	s.read((char*)&v.val,4);
+	v.val=GINT32_FROM_LE(v.val);
+	return s;
+}
+inline std::istream& operator>>(std::istream& s, FIXED8& v)
+{
+	s.read((char*)&v.val,2);
+	v.val=GINT16_FROM_LE(v.val);
 	return s;
 }
 
@@ -1278,7 +1307,7 @@ public:
     RGBA GlowColor;
     FIXED BlurX;
     FIXED BlurY;
-    UB Passes;
+    int Passes;
     FIXED8 Strength;
     bool InnerGlow;
     bool Knockout;

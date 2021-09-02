@@ -287,8 +287,7 @@ public:
 		DisplayObject(c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f),bounds(b),tagID(_tagID) {}
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
-	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
 	uint32_t getTagID() const override { return tagID; }
 };
 

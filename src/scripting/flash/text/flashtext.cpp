@@ -257,15 +257,15 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	if (!this->legacy || (tag==nullptr) || autoSize!=AS_NONE)
 	{
 		xmin=0;
-		xmax=max(0.0,textWidth+autosizeposition);
+		xmax=max(0.0f,float(textWidth+autosizeposition))+2*TEXTFIELD_PADDING;
 		ymin=0;
-		ymax=max(0.0,number_t(height));
+		ymax=max(0.0f,float(height));
 		return true;
 	}
 	xmin=0;
-	xmax=max(0.0,textWidth+tag->Bounds.Xmin/20.0);
+	xmax=max(0.0f,float(textWidth+tag->Bounds.Xmin)/20.0f);
 	ymin=0;
-	ymax=max(0.0,height+tag->Bounds.Ymin/20.0);
+	ymax=max(0.0f,float(height+tag->Bounds.Ymin)/20.0f);
 	return true;
 }
 
@@ -360,7 +360,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 	switch (autoSize)
 	{
 		case AS_RIGHT:
-			autosizeposition = max(0.0,number_t(width-TEXTFIELD_PADDING*2)-textWidth);
+			autosizeposition = max(0.0f,float(width-TEXTFIELD_PADDING*2)-textWidth);
 			for (auto it = textlines.begin(); it != textlines.end(); it++)
 			{
 				if ((*it).textwidth< textWidth)
@@ -1069,6 +1069,7 @@ void TextField::updateSizes()
 	if (embeddedfont && embeddedfont->hasGlyphs(getText()))
 	{
 		scaling = 1.0f/1024.0f/20.0f;
+		th=0;
 		number_t w,h;
 		auto it = textlines.begin();
 		while (it != textlines.end())
@@ -1110,11 +1111,10 @@ void TextField::updateSizes()
 				}
 			}
 			it++;
+			th+=h;
 		}
 		if(w>tw)
 			tw = w;
-		if(h>th)
-			th = h;
 	}
 	else
 	{
@@ -1481,8 +1481,8 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		uint32_t startposy = 0;
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{
-			embeddedfont->fillTextTokens(tokens,(*it).text,fontSize,fillstyleTextColor,leading,(*it).autosizeposition,startposy);
-			startposy+=textHeight/getLineCount();
+			embeddedfont->fillTextTokens(tokens,(*it).text,fontSize,fillstyleTextColor,leading,autosizeposition+(*it).autosizeposition,startposy);
+			startposy += this->leading+(embeddedfont->getAscent()+embeddedfont->getDescent()+embeddedfont->getLeading())*fontSize/1024;
 		}
 		if (tokens.empty())
 			return nullptr;
@@ -1538,7 +1538,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 	if (getText().empty() && !this->border && !this->background)
 		return false;
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? this->loadedFrom->getEmbeddedFontByID(fontID) : this->loadedFrom->getEmbeddedFont(font));
-	if ((ctxt.contextType == RenderContext::GL) && embeddedfont && embeddedfont->hasGlyphs(getText()))
+	if (!computeCacheAsBitmap() && (ctxt.contextType == RenderContext::GL) && embeddedfont && embeddedfont->hasGlyphs(getText()))
 	{
 		// fast rendering path using pre-generated textures for every glyph
 		float rotation = getConcatenatedMatrix().getRotation();
@@ -2085,6 +2085,11 @@ void StaticText::sinit(Class_base* c)
 	// DisplayObjectContainer::initFrame calls the constructor
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),_getText),GETTER_METHOD,true);
+}
+
+IDrawable* StaticText::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing)
+{
+	return TokenContainer::invalidate(target, initialMatrix,smoothing);
 }
 bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {

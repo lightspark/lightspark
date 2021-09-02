@@ -1187,7 +1187,7 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 	fillStyles.push_back(fillstyleColor);
 
 	int tokenscaling = fontpixelsize * this->scaling;
-	curPos.y = ((20+startposy)*1024+this->FontLeading/2.0) * this->scaling;
+	curPos.y = ((20+startposy)*1024) * this->scaling;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
@@ -2068,6 +2068,7 @@ void PlaceObject3Tag::setProperties(DisplayObject *obj, DisplayObjectContainer *
 		obj->setBlendMode(BlendMode);
 	if (PlaceFlagHasVisible)
 		obj->setVisible(Visible);
+	obj->cacheAsBitmap=this->BitmapCache;
 	if (this->SurfaceFilterList.Filters.size())
 	{
 		if (obj->filters.isNull())

@@ -291,8 +291,7 @@ public:
 	MorphShape(Class_base* c, DefineMorphShapeTag* _morphshapetag);
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
-	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 	uint32_t getTagID() const override;
 };
@@ -482,8 +481,7 @@ public:
 	{
 		return 0;
 	}
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override
-	{ return TokenContainer::invalidate(target, initialMatrix,smoothing); }
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	_NR<Graphics> getGraphics();
 };
@@ -927,6 +925,7 @@ public:
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
+	IDrawable* invalidateFromSource(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, DisplayObject* source, const MATRIX& sourceMatrix);
 };
 
 class AVM1Movie: public DisplayObject

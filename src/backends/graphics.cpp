@@ -953,7 +953,7 @@ void CairoPangoRenderer::applyCairoMask(cairo_t* cr, int32_t xOffset, int32_t yO
 	assert(false);
 }
 
-AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(o),surfaceBytes(nullptr),uploadNeeded(false)
+AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(o),surfaceBytes(nullptr),uploadNeeded(false),isBufferOwner(true)
 {
 }
 
@@ -961,7 +961,7 @@ AsyncDrawJob::~AsyncDrawJob()
 {
 	owner->getSystemState()->AsyncDrawJobCompleted(this);
 	delete drawable;
-	if (surfaceBytes)
+	if (surfaceBytes && isBufferOwner)
 		delete[] surfaceBytes;
 }
 
@@ -975,7 +975,7 @@ void AsyncDrawJob::execute()
 	sys->stageCoordinateMapping(sys->getRenderThread()->windowWidth,sys->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
 
 	if(!threadAborting)
-		surfaceBytes=drawable->getPixelBuffer(scalex,scaley);
+		surfaceBytes=drawable->getPixelBuffer(scalex,scaley,&isBufferOwner);
 	if(!threadAborting && surfaceBytes)
 		uploadNeeded=true;
 	owner->endDrawJob();

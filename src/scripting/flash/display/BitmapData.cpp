@@ -196,7 +196,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	th->notifyUsers();
 }
 
-void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing)
+void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap)
 {
 	//Create an InvalidateQueue to store all the hierarchy of objects that must be drawn
 	SoftwareInvalidateQueue queue;
@@ -210,6 +210,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		IDrawable* drawable=target->invalidate(d, initialMatrix,smoothing);
 		if(drawable==nullptr)
 			continue;
+		if (forCachedBitmap)
+			target->hasChanged=false;
 		//Compute the matrix for this object
 		bool isBufferOwner=true;
 		uint8_t* buf=drawable->getPixelBuffer(initialMatrix.getScaleX(),initialMatrix.getScaleY(),&isBufferOwner);
@@ -277,7 +279,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
-		th->drawDisplayObject(d, initialMatrix,smoothing);
+		th->drawDisplayObject(d, initialMatrix,smoothing,false);
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());
@@ -962,12 +964,27 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 
 ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 {
+	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	_NR<BitmapData> sourceBitmapData;
 	_NR<Rectangle> sourceRect;
 	_NR<Point> destPoint;
 	_NR<BitmapFilter> filter;
 	ARG_UNPACK_ATOM (sourceBitmapData)(sourceRect)(destPoint)(filter);
-	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.applyFilter not implemented");
+	if (sourceBitmapData.isNull())
+		throwError<TypeError>(kNullPointerError,"sourceBitmapData");
+	if (sourceRect.isNull())
+		throwError<TypeError>(kNullPointerError,"sourceRect");
+	if (destPoint.isNull())
+		throwError<TypeError>(kNullPointerError,"destPoint");
+	if (filter.isNull())
+		throwError<TypeError>(kNullPointerError,"filter");
+	
+	if (!filter->is<ColorMatrixFilter>())
+		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.applyFilter not implemented");
+	th->pixels->applyFilter(sourceBitmapData->pixels, sourceRect->getRect(),
+				  destPoint->getX(), destPoint->getY(),
+				  filter.getPtr());
+	th->notifyUsers();
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,noise)

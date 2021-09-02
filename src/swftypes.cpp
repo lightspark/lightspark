@@ -1256,7 +1256,7 @@ std::istream& lightspark::operator>>(std::istream& stream, GLOWFILTER& v)
 	v.InnerGlow = UB(1,bs);
 	v.Knockout = UB(1,bs);
 	v.CompositeSource = UB(1,bs);
-	bs.discard(5);
+	v.Passes = UB(5,bs);
 
 	return stream;
 }

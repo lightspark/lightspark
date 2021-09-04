@@ -373,7 +373,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 			autosizeposition = 0;
 			if (!wordWrap) // not in the specs but Adobe changes x position if wordWrap is not set
 			{
-				this->setX(originalXPosition + (int(originalWidth - textWidth))/2);
+				this->setX(originalXPosition + (int(originalWidth - textWidth))/2*sx);
 				if (updatewidth)
 					width = textWidth+TEXTFIELD_PADDING*2;
 			}
@@ -951,6 +951,7 @@ void TextField::getTextBounds(const tiny_string& txt,number_t &xmin,number_t &xm
 		embeddedfont->getTextBounds(txt,fontSize,xmax,ymax);
 		xmin = autosizeposition;
 		xmax += autosizeposition;
+		ymin=0;
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"TextFields: computing of textbounds not implemented for non-embedded fonts");
@@ -1061,7 +1062,8 @@ void TextField::updateSizes()
 	tw = textWidth;
 	th = textHeight;
 	
-	RootMovieClip* currentRoot=this->getRoot().getPtr();
+	RootMovieClip* currentRoot=this->loadedFrom;
+	if (!currentRoot) currentRoot=this->getRoot().getPtr();
 	if (!currentRoot) currentRoot = getSystemState()->mainClip;
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	if (embeddedfont && embeddedfont->hasGlyphs(getText()))
@@ -1073,6 +1075,8 @@ void TextField::updateSizes()
 		{
 			embeddedfont->getTextBounds((*it).text,fontSize,w,h);
 			(*it).textwidth=w;
+			if (!wordWrap && w>tw)
+				tw = w;
 			if (wordWrap && width > TEXTFIELD_PADDING*2 && uint32_t(w) > width-TEXTFIELD_PADDING*2)
 			{
 				// calculate lines for wordwrap
@@ -1548,6 +1552,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 		float greenOffset=0.0;
 		float blueOffset=0.0;
 		float alphaOffset=0.0;
+		RGB tcolor = this->textColor;
 		ColorTransform* ct = colorTransform.getPtr();
 		DisplayObjectContainer* p = getParent();
 		while (!ct && p)
@@ -1565,6 +1570,13 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 			greenOffset=ct->greenOffset;
 			blueOffset=ct->blueOffset;
 			alphaOffset=ct->alphaOffset;
+			float r,g,b,a;
+			RGBA tmp;
+			tmp = tcolor;
+			ct->applyTransformation(tmp,r,g,b,a);
+			tcolor.Red=r*255.0;
+			tcolor.Green=g*255.0;
+			tcolor.Blue=b*255.0;
 		}
 		AS_BLENDMODE bl = this->blendMode;
 		if (bl == BLENDMODE_NORMAL)
@@ -1659,7 +1671,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, this->textColor,true);
+						isMask, hasMask,3.0, tcolor,true);
 			}
 		}
 		number_t xpos=autosizeposition;
@@ -1680,7 +1692,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 					uint32_t width,height;
 					uint32_t rwidth,rheight;
 					number_t bxmin=xpos;
-					number_t bxmax=xpos+tex->width/yscale;
+					number_t bxmax=xpos+tex->width/xscale;
 					number_t bymin=ypos;
 					number_t bymax=ypos+tex->height/yscale;
 					//Compute the matrix and the masks that are relevant
@@ -1705,7 +1717,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 										rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,1.0, 1.0,
 										redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 										redOffset, greenOffset, blueOffset, alphaOffset,
-										isMask, hasMask,2.0, this->textColor,true);
+										isMask, hasMask,2.0, tcolor,true);
 				}
 				xpos += embeddedfont->getRenderCharAdvance(codetableindex)*fontSize;
 			}

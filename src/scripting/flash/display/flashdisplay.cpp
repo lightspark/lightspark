@@ -242,8 +242,8 @@ void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
 	if(!loader.isNull() && obj==waitedObject)
 		loader->setContent(obj);
 
-	if (!loader.isNull() && !loader->getParent()) // loader has no parent, ensure init/complete events are sended anyway
-		loader->getSystemState()->stage->addHiddenObject(waitedObject);
+	if (!loader.isNull() && !loader->getParent() && waitedObject->is<MovieClip>()) // loader has no parent, ensure init/complete events are sended anyway
+		loader->getSystemState()->stage->addHiddenObject(waitedObject->as<MovieClip>());
 		
 	waitedObject.reset();
 }
@@ -1435,6 +1435,7 @@ MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpri
 
 bool MovieClip::destruct()
 {
+	getSystemState()->stage->removeHiddenObject(this);
 	frames.clear();
 	setFramesLoaded(0);
 	auto it = frameScripts.begin();
@@ -1592,7 +1593,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 	if (th->state.stop_FP)
 	{
 		th->state.stop_FP=false;
-		th->advanceFrame();
+		if (th->isOnStage())
+			th->advanceFrame();
+		else
+			th->getSystemState()->stage->addHiddenObject(th);
 	}
 }
 
@@ -1647,10 +1651,15 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 
 	if (!this->isOnStage())
 	{
-		advanceFrame();
-		initFrame();
-		this->incRef();
-		this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+		if (stop)
+		{
+			advanceFrame();
+			initFrame();
+			this->incRef();
+			this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+		}
+		else
+			this->getSystemState()->stage->addHiddenObject(this);
 	}
 	else if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
 		advanceFrame();
@@ -3413,12 +3422,12 @@ ASFUNCTIONBODY_ATOM(Shape,_getGraphics)
 	ret = asAtomHandler::fromObject(th->graphics.getPtr());
 }
 
-MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this),morphshapetag(nullptr)
+MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this),morphshapetag(nullptr),currentratio(0)
 {
 	scaling = 1.0f/20.0f;
 }
 
-MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this),morphshapetag(_morphshapetag)
+MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this),morphshapetag(_morphshapetag),currentratio(0)
 {
 	scaling = 1.0f/20.0f;
 	if (this->morphshapetag)
@@ -3434,11 +3443,13 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 {
 	if (!this->legacy || (morphshapetag==nullptr))
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
-	// TODO get bounds based on current ratio
-	xmin=morphshapetag->EndBounds.Xmin/20.0;
-	xmax=morphshapetag->EndBounds.Xmax/20.0;
-	ymin=morphshapetag->EndBounds.Ymin/20.0;
-	ymax=morphshapetag->EndBounds.Ymax/20.0;
+
+	float curratiofactor = float(currentratio)/65535.0;
+	xmin=(morphshapetag->StartBounds.Xmin + (float(morphshapetag->EndBounds.Xmin - morphshapetag->StartBounds.Xmin)*curratiofactor))/20.0;
+	xmax=(morphshapetag->StartBounds.Xmax + (float(morphshapetag->EndBounds.Xmax - morphshapetag->StartBounds.Xmax)*curratiofactor))/20.0;
+	ymin=(morphshapetag->StartBounds.Ymin + (float(morphshapetag->EndBounds.Ymin - morphshapetag->StartBounds.Ymin)*curratiofactor))/20.0;
+	ymax=(morphshapetag->StartBounds.Ymax + (float(morphshapetag->EndBounds.Ymax - morphshapetag->StartBounds.Ymax)*curratiofactor))/20.0;
+
 	return true;
 }
 
@@ -3446,6 +3457,7 @@ void MorphShape::checkRatio(uint32_t ratio, bool inskipping)
 {
 	if (inskipping)
 		return;
+	currentratio = ratio;
 	if (this->morphshapetag)
 		this->morphshapetag->getTokensForRatio(tokens,ratio);
 	this->hasChanged = true;
@@ -3791,6 +3803,32 @@ void Stage::setFocusTarget(_NR<InteractiveObject> f)
 		focus->gotFocus();
 }
 
+void Stage::addHiddenObject(MovieClip* o)
+{
+	auto it = hiddenobjects.find(o);
+	if (it != hiddenobjects.end())
+		return;
+	hiddenobjects.insert(o);
+}
+
+void Stage::removeHiddenObject(MovieClip* o)
+{
+	auto it = hiddenobjects.find(o);
+	if (it != hiddenobjects.end())
+		hiddenobjects.erase(it);
+}
+
+void Stage::advanceFrame()
+{
+	DisplayObjectContainer::advanceFrame();
+	auto it = hiddenobjects.begin();
+	while (it != hiddenobjects.end())
+	{
+		(*it)->advanceFrame();
+		it++;
+	}
+}
+
 void Stage::initFrame()
 {
 	DisplayObjectContainer::initFrame();
@@ -3811,8 +3849,6 @@ void Stage::executeFrameScript()
 		(*it)->executeFrameScript();
 		it++;
 	}
-	// only execute first frame of hidden objects (?)
-	hiddenobjects.clear();
 }
 
 void Stage::finalize()

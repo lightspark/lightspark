@@ -150,7 +150,7 @@ public:
 		@param tokens A vector that will be filled with tokens
 	*/
 	void outputTokens(const std::list<FILLSTYLE>& styles, const std::list<LINESTYLE2>& linestyles, tokensVector& tokens);
-	void outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, const std::list<MORPHLINESTYLE2> &linestyles, tokensVector& tokens, uint16_t ratio);
+	void outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, const std::list<MORPHLINESTYLE2> &linestyles, tokensVector& tokens, uint16_t ratio, const RECT& boundsrc);
 	void clear();
 };
 

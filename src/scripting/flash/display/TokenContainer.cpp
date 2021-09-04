@@ -153,9 +153,13 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 	shapesBuilder.outputTokens(fillStyles,lineStyles, tokens);
 }
 
-void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,DefineMorphShapeTag *tag, tokensVector &tokens, uint16_t ratio)
+void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *tag, tokensVector &tokens, uint16_t ratio)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"MorphShape currently ignores most morph settings and just displays the start/end shape. ID:"<<tag->getId()<<" ratio:"<<ratio);
+	if (tag->StartEdges.ShapeRecords.size() > tag->EndEdges.ShapeRecords.size())
+	{
+		LOG(LOG_ERROR,"invalid MorphShape, ShapeRecords don't match:"<<tag->StartEdges.ShapeRecords.size()<<" "<<tag->EndEdges.ShapeRecords.size());
+		return;
+	}
 	Vector2 cursor;
 	unsigned int color0=0;
 	unsigned int color1=0;
@@ -169,30 +173,33 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 
 	const MATRIX matrix;
 	ShapesBuilder shapesBuilder;
+	float curratiofactor = float(ratio)/65535.0;
 
-	// TODO compute SHAPERECORD entries based on ratio
-	int boundsx = ratio == 65535 ? tag->EndBounds.Xmin : tag->StartBounds.Xmin;
-	int boundsy = ratio == 65535 ? tag->EndBounds.Ymin : tag->StartBounds.Ymin;
+	int boundsx = tag->StartBounds.Xmin + (float(tag->EndBounds.Xmin - tag->StartBounds.Xmin)*curratiofactor);
+	int boundsy = tag->StartBounds.Ymin + (float(tag->EndBounds.Ymin - tag->StartBounds.Ymin)*curratiofactor);
+	RECT boundsrc;
+	boundsrc.Xmin=boundsx;
+	boundsrc.Ymin=boundsy;
 	cursor.x= -boundsx;
 	cursor.y= -boundsy;
-	auto it = ratio == 65535 ? tag->EndEdges.ShapeRecords.begin() : tag->StartEdges.ShapeRecords.begin();
-	auto last = ratio == 65535 ? tag->EndEdges.ShapeRecords.end() : tag->StartEdges.ShapeRecords.end();
+	auto itstart = tag->StartEdges.ShapeRecords.begin();
+	auto itend = tag->EndEdges.ShapeRecords.begin();
 	Vector2 p1(matrix.multiply2D(cursor));
-	while (it != last)
+	while (itstart != tag->StartEdges.ShapeRecords.end())
 	{
-		const SHAPERECORD* cur=&(*it);
-		it++;
-		if(cur->TypeFlag)
+		const SHAPERECORD* curstart=&(*itstart);
+		const SHAPERECORD* curend=&(*itend);
+		if(curstart->TypeFlag)
 		{
 			if (outlinesForColor0 == outlinesForColor1)
 			{
 				lastoutlinesForColor0=nullptr;
 				lastoutlinesForColor1=nullptr;
 			}
-			if(cur->StraightFlag)
+			if(curstart->StraightFlag)
 			{
-				cursor.x += cur->DeltaX;
-				cursor.y += cur->DeltaY;
+				cursor.x += curstart->DeltaX+(curend->DeltaX-curstart->DeltaX)*curratiofactor;
+				cursor.y += curstart->DeltaY+(curend->DeltaY-curstart->DeltaY)*curratiofactor;
 				Vector2 p2(matrix.multiply2D(cursor));
 
 				if(color0)
@@ -206,11 +213,11 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 			}
 			else
 			{
-				cursor.x += cur->ControlDeltaX;
-				cursor.y += cur->ControlDeltaY;
+				cursor.x += curstart->ControlDeltaX+(curend->ControlDeltaX-curstart->ControlDeltaX)*curratiofactor;
+				cursor.y += curstart->ControlDeltaY+(curend->ControlDeltaY-curstart->ControlDeltaY)*curratiofactor;
 				Vector2 p2(matrix.multiply2D(cursor));
-				cursor.x += cur->AnchorDeltaX;
-				cursor.y += cur->AnchorDeltaY;
+				cursor.x += curstart->AnchorDeltaX+(curend->AnchorDeltaX-curstart->AnchorDeltaX)*curratiofactor;
+				cursor.y += curstart->AnchorDeltaY+(curend->AnchorDeltaY-curstart->AnchorDeltaY)*curratiofactor;
 				Vector2 p3(matrix.multiply2D(cursor));
 
 				if(color0)
@@ -228,36 +235,38 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(SystemState* sys,Defin
 			lastoutlinesForColor0=nullptr;
 			lastoutlinesForColor1=nullptr;
 			lastoutlinesForStroke=nullptr;
-			if(cur->StateMoveTo)
+			if(curstart->StateMoveTo)
 			{
-				cursor.x=cur->MoveDeltaX-boundsx;
-				cursor.y=cur->MoveDeltaY-boundsy;
+				cursor.x=(curstart->MoveDeltaX-boundsx)+(curend->MoveDeltaX-curstart->MoveDeltaX)*curratiofactor;
+				cursor.y=(curstart->MoveDeltaY-boundsy)+(curend->MoveDeltaY-curstart->MoveDeltaY)*curratiofactor;
 				Vector2 tmp(matrix.multiply2D(cursor));
 				p1.x = tmp.x;
 				p1.y = tmp.y;
 			}
-			if(cur->StateLineStyle)
+			if(curstart->StateLineStyle)
 			{
-				linestyle = cur->LineStyle;
+				linestyle = curstart->LineStyle;
 				if (linestyle)
 					outlinesForStroke=&shapesBuilder.strokeShapesMap[linestyle];
 			}
-			if(cur->StateFillStyle1)
+			if(curstart->StateFillStyle1)
 			{
-				color1=cur->StateFillStyle1;
+				color1=curstart->StateFillStyle1;
 				if (color1)
 					outlinesForColor1=&shapesBuilder.filledShapesMap[color1];
 			}
-			if(cur->StateFillStyle0)
+			if(curstart->StateFillStyle0)
 			{
-				color0=cur->StateFillStyle0;
+				color0=curstart->StateFillStyle0;
 				if (color0)
 					outlinesForColor0=&shapesBuilder.filledShapesMap[color0];
 			}
 		}
+		itstart++;
+		itend++;
 	}
 	tokens.clear();
-	shapesBuilder.outputMorphTokens(tag->MorphFillStyles.FillStyles,tag->MorphLineStyles.LineStyles2, tokens,ratio);
+	shapesBuilder.outputMorphTokens(tag->MorphFillStyles.FillStyles,tag->MorphLineStyles.LineStyles2, tokens,ratio,boundsrc);
 }
 
 void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
@@ -290,8 +299,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	int offx,offy;
 	owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth,owner->getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
 
-	bool isMask;
-	bool hasMask;
+	bool isMask=false;
+	bool hasMask=false;
 	if (target)
 	{
 		owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);

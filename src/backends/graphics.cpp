@@ -1140,11 +1140,19 @@ void TextData::setText(const char* text)
 		line.textwidth=UINT32_MAX;
 		if (index != tiny_string::npos)
 		{
-			line.text = t.substr_bytes(0,index).raw_buf();
+			if (index > 0 && t.charAt(index-1)=='\r')
+				line.text = t.substr_bytes(0,index-1).raw_buf();
+			else
+				line.text = t.substr_bytes(0,index).raw_buf();
 			t=t.substr_bytes(index+1,UINT32_MAX);
 		}
 		else
-			line.text = t.raw_buf();
+		{
+			if (t.numBytes() > 0 &&  t.charAt(t.numBytes()-1)=='\r')
+				line.text = t.substr_bytes(0,t.numBytes()-1).raw_buf();
+			else
+				line.text = t.raw_buf();
+		}
 		textlines.push_back(line);
 	}
 	while (index != tiny_string::npos);

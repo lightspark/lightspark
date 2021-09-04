@@ -414,6 +414,8 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Indent on ID "<<CharacterID);
 	}
 	in >> VariableName;
+	if (AutoSize && textData.autoSize == TextData::AS_NONE)
+		textData.autoSize = TextData::AS_LEFT;
 	if(HasText)
 	{
 		in >> InitialText;
@@ -432,8 +434,6 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	textData.width = (Bounds.Xmax-Bounds.Xmin)/20;
 	textData.height = (Bounds.Ymax-Bounds.Ymin)/20;
 	textData.leading = Leading/20;
-	if (AutoSize)
-		textData.autoSize = TextData::AS_LEFT;
 }
 
 ASObject* DefineEditTextTag::instance(Class_base* c)
@@ -1598,7 +1598,7 @@ void DefineMorphShapeTag::getTokensForRatio(tokensVector& tokens, uint32_t ratio
 	if (it==tokensmap.end())
 	{
 		it = tokensmap.insert(make_pair(ratio,tokensVector())).first;
-		TokenContainer::FromDefineMorphShapeTagToShapeVector(this->loadedFrom->getSystemState(),this,it->second,ratio);
+		TokenContainer::FromDefineMorphShapeTagToShapeVector(this,it->second,ratio);
 	}
 	tokens.filltokens.assign(it->second.filltokens.begin(),it->second.filltokens.end());
 	tokens.stroketokens.assign(it->second.stroketokens.begin(),it->second.stroketokens.end());
@@ -1837,10 +1837,10 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		if (currchar && !PlaceFlagHasMatrix) // reuse matrix of existing DispayObject at this depth
 			Matrix = currchar->getMatrix();
 
+		toAdd->loadedFrom=placedTag->loadedFrom;
 		//The matrix must be set before invoking the constructor
 		toAdd->setLegacyMatrix(placedTag->MapToBounds(Matrix));
 		toAdd->legacy = true;
-		toAdd->loadedFrom=placedTag->loadedFrom;
 
 		setProperties(toAdd, parent);
 

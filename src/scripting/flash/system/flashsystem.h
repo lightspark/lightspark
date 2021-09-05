@@ -53,6 +53,27 @@ public:
 	ASFUNCTION_ATOM(_getScreenResolutionY);
 	ASFUNCTION_ATOM(_getHasAccessibility);
 	ASFUNCTION_ATOM(_getScreenDPI);
+
+	ASFUNCTION_ATOM(_avHardwareDisable);
+	ASFUNCTION_ATOM(_hasAudio);
+	ASFUNCTION_ATOM(_hasAudioEncoder);
+	ASFUNCTION_ATOM(_hasEmbeddedVideo);
+	ASFUNCTION_ATOM(_hasIME);
+	ASFUNCTION_ATOM(_hasMP3);
+	ASFUNCTION_ATOM(_hasPrinting);
+	ASFUNCTION_ATOM(_hasScreenBroadcast);
+	ASFUNCTION_ATOM(_hasScreenPlayback);
+	ASFUNCTION_ATOM(_hasStreamingAudio);
+	ASFUNCTION_ATOM(_hasStreamingVideo);
+	ASFUNCTION_ATOM(_hasTLS);
+	ASFUNCTION_ATOM(_hasVideoEncoder);
+	ASFUNCTION_ATOM(_supports32BitProcesses);
+	ASFUNCTION_ATOM(_supports64BitProcesses);
+	ASFUNCTION_ATOM(_touchscreenType);
+	ASFUNCTION_ATOM(_pixelAspectRatio);
+	ASFUNCTION_ATOM(_screenColor);
+	ASFUNCTION_ATOM(_maxLevelIDC);
+	ASFUNCTION_ATOM(_hasMultiChannelAudio);
 };
 
 class ApplicationDomain: public ASObject

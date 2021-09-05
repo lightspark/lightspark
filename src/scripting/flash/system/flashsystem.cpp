@@ -144,7 +144,7 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getVersion)
 ASFUNCTIONBODY_ATOM(Capabilities,_getServerString)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Capabilities: not all capabilities are reported in ServerString");
-	tiny_string res = "A=t&SA=t&SV=t&MP3=t&OS=Linux&PT=PlugIn&L=en&TLS=t&DD=t";
+	tiny_string res = "&SA=t&SV=t&OS=Linux&PT=PlugIn&L=en&TLS=t&DD=t";
 	res +="&V=";
 	res += EMULATED_VERSION;
 	res +="&M=";

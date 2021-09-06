@@ -613,6 +613,13 @@ SharedObject::SharedObject(Class_base* c):EventDispatcher(c),hasData(false),clie
 	data=_MR(new_asobject(c->getSystemState()));
 }
 
+bool SharedObject::destruct()
+{
+	if (client.getPtr()==this)
+		client=data;// this is just to set client to "something else" to avoid that this SharedObject has a pointer to itself during destruction
+	return EventDispatcher::destruct();
+}
+
 void SharedObject::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);

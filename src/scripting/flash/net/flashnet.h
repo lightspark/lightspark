@@ -49,7 +49,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(_R<Array>,requestHeaders);
 public:
 	URLRequest(Class_base* c, const tiny_string u="", const tiny_string m="GET", _NR<ASObject> d = NullRef);
-	void finalize();
+	void finalize() override;
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -111,6 +111,7 @@ private:
 	bool hasData;
 public:
 	SharedObject(Class_base* c);
+	bool destruct() override;
 	bool doFlush();
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(getLocal);
@@ -165,7 +166,7 @@ class URLLoaderThread : public DownloaderThreadBase
 {
 private:
 	_R<URLLoader> loader;
-	void execute();
+	void execute() override;
 public:
 	URLLoaderThread(_R<URLRequest> _request, _R<URLLoader> _loader);
 };
@@ -180,10 +181,10 @@ private:
 	uint64_t timestamp_last_progress;
 public:
 	URLLoader(Class_base* c);
-	void finalize();
+	void finalize() override;
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	void threadFinished(IThreadJob *job);
+	void threadFinished(IThreadJob *job) override;
 	void setData(_NR<ASObject> data);
 	ASObject* getData() const
 	{
@@ -191,8 +192,8 @@ public:
 	}
 	tiny_string getDataFormat();
 	void setDataFormat(const tiny_string& newFormat);
-	void setBytesTotal(uint32_t b);
-	void setBytesLoaded(uint32_t b);
+	void setBytesTotal(uint32_t b) override;
+	void setBytesLoaded(uint32_t b) override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(load);
 	ASFUNCTION_ATOM(close);
@@ -212,7 +213,7 @@ private:
 public:
 	Responder(Class_base* c):ASObject(c),result(asAtomHandler::invalidAtom),status(asAtomHandler::invalidAtom){}
 	static void sinit(Class_base*);
-	void finalize();
+	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(onResult);
 };
@@ -237,12 +238,12 @@ private:
 	ObjectEncoding::ENCODING objectEncoding;
 	PROXY_TYPE proxyType;
 	//IThreadJob interface
-	void execute();
-	void threadAbort();
-	void jobFence();
+	void execute() override;
+	void threadAbort() override;
+	void jobFence() override;
 public:
 	NetConnection(Class_base* c);
-	void finalize();
+	void finalize() override;
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -262,7 +263,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(NullableRef<ASObject>,client);
 	ASPROPERTY_GETTER_SETTER(uint32_t,maxPeerConnections);
 	ASPROPERTY_GETTER(tiny_string,nearID);
-	void afterExecution(_R<Event> e);
+	void afterExecution(_R<Event> e) override;
 };
 
 class NetStreamAppendBytesAction: public ASObject
@@ -299,12 +300,12 @@ private:
 	Mutex mutex;
 	Mutex countermutex;
 	//IThreadJob interface for long jobs
-	void execute();
-	void threadAbort();
-	void jobFence();
+	void execute() override;
+	void threadAbort() override;
+	void jobFence() override;
 	//ITickJob interface to frame advance
-	void tick();
-	void tickFence();
+	void tick() override;
+	void tickFence() override;
 	bool isReady() const;
 	_NR<ASObject> client;
 
@@ -334,7 +335,7 @@ private:
 public:
 	NetStream(Class_base* c);
 	~NetStream();
-	void finalize();
+	void finalize() override;
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);

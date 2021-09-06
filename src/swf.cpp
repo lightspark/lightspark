@@ -590,9 +590,12 @@ void SystemState::systemFinalize()
 	parameters.reset();
 	static_SoundMixer_soundTransform.reset();
 	frameListeners.clear();
-	for(auto it = sharedobjectmap.begin(); it != sharedobjectmap.end(); it++)
+	auto it = sharedobjectmap.begin();
+	while (it != sharedobjectmap.end())
+	{
 		it->second->doFlush();
-	sharedobjectmap.clear();
+		it = sharedobjectmap.erase(it);
+	}
 	mainClip->destroyTags();
 }
 

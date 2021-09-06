@@ -2794,7 +2794,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    " (" << pos.x << "," << pos.y << ") " <<
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
-		    ((*it)->isMask() ? "m" : "") << " cd=" <<(*it)->ClipDepth<<" "<<
+		    ((*it)->isMask() ? "m" : "") << " cd=" <<(*it)->ClipDepth<<" "<<" ca=" <<(*it)->computeCacheAsBitmap()<<" "<<
 			"a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"' tag="<<(*it)->getTagID());
 
 		if ((*it)->is<DisplayObjectContainer>())
@@ -2864,6 +2864,8 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceT
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		(*it)->hasChanged = true;
+		if (computeCacheAsBitmap())
+			continue;
 		(*it)->requestInvalidation(q,forceTextureRefresh);
 	}
 }

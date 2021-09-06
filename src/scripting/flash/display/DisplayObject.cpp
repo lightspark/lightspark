@@ -1561,6 +1561,8 @@ IDrawable* DisplayObject::getCachedBitmap(DisplayObject* target)
 		this->sy=origsy;
 		this->tx=origtx;
 		this->ty=origty;
+		cachedBitmap->setNeedsTextureRecalculation();
+		cachedBitmap->hasChanged=true;
 		if (filters)
 		{
 			for (uint32_t i = 0; i < filters->size(); i++)

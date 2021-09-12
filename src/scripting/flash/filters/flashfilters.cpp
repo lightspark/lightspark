@@ -70,6 +70,12 @@ void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, num
 {
 	int radiusX = int(round(blurx)) >> 1;
 	int radiusY = int(round(blury)) >> 1;
+	if (radiusX >= int(sizeof(MUL_TABLE)/sizeof(int)))
+		radiusX = sizeof(MUL_TABLE)/sizeof(int)-1;
+	if (radiusY >= int(sizeof(MUL_TABLE)/sizeof(int)))
+		radiusY = sizeof(MUL_TABLE)/sizeof(int)-1;
+	if (radiusX<=0 || radiusY <= 0)
+		return;
 
 	int iterations = quality;
 
@@ -270,7 +276,7 @@ void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, num
 	}
 }
 
-void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t blurx, number_t blury, int quality, number_t strength, uint32_t color, bool inner, bool knockout)
+void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t blurx, number_t blury, int quality, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout)
 {
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
 	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
@@ -292,47 +298,42 @@ void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, BitmapContaine
 		uint32_t targetpos = (xpos+startpos)*4+i%(width*4);
 		if (targetpos+3 >= targetsize)
 			break;
-		uint32_t curalpha = min(uint32_t(0xff),uint32_t(number_t(tmpdata[i+3])*strength));
-		if (!inner)
+		number_t glowalpha = (inner ? 0xff - tmpdata[i+3] : tmpdata[i+3]);
+		number_t srcalpha = max(0.0d,min(1.0d,glowalpha*alpha*strength/255.0d));
+		number_t dstalpha = number_t(data[targetpos+3])/255.0d;
+		if (inner)
 		{
 			if (knockout)
 			{
-				data[targetpos  ] = min(uint32_t(0xff),uint32_t((color    )&0xff));
-				data[targetpos+1] = min(uint32_t(0xff),uint32_t((color>> 8)&0xff));
-				data[targetpos+2] = min(uint32_t(0xff),uint32_t((color>>16)&0xff));
-				if (curalpha == data[targetpos+3])
-					data[targetpos+3] = 0;
-				else
-					data[targetpos+3] = curalpha;
+				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha));
+				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha));
+				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha));
+				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*dstalpha));
 			}
-			else if (curalpha != data[targetpos+3])
+			else
 			{
-				data[targetpos  ] |= min(uint32_t(0xff),uint32_t((color    )&0xff));
-				data[targetpos+1] |= min(uint32_t(0xff),uint32_t((color>> 8)&0xff));
-				data[targetpos+2] |= min(uint32_t(0xff),uint32_t((color>>16)&0xff));
-				data[targetpos+3] = curalpha;
+				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha+number_t(data[targetpos  ])*(1.0d-srcalpha)));
+				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+1])*(1.0d-srcalpha)));
+				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+2])*(1.0d-srcalpha)));
+				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*dstalpha+number_t(data[targetpos+3])*(1.0d-srcalpha)));
 			}
 		}
 		else
 		{
-			LOG(LOG_NOT_IMPLEMENTED,"inner mode for DropShadowFilter");
-//			if (knockout)
-//			{
-////				data[targetpos  ] = min(uint32_t(0xff),uint32_t((color    )&0xff));
-////				data[targetpos+1] = min(uint32_t(0xff),uint32_t((color>> 8)&0xff));
-////				data[targetpos+2] = min(uint32_t(0xff),uint32_t((color>>16)&0xff));
-//				if (curalpha == data[targetpos+3])
-//					data[targetpos+3] = 0;
-//				else
-//					data[targetpos+3] = 0xff - curalpha;
-//			}
-//			else if (curalpha != data[targetpos+3])
-//			{
-//				data[targetpos  ] &= ~((color    )&0xff);
-//				data[targetpos+1] &= ~((color>> 8)&0xff);
-//				data[targetpos+2] &= ~((color>>16)&0xff);
-//				data[targetpos+3] = 0xff - curalpha;
-//			}
+			if (knockout)
+			{
+				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0d-dstalpha)));
+				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0d-dstalpha)));
+				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0d-dstalpha)));
+				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0d-dstalpha)));
+			}
+			else
+			{
+				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0d-dstalpha)+number_t(data[targetpos  ])));
+				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0d-dstalpha)+number_t(data[targetpos+1])));
+				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0d-dstalpha)+number_t(data[targetpos+2])));
+				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0d-dstalpha)+number_t(data[targetpos+3])));
+			}
 		}
 	}
 	delete[] tmpdata;
@@ -405,7 +406,7 @@ BitmapFilter* GlowFilter::cloneImpl() const
 }
 void GlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
 {
-	applyDropShadowFilter(target, source, sourceRect, xpos, ypos, blurX, blurY, quality, strength, color, inner, knockout);
+	applyDropShadowFilter(target, source, sourceRect, xpos, ypos, blurX, blurY, quality, strength, alpha, color, inner, knockout);
 }
 
 DropShadowFilter::DropShadowFilter(Class_base* c):
@@ -424,7 +425,7 @@ void DropShadowFilter::applyFilter(BitmapContainer* target, BitmapContainer* sou
 {
 	xpos += cos(angle*M_PI/180.0) * distance;
 	ypos +=	sin(angle*M_PI/180.0) * distance;
-	applyDropShadowFilter(target, source, sourceRect, xpos, ypos, blurX, blurY, quality, strength, color, inner, knockout);
+	applyDropShadowFilter(target, source, sourceRect, xpos, ypos, blurX, blurY, quality, strength, alpha, color, inner, knockout);
 }
 
 
@@ -746,7 +747,7 @@ void BlurFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, c
 		tmpdata = source->getRectangleData(sourceRect);
 	else
 		tmpdata = target->getRectangleData(sourceRect);
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	applyBlur(tmpdata,width,height,blurX,blurY,quality);
 	uint8_t* data = target->getData();
 	for (uint32_t i = 0; i < height; i++)
 	{

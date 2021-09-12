@@ -181,7 +181,7 @@ void Video::afterLegacyDelete(DisplayObjectContainer *par)
 	resetDecoder();
 }
 
-void Video::setOnStage(bool staged, bool force)
+void Video::setOnStage(bool staged, bool force, bool parentCachedAsBitmap)
 {
 	if(staged!=onStage||force)
 	{
@@ -191,7 +191,7 @@ void Video::setOnStage(bool staged, bool force)
 			resetDecoder();
 		}
 	}
-	DisplayObject::setOnStage(staged,force);
+	DisplayObject::setOnStage(staged,force, parentCachedAsBitmap);
 }
 
 uint32_t Video::getTagID() const

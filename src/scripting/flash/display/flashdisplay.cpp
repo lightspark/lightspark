@@ -2374,7 +2374,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	th->setOnStage(false);
+	th->setOnStage(false,false,false);
 	th->tokens.clear();
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
@@ -2810,7 +2810,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 	}
 }
 
-void DisplayObjectContainer::setOnStage(bool staged, bool force)
+void DisplayObjectContainer::setOnStage(bool staged, bool force, bool parentCachedAsBitmap)
 {
 	if(staged!=onStage||force)
 	{
@@ -2822,13 +2822,13 @@ void DisplayObjectContainer::setOnStage(bool staged, bool force)
 			displayListCopy.assign(dynamicDisplayList.begin(),
 						   dynamicDisplayList.end());
 		}
-		DisplayObject::setOnStage(staged,force);
+		DisplayObject::setOnStage(staged,force,parentCachedAsBitmap);
 		//Notify children
 		//calling DisplayObject::setOnStage may have changed the onStage state of the children,
 		//but the addedToStage/removedFromStage event must always be dispatched
 		std::vector<_R<DisplayObject>>::const_iterator it=displayListCopy.begin();
 		for(;it!=displayListCopy.end();++it)
-			(*it)->setOnStage(staged,true);
+			(*it)->setOnStage(staged,true,parentCachedAsBitmap || computeCacheAsBitmap());
 	}
 }
 
@@ -2859,13 +2859,13 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setMouseChildren)
 void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	DisplayObject::requestInvalidation(q);
+	if (computeCacheAsBitmap() && !dynamic_cast<SoftwareInvalidateQueue*>(q))
+		return;
 	Locker l(mutexDisplayList);
 	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		(*it)->hasChanged = true;
-		if (computeCacheAsBitmap())
-			continue;
 		(*it)->requestInvalidation(q,forceTextureRefresh);
 	}
 }
@@ -2901,7 +2901,7 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 		}
 	}
 	if (!onStage || child.getPtr() != getSystemState()->mainClip)
-		child->setOnStage(onStage);
+		child->setOnStage(onStage,false, computeCacheAsBitmap());
 }
 
 bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct)
@@ -2917,7 +2917,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct)
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
 
-		child->setOnStage(false);
+		child->setOnStage(false,false, computeCacheAsBitmap());
 		child->incRef();
 		if (direct)
 			child->setParent(nullptr);
@@ -2945,7 +2945,7 @@ void DisplayObjectContainer::_removeAllChildren()
 	while (it!=dynamicDisplayList.end())
 	{
 		_R<DisplayObject> child = *it;
-		child->setOnStage(false);
+		child->setOnStage(false,false, computeCacheAsBitmap());
 		getSystemState()->addDisplayObjectToResetParentList(child);
 		child->setMask(NullRef);
 		if (!needsActionScript3())
@@ -3110,7 +3110,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 			th->mapDepthToLegacyChild.erase(it2->second);
 			th->mapLegacyChildToDepth.erase(it2);
 		}
-		child->setOnStage(false);
+		child->setOnStage(false,false, th->computeCacheAsBitmap());
 		sys->addDisplayObjectToResetParentList(*it);
 		//incRef before the refrence is destroyed
 		child->incRef();

@@ -218,7 +218,7 @@ public:
 	bool Render(RenderContext& ctxt,bool force=false);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
 	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly);
-	virtual void setOnStage(bool staged, bool force = false);
+	virtual void setOnStage(bool staged, bool force, bool parentCachedAsBitmap);
 	bool isOnStage() const { return onStage; }
 	bool isMask() const { return !maskOf.isNull(); }
 	// checks for visibility depending on parent visibility 
@@ -229,6 +229,7 @@ public:
 	virtual _NR<RootMovieClip> getRoot();
 	virtual _NR<Stage> getStage();
 	void setLegacyMatrix(const MATRIX& m);
+	void setFilters(const FILTERLIST& filterlist);
 	virtual void advanceFrame() {}
 	virtual void declareFrame() {}
 	virtual void initFrame();

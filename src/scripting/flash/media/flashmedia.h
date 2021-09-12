@@ -152,7 +152,7 @@ public:
 	void finalize() override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 	void afterLegacyDelete(DisplayObjectContainer* par) override;
-	void setOnStage(bool staged, bool force = false) override;
+	void setOnStage(bool staged, bool force, bool parentCachedAsBitmap) override;
 	uint32_t getTagID() const override;
 	~Video();
 	static void sinit(Class_base*);

@@ -377,6 +377,65 @@ void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 	}
 }
 
+void DisplayObject::setFilters(const FILTERLIST& filterlist)
+{
+	if (filterlist.Filters.size())
+	{
+		if (filters.isNull())
+			filters = _MR(Class<Array>::getInstanceSNoArgsNoFreelist(getSystemState()));
+		filters->resize(0);
+		auto it = filterlist.Filters.cbegin();
+		while (it != filterlist.Filters.cend())
+		{
+			switch(it->FilterID)
+			{
+				case 0:
+					filters->push(asAtomHandler::fromObject(Class<DropShadowFilter>::getInstanceS(getSystemState(),it->DropShadowFilter)));
+					break;
+				case 1:
+					filters->push(asAtomHandler::fromObject(Class<BlurFilter>::getInstanceS(getSystemState(),it->BlurFilter)));
+					break;
+				case 2:
+					filters->push(asAtomHandler::fromObject(Class<GlowFilter>::getInstanceS(getSystemState(),it->GlowFilter)));
+					break;
+				case 3:
+					filters->push(asAtomHandler::fromObject(Class<BevelFilter>::getInstanceS(getSystemState(),it->BevelFilter)));
+					break;
+				case 4:
+					filters->push(asAtomHandler::fromObject(Class<GradientGlowFilter>::getInstanceS(getSystemState(),it->GradientGlowFilter)));
+					break;
+				case 5:
+					filters->push(asAtomHandler::fromObject(Class<ConvolutionFilter>::getInstanceS(getSystemState(),it->ConvolutionFilter)));
+					break;
+				case 6:
+					filters->push(asAtomHandler::fromObject(Class<ColorMatrixFilter>::getInstanceS(getSystemState(),it->ColorMatrixFilter)));
+					break;
+				case 7:
+					filters->push(asAtomHandler::fromObject(Class<GradientBevelFilter>::getInstanceS(getSystemState(),it->GradientBevelFilter)));
+					break;
+				default:
+					LOG(LOG_ERROR,"Unsupported Filter Id " << (int)it->FilterID);
+					break;
+			}
+			it++;
+		}
+		hasChanged=true;
+		setNeedsTextureRecalculation();
+		requestInvalidation(getSystemState());
+	}
+	else
+	{
+		if (!filters.isNull() && filters->size())
+		{
+			filters->resize(0);
+			hasChanged=true;
+			setNeedsTextureRecalculation();
+			requestInvalidation(getSystemState());
+		}
+	}
+	
+}
+
 void DisplayObject::becomeMaskOf(_NR<DisplayObject> m)
 {
 	maskOf=m;
@@ -638,7 +697,7 @@ void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, nu
 	getConcatenatedMatrix().getInverted().multiply2D(xin, yin, xout, yout);
 }
 
-void DisplayObject::setOnStage(bool staged, bool force)
+void DisplayObject::setOnStage(bool staged, bool force, bool parentCachedAsBitmap)
 {
 	bool changed = false;
 	//TODO: When removing from stage released the cachedTex
@@ -649,7 +708,8 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		if(staged==true)
 		{
 			hasChanged=true;
-			requestInvalidation(getSystemState());
+			if (!parentCachedAsBitmap)
+				requestInvalidation(getSystemState());
 		}
 		if(getVm(getSystemState())==nullptr)
 			return;
@@ -1533,7 +1593,9 @@ IDrawable* DisplayObject::getCachedBitmap(DisplayObject* target)
 		return nullptr;
 	if (needsTextureRecalculation)
 	{
-		if (!cachedBitmap)
+		if (!cachedBitmap
+				|| cachedBitmap->getBitmapSize().width != xmax-xmin
+				|| cachedBitmap->getBitmapSize().height != ymax-ymin)
 		{
 			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getSystemState(),xmax-xmin,ymax-ymin));
 			data->incRef();
@@ -1554,15 +1616,13 @@ IDrawable* DisplayObject::getCachedBitmap(DisplayObject* target)
 		this->tx=0;
 		this->ty=0;
 		cachedBitmap->bitmapData->drawDisplayObject(this, m0,true,true);
-		// temporarily reset position to original settings
+		// reset position to original settings
 		this->parent=origparent;
 		this->rotation=origrotation;
 		this->sx=origsx;
 		this->sy=origsy;
 		this->tx=origtx;
 		this->ty=origty;
-		cachedBitmap->setNeedsTextureRecalculation();
-		cachedBitmap->hasChanged=true;
 		if (filters)
 		{
 			for (uint32_t i = 0; i < filters->size(); i++)
@@ -1573,6 +1633,8 @@ IDrawable* DisplayObject::getCachedBitmap(DisplayObject* target)
 					asAtomHandler::as<BitmapFilter>(f)->applyFilter(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,xmax-xmin,0,ymax-ymin),0,0);
 			}
 		}
+		cachedBitmap->setNeedsTextureRecalculation();
+		cachedBitmap->hasChanged=true;
 	}
 	MATRIX m1(1,1,0,0,xmin,ymin);
 	return cachedBitmap->invalidateFromSource(target, MATRIX(),true,this,m1);

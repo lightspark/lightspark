@@ -1722,7 +1722,7 @@ ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 
 void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const
 {
-	assert_and_throw(obj && PlaceFlagHasCharacter);
+	assert_and_throw(obj);
 
 	//TODO: move these three attributes in PlaceInfo
 	if(PlaceFlagHasColorTransform)
@@ -1866,19 +1866,24 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			currchar=toAdd;
 		}
 	}
-	else if (PlaceFlagHasMatrix)
+	else 
 	{
-		if(placedTag==nullptr && currchar)
+		if (currchar)
+			setProperties(currchar, parent);
+		if (PlaceFlagHasMatrix)
 		{
-			// tag for CharacterID may be defined after this tag was defined, so we look for it again in the dictionary
-			RootMovieClip* root = parent->getRoot().getPtr();
-			if (root)
-				placedTag=root->dictionaryLookup(currchar->getTagID());
+			if(placedTag==nullptr && currchar)
+			{
+				// tag for CharacterID may be defined after this tag was defined, so we look for it again in the dictionary
+				RootMovieClip* root = parent->getRoot().getPtr();
+				if (root)
+					placedTag=root->dictionaryLookup(currchar->getTagID());
+			}
+			if (placedTag)
+				parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,placedTag->MapToBounds(Matrix));
+			else
+				parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
 		}
-		if (placedTag)
-			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,placedTag->MapToBounds(Matrix));
-		else
-			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
 	}
 	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
 	{
@@ -2069,47 +2074,7 @@ void PlaceObject3Tag::setProperties(DisplayObject *obj, DisplayObjectContainer *
 	if (PlaceFlagHasVisible)
 		obj->setVisible(Visible);
 	obj->cacheAsBitmap=this->BitmapCache;
-	if (this->SurfaceFilterList.Filters.size())
-	{
-		if (obj->filters.isNull())
-			obj->filters = _MR(Class<Array>::getInstanceSNoArgsNoFreelist(obj->getSystemState()));
-		auto it = this->SurfaceFilterList.Filters.begin();
-		while (it != this->SurfaceFilterList.Filters.end())
-		{
-			switch(it->FilterID)
-			{
-				case 0:
-					obj->filters->push(asAtomHandler::fromObject(Class<DropShadowFilter>::getInstanceS(obj->getSystemState(),it->DropShadowFilter)));
-					break;
-				case 1:
-					obj->filters->push(asAtomHandler::fromObject(Class<BlurFilter>::getInstanceS(obj->getSystemState(),it->BlurFilter)));
-					break;
-				case 2:
-					obj->filters->push(asAtomHandler::fromObject(Class<GlowFilter>::getInstanceS(obj->getSystemState(),it->GlowFilter)));
-					break;
-				case 3:
-					obj->filters->push(asAtomHandler::fromObject(Class<BevelFilter>::getInstanceS(obj->getSystemState(),it->BevelFilter)));
-					break;
-				case 4:
-					obj->filters->push(asAtomHandler::fromObject(Class<GradientGlowFilter>::getInstanceS(obj->getSystemState(),it->GradientGlowFilter)));
-					break;
-				case 5:
-					obj->filters->push(asAtomHandler::fromObject(Class<ConvolutionFilter>::getInstanceS(obj->getSystemState(),it->ConvolutionFilter)));
-					break;
-				case 6:
-					obj->filters->push(asAtomHandler::fromObject(Class<ColorMatrixFilter>::getInstanceS(obj->getSystemState(),it->ColorMatrixFilter)));
-					break;
-				case 7:
-					obj->filters->push(asAtomHandler::fromObject(Class<GradientBevelFilter>::getInstanceS(obj->getSystemState(),it->GradientBevelFilter)));
-					break;
-				default:
-					LOG(LOG_ERROR,"Unsupported Filter Id " << (int)it->FilterID);
-					break;
-			}
-			it++;
-		}
-	}
-	
+	obj->setFilters(this->SurfaceFilterList);
 }
 
 void SetBackgroundColorTag::execute(RootMovieClip* root) const
@@ -2271,8 +2236,8 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			state->name = BUILTIN_STRINGS::EMPTY;
 			if (i->ButtonHasBlendMode && i->buttonVersion == 2)
 				state->setBlendMode(i->BlendMode);
-			if (i->ButtonHasFilterList && i->FilterList.Filters.size() != 0)
-				LOG(LOG_NOT_IMPLEMENTED,"DefineButtonTag: FilterList "<<this->getId());
+			if (i->ButtonHasFilterList)
+				state->setFilters(i->FilterList);
 			if (i->ColorTransform.isfilled())
 				state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(state->getSystemState(),i->ColorTransform));
 

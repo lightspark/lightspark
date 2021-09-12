@@ -32,7 +32,7 @@ private:
 	virtual BitmapFilter* cloneImpl() const;
 protected:
 	void applyBlur(uint8_t* data, uint32_t width, uint32_t height, number_t blurx, number_t blury, int quality);
-	void applyDropShadowFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t blurx, number_t blury, int quality, number_t strength, uint32_t color, bool inner, bool knockout);
+	void applyDropShadowFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t blurx, number_t blury, int quality, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout);
 public:
 	BitmapFilter(Class_base* c, CLASS_SUBTYPE st=SUBTYPE_BITMAPFILTER):ASObject(c,T_OBJECT,st){}
 	static void sinit(Class_base* c);

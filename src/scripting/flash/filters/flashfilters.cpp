@@ -299,8 +299,8 @@ void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, BitmapContaine
 		if (targetpos+3 >= targetsize)
 			break;
 		number_t glowalpha = (inner ? 0xff - tmpdata[i+3] : tmpdata[i+3]);
-		number_t srcalpha = max(0.0d,min(1.0d,glowalpha*alpha*strength/255.0d));
-		number_t dstalpha = number_t(data[targetpos+3])/255.0d;
+		number_t srcalpha = max(0.0,min(1.0,glowalpha*alpha*strength/255.0));
+		number_t dstalpha = number_t(data[targetpos+3])/255.0;
 		if (inner)
 		{
 			if (knockout)
@@ -312,27 +312,27 @@ void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, BitmapContaine
 			}
 			else
 			{
-				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha+number_t(data[targetpos  ])*(1.0d-srcalpha)));
-				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+1])*(1.0d-srcalpha)));
-				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+2])*(1.0d-srcalpha)));
-				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*dstalpha+number_t(data[targetpos+3])*(1.0d-srcalpha)));
+				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha+number_t(data[targetpos  ])*(1.0-srcalpha)));
+				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+1])*(1.0-srcalpha)));
+				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+2])*(1.0-srcalpha)));
+				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*dstalpha+number_t(data[targetpos+3])*(1.0-srcalpha)));
 			}
 		}
 		else
 		{
 			if (knockout)
 			{
-				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0d-dstalpha)));
-				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0d-dstalpha)));
-				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0d-dstalpha)));
-				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0d-dstalpha)));
+				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)));
+				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)));
+				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)));
+				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0-dstalpha)));
 			}
 			else
 			{
-				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0d-dstalpha)+number_t(data[targetpos  ])));
-				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0d-dstalpha)+number_t(data[targetpos+1])));
-				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0d-dstalpha)+number_t(data[targetpos+2])));
-				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0d-dstalpha)+number_t(data[targetpos+3])));
+				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos  ])));
+				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+1])));
+				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+2])));
+				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+3])));
 			}
 		}
 	}

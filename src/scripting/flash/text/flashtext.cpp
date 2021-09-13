@@ -126,7 +126,7 @@ TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, 
 	: InteractiveObject(c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
 	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),originalXPosition(0),originalWidth(textData.width),
-	  fillstyleTextColor(0xff),fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),
+	  fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),
 	  alwaysShowSelection(false),
 	  condenseWhite(false), displayAsPassword(false),
 	  embedFonts(false), maxChars(_tag ? int32_t(_tag->MaxLength) : 0), mouseWheelEnabled(true),
@@ -139,6 +139,7 @@ TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, 
 		type = ET_EDITABLE;
 		tabEnabled = true;
 	}
+	fillstyleTextColor.push_back(0xff);
 }
 
 void TextField::sinit(Class_base* c)
@@ -1476,8 +1477,8 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 			tokens.filltokens.push_back(GeomToken(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
 			tokens.filltokens.push_back(GeomToken(CLEAR_STROKE).uval);
 		}
-		fillstyleTextColor.FillStyleType=SOLID_FILL;
-		fillstyleTextColor.Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
+		fillstyleTextColor.front().FillStyleType=SOLID_FILL;
+		fillstyleTextColor.front().Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
 		uint32_t startposy = 0;
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{

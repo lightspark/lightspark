@@ -921,8 +921,8 @@ ppPluginInstance::~ppPluginInstance()
 	m_sys->setShutdownFlag();
 
 	m_sys->destroy();
-	delete m_sys;
 	delete m_pt;
+	delete m_sys;
 	g_messageloop_interface->PostQuit(m_messageloop,PP_TRUE);
 	SDL_WaitThread(m_ppLoopThread,nullptr);
 	setTLSSys(nullptr);

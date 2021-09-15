@@ -209,7 +209,7 @@ void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, num
 			
 			if (iterations > 0)
 			{
-				for (y = 0; i<h; i++)
+				for (y = 0; y<h; y++)
 				{
 					p = yi << 2;
 					pa = uint32_t(a * ms) >> ss;
@@ -275,19 +275,12 @@ void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, num
 		}
 	}
 }
-
-void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t blurx, number_t blury, int quality, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout)
+void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout)
 {
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
 	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
 	uint32_t size = width*height;
-	uint8_t* tmpdata = nullptr;
-	if (source)
-		tmpdata = source->getRectangleData(sourceRect);
-	else
-		tmpdata = target->getRectangleData(sourceRect);
 
-	applyBlur(tmpdata,width,height,blurx,blury,quality);
 	uint8_t* data = target->getData();
 	uint32_t startpos = ypos*target->getWidth();
 	uint32_t targetsize = target->getWidth()*target->getHeight()*4;
@@ -336,7 +329,62 @@ void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, BitmapContaine
 			}
 		}
 	}
-	delete[] tmpdata;
+}
+void BitmapFilter::applyGradientFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout)
+{
+	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
+	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
+	uint32_t size = width*height;
+
+	uint8_t* data = target->getData();
+	uint32_t startpos = ypos*target->getWidth();
+	uint32_t targetsize = target->getWidth()*target->getHeight()*4;
+	for (uint32_t i = 0; i < size*4; i+=4)
+	{
+		if (i && i%(width*4)==0)
+			startpos+=target->getWidth();
+		uint32_t targetpos = (xpos+startpos)*4+i%(width*4);
+		if (targetpos+3 >= targetsize)
+			break;
+		number_t glowalpha = (inner ? 0xff - tmpdata[i+3] : tmpdata[i+3]);
+		number_t srcalpha = max(0.0,min(1.0,glowalpha*(alphas[uint32_t(glowalpha)])*strength/255.0));
+		number_t dstalpha = number_t(data[targetpos+3])/255.0;
+		uint32_t color = colors[uint32_t(glowalpha)];
+		if (inner)
+		{
+			if (knockout)
+			{
+				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha));
+				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha));
+				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha));
+				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*dstalpha));
+			}
+			else
+			{
+				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha+number_t(data[targetpos  ])*(1.0-srcalpha)));
+				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+1])*(1.0-srcalpha)));
+				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+2])*(1.0-srcalpha)));
+				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*dstalpha+number_t(data[targetpos+3])*(1.0-srcalpha)));
+			}
+		}
+		else
+		{
+			if (knockout)
+			{
+				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)));
+				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)));
+				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)));
+				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0-dstalpha)));
+			}
+			else
+			{
+				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos  ])));
+				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+1])));
+				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+2])));
+				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+3])));
+			}
+		}
+	}
 }
 
 ASFUNCTIONBODY_ATOM(BitmapFilter,clone)
@@ -406,7 +454,15 @@ BitmapFilter* GlowFilter::cloneImpl() const
 }
 void GlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
 {
-	applyDropShadowFilter(target, source, sourceRect, xpos, ypos, blurX, blurY, quality, strength, alpha, color, inner, knockout);
+	uint8_t* tmpdata = nullptr;
+	if (source)
+		tmpdata = source->getRectangleData(sourceRect);
+	else
+		tmpdata = target->getRectangleData(sourceRect);
+
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	applyDropShadowFilter(target, tmpdata, sourceRect, xpos, ypos, strength, alpha, color, inner, knockout);
+	delete[] tmpdata;
 }
 
 DropShadowFilter::DropShadowFilter(Class_base* c):
@@ -425,7 +481,17 @@ void DropShadowFilter::applyFilter(BitmapContainer* target, BitmapContainer* sou
 {
 	xpos += cos(angle*M_PI/180.0) * distance;
 	ypos +=	sin(angle*M_PI/180.0) * distance;
-	applyDropShadowFilter(target, source, sourceRect, xpos, ypos, blurX, blurY, quality, strength, alpha, color, inner, knockout);
+	if (hideObject)
+		LOG(LOG_NOT_IMPLEMENTED,"DropShadowFilter.hideObject");
+	uint8_t* tmpdata = nullptr;
+	if (source)
+		tmpdata = source->getRectangleData(sourceRect);
+	else
+		tmpdata = target->getRectangleData(sourceRect);
+
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	applyDropShadowFilter(target, tmpdata, sourceRect, xpos, ypos, strength, alpha, color, inner, knockout);
+	delete[] tmpdata;
 }
 
 
@@ -496,10 +562,9 @@ GradientGlowFilter::GradientGlowFilter(Class_base* c):
 }
 GradientGlowFilter::GradientGlowFilter(Class_base* c, const GRADIENTGLOWFILTER& filter):
 	BitmapFilter(c,SUBTYPE_GRADIENTGLOWFILTER),distance(filter.Distance),angle(filter.Angle), blurX(filter.BlurX), blurY(filter.BlurY), strength(filter.Strength), quality(filter.Passes),
-	type("inner"),// TODO: is type set based on "onTop" ?
+	type(filter.InnerGlow ? "inner": "outer"),// TODO: is type set based on "onTop" ?
 	knockout(filter.Knockout)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"GradientGlowFilter from Tag");
 	if (filter.GradientColors.size())
 	{
 		colors = _MR(Class<Array>::getInstanceSNoArgs(c->getSystemState()));
@@ -540,6 +605,52 @@ void GradientGlowFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, quality);
 	REGISTER_GETTER_SETTER(c, type);
 	REGISTER_GETTER_SETTER(c, knockout);
+}
+
+void GradientGlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+{
+	uint8_t* tmpdata = nullptr;
+	if (source)
+		tmpdata = source->getRectangleData(sourceRect);
+	else
+		tmpdata = target->getRectangleData(sourceRect);
+
+	number_t gradientalphas[256];
+	uint32_t gradientcolors[256];
+	number_t alpha = 1.0;
+	uint32_t color = 0x000000;
+	uint32_t ratioidx = 0;
+	uint32_t nextratio = 0;
+	for (uint32_t i=0; i <256; i++)
+	{
+		if (i >= nextratio)
+		{
+			if (ratios && ratios->size() > ratioidx)
+			{
+				asAtom a=asAtomHandler::invalidAtom;
+				ratios->at_nocheck(a,ratioidx);
+				nextratio = asAtomHandler::toUInt(a);
+			}
+			ratioidx++;
+		}
+		if (this->alphas && this->alphas->size() > ratioidx)
+		{
+			asAtom a=asAtomHandler::invalidAtom;
+			this->alphas->at_nocheck(a,ratioidx);
+			alpha = asAtomHandler::toNumber(a);
+		}
+		if (this->colors && this->colors->size() > ratioidx)
+		{
+			asAtom a=asAtomHandler::invalidAtom;
+			this->colors->at_nocheck(a,ratioidx);
+			color = asAtomHandler::toUInt(a);
+		}
+		gradientalphas[i] = alpha;
+		gradientcolors[i] = color;
+	}
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	applyGradientFilter(target, tmpdata, sourceRect, xpos, ypos, strength, gradientalphas, gradientcolors, type=="inner", knockout);
+	delete[] tmpdata;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, distance);
@@ -590,9 +701,10 @@ BevelFilter::BevelFilter(Class_base* c,const BEVELFILTER& filter):
 	highlightAlpha(filter.HighlightColor.af()), highlightColor(RGB(filter.HighlightColor.Red,filter.HighlightColor.Green,filter.HighlightColor.Blue).toUInt()),
 	knockout(filter.Knockout), quality(filter.Passes),
 	shadowAlpha(filter.ShadowColor.af()), shadowColor(RGB(filter.ShadowColor.Red,filter.ShadowColor.Green,filter.ShadowColor.Blue).toUInt()),
-	strength(filter.Strength), type("inner") // TODO: is type set based on "onTop" ?
+	strength(filter.Strength), type(filter.InnerShadow ? "inner" : "outer") // TODO: is type set based on "onTop" ?
 {
-	LOG(LOG_NOT_IMPLEMENTED,"BevelFilter from Tag");
+	if (filter.OnTop)
+		LOG(LOG_NOT_IMPLEMENTED,"BevelFilter onTop flag");
 }
 
 void BevelFilter::sinit(Class_base* c)
@@ -611,6 +723,7 @@ void BevelFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,strength);
 	REGISTER_GETTER_SETTER(c,type);
 }
+
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,angle);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,blurX);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,blurY);
@@ -623,11 +736,29 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,shadowAlpha);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,shadowColor);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,strength);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,type);
- 
+
+void BevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+{
+	if (type=="full")
+		LOG(LOG_NOT_IMPLEMENTED,"BevelFilter type 'full'");
+	uint8_t* tmpdata = nullptr;
+	if (source)
+		tmpdata = source->getRectangleData(sourceRect);
+	else
+		tmpdata = target->getRectangleData(sourceRect);
+
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	// TODO I've not found any useful documentation how BevelFilter should be implemented, so we just apply two dropShadowFilters with different angles and colors
+	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos( angle       *M_PI/180.0) * distance, ypos+sin( angle       *M_PI/180.0) * distance, strength, shadowAlpha, shadowColor, type=="inner", knockout);
+	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos((angle+180.0)*M_PI/180.0) * distance, ypos+sin((angle+180.0)*M_PI/180.0) * distance, strength, highlightAlpha, highlightColor, type=="inner", knockout);
+	delete[] tmpdata;
+
+}
+
 ASFUNCTIONBODY_ATOM(BevelFilter,_constructor)
 {
-	//BevelFilter *th = obj.as<BevelFilter>();
-	LOG(LOG_NOT_IMPLEMENTED,"BevelFilter is not implemented");
+	BevelFilter *th = asAtomHandler::as<BevelFilter>(obj);
+	ARG_UNPACK_ATOM(th->distance,4.0)(th->angle,45)(th->highlightColor,0xFFFFFF)(th->highlightAlpha,1.0)(th->shadowColor,0x000000)(th->shadowAlpha,1.0)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false);
 }
 
 BitmapFilter* BevelFilter::cloneImpl() const
@@ -670,28 +801,47 @@ void ColorMatrixFilter::sinit(Class_base* c)
 
 void ColorMatrixFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"applyFilter on ColorMatrixFilter");
-//	assert_and_throw(matrix->size() >= 20);
-//	for (int32_t y = sourceRect.Ymin; y < sourceRect.Ymax; y++)
-//	{
-//		for (int32_t x = sourceRect.Xmin; x < sourceRect.Xmax; x++)
-//		{
-//			uint32_t sourcecolor= source ? source->getPixel(x,y) : target->getPixel(x,y);
-//			number_t srcR = number_t((sourcecolor    )&0xff)/256.0;
-//			number_t srcG = number_t((sourcecolor>> 8)&0xff)/256.0;
-//			number_t srcB = number_t((sourcecolor>>16)&0xff)/256.0;
-//			number_t srcA = number_t((sourcecolor>>24)&0xff)/256.0;
-//			number_t redResult   = (asAtomHandler::toNumber(matrix->at(0))  * srcR) + (asAtomHandler::toNumber(matrix->at(1))  * srcG) + (asAtomHandler::toNumber(matrix->at(2))  * srcB) + (asAtomHandler::toNumber(matrix->at(3))  * srcA) + asAtomHandler::toNumber(matrix->at(4) );
-//			number_t greenResult = (asAtomHandler::toNumber(matrix->at(5))  * srcR) + (asAtomHandler::toNumber(matrix->at(6))  * srcG) + (asAtomHandler::toNumber(matrix->at(7))  * srcB) + (asAtomHandler::toNumber(matrix->at(8))  * srcA) + asAtomHandler::toNumber(matrix->at(9) );
-//			number_t blueResult  = (asAtomHandler::toNumber(matrix->at(10)) * srcR) + (asAtomHandler::toNumber(matrix->at(11)) * srcG) + (asAtomHandler::toNumber(matrix->at(12)) * srcB) + (asAtomHandler::toNumber(matrix->at(13)) * srcA) + asAtomHandler::toNumber(matrix->at(14));
-//			number_t alphaResult = (asAtomHandler::toNumber(matrix->at(15)) * srcR) + (asAtomHandler::toNumber(matrix->at(16)) * srcG) + (asAtomHandler::toNumber(matrix->at(17)) * srcB) + (asAtomHandler::toNumber(matrix->at(18)) * srcA) + asAtomHandler::toNumber(matrix->at(19));
-//			target->setPixel(xpos+x,ypos+y,
-//							 (max(uint32_t(0),min(uint32_t(0xff),uint32_t(redResult  *255.0)%0xff)    ))|
-//							 (max(uint32_t(0),min(uint32_t(0xff),uint32_t(greenResult*255.0)%0xff)<<8 ))|
-//							 (max(uint32_t(0),min(uint32_t(0xff),uint32_t(blueResult *255.0)%0xff)<<16))|
-//							 (max(uint32_t(0),min(uint32_t(0xff),uint32_t(alphaResult*255.0)%0xff)<<24)),true);
-//		}
-//	}
+	assert_and_throw(matrix->size() >= 20);
+	number_t m[20];
+	for (int i=0; i < 20; i++)
+	{
+		m[i] = asAtomHandler::toNumber(matrix->at(i));
+	}
+	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
+	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
+	uint32_t size = width*height;
+	uint8_t* tmpdata = nullptr;
+	if (source)
+		tmpdata = source->getRectangleData(sourceRect);
+	else
+		tmpdata = target->getRectangleData(sourceRect);
+	
+	uint8_t* data = target->getData();
+	uint32_t startpos = ypos*target->getWidth();
+	uint32_t targetsize = target->getWidth()*target->getHeight()*4;
+	for (uint32_t i = 0; i < size*4; i+=4)
+	{
+		if (i && i%(width*4)==0)
+			startpos+=target->getWidth();
+		uint32_t targetpos = (xpos+startpos)*4+i%(width*4);
+		if (targetpos+3 >= targetsize)
+			break;
+
+		number_t srcA = number_t(tmpdata[i+3]);
+		number_t srcR = number_t(tmpdata[i+2])*srcA/255.0;
+		number_t srcG = number_t(tmpdata[i+1])*srcA/255.0;
+		number_t srcB = number_t(tmpdata[i  ])*srcA/255.0;
+		number_t redResult   = (m[0 ]*srcR) + (m[1 ]*srcG) + (m[2 ]*srcB) + (m[3 ]*srcA) + m[4 ];
+		number_t greenResult = (m[5 ]*srcR) + (m[6 ]*srcG) + (m[7 ]*srcB) + (m[8 ]*srcA) + m[9 ];
+		number_t blueResult  = (m[10]*srcR) + (m[11]*srcG) + (m[12]*srcB) + (m[13]*srcA) + m[14];
+		number_t alphaResult = (m[15]*srcR) + (m[16]*srcG) + (m[17]*srcB) + (m[18]*srcA) + m[19];
+
+		data[targetpos  ] = (max(int32_t(0),min(int32_t(0xff),int32_t(blueResult ))));
+		data[targetpos+1] = (max(int32_t(0),min(int32_t(0xff),int32_t(greenResult))));
+		data[targetpos+2] = (max(int32_t(0),min(int32_t(0xff),int32_t(redResult  ))));
+		data[targetpos+3] = (max(int32_t(0),min(int32_t(0xff),int32_t(alphaResult))));
+	}
+	delete[] tmpdata;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(ColorMatrixFilter, matrix);
@@ -740,14 +890,15 @@ ASFUNCTIONBODY_ATOM(BlurFilter,_constructor)
 }
 void BlurFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
 {
-	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
-	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
 	uint8_t* tmpdata = nullptr;
 	if (source)
 		tmpdata = source->getRectangleData(sourceRect);
 	else
 		tmpdata = target->getRectangleData(sourceRect);
-	applyBlur(tmpdata,width,height,blurX,blurY,quality);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+
+	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
+	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
 	uint8_t* data = target->getData();
 	for (uint32_t i = 0; i < height; i++)
 	{
@@ -916,9 +1067,10 @@ GradientBevelFilter::GradientBevelFilter(Class_base* c, const GRADIENTBEVELFILTE
 	knockout(filter.Knockout),
 	quality(filter.Passes),
 	strength(filter.Strength),
-	type("inner") // TODO: is type set based on "onTop" ?
+	type(filter.InnerShadow ? "inner" : "outer") // TODO: is type set based on "onTop" ?
 {
-	LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter from Tag");
+	if (filter.OnTop)
+		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter onTop flag");
 	if (filter.GradientColors.size())
 	{
 		colors = _MR(Class<Array>::getInstanceSNoArgs(c->getSystemState()));
@@ -972,6 +1124,55 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,ratios);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,strength);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,type);
 
+void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+{
+	if (type=="full")
+		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter type 'full'");
+	uint8_t* tmpdata = nullptr;
+	if (source)
+		tmpdata = source->getRectangleData(sourceRect);
+	else
+		tmpdata = target->getRectangleData(sourceRect);
+
+	number_t gradientalphas[256];
+	uint32_t gradientcolors[256];
+	number_t alpha = 1.0;
+	uint32_t color = 0x000000;
+	uint32_t ratioidx = 0;
+	uint32_t nextratio = 0;
+	for (uint32_t i=0; i <256; i++)
+	{
+		if (i >= nextratio)
+		{
+			if (ratios && ratios->size() > ratioidx)
+			{
+				asAtom a=asAtomHandler::invalidAtom;
+				ratios->at_nocheck(a,ratioidx);
+				nextratio = asAtomHandler::toUInt(a);
+			}
+			ratioidx++;
+		}
+		if (this->alphas && this->alphas->size() > ratioidx)
+		{
+			asAtom a=asAtomHandler::invalidAtom;
+			this->alphas->at_nocheck(a,ratioidx);
+			alpha = asAtomHandler::toNumber(a);
+		}
+		if (this->colors && this->colors->size() > ratioidx)
+		{
+			asAtom a=asAtomHandler::invalidAtom;
+			this->colors->at_nocheck(a,ratioidx);
+			color = asAtomHandler::toUInt(a);
+		}
+		gradientalphas[i] = alpha;
+		gradientcolors[i] = color;
+	}
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos( angle       *M_PI/180.0) * distance, ypos+sin( angle       *M_PI/180.0) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout);
+	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos((angle+180.0)*M_PI/180.0) * distance, ypos+sin((angle+180.0)*M_PI/180.0) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout);
+	delete[] tmpdata;
+}
+
 ASFUNCTIONBODY_ATOM(GradientBevelFilter,_constructor)
 {
 	//GradientBevelFilter *th = obj.as<GradientBevelFilter>();
@@ -1019,24 +1220,24 @@ BitmapFilter* ShaderFilter::cloneImpl() const
 void BitmapFilterQuality::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("HIGH",nsNameAndKind(),asAtomHandler::fromUInt(3),DECLARED_TRAIT);
-	c->setVariableAtomByQName("LOW",nsNameAndKind(),asAtomHandler::fromUInt(1),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MEDIUM",nsNameAndKind(),asAtomHandler::fromUInt(2),DECLARED_TRAIT);
+	c->setVariableAtomByQName("HIGH",nsNameAndKind(),asAtomHandler::fromUInt(3),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("LOW",nsNameAndKind(),asAtomHandler::fromUInt(1),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MEDIUM",nsNameAndKind(),asAtomHandler::fromUInt(2),CONSTANT_TRAIT);
 }
 
 void DisplacementMapFilterMode::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("CLAMP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"clamp"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("COLOR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"color"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("IGNORE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"ignore"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("WRAP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"wrap"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("CLAMP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"clamp"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("COLOR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"color"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("IGNORE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"ignore"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("WRAP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"wrap"),CONSTANT_TRAIT);
 }
 
 void BitmapFilterType::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("FULL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"full"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("INNER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"inner"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("OUTER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"outer"),DECLARED_TRAIT);
+	c->setVariableAtomByQName("FULL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"full"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("INNER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"inner"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("OUTER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"outer"),CONSTANT_TRAIT);
 }

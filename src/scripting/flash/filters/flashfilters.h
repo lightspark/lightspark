@@ -32,7 +32,8 @@ private:
 	virtual BitmapFilter* cloneImpl() const;
 protected:
 	void applyBlur(uint8_t* data, uint32_t width, uint32_t height, number_t blurx, number_t blury, int quality);
-	void applyDropShadowFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t blurx, number_t blury, int quality, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout);
+	void applyDropShadowFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout);
+	void applyGradientFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout);
 public:
 	BitmapFilter(Class_base* c, CLASS_SUBTYPE st=SUBTYPE_BITMAPFILTER):ASObject(c,T_OBJECT,st){}
 	static void sinit(Class_base* c);
@@ -103,6 +104,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(int32_t,quality);
 	ASPROPERTY_GETTER_SETTER(tiny_string,type);
 	ASPROPERTY_GETTER_SETTER(bool,knockout);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos);
 };
 
 class BevelFilter: public BitmapFilter
@@ -126,6 +128,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(uint32_t,shadowColor);
 	ASPROPERTY_GETTER_SETTER(number_t,strength);
 	ASPROPERTY_GETTER_SETTER(tiny_string,type);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 };
 class ColorMatrixFilter: public BitmapFilter
 {
@@ -210,6 +213,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, ratios);
 	ASPROPERTY_GETTER_SETTER(number_t, strength);
 	ASPROPERTY_GETTER_SETTER(tiny_string, type);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos);
 };
 class ShaderFilter: public BitmapFilter
 {

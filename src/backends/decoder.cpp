@@ -103,8 +103,12 @@ VideoDecoder::VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),fram
 
 VideoDecoder::~VideoDecoder()
 {
-	if (videoTexture.isValid())
-		getSys()->getRenderThread()->releaseTexture(getTexture());
+	if(videoTexture.isValid())
+	{
+		RenderThread *rt=getSys()->getRenderThread();
+		if(rt)
+			rt->releaseTexture(getTexture());
+	}
 }
 
 void VideoDecoder::waitForFencing()

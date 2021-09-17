@@ -817,10 +817,9 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	inWriting(false)
 {
 	m_messageloop = g_messageloop_interface->Create(this->getppInstance());
-	m_ppLoopThread = SDL_CreateThread(ppPluginInstance::worker,"pploop",this);
 	m_cachefilesystem = g_filesystem_interface->Create(getppInstance(),PP_FileSystemType::PP_FILESYSTEMTYPE_LOCALTEMPORARY);
 	g_messageloop_interface->PostWork(m_messageloop,PP_MakeCompletionCallback(openfilesystem_callback,this),0);
-	
+
 	m_cachefilename = 0;
 	m_last_size.width = 0;
 	m_last_size.height = 0;
@@ -829,6 +828,8 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	m_sys=new lightspark::SystemState(0, lightspark::SystemState::FLASH);
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
+
+	m_ppLoopThread = SDL_CreateThread(ppPluginInstance::worker,"pploop",this);
 
 	m_sys->extScriptObject = new ppExtScriptObject(this,m_sys);
 	//Parse OBJECT/EMBED tag attributes
@@ -920,8 +921,8 @@ ppPluginInstance::~ppPluginInstance()
 	m_sys->setShutdownFlag();
 
 	m_sys->destroy();
-	delete m_sys;
 	delete m_pt;
+	delete m_sys;
 	g_messageloop_interface->PostQuit(m_messageloop,PP_TRUE);
 	SDL_WaitThread(m_ppLoopThread,nullptr);
 	setTLSSys(nullptr);

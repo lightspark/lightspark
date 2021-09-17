@@ -3872,6 +3872,9 @@ void Stage::finalize()
 	avm1MouseListeners.clear();
 	avm1EventListeners.clear();
 	avm1ResizeListeners.clear();
+	fullScreenSourceRect.reset();
+	stage3Ds.reset();
+	softKeyboardRect.reset();
 	DisplayObjectContainer::finalize();
 }
 

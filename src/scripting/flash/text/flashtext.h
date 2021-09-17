@@ -125,7 +125,7 @@ private:
 	int32_t originalWidth;
 
 	// these are only used when drawing to DisplayObject, so they are guarranteed not to be destroyed during rendering
-	FILLSTYLE fillstyleTextColor;
+	list<FILLSTYLE> fillstyleTextColor;
 	FILLSTYLE fillstyleBackgroundColor;
 	LINESTYLE2 lineStyleBorder;
 	LINESTYLE2 lineStyleCaret;

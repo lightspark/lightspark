@@ -1006,6 +1006,7 @@ WorkerDomain::WorkerDomain(Class_base* c):
 void WorkerDomain::finalize()
 {
 	workerlist.reset();
+	workerSharedObject.reset();
 }
 
 void WorkerDomain::sinit(Class_base* c)

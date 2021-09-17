@@ -790,11 +790,9 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* ro
 	root->registerEmbeddedFont("",this);
 }
 
-void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
+void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
 {
-	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
-	fillStyles.push_back(fillstyleColor);
 
 	int tokenscaling = fontpixelsize * this->scaling;
 	curPos.y = 1024 + startposy*1024;
@@ -818,7 +816,7 @@ void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text,
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
 							   glyphPos.x+startposx*1024*20,
 							   glyphPos.y);
-					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
+					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillstyleColor,glyphMatrix);
 					curPos.x += tokenscaling;
 					found = true;
 					break;
@@ -970,11 +968,9 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	root->registerEmbeddedFont(getFontname(),this);
 }
 
-void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
+void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
 {
-	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
-	fillStyles.push_back(fillstyleColor);
 
 	int tokenscaling = fontpixelsize * this->scaling;
 	curPos.y = (1024+this->FontLeading/2.0)+startposy*1024;
@@ -998,7 +994,7 @@ void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
 							   glyphPos.x+startposx*1024*20,
 							   glyphPos.y);
-					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
+					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillstyleColor,glyphMatrix);
 					if (FontFlagsHasLayout)
 						curPos.x += FontAdvanceTable[i];
 					else
@@ -1180,11 +1176,9 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 
 }
 
-void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, FILLSTYLE& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
+void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
 {
-	std::list<FILLSTYLE> fillStyles;
 	Vector2 curPos;
-	fillStyles.push_back(fillstyleColor);
 
 	int tokenscaling = fontpixelsize * this->scaling;
 	curPos.y = ((20+startposy)*1024) * this->scaling;
@@ -1208,7 +1202,7 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
 							   glyphPos.x+startposx*1024*20* this->scaling,
 							   glyphPos.y);
-					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
+					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillstyleColor,glyphMatrix);
 					if (FontFlagsHasLayout)
 						curPos.x += FontAdvanceTable[i];
 					found = true;

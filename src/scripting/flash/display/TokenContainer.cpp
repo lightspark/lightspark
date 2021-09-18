@@ -266,7 +266,13 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 
 void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
+	if (owner->getTagID()==461 && q->getCacheAsBitmapObject())
+	{
+		int x=0;
+	}
 	if((tokens.empty() && !owner->computeCacheAsBitmap()) || owner->skipRender())
+		return;
+	if (owner->requestInvalidationForCacheAsBitmap(q))
 		return;
 	owner->incRef();
 	if (forceTextureRefresh)
@@ -274,8 +280,19 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 	q->addToInvalidateQueue(_MR(owner));
 }
 
-IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
+	if (owner->computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=owner))
+	{
+		IDrawable* ret = owner->getCachedBitmapDrawable(target, initialMatrix);
+		if (ret)
+		{
+			if (cachedBitmap)
+				*cachedBitmap = owner->getCachedBitmap().getPtr();
+			return ret;
+		}
+	}
+	
 	int32_t x,y,rx,ry;
 	uint32_t width,height;
 	uint32_t rwidth,rheight;

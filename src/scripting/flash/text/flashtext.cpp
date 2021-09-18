@@ -1345,6 +1345,8 @@ void TextField::textUpdated()
 
 void TextField::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
+	if (requestInvalidationForCacheAsBitmap(q))
+		return;
 	if (!tokensEmpty())
 		TokenContainer::requestInvalidation(q,forceTextureRefresh);
 	else
@@ -1394,9 +1396,19 @@ void TextField::defaultEventBehavior(_R<Event> e)
 	}
 }
 
-IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
 	Locker l(invalidatemutex);
+	if (cachedBitmap && computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	{
+		IDrawable* ret = getCachedBitmapDrawable(target, initialMatrix);
+		if (ret)
+		{
+			if (cachedBitmap)
+				*cachedBitmap = owner->getCachedBitmap().getPtr();
+			return ret;
+		}
+	}
 	int32_t x,y,rx,ry;
 	uint32_t width,height,rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
@@ -1487,7 +1499,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		}
 		if (tokens.empty())
 			return nullptr;
-		return TokenContainer::invalidate(target, initialMatrix,smoothing);
+		return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
 	}
 	std::vector<IDrawable::MaskData> masks;
 	bool isMask;
@@ -1536,6 +1548,11 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 
 bool TextField::renderImpl(RenderContext& ctxt) const
 {
+	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL && getCachedBitmap())
+	{
+		getCachedBitmap()->Render(ctxt);
+		return false;
+	}
 	if (getText().empty() && !this->border && !this->background)
 		return false;
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? this->loadedFrom->getEmbeddedFontByID(fontID) : this->loadedFrom->getEmbeddedFont(font));
@@ -2088,9 +2105,9 @@ void StaticText::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),_getText),GETTER_METHOD,true);
 }
 
-IDrawable* StaticText::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing)
+IDrawable* StaticText::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
-	return TokenContainer::invalidate(target, initialMatrix,smoothing);
+	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
 }
 bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
@@ -2099,6 +2116,16 @@ bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numb
 	ymin=bounds.Ymin/20.0;
 	ymax=bounds.Ymax/20.0;
 	return true;
+}
+
+bool StaticText::renderImpl(RenderContext& ctxt) const
+{
+	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL && getCachedBitmap())
+	{
+		getCachedBitmap()->Render(ctxt);
+		return false;
+	}
+	return TokenContainer::renderImpl(ctxt);
 }
 
 _NR<DisplayObject> StaticText::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)

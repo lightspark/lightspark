@@ -702,13 +702,26 @@ bool TextLine::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number
 
 void TextLine::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
+	if (requestInvalidationForCacheAsBitmap(q))
+		return;
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 	incRef();
 	q->addToInvalidateQueue(_MR(this));
 }
 
-IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing)
+IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
+	if (cachedBitmap && computeCacheAsBitmap())
+	{
+		setNeedsTextureRecalculation();
+		IDrawable* ret = getCachedBitmapDrawable(target, initialMatrix);
+		if (ret)
+		{
+			if (cachedBitmap)
+				*cachedBitmap = getCachedBitmap().getPtr();
+			return ret;
+		}
+	}
 	int32_t x,y,rx,ry;
 	uint32_t width,height,rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;

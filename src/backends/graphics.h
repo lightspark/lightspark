@@ -463,15 +463,20 @@ public:
 
 class InvalidateQueue
 {
+protected:
+	_NR<DisplayObject> cacheAsBitmapObject;
 public:
+	InvalidateQueue(_NR<DisplayObject> _cacheAsBitmapObject=NullRef):cacheAsBitmapObject(_cacheAsBitmapObject) {}
 	virtual ~InvalidateQueue(){}
 	//Invalidation queue management
 	virtual void addToInvalidateQueue(_R<DisplayObject> d) = 0;
+	_NR<DisplayObject> getCacheAsBitmapObject() const { return cacheAsBitmapObject; }
 };
 
 class SoftwareInvalidateQueue: public InvalidateQueue
 {
 public:
+	SoftwareInvalidateQueue(_NR<DisplayObject> _cacheAsBitmapObject):InvalidateQueue(_cacheAsBitmapObject) {}
 	std::list<_R<DisplayObject>> queue;
 	void addToInvalidateQueue(_R<DisplayObject> d) override;
 };

@@ -1202,22 +1202,27 @@ void SystemState::flushInvalidationQueue()
 	{
 		if(cur->isOnStage() && cur->hasChanged)
 		{
-			IDrawable* d=cur->getCachedBitmap(stage);
-			if (!d)
-				d=cur->invalidate(stage, MATRIX(),true);
+			_NR<DisplayObject> drawobj=cur;
+			DisplayObject* cachedBitmap= nullptr;
+			IDrawable* d=cur->invalidate(stage, MATRIX(),true,nullptr, &cachedBitmap);
 			//Check if the drawable is valid and forge a new job to
 			//render it and upload it to GPU
 			if(d)
 			{
-				if (cur->getNeedsTextureRecalculation())
+				if (cachedBitmap)
+				{
+					cachedBitmap->incRef();
+					drawobj = _MNR(cachedBitmap);
+				}
+				if (drawobj->getNeedsTextureRecalculation())
 				{
 					drawjobLock.lock();
-					AsyncDrawJob* j = new AsyncDrawJob(d,cur);
-					if (!cur->getTextureRecalculationSkippable())
+					AsyncDrawJob* j = new AsyncDrawJob(d,drawobj);
+					if (!drawobj->getTextureRecalculationSkippable())
 					{
 						for (auto it = drawJobsPending.begin(); it != drawJobsPending.end(); it++)
 						{
-							if ((*it)->getOwner() == cur.getPtr())
+							if ((*it)->getOwner() == drawobj.getPtr())
 							{
 								// older drawjob currently running for this DisplayObject, abort it
 								(*it)->threadAborting=true;
@@ -1227,7 +1232,7 @@ void SystemState::flushInvalidationQueue()
 						}
 						for (auto it = drawJobsNew.begin(); it != drawJobsNew.end(); it++)
 						{
-							if ((*it)->getOwner() == cur.getPtr())
+							if ((*it)->getOwner() == drawobj.getPtr())
 							{
 								// older drawjob currently running for this DisplayObject, abort it
 								(*it)->threadAborting=true;
@@ -1241,11 +1246,11 @@ void SystemState::flushInvalidationQueue()
 					drawjobLock.unlock();
 				}
 				else
-					renderThread->addRefreshableSurface(d,cur);
+					renderThread->addRefreshableSurface(d,drawobj);
 			}
-			cur->hasChanged=false;
+			drawobj->hasChanged=false;
 			if (getRenderThread()->isStarted())
-				cur->resetNeedsTextureRecalculation();
+				drawobj->resetNeedsTextureRecalculation();
 		}
 		_NR<DisplayObject> next=cur->invalidateQueueNext;
 		cur->invalidateQueueNext=NullRef;
@@ -1916,7 +1921,7 @@ void RootMovieClip::constructionComplete()
 	MovieClip::constructionComplete();
 	incRef();
 	getSystemState()->stage->_addChildAt(_MR(this),0);
-	this->setOnStage(true,true,computeCacheAsBitmap());
+	this->setOnStage(true,true);
 	if (!loaderInfo.isNull())
 		loaderInfo->setComplete();
 	getSystemState()->addTick(1000/frameRate,getSystemState());

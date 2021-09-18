@@ -330,6 +330,42 @@ void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, uint8_t* tmpda
 		}
 	}
 }
+void BitmapFilter::fillGradientColors(number_t* gradientalphas, uint32_t* gradientcolors,Array* ratios,Array* alphas,Array* colors)
+{
+	number_t alpha = 1.0;
+	uint32_t color = 0x000000;
+	uint32_t ratioidx = 0;
+	uint32_t nextratio = 0;
+	uint32_t currratioidx = 0;
+	for (uint32_t i=0; i <256; i++)
+	{
+		if (i >= nextratio)
+		{
+			currratioidx= ratioidx;
+			ratioidx++;
+			if (ratios && ratios->size() > ratioidx)
+			{
+				asAtom a=asAtomHandler::invalidAtom;
+				ratios->at_nocheck(a,ratioidx);
+				nextratio = asAtomHandler::toUInt(a);
+			}
+		}
+		if (alphas && alphas->size() > currratioidx)
+		{
+			asAtom a=asAtomHandler::invalidAtom;
+			alphas->at_nocheck(a,currratioidx);
+			alpha = asAtomHandler::toNumber(a);
+		}
+		if (colors && colors->size() > currratioidx)
+		{
+			asAtom a=asAtomHandler::invalidAtom;
+			colors->at_nocheck(a,currratioidx);
+			color = asAtomHandler::toUInt(a);
+		}
+		gradientalphas[i] = alpha;
+		gradientcolors[i] = color;
+	}
+}
 void BitmapFilter::applyGradientFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout)
 {
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
@@ -347,7 +383,8 @@ void BitmapFilter::applyGradientFilter(BitmapContainer* target, uint8_t* tmpdata
 		if (targetpos+3 >= targetsize)
 			break;
 		number_t glowalpha = (inner ? 0xff - tmpdata[i+3] : tmpdata[i+3]);
-		number_t srcalpha = max(0.0,min(1.0,glowalpha*(alphas[uint32_t(glowalpha)])*strength/255.0));
+		number_t alpha = alphas[uint32_t(glowalpha)];
+		number_t srcalpha = max(0.0,min(1.0,glowalpha*alpha*strength/255.0));
 		number_t dstalpha = number_t(data[targetpos+3])/255.0;
 		uint32_t color = colors[uint32_t(glowalpha)];
 		if (inner)
@@ -479,8 +516,8 @@ DropShadowFilter::DropShadowFilter(Class_base* c,const DROPSHADOWFILTER& filter)
 }
 void DropShadowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
 {
-	xpos += cos(angle*M_PI/180.0) * distance;
-	ypos +=	sin(angle*M_PI/180.0) * distance;
+	xpos += cos(angle) * distance;
+	ypos +=	sin(angle) * distance;
 	if (hideObject)
 		LOG(LOG_NOT_IMPLEMENTED,"DropShadowFilter.hideObject");
 	uint8_t* tmpdata = nullptr;
@@ -617,37 +654,7 @@ void GradientGlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* s
 
 	number_t gradientalphas[256];
 	uint32_t gradientcolors[256];
-	number_t alpha = 1.0;
-	uint32_t color = 0x000000;
-	uint32_t ratioidx = 0;
-	uint32_t nextratio = 0;
-	for (uint32_t i=0; i <256; i++)
-	{
-		if (i >= nextratio)
-		{
-			if (ratios && ratios->size() > ratioidx)
-			{
-				asAtom a=asAtomHandler::invalidAtom;
-				ratios->at_nocheck(a,ratioidx);
-				nextratio = asAtomHandler::toUInt(a);
-			}
-			ratioidx++;
-		}
-		if (this->alphas && this->alphas->size() > ratioidx)
-		{
-			asAtom a=asAtomHandler::invalidAtom;
-			this->alphas->at_nocheck(a,ratioidx);
-			alpha = asAtomHandler::toNumber(a);
-		}
-		if (this->colors && this->colors->size() > ratioidx)
-		{
-			asAtom a=asAtomHandler::invalidAtom;
-			this->colors->at_nocheck(a,ratioidx);
-			color = asAtomHandler::toUInt(a);
-		}
-		gradientalphas[i] = alpha;
-		gradientcolors[i] = color;
-	}
+	fillGradientColors(gradientalphas,gradientcolors,this->ratios.getPtr(), this->alphas.getPtr(), this->colors.getPtr());
 	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
 	applyGradientFilter(target, tmpdata, sourceRect, xpos, ypos, strength, gradientalphas, gradientcolors, type=="inner", knockout);
 	delete[] tmpdata;
@@ -749,8 +756,8 @@ void BevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, 
 
 	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
 	// TODO I've not found any useful documentation how BevelFilter should be implemented, so we just apply two dropShadowFilters with different angles and colors
-	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos( angle       *M_PI/180.0) * distance, ypos+sin( angle       *M_PI/180.0) * distance, strength, shadowAlpha, shadowColor, type=="inner", knockout);
-	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos((angle+180.0)*M_PI/180.0) * distance, ypos+sin((angle+180.0)*M_PI/180.0) * distance, strength, highlightAlpha, highlightColor, type=="inner", knockout);
+	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos(angle     ) * distance, ypos+sin(angle     ) * distance, strength, shadowAlpha   , shadowColor   , type=="inner", knockout);
+	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos(angle+M_PI) * distance, ypos+sin(angle+M_PI) * distance, strength, highlightAlpha, highlightColor, type=="inner", knockout);
 	delete[] tmpdata;
 
 }
@@ -836,9 +843,9 @@ void ColorMatrixFilter::applyFilter(BitmapContainer* target, BitmapContainer* so
 		number_t blueResult  = (m[10]*srcR) + (m[11]*srcG) + (m[12]*srcB) + (m[13]*srcA) + m[14];
 		number_t alphaResult = (m[15]*srcR) + (m[16]*srcG) + (m[17]*srcB) + (m[18]*srcA) + m[19];
 
-		data[targetpos  ] = (max(int32_t(0),min(int32_t(0xff),int32_t(blueResult ))));
-		data[targetpos+1] = (max(int32_t(0),min(int32_t(0xff),int32_t(greenResult))));
-		data[targetpos+2] = (max(int32_t(0),min(int32_t(0xff),int32_t(redResult  ))));
+		data[targetpos  ] = (max(int32_t(0),min(int32_t(0xff),int32_t(blueResult *alphaResult/255.0))));
+		data[targetpos+1] = (max(int32_t(0),min(int32_t(0xff),int32_t(greenResult*alphaResult/255.0))));
+		data[targetpos+2] = (max(int32_t(0),min(int32_t(0xff),int32_t(redResult  *alphaResult/255.0))));
 		data[targetpos+3] = (max(int32_t(0),min(int32_t(0xff),int32_t(alphaResult))));
 	}
 	delete[] tmpdata;
@@ -1136,40 +1143,11 @@ void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* 
 
 	number_t gradientalphas[256];
 	uint32_t gradientcolors[256];
-	number_t alpha = 1.0;
-	uint32_t color = 0x000000;
-	uint32_t ratioidx = 0;
-	uint32_t nextratio = 0;
-	for (uint32_t i=0; i <256; i++)
-	{
-		if (i >= nextratio)
-		{
-			if (ratios && ratios->size() > ratioidx)
-			{
-				asAtom a=asAtomHandler::invalidAtom;
-				ratios->at_nocheck(a,ratioidx);
-				nextratio = asAtomHandler::toUInt(a);
-			}
-			ratioidx++;
-		}
-		if (this->alphas && this->alphas->size() > ratioidx)
-		{
-			asAtom a=asAtomHandler::invalidAtom;
-			this->alphas->at_nocheck(a,ratioidx);
-			alpha = asAtomHandler::toNumber(a);
-		}
-		if (this->colors && this->colors->size() > ratioidx)
-		{
-			asAtom a=asAtomHandler::invalidAtom;
-			this->colors->at_nocheck(a,ratioidx);
-			color = asAtomHandler::toUInt(a);
-		}
-		gradientalphas[i] = alpha;
-		gradientcolors[i] = color;
-	}
+	fillGradientColors(gradientalphas,gradientcolors,this->ratios.getPtr(), this->alphas.getPtr(), this->colors.getPtr());
 	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
-	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos( angle       *M_PI/180.0) * distance, ypos+sin( angle       *M_PI/180.0) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout);
-	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos((angle+180.0)*M_PI/180.0) * distance, ypos+sin((angle+180.0)*M_PI/180.0) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout);
+	// TODO I've not found any useful documentation how BevelFilter should be implemented, so we just apply two dropShadowFilters with different angles
+	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos(angle     ) * distance, ypos+sin(angle     ) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout);
+	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos(angle+M_PI) * distance, ypos+sin(angle+M_PI) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout);
 	delete[] tmpdata;
 }
 

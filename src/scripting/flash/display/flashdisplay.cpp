@@ -867,9 +867,9 @@ void Sprite::buildTraits(ASObject* o)
 {
 }
 
-IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing)
+IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
-	return TokenContainer::invalidate(target, initialMatrix,smoothing);
+	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
 }
 
 ASFUNCTIONBODY_ATOM(Sprite,_startDrag)
@@ -1007,6 +1007,8 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 
 void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
+	if (requestInvalidationForCacheAsBitmap(q))
+		return;
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 	TokenContainer::requestInvalidation(q,forceTextureRefresh);
 }
@@ -1014,6 +1016,11 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 bool DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 {
 	bool renderingfailed = false;
+	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL && getCachedBitmap())
+	{
+		getCachedBitmap()->Render(ctxt);
+		return renderingfailed;
+	}
 	Locker l(mutexDisplayList);
 	//Now draw also the display list
 	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
@@ -2374,7 +2381,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	th->setOnStage(false,false,false);
+	th->setOnStage(false,false);
 	th->tokens.clear();
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
@@ -2810,7 +2817,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 	}
 }
 
-void DisplayObjectContainer::setOnStage(bool staged, bool force, bool parentCachedAsBitmap)
+void DisplayObjectContainer::setOnStage(bool staged, bool force)
 {
 	if(staged!=onStage||force)
 	{
@@ -2822,13 +2829,13 @@ void DisplayObjectContainer::setOnStage(bool staged, bool force, bool parentCach
 			displayListCopy.assign(dynamicDisplayList.begin(),
 						   dynamicDisplayList.end());
 		}
-		DisplayObject::setOnStage(staged,force,parentCachedAsBitmap);
+		DisplayObject::setOnStage(staged,force);
 		//Notify children
 		//calling DisplayObject::setOnStage may have changed the onStage state of the children,
 		//but the addedToStage/removedFromStage event must always be dispatched
 		std::vector<_R<DisplayObject>>::const_iterator it=displayListCopy.begin();
 		for(;it!=displayListCopy.end();++it)
-			(*it)->setOnStage(staged,true,parentCachedAsBitmap || computeCacheAsBitmap());
+			(*it)->setOnStage(staged,true);
 	}
 }
 
@@ -2859,7 +2866,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setMouseChildren)
 void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	DisplayObject::requestInvalidation(q);
-	if (computeCacheAsBitmap() && !dynamic_cast<SoftwareInvalidateQueue*>(q))
+	if (requestInvalidationForCacheAsBitmap(q))
 		return;
 	Locker l(mutexDisplayList);
 	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
@@ -2901,7 +2908,7 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 		}
 	}
 	if (!onStage || child.getPtr() != getSystemState()->mainClip)
-		child->setOnStage(onStage,false, computeCacheAsBitmap());
+		child->setOnStage(onStage,false);
 }
 
 bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct)
@@ -2917,7 +2924,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct)
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
 
-		child->setOnStage(false,false, computeCacheAsBitmap());
+		child->setOnStage(false,false);
 		child->incRef();
 		if (direct)
 			child->setParent(nullptr);
@@ -2945,7 +2952,7 @@ void DisplayObjectContainer::_removeAllChildren()
 	while (it!=dynamicDisplayList.end())
 	{
 		_R<DisplayObject> child = *it;
-		child->setOnStage(false,false, computeCacheAsBitmap());
+		child->setOnStage(false,false);
 		getSystemState()->addDisplayObjectToResetParentList(child);
 		child->setMask(NullRef);
 		if (!needsActionScript3())
@@ -3110,7 +3117,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 			th->mapDepthToLegacyChild.erase(it2->second);
 			th->mapLegacyChildToDepth.erase(it2);
 		}
-		child->setOnStage(false,false, th->computeCacheAsBitmap());
+		child->setOnStage(false,false);
 		sys->addDisplayObjectToResetParentList(*it);
 		//incRef before the refrence is destroyed
 		child->incRef();
@@ -3410,9 +3417,9 @@ void Shape::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(c->getSystemState(),_getGraphics),GETTER_METHOD,true);
 }
 
-IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing)
+IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
-	return TokenContainer::invalidate(target, initialMatrix,smoothing);
+	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
 }
 
 ASFUNCTIONBODY_ATOM(Shape,_constructor)
@@ -3446,9 +3453,9 @@ void MorphShape::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_SEALED | CLASS_FINAL);
 }
 
-IDrawable* MorphShape::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing)
+IDrawable* MorphShape::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
-	return TokenContainer::invalidate(target, initialMatrix,smoothing);
+	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
 }
 
 bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax) const
@@ -4380,14 +4387,26 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 {
 	if(skipRender())
 		return;
+	if (requestInvalidationForCacheAsBitmap(q))
+		return;
 	incRef();
 	// texture recalculation is never needed for bitmaps
 	resetNeedsTextureRecalculation();
 	q->addToInvalidateQueue(_MR(this));
 }
 
-IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing)
+IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
+	if (cachedBitmap && computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	{
+		IDrawable* ret = getCachedBitmapDrawable(target, initialMatrix);
+		if (ret)
+		{
+			if (cachedBitmap)
+				*cachedBitmap = getCachedBitmap().getPtr();
+			return ret;
+		}
+	}
 	return invalidateFromSource(target, initialMatrix, this->smoothing, this, MATRIX());
 }
 
@@ -4851,20 +4870,22 @@ void SimpleButton::finalize()
 	buttontag=nullptr;
 }
 
-IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing)
+IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
 	if (!upState.isNull())
-		upState->invalidate(target,initialMatrix,smoothing);
+		upState->invalidate(target,initialMatrix,smoothing,q,cachedBitmap);
 	if (!overState.isNull())
-		overState->invalidate(target,initialMatrix,smoothing);
+		overState->invalidate(target,initialMatrix,smoothing,q,cachedBitmap);
 	if (!downState.isNull())
-		downState->invalidate(target,initialMatrix,smoothing);
+		downState->invalidate(target,initialMatrix,smoothing,q,cachedBitmap);
 	if (!hitTestState.isNull())
-		hitTestState->invalidate(target,initialMatrix,smoothing);
-	return DisplayObjectContainer::invalidate(target, initialMatrix,smoothing);
+		hitTestState->invalidate(target,initialMatrix,smoothing,q,cachedBitmap);
+	return DisplayObjectContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
 }
 void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
+	if (requestInvalidationForCacheAsBitmap(q))
+		return;
 	if (!upState.isNull())
 	{
 		upState->hasChanged = true;

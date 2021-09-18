@@ -117,6 +117,7 @@ void DisplayObject::finalize()
 {
 	EventDispatcher::finalize();
 	cachedBitmap.reset();
+	cachedAsBitmapOf.reset();
 	maskOf.reset();
 	parent=nullptr;
 	eventparentmap.clear();
@@ -138,6 +139,7 @@ bool DisplayObject::destruct()
 {
 	// TODO make all DisplayObject derived classes reusable
 	cachedBitmap.reset();
+	cachedAsBitmapOf.reset();
 	maskOf.reset();
 	parent=nullptr;
 	eventparentmap.clear();
@@ -270,6 +272,25 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 bool DisplayObject::computeCacheAsBitmap() const
 {
 	return cacheAsBitmap || (!filters.isNull() && filters->size()!=0);
+}
+
+bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
+{
+	if (q->getCacheAsBitmapObject())
+	{
+		if (this->computeCacheAsBitmap() && this !=q->getCacheAsBitmapObject().getPtr())
+		{
+			this->incRef();
+			q->addToInvalidateQueue(_MR(this));
+			return true;
+		}
+	}
+	else
+	{
+		if (cachedAsBitmapOf && cachedAsBitmapOf->computeCacheAsBitmap())
+			return true;
+	}
+	return false;
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_cacheAsBitmap)
 {
@@ -421,7 +442,8 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 		}
 		hasChanged=true;
 		setNeedsTextureRecalculation();
-		requestInvalidation(getSystemState());
+		if (this->cachedAsBitmapOf.isNull())
+			requestInvalidation(getSystemState());
 	}
 	else
 	{
@@ -430,7 +452,8 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 			filters->resize(0);
 			hasChanged=true;
 			setNeedsTextureRecalculation();
-			requestInvalidation(getSystemState());
+			if (this->cachedAsBitmapOf.isNull())
+				requestInvalidation(getSystemState());
 		}
 	}
 	
@@ -645,7 +668,7 @@ void DisplayObject::computeBoundsForTransformedRect(number_t xmin, number_t xmax
 	outHeight=ceil(maxy-miny);
 }
 
-IDrawable* DisplayObject::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing)
+IDrawable* DisplayObject::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
 	//Not supposed to be called
 	throw RunTimeException("DisplayObject::invalidate");
@@ -697,7 +720,7 @@ void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, nu
 	getConcatenatedMatrix().getInverted().multiply2D(xin, yin, xout, yout);
 }
 
-void DisplayObject::setOnStage(bool staged, bool force, bool parentCachedAsBitmap)
+void DisplayObject::setOnStage(bool staged, bool force)
 {
 	bool changed = false;
 	//TODO: When removing from stage released the cachedTex
@@ -708,11 +731,13 @@ void DisplayObject::setOnStage(bool staged, bool force, bool parentCachedAsBitma
 		if(staged==true)
 		{
 			hasChanged=true;
-			if (!parentCachedAsBitmap)
+			if (!this->cachedAsBitmapOf)
 				requestInvalidation(getSystemState());
 		}
 		if(getVm(getSystemState())==nullptr)
 			return;
+		if (this->cachedAsBitmapOf)
+			this->cachedAsBitmapOf->setNeedsTextureRecalculation();
 		changed = true;
 	}
 	if (force || changed)
@@ -1225,7 +1250,16 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 	if(parent!=p)
 	{
 		if (p)
+		{
 			getSystemState()->removeFromResetParentList(this);
+			if (p->computeCacheAsBitmap())
+			{
+				p->incRef();
+				cachedAsBitmapOf = _MNR(p);
+			}
+			else
+				cachedAsBitmapOf = p->cachedAsBitmapOf;
+		}
 		parent=p;
 		hasChanged=true;
 		if(onStage && !getSystemState()->isShuttingDown())
@@ -1510,13 +1544,13 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 
 	if(maskMode == IDrawable::HARD_MASK)
 	{
-		SoftwareInvalidateQueue queue;
+		SoftwareInvalidateQueue queue(NullRef);
 		mask->requestInvalidation(&queue);
 		for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
 		{
 			DisplayObject* target=(*it).getPtr();
 			//Get the drawable from each of the added objects
-			IDrawable* drawable=target->invalidate(nullptr, MATRIX(),false);
+			IDrawable* drawable=target->invalidate(nullptr, MATRIX(),false,nullptr,nullptr);
 			if(drawable==nullptr)
 				continue;
 			masks.emplace_back(drawable, maskMode);
@@ -1544,10 +1578,10 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 			//The created bitmap is already correctly scaled and rotated
 			//Just apply the needed offset
 			MATRIX m2(1,1,0,0,xmin,ymin);
-			drawable=bmp->invalidate(nullptr, m2,false);
+			drawable=bmp->invalidate(nullptr, m2,false,nullptr,nullptr);
 		}
 		else
-			drawable=mask->invalidate(nullptr, MATRIX(),false);
+			drawable=mask->invalidate(nullptr, MATRIX(),false,nullptr,nullptr);
 
 		if(drawable==nullptr)
 			return;
@@ -1581,15 +1615,14 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 		cur=cur->getParent();
 	}
 }
-
-IDrawable* DisplayObject::getCachedBitmap(DisplayObject* target)
+IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MATRIX& initialMatrix)
 {
 	if (!computeCacheAsBitmap())
 		return nullptr;
 	number_t xmin,xmax,ymin,ymax;
 	MATRIX m;
 	bool ret=getBounds(xmin,xmax,ymin,ymax,m);
-	if(ret==false)
+	if(ret==false || xmax-xmin >= 8192 || ymax-ymin >= 8192 || ((xmax-xmin)*(ymax-ymin)) >= 16777216)
 		return nullptr;
 	if (needsTextureRecalculation)
 	{
@@ -1633,11 +1666,18 @@ IDrawable* DisplayObject::getCachedBitmap(DisplayObject* target)
 					asAtomHandler::as<BitmapFilter>(f)->applyFilter(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,xmax-xmin,0,ymax-ymin),0,0);
 			}
 		}
-		cachedBitmap->setNeedsTextureRecalculation();
+		cachedBitmap->resetNeedsTextureRecalculation();
 		cachedBitmap->hasChanged=true;
+		if (!this->cachedAsBitmapOf)
+		{
+			// force texture upload
+			cachedBitmap->bitmapData->addUser(cachedBitmap.getPtr());
+		}
 	}
+	this->resetNeedsTextureRecalculation();
+	this->hasChanged=false;
 	MATRIX m1(1,1,0,0,xmin,ymin);
-	return cachedBitmap->invalidateFromSource(target, MATRIX(),true,this,m1);
+	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this,m1);
 }
 
 bool DisplayObject::findParent(DisplayObject *d) const

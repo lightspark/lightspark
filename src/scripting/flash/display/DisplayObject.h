@@ -150,6 +150,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
 	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,scrollRect);
 	_NR<ColorTransform> colorTransform;
+	// pointer to the ancestor of this DisplayObject that is cached as Bitmap
+	_NR<DisplayObject> cachedAsBitmapOf;
 	void setNeedsTextureRecalculation(bool skippable=false);
 	void resetNeedsTextureRecalculation() { needsTextureRecalculation=false; }
 	bool getNeedsTextureRecalculation() const { return needsTextureRecalculation; }
@@ -164,9 +166,11 @@ public:
 	 * cacheAsBitmap is true also if any filter is used
 	 */
 	bool computeCacheAsBitmap() const;
+	bool requestInvalidationForCacheAsBitmap(InvalidateQueue* q);
 	void computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, bool &hasMask) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
-	IDrawable* getCachedBitmap(DisplayObject* target);
+	IDrawable* getCachedBitmapDrawable(DisplayObject* target, const MATRIX& initialMatrix);
+	_NR<DisplayObject> getCachedBitmap() const { return cachedBitmap; }
 	DisplayObjectContainer* getParent() const { return parent; }
 	bool findParent(DisplayObject* d) const;
 	void setParent(DisplayObjectContainer* p);
@@ -184,7 +188,7 @@ public:
 	 * _must_ be on the parent chain of this
 	 * @param initialMatrix A matrix that will be prepended to all transformations
 	 */
-	virtual IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing);
+	virtual IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap);
 	virtual void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false);
 	void updateCachedSurface(IDrawable* d);
 	MATRIX getConcatenatedMatrix() const;
@@ -218,7 +222,7 @@ public:
 	bool Render(RenderContext& ctxt,bool force=false);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
 	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly);
-	virtual void setOnStage(bool staged, bool force, bool parentCachedAsBitmap);
+	virtual void setOnStage(bool staged, bool force);
 	bool isOnStage() const { return onStage; }
 	bool isMask() const { return !maskOf.isNull(); }
 	// checks for visibility depending on parent visibility 

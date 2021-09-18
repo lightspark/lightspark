@@ -115,7 +115,7 @@ protected:
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
-	void setOnStage(bool staged, bool force, bool parentCachedAsBitmap) override;
+	void setOnStage(bool staged, bool force) override;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override
@@ -217,7 +217,7 @@ public:
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
 	void constructionComplete() override;
 	void finalize() override;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	uint32_t getTagID() const override;
 
@@ -267,7 +267,7 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap) override;
 };
 
 class DefineMorphShapeTag;
@@ -291,7 +291,7 @@ public:
 	MorphShape(Class_base* c, DefineMorphShapeTag* _morphshapetag);
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap) override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 	uint32_t getTagID() const override;
 };
@@ -481,7 +481,7 @@ public:
 	{
 		return 0;
 	}
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	_NR<Graphics> getGraphics();
 };
@@ -709,7 +709,7 @@ public:
 	bool renderStage3D();
 	void onDisplayState(const tiny_string&);
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
-	void setOnStage(bool staged, bool force, bool parentCachedAsBitmap) override { assert(false); /* we are the stage */}
+	void setOnStage(bool staged, bool force) override { assert(false); /* we are the stage */}
 	_NR<RootMovieClip> getRoot() override;
 	void setRoot(_NR<RootMovieClip> _root);
 	Stage(Class_base* c);
@@ -875,7 +875,7 @@ class IntSize
 public:
 	uint32_t width;
 	uint32_t height;
-	IntSize(uint32_t w, uint32_t h):width(h),height(h){}
+	IntSize(uint32_t w, uint32_t h):width(w),height(h){}
 };
 
 class PixelSnapping: public ASObject
@@ -924,7 +924,7 @@ public:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing) override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap) override;
 	IDrawable* invalidateFromSource(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, DisplayObject* source, const MATRIX& sourceMatrix);
 };
 

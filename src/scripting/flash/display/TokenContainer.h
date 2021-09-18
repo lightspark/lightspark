@@ -62,7 +62,7 @@ public:
 protected:
 	TokenContainer(DisplayObject* _o);
 	TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling);
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing);
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 	{

@@ -199,15 +199,22 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap)
 {
 	//Create an InvalidateQueue to store all the hierarchy of objects that must be drawn
-	SoftwareInvalidateQueue queue;
+	if (forCachedBitmap)
+		d->incRef();
+	SoftwareInvalidateQueue queue(forCachedBitmap ? _MNR(d):NullRef);
 	d->hasChanged=true;
 	d->requestInvalidation(&queue);
+	if (forCachedBitmap)
+	{
+		uint8_t* p = pixels->getData();
+		memset(p,0,pixels->getWidth()*pixels->getHeight()*4);
+	}
 	CairoRenderContext ctxt(pixels->getData(), pixels->getWidth(), pixels->getHeight(),smoothing);
 	for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
 	{
 		DisplayObject* target=(*it).getPtr();
 		//Get the drawable from each of the added objects
-		IDrawable* drawable=target->invalidate(d, initialMatrix,smoothing);
+		IDrawable* drawable=target->invalidate(d, initialMatrix,smoothing,&queue, nullptr);
 		if(drawable==nullptr)
 			continue;
 		if (forCachedBitmap)

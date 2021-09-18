@@ -1746,6 +1746,13 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 		//Remove the automatic name set by the DisplayObject constructor
 		obj->name = BUILTIN_STRINGS::EMPTY;
 	}
+	if (parent && parent->computeCacheAsBitmap())
+	{
+		parent->incRef();
+		obj->cachedAsBitmapOf=_MR(parent);
+	}
+	else
+		obj->cachedAsBitmapOf=parent->cachedAsBitmapOf;
 }
 
 void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
@@ -1833,7 +1840,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 
 		toAdd->loadedFrom=placedTag->loadedFrom;
 		//The matrix must be set before invoking the constructor
-		toAdd->setLegacyMatrix(placedTag->MapToBounds(Matrix));
+		toAdd->setLegacyMatrix(Matrix);
 		toAdd->legacy = true;
 
 		setProperties(toAdd, parent);
@@ -1873,10 +1880,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 				if (root)
 					placedTag=root->dictionaryLookup(currchar->getTagID());
 			}
-			if (placedTag)
-				parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,placedTag->MapToBounds(Matrix));
-			else
-				parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
+			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
 		}
 	}
 	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
@@ -1977,7 +1981,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 
 PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):PlaceObject2Tag(h,root->version)
 {
-	LOG(LOG_TRACE,_("PlaceObject3"));
+	LOG(LOG_TRACE,"PlaceObject3");
 	uint32_t start = in.tellg();
 
 	BitStream bs(in);

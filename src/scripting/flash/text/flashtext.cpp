@@ -1079,6 +1079,7 @@ void TextField::updateSizes()
 			(*it).textwidth=w;
 			if (!wordWrap && w>tw)
 				tw = w;
+			bool listchanged=false;
 			if (wordWrap && width > TEXTFIELD_PADDING*2 && uint32_t(w) > width-TEXTFIELD_PADDING*2)
 			{
 				// calculate lines for wordwrap
@@ -1099,6 +1100,7 @@ void TextField::updateSizes()
 						embeddedfont->getTextBounds(t.text,fontSize,w,h);
 						t.textwidth=w;
 						it = textlines.insert(++it,t);
+						listchanged=true;
 						text =t.text;
 						if (uint32_t(w) <= width-TEXTFIELD_PADDING*2)
 						{
@@ -1111,7 +1113,8 @@ void TextField::updateSizes()
 					c= text.rfind(" ",c-1);// TODO check for other whitespace characters
 				}
 			}
-			it++;
+			if (!listchanged)
+				it++;
 			th+=h;
 		}
 		if(w>tw)
@@ -1161,9 +1164,12 @@ void TextField::setHtmlText(const tiny_string& html)
 	{
 		parser.parseTextAndFormating(html, this);
 	}
-	hasChanged=true;
-	setNeedsTextureRecalculation();
-	textUpdated();
+	if (this->isConstructed())
+	{
+		hasChanged=true;
+		setNeedsTextureRecalculation();
+		textUpdated();
+	}
 }
 
 std::string TextField::toDebugString()
@@ -1256,6 +1262,8 @@ void TextField::afterLegacyInsert()
 		}
 	}
 	avm1SyncTagVar();
+	updateSizes();
+	setSizeAndPositionFromAutoSize();
 }
 
 void TextField::afterLegacyDelete(DisplayObjectContainer *par)
@@ -1324,12 +1332,20 @@ uint32_t TextField::getTagID() const
 
 void TextField::textUpdated()
 {
+	if (this->getText().find("This is your first achievement")== 0)
+	{
+		LOG(LOG_ERROR,"text updated2:"<<this->height<<" "<<this->textHeight);
+	}
 	avm1SyncTagVar();
 	scrollH = 0;
 	scrollV = 1;
 	selectionBeginIndex = 0;
 	selectionEndIndex = 0;
 	updateSizes();
+	if (this->getText().find("This is your first achievement")== 0)
+	{
+		LOG(LOG_ERROR,"text updated3:"<<this->height<<" "<<this->textHeight);
+	}
 	setSizeAndPositionFromAutoSize();
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? this->loadedFrom->getEmbeddedFontByID(fontID) : this->loadedFrom->getEmbeddedFont(font));
 	// TODO implement fast rendering path for not embedded fonts

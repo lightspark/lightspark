@@ -2842,8 +2842,8 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->getGlobalScope()->setVariableByQName(mname->name_s_id,mname->ns[0], ret,DECLARED_TRAIT);
 	th->mi->context->root->bindClass(className,ret);
 
-	auto j = th->mi->context->root->applicationDomain->classesSuperNotFilled.cbegin();
-	while (j != th->mi->context->root->applicationDomain->classesSuperNotFilled.cend())
+	auto j = th->mi->context->root->applicationDomain->classesSuperNotFilled.begin();
+	while (j != th->mi->context->root->applicationDomain->classesSuperNotFilled.end())
 	{
 		if((*j)->super == ret)
 		{

@@ -84,7 +84,7 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,_constructor)
 	}
 
 	std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
-	th->currlocale = std::locale(localeName);
+	th->currlocale = std::locale(localeName.c_str());
 	th->actualLocaleIDName = th->requestedLocaleIDName;
 	th->lastOperationStatus="noError";
 

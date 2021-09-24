@@ -76,7 +76,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,_constructor)
 	if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
 		std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
-		th->currlocale = std::locale(localeName);
+		th->currlocale = std::locale(localeName.c_str());
 		th->actualLocaleIDName = th->requestedLocaleIDName;
 		th->lastOperationStatus="noError";
 	}

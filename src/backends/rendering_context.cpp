@@ -375,10 +375,18 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 	cairo_surface_t* chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height);
 	cairo_save(cr);
 	cairo_set_antialias(cr,smooth ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
-	cairo_translate(cr,x+(w/2),y+(h/2));
-	cairo_rotate(cr,rotate*M_PI/180.0);
-	cairo_scale(cr, xscale, yscale);
-	cairo_set_source_surface(cr, chunkSurface, -(widthtransformed/2),-(heighttransformed/2));
+	if (rotate==0 || std::isnan(rotate))
+	{
+		cairo_scale(cr, xscale, yscale);
+		cairo_set_source_surface(cr, chunkSurface, xtransformed,ytransformed);
+	}
+	else
+	{
+		cairo_translate(cr,x+(w/2),y+(h/2));
+		cairo_rotate(cr,rotate*M_PI/180.0);
+		cairo_scale(cr, xscale, yscale);
+		cairo_set_source_surface(cr, chunkSurface, -(widthtransformed/2),-(heighttransformed/2));
+	}
 	cairo_paint(cr);
 	cairo_surface_destroy(chunkSurface);
 	cairo_restore(cr);

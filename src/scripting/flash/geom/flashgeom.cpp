@@ -543,6 +543,28 @@ uint8_t *ColorTransform::applyTransformation(BitmapContainer* bm)
 	return (uint8_t*)bm->getDataColorTransformed();
 }
 
+void ColorTransform::applyTransformation(uint8_t* bm, uint32_t width, uint32_t height)
+{
+	if (redMultiplier==1.0 &&
+		greenMultiplier==1.0 &&
+		blueMultiplier==1.0 &&
+		alphaMultiplier==1.0 &&
+		redOffset==0.0 &&
+		greenOffset==0.0 &&
+		blueOffset==0.0 &&
+		alphaOffset==0.0)
+		return;
+
+	uint32_t size = width*height*4;
+	for (uint32_t i = 0; i < size; i+=4)
+	{
+		bm[i+3] = max(0,min(255,int(((number_t(bm[i+3]) * alphaMultiplier) + alphaOffset))));
+		bm[i+2] = max(0,min(255,int(((number_t(bm[i+2]) *  blueMultiplier) +  blueOffset)*(number_t(bm[i+3])/255.0))));
+		bm[i+1] = max(0,min(255,int(((number_t(bm[i+1]) * greenMultiplier) + greenOffset)*(number_t(bm[i+3])/255.0))));
+		bm[i  ] = max(0,min(255,int(((number_t(bm[i  ]) *   redMultiplier) +   redOffset)*(number_t(bm[i+3])/255.0))));
+	}
+}
+
 void ColorTransform::setProperties(const CXFORMWITHALPHA &cx)
 {
 	cx.getParameters(redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,

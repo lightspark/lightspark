@@ -34,7 +34,7 @@ void BitmapFilter::sinit(Class_base* c)
 
 void BitmapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"applyFilter for "<<this->toDebugString());
+	LOG(LOG_ERROR,"applyFilter for "<<this->toDebugString());
 }
 
 BitmapFilter* BitmapFilter::cloneImpl() const
@@ -674,8 +674,8 @@ ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, knockout);
 
 ASFUNCTIONBODY_ATOM(GradientGlowFilter,_constructor)
 {
-	//GradientGlowFilter *th = obj.as<GradientGlowFilter>();
-	LOG(LOG_NOT_IMPLEMENTED,"GradientGlowFilter is not implemented");
+	GradientGlowFilter *th = asAtomHandler::as<GradientGlowFilter>(obj);
+	ARG_UNPACK_ATOM(th->distance,4.0)(th->angle,45)(th->colors,NullRef)(th->alphas,NullRef)(th->ratios,NullRef)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false);
 }
 
 BitmapFilter* GradientGlowFilter::cloneImpl() const
@@ -972,6 +972,95 @@ void ConvolutionFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,preserveAlpha);
 }
 
+void ConvolutionFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+{
+	// spec is not really clear how this should be implemented, especially when using something different than a 3x3 matrix:
+	// "
+	// For a 3 x 3 matrix convolution, the following formula is used for each independent color channel:
+	// dst (x, y) = ((src (x-1, y-1) * a0 + src(x, y-1) * a1....
+	//					  src(x, y+1) * a7 + src (x+1,y+1) * a8) / divisor) + bias
+	// "
+	uint32_t mX = matrixX;
+	uint32_t mY = matrixY;
+	number_t* m =new number_t[mX*mY];
+	for (uint32_t y=0; y < mY ; y++)
+	{
+		for (uint32_t x=0; x < mX ; x++)
+		{
+			m[y*mX+x] = matrix->size() < y*mX+x ? asAtomHandler::toNumber(matrix->at(y*mX+x)) : 0;
+		}
+	}
+	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
+	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
+	uint32_t size = width*height;
+	uint8_t* tmpdata = nullptr;
+	if (source)
+		tmpdata = source->getRectangleData(sourceRect);
+	else
+		tmpdata = target->getRectangleData(sourceRect);
+	
+	uint8_t* data = target->getData();
+	uint32_t startpos = ypos*target->getWidth();
+	int32_t mstartpos=-(mY/2*target->getWidth()*4+mX/2);
+	uint32_t targetsize = target->getWidth()*target->getHeight()*4;
+	number_t realdivisor = divisor==0 ? 1.0 : divisor;
+	for (uint32_t i = 0; i < size*4; i+=4)
+	{
+		if (i && i%(width*4)==0)
+			startpos+=target->getWidth();
+		uint32_t targetpos = (xpos+startpos)*4+i%(width*4);
+		if (targetpos+3 >= targetsize)
+			break;
+
+		number_t redResult   = 0;
+		number_t greenResult = 0;
+		number_t blueResult  = 0;
+		number_t alphaResult = 0;
+		for (uint32_t y=0; y <mY; y++)
+		{
+			for (uint32_t x=0; x <mX; x++)
+			{
+				if (
+						(i%(width*4) <= mX/2
+						|| i%(width*4) >= (width-mX/2)*4
+						|| i/(width*4) <= mY/2
+						|| i/(width*4) >= height-mY/2))
+				{
+					if (clamp)
+					{
+						alphaResult += number_t(tmpdata[i+3])*m[y*mX+x];
+						redResult   += number_t(tmpdata[i+2])*m[y*mX+x];
+						greenResult += number_t(tmpdata[i+1])*m[y*mX+x];
+						blueResult  += number_t(tmpdata[i  ])*m[y*mX+x];
+					}
+					else
+					{
+						alphaResult += ((alpha*255)     )*m[y*mX+x];
+						redResult   += ((color>>16)&0xff)*m[y*mX+x];
+						greenResult += ((color>> 8)&0xff)*m[y*mX+x];
+						blueResult  += ((color    )&0xff)*m[y*mX+x];
+					}
+				}
+				else
+				{
+					alphaResult += number_t(tmpdata[mstartpos + y*mY +x+3])*m[y*mX+x];
+					redResult   += number_t(tmpdata[mstartpos + y*mY +x+2])*m[y*mX+x];
+					greenResult += number_t(tmpdata[mstartpos + y*mY +x+1])*m[y*mX+x];
+					blueResult  += number_t(tmpdata[mstartpos + y*mY +x  ])*m[y*mX+x];
+				}
+			}
+		}
+		data[targetpos  ] = (max(int32_t(0),min(int32_t(0xff),int32_t(blueResult  / realdivisor + bias))));
+		data[targetpos+1] = (max(int32_t(0),min(int32_t(0xff),int32_t(greenResult / realdivisor + bias))));
+		data[targetpos+2] = (max(int32_t(0),min(int32_t(0xff),int32_t(redResult   / realdivisor + bias))));
+		if (!preserveAlpha)
+			data[targetpos+3] = (max(int32_t(0),min(int32_t(0xff),int32_t(alphaResult / realdivisor + bias))));
+		mstartpos+=4;
+	}
+	delete[] m;
+	delete[] tmpdata;
+}
+
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,alpha);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,bias);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,clamp);
@@ -984,8 +1073,8 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,preserveAlpha);
 
 ASFUNCTIONBODY_ATOM(ConvolutionFilter,_constructor)
 {
-	//ConvolutionFilter *th = obj.as<ConvolutionFilter>();
-	LOG(LOG_NOT_IMPLEMENTED,"ConvolutionFilter is not implemented");
+	ConvolutionFilter *th = asAtomHandler::as<ConvolutionFilter>(obj);
+	ARG_UNPACK_ATOM(th->matrixX,0)(th->matrixY,0)(th->matrix,NullRef)(th->divisor,1.0)(th->bias,0.0)(th->preserveAlpha,true)(th->clamp,true)(th->color,0)(th->alpha,0.0);
 }
 
 BitmapFilter* ConvolutionFilter::cloneImpl() const
@@ -1022,6 +1111,84 @@ void DisplacementMapFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,scaleY);
 }
 
+void DisplacementMapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+{
+	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
+	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
+	uint32_t size = width*height;
+	uint32_t mapx = mapPoint ? uint32_t(mapPoint->getX()) : 0;
+	uint32_t mapy = mapPoint ? uint32_t(mapPoint->getX()) : 0;
+	if (mapBitmap.isNull() || mapBitmap->getBitmapContainer().isNull() || (mapBitmap->getBitmapContainer()->getWidth()-mapx)*(mapBitmap->getBitmapContainer()->getHeight()-mapy) > size)
+		return;
+	uint8_t* tmpdata = nullptr;
+	if (source)
+		tmpdata = source->getRectangleData(sourceRect);
+	else
+		tmpdata = target->getRectangleData(sourceRect);
+	
+	uint8_t* data = target->getData();
+	uint32_t startpos = ypos*target->getWidth();
+	uint32_t targetsize = target->getWidth()*target->getHeight()*4;
+	uint32_t mapPointstartpos = mapPoint ? (mapx+mapy*mapBitmap->getWidth())*4 : 0;
+	uint8_t* mapbitmapdata=mapBitmap->getBitmapContainer()->getData();
+	uint32_t mapchannelindexX = 0;
+	uint32_t mapchannelindexY = 0;
+	switch (componentX)
+	{
+		case BitmapDataChannel::ALPHA:
+			mapchannelindexX=3;
+			break;
+		case BitmapDataChannel::RED:
+			mapchannelindexX=2;
+			break;
+		case BitmapDataChannel::GREEN:
+			mapchannelindexX=1;
+			break;
+		case BitmapDataChannel::BLUE:
+			mapchannelindexX=0;
+			break;
+	}
+	switch (componentY)
+	{
+		case BitmapDataChannel::ALPHA:
+			mapchannelindexY=3;
+			break;
+		case BitmapDataChannel::RED:
+			mapchannelindexY=2;
+			break;
+		case BitmapDataChannel::GREEN:
+			mapchannelindexY=1;
+			break;
+		case BitmapDataChannel::BLUE:
+			mapchannelindexY=0;
+			break;
+	}
+
+	for (uint32_t i = 0; i < size*4; i+=4)
+	{
+		if (i && i%(width*4)==0)
+		{
+			startpos+=target->getWidth();
+			mapPointstartpos+=mapBitmap->getWidth();
+		}
+		uint32_t targetpos = (xpos+startpos)*4+i%(width*4);
+		uint32_t mappointpos = (mapPointstartpos)*4+i%(width*4);
+		if (targetpos+3 >= targetsize)
+			break;
+
+		int32_t alphaResult = tmpdata[i+3 + int32_t((mapbitmapdata[mappointpos+mapchannelindexX]-128)*scaleX/256 + (mapbitmapdata[mappointpos+mapchannelindexY]-128)*scaleY/256)];
+		int32_t redResult   = tmpdata[i+2 + int32_t((mapbitmapdata[mappointpos+mapchannelindexX]-128)*scaleX/256 + (mapbitmapdata[mappointpos+mapchannelindexY]-128)*scaleY/256)];
+		int32_t greenResult = tmpdata[i+1 + int32_t((mapbitmapdata[mappointpos+mapchannelindexX]-128)*scaleX/256 + (mapbitmapdata[mappointpos+mapchannelindexY]-128)*scaleY/256)];
+		int32_t blueResult  = tmpdata[i   + int32_t((mapbitmapdata[mappointpos+mapchannelindexX]-128)*scaleX/256 + (mapbitmapdata[mappointpos+mapchannelindexY]-128)*scaleY/256)];
+
+		data[targetpos  ] = max(int32_t(0),min(int32_t(0xff),blueResult ));
+		data[targetpos+1] = max(int32_t(0),min(int32_t(0xff),greenResult));
+		data[targetpos+2] = max(int32_t(0),min(int32_t(0xff),redResult  ));
+		data[targetpos+3] = max(int32_t(0),min(int32_t(0xff),alphaResult));
+	}
+	delete[] tmpdata;
+}
+
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,alpha);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,color);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,componentX);
@@ -1034,8 +1201,8 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleY);
 
 ASFUNCTIONBODY_ATOM(DisplacementMapFilter,_constructor)
 {
-	//DisplacementMapFilter *th = obj.as<DisplacementMapFilter>();
-	LOG(LOG_NOT_IMPLEMENTED,"DisplacementMapFilter is not implemented");
+	DisplacementMapFilter *th = asAtomHandler::as<DisplacementMapFilter>(obj);
+	ARG_UNPACK_ATOM(th->mapBitmap,NullRef)(th->mapPoint,NullRef)(th->componentX,0)(th->componentY,0)(th->scaleX,0.0)(th->scaleY,0.0)(th->mode,"wrap")(th->color,0)(th->alpha,0.0);
 }
 
 BitmapFilter* DisplacementMapFilter::cloneImpl() const
@@ -1153,8 +1320,8 @@ void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* 
 
 ASFUNCTIONBODY_ATOM(GradientBevelFilter,_constructor)
 {
-	//GradientBevelFilter *th = obj.as<GradientBevelFilter>();
-	LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter is not implemented");
+	GradientBevelFilter *th = asAtomHandler::as<GradientBevelFilter>(obj);
+	ARG_UNPACK_ATOM(th->distance,4.0)(th->angle,45)(th->colors,NullRef)(th->alphas,NullRef)(th->ratios,NullRef)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false);
 }
 
 BitmapFilter* GradientBevelFilter::cloneImpl() const
@@ -1182,6 +1349,11 @@ ShaderFilter::ShaderFilter(Class_base* c):
 void ShaderFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
+}
+
+void ShaderFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"applyFilter for ShaderFilter");
 }
 
 ASFUNCTIONBODY_ATOM(ShaderFilter,_constructor)

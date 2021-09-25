@@ -2,7 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
-	* implement all filters except DisplacementMapFilter, ConvolutionFilter and ShaderFilter
+	* implement all filters except ShaderFilter
 	* full support for MorphShapes
 	* implement wordwrap support for textfields
 	* implement sound panning

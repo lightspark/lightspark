@@ -222,6 +222,25 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		//Compute the matrix for this object
 		bool isBufferOwner=true;
 		uint8_t* buf=drawable->getPixelBuffer(initialMatrix.getScaleX(),initialMatrix.getScaleY(),&isBufferOwner);
+		ColorTransform* ct = target->colorTransform.getPtr();
+		DisplayObjectContainer* p = target->getParent();
+		while (!ct && p)
+		{
+			ct = p->colorTransform.getPtr();
+			p = p->getParent();
+		}
+		if (ct)
+		{
+			if (!isBufferOwner)
+			{
+				isBufferOwner=true;
+				uint8_t* buf2 = new uint8_t[drawable->getWidth()*drawable->getHeight()*4];
+				memcpy(buf2,buf,drawable->getWidth()*drawable->getHeight()*4);
+				buf=buf2;
+			}
+			ct->applyTransformation(buf,drawable->getWidth(),drawable->getHeight());
+		}
+		
 		if (!drawable->getIsMask())
 		{
 			//Construct a CachedSurface using the data

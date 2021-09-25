@@ -266,10 +266,6 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 
 void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	if (owner->getTagID()==461 && q->getCacheAsBitmapObject())
-	{
-		int x=0;
-	}
 	if((tokens.empty() && !owner->computeCacheAsBitmap()) || owner->skipRender())
 		return;
 	if (owner->requestInvalidationForCacheAsBitmap(q))

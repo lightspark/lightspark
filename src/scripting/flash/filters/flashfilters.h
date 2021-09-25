@@ -82,7 +82,7 @@ public:
 	DropShadowFilter(Class_base* c,const DROPSHADOWFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 };
 
 class GradientGlowFilter: public BitmapFilter
@@ -105,7 +105,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(int32_t,quality);
 	ASPROPERTY_GETTER_SETTER(tiny_string,type);
 	ASPROPERTY_GETTER_SETTER(bool,knockout);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 };
 
 class BevelFilter: public BitmapFilter
@@ -175,6 +175,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, matrixX);
 	ASPROPERTY_GETTER_SETTER(number_t, matrixY);
 	ASPROPERTY_GETTER_SETTER(bool, preserveAlpha);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 };
 class DisplacementMapFilter: public BitmapFilter
 {
@@ -193,6 +194,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string,mode);
 	ASPROPERTY_GETTER_SETTER(number_t,scaleX);
 	ASPROPERTY_GETTER_SETTER(number_t,scaleY);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 };
 class GradientBevelFilter: public BitmapFilter
 {
@@ -214,7 +216,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, ratios);
 	ASPROPERTY_GETTER_SETTER(number_t, strength);
 	ASPROPERTY_GETTER_SETTER(tiny_string, type);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 };
 class ShaderFilter: public BitmapFilter
 {
@@ -224,6 +226,7 @@ public:
 	ShaderFilter(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 };
 
 class BitmapFilterQuality: public ASObject

@@ -442,8 +442,6 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 		}
 		hasChanged=true;
 		setNeedsTextureRecalculation();
-		if (this->cachedAsBitmapOf.isNull())
-			requestInvalidation(getSystemState());
 	}
 	else
 	{
@@ -452,8 +450,6 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 			filters->resize(0);
 			hasChanged=true;
 			setNeedsTextureRecalculation();
-			if (this->cachedAsBitmapOf.isNull())
-				requestInvalidation(getSystemState());
 		}
 	}
 	
@@ -736,9 +732,19 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		}
 		if(getVm(getSystemState())==nullptr)
 			return;
-		if (this->cachedAsBitmapOf)
-			this->cachedAsBitmapOf->setNeedsTextureRecalculation();
 		changed = true;
+		DisplayObject* c = cachedAsBitmapOf.getPtr();
+		while (c)
+		{
+			c->hasChanged=true;
+			c->setNeedsTextureRecalculation();
+			if (!c->cachedAsBitmapOf)
+			{
+				c->requestInvalidation(c->getSystemState());
+				break;
+			}
+			c = c->cachedAsBitmapOf.getPtr();
+		}
 	}
 	if (force || changed)
 	{
@@ -1262,7 +1268,7 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 		}
 		parent=p;
 		hasChanged=true;
-		if(onStage && !getSystemState()->isShuttingDown())
+		if(onStage && !cachedAsBitmapOf && !getSystemState()->isShuttingDown())
 			requestInvalidation(getSystemState());
 	}
 }

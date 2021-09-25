@@ -353,7 +353,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 {
 	if (autoSize == AS_NONE)
 	{
-		if (updatewidth)
+		if (updatewidth && !wordWrap)
 			width = originalWidth;
 		return;
 	}
@@ -390,7 +390,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 			break;
 		default:
 			autosizeposition = 0;
-			if (updatewidth)
+			if (updatewidth && !wordWrap)
 				width = textWidth+TEXTFIELD_PADDING*2;
 			break;
 	}
@@ -1332,20 +1332,12 @@ uint32_t TextField::getTagID() const
 
 void TextField::textUpdated()
 {
-	if (this->getText().find("This is your first achievement")== 0)
-	{
-		LOG(LOG_ERROR,"text updated2:"<<this->height<<" "<<this->textHeight);
-	}
 	avm1SyncTagVar();
 	scrollH = 0;
 	scrollV = 1;
 	selectionBeginIndex = 0;
 	selectionEndIndex = 0;
 	updateSizes();
-	if (this->getText().find("This is your first achievement")== 0)
-	{
-		LOG(LOG_ERROR,"text updated3:"<<this->height<<" "<<this->textHeight);
-	}
 	setSizeAndPositionFromAutoSize();
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? this->loadedFrom->getEmbeddedFontByID(fontID) : this->loadedFrom->getEmbeddedFont(font));
 	// TODO implement fast rendering path for not embedded fonts

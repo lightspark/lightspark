@@ -1928,6 +1928,21 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			}
 		}
 	}
+	if (currchar)
+	{
+		DisplayObject* c = currchar->cachedAsBitmapOf.getPtr();
+		while (c)
+		{
+			c->hasChanged=true;
+			c->setNeedsTextureRecalculation();
+			if (!c->cachedAsBitmapOf)
+			{
+				c->requestInvalidation(c->getSystemState());
+				break;
+			}
+			c = c->cachedAsBitmapOf.getPtr();
+		}
+	}
 }
 
 PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root, AdditionalDataTag *datatag):DisplayListTag(h),ClipActions(root->version,datatag),placedTag(nullptr)

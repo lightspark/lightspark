@@ -618,7 +618,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 
 	if(th->is<DisplayObject>() && (eventName=="enterFrame"
 				|| eventName=="exitFrame"
-				|| eventName=="frameConstructed") )
+				|| eventName=="frameConstructed"
+				|| eventName=="render") )
 	{
 		th->incRef();
 		th->getSystemState()->registerFrameListener(_MR(th->as<DisplayObject>()));

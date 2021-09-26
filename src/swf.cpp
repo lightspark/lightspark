@@ -2140,7 +2140,21 @@ void SystemState::tick()
 			}
 		}
 	}
-	/* TODO: Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
+	/* Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
+	if (stage->invalidated)
+	{
+		RELEASE_WRITE(stage->invalidated,false);
+		Locker l(mutexFrameListeners);
+		if(!frameListeners.empty())
+		{
+			_R<Event> e(Class<Event>::getInstanceS(this,"render"));
+			auto it=frameListeners.begin();
+			for(;it!=frameListeners.end();it++)
+			{
+				getVm(this)->addEvent(*it,e);
+			}
+		}
+	}
 
 	/* Step 9: we are idle now, so we can handle all input events */
 	_R<IdleEvent> idle = _MR(new (unaccountedMemory) IdleEvent());

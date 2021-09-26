@@ -4133,9 +4133,8 @@ ASFUNCTIONBODY_ATOM(Stage,_getWmodeGPU)
 }
 ASFUNCTIONBODY_ATOM(Stage,_invalidate)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"invalidate not implemented yet");
-	// TODO this crashes lightspark
 	Stage* th=asAtomHandler::as<Stage>(obj);
+	RELEASE_WRITE(th->invalidated,true);
 	th->incRef();
 	_R<FlushInvalidationQueueEvent> event=_MR(new (sys->unaccountedMemory) FlushInvalidationQueueEvent());
 	getVm(sys)->addEvent(_MR(th),event);

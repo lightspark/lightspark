@@ -1,3 +1,110 @@
+lightspark (0.8.5-0ubuntu1~ppa1) hirsute; urgency=low
+    
+    * New release
+    * improved text rendering
+    * better support for embedded video
+    * lightspark now runs directly on wayland (with SDL_VIDEODRIVER=wayland)
+    * better support for obfuscated AVM1 files
+    * significantly faster rendering of bitmaps
+
+ -- luke <lnee@fallback>  Sat, 3 Jul 2021 17:33:45 +0200
+ 
+lightspark (0.8.4.1-0ubuntu1~ppa1) groovy; urgency=low
+    
+    * New release
+    * Hotfix for crash on Windows, no changes for Linux
+
+ -- luke <lnee@fallback>  Wed, 10 Feb 2021 16:43:30 +0100
+ 
+lightspark (0.8.4-0ubuntu1~ppa1) groovy; urgency=low
+    
+    * New release
+    * improved handling of mixed AVM1/AVM2 files
+    * implement streaming of videos embedded in the swf file
+    * implement class inheritance for AVM1
+    * added settings dialog, currently only used to enable/disable local storage
+    * support for local storage added
+    * use SDL threading methods, remove glibmm dependency
+
+ -- luke <lnee@fallback>  Sun, 7 Jul 2021 17:11:32 +0100
+ 
+lightspark (0.8.3-0ubuntu1~ppa1) focal; urgency=low
+    
+    * New release
+    * fix support for sound in PPAPI plugin
+    * better handling of obfuscated code
+    * new command line argument to ignore unhandled exceptions
+    * support for context menus added
+    * partial support for CubeTextures and compressed Textures in Stage3d
+    * ability to create screenshot added
+    * boost dependency removed
+    * fullscreen mode implemented
+    * better sound handling, especially for AVM1
+    * better support of older (AVM1) swf files
+    * support for xml in AVM1
+    * support for video streaming in AVM1
+
+ -- luke <lnee@fallback>  Sun, 5 Jul 2020 12:31:09 +0200
+ 
+lightspark (0.8.2-0ubuntu1~ppa1) eoan; urgency=low
+    
+    * New release
+    * implement support for text input
+    * implement support for sound streaming (SoundStreamHead/SoundStreamHeadBlock tags)
+    * direct support for older swf, no need for gnash any more (fallback to gnash ist still available by setting environment variable LIGHTSPARK_USE_GNASH=1)
+    * PPAPI plugin works again
+    * make llvm dependency optional (disabled by default)
+    * implement flash.system.Worker/WorkerDomain
+    * use libswresample instead of libavresample, if available
+    * reduce memory usage
+    * several performance improvements
+    * add partial support for rtmfp protocol
+
+ -- luke <lnee@fallback>  Sun, 15 Sep 2019 17:33:56 +0200
+ 
+lightspark (0.8.1-0ubuntu1~ppa1) bionic; urgency=low
+    
+    * New release
+    * make plugins work with newer versions of firefox and chromium
+    * partially implement flash.net.Socket
+    * several performance improvements, but lightspark is still slower than adobe player
+    * fix several rendering issues
+    * implement support for Stage3D
+    * partially implement MorphShape rendering
+    * add support for llvm 5.0
+    * remove gtk2 dependency
+    * fix Reference counting, significantly reduces memory usage
+
+ -- luke <lnee@fallback>  Sat, 2 Jun 2018 11:25:36 +0200
+     
+lightspark (0.8-0ubuntu1~ppa1) zesty; urgency=low
+    
+    * New release
+    * make NPAPI plugin windowless, now it works on Firefox > version 52
+    * add ppapi plugin for use with chromium based browsers
+    * switch to SDL2/SDL2_mixer for everything except Firefox plugin.
+    * the plugin uses gtk2 to interact with Firefox, so the gtk2 dependency is only needed when building the Firefox plugin
+    * removes audio plugins as audio is now handled via SDL2_mixer for all platforms.
+    * removes the pulseaudio dependency
+    * the configuration setting [audio] is no longer needed
+    * implement rendering of embedded fonts in TextFields
+    * fix handling of multiple streams in SDL audio plugin, adds dependency on sdl_mixer
+    * switch to internal xml parsing (based on pugixml), removes dependency on libxml++
+    * compilation using clang possible
+    * implement several missing opcodes
+    * fix serialization
+    * implement data generation mode
+    * support for avmplus classes (mostly stubs)
+    * Support LLVM up to version 4.0
+    * fix event dispatcher handling
+    * several fixes for object initialization
+    * partially implement AMF0 decoding
+    * complete rework of XML subsystem
+    * Support embedded audio
+    * Implement JSON parsing
+
+ -- luke <lnee@fallback>  Fri, 14 Jul 2017 22:07:54 +0200
+    
 lightspark (0.7.2-0ubuntu1~ppa1) quantal; urgency=low
 
   * New release

@@ -34,9 +34,9 @@ The following tools are also required:
 * gcc (version 4.6.0 or newer) or clang
 
 To install these, run the following command(s):
-### Ubuntu (tested on 19.10):
+### Ubuntu (tested on 21.10):
 ```
-sudo apt install git gcc nasm cmake gettext libcurl4-gnutls-dev libsdl2-mixer-dev libsdl2-dev libpango1.0-dev libcairo2-dev libavcodec-dev libavresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
+sudo apt install git gcc g++ nasm cmake gettext libcurl4-gnutls-dev libsdl2-mixer-dev libsdl2-dev libpango1.0-dev libcairo2-dev libavcodec-dev libavresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
 ```
 
 ### Fedora (tested on 33):

@@ -191,7 +191,14 @@ void SystemState::staticInit()
 #endif
 
 	// seed the random number generator
-	srand(time(NULL));
+	char *envvar = getenv("LIGHTSPARK_RANDOM_SEED");
+	if (envvar)
+	{
+		LOG(LOG_INFO,"using static random seed:"<<envvar);
+		srand(atoi(envvar));
+	}
+	else
+		srand(time(nullptr));
 }
 
 void SystemState::staticDeinit()

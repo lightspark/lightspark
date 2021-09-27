@@ -101,6 +101,8 @@ Type `lightspark` to see all command line options.
 * ``LIGHTSPARK_PLUGIN_LOGLEVEL``: sets the log level (0-4) (browser plugins only)
 * ``LIGHTSPARK_PLUGIN_LOGFILE``: sets the file the log will be written to (browser plugins only)
 * ``LIGHTSPARK_PLUGIN_PARAMFILE``: if set, the flash variables set by the website will be written to this file (browser plugins only)
+* ``LIGHTSPARK_RANDOM_SEED``: if set, lightspark will use the provided integer value as seed for random numbers (this is useful for debugging to ensure you get the same sequence of random numbers in every run)
+
 
 SWF Support
 -----------

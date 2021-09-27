@@ -323,6 +323,16 @@ std::string IFunction::toDebugString()
 #endif
 	return ret;
 }
+void IFunction::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t>& traitsMap)
+{
+	// according to avmplus functions are "serialized" as undefined
+	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+		out->writeByte(amf0_undefined_marker);
+	else
+		out->writeByte(undefined_marker);
+}
 
 SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(nullptr),simpleGetterOrSetterName(nullptr),fromNewFunction(false),func_scope(NullRef)
 {

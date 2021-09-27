@@ -485,6 +485,9 @@ public:
 	virtual multiname* callGetter(asAtom& ret, ASObject* target) =0;
 	virtual Class_base* getReturnType() =0;
 	std::string toDebugString() override;
+	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t>& traitsMap) override;
 };
 
 /*

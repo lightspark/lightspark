@@ -3703,7 +3703,7 @@ uint32_t Stage::internalGetWidth() const
 	else
 	{
 		RECT size=getSystemState()->mainClip->getFrameSize();
-		width=size.Xmax/20;
+		width=(size.Xmax-size.Xmin)/20;
 	}
 	return width;
 }
@@ -3716,7 +3716,7 @@ uint32_t Stage::internalGetHeight() const
 	else
 	{
 		RECT size=getSystemState()->mainClip->getFrameSize();
-		height=size.Ymax/20;
+		height=(size.Ymax-size.Ymin)/20;
 	}
 	return height;
 }

@@ -842,8 +842,8 @@ void SystemState::delayedCreation(SystemState* sys)
 {
 	sys->audioManager=new AudioManager(sys->engineData);
 	sys->localstorageallowed =sys->getEngineData()->getLocalStorageAllowedMarker();
-	int32_t reqWidth=sys->mainClip->getFrameSize().Xmax/20;
-	int32_t reqHeight=sys->mainClip->getFrameSize().Ymax/20;
+	int32_t reqWidth=(sys->mainClip->getFrameSize().Xmax-sys->mainClip->getFrameSize().Xmin)/20;
+	int32_t reqHeight=(sys->mainClip->getFrameSize().Ymax-sys->mainClip->getFrameSize().Ymin)/20;
 
 	if (EngineData::enablerendering)
 		sys->engineData->showWindow(reqWidth, reqHeight);
@@ -1336,8 +1336,8 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 
 	Locker locker(mutex);
 	RECT size=getSys()->mainClip->getFrameSize();
-	int width=size.Xmax/20;
-	int height=size.Ymax/20;
+	int width=(size.Xmax-size.Xmin)/20;
+	int height=(size.Ymax-size.Ymin)/20;
 	
 	float *vertex_coords = new float[data.size()*2];
 	float *color_coords = new float[data.size()*4];
@@ -1852,8 +1852,8 @@ void ParseThread::threadAbort()
 bool RootMovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
 	RECT f=getFrameSize();
-	xmin=0;
-	ymin=0;
+	xmin=f.Xmin/20;
+	ymin=f.Ymin/20;
 	xmax=f.Xmax/20;
 	ymax=f.Ymax/20;
 	return true;
@@ -2249,6 +2249,8 @@ void SystemState::stageCoordinateMapping(uint32_t windowWidth, uint32_t windowHe
 {
 	//Get the size of the content
 	RECT r=mainClip->getFrameSize();
+	r.Xmin/=20;
+	r.Ymin/=20;
 	r.Xmax/=20;
 	r.Ymax/=20;
 	//Now compute the scalings and offsets
@@ -2257,65 +2259,65 @@ void SystemState::stageCoordinateMapping(uint32_t windowWidth, uint32_t windowHe
 		case SystemState::SHOW_ALL:
 			//Compute both scaling
 			scaleX=windowWidth;
-			scaleX/=r.Xmax;
+			scaleX/=(r.Xmax-r.Xmin);
 			scaleY=windowHeight;
-			scaleY/=r.Ymax;
+			scaleY/=(r.Ymax-r.Ymin);
 			//Enlarge with no distortion
 			if(scaleX<scaleY)
 			{
 				//Uniform scaling for Y
 				scaleY=scaleX;
 				//Apply the offset
-				offsetY=(windowHeight-r.Ymax*scaleY)/2;
-				offsetX=0;
+				offsetY=-r.Ymin+(windowHeight-(r.Ymax-r.Ymin)*scaleY)/2;
+				offsetX=-r.Xmin;
 			}
 			else
 			{
 				//Uniform scaling for X
 				scaleX=scaleY;
 				//Apply the offset
-				offsetX=(windowWidth-r.Xmax*scaleX)/2;
-				offsetY=0;
+				offsetX=-r.Xmin+(windowWidth-(r.Xmax-r.Xmin)*scaleX)/2;
+				offsetY=-r.Ymin;
 			}
 			break;
 		case SystemState::NO_BORDER:
 			//Compute both scaling
 			scaleX=windowWidth;
-			scaleX/=r.Xmax;
+			scaleX/=(r.Xmax-r.Xmin);
 			scaleY=windowHeight;
-			scaleY/=r.Ymax;
+			scaleY/=(r.Ymax-r.Ymin);
 			//Enlarge with no distortion
 			if(scaleX>scaleY)
 			{
 				//Uniform scaling for Y
 				scaleY=scaleX;
 				//Apply the offset
-				offsetY=(windowHeight-r.Ymax*scaleY)/2;
-				offsetX=0;
+				offsetY=-r.Ymin+(windowHeight-(r.Ymax-r.Ymin)*scaleY)/2;
+				offsetX=-r.Xmin;
 			}
 			else
 			{
 				//Uniform scaling for X
 				scaleX=scaleY;
 				//Apply the offset
-				offsetX=(windowWidth-r.Xmax*scaleX)/2;
-				offsetY=0;
+				offsetX=-r.Xmin+(windowWidth-(r.Xmax-r.Xmin)*scaleX)/2;
+				offsetY=-r.Ymin;
 			}
 			break;
 		case SystemState::EXACT_FIT:
 			//Compute both scaling
 			scaleX=windowWidth;
-			scaleX/=r.Xmax;
+			scaleX/=(r.Xmax-r.Xmin);
 			scaleY=windowHeight;
-			scaleY/=r.Ymax;
-			offsetX=0;
-			offsetY=0;
+			scaleY/=(r.Ymax-r.Ymin);
+			offsetX=-r.Xmin;
+			offsetY=-r.Ymin;
 			break;
 		case SystemState::NO_SCALE:
 			scaleX=1;
 			scaleY=1;
-			offsetX=0;
-			offsetY=0;
+			offsetX=-r.Xmin;
+			offsetY=-r.Ymin;
 			break;
 	}
 }

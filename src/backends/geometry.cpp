@@ -253,7 +253,7 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 	}
 }
 
-void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, const std::list<MORPHLINESTYLE2> &linestyles, tokensVector &tokens, uint16_t ratio, const RECT& boundsrc)
+void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::list<MORPHLINESTYLE2> &linestyles, tokensVector &tokens, uint16_t ratio, const RECT& boundsrc)
 {
 	joinOutlines();
 	//Try to greedily condense as much as possible the output
@@ -388,7 +388,7 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, const s
 		{
 			assert(!it->second.empty());
 			//Find the style given the index
-			std::list<MORPHLINESTYLE2>::const_iterator stylesIt=linestyles.begin();
+			std::list<MORPHLINESTYLE2>::iterator stylesIt=linestyles.begin();
 			assert(it->first);
 			for(unsigned int i=0;i<it->first-1;i++)
 			{
@@ -396,10 +396,124 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, const s
 				assert(stylesIt!=linestyles.end());
 			}
 			//Set the line style
-			LOG(LOG_NOT_IMPLEMENTED,"morphing for line styles");
+			auto itls =stylesIt->linestylecache.find(ratio);
+			if (itls == stylesIt->linestylecache.end())
+			{
+				LINESTYLE2 ls(0xff);
+				ls.FillType.FillStyleType=stylesIt->FillType.FillStyleType;
+				ls.StartCapStyle = stylesIt->StartCapStyle;
+				ls.JointStyle = stylesIt->JoinStyle;
+				ls.HasFillFlag = stylesIt->HasFillFlag;
+				ls.NoHScaleFlag = stylesIt->NoHScaleFlag;
+				ls.NoVScaleFlag = stylesIt->NoVScaleFlag;
+				ls.PixelHintingFlag = stylesIt->PixelHintingFlag;
+				ls.NoClose = stylesIt->NoClose;
+				ls.EndCapStyle = stylesIt->EndCapStyle;
+				ls.MiterLimitFactor = stylesIt->MiterLimitFactor;
+				ls.Width = stylesIt->StartWidth + (stylesIt->EndWidth - stylesIt->StartWidth)*(number_t(ratio)/65535.0);
+				uint8_t compratio = ratio>>8;
+				if (stylesIt->HasFillFlag)
+				{
+					switch (stylesIt->FillType.FillStyleType)
+					{
+						case LINEAR_GRADIENT:
+						case RADIAL_GRADIENT:
+						case FOCAL_RADIAL_GRADIENT:
+						{
+							number_t gradratio = float(ratio)/65535.0;
+							MATRIX ratiomatrix;
+							
+							ratiomatrix.scale(stylesIt->FillType.StartGradientMatrix.getScaleX()+(stylesIt->FillType.EndGradientMatrix.getScaleX()-stylesIt->FillType.StartGradientMatrix.getScaleX())*gradratio,
+											  stylesIt->FillType.StartGradientMatrix.getScaleY()+(stylesIt->FillType.EndGradientMatrix.getScaleY()-stylesIt->FillType.StartGradientMatrix.getScaleY())*gradratio);
+							ratiomatrix.rotate((stylesIt->FillType.StartGradientMatrix.getRotation()+(stylesIt->FillType.EndGradientMatrix.getRotation()-stylesIt->FillType.StartGradientMatrix.getRotation())*gradratio)*180.0/M_PI);
+							ratiomatrix.translate(stylesIt->FillType.StartGradientMatrix.getTranslateX() +(stylesIt->FillType.EndGradientMatrix.getTranslateX()-stylesIt->FillType.StartGradientMatrix.getTranslateX())*gradratio,
+												  stylesIt->FillType.StartGradientMatrix.getTranslateY() +(stylesIt->FillType.EndGradientMatrix.getTranslateY()-stylesIt->FillType.StartGradientMatrix.getTranslateY())*gradratio);
+							
+							ls.FillType.Matrix = ratiomatrix;
+							ls.FillType.Gradient.GradientRecords.reserve(stylesIt->FillType.StartColors.size());
+							GRADRECORD gr(0xff);
+							for (uint32_t i1=0; i1 < stylesIt->FillType.StartColors.size(); i1++)
+							{
+								switch (compratio)
+								{
+									case 0:
+										gr.Color = stylesIt->FillType.StartColors[i1];
+										gr.Ratio = stylesIt->FillType.StartRatios[i1];
+										break;
+									case 0xff:
+										gr.Color = stylesIt->FillType.EndColors[i1];
+										gr.Ratio = stylesIt->FillType.EndRatios[i1];
+										break;
+									default:
+									{
+										gr.Color.Red = stylesIt->FillType.StartColors[i1].Red + ((int32_t)ratio * ((int32_t)stylesIt->FillType.EndColors[i1].Red-(int32_t)stylesIt->FillType.StartColors[i1].Red)/(int32_t)UINT16_MAX);
+										gr.Color.Green = stylesIt->FillType.StartColors[i1].Green + ((int32_t)ratio * ((int32_t)stylesIt->FillType.EndColors[i1].Green-(int32_t)stylesIt->FillType.StartColors[i1].Green)/(int32_t)UINT16_MAX);
+										gr.Color.Blue = stylesIt->FillType.StartColors[i1].Blue + ((int32_t)ratio * ((int32_t)stylesIt->FillType.EndColors[i1].Blue-(int32_t)stylesIt->FillType.StartColors[i1].Blue)/(int32_t)UINT16_MAX);
+										gr.Color.Alpha = stylesIt->FillType.StartColors[i1].Alpha + ((int32_t)ratio * ((int32_t)stylesIt->FillType.EndColors[i1].Alpha-(int32_t)stylesIt->FillType.StartColors[i1].Alpha)/(int32_t)UINT16_MAX);
+										uint8_t diff = stylesIt->FillType.EndRatios[i1]-stylesIt->FillType.StartRatios[i1];
+										gr.Ratio = stylesIt->FillType.StartRatios[i1] + (diff/compratio);
+										break;
+									}
+								}
+								ls.FillType.FocalGradient.InterpolationMode=stylesIt->FillType.InterpolationMode;
+								ls.FillType.FocalGradient.SpreadMode=stylesIt->FillType.SpreadMode;
+								ls.FillType.FocalGradient.FocalPoint=stylesIt->FillType.StartFocalPoint + (stylesIt->FillType.EndFocalPoint-stylesIt->FillType.StartFocalPoint)*gradratio;
+								ls.FillType.Gradient.GradientRecords.push_back(gr);
+								ls.FillType.ShapeBounds = boundsrc;
+							}
+							break;
+						}
+						case SOLID_FILL:
+						{
+							switch (compratio)
+							{
+								case 0:
+									ls.FillType.Color = stylesIt->StartColor;
+									break;
+								case 0xff:
+									ls.FillType.Color = stylesIt->EndColor;
+									break;
+								default:
+								{
+									ls.FillType.Color.Red = stylesIt->StartColor.Red + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Red-(int32_t)stylesIt->StartColor.Red)/(int32_t)UINT16_MAX);
+									ls.FillType.Color.Green = stylesIt->StartColor.Green + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Green-(int32_t)stylesIt->StartColor.Green)/(int32_t)UINT16_MAX);
+									ls.FillType.Color.Blue = stylesIt->StartColor.Blue + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Blue-(int32_t)stylesIt->StartColor.Blue)/(int32_t)UINT16_MAX);
+									ls.FillType.Color.Alpha = stylesIt->EndColor.Alpha + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Alpha-(int32_t)stylesIt->StartColor.Alpha)/(int32_t)UINT16_MAX);
+									break;
+								}
+							}
+							break;
+						}
+						default:
+							LOG(LOG_NOT_IMPLEMENTED,"morphing for line style type:"<<hex<<stylesIt->FillType.FillStyleType);
+							break;
+					}
+				}
+				else
+				{
+					switch (compratio)
+					{
+						case 0:
+							ls.FillType.Color = stylesIt->StartColor;
+							break;
+						case 0xff:
+							ls.FillType.Color = stylesIt->EndColor;
+							break;
+						default:
+						{
+							ls.FillType.Color.Red = stylesIt->StartColor.Red + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Red-(int32_t)stylesIt->StartColor.Red)/(int32_t)UINT16_MAX);
+							ls.FillType.Color.Green = stylesIt->StartColor.Green + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Green-(int32_t)stylesIt->StartColor.Green)/(int32_t)UINT16_MAX);
+							ls.FillType.Color.Blue = stylesIt->StartColor.Blue + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Blue-(int32_t)stylesIt->StartColor.Blue)/(int32_t)UINT16_MAX);
+							ls.FillType.Color.Alpha = stylesIt->EndColor.Alpha + ((int32_t)ratio * ((int32_t)stylesIt->EndColor.Alpha-(int32_t)stylesIt->StartColor.Alpha)/(int32_t)UINT16_MAX);
+							break;
+						}
+					}
+				}
+				itls = stylesIt->linestylecache.insert(make_pair(ratio,ls)).first;
+			}
 			vector<vector<ShapePathSegment> >& outlinesForStroke=it->second;
 			tokens.stroketokens.push_back(GeomToken(SET_STROKE).uval);
-			tokens.stroketokens.push_back(GeomToken(*stylesIt).uval);
+			tokens.stroketokens.push_back(GeomToken((*itls).second).uval);
 			for(unsigned int i=0;i<outlinesForStroke.size();i++)
 			{
 				vector<ShapePathSegment>& segments=outlinesForStroke[i];

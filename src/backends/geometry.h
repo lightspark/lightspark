@@ -77,7 +77,6 @@ struct GeomToken
 		} vec;
 		const FILLSTYLE*  fillStyle; // make sure the pointer is valid until rendering is done
 		const LINESTYLE2* lineStyle; // make sure the pointer is valid until rendering is done
-		const MORPHLINESTYLE2* morphlineStyle; // make sure the pointer is valid until rendering is done
 		number_t value;
 		uint64_t uval;// this is used to have direct access to the value as it is stored in a vector<uint64_t> for performance
 	};
@@ -95,7 +94,6 @@ struct GeomToken
 	GeomToken(const FILLSTYLE& fs):fillStyle(&fs) {}
 	GeomToken(const LINESTYLE2& ls):lineStyle(&ls) {}
 	GeomToken(number_t val):value(val) {}
-	GeomToken(const MORPHLINESTYLE2& mls):morphlineStyle(&mls) {}
 	GeomToken(const Vector2& _vec)
 	{
 		vec.x=_vec.x;
@@ -150,7 +148,7 @@ public:
 		@param tokens A vector that will be filled with tokens
 	*/
 	void outputTokens(const std::list<FILLSTYLE>& styles, const std::list<LINESTYLE2>& linestyles, tokensVector& tokens);
-	void outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, const std::list<MORPHLINESTYLE2> &linestyles, tokensVector& tokens, uint16_t ratio, const RECT& boundsrc);
+	void outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::list<MORPHLINESTYLE2>& linestyles, tokensVector& tokens, uint16_t ratio, const RECT& boundsrc);
 	void clear();
 };
 

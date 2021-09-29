@@ -481,7 +481,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const MATRIX& r)
 {
 	s << "| " << r.xx << ' ' << r.yx << " |" << std::endl;
 	s << "| " << r.xy << ' ' << r.yy << " |" << std::endl;
-	s << "| " << (int)r.x0 << ' ' << (int)r.y0 << " |" << std::endl;
+	s << "| " << r.x0 << ' ' << r.y0 << " |" << std::endl;
 	return s;
 }
 
@@ -1162,8 +1162,8 @@ std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 		v.xy = 0;
 	}
 	int NTranslateBits=UB(5,bs);
-	v.x0=SB(NTranslateBits,bs)/20;
-	v.y0=SB(NTranslateBits,bs)/20;
+	v.x0=SB(NTranslateBits,bs)/20.0;
+	v.y0=SB(NTranslateBits,bs)/20.0;
 	return stream;
 }
 
@@ -1697,6 +1697,35 @@ FILLSTYLE& FILLSTYLE::operator=(FILLSTYLE r)
 	Color = r.Color;
 	FillStyleType = r.FillStyleType;
 	version = r.version;
+	return *this;
+}
+
+LINESTYLE2::LINESTYLE2(const LINESTYLE2& r):StartCapStyle(r.StartCapStyle),JointStyle(r.JointStyle),HasFillFlag(r.HasFillFlag),
+	NoHScaleFlag(r.NoHScaleFlag),NoVScaleFlag(r.NoVScaleFlag),PixelHintingFlag(r.PixelHintingFlag),
+	Width(r.Width),MiterLimitFactor(r.MiterLimitFactor),Color(r.Color),
+	FillType(r.FillType),version(r.version)
+{
+}
+
+LINESTYLE2::~LINESTYLE2()
+{
+}
+
+LINESTYLE2& LINESTYLE2::operator=(LINESTYLE2 r)
+{
+	StartCapStyle=r.StartCapStyle;
+	JointStyle=r.JointStyle;
+	HasFillFlag=r.HasFillFlag;
+	NoHScaleFlag=r.NoHScaleFlag;
+	NoVScaleFlag=r.NoVScaleFlag;
+	PixelHintingFlag=r.PixelHintingFlag;
+	NoClose=r.NoClose;
+	EndCapStyle=r.EndCapStyle;
+	Width=r.Width;
+	MiterLimitFactor=r.MiterLimitFactor;
+	Color=r.Color;
+	FillType=r.FillType;
+	version=r.version;
 	return *this;
 }
 

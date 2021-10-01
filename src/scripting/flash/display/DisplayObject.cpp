@@ -1621,6 +1621,7 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 		cur=cur->getParent();
 	}
 }
+#define FILTERBORDER 2 // border in pixels around cached bitmap needed to properly compute filters at borders
 IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MATRIX& initialMatrix)
 {
 	if (!computeCacheAsBitmap())
@@ -1630,17 +1631,19 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	bool ret=getBounds(xmin,xmax,ymin,ymax,m);
 	if(ret==false || xmax-xmin >= 8192 || ymax-ymin >= 8192 || ((xmax-xmin)*(ymax-ymin)) >= 16777216)
 		return nullptr;
+	uint32_t w=(xmax-xmin)+FILTERBORDER*2;
+	uint32_t h=(ymax-ymin)+FILTERBORDER*2;
 	if (needsTextureRecalculation)
 	{
 		if (!cachedBitmap
-				|| cachedBitmap->getBitmapSize().width != xmax-xmin
-				|| cachedBitmap->getBitmapSize().height != ymax-ymin)
+				|| cachedBitmap->getBitmapSize().width != w
+				|| cachedBitmap->getBitmapSize().height != h)
 		{
-			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getSystemState(),xmax-xmin,ymax-ymin));
+			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getSystemState(),w,h));
 			data->incRef();
 			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getSystemState(),data));
 		}
-		MATRIX m0(1,1,0,0,-xmin,-ymin);
+		MATRIX m0(1,1,0,0,-(xmin-FILTERBORDER),-(ymin-FILTERBORDER));
 		DisplayObjectContainer* origparent=this->parent;
 		number_t origrotation = this->rotation;
 		number_t origsx = this->sx;
@@ -1669,7 +1672,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 				asAtom f = asAtomHandler::invalidAtom;
 				filters->at_nocheck(f,i);
 				if (asAtomHandler::is<BitmapFilter>(f))
-					asAtomHandler::as<BitmapFilter>(f)->applyFilter(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,xmax-xmin,0,ymax-ymin),0,0);
+					asAtomHandler::as<BitmapFilter>(f)->applyFilter(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0);
 			}
 		}
 		cachedBitmap->resetNeedsTextureRecalculation();
@@ -1682,7 +1685,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	}
 	this->resetNeedsTextureRecalculation();
 	this->hasChanged=false;
-	MATRIX m1(1,1,0,0,xmin,ymin);
+	MATRIX m1(1,1,0,0,xmin-FILTERBORDER,ymin-FILTERBORDER);
 	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this,m1);
 }
 

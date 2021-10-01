@@ -233,7 +233,7 @@ ASFUNCTIONBODY_GETTER_SETTER(TextField, multiline);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, mouseWheelEnabled); // stub
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollH, validateScrollH);
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollV, validateScrollV);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, selectable); // stub
+ASFUNCTIONBODY_GETTER_SETTER(TextField, selectable);
 ASFUNCTIONBODY_GETTER(TextField, selectionBeginIndex);
 ASFUNCTIONBODY_GETTER(TextField, selectionEndIndex);
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, sharpness, validateSharpness); // stub
@@ -272,6 +272,8 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 
 _NR<DisplayObject> TextField::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
+	if (!selectable)
+		return NullRef;
 	/* I suppose one does not have to actually hit a character */
 	number_t xmin,xmax,ymin,ymax;
 	boundsRect(xmin,xmax,ymin,ymax);

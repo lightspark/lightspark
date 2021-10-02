@@ -79,6 +79,7 @@ private:
 	SDL_Window* contextmenu;
 	SDL_Renderer* contextmenurenderer;
 	SDL_Texture* contextmenutexture;
+	static SDL_Cursor* handCursor;
 	uint8_t* contextmenupixels;
 	int32_t contextmenuheight;
 	void openContextMenuIntern(InteractiveObject *dispatcher);
@@ -182,6 +183,8 @@ public:
 	/* show/hide mouse cursor, must be called from mainLoopThread */
 	static void showMouseCursor(SystemState *sys);
 	static void hideMouseCursor(SystemState *sys);
+	static void setMouseHandCursor(SystemState *sys);
+	static void resetMouseHandCursor(SystemState *sys);
 	virtual void setClipboardText(const std::string txt);
 	virtual bool getScreenData(SDL_DisplayMode* screen) = 0;
 	virtual double getScreenDPI() = 0;

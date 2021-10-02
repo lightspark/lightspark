@@ -208,6 +208,7 @@ private:
 	BUTTONSTATE currentState;
 	bool enabled;
 	bool useHandCursor;
+	bool hasMouse;
 	void reflectState();
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	/* This is called by when an event is dispatched */
@@ -241,6 +242,7 @@ public:
 	void afterLegacyDelete(DisplayObjectContainer* par) override;
 	bool AVM1HandleKeyboardEvent(KeyboardEvent* e) override;
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
+	void handleMouseCursor(bool rollover) override;
 };
 
 class Shape: public DisplayObject, public TokenContainer
@@ -444,6 +446,8 @@ private:
 	_NR<SoundChannel> sound;
 	uint32_t soundstartframe;
 	bool streamingsound;
+	bool hasMouse;
+	void afterSetUseHandCursor(bool oldValue);
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override
@@ -484,6 +488,7 @@ public:
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	_NR<Graphics> getGraphics();
+	void handleMouseCursor(bool rollover) override;
 };
 
 struct FrameLabel_data

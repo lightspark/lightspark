@@ -805,7 +805,7 @@ void Loader::setContent(_R<DisplayObject> o)
 		o->loaderInfo->setComplete();
 }
 
-Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),dragged(false),buttonMode(false),useHandCursor(false)
+Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),hasMouse(false),dragged(false),buttonMode(false),useHandCursor(true)
 {
 	subtype=SUBTYPE_SPRITE;
 }
@@ -818,8 +818,9 @@ bool Sprite::destruct()
 	hitTarget.reset();
 	dragged = false;
 	buttonMode = false;
-	useHandCursor = false;
+	useHandCursor = true;
 	streamingsound=false;
+	hasMouse=false;
 	tokens.clear();
 	return DisplayObjectContainer::destruct();
 }
@@ -860,8 +861,13 @@ void Sprite::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("soundTransform","",Class<IFunction>::getFunction(c->getSystemState(),setSoundTransform),SETTER_METHOD,true);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Sprite, buttonMode);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Sprite, useHandCursor);
+ASFUNCTIONBODY_GETTER_SETTER(Sprite, buttonMode);
+ASFUNCTIONBODY_GETTER_SETTER_CB(Sprite, useHandCursor,afterSetUseHandCursor);
+
+void Sprite::afterSetUseHandCursor(bool /*oldValue*/)
+{
+	handleMouseCursor(hasMouse);
+}
 
 void Sprite::buildTraits(ASObject* o)
 {
@@ -1231,6 +1237,21 @@ _NR<Graphics> Sprite::getGraphics()
 	if(graphics.isNull())
 		graphics=_MR(Class<Graphics>::getInstanceS(getSystemState(),this));
 	return graphics;
+}
+
+void Sprite::handleMouseCursor(bool rollover)
+{
+	if (rollover)
+	{
+		hasMouse=true;
+		if (buttonMode)
+			getSystemState()->setMouseHandCursor(this->useHandCursor);
+	}
+	else
+	{
+		getSystemState()->setMouseHandCursor(false);
+		hasMouse=false;
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Sprite,_getGraphics)
@@ -4607,6 +4628,20 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 	return handled;
 }
 
+void SimpleButton::handleMouseCursor(bool rollover)
+{
+	if (rollover)
+	{
+		hasMouse=true;
+		getSystemState()->setMouseHandCursor(this->useHandCursor);
+	}
+	else
+	{
+		getSystemState()->setMouseHandCursor(false);
+		hasMouse=false;
+	}
+}
+
 bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 {
 	bool handled=false;
@@ -4824,7 +4859,7 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 				DisplayObject *oS, DisplayObject *uS, DefineButtonTag *tag)
 	: DisplayObjectContainer(c), downState(dS), hitTestState(hTS), overState(oS), upState(uS),
-	  buttontag(tag),currentState(STATE_OUT),enabled(true),useHandCursor(true)
+	  buttontag(tag),currentState(STATE_OUT),enabled(true),useHandCursor(true),hasMouse(false)
 {
 	/* When called from DefineButton2Tag::instance, they are not constructed yet
 	 * TODO: construct them here for once, or each time they become visible?
@@ -4866,6 +4901,9 @@ void SimpleButton::finalize()
 	hitTestState.reset();
 	overState.reset();
 	upState.reset();
+	enabled=true;
+	useHandCursor=true;
+	hasMouse=false;
 	buttontag=nullptr;
 }
 
@@ -5073,6 +5111,7 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_setUseHandCursor)
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
 	assert_and_throw(argslen==1);
 	th->useHandCursor=asAtomHandler::Boolean_concrete(args[0]);
+	th->handleMouseCursor(th->hasMouse);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_getUseHandCursor)

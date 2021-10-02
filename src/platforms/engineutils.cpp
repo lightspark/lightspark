@@ -51,6 +51,7 @@ SDL_Thread* EngineData::mainLoopThread = nullptr;
 bool EngineData::mainthread_running = false;
 bool EngineData::sdl_needinit = true;
 bool EngineData::enablerendering = true;
+SDL_Cursor* EngineData::handCursor = nullptr;
 Semaphore EngineData::mainthread_initialized(0);
 EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),currentPixelBufPtr(nullptr),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
 {
@@ -66,6 +67,9 @@ EngineData::~EngineData()
 #endif
 		currentPixelBufPtr = nullptr;
 	}
+	if (handCursor)
+		SDL_FreeCursor(handCursor);
+	handCursor=nullptr;
 }
 bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 {
@@ -635,6 +639,17 @@ void EngineData::showMouseCursor(SystemState* /*sys*/)
 void EngineData::hideMouseCursor(SystemState* /*sys*/)
 {
 	SDL_ShowCursor(SDL_DISABLE);
+}
+
+void EngineData::setMouseHandCursor(SystemState* /*sys*/)
+{
+	if (!handCursor)
+		handCursor = SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_HAND);
+	SDL_SetCursor(handCursor);
+}
+void EngineData::resetMouseHandCursor(SystemState* /*sys*/)
+{
+	SDL_SetCursor(SDL_GetDefaultCursor());
 }
 
 void EngineData::setClipboardText(const std::string txt)

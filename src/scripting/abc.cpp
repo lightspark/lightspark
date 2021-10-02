@@ -1032,10 +1032,11 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			event->incRef();
 			_R<MouseEvent> mevent = _MR(event->as<MouseEvent>());
 			if(mevent->relatedObject)
-			{  
+			{
 				mevent->relatedObject->incRef();
 				rcur = mevent->relatedObject.getPtr();
 			}
+			dispatcher->as<DisplayObject>()->handleMouseCursor(event->type == "rollOver");
 		}
 		//If the relObj is non null, we get its ancestors to build a truncated parents queue for the target 
 		if(rcur)

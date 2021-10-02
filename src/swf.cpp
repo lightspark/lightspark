@@ -2347,6 +2347,13 @@ void SystemState::showMouseCursor(bool visible)
 	else
 		engineData->runInMainThread(this,&EngineData::hideMouseCursor);
 }
+void SystemState::setMouseHandCursor(bool sethand)
+{
+	if (sethand)
+		engineData->runInMainThread(this,&EngineData::setMouseHandCursor);
+	else
+		engineData->runInMainThread(this,&EngineData::resetMouseHandCursor);
+}
 
 void SystemState::waitRendering()
 {

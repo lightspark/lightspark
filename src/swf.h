@@ -540,6 +540,7 @@ public:
 	void openPageInBrowser(const tiny_string& url, const tiny_string& window);
 
 	void showMouseCursor(bool visible);
+	void setMouseHandCursor(bool sethand);
 	void waitRendering() DLL_PUBLIC;
 	EngineData* getEngineData() { return engineData;}
 	uint32_t getSwfVersion();

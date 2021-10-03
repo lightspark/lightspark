@@ -244,7 +244,7 @@ ASFUNCTIONBODY_GETTER_SETTER(TextField, useRichTextClipboard); // stub
 
 void TextField::finalize()
 {
-	ASObject::finalize();
+	InteractiveObject::finalize();
 	restrictChars.reset();
 	styleSheet.reset();
 }
@@ -1351,6 +1351,7 @@ void TextField::textUpdated()
 		if(onStage && isVisible())
 			requestInvalidation(this->getSystemState());
 	}
+	invalidateCachedAsBitmpapOf();
 }
 
 void TextField::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)

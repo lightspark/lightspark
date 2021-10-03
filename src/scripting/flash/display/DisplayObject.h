@@ -152,6 +152,7 @@ public:
 	_NR<ColorTransform> colorTransform;
 	// pointer to the ancestor of this DisplayObject that is cached as Bitmap
 	_NR<DisplayObject> cachedAsBitmapOf;
+	void invalidateCachedAsBitmpapOf();
 	void setNeedsTextureRecalculation(bool skippable=false);
 	void resetNeedsTextureRecalculation() { needsTextureRecalculation=false; }
 	bool getNeedsTextureRecalculation() const { return needsTextureRecalculation; }

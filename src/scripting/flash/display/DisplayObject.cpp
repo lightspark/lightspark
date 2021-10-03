@@ -733,18 +733,7 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		if(getVm(getSystemState())==nullptr)
 			return;
 		changed = true;
-		DisplayObject* c = cachedAsBitmapOf.getPtr();
-		while (c)
-		{
-			c->hasChanged=true;
-			c->setNeedsTextureRecalculation();
-			if (!c->cachedAsBitmapOf)
-			{
-				c->requestInvalidation(c->getSystemState());
-				break;
-			}
-			c = c->cachedAsBitmapOf.getPtr();
-		}
+		invalidateCachedAsBitmpapOf();
 	}
 	if (force || changed)
 	{
@@ -1524,6 +1513,22 @@ void DisplayObject::afterConstruction()
 //	needsTextureRecalculation=true;
 //	if(onStage)
 //		requestInvalidation(getSystemState());
+}
+
+void DisplayObject::invalidateCachedAsBitmpapOf()
+{
+	DisplayObject* c = cachedAsBitmapOf.getPtr();
+	while (c)
+	{
+		c->hasChanged=true;
+		c->setNeedsTextureRecalculation();
+		if (!c->cachedAsBitmapOf)
+		{
+			c->requestInvalidation(c->getSystemState());
+			break;
+		}
+		c = c->cachedAsBitmapOf.getPtr();
+	}
 }
 
 void DisplayObject::setNeedsTextureRecalculation(bool skippable)

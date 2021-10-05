@@ -257,28 +257,28 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 {
 	if (!this->legacy || (tag==nullptr) || autoSize!=AS_NONE)
 	{
-		xmin=0;
-		xmax=max(0.0f,float(textWidth+autosizeposition))+2*TEXTFIELD_PADDING;
-		ymin=0;
-		ymax=max(0.0f,float(height));
+		xmin=tag ? tag->Bounds.Xmin/20.0f : 0.0f;
+		xmax=max(0.0f,float(textWidth+autosizeposition))+2*TEXTFIELD_PADDING+ (tag ? tag->Bounds.Xmin/20.0f : 0.0f);
+		ymin=tag ? tag->Bounds.Ymin/20.0f : 0.0f;
+		ymax=max(0.0f,float(height)+(tag ? tag->Bounds.Ymin/20.0f :0.0f));
 		return true;
 	}
-	xmin=0;
-	xmax=max(0.0f,float(textWidth+tag->Bounds.Xmin)/20.0f);
-	ymin=0;
-	ymax=max(0.0f,float(height+tag->Bounds.Ymin)/20.0f);
+	xmin=tag->Bounds.Xmin/20.0f;
+	xmax=max(0.0f,float(textWidth)+tag->Bounds.Xmin/20.0f);
+	ymin=tag->Bounds.Ymin/20.0f;
+	ymax=max(0.0f,float(height)+tag->Bounds.Ymin/20.0f);
 	return true;
 }
 
 _NR<DisplayObject> TextField::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
-	if (!selectable)
-		return NullRef;
 	/* I suppose one does not have to actually hit a character */
 	number_t xmin,xmax,ymin,ymax;
 	boundsRect(xmin,xmax,ymin,ymax);
 	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax && isHittable(type))
 	{
+		if (!selectable)
+			return last;
 		incRef();
 		return _MNR(this);
 	}
@@ -1118,6 +1118,8 @@ void TextField::updateSizes()
 			if (!listchanged)
 				it++;
 			th+=h;
+			if (it != textlines.end())
+				th+=this->leading;
 		}
 		if(w>tw)
 			tw = w;
@@ -1343,7 +1345,7 @@ void TextField::textUpdated()
 	setSizeAndPositionFromAutoSize();
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? this->loadedFrom->getEmbeddedFontByID(fontID) : this->loadedFrom->getEmbeddedFont(font));
 	// TODO implement fast rendering path for not embedded fonts
-	if (!embeddedfont || !embeddedfont->hasGlyphs(getText()))
+	if (computeCacheAsBitmap() || !embeddedfont || !embeddedfont->hasGlyphs(getText()))
 	{
 		hasChanged=true;
 		setNeedsTextureRecalculation();
@@ -1502,7 +1504,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		}
 		fillstyleTextColor.front().FillStyleType=SOLID_FILL;
 		fillstyleTextColor.front().Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
-		uint32_t startposy = 0;
+		int32_t startposy = 0;
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{
 			embeddedfont->fillTextTokens(tokens,(*it).text,fontSize,fillstyleTextColor,leading,autosizeposition+(*it).autosizeposition,startposy);
@@ -1703,7 +1705,6 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						isMask, hasMask,3.0, tcolor,true);
 			}
 		}
-		number_t xpos=autosizeposition;
 		number_t ypos=-TEXTFIELD_PADDING/yscale;
 		float scalex;
 		float scaley;
@@ -1711,7 +1712,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 		getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
 		for (auto itl = textlines.begin(); itl != textlines.end(); itl++)
 		{
-			xpos = autosizeposition+(*itl).autosizeposition;
+			number_t xpos = (autoSize==AS_NONE && tag ? tag->Bounds.Xmin/20.0f : 0.0f)+autosizeposition+(*itl).autosizeposition;
 			for (auto it = (*itl).text.begin(); it!= (*itl).text.end(); it++)
 			{
 				const TextureChunk* tex = embeddedfont->getCharTexture(it,this->fontSize*yscale,codetableindex);

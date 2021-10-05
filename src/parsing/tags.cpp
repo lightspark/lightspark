@@ -368,12 +368,6 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	if(HasFont)
 	{
 		in >> FontID;
-		FontTag* fonttag =  dynamic_cast<FontTag*>(root->dictionaryLookup(FontID));
-		if (fonttag)
-		{
-			textData.font = fonttag->getFontname();
-			textData.fontID = fonttag->getId();
-		}
 		if(HasFontClass)
 			in >> FontClass;
 		in >> FontHeight;
@@ -394,7 +388,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 		switch(Align)
 		{
 			case 0:
-				textData.autoSize = TextData::AS_LEFT;
+				textData.autoSize = AutoSize ? TextData::AS_LEFT : TextData::AS_NONE;
 				break;
 			case 1:
 				textData.autoSize = TextData::AS_RIGHT;
@@ -444,6 +438,15 @@ ASObject* DefineEditTextTag::instance(Class_base* c)
 			c=Class<TextField>::getClass(loadedFrom->getSystemState());
 		else
 			c=Class<AVM1TextField>::getClass(loadedFrom->getSystemState());
+	}
+	if (HasFont && textData.fontID!=this->FontID)
+	{
+		FontTag* fonttag =  dynamic_cast<FontTag*>(loadedFrom->dictionaryLookup(FontID));
+		if (fonttag)
+		{
+			textData.font = fonttag->getFontname();
+			textData.fontID = fonttag->getId();
+		}
 	}
 	//TODO: check
 	assert_and_throw(bindedTo==nullptr);
@@ -790,7 +793,7 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* ro
 	root->registerEmbeddedFont("",this);
 }
 
-void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
+void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, int32_t leading, int32_t startposx, int32_t startposy)
 {
 	Vector2 curPos;
 
@@ -968,7 +971,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	root->registerEmbeddedFont(getFontname(),this);
 }
 
-void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
+void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, int32_t leading, int32_t startposx, int32_t startposy)
 {
 	Vector2 curPos;
 
@@ -1176,12 +1179,12 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 
 }
 
-void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, uint32_t leading, uint32_t startposx, uint32_t startposy)
+void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, int32_t leading, int32_t startposx, int32_t startposy)
 {
 	Vector2 curPos;
 
 	int tokenscaling = fontpixelsize * this->scaling;
-	curPos.y = ((20+startposy)*1024) * this->scaling;
+	curPos.y = (this->FontAscent + startposy*1024)*this->scaling;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{

@@ -1636,8 +1636,8 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	bool ret=getBounds(xmin,xmax,ymin,ymax,m);
 	if(ret==false || xmax-xmin >= 8192 || ymax-ymin >= 8192 || ((xmax-xmin)*(ymax-ymin)) >= 16777216)
 		return nullptr;
-	uint32_t w=(xmax-xmin)+FILTERBORDER*2;
-	uint32_t h=(ymax-ymin)+FILTERBORDER*2;
+	uint32_t w=ceil(xmax-xmin)+FILTERBORDER*2;
+	uint32_t h=ceil(ymax-ymin)+FILTERBORDER*2;
 	if (needsTextureRecalculation)
 	{
 		if (!cachedBitmap
@@ -1680,6 +1680,14 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 					asAtomHandler::as<BitmapFilter>(f)->applyFilter(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0);
 			}
 		}
+		// apply colortransform for cached bitmap after the filters are applied
+		ColorTransform* ct = colorTransform.getPtr();
+		if (ct)
+		{
+			ct->applyTransformation(cachedBitmap->bitmapData->getBitmapContainer()->getData()
+									,cachedBitmap->bitmapData->getBitmapContainer()->getWidth()*cachedBitmap->bitmapData->getBitmapContainer()->getHeight()*4);
+		}
+		
 		cachedBitmap->resetNeedsTextureRecalculation();
 		cachedBitmap->hasChanged=true;
 		if (!this->cachedAsBitmapOf)

@@ -63,7 +63,7 @@ public:
 						 float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset,
 						 bool smoothing);
 	
-	uint8_t* getPixelBuffer(float scalex,float scaley, bool* isBufferOwner=nullptr) override;
+	uint8_t* getPixelBuffer(float scalex,float scaley, bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const override {}
 };
 

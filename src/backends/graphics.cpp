@@ -170,8 +170,8 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			}
 
 			MATRIX tmp=style.Matrix;
-			tmp.x0 -= style.ShapeBounds.Xmin/20;
-			tmp.y0 -= style.ShapeBounds.Ymin/20;
+			tmp.x0 -= number_t(style.ShapeBounds.Xmin)/20.0;
+			tmp.y0 -= number_t(style.ShapeBounds.Ymin)/20.0;
 			cairo_matrix_scale(&tmp,scalex,scaley);
 			tmp.x0/=scaleCorrection;
 			tmp.y0/=scaleCorrection;
@@ -525,10 +525,12 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr, float scalex, float scaley)
 	cairoPathFromTokens(cr, tokens, scaleFactor, false,scalex, scaley,xstart,ystart,isMask);
 }
 
-uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley, bool *isBufferOwner)
+uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley, bool *isBufferOwner, uint32_t* bufsize)
 {
 	if (isBufferOwner)
 		*isBufferOwner=true;
+	if (bufsize)
+		*bufsize=width*height*4;
 	if(width==0 || height==0 || !Config::getConfig()->isRenderingEnabled())
 		return nullptr;
 
@@ -1088,10 +1090,12 @@ BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _
 {
 }
 
-uint8_t *BitmapRenderer::getPixelBuffer(float scalex, float scaley, bool *isBufferOwner)
+uint8_t *BitmapRenderer::getPixelBuffer(float scalex, float scaley, bool *isBufferOwner, uint32_t* bufsize)
 {
 	if (isBufferOwner)
 		*isBufferOwner=false;
+	if (bufsize)
+		*bufsize=data->getWidth()*data->getHeight()*4;
 	return data->getData();
 }
 

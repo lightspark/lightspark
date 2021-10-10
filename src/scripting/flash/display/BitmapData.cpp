@@ -221,10 +221,11 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 			target->hasChanged=false;
 		//Compute the matrix for this object
 		bool isBufferOwner=true;
-		uint8_t* buf=drawable->getPixelBuffer(initialMatrix.getScaleX(),initialMatrix.getScaleY(),&isBufferOwner);
+		uint32_t bufsize=0;
+		uint8_t* buf=drawable->getPixelBuffer(initialMatrix.getScaleX(),initialMatrix.getScaleY(),&isBufferOwner,&bufsize);
 		ColorTransform* ct = target->colorTransform.getPtr();
 		DisplayObjectContainer* p = target->getParent();
-		while (!ct && p)
+		while (!ct && p && p!= d)
 		{
 			ct = p->colorTransform.getPtr();
 			p = p->getParent();
@@ -234,11 +235,11 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 			if (!isBufferOwner)
 			{
 				isBufferOwner=true;
-				uint8_t* buf2 = new uint8_t[drawable->getWidth()*drawable->getHeight()*4];
-				memcpy(buf2,buf,drawable->getWidth()*drawable->getHeight()*4);
+				uint8_t* buf2 = new uint8_t[bufsize];
+				memcpy(buf2,buf,bufsize);
 				buf=buf2;
 			}
-			ct->applyTransformation(buf,drawable->getWidth(),drawable->getHeight());
+			ct->applyTransformation(buf,bufsize);
 		}
 		
 		if (!drawable->getIsMask())

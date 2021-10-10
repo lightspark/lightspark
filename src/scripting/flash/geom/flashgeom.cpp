@@ -543,7 +543,7 @@ uint8_t *ColorTransform::applyTransformation(BitmapContainer* bm)
 	return (uint8_t*)bm->getDataColorTransformed();
 }
 
-void ColorTransform::applyTransformation(uint8_t* bm, uint32_t width, uint32_t height)
+void ColorTransform::applyTransformation(uint8_t* bm, uint32_t size)
 {
 	if (redMultiplier==1.0 &&
 		greenMultiplier==1.0 &&
@@ -555,7 +555,6 @@ void ColorTransform::applyTransformation(uint8_t* bm, uint32_t width, uint32_t h
 		alphaOffset==0.0)
 		return;
 
-	uint32_t size = width*height*4;
 	for (uint32_t i = 0; i < size; i+=4)
 	{
 		bm[i+3] = max(0,min(255,int(((number_t(bm[i+3]) * alphaMultiplier) + alphaOffset))));

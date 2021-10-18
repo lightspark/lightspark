@@ -609,7 +609,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 		return true;
 	if (surface.tex->width == 0 || surface.tex->height == 0)
 		return true;
-	
+
 	AS_BLENDMODE bl = this->blendMode;
 	if (bl == BLENDMODE_NORMAL)
 	{
@@ -633,7 +633,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 }
 
 void DisplayObject::computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
-		int32_t& outXMin, int32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight,
+		number_t& outXMin, number_t& outYMin, number_t& outWidth, number_t& outHeight,
 		const MATRIX& m) const
 {
 	//As the transformation is arbitrary we have to check all the four vertices
@@ -660,8 +660,8 @@ void DisplayObject::computeBoundsForTransformedRect(number_t xmin, number_t xmax
 	}
 	outXMin=minx;
 	outYMin=miny;
-	outWidth=ceil(maxx-minx);
-	outHeight=ceil(maxy-miny);
+	outWidth = maxx - minx;
+	outHeight = maxy - miny;
 }
 
 IDrawable* DisplayObject::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)

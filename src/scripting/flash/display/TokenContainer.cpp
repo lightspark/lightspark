@@ -288,10 +288,10 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			return ret;
 		}
 	}
-	
-	int32_t x,y,rx,ry;
-	uint32_t width,height;
-	uint32_t rwidth,rheight;
+
+	number_t x,y,rx,ry;
+	number_t width,height;
+	number_t rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(!owner->boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax))
 	{

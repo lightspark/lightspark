@@ -1422,8 +1422,8 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 			return ret;
 		}
 	}
-	int32_t x,y,rx,ry;
-	uint32_t width,height,rwidth,rheight;
+	number_t x,y,rx,ry;
+	number_t width,height,rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
 	{
@@ -1625,9 +1625,9 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 			number_t bxmin,bxmax,bymin,bymax;
 			boundsRect(bxmin,bxmax,bymin,bymax);
 			TextureChunk tex=getSystemState()->getRenderThread()->allocateTexture(this->width, this->height, true);
-			int32_t x,y,rx,ry;
-			uint32_t width,height;
-			uint32_t rwidth,rheight;
+			number_t x,y,rx,ry;
+			number_t width,height;
+			number_t rwidth,rheight;
 			MATRIX totalMatrix;
 			std::vector<IDrawable::MaskData> masks;
 			float scalex;
@@ -1718,9 +1718,9 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 				const TextureChunk* tex = embeddedfont->getCharTexture(it,this->fontSize*yscale,codetableindex);
 				if (tex)
 				{
-					int32_t x,y,rx,ry;
-					uint32_t width,height;
-					uint32_t rwidth,rheight;
+					number_t x,y,rx,ry;
+					number_t width,height;
+					number_t rwidth,rheight;
 					number_t bxmin=xpos;
 					number_t bxmax=xpos+tex->width/xscale;
 					number_t bymin=ypos;

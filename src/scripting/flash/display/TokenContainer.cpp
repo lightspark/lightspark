@@ -358,8 +358,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		alphaOffset=ct->alphaOffset;
 	}
 	return new CairoTokenRenderer(tokens,totalMatrix
-				, x*scalex, y*scaley, width*scalex, height*scaley
-				, rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,rotation
+				, x*scalex, y*scaley, ceil(width*scalex), ceil(height*scaley)
+				, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), rotation
 				, xscale, yscale
 				, isMask, hasMask
 				, scaling,owner->getConcatenatedAlpha(), masks

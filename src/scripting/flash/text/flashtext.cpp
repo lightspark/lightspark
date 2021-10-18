@@ -1537,7 +1537,8 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	float xscale = getConcatenatedMatrix().getScaleX();
 	float yscale = getConcatenatedMatrix().getScaleY();
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
-	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, width, height, rx, ry, rwidth, rheight, rotation,xscale,yscale,isMask,hasMask, 1.0f,getConcatenatedAlpha(), masks,
+	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, ceil(width), ceil(height),
+																					rx, ry, ceil(rwidth), ceil(rheight), rotation,xscale,yscale,isMask,hasMask, 1.0f,getConcatenatedAlpha(), masks,
 																					1.0f,1.0f,1.0f,1.0f,
 																					0.0f,0.0f,0.0f,0.0f,
 																					smoothing);
@@ -1549,8 +1550,8 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		Currently, the TextField is stretched in case of scaling.
 	*/
 	return new CairoPangoRenderer(*this,totalMatrix,
-				x, y, width, height,
-				rx,ry,rwidth,rheight,rotation,
+				x, y, ceil(width), ceil(height),
+				rx, ry, ceil(rwidth), ceil(rheight), rotation,
 				xscale,yscale,
 				isMask,hasMask,
 				1.0f, getConcatenatedAlpha(), masks,
@@ -1634,7 +1635,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 			float scaley;
 			int offx,offy;
 			getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
-		
+
 			bool isMask;
 			bool hasMask;
 			totalMatrix=getConcatenatedMatrix();
@@ -1652,14 +1653,14 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 				ctxt.renderTextured(tex, x*scalex, y*scaley,
 						tex.width*scalex, tex.height*scaley,
 						getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,xscale, yscale,
+						rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
 						isMask, hasMask,3.0, this->borderColor,false);
 				ctxt.renderTextured(tex, (x+1)*scalex, (y+1)*scaley,
 						(tex.width-2)*scalex, (tex.height-2)*scaley,
 						getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						rotation,(rx+1)*scalex,(ry+1)*scaley,(rwidth-2)*scalex,(rheight-2)*scaley,xscale, yscale,
+						rotation, (rx+1)*scalex, (ry+1)*scaley, ceil((rwidth-2)*scalex), ceil((rheight-2)*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
 						isMask, hasMask,3.0, this->backgroundColor,false);
@@ -1669,12 +1670,12 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 				ctxt.renderTextured(tex, x*scalex, y*scaley,
 						tex.width*scalex, tex.height*scaley,
 						getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,xscale, yscale,
+						rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
 						isMask, hasMask,3.0, this->backgroundColor,false);
 			}
-			
+
 			if (this->caretblinkstate)
 			{
 				int ypadding = (bymax-bymin-4);
@@ -1697,9 +1698,9 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 				computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,hasMask);
 				computeBoundsForTransformedRect(tw,tw+2,bymin+ypadding,bymax-ypadding,rx,ry,rwidth,rheight,totalMatrix2);
 				ctxt.renderTextured(tex, x*scalex, y*scaley,
-						width*scalex, height*scaley,
+						ceil(width*scalex), ceil(height*scaley),
 						getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,xscale, yscale,
+						rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
 						isMask, hasMask,3.0, tcolor,true);
@@ -1744,7 +1745,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 					ctxt.renderTextured(*tex, x*scalex, y*scaley,
 										tex->width*scalex, tex->height*scaley,
 										getConcatenatedAlpha(), RenderContext::RGB_MODE,
-										rotation,rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,1.0, 1.0,
+										rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), 1.0, 1.0,
 										redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 										redOffset, greenOffset, blueOffset, alphaOffset,
 										isMask, hasMask,2.0, tcolor,true);

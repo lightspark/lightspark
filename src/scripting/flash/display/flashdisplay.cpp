@@ -4504,8 +4504,8 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 		alphaOffset=ct->alphaOffset;
 	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
-				, x*scalex, y*scaley, width*scalex, height*scaley
-				, rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,rotation
+				, x*scalex, y*scaley, ceil(width*scalex), ceil(height*scaley)
+				, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), rotation
 				, xscale, yscale
 				, isMask, hasMask
 				, source->getConcatenatedAlpha(), masks

@@ -748,8 +748,8 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 
 	float rotation = getConcatenatedMatrix().getRotation();
 	return new CairoPangoRenderer(*this, totalMatrix,
-				x, y, width, height,
-				rx, ry, rwidth, rheight,rotation,
+				x, y, ceil(width), ceil(height),
+				rx, ry, ceil(rwidth), ceil(rheight), rotation,
 				totalMatrix.getScaleX(),totalMatrix.getScaleY(),
 				isMask,hasMask,
 				1.0f,getConcatenatedAlpha(),masks,

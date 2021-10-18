@@ -350,7 +350,7 @@ struct textline
 	uint32_t textwidth;
 };
 
-class TextData
+class DLL_PUBLIC TextData
 {
 friend class CairoPangoRenderer;
 protected:

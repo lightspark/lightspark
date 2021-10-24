@@ -622,6 +622,7 @@ void AVM1BitmapData::sinit(Class_base *c)
 {
 	BitmapData::sinit(c);
 	c->setDeclaredMethodByQName("loadBitmap","",Class<IFunction>::getFunction(c->getSystemState(),loadBitmap),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("rectangle","",Class<IFunction>::getFunction(c->getSystemState(),getRect,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1BitmapData,loadBitmap)
 {

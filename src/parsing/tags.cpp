@@ -1351,11 +1351,11 @@ ASObject* BitmapTag::instance(Class_base* c)
 	//Also BitmapData is used in the wild though, so support both cases
 
 	Class_base* realClass=(c)?c:bindedTo;
-	Class_base* classRet = Class<BitmapData>::getClass(loadedFrom->getSystemState());
-
+	Class_base* classRet = nullptr;
 
 	if (loadedFrom->usesActionScript3)
 	{
+		classRet = Class<BitmapData>::getClass(loadedFrom->getSystemState());
 		if(!realClass)
 			return new (classRet->memoryAccount) BitmapData(classRet, bitmap);
 		if(realClass->isSubClass(Class<Bitmap>::getClass(realClass->getSystemState())))
@@ -1367,6 +1367,7 @@ ASObject* BitmapTag::instance(Class_base* c)
 	}
 	else
 	{
+		classRet = Class<AVM1BitmapData>::getClass(loadedFrom->getSystemState());
 		if(!realClass)
 			return new (classRet->memoryAccount) AVM1BitmapData(classRet, bitmap);
 		if(realClass->isSubClass(Class<AVM1Bitmap>::getClass(realClass->getSystemState())))

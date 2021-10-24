@@ -288,10 +288,10 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			return ret;
 		}
 	}
-	
-	int32_t x,y,rx,ry;
-	uint32_t width,height;
-	uint32_t rwidth,rheight;
+
+	number_t x,y,rx,ry;
+	number_t width,height;
+	number_t rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(!owner->boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax))
 	{
@@ -358,8 +358,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		alphaOffset=ct->alphaOffset;
 	}
 	return new CairoTokenRenderer(tokens,totalMatrix
-				, x*scalex, y*scaley, width*scalex, height*scaley
-				, rx*scalex,ry*scaley,rwidth*scalex,rheight*scaley,rotation
+				, x*scalex, y*scaley, ceil(width*scalex), ceil(height*scaley)
+				, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), rotation
 				, xscale, yscale
 				, isMask, hasMask
 				, scaling,owner->getConcatenatedAlpha(), masks

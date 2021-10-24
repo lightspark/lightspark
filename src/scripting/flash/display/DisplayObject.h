@@ -110,7 +110,7 @@ protected:
 	_NR<DisplayObject> mask;
 	mutable Mutex spinlock;
 	void computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
-			int32_t& outXMin, int32_t& outYMin, uint32_t& outWidth, uint32_t& outHeight,
+			number_t& outXMin, number_t& outYMin, number_t& outWidth, number_t& outHeight,
 			const MATRIX& m) const;
 	/*
 	 * Assume the lock is held and the matrix will not change

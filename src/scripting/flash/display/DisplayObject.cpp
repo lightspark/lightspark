@@ -1638,7 +1638,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		return nullptr;
 	uint32_t w=ceil(xmax-xmin)+FILTERBORDER*2;
 	uint32_t h=ceil(ymax-ymin)+FILTERBORDER*2;
-	if (needsTextureRecalculation)
+	if (needsTextureRecalculation|| !cachedBitmap)
 	{
 		if (!cachedBitmap
 				|| cachedBitmap->getBitmapSize().width != w

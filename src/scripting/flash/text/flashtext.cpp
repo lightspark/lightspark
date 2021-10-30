@@ -1557,7 +1557,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				1.0f, getConcatenatedAlpha(), masks,
 				1.0f,1.0f,1.0f,1.0f,
 				0.0f,0.0f,0.0f,0.0f,
-				smoothing,bxmin,bymin,caretIndex);
+				smoothing,caretIndex);
 }
 
 bool TextField::renderImpl(RenderContext& ctxt) const
@@ -1656,14 +1656,14 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, this->borderColor,false);
+						isMask, hasMask,3.0, this->borderColor,false,totalMatrix2);
 				ctxt.renderTextured(tex, (x+1)*scalex, (y+1)*scaley,
 						(tex.width-2)*scalex, (tex.height-2)*scaley,
 						getConcatenatedAlpha(), RenderContext::RGB_MODE,
 						rotation, (rx+1)*scalex, (ry+1)*scaley, ceil((rwidth-2)*scalex), ceil((rheight-2)*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, this->backgroundColor,false);
+						isMask, hasMask,3.0, this->backgroundColor,false,totalMatrix2);
 			}
 			else if (this->background)
 			{
@@ -1673,7 +1673,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, this->backgroundColor,false);
+						isMask, hasMask,3.0, this->backgroundColor,false,totalMatrix2);
 			}
 
 			if (this->caretblinkstate)
@@ -1703,7 +1703,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, tcolor,true);
+						isMask, hasMask,3.0, tcolor,true,totalMatrix2);
 			}
 		}
 		number_t ypos=-TEXTFIELD_PADDING/yscale;
@@ -1748,7 +1748,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 										rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), 1.0, 1.0,
 										redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 										redOffset, greenOffset, blueOffset, alphaOffset,
-										isMask, hasMask,2.0, tcolor,true);
+										isMask, hasMask,2.0, tcolor,true,totalMatrix2);
 				}
 				xpos += embeddedfont->getRenderCharAdvance(codetableindex)*fontSize;
 			}

@@ -121,11 +121,11 @@ CairoRenderer::CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _
 		float _s, float _a, const std::vector<MaskData>& _ms,
 		float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
 		float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset,
-		bool _smoothing, number_t _xstart, number_t _ystart)
+		bool _smoothing)
 	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _im, _hm,_a, _ms,
 				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
-				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing)
-	, scaleFactor(_s), matrix(_m),xstart(_xstart),ystart(_ystart)
+				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing,_m)
+	, scaleFactor(_s)
 {
 }
 
@@ -143,7 +143,7 @@ void CairoTokenRenderer::quadraticBezier(cairo_t* cr, double control_x, double c
 	               end_x, end_y);
 }
 
-cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, float scalex, float scaley, bool isMask)
+cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask)
 {
 	cairo_pattern_t* pattern = nullptr;
 
@@ -172,11 +172,8 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			MATRIX tmp=style.Matrix;
 			tmp.x0 -= number_t(style.ShapeBounds.Xmin)/20.0;
 			tmp.y0 -= number_t(style.ShapeBounds.Ymin)/20.0;
-			cairo_matrix_scale(&tmp,scalex,scaley);
 			tmp.x0/=scaleCorrection;
 			tmp.y0/=scaleCorrection;
-			tmp.x0*=scalex;
-			tmp.y0*=scaley;
 			// The dimensions of the pattern space are specified in SWF specs
 			// as a 32768x32768 box centered at (0,0)
 			if (style.FillStyleType == LINEAR_GRADIENT)
@@ -238,7 +235,6 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			cairo_matrix_t mat=style.Matrix;
 			mat.x0 -= style.ShapeBounds.Xmin/20;
 			mat.y0 -= style.ShapeBounds.Ymin/20;
-			cairo_matrix_scale(&mat,scalex,scaley);
 			cairo_status_t st = cairo_matrix_invert(&mat);
 			assert(st == CAIRO_STATUS_SUCCESS);
 			(void)st; // silence warning about unused variable
@@ -269,20 +265,14 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 	return pattern;
 }
 
-bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& tokens, double scaleCorrection, bool skipPaint,float scalex,float scaley,number_t xstart, number_t ystart,bool isMask)
+bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& tokens, double scaleCorrection, bool skipPaint,bool isMask)
 {
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
 
 	bool empty=true;
 
 	cairo_t *stroke_cr = cairo_create(cairo_get_group_target(cr));
-	cairo_matrix_t mat;
-	cairo_get_matrix(cr,&mat);
-	cairo_matrix_translate(&mat,-xstart*scalex,-ystart*scaley);
-	cairo_set_matrix(cr, &mat);
-	cairo_set_matrix(stroke_cr, &mat);
 	cairo_push_group(stroke_cr);
-
 	// Make sure not to draw anything until a fill is set.
 	cairo_set_operator(stroke_cr, CAIRO_OPERATOR_DEST);
 	cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
@@ -322,13 +312,13 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				case MOVE:
 				{
 					GeomToken p1(*(++it),false);
-					PATH(cairo_move_to, (p1.vec.x)*scalex, (p1.vec.y)*scaley);
+					PATH(cairo_move_to, (p1.vec.x), (p1.vec.y));
 					break;
 				}
 				case STRAIGHT:
 				{
 					GeomToken p1(*(++it),false);
-					PATH(cairo_line_to, (p1.vec.x)*scalex, (p1.vec.y)*scaley);
+					PATH(cairo_line_to, (p1.vec.x), (p1.vec.y));
 					empty = false;
 					break;
 				}
@@ -337,8 +327,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					GeomToken p1(*(++it),false);
 					GeomToken p2(*(++it),false);
 					PATH(quadraticBezier,
-					   (p1.vec.x)*scalex, (p1.vec.y)*scaley,
-					   (p2.vec.x)*scalex, (p2.vec.y)*scaley);
+					   (p1.vec.x), (p1.vec.y),
+					   (p2.vec.x), (p2.vec.y));
 					empty = false;
 					break;
 				}
@@ -348,9 +338,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					GeomToken p2(*(++it),false);
 					GeomToken p3(*(++it),false);
 					PATH(cairo_curve_to,
-					   (p1.vec.x)*scalex, (p1.vec.y)*scaley,
-					   (p2.vec.x)*scalex, (p2.vec.y)*scaley,
-					   (p3.vec.x)*scalex, (p3.vec.y)*scaley);
+					   (p1.vec.x), (p1.vec.y),
+					   (p2.vec.x), (p2.vec.y),
+					   (p3.vec.x), (p3.vec.y));
 					empty = false;
 					break;
 				}
@@ -365,7 +355,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					if (style->FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
 						style->FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
 						cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-					cairo_pattern_t* pattern = FILLSTYLEToCairo(*style, scaleCorrection,scalex,scaley,isMask);
+					cairo_pattern_t* pattern = FILLSTYLEToCairo(*style, scaleCorrection,isMask);
 					if(pattern)
 					{
 						cairo_set_source(cr, pattern);
@@ -388,7 +378,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						if (style->FillType.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
 							style->FillType.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
 							cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-						cairo_pattern_t* pattern = FILLSTYLEToCairo(style->FillType, scaleCorrection,scalex,scaley,isMask);
+						cairo_pattern_t* pattern = FILLSTYLEToCairo(style->FillType, scaleCorrection,isMask);
 						if (pattern)
 						{
 							cairo_set_source(stroke_cr, pattern);
@@ -516,16 +506,15 @@ cairo_surface_t* CairoRenderer::allocateSurface(uint8_t*& buf)
 	return cairo_image_surface_create_for_data(buf, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
 }
 
-void CairoTokenRenderer::executeDraw(cairo_t* cr, float scalex, float scaley)
+void CairoTokenRenderer::executeDraw(cairo_t* cr)
 {
 	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-
-	cairoPathFromTokens(cr, tokens, scaleFactor, false,scalex, scaley,xstart,ystart,isMask);
+	cairoPathFromTokens(cr, tokens, scaleFactor, false,isMask);
 }
 
-uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley, bool *isBufferOwner, uint32_t* bufsize)
+uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 {
 	if (isBufferOwner)
 		*isBufferOwner=true;
@@ -548,10 +537,10 @@ uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley, bool *isBuffe
 	{
 		if(masks[i].maskMode != HARD_MASK)
 			continue;
-		masks[i].m->applyCairoMask(cr,xOffset,yOffset,scalex,scaley);
+		masks[i].m->applyCairoMask(cr,xOffset,yOffset);
 	}
 
-	executeDraw(cr,scalex, scaley);
+	executeDraw(cr);
 
 	cairo_surface_t* maskSurface = nullptr;
 	uint8_t* maskRawData = nullptr;
@@ -564,7 +553,7 @@ uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley, bool *isBuffe
 		if(masks[i].maskMode != SOFT_MASK)
 			continue;
 		//TODO: this may be optimized if needed
-		uint8_t* maskData = masks[i].m->getPixelBuffer(scalex,scaley);
+		uint8_t* maskData = masks[i].m->getPixelBuffer();
 		if(maskData==nullptr)
 			continue;
 
@@ -600,7 +589,6 @@ uint8_t* CairoRenderer::getPixelBuffer(float scalex, float scaley, bool *isBuffe
 		cairo_surface_destroy(maskSurface);
 		delete[] maskRawData;
 	}
-
 //	cairo_surface_write_to_png(cairoSurface,"/tmp/cairo.png");
 	cairo_destroy(cr);
 	return ret;
@@ -613,7 +601,7 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
 
-	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,1.0,1.0,0,0,true);
+	bool empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,true);
 	bool ret=false;
 	if(!empty)
 	{
@@ -633,14 +621,14 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 	return ret;
 }
 
-void CairoTokenRenderer::applyCairoMask(cairo_t* cr,int32_t xOffset,int32_t yOffset, float scalex, float scaley) const
+void CairoTokenRenderer::applyCairoMask(cairo_t* cr,int32_t xOffset,int32_t yOffset) const
 {
 	cairo_matrix_t mat;
 	cairo_get_matrix(cr,&mat);
 	cairo_translate(cr,xOffset,yOffset);
 	cairo_set_matrix(cr,&mat);
 	
-	cairoPathFromTokens(cr, tokens, scaleFactor, true,scalex,scaley,xstart,ystart,true);
+	cairoPathFromTokens(cr, tokens, scaleFactor, true,true);
 	cairo_clip(cr);
 }
 
@@ -650,11 +638,11 @@ CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m,
 									   , const std::vector<IDrawable::MaskData> &_ms
 									   , float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier
 									   , float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset
-									   , bool _smoothing, number_t _xmin, number_t _ymin)
+									   , bool _smoothing)
 	: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs,_ys,_im,_hm,_s,_a,_ms
 					, _redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier
 					, _redOffset,_greenOffset,_blueOffset,_alphaOffset
-					,_smoothing,_xmin,_ymin),tokens(_g)
+					,_smoothing),tokens(_g)
 {
 }
 
@@ -786,7 +774,7 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 	pango_font_description_free(desc);
 }
 
-void CairoPangoRenderer::executeDraw(cairo_t* cr, float /*scalex*/, float /*scaley*/)
+void CairoPangoRenderer::executeDraw(cairo_t* cr)
 {
 	PangoLayout* layout;
 
@@ -950,7 +938,7 @@ std::vector<LineData> CairoPangoRenderer::getLineData(const TextData& _textData)
 	return data;
 }
 
-void CairoPangoRenderer::applyCairoMask(cairo_t* cr, int32_t xOffset, int32_t yOffset, float scalex, float scaley) const
+void CairoPangoRenderer::applyCairoMask(cairo_t* cr, int32_t xOffset, int32_t yOffset) const
 {
 	assert(false);
 }
@@ -970,14 +958,8 @@ AsyncDrawJob::~AsyncDrawJob()
 void AsyncDrawJob::execute()
 {
 	owner->startDrawJob();
-	SystemState* sys = owner->getSystemState();
-	float scalex;
-	float scaley;
-	int offx,offy;
-	sys->stageCoordinateMapping(sys->getRenderThread()->windowWidth,sys->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
-
 	if(!threadAborting)
-		surfaceBytes=drawable->getPixelBuffer(scalex,scaley,&isBufferOwner);
+		surfaceBytes=drawable->getPixelBuffer(&isBufferOwner);
 	if(!threadAborting && surfaceBytes)
 		uploadNeeded=true;
 	owner->endDrawJob();
@@ -1049,6 +1031,7 @@ const TextureChunk& AsyncDrawJob::getTexture()
 	surface.greenOffset=drawable->getGreenOffset();
 	surface.blueOffset=drawable->getBlueOffset();
 	surface.alphaOffset=drawable->getAlphaOffset();
+	surface.matrix=drawable->getMatrix();
 	return *surface.tex;
 }
 
@@ -1082,15 +1065,15 @@ IDrawable::~IDrawable()
 BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, bool _hm,
 		float _a, const std::vector<MaskData>& _ms,
 		float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
-		float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,bool _smoothing)
+		float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset, bool _smoothing, const MATRIX& _m)
 	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _im, _hm,_a, _ms,
 				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
-				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing)
+				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing,_m)
 	, data(_data)
 {
 }
 
-uint8_t *BitmapRenderer::getPixelBuffer(float scalex, float scaley, bool *isBufferOwner, uint32_t* bufsize)
+uint8_t *BitmapRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 {
 	if (isBufferOwner)
 		*isBufferOwner=false;

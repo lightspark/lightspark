@@ -150,7 +150,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
 									 float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 									 float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-									 bool isMask, bool hasMask, float directMode, RGB directColor, bool smooth)
+									 bool isMask, bool hasMask, float directMode, RGB directColor, bool smooth, const MATRIX& matrix)
 {
 	if (isMask)
 	{
@@ -365,7 +365,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask, float directMode, RGB directColor, bool smooth)
+			bool isMask, bool hasMask, float directMode, RGB directColor, bool smooth,const MATRIX& matrix)
 {
 	if (alpha != 1.0)
 		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured alpha not implemented:"<<alpha);
@@ -375,18 +375,8 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 	cairo_surface_t* chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height);
 	cairo_save(cr);
 	cairo_set_antialias(cr,smooth ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
-	if (rotate==0 || std::isnan(rotate))
-	{
-		cairo_scale(cr, xscale, yscale);
-		cairo_set_source_surface(cr, chunkSurface, xtransformed,ytransformed);
-	}
-	else
-	{
-		cairo_translate(cr,x+(w/2),y+(h/2));
-		cairo_rotate(cr,rotate*M_PI/180.0);
-		cairo_scale(cr, xscale, yscale);
-		cairo_set_source_surface(cr, chunkSurface, -(widthtransformed/2),-(heighttransformed/2));
-	}
+	cairo_set_matrix(cr,&matrix);
+	cairo_set_source_surface(cr, chunkSurface, 0,0);
 	cairo_paint(cr);
 	cairo_surface_destroy(chunkSurface);
 	cairo_restore(cr);

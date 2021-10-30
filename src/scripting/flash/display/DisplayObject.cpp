@@ -628,7 +628,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 			surface.rotation,surface.xOffsetTransformed,surface.yOffsetTransformed,surface.widthTransformed,surface.heightTransformed,surface.xscale, surface.yscale,
 			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
 			surface.redOffset, surface.greenOffset, surface.blueOffset, surface.alphaOffset,
-			surface.isMask, surface.hasMask,0.0,RGB(),surface.smoothing);
+			surface.isMask, surface.hasMask,0.0,RGB(),surface.smoothing,surface.matrix);
 	return false;
 }
 
@@ -701,6 +701,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface.greenOffset=d->getGreenOffset();
 	cachedSurface.blueOffset=d->getBlueOffset();
 	cachedSurface.alphaOffset=d->getAlphaOffset();
+	cachedSurface.matrix=d->getMatrix();
 }
 //TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
 //this way they have less pb with precision.
@@ -1626,13 +1627,37 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 		cur=cur->getParent();
 	}
 }
+void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool smoothing, bool forcachedbitmap)
+{
+	DisplayObjectContainer* origparent=this->parent;
+	number_t origrotation = this->rotation;
+	number_t origsx = this->sx;
+	number_t origsy = this->sy;
+	number_t origtx = this->tx;
+	number_t origty = this->ty;
+	// temporarily reset all position settings to avoid matrix manipulation from this DisplayObject
+	this->parent = nullptr;
+	this->rotation=0;
+	this->sx=1;
+	this->sy=1;
+	this->tx=0;
+	this->ty=0;
+	bm->drawDisplayObject(this, initialMatrix,smoothing,forcachedbitmap);
+	// reset position to original settings
+	this->parent=origparent;
+	this->rotation=origrotation;
+	this->sx=origsx;
+	this->sy=origsy;
+	this->tx=origtx;
+	this->ty=origty;
+}
 #define FILTERBORDER 2 // border in pixels around cached bitmap needed to properly compute filters at borders
 IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MATRIX& initialMatrix)
 {
 	if (!computeCacheAsBitmap())
 		return nullptr;
 	number_t xmin,xmax,ymin,ymax;
-	MATRIX m;
+	MATRIX m=getMatrix();
 	bool ret=getBounds(xmin,xmax,ymin,ymax,m);
 	if(ret==false || xmax-xmin >= 8192 || ymax-ymin >= 8192 || ((xmax-xmin)*(ymax-ymin)) >= 16777216)
 		return nullptr;
@@ -1648,28 +1673,9 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 			data->incRef();
 			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getSystemState(),data));
 		}
-		MATRIX m0(1,1,0,0,-(xmin-FILTERBORDER),-(ymin-FILTERBORDER));
-		DisplayObjectContainer* origparent=this->parent;
-		number_t origrotation = this->rotation;
-		number_t origsx = this->sx;
-		number_t origsy = this->sy;
-		number_t origtx = this->tx;
-		number_t origty = this->ty;
-		// temporarily reset all position settings to avoid matrix manipulation from this DisplayObject
-		this->parent = nullptr;
-		this->rotation=0;
-		this->sx=1;
-		this->sy=1;
-		this->tx=0;
-		this->ty=0;
-		cachedBitmap->bitmapData->drawDisplayObject(this, m0,true,true);
-		// reset position to original settings
-		this->parent=origparent;
-		this->rotation=origrotation;
-		this->sx=origsx;
-		this->sy=origsy;
-		this->tx=origtx;
-		this->ty=origty;
+		MATRIX m0=m;
+		m0.translate(-(xmin-FILTERBORDER) ,-(ymin-FILTERBORDER));
+		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,true,true);
 		if (filters)
 		{
 			for (uint32_t i = 0; i < filters->size(); i++)
@@ -1699,7 +1705,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	this->resetNeedsTextureRecalculation();
 	this->hasChanged=false;
 	MATRIX m1(1,1,0,0,xmin-FILTERBORDER,ymin-FILTERBORDER);
-	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this,m1);
+	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this->getParent(),m1);
 }
 
 bool DisplayObject::findParent(DisplayObject *d) const

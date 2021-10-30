@@ -4454,13 +4454,15 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	bool hasMask;
 	if (target)
 	{
-		source->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
+		if (source)
+			source->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
 		totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	}
 	totalMatrix = totalMatrix.multiplyMatrix(sourceMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
-
-	MATRIX m = source->getConcatenatedMatrix();
+	MATRIX m;
+	if (source)
+		m = source->getConcatenatedMatrix();
 	width = bxmax-bxmin;
 	height = bymax-bymin;
 	float rotation = m.getRotation();
@@ -4478,13 +4480,14 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
-		source->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
+		if (source)
+			source->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 	totalMatrix2 = totalMatrix2.multiplyMatrix(sourceMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 	ColorTransform* ct = colorTransform.getPtr();
-	DisplayObjectContainer* p = source->getParent();
+	DisplayObjectContainer* p = source ? source->getParent() :nullptr;
 	while (!ct && p)
 	{
 		ct = p->colorTransform.getPtr();
@@ -4508,9 +4511,9 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 				, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), rotation
 				, xscale, yscale
 				, isMask, hasMask
-				, source->getConcatenatedAlpha(), masks
+				, source ? source->getConcatenatedAlpha() : 1.0, masks
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
-				, redOffset,greenOffset,blueOffset,alphaOffset,smoothing);
+				, redOffset,greenOffset,blueOffset,alphaOffset,smoothing,totalMatrix2);
 }
 
 void SimpleButton::sinit(Class_base* c)

@@ -691,9 +691,8 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 							, 0.05,1.0, masks
 							, 1.0,1.0,1.0,1.0
 							, 0,0,0,0
-							, true
-							,0,0);
-				uint8_t* buf = r.getPixelBuffer(1.0,1.0);
+							, true);
+				uint8_t* buf = r.getPixelBuffer();
 				CharacterRenderer* renderer = new CharacterRenderer(buf,xmax,ymax);
 				getSys()->getRenderThread()->addUploadJob(renderer);
 				it = getGlyphShapes().at(i).scaledtexturecache.insert(make_pair(tokenscaling,renderer)).first;
@@ -1788,7 +1787,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		if(placedTag==nullptr)
 		{
 			// tag for CharacterID may be defined after this tag was defined, so we look for it again in the dictionary
-			RootMovieClip* root = parent->getRoot().getPtr();
+			RootMovieClip* root = parent->loadedFrom;
 			if (root)
 				placedTag=root->dictionaryLookup(CharacterId);
 		}
@@ -1880,7 +1879,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			if(placedTag==nullptr && currchar)
 			{
 				// tag for CharacterID may be defined after this tag was defined, so we look for it again in the dictionary
-				RootMovieClip* root = parent->getRoot().getPtr();
+				RootMovieClip* root = parent->loadedFrom;
 				if (root)
 					placedTag=root->dictionaryLookup(currchar->getTagID());
 			}
@@ -1983,8 +1982,6 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 
 	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0));
 
-	if(PlaceFlagHasCharacter)
-		placedTag=root->dictionaryLookup(CharacterId);
 }
 
 PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):PlaceObject2Tag(h,root->version)
@@ -2068,8 +2065,6 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 
 	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0))
 
-	if(PlaceFlagHasCharacter)
-		placedTag=root->dictionaryLookup(CharacterId);
 }
 
 void PlaceObject3Tag::setProperties(DisplayObject *obj, DisplayObjectContainer *parent) const

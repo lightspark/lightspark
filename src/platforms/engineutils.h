@@ -61,10 +61,10 @@ public:
 	externalFontRenderer(const TextData &_textData, class EngineData* engine, int32_t x, int32_t y, int32_t w, int32_t h, int32_t rx, int32_t ry, int32_t rw, int32_t rh, float r, float xs, float ys, bool im, bool hm, float a, const std::vector<MaskData>& m,
 						 float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
 						 float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset,
-						 bool smoothing);
+						 bool smoothing, const MATRIX &_m);
 	
-	uint8_t* getPixelBuffer(float scalex,float scaley, bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY, float scalex, float scaley) const override {}
+	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
+	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}
 };
 
 #define CONTEXTMENUWIDTH 200

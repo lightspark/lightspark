@@ -288,7 +288,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			return ret;
 		}
 	}
-
 	number_t x,y,rx,ry;
 	number_t width,height;
 	number_t rwidth,rheight;
@@ -333,6 +332,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
+		if (q && q->isSoftwareQueue)
+			totalMatrix2.translate(bxmin,bymin);
 		owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
@@ -357,7 +358,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		blueOffset=ct->blueOffset;
 		alphaOffset=ct->alphaOffset;
 	}
-	return new CairoTokenRenderer(tokens,totalMatrix
+	return new CairoTokenRenderer(tokens,totalMatrix2
 				, x*scalex, y*scaley, ceil(width*scalex), ceil(height*scaley)
 				, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), rotation
 				, xscale, yscale
@@ -365,8 +366,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, scaling,owner->getConcatenatedAlpha(), masks
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
 				, redOffset,greenOffset,blueOffset,alphaOffset
-				, smoothing
-				, owner->legacy ? 0 : bxmin, owner->legacy ? 0 : bymin);
+				, smoothing);
 }
 
 _NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const

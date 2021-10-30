@@ -198,9 +198,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 
 void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap)
 {
-	//Create an InvalidateQueue to store all the hierarchy of objects that must be drawn
 	if (forCachedBitmap)
 		d->incRef();
+	//Create an InvalidateQueue to store all the hierarchy of objects that must be drawn
 	SoftwareInvalidateQueue queue(forCachedBitmap ? _MNR(d):NullRef);
 	d->hasChanged=true;
 	d->requestInvalidation(&queue);
@@ -222,7 +222,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		//Compute the matrix for this object
 		bool isBufferOwner=true;
 		uint32_t bufsize=0;
-		uint8_t* buf=drawable->getPixelBuffer(initialMatrix.getScaleX(),initialMatrix.getScaleY(),&isBufferOwner,&bufsize);
+		uint8_t* buf=drawable->getPixelBuffer(&isBufferOwner,&bufsize);
 		ColorTransform* ct = target->colorTransform.getPtr();
 		DisplayObjectContainer* p = target->getParent();
 		while (!ct && p && p!= d)
@@ -241,7 +241,6 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 			}
 			ct->applyTransformation(buf,bufsize);
 		}
-		
 		if (!drawable->getIsMask())
 		{
 			//Construct a CachedSurface using the data
@@ -257,6 +256,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 			surface.rotation=drawable->getRotation();
 			surface.xscale = drawable->getXScale();
 			surface.yscale = drawable->getYScale();
+			surface.matrix = drawable->getMatrix();
 		}
 		delete drawable;
 	}
@@ -306,7 +306,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
-		th->drawDisplayObject(d, initialMatrix,smoothing,false);
+		d->DrawToBitmap(th,initialMatrix,smoothing,false);
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());
@@ -1006,8 +1006,6 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 	if (filter.isNull())
 		throwError<TypeError>(kNullPointerError,"filter");
 	
-	if (!filter->is<ColorMatrixFilter>())
-		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.applyFilter not implemented");
 	th->pixels->applyFilter(sourceBitmapData->pixels, sourceRect->getRect(),
 				  destPoint->getX(), destPoint->getY(),
 				  filter.getPtr());

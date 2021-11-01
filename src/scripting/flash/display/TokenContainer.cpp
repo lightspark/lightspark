@@ -276,7 +276,7 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 	q->addToInvalidateQueue(_MR(owner));
 }
 
-IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
+IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap, bool fromgraphics)
 {
 	if (owner->computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=owner))
 	{
@@ -358,6 +358,14 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		blueOffset=ct->blueOffset;
 		alphaOffset=ct->alphaOffset;
 	}
+	number_t regpointx = 0.0;
+	number_t regpointy = 0.0;
+	if (fromgraphics)
+	{
+		// the tokens are generated from graphics, so we have to translate them to the registration point of the sprite/shape
+		regpointx=bxmin;
+		regpointy=bymin;
+	}
 	return new CairoTokenRenderer(tokens,totalMatrix2
 				, x*scalex, y*scaley, ceil(width*scalex), ceil(height*scaley)
 				, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), rotation
@@ -366,7 +374,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, scaling,owner->getConcatenatedAlpha(), masks
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
 				, redOffset,greenOffset,blueOffset,alphaOffset
-				, smoothing);
+				, smoothing, regpointx, regpointy);
 }
 
 _NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const

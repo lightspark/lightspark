@@ -875,7 +875,7 @@ void Sprite::buildTraits(ASObject* o)
 
 IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
-	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
+	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,true);
 }
 
 ASFUNCTIONBODY_ATOM(Sprite,_startDrag)
@@ -3440,7 +3440,7 @@ void Shape::sinit(Class_base* c)
 
 IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
-	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
+	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,!graphics.isNull());
 }
 
 ASFUNCTIONBODY_ATOM(Shape,_constructor)
@@ -3476,7 +3476,7 @@ void MorphShape::sinit(Class_base* c)
 
 IDrawable* MorphShape::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
-	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
+	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,false);
 }
 
 bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax) const

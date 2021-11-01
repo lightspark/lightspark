@@ -300,7 +300,7 @@ class CairoTokenRenderer : public CairoRenderer
 {
 private:
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask);
-	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, bool isMask);
+	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, bool isMask, number_t xstart, number_t ystart);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
 	/*
 	   The tokens to be drawn
@@ -311,6 +311,8 @@ private:
 	 */
 	void executeDraw(cairo_t* cr) override;
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override;
+	number_t xstart;
+	number_t ystart;
 public:
 	/*
 	   CairoTokenRenderer constructor
@@ -332,7 +334,7 @@ public:
 			float _s, float _a, const std::vector<MaskData>& _ms,
 			float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
 			float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,
-			bool _smoothing);
+			bool _smoothing,number_t _xstart, number_t _ystart);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 

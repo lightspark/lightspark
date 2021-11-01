@@ -1512,7 +1512,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		}
 		if (tokens.empty())
 			return nullptr;
-		return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
+		return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,false);
 	}
 	std::vector<IDrawable::MaskData> masks;
 	bool isMask;
@@ -2120,7 +2120,7 @@ void StaticText::sinit(Class_base* c)
 
 IDrawable* StaticText::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
 {
-	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
+	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,false);
 }
 bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {

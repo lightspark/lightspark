@@ -691,7 +691,7 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 							, 0.05,1.0, masks
 							, 1.0,1.0,1.0,1.0
 							, 0,0,0,0
-							, true);
+							, true,0,0);
 				uint8_t* buf = r.getPixelBuffer();
 				CharacterRenderer* renderer = new CharacterRenderer(buf,xmax,ymax);
 				getSys()->getRenderThread()->addUploadJob(renderer);

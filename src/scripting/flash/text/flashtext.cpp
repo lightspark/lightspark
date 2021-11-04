@@ -1431,7 +1431,8 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		return nullptr;
 	}
 
-	RootMovieClip* currentRoot=this->getRoot().getPtr();
+	RootMovieClip* currentRoot=this->loadedFrom;
+	if (!currentRoot) currentRoot=this->getRoot().getPtr();
 	if (!currentRoot) currentRoot = getSystemState()->mainClip;
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
 	tokens.clear();

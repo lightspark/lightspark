@@ -221,8 +221,6 @@ private:
 	void setSize(uint32_t w, uint32_t h);
 	bool fillDataAndCheckValidity();
 	uint32_t curBufferOffset;
-	// used for embedded video
-	uint32_t currentcachedframe;
 	DefineVideoStreamTag* embeddedvideotag;
 public:
 	FFMpegVideoDecoder(LS_VIDEO_CODEC codec, uint8_t* initdata, uint32_t datalen, double frameRateHint,DefineVideoStreamTag* tag=nullptr);

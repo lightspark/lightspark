@@ -151,26 +151,15 @@ void Video::checkRatio(uint32_t ratio, bool inskipping)
 			lastuploadedframe=UINT32_MAX;
 		}
 #endif
-		if (embeddedVideoDecoder && !embeddedVideoDecoder->isUploading() && ratio > 0 && ratio <= videotag->NumFrames && videotag->frames[ratio-1])
+		if (embeddedVideoDecoder && !embeddedVideoDecoder->isUploading() && ratio >= 0 && ratio < videotag->NumFrames && videotag->frames[ratio])
 		{
-			if (lastuploadedframe == UINT32_MAX)
-			{
-				embeddedVideoDecoder->decodeData(videotag->frames[ratio-1]->getData(),videotag->frames[ratio-1]->getNumBytes(),ratio);
-				embeddedVideoDecoder->waitForFencing();
-				lastuploadedframe = ratio;
-				getSystemState()->getRenderThread()->addUploadJob(embeddedVideoDecoder);
-			}
 			if (ratio != lastuploadedframe && !embeddedVideoDecoder->isUploading())
 			{
 				embeddedVideoDecoder->waitForFencing();
-				embeddedVideoDecoder->setVideoFrameToDecode(ratio-1);
+				embeddedVideoDecoder->setVideoFrameToDecode(ratio);
 				lastuploadedframe = ratio;
 				getSystemState()->getRenderThread()->addUploadJob(embeddedVideoDecoder);
 			}
-		}
-		if (lastuploadedframe==uint32_t(videotag->NumFrames-1))
-		{
-			resetDecoder();
 		}
 	}
 }

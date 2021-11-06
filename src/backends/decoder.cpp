@@ -138,12 +138,15 @@ bool FFMpegVideoDecoder::fillDataAndCheckValidity()
 }
 
 FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata, uint32_t datalen, double frameRateHint, DefineVideoStreamTag *tag):
-	ownedContext(true),curBuffer(0),codecContext(nullptr),curBufferOffset(0),currentcachedframe(UINT32_MAX),embeddedvideotag(tag)
+	ownedContext(true),curBuffer(0),codecContext(nullptr),curBufferOffset(0),embeddedvideotag(tag)
 {
 	//The tag is the header, initialize decoding
 	switchCodec(codecId, initdata, datalen, frameRateHint);
-
 	frameIn=av_frame_alloc();
+	// immediately decode 1 frame to obtain size:
+	// 'define stream' tag information not always correct + cannot resize during an 'upload' call
+	VideoFrameTag* t = tag->getFrame(0);
+	decodeData(t->getData(), t->getNumBytes(), UINT32_MAX);
 }
 
 void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, uint32_t datalen, double frameRateHint)
@@ -221,7 +224,7 @@ void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, 
 }
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
 FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecParameters* codecPar, double frameRateHint):
-	ownedContext(true),curBuffer(0),codecContext(NULL),curBufferOffset(0),currentcachedframe(UINT32_MAX),embeddedvideotag(nullptr)
+	ownedContext(true),curBuffer(0),codecContext(NULL),curBufferOffset(0),embeddedvideotag(nullptr)
 {
 	status=INIT;
 #ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -262,7 +265,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecParameters* codecPar, double frame
 }
 #else
 FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint):
-	ownedContext(false),curBuffer(0),codecContext(_c),curBufferOffset(0),currentcachedframe(UINT32_MAX),embeddedvideotag(nullptr)
+	ownedContext(false),curBuffer(0),codecContext(_c),curBufferOffset(0),embeddedvideotag(nullptr)
 {
 	frameIn=av_frame_alloc();
 	status=INIT;
@@ -565,30 +568,30 @@ void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h)
 	assert_and_throw(w==((frameWidth+15)&0xfffffff0) && h==frameHeight);
 	if (embeddedvideotag) // on embedded video we decode the frames during upload
 	{
-		if (currentframe != UINT32_MAX)
+		if (currentframe < lastframe)
 		{
-			skipAll();
-			for (uint32_t i = lastframe+1; i <currentframe; i++)
-			{
-				VideoFrameTag* t = embeddedvideotag->getFrame(i);
-				if (t)
-					decodeData(t->getData(),t->getNumBytes(),UINT32_MAX);
-			}
-			decodeData(embeddedvideotag->getFrame(currentframe)->getData(),embeddedvideotag->getFrame(currentframe)->getNumBytes(), 0);
-			lastframe=currentframe;
+			currentframe = 0;
+			lastframe = UINT32_MAX;
 		}
-		else
-			currentframe=0;
+
+		skipAll();
+		for (uint32_t i = lastframe+1; i <= currentframe; i++)
+		{
+			VideoFrameTag* t = embeddedvideotag->getFrame(i);
+			if (!t)
+				return;
+			decodeData(t->getData(), t->getNumBytes(), (i == currentframe) ? 0 : UINT32_MAX);
+			lastframe = i;
+		}
 		if(embeddedbuffers.isEmpty())
 			return;
-
 	}
 	else
 	{
 		if(streamingbuffers.isEmpty())
 			return;
 	}
-	
+
 	//At least a frame is available
 	YUVBuffer* cur=embeddedvideotag ? &embeddedbuffers.front() : &streamingbuffers.front();
 	fastYUV420ChannelsToYUV0Buffer(cur->ch[0],cur->ch[1],cur->ch[2],data,frameWidth,frameHeight);

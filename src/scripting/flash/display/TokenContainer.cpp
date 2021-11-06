@@ -276,17 +276,11 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 	q->addToInvalidateQueue(_MR(owner));
 }
 
-IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap, bool fromgraphics)
+IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap, bool fromgraphics)
 {
 	if (owner->computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=owner))
 	{
-		IDrawable* ret = owner->getCachedBitmapDrawable(target, initialMatrix);
-		if (ret)
-		{
-			if (cachedBitmap)
-				*cachedBitmap = owner->getCachedBitmap().getPtr();
-			return ret;
-		}
+		return owner->getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
 	}
 	number_t x,y,rx,ry;
 	number_t width,height;
@@ -366,6 +360,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		regpointx=bxmin;
 		regpointy=bymin;
 	}
+	owner->cachedSurface.isValid=true;
 	return new CairoTokenRenderer(tokens,totalMatrix2
 				, x*scalex, y*scaley, ceil(width*scalex), ceil(height*scaley)
 				, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), rotation

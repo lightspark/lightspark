@@ -1210,17 +1210,14 @@ void SystemState::flushInvalidationQueue()
 		if(cur->isOnStage() && cur->hasChanged)
 		{
 			_NR<DisplayObject> drawobj=cur;
-			DisplayObject* cachedBitmap= nullptr;
+			_NR<DisplayObject> cachedBitmap;
 			IDrawable* d=cur->invalidate(stage, MATRIX(),true,nullptr, &cachedBitmap);
 			//Check if the drawable is valid and forge a new job to
 			//render it and upload it to GPU
 			if(d)
 			{
 				if (cachedBitmap)
-				{
-					cachedBitmap->incRef();
-					drawobj = _MNR(cachedBitmap);
-				}
+					drawobj = cachedBitmap;
 				if (drawobj->getNeedsTextureRecalculation())
 				{
 					drawjobLock.lock();

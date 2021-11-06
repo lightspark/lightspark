@@ -709,18 +709,12 @@ void TextLine::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 	q->addToInvalidateQueue(_MR(this));
 }
 
-IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
+IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	if (cachedBitmap && computeCacheAsBitmap())
 	{
 		setNeedsTextureRecalculation();
-		IDrawable* ret = getCachedBitmapDrawable(target, initialMatrix);
-		if (ret)
-		{
-			if (cachedBitmap)
-				*cachedBitmap = getCachedBitmap().getPtr();
-			return ret;
-		}
+		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
 	}
 	number_t x,y,rx,ry;
 	number_t width,height,rwidth,rheight;

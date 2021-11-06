@@ -1409,18 +1409,12 @@ void TextField::defaultEventBehavior(_R<Event> e)
 	}
 }
 
-IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
+IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	Locker l(invalidatemutex);
 	if (cachedBitmap && computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
-		IDrawable* ret = getCachedBitmapDrawable(target, initialMatrix);
-		if (ret)
-		{
-			if (cachedBitmap)
-				*cachedBitmap = owner->getCachedBitmap().getPtr();
-			return ret;
-		}
+		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
 	}
 	number_t x,y,rx,ry;
 	number_t width,height,rwidth,rheight;
@@ -1550,6 +1544,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		Width changes do not change the font size, and do nothing when autosize is on and wordwrap off.
 		Currently, the TextField is stretched in case of scaling.
 	*/
+	cachedSurface.isValid=true;
 	return new CairoPangoRenderer(*this,totalMatrix,
 				x, y, ceil(width), ceil(height),
 				rx, ry, ceil(rwidth), ceil(rheight), rotation,
@@ -1563,9 +1558,11 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 
 bool TextField::renderImpl(RenderContext& ctxt) const
 {
-	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL && getCachedBitmap())
+	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
 	{
-		getCachedBitmap()->Render(ctxt);
+		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
+		if (d)
+			d->Render(ctxt);
 		return false;
 	}
 	if (getText().empty() && !this->border && !this->background)
@@ -2119,7 +2116,7 @@ void StaticText::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),_getText),GETTER_METHOD,true);
 }
 
-IDrawable* StaticText::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
+IDrawable* StaticText::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,false);
 }
@@ -2134,9 +2131,11 @@ bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numb
 
 bool StaticText::renderImpl(RenderContext& ctxt) const
 {
-	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL && getCachedBitmap())
+	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
 	{
-		getCachedBitmap()->Render(ctxt);
+		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
+		if (d)
+			d->Render(ctxt);
 		return false;
 	}
 	return TokenContainer::renderImpl(ctxt);

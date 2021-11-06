@@ -170,7 +170,7 @@ public:
 	bool requestInvalidationForCacheAsBitmap(InvalidateQueue* q);
 	void computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, bool &hasMask) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
-	IDrawable* getCachedBitmapDrawable(DisplayObject* target, const MATRIX& initialMatrix);
+	IDrawable* getCachedBitmapDrawable(DisplayObject* target, const MATRIX& initialMatrix, _NR<DisplayObject>* pcachedBitmap);
 	_NR<DisplayObject> getCachedBitmap() const { return cachedBitmap; }
 	DisplayObjectContainer* getParent() const { return parent; }
 	bool findParent(DisplayObject* d) const;
@@ -189,7 +189,7 @@ public:
 	 * _must_ be on the parent chain of this
 	 * @param initialMatrix A matrix that will be prepended to all transformations
 	 */
-	virtual IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap);
+	virtual IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap);
 	virtual void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false);
 	void updateCachedSurface(IDrawable* d);
 	MATRIX getConcatenatedMatrix() const;

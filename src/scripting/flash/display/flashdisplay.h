@@ -218,7 +218,7 @@ public:
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
 	void constructionComplete() override;
 	void finalize() override;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap) override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	uint32_t getTagID() const override;
 
@@ -269,7 +269,7 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap) override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
 };
 
 class DefineMorphShapeTag;
@@ -293,7 +293,7 @@ public:
 	MorphShape(Class_base* c, DefineMorphShapeTag* _morphshapetag);
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap) override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 	uint32_t getTagID() const override;
 };
@@ -485,7 +485,7 @@ public:
 	{
 		return 0;
 	}
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap) override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	_NR<Graphics> getGraphics();
 	void handleMouseCursor(bool rollover) override;
@@ -912,8 +912,7 @@ private:
 	void onSmoothingChanged(bool);
 	void onPixelSnappingChanged(tiny_string snapping);
 protected:
-	bool renderImpl(RenderContext& ctxt) const override
-		{ return defaultRender(ctxt); }
+	bool renderImpl(RenderContext& ctxt) const override;
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
@@ -930,8 +929,8 @@ public:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap) override;
-	IDrawable* invalidateFromSource(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, DisplayObject* source, const MATRIX& sourceMatrix);
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
+	IDrawable* invalidateFromSource(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix, DisplayObject* originalsource);
 };
 
 class AVM1Movie: public DisplayObject

@@ -50,7 +50,7 @@ Vector2f DisplayObject::getXY()
 
 bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const
 {
-	if(!isConstructed())
+	if(!legacy && !isConstructed())
 		return false;
 
 	bool ret=boundsRect(xmin,xmax,ymin,ymax);
@@ -96,7 +96,7 @@ number_t DisplayObject::getNominalHeight()
 
 bool DisplayObject::Render(RenderContext& ctxt, bool force)
 {
-	if(!isConstructed() || (!force && !visible) || clippedAlpha()==0.0)
+	if((!legacy && !isConstructed()) || (!force && skipRender()) || clippedAlpha()==0.0)
 		return false;
 	return renderImpl(ctxt);
 }
@@ -133,6 +133,7 @@ void DisplayObject::finalize()
 	if (!cachedSurface.isChunkOwner)
 		cachedSurface.tex=nullptr;
 	cachedSurface.isChunkOwner=true;
+	cachedSurface.isValid=false;
 }
 
 bool DisplayObject::destruct()
@@ -176,7 +177,10 @@ bool DisplayObject::destruct()
 	avm1functions.clear();
 	if (!cachedSurface.isChunkOwner)
 		cachedSurface.tex=nullptr;
+	if (cachedSurface.tex)
+		cachedSurface.tex->makeEmpty();
 	cachedSurface.isChunkOwner=true;
+	cachedSurface.isValid=false;
 	return EventDispatcher::destruct();
 }
 
@@ -271,7 +275,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 }
 bool DisplayObject::computeCacheAsBitmap() const
 {
-	return cacheAsBitmap || (!filters.isNull() && filters->size()!=0);
+	return cacheAsBitmap || (!filters.isNull() && filters->size()!=0) || isMask();
 }
 
 bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
@@ -605,7 +609,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 	const CachedSurface& surface=ctxt.getCachedSurface(this);
 	/* surface is only modified from within the render thread
 	 * so we need no locking here */
-	if(!surface.tex || !surface.tex->isValid())
+	if(!surface.isValid || !surface.tex || !surface.tex->isValid())
 		return true;
 	if (surface.tex->width == 0 || surface.tex->height == 0)
 		return true;
@@ -664,7 +668,7 @@ void DisplayObject::computeBoundsForTransformedRect(number_t xmin, number_t xmax
 	outHeight = maxy - miny;
 }
 
-IDrawable* DisplayObject::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
+IDrawable* DisplayObject::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	//Not supposed to be called
 	throw RunTimeException("DisplayObject::invalidate");
@@ -702,6 +706,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface.blueOffset=d->getBlueOffset();
 	cachedSurface.alphaOffset=d->getAlphaOffset();
 	cachedSurface.matrix=d->getMatrix();
+	cachedSurface.isValid=true;
 }
 //TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
 //this way they have less pb with precision.
@@ -1652,7 +1657,7 @@ void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool
 	this->ty=origty;
 }
 #define FILTERBORDER 2 // border in pixels around cached bitmap needed to properly compute filters at borders
-IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MATRIX& initialMatrix)
+IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MATRIX& initialMatrix,_NR<DisplayObject>* pcachedBitmap)
 {
 	if (!computeCacheAsBitmap())
 		return nullptr;
@@ -1702,10 +1707,12 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 			cachedBitmap->bitmapData->addUser(cachedBitmap.getPtr());
 		}
 	}
+	if (pcachedBitmap)
+		*pcachedBitmap = cachedBitmap;
 	this->resetNeedsTextureRecalculation();
 	this->hasChanged=false;
 	MATRIX m1(1,1,0,0,xmin-FILTERBORDER,ymin-FILTERBORDER);
-	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this->getParent(),m1);
+	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this->getParent(),m1,this);
 }
 
 bool DisplayObject::findParent(DisplayObject *d) const
@@ -2476,15 +2483,6 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 		getVariableByMultiname(ret,m);
 		if (asAtomHandler::isInvalid(ret))// get Variable from root movie
 			loadedFrom->getVariableByMultiname(ret,m);
-		if (asAtomHandler::isInvalid(ret))// get lowercase Variable from root movie
-		{
-			tiny_string s = name.lowercase();
-			if (s != name)
-			{
-				m.name_s_id=getSystemState()->getUniqueStringId(s);
-				loadedFrom->getVariableByMultiname(ret,m);
-			}
-		}
 	}
 	return ret;
 }

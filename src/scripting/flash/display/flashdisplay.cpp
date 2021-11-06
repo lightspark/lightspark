@@ -873,7 +873,7 @@ void Sprite::buildTraits(ASObject* o)
 {
 }
 
-IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
+IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,true);
 }
@@ -1022,9 +1022,11 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 bool DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 {
 	bool renderingfailed = false;
-	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL && getCachedBitmap())
+	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
 	{
-		getCachedBitmap()->Render(ctxt);
+		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
+		if (d)
+			d->Render(ctxt);
 		return renderingfailed;
 	}
 	Locker l(mutexDisplayList);
@@ -3438,7 +3440,7 @@ void Shape::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(c->getSystemState(),_getGraphics),GETTER_METHOD,true);
 }
 
-IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
+IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,!graphics.isNull());
 }
@@ -3474,7 +3476,7 @@ void MorphShape::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_SEALED | CLASS_FINAL);
 }
 
-IDrawable* MorphShape::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
+IDrawable* MorphShape::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,false);
 }
@@ -4345,6 +4347,11 @@ void Bitmap::onPixelSnappingChanged(tiny_string snapping)
 	pixelSnapping = snapping;
 }
 
+bool Bitmap::renderImpl(RenderContext& ctxt) const
+{
+	return defaultRender(ctxt);
+}
+
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,bitmapData,onBitmapData);
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,smoothing,onSmoothingChanged);
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged);
@@ -4363,7 +4370,10 @@ void Bitmap::updatedData()
 	cachedSurface.isChunkOwner=false;
 	hasChanged=true;
 	if(onStage)
+	{
+		cachedSurface.isValid=true;
 		requestInvalidation(getSystemState());
+	}
 }
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
@@ -4415,22 +4425,16 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 	q->addToInvalidateQueue(_MR(this));
 }
 
-IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
+IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	if (cachedBitmap && computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
-		IDrawable* ret = getCachedBitmapDrawable(target, initialMatrix);
-		if (ret)
-		{
-			if (cachedBitmap)
-				*cachedBitmap = getCachedBitmap().getPtr();
-			return ret;
-		}
+		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
 	}
-	return invalidateFromSource(target, initialMatrix, this->smoothing, this, MATRIX());
+	return invalidateFromSource(target, initialMatrix, this->smoothing, this, MATRIX(),nullptr);
 }
 
-IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, DisplayObject* source, const MATRIX& sourceMatrix)
+IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix,DisplayObject* originalsource)
 {
 	number_t x,y,rx,ry;
 	number_t width,height;
@@ -4454,15 +4458,15 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	bool hasMask;
 	if (target)
 	{
-		if (source)
-			source->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
+		if (matrixsource)
+			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
 		totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	}
 	totalMatrix = totalMatrix.multiplyMatrix(sourceMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	MATRIX m;
-	if (source)
-		m = source->getConcatenatedMatrix();
+	if (matrixsource)
+		m = matrixsource->getConcatenatedMatrix();
 	width = bxmax-bxmin;
 	height = bymax-bymin;
 	float rotation = m.getRotation();
@@ -4480,14 +4484,14 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
-		if (source)
-			source->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
+		if (matrixsource)
+			matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 	totalMatrix2 = totalMatrix2.multiplyMatrix(sourceMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 	ColorTransform* ct = colorTransform.getPtr();
-	DisplayObjectContainer* p = source ? source->getParent() :nullptr;
+	DisplayObjectContainer* p = matrixsource ? matrixsource->getParent() :nullptr;
 	while (!ct && p)
 	{
 		ct = p->colorTransform.getPtr();
@@ -4506,12 +4510,20 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 		blueOffset=ct->blueOffset;
 		alphaOffset=ct->alphaOffset;
 	}
+	cachedSurface.isValid=true;
+	if (originalsource)
+	{
+		if (!isMask)
+			isMask = originalsource->ClipDepth || !originalsource->maskOf.isNull();
+		if (!hasMask)
+			hasMask = !originalsource->mask.isNull();
+	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, x*scalex, y*scaley, ceil(width*scalex), ceil(height*scaley)
 				, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), rotation
 				, xscale, yscale
 				, isMask, hasMask
-				, source ? source->getConcatenatedAlpha() : 1.0, masks
+				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
 				, redOffset,greenOffset,blueOffset,alphaOffset,smoothing,totalMatrix2);
 }
@@ -4910,7 +4922,7 @@ void SimpleButton::finalize()
 	buttontag=nullptr;
 }
 
-IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, DisplayObject** cachedBitmap)
+IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	if (!upState.isNull())
 		upState->invalidate(target,initialMatrix,smoothing,q,cachedBitmap);

@@ -257,6 +257,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 			surface.xscale = drawable->getXScale();
 			surface.yscale = drawable->getYScale();
 			surface.matrix = drawable->getMatrix();
+			surface.isValid=true;
 		}
 		delete drawable;
 	}
@@ -283,7 +284,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 				      drawable->getClassName(),
 				      "IBitmapDrawable");
 
-	if(!ctransform.isNull() || !(blendMode.empty() || blendMode == "null") || !clipRect.isNull())
+	if(!(blendMode.empty() || blendMode == "null") || !clipRect.isNull())
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support many parameters:"<<ctransform.isNull()<<" "<<clipRect.isNull()<<" "<<blendMode);
 
 	if(drawable->is<BitmapData>())
@@ -298,6 +299,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		ctxt.transformedBlit(initialMatrix, data->pixels->getData(),
 				data->pixels->getWidth(), data->pixels->getHeight(),
 				CairoRenderContext::FILTER_NONE);
+		if (ctransform)
+			ctransform->applyTransformation(data->pixels->getData(),data->getBitmapContainer()->getWidth()*data->getBitmapContainer()->getHeight()*4);
 	}
 	else if(drawable->is<DisplayObject>())
 	{
@@ -307,6 +310,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
 		d->DrawToBitmap(th,initialMatrix,smoothing,false);
+		if (ctransform)
+			ctransform->applyTransformation(th->pixels->getData(),th->getBitmapContainer()->getWidth()*th->getBitmapContainer()->getHeight()*4);
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());

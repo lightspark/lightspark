@@ -1040,6 +1040,7 @@ const TextureChunk& AsyncDrawJob::getTexture()
 	surface.blueOffset=drawable->getBlueOffset();
 	surface.alphaOffset=drawable->getAlphaOffset();
 	surface.matrix=drawable->getMatrix();
+	surface.isValid=true;
 	return *surface.tex;
 }
 

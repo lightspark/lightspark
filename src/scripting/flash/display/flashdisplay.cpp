@@ -4871,6 +4871,67 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 		DisplayObjectContainer::defaultEventBehavior(e);
 }
 
+bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	bool ret = false;
+	number_t txmin,txmax,tymin,tymax;
+	if (!upState.isNull() && upState->getBounds(txmin,txmax,tymin,tymax,upState->getMatrix()))
+	{
+		if(ret==true)
+		{
+			xmin = min(xmin,txmin);
+			xmax = max(xmax,txmax);
+			ymin = min(ymin,tymin);
+			ymax = max(ymax,tymax);
+		}
+		else
+		{
+			xmin=txmin;
+			xmax=txmax;
+			ymin=tymin;
+			ymax=tymax;
+			ret=true;
+		}
+	}
+	if (!overState.isNull() && overState->getBounds(txmin,txmax,tymin,tymax,overState->getMatrix()))
+	{
+		if(ret==true)
+		{
+			xmin = min(xmin,txmin);
+			xmax = max(xmax,txmax);
+			ymin = min(ymin,tymin);
+			ymax = max(ymax,tymax);
+		}
+		else
+		{
+			xmin=txmin;
+			xmax=txmax;
+			ymin=tymin;
+			ymax=tymax;
+			ret=true;
+		}
+	}
+	if (!downState.isNull() && upState->getBounds(txmin,txmax,tymin,tymax,downState->getMatrix()))
+	{
+		if(ret==true)
+		{
+			xmin = min(xmin,txmin);
+			xmax = max(xmax,txmax);
+			ymin = min(ymin,tymin);
+			ymax = max(ymax,tymax);
+		}
+		else
+		{
+			xmin=txmin;
+			xmax=txmax;
+			ymin=tymin;
+			ymax=tymax;
+			ret=true;
+		}
+	}
+	return ret;
+}
+
 SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 				DisplayObject *oS, DisplayObject *uS, DefineButtonTag *tag)
 	: DisplayObjectContainer(c), downState(dS), hitTestState(hTS), overState(oS), upState(uS),
@@ -4921,9 +4982,12 @@ void SimpleButton::finalize()
 	hasMouse=false;
 	buttontag=nullptr;
 }
-
 IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
+	if (computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	{
+		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
+	}
 	if (!upState.isNull())
 		upState->invalidate(target,initialMatrix,smoothing,q,cachedBitmap);
 	if (!overState.isNull())
@@ -4932,12 +4996,17 @@ IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initial
 		downState->invalidate(target,initialMatrix,smoothing,q,cachedBitmap);
 	if (!hitTestState.isNull())
 		hitTestState->invalidate(target,initialMatrix,smoothing,q,cachedBitmap);
-	return DisplayObjectContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
+	return nullptr;
 }
 void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	if (requestInvalidationForCacheAsBitmap(q))
 		return;
+	if (computeCacheAsBitmap())
+	{
+		incRef();
+		q->addToInvalidateQueue(_MR(this));
+	}
 	if (!upState.isNull())
 	{
 		upState->hasChanged = true;
@@ -4966,7 +5035,6 @@ void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefr
 			hitTestState->colorTransform = this->colorTransform;
 		hitTestState->requestInvalidation(q,forceTextureRefresh);
 	}
-	
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 }
 

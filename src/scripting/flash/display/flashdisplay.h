@@ -213,6 +213,8 @@ private:
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e) override;
+protected:
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 public:
 	SimpleButton(Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);

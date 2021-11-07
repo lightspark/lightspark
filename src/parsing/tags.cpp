@@ -706,7 +706,7 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 
 bool FontTag::hasGlyphs(const tiny_string text) const
 {
-	if (CodeTable.size())
+	if (!CodeTable.size())
 	{
 		// always return false if CodeTable is empty;
 		return false;

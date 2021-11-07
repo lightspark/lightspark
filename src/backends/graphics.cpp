@@ -735,7 +735,15 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 
 	assert(line==UINT32_MAX || tData.getLineCount()>line);
 	tiny_string text = tData.getText(line);
-	pango_layout_set_text(layout, text.raw_buf(), -1);
+	if (tData.isPassword)
+	{
+		tiny_string pwtxt;
+		for (uint32_t i = 0; i < text.numChars(); i++)
+			pwtxt+="*";
+		pango_layout_set_text(layout, pwtxt.raw_buf(), -1);
+	}
+	else
+		pango_layout_set_text(layout, text.raw_buf(), -1);
 
 	/* setup alignment */
 	PangoAlignment alignment;

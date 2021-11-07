@@ -193,6 +193,8 @@ public:
 	ASFUNCTION_ATOM(_replaceText);
 	ASFUNCTION_ATOM(_replaceSelectedText);
 	ASFUNCTION_ATOM(_getCharBoundaries);
+	ASFUNCTION_ATOM(_getdisplayAsPassword);
+	ASFUNCTION_ATOM(_setdisplayAsPassword);
 	ASPROPERTY_GETTER_SETTER(bool, alwaysShowSelection);
 	ASFUNCTION_GETTER_SETTER(background);
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
@@ -200,7 +202,6 @@ public:
 	ASFUNCTION_GETTER_SETTER(borderColor);
 	ASPROPERTY_GETTER(uint32_t, caretIndex);
 	ASPROPERTY_GETTER_SETTER(bool, condenseWhite);
-	ASPROPERTY_GETTER_SETTER(bool, displayAsPassword);
 	ASPROPERTY_GETTER_SETTER(bool, embedFonts);
 	ASPROPERTY_GETTER_SETTER(int32_t, maxChars);
 	ASFUNCTION_GETTER_SETTER(multiline);

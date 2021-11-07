@@ -428,6 +428,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	textData.width = (Bounds.Xmax-Bounds.Xmin)/20;
 	textData.height = (Bounds.Ymax-Bounds.Ymin)/20;
 	textData.leading = Leading/20;
+	textData.isPassword = Password;
 }
 
 ASObject* DefineEditTextTag::instance(Class_base* c)

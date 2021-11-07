@@ -125,7 +125,7 @@ TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, 
 	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),originalXPosition(0),originalWidth(textData.width),
 	  fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),
 	  alwaysShowSelection(false),
-	  condenseWhite(false), displayAsPassword(false),
+	  condenseWhite(false),
 	  embedFonts(false), maxChars(_tag ? int32_t(_tag->MaxLength) : 0), mouseWheelEnabled(true),
 	  selectable(_selectable), selectionBeginIndex(0), selectionEndIndex(0),
 	  sharpness(0), thickness(0), useRichTextClipboard(false)
@@ -187,6 +187,8 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getRestrict),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setRestrict),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textInteractionMode","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getTextInteractionMode),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("displayAsPassword","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getdisplayAsPassword),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("displayAsPassword","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setdisplayAsPassword),SETTER_METHOD,true);
 
 	// special handling neccessary when setting x
 	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setTextFieldX),SETTER_METHOD,true);
@@ -198,7 +200,6 @@ void TextField::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, borderColor);
 	REGISTER_GETTER(c, caretIndex);
 	REGISTER_GETTER_SETTER(c, condenseWhite);
-	REGISTER_GETTER_SETTER(c, displayAsPassword);
 	REGISTER_GETTER_SETTER(c, embedFonts);
 	REGISTER_GETTER_SETTER(c, maxChars);
 	REGISTER_GETTER_SETTER(c, multiline);
@@ -223,7 +224,6 @@ ASFUNCTIONBODY_GETTER_SETTER(TextField, border);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, borderColor);
 ASFUNCTIONBODY_GETTER(TextField, caretIndex);
 ASFUNCTIONBODY_GETTER_SETTER(TextField, condenseWhite);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, displayAsPassword); // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, embedFonts); // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, maxChars); // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, multiline);
@@ -289,6 +289,23 @@ _NR<DisplayObject> TextField::hitTestImpl(_NR<DisplayObject> last, number_t x, n
 	}
 	else
 		return NullRef;
+}
+
+ASFUNCTIONBODY_ATOM(TextField,_getdisplayAsPassword)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+	asAtomHandler::setBool(ret,th->isPassword);
+}
+
+ASFUNCTIONBODY_ATOM(TextField,_setdisplayAsPassword)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+	ARG_UNPACK_ATOM(th->isPassword);
+	th->setSizeAndPositionFromAutoSize();
+	th->hasChanged=true;
+	th->setNeedsTextureRecalculation();
+	if(th->onStage && th->isVisible())
+		th->requestInvalidation(th->getSystemState());
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getWordWrap)
@@ -1521,7 +1538,15 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		int32_t startposy = 0;
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{
-			embeddedfont->fillTextTokens(tokens,(*it).text,fontSize,fillstyleTextColor,leading,autosizeposition+(*it).autosizeposition,startposy);
+			if (isPassword)
+			{
+				tiny_string pwtxt;
+				for (uint32_t i = 0; i < (*it).text.numChars(); i++)
+					pwtxt+="*";
+				embeddedfont->fillTextTokens(tokens,pwtxt,fontSize,fillstyleTextColor,leading,autosizeposition+(*it).autosizeposition,startposy);
+			}
+			else
+				embeddedfont->fillTextTokens(tokens,(*it).text,fontSize,fillstyleTextColor,leading,autosizeposition+(*it).autosizeposition,startposy);
 			startposy += this->leading+(embeddedfont->getAscent()+embeddedfont->getDescent()+embeddedfont->getLeading())*fontSize/1024;
 		}
 		if (tokens.empty())

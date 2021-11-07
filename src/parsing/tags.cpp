@@ -225,7 +225,7 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 				ret=new DefineVideoStreamTag(h,f,root);
 				break;
 			case 61:
-				ret=new VideoFrameTag(h,f);
+				ret=new VideoFrameTag(h, f, root);
 				break;
 			case 63:
 				ret=new DebugIDTag(h,f);
@@ -1907,8 +1907,12 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	{
 		parent->setupClipActionsAt(LEGACY_DEPTH_START+Depth,ClipActions);
 	}
+
 	if (PlaceFlagHasRatio)
-		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START+Depth,Ratio,inskipping);
+		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, Ratio, inskipping);
+	else if (PlaceFlagHasCharacter)
+		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, 0, inskipping);
+
 	if(PlaceFlagHasColorTransform)
 		parent->checkColorTransformForLegacyChildAt(LEGACY_DEPTH_START+Depth,ColorTransformWithAlpha);
 	if (newInstance && PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventConstruct && currchar)
@@ -2926,7 +2930,7 @@ AdditionalDataTag::AdditionalDataTag(RECORDHEADER h, istream &in):Tag(h)
 		in.read((char*)bytes,numbytes);
 	}
 }
-VideoFrameTag::VideoFrameTag(RECORDHEADER h, istream &in):DisplayListTag(h)
+VideoFrameTag::VideoFrameTag(RECORDHEADER h, istream &in, RootMovieClip* root) : DisplayListTag(h)
 {
 	in >> StreamID >> FrameNum;
 	framedata=nullptr;
@@ -2936,22 +2940,17 @@ VideoFrameTag::VideoFrameTag(RECORDHEADER h, istream &in):DisplayListTag(h)
 		framedata = new uint8_t[numbytes+AV_INPUT_BUFFER_PADDING_SIZE];
 		memset(framedata+numbytes,0,AV_INPUT_BUFFER_PADDING_SIZE);
 		in.read((char*)framedata,numbytes);
+
+		DefineVideoStreamTag* videotag=dynamic_cast<DefineVideoStreamTag*>(root->dictionaryLookup(StreamID));
+		if (videotag)
+			videotag->setFrameData(this);
+		else
+			LOG(LOG_ERROR,"VideoFrameTag: no corresponding video found "<<StreamID);
 	}
 }
 
-VideoFrameTag::~VideoFrameTag() 
+VideoFrameTag::~VideoFrameTag()
 {
 	if (framedata)
 		delete[] framedata;
-}
-
-void VideoFrameTag::execute(DisplayObjectContainer *parent, bool inskipping)
-{
-	DefineVideoStreamTag* videotag=dynamic_cast<DefineVideoStreamTag*>(parent->loadedFrom->dictionaryLookup(StreamID));
-	if (videotag)
-	{
-		videotag->setFrameData(this);
-	}
-	else
-		LOG(LOG_ERROR,"VideoFrameTag: no corresponding video found "<<StreamID);
 }

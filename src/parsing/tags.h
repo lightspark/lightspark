@@ -777,6 +777,7 @@ public:
 	void setFrameData(VideoFrameTag* tag);
 	VideoFrameTag* getFrame(uint32_t frame) const { return frames[frame]; }
 };
+
 class VideoFrameTag: public DisplayListTag
 {
 private:
@@ -785,13 +786,14 @@ private:
 	uint8_t* framedata;
 	uint32_t numbytes;
 public:
-	VideoFrameTag(RECORDHEADER h, std::istream& in);
+	VideoFrameTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	~VideoFrameTag();
-	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+	void execute(DisplayObjectContainer* parent, bool inskipping) override {}
 	uint8_t* getData() { return framedata; }
 	uint32_t getNumBytes() { return numbytes+AV_INPUT_BUFFER_PADDING_SIZE; }
 	uint32_t getFrameNumber() { return FrameNum; }
 };
+
 class MetadataTag: public Tag
 {
 private:

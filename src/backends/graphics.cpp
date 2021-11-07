@@ -828,29 +828,32 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 	{
 		cairo_set_source_rgb(cr, textData.borderColor.Red/255., textData.borderColor.Green/255., textData.borderColor.Blue/255.);
 		cairo_set_line_width(cr, 1);
-		cairo_rectangle(cr, 0, 0, textData.width, textData.height);
-		cairo_stroke_preserve(cr);
+		cairo_rectangle(cr, 0, 0, this->width, this->height);
+		cairo_stroke(cr);
 	}
 	if(textData.caretblinkstate)
 	{
-		uint32_t tw=0;
+		uint32_t tw=TEXTFIELD_PADDING;
+		uint32_t thstart=TEXTFIELD_PADDING;
+		uint32_t thend=PANGO_PIXELS(PANGO_SCALE*textData.fontSize)+TEXTFIELD_PADDING;
 		if (!textData.textlines.empty())
 		{
-			uint32_t w,h,tw,th;
+			uint32_t w,h,tw1,th1;
 			tiny_string currenttext = textData.getText(0);
 			if (caretIndex < currenttext.numChars())
 			{
 				textData.textlines[0].text = textData.textlines[0].text.substr(0,caretIndex);
 			}
-			getBounds(textData,w,h,tw,th,0);
+			getBounds(textData,w,h,tw1,th1,0);
 			textData.textlines[0].text = currenttext;
+			tw += tw1;
 		}
 		tw+=xpos;
 		cairo_set_source_rgb(cr, 0, 0, 0);
 		cairo_set_line_width(cr, 2);
-		cairo_move_to(cr,tw,2);
-		cairo_line_to(cr,tw, textData.height-2);
-		cairo_stroke_preserve(cr);
+		cairo_move_to(cr,tw, thstart);
+		cairo_line_to(cr,tw, thend);
+		cairo_stroke(cr);
 	}
 
 	g_object_unref(layout);
@@ -858,7 +861,7 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 
 bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th, uint32_t line)
 {
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(nullptr, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 	cairo_t *cr=cairo_create(cairoSurface);
 
 	PangoLayout* layout;

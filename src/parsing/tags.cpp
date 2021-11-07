@@ -705,6 +705,11 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 
 bool FontTag::hasGlyphs(const tiny_string text) const
 {
+	if (CodeTable.size())
+	{
+		// always return false if CodeTable is empty;
+		return false;
+	}
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
 		bool found = false;
@@ -1933,7 +1938,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	}
 	if (currchar)
 	{
-		currchar->invalidateCachedAsBitmpapOf();
+		currchar->invalidateCachedAsBitmapOf();
 	}
 }
 

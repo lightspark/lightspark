@@ -739,7 +739,7 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		if(getVm(getSystemState())==nullptr)
 			return;
 		changed = true;
-		invalidateCachedAsBitmpapOf();
+		invalidateCachedAsBitmapOf();
 	}
 	if (force || changed)
 	{
@@ -1439,7 +1439,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 
 _NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
 {
-	if(!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed())
+	if((!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && !isMask())
 		return NullRef;
 
 	//First check if there is any mask on this object, if so the point must be inside the mask to go on
@@ -1521,7 +1521,7 @@ void DisplayObject::afterConstruction()
 //		requestInvalidation(getSystemState());
 }
 
-void DisplayObject::invalidateCachedAsBitmpapOf()
+void DisplayObject::invalidateCachedAsBitmapOf()
 {
 	DisplayObject* c = cachedAsBitmapOf.getPtr();
 	while (c)

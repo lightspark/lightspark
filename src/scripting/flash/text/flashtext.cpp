@@ -30,9 +30,6 @@
 #include "scripting/argconv.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 
-// according to TextLineMetrics specs, there are always 2 pixels added to each side of a textfield
-#define TEXTFIELD_PADDING 2
-
 using namespace std;
 using namespace lightspark;
 
@@ -255,7 +252,15 @@ void TextField::buildTraits(ASObject* o)
 
 bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	if (!this->legacy || (tag==nullptr) || autoSize!=AS_NONE)
+	if (this->type == ET_EDITABLE && tag)
+	{
+		xmin=tag->Bounds.Xmin/20.0f;
+		xmax=tag->Bounds.Xmax/20.0f;
+		ymin=tag->Bounds.Ymin/20.0f;
+		ymax=tag->Bounds.Ymax/20.0f;
+		return true;
+	}
+	if ((!this->legacy || (tag==nullptr) || autoSize!=AS_NONE))
 	{
 		xmin=tag ? tag->Bounds.Xmin/20.0f : 0.0f;
 		xmax=max(0.0f,float(textWidth+autosizeposition))+2*TEXTFIELD_PADDING+ (tag ? tag->Bounds.Xmin/20.0f : 0.0f);
@@ -1291,6 +1296,12 @@ void TextField::lostFocus()
 {
 	SDL_StopTextInput();
 	getSystemState()->removeJob(this);
+	caretblinkstate = false;
+	hasChanged=true;
+	setNeedsTextureRecalculation();
+	if(onStage && isVisible())
+		requestInvalidation(this->getSystemState());
+	invalidateCachedAsBitmapOf();
 }
 
 void TextField::gotFocus()
@@ -1321,12 +1332,20 @@ void TextField::tick()
 {
 	if (this->type != ET_EDITABLE)
 		return;
-	caretblinkstate = !caretblinkstate;
+	if (this == getSystemState()->stage->getFocusTarget().getPtr())
+		caretblinkstate = !caretblinkstate;
+	else
+		caretblinkstate = false;
 	hasChanged=true;
 	setNeedsTextureRecalculation();
 	
 	if(onStage && isVisible())
 		requestInvalidation(this->getSystemState());
+	invalidateCachedAsBitmapOf();
+}
+
+void TextField::tickFence()
+{
 }
 
 uint32_t TextField::getTagID() const
@@ -1353,7 +1372,7 @@ void TextField::textUpdated()
 		if(onStage && isVisible())
 			requestInvalidation(this->getSystemState());
 	}
-	invalidateCachedAsBitmpapOf();
+	invalidateCachedAsBitmapOf();
 }
 
 void TextField::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
@@ -1509,6 +1528,10 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 			return nullptr;
 		return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,false);
 	}
+	if (computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	{
+		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
+	}
 	std::vector<IDrawable::MaskData> masks;
 	bool isMask;
 	bool hasMask;
@@ -1623,7 +1646,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 		{
 			number_t bxmin,bxmax,bymin,bymax;
 			boundsRect(bxmin,bxmax,bymin,bymax);
-			TextureChunk tex=getSystemState()->getRenderThread()->allocateTexture(this->width, this->height, true);
+			TextureChunk tex=getSystemState()->getRenderThread()->allocateTexture(bxmax-bxmin, bymax-bymin, true);
 			number_t x,y,rx,ry;
 			number_t width,height;
 			number_t rwidth,rheight;

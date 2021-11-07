@@ -26,6 +26,9 @@
 #include "scripting/flash/display/flashdisplay.h"
 #include "3rdparty/pugixml/src/pugixml.hpp"
 
+// according to TextLineMetrics specs, there are always 2 pixels added to each side of a textfield
+#define TEXTFIELD_PADDING 2
+
 namespace lightspark
 {
 class Array;
@@ -146,7 +149,7 @@ public:
 	void gotFocus() override;
 	void textInputChanged(const tiny_string& newtext) override;
 	void tick() override;
-	void tickFence() override {}
+	void tickFence() override;
 	uint32_t getTagID() const override;
 	
 	ASFUNCTION_ATOM(appendText);

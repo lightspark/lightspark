@@ -422,7 +422,7 @@ class CairoPangoRenderer : public CairoRenderer
 	TextData textData;
 	uint32_t caretIndex;
 	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData, uint32_t line=UINT32_MAX);
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const;
+	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override;
 	static PangoRectangle lineExtents(PangoLayout *layout, int lineNumber);
 public:
 	CairoPangoRenderer(const TextData& _textData, const MATRIX& _m,

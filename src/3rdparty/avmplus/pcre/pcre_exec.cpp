@@ -140,7 +140,7 @@ Returns:      TRUE if matched
 */
 
 static BOOL
-match_ref(int offset, register USPTR eptr, int length, match_data *md,
+match_ref(int offset, USPTR eptr, int length, match_data *md,
   unsigned long int ims)
 {
 if (ES3_Compatible_Behavior)
@@ -443,10 +443,10 @@ match(REGISTER USPTR eptr, REGISTER const uschar *ecode, const uschar *mstart,
 so they can be ordinary variables in all cases. Mark some of them with
 "register" because they are used a lot in loops. */
 
-register int  rrc;         /* Returns from recursive calls */
-register int  i;           /* Used for loops not involving calls to RMATCH() */
-register unsigned int c;   /* Character values not kept over RMATCH() calls */
-register BOOL utf8;        /* Local copy of UTF-8 flag for speed */
+int  rrc;         /* Returns from recursive calls */
+int  i;           /* Used for loops not involving calls to RMATCH() */
+unsigned int c;   /* Character values not kept over RMATCH() calls */
+BOOL utf8;        /* Local copy of UTF-8 flag for speed */
 
 BOOL minimize, possessive; /* Quantifier options */
 int condcode = 0;
@@ -2737,7 +2737,7 @@ for (;;)
       /* UTF-8 mode */
       if (utf8)
         {
-        register unsigned int d;
+        unsigned int d;
         for (i = 1; i <= min; i++)
           {
           GETCHARINC(d, eptr);
@@ -2762,7 +2762,7 @@ for (;;)
         /* UTF-8 mode */
         if (utf8)
           {
-          register unsigned int d;
+          unsigned int d;
           for (fi = min;; fi++)
             {
             RMATCH(eptr, ecode, offset_top, md, ims, eptrb, 0, RM28);
@@ -2798,7 +2798,7 @@ for (;;)
         /* UTF-8 mode */
         if (utf8)
           {
-          register unsigned int d;
+          unsigned int d;
           for (i = min; i < max; i++)
             {
             int len = 1;
@@ -2848,7 +2848,7 @@ for (;;)
       /* UTF-8 mode */
       if (utf8)
         {
-        register unsigned int d;
+        unsigned int d;
         for (i = 1; i <= min; i++)
           {
           GETCHARINC(d, eptr);
@@ -2871,7 +2871,7 @@ for (;;)
         /* UTF-8 mode */
         if (utf8)
           {
-          register unsigned int d;
+          unsigned int d;
           for (fi = min;; fi++)
             {
             RMATCH(eptr, ecode, offset_top, md, ims, eptrb, 0, RM32);
@@ -2906,7 +2906,7 @@ for (;;)
         /* UTF-8 mode */
         if (utf8)
           {
-          register unsigned int d;
+          unsigned int d;
           for (i = min; i < max; i++)
             {
             int len = 1;
@@ -4659,7 +4659,7 @@ tables = external_re->tables;
 
 if (extra_data != NULL)
   {
-  register unsigned int flags = extra_data->flags;
+  unsigned int flags = extra_data->flags;
   if ((flags & PCRE_EXTRA_STUDY_DATA) != 0)
     study = (const pcre_study_data *)extra_data->study_data;
   if ((flags & PCRE_EXTRA_MATCH_LIMIT) != 0)
@@ -4830,8 +4830,8 @@ initialize them to avoid reading uninitialized locations. */
 
 if (md->offset_vector != NULL)
   {
-  register int *iptr = md->offset_vector + ocount;
-  register int *iend = iptr - resetcount/2 + 1;
+  int *iptr = md->offset_vector + ocount;
+  int *iend = iptr - resetcount/2 + 1;
   while (--iptr >= iend) *iptr = -1;
   }
 
@@ -4880,8 +4880,8 @@ for(;;)
 
   if (md->offset_vector != NULL)
     {
-    register int *iptr = md->offset_vector;
-    register int *iend = iptr + resetcount;
+    int *iptr = md->offset_vector;
+    int *iend = iptr + resetcount;
     while (iptr < iend) *iptr++ = -1;
     }
 
@@ -4938,7 +4938,7 @@ for(;;)
     {
     while (start_match < end_subject)
       {
-      register unsigned int c = *start_match;
+      unsigned int c = *start_match;
       if ((start_bits[c/8] & (1 << (c&7))) == 0) start_match++; else break;
       }
     }
@@ -4973,7 +4973,7 @@ for(;;)
       end_subject - start_match < REQ_BYTE_MAX &&
       !md->partial)
     {
-    register USPTR p = start_match + ((first_byte >= 0)? 1 : 0);
+    USPTR p = start_match + ((first_byte >= 0)? 1 : 0);
 
     /* We don't need to repeat the search if we haven't yet reached the
     place we found it at last time. */
@@ -4984,7 +4984,7 @@ for(;;)
         {
         while (p < end_subject)
           {
-          register int pp = *p++;
+          int pp = *p++;
           if (pp == req_byte || pp == req_byte2) { p--; break; }
           }
         }

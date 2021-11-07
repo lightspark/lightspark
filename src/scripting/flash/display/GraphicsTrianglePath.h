@@ -34,7 +34,7 @@ class GraphicsTrianglePath: public ASObject, public IGraphicsPath, public IGraph
 public:
 	GraphicsTrianglePath(Class_base* c);
 	static void sinit(Class_base* c);
-	void finalize();
+	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string, culling);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>, indices);

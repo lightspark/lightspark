@@ -2604,6 +2604,11 @@ void RootMovieClip::setupAVM1RootMovie()
 		this->classdef = Class<AVM1MovieClip>::getRef(getSystemState()).getPtr();
 		if (!getSystemState()->avm1global)
 			getVm(getSystemState())->registerClassesAVM1();
+		// it seems that the url parameters and flash vars are made available as properties of the root movie clip
+		// I haven't found anything in the documentation but gnash also does this
+		_NR<ASObject> params = getSystemState()->getParameters();
+		if (params)
+			params->copyValues(this);
 	}
 }
 

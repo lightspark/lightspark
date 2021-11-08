@@ -90,10 +90,13 @@ bool InputThread::worker(SDL_Event *event)
 			_NR<InteractiveObject> target = m_sys->stage->getFocusTarget();
 			if (target.isNull())
 				break;
-		
-			tiny_string s = event->text.text;
-			target->incRef();
-			m_sys->currentVm->addIdleEvent(NullRef, _MR(new (m_sys->unaccountedMemory) TextInputEvent(target,s)));
+			// SDL_TEXINPUT sometimes seems to send an empty text, we ignore those events
+			tiny_string s = std::string(event->text.text);
+			if (s.numChars()> 0)
+			{
+				target->incRef();
+				m_sys->currentVm->addIdleEvent(NullRef, _MR(new (m_sys->unaccountedMemory) TextInputEvent(target,s)));
+			}
 			break;
 		}
 		case SDL_MOUSEBUTTONDOWN:
@@ -418,7 +421,7 @@ void InputThread::handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, 
 
 void InputThread::handleMouseLeave()
 {
-	if(m_sys->currentVm == NULL)
+	if(m_sys->currentVm == nullptr)
 		return;
 
 	_NR<Stage> stage = _MR(m_sys->stage);

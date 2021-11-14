@@ -275,7 +275,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 }
 bool DisplayObject::computeCacheAsBitmap() const
 {
-	return cacheAsBitmap || (!filters.isNull() && filters->size()!=0) || isMask();
+	return cacheAsBitmap || (!filters.isNull() && filters->size()!=0);
 }
 
 bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
@@ -291,7 +291,7 @@ bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
 	}
 	else
 	{
-		if (cachedAsBitmapOf && cachedAsBitmapOf->computeCacheAsBitmap())
+		if (!isMask() && cachedAsBitmapOf && cachedAsBitmapOf->computeCacheAsBitmap())
 			return true;
 	}
 	return false;
@@ -1610,8 +1610,8 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 {
 	const DisplayObject* cur=this;
 	bool gatherMasks = true;
-	isMask = false;
-	hasMask = false;
+	isMask = cur->ClipDepth || !cur->maskOf.isNull();
+	hasMask = !cur->mask.isNull();
 	while(cur && cur!=target)
 	{
 		totalMatrix=cur->getMatrix(includeRotation).multiplyMatrix(totalMatrix);

@@ -315,11 +315,14 @@ CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t he
 	cr=cairo_create(cairoSurface);
 	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
 	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
+	masksurface=nullptr;
 }
 
 CairoRenderContext::~CairoRenderContext()
 {
 	cairo_destroy(cr);
+	if (masksurface)
+		cairo_surface_destroy(masksurface);
 }
 
 cairo_surface_t* CairoRenderContext::getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height)
@@ -374,13 +377,36 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 	uint8_t* buf=(uint8_t*)chunk.chunks;
 	cairo_surface_t* chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height);
 	cairo_save(cr);
-	cairo_set_antialias(cr,smooth ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
+	cairo_set_antialias(cr,smooth && !isMask ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 	cairo_set_matrix(cr,&matrix);
+
+	if(isMask)
+	{
+		if (masksurface) // reset previous mask
+			cairo_surface_destroy(masksurface);
+		masksurface = chunkSurface;
+		maskmatrix=matrix;
+	}
 	cairo_set_source_surface(cr, chunkSurface, 0,0);
-	cairo_paint(cr);
-	cairo_surface_destroy(chunkSurface);
+	if (hasMask)
+	{
+		if (masksurface)
+		{
+			// apply mask
+			cairo_save(cr);
+			cairo_set_matrix(cr,&maskmatrix);
+			cairo_mask_surface(cr,masksurface,0,0);
+			cairo_restore(cr);
+		}
+		else
+			LOG(LOG_ERROR,"surface has mask without a mask");
+	}
+	else if(!isMask)
+		cairo_paint(cr);
+
+	if (!isMask)
+		cairo_surface_destroy(chunkSurface);
 	cairo_restore(cr);
-//	cairo_surface_write_to_png(chunkSurface,"/tmp/cairo.png");
 }
 
 const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d) const

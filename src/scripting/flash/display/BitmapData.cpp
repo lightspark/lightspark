@@ -241,24 +241,23 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 			}
 			ct->applyTransformation(buf,bufsize);
 		}
-		if (!drawable->getIsMask())
-		{
-			//Construct a CachedSurface using the data
-			CachedSurface& surface=ctxt.allocateCustomSurface(target,buf,isBufferOwner);
-			surface.tex->width=drawable->getWidth();
-			surface.tex->height=drawable->getHeight();
-			surface.xOffset=drawable->getXOffset();
-			surface.yOffset=drawable->getYOffset();
-			surface.xOffsetTransformed=drawable->getXOffsetTransformed();
-			surface.yOffsetTransformed=drawable->getYOffsetTransformed();
-			surface.widthTransformed=drawable->getWidthTransformed();
-			surface.heightTransformed=drawable->getHeightTransformed();
-			surface.rotation=drawable->getRotation();
-			surface.xscale = drawable->getXScale();
-			surface.yscale = drawable->getYScale();
-			surface.matrix = drawable->getMatrix();
-			surface.isValid=true;
-		}
+		//Construct a CachedSurface using the data
+		CachedSurface& surface=ctxt.allocateCustomSurface(target,buf,isBufferOwner);
+		surface.tex->width=drawable->getWidth();
+		surface.tex->height=drawable->getHeight();
+		surface.xOffset=drawable->getXOffset();
+		surface.yOffset=drawable->getYOffset();
+		surface.xOffsetTransformed=drawable->getXOffsetTransformed();
+		surface.yOffsetTransformed=drawable->getYOffsetTransformed();
+		surface.widthTransformed=drawable->getWidthTransformed();
+		surface.heightTransformed=drawable->getHeightTransformed();
+		surface.rotation=drawable->getRotation();
+		surface.xscale = drawable->getXScale();
+		surface.yscale = drawable->getYScale();
+		surface.isMask=drawable->getIsMask();
+		surface.hasMask=drawable->getHasMask();
+		surface.matrix = drawable->getMatrix();
+		surface.isValid=true;
 		delete drawable;
 	}
 	d->Render(ctxt,true);

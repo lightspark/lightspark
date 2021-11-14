@@ -143,6 +143,8 @@ class CairoRenderContext: public RenderContext
 private:
 	std::map<const DisplayObject*, CachedSurface> customSurfaces;
 	cairo_t* cr;
+	cairo_surface_t* masksurface;
+	MATRIX maskmatrix;
 	static cairo_surface_t* getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height);
 	/*
 	 * An invalid surface to be returned for objects with no content

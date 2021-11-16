@@ -500,7 +500,7 @@ void DisplayObject::setBlendMode(UI8 blendmode)
 }
 MATRIX DisplayObject::getConcatenatedMatrix() const
 {
-	if(!parent)
+	if(!parent || parent == getSystemState()->mainClip)
 		return getMatrix();
 	else
 		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
@@ -1815,13 +1815,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		number_t localX;
 		number_t localY;
 		th->globalToLocal(x, y, localX, localY);
-		if (!th->loadedFrom->usesActionScript3 && th->getRoot())
-		{
-			// it seems that in AVM1 adobe doesn't use the stage coordinates as reference point, instead it's the root object
-			Vector2f rxy =th->getRoot()->getXY();
-			localX+=rxy.x;
-			localY+=rxy.y;
-		}
 
 		// Hmm, hitTest will also check the mask, is this the
 		// right thing to do?

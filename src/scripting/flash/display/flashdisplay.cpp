@@ -2710,11 +2710,7 @@ InteractiveObject::~InteractiveObject()
 
 ASFUNCTIONBODY_ATOM(InteractiveObject,_constructor)
 {
-	InteractiveObject* th=asAtomHandler::as<InteractiveObject>(obj);
 	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
-	//Object registered very early are not supported this way (Stage for example)
-	if(sys->getInputThread())
-		sys->getInputThread()->addListener(th);
 }
 
 ASFUNCTIONBODY_ATOM(InteractiveObject,_setMouseEnabled)
@@ -2745,8 +2741,6 @@ ASFUNCTIONBODY_ATOM(InteractiveObject,_getDoubleClickEnabled)
 
 bool InteractiveObject::destruct()
 {
-	if(getSystemState()->getInputThread())
-		getSystemState()->getInputThread()->removeListener(this);
 	contextMenu.reset();
 	mouseEnabled = true;
 	doubleClickEnabled =false;

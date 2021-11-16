@@ -88,8 +88,6 @@ public:
 	~InputThread();
 	void wait();
 	void start(EngineData* data);
-	void addListener(InteractiveObject* ob);
-	void removeListener(InteractiveObject* ob);
 	void startDrag(_R<Sprite> s, const RECT* limit, Vector2f dragOffset);
 	void stopDrag(Sprite* s);
 

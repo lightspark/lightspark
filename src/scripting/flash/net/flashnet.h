@@ -108,7 +108,6 @@ class SharedObject: public EventDispatcher
 {
 private:
 	tiny_string name;
-	bool hasData;
 public:
 	SharedObject(Class_base* c);
 	bool destruct() override;

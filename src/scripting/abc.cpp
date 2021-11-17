@@ -645,7 +645,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			//QName is used even in MultinameL
 			if (asAtomHandler::isInteger(n))
 			{
-				ret->name_i=asAtomHandler::getInt(n);
+				ret->name_i=asAtomHandler::toInt(n);
 				ret->name_type = multiname::NAME_INT;
 				ret->name_s_id = UINT32_MAX;
 				ret->isInteger=true;

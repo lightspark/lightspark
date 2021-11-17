@@ -607,7 +607,7 @@ void SharedObjectFlushStatus::sinit(Class_base* c)
 	c->setVariableAtomByQName("PENDING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"pending"),DECLARED_TRAIT);
 }
 
-SharedObject::SharedObject(Class_base* c):EventDispatcher(c),hasData(false),client(this),objectEncoding(ObjectEncoding::AMF3)
+SharedObject::SharedObject(Class_base* c):EventDispatcher(c),client(this),objectEncoding(ObjectEncoding::AMF3)
 {
 	subtype=SUBTYPE_SHAREDOBJECT;
 	data=_MR(new_asobject(c->getSystemState()));
@@ -685,7 +685,6 @@ ASFUNCTIONBODY_ATOM(SharedObject,getLocal)
 	if (secure)
 		LOG(LOG_NOT_IMPLEMENTED,"SharedObject.getLocal: parameter 'secure' is ignored");
 
-
 	tiny_string fullname = localPath + "|";
 	fullname += name;
 	SharedObject* res = nullptr;
@@ -694,7 +693,6 @@ ASFUNCTIONBODY_ATOM(SharedObject,getLocal)
 	{
 		res = Class<SharedObject>::getInstanceS(sys);
 		res->name=localPath;
-		res->hasData=true;
 		if (sys->localStorageAllowed())
 		{
 			ByteArray* b = Class<ByteArray>::getInstanceS(sys);
@@ -727,7 +725,7 @@ ASFUNCTIONBODY_ATOM(SharedObject,getRemote)
 }
 bool SharedObject::doFlush()
 {
-	if (hasData && !data.isNull() && getSystemState()->localStorageAllowed())
+	if (!data.isNull() && data->numVariables() && getSystemState()->localStorageAllowed())
 	{
 		ByteArray* b = Class<ByteArray>::getInstanceS(getSystemState());
 		b->writeObject(data.getPtr());
@@ -757,7 +755,6 @@ ASFUNCTIONBODY_ATOM(SharedObject,clear)
 {
 	SharedObject* th=asAtomHandler::as<SharedObject>(obj);
 	th->data->destroyContents();
-	th->hasData=false;
 	sys->getEngineData()->removeSharedObject(th->name);
 }
 

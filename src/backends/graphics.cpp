@@ -277,6 +277,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	bool empty=true;
 
 	cairo_t *stroke_cr = cairo_create(cairo_get_group_target(cr));
+	cairo_scale(stroke_cr, scaleCorrection, scaleCorrection);
 	if (xstart || ystart)
 	{
 		cairo_matrix_t mat;

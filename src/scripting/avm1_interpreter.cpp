@@ -2411,6 +2411,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				{
 					uint32_t frame = asAtomHandler::toUInt(a)+biasframe;
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGotoFrame2 "<<frame);
+					if (frame>0) // variable frame is 1-based
+						frame--;
 					clip->as<MovieClip>()->AVM1gotoFrame(frame,!playflag,clip->as<MovieClip>()->state.stop_FP == playflag);
 				}
 				ASATOM_DECREF(a);

@@ -72,7 +72,7 @@ class CachedSurface
 public:
 	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0)
 	  , redMultiplier(1.0), greenMultiplier(1.0), blueMultiplier(1.0), alphaMultiplier(1.0), redOffset(0.0), greenOffset(0.0), blueOffset(0.0), alphaOffset(0.0)
-	  ,isMask(false),hasMask(false),smoothing(true),isChunkOwner(true),isValid(false){}
+	  ,isMask(false),smoothing(true),isChunkOwner(true),isValid(false){}
 	~CachedSurface()
 	{
 		if (isChunkOwner && tex)
@@ -97,11 +97,11 @@ public:
 	float greenOffset;
 	float blueOffset;
 	float alphaOffset;
+	MATRIX matrix;
+	_NR<DisplayObject> mask;
 	bool isMask;
-	bool hasMask;
 	bool smoothing;
 	bool isChunkOwner;
-	MATRIX matrix;
 	bool isValid;
 };
 
@@ -166,7 +166,7 @@ protected:
 	float blueOffset;
 	float alphaOffset;
 	bool isMask;
-	bool hasMask;
+	_NR<DisplayObject> mask;
 	bool smoothing;
 	/**
 	  The whole transformation matrix that is applied to the rendered object
@@ -176,7 +176,7 @@ public:
 	IDrawable(int32_t w, int32_t h, int32_t x, int32_t y,
 		int32_t rw, int32_t rh, int32_t rx, int32_t ry, float r,
 		float xs, float ys,
-		bool im, bool hm,
+		bool im, _NR<DisplayObject> _mask,
 		float a, const std::vector<MaskData>& m,
 		float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
 		float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset, bool _smoothing,
@@ -185,7 +185,7 @@ public:
 		alpha(a),xscale(xs),yscale(ys),
 		redMultiplier(_redMultiplier),greenMultiplier(_greenMultiplier),blueMultiplier(_blueMultiplier),alphaMultiplier(_alphaMultiplier),
 		redOffset(_redOffset),greenOffset(_greenOffset),blueOffset(_blueOffset),alphaOffset(_alphaOffset),
-		isMask(im),hasMask(hm),smoothing(_smoothing), matrix(_m) {}
+		isMask(im),mask(_mask),smoothing(_smoothing), matrix(_m) {}
 	virtual ~IDrawable();
 	/*
 	 * This method returns a raster buffer of the image
@@ -211,7 +211,7 @@ public:
 	float getXScale() const { return xscale; }
 	float getYScale() const { return yscale; }
 	bool getIsMask() const { return isMask; }
-	bool getHasMask() const { return hasMask; }
+	_NR<DisplayObject> getMask() const { return mask; }
 	bool getSmoothing() const { return smoothing; }
 	float getRedMultiplier() const { return redMultiplier; }
 	float getGreenMultiplier() const { return greenMultiplier; }
@@ -278,7 +278,7 @@ public:
 	CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h
 				  , int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r
 				  , float _xs, float _ys
-				  , bool _im, bool _hm
+				  , bool _im, _NR<DisplayObject> mask
 				  , float _s, float _a, const std::vector<MaskData>& m
 				  , float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier
 				  , float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset
@@ -331,7 +331,7 @@ public:
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
 			int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r,
 			float _xs, float _ys,
-			bool _im, bool _hm,
+			bool _im, _NR<DisplayObject> _mask,
 			float _s, float _a, const std::vector<MaskData>& _ms,
 			float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
 			float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,
@@ -429,12 +429,12 @@ public:
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
 			int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r,
 			float _xs, float _ys,
-			bool _im, bool _hm,
+			bool _im, _NR<DisplayObject> _mask,
 			float _s, float _a, const std::vector<MaskData>& _ms,
 			float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
 			float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,
 			bool _smoothing,uint32_t _ci)
-		: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs, _ys,_im,_hm,_s,_a,_ms,
+		: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs, _ys,_im,_mask,_s,_a,_ms,
 						_redMultiplier, _greenMultiplier, _blueMultiplier, _alphaMultiplier,
 						_redOffset, _greenOffset, _blueOffset, _alphaOffset,
 						_smoothing), textData(_textData),caretIndex(_ci) {}
@@ -455,7 +455,7 @@ public:
 	BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _y, int32_t _w, int32_t _h
 				  , int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r
 				  , float _xs, float _ys
-				  , bool _im, bool _hm
+				  , bool _im, NullableRef<DisplayObject> mask
 				  , float _a, const std::vector<MaskData>& m
 				  , float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier
 				  , float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset

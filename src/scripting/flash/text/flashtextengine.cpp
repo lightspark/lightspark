@@ -727,14 +727,14 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 
 	//Compute the matrix and the masks that are relevant
 	bool isMask;
-	bool hasMask;
+	_NR<DisplayObject> mask;
 	MATRIX totalMatrix;
 	std::vector<IDrawable::MaskData> masks;
-	computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
+	computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask);
 	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	MATRIX totalMatrix2;
-	computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,hasMask);
+	computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask);
 	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 	if(width==0 || height==0)
@@ -745,7 +745,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 				x, y, ceil(width), ceil(height),
 				rx, ry, ceil(rwidth), ceil(rheight), rotation,
 				totalMatrix.getScaleX(),totalMatrix.getScaleY(),
-				isMask,hasMask,
+				isMask,mask,
 				1.0f,getConcatenatedAlpha(),masks,
 				1.0f,1.0f,1.0f,1.0f,
 				0.0f,0.0f,0.0f,0.0f,

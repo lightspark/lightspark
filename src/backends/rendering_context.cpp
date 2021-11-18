@@ -49,7 +49,7 @@ const float RenderContext::lsIdentityMatrix[16] = {
 
 const CachedSurface CairoRenderContext::invalidSurface;
 
-RenderContext::RenderContext(CONTEXT_TYPE t):contextType(t)
+RenderContext::RenderContext(CONTEXT_TYPE t):contextType(t),currentMask(nullptr)
 {
 	lsglLoadIdentity();
 }

@@ -255,7 +255,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.xscale = drawable->getXScale();
 		surface.yscale = drawable->getYScale();
 		surface.isMask=drawable->getIsMask();
-		surface.hasMask=drawable->getHasMask();
+		surface.mask=drawable->getMask();
 		surface.matrix = drawable->getMatrix();
 		surface.isValid=true;
 		delete drawable;

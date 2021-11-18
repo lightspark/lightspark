@@ -58,7 +58,7 @@ class externalFontRenderer : public IDrawable
 	int32_t externalressource;
 	class EngineData* m_engine;
 public:
-	externalFontRenderer(const TextData &_textData, class EngineData* engine, int32_t x, int32_t y, int32_t w, int32_t h, int32_t rx, int32_t ry, int32_t rw, int32_t rh, float r, float xs, float ys, bool im, bool hm, float a, const std::vector<MaskData>& m,
+	externalFontRenderer(const TextData &_textData, class EngineData* engine, int32_t x, int32_t y, int32_t w, int32_t h, int32_t rx, int32_t ry, int32_t rw, int32_t rh, float r, float xs, float ys, bool im, _NR<DisplayObject> _mask, float a, const std::vector<MaskData>& m,
 						 float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
 						 float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset,
 						 bool smoothing, const MATRIX &_m);
@@ -306,7 +306,7 @@ public:
 	// Text rendering
 	virtual uint8_t* getFontPixelBuffer(int32_t externalressource,int width,int height) { return nullptr; }
 	virtual int32_t setupFontRenderer(const TextData &_textData,float a, bool smoothing) { return 0; }
-	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, bool _hm, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms,
+	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms,
 									 float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
 									 float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset,
 									 bool smoothing);

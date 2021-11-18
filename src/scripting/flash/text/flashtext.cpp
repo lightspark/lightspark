@@ -1559,12 +1559,12 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	}
 	std::vector<IDrawable::MaskData> masks;
 	bool isMask;
-	bool hasMask;
-	computeMasksAndMatrix(target, masks, totalMatrix,false,isMask,hasMask);
+	_NR<DisplayObject> mask;
+	computeMasksAndMatrix(target, masks, totalMatrix,false,isMask,mask);
 	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	MATRIX totalMatrix2;
-	owner->computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,hasMask);
+	owner->computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask);
 	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 	if (this->type != ET_EDITABLE)
@@ -1581,7 +1581,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	float yscale = getConcatenatedMatrix().getScaleY();
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, ceil(width), ceil(height),
-																					rx, ry, ceil(rwidth), ceil(rheight), rotation,xscale,yscale,isMask,hasMask, 1.0f,getConcatenatedAlpha(), masks,
+																					rx, ry, ceil(rwidth), ceil(rheight), rotation,xscale,yscale,isMask,mask, 1.0f,getConcatenatedAlpha(), masks,
 																					1.0f,1.0f,1.0f,1.0f,
 																					0.0f,0.0f,0.0f,0.0f,
 																					smoothing);
@@ -1597,7 +1597,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				x, y, ceil(width), ceil(height),
 				rx, ry, ceil(rwidth), ceil(rheight), rotation,
 				xscale,yscale,
-				isMask,hasMask,
+				isMask,mask,
 				1.0f, getConcatenatedAlpha(), masks,
 				1.0f,1.0f,1.0f,1.0f,
 				0.0f,0.0f,0.0f,0.0f,
@@ -1683,14 +1683,14 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 			getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
 
 			bool isMask;
-			bool hasMask;
+			_NR<DisplayObject> mask;
 			totalMatrix=getConcatenatedMatrix();
-			computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,hasMask);
+			computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,mask);
 			computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 			MATRIX totalMatrix2;
 			std::vector<IDrawable::MaskData> masks2;
 			totalMatrix2=getConcatenatedMatrix();
-			computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,hasMask);
+			computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,mask);
 			computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 			ctxt.setProperties(bl);
 			ctxt.lsglLoadIdentity();
@@ -1702,14 +1702,14 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, this->borderColor,false,totalMatrix2);
+						isMask, mask,3.0, this->borderColor,false,totalMatrix2);
 				ctxt.renderTextured(tex, (x+1)*scalex, (y+1)*scaley,
 						(tex.width-2)*scalex, (tex.height-2)*scaley,
 						getConcatenatedAlpha(), RenderContext::RGB_MODE,
 						rotation, (rx+1)*scalex, (ry+1)*scaley, ceil((rwidth-2)*scalex), ceil((rheight-2)*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, this->backgroundColor,false,totalMatrix2);
+						isMask, mask,3.0, this->backgroundColor,false,totalMatrix2);
 			}
 			else if (this->background)
 			{
@@ -1719,7 +1719,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, this->backgroundColor,false,totalMatrix2);
+						isMask, mask,3.0, this->backgroundColor,false,totalMatrix2);
 			}
 
 			if (this->caretblinkstate)
@@ -1736,12 +1736,12 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 				MATRIX totalMatrix;
 				std::vector<IDrawable::MaskData> masks;
 				totalMatrix=getConcatenatedMatrix();
-				computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,hasMask);
+				computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,mask);
 				computeBoundsForTransformedRect(tw,tw+2,bymin+ypadding,bymax-ypadding,x,y,width,height,totalMatrix);
 				MATRIX totalMatrix2;
 				std::vector<IDrawable::MaskData> masks2;
 				totalMatrix2=getConcatenatedMatrix();
-				computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,hasMask);
+				computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,mask);
 				computeBoundsForTransformedRect(tw,tw+2,bymin+ypadding,bymax-ypadding,rx,ry,rwidth,rheight,totalMatrix2);
 				ctxt.renderTextured(tex, x*scalex, y*scaley,
 						ceil(width*scalex), ceil(height*scaley),
@@ -1749,7 +1749,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 						rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), xscale, yscale,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, hasMask,3.0, tcolor,true,totalMatrix2);
+						isMask, mask,3.0, tcolor,true,totalMatrix2);
 			}
 		}
 		number_t ypos=-TEXTFIELD_PADDING/yscale;
@@ -1777,14 +1777,14 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 					std::vector<IDrawable::MaskData> masks;
 					
 					bool isMask;
-					bool hasMask;
+					_NR<DisplayObject> mask;
 					totalMatrix=getConcatenatedMatrix();
-					computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,hasMask);
+					computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,mask);
 					computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 					MATRIX totalMatrix2;
 					std::vector<IDrawable::MaskData> masks2;
 					totalMatrix2=getConcatenatedMatrix();
-					computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,hasMask);
+					computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,mask);
 					computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 					ctxt.setProperties(bl);
 					ctxt.lsglLoadIdentity();
@@ -1794,7 +1794,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 										rotation, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), 1.0, 1.0,
 										redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 										redOffset, greenOffset, blueOffset, alphaOffset,
-										isMask, hasMask,2.0, tcolor,true,totalMatrix2);
+										isMask, mask,2.0, tcolor,true,totalMatrix2);
 				}
 				xpos += embeddedfont->getRenderCharAdvance(codetableindex)*fontSize;
 			}

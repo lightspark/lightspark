@@ -301,10 +301,10 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth,owner->getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
 
 	bool isMask=false;
-	bool hasMask=false;
+	_NR<DisplayObject> mask;
 	if (target)
 	{
-		owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
+		owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask);
 		totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	}
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
@@ -328,7 +328,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	{
 		if (q && q->isSoftwareQueue)
 			totalMatrix2.translate(bxmin,bymin);
-		owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
+		owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
@@ -365,7 +365,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, x*scalex, y*scaley, ceil(width*scalex), ceil(height*scaley)
 				, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), rotation
 				, xscale, yscale
-				, isMask, hasMask
+				, isMask, mask
 				, scaling,owner->getConcatenatedAlpha(), masks
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
 				, redOffset,greenOffset,blueOffset,alphaOffset

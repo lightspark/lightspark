@@ -4449,11 +4449,11 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
 
 	bool isMask;
-	bool hasMask;
+	_NR<DisplayObject> mask;
 	if (target)
 	{
 		if (matrixsource)
-			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,hasMask);
+			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask);
 		totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	}
 	totalMatrix = totalMatrix.multiplyMatrix(sourceMatrix);
@@ -4479,7 +4479,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	if (target)
 	{
 		if (matrixsource)
-			matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,hasMask);
+			matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 	totalMatrix2 = totalMatrix2.multiplyMatrix(sourceMatrix);
@@ -4509,14 +4509,14 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	{
 		if (!isMask)
 			isMask = originalsource->ClipDepth || !originalsource->maskOf.isNull();
-		if (!hasMask)
-			hasMask = !originalsource->mask.isNull();
+		if (!mask)
+			mask = originalsource->mask;
 	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, x*scalex, y*scaley, ceil(width*scalex), ceil(height*scaley)
 				, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), rotation
 				, xscale, yscale
-				, isMask, hasMask
+				, isMask, mask
 				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
 				, redOffset,greenOffset,blueOffset,alphaOffset,smoothing,totalMatrix2);

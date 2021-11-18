@@ -117,12 +117,12 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 	return false;
 }
 
-CairoRenderer::CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, bool _hm,
+CairoRenderer::CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
 		float _s, float _a, const std::vector<MaskData>& _ms,
 		float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
 		float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset,
 		bool _smoothing)
-	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _im, _hm,_a, _ms,
+	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _im, _mask,_a, _ms,
 				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
 				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing,_m)
 	, scaleFactor(_s)
@@ -701,12 +701,12 @@ void CairoTokenRenderer::applyCairoMask(cairo_t* cr,int32_t xOffset,int32_t yOff
 
 CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h
 									   , int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r
-									   , float _xs, float _ys, bool _im, bool _hm, float _s, float _a
+									   , float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a
 									   , const std::vector<IDrawable::MaskData> &_ms
 									   , float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier
 									   , float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset
 									   , bool _smoothing, number_t _xstart, number_t _ystart)
-	: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs,_ys,_im,_hm,_s,_a,_ms
+	: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs,_ys,_im,_mask,_s,_a,_ms
 					, _redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier
 					, _redOffset,_greenOffset,_blueOffset,_alphaOffset
 					,_smoothing),tokens(_g),xstart(_xstart),ystart(_ystart)
@@ -1099,7 +1099,7 @@ const TextureChunk& AsyncDrawJob::getTexture()
 	surface.xscale = drawable->getXScale();
 	surface.yscale = drawable->getYScale();
 	surface.isMask = drawable->getIsMask();
-	surface.hasMask = drawable->getHasMask();
+	surface.mask = drawable->getMask();
 	surface.smoothing = drawable->getSmoothing();
 	surface.redMultiplier=drawable->getRedMultiplier();
 	surface.greenMultiplier=drawable->getGreenMultiplier();
@@ -1141,11 +1141,11 @@ IDrawable::~IDrawable()
 	}
 }
 
-BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, bool _hm,
+BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
 		float _a, const std::vector<MaskData>& _ms,
 		float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
 		float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset, bool _smoothing, const MATRIX& _m)
-	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _im, _hm,_a, _ms,
+	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _im, _mask,_a, _ms,
 				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
 				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing,_m)
 	, data(_data)

@@ -626,13 +626,18 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 	}
 	ctxt.setProperties(bl);
 	ctxt.lsglLoadIdentity();
+	if (surface.isMask)
+		ctxt.currentMask=this;
+	// ensure that the matching mask is rendered before rendering this DisplayObject
+	if (ctxt.contextType == RenderContext::GL && surface.mask && surface.mask && ctxt.currentMask != surface.mask.getPtr())
+		surface.mask->defaultRender(ctxt); 
 	ctxt.renderTextured(*surface.tex, surface.xOffset,surface.yOffset,
 			surface.tex->width, surface.tex->height,
 			surface.alpha, RenderContext::RGB_MODE,
 			surface.rotation,surface.xOffsetTransformed,surface.yOffsetTransformed,surface.widthTransformed,surface.heightTransformed,surface.xscale, surface.yscale,
 			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
 			surface.redOffset, surface.greenOffset, surface.blueOffset, surface.alphaOffset,
-			surface.isMask, surface.hasMask,0.0,RGB(),surface.smoothing,surface.matrix);
+			surface.isMask, !surface.mask.isNull(),0.0,RGB(),surface.smoothing,surface.matrix);
 	return false;
 }
 
@@ -695,7 +700,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface.xscale=d->getXScale();
 	cachedSurface.yscale=d->getYScale();
 	cachedSurface.isMask=d->getIsMask();
-	cachedSurface.hasMask=d->getHasMask();
+	cachedSurface.mask=d->getMask();
 	cachedSurface.smoothing=d->getSmoothing();
 	cachedSurface.redMultiplier=d->getRedMultiplier();
 	cachedSurface.greenMultiplier=d->getGreenMultiplier();
@@ -1606,19 +1611,19 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 	}
 }
 
-void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, bool &hasMask) const
+void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, _NR<DisplayObject>&mask) const
 {
 	const DisplayObject* cur=this;
 	bool gatherMasks = true;
 	isMask = cur->ClipDepth || !cur->maskOf.isNull();
-	hasMask = !cur->mask.isNull();
+	mask = cur->mask;
 	while(cur && cur!=target)
 	{
 		totalMatrix=cur->getMatrix(includeRotation).multiplyMatrix(totalMatrix);
 		if(gatherMasks)
 		{
-			if (!cur->mask.isNull())
-				hasMask=true;
+			if (!cur->mask.isNull() && mask.isNull())
+				mask=cur->mask;
 			if (cur->ClipDepth || !cur->maskOf.isNull())
 				isMask=true;
 			if(!cur->maskOf.isNull())

@@ -45,6 +45,7 @@ public:
 	enum CONTEXT_TYPE { CAIRO=0, GL };
 	RenderContext(CONTEXT_TYPE t);
 	CONTEXT_TYPE contextType;
+	const DisplayObject* currentMask;
 
 	/* Modelview matrix manipulation */
 	void lsglLoadIdentity();

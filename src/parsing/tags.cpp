@@ -688,7 +688,7 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 							, xmin, ymin, xmax, ymax
 							, xmin, ymin, xmax, ymax,0
 							, 1, 1
-							, false, false
+							, false,_NR<DisplayObject>()
 							, 0.05,1.0, masks
 							, 1.0,1.0,1.0,1.0
 							, 0,0,0,0

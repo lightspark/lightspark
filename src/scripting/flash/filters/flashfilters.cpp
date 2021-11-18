@@ -82,7 +82,6 @@ void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, num
 	uint8_t* px = data;
 	int x, y, i, p, yp, yi, yw;
 	int r, g, b, a, pr, pg, pb, pa;
-	number_t f;
 
 	int divx = (radiusX + radiusX + 1);
 	int divy = (radiusY + radiusY + 1);
@@ -248,10 +247,9 @@ void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, num
 					px[p + 3] = pa = uint32_t(a * ms) >> ss;
 					if (pa > 0)
 					{
-						f = 255.0 / number_t(pa);
-						pr = int((uint32_t(r * ms) >> ss) * f);
-						pg = int((uint32_t(g * ms) >> ss) * f);
-						pb = int((uint32_t(b * ms) >> ss) * f);
+						pr = (uint32_t(r * ms) >> ss);
+						pg = (uint32_t(g * ms) >> ss);
+						pb = (uint32_t(b * ms) >> ss);
 						px[p] = pr > 255 ? 255 : pr;
 						px[p + 1] = pg > 255 ? 255 : pg;
 						px[p + 2] = pb > 255 ? 255 : pb;

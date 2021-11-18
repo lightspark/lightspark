@@ -1661,7 +1661,6 @@ void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool
 	this->tx=origtx;
 	this->ty=origty;
 }
-#define FILTERBORDER 2 // border in pixels around cached bitmap needed to properly compute filters at borders
 IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MATRIX& initialMatrix,_NR<DisplayObject>* pcachedBitmap)
 {
 	if (!computeCacheAsBitmap())
@@ -1671,8 +1670,20 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	bool ret=getBounds(xmin,xmax,ymin,ymax,m);
 	if(ret==false || xmax-xmin >= 8192 || ymax-ymin >= 8192 || ((xmax-xmin)*(ymax-ymin)) >= 16777216)
 		return nullptr;
-	uint32_t w=ceil(xmax-xmin)+FILTERBORDER*2;
-	uint32_t h=ceil(ymax-ymin)+FILTERBORDER*2;
+	uint32_t maxfilterborder=0;
+	if (filters)
+	{
+		// get maximum border in pixels around cached bitmap needed to properly apply filters
+		for (uint32_t i = 0; i < filters->size(); i++)
+		{
+			asAtom f = asAtomHandler::invalidAtom;
+			filters->at_nocheck(f,i);
+			if (asAtomHandler::is<BitmapFilter>(f))
+				maxfilterborder = max(maxfilterborder,asAtomHandler::as<BitmapFilter>(f)->getMaxFilterBorder());
+		}
+	}
+	uint32_t w=ceil(xmax-xmin)+maxfilterborder*2;
+	uint32_t h=ceil(ymax-ymin)+maxfilterborder*2;
 	if (needsTextureRecalculation|| !cachedBitmap)
 	{
 		if (!cachedBitmap
@@ -1684,7 +1695,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getSystemState(),data));
 		}
 		MATRIX m0=m;
-		m0.translate(-(xmin-FILTERBORDER) ,-(ymin-FILTERBORDER));
+		m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));
 		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,true,true);
 		if (filters)
 		{
@@ -1716,7 +1727,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		*pcachedBitmap = cachedBitmap;
 	this->resetNeedsTextureRecalculation();
 	this->hasChanged=false;
-	MATRIX m1(1,1,0,0,xmin-FILTERBORDER,ymin-FILTERBORDER);
+	MATRIX m1(1,1,0,0,xmin-maxfilterborder,ymin-maxfilterborder);
 	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this->getParent(),m1,this);
 }
 

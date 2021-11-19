@@ -748,7 +748,7 @@ else
       c = 0;
       while ((digitab[*pt] & ctype_xdigit) != 0)
         {
-        register int cc = *pt++;
+        int cc = *pt++;
         if (c == 0 && cc == '0') continue;     /* Leading zeroes */
         count++;
 
@@ -1448,13 +1448,13 @@ work_stack.push(work_item);
 while (!work_stack.isEmpty()) {
   work_stack.pop(work_item);
   int length = work_item.length;
-  register int branchlength = work_item.branchlength;
-  register uschar *cc = work_item.code + 1 + LINK_SIZE;
+  int branchlength = work_item.branchlength;
+  uschar *cc = work_item.code + 1 + LINK_SIZE;
   BOOL skip_to_next_item = FALSE;
 
   for (;!skip_to_next_item;)
     {
-    register int op = *cc;
+    int op = *cc;
     switch (op)
       {
       case OP_CBRA:
@@ -1679,7 +1679,7 @@ find_bracket(const uschar *code, BOOL utf8, int number)
 {
 for (;;)
   {
-  register int c = *code;
+  int c = *code;
   if (c == OP_END) return NULL;
 
   /* XCLASS is used for classes that cannot be represented just by a bit
@@ -1780,7 +1780,7 @@ find_recurse(const uschar *code, BOOL utf8)
 {
 for (;;)
   {
-  register int c = *code;
+  int c = *code;
   if (c == OP_END) return NULL;
   if (c == OP_RECURSE) return code;
 
@@ -1876,7 +1876,7 @@ Returns:      TRUE if what is matched could be empty
 static BOOL
 could_be_empty_branch(const uschar *code, const uschar *endcode, BOOL utf8)
 {
-register int c;
+int c;
 for (code = first_significant_code(code + _pcre_OP_lengths[*code], NULL, 0, TRUE);
      code < endcode;
      code = first_significant_code(code + _pcre_OP_lengths[c], NULL, 0, TRUE))
@@ -2127,7 +2127,7 @@ Returns:     a value representing the name, or -1 if unknown
 static int
 check_posix_name(const uschar *ptr, int len)
 {
-register int yield = 0;
+int yield = 0;
 while (posix_name_lengths[yield] != 0)
   {
   if (len == posix_name_lengths[yield] &&
@@ -2702,8 +2702,8 @@ int req_caseopt, reqvary, tempreqvary;
 int options = *optionsptr;
 int after_manual_callout = 0;
 int length_prevgroup = 0;
-register int c;
-register uschar *code = *codeptr;
+int c;
+uschar *code = *codeptr;
 uschar *last_code = code;
 uschar *orig_code = code;
 uschar *tempcode;
@@ -3113,7 +3113,7 @@ for (;; ptr++)
         {
         BOOL local_negate = FALSE;
         int posix_class, taboffset, tabopt;
-        register const uschar *cbits = cd->cbits;
+        const uschar *cbits = cd->cbits;
         uschar pbits[32];
 
         if (ptr[1] != ':')
@@ -3216,7 +3216,7 @@ for (;; ptr++)
 
         if (c < 0)
           {
-          register const uschar *cbits = cd->cbits;
+          const uschar *cbits = cd->cbits;
           class_charcount += 2;     /* Greater than 1 is what matters */
 
           switch (-c)
@@ -4129,7 +4129,7 @@ for (;; ptr++)
     else if (*previous == OP_BRA  || *previous == OP_CBRA ||
              *previous == OP_ONCE || *previous == OP_COND)
       {
-      register int i;
+      int i;
       int ketoffset = 0;
       int len = code - previous;
       uschar *bralink = NULL;
@@ -4150,7 +4150,7 @@ for (;; ptr++)
 
       if (repeat_max == -1)
         {
-        register uschar *ket = previous;
+        uschar *ket = previous;
         do ket += GET(ket, 1); while (*ket != OP_KET);
         ketoffset = code - ket;
         }
@@ -5970,7 +5970,7 @@ Returns:     TRUE or FALSE
 */
 
 static BOOL
-is_anchored(register const uschar * const code, int * const options, const unsigned int bracket_map,
+is_anchored(const uschar * const code, int * const options, const unsigned int bracket_map,
   const unsigned int backref_map)
 {
 TypedStack<pi_ia_is> work_stack;
@@ -5990,7 +5990,7 @@ while (!work_stack.isEmpty())
   do {
      const uschar *scode = first_significant_code(
        wi_code + _pcre_OP_lengths[*wi_code], options, PCRE_MULTILINE, FALSE);
-     register int op = *scode;
+     int op = *scode;
 
      /* Non-capturing brackets */
 
@@ -6096,7 +6096,7 @@ while (!work_stack.isEmpty())
   do {
      const uschar *scode = first_significant_code(
        wi_code + _pcre_OP_lengths[*wi_code], NULL, 0, FALSE);
-     register int op = *scode;
+     int op = *scode;
 
      /* Non-capturing brackets */
 
@@ -6186,7 +6186,7 @@ typedef struct pi_ffac {
 static int
 find_firstassertedchar(const uschar * const code, int * const options)
 {
-register int c = -1;
+int c = -1;
 BOOL inassert = FALSE;
 BOOL caseless = (*options & PCRE_CASELESS) != 0;
 TypedStack<pi_ffac> work_stack;
@@ -6205,7 +6205,7 @@ while (!work_stack.isEmpty())
   do {
      const uschar *scode =
        first_significant_code(wi_code + 1+LINK_SIZE, options, PCRE_CASELESS, TRUE);
-     register int op = *scode;
+     int op = *scode;
 
      switch(op)
        {

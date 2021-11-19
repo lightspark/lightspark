@@ -66,7 +66,7 @@ int
 _pcre_ord2utf8(int cvalue, uschar *buffer)
 {
 #ifdef SUPPORT_UTF8
-register int i, j;
+int i, j;
 for (i = 0; i < _pcre_utf8_table1_size; i++)
   if (cvalue <= _pcre_utf8_table1[i]) break;
 buffer += i;

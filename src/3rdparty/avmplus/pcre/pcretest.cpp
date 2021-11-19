@@ -362,7 +362,7 @@ Returns:     number of characters placed in the buffer
 static int
 ord2utf8(int cvalue, uschar *utf8bytes)
 {
-register int i, j;
+int i, j;
 for (i = 0; i < utf8_table1_size; i++)
   if (cvalue <= utf8_table1[i]) break;
 utf8bytes += i;
@@ -1256,7 +1256,7 @@ while (!done)
     {
     if (timeit > 0)
       {
-      register int i;
+      int i;
       clock_t time_taken;
       clock_t start_time = clock();
       for (i = 0; i < timeit; i++)
@@ -1320,7 +1320,7 @@ while (!done)
       {
       if (timeit > 0)
         {
-        register int i;
+        int i;
         clock_t time_taken;
         clock_t start_time = clock();
         for (i = 0; i < timeit; i++)
@@ -2015,7 +2015,7 @@ while (!done)
       {
       if (timeitm > 0)
         {
-        register int i;
+        int i;
         clock_t time_taken;
         clock_t start_time = clock();
 

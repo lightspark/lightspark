@@ -78,7 +78,7 @@ int
 _pcre_valid_utf8(const uschar *string, int length)
 {
 #ifdef SUPPORT_UTF8
-register const uschar *p;
+const uschar *p;
 
 if (length < 0)
   {
@@ -88,8 +88,8 @@ if (length < 0)
 
 for (p = string; length-- > 0; p++)
   {
-  register int ab;
-  register int c = *p;
+  int ab;
+  int c = *p;
   if (c < 128) continue;
   if (c < 0xc0) return p - string;
   ab = _pcre_utf8_table4[c & 0x3f];     /* Number of additional bytes */

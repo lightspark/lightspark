@@ -235,7 +235,6 @@ versions and production versions. Note that the "rw" argument of RMATCH isn't
 actuall used in this definition. */
 
 #ifndef NO_RECURSE
-#define REGISTER register
 
 #ifdef PCRE_DEBUG
 #define RMATCH(ra,rb,rc,rd,re,rf,rg,rw) \
@@ -261,8 +260,6 @@ actuall used in this definition. */
 /* These versions of the macros manage a private stack on the heap. Note that
 the "rd" argument of RMATCH isn't actually used in this definition. It's the md
 argument of match(), which never changes. */
-
-#define REGISTER
 
 #define RMATCH(ra,rb,rc,rd,re,rf,rg,rw)\
   {\
@@ -435,7 +432,7 @@ Returns:       MATCH_MATCH if matched            )  these values are >= 0
 */
 
 static int
-match(REGISTER USPTR eptr, REGISTER const uschar *ecode, const uschar *mstart,
+match(USPTR eptr, const uschar *ecode, const uschar *mstart,
   int offset_top, match_data *md, unsigned long int ims, eptrblock *eptrb,
   int flags, unsigned int rdepth)
 {

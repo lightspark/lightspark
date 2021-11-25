@@ -73,12 +73,12 @@ PCRE_EXPORT int
 _pcre_ucp_findchar(const int c, int *type_ptr, int *case_ptr)
 {
 cnode *node = ucp_table;
-register int cc = c;
+int cc = c;
 int case_offset;
 
 for (;;)
   {
-  register int d = node->f1 | ((node->f0 & f0_chhmask) << 16);
+  int d = node->f1 | ((node->f0 & f0_chhmask) << 16);
   if (cc == d) break;
   if (cc < d)
     {
@@ -87,7 +87,7 @@ for (;;)
     }
   else
     {
-    register int roffset = (node->f2 & f2_rightmask) >> f2_rightshift;
+    int roffset = (node->f2 & f2_rightmask) >> f2_rightshift;
     if (roffset == 0) return -1;
     node += 1 << (roffset - 1);
     }

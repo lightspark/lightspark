@@ -1273,10 +1273,10 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 	avioContext->is_streamed=1;
 #endif
 
-#ifdef FF_API_AVIOFORMAT
-	AVInputFormat* fmt = nullptr;
-#else
+#if LIBAVFORMAT_VERSION_MAJOR > 58
 	const AVInputFormat* fmt = nullptr;
+#else
+	AVInputFormat* fmt = nullptr;
 #endif
 	if (format)
 	{

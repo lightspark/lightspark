@@ -132,11 +132,13 @@ private:
 	FILLSTYLE fillstyleBackgroundColor;
 	LINESTYLE2 lineStyleBorder;
 	LINESTYLE2 lineStyleCaret;
+	Mutex* linemutex;
 	void getTextBounds(const tiny_string &txt, number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax);
 protected:
 	void afterSetLegacyMatrix() override;
 public:
 	TextField(Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true, const char* varname="", DefineEditTextTag* _tag=nullptr);
+	~TextField();
 	void finalize() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

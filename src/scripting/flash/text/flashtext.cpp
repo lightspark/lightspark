@@ -123,7 +123,7 @@ TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, 
 	: InteractiveObject(c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
 	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),originalXPosition(0),originalWidth(textData.width),
-	  fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),
+	  fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),linemutex(new Mutex()),
 	  alwaysShowSelection(false),
 	  condenseWhite(false),
 	  embedFonts(false), maxChars(_tag ? int32_t(_tag->MaxLength) : 0), mouseWheelEnabled(true),
@@ -137,6 +137,12 @@ TextField::TextField(Class_base* c, const TextData& textData, bool _selectable, 
 		tabEnabled = true;
 	}
 	fillstyleTextColor.push_back(0xff);
+}
+
+TextField::~TextField()
+{
+	delete linemutex;
+	linemutex=nullptr;
 }
 
 void TextField::sinit(Class_base* c)
@@ -385,6 +391,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 	switch (autoSize)
 	{
 		case AS_RIGHT:
+			linemutex->lock();
 			autosizeposition = max(0.0f,float(width-TEXTFIELD_PADDING*2)-textWidth);
 			for (auto it = textlines.begin(); it != textlines.end(); it++)
 			{
@@ -393,6 +400,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 				else
 					(*it).autosizeposition = 0;
 			}
+			linemutex->unlock();
 			break;
 		case AS_CENTER:
 			autosizeposition = 0;
@@ -404,6 +412,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 			}
 			else
 				autosizeposition = (int32_t((width-TEXTFIELD_PADDING*2) - textWidth)/2);
+			linemutex->lock();
 			for (auto it = textlines.begin(); it != textlines.end(); it++)
 			{
 				if ((*it).textwidth< textWidth)
@@ -411,6 +420,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 				else
 					(*it).autosizeposition = 0;
 			}
+			linemutex->unlock();
 			break;
 		default:
 			autosizeposition = 0;
@@ -1096,6 +1106,7 @@ void TextField::updateSizes()
 		scaling = 1.0f/1024.0f/20.0f;
 		th=0;
 		number_t w,h;
+		linemutex->lock();
 		auto it = textlines.begin();
 		while (it != textlines.end())
 		{
@@ -1143,6 +1154,7 @@ void TextField::updateSizes()
 			if (it != textlines.end())
 				th+=this->leading;
 		}
+		linemutex->unlock();
 		if(w>tw)
 			tw = w;
 	}
@@ -1536,6 +1548,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		fillstyleTextColor.front().FillStyleType=SOLID_FILL;
 		fillstyleTextColor.front().Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
 		int32_t startposy = 0;
+		linemutex->lock();
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{
 			if (isPassword)
@@ -1549,6 +1562,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				embeddedfont->fillTextTokens(tokens,(*it).text,fontSize,fillstyleTextColor,leading,autosizeposition+(*it).autosizeposition,startposy);
 			startposy += this->leading+(embeddedfont->getAscent()+embeddedfont->getDescent()+embeddedfont->getLeading())*fontSize/1024;
 		}
+		linemutex->unlock();
 		if (tokens.empty())
 			return nullptr;
 		return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,false);
@@ -1757,6 +1771,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 		float scaley;
 		int offx,offy;
 		getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
+		linemutex->lock();
 		for (auto itl = textlines.begin(); itl != textlines.end(); itl++)
 		{
 			number_t xpos = (autoSize==AS_NONE && tag ? tag->Bounds.Xmin/20.0f : 0.0f)+autosizeposition+(*itl).autosizeposition;
@@ -1800,6 +1815,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 			}
 			ypos += this->leading+(embeddedfont->getAscent()+embeddedfont->getDescent()+embeddedfont->getLeading())*fontSize/1024;
 		}
+		linemutex->unlock();
 		return false;
 	}
 	else

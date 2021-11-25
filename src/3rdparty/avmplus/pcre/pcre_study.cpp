@@ -108,7 +108,7 @@ static int
 set_start_bits(const uschar *code, uschar *start_bits, BOOL caseless,
   BOOL utf8, compile_data *cd)
 {
-register int c;
+int c;
 int yield = SSB_DONE;
 
 #if 0

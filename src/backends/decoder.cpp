@@ -158,25 +158,23 @@ void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, 
 			av_free(codecContext);
 	}
 #ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
-	codecContext=avcodec_alloc_context3(NULL);
+	codecContext=avcodec_alloc_context3(nullptr);
 #else
 	codecContext=avcodec_alloc_context();
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
-	AVCodec* codec=NULL;
+	const AVCodec* codec=nullptr;
 	videoCodec=codecId;
 	if(codecId==H264)
 	{
 		//TODO: serialize access to avcodec_open
-		const enum CodecID FFMPEGcodecId=CODEC_ID_H264;
-		codec=avcodec_find_decoder(FFMPEGcodecId);
+		codec=avcodec_find_decoder(CODEC_ID_H264);
 		assert(codec);
 		//Ignore the frameRateHint as the rate is gathered from the video data
 	}
 	else if(codecId==H263)
 	{
 		//TODO: serialize access to avcodec_open
-		const enum CodecID FFMPEGcodecId=CODEC_ID_FLV1;
-		codec=avcodec_find_decoder(FFMPEGcodecId);
+		codec=avcodec_find_decoder(CODEC_ID_FLV1);
 		assert(codec);
 
 		//Exploit the frame rate information
@@ -186,8 +184,7 @@ void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, 
 	else if(codecId==VP6)
 	{
 		//TODO: serialize access to avcodec_open
-		const enum CodecID FFMPEGcodecId=CODEC_ID_VP6F;
-		codec=avcodec_find_decoder(FFMPEGcodecId);
+		codec=avcodec_find_decoder(CODEC_ID_VP6F);
 		assert(codec);
 
 		//Exploit the frame rate information
@@ -197,8 +194,7 @@ void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, 
 	else if(codecId==VP6A)
 	{
 		//TODO: serialize access to avcodec_open
-		const enum CodecID FFMPEGcodecId=CODEC_ID_VP6A;
-		codec=avcodec_find_decoder(FFMPEGcodecId);
+		codec=avcodec_find_decoder(CODEC_ID_VP6A);
 		assert(codec);
 
 		//Exploit the frame rate information
@@ -211,7 +207,7 @@ void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, 
 		codecContext->extradata_size=datalen;
 	}
 #ifdef HAVE_AVCODEC_OPEN2
-	if(avcodec_open2(codecContext, codec, NULL)<0)
+	if(avcodec_open2(codecContext, codec, nullptr)<0)
 #else
 	if(avcodec_open(codecContext, codec)<0)
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -249,9 +245,9 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecParameters* codecPar, double frame
 			return;
 	}
 	avcodec_parameters_to_context(codecContext,codecPar);
-	AVCodec* codec=avcodec_find_decoder(codecPar->codec_id);
+	const AVCodec* codec=avcodec_find_decoder(codecPar->codec_id);
 #ifdef HAVE_AVCODEC_OPEN2
-	if(avcodec_open2(codecContext, codec, NULL)<0)
+	if(avcodec_open2(codecContext, codec, nullptr)<0)
 #else
 	if(avcodec_open(codecContext, codec)<0)
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -284,7 +280,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint)
 		default:
 			return;
 	}
-	AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
+	const AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
 #ifdef HAVE_AVCODEC_OPEN2
 	if(avcodec_open2(codecContext, codec, NULL)<0)
 #else
@@ -740,11 +736,11 @@ void FFMpegAudioDecoder::switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdat
 	if (resamplecontext)
 		avresample_free(&resamplecontext);
 #endif
-	AVCodec* codec=avcodec_find_decoder(LSToFFMpegCodec(audioCodec));
+	const AVCodec* codec=avcodec_find_decoder(LSToFFMpegCodec(audioCodec));
 	assert(codec);
 
 #ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
-	codecContext=avcodec_alloc_context3(NULL);
+	codecContext=avcodec_alloc_context3(nullptr);
 #else
 	codecContext=avcodec_alloc_context();
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -756,7 +752,7 @@ void FFMpegAudioDecoder::switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdat
 	}
 
 #ifdef HAVE_AVCODEC_OPEN2
-	if(avcodec_open2(codecContext, codec, NULL)<0)
+	if(avcodec_open2(codecContext, codec, nullptr)<0)
 #else
 	if(avcodec_open(codecContext, codec)<0)
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -770,13 +766,13 @@ void FFMpegAudioDecoder::switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdat
 
 FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC lscodec, int sampleRate, int channels, bool):engine(eng),ownedContext(true)
 #if defined HAVE_LIBAVRESAMPLE || defined HAVE_LIBSWRESAMPLE
-	,resamplecontext(NULL)
+	,resamplecontext(nullptr)
 #endif
 {
 	status=INIT;
 
 	CodecID codecId = LSToFFMpegCodec(lscodec);
-	AVCodec* codec=avcodec_find_decoder(codecId);
+	const AVCodec* codec=avcodec_find_decoder(codecId);
 	assert(codec);
 	codecContext=avcodec_alloc_context3(codec);
 	codecContext->codec_id = codecId;
@@ -815,7 +811,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecParameters* codecP
 #endif
 {
 	status=INIT;
-	AVCodec* codec=avcodec_find_decoder(codecPar->codec_id);
+	const AVCodec* codec=avcodec_find_decoder(codecPar->codec_id);
 	assert(codec);
 #ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
 	codecContext=avcodec_alloc_context3(NULL);
@@ -844,7 +840,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecContext* _c):engin
 #endif
 {
 	status=INIT;
-	AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
+	const AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
 	assert(codec);
 
 #ifdef HAVE_AVCODEC_OPEN2
@@ -1277,7 +1273,11 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 	avioContext->is_streamed=1;
 #endif
 
-	AVInputFormat* fmt = NULL;
+#ifdef FF_API_AVIOFORMAT
+	AVInputFormat* fmt = nullptr;
+#else
+	const AVInputFormat* fmt = nullptr;
+#endif
 	if (format)
 	{
 		switch (format->codec)
@@ -1302,7 +1302,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 				break;
 		}
 	}
-	if (fmt == NULL)
+	if (fmt == nullptr)
 	{
 		//Probe the stream format.
 		//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
@@ -1323,15 +1323,15 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 		fmt=av_probe_input_format(&probeData,1);
 		delete[] probeData.buf;
 	}
-	if(fmt==NULL)
+	if(fmt==nullptr)
 		return;
 
 #ifdef HAVE_AVIO_ALLOC_CONTEXT
 	formatCtx=avformat_alloc_context();
 	formatCtx->pb = avioContext;
-	int ret=avformat_open_input(&formatCtx, "lightspark_stream", fmt, NULL);
+	int ret=avformat_open_input(&formatCtx, "lightspark_stream", fmt, nullptr);
 #else
-	int ret=av_open_input_stream(&formatCtx, avioContext, "lightspark_stream", fmt, NULL);
+	int ret=av_open_input_stream(&formatCtx, avioContext, "lightspark_stream", fmt, nullptr);
 #endif
 	if(ret<0)
 		return;

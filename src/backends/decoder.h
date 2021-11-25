@@ -364,7 +364,7 @@ private:
 	std::vector<uint8_t> overflowBuffer;
 	bool fillDataAndCheckValidity();
 	CodecID LSToFFMpegCodec(LS_AUDIO_CODEC lscodec);
-#ifdef HAVE_AVCODEC_DECODE_AUDIO4
+#if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
 	AVFrame* frameIn;
 	int resampleFrameToS16(FrameSamples& curTail);
 #endif

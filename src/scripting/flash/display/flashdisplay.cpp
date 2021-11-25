@@ -3489,6 +3489,17 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 	return true;
 }
 
+_NR<DisplayObject> MorphShape::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type, bool interactiveObjectsOnly)
+{
+	number_t xmin, xmax, ymin, ymax;
+	boundsRect(xmin, xmax, ymin, ymax);
+	if (x<xmin || x>xmax || y<ymin || y>ymax)
+		return NullRef;
+	if (!interactiveObjectsOnly)
+		this->incRef();
+	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? last : _NR<DisplayObject>(this),x-xmin,y-ymin, type);
+}
+
 void MorphShape::checkRatio(uint32_t ratio, bool inskipping)
 {
 	if (inskipping)

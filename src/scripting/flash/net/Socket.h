@@ -53,6 +53,7 @@ class ASSocket : public EventDispatcher, IDataInput, IDataOutput
 protected:
 	ASSocketThread *job;
 	Mutex joblock; // protect access to job
+	uint8_t objectEncoding;
 
 	ASPROPERTY_GETTER_SETTER(int,timeout);
 	ASFUNCTION_ATOM(_constructor);
@@ -63,6 +64,8 @@ protected:
 	ASFUNCTION_ATOM(bytesAvailable);
 	ASFUNCTION_ATOM(_getEndian);
 	ASFUNCTION_ATOM(_setEndian);
+	ASFUNCTION_ATOM(_getObjectEncoding);
+	ASFUNCTION_ATOM(_setObjectEncoding);
 	ASFUNCTION_ATOM(readBoolean);
 	ASFUNCTION_ATOM(readByte);
 	ASFUNCTION_ATOM(readBytes);
@@ -93,7 +96,7 @@ protected:
 	void connect(tiny_string host, int port);
 	bool isConnected();
 public:
-	ASSocket(Class_base* c) : EventDispatcher(c), job(NULL), timeout(20000) {}
+	ASSocket(Class_base* c);
 	~ASSocket();
 	static void sinit(Class_base*);
 	void finalize();

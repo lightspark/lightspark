@@ -71,7 +71,7 @@ void XMLSocket::finalize()
 		job->threadAborting = true;
 		job->requestClose();
 		job->threadAbort();
-		job = NULL;
+		job = nullptr;
 	}
 	timeout = 20000;
 }
@@ -121,7 +121,7 @@ void XMLSocket::connect(tiny_string host, int port)
 		throw Class<IOError>::getInstanceS(getSystemState(),"Already connected");
 
 	// Host shouldn't contain scheme or port
-	if (host.strchr(':') != NULL)
+	if (host.strchr(':') != nullptr)
 		throw Class<SecurityError>::getInstanceS(getSystemState(),"Invalid hostname");
 
 	// Check sandbox and policy file
@@ -197,7 +197,60 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _connected)
 void XMLSocket::threadFinished()
 {
 	Locker l(joblock);
-	job = NULL;
+	job = nullptr;
+}
+void XMLSocket::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
+{
+	if (dispatcher == this)
+	{
+		if (e->type == "connect")
+		{
+			asAtom func=asAtomHandler::invalidAtom;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONCONNECT;
+			getVariableByMultiname(func,m);
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtom ret=asAtomHandler::invalidAtom;
+				asAtom obj = asAtomHandler::fromObject(this);
+				asAtom arg0 = asAtomHandler::fromBool(this->isConnected());
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,&arg0,1);
+			}
+		}
+		else if (e->type == "data")
+		{
+			asAtom func=asAtomHandler::invalidAtom;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONDATA;
+			getVariableByMultiname(func,m);
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtom ret=asAtomHandler::invalidAtom;
+				asAtom obj = asAtomHandler::fromObject(this);
+				asAtom arg0 = asAtomHandler::fromString(getSystemState(),e->as<DataEvent>()->data);
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,&arg0,1);
+			}
+		}
+		else if (e->type == "close")
+		{
+			asAtom func=asAtomHandler::invalidAtom;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONCLOSE;
+			getVariableByMultiname(func,m);
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtom ret=asAtomHandler::invalidAtom;
+				asAtom obj = asAtomHandler::fromObject(this);
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			}
+		}
+	}
 }
 
 XMLSocketThread::XMLSocketThread(_R<XMLSocket> _owner, const tiny_string& _hostname, int _port, int _timeout)
@@ -236,7 +289,7 @@ XMLSocketThread::~XMLSocketThread()
 		::close(signalEmitter);
 
 	void *data;
-	while ((data = g_async_queue_try_pop(sendQueue)) != NULL)
+	while ((data = g_async_queue_try_pop(sendQueue)) != nullptr)
 	{
 		tiny_string *s = (tiny_string *)data;
 		delete s;
@@ -249,7 +302,10 @@ void XMLSocketThread::execute()
 	if (!sock.connect(hostname, port))
 	{
 		owner->incRef();
-		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
+		if (owner->getSystemState()->mainClip->needsActionScript3())
+			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
+		else
+			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"connect")));
 		return;
 	}
 
@@ -259,7 +315,7 @@ void XMLSocketThread::execute()
 	struct timeval timeout;
 	int maxfd;
 	fd_set readfds;
-	       
+	
 	while (!threadAborting)
 	{
 		FD_ZERO(&readfds);
@@ -271,7 +327,7 @@ void XMLSocketThread::execute()
 		timeout.tv_sec = 10;
 		timeout.tv_usec = 0;
 
-		int status = select(maxfd+1, &readfds, NULL, NULL, &timeout);
+		int status = select(maxfd+1, &readfds, nullptr, nullptr, &timeout);
 		if (status  < 0)
 		{
 			owner->incRef();
@@ -344,11 +400,15 @@ void XMLSocketThread::executeCommand(char cmd, SocketIO& sock)
 		case SOCKET_COMMAND_SEND:
 		{
 			void *data;
-			while ((data = g_async_queue_try_pop(sendQueue)) != NULL)
+			while ((data = g_async_queue_try_pop(sendQueue)) != nullptr)
 			{
 				tiny_string *s = (tiny_string *)data;
 				sock.sendAll(s->raw_buf(), s->numBytes());
 				delete s;
+				// according to specs every message is terminated by a null byte
+				char buf=0;
+				sock.sendAll(&buf, 1);
+				
 			}
 			break;
 		}

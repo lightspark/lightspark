@@ -1138,7 +1138,10 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		dispatcher->incRef();
 		dispatcher->getSystemState()->stage->setFocusTarget(_MR(dispatcher->as<InteractiveObject>()));
 	}
-	dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event.getPtr());
+	if (dispatcher->is<DisplayObject>())
+		dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event.getPtr());
+	else
+		dispatcher->AVM1HandleEvent(dispatcher,event.getPtr());
 	
 	/* This must even be called if stop*Propagation has been called */
 	if(!event->defaultPrevented)

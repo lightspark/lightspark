@@ -671,7 +671,7 @@ ASFUNCTIONBODY_GETTER_SETTER_STATIC(SoundMixer,soundTransform);
 
 ASFUNCTIONBODY_ATOM(SoundMixer,stopAll)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"SoundMixer.stopAll does nothing");
+	sys->audioManager->stopAllSounds();
 }
 ASFUNCTIONBODY_ATOM(SoundMixer,computeSpectrum)
 {
@@ -970,6 +970,7 @@ void SoundChannel::playStream()
 void SoundChannel::jobFence()
 {
 	mutex.lock();
+	RELEASE_WRITE(stopped,true);
 	RELEASE_WRITE(terminated,true);
 	if (restartafterabort && !getSystemState()->isShuttingDown())
 	{

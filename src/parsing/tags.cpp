@@ -2492,8 +2492,7 @@ void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	if (!soundTag)
 		return;
 
-	if (SoundInfo.HasEnvelope || SoundInfo.HasLoops ||
-	    SoundInfo.HasOutPoint || SoundInfo.HasInPoint)
+	if (SoundInfo.HasOutPoint || SoundInfo.HasInPoint)
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "StartSoundTag: some modifiers not supported");
 	}
@@ -2521,6 +2520,8 @@ void StartSoundTag::play(DefineSoundTag *soundTag)
 			    soundTag->getChannels()),
 			false,this));
 		soundTag->soundchanel->setConstant();
+		if (this->SoundInfo.HasLoops)
+			soundTag->soundchanel->setLoops(this->SoundInfo.LoopCount);
 	}
 	if (this->SoundInfo.SyncNoMultiple && soundTag->soundchanel->isPlaying())
 		return;

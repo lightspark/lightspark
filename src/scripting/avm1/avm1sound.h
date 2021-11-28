@@ -31,9 +31,11 @@ class AVM1Sound: public Sound
 {
 private:
 	_NR<MovieClip> clip;
+	bool loading;
+	bool isStreaming;
 public:
-	AVM1Sound(Class_base* c):Sound(c){}
-	AVM1Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format, number_t duration_in_ms):Sound(c,soundData,format,duration_in_ms) {}
+	AVM1Sound(Class_base* c):Sound(c),loading(false),isStreaming(false){}
+	AVM1Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format, number_t duration_in_ms):Sound(c,soundData,format,duration_in_ms),loading(false),isStreaming(false) {}
 	static void sinit(Class_base* c);
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 
@@ -45,6 +47,7 @@ public:
 	ASFUNCTION_ATOM(setPan);
 	ASFUNCTION_ATOM(stop);
 	ASFUNCTION_ATOM(getPosition);
+	ASFUNCTION_ATOM(loadSound);
 };
 
 }

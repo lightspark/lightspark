@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/abc.h"
 #include "scripting/avm1/avm1sound.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
@@ -37,6 +38,7 @@ void AVM1Sound::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setPan","",Class<IFunction>::getFunction(c->getSystemState(),setPan),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),getPosition),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("duration","",Class<IFunction>::getFunction(c->getSystemState(),_getter_length),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loadSound","",Class<IFunction>::getFunction(c->getSystemState(),loadSound),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)
 {
@@ -128,6 +130,44 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getPosition)
 	else
 		asAtomHandler::setInt(ret,sys,0);
 }
+ASFUNCTIONBODY_ATOM(AVM1Sound,loadSound)
+{
+	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
+
+	th->loading=false;
+	tiny_string url;
+	ARG_UNPACK_ATOM(url)(th->isStreaming);
+	tiny_string realurl;
+	if (url.find("://") == tiny_string::npos)
+	{
+		// relative url, so we add the main url
+		realurl = sys->mainClip->getOrigin().getProtocol()+"://";
+		realurl += sys->mainClip->getOrigin().getHostname()+":";
+		realurl += Integer::toString(sys->mainClip->getOrigin().getPort())+"/";
+		realurl += url;
+	}
+	else
+		realurl = url;
+	th->url = URLInfo(realurl);
+	_R<StreamCache> c(_MR(new MemoryStreamCache(th->getSystemState())));
+	th->soundData = c;
+
+	if(!th->url.isValid())
+	{
+		//Notify an error during loading
+		th->incRef();
+		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
+		return;
+	}
+
+	th->incRef();
+	th->downloader=th->getSystemState()->downloadManager->download(th->url, th->soundData, th);
+	if(th->downloader->hasFailed())
+	{
+		th->incRef();
+		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
+	}
+}
 
 void AVM1Sound::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
@@ -146,6 +186,31 @@ void AVM1Sound::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::fromObject(this);
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			}
+		}
+	}
+	if (dispatcher == this)
+	{
+		if (e->type == "progress" && !this->loading)
+		{
+			this->loading=true;
+			asAtom func=asAtomHandler::invalidAtom;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
+			getVariableByMultiname(func,m);
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtom ret=asAtomHandler::invalidAtom;
+				asAtom obj = asAtomHandler::fromObject(this);
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			}
+			if (isStreaming)
+			{
+				asAtom ret = asAtomHandler::invalidAtom;
+				asAtom obj = asAtomHandler::fromObject(this);
+				this->play(ret,getSystemState(),obj,nullptr,0);
 			}
 		}
 	}

@@ -19,6 +19,7 @@
 
 #include "version.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/messagechannel.h"
 #include "scripting/abc.h"
 #include "scripting/argconv.h"
 #include "compat.h"
@@ -852,6 +853,18 @@ ASWorker::ASWorker(Class_base* c):
 
 void ASWorker::finalize()
 {
+	if (!isPrimordial)
+	{
+		threadAborting = true;
+		parsemutex.lock();
+		if (parser)
+			parser->threadAborting = true;
+		parsemutex.unlock();
+		threadAbort();
+		sem_event_cond.signal();
+		started = false;
+	}
+	
 	loader.reset();
 	swf.reset();
 }
@@ -859,17 +872,17 @@ void ASWorker::finalize()
 void ASWorker::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("current","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrent),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("getSharedProperty","",Class<IFunction>::getFunction(c->getSystemState(),getSharedProperty),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("isSupported","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrent),GETTER_METHOD,false);
-	REGISTER_GETTER(c, isPrimordial);
-	REGISTER_GETTER(c, state);
-	c->setDeclaredMethodByQName("addEventListener","",Class<IFunction>::getFunction(c->getSystemState(),addEventListener),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createMessageChannel","",Class<IFunction>::getFunction(c->getSystemState(),createMessageChannel),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeEventListener","",Class<IFunction>::getFunction(c->getSystemState(),removeEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("current","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrent,0,Class<ASWorker>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("getSharedProperty","",Class<IFunction>::getFunction(c->getSystemState(),getSharedProperty,1,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isSupported","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrent,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	REGISTER_GETTER_RESULTTYPE(c, isPrimordial,Boolean);
+	REGISTER_GETTER_RESULTTYPE(c, state,ASString);
+	c->setDeclaredMethodByQName("addEventListener","",Class<IFunction>::getFunction(c->getSystemState(),_addEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createMessageChannel","",Class<IFunction>::getFunction(c->getSystemState(),createMessageChannel,1,Class<MessageChannel>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeEventListener","",Class<IFunction>::getFunction(c->getSystemState(),_removeEventListener),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setSharedProperty","",Class<IFunction>::getFunction(c->getSystemState(),setSharedProperty),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("start","",Class<IFunction>::getFunction(c->getSystemState(),start),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("terminate","",Class<IFunction>::getFunction(c->getSystemState(),terminate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("terminate","",Class<IFunction>::getFunction(c->getSystemState(),terminate,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 }
 
 void ASWorker::execute()
@@ -888,7 +901,62 @@ void ASWorker::execute()
 	{
 		LOG(LOG_INFO,"start worker"<<this->toDebugString()<<" "<<this->isPrimordial);
 		parser->execute();
-		LOG(LOG_INFO,"worker done"<<this->toDebugString()<<" "<<this->isPrimordial);
+	}
+	parsemutex.lock();
+	delete parser;
+	parser = nullptr;
+	parsemutex.unlock();
+	while (!this->threadAborting)
+	{
+		event_queue_mutex.lock();
+		while(events_queue.empty() && !this->threadAborting)
+			sem_event_cond.wait(event_queue_mutex);
+		if (this->threadAborting)
+			break;
+
+		_NR<EventDispatcher> dispatcher=events_queue.front().first;
+		_R<Event> e=events_queue.front().second;
+		events_queue.pop_front();
+	
+		event_queue_mutex.unlock();
+		try
+		{
+			if (dispatcher)
+				dispatcher->handleEvent(e);
+		}
+		catch(LightsparkException& e)
+		{
+			LOG(LOG_ERROR,"Error in worker " << e.cause);
+			getSystemState()->setError(e.cause);
+			threadAborting = true;
+		}
+		catch(ASObject*& e)
+		{
+			if(e->getClass())
+				LOG(LOG_ERROR,"Unhandled ActionScript exception in worker " << e->toString());
+			else
+				LOG(LOG_ERROR,"Unhandled ActionScript exception in worker (no type)");
+			if (e->is<ASError>())
+			{
+				LOG(LOG_ERROR,"Unhandled ActionScript exception in worker " << e->as<ASError>()->getStackTraceString());
+				if (getSystemState()->ignoreUnhandledExceptions)
+					return;
+				getSystemState()->setError(e->as<ASError>()->getStackTraceString());
+			}
+			else
+				getSystemState()->setError("Unhandled ActionScript exception");
+			threadAborting = true;
+		}
+		if (threadAborting)
+		{
+			while(!events_queue.empty())
+			{
+				_R<Event> e=events_queue.front().second;
+				events_queue.pop_front();
+			}
+			threadAbort();
+			started = false;
+		}
 	}
 	delete sbuf;
 }
@@ -899,11 +967,22 @@ void ASWorker::jobFence()
 	this->incRef();
 	getSystemState()->removeWorker(this);
 	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"workerState")));
-	parsemutex.lock();
-	delete parser;
-	parser = nullptr;
-	parsemutex.unlock();
+	sem_event_cond.signal();
 }
+
+void ASWorker::threadAbort()
+{
+	sem_event_cond.signal();
+}
+bool ASWorker::addEvent(_NR<EventDispatcher> obj, _R<Event> ev)
+{
+	Locker l(event_queue_mutex);
+	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
+	RELEASE_WRITE(ev->queued,true);
+	sem_event_cond.signal();
+	return true;
+}
+
 ASFUNCTIONBODY_GETTER(ASWorker, state);
 ASFUNCTIONBODY_GETTER(ASWorker, isPrimordial);
 
@@ -921,7 +1000,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,getSharedProperty)
 	ARG_UNPACK_ATOM(key);
 	Locker l(sys->workerDomain->workersharedobjectmutex);
 	
-	multiname m(NULL);
+	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=sys->getUniqueStringId(key);
 	m.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
@@ -937,12 +1016,22 @@ ASFUNCTIONBODY_ATOM(ASWorker,isSupported)
 }
 ASFUNCTIONBODY_ATOM(ASWorker,_addEventListener)
 {
+	ASWorker* th = asAtomHandler::as<ASWorker>(obj);
+	th->worker = th;
 	EventDispatcher::addEventListener(ret,sys,obj,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(ASWorker,createMessageChannel)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Worker.createMessageChannel not implemented");
-	asAtomHandler::setUndefined(ret);
+	ASWorker* th = asAtomHandler::as<ASWorker>(obj);
+	_NR<ASWorker> receiver;
+	ARG_UNPACK_ATOM(receiver);
+	if (receiver.isNull())
+		throwError<ArgumentError>(kInvalidArgumentError,"receiver");
+	MessageChannel* channel = Class<MessageChannel>::getInstanceSNoArgs(sys);
+	th->incRef();
+	channel->sender = _MR(th);
+	channel->receiver = receiver;
+	ret = asAtomHandler::fromObjectNoPrimitive(channel);
 }
 ASFUNCTIONBODY_ATOM(ASWorker,_removeEventListener)
 {
@@ -955,7 +1044,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,setSharedProperty)
 	ARG_UNPACK_ATOM(key)(value);
 	Locker l(sys->workerDomain->workersharedobjectmutex);
 	ASATOM_INCREF(value);
-	multiname m(NULL);
+	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=sys->getUniqueStringId(key);
 	m.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));

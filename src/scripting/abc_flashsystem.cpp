@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/messagechannel.h"
 #include "scripting/flash/system/messagechannelstate.h"
 #include "scripting/flash/system/securitypanel.h"
 #include "scripting/flash/system/systemupdater.h"
@@ -45,6 +46,7 @@ void ABCVm::registerClassesFlashSystem(Global* builtin)
 	builtin->registerBuiltin("WorkerState","flash.system",Class<WorkerState>::getRef(m_sys));
 	builtin->registerBuiltin("ImageDecodingPolicy","flash.system",Class<ImageDecodingPolicy>::getRef(m_sys));
 	builtin->registerBuiltin("IMEConversionMode","flash.system",Class<IMEConversionMode>::getRef(m_sys));
+	builtin->registerBuiltin("MessageChannel","flash.system",Class<MessageChannel>::getRef(m_sys));
 	builtin->registerBuiltin("MessageChannelState","flash.system",Class<MessageChannelState>::getRef(m_sys));
 	builtin->registerBuiltin("SecurityPanel","flash.system",Class<SecurityPanel>::getRef(m_sys));
 	builtin->registerBuiltin("SystemUpdater","flash.system",Class<SystemUpdater>::getRef(m_sys));

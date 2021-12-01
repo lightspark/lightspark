@@ -180,6 +180,16 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 			root->hasMainClass=true;
 			root->incRef();
 			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
+			if (root != root->getSystemState()->mainClip)
+			{
+				ASWorker* worker = getWorker();
+				if (worker)
+				{
+					worker->state ="running";
+					worker->incRef();
+					getVm(root->getSystemState())->addEvent(_MR(worker),_MR(Class<Event>::getInstanceS(root->getSystemState(),"workerState")));
+				}
+			}
 		}
 		else
 		{
@@ -1412,6 +1422,10 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	RELEASE_WRITE(ev->queued,true);
 	sem_event_cond.signal();
+	if (!m_sys->singleworker)
+	{
+		m_sys->addEventToBackgroundWorkers(obj,ev);
+	}
 	return true;
 }
 void ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
@@ -1519,7 +1533,7 @@ void ABCVm::handleFrontEvent()
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,_("Error in VM ") << e.cause);
+		LOG(LOG_ERROR,"Error in VM " << e.cause);
 		m_sys->setError(e.cause);
 		/* do not allow any more event to be enqueued */
 		signalEventWaiters();
@@ -1527,18 +1541,18 @@ void ABCVm::handleFrontEvent()
 	catch(ASObject*& e)
 	{
 		if(e->getClass())
-			LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->toString());
+			LOG(LOG_ERROR,"Unhandled ActionScript exception in VM " << e->toString());
 		else
-			LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM (no type)"));
+			LOG(LOG_ERROR,"Unhandled ActionScript exception in VM (no type)");
 		if (e->is<ASError>())
 		{
-			LOG(LOG_ERROR,_("Unhandled ActionScript exception in VM ") << e->as<ASError>()->getStackTraceString());
+			LOG(LOG_ERROR,"Unhandled ActionScript exception in VM " << e->as<ASError>()->getStackTraceString());
 			if (m_sys->ignoreUnhandledExceptions)
 				return;
 			m_sys->setError(e->as<ASError>()->getStackTraceString());
 		}
 		else
-			m_sys->setError(_("Unhandled ActionScript exception"));
+			m_sys->setError("Unhandled ActionScript exception");
 		/* do not allow any more event to be enqueued */
 		shuttingdown = true;
 		signalEventWaiters();
@@ -1558,7 +1572,7 @@ method_info* ABCContext::get_method(unsigned int m)
 
 void ABCVm::not_impl(int n)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("not implement opcode 0x") << hex << n );
+	LOG(LOG_NOT_IMPLEMENTED, "not implement opcode 0x" << hex << n );
 	throw UnsupportedException("Not implemented opcode");
 }
 
@@ -1658,8 +1672,6 @@ void ABCContext::exec(bool lazy)
 	LOG(LOG_CALLS, _("Last script (Entry Point)"));
 	//Creating a new global for the last script
 	Global* global=root->applicationDomain->getLastGlobalScope();
-	root->getSystemState()->worker->state ="running";
-	getVm(root->getSystemState())->addEvent(_MR(root->getSystemState()->worker),_MR(Class<Event>::getInstanceS(root->getSystemState(),"workerState")));
 
 	//the script init of the last script is the main entry point
 	if(!lazy)

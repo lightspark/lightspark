@@ -816,6 +816,23 @@ void SystemState::removeWorker(ASWorker *w)
 	singleworker=workerDomain->workerlist->size() <= 1;
 
 }
+void SystemState::addEventToBackgroundWorkers(_NR<EventDispatcher> obj, _R<Event> ev)
+{
+	if(obj.isNull())
+		return;
+	
+	if (ev->is<WaitableEvent>())
+		return;
+	Locker l(workerMutex);
+	for (uint32_t i= 0; i < workerDomain->workerlist->size(); i++)
+	{
+		asAtom w = workerDomain->workerlist->at(i);
+		if (asAtomHandler::is<ASWorker>(w) && !asAtomHandler::as<ASWorker>(w)->isPrimordial && obj->hasEventListener(ev->type))
+		{
+			asAtomHandler::as<ASWorker>(w)->addEvent(obj,ev);
+		}
+	}
+}
 
 void SystemState::startRenderTicks()
 {

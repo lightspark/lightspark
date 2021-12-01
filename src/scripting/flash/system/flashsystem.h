@@ -197,6 +197,11 @@ private:
 	ParseThread* parser;
 	bool giveAppPrivileges;
 	bool started;
+	//Synchronization
+	Mutex event_queue_mutex;
+	Cond sem_event_cond;
+	typedef std::pair<_NR<EventDispatcher>,_R<Event>> eventType;
+	std::deque<eventType> events_queue;
 public:
 	ASWorker(Class_base* c);
 	void finalize() override;
@@ -214,6 +219,8 @@ public:
 	ASFUNCTION_ATOM(terminate);
 	void execute() override;
 	void jobFence() override;
+	void threadAbort() override;
+	bool addEvent(_NR<EventDispatcher> obj ,_R<Event> ev);
 };
 class WorkerDomain: public ASObject
 {

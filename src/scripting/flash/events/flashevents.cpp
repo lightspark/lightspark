@@ -557,7 +557,7 @@ void IOErrorEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("STANDARD_OUTPUT_IO_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardOutputIoError"),CONSTANT_TRAIT);
 }
 
-EventDispatcher::EventDispatcher(Class_base* c):ASObject(c),forcedTarget(asAtomHandler::invalidAtom)
+EventDispatcher::EventDispatcher(Class_base* c):ASObject(c),forcedTarget(asAtomHandler::invalidAtom),worker(nullptr)
 {
 }
 
@@ -630,7 +630,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		//Search if any listener is already registered for the event
 		list<listener>& listeners=th->handlers[eventName];
 		ASATOM_INCREF(args[1]);
-		const listener newListener(args[1], priority, useCapture);
+		const listener newListener(args[1], priority, useCapture, th->worker);
 		//Ordered insertion
 		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
 		// check if a listener that matches type, use_capture and function is already registered
@@ -765,7 +765,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	if(h==handlers.end())
 		return;
 
-	LOG(LOG_CALLS, _("Handling event ") << h->first);
+	LOG(LOG_CALLS,"Handling event " << h->first<<" "<<getWorker());
 
 	//Create a temporary copy of the listeners, as the list can be modified during the calls
 	vector<listener> tmpListener(h->second.begin(),h->second.end());
@@ -781,6 +781,8 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	{
 		if( (e->eventPhase == EventPhase::BUBBLING_PHASE && tmpListener[i].use_capture)
 		||  (e->eventPhase == EventPhase::CAPTURING_PHASE && !tmpListener[i].use_capture))
+			continue;
+		if (tmpListener[i].worker && tmpListener[i].worker != getWorker()) // only handle listeners that are available in the current worker
 			continue;
 		asAtom arg0= asAtomHandler::fromObject(e.getPtr());
 		IFunction* func = asAtomHandler::as<IFunction>(tmpListener[i].f);

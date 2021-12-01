@@ -336,9 +336,10 @@ private:
 	 * false: get events in the bubble phase
 	 */
 	bool use_capture;
+	ASWorker* worker;
 public:
-	explicit listener(asAtom _f, int32_t _p, bool _c)
-		:f(_f),priority(_p),use_capture(_c){}
+	explicit listener(asAtom _f, int32_t _p, bool _c,ASWorker* _w)
+		:f(_f),priority(_p),use_capture(_c),worker(_w){}
 	bool operator==(std::pair<asAtom,bool> r)
 	{
 		/* One can register the same handle for the same event with
@@ -370,6 +371,7 @@ private:
 	asAtom forcedTarget;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) {}
+	ASWorker* worker; // the worker in which the events will be handled (nullptr for primordial worker)
 public:
 	EventDispatcher(Class_base* c);
 	void finalize() override;

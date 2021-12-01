@@ -79,6 +79,7 @@
 #include "scripting/flash/sampler/flashsampler.h"
 #include "scripting/flash/security/certificatestatus.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/messagechannel.h"
 #include "scripting/flash/system/messagechannelstate.h"
 #include "scripting/flash/system/securitypanel.h"
 #include "scripting/flash/system/systemupdater.h"

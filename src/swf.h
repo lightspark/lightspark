@@ -458,6 +458,7 @@ public:
 	Mutex workerMutex;
 	void addWorker(ASWorker* w);
 	void removeWorker(ASWorker* w);
+	void addEventToBackgroundWorkers(_NR<EventDispatcher> obj, _R<Event> ev);
 
 	//Stuff to be done once for process and not for plugin instance
 	static void staticInit() DLL_PUBLIC;

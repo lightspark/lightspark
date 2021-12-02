@@ -1199,19 +1199,23 @@ void TextData::setText(const char* text)
 		return;
 	tiny_string t = text;
 	uint32_t index = tiny_string::npos;
+	uint32_t index1 = tiny_string::npos;
+	uint32_t index2 = tiny_string::npos;
 	do
 	{
-		index = t.find("\n");
+		index1 = t.find("\n");
+		index2 = t.find("\r");
+		index = min(index1,index2);
 		textline line;
 		line.autosizeposition=0;
 		line.textwidth=UINT32_MAX;
 		if (index != tiny_string::npos)
 		{
-			if (index > 0 && t.charAt(index-1)=='\r')
-				line.text = t.substr_bytes(0,index-1).raw_buf();
+			line.text = t.substr_bytes(0,index).raw_buf();
+			if (index < t.numChars()-1 && (t.charAt(index+1)=='\r' || t.charAt(index+1)=='\n'))
+				t=t.substr_bytes(index+2,UINT32_MAX);
 			else
-				line.text = t.substr_bytes(0,index).raw_buf();
-			t=t.substr_bytes(index+1,UINT32_MAX);
+				t=t.substr_bytes(index+1,UINT32_MAX);
 		}
 		else
 		{

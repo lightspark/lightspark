@@ -1634,8 +1634,8 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 	{
 		// fast rendering path using pre-generated textures for every glyph
 		float rotation = getConcatenatedMatrix().getRotation();
-		float xscale = getConcatenatedMatrix().getScaleX();
-		float yscale = getConcatenatedMatrix().getScaleY();
+		float xscale = abs(getConcatenatedMatrix().getScaleX());
+		float yscale = abs(getConcatenatedMatrix().getScaleY());
 		float redMultiplier=1.0;
 		float greenMultiplier=1.0;
 		float blueMultiplier=1.0;

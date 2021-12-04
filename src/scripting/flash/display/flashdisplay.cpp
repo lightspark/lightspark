@@ -337,9 +337,13 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytes)
 
 	if (th->bytesData.isNull())
 		th->bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(sys));
-	if (!th->loader.isNull() && !th->loader->getContent().isNull())
+	if (th->loader.isNull()) //th is the LoaderInfo of the main clip
+	{
+		if (th->bytesData->getLength() == 0 && sys->mainClip->parsethread)
+			sys->mainClip->parsethread->getSWFByteArray(th->bytesData.getPtr());
+	}
+	else if (!th->loader->getContent().isNull())
 		th->bytesData->writeObject(th->loader->getContent().getPtr());
-
 	ret = asAtomHandler::fromObject(th->bytesData.getPtr());
 }
 

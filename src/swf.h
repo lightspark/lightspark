@@ -104,6 +104,7 @@ public:
 	void constructionComplete() override;
 	void afterConstruction() override;
 	bool needsActionScript3() const override { return this->usesActionScript3;}
+	ParseThread* parsethread;
 	uint32_t version;
 	uint32_t fileLength;
 	bool hasSymbolClass;
@@ -622,16 +623,18 @@ public:
 	ParseThread(std::istream& in, RootMovieClip *root) DLL_PUBLIC;
 	~ParseThread();
 	FILE_TYPE getFileType() const { return fileType; }
-        _NR<DisplayObject> getParsedObject();
+	_NR<DisplayObject> getParsedObject();
 	RootMovieClip* getRootMovie() const;
 	static FILE_TYPE recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4);
 	void execute();
 	_NR<ApplicationDomain> applicationDomain;
 	_NR<SecurityDomain> securityDomain;
+	void getSWFByteArray(ByteArray* ba);
 private:
 	std::istream& f;
 	uncompressing_filter* uncompressingFilter;
 	std::streambuf* backend;
+	std::streambuf* bytearraybuf;
 	Loader *loader;
 	_NR<DisplayObject> parsedObject;
 	Mutex objectSpinlock;

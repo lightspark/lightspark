@@ -94,6 +94,7 @@ RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomai
 {
 	subtype=SUBTYPE_ROOTMOVIECLIP;
 	loaderInfo=li;
+	parsethread=nullptr;
 	hasSymbolClass=false;
 	hasMainClass=false;
 	usesActionScript3=false;
@@ -1415,7 +1416,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 			{
 				//Tag is before this sample
 				getRenderThread()->renderText(cr, curTag->c_str(), curTagX, imax(curTagY-curTagH,0));
-				curTag=NULL;
+				curTag=nullptr;
 			}
 		}
 	}
@@ -1423,7 +1424,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 
 ParseThread::ParseThread(istream& in, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain, Loader *_loader, tiny_string srcurl)
   : version(0),applicationDomain(appDomain),securityDomain(secDomain),
-    f(in),uncompressingFilter(NULL),backend(NULL),loader(_loader),
+    f(in),uncompressingFilter(nullptr),backend(nullptr),bytearraybuf(nullptr),loader(_loader),
     parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
@@ -1431,11 +1432,16 @@ ParseThread::ParseThread(istream& in, _R<ApplicationDomain> appDomain, _R<Securi
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
   : version(0),applicationDomain(NullRef),securityDomain(NullRef), //The domains are not needed since the system state create them itself
-    f(in),uncompressingFilter(NULL),backend(NULL),loader(NULL),
+    f(in),uncompressingFilter(nullptr),backend(nullptr),bytearraybuf(nullptr),loader(nullptr),
     parsedObject(NullRef),url(),fileType(FT_UNKNOWN)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	setRootMovie(root);
+	if (root)
+	{
+		root->parsethread=this;
+		bytearraybuf= f.rdbuf();
+	}
 }
 
 ParseThread::~ParseThread()
@@ -1846,6 +1852,15 @@ void ParseThread::setRootMovie(RootMovieClip *root)
 	assert(root);
 	root->incRef();
 	parsedObject=_MNR(root);
+}
+
+void ParseThread::getSWFByteArray(ByteArray* ba)
+{
+	istream f2(bytearraybuf);
+	f2.seekg(0,ios_base::end);
+	uint32_t len = f2.tellg();
+	f2.seekg(0);
+	f2.read((char*)ba->getBuffer(len,true),len);
 }
 
 RootMovieClip* ParseThread::getRootMovie() const
@@ -2483,12 +2498,14 @@ bool RootMovieClip::destruct()
 	applicationDomain.reset();
 	securityDomain.reset();
 	waitingforparser=false;
+	parsethread=nullptr;
 	return MovieClip::destruct();
 }
 void RootMovieClip::finalize()
 {
 	applicationDomain.reset();
 	securityDomain.reset();
+	parsethread=nullptr;
 	MovieClip::finalize();
 }
 

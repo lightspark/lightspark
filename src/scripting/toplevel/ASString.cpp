@@ -441,7 +441,7 @@ ASFUNCTIONBODY_ATOM(ASString,substr)
 		}
 	}
 	if(start<0) {
-		start=data.numChars()+start;
+		start=int32_t(data.numChars())+start;
 		if(start<0)
 			start=0;
 	}
@@ -458,6 +458,12 @@ ASFUNCTIONBODY_ATOM(ASString,substr)
 		}
 		else
 			len=asAtomHandler::toInt(args[1]);
+		if (len<0)
+		{
+			len=int32_t(data.numChars())+len;
+			if(len<0)
+				len=0;
+		}
 	}
 	ret = asAtomHandler::fromObject(abstract_s(sys,data.substr(start,len)));
 }

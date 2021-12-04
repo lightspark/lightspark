@@ -782,7 +782,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 		if( (e->eventPhase == EventPhase::BUBBLING_PHASE && tmpListener[i].use_capture)
 		||  (e->eventPhase == EventPhase::CAPTURING_PHASE && !tmpListener[i].use_capture))
 			continue;
-		if (tmpListener[i].worker && tmpListener[i].worker != getWorker()) // only handle listeners that are available in the current worker
+		if (tmpListener[i].worker != getWorker()) // only handle listeners that are available in the current worker
 			continue;
 		asAtom arg0= asAtomHandler::fromObject(e.getPtr());
 		IFunction* func = asAtomHandler::as<IFunction>(tmpListener[i].f);

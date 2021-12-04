@@ -202,13 +202,27 @@ void ScriptLimitsTag::execute(RootMovieClip* root) const
 {
 	if (root != root->getSystemState()->mainClip)
 		return;
-	if (MaxRecursionDepth > getVm(root->getSystemState())->limits.max_recursion)
+	ASWorker* worker = getWorker();
+	if (worker)
 	{
-		delete[] getVm(root->getSystemState())->stacktrace;
-		getVm(root->getSystemState())->stacktrace = new ABCVm::stacktrace_entry[MaxRecursionDepth];
+		if (MaxRecursionDepth > worker->limits.max_recursion)
+		{
+			delete[] worker->stacktrace;
+			worker->stacktrace = new stacktrace_entry[MaxRecursionDepth];
+		}
+		worker->limits.max_recursion = MaxRecursionDepth;
+		worker->limits.script_timeout = ScriptTimeoutSeconds;
 	}
-	getVm(root->getSystemState())->limits.max_recursion = MaxRecursionDepth;
-	getVm(root->getSystemState())->limits.script_timeout = ScriptTimeoutSeconds;
+	else
+	{
+		if (MaxRecursionDepth > getVm(root->getSystemState())->limits.max_recursion)
+		{
+			delete[] getVm(root->getSystemState())->stacktrace;
+			getVm(root->getSystemState())->stacktrace = new stacktrace_entry[MaxRecursionDepth];
+		}
+		getVm(root->getSystemState())->limits.max_recursion = MaxRecursionDepth;
+		getVm(root->getSystemState())->limits.script_timeout = ScriptTimeoutSeconds;
+	}
 }
 
 void ABCVm::registerClasses()

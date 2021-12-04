@@ -76,15 +76,18 @@ tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1,
 	{
 		SystemState* sys = getSys();
 		tiny_string stacktrace;
-		for (uint32_t i = getVm(sys)->cur_recursion; i > 0; i--)
+		ASWorker* w = getWorker();
+		int cur_rec = w ? w->cur_recursion : getVm(sys)->cur_recursion;
+		stacktrace_entry* strace = w ? w->stacktrace : getVm(sys)->stacktrace;
+		for (uint32_t i = cur_rec; i > 0; i--)
 		{
 			stacktrace += "    at ";
-			stacktrace += asAtomHandler::toObject(getVm(sys)->stacktrace[i-1].object,sys)->getClassName();
+			stacktrace += asAtomHandler::toObject(strace[i-1].object,sys)->getClassName();
 			stacktrace += "/";
-			stacktrace += sys->getStringFromUniqueId(getVm(sys)->stacktrace[i-1].name);
+			stacktrace += sys->getStringFromUniqueId(strace[i-1].name);
 			stacktrace += "()\n";
 		}
-		LOG(LOG_INFO,"throwing exception:"<<errorID<<" "<<msg.str()<< "\n" << stacktrace);
+		LOG(LOG_INFO,"throwing exception:"<<w<<" id:"<<errorID<<" "<<msg.str()<< "\n" << stacktrace);
 	}
 //	Log::setLogLevel(LOG_CALLS);
 	return msg.str();

@@ -68,6 +68,7 @@ struct call_context
 	 * */
 	Class_base* inClass;
 	SystemState* sys;
+	class ASWorker* worker;
 	/* Current namespace set by 'default xml namespace = ...'.
 	 * Defaults to empty string according to ECMA-357 13.1.1.1
 	 */
@@ -78,7 +79,7 @@ struct call_context
 		max_stackp(nullptr),
 		parent_scope_stack(nullptr),curr_scope_stack(0),argarrayposition(-1),
 		scope_stack(nullptr),scope_stack_dynamic(nullptr),localslots(nullptr),mi(_mi),
-		inClass(nullptr),sys(nullptr),defaultNamespaceUri(0)
+		inClass(nullptr),sys(nullptr),worker(nullptr),defaultNamespaceUri(0)
 	{
 	}
 	static void handleError(int errorcode);

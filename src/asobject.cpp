@@ -1908,7 +1908,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			}
 		}
 	}
-	else if (e->type == "mouseOver" || e->type == "mouseOut")
+	else if (e->type == "mouseOver" || e->type == "mouseOut" || e->type == "click")
 	{
 		// not available in AVM1
 	}
@@ -2764,7 +2764,7 @@ std::string asAtomHandler::toDebugString(asAtom& a)
 
 asAtom asAtomHandler::asTypelate(asAtom& a, asAtom& b)
 {
-	LOG_CALL(_("asTypelate"));
+	LOG_CALL("asTypelate");
 
 	if(!isObject(b) || !is<Class_base>(b))
 	{
@@ -2800,19 +2800,18 @@ asAtom asAtomHandler::asTypelate(asAtom& a, asAtom& b)
 	}
 
 	bool real_ret=objc->isSubClass(c);
-	LOG_CALL(_("Type ") << objc->class_name << _(" is ") << ((real_ret)?_(" "):_("not ")) 
-			<< _("subclass of ") << c->class_name);
+	LOG_CALL("Type " << objc->class_name << " is " << ((real_ret)?" ":"not ") 
+			<< "subclass of " << c->class_name);
 	ASATOM_DECREF(b);
 	if(real_ret)
 		return a;
 	else
 		return asAtomHandler::nullAtom;
-	
 }
 
 bool asAtomHandler::isTypelate(asAtom& a,ASObject *type)
 {
-	LOG_CALL(_("isTypelate"));
+	LOG_CALL("isTypelate");
 	bool real_ret=false;
 
 	Class_base* objc=nullptr;

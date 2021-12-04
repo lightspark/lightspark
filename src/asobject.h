@@ -2479,5 +2479,19 @@ inline bool asfreelist::pushObjectToFreeList(ASObject *obj)
 	return false;
 }
 
+struct abc_limits {
+	/* maxmium number of recursion allowed. See ScriptLimitsTag */
+	uint32_t max_recursion;
+	/* maxmium number of seconds for script execution. See ScriptLimitsTag */
+	uint32_t script_timeout;
+};
+
+struct stacktrace_entry
+{
+	asAtom object;
+	uint32_t name;
+	void set(asAtom o, uint32_t n) { object=o; name=n; }
+};
+
 }
 #endif /* ASOBJECT_H */

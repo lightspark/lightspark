@@ -31,6 +31,7 @@ namespace lightspark
 {
 
 class SecurityDomain;
+struct call_context;
 
 class Capabilities: public ASObject
 {
@@ -206,6 +207,28 @@ public:
 	ASWorker(Class_base* c);
 	void finalize() override;
 	static void sinit(Class_base*);
+
+	//  TODO merge stacktrace handling with ABCVm
+	abc_limits limits;
+	call_context* currentCallContext;
+	uint32_t cur_recursion;
+	stacktrace_entry* stacktrace;
+	FORCE_INLINE call_context* incStack(asAtom o, uint32_t f)
+	{
+		if(USUALLY_FALSE(cur_recursion == limits.max_recursion))
+		{
+			throwStackOverflow();
+		}
+		stacktrace[cur_recursion].set(o,f);
+		++cur_recursion; //increment current recursion depth
+		return currentCallContext;
+	}
+	FORCE_INLINE void decStack(call_context* saved_cc)
+	{
+		currentCallContext = saved_cc;
+		--cur_recursion; //decrement current recursion depth
+	}
+	void throwStackOverflow();
 	ASFUNCTION_ATOM(_getCurrent);
 	ASFUNCTION_ATOM(getSharedProperty);
 	ASFUNCTION_ATOM(isSupported);

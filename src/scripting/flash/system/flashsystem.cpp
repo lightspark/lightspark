@@ -846,7 +846,7 @@ ASFUNCTIONBODY_ATOM(System,gc)
 
 ASWorker::ASWorker(Class_base* c):
 	EventDispatcher(c),loader(_MR(Class<Loader>::getInstanceS(c->getSystemState()))),parser(nullptr),
-	giveAppPrivileges(false),started(false),isPrimordial(false),state("new")
+	giveAppPrivileges(false),started(false),currentCallContext(nullptr),cur_recursion(0),stacktrace(new stacktrace_entry[256]),isPrimordial(false),state("new")
 {
 	subtype = SUBTYPE_WORKER;
 }
@@ -864,7 +864,7 @@ void ASWorker::finalize()
 		sem_event_cond.signal();
 		started = false;
 	}
-	
+	delete[] stacktrace;
 	loader.reset();
 	swf.reset();
 }
@@ -883,6 +883,11 @@ void ASWorker::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setSharedProperty","",Class<IFunction>::getFunction(c->getSystemState(),setSharedProperty),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("start","",Class<IFunction>::getFunction(c->getSystemState(),start),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("terminate","",Class<IFunction>::getFunction(c->getSystemState(),terminate,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+}
+
+void ASWorker::throwStackOverflow()
+{
+	throwError<ASError>(kStackOverflowError);
 }
 
 void ASWorker::execute()

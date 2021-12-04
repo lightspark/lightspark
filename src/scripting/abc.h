@@ -1394,12 +1394,6 @@ public:
 	/* The current recursion level. Each call increases this by one,
 	 * each return from a call decreases this. */
 	uint32_t cur_recursion;
-	struct stacktrace_entry
-	{
-		asAtom object;
-		uint32_t name;
-		void set(asAtom o, uint32_t n) { object=o; name=n; }
-	};
 	stacktrace_entry* stacktrace;
 	FORCE_INLINE call_context* incStack(asAtom o, uint32_t f)
 	{
@@ -1418,12 +1412,7 @@ public:
 	}
 	void throwStackOverflow();
 
-	struct abc_limits {
-		/* maxmium number of recursion allowed. See ScriptLimitsTag */
-		uint32_t max_recursion;
-		/* maxmium number of seconds for script execution. See ScriptLimitsTag */
-		uint32_t script_timeout;
-	} limits;
+	abc_limits limits;
 
 	uint32_t getAndIncreaseNamespaceBase(uint32_t nsNum);
 

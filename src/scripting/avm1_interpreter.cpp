@@ -2007,8 +2007,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					// frame not yet loaded, skip actions
 					while (skipcount && it != actionlist.end())
 					{
-						it++;
-						if (*it > 0x80)
+						if (*it++ > 0x80)
 						{
 							uint32_t c = uint32_t(*it++) | ((*it++)<<8);
 							it+=c;

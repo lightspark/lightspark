@@ -797,7 +797,7 @@ void Loader::setContent(_R<DisplayObject> o)
 		if (p)
 		{
 			int depth =p->findLegacyChildDepth(avm1target.getPtr());
-			p->deleteLegacyChildAt(depth);
+			p->deleteLegacyChildAt(depth,false);
 			p->_addChildAt(o,depth);
 		}
 	}
@@ -1048,7 +1048,7 @@ void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
 	auto it = legacyChildrenMarkedForDeletion.begin();
 	while (it != legacyChildrenMarkedForDeletion.end())
 	{
-		deleteLegacyChildAt(*it);
+		deleteLegacyChildAt(*it,false);
 		it = legacyChildrenMarkedForDeletion.erase(it);
 	}
 	namedRemovedLegacyChildren.clear();
@@ -1932,7 +1932,7 @@ void MovieClip::afterLegacyInsert()
 {
 }
 
-void MovieClip::afterLegacyDelete(DisplayObjectContainer *par)
+void MovieClip::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping)
 {
 	getSystemState()->stage->AVM1RemoveMouseListener(this);
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
@@ -2188,7 +2188,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	}
 	if(th->hasLegacyChildAt(Depth) )
 	{
-		th->deleteLegacyChildAt(Depth);
+		th->deleteLegacyChildAt(Depth,false);
 		th->insertLegacyChildAt(Depth,toAdd);
 	}
 	else
@@ -2226,7 +2226,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	toAdd->setMouseEnabled(false);
 	if(th->hasLegacyChildAt(Depth) )
 	{
-		th->deleteLegacyChildAt(Depth);
+		th->deleteLegacyChildAt(Depth,false);
 		th->insertLegacyChildAt(Depth,toAdd);
 	}
 	else
@@ -2283,7 +2283,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1DuplicateMovieClip)
 	}
 	if(th->getParent()->hasLegacyChildAt(Depth))
 	{
-		th->getParent()->deleteLegacyChildAt(Depth);
+		th->getParent()->deleteLegacyChildAt(Depth,false);
 		th->getParent()->insertLegacyChildAt(Depth,toAdd);
 	}
 	else
@@ -2371,7 +2371,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
 		toAdd->smoothing = asAtomHandler::Boolean_concrete(args[3]);
 	if(th->hasLegacyChildAt(Depth) )
 	{
-		th->deleteLegacyChildAt(Depth);
+		th->deleteLegacyChildAt(Depth,false);
 		th->insertLegacyChildAt(Depth,toAdd);
 	}
 	else
@@ -2526,7 +2526,7 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,c
 	o->requestInvalidation(getSystemState());
 }
 
-void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
+void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 {
 	if(!hasLegacyChildAt(depth))
 		return;
@@ -2547,7 +2547,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth)
 	}
 
 	obj->incRef();
-	obj->afterLegacyDelete(this);
+	obj->afterLegacyDelete(this,inskipping);
 	//this also removes it from depthToLegacyChild
 	bool ret = _removeChild(obj);
 	assert_and_throw(ret);
@@ -4564,7 +4564,7 @@ void SimpleButton::afterLegacyInsert()
 	getSystemState()->stage->AVM1AddMouseListener(this);
 }
 
-void SimpleButton::afterLegacyDelete(DisplayObjectContainer *par)
+void SimpleButton::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping)
 {
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
 	getSystemState()->stage->AVM1RemoveMouseListener(this);

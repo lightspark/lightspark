@@ -335,7 +335,7 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayList
 void RemoveObject2Tag::execute(DisplayObjectContainer* parent,bool inskipping)
 {
 	parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
-	parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);
+	parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
 }
 
 SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -1780,7 +1780,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		nameID = currchar->name;
 		if (parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth) && currchar->getTagID() != CharacterId)
 		{
-			parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);
+			parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
 			exists = false;
 		}
 	}
@@ -1861,7 +1861,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 
 			if(PlaceFlagMove || (currchar->getTagID() != CharacterId))
 			{
-				parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth);
+				parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
 				/* parent becomes the owner of toAdd */
 				parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd);
 				currchar=toAdd;

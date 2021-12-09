@@ -147,7 +147,7 @@ public:
 	void setupClipActionsAt(int32_t depth, const CLIPACTIONS& actions);
 	void checkRatioForLegacyChildAt(int32_t depth, uint32_t ratio, bool inskipping);
 	void checkColorTransformForLegacyChildAt(int32_t depth, const CXFORMWITHALPHA& colortransform);
-	void deleteLegacyChildAt(int32_t depth);
+	void deleteLegacyChildAt(int32_t depth, bool inskipping);
 	void insertLegacyChildAt(int32_t depth, DisplayObject* obj);
 	DisplayObject* findLegacyChildByTagID(uint32_t tagid);
 	int findLegacyChildDepth(DisplayObject* obj);
@@ -241,7 +241,7 @@ public:
 	ASFUNCTION_ATOM(_setUseHandCursor);
 
 	void afterLegacyInsert() override;
-	void afterLegacyDelete(DisplayObjectContainer* par) override;
+	void afterLegacyDelete(DisplayObjectContainer* parent, bool inskipping) override;
 	bool AVM1HandleKeyboardEvent(KeyboardEvent* e) override;
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
 	void handleMouseCursor(bool rollover) override;
@@ -646,7 +646,7 @@ public:
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 
 	void afterLegacyInsert() override;
-	void afterLegacyDelete(DisplayObjectContainer* par) override;
+	void afterLegacyDelete(DisplayObjectContainer* parent, bool inskipping) override;
 
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
 	uint32_t getTagID() const override { return fromDefineSpriteTag; }

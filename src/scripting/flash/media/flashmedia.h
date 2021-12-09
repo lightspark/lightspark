@@ -151,7 +151,7 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
-	void afterLegacyDelete(DisplayObjectContainer* par) override;
+	void afterLegacyDelete(DisplayObjectContainer* parent, bool inskipping) override;
 	void setOnStage(bool staged, bool force) override;
 	uint32_t getTagID() const override;
 	~Video();

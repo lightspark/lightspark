@@ -1304,19 +1304,19 @@ void TextField::afterLegacyInsert()
 	setSizeAndPositionFromAutoSize();
 }
 
-void TextField::afterLegacyDelete(DisplayObjectContainer *par)
+void TextField::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping)
 {
-	if (!tagvarname.empty())
+	if (!tagvarname.empty() && !inskipping)
 	{
-		while (par)
+		while (parent)
 		{
-			if (par->is<MovieClip>())
+			if (parent->is<MovieClip>())
 			{
-				par->as<MovieClip>()->AVM1SetVariable(tagvarname,asAtomHandler::undefinedAtom);
-				par->as<MovieClip>()->setVariableBinding(tagvarname,NullRef);
+				parent->as<MovieClip>()->AVM1SetVariable(tagvarname,asAtomHandler::undefinedAtom);
+				parent->as<MovieClip>()->setVariableBinding(tagvarname,NullRef);
 				break;
 			}
-			par = par->getParent();
+			parent = parent->getParent();
 		}
 	}
 }

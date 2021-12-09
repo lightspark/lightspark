@@ -1592,8 +1592,7 @@ void Class_base::describeInstance(pugi::xml_node& root, bool istemplate,bool for
 		std::map<tiny_string, pugi::xml_node*> instanceNodes;
 		if(!istemplate)
 			describeVariables(root,c,instanceNodes,Variables,false,forinstance);
-		if (istemplate || !forinstance)
-			describeVariables(root,c,instanceNodes,borrowedVariables,istemplate,forinstance);
+		describeVariables(root,c,instanceNodes,borrowedVariables,istemplate,false);
 	}
 	std::map<varName,pugi::xml_node> propnames;
 	bool bfirst = true;
@@ -1613,7 +1612,7 @@ void Class_base::describeVariables(pugi::xml_node& root, const Class_base* c, st
 	for(;it!=map.Variables.cend();++it)
 	{
 		const char* nodename;
-		const char* access = NULL;
+		const char* access = nullptr;
 		switch (it->second.kind)
 		{
 			case CONSTANT_TRAIT:

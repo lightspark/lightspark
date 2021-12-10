@@ -742,7 +742,7 @@ ASFUNCTIONBODY_ATOM(SharedObject,flush)
 	int minDiskSpace=0;
 	ARG_UNPACK_ATOM(minDiskSpace,0);
 	if (minDiskSpace != 0)
-		LOG(LOG_NOT_IMPLEMENTED,"SharedOBject.flush: parameter minDiskSpace is ignored");
+		LOG(LOG_NOT_IMPLEMENTED,"SharedObject.flush: parameter minDiskSpace is ignored");
 	if (!th->doFlush())
 		throwError<ASError>(0,"flushing SharedObject failed");
 	if (!sys->mainClip->usesActionScript3)
@@ -770,7 +770,22 @@ ASFUNCTIONBODY_ATOM(SharedObject,connect)
 }
 ASFUNCTIONBODY_ATOM(SharedObject,setProperty)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "SharedObject.setProperty not implemented");
+	SharedObject* th=asAtomHandler::as<SharedObject>(obj);
+	asAtom propertyName=asAtomHandler::invalidAtom;
+	asAtom value=asAtomHandler::invalidAtom;
+	ARG_UNPACK_ATOM(propertyName)(value,asAtomHandler::nullAtom);
+	if (th->data.isNull())
+		th->data=_MR(new_asobject(sys));
+	multiname m(nullptr);
+	m.name_type = multiname::NAME_STRING;
+	m.name_s_id = asAtomHandler::toStringId(propertyName,sys);
+	if (asAtomHandler::isNull(value))
+		th->data->deleteVariableByMultiname(m);
+	else
+	{
+		ASATOM_INCREF(value);
+		th->data->setVariableByMultiname(m,value,CONST_NOT_ALLOWED);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(SharedObject,_getPreventBackup)

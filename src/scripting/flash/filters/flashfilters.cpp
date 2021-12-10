@@ -280,13 +280,17 @@ void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, uint8_t* tmpda
 	uint32_t size = width*height;
 
 	uint8_t* data = target->getData();
-	uint32_t startpos = ypos*target->getWidth();
-	uint32_t targetsize = target->getWidth()*target->getHeight()*4;
+	int32_t startpos = ypos*target->getWidth();
+	int32_t targetsize = target->getWidth()*target->getHeight()*4;
 	for (uint32_t i = 0; i < size*4; i+=4)
 	{
 		if (i && i%(width*4)==0)
 			startpos+=target->getWidth();
-		uint32_t targetpos = (xpos+startpos)*4+i%(width*4);
+		if (startpos < 0)
+			continue;
+		int32_t targetpos = (xpos+startpos)*4+i%(width*4);
+		if (targetpos < 0)
+			continue;
 		if (targetpos+3 >= targetsize)
 			break;
 		number_t glowalpha = (inner ? 0xff - tmpdata[i+3] : tmpdata[i+3]);
@@ -999,7 +1003,7 @@ void ConvolutionFilter::applyFilter(BitmapContainer* target, BitmapContainer* so
 	
 	uint8_t* data = target->getData();
 	uint32_t startpos = ypos*target->getWidth();
-	int32_t mstartpos=-(mY/2*target->getWidth()*4+mX/2);
+	int32_t mstartpos=-(mY/2*width*4+mX/2);
 	uint32_t targetsize = target->getWidth()*target->getHeight()*4;
 	number_t realdivisor = divisor==0 ? 1.0 : divisor;
 	for (uint32_t i = 0; i < size*4; i+=4)

@@ -2616,6 +2616,8 @@ bool checkInitializeLocalToConstant(preloadstate& state,int32_t value)
 		state.operandlist.pop_back();
 		return true;
 	}
+	if (value >= 0 && value < int(state.canlocalinitialize.size()))
+		state.canlocalinitialize[value]=false;
 	return false;
 }
 void removeInitializeLocalToConstant(preloadstate& state,int32_t value)

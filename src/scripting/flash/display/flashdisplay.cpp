@@ -2823,7 +2823,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
 		    ((*it)->isMask() ? "m" : "") << " cd=" <<(*it)->ClipDepth<<" "<<" ca=" <<(*it)->computeCacheAsBitmap()<<" "<<
-			"a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"' tag="<<(*it)->getTagID());
+			"a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name));
 
 		if ((*it)->is<DisplayObjectContainer>())
 		{

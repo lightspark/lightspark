@@ -215,7 +215,7 @@ public:
 	tiny_string AVM1GetPath();
 	virtual void afterLegacyInsert() {}
 	virtual void afterLegacyDelete(DisplayObjectContainer* parent,bool inskipping) {}
-	virtual uint32_t getTagID() const { return 0;}
+	virtual uint32_t getTagID() const { return UINT32_MAX;}
 	virtual void resetLegacyState() {}
 	virtual void startDrawJob() {}
 	virtual void endDrawJob() {}
@@ -331,6 +331,7 @@ public:
 	void AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj);
 	AVM1Function *AVM1GetFunction(uint32_t nameID);
 	void DrawToBitmap(BitmapData* bm, const MATRIX& initialMatrix, bool smoothing, bool forcachedbitmap);
+	std::string toDebugString() override;
 };
 }
 #endif /* SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H */

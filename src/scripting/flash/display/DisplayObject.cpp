@@ -1661,6 +1661,15 @@ void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool
 	this->tx=origtx;
 	this->ty=origty;
 }
+string DisplayObject::toDebugString()
+{
+	std::string res = EventDispatcher::toDebugString();
+	res += "tag=";
+	char buf[100];
+	sprintf(buf,"%u",getTagID());
+	res += buf;
+	return res;
+}
 IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MATRIX& initialMatrix,_NR<DisplayObject>* pcachedBitmap)
 {
 	if (!computeCacheAsBitmap())

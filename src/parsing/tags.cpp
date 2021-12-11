@@ -1989,9 +1989,6 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		ClipActions.dataskipbytes = (uint32_t(in.tellg())-startpos)+h.getHeaderSize();
 		in >> ClipActions;
 	}
-
-	assert_and_throw(!(PlaceFlagHasCharacter && CharacterId==0));
-
 }
 
 PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):PlaceObject2Tag(h,root->version)

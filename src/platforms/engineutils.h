@@ -51,6 +51,7 @@ enum TRIANGLE_FACE { FACE_BACK, FACE_FRONT, FACE_FRONT_AND_BACK, FACE_NONE };
 enum BLEND_FACTOR { BLEND_ONE,BLEND_ZERO,BLEND_SRC_ALPHA,BLEND_SRC_COLOR,BLEND_DST_ALPHA,BLEND_DST_COLOR,BLEND_ONE_MINUS_SRC_ALPHA,BLEND_ONE_MINUS_SRC_COLOR,BLEND_ONE_MINUS_DST_ALPHA,BLEND_ONE_MINUS_DST_COLOR };
 enum VERTEXBUFFER_FORMAT { BYTES_4, FLOAT_1, FLOAT_2, FLOAT_3, FLOAT_4 };
 enum CLEARMASK { COLOR = 0x1, DEPTH = 0x2, STENCIL = 0x4 };
+enum TEXTUREFORMAT { BGRA, BGRA_PACKED, BGR_PACKED, COMPRESSED, COMPRESSED_ALPHA, RGBA_HALF_FLOAT };
 
 // this is only used for font rendering in PPAPI plugin
 class externalFontRenderer : public IDrawable
@@ -273,6 +274,7 @@ public:
 	virtual void exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, uint32_t filter, uint32_t mipmap, uint32_t wrap);
 	virtual void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, bool hasalpha);
 	virtual void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels);
+	virtual void exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, TEXTUREFORMAT format);
 	virtual void exec_glDrawBuffer_GL_BACK();
 	virtual void exec_glClearColor(float red,float green,float blue,float alpha);
 	virtual void exec_glClearStencil(uint32_t stencil);

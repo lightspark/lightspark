@@ -1180,8 +1180,8 @@ void EngineData::exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, ui
 			break;
 	}
 	glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR : GL_NEAREST);
-	glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-	glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap&1 ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap&2 ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 #ifdef ENABLE_GLES2
 	if (lodbias != 0)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D: GL_TEXTURE_LOD_BIAS not available for OpenGL ES");
@@ -1198,6 +1198,29 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level,
 void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
 {
 	glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
+}
+void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels, TEXTUREFORMAT format)
+{
+	switch (format)
+	{
+		case TEXTUREFORMAT::BGRA:
+			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+			break;
+		case TEXTUREFORMAT::BGRA_PACKED:
+			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
+			break;
+		case TEXTUREFORMAT::BGR_PACKED:
+			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_SHORT_5_6_5, pixels);
+			break;
+		case TEXTUREFORMAT::RGBA_HALF_FLOAT:
+		case TEXTUREFORMAT::COMPRESSED:
+		case TEXTUREFORMAT::COMPRESSED_ALPHA:
+			LOG(LOG_NOT_IMPLEMENTED,"upload texture in format "<<format);
+			break;
+		default:
+			LOG(LOG_ERROR,"invalid format for upload texture:"<<format);
+			break;
+	}
 }
 
 void EngineData::exec_glDrawBuffer_GL_BACK()

@@ -447,6 +447,16 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			// action.udata1 = red | green | blue | alpha
 			engineData->exec_glColorMask(action.udata1&0x01,action.udata1&0x02,action.udata1&0x04,action.udata1&0x08);
 			break;
+		case RENDER_SETSAMPLERSTATE:
+			//action.udata1 = samplerid
+			//action.udata2 = wrap + filter + mipfilter
+			if (action.udata1 < currentprogram->samplerState.size())
+			{
+				currentprogram->samplerState[action.udata1].w = (action.udata2 & 0xf)-1; //wrap
+				currentprogram->samplerState[action.udata1].f = ((action.udata2 & 0xf0) >>4)-1; //filter
+				currentprogram->samplerState[action.udata1].m = ((action.udata2 & 0xf00) >>8)-1 ; //mipfilter
+			}
+			break;
 	}
 }
 
@@ -618,15 +628,15 @@ void Context3D::loadTexture(TextureBase *tex)
 		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 		if (tex->bitmaparray.size() == 0)
-			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, tex->width, tex->height, 0, NULL,tex->hasalpha);
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, tex->width, tex->height, 0, nullptr,tex->hasalpha);
 		else
 		{
 			for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
 			{
 				if (tex->bitmaparray[i].size() > 0)
-					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->hasalpha);
+					engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->format);
 				else
-					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(i, tex->width>>i, tex->height>>i, 0, nullptr,tex->hasalpha);
+					engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, nullptr,tex->format);
 			}
 		}
 		engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
@@ -702,24 +712,23 @@ void Context3D::sinit(lightspark::Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED|CLASS_FINAL);
 
-	REGISTER_GETTER(c,backBufferHeight);
-	REGISTER_GETTER(c,backBufferWidth);
-	REGISTER_GETTER(c,driverInfo);
-	REGISTER_GETTER_SETTER(c,enableErrorChecking);
-	REGISTER_GETTER_SETTER(c,maxBackBufferHeight);
-	REGISTER_GETTER_SETTER(c,maxBackBufferWidth);
-	REGISTER_GETTER(c,profile);
-	c->setDeclaredMethodByQName("supportsVideoTexture","",Class<IFunction>::getFunction(c->getSystemState(),supportsVideoTexture),GETTER_METHOD,false);
+	REGISTER_GETTER_RESULTTYPE(c,backBufferHeight,Integer);
+	REGISTER_GETTER_RESULTTYPE(c,backBufferWidth,Integer);
+	REGISTER_GETTER_RESULTTYPE(c,driverInfo,ASString);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,enableErrorChecking,Boolean);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,maxBackBufferHeight,Integer);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,maxBackBufferWidth,Integer);
+	REGISTER_GETTER_RESULTTYPE(c,profile,ASString);
+	c->setDeclaredMethodByQName("supportsVideoTexture","",Class<IFunction>::getFunction(c->getSystemState(),supportsVideoTexture,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("configureBackBuffer","",Class<IFunction>::getFunction(c->getSystemState(),configureBackBuffer),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createIndexBuffer","",Class<IFunction>::getFunction(c->getSystemState(),createIndexBuffer),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createProgram","",Class<IFunction>::getFunction(c->getSystemState(),createProgram),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createCubeTexture","",Class<IFunction>::getFunction(c->getSystemState(),createCubeTexture),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createTexture","",Class<IFunction>::getFunction(c->getSystemState(),createTexture),NORMAL_METHOD,true);
-	if(c->getSystemState()->flashMode==SystemState::AIR)
-		c->setDeclaredMethodByQName("createRectangleTexture","",Class<IFunction>::getFunction(c->getSystemState(),createRectangleTexture),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createVertexBuffer","",Class<IFunction>::getFunction(c->getSystemState(),createVertexBuffer),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createVideoTexture","",Class<IFunction>::getFunction(c->getSystemState(),createVideoTexture),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createIndexBuffer","",Class<IFunction>::getFunction(c->getSystemState(),createIndexBuffer,1,Class<IndexBuffer3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createProgram","",Class<IFunction>::getFunction(c->getSystemState(),createProgram,0,Class<Program3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createCubeTexture","",Class<IFunction>::getFunction(c->getSystemState(),createCubeTexture,3,Class<CubeTexture>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createTexture","",Class<IFunction>::getFunction(c->getSystemState(),createTexture,4,Class<Texture>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createRectangleTexture","",Class<IFunction>::getFunction(c->getSystemState(),createRectangleTexture),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createVertexBuffer","",Class<IFunction>::getFunction(c->getSystemState(),createVertexBuffer,2,Class<VertexBuffer3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createVideoTexture","",Class<IFunction>::getFunction(c->getSystemState(),createVideoTexture,0,Class<VideoTexture>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawToBitmapData","",Class<IFunction>::getFunction(c->getSystemState(),drawToBitmapData),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("drawTriangles","",Class<IFunction>::getFunction(c->getSystemState(),drawTriangles),NORMAL_METHOD,true);
@@ -747,7 +756,7 @@ void Context3D::sinit(lightspark::Class_base *c)
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Context3D,backBufferHeight);
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Context3D,backBufferWidth);
 ASFUNCTIONBODY_GETTER(Context3D,driverInfo);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Context3D,enableErrorChecking);
+ASFUNCTIONBODY_GETTER_SETTER(Context3D,enableErrorChecking);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Context3D,maxBackBufferHeight);
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Context3D,maxBackBufferWidth);
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Context3D,profile);
@@ -796,21 +805,23 @@ ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
 	}
 	res->width = res->height = size;
 	res->bitmaparray.resize(res->max_miplevel*6); // reserve space for 6 bitmaps * no. of mipmaps
-	if (format != "bgra" || optimizeForRenderToTexture || streamingLevels != 0)
-		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createCubeTexture ignores parameters format,optimizeForRenderToTexture,streamingLevels:"<<format<<" "<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
+	res->setFormat(format);
+	if (optimizeForRenderToTexture || streamingLevels != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createCubeTexture ignores parameters optimizeForRenderToTexture,streamingLevels:"<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
 	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createRectangleTexture does nothing");
-	int width;
-	int height;
 	tiny_string format;
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
-	ARG_UNPACK_ATOM(width)(height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
-	ret = asAtomHandler::fromObject(Class<RectangleTexture>::getInstanceS(sys,th));
+	RectangleTexture* res = Class<RectangleTexture>::getInstanceS(sys,th);
+	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
+	res->setFormat(format);
+	if (optimizeForRenderToTexture || streamingLevels != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createRectangleTexture ignores parameters optimizeForRenderToTexture,streamingLevels:"<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
+	ret = asAtomHandler::fromObjectNoPrimitive(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 {
@@ -820,9 +831,10 @@ ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 	int32_t streamingLevels;
 	Texture* res = Class<Texture>::getInstanceS(sys,th);
 	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
-	if (format != "bgra" || optimizeForRenderToTexture || streamingLevels != 0)
-		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createTexture ignores parameters format,optimizeForRenderToTexture,streamingLevels:"<<format<<" "<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
-	ret = asAtomHandler::fromObject(res);
+	res->setFormat(format);
+	if (optimizeForRenderToTexture || streamingLevels != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createTexture ignores parameters optimizeForRenderToTexture,streamingLevels:"<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
+	ret = asAtomHandler::fromObjectNoPrimitive(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createVideoTexture)
 {
@@ -863,6 +875,8 @@ ASFUNCTIONBODY_ATOM(Context3D,clear)
 	ARG_UNPACK_ATOM(red,0.0)(green,0.0)(blue,0.0)(alpha,1.0)(depth,1.0)(action.udata1,0)(action.udata2,0xffffffff);
 	action.fdata =new float[5] { (float)red, (float)green, (float)blue, (float)alpha, (float)depth};
 	th->addAction(action);
+	if (th->enableErrorChecking)
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.clear with errorchecking");
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,drawToBitmapData)
@@ -885,6 +899,8 @@ ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
 	action.udata1 = firstIndex;
 	action.udata2 = (numTriangles == -1 ? UINT32_MAX : numTriangles);
 	th->actions[th->currentactionvector].push_back(action);
+	if (th->enableErrorChecking)
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.drawTriangles with errorchecking");
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,setBlendFactors)
@@ -1126,12 +1142,58 @@ ASFUNCTIONBODY_ATOM(Context3D,setRenderToTexture)
 }
 ASFUNCTIONBODY_ATOM(Context3D,setSamplerStateAt)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.setSamplerStateAt does nothing");
+	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	int32_t sampler;
 	tiny_string wrap;
 	tiny_string filter;
 	tiny_string mipfilter;
 	ARG_UNPACK_ATOM(sampler)(wrap)(filter)(mipfilter);
+	renderaction action;
+	action.action = RENDER_ACTION::RENDER_SETSAMPLERSTATE;
+	action.udata1 = uint32_t(sampler);
+	action.udata2 = 0;
+	if (wrap == "clamp")
+		action.udata2 |= 0x1;
+	else if (wrap == "repeat")
+		action.udata2 |= 0x2;
+	else if (wrap == "clamp_u_repeat_v")
+		action.udata2 |= 0x3;
+	else if (wrap == "repeat_u_clamp_v")
+		action.udata2 |= 0x4;
+
+	if (filter == "anisotropic16x")
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setSamplerStateAt for filter "<<filter);
+		action.udata2 |= 0x60;
+	}
+	else if (filter == "anisotropic2x")
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setSamplerStateAt for filter "<<filter);
+		action.udata2 |= 0x50;
+	}
+	else if (filter == "anisotropic4x")
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setSamplerStateAt for filter "<<filter);
+		action.udata2 |= 0x40;
+	}
+	else if (filter == "anisotropic8x")
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setSamplerStateAt for filter "<<filter);
+		action.udata2 |= 0x30;
+	}
+	else if (filter == "linear")
+		action.udata2 |= 0x20;
+	else if (filter == "nearest")
+		action.udata2 |= 0x10;
+
+	if (mipfilter == "miplinear")
+		action.udata2 |= 0x300;
+	else if (mipfilter == "mipnearest")
+		action.udata2 |= 0x200;
+	else if (mipfilter == "mipnone")
+		action.udata2 |= 0x100;
+
+	th->addAction(action);
 }
 ASFUNCTIONBODY_ATOM(Context3D,present)
 {

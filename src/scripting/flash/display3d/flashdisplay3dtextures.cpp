@@ -193,6 +193,22 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 	data->setPosition(endposition);
 }
 
+void TextureBase::setFormat(const tiny_string& f)
+{
+	if (f == "bgra")
+		format = TEXTUREFORMAT::BGRA;
+	else if (f == "bgraPacked4444")
+		format = TEXTUREFORMAT::BGRA_PACKED;
+	else if (f == "bgrPacked565")
+		format = TEXTUREFORMAT::BGR_PACKED;
+	else if (f == "compressed")
+		format = TEXTUREFORMAT::COMPRESSED;
+	else if (f == "compressedAlpha")
+		format = TEXTUREFORMAT::COMPRESSED_ALPHA;
+	else if (f == "rgbaHalfFloat")
+		format = TEXTUREFORMAT::RGBA_HALF_FLOAT;
+}
+
 void TextureBase::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
@@ -284,6 +300,22 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 		throwError<RangeError>(kParamRangeError);
 	}
 	data->readBytes(byteArrayOffset,bytesneeded,th->bitmaparray[miplevel].data());
+#ifdef ENABLE_GLES
+	switch (th->format)
+	{
+		case TEXTUREFORMAT::BGRA:
+		{
+			for (uint32_t i = 0; i < th->bitmaparray[miplevel].size(); i+=4)
+				std::swap(th->bitmaparray[miplevel][i],th->bitmaparray[miplevel][i+2]);
+		}
+		case TEXTUREFORMAT::BGRA_PACKED:
+			LOG(LOG_NOT_IMPLEMENTED,"texture conversion from BGRA_PACKED to RGBA for opengles")
+			break;
+		case TEXTUREFORMAT::BGR_PACKED:
+			LOG(LOG_NOT_IMPLEMENTED,"texture conversion from BGR_PACKED to RGB for opengles")
+			break;
+	}
+#endif
 	data->setPosition(byteArrayOffset+bytesneeded);
 	th->context->addAction(RENDER_LOADTEXTURE,th);
 }

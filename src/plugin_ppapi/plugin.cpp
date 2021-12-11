@@ -2418,8 +2418,8 @@ void ppPluginEngineData::exec_glSetTexParameters(int32_t lodbias, uint32_t dimen
 			g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST);
 			break;
 	}
-	g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-	g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap&1 ? GL_REPEAT : GL_CLAMP_TO_EDGE);
+	g_gles2_interface->TexParameteri(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap&2 ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 	if (lodbias != 0)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D: GL_TEXTURE_LOD_BIAS not available for PPAPI");
 	//g_gles2_interface->TexParameterf(instance->m_graphics,dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS,(float)(lodbias)/8.0);
@@ -2432,6 +2432,29 @@ void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_
 void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
 {
 	g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
+}
+void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels, TEXTUREFORMAT format)
+{
+	switch (format)
+	{
+		case TEXTUREFORMAT::BGRA:
+			g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+			break;
+		case TEXTUREFORMAT::BGRA_PACKED:
+			g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
+			break;
+		case TEXTUREFORMAT::BGR_PACKED:
+			g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
+			break;
+		case TEXTUREFORMAT::RGBA_HALF_FLOAT:
+		case TEXTUREFORMAT::COMPRESSED:
+		case TEXTUREFORMAT::COMPRESSED_ALPHA:
+			LOG(LOG_NOT_IMPLEMENTED,"upload texture in format "<<format);
+			break;
+		default:
+			LOG(LOG_ERROR,"invalid format for upload texture:"<<format);
+			break;
+	}
 }
 
 void ppPluginEngineData::exec_glDrawBuffer_GL_BACK()

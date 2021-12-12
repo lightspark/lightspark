@@ -153,13 +153,27 @@ void FontDescription::sinit(Class_base* c)
 	c->isReusable = true;
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),_clone),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("isFontCompatible","",Class<IFunction>::getFunction(c->getSystemState(),isFontCompatible),NORMAL_METHOD,false);
-	REGISTER_GETTER_SETTER(c,cffHinting);
-	REGISTER_GETTER_SETTER(c,fontLookup);
-	REGISTER_GETTER_SETTER(c,fontName);
-	REGISTER_GETTER_SETTER(c,fontPosture);
-	REGISTER_GETTER_SETTER(c,fontWeight);
-	REGISTER_GETTER_SETTER(c,locked);
-	REGISTER_GETTER_SETTER(c,renderingMode);
+
+    c->setDeclaredMethodByQName("fontName","",Class<IFunction>::getFunction(c->getSystemState(),_getFontName),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontName","",Class<IFunction>::getFunction(c->getSystemState(),_setFontName),SETTER_METHOD,true);
+
+    c->setDeclaredMethodByQName("fontWeight","",Class<IFunction>::getFunction(c->getSystemState(),_getFontWeight),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontWeight","",Class<IFunction>::getFunction(c->getSystemState(),_setFontWeight),SETTER_METHOD,true);
+
+    c->setDeclaredMethodByQName("fontPosture","",Class<IFunction>::getFunction(c->getSystemState(),_getFontPosture),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontPosture","",Class<IFunction>::getFunction(c->getSystemState(),_setFontPosture),SETTER_METHOD,true);
+
+    c->setDeclaredMethodByQName("fontLookup","",Class<IFunction>::getFunction(c->getSystemState(),_getFontLookup),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontLookup","",Class<IFunction>::getFunction(c->getSystemState(),_setFontLookup),SETTER_METHOD,true);
+
+    c->setDeclaredMethodByQName("renderingMode","",Class<IFunction>::getFunction(c->getSystemState(),_getRenderingMode),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("renderingMode","",Class<IFunction>::getFunction(c->getSystemState(),_setRenderingMode),SETTER_METHOD,true);
+
+    c->setDeclaredMethodByQName("cffHinting","",Class<IFunction>::getFunction(c->getSystemState(),_getCffHinting),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("cffHinting","",Class<IFunction>::getFunction(c->getSystemState(),_setCffHinting),SETTER_METHOD,true);
+
+    c->setDeclaredMethodByQName("locked","",Class<IFunction>::getFunction(c->getSystemState(),_getLocked),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("locked","",Class<IFunction>::getFunction(c->getSystemState(),_setLocked),SETTER_METHOD,true);
 }
 
 bool FontDescription::destruct()
@@ -176,15 +190,9 @@ bool FontDescription::destruct()
 
 ASFUNCTIONBODY_ATOM(FontDescription,_constructor)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "FontDescription class not implemented");
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    ARG_UNPACK_ATOM(th->fontName, "_serif")(th->fontWeight, "normal")(th->fontPosture, "normal")(th->fontLookup, "device")(th->renderingMode, "cff")(th->cffHinting, "horizontalStem");
 }
-ASFUNCTIONBODY_GETTER_SETTER(FontDescription,cffHinting)
-ASFUNCTIONBODY_GETTER_SETTER(FontDescription,fontLookup)
-ASFUNCTIONBODY_GETTER_SETTER(FontDescription,fontName)
-ASFUNCTIONBODY_GETTER_SETTER(FontDescription,fontPosture)
-ASFUNCTIONBODY_GETTER_SETTER(FontDescription,fontWeight)
-ASFUNCTIONBODY_GETTER_SETTER(FontDescription,locked)
-ASFUNCTIONBODY_GETTER_SETTER(FontDescription,renderingMode)
 
 ASFUNCTIONBODY_ATOM(FontDescription, _clone)
 {
@@ -200,6 +208,7 @@ ASFUNCTIONBODY_ATOM(FontDescription, _clone)
 	newfontdescription->locked = false;
 	ret = asAtomHandler::fromObject(newfontdescription);
 }
+
 ASFUNCTIONBODY_ATOM(FontDescription, isFontCompatible)
 {
 	tiny_string fontName;
@@ -232,6 +241,208 @@ ASFUNCTIONBODY_ATOM(FontDescription, isFontCompatible)
 		it++;
 	}
 	asAtomHandler::setBool(ret,false);
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,isDeviceFontCompatible)
+{
+	// Similar to isFontCompatible but without embeddedCFF check.
+
+    tiny_string fontName;
+    tiny_string fontWeight;
+    tiny_string fontPosture;
+    ARG_UNPACK_ATOM(fontName)(fontWeight)(fontPosture);
+    bool italic = false;
+    bool bold = false;
+    if (fontWeight == "bold")
+        bold = true;
+    else if (fontWeight != "normal")
+        throwError<ArgumentError>(kInvalidArgumentError,"fontWeight");
+    if (fontPosture == "italic")
+        italic = true;
+    else if (fontPosture != "normal")
+        throwError<ArgumentError>(kInvalidArgumentError,"fontPosture");
+    tiny_string fontStyle = bold ? (italic ? "boldItalic" : "bold") : (italic ? "italic" : "regular");
+    std::vector<asAtom>* flist = ASFont::getFontList();
+    auto it = flist->begin();
+    while (it != flist->end())
+    {
+        ASFont* f = asAtomHandler::as<ASFont>(*it);
+        if (f->fontName == fontName &&
+            f->fontStyle == fontStyle)
+        {
+            asAtomHandler::setBool(ret,true);
+            return;
+        }
+        it++;
+    }
+    asAtomHandler::setBool(ret,false);
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_getLocked)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    ret = asAtomHandler::fromBool(th->locked);
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_setLocked)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    if (!th->locked)
+    {
+        bool value;
+        ARG_UNPACK_ATOM(value);
+        th->locked = value;
+    }
+    else
+    {
+        throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+    }
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_getFontName)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    ret = asAtomHandler::fromString(sys,th->fontName);
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_setFontName)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    if (!th->locked)
+    {
+        tiny_string value;
+        ARG_UNPACK_ATOM(value);
+        th->fontName = value;
+    }
+	else
+	{
+		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+	}
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_getFontWeight)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    ret = asAtomHandler::fromString(sys,th->fontWeight);
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_setFontWeight)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    if (!th->locked)
+    {
+        tiny_string value;
+        ARG_UNPACK_ATOM(value);
+		if (value != "bold" && value != "normal")
+		{
+			throwError<ArgumentError>(kInvalidEnumError, "fontWeight");
+		}
+        th->fontWeight = value;
+    }
+	else
+	{
+		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+	}
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_getFontPosture)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    ret = asAtomHandler::fromString(sys,th->fontPosture);
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_setFontPosture)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    if (!th->locked)
+    {
+        tiny_string value;
+        ARG_UNPACK_ATOM(value);
+		if (value != "italic" && value != "normal")
+		{
+			throwError<ArgumentError>(kInvalidEnumError, "fontPosture");
+		}
+        th->fontPosture = value;
+    }
+	else
+	{
+		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+	}
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_getFontLookup)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    ret = asAtomHandler::fromString(sys,th->fontLookup);
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_setFontLookup)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    if (!th->locked)
+    {
+        tiny_string value;
+        ARG_UNPACK_ATOM(value);
+		if (value != "device" && value != "embeddedCFF")
+		{
+			throwError<ArgumentError>(kInvalidEnumError, "fontLookup");
+		}
+        th->fontLookup = value;
+    }
+	else
+	{
+		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+	}
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_getRenderingMode)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    ret = asAtomHandler::fromString(sys,th->renderingMode);
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_setRenderingMode)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    if (!th->locked)
+    {
+        tiny_string value;
+        ARG_UNPACK_ATOM(value);
+		if (value != "cff" && value != "normal")
+		{
+			throwError<ArgumentError>(kInvalidEnumError, "renderingMode");
+		}
+        th->renderingMode = value;
+    }
+	else
+	{
+		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+	}
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_getCffHinting)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    ret = asAtomHandler::fromString(sys,th->cffHinting);
+}
+
+ASFUNCTIONBODY_ATOM(FontDescription,_setCffHinting)
+{
+    FontDescription* th=asAtomHandler::as<FontDescription>(obj);
+    if (!th->locked)
+    {
+        tiny_string value;
+        ARG_UNPACK_ATOM(value);
+		if (value != "horizontalStem" && value != "none")
+		{
+			throwError<ArgumentError>(kInvalidEnumError, "cffHinting");
+		}
+        th->cffHinting = value;
+    }
+	else
+	{
+		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+	}
 }
 
 void FontPosture::sinit(Class_base* c)

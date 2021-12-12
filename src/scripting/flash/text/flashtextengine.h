@@ -76,21 +76,45 @@ public:
 
 class FontDescription: public ASObject
 {
+private:
+    tiny_string cffHinting;
+    tiny_string fontLookup;
+    tiny_string fontName;
+    tiny_string fontPosture;
+    tiny_string fontWeight;
+    bool locked;
+    tiny_string renderingMode;
+
 public:
 	FontDescription(Class_base* c): ASObject(c,T_OBJECT,SUBTYPE_FONTDESCRIPTION), 
-		cffHinting("horizontalStem"), fontLookup("device"), fontName("_serif"), fontPosture("normal"), fontWeight("normal"),locked(false), renderingMode("cff") {}
+        cffHinting("horizontalStem"), fontLookup("device"), fontName("_serif"), fontPosture("normal"), fontWeight("normal"),locked(false), renderingMode("cff") {}
 	static void sinit(Class_base* c);
-	bool destruct();
+    bool destruct();
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_clone);
 	ASFUNCTION_ATOM(isFontCompatible);
-	ASPROPERTY_GETTER_SETTER(tiny_string,cffHinting);
-	ASPROPERTY_GETTER_SETTER(tiny_string,fontLookup);
-	ASPROPERTY_GETTER_SETTER(tiny_string,fontName);
-	ASPROPERTY_GETTER_SETTER(tiny_string,fontPosture);
-	ASPROPERTY_GETTER_SETTER(tiny_string,fontWeight);
-	ASPROPERTY_GETTER_SETTER(bool,locked);
-	ASPROPERTY_GETTER_SETTER(tiny_string,renderingMode);
+	ASFUNCTION_ATOM(isDeviceFontCompatible);
+
+    ASFUNCTION_ATOM(_getCffHinting);
+    ASFUNCTION_ATOM(_setCffHinting);
+
+    ASFUNCTION_ATOM(_getFontLookup);
+    ASFUNCTION_ATOM(_setFontLookup);
+
+    ASFUNCTION_ATOM(_getFontName);
+    ASFUNCTION_ATOM(_setFontName);
+
+    ASFUNCTION_ATOM(_getFontPosture);
+    ASFUNCTION_ATOM(_setFontPosture);
+
+    ASFUNCTION_ATOM(_getFontWeight);
+    ASFUNCTION_ATOM(_setFontWeight);
+
+    ASFUNCTION_ATOM(_getLocked);
+    ASFUNCTION_ATOM(_setLocked);
+
+    ASFUNCTION_ATOM(_getRenderingMode);
+    ASFUNCTION_ATOM(_setRenderingMode);
 };
 
 class FontPosture: public ASObject

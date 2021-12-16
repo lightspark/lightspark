@@ -78,14 +78,25 @@ ASFUNCTIONBODY_ATOM(MessageChannel,receive)
 	MessageChannel* th=asAtomHandler::as<MessageChannel>(obj);
 	bool blockUntilReceived;
 	ARG_UNPACK_ATOM(blockUntilReceived,false);
-	if (blockUntilReceived)
-		LOG(LOG_NOT_IMPLEMENTED,"MessageChannel.send ignores parameter blockUntilReceived");
 	Locker l(th->messagequeuemutex);
 	if (th->messagequeue.empty())
 	{
-		ret = asAtomHandler::nullAtom;
-		return;
+		if (blockUntilReceived)
+		{
+			while (th->messagequeue.empty() && th->state=="open")
+			{
+				l.release();
+				compat_msleep(100);
+				l.acquire();
+			}
+		}
+		if (th->messagequeue.empty())
+		{
+			ret = asAtomHandler::nullAtom;
+			return;
+		}
 	}
+	
 	_NR<ASObject> msg = th->messagequeue.front();
 	th->messagequeue.pop();
 	if (msg->is<ASWorker>()

@@ -849,6 +849,8 @@ ASWorker::ASWorker(Class_base* c):
 	giveAppPrivileges(false),started(false),currentCallContext(nullptr),cur_recursion(0),stacktrace(new stacktrace_entry[256]),isPrimordial(false),state("new")
 {
 	subtype = SUBTYPE_WORKER;
+	limits.max_recursion = 256;
+	limits.script_timeout = 20;
 }
 
 void ASWorker::finalize()
@@ -897,14 +899,14 @@ void ASWorker::execute()
 	streambuf *sbuf = new bytes_buf(swf->bytes,swf->getLength());
 	istream s(sbuf);
 	parsemutex.lock();
-	parser = new ParseThread(s,getSystemState()->mainClip->applicationDomain,getSystemState()->mainClip->securityDomain,loader.getPtr(),"");
+	parser = new ParseThread(s,_MR(Class<ApplicationDomain>::getInstanceS(this->getSystemState(),_MR(getSystemState()->systemDomain))),getSystemState()->mainClip->securityDomain,loader.getPtr(),"");
 	parsemutex.unlock();
 	getSystemState()->addWorker(this);
 	this->incRef();
 	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"workerState")));
 	if (!this->threadAborting)
 	{
-		LOG(LOG_INFO,"start worker"<<this->toDebugString()<<" "<<this->isPrimordial);
+		LOG(LOG_INFO,"start worker"<<this->toDebugString()<<" "<<this->isPrimordial<<" "<<getWorker());
 		parser->execute();
 	}
 	parsemutex.lock();
@@ -1106,9 +1108,9 @@ void WorkerDomain::finalize()
 void WorkerDomain::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("current","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrent),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("isSupported","",Class<IFunction>::getFunction(c->getSystemState(),_isSupported),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("createWorker","",Class<IFunction>::getFunction(c->getSystemState(),createWorker),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("current","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrent,0,Class<WorkerDomain>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("isSupported","",Class<IFunction>::getFunction(c->getSystemState(),_isSupported,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("createWorker","",Class<IFunction>::getFunction(c->getSystemState(),createWorker,1,Class<ASWorker>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("listWorkers","",Class<IFunction>::getFunction(c->getSystemState(),listWorkers),NORMAL_METHOD,true);
 	if(c->getSystemState()->flashMode==SystemState::AVMPLUS)
 	{

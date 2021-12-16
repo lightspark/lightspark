@@ -61,7 +61,7 @@ Activation_object* lightspark::new_activationObject(SystemState* sys)
 }
 
 
-Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_global):Class_base(name, m),tag(nullptr),bindedToRoot(false),classtrait(_classtrait)
+Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_global):Class_base(name, m),tag(nullptr),bindedToRoot(false),bindingchecked(false),classtrait(_classtrait)
 {
 	this->global=_global;
 	this->incRef(); //create on reference for the classes map
@@ -90,8 +90,15 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 	//We override the classdef
 	if(realClass==nullptr)
 		realClass=this;
-	if (!this->isBinded()) // it seems possible that an instance of a class is constructed before the binding of the class is available, so we have to check for a binding here
-		getSystemState()->mainClip->bindClass(this->class_name,this);
+	if (!this->needsBindingCheck()) // it seems possible that an instance of a class is constructed before the binding of the class is available, so we have to check for a binding here
+	{
+		ASWorker* worker = getWorker();
+		if (worker)
+			worker->rootClip->bindClass(this->class_name,this);
+		else
+			getSystemState()->mainClip->bindClass(this->class_name,this);
+		this->bindingchecked=true;
+	}
 	if(tag)
 	{
 		ret=asAtomHandler::fromObject(tag->instance(realClass));

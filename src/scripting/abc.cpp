@@ -173,23 +173,23 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 
 	for(int i=0;i<NumSymbols;i++)
 	{
-		LOG(LOG_CALLS,_("Binding ") << Tags[i] << ' ' << Names[i]);
+		LOG(LOG_CALLS,"Binding " << Tags[i] << ' ' << Names[i]);
 		tiny_string className((const char*)Names[i],true);
 		if(Tags[i]==0)
 		{
 			root->hasMainClass=true;
 			root->incRef();
 			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
-			if (root != root->getSystemState()->mainClip)
+			ASWorker* worker = getWorker();
+			if (worker && !worker->isPrimordial && root != root->getSystemState()->mainClip)
 			{
-				ASWorker* worker = getWorker();
-				if (worker)
-				{
-					worker->state ="running";
-					worker->incRef();
-					getVm(root->getSystemState())->addEvent(_MR(worker),_MR(Class<Event>::getInstanceS(root->getSystemState(),"workerState")));
-				}
+				getVm(root->getSystemState())->buildClassAndInjectBase(className.raw_buf(),_MR(root));
+				worker->state ="running";
+				worker->incRef();
+				getVm(root->getSystemState())->addEvent(_MR(worker),_MR(Class<Event>::getInstanceS(root->getSystemState(),"workerState")));
 			}
+			else
+				getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
 		}
 		else
 		{
@@ -457,11 +457,11 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* context)
 	}
 	
 	asAtom rt1=asAtomHandler::invalidAtom;
-	ASObject* rt2 = NULL;
+	ASObject* rt2 = nullptr;
 	if(fromStack > 0)
 	{
 		if(!context)
-			return NULL;
+			return nullptr;
 		RUNTIME_STACK_POP(context,rt1);
 	}
 	if(fromStack > 1)
@@ -825,8 +825,8 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):scriptsdecla
 		{
 			multiname* supermname = getMultiname(instances[i].supername,nullptr);
 			QName superclassName(supermname->name_s_id,supermname->ns[0].nsNameId);
-			auto it = root->getSystemState()->customclassoverriddenmethods.find(superclassName);
-			if (it == root->getSystemState()->customclassoverriddenmethods.end())
+			auto it = root->customclassoverriddenmethods.find(superclassName);
+			if (it == root->customclassoverriddenmethods.end())
 			{
 				// super class is builtin class
 				instances[i].overriddenmethods = new std::unordered_set<uint32_t>();
@@ -852,7 +852,7 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):scriptsdecla
 		}
 		multiname* mname = getMultiname(instances[i].name,nullptr);
 		QName className(mname->name_s_id,mname->ns[0].nsNameId);
-		root->getSystemState()->customclassoverriddenmethods.insert(make_pair(className,instances[i].overriddenmethods));
+		root->customclassoverriddenmethods.insert(make_pair(className,instances[i].overriddenmethods));
 
 		LOG(LOG_TRACE,_("Class ") << *getMultiname(instances[i].name,nullptr));
 		LOG(LOG_TRACE,_("Flags:"));
@@ -1193,12 +1193,12 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case BIND_CLASS:
 			{
 				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second.getPtr());
-				LOG(LOG_CALLS,_("Binding of ") << ev->class_name);
+				LOG(LOG_CALLS,"Binding of " << ev->class_name);
 				if(ev->tag)
 					buildClassAndBindTag(ev->class_name.raw_buf(),ev->tag);
 				else
 					buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base);
-				LOG(LOG_CALLS,_("End of binding of ") << ev->class_name);
+				LOG(LOG_CALLS,"End of binding of " << ev->class_name);
 				break;
 			}
 			case SHUTDOWN:
@@ -1454,7 +1454,7 @@ void ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 
 Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)
 {
-	LOG(LOG_CALLS,_("Setting class name to ") << s);
+	LOG(LOG_CALLS,"Setting class name to " << s);
 	ASObject* target;
 	ASObject* derived_class=root->applicationDomain->getVariableByString(s,target);
 	if(derived_class==nullptr)
@@ -1648,7 +1648,7 @@ void ABCContext::declareScripts()
 
 	for(;i<scripts.size();i++)
 	{
-		LOG(LOG_CALLS, _("Script N: ") << i );
+		LOG(LOG_CALLS, "Script N: " << i );
 
 		//Creating a new global for this script
 		Global* global=Class<Global>::getInstanceS(root->getSystemState(),this, i,false);
@@ -1656,7 +1656,7 @@ void ABCContext::declareScripts()
 #ifndef NDEBUG
 		global->initialized=false;
 #endif
-		LOG(LOG_CALLS, _("Building script traits: ") << scripts[i].trait_count );
+		LOG(LOG_CALLS, "Building script traits: " << scripts[i].trait_count );
 
 
 		std::vector<multiname*> additionalslots;
@@ -1683,7 +1683,7 @@ void ABCContext::exec(bool lazy)
 {
 	declareScripts();
 	//The last script entry has to be run
-	LOG(LOG_CALLS, _("Last script (Entry Point)"));
+	LOG(LOG_CALLS, "Last script (Entry Point)");
 	//Creating a new global for the last script
 	Global* global=root->applicationDomain->getLastGlobalScope();
 
@@ -1694,7 +1694,7 @@ void ABCContext::exec(bool lazy)
 		asAtom g = asAtomHandler::fromObject(global);
 		runScriptInit(lastscript, g);
 	}
-	LOG(LOG_CALLS, _("End of Entry Point"));
+	LOG(LOG_CALLS, "End of Entry Point");
 }
 
 void ABCContext::runScriptInit(unsigned int i, asAtom &g)
@@ -2322,7 +2322,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 					const namespace_info& ns_info=constant_pool.namespaces[ns];
 					ci->initializeProtectedNamespace(getString(ns_info.name),ns_info,root.getPtr());
 				}
-				LOG(LOG_CALLS,_("Adding immutable object traits to class"));
+				LOG(LOG_CALLS,"Adding immutable object traits to class");
 				//Class objects also contains all the methods/getters/setters declared for instances
 				for(unsigned int i=0;i<instances[t->classi].trait_count;i++)
 				{
@@ -2334,7 +2334,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				//add implemented interfaces
 				for(unsigned int i=0;i<instances[t->classi].interface_count;i++)
 				{
-					multiname* name=getMultiname(instances[t->classi].interfaces[i],NULL);
+					multiname* name=getMultiname(instances[t->classi].interfaces[i],nullptr);
 					ci->addImplementedInterface(*name);
 				}
 
@@ -2370,7 +2370,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				if(instances[t->classi].supername)
 				{
 					// set superclass for classes that are not instantiated by newClass opcode (e.g. buttons)
-					multiname mnsuper = *getMultiname(instances[t->classi].supername,NULL);
+					multiname mnsuper = *getMultiname(instances[t->classi].supername,nullptr);
 					ASObject* superclass=root->applicationDomain->getVariableByMultinameOpportunistic(mnsuper);
 					if(superclass && superclass->is<Class_base>() && !superclass->is<Class_inherit>())
 					{
@@ -2388,7 +2388,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			variable* v = obj->is<Global>() ? obj->setVariableAtomByQName(mname->name_s_id,mname->ns[0], asAtomHandler::nullAtom,DECLARED_TRAIT)
 											: obj->setVariableByQName(mname->name_s_id,mname->ns[0], ret,DECLARED_TRAIT);
 
-			LOG(LOG_CALLS,_("Class slot ")<< t->slot_id << _(" type Class name ") << *mname << _(" id ") << t->classi);
+			LOG(LOG_CALLS,"Class slot "<< t->slot_id << " type Class name " << *mname << " id " << t->classi);
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, v);
 			else
@@ -2401,11 +2401,11 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 		{
 			//methods can also be defined at toplevel (not only traits_info::Function!)
 			if(kind == traits_info::Getter)
-				LOG(LOG_CALLS,"Getter trait: " << *mname << _(" #") << t->method);
+				LOG(LOG_CALLS,"Getter trait: " << *mname << " #" << t->method);
 			else if(kind == traits_info::Setter)
-				LOG(LOG_CALLS,"Setter trait: " << *mname << _(" #") << t->method);
+				LOG(LOG_CALLS,"Setter trait: " << *mname << " #" << t->method);
 			else if(kind == traits_info::Method)
-				LOG(LOG_CALLS,"Method trait: " << *mname << _(" #") << t->method);
+				LOG(LOG_CALLS,"Method trait: " << *mname << " #" << t->method);
 			method_info* m=&methods[t->method];
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(obj->getSystemState(),m,m->numArgs());
 
@@ -2450,7 +2450,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			if(checkExisting && obj->hasPropertyByMultiname(*mname,false,false))
 				return;
 
-			multiname* tname=getMultiname(t->type_name,NULL);
+			multiname* tname=getMultiname(t->type_name,nullptr);
 			asAtom ret=asAtomHandler::invalidAtom;
 			//If the index is valid we set the constant
 			if(t->vindex)
@@ -2461,7 +2461,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			else
 				asAtomHandler::setNull(ret);
 
-			LOG(LOG_CALLS,_("Const ") << *mname <<_(" type ")<< *tname<< " = " << asAtomHandler::toDebugString(ret));
+			LOG(LOG_CALLS,"Const " << *mname <<" type "<< *tname<< " = " << asAtomHandler::toDebugString(ret));
 
 			obj->initializeVariableByMultiname(*mname, ret, tname, this, CONSTANT_TRAIT,t->slot_id,isenumerable);
 			break;
@@ -2472,16 +2472,16 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			if(checkExisting && obj->hasPropertyByMultiname(*mname,false,false))
 				return;
 
-			multiname* tname=getMultiname(t->type_name,NULL);
+			multiname* tname=getMultiname(t->type_name,nullptr);
 			asAtom ret=asAtomHandler::invalidAtom;
 			if(t->vindex)
 			{
 				getConstant(ret,t->vkind,t->vindex);
-				LOG_CALL(_("Slot ") << t->slot_id << ' ' << *mname <<_(" type ")<<*tname<< " = " << asAtomHandler::toDebugString(ret) <<" "<<isBorrowed);
+				LOG_CALL("Slot " << t->slot_id << ' ' << *mname <<" type "<<*tname<< " = " << asAtomHandler::toDebugString(ret) <<" "<<isBorrowed);
 			}
 			else
 			{
-				LOG_CALL(_("Slot ")<< t->slot_id<<  _(" vindex 0 ") << *mname <<_(" type ")<<*tname<<" "<<isBorrowed);
+				LOG_CALL(_("Slot ")<< t->slot_id<<  " vindex 0 " << *mname <<" type "<<*tname<<" "<<isBorrowed);
 				ret = asAtomHandler::invalidAtom;
 			}
 
@@ -2491,7 +2491,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			break;
 		}
 		default:
-			LOG(LOG_ERROR,_("Trait not supported ") << *mname << _(" ") << t->kind);
+			LOG(LOG_ERROR,"Trait not supported " << *mname << " " << t->kind);
 			obj->setVariableByMultiname(*mname, asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED);
 			break;
 	}

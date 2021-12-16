@@ -1117,7 +1117,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getLoaderInfo)
 	if (r.isNull())
 	{
 		// if this DisplayObject is not yet added to the stage we just use the mainclip
-		r = _MR(sys->mainClip);
+		r = _MR(th->loadedFrom ? th->loadedFrom : sys->mainClip);
 		r->incRef();
 	}
 	if(r.isNull() || r->loaderInfo.isNull())

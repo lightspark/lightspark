@@ -1128,7 +1128,7 @@ void SystemState::needsAVM2(bool avm2)
 		worker->state ="running";
 		worker->setRefConstant();
 		addWorker(worker);
-		setTLSWorker(worker);
+		//setTLSWorker(worker);
 	}
 	else
 		vmVersion=AVM1;
@@ -1592,6 +1592,11 @@ void ParseThread::parseSWF(UI8 ver)
 	{
 		_NR<LoaderInfo> li=loader->getContentLoaderInfo();
 		root=RootMovieClip::getInstance(li, applicationDomain, securityDomain);
+		if (getWorker())
+		{
+			root->incRef();
+			getWorker()->rootClip = _MR(root);
+		}
 		parsedObject=_MNR(root);
 		li->setWaitedObject(parsedObject);
 		if(!url.empty())

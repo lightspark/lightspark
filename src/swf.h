@@ -142,6 +142,11 @@ public:
 	 * The security domain for this clip
 	 */
 	_NR<SecurityDomain> securityDomain;
+	/*
+	 * Support for class aliases in AMF3 serialization
+	 */
+	std::map<tiny_string, _R<Class_base> > aliasMap;
+	std::map<QName,std::unordered_set<uint32_t>*> customclassoverriddenmethods;
 	//DisplayObject interface
 	_NR<RootMovieClip> getRoot() override;
 	_NR<Stage> getStage() override;
@@ -415,8 +420,6 @@ public:
 	Class_base** builtinClasses;
 	std::map<QName, Template_base*> templates;
 
-	std::map<QName,std::unordered_set<uint32_t>*> customclassoverriddenmethods;
-	
 	//Flags for command line options
 	bool useInterpreter;
 	bool useFastInterpreter;
@@ -497,10 +500,6 @@ public:
 	//Resize support
 	void resizeCompleted();
 
-	/*
-	 * Support for class aliases in AMF3 serialization
-	 */
-	std::map<tiny_string, _R<Class_base> > aliasMap;
 #ifdef PROFILING_SUPPORT
 	void setProfilingOutput(const tiny_string& t) DLL_PUBLIC;
 	const tiny_string& getProfilingOutput() const;

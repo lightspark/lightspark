@@ -369,16 +369,17 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		//Custom serialization
 		const tiny_string& className=parseStringVR(stringMap);
 		assert_and_throw(!className.empty());
-		const auto it=input->getSystemState()->aliasMap.find(className);
-		assert_and_throw(it!=input->getSystemState()->aliasMap.end());
+		RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : input->getSystemState()->mainClip;
+		const auto it=root->aliasMap.find(className);
+		assert_and_throw(it!=root->aliasMap.end());
 
 		Class_base* type=it->second.getPtr();
 		traitsMap.push_back(TraitsRef(type));
 
 		asAtom ret=asAtomHandler::invalidAtom;
-		type->getInstance(ret,true, NULL, 0);
+		type->getInstance(ret,true, nullptr, 0);
 		//Invoke readExternal
-		multiname readExternalName(NULL);
+		multiname readExternalName(nullptr);
 		readExternalName.name_type=multiname::NAME_STRING;
 		readExternalName.name_s_id=input->getSystemState()->getUniqueStringId("readExternal");
 		readExternalName.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
@@ -410,8 +411,9 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		for(uint32_t i=0;i<traitsCount;i++)
 			traits.traitsNames.emplace_back(parseStringVR(stringMap));
 
-		const auto it=input->getSystemState()->aliasMap.find(className);
-		if(it!=input->getSystemState()->aliasMap.end())
+		RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : input->getSystemState()->mainClip;
+		const auto it=root->aliasMap.find(className);
+		if(it!=root->aliasMap.end())
 			traits.type=it->second.getPtr();
 		traitsMap.emplace_back(traits);
 	}

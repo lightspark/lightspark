@@ -2098,8 +2098,9 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	assert_and_throw(type);
 
 	//Check if an alias is registered
-	auto aliasIt=getSystemState()->aliasMap.begin();
-	const auto aliasEnd=getSystemState()->aliasMap.end();
+	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : getSystemState()->mainClip;
+	auto aliasIt=root->aliasMap.begin();
+	const auto aliasEnd=root->aliasMap.end();
 	//Linear search for alias
 	tiny_string alias;
 	for(;aliasIt!=aliasEnd;++aliasIt)

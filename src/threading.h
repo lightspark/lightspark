@@ -143,10 +143,13 @@ public:
 		lighted=true;
 	}
 };
+class ASWorker;
 
 class IThreadJob
 {
 friend class ThreadPool;
+private:
+	ASWorker* fromWorker;
 public:
 	/*
 	 * Set to true by the ThreadPool just before threadAbort()
@@ -177,8 +180,9 @@ public:
 	 * 'delete this'.
 	 */
 	virtual void jobFence()=0;
-	IThreadJob() : threadAborting(false) {}
+	IThreadJob() : fromWorker(nullptr),threadAborting(false) {}
 	virtual ~IThreadJob() {}
+	void setWorker(ASWorker* w) { fromWorker = w;}
 };
 
 template<class T, uint32_t size>

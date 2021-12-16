@@ -48,6 +48,7 @@ private:
 	void getInstance(asAtom& ret, bool construct, asAtom *args, const unsigned int argslen, Class_base* realClass) override;
 	DictionaryTag* tag;
 	bool bindedToRoot;
+	bool bindingchecked;
 	void recursiveBuild(ASObject* target) const;
 	const traits_info* classtrait;
 	_NR<ASObject> instancefactory;
@@ -61,6 +62,8 @@ public:
 	bool destruct() override
 	{
 		instancefactory.reset();
+		bindingchecked=false;
+		bindedToRoot=false;
 		auto it = class_scope.begin();
 		while (it != class_scope.end())
 		{
@@ -84,6 +87,10 @@ public:
 	bool isBinded() const
 	{
 		return tag || bindedToRoot;
+	}
+	bool needsBindingCheck() const
+	{
+		return !bindingchecked;
 	}
 	//Closure stack
 	std::vector<scope_entry> class_scope;

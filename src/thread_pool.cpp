@@ -99,6 +99,7 @@ int ThreadPool::job_worker(void *d)
 		data->pool->curJobs[data->index]=myJob;
 		l.release();
 
+		setTLSWorker(myJob->fromWorker);
 		chronometer.checkpoint();
 		try
 		{
@@ -137,6 +138,7 @@ int ThreadPool::job_worker(void *d)
 void ThreadPool::addJob(IThreadJob* j)
 {
 	Locker l(mutex);
+	j->setWorker(getWorker());
 	if(stopFlag)
 	{
 		j->jobFence();

@@ -2684,15 +2684,17 @@ ASFUNCTIONBODY_ATOM(lightspark,registerClassAlias)
 	const tiny_string& arg0 = asAtomHandler::toString(args[0],sys);
 	ASATOM_INCREF(args[1]);
 	_R<Class_base> c=_MR(asAtomHandler::as<Class_base>(args[1]));
-	sys->aliasMap.insert(make_pair(arg0, c));
+	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : sys->mainClip;
+	root->aliasMap.insert(make_pair(arg0, c));
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getClassByAlias)
 {
 	assert_and_throw(argslen==1 && asAtomHandler::isString(args[0]));
 	const tiny_string& arg0 = asAtomHandler::toString(args[0],sys);
-	auto it=sys->aliasMap.find(arg0);
-	if(it==sys->aliasMap.end())
+	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : sys->mainClip;
+	auto it=root->aliasMap.find(arg0);
+	if(it==root->aliasMap.end())
 		throwError<ReferenceError>(kClassNotFoundError, arg0);
 	it->second->incRef();
 	ret = asAtomHandler::fromObject(it->second.getPtr());

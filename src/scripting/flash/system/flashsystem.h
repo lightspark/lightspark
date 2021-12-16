@@ -244,6 +244,7 @@ public:
 	void jobFence() override;
 	void threadAbort() override;
 	bool addEvent(_NR<EventDispatcher> obj ,_R<Event> ev);
+	_NR<RootMovieClip> rootClip;
 };
 class WorkerDomain: public ASObject
 {

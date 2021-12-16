@@ -348,15 +348,15 @@ _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 }
 
 Sound::Sound(Class_base* c)
-	:EventDispatcher(c),downloader(nullptr),soundData(new MemoryStreamCache(c->getSystemState())),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),
-	 container(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(-1)
+	:EventDispatcher(c),downloader(nullptr),soundData(nullptr),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),
+	 container(true),sampledataprocessed(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(-1)
 {
 	subtype=SUBTYPE_SOUND;
 }
 
 Sound::Sound(Class_base* c, _R<StreamCache> data, AudioFormat _format, number_t duration_in_ms)
 	:EventDispatcher(c),downloader(nullptr),soundData(data),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),
-	 container(false),format(_format),
+	 container(false),sampledataprocessed(true),format(_format),
 	 bytesLoaded(soundData->getReceivedLength()),
 	 bytesTotal(soundData->getReceivedLength()),length(duration_in_ms)
 {
@@ -376,13 +376,13 @@ void Sound::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play,0,Class<SoundChannel>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("extract","",Class<IFunction>::getFunction(c->getSystemState(),extract),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("extract","",Class<IFunction>::getFunction(c->getSystemState(),extract,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("loadCompressedDataFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),loadCompressedDataFromByteArray),NORMAL_METHOD,true);
-	REGISTER_GETTER(c,bytesLoaded);
-	REGISTER_GETTER(c,bytesTotal);
-	REGISTER_GETTER(c,length);
+	REGISTER_GETTER_RESULTTYPE(c,bytesLoaded,UInteger);
+	REGISTER_GETTER_RESULTTYPE(c,bytesTotal,UInteger);
+	REGISTER_GETTER_RESULTTYPE(c,length,Number);
 }
 
 ASFUNCTIONBODY_ATOM(Sound,_constructor)
@@ -453,17 +453,13 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		startTime *= 1000;
 	if (soundtransform.isNull())
 		soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(sys));
-
-	th->incRef();
 	if (th->container)
 	{
-		_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(th->getSystemState()));
-		th->incRef();
-		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<SampleDataEvent>::getInstanceS(th->getSystemState(),data,0)));
-		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, AudioFormat(LINEAR_PCM_FLOAT_BE,44100,2),false));
-		th->soundChannel->setStartTime(startTime);
+		RELEASE_WRITE(th->sampledataprocessed,true);
+		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,NullRef, AudioFormat(LINEAR_PCM_FLOAT_BE,44100,2),false,nullptr,th));
 		th->soundChannel->setLoops(loops);
 		th->soundChannel->soundTransform = soundtransform;
+		th->soundChannel->play(startTime);
 		th->soundChannel->incRef();
 		ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
 	}
@@ -504,7 +500,9 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 	int32_t startPosition;
 	ARG_UNPACK_ATOM(target)(length)(startPosition,-1);
 	int32_t readcount=0;
-	if (!target.isNull())
+	int32_t bytelength=length*4*2; // length is in samples (2 32bit floats)
+	int32_t bytestartposition= startPosition*4*2; // startposition is in samples (2 32bit floats)
+	if (!target.isNull() && !th->soundData.isNull())
 	{
 		std::streambuf *sbuf = th->soundData->createReader();
 		istream s(sbuf);
@@ -514,15 +512,16 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 		try
 		{
 #ifdef ENABLE_LIBAVCODEC
-			if (th->rawDataStreamDecoder && startPosition >= 0)
+			if (th->rawDataStreamDecoder && bytestartposition < th->rawDataStartPosition)
 			{
 				delete th->rawDataStreamDecoder;
 				th->rawDataStreamDecoder= nullptr;
+				th->rawDataStartPosition=0;
 			}
-			if (startPosition < 0)
-				startPosition = th->rawDataStartPosition;
+			if (bytestartposition < 0)
+				bytestartposition = th->rawDataStartPosition;
 			if (th->rawDataStreamDecoder== nullptr)
-				th->rawDataStreamDecoder=new FFMpegStreamDecoder(nullptr,sys->getEngineData(),s,&th->format,th->soundData->hasTerminated() ? th->soundData->getReceivedLength() : -1);
+				th->rawDataStreamDecoder=new FFMpegStreamDecoder(nullptr,sys->getEngineData(),s,&th->format,th->soundData->hasTerminated() ? th->soundData->getReceivedLength() : -1,true);
 			if(!th->rawDataStreamDecoder->isValid())
 			{
 				LOG(LOG_ERROR,"invalid streamDecoder");
@@ -531,7 +530,8 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 			}
 			else
 			{
-				uint8_t* data = new uint8_t[length];
+				uint8_t* data = new uint8_t[bytelength];
+				bool firstcopy=true;
 				while(true)
 				{
 					bool decodingSuccess=th->rawDataStreamDecoder->decodeNextFrame();
@@ -541,17 +541,25 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 					{
 						uint8_t buf[MAX_AUDIO_FRAME_SIZE];
 						uint32_t read = th->rawDataStreamDecoder->audioDecoder->copyFrame((int16_t *)buf, MAX_AUDIO_FRAME_SIZE);
-						th->rawDataStartPosition += min(read,uint32_t(length-readcount));
-						if (th->rawDataStartPosition > startPosition)
+						th->rawDataStartPosition += read;
+						if (th->rawDataStartPosition > bytestartposition)
 						{
-							memcpy(data+readcount,buf,min(read,uint32_t(length-readcount)));
+							if (firstcopy)
+							{
+								firstcopy=false;
+								int bufstart = read - (th->rawDataStartPosition - bytestartposition);
+								read = (th->rawDataStartPosition - bytestartposition);
+								memcpy(data+readcount,buf+bufstart,min(read,uint32_t(bytelength-readcount)));
+							}
+							else
+								memcpy(data+readcount,buf,min(read,uint32_t(bytelength-readcount)));
 							readcount+=read;
 						}
-						if (th->rawDataStartPosition-startPosition >= length)
+						if (th->rawDataStartPosition-bytestartposition >= bytelength)
 							break;
 					}
 				}
-				target->writeBytes(data,min(readcount,length));
+				target->writeBytes(data,min(readcount,bytelength));
 				delete[] data;
 			}
 #endif //ENABLE_LIBAVCODEC
@@ -562,7 +570,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 		}
 		delete sbuf;
 	}
-	ret = asAtomHandler::fromInt(readcount);
+	ret = asAtomHandler::fromInt(min(readcount,bytelength)/8);
 }
 
 ASFUNCTIONBODY_ATOM(Sound,loadCompressedDataFromByteArray)
@@ -577,9 +585,11 @@ ASFUNCTIONBODY_ATOM(Sound,loadCompressedDataFromByteArray)
 	if (bytes)
 	{
 		uint8_t* buf = new uint8_t[bytesLength];
-		if (bytes->readBytes(bytes->getPosition(),bytesLength,buf))
+		uint32_t oldpos = bytes->getPosition();
+		if (bytes->readBytes(oldpos,bytesLength,buf))
 		{
 			th->soundData->append(buf,bytesLength);
+			bytes->setPosition(oldpos+bytesLength);
 		}
 		delete[] buf;
 	}
@@ -589,28 +599,20 @@ void Sound::afterExecution(_R<Event> e)
 	if (e->type == "sampleData")
 	{
 		_NR<ByteArray> data = e->as<SampleDataEvent>()->data;
-		if (data.isNull())
-		{
-			this->soundData->markFinished(false);
-			return;
-		}
-		uint32_t len = data->getLength();
-		uint32_t reallen = len;
-		this->soundData->append(data->getBuffer(len,false),len);
-		if (reallen)
-			soundChannel->resume();
-		if (len < 2048*sizeof(float))
-		{
-			// less than 2048 samples, stop requesting data
-			this->soundData->markFinished(true);
-		}
-		else
-		{
-			// request more data
-			_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(getSystemState()));
-			incRef();
-			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<SampleDataEvent>::getInstanceS(getSystemState(),data,this->soundData->getReceivedLength())));
-		}
+		this->soundChannel->appendSampleData(data.getPtr());
+		RELEASE_WRITE(sampledataprocessed,true);
+	}
+}
+
+void Sound::requestSampleDataEvent(size_t position)
+{
+	if (container && ACQUIRE_READ(sampledataprocessed))
+	{
+		RELEASE_WRITE(sampledataprocessed,false);
+		// request more data
+		_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(getSystemState()));
+		incRef();
+		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<SampleDataEvent>::getInstanceS(getSystemState(),data,position)));
 	}
 }
 
@@ -707,9 +709,9 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
-SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay, StartSoundTag* _tag)
-	: EventDispatcher(c),stream(_stream),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
-	format(_format),tag(_tag),oldVolume(-1.0),startTime(0),loopstogo(0),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
+SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay, StartSoundTag* _tag, Sound* _sampleproducer)
+	: EventDispatcher(c),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
+	format(_format),tag(_tag),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
 	leftPeak(1),rightPeak(1)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
@@ -727,9 +729,34 @@ void SoundChannel::appendStreamBlock(unsigned char *buf, int len)
 		SoundStreamBlockTag::decodeSoundBlock(stream.getPtr(),format.codec,buf,len);
 }
 
+void SoundChannel::appendSampleData(ByteArray* data)
+{
+	if (data == nullptr)
+	{
+		streamdatafinished=true;
+		threadAbort();
+	}
+	if (!isPlaying() && !isStarting())
+		return;
+	uint32_t len = data->getLength();
+	if (len)
+	{
+		audioDecoder->decodeData(data->getBufferNoCheck(),len,streamposition/(44100*2/1000));
+		streamposition+=len/(sizeof(float)*2);
+		resume();
+	}
+	if (len < 2048*sizeof(float))
+	{
+		// less than 2048 samples, stop requesting data
+		streamdatafinished=true;
+	}
+	
+}
+
 void SoundChannel::play(number_t starttime)
 {
 	mutex.lock();
+	RELEASE_WRITE(starting,true);
 	if (!ACQUIRE_READ(stopped))
 	{
 		RELEASE_WRITE(stopped,true);
@@ -762,7 +789,7 @@ void SoundChannel::play(number_t starttime)
 		mutex.lock();
 		restartafterabort=false;
 		startTime = starttime;
-		if (!stream.isNull() && ACQUIRE_READ(stopped))
+		if (ACQUIRE_READ(stopped))
 		{
 			// Start playback
 			incRef();
@@ -775,7 +802,7 @@ void SoundChannel::play(number_t starttime)
 }
 void SoundChannel::resume()
 {
-	if (!stream.isNull() && ACQUIRE_READ(stopped))
+	if (ACQUIRE_READ(stopped))
 	{
 		// Start playback
 		incRef();
@@ -797,9 +824,9 @@ void SoundChannel::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),getPosition),GETTER_METHOD,true);
 
-	REGISTER_GETTER(c,leftPeak);
-	REGISTER_GETTER(c,rightPeak);
-	REGISTER_GETTER_SETTER(c,soundTransform);
+	REGISTER_GETTER_RESULTTYPE(c,leftPeak,Number);
+	REGISTER_GETTER_RESULTTYPE(c,rightPeak,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,soundTransform,SoundTransform);
 }
 
 ASFUNCTIONBODY_GETTER(SoundChannel,leftPeak);
@@ -849,9 +876,27 @@ ASFUNCTIONBODY_ATOM(SoundChannel,getPosition)
 }
 void SoundChannel::execute()
 {
+	// ensure audio manager is initialized
+	getSystemState()->waitInitialized();
+	RELEASE_WRITE(starting,false);
 	while (true)
 	{
-		playStream();
+		mutex.lock();
+		if (audioStream)
+		{
+			delete audioStream;
+			audioStream=nullptr;
+		}
+		mutex.unlock();
+		if (sampleproducer)
+			playStreamFromSamples();
+		else
+			playStream();
+		if (!ACQUIRE_READ(stopped))
+		{
+			incRef();
+			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"soundComplete")));
+		}
 		if (loopstogo)
 			loopstogo--;
 		else
@@ -863,24 +908,13 @@ void SoundChannel::execute()
 
 void SoundChannel::playStream()
 {
-	// ensure audio manager is initialized
-	getSystemState()->waitInitialized();
 	assert(!stream.isNull());
 	std::streambuf *sbuf = stream->createReader();
 	istream s(sbuf);
 	s.exceptions ( istream::failbit | istream::badbit );
-
 	bool waitForFlush=true;
 	StreamDecoder* streamDecoder=nullptr;
-	{
-		mutex.lock();
-		if (audioStream)
-		{
-			delete audioStream;
-			audioStream=nullptr;
-		}
-		mutex.unlock();
-	}
+
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
@@ -958,12 +992,74 @@ void SoundChannel::playStream()
 	}
 	delete streamDecoder;
 	delete sbuf;
+}
 
-	if (!ACQUIRE_READ(stopped))
+void SoundChannel::playStreamFromSamples()
+{
+	assert(stream.isNull());
+	bool waitForFlush=true;
+	//We need to catch possible EOF and other error condition in the non reliable stream
+	try
 	{
-		incRef();
-		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"soundComplete")));
+		audioDecoder=new SampleDataAudioDecoder();
+		while(!ACQUIRE_READ(stopped))
+		{
+			if (!streamdatafinished && sampleproducer && audioDecoder->getFilled()<150)
+			{
+				sampleproducer->requestSampleDataEvent(streamposition);
+			}
+			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
+				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,startTime,soundTransform ? soundTransform->volume : 1.0);
+
+			if(audioStream)
+			{
+				//TODO: use soundTransform->pan
+				if(soundTransform && soundTransform->volume != oldVolume)
+				{
+					audioStream->setVolume(soundTransform->volume);
+					oldVolume = soundTransform->volume;
+				}
+				checkEnvelope();
+				if (streamdatafinished && !audioDecoder->hasDecodedFrames())
+					threadAbort();
+			}
+			
+			if(threadAborting)
+				throw JobTerminationException();
+		}
 	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR, "Exception in SoundChannel " << e.cause);
+		threadAbort();
+		waitForFlush=false;
+	}
+	catch(JobTerminationException& e)
+	{
+		waitForFlush=false;
+	}
+	catch(exception& e)
+	{
+		LOG(LOG_ERROR, _("Exception in reading SoundChannel: ")<<e.what());
+	}
+	streamdatafinished=false;
+	if(waitForFlush)
+	{
+		//Put the decoders in the flushing state and wait for the complete consumption of contents
+		if(audioDecoder)
+		{
+			audioDecoder->setFlushing();
+			audioDecoder->waitFlushed();
+		}
+	}
+
+	mutex.lock();
+	audioDecoder=nullptr;
+	delete audioStream;
+	audioStream=nullptr;
+	mutex.unlock();
+	incRef();
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"soundComplete")));
 }
 
 

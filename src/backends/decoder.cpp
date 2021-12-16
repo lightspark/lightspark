@@ -145,8 +145,11 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(LS_VIDEO_CODEC codecId, uint8_t* initdata
 	frameIn=av_frame_alloc();
 	// immediately decode 1 frame to obtain size:
 	// 'define stream' tag information not always correct + cannot resize during an 'upload' call
-	VideoFrameTag* t = tag->getFrame(0);
-	decodeData(t->getData(), t->getNumBytes(), UINT32_MAX);
+	if (tag)
+	{
+		VideoFrameTag* t = tag->getFrame(0);
+		decodeData(t->getData(), t->getNumBytes(), UINT32_MAX);
+	}
 }
 
 void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, uint32_t datalen, double frameRateHint)
@@ -716,7 +719,7 @@ void AudioDecoder::skipAll()
 #ifdef ENABLE_LIBAVCODEC
 FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen):engine(eng),ownedContext(true)
 #if defined HAVE_LIBAVRESAMPLE || defined HAVE_LIBSWRESAMPLE
-	,resamplecontext(NULL)
+	,resamplecontext(nullptr)
 #endif
 {
 	switchCodec(audioCodec,initdata,datalen);
@@ -764,7 +767,7 @@ void FFMpegAudioDecoder::switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdat
 		status=INIT;
 }
 
-FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC lscodec, int sampleRate, int channels, bool):engine(eng),ownedContext(true)
+FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng, LS_AUDIO_CODEC lscodec, int sampleRate, int channels, bool):engine(eng),ownedContext(true)
 #if defined HAVE_LIBAVRESAMPLE || defined HAVE_LIBSWRESAMPLE
 	,resamplecontext(nullptr)
 #endif
@@ -791,7 +794,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC lscodec, i
 			break;
 	}
 #ifdef HAVE_AVCODEC_OPEN2
-	if(avcodec_open2(codecContext, codec, NULL)<0)
+	if(avcodec_open2(codecContext, codec, nullptr)<0)
 #else
 	if(avcodec_open(codecContext, codec)<0)
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -805,23 +808,23 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC lscodec, i
 }
 
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
-FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecParameters* codecPar):engine(eng),ownedContext(true),codecContext(NULL)
+FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecParameters* codecPar):engine(eng),ownedContext(true),codecContext(nullptr)
 #if defined HAVE_LIBAVRESAMPLE || defined HAVE_LIBSWRESAMPLE
-	,resamplecontext(NULL)
+	,resamplecontext(nullptr)
 #endif
 {
 	status=INIT;
 	const AVCodec* codec=avcodec_find_decoder(codecPar->codec_id);
 	assert(codec);
 #ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
-	codecContext=avcodec_alloc_context3(NULL);
+	codecContext=avcodec_alloc_context3(nullptr);
 #else
 	codecContext=avcodec_alloc_context();
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
 	avcodec_parameters_to_context(codecContext,codecPar);
 
 #ifdef HAVE_AVCODEC_OPEN2
-	if(avcodec_open2(codecContext, codec, NULL)<0)
+	if(avcodec_open2(codecContext, codec, nullptr)<0)
 #else
 	if(avcodec_open(codecContext, codec)<0)
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -964,7 +967,7 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 		else
 		{
 			FrameSamples& curTail=samplesBuffer.acquireLast();
-			int len = resampleFrameToS16(curTail);
+			int len = resampleFrame(curTail);
 #if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
 			maxLen = pkt->size - av_frame_get_pkt_size (frameIn);
 #else
@@ -1032,7 +1035,7 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 	}
 	else
 	{
-		maxLen = resampleFrameToS16(curTail);
+		maxLen = resampleFrame(curTail);
 	}
 #else
 	int32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
@@ -1084,7 +1087,7 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 		else
 		{
 			FrameSamples& curTail=samplesBuffer.acquireLast();
-			int len = resampleFrameToS16(curTail);
+			int len = resampleFrame(curTail);
 #if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
 			maxLen = pkt->size - av_frame_get_pkt_size (frameIn);
 #else
@@ -1114,7 +1117,7 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	}
 	else
 	{
-		maxLen = resampleFrameToS16(curTail);
+		maxLen = resampleFrame(curTail);
 	}
 #elif HAVE_AVCODEC_DECODE_AUDIO3
 	int ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
@@ -1148,7 +1151,7 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 #endif
 }
 #if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
-int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
+int FFMpegAudioDecoder::resampleFrame(FrameSamples& curTail)
 {
 	int sample_rate = engine->audio_getSampleRate();
 	unsigned int channel_layout = AV_CH_LAYOUT_STEREO;
@@ -1161,7 +1164,9 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 #else
 	int framesamplerate = frameIn->sample_rate;
 #endif
-	if(frameIn->format == AV_SAMPLE_FMT_S16 && sample_rate == framesamplerate && channel_layout == frameIn->channel_layout)
+	AVSampleFormat outputsampleformat = forExtraction ? AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
+	int outputsampleformatsize = forExtraction ? sizeof(float) : sizeof(int16_t);
+	if(frameIn->format == outputsampleformat && sample_rate == framesamplerate && channel_layout == frameIn->channel_layout)
 	{
 		//This is suboptimal but equivalent to what libavcodec
 		//does for the compatibility version of avcodec_decode_audio3
@@ -1178,19 +1183,21 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 		av_opt_set_int(resamplecontext, "in_sample_rate",     framesamplerate,     0);
 		av_opt_set_int(resamplecontext, "out_sample_rate",    sample_rate,     0);
 		av_opt_set_int(resamplecontext, "in_sample_fmt",      frameIn->format,   0);
-		av_opt_set_int(resamplecontext, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
+		av_opt_set_int(resamplecontext, "out_sample_fmt",     outputsampleformat,    0);
 		swr_init(resamplecontext);
 	}
 
 	uint8_t *output;
 	int out_samples = swr_get_out_samples(resamplecontext,frameIn->nb_samples);
-	int res = av_samples_alloc(&output, NULL, 2, out_samples,AV_SAMPLE_FMT_S16, 0);
+	int res = av_samples_alloc(&output, nullptr, 2, out_samples,outputsampleformat, 0);
 
 	if (res >= 0)
 	{
-		maxLen = swr_convert(resamplecontext, &output, out_samples, (const uint8_t**)frameIn->extended_data, frameIn->nb_samples)*2*av_get_channel_layout_nb_channels(channel_layout);// 2 bytes in AV_SAMPLE_FMT_S16
+		maxLen = swr_convert(resamplecontext, &output, out_samples, (const uint8_t**)frameIn->extended_data, frameIn->nb_samples)*outputsampleformatsize*av_get_channel_layout_nb_channels(channel_layout);
 		if (maxLen > 0)
+		{
 			memcpy(curTail.samples, output, maxLen);
+		}
 		else
 		{
 			LOG(LOG_ERROR, "resampling failed");
@@ -1214,17 +1221,17 @@ int FFMpegAudioDecoder::resampleFrameToS16(FrameSamples& curTail)
 		av_opt_set_int(resamplecontext, "in_sample_rate",     framesamplerate,     0);
 		av_opt_set_int(resamplecontext, "out_sample_rate",    sample_rate,     0);
 		av_opt_set_int(resamplecontext, "in_sample_fmt",      frameIn->format,   0);
-		av_opt_set_int(resamplecontext, "out_sample_fmt",     AV_SAMPLE_FMT_S16,    0);
+		av_opt_set_int(resamplecontext, "out_sample_fmt",     outputsampleformat,    0);
 		avresample_open(resamplecontext);
 	}
 
 	uint8_t *output;
 	int out_linesize;
 	int out_samples = avresample_available(resamplecontext) + av_rescale_rnd(avresample_get_delay(resamplecontext) + frameIn->linesize[0], sample_rate, sample_rate, AV_ROUND_UP);
-	int res = av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, AV_SAMPLE_FMT_S16, 0);
+	int res = av_samples_alloc(&output, &out_linesize, frameIn->nb_samples, out_samples, outputsampleformat, 0);
 	if (res >= 0)
 	{
-		maxLen = avresample_convert(resamplecontext, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*2*av_get_channel_layout_nb_channels(channel_layout); // 2 bytes in AV_SAMPLE_FMT_S16
+		maxLen = avresample_convert(resamplecontext, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*outputsampleformatsize*av_get_channel_layout_nb_channels(channel_layout);
 		memcpy(curTail.samples, output, maxLen);
 		av_freep(&output);
 	}
@@ -1252,7 +1259,7 @@ StreamDecoder::~StreamDecoder()
 }
 
 #ifdef ENABLE_LIBAVCODEC
-FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::istream& s, AudioFormat* format, int streamsize)
+FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::istream& s, AudioFormat* format, int streamsize, bool forExtraction)
  : netstream(ns),audioFound(false),videoFound(false),stream(s),formatCtx(nullptr),audioIndex(-1),
    videoIndex(-1),customAudioDecoder(nullptr),customVideoDecoder(nullptr),avioContext(nullptr),availablestreamlength(streamsize)
 {
@@ -1264,7 +1271,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 #else
 	avioContext=av_alloc_put_byte(avioBuffer,aviobufsize,0,this,avioReadPacket,nullptr,nullptr);
 #endif
-	if(avioContext==NULL)
+	if(avioContext==nullptr)
 		return;
 
 #if LIBAVFORMAT_VERSION_MAJOR > 52 || (LIBAVFORMAT_VERSION_MAJOR == 52  && LIBAVFORMAT_VERSION_MINOR > 64)
@@ -1398,6 +1405,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 			customAudioDecoder=new FFMpegAudioDecoder(eng,formatCtx->streams[audioIndex]->codec);
 #endif
 		audioDecoder=customAudioDecoder;
+		audioDecoder->forExtraction=forExtraction;
 	}
 	if (netstream && formatCtx->duration)
 	{
@@ -1498,3 +1506,26 @@ int FFMpegStreamDecoder::avioReadPacket(void* t, uint8_t* buf, int buf_size)
 	return ret;
 }
 #endif //ENABLE_LIBAVCODEC
+
+uint32_t SampleDataAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t time)
+{
+	if (status == PREINIT)
+		status = INIT;
+	else if (status == INIT)
+		status = VALID;
+	FrameSamples& curTail=samplesBuffer.acquireLast();
+	uint32_t samplecount = min(datalen/4,MAX_AUDIO_FRAME_SIZE/2);
+	for (uint32_t i = 0; i < samplecount; i++)
+	{
+		uint32_t res;
+		memcpy(&res,data+i*4,4);
+		res = GUINT32_FROM_BE(res);
+		float *floatptr=reinterpret_cast<float*>(&res);
+		curTail.samples[i] = int16_t(floor(*floatptr * 32767.0f));
+	}
+	curTail.len=samplecount*2;
+	curTail.current=curTail.samples;
+	curTail.time=time;
+	samplesBuffer.commitLast();
+	return samplecount*2;
+}

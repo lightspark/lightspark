@@ -295,13 +295,17 @@ public:
 	*/
 	void* operator new(size_t);
 	void operator delete(void*);
-	AudioDecoder():sampleRate(0),channelCount(0),initialTime(-1){}
+	AudioDecoder():sampleRate(0),channelCount(0),initialTime(-1),forExtraction(false){}
 	virtual ~AudioDecoder(){}
 	virtual void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen)=0;
 	virtual uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time)=0;
 	bool hasDecodedFrames() const
 	{
 		return !samplesBuffer.isEmpty();
+	}
+	uint32_t getFilled() const
+	{
+		return samplesBuffer.len();
 	}
 	uint32_t getFrontTime() const;
 	uint32_t getBytesPerMSec() const
@@ -321,7 +325,7 @@ public:
 	*/
 	void skipAll() DLL_PUBLIC;
 	bool discardFrame();
-	void setFlushing()
+	void setFlushing() override
 	{
 		flushing=true;
 		if(samplesBuffer.isEmpty())
@@ -333,6 +337,8 @@ public:
 	uint32_t channelCount;
 	//Saves the timestamp of the first decoded frame
 	uint32_t initialTime;
+	// if true, decoder is only used for extracting parts meaning audio data will always be provided as 32bit floats for 2 channels
+	bool forExtraction;
 };
 
 class NullAudioDecoder: public AudioDecoder
@@ -344,9 +350,24 @@ public:
 		sampleRate=44100;
 		channelCount=2;
 	}
-	void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen){}
-	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time){return 0;}
+	void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen) override {}
+	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time) override {return 0;}
 };
+
+// this is the AudioDecoder for streaming Sounds by SampleDataEvent
+class SampleDataAudioDecoder: public AudioDecoder
+{
+public:
+	SampleDataAudioDecoder()
+	{
+		sampleRate=44100;
+		channelCount=2;
+	}
+	void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen) override {}
+	// the data is always expected to be floats
+	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time) override;
+};
+
 
 #ifdef ENABLE_LIBAVCODEC
 class EngineData;
@@ -366,11 +387,11 @@ private:
 	CodecID LSToFFMpegCodec(LS_AUDIO_CODEC lscodec);
 #if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
 	AVFrame* frameIn;
-	int resampleFrameToS16(FrameSamples& curTail);
+	int resampleFrame(FrameSamples& curTail);
 #endif
 public:
 	FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
-	FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC codec, int sampleRate, int channels, bool);
+	FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC codec, int sampleRate, int channels,bool);
 	/*
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
@@ -392,7 +413,7 @@ public:
 class StreamDecoder
 {
 public:
-	StreamDecoder():audioDecoder(NULL),videoDecoder(NULL),valid(false),hasvideo(false){}
+	StreamDecoder():audioDecoder(nullptr),videoDecoder(nullptr),valid(false),hasvideo(false){}
 	virtual ~StreamDecoder();
 	virtual bool decodeNextFrame() = 0;
 	virtual void jumpToPosition(number_t position) = 0;
@@ -430,7 +451,7 @@ private:
 #endif
 	int availablestreamlength;
 public:
-	FFMpegStreamDecoder(NetStream* ns,EngineData* eng,std::istream& s, AudioFormat* format = NULL, int streamsize = -1);
+	FFMpegStreamDecoder(NetStream* ns,EngineData* eng,std::istream& s, AudioFormat* format = nullptr, int streamsize = -1, bool forExtraction=false);
 	~FFMpegStreamDecoder();
 	void jumpToPosition(number_t position) override;
 	bool decodeNextFrame() override;

@@ -45,7 +45,7 @@ protected:
 	URLInfo url;
 	std::vector<uint8_t> postData;
 	Downloader* downloader;
-	_R<StreamCache> soundData;
+	_NR<StreamCache> soundData;
 	_NR<SoundChannel> soundChannel;
 	StreamDecoder* rawDataStreamDecoder;
 	int32_t rawDataStartPosition;
@@ -53,6 +53,7 @@ protected:
 	// soundData. If container is false, soundData is raw samples
 	// and format is defined by format member.
 	bool container;
+	ACQUIRE_RELEASE_FLAG(sampledataprocessed);
 	AudioFormat format;
 	ASPROPERTY_GETTER(uint32_t,bytesLoaded);
 	ASPROPERTY_GETTER(uint32_t,bytesTotal);
@@ -73,6 +74,7 @@ public:
 	ASFUNCTION_ATOM(extract);
 	ASFUNCTION_ATOM(loadCompressedDataFromByteArray);
 	void afterExecution(_R<Event> e);
+	void requestSampleDataEvent(size_t position);
 };
 
 class SoundTransform: public ASObject
@@ -93,7 +95,9 @@ class SoundChannel : public EventDispatcher, public IThreadJob
 {
 private:
 	_NR<StreamCache> stream;
+	Sound* sampleproducer;
 	Mutex mutex;
+	ACQUIRE_RELEASE_FLAG(starting);
 	ACQUIRE_RELEASE_FLAG(stopped);
 	ACQUIRE_RELEASE_FLAG(terminated);
 	AudioDecoder* audioDecoder;
@@ -103,14 +107,18 @@ private:
 	number_t oldVolume;
 	void validateSoundTransform(_NR<SoundTransform>);
 	void playStream();
+	void playStreamFromSamples();
 	number_t startTime;
 	int32_t loopstogo;
+	uint32_t streamposition;
+	bool streamdatafinished;
 	bool restartafterabort;
 	void checkEnvelope();
 public:
-	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), bool autoplay=true,StartSoundTag* _tag=nullptr);
+	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), bool autoplay=true, StartSoundTag* _tag=nullptr, Sound* _sampleproducer = nullptr);
 	~SoundChannel();
 	void appendStreamBlock(unsigned char* buf, int len);
+	void appendSampleData(ByteArray* data);
 	void play(number_t starttime=0);
 	void resume();
 	void markFinished(); // indicates that all sound data is available
@@ -120,6 +128,7 @@ public:
 	static void buildTraits(ASObject* o);
 	void finalize();
 	bool isPlaying() { return !ACQUIRE_READ(stopped); }
+	bool isStarting() { return ACQUIRE_READ(starting); }
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
 	ASPROPERTY_GETTER(number_t,leftPeak);
 	ASPROPERTY_GETTER(number_t,rightPeak);

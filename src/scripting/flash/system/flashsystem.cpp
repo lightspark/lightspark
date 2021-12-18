@@ -865,16 +865,19 @@ void ASWorker::finalize()
 		threadAbort();
 		sem_event_cond.signal();
 		started = false;
-		for(auto it = rootClip->customClasses.begin(); it != rootClip->customClasses.end(); ++it)
-			it->second->finalize();
-		for(auto it = rootClip->templates.begin(); it != rootClip->templates.end(); ++it)
-			it->second->finalize();
-		for(auto i = rootClip->customClasses.begin(); i != rootClip->customClasses.end(); ++i)
-			i->second->decRef();
-		for(auto i = rootClip->templates.begin(); i != rootClip->templates.end(); ++i)
-			i->second->decRef();
-		rootClip->customClasses.clear();
-		rootClip.reset();
+		if (rootClip)
+		{
+			for(auto it = rootClip->customClasses.begin(); it != rootClip->customClasses.end(); ++it)
+				it->second->finalize();
+			for(auto it = rootClip->templates.begin(); it != rootClip->templates.end(); ++it)
+				it->second->finalize();
+			for(auto i = rootClip->customClasses.begin(); i != rootClip->customClasses.end(); ++i)
+				i->second->decRef();
+			for(auto i = rootClip->templates.begin(); i != rootClip->templates.end(); ++i)
+				i->second->decRef();
+			rootClip->customClasses.clear();
+			rootClip.reset();
+		}
 	}
 	delete[] stacktrace;
 	loader.reset();

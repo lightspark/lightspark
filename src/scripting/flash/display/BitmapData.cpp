@@ -852,6 +852,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixels)
 			th->pixels->setPixel(x, y, pixel, th->transparent);
 		}
 	}
+	th->notifyUsers();
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,setVector)
@@ -886,6 +887,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setVector)
 			i++;
 		}
 	}
+	th->notifyUsers();
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)

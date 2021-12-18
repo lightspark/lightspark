@@ -142,11 +142,15 @@ public:
 	 * The security domain for this clip
 	 */
 	_NR<SecurityDomain> securityDomain;
+	//map of all classed defined in the swf. They own one reference to each class/template
+	//key is the stringID of the class name (without namespace)
+	std::multimap<uint32_t, Class_base*> customClasses;
 	/*
 	 * Support for class aliases in AMF3 serialization
 	 */
 	std::map<tiny_string, _R<Class_base> > aliasMap;
 	std::map<QName,std::unordered_set<uint32_t>*> customclassoverriddenmethods;
+	std::map<QName, Template_base*> templates;
 	//DisplayObject interface
 	_NR<RootMovieClip> getRoot() override;
 	_NR<Stage> getStage() override;
@@ -413,12 +417,8 @@ public:
 	//Application starting time in milliseconds
 	uint64_t startTime;
 
-	//map of all classed defined in the swf. They own one reference to each class/template
-	//key is the stringID of the class name (without namespace)
-	std::multimap<uint32_t, Class_base*> customClasses;
 	//This is an array of fixed size, we can avoid using std::vector
 	Class_base** builtinClasses;
-	std::map<QName, Template_base*> templates;
 
 	//Flags for command line options
 	bool useInterpreter;

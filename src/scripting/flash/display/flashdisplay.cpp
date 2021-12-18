@@ -570,7 +570,8 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	this->contentLoaderInfo->resetState();
 	//Check if a security domain has been manually set
 	SecurityDomain* secDomain=nullptr;
-	SecurityDomain* curSecDomain=getVm(this->getSystemState())->currentCallContext ? ABCVm::getCurrentSecurityDomain(getVm(this->getSystemState())->currentCallContext).getPtr():this->getSystemState()->mainClip->securityDomain.getPtr();
+	SecurityDomain* curSecDomain=getWorker() ? getWorker()->rootClip->securityDomain.getPtr()
+											 : getVm(this->getSystemState())->currentCallContext ? ABCVm::getCurrentSecurityDomain(getVm(this->getSystemState())->currentCallContext).getPtr():this->getSystemState()->mainClip->securityDomain.getPtr();
 	if(context)
 	{
 		if (context->securityDomain)
@@ -590,7 +591,8 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
 	//the passed applicationDomain is ignored
-	RootMovieClip* currentRoot=getVm(this->getSystemState())->currentCallContext ? getVm(this->getSystemState())->currentCallContext->mi->context->root.getPtr():this->getSystemState()->mainClip;
+	RootMovieClip* currentRoot=getWorker() ? getWorker()->rootClip.getPtr()
+										   : getVm(this->getSystemState())->currentCallContext ? getVm(this->getSystemState())->currentCallContext->mi->context->root.getPtr():this->getSystemState()->mainClip;
 	// empty origin is possible if swf is loaded by loadBytes()
 	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==this->url.getHostname() || secDomain)
 	{
@@ -655,13 +657,13 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 	_NR<LoaderContext> context;
 	ARG_UNPACK_ATOM (bytes)(context, NullRef);
 
-	_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getVm(th->getSystemState())->currentCallContext);
+	_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getWorker() ? getWorker()->currentCallContext : getVm(th->getSystemState())->currentCallContext);
 	if(context.isNull() || context->applicationDomain.isNull())
 		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(sys,parentDomain));
 	else
 		th->contentLoaderInfo->applicationDomain = context->applicationDomain;
 	//Always loaded in the current security domain
-	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getVm(th->getSystemState())->currentCallContext);
+	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getWorker() ? getWorker()->currentCallContext : getVm(th->getSystemState())->currentCallContext);
 	th->contentLoaderInfo->securityDomain = curSecDomain;
 
 	th->allowCodeImport = context.isNull() || context->getAllowCodeImport();
@@ -3680,7 +3682,8 @@ Stage::Stage(Class_base* c):
 	subtype = SUBTYPE_STAGE;
 	onStage = true;
 	asAtom v=asAtomHandler::invalidAtom;
-	Template<Vector>::getInstanceS(v,getSystemState(),Class<Stage3D>::getClass(getSystemState()),NullRef);
+	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : getSystemState()->mainClip;
+	Template<Vector>::getInstanceS(v,root,Class<Stage3D>::getClass(getSystemState()),NullRef);
 	stage3Ds = _R<Vector>(asAtomHandler::as<Vector>(v));
 	// according to specs, Desktop computers usually have 4 Stage3D objects available
 	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(c->getSystemState()));
@@ -3827,7 +3830,8 @@ ASFUNCTIONBODY_ATOM(Stage,_setScaleMode)
 ASFUNCTIONBODY_ATOM(Stage,_getStageVideos)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Accelerated rendering through StageVideo not implemented, SWF should fall back to Video");
-	Template<Vector>::getInstanceS(ret,sys,Class<StageVideo>::getClass(sys),NullRef);
+	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : sys->mainClip;
+	Template<Vector>::getInstanceS(ret,root,Class<StageVideo>::getClass(sys),NullRef);
 }
 
 _NR<InteractiveObject> Stage::getFocusTarget()

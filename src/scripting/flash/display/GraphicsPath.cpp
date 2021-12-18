@@ -74,16 +74,17 @@ void GraphicsPath::finalize()
 
 void GraphicsPath::ensureValid()
 {
+	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : getSystemState()->mainClip;
 	if (commands.isNull())
 	{
 		asAtom v=asAtomHandler::invalidAtom;
-		Template<Vector>::getInstanceS(v,getSystemState(),Class<Integer>::getClass(getSystemState()),NullRef);
+		Template<Vector>::getInstanceS(v,root,Class<Integer>::getClass(getSystemState()),NullRef);
 		commands = _MNR(asAtomHandler::as<Vector>(v));
 	}
 	if (data.isNull())
 	{
 		asAtom v=asAtomHandler::invalidAtom;
-		Template<Vector>::getInstanceS(v,getSystemState(),Class<Number>::getClass(getSystemState()),NullRef);
+		Template<Vector>::getInstanceS(v,root,Class<Number>::getClass(getSystemState()),NullRef);
 		data = _MNR(asAtomHandler::as<Vector>(v));
 	}
 }

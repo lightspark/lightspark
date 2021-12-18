@@ -807,9 +807,9 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		}
 
 		// Properties can not be added to a sealed class
-		if (cls && cls->isSealed && getVm(getSystemState())->currentCallContext)
+		if (cls && cls->isSealed)
 		{
-			const Type* type = Type::getTypeFromMultiname(&name,getVm(getSystemState())->currentCallContext->mi->context);
+			const Type* type = Type::getTypeFromMultiname(&name,getWorker() ? getWorker()->currentCallContext->mi->context : getVm(getSystemState())->currentCallContext->mi->context);
 			if (type)
 				throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 			throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), cls->getQualifiedClassName());
@@ -941,9 +941,9 @@ void variable::setVar(asAtom v,ASObject *obj, bool _isrefcounted)
 	//Resolve the typename if we have one
 	//currentCallContext may be NULL when inserting legacy
 	//children, which is done outisde any ABC context
-	if(!isResolved && traitTypemname && getVm(obj->getSystemState())->currentCallContext)
+	if(!isResolved && traitTypemname)
 	{
-		type = Type::getTypeFromMultiname(traitTypemname, getVm(obj->getSystemState())->currentCallContext->mi->context);
+		type = Type::getTypeFromMultiname(traitTypemname, getWorker() ? getWorker()->currentCallContext->mi->context : getVm(obj->getSystemState())->currentCallContext->mi->context);
 		assert(type);
 		isResolved=true;
 	}
@@ -1320,7 +1320,7 @@ bool ASObject::cloneInstance(ASObject *target)
 void ASObject::checkFunctionScope(ASObject* o)
 {
 	SyntheticFunction* f = o->as<SyntheticFunction>();
-	if (!getVm(getSystemState())->currentCallContext->mi->needsActivation() || this->is<Global>() || this->is<Function_object>())
+	if (this->is<Global>() || this->is<Function_object>() || !(getWorker() ? getWorker()->currentCallContext->mi->needsActivation() : getVm(getSystemState())->currentCallContext->mi->needsActivation()))
 		return;
 	for (auto it = f->func_scope->scope.rbegin(); it != f->func_scope->scope.rend(); it++)
 	{

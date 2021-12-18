@@ -712,12 +712,13 @@ ASFUNCTIONBODY_ATOM(BitmapData,histogram)
 	}
 
 	asAtom v=asAtomHandler::invalidAtom;
-	Template<Vector>::getInstanceS(v,sys,Template<Vector>::getTemplateInstance(sys,Class<Number>::getClass(sys),NullRef).getPtr(),NullRef);
+	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : sys->mainClip;
+	Template<Vector>::getInstanceS(v,root,Template<Vector>::getTemplateInstance(root,Class<Number>::getClass(sys),NullRef).getPtr(),NullRef);
 	Vector *result = asAtomHandler::as<Vector>(v);
 	int channelOrder[4] = {2, 1, 0, 3}; // red, green, blue, alpha
 	for (int j=0; j<4; j++)
 	{
-		Template<Vector>::getInstanceS(v,sys,Class<Number>::getClass(sys),NullRef);
+		Template<Vector>::getInstanceS(v,root,Class<Number>::getClass(sys),NullRef);
 		Vector *histogram = asAtomHandler::as<Vector>(v);
 		for (int level=0; level<256; level++)
 		{
@@ -810,7 +811,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,getVector)
 		throwError<TypeError>(kNullPointerError, "rect");
 
 	asAtom v=asAtomHandler::invalidAtom;
-	Template<Vector>::getInstanceS(v,sys,Class<UInteger>::getClass(sys),NullRef);
+	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : sys->mainClip;
+	Template<Vector>::getInstanceS(v,root,Class<UInteger>::getClass(sys),NullRef);
 	Vector *result = asAtomHandler::as<Vector>(v);
 	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect->getRect());
 	vector<uint32_t>::const_iterator it;

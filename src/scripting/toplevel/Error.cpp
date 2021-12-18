@@ -97,13 +97,28 @@ ASError::ASError(Class_base* c, const tiny_string& error_message, int id, const 
 	ASObject(c),errorID(id),name(error_name),message(error_message)
 {
 	stacktrace = "";
-	for (uint32_t i = getVm(c->getSystemState())->cur_recursion; i > 0; i--)
+	ASWorker* w = getWorker();
+	if (w)
 	{
-		stacktrace += "    at ";
-		stacktrace += asAtomHandler::toObject(getVm(c->getSystemState())->stacktrace[i-1].object,c->getSystemState())->getClassName();
-		stacktrace += "/";
-		stacktrace += c->getSystemState()->getStringFromUniqueId(getVm(c->getSystemState())->stacktrace[i-1].name);
-		stacktrace += "()\n";
+		for (uint32_t i = w->cur_recursion; i > 0; i--)
+		{
+			stacktrace += "    at ";
+			stacktrace += asAtomHandler::toObject(w->stacktrace[i-1].object,c->getSystemState())->getClassName();
+			stacktrace += "/";
+			stacktrace += c->getSystemState()->getStringFromUniqueId(w->stacktrace[i-1].name);
+			stacktrace += "()\n";
+		}
+	}
+	else
+	{
+		for (uint32_t i = getVm(c->getSystemState())->cur_recursion; i > 0; i--)
+		{
+			stacktrace += "    at ";
+			stacktrace += asAtomHandler::toObject(getVm(c->getSystemState())->stacktrace[i-1].object,c->getSystemState())->getClassName();
+			stacktrace += "/";
+			stacktrace += c->getSystemState()->getStringFromUniqueId(getVm(c->getSystemState())->stacktrace[i-1].name);
+			stacktrace += "()\n";
+		}
 	}
 }
 

@@ -694,9 +694,9 @@ void SystemState::destroy()
 		if(builtinClasses[i])
 			builtinClasses[i]->finalize();
 	}
-	for(auto it = customClasses.begin(); it != customClasses.end(); ++it)
+	for(auto it = mainClip->customClasses.begin(); it != mainClip->customClasses.end(); ++it)
 		it->second->finalize();
-	for(auto it = templates.begin(); it != templates.end(); ++it)
+	for(auto it = mainClip->templates.begin(); it != mainClip->templates.end(); ++it)
 		it->second->finalize();
 
 	//Here we clean the events queue
@@ -709,11 +709,11 @@ void SystemState::destroy()
 		if(builtinClasses[i])
 			builtinClasses[i]->decRef();
 	}
-	for(auto i = customClasses.begin(); i != customClasses.end(); ++i)
+	for(auto i = mainClip->customClasses.begin(); i != mainClip->customClasses.end(); ++i)
 		i->second->decRef();
 
 	//Free templates by decRef'ing them
-	for(auto i = templates.begin(); i != templates.end(); ++i)
+	for(auto i = mainClip->templates.begin(); i != mainClip->templates.end(); ++i)
 		i->second->decRef();
 
 	//The Vm must be destroyed this late to clean all managed integers and numbers

@@ -579,39 +579,39 @@ public:
 		return ret;
 	}
 
-	static Ref<Class_base> getTemplateInstance(SystemState* sys,const Type* type,_NR<ApplicationDomain> appdomain)
+	static Ref<Class_base> getTemplateInstance(RootMovieClip* root,const Type* type,_NR<ApplicationDomain> appdomain)
 	{
 		std::vector<const Type*> t(1,type);
-		Template<T>* templ=getTemplate(sys);
+		Template<T>* templ=getTemplate(root);
 		Ref<Class_base> ret=_MR(templ->applyType(t, appdomain));
 		templ->decRef();
 		return ret;
 	}
 
-	static Ref<Class_base> getTemplateInstance(SystemState* sys,const QName& qname, ABCContext* context,_NR<ApplicationDomain> appdomain)
+	static Ref<Class_base> getTemplateInstance(RootMovieClip* root,const QName& qname, ABCContext* context,_NR<ApplicationDomain> appdomain)
 	{
-		Template<T>* templ=getTemplate(sys);
+		Template<T>* templ=getTemplate(root);
 		Ref<Class_base> ret=_MR(templ->applyTypeByQName(qname,appdomain));
 		ret->context = context;
 		templ->decRef();
 		return ret;
 	}
-	static void getInstanceS(asAtom& ret, SystemState* sys,const Type* type,_NR<ApplicationDomain> appdomain)
+	static void getInstanceS(asAtom& ret, RootMovieClip* root,const Type* type,_NR<ApplicationDomain> appdomain)
 	{
-		getTemplateInstance(sys,type,appdomain).getPtr()->getInstance(ret,true,nullptr,0);
+		getTemplateInstance(root,type,appdomain).getPtr()->getInstance(ret,true,nullptr,0);
 	}
 
-	static Template<T>* getTemplate(SystemState* sys,const QName& name)
+	static Template<T>* getTemplate(RootMovieClip* root,const QName& name)
 	{
-		std::map<QName, Template_base*>::iterator it=sys->templates.find(name);
+		std::map<QName, Template_base*>::iterator it=root->templates.find(name);
 		Template<T>* ret=nullptr;
-		if(it==sys->templates.end()) //This class is not yet in the map, create it
+		if(it==root->templates.end()) //This class is not yet in the map, create it
 		{
-			MemoryAccount* m = sys->allocateMemoryAccount(name.getQualifiedName(sys));
+			MemoryAccount* m = root->getSystemState()->allocateMemoryAccount(name.getQualifiedName(root->getSystemState()));
 			ret=new (m) Template<T>(name);
-			ret->prototype = _MNR(new_objectPrototype(sys));
-			ret->addPrototypeGetter(sys);
-			sys->templates.insert(std::make_pair(name,ret));
+			ret->prototype = _MNR(new_objectPrototype(root->getSystemState()));
+			ret->addPrototypeGetter(root->getSystemState());
+			root->templates.insert(std::make_pair(name,ret));
 		}
 		else
 			ret=static_cast<Template<T>*>(it->second);
@@ -620,9 +620,9 @@ public:
 		return ret;
 	}
 
-	static Template<T>* getTemplate(SystemState* sys)
+	static Template<T>* getTemplate(RootMovieClip* root)
 	{
-		return getTemplate(sys,QName(sys->getUniqueStringId(ClassName<T>::name),sys->getUniqueStringId(ClassName<T>::ns)));
+		return getTemplate(root,QName(root->getSystemState()->getUniqueStringId(ClassName<T>::name),root->getSystemState()->getUniqueStringId(ClassName<T>::ns)));
 	}
 };
 

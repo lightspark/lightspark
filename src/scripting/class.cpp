@@ -65,7 +65,6 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_i
 {
 	this->global=_global;
 	this->incRef(); //create on reference for the classes map
-	this->getSystemState()->customClasses.insert(make_pair(name.nameId,this));
 	isReusable = true;
 	subtype = SUBTYPE_INHERIT;
 }
@@ -90,7 +89,7 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 	//We override the classdef
 	if(realClass==nullptr)
 		realClass=this;
-	if (!this->needsBindingCheck()) // it seems possible that an instance of a class is constructed before the binding of the class is available, so we have to check for a binding here
+	if (this->needsBindingCheck()) // it seems possible that an instance of a class is constructed before the binding of the class is available, so we have to check for a binding here
 	{
 		ASWorker* worker = getWorker();
 		if (worker)

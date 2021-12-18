@@ -2649,6 +2649,7 @@ void ABCVm::newClass(call_context* th, int n)
 		LOG_CALL("add classes defined:"<<*mname<<" "<<th->mi->context);
 		//Add the class to the ones being currently defined in this context
 		th->mi->context->root->applicationDomain->classesBeingDefined.insert(make_pair(mname, ret));
+		th->mi->context->root->customClasses.insert(make_pair(mname->name_s_id,ret));
 	}
 		
 	ret->isFinal = th->mi->context->instances[n].isFinal();

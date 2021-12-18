@@ -200,13 +200,13 @@ asAtom Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& s
 		{
 			tiny_string vectypename;
 			vectypename = parseStringVR(stringMap);
-			multiname m(NULL);
+			multiname m(nullptr);
 			m.name_type=multiname::NAME_STRING;
 			m.name_s_id=input->getSystemState()->getUniqueStringId(vectypename);
 			m.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 			m.isAttribute = false;
-			type = Type::getTypeFromMultiname(&m,getVm(input->getSystemState())->currentCallContext->mi->context);
-			if (type == NULL)
+			type = Type::getTypeFromMultiname(&m,getWorker() ? getWorker()->currentCallContext->mi->context :getVm(input->getSystemState())->currentCallContext->mi->context);
+			if (type == nullptr)
 			{
 				LOG(LOG_ERROR,"unknown vector type during deserialization:"<<m);
 				type = input->getSystemState()->getObjectClassRef();
@@ -219,7 +219,10 @@ asAtom Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& s
 			
 	}
 	asAtom v=asAtomHandler::invalidAtom;
-	Template<Vector>::getInstanceS(v,input->getSystemState(),type,ABCVm::getCurrentApplicationDomain(getVm(input->getSystemState())->currentCallContext));
+	Template<Vector>::getInstanceS(v,
+								   getWorker() ? getWorker()->rootClip.getPtr() : input->getSystemState()->mainClip,
+								   type,
+								   ABCVm::getCurrentApplicationDomain(getWorker() ? getWorker()->currentCallContext : getVm(input->getSystemState())->currentCallContext));
 	Vector* ret= asAtomHandler::as<Vector>(v);
 	//Add object to the map
 	objMap.push_back(asAtomHandler::fromObject(ret));

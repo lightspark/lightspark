@@ -263,7 +263,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_constructor)
 	ARG_UNPACK_ATOM(parentDomain);
 	avmplusDomain* th = asAtomHandler::as<avmplusDomain>(obj);
 	if (parentDomain.isNull())
-		th->appdomain = ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext);
+		th->appdomain = ABCVm::getCurrentApplicationDomain(getWorker() ? getWorker()->currentCallContext :getVm(sys)->currentCallContext);
 	else
 		th->appdomain = _NR<ApplicationDomain>(Class<ApplicationDomain>::getInstanceS(sys,parentDomain->appdomain));
 }
@@ -271,7 +271,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_constructor)
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getCurrentDomain)
 {
 	avmplusDomain* res = Class<avmplusDomain>::getInstanceSNoArgs(sys);
-	res->appdomain = ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext);
+	res->appdomain = ABCVm::getCurrentApplicationDomain(getWorker() ? getWorker()->currentCallContext :getVm(sys)->currentCallContext);
 	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getMinDomainMemoryLength)
@@ -296,7 +296,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 	mc.append(bytes->getBuffer(bytes->getLength(),false),bytes->getLength());
 	std::streambuf *sbuf = mc.createReader();
 	std::istream s(sbuf);
-	RootMovieClip* root=getVm(sys)->currentCallContext->mi->context->root.getPtr();
+	RootMovieClip* root=getWorker() ? getWorker()->currentCallContext->mi->context->root.getPtr() :getVm(sys)->currentCallContext->mi->context->root.getPtr();
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
 	root->incRef();
@@ -320,7 +320,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
 	std::istream s(sbuf);
 	
 	// execute loaded abc bytes
-	RootMovieClip* root=getVm(sys)->currentCallContext->mi->context->root.getPtr();
+	RootMovieClip* root=getWorker() ? getWorker()->currentCallContext->mi->context->root.getPtr() :getVm(sys)->currentCallContext->mi->context->root.getPtr();
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
 	root->incRef();

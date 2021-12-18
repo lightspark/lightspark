@@ -2374,7 +2374,8 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_get_rawData)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	asAtom v=asAtomHandler::invalidAtom;
-	Template<Vector>::getInstanceS(v,sys,Class<Number>::getClass(sys),NullRef);
+	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : sys->mainClip;
+	Template<Vector>::getInstanceS(v,root,Class<Number>::getClass(sys),NullRef);
 	Vector *result = asAtomHandler::as<Vector>(v);
 	for (uint32_t i = 0; i < 4*4; i++)
 	{

@@ -3886,6 +3886,30 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								typestack.push_back(typestackentry(resulttype,false));
 								break;
 							}
+							else if ((isborrowed || v->kind == INSTANCE_TRAIT) && asAtomHandler::isValid(v->var))
+							{
+								// property is variable from class
+								resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
+								state.preloadedcode.push_back((uint32_t)0xd0);
+								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+								state.operandlist.push_back(operands(OP_LOCAL,function->inClass, 0,1,state.preloadedcode.size()-1));
+								if (function->inClass->is<Class_inherit>()
+									&& !function->inClass->as<Class_inherit>()->hasoverriddenmethod(name)
+									&& v->slotid)
+								{
+									// convert to getslot on local[0]
+									setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,false,ABC_OP_OPTIMZED_GETSLOT_SETSLOT);
+									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint =v->slotid-1;
+								}
+								else
+								{
+									// convert to getprop on local[0]
+									setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,0x66,code,true, false,resulttype,p,true,false,false,false);
+									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
+								}
+								typestack.push_back(typestackentry(resulttype,false));
+								break;
+							}
 							else if (!isborrowed && v->kind==DECLARED_TRAIT)
 							{
 								// property is static variable from class
@@ -3949,7 +3973,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							o = asAtomHandler::fromObjectNoPrimitive(cls);
 					}
 					// fast check for builtin classes if no custom class with same name is defined
-					if(asAtomHandler::isInvalid(o) && mi->context->root->getSystemState()->customClasses.find(name->name_s_id) == mi->context->root->getSystemState()->customClasses.end())
+					if(asAtomHandler::isInvalid(o) && mi->context->root->customClasses.find(name->name_s_id) == mi->context->root->customClasses.end())
 					{
 						ASObject* cls = mi->context->root->getSystemState()->systemDomain->getVariableByMultinameOpportunistic(*name);
 						if (cls)

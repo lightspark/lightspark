@@ -2309,6 +2309,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 
 				MemoryAccount* m = obj->getSystemState()->allocateMemoryAccount(className.getQualifiedName(obj->getSystemState()));
 				Class_inherit* ci=new (m) Class_inherit(className, m,t,obj->is<Global>() ? obj->as<Global>() : nullptr);
+				root->customClasses.insert(make_pair(mname->name_s_id,ci));
 				ci->isInterface = true;
 				ci->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(obj->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
 				LOG(LOG_CALLS,_("Building class traits"));
@@ -2366,6 +2367,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				MemoryAccount* m = obj->getSystemState()->allocateMemoryAccount(className.getQualifiedName(obj->getSystemState()));
 				Class_inherit* c=new (m) Class_inherit(className, m,t,obj->is<Global>() ? obj->as<Global>() : nullptr);
 				c->context = this;
+				root->customClasses.insert(make_pair(mname->name_s_id,c));
 
 				if(instances[t->classi].supername)
 				{

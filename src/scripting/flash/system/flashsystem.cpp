@@ -415,7 +415,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,_getMinDomainMemoryLength)
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_getCurrentDomain)
 {
-	_NR<ApplicationDomain> res=ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext);
+	_NR<ApplicationDomain> res=ABCVm::getCurrentApplicationDomain(getWorker() ? getWorker()->currentCallContext : getVm(sys)->currentCallContext);
 	res->incRef();
 	ret = asAtomHandler::fromObject(res.getPtr());
 }
@@ -471,7 +471,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 	if (nsName != "")
 		name.ns.push_back(nsNameAndKind(sys,nsName,NAMESPACE));
 
-	LOG(LOG_CALLS,_("Looking for definition of ") << name);
+	LOG(LOG_CALLS,"Looking for definition of " << name);
 	ret = asAtomHandler::invalidAtom;
 	ASObject* target;
 	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
@@ -593,7 +593,7 @@ void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(a
 			{
 				const Type* t = asAtomHandler::getObject(typeobj)->as<Type>();
 				this->incRef();
-				ret = asAtomHandler::fromObject(Template<Vector>::getTemplateInstance(getSystemState(),t,_NR<ApplicationDomain>(this)).getPtr());
+				ret = asAtomHandler::fromObject(Template<Vector>::getTemplateInstance(getWorker() ? getWorker()->rootClip.getPtr() : getSystemState()->mainClip,t,_NR<ApplicationDomain>(this)).getPtr());
 			}
 		}
 	}
@@ -701,7 +701,7 @@ ASFUNCTIONBODY_ATOM(SecurityDomain,_constructor)
 
 ASFUNCTIONBODY_ATOM(SecurityDomain,_getCurrentDomain)
 {
-	_NR<SecurityDomain> res=ABCVm::getCurrentSecurityDomain(getVm(sys)->currentCallContext);
+	_NR<SecurityDomain> res=ABCVm::getCurrentSecurityDomain(getWorker() ? getWorker()->currentCallContext : getVm(sys)->currentCallContext);
 	res->incRef();
 	ret = asAtomHandler::fromObject(res.getPtr());
 }
@@ -865,6 +865,16 @@ void ASWorker::finalize()
 		threadAbort();
 		sem_event_cond.signal();
 		started = false;
+		for(auto it = rootClip->customClasses.begin(); it != rootClip->customClasses.end(); ++it)
+			it->second->finalize();
+		for(auto it = rootClip->templates.begin(); it != rootClip->templates.end(); ++it)
+			it->second->finalize();
+		for(auto i = rootClip->customClasses.begin(); i != rootClip->customClasses.end(); ++i)
+			i->second->decRef();
+		for(auto i = rootClip->templates.begin(); i != rootClip->templates.end(); ++i)
+			i->second->decRef();
+		rootClip->customClasses.clear();
+		rootClip.reset();
 	}
 	delete[] stacktrace;
 	loader.reset();
@@ -1093,7 +1103,8 @@ WorkerDomain::WorkerDomain(Class_base* c):
 {
 	subtype = SUBTYPE_WORKERDOMAIN;
 	asAtom v=asAtomHandler::invalidAtom;
-	Template<Vector>::getInstanceS(v,getSystemState(),Class<ASWorker>::getClass(getSystemState()),NullRef);
+	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : getSystemState()->mainClip;
+	Template<Vector>::getInstanceS(v,root,Class<ASWorker>::getClass(getSystemState()),NullRef);
 	workerlist = _R<Vector>(asAtomHandler::as<Vector>(v));
 	workerSharedObject = _MR(Class<ASObject>::getInstanceS(getSystemState()));
 	workerSharedObject->setRefConstant();

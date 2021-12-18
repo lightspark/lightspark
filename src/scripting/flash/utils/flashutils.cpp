@@ -169,7 +169,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 	if (nsName.empty() || nsName.startsWith("flash."))
 		sys->systemDomain->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
 	if(asAtomHandler::isInvalid(ret))
-		ABCVm::getCurrentApplicationDomain(getVm(sys)->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
+		ABCVm::getCurrentApplicationDomain(getWorker() ? getWorker()->currentCallContext : getVm(sys)->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
 
 	if(asAtomHandler::isInvalid(ret))
 	{

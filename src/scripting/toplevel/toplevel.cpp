@@ -186,7 +186,7 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
 		{
 			//get the current global object
-			call_context* cc = getVm(th->getSystemState())->currentCallContext;
+			call_context* cc = getWorker() ? getWorker()->currentCallContext :getVm(th->getSystemState())->currentCallContext;
 			if (!cc)
 			{
 				if (argslen == 0)
@@ -240,7 +240,7 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
 		{
 			//get the current global object
-			call_context* cc = getVm(th->getSystemState())->currentCallContext;
+			call_context* cc = getWorker() ? getWorker()->currentCallContext : getVm(th->getSystemState())->currentCallContext;
 			if (!cc)
 			{
 				if (argslen == 0)
@@ -462,7 +462,10 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	cc->stackp = cc->stack;
 
 	/* Set the current global object, each script in each DoABCTag has its own */
-	getVm(getSystemState())->currentCallContext = cc;
+	if (worker)
+		worker->currentCallContext = cc;
+	else
+		getVm(getSystemState())->currentCallContext = cc;
 
 	cc->locals[0]=obj;
 
@@ -1028,13 +1031,13 @@ const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context)
 					}
 				}
 				assert_and_throw(instancetype);
-				typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),instancetype,context->root->applicationDomain).getPtr();
+				typeObject = Template<Vector>::getTemplateInstance(context->root.getPtr(),instancetype,context->root->applicationDomain).getPtr();
 			}
 			else
 			{
 				LOG(LOG_NOT_IMPLEMENTED,"getTypeFromMultiname with "<<mn->templateinstancenames.size()<<" instance types");
 				QName qname(mn->name_s_id,mn->ns[0].nsNameId);
-				typeObject = Template<Vector>::getTemplateInstance(context->root->getSystemState(),qname,context,context->root->applicationDomain).getPtr();
+				typeObject = Template<Vector>::getTemplateInstance(context->root.getPtr(),qname,context,context->root->applicationDomain).getPtr();
 			}
 		}
 	}

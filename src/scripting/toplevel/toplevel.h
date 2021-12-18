@@ -938,6 +938,7 @@ public:
 	// ensures that the init script has been run
 	void checkScriptInit();
 	bool isAVM1() const { return isavm1; }
+	ABCContext* getContext() const { return context; }
 };
 
 void eval(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);

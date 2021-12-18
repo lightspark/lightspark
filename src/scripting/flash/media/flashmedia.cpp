@@ -348,14 +348,14 @@ _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 }
 
 Sound::Sound(Class_base* c)
-	:EventDispatcher(c),downloader(nullptr),soundData(nullptr),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),
+	:EventDispatcher(c),downloader(nullptr),soundData(nullptr),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),
 	 container(true),sampledataprocessed(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(-1)
 {
 	subtype=SUBTYPE_SOUND;
 }
 
 Sound::Sound(Class_base* c, _R<StreamCache> data, AudioFormat _format, number_t duration_in_ms)
-	:EventDispatcher(c),downloader(nullptr),soundData(data),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),
+	:EventDispatcher(c),downloader(nullptr),soundData(data),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),
 	 container(false),sampledataprocessed(true),format(_format),
 	 bytesLoaded(soundData->getReceivedLength()),
 	 bytesTotal(soundData->getReceivedLength()),length(duration_in_ms)
@@ -370,6 +370,12 @@ Sound::~Sound()
 	if (rawDataStreamDecoder)
 		delete rawDataStreamDecoder;
 	rawDataStreamDecoder=nullptr;
+	if (rawDataStream)
+		delete rawDataStream;
+	rawDataStream=nullptr;
+	if (rawDataStreamBuf)
+		delete rawDataStreamBuf;
+	rawDataStreamBuf=nullptr;
 }
 
 void Sound::sinit(Class_base* c)
@@ -388,7 +394,6 @@ void Sound::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(Sound,_constructor)
 {
 	EventDispatcher::_constructor(ret,sys,obj, nullptr, 0);
-
 	if (argslen>0)
 		Sound::load(ret,sys,obj, args, argslen);
 }
@@ -504,10 +509,6 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 	int32_t bytestartposition= startPosition*4*2; // startposition is in samples (2 32bit floats)
 	if (!target.isNull() && !th->soundData.isNull())
 	{
-		std::streambuf *sbuf = th->soundData->createReader();
-		istream s(sbuf);
-		s.exceptions ( istream::failbit | istream::badbit );
-		
 		int32_t readcount=0;
 		try
 		{
@@ -521,43 +522,56 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 			if (bytestartposition < 0)
 				bytestartposition = th->rawDataStartPosition;
 			if (th->rawDataStreamDecoder== nullptr)
-				th->rawDataStreamDecoder=new FFMpegStreamDecoder(nullptr,sys->getEngineData(),s,&th->format,th->soundData->hasTerminated() ? th->soundData->getReceivedLength() : -1,true);
+			{
+				if (th->rawDataStream)
+					delete th->rawDataStream;
+				if (th->rawDataStreamBuf)
+					delete th->rawDataStreamBuf;
+				th->rawDataStreamBuf = th->soundData->createReader();
+				th->rawDataStream = new istream(th->rawDataStreamBuf);
+				th->rawDataStream->exceptions ( istream::failbit | istream::badbit );
+				th->rawDataStreamDecoder=new FFMpegStreamDecoder(nullptr,sys->getEngineData(),*th->rawDataStream,&th->format,th->soundData->hasTerminated() ? th->soundData->getReceivedLength() : -1,true);
+			}
 			if(!th->rawDataStreamDecoder->isValid())
 			{
 				LOG(LOG_ERROR,"invalid streamDecoder");
 				delete th->rawDataStreamDecoder;
 				th->rawDataStreamDecoder=nullptr;
 			}
-			else
+			else if(th->rawDataStreamDecoder->audioDecoder)
 			{
 				uint8_t* data = new uint8_t[bytelength];
 				bool firstcopy=true;
 				while(true)
 				{
-					bool decodingSuccess=th->rawDataStreamDecoder->decodeNextFrame();
-					if(decodingSuccess==false || !th->rawDataStreamDecoder->audioDecoder)
-						break;
-					if(th->rawDataStreamDecoder->audioDecoder)
+					if (!th->rawDataStreamDecoder->audioDecoder->hasDecodedFrames())
 					{
-						uint8_t buf[MAX_AUDIO_FRAME_SIZE];
-						uint32_t read = th->rawDataStreamDecoder->audioDecoder->copyFrame((int16_t *)buf, MAX_AUDIO_FRAME_SIZE);
-						th->rawDataStartPosition += read;
-						if (th->rawDataStartPosition > bytestartposition)
-						{
-							if (firstcopy)
-							{
-								firstcopy=false;
-								int bufstart = read - (th->rawDataStartPosition - bytestartposition);
-								read = (th->rawDataStartPosition - bytestartposition);
-								memcpy(data+readcount,buf+bufstart,min(read,uint32_t(bytelength-readcount)));
-							}
-							else
-								memcpy(data+readcount,buf,min(read,uint32_t(bytelength-readcount)));
-							readcount+=read;
-						}
-						if (th->rawDataStartPosition-bytestartposition >= bytelength)
+						bool decodingSuccess=th->rawDataStreamDecoder->decodeNextFrame();
+						if(decodingSuccess==false)
 							break;
 					}
+					uint8_t buf[MAX_AUDIO_FRAME_SIZE];
+					uint32_t read = th->rawDataStreamDecoder->audioDecoder->copyFrame((int16_t *)buf,
+																					  min(th->rawDataStartPosition >= bytestartposition
+																						  ? bytelength-readcount
+																						  : bytestartposition - th->rawDataStartPosition
+																							, MAX_AUDIO_FRAME_SIZE));
+					th->rawDataStartPosition += read;
+					if (th->rawDataStartPosition > bytestartposition)
+					{
+						if (firstcopy)
+						{
+							firstcopy=false;
+							int bufstart = read - (th->rawDataStartPosition - bytestartposition);
+							read = (th->rawDataStartPosition - bytestartposition);
+							memcpy(data+readcount,buf+bufstart,min(read,uint32_t(bytelength-readcount)));
+						}
+						else
+							memcpy(data+readcount,buf,min(read,uint32_t(bytelength-readcount)));
+						readcount+=read;
+					}
+					if (th->rawDataStartPosition-bytestartposition >= bytelength)
+						break;
 				}
 				target->writeBytes(data,min(readcount,bytelength));
 				delete[] data;
@@ -568,7 +582,6 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 		{
 			LOG(LOG_ERROR, _("Exception in extracting sound data: ")<<e.what());
 		}
-		delete sbuf;
 	}
 	ret = asAtomHandler::fromInt(min(readcount,bytelength)/8);
 }
@@ -593,6 +606,7 @@ ASFUNCTIONBODY_ATOM(Sound,loadCompressedDataFromByteArray)
 		}
 		delete[] buf;
 	}
+	th->soundData->markFinished();
 }
 void Sound::afterExecution(_R<Event> e)
 {

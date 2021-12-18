@@ -49,6 +49,8 @@ protected:
 	_NR<SoundChannel> soundChannel;
 	StreamDecoder* rawDataStreamDecoder;
 	int32_t rawDataStartPosition;
+	streambuf* rawDataStreamBuf;
+	istream* rawDataStream;
 	// If container is true, audio format is parsed from
 	// soundData. If container is false, soundData is raw samples
 	// and format is defined by format member.

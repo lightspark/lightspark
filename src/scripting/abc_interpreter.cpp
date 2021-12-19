@@ -1416,7 +1416,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				b = code.peekbyteFromPosition(pos);
 				pos++;
 				argsneeded++;
-				if (b==0x73)//convert_i
+				if (b==0x73 ||//convert_i
+						b==0x74)//convert_u
 				{
 					b = code.peekbyteFromPosition(pos);
 					pos++;
@@ -1643,6 +1644,15 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 							localresultused++;
 						localresultaddedindex.insert(currindex);
 					}
+				}
+				else if (argsneeded > 1 && !fromdup &&
+					(uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 1)
+				{
+					// getproperty with 1 runtime arg needs 2 args and produces 1 arg
+					argsneeded--;
+					pos = code.skipu30FromPosition(pos);
+					b = code.peekbyteFromPosition(pos);
+					pos++;
 				}
 				else
 					keepchecking=false;
@@ -5194,8 +5204,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.preloadedcode.back().pcode.arg3_int=value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
-				state.operandlist.push_back(operands(OP_BYTE,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),index,1,state.preloadedcode.size()-1));
-				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
+				if (state.jumptargets.find(code.tellg()) != state.jumptargets.end() && code.peekbyte() == 0x74)//convert_u
+				{
+					state.operandlist.push_back(operands(OP_UINTEGER,Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr(),(uint32_t)value,1,state.preloadedcode.size()-1));
+					typestack.push_back(typestackentry(Class<UInteger>::getRef(function->getSystemState()).getPtr(),false));
+					code.readbyte();
+				}
+				else
+				{
+					state.operandlist.push_back(operands(OP_BYTE,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),index,1,state.preloadedcode.size()-1));
+					typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
+				}
 				break;
 			}
 			case 0x25://pushshort
@@ -6365,7 +6384,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			case 0x74://convert_u
 #ifdef ENABLE_OPTIMIZATION
-				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0 && state.operandlist.back().objtype == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr())
+				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
+						&& (state.operandlist.back().objtype == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr()
+							|| state.preloadedcode.back().opcode==0x24))//pushbyte
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				else
 #endif

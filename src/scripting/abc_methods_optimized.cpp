@@ -2692,7 +2692,7 @@ void ABCVm::abc_getProperty_constant_constant(call_context* context)
 	uint32_t t = (++(context->exec_pos))->arg3_uint;
 	multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,nullptr,t,false);
 	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->sys);
-	LOG_CALL( _("getProperty_cc ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	LOG_CALL( "getProperty_cc " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name);
 	if(asAtomHandler::isInvalid(prop))
@@ -2722,7 +2722,7 @@ void ABCVm::abc_getProperty_constant_local(call_context* context)
 	uint32_t t = (++(context->exec_pos))->arg3_uint;
 	multiname* name=context->mi->context->getMultinameImpl(CONTEXT_GETLOCAL(context,instrptr->local_pos2),nullptr,t,false);
 	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->sys);
-	LOG_CALL( _("getProperty_cl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	LOG_CALL( "getProperty_cl " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name);
 	if(asAtomHandler::isInvalid(prop))
@@ -2737,7 +2737,7 @@ void ABCVm::abc_getProperty_local_local(call_context* context)
 	uint32_t t = (++(context->exec_pos))->arg3_uint;
 	multiname* name=context->mi->context->getMultinameImpl(CONTEXT_GETLOCAL(context,instrptr->local_pos2),nullptr,t,false);
 	ASObject* obj= asAtomHandler::toObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1),context->sys);
-	LOG_CALL( _("getProperty_ll ") << *name <<"("<<instrptr->local_pos2<<")"<< ' ' << obj->toDebugString() <<"("<<instrptr->local_pos1<<")"<< ' '<<obj->isInitialized());
+	LOG_CALL( "getProperty_ll " << *name <<"("<<instrptr->local_pos2<<")"<< ' ' << obj->toDebugString() <<"("<<instrptr->local_pos1<<")"<< ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name);
 	if(asAtomHandler::isInvalid(prop))
@@ -2752,7 +2752,7 @@ void ABCVm::abc_getProperty_constant_constant_localresult(call_context* context)
 	uint32_t t = (++(context->exec_pos))->arg3_uint;
 	multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,nullptr,t,false);
 	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->sys);
-	LOG_CALL( _("getProperty_ccl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	LOG_CALL( "getProperty_ccl " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name);
 	if(asAtomHandler::isInvalid(prop))
@@ -2769,19 +2769,24 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->arg3_uint;
 	asAtom prop=asAtomHandler::invalidAtom;
-	if (asAtomHandler::isInteger(*instrptr->arg2_constant)
-			&& asAtomHandler::is<Array>(CONTEXT_GETLOCAL(context,instrptr->local_pos1))
-			&& asAtomHandler::getInt(*instrptr->arg2_constant) > 0
-			&& (uint32_t)asAtomHandler::getInt(*instrptr->arg2_constant) < asAtomHandler::as<Array>(CONTEXT_GETLOCAL(context,instrptr->local_pos1))->currentsize)
+	if (asAtomHandler::isInteger(*instrptr->arg2_constant) && asAtomHandler::isObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1)))
 	{
-		LOG_CALL( _("getProperty_lcl ") << asAtomHandler::getInt(*instrptr->arg2_constant) << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
-		asAtomHandler::as<Array>(CONTEXT_GETLOCAL(context,instrptr->local_pos1))->at_nocheck(prop,asAtomHandler::getInt(*instrptr->arg2_constant));
+		LOG_CALL( "getProperty_lcl int " << asAtomHandler::getInt(*instrptr->arg2_constant) << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
+		ASObject* obj= asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+		obj->getVariableByInteger(prop,asAtomHandler::getInt(*instrptr->arg2_constant),GET_VARIABLE_OPTION::NO_INCREF);
+		if(asAtomHandler::isInvalid(prop))
+		{
+			multiname m(nullptr);
+			m.name_type = multiname::NAME_INT;
+			m.name_i = asAtomHandler::getInt(*instrptr->arg2_constant);
+			checkPropertyException(obj,&m,prop);
+		}
 	}
 	else
 	{
 		multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,nullptr,t,false);
 		ASObject* obj= asAtomHandler::toObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1),context->sys);
-		LOG_CALL( _("getProperty_lcl ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+		LOG_CALL( "getProperty_lcl " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 		obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NO_INCREF);
 		if(asAtomHandler::isInvalid(prop))
 			checkPropertyException(obj,name,prop);
@@ -2799,7 +2804,7 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 	uint32_t t = (++(context->exec_pos))->arg3_uint;
 	multiname* name=context->mi->context->getMultinameImpl(CONTEXT_GETLOCAL(context,instrptr->local_pos2),nullptr,t,false);
 	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->sys,true);
-	LOG_CALL( _("getProperty_cll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	LOG_CALL( "getProperty_cll " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NO_INCREF);
 	if(asAtomHandler::isInvalid(prop))
@@ -2816,19 +2821,24 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t t = (++(context->exec_pos))->arg3_uint;
 	asAtom prop=asAtomHandler::invalidAtom;
-	if (asAtomHandler::isInteger(CONTEXT_GETLOCAL(context,instrptr->local_pos2))
-			&& asAtomHandler::is<Array>(CONTEXT_GETLOCAL(context,instrptr->local_pos1))
-			&& asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2)) > 0
-			&& (uint32_t)asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2)) < asAtomHandler::as<Array>(CONTEXT_GETLOCAL(context,instrptr->local_pos1))->currentsize)
+	if (asAtomHandler::isInteger(CONTEXT_GETLOCAL(context,instrptr->local_pos2)) && asAtomHandler::isObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1)))
 	{
-		LOG_CALL( _("getProperty_lll int ") << asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2)) << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
-		asAtomHandler::as<Array>(CONTEXT_GETLOCAL(context,instrptr->local_pos1))->at_nocheck(prop,asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2)));
+		LOG_CALL( "getProperty_lll int " << asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2)) << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
+		ASObject* obj= asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+		obj->getVariableByInteger(prop,asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2)),GET_VARIABLE_OPTION::NO_INCREF);
+		if(asAtomHandler::isInvalid(prop))
+		{
+			multiname m(nullptr);
+			m.name_type = multiname::NAME_INT;
+			m.name_i = asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2));
+			checkPropertyException(obj,&m,prop);
+		}
 	}
 	else
 	{
 		multiname* name=context->mi->context->getMultinameImpl(CONTEXT_GETLOCAL(context,instrptr->local_pos2),nullptr,t,false);
 		ASObject* obj= asAtomHandler::toObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1),context->sys);
-		LOG_CALL( _("getProperty_lll ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+		LOG_CALL( "getProperty_lll " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 		obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NO_INCREF);
 		if(asAtomHandler::isInvalid(prop))
 			checkPropertyException(obj,name,prop);

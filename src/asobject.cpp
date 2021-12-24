@@ -520,19 +520,19 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	if(considerDynamic)
 		validTraits|=DYNAMIC_TRAIT;
 
-	if(Variables.findObjVar(getSystemState(),name, validTraits)!=NULL)
+	if(Variables.findObjVar(getSystemState(),name, validTraits)!=nullptr)
 		return true;
 
-	if(classdef && classdef->borrowedVariables.findObjVar(getSystemState(),name, DECLARED_TRAIT)!=NULL)
+	if(classdef && classdef->borrowedVariables.findObjVar(getSystemState(),name, DECLARED_TRAIT)!=nullptr)
 		return true;
 
 	//Check prototype inheritance chain
 	if(getClass() && considerPrototype)
 	{
-		Prototype* proto = getClass()->prototype.getPtr();
+		Prototype* proto = getClass()->getPrototype();
 		while(proto)
 		{
-			if(proto->getObj()->findGettable(name) != NULL)
+			if(proto->getObj()->findGettable(name) != nullptr)
 				return true;
 			proto=proto->prevPrototype.getPtr();
 		}
@@ -1211,14 +1211,14 @@ ASFUNCTIONBODY_ATOM(ASObject,isPrototypeOf)
 	bool res =false;
 	Class_base* cls = asAtomHandler::toObject(args[0],sys)->getClass();
 	
-	while (cls != NULL)
+	while (cls != nullptr)
 	{
-		if (cls->prototype->getObj() == asAtomHandler::getObject(obj))
+		if (cls->getPrototype()->getObj() == asAtomHandler::getObject(obj))
 		{
 			res = true;
 			break;
 		}
-		Class_base* clsparent = cls->prototype->getObj()->getClass();
+		Class_base* clsparent = cls->getPrototype()->getObj()->getClass();
 		if (clsparent == cls)
 			break;
 		cls = clsparent;
@@ -1408,7 +1408,7 @@ variable* ASObject::findVariableByMultiname(const multiname& name, Class_base* c
 			if(!obj && name.hasEmptyNS)
 			{
 				//Check prototype chain
-				Prototype* proto = cls->prototype.getPtr();
+				Prototype* proto = cls->getPrototype();
 				while(proto)
 				{
 					obj=proto->getObj()->Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealID);
@@ -1455,7 +1455,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 			if(!obj && name.hasEmptyNS)
 			{
 				//Check prototype chain
-				Prototype* proto = cls->prototype.getPtr();
+				Prototype* proto = cls->getPrototype();
 				while(proto)
 				{
 					obj=proto->getObj()->Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
@@ -3290,7 +3290,7 @@ void asAtomHandler::setFunction(asAtom& a,ASObject *obj, ASObject *closure)
 	if (closure &&obj->is<IFunction>())
 	{
 		closure->incRef();
-		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(obj->as<IFunction>()->bind(_MR(closure)))|ATOM_OBJECTPTR;
+		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(obj->as<IFunction>()->bind(_MR(closure),closure->getSystemState()->singleworker))|ATOM_OBJECTPTR;
 	}
 	else
 	{

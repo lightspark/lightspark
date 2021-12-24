@@ -1231,6 +1231,16 @@ void Class_base::_getter_constructorprop(asAtom& ret, SystemState* sys, asAtom& 
 	ret = asAtomHandler::fromObject(res);
 }
 
+Prototype* Class_base::getPrototype() const
+{
+	// workers need their own prototype objects for every class
+	if (prototype.isNull() || this->is<Class_inherit>() || getSystemState()->singleworker || !getWorker())
+		return prototype.getPtr();
+	else
+		return getWorker()->getClassPrototype(this);
+}
+
+
 void Class_base::_getter_prototype(asAtom& ret, SystemState* sys,asAtom& obj, asAtom* args, const unsigned int argslen)
 {
 	if(!asAtomHandler::is<Class_base>(obj))
@@ -1238,11 +1248,11 @@ void Class_base::_getter_prototype(asAtom& ret, SystemState* sys,asAtom& obj, as
 	Class_base* th = asAtomHandler::as<Class_base>(obj);
 	if(argslen != 0)
 		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
-	ASObject* res=th->prototype->getObj();
-	res->incRef();
-	ret = asAtomHandler::fromObject(res);
+	
+	ret = asAtomHandler::fromObject(th->getPrototype()->getObj());
+	ASATOM_INCREF(ret);
 }
-ASFUNCTIONBODY_GETTER(Class_base, length);
+ASFUNCTIONBODY_GETTER(Class_base, length)
 
 void Class_base::generator(asAtom& ret, asAtom* args, const unsigned int argslen)
 {
@@ -2617,10 +2627,10 @@ void Class<IFunction>::getInstance(asAtom& ret,bool construct, asAtom* args, con
 Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 {
 	uint32_t classId=ClassName<IFunction>::id;
-	Class<IFunction>* ret=NULL;
+	Class<IFunction>* ret=nullptr;
 	SystemState* s = sys ? sys : getSys();
 	Class_base** retAddr=&s->builtinClasses[classId];
-	if(*retAddr==NULL)
+	if(*retAddr==nullptr)
 	{
 		//Create the class
 		MemoryAccount* m = s->allocateMemoryAccount(ClassName<IFunction>::name);
@@ -3165,12 +3175,20 @@ ObjectPrototype::ObjectPrototype(Class_base* c) : ASObject(c)
 	constructIndicator = true;
 	constructorCallComplete = true;
 	obj = this;
+	originalPrototypeVars = new_asobject(c->getSystemState());
 }
 bool ObjectPrototype::isEqual(ASObject* r)
 {
 	if (r->is<ObjectPrototype>())
 		return this->getClass() == r->getClass();
 	return ASObject::isEqual(r);
+}
+
+Prototype* ObjectPrototype::clonePrototype()
+{
+	Prototype* res = new_objectPrototype(getSystemState());
+	copyOriginalValues(res);
+	return res;
 }
 
 GET_VARIABLE_RESULT ObjectPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
@@ -3201,12 +3219,20 @@ ArrayPrototype::ArrayPrototype(Class_base* c) : Array(c)
 	constructIndicator = true;
 	constructorCallComplete = true;
 	obj = this;
+	originalPrototypeVars = new_asobject(c->getSystemState());
 }
 bool ArrayPrototype::isEqual(ASObject* r)
 {
 	if (r->is<ArrayPrototype>())
 		return this->getClass() == r->getClass();
 	return ASObject::isEqual(r);
+}
+
+Prototype* ArrayPrototype::clonePrototype()
+{
+	Prototype* res = new (getClass()->memoryAccount) ArrayPrototype(getClass());
+	copyOriginalValues(res);
+	return res;
 }
 
 GET_VARIABLE_RESULT ArrayPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
@@ -3249,6 +3275,7 @@ FunctionPrototype::FunctionPrototype(Class_base* c, _NR<Prototype> p) : Function
 	//Add the prototype to the Nop function
 	this->prototype = _MR(new_asobject(c->getSystemState()));
 	obj = this;
+	originalPrototypeVars = new_asobject(c->getSystemState());
 }
 
 GET_VARIABLE_RESULT FunctionPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
@@ -3258,6 +3285,13 @@ GET_VARIABLE_RESULT FunctionPrototype::getVariableByMultiname(asAtom& ret, const
 		return res;
 
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
+}
+
+Prototype* FunctionPrototype::clonePrototype()
+{
+	Prototype* res = new_functionPrototype(getClass(),this->prevPrototype);
+	copyOriginalValues(res);
+	return res;
 }
 
 Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c,T_OBJECT,SUBTYPE_FUNCTIONOBJECT), functionPrototype(p)
@@ -3332,24 +3366,37 @@ void Prototype::setVariableByQName(const tiny_string &name, const tiny_string &n
 {
 	if (o->is<Function>())
 		o->as<Function>()->setRefConstant();
-	getObj()->setVariableByQName(name,ns,o,traitKind);
+	obj->setVariableByQName(name,ns,o,traitKind);
+	originalPrototypeVars->setVariableByQName(name,ns,o,traitKind);
 }
 void Prototype::setVariableByQName(const tiny_string &name, const nsNameAndKind &ns, ASObject *o, TRAIT_KIND traitKind)
 {
 	if (o->is<Function>())
 		o->as<Function>()->setRefConstant();
-	getObj()->setVariableByQName(name,ns,o,traitKind);
+	uint32_t nameID = obj->getSystemState()->getUniqueStringId(name);
+	obj->setVariableByQName(nameID,ns,o,traitKind);
+	originalPrototypeVars->setVariableByQName(nameID,ns,o,traitKind);
 }
 void Prototype::setVariableByQName(uint32_t nameID, const nsNameAndKind &ns, ASObject *o, TRAIT_KIND traitKind)
 {
 	if (o->is<Function>())
 		o->as<Function>()->setRefConstant();
-	getObj()->setVariableByQName(nameID,ns,o,traitKind);
+	obj->setVariableByQName(nameID,ns,o,traitKind);
+	originalPrototypeVars->setVariableByQName(nameID,ns,o,traitKind);
 }
 
 void Prototype::setVariableAtomByQName(const tiny_string &name, const nsNameAndKind &ns, asAtom o, TRAIT_KIND traitKind)
 {
 	if (asAtomHandler::is<Function>(o))
 		asAtomHandler::as<Function>(o)->setRefConstant();
-	getObj()->setVariableAtomByQName(name,ns,o,traitKind);
+	uint32_t nameID = obj->getSystemState()->getUniqueStringId(name);
+	obj->setVariableAtomByQName(nameID,ns,o,traitKind);
+	originalPrototypeVars->setVariableAtomByQName(nameID,ns,o,traitKind);
+}
+
+void Prototype::copyOriginalValues(Prototype* target)
+{
+	if (this->prevPrototype)
+		this->prevPrototype->copyOriginalValues(target);
+	originalPrototypeVars->copyValues(target->getObj());
 }

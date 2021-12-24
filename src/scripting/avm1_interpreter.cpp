@@ -939,7 +939,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (!proto)
 				{
 					if (superobj->is<Class_base>())
-						proto = superobj->as<Class_base>()->prototype->getObj();
+						proto = superobj->as<Class_base>()->getPrototype()->getObj();
 					else if (superobj->is<IFunction>())
 						proto = superobj->as<IFunction>()->prototype.getPtr();
 				}
@@ -1387,7 +1387,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							o->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION(GET_VARIABLE_OPTION::DONT_CHECK_CLASS|GET_VARIABLE_OPTION::NO_INCREF));
 							if (!asAtomHandler::isValid(ret))
 							{
-								ASObject* pr = o->is<Class_base>() && !o->as<Class_base>()->prototype.isNull() ? o->as<Class_base>()->prototype->getObj() : o->getprop_prototype();
+								ASObject* pr = o->is<Class_base>() && o->as<Class_base>()->getPrototype() ? o->as<Class_base>()->getPrototype()->getObj() : o->getprop_prototype();
 								// search the prototype before searching the AS3 class
 								while (pr)
 								{
@@ -1436,9 +1436,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 									case BUILTIN_STRINGS::PROTOTYPE:
 									{
 										if (o->is<Class_base>())
-											ret = asAtomHandler::fromObject(o->as<Class_base>()->prototype.getPtr()->getObj());
+											ret = asAtomHandler::fromObject(o->as<Class_base>()->getPrototype()->getObj());
 										else if (o->getClass())
-											ret = asAtomHandler::fromObject(o->getClass()->prototype.getPtr()->getObj());
+											ret = asAtomHandler::fromObject(o->getClass()->getPrototype()->getObj());
 										else
 											LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember for scriptobject without class "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
 										break;

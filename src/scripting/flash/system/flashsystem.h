@@ -188,6 +188,7 @@ public:
 };
 class WorkerDomain;
 class ParseThread;
+class Prototype;
 class ASWorker: public EventDispatcher, public IThreadJob
 {
 friend class WorkerDomain;
@@ -203,9 +204,11 @@ private:
 	Cond sem_event_cond;
 	typedef std::pair<_NR<EventDispatcher>,_R<Event>> eventType;
 	std::deque<eventType> events_queue;
+	map<const Class_base*,_R<Prototype>> protoypeMap;
 public:
 	ASWorker(Class_base* c);
 	void finalize() override;
+	Prototype* getClassPrototype(const Class_base* cls);
 	static void sinit(Class_base*);
 
 	//  TODO merge stacktrace handling with ABCVm

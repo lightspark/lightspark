@@ -98,7 +98,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
-	LOG(LOG_CALLS,_("DoABCTag"));
+	LOG(LOG_CALLS,"DoABCTag");
 
 	RootMovieClip* root=getParseThread()->getRootMovie();
 	root->incRef();
@@ -107,14 +107,14 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	int pos=in.tellg();
 	if(dest!=pos)
 	{
-		LOG(LOG_ERROR,_("Corrupted ABC data: missing ") << dest-in.tellg());
+		LOG(LOG_ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
 		throw ParseException("Not complete ABC data");
 	}
 }
 
 void DoABCTag::execute(RootMovieClip* root) const
 {
-	LOG(LOG_CALLS,_("ABC Exec"));
+	LOG(LOG_CALLS,"ABC Exec");
 	/* currentVM will free the context*/
 	if (!getWorker() || getWorker()->isPrimordial)
 		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
@@ -127,7 +127,7 @@ DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	int dest=in.tellg();
 	dest+=h.getLength();
 	in >> Flags >> Name;
-	LOG(LOG_CALLS,_("DoABCDefineTag Name: ") << Name);
+	LOG(LOG_CALLS,"DoABCDefineTag Name: " << Name);
 
 	RootMovieClip* root=getParseThread()->getRootMovie();
 	root->incRef();
@@ -136,14 +136,14 @@ DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	int pos=in.tellg();
 	if(dest!=pos)
 	{
-		LOG(LOG_ERROR,_("Corrupted ABC data: missing ") << dest-in.tellg());
+		LOG(LOG_ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
 		throw ParseException("Not complete ABC data");
 	}
 }
 
 void DoABCDefineTag::execute(RootMovieClip* root) const
 {
-	LOG(LOG_CALLS,_("ABC Exec ") << Name);
+	LOG(LOG_CALLS,"ABC Exec " << Name);
 	/* currentVM will free the context*/
 	// some swf files have multiple abc tags without the "lazy" flag.
 	// if the swf file also has a SymbolClass, we just ignore them and execute all abc tags lazy.
@@ -157,7 +157,7 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
 {
-	LOG(LOG_TRACE,_("SymbolClassTag"));
+	LOG(LOG_TRACE,"SymbolClassTag");
 	in >> NumSymbols;
 
 	Tags.resize(NumSymbols);
@@ -169,7 +169,7 @@ SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
 
 void SymbolClassTag::execute(RootMovieClip* root) const
 {
-	LOG(LOG_TRACE,_("SymbolClassTag Exec"));
+	LOG(LOG_TRACE,"SymbolClassTag Exec");
 
 	for(int i=0;i<NumSymbols;i++)
 	{
@@ -179,7 +179,6 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 		{
 			root->hasMainClass=true;
 			root->incRef();
-			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
 			ASWorker* worker = getWorker();
 			if (worker && !worker->isPrimordial && root != root->getSystemState()->mainClip)
 			{
@@ -1599,7 +1598,7 @@ void call_context::handleError(int errorcode)
 
 bool ABCContext::isinstance(ASObject* obj, multiname* name)
 {
-	LOG(LOG_CALLS, _("isinstance ") << *name);
+	LOG(LOG_CALLS, "isinstance " << *name);
 
 	if(name->name_s_id == BUILTIN_STRINGS::ANY)
 		return true;
@@ -1621,20 +1620,20 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 	if(obj->getObjectType()==T_INTEGER || obj->getObjectType()==T_UINTEGER || obj->getObjectType()==T_NUMBER)
 	{
 		real_ret=(c==Class<Integer>::getClass(obj->getSystemState()) || c==Class<Number>::getClass(obj->getSystemState()) || c==Class<UInteger>::getClass(obj->getSystemState()));
-		LOG(LOG_CALLS,_("Numeric type is ") << ((real_ret)?"_(":")not _(") << ")subclass of " << c->class_name);
+		LOG(LOG_CALLS,"Numeric type is " << ((real_ret)?"":"not ") << "subclass of " << c->class_name);
 		return real_ret;
 	}
 
 	if(!objc)
 	{
 		real_ret=obj->getObjectType()==type->getObjectType();
-		LOG(LOG_CALLS,_("isType on non classed object ") << real_ret);
+		LOG(LOG_CALLS,"isType on non classed object " << real_ret);
 		return real_ret;
 	}
 
 	assert_and_throw(type->getObjectType()==T_CLASS);
 	real_ret=objc->isSubClass(c);
-	LOG(LOG_CALLS,_("Type ") << objc->class_name << _(" is ") << ((real_ret)?"":_("not ")) 
+	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?"":"not ") 
 			<< "subclass of " << c->class_name);
 	return real_ret;
 }
@@ -1705,7 +1704,7 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 	hasRunScriptInit[i] = true;
 
 	method_info* m=get_method(scripts[i].init);
-	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(this->root->getSystemState(),m,m->numArgs());
+	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(this->root->getSystemState(),m,m->numArgs(),this->root->getSystemState()->singleworker);
 	entry->fromNewFunction=true;
 	
 	entry->addToScope(scope_entry(g,false));
@@ -2409,7 +2408,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			else if(kind == traits_info::Method)
 				LOG(LOG_CALLS,"Method trait: " << *mname << " #" << t->method);
 			method_info* m=&methods[t->method];
-			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(obj->getSystemState(),m,m->numArgs());
+			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(obj->getSystemState(),m,m->numArgs(),obj->getSystemState()->singleworker);
 
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)
@@ -2509,12 +2508,12 @@ void method_info::getOptional(asAtom& ret, unsigned int i)
 multiname* method_info::paramTypeName(unsigned int i) const
 {
 	assert_and_throw(i<info.param_type.size());
-	return context->getMultiname(info.param_type[i],NULL);
+	return context->getMultiname(info.param_type[i],nullptr);
 }
 
 multiname* method_info::returnTypeName() const
 {
-	return context->getMultiname(info.return_type,NULL);
+	return context->getMultiname(info.return_type,nullptr);
 }
 
 istream& lightspark::operator>>(istream& in, method_info& v)

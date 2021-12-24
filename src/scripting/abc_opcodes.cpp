@@ -869,8 +869,8 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 	}
 	else
 	{
-		Class<ASObject>::getRef(asAtomHandler::as<IFunction>(f)->getSystemState())->prototype->getObj()->incRef();
-		constructor->setVariableByQName("prototype","",Class<ASObject>::getRef(asAtomHandler::as<IFunction>(f)->getSystemState())->prototype->getObj(),DECLARED_TRAIT);
+		Class<ASObject>::getRef(asAtomHandler::as<IFunction>(f)->getSystemState())->getPrototype()->incRef();
+		constructor->setVariableByQName("prototype","",Class<ASObject>::getRef(asAtomHandler::as<IFunction>(f)->getSystemState())->getPrototype()->getObj(),DECLARED_TRAIT);
 	}
 	
 	asAtomHandler::getObject(ret)->setVariableByQName("constructor","",constructor,DECLARED_TRAIT);
@@ -2032,7 +2032,7 @@ void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, 
 	}
 	method_info* mi = th->mi->context->get_method(n);
 	assert_and_throw(mi);
-	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->sys,mi,mi->numArgs());
+	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->sys,mi,mi->numArgs(),th->sys->singleworker);
 	if(f)
 	{
 		asAtom v = asAtomHandler::fromObject(f);
@@ -2172,7 +2172,7 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	}
 
 	real_ret=objc->isSubClass(c);
-	LOG_CALL(_("Type ") << objc->class_name << _(" is ") << ((real_ret)?"":_("not ")) 
+	LOG_CALL("Type " << objc->class_name << " is " << ((real_ret)?"":"not ") 
 			<< "subclass of " << c->class_name);
 	obj->decRef();
 	type->decRef();
@@ -2182,7 +2182,7 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 ASObject* ABCVm::asType(ABCContext* context, ASObject* obj, multiname* name)
 {
 	bool ret = context->isinstance(obj, name);
-	LOG_CALL(_("asType"));
+	LOG_CALL("asType "<<*name<<" "<<obj->toDebugString());
 	
 	if(ret)
 		return obj;
@@ -2196,7 +2196,7 @@ ASObject* ABCVm::asType(ABCContext* context, ASObject* obj, multiname* name)
 
 ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 {
-	LOG_CALL(_("asTypelate"));
+	LOG_CALL("asTypelate");
 
 	if(!type->is<Class_base>())
 	{
@@ -2750,7 +2750,7 @@ void ABCVm::newClass(call_context* th, int n)
 			constructor->validProfName=true;
 		}
 #endif
-		SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(ret->getSystemState(),constructor,constructor->numArgs());
+		SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(ret->getSystemState(),constructor,constructor->numArgs(),ret->getSystemState()->singleworker);
 		constructorFunc->acquireScope(ret->class_scope);
 		constructorFunc->addToScope(scope_entry(asAtomHandler::fromObject(ret),false));
 		constructorFunc->inClass = ret;
@@ -2805,7 +2805,7 @@ void ABCVm::newClass(call_context* th, int n)
 	LOG_CALL(_("Calling Class init ") << ret);
 	//Class init functions are called with global as this
 	method_info* m=&th->mi->context->methods[th->mi->context->classes[n].cinit];
-	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(ret->getSystemState(),m,m->numArgs());
+	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(ret->getSystemState(),m,m->numArgs(),ret->getSystemState()->singleworker);
 	cinit->fromNewFunction=true;
 	cinit->inClass = ret;
 	//cinit must inherit the current scope
@@ -2836,7 +2836,7 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 	assert_and_throw(asAtomHandler::isUndefined(ret2));
 	ASATOM_DECREF(ret2);
-	LOG_CALL(_("End of Class init ") << *mname <<" " <<ret);
+	LOG_CALL("End of Class init " << *mname <<" " <<ret);
 	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObjectNoPrimitive(ret));
 	cinit->decRef();
 	if (ret->getGlobalScope()) // the variable on the Definition Object was set to null in class definition, but can be set to the real object now that the class init function was called
@@ -2868,9 +2868,9 @@ ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
 {
 	LOG_CALL("newActivation");
 	//TODO: Should method traits be added to the activation context?
-	ASObject* act= NULL;
+	ASObject* act= nullptr;
 	ASObject* caller = asAtomHandler::getObject(th->locals[0]);
-	if (caller != NULL && caller->is<Function_object>())
+	if (caller != nullptr && caller->is<Function_object>())
 		act = new_functionObject(caller->as<Function_object>()->functionPrototype);
 	else
 		act = new_activationObject(th->sys);
@@ -2989,10 +2989,10 @@ bool ABCVm::deleteProperty(ASObject* obj, multiname* name)
 
 ASObject* ABCVm::newFunction(call_context* th, int n)
 {
-	LOG_CALL(_("newFunction ") << n);
+	LOG_CALL("newFunction " << n);
 
 	method_info* m=&th->mi->context->methods[n];
-	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->mi->context->root->applicationDomain->getSystemState(),m,m->numArgs());
+	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->mi->context->root->applicationDomain->getSystemState(),m,m->numArgs(),th->mi->context->root->getSystemState()->singleworker);
 	f->func_scope = _R<scope_entry_list>(new scope_entry_list());
 	f->fromNewFunction=true;
 	if (th->parent_scope_stack)

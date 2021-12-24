@@ -185,7 +185,9 @@ protected:
 public:
 	asfreelist freelist[2];
 	variables_map borrowedVariables;
-	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
+	_NR<Prototype> prototype;
+	Prototype* getPrototype() const;
+	ASFUNCTION_ATOM(_getter_prototype);
 	ASPROPERTY_GETTER(_NR<ObjectConstructor>,constructorprop);
 	_NR<Class_base> super;
 	//We need to know what is the context we are referring to
@@ -335,9 +337,15 @@ class Prototype
 {
 protected:
 	ASObject* obj;
+	ASObject* originalPrototypeVars;
+	void copyOriginalValues(Prototype* target);
 public:
-	Prototype():isSealed(false) {}
-	virtual ~Prototype() {}
+	Prototype():obj(nullptr),originalPrototypeVars(nullptr),isSealed(false) {}
+	virtual ~Prototype()
+	{
+		if (originalPrototypeVars)
+			originalPrototypeVars->decRef();
+	}
 	_NR<Prototype> prevPrototype;
 	inline void incRef() { obj->incRef(); }
 	inline void decRef() { obj->decRef(); }
@@ -350,6 +358,8 @@ public:
 	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind);
 	void setVariableByQName(uint32_t nameID, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind);
 	void setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind);
+
+	virtual Prototype* clonePrototype() = 0;
 };
 
 /* Special object used as prototype for classes
@@ -363,6 +373,7 @@ public:
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
 	bool isEqual(ASObject* r) override;
+	Prototype* clonePrototype() override;
 };
 
 /* Special object used as constructor property for classes
@@ -388,6 +399,7 @@ public:
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
 	bool isEqual(ASObject* r) override;
+	Prototype* clonePrototype() override;
 };
 
 class Activation_object: public ASObject
@@ -437,7 +449,7 @@ public:
 	ASFUNCTION_ATOM(_length);
 protected:
 	IFunction(Class_base *c,CLASS_SUBTYPE st);
-	virtual IFunction* clone()=0;
+	virtual IFunction* clone(bool fromfreelist)=0;
 public:
 	_NR<ASObject> closure_this;
 	static void sinit(Class_base* c);
@@ -462,10 +474,10 @@ public:
 		prototype.reset();
 		return destructIntern();
 	}
-	IFunction* bind(_NR<ASObject> c)
+	IFunction* bind(_NR<ASObject> c,bool fromfreelist)
 	{
 		IFunction* ret=nullptr;
-		ret=clone();
+		ret=clone(fromfreelist);
 		ret->setClass(getClass());
 		ret->closure_this=c;
 		ret->clonedFrom=this;
@@ -512,9 +524,9 @@ protected:
 	Class_base* returnTypeAllArgsInt;
 	Function(Class_base* c,as_atom_function v = nullptr):IFunction(c,SUBTYPE_FUNCTION),val_atom(v) {}
 	method_info* getMethodInfo() const override { return nullptr; }
-	IFunction* clone() override
+	IFunction* clone(bool /*fromfreelist*/) override
 	{
-		Function*  ret = objfreelist->getObjectFromFreeList()->as<Function>();
+		Function* ret = objfreelist->getObjectFromFreeList()->as<Function>();
 		if (!ret)
 			ret=new (getClass()->memoryAccount) Function(*this);
 		else
@@ -580,6 +592,7 @@ public:
 	}
 	
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
+	Prototype* clonePrototype() override;
 };
 
 /*
@@ -604,9 +617,9 @@ private:
 	bool fromNewFunction;
 	SyntheticFunction(Class_base* c,method_info* m);
 protected:
-	IFunction* clone() override
+	IFunction* clone(bool fromfreelist) override
 	{
-		SyntheticFunction*  ret = objfreelist->getObjectFromFreeList()->as<SyntheticFunction>();
+		SyntheticFunction* ret = fromfreelist ? objfreelist->getObjectFromFreeList()->as<SyntheticFunction>() : nullptr;
 		if (!ret)
 		{
 			ret=new (getClass()->memoryAccount) SyntheticFunction(*this);
@@ -715,7 +728,7 @@ protected:
 		superobj = asAtomHandler::invalidAtom;
 	}
 	method_info* getMethodInfo() const override { return nullptr; }
-	IFunction* clone() override
+	IFunction* clone(bool /*fromfreelist*/) override
 	{
 		// no cloning needed in AVM1
 		return nullptr;
@@ -782,11 +795,12 @@ public:
 		return ret;
 	}
 
-	static SyntheticFunction* getSyntheticFunction(SystemState* sys,method_info* m, uint32_t _length)
+	static SyntheticFunction* getSyntheticFunction(SystemState* sys,method_info* m, uint32_t _length,bool fromfreelist)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
-		SyntheticFunction*  ret;
-		ret= c->freelist[1].getObjectFromFreeList()->as<SyntheticFunction>();
+		SyntheticFunction* ret = nullptr;
+		if (fromfreelist)
+			ret= c->freelist[1].getObjectFromFreeList()->as<SyntheticFunction>();
 		if (!ret)
 		{
 			ret=new (c->memoryAccount) SyntheticFunction(c, m);

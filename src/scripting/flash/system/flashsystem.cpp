@@ -884,6 +884,17 @@ void ASWorker::finalize()
 	swf.reset();
 }
 
+Prototype* ASWorker::getClassPrototype(const Class_base* cls)
+{
+	auto it = protoypeMap.find(cls);
+	if (it == protoypeMap.end())
+	{
+		Prototype* p = cls->prototype->clonePrototype();
+		it = protoypeMap.insert(make_pair(cls,_MR(p))).first;
+	}
+	return it->second.getPtr();
+}
+
 void ASWorker::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);

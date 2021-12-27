@@ -121,7 +121,7 @@ bool Vector::destruct()
 
 void Vector::setTypes(const std::vector<const Type *> &types)
 {
-	assert(vec_type == NULL);
+	assert(vec_type == nullptr);
 	if(types.size() == 1)
 		vec_type = types[0];
 }
@@ -660,7 +660,7 @@ ASFUNCTIONBODY_ATOM(Vector,slice)
 
 	startIndex=th->capIndex(startIndex);
 	endIndex=th->capIndex(endIndex);
-	th->getClass()->getInstance(ret,true,NULL,0);
+	th->getClass()->getInstance(ret,true,nullptr,0);
 	Vector* res= asAtomHandler::as<Vector>(ret);
 	res->vec.resize(endIndex-startIndex, th->getDefaultValue());
 	int j = 0;
@@ -669,8 +669,8 @@ ASFUNCTIONBODY_ATOM(Vector,slice)
 		if (asAtomHandler::isValid(th->vec[i]))
 		{
 			res->vec[j] =th->vec[i];
-			if (!th->vec_type->coerce(th->getSystemState(),th->vec[j]))
-				ASATOM_INCREF(th->vec[j]);
+			if (!th->vec_type->coerce(th->getSystemState(),res->vec[j]))
+				ASATOM_INCREF(res->vec[j]);
 		}
 		j++;
 	}

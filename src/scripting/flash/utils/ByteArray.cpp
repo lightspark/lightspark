@@ -486,6 +486,23 @@ asAtom ByteArray::readObject()
 	return ret;
 }
 
+ASObject* ByteArray::readSharedObject()
+{
+	ASObject* ret = Class<ASObject>::getInstanceS(getSystemState());
+	if (getLength()<=16)
+		return ret;
+	Amf3Deserializer d(this);
+	try
+	{
+		d.readSharedObject(ret);
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR,"Exception caught while parsing shared object: " << e.cause);
+	}
+	return ret;
+}
+
 void ByteArray::writeUTF(const tiny_string& str)
 {
 	getBuffer(position+str.numBytes()+2,true);
@@ -552,6 +569,37 @@ uint32_t ByteArray::writeObject(ASObject* obj)
 	uint32_t oldPosition=position;
 	obj->serialize(this, stringMap, objMap,traitsMap);
 	return position-oldPosition;
+}
+void ByteArray::writeSharedObject(ASObject* obj, const tiny_string& name)
+{
+	// write amf header
+	writeByte(0x00);
+	writeByte(0xbf);
+	uint32_t sizepos = getPosition();
+	writeUnsignedInt(0); // size of file, will be filled at end of method
+	writeByte('T');
+	writeByte('C');
+	writeByte('S');
+	writeByte('O');
+	writeByte(0x00);
+	writeByte(0x04);
+	writeByte(0x00);
+	writeByte(0x00);
+	writeByte(0x00);
+	writeByte(0x00);
+	writeUTF(name);
+	writeByte(0x00);
+	writeByte(0x00);
+	writeByte(0x00);
+	writeByte(0x03);// always store as AMF3
+
+	map<tiny_string, uint32_t> stringMap;
+	map<const ASObject*, uint32_t> objMap;
+	map<const Class_base*, uint32_t> traitsMap;
+	obj->serializeDynamicProperties(this, stringMap, objMap,traitsMap,true,true);
+	setPosition(sizepos);
+	writeUnsignedInt(GUINT32_TO_BE(getLength()-6));
+	setPosition(0);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,writeObject)

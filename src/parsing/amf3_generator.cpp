@@ -43,6 +43,43 @@ asAtom Amf3Deserializer::readObject() const
 	return parseValue(stringMap, objMap, traitsMap);
 }
 
+void Amf3Deserializer::readSharedObject(ASObject* ret)
+{
+	// skip the amf header of the file
+	// -> 2 byte always 0x00, 0xbf
+	// -> 4 byte filesize-6
+	// -> 10 byte always 'T', 'C', 'S', 'O', 0x00, 0x04, 0x00, 0x00, 0x00, 0x00
+	input->setPosition(16);
+	tiny_string name;
+	bool ok=false;
+	ok = input->readUTF(name);
+	uint32_t amfversion;
+	ok = ok && input->readUnsignedInt(amfversion);
+	if (ok)
+	{
+		vector<tiny_string> stringMap;
+		vector<asAtom> objMap;
+		vector<TraitsRef> traitsMap;
+		if (amfversion!= 3 && amfversion!=0)
+			LOG(LOG_ERROR,"invalid amf version for sharedObject:"<<name<<" "<<amfversion);
+		input->setCurrentObjectEncoding(amfversion==3 ? ObjectEncoding::AMF3 : ObjectEncoding::AMF0);
+		while (input->getPosition() < input->getLength())
+		{
+			tiny_string key = amfversion==3 ? parseStringVR(stringMap) : parseStringAMF0();
+			asAtom value = parseValue(stringMap,objMap,traitsMap);
+			if (asAtomHandler::isValid(value))
+			{
+				multiname m(nullptr);
+				m.name_type=multiname::NAME_STRING;
+				m.name_s_id=input->getSystemState()->getUniqueStringId(key);
+				ret->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED);
+			}
+			uint8_t b;
+			input->readByte(b); // skip 0 byte
+		}
+	}
+}
+
 asAtom Amf3Deserializer::parseInteger() const
 {
 	uint32_t tmp;

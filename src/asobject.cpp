@@ -2014,7 +2014,7 @@ unsigned int ASObject::numVariables() const
 
 void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap,bool usedynamicPropertyWriter)
+				std::map<const Class_base*, uint32_t> traitsMap, bool usedynamicPropertyWriter, bool forSharedObject)
 {
 	if (usedynamicPropertyWriter && 
 			!out->getSystemState()->static_ObjectEncoding_dynamicPropertyWriter.isNull() &&
@@ -2037,16 +2037,16 @@ void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, 
 		args[0] = asAtomHandler::fromObject(this);
 		args[1] = asAtomHandler::fromObject(o);
 		asAtomHandler::callFunction(wr,ret,v,args,2,false);
-		o->serializeDynamicProperties(out, stringMap, objMap, traitsMap,false);
+		o->serializeDynamicProperties(out, stringMap, objMap, traitsMap,false,false);
 		delete o;
 	}
 	else
-		Variables.serialize(out, stringMap, objMap, traitsMap);
+		Variables.serialize(out, stringMap, objMap, traitsMap,forSharedObject);
 }
 
 void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap)
+				std::map<const Class_base*, uint32_t>& traitsMap,bool forsharedobject)
 {
 	bool amf0 = out->getObjectEncoding() == ObjectEncoding::AMF0;
 	//Pairs of name, value
@@ -2062,9 +2062,15 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 		else
 			out->writeStringVR(stringMap,out->getSystemState()->getStringFromUniqueId(it->first));
 		asAtomHandler::toObject(it->second.var,out->getSystemState())->serialize(out, stringMap, objMap, traitsMap);
+		if (forsharedobject)
+		{
+			// it seems that on shared objects an additional 0 is written after each property
+			out->writeByte(0);
+		}
 	}
 	//The empty string closes the object
-	if (!amf0) out->writeStringVR(stringMap, "");
+	if (!amf0 && !forsharedobject)
+		out->writeStringVR(stringMap, "");
 }
 
 void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -2091,7 +2097,6 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 			out->writeU29(it->second << 1);
 		}
 		return;
-		
 	}
 
 	Class_base* type=getClass();

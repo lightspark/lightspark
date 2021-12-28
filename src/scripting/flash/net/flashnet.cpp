@@ -685,29 +685,26 @@ ASFUNCTIONBODY_ATOM(SharedObject,getLocal)
 	if (secure)
 		LOG(LOG_NOT_IMPLEMENTED,"SharedObject.getLocal: parameter 'secure' is ignored");
 
-	tiny_string fullname = localPath + "|";
+	tiny_string fullname;
+	if (!localPath.empty() )
+		fullname = localPath + "_";
 	fullname += name;
 	SharedObject* res = nullptr;
 	auto it = sys->sharedobjectmap.find(fullname);
 	if (it == sys->sharedobjectmap.end())
 	{
 		res = Class<SharedObject>::getInstanceS(sys);
-		res->name=localPath;
+		res->name=fullname;
 		if (sys->localStorageAllowed())
 		{
 			ByteArray* b = Class<ByteArray>::getInstanceS(sys);
-			asAtom a = asAtomHandler::invalidAtom;
-			if (sys->getEngineData()->fillSharedObject(localPath,b))
+			if (sys->getEngineData()->fillSharedObject(fullname,b))
 			{
 				b->setPosition(0);
-				a = b->readObject();
+//				ASObject* so = asAtomHandler::getObjectNoCheck(b->readObject());
+				ASObject* so = b->readSharedObject();
+				res->data = _MR(so);
 			}
-			ASObject* d = nullptr;
-			if (asAtomHandler::isObject(a))
-				d = asAtomHandler::getObjectNoCheck(a);
-			else
-				d = Class<ASObject>::getInstanceS(sys);
-			res->data = _MR(d);
 			b->decRef();
 		}
 		sys->sharedobjectmap.insert(make_pair(fullname,_MR(res)));
@@ -728,8 +725,7 @@ bool SharedObject::doFlush()
 	if (!data.isNull() && data->numVariables() && getSystemState()->localStorageAllowed())
 	{
 		ByteArray* b = Class<ByteArray>::getInstanceS(getSystemState());
-		b->writeObject(data.getPtr());
-		b->setPosition(0);
+		b->writeSharedObject(data.getPtr(),name);
 		bool ret = getSystemState()->getEngineData()->flushSharedObject(name,b);
 		b->decRef();
 		return ret;

@@ -803,7 +803,7 @@ public:
 	void check() const;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap, bool forsharedobject=false);
 	void dumpVariables();
 	void destroyContents();
 	bool cloneInstance(variables_map& map);
@@ -870,9 +870,6 @@ protected:
 	bool traitsInitialized:1;
 	bool constructIndicator:1;
 	bool constructorCallComplete:1; // indicates that the constructor including all super constructors has been called
-	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
-				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap,bool usedynamicPropertyWriter=true);
 	void setClass(Class_base* c);
 	static variable* findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter);
 	static FORCE_INLINE const variable* findGettableImplConst(SystemState* sys, const variables_map& map, const multiname& name, uint32_t* nsRealId = nullptr)
@@ -954,7 +951,9 @@ protected:
 	}
 public:
 	ASObject(Class_base* c,SWFOBJECT_TYPE t = T_OBJECT,CLASS_SUBTYPE subtype = SUBTYPE_NOT_SET);
-	
+	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+				std::map<const ASObject*, uint32_t>& objMap,
+				std::map<const Class_base*, uint32_t> traitsMap,bool usedynamicPropertyWriter=true, bool forSharedObject = false);
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	bool initialized:1;

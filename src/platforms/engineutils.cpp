@@ -332,7 +332,6 @@ std::string EngineData::getsharedobjectfilename(const tiny_string& name)
 
 	std::string p = subdir.raw_buf();
 	p += G_DIR_SEPARATOR_S;
-	p += "shared_";
 	p += name.raw_buf();
 	p += ".sol";
 	return p;
@@ -346,7 +345,10 @@ void EngineData::setLocalStorageAllowedMarker(bool allowed)
 	p += G_DIR_SEPARATOR_S;
 	p += "localStorageAllowed";
 	if (allowed)
-		g_creat(p.c_str(),0600);
+	{
+		if (!g_file_test(subdir.raw_buf(),G_FILE_TEST_EXISTS))
+			g_creat(p.c_str(),0600);
+	}
 	else
 		g_unlink(p.c_str());
 }

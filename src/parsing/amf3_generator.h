@@ -127,6 +127,7 @@ private:
 public:
 	Amf3Deserializer(ByteArray* i):input(i) {}
 	asAtom readObject() const;
+	void readSharedObject(ASObject* ret);
 	tiny_string parseStringAMF0() const;
 };
 

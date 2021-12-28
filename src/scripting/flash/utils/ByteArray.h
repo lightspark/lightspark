@@ -56,7 +56,7 @@ public:
 	{
 		if (shareable) mutex.unlock();
 	}
-	ByteArray(Class_base* c, uint8_t* b = NULL, uint32_t l = 0);
+	ByteArray(Class_base* c, uint8_t* b = nullptr, uint32_t l = 0);
 	~ByteArray();
 	//Helper interface for serialization
 	bool peekByte(uint8_t& b);
@@ -77,6 +77,7 @@ public:
 	bool readUTFBytes(uint32_t length,tiny_string& ret);
 	bool readBytes(uint32_t offset, uint32_t length, uint8_t* ret);
 	asAtom readObject();
+	ASObject* readSharedObject();
 	FORCE_INLINE void writeByte(uint8_t b)
 	{
 		getBuffer(position+1,true);
@@ -92,6 +93,7 @@ public:
 	void writeUnsignedInt(uint32_t val);
 	void writeUTF(const tiny_string& str);
 	uint32_t writeObject(ASObject* obj);
+	void writeSharedObject(ASObject* obj, const tiny_string& name);
 	void writeStringVR(std::map<tiny_string, uint32_t>& stringMap, const tiny_string& s);
 	void writeStringAMF0(const tiny_string& s);
 	void writeXMLString(std::map<const ASObject*, uint32_t>& objMap, ASObject *xml, const tiny_string& s);

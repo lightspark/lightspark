@@ -2,6 +2,8 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* local storage is files (*.sol) are saved in same format as adobe, so saved data from adobe can be used in lightspark (and vice versa)
+	  this means that saved data from older versions of lightspark is not compatible with this version!
 	* improved support for background workers
 	* implement streaming of dynamically created audio samples
 	* add environment variable LIGHTSPARK_RANDOM_SEED to seed random number generator with constant value (useful for debugging)

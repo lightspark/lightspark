@@ -265,7 +265,7 @@ void ABCVm::registerClasses()
 void ABCVm::loadFloat(call_context *th)
 {
 	RUNTIME_STACK_POP_CREATE(th,arg1);
-	float addr=asAtomHandler::toNumber(*arg1);
+	uint32_t addr=asAtomHandler::toUInt(*arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 	number_t ret=appDomain->readFromDomainMemory<float>(addr);
 	ASATOM_DECREF_POINTER(arg1);
@@ -273,16 +273,18 @@ void ABCVm::loadFloat(call_context *th)
 }
 void ABCVm::loadFloat(call_context *th,asAtom& ret, asAtom& arg1)
 {
-	float addr=asAtomHandler::toNumber(arg1);
+	uint32_t addr=asAtomHandler::toUInt(arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 	number_t res=appDomain->readFromDomainMemory<float>(addr);
-	ret = asAtomHandler::fromNumber(appDomain->getSystemState(),res,false);
+	asAtom oldret = ret;
+	if (asAtomHandler::replaceNumber(ret,appDomain->getSystemState(),res))
+		ASATOM_DECREF(oldret);
 }
 
 void ABCVm::loadDouble(call_context *th)
 {
 	RUNTIME_STACK_POP_CREATE(th,arg1);
-	double addr=asAtomHandler::toNumber(*arg1);
+	uint32_t addr=asAtomHandler::toUInt(*arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 	number_t ret=appDomain->readFromDomainMemory<double>(addr);
 	ASATOM_DECREF_POINTER(arg1);
@@ -290,10 +292,12 @@ void ABCVm::loadDouble(call_context *th)
 }
 void ABCVm::loadDouble(call_context *th,asAtom& ret, asAtom& arg1)
 {
-	float addr=asAtomHandler::toNumber(arg1);
+	uint32_t addr=asAtomHandler::toUInt(arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 	number_t res=appDomain->readFromDomainMemory<double>(addr);
-	ret = asAtomHandler::fromNumber(appDomain->getSystemState(),res,false);
+	asAtom oldret = ret;
+	if (asAtomHandler::replaceNumber(ret,appDomain->getSystemState(),res))
+		ASATOM_DECREF(oldret);
 }
 
 void ABCVm::storeFloat(call_context *th)
@@ -1177,9 +1181,37 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	if (event->is<ProgressEvent>())
 		event->as<ProgressEvent>()->accesmutex.unlock();
 }
+#ifndef _WIN32
+	#include <valgrind/callgrind.h>
+#endif
+//#define lk_profiling 110
+#define lk_profiling_event "enterFrame"
+#define lk_profiling_mousecount 2
 
+uint32_t eventcallcount=0;
+uint32_t eventcallcount_start=10000000;
+uint32_t eventmousedown=0;
 void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 {
+#ifdef lk_profiling
+	if (e.second->type==lk_profiling_event)
+	{
+		eventcallcount++;
+		if (eventcallcount == lk_profiling + eventcallcount_start)
+		{
+			CALLGRIND_START_INSTRUMENTATION ;
+		}
+	}
+	if (e.second->type=="mouseDown")
+	{
+		eventmousedown++;
+		if (eventmousedown == lk_profiling_mousecount)
+		{
+			eventcallcount_start=eventcallcount;
+		}
+		clearOpcodeCounters();
+	}
+#endif
 	//LOG(LOG_INFO,"handleEvent:"<<e.second->type);
 	e.second->check();
 	if(!e.first.isNull())
@@ -1372,6 +1404,17 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 	if(e.second->is<WaitableEvent>())
 		e.second->as<WaitableEvent>()->signal();
 	RELEASE_WRITE(e.second->queued,false);
+#ifdef lk_profiling
+	if (e.second->type==lk_profiling_event)
+	{
+		if (eventcallcount == lk_profiling + eventcallcount_start)
+		{
+			CALLGRIND_STOP_INSTRUMENTATION;
+			dumpOpcodeCounters(100000);
+			exit(0);
+		}
+	}
+#endif
 	//LOG(LOG_INFO,"handleEvent done:"<<e.second->type);
 }
 

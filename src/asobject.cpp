@@ -507,7 +507,7 @@ variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TR
 
 	//Name not present, insert it if we have to create it
 	if(createKind==NO_CREATE_TRAIT)
-		return NULL;
+		return nullptr;
 
 	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(nameId, variable(createKind,ns)) );
 	return &inserted->second;
@@ -1173,7 +1173,7 @@ ASFUNCTIONBODY_ATOM(ASObject,_toLocaleString)
 ASFUNCTIONBODY_ATOM(ASObject,hasOwnProperty)
 {
 	assert_and_throw(argslen==1);
-	multiname name(NULL);
+	multiname name(nullptr);
 	switch (asAtomHandler::getObjectType(args[0]))
 	{
 		case T_INTEGER:
@@ -1730,7 +1730,7 @@ void ASObject::dumpObjectCounters(uint32_t threshhold)
 	LOG(LOG_INFO,"countall:"<<c);
 }
 #endif
-ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->getSystemState()->singleworker && c->isReusable ? c->freelist : nullptr),Variables((c)?c->memoryAccount:nullptr),classdef(c),proxyMultiName(nullptr),sys(c?c->sys:nullptr),
+ASObject::ASObject(Class_base* c,SWFOBJECT_TYPE t,CLASS_SUBTYPE st):objfreelist(c && c->isReusable && (c->getSystemState()->singleworker || !getWorker())? c->freelist : nullptr),Variables((c)?c->memoryAccount:nullptr),classdef(c),proxyMultiName(nullptr),sys(c?c->sys:nullptr),
 	stringId(UINT32_MAX),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 {
 #ifndef NDEBUG
@@ -3184,7 +3184,7 @@ void asAtomHandler::addreplace(asAtom& ret, SystemState* sys,asAtom& v1, asAtom 
 		int64_t num1=toInt64(v1);
 		int64_t num2=toInt64(v2);
 		int64_t res = num1+num2;
-		LOG_CALL("addI " << num1 << '+' << num2 <<"="<<res);
+		LOG_CALL("addI replace " << num1 << '+' << num2 <<"="<<res);
 		if (forceint || (res >= -(1<<28) && res < (1<<28)))
 			setInt(ret,sys,res);
 		else if (res >= 0 && res < (1<<29))
@@ -3197,7 +3197,7 @@ void asAtomHandler::addreplace(asAtom& ret, SystemState* sys,asAtom& v1, asAtom 
 	{
 		double num1=toNumber(v1);
 		double num2=toNumber(v2);
-		LOG_CALL("addN " << num1 << '+' << num2<<" "<<toDebugString(v1)<<" "<<toDebugString(v2));
+		LOG_CALL("addN replace " << num1 << '+' << num2<<" "<<toDebugString(v1)<<" "<<toDebugString(v2)<<" "<<forceint);
 		ASObject* o = getObject(ret);
 		if (forceint)
 		{
@@ -3212,7 +3212,7 @@ void asAtomHandler::addreplace(asAtom& ret, SystemState* sys,asAtom& v1, asAtom 
 	{
 		tiny_string sa = toString(v1,sys);
 		sa += toString(v2,sys);
-		LOG_CALL("add " << toString(v1,sys) << '+' << toString(v2,sys));
+		LOG_CALL("add replace " << toString(v1,sys) << '+' << toString(v2,sys));
 		ASATOM_DECREF(ret);
 		if (forceint)
 			setInt(ret,sys,Integer::stringToASInteger(sa.raw_buf(),0));
@@ -3275,7 +3275,7 @@ void asAtomHandler::addreplace(asAtom& ret, SystemState* sys,asAtom& v1, asAtom 
 			{//Convert both to numbers and add
 				number_t num1=AVM1toNumber(val1p,sys->getSwfVersion());
 				number_t num2=AVM1toNumber(val2p,sys->getSwfVersion());
-				LOG_CALL("addN " << num1 << '+' << num2);
+				LOG_CALL("addN replace primitive " << num1 << '+' << num2);
 				ASObject* o = getObject(ret);
 				if (forceint)
 				{

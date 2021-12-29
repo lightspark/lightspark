@@ -840,7 +840,7 @@ private:
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
 			if(!(asAtomHandler::isValid(ret->getter) || asAtomHandler::isValid(ret->var)))
-				ret=NULL;
+				ret=nullptr;
 		}
 		return ret;
 	}

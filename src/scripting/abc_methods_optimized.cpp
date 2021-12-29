@@ -107,7 +107,7 @@ void ABCVm::abc_ifnge_local_local(call_context* context)
 void ABCVm::abc_iftrue_constant(call_context* context)
 {
 	bool cond=asAtomHandler::Boolean_concrete(*context->exec_pos->arg1_constant);
-	LOG_CALL(_("ifTrue_c (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifTrue_c (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -116,7 +116,7 @@ void ABCVm::abc_iftrue_constant(call_context* context)
 void ABCVm::abc_iftrue_local(call_context* context)
 {
 	bool cond=asAtomHandler::Boolean_concrete(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
-	LOG_CALL(_("ifTrue_l (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifTrue_l (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -126,29 +126,33 @@ void ABCVm::abc_iftrue_dup_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	bool cond=asAtomHandler::Boolean_concrete(*instrptr->arg1_constant);
-	LOG_CALL(_("ifTrue_dup_c (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifTrue_dup_c (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
+	{
 		context->exec_pos += context->exec_pos->arg3_int;
+		RUNTIME_STACK_PUSH(context,*instrptr->arg1_constant);
+	}
 	else
 		++(context->exec_pos);
-	RUNTIME_STACK_PUSH(context,*instrptr->arg1_constant);
 }
 void ABCVm::abc_iftrue_dup_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	bool cond=asAtomHandler::Boolean_concrete(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	LOG_CALL(_("ifTrue_dup_l (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifTrue_dup_l (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
+	{
 		context->exec_pos += context->exec_pos->arg3_int;
+		ASATOM_INCREF(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+		RUNTIME_STACK_PUSH(context,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	}
 	else
 		++(context->exec_pos);
-	ASATOM_INCREF(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	RUNTIME_STACK_PUSH(context,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 }
 void ABCVm::abc_iffalse_constant(call_context* context)
 {
 	bool cond=!asAtomHandler::Boolean_concrete(*context->exec_pos->arg1_constant);
-	LOG_CALL(_("ifFalse_c (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifFalse_c (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -157,7 +161,7 @@ void ABCVm::abc_iffalse_constant(call_context* context)
 void ABCVm::abc_iffalse_local(call_context* context)
 {
 	bool cond=!asAtomHandler::Boolean_concrete(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
-	LOG_CALL(_("ifFalse_l (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifFalse_l (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -167,24 +171,28 @@ void ABCVm::abc_iffalse_dup_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	bool cond=!asAtomHandler::Boolean_concrete(*instrptr->arg1_constant);
-	LOG_CALL(_("ifFalse_dup_c (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifFalse_dup_c (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
+	{
 		context->exec_pos += context->exec_pos->arg3_int;
+		RUNTIME_STACK_PUSH(context,*instrptr->arg1_constant);
+	}
 	else
 		++(context->exec_pos);
-	RUNTIME_STACK_PUSH(context,*instrptr->arg1_constant);
 }
 void ABCVm::abc_iffalse_dup_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	bool cond=!asAtomHandler::Boolean_concrete(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	LOG_CALL(_("ifFalse_dup_l (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifFalse_dup_l (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
+	{
 		context->exec_pos += context->exec_pos->arg3_int;
+		ASATOM_INCREF(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+		RUNTIME_STACK_PUSH(context,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	}
 	else
 		++(context->exec_pos);
-	ASATOM_INCREF(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	RUNTIME_STACK_PUSH(context,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 }
 void ABCVm::abc_ifeq_constant_constant(call_context* context)
 {
@@ -759,22 +767,14 @@ void ABCVm::abc_lf32_constant_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "lf32_cl");
-	asAtom ret=asAtomHandler::invalidAtom;
-	loadFloat(context,ret,*instrptr->arg1_constant);
-	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
-	ASATOM_DECREF(oldres);
+	loadFloat(context,CONTEXT_GETLOCAL(context,instrptr->local3.pos),*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_lf32_local_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "lf32_ll");
-	asAtom ret=asAtomHandler::invalidAtom;
-	loadFloat(context,ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
-	ASATOM_DECREF(oldres);
+	loadFloat(context,CONTEXT_GETLOCAL(context,instrptr->local3.pos),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	++(context->exec_pos);
 }
 void ABCVm::abc_lf32_constant_setslotnocoerce(call_context* context)

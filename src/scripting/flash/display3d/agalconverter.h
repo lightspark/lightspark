@@ -12,7 +12,7 @@ using namespace lightspark;
 
 // routines to convert AGAL-Bytecode to GLSL shader language
 // AGAL bytecode format is documented in http://help.adobe.com/en_US/as3/dev/WSd6a006f2eb1dc31e-310b95831324724ec56-8000.html
-// conversion algorithm is taken from https://github.com/openfl/openfl/blob/develop/openfl/_internal/stage3D/AGALConverter.hx (converted to c++)
+// conversion algorithm is taken from https://github.com/openfl/openfl/blob/develop/src/openfl/display3D/_internal/AGALConverter.hx (converted to c++)
 
 tiny_string prefixFromType (RegisterType regType, bool isVertexProgram)
 {
@@ -131,7 +131,23 @@ struct SourceRegister
 		} else {
 			// indirect register
 			char buf[100];
-			sprintf(buf,"%d[ int(%s%d.%c) +%d]",o,prefixFromType (itype, isVertexProgram).raw_buf(),n,'x'+q,offset);
+			char indexComponent = ' ';
+			switch (q)
+			{
+				case 0:
+					indexComponent = 'x';
+					break;
+				case 1:
+					indexComponent = 'y';
+					break;
+				case 2:
+					indexComponent = 'z';
+					break;
+				case 3:
+					indexComponent = 'w';
+					break;
+			}
+			sprintf(buf,"%d[ int(%s%d.%c) +%d]",o,prefixFromType (itype, isVertexProgram).raw_buf(),n,indexComponent,offset);
 			str += buf;
 		}
 		if (emitSwizzle && swizzle != "") {
@@ -201,25 +217,10 @@ public:
 	}
 	tiny_string toGLSL (bool tempRegistersOnly)
 	{
-		std::sort(mEntries.begin(),mEntries.end(), [](const RegisterMapEntry& a, const RegisterMapEntry& b) {
-			return a.number < b.number;
-		});
 		RegisterMapEntry entry;
 
-		for (uint32_t i = 0; i < mEntries.size(); i++)
-		{
-			entry = mEntries[i];
-			if (entry.usage == RegisterUsage::VECTOR_4_ARRAY) {
-				// find how many registers based on the next entry.
-				if (i < mEntries.size() - 1) {
-					mEntries[i].arraycount = mEntries[i + 1].number - entry.number;
-				} else {
-					mEntries[i].arraycount = 128;
-				}
-			}
-		}
 		std::sort(mEntries.begin(),mEntries.end(), [](const RegisterMapEntry& a, const RegisterMapEntry& b) {
-			return a.type < b.type;
+			return a.type < b.type || (a.type==b.type && a.number<b.number);
 		});
 		tiny_string sb;
 		for (uint32_t i = 0; i < mEntries.size(); i++)
@@ -284,7 +285,7 @@ public:
 					LOG(LOG_ERROR, "AGAL:Missing switch patten: RegisterUsage::UNUSED");
 					break;
 				case RegisterUsage::SAMPLER_2D_ALPHA:
-					LOG(LOG_ERROR, "AGAL:Missing switch patten: RegisterUsage::SAMPLER_2D_ALPHA");
+				case RegisterUsage::SAMPLER_CUBE_ALPHA:
 					break;
 			}
 			if (entry.usage == RegisterUsage::SAMPLER_2D_ALPHA)
@@ -297,12 +298,35 @@ public:
 				sb += "sampler2D ";
 				sb += entry.name + "_alpha";
 				sb += ";\n";
-			} else if (entry.usage == RegisterUsage::VECTOR_4_ARRAY) {
-				char buf[100];
-				sprintf(buf,"[%d]",entry.arraycount);
-				sb += entry.name + buf; // this is an array of "count" elements.
+				
+				sb += "uniform ";
+				sb += "bool ";
+				sb += entry.name + "_alphaEnabled";
 				sb += ";\n";
-			} else {
+			}
+			else if (entry.usage == RegisterUsage::SAMPLER_CUBE_ALPHA)
+			{
+				sb += "samplerCube ";
+				sb += entry.name;
+				sb += ";\n";
+				
+				sb += "uniform ";
+				sb += "samplerCube ";
+				sb += entry.name + "_alpha";
+				sb += ";\n";
+				
+				sb += "uniform ";
+				sb += "bool ";
+				sb += entry.name + "_alphaEnabled";
+				sb += ";\n";
+			}
+			else if (entry.usage == RegisterUsage::VECTOR_4_ARRAY)
+			{
+				sb += entry.name + "[128]"; // this is an array of "count" elements.
+				sb += ";\n";
+			}
+			else
+			{
 				sb += entry.name;
 				sb += ";\n";
 			}
@@ -633,14 +657,49 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 				switch (sampler.d)
 				{
 					case 0: // 2d texture
-						sr1.sourceMask = 0x3;
-						map.addSaR (sampler, RegisterUsage::SAMPLER_2D);
-						sb += dr.toGLSL () + " = texture2D(" + sampler.toGLSL () + ", " + sr1.toGLSL () + "); // tex";
+						if (sampler.t == 2)
+						{ // dxt5, sampler alpha
+							sr1.sourceMask = 0x3;
+							map.addSaR(sampler, RegisterUsage::SAMPLER_2D_ALPHA);
+							sb += "if (";
+							sb += sampler.toGLSL() + "_alphaEnabled) {\n";
+							sb += "\t\t";
+							sb += dr.toGLSL() + " = vec4(texture2D(" + sampler.toGLSL() + ", " + sr1.toGLSL() + ").xyz, texture2D("
+								+ sampler.toGLSL() + "_alpha, " + sr1.toGLSL() + ").x); // tex + alpha\n";
+							sb += "\t} else {\n";
+							sb += "\t\t";
+							sb += dr.toGLSL() + " = texture2D(" + sampler.toGLSL() + ", " + sr1.toGLSL() + "); // tex\n";
+							sb += "\t}";
+						}
+						else
+						{
+							sr1.sourceMask = 0x3;
+							map.addSaR (sampler, RegisterUsage::SAMPLER_2D);
+							sb += dr.toGLSL () + " = texture2D(" + sampler.toGLSL () + ", " + sr1.toGLSL () + "); // tex";
+						}
 						break;
 					case 1: // cube texture
-						sr1.sourceMask = 0x7;
-						sb += dr.toGLSL () + " = textureCube(" + sampler.toGLSL () + ", " + sr1.toGLSL () + "); // tex";
-						map.addSaR (sampler, RegisterUsage::SAMPLER_CUBE);
+						if (sampler.t == 2)
+						{ // dxt5, sampler alpha
+
+							sr1.sourceMask = 0x7;
+							map.addSaR(sampler, RegisterUsage::SAMPLER_CUBE_ALPHA);
+							sb += "if (";
+							sb += sampler.toGLSL() + "_alphaEnabled) {\n";
+							sb += "\t\t";
+							sb += dr.toGLSL() + " = vec4(textureCube(" + sampler.toGLSL() + ", " + sr1.toGLSL() + ").xyz, textureCube("
+								+ sampler.toGLSL() + "_alpha, " + sr1.toGLSL() + ").x); // tex + alpha\n";
+							sb += "\t} else {\n";
+							sb += "\t\t";
+							sb += dr.toGLSL() + " = textureCube(" + sampler.toGLSL() + ", " + sr1.toGLSL() + "); // tex";
+							sb += "\t}";
+						}
+						else
+						{
+							sr1.sourceMask = 0x7;
+							sb += dr.toGLSL () + " = textureCube(" + sampler.toGLSL () + ", " + sr1.toGLSL () + "); // tex";
+							map.addSaR (sampler, RegisterUsage::SAMPLER_CUBE);
+						}
 						break;
 				}
 				//sb.AppendFormat("{0} = vec4(0,1,0,1);", dr.toGLSL () );

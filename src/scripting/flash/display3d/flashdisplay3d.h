@@ -42,6 +42,7 @@ enum RegisterUsage {
 	SAMPLER_2D,
 	SAMPLER_2D_ALPHA,
 	SAMPLER_CUBE,
+	SAMPLER_CUBE_ALPHA,
 	VECTOR_4_ARRAY
 };
 
@@ -69,8 +70,25 @@ struct RegisterMapEntry
 	uint32_t number;
 	RegisterType type;
 	RegisterUsage usage;
-	uint32_t arraycount;
 	RegisterMapEntry():program_register_id(UINT32_MAX) {}
+	RegisterMapEntry(const RegisterMapEntry& r)
+	{
+		program_register_id = r.program_register_id;
+		name = r.name.raw_buf();
+		number = r.number;
+		type = r.type;
+		usage = r.usage;
+	}
+	RegisterMapEntry& operator=(const RegisterMapEntry& r)
+	{
+		program_register_id = r.program_register_id;
+		name = r.name.raw_buf();
+		number = r.number;
+		type = r.type;
+		usage = r.usage;
+		return *this;
+	}
+	
 };
 
 namespace lightspark
@@ -92,7 +110,7 @@ struct renderaction
 	uint32_t udata3;
 	float *fdata;
 	_NR<ASObject> dataobject;
-	renderaction():udata1(0),udata2(0),udata3(0),fdata(NULL) {}
+	renderaction():udata1(0),udata2(0),udata3(0),fdata(nullptr) {}
 };
 struct constantregister
 {

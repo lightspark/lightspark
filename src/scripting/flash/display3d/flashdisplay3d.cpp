@@ -478,8 +478,6 @@ void Context3D::setRegisters(EngineData* engineData,std::vector<RegisterMapEntry
 				}
 				if (it->program_register_id != UINT32_MAX)
 					engineData->exec_glUniform4fv(it->program_register_id,1, data);
-				else
-					LOG(LOG_ERROR,"setRegisters vector no location:"<<it->number);
 				break;
 			}
 			case RegisterUsage::MATRIX_4_4:
@@ -501,12 +499,35 @@ void Context3D::setRegisters(EngineData* engineData,std::vector<RegisterMapEntry
 				}
 				if (it->program_register_id != UINT32_MAX)
 					engineData->exec_glUniformMatrix4fv(it->program_register_id,1,false, data2);
-				else
-					LOG(LOG_ERROR,"setRegisters no location:"<<it->number);
+				break;
+			}
+			case RegisterUsage::VECTOR_4_ARRAY:
+			{
+				char buf[100];
+				if (it->program_register_id == UINT32_MAX)
+				{
+					sprintf(buf,"%cc%d",isVertex?'v':'f',it->number);
+					it->program_register_id = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
+				}
+				// TODO currently the array is filled with every constant from the current number to the end of the constant list
+				// find a way to determine the size of the array
+				uint32_t regcount = CONTEXT3D_PROGRAM_REGISTERS-it->number;
+				float* data2 = new float[4*regcount];
+				for (uint32_t i =0; i < regcount; i++)
+				{
+					float* data = constants[it->number+i].data;
+					data2[i*4] = data[0];
+					data2[i*4+1] = data[1];
+					data2[i*4+2] = data[2];
+					data2[i*4+3] = data[3];
+				}
+				if (it->program_register_id != UINT32_MAX)
+					engineData->exec_glUniform4fv(it->program_register_id,regcount, data2);
+				delete[] data2;
 				break;
 			}
 			default:
-				LOG(LOG_NOT_IMPLEMENTED,"Context3D.setRegisters: RegisterUsage:"<<(uint32_t)it->usage<<" "<<it->number);
+				LOG(LOG_NOT_IMPLEMENTED,"Context3D.setRegisters: RegisterUsage:"<<(uint32_t)it->usage<<" "<<it->number<<" "<<isVertex<<" "<<currentprogram->gpu_program);
 				break;
 		}
 		it++;

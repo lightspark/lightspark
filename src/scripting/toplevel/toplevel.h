@@ -278,6 +278,10 @@ public:
 	{
 		overriddenmethods.insert(nameID);
 	}
+	// Class_base needs special handling for dynamic variables in background workers
+	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE) override;
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
 };
 
 class Template_base : public ASObject, public Type
@@ -337,19 +341,23 @@ class Prototype
 {
 protected:
 	ASObject* obj;
+	ASObject* workerDynamicClassVars; // this contains dynamically added properties to the class this prototype belongs to if it is added in a background worker
 	ASObject* originalPrototypeVars;
 	void copyOriginalValues(Prototype* target);
 public:
-	Prototype():obj(nullptr),originalPrototypeVars(nullptr),isSealed(false) {}
+	Prototype():obj(nullptr),workerDynamicClassVars(nullptr),originalPrototypeVars(nullptr),isSealed(false) {}
 	virtual ~Prototype()
 	{
 		if (originalPrototypeVars)
 			originalPrototypeVars->decRef();
+		if (workerDynamicClassVars)
+			workerDynamicClassVars->decRef();
 	}
 	_NR<Prototype> prevPrototype;
 	inline void incRef() { obj->incRef(); }
 	inline void decRef() { obj->decRef(); }
 	inline ASObject* getObj() {return obj; }
+	inline ASObject* getWorkerDynamicClassVars() const {return workerDynamicClassVars; }
 	bool isSealed;
 	/*
 	 * This method is actually forwarded to the object. It's here as a shorthand.

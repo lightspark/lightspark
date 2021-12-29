@@ -1219,7 +1219,7 @@ Class_base::~Class_base()
 
 void Class_base::_getter_constructorprop(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen)
 {
-	Class_base* th = NULL;
+	Class_base* th = nullptr;
 	if(asAtomHandler::is<Class_base>(obj))
 		th = asAtomHandler::as<Class_base>(obj);
 	else
@@ -1352,7 +1352,7 @@ void Class_base::finalize()
 	use_protected = false;
 }
 
-Template_base::Template_base(QName name) : ASObject((Class_base*)(NULL)),template_name(name)
+Template_base::Template_base(QName name) : ASObject((Class_base*)(nullptr)),template_name(name)
 {
 	type = T_TEMPLATE;
 }
@@ -1379,9 +1379,9 @@ Class_object* Class_object::getClass(SystemState *sys)
 	//if not we register ourselves (see also Class<T>::getClass)
 	//Class object position in the map is hardwired to 0
 	uint32_t classId=0;
-	Class_object* ret=NULL;
+	Class_object* ret=nullptr;
 	Class_base** retAddr=&sys->builtinClasses[classId];
-	if(*retAddr==NULL)
+	if(*retAddr==nullptr)
 	{
 		//Create the class
 		ret=new (sys->unaccountedMemory) Class_object();
@@ -2009,6 +2009,41 @@ void Class_base::removeAllDeclaredProperties()
 {
 	Variables.removeAllDeclaredProperties();
 	borrowedVariables.removeAllDeclaredProperties();
+}
+
+multiname* Class_base::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+{
+	Prototype* pr = this->getPrototype();
+	ASObject* dynvars =pr ? pr->getWorkerDynamicClassVars() : nullptr;
+	if (dynvars)
+	{
+		if (ASObject::hasPropertyByMultiname(name,false,false))
+			return setVariableByMultiname_intern(name,o,allowConst,this->getClass(),alreadyset);
+		else 
+			return dynvars->setVariableByMultiname(name,o,allowConst,alreadyset);
+	}
+	return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset);
+}
+
+GET_VARIABLE_RESULT Class_base::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+{
+	Prototype* pr = this->getPrototype();
+	ASObject* dynvars =pr ? pr->getWorkerDynamicClassVars() : nullptr;
+	if (dynvars == nullptr)
+		return ASObject::getVariableByMultiname(ret,name,opt);
+	GET_VARIABLE_RESULT res = dynvars->getVariableByMultiname(ret,name,opt);
+	if (asAtomHandler::isValid(ret))
+		return res;
+	return ASObject::getVariableByMultiname(ret,name,opt);
+}
+
+bool Class_base::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
+{
+	Prototype* pr = this->getPrototype();
+	ASObject* dynvars =pr ? pr->getWorkerDynamicClassVars() : nullptr;
+	if (dynvars && considerDynamic && dynvars->hasPropertyByMultiname(name,considerDynamic, false))
+		return true;
+	return ASObject::hasPropertyByMultiname(name,considerDynamic, considerPrototype);
 }
 
 ASQName::ASQName(Class_base* c):ASObject(c,T_QNAME),uri_is_null(false),uri(0),local_name(0)
@@ -3399,4 +3434,5 @@ void Prototype::copyOriginalValues(Prototype* target)
 	if (this->prevPrototype)
 		this->prevPrototype->copyOriginalValues(target);
 	originalPrototypeVars->copyValues(target->getObj());
+	target->workerDynamicClassVars = new_asobject(target->getObj()->getSystemState());
 }

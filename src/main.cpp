@@ -502,6 +502,8 @@ int main(int argc, char* argv[])
 	sharedobjectdatapath += filedatapath;
 
 	sys->setParamsAndEngine(new StandaloneEngineData(sharedobjectdatapath), true);
+	// on standalone local storage is always allowed
+	sys->getEngineData()->setLocalStorageAllowedMarker(true);
 
 	sys->securityManager->setSandboxType(sandboxType);
 	if(sandboxType == SecurityManager::REMOTE)

@@ -346,7 +346,7 @@ void EngineData::setLocalStorageAllowedMarker(bool allowed)
 	p += "localStorageAllowed";
 	if (allowed)
 	{
-		if (!g_file_test(subdir.raw_buf(),G_FILE_TEST_EXISTS))
+		if (!g_file_test(p.c_str(),G_FILE_TEST_EXISTS))
 			g_creat(p.c_str(),0600);
 	}
 	else

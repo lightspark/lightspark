@@ -1949,7 +1949,7 @@ void RootMovieClip::constructionComplete()
 {
 	if(isConstructed())
 		return;
-	if (!isVmThread())
+	if (!isVmThread() && !getWorker())
 	{
 		this->incRef();
 		getVm(getSystemState())->prependEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this))));

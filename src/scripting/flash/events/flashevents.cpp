@@ -630,7 +630,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		//Search if any listener is already registered for the event
 		list<listener>& listeners=th->handlers[eventName];
 		ASATOM_INCREF(args[1]);
-		const listener newListener(args[1], priority, useCapture, th->worker);
+		const listener newListener(args[1], priority, useCapture, th->worker ? th->worker : getWorker());
 		//Ordered insertion
 		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
 		// check if a listener that matches type, use_capture and function is already registered
@@ -673,12 +673,12 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 		map<tiny_string, list<listener> >::iterator h=th->handlers.find(eventName);
 		if(h==th->handlers.end())
 		{
-			LOG(LOG_CALLS,_("Event not found"));
+			LOG(LOG_CALLS,"Event not found");
 			return;
 		}
 
-		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),
-											make_pair(args[1],useCapture));
+		const listener ls(args[1],0,useCapture,getWorker());
+		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),ls);
 		if(it!=h->second.end())
 		{
 			ASATOM_DECREF(it->f);
@@ -724,7 +724,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 	{
 		//Object must be cloned, cloning is implemented with the clone AS method
 		asAtom cloned=asAtomHandler::invalidAtom;
-		e->executeASMethod(cloned,"clone", {""}, NULL, 0);
+		e->executeASMethod(cloned,"clone", {""}, nullptr, 0);
 		//Clone always exists since it's implemented in Event itself
 		if(!asAtomHandler::getObject(cloned) || !asAtomHandler::getObject(cloned)->is<Event>())
 		{
@@ -792,6 +792,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 		ASATOM_DECREF(ret);
 		//And now no more, f can also be deleted
 		ASATOM_DECREF(tmpListener[i].f);
+		afterExecution(e);
 	}
 	e->check();
 }

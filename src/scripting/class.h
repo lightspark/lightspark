@@ -190,7 +190,7 @@ public:
 		Class<T>* c=static_cast<Class<T>*>(sys->builtinClasses[ClassName<T>::id]);
 		if (!c)
 			c = getClass(sys);
-		T* ret = c->freelist[0].getObjectFromFreeList()->template as<T>();
+		T* ret = sys->singleworker || !getWorker() ? c->freelist[0].getObjectFromFreeList()->template as<T>() : nullptr;
 		if (!ret)
 		{
 			ret=new (c->memoryAccount) T(c);

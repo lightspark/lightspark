@@ -947,7 +947,7 @@ void ABCContext::dumpProfilingData(ostream& f) const
  * nextNamespaceBase is set to 2 since 0 is the empty namespace and 1 is the AS3 namespace
  */
 ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(true),shuttingdown(false),
-	events_queue(reporter_allocator<eventType>(m)),idleevents_queue(reporter_allocator<eventType>(m)),nextNamespaceBase(2),currentCallContext(NULL),
+	events_queue(reporter_allocator<eventType>(m)),idleevents_queue(reporter_allocator<eventType>(m)),nextNamespaceBase(2),currentCallContext(nullptr),
 	vmDataMemory(m),cur_recursion(0)
 {
 	limits.max_recursion = 256;
@@ -1173,7 +1173,6 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	/* This must even be called if stop*Propagation has been called */
 	if(!event->defaultPrevented)
 		dispatcher->defaultEventBehavior(event);
-	dispatcher->afterExecution(event);
 	
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
@@ -1841,7 +1840,7 @@ int ABCVm::Run(void* d)
 			}
 			else if(firstMissingEvents)
 			{
-				LOG(LOG_INFO,th->events_queue.size() << _(" events missing before exit"));
+				LOG(LOG_INFO,th->events_queue.size() << " events missing before exit");
 				firstMissingEvents = false;
 			}
 		}

@@ -52,7 +52,7 @@ bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 	{
 		frameWidth=w;
 		frameHeight=h;
-		LOG(LOG_INFO,_("VIDEO DEC: Video frame size ") << frameWidth << 'x' << frameHeight);
+		LOG(LOG_INFO,"VIDEO DEC: Video frame size " << frameWidth << 'x' << frameHeight);
 		resizeGLBuffers=true;
 		videoTexture=getSys()->getRenderThread()->allocateTexture(frameWidth, frameHeight, true);
 		return true;
@@ -672,6 +672,7 @@ uint32_t AudioDecoder::copyFrame(int16_t* dest, uint32_t len)
 		samplesBuffer.front().current+=frameSize/2;
 		samplesBuffer.front().time+=frameSize/getBytesPerMSec();
 	}
+	samplesconsumed(frameSize/2);
 	return frameSize;
 }
 
@@ -902,7 +903,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 {
 	if(codecContext->sample_rate!=0)
 	{
-		LOG(LOG_INFO,_("AUDIO DEC: Audio sample rate ") << codecContext->sample_rate);
+		LOG(LOG_INFO,"AUDIO DEC: Audio sample rate " << codecContext->sample_rate);
 		sampleRate=codecContext->sample_rate;
 	}
 	else
@@ -910,7 +911,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 
 	if(codecContext->channels!=0)
 	{
-		LOG(LOG_INFO, _("AUDIO DEC: Audio channels ") << codecContext->channels);
+		LOG(LOG_INFO, "AUDIO DEC: Audio channels " << codecContext->channels);
 		channelCount=codecContext->channels;
 	}
 	else
@@ -919,7 +920,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 	if(initialTime==(uint32_t)-1 && !samplesBuffer.isEmpty())
 	{
 		initialTime=getFrontTime();
-		LOG(LOG_INFO,_("AUDIO DEC: Initial timestamp ") << initialTime);
+		LOG(LOG_INFO,"AUDIO DEC: Initial timestamp " << initialTime);
 	}
 	else
 		return false;
@@ -1128,7 +1129,7 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 	if(ret==-1)
 	{
 		//A decoding error occurred, create an empty sample buffer
-		LOG(LOG_ERROR,_("Malformed audio packet"));
+		LOG(LOG_ERROR,"Malformed audio packet");
 		curTail.len=0;
 		curTail.current=curTail.samples;
 		curTail.time=time;
@@ -1353,7 +1354,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 	if(ret<0)
 		return;
 
-	LOG_CALL(_("FFMpeg found ") << formatCtx->nb_streams << _(" streams"));
+	LOG_CALL("FFMpeg found " << formatCtx->nb_streams << " streams");
 	for(uint32_t i=0;i<formatCtx->nb_streams;i++)
 	{
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
@@ -1428,8 +1429,8 @@ FFMpegStreamDecoder::~FFMpegStreamDecoder()
 	//Delete the decoders before deleting the input stream to avoid a crash in ffmpeg code
 	delete audioDecoder;
 	delete videoDecoder;
-	audioDecoder=NULL;
-	videoDecoder=NULL;
+	audioDecoder=nullptr;
+	videoDecoder=nullptr;
 	if(formatCtx)
 	{
 #ifdef HAVE_AVIO_ALLOC_CONTEXT
@@ -1507,6 +1508,11 @@ int FFMpegStreamDecoder::avioReadPacket(void* t, uint8_t* buf, int buf_size)
 }
 #endif //ENABLE_LIBAVCODEC
 
+void SampleDataAudioDecoder::samplesconsumed(uint32_t samples)
+{
+	bufferedsamples -= samples;
+}
+
 uint32_t SampleDataAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t time)
 {
 	if (status == PREINIT)
@@ -1527,5 +1533,6 @@ uint32_t SampleDataAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint
 	curTail.current=curTail.samples;
 	curTail.time=time;
 	samplesBuffer.commitLast();
+	bufferedsamples += samplecount;
 	return samplecount*2;
 }

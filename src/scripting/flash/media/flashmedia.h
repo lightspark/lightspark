@@ -51,6 +51,7 @@ protected:
 	int32_t rawDataStartPosition;
 	streambuf* rawDataStreamBuf;
 	istream* rawDataStream;
+	number_t buffertime;
 	// If container is true, audio format is parsed from
 	// soundData. If container is false, soundData is raw samples
 	// and format is defined by format member.
@@ -77,6 +78,7 @@ public:
 	ASFUNCTION_ATOM(loadCompressedDataFromByteArray);
 	void afterExecution(_R<Event> e);
 	void requestSampleDataEvent(size_t position);
+	number_t getBufferTime() const { return buffertime; }
 };
 
 class SoundTransform: public ASObject
@@ -193,13 +195,12 @@ public:
 };
 class SoundLoaderContext : public ASObject
 {
-private:
-	ASPROPERTY_GETTER_SETTER(number_t,bufferTime);
-	ASPROPERTY_GETTER_SETTER(bool,checkPolicyFile);
 public:
-	SoundLoaderContext(Class_base* c):ASObject(c){}
+	SoundLoaderContext(Class_base* c):ASObject(c),bufferTime(1000),checkPolicyFile(false){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
+	ASPROPERTY_GETTER_SETTER(number_t,bufferTime);
+	ASPROPERTY_GETTER_SETTER(bool,checkPolicyFile);
 };
 
 class StageVideo : public EventDispatcher

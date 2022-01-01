@@ -348,14 +348,14 @@ _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 }
 
 Sound::Sound(Class_base* c)
-	:EventDispatcher(c),downloader(nullptr),soundData(nullptr),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),
+	:EventDispatcher(c),downloader(nullptr),soundData(nullptr),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),buffertime(1000),
 	 container(true),sampledataprocessed(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(-1)
 {
 	subtype=SUBTYPE_SOUND;
 }
 
 Sound::Sound(Class_base* c, _R<StreamCache> data, AudioFormat _format, number_t duration_in_ms)
-	:EventDispatcher(c),downloader(nullptr),soundData(data),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),
+	:EventDispatcher(c),downloader(nullptr),soundData(data),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),buffertime(1000),
 	 container(false),sampledataprocessed(true),format(_format),
 	 bytesLoaded(soundData->getReceivedLength()),
 	 bytesTotal(soundData->getReceivedLength()),length(duration_in_ms)
@@ -410,6 +410,8 @@ ASFUNCTIONBODY_ATOM(Sound,load)
 		th->url = urlRequest->getRequestURL();
 		urlRequest->getPostData(th->postData);
 	}
+	if (!context.isNull())
+		th->buffertime = context->bufferTime;
 	_R<StreamCache> c(_MR(new MemoryStreamCache(th->getSystemState())));
 	th->soundData = c;
 
@@ -607,6 +609,8 @@ ASFUNCTIONBODY_ATOM(Sound,loadCompressedDataFromByteArray)
 		delete[] buf;
 	}
 	th->soundData->markFinished();
+	th->container=false;
+	th->format.codec = LS_AUDIO_CODEC::MP3;
 }
 void Sound::afterExecution(_R<Event> e)
 {
@@ -713,10 +717,6 @@ void SoundLoaderContext::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 {
 	SoundLoaderContext* th=asAtomHandler::as<SoundLoaderContext>(obj);
-	
-	assert_and_throw(argslen<=2);
-	th->bufferTime = 1000;
-	th->checkPolicyFile = false;
 	ARG_UNPACK_ATOM(th->bufferTime,1000)(th->checkPolicyFile,false);
 }
 
@@ -753,18 +753,22 @@ void SoundChannel::appendSampleData(ByteArray* data)
 	if (!isPlaying() && !isStarting())
 		return;
 	uint32_t len = data->getLength();
-	if (len)
+	uint32_t toprocess=len;
+	while (toprocess)
 	{
-		audioDecoder->decodeData(data->getBufferNoCheck(),len,streamposition/(44100*2/1000));
-		streamposition+=len/(sizeof(float)*2);
-		resume();
+		uint32_t samples = audioDecoder->decodeData(data->getBufferNoCheck(),toprocess,streamposition/(44100*2/1000));
+		streamposition+=samples;
+		if (toprocess > samples*sizeof(float))
+			toprocess -= samples*sizeof(float);
+		else
+			toprocess=0;
 	}
+	resume();
 	if (len < 2048*sizeof(float))
 	{
 		// less than 2048 samples, stop requesting data
 		streamdatafinished=true;
 	}
-	
 }
 
 void SoundChannel::play(number_t starttime)
@@ -892,7 +896,6 @@ void SoundChannel::execute()
 {
 	// ensure audio manager is initialized
 	getSystemState()->waitInitialized();
-	RELEASE_WRITE(starting,false);
 	while (true)
 	{
 		mutex.lock();
@@ -946,6 +949,7 @@ void SoundChannel::playStream()
 			if (audioStream)
 				audioStream->setPlayedTime(this->startTime);
 		}
+		RELEASE_WRITE(starting,false);
 		while(!ACQUIRE_READ(stopped))
 		{
 			bool decodingSuccess=streamDecoder->decodeNextFrame();
@@ -1016,28 +1020,36 @@ void SoundChannel::playStreamFromSamples()
 	try
 	{
 		audioDecoder=new SampleDataAudioDecoder();
+		bool bufferfilled=false;
 		while(!ACQUIRE_READ(stopped))
 		{
-			if (!streamdatafinished && sampleproducer && audioDecoder->getFilled()<150)
+			if (!streamdatafinished && sampleproducer && audioDecoder->getBufferedSamples()< sampleproducer->getBufferTime()*44100.0*2.0/1000.0)
 			{
 				sampleproducer->requestSampleDataEvent(streamposition);
 			}
-			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
-				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,startTime,soundTransform ? soundTransform->volume : 1.0);
-
-			if(audioStream)
+			else
 			{
-				//TODO: use soundTransform->pan
-				if(soundTransform && soundTransform->volume != oldVolume)
-				{
-					audioStream->setVolume(soundTransform->volume);
-					oldVolume = soundTransform->volume;
-				}
-				checkEnvelope();
-				if (streamdatafinished && !audioDecoder->hasDecodedFrames())
-					threadAbort();
+				bufferfilled=true;
+				RELEASE_WRITE(starting,false);
 			}
-			
+			if (bufferfilled)
+			{
+				if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
+					audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,startTime,soundTransform ? soundTransform->volume : 1.0);
+				
+				if(audioStream)
+				{
+					//TODO: use soundTransform->pan
+					if(soundTransform && soundTransform->volume != oldVolume)
+					{
+						audioStream->setVolume(soundTransform->volume);
+						oldVolume = soundTransform->volume;
+					}
+					checkEnvelope();
+					if (streamdatafinished && !audioDecoder->hasDecodedFrames())
+						threadAbort();
+				}
+			}
 			if(threadAborting)
 				throw JobTerminationException();
 		}

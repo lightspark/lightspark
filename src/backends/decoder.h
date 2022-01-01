@@ -289,6 +289,7 @@ public:
 	uint32_t sampleRate;
 protected:
 	BlockingCircularQueue<FrameSamples,150> samplesBuffer;
+	virtual void samplesconsumed(uint32_t samples) {}
 public:
 	/**
 	  	The AudioDecoder contains audio buffers that must be aligned to 16 bytes, so we redefine the allocator
@@ -299,6 +300,7 @@ public:
 	virtual ~AudioDecoder(){}
 	virtual void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen)=0;
 	virtual uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time)=0;
+	virtual int32_t getBufferedSamples() const { return -1;}
 	bool hasDecodedFrames() const
 	{
 		return !samplesBuffer.isEmpty();
@@ -357,15 +359,22 @@ public:
 // this is the AudioDecoder for streaming Sounds by SampleDataEvent
 class SampleDataAudioDecoder: public AudioDecoder
 {
+private:
+	ATOMIC_INT32(bufferedsamples);
+protected:
+	void samplesconsumed(uint32_t samples) override;
 public:
 	SampleDataAudioDecoder()
 	{
 		sampleRate=44100;
 		channelCount=2;
+		bufferedsamples=0;
 	}
 	void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen) override {}
 	// the data is always expected to be floats
 	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time) override;
+	int32_t getBufferedSamples() const override { return  bufferedsamples; }
+	
 };
 
 

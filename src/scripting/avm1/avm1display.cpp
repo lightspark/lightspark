@@ -37,6 +37,12 @@ void AVM1MovieClip::afterConstruction()
 	}
 }
 
+bool AVM1MovieClip::destruct()
+{
+	avm1loader.reset();
+	return MovieClip::destruct();
+}
+
 void AVM1MovieClip::sinit(Class_base* c)
 {
 	MovieClip::sinit(c);
@@ -96,6 +102,7 @@ void AVM1Shape::sinit(Class_base* c)
 void AVM1SimpleButton::sinit(Class_base* c)
 {
 	SimpleButton::sinit(c);
+	c->isSealed = false;
 	DisplayObject::AVM1SetupMethods(c);
 }
 
@@ -344,6 +351,14 @@ bool AVM1MovieClipLoader::destruct()
 	listeners.clear();
 	jobs.clear();
 	return Loader::destruct();
+}
+
+void AVM1MovieClipLoader::load(const tiny_string& url, const tiny_string& method, AVM1MovieClip* target)
+{
+	URLRequest* r = Class<URLRequest>::getInstanceS(getSystemState(),url,method);
+	target->incRef();
+	avm1target = _MR(target);
+	loadIntern(r,nullptr);
 }
 
 void AVM1Color::sinit(Class_base* c)

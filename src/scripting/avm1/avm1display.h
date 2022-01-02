@@ -30,7 +30,7 @@
 
 namespace lightspark
 {
-
+class AVM1MovieClipLoader;
 class AVM1MovieClip: public MovieClip
 {
 public:
@@ -39,7 +39,9 @@ public:
 	{
 		name=nameID;
 	}
-	void afterConstruction();
+	_NR<AVM1MovieClipLoader> avm1loader;
+	void afterConstruction() override;
+	bool destruct() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(startDrag);
 	ASFUNCTION_ATOM(stopDrag);
@@ -92,6 +94,7 @@ public:
 	ASFUNCTION_ATOM(removeListener);
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 	bool destruct() override;
+	void load(const tiny_string& url, const tiny_string& method, AVM1MovieClip* target);
 };
 
 class AVM1Color: public ASObject

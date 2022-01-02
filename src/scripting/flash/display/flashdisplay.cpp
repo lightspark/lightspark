@@ -481,7 +481,7 @@ void LoaderThread::execute()
 
 	// Delete the bytes container (cache reader or bytes_buf)
 	delete sbuf;
-	sbuf = NULL;
+	sbuf = nullptr;
 	if (source==URL) {
 		//Acquire the lock to ensure consistency in threadAbort
 		Locker l(downloaderLock);
@@ -2401,11 +2401,14 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1getSWFVersion)
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 {
-//	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
 	tiny_string url;
 	tiny_string method;
 	ARG_UNPACK_ATOM(url,"")(method,"GET");
-	LOG(LOG_NOT_IMPLEMENTED,"MovieClip.loadMovie not implemented "<<url<<" "<<method);
+	
+	AVM1MovieClipLoader* ld = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(sys);
+	th->avm1loader = _MR(ld);
+	ld->load(url,method,th);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)
 {

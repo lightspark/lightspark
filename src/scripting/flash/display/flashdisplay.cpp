@@ -5782,10 +5782,10 @@ void Stage3D::sinit(Class_base *c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("requestContext3D","",Class<IFunction>::getFunction(c->getSystemState(),requestContext3D),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("requestContext3DMatchingProfiles","",Class<IFunction>::getFunction(c->getSystemState(),requestContext3DMatchingProfiles),NORMAL_METHOD,true);
-	REGISTER_GETTER_SETTER(c,x);
-	REGISTER_GETTER_SETTER(c,y);
-	REGISTER_GETTER_SETTER(c,visible);
-	REGISTER_GETTER(c,context3D);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,x,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,y,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,visible,Boolean);
+	REGISTER_GETTER_RESULTTYPE(c,context3D,Context3D);
 }
 ASFUNCTIONBODY_GETTER_SETTER(Stage3D,x);
 ASFUNCTIONBODY_GETTER_SETTER(Stage3D,y);

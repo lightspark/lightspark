@@ -631,7 +631,7 @@ abc_function ABCVm::abcfunctions[]={
 	abc_not_local_localresult,
 	abc_iftrue_dup_constant,// 0x1dc ABC_OP_OPTIMZED_IFTRUE_DUP
 	abc_iftrue_dup_local,
-	abc_iffalse_dup_constant,// 0x1de ABC_OP_OPTIMZED_IFFALSE_FALSE
+	abc_iffalse_dup_constant,// 0x1de ABC_OP_OPTIMZED_IFFALSE_DUP
 	abc_iffalse_dup_local,
 	abc_callpropertyStaticName_constant,// 0x1e0 ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_NOARGS
 	abc_callpropertyStaticName_local,
@@ -3984,9 +3984,22 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									&& !function->inClass->as<Class_inherit>()->hasoverriddenmethod(name)
 									&& v->slotid)
 								{
-									// convert to getslot on local[0]
-									setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,false,ABC_OP_OPTIMZED_GETSLOT_SETSLOT);
-									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint =v->slotid-1;
+									asAtom o = asAtomHandler::invalidAtom;
+									cls->getInstance(o,false,nullptr,0);
+									cls->setupDeclaredTraits(asAtomHandler::getObject(o),false);
+									variable* v1 = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr);
+									if (!asAtomHandler::isPrimitive(o) && v1 && v1->slotid)
+									{
+										// convert to getslot on local[0]
+										setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,false,ABC_OP_OPTIMZED_GETSLOT_SETSLOT);
+										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint =v1->slotid-1;
+									}
+									else
+									{
+										// convert to getprop on local[0]
+										setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,0x66,code,true, false,resulttype,p,true,false,false,false);
+										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
+									}
 								}
 								else
 								{
@@ -4790,7 +4803,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									if (is_iftruefalse)
 									{
 										if (state.jumptargets.find(pos) != state.jumptargets.end())
+										{
+											is_iftruefalse=false;
 											break;
+										}
 										pos++;
 										handled = true;
 									}
@@ -4802,6 +4818,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						}
 						if (is_iftruefalse)
 						{
+							// remove used operand
+							auto it = state.operandlist.end();
+							(--it)->removeArg(state);
+							state.operandlist.pop_back();
+
 							state.canlocalinitialize.clear();
 							state.preloadedcode.push_back(opcode_optimized);
 							state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();

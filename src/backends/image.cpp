@@ -34,7 +34,7 @@ namespace lightspark
 
 struct istream_source_mgr : public jpeg_source_mgr
 {
-	istream_source_mgr(std::istream& str) : input(str), data(NULL), capacity(0) {}
+	istream_source_mgr(std::istream& str) : input(str), data(nullptr), capacity(0) {}
 	std::istream& input;
 	char* data;
 	int capacity;
@@ -107,7 +107,13 @@ static void skip_input_data_istream(j_decompress_ptr cinfo, long num_bytes) {
 	{
 		try
 		{
-			src->input.seekg(num_bytes-src->bytes_in_buffer, std::ios_base::cur);
+			int readcount = num_bytes-src->bytes_in_buffer;
+			while (readcount)
+			{
+				int r = std::min(src->capacity,readcount);
+				src->input.read(src->data,r);
+				readcount-=r;
+			}
 		}
 		catch(std::ios_base::failure& exc)
 		{
@@ -157,7 +163,7 @@ uint8_t* ImageDecoder::decodeJPEG(uint8_t* inData, int len, const uint8_t* table
 	}
 	else
 	{
-		tablesSrc = NULL;
+		tablesSrc = nullptr;
 	}
 
 	*width = 0;
@@ -179,7 +185,7 @@ uint8_t* ImageDecoder::decodeJPEG(std::istream& str, uint32_t* width, uint32_t* 
 	src.resync_to_restart = jpeg_resync_to_restart;
 	src.term_source = term_source;
 
-	uint8_t* res=decodeJPEGImpl(&src, NULL, width, height, hasAlpha);
+	uint8_t* res=decodeJPEGImpl(&src, nullptr, width, height, hasAlpha);
 
 	delete[] src.data;
 	return res;
@@ -194,7 +200,7 @@ uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr *src, jpeg_source_mgr *hea
 	err.error_exit = error_exit;
 
 	if (setjmp(err.jmpBuf)) {
-		return NULL;
+		return nullptr;
 	}
 
 	jpeg_create_decompress(&cinfo);
@@ -240,7 +246,7 @@ uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr *src, jpeg_source_mgr *hea
 		/* TODO: is this the right thing for aborting? */
 		jpeg_abort_decompress(&cinfo);
 		jpeg_destroy_decompress(&cinfo);
-		return NULL;
+		return nullptr;
 	}
 	assert(cinfo.output_components == 3 || cinfo.output_components == 4);
 
@@ -287,7 +293,7 @@ static void ReadPNGDataFromBuffer(png_structp pngPtr, png_bytep data, png_size_t
 }
 uint8_t* ImageDecoder::decodePNG(uint8_t* inData, int len, uint32_t* width, uint32_t* height, bool* hasAlpha)
 {
-	png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 	if (!pngPtr)
 	{
 		LOG(LOG_ERROR,"Couldn't initialize png read struct");
@@ -303,11 +309,11 @@ uint8_t* ImageDecoder::decodePNG(uint8_t* inData, int len, uint32_t* width, uint
 
 uint8_t* ImageDecoder::decodePNG(std::istream& str, uint32_t* width, uint32_t* height, bool* hasAlpha)
 {
-	png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+	png_structp pngPtr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
 	if (!pngPtr)
 	{
 		LOG(LOG_ERROR,"Couldn't initialize png read struct");
-		return NULL;
+		return nullptr;
 	}
 	png_set_read_fn(pngPtr,(void*)&str, ReadPNGDataFromStream);
 
@@ -316,25 +322,25 @@ uint8_t* ImageDecoder::decodePNG(std::istream& str, uint32_t* width, uint32_t* h
 
 uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32_t* height, bool* hasAlpha)
 {
-	png_bytep* rowPtrs = NULL;
-	uint8_t* outData = NULL;
+	png_bytep* rowPtrs = nullptr;
+	uint8_t* outData = nullptr;
 	png_infop infoPtr = png_create_info_struct(pngPtr);
 	if (!infoPtr)
 	{
 		LOG(LOG_ERROR,"Couldn't initialize png info struct");
 		png_destroy_read_struct(&pngPtr, (png_infopp)0, (png_infopp)0);
-		return NULL;
+		return nullptr;
 	}
 
 	if (setjmp(png_jmpbuf(pngPtr)))
 	{
 		png_destroy_read_struct(&pngPtr, &infoPtr,(png_infopp)0);
-		if (rowPtrs != NULL) delete [] rowPtrs;
-		if (outData != NULL) delete [] outData;
+		if (rowPtrs != nullptr) delete [] rowPtrs;
+		if (outData != nullptr) delete [] outData;
 
 		LOG(LOG_ERROR,"error during reading of the png file");
 
-		return NULL;
+		return nullptr;
 	}
 
 	png_read_info(pngPtr, infoPtr);
@@ -385,7 +391,7 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 	}
 
 	png_read_image(pngPtr, rowPtrs);
-	png_read_end(pngPtr, NULL);
+	png_read_end(pngPtr, nullptr);
 	png_destroy_read_struct(&pngPtr, &infoPtr,(png_infopp)0);
 	delete[] (png_bytep)rowPtrs;
 
@@ -395,7 +401,7 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 uint8_t* ImageDecoder::decodePalette(uint8_t* pixels, uint32_t width, uint32_t height, uint32_t stride, uint8_t* palette, unsigned int numColors, unsigned int paletteBPP)
 {
 	if (numColors == 0)
-		return NULL;
+		return nullptr;
 
 	assert(stride >= width);
 	assert(paletteBPP==3 || paletteBPP==4);

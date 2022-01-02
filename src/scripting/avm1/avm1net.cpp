@@ -48,6 +48,7 @@ void AVM1LoadVars::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, URLVariables, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->setDeclaredMethodByQName("sendAndLoad","",Class<IFunction>::getFunction(c->getSystemState(),sendAndLoad),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1LoadVars,_constructor)
 {
@@ -79,6 +80,20 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,sendAndLoad)
 	}
 	else
 		LOG(LOG_ERROR,"LoadVars.sendAndLoad called without target");
+}
+ASFUNCTIONBODY_ATOM(AVM1LoadVars,load)
+{
+	AVM1LoadVars* th = asAtomHandler::as<AVM1LoadVars>(obj);
+	tiny_string strurl;
+	ARG_UNPACK_ATOM (strurl);
+
+	if (th->loader.isNull())
+		th->loader = _MR(Class<URLLoader>::getInstanceS(sys));
+	th->incRef();
+	URLRequest* req = Class<URLRequest>::getInstanceS(sys,strurl,"GET",_MR(th));
+	asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
+	asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(th->loader.getPtr());
+	URLLoader::load(ret,sys,loaderobj,&urlarg,1);
 }
 multiname* AVM1LoadVars::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
 {

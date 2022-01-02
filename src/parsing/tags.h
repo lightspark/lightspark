@@ -314,7 +314,7 @@ private:
 public:
 	SoundStreamHeadTag(RECORDHEADER h, std::istream& s, RootMovieClip* root,DefineSpriteTag* sprite);
 	_R<MemoryStreamCache> SoundData;
-	void setSoundChannel(Sprite* spr, bool autoplay);
+	void setSoundChannel(Sprite* spr);
 	void execute(DisplayObjectContainer *parent,bool inskipping) override {}
 };
 

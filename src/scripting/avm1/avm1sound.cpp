@@ -73,7 +73,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 	if (soundTag->soundchanel)
 		th->soundChannel = soundTag->soundchanel;
 	else
-		th->soundChannel  = soundTag->soundchanel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format,false));
+		th->soundChannel  = soundTag->soundchanel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format));
 	if(th->clip)
 	{
 		th->soundChannel->incRef();

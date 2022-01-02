@@ -572,7 +572,7 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 				new (retClass->memoryAccount) AVM1MovieClip(retClass, *this, this->getId()) :
 				new (retClass->memoryAccount) MovieClip(retClass, *this, this->getId());
 	if (soundheadtag)
-		soundheadtag->setSoundChannel(spr,false);
+		soundheadtag->setSoundChannel(spr);
 	if (soundstartframe != UINT32_MAX)
 		spr->setSoundStartFrame(this->soundstartframe);
 	spr->loadedFrom=this->loadedFrom;
@@ -2340,7 +2340,7 @@ ASObject* DefineBinaryDataTag::instance(Class_base* c)
 	uint8_t* b = new uint8_t[len];
 	memcpy(b,bytes,len);
 
-	Class_base* classRet = NULL;
+	Class_base* classRet = nullptr;
 	if(c)
 		classRet=c;
 	else if(bindedTo)
@@ -2513,9 +2513,9 @@ void StartSoundTag::play(DefineSoundTag *soundTag)
 		soundTag->soundchanel = _NR<SoundChannel>(Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getSystemState(),
 			soundTag->getSoundData(),
 			AudioFormat(soundTag->getAudioCodec(),
-			    soundTag->getSampleRate(),
-			    soundTag->getChannels()),
-			false,this));
+						soundTag->getSampleRate(),
+						soundTag->getChannels()),
+			this));
 		soundTag->soundchanel->setConstant();
 		if (this->SoundInfo.HasLoops)
 			soundTag->soundchanel->setLoops(this->SoundInfo.LoopCount);
@@ -2796,15 +2796,15 @@ SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in, RootMov
 	}
 	else if (root)
 	{
-		setSoundChannel(root,false);
+		setSoundChannel(root);
 	}
 }
 
-void SoundStreamHeadTag::setSoundChannel(Sprite *spr,bool autoplay)
+void SoundStreamHeadTag::setSoundChannel(Sprite *spr)
 {
 	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(spr->getSystemState(),
 								SoundData,
-								AudioFormat(LS_AUDIO_CODEC(StreamSoundCompression),StreamSoundRate,StreamSoundType+1),autoplay);
+								AudioFormat(LS_AUDIO_CODEC(StreamSoundCompression),StreamSoundRate,StreamSoundType+1));
 	spr->setSound(schannel,true);
 }
 

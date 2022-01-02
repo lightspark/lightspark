@@ -463,7 +463,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 	if (th->container)
 	{
 		RELEASE_WRITE(th->sampledataprocessed,true);
-		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,NullRef, AudioFormat(LINEAR_PCM_FLOAT_BE,44100,2),false,nullptr,th));
+		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,NullRef, AudioFormat(LINEAR_PCM_FLOAT_BE,44100,2),nullptr,th));
 		th->soundChannel->setLoops(loops);
 		th->soundChannel->soundTransform = soundtransform;
 		th->soundChannel->play(startTime);
@@ -481,7 +481,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
 			return;
 		}
-		SoundChannel* s = Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format,false);
+		SoundChannel* s = Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format);
 		s->setStartTime(startTime);
 		s->setLoops(loops);
 		s->soundTransform = soundtransform;
@@ -723,14 +723,12 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
-SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, bool autoplay, StartSoundTag* _tag, Sound* _sampleproducer)
+SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, StartSoundTag* _tag, Sound* _sampleproducer)
 	: EventDispatcher(c),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
 	format(_format),tag(_tag),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
 	leftPeak(1),rightPeak(1)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
-	if (autoplay)
-		play();
 }
 
 SoundChannel::~SoundChannel()

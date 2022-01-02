@@ -119,7 +119,7 @@ private:
 	bool restartafterabort;
 	void checkEnvelope();
 public:
-	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), bool autoplay=true, StartSoundTag* _tag=nullptr, Sound* _sampleproducer = nullptr);
+	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), StartSoundTag* _tag=nullptr, Sound* _sampleproducer = nullptr);
 	~SoundChannel();
 	void appendStreamBlock(unsigned char* buf, int len);
 	void appendSampleData(ByteArray* data);

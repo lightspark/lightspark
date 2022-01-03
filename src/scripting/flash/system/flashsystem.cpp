@@ -572,7 +572,7 @@ void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(a
 		{
 			tiny_string vtype = s.substr_bytes(8,s.numBytes()-9);
 
-			multiname tn(NULL);
+			multiname tn(nullptr);
 			tn.name_type=multiname::NAME_STRING;
 
 			uint32_t lastpos = vtype.rfind("::");
@@ -600,6 +600,11 @@ void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(a
 }
 ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname& name)
 {
+	auto it = classesBeingDefined.find(&name);
+	if (it != classesBeingDefined.end())
+	{
+		return ((*it).second);
+	}
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
 		asAtom o=asAtomHandler::invalidAtom;
@@ -609,11 +614,6 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 			// No incRef, return a reference borrowed from globalScopes
 			return asAtomHandler::toObject(o,getSystemState());
 		}
-	}
-	auto it = classesBeingDefined.find(&name);
-	if (it != classesBeingDefined.end())
-	{
-		return ((*it).second);
 	}
 	if(!parentDomain.isNull())
 	{

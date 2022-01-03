@@ -254,6 +254,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.rotation=drawable->getRotation();
 		surface.xscale = drawable->getXScale();
 		surface.yscale = drawable->getYScale();
+		surface.tex->xContentScale = drawable->getXContentScale();
+		surface.tex->yContentScale = drawable->getYContentScale();
 		surface.isMask=drawable->getIsMask();
 		surface.mask=drawable->getMask();
 		surface.matrix = drawable->getMatrix();

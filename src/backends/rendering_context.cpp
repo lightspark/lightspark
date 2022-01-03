@@ -178,7 +178,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 	engineData->exec_glUniform2f(beforeRotateUniform, float(w)/2.0,float(h)/2.0);
 	engineData->exec_glUniform2f(afterRotateUniform, float(widthtransformed)/2.0,float(heighttransformed)/2.0);
 	engineData->exec_glUniform2f(startPositionUniform, xtransformed,ytransformed);
-	engineData->exec_glUniform2f(scaleUniform, xscale,yscale);
+	engineData->exec_glUniform2f(scaleUniform, xscale / chunk.xContentScale, yscale / chunk.yContentScale);
 	engineData->exec_glUniform4f(colortransMultiplyUniform, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier);
 	engineData->exec_glUniform4f(colortransAddUniform, redOffset/255.0,greenOffset/255.0,blueOffset/255.0,alphaOffset/255.0);
 	// set mode for direct coloring:
@@ -378,14 +378,21 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 	cairo_surface_t* chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height);
 	cairo_save(cr);
 	cairo_set_antialias(cr,smooth && !isMask ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
+
+	// scale: keep draws in positive quadrant
 	cairo_set_matrix(cr,&matrix);
+	if (chunk.xContentScale < 0)
+		cairo_translate(cr, w / -chunk.xContentScale, 0);
+	if (chunk.yContentScale < 0)
+		cairo_translate(cr, 0, h / -chunk.yContentScale);
+	cairo_scale(cr, 1 / chunk.xContentScale, 1 / chunk.yContentScale);
 
 	if(isMask)
 	{
 		if (masksurface) // reset previous mask
 			cairo_surface_destroy(masksurface);
 		masksurface = chunkSurface;
-		maskmatrix=matrix;
+		cairo_get_matrix(cr, &maskmatrix);
 	}
 	cairo_set_source_surface(cr, chunkSurface, 0,0);
 	if (hasMask)

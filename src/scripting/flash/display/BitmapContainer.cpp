@@ -160,7 +160,7 @@ void BitmapContainer::upload(uint8_t *data, uint32_t w, uint32_t h)
 	memcpy(data, getData(), w*h*4);
 }
 
-const TextureChunk &BitmapContainer::getTexture()
+TextureChunk& BitmapContainer::getTexture()
 {
 	return bitmaptexture;
 }

@@ -107,7 +107,8 @@ void RenderThread::finalizeUpload()
 	ITextureUploadable* u=prevUploadJob;
 	uint32_t w,h;
 	u->sizeNeeded(w,h);
-	const TextureChunk& tex=u->getTexture();
+	TextureChunk& tex=u->getTexture();
+	u->contentScale(tex.xContentScale, tex.yContentScale);
 	loadChunkBGRA(tex, w, h, engineData->getCurrentPixBuf());
 	u->uploadFence();
 	prevUploadJob=nullptr;

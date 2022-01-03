@@ -1230,14 +1230,17 @@ void SystemState::flushInvalidationQueue()
 		{
 			_NR<DisplayObject> drawobj=cur;
 			_NR<DisplayObject> cachedBitmap;
-			IDrawable* d=cur->invalidate(stage, MATRIX(),true,nullptr, &cachedBitmap);
+			float scalex, scaley;
+			int offx, offy;
+			stageCoordinateMapping(renderThread->windowWidth, renderThread->windowHeight, offx, offy, scalex, scaley);
+			IDrawable* d=cur->invalidate(stage, MATRIX(scalex, scaley), true, nullptr, &cachedBitmap);
 			//Check if the drawable is valid and forge a new job to
 			//render it and upload it to GPU
 			if(d)
 			{
 				if (cachedBitmap)
 					drawobj = cachedBitmap;
-				if (drawobj->getNeedsTextureRecalculation())
+				if (drawobj->getNeedsTextureRecalculation() || !d->isCachedSurfaceUsable(drawobj.getPtr()))
 				{
 					drawjobLock.lock();
 					AsyncDrawJob* j = new AsyncDrawJob(d,drawobj);

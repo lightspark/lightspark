@@ -1432,7 +1432,7 @@ externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData
 										   float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
 										   float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset,
 										   bool smoothing, const MATRIX &_m)
-	: IDrawable(w, h, x, y,rw,rh,rx,ry,r,xs,ys,im,_mask, a, m,
+	: IDrawable(w, h, x, y,rw,rh,rx,ry,r,xs,ys, 1, 1, im, _mask, a, m,
 				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
 				_redOffset,_greenOffset,_blueOffset,_alphaOffset,smoothing,_m),m_engine(engine)
 {

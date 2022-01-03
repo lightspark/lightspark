@@ -126,7 +126,7 @@ public:
 	void waitForFencing();
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h) const;
-	const TextureChunk& getTexture();
+	TextureChunk& getTexture();
 	void uploadFence();
 	void markForDestruction();
 	bool isUploading() { return fenceCount; }

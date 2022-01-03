@@ -46,6 +46,8 @@ TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 	const uint32_t blocksW=(width+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL;
 	const uint32_t blocksH=(height+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL;
 	chunks=new uint32_t[blocksW*blocksH];
+	xContentScale = 1;
+	yContentScale = 1;
 }
 
 TextureChunk::TextureChunk(const TextureChunk& r):chunks(nullptr),texId(0),width(r.width),height(r.height)
@@ -74,6 +76,8 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 	}
 	else
 		chunks=nullptr;
+	xContentScale = r.xContentScale;
+	yContentScale = r.yContentScale;
 	return *this;
 }
 
@@ -122,7 +126,7 @@ CairoRenderer::CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _
 		float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
 		float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset,
 		bool _smoothing)
-	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _im, _mask,_a, _ms,
+	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _xs, _ys, _im, _mask,_a, _ms,
 				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
 				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing,_m)
 	, scaleFactor(_s)
@@ -589,10 +593,16 @@ uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 		return nullptr;
 
 	uint8_t* ret=nullptr;
-
 	cairo_surface_t* cairoSurface=allocateSurface(ret);
-
 	cairo_t* cr=cairo_create(cairoSurface);
+
+	// scale: keep draws in positive quadrant
+	if (xscale < 0)
+		cairo_translate(cr, width, 0);
+	if (yscale < 0)
+		cairo_translate(cr, 0, height);
+	cairo_scale(cr, xscale, yscale);
+
 	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
 	cairoClean(cr);
 	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
@@ -657,6 +667,16 @@ uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 //	cairo_surface_write_to_png(cairoSurface,"/tmp/cairo.png");
 	cairo_destroy(cr);
 	return ret;
+}
+
+bool CairoRenderer::isCachedSurfaceUsable(const DisplayObject* o) const
+{
+	const TextureChunk* tex = o->cachedSurface.tex;
+
+	// arbitrary regen threshold
+	return !tex || !tex->isValid() ||
+		(abs(xscale / tex->xContentScale) < 2
+		&& abs(yscale / tex->yContentScale) < 2);
 }
 
 bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, number_t x, number_t y)
@@ -1074,7 +1094,7 @@ void AsyncDrawJob::sizeNeeded(uint32_t& w, uint32_t& h) const
 	h=drawable->getHeight();
 }
 
-const TextureChunk& AsyncDrawJob::getTexture()
+TextureChunk& AsyncDrawJob::getTexture()
 {
 	/* This is called in the render thread,
 	 * so we need no locking for surface */
@@ -1126,6 +1146,12 @@ void AsyncDrawJob::uploadFence()
 	delete this;
 }
 
+void AsyncDrawJob::contentScale(float& x, float& y) const
+{
+	x = drawable->getXContentScale();
+	y = drawable->getYContentScale();
+}
+
 void SoftwareInvalidateQueue::addToInvalidateQueue(_R<DisplayObject> d)
 {
 	queue.emplace_back(d);
@@ -1146,7 +1172,7 @@ BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _
 		float _a, const std::vector<MaskData>& _ms,
 		float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
 		float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset, bool _smoothing, const MATRIX& _m)
-	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _im, _mask,_a, _ms,
+	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, 1, 1, _im, _mask,_a, _ms,
 				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
 				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing,_m)
 	, data(_data)
@@ -1168,7 +1194,7 @@ void CharacterRenderer::upload(uint8_t *data, uint32_t w, uint32_t h)
 	memcpy(data, this->data, w*h*4);
 }
 
-const TextureChunk& CharacterRenderer::getTexture()
+TextureChunk& CharacterRenderer::getTexture()
 {
 	if(!chunk.resizeIfLargeEnough(width, height))
 	chunk=getSys()->getRenderThread()->allocateTexture(width, height,false);

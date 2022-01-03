@@ -4620,9 +4620,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				bool skip = false;
 				ASObject* tobj = nullptr;
 #ifdef ENABLE_OPTIMIZATION
-				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
-				if (state.jumptargets.find(p) == state.jumptargets.end() && typestack.size() > 0)
+				// skip coerce followed by coerce
+				skip = (state.jumptargets.find(p) == state.jumptargets.end() && code.peekbyte() == 0x80);//coerce 
+				if (!skip && state.jumptargets.find(p) == state.jumptargets.end() && typestack.size() > 0)
 				{
+					multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
 					assert_and_throw(name->isStatic);
 					const Type* tp = Type::getTypeFromMultiname(name, mi->context);
 					const Class_base* cls =dynamic_cast<const Class_base*>(tp);

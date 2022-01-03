@@ -1302,6 +1302,7 @@ class AVM1Function;
 class Activation_object;
 class ApplicationDomain;
 class Array;
+class ASCondition;
 class ASMutex;
 class ASQName;
 class ASString;
@@ -1348,6 +1349,7 @@ class LoaderContext;
 class LoaderInfo;
 class Matrix;
 class Matrix3D;
+class MessageChannel;
 class MouseEvent;
 class MovieClip;
 class Namespace;
@@ -1400,6 +1402,7 @@ template<> inline bool ASObject::is<AVM1Function>() const { return subtype==SUBT
 template<> inline bool ASObject::is<Activation_object>() const { return subtype==SUBTYPE_ACTIVATIONOBJECT; }
 template<> inline bool ASObject::is<ApplicationDomain>() const { return subtype==SUBTYPE_APPLICATIONDOMAIN; }
 template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
+template<> inline bool ASObject::is<ASCondition>() const { return subtype==SUBTYPE_CONDITION; }
 template<> inline bool ASObject::is<ASMutex>() const { return subtype==SUBTYPE_MUTEX; }
 template<> inline bool ASObject::is<ASObject>() const { return true; }
 template<> inline bool ASObject::is<ASQName>() const { return type==T_QNAME; }
@@ -1450,6 +1453,7 @@ template<> inline bool ASObject::is<Namespace>() const { return type==T_NAMESPAC
 template<> inline bool ASObject::is<NetStream>() const { return subtype==SUBTYPE_NETSTREAM; }
 template<> inline bool ASObject::is<Matrix>() const { return subtype==SUBTYPE_MATRIX; }
 template<> inline bool ASObject::is<Matrix3D>() const { return subtype==SUBTYPE_MATRIX3D; }
+template<> inline bool ASObject::is<MessageChannel>() const { return subtype==SUBTYPE_MESSAGECHANNEL; }
 template<> inline bool ASObject::is<MouseEvent>() const { return subtype==SUBTYPE_MOUSE_EVENT; }
 template<> inline bool ASObject::is<MovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP || subtype == SUBTYPE_MOVIECLIP; }
 template<> inline bool ASObject::is<Null>() const { return type==T_NULL; }

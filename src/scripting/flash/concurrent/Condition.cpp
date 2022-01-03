@@ -23,7 +23,7 @@
 using namespace std;
 using namespace lightspark;
 
-ASCondition::ASCondition(Class_base* c):ASObject(c)
+ASCondition::ASCondition(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_CONDITION)
 {
 	
 }

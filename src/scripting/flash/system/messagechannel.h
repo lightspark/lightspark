@@ -32,7 +32,10 @@ private:
 	Mutex messagequeuemutex;
 	std::queue<_R<ASObject>> messagequeue;
 public:
-	MessageChannel(Class_base* c):EventDispatcher(c),state("open"){}
+	MessageChannel(Class_base* c):EventDispatcher(c),state("open")
+	{
+		subtype=SUBTYPE_MESSAGECHANNEL;
+	}
 	static void sinit(Class_base* c);
 	void finalize() override;
 	_NR<ASWorker> sender;

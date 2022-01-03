@@ -231,7 +231,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),avm1global(nullptr),
 	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),exitOnError(ERROR_NONE),singleworker(true),
 	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
-	static_SoundMixer_bufferTime(0),isinitialized(false)
+	static_SoundMixer_bufferTime(0),static_Multitouch_inputMode("gesture"),isinitialized(false)
 {
 	//Forge the builtin strings
 	uniqueStringIDMap.reserve(LAST_BUILTIN_STRING);

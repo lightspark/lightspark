@@ -559,6 +559,7 @@ public:
 	_NR<SoundTransform> static_SoundMixer_soundTransform;
 	int static_SoundMixer_bufferTime;
 	_NR<ASObject> static_ObjectEncoding_dynamicPropertyWriter;
+	tiny_string static_Multitouch_inputMode;
 
 	ACQUIRE_RELEASE_FLAG(isinitialized);
 	Mutex initializedMutex;

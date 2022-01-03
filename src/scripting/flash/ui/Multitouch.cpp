@@ -31,14 +31,14 @@ using namespace lightspark;
 void Multitouch::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("maxTouchPoints","",Class<IFunction>::getFunction(c->getSystemState(),getMaxTouchPoints),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportedGestures","",Class<IFunction>::getFunction(c->getSystemState(),getSupportedGestures),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsGestureEvents","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsGestureEvents),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsTouchEvents","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsTouchEvents),GETTER_METHOD,false);
-	REGISTER_GETTER_SETTER(c, inputMode);
+	c->setDeclaredMethodByQName("maxTouchPoints","",Class<IFunction>::getFunction(c->getSystemState(),getMaxTouchPoints,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportedGestures","",Class<IFunction>::getFunction(c->getSystemState(),getSupportedGestures,0,Class<Vector>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsGestureEvents","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsGestureEvents,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsTouchEvents","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsTouchEvents,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	REGISTER_GETTER_SETTER_STATIC_RESULTTYPE(c, inputMode,ASString);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(Multitouch, inputMode);
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(Multitouch, inputMode);
 
 ASFUNCTIONBODY_ATOM(Multitouch, getMaxTouchPoints)
 {

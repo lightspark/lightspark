@@ -213,6 +213,7 @@
 #define REGISTER_GETTER_RESULTTYPE(c,name,cls) \
 	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(c->getSystemState(),_getter_##name,0,Class<cls>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true)
 
+
 #define REGISTER_GETTER_SETTER_RESULTTYPE(c,name,cls) \
 		REGISTER_GETTER_RESULTTYPE(c,name,cls); \
 		REGISTER_SETTER(c,name)
@@ -233,8 +234,15 @@
 #define REGISTER_SETTER_STATIC(c,name) \
 	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(c->getSystemState(),_setter_##name),SETTER_METHOD,false)
 
+#define REGISTER_GETTER_STATIC_RESULTTYPE(c,name,cls) \
+	c->setDeclaredMethodByQName(#name,"",Class<IFunction>::getFunction(c->getSystemState(),_getter_##name,0,Class<cls>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false)
+
 #define REGISTER_GETTER_SETTER_STATIC(c,name) \
 		REGISTER_GETTER_STATIC(c,name); \
+		REGISTER_SETTER_STATIC(c,name)
+
+#define REGISTER_GETTER_SETTER_STATIC_RESULTTYPE(c,name,cls) \
+		REGISTER_GETTER_STATIC_RESULTTYPE(c,name,cls); \
 		REGISTER_SETTER_STATIC(c,name)
 
 #define CLASS_DYNAMIC_NOT_FINAL 0

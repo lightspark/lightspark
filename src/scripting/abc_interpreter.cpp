@@ -6580,6 +6580,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					code.peekbyte() == 0x11 ||  //iftrue
 					code.peekbyte() == 0x12 ))  //iffalse
 				{
+					if (state.jumptargets.find(code.tellg()) != state.jumptargets.end())
+						clearOperands(state,true,&lastlocalresulttype);
 					// "not" followed by iftrue/iffalse, can be skipped, iftrue/iffalse will be reversed
 					reverse_iftruefalse = true;
 					break;

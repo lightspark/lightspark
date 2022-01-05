@@ -27,6 +27,7 @@ using namespace lightspark;
 void AVM1XMLDocument::sinit(Class_base* c)
 {
 	XMLDocument::sinit(c);
+	c->isSealed = false;
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
 	
 }

@@ -809,7 +809,13 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		// Properties can not be added to a sealed class
 		if (cls && cls->isSealed)
 		{
-			const Type* type = Type::getTypeFromMultiname(&name,getWorker() ? getWorker()->currentCallContext->mi->context : getVm(getSystemState())->currentCallContext->mi->context);
+			ASWorker* w = getWorker();
+			ABCContext* c = nullptr;
+			if (w)
+				c = w->currentCallContext ? w->currentCallContext->mi->context : nullptr;
+			else if (getVm(getSystemState())->currentCallContext)
+				c = getVm(getSystemState())->currentCallContext->mi->context;
+			const Type* type =c ? Type::getTypeFromMultiname(&name,c) : nullptr;
 			if (type)
 				throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 			throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), cls->getQualifiedClassName());

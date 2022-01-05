@@ -80,7 +80,7 @@ void VideoDecoder::sizeNeeded(uint32_t& w, uint32_t& h) const
 	h=frameHeight;
 }
 
-const TextureChunk& VideoDecoder::getTexture()
+TextureChunk& VideoDecoder::getTexture()
 {
 	return videoTexture;
 }

@@ -55,7 +55,7 @@ private:
 	uint32_t texId;
 	TextureChunk(uint32_t w, uint32_t h);
 public:
-	TextureChunk():chunks(nullptr),texId(0),width(0),height(0){}
+	TextureChunk():chunks(nullptr),texId(0),width(0),height(0),xContentScale(1),yContentScale(1) {}
 	TextureChunk(const TextureChunk& r);
 	TextureChunk& operator=(const TextureChunk& r);
 	~TextureChunk();
@@ -65,14 +65,16 @@ public:
 	void makeEmpty();
 	uint32_t width;
 	uint32_t height;
+	float xContentScale; // scale the bitmap content was generated for
+	float yContentScale;
 };
 
 class CachedSurface
 {
 public:
-	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0)
-	  , redMultiplier(1.0), greenMultiplier(1.0), blueMultiplier(1.0), alphaMultiplier(1.0), redOffset(0.0), greenOffset(0.0), blueOffset(0.0), alphaOffset(0.0)
-	  ,isMask(false),smoothing(true),isChunkOwner(true),isValid(false){}
+	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0),
+		redMultiplier(1.0), greenMultiplier(1.0), blueMultiplier(1.0), alphaMultiplier(1.0), redOffset(0.0), greenOffset(0.0), blueOffset(0.0), alphaOffset(0.0)
+		,isMask(false),smoothing(true),isChunkOwner(true),isValid(false){}
 	~CachedSurface()
 	{
 		if (isChunkOwner && tex)
@@ -112,11 +114,12 @@ protected:
 	~ITextureUploadable(){}
 public:
 	virtual void sizeNeeded(uint32_t& w, uint32_t& h) const=0;
+	virtual void contentScale(float& x, float& y) const {x = 1; y = 1;}
 	/*
 		Upload data to memory mapped to the graphics card (note: size is guaranteed to be enough
 	*/
 	virtual void upload(uint8_t* data, uint32_t w, uint32_t h)=0;
-	virtual const TextureChunk& getTexture()=0;
+	virtual TextureChunk& getTexture()=0;
 	/*
 		Signal the completion of the upload to the texture
 		NOTE: fence may be called on shutdown even if the upload has not happen, so be ready for this event
@@ -157,6 +160,8 @@ protected:
 	float alpha;
 	float xscale;
 	float yscale;
+	float xContentScale;
+	float yContentScale;
 	float redMultiplier;
 	float greenMultiplier;
 	float blueMultiplier;
@@ -175,14 +180,14 @@ protected:
 public:
 	IDrawable(int32_t w, int32_t h, int32_t x, int32_t y,
 		int32_t rw, int32_t rh, int32_t rx, int32_t ry, float r,
-		float xs, float ys,
+		float xs, float ys, float xcs, float ycs,
 		bool im, _NR<DisplayObject> _mask,
 		float a, const std::vector<MaskData>& m,
 		float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
 		float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset, bool _smoothing,
 		const MATRIX& _m):
 		masks(m),width(w),height(h),xOffset(x),yOffset(y),xOffsetTransformed(rx),yOffsetTransformed(ry),widthTransformed(rw),heightTransformed(rh),rotation(r),
-		alpha(a),xscale(xs),yscale(ys),
+		alpha(a), xscale(xs), yscale(ys), xContentScale(xcs), yContentScale(ycs),
 		redMultiplier(_redMultiplier),greenMultiplier(_greenMultiplier),blueMultiplier(_blueMultiplier),alphaMultiplier(_alphaMultiplier),
 		redOffset(_redOffset),greenOffset(_greenOffset),blueOffset(_blueOffset),alphaOffset(_alphaOffset),
 		isMask(im),mask(_mask),smoothing(_smoothing), matrix(_m) {}
@@ -198,6 +203,7 @@ public:
 	 * another object
 	 */
 	virtual void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const = 0;
+	virtual bool isCachedSurfaceUsable(const DisplayObject*) const {return true;}
 	int32_t getWidth() const { return width; }
 	int32_t getHeight() const { return height; }
 	int32_t getWidthTransformed() const { return widthTransformed; }
@@ -210,6 +216,8 @@ public:
 	float getAlpha() const { return alpha; }
 	float getXScale() const { return xscale; }
 	float getYScale() const { return yscale; }
+	float getXContentScale() const { return xContentScale; }
+	float getYContentScale() const { return yContentScale; }
 	bool getIsMask() const { return isMask; }
 	_NR<DisplayObject> getMask() const { return mask; }
 	bool getSmoothing() const { return smoothing; }
@@ -252,8 +260,9 @@ public:
 	//ITextureUploadable interface
 	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
 	void sizeNeeded(uint32_t& w, uint32_t& h) const override;
-	const TextureChunk& getTexture() override;
+	TextureChunk& getTexture() override;
 	void uploadFence() override;
+	void contentScale(float& x, float& y) const override;
 	DisplayObject* getOwner() { return owner.getPtr(); }
 };
 
@@ -285,6 +294,7 @@ public:
 				  , bool _smoothing);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
+	bool isCachedSurfaceUsable(const DisplayObject*) const override;
 	/*
 	 * Converts data (which is in RGB format) to the format internally used by cairo.
 	 */
@@ -498,7 +508,7 @@ public:
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h) const override { w=width; h=height;}
 	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
-	const TextureChunk& getTexture() override;
+	TextureChunk& getTexture() override;
 	void uploadFence() override {}
 };
 

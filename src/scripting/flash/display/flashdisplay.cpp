@@ -4465,11 +4465,6 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	MATRIX totalMatrix;
 	std::vector<IDrawable::MaskData> masks;
 
-	float scalex;
-	float scaley;
-	int offx,offy;
-	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
-
 	bool isMask;
 	_NR<DisplayObject> mask;
 	if (target)
@@ -4480,11 +4475,9 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	}
 	totalMatrix = totalMatrix.multiplyMatrix(sourceMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
-	MATRIX m;
+	MATRIX m = initialMatrix;
 	if (matrixsource)
-		m = matrixsource->getConcatenatedMatrix();
-	width = bxmax-bxmin;
-	height = bymax-bymin;
+		m = m.multiplyMatrix(matrixsource->getConcatenatedMatrix());
 	float rotation = m.getRotation();
 	float xscale = m.getScaleX();
 	float yscale = m.getScaleY();
@@ -4535,8 +4528,8 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 			mask = originalsource->mask;
 	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
-				, x*scalex, y*scaley, ceil(width*scalex), ceil(height*scaley)
-				, rx*scalex, ry*scaley, ceil(rwidth*scalex), ceil(rheight*scaley), rotation
+				, x, y, this->bitmapData->getWidth(), this->bitmapData->getHeight()
+				, rx, ry, round(rwidth), round(rheight), rotation
 				, xscale, yscale
 				, isMask, mask
 				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks

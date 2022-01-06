@@ -1778,6 +1778,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 			for (auto it = (*itl).text.begin(); it!= (*itl).text.end(); it++)
 			{
 				const TextureChunk* tex = embeddedfont->getCharTexture(it,this->fontSize*yscale,codetableindex);
+				number_t adv = embeddedfont->getRenderCharAdvance(codetableindex)*fontSize;
 				if (tex)
 				{
 					number_t x,y,rx,ry;
@@ -1810,8 +1811,10 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 										redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 										redOffset, greenOffset, blueOffset, alphaOffset,
 										isMask, mask,2.0, tcolor,true,totalMatrix2);
+					xpos += adv ? adv : bxmax-bxmin;
 				}
-				xpos += embeddedfont->getRenderCharAdvance(codetableindex)*fontSize;
+				else
+					xpos += adv ? adv : fontSize/2;
 			}
 			ypos += this->leading+(embeddedfont->getAscent()+embeddedfont->getDescent()+embeddedfont->getLeading())*fontSize/1024;
 		}

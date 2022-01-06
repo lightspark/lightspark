@@ -1055,7 +1055,19 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 					if (FontFlagsHasLayout)
 						tmpwidth += FontAdvanceTable[i]/1024.0/20.0 * tokenscaling;
 					else
-						tmpwidth += tokenscaling;
+					{
+						const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
+						number_t ystart = getRenderCharStartYPos()/1024.0f;
+						ystart *=number_t(tokenscaling);
+						MATRIX glyphMatrix(number_t(tokenscaling)/1024.0f, number_t(tokenscaling)/1024.0f, 0, 0,0,ystart);
+						tokensVector tmptokens;
+						TokenContainer::FromShaperecordListToShapeVector(sr,tmptokens,fillStyles,glyphMatrix);
+						number_t xmin, xmax, ymin, ymax;
+						if (TokenContainer::boundsRectFromTokens(tmptokens,0.05,xmin,xmax,ymin,ymax))
+							tmpwidth += xmax-xmin;
+						else
+							tmpwidth += tokenscaling/2.0;
+					}
 					break;
 				}
 			}

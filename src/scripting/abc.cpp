@@ -1020,7 +1020,9 @@ int ABCVm::getEventQueueSize()
 
 void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 {
-	if (dispatcher && dispatcher->is<RootMovieClip>() && dispatcher->as<RootMovieClip>()->isWaitingForParser() && event->type == "enterFrame")
+	if (dispatcher && dispatcher->is<DisplayObject>() && event->type == "enterFrame" && (
+				(dispatcher->is<RootMovieClip>() && dispatcher->as<RootMovieClip>()->isWaitingForParser()) || // RootMovieClip is not yet completely parsed
+				(!dispatcher->as<DisplayObject>()->isOnStage()))) // enterFrame event is only executed for DisplayObjects thar are on stage
 		return;
 	if (event->is<ProgressEvent>())
 	{

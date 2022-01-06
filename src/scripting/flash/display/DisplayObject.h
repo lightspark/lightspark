@@ -193,7 +193,7 @@ public:
 	virtual IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap);
 	virtual void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false);
 	void updateCachedSurface(IDrawable* d);
-	MATRIX getConcatenatedMatrix() const;
+	MATRIX getConcatenatedMatrix(bool includeRoot=false) const;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	float getConcatenatedAlpha() const;

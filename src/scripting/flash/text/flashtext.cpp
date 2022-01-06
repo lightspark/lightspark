@@ -1698,12 +1698,12 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 
 			bool isMask;
 			_NR<DisplayObject> mask;
-			totalMatrix=getConcatenatedMatrix();
+			totalMatrix=getConcatenatedMatrix(true);
 			computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,mask);
 			computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 			MATRIX totalMatrix2;
 			std::vector<IDrawable::MaskData> masks2;
-			totalMatrix2=getConcatenatedMatrix();
+			totalMatrix2=getConcatenatedMatrix(true);
 			computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,mask);
 			computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 			ctxt.setProperties(bl);
@@ -1749,12 +1749,12 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 				}
 				MATRIX totalMatrix;
 				std::vector<IDrawable::MaskData> masks;
-				totalMatrix=getConcatenatedMatrix();
+				totalMatrix=getConcatenatedMatrix(true);
 				computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,mask);
 				computeBoundsForTransformedRect(tw,tw+2,bymin+ypadding,bymax-ypadding,x,y,width,height,totalMatrix);
 				MATRIX totalMatrix2;
 				std::vector<IDrawable::MaskData> masks2;
-				totalMatrix2=getConcatenatedMatrix();
+				totalMatrix2=getConcatenatedMatrix(true);
 				computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,mask);
 				computeBoundsForTransformedRect(tw,tw+2,bymin+ypadding,bymax-ypadding,rx,ry,rwidth,rheight,totalMatrix2);
 				ctxt.renderTextured(tex, x*scalex, y*scaley,
@@ -1794,12 +1794,12 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 					
 					bool isMask;
 					_NR<DisplayObject> mask;
-					totalMatrix=getConcatenatedMatrix();
+					totalMatrix=getConcatenatedMatrix(true);
 					computeMasksAndMatrix(this,masks,totalMatrix,false,isMask,mask);
 					computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 					MATRIX totalMatrix2;
 					std::vector<IDrawable::MaskData> masks2;
-					totalMatrix2=getConcatenatedMatrix();
+					totalMatrix2=getConcatenatedMatrix(true);
 					computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,mask);
 					computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 					ctxt.setProperties(bl);

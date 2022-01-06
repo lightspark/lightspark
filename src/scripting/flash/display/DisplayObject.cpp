@@ -498,12 +498,12 @@ void DisplayObject::setBlendMode(UI8 blendmode)
 		this->blendMode = (AS_BLENDMODE)(uint8_t)blendmode;
 	}
 }
-MATRIX DisplayObject::getConcatenatedMatrix() const
+MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot) const
 {
-	if(!parent || parent == getSystemState()->mainClip)
+	if(!parent || (!includeRoot && parent == getSystemState()->mainClip))
 		return getMatrix();
 	else
-		return parent->getConcatenatedMatrix().multiplyMatrix(getMatrix());
+		return parent->getConcatenatedMatrix(includeRoot).multiplyMatrix(getMatrix());
 }
 
 /* Return alpha value between 0 and 1. (The stored alpha value is not

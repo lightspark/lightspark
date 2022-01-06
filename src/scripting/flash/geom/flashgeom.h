@@ -284,13 +284,16 @@ private:
 	void append(number_t* otherdata);
 	void prepend(number_t *otherdata);
 	number_t getDeterminant();
+	void identity();
 public:
 	Matrix3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_MATRIX3D){}
 	static void sinit(Class_base* c);
 	bool destruct();
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(clone);
+	ASFUNCTION_ATOM(decompose);
 	ASFUNCTION_ATOM(recompose);
+	ASFUNCTION_ATOM(deltaTransformVector);
 	ASFUNCTION_ATOM(prepend);
 	ASFUNCTION_ATOM(prependScale);
 	ASFUNCTION_ATOM(prependTranslation);
@@ -303,7 +306,7 @@ public:
 	ASFUNCTION_ATOM(copyRawDataTo);
 	ASFUNCTION_ATOM(copyFrom);
 	ASFUNCTION_ATOM(copyToMatrix3D);
-	ASFUNCTION_ATOM(identity);
+	ASFUNCTION_ATOM(_identity);
 	ASFUNCTION_ATOM(invert);
 	ASFUNCTION_ATOM(_get_rawData);
 	ASFUNCTION_ATOM(_set_rawData);

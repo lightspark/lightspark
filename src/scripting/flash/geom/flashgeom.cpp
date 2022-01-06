@@ -1994,7 +1994,31 @@ number_t Matrix3D::getDeterminant()
 			+ (data[4] * data[9] - data[8] * data[5]) * (data[2] * data[15] - data[14] * data[3])
 			- (data[4] * data[13] - data[12] * data[5]) * (data[2] * data[11] - data[10] * data[3])
 			+ (data[8] * data[13] - data[12] * data[9]) * (data[2] * data[7] - data[6] * data[3]));
+}
 
+void Matrix3D::identity()
+{
+	// Identity Matrix
+	uint32_t i = 0;
+	data[i++] = 1.0;
+	data[i++] = 0.0;
+	data[i++] = 0.0;
+	data[i++] = 0.0;
+
+	data[i++] = 0.0;
+	data[i++] = 1.0;
+	data[i++] = 0.0;
+	data[i++] = 0.0;
+
+	data[i++] = 0.0;
+	data[i++] = 0.0;
+	data[i++] = 1.0;
+	data[i++] = 0.0;
+
+	data[i++] = 0.0;
+	data[i++] = 0.0;
+	data[i++] = 0.0;
+	data[i++] = 1.0;
 }
 
 void Matrix3D::sinit(Class_base* c)
@@ -2003,6 +2027,8 @@ void Matrix3D::sinit(Class_base* c)
 	c->isReusable = true;
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone,0,Class<Matrix3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("recompose","",Class<IFunction>::getFunction(c->getSystemState(),recompose,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("decompose","",Class<IFunction>::getFunction(c->getSystemState(),decompose,0,Class<Vector>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("deltaTransformVector","",Class<IFunction>::getFunction(c->getSystemState(),deltaTransformVector,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prepend","",Class<IFunction>::getFunction(c->getSystemState(),prepend),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prependScale","",Class<IFunction>::getFunction(c->getSystemState(),prependScale),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prependTranslation","",Class<IFunction>::getFunction(c->getSystemState(),prependTranslation),NORMAL_METHOD,true);
@@ -2015,14 +2041,14 @@ void Matrix3D::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("copyToMatrix3D","",Class<IFunction>::getFunction(c->getSystemState(),copyToMatrix3D),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyRawDataFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyRawDataFrom),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyRawDataTo","",Class<IFunction>::getFunction(c->getSystemState(),copyRawDataTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("identity","",Class<IFunction>::getFunction(c->getSystemState(),identity),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("identity","",Class<IFunction>::getFunction(c->getSystemState(),_identity),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("invert","",Class<IFunction>::getFunction(c->getSystemState(),invert,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("rawData","",Class<IFunction>::getFunction(c->getSystemState(),_get_rawData,0,Class<Vector>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rawData","",Class<IFunction>::getFunction(c->getSystemState(),_set_rawData),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("determinant","",Class<IFunction>::getFunction(c->getSystemState(),_get_determinant,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),_set_position),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),_get_position,0,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("transformVector","",Class<IFunction>::getFunction(c->getSystemState(),transformVector),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("transformVector","",Class<IFunction>::getFunction(c->getSystemState(),transformVector,2,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 }
 
 bool Matrix3D::destruct()
@@ -2056,27 +2082,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_constructor)
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Vector> v;
 	ARG_UNPACK_ATOM(v,NullRef);
-	// Identity Matrix
-	uint32_t i = 0;
-	th->data[i++] = 1.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	
-	th->data[i++] = 0.0;
-	th->data[i++] = 1.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 1.0;
-	th->data[i++] = 0.0;
-	
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 1.0;
+	th->identity();
 	if (!v.isNull())
 	{
 		for (uint32_t i = 0; i < v->size() && i < 4*4; i++)
@@ -2095,12 +2101,217 @@ ASFUNCTIONBODY_ATOM(Matrix3D,clone)
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,recompose)
 {
+	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Vector> components;
 	tiny_string orientationStyle;
 	ARG_UNPACK_ATOM(components)(orientationStyle, "eulerAngles");
-	
-	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.recompose does nothing");
+
 	asAtomHandler::setBool(ret,false);
+	if (components.isNull() || !components->sameType(Class<Vector3D>::getRef(sys).getPtr()) || components->size() < 3)
+		return;
+	asAtom tmp;
+	tmp = components->at(0);
+	Vector3D* v0 = asAtomHandler::as<Vector3D>(tmp);
+	tmp = components->at(1);
+	Vector3D* v1 = asAtomHandler::as<Vector3D>(tmp);
+	tmp = components->at(2);
+	Vector3D* v2 = asAtomHandler::as<Vector3D>(tmp);
+	if (v2->x == 0 || v2->y == 0 || v2->z == 0)
+		return;
+	th->identity();
+	float scale[16];
+	scale[0] = scale[1] = scale[2] = v2->x;
+	scale[4] = scale[5] = scale[6] = v2->y;
+	scale[8] = scale[9] = scale[10] = v2->z;
+	if (orientationStyle == "eulerAngles")
+	{
+		number_t cx = cos(v1->x);
+		number_t cy = cos(v1->y);
+		number_t cz = cos(v1->z);
+		number_t sx = sin(v1->x);
+		number_t sy = sin(v1->y);
+		number_t sz = sin(v1->z);
+		th->data[0] = cy * cz * scale[0];
+		th->data[1] = cy * sz * scale[1];
+		th->data[2] = -sy * scale[2];
+		th->data[3] = 0;
+		th->data[4] = (sx * sy * cz - cx * sz) * scale[4];
+		th->data[5] = (sx * sy * sz + cx * cz) * scale[5];
+		th->data[6] = sx * cy * scale[6];
+		th->data[7] = 0;
+		th->data[8] = (cx * sy * cz + sx * sz) * scale[8];
+		th->data[9] = (cx * sy * sz - sx * cz) * scale[9];
+		th->data[10] = cx * cy * scale[10];
+		th->data[11] = 0;
+		th->data[12] = v0->x;
+		th->data[13] = v0->y;
+		th->data[14] = v0->z;
+		th->data[15] = 1;
+	}
+	else
+	{
+		number_t x = v1->x;
+		number_t y = v1->y;
+		number_t z = v1->z;
+		number_t w = v1->w;
+		if (orientationStyle == "axisAngle")
+		{
+			x *= sin(w / 2);
+			y *= sin(w / 2);
+			z *= sin(w / 2);
+			w = cos(w / 2);
+		}
+		th->data[0] = (1 - 2 * y * y - 2 * z * z) * scale[0];
+		th->data[1] = (2 * x * y + 2 * w * z) * scale[1];
+		th->data[2] = (2 * x * z - 2 * w * y) * scale[2];
+		th->data[3] = 0;
+		th->data[4] = (2 * x * y - 2 * w * z) * scale[4];
+		th->data[5] = (1 - 2 * x * x - 2 * z * z) * scale[5];
+		th->data[6] = (2 * y * z + 2 * w * x) * scale[6];
+		th->data[7] = 0;
+		th->data[8] = (2 * x * z + 2 * w * y) * scale[8];
+		th->data[9] = (2 * y * z - 2 * w * x) * scale[9];
+		th->data[10] = (1 - 2 * x * x - 2 * y * y) * scale[10];
+		th->data[11] = 0;
+		th->data[12] = v0->x;
+		th->data[13] = v0->y;
+		th->data[14] = v0->z;
+		th->data[15] = 1;
+	}
+	if (v2->x == 0)
+		th->data[0] = 1e-15;
+	if (v2->y == 0)
+		th->data[5] = 1e-15;
+	if (v2->z == 0)
+		th->data[10] = 1e-15;
+	asAtomHandler::setBool(ret,!(v2->x == 0 || v2->y == 0 || v2->z == 0));
+}
+ASFUNCTIONBODY_ATOM(Matrix3D,decompose)
+{
+	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
+	tiny_string orientationStyle;
+	ARG_UNPACK_ATOM(orientationStyle, "eulerAngles");
+
+	asAtom v=asAtomHandler::invalidAtom;
+	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : sys->mainClip;
+	Template<Vector>::getInstanceS(v,root,Class<Vector3D>::getClass(sys),NullRef);
+	Vector *result = asAtomHandler::as<Vector>(v);
+
+	// algorithm taken from openFL
+	float mr[16];
+	th->getRawDataAsFloat(mr);
+
+	Vector3D* pos =  Class<Vector3D>::getInstanceSNoArgs(sys);
+	pos->x=mr[12];
+	pos->y=mr[13];
+	pos->z=mr[14];
+	mr[12] = 0;
+	mr[13] = 0;
+	mr[14] = 0;
+
+	Vector3D* scale =  Class<Vector3D>::getInstanceSNoArgs(sys);
+
+	scale->x = sqrt(mr[0] * mr[0] + mr[1] * mr[1] + mr[2] * mr[2]);
+	scale->y = sqrt(mr[4] * mr[4] + mr[5] * mr[5] + mr[6] * mr[6]);
+	scale->z = sqrt(mr[8] * mr[8] + mr[9] * mr[9] + mr[10] * mr[10]);
+
+	if (mr[0] * (mr[5] * mr[10] - mr[6] * mr[9]) - mr[1] * (mr[4] * mr[10] - mr[6] * mr[8]) + mr[2] * (mr[4] * mr[9] - mr[5] * mr[8]) < 0)
+		scale->z = -scale->z;
+
+	mr[0] /= scale->x;
+	mr[1] /= scale->x;
+	mr[2] /= scale->x;
+	mr[4] /= scale->y;
+	mr[5] /= scale->y;
+	mr[6] /= scale->y;
+	mr[8] /= scale->z;
+	mr[9] /= scale->z;
+	mr[10] /= scale->z;
+
+	Vector3D* rot =  Class<Vector3D>::getInstanceSNoArgs(sys);
+
+	if (orientationStyle == "axisAngle")
+	{
+		rot->w = acos((mr[0] + mr[5] + mr[10] - 1) / 2);
+		float len = sqrt((mr[6] - mr[9]) * (mr[6] - mr[9]) + (mr[8] - mr[2]) * (mr[8] - mr[2]) + (mr[1] - mr[4]) * (mr[1] - mr[4]));
+		if (len != 0)
+		{
+			rot->x = (mr[6] - mr[9]) / len;
+			rot->y = (mr[8] - mr[2]) / len;
+			rot->z = (mr[1] - mr[4]) / len;
+		}
+		else
+		{
+			rot->x = rot->y = rot->z = 0;
+		}
+	}
+	else if (orientationStyle == "quaternion")
+	{
+		float tr = mr[0] + mr[5] + mr[10];
+		if (tr > 0)
+		{
+			rot->w = sqrt(1 + tr) / 2;
+			rot->x = (mr[6] - mr[9]) / (4 * rot->w);
+			rot->y = (mr[8] - mr[2]) / (4 * rot->w);
+			rot->z = (mr[1] - mr[4]) / (4 * rot->w);
+		}
+		else if ((mr[0] > mr[5]) && (mr[0] > mr[10]))
+		{
+			rot->x = sqrt(1 + mr[0] - mr[5] - mr[10]) / 2;
+			rot->w = (mr[6] - mr[9]) / (4 * rot->x);
+			rot->y = (mr[1] + mr[4]) / (4 * rot->x);
+			rot->z = (mr[8] + mr[2]) / (4 * rot->x);
+		}
+		else if (mr[5] > mr[10])
+		{
+			rot->y = sqrt(1 + mr[5] - mr[0] - mr[10]) / 2;
+			rot->x = (mr[1] + mr[4]) / (4 * rot->y);
+			rot->w = (mr[8] - mr[2]) / (4 * rot->y);
+			rot->z = (mr[6] + mr[9]) / (4 * rot->y);
+		}
+		else
+		{
+			rot->z = sqrt(1 + mr[10] - mr[0] - mr[5]) / 2;
+			rot->x = (mr[8] + mr[2]) / (4 * rot->z);
+			rot->y = (mr[6] + mr[9]) / (4 * rot->z);
+			rot->w = (mr[1] - mr[4]) / (4 * rot->z);
+		}
+	}
+	else if (orientationStyle == "eulerAngles")
+	{
+		rot->y = asin(-mr[2]);
+		if (mr[2] != 1 && mr[2] != -1)
+		{
+			rot->x = atan2(mr[6], mr[10]);
+			rot->z = atan2(mr[1], mr[0]);
+		}
+		else
+		{
+			rot->z = 0;
+			rot->x = atan2(mr[4], mr[5]);
+		}
+	}
+	else
+		LOG(LOG_ERROR,"Matrix3D.decompose with invalid orientationStyle:"<<orientationStyle);
+	asAtom a;
+	a = asAtomHandler::fromObjectNoPrimitive(pos);
+	result->append(a);
+	a = asAtomHandler::fromObjectNoPrimitive(rot);
+	result->append(a);
+	a = asAtomHandler::fromObjectNoPrimitive(scale);
+	result->append(a);
+	ret = asAtomHandler::fromObjectNoPrimitive(result);
+}
+ASFUNCTIONBODY_ATOM(Matrix3D,deltaTransformVector)
+{
+	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
+	_NR<Vector3D> v;
+	ARG_UNPACK_ATOM(v);
+	Vector3D* result = Class<Vector3D>::getInstanceSNoArgs(sys);
+	result->x = v->x * th->data[0] + v->y * th->data[4] + v->z * th->data[8];
+	result->y = v->x * th->data[1] + v->y * th->data[5] + v->z * th->data[9];
+	result->x = v->x * th->data[3] + v->y * th->data[7] + v->z * th->data[11];
+	ret = asAtomHandler::fromObjectNoPrimitive(result);
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,prepend)
 {
@@ -2306,30 +2517,10 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyToMatrix3D)
 	}
 }
 
-ASFUNCTIONBODY_ATOM(Matrix3D,identity)
+ASFUNCTIONBODY_ATOM(Matrix3D,_identity)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
-	// Identity Matrix
-	uint32_t i = 0;
-	th->data[i++] = 1.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	
-	th->data[i++] = 0.0;
-	th->data[i++] = 1.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 1.0;
-	th->data[i++] = 0.0;
-	
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 0.0;
-	th->data[i++] = 1.0;
+	th->identity();
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,invert)
 {
@@ -2434,7 +2625,6 @@ ASFUNCTIONBODY_ATOM(Matrix3D,transformVector)
 	res->w = (x * th->data[3] + y * th->data[7] + z * th->data[11] + th->data[15]);
 	ret = asAtomHandler::fromObject(res);
 }
-
 
 void PerspectiveProjection::sinit(Class_base* c)
 {

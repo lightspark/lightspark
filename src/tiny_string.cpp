@@ -290,6 +290,12 @@ bool tiny_string::endsWith(const char* o) const
  * returns index of character */
 uint32_t tiny_string::find(const tiny_string& needle, uint32_t start) const
 {
+	if (isASCII && !hasNull)
+	{
+		// fast path for ascii strings
+		const char* p = strstr(buf+start,needle.raw_buf());
+		return (p ? p-buf : npos);
+	}
 	//TODO: omit copy into std::string
 	size_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
 	size_t bytepos = std::string(*this).find(needle.raw_buf(),bytestart,needle.numBytes());

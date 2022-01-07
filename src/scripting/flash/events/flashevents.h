@@ -340,13 +340,7 @@ private:
 public:
 	explicit listener(asAtom _f, int32_t _p, bool _c,ASWorker* _w)
 		:f(_f),priority(_p),use_capture(_c),worker(_w){}
-	bool operator==(const listener& r)
-	{
-		/* One can register the same handle for the same event with
-		 * different values of use_capture
-		 */
-		return (use_capture == r.use_capture) && (worker == r.worker) && asAtomHandler::getObject(f)->isEqual(asAtomHandler::getObject(r.f));
-	}
+	bool operator==(const listener& r);
 	bool operator<(const listener& r) const
 	{
 		//The higher the priority the earlier this must be executed

@@ -29,6 +29,21 @@
 using namespace std;
 using namespace lightspark;
 
+bool listener::operator==(const listener &r)
+{
+	/* One can register the same handle for the same event with
+		 * different values of use_capture
+		 */
+	if ((use_capture != r.use_capture) || (worker != r.worker))
+		return false;
+	assert(asAtomHandler::is<IFunction>(f) && asAtomHandler::is<IFunction>(r.f));
+	if (asAtomHandler::getObjectNoCheck(f)->as<IFunction>()->closure_this
+			&& asAtomHandler::getObjectNoCheck(r.f)->as<IFunction>()->closure_this
+			&& asAtomHandler::getObjectNoCheck(f)->as<IFunction>()->closure_this != asAtomHandler::getObjectNoCheck(r.f)->as<IFunction>()->closure_this)
+		return false;
+	return asAtomHandler::getObjectNoCheck(f)->isEqual(asAtomHandler::getObjectNoCheck(r.f));
+}
+
 void IEventDispatcher::linkTraits(Class_base* c)
 {
 	lookupAndLink(c,STRING_ADDEVENTLISTENER,STRING_FLASH_EVENTS_IEVENTDISPATCHER);

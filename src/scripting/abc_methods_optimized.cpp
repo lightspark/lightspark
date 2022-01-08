@@ -2771,14 +2771,15 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 	asAtom prop=asAtomHandler::invalidAtom;
 	if (asAtomHandler::isInteger(*instrptr->arg2_constant) && asAtomHandler::isObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1)))
 	{
-		LOG_CALL( "getProperty_lcl int " << asAtomHandler::getInt(*instrptr->arg2_constant) << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
+		int n = asAtomHandler::toInt(*instrptr->arg2_constant);
+		LOG_CALL( "getProperty_lcl int " << n << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
 		ASObject* obj= asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-		obj->getVariableByInteger(prop,asAtomHandler::getInt(*instrptr->arg2_constant),GET_VARIABLE_OPTION::NO_INCREF);
+		obj->getVariableByInteger(prop,n,GET_VARIABLE_OPTION::NO_INCREF);
 		if(asAtomHandler::isInvalid(prop))
 		{
 			multiname m(nullptr);
 			m.name_type = multiname::NAME_INT;
-			m.name_i = asAtomHandler::getInt(*instrptr->arg2_constant);
+			m.name_i = n;
 			checkPropertyException(obj,&m,prop);
 		}
 	}
@@ -2823,14 +2824,15 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 	asAtom prop=asAtomHandler::invalidAtom;
 	if (asAtomHandler::isInteger(CONTEXT_GETLOCAL(context,instrptr->local_pos2)) && asAtomHandler::isObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1)))
 	{
-		LOG_CALL( "getProperty_lll int " << asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2)) << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
+		int n = asAtomHandler::toInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2));
+		LOG_CALL( "getProperty_lll int " << n << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
 		ASObject* obj= asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-		obj->getVariableByInteger(prop,asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2)),GET_VARIABLE_OPTION::NO_INCREF);
+		obj->getVariableByInteger(prop,n,GET_VARIABLE_OPTION::NO_INCREF);
 		if(asAtomHandler::isInvalid(prop))
 		{
 			multiname m(nullptr);
 			m.name_type = multiname::NAME_INT;
-			m.name_i = asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2));
+			m.name_i = n;
 			checkPropertyException(obj,&m,prop);
 		}
 	}

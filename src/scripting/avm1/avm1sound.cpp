@@ -29,6 +29,7 @@ using namespace lightspark;
 void AVM1Sound::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, avm1constructor, CLASS_SEALED);
+	c->isSealed=false;
 	c->setDeclaredMethodByQName("start","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attachSound","",Class<IFunction>::getFunction(c->getSystemState(),attachSound),NORMAL_METHOD,true);

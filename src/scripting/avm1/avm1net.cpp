@@ -136,3 +136,8 @@ void AVM1NetConnection::sinit(Class_base *c)
 	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),connect),NORMAL_METHOD,true);
 }
 
+void AVM1XMLSocket::sinit(Class_base* c)
+{
+	XMLSocket::sinit(c);
+	c->isSealed=false;
+}

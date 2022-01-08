@@ -22,6 +22,7 @@
 
 #include "asobject.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/net/XMLSocket.h"
 
 namespace lightspark
 {
@@ -58,6 +59,14 @@ public:
 	AVM1NetConnection(Class_base* c):NetConnection(c){}
 	static void sinit(Class_base* c);
 };
+
+class AVM1XMLSocket: public XMLSocket
+{
+public:
+	AVM1XMLSocket(Class_base* c):XMLSocket(c){}
+	static void sinit(Class_base* c);
+};
+
 
 }
 #endif // SCRIPTING_AVM1_AVM1NET_H

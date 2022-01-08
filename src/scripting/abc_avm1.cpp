@@ -24,7 +24,6 @@
 #include "scripting/avm1/avm1net.h"
 #include "scripting/avm1/avm1text.h"
 #include "scripting/avm1/avm1xml.h"
-#include "scripting/flash/net/XMLSocket.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/ui/ContextMenuItem.h"
 #include "scripting/abc.h"
@@ -65,7 +64,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("TextFormat","",Class<TextFormat>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XML","",Class<AVM1XMLDocument>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XMLNode","",Class<XMLNode>::getRef(m_sys));
-	builtinavm1->registerBuiltin("XMLSocket","",Class<XMLSocket>::getRef(m_sys));
+	builtinavm1->registerBuiltin("XMLSocket","",Class<AVM1XMLSocket>::getRef(m_sys));
 
 	builtinavm1->registerBuiltin("NetConnection","",Class<AVM1NetConnection>::getRef(m_sys));
 	builtinavm1->registerBuiltin("NetStream","",Class<NetStream>::getRef(m_sys));

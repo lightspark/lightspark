@@ -36,7 +36,6 @@ bool listener::operator==(const listener &r)
 		 */
 	if ((use_capture != r.use_capture) || (worker != r.worker))
 		return false;
-	assert(asAtomHandler::is<IFunction>(f) && asAtomHandler::is<IFunction>(r.f));
 	if (asAtomHandler::getObjectNoCheck(f)->as<IFunction>()->closure_this
 			&& asAtomHandler::getObjectNoCheck(r.f)->as<IFunction>()->closure_this
 			&& asAtomHandler::getObjectNoCheck(f)->as<IFunction>()->closure_this != asAtomHandler::getObjectNoCheck(r.f)->as<IFunction>()->closure_this)

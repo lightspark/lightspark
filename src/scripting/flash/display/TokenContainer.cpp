@@ -306,6 +306,13 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	}
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 
+	if (isnan(width) || isnan(height))
+	{
+		// on stage with invalid contatenatedMatrix. Create a trash initial texture
+		width = 1;
+		height = 1;
+	}
+
 	float redMultiplier=1.0;
 	float greenMultiplier=1.0;
 	float blueMultiplier=1.0;

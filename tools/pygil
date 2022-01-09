@@ -16,7 +16,7 @@ sinit = re.compile('.*void\s*(\w*)::sinit\(.*')
 rconstructor = re.compile('[^/]*ASFUNCTIONBODY[\_ATOM]*\( *([^,]*), *\_constructor\)')
 #looks like builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef(m_sys));
 rclass          = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(m\_sys\)\)')
-rtemplateclass  = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *_MR\(Template<([^>]*)>::getTemplate\(m\_sys\)\)\)')
+rtemplateclass  = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *_MR\(Template<([^>]*)>::getTemplate\(m\_sys\-\>mainClip\)\)\)')
 rinterfaceclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *InterfaceClass<([^>]*)>::getRef\(m\_sys\)\)')
 rclassavm1      = re.compile('.*builtinavm1->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(m\_sys\)\)')
 #the line may start with anything but a comment character
@@ -24,12 +24,15 @@ rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,
 rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *SETTER_METHOD, *([^ ]*)')
 rmet = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *NORMAL_METHOD, *([^ ]*)')
 rmet2 = re.compile('[^/]*->prototype->setVariable[Atom]*ByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)* *[A-Z]*\_TRAIT')
+rmet3 = re.compile('[^/]*->prototype->setVariable[Atom]*ByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *[A-Z]*\_TRAIT')
 rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
 rget3 = re.compile('.*REGISTER_GETTER_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
+rget4 = re.compile('.*REGISTER_GETTER_STATIC_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
 rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
 rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
 rgetset3 = re.compile('.*REGISTER_GETTER_SETTER_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
 rgetsetstatic2 = re.compile('.*REGISTER_GETTER_SETTER_STATIC\([^,]*, *(.*)\)')
+rgetsetstatic3 = re.compile('.*REGISTER_GETTER_SETTER_STATIC_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
 #take c->setVariableAtomByQName(..) but not c->prototype->setVariableByQName(..)
 rconst = re.compile('[^/]*[^prtoye]->setVariable[Atom]*ByQName\( *"([^"]*)",.*[A-Z]*\_TRAIT');
 #looks like Event *IOErrorEvent::cloneImpl() const
@@ -169,6 +172,10 @@ for line in ptmp.split(";"):
 	if m:
 		getters.add((curClass, m.group(1)))
 		continue
+	m = rget4.match(line)
+	if m:
+		getters.add((curClass, m.group(1)))
+		continue
 	m = rset.match(line)
 	if m:
 		setters.add((curClass, m.group(1)))
@@ -192,11 +199,20 @@ for line in ptmp.split(";"):
 		getters.add((curClass, m.group(1)))
 		setters.add((curClass, m.group(1)))
 		continue
+	m = rgetsetstatic3.match(line)
+	if m:
+		getters.add((curClass, m.group(1)))
+		setters.add((curClass, m.group(1)))
+		continue
 	m = rmet.match(line)
 	if m:
 		methods.add((curClass, m.group(1)))
 		continue
 	m = rmet2.match(line)
+	if m:
+		methods.add((curClass, m.group(1)))
+		continue
+	m = rmet3.match(line)
 	if m:
 		methods.add((curClass, m.group(1)))
 		continue

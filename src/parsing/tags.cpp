@@ -904,6 +904,7 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 		in >> t;
 		FontName.push_back(t);
 	}
+	FontName.push_back(UI8(0));// ensure that fontname ends with \0
 	fontname = tiny_string((const char*)FontName.data(),true);
 
 	in >> NumGlyphs;
@@ -1099,6 +1100,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 		in >> t;
 		FontName.push_back(t);
 	}
+	FontName.push_back(UI8(0));// ensure that fontname ends with \0
 	fontname = tiny_string((const char*)FontName.data(),true);
 	in >> NumGlyphs;
 	streampos offsetReference = in.tellg();

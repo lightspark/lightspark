@@ -509,7 +509,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 	int32_t readcount=0;
 	int32_t bytelength=length*4*2; // length is in samples (2 32bit floats)
 	int32_t bytestartposition= startPosition*4*2; // startposition is in samples (2 32bit floats)
-	if (!target.isNull() && !th->soundData.isNull())
+	if (!target.isNull() && !th->soundData.isNull() && th->soundData->getReceivedLength() > 0)
 	{
 		int32_t readcount=0;
 		try
@@ -749,6 +749,8 @@ void SoundChannel::appendSampleData(ByteArray* data)
 		threadAbort();
 	}
 	if (!isPlaying() && !isStarting())
+		return;
+	if (!audioDecoder)
 		return;
 	uint32_t len = data->getLength();
 	uint32_t toprocess=len;
@@ -1046,6 +1048,12 @@ void SoundChannel::playStreamFromSamples()
 					checkEnvelope();
 					if (streamdatafinished && !audioDecoder->hasDecodedFrames())
 						threadAbort();
+				}
+				else if (audioDecoder && audioDecoder->isValid())
+				{
+					// no audio available, consume data anyway
+					int16_t buf[512];
+					audioDecoder->copyFrame(buf,512);
 				}
 			}
 			if(threadAborting)

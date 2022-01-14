@@ -1094,8 +1094,8 @@ void TextField::updateSizes()
 {
 	Locker l(invalidatemutex);
 	uint32_t tw,th;
-	tw = textWidth;
-	th = textHeight;
+	tw = 0;
+	th = 0;
 	
 	RootMovieClip* currentRoot=this->loadedFrom;
 	if (!currentRoot) currentRoot=this->getRoot().getPtr();
@@ -1547,7 +1547,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		}
 		fillstyleTextColor.front().FillStyleType=SOLID_FILL;
 		fillstyleTextColor.front().Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
-		int32_t startposy = 0;
+		int32_t startposy = TEXTFIELD_PADDING;
 		linemutex->lock();
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{
@@ -1556,10 +1556,10 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				tiny_string pwtxt;
 				for (uint32_t i = 0; i < (*it).text.numChars(); i++)
 					pwtxt+="*";
-				embeddedfont->fillTextTokens(tokens,pwtxt,fontSize,fillstyleTextColor,leading,autosizeposition+(*it).autosizeposition,startposy);
+				embeddedfont->fillTextTokens(tokens,pwtxt,fontSize,fillstyleTextColor,leading,TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition,startposy);
 			}
 			else
-				embeddedfont->fillTextTokens(tokens,(*it).text,fontSize,fillstyleTextColor,leading,autosizeposition+(*it).autosizeposition,startposy);
+				embeddedfont->fillTextTokens(tokens,(*it).text,fontSize,fillstyleTextColor,leading,TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition,startposy);
 			startposy += this->leading+(embeddedfont->getAscent()+embeddedfont->getDescent()+embeddedfont->getLeading())*fontSize/1024;
 		}
 		linemutex->unlock();

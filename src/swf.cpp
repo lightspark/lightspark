@@ -24,6 +24,7 @@
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/utils/flashutils.h"
 #include "scripting/flash/media/flashmedia.h"
+#include "scripting/flash/filesystem/flashfilesystem.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/avm1/avm1display.h"
@@ -314,6 +315,11 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 
     static_SoundMixer_soundTransform  = _MR(Class<SoundTransform>::getInstanceS(this));
 	static_SoundMixer_soundTransform->setRefConstant();
+	if (flashMode == SystemState::AIR)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"File.applicationDirectory is not set");
+		static_ASFile_applicationDirectory=_MNR(Class<ASFile>::getInstanceS(this));
+	}
 	threadPool=new ThreadPool(this);
 	downloadThreadPool=new ThreadPool(this);
 

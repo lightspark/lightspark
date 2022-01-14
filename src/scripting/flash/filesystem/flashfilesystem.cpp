@@ -51,13 +51,23 @@ ASFile::ASFile(Class_base* c):
 void ASFile::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, FileReference, _constructor, CLASS_SEALED);
-	REGISTER_GETTER(c,exists);
+	REGISTER_GETTER_RESULTTYPE(c,exists,Boolean);
+	REGISTER_GETTER_STATIC_RESULTTYPE(c,applicationDirectory,ASFile);
+	c->setDeclaredMethodByQName("resolvePath", "", Class<IFunction>::getFunction(c->getSystemState(),resolvePath,1,Class<ASFile>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 }
-ASFUNCTIONBODY_GETTER(ASFile, exists);
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(ASFile, exists);
+ASFUNCTIONBODY_GETTER_STATIC(ASFile, applicationDirectory);
 
 ASFUNCTIONBODY_ATOM(ASFile,_constructor)
 {
 	FileReference::_constructor(ret,sys,obj, NULL, 0);
 	//ASFile* th=Class<FileReference>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"File is not implemented");
+}
+ASFUNCTIONBODY_ATOM(ASFile,resolvePath)
+{
+	//ASFile* th=Class<FileReference>::cast(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"File.resolvePath is not implemented");
+	ASFile* res = Class<ASFile>::getInstanceS(sys);
+	ret = asAtomHandler::fromObjectNoPrimitive(res);
 }

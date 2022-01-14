@@ -63,6 +63,7 @@ class SecurityDomain;
 class Class_inherit;
 class FontTag;
 class SoundTransform;
+class ASFile;
 
 class RootMovieClip: public MovieClip
 {
@@ -560,6 +561,7 @@ public:
 	int static_SoundMixer_bufferTime;
 	_NR<ASObject> static_ObjectEncoding_dynamicPropertyWriter;
 	tiny_string static_Multitouch_inputMode;
+	_NR<ASFile> static_ASFile_applicationDirectory;
 
 	ACQUIRE_RELEASE_FLAG(isinitialized);
 	Mutex initializedMutex;

@@ -64,6 +64,8 @@ REGISTER_CLASS_NAME(ASCondition,"flash.concurrent")
 //Desktop (AIR)
 REGISTER_CLASS_NAME(NativeApplication,"flash.desktop")
 REGISTER_CLASS_NAME(NativeDragManager,"flash.desktop")
+REGISTER_CLASS_NAME(NativeProcess,"flash.desktop")
+REGISTER_CLASS_NAME(NativeProcessStartupInfo,"flash.desktop")
 REGISTER_CLASS_NAME(ClipboardFormats,"flash.desktop")
 REGISTER_CLASS_NAME(ClipboardTransferMode,"flash.desktop")
 

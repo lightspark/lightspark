@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #ifndef SCRIPTING_FLASH_FILESYSTEM_FLASHFILESYSTEM_H
-#define SCRIPTING_FLASH_PRINTING_FLASHFILESYSTEM_H 1
+#define SCRIPTING_FLASH_FILESYSTEM_FLASHFILESYSTEM_H 1
 
 #include "compat.h"
 #include "asobject.h"
@@ -44,6 +44,8 @@ public:
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,exists);
+	ASPROPERTY_GETTER(_NR<ASFile>,applicationDirectory);
+	ASFUNCTION_ATOM(resolvePath);
 };
 }
 #endif /* SCRIPTING_FLASH_FILESYSTEM_FLASHFILESYSTEM_H */

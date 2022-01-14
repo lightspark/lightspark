@@ -22,10 +22,11 @@
 
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/filesystem/flashfilesystem.h"
+#include "scripting/toplevel/Vector.h"
 
 namespace lightspark
 {
-
 class NativeApplication: public EventDispatcher
 {
 public:
@@ -45,7 +46,27 @@ public:
 	ASPROPERTY_GETTER(bool,isSupported);
 };
 
-
+class NativeProcess: public EventDispatcher
+{
+public:
+	NativeProcess(Class_base* c):EventDispatcher(c),isSupported(false){}
+	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(start);
+	ASPROPERTY_GETTER(bool,isSupported);
 };
+class NativeProcessStartupInfo: public ASObject
+{
+public:
+	NativeProcessStartupInfo(Class_base* c):ASObject(c){}
+	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(_constructor);
+	ASPROPERTY_GETTER_SETTER(_NR<Vector>,arguments);
+	ASPROPERTY_GETTER_SETTER(_NR<ASFile>,executable);
+	ASPROPERTY_GETTER_SETTER(_NR<ASFile>,workingDirectory);
+};
+
+
+}
 
 #endif /* SCRIPTING_FLASH_DESKTOP_FLASHDESKTOP_H */

@@ -34,5 +34,7 @@ void ABCVm::registerClassesFlashDesktop(Global* builtin)
 	{
 		builtin->registerBuiltin("NativeApplication","flash.desktop",Class<NativeApplication>::getRef(m_sys));
 		builtin->registerBuiltin("NativeDragManager","flash.desktop",Class<NativeDragManager>::getRef(m_sys));
+		builtin->registerBuiltin("NativeProcess","flash.desktop",Class<NativeProcess>::getRef(m_sys));
+		builtin->registerBuiltin("NativeProcessStartupInfo","flash.desktop",Class<NativeProcessStartupInfo>::getRef(m_sys));
 	}
 }

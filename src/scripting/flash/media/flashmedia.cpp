@@ -412,8 +412,8 @@ ASFUNCTIONBODY_ATOM(Sound,load)
 	}
 	if (!context.isNull())
 		th->buffertime = context->bufferTime;
-	_R<StreamCache> c(_MR(new MemoryStreamCache(th->getSystemState())));
-	th->soundData = c;
+	if (urlRequest.isNull())
+		return;
 
 	if(!th->url.isValid())
 	{
@@ -422,6 +422,8 @@ ASFUNCTIONBODY_ATOM(Sound,load)
 		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
 		return;
 	}
+	_R<StreamCache> c(_MR(new MemoryStreamCache(th->getSystemState())));
+	th->soundData = c;
 
 	//The URL is valid so we can start the download
 
@@ -880,7 +882,7 @@ ASFUNCTIONBODY_ATOM(SoundChannel, stop)
 {
 	SoundChannel* th=asAtomHandler::as<SoundChannel>(obj);
 	th->threadAbort();
-	while (!ACQUIRE_READ(th->terminated))
+	while (!ACQUIRE_READ(th->stopped) && !ACQUIRE_READ(th->terminated))
 		compat_msleep(10);
 }
 ASFUNCTIONBODY_ATOM(SoundChannel,getPosition)

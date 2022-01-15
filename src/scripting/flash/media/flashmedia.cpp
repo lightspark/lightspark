@@ -465,7 +465,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 	if (th->container)
 	{
 		RELEASE_WRITE(th->sampledataprocessed,true);
-		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,NullRef, AudioFormat(LINEAR_PCM_FLOAT_BE,44100,2),nullptr,th));
+		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,NullRef, AudioFormat(LINEAR_PCM_FLOAT_PLATFORM_ENDIAN,44100,2),nullptr,th));
 		th->soundChannel->setLoops(loops);
 		th->soundChannel->soundTransform = soundtransform;
 		th->soundChannel->play(startTime);
@@ -577,6 +577,26 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 					if (th->rawDataStartPosition-bytestartposition >= bytelength)
 						break;
 				}
+				// ffmpeg always returns decoded data in native endian format, so we have to convert to the target endian setting
+#if G_BYTE_ORDER == G_BIG_ENDIAN
+				if (target->getLittleEndian())
+				{
+					for (int32_t i = 0; i < min(readcount,bytelength); i+=4)
+					{
+						uint32_t* u = (uint32_t*)(&data[i]);
+						*u = GUINT32_TO_BE(*u);
+					}
+				}
+#else
+				if (!target->getLittleEndian())
+				{
+					for (int32_t i = 0; i < min(readcount,bytelength); i+=4)
+					{
+						uint32_t* u = (uint32_t*)(&data[i]);
+						*u = GUINT32_TO_LE(*u);
+					}
+				}
+#endif
 				target->writeBytes(data,min(readcount,bytelength));
 				delete[] data;
 			}
@@ -631,6 +651,9 @@ void Sound::requestSampleDataEvent(size_t position)
 		RELEASE_WRITE(sampledataprocessed,false);
 		// request more data
 		_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(getSystemState()));
+#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+		data->setLittleEndian(true);
+#endif
 		incRef();
 		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<SampleDataEvent>::getInstanceS(getSystemState(),data,position)));
 	}

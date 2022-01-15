@@ -890,10 +890,19 @@ CodecID FFMpegAudioDecoder::LSToFFMpegCodec(LS_AUDIO_CODEC LSCodec)
 		case ADPCM:
 			return CODEC_ID_ADPCM_SWF;
 		case LINEAR_PCM_PLATFORM_ENDIAN:
+#if __BYTE_ORDER == __BIG_ENDIAN
+			return CODEC_ID_PCM_S16BE;
+#else
+			return CODEC_ID_PCM_S16LE;
+#endif
 		case LINEAR_PCM_LE:
 			return CODEC_ID_PCM_S16LE;
-		case LINEAR_PCM_FLOAT_BE:
+		case LINEAR_PCM_FLOAT_PLATFORM_ENDIAN:
+#if __BYTE_ORDER == __BIG_ENDIAN
 			return CODEC_ID_PCM_F32BE;
+#else
+			return CODEC_ID_PCM_F32LE;
+#endif
 		default:
 			return CODEC_ID_NONE;
 	}
@@ -1297,11 +1306,21 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 				fmt = av_find_input_format("aac");
 				break;
 			case LS_AUDIO_CODEC::LINEAR_PCM_PLATFORM_ENDIAN:
+#if __BYTE_ORDER == __BIG_ENDIAN
+				fmt = av_find_input_format("s16be");
+#else
+				fmt = av_find_input_format("s16le");
+#endif
+				break;
 			case LS_AUDIO_CODEC::LINEAR_PCM_LE:
 				fmt = av_find_input_format("s16le");
 				break;
-			case LS_AUDIO_CODEC::LINEAR_PCM_FLOAT_BE:
+			case LS_AUDIO_CODEC::LINEAR_PCM_FLOAT_PLATFORM_ENDIAN:
+#if __BYTE_ORDER == __BIG_ENDIAN
 				fmt = av_find_input_format("f32be");
+#else
+				fmt = av_find_input_format("f32le");
+#endif
 				break;
 			case LS_AUDIO_CODEC::ADPCM:
 				LOG(LOG_NOT_IMPLEMENTED,"audio codec unknown for type "<<(int)format->codec<<", using ffmpeg autodetection");
@@ -1346,7 +1365,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 	if (!format)
 	{
 #ifdef HAVE_AVFORMAT_FIND_STREAM_INFO
-		ret=avformat_find_stream_info(formatCtx,NULL);
+		ret=avformat_find_stream_info(formatCtx,nullptr);
 #else
 		ret=av_find_stream_info(formatCtx);
 #endif
@@ -1523,11 +1542,13 @@ uint32_t SampleDataAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint
 	uint32_t samplecount = min(datalen/4,MAX_AUDIO_FRAME_SIZE/2);
 	for (uint32_t i = 0; i < samplecount; i++)
 	{
-		uint32_t res;
-		memcpy(&res,data+i*4,4);
-		res = GUINT32_FROM_BE(res);
-		float *floatptr=reinterpret_cast<float*>(&res);
-		curTail.samples[i] = int16_t(floor(*floatptr * 32767.0f));
+		union
+		{
+			uint32_t u;
+			float f;
+		} res;
+		memcpy(&res.u,data+i*4,4);
+		curTail.samples[i] = int16_t(floor(res.f * 32767.0f));
 	}
 	curTail.len=samplecount*2;
 	curTail.current=curTail.samples;

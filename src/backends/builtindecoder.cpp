@@ -91,14 +91,14 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 				memcpy(headerbuf,tag.packetData,tag.packetLen);
 				headerLen = tag.packetLen;
 			}
-			if(audioDecoder==NULL)
+			if(audioDecoder==nullptr)
 			{
 				audioCodec=tag.SoundFormat;
 				switch(tag.SoundFormat)
 				{
 					case AAC:
 #ifdef ENABLE_LIBAVCODEC
-						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat,NULL,0);// tag.packetData, tag.packetLen);
+						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat,nullptr,0);// tag.packetData, tag.packetLen);
 #else
 						audioDecoder=new NullAudioDecoder();
 #endif
@@ -106,7 +106,7 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 						break;
 					case MP3:
 #ifdef ENABLE_LIBAVCODEC
-						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat,NULL,0);
+						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat,nullptr,0);
 #else
 						audioDecoder=new NullAudioDecoder();
 #endif

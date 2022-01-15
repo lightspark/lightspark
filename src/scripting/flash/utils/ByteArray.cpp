@@ -815,20 +815,16 @@ ASFUNCTIONBODY_ATOM(ByteArray,readDouble)
 	assert_and_throw(argslen==0);
 
 	th->lock();
-	if(th->len < th->position+8)
+	number_t res;
+	if(!th->readDouble(res,th->position))
 	{
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
-
-	uint64_t res;
-	memcpy(&res,th->bytes+th->position,8);
 	th->position+=8;
-	res = th->endianOut(res);
 
-	double *doubleptr=reinterpret_cast<double*>(&res);
 	th->unlock();
-	asAtomHandler::setNumber(ret,sys,*doubleptr);
+	asAtomHandler::setNumber(ret,sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
@@ -837,20 +833,16 @@ ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
 	assert_and_throw(argslen==0);
 
 	th->lock();
-	if(th->len < th->position+4)
+	float res;
+	if(!th->readFloat(res,th->position))
 	{
 		th->unlock();
 		throwError<EOFError>(kEOFError);
 	}
-
-	uint32_t res;
-	memcpy(&res,th->bytes+th->position,4);
 	th->position+=4;
-	res = th->endianOut(res);
 
-	float *floatptr=reinterpret_cast<float*>(&res);
 	th->unlock();
-	asAtomHandler::setNumber(ret,sys,*floatptr);
+	asAtomHandler::setNumber(ret,sys,res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readInt)

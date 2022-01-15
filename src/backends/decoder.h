@@ -47,6 +47,7 @@ extern "C"
 #define CODEC_ID_VP6A AV_CODEC_ID_VP6A
 #define CODEC_ID_AAC AV_CODEC_ID_AAC
 #define CODEC_ID_MP3 AV_CODEC_ID_MP3
+#define CODEC_ID_PCM_S16BE AV_CODEC_ID_PCM_S16BE
 #define CODEC_ID_PCM_S16LE AV_CODEC_ID_PCM_S16LE
 #define CODEC_ID_PCM_F32BE AV_CODEC_ID_PCM_F32BE
 #define CODEC_ID_PCM_F32LE AV_CODEC_ID_PCM_F32LE
@@ -63,10 +64,6 @@ extern "C"
 
 namespace lightspark
 {
-
-enum LS_VIDEO_CODEC { H264=0, H263, VP6, VP6A };
-// "Audio coding formats" from Chapter 11 in SWF documentation (except for LINEAR_PCM_FLOAT_BE)
-enum LS_AUDIO_CODEC { CODEC_NONE=-1, LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10, LINEAR_PCM_FLOAT_BE = 100 };
 
 class AudioFormat
 {

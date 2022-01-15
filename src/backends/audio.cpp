@@ -160,14 +160,14 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 {
 	Locker l(streamMutex);
 	if (!audio_available)
-		return NULL;
+		return nullptr;
 	if (!mixeropened)
 	{
 		if (!engineData->audio_ManagerOpenMixer())
 		{
 			LOG(LOG_ERROR,"Couldn't open mixer");
 			audio_available = 0;
-			return NULL;
+			return nullptr;
 		}
 		mixeropened = 1;
 	}
@@ -177,7 +177,7 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 	if (!stream->init(volume))
 	{
 		delete stream;
-		return NULL;
+		return nullptr;
 	}
 	if (startpaused)
 		stream->pause();

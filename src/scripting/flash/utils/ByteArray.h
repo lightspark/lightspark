@@ -76,6 +76,37 @@ public:
 	bool readUTF(tiny_string& ret);
 	bool readUTFBytes(uint32_t length,tiny_string& ret);
 	bool readBytes(uint32_t offset, uint32_t length, uint8_t* ret);
+	inline bool readFloat(float& ret, uint32_t pos)
+	{
+		if(len < pos+4)
+			return false;
+		union
+		{
+			uint32_t u;
+			float f;
+		} res;
+		memcpy(&res,bytes+pos,4);
+		res.u = endianOut(res.u);
+		ret=res.f;
+		return true;
+	}
+	inline bool readDouble(number_t& ret, uint32_t pos)
+	{
+		if(len < pos+8)
+			return false;
+	
+		union
+		{
+			uint64_t u;
+			double d;
+		} res;
+		memcpy(&res,bytes+pos,8);
+		pos+=8;
+		res.u = endianOut(res.u);
+		ret=res.d;
+		return true;
+	}
+	
 	asAtom readObject();
 	ASObject* readSharedObject();
 	FORCE_INLINE void writeByte(uint8_t b)
@@ -98,7 +129,6 @@ public:
 	void writeStringAMF0(const tiny_string& s);
 	void writeXMLString(std::map<const ASObject*, uint32_t>& objMap, ASObject *xml, const tiny_string& s);
 	void writeU29(uint32_t val);
-
 	void serializeDouble(number_t val);
 
 	void setLength(uint32_t newLen);

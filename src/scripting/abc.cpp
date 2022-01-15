@@ -267,7 +267,8 @@ void ABCVm::loadFloat(call_context *th)
 	RUNTIME_STACK_POP_CREATE(th,arg1);
 	uint32_t addr=asAtomHandler::toUInt(*arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	number_t ret=appDomain->readFromDomainMemory<float>(addr);
+	float ret=0;
+	appDomain->domainMemory->readFloat(ret,addr);
 	ASATOM_DECREF_POINTER(arg1);
 	RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getSystemState(),ret,false));
 }
@@ -275,7 +276,10 @@ void ABCVm::loadFloat(call_context *th,asAtom& ret, asAtom& arg1)
 {
 	uint32_t addr=asAtomHandler::toUInt(arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	number_t res=appDomain->readFromDomainMemory<float>(addr);
+	float res=0;
+	if(appDomain->currentDomainMemory->getLength() < (addr+sizeof(float)))
+		throwError<RangeError>(kInvalidRangeError);
+	appDomain->currentDomainMemory->readFloat(res,addr);
 	asAtom oldret = ret;
 	if (asAtomHandler::replaceNumber(ret,appDomain->getSystemState(),res))
 		ASATOM_DECREF(oldret);
@@ -286,15 +290,19 @@ void ABCVm::loadDouble(call_context *th)
 	RUNTIME_STACK_POP_CREATE(th,arg1);
 	uint32_t addr=asAtomHandler::toUInt(*arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	number_t ret=appDomain->readFromDomainMemory<double>(addr);
+	number_t res=0;
+	if(appDomain->currentDomainMemory->getLength() < (addr+sizeof(float)))
+		throwError<RangeError>(kInvalidRangeError);
+	appDomain->currentDomainMemory->readDouble(res,addr);
 	ASATOM_DECREF_POINTER(arg1);
-	RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getSystemState(),ret,false));
+	RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getSystemState(),res,false));
 }
 void ABCVm::loadDouble(call_context *th,asAtom& ret, asAtom& arg1)
 {
 	uint32_t addr=asAtomHandler::toUInt(arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	number_t res=appDomain->readFromDomainMemory<double>(addr);
+	number_t res=0;
+	appDomain->domainMemory->readDouble(res,addr);
 	asAtom oldret = ret;
 	if (asAtomHandler::replaceNumber(ret,appDomain->getSystemState(),res))
 		ASATOM_DECREF(oldret);
@@ -1022,7 +1030,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 {
 	if (dispatcher && dispatcher->is<DisplayObject>() && event->type == "enterFrame" && (
 				(dispatcher->is<RootMovieClip>() && dispatcher->as<RootMovieClip>()->isWaitingForParser()) || // RootMovieClip is not yet completely parsed
-				(!dispatcher->as<DisplayObject>()->isOnStage()))) // enterFrame event is only executed for DisplayObjects thar are on stage
+				(!dispatcher->as<DisplayObject>()->isOnStage()))) // enterFrame event is only executed for DisplayObjects that are on stage
 		return;
 	if (event->is<ProgressEvent>())
 	{

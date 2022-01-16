@@ -1371,7 +1371,6 @@ ASObject* BitmapTag::instance(Class_base* c)
 
 	Class_base* realClass=(c)?c:bindedTo;
 	Class_base* classRet = nullptr;
-
 	if (loadedFrom->usesActionScript3)
 	{
 		classRet = Class<BitmapData>::getClass(loadedFrom->getSystemState());
@@ -1383,6 +1382,8 @@ ASObject* BitmapTag::instance(Class_base* c)
 			Bitmap* bitmapRet= new (realClass->memoryAccount) Bitmap(realClass,_MR(ret));
 			return bitmapRet;
 		}
+		else
+			return new (classRet->memoryAccount) BitmapData(realClass, bitmap);
 	}
 	else
 	{
@@ -1395,6 +1396,8 @@ ASObject* BitmapTag::instance(Class_base* c)
 			Bitmap* bitmapRet= new (realClass->memoryAccount) AVM1Bitmap(realClass,_MR(ret));
 			return bitmapRet;
 		}
+		else
+			return new (classRet->memoryAccount) AVM1BitmapData(realClass, bitmap);
 	}
 
 	if(realClass->isSubClass(Class<BitmapData>::getClass(realClass->getSystemState())))
@@ -2425,7 +2428,7 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 
 ASObject* DefineSoundTag::instance(Class_base* c)
 {
-	Class_base* retClass=NULL;
+	Class_base* retClass=nullptr;
 	if (c)
 		retClass=c;
 	else if(bindedTo)

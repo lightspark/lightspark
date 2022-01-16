@@ -297,7 +297,7 @@ uint8_t* ImageDecoder::decodePNG(uint8_t* inData, int len, uint32_t* width, uint
 	if (!pngPtr)
 	{
 		LOG(LOG_ERROR,"Couldn't initialize png read struct");
-		return NULL;
+		return nullptr;
 	}
 	png_image_buffer b;
 	b.data = inData;
@@ -359,11 +359,24 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 	switch (color_type)
 	{
 		case PNG_COLOR_TYPE_PALETTE:
+		{
 			png_set_palette_to_rgb(pngPtr);
+			
+			png_bytep trans_alpha = nullptr;;
+			int num_trans = 0;
+			png_color_16p trans_color = nullptr;
+			png_get_tRNS(pngPtr, infoPtr, &trans_alpha, &num_trans, &trans_color);
+			*hasAlpha = trans_alpha != nullptr;
 			break;
+		}
 		case PNG_COLOR_TYPE_GRAY:
 			if (bitdepth < 8)
 				png_set_gray_to_rgb(pngPtr);
+			*hasAlpha = false;
+			break;
+		default:
+			// libpng also returns ARGB32 for RGB images without alpha channel
+			*hasAlpha = true;
 			break;
 	}
 
@@ -371,8 +384,6 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 	{
 		png_set_strip_16(pngPtr);
 	}
-
-	*hasAlpha = (channels > 3);
 
 	// Update the infoPtr to reflect the transformations set
 	// above. Read new values by calling png_get_* again.

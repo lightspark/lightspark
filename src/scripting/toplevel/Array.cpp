@@ -933,46 +933,161 @@ bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2
 	}
 }
 // std::sort expects strict weak ordering for the comparison function
-// this is not guarranteed by user defined comparison functions, so we need out own sorting method.
-// TODO this is just a simple quicksort implementation, not optimized for performance
-void simplequicksortArray(std::vector<asAtom>& v, Array::sortComparatorWrapper& comp, int32_t lo, int32_t hi)
+// this is not guarranteed by user defined comparison functions, so we need our own sorting method.
+
+// this is the quicksort algorithm used by avmplus
+// see https://github.com/adobe-flash/avmplus/blob/master/core/ArrayClass.cpp
+void qsort(std::vector<asAtom>& v, Array::sortComparatorWrapper& comp, uint32_t lo, uint32_t hi)
 {
-	if (v.size() == 2)
-	{
-		if (comp.compare(v[0],v[1]) > 0)
-			std::swap(v[0],v[1]);
+	// This is an iterative implementation of the recursive quick sort.
+	// Recursive implementations are basically storing nested (lo,hi) pairs
+	// in the stack frame, so we can avoid the recursion by storing them
+	// in an array.
+	//
+	// Once partitioned, we sub-partition the smaller half first. This means
+	// the greatest stack depth happens with equal partitions, all the way down,
+	// which would be 1 + log2(size), which could never exceed 33.
+
+	uint32_t size;
+	struct StackFrame { uint32_t lo, hi; };
+	StackFrame stk[33];
+	int stkptr = 0;
+
+	// leave without doing anything if the array is empty (lo > hi) or only one element (lo == hi)
+	if (lo >= hi)
 		return;
-	}
-	if (lo < hi)
-	{
-		asAtom pivot = v[lo];
-		int32_t i = lo - 1;
-		int32_t j = hi + 1;
-		while (true)
-		{
-			do
-			{
-				i++;
+
+	// code below branches to this label instead of recursively calling qsort()
+recurse:
+
+	size = (hi - lo) + 1; // number of elements in the partition
+
+	if (size < 4) {
+
+		// It is standard to use another sort for smaller partitions,
+		// for instance c library source uses insertion sort for 8 or less.
+		//
+		// However, as our swap() is essentially free, the relative cost of
+		// compare() is high, and with profiling, I found quicksort()-ing
+		// down to four had better performance.
+		//
+		// Although verbose, handling the remaining cases explicitly is faster,
+		// so I do so here.
+
+		if (size == 3) {
+			if (comp.compare(v[lo],v[lo + 1]) > 0) {
+				std::swap(v[lo], v[lo + 1]);
+				if (comp.compare(v[lo + 1], v[lo + 2]) > 0) {
+					std::swap(v[lo + 1], v[lo + 2]);
+					if (comp.compare(v[lo], v[lo + 1]) > 0) {
+						std::swap(v[lo], v[lo + 1]);
+					}
+				}
+			} else {
+				if (comp.compare(v[lo + 1], v[lo + 2]) > 0) {
+					std::swap(v[lo + 1], v[lo + 2]);
+					if (comp.compare(v[lo], v[lo + 1]) > 0) {
+						std::swap(v[lo], v[lo + 1]);
+					}
+				}
 			}
-			while (i < hi && (comp.compare(v[i],pivot) < 0));
-			
-			do
-			{
-				j--;
-			}
-			while (j >= 0 && (comp.compare(v[j],pivot) > 0));
-	
-			if (i >= j)
+		} else if (size == 2) {
+			if (comp.compare(v[lo], v[lo + 1]) > 0)
+				std::swap(v[lo], v[lo + 1]);
+		} else {
+			// size is one, zero or negative, so there isn't any sorting to be done
+		}
+	} else {
+		// qsort()-ing a near or already sorted list goes much better if
+		// you use the midpoint as the pivot, but the algorithm is simpler
+		// if the pivot is at the start of the list, so move the middle
+		// element to the front!
+		uint32_t pivot = lo + (size / 2);
+		std::swap(v[pivot], v[lo]);
+
+
+		uint32_t left = lo;
+		uint32_t right = hi + 1;
+
+		for (;;) {
+			// Move the left right until it's at an element greater than the pivot.
+			// Move the right left until it's at an element less than the pivot.
+			// If left and right cross, we can terminate, otherwise swap and continue.
+			//
+			// As each pass of the outer loop increments left at least once,
+			// and decrements right at least once, this loop has to terminate.
+
+			do  {
+				left++;
+			} while ((left <= hi) && (comp.compare(v[left], v[lo]) <= 0));
+
+			do  {
+				right--;
+			} while ((right > lo) && (comp.compare(v[right], v[lo]) >= 0));
+
+			if (right < left)
 				break;
 
-			std::swap(v[i],v[j]);
+			std::swap(v[left], v[right]);
 		}
-		if (j >= lo)
+
+		// move the pivot after the lower partition
+		std::swap(v[lo], v[right]);
+
+		// The array is now in three partions:
+		//  1. left partition   : i in [lo, right), elements less than or equal to pivot
+		//  2. center partition : i in [right, left], elements equal to pivot
+		//  3. right partition  : i in (left, hi], elements greater than pivot
+		// NOTE : [ means the range includes the lower bounds, ( means it excludes it, with the same for ] and ).
+
+		// Many quick sorts recurse into the left partition, and then the right.
+		// The worst case of this can lead to a stack depth of size -- for instance,
+		// the left is empty, the center is just the pivot, and the right is everything else.
+		//
+		// If you recurse into the smaller partition first, then the worst case is an
+		// equal partitioning, which leads to a depth of log2(size).
+		if ((right - 1 - lo) >= (hi - left))
 		{
-			simplequicksortArray(v, comp, lo, j);
-			simplequicksortArray(v, comp, j + 1, hi);
+			if ((lo + 1) < right)
+			{
+				stk[stkptr].lo = lo;
+				stk[stkptr].hi = right - 1;
+				++stkptr;
+			}
+
+			if (left < hi)
+			{
+				lo = left;
+				goto recurse;
+			}
+		}
+		else
+		{
+			if (left < hi)
+			{
+				stk[stkptr].lo = left;
+				stk[stkptr].hi = hi;
+				++stkptr;
+			}
+
+			if ((lo + 1) < right)
+			{
+				hi = right - 1;
+				goto recurse;           /* do small recursion */
+			}
 		}
 	}
+
+	// we reached the bottom of the well, pop the nested stack frame
+	if (--stkptr >= 0)
+	{
+		lo = stk[stkptr].lo;
+		hi = stk[stkptr].hi;
+		goto recurse;
+	}
+
+	// we've returned to the top, so we are done!
+	return;
 }
 
 number_t Array::sortComparatorWrapper::compare(const asAtom& d1, const asAtom& d2)
@@ -1044,7 +1159,7 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	if(asAtomHandler::isValid(comp))
 	{
 		sortComparatorWrapper c(comp);
-		simplequicksortArray(tmp,c,0,tmp.size()-1);
+		qsort(tmp,c,0,tmp.size()-1);
 	}
 	else
 		sort(tmp.begin(),tmp.end(),sortComparatorDefault(sys->getSwfVersion() < 11, isNumeric,isCaseInsensitive,isDescending));

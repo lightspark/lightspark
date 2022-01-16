@@ -268,6 +268,8 @@ void ABCVm::loadFloat(call_context *th)
 	uint32_t addr=asAtomHandler::toUInt(*arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 	float ret=0;
+	if(appDomain->currentDomainMemory->getLength() < (addr+sizeof(float)))
+		throwError<RangeError>(kInvalidRangeError);
 	appDomain->domainMemory->readFloat(ret,addr);
 	ASATOM_DECREF_POINTER(arg1);
 	RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getSystemState(),ret,false));
@@ -291,7 +293,7 @@ void ABCVm::loadDouble(call_context *th)
 	uint32_t addr=asAtomHandler::toUInt(*arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 	number_t res=0;
-	if(appDomain->currentDomainMemory->getLength() < (addr+sizeof(float)))
+	if(appDomain->currentDomainMemory->getLength() < (addr+sizeof(double)))
 		throwError<RangeError>(kInvalidRangeError);
 	appDomain->currentDomainMemory->readDouble(res,addr);
 	ASATOM_DECREF_POINTER(arg1);
@@ -302,6 +304,8 @@ void ABCVm::loadDouble(call_context *th,asAtom& ret, asAtom& arg1)
 	uint32_t addr=asAtomHandler::toUInt(arg1);
 	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
 	number_t res=0;
+	if(appDomain->currentDomainMemory->getLength() < (addr+sizeof(double)))
+		throwError<RangeError>(kInvalidRangeError);
 	appDomain->domainMemory->readDouble(res,addr);
 	asAtom oldret = ret;
 	if (asAtomHandler::replaceNumber(ret,appDomain->getSystemState(),res))

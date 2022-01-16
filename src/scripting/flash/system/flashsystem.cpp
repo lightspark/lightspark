@@ -504,6 +504,7 @@ ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObjec
 	{
 		name.name_s_id=getSystemState()->getUniqueStringId(str.substr(index+1));
 		name.ns.push_back(nsNameAndKind(getSystemState(),str.substr(0,index),NAMESPACE));
+		name.hasEmptyNS=false;
 	}
 	asAtom ret=asAtomHandler::invalidAtom;
 	getVariableAndTargetByMultiname(ret,name, target);
@@ -585,6 +586,7 @@ void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(a
 			{
 				tn.name_s_id=getSystemState()->getUniqueStringId(vtype.substr_bytes(lastpos+2,vtype.numBytes()-(lastpos+2)));
 				tn.ns.push_back(nsNameAndKind(getSystemState(),vtype.substr_bytes(0,lastpos),NAMESPACE));
+				tn.hasEmptyNS=false;
 			}
 			ASObject* tntarget;
 			asAtom typeobj=asAtomHandler::invalidAtom;

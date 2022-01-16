@@ -161,7 +161,10 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 	stringToQName(tmp,tmpName,nsName);
 	name.name_s_id=sys->getUniqueStringId(tmpName);
 	if (nsName != "")
+	{
 		name.ns.push_back(nsNameAndKind(sys,nsName,NAMESPACE));
+		name.hasEmptyNS=false;
+	}
 
 	LOG(LOG_CALLS,_("Looking for definition of ") << name);
 	ASObject* target;

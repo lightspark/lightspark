@@ -74,6 +74,7 @@ XMLList::XMLList(Class_base* c, const XML::XMLVector& r, XMLList *targetobject, 
 	this->targetproperty.name_type = targetproperty.name_type;
 	this->targetproperty.isAttribute = targetproperty.isAttribute;
 	this->targetproperty.name_s_id = targetproperty.name_s_id;
+	this->targetproperty.hasEmptyNS = targetproperty.hasEmptyNS;
 	for (auto it = targetproperty.ns.begin();it != targetproperty.ns.end(); it++)
 	{
 		this->targetproperty.ns.push_back(*it);
@@ -92,6 +93,7 @@ XMLList* XMLList::create(SystemState* sys,const XML::XMLVector& r, XMLList *targ
 	res->targetproperty.name_type = targetproperty.name_type;
 	res->targetproperty.isAttribute = targetproperty.isAttribute;
 	res->targetproperty.name_s_id = targetproperty.name_s_id;
+	res->targetproperty.hasEmptyNS = targetproperty.hasEmptyNS;
 	for (auto it = targetproperty.ns.begin();it != targetproperty.ns.end(); it++)
 	{
 		res->targetproperty.ns.push_back(*it);

@@ -2563,6 +2563,7 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 	{
 		nm = tag->bindingclassname.substr(pos+1,tag->bindingclassname.numBytes());
 		ns = tag->bindingclassname.substr(0,pos);
+		clsname.hasEmptyNS=false;
 	}
 	else
 	{

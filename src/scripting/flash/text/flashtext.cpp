@@ -387,12 +387,19 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 			width = originalWidth;
 		return;
 	}
-
 	switch (autoSize)
 	{
 		case AS_RIGHT:
 			linemutex->lock();
-			autosizeposition = max(0.0f,float(width-TEXTFIELD_PADDING*2)-textWidth);
+			autosizeposition = 0;
+			if (!wordWrap) // not in the specs but Adobe changes x position if wordWrap is not set
+			{
+				this->setX(originalXPosition + (int(originalWidth - textWidth))*sx);
+				if (updatewidth)
+					width = textWidth+TEXTFIELD_PADDING*2;
+			}
+			else
+				autosizeposition = max(0.0f,float(width-TEXTFIELD_PADDING*2)-textWidth);
 			for (auto it = textlines.begin(); it != textlines.end(); it++)
 			{
 				if ((*it).textwidth< textWidth)
@@ -1774,7 +1781,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 		linemutex->lock();
 		for (auto itl = textlines.begin(); itl != textlines.end(); itl++)
 		{
-			number_t xpos = (autoSize==AS_NONE && tag ? tag->Bounds.Xmin/20.0f : 0.0f)+autosizeposition+(*itl).autosizeposition;
+			number_t xpos = (tag ? tag->Bounds.Xmin/20.0f : 0.0f)+autosizeposition+(*itl).autosizeposition;
 			for (auto it = (*itl).text.begin(); it!= (*itl).text.end(); it++)
 			{
 				const TextureChunk* tex = embeddedfont->getCharTexture(it,this->fontSize*yscale,codetableindex);

@@ -843,7 +843,7 @@ number_t DefineFont2Tag::getRenderCharStartYPos() const
 number_t DefineFont2Tag::getRenderCharAdvance(uint32_t index) const
 {
 	if (index < FontAdvanceTable.size())
-		return FontAdvanceTable[index]/1024.0;
+		return number_t(FontAdvanceTable[index])/1024.0;
 	return 0;
 }
 
@@ -851,7 +851,7 @@ void DefineFont2Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 {
 	int tokenscaling = fontpixelsize * this->scaling;
 	width=0;
-	height= tokenscaling;
+	height= (number_t(FontAscent+FontDescent+FontLeading)/1024.0)* tokenscaling;
 	number_t tmpwidth=0;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
@@ -861,7 +861,7 @@ void DefineFont2Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 			if (width < tmpwidth)
 				width = tmpwidth;
 			tmpwidth = 0;
-			height+=tokenscaling;
+			height+=tokenscaling+ (number_t(this->FontLeading)/1024.0)*this->scaling;
 		}
 		else
 		{
@@ -870,7 +870,7 @@ void DefineFont2Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 				if (CodeTable[i] == *it)
 				{
 					if (FontFlagsHasLayout)
-						tmpwidth += FontAdvanceTable[i];
+						tmpwidth += number_t(FontAdvanceTable[i])/1024.0 * fontpixelsize;
 					else
 						tmpwidth += tokenscaling;
 					break;
@@ -884,7 +884,7 @@ void DefineFont2Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 
 DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 20, root)
 {
-	LOG(LOG_TRACE,_("DefineFont2"));
+	LOG(LOG_TRACE,"DefineFont2");
 	in >> FontID;
 	BitStream bs(in);
 	FontFlagsHasLayout = UB(1,bs);
@@ -1027,7 +1027,7 @@ number_t DefineFont3Tag::getRenderCharStartYPos() const
 number_t DefineFont3Tag::getRenderCharAdvance(uint32_t index) const
 {
 	if (index < FontAdvanceTable.size())
-		return FontAdvanceTable[index]/1024.0/20.0;
+		return number_t(FontAdvanceTable[index])/1024.0/20.0;
 	return 0;
 }
 
@@ -1035,7 +1035,7 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 {
 	int tokenscaling = fontpixelsize * this->scaling;
 	width=0;
-	height= ((FontAscent+FontDescent+FontLeading)/1024.0/20.0)* tokenscaling;
+	height= (number_t(FontAscent+FontDescent+FontLeading)/1024.0/20.0)* tokenscaling;
 	number_t tmpwidth=0;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
@@ -1045,7 +1045,7 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 			if (width < tmpwidth)
 				width = tmpwidth;
 			tmpwidth = 0;
-			height+=tokenscaling+ (this->FontLeading/1024.0/20.0)*this->scaling;
+			height+=tokenscaling+ (number_t(this->FontLeading)/1024.0/20.0)*this->scaling;
 		}
 		else
 		{
@@ -1054,7 +1054,7 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 				if (CodeTable[i] == *it)
 				{
 					if (FontFlagsHasLayout)
-						tmpwidth += FontAdvanceTable[i]/1024.0/20.0 * tokenscaling;
+						tmpwidth += number_t(FontAdvanceTable[i])/1024.0/20.0 * tokenscaling;
 					else
 					{
 						const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
@@ -1080,7 +1080,7 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 
 DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root),CodeTableOffset(0)
 {
-	LOG(LOG_TRACE,_("DefineFont3"));
+	LOG(LOG_TRACE,"DefineFont3");
 	in >> FontID;
 	BitStream bs(in);
 	FontFlagsHasLayout = UB(1,bs);

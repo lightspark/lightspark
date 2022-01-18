@@ -778,7 +778,7 @@ void Loader::setContent(_R<DisplayObject> o)
 	// content may have already been set.
 	// this can happen if setContent was already called from ObjectHasLoaded 
 	// and is called again at the end of LoaderThread::execute
-	if (o->getParent() == this) 
+	if (o->getParent() == this || (!avm1target.isNull() && o->getParent()))
 		return;
 	{
 		Locker l(mutexDisplayList);

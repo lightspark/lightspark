@@ -58,6 +58,7 @@ class Rectangle;
 class Class_inherit;
 class Point;
 class NativeMenuItem;
+class AVM1MovieClipLoader;
 
 class InteractiveObject: public DisplayObject
 {
@@ -607,6 +608,7 @@ public:
 	void afterConstruction() override;
 	void resetLegacyState() override;
 	RunState state;
+	_NR<AVM1MovieClipLoader> avm1loader;
 	Frame* getCurrentFrame();
 	MovieClip(Class_base* c);
 	MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID);

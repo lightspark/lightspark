@@ -30,7 +30,6 @@
 
 namespace lightspark
 {
-class AVM1MovieClipLoader;
 class AVM1MovieClip: public MovieClip
 {
 public:
@@ -39,7 +38,6 @@ public:
 	{
 		name=nameID;
 	}
-	_NR<AVM1MovieClipLoader> avm1loader;
 	void afterConstruction() override;
 	bool destruct() override;
 	static void sinit(Class_base* c);

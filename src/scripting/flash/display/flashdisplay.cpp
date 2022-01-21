@@ -735,6 +735,7 @@ void Loader::finalize()
 	DisplayObjectContainer::finalize();
 	content.reset();
 	contentLoaderInfo.reset();
+	avm1target.reset();
 }
 
 Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
@@ -798,8 +799,16 @@ void Loader::setContent(_R<DisplayObject> o)
 		DisplayObjectContainer* p = avm1target->getParent();
 		if (p)
 		{
-			int depth =p->findLegacyChildDepth(avm1target.getPtr());
-			p->deleteLegacyChildAt(depth,false);
+			int depth=0;
+			if (p->is<Stage>())
+			{
+				p->_removeChild(avm1target.getPtr());
+			}
+			else
+			{
+				depth =p->findLegacyChildDepth(avm1target.getPtr());
+				p->deleteLegacyChildAt(depth,false);
+			}
 			p->_addChildAt(o,depth);
 		}
 	}

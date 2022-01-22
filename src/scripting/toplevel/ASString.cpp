@@ -1003,19 +1003,26 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 			if(type==FUNC)
 			{
 				//Get the replace for this match
-				asAtom* subargs = g_newa(asAtom, 3+capturingGroups);
+				vector<asAtom> subargs;
+				subargs.reserve(3+capturingGroups);
+
 				//we index on bytes, not on UTF-8 characters
-				subargs[0]=asAtomHandler::fromObject(abstract_s(sys,res->data.substr_bytes(ovector[0],ovector[1]-ovector[0])));
+				subargs.push_back(asAtomHandler::fromObject(abstract_s(sys,res->data.substr_bytes(ovector[0],ovector[1]-ovector[0]))));
 				for(int i=0;i<capturingGroups;i++)
-					subargs[i+1]=asAtomHandler::fromObject(abstract_s(sys,res->data.substr_bytes(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2])));
-				subargs[capturingGroups+1]=asAtomHandler::fromInt((int32_t)(ovector[0]-retDiff));
+				{
+					if (ovector[i*2+2] >= 0)
+						subargs.push_back(asAtomHandler::fromObject(abstract_s(sys,res->data.substr_bytes(ovector[i*2+2],ovector[i*2+3]-ovector[i*2+2]))));
+					else
+						subargs.push_back(asAtomHandler::undefinedAtom);
+				}
+				subargs.push_back(asAtomHandler::fromInt((int32_t)(ovector[0]-retDiff)));
 				
-				subargs[capturingGroups+2]=asAtomHandler::fromObject(abstract_s(sys,data));
+				subargs.push_back(asAtomHandler::fromObject(abstract_s(sys,data)));
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::nullAtom;
 				if (asAtomHandler::as<IFunction>(args[1])->closure_this) // use closure as "this" in function call
 					obj = asAtomHandler::fromObject(asAtomHandler::as<IFunction>(args[1])->closure_this.getPtr());
-				asAtomHandler::callFunction(args[1],ret,obj, subargs, 3+capturingGroups,true);
+				asAtomHandler::callFunction(args[1],ret,obj, subargs.data(), subargs.size(),true);
 				replaceWithTmp=asAtomHandler::toString(ret,sys).raw_buf();
 				ASATOM_DECREF(ret);
 			} else {
@@ -1033,7 +1040,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 						   
 						while (++ipos < replaceWithTmp.numChars() && i<10) {
 						j = replaceWithTmp.charAt(ipos)-'0';
-							if (j <0 || j> 9 || rc < 10*i + j)
+							if ((j <0) || (j> 9) || (rc < 10*i + j))
 								break;
 							i = 10*i + j;
 						}

@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
@@ -98,6 +97,7 @@ public:
 	bool isBuiltin() const override { return false; }
 	bool hasoverriddenmethod(multiname* name) const override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt) override;
+	std::string toDebugString() override;
 };
 
 /* helper function: does Class<ASObject>::getInstances(), but solves forward declaration problem */

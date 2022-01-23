@@ -21,7 +21,7 @@
 #define FLASH_NET_SOCKET_H_
 
 #include "scripting/flash/events/flashevents.h"
-#include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/utils/flashutils.h"
 #include "tiny_string.h"
 #include "asobject.h"
 #include "threading.h"
@@ -29,7 +29,7 @@
 
 namespace lightspark
 {
-
+class ByteArray;
 class SocketIO
 {
 private:

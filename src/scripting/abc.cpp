@@ -262,96 +262,6 @@ void ABCVm::registerClasses()
 	m_sys->systemDomain->registerGlobalScope(builtin);
 }
 
-void ABCVm::loadFloat(call_context *th)
-{
-	RUNTIME_STACK_POP_CREATE(th,arg1);
-	uint32_t addr=asAtomHandler::toUInt(*arg1);
-	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	float ret=0;
-	if(appDomain->currentDomainMemory->getLength() < (addr+sizeof(float)))
-		throwError<RangeError>(kInvalidRangeError);
-	appDomain->domainMemory->readFloat(ret,addr);
-	ASATOM_DECREF_POINTER(arg1);
-	RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getSystemState(),ret,false));
-}
-void ABCVm::loadFloat(call_context *th,asAtom& ret, asAtom& arg1)
-{
-	uint32_t addr=asAtomHandler::toUInt(arg1);
-	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	float res=0;
-	if(appDomain->currentDomainMemory->getLength() < (addr+sizeof(float)))
-		throwError<RangeError>(kInvalidRangeError);
-	appDomain->currentDomainMemory->readFloat(res,addr);
-	asAtom oldret = ret;
-	if (asAtomHandler::replaceNumber(ret,appDomain->getSystemState(),res))
-		ASATOM_DECREF(oldret);
-}
-
-void ABCVm::loadDouble(call_context *th)
-{
-	RUNTIME_STACK_POP_CREATE(th,arg1);
-	uint32_t addr=asAtomHandler::toUInt(*arg1);
-	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	number_t res=0;
-	if(appDomain->currentDomainMemory->getLength() < (addr+sizeof(double)))
-		throwError<RangeError>(kInvalidRangeError);
-	appDomain->currentDomainMemory->readDouble(res,addr);
-	ASATOM_DECREF_POINTER(arg1);
-	RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getSystemState(),res,false));
-}
-void ABCVm::loadDouble(call_context *th,asAtom& ret, asAtom& arg1)
-{
-	uint32_t addr=asAtomHandler::toUInt(arg1);
-	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	number_t res=0;
-	if(appDomain->currentDomainMemory->getLength() < (addr+sizeof(double)))
-		throwError<RangeError>(kInvalidRangeError);
-	appDomain->domainMemory->readDouble(res,addr);
-	asAtom oldret = ret;
-	if (asAtomHandler::replaceNumber(ret,appDomain->getSystemState(),res))
-		ASATOM_DECREF(oldret);
-}
-
-void ABCVm::storeFloat(call_context *th)
-{
-	RUNTIME_STACK_POP_CREATE(th,arg1);
-	RUNTIME_STACK_POP_CREATE(th,arg2);
-	number_t addr=asAtomHandler::toNumber(*arg1);
-	ASATOM_DECREF_POINTER(arg1);
-	float val=(float)asAtomHandler::toNumber(*arg2);
-	ASATOM_DECREF_POINTER(arg2);
-	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	appDomain->writeToDomainMemory<float>(addr, val);
-}
-void ABCVm::storeFloat(call_context *th, asAtom& arg1, asAtom& arg2)
-{
-	number_t addr=asAtomHandler::toNumber(arg1);
-	float val=(float)asAtomHandler::toNumber(arg2);
-	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	appDomain->writeToDomainMemory<float>(addr, val);
-}
-
-void ABCVm::storeDouble(call_context *th)
-{
-	RUNTIME_STACK_POP_CREATE(th,arg1);
-	RUNTIME_STACK_POP_CREATE(th,arg2);
-	number_t addr=asAtomHandler::toNumber(*arg1);
-	ASATOM_DECREF_POINTER(arg1);
-	double val=asAtomHandler::toNumber(*arg2);
-	ASATOM_DECREF_POINTER(arg2);
-	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	appDomain->writeToDomainMemory<double>(addr, val);
-}
-void ABCVm::storeDouble(call_context *th, asAtom& arg1, asAtom& arg2)
-{
-	number_t addr=asAtomHandler::toNumber(arg1);
-	double val=asAtomHandler::toNumber(arg2);
-	ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-	appDomain->writeToDomainMemory<double>(addr, val);
-}
-
-
-
 //Pre: we already know that n is not zero and that we are going to use an RT multiname from getMultinameRTData
 multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 {
@@ -380,7 +290,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		return ret;
@@ -397,7 +307,7 @@ multiname* ABCContext::s_getMultiname_d(call_context* th, number_t rtd, int n)
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		return ret;
@@ -432,7 +342,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		return ret;
@@ -449,7 +359,7 @@ multiname* ABCContext::s_getMultiname_i(call_context* th, uint32_t rti, int n)
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 		return ret;
@@ -654,7 +564,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
+				LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 	}
@@ -756,7 +666,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			break;
 		}
 		default:
-			LOG(LOG_ERROR,_("Multiname to String not yet implemented for this kind ") << hex << m->kind);
+			LOG(LOG_ERROR,"Multiname to String not yet implemented for this kind " << hex << m->kind);
 			throw UnsupportedException("Multiname to String not implemented");
 	}
 	return ret;
@@ -1594,7 +1504,7 @@ method_info* ABCContext::get_method(unsigned int m)
 		return &methods[m];
 	else
 	{
-		LOG(LOG_ERROR,_("Requested invalid method"));
+		LOG(LOG_ERROR,"Requested invalid method");
 		return NULL;
 	}
 }
@@ -2143,7 +2053,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 //		case traits_info::Const:
 //		case traits_info::Slot:
 		default:
-			LOG(LOG_ERROR,_("Trait not supported ") << mname << _(" ") << t->kind);
+			LOG(LOG_ERROR,"Trait not supported " << mname << _(" ") << t->kind);
 			throw UnsupportedException("Trait not supported");
 	}
 }
@@ -2181,7 +2091,7 @@ void ABCContext::getConstant(asAtom &ret, int kind, int index)
 			break;
 		default:
 		{
-			LOG(LOG_ERROR,_("Constant kind ") << hex << kind);
+			LOG(LOG_ERROR,"Constant kind " << hex << kind);
 			throw UnsupportedException("Constant trait not supported");
 		}
 	}
@@ -2233,7 +2143,7 @@ asAtom* ABCContext::getConstantAtom(OPERANDTYPES kind, int index)
 			break;
 		default:
 		{
-			LOG(LOG_ERROR,_("Constant kind ") << hex << kind);
+			LOG(LOG_ERROR,"Constant kind " << hex << kind);
 			throw UnsupportedException("Constant trait not supported");
 		}
 	}

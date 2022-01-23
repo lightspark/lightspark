@@ -19,6 +19,7 @@
 
 #include "version.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/system/messagechannel.h"
 #include "scripting/abc.h"
 #include "scripting/argconv.h"
@@ -624,6 +625,11 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 			return ret;
 	}
 	return nullptr;
+}
+
+void ApplicationDomain::throwRangeError()
+{
+	throwError<RangeError>(kInvalidRangeError);
 }
 
 void ApplicationDomain::checkDomainMemory()

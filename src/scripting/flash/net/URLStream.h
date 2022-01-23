@@ -25,12 +25,12 @@
 #include "scripting/flash/events/flashevents.h"
 #include "thread_pool.h"
 #include "backends/netutils.h"
+#include "scripting/flash/utils/flashutils.h"
 
 namespace lightspark
 {
 
 class URLStream;
-class ByteArray;
 
 class URLStreamThread : public DownloaderThreadBase, public ILoadable
 {

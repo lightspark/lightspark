@@ -28,6 +28,7 @@
 #include "abc.h"
 #include "backends/security.h"
 #include "backends/rendering.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include <string>
 #include <algorithm>
 #include <SDL2/SDL.h>

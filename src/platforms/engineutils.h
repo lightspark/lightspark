@@ -27,8 +27,6 @@
 #include "threading.h"
 #include "tiny_string.h"
 #include "backends/graphics.h"
-#include "flash/utils/ByteArray.h"
-#include "flash/display/NativeMenuItem.h"
 
 #define LIGHTSPARK_AUDIO_BUFFERSIZE 512
 
@@ -45,6 +43,9 @@ class SystemState;
 class StreamCache;
 class AudioStream;
 class ITickJob;
+class ByteArray;
+class NativeMenuItem;
+class InteractiveObject;
 
 enum DEPTH_FUNCTION { ALWAYS, EQUAL, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL, NEVER, NOT_EQUAL };
 enum TRIANGLE_FACE { FACE_BACK, FACE_FRONT, FACE_FRONT_AND_BACK, FACE_NONE };

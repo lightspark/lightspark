@@ -31,6 +31,8 @@
 #include "abc.h"
 #include "class.h"
 #include "scripting/flash/events/flashevents.h"
+#include "flash/display/NativeMenuItem.h"
+#include "flash/utils/ByteArray.h"
 #include <glib/gstdio.h>
 #include <fcntl.h>
 #include <sys/types.h>

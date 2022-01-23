@@ -29,7 +29,6 @@
 #include "backends/decoder.h"
 #include "backends/audio.h"
 #include "NetStreamInfo.h"
-#include "scripting/flash/utils/ByteArray.h"
 
 namespace lightspark
 {

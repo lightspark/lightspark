@@ -31,7 +31,6 @@
 #include "swf.h"
 #include "scripting/abcutils.h"
 #include "scripting/abctypes.h"
-#include "scripting/flash/system/flashsystem.h"
 #include "scripting/toplevel/toplevel.h"
 
 #ifdef LLVM_ENABLED
@@ -359,55 +358,6 @@ private:
 	//If you change a definition here, update the opcode_table_* entry in abc_codesynth
 	static ASObject *hasNext(ASObject* obj, ASObject* cur_index); 
 	static bool hasNext2(call_context* th, int n, int m); 
-	template<class T>
-	static void loadIntN(call_context* th)
-	{
-		RUNTIME_STACK_POP_CREATE(th,arg1);
-		uint32_t addr=asAtomHandler::toUInt(*arg1);
-		ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-		T ret=appDomain->readFromDomainMemory<T>(addr);
-		ASATOM_DECREF_POINTER(arg1);
-		RUNTIME_STACK_PUSH(th,asAtomHandler::fromInt(ret));
-	}
-	template<class T>
-	static void storeIntN(call_context* th)
-	{
-		RUNTIME_STACK_POP_CREATE(th,arg1);
-		RUNTIME_STACK_POP_CREATE(th,arg2);
-		uint32_t addr=asAtomHandler::toUInt(*arg1);
-		ASATOM_DECREF_POINTER(arg1);
-		int32_t val=asAtomHandler::toInt(*arg2);
-		ASATOM_DECREF_POINTER(arg2);
-		ApplicationDomain* appDomain = th->mi->context->root->applicationDomain.getPtr();
-		appDomain->writeToDomainMemory<T>(addr, val);
-	}
-	template<class T>
-	static FORCE_INLINE void loadIntN(call_context* th,asAtom& ret, asAtom& arg1)
-	{
-		uint32_t addr=asAtomHandler::toUInt(arg1);
-		ByteArray* dm = th->mi->context->root->applicationDomain->currentDomainMemory;
-		if(dm->getLength() < (addr+sizeof(T)))
-			throwError<RangeError>(kInvalidRangeError);
-		ret = asAtomHandler::fromInt(*reinterpret_cast<T*>(dm->getBufferNoCheck()+addr));
-	}
-	template<class T>
-	static FORCE_INLINE void storeIntN(call_context* th, asAtom& arg1, asAtom& arg2)
-	{
-		uint32_t addr=asAtomHandler::toUInt(arg1);
-		int32_t val=asAtomHandler::toInt(arg2);
-		ByteArray* dm = th->mi->context->root->applicationDomain->currentDomainMemory;
-		if(dm->getLength() < (addr+sizeof(T)))
-			throwError<RangeError>(kInvalidRangeError);
-		*reinterpret_cast<T*>(dm->getBufferNoCheck()+addr)=val;
-	}
-	static void loadFloat(call_context* th);
-	static void loadFloat(call_context* th,asAtom& ret, asAtom& arg1);
-	static void loadDouble(call_context* th);
-	static void loadDouble(call_context* th,asAtom& ret, asAtom& arg1);
-	static void storeFloat(call_context* th);
-	static void storeFloat(call_context* th, asAtom& arg1, asAtom& arg2);
-	static void storeDouble(call_context* th);
-	static void storeDouble(call_context* th, asAtom& arg1, asAtom& arg2);
 
 	static void callStatic(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
 	static void callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn);
@@ -1354,10 +1304,8 @@ public:
 	void registerClassesAVM1();
 	static int Run(void* d);
 	static void executeFunction(call_context* context);
-#ifndef NDEBUG
 	static void dumpOpcodeCounters(uint32_t threshhold);
 	static void clearOpcodeCounters();
-#endif
 	
 	static void preloadFunction(SyntheticFunction *function);
 	static ASObject* executeFunctionFast(const SyntheticFunction* function, call_context* context, ASObject *caller);

@@ -25,6 +25,7 @@
 #include "argconv.h"
 #include "swf.h"
 #include "flash/errors/flasherrors.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include <sys/types.h>
 #ifdef _WIN32
 #ifndef _WIN32_WINNT

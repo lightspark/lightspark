@@ -210,7 +210,15 @@ GET_VARIABLE_RESULT Class_inherit::getVariableByMultiname(asAtom& ret, const mul
 	checkScriptInit();
 	return Class_base::getVariableByMultiname(ret,name,opt);
 }
-
+string Class_inherit::toDebugString()
+{
+	std::string res = Class_base::toDebugString();
+	res += "tag=";
+	char buf[100];
+	sprintf(buf,"%u",tag ? tag->getId():UINT32_MAX);
+	res += buf;
+	return res;
+}
 template<>
 void Class<Global>::getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {

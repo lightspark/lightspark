@@ -20,6 +20,7 @@
 #include "scripting/toplevel/Vector.h"
 #include "scripting/flash/display/GraphicsPath.h"
 #include "scripting/flash/display/Graphics.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "scripting/argconv.h"
 #include "scripting/class.h"
 

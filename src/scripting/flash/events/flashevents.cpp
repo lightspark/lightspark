@@ -1589,6 +1589,14 @@ Event* SampleDataEvent::cloneImpl() const
 	return clone;
 }
 
+SampleDataEvent::SampleDataEvent(Class_base* c) : Event(c, "sampleData",false,false,SUBTYPE_SAMPLEDATA_EVENT),position(0)
+{
+}
+
+SampleDataEvent::SampleDataEvent(Class_base* c, NullableRef<ByteArray> _data, number_t _pos) : Event(c, "sampleData",false,false,SUBTYPE_SAMPLEDATA_EVENT),data(_data),position(_pos) 
+{
+}
+
 void ThrottleEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);

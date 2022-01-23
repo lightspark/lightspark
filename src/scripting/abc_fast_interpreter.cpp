@@ -561,70 +561,70 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//li8
 				LOG_CALL( "li8");
-				loadIntN<uint8_t>(context);
+				ApplicationDomain::loadIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(), context);
 				break;
 			}
 			case 0x36:
 			{
 				//li16
 				LOG_CALL( "li16");
-				loadIntN<uint16_t>(context);
+				ApplicationDomain::loadIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(), context);
 				break;
 			}
 			case 0x37:
 			{
 				//li32
 				LOG_CALL( "li32");
-				loadIntN<uint32_t>(context);
+				ApplicationDomain::loadIntN<uint32_t>(context->mi->context->root->applicationDomain.getPtr(), context);
 				break;
 			}
 			case 0x38:
 			{
 				//lf32
 				LOG_CALL( "lf32");
-				loadFloat(context);
+				ApplicationDomain::loadFloat(context->mi->context->root->applicationDomain.getPtr(), context);
 				break;
 			}
 			case 0x39:
 			{
 				//lf32
 				LOG_CALL( "lf64");
-				loadDouble(context);
+				ApplicationDomain::loadDouble(context->mi->context->root->applicationDomain.getPtr(), context);
 				break;
 			}
 			case 0x3a:
 			{
 				//si8
 				LOG_CALL( "si8");
-				storeIntN<uint8_t>(context);
+				ApplicationDomain::storeIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(), context);
 				break;
 			}
 			case 0x3b:
 			{
 				//si16
 				LOG_CALL( "si16");
-				storeIntN<uint16_t>(context);
+				ApplicationDomain::storeIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(), context);
 				break;
 			}
 			case 0x3c:
 			{
 				//si32
 				LOG_CALL( "si32");
-				storeIntN<uint32_t>(context);
+				ApplicationDomain::storeIntN<uint32_t>(context->mi->context->root->applicationDomain.getPtr(), context);
 				break;
 			}
 			case 0x3d:
 			{
 				//sf32
 				LOG_CALL( "sf32");
-				storeFloat(context);
+				ApplicationDomain::storeFloat(context->mi->context->root->applicationDomain.getPtr(), context);
 				break;
 			}
 			case 0x3e:
 			{
 				//sf32
 				LOG_CALL( "sf64");
-				storeDouble(context);
+				ApplicationDomain::storeDouble(context->mi->context->root->applicationDomain.getPtr(), context);
 				break;
 			}
 			case 0x40:
@@ -638,7 +638,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//call
 				uint32_t t=data->uints[0];
-				method_info* called_mi=NULL;
+				method_info* called_mi=nullptr;
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				call(context,t,&called_mi);
 				if(called_mi)

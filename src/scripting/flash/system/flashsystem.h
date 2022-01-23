@@ -22,6 +22,7 @@
 
 #include "compat.h"
 #include "asobject.h"
+#include "scripting/abcutils.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/toplevel/Error.h"
 #include "scripting/flash/events/flashevents.h"
@@ -113,11 +114,12 @@ public:
 	ASFUNCTION_ATOM(getDefinition);
 	ASPROPERTY_GETTER_SETTER(_NR<ByteArray>, domainMemory);
 	ASPROPERTY_GETTER(_NR<ApplicationDomain>, parentDomain);
+	static void throwRangeError();
 	template<class T>
 	T readFromDomainMemory(uint32_t addr)
 	{
 		if(currentDomainMemory->getLength() < (addr+sizeof(T)))
-			throwError<RangeError>(kInvalidRangeError);
+			throwRangeError();
 		uint8_t* buf=currentDomainMemory->getBufferNoCheck();
 		return *reinterpret_cast<T*>(buf+addr);
 	}
@@ -125,9 +127,115 @@ public:
 	void writeToDomainMemory(uint32_t addr, T val)
 	{
 		if(currentDomainMemory->getLength() < (addr+sizeof(T)))
-			throwError<RangeError>(kInvalidRangeError);
+			throwRangeError();
 		uint8_t* buf=currentDomainMemory->getBufferNoCheck();
 		*reinterpret_cast<T*>(buf+addr)=val;
+	}
+	template<class T>
+	static void loadIntN(ApplicationDomain* appDomain,call_context* th)
+	{
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		uint32_t addr=asAtomHandler::toUInt(*arg1);
+		T ret=appDomain->readFromDomainMemory<T>(addr);
+		ASATOM_DECREF_POINTER(arg1);
+		RUNTIME_STACK_PUSH(th,asAtomHandler::fromInt(ret));
+	}
+	template<class T>
+	static void storeIntN(ApplicationDomain* appDomain,call_context* th)
+	{
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		RUNTIME_STACK_POP_CREATE(th,arg2);
+		uint32_t addr=asAtomHandler::toUInt(*arg1);
+		ASATOM_DECREF_POINTER(arg1);
+		int32_t val=asAtomHandler::toInt(*arg2);
+		ASATOM_DECREF_POINTER(arg2);
+		appDomain->writeToDomainMemory<T>(addr, val);
+	}
+	template<class T>
+	static FORCE_INLINE void loadIntN(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1)
+	{
+		uint32_t addr=asAtomHandler::toUInt(arg1);
+		ByteArray* dm = appDomain->currentDomainMemory;
+		if(dm->getLength() < (addr+sizeof(T)))
+			throwRangeError();
+		ret = asAtomHandler::fromInt(*reinterpret_cast<T*>(dm->getBufferNoCheck()+addr));
+	}
+	template<class T>
+	static FORCE_INLINE void storeIntN(ApplicationDomain* appDomain, asAtom& arg1, asAtom& arg2)
+	{
+		uint32_t addr=asAtomHandler::toUInt(arg1);
+		int32_t val=asAtomHandler::toInt(arg2);
+		ByteArray* dm = appDomain->currentDomainMemory;
+		if(dm->getLength() < (addr+sizeof(T)))
+			throwRangeError();
+		*reinterpret_cast<T*>(dm->getBufferNoCheck()+addr)=val;
+	}
+	
+	static FORCE_INLINE void loadFloat(ApplicationDomain* appDomain,call_context *th)
+	{
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		uint32_t addr=asAtomHandler::toUInt(*arg1);
+		number_t ret=appDomain->readFromDomainMemory<float>(addr);
+		ASATOM_DECREF_POINTER(arg1);
+		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getSystemState(),ret,false));
+	}
+	static FORCE_INLINE void loadFloat(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1)
+	{
+		uint32_t addr=asAtomHandler::toUInt(arg1);
+		number_t res=appDomain->readFromDomainMemory<float>(addr);
+		asAtom oldret = ret;
+		if (asAtomHandler::replaceNumber(ret,appDomain->getSystemState(),res))
+			ASATOM_DECREF(oldret);
+	}
+	static FORCE_INLINE void loadDouble(ApplicationDomain* appDomain,call_context *th)
+	{
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		uint32_t addr=asAtomHandler::toUInt(*arg1);
+		number_t res=appDomain->readFromDomainMemory<double>(addr);
+		ASATOM_DECREF_POINTER(arg1);
+		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getSystemState(),res,false));
+	}
+	static FORCE_INLINE void loadDouble(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1)
+	{
+		uint32_t addr=asAtomHandler::toUInt(arg1);
+		number_t res=appDomain->readFromDomainMemory<double>(addr);
+		asAtom oldret = ret;
+		if (asAtomHandler::replaceNumber(ret,appDomain->getSystemState(),res))
+			ASATOM_DECREF(oldret);
+	}
+
+	static FORCE_INLINE void storeFloat(ApplicationDomain* appDomain,call_context *th)
+	{
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		RUNTIME_STACK_POP_CREATE(th,arg2);
+		number_t addr=asAtomHandler::toNumber(*arg1);
+		ASATOM_DECREF_POINTER(arg1);
+		float val=(float)asAtomHandler::toNumber(*arg2);
+		ASATOM_DECREF_POINTER(arg2);
+		appDomain->writeToDomainMemory<float>(addr, val);
+	}
+	static FORCE_INLINE void storeFloat(ApplicationDomain* appDomain, asAtom& arg1, asAtom& arg2)
+	{
+		number_t addr=asAtomHandler::toNumber(arg1);
+		float val=(float)asAtomHandler::toNumber(arg2);
+		appDomain->writeToDomainMemory<float>(addr, val);
+	}
+
+	static FORCE_INLINE void storeDouble(ApplicationDomain* appDomain,call_context *th)
+	{
+		RUNTIME_STACK_POP_CREATE(th,arg1);
+		RUNTIME_STACK_POP_CREATE(th,arg2);
+		number_t addr=asAtomHandler::toNumber(*arg1);
+		ASATOM_DECREF_POINTER(arg1);
+		double val=asAtomHandler::toNumber(*arg2);
+		ASATOM_DECREF_POINTER(arg2);
+		appDomain->writeToDomainMemory<double>(addr, val);
+	}
+	static FORCE_INLINE void storeDouble(ApplicationDomain* appDomain, asAtom& arg1, asAtom& arg2)
+	{
+		number_t addr=asAtomHandler::toNumber(arg1);
+		double val=asAtomHandler::toNumber(arg2);
+		appDomain->writeToDomainMemory<double>(addr, val);
 	}
 	void checkDomainMemory();
 };

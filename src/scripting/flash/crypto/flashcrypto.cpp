@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/crypto/flashcrypto.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "scripting/argconv.h"
 #include <random>
 

@@ -21,11 +21,10 @@
 #define SCRIPTING_AVMPLUS_AVMPLUS_H 1
 
 #include "asobject.h"
-#include "scripting/flash/system/flashsystem.h"
 
 namespace lightspark
 {
-
+class ApplicationDomain;
 class avmplusFile : public ASObject
 {
 public:

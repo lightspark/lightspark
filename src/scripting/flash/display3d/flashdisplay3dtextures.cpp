@@ -2,82 +2,47 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
-
+#include "scripting/flash/utils/ByteArray.h"
 #define INITGUID
 #include "3rdparty/jxrlib/jxrgluelib/JXRGlue.h"
 
 namespace lightspark
 {
-void decodejxr(uint8_t* bytes, uint32_t texlen, vector<uint8_t>& result, uint32_t width, uint32_t height, bool hasalpha)
+bool decodejxr(uint8_t* bytes, uint32_t texlen, vector<uint8_t>& result, uint32_t width, uint32_t height, bool hasalpha)
 {
 	PKFactory* pFactory = nullptr;
 	PKCodecFactory* pCodecFactory = nullptr;
 	PKImageDecode* pDecoder = nullptr;
 	PKFormatConverter* pConverter = nullptr;
+	struct WMPStream* pDecodeStream = nullptr;
 	PKRect rect;
 	rect.X=0;
 	rect.Y=0;
 	rect.Width=width;
 	rect.Height=height;
-	if (PKCreateFactory(&pFactory, PK_SDK_VERSION)<0)
-	{
+	bool success = true;
+	if (success && !(success = (PKCreateFactory(&pFactory, PK_SDK_VERSION)>=0)))
 		LOG(LOG_ERROR,"decodejxr:PKCreateFactory failed");
-		return;
-	}
-	if (PKCreateCodecFactory(&pCodecFactory, WMP_SDK_VERSION)<0)
-	{
-		pFactory->Release(&pFactory);
+	if (success && !(success = (PKCreateCodecFactory(&pCodecFactory, WMP_SDK_VERSION)>=0)))
 		LOG(LOG_ERROR,"decodejxr:PKCreateCodecFactory failed");
-		return;
-	}
-	if (PKImageDecode_Create_WMP(&pDecoder)<0)
-	{
-		pCodecFactory->Release(&pCodecFactory);
-		pFactory->Release(&pFactory);
+	if (success && !(success = (PKImageDecode_Create_WMP(&pDecoder)>=0)))
 		LOG(LOG_ERROR,"decodejxr:PKImageDecode_Create_WMP failed");
-		return;
-	}
-	struct WMPStream* pStream = nullptr;
-	if (pFactory->CreateStreamFromMemory(&pStream,bytes,texlen))
-	{
-		pCodecFactory->Release(&pCodecFactory);
-		pFactory->Release(&pFactory);
+	if (success && !(success = (pFactory->CreateStreamFromMemory(&pDecodeStream,bytes,texlen)>=0)))
 		LOG(LOG_ERROR,"decodejxr:CreateStreamFromMemory failed");
-		return;
-	}
-	if (pDecoder->Initialize(pDecoder,pStream)<0)
-	{
-		pCodecFactory->Release(&pCodecFactory);
-		pDecoder->Release(&pDecoder);
-		pFactory->Release(&pFactory);
-		LOG(LOG_ERROR,"decodejxr:Initialize failed");
-		return;
-	}
-	if (pCodecFactory->CreateFormatConverter(&pConverter) < 0)
-	{
-		pCodecFactory->Release(&pCodecFactory);
-		pDecoder->Release(&pDecoder);
+	if (success && !(success = (pDecoder->Initialize(pDecoder,pDecodeStream)>=0)))
+		LOG(LOG_ERROR,"decodejxr:Decoder.Initialize failed");
+	if (success && !(success = (pCodecFactory->CreateFormatConverter(&pConverter)>=0)))
 		LOG(LOG_ERROR,"decodejxr:CreateFormatConverter failed");
-		return;
-	}
-	if (pConverter->Initialize(pConverter, pDecoder, nullptr, hasalpha ? GUID_PKPixelFormat32bppRGBA : GUID_PKPixelFormat24bppRGB) < 0)
-	{
-		pCodecFactory->Release(&pCodecFactory);
-		pDecoder->Release(&pDecoder);
+	if (success && !(success = (pConverter->Initialize(pConverter, pDecoder, nullptr, hasalpha ? GUID_PKPixelFormat32bppRGBA : GUID_PKPixelFormat24bppRGB)>=0)))
 		LOG(LOG_ERROR,"decodejxr:Converter.Initialize failed");
-		return;
-	}
-	if (pConverter->Copy(pConverter, &rect, result.data(), width*(hasalpha ? 4 : 3)) < 0)
-	{
-		pCodecFactory->Release(&pCodecFactory);
-		pDecoder->Release(&pDecoder);
+	if (success && !(success = (pConverter->Copy(pConverter, &rect, result.data(), width*(hasalpha ? 4 : 3))>=0)))
 		LOG(LOG_ERROR,"decodejxr:Converter.Copy failed");
-		return;
-	}
-	pConverter->Release(&pConverter);
-	pDecoder->Release(&pDecoder);
-	pFactory->Release(&pFactory);
-	pCodecFactory->Release(&pCodecFactory);
+	
+	if (pConverter) pConverter->Release(&pConverter);
+	if (pDecoder) pDecoder->Release(&pDecoder);
+	if (pFactory) pFactory->Release(&pFactory);
+	if (pCodecFactory) pCodecFactory->Release(&pCodecFactory);
+	return success;
 }
 void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffset, bool forCubeTexture, bool& hasalpha)
 {
@@ -155,6 +120,8 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 		bitmaparray.resize(texcount);
 	uint32_t tmpwidth = width;
 	uint32_t tmpheight = width;
+	uint8_t* maintexbytes=nullptr;
+	uint32_t maintexlen=0;
 	for (uint32_t i = 0; i < texcount; i++)
 	{
 		switch (format)
@@ -172,13 +139,40 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 				}
 				else
 					data->readUnsignedInt(texlen);
-				if (texlen == 0)
-					break;
-				uint8_t texbytes[texlen];
-				data->readBytes(data->getPosition(),texlen,texbytes);
 				if (bitmaparray[i].size() < tmpwidth*tmpheight*(format == 0 ? 3 : 4))
 					bitmaparray[i].resize(tmpwidth*tmpheight*(format == 0 ? 3 : 4));
-				decodejxr(texbytes,texlen,bitmaparray[i],tmpwidth,tmpheight,format == 1);
+				if (texlen == 0)
+				{
+					if (maintexbytes)
+					{
+						// fallback to main image if no data for mipmap image available
+						decodejxr(maintexbytes,maintexlen,bitmaparray[i],tmpwidth,tmpheight,format == 1);
+					}
+				}
+				else
+				{
+					uint8_t* texbytes = new uint8_t[texlen];
+					data->readBytes(data->getPosition(),texlen,texbytes);
+					if (decodejxr(texbytes,texlen,bitmaparray[i],tmpwidth,tmpheight,format == 1))
+					{
+						if (maintexbytes == nullptr)
+						{
+							maintexbytes = texbytes;
+							maintexlen = texlen;
+							texbytes = nullptr;
+						}
+						else
+							delete[] texbytes;
+					}
+					else
+					{
+						if (maintexbytes)
+						{
+							// fallback to main image if decoding of mipmap image fails
+							decodejxr(maintexbytes,maintexlen,bitmaparray[i],tmpwidth,tmpheight,format == 1);
+						}
+					}
+				}
 				hasalpha = (format == 1);
 				data->setPosition(data->getPosition()+texlen);
 				tmpwidth >>= 1;
@@ -191,6 +185,8 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 		}
 	}
 	data->setPosition(endposition);
+	if (maintexbytes)
+		delete[] maintexbytes;
 }
 
 void TextureBase::setFormat(const tiny_string& f)

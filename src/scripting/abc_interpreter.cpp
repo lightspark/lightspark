@@ -1376,7 +1376,27 @@ bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden)
 		!objtype->as<Class_inherit>()->hasoverriddenmethod(name) // current method is not in overridden methods
 		);
 }
-
+void setForceInt(preloadstate& state,memorystream& code,Class_base** resulttype)
+{
+	switch (code.peekbyte())
+	{
+		case 0x73://convert_i
+		case 0x35://li8
+		case 0x36://li16
+		case 0x37://li32
+		case 0x38://lf32
+		case 0x39://lf64
+		case 0x3a://si8
+		case 0x3b://si16
+		case 0x3c://si32
+			state.preloadedcode.back().pcode.local3.flags |= ABC_OP_FORCEINT;
+			*resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+			break;
+		default:
+			break;
+	}
+	
+}
 bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_jumpspace, Class_base* restype,int preloadpos=-1,int preloadlocalpos=-1, bool checkchanged=false,bool fromdup = false, uint32_t opcode_setslot=UINT32_MAX)
 {
 #ifdef ENABLE_OPTIMIZATION
@@ -2263,11 +2283,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 					else
 						resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				}
-				if (code.peekbyte() == 0x73)//convert_i
-				{
-					state.preloadedcode.back().pcode.local3.flags |= ABC_OP_FORCEINT;
-					resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
-				}
+				setForceInt(state,code,&resulttype);
 				break;
 			case ABC_OP_OPTIMZED_MODULO:
 				if (op1type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
@@ -2279,19 +2295,14 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 			case ABC_OP_OPTIMZED_MULTIPLY:
 			case ABC_OP_OPTIMZED_DIVIDE:
 				resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
-				if (code.peekbyte() == 0x73)//convert_i
-				{
-					state.preloadedcode.back().pcode.local3.flags |= ABC_OP_FORCEINT;
-					resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
-				}
+				setForceInt(state,code,&resulttype);
 				break;
 			case ABC_OP_OPTIMZED_ADD_I:
 				if (op1isconstant)
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_int= asAtomHandler::toInt(*state.preloadedcode.back().pcode.arg1_constant);
 				if (op2isconstant)
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg2_int= asAtomHandler::toInt(*state.preloadedcode.back().pcode.arg2_constant);
-				if (code.peekbyte() == 0x73)//convert_i
-					state.preloadedcode.back().pcode.local3.flags |= ABC_OP_FORCEINT;
+				setForceInt(state,code,&resulttype);
 				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_RSHIFT:
@@ -3783,6 +3794,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								typestack.push_back(typestackentry(function->inClass,isborrowed));
 								break;
 							}
+							if (function->isStatic && !isborrowed && v->kind == DECLARED_TRAIT)
+							{
+								// property is a static variable of the class this function belongs to
+								o=asAtomHandler::fromObjectNoPrimitive(function->inClass);
+								addCachedConstant(state,mi, o,code);
+								typestack.push_back(typestackentry(function->inClass,false));
+								break;
+							}
 						}
 					}
 					if (!found)
@@ -3926,9 +3945,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 								asAtom clAtom = asAtomHandler::fromObjectNoPrimitive(function->inClass);
 								addCachedConstant(state,state.mi,clAtom,code);
-								// convert to getprop on class
-								setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,0x66,code,true, false,resulttype,p,true,false,false,false);
-								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
+								if (v->slotid)
+								{
+									// convert to getslot on class
+									setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,false,ABC_OP_OPTIMZED_GETSLOT_SETSLOT);
+									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint =v->slotid-1;
+								}
+								else
+								{
+									// convert to getprop on class
+									setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,0x66,code,true, false,resulttype,p,true,false,false,false);
+									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
+								}
 								typestack.push_back(typestackentry(resulttype,false));
 								break;
 							}
@@ -4234,8 +4262,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									asAtom o = asAtomHandler::invalidAtom;
 									it->objtype->getInstance(o,false,nullptr,0);
 									it->objtype->setupDeclaredTraits(asAtomHandler::getObject(o),false);
-		
 									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr);
+									if (!v && it->objtype->is<Class_inherit>())
+									{
+										v = it->objtype->findVariableByMultiname(*name,nullptr);
+										if (v && v->kind != DECLARED_TRAIT)
+											v=nullptr;
+									}
 									if (!asAtomHandler::isPrimitive(o) && v && v->slotid)
 									{
 										// we can skip coercing when setting the slot value if
@@ -5953,7 +5986,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										{
 											// function is a class generator, we can use it as the result type
 											resulttype = asAtomHandler::as<Class_base>(func);
-											if (resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr() || resulttype == Class<Number>::getRef(function->getSystemState()).getPtr())
+											if (resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()
+													|| resulttype == Class<UInteger>::getRef(function->getSystemState()).getPtr()
+													|| resulttype == Class<Number>::getRef(function->getSystemState()).getPtr())
 											{
 												if (state.operandlist.size() > 2 && typestack.size() > 0 && typestack.back().obj == resulttype)
 													isGenerator=true; // generator can be skipped
@@ -5964,6 +5999,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 													if (resulttype != Class<Number>::getRef(function->getSystemState()).getPtr()
 															|| (state.operandlist.size() > 0
 																&& state.operandlist.back().objtype != Class<Integer>::getRef(function->getSystemState()).getPtr()
+																&& state.operandlist.back().objtype != Class<UInteger>::getRef(function->getSystemState()).getPtr()
 																&& state.operandlist.back().objtype != Class<Number>::getRef(function->getSystemState()).getPtr()))
 														generatorneedsconversion=true;
 												}
@@ -6048,7 +6084,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									if ((opcode == 0x4f && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code)) ||
 									   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,!(reuseoperand || generatorneedsconversion) || !isGenerator,p,resulttype))))
 									{
-										// generator for Integer/Number can be skipped if argument is already an Integer/Number and the result will be used as local result
+										// generator for Integer/UInteger/Number can be skipped if argument is already an Integer/UInteger/Number and the result will be used as local result
 										if (isGenerator && (reuseoperand || generatorneedsconversion))
 										{
 											removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);
@@ -6070,13 +6106,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											if (generatorneedsconversion)
 											{
 												// replace call to generator with optimized convert_i/convert_d
-												setupInstructionOneArgument(state
-																			,resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()? ABC_OP_OPTIMZED_CONVERTI: ABC_OP_OPTIMZED_CONVERTD
-																			,resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()? 0x73 //convert_i
-																																					  : 0x75 //convert_d
-																			,code,true,true,resulttype,code.tellg(),true,false,false,true
-																			,resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()? ABC_OP_OPTIMZED_CONVERTI_SETSLOT: ABC_OP_OPTIMZED_CONVERTD_SETSLOT
-																			);
+												if (resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr())
+													setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTI,
+																				0x73 //convert_i
+																				,code,true,true,resulttype,code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTI_SETSLOT);
+												else if (resulttype == Class<UInteger>::getRef(function->getSystemState()).getPtr())
+													setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTU,
+																				0x74 //convert_u
+																				,code,true,true,resulttype,code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTU_SETSLOT);
+												else 
+													setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTD,
+																				0x75 //convert_d
+																				,code,true,true,resulttype,code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTD_SETSLOT);
 											}
 											typestack.push_back(typestackentry(resulttype,false));
 											break;
@@ -6616,11 +6657,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 #endif
 				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_ADD,opcode,code,false,false,true,code.tellg(),resulttype,ABC_OP_OPTIMZED_ADD_SETSLOT))
 				{
-					if (code.peekbyte()==0x73)//convert_i
-					{
-						state.preloadedcode.back().pcode.local3.flags |= ABC_OP_FORCEINT;
-						resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
-					}
+					setForceInt(state,code,&resulttype);
 				}
 				typestack.push_back(typestackentry(resulttype,false));
 				break;
@@ -6631,11 +6668,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_SUBTRACT_SETSLOT))
 				{
-					if (code.peekbyte()==0x73)//convert_i
-					{
-						state.preloadedcode.back().pcode.local3.flags |= ABC_OP_FORCEINT;
-						resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
-					}
+					setForceInt(state,code,&resulttype);
 				}
 				typestack.push_back(typestackentry(resulttype,false));
 				break;
@@ -6646,11 +6679,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_MULTIPLY_SETSLOT))
 				{
-					if (code.peekbyte()==0x73)//convert_i
-					{
-						state.preloadedcode.back().pcode.local3.flags |= ABC_OP_FORCEINT;
-						resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
-					}
+					setForceInt(state,code,&resulttype);
 				}
 				typestack.push_back(typestackentry(resulttype,false));
 				break;
@@ -6661,11 +6690,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_DIVIDE,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_DIVIDE_SETSLOT))
 				{
-					if (code.peekbyte()==0x73)//convert_i
-					{
-						state.preloadedcode.back().pcode.local3.flags |= ABC_OP_FORCEINT;
-						resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
-					}
+					setForceInt(state,code,&resulttype);
 				}
 				typestack.push_back(typestackentry(resulttype,false));
 				break;

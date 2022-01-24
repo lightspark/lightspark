@@ -1449,10 +1449,6 @@ void DefineTextTag::computeCached()
 
 	FontTag* curFont = nullptr;
 	Vector2 curPos;
-	FILLSTYLE fs(1);
-	fs.FillStyleType = SOLID_FILL;
-	fs.Color = RGBA(0,0,0,255);
-	fillStyles.push_back(fs);
 
 	/*
 	 * All coordinates are scaled into 1024*20*20 units per pixel.
@@ -1476,10 +1472,14 @@ void DefineTextTag::computeCached()
 			assert_and_throw(curFont);
 		}
 		assert_and_throw(curFont);
+		FILLSTYLE fs(1);
+		fs.FillStyleType = SOLID_FILL;
+		fs.Color = RGBA(0,0,0,255);
 		if(TextRecords[i].StyleFlagsHasColor)
-		{
-			fillStyles.front().Color = TextRecords[i].TextColor;
-		}
+			fs.Color = TextRecords[i].TextColor;
+		else if (!fillStyles.empty())
+			fs.Color = fillStyles.back().Color;
+		fillStyles.push_back(fs);
 		if(TextRecords[i].StyleFlagsHasXOffset)
 		{
 			curPos.x = TextRecords[i].XOffset;
@@ -1499,6 +1499,9 @@ void DefineTextTag::computeCached()
 		{
 			const GLYPHENTRY& ge = TextRecords[i].GlyphEntries[j];
 			std::vector<SHAPERECORD>& sr = curFont->getGlyphShapes().at(ge.GlyphIndex).ShapeRecords;
+			//set fillstyle of each glyph to fillstyle of this TextRecord
+			for (auto it = sr.begin(); it != sr.end(); it++)
+				(*it).FillStyle0 = i+1;
 			Vector2 glyphPos = curPos*twipsScaling;
 
 			MATRIX glyphMatrix(scaling, scaling, 0, 0, 

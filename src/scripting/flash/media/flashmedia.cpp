@@ -26,6 +26,7 @@
 #include "backends/rendering.h"
 #include "backends/streamcache.h"
 #include "scripting/argconv.h"
+#include "parsing/tags.h"
 #include <unistd.h>
 
 using namespace lightspark;

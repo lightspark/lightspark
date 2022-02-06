@@ -36,6 +36,10 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
+#include "parsing/tags.h"
 
 
 using namespace std;
@@ -1393,7 +1397,7 @@ std::istream& lightspark::operator>>(std::istream& stream, GRADIENTBEVELFILTER& 
 	v.Knockout = UB(1,bs);
 	v.CompositeSource = UB(1,bs);
 	v.OnTop = UB(1,bs);
-	bs.discard(4);
+	v.Passes = UB(4,bs);
 
 	return stream;
 }
@@ -1641,7 +1645,7 @@ void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_s
 	ns="";
 }
 
-RunState::RunState():last_FP(-1),FP(0),next_FP(0),stop_FP(false),explicit_FP(false),creatingframe(false),frameadvanced(false),avm1ScriptExecuted(false)
+RunState::RunState():last_FP(-1),FP(0),next_FP(0),stop_FP(false),explicit_FP(false),creatingframe(false),frameadvanced(false)
 {
 }
 

@@ -30,11 +30,7 @@ using namespace lightspark;
 void AVM1MovieClip::afterConstruction()
 {
 	MovieClip::afterConstruction();
-	if (getSystemState()->getSwfVersion() >= 6)
-	{
-		this->incRef();
-		getVm(getSystemState())->prependEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"load")));
-	}
+	getSystemState()->stage->AVM1AddEventListener(this);
 }
 
 bool AVM1MovieClip::destruct()

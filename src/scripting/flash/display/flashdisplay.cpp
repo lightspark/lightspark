@@ -37,8 +37,12 @@
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/avm1/avm1text.h"
+#include "parsing/tags.h"
 #include <algorithm>
 
 #define FRAME_NOT_FOUND 0xffffffff //Used by getFrameIdBy*
@@ -1470,12 +1474,15 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false),inAVM1Attachment(false),actions(nullptr),totalFrames_unreliable(1),enabled(true)
+MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
+  ,inAVM1Attachment(false),isAVM1Loaded(false),avm1PrevScriptedClip(nullptr),avm1NextScriptedClip(nullptr)
+  ,actions(nullptr),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false),inAVM1Attachment(false)
+MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
+  ,inAVM1Attachment(false),isAVM1Loaded(false),avm1PrevScriptedClip(nullptr),avm1NextScriptedClip(nullptr)
   ,actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
@@ -1487,6 +1494,9 @@ bool MovieClip::destruct()
 {
 	getSystemState()->stage->removeHiddenObject(this);
 	frames.clear();
+	inAVM1Attachment=false;
+	isAVM1Loaded=false;
+	getSystemState()->stage->AVM1RemoveScriptedMovieClip(this);
 	setFramesLoaded(0);
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())
@@ -1644,7 +1654,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 	{
 		th->state.stop_FP=false;
 		if (th->isOnStage())
-			th->advanceFrame();
+		{
+			if (th->needsActionScript3())
+				th->advanceFrame();
+		}
 		else
 			th->getSystemState()->stage->addHiddenObject(th);
 	}
@@ -1696,6 +1709,8 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
+	if (!needsActionScript3())
+		return;
 	if (inExecuteFramescript)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 
@@ -1712,7 +1727,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 			this->getSystemState()->stage->addHiddenObject(this);
 	}
 	else if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
-		advanceFrame();
+			advanceFrame();
 }
 
 void MovieClip::AVM1gotoFrameLabel(const tiny_string& label,bool stop, bool switchplaystate)
@@ -1731,19 +1746,8 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 		frame = 0;
 	state.next_FP = frame;
 	state.explicit_FP = true;
-	// no need to advance if we stop at current frame
-	bool advance = !stop || state.next_FP != state.FP;
 	if (switchplaystate)
-	{
-		if (!stop && state.stop_FP)
-		{
-			// play called and we have stopped before, no need to advance
-			advance = false;
-		}
 		state.stop_FP = stop;
-	}
-	if (advance)
-		advanceFrame();
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,gotoAndStop)
@@ -1765,6 +1769,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 	th->state.next_FP = th->state.FP == th->getFramesLoaded()-1 ? th->state.FP : th->state.FP+1;
 	th->state.explicit_FP=true;
 	th->state.stop_FP=true;
+	if (!th->needsActionScript3())
+		return;
+	
 	if (th->inExecuteFramescript)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 	if (!th->isOnStage())
@@ -1776,7 +1783,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 	}
 	else if (th->state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
 		th->advanceFrame();
-
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
@@ -1786,6 +1792,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 	th->state.next_FP = th->state.FP == 0 ? th->state.FP : th->state.FP-1;
 	th->state.explicit_FP=true;
 	th->state.stop_FP=true;
+	if (!th->needsActionScript3())
+		return;
 	if (th->inExecuteFramescript)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 	if (!th->isOnStage())
@@ -1947,12 +1955,6 @@ void MovieClip::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping
 {
 	getSystemState()->stage->AVM1RemoveMouseListener(this);
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
-	if (this->actions && this->actions->AllEventFlags.ClipEventEnterFrame)
-	{
-		this->incRef();
-		getSystemState()->unregisterFrameListener(_MR(this));
-		getSystemState()->stage->AVM1RemoveEventListener(this);
-	}
 }
 bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 {
@@ -1973,7 +1975,7 @@ bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 }
 bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 {
-	if (!this->isOnStage() || !this->enabled || !this->visible)
+	if (!this->isOnStage() || !this->enabled)
 		return false;
 	if (dispatcher->is<DisplayObject>())
 	{
@@ -1982,7 +1984,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 		this->globalToLocal(xg,yg,x,y);
 		this->incRef();
 		_NR<DisplayObject> dispobj=hitTest(_MR(this),x,y, DisplayObject::MOUSE_CLICK,true);
-		if (this->actions)
+		if (actions)
 		{
 			for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
 			{
@@ -2026,56 +2028,6 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				{
 					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 				}
-				if (e->type == "enterFrame" && it->EventFlags.ClipEventEnterFrame)
-				{
-					if (!this->isOnStage())
-						return;
-					if (!this->state.explicit_FP)
-					{
-						ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
-					}
-				}
-				if (e->type == "load" && it->EventFlags.ClipEventLoad)
-				{
-					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
-				}
-			}
-		}
-		if (e->type == "enterFrame")
-		{
-			if (!this->isOnStage())
-				return;
-			if (!this->state.explicit_FP)
-			{
-				asAtom func=asAtomHandler::invalidAtom;
-				multiname m(nullptr);
-				m.name_type=multiname::NAME_STRING;
-				m.isAttribute = false;
-			
-				m.name_s_id=BUILTIN_STRINGS::STRING_ONENTERFRAME;
-				getVariableByMultiname(func,m);
-				if (asAtomHandler::is<AVM1Function>(func))
-				{
-					asAtom ret=asAtomHandler::invalidAtom;
-					asAtom obj = asAtomHandler::fromObject(this);
-					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-				}
-			}
-		}
-		else if (e->type == "load")
-		{
-			asAtom func=asAtomHandler::invalidAtom;
-			multiname m(nullptr);
-			m.name_type=multiname::NAME_STRING;
-			m.isAttribute = false;
-
-			m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
-			getVariableByMultiname(func,m);
-			if (asAtomHandler::is<AVM1Function>(func))
-			{
-				asAtom ret=asAtomHandler::invalidAtom;
-				asAtom obj = asAtomHandler::fromObject(this);
-				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 			}
 		}
 	}
@@ -2085,23 +2037,23 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 {
 	actions = &clipactions;
-	if (this->actions->AllEventFlags.ClipEventMouseDown ||
-			this->actions->AllEventFlags.ClipEventMouseMove ||
-			this->actions->AllEventFlags.ClipEventRollOver ||
-			this->actions->AllEventFlags.ClipEventRollOut ||
-			this->actions->AllEventFlags.ClipEventPress ||
-			this->actions->AllEventFlags.ClipEventMouseUp)
+	if (clipactions.AllEventFlags.ClipEventMouseDown ||
+			clipactions.AllEventFlags.ClipEventMouseMove ||
+			clipactions.AllEventFlags.ClipEventRollOver ||
+			clipactions.AllEventFlags.ClipEventRollOut ||
+			clipactions.AllEventFlags.ClipEventPress ||
+			clipactions.AllEventFlags.ClipEventMouseUp)
 	{
 		setMouseEnabled(true);
 		getSystemState()->stage->AVM1AddMouseListener(this);
 	}
-	if (this->actions->AllEventFlags.ClipEventKeyDown ||
-			this->actions->AllEventFlags.ClipEventKeyUp)
+	if (clipactions.AllEventFlags.ClipEventKeyDown ||
+			clipactions.AllEventFlags.ClipEventKeyUp)
 		getSystemState()->stage->AVM1AddKeyboardListener(this);
 
-	if (this->actions->AllEventFlags.ClipEventLoad)
+	if (clipactions.AllEventFlags.ClipEventLoad)
 		getSystemState()->stage->AVM1AddEventListener(this);
-	if (this->actions->AllEventFlags.ClipEventEnterFrame)
+	if (clipactions.AllEventFlags.ClipEventEnterFrame)
 	{
 		this->incRef();
 		getSystemState()->registerFrameListener(_MR(this));
@@ -2521,7 +2473,7 @@ void DisplayObjectContainer::checkRatioForLegacyChildAt(int32_t depth,uint32_t r
 {
 	if(!hasLegacyChildAt(depth))
 	{
-		LOG(LOG_ERROR,"checkRatioForLegacyChildAt: no child at that depth "<<depth<<" "<<this->toDebugString()<<" "<<this->getTagID());
+		LOG(LOG_ERROR,"checkRatioForLegacyChildAt: no child at that depth "<<depth<<" "<<this->toDebugString());
 		return;
 	}
 	mapDepthToLegacyChild.at(depth)->checkRatio(ratio,inskipping);
@@ -3689,7 +3641,7 @@ void Stage::buildTraits(ASObject* o)
 }
 
 Stage::Stage(Class_base* c):
-	DisplayObjectContainer(c), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
+	DisplayObjectContainer(c),avm1ScriptMovieClipFirst(nullptr),avm1ScriptMovieClipLast(nullptr), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
 {
 	subtype = SUBTYPE_STAGE;
 	onStage = true;
@@ -3885,6 +3837,40 @@ void Stage::removeHiddenObject(MovieClip* o)
 		hiddenobjects.erase(it);
 }
 
+
+void Stage::AVM1AddScriptedMovieClip(MovieClip* clip)
+{
+	if (clip->avm1PrevScriptedClip || clip->avm1NextScriptedClip || this->avm1ScriptMovieClipFirst == clip)
+		return;
+	if (!this->avm1ScriptMovieClipFirst)
+	{
+		this->avm1ScriptMovieClipFirst=clip;
+		this->avm1ScriptMovieClipLast=clip;
+	}
+	else
+	{
+		clip->avm1NextScriptedClip=this->avm1ScriptMovieClipFirst;
+		this->avm1ScriptMovieClipFirst->avm1PrevScriptedClip=clip;
+		this->avm1ScriptMovieClipFirst=clip;
+	}
+}
+
+void Stage::AVM1RemoveScriptedMovieClip(MovieClip* clip)
+{
+	if (!clip->avm1PrevScriptedClip && !clip->avm1NextScriptedClip)
+		return;
+	if (clip->avm1PrevScriptedClip)
+		clip->avm1PrevScriptedClip->avm1NextScriptedClip=clip->avm1NextScriptedClip;
+	else
+		this->avm1ScriptMovieClipFirst=clip->avm1NextScriptedClip;
+	if (!clip->avm1NextScriptedClip)
+		this->avm1ScriptMovieClipLast=clip->avm1PrevScriptedClip;
+	else
+		clip->avm1NextScriptedClip->avm1PrevScriptedClip=clip->avm1PrevScriptedClip;
+	clip->avm1PrevScriptedClip=nullptr;
+	clip->avm1NextScriptedClip=nullptr;
+}
+
 void Stage::advanceFrame()
 {
 	DisplayObjectContainer::advanceFrame();
@@ -3893,6 +3879,16 @@ void Stage::advanceFrame()
 	{
 		(*it)->advanceFrame();
 		it++;
+	}
+	if (!needsActionScript3())
+	{
+		MovieClip* clip = avm1ScriptMovieClipFirst;
+		while (clip)
+		{
+			clip->AVM1HandleScripts();
+			clip = clip->avm1NextScriptedClip;
+		}
+		DisplayObjectContainer::declareFrame();
 	}
 }
 
@@ -4108,7 +4104,6 @@ bool Stage::AVM1RemoveResizeListener(ASObject *o)
 	}
 	return false;
 }
-
 
 ASFUNCTIONBODY_ATOM(Stage,_getFocus)
 {
@@ -4929,7 +4924,7 @@ bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, nu
 			ret=true;
 		}
 	}
-	if (!downState.isNull() && upState->getBounds(txmin,txmax,tymin,tymax,downState->getMatrix()))
+	if (!downState.isNull() && downState->getBounds(txmin,txmax,tymin,tymax,downState->getMatrix()))
 	{
 		if(ret==true)
 		{
@@ -5347,8 +5342,6 @@ void DisplayObjectContainer::initFrame()
 
 void DisplayObjectContainer::executeFrameScript()
 {
-	// I've not found any documentation about the order of script execution in AVM1 but it seems they are executed top down
-	DisplayObject::executeFrameScript();
 	// elements of the dynamicDisplayList may be removed during executeFrameScript() calls,
 	// so we create a temporary list containing all elements
 	std::vector < _R<DisplayObject> > tmplist;
@@ -5445,7 +5438,7 @@ void MovieClip::declareFrame()
 	//      super();
 	//      // code here will be executed _after_ childclip was constructed
 	//  }
-	if (!this->getConstructIndicator())
+	if (needsActionScript3() && !this->getConstructIndicator())
 	{
 		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 		getClass()->handleConstruction(obj,nullptr,0,true);
@@ -5465,12 +5458,61 @@ void MovieClip::declareFrame()
 				++iter;
 			}
 		}
-		if (newFrame)
+		if (newFrame && needsActionScript3())
 			state.frameadvanced=true;
 	}
 	// remove all legacy objects that have not been handled in the PlaceObject/RemoveObject tags
 	LegacyChildEraseDeletionMarked();
 	DisplayObjectContainer::declareFrame();
+}
+void MovieClip::AVM1HandleScripts()
+{
+	if (isAVM1Loaded && !this->isOnStage())
+		return;
+	auto itbind = variablebindings.begin();
+	while (itbind != variablebindings.end())
+	{
+		asAtom v = getVariableBindingValue(getSystemState()->getStringFromUniqueId((*itbind).first));
+		(*itbind).second->UpdateVariableBinding(v);
+		itbind++;
+	}
+	bool wasexplicit = state.explicit_FP;
+	if (actions && !this->state.explicit_FP)
+	{
+		for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
+		{
+			std::map<uint32_t,asAtom> m;
+			if (!isAVM1Loaded && it->EventFlags.ClipEventLoad)
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+			if (isAVM1Loaded && it->EventFlags.ClipEventEnterFrame)
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+		}
+	}
+	if (!this->state.explicit_FP)
+	{
+		asAtom func=asAtomHandler::invalidAtom;
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+	
+		m.name_s_id= isAVM1Loaded ? BUILTIN_STRINGS::STRING_ONENTERFRAME : BUILTIN_STRINGS::STRING_ONLOAD;
+		getVariableByMultiname(func,m);
+		if (asAtomHandler::is<AVM1Function>(func))
+		{
+			asAtom ret=asAtomHandler::invalidAtom;
+			asAtom obj = asAtomHandler::fromObject(this);
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+		}
+	}
+	// TODO: check if the conditions when to execute the frame scripts are correct:
+	// - clip was just initialized and is accessed for the first time
+	// - clip is currently playing (not stopped)
+	// - playhead was explicitely set before calling the onEnterFrame handlers
+	// - playhead was explicitely set during calling the onEnterFrame handlers but didn't change the current frame
+	if (!isAVM1Loaded || !state.stop_FP || wasexplicit || (this->state.explicit_FP && (state.FP==state.next_FP)))
+		AVM1ExecuteFrameActions(state.FP);
+	state.explicit_FP=false;
+	isAVM1Loaded=true;
 }
 void MovieClip::initFrame()
 {
@@ -5503,26 +5545,9 @@ void MovieClip::initFrame()
 
 void MovieClip::executeFrameScript()
 {
-	auto itbind = variablebindings.begin();
-	while (itbind != variablebindings.end())
-	{
-		asAtom v = getVariableBindingValue(getSystemState()->getStringFromUniqueId((*itbind).first));
-		(*itbind).second->UpdateVariableBinding(v);
-		itbind++;
-	}
+	Sprite::executeFrameScript();
 	state.explicit_FP=false;
-	if (!needsActionScript3())
-	{
-		if (!state.avm1ScriptExecuted)
-		{
-			state.avm1ScriptExecuted=true;
-			auto iter=frames.begin();
-			for(uint32_t i=0;i<state.FP;i++)
-				++iter;
-			iter->AVM1executeActions(this);
-		}
-	}
-
+	
 	if (frameScriptToExecute != UINT32_MAX)
 	{
 		uint32_t f = frameScriptToExecute;
@@ -5534,7 +5559,6 @@ void MovieClip::executeFrameScript()
 		ASATOM_DECREF(v);
 		inExecuteFramescript = false;
 	}
-	Sprite::executeFrameScript();
 }
 
 void MovieClip::checkRatio(uint32_t ratio, bool inskipping)
@@ -5569,6 +5593,7 @@ void DisplayObjectContainer::advanceFrame()
  */
 void MovieClip::advanceFrame()
 {
+	getSystemState()->stage->AVM1AddScriptedMovieClip(this);
 	if (state.stop_FP)
 		stopSound();
 	else
@@ -5618,7 +5643,6 @@ void MovieClip::advanceFrame()
 	if (state.next_FP != state.FP)
 	{
 		state.FP=state.next_FP;
-		state.avm1ScriptExecuted=false;
 	}
 	if(!state.stop_FP && getFramesLoaded()>0)
 	{
@@ -5632,12 +5656,16 @@ void MovieClip::advanceFrame()
 	// ensure the legacy objects of the current frame are created
 	if (int(state.FP) >= state.last_FP) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
 		DisplayObjectContainer::advanceFrame();
-	declareFrame();
-	if (state.explicit_FP)
+	
+	if (needsActionScript3())
 	{
-		// setting state.frameadvanced ensures that the frame is not declared multiple times
-		// if it was set by an actionscript command.
-		state.frameadvanced = true;
+		declareFrame();
+		if (state.explicit_FP)
+		{
+			// setting state.frameadvanced ensures that the frame is not declared multiple times
+			// if it was set by an actionscript command.
+			state.frameadvanced = true;
+		}
 	}
 }
 
@@ -5648,12 +5676,10 @@ void MovieClip::constructionComplete()
 	/* If this object was 'new'ed from AS code, the first
 	 * frame has not been initalized yet, so init the frame
 	 * now */
-	if(state.last_FP == -1)
+	if(state.last_FP == -1 && needsActionScript3())
 	{
 		advanceFrame();
 		initFrame();
-		if (!needsActionScript3())
-			executeFrameScript();
 	}
 }
 
@@ -5680,6 +5706,19 @@ void MovieClip::afterConstruction()
 	}
 }
 
+void MovieClip::setOnStage(bool staged, bool forced)
+{
+	bool wasOnStage = isOnStage();
+	Sprite::setOnStage(staged,forced);
+	if (isOnStage())
+	{
+		if (isAVM1Loaded && !wasOnStage)
+			getSystemState()->stage->AVM1AddScriptedMovieClip(this);
+	}
+	else
+		getSystemState()->stage->AVM1RemoveScriptedMovieClip(this);
+}
+
 void MovieClip::resetLegacyState()
 {
 	DisplayObjectContainer::resetLegacyState();
@@ -5690,7 +5729,6 @@ void MovieClip::resetLegacyState()
 	state.explicit_FP=false;
 	state.creatingframe=false;
 	state.frameadvanced=false;
-	state.avm1ScriptExecuted=false;
 }
 
 Frame *MovieClip::getCurrentFrame()

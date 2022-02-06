@@ -1755,7 +1755,7 @@ bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& y
 {
 	number_t x1, x2, y1, y2;
 	if (!boundsRect(x1, x2, y1, y2))
-		return abstract_b(getSystemState(),false);
+		return false;
 
 	localToGlobal(x1, y1, x1, y1);
 	localToGlobal(x2, y2, x2, y2);
@@ -1802,7 +1802,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestObject)
 	number_t intersect_xmin = dmax(xmin, xmin2);
 	number_t intersect_ymax = dmin(ymax, ymax2);
 	number_t intersect_ymin = dmax(ymin, ymin2);
-
 	asAtomHandler::setBool(ret,(intersect_xmax > intersect_xmin) && 
 			  (intersect_ymax > intersect_ymin));
 }
@@ -2281,7 +2280,6 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("_root","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getRoot),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_url","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getURL),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_hitTest),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("hittest","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_hitTest),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_localToGlobal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("globalToLocal","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_globalToLocal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getBytesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getBytesLoaded),NORMAL_METHOD,true);

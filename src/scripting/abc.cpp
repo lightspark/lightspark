@@ -76,7 +76,8 @@
 #include "scripting/class.h"
 #include "exceptions.h"
 #include "scripting/abc.h"
-#include"backends/rendering.h"
+#include "backends/rendering.h"
+#include "parsing/tags.h"
 
 using namespace std;
 using namespace lightspark;
@@ -94,135 +95,6 @@ bool lightspark::isVmThread()
 #endif
 }
 
-DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
-{
-	int dest=in.tellg();
-	dest+=h.getLength();
-	LOG(LOG_CALLS,"DoABCTag");
-
-	RootMovieClip* root=getParseThread()->getRootMovie();
-	root->incRef();
-	context=new ABCContext(_MR(root), in, getVm(root->getSystemState()));
-
-	int pos=in.tellg();
-	if(dest!=pos)
-	{
-		LOG(LOG_ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
-		throw ParseException("Not complete ABC data");
-	}
-}
-
-void DoABCTag::execute(RootMovieClip* root) const
-{
-	LOG(LOG_CALLS,"ABC Exec");
-	/* currentVM will free the context*/
-	if (!getWorker() || getWorker()->isPrimordial)
-		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
-	else
-		context->exec(false);
-}
-
-DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
-{
-	int dest=in.tellg();
-	dest+=h.getLength();
-	in >> Flags >> Name;
-	LOG(LOG_CALLS,"DoABCDefineTag Name: " << Name);
-
-	RootMovieClip* root=getParseThread()->getRootMovie();
-	root->incRef();
-	context=new ABCContext(_MR(root), in, getVm(root->getSystemState()));
-
-	int pos=in.tellg();
-	if(dest!=pos)
-	{
-		LOG(LOG_ERROR,"Corrupted ABC data: missing " << dest-in.tellg());
-		throw ParseException("Not complete ABC data");
-	}
-}
-
-void DoABCDefineTag::execute(RootMovieClip* root) const
-{
-	LOG(LOG_CALLS,"ABC Exec " << Name);
-	/* currentVM will free the context*/
-	// some swf files have multiple abc tags without the "lazy" flag.
-	// if the swf file also has a SymbolClass, we just ignore them and execute all abc tags lazy.
-	// the real start of the main class is done when the symbol with id 0 is detected in SymbolClass tag
-	bool lazy = root->hasSymbolClass || ((int32_t)Flags)&1;
-	if (!getWorker() || getWorker()->isPrimordial)
-		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,lazy)));
-	else
-		context->exec(lazy);
-}
-
-SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)
-{
-	LOG(LOG_TRACE,"SymbolClassTag");
-	in >> NumSymbols;
-
-	Tags.resize(NumSymbols);
-	Names.resize(NumSymbols);
-
-	for(int i=0;i<NumSymbols;i++)
-		in >> Tags[i] >> Names[i];
-}
-
-void SymbolClassTag::execute(RootMovieClip* root) const
-{
-	LOG(LOG_TRACE,"SymbolClassTag Exec");
-
-	for(int i=0;i<NumSymbols;i++)
-	{
-		LOG(LOG_CALLS,"Binding " << Tags[i] << ' ' << Names[i]);
-		tiny_string className((const char*)Names[i],true);
-		if(Tags[i]==0)
-		{
-			root->hasMainClass=true;
-			root->incRef();
-			ASWorker* worker = getWorker();
-			if (worker && !worker->isPrimordial && root != root->getSystemState()->mainClip)
-			{
-				getVm(root->getSystemState())->buildClassAndInjectBase(className.raw_buf(),_MR(root));
-				worker->state ="running";
-				worker->incRef();
-				getVm(root->getSystemState())->addEvent(_MR(worker),_MR(Class<Event>::getInstanceS(root->getSystemState(),"workerState")));
-			}
-			else
-				getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
-		}
-		else
-		{
-			root->addBinding(className, root->dictionaryLookup(Tags[i]));
-		}
-	}
-}
-
-void ScriptLimitsTag::execute(RootMovieClip* root) const
-{
-	if (root != root->getSystemState()->mainClip)
-		return;
-	ASWorker* worker = getWorker();
-	if (worker)
-	{
-		if (MaxRecursionDepth > worker->limits.max_recursion)
-		{
-			delete[] worker->stacktrace;
-			worker->stacktrace = new stacktrace_entry[MaxRecursionDepth];
-		}
-		worker->limits.max_recursion = MaxRecursionDepth;
-		worker->limits.script_timeout = ScriptTimeoutSeconds;
-	}
-	else
-	{
-		if (MaxRecursionDepth > getVm(root->getSystemState())->limits.max_recursion)
-		{
-			delete[] getVm(root->getSystemState())->stacktrace;
-			getVm(root->getSystemState())->stacktrace = new stacktrace_entry[MaxRecursionDepth];
-		}
-		getVm(root->getSystemState())->limits.max_recursion = MaxRecursionDepth;
-		getVm(root->getSystemState())->limits.script_timeout = ScriptTimeoutSeconds;
-	}
-}
 
 void ABCVm::registerClasses()
 {

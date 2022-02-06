@@ -29,6 +29,7 @@
 #include "backends/rendering_context.h"
 #include "scripting/argconv.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
+#include "parsing/tags.h"
 
 using namespace std;
 using namespace lightspark;

@@ -586,6 +586,7 @@ public:
 
 class MovieClip: public Sprite, public FrameContainer
 {
+friend class Stage;
 private:
 	uint32_t getCurrentScene() const;
 	const Scene_data *getScene(const tiny_string &sceneName) const;
@@ -596,6 +597,9 @@ private:
 	uint32_t lastratio;
 	bool inExecuteFramescript;
 	bool inAVM1Attachment;
+	bool isAVM1Loaded;
+	MovieClip* avm1PrevScriptedClip;
+	MovieClip* avm1NextScriptedClip;
 protected:
 	const CLIPACTIONS* actions;
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
@@ -606,6 +610,7 @@ public:
 	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
 	void constructionComplete() override;
 	void afterConstruction() override;
+	void setOnStage(bool staged, bool forced) override;
 	void resetLegacyState() override;
 	RunState state;
 	_NR<AVM1MovieClipLoader> avm1loader;
@@ -663,6 +668,8 @@ public:
 	static void AVM1SetupMethods(Class_base* c);
 	void AVM1ExecuteFrameActionsFromLabel(const tiny_string &label);
 	void AVM1ExecuteFrameActions(uint32_t frame);
+	void AVM1HandleScripts();
+
 	ASFUNCTION_ATOM(AVM1AttachMovie);
 	ASFUNCTION_ATOM(AVM1CreateEmptyMovieClip);
 	ASFUNCTION_ATOM(AVM1RemoveMovieClip);
@@ -705,6 +712,10 @@ private:
 	vector<_R<ASObject>> avm1MouseListeners;
 	vector<_R<ASObject>> avm1EventListeners;
 	vector<_R<ASObject>> avm1ResizeListeners;
+	// double linked list of AVM1 MovieClips currently on Stage that have scripts to execute
+	// this is needed to execute the scripts in the correct order
+	MovieClip* avm1ScriptMovieClipFirst;
+	MovieClip* avm1ScriptMovieClipLast;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
 	bool renderImpl(RenderContext& ctxt) const override;
@@ -770,6 +781,8 @@ public:
 	void AVM1RemoveEventListener(ASObject *o);
 	void AVM1AddResizeListener(ASObject *o);
 	bool AVM1RemoveResizeListener(ASObject *o);
+	void AVM1AddScriptedMovieClip(MovieClip* clip);
+	void AVM1RemoveScriptedMovieClip(MovieClip* clip);
 };
 
 class StageScaleMode: public ASObject

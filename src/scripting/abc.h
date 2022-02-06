@@ -22,7 +22,6 @@
 
 #include "compat.h"
 #include <cstddef>
-#include "parsing/tags.h"
 #include "logger.h"
 #include <vector>
 #include <deque>
@@ -1372,39 +1371,6 @@ public:
 	void setIdle(bool isidle) { isIdle = isidle; }
 };
 
-class DoABCTag: public ControlTag
-{
-private:
-	ABCContext* context;
-public:
-	DoABCTag(RECORDHEADER h, std::istream& in);
-	TAGTYPE getType() const{ return ABC_TAG; }
-	void execute(RootMovieClip* root) const;
-};
-
-class DoABCDefineTag: public ControlTag
-{
-private:
-	UI32_SWF Flags;
-	STRING Name;
-	ABCContext* context;
-public:
-	DoABCDefineTag(RECORDHEADER h, std::istream& in);
-	TAGTYPE getType() const{ return ABC_TAG; }
-	void execute(RootMovieClip* root) const;
-};
-
-class SymbolClassTag: public ControlTag
-{
-private:
-	UI16_SWF NumSymbols;
-	std::vector<UI16_SWF> Tags;
-	std::vector<STRING> Names;
-public:
-	SymbolClassTag(RECORDHEADER h, std::istream& in);
-	TAGTYPE getType() const{ return SYMBOL_CLASS_TAG; }
-	void execute(RootMovieClip* root) const;
-};
 
 inline ABCVm* getVm(SystemState* sys)
 {

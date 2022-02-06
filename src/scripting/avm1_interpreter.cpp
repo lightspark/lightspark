@@ -23,6 +23,7 @@
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/avm1/avm1display.h"
+#include "parsing/tags.h"
 
 using namespace std;
 using namespace lightspark;
@@ -238,7 +239,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					break;
 				}
 				uint32_t frame = clip->as<MovieClip>()->state.next_FP;
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPlay ");
+				if (clip->as<MovieClip>()->state.stop_FP && clip->as<MovieClip>()->state.FP == frame)
+					frame++;
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPlay "<<frame);
 				clip->as<MovieClip>()->AVM1gotoFrame(frame,false,true);
 				break;
 			}
@@ -1490,6 +1493,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (asAtomHandler::isInvalid(ret))
 						asAtomHandler::setUndefined(ret);
 				}
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember done "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name)<<" " <<asAtomHandler::toDebugString(ret));
 				ASATOM_INCREF(ret);
 				ASATOM_DECREF(name);
 				ASATOM_DECREF(scriptobject);

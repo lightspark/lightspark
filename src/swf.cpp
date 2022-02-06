@@ -26,6 +26,7 @@
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/filesystem/flashfilesystem.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/avm1/avm1display.h"
 #include "logger.h"
@@ -41,6 +42,7 @@
 #include "backends/locale.h"
 #include "backends/currency.h"
 #include "memory_support.h"
+#include "parsing/tags.h"
 
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
@@ -1970,6 +1972,14 @@ void RootMovieClip::constructionComplete()
 		return;
 	}
 	MovieClip::constructionComplete();
+	if (!needsActionScript3())
+	{
+		advanceFrame();
+		declareFrame();
+		AVM1HandleScripts();
+		initFrame();
+	}
+	
 	incRef();
 	getSystemState()->stage->_addChildAt(_MR(this),0);
 	this->setOnStage(true,true);

@@ -141,7 +141,7 @@ tiny_string ASObject::toString()
 	switch(this->getObjectType())
 	{
 	case T_UNDEFINED:
-		return "undefined";
+		return getSystemState()->getSwfVersion() > 6 ? "undefined" : "";
 	case T_NULL:
 		return "null";
 	case T_BOOLEAN:
@@ -2960,7 +2960,7 @@ tiny_string asAtomHandler::toString(const asAtom& a,SystemState* sys)
 				case ATOMTYPE_NULL_BIT:
 					return "null";
 				case ATOMTYPE_UNDEFINED_BIT:
-					return "undefined";
+					return sys->getSwfVersion() > 6 ? "undefined" : "";
 				case ATOMTYPE_BOOL_BIT:
 					return a.uintval&0x80 ? "true" : "false";
 				default:

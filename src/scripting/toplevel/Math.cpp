@@ -317,11 +317,14 @@ ASFUNCTIONBODY_ATOM(Math,pow)
 
 ASFUNCTIONBODY_ATOM(Math,random)
 {
-	if(argslen > 0)
+	number_t max=1.0;
+	if(argslen > 0 && sys->mainClip->needsActionScript3())
 		throwError<ArgumentError>(kWrongArgumentCountError, "object", "", "");
+	else
+		ARG_UNPACK_ATOM(max,1.0);
 
 	number_t res=rand();
-	res/=(number_t(1.)+RAND_MAX);
+	res/=(number_t(1.)+RAND_MAX)*max;
 	asAtomHandler::setNumber(ret,sys,res);
 }
 

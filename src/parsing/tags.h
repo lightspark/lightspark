@@ -283,7 +283,7 @@ public:
 	int getChannels() const;
 	_R<MemoryStreamCache> getSoundData() const;
 	std::streambuf *createSoundStream() const;
-	_NR<SoundChannel> soundchanel;
+	_NR<SoundChannel> soundchannel;
 	// indicates if this channel is attached to a Sound object
 	bool isAttached;
 };
@@ -293,8 +293,6 @@ class StartSoundTag: public DisplayListTag
 private:
 	UI16_SWF SoundId;
 	SOUNDINFO SoundInfo;
-
-	void play(DefineSoundTag *soundTag);
 public:
 	StartSoundTag(RECORDHEADER h, std::istream& s);
 	void execute(DisplayObjectContainer* parent,bool inskipping) override;

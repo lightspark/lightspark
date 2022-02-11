@@ -442,6 +442,7 @@ private:
 	//Sprite as its hitArea. Hits will be relayed to hitTarget.
 	_NR<Sprite> hitTarget;
 	_NR<SoundChannel> sound;
+	_NR<SoundTransform> soundtransform;
 	uint32_t soundstartframe;
 	bool streamingsound;
 	bool hasMouse;

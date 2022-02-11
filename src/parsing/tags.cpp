@@ -2513,36 +2513,32 @@ void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "StartSoundTag: some modifiers not supported");
 	}
-	if (SoundInfo.SyncStop)
+	if (soundTag->soundchannel.isNull())
 	{
-		if (soundTag && soundTag->soundchanel)
-			soundTag->soundchanel->threadAbort();
-		return;
-	}
-	// it seems that adobe ignores the StartSoundTag if SoundInfo.SyncNoMultiple is set and the tag is attached to a Sound object by actionscript
-	if (SoundInfo.SyncNoMultiple && soundTag->isAttached)
-		return;
-
-	play(soundTag);
-}
-
-void StartSoundTag::play(DefineSoundTag *soundTag)
-{
-	if (soundTag->soundchanel.isNull())
-	{
-		soundTag->soundchanel = _NR<SoundChannel>(Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getSystemState(),
+		soundTag->soundchannel = _NR<SoundChannel>(Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getSystemState(),
 			soundTag->getSoundData(),
 			AudioFormat(soundTag->getAudioCodec(),
 						soundTag->getSampleRate(),
 						soundTag->getChannels()),
 			this));
-		soundTag->soundchanel->setConstant();
+		soundTag->soundchannel->setConstant();
 		if (this->SoundInfo.HasLoops)
-			soundTag->soundchanel->setLoops(this->SoundInfo.LoopCount);
+			soundTag->soundchannel->setLoops(this->SoundInfo.LoopCount);
 	}
-	if (this->SoundInfo.SyncNoMultiple && soundTag->soundchanel->isPlaying())
+	if (parent->is<Sprite>())
+		parent->as<Sprite>()->setSound(soundTag->soundchannel.getPtr(),false);
+	if (SoundInfo.SyncStop)
+	{
+		if (soundTag && soundTag->soundchannel)
+			soundTag->soundchannel->threadAbort();
 		return;
-	soundTag->soundchanel->play(0);
+	}
+	// it seems that adobe ignores the StartSoundTag if SoundInfo.SyncNoMultiple is set and the tag is attached to a Sound object by actionscript
+	if (SoundInfo.SyncNoMultiple && soundTag->isAttached)
+		return;
+	if (this->SoundInfo.SyncNoMultiple && soundTag->soundchannel->isPlaying())
+		return;
+	soundTag->soundchannel->play(0);
 }
 
 ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):ControlTag(h)

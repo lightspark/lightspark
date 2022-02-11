@@ -27,6 +27,9 @@
 #include "backends/streamcache.h"
 #include "scripting/argconv.h"
 #include "parsing/tags.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
 #include <unistd.h>
 
 using namespace lightspark;
@@ -1172,7 +1175,7 @@ void SoundChannel::checkEnvelope()
 {
 	if (tag && tag->getSoundInfo()->HasEnvelope)
 	{
-		uint32_t playedtime = audioStream->getPlayedTime();
+		uint32_t playedtime = audioStream ? audioStream->getPlayedTime() : 0;
 		auto itprev = tag->getSoundInfo()->SoundEnvelope.begin();
 		for (auto it = tag->getSoundInfo()->SoundEnvelope.begin(); it != tag->getSoundInfo()->SoundEnvelope.end(); it++)
 		{
@@ -1183,9 +1186,13 @@ void SoundChannel::checkEnvelope()
 		if (itprev == tag->getSoundInfo()->SoundEnvelope.end())
 			return;
 		leftPeak= number_t(itprev->LeftLevel)/32768.0;
-		rightPeak= number_t(itprev->LeftLevel)/32768.0;
+		rightPeak= number_t(itprev->RightLevel)/32768.0;
 		if (audioStream)
 			audioStream->setPanning(itprev->LeftLevel,itprev->RightLevel);
+		if (soundTransform.isNull())
+			soundTransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(getSystemState()));
+		soundTransform->leftToLeft=leftPeak;
+		soundTransform->rightToRight=rightPeak;
 	}
 }
 

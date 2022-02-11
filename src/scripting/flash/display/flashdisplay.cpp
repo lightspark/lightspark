@@ -957,17 +957,27 @@ ASFUNCTIONBODY_ATOM(Sprite,getSoundTransform)
 	}
 	else
 		asAtomHandler::setNull(ret);
+	if (!th->soundtransform)
+	{
+		if (th->sound)
+			th->soundtransform = th->sound->soundTransform;
+	}
+	if (!th->soundtransform)
+	{
+		th->soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(sys));
+		if (th->sound)
+			th->sound->soundTransform = th->soundtransform;
+	}
+	ret = asAtomHandler::fromObject(th->soundtransform.getPtr());
+	ASATOM_INCREF(ret);
 }
 ASFUNCTIONBODY_ATOM(Sprite,setSoundTransform)
 {
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
-	if (th->sound)
-	{
-		if (argslen == 0 || !asAtomHandler::is<SoundTransform>(args[0]))
-			th->sound->soundTransform.reset();
-		else
-			th->sound->soundTransform =  _MR(asAtomHandler::getObject(args[0])->as<SoundTransform>());
-	}
+	if (argslen == 0 || !asAtomHandler::is<SoundTransform>(args[0]))
+		return;
+	ASATOM_INCREF(args[0]);
+	th->soundtransform =  _MR(asAtomHandler::getObject(args[0])->as<SoundTransform>());
 }
 
 bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
@@ -1218,6 +1228,10 @@ void Sprite::setSound(SoundChannel *s,bool forstreaming)
 {
 	sound = _MR(s);
 	streamingsound = forstreaming;
+	if (sound->soundTransform)
+		this->soundtransform = sound->soundTransform;
+	else
+		sound->soundTransform = this->soundtransform;
 }
 
 void Sprite::appendSound(unsigned char *buf, int len, uint32_t frame)

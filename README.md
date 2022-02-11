@@ -36,7 +36,7 @@ The following tools are also required:
 To install these, run the following command(s):
 ### Ubuntu (tested on 21.10):
 ```
-sudo apt install git gcc g++ nasm cmake gettext libcurl4-gnutls-dev libsdl2-mixer-dev libsdl2-dev libpango1.0-dev libcairo2-dev libavcodec-dev libavresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
+sudo apt install git gcc g++ nasm cmake gettext libcurl4-gnutls-dev libsdl2-mixer-dev libsdl2-dev libpango1.0-dev libcairo2-dev libavcodec-dev libswresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
 ```
 
 ### Fedora (tested on 33):

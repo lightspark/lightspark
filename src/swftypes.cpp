@@ -1030,7 +1030,8 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveBits(0),MoveDelta
 		{
 			LineStyle=UB(parent->NumLineBits,bs);
 		}
-		if(StateNewStyles && parent->version >= 2)
+		// contrary to spec StateNewStyles is also allowed in DefineShapeTag
+		if(StateNewStyles)// && parent->version >= 2)
 		{
 			SHAPEWITHSTYLE* ps=dynamic_cast<SHAPEWITHSTYLE*>(parent);
 			if(ps==NULL)

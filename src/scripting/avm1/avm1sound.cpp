@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/avm1/avm1sound.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "parsing/tags.h"
@@ -71,10 +72,10 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 	th->format= AudioFormat(soundTag->getAudioCodec(), soundTag->getSampleRate(), soundTag->getChannels());
 	th->container=false;
 	th->length = soundTag->getDurationInMS();
-	if (soundTag->soundchanel)
-		th->soundChannel = soundTag->soundchanel;
+	if (soundTag->soundchannel)
+		th->soundChannel = soundTag->soundchannel;
 	else
-		th->soundChannel  = soundTag->soundchanel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format));
+		th->soundChannel  = soundTag->soundchannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format));
 	if(th->clip)
 	{
 		th->soundChannel->incRef();

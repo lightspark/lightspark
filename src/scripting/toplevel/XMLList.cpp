@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/toplevel/XMLList.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/class.h"
 #include "compat.h"
 #include "scripting/argconv.h"

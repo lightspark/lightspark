@@ -34,6 +34,7 @@
 #include "backends/rendering.h"
 #include "backends/streamcache.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/UInteger.h"
 
 using namespace std;
 using namespace lightspark;

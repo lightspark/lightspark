@@ -21,7 +21,6 @@
 #define ASOBJECT_H 1
 
 #include "swftypes.h"
-#include "threading.h"
 #include <unordered_map>
 #include <limits>
 

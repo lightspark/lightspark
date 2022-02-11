@@ -20,13 +20,12 @@
 #ifndef SCRIPTING_FLASH_DESKTOP_FLASHDESKTOP_H
 #define SCRIPTING_FLASH_DESKTOP_FLASHDESKTOP_H 1
 
-#include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
-#include "scripting/flash/filesystem/flashfilesystem.h"
-#include "scripting/toplevel/Vector.h"
 
 namespace lightspark
 {
+class Vector;
+class ASFile;
 class NativeApplication: public EventDispatcher
 {
 public:
@@ -58,7 +57,7 @@ public:
 class NativeProcessStartupInfo: public ASObject
 {
 public:
-	NativeProcessStartupInfo(Class_base* c):ASObject(c){}
+	NativeProcessStartupInfo(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>,arguments);

@@ -28,6 +28,7 @@
 
 #include "asobject.h"
 #include "compat.h"
+#include "threading.h"
 
 namespace lightspark
 {

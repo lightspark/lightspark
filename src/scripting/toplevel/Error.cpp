@@ -21,6 +21,8 @@
 #include "scripting/toplevel/Error.h"
 #include "asobject.h"
 #include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/abc.h"

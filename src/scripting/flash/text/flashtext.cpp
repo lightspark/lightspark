@@ -30,6 +30,7 @@
 #include "scripting/argconv.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 #include "parsing/tags.h"
+#include "scripting/toplevel/Integer.h"
 
 using namespace std;
 using namespace lightspark;

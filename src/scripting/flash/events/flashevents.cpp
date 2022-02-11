@@ -25,6 +25,8 @@
 #include "scripting/argconv.h"
 #include <algorithm>
 #include "scripting/flash/ui/gameinput.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/flash/utils/ByteArray.h"
 
 using namespace std;
 using namespace lightspark;

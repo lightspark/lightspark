@@ -21,6 +21,7 @@
 #include "scripting/flash/system/messagechannel.h"
 #include "scripting/flash/concurrent/Condition.h"
 #include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 

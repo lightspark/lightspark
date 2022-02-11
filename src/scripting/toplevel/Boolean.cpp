@@ -19,6 +19,9 @@
 
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"

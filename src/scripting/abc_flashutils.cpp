@@ -20,9 +20,11 @@
 #include "scripting/flash/utils/flashutils.h"
 #include "scripting/flash/utils/CompressionAlgorithm.h"
 #include "scripting/flash/utils/Dictionary.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/utils/Proxy.h"
 #include "scripting/flash/utils/Timer.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/XML.h"
 
 #include "scripting/class.h"

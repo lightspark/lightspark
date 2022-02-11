@@ -22,6 +22,8 @@
 
 #include "scripting/flash/desktop/flashdesktop.h"
 #include "scripting/argconv.h"
+#include "scripting/flash/filesystem/flashfilesystem.h"
+#include "scripting/toplevel/Vector.h"
 
 using namespace std;
 using namespace lightspark;
@@ -82,6 +84,10 @@ ASFUNCTIONBODY_ATOM(NativeProcess,_constructor)
 ASFUNCTIONBODY_ATOM(NativeProcess, start)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"NativeProcess.start does nothing");
+}
+
+NativeProcessStartupInfo::NativeProcessStartupInfo(Class_base* c):ASObject(c)
+{
 }
 
 void NativeProcessStartupInfo::sinit(Class_base* c)

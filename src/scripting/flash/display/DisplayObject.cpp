@@ -29,6 +29,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/filters/flashfilters.h"
+#include "scripting/toplevel/Number.h"
 #include <algorithm>
 
 // adobe seems to use twips as the base of the internal coordinate system, so we have to "round" coordinates to twips

@@ -25,6 +25,7 @@
 #include "scripting/argconv.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/utils/Dictionary.h"
+#include "scripting/flash/utils/ByteArray.h"
 
 using namespace std;
 using namespace lightspark;

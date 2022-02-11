@@ -45,6 +45,8 @@
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/toplevel/XML.h"
 
@@ -531,7 +533,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		this->incRef();
 
 #ifndef NDEBUG
-	Log::calls_indent++;
+	if (!worker)
+		Log::calls_indent++;
 #endif
 	while (true)
 	{
@@ -585,7 +588,6 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		{
 			unsigned int pos = cc->exec_pos-cc->mi->body->preloadedcode.data();
 			bool no_handler = true;
-
 			LOG_CALL("got an " << excobj->toDebugString());
 			LOG_CALL("pos=" << pos);
 			for (unsigned int i=0;i<mi->body->exceptions.size();i++)
@@ -613,7 +615,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			{
 				worker ? worker->decStack(saved_cc) : getVm(getSystemState())->decStack(saved_cc);
 #ifndef NDEBUG
-				Log::calls_indent--;
+				if (!worker)
+					Log::calls_indent--;
 #endif
 				throw;
 			}
@@ -623,7 +626,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	}
 	worker ? worker->decStack(saved_cc) : getVm(getSystemState())->decStack(saved_cc);
 #ifndef NDEBUG
-	Log::calls_indent--;
+	if (!worker)
+		Log::calls_indent--;
 #endif
 
 	ret.uintval = cc->locals[mi->body->getReturnValuePos()].uintval;
@@ -1279,7 +1283,7 @@ tiny_string Class_base::toString()
 
 void Class_base::setConstructor(IFunction* c)
 {
-	assert_and_throw(constructor==NULL);
+	assert_and_throw(constructor==nullptr);
 	constructor=c;
 }
 

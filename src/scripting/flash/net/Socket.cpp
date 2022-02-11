@@ -26,6 +26,9 @@
 #include "swf.h"
 #include "flash/errors/flasherrors.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
 #include <sys/types.h>
 #ifdef _WIN32
 #ifndef _WIN32_WINNT

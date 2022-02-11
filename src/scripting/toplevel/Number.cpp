@@ -20,6 +20,8 @@
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Math.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "3rdparty/avmplus/core/d2a.h"

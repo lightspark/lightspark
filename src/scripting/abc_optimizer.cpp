@@ -22,6 +22,10 @@
 #include "abcutils.h"
 #include "toplevel/toplevel.h"
 #include "toplevel/ASString.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
+#include "scripting/flash/system/flashsystem.h"
 #include <string>
 #include <sstream>
 

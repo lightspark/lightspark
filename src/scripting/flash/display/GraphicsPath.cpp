@@ -17,6 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/flash/display/GraphicsPath.h"
 #include "scripting/flash/display/Graphics.h"

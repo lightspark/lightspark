@@ -23,6 +23,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "currencyparseresult.h"
+#include "scripting/toplevel/Number.h"
 #include <string>
 
 using namespace lightspark;

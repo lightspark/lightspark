@@ -25,6 +25,7 @@
 #include "scripting/argconv.h"
 #include "compat.h"
 #include "backends/security.h"
+#include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Vector.h"

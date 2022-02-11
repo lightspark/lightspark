@@ -19,6 +19,7 @@
 
 #include "parsing/amf3_generator.h"
 #include "scripting/toplevel/Date.h"
+#include "scripting/toplevel/Number.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/utils/ByteArray.h"

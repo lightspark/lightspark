@@ -22,6 +22,9 @@
 #include "scripting/class.h"
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/XML.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 #include <algorithm>

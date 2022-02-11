@@ -20,6 +20,7 @@
 #include "scripting/flash/ui/Multitouch.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/Error.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"

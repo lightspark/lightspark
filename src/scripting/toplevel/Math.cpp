@@ -18,6 +18,8 @@
 **************************************************************************/
 
 #include "scripting/toplevel/Math.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 

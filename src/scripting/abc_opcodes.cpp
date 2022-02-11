@@ -24,10 +24,14 @@
 #include "compat.h"
 #include "scripting/abcutils.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/RegExp.h"
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/flash/utils/Proxy.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "parsing/streams.h"
 
 using namespace std;
@@ -1167,7 +1171,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 {
 	//Implement ECMA add algorithm, for XML and default (see avm2overview)
 	
-	ASObject* res = NULL;
+	ASObject* res = nullptr;
 	// if both values are Integers or int Numbers the result is also an int Number
 	if( (val1->is<Integer>() || val1->is<UInteger>() || (val1->is<Number>() && !val1->as<Number>()->isfloat)) &&
 		(val2->is<Integer>() || val2->is<UInteger>() || (val2->is<Number>() && !val2->as<Number>()->isfloat)))

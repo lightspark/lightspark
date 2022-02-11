@@ -24,6 +24,7 @@
 #include "scripting/class.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/RegExp.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "parsing/streams.h"
 #include <string>
 #include <sstream>

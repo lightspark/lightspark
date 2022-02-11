@@ -18,12 +18,15 @@
 **************************************************************************/
 
 #include "scripting/abc.h"
-#include "scripting/flash/utils/flashutils.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "asobject.h"
 #include "scripting/class.h"
 #include "compat.h"
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include <sstream>
 #include <zlib.h>

@@ -24,6 +24,10 @@
 #include "compat.h"
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include <sstream>
 #include <zlib.h>

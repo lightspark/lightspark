@@ -27,6 +27,10 @@
 #include "scripting/class.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
+#include "scripting/flash/system/flashsystem.h"
 
 #include "backends/extscriptobject.h"
 

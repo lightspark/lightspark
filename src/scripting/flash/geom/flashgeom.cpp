@@ -20,6 +20,7 @@
 #include "scripting/abc.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Vector.h"
 
 using namespace lightspark;

@@ -78,6 +78,10 @@
 #include "scripting/abc.h"
 #include "backends/rendering.h"
 #include "parsing/tags.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
+#include "scripting/flash/system/flashsystem.h"
 
 using namespace std;
 using namespace lightspark;

@@ -22,6 +22,7 @@
 
 #include "compat.h"
 #include "swftypes.h"
+#include "threading.h"
 #include "scripting/flash/utils/flashutils.h"
 
 namespace lightspark

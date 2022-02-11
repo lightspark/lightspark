@@ -21,6 +21,8 @@
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/utils/ByteArray.h"
 
 using namespace std;

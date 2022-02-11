@@ -24,6 +24,8 @@
 #include <string>
 #include <sstream>
 #include "scripting/class.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/flash/system/flashsystem.h"
 
 using namespace std;
 using namespace lightspark;

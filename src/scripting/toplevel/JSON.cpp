@@ -19,6 +19,7 @@
 
 #include "scripting/argconv.h"
 #include "scripting/toplevel/JSON.h"
+#include "scripting/toplevel/Integer.h"
 
 using namespace std;
 using namespace lightspark;

@@ -22,6 +22,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include <iomanip>
+#include "scripting/toplevel/Number.h"
 #include "scripting/flash/globalization/numberparseresult.h"
 
 using namespace lightspark;

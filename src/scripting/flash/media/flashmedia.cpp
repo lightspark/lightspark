@@ -30,6 +30,7 @@
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include <unistd.h>
 
 using namespace lightspark;

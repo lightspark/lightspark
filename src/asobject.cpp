@@ -25,11 +25,15 @@
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Boolean.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Date.h"
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Error.h"
+#include "scripting/flash/system/flashsystem.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 
 using namespace lightspark;

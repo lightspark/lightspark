@@ -20,12 +20,211 @@
 #ifndef SCRIPTING_TOPLEVEL_VECTOR_H
 #define SCRIPTING_TOPLEVEL_VECTOR_H 1
 
-#include "asobject.h"
+#include "scripting/flash/system/flashsystem.h"
+#include "class.h"
 
 namespace lightspark
 {
 
-template<class T> class TemplatedClass;
+/* This is a class which was instantiated from a Template<T> */
+template<class T>
+class TemplatedClass : public Class<T>
+{
+private:
+	/* the Template<T>* this class was generated from */
+	const Template_base* templ;
+	std::vector<const Type*> types;
+public:
+	TemplatedClass(const QName& name, const std::vector<const Type*>& _types, Template_base* _templ, MemoryAccount* m)
+		: Class<T>(name, m), templ(_templ), types(_types)
+	{
+	}
+
+	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr)
+	{
+		if(realClass==nullptr)
+			realClass=this;
+		ret = asAtomHandler::fromObject(realClass->freelist[0].getObjectFromFreeList());
+		if (asAtomHandler::isInvalid(ret))
+			ret=asAtomHandler::fromObject(new (realClass->memoryAccount) T(realClass));
+		asAtomHandler::resetCached(ret);
+		asAtomHandler::as<T>(ret)->setTypes(types);
+		if(construct)
+			this->handleConstruction(ret,args,argslen,true);
+	}
+
+	/* This function is called for as3 code like v = Vector.<String>(["Hello", "World"])
+	 * this->types will be Class<ASString> on entry of this function.
+	 */
+	void generator(asAtom& ret, asAtom* args, const unsigned int argslen)
+	{
+		asAtom th = asAtomHandler::fromObject(this);
+		T::generator(ret,this->getSystemState(),th,args,argslen);
+	}
+
+	const Template_base* getTemplate() const
+	{
+		return templ;
+	}
+
+	std::vector<const Type*> getTypes() const
+	{
+		return types;
+	}
+	void addType(const Type* type)
+	{
+		types.push_back(type);
+	}
+
+	bool coerce(SystemState* sys,asAtom& o) const
+	{
+		if (asAtomHandler::isUndefined(o))
+		{
+			asAtomHandler::setNull(o);
+			return true;
+		}
+		else if (asAtomHandler::isNull(o) || (asAtomHandler::isObject(o) && asAtomHandler::is<T>(o) && asAtomHandler::getObjectNoCheck(o)->as<T>()->sameType(this)))
+		{
+			// Vector.<x> can be coerced to Vector.<y>
+			// only if x and y are the same type
+			return false;
+		}
+		else
+		{
+			tiny_string clsname = asAtomHandler::getObject(o) ? asAtomHandler::getObject(o)->getClassName() : "";
+			throwError<TypeError>(kCheckTypeFailedError, clsname,
+								  Class<T>::getQualifiedClassName());
+		}
+		return false;
+	}
+};
+
+/* this is modeled closely after the Class/Class_base pattern */
+template<class T>
+class Template : public Template_base
+{
+public:
+	Template(QName name) : Template_base(name) {}
+
+	QName getQName(SystemState* sys, const std::vector<const Type*>& types)
+	{
+		//This is the naming scheme that the ABC compiler uses,
+		//and we need to stay in sync here
+		tiny_string name = ClassName<T>::name;
+		for(size_t i=0;i<types.size();++i)
+		{
+			name += "$";
+			name += types[i]->getName();
+		}
+		QName ret(sys->getUniqueStringId(name),sys->getUniqueStringId(ClassName<T>::ns));
+		return ret;
+	}
+
+	Class_base* applyType(const std::vector<const Type*>& types,_NR<ApplicationDomain> applicationDomain)
+	{
+		_NR<ApplicationDomain> appdomain = applicationDomain;
+		
+		// if type is a builtin class, it is handled in the systemDomain
+		if (appdomain.isNull() || (types.size() > 0 && types[0]->isBuiltin()))
+			appdomain = _MR(getSys()->systemDomain);
+		QName instantiatedQName = getQName(appdomain->getSystemState(),types);
+
+		std::map<QName, Class_base*>::iterator it=appdomain->instantiatedTemplates.find(instantiatedQName);
+		Class<T>* ret=nullptr;
+		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
+		{
+			MemoryAccount* m = appdomain->getSystemState()->allocateMemoryAccount(instantiatedQName.getQualifiedName(appdomain->getSystemState()));
+			ret=new (m) TemplatedClass<T>(instantiatedQName,types,this,m);
+			appdomain->instantiatedTemplates.insert(std::make_pair(instantiatedQName,ret));
+			ret->prototype = _MNR(new_objectPrototype(appdomain->getSystemState()));
+			T::sinit(ret);
+			if(ret->super)
+				ret->prototype->prevPrototype=ret->super->prototype;
+			ret->addPrototypeGetter();
+		}
+		else
+		{
+			TemplatedClass<T>* tmp = static_cast<TemplatedClass<T>*>(it->second);
+			if (tmp->getTypes().size() == 0)
+				tmp->addType(types[0]);
+			ret= tmp;
+		}
+
+		ret->incRef();
+		return ret;
+	}
+	Class_base* applyTypeByQName(const QName& qname,_NR<ApplicationDomain> applicationDomain)
+	{
+		const std::vector<const Type*> types;
+		_NR<ApplicationDomain> appdomain = applicationDomain;
+		std::map<QName, Class_base*>::iterator it=appdomain->instantiatedTemplates.find(qname);
+		Class<T>* ret=nullptr;
+		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
+		{
+			MemoryAccount* m = appdomain->getSystemState()->allocateMemoryAccount(qname.getQualifiedName(appdomain->getSystemState()));
+			ret=new (m) TemplatedClass<T>(qname,types,this,m);
+			appdomain->instantiatedTemplates.insert(std::make_pair(qname,ret));
+			ret->prototype = _MNR(new_objectPrototype(appdomain->getSystemState()));
+			T::sinit(ret);
+			if(ret->super)
+				ret->prototype->prevPrototype=ret->super->prototype;
+			ret->addPrototypeGetter();
+		}
+		else
+			ret=static_cast<TemplatedClass<T>*>(it->second);
+
+		ret->incRef();
+		return ret;
+	}
+
+	static Ref<Class_base> getTemplateInstance(RootMovieClip* root,const Type* type,_NR<ApplicationDomain> appdomain)
+	{
+		std::vector<const Type*> t(1,type);
+		Template<T>* templ=getTemplate(root);
+		Ref<Class_base> ret=_MR(templ->applyType(t, appdomain));
+		templ->decRef();
+		return ret;
+	}
+
+	static Ref<Class_base> getTemplateInstance(RootMovieClip* root,const QName& qname, ABCContext* context,_NR<ApplicationDomain> appdomain)
+	{
+		Template<T>* templ=getTemplate(root);
+		Ref<Class_base> ret=_MR(templ->applyTypeByQName(qname,appdomain));
+		ret->context = context;
+		templ->decRef();
+		return ret;
+	}
+	static void getInstanceS(asAtom& ret, RootMovieClip* root,const Type* type,_NR<ApplicationDomain> appdomain)
+	{
+		getTemplateInstance(root,type,appdomain).getPtr()->getInstance(ret,true,nullptr,0);
+	}
+
+	static Template<T>* getTemplate(RootMovieClip* root,const QName& name)
+	{
+		std::map<QName, Template_base*>::iterator it=root->templates.find(name);
+		Template<T>* ret=nullptr;
+		if(it==root->templates.end()) //This class is not yet in the map, create it
+		{
+			MemoryAccount* m = root->getSystemState()->allocateMemoryAccount(name.getQualifiedName(root->getSystemState()));
+			ret=new (m) Template<T>(name);
+			ret->prototype = _MNR(new_objectPrototype(root->getSystemState()));
+			ret->addPrototypeGetter(root->getSystemState());
+			root->templates.insert(std::make_pair(name,ret));
+		}
+		else
+			ret=static_cast<Template<T>*>(it->second);
+
+		ret->incRef();
+		return ret;
+	}
+
+	static Template<T>* getTemplate(RootMovieClip* root)
+	{
+		return getTemplate(root,QName(root->getSystemState()->getUniqueStringId(ClassName<T>::name),root->getSystemState()->getUniqueStringId(ClassName<T>::ns)));
+	}
+};
+
+
 class Vector: public ASObject
 {
 	const Type* vec_type;

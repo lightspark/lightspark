@@ -20,6 +20,8 @@
 #include "3rdparty/avmplus/pcre/pcre.h"
 
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "compat.h"
 #include "scripting/argconv.h"

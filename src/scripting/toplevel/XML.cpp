@@ -19,6 +19,8 @@
 
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/xml/flashxml.h"
 #include "scripting/class.h"
 #include "compat.h"

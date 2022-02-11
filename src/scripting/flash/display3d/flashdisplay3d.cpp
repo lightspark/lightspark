@@ -19,6 +19,7 @@
 
 #include "scripting/flash/display3d/flashdisplay3d.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/class.h"

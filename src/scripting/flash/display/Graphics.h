@@ -23,6 +23,7 @@
 #include <vector>
 #include "asobject.h"
 #include "backends/geometry.h"
+#include "threading.h"
 
 namespace lightspark
 {

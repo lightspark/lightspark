@@ -18,6 +18,8 @@
 **************************************************************************/
 
 #include "scripting/avmplus/avmplus.h"
+#include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/class.h"

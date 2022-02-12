@@ -4574,10 +4574,6 @@ void SimpleButton::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),_setUseHandCursor),SETTER_METHOD,true);
 }
 
-void SimpleButton::buildTraits(ASObject* o)
-{
-}
-
 void SimpleButton::afterLegacyInsert()
 {
 	getSystemState()->stage->AVM1AddKeyboardListener(this);
@@ -4622,22 +4618,22 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 	if(e->type == "mouseDown")
 	{
 		currentState = DOWN;
-		reflectState();
+		reflectState(oldstate);
 	}
 	else if(e->type == "mouseUp")
 	{
 		currentState = UP;
-		reflectState();
+		reflectState(oldstate);
 	}
 	else if(e->type == "mouseOver")
 	{
 		currentState = OVER;
-		reflectState();
+		reflectState(oldstate);
 	}
 	else if(e->type == "mouseOut")
 	{
 		currentState = STATE_OUT;
-		reflectState();
+		reflectState(oldstate);
 	}
 	bool handled = false;
 	if (buttontag)
@@ -4876,25 +4872,26 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 
 void SimpleButton::defaultEventBehavior(_R<Event> e)
 {
+	BUTTONSTATE oldstate = currentState;
 	if(e->type == "mouseDown")
 	{
 		currentState = DOWN;
-		reflectState();
+		reflectState(oldstate);
 	}
 	else if(e->type == "mouseUp")
 	{
 		currentState = UP;
-		reflectState();
+		reflectState(oldstate);
 	}
 	else if(e->type == "mouseOver")
 	{
 		currentState = OVER;
-		reflectState();
+		reflectState(oldstate);
 	}
 	else if(e->type == "mouseOut")
 	{
 		currentState = STATE_OUT;
-		reflectState();
+		reflectState(oldstate);
 	}
 	else
 		DisplayObjectContainer::defaultEventBehavior(e);
@@ -4972,22 +4969,65 @@ SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 	if(dS)
 	{
 		dS->advanceFrame();
+		if (!dS->loadedFrom->needsActionScript3())
+			dS->declareFrame();
 		dS->initFrame();
 	}
 	if(hTS)
 	{
 		hTS->advanceFrame();
+		if (!hTS->loadedFrom->needsActionScript3())
+			hTS->declareFrame();
 		hTS->initFrame();
 	}
 	if(oS)
 	{
 		oS->advanceFrame();
+		if (!oS->loadedFrom->needsActionScript3())
+			oS->declareFrame();
 		oS->initFrame();
 	}
 	if(uS)
 	{
 		uS->advanceFrame();
+		if (!uS->loadedFrom->needsActionScript3())
+			uS->declareFrame();
 		uS->initFrame();
+	}
+	if (tag && tag->sounds)
+	{
+		if (tag->sounds->SoundID0_OverUpToIdle)
+		{
+			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(tag->loadedFrom->dictionaryLookup(tag->sounds->SoundID0_OverUpToIdle));
+			if (sound)
+				soundchannel_OverUpToIdle = sound->createSoundChannel(&tag->sounds->SoundInfo0_OverUpToIdle);
+			else
+				LOG(LOG_ERROR,"ButtonSound not found for OverUpToIdle:"<<tag->sounds->SoundID0_OverUpToIdle << " on button "<<tag->getId());
+		}
+		if (tag->sounds->SoundID1_IdleToOverUp)
+		{
+			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(tag->loadedFrom->dictionaryLookup(tag->sounds->SoundID1_IdleToOverUp));
+			if (sound)
+				soundchannel_IdleToOverUp = sound->createSoundChannel(&tag->sounds->SoundInfo1_IdleToOverUp);
+			else
+				LOG(LOG_ERROR,"ButtonSound not found for IdleToOverUp:"<<tag->sounds->SoundID1_IdleToOverUp << " on button "<<tag->getId());
+		}
+		if (tag->sounds->SoundID2_OverUpToOverDown)
+		{
+			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(tag->loadedFrom->dictionaryLookup(tag->sounds->SoundID2_OverUpToOverDown));
+			if (sound)
+				soundchannel_OverUpToOverDown = sound->createSoundChannel(&tag->sounds->SoundInfo2_OverUpToOverDown);
+			else
+				LOG(LOG_ERROR,"ButtonSound not found for OverUpToOverDown:"<<tag->sounds->SoundID2_OverUpToOverDown << " on button "<<tag->getId());
+		}
+		if (tag->sounds->SoundID3_OverDownToOverUp)
+		{
+			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(tag->loadedFrom->dictionaryLookup(tag->sounds->SoundID3_OverDownToOverUp));
+			if (sound)
+				soundchannel_OverDownToOverUp = sound->createSoundChannel(&tag->sounds->SoundInfo3_OverDownToOverUp);
+			else
+				LOG(LOG_ERROR,"ButtonSound not found for OverUpToOverDown:"<<tag->sounds->SoundID3_OverDownToOverUp << " on button "<<tag->getId());
+		}
 	}
 
 	tabEnabled = true;
@@ -4995,7 +5035,7 @@ SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 
 void SimpleButton::constructionComplete()
 {
-	reflectState();
+	reflectState(STATE_OUT);
 	DisplayObjectContainer::constructionComplete();
 }
 
@@ -5095,7 +5135,7 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 		th->hitTestState = hitTestState;
 }
 
-void SimpleButton::reflectState()
+void SimpleButton::reflectState(BUTTONSTATE oldstate)
 {
 	assert(dynamicDisplayList.empty() || dynamicDisplayList.size() == 1);
 	if(!dynamicDisplayList.empty())
@@ -5116,6 +5156,14 @@ void SimpleButton::reflectState()
 		overState->incRef();
 		_addChildAt(overState,0);
 	}
+	if ((oldstate == OVER || oldstate == UP) && currentState == STATE_OUT && soundchannel_OverUpToIdle)
+		soundchannel_OverUpToIdle->play();
+	if (oldstate == STATE_OUT && (currentState == OVER || currentState == UP) && soundchannel_IdleToOverUp)
+		soundchannel_IdleToOverUp->play();
+	if (oldstate == UP && currentState == DOWN && soundchannel_OverUpToOverDown)
+		soundchannel_OverUpToOverDown->play();
+	if (oldstate == DOWN && currentState == UP && soundchannel_OverDownToOverUp)
+		soundchannel_OverDownToOverUp->play();
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_getUpState)
@@ -5137,7 +5185,7 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_setUpState)
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
 	th->upState = _MNR(asAtomHandler::as<DisplayObject>(args[0]));
 	th->upState->incRef();
-	th->reflectState();
+	th->reflectState(th->currentState);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_getHitTestState)
@@ -5180,7 +5228,7 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_setOverState)
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
 	th->overState = _MNR(asAtomHandler::as<DisplayObject>(args[0]));
 	th->overState->incRef();
-	th->reflectState();
+	th->reflectState(th->currentState);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_getDownState)
@@ -5202,7 +5250,7 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_setDownState)
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
 	th->downState = _MNR(asAtomHandler::as<DisplayObject>(args[0]));
 	th->downState->incRef();
-	th->reflectState();
+	th->reflectState(th->currentState);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_setEnabled)

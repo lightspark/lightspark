@@ -107,7 +107,7 @@ private:
 	AudioDecoder* audioDecoder;
 	AudioStream* audioStream;
 	AudioFormat format;
-	StartSoundTag* tag;
+	const SOUNDINFO* soundinfo;
 	number_t oldVolume;
 	void validateSoundTransform(_NR<SoundTransform>);
 	void playStream();
@@ -119,7 +119,7 @@ private:
 	bool restartafterabort;
 	void checkEnvelope();
 public:
-	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), StartSoundTag* _tag=nullptr, Sound* _sampleproducer = nullptr);
+	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), const SOUNDINFO* _soundinfo=nullptr, Sound* _sampleproducer = nullptr);
 	~SoundChannel();
 	void appendStreamBlock(unsigned char* buf, int len);
 	void appendSampleData(ByteArray* data);
@@ -129,7 +129,6 @@ public:
 	void setStartTime(number_t starttime) { startTime = starttime; }
 	void setLoops(int32_t loops) {loopstogo=loops;}
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	void finalize();
 	bool isPlaying() { return !ACQUIRE_READ(stopped); }
 	bool isStarting() { return ACQUIRE_READ(starting); }

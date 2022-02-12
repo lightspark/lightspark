@@ -72,10 +72,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 	th->format= AudioFormat(soundTag->getAudioCodec(), soundTag->getSampleRate(), soundTag->getChannels());
 	th->container=false;
 	th->length = soundTag->getDurationInMS();
-	if (soundTag->soundchannel)
-		th->soundChannel = soundTag->soundchannel;
-	else
-		th->soundChannel  = soundTag->soundchannel = _MR(Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format));
+	th->soundChannel =soundTag->createSoundChannel(nullptr);
 	if(th->clip)
 	{
 		th->soundChannel->incRef();

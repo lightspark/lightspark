@@ -36,7 +36,7 @@ class DisplayObjectContainer;
 class DefineSpriteTag;
 class AdditionalDataTag;
 
-enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG,AVM1ACTION_TAG,AVM1INITACTION_TAG};
+enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG,AVM1ACTION_TAG,AVM1INITACTION_TAG,BUTTONSOUND_TAG};
 
 void ignore(std::istream& i, int count);
 
@@ -284,6 +284,7 @@ public:
 	_R<MemoryStreamCache> getSoundData() const;
 	std::streambuf *createSoundStream() const;
 	_NR<SoundChannel> soundchannel;
+	_NR<SoundChannel> createSoundChannel(const SOUNDINFO* soundinfo);
 	// indicates if this channel is attached to a Sound object
 	bool isAttached;
 };
@@ -418,6 +419,22 @@ public:
 	SetBackgroundColorTag(RECORDHEADER h, std::istream& in);
 	void execute(RootMovieClip* root) const override;
 };
+class DefineButtonTag;
+class DefineButtonSoundTag: public Tag
+{
+public:
+	UI16_SWF SoundID0_OverUpToIdle;
+	SOUNDINFO SoundInfo0_OverUpToIdle;
+	UI16_SWF SoundID1_IdleToOverUp;
+	SOUNDINFO SoundInfo1_IdleToOverUp;
+	UI16_SWF SoundID2_OverUpToOverDown;
+	SOUNDINFO SoundInfo2_OverUpToOverDown;
+	UI16_SWF SoundID3_OverDownToOverUp;
+	SOUNDINFO SoundInfo3_OverDownToOverUp;
+	DefineButtonTag* button;
+	DefineButtonSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
+	TAGTYPE getType() const override { return BUTTONSOUND_TAG; }
+};
 
 class DefineButtonTag: public DictionaryTag
 {
@@ -429,8 +446,10 @@ private:
 public:
 	std::vector<BUTTONCONDACTION> condactions;
 	DefineButtonTag(RECORDHEADER h, std::istream& in, int version, RootMovieClip* root, AdditionalDataTag* datatag);
+	~DefineButtonTag();
 	int getId() const override { return ButtonId; }
 	ASObject* instance(Class_base* c=nullptr) override;
+	DefineButtonSoundTag* sounds;
 };
 
 class KERNINGRECORD

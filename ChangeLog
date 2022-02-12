@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* implement DefineButtonSound tag
 	* always enable local storage when running standalone executable
 	* local storage files (*.sol) are saved in same format as adobe, so saved data from adobe can be used in lightspark (and vice versa)
 	  this means that saved data from older versions of lightspark is not compatible with this version!

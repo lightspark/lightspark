@@ -198,6 +198,10 @@ private:
 	_NR<DisplayObject> hitTestState;
 	_NR<DisplayObject> overState;
 	_NR<DisplayObject> upState;
+	_NR<SoundChannel> soundchannel_OverUpToIdle;
+	_NR<SoundChannel> soundchannel_IdleToOverUp;
+	_NR<SoundChannel> soundchannel_OverUpToOverDown;
+	_NR<SoundChannel> soundchannel_OverDownToOverUp;
 	DefineButtonTag* buttontag;
 	enum BUTTONSTATE
 	{
@@ -210,7 +214,7 @@ private:
 	bool enabled;
 	bool useHandCursor;
 	bool hasMouse;
-	void reflectState();
+	void reflectState(BUTTONSTATE oldstate);
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e) override;
@@ -226,7 +230,6 @@ public:
 	uint32_t getTagID() const override;
 
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getUpState);
 	ASFUNCTION_ATOM(_setUpState);

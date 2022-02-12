@@ -753,12 +753,14 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
-SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, StartSoundTag* _tag, Sound* _sampleproducer)
+SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, Sound* _sampleproducer)
 	: EventDispatcher(c),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
-	format(_format),tag(_tag),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
+	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
 	leftPeak(1),rightPeak(1)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
+	if (soundinfo && soundinfo->HasLoops)
+		setLoops(soundinfo->LoopCount);
 }
 
 SoundChannel::~SoundChannel()
@@ -880,10 +882,6 @@ void SoundChannel::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER(SoundChannel,leftPeak);
 ASFUNCTIONBODY_GETTER(SoundChannel,rightPeak);
 ASFUNCTIONBODY_GETTER_SETTER_CB(SoundChannel,soundTransform,validateSoundTransform);
-
-void SoundChannel::buildTraits(ASObject* o)
-{
-}
 
 void SoundChannel::finalize()
 {
@@ -1174,17 +1172,17 @@ void SoundChannel::threadAbort()
 }
 void SoundChannel::checkEnvelope()
 {
-	if (tag && tag->getSoundInfo()->HasEnvelope)
+	if (soundinfo && soundinfo->HasEnvelope)
 	{
 		uint32_t playedtime = audioStream ? audioStream->getPlayedTime() : 0;
-		auto itprev = tag->getSoundInfo()->SoundEnvelope.begin();
-		for (auto it = tag->getSoundInfo()->SoundEnvelope.begin(); it != tag->getSoundInfo()->SoundEnvelope.end(); it++)
+		auto itprev = soundinfo->SoundEnvelope.begin();
+		for (auto it = soundinfo->SoundEnvelope.begin(); it != soundinfo->SoundEnvelope.end(); it++)
 		{
 			if (it->Pos44/44>playedtime)
 				break;
 			itprev=it;
 		}
-		if (itprev == tag->getSoundInfo()->SoundEnvelope.end())
+		if (itprev == soundinfo->SoundEnvelope.end())
 			return;
 		leftPeak= number_t(itprev->LeftLevel)/32768.0;
 		rightPeak= number_t(itprev->RightLevel)/32768.0;

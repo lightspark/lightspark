@@ -1794,6 +1794,12 @@ void ParseThread::parseSWF(UI8 ver)
 					delete tag;
 					break;
 				}
+				case BUTTONSOUND_TAG:
+				{
+					if (!static_cast<DefineButtonSoundTag*>(tag)->button)
+						delete tag;
+					break;
+				}
 				case TAG:
 				{
 					//Not yet implemented tag, ignore it

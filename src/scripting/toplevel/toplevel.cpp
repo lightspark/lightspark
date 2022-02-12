@@ -2943,6 +2943,11 @@ ASFUNCTIONBODY_ATOM(lightspark,trace)
 	Log::print(s.str());
 	ret = asAtomHandler::undefinedAtom;
 }
+ASFUNCTIONBODY_ATOM(lightspark,AVM1_updateAfterEvent)
+{
+	sys->stage->forceInvalidation();
+}
+
 ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 {
 	_NR<ASObject> o;

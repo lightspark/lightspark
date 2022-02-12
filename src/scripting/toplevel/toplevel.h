@@ -977,9 +977,10 @@ void unescape(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsi
 void print(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void trace(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 void AVM1_ASSetPropFlags(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void AVM1_updateAfterEvent(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 bool isXMLName(SystemState *sys, asAtom &obj);
 void _isXMLName(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
 number_t parseNumber(const tiny_string str, bool useoldversion=false);
-};
+}
 
 #endif /* SCRIPTING_TOPLEVEL_TOPLEVEL_H */

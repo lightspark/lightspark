@@ -17,7 +17,7 @@ In preparation for building Lightspark, you need development packages for:
 * curl
 * zlib
 * libavcodec
-* libavresample
+* libswresample
 * libglew
 * librtmp
 * cairo

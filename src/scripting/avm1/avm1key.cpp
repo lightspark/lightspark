@@ -77,6 +77,8 @@ ASFUNCTIONBODY_ATOM(AVM1Key,removeListener)
 ASFUNCTIONBODY_ATOM(AVM1Key,getCode)
 {
 	AS3KeyCode c = sys->getInputThread()->getLastKeyDown();
+	if (c==0)
+		c = sys->getInputThread()->getLastKeyUp();
 	asAtomHandler::setInt(ret,sys,c);
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,getAscii)

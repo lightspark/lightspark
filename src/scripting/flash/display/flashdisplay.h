@@ -725,6 +725,7 @@ protected:
 	bool renderImpl(RenderContext& ctxt) const override;
 public:
 	ACQUIRE_RELEASE_FLAG(invalidated);
+	void forceInvalidation();
 	void onAlign(const tiny_string&);
 	bool renderStage3D();
 	void onDisplayState(const tiny_string&);

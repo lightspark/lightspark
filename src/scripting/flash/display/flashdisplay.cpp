@@ -4193,10 +4193,14 @@ ASFUNCTIONBODY_ATOM(Stage,_getWmodeGPU)
 ASFUNCTIONBODY_ATOM(Stage,_invalidate)
 {
 	Stage* th=asAtomHandler::as<Stage>(obj);
-	RELEASE_WRITE(th->invalidated,true);
-	th->incRef();
-	_R<FlushInvalidationQueueEvent> event=_MR(new (sys->unaccountedMemory) FlushInvalidationQueueEvent());
-	getVm(sys)->addEvent(_MR(th),event);
+	th->forceInvalidation();
+}
+void Stage::forceInvalidation()
+{
+	RELEASE_WRITE(this->invalidated,true);
+	this->incRef();
+	_R<FlushInvalidationQueueEvent> event=_MR(new (getSystemState()->unaccountedMemory) FlushInvalidationQueueEvent());
+	getVm(getSystemState())->addEvent(_MR(this),event);
 }
 ASFUNCTIONBODY_ATOM(Stage,_getColor)
 {

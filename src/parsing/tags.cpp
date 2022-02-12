@@ -1507,7 +1507,8 @@ void DefineTextTag::computeCached()
 		for(uint32_t j=0;j<TextRecords[i].GlyphEntries.size();++j)
 		{
 			const GLYPHENTRY& ge = TextRecords[i].GlyphEntries[j];
-			std::vector<SHAPERECORD>& sr = curFont->getGlyphShapes().at(ge.GlyphIndex).ShapeRecords;
+			// use copy of shaperecords to modify fillstyle
+			std::vector<SHAPERECORD> sr = curFont->getGlyphShapes().at(ge.GlyphIndex).ShapeRecords;
 			//set fillstyle of each glyph to fillstyle of this TextRecord
 			for (auto it = sr.begin(); it != sr.end(); it++)
 				(*it).FillStyle0 = i+1;

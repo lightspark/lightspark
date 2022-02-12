@@ -21,6 +21,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Vector.h"
 
 using namespace lightspark;
@@ -577,7 +578,7 @@ void ColorTransform::sinit(Class_base* c)
 	c->isReusable = true;
 
 	// properties
-	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),getColor),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),getColor,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),setColor),SETTER_METHOD,true);
 
 	c->setDeclaredMethodByQName("redMultiplier","",Class<IFunction>::getFunction(c->getSystemState(),getRedMultiplier,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
@@ -667,9 +668,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setColor)
 	th->redMultiplier=0;
 	th->greenMultiplier=0;
 	th->blueMultiplier=0;
-	th->alphaMultiplier=0;
 	//Setting offset to the input value
-	th->alphaOffset=(tmp>>24)&0xff;
 	th->redOffset=(tmp>>16)&0xff;
 	th->greenOffset=(tmp>>8)&0xff;
 	th->blueOffset=tmp&0xff;
@@ -679,15 +678,14 @@ ASFUNCTIONBODY_ATOM(ColorTransform,getColor)
 {
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
 
-	int ao, ro, go, bo;
-	ao = static_cast<int>(th->alphaOffset) & 0xff;
+	int ro, go, bo;
 	ro = static_cast<int>(th->redOffset) & 0xff;
 	go = static_cast<int>(th->greenOffset) & 0xff;
 	bo = static_cast<int>(th->blueOffset) & 0xff;
 
-	number_t color = (ao<<24) | (ro<<16) | (go<<8) | bo;
+	uint32_t color = (ro<<16) | (go<<8) | bo;
 
-	asAtomHandler::setNumber(ret,sys,color);
+	asAtomHandler::setUInt(ret,sys,color);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getRedMultiplier)

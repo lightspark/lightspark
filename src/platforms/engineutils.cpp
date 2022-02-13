@@ -254,6 +254,12 @@ bool EngineData::FileExists(SystemState* sys, const tiny_string &filename, bool 
 	return false;
 }
 
+uint32_t EngineData::FileSize(SystemState* sys, const tiny_string& filename, bool isfullpath)
+{
+	LOG(LOG_ERROR,"FileSize not implemented");
+	return 0;
+}
+
 tiny_string EngineData::FileFullPath(SystemState* sys, const tiny_string& filename)
 {
 	LOG(LOG_ERROR,"FileFullPath not implemented");
@@ -271,7 +277,12 @@ void EngineData::FileWrite(SystemState* sys,const tiny_string &filename, const t
 	LOG(LOG_ERROR,"FileWrite not implemented");
 }
 
-void EngineData::FileReadByteArray(SystemState* sys,const tiny_string &filename,ByteArray* res, bool isfullpath)
+uint8_t EngineData::FileReadUnsignedByte(SystemState* sys, const tiny_string& filename, uint32_t startpos, bool isfullpath)
+{
+	LOG(LOG_ERROR,"FileReadUnsignedByte not implemented");
+}
+
+void EngineData::FileReadByteArray(SystemState* sys, const tiny_string &filename, ByteArray* res, uint32_t startpos, uint32_t length, bool isfullpath)
 {
 	LOG(LOG_ERROR,"FileReadByteArray not implemented");
 }

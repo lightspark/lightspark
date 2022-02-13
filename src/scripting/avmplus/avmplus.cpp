@@ -72,7 +72,7 @@ ASFUNCTIONBODY_ATOM(avmplusFile,readByteArray)
 	if (!sys->getEngineData()->FileExists(sys,filename,false))
 		throwError<ASError>(kFileOpenError,filename);
 	ByteArray* res = Class<ByteArray>::getInstanceS(sys);
-	sys->getEngineData()->FileReadByteArray(sys,filename,res,false);
+	sys->getEngineData()->FileReadByteArray(sys,filename,res,9,UINT32_MAX,false);
 	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)
@@ -292,7 +292,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 	if (!sys->getEngineData()->FileExists(sys,filename,false))
 		throwError<ASError>(kFileOpenError,filename);
 	_NR<ByteArray> bytes = _NR<ByteArray>(Class<ByteArray>::getInstanceS(sys));
-	sys->getEngineData()->FileReadByteArray(sys,filename,bytes.getPtr(),false);
+	sys->getEngineData()->FileReadByteArray(sys,filename,bytes.getPtr(),0,UINT32_MAX,false);
 
 	// execute loaded abc file
 	MemoryStreamCache mc(sys);

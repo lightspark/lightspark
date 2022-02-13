@@ -33,7 +33,7 @@ class FileStream: public EventDispatcher
 {
 	_NR<ASFile> file;
 	tiny_string fileMode;
-	_NR<ByteArray> bytes;
+	bool isopen;
 public:
 	FileStream(Class_base* c);
 	static void sinit(Class_base*);
@@ -41,7 +41,9 @@ public:
 	ASFUNCTION_ATOM(open);
 	ASFUNCTION_ATOM(close);
 	ASFUNCTION_ATOM(readBytes);
+	ASFUNCTION_ATOM(readUnsignedByte);
 	ASPROPERTY_GETTER(uint32_t,bytesAvailable);
+	ASPROPERTY_GETTER_SETTER(number_t,position);
 };
 
 class ASFile: public FileReference

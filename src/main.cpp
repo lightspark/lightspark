@@ -163,6 +163,27 @@ public:
 	{
 		SDL_GL_DeleteContext(mSDLContext);
 	}
+
+	bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath) override
+	{
+		if (!isvalidfilename(filename))
+			return false;
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
+		if (p.empty())
+			return false;
+		return g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS);
+	}
+
+	uint32_t FileSize(SystemState* sys,const tiny_string& filename, bool isfullpath) override
+	{
+		if (!isvalidfilename(filename))
+			return 0;
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
+		if (p.empty())
+			return 0;
+		return getfilesize(p.raw_buf());
+	}
+	
 	tiny_string FileFullPath(SystemState* sys, const tiny_string& filename) override
 	{
 		std::string p;
@@ -178,16 +199,6 @@ public:
 		p += G_DIR_SEPARATOR_S;
 		p += filename.raw_buf();
 		return p;
-	}
-	
-	bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath) override
-	{
-		if (!isvalidfilename(filename))
-			return false;
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return false;
-		return g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS);
 	}
 
 	tiny_string FileRead(SystemState* sys,const tiny_string& filename, bool isfullpath) override
@@ -222,7 +233,24 @@ public:
 		file << data;
 		file.close();
 	}
-	void FileReadByteArray(SystemState* sys,const tiny_string &filename,ByteArray* res, bool isfullpath) override
+	uint8_t FileReadUnsignedByte(SystemState* sys, const tiny_string& filename, uint32_t startpos, bool isfullpath)
+	{
+		if (!isvalidfilename(filename))
+			return 0;
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
+		if (p.empty())
+			return 0;
+		if (!g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS))
+			return 0;
+		std::ifstream file;
+		file.open(p.raw_buf(), std::ios::in|std::ios::binary);
+		file.seekg(startpos);
+		uint8_t buf;
+		file.read((char*)&buf,1);
+		file.close();
+		return buf;
+	}
+	void FileReadByteArray(SystemState* sys,const tiny_string &filename,ByteArray* res, uint32_t startpos, uint32_t length, bool isfullpath) override
 	{
 		if (!isvalidfilename(filename))
 			return;
@@ -231,13 +259,15 @@ public:
 			return;
 		if (!g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS))
 			return;
-		uint32_t len = getfilesize(p.raw_buf());
+		uint32_t len = min(length,uint32_t(getfilesize(p.raw_buf())-startpos));
 		std::ifstream file;
-		uint8_t buf[len];
+		uint8_t* buf = new uint8_t[len];
 		file.open(p.raw_buf(), std::ios::in|std::ios::binary);
+		file.seekg(startpos);
 		file.read((char*)buf,len);
 		res->writeBytes(buf,len);
 		file.close();
+		delete[] buf;
 	}
 	
 	void FileWriteByteArray(SystemState* sys,const tiny_string &filename, ByteArray *data, bool isfullpath) override

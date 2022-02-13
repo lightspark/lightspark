@@ -19,7 +19,9 @@
 
 #include "scripting/flash/filesystem/flashfilesystem.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/errors/flasherrors.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/toplevel/Number.h"
 #include "scripting/abc.h"
 #include "scripting/argconv.h"
 #include "compat.h"
@@ -27,7 +29,7 @@
 using namespace lightspark;
 
 FileStream::FileStream(Class_base* c):
-	EventDispatcher(c),bytesAvailable(0)
+	EventDispatcher(c),isopen(false),bytesAvailable(0),position(0)
 {
 	subtype=SUBTYPE_FILESTREAM;
 }
@@ -38,9 +40,12 @@ void FileStream::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("open", "", Class<IFunction>::getFunction(c->getSystemState(),open), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("close", "", Class<IFunction>::getFunction(c->getSystemState(),close), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("readBytes", "", Class<IFunction>::getFunction(c->getSystemState(),readBytes), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readUnsignedByte", "", Class<IFunction>::getFunction(c->getSystemState(),readUnsignedByte,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 	REGISTER_GETTER_RESULTTYPE(c,bytesAvailable,UInteger);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,position,Number);
 }
 ASFUNCTIONBODY_GETTER(FileStream, bytesAvailable);
+ASFUNCTIONBODY_GETTER_SETTER(FileStream, position);
 
 ASFUNCTIONBODY_ATOM(FileStream,_constructor)
 {
@@ -51,24 +56,47 @@ ASFUNCTIONBODY_ATOM(FileStream,open)
 {
 	FileStream* th=asAtomHandler::as<FileStream>(obj);
 	ARG_UNPACK_ATOM(th->file)(th->fileMode);
-	th->bytes = _MR(Class<ByteArray>::getInstanceSNoArgs(sys));
-	// TODO we just read the whole file into a bytearray for now, not a good solution for bigger files
-	sys->getEngineData()->FileReadByteArray(sys,th->file->getFullPath(),th->bytes.getPtr(),true);
-	th->bytesAvailable = th->bytes->getLength();
-	th->bytes->setPosition(0);
+	LOG(LOG_NOT_IMPLEMENTED,"FileStream.open: FileMode is ignored");
+	th->bytesAvailable = sys->getEngineData()->FileSize(sys,th->file->getFullPath(),true);
+	th->isopen=true;
+	th->position=0;
 }
 ASFUNCTIONBODY_ATOM(FileStream,close)
 {
 	FileStream* th=asAtomHandler::as<FileStream>(obj);
-	th->bytes.reset();
+	th->isopen=false;
 	th->bytesAvailable = 0;
+	th->position=0;
 }
 ASFUNCTIONBODY_ATOM(FileStream,readBytes)
 {
 	FileStream* th=asAtomHandler::as<FileStream>(obj);
-	asAtom v = asAtomHandler::fromObject(th->bytes.getPtr());
-	ByteArray::readBytes(ret,sys,v, args, argslen);
-	th->bytesAvailable = th->bytes->getLength()-th->bytes->getPosition();
+	_NR<ByteArray> bytes;
+	uint32_t offset;
+	uint32_t length;
+	ARG_UNPACK_ATOM(bytes)(offset,0)(length,UINT32_MAX);
+	if (!th->isopen)
+		throw Class<IOError>::getInstanceS(sys,"FileStream is not opened");
+	if (length != UINT32_MAX && th->bytesAvailable < length)
+		throwError<EOFError>(kEOFError);
+	uint32_t bpos = bytes->getPosition();
+	bytes->setPosition(offset);
+	sys->getEngineData()->FileReadByteArray(sys,th->file->getFullPath(),bytes.getPtr(),th->position,length,true);
+	bytes->setPosition(bpos);
+	th->position+= min(length,th->bytesAvailable);
+	th->bytesAvailable -= min(length,th->bytesAvailable);
+}
+ASFUNCTIONBODY_ATOM(FileStream,readUnsignedByte)
+{
+	FileStream* th=asAtomHandler::as<FileStream>(obj);
+	if (!th->isopen)
+		throw Class<IOError>::getInstanceS(sys,"FileStream is not opened");
+	if (th->bytesAvailable==0)
+		throwError<EOFError>(kEOFError);
+	uint32_t res = sys->getEngineData()->FileReadUnsignedByte(sys,th->file->getFullPath(),th->position,true);
+	th->bytesAvailable--;
+	th->position++;
+	ret= asAtomHandler::fromUInt(res);
 }
 
 ASFile::ASFile(Class_base* c, const tiny_string _path, bool _exists):

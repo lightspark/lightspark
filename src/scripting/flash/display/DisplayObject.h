@@ -217,7 +217,6 @@ public:
 	virtual void afterLegacyInsert() {}
 	virtual void afterLegacyDelete(DisplayObjectContainer* parent,bool inskipping) {}
 	virtual uint32_t getTagID() const { return UINT32_MAX;}
-	virtual void resetLegacyState() {}
 	virtual void startDrawJob() {}
 	virtual void endDrawJob() {}
 	

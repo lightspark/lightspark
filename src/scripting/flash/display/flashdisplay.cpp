@@ -2211,6 +2211,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	else
 		th->insertLegacyChildAt(Depth,toAdd);
 	toAdd->constructionComplete();
+	toAdd->afterConstruction();
 	toAdd->incRef();
 	ret=asAtomHandler::fromObject(toAdd);
 }
@@ -2673,16 +2674,6 @@ void DisplayObjectContainer::finalize()
 	mapLegacyChildToDepth.clear();
 	namedRemovedLegacyChildren.clear();
 	InteractiveObject::finalize();
-}
-
-void DisplayObjectContainer::resetLegacyState()
-{
-	auto i = mapDepthToLegacyChild.begin();
-	while( i != mapDepthToLegacyChild.end())
-	{
-		i->second->resetLegacyState();
-		i++;
-	}
 }
 
 InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
@@ -5753,6 +5744,7 @@ void MovieClip::constructionComplete()
 
 void MovieClip::afterConstruction()
 {
+	getSystemState()->stage->AVM1AddScriptedMovieClip(this);
 	// set framescript of frame 0 after construction is completed
 	// only if state.FP was not changed during construction
 	if(frameScripts.count(0) && state.FP == 0)
@@ -5785,18 +5777,6 @@ void MovieClip::setOnStage(bool staged, bool forced)
 	}
 	else
 		getSystemState()->stage->AVM1RemoveScriptedMovieClip(this);
-}
-
-void MovieClip::resetLegacyState()
-{
-	DisplayObjectContainer::resetLegacyState();
-	state.last_FP=-1;
-	state.FP=0;
-	state.next_FP=0;
-	state.stop_FP=false;
-	state.explicit_FP=false;
-	state.creatingframe=false;
-	state.frameadvanced=false;
 }
 
 Frame *MovieClip::getCurrentFrame()

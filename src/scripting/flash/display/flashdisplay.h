@@ -141,7 +141,6 @@ public:
 	DisplayObjectContainer(Class_base* c);
 	bool destruct() override;
 	void finalize() override;
-	void resetLegacyState() override;
 	bool hasLegacyChildAt(int32_t depth);
 	// this does not test if a DisplayObject exists at the provided depth
 	DisplayObject* getLegacyChildAt(int32_t depth);
@@ -615,7 +614,6 @@ public:
 	void constructionComplete() override;
 	void afterConstruction() override;
 	void setOnStage(bool staged, bool forced) override;
-	void resetLegacyState() override;
 	RunState state;
 	_NR<AVM1MovieClipLoader> avm1loader;
 	Frame* getCurrentFrame();

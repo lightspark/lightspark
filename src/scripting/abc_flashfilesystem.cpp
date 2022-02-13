@@ -29,6 +29,7 @@ void ABCVm::registerClassesFlashFilesystem(Global* builtin)
 	if(m_sys->flashMode==SystemState::AIR)
 	{
 		builtin->registerBuiltin("File","flash.filesystem",Class<ASFile>::getRef(m_sys));
+		builtin->registerBuiltin("FileMode","flash.filesystem",Class<FileMode>::getRef(m_sys));
 		builtin->registerBuiltin("FileStream","flash.filesystem",Class<FileStream>::getRef(m_sys));
 	}
 }

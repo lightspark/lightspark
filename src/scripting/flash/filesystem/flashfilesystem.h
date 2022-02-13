@@ -28,24 +28,40 @@
 namespace lightspark
 {
 
+class ASFile;
 class FileStream: public EventDispatcher
 {
+	_NR<ASFile> file;
+	tiny_string fileMode;
+	_NR<ByteArray> bytes;
 public:
 	FileStream(Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
-	ASPROPERTY_GETTER(bool,isSupported);
+	ASFUNCTION_ATOM(open);
+	ASFUNCTION_ATOM(close);
+	ASFUNCTION_ATOM(readBytes);
+	ASPROPERTY_GETTER(uint32_t,bytesAvailable);
 };
 
 class ASFile: public FileReference
 {
+	tiny_string path;
 public:
-	ASFile(Class_base* c);
+	ASFile(Class_base* c, const tiny_string _path="", bool _exists=false);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,exists);
 	ASPROPERTY_GETTER(_NR<ASFile>,applicationDirectory);
 	ASFUNCTION_ATOM(resolvePath);
+	const tiny_string& getFullPath() const { return path; }
 };
+class FileMode: public ASObject
+{
+public:
+	FileMode(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_FILEMODE){}
+	static void sinit(Class_base* c);
+};
+
 }
 #endif /* SCRIPTING_FLASH_FILESYSTEM_FLASHFILESYSTEM_H */

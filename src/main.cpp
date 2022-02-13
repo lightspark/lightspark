@@ -42,6 +42,7 @@ using namespace lightspark;
 class StandaloneEngineData: public EngineData
 {
 	SDL_GLContext mSDLContext;
+	char* mBaseDir;
 	void removedir(const char* dir)
 	{
 		GDir* d = g_dir_open(dir,0,nullptr);
@@ -82,10 +83,13 @@ public:
 	StandaloneEngineData(const tiny_string& datapath)
 	{
 		sharedObjectDatapath=datapath;
+		mBaseDir = g_get_current_dir();
 	}
 	~StandaloneEngineData()
 	{
 		removedir(Config::getConfig()->getDataDirectory().c_str());
+		if (mBaseDir)
+			g_free(mBaseDir);
 	}
 	SDL_Window* createWidget(uint32_t w, uint32_t h) override
 	{
@@ -159,85 +163,93 @@ public:
 	{
 		SDL_GL_DeleteContext(mSDLContext);
 	}
-	bool FileExists(const tiny_string& filename) override
+	tiny_string FileFullPath(SystemState* sys, const tiny_string& filename) override
+	{
+		std::string p;
+		if (sys->flashMode == SystemState::FLASH_MODE::AIR && mBaseDir)
+		{
+			if (!g_path_is_absolute(filename.raw_buf()))
+				p = mBaseDir;
+		}
+		else
+			p = Config::getConfig()->getDataDirectory();
+		if (p.empty())
+			return "";
+		p += G_DIR_SEPARATOR_S;
+		p += filename.raw_buf();
+		return p;
+	}
+	
+	bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath) override
 	{
 		if (!isvalidfilename(filename))
 			return false;
-		std::string p = Config::getConfig()->getDataDirectory();
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
 		if (p.empty())
 			return false;
-		p += G_DIR_SEPARATOR_S;
-		p += filename.raw_buf();
-		return g_file_test(p.c_str(),G_FILE_TEST_EXISTS);
+		return g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS);
 	}
-	tiny_string FileRead(const tiny_string& filename) override
+
+	tiny_string FileRead(SystemState* sys,const tiny_string& filename, bool isfullpath) override
 	{
 		if (!isvalidfilename(filename))
 			return "";
-		std::string p = Config::getConfig()->getDataDirectory();
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
 		if (p.empty())
 			return "";
 
-		p += G_DIR_SEPARATOR_S;
-		p += filename.raw_buf();
-		if (!g_file_test(p.c_str(),G_FILE_TEST_EXISTS))
+		if (!g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS))
 			return "";
-		uint32_t len = getfilesize(p.c_str());
+		uint32_t len = getfilesize(p.raw_buf());
 		std::ifstream file;
 		
-		file.open(p, std::ios::in|std::ios::binary);
+		file.open(p.raw_buf(), std::ios::in|std::ios::binary);
 		
 		tiny_string res(file,len);
 		file.close();
 		return res;
 	}
-	void FileWrite(const tiny_string& filename, const tiny_string& data) override
+	void FileWrite(SystemState* sys,const tiny_string& filename, const tiny_string& data, bool isfullpath) override
 	{
 		if (!isvalidfilename(filename))
 			return;
-		std::string p = Config::getConfig()->getDataDirectory();
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
 		if (p.empty())
 			return;
-		p += G_DIR_SEPARATOR_S;
-		p += filename.raw_buf();
 		std::ofstream file;
 		
-		file.open(p, std::ios::out|std::ios::binary);
+		file.open(p.raw_buf(), std::ios::out|std::ios::binary);
 		file << data;
 		file.close();
 	}
-	void FileReadByteArray(const tiny_string &filename,ByteArray* res) override
+	void FileReadByteArray(SystemState* sys,const tiny_string &filename,ByteArray* res, bool isfullpath) override
 	{
 		if (!isvalidfilename(filename))
 			return;
-		std::string p = Config::getConfig()->getDataDirectory();
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
 		if (p.empty())
 			return;
-		p += G_DIR_SEPARATOR_S;
-		p += filename.raw_buf();
-		if (!g_file_test(p.c_str(),G_FILE_TEST_EXISTS))
+		if (!g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS))
 			return;
-		uint32_t len = getfilesize(p.c_str());
+		uint32_t len = getfilesize(p.raw_buf());
 		std::ifstream file;
 		uint8_t buf[len];
-		file.open(p, std::ios::in|std::ios::binary);
+		file.open(p.raw_buf(), std::ios::in|std::ios::binary);
 		file.read((char*)buf,len);
 		res->writeBytes(buf,len);
 		file.close();
 	}
 	
-	void FileWriteByteArray(const tiny_string &filename, ByteArray *data) override
+	void FileWriteByteArray(SystemState* sys,const tiny_string &filename, ByteArray *data, bool isfullpath) override
 	{
 		if (!isvalidfilename(filename))
 			return;
-		std::string p = Config::getConfig()->getDataDirectory();
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
 		if (p.empty())
 			return;
-		p += G_DIR_SEPARATOR_S;
-		p += filename.raw_buf();
 		std::ofstream file;
 		
-		file.open(p, std::ios::out|std::ios::binary|std::ios::trunc);
+		file.open(p.raw_buf(), std::ios::out|std::ios::binary|std::ios::trunc);
 		uint8_t* buf = data->getBuffer(data->getLength(),false);
 		file.write((char*)buf,data->getLength());
 		file.close();

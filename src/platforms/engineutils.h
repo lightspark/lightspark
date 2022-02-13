@@ -174,11 +174,12 @@ public:
 	static Semaphore mainthread_initialized;
 	static bool startSDLMain();
 
-	virtual bool FileExists(const tiny_string& filename);
-	virtual tiny_string FileRead(const tiny_string& filename);
-	virtual void FileWrite(const tiny_string& filename, const tiny_string& data);
-	virtual void FileReadByteArray(const tiny_string &filename,ByteArray* res);
-	virtual void FileWriteByteArray(const tiny_string& filename, ByteArray* data);
+	virtual bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath);
+	virtual tiny_string FileFullPath(SystemState* sys,const tiny_string& filename);
+	virtual tiny_string FileRead(SystemState* sys,const tiny_string& filename, bool isfullpath);
+	virtual void FileWrite(SystemState* sys,const tiny_string& filename, const tiny_string& data, bool isfullpath);
+	virtual void FileReadByteArray(SystemState* sys,const tiny_string &filename,ByteArray* res, bool isfullpath);
+	virtual void FileWriteByteArray(SystemState* sys,const tiny_string& filename, ByteArray* data, bool isfullpath);
 	void initGLEW();
 	void resizePixelBuffers(uint32_t w, uint32_t h);
 

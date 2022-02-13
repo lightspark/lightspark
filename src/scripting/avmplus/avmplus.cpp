@@ -48,31 +48,31 @@ ASFUNCTIONBODY_ATOM(avmplusFile,exists)
 {
 	tiny_string filename;
 	ARG_UNPACK_ATOM(filename);
-	asAtomHandler::setBool(ret,sys->getEngineData()->FileExists(filename));
+	asAtomHandler::setBool(ret,sys->getEngineData()->FileExists(sys,filename,false));
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,read)
 {
 	tiny_string filename;
 	ARG_UNPACK_ATOM(filename);
-	if (!sys->getEngineData()->FileExists(filename))
+	if (!sys->getEngineData()->FileExists(sys,filename,false))
 		throwError<ASError>(kFileOpenError,filename);
-	ret = asAtomHandler::fromObject(abstract_s(sys,sys->getEngineData()->FileRead(filename)));
+	ret = asAtomHandler::fromObject(abstract_s(sys,sys->getEngineData()->FileRead(sys,filename,false)));
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,write)
 {
 	tiny_string filename;
 	tiny_string data;
 	ARG_UNPACK_ATOM(filename)(data);
-	sys->getEngineData()->FileWrite(filename,data);
+	sys->getEngineData()->FileWrite(sys,filename,data,false);
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,readByteArray)
 {
 	tiny_string filename;
 	ARG_UNPACK_ATOM(filename);
-	if (!sys->getEngineData()->FileExists(filename))
+	if (!sys->getEngineData()->FileExists(sys,filename,false))
 		throwError<ASError>(kFileOpenError,filename);
 	ByteArray* res = Class<ByteArray>::getInstanceS(sys);
-	sys->getEngineData()->FileReadByteArray(filename,res);
+	sys->getEngineData()->FileReadByteArray(sys,filename,res,false);
 	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)
@@ -80,7 +80,7 @@ ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)
 	tiny_string filename;
 	_NR<ByteArray> data;
 	ARG_UNPACK_ATOM(filename)(data);
-	sys->getEngineData()->FileWriteByteArray(filename,data.getPtr());
+	sys->getEngineData()->FileWriteByteArray(sys,filename,data.getPtr(),false);
 }
 
 avmplusSystem::avmplusSystem(Class_base* c):
@@ -289,10 +289,10 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 	ARG_UNPACK_ATOM(filename)(swfVersion, 0);
 	if (swfVersion != 0)
 		LOG(LOG_NOT_IMPLEMENTED, "avmplus.Domain.load is unimplemented for swfVersion "<<swfVersion);
-	if (!sys->getEngineData()->FileExists(filename))
+	if (!sys->getEngineData()->FileExists(sys,filename,false))
 		throwError<ASError>(kFileOpenError,filename);
 	_NR<ByteArray> bytes = _NR<ByteArray>(Class<ByteArray>::getInstanceS(sys));
-	sys->getEngineData()->FileReadByteArray(filename,bytes.getPtr());
+	sys->getEngineData()->FileReadByteArray(sys,filename,bytes.getPtr(),false);
 
 	// execute loaded abc file
 	MemoryStreamCache mc(sys);

@@ -248,29 +248,35 @@ bool EngineData::startSDLMain()
 	return mainthread_running;
 }
 
-bool EngineData::FileExists(const tiny_string &filename)
+bool EngineData::FileExists(SystemState* sys, const tiny_string &filename, bool isfullpath)
 {
 	LOG(LOG_ERROR,"FileExists not implemented");
 	return false;
 }
 
-tiny_string EngineData::FileRead(const tiny_string &filename)
+tiny_string EngineData::FileFullPath(SystemState* sys, const tiny_string& filename)
+{
+	LOG(LOG_ERROR,"FileFullPath not implemented");
+	return "";
+}
+
+tiny_string EngineData::FileRead(SystemState* sys,const tiny_string &filename, bool isfullpath)
 {
 	LOG(LOG_ERROR,"FileRead not implemented");
 	return "";
 }
 
-void EngineData::FileWrite(const tiny_string &filename, const tiny_string &data)
+void EngineData::FileWrite(SystemState* sys,const tiny_string &filename, const tiny_string &data, bool isfullpath)
 {
 	LOG(LOG_ERROR,"FileWrite not implemented");
 }
 
-void EngineData::FileReadByteArray(const tiny_string &filename,ByteArray* res)
+void EngineData::FileReadByteArray(SystemState* sys,const tiny_string &filename,ByteArray* res, bool isfullpath)
 {
 	LOG(LOG_ERROR,"FileReadByteArray not implemented");
 }
 
-void EngineData::FileWriteByteArray(const tiny_string &filename, ByteArray *data)
+void EngineData::FileWriteByteArray(SystemState* sys, const tiny_string &filename, ByteArray *data, bool isfullpath)
 {
 	LOG(LOG_ERROR,"FileWriteByteArray not implemented");
 }

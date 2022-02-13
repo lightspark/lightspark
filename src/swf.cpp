@@ -317,11 +317,6 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 
     static_SoundMixer_soundTransform  = _MR(Class<SoundTransform>::getInstanceS(this));
 	static_SoundMixer_soundTransform->setRefConstant();
-	if (flashMode == SystemState::AIR)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"File.applicationDirectory is not set");
-		static_ASFile_applicationDirectory=_MNR(Class<ASFile>::getInstanceS(this));
-	}
 	threadPool=new ThreadPool(this);
 	downloadThreadPool=new ThreadPool(this);
 
@@ -1150,6 +1145,11 @@ void SystemState::setParamsAndEngine(EngineData* e, bool s)
 	Locker l(rootMutex);
 	engineData=e;
 	standalone=s;
+	if (flashMode == SystemState::AIR)
+	{
+		static_ASFile_applicationDirectory=_MNR(Class<ASFile>::getInstanceS(this,getEngineData()->FileFullPath(this,""),true));
+	}
+	
 	if(vmVersion)
 		addJob(new EngineCreator);
 }

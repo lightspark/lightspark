@@ -201,6 +201,7 @@ REGISTER_CLASS_NAME(ExternalInterface,"flash.external")
 
 //filesystem
 REGISTER_CLASS_NAME2(ASFile,"File","flash.filesystem")
+REGISTER_CLASS_NAME(FileMode,"flash.filesystem")
 REGISTER_CLASS_NAME(FileStream,"flash.filesystem")
 
 //Filters

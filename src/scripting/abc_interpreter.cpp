@@ -3799,11 +3799,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							}
 							if (function->isStatic && !isborrowed && v->kind == DECLARED_TRAIT)
 							{
-								// property is a static variable of the class this function belongs to
-								o=asAtomHandler::fromObjectNoPrimitive(function->inClass);
-								addCachedConstant(state,mi, o,code);
-								typestack.push_back(typestackentry(function->inClass,false));
-								break;
+								// if property is a static variable of the class this function belongs to we have to check the scopes first
+								found = false;
 							}
 						}
 					}
@@ -3827,8 +3824,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							if (obj->hasPropertyByMultiname(*name, false, true))
 							{
 								found = true;
-								scopepos=spos;
 								done=true;
+								if (function->isStatic && obj==function->inClass)
+								{
+									// property is a static variable of the class this function belongs to
+									o=asAtomHandler::fromObjectNoPrimitive(function->inClass);
+									addCachedConstant(state,mi, o,code);
+									resulttype = function->inClass;
+									break;
+								}
+								else
+									scopepos=spos;
 								break;
 							}
 							++it;
@@ -6000,8 +6006,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 													// generator will be replaced by a conversion operator
 													isGenerator=true;
 													if (resulttype != Class<Number>::getRef(function->getSystemState()).getPtr()
-															|| (state.operandlist.size() > 0
-																&& state.operandlist.back().objtype != Class<Integer>::getRef(function->getSystemState()).getPtr()
+															|| (state.operandlist.back().objtype != Class<Integer>::getRef(function->getSystemState()).getPtr()
 																&& state.operandlist.back().objtype != Class<UInteger>::getRef(function->getSystemState()).getPtr()
 																&& state.operandlist.back().objtype != Class<Number>::getRef(function->getSystemState()).getPtr()))
 														generatorneedsconversion=true;

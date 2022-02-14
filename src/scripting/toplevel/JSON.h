@@ -35,17 +35,17 @@ public:
 	ASFUNCTION_ATOM(generator);
 	ASFUNCTION_ATOM(_parse);
 	ASFUNCTION_ATOM(_stringify);
-	static ASObject* doParse(const tiny_string &jsonstring, asAtom reviver);
+	static ASObject* doParse(const tiny_string &jsonstring, asAtom reviver, SystemState* sys);
 private:
-	static void parseAll(const tiny_string &jsonstring, ASObject** parent , multiname &key, asAtom reviver);
-	static int parse(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key, asAtom reviver);
-	static int parseTrue(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key);
-	static int parseFalse(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key);
-	static int parseNull(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key);
-	static int parseString(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key, tiny_string *result = nullptr);
-	static int parseNumber(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key);
-	static int parseObject(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key, asAtom reviver);
-	static int parseArray(const tiny_string &jsonstring, int pos, ASObject **parent, multiname &key, asAtom reviver);
+	static void parseAll(const tiny_string &jsonstring, ASObject** parent , multiname &key, asAtom reviver, SystemState* sys);
+	static void parse(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, SystemState* sys);
+	static void parseTrue(CharIterator& it, ASObject **parent, multiname &key, SystemState* sys);
+	static void parseFalse(CharIterator& it, ASObject **parent, multiname &key, SystemState* sys);
+	static void parseNull(CharIterator& it, ASObject **parent, multiname &key, SystemState* sys);
+	static void parseString(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, SystemState* sys, tiny_string *result = nullptr);
+	static void parseNumber(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, SystemState* sys);
+	static void parseObject(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, SystemState* sys);
+	static void parseArray(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, SystemState* sys);
 };
 
 }

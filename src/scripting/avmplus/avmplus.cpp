@@ -72,7 +72,7 @@ ASFUNCTIONBODY_ATOM(avmplusFile,readByteArray)
 	if (!sys->getEngineData()->FileExists(sys,filename,false))
 		throwError<ASError>(kFileOpenError,filename);
 	ByteArray* res = Class<ByteArray>::getInstanceS(sys);
-	sys->getEngineData()->FileReadByteArray(sys,filename,res,9,UINT32_MAX,false);
+	sys->getEngineData()->FileReadByteArray(sys,filename,res,0,UINT32_MAX,false);
 	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)

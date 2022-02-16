@@ -280,6 +280,7 @@ void EngineData::FileWrite(SystemState* sys,const tiny_string &filename, const t
 uint8_t EngineData::FileReadUnsignedByte(SystemState* sys, const tiny_string& filename, uint32_t startpos, bool isfullpath)
 {
 	LOG(LOG_ERROR,"FileReadUnsignedByte not implemented");
+	return 0;
 }
 
 void EngineData::FileReadByteArray(SystemState* sys, const tiny_string &filename, ByteArray* res, uint32_t startpos, uint32_t length, bool isfullpath)

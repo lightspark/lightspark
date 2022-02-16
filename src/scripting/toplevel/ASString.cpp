@@ -31,20 +31,20 @@
 using namespace std;
 using namespace lightspark;
 
-ASString::ASString(Class_base* c):ASObject(c,T_STRING),currentindex(0),hasId(true),datafilled(true)
+ASString::ASString(Class_base* c):ASObject(c,T_STRING),hasId(true),datafilled(true)
 {
 	stringId = BUILTIN_STRINGS::EMPTY;
 }
 
-ASString::ASString(Class_base* c,const string& s) : ASObject(c,T_STRING),data(s),currentindex(0),hasId(false),datafilled(true)
+ASString::ASString(Class_base* c,const string& s) : ASObject(c,T_STRING),data(s),hasId(false),datafilled(true)
 {
 }
 
-ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c,T_STRING),data(s),currentindex(0),hasId(false),datafilled(true)
+ASString::ASString(Class_base* c,const tiny_string& s) : ASObject(c,T_STRING),data(s),hasId(false),datafilled(true)
 {
 }
 
-ASString::ASString(Class_base* c,const char* s) : ASObject(c,T_STRING),data(s, /*copy:*/true),currentindex(0),hasId(false),datafilled(true)
+ASString::ASString(Class_base* c,const char* s) : ASObject(c,T_STRING),data(s, /*copy:*/true),hasId(false),datafilled(true)
 {
 }
 
@@ -53,7 +53,6 @@ ASString::ASString(Class_base* c,const char* s, uint32_t len) : ASObject(c,T_STR
 	data = std::string(s,len);
 	hasId = false;
 	datafilled=true;
-	currentindex=0;
 }
 
 ASFUNCTIONBODY_ATOM(ASString,_constructor)
@@ -135,10 +134,6 @@ void ASString::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("localeCompare","",Class<IFunction>::getFunction(c->getSystemState(),localeCompare_prototype,1,Class<Integer>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-}
-
-void ASString::buildTraits(ASObject* o)
-{
 }
 
 ASFUNCTIONBODY_ATOM(ASString,search)
@@ -430,7 +425,6 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 
 ASFUNCTIONBODY_ATOM(ASString,substr)
 {
-	tiny_string data = asAtomHandler::toString(obj,sys);
 	int start=0;
 	if(argslen>=1)
 	{
@@ -442,14 +436,20 @@ ASFUNCTIONBODY_ATOM(ASString,substr)
 			return;
 		}
 	}
+	int numchars=0;
+	if (asAtomHandler::isStringID(obj))
+		numchars = sys->getStringFromUniqueId(asAtomHandler::getStringId(obj)).numChars();
+	else if (asAtomHandler::is<ASString>(obj))
+		numchars = asAtomHandler::as<ASString>(obj)->getData().numChars();
+	else
+		numchars = asAtomHandler::toString(obj,sys).numChars();
 	if(start<0) {
-		start=int32_t(data.numChars())+start;
+		start=numchars+start;
 		if(start<0)
 			start=0;
 	}
-	if(start>(int)data.numChars())
-		start=data.numChars();
-
+	if(start>numchars)
+		start=numchars;
 	int len=0x7fffffff;
 	if (argslen==2 && !asAtomHandler::is<Undefined>(args[1]))
 	{
@@ -462,12 +462,21 @@ ASFUNCTIONBODY_ATOM(ASString,substr)
 			len=asAtomHandler::toInt(args[1]);
 		if (len<0)
 		{
-			len=int32_t(data.numChars())+len;
+			len+=numchars;
 			if(len<0)
 				len=0;
 		}
 	}
-	ret = asAtomHandler::fromObject(abstract_s(sys,data.substr(start,len)));
+
+	if (asAtomHandler::isStringID(obj))
+		ret = asAtomHandler::fromObject(abstract_s(sys,sys->getStringFromUniqueId(asAtomHandler::getStringId(obj)).substr(start,len)));
+	else if (asAtomHandler::is<ASString>(obj))
+	{
+		ASString* th = asAtomHandler::as<ASString>(obj);
+		ret = asAtomHandler::fromObject(abstract_s(sys,th->data.substr_bytes(th->getBytePosition(start),start+len >= numchars ? UINT32_MAX  : (th->getBytePosition(start+len)-th->getBytePosition(start)))));
+	}
+	else
+		ret = asAtomHandler::fromObject(abstract_s(sys,asAtomHandler::toString(obj,sys).substr(start,len)));
 }
 
 ASFUNCTIONBODY_ATOM(ASString,substring)
@@ -732,25 +741,7 @@ ASFUNCTIONBODY_ATOM(ASString,charAt)
 			ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 			return;
 		}
-		uint32_t c;
-		if (th->getData().isSinglebyte())
-			c = th->getData().charAt(index);
-		else
-		{
-			if (index == 0)
-			{
-				th->currentpos = th->getData().begin();
-				th->currentindex = 0;
-				c = *(th->currentpos);
-			}
-			else if (th->currentpos.isValid() && th->currentindex == index-1)
-			{
-				th->currentindex++;
-				c = *(++th->currentpos);
-			}
-			else
-				c = th->getData().charAt(index);
-		}
+		uint32_t c = g_utf8_get_char(th->getData().raw_buf()+th->getBytePosition(index));
 		ret = c < BUILTIN_STRINGS_CHAR_MAX ? asAtomHandler::fromStringID(c) : asAtomHandler::fromObject(abstract_s(sys, tiny_string::fromChar(c) ));
 		return;
 	}
@@ -787,25 +778,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 			asAtomHandler::setNumber(ret,sys,Number::NaN);
 		else
 		{
-			uint32_t c;
-			if (th->getData().isSinglebyte())
-				c = th->getData().charAt(index);
-			else
-			{
-				if (index == 0)
-				{
-					th->currentpos = th->getData().begin();
-					th->currentindex = 0;
-					c = *(th->currentpos);
-				}
-				else if (th->currentpos.isValid() && th->currentindex == index-1)
-				{
-					th->currentindex++;
-					c = *(++th->currentpos);
-				}
-				else
-					c = th->getData().charAt(index);
-			}
+			uint32_t c = g_utf8_get_char(th->getData().raw_buf()+th->getBytePosition(index));
 			asAtomHandler::setInt(ret,sys,(int32_t)c);
 		}
 	}

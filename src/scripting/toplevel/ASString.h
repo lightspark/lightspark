@@ -22,6 +22,7 @@
 
 #include "scripting/class.h"
 
+
 namespace Glib { class ustring; }
 
 namespace lightspark
@@ -41,10 +42,9 @@ private:
 	number_t parseStringInfinite(const char *s, char **end) const;
 	tiny_string data;
 	
-	// stores the position of the last call to charAt/charCodeAt
-	// speeds up iterating over all chars in the string
-	CharIterator currentpos;
-	uint32_t currentindex;
+	// stores the position of utf8-characters in the string
+	// speeds up direct access to characters by position
+	std::vector<uint32_t> charpositions;
 public:
 	ASString(Class_base* c);
 	ASString(Class_base* c, const std::string& s);
@@ -71,7 +71,6 @@ public:
 	}
 
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(charAt);
 	ASFUNCTION_ATOM(charCodeAt);
@@ -114,15 +113,32 @@ public:
 		data.clear(); 
 		hasId = false;
 		datafilled=false; 
+		charpositions.clear();
 		if (!destructIntern())
 		{
 			stringId = BUILTIN_STRINGS::EMPTY;
 			hasId = true;
 			datafilled = true;
-			currentindex=0;
 			return false;
 		}
 		return true;
+	}
+	inline uint32_t getBytePosition(uint32_t charpos)
+	{
+		if (charpos > data.numChars())
+			return UINT32_MAX;
+		if (data.isSinglebyte())
+			return charpos;
+		if (charpositions.empty())
+		{
+			charpositions.reserve(this->data.numChars());
+			for (auto it = data.begin(); it != data.end(); it++)
+			{
+				charpositions.push_back(it.ptr()-data.raw_buf());
+			}
+		}
+		return charpositions[charpos];
+		
 	}
 };
 

@@ -41,7 +41,7 @@ friend class tiny_string;
 private:
 	char* buf_ptr;
 public:
-	CharIterator() : buf_ptr(NULL) {}
+	CharIterator() : buf_ptr(nullptr) {}
 	CharIterator(char* buf) : buf_ptr(buf) {}
 	/* Return the utf8-character value */
 	uint32_t operator*() const
@@ -77,6 +77,7 @@ public:
 		return g_unichar_digit_value(g_utf8_get_char(buf_ptr));
 	}
 	bool isValid() const { return buf_ptr; }
+	inline char* ptr() const { return buf_ptr; }
 };
 
 /*
@@ -195,7 +196,7 @@ public:
 	char* strchrr(char c) const;
 	/*explicit*/ operator std::string() const;
 	bool startsWith(const char* o) const;
-        bool endsWith(const char* o) const;
+	bool endsWith(const char* o) const;
 	/* idx is an index of utf-8 characters */
 	uint32_t charAt(uint32_t idx) const
 	{
@@ -225,5 +226,5 @@ public:
 	int compare(const tiny_string& r) const;
 };
 
-};
+}
 #endif /* TINY_STRING_H */

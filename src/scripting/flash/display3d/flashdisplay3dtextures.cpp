@@ -401,10 +401,41 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 }
 ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"RectangleTexture.uploadFromByteArray does nothing");
+	RectangleTexture* th = asAtomHandler::as<RectangleTexture>(obj);
 	_NR<ByteArray> data;
-	int32_t byteArrayOffset;
+	uint32_t byteArrayOffset;
 	ARG_UNPACK_ATOM(data)(byteArrayOffset);
+	if (data.isNull())
+		throwError<TypeError>(kNullArgumentError);
+	th->needrefresh = true;
+	if (th->bitmaparray.size() == 0)
+		th->bitmaparray.resize(1);
+	uint32_t bytesneeded = th->height*th->width*4;
+	if (byteArrayOffset + bytesneeded > data->getLength())
+	{
+		LOG(LOG_ERROR,"not enough bytes to read");
+		throwError<RangeError>(kParamRangeError);
+	}
+	th->bitmaparray[0].resize(bytesneeded);
+	data->readBytes(byteArrayOffset,bytesneeded,th->bitmaparray[0].data());
+#ifdef ENABLE_GLES
+	switch (th->format)
+	{
+		case TEXTUREFORMAT::BGRA:
+		{
+			for (uint32_t i = 0; i < th->bitmaparray[0].size(); i+=4)
+				std::swap(th->bitmaparray[0][i],th->bitmaparray[miplevel][i+2]);
+		}
+		case TEXTUREFORMAT::BGRA_PACKED:
+			LOG(LOG_NOT_IMPLEMENTED,"texture conversion from BGRA_PACKED to RGBA for opengles")
+			break;
+		case TEXTUREFORMAT::BGR_PACKED:
+			LOG(LOG_NOT_IMPLEMENTED,"texture conversion from BGR_PACKED to RGB for opengles")
+			break;
+	}
+#endif
+	data->setPosition(byteArrayOffset+bytesneeded);
+	th->context->addAction(RENDER_LOADTEXTURE,th);
 }
 
 void VideoTexture::sinit(Class_base *c)

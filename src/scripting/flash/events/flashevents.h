@@ -22,16 +22,16 @@
 
 #include "compat.h"
 #include "asobject.h"
-#include "backends/extscriptobject.h"
+#include "threading.h"
 #include <string>
-#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_keycode.h>
 #undef MOUSE_EVENT
 
 namespace lightspark
 {
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
-	FUNCTION, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
+	FUNCTION,FUNCTION_ASYNC, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
 	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,AVM1INITACTION_EVENT,ROOTCONSTRUCTEDEVENT };
 
 class ABCContext;
@@ -48,7 +48,7 @@ class Event: public ASObject
 {
 public:
 	Event(Class_base* cb, const tiny_string& t = "Event", bool b=false, bool c=false, CLASS_SUBTYPE st=SUBTYPE_EVENT);
-	void finalize();
+	void finalize() override;
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	virtual void setTarget(asAtom t) {target = t; }
@@ -84,7 +84,7 @@ private:
 	bool handled;
 public:
 	WaitableEvent(const tiny_string& t = "Event", bool b=false, bool c=false)
-		: Event(NULL,t,b,c,SUBTYPE_WAITABLE_EVENT), handled(false) {}
+		: Event(nullptr,t,b,c,SUBTYPE_WAITABLE_EVENT), handled(false) {}
 	void wait();
 	void signal();
 	void finalize() override ;
@@ -101,7 +101,6 @@ public:
 		BUBBLING_PHASE = 3
 	};
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o) {}
 };
 
 class KeyboardEvent: public Event
@@ -117,9 +116,6 @@ private:
 public:
 	KeyboardEvent(Class_base* c, tiny_string _type="", uint32_t _charcode=0, uint32_t _keycode=0, SDL_Keymod modifiers=KMOD_NONE, SDL_Keycode _sdlkeycode=SDLK_UNKNOWN);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_GETTER_SETTER(altKey);
 	ASFUNCTION_GETTER_SETTER(commandKey);
@@ -137,9 +133,6 @@ class FocusEvent: public Event
 public:
 	FocusEvent(Class_base* c);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(_constructor);
 };
 
@@ -148,9 +141,6 @@ class FullScreenEvent: public Event
 public:
 	FullScreenEvent(Class_base* c);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(_constructor);
 };
 
@@ -161,9 +151,6 @@ private:
 public:
 	NetStatusEvent(Class_base* cb, const tiny_string& l="", const tiny_string& c="");
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(_constructor);
 	tiny_string statuscode;
 };
@@ -173,9 +160,6 @@ class HTTPStatusEvent: public Event
 public:
 	HTTPStatusEvent(Class_base* c):Event(c){}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(_constructor);
 };
 
@@ -186,9 +170,6 @@ protected:
 public:
 	TextEvent(Class_base* c, const tiny_string& t = "textEvent");
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(_constructor);
 };
 
@@ -201,9 +182,6 @@ protected:
 public:
 	ErrorEvent(Class_base* c, const tiny_string& t = "error", const std::string& e = "", int id = 0);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(_constructor);
 };
 
@@ -214,9 +192,6 @@ private:
 public:
 	IOErrorEvent(Class_base* c, const tiny_string& t = "ioError", const std::string& e = "", int id = 0);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 };
 
 class SecurityErrorEvent: public ErrorEvent
@@ -224,9 +199,6 @@ class SecurityErrorEvent: public ErrorEvent
 public:
 	SecurityErrorEvent(Class_base* c, const std::string& e = "");
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 };
 
 class AsyncErrorEvent: public ErrorEvent
@@ -234,9 +206,6 @@ class AsyncErrorEvent: public ErrorEvent
 public:
 	AsyncErrorEvent(Class_base* c);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(_constructor);
 };
 
@@ -245,9 +214,6 @@ class UncaughtErrorEvent: public ErrorEvent
 public:
 	UncaughtErrorEvent(Class_base* c);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(_constructor);
 };
 
@@ -263,7 +229,6 @@ public:
 	ProgressEvent(Class_base* c);
 	ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total, const tiny_string& t="progress");
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 };
 
@@ -273,9 +238,6 @@ public:
 	TimerEvent(Class_base* c):Event(c, "DEPRECATED"){}
 	TimerEvent(Class_base* c,const tiny_string& t):Event(c,t,true){}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(updateAfterEvent);
 };
 
@@ -290,7 +252,6 @@ public:
 		   bool b=true, SDL_Keymod _modifiers=KMOD_NONE,bool _buttonDown = false,
 		   _NR<InteractiveObject> relObj = NullRef, int32_t delta=1);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	void setTarget(asAtom t) override;
 	EVENT_TYPE getEventType() const override { return MOUSE_EVENT;}
 	ASFUNCTION_ATOM(_constructor);
@@ -323,7 +284,6 @@ class InvokeEvent: public Event
 public:
 	InvokeEvent(Class_base* c) : Event(c, "invoke"){}
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o){}
 	ASFUNCTION_ATOM(_constructor);
 };
 
@@ -376,7 +336,6 @@ public:
 	// is called after an event was handled by the event queue
 	virtual void afterHandleEvent(Event* ev) {}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	void handleEvent(_R<Event> e);
 	void dumpHandlers();
 	bool hasEventListener(const tiny_string& eventName);
@@ -394,7 +353,6 @@ class StatusEvent: public Event
 public:
 	StatusEvent(Class_base* c) : Event(c, "StatusEvent") {}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o) {}
 };
 
 class DataEvent: public TextEvent
@@ -404,7 +362,6 @@ private:
 public:
 	DataEvent(Class_base* c, const tiny_string& _data="") : TextEvent(c, "data"), data(_data) {}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o) {}
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string, data);
 };
@@ -443,10 +400,25 @@ private:
 	asAtom* args;
 	unsigned int numArgs;
 public:
-	FunctionEvent(asAtom _f, asAtom _obj=asAtomHandler::invalidAtom, asAtom* _args=NULL, uint32_t _numArgs=0);
+	FunctionEvent(asAtom _f, asAtom _obj=asAtomHandler::invalidAtom, asAtom* _args=nullptr, uint32_t _numArgs=0);
 	~FunctionEvent();
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const override { return FUNCTION; }
+};
+
+class FunctionAsyncEvent: public Event
+{
+friend class ABCVm;
+private:
+	asAtom f=asAtomHandler::invalidAtom;
+	asAtom obj=asAtomHandler::invalidAtom;
+	asAtom* args;
+	unsigned int numArgs;
+public:
+	FunctionAsyncEvent(asAtom _f, asAtom _obj=asAtomHandler::invalidAtom, asAtom* _args=nullptr, uint32_t _numArgs=0);
+	~FunctionAsyncEvent();
+	static void sinit(Class_base*);
+	EVENT_TYPE getEventType() const override { return FUNCTION_ASYNC; }
 };
 
 class ExternalCallEvent: public WaitableEvent
@@ -577,9 +549,6 @@ class DRMErrorEvent: public ErrorEvent
 public:
 	DRMErrorEvent(Class_base* c);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(_constructor);
 };
 
@@ -588,9 +557,6 @@ class DRMStatusEvent: public Event
 public:
 	DRMStatusEvent(Class_base* c);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o)
-	{
-	}
 	ASFUNCTION_ATOM(_constructor);
 };
 

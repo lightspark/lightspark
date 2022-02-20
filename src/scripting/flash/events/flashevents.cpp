@@ -311,9 +311,6 @@ void ProgressEvent::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_SETTER(ProgressEvent,bytesLoaded);
 ASFUNCTIONBODY_GETTER_SETTER(ProgressEvent,bytesTotal);
 
-void ProgressEvent::buildTraits(ASObject* o)
-{
-}
 
 ASFUNCTIONBODY_ATOM(ProgressEvent,_constructor)
 {
@@ -501,13 +498,6 @@ ASFUNCTIONBODY_ATOM(MouseEvent,updateAfterEvent)
 	LOG(LOG_NOT_IMPLEMENTED,"MouseEvent::updateAfterEvent not implemented");
 }
 
-void MouseEvent::buildTraits(ASObject* o)
-{
-	//TODO: really handle local[XY]
-	//o->setVariableByQName("localX","",abstract_d(0),DECLARED_TRAIT);
-	//o->setVariableByQName("localY","",abstract_d(0),DECLARED_TRAIT);
-}
-
 void MouseEvent::setTarget(asAtom t)
 {
 	target = t;
@@ -599,10 +589,6 @@ void EventDispatcher::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("dispatchEvent","",Class<IFunction>::getFunction(c->getSystemState(),dispatchEvent),NORMAL_METHOD,true);
 
 	IEventDispatcher::linkTraits(c);
-}
-
-void EventDispatcher::buildTraits(ASObject* o)
-{
 }
 
 void EventDispatcher::dumpHandlers()
@@ -1183,6 +1169,23 @@ FunctionEvent::FunctionEvent(asAtom _f, asAtom _obj, asAtom* _args, uint32_t _nu
 }
 
 FunctionEvent::~FunctionEvent()
+{
+	//Since the array is used in Function::call the object inside are already been decReffed
+	delete[] args;
+}
+
+FunctionAsyncEvent::FunctionAsyncEvent(asAtom _f, asAtom _obj, asAtom* _args, uint32_t _numArgs):
+		Event(nullptr,"FunctionAsyncEvent"),f(_f),obj(_obj),numArgs(_numArgs)
+{
+	args = new asAtom[numArgs];
+	uint32_t i;
+	for(i=0; i<numArgs; i++)
+	{
+		args[i] = _args[i];
+	}
+}
+
+FunctionAsyncEvent::~FunctionAsyncEvent()
 {
 	//Since the array is used in Function::call the object inside are already been decReffed
 	delete[] args;

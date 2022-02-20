@@ -2,6 +2,7 @@
 #define PPAPI_PLUGIN_H
 
 #include "swf.h"
+#include "backends/extscriptobject.h"
 #include "ppapi/c/ppp_instance.h"
 #include "ppapi/c/pp_var.h"
 #include "ppapi/c/pp_resource.h"

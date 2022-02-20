@@ -30,7 +30,6 @@
 #include "swf.h"
 #include "scripting/abcutils.h"
 #include "scripting/abctypes.h"
-#include "scripting/toplevel/toplevel.h"
 
 #ifdef LLVM_ENABLED
 namespace llvm {

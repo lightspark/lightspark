@@ -1034,6 +1034,17 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				}
 				break;
 			}
+			case FUNCTION_ASYNC:
+			{
+				FunctionAsyncEvent* ev=static_cast<FunctionAsyncEvent*>(e.second.getPtr());
+				asAtom result=asAtomHandler::invalidAtom;
+				if (asAtomHandler::is<AVM1Function>(ev->f))
+					asAtomHandler::as<AVM1Function>(ev->f)->call(&result,&ev->obj,ev->args,ev->numArgs);
+				else
+					asAtomHandler::callFunction(ev->f,result,ev->obj,ev->args,ev->numArgs,true);
+				ASATOM_DECREF(result);
+				break;
+			}
 			case EXTERNAL_CALL:
 			{
 				ExternalCallEvent* ev=static_cast<ExternalCallEvent*>(e.second.getPtr());

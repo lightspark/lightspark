@@ -49,6 +49,12 @@ uint32_t IntervalManager::setInterval(asAtom callback, asAtom* args, const unsig
 {
 	Locker l(mutex);
 
+	if (interval == 0)
+	{
+		// interval is 0, so we make sure the function is executed for the first time ahead of the next event in the event loop
+		_R<FunctionAsyncEvent> event(new (asAtomHandler::getObject(callback)->getSystemState()->unaccountedMemory) FunctionAsyncEvent(callback, obj, args, argslen));
+		getVm(asAtomHandler::getObject(callback)->getSystemState())->prependEvent(NullRef,event);
+	}
 	uint32_t id = getFreeID();
 	IntervalRunner* runner = new (asAtomHandler::getObject(callback)->getSystemState()->unaccountedMemory)
 		IntervalRunner(IntervalRunner::INTERVAL, id, callback, args, argslen, obj);

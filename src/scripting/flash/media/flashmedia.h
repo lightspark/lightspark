@@ -79,6 +79,7 @@ public:
 	void afterExecution(_R<Event> e);
 	void requestSampleDataEvent(size_t position);
 	number_t getBufferTime() const { return buffertime; }
+	inline bool getSampleDataProcessed() const { return container && ACQUIRE_READ(sampledataprocessed); }
 };
 
 class SoundTransform: public ASObject

@@ -651,17 +651,14 @@ void Sound::afterExecution(_R<Event> e)
 
 void Sound::requestSampleDataEvent(size_t position)
 {
-	if (container && ACQUIRE_READ(sampledataprocessed))
-	{
-		RELEASE_WRITE(sampledataprocessed,false);
-		// request more data
-		_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(getSystemState()));
+	RELEASE_WRITE(sampledataprocessed,false);
+	// request more data
+	_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceSNoArgs(getSystemState()));
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
-		data->setLittleEndian(true);
+	data->setLittleEndian(true);
 #endif
-		incRef();
-		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<SampleDataEvent>::getInstanceS(getSystemState(),data,position)));
-	}
+	incRef();
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<SampleDataEvent>::getInstanceS(getSystemState(),data,position)));
 }
 
 void Sound::setBytesTotal(uint32_t b)
@@ -1051,9 +1048,10 @@ void SoundChannel::playStreamFromSamples()
 		bool bufferfilled=false;
 		while(!ACQUIRE_READ(stopped))
 		{
-			if (!streamdatafinished && sampleproducer && audioDecoder->getBufferedSamples()< sampleproducer->getBufferTime()*44100.0*2.0/1000.0)
+			if (!streamdatafinished && sampleproducer && static_cast<SampleDataAudioDecoder*>(audioDecoder)->getBufferedSamples()< sampleproducer->getBufferTime()*44100.0*2.0/1000.0)
 			{
-				sampleproducer->requestSampleDataEvent(streamposition);
+				if (sampleproducer->getSampleDataProcessed())
+					sampleproducer->requestSampleDataEvent(streamposition);
 			}
 			else
 			{

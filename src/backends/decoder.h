@@ -297,7 +297,6 @@ public:
 	virtual ~AudioDecoder(){}
 	virtual void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen)=0;
 	virtual uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time)=0;
-	virtual int32_t getBufferedSamples() const { return -1;}
 	bool hasDecodedFrames() const
 	{
 		return !samplesBuffer.isEmpty();
@@ -370,8 +369,7 @@ public:
 	void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen) override {}
 	// the data is always expected to be floats
 	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time) override;
-	int32_t getBufferedSamples() const override { return  bufferedsamples; }
-	
+	inline int32_t getBufferedSamples() const { return  bufferedsamples; }
 };
 
 

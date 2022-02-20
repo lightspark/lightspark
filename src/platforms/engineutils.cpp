@@ -288,9 +288,15 @@ void EngineData::FileReadByteArray(SystemState* sys, const tiny_string &filename
 	LOG(LOG_ERROR,"FileReadByteArray not implemented");
 }
 
-void EngineData::FileWriteByteArray(SystemState* sys, const tiny_string &filename, ByteArray *data, bool isfullpath)
+void EngineData::FileWriteByteArray(SystemState* sys, const tiny_string &filename, ByteArray *data, uint32_t startpos, uint32_t length, bool isfullpath)
 {
 	LOG(LOG_ERROR,"FileWriteByteArray not implemented");
+}
+
+bool EngineData::FileCreateDirectory(SystemState* sys, const tiny_string &filename, bool isfullpath)
+{
+	LOG(LOG_ERROR,"FileCreateDirectory not implemented");
+	return false;
 }
 
 void EngineData::initGLEW()

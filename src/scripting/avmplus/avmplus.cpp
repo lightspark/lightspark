@@ -80,7 +80,7 @@ ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)
 	tiny_string filename;
 	_NR<ByteArray> data;
 	ARG_UNPACK_ATOM(filename)(data);
-	sys->getEngineData()->FileWriteByteArray(sys,filename,data.getPtr(),false);
+	sys->getEngineData()->FileWriteByteArray(sys,filename,data.getPtr(),0,UINT32_MAX,false);
 }
 
 avmplusSystem::avmplusSystem(Class_base* c):

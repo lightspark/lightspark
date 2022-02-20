@@ -270,7 +270,7 @@ public:
 		delete[] buf;
 	}
 	
-	void FileWriteByteArray(SystemState* sys,const tiny_string &filename, ByteArray *data, bool isfullpath) override
+	void FileWriteByteArray(SystemState* sys,const tiny_string &filename, ByteArray *data, uint32_t startpos, uint32_t length, bool isfullpath) override
 	{
 		if (!isvalidfilename(filename))
 			return;
@@ -281,8 +281,20 @@ public:
 		
 		file.open(p.raw_buf(), std::ios::out|std::ios::binary|std::ios::trunc);
 		uint8_t* buf = data->getBuffer(data->getLength(),false);
-		file.write((char*)buf,data->getLength());
+		uint32_t len = length;
+		if (length == UINT32_MAX || startpos+length > data->getLength())
+			len = data->getLength()-startpos;
+		file.write((char*)buf+startpos,len);
 		file.close();
+	}
+	bool FileCreateDirectory(SystemState* sys,const tiny_string& filename, bool isfullpath) override
+	{
+		if (!isvalidfilename(filename))
+			return false;
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
+		if (p.empty())
+			return false;
+		return g_mkdir_with_parents(p.raw_buf(),0755) == 0;
 	}
 };
 

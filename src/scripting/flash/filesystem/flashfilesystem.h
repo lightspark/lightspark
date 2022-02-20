@@ -44,6 +44,7 @@ public:
 	ASFUNCTION_ATOM(readUnsignedByte);
 	ASPROPERTY_GETTER(uint32_t,bytesAvailable);
 	ASPROPERTY_GETTER_SETTER(number_t,position);
+	ASFUNCTION_ATOM(writeBytes);
 };
 
 class ASFile: public FileReference
@@ -56,6 +57,7 @@ public:
 	ASPROPERTY_GETTER(bool,exists);
 	ASPROPERTY_GETTER(_NR<ASFile>,applicationDirectory);
 	ASFUNCTION_ATOM(resolvePath);
+	ASFUNCTION_ATOM(createDirectory);
 	const tiny_string& getFullPath() const { return path; }
 };
 class FileMode: public ASObject

@@ -41,6 +41,7 @@ void FileStream::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("close", "", Class<IFunction>::getFunction(c->getSystemState(),close), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("readBytes", "", Class<IFunction>::getFunction(c->getSystemState(),readBytes), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("readUnsignedByte", "", Class<IFunction>::getFunction(c->getSystemState(),readUnsignedByte,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("writeBytes", "", Class<IFunction>::getFunction(c->getSystemState(),writeBytes), NORMAL_METHOD, true);
 	REGISTER_GETTER_RESULTTYPE(c,bytesAvailable,UInteger);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,position,Number);
 }
@@ -98,6 +99,17 @@ ASFUNCTIONBODY_ATOM(FileStream,readUnsignedByte)
 	th->position++;
 	ret= asAtomHandler::fromUInt(res);
 }
+ASFUNCTIONBODY_ATOM(FileStream,writeBytes)
+{
+	FileStream* th=asAtomHandler::as<FileStream>(obj);
+	_NR<ByteArray> bytes;
+	uint32_t offset;
+	uint32_t length;
+	ARG_UNPACK_ATOM(bytes)(offset,0)(length,UINT32_MAX);
+	if (!th->isopen)
+		throw Class<IOError>::getInstanceS(sys,"FileStream is not opened");
+	sys->getEngineData()->FileWriteByteArray(sys,th->file->getFullPath(),bytes.getPtr(),offset,length,true);
+}
 
 ASFile::ASFile(Class_base* c, const tiny_string _path, bool _exists):
 	FileReference(c),path(_path),exists(_exists)
@@ -111,6 +123,7 @@ void ASFile::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,exists,Boolean);
 	REGISTER_GETTER_STATIC_RESULTTYPE(c,applicationDirectory,ASFile);
 	c->setDeclaredMethodByQName("resolvePath", "", Class<IFunction>::getFunction(c->getSystemState(),resolvePath,1,Class<ASFile>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("createDirectory", "", Class<IFunction>::getFunction(c->getSystemState(),createDirectory), NORMAL_METHOD, true);
 }
 ASFUNCTIONBODY_GETTER(ASFile, exists);
 ASFUNCTIONBODY_GETTER_STATIC(ASFile, applicationDirectory);
@@ -138,6 +151,13 @@ ASFUNCTIONBODY_ATOM(ASFile,resolvePath)
 	LOG(LOG_NOT_IMPLEMENTED,"File.resolvePath is not implemented");
 	ASFile* res = Class<ASFile>::getInstanceS(sys);
 	ret = asAtomHandler::fromObjectNoPrimitive(res);
+}
+
+ASFUNCTIONBODY_ATOM(ASFile,createDirectory)
+{
+	ASFile* th=asAtomHandler::as<ASFile>(obj);
+	if (!sys->getEngineData()->FileCreateDirectory(sys,th->path,true))
+		throwError<IOError>(kFileWriteError,th->path);
 }
 
 void FileMode::sinit(Class_base* c)

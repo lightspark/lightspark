@@ -1547,7 +1547,10 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				lastlocalpos=-1;
 				break;
 			case 0x73://convert_i
-				if (argsneeded || restype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
+				if (argsneeded
+						|| restype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr()
+						|| code.peekbyteFromPosition(pos) == b
+						)
 				{
 					b = code.peekbyteFromPosition(pos);
 					pos++;
@@ -1556,7 +1559,10 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					keepchecking=false;
 				break;
 			case 0x74://convert_u
-				if (argsneeded || restype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr())
+				if (argsneeded
+						|| restype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr()
+						|| code.peekbyteFromPosition(pos) == b
+						)
 				{
 					b = code.peekbyteFromPosition(pos);
 					pos++;
@@ -1565,10 +1571,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					keepchecking=false;
 				break;
 			case 0x75://convert_d
-				if (argsneeded 
+				if (argsneeded
 						|| restype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr()
 						|| restype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr()
-						|| restype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr())
+						|| restype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr()
+						|| code.peekbyteFromPosition(pos) == b
+						)
 				{
 					b = code.peekbyteFromPosition(pos);
 					pos++;
@@ -1580,6 +1588,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				if (argsneeded || restype == Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr()
 						|| code.peekbyteFromPosition(pos) == 0x11 //iftrue
 						|| code.peekbyteFromPosition(pos) == 0x12 //iffalse
+						|| code.peekbyteFromPosition(pos) == 0x96 //not
+						|| code.peekbyteFromPosition(pos) == b
 					)
 				{
 					b = code.peekbyteFromPosition(pos);
@@ -1634,11 +1644,32 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				if (name->isStatic && !argsneeded)
 				{
 					const Type* tp = Type::getTypeFromMultiname(name,state.mi->context);
-					if (tp && tp == restype)
+					if (tp && (state.jumptargets.find(pos) == state.jumptargets.end()))
 					{
-						pos = code.skipu30FromPosition(pos);
-						b = code.peekbyteFromPosition(pos);
-						pos++;
+						bool skip = false;
+						if (restype)
+						{
+							if (restype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr() ||
+									 restype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() ||
+									 restype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr() ||
+									 restype == Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr())
+								skip = tp == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr() || tp == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() || tp == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr();
+							else if (restype != Class<ASString>::getRef(state.mi->context->root->getSystemState()).getPtr())
+								skip = restype != nullptr;
+						}
+						else
+							skip= tp != Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr()
+									&& tp != Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr()
+									&& tp != Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr()
+									&& tp != Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr();
+						if (skip)
+						{
+							restype = (Class_base*)tp;
+							pos = code.skipu30FromPosition(pos);
+							b = code.peekbyteFromPosition(pos);
+							pos++;
+							break;
+						}
 					}
 				}
 				keepchecking=false;
@@ -2640,7 +2671,7 @@ bool swapWithFollowingSetLocal(preloadstate& state,memorystream& code,uint32_t s
 
 void setupInstructionComparison(preloadstate& state,int operator_start,int opcode,memorystream& code, int operator_replace,int operator_replace_reverse,std::vector<typestackentry>& typestack,Class_base** lastlocalresulttype,std::map<int32_t,int32_t>& jumppositions, std::map<int32_t,int32_t>& jumpstartpositions)
 {
-	if (setupInstructionTwoArguments(state,operator_start,opcode,code,false,false,true,code.tellg()))
+	if (setupInstructionTwoArguments(state,operator_start,opcode,code,false,false,true,code.tellg(),Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr()))
 	{
 #ifdef ENABLE_OPTIMIZATION
 		if (state.preloadedcode.back().opcode >= uint32_t(operator_start+4)) // has localresult
@@ -2682,6 +2713,15 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 					removetypestack(typestack,2);
 					return;
 				}
+			}
+		}
+		else
+		{
+			uint32_t pos = code.tellg();
+			bool ok = state.jumptargets.find(pos) == state.jumptargets.end();
+			if (ok && code.peekbyteFromPosition(pos) == 0x76) //convert_b
+			{
+				code.readbyte();
 			}
 		}
 #endif
@@ -4663,7 +4703,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				ASObject* tobj = nullptr;
 #ifdef ENABLE_OPTIMIZATION
 				// skip coerce followed by coerce
-				skip = (state.jumptargets.find(p) == state.jumptargets.end() && code.peekbyte() == 0x80);//coerce 
+				skip = (state.jumptargets.find(p) == state.jumptargets.end() && code.peekbyte() == 0x80);//coerce
 				if (!skip && state.jumptargets.find(p) == state.jumptargets.end() && typestack.size() > 0)
 				{
 					multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
@@ -4678,36 +4718,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								 tobj  == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() ||
 								 tobj  == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr())
 							skip = cls == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr() || cls == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() || cls == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr();
-						else
-							skip = cls && cls->isSubClass(tobj->as<Class_base>());
+						else if (tobj != Class<ASString>::getRef(mi->context->root->getSystemState()).getPtr())
+							skip = cls;
 					}
-					else if (state.operandlist.size() > 0 && state.operandlist.back().type != OP_LOCAL && state.operandlist.back().type != OP_CACHED_SLOT)
-					{
-						asAtom o = *mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
-						if (asAtomHandler::isValid(o))
-						{
-							if (cls)
-							{
-								switch (asAtomHandler::getObjectType(o))
-								{
-									case T_NULL:
-										skip = cls != Class<Number>::getRef(mi->context->root->getSystemState()).getPtr() &&
-												cls != Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() &&
-												cls != Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() &&
-												cls != Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr();
-										break;
-									case T_INTEGER:
-									case T_NUMBER:
-									case T_UINTEGER:
-										skip = cls == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr() || cls == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() || cls == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr();
-										break;
-									default:
-										skip= state.operandlist.back().objtype && cls->isSubClass(state.operandlist.back().objtype);
-										break;
-								}
-							}
-						}
-					}
+					else if (!tobj)
+						skip= cls != Class<Number>::getRef(mi->context->root->getSystemState()).getPtr()
+								&& cls != Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr()
+								&& cls != Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr()
+								&& cls != Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr();
+					if (skip)
+						tobj = (Class_base*)cls;
 				}
 #endif
 				if (!skip)
@@ -4719,6 +4739,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				}
 				else
 					opcode_skipped=true;
+				if (state.operandlist.size() && tobj && tobj->is<Class_base>())
+					state.operandlist.back().objtype=tobj->as<Class_base>();
 				removetypestack(typestack,1);
 				typestack.push_back(typestackentry(tobj,false));
 				break;
@@ -6284,6 +6306,27 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									}
 									break;
 							}
+							if (opcode == 0x46)
+							{
+								bool skip = false;
+								switch (code.peekbyte())
+								{
+									case 0x73://convert_i
+										skip = resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr();
+										break;
+									case 0x74://convert_u
+										skip = resulttype == Class<UInteger>::getRef(function->getSystemState()).getPtr();
+										break;
+									case 0x75://convert_d
+										skip = resulttype == Class<Number>::getRef(function->getSystemState()).getPtr();
+										break;
+									case 0x76://convert_b
+										skip = resulttype == Class<Boolean>::getRef(function->getSystemState()).getPtr();
+										break;
+								}
+								if (skip)
+									code.readbyte();
+							}
 							break;
 						default:
 							state.preloadedcode.push_back((uint32_t)opcode);
@@ -6555,6 +6598,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x73://convert_i
 #ifdef ENABLE_OPTIMIZATION
+				if (opcode == code.peekbyte())
+					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				else
@@ -6565,6 +6610,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			case 0x74://convert_u
 #ifdef ENABLE_OPTIMIZATION
+				if (opcode == code.peekbyte())
+					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
 						&& (state.operandlist.back().objtype == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr()
 							|| state.preloadedcode.back().opcode==0x24))//pushbyte
@@ -6578,6 +6625,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x75://convert_d
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 #ifdef ENABLE_OPTIMIZATION
+				if (opcode == code.peekbyte())
+					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0 
 						&& (state.operandlist.back().objtype == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr()
 							|| state.operandlist.back().objtype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr()
@@ -6593,12 +6642,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			case 0x76://convert_b
 #ifdef ENABLE_OPTIMIZATION
-				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end() &&
-						((state.operandlist.size() > 0 && state.operandlist.back().objtype == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr()) ||
-						((code.peekbyte() == 0x11 ||  //iftrue
-						  code.peekbyte() == 0x12 )   //iffalse
-						 && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()))
-						)
+				if (opcode == code.peekbyte())
+					break;
+				if ((state.jumptargets.find(code.tellg()) == state.jumptargets.end()
+					 && state.operandlist.size() > 0 && state.operandlist.back().objtype == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr()) ||
+					((code.peekbyte() == 0x11 || //iftrue
+					  code.peekbyte() == 0x12 || //iffalse
+					  code.peekbyte() == 0x96    //not
+					  )))
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				else
 #endif

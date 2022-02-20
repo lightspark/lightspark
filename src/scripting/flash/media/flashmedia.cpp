@@ -1033,7 +1033,8 @@ void SoundChannel::playStream()
 		audioStream=nullptr;
 		mutex.unlock();
 	}
-	delete streamDecoder;
+	if (streamDecoder)
+		delete streamDecoder;
 	delete sbuf;
 }
 
@@ -1041,14 +1042,17 @@ void SoundChannel::playStreamFromSamples()
 {
 	assert(stream.isNull());
 	bool waitForFlush=true;
+	SampleDataAudioDecoder* sampleDecoder = nullptr;
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
-		audioDecoder=new SampleDataAudioDecoder();
+		sampleDecoder=new SampleDataAudioDecoder();
 		bool bufferfilled=false;
 		while(!ACQUIRE_READ(stopped))
 		{
-			if (!streamdatafinished && sampleproducer && static_cast<SampleDataAudioDecoder*>(audioDecoder)->getBufferedSamples()< sampleproducer->getBufferTime()*44100.0*2.0/1000.0)
+			if(audioDecoder==nullptr)
+				audioDecoder=sampleDecoder;
+			if (!streamdatafinished && sampleproducer && sampleDecoder && sampleDecoder->getBufferedSamples()< sampleproducer->getBufferTime()*44100.0*2.0/1000.0)
 			{
 				if (sampleproducer->getSampleDataProcessed())
 					sampleproducer->requestSampleDataEvent(streamposition);
@@ -1113,9 +1117,12 @@ void SoundChannel::playStreamFromSamples()
 
 	mutex.lock();
 	audioDecoder=nullptr;
-	delete audioStream;
+	if (audioStream)
+		delete audioStream;
 	audioStream=nullptr;
 	mutex.unlock();
+	if (sampleDecoder)
+		delete sampleDecoder;
 	incRef();
 	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"soundComplete")));
 }

@@ -130,7 +130,7 @@ public:
 	void setStartTime(number_t starttime) { startTime = starttime; }
 	void setLoops(int32_t loops) {loopstogo=loops;}
 	static void sinit(Class_base* c);
-	void finalize();
+	void finalize() override;
 	bool isPlaying() { return !ACQUIRE_READ(stopped); }
 	bool isStarting() { return ACQUIRE_READ(starting); }
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);

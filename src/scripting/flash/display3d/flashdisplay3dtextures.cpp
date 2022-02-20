@@ -395,9 +395,33 @@ void RectangleTexture::sinit(Class_base *c)
 }
 ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"RectangleTexture.uploadFromBitmapData does nothing");
+	RectangleTexture* th = asAtomHandler::as<RectangleTexture>(obj);
 	_NR<BitmapData> source;
 	ARG_UNPACK_ATOM(source);
+
+	if (source.isNull())
+		throwError<TypeError>(kNullArgumentError);
+	th->needrefresh = true;
+	if (th->bitmaparray.size() == 0)
+		th->bitmaparray.resize(1);
+	uint32_t bytesneeded = th->width*th->height*4;
+	th->bitmaparray[0].resize(bytesneeded);
+
+	assert_and_throw(th->height == source->getHeight() && th->width == source->getWidth());
+	for (uint32_t i = 0; i < th->height; i++)
+	{
+		for (uint32_t j = 0; j < th->width; j++)
+		{
+			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
+			uint32_t* data = (uint32_t*)(&source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4+j*4]);
+			uint8_t alpha = ((*data) >>24) & 0xff;
+			th->bitmaparray[0][i*th->width*4 + j*4  ] = (uint8_t)((((*data)     ) & 0xff)*alpha /255);
+			th->bitmaparray[0][i*th->width*4 + j*4+1] = (uint8_t)((((*data) >> 8) & 0xff)*alpha /255);
+			th->bitmaparray[0][i*th->width*4 + j*4+2] = (uint8_t)((((*data) >>16) & 0xff)*alpha /255);
+			th->bitmaparray[0][i*th->width*4 + j*4+3] = (uint8_t)((((*data) >>24) & 0xff)           );
+		}
+	}
+	th->context->addAction(RENDER_LOADTEXTURE,th);
 }
 ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 {

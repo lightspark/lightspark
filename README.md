@@ -72,11 +72,11 @@ Usage
 
 ### Browser plugin
 
-Firefox plugin path and Firefox should show it in the about:plugins list and in the Tools -> Add-ons -> Plugins window.
+Most browsers including Firefox and Chromium don't support flash any longer, so the plugins don't work on their latest versions.
+
+There are alternative browsers that still support flash, see https://github.com/lightspark/lightspark/wiki/Getting-Lightspark-up-and-running-in-Web-Browser
 
 Lightspark registers itself as the plugin for application/x-shockwave-flash and for application/x-lightspark, so it should be recognisable in the about:plugins page. Its description string is ``Shockwave Flash 12.1 r<current version>``. The current version is now "r710".
-
-Firefox is not able to deal very well with multiple plugins for the same MIME type. If you only see a black box where a flash app should be, try to remove any other flash plugin you have installed.
 
 ### Command line
 

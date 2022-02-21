@@ -1002,7 +1002,34 @@ abc_function ABCVm::abcfunctions[]={
 	abc_instanceof_constant_local_localresult,
 	abc_instanceof_local_local_localresult,
 
-	abc_invalidinstruction, // 0x338
+	abc_subtract_i_constant_constant, // 0x338 ABC_OP_OPTIMZED_SUBTRACT_I
+	abc_subtract_i_local_constant,
+	abc_subtract_i_constant_local,
+	abc_subtract_i_local_local,
+	abc_subtract_i_constant_constant_localresult,
+	abc_subtract_i_local_constant_localresult,
+	abc_subtract_i_constant_local_localresult,
+	abc_subtract_i_local_local_localresult,
+
+	abc_multiply_i_constant_constant, // 0x340 ABC_OP_OPTIMZED_MULTIPLY_I
+	abc_multiply_i_local_constant,
+	abc_multiply_i_constant_local,
+	abc_multiply_i_local_local,
+	abc_multiply_i_constant_constant_localresult,
+	abc_multiply_i_local_constant_localresult,
+	abc_multiply_i_constant_local_localresult,
+	abc_multiply_i_local_local_localresult,
+
+	abc_subtract_i_constant_constant_setslotnocoerce, // 0x348 ABC_OP_OPTIMZED_SUBTRACT_I_SETSLOT
+	abc_subtract_i_local_constant_setslotnocoerce,
+	abc_subtract_i_constant_local_setslotnocoerce,
+	abc_subtract_i_local_local_setslotnocoerce,
+	abc_multiply_i_constant_constant_setslotnocoerce, // 0x34c ABC_OP_OPTIMZED_MULTIPLY_I_SETSLOT
+	abc_multiply_i_local_constant_setslotnocoerce,
+	abc_multiply_i_constant_local_setslotnocoerce,
+	abc_multiply_i_local_local_setslotnocoerce,
+
+	abc_invalidinstruction, // 0x350
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1261,6 +1288,11 @@ struct operands
 #define ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_ONEARG 0x00000320
 #define ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_ONEARG 0x00000328
 #define ABC_OP_OPTIMZED_INSTANCEOF 0x00000330
+#define ABC_OP_OPTIMZED_SUBTRACT_I 0x00000338
+#define ABC_OP_OPTIMZED_MULTIPLY_I 0x00000340
+#define ABC_OP_OPTIMZED_SUBTRACT_I_SETSLOT 0x00000348
+#define ABC_OP_OPTIMZED_MULTIPLY_I_SETSLOT 0x0000034c
+
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -2022,6 +2054,9 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x3c://si32
 		case 0x3d://sf32
 		case 0x3e://sf64
+		case 0xc5://add_i
+		case 0xc6://subtract_i
+		case 0xc7://multiply_i
 			if ((argsneeded==1 || (!argsneeded && state.operandlist.size() > 0)) && (state.jumptargets.find(pos) == state.jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result 
@@ -2332,6 +2367,8 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 				setForceInt(state,code,&resulttype);
 				break;
 			case ABC_OP_OPTIMZED_ADD_I:
+			case ABC_OP_OPTIMZED_SUBTRACT_I:
+			case ABC_OP_OPTIMZED_MULTIPLY_I:
 				if (op1isconstant)
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_int= asAtomHandler::toInt(*state.preloadedcode.back().pcode.arg1_constant);
 				if (op2isconstant)
@@ -5933,7 +5970,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							switch (argcount)
 							{
 								case 0:
-									if (state.operandlist.size() > 0 && (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_CONSTANT) && state.operandlist.back().objtype)
+									if (state.operandlist.size() > 0
+											&& (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_CONSTANT || state.operandlist.back().type == OP_CACHED_SLOT)
+											&& state.operandlist.back().objtype)
 									{
 										if (canCallFunctionDirect(state.operandlist.back(),name))
 										{
@@ -6600,7 +6639,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte())
 					break;
-				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
+				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
+					break;
+				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
+						&& state.operandlist.back().objtype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				else
 #endif
@@ -6611,6 +6653,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x74://convert_u
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte())
+					break;
+				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr())
 					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
 						&& (state.operandlist.back().objtype == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr()
@@ -6627,6 +6671,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte())
 					break;
+				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr())
+					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0 
 						&& (state.operandlist.back().objtype == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr()
 							|| state.operandlist.back().objtype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr()
@@ -6634,15 +6680,15 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				else
 #endif
-				{
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTD,opcode,code,true,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTD_SETSLOT);
-					removetypestack(typestack,1);
-					typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),false));
-				}
+				removetypestack(typestack,1);
+				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0x76://convert_b
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte())
+					break;
+				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr())
 					break;
 				if ((state.jumptargets.find(code.tellg()) == state.jumptargets.end()
 					 && state.operandlist.size() > 0 && state.operandlist.back().objtype == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr()) ||
@@ -6725,7 +6771,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				removetypestack(typestack,2);
 				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
-				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_SUBTRACT_SETSLOT))
+				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,false,false,true,code.tellg(),resulttype,ABC_OP_OPTIMZED_SUBTRACT_SETSLOT))
 				{
 					setForceInt(state,code,&resulttype);
 				}
@@ -6736,7 +6782,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				removetypestack(typestack,2);
 				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
-				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_MULTIPLY_SETSLOT))
+				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,false,false,true,code.tellg(),resulttype,ABC_OP_OPTIMZED_MULTIPLY_SETSLOT))
 				{
 					setForceInt(state,code,&resulttype);
 				}
@@ -6747,7 +6793,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				removetypestack(typestack,2);
 				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
-				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_DIVIDE,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_DIVIDE_SETSLOT))
+				if (!setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_DIVIDE,opcode,code,false,false,true,code.tellg(),resulttype,ABC_OP_OPTIMZED_DIVIDE_SETSLOT))
 				{
 					setForceInt(state,code,&resulttype);
 				}
@@ -6918,11 +6964,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			}
 			case 0xc6://subtract_i
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				clearOperands(state,true,&lastlocalresulttype);
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_SUBTRACT_I,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_SUBTRACT_I_SETSLOT);
 				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(nullptr,false));
+				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0x97://bitnot
 			case 0xc4://negate_i
@@ -6983,12 +7027,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			case 0x71://esc_xelem
 			case 0x72://esc_xattr
-			case 0xc7://multiply_i
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,1);
 				typestack.push_back(typestackentry(nullptr,false));
+				break;
+			case 0xc7://multiply_i
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_MULTIPLY_I,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_MULTIPLY_I_SETSLOT);
+				removetypestack(typestack,2);
+				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0xd4://setlocal_0
 			case 0xd5://setlocal_1

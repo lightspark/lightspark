@@ -1184,7 +1184,32 @@ private:
 	static void abc_add_i_local_local_setslotnocoerce(call_context* context);
 	
 	static void abc_subtract_i(call_context* context);
+	static void abc_subtract_i_constant_constant(call_context* context);
+	static void abc_subtract_i_local_constant(call_context* context);
+	static void abc_subtract_i_constant_local(call_context* context);
+	static void abc_subtract_i_local_local(call_context* context);
+	static void abc_subtract_i_constant_constant_localresult(call_context* context);
+	static void abc_subtract_i_local_constant_localresult(call_context* context);
+	static void abc_subtract_i_constant_local_localresult(call_context* context);
+	static void abc_subtract_i_local_local_localresult(call_context* context);
+	static void abc_subtract_i_constant_constant_setslotnocoerce(call_context* context);
+	static void abc_subtract_i_local_constant_setslotnocoerce(call_context* context);
+	static void abc_subtract_i_constant_local_setslotnocoerce(call_context* context);
+	static void abc_subtract_i_local_local_setslotnocoerce(call_context* context);
+
 	static void abc_multiply_i(call_context* context);
+	static void abc_multiply_i_constant_constant(call_context* context);
+	static void abc_multiply_i_local_constant(call_context* context);
+	static void abc_multiply_i_constant_local(call_context* context);
+	static void abc_multiply_i_local_local(call_context* context);
+	static void abc_multiply_i_constant_constant_localresult(call_context* context);
+	static void abc_multiply_i_local_constant_localresult(call_context* context);
+	static void abc_multiply_i_constant_local_localresult(call_context* context);
+	static void abc_multiply_i_local_local_localresult(call_context* context);
+	static void abc_multiply_i_constant_constant_setslotnocoerce(call_context* context);
+	static void abc_multiply_i_local_constant_setslotnocoerce(call_context* context);
+	static void abc_multiply_i_constant_local_setslotnocoerce(call_context* context);
+	static void abc_multiply_i_local_local_setslotnocoerce(call_context* context);
 
 	static void abc_getlocal_0(call_context* context); // 0xd0
 	static void abc_getlocal_1(call_context* context);

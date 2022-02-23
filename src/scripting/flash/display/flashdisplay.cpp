@@ -3651,6 +3651,7 @@ Stage::Stage(Class_base* c):
 	DisplayObjectContainer(c),avm1ScriptMovieClipFirst(nullptr),avm1ScriptMovieClipLast(nullptr), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
 {
 	subtype = SUBTYPE_STAGE;
+	RELEASE_WRITE(this->invalidated,false);
 	onStage = true;
 	asAtom v=asAtomHandler::invalidAtom;
 	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : getSystemState()->mainClip;

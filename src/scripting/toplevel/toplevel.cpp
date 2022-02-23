@@ -418,7 +418,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	uint32_t passedToRest=(numArgs > args_len)?(numArgs-mi->numArgs()):0;
 
 	/* setup argumentsArray if needed */
-	Array* argumentsArray = NULL;
+	Array* argumentsArray = nullptr;
 	if(mi->needsArgs())
 	{
 		//The arguments does not contain default values of optional parameters,
@@ -484,7 +484,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		}
 	}
 	else if (args)
-		memcpy(cc->locals+1,args,1+passedToLocals*sizeof(asAtom));
+		memcpy(cc->locals+1,args,passedToLocals*sizeof(asAtom));
 
 	//Fill missing parameters until optional parameters begin
 	//like fun(a,b,c,d=3,e=5) called as fun(1,2) becomes
@@ -663,7 +663,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	{
 		ASATOM_DECREF_POINTER(i);
 	}
-	if (cc->scope_stack[0].uintval != obj.uintval && mi->needsscope)
+	if (mi->needsscope && cc->scope_stack[0].uintval != obj.uintval)
 		ASATOM_DECREF_POINTER(cc->scope_stack);
 	cc->curr_scope_stack=0;
 	if (!isMethod())

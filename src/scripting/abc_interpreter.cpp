@@ -1470,6 +1470,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				pos++;
 				b = code.peekbyteFromPosition(pos);
 				pos++;
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
 				argsneeded++;
 				if (b==0x73 ||//convert_i
 						b==0x74)//convert_u
@@ -1484,6 +1490,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				pos = code.skipu30FromPosition(pos);
 				b = code.peekbyteFromPosition(pos);
 				pos++;
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
 				argsneeded++;
 				if (b==0x73)//convert_i
 				{
@@ -1495,6 +1507,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x26://pushtrue
 				b = code.peekbyteFromPosition(pos);
 				pos++;
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
 				argsneeded++;
 				if (b==0x76)//convert_b
 				{
@@ -1507,6 +1525,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x27://pushfalse
 				b = code.peekbyteFromPosition(pos);
 				pos++;
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
 				argsneeded++;
 				if (b==0x76)//convert_b
 				{
@@ -1519,6 +1543,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				pos = code.skipu30FromPosition(pos);
 				b = code.peekbyteFromPosition(pos);
 				pos++;
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
 				argsneeded++;
 				if (b==0x74)//convert_u
 				{
@@ -1531,6 +1561,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				pos = code.skipu30FromPosition(pos);
 				b = code.peekbyteFromPosition(pos);
 				pos++;
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
 				argsneeded++;
 				if (b==0x75)//convert_d
 				{
@@ -1541,7 +1577,21 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				break;
 			case 0x2c://pushstring
 			case 0x31://pushnamespace
+				pos = code.skipu30FromPosition(pos);
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
+				argsneeded++;
+				lastlocalpos=-1;
+				break;
 			case 0x65://getscopeobject
+			case 0x5d://findproperty
+			case 0x5e://findpropstrict
 				pos = code.skipu30FromPosition(pos);
 				b = code.peekbyteFromPosition(pos);
 				pos++;
@@ -1564,6 +1614,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				uint32_t t = code.peeku30FromPosition(pos);
 				pos = code.skipu30FromPosition(pos);
 				b = code.peekbyteFromPosition(pos);
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
 				pos++;
 				argsneeded++;
 				lastlocalpos=t;
@@ -1633,6 +1689,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x20://pushnull
 				b = code.peekbyteFromPosition(pos);
 				pos++;
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
 				argsneeded++;
 				if (b==0x80 //coerce
 					&& (state.jumptargets.find(pos) == state.jumptargets.end()))
@@ -1657,6 +1719,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x28://pushnan
 				b = code.peekbyteFromPosition(pos);
 				pos++;
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
 				lastlocalpos=-1;
 				argsneeded++;
 				break;
@@ -1667,6 +1735,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				lastlocalpos=b-0xd0;
 				b = code.peekbyteFromPosition(pos);
 				pos++;
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
 				argsneeded++;
 				break;
 			case 0x80://coerce
@@ -4544,8 +4618,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x62://getlocal
 			{
 				int32_t p = code.tellg();
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size()+1;
 				uint32_t value =code.readu30();
+#ifdef ENABLE_OPTIMIZATION
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
+#endif
 				assert_and_throw(value < mi->body->getReturnValuePos());
 				removeInitializeLocalToConstant(state,value);
 				state.preloadedcode.push_back(opcode);
@@ -4787,9 +4867,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0xd2://getlocal_2
 			case 0xd3://getlocal_3
 			{
-				removeInitializeLocalToConstant(state,opcode-0xd0);
 				int32_t p = code.tellg();
 #ifdef ENABLE_OPTIMIZATION
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
+				removeInitializeLocalToConstant(state,opcode-0xd0);
 				if (p==1 && opcode == 0xd0) //getlocal_0
 				{
 					if (code.peekbyte() == 0x30) // pushscope
@@ -5410,8 +5495,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			}
 			case 0x20://pushnull
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end())
 					state.operandlist.push_back(operands(OP_NULL, nullptr,0,1,state.preloadedcode.size()-1));
 				else
@@ -5419,8 +5508,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x21://pushundefined
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end())
 					state.operandlist.push_back(operands(OP_UNDEFINED, nullptr,0,1,state.preloadedcode.size()-1));
 				else
@@ -5430,9 +5523,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x24://pushbyte
 			{
 				int32_t p = code.tellg();
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				int32_t value = (int32_t)(int8_t)code.readbyte();
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
+				state.preloadedcode.push_back((uint32_t)opcode);
 				uint8_t index = value;
 				state.preloadedcode.back().pcode.arg3_int=value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
@@ -5453,9 +5550,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x25://pushshort
 			{
 				int32_t p = code.tellg();
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				int32_t value = (int32_t)(int16_t)code.readu32();
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
+				state.preloadedcode.push_back((uint32_t)opcode);
 				uint16_t index = value;
 				state.preloadedcode.back().pcode.arg3_int=value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
@@ -5466,6 +5567,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x26://pushtrue
 			{
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
 				int32_t p = code.tellg();
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
@@ -5477,6 +5583,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x27://pushfalse
 			{
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
 				int32_t p = code.tellg();
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
@@ -5488,6 +5599,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x28://pushnan
 			{
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
 				int32_t p = code.tellg();
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
@@ -5500,9 +5616,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x2c://pushstring
 			{
 				int32_t p = code.tellg();
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				uint32_t value = code.readu30();
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
+				state.preloadedcode.push_back((uint32_t)opcode);
 				state.preloadedcode.back().pcode.arg3_uint = value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
@@ -5513,9 +5633,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x2d://pushint
 			{
 				int32_t p = code.tellg();
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				uint32_t value = code.readu30();
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
+				state.preloadedcode.push_back((uint32_t)opcode);
 				state.preloadedcode.back().pcode.arg3_uint = value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
@@ -5526,9 +5650,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x2e://pushuint
 			{
 				int32_t p = code.tellg();
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				uint32_t value = code.readu30();
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
+				state.preloadedcode.push_back((uint32_t)opcode);
 				state.preloadedcode.back().pcode.arg3_uint = value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
@@ -5539,9 +5667,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x2f://pushdouble
 			{
 				int32_t p = code.tellg();
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				uint32_t value = code.readu30();
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
+				state.preloadedcode.push_back((uint32_t)opcode);
 				state.preloadedcode.back().pcode.arg3_uint = value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
@@ -5560,9 +5692,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x31://pushnamespace
 			{
 				int32_t p = code.tellg();
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				uint32_t value = code.readu30();
+				if ((state.jumptargets.find(code.tellg()+1) == state.jumptargets.end()) && code.peekbyte()==0x29) // pop
+				{
+					code.readbyte();
+					break;
+				}
+				state.preloadedcode.push_back((uint32_t)opcode);
 				state.preloadedcode.back().pcode.arg3_uint = value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);

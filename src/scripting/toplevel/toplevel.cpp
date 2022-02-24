@@ -603,11 +603,12 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 					cc->runtime_stack_clear();
 					*(cc->stackp++)=asAtomHandler::fromObject(excobj);
 					excobj->incRef();
-					while (cc->curr_scope_stack)
+					while (cc->curr_scope_stack != (mi->needsscope ? 1 : 0))
 					{
 						--cc->curr_scope_stack;
 						ASATOM_DECREF(cc->scope_stack[cc->curr_scope_stack]);
 					}
+					cc->curr_scope_stack=0;
 					break;
 				}
 			}

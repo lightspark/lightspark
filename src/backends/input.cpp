@@ -445,7 +445,7 @@ void InputThread::handleMouseLeave()
 
 bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 {
-	if (m_sys->getEngineData()->inFullScreenMode() && keyevent->keysym.sym == SDLK_ESCAPE)
+	if (m_sys->getEngineData()->inFullScreenMode() && keyevent->keysym.sym == SDLK_ESCAPE && m_sys->flashMode != SystemState::AIR)
 	{
 		m_sys->getEngineData()->setDisplayState("normal",m_sys);
 		return true;
@@ -679,7 +679,7 @@ AS3KeyCode getAS3KeyCode(SDL_Keycode sdlkey)
 
 void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 {
-	if(m_sys->currentVm == NULL)
+	if(m_sys->currentVm == nullptr)
 		return;
 
 	_NR<DisplayObject> target = m_sys->stage->getFocusTarget();

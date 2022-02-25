@@ -3160,7 +3160,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = codejumps.tellg();
 				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
-				if (p1 > p && prevopcode==0x26) //pushtrue
+				if (p1 > p && state.jumptargets.find(p) == state.jumptargets.end() && prevopcode==0x26) //pushtrue
 				{
 					int32_t nextreachable = p1;
 					// find the first jump target after the current position
@@ -3183,7 +3183,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = codejumps.tellg();
 				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
-				if (p1 > p && prevopcode==0x27) //pushfalse
+				if (p1 > p && state.jumptargets.find(p) == state.jumptargets.end() && prevopcode==0x27) //pushfalse
 				{
 					int32_t nextreachable = p1;
 					// find the first jump target after the current position

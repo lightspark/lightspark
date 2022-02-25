@@ -320,10 +320,10 @@ ASFUNCTIONBODY_ATOM(XML,descendants)
 	_NR<ASObject> name;
 	ARG_UNPACK_ATOM(name,_NR<ASObject>(abstract_s(sys,"*")));
 	XMLVector res;
-	multiname mname(NULL);
+	multiname mname(nullptr);
 	name->applyProxyProperty(mname);
 	th->getDescendantsByQName(name->toString(),mname.isQName() ? mname.ns[0].nsNameId : (uint32_t)BUILTIN_STRINGS::EMPTY,mname.isAttribute,res);
-	ret = asAtomHandler::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(NULL)));
+	ret = asAtomHandler::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(nullptr)));
 }
 
 ASFUNCTIONBODY_ATOM(XML,_appendChild)
@@ -799,7 +799,7 @@ ASFUNCTIONBODY_ATOM(XML,children)
 	assert_and_throw(argslen==0);
 	XMLVector res;
 	th->childrenImpl(res, "*");
-	multiname mname(NULL);
+	multiname mname(nullptr);
 	mname.name_s_id=BUILTIN_STRINGS::STRING_WILDCARD;
 	mname.name_type=multiname::NAME_STRING;
 	mname.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
@@ -865,7 +865,7 @@ ASFUNCTIONBODY_ATOM(XML,text)
 	ARG_UNPACK_ATOM;
 	XMLVector res;
 	th->getText(res);
-	ret = asAtomHandler::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(NULL)));
+	ret = asAtomHandler::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(nullptr)));
 }
 
 ASFUNCTIONBODY_ATOM(XML,elements)
@@ -878,7 +878,7 @@ ASFUNCTIONBODY_ATOM(XML,elements)
 		name="";
 
 	th->getElementNodes(name, res);
-	ret = asAtomHandler::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(NULL)));
+	ret = asAtomHandler::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(nullptr)));
 }
 
 void XML::getElementNodes(const tiny_string& name, XMLVector& foundElements)
@@ -1293,7 +1293,7 @@ void XML::getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAt
 
 XML::XMLVector XML::getAttributes()
 { 
-	multiname mn(NULL);
+	multiname mn(nullptr);
 	mn.name_type=multiname::NAME_STRING;
 	mn.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	mn.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
@@ -2060,7 +2060,7 @@ ASFUNCTIONBODY_ATOM(XML,_setPrettyPrinting)
 ASFUNCTIONBODY_ATOM(XML,_getSettings)
 {
 	ASObject* res = Class<ASObject>::getInstanceS(sys);
-	multiname mn(NULL);
+	multiname mn(nullptr);
 	mn.name_type=multiname::NAME_STRING;
 	mn.ns.emplace_back(res->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	mn.ns.emplace_back(res->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
@@ -2100,7 +2100,7 @@ ASFUNCTIONBODY_ATOM(XML,_setSettings)
 		asAtomHandler::setNull(ret);
 		return;
 	}
-	multiname mn(NULL);
+	multiname mn(nullptr);
 	mn.name_type=multiname::NAME_STRING;
 	mn.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	mn.ns.emplace_back(sys,BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
@@ -2146,7 +2146,7 @@ ASFUNCTIONBODY_ATOM(XML,_setSettings)
 ASFUNCTIONBODY_ATOM(XML,_getDefaultSettings)
 {
 	ASObject* res = Class<ASObject>::getInstanceS(sys);
-	multiname mn(NULL);
+	multiname mn(nullptr);
 	mn.name_type=multiname::NAME_STRING;
 	mn.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	mn.ns.emplace_back(sys,BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
@@ -2430,7 +2430,7 @@ ASFUNCTIONBODY_ATOM(XML,comments)
 	ARG_UNPACK_ATOM(name,"*");
 	XMLVector res;
 	th->getComments(res);
-	ret = asAtomHandler::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(NULL)));
+	ret = asAtomHandler::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(nullptr)));
 }
 void XML::getComments(XMLVector& ret)
 {
@@ -2454,7 +2454,7 @@ ASFUNCTIONBODY_ATOM(XML,processingInstructions)
 	ARG_UNPACK_ATOM(name,"*");
 	XMLVector res;
 	th->getprocessingInstructions(res,name);
-	ret = asAtomHandler::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(NULL)));
+	ret = asAtomHandler::fromObject(XMLList::create(sys,res,th->getChildrenlist(),multiname(nullptr)));
 }
 void XML::getprocessingInstructions(XMLVector& ret, tiny_string name)
 {
@@ -2490,7 +2490,7 @@ ASFUNCTIONBODY_ATOM(XML,_hasOwnProperty)
 		res = true;
 	else
 	{
-		multiname name(NULL);
+		multiname name(nullptr);
 		name.name_type=multiname::NAME_STRING;
 		name.name_s_id=asAtomHandler::toStringId(args[0],sys);
 		name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
@@ -2707,7 +2707,7 @@ void XML::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 		    std::map<const ASObject*, uint32_t>& objMap,
 		    std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"serializing XML in AMF0 not implemented");
 		return;
@@ -3026,7 +3026,7 @@ ASFUNCTIONBODY_ATOM(XML,_replace)
 	_NR<ASObject> value;
 	ARG_UNPACK_ATOM(propertyName) (value);
 
-	multiname name(NULL);
+	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 	if (propertyName->is<ASQName>())
 	{

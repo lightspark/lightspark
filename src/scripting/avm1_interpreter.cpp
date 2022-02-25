@@ -25,6 +25,7 @@
 #include "scripting/toplevel/Number.h"
 #include "scripting/avm1/avm1display.h"
 #include "parsing/tags.h"
+#include "backends/audio.h"
 
 using namespace std;
 using namespace lightspark;

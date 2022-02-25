@@ -79,6 +79,8 @@ enum LS_VIDEO_CODEC { H264=0, H263, VP6, VP6A };
 // "Audio coding formats" from Chapter 11 in SWF documentation (except for LINEAR_PCM_FLOAT_PLATFORM_ENDIAN)
 enum LS_AUDIO_CODEC { CODEC_NONE=-1, LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=2, LINEAR_PCM_LE=3, AAC=10, LINEAR_PCM_FLOAT_PLATFORM_ENDIAN = 100 };
 
+enum OBJECT_ENCODING { AMF0=0, AMF3=3, DEFAULT=3 };
+
 inline std::ostream& operator<<(std::ostream& s, const STACK_TYPE& st)
 {
 	switch(st)
@@ -824,7 +826,7 @@ public:
 	FB(int s,BitStream& stream)
 	{
 		if(s>32)
-			LOG(LOG_ERROR,_("Fixed point bit field wider than 32 bit not supported"));
+			LOG(LOG_ERROR,"Fixed point bit field wider than 32 bit not supported");
 		buf=stream.readBits(s);
 		if(buf>>(s-1)&1)
 		{
@@ -867,7 +869,7 @@ public:
 			i++;
 		}*/
 		if(s>32)
-			LOG(LOG_ERROR,_("Unsigned bit field wider than 32 bit not supported"));
+			LOG(LOG_ERROR,"Unsigned bit field wider than 32 bit not supported");
 		buf=stream.readBits(s);
 	}
 	operator int() const
@@ -884,7 +886,7 @@ public:
 	SB(int s,BitStream& stream)
 	{
 		if(s>32)
-			LOG(LOG_ERROR,_("Signed bit field wider than 32 bit not supported"));
+			LOG(LOG_ERROR,"Signed bit field wider than 32 bit not supported");
 		buf=stream.readBits(s);
 		if(buf>>(s-1)&1)
 		{

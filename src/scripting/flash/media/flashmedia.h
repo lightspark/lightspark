@@ -210,7 +210,7 @@ private:
 	mutable uint32_t videoWidth, videoHeight;
 	_NR<NetStream> netStream;
 public:
-	StageVideo(Class_base* c):EventDispatcher(c),videoWidth(0),videoHeight(0){}
+	StageVideo(Class_base* c);
 	void finalize();
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);

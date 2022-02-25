@@ -305,7 +305,7 @@ tiny_string XMLNode::toString_priv(pugi::xml_node outputNode)
 }
 
 XMLDocument::XMLDocument(Class_base* c, tiny_string s)
-  : XMLNode(c),rootNode(NULL),ignoreWhite(false)
+  : XMLNode(c),rootNode(nullptr),ignoreWhite(false)
 {
 	if(!s.empty())
 	{
@@ -343,7 +343,7 @@ void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& str
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"serializing XMLDocument in AMF0 not implemented");
 		return;
@@ -396,7 +396,7 @@ ASFUNCTIONBODY_ATOM(XMLDocument,firstChild)
 ASFUNCTIONBODY_ATOM(XMLDocument,createElement)
 {
 	XMLDocument* th=asAtomHandler::as<XMLDocument>(obj);
-	assert(th->node==NULL);
+	assert(th->node==nullptr);
 	tiny_string name;
 	ARG_UNPACK_ATOM(name);
 	pugi::xml_node newNode;

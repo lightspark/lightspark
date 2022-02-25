@@ -36,6 +36,7 @@
 #include "scripting/flash/accessibility/flashaccessibility.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/net/flashnet.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
@@ -1638,7 +1639,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 
 		if(!asAtomHandler::isFunction(args[i+1]))
 		{
-			LOG(LOG_ERROR,_("Not a function"));
+			LOG(LOG_ERROR,"Not a function");
 			return;
 		}
 		ASATOM_INCREF(args[i+1]);
@@ -1648,7 +1649,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 
 ASFUNCTIONBODY_ATOM(MovieClip,swapDepths)
 {
-	LOG(LOG_NOT_IMPLEMENTED,_("Called swapDepths"));
+	LOG(LOG_NOT_IMPLEMENTED,"Called swapDepths");
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,stop)
@@ -3112,7 +3113,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 			th->mapLegacyChildToDepth.erase(it2);
 		}
 		child->setOnStage(false,false);
-		sys->addDisplayObjectToResetParentList(*it);
+		sys->addDisplayObjectToResetParentList(child);
 		//incRef before the refrence is destroyed
 		child->incRef();
 		th->dynamicDisplayList.erase(it);
@@ -4296,10 +4297,10 @@ Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE typ
 			bitmapData->getBitmapContainer()->fromPNG(*s);
 			break;
 		case FT_GIF:
-			LOG(LOG_NOT_IMPLEMENTED, _("GIFs are not yet supported"));
+			LOG(LOG_NOT_IMPLEMENTED, "GIFs are not yet supported");
 			break;
 		default:
-			LOG(LOG_ERROR,_("Unsupported image type"));
+			LOG(LOG_ERROR,"Unsupported image type");
 			break;
 	}
 	Bitmap::updatedData();
@@ -5694,7 +5695,7 @@ void MovieClip::advanceFrame()
 	{
 		if(hasFinishedLoading())
 		{
-			LOG(LOG_ERROR,_("state.next_FP >= getFramesLoaded:")<< state.next_FP<<" "<<getFramesLoaded() <<" "<<toDebugString()<<" "<<getTagID());
+			LOG(LOG_ERROR,"state.next_FP >= getFramesLoaded:"<< state.next_FP<<" "<<getFramesLoaded() <<" "<<toDebugString()<<" "<<getTagID());
 			state.next_FP = state.FP;
 		}
 		return;
@@ -5819,7 +5820,7 @@ void Shader::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Shader,_constructor)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("Shader class is unimplemented."));
+	LOG(LOG_NOT_IMPLEMENTED, "Shader class is unimplemented.");
 }
 
 void BitmapDataChannel::sinit(Class_base* c)

@@ -25,6 +25,8 @@
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/utils/IntervalRunner.h"
+#include "scripting/flash/utils/IntervalManager.h"
 
 using namespace std;
 using namespace lightspark;

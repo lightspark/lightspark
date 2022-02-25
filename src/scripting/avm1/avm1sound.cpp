@@ -23,6 +23,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "parsing/tags.h"
+#include "backends/audio.h"
 
 using namespace std;
 using namespace lightspark;

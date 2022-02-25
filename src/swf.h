@@ -29,11 +29,8 @@
 #include <string>
 #include "swftypes.h"
 #include "scripting/flash/display/flashdisplay.h"
-#include "scripting/flash/net/flashnet.h"
-#include "scripting/flash/utils/IntervalManager.h"
 #include "timer.h"
 #include "memory_support.h"
-#include "platforms/engineutils.h"
 
 class uncompressing_filter;
 
@@ -49,6 +46,7 @@ class DisplayListTag;
 class DictionaryTag;
 class ExtScriptObject;
 class InputThread;
+class IntervalManager;
 class ParseThread;
 class PluginManager;
 class RenderThread;
@@ -483,9 +481,9 @@ public:
 	//TODO: Those should be different for each security domain
 	//NAMING: static$CLASSNAME$$PROPERTYNAME$
 	//	NetConnection
-	ObjectEncoding::ENCODING staticNetConnectionDefaultObjectEncoding;
-	ObjectEncoding::ENCODING staticByteArrayDefaultObjectEncoding;
-	ObjectEncoding::ENCODING staticSharedObjectDefaultObjectEncoding;
+	OBJECT_ENCODING staticNetConnectionDefaultObjectEncoding;
+	OBJECT_ENCODING staticByteArrayDefaultObjectEncoding;
+	OBJECT_ENCODING staticSharedObjectDefaultObjectEncoding;
 	bool staticSharedObjectPreventBackup;
 	
 	//enterFrame event management

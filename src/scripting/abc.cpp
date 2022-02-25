@@ -82,6 +82,7 @@
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/net/flashnet.h"
 
 using namespace std;
 using namespace lightspark;
@@ -556,7 +557,7 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):scriptsdecla
 	method_body(reporter_allocator<method_body_info>(vm->vmDataMemory))
 {
 	in >> minor >> major;
-	LOG(LOG_CALLS,_("ABCVm version ") << major << '.' << minor);
+	LOG(LOG_CALLS,"ABCVm version " << major << '.' << minor);
 	in >> constant_pool;
 
 	constantAtoms_integer.resize(constant_pool.integer.size());
@@ -655,24 +656,24 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):scriptsdecla
 		QName className(mname->name_s_id,mname->ns[0].nsNameId);
 		root->customclassoverriddenmethods.insert(make_pair(className,instances[i].overriddenmethods));
 
-		LOG(LOG_TRACE,_("Class ") << *getMultiname(instances[i].name,nullptr));
-		LOG(LOG_TRACE,_("Flags:"));
+		LOG(LOG_TRACE,"Class " << *getMultiname(instances[i].name,nullptr));
+		LOG(LOG_TRACE,"Flags:");
 		if(instances[i].isSealed())
-			LOG(LOG_TRACE,_("\tSealed"));
+			LOG(LOG_TRACE,"\tSealed");
 		if(instances[i].isFinal())
-			LOG(LOG_TRACE,_("\tFinal"));
+			LOG(LOG_TRACE,"\tFinal");
 		if(instances[i].isInterface())
-			LOG(LOG_TRACE,_("\tInterface"));
+			LOG(LOG_TRACE,"\tInterface");
 		if(instances[i].isProtectedNs())
-			LOG(LOG_TRACE,_("\tProtectedNS ") << root->getSystemState()->getStringFromUniqueId(getString(constant_pool.namespaces[instances[i].protectedNs].name)));
+			LOG(LOG_TRACE,"\tProtectedNS " << root->getSystemState()->getStringFromUniqueId(getString(constant_pool.namespaces[instances[i].protectedNs].name)));
 		if(instances[i].supername)
-			LOG(LOG_TRACE,_("Super ") << *getMultiname(instances[i].supername,NULL));
+			LOG(LOG_TRACE,"Super " << *getMultiname(instances[i].supername,NULL));
 		if(instances[i].interface_count)
 		{
-			LOG(LOG_TRACE,_("Implements"));
+			LOG(LOG_TRACE,"Implements");
 			for(unsigned int j=0;j<instances[i].interfaces.size();j++)
 			{
-				LOG(LOG_TRACE,_("\t") << *getMultiname(instances[i].interfaces[j],NULL));
+				LOG(LOG_TRACE,"\t" << *getMultiname(instances[i].interfaces[j],nullptr));
 			}
 		}
 		LOG(LOG_TRACE,endl);
@@ -693,7 +694,7 @@ ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):scriptsdecla
 		in >> method_body[i];
 
 		//Link method body with method signature
-		if(methods[method_body[i].method].body!=NULL)
+		if(methods[method_body[i].method].body!=nullptr)
 			throw ParseException("Duplicated body for function");
 		else
 			methods[method_body[i].method].body=&method_body[i];
@@ -1271,7 +1272,7 @@ Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)
 	ASObject* derived_class=root->applicationDomain->getVariableByString(s,target);
 	if(derived_class==nullptr)
 	{
-		//LOG(LOG_ERROR,_("Class ") << s << _(" not found in global for ")<<root->getOrigin());
+		//LOG(LOG_ERROR,"Class " << s << " not found in global for "<<root->getOrigin());
 		//throw RunTimeException("Class not found in global");
 		return nullptr;
 	}
@@ -1697,7 +1698,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 	uint16_t version;
 	if(!message->readShort(version))
 		return;
-	message->setCurrentObjectEncoding(version == 3 ? ObjectEncoding::AMF3 : ObjectEncoding::AMF0);
+	message->setCurrentObjectEncoding(version == 3 ? OBJECT_ENCODING::AMF3 : OBJECT_ENCODING::AMF0);
 	uint16_t numHeaders;
 	if(!message->readShort(numHeaders))
 		return;
@@ -1725,14 +1726,14 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		uint8_t marker;
 		if(!message->peekByte(marker))
 			return;
-		if (marker == 0x11 && message->getCurrentObjectEncoding() != ObjectEncoding::AMF3) // switch to AMF3
+		if (marker == 0x11 && message->getCurrentObjectEncoding() != OBJECT_ENCODING::AMF3) // switch to AMF3
 		{
-			message->setCurrentObjectEncoding(ObjectEncoding::AMF3);
+			message->setCurrentObjectEncoding(OBJECT_ENCODING::AMF3);
 			message->readByte(marker);
 		}
 		asAtom v = asAtomHandler::fromObject(message.getPtr());
 		asAtom obj=asAtomHandler::invalidAtom;
-		ByteArray::readObject(obj,m_sys, v, NULL, 0);
+		ByteArray::readObject(obj,m_sys, v, nullptr, 0);
 
 		asAtom callback=asAtomHandler::invalidAtom;
 		if(!client.isNull())
@@ -1774,14 +1775,14 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		uint8_t marker;
 		if(!message->peekByte(marker))
 			return;
-		if (marker == 0x11 && message->getCurrentObjectEncoding() != ObjectEncoding::AMF3) // switch to AMF3
+		if (marker == 0x11 && message->getCurrentObjectEncoding() != OBJECT_ENCODING::AMF3) // switch to AMF3
 		{
-			message->setCurrentObjectEncoding(ObjectEncoding::AMF3);
+			message->setCurrentObjectEncoding(OBJECT_ENCODING::AMF3);
 			message->readByte(marker);
 		}
 		asAtom v = asAtomHandler::fromObject(message.getPtr());
 		asAtom ret=asAtomHandler::invalidAtom;
-		ByteArray::readObject(ret,m_sys,v, NULL, 0);
+		ByteArray::readObject(ret,m_sys,v, nullptr, 0);
 	
 		if(!responder.isNull())
 		{
@@ -1858,19 +1859,19 @@ void ABCContext::buildInstanceTraits(ASObject* obj, int class_index)
 
 void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 {
-	const multiname& mname=*getMultiname(t->name,NULL);
+	const multiname& mname=*getMultiname(t->name,nullptr);
 	//Should be a Qname
 	assert_and_throw(mname.ns.size()==1 && mname.name_type==multiname::NAME_STRING);
 
 	uint32_t nameId=mname.name_s_id;
 	if(t->kind>>4)
-		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
+		LOG(LOG_CALLS,"Next slot has flags " << (t->kind>>4));
 	switch(t->kind&0xf)
 	{
 		//Link the methods to the implementations
 		case traits_info::Method:
 		{
-			LOG(LOG_CALLS,_("Method trait: ") << mname << _(" #") << t->method);
+			LOG(LOG_CALLS,"Method trait: " << mname << " #" << t->method);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -1886,15 +1887,15 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,_("Method not linkable") << ": " << mname);
+				LOG(LOG_NOT_IMPLEMENTED,"Method not linkable" << ": " << mname);
 			}
 
-			LOG(LOG_TRACE,_("End Method trait: ") << mname);
+			LOG(LOG_TRACE,"End Method trait: " << mname);
 			break;
 		}
 		case traits_info::Getter:
 		{
-			LOG(LOG_CALLS,_("Getter trait: ") << mname);
+			LOG(LOG_CALLS,"Getter trait: " << mname);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -1908,15 +1909,15 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,_("Getter not linkable") << ": " << mname);
+				LOG(LOG_NOT_IMPLEMENTED,"Getter not linkable" << ": " << mname);
 			}
 
-			LOG(LOG_TRACE,_("End Getter trait: ") << mname);
+			LOG(LOG_TRACE,"End Getter trait: " << mname);
 			break;
 		}
 		case traits_info::Setter:
 		{
-			LOG(LOG_CALLS,_("Setter trait: ") << mname << _(" #") << t->method);
+			LOG(LOG_CALLS,"Setter trait: " << mname << " #" << t->method);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -1930,17 +1931,17 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,_("Setter not linkable") << ": " << mname);
+				LOG(LOG_NOT_IMPLEMENTED,"Setter not linkable" << ": " << mname);
 			}
 			
-			LOG(LOG_TRACE,_("End Setter trait: ") << mname);
+			LOG(LOG_TRACE,"End Setter trait: " << mname);
 			break;
 		}
 //		case traits_info::Class:
 //		case traits_info::Const:
 //		case traits_info::Slot:
 		default:
-			LOG(LOG_ERROR,"Trait not supported " << mname << _(" ") << t->kind);
+			LOG(LOG_ERROR,"Trait not supported " << mname << " " << t->kind);
 			throw UnsupportedException("Trait not supported");
 	}
 }
@@ -2051,7 +2052,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 	assert_and_throw(mname->name_type==multiname::NAME_STRING);
 #ifndef NDEBUG
 	if(t->kind>>4)
-		LOG(LOG_CALLS,_("Next slot has flags ") << (t->kind>>4));
+		LOG(LOG_CALLS,"Next slot has flags " << (t->kind>>4));
 	if(t->kind&traits_info::Metadata)
 	{
 		for(unsigned int i=0;i<t->metadata_count;i++)
@@ -2124,7 +2125,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				root->customClasses.insert(make_pair(mname->name_s_id,ci));
 				ci->isInterface = true;
 				ci->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(obj->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
-				LOG(LOG_CALLS,_("Building class traits"));
+				LOG(LOG_CALLS,"Building class traits");
 				for(unsigned int i=0;i<classes[t->classi].trait_count;i++)
 					buildTrait(ci,additionalslots,&classes[t->classi].traits[i],false);
 				//Add protected namespace if needed
@@ -2275,7 +2276,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			else
 				asAtomHandler::setNull(ret);
 
-			LOG(LOG_CALLS,"Const " << *mname <<" type "<< *tname<< " = " << asAtomHandler::toDebugString(ret));
+			LOG_CALL("Const " << *mname <<" type "<< *tname<< " = " << asAtomHandler::toDebugString(ret));
 
 			obj->initializeVariableByMultiname(*mname, ret, tname, this, CONSTANT_TRAIT,t->slot_id,isenumerable);
 			break;
@@ -2295,7 +2296,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			}
 			else
 			{
-				LOG_CALL(_("Slot ")<< t->slot_id<<  " vindex 0 " << *mname <<" type "<<*tname<<" "<<isBorrowed);
+				LOG_CALL("Slot "<< t->slot_id<<  " vindex 0 " << *mname <<" type "<<*tname<<" "<<isBorrowed);
 				ret = asAtomHandler::invalidAtom;
 			}
 

@@ -20,6 +20,7 @@
 #include "scripting/avm1/avm1display.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/flash/net/flashnet.h"
 #include "parsing/tags.h"
 #include "scripting/abc.h"
 #include "backends/security.h"

@@ -21,6 +21,7 @@
 #include "backends/security.h"
 #include "scripting/abc.h"
 #include "scripting/class.h"
+#include "scripting/flash/net/flashnet.h"
 #include "swf.h"
 #include "backends/config.h"
 #include "backends/netutils.h"
@@ -170,28 +171,28 @@ StandaloneDownloadManager::~StandaloneDownloadManager()
 Downloader* StandaloneDownloadManager::download(const URLInfo& url, _R<StreamCache> cache, ILoadable* owner)
 {
 	bool cached = dynamic_cast<FileStreamCache *>(cache.getPtr()) != NULL;
-	LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager::download '") << url.getParsedURL()
-			<< "'" << (cached ? _(" - cached") : ""));
+	LOG(LOG_INFO, "NET: STANDALONE: DownloadManager::download '" << url.getParsedURL()
+			<< "'" << (cached ? " - cached" : ""));
 	ThreadedDownloader* downloader;
 	// empty URL means data is generated from calls to NetStream::appendBytes
 	if(url.isEmpty())
 	{
-		LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager: Data generation mode"));
+		LOG(LOG_INFO, "NET: STANDALONE: DownloadManager: Data generation mode");
 		downloader=new LocalDownloader(url.getPath(), cache, owner,true);
 	}
 	else if(url.getProtocol() == "file")
 	{
-		LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager: local file"));
+		LOG(LOG_INFO, "NET: STANDALONE: DownloadManager: local file");
 		downloader=new LocalDownloader(url.getPath(), cache, owner);
 	}
 	else if(url.getProtocol().substr(0, 4) == "rtmp")
 	{
-		LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager: RTMP stream"));
+		LOG(LOG_INFO, "NET: STANDALONE: DownloadManager: RTMP stream");
 		downloader=new RTMPDownloader(url.getParsedURL(), cache, url.getStream(), owner);
 	}
 	else
 	{
-		LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager: remote file"));
+		LOG(LOG_INFO, "NET: STANDALONE: DownloadManager: remote file");
 		downloader=new CurlDownloader(url.getParsedURL(), cache, owner);
 	}
 	downloader->enableFencingWaiting();
@@ -214,18 +215,18 @@ Downloader* StandaloneDownloadManager::downloadWithData(const URLInfo& url, _R<S
 		const std::vector<uint8_t>& data,
 		const std::list<tiny_string>& headers, ILoadable* owner)
 {
-	LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager::downloadWithData '") << url.getParsedURL());
+	LOG(LOG_INFO, "NET: STANDALONE: DownloadManager::downloadWithData '" << url.getParsedURL());
 	ThreadedDownloader* downloader;
 	if(url.getProtocol() == "file")
 	{
-		LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager: local file - Ignoring data field"));
+		LOG(LOG_INFO, "NET: STANDALONE: DownloadManager: local file - Ignoring data field");
 		downloader=new LocalDownloader(url.getPath(), cache, owner);
 	}
 	else if(url.getProtocol() == "rtmpe")
 		throw RunTimeException("RTMPE does not support additional data");
 	else
 	{
-		LOG(LOG_INFO, _("NET: STANDALONE: DownloadManager: remote file"));
+		LOG(LOG_INFO, "NET: STANDALONE: DownloadManager: remote file");
 		downloader=new CurlDownloader(url.getParsedURL(), cache, data, headers, owner);
 	}
 	downloader->enableFencingWaiting();
@@ -425,7 +426,7 @@ void Downloader::parseHeader(std::string header, bool _setLength)
 			//Set the new real URL when we are being redirected
 			if(getRequestStatus()/100 == 3 && headerName == "location")
 			{
-				LOG(LOG_INFO, _("NET: redirect detected"));
+				LOG(LOG_INFO, "NET: redirect detected");
 				setRedirected(URLInfo(url).goToURL(tiny_string(headerValue)).getParsedURL());
 			}
 			if(headerName == "content-length")
@@ -576,7 +577,7 @@ void CurlDownloader::execute()
 		setFailed();
 		return;
 	}
-	LOG(LOG_INFO, _("NET: CurlDownloader::execute: reading remote file: ") << url.raw_buf());
+	LOG(LOG_INFO, "NET: CurlDownloader::execute: reading remote file: " << url.raw_buf());
 #ifdef ENABLE_CURL
 	CURL *curl;
 	CURLcode res;
@@ -657,7 +658,7 @@ void CurlDownloader::execute()
 	}
 #else
 	//ENABLE_CURL not defined
-	LOG(LOG_ERROR,_("NET: CURL not enabled in this build. Downloader will always fail."));
+	LOG(LOG_ERROR,"NET: CURL not enabled in this build. Downloader will always fail.");
 	setFailed();
 	return;
 #endif
@@ -747,7 +748,7 @@ void LocalDownloader::execute()
 	}
 	else
 	{
-		LOG(LOG_INFO, _("NET: LocalDownloader::execute: reading local file: ") << url.raw_buf());
+		LOG(LOG_INFO, "NET: LocalDownloader::execute: reading local file: " << url.raw_buf());
 		//If the caching is selected, we override the normal behaviour and use the local file as the cache file
 		//This prevents unneeded copying of the file's data
 
@@ -789,7 +790,7 @@ void LocalDownloader::execute()
 				}
 				if(readFailed)
 				{
-					LOG(LOG_ERROR, _("NET: LocalDownloader::execute: reading from local file failed: ") << url.raw_buf());
+					LOG(LOG_ERROR, "NET: LocalDownloader::execute: reading from local file failed: " << url.raw_buf());
 					setFailed();
 					return;
 				}
@@ -797,7 +798,7 @@ void LocalDownloader::execute()
 			}
 			else
 			{
-				LOG(LOG_ERROR, _("NET: LocalDownloader::execute: could not open local file: ") << url.raw_buf());
+				LOG(LOG_ERROR, "NET: LocalDownloader::execute: could not open local file: " << url.raw_buf());
 				setFailed();
 				return;
 			}

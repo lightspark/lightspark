@@ -72,7 +72,7 @@ Undefined::Undefined():ASObject((Class_base*)(NULL),T_UNDEFINED)
 
 ASFUNCTIONBODY_ATOM(Undefined,call)
 {
-	LOG_CALL(_("Undefined function"));
+	LOG_CALL("Undefined function");
 }
 
 TRISTATE Undefined::isLess(ASObject* r)
@@ -128,7 +128,7 @@ void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 		out->writeByte(amf0_undefined_marker);
 	else
 		out->writeByte(undefined_marker);
@@ -330,7 +330,7 @@ void IFunction::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
 	// according to avmplus functions are "serialized" as undefined
-	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 		out->writeByte(amf0_undefined_marker);
 	else
 		out->writeByte(undefined_marker);
@@ -927,7 +927,7 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 		out->writeByte(amf0_null_marker);
 	else
 		out->writeByte(null_marker);
@@ -1457,7 +1457,7 @@ void Class_base::linkInterface(Class_base* c) const
 
 	if(constructor)
 	{
-		LOG_CALL(_("Calling interface init for ") << class_name);
+		LOG_CALL("Calling interface init for " << class_name);
 		asAtom v = asAtomHandler::fromObject(c);
 		asAtom ret=asAtomHandler::invalidAtom;
 		asAtom c = asAtomHandler::fromObject(constructor);
@@ -1970,7 +1970,7 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name)
 		LOG_CALL("Calling the getter for " << name << " on " << asAtomHandler::toDebugString(obj->getter));
 		assert(asAtomHandler::isFunction(obj->getter));
 		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,asAtomHandler::getClosure(obj->getter) ? asAtomHandler::getClosure(obj->getter) : this);
-		LOG_CALL(_("End of getter")<< ' ' << asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
+		LOG_CALL("End of getter"<< ' ' << asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
 		return;
 	}
 	else

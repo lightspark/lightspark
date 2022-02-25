@@ -28,7 +28,7 @@
 using namespace std;
 using namespace lightspark;
 
-Date::Date(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_DATE),extrayears(0), nan(false), datetime(NULL),datetimeUTC(NULL)
+Date::Date(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_DATE),extrayears(0), nan(false), datetime(nullptr),datetimeUTC(nullptr)
 {
 }
 
@@ -810,7 +810,7 @@ ASFUNCTIONBODY_ATOM(Date,setTime)
 	ARG_UNPACK_ATOM (ms, Number::NaN);
 	if (!asAtomHandler::is<Date>(obj))
 	{
-		multiname name(NULL);
+		multiname name(nullptr);
 		name.name_type=multiname::NAME_STRING;
 		name.name_s_id=sys->getUniqueStringId("value");
 		name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
@@ -1204,7 +1204,7 @@ void Date::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"serializing Date in AMF0 not implemented");
 		return;

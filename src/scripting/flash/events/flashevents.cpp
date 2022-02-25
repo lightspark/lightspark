@@ -27,6 +27,7 @@
 #include "scripting/flash/ui/gameinput.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/net/flashnet.h"
 
 using namespace std;
 using namespace lightspark;
@@ -1203,17 +1204,17 @@ ExternalCallEvent::~ExternalCallEvent()
 }
 
 BindClassEvent::BindClassEvent(_R<RootMovieClip> b, const tiny_string& c)
-	: Event(NULL, "bindClass"),base(b),tag(NULL),class_name(c)
+	: Event(nullptr, "bindClass"),base(b),tag(NULL),class_name(c)
 {
 }
 
 BindClassEvent::BindClassEvent(DictionaryTag* t, const tiny_string& c)
-	: Event(NULL, "bindClass"),tag(t),class_name(c)
+	: Event(nullptr, "bindClass"),tag(t),class_name(c)
 {
 }
 
 ParseRPCMessageEvent::ParseRPCMessageEvent(_R<ByteArray> ba, _NR<ASObject> c, _NR<Responder> r):
-	Event(NULL, "ParseRPCMessageEvent"),message(ba),client(c),responder(r)
+	Event(nullptr, "ParseRPCMessageEvent"),message(ba),client(c),responder(r)
 {
 }
 

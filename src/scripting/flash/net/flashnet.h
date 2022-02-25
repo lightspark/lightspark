@@ -153,7 +153,6 @@ class ObjectEncoding: public ASObject
 {
 public:
 	ObjectEncoding(Class_base* c):ASObject(c){}
-	enum ENCODING { AMF0=0, AMF3=3, DEFAULT=3 };
 	static void sinit(Class_base*);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, dynamicPropertyWriter);
 };
@@ -233,7 +232,7 @@ private:
 	_NR<Responder> responder;
 	uint32_t messageCount;
 	//The connection is to a flash media server
-	ObjectEncoding::ENCODING objectEncoding;
+	OBJECT_ENCODING objectEncoding;
 	PROXY_TYPE proxyType;
 	//IThreadJob interface
 	void execute() override;

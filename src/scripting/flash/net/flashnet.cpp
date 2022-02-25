@@ -609,7 +609,7 @@ void SharedObjectFlushStatus::sinit(Class_base* c)
 	c->setVariableAtomByQName("PENDING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"pending"),DECLARED_TRAIT);
 }
 
-SharedObject::SharedObject(Class_base* c):EventDispatcher(c),client(this),objectEncoding(ObjectEncoding::AMF3)
+SharedObject::SharedObject(Class_base* c):EventDispatcher(c),client(this),objectEncoding(OBJECT_ENCODING::AMF3)
 {
 	subtype=SUBTYPE_SHAREDOBJECT;
 	data=_MR(new_asobject(c->getSystemState()));
@@ -642,7 +642,7 @@ void SharedObject::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("preventBackup","",Class<IFunction>::getFunction(c->getSystemState(),_setPreventBackup),SETTER_METHOD,false);
 	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(c->getSystemState(),_getSize),GETTER_METHOD,true);
 
-	getSys()->staticSharedObjectDefaultObjectEncoding = ObjectEncoding::AMF3;
+	getSys()->staticSharedObjectDefaultObjectEncoding = OBJECT_ENCODING::AMF3;
 	getSys()->staticSharedObjectPreventBackup = false;
 }
 
@@ -661,9 +661,9 @@ ASFUNCTIONBODY_ATOM(SharedObject,_setDefaultObjectEncoding)
 	assert_and_throw(argslen == 1);
 	uint32_t value = asAtomHandler::toUInt(args[0]);
 	if(value == 0)
-	    sys->staticSharedObjectDefaultObjectEncoding = ObjectEncoding::AMF0;
+	    sys->staticSharedObjectDefaultObjectEncoding = OBJECT_ENCODING::AMF0;
 	else if(value == 3)
-	    sys->staticSharedObjectDefaultObjectEncoding = ObjectEncoding::AMF3;
+	    sys->staticSharedObjectDefaultObjectEncoding = OBJECT_ENCODING::AMF3;
 	else
 	    throw RunTimeException("Invalid shared object encoding");
 }
@@ -873,7 +873,7 @@ void NetConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(c->getSystemState(),_getConnected),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getDefaultObjectEncoding),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_setDefaultObjectEncoding),SETTER_METHOD,false);
-	c->getSystemState()->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::DEFAULT;
+	c->getSystemState()->staticNetConnectionDefaultObjectEncoding = OBJECT_ENCODING::DEFAULT;
 	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getObjectEncoding),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_setObjectEncoding),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("protocol","",Class<IFunction>::getFunction(c->getSystemState(),_getProtocol),GETTER_METHOD,true);
@@ -970,7 +970,7 @@ ASFUNCTIONBODY_ATOM(NetConnection,call)
 
 void NetConnection::execute()
 {
-	LOG(LOG_CALLS,_("NetConnection async execution ") << uri);
+	LOG(LOG_CALLS,"NetConnection async execution " << uri);
 	assert(!messageData.empty());
 	std::list<tiny_string> headers;
 	headers.push_back("Content-Type: application/x-amf");
@@ -1124,9 +1124,9 @@ ASFUNCTIONBODY_ATOM(NetConnection,_setDefaultObjectEncoding)
 	assert_and_throw(argslen == 1);
 	int32_t value = asAtomHandler::toInt(args[0]);
 	if(value == 0)
-		sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::AMF0;
+		sys->staticNetConnectionDefaultObjectEncoding = OBJECT_ENCODING::AMF0;
 	else if(value == 3)
-		sys->staticNetConnectionDefaultObjectEncoding = ObjectEncoding::AMF3;
+		sys->staticNetConnectionDefaultObjectEncoding = OBJECT_ENCODING::AMF3;
 	else
 		throw RunTimeException("Invalid object encoding");
 }
@@ -1147,9 +1147,9 @@ ASFUNCTIONBODY_ATOM(NetConnection,_setObjectEncoding)
 	}
 	int32_t value = asAtomHandler::toInt(args[0]);
 	if(value == 0)
-		th->objectEncoding = ObjectEncoding::AMF0; 
+		th->objectEncoding = OBJECT_ENCODING::AMF0; 
 	else
-		th->objectEncoding = ObjectEncoding::AMF3; 
+		th->objectEncoding = OBJECT_ENCODING::AMF3; 
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,_getProtocol)
@@ -1422,7 +1422,7 @@ ASFUNCTIONBODY_ATOM(NetStream,_constructor)
 	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 
-	LOG(LOG_CALLS,_("NetStream constructor"));
+	LOG(LOG_CALLS,"NetStream constructor");
 	tiny_string value;
 	_NR<NetConnection> netConnection;
 
@@ -1586,7 +1586,7 @@ ASFUNCTIONBODY_ATOM(NetStream,close)
 		th->incRef();
 		getVm(sys)->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS(sys,"status", "NetStream.Play.Stop")));
 	}
-	LOG(LOG_CALLS, _("NetStream::close called"));
+	LOG(LOG_CALLS, "NetStream::close called");
 }
 ASFUNCTIONBODY_ATOM(NetStream,play2)
 {
@@ -2062,7 +2062,7 @@ void NetStream::execute()
 	}
 	catch(exception& e)
 	{
-		LOG(LOG_ERROR, _("Exception in reading: ")<<e.what());
+		LOG(LOG_ERROR, "Exception in reading: "<<e.what());
 	}
 	if(waitForFlush)
 	{

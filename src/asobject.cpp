@@ -34,6 +34,7 @@
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Error.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/net/flashnet.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 
 using namespace lightspark;
@@ -2058,7 +2059,7 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap,bool forsharedobject)
 {
-	bool amf0 = out->getObjectEncoding() == ObjectEncoding::AMF0;
+	bool amf0 = out->getObjectEncoding() == OBJECT_ENCODING::AMF0;
 	//Pairs of name, value
 	auto it=Variables.begin();
 	for(;it!=Variables.end();it++)
@@ -2087,7 +2088,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	bool amf0 = out->getObjectEncoding() == ObjectEncoding::AMF0;
+	bool amf0 = out->getObjectEncoding() == OBJECT_ENCODING::AMF0;
 	if (amf0)
 		out->writeByte(amf0_object_marker);
 	else

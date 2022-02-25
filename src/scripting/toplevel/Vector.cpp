@@ -264,7 +264,7 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 	  
 	asAtom f = args[0];
 	asAtom params[3];
-	th->getClass()->getInstance(ret,true,NULL,0);
+	th->getClass()->getInstance(ret,true,nullptr,0);
 	Vector* res= asAtomHandler::as<Vector>(ret);
 	asAtom funcRet=asAtomHandler::invalidAtom;
 	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
@@ -691,7 +691,7 @@ ASFUNCTIONBODY_ATOM(Vector,splice)
 	if(argslen > 1)
 		deleteCount=asAtomHandler::toUInt(args[1]);
 	int totalSize=th->size();
-	th->getClass()->getInstance(ret,true,NULL,0);
+	th->getClass()->getInstance(ret,true,nullptr,0);
 	Vector* res= asAtomHandler::as<Vector>(ret);
 
 	startIndex=th->capIndex(startIndex);
@@ -1087,7 +1087,7 @@ ASFUNCTIONBODY_ATOM(Vector,_map)
 	asAtom func=asAtomHandler::invalidAtom;
 
 	ARG_UNPACK_ATOM(func)(thisObject,asAtomHandler::nullAtom);
-	th->getClass()->getInstance(ret,true,NULL,0);
+	th->getClass()->getInstance(ret,true,nullptr,0);
 	Vector* res= asAtomHandler::as<Vector>(ret);
 
 	for(uint32_t i=0;i<th->size();i++)
@@ -1494,7 +1494,7 @@ void Vector::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"serializing Vector in AMF0 not implemented");
 		return;

@@ -41,7 +41,7 @@ using namespace lightspark;
 // maybe we should set this smaller
 #define BA_MAX_SIZE 0x40000000
 
-ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c,T_OBJECT,SUBTYPE_BYTEARRAY),littleEndian(false),objectEncoding(ObjectEncoding::AMF3),currentObjectEncoding(ObjectEncoding::AMF3),
+ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c,T_OBJECT,SUBTYPE_BYTEARRAY),littleEndian(false),objectEncoding(OBJECT_ENCODING::AMF3),currentObjectEncoding(OBJECT_ENCODING::AMF3),
 	position(0),bytes(b),real_len(l),len(l),shareable(false)
 {
 #ifdef MEMORY_USAGE_PROFILING
@@ -75,7 +75,7 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getDefaultObjectEncoding,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_setDefaultObjectEncoding),SETTER_METHOD,false);
 
-	c->getSystemState()->staticByteArrayDefaultObjectEncoding = ObjectEncoding::DEFAULT;
+	c->getSystemState()->staticByteArrayDefaultObjectEncoding = OBJECT_ENCODING::DEFAULT;
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("compress","",Class<IFunction>::getFunction(c->getSystemState(),_compress),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uncompress","",Class<IFunction>::getFunction(c->getSystemState(),_uncompress),NORMAL_METHOD,true);
@@ -266,7 +266,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setObjectEncoding)
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	uint32_t value;
 	ARG_UNPACK_ATOM(value);
-	if(value!=ObjectEncoding::AMF0 && value!=ObjectEncoding::AMF3)
+	if(value!=OBJECT_ENCODING::AMF0 && value!=OBJECT_ENCODING::AMF3)
 		throwError<ArgumentError>(kInvalidEnumError, "objectEncoding");
 
 	th->objectEncoding=value;
@@ -283,9 +283,9 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setDefaultObjectEncoding)
 	assert_and_throw(argslen == 1);
 	int32_t value = asAtomHandler::toInt(args[0]);
 	if(value == 0)
-		sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF0;
+		sys->staticByteArrayDefaultObjectEncoding = OBJECT_ENCODING::AMF0;
 	else if(value == 3)
-		sys->staticByteArrayDefaultObjectEncoding = ObjectEncoding::AMF3;
+		sys->staticByteArrayDefaultObjectEncoding = OBJECT_ENCODING::AMF3;
 	else
 		throw RunTimeException("Invalid object encoding");
 }
@@ -1666,7 +1666,7 @@ void ByteArray::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"serializing ByteArray in AMF0 not implemented");
 		return;

@@ -80,7 +80,7 @@ multiname *Dictionary::setVariableByMultiname(multiname& name, asAtom& o, CONST_
 	assert_and_throw(implEnable);
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
-		multiname tmpname(NULL);
+		multiname tmpname(nullptr);
 		tmpname.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 		switch (name.name_o->getObjectType())
 		{
@@ -140,7 +140,7 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name)
 
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
-		multiname tmpname(NULL);
+		multiname tmpname(nullptr);
 		tmpname.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 		switch (name.name_o->getObjectType())
 		{
@@ -194,7 +194,7 @@ GET_VARIABLE_RESULT Dictionary::getVariableByMultiname(asAtom& ret, const multin
 	{
 		if(name.name_type==multiname::NAME_OBJECT)
 		{
-			multiname tmpname(NULL);
+			multiname tmpname(nullptr);
 			tmpname.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 			switch (name.name_o->getObjectType())
 			{
@@ -267,7 +267,7 @@ bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDyna
 
 	if(name.name_type==multiname::NAME_OBJECT)
 	{
-		multiname tmpname(NULL);
+		multiname tmpname(nullptr);
 		tmpname.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 		switch (name.name_o->getObjectType())
 		{
@@ -386,7 +386,7 @@ void Dictionary::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stri
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"serializing Dictionary in AMF0 not implemented");
 		return;

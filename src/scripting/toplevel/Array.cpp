@@ -586,7 +586,7 @@ ASFUNCTIONBODY_ATOM(Array,shift)
 			return;
 		}
 		// for other objects we just decrease the length property
-		multiname lengthName(NULL);
+		multiname lengthName(nullptr);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
 		lengthName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
@@ -838,7 +838,7 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 			return;
 		}
 		// for other objects we just decrease the length property
-		multiname lengthName(NULL);
+		multiname lengthName(nullptr);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
 		lengthName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
@@ -1245,7 +1245,7 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 		int n = 0;
 		for(uint32_t i = 0;i<obj->size();i++)
 		{
-			multiname sortfieldname(NULL);
+			multiname sortfieldname(nullptr);
 			sortfieldname.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
 			asAtom atom = obj->at(i);
 			sortfieldname.setName(atom,sys);
@@ -1275,7 +1275,7 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 	}
 	else
 	{
-		multiname sortfieldname(NULL);
+		multiname sortfieldname(nullptr);
 		asAtom atom = args[0];
 		sortfieldname.setName(atom,th->getSystemState());
 		sortfieldname.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
@@ -1362,7 +1362,7 @@ ASFUNCTIONBODY_ATOM(Array,unshift)
 			return;
 		}
 		// for other objects we just increase the length property
-		multiname lengthName(NULL);
+		multiname lengthName(nullptr);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
 		lengthName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
@@ -1424,7 +1424,7 @@ ASFUNCTIONBODY_ATOM(Array,_push)
 			return;
 		}
 		// for other objects we just increase the length property
-		multiname lengthName(NULL);
+		multiname lengthName(nullptr);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
 		lengthName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
@@ -1465,7 +1465,7 @@ ASFUNCTIONBODY_ATOM(Array,_push_as3)
 			return;
 		}
 		// for other objects we just increase the length property
-		multiname lengthName(NULL);
+		multiname lengthName(nullptr);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
 		lengthName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
@@ -2155,7 +2155,7 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"serializing Array in AMF0 not implemented");
 		return;
@@ -2312,7 +2312,7 @@ uint64_t Array::size()
 {
 	if (this->getClass()->is<Class_inherit>())
 	{
-		multiname lengthName(NULL);
+		multiname lengthName(nullptr);
 		lengthName.name_type=multiname::NAME_STRING;
 		lengthName.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
 		lengthName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));

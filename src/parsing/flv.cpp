@@ -41,12 +41,12 @@ FLV_HEADER::FLV_HEADER(std::istream& in):dataOffset(0),_hasAudio(false),_hasVide
 	
 	if(Signature[0]=='F' && Signature[1]=='L' && Signature[2]=='V')
 	{
-		LOG(LOG_INFO, _("PARSING: FLV file: Version ") << (int)Version);
+		LOG(LOG_INFO, "PARSING: FLV file: Version " << (int)Version);
 		valid=true;
 	}
 	else
 	{
-		LOG(LOG_INFO,_("PARSING: No FLV file signature found"));
+		LOG(LOG_INFO,"PARSING: No FLV file signature found");
 		valid=false;
 		return;
 	}
@@ -99,8 +99,8 @@ ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 		_R<ByteArray> b = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getSys()));
 		uint8_t* data =b->getBuffer(dataSize,true);
 		s.read((char*)data,dataSize);
-		b->setObjectEncoding(ObjectEncoding::AMF0);
-		b->setCurrentObjectEncoding(ObjectEncoding::AMF0);
+		b->setObjectEncoding(OBJECT_ENCODING::AMF0);
+		b->setCurrentObjectEncoding(OBJECT_ENCODING::AMF0);
 		b->setPosition(0);
 		uint8_t tagtype;
 		if (!b->readByte(tagtype))

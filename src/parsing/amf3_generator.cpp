@@ -65,7 +65,7 @@ void Amf3Deserializer::readSharedObject(ASObject* ret)
 		vector<TraitsRef> traitsMap;
 		if (amfversion!= 3 && amfversion!=0)
 			LOG(LOG_ERROR,"invalid amf version for sharedObject:"<<name<<" "<<amfversion);
-		input->setCurrentObjectEncoding(amfversion==3 ? ObjectEncoding::AMF3 : ObjectEncoding::AMF0);
+		input->setCurrentObjectEncoding(amfversion==3 ? OBJECT_ENCODING::AMF3 : OBJECT_ENCODING::AMF0);
 		while (input->getPosition() < input->getLength())
 		{
 			tiny_string key = amfversion==3 ? parseStringVR(stringMap) : parseStringAMF0();
@@ -540,7 +540,7 @@ asAtom Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 	uint8_t marker;
 	if(!input->readByte(marker))
 		throw ParseException("Not enough data to parse AMF3 object");
-	if (input->getCurrentObjectEncoding() == ObjectEncoding::AMF3)
+	if (input->getCurrentObjectEncoding() == OBJECT_ENCODING::AMF3)
 	{
 		switch(marker)
 		{
@@ -624,7 +624,7 @@ asAtom Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 				return parseObjectAMF0(stringMap,objMap,traitsMap, class_name);
 			}
 			case amf0_avmplus_object_marker:
-				input->setCurrentObjectEncoding(ObjectEncoding::AMF3);
+				input->setCurrentObjectEncoding(OBJECT_ENCODING::AMF3);
 				return parseValue(stringMap, objMap, traitsMap);
 			default:
 				LOG(LOG_ERROR,"Unsupported marker " << (uint32_t)marker);

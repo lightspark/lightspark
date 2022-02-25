@@ -31,6 +31,7 @@
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/net/flashnet.h"
 #include <unistd.h>
 
 using namespace lightspark;
@@ -609,7 +610,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 		}
 		catch(exception& e)
 		{
-			LOG(LOG_ERROR, _("Exception in extracting sound data: ")<<e.what());
+			LOG(LOG_ERROR, "Exception in extracting sound data: "<<e.what());
 		}
 	}
 	ret = asAtomHandler::fromInt(min(readcount,bytelength)/8);
@@ -1014,7 +1015,7 @@ void SoundChannel::playStream()
 	}
 	catch(exception& e)
 	{
-		LOG(LOG_ERROR, _("Exception in reading SoundChannel: ")<<e.what());
+		LOG(LOG_ERROR, "Exception in reading SoundChannel: "<<e.what());
 	}
 	if(waitForFlush)
 	{
@@ -1102,7 +1103,7 @@ void SoundChannel::playStreamFromSamples()
 	}
 	catch(exception& e)
 	{
-		LOG(LOG_ERROR, _("Exception in reading SoundChannel: ")<<e.what());
+		LOG(LOG_ERROR, "Exception in reading SoundChannel: "<<e.what());
 	}
 	streamdatafinished=false;
 	if(waitForFlush)
@@ -1208,6 +1209,10 @@ void StageVideo::sinit(Class_base *c)
 	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(c->getSystemState(),attachNetStream),NORMAL_METHOD,true);
 }
 
+
+StageVideo::StageVideo(Class_base* c):EventDispatcher(c),videoWidth(0),videoHeight(0)
+{
+}
 
 void StageVideo::finalize()
 {

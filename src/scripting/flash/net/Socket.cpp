@@ -111,7 +111,7 @@ bool SocketIO::connect(const tiny_string& hostname, int port, int timeoutseconds
 		return false;
 	}
 
-	for(p = servinfo; p != NULL; p = p->ai_next)
+	for(p = servinfo; p != nullptr; p = p->ai_next)
 	{
 		if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
 			continue;
@@ -274,7 +274,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_constructor)
 	int port;
 	ARG_UNPACK_ATOM (host, "") (port, 0);
 
-	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
+	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
 
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	host_is_null = argslen > 0 && asAtomHandler::is<Null>(args[0]);
@@ -310,7 +310,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_setObjectEncoding)
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	uint32_t value;
 	ARG_UNPACK_ATOM(value);
-	if(value!=ObjectEncoding::AMF0 && value!=ObjectEncoding::AMF3)
+	if(value!=OBJECT_ENCODING::AMF0 && value!=OBJECT_ENCODING::AMF3)
 		throwError<ArgumentError>(kInvalidEnumError, "objectEncoding");
 
 	th->objectEncoding=value;
@@ -328,7 +328,7 @@ void ASSocket::connect(tiny_string host, int port)
 		throw Class<IOError>::getInstanceS(getSystemState(),"Already connected");
 
 	// Host shouldn't contain scheme or port
-	if (host.strchr(':') != NULL)
+	if (host.strchr(':') != nullptr)
 		throw Class<SecurityError>::getInstanceS(getSystemState(),"Invalid hostname");
 
 	// Check sandbox and policy file
@@ -657,7 +657,7 @@ bool ASSocket::isConnected()
 	return job && job->isConnected();
 }
 
-ASSocket::ASSocket(Class_base* c) : EventDispatcher(c), job(nullptr), objectEncoding(ObjectEncoding::AMF3), timeout(20000)
+ASSocket::ASSocket(Class_base* c) : EventDispatcher(c), job(nullptr), objectEncoding(OBJECT_ENCODING::AMF3), timeout(20000)
 {
 }
 
@@ -670,7 +670,7 @@ ASFUNCTIONBODY_ATOM(ASSocket, _connected)
 void ASSocket::threadFinished()
 {
 	Locker l(joblock);
-	job = NULL;
+	job = nullptr;
 }
 
 ASSocketThread::ASSocketThread(_R<ASSocket> _owner, const tiny_string& _hostname, int _port, int _timeout)
@@ -681,7 +681,7 @@ ASSocketThread::ASSocketThread(_R<ASSocket> _owner, const tiny_string& _hostname
 	datareceive = _MR(Class<ByteArray>::getInstanceS(owner->getSystemState()));
 #ifdef _WIN32
 	HANDLE readPipe, writePipe;
-	if (!CreatePipe(&readPipe,&writePipe,NULL,0))
+	if (!CreatePipe(&readPipe,&writePipe,nullptr,0))
 	{
 		signalListener = -1;
 		signalEmitter = -1;
@@ -710,7 +710,7 @@ ASSocketThread::~ASSocketThread()
 		::close(signalEmitter);
 
 	void *data;
-	while ((data = g_async_queue_try_pop(sendQueue)) != NULL)
+	while ((data = g_async_queue_try_pop(sendQueue)) != nullptr)
 	{
 		tiny_string *s = (tiny_string *)data;
 		delete s;

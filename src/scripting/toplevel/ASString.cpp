@@ -168,7 +168,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 
 	const char* error;
 	int errorOffset;
-	pcre* pcreRE=pcre_compile(restr.raw_buf(), options, &error, &errorOffset,NULL);
+	pcre* pcreRE=pcre_compile(restr.raw_buf(), options, &error, &errorOffset,nullptr);
 	if(error)
 	{
 		asAtomHandler::setInt(ret,sys,res);
@@ -672,7 +672,7 @@ void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap)
 {
-	if (out->getObjectEncoding() == ObjectEncoding::AMF0)
+	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{
 		out->writeByte(amf0_string_marker);
 		out->writeStringAMF0(getData());
@@ -949,7 +949,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 		}
 
 		int capturingGroups;
-		int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+		int infoOk=pcre_fullinfo(pcreRE, nullptr, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 		if(infoOk!=0)
 		{
 			pcre_free(pcreRE);

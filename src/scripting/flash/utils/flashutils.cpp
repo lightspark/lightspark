@@ -29,6 +29,7 @@
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/utils/IntervalManager.h"
 #include <sstream>
 #include <zlib.h>
 #include <glib.h>
@@ -170,7 +171,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 		name.hasEmptyNS=false;
 	}
 
-	LOG(LOG_CALLS,_("Looking for definition of ") << name);
+	LOG(LOG_CALLS,"Looking for definition of " << name);
 	ASObject* target;
 	ret = asAtomHandler::invalidAtom;
 	if (nsName.empty() || nsName.startsWith("flash."))
@@ -185,7 +186,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 
 	assert_and_throw(asAtomHandler::isClass(ret));
 
-	LOG(LOG_CALLS,_("Getting definition for ") << name);
+	LOG(LOG_CALLS,"Getting definition for " << name);
 	ASATOM_INCREF(ret);
 }
 

@@ -3,6 +3,7 @@
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/net/flashnet.h"
 #define INITGUID
 #include "3rdparty/jxrlib/jxrgluelib/JXRGlue.h"
 

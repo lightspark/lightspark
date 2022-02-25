@@ -23,6 +23,7 @@
 #include "scripting/abc.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/utils/flashutils.h"
+#include "scripting/flash/utils/IntervalManager.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/filesystem/flashfilesystem.h"
 #include "scripting/toplevel/ASString.h"
@@ -462,7 +463,7 @@ void SystemState::parseParametersFromFile(const char* f)
 	ifstream i(f, ios::in|ios::binary);
 	if(!i)
 	{
-		LOG(LOG_ERROR,_("Parameters file not found"));
+		LOG(LOG_ERROR,"Parameters file not found");
 		return;
 	}
 	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS(this));
@@ -968,7 +969,7 @@ void SystemState::launchGnash()
 	if(dumpedSWFPath.empty())
 		return;
 
-	LOG(LOG_INFO,_("Trying to invoke gnash!"));
+	LOG(LOG_INFO,"Trying to invoke gnash!");
 	//Dump the cookies to a temporary file
 	int file=g_file_open_tmp("lightsparkcookiesXXXXXX",&cookiesFileName,NULL);
 	if(file!=-1)
@@ -982,7 +983,7 @@ void SystemState::launchGnash()
 			res = write(file, data.c_str()+written, data.size()-written);
 			if(res < 0)
 			{
-				LOG(LOG_ERROR, _("Error during writing of cookie file for Gnash"));
+				LOG(LOG_ERROR, "Error during writing of cookie file for Gnash");
 				break;
 			}
 			written += res;
@@ -1087,7 +1088,7 @@ void SystemState::launchGnash()
 			ret = write(gnash_stdin, data+written, swfStream.gcount()-written);
 			if(ret < 0)
 			{
-				LOG(LOG_ERROR, _("Error during writing of SWF file to Gnash"));
+				LOG(LOG_ERROR, "Error during writing of SWF file to Gnash");
 				stop = true;
 				break;
 			}
@@ -1121,7 +1122,7 @@ void SystemState::needsAVM2(bool avm2)
 		//needsAVM2 is only called for the SystemState movie
 		assert(!currentVm);
 		vmVersion=AVM2;
-		LOG(LOG_INFO,_("Creating VM"));
+		LOG(LOG_INFO,"Creating VM");
 		MemoryAccount* vmDataMemory=this->allocateMemoryAccount("VM_Data");
 		currentVm=new ABCVm(this, vmDataMemory);
 		workerDomain = Class<WorkerDomain>::getInstanceS(this);
@@ -1497,7 +1498,7 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 	//Enable decompression if needed
 	if(fileType==FT_SWF)
 	{
-		LOG(LOG_INFO, _("Uncompressed SWF file: Version ") << (int)version);
+		LOG(LOG_INFO, "Uncompressed SWF file: Version " << (int)version);
 		root->loaderInfo->setBytesTotal(FileLength);
 	}
 	else
@@ -1506,12 +1507,12 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 		backend=f.rdbuf();
 		if(fileType==FT_COMPRESSED_SWF)
 		{
-			LOG(LOG_INFO, _("zlib compressed SWF file: Version ") << (int)version);
+			LOG(LOG_INFO, "zlib compressed SWF file: Version " << (int)version);
 			uncompressingFilter = new zlib_filter(backend);
 		}
 		else if(fileType==FT_LZMA_COMPRESSED_SWF)
 		{
-			LOG(LOG_INFO, _("lzma compressed SWF file: Version ") << (int)version);
+			LOG(LOG_INFO, "lzma compressed SWF file: Version " << (int)version);
 			uncompressingFilter = new liblzma_filter(backend);
 		}
 		else
@@ -1535,7 +1536,7 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 		frameRate = 30;
 	else
 		frameRate/=256;
-	LOG(LOG_INFO,_("FrameRate ") << frameRate);
+	LOG(LOG_INFO,"FrameRate " << frameRate);
 	root->setFrameRate(frameRate);
 	root->loaderInfo->setFrameRate(frameRate);
 	root->setFrameSize(FrameSize);
@@ -1571,18 +1572,18 @@ void ParseThread::execute()
 		// handle error for loaded SWFs.
 		if(!loader)
 		{
-			LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);
+			LOG(LOG_ERROR,"Exception in ParseThread " << e.cause);
 			getSys()->setError(e.cause, SystemState::ERROR_PARSING);
 		}
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,_("Exception in ParseThread ") << e.cause);
+		LOG(LOG_ERROR,"Exception in ParseThread " << e.cause);
 		getSys()->setError(e.cause, SystemState::ERROR_PARSING);
 	}
 	catch(std::exception& e)
 	{
-		LOG(LOG_ERROR,_("Stream exception in ParseThread ") << e.what());
+		LOG(LOG_ERROR,"Stream exception in ParseThread " << e.what());
 	}
 }
 
@@ -1671,7 +1672,7 @@ void ParseThread::parseSWF(UI8 ver)
 						&& root->getSystemState()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
 				{
 					root->getSystemState()->securityManager->setSandboxType(SecurityManager::LOCAL_WITH_NETWORK);
-					LOG(LOG_INFO, _("Switched to local-with-networking sandbox by FileAttributesTag"));
+					LOG(LOG_INFO, "Switched to local-with-networking sandbox by FileAttributesTag");
 				}
 			}
 		}
@@ -1828,7 +1829,7 @@ void ParseThread::parseSWF(UI8 ver)
 		root->loaderInfo->setBytesLoaded(root->loaderInfo->getBytesTotal());
 	}
 	root->markSoundFinished();
-	LOG(LOG_TRACE,_("End of parsing"));
+	LOG(LOG_TRACE,"End of parsing");
 }
 
 void ParseThread::parseBitmap()
@@ -2029,7 +2030,7 @@ DictionaryTag* RootMovieClip::dictionaryLookup(int id)
 	auto it = dictionary.find(id);
 	if(it==dictionary.end())
 	{
-		LOG(LOG_ERROR,_("No such Id on dictionary ") << id << " for " << origin);
+		LOG(LOG_ERROR,"No such Id on dictionary " << id << " for " << origin);
 		//throw RunTimeException("Could not find an object on the dictionary");
 		return nullptr;
 	}
@@ -2046,7 +2047,7 @@ DictionaryTag* RootMovieClip::dictionaryLookupByName(uint32_t nameID)
 	}
 	if(it==dictionary.end())
 	{
-		LOG(LOG_ERROR,_("No such name on dictionary ") << getSystemState()->getStringFromUniqueId(nameID) << " for " << origin);
+		LOG(LOG_ERROR,"No such name on dictionary " << getSystemState()->getStringFromUniqueId(nameID) << " for " << origin);
 		return nullptr;
 	}
 	return it->second;

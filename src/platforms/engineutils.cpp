@@ -26,6 +26,7 @@
 #include "backends/input.h"
 #include "backends/rendering.h"
 #include "backends/lsopengl.h"
+#include "backends/audio.h"
 #include <pango/pangocairo.h>
 #include "version.h"
 #include "abc.h"
@@ -312,14 +313,14 @@ void EngineData::initGLEW()
 		if (!videodriver || strcmp(videodriver,"wayland")!= 0 || err != GLEW_ERROR_NO_GLX_DISPLAY)
 #endif
 		{
-			LOG(LOG_ERROR,_("Cannot initialize GLEW: cause ") << glewGetErrorString(err));
+			LOG(LOG_ERROR,"Cannot initialize GLEW: cause " << glewGetErrorString(err));
 			throw RunTimeException("Rendering: Cannot initialize GLEW!");
 		}
 	}
 
 	if(!GLEW_VERSION_2_0)
 	{
-		LOG(LOG_ERROR,_("Video card does not support OpenGL 2.0... Aborting"));
+		LOG(LOG_ERROR,"Video card does not support OpenGL 2.0... Aborting");
 		throw RunTimeException("Rendering: OpenGL driver does not support OpenGL 2.0");
 	}
 	if(!GLEW_ARB_framebuffer_object)

@@ -163,7 +163,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				engineData->exec_glGetProgramiv_GL_LINK_STATUS(p->gpu_program,&stat);
 				if(!stat)
 				{
-					LOG(LOG_INFO,_("program link ") << str);
+					LOG(LOG_INFO,"program link " << str);
 					throw RunTimeException("Could not link program");
 				}
 				for (auto it = currentprogram->samplerState.begin();it != currentprogram->samplerState.end(); it++)
@@ -284,27 +284,27 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata1 = index
 			//action.udata2 = bufferOffset
 			//action.udata3 = format
-			if (!action.dataobject.isNull())
+			//action.fdata = bufferdata
+			if (vertexbufferIDs[action.udata1] == UINT32_MAX)
+				engineData->exec_glGenBuffers(1,&(vertexbufferIDs[action.udata1]));
+			if (action.dataobject)
 			{
 				VertexBuffer3D* buffer = action.dataobject->as<VertexBuffer3D>();
-				assert_and_throw(buffer->numVertices*buffer->data32PerVertex <= buffer->data.size());
-				if (buffer->bufferID == UINT32_MAX)
-					engineData->exec_glGenBuffers(1,&(buffer->bufferID));
-				if (buffer->upload_needed)
-				{
-					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(buffer->bufferID);
-					if (buffer->bufferUsage == "dynamicDraw")
-						engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),buffer->data.data());
-					else
-						engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),buffer->data.data());
-					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
-					buffer->upload_needed=false;
-				}
-				attribs[action.udata1].bufferID = buffer->bufferID;
 				attribs[action.udata1].data32PerVertex = buffer->data32PerVertex;
-				attribs[action.udata1].offset = action.udata2;
-				attribs[action.udata1].format = (VERTEXBUFFER_FORMAT)action.udata3;
+				if (action.fdata)
+				{
+					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(vertexbufferIDs[action.udata1]);
+					if (buffer->bufferUsage == "dynamicDraw")
+						engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),action.fdata);
+					else
+						engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),action.fdata);
+					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
+					delete[] action.fdata;
+				}
 			}
+			attribs[action.udata1].bufferID = vertexbufferIDs[action.udata1];
+			attribs[action.udata1].offset = action.udata2;
+			attribs[action.udata1].format = (VERTEXBUFFER_FORMAT)action.udata3;
 			break;
 		}
 		case RENDER_DRAWTRIANGLES:
@@ -312,6 +312,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.dataobject = IndexBuffer3D
 			//action.udata1 = firstIndex
 			//action.udata2 = numTriangles
+			//action.idata = indexBuffer data
 			if (currentprogram)
 			{
 				setPositionScale(engineData);
@@ -321,24 +322,28 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				setAttribs(engineData,currentprogram->vertexattributes);
 				setAttribs(engineData,currentprogram->fragmentattributes);
 			}
+			engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
 
 			IndexBuffer3D* buffer = action.dataobject->as<IndexBuffer3D>();
 			uint32_t count = (action.udata2 == UINT32_MAX) ? buffer->data.size() : (action.udata2 * 3);
 			assert_and_throw(count+ action.udata1 <= buffer->data.size());
 			if (buffer->bufferID == UINT32_MAX)
-			{
 				engineData->exec_glGenBuffers(1,&(buffer->bufferID));
-				engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(buffer->bufferID);
+			engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(buffer->bufferID);
+			if (action.idata)
+			{
 				if (buffer->bufferUsage == "dynamicDraw")
-					engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->data.size()*sizeof(uint16_t),buffer->data.data());
+					engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->data.size()*sizeof(uint16_t),action.idata);
 				else
-					engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->data.size()*sizeof(uint16_t),buffer->data.data());
+					engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->data.size()*sizeof(uint16_t),action.idata);
+				buffer->upload_needed=false;
 			}
-			else
-				engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(buffer->bufferID);
 			engineData->exec_glDrawElements_GL_TRIANGLES_GL_UNSIGNED_SHORT(count,(void*)(action.udata1*sizeof(uint16_t)));
-			engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
-			engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(0);
+			if (currentprogram)
+			{
+				resetAttribs(engineData,currentprogram->vertexattributes);
+				resetAttribs(engineData,currentprogram->fragmentattributes);
+			}
 			break;
 		}
 		case RENDER_DELETEBUFFER:
@@ -458,9 +463,15 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				currentprogram->samplerState[action.udata1].m = ((action.udata2 & 0xf00) >>8)-1 ; //mipfilter
 			}
 			break;
+		case RENDER_DELETETEXTURE:
+			//action.udata1 = textureid
+			if (action.udata1 != UINT32_MAX)
+			{
+				engineData->exec_glDeleteTextures(1, &action.udata1);
+			}
+			break;
 	}
 }
-
 void Context3D::setRegisters(EngineData* engineData,std::vector<RegisterMapEntry>& registermap,constantregister* constants, bool isVertex)
 {
 	auto it = registermap.begin();
@@ -472,23 +483,15 @@ void Context3D::setRegisters(EngineData* engineData,std::vector<RegisterMapEntry
 			{
 				float* data = constants[it->number].data;
 				if (it->program_register_id == UINT32_MAX)
-				{
-					char buf[100];
-					sprintf(buf,"%cc%d",isVertex?'v':'f',it->number);
-					it->program_register_id = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
-				}
+					it->program_register_id = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,it->name.raw_buf());
 				if (it->program_register_id != UINT32_MAX)
 					engineData->exec_glUniform4fv(it->program_register_id,1, data);
 				break;
 			}
 			case RegisterUsage::MATRIX_4_4:
 			{
-				char buf[100];
 				if (it->program_register_id == UINT32_MAX)
-				{
-					sprintf(buf,"%cc%d",isVertex?'v':'f',it->number);
-					it->program_register_id = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
-				}
+					it->program_register_id = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,it->name.raw_buf());
 				float data2[4*4];
 				for (uint32_t i =0; i < 4; i++)
 				{
@@ -504,19 +507,16 @@ void Context3D::setRegisters(EngineData* engineData,std::vector<RegisterMapEntry
 			}
 			case RegisterUsage::VECTOR_4_ARRAY:
 			{
-				char buf[100];
 				if (it->program_register_id == UINT32_MAX)
-				{
-					sprintf(buf,"%cc%d",isVertex?'v':'f',it->number);
-					it->program_register_id = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,buf);
-				}
+					it->program_register_id = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,it->name.raw_buf());
 				// TODO currently the array is filled with every constant from the current number to the end of the constant list
 				// find a way to determine the size of the array
-				uint32_t regcount = CONTEXT3D_PROGRAM_REGISTERS-it->number;
+				uint32_t regstart = it->number;
+				uint32_t regcount = CONTEXT3D_PROGRAM_REGISTERS-regstart;
 				float* data2 = new float[4*regcount];
 				for (uint32_t i =0; i < regcount; i++)
 				{
-					float* data = constants[it->number+i].data;
+					float* data = constants[regstart+i].data;
 					data2[i*4] = data[0];
 					data2[i*4+1] = data[1];
 					data2[i*4+2] = data[2];
@@ -544,9 +544,7 @@ void Context3D::setAttribs(EngineData *engineData,std::vector<RegisterMapEntry>&
 		{
 			if (it->program_register_id == UINT32_MAX)
 			{
-				char buf[100];
-				sprintf(buf,"va%d",it->number);
-				it->program_register_id = engineData->exec_glGetAttribLocation(currentprogram->gpu_program,buf);
+				it->program_register_id = engineData->exec_glGetAttribLocation(currentprogram->gpu_program,it->name.raw_buf());
 			}
 			if (it->program_register_id != UINT32_MAX)
 			{
@@ -555,6 +553,16 @@ void Context3D::setAttribs(EngineData *engineData,std::vector<RegisterMapEntry>&
 				engineData->exec_glVertexAttribPointer(it->program_register_id, attribs[it->number].data32PerVertex*sizeof(float), (const void*)(size_t)(attribs[it->number].offset*4),attribs[it->number].format);
 			}
 		}
+		it++;
+	}
+}
+void Context3D::resetAttribs(EngineData *engineData,std::vector<RegisterMapEntry>& attributes)
+{
+	auto it = attributes.begin();
+	while (it != attributes.end())
+	{
+		if (attribs[it->number].bufferID != UINT32_MAX && it->program_register_id != UINT32_MAX)
+			engineData->exec_glDisableVertexAttribArray(it->program_register_id);
 		it++;
 	}
 }
@@ -599,11 +607,13 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 {
 	Locker l(rendermutex);
 	if (!swapbuffers || actions[1-currentactionvector].size() == 0)
+	{
+		swapbuffers = false;
 		return false;
+	}
 	EngineData* engineData = getSystemState()->getEngineData();
 	if (currentprogram)
 		engineData->exec_glUseProgram(currentprogram->gpu_program);
-	
 	for (uint32_t i = 0; i < actions[1-currentactionvector].size(); i++)
 	{
 		renderaction& action = actions[1-currentactionvector][i];
@@ -715,6 +725,8 @@ Context3D::Context3D(Class_base *c):EventDispatcher(c),samplers{UINT32_MAX,UINT3
 
 void Context3D::addAction(RENDER_ACTION type, ASObject *dataobject)
 {
+	if (!getSystemState()->getRenderThread()->isStarted())
+		return;
 	renderaction action;
 	action.action = type;
 	if (dataobject)
@@ -727,6 +739,8 @@ void Context3D::addAction(RENDER_ACTION type, ASObject *dataobject)
 
 void Context3D::addAction(renderaction action)
 {
+	if (!getSystemState()->getRenderThread()->isStarted())
+		return;
 	actions[currentactionvector].push_back(action);
 }
 
@@ -912,14 +926,19 @@ ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	_NR<IndexBuffer3D> indexBuffer;
-	uint32_t firstIndex;
+	int32_t firstIndex;
 	int32_t numTriangles;
 	ARG_UNPACK_ATOM(indexBuffer)(firstIndex,0)(numTriangles,-1);
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_DRAWTRIANGLES;
 	action.dataobject = indexBuffer;
-	action.udata1 = firstIndex;
+	action.udata1 = firstIndex < 0 ? 0 : firstIndex;
 	action.udata2 = (numTriangles == -1 ? UINT32_MAX : numTriangles);
+	if (indexBuffer && indexBuffer->upload_needed)
+	{
+		action.idata = new uint16_t[indexBuffer->data.size()];
+		memcpy(action.idata,indexBuffer->data.data(),indexBuffer->data.size()*sizeof(uint16_t));
+	}
 	th->actions[th->currentactionvector].push_back(action);
 	if (th->enableErrorChecking)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.drawTriangles with errorchecking");
@@ -1104,13 +1123,16 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromVector)
 		action.udata1= firstRegister;
 		action.udata2= programType == "vertex" ? 1 : 0;
 		action.udata3= numRegisters < 0 ? data->size()/4 : min ((uint32_t)numRegisters,data->size()/4);
-		action.fdata= new float[action.udata3*4];
-		for (uint32_t i = 0; i < action.udata3*4; i++)
+		if (action.udata3)
 		{
-			asAtom a = data->at(i);
-			action.fdata[i] = asAtomHandler::toNumber(a);
+			action.fdata= new float[action.udata3*4];
+			for (uint32_t i = 0; i < action.udata3*4; i++)
+			{
+				asAtom a = data->at(i);
+				action.fdata[i] = asAtomHandler::toNumber(a);
+			}
+			th->addAction(action);
 		}
-		th->addAction(action);
 	}
 }
 
@@ -1223,7 +1245,8 @@ ASFUNCTIONBODY_ATOM(Context3D,present)
 	Locker l(th->rendermutex);
 	if (th->swapbuffers)
 	{
-		LOG(LOG_ERROR,"last frame has not been rendered yet, skipping frame");
+		if (sys->getRenderThread()->isStarted())
+			LOG(LOG_ERROR,"last frame has not been rendered yet, skipping frame:"<<th->actions[1-th->currentactionvector].size());
 		th->actions[th->currentactionvector].clear();
 	}
 	else
@@ -1293,6 +1316,13 @@ ASFUNCTIONBODY_ATOM(Context3D,setVertexBufferAt)
 		action.udata3 = VERTEXBUFFER_FORMAT::FLOAT_3;
 	else if (format == "float4")
 		action.udata3 = VERTEXBUFFER_FORMAT::FLOAT_4;
+	else
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setVertexBufferAt with format "<<format);
+	if (!buffer.isNull())
+	{
+		action.fdata = new float[buffer->data.size()*sizeof(float)];
+		memcpy(action.fdata,buffer->data.data(),buffer->data.size()*sizeof(float));
+	}
 	th->actions[th->currentactionvector].push_back(action);
 }
 
@@ -1487,6 +1517,7 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromByteArray)
 		throwError<RangeError>(kParamRangeError);
 	if (th->data.size() < count+startOffset)
 		th->data.resize(count+startOffset);
+	th->upload_needed = true;
 	uint32_t origpos = data->getPosition();
 	data->setPosition(byteArrayOffset);
 	for (uint32_t i = 0; i< count; i++)
@@ -1506,6 +1537,7 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
 	ARG_UNPACK_ATOM(data)(startOffset)(count);
 	if (th->data.size() < count+startOffset)
 		th->data.resize(count+startOffset);
+	th->upload_needed = true;
 	for (uint32_t i = 0; i< count; i++)
 	{
 		asAtom a = data->at(i);
@@ -1533,27 +1565,25 @@ ASFUNCTIONBODY_ATOM(Program3D,upload)
 	ARG_UNPACK_ATOM(vertexProgram)(fragmentProgram);
 	th->samplerState.clear();
 	if (!vertexProgram.isNull())
+	{
 		th->vertexprogram = AGALtoGLSL(vertexProgram.getPtr(),true,th->samplerState,th->vertexregistermap,th->vertexattributes);
+//		LOG(LOG_INFO,"vertex shader:"<<th<<"\n"<<th->vertexprogram);
+	}
 	if (!fragmentProgram.isNull())
+	{
 		th->fragmentprogram = AGALtoGLSL(fragmentProgram.getPtr(),false,th->samplerState,th->fragmentregistermap,th->fragmentattributes);
+//		LOG(LOG_INFO,"fragment shader:"<<th<<"\n"<<th->fragmentprogram);
+	}
 }
 
 VertexBuffer3D::VertexBuffer3D(Class_base *c, Context3D *ctx, int _numVertices, int32_t _data32PerVertex, tiny_string _bufferUsage)
-	:ASObject(c,T_OBJECT,SUBTYPE_VERTEXBUFFER3D),context(ctx),bufferID(UINT32_MAX),numVertices(_numVertices),data32PerVertex(_data32PerVertex),bufferUsage(_bufferUsage),upload_needed(false)
+	:ASObject(c,T_OBJECT,SUBTYPE_VERTEXBUFFER3D),context(ctx),numVertices(_numVertices),data32PerVertex(_data32PerVertex),bufferUsage(_bufferUsage),disposed(false)
 {
 	data.resize(numVertices*data32PerVertex);
 }
 
 VertexBuffer3D::~VertexBuffer3D()
 {
-	if (context && bufferID != UINT32_MAX)
-	{
-		renderaction action;
-		action.action =RENDER_ACTION::RENDER_DELETEBUFFER;
-		action.udata1 = this->bufferID;
-		context->addAction(action);
-		this->bufferID = UINT32_MAX;
-	}
 }
 
 void VertexBuffer3D::sinit(Class_base *c)
@@ -1566,18 +1596,17 @@ void VertexBuffer3D::sinit(Class_base *c)
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,dispose)
 {
 	VertexBuffer3D* th = asAtomHandler::as<VertexBuffer3D>(obj);
-	if (th->context && th->bufferID != UINT32_MAX)
-	{
-		renderaction action;
-		action.action =RENDER_ACTION::RENDER_DELETEBUFFER;
-		action.udata1 = th->bufferID;
-		th->context->addAction(action);
-		th->bufferID = UINT32_MAX;
-	}
+	th->data.clear();
+	th->disposed=true;
 }
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 {
 	VertexBuffer3D* th = asAtomHandler::as<VertexBuffer3D>(obj);
+	if (th->disposed)
+	{
+		LOG(LOG_ERROR,"VertexBuffer3D.uploadFromByteArray from disposed buffer");
+		return;
+	}
 	_NR<ByteArray> data;
 	uint32_t byteArrayOffset;
 	uint32_t startVertex;
@@ -1587,7 +1616,6 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 		throwError<TypeError>(kNullPointerError);
 	if (data->getLength() < byteArrayOffset+numVertices*th->data32PerVertex*4)
 		throwError<RangeError>(kParamRangeError);
-	th->upload_needed = true;
 	if (th->data.size() < (numVertices+startVertex)* th->data32PerVertex)
 		th->data.resize((numVertices+startVertex)* th->data32PerVertex);
 	uint32_t origpos = data->getPosition();
@@ -1606,11 +1634,15 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
 {
 	VertexBuffer3D* th = asAtomHandler::as<VertexBuffer3D>(obj);
+	if (th->disposed)
+	{
+		LOG(LOG_ERROR,"VertexBuffer3D.uploadFromVector from disposed buffer");
+		return;
+	}
 	_NR<Vector> data;
 	uint32_t startVertex;
 	uint32_t numVertices;
 	ARG_UNPACK_ATOM(data)(startVertex)(numVertices);
-	th->upload_needed = true;
 	if (th->data.size() < (numVertices+startVertex)* th->data32PerVertex)
 		th->data.resize((numVertices+startVertex)* th->data32PerVertex);
 	for (uint32_t i = 0; i< numVertices* th->data32PerVertex; i++)

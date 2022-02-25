@@ -213,7 +213,12 @@ void TextureBase::sinit(Class_base *c)
 }
 ASFUNCTIONBODY_ATOM(TextureBase,dispose)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"TextureBase.dispose does nothing");
+	TextureBase* th = asAtomHandler::as<TextureBase>(obj);
+	renderaction action;
+	action.action =RENDER_ACTION::RENDER_DELETETEXTURE;
+	action.udata1 = th->textureID;
+	th->context->addAction(action);
+	th->textureID=UINT32_MAX;
 }
 
 void Texture::sinit(Class_base *c)

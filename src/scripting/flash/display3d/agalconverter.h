@@ -621,15 +621,14 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 				//destination.z = (source1.x * source2[2].x) + (source1.y * source2[2].y) + (source1.z * source2[2].z)+ (source1.w * source2[2].w)
 				// prevent w from being written for a m34
 				dr.mask &= 7;
-// TODO this would result in v1.xyz = v2.xyz * mat which is invalid as mat is a 4x4 matrix
-//				RegisterUsage existingUsage = map.getRegisterUsage (sr2);
-//				if (existingUsage != RegisterUsage::VECTOR_4 && existingUsage != RegisterUsage::VECTOR_4_ARRAY) {
-//					sb += dr.toGLSL () + " = " + sr1.toGLSL () + " * " + sr2.toGLSL (false) + "; // m34";
-//					map.addDR (dr, RegisterUsage::VECTOR_4);
-//					map.addSR (sr1, RegisterUsage::VECTOR_4);
-//					map.addSR (sr2, RegisterUsage::MATRIX_4_4);
-//				}
-//				else
+				RegisterUsage existingUsage = map.getRegisterUsage (sr2);
+				if (existingUsage != RegisterUsage::VECTOR_4 && existingUsage != RegisterUsage::VECTOR_4_ARRAY) {
+					sb += dr.toGLSL () + " = vec3(" + sr1.toGLSL (false) + " * " + sr2.toGLSL (false) + "); // m34";
+					map.addDR (dr, RegisterUsage::VECTOR_4);
+					map.addSR (sr1, RegisterUsage::VECTOR_4);
+					map.addSR (sr2, RegisterUsage::MATRIX_4_4);
+				}
+				else
 				{
 					// compose the matrix multiply from dot products
 					sr1.sourceMask = sr2.sourceMask = 0xF;

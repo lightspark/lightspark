@@ -2924,7 +2924,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct)
 		if (direct)
 			child->setParent(nullptr);
 		else
-			getSystemState()->addDisplayObjectToResetParentList(_MR(child));
+			getSystemState()->addDisplayObjectToResetParentList(child);
 		child->setMask(NullRef);
 		
 		//Erase this from the legacy child map (if it is in there)
@@ -2948,7 +2948,7 @@ void DisplayObjectContainer::_removeAllChildren()
 	{
 		_R<DisplayObject> child = *it;
 		child->setOnStage(false,false);
-		getSystemState()->addDisplayObjectToResetParentList(child);
+		getSystemState()->addDisplayObjectToResetParentList(child.getPtr());
 		child->setMask(NullRef);
 		if (!needsActionScript3())
 			child->removeAVM1Listeners();

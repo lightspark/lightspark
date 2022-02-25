@@ -316,7 +316,7 @@ private:
 	void systemFinalize();
 	std::map<tiny_string, Class_base *> classnamemap;
 	set<ASObject*> constantrefs;
-	list<_R<DisplayObject>> listResetParent;
+	unordered_set<DisplayObject*> listResetParent;
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	tiny_string getDumpedSWFPath() const { return dumpedSWFPath;}
@@ -567,10 +567,11 @@ public:
 	void waitInitialized();
 	void getClassInstanceByName(asAtom &ret, const tiny_string& clsname);
 	Mutex resetParentMutex;
-	void addDisplayObjectToResetParentList(_R<DisplayObject> child)
+	void addDisplayObjectToResetParentList(DisplayObject* child)
 	{
 		Locker l(resetParentMutex);
-		listResetParent.push_back(child);
+		child->incRef();
+		listResetParent.insert(child);
 	}
 	void resetParentList()
 	{
@@ -579,6 +580,7 @@ public:
 		while (it != listResetParent.end())
 		{
 			(*it)->setParent(nullptr);
+			(*it)->decRef();
 			it = listResetParent.erase(it);
 		}
 	}
@@ -588,7 +590,7 @@ public:
 		auto it = listResetParent.begin();
 		while (it != listResetParent.end())
 		{
-			if ((*it).getPtr()==d)
+			if ((*it)==d)
 				return true;
 			it++;
 		}
@@ -600,8 +602,9 @@ public:
 		auto it = listResetParent.begin();
 		while (it != listResetParent.end())
 		{
-			if ((*it).getPtr()==d)
+			if ((*it)==d)
 			{
+				d->decRef();
 				listResetParent.erase(it);
 				break;
 			}

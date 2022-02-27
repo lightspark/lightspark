@@ -23,6 +23,7 @@
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/flash/display/BitmapContainer.h"
 
 using namespace lightspark;
 using namespace std;

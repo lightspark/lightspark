@@ -28,9 +28,7 @@
 #include "exceptions.h"
 #include "threading.h"
 #include "scripting/abcutils.h"
-#include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Array.h"
-#include "scripting/toplevel/Error.h"
 #include "memory_support.h"
 
 namespace pugi
@@ -54,8 +52,6 @@ class Void;
 class Class_object;
 class ApplicationDomain;
 extern bool isVmThread();
-// Enum used during early binding in abc_optimizer.cpp
-enum EARLY_BIND_STATUS { NOT_BINDED=0, CANNOT_BIND=1, BINDED };
 
 /* This abstract class represents a type, i.e. something that a value can be coerced to.
  * Currently Class_base and Template_base implement this interface.
@@ -612,8 +608,6 @@ friend class ABCVm;
 friend class ABCContext;
 friend class Class<IFunction>;
 friend class Class_base;
-public:
-	typedef ASObject* (*synt_function)(call_context* cc);
 private:
 	vector<ASObject*> dynamicreferencedobjects;
 	/* Data structure with information directly loaded from the SWF */
@@ -690,18 +684,7 @@ public:
 	Class_base* getReturnType() override;
 	void checkParamTypes();
 	bool canSkipCoercion(int param, Class_base* cls);
-};
-class AVM1context
-{
-friend class AVM1Function;
-private:
-	std::vector<uint32_t> avm1strings;
-public:
-	AVM1context():keepLocals(true) {}
-	void AVM1ClearConstants();
-	void AVM1AddConstant(uint32_t nameID);
-	asAtom AVM1GetConstant(uint16_t index);
-	bool keepLocals;
+	inline bool isFromNewFunction() { return fromNewFunction; }
 };
 
 class AVM1Function : public IFunction

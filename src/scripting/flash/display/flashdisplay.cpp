@@ -37,6 +37,8 @@
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/ui/ContextMenu.h"
+#include "scripting/flash/display3d/flashdisplay3d.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
@@ -5869,6 +5871,11 @@ bool Stage3D::renderImpl(RenderContext &ctxt) const
 	if (!visible || context3D.isNull())
 		return false;
 	return context3D->renderImpl(ctxt);
+}
+
+Stage3D::Stage3D(Class_base* c):EventDispatcher(c),x(0),y(0),visible(true)
+{
+	subtype = SUBTYPE_STAGE3D;
 }
 
 void Stage3D::sinit(Class_base *c)

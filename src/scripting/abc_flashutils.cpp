@@ -23,6 +23,7 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/utils/Proxy.h"
 #include "scripting/flash/utils/Timer.h"
+#include "scripting/flash/display/NativeMenuItem.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/XML.h"

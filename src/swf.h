@@ -62,6 +62,7 @@ class Class_inherit;
 class FontTag;
 class SoundTransform;
 class ASFile;
+class EngineData;
 
 class RootMovieClip: public MovieClip
 {

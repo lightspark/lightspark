@@ -3,6 +3,7 @@
 
 #include "swf.h"
 #include "backends/extscriptobject.h"
+#include "platforms/engineutils.h"
 #include "ppapi/c/ppp_instance.h"
 #include "ppapi/c/pp_var.h"
 #include "ppapi/c/pp_resource.h"

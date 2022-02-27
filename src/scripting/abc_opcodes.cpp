@@ -23,6 +23,7 @@
 #include "exceptions.h"
 #include "compat.h"
 #include "scripting/abcutils.h"
+#include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
@@ -350,7 +351,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		{
 			asAtom o = asAtomHandler::fromObject(instrptr->cacheobj2);
 			ASATOM_INCREF(o);
-			LOG_CALL( (callproplex ? (keepReturn ? "callPropLex " : "callPropLexVoid") : (keepReturn ? "callProperty " : "callPropVoid")) << "from cache:"<<*th->mi->context->getMultiname(n,th)<<" "<<asAtomHandler::toDebugString(obj)<<" "<<asAtomHandler::toDebugString(o));
+			LOG_CALL( (callproplex ? (keepReturn ? "callPropLex " : "callPropLexVoid") : (keepReturn ? "callProperty " : "callPropVoid")) << " from cache:"<<*th->mi->context->getMultiname(n,th)<<" "<<asAtomHandler::toDebugString(obj)<<" "<<asAtomHandler::toDebugString(o));
 			callImpl(th, o, obj, args, m, keepReturn);
 			LOG_CALL("End of calling cached property "<<*th->mi->context->getMultiname(n,th));
 			return;
@@ -474,7 +475,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 						proxyArgs[i+1]=args[i];
 					
 					//We now suppress special handling
-					LOG_CALL(_("Proxy::callProperty"));
+					LOG_CALL("Proxy::callProperty");
 					ASATOM_INCREF(oproxy);
 					asAtom ret=asAtomHandler::invalidAtom;
 					asAtomHandler::callFunction(oproxy,ret,obj,proxyArgs,m+1,true);
@@ -486,13 +487,13 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 						ASATOM_DECREF(ret);
 					}
 				}
-				LOG_CALL(_("End of calling proxy custom caller ") << *name);
+				LOG_CALL("End of calling proxy custom caller " << *name);
 				return;
 			}
 			else if(asAtomHandler::isValid(o))
 			{
 				callImpl(th, o, obj, args, m, keepReturn);
-				LOG_CALL(_("End of calling proxy ") << *name);
+				LOG_CALL("End of calling proxy " << *name);
 				return;
 			}
 		}
@@ -531,7 +532,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		}
 
 	}
-	LOG_CALL(_("End of calling ") << *name);
+	LOG_CALL("End of calling " << *name);
 }
 
 void ABCVm::callMethod(call_context* th, int n, int m)
@@ -574,12 +575,12 @@ void ABCVm::callMethod(call_context* th, int n, int m)
 		ASATOM_DECREF(obj);
 		throwError<TypeError>(kCallNotFoundError, "", clsname);
 	}
-	LOG_CALL(_("End of calling method ") << n);
+	LOG_CALL("End of calling method " << n);
 }
 
 int32_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
 {
-	LOG_CALL( _("getProperty_i ") << *name );
+	LOG_CALL( "getProperty_i " << *name );
 
 	//TODO: implement exception handling to find out if no integer can be returned
 	int32_t ret=obj->getVariableByMultiname_i(*name);
@@ -590,7 +591,7 @@ int32_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
 
 ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 {
-	LOG_CALL( _("getProperty ") << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
+	LOG_CALL( "getProperty " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name);
@@ -624,14 +625,14 @@ number_t ABCVm::divide(ASObject* val2, ASObject* val1)
 
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("divide ")  << num1 << '/' << num2);
+	LOG_CALL("divide "  << num1 << '/' << num2);
 	return num1/num2;
 }
 
 void ABCVm::pushWith(call_context* th)
 {
 	RUNTIME_STACK_POP_CREATE(th,t);
-	LOG_CALL( _("pushWith ") << asAtomHandler::toDebugString(*t) );
+	LOG_CALL( "pushWith " << asAtomHandler::toDebugString(*t) );
 	assert_and_throw(th->curr_scope_stack < th->mi->body->max_scope_depth);
 	th->scope_stack[th->curr_scope_stack] = *t;
 	th->scope_stack_dynamic[th->curr_scope_stack] = true;
@@ -641,7 +642,7 @@ void ABCVm::pushWith(call_context* th)
 void ABCVm::pushScope(call_context* th)
 {
 	RUNTIME_STACK_POP_CREATE(th,t);
-	LOG_CALL( _("pushScope ") << asAtomHandler::toDebugString(*t) );
+	LOG_CALL( "pushScope " << asAtomHandler::toDebugString(*t) );
 	assert_and_throw(th->curr_scope_stack < th->mi->body->max_scope_depth);
 	th->scope_stack[th->curr_scope_stack] = *t;
 	th->scope_stack_dynamic[th->curr_scope_stack] = false;
@@ -659,7 +660,7 @@ Global* ABCVm::getGlobalScope(call_context* th)
 		ret =asAtomHandler::getObject(th->scope_stack[0]);
 	}
 	assert_and_throw(ret->is<Global>());
-	LOG_CALL(_("getGlobalScope: ") << ret->toDebugString());
+	LOG_CALL("getGlobalScope: " << ret->toDebugString());
 	return ret->as<Global>();
 }
 

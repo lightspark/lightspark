@@ -30,6 +30,7 @@
 #include "backends/rendering.h"
 #include "backends/audio.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/display/NativeMenuItem.h"
 #include <string>
 #include <algorithm>
 #include <SDL2/SDL.h>

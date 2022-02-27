@@ -28,6 +28,7 @@
 #include "scripting/flash/filesystem/flashfilesystem.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/avm1/avm1display.h"
 #include "logger.h"

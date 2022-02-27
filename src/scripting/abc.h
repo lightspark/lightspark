@@ -104,7 +104,7 @@ public:
 	bool validProfName;
 #endif
 
-	SyntheticFunction::synt_function f;
+	synt_function f;
 	ABCContext* context;
 	method_body_info* body;
 #ifdef LLVM_ENABLED

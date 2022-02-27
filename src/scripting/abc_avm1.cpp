@@ -26,6 +26,7 @@
 #include "scripting/avm1/avm1xml.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/ui/ContextMenuItem.h"
+#include "scripting/flash/ui/ContextMenu.h"
 #include "scripting/abc.h"
 using namespace lightspark;
 

@@ -92,6 +92,34 @@ struct call_context
 		}
 	}
 };
+typedef ASObject* (*synt_function)(call_context* cc);
+
+class AVM1context
+{
+friend class AVM1Function;
+private:
+	std::vector<uint32_t> avm1strings;
+public:
+	AVM1context():keepLocals(true) {}
+	void AVM1ClearConstants()
+	{
+		avm1strings.clear();
+	}
+	void AVM1AddConstant(uint32_t nameID)
+	{
+		avm1strings.push_back(nameID);
+	}
+	asAtom AVM1GetConstant(uint16_t index)
+	{
+		if (index < avm1strings.size())
+			return asAtomHandler::fromStringID(avm1strings[index]);
+		LOG(LOG_ERROR,"AVM1:constant not found in pool:"<<index<<" "<<avm1strings.size());
+		return asAtomHandler::undefinedAtom;
+	}
+	bool keepLocals;
+};
+
+
 #define CONTEXT_GETLOCAL(context,pos) \
 	(*(context->localslots[pos]))
 

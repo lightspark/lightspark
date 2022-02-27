@@ -3388,24 +3388,6 @@ const multiname* ActivationType::resolveSlotTypeName(uint32_t slotId) const
 	}
 	return nullptr;
 }
-void AVM1context::AVM1ClearConstants()
-{
-	avm1strings.clear();
-}
-
-void AVM1context::AVM1AddConstant(uint32_t nameID)
-{
-	avm1strings.push_back(nameID);
-}
-
-asAtom AVM1context::AVM1GetConstant(uint16_t index)
-{
-	if (index < avm1strings.size())
-		return asAtomHandler::fromStringID(avm1strings[index]);
-	LOG(LOG_ERROR,"AVM1:constant not found in pool:"<<index<<" "<<avm1strings.size());
-	return asAtomHandler::undefinedAtom;
-}
-
 
 void Prototype::setVariableByQName(const tiny_string &name, const tiny_string &ns, ASObject *o, TRAIT_KIND traitKind)
 {

@@ -30,6 +30,7 @@
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Vector.h"
 #include "parsing/streams.h"
+#include "platforms/engineutils.h"
 
 #include <istream>
 
@@ -438,7 +439,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 	if (nsName != "")
 		name.ns.push_back(nsNameAndKind(sys,nsName,NAMESPACE));
 
-	LOG(LOG_CALLS,_("Looking for definition of ") << name);
+	LOG(LOG_CALLS,"Looking for definition of " << name);
 	ASObject* target;
 	asAtom o=asAtomHandler::invalidAtom;
 	ret = asAtomHandler::invalidAtom;
@@ -451,7 +452,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 			asAtomHandler::setBool(ret,false);
 		else
 		{
-			LOG(LOG_CALLS,_("Found definition for ") << name<<"|"<<asAtomHandler::toDebugString(o)<<"|"<<asAtomHandler::toDebugString(obj));
+			LOG(LOG_CALLS,"Found definition for " << name<<"|"<<asAtomHandler::toDebugString(o)<<"|"<<asAtomHandler::toDebugString(obj));
 			asAtomHandler::setBool(ret,true);
 		}
 	}
@@ -483,7 +484,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 	//TODO: specs says that also namespaces and function may be returned
 	//assert_and_throw(o->getObjectType()==T_CLASS);
 
-	LOG(LOG_CALLS,_("Getting definition for ") << name);
+	LOG(LOG_CALLS,"Getting definition for " << name);
 	ASATOM_INCREF(ret);
 }
 
@@ -770,12 +771,12 @@ ASFUNCTIONBODY_ATOM(Security,_getSandboxType)
 
 ASFUNCTIONBODY_ATOM(Security, allowDomain)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("Security::allowDomain"));
+	LOG(LOG_NOT_IMPLEMENTED, "Security::allowDomain");
 }
 
 ASFUNCTIONBODY_ATOM(Security, allowInsecureDomain)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("Security::allowInsecureDomain"));
+	LOG(LOG_NOT_IMPLEMENTED, "Security::allowInsecureDomain");
 }
 
 ASFUNCTIONBODY_ATOM(Security, loadPolicyFile)
@@ -788,7 +789,7 @@ ASFUNCTIONBODY_ATOM(Security, loadPolicyFile)
 
 ASFUNCTIONBODY_ATOM(Security, showSettings)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("Security::showSettings"));
+	LOG(LOG_NOT_IMPLEMENTED, "Security::showSettings");
 }
 
 ASFUNCTIONBODY_ATOM(Security, pageDomain)

@@ -20,6 +20,7 @@
 #include "swf.h"
 #include "backends/audio.h"
 #include "backends/config.h"
+#include "platforms/engineutils.h"
 #include <iostream>
 #include "logger.h"
 #include <sys/time.h>

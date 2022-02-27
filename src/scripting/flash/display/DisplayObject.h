@@ -24,6 +24,7 @@
 #include "scripting/flash/display/IBitmapDrawable.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
+#include "backends/graphics.h"
 
 namespace lightspark
 {

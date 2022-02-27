@@ -22,6 +22,7 @@
 
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Boolean.h"
+#include "scripting/toplevel/Error.h"
 
 /* Usage of ARG_UNPACK:
  * You have to use it within a ASFUNCTIONBODY_ATOM() { }, because it uses the implicit arguments 'args' and 'argslen'.

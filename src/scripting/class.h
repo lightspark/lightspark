@@ -20,6 +20,7 @@
 #include "compat.h"
 #include "asobject.h"
 #include "swf.h"
+#include "scripting/toplevel/toplevel.h"
 
 #ifndef SCRIPTING_CLASS_H
 #define SCRIPTING_CLASS_H 1

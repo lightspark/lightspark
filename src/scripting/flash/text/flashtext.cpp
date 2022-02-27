@@ -2111,6 +2111,10 @@ void TextFormat::onAlign(const tiny_string& old)
 	}
 }
 
+TextFormat::TextFormat(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_TEXTFORMAT)
+{
+}
+
 void StyleSheet::finalize()
 {
 	EventDispatcher::finalize();

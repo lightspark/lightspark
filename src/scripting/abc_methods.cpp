@@ -34,7 +34,7 @@ using namespace lightspark;
 
 void ABCVm::abc_bkpt(call_context* context)
 {
-	LOG_CALL( _("bkpt") );
+	LOG_CALL( "bkpt" );
 	++(context->exec_pos);
 }
 void ABCVm::abc_nop(call_context* context)
@@ -89,7 +89,7 @@ void ABCVm::abc_ifnlt(call_context* context)
 	bool cond=!(asAtomHandler::isLess(*v2,context->sys,*v1) == TTRUE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
-	LOG_CALL(_("ifNLT (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNLT (" << ((cond)?"taken)":"not taken)"));
 
 	if(cond)
 		context->exec_pos += (*context->exec_pos).arg3_int;
@@ -103,7 +103,7 @@ void ABCVm::abc_ifnle(call_context* context)
 	bool cond=!(asAtomHandler::isLess(*v1,context->sys,*v2) == TFALSE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
-	LOG_CALL(_("ifNLE (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNLE (" << ((cond)?"taken)":"not taken)"));
 
 	if(cond)
 		context->exec_pos += (*context->exec_pos).arg3_int;
@@ -117,7 +117,7 @@ void ABCVm::abc_ifngt(call_context* context)
 	bool cond=!(asAtomHandler::isLess(*v1,context->sys,*v2) == TTRUE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
-	LOG_CALL(_("ifNGT (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNGT (" << ((cond)?"taken)":"not taken)"));
 
 	if(cond)
 		context->exec_pos += (*context->exec_pos).arg3_int;
@@ -131,7 +131,7 @@ void ABCVm::abc_ifnge(call_context* context)
 	bool cond=!(asAtomHandler::isLess(*v2,context->sys,*v1) == TFALSE);
 	ASATOM_DECREF_POINTER(v2);
 	ASATOM_DECREF_POINTER(v1);
-	LOG_CALL(_("ifNGE (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNGE (" << ((cond)?"taken)":"not taken)"));
 
 	if(cond)
 		context->exec_pos += (*context->exec_pos).arg3_int;
@@ -280,7 +280,7 @@ void ABCVm::abc_lookupswitch(call_context* context)
 	preloadedcodedata* here=context->exec_pos; //Base for the jumps is the instruction itself for the switch
 	int32_t t = (++(context->exec_pos))->arg3_int;
 	preloadedcodedata* defaultdest=here+t;
-	LOG_CALL(_("Switch default dest ") << t);
+	LOG_CALL("Switch default dest " << t);
 	uint32_t count = (++(context->exec_pos))->arg3_uint;
 
 	RUNTIME_STACK_POP_CREATE(context,index_obj);
@@ -433,7 +433,7 @@ void ABCVm::abc_swap(call_context* context)
 void ABCVm::abc_pushstring(call_context* context)
 {
 	uint32_t t = context->exec_pos->arg3_uint;
-	LOG_CALL( _("pushString ") << context->sys->getStringFromUniqueId(context->mi->context->getString(t)) );
+	LOG_CALL( "pushString " << context->sys->getStringFromUniqueId(context->mi->context->getString(t)) );
 	RUNTIME_STACK_PUSH(context,asAtomHandler::fromStringID(context->mi->context->getString(t)));
 	++(context->exec_pos);
 }
@@ -595,14 +595,14 @@ void ABCVm::abc_callproperty(call_context* context)
 }
 void ABCVm::abc_returnvoid(call_context* context)
 {
-	LOG_CALL(_("returnVoid"));
+	LOG_CALL("returnVoid");
 	context->locals[context->mi->body->getReturnValuePos()]= asAtomHandler::undefinedAtom;
 	++(context->exec_pos);
 }
 void ABCVm::abc_returnvalue(call_context* context)
 {
 	RUNTIME_STACK_POP(context,context->locals[context->mi->body->getReturnValuePos()]);
-	LOG_CALL(_("returnValue ") << asAtomHandler::toDebugString(context->locals[context->mi->body->getReturnValuePos()]));
+	LOG_CALL("returnValue " << asAtomHandler::toDebugString(context->locals[context->mi->body->getReturnValuePos()]));
 	++(context->exec_pos);
 }
 void ABCVm::abc_constructsuper(call_context* context)
@@ -770,7 +770,7 @@ void ABCVm::abc_setproperty(call_context* context)
 
 	RUNTIME_STACK_POP_CREATE(context,obj)
 
-	LOG_CALL(_("setProperty ") << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("setProperty " << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 
 	if(asAtomHandler::isNull(*obj))
 	{
@@ -799,7 +799,7 @@ void ABCVm::abc_setproperty(call_context* context)
 void ABCVm::abc_getlocal(call_context* context)
 {
 	uint32_t i = ((context->exec_pos)++)->arg3_uint;
-	LOG_CALL( _("getLocal n ") << i << _(": ") << asAtomHandler::toDebugString(context->locals[i]) );
+	LOG_CALL( "getLocal n " << i << ": " << asAtomHandler::toDebugString(context->locals[i]) );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
 }
@@ -808,7 +808,7 @@ void ABCVm::abc_setlocal(call_context* context)
 	uint32_t i = ((context->exec_pos)++)->arg3_uint;
 	RUNTIME_STACK_POP_CREATE(context,obj)
 
-	LOG_CALL( _("setLocal n ") << i << _(": ") << asAtomHandler::toDebugString(*obj) );
+	LOG_CALL( "setLocal n " << i << ": " << asAtomHandler::toDebugString(*obj) );
 	assert(i <= context->mi->body->getReturnValuePos()+context->mi->body->localresultcount);
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
@@ -829,7 +829,7 @@ void ABCVm::abc_getscopeobject(call_context* context)
 	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
 	asAtom ret=context->scope_stack[t];
 	ASATOM_INCREF(ret);
-	LOG_CALL( _("getScopeObject: ") << asAtomHandler::toDebugString(ret)<<" "<<t);
+	LOG_CALL( "getScopeObject: " << asAtomHandler::toDebugString(ret)<<" "<<t);
 
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
@@ -975,7 +975,7 @@ void ABCVm::abc_convert_s(call_context* context)
 {
 	//convert_s
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	LOG_CALL( _("convert_s") );
+	LOG_CALL( "convert_s" );
 	if(!asAtomHandler::isString(*pval))
 	{
 		tiny_string s = asAtomHandler::toString(*pval,context->sys);
@@ -1148,7 +1148,7 @@ void ABCVm::abc_declocal(call_context* context)
 void ABCVm::abc_typeof(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	LOG_CALL(_("typeOf"));
+	LOG_CALL("typeOf");
 	asAtom ret = asAtomHandler::typeOf(*pval);
 	ASATOM_DECREF_POINTER(pval);
 	*pval = ret;
@@ -1305,7 +1305,7 @@ void ABCVm::abc_equals(call_context* context)
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 
 	bool ret=asAtomHandler::isEqual(*pval,context->sys,*v2);
-	LOG_CALL( _("equals ") << ret);
+	LOG_CALL( "equals " << ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
 	asAtomHandler::setBool(*pval,ret);
@@ -1317,7 +1317,7 @@ void ABCVm::abc_strictequals(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	bool ret = asAtomHandler::isEqualStrict(*pval,context->sys,*v2);
-	LOG_CALL( _("strictequals ") << ret);
+	LOG_CALL( "strictequals " << ret);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
 	asAtomHandler::setBool(*pval,ret);
@@ -1329,7 +1329,7 @@ void ABCVm::abc_lessthan(call_context* context)
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	//Real comparision demanded to object
 	bool ret=(asAtomHandler::isLess(*pval,context->sys,*v2)==TTRUE);
-	LOG_CALL(_("lessThan ")<<ret<<" "<<asAtomHandler::toDebugString(*pval)<<" "<<asAtomHandler::toDebugString(*v2));
+	LOG_CALL("lessThan "<<ret<<" "<<asAtomHandler::toDebugString(*pval)<<" "<<asAtomHandler::toDebugString(*v2));
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v2);
 
@@ -1485,7 +1485,7 @@ void ABCVm::abc_multiply_i(call_context* context)
 void ABCVm::abc_getlocal_0(call_context* context)
 {
 	int i=0;
-	LOG_CALL( _("getLocal ") << i << _(": ") << asAtomHandler::toDebugString(context->locals[i]) );
+	LOG_CALL( "getLocal " << i << ": " << asAtomHandler::toDebugString(context->locals[i]) );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
 	++(context->exec_pos);
@@ -1493,7 +1493,7 @@ void ABCVm::abc_getlocal_0(call_context* context)
 void ABCVm::abc_getlocal_1(call_context* context)
 {
 	int i=1;
-	LOG_CALL( _("getLocal ") << i << _(": ") << asAtomHandler::toDebugString(context->locals[i]) );
+	LOG_CALL( "getLocal " << i << ": " << asAtomHandler::toDebugString(context->locals[i]) );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
 	++(context->exec_pos);
@@ -1501,7 +1501,7 @@ void ABCVm::abc_getlocal_1(call_context* context)
 void ABCVm::abc_getlocal_2(call_context* context)
 {
 	int i=2;
-	LOG_CALL( _("getLocal ") << i << _(": ") << asAtomHandler::toDebugString(context->locals[i]) );
+	LOG_CALL( "getLocal " << i << ": " << asAtomHandler::toDebugString(context->locals[i]) );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
 	++(context->exec_pos);
@@ -1509,7 +1509,7 @@ void ABCVm::abc_getlocal_2(call_context* context)
 void ABCVm::abc_getlocal_3(call_context* context)
 {
 	int i=3;
-	LOG_CALL( _("getLocal ") << i << _(": ") << asAtomHandler::toDebugString(context->locals[i]) );
+	LOG_CALL( "getLocal " << i << ": " << asAtomHandler::toDebugString(context->locals[i]) );
 	ASATOM_INCREF(context->locals[i]);
 	RUNTIME_STACK_PUSH(context,context->locals[i]);
 	++(context->exec_pos);
@@ -1517,7 +1517,7 @@ void ABCVm::abc_getlocal_3(call_context* context)
 void ABCVm::abc_setlocal_0(call_context* context)
 {
 	unsigned int i=0;
-	LOG_CALL( _("setLocal ") << i);
+	LOG_CALL( "setLocal " << i);
 	RUNTIME_STACK_POP_CREATE(context,obj)
 	if (USUALLY_FALSE(i >= context->mi->body->getReturnValuePos()))
 	{
@@ -1534,7 +1534,7 @@ void ABCVm::abc_setlocal_0(call_context* context)
 void ABCVm::abc_setlocal_1(call_context* context)
 {
 	unsigned int i=1;
-	LOG_CALL( _("setLocal ") << i);
+	LOG_CALL( "setLocal " << i);
 	++(context->exec_pos);
 
 	RUNTIME_STACK_POP_CREATE(context,obj)
@@ -1554,7 +1554,7 @@ void ABCVm::abc_setlocal_2(call_context* context)
 	unsigned int i=2;
 	++(context->exec_pos);
 	RUNTIME_STACK_POP_CREATE(context,obj)
-	LOG_CALL( _("setLocal ") << i<<" "<<asAtomHandler::toDebugString(*obj));
+	LOG_CALL( "setLocal " << i<<" "<<asAtomHandler::toDebugString(*obj));
 	if (USUALLY_FALSE(i >= context->mi->body->getReturnValuePos()))
 	{
 		LOG(LOG_ERROR,"abc_setlocal invalid index:"<<i);
@@ -1570,7 +1570,7 @@ void ABCVm::abc_setlocal_3(call_context* context)
 {
 	unsigned int i=3;
 	++(context->exec_pos);
-	LOG_CALL( _("setLocal ") << i);
+	LOG_CALL( "setLocal " << i);
 	RUNTIME_STACK_POP_CREATE(context,obj)
 	if (USUALLY_FALSE(i >= context->mi->body->getReturnValuePos()))
 	{
@@ -1585,7 +1585,7 @@ void ABCVm::abc_setlocal_3(call_context* context)
 }
 void ABCVm::abc_debug(call_context* context)
 {
-	LOG_CALL( _("debug") );
+	LOG_CALL( "debug" );
 	++(context->exec_pos);
 	++(context->exec_pos);
 	++(context->exec_pos);
@@ -1595,28 +1595,28 @@ void ABCVm::abc_debug(call_context* context)
 void ABCVm::abc_debugline(call_context* context)
 {
 	//debugline
-	LOG_CALL( _("debugline") );
+	LOG_CALL( "debugline" );
 	++(context->exec_pos);
 	++(context->exec_pos);
 }
 void ABCVm::abc_debugfile(call_context* context)
 {
 	//debugfile
-	LOG_CALL( _("debugfile") );
+	LOG_CALL( "debugfile" );
 	++(context->exec_pos);
 	++(context->exec_pos);
 }
 void ABCVm::abc_bkptline(call_context* context)
 {
 	//bkptline
-	LOG_CALL( _("bkptline") );
+	LOG_CALL( "bkptline" );
 	++(context->exec_pos);
 	++(context->exec_pos);
 }
 void ABCVm::abc_timestamp(call_context* context)
 {
 	//timestamp
-	LOG_CALL( _("timestamp") );
+	LOG_CALL( "timestamp" );
 	++(context->exec_pos);
 }
 void ABCVm::abc_invalidinstruction(call_context* context)

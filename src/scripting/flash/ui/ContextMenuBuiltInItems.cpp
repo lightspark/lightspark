@@ -16,6 +16,7 @@
 **************************************************************************/
 
 #include "ContextMenuItem.h"
+#include "ContextMenuBuiltInItems.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 

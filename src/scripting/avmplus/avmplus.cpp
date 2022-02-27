@@ -26,6 +26,7 @@
 #include "scripting/argconv.h"
 #include "threading.h"
 #include "abc.h"
+#include "platforms/engineutils.h"
 
 using namespace lightspark;
 

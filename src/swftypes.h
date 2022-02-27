@@ -81,6 +81,9 @@ enum LS_AUDIO_CODEC { CODEC_NONE=-1, LINEAR_PCM_PLATFORM_ENDIAN=0, ADPCM=1, MP3=
 
 enum OBJECT_ENCODING { AMF0=0, AMF3=3, DEFAULT=3 };
 
+// Enum used during early binding in abc_optimizer.cpp
+enum EARLY_BIND_STATUS { NOT_BINDED=0, CANNOT_BIND=1, BINDED };
+
 inline std::ostream& operator<<(std::ostream& s, const STACK_TYPE& st)
 {
 	switch(st)

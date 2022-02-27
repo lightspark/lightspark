@@ -21,6 +21,7 @@
 #ifndef PLUGIN_PLUGIN_H
 #define PLUGIN_PLUGIN_H 1
 
+#include "platforms/engineutils.h"
 #include "swf.h"
 #include <iostream>
 #include <sstream>

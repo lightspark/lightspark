@@ -21,7 +21,8 @@
 #include "compat.h"
 #include "abcutils.h"
 #include "toplevel/toplevel.h"
-#include "toplevel/ASString.h"
+#include "scripting/toplevel/Boolean.h"
+#include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
@@ -1664,8 +1665,8 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,_("Not optimizable instruction @") << code.tellg());
-				LOG(LOG_ERROR,_("dump ") << hex << (unsigned int)opcode << dec);
+				LOG(LOG_ERROR,"Not optimizable instruction @" << code.tellg());
+				LOG(LOG_ERROR,"dump " << hex << (unsigned int)opcode << dec);
 				throw ParseException("Not implemented instruction in optimizer");
 		}
 	}

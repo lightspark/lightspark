@@ -37,6 +37,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
 #include "parsing/tags.h"
@@ -136,9 +137,9 @@ const tiny_string multiname::normalizedNameUnresolved(SystemState* sys) const
 
 void multiname::setName(asAtom& n,SystemState* sys)
 {
-	if (name_type==NAME_OBJECT && name_o!=NULL) {
+	if (name_type==NAME_OBJECT && name_o!=nullptr) {
 		name_o->decRef();
-		name_o = NULL;
+		name_o = nullptr;
 	}
 
 	switch(asAtomHandler::getObjectType(n))
@@ -209,7 +210,7 @@ void multiname::resetNameIfObject()
 	if(name_type==NAME_OBJECT && name_o)
 	{
 		name_o->decRef();
-		name_o=NULL;
+		name_o=nullptr;
 	}
 }
 
@@ -543,7 +544,7 @@ std::istream& lightspark::operator>>(std::istream& s, LINESTYLEARRAY& v)
 	UI8 LineStyleCount;
 	s >> LineStyleCount;
 	if(LineStyleCount==0xff)
-		LOG(LOG_ERROR,_("Line array extended not supported"));
+		LOG(LOG_ERROR,"Line array extended not supported");
 	if(v.version<4)
 	{
 		for(int i=0;i<LineStyleCount;i++)
@@ -574,7 +575,7 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHLINESTYLEARRAY& v)
 	UI8 LineStyleCount;
 	s >> LineStyleCount;
 	if(LineStyleCount==0xff)
-		LOG(LOG_ERROR,_("Line array extended not supported"));
+		LOG(LOG_ERROR,"Line array extended not supported");
 	assert(v.version==1 || v.version==2);
 	if(v.version==1)
 	{
@@ -636,7 +637,7 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLEARRAY& v)
 	UI8 FillStyleCount;
 	s >> FillStyleCount;
 	if(FillStyleCount==0xff)
-		LOG(LOG_ERROR,_("Fill array extended not supported"));
+		LOG(LOG_ERROR,"Fill array extended not supported");
 	for(int i=0;i<FillStyleCount;i++)
 	{
 		MORPHFILLSTYLE t;
@@ -753,7 +754,7 @@ std::istream& lightspark::operator>>(std::istream& in, TEXTRECORD& v)
 	v.TextRecordType=UB(1,bs);
 	v.StyleFlagsReserved=UB(3,bs);
 	if(v.StyleFlagsReserved)
-		LOG(LOG_ERROR,_("Reserved bits not so reserved"));
+		LOG(LOG_ERROR,"Reserved bits not so reserved");
 	v.StyleFlagsHasFont=UB(1,bs);
 	v.StyleFlagsHasColor=UB(1,bs);
 	v.StyleFlagsHasYOffset=UB(1,bs);
@@ -914,7 +915,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 	}
 	else
 	{
-		LOG(LOG_ERROR,_("Not supported fill style ") << (int)v.FillStyleType);
+		LOG(LOG_ERROR,"Not supported fill style " << (int)v.FillStyleType);
 	throw ParseException("Not supported fill style");
 	}
 	return s;
@@ -961,7 +962,7 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLE& v)
 	}
 	else
 	{
-		LOG(LOG_ERROR,_("Not supported fill style 0x") << hex << (int)v.FillStyleType << " at "<< s.tellg()<< dec <<  _("... Aborting"));
+		LOG(LOG_ERROR,"Not supported fill style 0x" << hex << (int)v.FillStyleType << " at "<< s.tellg()<< dec <<  "... Aborting");
 	}
 	return s;
 }
@@ -1034,7 +1035,7 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveBits(0),MoveDelta
 		if(StateNewStyles)// && parent->version >= 2)
 		{
 			SHAPEWITHSTYLE* ps=dynamic_cast<SHAPEWITHSTYLE*>(parent);
-			if(ps==NULL)
+			if(ps==nullptr)
 				throw ParseException("Malformed SWF file");
 			bs.pos=0;
 			FILLSTYLEARRAY a(ps->FillStyles.version);
@@ -1245,7 +1246,7 @@ std::istream& lightspark::operator>>(std::istream& stream, FILTER& v)
 			stream >> v.GradientBevelFilter;
 			break;
 		default:
-			LOG(LOG_ERROR,_("Unsupported Filter Id ") << (int)v.FilterID);
+			LOG(LOG_ERROR,"Unsupported Filter Id " << (int)v.FilterID);
 			throw ParseException("Unsupported Filter Id");
 	}
 	return stream;
@@ -1818,7 +1819,7 @@ RGB::RGB(const tiny_string& colorstr):Red(0),Green(0),Blue(0)
 	if (s[0] == '#')
 		s++;
 
-	gint64 color = g_ascii_strtoll(s, NULL, 16);
+	gint64 color = g_ascii_strtoll(s, nullptr, 16);
 	Red = (color >> 16) & 0xFF;
 	Green = (color >> 8) & 0xFF;
 	Blue = color & 0xFF;

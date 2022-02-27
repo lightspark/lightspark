@@ -24,16 +24,11 @@
 
 #include "swftypes.h"
 #include "scripting/flash/events/flashevents.h"
-#include "thread_pool.h"
-#include "scripting/flash/utils/flashutils.h"
-#include "backends/graphics.h"
 #include "backends/netutils.h"
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/display/TokenContainer.h"
-#include "scripting/flash/display3d/flashdisplay3d.h"
-#include "scripting/flash/ui/ContextMenu.h"
-#include "scripting/flash/accessibility/flashaccessibility.h"
-#include "scripting/toplevel/toplevel.h"
+#include "abcutils.h"
+#include <unordered_set>
 
 namespace lightspark
 {
@@ -59,6 +54,8 @@ class Class_inherit;
 class Point;
 class NativeMenuItem;
 class AVM1MovieClipLoader;
+class Context3D;
+class AccessibilityImplementation;
 
 class InteractiveObject: public DisplayObject
 {
@@ -97,7 +94,7 @@ public:
 	void setMouseEnabled(bool enabled) { mouseEnabled = enabled; }
 	void defaultEventBehavior(_R<Event> e) override;
 	// returns the owner of the contextmenu
-	_NR<InteractiveObject> getCurrentContextMenuItems(std::vector<Ref<NativeMenuItem> > &items);
+	_NR<InteractiveObject> getCurrentContextMenuItems(std::vector<_R<NativeMenuItem> > &items);
 };
 
 class DisplayObjectContainer: public InteractiveObject
@@ -828,7 +825,7 @@ friend class Stage;
 protected:
 	bool renderImpl(RenderContext &ctxt) const;
 public:
-	Stage3D(Class_base* c):EventDispatcher(c),x(0),y(0),visible(true){ subtype = SUBTYPE_STAGE3D; }
+	Stage3D(Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(requestContext3D);

@@ -846,7 +846,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	if(asAtomHandler::isValid(obj->setter))
 	{
 		//Call the setter
-		LOG_CALL(_("Calling the setter ")<<obj->type<<" "<<obj->slotid);
+		LOG_CALL("Calling the setter "<<obj->type<<" "<<obj->slotid);
 		//One argument can be passed without creating an array
 		ASObject* target=this;
 		asAtom* arg1 = &o;
@@ -869,7 +869,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		ASATOM_DECREF(o);
 		// it seems that Adobe allows setters with return values...
 		//assert_and_throw(asAtomHandler::isUndefined(ret));
-		LOG_CALL(_("End of setter"));
+		LOG_CALL("End of setter");
 	}
 	else
 	{

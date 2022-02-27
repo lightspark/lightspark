@@ -1245,11 +1245,11 @@ multiname *ByteArray::setVariableByMultiname(multiname& name, asAtom& o, CONST_A
 	ASATOM_DECREF(o);
 	return nullptr;
 }
-void ByteArray::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst)
+void ByteArray::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	if (index < 0)
 	{
-		setVariableByInteger_intern(index,o,allowConst);
+		setVariableByInteger_intern(index,o,allowConst,alreadyset);
 		return;
 	}
 	lock();

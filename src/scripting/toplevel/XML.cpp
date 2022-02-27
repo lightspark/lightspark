@@ -1570,14 +1570,14 @@ multiname *XML::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED
 {
 	return setVariableByMultinameIntern(name, o, allowConst, false);
 }
-void XML::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst)
+void XML::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	if (index < 0)
 	{
-		setVariableByInteger_intern(index,o,allowConst);
+		setVariableByInteger_intern(index,o,allowConst,alreadyset);
 		return;
 	}
-	childrenlist->setVariableByInteger(index,o,allowConst);
+	childrenlist->setVariableByInteger(index,o,allowConst,alreadyset);
 }
 multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext)
 {

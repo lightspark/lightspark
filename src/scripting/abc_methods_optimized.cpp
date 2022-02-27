@@ -35,7 +35,7 @@ using namespace lightspark;
 void ABCVm::abc_ifnlt_constant_constant(call_context* context)
 {
 	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->sys,*context->exec_pos->arg2_constant) == TTRUE);
-	LOG_CALL(_("ifNLT_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNLT_cc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -44,7 +44,7 @@ void ABCVm::abc_ifnlt_constant_constant(call_context* context)
 void ABCVm::abc_ifnlt_local_constant(call_context* context)
 {
 	bool cond=!(asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,*context->exec_pos->arg2_constant) == TTRUE);
-	LOG_CALL(_("ifNLT_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNLT_lc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -53,7 +53,7 @@ void ABCVm::abc_ifnlt_local_constant(call_context* context)
 void ABCVm::abc_ifnlt_constant_local(call_context* context)
 {
 	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)) == TTRUE);
-	LOG_CALL(_("ifNLT_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNLT_cl (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -62,7 +62,7 @@ void ABCVm::abc_ifnlt_constant_local(call_context* context)
 void ABCVm::abc_ifnlt_local_local(call_context* context)
 {
 	bool cond=!(asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)) == TTRUE);
-	LOG_CALL(_("ifNLT_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNLT_ll (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -71,7 +71,7 @@ void ABCVm::abc_ifnlt_local_local(call_context* context)
 void ABCVm::abc_ifnge_constant_constant(call_context* context)
 {
 	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->sys,*context->exec_pos->arg2_constant) == TFALSE);
-	LOG_CALL("ifNGE_cc (" << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNGE_cc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -80,7 +80,7 @@ void ABCVm::abc_ifnge_constant_constant(call_context* context)
 void ABCVm::abc_ifnge_local_constant(call_context* context)
 {
 	bool cond=!(asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,*context->exec_pos->arg2_constant) == TFALSE);
-	LOG_CALL("ifNGE_lc (" << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNGE_lc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -89,7 +89,7 @@ void ABCVm::abc_ifnge_local_constant(call_context* context)
 void ABCVm::abc_ifnge_constant_local(call_context* context)
 {
 	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)) == TFALSE);
-	LOG_CALL("ifNGE_cl (" << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNGE_cl (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -98,7 +98,7 @@ void ABCVm::abc_ifnge_constant_local(call_context* context)
 void ABCVm::abc_ifnge_local_local(call_context* context)
 {
 	bool cond=!(asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)) == TFALSE);
-	LOG_CALL("ifNGE_ll (" << ((cond)?_("taken)"):_("not taken)"))<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
+	LOG_CALL("ifNGE_ll (" << ((cond)?"taken)":"not taken)")<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -197,7 +197,7 @@ void ABCVm::abc_iffalse_dup_local(call_context* context)
 void ABCVm::abc_ifeq_constant_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isEqual(*context->exec_pos->arg1_constant,context->sys,*context->exec_pos->arg2_constant);
-	LOG_CALL(_("ifEq_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifEq_cc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -206,7 +206,7 @@ void ABCVm::abc_ifeq_constant_constant(call_context* context)
 void ABCVm::abc_ifeq_local_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isEqual(*context->exec_pos->arg2_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
-	LOG_CALL(_("ifEq_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifEq_lc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -215,7 +215,7 @@ void ABCVm::abc_ifeq_local_constant(call_context* context)
 void ABCVm::abc_ifeq_constant_local(call_context* context)
 {
 	bool cond=asAtomHandler::isEqual(*context->exec_pos->arg1_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	LOG_CALL(_("ifEq_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifEq_cl (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -224,7 +224,7 @@ void ABCVm::abc_ifeq_constant_local(call_context* context)
 void ABCVm::abc_ifeq_local_local(call_context* context)
 {
 	bool cond=asAtomHandler::isEqual(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	LOG_CALL(_("ifEq_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifEq_ll (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -233,7 +233,7 @@ void ABCVm::abc_ifeq_local_local(call_context* context)
 void ABCVm::abc_ifne_constant_constant(call_context* context)
 {
 	bool cond=!asAtomHandler::isEqual(*context->exec_pos->arg1_constant,context->sys,*context->exec_pos->arg2_constant);
-	LOG_CALL(_("ifNE_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNE_cc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -242,7 +242,7 @@ void ABCVm::abc_ifne_constant_constant(call_context* context)
 void ABCVm::abc_ifne_local_constant(call_context* context)
 {
 	bool cond=!asAtomHandler::isEqual(*context->exec_pos->arg2_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
-	LOG_CALL(_("ifNE_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNE_lc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -251,7 +251,7 @@ void ABCVm::abc_ifne_local_constant(call_context* context)
 void ABCVm::abc_ifne_constant_local(call_context* context)
 {
 	bool cond=!asAtomHandler::isEqual(*context->exec_pos->arg1_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	LOG_CALL(_("ifNE_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNE_cl (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -260,7 +260,7 @@ void ABCVm::abc_ifne_constant_local(call_context* context)
 void ABCVm::abc_ifne_local_local(call_context* context)
 {
 	bool cond=!asAtomHandler::isEqual(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	LOG_CALL(_("ifNE_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNE_ll (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -270,7 +270,7 @@ void ABCVm::abc_ifne_local_local(call_context* context)
 void ABCVm::abc_iflt_constant_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->sys,*context->exec_pos->arg2_constant) == TTRUE;
-	LOG_CALL(_("ifLT_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifLT_cc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -279,7 +279,7 @@ void ABCVm::abc_iflt_constant_constant(call_context* context)
 void ABCVm::abc_iflt_local_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,*context->exec_pos->arg2_constant) == TTRUE;
-	LOG_CALL(_("ifLT_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifLT_lc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -288,7 +288,7 @@ void ABCVm::abc_iflt_local_constant(call_context* context)
 void ABCVm::abc_iflt_constant_local(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)) == TTRUE;
-	LOG_CALL(_("ifLT_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifLT_cl (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -297,7 +297,7 @@ void ABCVm::abc_iflt_constant_local(call_context* context)
 void ABCVm::abc_iflt_local_local(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)) == TTRUE;
-	LOG_CALL(_("ifLT_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifLT_ll (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -306,7 +306,7 @@ void ABCVm::abc_iflt_local_local(call_context* context)
 void ABCVm::abc_ifle_constant_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(*context->exec_pos->arg2_constant,context->sys,*context->exec_pos->arg1_constant) == TFALSE;
-	LOG_CALL(_("ifLE_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifLE_cc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -315,7 +315,7 @@ void ABCVm::abc_ifle_constant_constant(call_context* context)
 void ABCVm::abc_ifle_local_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(*context->exec_pos->arg2_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)) == TFALSE;
-	LOG_CALL(_("ifLE_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifLE_lc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -324,7 +324,7 @@ void ABCVm::abc_ifle_local_constant(call_context* context)
 void ABCVm::abc_ifle_constant_local(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->sys,*context->exec_pos->arg1_constant) == TFALSE;
-	LOG_CALL(_("ifLE_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifLE_cl (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -333,7 +333,7 @@ void ABCVm::abc_ifle_constant_local(call_context* context)
 void ABCVm::abc_ifle_local_local(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)) == TFALSE;
-	LOG_CALL(_("ifLE_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifLE_ll (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -342,7 +342,7 @@ void ABCVm::abc_ifle_local_local(call_context* context)
 void ABCVm::abc_ifgt_constant_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(*context->exec_pos->arg2_constant,context->sys,*context->exec_pos->arg1_constant) == TTRUE;
-	LOG_CALL(_("ifGT_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifGT_cc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -351,7 +351,7 @@ void ABCVm::abc_ifgt_constant_constant(call_context* context)
 void ABCVm::abc_ifgt_local_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(*context->exec_pos->arg2_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)) == TTRUE;
-	LOG_CALL(_("ifGT_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifGT_lc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -360,7 +360,7 @@ void ABCVm::abc_ifgt_local_constant(call_context* context)
 void ABCVm::abc_ifgt_constant_local(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->sys,*context->exec_pos->arg1_constant) == TTRUE;
-	LOG_CALL(_("ifGT_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifGT_cl (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -369,7 +369,7 @@ void ABCVm::abc_ifgt_constant_local(call_context* context)
 void ABCVm::abc_ifgt_local_local(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)) == TTRUE;
-	LOG_CALL(_("ifGT_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifGT_ll (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -378,7 +378,7 @@ void ABCVm::abc_ifgt_local_local(call_context* context)
 void ABCVm::abc_ifge_constant_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->sys,*context->exec_pos->arg2_constant) == TFALSE;
-	LOG_CALL(_("ifGE_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifGE_cc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -387,7 +387,7 @@ void ABCVm::abc_ifge_constant_constant(call_context* context)
 void ABCVm::abc_ifge_local_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,*context->exec_pos->arg2_constant) == TFALSE;
-	LOG_CALL(_("ifGE_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifGE_lc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -396,7 +396,7 @@ void ABCVm::abc_ifge_local_constant(call_context* context)
 void ABCVm::abc_ifge_constant_local(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(*context->exec_pos->arg1_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)) == TFALSE;
-	LOG_CALL(_("ifGE_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifGE_cl (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -405,7 +405,7 @@ void ABCVm::abc_ifge_constant_local(call_context* context)
 void ABCVm::abc_ifge_local_local(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)) == TFALSE;
-	LOG_CALL(_("ifGE_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifGE_ll (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -414,7 +414,7 @@ void ABCVm::abc_ifge_local_local(call_context* context)
 void ABCVm::abc_ifstricteq_constant_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isEqualStrict(*context->exec_pos->arg1_constant,context->sys,*context->exec_pos->arg2_constant);
-	LOG_CALL(_("ifstricteq_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifstricteq_cc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -423,7 +423,7 @@ void ABCVm::abc_ifstricteq_constant_constant(call_context* context)
 void ABCVm::abc_ifstricteq_local_constant(call_context* context)
 {
 	bool cond=asAtomHandler::isEqualStrict(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,*context->exec_pos->arg2_constant);
-	LOG_CALL(_("ifstricteq_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifstricteq_lc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -432,7 +432,7 @@ void ABCVm::abc_ifstricteq_local_constant(call_context* context)
 void ABCVm::abc_ifstricteq_constant_local(call_context* context)
 {
 	bool cond=asAtomHandler::isEqualStrict(*context->exec_pos->arg1_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	LOG_CALL(_("ifstricteq_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifstricteq_cl (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -440,9 +440,9 @@ void ABCVm::abc_ifstricteq_constant_local(call_context* context)
 }
 void ABCVm::abc_ifstricteq_local_local(call_context* context)
 {
-	LOG_CALL(_("ifstricteq_ll (") << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
+	LOG_CALL("ifstricteq_ll (" << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
 	bool cond=asAtomHandler::isEqualStrict(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	LOG_CALL(_("ifstricteq_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifstricteq_ll (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -451,7 +451,7 @@ void ABCVm::abc_ifstricteq_local_local(call_context* context)
 void ABCVm::abc_ifstrictne_constant_constant(call_context* context)
 {
 	bool cond=!asAtomHandler::isEqualStrict(*context->exec_pos->arg1_constant,context->sys,*context->exec_pos->arg2_constant);
-	LOG_CALL(_("ifstrictne_cc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifstrictne_cc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -460,7 +460,7 @@ void ABCVm::abc_ifstrictne_constant_constant(call_context* context)
 void ABCVm::abc_ifstrictne_local_constant(call_context* context)
 {
 	bool cond=!asAtomHandler::isEqualStrict(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,*context->exec_pos->arg2_constant);
-	LOG_CALL(_("ifstrictne_lc (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifstrictne_lc (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -469,7 +469,7 @@ void ABCVm::abc_ifstrictne_local_constant(call_context* context)
 void ABCVm::abc_ifstrictne_constant_local(call_context* context)
 {
 	bool cond=!asAtomHandler::isEqualStrict(*context->exec_pos->arg1_constant,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	LOG_CALL(_("ifstrictne_cl (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifstrictne_cl (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -478,7 +478,7 @@ void ABCVm::abc_ifstrictne_constant_local(call_context* context)
 void ABCVm::abc_ifstrictne_local_local(call_context* context)
 {
 	bool cond=!asAtomHandler::isEqualStrict(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	LOG_CALL(_("ifstrictne_ll (") << ((cond)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifstrictne_ll (" << ((cond)?"taken)":"not taken)"));
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -2031,13 +2031,16 @@ void ABCVm::abc_setPropertyStaticName(call_context* context)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->sys);
+	bool alreadyset=false;
 	multiname* simplesettername = nullptr;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
 	if (simplesettername)
 		context->exec_pos->cachedmultiname2 = simplesettername;
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	ASATOM_DECREF_POINTER(obj);
 	++(context->exec_pos);
 }
@@ -2049,7 +2052,7 @@ void ABCVm::abc_setPropertyStaticName_constant_constant(call_context* context)
 	asAtom* obj = instrptr->arg1_constant;
 	asAtom* value = instrptr->arg2_constant;
 
-	LOG_CALL(_("setProperty_scc ") << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("setProperty_scc " << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 
 	if(asAtomHandler::isNull(*obj))
 	{
@@ -2124,13 +2127,16 @@ void ABCVm::abc_setPropertyStaticName_constant_local(call_context* context)
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->sys);
 	ASATOM_INCREF_POINTER(value);
+	bool alreadyset=false;
 	multiname* simplesettername = nullptr;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
 	if (simplesettername)
 		context->exec_pos->cachedmultiname2 = simplesettername;
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
@@ -2155,13 +2161,16 @@ void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->sys);
 	ASATOM_INCREF_POINTER(value);
+	bool alreadyset=false;
 	multiname* simplesettername = nullptr;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED);
+		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
 	if (simplesettername)
 		context->exec_pos->cachedmultiname2 = simplesettername;
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyInteger(call_context* context)
@@ -2187,10 +2196,13 @@ void ABCVm::abc_setPropertyInteger(call_context* context)
 	ASObject* o = asAtomHandler::getObject(*obj);
 	if (!o)
 		o = asAtomHandler::toObject(*obj,context->sys);
+	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	ASATOM_DECREF_POINTER(obj);
 	++(context->exec_pos);
 }
@@ -2218,10 +2230,13 @@ void ABCVm::abc_setPropertyInteger_constant_constant_constant(call_context* cont
 	ASObject* o = asAtomHandler::getObject(*obj);
 	if (!o)
 		o = asAtomHandler::toObject(*obj,context->sys);
+	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyInteger_constant_local_constant(call_context* context)
@@ -2248,10 +2263,13 @@ void ABCVm::abc_setPropertyInteger_constant_local_constant(call_context* context
 	ASObject* o = asAtomHandler::getObject(*obj);
 	if (!o)
 		o = asAtomHandler::toObject(*obj,context->sys);
+	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyInteger_constant_constant_local(call_context* context)
@@ -2278,10 +2296,13 @@ void ABCVm::abc_setPropertyInteger_constant_constant_local(call_context* context
 	ASObject* o = asAtomHandler::getObject(*obj);
 	if (!o)
 		o = asAtomHandler::toObject(*obj,context->sys);
+	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyInteger_constant_local_local(call_context* context)
@@ -2309,10 +2330,13 @@ void ABCVm::abc_setPropertyInteger_constant_local_local(call_context* context)
 	ASObject* o = asAtomHandler::getObject(*obj);
 	if (!o)
 		o = asAtomHandler::toObject(*obj,context->sys);
+	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyInteger_local_constant_constant(call_context* context)
@@ -2339,10 +2363,13 @@ void ABCVm::abc_setPropertyInteger_local_constant_constant(call_context* context
 	ASObject* o = asAtomHandler::getObject(obj);
 	if (!o)
 		o = asAtomHandler::toObject(obj,context->sys);
+	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyInteger_local_local_constant(call_context* context)
@@ -2369,10 +2396,13 @@ void ABCVm::abc_setPropertyInteger_local_local_constant(call_context* context)
 	ASObject* o = asAtomHandler::getObject(obj);
 	if (!o)
 		o = asAtomHandler::toObject(obj,context->sys);
+	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyInteger_local_constant_local(call_context* context)
@@ -2400,10 +2430,13 @@ void ABCVm::abc_setPropertyInteger_local_constant_local(call_context* context)
 	ASObject* o = asAtomHandler::getObject(obj);
 	if (!o)
 		o = asAtomHandler::toObject(obj,context->sys);
+	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyInteger_local_local_local(call_context* context)
@@ -2431,10 +2464,13 @@ void ABCVm::abc_setPropertyInteger_local_local_local(call_context* context)
 	ASObject* o = asAtomHandler::getObject(obj);
 	if (!o)
 		o = asAtomHandler::toObject(obj,context->sys);
+	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED);
+		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 
@@ -2461,7 +2497,10 @@ void ABCVm::abc_setPropertyIntegerVector_constant_constant_constant(call_context
 	}
 
 	Vector* o = asAtomHandler::as<Vector>(*obj);
-	o->setVariableByIntegerNoCoerce(index,*value);
+	bool alreadyset=false;
+	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyIntegerVector_constant_local_constant(call_context* context)
@@ -2486,7 +2525,10 @@ void ABCVm::abc_setPropertyIntegerVector_constant_local_constant(call_context* c
 	}
 
 	Vector* o = asAtomHandler::as<Vector>(*obj);
-	o->setVariableByIntegerNoCoerce(index,*value);
+	bool alreadyset=false;
+	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyIntegerVector_constant_constant_local(call_context* context)
@@ -2511,7 +2553,10 @@ void ABCVm::abc_setPropertyIntegerVector_constant_constant_local(call_context* c
 	}
 
 	Vector* o = asAtomHandler::as<Vector>(*obj);
-	o->setVariableByIntegerNoCoerce(index,*value);
+	bool alreadyset=false;
+	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyIntegerVector_constant_local_local(call_context* context)
@@ -2537,7 +2582,10 @@ void ABCVm::abc_setPropertyIntegerVector_constant_local_local(call_context* cont
 
 	ASATOM_INCREF_POINTER(value);
 	Vector* o = asAtomHandler::as<Vector>(*obj);
-	o->setVariableByIntegerNoCoerce(index,*value);
+	bool alreadyset=false;
+	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyIntegerVector_local_constant_constant(call_context* context)
@@ -2562,7 +2610,10 @@ void ABCVm::abc_setPropertyIntegerVector_local_constant_constant(call_context* c
 	}
 
 	Vector* o = asAtomHandler::as<Vector>(obj);
-	o->setVariableByIntegerNoCoerce(index,*value);
+	bool alreadyset=false;
+	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyIntegerVector_local_local_constant(call_context* context)
@@ -2587,7 +2638,10 @@ void ABCVm::abc_setPropertyIntegerVector_local_local_constant(call_context* cont
 	}
 
 	Vector* o = asAtomHandler::as<Vector>(obj);
-	o->setVariableByIntegerNoCoerce(index,*value);
+	bool alreadyset=false;
+	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyIntegerVector_local_constant_local(call_context* context)
@@ -2613,7 +2667,10 @@ void ABCVm::abc_setPropertyIntegerVector_local_constant_local(call_context* cont
 
 	ASATOM_INCREF_POINTER(value);
 	Vector* o = asAtomHandler::as<Vector>(obj);
-	o->setVariableByIntegerNoCoerce(index,*value);
+	bool alreadyset=false;
+	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyIntegerVector_local_local_local(call_context* context)
@@ -2639,7 +2696,10 @@ void ABCVm::abc_setPropertyIntegerVector_local_local_local(call_context* context
 
 	ASATOM_INCREF_POINTER(value);
 	Vector* o = asAtomHandler::as<Vector>(obj);
-	o->setVariableByIntegerNoCoerce(index,*value);
+	bool alreadyset=false;
+	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset);
+	if (alreadyset)
+		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
 }
 

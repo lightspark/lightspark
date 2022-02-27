@@ -266,14 +266,15 @@ public:
 	//Overloads
 	tiny_string toString();
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr) override;
-	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst) override;
-	FORCE_INLINE void setVariableByIntegerNoCoerce(int index, asAtom &o)
+	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset) override;
+	FORCE_INLINE void setVariableByIntegerNoCoerce(int index, asAtom &o, bool* alreadyset)
 	{
 		if (USUALLY_FALSE(index < 0))
 		{
-			setVariableByInteger_intern(index,o,ASObject::CONST_ALLOWED);
+			setVariableByInteger_intern(index,o,ASObject::CONST_ALLOWED,alreadyset);
 			return;
 		}
+		*alreadyset=false;
 		if(size_t(index) < vec.size())
 		{
 			if (vec[index].uintval != o.uintval)
@@ -281,6 +282,8 @@ public:
 				ASATOM_DECREF(vec[index]);
 				vec[index] = o;
 			}
+			else
+				*alreadyset=true;
 		}
 		else if(!fixed && size_t(index) == vec.size())
 		{

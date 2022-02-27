@@ -248,7 +248,7 @@ public:
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt) override;
 	int32_t getVariableByMultiname_i(const multiname& name) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
-	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst) override;
+	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool *alreadyset) override;
 	void setVariableByMultiname_i(multiname& name, int32_t value) override;
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
 

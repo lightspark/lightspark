@@ -848,13 +848,14 @@ multiname *XMLList::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALL
 {
 	return setVariableByMultinameIntern(name, o, allowConst, false);
 }
-void XMLList::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst)
+void XMLList::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	if (index < 0)
 	{
-		setVariableByInteger_intern(index,o,allowConst);
+		setVariableByInteger_intern(index,o,allowConst,alreadyset);
 		return;
 	}
+	*alreadyset=false;
 	XML::XMLVector retnodes;
 	XMLList* tmplist = targetobject;
 	multiname tmpprop = targetproperty;

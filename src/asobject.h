@@ -1058,9 +1058,9 @@ public:
 	{
 		return setVariableByMultiname_intern(name,o,allowConst,classdef,alreadyset);
 	}
-	virtual void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst)
+	virtual void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 	{
-		setVariableByInteger_intern(index,o,allowConst);
+		setVariableByInteger_intern(index,o,allowConst,alreadyset);
 	}
 	/*
 	 * Sets  variable of this object. It looks through all classes (beginning at cls),
@@ -1070,12 +1070,12 @@ public:
 	 * Setting CONSTANT_TRAIT is only allowed if allowConst is true
 	 */
 	multiname* setVariableByMultiname_intern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset);
-	void setVariableByInteger_intern(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst)
+	void setVariableByInteger_intern(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 	{
 		multiname m(nullptr);
 		m.name_type = multiname::NAME_INT;
 		m.name_i = index;
-		setVariableByMultiname(m,o,allowConst,nullptr);
+		setVariableByMultiname(m,o,allowConst,alreadyset);
 	}
 	
 	// sets dynamic variable without checking for existence

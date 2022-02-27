@@ -1338,13 +1338,14 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 	return nullptr;
 }
 
-void Vector::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst)
+void Vector::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	if (index < 0)
 	{
-		setVariableByInteger_intern(index,o,allowConst);
+		setVariableByInteger_intern(index,o,allowConst,alreadyset);
 		return;
 	}
+	*alreadyset = false;
 	asAtom v = o;
 	if (this->vec_type->coerce(getSystemState(), o))
 		ASATOM_DECREF(v);
@@ -1355,6 +1356,8 @@ void Vector::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_
 			ASATOM_DECREF(vec[index]);
 			vec[index] = o;
 		}
+		else
+			*alreadyset=true;
 	}
 	else if(!fixed && size_t(index) == vec.size())
 	{

@@ -1917,11 +1917,11 @@ multiname *Array::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOW
 	return nullptr;
 }
 
-void Array::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst)
+void Array::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
 {
 	if (index < 0)
 	{
-		setVariableByInteger_intern(index,o,allowConst);
+		setVariableByInteger_intern(index,o,allowConst, alreadyset);
 		return;
 	}
 	// Derived classes may be sealed!
@@ -1936,7 +1936,7 @@ void Array::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_F
 	}
 	if(uint64_t(index)>=size())
 		resize((uint64_t)index+1);
-	set(index, o,false);
+	*alreadyset = !set(index, o,false);
 }
 
 bool Array::deleteVariableByMultiname(const multiname& name)

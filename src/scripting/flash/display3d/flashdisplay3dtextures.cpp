@@ -4,6 +4,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/display3d/flashdisplay3d.h"
 #define INITGUID
 #include "3rdparty/jxrlib/jxrgluelib/JXRGlue.h"
 
@@ -413,7 +414,7 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 	uint32_t bytesneeded = th->width*th->height*4;
 	th->bitmaparray[0].resize(bytesneeded);
 
-	assert_and_throw(th->height == source->getHeight() && th->width == source->getWidth());
+	assert_and_throw(th->height == uint32_t(source->getHeight()) && th->width == uint32_t(source->getWidth()));
 	for (uint32_t i = 0; i < th->height; i++)
 	{
 		for (uint32_t j = 0; j < th->width; j++)

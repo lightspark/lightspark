@@ -80,7 +80,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			}
 			else
 				engineData->exec_glClear((CLEARMASK)(action.udata2 & CLEARMASK::COLOR));
-			delete[] action.fdata;
 			break;
 		case RENDER_CONFIGUREBACKBUFFER:
 			//action.udata1 = enableDepthAndStencil
@@ -284,23 +283,18 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata1 = index
 			//action.udata2 = bufferOffset
 			//action.udata3 = format
-			//action.fdata = bufferdata
 			if (vertexbufferIDs[action.udata1] == UINT32_MAX)
 				engineData->exec_glGenBuffers(1,&(vertexbufferIDs[action.udata1]));
 			if (action.dataobject)
 			{
 				VertexBuffer3D* buffer = action.dataobject->as<VertexBuffer3D>();
 				attribs[action.udata1].data32PerVertex = buffer->data32PerVertex;
-				if (action.fdata)
-				{
-					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(vertexbufferIDs[action.udata1]);
-					if (buffer->bufferUsage == "dynamicDraw")
-						engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),action.fdata);
-					else
-						engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),action.fdata);
-					engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
-					delete[] action.fdata;
-				}
+				engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(vertexbufferIDs[action.udata1]);
+				if (buffer->bufferUsage == "dynamicDraw")
+					engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),buffer->data.data());
+				else
+					engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),buffer->data.data());
+				engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
 			}
 			attribs[action.udata1].bufferID = vertexbufferIDs[action.udata1];
 			attribs[action.udata1].offset = action.udata2;
@@ -312,7 +306,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.dataobject = IndexBuffer3D
 			//action.udata1 = firstIndex
 			//action.udata2 = numTriangles
-			//action.idata = indexBuffer data
 			if (currentprogram)
 			{
 				setPositionScale(engineData);
@@ -330,12 +323,12 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			if (buffer->bufferID == UINT32_MAX)
 				engineData->exec_glGenBuffers(1,&(buffer->bufferID));
 			engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(buffer->bufferID);
-			if (action.idata)
+			if (buffer->upload_needed)
 			{
 				if (buffer->bufferUsage == "dynamicDraw")
-					engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->data.size()*sizeof(uint16_t),action.idata);
+					engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->data.size()*sizeof(uint16_t),buffer->data.data());
 				else
-					engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->data.size()*sizeof(uint16_t),action.idata);
+					engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->data.size()*sizeof(uint16_t),buffer->data.data());
 				buffer->upload_needed=false;
 			}
 			engineData->exec_glDrawElements_GL_TRIANGLES_GL_UNSIGNED_SHORT(count,(void*)(action.udata1*sizeof(uint16_t)));
@@ -374,7 +367,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 					data[3] = action.fdata[i*4+3];
 				}
 			}
-			delete[] action.fdata;
 			break;
 		}
 		case RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR:
@@ -391,7 +383,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				data[2] = action.fdata[i*4+2];
 				data[3] = action.fdata[i*4+3];
 			}
-			delete[] action.fdata;
 			break;
 		}
 		case RENDER_SETTEXTUREAT:
@@ -447,7 +438,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		case RENDER_SETSCISSORRECTANGLE:
 			// action.fdata = x,y,width,height
 			engineData->exec_glScissor(action.fdata[0],action.fdata[1],action.fdata[2],action.fdata[3]);
-			delete[] action.fdata;
 			break;
 		case RENDER_SETCOLORMASK:
 			// action.udata1 = red | green | blue | alpha
@@ -909,7 +899,11 @@ ASFUNCTIONBODY_ATOM(Context3D,clear)
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_CLEAR;
 	ARG_UNPACK_ATOM(red,0.0)(green,0.0)(blue,0.0)(alpha,1.0)(depth,1.0)(action.udata1,0)(action.udata2,0xffffffff);
-	action.fdata =new float[5] { (float)red, (float)green, (float)blue, (float)alpha, (float)depth};
+	action.fdata[0] = (float)red;
+	action.fdata[1] = (float)green;
+	action.fdata[2] = (float)blue;
+	action.fdata[3] = (float)alpha;
+	action.fdata[4] = (float)depth;
 	th->addAction(action);
 	if (th->enableErrorChecking)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.clear with errorchecking");
@@ -934,11 +928,6 @@ ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
 	action.dataobject = indexBuffer;
 	action.udata1 = firstIndex < 0 ? 0 : firstIndex;
 	action.udata2 = (numTriangles == -1 ? UINT32_MAX : numTriangles);
-	if (indexBuffer && indexBuffer->upload_needed)
-	{
-		action.idata = new uint16_t[indexBuffer->data.size()];
-		memcpy(action.idata,indexBuffer->data.data(),indexBuffer->data.size()*sizeof(uint16_t));
-	}
 	th->actions[th->currentactionvector].push_back(action);
 	if (th->enableErrorChecking)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.drawTriangles with errorchecking");
@@ -1098,7 +1087,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromMatrix)
 	{
 		renderaction action;
 		action.action = RENDER_ACTION::RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX;
-		action.fdata = new float[16];
 		matrix->getRawDataAsFloat(action.fdata);
 		action.udata1= firstRegister;
 		action.udata2= programType == "vertex" ? 1 : 0;
@@ -1125,7 +1113,8 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromVector)
 		action.udata3= numRegisters < 0 ? data->size()/4 : min ((uint32_t)numRegisters,data->size()/4);
 		if (action.udata3)
 		{
-			action.fdata= new float[action.udata3*4];
+			if (action.udata3 > CONTEXT3D_PROGRAM_REGISTERS-action.udata1)
+				throwError<RangeError>(kOutOfRangeError,"Constant Register Out Of Bounds");
 			for (uint32_t i = 0; i < action.udata3*4; i++)
 			{
 				asAtom a = data->at(i);
@@ -1146,7 +1135,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setScissorRectangle)
 	{
 		renderaction action;
 		action.action = RENDER_ACTION::RENDER_SETSCISSORRECTANGLE;
-		action.fdata = new float[4];
 		action.fdata[0] = rectangle->x;
 		action.fdata[1] = rectangle->y;
 		action.fdata[2] = rectangle->width;
@@ -1318,11 +1306,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setVertexBufferAt)
 		action.udata3 = VERTEXBUFFER_FORMAT::FLOAT_4;
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setVertexBufferAt with format "<<format);
-	if (!buffer.isNull())
-	{
-		action.fdata = new float[buffer->data.size()*sizeof(float)];
-		memcpy(action.fdata,buffer->data.data(),buffer->data.size()*sizeof(float));
-	}
 	th->actions[th->currentactionvector].push_back(action);
 }
 
@@ -1467,7 +1450,7 @@ void Context3DWrapMode::sinit(Class_base *c)
 }
 
 IndexBuffer3D::IndexBuffer3D(Class_base *c, Context3D* ctx,int numVertices, tiny_string _bufferUsage)
-	:ASObject(c,T_OBJECT,SUBTYPE_INDEXBUFFER3D),context(ctx),bufferID(UINT32_MAX),bufferUsage(_bufferUsage)
+	:ASObject(c,T_OBJECT,SUBTYPE_INDEXBUFFER3D),context(ctx),bufferID(UINT32_MAX),bufferUsage(_bufferUsage),upload_needed(false)
 {
 	data.resize(numVertices);
 }
@@ -1515,9 +1498,10 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromByteArray)
 		throwError<TypeError>(kNullPointerError);
 	if (data->getLength() < byteArrayOffset+count*2)
 		throwError<RangeError>(kParamRangeError);
+	th->context->rendermutex.lock();
+	th->upload_needed=true;
 	if (th->data.size() < count+startOffset)
 		th->data.resize(count+startOffset);
-	th->upload_needed = true;
 	uint32_t origpos = data->getPosition();
 	data->setPosition(byteArrayOffset);
 	for (uint32_t i = 0; i< count; i++)
@@ -1526,6 +1510,7 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromByteArray)
 		if (data->readShort(d))
 			th->data[startOffset+i] = d;
 	}
+	th->context->rendermutex.unlock();
 	data->setPosition(origpos);
 }
 ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
@@ -1535,14 +1520,16 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
 	uint32_t startOffset;
 	uint32_t count;
 	ARG_UNPACK_ATOM(data)(startOffset)(count);
+	th->context->rendermutex.lock();
+	th->upload_needed=true;
 	if (th->data.size() < count+startOffset)
 		th->data.resize(count+startOffset);
-	th->upload_needed = true;
 	for (uint32_t i = 0; i< count; i++)
 	{
 		asAtom a = data->at(i);
 		th->data[startOffset+i] = asAtomHandler::toUInt(a);
 	}
+	th->context->rendermutex.unlock();
 }
 
 void Program3D::sinit(Class_base *c)
@@ -1616,10 +1603,11 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 		throwError<TypeError>(kNullPointerError);
 	if (data->getLength() < byteArrayOffset+numVertices*th->data32PerVertex*4)
 		throwError<RangeError>(kParamRangeError);
-	if (th->data.size() < (numVertices+startVertex)* th->data32PerVertex)
-		th->data.resize((numVertices+startVertex)* th->data32PerVertex);
 	uint32_t origpos = data->getPosition();
 	data->setPosition(byteArrayOffset);
+	th->context->rendermutex.lock();
+	if (th->data.size() < (numVertices+startVertex)* th->data32PerVertex)
+		th->data.resize((numVertices+startVertex)* th->data32PerVertex);
 	for (uint32_t i = 0; i< numVertices* th->data32PerVertex; i++)
 	{
 		union {
@@ -1629,6 +1617,7 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 		if (data->readUnsignedInt(d.u))
 			th->data[startVertex*th->data32PerVertex+i] = d.f;
 	}
+	th->context->rendermutex.unlock();
 	data->setPosition(origpos);
 }
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
@@ -1643,6 +1632,7 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
 	uint32_t startVertex;
 	uint32_t numVertices;
 	ARG_UNPACK_ATOM(data)(startVertex)(numVertices);
+	th->context->rendermutex.lock();
 	if (th->data.size() < (numVertices+startVertex)* th->data32PerVertex)
 		th->data.resize((numVertices+startVertex)* th->data32PerVertex);
 	for (uint32_t i = 0; i< numVertices* th->data32PerVertex; i++)
@@ -1650,6 +1640,7 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
 		asAtom a = data->at(i);
 		th->data[startVertex*th->data32PerVertex+i] = asAtomHandler::toNumber(a);
 	}
+	th->context->rendermutex.unlock();
 }
 
 }

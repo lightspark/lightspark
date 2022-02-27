@@ -91,6 +91,10 @@ struct RegisterMapEntry
 	
 };
 
+#define CONTEXT3D_SAMPLER_COUNT 8
+#define CONTEXT3D_ATTRIBUTE_COUNT 8
+#define CONTEXT3D_PROGRAM_REGISTERS 128
+
 namespace lightspark
 {
 class RenderContext;
@@ -108,13 +112,9 @@ struct renderaction
 	uint32_t udata1;
 	uint32_t udata2;
 	uint32_t udata3;
-	union
-	{
-		float *fdata;
-		uint16_t *idata;
-	};
+	float fdata[CONTEXT3D_PROGRAM_REGISTERS*4];
 	_NR<ASObject> dataobject;
-	renderaction():udata1(0),udata2(0),udata3(0),fdata(nullptr) {}
+	renderaction():udata1(0),udata2(0),udata3(0),fdata{0} {}
 };
 struct constantregister
 {
@@ -128,9 +128,6 @@ struct attribregister
 	VERTEXBUFFER_FORMAT format;
 	attribregister():bufferID(UINT32_MAX) {}
 };
-#define CONTEXT3D_SAMPLER_COUNT 8
-#define CONTEXT3D_ATTRIBUTE_COUNT 8
-#define CONTEXT3D_PROGRAM_REGISTERS 128
 
 class Context3D: public EventDispatcher
 {

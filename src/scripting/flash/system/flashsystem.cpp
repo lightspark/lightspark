@@ -856,11 +856,12 @@ ASFUNCTIONBODY_ATOM(System,gc)
 
 ASWorker::ASWorker(Class_base* c):
 	EventDispatcher(c),loader(_MR(Class<Loader>::getInstanceS(c->getSystemState()))),parser(nullptr),
-	giveAppPrivileges(false),started(false),currentCallContext(nullptr),cur_recursion(0),stacktrace(new stacktrace_entry[256]),isPrimordial(false),state("new")
+	giveAppPrivileges(false),started(false),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
 {
 	subtype = SUBTYPE_WORKER;
-	limits.max_recursion = 256;
+	limits.max_recursion = c->getSystemState()->flashMode == SystemState::AIR ? 512 : 256;
 	limits.script_timeout = 20;
+	stacktrace = new stacktrace_entry[limits.max_recursion];
 }
 
 void ASWorker::finalize()

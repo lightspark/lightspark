@@ -24,6 +24,7 @@
 #include "scripting/class.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/RegExp.h"
@@ -1064,10 +1065,11 @@ struct preloadstate
 	std::vector<Class_base*> defaultlocaltypes;
 	std::vector<bool> defaultlocaltypescacheable;
 	std::vector<bool> canlocalinitialize;
+	SyntheticFunction* function;
 	method_info* mi;
 	std::vector<preloadedcodebuffer> preloadedcode;
 	bool duplocalresult;
-	preloadstate(method_info* _mi):mi(_mi),duplocalresult(false) {}
+	preloadstate(SyntheticFunction* _f, method_info* _mi):function(_f),mi(_mi),duplocalresult(false) {}
 };
 
 struct operands
@@ -1592,11 +1594,16 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x65://getscopeobject
 			case 0x5d://findproperty
 			case 0x5e://findpropstrict
-				pos = code.skipu30FromPosition(pos);
-				b = code.peekbyteFromPosition(pos);
-				pos++;
-				argsneeded++;
-				lastlocalpos=-1;
+				if (state.function->inClass && !state.function->isFromNewFunction() && !state.mi->needsActivation())
+				{
+					pos = code.skipu30FromPosition(pos);
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					argsneeded++;
+					lastlocalpos=-1;
+				}
+				else
+					keepchecking=false;
 				break;
 			case 0x6c://getslot
 				if (argsneeded || state.operandlist.size()>0)
@@ -2877,7 +2884,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 	method_info* mi=function->mi;
 
 	const int code_len=mi->body->code.size();
-	preloadstate state(mi);
+	preloadstate state(function,mi);
 	std::map<int32_t,int32_t> jumppositions;
 	std::map<int32_t,int32_t> jumpstartpositions;
 	std::map<int32_t,int32_t> switchpositions;

@@ -30,7 +30,7 @@
 using namespace lightspark;
 
 FileStream::FileStream(Class_base* c):
-	EventDispatcher(c),isopen(false),bytesAvailable(0),position(0)
+	EventDispatcher(c),filesize(0),bytesAvailable(0),position(0)
 {
 	subtype=SUBTYPE_FILESTREAM;
 }
@@ -47,7 +47,13 @@ void FileStream::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,position,Number);
 }
 ASFUNCTIONBODY_GETTER(FileStream, bytesAvailable);
-ASFUNCTIONBODY_GETTER_SETTER(FileStream, position);
+ASFUNCTIONBODY_GETTER_SETTER_CB(FileStream, position,afterPositionChange);
+void FileStream::afterPositionChange(number_t oldposition)
+{
+	bytesAvailable = filesize-position;
+	if (stream.is_open())
+		stream.seekg(position);
+}
 
 ASFUNCTIONBODY_ATOM(FileStream,_constructor)
 {
@@ -58,16 +64,26 @@ ASFUNCTIONBODY_ATOM(FileStream,open)
 {
 	FileStream* th=asAtomHandler::as<FileStream>(obj);
 	ARG_UNPACK_ATOM(th->file)(th->fileMode);
-	LOG(LOG_NOT_IMPLEMENTED,"FileStream.open: FileMode is ignored");
-	th->bytesAvailable = sys->getEngineData()->FileSize(sys,th->file->getFullPath(),true);
-	th->isopen=true;
+	th->bytesAvailable = th->filesize = sys->getEngineData()->FileSize(sys,th->file->getFullPath(),true);
+	if (th->fileMode == "read")
+		th->stream.open(th->file->getFullPath().raw_buf(),ios_base::in|ios_base::binary);
+	else if (th->fileMode == "write")
+		th->stream.open(th->file->getFullPath().raw_buf(),ios_base::out|ios_base::binary|ios_base::trunc);
+	else if (th->fileMode == "update")
+		th->stream.open(th->file->getFullPath().raw_buf(),ios_base::in|ios_base::out|ios_base::binary);
+	else if (th->fileMode == "append")
+		th->stream.open(th->file->getFullPath().raw_buf(),ios_base::out|ios_base::binary|ios_base::ate);
+	else
+		LOG(LOG_ERROR,"invalid filemode:"<<th->fileMode);
 	th->position=0;
 }
 ASFUNCTIONBODY_ATOM(FileStream,close)
 {
 	FileStream* th=asAtomHandler::as<FileStream>(obj);
-	th->isopen=false;
+	if (th->stream.is_open())
+		th->stream.close();
 	th->bytesAvailable = 0;
+	th->filesize=0;
 	th->position=0;
 }
 ASFUNCTIONBODY_ATOM(FileStream,readBytes)
@@ -77,28 +93,31 @@ ASFUNCTIONBODY_ATOM(FileStream,readBytes)
 	uint32_t offset;
 	uint32_t length;
 	ARG_UNPACK_ATOM(bytes)(offset,0)(length,UINT32_MAX);
-	if (!th->isopen)
-		throw Class<IOError>::getInstanceS(sys,"FileStream is not opened");
+	if (!th->stream.is_open())
+		throw Class<IOError>::getInstanceS(sys,"FileStream is not open");
+	if (th->fileMode != "read" && th->fileMode != "update")
+		throw Class<IOError>::getInstanceS(sys,"FileStream is not readable");
 	if (length != UINT32_MAX && th->bytesAvailable < length)
 		throwError<EOFError>(kEOFError);
-	uint32_t bpos = bytes->getPosition();
-	bytes->setPosition(offset);
-	sys->getEngineData()->FileReadByteArray(sys,th->file->getFullPath(),bytes.getPtr(),th->position,length,true);
-	bytes->setPosition(bpos);
-	th->position+= min(length,th->bytesAvailable);
-	th->bytesAvailable -= min(length,th->bytesAvailable);
+	length = min(length,th->bytesAvailable);
+	th->stream.read((char*)(bytes->getBufferNoCheck()+offset),length);
+	th->position+= length;
+	th->bytesAvailable = th->filesize-th->position;
 }
 ASFUNCTIONBODY_ATOM(FileStream,readUnsignedByte)
 {
 	FileStream* th=asAtomHandler::as<FileStream>(obj);
-	if (!th->isopen)
-		throw Class<IOError>::getInstanceS(sys,"FileStream is not opened");
+	if (!th->stream.is_open())
+		throw Class<IOError>::getInstanceS(sys,"FileStream is not open");
+	if (th->fileMode != "read" && th->fileMode != "update")
+		throw Class<IOError>::getInstanceS(sys,"FileStream is not readable");
 	if (th->bytesAvailable==0)
 		throwError<EOFError>(kEOFError);
-	uint32_t res = sys->getEngineData()->FileReadUnsignedByte(sys,th->file->getFullPath(),th->position,true);
-	th->bytesAvailable--;
+	uint8_t b;
+	th->stream>>b;
 	th->position++;
-	ret= asAtomHandler::fromUInt(res);
+	th->bytesAvailable = th->filesize-th->position;
+	ret= asAtomHandler::fromUInt(b);
 }
 ASFUNCTIONBODY_ATOM(FileStream,writeBytes)
 {
@@ -107,9 +126,15 @@ ASFUNCTIONBODY_ATOM(FileStream,writeBytes)
 	uint32_t offset;
 	uint32_t length;
 	ARG_UNPACK_ATOM(bytes)(offset,0)(length,UINT32_MAX);
-	if (!th->isopen)
-		throw Class<IOError>::getInstanceS(sys,"FileStream is not opened");
-	sys->getEngineData()->FileWriteByteArray(sys,th->file->getFullPath(),bytes.getPtr(),offset,length,true);
+	if (!th->stream.is_open())
+		throw Class<IOError>::getInstanceS(sys,"FileStream is not open");
+	if (th->fileMode == "read")
+		throw Class<IOError>::getInstanceS(sys,"FileStream is not writable");
+	uint8_t* buf = bytes->getBuffer(bytes->getLength(),false);
+	uint32_t len = length;
+	if (length == UINT32_MAX || offset+length > bytes->getLength())
+		len = bytes->getLength()-offset;
+	th->stream.write((char*)buf+offset,len);
 }
 
 ASFile::ASFile(Class_base* c, const tiny_string _path, bool _exists):

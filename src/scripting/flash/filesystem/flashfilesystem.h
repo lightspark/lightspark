@@ -33,7 +33,9 @@ class FileStream: public EventDispatcher
 {
 	_NR<ASFile> file;
 	tiny_string fileMode;
-	bool isopen;
+	fstream stream;
+	uint32_t filesize;
+	void afterPositionChange(number_t oldposition);
 public:
 	FileStream(Class_base* c);
 	static void sinit(Class_base*);

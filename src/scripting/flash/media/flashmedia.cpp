@@ -638,7 +638,6 @@ ASFUNCTIONBODY_ATOM(Sound,loadCompressedDataFromByteArray)
 	}
 	th->soundData->markFinished();
 	th->container=false;
-	th->format.codec = LS_AUDIO_CODEC::MP3;
 }
 void Sound::afterExecution(_R<Event> e)
 {

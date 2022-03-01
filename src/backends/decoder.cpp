@@ -1480,7 +1480,7 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 		return false;
 	auto time_base=formatCtx->streams[pkt.stream_index]->time_base;
 	//Should use dts
-	uint32_t mtime=pkt.dts*1000*time_base.num/time_base.den;
+	uint32_t mtime=pkt.dts*1000*(time_base.den ? time_base.num/time_base.den : time_base.num);
 
 	if (pkt.stream_index==(int)audioIndex)
 	{

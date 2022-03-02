@@ -752,7 +752,7 @@ ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(t
 	// TODO: it seems that AIR applications have a higher default value for max_recursion
 	// I haven't found any documentation about that, so we just double it.
 	// If this is changed, it also needs to be changed in the constructor of ASWorker
-	limits.max_recursion = s->flashMode == SystemState::AIR ? 512 : 256;
+	limits.max_recursion = s->flashMode == SystemState::AIR ? 2048 : 256;
 	limits.script_timeout = 20;
 	m_sys=s;
 	stacktrace=new stacktrace_entry[limits.max_recursion];

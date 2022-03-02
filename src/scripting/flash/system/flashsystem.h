@@ -87,7 +87,7 @@ private:
 public:
 	ByteArray* currentDomainMemory;
 	ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p=NullRef);
-	void finalize();
+	void finalize() override;
 	std::map<const multiname*, Class_base*> classesBeingDefined;
 	std::map<QName, Class_base*> instantiatedTemplates;
 
@@ -252,7 +252,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, parameters);
 	ASPROPERTY_GETTER_SETTER(_NR<SecurityDomain>, securityDomain);
 	ASPROPERTY_GETTER_SETTER(tiny_string, imageDecodingPolicy);
-	void finalize();
+	void finalize() override;
 	bool getAllowCodeImport();
 	bool getCheckPolicyFile();
 };

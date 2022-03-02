@@ -1224,8 +1224,14 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
 /*! \brief enqueue an event, a reference is acquired
 * * \param obj EventDispatcher that will receive the event
 * * \param ev event that will be sent */
-bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
+bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool isGlobalMessage)
 {
+	if (!m_sys->singleworker && !isGlobalMessage)
+	{
+		ASWorker* w = getWorker();
+		if (w)
+			return w->addEvent(obj,ev);
+	}
 	/* We have to run waitable events directly,
 	 * because otherwise waiting on them in the vm thread
 	 * will block the vm thread from executing them.
@@ -1252,7 +1258,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	RELEASE_WRITE(ev->queued,true);
 	sem_event_cond.signal();
-	if (!m_sys->singleworker)
+	if (isGlobalMessage)
 	{
 		m_sys->addEventToBackgroundWorkers(obj,ev);
 	}

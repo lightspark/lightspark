@@ -938,7 +938,7 @@ void ASWorker::execute()
 	parsemutex.unlock();
 	getSystemState()->addWorker(this);
 	this->incRef();
-	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"workerState")));
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"workerState")),true);
 	if (!this->threadAborting)
 	{
 		LOG(LOG_INFO,"start worker"<<this->toDebugString()<<" "<<this->isPrimordial<<" "<<getWorker());
@@ -1008,7 +1008,7 @@ void ASWorker::jobFence()
 	state ="terminated";
 	this->incRef();
 	getSystemState()->removeWorker(this);
-	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"workerState")));
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"workerState")),true);
 	sem_event_cond.signal();
 }
 

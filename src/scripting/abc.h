@@ -1348,7 +1348,7 @@ public:
 			const std::vector<InferenceData>& scopeStack, const multiname* name, InferenceData& inferredData);
 	static const Type* getLocalType(const SyntheticFunction* f, unsigned localIndex);
 
-	bool addEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
+	bool addEvent(_NR<EventDispatcher>,_R<Event>, bool isGlobalMessage=false) DLL_PUBLIC;
 	bool prependEvent(_NR<EventDispatcher>, _R<Event> , bool force=false) DLL_PUBLIC;
 	void addIdleEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();

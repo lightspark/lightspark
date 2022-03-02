@@ -140,5 +140,5 @@ ASFUNCTIONBODY_ATOM(MessageChannel,send)
 		th->messagequeue.push(_MR(b));
 	}
 	th->incRef();
-	getVm(sys)->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(sys,"channelMessage")));
+	getVm(sys)->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(sys,"channelMessage")),true);
 }

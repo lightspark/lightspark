@@ -62,7 +62,7 @@ private:
 	std::map<tiny_string, asAtom > styles;
 public:
 	StyleSheet(Class_base* c):EventDispatcher(c){}
-	void finalize();
+	void finalize() override;
 	ASFUNCTION_ATOM(getStyle);
 	ASFUNCTION_ATOM(setStyle);
 	ASFUNCTION_ATOM(_getStyleNames);

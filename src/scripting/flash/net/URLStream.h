@@ -40,11 +40,11 @@ private:
 	std::streambuf *streambuffer;
 	uint64_t timestamp_last_progress;
 	uint32_t bytes_total;
-	void execute();
+	void execute() override;
 public:
 	URLStreamThread(_R<URLRequest> request, _R<URLStream> ldr, _R<ByteArray> bytes);
-	void setBytesTotal(uint32_t b);
-	void setBytesLoaded(uint32_t b);
+	void setBytesTotal(uint32_t b) override;
+	void setBytesLoaded(uint32_t b) override;
 };
 
 class URLStream: public EventDispatcher, public IDataInput, public IDownloaderThreadListener
@@ -54,7 +54,7 @@ private:
 	_NR<ByteArray> data;
 	URLStreamThread *job;
 	Mutex spinlock;
-	void finalize();
+	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getEndian);
 	ASFUNCTION_ATOM(_setEndian);
@@ -82,7 +82,7 @@ public:
 	URLStream(Class_base* c);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
-	void threadFinished(IThreadJob *job);
+	void threadFinished(IThreadJob *job) override;
 };
 
 }

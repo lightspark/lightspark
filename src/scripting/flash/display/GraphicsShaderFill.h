@@ -35,12 +35,12 @@ class GraphicsShaderFill: public ASObject, public IGraphicsFill, public IGraphic
 public:
 	GraphicsShaderFill(Class_base* c);
 	static void sinit(Class_base* c);
-	void finalize();
+	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Matrix>, matrix);
 	ASPROPERTY_GETTER_SETTER(_NR<Shader>, shader);
-	FILLSTYLE toFillStyle();
-	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics);
+	FILLSTYLE toFillStyle() override;
+	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics) override;
 };
 
 }

@@ -34,7 +34,7 @@ protected:
 public:
 	GraphicsStroke(Class_base* c);
 	static void sinit(Class_base* c);
-	void finalize();
+	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string, caps);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, fill); // really IGraphicsFill
@@ -43,7 +43,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, pixelHinting);
 	ASPROPERTY_GETTER_SETTER(tiny_string, scaleMode);
 	ASPROPERTY_GETTER_SETTER(number_t, thickness);
-	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics);
+	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics) override;
 };
 
 }

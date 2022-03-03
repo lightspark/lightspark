@@ -36,7 +36,7 @@ class GraphicsGradientFill: public ASObject, public IGraphicsFill, public IGraph
 public:
 	GraphicsGradientFill(Class_base* c);
 	static void sinit(Class_base* c);
-	void finalize();
+	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, alphas);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, colors);
@@ -46,8 +46,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, ratios);
 	ASPROPERTY_GETTER_SETTER(tiny_string, spreadMethod);
 	ASPROPERTY_GETTER_SETTER(tiny_string, type);
-	FILLSTYLE toFillStyle();
-	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics);
+	FILLSTYLE toFillStyle() override;
+	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics) override;
 };
 
 }

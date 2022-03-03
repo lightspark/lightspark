@@ -99,7 +99,7 @@ public:
 	ASSocket(Class_base* c);
 	~ASSocket();
 	static void sinit(Class_base*);
-	void finalize();
+	void finalize() override;
 	void threadFinished();
 };
 
@@ -125,8 +125,8 @@ protected:
 public:
 	ASSocketThread(_R<ASSocket> owner, const tiny_string& hostname, int port, int timeout);
 	~ASSocketThread();
-	virtual void execute();
-	virtual void jobFence();
+	void execute() override;
+	void jobFence() override;
 	void flushData();
 	void requestClose();
 	bool isConnected();

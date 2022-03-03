@@ -211,7 +211,7 @@ private:
 	_NR<NetStream> netStream;
 public:
 	StageVideo(Class_base* c);
-	void finalize();
+	void finalize() override;
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getVideoWidth);

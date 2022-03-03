@@ -1030,8 +1030,8 @@ abc_function ABCVm::abcfunctions[]={
 	abc_multiply_i_constant_local_setslotnocoerce,
 	abc_multiply_i_local_local_setslotnocoerce,
 
-	abc_invalidinstruction, // 0x350
-	abc_invalidinstruction,
+	abc_inclocal_i_postfix, // 0x350 ABC_OP_OPTIMZED_INCLOCAL_I_POSTFIX
+	abc_declocal_i_postfix, // 0x351 ABC_OP_OPTIMZED_DECLOCAL_I_POSTFIX
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1294,6 +1294,8 @@ struct operands
 #define ABC_OP_OPTIMZED_MULTIPLY_I 0x00000340
 #define ABC_OP_OPTIMZED_SUBTRACT_I_SETSLOT 0x00000348
 #define ABC_OP_OPTIMZED_MULTIPLY_I_SETSLOT 0x0000034c
+#define ABC_OP_OPTIMZED_INCLOCAL_I_POSTFIX 0x00000350
+#define ABC_OP_OPTIMZED_DECLOCAL_I_POSTFIX 0x00000351
 
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
@@ -2737,7 +2739,7 @@ void skipunreachablecode(preloadstate& state, memorystream& code, bool updatetar
 		}
 	}
 }
-bool swapWithFollowingSetLocal(preloadstate& state,memorystream& code,uint32_t startpos,std::vector<typestackentry>& typestack)
+bool checkforpostfix(preloadstate& state,memorystream& code,uint32_t startpos,std::vector<typestackentry>& typestack, int32_t localpos, uint32_t postfix_opcode)
 {
 #ifdef ENABLE_OPTIMIZATION
 	if (!state.operandlist.empty() && state.jumptargets.find(startpos) == state.jumptargets.end())
@@ -2770,6 +2772,26 @@ bool swapWithFollowingSetLocal(preloadstate& state,memorystream& code,uint32_t s
 			}
 			if (loc != UINT32_MAX && state.jumptargets.find(pos) == state.jumptargets.end())
 			{
+				if (state.operandlist.back().type == OP_LOCAL && state.operandlist.back().index == localpos)
+				{
+					// code is a postfix increment/decrement where the result is used directly
+					// actionscript code like:
+					// y = x++;
+					// is  translated sequence is of form
+					// getlocal x
+					// inclocal_i x
+					// convert_i
+					// setlocal y
+					state.preloadedcode.pop_back(); // remove getlocal opcode
+					state.preloadedcode.push_back(postfix_opcode);
+					state.preloadedcode.back().pcode.arg1_uint = localpos;
+					state.preloadedcode.back().pcode.local3.pos = loc;
+					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					setOperandModified(state,OP_LOCAL,localpos);
+					clearOperands(state,true,nullptr);
+					code.seekg(pos);
+					return true;
+				}
 				// current opcode is followed by setlocal, we can swap these opcodes to let setlocal be optimized
 				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,peekopcode,code,startpos);
 				state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint =loc;
@@ -2779,7 +2801,6 @@ bool swapWithFollowingSetLocal(preloadstate& state,memorystream& code,uint32_t s
 					state.localtypes[loc]=nullptr;
 				removetypestack(typestack,1);
 				code.seekg(pos);
-				return true;
 			}
 		}
 	}
@@ -3805,24 +3826,28 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				uint32_t p = code.tellg();
 				uint32_t t = code.readu30();
-				swapWithFollowingSetLocal(state,code,p,typestack);
-				state.preloadedcode.push_back(ABC_OP_OPTIMZED_INCLOCAL_I);
-				state.preloadedcode.back().pcode.arg1_uint = t;
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				setOperandModified(state,OP_LOCAL,t);
-				clearOperands(state,true,&lastlocalresulttype);
+				if (!checkforpostfix(state,code,p,typestack, t,ABC_OP_OPTIMZED_INCLOCAL_I_POSTFIX))
+				{
+					state.preloadedcode.push_back(ABC_OP_OPTIMZED_INCLOCAL_I);
+					state.preloadedcode.back().pcode.arg1_uint = t;
+					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					setOperandModified(state,OP_LOCAL,t);
+					clearOperands(state,true,&lastlocalresulttype);
+				}
 				break;
 			}
 			case 0xc3://declocal_i
 			{
 				uint32_t p = code.tellg();
 				uint32_t t = code.readu30();
-				swapWithFollowingSetLocal(state,code,p,typestack);
-				state.preloadedcode.push_back(ABC_OP_OPTIMZED_DECLOCAL_I);
-				state.preloadedcode.back().pcode.arg1_uint = t;
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				setOperandModified(state,OP_LOCAL,t);
-				clearOperands(state,true,&lastlocalresulttype);
+				if (!checkforpostfix(state,code,p,typestack, t,ABC_OP_OPTIMZED_DECLOCAL_I_POSTFIX))
+				{
+					state.preloadedcode.push_back(ABC_OP_OPTIMZED_DECLOCAL_I);
+					state.preloadedcode.back().pcode.arg1_uint = t;
+					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					setOperandModified(state,OP_LOCAL,t);
+					clearOperands(state,true,&lastlocalresulttype);
+				}
 				break;
 			}
 			case 0x08://kill

@@ -525,8 +525,8 @@ public:
 	static bool Boolean_concrete(asAtom& a);
 	static bool Boolean_concrete_object(asAtom& a);
 	static void convert_b(asAtom& a, bool refcounted);
-	static FORCE_INLINE int32_t getInt(const asAtom& a) { assert((a.uintval&0x7) == ATOM_INTEGER || (a.uintval&0x3) == ATOM_UINTEGER); return a.intval>>3; }
-	static FORCE_INLINE uint32_t getUInt(const asAtom& a) { assert((a.uintval&0x7) == ATOM_UINTEGER || (a.uintval&0x3) == ATOM_INTEGER); return a.uintval>>3; }
+	static FORCE_INLINE int32_t getInt(const asAtom& a) { assert((a.uintval&0x7) == ATOM_INTEGER || (a.uintval&0x7) == ATOM_UINTEGER); return a.intval>>3; }
+	static FORCE_INLINE uint32_t getUInt(const asAtom& a) { assert((a.uintval&0x7) == ATOM_UINTEGER || (a.uintval&0x7) == ATOM_INTEGER); return a.uintval>>3; }
 	static FORCE_INLINE uint32_t getStringId(const asAtom& a) { assert((a.uintval&0x7) == ATOM_STRINGID); return a.uintval>>3; }
 	static FORCE_INLINE void setInt(asAtom& a,SystemState* sys, int64_t val);
 	static FORCE_INLINE void setUInt(asAtom& a,SystemState* sys, uint32_t val);
@@ -1954,14 +1954,14 @@ FORCE_INLINE void asAtomHandler::bit_xor(asAtom& a,SystemState* sys,asAtom &v1)
 {
 	int32_t i1=toInt(v1);
 	int32_t i2=toInt(a);
-	LOG_CALL(_("bitXor ") << std::hex << i1 << '^' << i2 << std::dec);
+	LOG_CALL("bitXor " << std::hex << i1 << '^' << i2 << std::dec);
 	setInt(a,sys,i1^i2);
 }
 
 FORCE_INLINE void asAtomHandler::bitnot(asAtom& a,SystemState* sys)
 {
 	int32_t i1=toInt(a);
-	LOG_CALL(_("bitNot ") << std::hex << i1 << std::dec);
+	LOG_CALL("bitNot " << std::hex << i1 << std::dec);
 	setInt(a,sys,~i1);
 }
 
@@ -1973,7 +1973,7 @@ FORCE_INLINE void asAtomHandler::subtract(asAtom& a,SystemState* sys,asAtom &v2,
 		int64_t num1=toInt64(a);
 		int64_t num2=toInt64(v2);
 	
-		LOG_CALL(_("subtractI ") << num1 << '-' << num2);
+		LOG_CALL("subtractI " << num1 << '-' << num2);
 		int64_t res = num1-num2;
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
 			setInt(a,sys,int32_t(res));
@@ -1987,7 +1987,7 @@ FORCE_INLINE void asAtomHandler::subtract(asAtom& a,SystemState* sys,asAtom &v2,
 		number_t num2=toNumber(v2);
 		number_t num1=toNumber(a);
 	
-		LOG_CALL(_("subtract ") << num1 << '-' << num2);
+		LOG_CALL("subtract " << num1 << '-' << num2);
 		if (forceint)
 			setInt(a,sys,num1-num2);
 		else
@@ -2002,7 +2002,7 @@ FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret,SystemState* sys,co
 		int64_t num1=toInt64(v1);
 		int64_t num2=toInt64(v2);
 	
-		LOG_CALL(_("subtractreplaceI ") << num1 << '-' << num2);
+		LOG_CALL("subtractreplaceI " << num1 << '-' << num2);
 		ASATOM_DECREF(ret);
 		int64_t res = num1-num2;
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
@@ -2018,7 +2018,7 @@ FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret,SystemState* sys,co
 		number_t num1=toNumber(v1);
 	
 		ASObject* o = getObject(ret);
-		LOG_CALL(_("subtractreplace ")  << num1 << '-' << num2);
+		LOG_CALL("subtractreplace "  << num1 << '-' << num2);
 		if (forceint)
 		{
 			setInt(ret,sys,num1-num2);
@@ -2038,7 +2038,7 @@ FORCE_INLINE void asAtomHandler::multiply(asAtom& a,SystemState* sys,asAtom &v2,
 		int64_t num1=toInt64(a);
 		int64_t num2=toInt64(v2);
 	
-		LOG_CALL(_("multiplyI ") << num1 << '*' << num2);
+		LOG_CALL("multiplyI " << num1 << '*' << num2);
 		int64_t res = num1*num2;
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
 			setInt(a,sys,res);
@@ -2051,7 +2051,7 @@ FORCE_INLINE void asAtomHandler::multiply(asAtom& a,SystemState* sys,asAtom &v2,
 	{
 		double num1=toNumber(v2);
 		double num2=toNumber(a);
-		LOG_CALL(_("multiply ")  << num1 << '*' << num2);
+		LOG_CALL("multiply "  << num1 << '*' << num2);
 		if (forceint)
 			setInt(a,sys,num1*num2);
 		else 
@@ -2067,7 +2067,7 @@ FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, SystemState* sys,c
 		int64_t num1=toInt64(v1);
 		int64_t num2=toInt64(v2);
 	
-		LOG_CALL(_("multiplyreplaceI ") << num1 << '*' << num2);
+		LOG_CALL("multiplyreplaceI " << num1 << '*' << num2);
 		ASATOM_DECREF(ret);
 		int64_t res = num1*num2;
 		
@@ -2083,7 +2083,7 @@ FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, SystemState* sys,c
 		double num1=toNumber(v2);
 		double num2=toNumber(v1);
 		ASObject* o = getObject(ret);
-		LOG_CALL(_("multiplyreplace ")  << num1 << '*' << num2);
+		LOG_CALL("multiplyreplace "  << num1 << '*' << num2);
 		if (forceint)
 		{
 			setInt(ret,sys,num1*num2);
@@ -2100,7 +2100,7 @@ FORCE_INLINE void asAtomHandler::divide(asAtom& a,SystemState* sys,asAtom &v2, b
 	double num1=toNumber(a);
 	double num2=toNumber(v2);
 
-	LOG_CALL(_("divide ")  << num1 << '/' << num2);
+	LOG_CALL("divide "  << num1 << '/' << num2);
 	// handling of infinity according to ECMA-262, chapter 11.5.2
 	if (std::isinf(num1))
 	{
@@ -2123,7 +2123,7 @@ FORCE_INLINE void asAtomHandler::dividereplace(asAtom& ret,SystemState* sys,cons
 	double num2=toNumber(v2);
 
 	number_t res=0;
-	LOG_CALL(_("divide ")  << num1 << '/' << num2);
+	LOG_CALL("divide "  << num1 << '/' << num2);
 	// handling of infinity according to ECMA-262, chapter 11.5.2
 	if (std::isinf(num1))
 	{
@@ -2139,7 +2139,7 @@ FORCE_INLINE void asAtomHandler::dividereplace(asAtom& ret,SystemState* sys,cons
 		res = num1/num2;
 	
 	ASObject* o = getObject(ret);
-	LOG_CALL(_("dividereplace ")  << num1 << '/' << num2);
+	LOG_CALL("dividereplace "  << num1 << '/' << num2);
 	if (forceint)
 	{
 		setInt(ret,sys,num1/num2);
@@ -2159,7 +2159,7 @@ FORCE_INLINE void asAtomHandler::modulo(asAtom& a,SystemState* sys,asAtom &v2)
 	{
 		int32_t num1=toInt(a);
 		int32_t num2=toInt(v2);
-		LOG_CALL(_("moduloI ")  << num1 << '%' << num2);
+		LOG_CALL("moduloI "  << num1 << '%' << num2);
 		if (num2 == 0)
 			setNumber(a,sys,numeric_limits<double>::quiet_NaN());
 		else
@@ -2169,7 +2169,7 @@ FORCE_INLINE void asAtomHandler::modulo(asAtom& a,SystemState* sys,asAtom &v2)
 	{
 		number_t num1=toNumber(a);
 		number_t num2=toNumber(v2);
-		LOG_CALL(_("modulo ")  << num1 << '%' << num2);
+		LOG_CALL("modulo "  << num1 << '%' << num2);
 		/* fmod returns NaN if num2 == 0 as the spec mandates */
 		setNumber(a,sys,::fmod(num1,num2));
 	}
@@ -2183,7 +2183,7 @@ FORCE_INLINE void asAtomHandler::moduloreplace(asAtom& ret, SystemState* sys,con
 		int32_t num1=toInt(v1);
 		int32_t num2=toInt(v2);
 		ASATOM_DECREF(ret);
-		LOG_CALL(_("moduloreplaceI ")  << num1 << '%' << num2);
+		LOG_CALL("moduloreplaceI "  << num1 << '%' << num2);
 		if (num2 == 0)
 			setNumber(ret,sys,numeric_limits<double>::quiet_NaN());
 		else
@@ -2193,7 +2193,7 @@ FORCE_INLINE void asAtomHandler::moduloreplace(asAtom& ret, SystemState* sys,con
 	{
 		number_t num1=toNumber(v1);
 		number_t num2=toNumber(v2);
-		LOG_CALL(_("moduloreplace ")  << num1 << '%' << num2);
+		LOG_CALL("moduloreplace "  << num1 << '%' << num2);
 		/* fmod returns NaN if num2 == 0 as the spec mandates */
 		ASObject* o = getObject(ret);
 		if (replaceNumber(ret,sys,::fmod(num1,num2)) && o)
@@ -2205,7 +2205,7 @@ FORCE_INLINE void asAtomHandler::lshift(asAtom& a,SystemState* sys,asAtom &v1)
 {
 	int32_t i2=toInt(a);
 	uint32_t i1=toUInt(v1)&0x1f;
-	LOG_CALL(_("lShift ")<<std::hex<<i2<<_("<<")<<i1<<std::dec);
+	LOG_CALL("lShift "<<std::hex<<i2<<"<<"<<i1<<std::dec);
 	//Left shift are supposed to always work in 32bit
 	setInt(a,sys,i2<<i1);
 }
@@ -2214,7 +2214,7 @@ FORCE_INLINE void asAtomHandler::rshift(asAtom& a,SystemState* sys,asAtom &v1)
 {
 	int32_t i2=toInt(a);
 	uint32_t i1=toUInt(v1)&0x1f;
-	LOG_CALL(_("rShift ")<<std::hex<<i2<<_(">>")<<i1<<std::dec);
+	LOG_CALL("rShift "<<std::hex<<i2<<">>"<<i1<<std::dec);
 	setInt(a,sys,i2>>i1);
 }
 
@@ -2222,26 +2222,26 @@ FORCE_INLINE void asAtomHandler::urshift(asAtom& a,SystemState* sys,asAtom &v1)
 {
 	uint32_t i2=toUInt(a);
 	uint32_t i1=toUInt(v1)&0x1f;
-	LOG_CALL(_("urShift ")<<std::hex<<i2<<_(">>")<<i1<<std::dec);
+	LOG_CALL("urShift "<<std::hex<<i2<<">>"<<i1<<std::dec);
 	setInt(a,sys,i2>>i1);
 }
 FORCE_INLINE void asAtomHandler::bit_and(asAtom& a,SystemState* sys,asAtom &v1)
 {
 	int32_t i1=toInt(v1);
 	int32_t i2=toInt(a);
-	LOG_CALL(_("bitAnd_oo ") << std::hex << i1 << '&' << i2 << std::dec);
+	LOG_CALL("bitAnd_oo " << std::hex << i1 << '&' << i2 << std::dec);
 	setInt(a,sys,i1&i2);
 }
 FORCE_INLINE void asAtomHandler::bit_or(asAtom& a,SystemState* sys,asAtom &v1)
 {
 	int32_t i1=toInt(v1);
 	int32_t i2=toInt(a);
-	LOG_CALL(_("bitOr ") << std::hex << i1 << '|' << i2 << std::dec);
+	LOG_CALL("bitOr " << std::hex << i1 << '|' << i2 << std::dec);
 	setInt(a,sys,i1|i2);
 }
 FORCE_INLINE void asAtomHandler::_not(asAtom& a)
 {
-	LOG_CALL( _("not:") <<toDebugString(a)<<" "<<!Boolean_concrete(a));
+	LOG_CALL("not:" <<toDebugString(a)<<" "<<!Boolean_concrete(a));
 	
 	bool ret=!Boolean_concrete(a);
 	setBool(a,ret);
@@ -2249,7 +2249,7 @@ FORCE_INLINE void asAtomHandler::_not(asAtom& a)
 
 FORCE_INLINE void asAtomHandler::negate_i(asAtom& a,SystemState* sys)
 {
-	LOG_CALL(_("negate_i"));
+	LOG_CALL("negate_i");
 	int n=toInt(a);
 	setInt(a,sys,-n);
 }
@@ -2259,7 +2259,7 @@ FORCE_INLINE void asAtomHandler::add_i(asAtom& a,SystemState* sys,asAtom &v2)
 	int64_t num2=toInt(v2);
 	int64_t num1=toInt(a);
 
-	LOG_CALL(_("add_i ") << num1 << '+' << num2);
+	LOG_CALL("add_i " << num1 << '+' << num2);
 	int64_t res = num1+num2;
 	if (res >= INT32_MAX || res <= INT32_MIN)
 		setNumber(a,sys,res);
@@ -2272,7 +2272,7 @@ FORCE_INLINE void asAtomHandler::subtract_i(asAtom& a,SystemState* sys,asAtom &v
 	int num2=toInt(v2);
 	int num1=toInt(a);
 
-	LOG_CALL(_("subtract_i ") << num1 << '-' << num2);
+	LOG_CALL("subtract_i " << num1 << '-' << num2);
 	setInt(a,sys,num1-num2);
 }
 
@@ -2280,7 +2280,7 @@ FORCE_INLINE void asAtomHandler::multiply_i(asAtom& a,SystemState* sys,asAtom &v
 {
 	int num1=toInt(a);
 	int num2=toInt(v2);
-	LOG_CALL(_("multiply_i ")  << num1 << '*' << num2);
+	LOG_CALL("multiply_i "  << num1 << '*' << num2);
 	int64_t res = num1*num2;
 	setInt(a,sys,res);
 }

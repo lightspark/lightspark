@@ -7175,6 +7175,29 @@ void ABCVm::abc_declocal_i_optimized(call_context* context)
 	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,t),context->sys);
 	++context->exec_pos;
 }
+void ABCVm::abc_inclocal_i_postfix(call_context* context)
+{
+	int32_t t = context->exec_pos->arg1_uint;
+	LOG_CALL( "incLocal_i_postfix " << t <<" "<<context->exec_pos->local3.pos);
+	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
+	asAtom res = CONTEXT_GETLOCAL(context,t);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+	ASATOM_DECREF(oldres);
+	asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,t),context->sys);
+	++context->exec_pos;
+}
+void ABCVm::abc_declocal_i_postfix(call_context* context)
+{
+	int32_t t = context->exec_pos->arg1_uint;
+	LOG_CALL( "decLocal_i_postfix " << t <<" "<<context->exec_pos->local3.pos);
+	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
+	asAtom res = CONTEXT_GETLOCAL(context,t);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+	ASATOM_DECREF(oldres);
+	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,t),context->sys);
+	++context->exec_pos;
+}
+
 void ABCVm::abc_dup_local(call_context* context)
 {
 	LOG_CALL("dup_l "<<context->exec_pos->local_pos1<<" "<<(context->exec_pos->local3.pos));

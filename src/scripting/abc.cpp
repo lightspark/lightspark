@@ -927,6 +927,8 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		auto i = parents.rbegin();
 		for(;i!=parents.rend();++i)
 		{
+			if (event->immediatePropagationStopped || event->propagationStopped)
+				break;
 			(*i)->incRef();
 			event->currentTarget=_MR(*i);
 			(*i)->handleEvent(event);
@@ -938,9 +940,12 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	if(doTarget)
 	{
 		event->eventPhase = EventPhase::AT_TARGET;
-		dispatcher->incRef();
-		event->currentTarget=_MR(dispatcher);
-		dispatcher->handleEvent(event);
+		if (!event->immediatePropagationStopped && !event->propagationStopped)
+		{
+			dispatcher->incRef();
+			event->currentTarget=_MR(dispatcher);
+			dispatcher->handleEvent(event);
+		}
 	}
 
 	//Do bubbling phase
@@ -950,6 +955,8 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		auto i = parents.begin();
 		for(;i!=parents.end();++i)
 		{
+			if (event->immediatePropagationStopped || event->propagationStopped)
+				break;
 			(*i)->incRef();
 			event->currentTarget=_MR(*i);
 			(*i)->handleEvent(event);
@@ -963,6 +970,8 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		event->currentTarget=_MR(dispatcher->getSystemState()->stage);
 		dispatcher->getSystemState()->stage->handleEvent(event);
 		event->currentTarget=NullRef;
+		if(!event->defaultPrevented)
+			dispatcher->getSystemState()->stage->defaultEventBehavior(event);
 	}
 	if (event->type == "mouseDown" && dispatcher->is<InteractiveObject>())
 	{

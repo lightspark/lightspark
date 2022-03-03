@@ -409,8 +409,8 @@ protected:
 public:
 	Loader(Class_base* c);
 	~Loader();
-	void finalize();
-	void threadFinished(IThreadJob* job);
+	void finalize() override;
+	void threadFinished(IThreadJob* job) override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -719,6 +719,7 @@ protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
 	bool renderImpl(RenderContext& ctxt) const override;
 public:
+	void defaultEventBehavior(_R<Event> e) override;
 	ACQUIRE_RELEASE_FLAG(invalidated);
 	void forceInvalidation();
 	void onAlign(const tiny_string&);

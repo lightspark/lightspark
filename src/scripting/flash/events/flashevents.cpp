@@ -55,7 +55,8 @@ void IEventDispatcher::linkTraits(Class_base* c)
 }
 
 Event::Event(Class_base* cb, const tiny_string& t, bool b, bool c, CLASS_SUBTYPE st):
-	ASObject(cb,T_OBJECT,st),bubbles(b),cancelable(c),defaultPrevented(false),queued(false),eventPhase(0),type(t),target(asAtomHandler::invalidAtom),currentTarget()
+	ASObject(cb,T_OBJECT,st),bubbles(b),cancelable(c),defaultPrevented(false),propagationStopped(false),immediatePropagationStopped(false),queued(false),
+	eventPhase(0),type(t),target(asAtomHandler::invalidAtom),currentTarget()
 {
 }
 
@@ -187,7 +188,7 @@ ASFUNCTIONBODY_ATOM(Event,formatToString)
 		msg += prop;
 		msg += "=";
 
-		multiname propName(NULL);
+		multiname propName(nullptr);
 		propName.name_type=multiname::NAME_STRING;
 		propName.name_s_id=sys->getUniqueStringId(prop);
 		propName.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
@@ -215,12 +216,12 @@ ASFUNCTIONBODY_ATOM(Event,clone)
 ASFUNCTIONBODY_ATOM(Event,stopPropagation)
 {
 	Event* th=asAtomHandler::as<Event>(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"Event.stopPropagation not implemented:"<<th->toDebugString());
+	th->propagationStopped=true;
 }
 ASFUNCTIONBODY_ATOM(Event,stopImmediatePropagation)
 {
 	Event* th=asAtomHandler::as<Event>(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"Event.stopImmediatePropagation not implemented:"<<th->toDebugString());
+	th->immediatePropagationStopped=true;
 }
 
 void WaitableEvent::wait()
@@ -787,6 +788,8 @@ void EventDispatcher::handleEvent(_R<Event> e)
 			continue;
 		if (tmpListener[i].worker != getWorker()) // only handle listeners that are available in the current worker
 			continue;
+		if (e->immediatePropagationStopped)
+			break;
 		asAtom arg0= asAtomHandler::fromObject(e.getPtr());
 		IFunction* func = asAtomHandler::as<IFunction>(tmpListener[i].f);
 		asAtom v = asAtomHandler::fromObject(func->closure_this ? func->closure_this.getPtr() : this);

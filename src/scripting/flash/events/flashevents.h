@@ -61,6 +61,8 @@ public:
 	ASPROPERTY_GETTER(bool,bubbles);
 	ASPROPERTY_GETTER(bool,cancelable);
 	bool defaultPrevented;
+	bool propagationStopped;
+	bool immediatePropagationStopped;
 	ACQUIRE_RELEASE_FLAG(queued); // indicates that this event was added to the event queue
 	ASPROPERTY_GETTER(uint32_t,eventPhase);
 	ASPROPERTY_GETTER(tiny_string,type);

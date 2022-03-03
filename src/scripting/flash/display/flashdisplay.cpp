@@ -38,6 +38,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/ui/ContextMenu.h"
+#include "scripting/flash/ui/keycodes.h"
 #include "scripting/flash/display3d/flashdisplay3d.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
@@ -3605,11 +3606,32 @@ void Stage::onFullScreenSourceRect(_NR<Rectangle> /*oldValue*/)
 	fullScreenSourceRect.reset();
 }
 
+void Stage::defaultEventBehavior(_R<Event> e)
+{
+	if (e->type == "keyDown")
+	{
+		KeyboardEvent* ev = e->as<KeyboardEvent>();
+		uint32_t modifiers = ev->getModifiers() & (KMOD_LSHIFT | KMOD_RSHIFT |KMOD_LCTRL | KMOD_RCTRL | KMOD_LALT | KMOD_RALT);
+		if (modifiers == KMOD_NONE)
+		{
+			switch (ev->getKeyCode())
+			{
+				case AS3KEYCODE_ESCAPE:
+					if (getSystemState()->getEngineData()->inFullScreenMode())
+						getSystemState()->getEngineData()->setDisplayState("normal",getSystemState());
+					break;
+				default:
+					break;
+			}
+		}
+	}
+}
+
 void Stage::eventListenerAdded(const tiny_string& eventName)
 {
 	if (eventName == "stageVideoAvailability")
 	{
-		// StageVideoAvailabilityEvent is dispatched directly after an eventListener is added added
+		// StageVideoAvailabilityEvent is dispatched directly after an eventListener is added
 		// see https://www.adobe.com/devnet/flashplayer/articles/stage_video.html 
 		this->incRef();
 		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS(getSystemState())));

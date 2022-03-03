@@ -35,7 +35,7 @@ InputThread::InputThread(SystemState* s):m_sys(s),engineData(nullptr),terminated
 	curDragged(),currentMouseOver(),lastMouseDownTarget(),
 	lastKeyUp(SDLK_UNKNOWN), dragLimit(nullptr),button1pressed(false)
 {
-	LOG(LOG_INFO,_("Creating input thread"));
+	LOG(LOG_INFO,"Creating input thread");
 }
 
 void InputThread::start(EngineData* e)
@@ -253,7 +253,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,_("Error in input handling ") << e.cause);
+		LOG(LOG_ERROR,"Error in input handling " << e.cause);
 		m_sys->setError(e.cause);
 		return NullRef;
 	}
@@ -445,11 +445,6 @@ void InputThread::handleMouseLeave()
 
 bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 {
-	if (m_sys->getEngineData()->inFullScreenMode() && keyevent->keysym.sym == SDLK_ESCAPE && m_sys->flashMode != SystemState::AIR)
-	{
-		m_sys->getEngineData()->setDisplayState("normal",m_sys);
-		return true;
-	}
 	if (keyevent->keysym.sym == SDLK_MENU)
 	{
 		int stageX,stageY;

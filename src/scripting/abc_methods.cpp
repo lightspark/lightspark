@@ -280,10 +280,10 @@ void ABCVm::abc_lookupswitch(call_context* context)
 	preloadedcodedata* here=context->exec_pos; //Base for the jumps is the instruction itself for the switch
 	int32_t t = (++(context->exec_pos))->arg3_int;
 	preloadedcodedata* defaultdest=here+t;
-	LOG_CALL("Switch default dest " << t);
 	uint32_t count = (++(context->exec_pos))->arg3_uint;
 
 	RUNTIME_STACK_POP_CREATE(context,index_obj);
+	LOG_CALL("lookupswitch " << t <<" "<<asAtomHandler::toDebugString(*index_obj));
 	assert_and_throw(asAtomHandler::isNumeric(*index_obj));
 	unsigned int index=asAtomHandler::toUInt(*index_obj);
 	ASATOM_DECREF_POINTER(index_obj);

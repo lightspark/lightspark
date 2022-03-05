@@ -632,6 +632,8 @@ private:
 	static void abc_ifstrictne_constant_local(call_context* context);
 	static void abc_ifstrictne_local_local(call_context* context);
 	static void abc_lookupswitch(call_context* context);
+	static void abc_lookupswitch_constant(call_context* context);
+	static void abc_lookupswitch_local(call_context* context);
 	static void abc_pushwith(call_context* context);
 	static void abc_popscope(call_context* context);
 	static void abc_nextname(call_context* context);

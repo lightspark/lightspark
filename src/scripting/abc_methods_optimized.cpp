@@ -7299,3 +7299,41 @@ void ABCVm::abc_getfuncscopeobject_localresult(call_context* context)
 	ASATOM_INCREF(res);
 	++(context->exec_pos);
 }
+void ABCVm::abc_lookupswitch_constant(call_context* context)
+{
+	preloadedcodedata* here=context->exec_pos; //Base for the jumps is the instruction itself for the switch
+	asAtom index_obj = *here->arg1_constant;
+	int32_t t = (++(context->exec_pos))->arg3_int;
+	preloadedcodedata* defaultdest=here+t;
+	LOG_CALL("lookupswitch_c " << t);
+	uint32_t count = (++(context->exec_pos))->arg3_uint;
+
+	assert_and_throw(asAtomHandler::isNumeric(index_obj));
+	unsigned int index=asAtomHandler::toUInt(index_obj);
+	ASATOM_DECREF(index_obj);
+
+	preloadedcodedata* dest=defaultdest;
+	if(index<=count)
+		dest=here+(context->exec_pos+index+1)->arg3_int;
+
+	context->exec_pos = dest;
+}
+void ABCVm::abc_lookupswitch_local(call_context* context)
+{
+	preloadedcodedata* here=context->exec_pos; //Base for the jumps is the instruction itself for the switch
+	asAtom index_obj = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	int32_t t = (++(context->exec_pos))->arg3_int;
+	preloadedcodedata* defaultdest=here+t;
+	LOG_CALL("lookupswitch_l " << t<<" "<<asAtomHandler::toDebugString(index_obj));
+	uint32_t count = (++(context->exec_pos))->arg3_uint;
+
+	assert_and_throw(asAtomHandler::isNumeric(index_obj));
+	unsigned int index=asAtomHandler::toUInt(index_obj);
+	ASATOM_DECREF(index_obj);
+
+	preloadedcodedata* dest=defaultdest;
+	if(index<=count)
+		dest=here+(context->exec_pos+index+1)->arg3_int;
+
+	context->exec_pos = dest;
+}

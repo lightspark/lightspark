@@ -1032,8 +1032,8 @@ abc_function ABCVm::abcfunctions[]={
 
 	abc_inclocal_i_postfix, // 0x350 ABC_OP_OPTIMZED_INCLOCAL_I_POSTFIX
 	abc_declocal_i_postfix, // 0x351 ABC_OP_OPTIMZED_DECLOCAL_I_POSTFIX
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_lookupswitch_constant, // 0x352 ABC_OP_OPTIMZED_LOOKUPSWITCH
+	abc_lookupswitch_local,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1296,7 +1296,7 @@ struct operands
 #define ABC_OP_OPTIMZED_MULTIPLY_I_SETSLOT 0x0000034c
 #define ABC_OP_OPTIMZED_INCLOCAL_I_POSTFIX 0x00000350
 #define ABC_OP_OPTIMZED_DECLOCAL_I_POSTFIX 0x00000351
-
+#define ABC_OP_OPTIMZED_LOOKUPSWITCH 0x00000352
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -1804,6 +1804,14 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					keepchecking=false;
 				break;
 			case 0x08://kill
+				if (state.jumptargets.find(pos) == state.jumptargets.end())
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				else
+					keepchecking=false;
+				break;
 			case 0x82://coerce_a
 				b = code.peekbyteFromPosition(pos);
 				pos++;
@@ -2097,6 +2105,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x37://li32
 		case 0x38://lf32
 		case 0x39://lf64
+		case 0x1b://lookupswitch
 			if (!argsneeded&& (state.jumptargets.find(pos) == state.jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result 
@@ -3854,17 +3863,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				int32_t p = code.tellg();
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				uint32_t t = code.readu30();
+#ifdef ENABLE_OPTIMIZATION
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 				{
-					state.jumptargeteresulttypes.erase(p+1);
-					state.jumptargets[p+1]++;
+					state.jumptargeteresulttypes.erase(code.tellg()+1);
+					state.jumptargets[code.tellg()+1]++;
 				}
-				uint32_t t = code.readu30();
 				if (skippablekills.count(t))
 				{
 					opcode_skipped=true;
 				}
 				else
+#endif
 				{
 					state.preloadedcode.push_back((uint32_t)opcode);
 					state.oldnewpositions[p] = (int32_t)state.preloadedcode.size();
@@ -5505,8 +5516,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			{
 				state.canlocalinitialize.clear();
 				removetypestack(typestack,1);
-				state.preloadedcode.push_back((uint32_t)opcode);
 				int32_t p = code.tellg()-1;
+				if (setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_LOOKUPSWITCH,opcode,code,code.tellg()))
+					state.oldnewpositions[p] = (int32_t)state.preloadedcode.size()-1;
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				switchpositions[state.preloadedcode.size()] = code.reads24();
 				switchstartpositions[state.preloadedcode.size()] = p;
@@ -5523,7 +5535,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					state.preloadedcode.push_back(0);
 				}
 				clearOperands(state,true,&lastlocalresulttype);
-				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			}
 			case 0x20://pushnull

@@ -74,24 +74,25 @@ tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1,
 
 		msgtemplate++;
 	}
-	if (Log::getLevel() >= LOG_INFO)
-	{
-		SystemState* sys = getSys();
-		tiny_string stacktrace;
-		ASWorker* w = getWorker();
-		int cur_rec = w ? w->cur_recursion : getVm(sys)->cur_recursion;
-		stacktrace_entry* strace = w ? w->stacktrace : getVm(sys)->stacktrace;
-		for (uint32_t i = cur_rec; i > 0; i--)
-		{
-			stacktrace += "    at ";
-			stacktrace += asAtomHandler::toObject(strace[i-1].object,sys)->getClassName();
-			stacktrace += "/";
-			stacktrace += sys->getStringFromUniqueId(strace[i-1].name);
-			stacktrace += "()\n";
-		}
-		LOG(LOG_INFO,"throwing exception:"<<w<<" id:"<<errorID<<" "<<msg.str()<< "\n" << stacktrace);
-	}
+//	if (Log::getLevel() >= LOG_INFO)
+//	{
+//		SystemState* sys = getSys();
+//		tiny_string stacktrace;
+//		ASWorker* w = getWorker();
+//		int cur_rec = w ? w->cur_recursion : getVm(sys)->cur_recursion;
+//		stacktrace_entry* strace = w ? w->stacktrace : getVm(sys)->stacktrace;
+//		for (uint32_t i = cur_rec; i > 0; i--)
+//		{
+//			stacktrace += "    at ";
+//			stacktrace += asAtomHandler::toObject(strace[i-1].object,sys)->getClassName();
+//			stacktrace += "/";
+//			stacktrace += sys->getStringFromUniqueId(strace[i-1].name);
+//			stacktrace += "()\n";
+//		}
+//		LOG(LOG_INFO,"throwing exception:"<<w<<" id:"<<errorID<<" "<<msg.str()<< "\n" << stacktrace);
+//	}
 //	Log::setLogLevel(LOG_CALLS);
+	LOG(LOG_INFO,"throwing exception:"<<getWorker()<<" id:"<<errorID<<" "<<msg.str());
 	return msg.str();
 }
 

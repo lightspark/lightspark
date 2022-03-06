@@ -1596,7 +1596,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x65://getscopeobject
 			case 0x5d://findproperty
 			case 0x5e://findpropstrict
-				if (state.function->inClass && !state.function->isFromNewFunction() && !state.mi->needsActivation())
+				if (state.function->inClass && state.function->inClass->isSealed && !state.function->isFromNewFunction() && !state.mi->needsActivation())
 				{
 					pos = code.skipu30FromPosition(pos);
 					b = code.peekbyteFromPosition(pos);
@@ -3967,19 +3967,24 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				bool found = false;
 				bool done=false;
 				multiname* name=mi->context->getMultiname(t,nullptr);
-				if (name && name->isStatic)
+				bool isborrowed = false;
+				bool classvar=false;
+				variable* v = nullptr;
+				Class_base* cls = function->inClass;
+				if (name && name->isStatic && !function->isFromNewFunction())
 				{
-					if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
+					if (function->inClass && function->inClass->isSealed && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 					{
-						bool isborrowed = false;
-						variable* v = nullptr;
-						Class_base* cls = function->inClass;
 						do
 						{
+							if (!cls->isSealed)
+								break;
 							v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed);
+							if (v)
+								break;
 							cls = cls->super.getPtr();
 						}
-						while (!v && cls && cls->isSealed);
+						while (cls && cls->isSealed);
 						if (v)
 						{
 							found =true;
@@ -3991,14 +3996,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								typestack.push_back(typestackentry(function->inClass,isborrowed));
 								break;
 							}
-							if (function->isStatic && !isborrowed && v->kind == DECLARED_TRAIT)
+							if (function->isStatic && !isborrowed && (v->kind & DECLARED_TRAIT))
 							{
 								// if property is a static variable of the class this function belongs to we have to check the scopes first
 								found = false;
 							}
 						}
 					}
-					if (!found)
+					if (!found && (!function->inClass || function->inClass->isSealed))
 					{
 						uint32_t spos = scopelist.size();
 						auto it=scopelist.rbegin();
@@ -4025,6 +4030,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									o=asAtomHandler::fromObjectNoPrimitive(function->inClass);
 									addCachedConstant(state,mi, o,code);
 									resulttype = function->inClass;
+									classvar=true;
 									break;
 								}
 								else
@@ -4103,8 +4109,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint=scopepos;
 						clearOperands(state,true,&lastlocalresulttype);
 					}
+					done=true;
 				}
 				else if(!done)
+				{
+					if (v && function->inClass->isSealed && !function->isFromNewFunction() && (!function->isStatic || !isborrowed ))
+					{
+						asAtom value = asAtomHandler::fromObjectNoPrimitive(cls);
+						addCachedConstant(state,mi, value,code);
+						typestack.push_back(typestackentry(cls,isborrowed));
+						break;
+					}
+				}
+				if(!done)
 #endif
 				{
 					state.preloadedcode.push_back((uint32_t)opcode);
@@ -4112,7 +4129,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					state.preloadedcode.back().pcode.local3.pos=t;
 					clearOperands(state,true,&lastlocalresulttype);
 				}
-				typestack.push_back(typestackentry(resulttype,false));
+				typestack.push_back(typestackentry(resulttype,classvar));
 				break;
 			}
 			case 0x60://getlex
@@ -4457,12 +4474,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										}
 									}
 								}
-								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT || it->type == OP_CACHED_SLOT) && it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
+								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT || it->type == OP_CACHED_SLOT) 
+										&& it->objtype && !it->objtype->isInterface && it->objtype->isInitialized()
+										&& (!typestack[typestack.size()-2].obj || !typestack[typestack.size()-2].classvar))
 								{
+									asAtom o = asAtomHandler::invalidAtom;
 									if (it->objtype->is<Class_inherit>())
 										it->objtype->as<Class_inherit>()->checkScriptInit();
 									// check if we can replace setProperty by setSlot
-									asAtom o = asAtomHandler::invalidAtom;
 									it->objtype->getInstance(o,false,nullptr,0);
 									it->objtype->setupDeclaredTraits(asAtomHandler::getObject(o),false);
 									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr);
@@ -6636,7 +6655,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										typestack.push_back(typestackentry(resulttype,false));
 										break;
 									}
-									if (v && v->slotid)
+									if (v && v->slotid && (!typestack.back().obj || !typestack.back().classvar))
 									{
 										Class_base* resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
 										if (asAtomHandler::getObject(*a)->is<Global>())
@@ -6685,12 +6704,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
 									}
 								}
-								if (state.operandlist.back().objtype && !state.operandlist.back().objtype->isInterface && state.operandlist.back().objtype->isInitialized())
+								if (state.operandlist.back().objtype && !state.operandlist.back().objtype->isInterface && state.operandlist.back().objtype->isInitialized()
+										&& (!typestack.back().obj || !typestack.back().classvar))
 								{
+									asAtom o = asAtomHandler::invalidAtom;
 									if (state.operandlist.back().objtype->is<Class_inherit>())
 										state.operandlist.back().objtype->as<Class_inherit>()->checkScriptInit();
 									// check if we can replace getProperty by getSlot
-									asAtom o = asAtomHandler::invalidAtom;
 									state.operandlist.back().objtype->getInstance(o,false,nullptr,0);
 									state.operandlist.back().objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
 

@@ -6561,7 +6561,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										skip = resulttype == Class<Boolean>::getRef(function->getSystemState()).getPtr();
 										break;
 								}
-								if (skip)
+								if (skip && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 									code.readbyte();
 							}
 							break;
@@ -6836,7 +6836,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0x73://convert_i
 #ifdef ENABLE_OPTIMIZATION
-				if (opcode == code.peekbyte())
+				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
 				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
 					break;
@@ -6851,7 +6851,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			case 0x74://convert_u
 #ifdef ENABLE_OPTIMIZATION
-				if (opcode == code.peekbyte())
+				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
 				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr())
 					break;
@@ -6868,7 +6868,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			case 0x75://convert_d
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 #ifdef ENABLE_OPTIMIZATION
-				if (opcode == code.peekbyte())
+				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
 				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr())
 					break;
@@ -6885,7 +6885,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				break;
 			case 0x76://convert_b
 #ifdef ENABLE_OPTIMIZATION
-				if (opcode == code.peekbyte())
+				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
 				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr())
 					break;

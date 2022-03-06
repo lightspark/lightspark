@@ -276,7 +276,7 @@ void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)
 ASFUNCTIONBODY_ATOM(LoaderInfo,_constructor)
 {
 	//LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
+	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getLoaderURL)
@@ -294,7 +294,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getContent)
 	else
 	{
 		asAtom a = asAtomHandler::fromObject(th->loader.getPtr());
-		Loader::_getContent(ret,sys,a,NULL,0);
+		Loader::_getContent(ret,sys,a,nullptr,0);
 	}
 }
 
@@ -905,7 +905,7 @@ ASFUNCTIONBODY_ATOM(Sprite,_startDrag)
 {
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
 	bool lockCenter = false;
-	const RECT* bounds = NULL;
+	const RECT* bounds = nullptr;
 	ARG_UNPACK_ATOM(lockCenter,false);
 	if(argslen > 1)
 	{
@@ -1267,7 +1267,7 @@ void Sprite::markSoundFinished()
 ASFUNCTIONBODY_ATOM(Sprite,_constructor)
 {
 	//Sprite* th=Class<Sprite>::cast(obj);
-	DisplayObjectContainer::_constructor(ret,sys,obj,NULL,0);
+	DisplayObjectContainer::_constructor(ret,sys,obj,nullptr,0);
 }
 
 _NR<Graphics> Sprite::getGraphics()
@@ -1557,7 +1557,7 @@ void MovieClip::finalize()
 }
 
 /* Returns a Scene_data pointer for a scene called sceneName, or for
- * the current scene if sceneName is empty. Returns NULL, if not found.
+ * the current scene if sceneName is empty. Returns nullptr, if not found.
  */
 const Scene_data *MovieClip::getScene(const tiny_string &sceneName) const
 {
@@ -1575,7 +1575,7 @@ const Scene_data *MovieClip::getScene(const tiny_string &sceneName) const
 		}
 	}
 
-	return NULL;  //Not found!
+	return nullptr;  //Not found!
 }
 
 /* Return global frame index for a named frame. If sceneName is not
@@ -1944,7 +1944,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabels)
 
 ASFUNCTIONBODY_ATOM(MovieClip,_constructor)
 {
-	Sprite::_constructor(ret,sys,obj,NULL,0);
+	Sprite::_constructor(ret,sys,obj,nullptr,0);
 /*	th->setVariableByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),swapDepths));
 	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),createEmptyMovieClip));*/
 }
@@ -2418,7 +2418,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 	if(tf->name != BUILTIN_STRINGS::EMPTY)
 	{
 		tf->incRef();
-		multiname objName(NULL);
+		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=tf->name;
 		objName.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
@@ -2571,7 +2571,7 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{
 		obj->incRef();
-		multiname objName(NULL);
+		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
@@ -2839,7 +2839,7 @@ void DisplayObjectContainer::setOnStage(bool staged, bool force)
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_constructor)
 {
-	InteractiveObject::_constructor(ret,sys,obj,NULL,0);
+	InteractiveObject::_constructor(ret,sys,obj,nullptr,0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getNumChildren)
@@ -3234,7 +3234,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getChildByName)
 	assert_and_throw(argslen==1);
 	uint32_t wantedName=asAtomHandler::toStringId(args[0],sys);
 	std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
-	ASObject* res=NULL;
+	ASObject* res=nullptr;
 	for(;it!=th->dynamicDisplayList.end();++it)
 	{
 		if((*it)->name==wantedName)
@@ -3503,41 +3503,41 @@ uint32_t MorphShape::getTagID() const
 void Stage::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("allowFullScreen","",Class<IFunction>::getFunction(c->getSystemState(),_getAllowFullScreen),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("allowFullScreenInteractive","",Class<IFunction>::getFunction(c->getSystemState(),_getAllowFullScreenInteractive),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("colorCorrectionSupport","",Class<IFunction>::getFunction(c->getSystemState(),_getColorCorrectionSupport),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fullScreenHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fullScreenWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("allowFullScreen","",Class<IFunction>::getFunction(c->getSystemState(),_getAllowFullScreen,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("allowFullScreenInteractive","",Class<IFunction>::getFunction(c->getSystemState(),_getAllowFullScreenInteractive,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("colorCorrectionSupport","",Class<IFunction>::getFunction(c->getSystemState(),_getColorCorrectionSupport,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullScreenHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullScreenWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageWidth","",Class<IFunction>::getFunction(c->getSystemState(),_setStageWidth),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageHeight","",Class<IFunction>::getFunction(c->getSystemState(),_setStageHeight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleMode),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleMode,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_setScaleMode),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(c->getSystemState(),_getLoaderInfo),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageVideos","",Class<IFunction>::getFunction(c->getSystemState(),_getStageVideos),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(c->getSystemState(),_getFocus),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loaderInfo","",Class<IFunction>::getFunction(c->getSystemState(),_getLoaderInfo,0,Class<LoaderInfo>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageVideos","",Class<IFunction>::getFunction(c->getSystemState(),_getStageVideos,0,Class<Vector>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(c->getSystemState(),_getFocus,0,Class<InteractiveObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("focus","",Class<IFunction>::getFunction(c->getSystemState(),_setFocus),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("frameRate","",Class<IFunction>::getFunction(c->getSystemState(),_getFrameRate),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("frameRate","",Class<IFunction>::getFunction(c->getSystemState(),_getFrameRate,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("frameRate","",Class<IFunction>::getFunction(c->getSystemState(),_setFrameRate),SETTER_METHOD,true);
 	// override the setter from DisplayObjectContainer
 	c->setDeclaredMethodByQName("tabChildren","",Class<IFunction>::getFunction(c->getSystemState(),_setTabChildren),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("wmodeGPU","",Class<IFunction>::getFunction(c->getSystemState(),_getWmodeGPU),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wmodeGPU","",Class<IFunction>::getFunction(c->getSystemState(),_getWmodeGPU,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("invalidate","",Class<IFunction>::getFunction(c->getSystemState(),_invalidate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),_getColor),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),_getColor,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),_setColor),SETTER_METHOD,true);
-	REGISTER_GETTER_SETTER(c,align);
-	REGISTER_GETTER_SETTER(c,colorCorrection);
-	REGISTER_GETTER_SETTER(c,displayState);
-	REGISTER_GETTER_SETTER(c,fullScreenSourceRect);
-	REGISTER_GETTER_SETTER(c,showDefaultContextMenu);
-	REGISTER_GETTER_SETTER(c,quality);
-	REGISTER_GETTER_SETTER(c,stageFocusRect);
-	REGISTER_GETTER(c,allowsFullScreen);
-	REGISTER_GETTER(c,stage3Ds);
-	REGISTER_GETTER(c,softKeyboardRect);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,align,ASString);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,colorCorrection,ASString);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,displayState,ASString);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,fullScreenSourceRect,Rectangle);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,showDefaultContextMenu,Boolean);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,quality,ASString);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,stageFocusRect,Boolean);
+	REGISTER_GETTER_RESULTTYPE(c,allowsFullScreen,Boolean);
+	REGISTER_GETTER_RESULTTYPE(c,stage3Ds,Vector);
+	REGISTER_GETTER_RESULTTYPE(c,softKeyboardRect,Rectangle);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,align,onAlign);
@@ -3780,7 +3780,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setStageHeight)
 ASFUNCTIONBODY_ATOM(Stage,_getLoaderInfo)
 {
 	asAtom a = asAtomHandler::fromObject(sys->mainClip);
-	RootMovieClip::_getLoaderInfo(ret,sys,a,NULL,0);
+	RootMovieClip::_getLoaderInfo(ret,sys,a,nullptr,0);
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_getScaleMode)
@@ -4369,7 +4369,7 @@ ASFUNCTIONBODY_ATOM(Bitmap,_constructor)
 	Bitmap* th = asAtomHandler::as<Bitmap>(obj);
 	ARG_UNPACK_ATOM(_bitmapData, NullRef)(_pixelSnapping, "auto")(th->smoothing, false);
 
-	DisplayObject::_constructor(ret,sys,obj,NULL,0);
+	DisplayObject::_constructor(ret,sys,obj,nullptr,0);
 
 	if(_pixelSnapping!="auto")
 		LOG(LOG_NOT_IMPLEMENTED, "Bitmap constructor doesn't support pixelSnapping:"<<_pixelSnapping);
@@ -5834,7 +5834,7 @@ void AVM1Movie::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(AVM1Movie,_constructor)
 {
-	DisplayObject::_constructor(ret,sys,obj,NULL,0);
+	DisplayObject::_constructor(ret,sys,obj,nullptr,0);
 }
 
 void Shader::sinit(Class_base* c)
@@ -5918,7 +5918,7 @@ ASFUNCTIONBODY_GETTER(Stage3D,context3D);
 ASFUNCTIONBODY_ATOM(Stage3D,_constructor)
 {
 	//Stage3D* th=asAtomHandler::as<Stage3D>(obj);
-	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
+	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
 }
 ASFUNCTIONBODY_ATOM(Stage3D,requestContext3D)
 {

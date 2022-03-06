@@ -2019,7 +2019,6 @@ void ABCVm::abc_setPropertyStaticName(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,obj);
 
 	LOG_CALL("setProperty_s " << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
@@ -6743,46 +6742,101 @@ void ABCVm::abc_add_i_constant_constant_localresult(call_context* context)
 }
 void ABCVm::abc_add_i_local_constant_localresult(call_context* context)
 {
-	asAtom res;
-	int64_t num1=asAtomHandler::toInt64(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
-	int64_t num2=context->exec_pos->arg2_int;
-	LOG_CALL("add_i_lcl " << num1 << '+' << num2<<" "<<hex<<context->exec_pos->local3.flags);
-	int64_t ret = num1+num2;
-	if (context->exec_pos->local3.flags & ABC_OP_FORCEINT || (ret < INT32_MAX && ret > INT32_MIN))
-		asAtomHandler::setInt(res,context->sys,(int32_t)ret);
-	else
-		asAtomHandler::setNumber(res,context->sys,ret);
-
+	asAtom arg1 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
-	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-	ASATOM_DECREF(oldres);
+	if (USUALLY_TRUE(
+#ifdef LIGHTSPARK_64
+			((arg1.uintval & 0xc000000000000007) ==ATOM_INTEGER)
+#else
+			((context->exec_pos->arg2_int & 0xc0000007) ==ATOM_INTEGER ) && ((arg1.uintval & 0xc0000007) ==ATOM_INTEGER )
+#endif
+			&& !asAtomHandler::isObject(oldres)))
+	{
+		// fast path for common case that both arguments are ints and the result doesn't overflow
+		asAtom res = asAtomHandler::fromInt(context->exec_pos->arg2_int);
+		LOG_CALL("add_i_lcl_fast");
+		res.intval += arg1.intval-ATOM_INTEGER;
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+	}
+	else
+	{
+		asAtom res;
+		int64_t num1=asAtomHandler::toInt64(arg1);
+		int64_t num2=context->exec_pos->arg2_int;
+		LOG_CALL("add_i_lcl " << num1 << '+' << num2<<" "<<hex<<context->exec_pos->local3.flags);
+		int64_t ret = num1+num2;
+		if (context->exec_pos->local3.flags & ABC_OP_FORCEINT || (ret < INT32_MAX && ret > INT32_MIN))
+			asAtomHandler::setInt(res,context->sys,(int32_t)ret);
+		else
+			asAtomHandler::setNumber(res,context->sys,ret);
+		
+		asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		ASATOM_DECREF(oldres);
+	}
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_i_constant_local_localresult(call_context* context)
 {
-	asAtom res;
-	int64_t num1=context->exec_pos->arg1_int;
-	int64_t num2=asAtomHandler::toInt64(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	LOG_CALL("add_i_cll " << num1 << '+' << num2);
-	int64_t ret = num1+num2;
-	if (context->exec_pos->local3.flags & ABC_OP_FORCEINT || (ret < INT32_MAX && ret > INT32_MIN))
-		asAtomHandler::setInt(res,context->sys,(int32_t)ret);
-	else
-		asAtomHandler::setNumber(res,context->sys,ret);
-
+	asAtom arg2 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2);
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
-	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-	ASATOM_DECREF(oldres);
+	if (USUALLY_TRUE(
+#ifdef LIGHTSPARK_64
+			((arg2.uintval & 0xc000000000000007) ==ATOM_INTEGER)
+#else
+			((context->exec_pos->arg1_int & 0xc0000007) ==ATOM_INTEGER ) && ((arg2.uintval & 0xc0000007) ==ATOM_INTEGER )
+#endif
+			&& !asAtomHandler::isObject(oldres)))
+	{
+		// fast path for common case that both arguments are ints and the result doesn't overflow
+		asAtom res = asAtomHandler::fromInt(context->exec_pos->arg1_int);
+		LOG_CALL("add_i_cll_fast");
+		res.intval += arg2.intval-ATOM_INTEGER;
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+	}
+	else
+	{
+		asAtom res;
+		int64_t num1=context->exec_pos->arg1_int;
+		int64_t num2=asAtomHandler::toInt64(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
+		LOG_CALL("add_i_cll " << num1 << '+' << num2);
+		int64_t ret = num1+num2;
+		if (context->exec_pos->local3.flags & ABC_OP_FORCEINT || (ret < INT32_MAX && ret > INT32_MIN))
+			asAtomHandler::setInt(res,context->sys,(int32_t)ret);
+		else
+			asAtomHandler::setNumber(res,context->sys,ret);
+		
+		asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		ASATOM_DECREF(oldres);
+	}
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_i_local_local_localresult(call_context* context)
 {
-	LOG_CALL("add_i_lll");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	asAtom arg2 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2);
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
-	asAtomHandler::add_i(res,context->sys,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-	ASATOM_DECREF(oldres);
+	if (USUALLY_TRUE(
+#ifdef LIGHTSPARK_64
+			((res.uintval & 0xc000000000000007) ==ATOM_INTEGER) && ((arg2.uintval & 0xc000000000000007) ==ATOM_INTEGER)
+#else
+			((res.uintval & 0xc0000007) ==ATOM_INTEGER) && ((arg2.uintval & 0xc0000007) ==ATOM_INTEGER)
+#endif
+			&& !asAtomHandler::isObject(oldres)))
+	{
+		// fast path for common case that both arguments are ints and the result doesn't overflow
+		LOG_CALL("add_i_lll_fast");
+		res.intval += arg2.intval-ATOM_INTEGER;
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+	}
+	else
+	{
+		LOG_CALL("add_i_lll");
+		asAtomHandler::add_i(res,context->sys,arg2);
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		ASATOM_DECREF(oldres);
+	}
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_i_constant_constant_setslotnocoerce(call_context* context)

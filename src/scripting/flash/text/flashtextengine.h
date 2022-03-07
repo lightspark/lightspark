@@ -79,13 +79,14 @@ class FontDescription: public ASObject
 private:
     tiny_string cffHinting;
     tiny_string fontLookup;
-    tiny_string fontName;
+
     tiny_string fontPosture;
     tiny_string fontWeight;
     bool locked;
     tiny_string renderingMode;
 
 public:
+    tiny_string fontName;
 	FontDescription(Class_base* c): ASObject(c,T_OBJECT,SUBTYPE_FONTDESCRIPTION), 
         cffHinting("horizontalStem"), fontLookup("device"), fontName("_serif"), fontPosture("normal"), fontWeight("normal"),locked(false), renderingMode("cff") {}
 	static void sinit(Class_base* c);

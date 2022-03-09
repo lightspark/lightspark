@@ -584,10 +584,12 @@ void ABCVm::abc_li8_local_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li8_ll");
-	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	uint32_t addr=asAtomHandler::getUInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ByteArray* dm = context->mi->context->root->applicationDomain->currentDomainMemory;
+	if(USUALLY_FALSE(dm->getLength() <= addr))
+		throwError<RangeError>(kInvalidRangeError);
+	(CONTEXT_GETLOCAL(context,instrptr->local3.pos).uintval=(*(dm->getBufferNoCheck()+addr))<<3|ATOM_INTEGER);
 	ASATOM_DECREF(oldres);
 	++(context->exec_pos);
 }
@@ -890,7 +892,13 @@ void ABCVm::abc_si8_local_local(call_context* context)
 {
 	LOG_CALL( "si8_ll");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local_pos2),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	uint32_t addr=asAtomHandler::getUInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2));
+	int32_t val=asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ByteArray* dm = context->mi->context->root->applicationDomain->currentDomainMemory;
+	if(USUALLY_FALSE(dm->getLength() <= addr))
+		throwError<RangeError>(kInvalidRangeError);
+	*(dm->getBufferNoCheck()+addr)=val;
+
 	++(context->exec_pos);
 }
 void ABCVm::abc_si16_constant_constant(call_context* context)
@@ -7232,23 +7240,55 @@ void ABCVm::abc_declocal_i_optimized(call_context* context)
 void ABCVm::abc_inclocal_i_postfix(call_context* context)
 {
 	int32_t t = context->exec_pos->arg1_uint;
-	LOG_CALL( "incLocal_i_postfix " << t <<" "<<context->exec_pos->local3.pos);
+	asAtom& res = CONTEXT_GETLOCAL(context,t);
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
-	asAtom res = CONTEXT_GETLOCAL(context,t);
-	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-	ASATOM_DECREF(oldres);
-	asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,t),context->sys);
+	if (USUALLY_TRUE(
+#ifdef LIGHTSPARK_64
+			((res.uintval & 0xc000000000000007) ==ATOM_INTEGER)
+#else
+			((res.uintval & 0xc0000007) ==ATOM_INTEGER )
+#endif
+			&& !asAtomHandler::isObject(oldres)))
+	{
+		// fast path for common case that argument is ints and the result doesn't overflow
+		LOG_CALL( "incLocal_i_postfix_fast " << t <<" "<<context->exec_pos->local3.pos);
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		res.intval += 8;
+	}
+	else
+	{
+		LOG_CALL( "incLocal_i_postfix " << t <<" "<<context->exec_pos->local3.pos);
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		ASATOM_DECREF(oldres);
+		asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,t),context->sys);
+	}
 	++context->exec_pos;
 }
 void ABCVm::abc_declocal_i_postfix(call_context* context)
 {
 	int32_t t = context->exec_pos->arg1_uint;
-	LOG_CALL( "decLocal_i_postfix " << t <<" "<<context->exec_pos->local3.pos);
+	asAtom& res = CONTEXT_GETLOCAL(context,t);
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
-	asAtom res = CONTEXT_GETLOCAL(context,t);
-	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-	ASATOM_DECREF(oldres);
-	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,t),context->sys);
+	if (USUALLY_TRUE(
+#ifdef LIGHTSPARK_64
+			((res.uintval & 0xc000000000000007) ==ATOM_INTEGER)
+#else
+			((res.uintval & 0xc0000007) ==ATOM_INTEGER )
+#endif
+			&& !asAtomHandler::isObject(oldres)))
+	{
+		// fast path for common case that argument is ints and the result doesn't overflow
+		LOG_CALL( "decLocal_i_postfix_fast " << t <<" "<<context->exec_pos->local3.pos);
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		res.intval -= 8;
+	}
+	else
+	{
+		LOG_CALL( "decLocal_i_postfix " << t <<" "<<context->exec_pos->local3.pos);
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		ASATOM_DECREF(oldres);
+		asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,t),context->sys);
+	}
 	++context->exec_pos;
 }
 

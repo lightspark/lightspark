@@ -1880,6 +1880,9 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0xa8://bitand
 			case 0xa9://bitor
 			case 0xaa://bitxor
+			case 0xc5://add_i
+			case 0xc6://subtract_i
+			case 0xc7://multiply_i
 				if (argsneeded>=2)
 				{
 					b = code.peekbyteFromPosition(pos);
@@ -1900,6 +1903,48 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				pos = code.skipu30FromPosition(pos);
 				b = code.peekbyteFromPosition(pos);
 				pos++;
+				break;
+			case 0xc2://inclocal_i
+			case 0xc3://declocal_i
+				switch (code.peekbyteFromPosition(pos))
+				{
+					case 0x63: //setlocal
+					case 0xd4: //setlocal_0
+					case 0xd5: //setlocal_1
+					case 0xd6: //setlocal_2
+					case 0xd7: //setlocal_3
+						pos = code.skipu30FromPosition(pos);
+						b = code.peekbyteFromPosition(pos);
+						pos++;
+						break;
+					default:
+						keepchecking=false;
+						break;
+				}
+				break;
+			case 0x63://setlocal
+				if (argsneeded)
+				{
+					pos = code.skipu30FromPosition(pos);
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					argsneeded--;
+				}
+				else
+					keepchecking=false;
+				break;
+			case 0xd4://setlocal_0
+			case 0xd5://setlocal_1
+			case 0xd6://setlocal_2
+			case 0xd7://setlocal_3
+				if (argsneeded)
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					argsneeded--;
+				}
+				else
+					keepchecking=false;
 				break;
 			default:
 				keepchecking=false;
@@ -2791,13 +2836,13 @@ bool checkforpostfix(preloadstate& state,memorystream& code,uint32_t startpos,st
 					// inclocal_i x
 					// convert_i
 					// setlocal y
+					state.operandlist.pop_back();
 					state.preloadedcode.pop_back(); // remove getlocal opcode
 					state.preloadedcode.push_back(postfix_opcode);
 					state.preloadedcode.back().pcode.arg1_uint = localpos;
 					state.preloadedcode.back().pcode.local3.pos = loc;
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 					setOperandModified(state,OP_LOCAL,localpos);
-					clearOperands(state,true,nullptr);
 					code.seekg(pos);
 					return true;
 				}
@@ -3961,6 +4006,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				uint32_t t =code.readu30();
 				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs);
 				ASObject* resulttype = nullptr;
+				bool classvar=false;
 #ifdef ENABLE_OPTIMIZATION
 				uint32_t scopepos=UINT32_MAX;
 				asAtom o=asAtomHandler::invalidAtom;
@@ -3968,7 +4014,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				bool done=false;
 				multiname* name=mi->context->getMultiname(t,nullptr);
 				bool isborrowed = false;
-				bool classvar=false;
 				variable* v = nullptr;
 				Class_base* cls = function->inClass;
 				if (name && name->isStatic && !function->isFromNewFunction())

@@ -6827,11 +6827,11 @@ void ABCVm::abc_add_i_local_local_localresult(call_context* context)
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	if (USUALLY_TRUE(
 #ifdef LIGHTSPARK_64
-			((res.uintval & 0xc000000000000007) ==ATOM_INTEGER) && ((arg2.uintval & 0xc000000000000007) ==ATOM_INTEGER)
+			(((res.uintval | arg2.uintval) & 0xc000000000000007) ==ATOM_INTEGER)
 #else
-			((res.uintval & 0xc0000007) ==ATOM_INTEGER) && ((arg2.uintval & 0xc0000007) ==ATOM_INTEGER)
+			((res.uintval | arg2.uintval) & 0xc0000007) ==ATOM_INTEGER)
 #endif
-			&& !asAtomHandler::isObject(oldres)))
+			))
 	{
 		// fast path for common case that both arguments are ints and the result doesn't overflow
 		LOG_CALL("add_i_lll_fast");
@@ -6843,8 +6843,8 @@ void ABCVm::abc_add_i_local_local_localresult(call_context* context)
 		LOG_CALL("add_i_lll");
 		asAtomHandler::add_i(res,context->sys,arg2);
 		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-		ASATOM_DECREF(oldres);
 	}
+	ASATOM_DECREF(oldres);
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_i_constant_constant_setslotnocoerce(call_context* context)
@@ -7226,15 +7226,15 @@ void ABCVm::abc_multiply_i_local_local_setslotnocoerce(call_context* context)
 void ABCVm::abc_inclocal_i_optimized(call_context* context)
 {
 	int32_t t = context->exec_pos->arg1_uint;
-	LOG_CALL( "incLocal_i_o " << t );
-	asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,t),context->sys);
+	LOG_CALL( "incLocal_i_o " << t << " "<< context->exec_pos->arg2_int);
+	asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,t),context->sys,context->exec_pos->arg2_int);
 	++context->exec_pos;
 }
 void ABCVm::abc_declocal_i_optimized(call_context* context)
 {
 	int32_t t = context->exec_pos->arg1_uint;
-	LOG_CALL( "decLocal_i_o " << t );
-	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,t),context->sys);
+	LOG_CALL( "decLocal_i_o " << t << " "<< context->exec_pos->arg2_int);
+	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,t),context->sys,context->exec_pos->arg2_int);
 	++context->exec_pos;
 }
 void ABCVm::abc_inclocal_i_postfix(call_context* context)

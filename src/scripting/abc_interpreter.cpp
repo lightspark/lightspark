@@ -3884,6 +3884,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				{
 					state.preloadedcode.push_back(ABC_OP_OPTIMZED_INCLOCAL_I);
 					state.preloadedcode.back().pcode.arg1_uint = t;
+					state.preloadedcode.back().pcode.arg2_uint = 1;
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 					setOperandModified(state,OP_LOCAL,t);
 					clearOperands(state,true,&lastlocalresulttype);
@@ -3898,6 +3899,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				{
 					state.preloadedcode.push_back(ABC_OP_OPTIMZED_DECLOCAL_I);
 					state.preloadedcode.back().pcode.arg1_uint = t;
+					state.preloadedcode.back().pcode.arg2_uint = 1;
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 					setOperandModified(state,OP_LOCAL,t);
 					clearOperands(state,true,&lastlocalresulttype);
@@ -7132,6 +7134,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						state.operandlist.back().removeArg(state);
 						state.preloadedcode.push_back(opcode == 0xc0 ? ABC_OP_OPTIMZED_INCLOCAL_I : ABC_OP_OPTIMZED_DECLOCAL_I); //inclocal_i/declocal_i
 						state.preloadedcode.back().pcode.arg1_uint = t;
+						state.preloadedcode.back().pcode.arg2_uint = 1;
 						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 						if (code.readbyte() == 0x63) //setlocal
 							code.readbyte();
@@ -7150,8 +7153,22 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0xc5://add_i
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_ADD_I,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_ADD_I_SETSLOT);
-				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				if (state.preloadedcode.back().opcode==ABC_OP_OPTIMZED_ADD_I+5
+						&& state.preloadedcode.back().pcode.local3.pos == state.preloadedcode.back().pcode.local_pos1
+						&& state.preloadedcode.back().pcode.local3.pos < function->mi->body->getReturnValuePos())
+				{
+					// add_i is optimized to abc_add_i_local_constant_localresult and localresult and local1 point to the same poition
+					// can be replaced by inclocal_i with constant int argument
+					// optimizes actionscript code like
+					// x += 4;
+					state.preloadedcode.back().opcode = ABC_OP_OPTIMZED_INCLOCAL_I;
+					removetypestack(typestack,1);
+				}
+				else
+				{
+					removetypestack(typestack,2);
+					typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				}
 				break;
 			case 0x03://throw
 				state.canlocalinitialize.clear();
@@ -7209,8 +7226,22 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 			}
 			case 0xc6://subtract_i
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_SUBTRACT_I,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_SUBTRACT_I_SETSLOT);
-				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				if (state.preloadedcode.back().opcode==ABC_OP_OPTIMZED_SUBTRACT_I+5
+						&& state.preloadedcode.back().pcode.local3.pos == state.preloadedcode.back().pcode.local_pos1
+						&& state.preloadedcode.back().pcode.local3.pos < function->mi->body->getReturnValuePos())
+				{
+					// add_i is optimized to abc_add_i_local_constant_localresult and localresult and local1 point to the same poition
+					// can be replaced by inclocal_i with constant int argument
+					// optimizes actionscript code like
+					// x -= 4;
+					state.preloadedcode.back().opcode = ABC_OP_OPTIMZED_DECLOCAL_I;
+					removetypestack(typestack,1);
+				}
+				else
+				{
+					removetypestack(typestack,2);
+					typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				}
 				break;
 			case 0x97://bitnot
 			case 0xc4://negate_i

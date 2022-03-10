@@ -538,8 +538,8 @@ public:
 	static void setFunction(asAtom& a,ASObject* obj, ASObject* closure);
 	static FORCE_INLINE void increment(asAtom& a,SystemState* sys);
 	static FORCE_INLINE void decrement(asAtom& a,SystemState* sys);
-	static FORCE_INLINE void increment_i(asAtom& a,SystemState* sys);
-	static FORCE_INLINE void decrement_i(asAtom& a,SystemState* sys);
+	static FORCE_INLINE void increment_i(asAtom& a,SystemState* sys, int32_t amount=1);
+	static FORCE_INLINE void decrement_i(asAtom& a,SystemState* sys, int32_t amount=1);
 	static bool add(asAtom& a,asAtom& v2, SystemState *sys,bool forceint);
 	static void addreplace(asAtom& ret, SystemState* sys, asAtom &v1, asAtom &v2,bool forceint);
 	static FORCE_INLINE void bitnot(asAtom& a,SystemState* sys);
@@ -1935,19 +1935,19 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a,SystemState* sys)
 
 }
 
-FORCE_INLINE void asAtomHandler::increment_i(asAtom& a,SystemState* sys)
+FORCE_INLINE void asAtomHandler::increment_i(asAtom& a, SystemState* sys, int32_t amount)
 {
 	if ((a.uintval&0x7) == ATOM_INTEGER)
-		setInt(a,sys,int32_t(a.intval>>3)+1);
+		setInt(a,sys,int32_t(a.intval>>3)+amount);
 	else
-		setInt(a,sys,toInt(a)+1);
+		setInt(a,sys,toInt(a)+amount);
 }
-FORCE_INLINE void asAtomHandler::decrement_i(asAtom& a,SystemState* sys)
+FORCE_INLINE void asAtomHandler::decrement_i(asAtom& a, SystemState* sys, int32_t amount)
 {
 	if ((a.uintval&0x7) == ATOM_INTEGER)
-		setInt(a,sys,int32_t(a.intval>>3)-1);
+		setInt(a,sys,int32_t(a.intval>>3)-amount);
 	else
-		setInt(a,sys,toInt(a)-1);
+		setInt(a,sys,toInt(a)-amount);
 }
 
 FORCE_INLINE void asAtomHandler::bit_xor(asAtom& a,SystemState* sys,asAtom &v1)

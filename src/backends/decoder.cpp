@@ -28,6 +28,7 @@
 #include "SDL2/SDL_mixer.h"
 #include "scripting/class.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/media/flashmedia.h"
 #include "parsing/tags.h"
 
 #if LIBAVUTIL_VERSION_MAJOR < 51
@@ -1530,6 +1531,7 @@ int FFMpegStreamDecoder::avioReadPacket(void* t, uint8_t* buf, int buf_size)
 void SampleDataAudioDecoder::samplesconsumed(uint32_t samples)
 {
 	bufferedsamples -= samples;
+	soundchannel->semSampleData.signal();
 }
 
 uint32_t SampleDataAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t time)

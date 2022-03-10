@@ -352,15 +352,17 @@ public:
 	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time) override {return 0;}
 };
 
+class SoundChannel;
 // this is the AudioDecoder for streaming Sounds by SampleDataEvent
 class SampleDataAudioDecoder: public AudioDecoder
 {
 private:
 	ATOMIC_INT32(bufferedsamples);
+	SoundChannel* soundchannel;
 protected:
 	void samplesconsumed(uint32_t samples) override;
 public:
-	SampleDataAudioDecoder()
+	SampleDataAudioDecoder(SoundChannel* _soundchannel):AudioDecoder(),soundchannel(_soundchannel)
 	{
 		sampleRate=44100;
 		channelCount=2;
@@ -409,8 +411,8 @@ public:
 	   Specialized decoding used by FFMpegStreamDecoder
 	*/
 	uint32_t decodePacket(AVPacket* pkt, uint32_t time);
-	void switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen);
-	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time);
+	void switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen) override;
+	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time) override;
 };
 #endif
 

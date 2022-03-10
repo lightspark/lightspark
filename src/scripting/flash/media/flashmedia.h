@@ -144,6 +144,7 @@ public:
 	void execute();
 	void jobFence();
 	void threadAbort();
+	Semaphore semSampleData;
 };
 
 class Video: public DisplayObject

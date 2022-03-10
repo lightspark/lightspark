@@ -646,6 +646,7 @@ void Sound::afterExecution(_R<Event> e)
 		_NR<ByteArray> data = e->as<SampleDataEvent>()->data;
 		this->soundChannel->appendSampleData(data.getPtr());
 		RELEASE_WRITE(sampledataprocessed,true);
+		this->soundChannel->semSampleData.signal();
 	}
 }
 
@@ -753,7 +754,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, Sound* _sampleproducer)
 	: EventDispatcher(c),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
 	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
-	leftPeak(1),rightPeak(1)
+	leftPeak(1),rightPeak(1),semSampleData(0)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
 	if (soundinfo && soundinfo->HasLoops)
@@ -1046,7 +1047,7 @@ void SoundChannel::playStreamFromSamples()
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
-		sampleDecoder=new SampleDataAudioDecoder();
+		sampleDecoder=new SampleDataAudioDecoder(this);
 		bool bufferfilled=false;
 		while(!ACQUIRE_READ(stopped))
 		{
@@ -1086,6 +1087,7 @@ void SoundChannel::playStreamFromSamples()
 					audioDecoder->copyFrame(buf,512);
 				}
 			}
+			semSampleData.wait();
 			if(threadAborting)
 				throw JobTerminationException();
 		}
@@ -1153,6 +1155,7 @@ void SoundChannel::jobFence()
 
 void SoundChannel::threadAbort()
 {
+	semSampleData.signal();
 	mutex.lock();
 	if (ACQUIRE_READ(stopped))
 	{

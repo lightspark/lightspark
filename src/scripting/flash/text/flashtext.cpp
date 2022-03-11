@@ -290,8 +290,6 @@ _NR<DisplayObject> TextField::hitTestImpl(_NR<DisplayObject> last, number_t x, n
 	boundsRect(xmin,xmax,ymin,ymax);
 	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax && isHittable(type))
 	{
-		if (!selectable)
-			return last;
 		incRef();
 		return _MNR(this);
 	}
@@ -1872,7 +1870,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	uint32_t index =v.find("&nbsp;");
 	while (index != tiny_string::npos)
 	{
-		v = v.replace(index,6," ");
+		v.replace(index,6," ");
 		index =v.find("&nbsp;",index);
 	}
 	newtext += v;
@@ -1947,11 +1945,11 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 		 name == "li" || name == "b" || name == "i" ||
 		 name == "span" || name == "textformat" || name == "tab")
 	{
-		LOG(LOG_NOT_IMPLEMENTED, _("Unsupported tag in TextField: ") << name);
+		LOG(LOG_NOT_IMPLEMENTED, "Unsupported tag in TextField: " << name);
 	}
 	else
 	{
-		LOG(LOG_NOT_IMPLEMENTED, _("Unknown tag in TextField: ") << name);
+		LOG(LOG_NOT_IMPLEMENTED, "Unknown tag in TextField: " << name);
 	}
 	textdata->setText(newtext.raw_buf());
 	return true;

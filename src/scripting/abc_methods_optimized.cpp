@@ -6829,7 +6829,7 @@ void ABCVm::abc_add_i_local_local_localresult(call_context* context)
 #ifdef LIGHTSPARK_64
 			(((res.uintval | arg2.uintval) & 0xc000000000000007) ==ATOM_INTEGER)
 #else
-			((res.uintval | arg2.uintval) & 0xc0000007) ==ATOM_INTEGER)
+			(((res.uintval | arg2.uintval) & 0xc0000007) ==ATOM_INTEGER)
 #endif
 			))
 	{

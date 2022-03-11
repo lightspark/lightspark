@@ -2586,10 +2586,10 @@ void asAtomHandler::callFunction(asAtom& caller,asAtom& ret,asAtom &obj, asAtom 
 		{
 			for (uint32_t i = 0; i < num_args; i++)
 				ASATOM_INCREF(args[i]);
+			ASATOM_INCREF(obj); // ensure we have a reference to the calling object as it may be decreffed during the call
 		}
 		getObjectNoCheck(caller)->as<SyntheticFunction>()->call(ret,c, args, num_args,coerceresult,coercearguments);
-		if (args_refcounted)
-			ASATOM_DECREF(c);
+		ASATOM_DECREF(c);
 		return;
 	}
 	// when calling builtin functions, normally no refcounting is needed

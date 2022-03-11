@@ -1135,7 +1135,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 
 		number_t localX, localY;
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-		if (!this->is<RootMovieClip>())
+		if (this != getSystemState()->mainClip)
 		{
 			this->incRef();
 			ret=(*j)->hitTest(_MR(this), localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly);
@@ -5727,7 +5727,8 @@ void MovieClip::advanceFrame()
 	{
 		if(hasFinishedLoading())
 		{
-			LOG(LOG_ERROR,"state.next_FP >= getFramesLoaded:"<< state.next_FP<<" "<<getFramesLoaded() <<" "<<toDebugString()<<" "<<getTagID());
+			if (getFramesLoaded() != 0)
+				LOG(LOG_ERROR,"state.next_FP >= getFramesLoaded:"<< state.next_FP<<" "<<getFramesLoaded() <<" "<<toDebugString()<<" "<<getTagID());
 			state.next_FP = state.FP;
 		}
 		return;

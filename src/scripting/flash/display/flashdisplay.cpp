@@ -3849,10 +3849,18 @@ void Stage::setFocusTarget(_NR<InteractiveObject> f)
 {
 	Locker l(focusSpinlock);
 	if (focus)
+	{
 		focus->lostFocus();
+		focus->incRef();
+		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getSystemState(),"focusOut")));
+	}
 	focus = f;
 	if (focus)
+	{
 		focus->gotFocus();
+		focus->incRef();
+		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getSystemState(),"custcfocusIn")));
+	}
 }
 
 void Stage::addHiddenObject(MovieClip* o)

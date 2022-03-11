@@ -2456,7 +2456,8 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	SoundData->append(tmpp, soundDataLength);
 	SoundData->markFinished();
 #ifdef ENABLE_LIBAVCODEC
-	if (soundDataLength >= 8192)
+	// it seems that ffmpeg doesn't properly detect PCM data, so we only autodetect the sample rate for MP3
+	if (SoundFormat == LS_AUDIO_CODEC::MP3 && soundDataLength >= 8192)
 	{
 		// detect real sample rate regardless of value provided in the tag
 		std::streambuf *sbuf = SoundData->createReader();

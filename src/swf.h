@@ -487,9 +487,10 @@ public:
 	OBJECT_ENCODING staticSharedObjectDefaultObjectEncoding;
 	bool staticSharedObjectPreventBackup;
 	
-	//enterFrame event management
+	//broadcast event management
 	void registerFrameListener(_R<DisplayObject> clip);
 	void unregisterFrameListener(_R<DisplayObject> clip);
+	void addBroadcastEvent(const tiny_string& event);
 
 	//Invalidation queue management
 	void addToInvalidateQueue(_R<DisplayObject> d) override;

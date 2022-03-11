@@ -250,7 +250,7 @@ void EventPhase::sinit(Class_base* c)
 	c->setVariableAtomByQName("AT_TARGET",nsNameAndKind(),asAtomHandler::fromUInt(AT_TARGET),DECLARED_TRAIT);
 }
 
-FocusEvent::FocusEvent(Class_base* c):Event(c, "focusEvent")
+FocusEvent::FocusEvent(Class_base* c, tiny_string _type):Event(c, _type)
 {
 }
 

@@ -140,6 +140,12 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 					case SDL_WINDOWEVENT_FOCUS_LOST:
 						sys->getEngineData()->closeContextMenu();
 						break;
+					case SDL_WINDOWEVENT_ENTER:
+						sys->addBroadcastEvent("activate");
+						break;
+					case SDL_WINDOWEVENT_LEAVE:
+						sys->addBroadcastEvent("deactivate");
+						break;
 					default:
 						break;
 				}

@@ -173,6 +173,20 @@ void SystemState::unregisterFrameListener(_R<DisplayObject> obj)
 	frameListeners.erase(obj);
 }
 
+void SystemState::addBroadcastEvent(const tiny_string& event)
+{
+	Locker l(mutexFrameListeners);
+	if(!frameListeners.empty())
+	{
+		_R<Event> e(Class<Event>::getInstanceS(this,event));
+		auto it=frameListeners.begin();
+		for(;it!=frameListeners.end();it++)
+		{
+			getVm(this)->addEvent(*it,e);
+		}
+	}
+}
+
 RootMovieClip* RootMovieClip::getInstance(_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass(getSys());
@@ -2161,18 +2175,7 @@ void SystemState::tick()
 	}
 
 	/* Step 2: Send enterFrame events, if needed */
-	{
-		Locker l(mutexFrameListeners);
-		if(!frameListeners.empty())
-		{
-			_R<Event> e(Class<Event>::getInstanceS(this,"enterFrame"));
-			auto it=frameListeners.begin();
-			for(;it!=frameListeners.end();it++)
-			{
-				getVm(this)->addEvent(*it,e);
-			}
-		}
-	}
+	addBroadcastEvent("enterFrame");
 
 	/* Step 3: create legacy objects, which are new in this frame (top-down),
 	 * run their constructors (bottom-up) */
@@ -2180,49 +2183,19 @@ void SystemState::tick()
 	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent(_MR(stage))));
 
 	/* Step 4: dispatch frameConstructed events */
-	{
-		Locker l(mutexFrameListeners);
-		if(!frameListeners.empty())
-		{
-			_R<Event> e(Class<Event>::getInstanceS(this,"frameConstructed"));
-			auto it=frameListeners.begin();
-			for(;it!=frameListeners.end();it++)
-			{
-				getVm(this)->addEvent(*it,e);
-			}
-		}
-	}
+	addBroadcastEvent("frameConstructed");
+
 	/* Step 5: run all frameScripts (bottom-up) */
 	stage->incRef();
 	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) ExecuteFrameScriptEvent(_MR(stage))));
 
 	/* Step 6: dispatch exitFrame event */
-	{
-		Locker l(mutexFrameListeners);
-		if(!frameListeners.empty())
-		{
-			_R<Event> e(Class<Event>::getInstanceS(this,"exitFrame"));
-			auto it=frameListeners.begin();
-			for(;it!=frameListeners.end();it++)
-			{
-				getVm(this)->addEvent(*it,e);
-			}
-		}
-	}
+	addBroadcastEvent("exitFrame");
 	/* Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
 	if (stage->invalidated)
 	{
 		RELEASE_WRITE(stage->invalidated,false);
-		Locker l(mutexFrameListeners);
-		if(!frameListeners.empty())
-		{
-			_R<Event> e(Class<Event>::getInstanceS(this,"render"));
-			auto it=frameListeners.begin();
-			for(;it!=frameListeners.end();it++)
-			{
-				getVm(this)->addEvent(*it,e);
-			}
-		}
+		addBroadcastEvent("render");
 	}
 
 	/* Step 9: we are idle now, so we can handle all input events */

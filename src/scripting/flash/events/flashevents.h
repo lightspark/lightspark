@@ -133,7 +133,7 @@ public:
 class FocusEvent: public Event
 {
 public:
-	FocusEvent(Class_base* c);
+	FocusEvent(Class_base* c, tiny_string _type="focusEvent");
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };

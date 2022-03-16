@@ -175,7 +175,6 @@ public:
 	int gpu_program;
 	volatile uint32_t windowWidth;
 	volatile uint32_t windowHeight;
-	int fragmentTexScaleUniform;
 
 	void renderErrorPage(RenderThread *rt, bool standalone);
 	void renderSettingsPage();

@@ -4493,8 +4493,7 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 
 IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix,DisplayObject* originalsource)
 {
-	number_t x,y,rx,ry;
-	number_t width,height;
+	number_t rx,ry;
 	number_t rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(!boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax))
@@ -4507,21 +4506,11 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	std::vector<IDrawable::MaskData> masks;
 
 	bool isMask;
-	_NR<DisplayObject> mask;
 	if (target)
 	{
 		if (matrixsource)
 			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask);
-		totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
 	}
-	totalMatrix = totalMatrix.multiplyMatrix(sourceMatrix);
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
-	MATRIX m = initialMatrix;
-	if (matrixsource)
-		m = m.multiplyMatrix(matrixsource->getConcatenatedMatrix());
-	float rotation = m.getRotation();
-	float xscale = m.getScaleX();
-	float yscale = m.getScaleY();
 	float redMultiplier=1.0;
 	float greenMultiplier=1.0;
 	float blueMultiplier=1.0;
@@ -4547,7 +4536,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 		ct = p->colorTransform.getPtr();
 		p = p->getParent();
 	}
-	if(width==0 || height==0)
+	if (rwidth==0 || rheight==0)
 		return nullptr;
 	if (ct)
 	{
@@ -4569,9 +4558,9 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 			mask = originalsource->mask;
 	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
-				, x, y, this->bitmapData->getWidth(), this->bitmapData->getHeight()
-				, rx, ry, round(rwidth), round(rheight), rotation
-				, xscale, yscale
+				, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
+				, rx, ry, round(rwidth), round(rheight), 0
+				, 1, 1
 				, isMask, mask
 				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier

@@ -146,8 +146,7 @@ void GLRenderContext::setProperties(AS_BLENDMODE blendmode)
 			break;
 	}
 }
-void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
+void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 									 float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 									 float redOffset, float greenOffset, float blueOffset, float alphaOffset,
 									 bool isMask, bool hasMask, float directMode, RGB directColor, bool smooth, const MATRIX& matrix)
@@ -172,13 +171,6 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 	engineData->exec_glUniform1f(yuvUniform, (colorMode==YUV_MODE)?1:0);
 	//Set alpha
 	engineData->exec_glUniform1f(alphaUniform, alpha);
-	// set rotation, scaling and translation
-	// TODO there may be a more elegant way to handle this, but I'm new to shader programming...
-	engineData->exec_glUniform1f(rotateUniform, rotate*M_PI/180.0);
-	engineData->exec_glUniform2f(beforeRotateUniform, float(w)/2.0,float(h)/2.0);
-	engineData->exec_glUniform2f(afterRotateUniform, float(widthtransformed)/2.0,float(heighttransformed)/2.0);
-	engineData->exec_glUniform2f(startPositionUniform, xtransformed,ytransformed);
-	engineData->exec_glUniform2f(scaleUniform, xscale / chunk.xContentScale, yscale / chunk.yContentScale);
 	engineData->exec_glUniform4f(colortransMultiplyUniform, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier);
 	engineData->exec_glUniform4f(colortransAddUniform, redOffset/255.0,greenOffset/255.0,blueOffset/255.0,alphaOffset/255.0);
 	// set mode for direct coloring:
@@ -189,6 +181,9 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 	engineData->exec_glUniform1f(directUniform, directMode);
 	engineData->exec_glUniform4f(directColorUniform,float(directColor.Red)/255.0,float(directColor.Green)/255.0,float(directColor.Blue)/255.0,1.0);
 	//Set matrix
+	float fmatrix[16];
+	matrix.get4DMatrix(fmatrix);
+	lsglLoadMatrixf(fmatrix);
 	setMatrixUniform(LSGL_MODELVIEW);
 
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
@@ -204,14 +199,19 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32
 	float *texture_coords = g_newa(float,chunk.getNumberOfChunks()*12);
 	float realchunkwidth = chunk.width;
 	float realchunkheight = chunk.height;
+
+	int w = chunk.width;
+	int h = chunk.height;
+	float tx = chunk.xOffset;
+	float ty = chunk.yOffset;
 	for(uint32_t i=0, k=0;i<realchunkheight;i+=CHUNKSIZE_REAL)
 	{
-		startY=float(h*i)/realchunkheight;
-		endY=min(float(h*(i+CHUNKSIZE_REAL))/realchunkheight,float(h));
+		startY = (float(h*i)/realchunkheight + ty) / chunk.yContentScale;
+		endY = (min(float(h*(i+CHUNKSIZE_REAL))/realchunkheight,float(h)) + ty) / chunk.yContentScale;
 		for(uint32_t j=0;j<realchunkwidth;j+=CHUNKSIZE_REAL)
 		{
-			startX=float(w*j)/realchunkwidth;
-			endX=min(float(w*(j+CHUNKSIZE_REAL))/realchunkwidth,float(w));
+			startX = (float(w*j)/realchunkwidth + tx) / chunk.xContentScale;
+			endX = (min(float(w*(j+CHUNKSIZE_REAL))/realchunkwidth,float(w)) + tx) / chunk.xContentScale;
 			const uint32_t curChunkId=chunk.chunks[curChunk];
 			const uint32_t blockX=((curChunkId%blocksPerSide)*CHUNKSIZE);
 			const uint32_t blockY=((curChunkId/blocksPerSide)*CHUNKSIZE);
@@ -364,8 +364,7 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, uint8_t* sourceBuf, ui
 	cairo_fill(cr);
 }
 
-void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
+void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
 			bool isMask, bool hasMask, float directMode, RGB directColor, bool smooth,const MATRIX& matrix)
@@ -379,12 +378,8 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, int32_t x, in
 	cairo_save(cr);
 	cairo_set_antialias(cr,smooth && !isMask ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 
-	// scale: keep draws in positive quadrant
-	cairo_set_matrix(cr,&matrix);
-	if (chunk.xContentScale < 0)
-		cairo_translate(cr, w / -chunk.xContentScale, 0);
-	if (chunk.yContentScale < 0)
-		cairo_translate(cr, 0, h / -chunk.yContentScale);
+	MATRIX m = matrix.multiplyMatrix(MATRIX(1, 1, 0, 0, chunk.xOffset / chunk.xContentScale, chunk.yOffset / chunk.yContentScale));
+	cairo_set_matrix(cr, &m);
 	cairo_scale(cr, 1 / chunk.xContentScale, 1 / chunk.yContentScale);
 
 	if(isMask)

@@ -631,11 +631,8 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 		ctxt.currentMask=this;
 	// ensure that the matching mask is rendered before rendering this DisplayObject
 	if (ctxt.contextType == RenderContext::GL && surface.mask && surface.mask && ctxt.currentMask != surface.mask.getPtr())
-		surface.mask->defaultRender(ctxt); 
-	ctxt.renderTextured(*surface.tex, surface.xOffset,surface.yOffset,
-			surface.tex->width, surface.tex->height,
-			surface.alpha, RenderContext::RGB_MODE,
-			surface.rotation,surface.xOffsetTransformed,surface.yOffsetTransformed,surface.widthTransformed,surface.heightTransformed,surface.xscale, surface.yscale,
+		surface.mask->defaultRender(ctxt);
+	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
 			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
 			surface.redOffset, surface.greenOffset, surface.blueOffset, surface.alphaOffset,
 			surface.isMask, !surface.mask.isNull(),0.0,RGB(),surface.smoothing,surface.matrix);

@@ -529,6 +529,13 @@ void EngineData::selectContextMenuItem()
 	event.type = LS_USEREVENT_SELECTITEM_CONTEXTMENU;
 	SDL_PushEvent(&event);
 }
+void EngineData::InteractiveObjectRemovedFromStage()
+{
+	SDL_Event event;
+	SDL_zero(event);
+	event.type = LS_USEREVENT_INTERACTIVEOBJECT_REMOVED_FOM_STAGE;
+	SDL_PushEvent(&event);
+}
 void EngineData::selectContextMenuItemIntern()
 {
 	if (contextmenucurrentitem >=0)

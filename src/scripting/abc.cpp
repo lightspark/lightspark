@@ -822,9 +822,8 @@ int ABCVm::getEventQueueSize()
 
 void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 {
-	if (dispatcher && dispatcher->is<DisplayObject>() && event->type == "enterFrame" && (
-				(dispatcher->is<RootMovieClip>() && dispatcher->as<RootMovieClip>()->isWaitingForParser()) || // RootMovieClip is not yet completely parsed
-				(!dispatcher->as<DisplayObject>()->isOnStage()))) // enterFrame event is only executed for DisplayObjects that are on stage
+	if (dispatcher && dispatcher->is<DisplayObject>() && event->type == "enterFrame" && 
+				dispatcher->is<RootMovieClip>() && dispatcher->as<RootMovieClip>()->isWaitingForParser()) // enterFrame event is only executed for DisplayObjects that are on stage
 		return;
 	if (event->is<ProgressEvent>())
 	{
@@ -851,7 +850,6 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	*/
 	//This is to take care of rollOver/Out
 	bool doTarget = true;
-
 	//capture phase
 	if(dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass(dispatcher->getSystemState())))
 	{
@@ -864,7 +862,6 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			_R<MouseEvent> mevent = _MR(event->as<MouseEvent>());
 			if(mevent->relatedObject)
 			{
-				mevent->relatedObject->incRef();
 				rcur = mevent->relatedObject.getPtr();
 			}
 			dispatcher->as<DisplayObject>()->handleMouseCursor(event->type == "rollOver");
@@ -873,7 +870,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		if(rcur)
 		{
 			std::vector<DisplayObject*> rparents;
-			rparents.push_back(rcur);        
+			rparents.push_back(rcur);
 			while(true)
 			{
 				if(!rcur->getParent())
@@ -930,7 +927,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			if (event->immediatePropagationStopped || event->propagationStopped)
 				break;
 			(*i)->incRef();
-			event->currentTarget=_MR(*i);
+			event->currentTarget=_MNR(*i);
 			(*i)->handleEvent(event);
 			event->currentTarget=NullRef;
 		}
@@ -943,8 +940,9 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		if (!event->immediatePropagationStopped && !event->propagationStopped)
 		{
 			dispatcher->incRef();
-			event->currentTarget=_MR(dispatcher);
+			event->currentTarget=_MNR(dispatcher);
 			dispatcher->handleEvent(event);
+			event->currentTarget=NullRef;
 		}
 	}
 
@@ -958,7 +956,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			if (event->immediatePropagationStopped || event->propagationStopped)
 				break;
 			(*i)->incRef();
-			event->currentTarget=_MR(*i);
+			event->currentTarget=_MNR(*i);
 			(*i)->handleEvent(event);
 			event->currentTarget=NullRef;
 		}
@@ -976,7 +974,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	if (event->type == "mouseDown" && dispatcher->is<InteractiveObject>())
 	{
 		dispatcher->incRef();
-		dispatcher->getSystemState()->stage->setFocusTarget(_MR(dispatcher->as<InteractiveObject>()));
+		dispatcher->getSystemState()->stage->setFocusTarget(_MNR(dispatcher->as<InteractiveObject>()));
 	}
 	if (dispatcher->is<DisplayObject>())
 		dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event.getPtr());

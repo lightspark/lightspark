@@ -919,7 +919,7 @@ private:
 	ABCContext* context;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
-	TAGTYPE getType() const{ return ABC_TAG; }
+	TAGTYPE getType() const override { return ABC_TAG; }
 	void execute(RootMovieClip* root) const override;
 };
 
@@ -931,7 +931,7 @@ private:
 	ABCContext* context;
 public:
 	DoABCDefineTag(RECORDHEADER h, std::istream& in);
-	TAGTYPE getType() const{ return ABC_TAG; }
+	TAGTYPE getType() const override { return ABC_TAG; }
 	void execute(RootMovieClip* root) const override;
 };
 

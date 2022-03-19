@@ -71,6 +71,7 @@ protected:
 		else
 			return true;
 	}
+	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	~InteractiveObject();
 public:
 	InteractiveObject(Class_base* c);
@@ -113,7 +114,7 @@ protected:
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
-	void setOnStage(bool staged, bool force) override;
+	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override
@@ -129,9 +130,9 @@ public:
 	void eraseRemovedLegacyChild(uint32_t name);
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
-	void _addChildAt(_R<DisplayObject> child, unsigned int index);
+	void _addChildAt(_R<DisplayObject> child, unsigned int index, bool inskipping=false);
 	void dumpDisplayList(unsigned int level=0);
-	bool _removeChild(DisplayObject* child, bool direct=false);
+	bool _removeChild(DisplayObject* child, bool direct=false, bool inskipping=false);
 	void _removeAllChildren();
 	void removeAVM1Listeners() override;
 	int getChildIndex(_R<DisplayObject> child);
@@ -145,7 +146,7 @@ public:
 	void checkRatioForLegacyChildAt(int32_t depth, uint32_t ratio, bool inskipping);
 	void checkColorTransformForLegacyChildAt(int32_t depth, const CXFORMWITHALPHA& colortransform);
 	void deleteLegacyChildAt(int32_t depth, bool inskipping);
-	void insertLegacyChildAt(int32_t depth, DisplayObject* obj);
+	void insertLegacyChildAt(int32_t depth, DisplayObject* obj,bool inskipping=false);
 	DisplayObject* findLegacyChildByTagID(uint32_t tagid);
 	int findLegacyChildDepth(DisplayObject* obj);
 	void transformLegacyChildAt(int32_t depth, const MATRIX& mat);
@@ -610,7 +611,7 @@ public:
 	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
 	void constructionComplete() override;
 	void afterConstruction() override;
-	void setOnStage(bool staged, bool forced) override;
+	void setOnStage(bool staged, bool forced, bool inskipping=false) override;
 	RunState state;
 	_NR<AVM1MovieClipLoader> avm1loader;
 	Frame* getCurrentFrame();
@@ -726,7 +727,7 @@ public:
 	bool renderStage3D();
 	void onDisplayState(const tiny_string&);
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
-	void setOnStage(bool staged, bool force) override { assert(false); /* we are the stage */}
+	void setOnStage(bool staged, bool force,bool inskipping=false) override { assert(false); /* we are the stage */}
 	_NR<RootMovieClip> getRoot() override;
 	void setRoot(_NR<RootMovieClip> _root);
 	Stage(Class_base* c);
@@ -735,6 +736,7 @@ public:
 	_NR<Stage> getStage() override;
 	_NR<InteractiveObject> getFocusTarget();
 	void setFocusTarget(_NR<InteractiveObject> focus);
+	void checkResetFocusTarget(InteractiveObject* removedtarget);
 	void addHiddenObject(MovieClip* o);
 	void removeHiddenObject(MovieClip* o);
 	void advanceFrame() override;

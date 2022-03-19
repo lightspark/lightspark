@@ -273,7 +273,7 @@ private:
 	Mutex profileDataSpinlock;
 
 	Mutex mutexFrameListeners;
-	std::set<_R<DisplayObject>> frameListeners;
+	std::set<DisplayObject*> frameListeners;
 	/*
 	   The head of the invalidate queue
 	*/
@@ -488,8 +488,8 @@ public:
 	bool staticSharedObjectPreventBackup;
 	
 	//broadcast event management
-	void registerFrameListener(_R<DisplayObject> clip);
-	void unregisterFrameListener(_R<DisplayObject> clip);
+	void registerFrameListener(DisplayObject* clip);
+	void unregisterFrameListener(DisplayObject* clip);
 	void addBroadcastEvent(const tiny_string& event);
 
 	//Invalidation queue management

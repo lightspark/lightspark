@@ -1893,7 +1893,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			{
 				parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
 				/* parent becomes the owner of toAdd */
-				parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd);
+				parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd,inskipping);
 				currchar=toAdd;
 			}
 			else
@@ -1902,7 +1902,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		else
 		{
 			/* parent becomes the owner of toAdd */
-			parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd);
+			parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd,inskipping);
 			currchar=toAdd;
 		}
 	}

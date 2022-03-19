@@ -1172,8 +1172,10 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 			if (canCache
 					&& (cacheptr->local2.flags & ABC_OP_NOTCACHEABLE)==0
 					&& asAtomHandler::canCacheMethod(obj,name)
-					&& asAtomHandler::getObject(o)
-					&& ((asAtomHandler::is<Class_base>(obj) && asAtomHandler::as<IFunction>(o)->inClass == asAtomHandler::as<Class_base>(obj)) || (asAtomHandler::as<IFunction>(o)->inClass && asAtomHandler::getClass(obj,context->sys)->isSubClass(asAtomHandler::as<IFunction>(o)->inClass))))
+					&& asAtomHandler::isObject(o)
+					&& !asAtomHandler::as<IFunction>(o)->clonedFrom
+					&& ((asAtomHandler::is<Class_base>(obj) && asAtomHandler::as<IFunction>(o)->inClass == asAtomHandler::as<Class_base>(obj)) 
+						|| (asAtomHandler::as<IFunction>(o)->inClass && asAtomHandler::getClass(obj,context->sys)->isSubClass(asAtomHandler::as<IFunction>(o)->inClass))))
 			{
 				// cache method if multiname is static and it is a method of a sealed class
 				cacheptr->local2.flags |= ABC_OP_CACHED;

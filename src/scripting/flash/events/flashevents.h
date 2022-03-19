@@ -309,6 +309,7 @@ public:
 		//The higher the priority the earlier this must be executed
 		return priority>r.priority;
 	}
+	void resetClosure();
 };
 
 class IEventDispatcher

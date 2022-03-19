@@ -159,15 +159,13 @@ const URLInfo& RootMovieClip::getBaseURL()
 		return origin;
 }
 
-void SystemState::registerFrameListener(_R<DisplayObject> obj)
+void SystemState::registerFrameListener(DisplayObject* obj)
 {
 	Locker l(mutexFrameListeners);
-	if (frameListeners.find(obj) != frameListeners.end())
-		return;
 	frameListeners.insert(obj);
 }
 
-void SystemState::unregisterFrameListener(_R<DisplayObject> obj)
+void SystemState::unregisterFrameListener(DisplayObject* obj)
 {
 	Locker l(mutexFrameListeners);
 	frameListeners.erase(obj);
@@ -182,7 +180,8 @@ void SystemState::addBroadcastEvent(const tiny_string& event)
 		auto it=frameListeners.begin();
 		for(;it!=frameListeners.end();it++)
 		{
-			getVm(this)->addEvent(*it,e);
+			(*it)->incRef();
+			getVm(this)->addEvent(_MR(*it),e);
 		}
 	}
 }
@@ -2461,7 +2460,6 @@ void SystemState::getClassInstanceByName(asAtom& ret, const tiny_string &clsname
 		c = it->second;
 	c->getInstance(ret,true,nullptr,0);
 }
-
 /* This is run in vm's thread context */
 void RootMovieClip::initFrame()
 {

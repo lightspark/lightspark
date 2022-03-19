@@ -46,6 +46,12 @@ bool listener::operator==(const listener &r)
 	return asAtomHandler::getObjectNoCheck(f)->isEqual(asAtomHandler::getObjectNoCheck(r.f));
 }
 
+void listener::resetClosure()
+{
+	if (asAtomHandler::isFunction(f) && asAtomHandler::as<IFunction>(f)->closure_this)
+		asAtomHandler::as<IFunction>(f)->closure_this.reset();
+}
+
 void IEventDispatcher::linkTraits(Class_base* c)
 {
 	lookupAndLink(c,STRING_ADDEVENTLISTENER,STRING_FLASH_EVENTS_IEVENTDISPATCHER);
@@ -59,7 +65,6 @@ Event::Event(Class_base* cb, const tiny_string& t, bool b, bool c, CLASS_SUBTYPE
 	eventPhase(0),type(t),target(asAtomHandler::invalidAtom),currentTarget()
 {
 }
-
 void Event::finalize()
 {
 	ASObject::finalize();
@@ -306,12 +311,12 @@ void ProgressEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("STANDARD_ERROR_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardErrorData"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("STANDARD_INPUT_PROGRESS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardInputProgress"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("STANDARD_OUTPUT_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardOutputData"),DECLARED_TRAIT);
-	REGISTER_GETTER_SETTER(c,bytesLoaded);
-	REGISTER_GETTER_SETTER(c,bytesTotal);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,bytesLoaded,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,bytesTotal,Number);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(ProgressEvent,bytesLoaded);
-ASFUNCTIONBODY_GETTER_SETTER(ProgressEvent,bytesTotal);
+ASFUNCTIONBODY_GETTER_SETTER(ProgressEvent,bytesLoaded)
+ASFUNCTIONBODY_GETTER_SETTER(ProgressEvent,bytesTotal)
 
 
 ASFUNCTIONBODY_ATOM(ProgressEvent,_constructor)
@@ -571,12 +576,33 @@ EventDispatcher::EventDispatcher(Class_base* c):ASObject(c),forcedTarget(asAtomH
 
 void EventDispatcher::finalize()
 {
+	auto it=handlers.begin();
+	while(it!=handlers.end())
+	{
+		auto it2 = it->second.begin();
+		while (it2 != it->second.end())
+		{
+			(*it2).resetClosure();
+			it2 = it->second.erase(it2);
+		}
+		it = handlers.erase(it);
+	}
 	ASObject::finalize();
-	handlers.clear();
 }
 bool EventDispatcher::destruct()
 {
 	forcedTarget = asAtomHandler::invalidAtom;
+	auto it=handlers.begin();
+	while(it!=handlers.end())
+	{
+		auto it2 = it->second.begin();
+		while (it2 != it->second.end())
+		{
+			(*it2).resetClosure();
+			it2 = it->second.erase(it2);
+		}
+		it = handlers.erase(it);
+	}
 	return ASObject::destruct();
 }
 
@@ -625,15 +651,13 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 				|| eventName=="frameConstructed"
 				|| eventName=="render") )
 	{
-		th->incRef();
-		th->getSystemState()->registerFrameListener(_MR(th->as<DisplayObject>()));
+		th->getSystemState()->registerFrameListener(th->as<DisplayObject>());
 	}
 
 	{
 		Locker l(th->handlersMutex);
 		//Search if any listener is already registered for the event
 		list<listener>& listeners=th->handlers[eventName];
-		ASATOM_INCREF(args[1]);
 		const listener newListener(args[1], priority, useCapture, th->worker ? th->worker : getWorker());
 		//Ordered insertion
 		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
@@ -645,6 +669,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 			if (insertPointFunc == newfunc || (insertPointFunc->clonedFrom && insertPointFunc->clonedFrom == newfunc->clonedFrom && insertPointFunc->closure_this==newfunc->closure_this))
 				return; // don't register the same listener twice
 		}
+		ASATOM_INCREF(args[1]);
 		listeners.insert(insertionPoint,newListener);
 	}
 	th->eventListenerAdded(eventName);
@@ -685,6 +710,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),ls);
 		if(it!=h->second.end())
 		{
+			if (asAtomHandler::isFunction(it->f))
+				asAtomHandler::as<IFunction>(it->f)->closure_this.reset();
 			ASATOM_DECREF(it->f);
 			h->second.erase(it);
 		}
@@ -700,8 +727,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 					&& !th->hasEventListener("exitFrame")
 					&& !th->hasEventListener("frameConstructed")) )
 	{
-		th->incRef();
-		th->getSystemState()->unregisterFrameListener(_MR(th->as<DisplayObject>()));
+		th->getSystemState()->unregisterFrameListener(th->as<DisplayObject>());
 	}
 }
 

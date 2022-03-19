@@ -177,7 +177,7 @@ void Video::afterLegacyDelete(DisplayObjectContainer *parent, bool inskipping)
 	resetDecoder();
 }
 
-void Video::setOnStage(bool staged, bool force)
+void Video::setOnStage(bool staged, bool force,bool inskipping)
 {
 	if(staged!=onStage||force)
 	{
@@ -187,7 +187,7 @@ void Video::setOnStage(bool staged, bool force)
 			resetDecoder();
 		}
 	}
-	DisplayObject::setOnStage(staged,force);
+	DisplayObject::setOnStage(staged,force,inskipping);
 }
 
 uint32_t Video::getTagID() const

@@ -141,9 +141,9 @@ public:
 	ASFUNCTION_ATOM(getPosition);
 
 	//IThreadJob interface
-	void execute();
-	void jobFence();
-	void threadAbort();
+	void execute() override;
+	void jobFence() override;
+	void threadAbort() override;
 	Semaphore semSampleData;
 };
 
@@ -166,7 +166,7 @@ public:
 	void finalize() override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 	void afterLegacyDelete(DisplayObjectContainer* parent, bool inskipping) override;
-	void setOnStage(bool staged, bool force) override;
+	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	uint32_t getTagID() const override;
 	~Video();
 	static void sinit(Class_base*);

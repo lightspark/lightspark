@@ -39,6 +39,8 @@ namespace lightspark
 #define LS_USEREVENT_OPEN_CONTEXTMENU EngineData::userevent+3
 #define LS_USEREVENT_UPDATE_CONTEXTMENU EngineData::userevent+4
 #define LS_USEREVENT_SELECTITEM_CONTEXTMENU EngineData::userevent+5
+#define LS_USEREVENT_INTERACTIVEOBJECT_REMOVED_FOM_STAGE EngineData::userevent+6
+
 class SystemState;
 class StreamCache;
 class AudioStream;
@@ -167,6 +169,7 @@ public:
 		return incontextmenupreparing;
 	}
 	void selectContextMenuItem();
+	void InteractiveObjectRemovedFromStage();
 
 	static bool sdl_needinit;
 	static bool enablerendering;

@@ -2073,8 +2073,7 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 		getSystemState()->stage->AVM1AddEventListener(this);
 	if (clipactions.AllEventFlags.ClipEventEnterFrame)
 	{
-		this->incRef();
-		getSystemState()->registerFrameListener(_MR(this));
+		getSystemState()->registerFrameListener(this);
 		getSystemState()->stage->AVM1AddEventListener(this);
 	}
 }
@@ -2536,11 +2535,11 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 	obj->incRef();
 	obj->afterLegacyDelete(this,inskipping);
 	//this also removes it from depthToLegacyChild
-	bool ret = _removeChild(obj);
+	bool ret = _removeChild(obj,false,inskipping);
 	assert_and_throw(ret);
 }
 
-void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* obj)
+void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* obj, bool inskipping)
 {
 	if(hasLegacyChildAt(depth))
 	{
@@ -2567,7 +2566,7 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 		}
 	}
 	
-	_addChildAt(_MR(obj),insertpos);
+	_addChildAt(_MR(obj),insertpos,inskipping);
 	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{
 		obj->incRef();
@@ -2683,6 +2682,13 @@ void DisplayObjectContainer::finalize()
 InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
 {
 	subtype=SUBTYPE_INTERACTIVE_OBJECT;
+}
+
+void InteractiveObject::setOnStage(bool staged, bool force,bool inskipping)
+{
+	if (!staged)
+		getSystemState()->stage->checkResetFocusTarget(this);
+	DisplayObject::setOnStage(staged,force,inskipping);
 }
 
 InteractiveObject::~InteractiveObject()
@@ -2815,7 +2821,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 	}
 }
 
-void DisplayObjectContainer::setOnStage(bool staged, bool force)
+void DisplayObjectContainer::setOnStage(bool staged, bool force,bool inskipping)
 {
 	if(staged!=onStage||force)
 	{
@@ -2827,13 +2833,13 @@ void DisplayObjectContainer::setOnStage(bool staged, bool force)
 			displayListCopy.assign(dynamicDisplayList.begin(),
 						   dynamicDisplayList.end());
 		}
-		DisplayObject::setOnStage(staged,force);
+		InteractiveObject::setOnStage(staged,force,inskipping);
 		//Notify children
-		//calling DisplayObject::setOnStage may have changed the onStage state of the children,
+		//calling InteractiveObject::setOnStage may have changed the onStage state of the children,
 		//but the addedToStage/removedFromStage event must always be dispatched
 		std::vector<_R<DisplayObject>>::const_iterator it=displayListCopy.begin();
 		for(;it!=displayListCopy.end();++it)
-			(*it)->setOnStage(staged,true);
+			(*it)->setOnStage(staged,true,inskipping);
 	}
 }
 
@@ -2875,7 +2881,7 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceT
 	}
 }
 
-void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int index)
+void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int index, bool inskipping)
 {
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
@@ -2887,7 +2893,7 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 		else
 		{
 			child->incRef();
-			child->getParent()->_removeChild(child.getPtr());
+			child->getParent()->_removeChild(child.getPtr(),inskipping);
 		}
 	}
 	getSystemState()->removeFromResetParentList(child.getPtr());
@@ -2906,10 +2912,10 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 		}
 	}
 	if (!onStage || child.getPtr() != getSystemState()->mainClip)
-		child->setOnStage(onStage,false);
+		child->setOnStage(onStage,false,inskipping);
 }
 
-bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct)
+bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool inskipping)
 {
 	if(!child->getParent() || child->getParent()!=this)
 		return false;
@@ -2922,8 +2928,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct)
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
 
-		child->setOnStage(false,false);
-		child->incRef();
+		child->setOnStage(false,false,inskipping);
 		if (direct)
 			child->setParent(nullptr);
 		else
@@ -3851,16 +3856,21 @@ void Stage::setFocusTarget(_NR<InteractiveObject> f)
 	if (focus)
 	{
 		focus->lostFocus();
-		focus->incRef();
-		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getSystemState(),"focusOut")));
+		getVm(getSystemState())->addEvent(focus,_MR(Class<FocusEvent>::getInstanceS(getSystemState(),"focusOut")));
 	}
 	focus = f;
 	if (focus)
 	{
 		focus->gotFocus();
-		focus->incRef();
-		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getSystemState(),"custcfocusIn")));
+		getVm(getSystemState())->addEvent(focus,_MR(Class<FocusEvent>::getInstanceS(getSystemState(),"focusIn")));
 	}
+}
+
+void Stage::checkResetFocusTarget(InteractiveObject* removedtarget)
+{
+	Locker l(focusSpinlock);
+	if (focus.getPtr() == removedtarget)
+		focus=NullRef;
 }
 
 void Stage::addHiddenObject(MovieClip* o)
@@ -4617,7 +4627,7 @@ void SimpleButton::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipp
 
 bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e)
 {
-	if (!this->isOnStage() || !this->enabled || !this->isVisible())
+	if (!this->isOnStage() || !this->enabled || !this->isVisible() || this->loadedFrom->needsActionScript3())
 		return false;
 	if (!dispatcher->is<DisplayObject>())
 		return false;
@@ -4893,8 +4903,11 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 		if(!isHittable(type))
 			return NullRef;
 
-		this->incRef();
-		ret = _MR(this);
+		if (ret.getPtr() != this)
+		{
+			this->incRef();
+			ret = _MR(this);
+		}
 	}
 	return ret;
 }
@@ -5058,7 +5071,6 @@ SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 				LOG(LOG_ERROR,"ButtonSound not found for OverUpToOverDown:"<<tag->sounds->SoundID3_OverDownToOverUp << " on button "<<tag->getId());
 		}
 	}
-
 	tabEnabled = true;
 }
 
@@ -5067,7 +5079,6 @@ void SimpleButton::constructionComplete()
 	reflectState(STATE_OUT);
 	DisplayObjectContainer::constructionComplete();
 }
-
 void SimpleButton::finalize()
 {
 	DisplayObjectContainer::finalize();
@@ -5801,10 +5812,10 @@ void MovieClip::afterConstruction()
 	}
 }
 
-void MovieClip::setOnStage(bool staged, bool forced)
+void MovieClip::setOnStage(bool staged, bool forced,bool inskipping)
 {
 	bool wasOnStage = isOnStage();
-	Sprite::setOnStage(staged,forced);
+	Sprite::setOnStage(staged,forced,inskipping);
 	if (isOnStage())
 	{
 		if (isAVM1Loaded && !wasOnStage)

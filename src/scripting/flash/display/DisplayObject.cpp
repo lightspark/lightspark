@@ -116,6 +116,7 @@ DisplayObject::~DisplayObject() {}
 
 void DisplayObject::finalize()
 {
+	getSystemState()->unregisterFrameListener(this);
 	EventDispatcher::finalize();
 	cachedBitmap.reset();
 	cachedAsBitmapOf.reset();
@@ -140,6 +141,7 @@ void DisplayObject::finalize()
 bool DisplayObject::destruct()
 {
 	// TODO make all DisplayObject derived classes reusable
+	getSystemState()->unregisterFrameListener(this);
 	cachedBitmap.reset();
 	cachedAsBitmapOf.reset();
 	maskOf.reset();
@@ -728,7 +730,7 @@ void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, nu
 	getConcatenatedMatrix().getInverted().multiply2D(xin, yin, xout, yout);
 }
 
-void DisplayObject::setOnStage(bool staged, bool force)
+void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 {
 	bool changed = false;
 	//TODO: When removing from stage released the cachedTex
@@ -760,7 +762,7 @@ void DisplayObject::setOnStage(bool staged, bool force)
 		{
 			// ensure that DisplayObject constructor is called if this was added by PlaceObjectTag
 			// so that event listeners for "addedToStage" defined in constructor are added
-			if (!this->getConstructIndicator() && this->legacy
+			if (!this->getConstructIndicator() && this->legacy && !inskipping
 					&& this->getClass()->hasConstructor() && getClass()->getConstructor()->getMethodInfo() && getClass()->getConstructor()->getMethodInfo()->numArgs()==0)
 			{
 				asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
@@ -791,6 +793,8 @@ void DisplayObject::setOnStage(bool staged, bool force)
 				this->incRef();
 				getVm(getSystemState())->addEvent(_MR(this),e);
 			}
+			if (this->is<InteractiveObject>())
+				getSystemState()->getEngineData()->InteractiveObjectRemovedFromStage();
 		}
 	}
 }
@@ -1481,7 +1485,7 @@ void DisplayObject::initFrame()
 	if(!isConstructed() && getClass())
 	{
 		asAtom o = asAtomHandler::fromObject(this);
-		getClass()->handleConstruction(o,NULL,0,true);
+		getClass()->handleConstruction(o,nullptr,0,true);
 
 		/*
 		 * Legacy objects have their display list properties set on creation, but
@@ -1861,8 +1865,7 @@ multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CON
 		{
 			if (asAtomHandler::isFunction(o))
 			{
-				this->incRef();
-				getSystemState()->registerFrameListener(_MR(this));
+				getSystemState()->registerFrameListener(this);
 				getSystemState()->stage->AVM1AddEventListener(this);
 				setIsEnumerable(name, false);
 			}
@@ -1893,15 +1896,13 @@ void DisplayObject::AVM1registerPrototypeListeners()
 		name.name_s_id = BUILTIN_STRINGS::STRING_ONENTERFRAME;
 		if (pr->hasPropertyByMultiname(name,true,false))
 		{
-			this->incRef();
-			getSystemState()->registerFrameListener(_MR(this));
+			getSystemState()->registerFrameListener(this);
 			getSystemState()->stage->AVM1AddEventListener(this);
 		}
 		name.name_s_id = BUILTIN_STRINGS::STRING_ONLOAD;
 		if (pr->hasPropertyByMultiname(name,true,false))
 		{
-			this->incRef();
-			getSystemState()->registerFrameListener(_MR(this));
+			getSystemState()->registerFrameListener(this);
 			getSystemState()->stage->AVM1AddEventListener(this);
 		}
 		if (this->is<InteractiveObject>())
@@ -1954,8 +1955,7 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name)
 		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
 		{
-			this->incRef();
-			getSystemState()->unregisterFrameListener(_MR(this));
+			getSystemState()->unregisterFrameListener(this);
 		}
 		if (this->is<InteractiveObject>() && (
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
@@ -1978,8 +1978,7 @@ void DisplayObject::removeAVM1Listeners()
 	getSystemState()->stage->AVM1RemoveMouseListener(this);
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
 	getSystemState()->stage->AVM1RemoveEventListener(this);
-	this->incRef();
-	getSystemState()->unregisterFrameListener(_MR(this));
+	getSystemState()->unregisterFrameListener(this);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)

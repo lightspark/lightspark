@@ -60,8 +60,7 @@ public:
 	/**
 		Render a quad of given size using the given chunk
 	*/
-	virtual void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode,float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
+	virtual void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
 			bool isMask, bool hasMask, float directMode, RGB directColor,bool smooth, const MATRIX& matrix)=0;
@@ -83,11 +82,6 @@ protected:
 
 	int yuvUniform;
 	int alphaUniform;
-	int rotateUniform;
-	int beforeRotateUniform;
-	int startPositionUniform;
-	int afterRotateUniform;
-	int scaleUniform;
 	int maskUniform;
 	int colortransMultiplyUniform;
 	int colortransAddUniform;
@@ -123,8 +117,7 @@ public:
 	void SetEngineData(EngineData* data) { engineData = data;}
 	void lsglOrtho(float l, float r, float b, float t, float n, float f);
 
-	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
+	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
 			bool isMask, bool hasMask, float directMode, RGB directColor,bool smooth, const MATRIX& matrix) override;
@@ -154,8 +147,7 @@ private:
 public:
 	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height,bool smoothing);
 	virtual ~CairoRenderContext();
-	void renderTextured(const TextureChunk& chunk, int32_t x, int32_t y, uint32_t w, uint32_t h,
-			float alpha, COLOR_MODE colorMode, float rotate, int32_t xtransformed, int32_t ytransformed, int32_t widthtransformed, int32_t heighttransformed, float xscale, float yscale,
+	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
 			bool isMask, bool hasMask, float directMode, RGB directColor, bool smooth, const MATRIX& matrix) override;

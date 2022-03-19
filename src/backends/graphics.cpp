@@ -46,8 +46,6 @@ TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 	const uint32_t blocksW=(width+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL;
 	const uint32_t blocksH=(height+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL;
 	chunks=new uint32_t[blocksW*blocksH];
-	xContentScale = 1;
-	yContentScale = 1;
 }
 
 TextureChunk::TextureChunk(const TextureChunk& r):chunks(nullptr),texId(0),width(r.width),height(r.height)
@@ -78,6 +76,8 @@ TextureChunk& TextureChunk::operator=(const TextureChunk& r)
 		chunks=nullptr;
 	xContentScale = r.xContentScale;
 	yContentScale = r.yContentScale;
+	xOffset = r.xOffset;
+	yOffset = r.yOffset;
 	return *this;
 }
 
@@ -596,11 +596,6 @@ uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 	cairo_surface_t* cairoSurface=allocateSurface(ret);
 	cairo_t* cr=cairo_create(cairoSurface);
 
-	// scale: keep draws in positive quadrant
-	if (xscale < 0)
-		cairo_translate(cr, width, 0);
-	if (yscale < 0)
-		cairo_translate(cr, 0, height);
 	cairo_scale(cr, xscale, yscale);
 
 	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
@@ -1150,6 +1145,12 @@ void AsyncDrawJob::contentScale(float& x, float& y) const
 {
 	x = drawable->getXContentScale();
 	y = drawable->getYContentScale();
+}
+
+void AsyncDrawJob::contentOffset(float& x, float& y) const
+{
+	x = drawable->getXOffset();
+	y = drawable->getYOffset();
 }
 
 void SoftwareInvalidateQueue::addToInvalidateQueue(_R<DisplayObject> d)

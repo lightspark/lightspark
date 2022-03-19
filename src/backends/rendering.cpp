@@ -109,6 +109,7 @@ void RenderThread::finalizeUpload()
 	u->sizeNeeded(w,h);
 	TextureChunk& tex=u->getTexture();
 	u->contentScale(tex.xContentScale, tex.yContentScale);
+	u->contentOffset(tex.xOffset, tex.yOffset);
 	loadChunkBGRA(tex, w, h, engineData->getCurrentPixBuf());
 	u->uploadFence();
 	prevUploadJob=nullptr;
@@ -390,11 +391,6 @@ void RenderThread::renderSettingsPage()
 	renderText(cr, "allow local storage",10,height-25);
 
 	engineData->exec_glUniform1f(alphaUniform, 1);
-	engineData->exec_glUniform1f(rotateUniform, 0);
-	engineData->exec_glUniform2f(beforeRotateUniform, width,height);
-	engineData->exec_glUniform2f(afterRotateUniform, width,height);
-	engineData->exec_glUniform2f(startPositionUniform,(windowWidth-width)/2, (windowHeight-height)/2);
-	engineData->exec_glUniform2f(scaleUniform, 1.0,1.0);
 	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
 	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
 	mapCairoTexture(width, height,true);
@@ -571,12 +567,6 @@ void RenderThread::commonGLInit(int width, int height)
 	projectionMatrixUniform =engineData->exec_glGetUniformLocation(gpu_program,"ls_ProjectionMatrix");
 	modelviewMatrixUniform =engineData->exec_glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");
 
-	fragmentTexScaleUniform=engineData->exec_glGetUniformLocation(gpu_program,"texScale");
-	rotateUniform =engineData->exec_glGetUniformLocation(gpu_program,"rotation");
-	beforeRotateUniform =engineData->exec_glGetUniformLocation(gpu_program,"beforeRotate");
-	afterRotateUniform=engineData->exec_glGetUniformLocation(gpu_program,"afterRotate");
-	startPositionUniform=engineData->exec_glGetUniformLocation(gpu_program,"startPosition");
-	scaleUniform=engineData->exec_glGetUniformLocation(gpu_program,"scale");
 	colortransMultiplyUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformMultiply");
 	colortransAddUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformAdd");
 	directColorUniform=engineData->exec_glGetUniformLocation(gpu_program,"directColor");
@@ -765,11 +755,6 @@ void RenderThread::plotProfilingData()
 	for(;it!=m_sys->profilingData.end();++it)
 		(*it)->plot(1000000/m_sys->mainClip->getFrameRate(),cr);
 	engineData->exec_glUniform1f(directUniform, 0);
-	engineData->exec_glUniform1f(rotateUniform, 0);
-	engineData->exec_glUniform2f(beforeRotateUniform, windowWidth, windowHeight);
-	engineData->exec_glUniform2f(afterRotateUniform, windowWidth, windowHeight);
-	engineData->exec_glUniform2f(startPositionUniform,0,0);
-	engineData->exec_glUniform2f(scaleUniform, 1.0,1.0);
 	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
 	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
 
@@ -857,11 +842,6 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 
 	engineData->exec_glUniform1f(directUniform, 0);
 	engineData->exec_glUniform1f(alphaUniform, 1);
-	engineData->exec_glUniform1f(rotateUniform, 0);
-	engineData->exec_glUniform2f(beforeRotateUniform, windowWidth, windowHeight);
-	engineData->exec_glUniform2f(afterRotateUniform, windowWidth, windowHeight);
-	engineData->exec_glUniform2f(startPositionUniform,0,0);
-	engineData->exec_glUniform2f(scaleUniform, 1.0,1.0);
 	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
 	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
 	mapCairoTexture(windowWidth, windowHeight);

@@ -300,9 +300,12 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	if (target)
 	{
 		owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask);
-		MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY(),
-				0, 0, initialMatrix.getTranslateX(), initialMatrix.getTranslateY());
+		MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
 		totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
+		totalMatrix.xx = abs(totalMatrix.xx);
+		totalMatrix.yy = abs(totalMatrix.yy);
+		totalMatrix.x0 = 0;
+		totalMatrix.y0 = 0;
 	}
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 
@@ -325,8 +328,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
-		if (q && q->isSoftwareQueue)
-			totalMatrix2.translate(bxmin,bymin);
 		owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
@@ -362,8 +363,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	owner->cachedSurface.isValid=true;
 	return new CairoTokenRenderer(tokens,totalMatrix2
 				, x, y, ceil(width), ceil(height)
-				, rx, ry, ceil(rwidth), ceil(rheight), totalMatrix2.getRotation()
-				, totalMatrix2.getScaleX(), totalMatrix2.getScaleY()
+				, rx, ry, ceil(rwidth), ceil(rheight), 0
+				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
 				, isMask, mask
 				, scaling,owner->getConcatenatedAlpha(), masks
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier

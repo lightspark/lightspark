@@ -260,6 +260,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.yscale = drawable->getYScale();
 		surface.tex->xContentScale = drawable->getXContentScale();
 		surface.tex->yContentScale = drawable->getYContentScale();
+		surface.tex->xOffset = surface.xOffset;
+		surface.tex->yOffset = surface.yOffset;
 		surface.isMask=drawable->getIsMask();
 		surface.mask=drawable->getMask();
 		surface.matrix = drawable->getMatrix();

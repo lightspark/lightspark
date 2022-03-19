@@ -51,11 +51,11 @@ private:
 	 * For CairoRenderContext texId is an arbitrary id for the texture and chunks is
 	 * not used.
 	 */
-	uint32_t* chunks;
-	uint32_t texId;
+	uint32_t* chunks = nullptr;
+	uint32_t texId = 0;
 	TextureChunk(uint32_t w, uint32_t h);
 public:
-	TextureChunk():chunks(nullptr),texId(0),width(0),height(0),xContentScale(1),yContentScale(1) {}
+	TextureChunk() {}
 	TextureChunk(const TextureChunk& r);
 	TextureChunk& operator=(const TextureChunk& r);
 	~TextureChunk();
@@ -63,10 +63,12 @@ public:
 	uint32_t getNumberOfChunks() const { return ((width+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL)*((height+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL); }
 	bool isValid() const { return chunks; }
 	void makeEmpty();
-	uint32_t width;
-	uint32_t height;
-	float xContentScale; // scale the bitmap content was generated for
-	float yContentScale;
+	uint32_t width = 0;
+	uint32_t height = 0;
+	float xContentScale = 1; // scale the bitmap content was generated for
+	float yContentScale = 1;
+	float xOffset = 0; // texture topleft from Shape origin
+	float yOffset = 0;
 };
 
 class CachedSurface
@@ -115,6 +117,8 @@ protected:
 public:
 	virtual void sizeNeeded(uint32_t& w, uint32_t& h) const=0;
 	virtual void contentScale(float& x, float& y) const {x = 1; y = 1;}
+	// Texture topleft from Shape origin
+	virtual void contentOffset(float& x, float& y) const {x = 0; y = 0;}
 	/*
 		Upload data to memory mapped to the graphics card (note: size is guaranteed to be enough
 	*/
@@ -263,6 +267,7 @@ public:
 	TextureChunk& getTexture() override;
 	void uploadFence() override;
 	void contentScale(float& x, float& y) const override;
+	void contentOffset(float& x, float& y) const override;
 	DisplayObject* getOwner() { return owner.getPtr(); }
 };
 

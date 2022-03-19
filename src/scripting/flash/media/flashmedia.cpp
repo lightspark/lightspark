@@ -231,24 +231,18 @@ bool Video::renderImpl(RenderContext& ctxt) const
 	{
 		//All operations here should be non blocking
 		ctxt.setProperties(this->getBlendMode());
-		const MATRIX totalMatrix=getConcatenatedMatrix();
-		float m[16];
-		totalMatrix.get4DMatrix(m);
-		ctxt.lsglLoadMatrixf(m);
-	
+		MATRIX totalMatrix = getConcatenatedMatrix();
+
 		float scalex;
 		float scaley;
 		int offx,offy;
 		getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
+		totalMatrix.scale(scalex, scaley);
 
 		//Enable YUV to RGB conversion
 		//width and height will not change now (the Video mutex is acquired)
 		ctxt.renderTextured(embeddedVideoDecoder ? embeddedVideoDecoder->getTexture() : netStream->getTexture(),
-			0, 0, width*scalex, height*scaley,
-			clippedAlpha(), RenderContext::YUV_MODE,totalMatrix.getRotation(),
-			0, 0, // transformed position is already set through lsglLoadMatrixf above
-			width*scalex,height*scaley,
-			1.0f,1.0f,
+			clippedAlpha(), RenderContext::YUV_MODE,
 			1.0f,1.0f,1.0f,1.0f,
 			0.0f,0.0f,0.0f,0.0f,
 			false,false,0.0,RGB(),false,totalMatrix);

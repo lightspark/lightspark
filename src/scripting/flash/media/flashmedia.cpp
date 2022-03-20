@@ -908,9 +908,7 @@ ASFUNCTIONBODY_ATOM(SoundChannel,getPosition)
 	if(!asAtomHandler::is<SoundChannel>(obj))
 		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
 	SoundChannel* th = asAtomHandler::as<SoundChannel>(obj);
-	// TODO adobe seems to add some buffering time to the position, but the mechanism behind that is unclear
-	// so for now we just add 500ms
-	asAtomHandler::setUInt(ret,sys,th->audioStream ? th->audioStream->getPlayedTime()+500 : th->startTime);
+	asAtomHandler::setUInt(ret,sys,th->audioStream ? th->audioStream->getPlayedTime() : th->startTime);
 }
 void SoundChannel::execute()
 {

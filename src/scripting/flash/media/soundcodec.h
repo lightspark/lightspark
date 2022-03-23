@@ -28,7 +28,7 @@ namespace lightspark
 class SoundCodec: public ASObject
 {
 public:
-	SoundCodec(Class_base* c):ASObject(c){}
+	SoundCodec(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

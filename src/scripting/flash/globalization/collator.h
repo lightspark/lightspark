@@ -47,7 +47,7 @@ public:
 		bool ignoreKanaType,
 		bool ignoreSymbols);
 	bool isSymbol(uint32_t character);
-	Collator(Class_base* c):ASObject(c){}
+	Collator(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(compare);

@@ -24,8 +24,8 @@
 
 using namespace lightspark;
 
-AVTagData::AVTagData(Class_base* c):
-	ASObject(c)
+AVTagData::AVTagData(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {}
 
 ASFUNCTIONBODY_ATOM(AVTagData,_constructor)

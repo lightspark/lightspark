@@ -286,7 +286,7 @@ public:
 			case 0x12: //RTQNameLA
 				return 2;
 			default:
-				LOG(LOG_ERROR,_("getMultinameRTData not yet implemented for this kind ") << m->kind);
+				LOG(LOG_ERROR,"getMultinameRTData not yet implemented for this kind " << m->kind);
 				throw UnsupportedException("kind not implemented for getMultinameRTData");
 		}
 	}
@@ -392,12 +392,12 @@ private:
 	static bool ifStrictNE(ASObject*, ASObject*); 
 	static bool ifFalse(ASObject*); 
 	static bool ifTrue(ASObject*); 
-	static ASObject* getSlot(ASObject* th, int n); 
-	static void setSlot(ASObject*, ASObject*, int n); 
+	static ASObject* getSlot(call_context* th, ASObject* obj, int n);
+	static void setSlot(call_context *th, ASObject*, ASObject*, int n);
 	static void kill(int n); 
-	static ASObject* pushString(call_context* th, int n); 
-	static bool getLex(call_context* th, int n); 
-	static bool getLex_multiname(call_context* th, multiname* n, uint32_t localresult); 
+	static ASObject* pushString(call_context* th, int n);
+	static bool getLex(call_context* th, int n);
+	static bool getLex_multiname(call_context* th, multiname* n, uint32_t localresult);
 	static ASObject* getScopeObject(call_context* th, int n); 
 	static bool deleteProperty(ASObject* obj, multiname* name);
 	static void initProperty(ASObject* obj, ASObject* val, multiname* name);
@@ -1300,7 +1300,6 @@ private:
 
 public:
 	static abc_function abcfunctions[];
-	call_context* currentCallContext;
 
 	MemoryAccount* vmDataMemory;
 
@@ -1334,7 +1333,7 @@ public:
 	static void dumpOpcodeCounters(uint32_t threshhold);
 	static void clearOpcodeCounters();
 	
-	static void preloadFunction(SyntheticFunction *function);
+	static void preloadFunction(SyntheticFunction *function,ASWorker* wrk);
 	static ASObject* executeFunctionFast(const SyntheticFunction* function, call_context* context, ASObject *caller);
 	static void optimizeFunction(SyntheticFunction* function);
 	static void verifyBranch(std::set<uint32_t>& pendingBlock,std::map<uint32_t,BasicBlock>& basicBlocks,
@@ -1366,33 +1365,7 @@ public:
 	static _R<ApplicationDomain> getCurrentApplicationDomain(call_context* th);
 	static _R<SecurityDomain> getCurrentSecurityDomain(call_context* th);
 
-	/* The current recursion level. Each call increases this by one,
-	 * each return from a call decreases this. */
-	uint32_t cur_recursion;
-	stacktrace_entry* stacktrace;
-	FORCE_INLINE call_context* incStack(asAtom o, uint32_t f)
-	{
-		if(USUALLY_FALSE(cur_recursion == limits.max_recursion))
-		{
-			throwStackOverflow();
-		}
-		stacktrace[cur_recursion].set(o,f);
-		++cur_recursion; //increment current recursion depth
-		return currentCallContext;
-	}
-	FORCE_INLINE void decStack(call_context* saved_cc)
-	{
-		currentCallContext = saved_cc;
-		--cur_recursion; //decrement current recursion depth
-	}
-	void throwStackOverflow();
-
-	abc_limits limits;
-
 	uint32_t getAndIncreaseNamespaceBase(uint32_t nsNum);
-
-	tiny_string getDefaultXMLNamespace();
-	uint32_t getDefaultXMLNamespaceID();
 
 	bool buildClassAndBindTag(const std::string& s, DictionaryTag* t, Class_inherit *derived_cls=nullptr);
 	void checkExternalCallEvent() DLL_PUBLIC;

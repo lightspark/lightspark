@@ -27,8 +27,8 @@
 
 using namespace lightspark;
 
-StringTools::StringTools(Class_base* c):
-	ASObject(c)
+StringTools::StringTools(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 
@@ -49,9 +49,9 @@ ASFUNCTIONBODY_ATOM(StringTools,_constructor)
 {
 	StringTools* th =asAtomHandler::as<StringTools>(obj);
 	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
-	if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
+	if (wrk->getSystemState()->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
-		std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
+		std::string localeName = wrk->getSystemState()->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
 		th->currlocale = std::locale(localeName.c_str());
 		th->actualLocaleIDName = th->requestedLocaleIDName;
 		th->lastOperationStatus="noError";
@@ -63,19 +63,19 @@ ASFUNCTIONBODY_ATOM(StringTools,_constructor)
 	}
 }
 
-ASFUNCTIONBODY_GETTER(StringTools, actualLocaleIDName);
-ASFUNCTIONBODY_GETTER(StringTools, lastOperationStatus);
-ASFUNCTIONBODY_GETTER(StringTools, requestedLocaleIDName);
+ASFUNCTIONBODY_GETTER(StringTools, actualLocaleIDName)
+ASFUNCTIONBODY_GETTER(StringTools, lastOperationStatus)
+ASFUNCTIONBODY_GETTER(StringTools, requestedLocaleIDName)
 
 ASFUNCTIONBODY_ATOM(StringTools,getAvailableLocaleIDNames)
 {
 	StringTools* th =asAtomHandler::as<StringTools>(obj);
-	Array* res=Class<Array>::getInstanceSNoArgs(sys);
-	std::vector<std::string> localeIds = sys->localeManager->getAvailableLocaleIDNames();
+	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
+	std::vector<std::string> localeIds = wrk->getSystemState()->localeManager->getAvailableLocaleIDNames();
 	for (std::vector<std::string>::iterator it = localeIds.begin(); it != localeIds.end(); ++it)
 	{
 		tiny_string value = (*it);
-		res->push(asAtomHandler::fromObject(abstract_s(sys, value)));
+		res->push(asAtomHandler::fromObject(abstract_s(wrk, value)));
 	}
 	th->lastOperationStatus="noError";
 	ret = asAtomHandler::fromObject(res);
@@ -98,7 +98,7 @@ ASFUNCTIONBODY_ATOM(StringTools,toLowerCase)
     transform(res.begin(), res.end(), res.begin(), ::tolower);
     std::locale::global(l);
     th->lastOperationStatus = "noError";
-    ret = asAtomHandler::fromString(sys,res);
+    ret = asAtomHandler::fromString(wrk->getSystemState(),res);
   }
   catch (std::runtime_error& e)
   {
@@ -123,7 +123,7 @@ ASFUNCTIONBODY_ATOM(StringTools,toUpperCase)
     transform(res.begin(), res.end(), res.begin(), ::toupper);
     std::locale::global(l);
     th->lastOperationStatus = "noError";
-    ret = asAtomHandler::fromString(sys,res);
+    ret = asAtomHandler::fromString(wrk->getSystemState(),res);
   }
   catch (std::runtime_error& e)
   {

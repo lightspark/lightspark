@@ -29,7 +29,7 @@
 using namespace std;
 using namespace lightspark;
 
-Accelerometer::Accelerometer(Class_base* c):EventDispatcher(c) {}
+Accelerometer::Accelerometer(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c) {}
 
 void Accelerometer::sinit(Class_base* c)
 {

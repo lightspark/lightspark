@@ -29,9 +29,9 @@ namespace lightspark
 
 class Number : public ASObject
 {
-friend ASObject* abstract_d(SystemState* sys,number_t i);
-friend ASObject* abstract_d_constant(SystemState* sys,number_t i);
-friend ASObject* abstract_di(SystemState* sys,int32_t i);
+friend ASObject* abstract_d(ASWorker* worker,number_t i);
+friend ASObject* abstract_d_constant(ASWorker* worker,number_t i);
+friend ASObject* abstract_di(ASWorker* worker,int32_t i);
 friend class ABCContext;
 friend class ABCVm;
 private:
@@ -41,7 +41,7 @@ private:
 	enum DTOSTRMODE { DTOSTR_NORMAL, DTOSTR_FIXED, DTOSTR_PRECISION, DTOSTR_EXPONENTIAL };
 	static tiny_string toString(number_t value, DTOSTRMODE mode, int32_t precision);
 public:
-	Number(Class_base* c, double v=Number::NaN):ASObject(c,T_NUMBER),dval(v),isfloat(true){}
+	Number(ASWorker* worker,Class_base* c, double v=Number::NaN):ASObject(worker,c,T_NUMBER),dval(v),isfloat(true){}
 	static const number_t NaN;
 	union {
 		number_t dval;
@@ -121,7 +121,7 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap) override;
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk) override;
 };
 
 

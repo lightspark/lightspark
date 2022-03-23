@@ -25,8 +25,8 @@
 
 using namespace lightspark;
 
-GraphicsTrianglePath::GraphicsTrianglePath(Class_base* c):
-	ASObject(c), culling("none")
+GraphicsTrianglePath::GraphicsTrianglePath(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c), culling("none")
 {
 }
 

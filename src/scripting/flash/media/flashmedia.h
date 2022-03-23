@@ -66,8 +66,8 @@ protected:
 	void setBytesLoaded(uint32_t b);
 	_NR<ProgressEvent> progressEvent;
 public:
-	Sound(Class_base* c);
-	Sound(Class_base* c, _R<StreamCache> soundData, AudioFormat format, number_t duration_in_ms);
+	Sound(ASWorker* wrk,Class_base* c);
+	Sound(ASWorker* wrk, Class_base* c, _R<StreamCache> soundData, AudioFormat format, number_t duration_in_ms);
 	~Sound();
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
@@ -85,7 +85,7 @@ public:
 class SoundTransform: public ASObject
 {
 public:
-	SoundTransform(Class_base* c);
+	SoundTransform(ASWorker* wrk,Class_base* c);
 	ASPROPERTY_GETTER_SETTER(number_t,volume);
 	ASPROPERTY_GETTER_SETTER(number_t,pan);
 	ASPROPERTY_GETTER_SETTER(number_t,leftToLeft);
@@ -120,7 +120,7 @@ private:
 	bool restartafterabort;
 	void checkEnvelope();
 public:
-	SoundChannel(Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), const SOUNDINFO* _soundinfo=nullptr, Sound* _sampleproducer = nullptr);
+	SoundChannel(ASWorker* wrk,Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), const SOUNDINFO* _soundinfo=nullptr, Sound* _sampleproducer = nullptr);
 	~SoundChannel();
 	void appendStreamBlock(unsigned char* buf, int len);
 	void appendSampleData(ByteArray* data);
@@ -161,7 +161,7 @@ private:
 	uint32_t lastuploadedframe;
 	void resetDecoder();
 public:
-	Video(Class_base* c, uint32_t w=320, uint32_t h=240, DefineVideoStreamTag* v=nullptr);
+	Video(ASWorker* wk,Class_base* c, uint32_t w=320, uint32_t h=240, DefineVideoStreamTag* v=nullptr);
 	bool destruct() override;
 	void finalize() override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
@@ -187,7 +187,7 @@ public:
 class SoundMixer : public ASObject
 {
 public:
-	SoundMixer(Class_base* c):ASObject(c){}
+	SoundMixer(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base*);
 	ASFUNCTION_GETTER_SETTER(bufferTime);
 	ASFUNCTION_GETTER_SETTER(soundTransform);
@@ -197,7 +197,7 @@ public:
 class SoundLoaderContext : public ASObject
 {
 public:
-	SoundLoaderContext(Class_base* c):ASObject(c),bufferTime(1000),checkPolicyFile(false){}
+	SoundLoaderContext(ASWorker* wrk,Class_base* c):ASObject(wrk,c),bufferTime(1000),checkPolicyFile(false){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t,bufferTime);
@@ -211,7 +211,7 @@ private:
 	mutable uint32_t videoWidth, videoHeight;
 	_NR<NetStream> netStream;
 public:
-	StageVideo(Class_base* c);
+	StageVideo(ASWorker* wrk,Class_base* c);
 	void finalize() override;
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
@@ -223,21 +223,21 @@ public:
 class StageVideoAvailability : public ASObject
 {
 public:
-	StageVideoAvailability(Class_base* c):ASObject(c){}
+	StageVideoAvailability(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base*);
 };
 
 class VideoStatus : public ASObject
 {
 public:
-	VideoStatus(Class_base* c):ASObject(c){}
+	VideoStatus(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base*);
 };
 
 class Microphone : public ASObject
 {
 public:
-	Microphone(Class_base* c):ASObject(c),isSupported(false){}
+	Microphone(ASWorker* wrk,Class_base* c):ASObject(wrk,c),isSupported(false){}
 	static void sinit(Class_base*);
 	ASPROPERTY_GETTER(bool ,isSupported);
 	ASFUNCTION_ATOM(getMicrophone);
@@ -245,14 +245,14 @@ public:
 class Camera : public EventDispatcher
 {
 public:
-	Camera(Class_base* c):EventDispatcher(c),isSupported(false){}
+	Camera(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),isSupported(false){}
 	static void sinit(Class_base*);
 	ASPROPERTY_GETTER(bool ,isSupported);
 };
 class VideoStreamSettings : public ASObject
 {
 public:
-	VideoStreamSettings(Class_base* c):ASObject(c){}
+	VideoStreamSettings(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(setKeyFrameInterval);
@@ -261,7 +261,7 @@ public:
 class H264VideoStreamSettings : public VideoStreamSettings
 {
 public:
-	H264VideoStreamSettings(Class_base* c):VideoStreamSettings(c){}
+	H264VideoStreamSettings(ASWorker* wrk,Class_base* c):VideoStreamSettings(wrk,c){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(setProfileLevel);
@@ -269,7 +269,7 @@ public:
 	ASPROPERTY_GETTER(tiny_string, level);
 	ASPROPERTY_GETTER(tiny_string, profile);
 };
-	
+
 }
 
 #endif /* SCRIPTING_FLASH_MEDIA_FLASHMEDIA_H */

@@ -455,8 +455,8 @@ ASObject* DefineEditTextTag::instance(Class_base* c)
 	//TODO: check
 	assert_and_throw(bindedTo==nullptr);
 	TextField* ret= loadedFrom->usesActionScript3 ? 
-					new (c->memoryAccount) TextField(c, textData, !NoSelect, ReadOnly,VariableName,this) :
-					new (c->memoryAccount) AVM1TextField(c, textData, !NoSelect, ReadOnly,VariableName,this);
+					new (c->memoryAccount) TextField(loadedFrom->getInstanceWorker(), c, textData, !NoSelect, ReadOnly,VariableName,this) :
+					new (c->memoryAccount) AVM1TextField(loadedFrom->getInstanceWorker(),c, textData, !NoSelect, ReadOnly,VariableName,this);
 	if (HTML)
 		ret->setHtmlText((const char*)InitialText);
 	return ret;
@@ -578,8 +578,8 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 	else
 		retClass=Class<MovieClip>::getClass(loadedFrom->getSystemState());
 	MovieClip* spr = !loadedFrom->usesActionScript3 ?
-				new (retClass->memoryAccount) AVM1MovieClip(retClass, *this, this->getId()) :
-				new (retClass->memoryAccount) MovieClip(retClass, *this, this->getId());
+				new (retClass->memoryAccount) AVM1MovieClip(loadedFrom->getInstanceWorker(),retClass, *this, this->getId()) :
+				new (retClass->memoryAccount) MovieClip(loadedFrom->getInstanceWorker(),retClass, *this, this->getId());
 	if (soundheadtag)
 		soundheadtag->setSoundChannel(spr);
 	if (soundstartframe != UINT32_MAX)
@@ -663,7 +663,7 @@ ASObject* FontTag::instance(Class_base* c)
 	else
 		retClass=Class<ASFont>::getClass(loadedFrom->getSystemState());
 
-	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
+	ASFont* ret=new (retClass->memoryAccount) ASFont(loadedFrom->getInstanceWorker(),retClass);
 	LOG(LOG_NOT_IMPLEMENTED,"FontTag::instance doesn't handle all font properties");
 	ret->SetFont(fontname,FontFlagsBold,FontFlagsItalic,true,false);
 	return ret;
@@ -1267,7 +1267,7 @@ DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 ASObject* DefineFont4Tag::instance(Class_base* c)
 { 
 	tiny_string fontname = FontName;
-	Class_base* retClass=NULL;
+	Class_base* retClass=nullptr;
 	if(c)
 		retClass=c;
 	else if(bindedTo)
@@ -1275,7 +1275,7 @@ ASObject* DefineFont4Tag::instance(Class_base* c)
 	else
 		retClass=Class<ASFont>::getClass(loadedFrom->getSystemState());
 
-	ASFont* ret=new (retClass->memoryAccount) ASFont(retClass);
+	ASFont* ret=new (retClass->memoryAccount) ASFont(loadedFrom->getInstanceWorker(),retClass);
 	LOG(LOG_NOT_IMPLEMENTED,"DefineFont4Tag::instance doesn't handle all font properties");
 	ret->SetFont(fontname,FontFlagsBold,FontFlagsItalic,FontFlagsHasFontData,false);
 	return ret;
@@ -1384,29 +1384,29 @@ ASObject* BitmapTag::instance(Class_base* c)
 	{
 		classRet = Class<BitmapData>::getClass(loadedFrom->getSystemState());
 		if(!realClass)
-			return new (classRet->memoryAccount) BitmapData(classRet, bitmap);
+			return new (classRet->memoryAccount) BitmapData(loadedFrom->getInstanceWorker(),classRet, bitmap);
 		if(realClass->isSubClass(Class<Bitmap>::getClass(realClass->getSystemState())))
 		{
-			BitmapData* ret=new (classRet->memoryAccount) BitmapData(classRet, bitmap);
-			Bitmap* bitmapRet= new (realClass->memoryAccount) Bitmap(realClass,_MR(ret));
+			BitmapData* ret=new (classRet->memoryAccount) BitmapData(loadedFrom->getInstanceWorker(),classRet, bitmap);
+			Bitmap* bitmapRet= new (realClass->memoryAccount) Bitmap(loadedFrom->getInstanceWorker(),realClass,_MR(ret));
 			return bitmapRet;
 		}
 		else
-			return new (classRet->memoryAccount) BitmapData(realClass, bitmap);
+			return new (classRet->memoryAccount) BitmapData(loadedFrom->getInstanceWorker(),realClass, bitmap);
 	}
 	else
 	{
 		classRet = Class<AVM1BitmapData>::getClass(loadedFrom->getSystemState());
 		if(!realClass)
-			return new (classRet->memoryAccount) AVM1BitmapData(classRet, bitmap);
+			return new (classRet->memoryAccount) AVM1BitmapData(loadedFrom->getInstanceWorker(),classRet, bitmap);
 		if(realClass->isSubClass(Class<AVM1Bitmap>::getClass(realClass->getSystemState())))
 		{
-			AVM1BitmapData* ret=new (classRet->memoryAccount) AVM1BitmapData(classRet, bitmap);
-			Bitmap* bitmapRet= new (realClass->memoryAccount) AVM1Bitmap(realClass,_MR(ret));
+			AVM1BitmapData* ret=new (classRet->memoryAccount) AVM1BitmapData(loadedFrom->getInstanceWorker(),classRet, bitmap);
+			Bitmap* bitmapRet= new (realClass->memoryAccount) AVM1Bitmap(loadedFrom->getInstanceWorker(),realClass,_MR(ret));
 			return bitmapRet;
 		}
 		else
-			return new (classRet->memoryAccount) AVM1BitmapData(realClass, bitmap);
+			return new (classRet->memoryAccount) AVM1BitmapData(loadedFrom->getInstanceWorker(),realClass, bitmap);
 	}
 
 	if(realClass->isSubClass(Class<BitmapData>::getClass(realClass->getSystemState())))
@@ -1414,7 +1414,7 @@ ASObject* BitmapTag::instance(Class_base* c)
 		classRet = realClass;
 	}
 
-	return new (classRet->memoryAccount) BitmapData(classRet, bitmap);
+	return new (classRet->memoryAccount) BitmapData(loadedFrom->getInstanceWorker(),classRet, bitmap);
 }
 
 DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, RootMovieClip* root,int v):DictionaryTag(h,root),version(v)
@@ -1447,7 +1447,7 @@ ASObject* DefineTextTag::instance(Class_base* c)
 	if(c==nullptr)
 		c=Class<StaticText>::getClass(loadedFrom->getSystemState());
 
-	StaticText* ret=new (c->memoryAccount) StaticText(c, tokens,TextBounds,this->getId());
+	StaticText* ret=new (c->memoryAccount) StaticText(loadedFrom->getInstanceWorker(),c, tokens,TextBounds,this->getId());
 	return ret;
 }
 
@@ -1558,14 +1558,14 @@ ASObject *DefineShapeTag::instance(Class_base *c)
 	if(c==nullptr)
 	{
 		ret= loadedFrom->usesActionScript3 ?
-					Class<Shape>::getInstanceSNoArgs(loadedFrom->getSystemState()):
-					Class<AVM1Shape>::getInstanceSNoArgs(loadedFrom->getSystemState());
+					Class<Shape>::getInstanceSNoArgs(loadedFrom->getInstanceWorker()):
+					Class<AVM1Shape>::getInstanceSNoArgs(loadedFrom->getInstanceWorker());
 	}
 	else
 	{
 		ret= loadedFrom->usesActionScript3 ?
-					 new (c->memoryAccount) Shape(c):
-					new (c->memoryAccount) AVM1Shape(c);
+					 new (c->memoryAccount) Shape(loadedFrom->getInstanceWorker(),c):
+					new (c->memoryAccount) AVM1Shape(loadedFrom->getInstanceWorker(),c);
 	}
 	ret->setupShape(this, 1.0f/20.0f);
 	return ret;
@@ -1621,7 +1621,7 @@ ASObject* DefineMorphShapeTag::instance(Class_base* c)
 	assert_and_throw(bindedTo==nullptr);
 	if(c==nullptr)
 		c=Class<MorphShape>::getClass(loadedFrom->getSystemState());
-	MorphShape* ret=new (c->memoryAccount) MorphShape(c, this);
+	MorphShape* ret=new (c->memoryAccount) MorphShape(loadedFrom->getInstanceWorker(),c, this);
 	return ret;
 }
 
@@ -1760,7 +1760,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 	//TODO: move these three attributes in PlaceInfo
 	if(PlaceFlagHasColorTransform)
 	{
-		obj->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(obj->getSystemState(),this->ColorTransformWithAlpha));
+		obj->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(obj->getInstanceWorker(),this->ColorTransformWithAlpha));
 	}
 
 	if(PlaceFlagHasRatio)
@@ -1858,8 +1858,8 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 				instance->setIsInitialized();
 			if (instance->is<BitmapData>())
 				toAdd = parent->loadedFrom->usesActionScript3 ?
-							Class<Bitmap>::getInstanceS(instance->getSystemState(),_R<BitmapData>(instance->as<BitmapData>())) :
-							Class<AVM1Bitmap>::getInstanceS(instance->getSystemState(),_R<AVM1BitmapData>(instance->as<AVM1BitmapData>()));
+							Class<Bitmap>::getInstanceS(instance->getInstanceWorker(),_R<BitmapData>(instance->as<BitmapData>())) :
+							Class<AVM1Bitmap>::getInstanceS(instance->getInstanceWorker(),_R<AVM1BitmapData>(instance->as<AVM1BitmapData>()));
 			else
 				toAdd=dynamic_cast<DisplayObject*>(instance);
 			if(!toAdd && instance)
@@ -1931,7 +1931,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		objName.name_s_id=currchar->name;
 		objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		asAtom v = asAtomHandler::fromObject(currchar);
-		parent->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED);
+		parent->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
 	}
 	if (PlaceFlagHasClipAction)
 	{
@@ -2308,7 +2308,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			if (i->ButtonHasFilterList)
 				state->setFilters(i->FilterList);
 			if (i->ColorTransform.isfilled())
-				state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(state->getSystemState(),i->ColorTransform));
+				state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(loadedFrom->getInstanceWorker(),i->ColorTransform));
 
 			if(states[j] == nullptr)
 			{
@@ -2319,7 +2319,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			{
 				if(!isSprite[j])
 				{
-					Sprite* spr = Class<Sprite>::getInstanceS(loadedFrom->getSystemState());
+					Sprite* spr = Class<Sprite>::getInstanceS(loadedFrom->getInstanceWorker());
 					spr->insertLegacyChildAt(LEGACY_DEPTH_START+curDepth[j],states[j]);
 					states[j] = spr;
 					spr->name = BUILTIN_STRINGS::EMPTY;
@@ -2340,8 +2340,8 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			realClass=Class<SimpleButton>::getClass(loadedFrom->getSystemState());
 	}
 	SimpleButton* ret= !loadedFrom->usesActionScript3 ?
-				new (realClass->memoryAccount) AVM1SimpleButton(realClass, states[0], states[1], states[2], states[3],this) :
-				new (realClass->memoryAccount) SimpleButton(realClass, states[0], states[1], states[2], states[3],this);
+				new (realClass->memoryAccount) AVM1SimpleButton(loadedFrom->getInstanceWorker(), realClass, states[0], states[1], states[2], states[3],this) :
+				new (realClass->memoryAccount) SimpleButton(loadedFrom->getInstanceWorker(), realClass, states[0], states[1], states[2], states[3],this);
 	return ret;
 }
 
@@ -2374,9 +2374,9 @@ ASObject* DefineVideoStreamTag::instance(Class_base* c)
 		classRet=Class<Video>::getClass(loadedFrom->getSystemState());
 
 	if (!loadedFrom->usesActionScript3)
-		return new (classRet->memoryAccount) AVM1Video(classRet, Width, Height,NumFrames ? this : nullptr);
+		return new (classRet->memoryAccount) AVM1Video(loadedFrom->getInstanceWorker(),classRet, Width, Height,NumFrames ? this : nullptr);
 	else
-		return new (classRet->memoryAccount) Video(classRet, Width, Height,NumFrames ? this : nullptr);
+		return new (classRet->memoryAccount) Video(loadedFrom->getInstanceWorker(),classRet, Width, Height,NumFrames ? this : nullptr);
 }
 
 void DefineVideoStreamTag::setFrameData(VideoFrameTag* tag)
@@ -2409,7 +2409,7 @@ ASObject* DefineBinaryDataTag::instance(Class_base* c)
 	else
 		classRet=Class<ByteArray>::getClass(loadedFrom->getSystemState());
 
-	ByteArray* ret=new (classRet->memoryAccount) ByteArray(classRet, b, len);
+	ByteArray* ret=new (classRet->memoryAccount) ByteArray(loadedFrom->getInstanceWorker(),classRet, b, len);
 	return ret;
 }
 
@@ -2484,10 +2484,10 @@ ASObject* DefineSoundTag::instance(Class_base* c)
 		retClass=Class<Sound>::getClass(loadedFrom->getSystemState());
 
 	if (!loadedFrom->usesActionScript3)
-		return new (retClass->memoryAccount) AVM1Sound(retClass, SoundData,
+		return new (retClass->memoryAccount) AVM1Sound(loadedFrom->getInstanceWorker(), retClass, SoundData,
 			AudioFormat(getAudioCodec(), getSampleRate(), getChannels()),getDurationInMS());
 	else
-		return new (retClass->memoryAccount) Sound(retClass, SoundData,
+		return new (retClass->memoryAccount) Sound(loadedFrom->getInstanceWorker(), retClass, SoundData,
 			AudioFormat(getAudioCodec(), getSampleRate(), getChannels()),getDurationInMS());
 }
 
@@ -2537,7 +2537,7 @@ std::streambuf *DefineSoundTag::createSoundStream() const
 
 _NR<SoundChannel> DefineSoundTag::createSoundChannel(const SOUNDINFO* soundinfo)
 {
-	return _MR(Class<SoundChannel>::getInstanceS(loadedFrom->getSystemState(),SoundData, AudioFormat(getAudioCodec(), getSampleRate(), getChannels()),soundinfo));
+	return _MR(Class<SoundChannel>::getInstanceS(loadedFrom->getInstanceWorker(),SoundData, AudioFormat(getAudioCodec(), getSampleRate(), getChannels()),soundinfo));
 }
 
 StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
@@ -2562,7 +2562,7 @@ void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	}
 	if (soundTag->soundchannel.isNull())
 	{
-		soundTag->soundchannel = _NR<SoundChannel>(Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getSystemState(),
+		soundTag->soundchannel = _NR<SoundChannel>(Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getInstanceWorker(),
 			soundTag->getSoundData(),
 			AudioFormat(soundTag->getAudioCodec(),
 						soundTag->getSampleRate(),
@@ -2863,7 +2863,7 @@ SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in, RootMov
 
 void SoundStreamHeadTag::setSoundChannel(Sprite *spr)
 {
-	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(spr->getSystemState(),
+	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(spr->getInstanceWorker(),
 								SoundData,
 								AudioFormat(LS_AUDIO_CODEC(StreamSoundCompression),StreamSoundRate,StreamSoundType+1));
 	spr->setSound(schannel,true);
@@ -3036,7 +3036,7 @@ void DoABCTag::execute(RootMovieClip* root) const
 {
 	LOG(LOG_CALLS,"ABC Exec");
 	/* currentVM will free the context*/
-	if (!getWorker() || getWorker()->isPrimordial)
+	if (root->getInstanceWorker()->isPrimordial)
 		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
 	else
 		context->exec(false);
@@ -3069,7 +3069,7 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 	// if the swf file also has a SymbolClass, we just ignore them and execute all abc tags lazy.
 	// the real start of the main class is done when the symbol with id 0 is detected in SymbolClass tag
 	bool lazy = root->hasSymbolClass || ((int32_t)Flags)&1;
-	if (!getWorker() || getWorker()->isPrimordial)
+	if (root->getInstanceWorker()->isPrimordial)
 		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,lazy)));
 	else
 		context->exec(lazy);
@@ -3099,13 +3099,13 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 		{
 			root->hasMainClass=true;
 			root->incRef();
-			ASWorker* worker = getWorker();
-			if (worker && !worker->isPrimordial && root != root->getSystemState()->mainClip)
+			ASWorker* worker = root->getInstanceWorker();
+			if (!worker->isPrimordial && root != root->getSystemState()->mainClip)
 			{
 				getVm(root->getSystemState())->buildClassAndInjectBase(className.raw_buf(),_MR(root));
 				worker->state ="running";
 				worker->incRef();
-				getVm(root->getSystemState())->addEvent(_MR(worker),_MR(Class<Event>::getInstanceS(root->getSystemState(),"workerState")));
+				getVm(root->getSystemState())->addEvent(_MR(worker),_MR(Class<Event>::getInstanceS(root->getInstanceWorker(),"workerState")));
 			}
 			else
 				getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
@@ -3121,25 +3121,12 @@ void ScriptLimitsTag::execute(RootMovieClip* root) const
 {
 	if (root != root->getSystemState()->mainClip)
 		return;
-	ASWorker* worker = getWorker();
-	if (worker)
+	ASWorker* worker = root->getInstanceWorker();
+	if (MaxRecursionDepth > worker->limits.max_recursion)
 	{
-		if (MaxRecursionDepth > worker->limits.max_recursion)
-		{
-			delete[] worker->stacktrace;
-			worker->stacktrace = new stacktrace_entry[MaxRecursionDepth];
-		}
-		worker->limits.max_recursion = MaxRecursionDepth;
-		worker->limits.script_timeout = ScriptTimeoutSeconds;
+		delete[] worker->stacktrace;
+		worker->stacktrace = new stacktrace_entry[MaxRecursionDepth];
 	}
-	else
-	{
-		if (MaxRecursionDepth > getVm(root->getSystemState())->limits.max_recursion)
-		{
-			delete[] getVm(root->getSystemState())->stacktrace;
-			getVm(root->getSystemState())->stacktrace = new stacktrace_entry[MaxRecursionDepth];
-		}
-		getVm(root->getSystemState())->limits.max_recursion = MaxRecursionDepth;
-		getVm(root->getSystemState())->limits.script_timeout = ScriptTimeoutSeconds;
-	}
+	worker->limits.max_recursion = MaxRecursionDepth;
+	worker->limits.script_timeout = ScriptTimeoutSeconds;
 }

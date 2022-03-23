@@ -36,24 +36,24 @@ ASFUNCTIONBODY_ATOM(AVM1XMLDocument,load)
 {
 	AVM1XMLDocument* th=asAtomHandler::as<AVM1XMLDocument>(obj);
 	if (th->loader.isNull())
-		th->loader = _MR(Class<URLLoader>::getInstanceS(sys));
+		th->loader = _MR(Class<URLLoader>::getInstanceS(wrk));
 	tiny_string url;
 	ARG_UNPACK_ATOM(url);
-	URLRequest* req = Class<URLRequest>::getInstanceS(sys,url);
+	URLRequest* req = Class<URLRequest>::getInstanceS(wrk,url);
 	asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
 	asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(th->loader.getPtr());
-	URLLoader::load(ret,sys,loaderobj,&urlarg,1);
+	URLLoader::load(ret,wrk,loaderobj,&urlarg,1);
 }
 
-multiname* AVM1XMLDocument::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname* AVM1XMLDocument::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset,ASWorker* wrk)
 {
-	multiname* res = XMLDocument::setVariableByMultiname(name,o,allowConst,alreadyset);
+	multiname* res = XMLDocument::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 	if (!getSystemState()->mainClip->usesActionScript3)
 	{
 		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
 		{
 			if (loader.isNull())
-				loader = _MR(Class<URLLoader>::getInstanceS(getSystemState()));
+				loader = _MR(Class<URLLoader>::getInstanceS(wrk));
 			this->incRef();
 			getSystemState()->stage->AVM1AddEventListener(this);
 			setIsEnumerable(name, false);
@@ -77,7 +77,7 @@ void AVM1XMLDocument::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 			m.name_type=multiname::NAME_STRING;
 			m.isAttribute = false;
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
-			getVariableByMultiname(func,m);
+			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 			if (asAtomHandler::is<AVM1Function>(func))
 			{
 				asAtom ret=asAtomHandler::invalidAtom;

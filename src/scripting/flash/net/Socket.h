@@ -96,7 +96,7 @@ protected:
 	void connect(tiny_string host, int port);
 	bool isConnected();
 public:
-	ASSocket(Class_base* c);
+	ASSocket(ASWorker* wrk,Class_base* c);
 	~ASSocket();
 	static void sinit(Class_base*);
 	void finalize() override;

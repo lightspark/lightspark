@@ -28,7 +28,7 @@ namespace lightspark
 class BitmapEncodingColorSpace: public ASObject
 {
 public:
-	BitmapEncodingColorSpace(Class_base* c):ASObject(c){}
+	BitmapEncodingColorSpace(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

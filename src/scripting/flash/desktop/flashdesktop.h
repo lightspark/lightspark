@@ -29,7 +29,7 @@ class ASFile;
 class NativeApplication: public EventDispatcher
 {
 public:
-	NativeApplication(Class_base* c):EventDispatcher(c){}
+	NativeApplication(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -40,7 +40,7 @@ public:
 class NativeDragManager: public ASObject
 {
 public:
-	NativeDragManager(Class_base* c):ASObject(c),isSupported(false){}
+	NativeDragManager(ASWorker* wrk,Class_base* c):ASObject(wrk,c),isSupported(false){}
 	static void sinit(Class_base* c);
 	ASPROPERTY_GETTER(bool,isSupported);
 };
@@ -48,7 +48,7 @@ public:
 class NativeProcess: public EventDispatcher
 {
 public:
-	NativeProcess(Class_base* c):EventDispatcher(c),isSupported(false){}
+	NativeProcess(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),isSupported(false){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(start);
@@ -57,7 +57,7 @@ public:
 class NativeProcessStartupInfo: public ASObject
 {
 public:
-	NativeProcessStartupInfo(Class_base* c);
+	NativeProcessStartupInfo(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>,arguments);

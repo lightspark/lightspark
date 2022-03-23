@@ -22,8 +22,8 @@
 
 using namespace lightspark;
 
-GraphicsEndFill::GraphicsEndFill(Class_base* c):
-	ASObject(c)
+GraphicsEndFill::GraphicsEndFill(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 

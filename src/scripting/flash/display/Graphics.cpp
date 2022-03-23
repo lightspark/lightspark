@@ -90,7 +90,7 @@ ASFUNCTIONBODY_ATOM(Graphics,clear)
 	th->lineStyles.clear();
 	th->owner->owner->hasChanged=true;
 	th->owner->owner->setNeedsTextureRecalculation();
-	th->owner->owner->requestInvalidation(sys);
+	th->owner->owner->requestInvalidation(wrk->getSystemState());
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,moveTo)
@@ -1092,7 +1092,7 @@ ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 	tiny_string spreadMethod;
 	tiny_string interpolationMethod;
 	number_t focalPointRatio;
-	if (sys->mainClip->usesActionScript3)
+	if (wrk->getSystemState()->mainClip->usesActionScript3)
 	{
 		ARG_UNPACK_ATOM (type) (colors) (alphas) (ratiosParam) (matrix, NullRef)
 				(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0);
@@ -1110,29 +1110,29 @@ ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 			{
 				multiname m(nullptr);
 				m.name_type = multiname::NAME_STRING;
-				m.name_s_id = sys->getUniqueStringId("matrixType");
+				m.name_s_id = wrk->getSystemState()->getUniqueStringId("matrixType");
 				asAtom a=asAtomHandler::invalidAtom;
-				mat->getVariableByMultiname(a,m);
-				if (asAtomHandler::toString(a,sys) != "box")
+				mat->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
+				if (asAtomHandler::toString(a,wrk) != "box")
 					LOG(LOG_NOT_IMPLEMENTED,"beginGradientFill with Object as Matrix and matrixType "<<asAtomHandler::toDebugString(a));
 				else
 				{
-					matrix = _MR(Class<Matrix>::getInstanceSNoArgs(sys));
-					m.name_s_id = sys->getUniqueStringId("x");
+					matrix = _MR(Class<Matrix>::getInstanceSNoArgs(wrk));
+					m.name_s_id = wrk->getSystemState()->getUniqueStringId("x");
 					asAtom x=asAtomHandler::invalidAtom;
-					mat->getVariableByMultiname(x,m);
-					m.name_s_id = sys->getUniqueStringId("y");
+					mat->getVariableByMultiname(x,m,GET_VARIABLE_OPTION::NONE,wrk);
+					m.name_s_id = wrk->getSystemState()->getUniqueStringId("y");
 					asAtom y=asAtomHandler::invalidAtom;
-					mat->getVariableByMultiname(y,m);
-					m.name_s_id = sys->getUniqueStringId("w");
+					mat->getVariableByMultiname(y,m,GET_VARIABLE_OPTION::NONE,wrk);
+					m.name_s_id = wrk->getSystemState()->getUniqueStringId("w");
 					asAtom w=asAtomHandler::invalidAtom;
-					mat->getVariableByMultiname(w,m);
-					m.name_s_id = sys->getUniqueStringId("h");
+					mat->getVariableByMultiname(w,m,GET_VARIABLE_OPTION::NONE,wrk);
+					m.name_s_id = wrk->getSystemState()->getUniqueStringId("h");
 					asAtom h=asAtomHandler::invalidAtom;
-					mat->getVariableByMultiname(h,m);
-					m.name_s_id = sys->getUniqueStringId("r");
+					mat->getVariableByMultiname(h,m,GET_VARIABLE_OPTION::NONE,wrk);
+					m.name_s_id = wrk->getSystemState()->getUniqueStringId("r");
 					asAtom r=asAtomHandler::invalidAtom;
-					mat->getVariableByMultiname(r,m);
+					mat->getVariableByMultiname(r,m,GET_VARIABLE_OPTION::NONE,wrk);
 					matrix->_createBox(asAtomHandler::toNumber(w), asAtomHandler::toNumber(h), asAtomHandler::toNumber(r), asAtomHandler::toNumber(x), asAtomHandler::toNumber(y));
 				}
 			}

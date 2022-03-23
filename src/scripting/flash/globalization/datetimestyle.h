@@ -29,7 +29,7 @@ namespace lightspark
 class DateTimeStyle: public ASObject
 {
 public:
-	DateTimeStyle(Class_base* c):ASObject(c){}
+	DateTimeStyle(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

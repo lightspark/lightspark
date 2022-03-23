@@ -41,7 +41,7 @@ using namespace lightspark;
 // maybe we should set this smaller
 #define BA_MAX_SIZE 0x40000000
 
-ByteArray::ByteArray(Class_base* c, uint8_t* b, uint32_t l):ASObject(c,T_OBJECT,SUBTYPE_BYTEARRAY),littleEndian(false),objectEncoding(OBJECT_ENCODING::AMF3),currentObjectEncoding(OBJECT_ENCODING::AMF3),
+ByteArray::ByteArray(ASWorker* wrk, Class_base* c, uint8_t* b, uint32_t l):ASObject(wrk,c,T_OBJECT,SUBTYPE_BYTEARRAY),littleEndian(false),objectEncoding(OBJECT_ENCODING::AMF3),currentObjectEncoding(OBJECT_ENCODING::AMF3),
 	position(0),bytes(b),real_len(l),len(l),shareable(false)
 {
 #ifdef MEMORY_USAGE_PROFILING
@@ -225,7 +225,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_constructor)
 ASFUNCTIONBODY_ATOM(ByteArray,_getPosition)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
-	asAtomHandler::setUInt(ret,sys,th->getPosition());
+	asAtomHandler::setUInt(ret,wrk,th->getPosition());
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setPosition)
@@ -239,17 +239,17 @@ ASFUNCTIONBODY_ATOM(ByteArray,_getEndian)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	if(th->littleEndian)
-		ret = asAtomHandler::fromString(sys,Endian::littleEndian);
+		ret = asAtomHandler::fromString(wrk->getSystemState(),Endian::littleEndian);
 	else
-		ret = asAtomHandler::fromString(sys,Endian::bigEndian);
+		ret = asAtomHandler::fromString(wrk->getSystemState(),Endian::bigEndian);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setEndian)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
-	if(asAtomHandler::toString(args[0],sys) == Endian::littleEndian)
+	if(asAtomHandler::toString(args[0],wrk) == Endian::littleEndian)
 		th->littleEndian = true;
-	else if(asAtomHandler::toString(args[0],sys) == Endian::bigEndian)
+	else if(asAtomHandler::toString(args[0],wrk) == Endian::bigEndian)
 		th->littleEndian = false;
 	else
 		throwError<ArgumentError>(kInvalidEnumError, "endian");
@@ -258,7 +258,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setEndian)
 ASFUNCTIONBODY_ATOM(ByteArray,_getObjectEncoding)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
-	asAtomHandler::setUInt(ret,sys,th->objectEncoding);
+	asAtomHandler::setUInt(ret,wrk,th->objectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setObjectEncoding)
@@ -275,7 +275,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setObjectEncoding)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getDefaultObjectEncoding)
 {
-	asAtomHandler::setUInt(ret,sys,sys->staticNetConnectionDefaultObjectEncoding);
+	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->staticNetConnectionDefaultObjectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setDefaultObjectEncoding)
@@ -283,9 +283,9 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setDefaultObjectEncoding)
 	assert_and_throw(argslen == 1);
 	int32_t value = asAtomHandler::toInt(args[0]);
 	if(value == 0)
-		sys->staticByteArrayDefaultObjectEncoding = OBJECT_ENCODING::AMF0;
+		wrk->getSystemState()->staticByteArrayDefaultObjectEncoding = OBJECT_ENCODING::AMF0;
 	else if(value == 3)
-		sys->staticByteArrayDefaultObjectEncoding = OBJECT_ENCODING::AMF3;
+		wrk->getSystemState()->staticByteArrayDefaultObjectEncoding = OBJECT_ENCODING::AMF3;
 	else
 		throw RunTimeException("Invalid object encoding");
 }
@@ -327,13 +327,13 @@ void ByteArray::setLength(uint32_t newLen)
 ASFUNCTIONBODY_ATOM(ByteArray,_getLength)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
-	asAtomHandler::setUInt(ret,sys,th->len);
+	asAtomHandler::setUInt(ret,wrk,th->len);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getBytesAvailable)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
-	asAtomHandler::setUInt(ret,sys,th->len-th->position);
+	asAtomHandler::setUInt(ret,wrk,th->len-th->position);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readBoolean)
@@ -376,7 +376,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readBytes)
 	if((uint64_t)length+offset > 0xFFFFFFFF)
 	{
 		th->unlock();
-		throw Class<RangeError>::getInstanceS(sys,"length+offset");
+		throw Class<RangeError>::getInstanceS(wrk,"length+offset");
 	}
 	
 	uint8_t* buf=out->getBuffer(length+offset,true);
@@ -423,7 +423,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUTF)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	ret = asAtomHandler::fromObject(abstract_s(sys,res));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,res));
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUTFBytes)
@@ -440,7 +440,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUTFBytes)
 	}
 	tiny_string res;
 	th->readUTFBytes(length,res);
-	ret = asAtomHandler::fromObject(abstract_s(sys,res));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,res));
 }
 
 bool ByteArray::readUTFBytes(uint32_t length,tiny_string& ret)
@@ -492,7 +492,7 @@ asAtom ByteArray::readObject()
 
 ASObject* ByteArray::readSharedObject()
 {
-	ASObject* ret = Class<ASObject>::getInstanceS(getSystemState());
+	ASObject* ret = Class<ASObject>::getInstanceS(getInstanceWorker());
 	if (getLength()<=16)
 		return ret;
 	Amf3Deserializer d(this);
@@ -527,7 +527,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeUTF)
 	assert_and_throw(argslen==1);
 	assert_and_throw(asAtomHandler::isString(args[0]));
 	th->lock();
-	th->writeUTF(asAtomHandler::toString(args[0],sys));
+	th->writeUTF(asAtomHandler::toString(args[0],wrk));
 	th->unlock();
 }
 
@@ -537,7 +537,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeUTFBytes)
 	//Validate parameters
 	assert_and_throw(argslen==1);
 	assert_and_throw(asAtomHandler::isString(args[0]));
-	tiny_string str=asAtomHandler::toString(args[0],sys);
+	tiny_string str=asAtomHandler::toString(args[0],wrk);
 	th->lock();
 	th->getBuffer(th->position+str.numBytes(),true);
 	memcpy(th->bytes+th->position,str.raw_buf(),str.numBytes());
@@ -562,7 +562,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeMultiByte)
 	th->unlock();
 }
 
-uint32_t ByteArray::writeObject(ASObject* obj)
+uint32_t ByteArray::writeObject(ASObject* obj, ASWorker* wrk)
 {
 	//Return the length of the serialized object
 
@@ -571,10 +571,10 @@ uint32_t ByteArray::writeObject(ASObject* obj)
 	map<const ASObject*, uint32_t> objMap;
 	map<const Class_base*, uint32_t> traitsMap;
 	uint32_t oldPosition=position;
-	obj->serialize(this, stringMap, objMap,traitsMap);
+	obj->serialize(this, stringMap, objMap,traitsMap,wrk);
 	return position-oldPosition;
 }
-void ByteArray::writeSharedObject(ASObject* obj, const tiny_string& name)
+void ByteArray::writeSharedObject(ASObject* obj, const tiny_string& name, ASWorker* wrk)
 {
 	// write amf header
 	writeByte(0x00);
@@ -600,7 +600,7 @@ void ByteArray::writeSharedObject(ASObject* obj, const tiny_string& name)
 	map<tiny_string, uint32_t> stringMap;
 	map<const ASObject*, uint32_t> objMap;
 	map<const Class_base*, uint32_t> traitsMap;
-	obj->serializeDynamicProperties(this, stringMap, objMap,traitsMap,true,true);
+	obj->serializeDynamicProperties(this, stringMap, objMap,traitsMap,wrk,true,true);
 	setPosition(sizepos);
 	writeUnsignedInt(GUINT32_TO_BE(getLength()-6));
 	setPosition(0);
@@ -612,7 +612,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeObject)
 	//Validate parameters
 	assert_and_throw(argslen==1);
 	th->lock();
-	th->writeObject(asAtomHandler::toObject(args[0],sys));
+	th->writeObject(asAtomHandler::toObject(args[0],wrk),wrk);
 	th->unlock();
 }
 
@@ -810,7 +810,7 @@ ASFUNCTIONBODY_ATOM(ByteArray, readByte)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	asAtomHandler::setInt(ret,sys,(int8_t)res);
+	asAtomHandler::setInt(ret,wrk,(int8_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readDouble)
@@ -828,7 +828,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readDouble)
 	th->position+=8;
 
 	th->unlock();
-	asAtomHandler::setNumber(ret,sys,res);
+	asAtomHandler::setNumber(ret,wrk,res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
@@ -846,7 +846,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
 	th->position+=4;
 
 	th->unlock();
-	asAtomHandler::setNumber(ret,sys,res);
+	asAtomHandler::setNumber(ret,wrk,res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readInt)
@@ -865,7 +865,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readInt)
 	memcpy(&res,th->bytes+th->position,4);
 	th->position+=4;
 	th->unlock();
-	asAtomHandler::setInt(ret,sys,(int32_t)th->endianOut(res));
+	asAtomHandler::setInt(ret,wrk,(int32_t)th->endianOut(res));
 }
 
 bool ByteArray::readShort(uint16_t& ret)
@@ -894,7 +894,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readShort)
 	}
 
 	th->unlock();
-	asAtomHandler::setInt(ret,sys,(int16_t)res);
+	asAtomHandler::setInt(ret,wrk,(int16_t)res);
 }
 ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
 {
@@ -908,7 +908,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	asAtomHandler::setUInt(ret,sys,(uint32_t)res);
+	asAtomHandler::setUInt(ret,wrk,(uint32_t)res);
 }
 
 bool ByteArray::readUnsignedInt(uint32_t& ret)
@@ -936,7 +936,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedInt)
 		throwError<EOFError>(kEOFError);
 	}
 	th->unlock();
-	asAtomHandler::setUInt(ret,sys,res);
+	asAtomHandler::setUInt(ret,wrk,res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedShort)
@@ -953,7 +953,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedShort)
 	}
 
 	th->unlock();
-	asAtomHandler::setUInt(ret,sys,(uint32_t)res);
+	asAtomHandler::setUInt(ret,wrk,(uint32_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
@@ -978,7 +978,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
 	s[strlen] = 0x0;
 	tiny_string res(s,true);
 	th->unlock();
-	ret = asAtomHandler::fromObject(abstract_s(sys,res));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,res));
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readObject)
@@ -1150,30 +1150,30 @@ ASFUNCTIONBODY_ATOM(ByteArray,_toString)
 			start = 3;
 	}
 	if (validateUtf8(th->bytes+start,th->len-start))
-		ret = asAtomHandler::fromObject(abstract_s(sys,(const char*)th->bytes+start,th->len-start));
+		ret = asAtomHandler::fromObject(abstract_s(wrk,(const char*)th->bytes+start,th->len-start));
 	else
-		ret = asAtomHandler::fromObject(abstract_s(sys,parseUtf8(th->bytes+start,th->len-start)));
+		ret = asAtomHandler::fromObject(abstract_s(wrk,parseUtf8(th->bytes+start,th->len-start)));
 }
 
-bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
+bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk)
 {
 	if(considerDynamic==false)
-		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype,wrk);
 	if (!isConstructed())
 		return false;
 	unsigned int index=0;
 	if(!Array::isValidMultiname(getSystemState(),name,index))
-		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype);
+		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype,wrk);
 
 	return index<len;
 }
 
-GET_VARIABLE_RESULT ByteArray::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT ByteArray::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
 	unsigned int index=0;
 	if((opt & GET_VARIABLE_OPTION::SKIP_IMPL)!=0  || !implEnable || !Array::isValidMultiname(getSystemState(),name,index))
 	{
-		return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
+		return getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 	}
 
 	if(index<len)
@@ -1181,33 +1181,33 @@ GET_VARIABLE_RESULT ByteArray::getVariableByMultiname(asAtom& ret, const multina
 		lock();
 		uint8_t value = bytes[index];
 		unlock();
-		asAtomHandler::setUInt(ret,this->getSystemState(),static_cast<uint32_t>(value));
+		asAtomHandler::setUInt(ret,this->getInstanceWorker(),static_cast<uint32_t>(value));
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	}
 	asAtomHandler::setUndefined(ret);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
-GET_VARIABLE_RESULT ByteArray::getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT ByteArray::getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
 	if (index < 0)
-		return getVariableByIntegerIntern(ret,index,opt);
+		return getVariableByIntegerIntern(ret,index,opt,wrk);
 	if (index >=0 && uint32_t(index) < len)
 	{
 		lock();
 		uint8_t value = bytes[index];
 		unlock();
-		asAtomHandler::setUInt(ret,this->getSystemState(),static_cast<uint32_t>(value));
+		asAtomHandler::setUInt(ret,this->getInstanceWorker(),static_cast<uint32_t>(value));
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	}
 	asAtomHandler::setUndefined(ret);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
-int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
+int32_t ByteArray::getVariableByMultiname_i(const multiname& name, ASWorker* wrk)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(getSystemState(),name,index))
-		return ASObject::getVariableByMultiname_i(name);
+		return ASObject::getVariableByMultiname_i(name,wrk);
 
 	if(index<len)
 	{
@@ -1220,12 +1220,12 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name)
 		return _MNR(getSystemState()->getUndefinedRef());
 }
 
-multiname *ByteArray::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *ByteArray::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
 	if(!Array::isValidMultiname(getSystemState(),name,index))
-		return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset);
+		return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 	if (index > BA_MAX_SIZE) 
 		throwError<ASError>(kOutOfMemoryError);
 
@@ -1245,11 +1245,11 @@ multiname *ByteArray::setVariableByMultiname(multiname& name, asAtom& o, CONST_A
 	ASATOM_DECREF(o);
 	return nullptr;
 }
-void ByteArray::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+void ByteArray::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
 	if (index < 0)
 	{
-		setVariableByInteger_intern(index,o,allowConst,alreadyset);
+		setVariableByInteger_intern(index,o,allowConst,alreadyset,wrk);
 		return;
 	}
 	lock();
@@ -1268,10 +1268,10 @@ void ByteArray::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOW
 
 	ASATOM_DECREF(o);
 }
-void ByteArray::setVariableByMultiname_i(multiname& name, int32_t value)
+void ByteArray::setVariableByMultiname_i(multiname& name, int32_t value, ASWorker* wrk)
 {
 	asAtom v = asAtomHandler::fromInt(value);
-	setVariableByMultiname(name, v,ASObject::CONST_NOT_ALLOWED);
+	setVariableByMultiname(name, v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
 }
 
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
@@ -1453,7 +1453,7 @@ void ByteArray::uncompress_zlib(bool raw)
 	strm.total_out=0;
 	status=inflateInit2(&strm,raw ? -15 : 15);
 	if(status==Z_VERSION_ERROR)
-		throw Class<IOError>::getInstanceS(getSystemState(),"not valid compressed data");
+		throw Class<IOError>::getInstanceS(getInstanceWorker(),"not valid compressed data");
 	else if(status!=Z_OK)
 		throw RunTimeException("zlib uncompress failed");
 
@@ -1467,7 +1467,7 @@ void ByteArray::uncompress_zlib(bool raw)
 		if(status!=Z_OK && status!=Z_STREAM_END)
 		{
 			inflateEnd(&strm);
-			throw Class<IOError>::getInstanceS(getSystemState(),"not valid compressed data");
+			throw Class<IOError>::getInstanceS(getInstanceWorker(),"not valid compressed data");
 		}
 
 		if(strm.avail_out==0)
@@ -1556,7 +1556,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,pop)
 		th->len--;
 	}
 	th->unlock();
-	asAtomHandler::setUInt(ret,sys,(uint32_t)res);
+	asAtomHandler::setUInt(ret,wrk,(uint32_t)res);
 	
 }
 
@@ -1572,7 +1572,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,push)
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	asAtomHandler::setUInt(ret,sys,res);
+	asAtomHandler::setUInt(ret,wrk,res);
 }
 
 // this seems to be how AS3 handles generic shift calls in Array class
@@ -1587,7 +1587,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,shift)
 		th->len--;
 	}
 	th->unlock();
-	asAtomHandler::setUInt(ret,sys,(uint32_t)res);
+	asAtomHandler::setUInt(ret,wrk,(uint32_t)res);
 }
 
 // this seems to be how AS3 handles generic unshift calls in Array class
@@ -1603,7 +1603,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,unshift)
 	}
 	uint32_t res = th->getLength();
 	th->unlock();
-	asAtomHandler::setUInt(ret,sys,res);
+	asAtomHandler::setUInt(ret,wrk,res);
 }
 ASFUNCTIONBODY_GETTER(ByteArray,shareable);
 ASFUNCTIONBODY_ATOM(ByteArray,_setter_shareable)
@@ -1639,7 +1639,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapIntAt)
 		memcpy(th->bytes+byteindex,&newvalue,4);
 	}
 	th->unlock();
-	asAtomHandler::setInt(ret,sys,res);
+	asAtomHandler::setInt(ret,wrk,res);
 }
 ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapLength)
 {
@@ -1654,17 +1654,17 @@ ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapLength)
 		th->setLength(newLength);
 	}
 	th->unlock();
-	asAtomHandler::setInt(ret,sys,res);
+	asAtomHandler::setInt(ret,wrk,res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_toJSON)
 {
-	ret = asAtomHandler::fromString(sys,"ByteArray");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"ByteArray");
 }
 
 void ByteArray::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap)
+				std::map<const Class_base*, uint32_t>& traitsMap,ASWorker* wrk)
 {
 	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{

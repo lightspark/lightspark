@@ -578,7 +578,7 @@ void EngineData::selectContextMenuItemIntern()
 		else
 		{
 			item->incRef();
-			getVm(item->getSystemState())->addEvent(_MR(item),_MR(Class<ContextMenuEvent>::getInstanceS(item->getSystemState(),"menuItemSelect",contextmenuDispatcher,contextmenuOwner)));
+			getVm(item->getSystemState())->addEvent(_MR(item),_MR(Class<ContextMenuEvent>::getInstanceS(item->getInstanceWorker(),"menuItemSelect",contextmenuDispatcher,contextmenuOwner)));
 		}
 	}
 	closeContextMenu();

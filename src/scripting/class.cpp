@@ -25,43 +25,43 @@
 
 using namespace lightspark;
 
-ASObject* lightspark::new_asobject(SystemState* sys)
+ASObject* lightspark::new_asobject(ASWorker* wrk)
 {
-	return Class<ASObject>::getInstanceS(sys);
+	return Class<ASObject>::getInstanceS(wrk);
 }
 
-Prototype* lightspark::new_objectPrototype(SystemState* sys)
+Prototype* lightspark::new_objectPrototype(ASWorker* wrk)
 {
 	//Create a Prototype object, the class should be ASObject
-	Class_base* c=Class<ASObject>::getClass(sys);
-	return new (c->memoryAccount) ObjectPrototype(c);
+	Class_base* c=Class<ASObject>::getClass(wrk->getSystemState());
+	return new (c->memoryAccount) ObjectPrototype(wrk,c);
 }
 
-Prototype* lightspark::new_functionPrototype(Class_base* functionClass, _NR<Prototype> p)
+Prototype* lightspark::new_functionPrototype(ASWorker* wrk,Class_base* functionClass, _NR<Prototype> p)
 {
 	//Create a Prototype object, the class should be ASObject
-	return new (functionClass->memoryAccount) FunctionPrototype(functionClass, p);
+	return new (functionClass->memoryAccount) FunctionPrototype(wrk,functionClass, p);
 }
 
 Function_object* lightspark::new_functionObject(_NR<ASObject> p)
 {
 	Class_base* c=Class<ASObject>::getClass(p->getSystemState());
-	return new (c->memoryAccount) Function_object(c, p);
+	return new (c->memoryAccount) Function_object(p->getInstanceWorker(), c, p);
 }
 
 ObjectConstructor* lightspark::new_objectConstructor(Class_base* cls,uint32_t length)
 {
-	return new (cls->memoryAccount) ObjectConstructor(cls, length);
+	return new (cls->memoryAccount) ObjectConstructor(cls->getInstanceWorker(), cls, length);
 }
 
-Activation_object* lightspark::new_activationObject(SystemState* sys)
+Activation_object* lightspark::new_activationObject(ASWorker* wrk)
 {
-	Class_base* c=Class<ASObject>::getClass(sys);
-	return new (c->memoryAccount) Activation_object(c);
+	Class_base* c=Class<ASObject>::getClass(wrk->getSystemState());
+	return new (c->memoryAccount) Activation_object(wrk,c);
 }
 
 
-Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_global):Class_base(name, m),tag(nullptr),bindedToRoot(false),bindingchecked(false),classtrait(_classtrait)
+Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_global):Class_base(name, UINT32_MAX,m),tag(nullptr),bindedToRoot(false),bindingchecked(false),classtrait(_classtrait)
 {
 	this->global=_global;
 	this->incRef(); //create on reference for the classes map
@@ -83,7 +83,7 @@ void Class_inherit::finalize()
 	
 }
 
-void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	checkScriptInit();
 	//We override the classdef
@@ -91,11 +91,7 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 		realClass=this;
 	if (this->needsBindingCheck()) // it seems possible that an instance of a class is constructed before the binding of the class is available, so we have to check for a binding here
 	{
-		ASWorker* worker = getWorker();
-		if (worker)
-			worker->rootClip->bindClass(this->class_name,this);
-		else
-			getSystemState()->mainClip->bindClass(this->class_name,this);
+		worker->rootClip->bindClass(this->class_name,this);
 		this->bindingchecked=true;
 	}
 	if(tag)
@@ -108,11 +104,11 @@ void Class_inherit::getInstance(asAtom& ret,bool construct, asAtom* args, const 
 	{
 		assert_and_throw(super);
 		//Our super should not construct, we are going to do it ourselves
-		super->getInstance(ret,false,nullptr,0,realClass);
+		super->getInstance(worker,ret,false,nullptr,0,realClass);
 		if (instancefactory.isNull())
 		{
 			asAtom instance=asAtomHandler::invalidAtom;
-			super->getInstance(instance,false,nullptr,0,realClass);
+			super->getInstance(worker,instance,false,nullptr,0,realClass);
 			instancefactory = _MR(asAtomHandler::getObject(instance));
 		}
 	}
@@ -205,10 +201,10 @@ bool Class_inherit::hasoverriddenmethod(multiname *name) const
 	return Class_base::hasoverriddenmethod(name);
 }
 
-GET_VARIABLE_RESULT Class_inherit::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT Class_inherit::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt,ASWorker* wrk)
 {
 	checkScriptInit();
-	return Class_base::getVariableByMultiname(ret,name,opt);
+	return Class_base::getVariableByMultiname(ret,name,opt,wrk);
 }
 string Class_inherit::toDebugString()
 {
@@ -220,7 +216,7 @@ string Class_inherit::toDebugString()
 	return res;
 }
 template<>
-void Class<Global>::getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+void Class<Global>::getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	throwError<TypeError>(kConstructOfNonFunctionError);
 }
@@ -291,7 +287,7 @@ void lightspark::lookupAndLink(Class_base* c, uint32_t nameID, uint32_t interfac
 	}
 }
 
-void Class<ASObject>::getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+void Class<ASObject>::getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	if (construct && args && argslen == 1 && this == Class<ASObject>::getClass(this->getSystemState()))
 	{
@@ -315,7 +311,7 @@ void Class<ASObject>::getInstance(asAtom& ret, bool construct, asAtom* args, con
 	}
 	if(realClass==nullptr)
 		realClass=this;
-	ret=asAtomHandler::fromObjectNoPrimitive(new (realClass->memoryAccount) ASObject(realClass));
+	ret=asAtomHandler::fromObjectNoPrimitive(new (realClass->memoryAccount) ASObject(worker,realClass));
 	if(construct)
 		handleConstruction(ret,args,argslen,true);
 }
@@ -330,11 +326,12 @@ Class<ASObject>* Class<ASObject>::getClass(SystemState* sys)
 		//Create the class
 		QName name(s->getUniqueStringId(ClassName<ASObject>::name),s->getUniqueStringId(ClassName<ASObject>::ns));
 		MemoryAccount* m = s->allocateMemoryAccount(ClassName<ASObject>::name);
-		ret=new (m) Class<ASObject>(name, m);
+		ret=new (m) Class<ASObject>(name, ClassName<ASObject>::id, m);
+		ret->setWorker(s->worker);
 		ret->setSystemState(s);
 		ret->incRef();
 		*retAddr=ret;
-		ret->prototype = _MNR(new_objectPrototype(sys));
+		ret->prototype = _MNR(new_objectPrototype(sys->worker));
 		ASObject::sinit(ret);
 		ret->initStandardProps();
 	}

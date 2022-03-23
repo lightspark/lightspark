@@ -79,7 +79,7 @@ private:
 	ASFUNCTION_ATOM(readUTFBytes);
 	ASPROPERTY_GETTER(bool,connected);
 public:
-	URLStream(Class_base* c);
+	URLStream(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	void threadFinished(IThreadJob *job) override;

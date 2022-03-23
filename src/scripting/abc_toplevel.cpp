@@ -40,15 +40,15 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	builtin->registerBuiltin("Class","",Class_object::getRef(m_sys));
 	builtin->registerBuiltin("Number","",Class<Number>::getRef(m_sys));
 	builtin->registerBuiltin("Boolean","",Class<Boolean>::getRef(m_sys));
-	builtin->setVariableAtomByQName("NaN",nsNameAndKind(),asAtomHandler::fromNumber(m_sys,numeric_limits<double>::quiet_NaN(),true),CONSTANT_TRAIT);
-	builtin->setVariableAtomByQName("Infinity",nsNameAndKind(),asAtomHandler::fromNumber(m_sys,numeric_limits<double>::infinity(),true),CONSTANT_TRAIT);
+	builtin->setVariableAtomByQName("NaN",nsNameAndKind(),asAtomHandler::fromNumber(m_sys->worker,numeric_limits<double>::quiet_NaN(),true),CONSTANT_TRAIT);
+	builtin->setVariableAtomByQName("Infinity",nsNameAndKind(),asAtomHandler::fromNumber(m_sys->worker,numeric_limits<double>::infinity(),true),CONSTANT_TRAIT);
 	builtin->registerBuiltin("String","",Class<ASString>::getRef(m_sys));
 	builtin->registerBuiltin("Array","",Class<Array>::getRef(m_sys));
 	builtin->registerBuiltin("Function","",Class<IFunction>::getRef(m_sys));
 	builtin->registerBuiltin("undefined","",_MR(m_sys->getUndefinedRef()));
 	builtin->registerBuiltin("Math","",Class<Math>::getRef(m_sys));
 	builtin->registerBuiltin("Namespace","",Class<Namespace>::getRef(m_sys));
-	builtin->registerBuiltin("AS3","",_MR(Class<Namespace>::getInstanceS(m_sys,BUILTIN_STRINGS::STRING_AS3NS)));
+	builtin->registerBuiltin("AS3","",_MR(Class<Namespace>::getInstanceS(m_sys->worker,BUILTIN_STRINGS::STRING_AS3NS)));
 	builtin->registerBuiltin("Date","",Class<Date>::getRef(m_sys));
 	builtin->registerBuiltin("JSON","",Class<JSON>::getRef(m_sys));
 	builtin->registerBuiltin("RegExp","",Class<RegExp>::getRef(m_sys));

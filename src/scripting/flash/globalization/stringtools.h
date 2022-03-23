@@ -34,7 +34,7 @@ private:
 	std::locale currlocale;
 
 public:
-	StringTools(Class_base* c);
+	StringTools(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(getAvailableLocaleIDNames);

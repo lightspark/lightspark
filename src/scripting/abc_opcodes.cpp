@@ -74,7 +74,7 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 	//Do not allow to set contant traits
 	asAtom v = asAtomHandler::fromObject(value);
 	bool alreadyset=false;
-	obj->setVariableByMultiname(*name,v,ASObject::CONST_NOT_ALLOWED,&alreadyset);
+	obj->setVariableByMultiname(*name,v,ASObject::CONST_NOT_ALLOWED,&alreadyset,obj->getInstanceWorker());
 	if (alreadyset)
 		value->decRef();
 	obj->decRef();
@@ -93,13 +93,13 @@ void ABCVm::setProperty_i(int32_t value,ASObject* obj,multiname* name)
 		LOG(LOG_ERROR,"calling setProperty_i on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
-	obj->setVariableByMultiname_i(*name,value);
+	obj->setVariableByMultiname_i(*name,value,obj->getInstanceWorker());
 	obj->decRef();
 }
 
 number_t ABCVm::convert_d(ASObject* o)
 {
-	LOG_CALL( _("convert_d") );
+	LOG_CALL( "convert_d" );
 	number_t ret=o->toNumber();
 	o->decRef();
 	return ret;
@@ -107,7 +107,7 @@ number_t ABCVm::convert_d(ASObject* o)
 
 bool ABCVm::convert_b(ASObject* o)
 {
-	LOG_CALL( _("convert_b") );
+	LOG_CALL( "convert_b" );
 	bool ret=Boolean_concrete(o);
 	o->decRef();
 	return ret;
@@ -115,7 +115,7 @@ bool ABCVm::convert_b(ASObject* o)
 
 uint32_t ABCVm::convert_u(ASObject* o)
 {
-	LOG_CALL( _("convert_u") );
+	LOG_CALL( "convert_u" );
 	uint32_t ret=o->toUInt();
 	o->decRef();
 	return ret;
@@ -123,7 +123,7 @@ uint32_t ABCVm::convert_u(ASObject* o)
 
 int32_t ABCVm::convert_i(ASObject* o)
 {
-	LOG_CALL( _("convert_i") );
+	LOG_CALL( "convert_i" );
 	int32_t ret=o->toInt();
 	o->decRef();
 	return ret;
@@ -131,7 +131,7 @@ int32_t ABCVm::convert_i(ASObject* o)
 
 int64_t ABCVm::convert_di(ASObject* o)
 {
-	LOG_CALL( _("convert_di") );
+	LOG_CALL( "convert_di" );
 	int64_t ret=o->toInt64();
 	o->decRef();
 	return ret;
@@ -139,11 +139,11 @@ int64_t ABCVm::convert_di(ASObject* o)
 
 ASObject* ABCVm::convert_s(ASObject* o)
 {
-	LOG_CALL( _("convert_s") );
+	LOG_CALL( "convert_s" );
 	ASObject* ret=o;
 	if(o->getObjectType()!=T_STRING)
 	{
-		ret=abstract_s(o->getSystemState(),o->toString());
+		ret=abstract_s(o->getInstanceWorker(),o->toString());
 		o->decRef();
 	}
 	return ret;
@@ -151,34 +151,34 @@ ASObject* ABCVm::convert_s(ASObject* o)
 
 void ABCVm::label()
 {
-	LOG_CALL( _("label") );
+	LOG_CALL( "label" );
 }
 
 void ABCVm::lookupswitch()
 {
-	LOG_CALL( _("lookupswitch") );
+	LOG_CALL( "lookupswitch" );
 }
 
 ASObject* ABCVm::pushUndefined()
 {
-	LOG_CALL( _("pushUndefined") );
+	LOG_CALL( "pushUndefined" );
 	return getSys()->getUndefinedRef();
 }
 
 ASObject* ABCVm::pushNull()
 {
-	LOG_CALL( _("pushNull") );
+	LOG_CALL( "pushNull" );
 	return getSys()->getNullRef();
 }
 
 void ABCVm::coerce_a()
 {
-	LOG_CALL( _("coerce_a") );
+	LOG_CALL( "coerce_a" );
 }
 
 ASObject* ABCVm::checkfilter(ASObject* o)
 {
-	LOG_CALL( _("checkfilter") );
+	LOG_CALL( "checkfilter" );
 	if (o->is<Null>())
 		throwError<TypeError>(kConvertNullToObjectError);
 	if (o->is<Undefined>())
@@ -191,9 +191,9 @@ ASObject* ABCVm::checkfilter(ASObject* o)
 ASObject* ABCVm::coerce_s(ASObject* o)
 {
 	asAtom v = asAtomHandler::fromObject(o);
-	if (Class<ASString>::getClass(o->getSystemState())->coerce(o->getSystemState(),v))
+	if (Class<ASString>::getClass(o->getSystemState())->coerce(o->getInstanceWorker(),v))
 		o->decRef();
-	return asAtomHandler::toObject(v,o->getSystemState());
+	return asAtomHandler::toObject(v,o->getInstanceWorker());
 }
 
 void ABCVm::coerce(call_context* th, int n)
@@ -210,59 +210,59 @@ void ABCVm::coerce(call_context* th, int n)
 		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
 	}
 	asAtom v= *o;
-	if (type->coerce(th->sys,*o))
+	if (type->coerce(th->worker,*o))
 		ASATOM_DECREF(v);
 }
 
 void ABCVm::pop()
 {
-	LOG_CALL( _("pop: DONE") );
+	LOG_CALL( "pop: DONE" );
 }
 
 void ABCVm::getLocal_int(int n, int v)
 {
-	LOG_CALL(_("getLocal[") << n << _("] (int)= ") << dec << v);
+	LOG_CALL("getLocal[" << n << "] (int)= " << dec << v);
 }
 
 void ABCVm::getLocal(ASObject* o, int n)
 {
-	LOG_CALL(_("getLocal[") << n << _("] (") << o << _(") ") << o->toDebugString());
+	LOG_CALL("getLocal[" << n << "] (" << o << ") " << o->toDebugString());
 }
 
 void ABCVm::getLocal_short(int n)
 {
-	LOG_CALL(_("getLocal[") << n << _("]"));
+	LOG_CALL("getLocal[" << n << "]");
 }
 
 void ABCVm::setLocal(int n)
 {
-	LOG_CALL(_("setLocal[") << n << _("]"));
+	LOG_CALL("setLocal[" << n << "]");
 }
 
 void ABCVm::setLocal_int(int n, int v)
 {
-	LOG_CALL(_("setLocal[") << n << _("] (int)= ") << dec << v);
+	LOG_CALL("setLocal[" << n << "] (int)= " << dec << v);
 }
 
 void ABCVm::setLocal_obj(int n, ASObject* v)
 {
-	LOG_CALL(_("setLocal[") << n << _("] = ") << v->toDebugString());
+	LOG_CALL("setLocal[" << n << "] = " << v->toDebugString());
 }
 
 int32_t ABCVm::pushShort(intptr_t n)
 {
-	LOG_CALL( _("pushShort ") << n );
+	LOG_CALL( "pushShort " << n );
 	return n;
 }
 
-void ABCVm::setSlot(ASObject* value, ASObject* obj, int n)
+void ABCVm::setSlot(call_context *th,ASObject* value, ASObject* obj, int n)
 {
 	LOG_CALL("setSlot " << n << " "<< obj<<" " <<obj->toDebugString() << " "<< value->toDebugString()<<" "<<value);
-	obj->setSlot(n-1,asAtomHandler::fromObject(value));
+	obj->setSlot(th->worker,n-1,asAtomHandler::fromObject(value));
 	obj->decRef();
 }
 
-ASObject* ABCVm::getSlot(ASObject* obj, int n)
+ASObject* ABCVm::getSlot(call_context *th,ASObject* obj, int n)
 {
 	asAtom ret=obj->getSlot(n);
 	LOG_CALL("getSlot " << n << " " << asAtomHandler::toDebugString(ret));
@@ -270,12 +270,12 @@ ASObject* ABCVm::getSlot(ASObject* obj, int n)
 	//script, so they should already be defind by this script
 	ASATOM_INCREF(ret);
 	obj->decRef();
-	return asAtomHandler::toObject(ret,obj->getSystemState());
+	return asAtomHandler::toObject(ret,th->worker);
 }
 
 number_t ABCVm::negate(ASObject* v)
 {
-	LOG_CALL( _("negate") );
+	LOG_CALL( "negate" );
 	number_t ret=-(v->toNumber());
 	v->decRef();
 	return ret;
@@ -283,7 +283,7 @@ number_t ABCVm::negate(ASObject* v)
 
 int32_t ABCVm::negate_i(ASObject* o)
 {
-	LOG_CALL(_("negate_i"));
+	LOG_CALL("negate_i");
 
 	int n=o->toInt();
 	o->decRef();
@@ -294,7 +294,7 @@ int32_t ABCVm::bitNot(ASObject* val)
 {
 	int32_t i1=val->toInt();
 	val->decRef();
-	LOG_CALL(_("bitNot ") << hex << i1 << dec);
+	LOG_CALL("bitNot " << hex << i1 << dec);
 	return ~i1;
 }
 
@@ -304,7 +304,7 @@ int32_t ABCVm::bitXor(ASObject* val2, ASObject* val1)
 	int32_t i2=val2->toInt();
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("bitXor ") << hex << i1 << '^' << i2 << dec);
+	LOG_CALL("bitXor " << hex << i1 << '^' << i2 << dec);
 	return i1^i2;
 }
 
@@ -313,7 +313,7 @@ int32_t ABCVm::bitOr_oi(ASObject* val2, int32_t val1)
 	int32_t i1=val1;
 	int32_t i2=val2->toInt();
 	val2->decRef();
-	LOG_CALL(_("bitOr ") << hex << i1 << '|' << i2 << dec);
+	LOG_CALL("bitOr " << hex << i1 << '|' << i2 << dec);
 	return i1|i2;
 }
 
@@ -323,7 +323,7 @@ int32_t ABCVm::bitOr(ASObject* val2, ASObject* val1)
 	int32_t i2=val2->toInt();
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("bitOr ") << hex << i1 << '|' << i2 << dec);
+	LOG_CALL("bitOr " << hex << i1 << '|' << i2 << dec);
 	return i1|i2;
 }
 
@@ -390,14 +390,14 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	if (!pobj)
 	{
 		// fast path for primitives to avoid creation of ASObjects
-		asAtomHandler::getVariableByMultiname(obj,o,th->sys,*name);
+		asAtomHandler::getVariableByMultiname(obj,o,th->sys,*name,th->worker);
 		canCache = asAtomHandler::isValid(o);
 	}
 	if(asAtomHandler::isInvalid(o))
 	{
-		pobj = asAtomHandler::toObject(obj,th->sys);
+		pobj = asAtomHandler::toObject(obj,th->worker);
 		//We should skip the special implementation of get
-		canCache = pobj->getVariableByMultiname(o,*name, SKIP_IMPL) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
+		canCache = pobj->getVariableByMultiname(o,*name, SKIP_IMPL,th->worker) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
 	}
 	name->resetNameIfObject();
 	if(asAtomHandler::isInvalid(o) && asAtomHandler::is<Class_base>(obj))
@@ -406,7 +406,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		_NR<Class_base> tmpcls = asAtomHandler::as<Class_base>(obj)->super;
 		while (tmpcls && !tmpcls.isNull())
 		{
-			tmpcls->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION::SKIP_IMPL);
+			tmpcls->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION::SKIP_IMPL,th->worker);
 			if(asAtomHandler::isValid(o))
 			{
 				canCache = true;
@@ -456,7 +456,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 			callPropertyName.name_s_id=th->sys->getUniqueStringId("callProperty");
 			callPropertyName.ns.emplace_back(th->sys,flash_proxy,NAMESPACE);
 			asAtom oproxy=asAtomHandler::invalidAtom;
-			pobj->getVariableByMultiname(oproxy,callPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL);
+			pobj->getVariableByMultiname(oproxy,callPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL,th->worker);
 			if(asAtomHandler::isValid(oproxy))
 			{
 				assert_and_throw(asAtomHandler::isFunction(oproxy));
@@ -468,7 +468,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 				{
 					//Create a new array
 					asAtom* proxyArgs=g_newa(asAtom, m+1);
-					ASObject* namearg = abstract_s(th->sys,name->normalizedName(th->sys));
+					ASObject* namearg = abstract_s(th->worker,name->normalizedName(th->sys));
 					namearg->setProxyProperty(*name);
 					proxyArgs[0]=asAtomHandler::fromObject(namearg);
 					for(int i=0;i<m;i++)
@@ -478,7 +478,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 					LOG_CALL("Proxy::callProperty");
 					ASATOM_INCREF(oproxy);
 					asAtom ret=asAtomHandler::invalidAtom;
-					asAtomHandler::callFunction(oproxy,ret,obj,proxyArgs,m+1,true);
+					asAtomHandler::callFunction(oproxy,th->worker,ret,obj,proxyArgs,m+1,true);
 					ASATOM_DECREF(oproxy);
 					if(keepReturn)
 						RUNTIME_STACK_PUSH(th,ret);
@@ -500,7 +500,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		for(int i=0;i<m;i++)
 			ASATOM_DECREF(args[i]);
 		//LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->qualifiedString(th->sys) << " not found on " << obj->toDebugString());
-		if (pobj->hasPropertyByMultiname(*name,true,true))
+		if (pobj->hasPropertyByMultiname(*name,true,true,th->worker))
 		{
 			tiny_string clsname = pobj->getClass()->getQualifiedClassName();
 			ASATOM_DECREF(obj);
@@ -583,7 +583,7 @@ int32_t ABCVm::getProperty_i(ASObject* obj, multiname* name)
 	LOG_CALL( "getProperty_i " << *name );
 
 	//TODO: implement exception handling to find out if no integer can be returned
-	int32_t ret=obj->getVariableByMultiname_i(*name);
+	int32_t ret=obj->getVariableByMultiname_i(*name,nullptr);
 
 	obj->decRef();
 	return ret;
@@ -594,7 +594,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	LOG_CALL( "getProperty " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 
 	asAtom prop=asAtomHandler::invalidAtom;
-	obj->getVariableByMultiname(prop,*name);
+	obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE,obj->getInstanceWorker());
 	ASObject *ret;
 
 	if(asAtomHandler::isInvalid(prop))
@@ -611,7 +611,7 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	}
 	else
 	{
-		ret=asAtomHandler::toObject(prop,obj->getSystemState());
+		ret=asAtomHandler::toObject(prop,obj->getInstanceWorker());
 		ret->incRef();
 	}
 	obj->decRef();
@@ -653,7 +653,7 @@ Global* ABCVm::getGlobalScope(call_context* th)
 {
 	ASObject* ret;
 	if (th->parent_scope_stack && th->parent_scope_stack->scope.size() > 0)
-		ret =asAtomHandler::toObject(th->parent_scope_stack->scope.begin()->object,th->sys);
+		ret =asAtomHandler::toObject(th->parent_scope_stack->scope.begin()->object,th->worker);
 	else
 	{
 		assert_and_throw(th->curr_scope_stack > 0);
@@ -666,7 +666,7 @@ Global* ABCVm::getGlobalScope(call_context* th)
 
 number_t ABCVm::decrement(ASObject* o)
 {
-	LOG_CALL(_("decrement"));
+	LOG_CALL("decrement");
 
 	number_t n=o->toNumber();
 	o->decRef();
@@ -675,7 +675,7 @@ number_t ABCVm::decrement(ASObject* o)
 
 uint32_t ABCVm::decrement_i(ASObject* o)
 {
-	LOG_CALL(_("decrement_i"));
+	LOG_CALL("decrement_i");
 
 	int32_t n=o->toInt();
 	o->decRef();
@@ -684,7 +684,7 @@ uint32_t ABCVm::decrement_i(ASObject* o)
 
 uint64_t ABCVm::decrement_di(ASObject* o)
 {
-	LOG_CALL(_("decrement_di"));
+	LOG_CALL("decrement_di");
 
 	int64_t n=o->toInt64();
 	o->decRef();
@@ -695,7 +695,7 @@ bool ABCVm::ifNLT(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
 	bool ret=!(obj1->isLess(obj2)==TTRUE);
-	LOG_CALL(_("ifNLT (") << ((ret)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNLT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
 	obj1->decRef();
@@ -706,7 +706,7 @@ bool ABCVm::ifLT(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
 	bool ret=(obj1->isLess(obj2)==TTRUE);
-	LOG_CALL(_("ifLT (") << ((ret)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifLT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
 	obj1->decRef();
@@ -715,7 +715,7 @@ bool ABCVm::ifLT(ASObject* obj2, ASObject* obj1)
 
 bool ABCVm::ifLT_oi(ASObject* obj2, int32_t val1)
 {
-	LOG_CALL(_("ifLT_oi"));
+	LOG_CALL("ifLT_oi");
 
 	//As ECMA said, on NaN return undefined... and undefined means not jump
 	bool ret;
@@ -730,7 +730,7 @@ bool ABCVm::ifLT_oi(ASObject* obj2, int32_t val1)
 
 bool ABCVm::ifLT_io(int32_t val2, ASObject* obj1)
 {
-	LOG_CALL(_("ifLT_io "));
+	LOG_CALL("ifLT_io ");
 
 	bool ret=obj1->toInt()<val2;
 
@@ -742,7 +742,7 @@ bool ABCVm::ifNE(ASObject* obj1, ASObject* obj2)
 {
 	//Real comparision demanded to object
 	bool ret=!(obj1->isEqual(obj2));
-	LOG_CALL(_("ifNE (") << ((ret)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNE (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
 	obj1->decRef();
@@ -755,7 +755,7 @@ bool ABCVm::ifNE_oi(ASObject* obj1, int32_t val2)
 	if(obj1->getObjectType()==T_UNDEFINED)
 		return false;
 	bool ret=obj1->toInt()!=val2;
-	LOG_CALL(_("ifNE (") << ((ret)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNE (" << ((ret)?"taken)":"not taken)"));
 
 	obj1->decRef();
 	return ret;
@@ -763,7 +763,7 @@ bool ABCVm::ifNE_oi(ASObject* obj1, int32_t val2)
 
 int32_t ABCVm::pushByte(intptr_t n)
 {
-	LOG_CALL( _("pushByte ") << n );
+	LOG_CALL( "pushByte " << n );
 	return n;
 }
 
@@ -772,7 +772,7 @@ number_t ABCVm::multiply_oi(ASObject* val2, int32_t val1)
 	double num1=val1;
 	double num2=val2->toNumber();
 	val2->decRef();
-	LOG_CALL(_("multiply_oi ")  << num1 << '*' << num2);
+	LOG_CALL("multiply_oi "  << num1 << '*' << num2);
 	return num1*num2;
 }
 
@@ -782,7 +782,7 @@ number_t ABCVm::multiply(ASObject* val2, ASObject* val1)
 	double num2=val2->toNumber();
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("multiply ")  << num1 << '*' << num2);
+	LOG_CALL("multiply "  << num1 << '*' << num2);
 	return num1*num2;
 }
 
@@ -792,40 +792,40 @@ int32_t ABCVm::multiply_i(ASObject* val2, ASObject* val1)
 	int num2=val2->toInt();
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("multiply ")  << num1 << '*' << num2);
+	LOG_CALL("multiply "  << num1 << '*' << num2);
 	return num1*num2;
 }
 
 void ABCVm::incLocal(call_context* th, int n)
 {
-	LOG_CALL( _("incLocal ") << n );
+	LOG_CALL( "incLocal " << n );
 	number_t tmp=asAtomHandler::toNumber(th->locals[n]);
 	ASATOM_DECREF(th->locals[n]);
-	asAtomHandler::setNumber(th->locals[n],th->sys,tmp+1);
+	asAtomHandler::setNumber(th->locals[n],th->worker,tmp+1);
 }
 
 void ABCVm::incLocal_i(call_context* th, int n)
 {
-	LOG_CALL( _("incLocal_i ") << n );
+	LOG_CALL( "incLocal_i " << n );
 	int32_t tmp=asAtomHandler::toInt(th->locals[n]);
 	ASATOM_DECREF(th->locals[n]);
-	asAtomHandler::setInt(th->locals[n],th->sys,tmp+1);
+	asAtomHandler::setInt(th->locals[n],th->worker,tmp+1);
 }
 
 void ABCVm::decLocal(call_context* th, int n)
 {
-	LOG_CALL( _("decLocal ") << n );
+	LOG_CALL( "decLocal " << n );
 	number_t tmp=asAtomHandler::toNumber(th->locals[n]);
 	ASATOM_DECREF(th->locals[n]);
-	asAtomHandler::setNumber(th->locals[n],th->sys,tmp-1);
+	asAtomHandler::setNumber(th->locals[n],th->worker,tmp-1);
 }
 
 void ABCVm::decLocal_i(call_context* th, int n)
 {
-	LOG_CALL( _("decLocal_i ") << n );
+	LOG_CALL( "decLocal_i " << n );
 	int32_t tmp=asAtomHandler::toInt(th->locals[n]);
 	ASATOM_DECREF(th->locals[n]);
-	asAtomHandler::setInt(th->locals[n],th->sys,tmp-1);
+	asAtomHandler::setInt(th->locals[n],th->worker,tmp-1);
 }
 
 /* This is called for expressions like
@@ -872,8 +872,8 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 	}
 	else
 	{
-		Class<ASObject>::getRef(asAtomHandler::as<IFunction>(f)->getSystemState())->getPrototype()->incRef();
-		constructor->setVariableByQName("prototype","",Class<ASObject>::getRef(asAtomHandler::as<IFunction>(f)->getSystemState())->getPrototype()->getObj(),DECLARED_TRAIT);
+		Class<ASObject>::getRef(asAtomHandler::as<IFunction>(f)->getSystemState())->getPrototype(th->worker)->incRef();
+		constructor->setVariableByQName("prototype","",Class<ASObject>::getRef(asAtomHandler::as<IFunction>(f)->getSystemState())->getPrototype(th->worker)->getObj(),DECLARED_TRAIT);
 	}
 	
 	asAtomHandler::getObject(ret)->setVariableByQName("constructor","",constructor,DECLARED_TRAIT);
@@ -881,7 +881,7 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 	ASATOM_INCREF(ret);
 	ASATOM_INCREF(f);
 	asAtom ret2=asAtomHandler::invalidAtom;
-	asAtomHandler::callFunction(f,ret2,ret,args,argslen,true);
+	asAtomHandler::callFunction(f,th->worker,ret2,ret,args,argslen,true);
 	ASATOM_DECREF(f);
 
 	//ECMA: "return ret2 if it is an object, else ret"
@@ -898,7 +898,7 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 
 void ABCVm::construct(call_context* th, int m)
 {
-	LOG_CALL( _("construct ") << m);
+	LOG_CALL( "construct " << m);
 	asAtom* args=g_newa(asAtom, m);
 	for(int i=0;i<m;i++)
 	{
@@ -908,7 +908,7 @@ void ABCVm::construct(call_context* th, int m)
 	asAtom obj=asAtomHandler::invalidAtom;
 	RUNTIME_STACK_POP(th,obj);
 
-	LOG_CALL(_("Constructing"));
+	LOG_CALL("Constructing");
 
 	asAtom ret=asAtomHandler::invalidAtom;
 	switch(asAtomHandler::getObjectType(obj))
@@ -916,7 +916,7 @@ void ABCVm::construct(call_context* th, int m)
 		case T_CLASS:
 		{
 			Class_base* o_class=asAtomHandler::as<Class_base>(obj);
-			o_class->getInstance(ret,true,args,m);
+			o_class->getInstance(th->worker,ret,true,args,m);
 			break;
 		}
 /*
@@ -942,22 +942,22 @@ void ABCVm::construct(call_context* th, int m)
 	if (asAtomHandler::getObject(ret))
 		asAtomHandler::getObject(ret)->setConstructorCallComplete();
 	ASATOM_DECREF(obj);
-	LOG_CALL(_("End of constructing ") << asAtomHandler::toDebugString(ret));
+	LOG_CALL("End of constructing " << asAtomHandler::toDebugString(ret));
 	RUNTIME_STACK_PUSH(th,ret);
 }
 
 void ABCVm::constructGenericType(call_context* th, int m)
 {
-	LOG_CALL( _("constructGenericType ") << m);
+	LOG_CALL( "constructGenericType " << m);
 	if (m != 1)
 		throwError<TypeError>(kWrongTypeArgCountError, "function", "1", Integer::toString(m));
 	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 	{
-		RUNTIME_STACK_POP_ASOBJECT(th,args[m-i-1], th->sys);
+		RUNTIME_STACK_POP_ASOBJECT(th,args[m-i-1]);
 	}
 
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj, th->sys);
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj);
 
 	if(obj->getObjectType() != T_TEMPLATE)
 	{
@@ -982,23 +982,22 @@ void ABCVm::constructGenericType(call_context* th, int m)
 		else if(args[i]->is<Null>())
 			t[i] = Type::anyType;
 		else
-			throw Class<TypeError>::getInstanceS(obj->getSystemState(),"Wrong type in applytype");
+			throw Class<TypeError>::getInstanceS(th->worker,"Wrong type in applytype");
 	}
-
 	Class_base* o_class = o_template->applyType(t,th->mi->context->root->applicationDomain);
 
 	// Register the type name in the global scope. The type name
 	// is later used by the coerce opcode.
 	ASObject* global;
 	if (th->parent_scope_stack && th->parent_scope_stack->scope.size() > 0)
-		global =asAtomHandler::toObject(th->parent_scope_stack->scope.begin()->object,th->sys);
+		global =asAtomHandler::toObject(th->parent_scope_stack->scope.begin()->object,th->worker);
 	else
 	{
 		assert_and_throw(th->curr_scope_stack > 0);
 		global =asAtomHandler::getObject(th->scope_stack[0]);
 	}
 	QName qname = o_class->class_name;
-	if (!global->hasPropertyByMultiname(qname, false, false))
+	if (!global->hasPropertyByMultiname(qname, false, false,th->worker))
 	{
 		o_class->incRef();
 		global->setVariableByQName(global->getSystemState()->getStringFromUniqueId(qname.nameId),nsNameAndKind(global->getSystemState(),qname.nsStringId,NAMESPACE),o_class,DECLARED_TRAIT);
@@ -1012,7 +1011,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 
 ASObject* ABCVm::typeOf(ASObject* obj)
 {
-	LOG_CALL(_("typeOf"));
+	LOG_CALL("typeOf");
 	string ret;
 	switch(obj->getObjectType())
 	{
@@ -1050,20 +1049,20 @@ ASObject* ABCVm::typeOf(ASObject* obj)
 		default:
 			assert_and_throw(false);
 	}
-	ASObject* res = abstract_s(obj->getSystemState(),ret);
+	ASObject* res = abstract_s(obj->getInstanceWorker(),ret);
 	obj->decRef();
 	return res;
 }
 
 void ABCVm::jump(int offset)
 {
-	LOG_CALL(_("jump ") << offset);
+	LOG_CALL("jump " << offset);
 }
 
 bool ABCVm::ifTrue(ASObject* obj1)
 {
 	bool ret=Boolean_concrete(obj1);
-	LOG_CALL(_("ifTrue (") << ((ret)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifTrue (" << ((ret)?"taken)":"not taken)"));
 
 	obj1->decRef();
 	return ret;
@@ -1076,7 +1075,7 @@ number_t ABCVm::modulo(ASObject* val1, ASObject* val2)
 
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("modulo ")  << num1 << '%' << num2);
+	LOG_CALL("modulo "  << num1 << '%' << num2);
 	/* fmod returns NaN if num2 == 0 as the spec mandates */
 	return ::fmod(num1,num2);
 }
@@ -1087,7 +1086,7 @@ number_t ABCVm::subtract_oi(ASObject* val2, int32_t val1)
 	int num1=val1;
 
 	val2->decRef();
-	LOG_CALL(_("subtract_oi ") << num1 << '-' << num2);
+	LOG_CALL("subtract_oi " << num1 << '-' << num2);
 	return num1-num2;
 }
 
@@ -1097,7 +1096,7 @@ number_t ABCVm::subtract_do(number_t val2, ASObject* val1)
 	number_t num1=val1->toNumber();
 
 	val1->decRef();
-	LOG_CALL(_("subtract_do ") << num1 << '-' << num2);
+	LOG_CALL("subtract_do " << num1 << '-' << num2);
 	return num1-num2;
 }
 
@@ -1106,14 +1105,14 @@ number_t ABCVm::subtract_io(int32_t val2, ASObject* val1)
 	if(val1->getObjectType()==T_UNDEFINED)
 	{
 		//HACK
-		LOG(LOG_NOT_IMPLEMENTED,_("subtract: HACK"));
+		LOG(LOG_NOT_IMPLEMENTED,"subtract: HACK");
 		return 0;
 	}
 	int num2=val2;
 	int num1=val1->toInt();
 
 	val1->decRef();
-	LOG_CALL(_("subtract_io ") << dec << num1 << '-' << num2);
+	LOG_CALL("subtract_io " << dec << num1 << '-' << num2);
 	return num1-num2;
 }
 
@@ -1123,7 +1122,7 @@ int32_t ABCVm::subtract_i(ASObject* val2, ASObject* val1)
 		val2->getObjectType()==T_UNDEFINED)
 	{
 		//HACK
-		LOG(LOG_NOT_IMPLEMENTED,_("subtract_i: HACK"));
+		LOG(LOG_NOT_IMPLEMENTED,"subtract_i: HACK");
 		return 0;
 	}
 	int num2=val2->toInt();
@@ -1131,7 +1130,7 @@ int32_t ABCVm::subtract_i(ASObject* val2, ASObject* val1)
 
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("subtract_i ") << num1 << '-' << num2);
+	LOG_CALL("subtract_i " << num1 << '-' << num2);
 	return num1-num2;
 }
 
@@ -1142,7 +1141,7 @@ number_t ABCVm::subtract(ASObject* val2, ASObject* val1)
 
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("subtract ") << num1 << '-' << num2);
+	LOG_CALL("subtract " << num1 << '-' << num2);
 	return num1-num2;
 }
 
@@ -1163,7 +1162,7 @@ void ABCVm::pushDouble(call_context* th, double d)
 
 void ABCVm::kill(int n)
 {
-	LOG_CALL( _("kill ") << n );
+	LOG_CALL( "kill " << n );
 }
 
 ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
@@ -1178,7 +1177,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		int64_t num1=val1->toInt64();
 		int64_t num2=val2->toInt64();
 		LOG_CALL("addI " << num1 << '+' << num2);
-		res = abstract_di(val1->getSystemState(), num1+num2);
+		res = abstract_di(val1->getInstanceWorker(), num1+num2);
 		val1->decRef();
 		val2->decRef();
 		return res;
@@ -1188,7 +1187,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		double num1=val1->as<Number>()->toNumber();
 		double num2=val2->as<Number>()->toNumber();
 		LOG_CALL("addN " << num1 << '+' << num2);
-		res = abstract_d(val1->getSystemState(), num1+num2);
+		res = abstract_d(val1->getInstanceWorker(), num1+num2);
 		val1->decRef();
 		val2->decRef();
 		return res;
@@ -1198,7 +1197,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		tiny_string a = val1->toString();
 		tiny_string b = val2->toString();
 		LOG_CALL("add " << a << '+' << b);
-		res = abstract_s(val1->getSystemState(),a + b);
+		res = abstract_s(val1->getInstanceWorker(),a + b);
 		val1->decRef();
 		val2->decRef();
 		return res;
@@ -1208,7 +1207,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		//Check if the objects are both XML or XMLLists
 		Class_base* xmlClass=Class<XML>::getClass(val1->getSystemState());
 
-		XMLList* newList=Class<XMLList>::getInstanceS(val1->getSystemState(),true);
+		XMLList* newList=Class<XMLList>::getInstanceS(val1->getInstanceWorker(),true);
 		if(val1->getClass()==xmlClass)
 			newList->append(_MR(static_cast<XML*>(val1)));
 		else //if(val1->getClass()==xmlListClass)
@@ -1231,10 +1230,10 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		val2->toPrimitive(val2p,NO_HINT);
 		if(asAtomHandler::is<ASString>(val1p) || asAtomHandler::is<ASString>(val2p))
 		{//If one is String, convert both to strings and concat
-			string a(asAtomHandler::toString(val1p,val1->getSystemState()).raw_buf());
-			string b(asAtomHandler::toString(val2p,val1->getSystemState()).raw_buf());
+			string a(asAtomHandler::toString(val1p,val1->getInstanceWorker()).raw_buf());
+			string b(asAtomHandler::toString(val2p,val1->getInstanceWorker()).raw_buf());
 			LOG_CALL("add " << a << '+' << b);
-			res = abstract_s(val1->getSystemState(),a+b);
+			res = abstract_s(val1->getInstanceWorker(),a+b);
 			val1->decRef();
 			val2->decRef();
 			return res;
@@ -1245,7 +1244,7 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 			number_t num2=asAtomHandler::toNumber(val2p);
 			LOG_CALL("addN " << num1 << '+' << num2);
 			number_t result = num1 + num2;
-			res = abstract_d(val1->getSystemState(),result);
+			res = abstract_d(val1->getInstanceWorker(),result);
 			val1->decRef();
 			val2->decRef();
 			return res;
@@ -1260,7 +1259,7 @@ int32_t ABCVm::add_i(ASObject* val2, ASObject* val1)
 		val2->getObjectType()==T_UNDEFINED)
 	{
 		//HACK
-		LOG(LOG_NOT_IMPLEMENTED,_("add_i: HACK"));
+		LOG(LOG_NOT_IMPLEMENTED,"add_i: HACK");
 		return 0;
 	}
 	int32_t num2=val2->toInt();
@@ -1268,7 +1267,7 @@ int32_t ABCVm::add_i(ASObject* val2, ASObject* val1)
 
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("add_i ") << num1 << '+' << num2);
+	LOG_CALL("add_i " << num1 << '+' << num2);
 	return num1+num2;
 }
 
@@ -1281,18 +1280,18 @@ ASObject* ABCVm::add_oi(ASObject* val2, int32_t val1)
 		Integer* ip=static_cast<Integer*>(val2);
 		int32_t num2=ip->val;
 		int32_t num1=val1;
-		res = abstract_i(val2->getSystemState(),num1+num2);
+		res = abstract_i(val2->getInstanceWorker(),num1+num2);
 		val2->decRef();
-		LOG_CALL(_("add ") << num1 << '+' << num2);
+		LOG_CALL("add " << num1 << '+' << num2);
 		return res;
 	}
 	else if(val2->getObjectType()==T_NUMBER)
 	{
 		double num2=val2->toNumber();
 		double num1=val1;
-		res = abstract_d(val2->getSystemState(),num1+num2);
+		res = abstract_d(val2->getInstanceWorker(),num1+num2);
 		val2->decRef();
-		LOG_CALL(_("add ") << num1 << '+' << num2);
+		LOG_CALL("add " << num1 << '+' << num2);
 		return res;
 	}
 	else if(val2->getObjectType()==T_STRING)
@@ -1300,14 +1299,14 @@ ASObject* ABCVm::add_oi(ASObject* val2, int32_t val1)
 		//Convert argument to int32_t
 		tiny_string a = Integer::toString(val1);
 		const tiny_string& b=val2->toString();
-		res = abstract_s(val2->getSystemState(), a+b);
+		res = abstract_s(val2->getInstanceWorker(), a+b);
 		val2->decRef();
-		LOG_CALL(_("add ") << a << '+' << b);
+		LOG_CALL("add " << a << '+' << b);
 		return res;
 	}
 	else
 	{
-		return add(val2,abstract_i(val2->getSystemState(),val1));
+		return add(val2,abstract_i(val2->getInstanceWorker(),val1));
 	}
 
 }
@@ -1320,32 +1319,32 @@ ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 	{
 		double num2=val2->toNumber();
 		double num1=val1;
-		res = abstract_d(val2->getSystemState(),num1+num2);
+		res = abstract_d(val2->getInstanceWorker(),num1+num2);
 		val2->decRef();
-		LOG_CALL(_("add ") << num1 << '+' << num2);
+		LOG_CALL("add " << num1 << '+' << num2);
 		return res;
 	}
 	else if(val2->getObjectType()==T_INTEGER)
 	{
 		double num2=val2->toNumber();
 		double num1=val1;
-		res = abstract_d(val2->getSystemState(),num1+num2);
+		res = abstract_d(val2->getInstanceWorker(),num1+num2);
 		val2->decRef();
-		LOG_CALL(_("add ") << num1 << '+' << num2);
+		LOG_CALL("add " << num1 << '+' << num2);
 		return res;
 	}
 	else if(val2->getObjectType()==T_STRING)
 	{
 		tiny_string a = Number::toString(val1);
 		const tiny_string& b=val2->toString();
-		res = abstract_s(val2->getSystemState(),a+b);
+		res = abstract_s(val2->getInstanceWorker(),a+b);
 		val2->decRef();
-		LOG_CALL(_("add ") << a << '+' << b);
+		LOG_CALL("add " << a << '+' << b);
 		return res;
 	}
 	else
 	{
-		return add(val2,abstract_d(val2->getSystemState(),val1));
+		return add(val2,abstract_d(val2->getInstanceWorker(),val1));
 	}
 
 }
@@ -1356,7 +1355,7 @@ int32_t ABCVm::lShift(ASObject* val1, ASObject* val2)
 	uint32_t i1=val1->toUInt()&0x1f;
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("lShift ")<<hex<<i2<<_("<<")<<i1<<dec);
+	LOG_CALL("lShift "<<hex<<i2<<"<<"<<i1<<dec);
 	//Left shift are supposed to always work in 32bit
 	int32_t ret=i2<<i1;
 	return ret;
@@ -1367,7 +1366,7 @@ int32_t ABCVm::lShift_io(uint32_t val1, ASObject* val2)
 	int32_t i2=val2->toInt();
 	uint32_t i1=val1&0x1f;
 	val2->decRef();
-	LOG_CALL(_("lShift ")<<hex<<i2<<_("<<")<<i1<<dec);
+	LOG_CALL("lShift "<<hex<<i2<<"<<"<<i1<<dec);
 	//Left shift are supposed to always work in 32bit
 	int32_t ret=i2<<i1;
 	return ret;
@@ -1379,7 +1378,7 @@ int32_t ABCVm::rShift(ASObject* val1, ASObject* val2)
 	uint32_t i1=val1->toUInt()&0x1f;
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("rShift ")<<hex<<i2<<_(">>")<<i1<<dec);
+	LOG_CALL("rShift "<<hex<<i2<<">>"<<i1<<dec);
 	return i2>>i1;
 }
 
@@ -1389,7 +1388,7 @@ uint32_t ABCVm::urShift(ASObject* val1, ASObject* val2)
 	uint32_t i1=val1->toUInt()&0x1f;
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL(_("urShift ")<<hex<<i2<<_(">>")<<i1<<dec);
+	LOG_CALL("urShift "<<hex<<i2<<">>"<<i1<<dec);
 	return i2>>i1;
 }
 
@@ -1398,13 +1397,13 @@ uint32_t ABCVm::urShift_io(uint32_t val1, ASObject* val2)
 	uint32_t i2=val2->toUInt();
 	uint32_t i1=val1&0x1f;
 	val2->decRef();
-	LOG_CALL(_("urShift ")<<hex<<i2<<_(">>")<<i1<<dec);
+	LOG_CALL("urShift "<<hex<<i2<<">>"<<i1<<dec);
 	return i2>>i1;
 }
 
 bool ABCVm::_not(ASObject* v)
 {
-	LOG_CALL( _("not") );
+	LOG_CALL( "not" );
 	bool ret=!Boolean_concrete(v);
 	v->decRef();
 	return ret;
@@ -1413,7 +1412,7 @@ bool ABCVm::_not(ASObject* v)
 bool ABCVm::equals(ASObject* val2, ASObject* val1)
 {
 	bool ret=val1->isEqual(val2);
-	LOG_CALL( _("equals ") << ret);
+	LOG_CALL( "equals " << ret);
 	val1->decRef();
 	val2->decRef();
 	return ret;
@@ -1458,7 +1457,7 @@ bool ABCVm::strictEqualImpl(ASObject* obj1, ASObject* obj2)
 
 bool ABCVm::strictEquals(ASObject* obj2, ASObject* obj1)
 {
-	LOG_CALL( _("strictEquals") );
+	LOG_CALL( "strictEquals" );
 	bool ret=strictEqualImpl(obj1, obj2);
 	obj1->decRef();
 	obj2->decRef();
@@ -1467,32 +1466,32 @@ bool ABCVm::strictEquals(ASObject* obj2, ASObject* obj1)
 
 void ABCVm::dup()
 {
-	LOG_CALL( _("dup: DONE") );
+	LOG_CALL( "dup: DONE" );
 }
 
 bool ABCVm::pushTrue()
 {
-	LOG_CALL( _("pushTrue") );
+	LOG_CALL( "pushTrue" );
 	return true;
 }
 
 bool ABCVm::pushFalse()
 {
-	LOG_CALL( _("pushFalse") );
+	LOG_CALL( "pushFalse" );
 	return false;
 }
 
 ASObject* ABCVm::pushNaN()
 {
-	LOG_CALL( _("pushNaN") );
-	return abstract_d(getSys(),Number::NaN);
+	LOG_CALL( "pushNaN" );
+	return abstract_d(getWorker(),Number::NaN);
 }
 
 bool ABCVm::ifGT(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
 	bool ret=(obj2->isLess(obj1)==TTRUE);
-	LOG_CALL(_("ifGT (") << ((ret)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifGT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
 	obj1->decRef();
@@ -1504,7 +1503,7 @@ bool ABCVm::ifNGT(ASObject* obj2, ASObject* obj1)
 
 	//Real comparision demanded to object
 	bool ret=!(obj2->isLess(obj1)==TTRUE);
-	LOG_CALL(_("ifNGT (") << ((ret)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNGT (" << ((ret)?"taken)":"not taken)"));
 
 	obj2->decRef();
 	obj1->decRef();
@@ -1515,7 +1514,7 @@ bool ABCVm::ifLE(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
 	bool ret=(obj2->isLess(obj1)==TFALSE);
-	LOG_CALL(_("ifLE (") << ((ret)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifLE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
@@ -1525,7 +1524,7 @@ bool ABCVm::ifNLE(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
 	bool ret=!(obj2->isLess(obj1)==TFALSE);
-	LOG_CALL(_("ifNLE (") << ((ret)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNLE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
@@ -1535,7 +1534,7 @@ bool ABCVm::ifGE(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
 	bool ret=(obj1->isLess(obj2)==TFALSE);
-	LOG_CALL(_("ifGE (") << ((ret)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifGE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
@@ -1545,7 +1544,7 @@ bool ABCVm::ifNGE(ASObject* obj2, ASObject* obj1)
 {
 	//Real comparision demanded to object
 	bool ret=!(obj1->isLess(obj2)==TFALSE);
-	LOG_CALL(_("ifNGE (") << ((ret)?_("taken)"):_("not taken)")));
+	LOG_CALL("ifNGE (" << ((ret)?"taken)":"not taken)"));
 	obj1->decRef();
 	obj2->decRef();
 	return ret;
@@ -1553,8 +1552,8 @@ bool ABCVm::ifNGE(ASObject* obj2, ASObject* obj1)
 
 void ABCVm::_throw(call_context* th)
 {
-	LOG_CALL(_("throw"));
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,exc, th->sys);
+	LOG_CALL("throw");
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,exc);
 	throw exc;
 }
 
@@ -1562,9 +1561,9 @@ void ABCVm::setSuper(call_context* th, int n)
 {
 	RUNTIME_STACK_POP_CREATE(th,value);
 	multiname* name=th->mi->context->getMultiname(n,th);
-	LOG_CALL(_("setSuper ") << *name);
+	LOG_CALL("setSuper " << *name);
 
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj, th->sys);
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj);
 
 	assert_and_throw(th->inClass)
 	assert_and_throw(th->inClass->super);
@@ -1572,7 +1571,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 
 	bool alreadyset=false;
-	obj->setVariableByMultiname_intern(*name,*value,ASObject::CONST_NOT_ALLOWED,th->inClass->super.getPtr(),&alreadyset);
+	obj->setVariableByMultiname_intern(*name,*value,ASObject::CONST_NOT_ALLOWED,th->inClass->super.getPtr(),&alreadyset,th->worker);
 	if (alreadyset)
 		ASATOM_DECREF_POINTER(value);
 	name->resetNameIfObject();
@@ -1582,9 +1581,9 @@ void ABCVm::setSuper(call_context* th, int n)
 void ABCVm::getSuper(call_context* th, int n)
 {
 	multiname* name=th->mi->context->getMultiname(n,th);
-	LOG_CALL(_("getSuper ") << *name);
+	LOG_CALL("getSuper " << *name);
 
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj, th->sys);
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj);
 
 	if(obj->is<Null>())
 	{
@@ -1605,7 +1604,7 @@ void ABCVm::getSuper(call_context* th, int n)
 	assert_and_throw(cls);
 
 	asAtom ret=asAtomHandler::invalidAtom;
-	obj->getVariableByMultinameIntern(ret,*name,cls);
+	obj->getVariableByMultinameIntern(ret,*name,cls,GET_VARIABLE_OPTION::NONE,th->worker);
 	if (asAtomHandler::isInvalid(ret))
 		throwError<ReferenceError>(kCallOfNonFunctionError,name->normalizedNameUnresolved(obj->getSystemState()));
 
@@ -1636,7 +1635,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 	//Find out the current 'this', when looking up over it, we have to consider all of it
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
-		ASObject* s = asAtomHandler::toObject(th->scope_stack[i-1],th->sys);
+		ASObject* s = asAtomHandler::toObject(th->scope_stack[i-1],th->worker);
 		// FROM_GETLEX flag tells getVariableByMultiname to
 		// ignore non-existing properties in XML obejcts
 		// (normally it would return an empty XMLList if the
@@ -1651,7 +1650,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 		asAtom prop=asAtomHandler::invalidAtom;
 		if (s->is<Null>()) // avoid exception
 			continue;
-		s->getVariableByMultiname(prop,*name, opt);
+		s->getVariableByMultiname(prop,*name, opt,th->worker);
 		if(asAtomHandler::isValid(prop))
 		{
 			o=prop;
@@ -1674,7 +1673,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 				canCache = false;
 	
 			asAtom prop=asAtomHandler::invalidAtom;
-			asAtomHandler::toObject(it->object,th->sys)->getVariableByMultiname(prop,*name, opt);
+			asAtomHandler::toObject(it->object,th->worker)->getVariableByMultiname(prop,*name, opt,th->worker);
 			if(asAtomHandler::isValid(prop))
 			{
 				o=prop;
@@ -1692,7 +1691,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 	if(asAtomHandler::isInvalid(o))
 	{
 		ASObject* target;
-		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target);
+		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target,th->worker);
 		if(asAtomHandler::isInvalid(o))
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found");
@@ -1719,7 +1718,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 
 void ABCVm::constructSuper(call_context* th, int m)
 {
-	LOG_CALL( _("constructSuper ") << m);
+	LOG_CALL( "constructSuper " << m);
 	asAtom* args=g_newa(asAtom, m);
 	for(int i=0;i<m;i++)
 	{
@@ -1733,28 +1732,28 @@ void ABCVm::constructSuper(call_context* th, int m)
 	assert_and_throw(th->inClass->super);
 	assert_and_throw(asAtomHandler::getObject(obj)->getClass());
 	assert_and_throw(asAtomHandler::getObject(obj)->getClass()->isSubClass(th->inClass));
-	LOG_CALL(_("Super prototype name ") << th->inClass->super->class_name);
+	LOG_CALL("Super prototype name " << th->inClass->super->class_name);
 
 	th->inClass->super->handleConstruction(obj,args, m, false);
 	ASATOM_DECREF(obj);
-	LOG_CALL(_("End super construct ")<<asAtomHandler::toDebugString(obj));
+	LOG_CALL("End super construct "<<asAtomHandler::toDebugString(obj));
 }
 
 ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 {
-	LOG_CALL( _("findProperty ") << *name );
+	LOG_CALL( "findProperty " << *name );
 
 	vector<scope_entry>::reverse_iterator it;
 	bool found=false;
 	ASObject* ret=NULL;
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
-		found=asAtomHandler::toObject(th->scope_stack[i-1],th->sys)->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true);
+		found=asAtomHandler::toObject(th->scope_stack[i-1],th->worker)->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true,th->worker);
 
 		if(found)
 		{
 			//We have to return the object, not the property
-			ret=asAtomHandler::toObject(th->scope_stack[i-1],th->sys);
+			ret=asAtomHandler::toObject(th->scope_stack[i-1],th->worker);
 			break;
 		}
 	}
@@ -1762,12 +1761,12 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 	{
 		for(it=th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
 		{
-			found=asAtomHandler::toObject(it->object,th->sys)->hasPropertyByMultiname(*name, it->considerDynamic, true);
+			found=asAtomHandler::toObject(it->object,th->worker)->hasPropertyByMultiname(*name, it->considerDynamic, true,th->worker);
 	
 			if(found)
 			{
 				//We have to return the object, not the property
-				ret=asAtomHandler::toObject(it->object,th->sys);
+				ret=asAtomHandler::toObject(it->object,th->worker);
 				break;
 			}
 		}
@@ -1777,17 +1776,17 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 		//try to find a global object where this is defined
 		ASObject* target;
 		asAtom o=asAtomHandler::invalidAtom;
-		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target);
+		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target,th->worker);
 		if(asAtomHandler::isValid(o))
 			ret=target;
 		else //else push the current global object
 		{
 			if (th->parent_scope_stack && th->parent_scope_stack->scope.size() > 0)
-				ret =asAtomHandler::toObject(th->parent_scope_stack->scope[0].object,th->sys);
+				ret =asAtomHandler::toObject(th->parent_scope_stack->scope[0].object,th->worker);
 			else
 			{
 				assert_and_throw(th->curr_scope_stack > 0);
-				ret =asAtomHandler::toObject(th->scope_stack[0],th->sys);
+				ret =asAtomHandler::toObject(th->scope_stack[0],th->worker);
 			}
 		}
 	}
@@ -1808,11 +1807,11 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
-		found=asAtomHandler::toObject(th->scope_stack[i-1],th->sys)->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true);
+		found=asAtomHandler::toObject(th->scope_stack[i-1],th->worker)->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true,th->worker);
 		if(found)
 		{
 			//We have to return the object, not the property
-			ret=asAtomHandler::toObject(th->scope_stack[i-1],th->sys);
+			ret=asAtomHandler::toObject(th->scope_stack[i-1],th->worker);
 			break;
 		}
 	}
@@ -1820,11 +1819,11 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 	{
 		for(it =th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
 		{
-			found=asAtomHandler::toObject(it->object,th->sys)->hasPropertyByMultiname(*name, it->considerDynamic, true);
+			found=asAtomHandler::toObject(it->object,th->worker)->hasPropertyByMultiname(*name, it->considerDynamic, true,th->worker);
 			if(found)
 			{
 				//We have to return the object, not the property
-				ret=asAtomHandler::toObject(it->object,th->sys);
+				ret=asAtomHandler::toObject(it->object,th->worker);
 				break;
 			}
 		}
@@ -1833,7 +1832,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 	{
 		ASObject* target;
 		asAtom o=asAtomHandler::invalidAtom;
-		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target);
+		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target,th->worker);
 		if(asAtomHandler::isValid(o))
 			ret=target;
 		else
@@ -1845,7 +1844,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 			m.isAttribute = false;
 			for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 			{
-				ASObject* r = asAtomHandler::toObject(th->scope_stack[i-1],th->sys);
+				ASObject* r = asAtomHandler::toObject(th->scope_stack[i-1],th->worker);
 				if (!r->is<Class_base>())
 					continue;
 				if (r->as<Class_base>()->checkExistingFunction(m))
@@ -1870,7 +1869,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 		if(instrptr->cacheobj2)
 			instrptr->cacheobj2->incRef();
 		if (instrptr->cacheobj1->is<IFunction>())
-			asAtomHandler::setFunction(ret,instrptr->cacheobj1,instrptr->cacheobj2);
+			asAtomHandler::setFunction(ret,instrptr->cacheobj1,instrptr->cacheobj2,th->worker);
 		else
 		{
 			instrptr->cacheobj1->incRef();
@@ -1887,7 +1886,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
-		found=asAtomHandler::toObject(th->scope_stack[i-1],th->sys)->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true);
+		found=asAtomHandler::toObject(th->scope_stack[i-1],th->worker)->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true,th->worker);
 		if (th->scope_stack_dynamic[i-1])
 			hasdynamic = true;
 		if(found)
@@ -1900,7 +1899,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 			{
 				// put object in cache
 				instrptr->local3.flags = ABC_OP_CACHED;
-				instrptr->cacheobj1 = asAtomHandler::toObject(ret,th->sys);
+				instrptr->cacheobj1 = asAtomHandler::toObject(ret,th->worker);
 				instrptr->cacheobj2 = asAtomHandler::getClosure(ret);
 				if (instrptr->cacheobj1->is<IFunction>())
 					instrptr->cacheobj1->as<IFunction>()->clonedFrom=nullptr;
@@ -1912,7 +1911,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 	{
 		for(it =th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
 		{
-			found=asAtomHandler::toObject(it->object,th->sys)->hasPropertyByMultiname(*name, it->considerDynamic, true);
+			found=asAtomHandler::toObject(it->object,th->worker)->hasPropertyByMultiname(*name, it->considerDynamic, true,th->worker);
 			if (it->considerDynamic)
 				hasdynamic = true;
 			if(found)
@@ -1927,7 +1926,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 	{
 		ASObject* target;
 		asAtom o=asAtomHandler::invalidAtom;
-		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target);
+		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target,th->worker);
 		if(asAtomHandler::isValid(o))
 		{
 			ret=asAtomHandler::fromObject(target);
@@ -1941,7 +1940,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 			m.isAttribute = false;
 			for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 			{
-				ASObject* r = asAtomHandler::toObject(th->scope_stack[i-1],th->sys);
+				ASObject* r = asAtomHandler::toObject(th->scope_stack[i-1],th->worker);
 				if (!r->is<Class_base>())
 					continue;
 				if (r->as<Class_base>()->checkExistingFunction(m))
@@ -1957,7 +1956,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 		{
 			// put object in cache
 			instrptr->local3.flags = ABC_OP_CACHED;
-			instrptr->cacheobj1 = asAtomHandler::toObject(ret,th->sys);
+			instrptr->cacheobj1 = asAtomHandler::toObject(ret,th->worker);
 			instrptr->cacheobj2 = asAtomHandler::getClosure(ret);
 			if (instrptr->cacheobj1->is<IFunction>())
 				instrptr->cacheobj1->as<IFunction>()->clonedFrom=nullptr;
@@ -1971,7 +1970,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 
 bool ABCVm::greaterThan(ASObject* obj1, ASObject* obj2)
 {
-	LOG_CALL(_("greaterThan"));
+	LOG_CALL("greaterThan");
 
 	//Real comparision demanded to object
 	bool ret=(obj2->isLess(obj1)==TTRUE);
@@ -1982,7 +1981,7 @@ bool ABCVm::greaterThan(ASObject* obj1, ASObject* obj2)
 
 bool ABCVm::greaterEquals(ASObject* obj1, ASObject* obj2)
 {
-	LOG_CALL(_("greaterEquals"));
+	LOG_CALL("greaterEquals");
 
 	//Real comparision demanded to object
 	bool ret=(obj1->isLess(obj2)==TFALSE);
@@ -1993,7 +1992,7 @@ bool ABCVm::greaterEquals(ASObject* obj1, ASObject* obj2)
 
 bool ABCVm::lessEquals(ASObject* obj1, ASObject* obj2)
 {
-	LOG_CALL(_("lessEquals"));
+	LOG_CALL("lessEquals");
 
 	//Real comparision demanded to object
 	bool ret=(obj2->isLess(obj1)==TFALSE);
@@ -2007,7 +2006,7 @@ void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 	//Allow to set contant traits
 	asAtom v = asAtomHandler::fromObject(value);
 	bool alreadyset=false;
-	obj->setVariableByMultiname(*name,v,ASObject::CONST_ALLOWED,&alreadyset);
+	obj->setVariableByMultiname(*name,v,ASObject::CONST_ALLOWED,&alreadyset,obj->getInstanceWorker());
 	if (alreadyset)
 		value->decRef();
 	obj->decRef();
@@ -2035,7 +2034,7 @@ void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, 
 	}
 	method_info* mi = th->mi->context->get_method(n);
 	assert_and_throw(mi);
-	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->sys,mi,mi->numArgs(),th->sys->singleworker);
+	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->worker,mi,mi->numArgs());
 	if(f)
 	{
 		asAtom v = asAtomHandler::fromObject(f);
@@ -2043,7 +2042,7 @@ void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, 
 	}
 	else
 	{
-		tiny_string clsname = asAtomHandler::toObject(obj,th->sys)->getClassName();
+		tiny_string clsname = asAtomHandler::toObject(obj,th->worker)->getClassName();
 		ASATOM_DECREF(obj);
 		for(int i=0;i<m;i++)
 			ASATOM_DECREF(args[i]);
@@ -2063,7 +2062,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	multiname* name=th->mi->context->getMultiname(n,th);
 	LOG_CALL((keepReturn ? "callSuper " : "callSuperVoid ") << *name << ' ' << m);
 
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj, th->sys);
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj);
 	if(obj->is<Null>())
 	{
 		obj->decRef();
@@ -2086,7 +2085,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 	assert_and_throw(obj->getClass());
 	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
 	asAtom f=asAtomHandler::invalidAtom;
-	obj->getVariableByMultinameIntern(f,*name,th->inClass->super.getPtr());
+	obj->getVariableByMultinameIntern(f,*name,th->inClass->super.getPtr(),GET_VARIABLE_OPTION::NONE, th->worker);
 	name->resetNameIfObject();
 	if(asAtomHandler::isValid(f))
 	{
@@ -2099,10 +2098,10 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 		obj->decRef();
 		for(int i=0;i<m;i++)
 			ASATOM_DECREF(args[i]);
-		//LOG(LOG_ERROR,_("Calling an undefined function ") << th->sys->getStringFromUniqueId(name->name_s_id));
+		//LOG(LOG_ERROR,"Calling an undefined function " << th->sys->getStringFromUniqueId(name->name_s_id));
 		throwError<ReferenceError>(kCallNotFoundError, name->qualifiedString(th->sys), clsname);
 	}
-	LOG_CALL(_("End of callSuper ") << *name);
+	LOG_CALL("End of callSuper " << *name);
 }
 
 bool ABCVm::isType(ABCContext* context, ASObject* obj, multiname* name)
@@ -2114,7 +2113,7 @@ bool ABCVm::isType(ABCContext* context, ASObject* obj, multiname* name)
 
 bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 {
-	LOG_CALL(_("isTypelate"));
+	LOG_CALL("isTypelate");
 	bool real_ret=false;
 
 	Class_base* objc=NULL;
@@ -2155,7 +2154,7 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 			real_ret=(obj->toNumber()==obj->toUInt());
 		else
 			real_ret=false;
-		LOG_CALL(_("Numeric type is ") << ((real_ret)?"":_("not ")) << _("subclass of ") << c->class_name);
+		LOG_CALL("Numeric type is " << ((real_ret)?"":"not ") << "subclass of " << c->class_name);
 		obj->decRef();
 		type->decRef();
 		return real_ret;
@@ -2168,7 +2167,7 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	else
 	{
 		real_ret=obj->getObjectType()==type->getObjectType();
-		LOG_CALL(_("isTypelate on non classed object ") << real_ret);
+		LOG_CALL("isTypelate on non classed object " << real_ret);
 		obj->decRef();
 		type->decRef();
 		return real_ret;
@@ -2296,7 +2295,7 @@ bool ABCVm::in(ASObject* val2, ASObject* val1)
 	//Acquire the reference
 	name.name_o=val1;
 	name.ns.emplace_back(val2->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-	bool ret=val2->hasPropertyByMultiname(name, true, true);
+	bool ret=val2->hasPropertyByMultiname(name, true, true,val2->getInstanceWorker());
 	name.name_o=nullptr;
 	val1->decRef();
 	val2->decRef();
@@ -2328,7 +2327,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	RUNTIME_STACK_POP(th,obj);
 
 	asAtom o=asAtomHandler::invalidAtom;
-	asAtomHandler::toObject(obj,th->sys)->getVariableByMultiname(o,*name);
+	asAtomHandler::toObject(obj,th->worker)->getVariableByMultiname(o,*name,GET_VARIABLE_OPTION::NONE, th->worker);
 
 	if(asAtomHandler::isInvalid(o))
 	{
@@ -2356,7 +2355,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 		if(asAtomHandler::isClass(o))
 		{
 			Class_base* o_class=asAtomHandler::as<Class_base>(o);
-			o_class->getInstance(ret,true,args,m);
+			o_class->getInstance(th->worker,ret,true,args,m);
 		}
 		else if(asAtomHandler::isFunction(o))
 		{
@@ -2396,7 +2395,7 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 
 	uint32_t newIndex=obj->nextNameIndex(curIndex);
 	ASATOM_DECREF(th->locals[m]);
-	asAtomHandler::setUInt(th->locals[m],obj->getSystemState(),newIndex);
+	asAtomHandler::setUInt(th->locals[m],th->worker,newIndex);
 	if(newIndex==0)
 	{
 		ASATOM_DECREF(th->locals[n]);
@@ -2408,16 +2407,16 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 
 void ABCVm::newObject(call_context* th, int n)
 {
-	LOG_CALL(_("newObject ") << n);
-	ASObject* ret=Class<ASObject>::getInstanceS(th->sys);
+	LOG_CALL("newObject " << n);
+	ASObject* ret=Class<ASObject>::getInstanceS(th->worker);
 	//Duplicated keys overwrite the previous value
-	multiname propertyName(NULL);
+	multiname propertyName(nullptr);
 	propertyName.name_type=multiname::NAME_STRING;
 	for(int i=0;i<n;i++)
 	{
 		RUNTIME_STACK_POP_CREATE(th,value);
 		RUNTIME_STACK_POP_CREATE(th,name);
-		uint32_t nameid=asAtomHandler::toStringId(*name,th->sys);
+		uint32_t nameid=asAtomHandler::toStringId(*name,th->worker);
 		ASATOM_DECREF_POINTER(name);
 		ret->setDynamicVariableNoCheck(nameid,*value);
 	}
@@ -2428,7 +2427,7 @@ void ABCVm::newObject(call_context* th, int n)
 void ABCVm::getDescendants(call_context* th, int n)
 {
 	multiname* name=th->mi->context->getMultiname(n,th);
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj, th->sys);
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj);
 	LOG_CALL("getDescendants " << *name << " " <<name->isAttribute<< " "<<obj->getClassName());
 	XML::XMLVector ret;
 	XMLList* targetobject = NULL;
@@ -2456,12 +2455,12 @@ void ABCVm::getDescendants(call_context* th, int n)
 	}
 	else if(obj->is<Proxy>())
 	{
-		multiname callPropertyName(NULL);
+		multiname callPropertyName(nullptr);
 		callPropertyName.name_type=multiname::NAME_STRING;
 		callPropertyName.name_s_id=obj->getSystemState()->getUniqueStringId("getDescendants");
 		callPropertyName.ns.emplace_back(th->sys,flash_proxy,NAMESPACE);
 		asAtom o=asAtomHandler::invalidAtom;
-		obj->getVariableByMultiname(o,callPropertyName,SKIP_IMPL);
+		obj->getVariableByMultiname(o,callPropertyName,SKIP_IMPL,th->worker);
 		
 		if(asAtomHandler::isValid(o))
 		{
@@ -2469,20 +2468,20 @@ void ABCVm::getDescendants(call_context* th, int n)
 			
 			//Create a new array
 			asAtom* proxyArgs=g_newa(asAtom, 1);
-			ASObject* namearg = abstract_s(obj->getSystemState(), name->normalizedName(th->sys));
+			ASObject* namearg = abstract_s(th->worker, name->normalizedName(th->sys));
 			namearg->setProxyProperty(*name);
 			proxyArgs[0]=asAtomHandler::fromObject(namearg);
 
 			//We now suppress special handling
-			LOG_CALL(_("Proxy::getDescendants"));
+			LOG_CALL("Proxy::getDescendants");
 			ASATOM_INCREF(o);
 			asAtom v = asAtomHandler::fromObject(obj);
 			asAtom ret=asAtomHandler::invalidAtom;
-			asAtomHandler::callFunction(o,ret,v,proxyArgs,1,true);
+			asAtomHandler::callFunction(o,th->worker,ret,v,proxyArgs,1,true);
 			ASATOM_DECREF(o);
 			RUNTIME_STACK_PUSH(th,ret);
 			
-			LOG_CALL(_("End of calling ") << *name);
+			LOG_CALL("End of calling " << *name);
 			return;
 		}
 		else
@@ -2498,7 +2497,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 		obj->decRef();
 		throwError<TypeError>(kDescendentsError, objName);
 	}
-	XMLList* retObj=XMLList::create(th->sys,ret,targetobject,*name);
+	XMLList* retObj=XMLList::create(th->worker,ret,targetobject,*name);
 	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(retObj));
 	obj->decRef();
 }
@@ -2514,7 +2513,7 @@ number_t ABCVm::increment(ASObject* o)
 
 uint32_t ABCVm::increment_i(ASObject* o)
 {
-	LOG_CALL(_("increment_i"));
+	LOG_CALL("increment_i");
 
 	int n=o->toInt();
 	o->decRef();
@@ -2523,7 +2522,7 @@ uint32_t ABCVm::increment_i(ASObject* o)
 
 uint64_t ABCVm::increment_di(ASObject* o)
 {
-	LOG_CALL(_("increment_di"));
+	LOG_CALL("increment_di");
 
 	int64_t n=o->toInt64();
 	o->decRef();
@@ -2540,7 +2539,7 @@ ASObject* ABCVm::nextValue(ASObject* index, ASObject* obj)
 	obj->nextValue(ret,index->toUInt());
 	obj->decRef();
 	index->decRef();
-	return asAtomHandler::toObject(ret,obj->getSystemState());
+	return asAtomHandler::toObject(ret,obj->getInstanceWorker());
 }
 
 ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
@@ -2553,7 +2552,7 @@ ASObject* ABCVm::nextName(ASObject* index, ASObject* obj)
 	obj->nextName(ret,index->toUInt());
 	obj->decRef();
 	index->decRef();
-	return asAtomHandler::toObject(ret,obj->getSystemState());
+	return asAtomHandler::toObject(ret,obj->getInstanceWorker());
 }
 ASObject* ABCVm::hasNext(ASObject* obj,ASObject* cur_index)
 {
@@ -2562,7 +2561,7 @@ ASObject* ABCVm::hasNext(ASObject* obj,ASObject* cur_index)
 	uint32_t curIndex=cur_index->toUInt();
 
 	uint32_t newIndex=obj->nextNameIndex(curIndex);
-	return abstract_i(obj->getSystemState(),newIndex);
+	return abstract_i(obj->getInstanceWorker(),newIndex);
 }
 
 std::vector<Class_base*> classesToLinkInterfaces;
@@ -2597,7 +2596,7 @@ bool ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
 	}
 	for(unsigned int i=0;i<interfaces.size();i++)
 	{
-		LOG_CALL(_("Linking with interface ") << interfaces[i]->class_name);
+		LOG_CALL("Linking with interface " << interfaces[i]->class_name);
 		interfaces[i]->linkInterface(target);
 	}
 	return true;
@@ -2610,7 +2609,7 @@ void ABCVm::newClass(call_context* th, int n)
 	const multiname* mname=th->mi->context->getMultiname(name_index,nullptr);
 	LOG_CALL( "newClass " << *mname );
 
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,baseClass, th->sys);
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,baseClass);
 
 	assert_and_throw(mname->ns.size()==1);
 	QName className(mname->name_s_id,mname->ns[0].nsNameId);
@@ -2634,10 +2633,10 @@ void ABCVm::newClass(call_context* th, int n)
 		_NR<ApplicationDomain> domain = getCurrentApplicationDomain(th);
 		ASObject* target;
 		asAtom oldDefinition=asAtomHandler::invalidAtom;
-		domain->getVariableAndTargetByMultiname(oldDefinition,*mname, target);
+		domain->getVariableAndTargetByMultiname(oldDefinition,*mname, target,th->worker);
 		if(asAtomHandler::isClass(oldDefinition))
 		{
-			LOG_CALL(_("Class ") << className << _(" already defined. Pushing previous definition"));
+			LOG_CALL("Class " << className << " already defined. Pushing previous definition");
 			baseClass->decRef();
 			ASATOM_INCREF(oldDefinition);
 			RUNTIME_STACK_PUSH(th,oldDefinition);
@@ -2648,6 +2647,7 @@ void ABCVm::newClass(call_context* th, int n)
 		}
 		MemoryAccount* m = th->sys->allocateMemoryAccount(className.getQualifiedName(th->sys));
 		ret=new (m) Class_inherit(className, m,nullptr,nullptr);
+		ret->setWorker(th->worker);
 
 		LOG_CALL("add classes defined:"<<*mname<<" "<<th->mi->context);
 		//Add the class to the ones being currently defined in this context
@@ -2727,12 +2727,12 @@ void ABCVm::newClass(call_context* th, int n)
 	// set constructor property first, as it seems to be allowed to override the constructor property by a class trait
 	ret->addConstructorGetter();
 
-	LOG_CALL(_("Building class traits"));
+	LOG_CALL("Building class traits");
 	std::vector<multiname*> additionalslots;
 	for(unsigned int i=0;i<th->mi->context->classes[n].trait_count;i++)
 		th->mi->context->buildTrait(ret,additionalslots,&th->mi->context->classes[n].traits[i],false);
 
-	LOG_CALL(_("Adding immutable object traits to class"));
+	LOG_CALL("Adding immutable object traits to class");
 	//Class objects also contains all the methods/getters/setters declared for instances
 	instance_info* cur=&th->mi->context->instances[n];
 	for(unsigned int i=0;i<cur->trait_count;i++)
@@ -2753,7 +2753,7 @@ void ABCVm::newClass(call_context* th, int n)
 			constructor->validProfName=true;
 		}
 #endif
-		SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(ret->getSystemState(),constructor,constructor->numArgs(),ret->getSystemState()->singleworker);
+		SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(th->worker,constructor,constructor->numArgs());
 		constructorFunc->acquireScope(ret->class_scope);
 		constructorFunc->addToScope(scope_entry(asAtomHandler::fromObject(ret),false));
 		constructorFunc->inClass = ret;
@@ -2764,7 +2764,7 @@ void ABCVm::newClass(call_context* th, int n)
 	th->mi->context->root->bindClass(className,ret);
 
 	//Add prototype variable
-	ret->prototype = _MNR(new_objectPrototype(ret->getSystemState()));
+	ret->prototype = _MNR(new_objectPrototype(ret->getInstanceWorker()));
 	//Add the constructor variable to the class prototype
 	ret->prototype->setVariableByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),ret, DECLARED_TRAIT);
 	if(ret->super)
@@ -2784,7 +2784,7 @@ void ABCVm::newClass(call_context* th, int n)
 		//Make the class valid if needed
 		ASObject* target;
 		asAtom obj=asAtomHandler::invalidAtom;
-		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(obj,*name, target);
+		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(obj,*name, target,th->worker);
 
 		//Named only interfaces seems to be allowed 
 		if(asAtomHandler::isInvalid(obj))
@@ -2805,10 +2805,10 @@ void ABCVm::newClass(call_context* th, int n)
 	if (th->mi->context->instances[n].isInterface())
 		ABCVm::SetAllClassLinks();
 	
-	LOG_CALL(_("Calling Class init ") << ret);
+	LOG_CALL("Calling Class init " << ret);
 	//Class init functions are called with global as this
 	method_info* m=&th->mi->context->methods[th->mi->context->classes[n].cinit];
-	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(ret->getSystemState(),m,m->numArgs(),ret->getSystemState()->singleworker);
+	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(th->worker,m,m->numArgs());
 	cinit->fromNewFunction=true;
 	cinit->inClass = ret;
 	//cinit must inherit the current scope
@@ -2824,11 +2824,11 @@ void ABCVm::newClass(call_context* th, int n)
 	{
 		asAtom v = asAtomHandler::fromObject(ret);
 		asAtom f = asAtomHandler::fromObject(cinit);
-		asAtomHandler::callFunction(f,ret2,v,nullptr,0,true);
+		asAtomHandler::callFunction(f,th->worker,ret2,v,nullptr,0,true);
 	}
 	catch(ASObject* exc)
 	{
-		LOG_CALL(_("Exception during class initialization. Returning Undefined"));
+		LOG_CALL("Exception during class initialization. Returning Undefined");
 		//Handle eventual exceptions from the constructor, to fix the stack
 		RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(th->mi->context->root->applicationDomain->getSystemState()->getUndefinedRef()));
 		cinit->decRef();
@@ -2864,7 +2864,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 void ABCVm::swap()
 {
-	LOG_CALL(_("swap"));
+	LOG_CALL("swap");
 }
 
 ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
@@ -2876,7 +2876,7 @@ ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
 	if (caller != nullptr && caller->is<Function_object>())
 		act = new_functionObject(caller->as<Function_object>()->functionPrototype);
 	else
-		act = new_activationObject(th->sys);
+		act = new_activationObject(th->worker);
 #ifndef NDEBUG
 	act->initialized=false;
 #endif
@@ -2932,7 +2932,7 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 	if(asAtomHandler::is<IFunction>(f))
 	{
 		asAtom ret=asAtomHandler::invalidAtom;
-		asAtomHandler::callFunction(f,ret,obj,args,m,true);
+		asAtomHandler::callFunction(f,th->worker,ret,obj,args,m,true);
 		if(keepReturn)
 			RUNTIME_STACK_PUSH(th,ret);
 		else
@@ -2942,7 +2942,7 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 	{
 		Class_base* c=asAtomHandler::as<Class_base>(f);
 		asAtom ret=asAtomHandler::invalidAtom;
-		c->generator(ret,args,m);
+		c->generator(th->worker,ret,args,m);
 		for(int i=0;i<m;i++)
 			ASATOM_DECREF(args[i]);
 		if(keepReturn)
@@ -2954,7 +2954,7 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 	else if(asAtomHandler::is<RegExp>(f))
 	{
 		asAtom ret=asAtomHandler::invalidAtom;
-		RegExp::exec(ret,th->sys,f,args,m);
+		RegExp::exec(ret,th->worker,f,args,m);
 		if(keepReturn)
 			RUNTIME_STACK_PUSH(th,ret);
 		else
@@ -2984,7 +2984,7 @@ bool ABCVm::deleteProperty(ASObject* obj, multiname* name)
 		if (name->name_o->is<XMLList>())
 			throwError<TypeError>(kDeleteTypeError,name->name_o->getClassName());
 	}
-	bool ret = obj->deleteVariableByMultiname(*name);
+	bool ret = obj->deleteVariableByMultiname(*name,obj->getInstanceWorker());
 
 	obj->decRef();
 	return ret;
@@ -2995,7 +2995,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	LOG_CALL("newFunction " << n);
 
 	method_info* m=&th->mi->context->methods[n];
-	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->mi->context->root->applicationDomain->getSystemState(),m,m->numArgs(),th->mi->context->root->getSystemState()->singleworker);
+	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->worker,m,m->numArgs());
 	f->func_scope = _R<scope_entry_list>(new scope_entry_list());
 	f->fromNewFunction=true;
 	if (th->parent_scope_stack)
@@ -3016,7 +3016,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 		f->addToScope(scope_entry(th->scope_stack[i],th->scope_stack_dynamic[i]));
 	}
 	//Create the prototype object
-	f->prototype = _MR(new_asobject(f->getSystemState()));
+	f->prototype = _MR(new_asobject(th->worker));
 	// the constructor object will not be refcounted, because otherwise the function object will never reach reference count 0
 	f->prototype->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),asAtomHandler::fromObject(f),DECLARED_TRAIT,true,false);
 
@@ -3029,7 +3029,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 ASObject* ABCVm::getScopeObject(call_context* th, int n)
 {
 	assert_and_throw(th->curr_scope_stack > (size_t)n);
-	ASObject* ret=asAtomHandler::toObject(th->scope_stack[(size_t)n],th->sys);
+	ASObject* ret=asAtomHandler::toObject(th->scope_stack[(size_t)n],th->worker);
 	ret->incRef();
 	LOG_CALL( "getScopeObject: " << ret->toDebugString());
 	return ret;
@@ -3038,16 +3038,16 @@ ASObject* ABCVm::getScopeObject(call_context* th, int n)
 ASObject* ABCVm::pushString(call_context* th, int n)
 {
 	LOG_CALL( "pushString " << th->sys->getStringFromUniqueId(th->mi->context->getString(n)) );
-	return abstract_s(th->mi->context->root->applicationDomain->getSystemState(),th->mi->context->getString(n));
+	return abstract_s(th->worker,th->mi->context->getString(n));
 }
 
 ASObject* ABCVm::newCatch(call_context* th, int n)
 {
-	ASObject* catchScope = Class<ASObject>::getInstanceS(th->sys);
+	ASObject* catchScope = Class<ASObject>::getInstanceS(th->worker);
 	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exceptions.size());
-	multiname* name = th->mi->context->getMultiname(th->mi->body->exceptions[n].var_name, NULL);
-	catchScope->setVariableByMultiname(*name, asAtomHandler::undefinedAtom,ASObject::CONST_NOT_ALLOWED);
-	variable* v = catchScope->findVariableByMultiname(*name,nullptr,nullptr,nullptr,true);
+	multiname* name = th->mi->context->getMultiname(th->mi->body->exceptions[n].var_name, nullptr);
+	catchScope->setVariableByMultiname(*name, asAtomHandler::undefinedAtom,ASObject::CONST_NOT_ALLOWED,nullptr,th->worker);
+	variable* v = catchScope->findVariableByMultiname(*name,nullptr,nullptr,nullptr,true,th->worker);
 	catchScope->initSlot(1, v);
 	return catchScope;
 }
@@ -3055,7 +3055,7 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 void ABCVm::newArray(call_context* th, int n)
 {
 	LOG_CALL( "newArray " << n );
-	Array* ret=Class<Array>::getInstanceSNoArgs(th->sys);
+	Array* ret=Class<Array>::getInstanceSNoArgs(th->worker);
 	ret->resize(n);
 	for(int i=0;i<n;i++)
 	{
@@ -3075,7 +3075,7 @@ ASObject* ABCVm::esc_xattr(ASObject* o)
 		t = o->as<XMLList>()->toXMLString_internal();
 	else
 		t = XML::encodeToXML(o->toString(),true);
-	ASObject* res = abstract_s(o->getSystemState(),t);
+	ASObject* res = abstract_s(o->getInstanceWorker(),t);
 	o->decRef();
 	return res;
 }
@@ -3089,7 +3089,7 @@ ASObject* ABCVm::esc_xelem(ASObject* o)
 		t = o->as<XMLList>()->toXMLString_internal();
 	else
 		t = XML::encodeToXML(o->toString(),false);
-	ASObject* res = abstract_s(o->getSystemState(),t);
+	ASObject* res = abstract_s(o->getInstanceWorker(),t);
 	o->decRef();
 	return res;
 }
@@ -3161,15 +3161,15 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 Namespace* ABCVm::pushNamespace(call_context* th, int n)
 {
 	const namespace_info& ns_info=th->mi->context->constant_pool.namespaces[n];
-	LOG_CALL( _("pushNamespace ") << th->sys->getStringFromUniqueId(th->mi->context->getString(ns_info.name)) );
-	return Class<Namespace>::getInstanceS(th->sys,th->mi->context->getString(ns_info.name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)ns_info.kind);
+	LOG_CALL( "pushNamespace " << th->sys->getStringFromUniqueId(th->mi->context->getString(ns_info.name)) );
+	return Class<Namespace>::getInstanceS(th->worker,th->mi->context->getString(ns_info.name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)ns_info.kind);
 }
 
 /* @spec-checked avm2overview */
 void ABCVm::dxns(call_context* th, int n)
 {
 	if(!th->mi->hasDXNS())
-		throw Class<VerifyError>::getInstanceS(th->sys,"dxns without SET_DXNS");
+		throw Class<VerifyError>::getInstanceS(th->worker,"dxns without SET_DXNS");
 
 	th->defaultNamespaceUri = th->mi->context->getString(n);
 }
@@ -3178,7 +3178,7 @@ void ABCVm::dxns(call_context* th, int n)
 void ABCVm::dxnslate(call_context* th, ASObject* o)
 {
 	if(!th->mi->hasDXNS())
-		throw Class<VerifyError>::getInstanceS(th->sys,"dxnslate without SET_DXNS");
+		throw Class<VerifyError>::getInstanceS(th->worker,"dxnslate without SET_DXNS");
 
 	th->defaultNamespaceUri = o->toStringId();
 	o->decRef();

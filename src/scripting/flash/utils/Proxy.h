@@ -32,34 +32,32 @@ friend class ABCVm;
 private:
 	bool proxyconstructionCompleted;
 public:
-	Proxy(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_PROXY),proxyconstructionCompleted(false){}
+	Proxy(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_PROXY),proxyconstructionCompleted(false){}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
-//	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_isAttribute);
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name,GET_VARIABLE_OPTION opt=NONE);
-	int32_t getVariableByMultiname_i(const multiname& name)
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	int32_t getVariableByMultiname_i(const multiname& name, ASWorker* wrk) override
 	{
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Proxy");
 	}
-	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr);
-	void setVariableByMultiname_i(multiname& name, int32_t value)
+	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
+	void setVariableByMultiname_i(multiname& name, int32_t value,ASWorker* wrk) override
 	{
 		asAtom v = asAtomHandler::fromInt(value);
-		setVariableByMultiname(name,v,CONST_NOT_ALLOWED);
+		setVariableByMultiname(name,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 	
-	bool deleteVariableByMultiname(const multiname& name);
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
+	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk) override;
 	tiny_string toString()
 	{
 		throw UnsupportedException("Proxy is missing some stuff");
 	}
-	uint32_t nextNameIndex(uint32_t cur_index);
-	void nextName(asAtom &ret, uint32_t index);
-	void nextValue(asAtom &ret, uint32_t index);
-	bool isConstructed() const;
+	uint32_t nextNameIndex(uint32_t cur_index) override;
+	void nextName(asAtom &ret, uint32_t index) override;
+	void nextValue(asAtom &ret, uint32_t index) override;
+	bool isConstructed() const override;
 };
 }
 

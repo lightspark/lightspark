@@ -31,7 +31,7 @@ namespace lightspark
 {
 class Accelerometer: public EventDispatcher {
 	public:
-		Accelerometer(Class_base* c);
+		Accelerometer(ASWorker* wrk,Class_base* c);
 		static void sinit(Class_base* c);
 		static void buildTraits(ASObject* o);
 		ASFUNCTION_ATOM(_isSupported);

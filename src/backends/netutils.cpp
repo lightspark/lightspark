@@ -834,7 +834,7 @@ bool DownloaderThreadBase::createDownloader(_R<StreamCache> cache,
 		if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 		{
 			dispatcher->incRef();
-			getVm(dispatcher->getSystemState())->addEvent(dispatcher,_MR(Class<SecurityErrorEvent>::getInstanceS(dispatcher->getSystemState(),"SecurityError: "
+			getVm(dispatcher->getSystemState())->addEvent(dispatcher,_MR(Class<SecurityErrorEvent>::getInstanceS(dispatcher->getInstanceWorker(),"SecurityError: "
 												 "connection to domain not allowed by securityManager")));
 			return false;
 		}
@@ -844,7 +844,7 @@ bool DownloaderThreadBase::createDownloader(_R<StreamCache> cache,
 		// url points to an adobe signed library which we cannot handle, so we abort here
 		LOG(LOG_NOT_IMPLEMENTED,"we don't handle adobe signed libraries");
 		dispatcher->incRef();
-		getVm(dispatcher->getSystemState())->addEvent(dispatcher,_MR(Class<IOErrorEvent>::getInstanceS(dispatcher->getSystemState())));
+		getVm(dispatcher->getSystemState())->addEvent(dispatcher,_MR(Class<IOErrorEvent>::getInstanceS(dispatcher->getInstanceWorker())));
 		return false;
 	}
 

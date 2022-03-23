@@ -43,5 +43,5 @@ ASFUNCTIONBODY_ATOM(NativeMenuItem,_constructor)
 {
 	NativeMenuItem* th=asAtomHandler::as<NativeMenuItem>(obj);
 	ARG_UNPACK_ATOM(th->label,"")(th->isSeparator,false);
-	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
+	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 }

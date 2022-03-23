@@ -37,7 +37,7 @@ class FileStream: public EventDispatcher
 	uint32_t filesize;
 	void afterPositionChange(number_t oldposition);
 public:
-	FileStream(Class_base* c);
+	FileStream(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(open);
@@ -53,7 +53,7 @@ class ASFile: public FileReference
 {
 	tiny_string path;
 public:
-	ASFile(Class_base* c, const tiny_string _path="", bool _exists=false);
+	ASFile(ASWorker* wrk,Class_base* c, const tiny_string _path="", bool _exists=false);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,exists);
@@ -65,7 +65,7 @@ public:
 class FileMode: public ASObject
 {
 public:
-	FileMode(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_FILEMODE){}
+	FileMode(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_FILEMODE){}
 	static void sinit(Class_base* c);
 };
 

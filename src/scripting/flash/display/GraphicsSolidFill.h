@@ -30,7 +30,7 @@ namespace lightspark
 class GraphicsSolidFill: public ASObject, public IGraphicsFill, public IGraphicsData
 {
 public:
-	GraphicsSolidFill(Class_base* c);
+	GraphicsSolidFill(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t, alpha);

@@ -32,7 +32,7 @@ class LocaleID: public ASObject
 private:
 	std::locale currlocale;
 public:
-	LocaleID(Class_base* c):ASObject(c){}
+	LocaleID(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(determinePreferredLocales);

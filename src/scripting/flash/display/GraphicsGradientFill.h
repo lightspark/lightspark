@@ -34,7 +34,7 @@ class Matrix;
 class GraphicsGradientFill: public ASObject, public IGraphicsFill, public IGraphicsData
 {
 public:
-	GraphicsGradientFill(Class_base* c);
+	GraphicsGradientFill(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);

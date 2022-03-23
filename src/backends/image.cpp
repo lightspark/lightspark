@@ -350,8 +350,6 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 
 	//bits per CHANNEL! note: not per pixel!
 	png_uint_32 bitdepth = png_get_bit_depth(pngPtr, infoPtr);
-	//Number of channels
-	png_uint_32 channels = png_get_channels(pngPtr, infoPtr);
 	//Color type. (RGB, RGBA, Luminance, luminance alpha... palette... etc)
 	png_uint_32 color_type = png_get_color_type(pngPtr, infoPtr);
 

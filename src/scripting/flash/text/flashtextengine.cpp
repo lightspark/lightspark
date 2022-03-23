@@ -39,7 +39,7 @@ void ContentElement::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_SETTER(ContentElement,elementFormat)
 ASFUNCTIONBODY_GETTER(ContentElement,rawText)
 
-ElementFormat::ElementFormat(Class_base *c): ASObject(c,T_OBJECT,SUBTYPE_ELEMENTFORMAT),
+ElementFormat::ElementFormat(ASWorker* wrk, Class_base *c): ASObject(wrk,c,T_OBJECT,SUBTYPE_ELEMENTFORMAT),
 	alignmentBaseline("useDominantBaseline"),
 	alpha(1.0),
 	baselineShift(0.0),
@@ -118,7 +118,7 @@ ASFUNCTIONBODY_ATOM(ElementFormat, _clone)
 {
 	ElementFormat* th=asAtomHandler::as<ElementFormat>(obj);
 
-	ElementFormat* newformat = Class<ElementFormat>::getInstanceS(sys);
+	ElementFormat* newformat = Class<ElementFormat>::getInstanceS(wrk);
 	newformat->fontDescription = th->fontDescription;
 	newformat->fontSize = th->fontSize;
 	newformat->color = th->color;
@@ -198,7 +198,7 @@ ASFUNCTIONBODY_ATOM(FontDescription, _clone)
 {
 	FontDescription* th=asAtomHandler::as<FontDescription>(obj);
 
-	FontDescription* newfontdescription = Class<FontDescription>::getInstanceS(sys);
+	FontDescription* newfontdescription = Class<FontDescription>::getInstanceS(wrk);
 	newfontdescription->cffHinting = th->cffHinting;
 	newfontdescription->fontLookup = th->fontLookup;
 	newfontdescription->fontName = th->fontName;
@@ -302,7 +302,7 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setLocked)
 ASFUNCTIONBODY_ATOM(FontDescription,_getFontName)
 {
     FontDescription* th=asAtomHandler::as<FontDescription>(obj);
-    ret = asAtomHandler::fromString(sys,th->fontName);
+    ret = asAtomHandler::fromString(wrk->getSystemState(),th->fontName);
 }
 
 ASFUNCTIONBODY_ATOM(FontDescription,_setFontName)
@@ -323,7 +323,7 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setFontName)
 ASFUNCTIONBODY_ATOM(FontDescription,_getFontWeight)
 {
     FontDescription* th=asAtomHandler::as<FontDescription>(obj);
-    ret = asAtomHandler::fromString(sys,th->fontWeight);
+    ret = asAtomHandler::fromString(wrk->getSystemState(),th->fontWeight);
 }
 
 ASFUNCTIONBODY_ATOM(FontDescription,_setFontWeight)
@@ -348,7 +348,7 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setFontWeight)
 ASFUNCTIONBODY_ATOM(FontDescription,_getFontPosture)
 {
     FontDescription* th=asAtomHandler::as<FontDescription>(obj);
-    ret = asAtomHandler::fromString(sys,th->fontPosture);
+    ret = asAtomHandler::fromString(wrk->getSystemState(),th->fontPosture);
 }
 
 ASFUNCTIONBODY_ATOM(FontDescription,_setFontPosture)
@@ -373,7 +373,7 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setFontPosture)
 ASFUNCTIONBODY_ATOM(FontDescription,_getFontLookup)
 {
     FontDescription* th=asAtomHandler::as<FontDescription>(obj);
-    ret = asAtomHandler::fromString(sys,th->fontLookup);
+    ret = asAtomHandler::fromString(wrk->getSystemState(),th->fontLookup);
 }
 
 ASFUNCTIONBODY_ATOM(FontDescription,_setFontLookup)
@@ -398,7 +398,7 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setFontLookup)
 ASFUNCTIONBODY_ATOM(FontDescription,_getRenderingMode)
 {
     FontDescription* th=asAtomHandler::as<FontDescription>(obj);
-    ret = asAtomHandler::fromString(sys,th->renderingMode);
+    ret = asAtomHandler::fromString(wrk->getSystemState(),th->renderingMode);
 }
 
 ASFUNCTIONBODY_ATOM(FontDescription,_setRenderingMode)
@@ -423,7 +423,7 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setRenderingMode)
 ASFUNCTIONBODY_ATOM(FontDescription,_getCffHinting)
 {
     FontDescription* th=asAtomHandler::as<FontDescription>(obj);
-    ret = asAtomHandler::fromString(sys,th->cffHinting);
+    ret = asAtomHandler::fromString(wrk->getSystemState(),th->cffHinting);
 }
 
 ASFUNCTIONBODY_ATOM(FontDescription,_setCffHinting)
@@ -524,7 +524,7 @@ ASFUNCTIONBODY_ATOM(EastAsianJustifier,_constructor)
 }
 
 
-TextBlock::TextBlock(Class_base *c): ASObject(c,T_OBJECT,SUBTYPE_TEXTBLOCK)
+TextBlock::TextBlock(ASWorker* wrk, Class_base *c): ASObject(wrk,c,T_OBJECT,SUBTYPE_TEXTBLOCK)
   ,applyNonLinearFontScaling(true),baselineFontSize(12),baselineZero("roman"),bidiLevel(0),firstLine(NullRef),lastLine(NullRef),lineRotation("rotate0")
 {
 }
@@ -604,7 +604,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	LOG(LOG_NOT_IMPLEMENTED,"splitting textblock in multiple lines not implemented");
 	th->content->as<TextElement>()->text = "";
 	th->incRef();
-	_NR<TextLine> textLine = _NR<TextLine>(Class<TextLine>::getInstanceS(sys,linetext, _MNR(th)));
+	_NR<TextLine> textLine = _NR<TextLine>(Class<TextLine>::getInstanceS(wrk,linetext, _MNR(th)));
 	textLine->width = (uint32_t)width;
 	textLine->previousLine = previousLine;
 	textLine->updateSizes();
@@ -795,8 +795,8 @@ ASFUNCTIONBODY_ATOM(GroupElement,_constructor)
 	LOG(LOG_NOT_IMPLEMENTED, "GroupElement constructor not implemented");
 }
 
-TextLine::TextLine(Class_base* c, tiny_string linetext, _NR<TextBlock> owner)
-  : DisplayObjectContainer(c), TextData(),nextLine(nullptr),previousLine(nullptr),userData(nullptr)
+TextLine::TextLine(ASWorker* wrk, Class_base* c, tiny_string linetext, _NR<TextBlock> owner)
+  : DisplayObjectContainer(wrk,c), TextData(),nextLine(nullptr),previousLine(nullptr),userData(nullptr)
   ,hasGraphicElement(false),hasTabs(false),rawTextLength(0),specifiedWidth(0),textBlockBeginIndex(0)
 {
 	subtype = SUBTYPE_TEXTLINE;
@@ -850,38 +850,38 @@ ASFUNCTIONBODY_ATOM(TextLine,_constructor)
 ASFUNCTIONBODY_ATOM(TextLine, getBaselinePosition)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.getBaselinePosition");
-	asAtomHandler::setInt(ret,sys,0);
+	asAtomHandler::setInt(ret,wrk,0);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getDescent)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.descent");
-	asAtomHandler::setInt(ret,sys,0);
+	asAtomHandler::setInt(ret,wrk,0);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getAscent)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.ascent");
-	asAtomHandler::setInt(ret,sys,th->textHeight);
+	asAtomHandler::setInt(ret,wrk,th->textHeight);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getTextWidth)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
-	asAtomHandler::setInt(ret,sys,th->textWidth);
+	asAtomHandler::setInt(ret,wrk,th->textWidth);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getTextHeight)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
-	asAtomHandler::setInt(ret,sys,th->textHeight);
+	asAtomHandler::setInt(ret,wrk,th->textHeight);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getUnjustifiedTextWidth)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
-	asAtomHandler::setInt(ret,sys,th->width);
+	asAtomHandler::setInt(ret,wrk,th->width);
 }
 
 void TextLine::updateSizes()

@@ -28,7 +28,7 @@ namespace lightspark
 class NetGroupSendResult: public ASObject
 {
 public:
-	NetGroupSendResult(Class_base* c):ASObject(c){}
+	NetGroupSendResult(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

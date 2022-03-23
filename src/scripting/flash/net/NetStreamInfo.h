@@ -26,7 +26,7 @@ namespace lightspark
 class NetStreamInfo: public ASObject
 {
 public:
-	NetStreamInfo(Class_base* c);
+	NetStreamInfo(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASPROPERTY_GETTER(number_t,audioBufferByteLength);
 	ASPROPERTY_GETTER(number_t,audioBufferLength);

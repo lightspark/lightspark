@@ -28,7 +28,7 @@ namespace lightspark
 class SWFVersion: public ASObject
 {
 public:
-	SWFVersion(Class_base* c):ASObject(c){}
+	SWFVersion(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

@@ -28,7 +28,7 @@ namespace lightspark
 class NationalDigitsType: public ASObject
 {
 public:
-	NationalDigitsType(Class_base* c):ASObject(c){}
+	NationalDigitsType(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

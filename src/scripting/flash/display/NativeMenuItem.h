@@ -29,7 +29,7 @@ namespace lightspark
 class DLL_PUBLIC NativeMenuItem: public EventDispatcher
 {
 public:
-	NativeMenuItem(Class_base* c):EventDispatcher(c),isSeparator(false),enabled(true){}
+	NativeMenuItem(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),isSeparator(false),enabled(true){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string, label);

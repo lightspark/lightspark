@@ -30,7 +30,7 @@ class Point;
 class Mouse : public ASObject
 {
 public:
-	Mouse(Class_base* c):ASObject(c){}
+	Mouse(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(hide);
 	ASFUNCTION_ATOM(show);
@@ -44,14 +44,14 @@ public:
 class MouseCursor : public ASObject
 {
 public:
-	MouseCursor(Class_base* c):ASObject(c){}
+	MouseCursor(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class MouseCursorData : public ASObject
 {
 public:
-	MouseCursorData(Class_base* c);
+	MouseCursorData(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>,data);

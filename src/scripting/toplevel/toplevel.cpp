@@ -56,14 +56,14 @@ using namespace lightspark;
 Any* const Type::anyType = new Any();
 Void* const Type::voidType = new Void();
 
-Null::Null():ASObject((Class_base*)(NULL),T_NULL)
+Null::Null():ASObject(nullptr,nullptr,T_NULL)
 {
 	traitsInitialized = true;
 	constructIndicator = true;
 	constructorCallComplete = true;
 }
 
-Undefined::Undefined():ASObject((Class_base*)(NULL),T_UNDEFINED)
+Undefined::Undefined():ASObject(nullptr,nullptr,T_UNDEFINED)
 {
 	traitsInitialized = true;
 	constructIndicator = true;
@@ -119,14 +119,14 @@ int64_t Undefined::toInt64()
 	return 0;
 }
 
-ASObject *Undefined::describeType() const
+ASObject *Undefined::describeType(ASWorker* wrk) const
 {
-	return ASObject::describeType();
+	return ASObject::describeType(wrk);
 }
 
 void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap)
+				std::map<const Class_base*, uint32_t>& traitsMap,ASWorker* wrk)
 {
 	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 		out->writeByte(amf0_undefined_marker);
@@ -134,14 +134,14 @@ void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 		out->writeByte(undefined_marker);
 }
 
-multiname *Undefined::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *Undefined::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
 	LOG(LOG_ERROR,"trying to set variable on undefined:"<<name <<" "<<asAtomHandler::toDebugString(o));
 	throwError<TypeError>(kConvertUndefinedToObjectError);
 	return nullptr;
 }
 
-IFunction::IFunction(Class_base* c,CLASS_SUBTYPE st):ASObject(c,T_FUNCTION,st),length(0),inClass(nullptr),isStatic(false),clonedFrom(nullptr),functionname(0)
+IFunction::IFunction(ASWorker* wrk,Class_base* c,CLASS_SUBTYPE st):ASObject(wrk,c,T_FUNCTION,st),length(0),inClass(nullptr),isStatic(false),clonedFrom(nullptr),functionname(0)
 {
 }
 
@@ -165,10 +165,10 @@ ASFUNCTIONBODY_ATOM(IFunction,_length)
 	if (asAtomHandler::is<IFunction>(obj))
 	{
 		IFunction* th=asAtomHandler::as<IFunction>(obj);
-		asAtomHandler::setUInt(ret,sys,th->length);
+		asAtomHandler::setUInt(ret,wrk,th->length);
 	}
 	else
-		asAtomHandler::setUInt(ret,sys,1);
+		asAtomHandler::setUInt(ret,wrk,1);
 }
 
 ASFUNCTIONBODY_ATOM(IFunction,apply)
@@ -188,7 +188,7 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
 		{
 			//get the current global object
-			call_context* cc = getWorker() ? getWorker()->currentCallContext :getVm(th->getSystemState())->currentCallContext;
+			call_context* cc = wrk->currentCallContext;
 			if (!cc)
 			{
 				if (argslen == 0)
@@ -223,7 +223,7 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 	if (asAtomHandler::is<AVM1Function>(obj))
 		asAtomHandler::as<AVM1Function>(obj)->call(&ret,&newObj,newArgs,newArgsLen);
 	else
-		asAtomHandler::callFunction(obj,ret,newObj,newArgs,newArgsLen,false);
+		asAtomHandler::callFunction(obj,wrk,ret,newObj,newArgs,newArgsLen,false);
 	if (newArgs)
 		delete[] newArgs;
 }
@@ -242,7 +242,7 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
 		{
 			//get the current global object
-			call_context* cc = getWorker() ? getWorker()->currentCallContext : getVm(th->getSystemState())->currentCallContext;
+			call_context* cc = wrk->currentCallContext;
 			if (!cc)
 			{
 				if (argslen == 0)
@@ -275,25 +275,25 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 	if (asAtomHandler::is<AVM1Function>(obj))
 		asAtomHandler::as<AVM1Function>(obj)->call(&ret,&newObj,newArgs,newArgsLen);
 	else
-		asAtomHandler::callFunction(obj,ret,newObj,newArgs,newArgsLen,false);
+		asAtomHandler::callFunction(obj,wrk,ret,newObj,newArgs,newArgsLen,false);
 }
 
 ASFUNCTIONBODY_ATOM(IFunction,_toString)
 {
 	if (asAtomHandler::is<Class_base>(obj))
-		ret = asAtomHandler::fromString(sys,"[class Function]");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"[class Function]");
 	else
-		ret = asAtomHandler::fromString(sys,"function Function() {}");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"function Function() {}");
 }
 
-void Class<IFunction>::generator(asAtom& ret,asAtom* args, const unsigned int argslen)
+void Class<IFunction>::generator(ASWorker* wrk, asAtom& ret,asAtom* args, const unsigned int argslen)
 {
 	if (argslen > 0)
 		throwError<EvalError>(kFunctionConstructorError);
 	ret = asAtomHandler::fromObject(getNopFunction());
 }
 
-ASObject *IFunction::describeType() const
+ASObject *IFunction::describeType(ASWorker* wrk) const
 {
 	pugi::xml_document p;
 	pugi::xml_node root = p.append_child("type");
@@ -309,7 +309,7 @@ ASObject *IFunction::describeType() const
 	// TODO: accessor
 	LOG(LOG_NOT_IMPLEMENTED, "describeType for Function not completely implemented");
 
-	return XML::createFromNode(root);
+	return XML::createFromNode(wrk, root);
 }
 
 std::string IFunction::toDebugString()
@@ -327,7 +327,7 @@ std::string IFunction::toDebugString()
 }
 void IFunction::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap)
+				std::map<const Class_base*, uint32_t>& traitsMap,ASWorker* wrk)
 {
 	// according to avmplus functions are "serialized" as undefined
 	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
@@ -336,12 +336,36 @@ void IFunction::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 		out->writeByte(undefined_marker);
 }
 
-SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(nullptr),simpleGetterOrSetterName(nullptr),fromNewFunction(false),func_scope(NullRef)
+SyntheticFunction::SyntheticFunction(ASWorker* wrk, Class_base* c, method_info* m):IFunction(wrk,c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(nullptr),simpleGetterOrSetterName(nullptr),fromNewFunction(false),func_scope(NullRef)
 {
 	if(mi)
 		length = mi->numArgs();
-	// use second freelist, first is used by Function class
-	objfreelist = &c->freelist[1];
+	objfreelist = &wrk->freelist_syntheticfunction;
+}
+
+IFunction* SyntheticFunction::clone(ASWorker* wrk)
+{
+	SyntheticFunction* ret = wrk->freelist_syntheticfunction.getObjectFromFreeList()->as<SyntheticFunction>();
+	if (!ret)
+	{
+		ret=new (getClass()->memoryAccount) SyntheticFunction(*this);
+	}
+	else
+	{
+		ret->resetCached();
+		ret->mi = mi;
+		ret->val = val;
+		ret->length = length;
+		ret->inClass = inClass;
+		ret->func_scope = func_scope;
+		ret->functionname = functionname;
+		ret->fromNewFunction = fromNewFunction;
+	}
+	ret->setWorker(wrk);
+	ret->objfreelist = &wrk->freelist_syntheticfunction;
+	ret->subtype = this->subtype;
+	ret->isStatic = this->isStatic;
+	return ret;
 }
 
 /**
@@ -349,7 +373,7 @@ SyntheticFunction::SyntheticFunction(Class_base* c,method_info* m):IFunction(c,S
  * by ABCVm::executeFunction() or through JIT.
  * It consumes one reference of obj and one of each arg
  */
-void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs,bool coerceresult, bool coercearguments)
+void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs, bool coerceresult, bool coercearguments)
 {
 	const method_body_info::CODE_STATUS& codeStatus = mi->body->codeStatus;
 	if (codeStatus == method_body_info::PRELOADING)
@@ -357,13 +381,14 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		// this is a call to this method during preloading, it can happen when constructing objects for optimization detection
 		return;
 	}
-	ASWorker* worker = getSystemState()->singleworker ? nullptr : getWorker();
-	call_context* saved_cc = worker ? worker->incStack(obj,this->functionname) : getVm(getSystemState())->incStack(obj,this->functionname);
+	assert(wrk == getWorker());
+	call_context* saved_cc = wrk->incStack(obj,this->functionname);
 	if (codeStatus != method_body_info::PRELOADED && codeStatus != method_body_info::USED)
 	{
 		mi->body->codeStatus = method_body_info::PRELOADING;
 		mi->cc.sys = getSystemState();
-		ABCVm::preloadFunction(this);
+		mi->cc.worker=wrk;
+		ABCVm::preloadFunction(this,wrk);
 		mi->body->codeStatus = method_body_info::PRELOADED;
 		mi->cc.exec_pos = mi->body->preloadedcode.data();
 		mi->cc.locals = new asAtom[mi->body->getReturnValuePos()+1+mi->body->localresultcount];
@@ -393,7 +418,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		 * This is in accordance with the proprietary player. */
 		if(isMethod() || mi->hasExplicitTypes)
 			throwError<ArgumentError>(kWrongArgumentCountError,
-						  asAtomHandler::toObject(obj,getSystemState())->getClassName(),
+						  asAtomHandler::toObject(obj,wrk)->getClassName(),
 						  Integer::toString(mi->numArgs()-mi->numOptions()),
 						  Integer::toString(numArgs));
 	}
@@ -423,7 +448,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	{
 		//The arguments does not contain default values of optional parameters,
 		//i.e. f(a,b=3) called as f(7) gives arguments = { 7 }
-		argumentsArray=Class<Array>::getInstanceSNoArgs(getSystemState());
+		argumentsArray=Class<Array>::getInstanceSNoArgs(wrk);
 		argumentsArray->resize(numArgs);
 		for(uint32_t j=0;j<numArgs;j++)
 		{
@@ -441,6 +466,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	{
 		cc = new call_context(mi);
 		cc->sys = getSystemState();
+		cc->worker=wrk;
 		cc->locals= g_newa(asAtom, mi->body->getReturnValuePos()+1+mi->body->localresultcount);
 		cc->stack = g_newa(asAtom, mi->body->max_stack+1);
 		cc->scope_stack=g_newa(asAtom, mi->body->max_scope_depth);
@@ -456,6 +482,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	else
 	{
 		cc = &mi->cc;
+		assert(cc->worker==wrk);
 	}
 	cc->exec_pos = mi->body->preloadedcode.data();
 	cc->parent_scope_stack=func_scope.getPtr();
@@ -464,10 +491,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	cc->stackp = cc->stack;
 
 	/* Set the current global object, each script in each DoABCTag has its own */
-	if (worker)
-		worker->currentCallContext = cc;
-	else
-		getVm(getSystemState())->currentCallContext = cc;
+	wrk->currentCallContext = cc;
 
 	cc->locals[0]=obj;
 
@@ -480,7 +504,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		for(asAtom* i=cc->locals+1;i< lastlocalpasssed;++i)
 		{
 			*i = *argp++;
-			(*itpartype++)->coerce(getSystemState(),*i);
+			(*itpartype++)->coerce(getInstanceWorker(),*i);
 		}
 	}
 	else if (args)
@@ -495,7 +519,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		if(iOptional >= 0)
 		{
 			mi->getOptional(cc->locals[i+1],iOptional);
-			mi->paramTypes[i]->coerce(getSystemState(),cc->locals[i+1]);
+			mi->paramTypes[i]->coerce(wrk,cc->locals[i+1]);
 		} else {
 			assert(mi->paramTypes[i] == Type::anyType);
 			cc->locals[i+1]=asAtomHandler::undefinedAtom;
@@ -513,8 +537,8 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	}
 	else if(mi->needsRest())
 	{
-		assert_and_throw(argumentsArray==NULL);
-		Array* rest=Class<Array>::getInstanceSNoArgs(getSystemState());
+		assert_and_throw(argumentsArray==nullptr);
+		Array* rest=Class<Array>::getInstanceSNoArgs(wrk);
 		rest->resize(passedToRest);
 		//Give the reference of the other args to an array
 		for(uint32_t j=0;j<passedToRest;j++)
@@ -533,7 +557,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		this->incRef();
 
 #ifndef NDEBUG
-	if (!worker)
+	if (wrk->isPrimordial)
 		Log::calls_indent++;
 #endif
 	while (true)
@@ -545,7 +569,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 				if(codeStatus == method_body_info::OPTIMIZED && getSystemState()->useFastInterpreter)
 				{
 					//This is a mildy hot function, execute it using the fast interpreter
-					ret=asAtomHandler::fromObject(ABCVm::executeFunctionFast(this,cc,asAtomHandler::toObject(obj,getSystemState())));
+					ret=asAtomHandler::fromObject(ABCVm::executeFunctionFast(this,cc,asAtomHandler::toObject(obj,wrk)));
 				}
 				else
 				{
@@ -614,9 +638,9 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 			}
 			if (no_handler)
 			{
-				worker ? worker->decStack(saved_cc) : getVm(getSystemState())->decStack(saved_cc);
+				wrk->decStack(saved_cc);
 #ifndef NDEBUG
-				if (!worker)
+				if (!wrk)
 					Log::calls_indent--;
 #endif
 				throw;
@@ -625,9 +649,9 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 		}
 		break;
 	}
-	worker ? worker->decStack(saved_cc) : getVm(getSystemState())->decStack(saved_cc);
+	wrk->decStack(saved_cc);
 #ifndef NDEBUG
-	if (!worker)
+	if (wrk->isPrimordial)
 		Log::calls_indent--;
 #endif
 
@@ -637,7 +661,7 @@ void SyntheticFunction::call(asAtom& ret, asAtom& obj, asAtom *args, uint32_t nu
 	if (coerceresult || mi->needscoerceresult)
 	{
 		asAtom v = ret;
-		if (mi->returnType->coerce(getSystemState(),ret))
+		if (mi->returnType->coerce(getInstanceWorker(),ret))
 			ASATOM_DECREF(v);
 	}
 
@@ -764,6 +788,28 @@ bool SyntheticFunction::canSkipCoercion(int param, Class_base *cls)
 		(mi->paramTypes[param] == Class<Number>::getRef(getSystemState()).getPtr() ||
 			mi->paramTypes[param] == Class<Integer>::getRef(getSystemState()).getPtr() ||
 			mi->paramTypes[param] == Class<UInteger>::getRef(getSystemState()).getPtr()));
+}
+
+IFunction* Function::clone(ASWorker* wrk)
+{
+	Function* ret = wrk->freelist[getClass()->classID].getObjectFromFreeList()->as<Function>();
+	if (!ret)
+		ret=new (getClass()->memoryAccount) Function(*this);
+	else
+	{
+		ret->val_atom = val_atom;
+		ret->length = length;
+		ret->inClass = inClass;
+		ret->functionname = functionname;
+		ret->resetCached();
+		ret->returnType = returnType;
+		ret->returnTypeAllArgsInt = returnTypeAllArgsInt;
+	}
+	ret->setWorker(wrk);
+	ret->objfreelist = &wrk->freelist[getClass()->classID];
+	ret->subtype = this->subtype;
+	ret->isStatic = this->isStatic;
+	return ret;
 }
 
 bool Function::isEqual(ASObject* r)
@@ -900,14 +946,14 @@ TRISTATE Null::isLessAtom(asAtom& r)
 	}
 }
 
-int32_t Null::getVariableByMultiname_i(const multiname& name)
+int32_t Null::getVariableByMultiname_i(const multiname& name, ASWorker* wrk)
 {
 	LOG(LOG_ERROR,"trying to get variable on null:"<<name);
 	throwError<TypeError>(kConvertNullToObjectError);
 	return 0;
 }
 
-GET_VARIABLE_RESULT Null::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT Null::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
 	LOG(LOG_ERROR,"trying to get variable on null:"<<name);
 	throwError<TypeError>(kConvertNullToObjectError);
@@ -925,7 +971,7 @@ int64_t Null::toInt64()
 
 void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap)
+				std::map<const Class_base*, uint32_t>& traitsMap,ASWorker* wrk)
 {
 	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 		out->writeByte(amf0_null_marker);
@@ -933,7 +979,7 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 		out->writeByte(null_marker);
 }
 
-multiname *Null::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *Null::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
 	LOG(LOG_ERROR,"trying to set variable on null:"<<name<<" value:"<<asAtomHandler::toDebugString(o));
 	ASATOM_DECREF(o);
@@ -941,7 +987,7 @@ multiname *Null::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWE
 	return nullptr;
 }
 
-const Type* Type::getBuiltinType(SystemState* sys, multiname* mn)
+const Type* Type::getBuiltinType(ASWorker* wrk, multiname* mn)
 {
 	if(mn->isStatic && mn->cachedType)
 		return mn->cachedType;
@@ -959,7 +1005,7 @@ const Type* Type::getBuiltinType(SystemState* sys, multiname* mn)
 	//Check if the class has already been defined
 	ASObject* target;
 	asAtom tmp=asAtomHandler::invalidAtom;
-	sys->systemDomain->getVariableAndTargetByMultiname(tmp,*mn, target);
+	wrk->getSystemState()->systemDomain->getVariableAndTargetByMultiname(tmp,*mn, target,wrk);
 	if(asAtomHandler::isClass(tmp))
 	{
 		if (mn->isStatic)
@@ -1007,9 +1053,9 @@ const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context)
 	{
 		ASObject* target;
 		asAtom o=asAtomHandler::invalidAtom;
-		context->root->applicationDomain->getVariableAndTargetByMultiname(o,*mn,target);
+		context->root->applicationDomain->getVariableAndTargetByMultiname(o,*mn,target,context->root->getInstanceWorker());
 		if (asAtomHandler::isValid(o))
-			typeObject=asAtomHandler::toObject(o,context->root->getSystemState());
+			typeObject=asAtomHandler::toObject(o,context->root->getInstanceWorker());
 	}
 	if(!typeObject)
 	{
@@ -1051,17 +1097,17 @@ const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context)
 	return typeObject ? typeObject->as<Type>() : nullptr;
 }
 
-Class_base::Class_base(const QName& name, MemoryAccount* m):ASObject(Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),
+Class_base::Class_base(const QName& name, uint32_t _classID, MemoryAccount* m):ASObject(getSys()->worker,Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),
 	qualifiedClassnameID(UINT32_MAX),global(nullptr),borrowedVariables(m),
-	context(nullptr),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
+	context(nullptr),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false),classID(_classID)
 {
 	setSystemState(getSys());
 	setRefConstant();
 }
 
-Class_base::Class_base(const Class_object*):ASObject((MemoryAccount*)nullptr),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(nullptr),
+Class_base::Class_base(const Class_object* c):ASObject((MemoryAccount*)nullptr),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(nullptr),
 	qualifiedClassnameID(UINT32_MAX),global(nullptr),borrowedVariables(nullptr),
-	context(nullptr),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(nullptr),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false)
+	context(nullptr),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(nullptr),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false),classID(UINT32_MAX)
 {
 	type=T_CLASS;
 	//We have tested that (Class is Class == true) so the classdef is 'this'
@@ -1115,7 +1161,7 @@ void Class_base::initStandardProps()
 }
 
 
-bool Class_base::coerce(SystemState* sys, asAtom& o) const
+bool Class_base::coerce(ASWorker* wrk, asAtom& o) const
 {
 	switch (asAtomHandler::getObjectType(o))
 	{
@@ -1128,7 +1174,7 @@ bool Class_base::coerce(SystemState* sys, asAtom& o) const
 		case T_UINTEGER:
 		case T_NUMBER:
 			// int/uint/number are interchangeable
-			if(this == Class<Number>::getRef(sys).getPtr() || this == Class<UInteger>::getRef(sys).getPtr() || this == Class<Integer>::getRef(sys).getPtr())
+			if(this == Class<Number>::getRef(getSystemState()).getPtr() || this == Class<UInteger>::getRef(getSystemState()).getPtr() || this == Class<Integer>::getRef(getSystemState()).getPtr())
 				return false;
 			break;
 		default:
@@ -1142,7 +1188,7 @@ bool Class_base::coerce(SystemState* sys, asAtom& o) const
 		|| (class_name.nameId==BUILTIN_STRINGS::STRING_CLASS && class_name.nsStringId==BUILTIN_STRINGS::EMPTY))
 			return false; /* 'this' is the type of a class */
 		else
-			throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(o,sys)->getClassName(), getQualifiedClassName());
+			throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(o,wrk)->getClassName(), getQualifiedClassName());
 	}
 	if (asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<ObjectConstructor>())
 		return false;
@@ -1150,11 +1196,11 @@ bool Class_base::coerce(SystemState* sys, asAtom& o) const
 	//o->getClass() == NULL for primitive types
 	//those are handled in overloads Class<Number>::coerce etc.
 	if(!asAtomHandler::getObject(o) ||  !asAtomHandler::getObject(o)->getClass() || !asAtomHandler::getObject(o)->getClass()->isSubClass(this))
-		throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(o,sys)->getClassName(), getQualifiedClassName());
+		throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(o,wrk)->getClassName(), getQualifiedClassName());
 	return false;
 }
 
-void Class_base::coerceForTemplate(SystemState *sys, asAtom &o) const
+void Class_base::coerceForTemplate(ASWorker* wrk, asAtom &o) const
 {
 	switch (asAtomHandler::getObjectType(o))
 	{
@@ -1165,15 +1211,15 @@ void Class_base::coerceForTemplate(SystemState *sys, asAtom &o) const
 			return;
 		case T_UINTEGER:
 		case T_INTEGER:
-			if(this == Class<Integer>::getRef(sys).getPtr() || this == Class<UInteger>::getRef(sys).getPtr())
+			if(this == Class<Integer>::getRef(getSystemState()).getPtr() || this == Class<UInteger>::getRef(getSystemState()).getPtr())
 				return;
 			break;
 		case T_NUMBER:
-			if(this == Class<Number>::getRef(sys).getPtr())
+			if(this == Class<Number>::getRef(getSystemState()).getPtr())
 				return;
 			break;
 		case T_STRING:
-			if(this == Class<ASString>::getRef(sys).getPtr())
+			if(this == Class<ASString>::getRef(getSystemState()).getPtr())
 				return;
 			break;
 		default:
@@ -1183,7 +1229,7 @@ void Class_base::coerceForTemplate(SystemState *sys, asAtom &o) const
 		return;
 
 	if(!asAtomHandler::getObject(o) || !asAtomHandler::getObject(o)->getClass() || !asAtomHandler::getObject(o)->getClass()->isSubClass(this))
-		throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(o,sys)->getClassName(), getQualifiedClassName());
+		throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(o,wrk)->getClassName(), getQualifiedClassName());
 }
 
 void Class_base::setSuper(Ref<Class_base> super_)
@@ -1198,9 +1244,9 @@ ASFUNCTIONBODY_ATOM(Class_base,_toString)
 	Class_base* th = asAtomHandler::as<Class_base>(obj);
 	tiny_string res;
 	res = "[class ";
-	res += sys->getStringFromUniqueId(th->class_name.nameId);
+	res += wrk->getSystemState()->getStringFromUniqueId(th->class_name.nameId);
 	res += "]";
-	ret = asAtomHandler::fromString(sys,res);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),res);
 }
 
 void Class_base::addConstructorGetter()
@@ -1222,7 +1268,7 @@ Class_base::~Class_base()
 {
 }
 
-void Class_base::_getter_constructorprop(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen)
+void Class_base::_getter_constructorprop(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen)
 {
 	Class_base* th = nullptr;
 	if(asAtomHandler::is<Class_base>(obj))
@@ -1230,38 +1276,39 @@ void Class_base::_getter_constructorprop(asAtom& ret, SystemState* sys, asAtom& 
 	else
 		th = asAtomHandler::getObject(obj)->getClass();
 	if(argslen != 0)
-		throw Class<ArgumentError>::getInstanceS(th->getSystemState(),"Arguments provided in getter");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter");
 	ASObject* res=th->constructorprop.getPtr();
 	res->incRef();
 	ret = asAtomHandler::fromObject(res);
 }
 
-Prototype* Class_base::getPrototype() const
+Prototype* Class_base::getPrototype(ASWorker* wrk) const
 {
+	assert(wrk==getWorker());
 	// workers need their own prototype objects for every class
-	if (prototype.isNull() || this->is<Class_inherit>() || getSystemState()->singleworker || !getWorker())
+	if (prototype.isNull() || this->is<Class_inherit>() || wrk->isPrimordial)
 		return prototype.getPtr();
 	else
-		return getWorker()->getClassPrototype(this);
+		return wrk->getClassPrototype(this);
 }
 
 
-void Class_base::_getter_prototype(asAtom& ret, SystemState* sys,asAtom& obj, asAtom* args, const unsigned int argslen)
+void Class_base::_getter_prototype(asAtom& ret, ASWorker* wrk,asAtom& obj, asAtom* args, const unsigned int argslen)
 {
 	if(!asAtomHandler::is<Class_base>(obj))
-		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
 	Class_base* th = asAtomHandler::as<Class_base>(obj);
 	if(argslen != 0)
-		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter");
 	
-	ret = asAtomHandler::fromObject(th->getPrototype()->getObj());
+	ret = asAtomHandler::fromObject(th->getPrototype(wrk)->getObj());
 	ASATOM_INCREF(ret);
 }
 ASFUNCTIONBODY_GETTER(Class_base, length)
 
-void Class_base::generator(asAtom& ret, asAtom* args, const unsigned int argslen)
+void Class_base::generator(ASWorker* wrk, asAtom& ret, asAtom* args, const unsigned int argslen)
 {
-	ASObject::generator(ret,getSystemState(),asAtomHandler::invalidAtom, args, argslen);
+	ASObject::generator(ret,wrk,asAtomHandler::invalidAtom, args, argslen);
 }
 
 void Class_base::addImplementedInterface(const multiname& i)
@@ -1301,7 +1348,7 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 		ASATOM_INCREF(target);
 		asAtom ret=asAtomHandler::invalidAtom;
 		asAtom c = asAtomHandler::fromObject(constructor);
-		asAtomHandler::callFunction(c,ret,target,args,argslen,true);
+		asAtomHandler::callFunction(c,asAtomHandler::getObjectNoCheck(target)->getInstanceWorker(),ret,target,args,argslen,true);
 		asAtomHandler::getObject(target)->constructIndicator = true;
 		target = asAtomHandler::fromObject(asAtomHandler::getObject(target));
 		LOG_CALL("handleConstruction done for "<<asAtomHandler::toDebugString(target));
@@ -1357,7 +1404,7 @@ void Class_base::finalize()
 	use_protected = false;
 }
 
-Template_base::Template_base(QName name) : ASObject((Class_base*)(nullptr)),template_name(name)
+Template_base::Template_base(ASWorker* wrk,QName name) : ASObject(wrk,(Class_base*)(nullptr)),template_name(name)
 {
 	type = T_TEMPLATE;
 }
@@ -1366,13 +1413,13 @@ void Template_base::addPrototypeGetter(SystemState* sys)
 	this->setSystemState(sys);
 	setDeclaredMethodByQName("prototype","",Class<IFunction>::getFunction(sys,_getter_prototype),GETTER_METHOD,false);
 }
-void Template_base::_getter_prototype(asAtom& ret, SystemState* sys,asAtom& obj, asAtom* args, const unsigned int argslen)
+void Template_base::_getter_prototype(asAtom& ret, ASWorker* wrk,asAtom& obj, asAtom* args, const unsigned int argslen)
 {
 	if(!asAtomHandler::is<Template_base>(obj))
-		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
 	Template_base* th = asAtomHandler::as<Template_base>(obj);
 	if(argslen != 0)
-		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter");
 	ASObject* res=th->prototype->getObj();
 	res->incRef();
 	ret = asAtomHandler::fromObject(res);
@@ -1390,6 +1437,7 @@ Class_object* Class_object::getClass(SystemState *sys)
 	{
 		//Create the class
 		ret=new (sys->unaccountedMemory) Class_object();
+		ret->setWorker(sys->worker);
 		ret->setSystemState(sys);
 		ret->incRef();
 		*retAddr=ret;
@@ -1412,7 +1460,7 @@ const std::vector<Class_base*>& Class_base::getInterfaces(bool *alldefined) cons
 		{
 			ASObject* target;
 			asAtom interface_obj=asAtomHandler::invalidAtom;
-			this->context->root->applicationDomain->getVariableAndTargetByMultiname(interface_obj,*it, target);
+			this->context->root->applicationDomain->getVariableAndTargetByMultiname(interface_obj,*it, target,context->root->getInstanceWorker());
 			if (asAtomHandler::isValid(interface_obj))
 			{
 				assert_and_throw(asAtomHandler::isClass(interface_obj));
@@ -1460,8 +1508,8 @@ void Class_base::linkInterface(Class_base* c) const
 		LOG_CALL("Calling interface init for " << class_name);
 		asAtom v = asAtomHandler::fromObject(c);
 		asAtom ret=asAtomHandler::invalidAtom;
-		asAtom c = asAtomHandler::fromObject(constructor);
-		asAtomHandler::callFunction(c,ret,v,NULL,0,false);
+		asAtom constr = asAtomHandler::fromObject(constructor);
+		asAtomHandler::callFunction(constr,context->root->getInstanceWorker(),ret,v,nullptr,0,false);
 		assert_and_throw(asAtomHandler::isInvalid(ret));
 	}
 }
@@ -1532,7 +1580,7 @@ tiny_string Class_base::getName() const
 			  : this->getSystemState()->getStringFromUniqueId(class_name.nsStringId) +"$"+ this->getSystemState()->getStringFromUniqueId(class_name.nameId));
 }
 
-ASObject *Class_base::describeType() const
+ASObject *Class_base::describeType(ASWorker* wrk) const
 {
 	pugi::xml_document p;
 	pugi::xml_node root = p.append_child("type");
@@ -1565,7 +1613,7 @@ ASObject *Class_base::describeType() const
 	node=root.append_child("factory");
 	node.append_attribute("type").set_value(getQualifiedClassName().raw_buf());
 	describeInstance(node,false,false);
-	return XML::createFromNode(root);
+	return XML::createFromNode(wrk,root);
 }
 
 void Class_base::describeInstance(pugi::xml_node& root, bool istemplate,bool forinstance) const
@@ -1931,7 +1979,7 @@ bool Class_base::checkExistingFunction(const multiname &name)
 	return false;
 }
 
-void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name)
+void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name, ASWorker* wrk)
 {
 	uint32_t nsRealId;
 	variable* obj = ASObject::findGettableImpl(getSystemState(), borrowedVariables,name,&nsRealId);
@@ -1969,7 +2017,7 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name)
 		//Call the getter
 		LOG_CALL("Calling the getter for " << name << " on " << asAtomHandler::toDebugString(obj->getter));
 		assert(asAtomHandler::isFunction(obj->getter));
-		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,asAtomHandler::getClosure(obj->getter) ? asAtomHandler::getClosure(obj->getter) : this);
+		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,asAtomHandler::getClosure(obj->getter) ? asAtomHandler::getClosure(obj->getter) : this,wrk);
 		LOG_CALL("End of getter"<< ' ' << asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
 		return;
 	}
@@ -1987,7 +2035,7 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name)
 			else
 			{
 				LOG_CALL("Attaching this class " << this->toDebugString() << " to function " << name << " "<<asAtomHandler::toDebugString(obj->var));
-				asAtomHandler::setFunction(ret,asAtomHandler::getObject(obj->var),nullptr);
+				asAtomHandler::setFunction(ret,asAtomHandler::getObject(obj->var),nullptr,wrk);
 			}
 		}
 		else
@@ -2016,42 +2064,54 @@ void Class_base::removeAllDeclaredProperties()
 	borrowedVariables.removeAllDeclaredProperties();
 }
 
-multiname* Class_base::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname* Class_base::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
-	Prototype* pr = this->getPrototype();
+	Prototype* pr = this->getPrototype(wrk);
 	ASObject* dynvars =pr ? pr->getWorkerDynamicClassVars() : nullptr;
 	if (dynvars)
 	{
-		if (ASObject::hasPropertyByMultiname(name,false,false))
-			return setVariableByMultiname_intern(name,o,allowConst,this->getClass(),alreadyset);
+		if (ASObject::hasPropertyByMultiname(name,false,false,wrk))
+			return setVariableByMultiname_intern(name,o,allowConst,this->getClass(),alreadyset,wrk);
 		else 
-			return dynvars->setVariableByMultiname(name,o,allowConst,alreadyset);
+			return dynvars->setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 	}
-	return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset);
+	return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 }
 
-GET_VARIABLE_RESULT Class_base::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT Class_base::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
-	Prototype* pr = this->getPrototype();
+	Prototype* pr = this->getPrototype(wrk);
 	ASObject* dynvars =pr ? pr->getWorkerDynamicClassVars() : nullptr;
 	if (dynvars == nullptr)
-		return ASObject::getVariableByMultiname(ret,name,opt);
-	GET_VARIABLE_RESULT res = dynvars->getVariableByMultiname(ret,name,opt);
+		return ASObject::getVariableByMultiname(ret,name,opt,wrk);
+	GET_VARIABLE_RESULT res = dynvars->getVariableByMultiname(ret,name,opt,wrk);
 	if (asAtomHandler::isValid(ret))
 		return res;
-	return ASObject::getVariableByMultiname(ret,name,opt);
+	return ASObject::getVariableByMultiname(ret,name,opt,wrk);
 }
 
-bool Class_base::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype)
+bool Class_base::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype,ASWorker* wrk)
 {
-	Prototype* pr = this->getPrototype();
+	Prototype* pr = this->getPrototype(wrk);
 	ASObject* dynvars =pr ? pr->getWorkerDynamicClassVars() : nullptr;
-	if (dynvars && considerDynamic && dynvars->hasPropertyByMultiname(name,considerDynamic, false))
+	if (dynvars && considerDynamic && dynvars->hasPropertyByMultiname(name,considerDynamic, false,wrk))
 		return true;
-	return ASObject::hasPropertyByMultiname(name,considerDynamic, considerPrototype);
+	return ASObject::hasPropertyByMultiname(name,considerDynamic, considerPrototype,wrk);
 }
 
-ASQName::ASQName(Class_base* c):ASObject(c,T_QNAME),uri_is_null(false),uri(0),local_name(0)
+variable* Class_base::findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t* nsRealID, bool* isborrowed, bool considerdynamic, ASWorker* wrk)
+{
+	variable* v=nullptr;
+	Prototype* pr = this->getPrototype(wrk);
+	ASObject* dynvars =pr ? pr->getWorkerDynamicClassVars() : nullptr;
+	if (dynvars)
+		v = dynvars->findVariableByMultiname(name,cls,nsRealID,isborrowed,true,wrk);
+	if (!v)
+		v = ASObject::findVariableByMultiname(name,cls,nsRealID,isborrowed,considerdynamic,wrk);
+	return v;
+}
+
+ASQName::ASQName(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_QNAME),uri_is_null(false),uri(0),local_name(0)
 {
 }
 void ASQName::setByXML(XML* node)
@@ -2081,7 +2141,7 @@ ASFUNCTIONBODY_ATOM(ASQName,_constructor)
 	{
 		th->local_name=BUILTIN_STRINGS::EMPTY;
 		th->uri_is_null=false;
-		th->uri=sys->getUniqueStringId(getVm(sys)->getDefaultXMLNamespace());
+		th->uri=wrk->getSystemState()->getUniqueStringId(wrk->getDefaultXMLNamespace());
 		return;
 	}
 	if(argslen==1)
@@ -2109,7 +2169,7 @@ ASFUNCTIONBODY_ATOM(ASQName,_constructor)
 	else if(asAtomHandler::isUndefined(nameval))
 		th->local_name=BUILTIN_STRINGS::EMPTY;
 	else
-		th->local_name=asAtomHandler::toStringId(nameval,sys);
+		th->local_name=asAtomHandler::toStringId(nameval,wrk);
 
 	// Set uri
 	th->uri_is_null=false;
@@ -2122,7 +2182,7 @@ ASFUNCTIONBODY_ATOM(ASQName,_constructor)
 		}
 		else
 		{
-			th->uri=getVm(sys)->getDefaultXMLNamespaceID();
+			th->uri=wrk->getDefaultXMLNamespaceID();
 		}
 	}
 	else if(asAtomHandler::isNull(namespaceval))
@@ -2139,12 +2199,12 @@ ASFUNCTIONBODY_ATOM(ASQName,_constructor)
 			th->uri=q->uri;
 		}
 		else if (asAtomHandler::isValid(namespaceval))
-			th->uri=asAtomHandler::toStringId(namespaceval,sys);
+			th->uri=asAtomHandler::toStringId(namespaceval,wrk);
 	}
 }
 ASFUNCTIONBODY_ATOM(ASQName,generator)
 {
-	ASQName* th=Class<ASQName>::getInstanceS(sys);
+	ASQName* th=Class<ASQName>::getInstanceS(wrk);
 	assert_and_throw(argslen<3);
 
 	asAtom nameval=asAtomHandler::invalidAtom;
@@ -2154,7 +2214,7 @@ ASFUNCTIONBODY_ATOM(ASQName,generator)
 	{
 		th->local_name=BUILTIN_STRINGS::EMPTY;
 		th->uri_is_null=false;
-		th->uri=getVm(sys)->getDefaultXMLNamespaceID();
+		th->uri=wrk->getDefaultXMLNamespaceID();
 		ret = asAtomHandler::fromObject(th);
 		return;
 	}
@@ -2185,7 +2245,7 @@ ASFUNCTIONBODY_ATOM(ASQName,generator)
 	else if(asAtomHandler::isUndefined(nameval))
 		th->local_name=BUILTIN_STRINGS::EMPTY;
 	else
-		th->local_name=asAtomHandler::toStringId(nameval,sys);
+		th->local_name=asAtomHandler::toStringId(nameval,wrk);
 
 	// Set uri
 	th->uri_is_null=false;
@@ -2198,7 +2258,7 @@ ASFUNCTIONBODY_ATOM(ASQName,generator)
 		}
 		else
 		{
-			th->uri=getVm(sys)->getDefaultXMLNamespaceID();
+			th->uri=wrk->getDefaultXMLNamespaceID();
 		}
 	}
 	else if(asAtomHandler::isNull(namespaceval))
@@ -2215,7 +2275,7 @@ ASFUNCTIONBODY_ATOM(ASQName,generator)
 			th->uri=q->uri;
 		}
 		else if (asAtomHandler::isValid(namespaceval))
-			th->uri=asAtomHandler::toStringId(namespaceval,sys);
+			th->uri=asAtomHandler::toStringId(namespaceval,wrk);
 	}
 	ret = asAtomHandler::fromObject(th);
 }
@@ -2238,9 +2298,9 @@ ASFUNCTIONBODY_ATOM(ASQName,_getLocalName)
 ASFUNCTIONBODY_ATOM(ASQName,_toString)
 {
 	if(!asAtomHandler::is<ASQName>(obj))
-		throw Class<TypeError>::getInstanceS(sys,"QName.toString is not generic");
+		throw Class<TypeError>::getInstanceS(wrk,"QName.toString is not generic");
 	ASQName* th=asAtomHandler::as<ASQName>(obj);
-	ret = asAtomHandler::fromString(sys,th->toString());
+	ret = asAtomHandler::fromString(wrk->getSystemState(),th->toString());
 }
 
 bool ASQName::isEqual(ASObject* o)
@@ -2319,12 +2379,12 @@ void ASQName::nextValue(asAtom &ret, uint32_t index)
 	}
 }
 
-Namespace::Namespace(Class_base* c):ASObject(c,T_NAMESPACE),nskind(NAMESPACE),prefix_is_undefined(false),uri(BUILTIN_STRINGS::EMPTY),prefix(BUILTIN_STRINGS::EMPTY)
+Namespace::Namespace(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_NAMESPACE),nskind(NAMESPACE),prefix_is_undefined(false),uri(BUILTIN_STRINGS::EMPTY),prefix(BUILTIN_STRINGS::EMPTY)
 {
 }
 
-Namespace::Namespace(Class_base* c, uint32_t _uri, uint32_t _prefix, NS_KIND _nskind)
-  : ASObject(c,T_NAMESPACE),nskind(_nskind),prefix_is_undefined(false),uri(_uri),prefix(_prefix)
+Namespace::Namespace(ASWorker* wrk,Class_base* c, uint32_t _uri, uint32_t _prefix, NS_KIND _nskind)
+  : ASObject(wrk,c,T_NAMESPACE),nskind(_nskind),prefix_is_undefined(false),uri(_uri),prefix(_prefix)
 {
 }
 
@@ -2388,7 +2448,7 @@ ASFUNCTIONBODY_ATOM(Namespace,_constructor)
 		}
 		else
 		{
-			th->uri=asAtomHandler::toStringId(urival,sys);
+			th->uri=asAtomHandler::toStringId(urival,wrk);
 			if(th->uri!=BUILTIN_STRINGS::EMPTY)
 			{
 				th->prefix_is_undefined=true;
@@ -2406,32 +2466,32 @@ ASFUNCTIONBODY_ATOM(Namespace,_constructor)
 		}
 		else
 		{
-			th->uri=asAtomHandler::toStringId(urival,sys);
+			th->uri=asAtomHandler::toStringId(urival,wrk);
 		}
 
 		if(th->uri==BUILTIN_STRINGS::EMPTY)
 		{
 			if(asAtomHandler::isUndefined(prefixval) ||
-			   asAtomHandler::toString(prefixval,sys)=="")
+			   asAtomHandler::toString(prefixval,wrk)=="")
 				th->prefix=BUILTIN_STRINGS::EMPTY;
 			else
-				throw Class<TypeError>::getInstanceS(th->getSystemState(),"Namespace prefix for empty uri not allowed");
+				throw Class<TypeError>::getInstanceS(wrk,"Namespace prefix for empty uri not allowed");
 		}
 		else if(asAtomHandler::isUndefined(prefixval) ||
-			!isXMLName(th->getSystemState(),prefixval))
+			!isXMLName(wrk,prefixval))
 		{
 			th->prefix_is_undefined=true;
 			th->prefix=BUILTIN_STRINGS::EMPTY;
 		}
 		else
 		{
-			th->prefix=asAtomHandler::toStringId(prefixval,th->getSystemState());
+			th->prefix=asAtomHandler::toStringId(prefixval,wrk);
 		}
 	}
 }
 ASFUNCTIONBODY_ATOM(Namespace,generator)
 {
-	Namespace* th=Class<Namespace>::getInstanceS(getSys());
+	Namespace* th=Class<Namespace>::getInstanceS(wrk);
 	asAtom urival=asAtomHandler::invalidAtom;
 	asAtom prefixval=asAtomHandler::invalidAtom;
 	assert_and_throw(argslen<3);
@@ -2475,7 +2535,7 @@ ASFUNCTIONBODY_ATOM(Namespace,generator)
 		}
 		else
 		{
-			th->uri=asAtomHandler::toStringId(urival,th->getSystemState());
+			th->uri=asAtomHandler::toStringId(urival,wrk);
 			if(th->uri!=BUILTIN_STRINGS::EMPTY)
 			{
 				th->prefix_is_undefined=true;
@@ -2493,26 +2553,26 @@ ASFUNCTIONBODY_ATOM(Namespace,generator)
 		}
 		else
 		{
-			th->uri=asAtomHandler::toStringId(urival,th->getSystemState());
+			th->uri=asAtomHandler::toStringId(urival,wrk);
 		}
 
 		if(th->uri==BUILTIN_STRINGS::EMPTY)
 		{
 			if(asAtomHandler::isUndefined(prefixval) ||
-			   asAtomHandler::toString(prefixval,sys)=="")
+			   asAtomHandler::toString(prefixval,wrk)=="")
 				th->prefix=BUILTIN_STRINGS::EMPTY;
 			else
-				throw Class<TypeError>::getInstanceS(getSys(),"Namespace prefix for empty uri not allowed");
+				throw Class<TypeError>::getInstanceS(wrk,"Namespace prefix for empty uri not allowed");
 		}
 		else if(asAtomHandler::isUndefined(prefixval) ||
-			!isXMLName(th->getSystemState(),prefixval))
+			!isXMLName(wrk,prefixval))
 		{
 			th->prefix_is_undefined=true;
 			th->prefix=BUILTIN_STRINGS::EMPTY;
 		}
 		else
 		{
-			th->prefix=asAtomHandler::toStringId(prefixval,th->getSystemState());
+			th->prefix=asAtomHandler::toStringId(prefixval,wrk);
 		}
 	}
 	ret = asAtomHandler::fromObject(th);
@@ -2557,7 +2617,7 @@ ASFUNCTIONBODY_ATOM(Namespace,_getPrefix)
 ASFUNCTIONBODY_ATOM(Namespace,_toString)
 {
 	if(!asAtomHandler::is<Namespace>(obj))
-		throw Class<TypeError>::getInstanceS(sys,"Namespace.toString is not generic");
+		throw Class<TypeError>::getInstanceS(wrk,"Namespace.toString is not generic");
 	Namespace* th=asAtomHandler::as<Namespace>(obj);
 	ret = asAtomHandler::fromStringID(th->uri);
 }
@@ -2570,7 +2630,7 @@ ASFUNCTIONBODY_ATOM(Namespace,_valueOf)
 ASFUNCTIONBODY_ATOM(Namespace,_ECMA_valueOf)
 {
 	if(!asAtomHandler::is<Namespace>(obj))
-		throw Class<TypeError>::getInstanceS(sys,"Namespace.valueOf is not generic");
+		throw Class<TypeError>::getInstanceS(wrk,"Namespace.valueOf is not generic");
 	Namespace* th=asAtomHandler::as<Namespace>(obj);
 	ret = asAtomHandler::fromStringID(th->uri);
 }
@@ -2640,21 +2700,21 @@ void Namespace::nextValue(asAtom& ret,uint32_t index)
 	}
 }
 
-void ASNop(asAtom& ret,SystemState* sys, asAtom& , asAtom* args, const unsigned int argslen)
+void ASNop(asAtom& ret, ASWorker* wrk, asAtom& , asAtom* args, const unsigned int argslen)
 {
 	asAtomHandler::setUndefined(ret);
 }
 
 IFunction* Class<IFunction>::getNopFunction()
 {
-	IFunction* ret=new (this->memoryAccount) Function(this, ASNop);
+	IFunction* ret=new (this->memoryAccount) Function(getInstanceWorker(),this, ASNop);
 	//Similarly to newFunction, we must create a prototype object
-	ret->prototype = _MR(new_asobject(ret->getSystemState()));
+	ret->prototype = _MR(new_asobject(getInstanceWorker()));
 	ret->prototype->setVariableByQName("constructor","",ret,DECLARED_TRAIT);
 	return ret;
 }
 
-void Class<IFunction>::getInstance(asAtom& ret,bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+void Class<IFunction>::getInstance(ASWorker* worker,asAtom& ret,bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	if (argslen > 0)
 		throwError<EvalError>(kFunctionConstructorError);
@@ -2674,7 +2734,9 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 	{
 		//Create the class
 		MemoryAccount* m = s->allocateMemoryAccount(ClassName<IFunction>::name);
-		ret=new (m) Class<IFunction>(m);
+		ret=new (m) Class<IFunction>(m,ClassName<IFunction>::id);
+		ret->classID=classId;
+		ret->setWorker(sys->worker);
 		ret->setSystemState(s);
 		//This function is called from Class<ASObject>::getRef(),
 		//so the Class<ASObject> we obtain will not have any
@@ -2682,7 +2744,7 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 		//up any borrowed traits from there. We do that by ourself.
 		ret->setSuper(Class<ASObject>::getRef(s));
 		//The prototype for Function seems to be a function object. Use the special FunctionPrototype
-		ret->prototype = _MNR(new_functionPrototype(ret, ret->super->prototype));
+		ret->prototype = _MNR(new_functionPrototype(sys->worker,ret, ret->super->prototype));
 		ret->prototype->getObj()->setVariableByQName("constructor","",ret,DECLARED_TRAIT);
 		ret->prototype->getObj()->setConstructIndicator();
 		ret->incRef();
@@ -2707,7 +2769,7 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 }
 
 
-Global::Global(Class_base* cb, ABCContext* c, int s, bool avm1):ASObject(cb,T_OBJECT,SUBTYPE_GLOBAL),scriptId(s),context(c),isavm1(avm1)
+Global::Global(ASWorker* wrk, Class_base* cb, ABCContext* c, int s, bool avm1):ASObject(wrk,cb,T_OBJECT,SUBTYPE_GLOBAL),scriptId(s),context(c),isavm1(avm1)
 {
 }
 
@@ -2716,15 +2778,15 @@ void Global::sinit(Class_base* c)
 	c->setSuper(Class<ASObject>::getRef(c->getSystemState()));
 }
 
-void Global::getVariableByMultinameOpportunistic(asAtom& ret, const multiname& name)
+void Global::getVariableByMultinameOpportunistic(asAtom& ret, const multiname& name,ASWorker* wrk)
 {
-	ASObject::getVariableByMultinameIntern(ret,name,this->getClass(),NO_INCREF);
+	ASObject::getVariableByMultinameIntern(ret,name,this->getClass(),NO_INCREF,wrk);
 	//Do not attempt to define the variable now in any case
 }
 
-GET_VARIABLE_RESULT Global::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT Global::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
-	GET_VARIABLE_RESULT res = getVariableByMultinameIntern(ret,name,this->getClass(),opt);
+	GET_VARIABLE_RESULT res = getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 	/*
 	 * All properties are registered by now, even if the script init has
 	 * not been run. Thus if ret == NULL, we don't have to run the script init.
@@ -2734,10 +2796,10 @@ GET_VARIABLE_RESULT Global::getVariableByMultiname(asAtom& ret, const multiname&
 	LOG_CALL("Access to " << name << ", running script init");
 	asAtom v = asAtomHandler::fromObject(this);
 	context->runScriptInit(scriptId,v);
-	return getVariableByMultinameIntern(ret,name,this->getClass(),opt);
+	return getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 }
 
-multiname *Global::setVariableByMultiname(multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname *Global::setVariableByMultiname(multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset,ASWorker* wrk)
 {
 	if (context && !context->hasRunScriptInit[scriptId])
 	{
@@ -2745,7 +2807,7 @@ multiname *Global::setVariableByMultiname(multiname &name, asAtom &o, ASObject::
 		asAtom v = asAtomHandler::fromObject(this);
 		context->runScriptInit(scriptId,v);
 	}
-	return setVariableByMultiname_intern(name,o,allowConst,this->getClass(),alreadyset);
+	return setVariableByMultiname_intern(name,o,allowConst,this->getClass(),alreadyset,wrk);
 }
 
 void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o, NS_KIND nskind)
@@ -2768,7 +2830,7 @@ void Global::checkScriptInit()
 ASFUNCTIONBODY_ATOM(lightspark,eval)
 {
 	// eval is not allowed in AS3, but an exception should be thrown
-	throw Class<EvalError>::getInstanceS(sys,"EvalError");
+	throw Class<EvalError>::getInstanceS(wrk,"EvalError");
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,parseInt)
@@ -2779,7 +2841,7 @@ ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 
 	if(radix != 0 && (radix < 2 || radix > 36))
 	{
-		asAtomHandler::setNumber(ret,sys,numeric_limits<double>::quiet_NaN());
+		asAtomHandler::setNumber(ret,wrk,numeric_limits<double>::quiet_NaN());
 		return;
 	}
 
@@ -2788,11 +2850,11 @@ ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 	bool valid=Integer::fromStringFlashCompatible(cur,res,radix);
 
 	if(valid==false)
-		asAtomHandler::setNumber(ret,sys,numeric_limits<double>::quiet_NaN());
+		asAtomHandler::setNumber(ret,wrk,numeric_limits<double>::quiet_NaN());
 	else if (res < INT32_MAX && res > INT32_MIN)
-		asAtomHandler::setInt(ret,sys,(int32_t)res);
+		asAtomHandler::setInt(ret,wrk,(int32_t)res);
 	else
-		asAtomHandler::setNumber(ret,sys,res);
+		asAtomHandler::setNumber(ret,wrk,res);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,parseFloat)
@@ -2800,7 +2862,7 @@ ASFUNCTIONBODY_ATOM(lightspark,parseFloat)
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "");
 
-	asAtomHandler::setNumber(ret,sys,parseNumber(str,sys->getSwfVersion()<11));
+	asAtomHandler::setNumber(ret,wrk,parseNumber(str,wrk->getSystemState()->getSwfVersion()<11));
 }
 number_t lightspark::parseNumber(const tiny_string str, bool useoldversion)
 {
@@ -2881,28 +2943,28 @@ ASFUNCTIONBODY_ATOM(lightspark,encodeURI)
 {
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
-	ret = asAtomHandler::fromObject(abstract_s(sys,URLInfo::encode(str, URLInfo::ENCODE_URI)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,URLInfo::encode(str, URLInfo::ENCODE_URI)));
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,decodeURI)
 {
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
-	ret = asAtomHandler::fromObject(abstract_s(sys,URLInfo::decode(str, URLInfo::ENCODE_URI)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,URLInfo::decode(str, URLInfo::ENCODE_URI)));
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,encodeURIComponent)
 {
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
-	ret = asAtomHandler::fromObject(abstract_s(sys,URLInfo::encode(str, URLInfo::ENCODE_URICOMPONENT)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,URLInfo::encode(str, URLInfo::ENCODE_URICOMPONENT)));
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,decodeURIComponent)
 {
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
-	ret = asAtomHandler::fromObject(abstract_s(sys,URLInfo::decode(str, URLInfo::ENCODE_URICOMPONENT)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,URLInfo::decode(str, URLInfo::ENCODE_URICOMPONENT)));
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,escape)
@@ -2910,9 +2972,9 @@ ASFUNCTIONBODY_ATOM(lightspark,escape)
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
 	if (argslen > 0 && asAtomHandler::is<Undefined>(args[0]))
-		ret = asAtomHandler::fromString(sys,"null");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"null");
 	else
-		ret = asAtomHandler::fromObject(abstract_s(sys,URLInfo::encode(str, URLInfo::ENCODE_ESCAPE)));
+		ret = asAtomHandler::fromObject(abstract_s(wrk,URLInfo::encode(str, URLInfo::ENCODE_ESCAPE)));
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,unescape)
@@ -2920,14 +2982,14 @@ ASFUNCTIONBODY_ATOM(lightspark,unescape)
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
 	if (argslen > 0 && asAtomHandler::is<Undefined>(args[0]))
-		ret = asAtomHandler::fromString(sys,"null");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"null");
 	else
-		ret = asAtomHandler::fromObject(abstract_s(sys,URLInfo::decode(str, URLInfo::ENCODE_ESCAPE)));
+		ret = asAtomHandler::fromObject(abstract_s(wrk,URLInfo::decode(str, URLInfo::ENCODE_ESCAPE)));
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,print)
 {
-	Log::print(asAtomHandler::toString(args[0],sys));
+	Log::print(asAtomHandler::toString(args[0],wrk));
 	ret = asAtomHandler::undefinedAtom;
 }
 
@@ -2939,14 +3001,14 @@ ASFUNCTIONBODY_ATOM(lightspark,trace)
 		if(i > 0)
 			s << " ";
 
-		s << asAtomHandler::toString(args[i],sys);
+		s << asAtomHandler::toString(args[i],wrk);
 	}
 	Log::print(s.str());
 	ret = asAtomHandler::undefinedAtom;
 }
 ASFUNCTIONBODY_ATOM(lightspark,AVM1_updateAfterEvent)
 {
-	sys->stage->forceInvalidation();
+	wrk->getSystemState()->stage->forceInvalidation();
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
@@ -2971,7 +3033,7 @@ ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 		std::list<tiny_string> namelist = names.split((uint32_t)',');
 		for (auto it = namelist.begin();it != namelist.end(); it++)
 		{
-			nameIDlist.push_back(sys->getUniqueStringId(*it));
+			nameIDlist.push_back(wrk->getSystemState()->getUniqueStringId(*it));
 		}
 	}
 	for (auto it = nameIDlist.begin();it != nameIDlist.end(); it++)
@@ -2981,7 +3043,7 @@ ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 		multiname name(nullptr);
 		name.name_type=multiname::NAME_STRING;
 		name.name_s_id=*it;
-		name.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
+		name.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		name.isAttribute=false;
 		if (set_false & 0x01) // dontEnum
 			o->setIsEnumerable(name, true);
@@ -3012,20 +3074,20 @@ ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 		onlySWF9Up	= 1 << 13 // 8192
 */
 }
-bool lightspark::isXMLName(SystemState* sys, asAtom& obj)
+bool lightspark::isXMLName(ASWorker* wrk, asAtom& obj)
 {
 	tiny_string name;
 
 	if(asAtomHandler::isQName(obj))
 	{
 		ASQName *q=asAtomHandler::as<ASQName>(obj);
-		name=sys->getStringFromUniqueId(q->getLocalName());
+		name=wrk->getSystemState()->getStringFromUniqueId(q->getLocalName());
 	}
 	else if(asAtomHandler::isUndefined(obj) ||
 		asAtomHandler::isNull(obj))
 		name="";
 	else
-		name=asAtomHandler::toString(obj,sys);
+		name=asAtomHandler::toString(obj,wrk);
 
 	if(name.empty())
 		return false;
@@ -3211,16 +3273,17 @@ ASFUNCTIONBODY_ATOM(lightspark,_isXMLName)
 	if(argslen==0)
 		asAtomHandler::setBool(ret,false);
 	else
-		asAtomHandler::setBool(ret,isXMLName(sys,args[0]));
+		asAtomHandler::setBool(ret,isXMLName(wrk,args[0]));
 }
 
-ObjectPrototype::ObjectPrototype(Class_base* c) : ASObject(c)
+ObjectPrototype::ObjectPrototype(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
 {
 	traitsInitialized = true;
 	constructIndicator = true;
 	constructorCallComplete = true;
 	obj = this;
-	originalPrototypeVars = new_asobject(c->getSystemState());
+	this->objfreelist=nullptr; // prototypes are not reusable
+	originalPrototypeVars = new_asobject(wrk);
 }
 bool ObjectPrototype::isEqual(ASObject* r)
 {
@@ -3229,42 +3292,45 @@ bool ObjectPrototype::isEqual(ASObject* r)
 	return ASObject::isEqual(r);
 }
 
-Prototype* ObjectPrototype::clonePrototype()
+Prototype* ObjectPrototype::clonePrototype(ASWorker* wrk)
 {
-	Prototype* res = new_objectPrototype(getSystemState());
+	Prototype* res = new_objectPrototype(wrk);
 	copyOriginalValues(res);
 	return res;
 }
 
-GET_VARIABLE_RESULT ObjectPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT ObjectPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
-	GET_VARIABLE_RESULT res = getVariableByMultinameIntern(ret,name,this->getClass(),opt);
+	GET_VARIABLE_RESULT res = getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 	if(asAtomHandler::isValid(ret) || prevPrototype.isNull())
 		return res;
 
-	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
+	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt,wrk);
 }
 
-multiname *ObjectPrototype::setVariableByMultiname(multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *ObjectPrototype::setVariableByMultiname(multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
-	if (this->isSealed && this->hasPropertyByMultiname(name,false,true))
+	if (this->isSealed && this->hasPropertyByMultiname(name,false,true,wrk))
 		throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), "");
-	return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset);
+	if (asAtomHandler::isObject(o)) // value may be used in another worker, so reset it's freelist pointer
+		asAtomHandler::getObjectNoCheck(o)->objfreelist=nullptr;
+	return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset,wrk);
 }
 
-ObjectConstructor::ObjectConstructor(Class_base* c,uint32_t length) : ASObject(c,T_OBJECT,SUBTYPE_OBJECTCONSTRUCTOR),_length(length)
+ObjectConstructor::ObjectConstructor(ASWorker* wrk, Class_base* c, uint32_t length) : ASObject(wrk,c,T_OBJECT,SUBTYPE_OBJECTCONSTRUCTOR),_length(length)
 {
 	Class<ASObject>::getRef(c->getSystemState())->prototype->incRef();
 	this->prototype = Class<ASObject>::getRef(c->getSystemState())->prototype.getPtr();
 }
 
-ArrayPrototype::ArrayPrototype(Class_base* c) : Array(c)
+ArrayPrototype::ArrayPrototype(ASWorker* wrk, Class_base* c) : Array(wrk,c)
 {
 	traitsInitialized = true;
 	constructIndicator = true;
 	constructorCallComplete = true;
 	obj = this;
-	originalPrototypeVars = new_asobject(c->getSystemState());
+	this->objfreelist=nullptr; // prototypes are not reusable
+	originalPrototypeVars = new_asobject(wrk);
 }
 bool ArrayPrototype::isEqual(ASObject* r)
 {
@@ -3273,30 +3339,32 @@ bool ArrayPrototype::isEqual(ASObject* r)
 	return ASObject::isEqual(r);
 }
 
-Prototype* ArrayPrototype::clonePrototype()
+Prototype* ArrayPrototype::clonePrototype(ASWorker* wrk)
 {
-	Prototype* res = new (getClass()->memoryAccount) ArrayPrototype(getClass());
+	Prototype* res = new (getClass()->memoryAccount) ArrayPrototype(wrk,getClass());
 	copyOriginalValues(res);
 	return res;
 }
 
-GET_VARIABLE_RESULT ArrayPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT ArrayPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
-	GET_VARIABLE_RESULT res = Array::getVariableByMultiname(ret,name,opt);
+	GET_VARIABLE_RESULT res = Array::getVariableByMultiname(ret,name,opt,wrk);
 	if(asAtomHandler::isValid(ret) || prevPrototype.isNull())
 		return res;
 
-	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
+	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt,wrk);
 }
 
-multiname *ArrayPrototype::setVariableByMultiname(multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+multiname *ArrayPrototype::setVariableByMultiname(multiname &name, asAtom& o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
-	if (this->isSealed && this->hasPropertyByMultiname(name,false,true))
+	if (this->isSealed && this->hasPropertyByMultiname(name,false,true,wrk))
 		throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), "");
-	return Array::setVariableByMultiname(name, o, allowConst,alreadyset);
+	if (asAtomHandler::isObject(o)) // value may be used in another worker, so reset it's freelist pointer
+		asAtomHandler::getObjectNoCheck(o)->objfreelist=nullptr;
+	return Array::setVariableByMultiname(name, o, allowConst,alreadyset,wrk);
 }
 
-GET_VARIABLE_RESULT ObjectConstructor::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT ObjectConstructor::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
 	if (name.normalizedName(getSystemState()) == "prototype")
 	{
@@ -3304,9 +3372,9 @@ GET_VARIABLE_RESULT ObjectConstructor::getVariableByMultiname(asAtom& ret, const
 		ret = asAtomHandler::fromObject(prototype->getObj());
 	}
 	else if (name.normalizedName(getSystemState()) == "length")
-		asAtomHandler::setUInt(ret,getSystemState(),_length);
+		asAtomHandler::setUInt(ret,getInstanceWorker(),_length);
 	else
-		return getClass()->getVariableByMultiname(ret,name, opt);
+		return getClass()->getVariableByMultiname(ret,name, opt,wrk);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 bool ObjectConstructor::isEqual(ASObject* r)
@@ -3314,46 +3382,55 @@ bool ObjectConstructor::isEqual(ASObject* r)
 	return this == r || getClass() == r;
 }
 
-FunctionPrototype::FunctionPrototype(Class_base* c, _NR<Prototype> p) : Function(c, ASNop)
+FunctionPrototype::FunctionPrototype(ASWorker* wrk, Class_base* c, _NR<Prototype> p) : Function(wrk,c, ASNop)
 {
 	prevPrototype=p;
 	//Add the prototype to the Nop function
-	this->prototype = _MR(new_asobject(c->getSystemState()));
+	this->prototype = _MR(new_asobject(wrk));
 	obj = this;
-	originalPrototypeVars = new_asobject(c->getSystemState());
+	this->objfreelist=nullptr; // prototypes are not reusable
+	originalPrototypeVars = new_asobject(wrk);
 }
 
-GET_VARIABLE_RESULT FunctionPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT FunctionPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
-	GET_VARIABLE_RESULT res =Function::getVariableByMultiname(ret,name, opt);
+	GET_VARIABLE_RESULT res =Function::getVariableByMultiname(ret,name, opt,wrk);
 	if(asAtomHandler::isValid(ret) || prevPrototype.isNull())
 		return res;
 
-	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt);
+	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt,wrk);
 }
 
-Prototype* FunctionPrototype::clonePrototype()
+multiname* FunctionPrototype::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
-	Prototype* res = new_functionPrototype(getClass(),this->prevPrototype);
+	if (asAtomHandler::isObject(o)) // value may be used in another worker, so reset it's freelist pointer
+		asAtomHandler::getObjectNoCheck(o)->objfreelist=nullptr;
+	return Function::setVariableByMultiname(name, o, allowConst,alreadyset,wrk);
+	
+}
+
+Prototype* FunctionPrototype::clonePrototype(ASWorker* wrk)
+{
+	Prototype* res = new_functionPrototype(wrk,getClass(),this->prevPrototype);
 	copyOriginalValues(res);
 	return res;
 }
 
-Function_object::Function_object(Class_base* c, _R<ASObject> p) : ASObject(c,T_OBJECT,SUBTYPE_FUNCTIONOBJECT), functionPrototype(p)
+Function_object::Function_object(ASWorker* wrk,Class_base* c, _R<ASObject> p) : ASObject(wrk,c,T_OBJECT,SUBTYPE_FUNCTIONOBJECT), functionPrototype(p)
 {
 	traitsInitialized = true;
 	constructIndicator = true;
 	constructorCallComplete = true;
 }
 
-GET_VARIABLE_RESULT Function_object::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt)
+GET_VARIABLE_RESULT Function_object::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
-	GET_VARIABLE_RESULT res = getVariableByMultinameIntern(ret,name,this->getClass(),opt);
+	GET_VARIABLE_RESULT res = getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 	assert(!functionPrototype.isNull());
 	if(asAtomHandler::isValid(ret))
 		return res;
 
-	return functionPrototype->getVariableByMultiname(ret,name, opt);
+	return functionPrototype->getVariableByMultiname(ret,name, opt,wrk);
 }
 
 EARLY_BIND_STATUS ActivationType::resolveMultinameStatically(const multiname& name) const
@@ -3362,7 +3439,7 @@ EARLY_BIND_STATUS ActivationType::resolveMultinameStatically(const multiname& na
 	for(unsigned int i=0;i<mi->body->trait_count;i++)
 	{
 		const traits_info* t=&mi->body->traits[i];
-		multiname* mname=mi->context->getMultiname(t->name,NULL);
+		multiname* mname=mi->context->getMultiname(t->name,nullptr);
 		std::cerr << "\t in " << *mname << std::endl;
 		assert_and_throw(mname->ns.size()==1 && mname->name_type==multiname::NAME_STRING);
 		if(mname->name_s_id!=name.normalizedNameId(mi->context->root->getSystemState()))
@@ -3425,6 +3502,6 @@ void Prototype::copyOriginalValues(Prototype* target)
 {
 	if (this->prevPrototype)
 		this->prevPrototype->copyOriginalValues(target);
-	originalPrototypeVars->copyValues(target->getObj());
-	target->workerDynamicClassVars = new_asobject(target->getObj()->getSystemState());
+	originalPrototypeVars->copyValues(target->getObj(),target->getObj()->getInstanceWorker());
+	target->workerDynamicClassVars = new_asobject(target->getObj()->getInstanceWorker());
 }

@@ -29,7 +29,7 @@ class ASCondition: public ASObject
 {
 	ASPROPERTY_GETTER(_NR<ASMutex>,mutex);
 public:
-	ASCondition(Class_base* c);
+	ASCondition(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_notify);

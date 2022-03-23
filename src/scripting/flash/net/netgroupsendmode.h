@@ -28,7 +28,7 @@ namespace lightspark
 class NetGroupSendMode: public ASObject
 {
 public:
-	NetGroupSendMode(Class_base* c):ASObject(c){}
+	NetGroupSendMode(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

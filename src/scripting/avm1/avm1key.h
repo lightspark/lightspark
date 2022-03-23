@@ -27,7 +27,7 @@ namespace lightspark
 class AVM1Key: public ASObject
 {
 public:
-	AVM1Key(Class_base* c):ASObject(c){}
+	AVM1Key(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 
 	ASFUNCTION_ATOM(isDown);
@@ -39,7 +39,7 @@ public:
 class AVM1Mouse: public ASObject
 {
 public:
-	AVM1Mouse(Class_base* c):ASObject(c){}
+	AVM1Mouse(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 
 	ASFUNCTION_ATOM(hide);

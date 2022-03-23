@@ -135,7 +135,7 @@ const tiny_string multiname::normalizedNameUnresolved(SystemState* sys) const
 	}
 }
 
-void multiname::setName(asAtom& n,SystemState* sys)
+void multiname::setName(asAtom& n,ASWorker* w)
 {
 	if (name_type==NAME_OBJECT && name_o!=nullptr) {
 		name_o->decRef();
@@ -173,24 +173,24 @@ void multiname::setName(asAtom& n,SystemState* sys)
 			ASQName* qname=asAtomHandler::as<ASQName>(n);
 			name_s_id=qname->local_name;
 			name_type = NAME_STRING;
-			isInteger=Array::isIntegerWithoutLeadingZeros(sys->getStringFromUniqueId(name_s_id));
+			isInteger=Array::isIntegerWithoutLeadingZeros(w->getSystemState()->getStringFromUniqueId(name_s_id));
 		}
 		break;
 	case T_STRING:
 		{
-			name_s_id=asAtomHandler::toStringId(n,sys);
+			name_s_id=asAtomHandler::toStringId(n,w);
 			name_type = NAME_STRING;
-			isInteger=Array::isIntegerWithoutLeadingZeros(sys->getStringFromUniqueId(name_s_id));
+			isInteger=Array::isIntegerWithoutLeadingZeros(w->getSystemState()->getStringFromUniqueId(name_s_id));
 		}
 		break;
 	case T_NULL:
-		name_o=sys->getNullRef();
+		name_o=w->getSystemState()->getNullRef();
 		name_type = NAME_OBJECT;
 		name_s_id = UINT32_MAX;
 		isInteger=false;
 		break;
 	case T_UNDEFINED:
-		name_o=sys->getUndefinedRef();
+		name_o=w->getSystemState()->getUndefinedRef();
 		name_type = NAME_OBJECT;
 		name_s_id = UINT32_MAX;
 		isInteger=false;
@@ -1520,81 +1520,81 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 	}
 	return s;
 }
-ASObject* lightspark::abstract_s(SystemState *sys)
+ASObject* lightspark::abstract_s(ASWorker* wrk)
 {
-	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
+	ASString* ret= Class<ASString>::getInstanceSNoArgs(wrk);
 	ret->stringId = BUILTIN_STRINGS::EMPTY;
 	ret->hasId = true;
 	ret->datafilled=true;
 	return ret;
 }
-ASObject* lightspark::abstract_s(SystemState *sys, const char* s, uint32_t len)
+ASObject* lightspark::abstract_s(ASWorker* wrk, const char* s, uint32_t len)
 {
-	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
+	ASString* ret= Class<ASString>::getInstanceSNoArgs(wrk);
 	ret->data = std::string(s,len);
 	ret->stringId = UINT32_MAX;
 	ret->hasId = false;
 	ret->datafilled=true;
 	return ret;
 }
-ASObject* lightspark::abstract_s(SystemState *sys, const char* s)
+ASObject* lightspark::abstract_s(ASWorker* wrk, const char* s)
 {
-	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
+	ASString* ret= Class<ASString>::getInstanceSNoArgs(wrk);
 	ret->data = s;
 	ret->stringId = UINT32_MAX;
 	ret->hasId = false;
 	ret->datafilled=true;
 	return ret;
 }
-ASObject* lightspark::abstract_s(SystemState *sys, const tiny_string& s)
+ASObject* lightspark::abstract_s(ASWorker* wrk, const tiny_string& s)
 {
-	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
+	ASString* ret= Class<ASString>::getInstanceSNoArgs(wrk);
 	ret->data = s;
 	ret->stringId = UINT32_MAX;
 	ret->hasId = false;
 	ret->datafilled=true;
 	return ret;
 }
-ASObject* lightspark::abstract_s(SystemState *sys, uint32_t stringId)
+ASObject* lightspark::abstract_s(ASWorker* wrk, uint32_t stringId)
 {
-	ASString* ret= Class<ASString>::getInstanceSNoArgs(sys);
+	ASString* ret= Class<ASString>::getInstanceSNoArgs(wrk);
 	ret->stringId = stringId;
 	ret->hasId = true;
 	ret->datafilled=false;
 	return ret;
 }
-ASObject* lightspark::abstract_d(SystemState* sys,number_t i)
+ASObject* lightspark::abstract_d(ASWorker* wrk, number_t i)
 {
-	Number* ret=Class<Number>::getInstanceSNoArgs(sys);
+	Number* ret=Class<Number>::getInstanceSNoArgs(wrk);
 	ret->dval = i;
 	ret->isfloat = true;
 	return ret;
 }
-ASObject* lightspark::abstract_d_constant(SystemState* sys,number_t i)
+ASObject* lightspark::abstract_d_constant(ASWorker* wrk, number_t i)
 {
-	Number* ret=new (sys->unaccountedMemory) Number(Class<Number>::getRef(sys).getPtr());
+	Number* ret=new (wrk->getSystemState()->unaccountedMemory) Number(wrk,Class<Number>::getRef(wrk->getSystemState()).getPtr());
 	ret->dval = i;
 	ret->isfloat = true;
 	ret->setRefConstant();
 	return ret;
 }
-ASObject* lightspark::abstract_di(SystemState* sys,int64_t i)
+ASObject* lightspark::abstract_di(ASWorker* wrk, int64_t i)
 {
-	Number* ret=Class<Number>::getInstanceSNoArgs(sys);
+	Number* ret=Class<Number>::getInstanceSNoArgs(wrk);
 	ret->ival = i;
 	ret->isfloat = false;
 	return ret;
 }
-ASObject* lightspark::abstract_i(SystemState *sys, int32_t i)
+ASObject* lightspark::abstract_i(ASWorker* wrk, int32_t i)
 {
-	Integer* ret=Class<Integer>::getInstanceSNoArgs(sys);
+	Integer* ret=Class<Integer>::getInstanceSNoArgs(wrk);
 	ret->val = i;
 	return ret;
 }
 
-ASObject* lightspark::abstract_ui(SystemState *sys, uint32_t i)
+ASObject* lightspark::abstract_ui(ASWorker* wrk, uint32_t i)
 {
-	UInteger* ret=Class<UInteger>::getInstanceSNoArgs(sys);
+	UInteger* ret=Class<UInteger>::getInstanceSNoArgs(wrk);
 	ret->val = i;
 	return ret;
 }

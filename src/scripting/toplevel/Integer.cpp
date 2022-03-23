@@ -30,9 +30,9 @@ using namespace lightspark;
 
 ASFUNCTIONBODY_ATOM(Integer,_toString)
 {
-	if(Class<Integer>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
+	if(Class<Integer>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		ret = asAtomHandler::fromString(sys,"0");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"0");
 		return;
 	}
 
@@ -44,25 +44,25 @@ ASFUNCTIONBODY_ATOM(Integer,_toString)
 	{
 		char buf[20];
 		snprintf(buf,20,"%i",asAtomHandler::toInt(obj));
-		ret = asAtomHandler::fromObject(abstract_s(sys,buf));
+		ret = asAtomHandler::fromObject(abstract_s(wrk,buf));
 	}
 	else
 	{
 		tiny_string s=Number::toStringRadix(asAtomHandler::toNumber(obj), radix);
-		ret = asAtomHandler::fromObject(abstract_s(sys,s));
+		ret = asAtomHandler::fromObject(abstract_s(wrk,s));
 	}
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_valueOf)
 {
-	if(Class<Integer>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
+	if(Class<Integer>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		asAtomHandler::setInt(ret,sys,0);
+		asAtomHandler::setInt(ret,wrk,0);
 		return;
 	}
 
 	if(!asAtomHandler::isInteger(obj))
-			throw Class<TypeError>::getInstanceS(sys,"");
+			throw Class<TypeError>::getInstanceS(wrk,"");
 
 	ASATOM_INCREF(obj);
 	ret = obj;
@@ -82,9 +82,9 @@ ASFUNCTIONBODY_ATOM(Integer,_constructor)
 ASFUNCTIONBODY_ATOM(Integer,generator)
 {
 	if (argslen == 0)
-		asAtomHandler::setInt(ret,sys,(int32_t)0);
+		asAtomHandler::setInt(ret,wrk,(int32_t)0);
 	else
-		asAtomHandler::setInt(ret,sys,asAtomHandler::toInt(args[0]));
+		asAtomHandler::setInt(ret,wrk,asAtomHandler::toInt(args[0]));
 }
 
 TRISTATE Integer::isLess(ASObject* o)
@@ -255,7 +255,7 @@ void Integer::sinit(Class_base* c)
 
 void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap)
+				std::map<const Class_base*, uint32_t>& traitsMap,ASWorker* wrk)
 {
 	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{
@@ -520,24 +520,24 @@ ASFUNCTIONBODY_ATOM(Integer,_toExponential)
 		else
 			fractionDigits = imin(imax((int32_t)ceil(::log10(::fabs(v))), 1), 20);
 	}
-	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toExponentialString(v, fractionDigits)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,Number::toExponentialString(v, fractionDigits)));
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_toFixed)
 {
 	int fractiondigits;
 	ARG_UNPACK_ATOM (fractiondigits, 0);
-	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toFixedString(asAtomHandler::toNumber(obj), fractiondigits)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,Number::toFixedString(asAtomHandler::toNumber(obj), fractiondigits)));
 }
 
 ASFUNCTIONBODY_ATOM(Integer,_toPrecision)
 {
 	if (argslen == 0 || asAtomHandler::is<Undefined>(args[0]))
 	{
-		ret = asAtomHandler::fromObject(abstract_s(sys,asAtomHandler::toString(obj,sys)));
+		ret = asAtomHandler::fromObject(abstract_s(wrk,asAtomHandler::toString(obj,wrk)));
 		return;
 	}
 	int precision;
 	ARG_UNPACK_ATOM (precision);
-	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toPrecisionString(asAtomHandler::toNumber(obj), precision)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,Number::toPrecisionString(asAtomHandler::toNumber(obj), precision)));
 }

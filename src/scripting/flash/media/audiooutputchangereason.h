@@ -28,7 +28,7 @@ namespace lightspark
 class AudioOutputChangeReason: public ASObject
 {
 public:
-	AudioOutputChangeReason(Class_base* c):ASObject(c){}
+	AudioOutputChangeReason(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

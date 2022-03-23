@@ -36,7 +36,7 @@ template<class T>
 void throwError(int errorID, const tiny_string& arg1="", const tiny_string& arg2="", const tiny_string& arg3="")
 {
 	tiny_string message = createErrorMessage(errorID, arg1, arg2, arg3);
-	throw Class<T>::getInstanceS(getSys(),message, errorID);
+	throw Class<T>::getInstanceS(getWorker(),message, errorID);
 }
 
 class ASError: public ASObject
@@ -50,7 +50,7 @@ protected:
 	void setErrorID(int32_t id) { errorID=id; }
 	static void errorGenerator(ASError *obj, asAtom *args, const unsigned int argslen);
 public:
-	ASError(Class_base* c, const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error");
+	ASError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error");
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	ASFUNCTION_ATOM(_getStackTrace);
@@ -64,7 +64,7 @@ public:
 class SecurityError: public ASError
 {
 public:
-	SecurityError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "SecurityError"){}
+	SecurityError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "SecurityError"){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
@@ -74,7 +74,7 @@ public:
 class ArgumentError: public ASError
 {
 public:
-	ArgumentError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "ArgumentError"){}
+	ArgumentError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "ArgumentError"){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
@@ -84,7 +84,7 @@ public:
 class DefinitionError: public ASError
 {
 public:
-	DefinitionError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "DefinitionError"){}
+	DefinitionError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "DefinitionError"){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
@@ -94,7 +94,7 @@ public:
 class EvalError: public ASError
 {
 public:
-	EvalError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "EvalError"){}
+	EvalError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "EvalError"){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
@@ -104,7 +104,7 @@ public:
 class RangeError: public ASError
 {
 public:
-	RangeError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "RangeError"){}
+	RangeError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "RangeError"){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
@@ -114,7 +114,7 @@ public:
 class ReferenceError: public ASError
 {
 public:
-	ReferenceError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "ReferenceError"){}
+	ReferenceError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "ReferenceError"){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
@@ -124,7 +124,7 @@ public:
 class SyntaxError: public ASError
 {
 public:
-	SyntaxError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "SyntaxError"){}
+	SyntaxError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "SyntaxError"){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
@@ -134,7 +134,7 @@ public:
 class TypeError: public ASError
 {
 public:
-	TypeError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "TypeError"){}
+	TypeError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "TypeError"){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
@@ -144,7 +144,7 @@ public:
 class URIError: public ASError
 {
 public:
-	URIError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "URIError"){}
+	URIError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "URIError"){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
@@ -154,7 +154,7 @@ public:
 class VerifyError: public ASError
 {
 public:
-	VerifyError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "VerifyError"){}
+	VerifyError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "VerifyError"){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
@@ -165,7 +165,7 @@ public:
 class UninitializedError: public ASError
 {
 public:
-	UninitializedError(Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(c, error_message, id, "UninitializedError"){}
+	UninitializedError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "UninitializedError"){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);

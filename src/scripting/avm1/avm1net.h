@@ -30,14 +30,14 @@ namespace lightspark
 class AVM1SharedObject: public SharedObject
 {
 public:
-	AVM1SharedObject(Class_base* c):SharedObject(c){}
+	AVM1SharedObject(ASWorker* wrk,Class_base* c):SharedObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class AVM1LocalConnection: public LocalConnection
 {
 public:
-	AVM1LocalConnection(Class_base* c):LocalConnection(c){}
+	AVM1LocalConnection(ASWorker* wrk,Class_base* c):LocalConnection(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
@@ -45,25 +45,25 @@ class AVM1LoadVars: public URLVariables
 {
 	_NR<URLLoader> loader;
 public:
-	AVM1LoadVars(Class_base* c):URLVariables(c){}
+	AVM1LoadVars(ASWorker* wrk,Class_base* c):URLVariables(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(sendAndLoad);
 	ASFUNCTION_ATOM(load);
-	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 };
 class AVM1NetConnection: public NetConnection
 {
 public:
-	AVM1NetConnection(Class_base* c):NetConnection(c){}
+	AVM1NetConnection(ASWorker* wrk,Class_base* c):NetConnection(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class AVM1XMLSocket: public XMLSocket
 {
 public:
-	AVM1XMLSocket(Class_base* c):XMLSocket(c){}
+	AVM1XMLSocket(ASWorker* wrk,Class_base* c):XMLSocket(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

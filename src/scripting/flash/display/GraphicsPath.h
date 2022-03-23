@@ -35,7 +35,7 @@ class GraphicsPath: public ASObject, public IGraphicsPath, public IGraphicsData
 private:
 	void ensureValid();
 public:
-	GraphicsPath(Class_base* c);
+	GraphicsPath(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);

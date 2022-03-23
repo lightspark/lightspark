@@ -702,7 +702,7 @@ void Context3D::loadCubeTexture(CubeTexture *tex)
 	}
 }
 
-Context3D::Context3D(Class_base *c):EventDispatcher(c),samplers{UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX},currentactionvector(0)
+Context3D::Context3D(ASWorker* wrk, Class_base *c):EventDispatcher(wrk,c),samplers{UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX},currentactionvector(0)
   ,textureframebuffer(UINT32_MAX),textureframebufferID(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX),currentprogram(NULL)
   ,renderingToTexture(false),enableDepthAndStencilBackbuffer(true),enableDepthAndStencilTextureBuffer(true),swapbuffers(false),backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
   ,maxBackBufferHeight(16384),maxBackBufferWidth(16384)
@@ -820,7 +820,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
 	tiny_string format;
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
-	CubeTexture* res = Class<CubeTexture>::getInstanceS(sys,th);
+	CubeTexture* res = Class<CubeTexture>::getInstanceS(wrk,th);
 	uint32_t size;
 	ARG_UNPACK_ATOM(size)(format)(optimizeForRenderToTexture)(streamingLevels,0);
 	uint32_t i = size;
@@ -842,7 +842,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 	tiny_string format;
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
-	RectangleTexture* res = Class<RectangleTexture>::getInstanceS(sys,th);
+	RectangleTexture* res = Class<RectangleTexture>::getInstanceS(wrk,th);
 	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
 	res->setFormat(format);
 	if (optimizeForRenderToTexture || streamingLevels != 0)
@@ -855,7 +855,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 	tiny_string format;
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
-	Texture* res = Class<Texture>::getInstanceS(sys,th);
+	Texture* res = Class<Texture>::getInstanceS(wrk,th);
 	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
 	res->setFormat(format);
 	if (optimizeForRenderToTexture || streamingLevels != 0)
@@ -866,13 +866,13 @@ ASFUNCTIONBODY_ATOM(Context3D,createVideoTexture)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createVideoTexture does nothing");
-	ret = asAtomHandler::fromObject(Class<VideoTexture>::getInstanceS(sys,th));
+	ret = asAtomHandler::fromObject(Class<VideoTexture>::getInstanceS(wrk,th));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createProgram)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	th->incRef();
-	ret = asAtomHandler::fromObject(Class<Program3D>::getInstanceS(sys,_MR(th)));
+	ret = asAtomHandler::fromObject(Class<Program3D>::getInstanceS(wrk,_MR(th)));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createVertexBuffer)
 {
@@ -881,7 +881,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createVertexBuffer)
 	int32_t data32PerVertex;
 	tiny_string bufferUsage;
 	ARG_UNPACK_ATOM(numVertices)(data32PerVertex)(bufferUsage,"staticDraw");
-	ret = asAtomHandler::fromObject(Class<VertexBuffer3D>::getInstanceS(sys,th, numVertices,data32PerVertex,bufferUsage));
+	ret = asAtomHandler::fromObject(Class<VertexBuffer3D>::getInstanceS(wrk,th, numVertices,data32PerVertex,bufferUsage));
 }
 ASFUNCTIONBODY_ATOM(Context3D,createIndexBuffer)
 {
@@ -889,7 +889,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createIndexBuffer)
 	int32_t numVertices;
 	tiny_string bufferUsage;
 	ARG_UNPACK_ATOM(numVertices)(bufferUsage,"staticDraw");
-	ret = asAtomHandler::fromObject(Class<IndexBuffer3D>::getInstanceS(sys,th,numVertices,bufferUsage));
+	ret = asAtomHandler::fromObject(Class<IndexBuffer3D>::getInstanceS(wrk,th,numVertices,bufferUsage));
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,clear)
@@ -1161,11 +1161,11 @@ ASFUNCTIONBODY_ATOM(Context3D,setRenderToTexture)
 	if (action.dataobject.isNull())
 		throwError<ArgumentError>(kCheckTypeFailedError,
 								  "null",
-								  Class<TextureBase>::getClass(sys)->getQualifiedClassName());
+								  Class<TextureBase>::getClass(wrk->getSystemState())->getQualifiedClassName());
 	if (!action.dataobject->is<TextureBase>())
 		throwError<ArgumentError>(kCheckTypeFailedError,
 								  action.dataobject->getClassName(),
-								  Class<TextureBase>::getClass(sys)->getQualifiedClassName());
+								  Class<TextureBase>::getClass(wrk->getSystemState())->getQualifiedClassName());
 	if (antiAlias!=0 || surfaceSelector!=0 || colorOutputIndex!=0)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setRenderToTexture ignores parameters antiAlias, surfaceSelector, colorOutput");
 	action.action = RENDER_ACTION::RENDER_TOTEXTURE;
@@ -1233,7 +1233,7 @@ ASFUNCTIONBODY_ATOM(Context3D,present)
 	Locker l(th->rendermutex);
 	if (th->swapbuffers)
 	{
-		if (sys->getRenderThread()->isStarted())
+		if (wrk->getSystemState()->getRenderThread()->isStarted())
 			LOG(LOG_ERROR,"last frame has not been rendered yet, skipping frame:"<<th->actions[1-th->currentactionvector].size());
 		th->actions[th->currentactionvector].clear();
 	}
@@ -1449,8 +1449,8 @@ void Context3DWrapMode::sinit(Class_base *c)
 	c->setVariableAtomByQName("REPEAT_U_CLAMP_V",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"repeat_u_clamp_v"),CONSTANT_TRAIT);
 }
 
-IndexBuffer3D::IndexBuffer3D(Class_base *c, Context3D* ctx,int numVertices, tiny_string _bufferUsage)
-	:ASObject(c,T_OBJECT,SUBTYPE_INDEXBUFFER3D),context(ctx),bufferID(UINT32_MAX),bufferUsage(_bufferUsage),upload_needed(false)
+IndexBuffer3D::IndexBuffer3D(ASWorker* wrk,Class_base* c, Context3D* ctx,int numVertices, tiny_string _bufferUsage)
+	:ASObject(wrk,c,T_OBJECT,SUBTYPE_INDEXBUFFER3D),context(ctx),bufferID(UINT32_MAX),bufferUsage(_bufferUsage),upload_needed(false)
 {
 	data.resize(numVertices);
 }
@@ -1563,8 +1563,8 @@ ASFUNCTIONBODY_ATOM(Program3D,upload)
 	}
 }
 
-VertexBuffer3D::VertexBuffer3D(Class_base *c, Context3D *ctx, int _numVertices, int32_t _data32PerVertex, tiny_string _bufferUsage)
-	:ASObject(c,T_OBJECT,SUBTYPE_VERTEXBUFFER3D),context(ctx),numVertices(_numVertices),data32PerVertex(_data32PerVertex),bufferUsage(_bufferUsage),disposed(false)
+VertexBuffer3D::VertexBuffer3D(ASWorker* wrk,Class_base *c, Context3D *ctx, int _numVertices, int32_t _data32PerVertex, tiny_string _bufferUsage)
+	:ASObject(wrk,c,T_OBJECT,SUBTYPE_VERTEXBUFFER3D),context(ctx),numVertices(_numVertices),data32PerVertex(_data32PerVertex),bufferUsage(_bufferUsage),disposed(false)
 {
 	data.resize(numVertices*data32PerVertex);
 }

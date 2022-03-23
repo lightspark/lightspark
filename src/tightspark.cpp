@@ -89,13 +89,13 @@ int main(int argc, char* argv[])
 	//One of useInterpreter or useJit must be enabled
 	if(!(useInterpreter || useJit))
 	{
-		LOG(LOG_ERROR,_("No execution model enabled"));
+		LOG(LOG_ERROR,"No execution model enabled");
 		exit(-1);
 	}
 	sys->useInterpreter=useInterpreter;
 	sys->useJit=useJit;
 
-	sys->mainClip->setOrigin(string("file://") + fileNames[0]);
+	wrk->getSystemState()->mainClip->setOrigin(string("file://") + fileNames[0]);
 
 #ifndef _WIN32
 	struct rlimit rl;
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
 		ifstream f(fileNames[i]);
 		if(f.is_open())
 		{
-			sys->mainClip->incRef();
+			wrk->getSystemState()->mainClip->incRef();
 			ABCContext* context=new ABCContext(_MR(sys->mainClip), f, vm);
 			contexts.push_back(context);
 			f.close();
@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
 		}
 		else
 		{
-			LOG(LOG_ERROR, fileNames[i] << _(" could not be opened for execution"));
+			LOG(LOG_ERROR, fileNames[i] << " could not be opened for execution");
 		}
 	}
 	vm->start();

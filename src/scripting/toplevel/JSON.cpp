@@ -24,7 +24,7 @@
 using namespace std;
 using namespace lightspark;
 
-JSON::JSON(Class_base* c):ASObject(c)
+JSON::JSON(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
 {
 }
 
@@ -49,12 +49,12 @@ ASFUNCTIONBODY_ATOM(JSON,generator)
 	ret = asAtomHandler::invalidAtom;
 }
 
-ASObject *JSON::doParse(const tiny_string &jsonstring, asAtom reviver,SystemState* sys)
+ASObject *JSON::doParse(const tiny_string &jsonstring, asAtom reviver, ASWorker* wrk)
 {
 	ASObject* res = nullptr;
 	multiname dummy(nullptr);
 	
-	parseAll(jsonstring,&res,dummy,reviver,sys);
+	parseAll(jsonstring,&res,dummy,reviver,wrk);
 	return res;
 }
 
@@ -72,7 +72,7 @@ ASFUNCTIONBODY_ATOM(JSON,_parse)
 			throwError<TypeError>(kCheckTypeFailedError);
 		reviver = args[1];
 	}
-	ASObject* res = doParse(text,reviver,sys);
+	ASObject* res = doParse(text,reviver,wrk);
 	if (!res)
 		throwError<TypeError>(kJSONInvalidParseInput);
 	ret = asAtomHandler::fromObject(res);
@@ -98,7 +98,7 @@ ASFUNCTIONBODY_ATOM(JSON,_stringify)
 			for (uint64_t i = 0; i < ar->size(); i++)
 			{
 				asAtom a = ar->at(i);
-				filter += asAtomHandler::toString(a,sys);
+				filter += asAtomHandler::toString(a,wrk);
 				filter += " ";
 			}
 		}
@@ -128,27 +128,27 @@ ASFUNCTIONBODY_ATOM(JSON,_stringify)
 			{
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtomHandler::getObject(space)->call_toString(ret);
-				spaces = asAtomHandler::toString(ret,sys);
+				spaces = asAtomHandler::toString(ret,wrk);
 			}
 			else
-				spaces = asAtomHandler::toString(space,sys);
+				spaces = asAtomHandler::toString(space,wrk);
 			if (spaces.numBytes() > 10)
 				spaces = spaces.substr_bytes(0,10);
 		}
 	}
 	tiny_string res = value->toJSON(path,replacer,spaces,filter);
 
-	ret = asAtomHandler::fromObject(abstract_s(sys,res));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,res));
 }
 
-void JSON::parseAll(const tiny_string &jsonstring, ASObject** parent , multiname& key, asAtom reviver, SystemState* sys)
+void JSON::parseAll(const tiny_string &jsonstring, ASObject** parent , multiname& key, asAtom reviver, ASWorker* wrk)
 {
 	CharIterator it = jsonstring.begin();
 	while (it != jsonstring.end())
 	{
 		if (*parent && (*parent)->isPrimitive())
 			throwError<SyntaxError>(kJSONInvalidParseInput);
-		parse(jsonstring, it, parent , key, reviver,sys);
+		parse(jsonstring, it, parent , key, reviver,wrk);
 		while (*it == ' ' ||
 			   *it == '\t' ||
 			   *it == '\n' ||
@@ -157,7 +157,7 @@ void JSON::parseAll(const tiny_string &jsonstring, ASObject** parent , multiname
 			it++;
 	}
 }
-void JSON::parse(const tiny_string &jsonstring,CharIterator& it, ASObject** parent , multiname& key, asAtom reviver, SystemState* sys)
+void JSON::parse(const tiny_string &jsonstring, CharIterator& it, ASObject** parent , multiname& key, asAtom reviver, ASWorker* wrk)
 {
 	while (*it == ' ' ||
 		   *it == '\t' ||
@@ -171,13 +171,13 @@ void JSON::parse(const tiny_string &jsonstring,CharIterator& it, ASObject** pare
 		switch(c)
 		{
 			case '{':
-				parseObject(jsonstring,it,parent,key, reviver,sys);
+				parseObject(jsonstring,it,parent,key, reviver,wrk);
 				break;
 			case '[': 
-				parseArray(jsonstring,it,parent,key, reviver,sys);
+				parseArray(jsonstring,it,parent,key, reviver,wrk);
 				break;
 			case '"':
-				parseString(jsonstring,it,parent,key,sys);
+				parseString(jsonstring,it,parent,key,wrk);
 				break;
 			case '0':
 			case '1':
@@ -190,16 +190,16 @@ void JSON::parse(const tiny_string &jsonstring,CharIterator& it, ASObject** pare
 			case '8':
 			case '9':
 			case '-':
-				parseNumber(jsonstring,it,parent,key,sys);
+				parseNumber(jsonstring,it,parent,key,wrk);
 				break;
 			case 't':
-				parseTrue(it,parent,key,sys);
+				parseTrue(it,parent,key,wrk);
 				break;
 			case 'f':
-				parseFalse(it,parent,key,sys);
+				parseFalse(it,parent,key,wrk);
 				break;
 			case 'n':
-				parseNull(it,parent,key,sys);
+				parseNull(it,parent,key,wrk);
 				break;
 			default:
 				throwError<SyntaxError>(kJSONInvalidParseInput);
@@ -212,10 +212,10 @@ void JSON::parse(const tiny_string &jsonstring,CharIterator& it, ASObject** pare
 		
 		if (haskey)
 		{
-			params[0] = asAtomHandler::fromObject(abstract_s(sys,key.normalizedName(sys)));
-			if ((*parent)->hasPropertyByMultiname(key,true,false))
+			params[0] = asAtomHandler::fromObject(abstract_s(wrk,key.normalizedName(wrk->getSystemState())));
+			if ((*parent)->hasPropertyByMultiname(key,true,false,wrk))
 			{
-				(*parent)->getVariableByMultiname(params[1],key);
+				(*parent)->getVariableByMultiname(params[1],key,GET_VARIABLE_OPTION::NONE,wrk);
 				ASATOM_INCREF(params[1]);
 			}
 			else
@@ -231,27 +231,27 @@ void JSON::parse(const tiny_string &jsonstring,CharIterator& it, ASObject** pare
 		asAtom funcret=asAtomHandler::invalidAtom;
 		asAtom closure = asAtomHandler::getClosure(reviver) ? asAtomHandler::fromObject(asAtomHandler::getClosure(reviver)) : asAtomHandler::nullAtom;
 		
-		asAtomHandler::callFunction(reviver,funcret,closure, params, 2,true);
+		asAtomHandler::callFunction(reviver,wrk,funcret,closure, params, 2,true);
 		if(asAtomHandler::isValid(funcret))
 		{
 			if (haskey)
 			{
 				if (asAtomHandler::isUndefined(funcret))
 				{
-					(*parent)->deleteVariableByMultiname(key);
+					(*parent)->deleteVariableByMultiname(key,wrk);
 					ASATOM_DECREF(funcret);
 				}
 				else
 				{
-					(*parent)->setVariableByMultiname(key,funcret,ASObject::CONST_NOT_ALLOWED);
+					(*parent)->setVariableByMultiname(key,funcret,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
 				}
 			}
 			else 
-				*parent= asAtomHandler::toObject(funcret,sys);
+				*parent= asAtomHandler::toObject(funcret,wrk);
 		}
 	}
 }
-void JSON::parseTrue(CharIterator& it, ASObject** parent, multiname &key, SystemState* sys)
+void JSON::parseTrue(CharIterator& it, ASObject** parent, multiname &key, ASWorker* wrk)
 {
 	if (*it++ != 't')
 		throwError<SyntaxError>(kJSONInvalidParseInput);
@@ -262,14 +262,14 @@ void JSON::parseTrue(CharIterator& it, ASObject** parent, multiname &key, System
 	if (*it++ != 'e')
 		throwError<SyntaxError>(kJSONInvalidParseInput);
 	if (*parent == nullptr)
-		*parent = abstract_b(sys,true);
+		*parent = abstract_b(wrk->getSystemState(),true);
 	else
 	{
 		asAtom v = asAtomHandler::fromBool(true);
-		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED);
+		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 }
-void JSON::parseFalse(CharIterator& it, ASObject** parent, multiname &key, SystemState* sys)
+void JSON::parseFalse(CharIterator& it, ASObject** parent, multiname &key, ASWorker* wrk)
 {
 	if (*it++ != 'f')
 		throwError<SyntaxError>(kJSONInvalidParseInput);
@@ -282,14 +282,14 @@ void JSON::parseFalse(CharIterator& it, ASObject** parent, multiname &key, Syste
 	if (*it++ != 'e')
 		throwError<SyntaxError>(kJSONInvalidParseInput);
 	if (*parent == nullptr)
-		*parent = abstract_b(sys,false);
+		*parent = abstract_b(wrk->getSystemState(),false);
 	else 
 	{
 		asAtom v = asAtomHandler::fromBool(false);
-		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED);
+		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 }
-void JSON::parseNull(CharIterator& it, ASObject** parent, multiname &key, SystemState* sys)
+void JSON::parseNull(CharIterator& it, ASObject** parent, multiname &key, ASWorker* wrk)
 {
 	if (*it++ != 'n')
 		throwError<SyntaxError>(kJSONInvalidParseInput);
@@ -300,11 +300,11 @@ void JSON::parseNull(CharIterator& it, ASObject** parent, multiname &key, System
 	if (*it++ != 'l')
 		throwError<SyntaxError>(kJSONInvalidParseInput);
 	if (*parent == nullptr)
-		*parent = sys->getNullRef();
+		*parent = wrk->getSystemState()->getNullRef();
 	else 
-		(*parent)->setVariableByMultiname(key,asAtomHandler::nullAtom,ASObject::CONST_NOT_ALLOWED);
+		(*parent)->setVariableByMultiname(key,asAtomHandler::nullAtom,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
 }
-void JSON::parseString(const tiny_string& jsonstring, CharIterator& it, ASObject** parent, multiname &key, SystemState* sys, tiny_string* result)
+void JSON::parseString(const tiny_string& jsonstring, CharIterator& it, ASObject** parent, multiname &key, ASWorker* wrk, tiny_string* result)
 {
 	it++; // ignore starting quotes
 	if (it == jsonstring.end())
@@ -410,17 +410,17 @@ void JSON::parseString(const tiny_string& jsonstring, CharIterator& it, ASObject
 	if (parent != nullptr)
 	{
 		if (*parent == nullptr)
-			*parent = abstract_s(sys,res);
+			*parent = abstract_s(wrk,res);
 		else 
 		{
-			asAtom v = asAtomHandler::fromObject(abstract_s(sys,res));
-			(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED);
+			asAtom v = asAtomHandler::fromObject(abstract_s(wrk,res));
+			(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
 		}
 	}
 	if (result)
 		*result =res;
 }
-void JSON::parseNumber(const tiny_string &jsonstring, CharIterator& it, ASObject** parent, multiname &key, SystemState* sys)
+void JSON::parseNumber(const tiny_string &jsonstring, CharIterator& it, ASObject** parent, multiname &key, ASWorker* wrk)
 {
 	tiny_string res;
 	bool done = false;
@@ -452,34 +452,34 @@ void JSON::parseNumber(const tiny_string &jsonstring, CharIterator& it, ASObject
 				break;
 		}
 	}
-	ASObject* numstr = abstract_s(sys,res);
+	ASObject* numstr = abstract_s(wrk,res);
 	number_t num = numstr->toNumber();
 
 	if (std::isnan(num))
 		throwError<SyntaxError>(kJSONInvalidParseInput);
 
 	if (*parent == nullptr)
-		*parent = abstract_d(sys,num);
+		*parent = abstract_d(wrk,num);
 	else 
 	{
-		asAtom v = asAtomHandler::fromNumber(sys,num,false);
-		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED);
+		asAtom v = asAtomHandler::fromNumber(wrk,num,false);
+		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 }
-void JSON::parseObject(const tiny_string &jsonstring, CharIterator& it, ASObject** parent, multiname &key, asAtom reviver, SystemState* sys)
+void JSON::parseObject(const tiny_string &jsonstring, CharIterator& it, ASObject** parent, multiname &key, asAtom reviver, ASWorker* wrk)
 {
 	it++; // ignore '{' or ','
-	ASObject* subobj = Class<ASObject>::getInstanceS(sys);
+	ASObject* subobj = Class<ASObject>::getInstanceS(wrk);
 	if (*parent == nullptr)
 		*parent = subobj;
 	else 
 	{
 		asAtom v = asAtomHandler::fromObject(subobj);
-		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED);
+		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
-	name.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
+	name.ns.push_back(nsNameAndKind(wrk->getSystemState(),"",NAMESPACE));
 	name.isAttribute = false;
 	bool done = false;
 	bool bfirst = true;
@@ -506,8 +506,8 @@ void JSON::parseObject(const tiny_string &jsonstring, CharIterator& it, ASObject
 			case '\"':
 				{
 					tiny_string keyname;
-					parseString(jsonstring,it,nullptr,name,sys,&keyname);
-					name.name_s_id=sys->getUniqueStringId(keyname);
+					parseString(jsonstring,it,nullptr,name,wrk,&keyname);
+					name.name_s_id=wrk->getSystemState()->getUniqueStringId(keyname);
 					needkey = false;
 					needvalue = true;
 				}
@@ -521,7 +521,7 @@ void JSON::parseObject(const tiny_string &jsonstring, CharIterator& it, ASObject
 				break;
 			case ':':
 				it++;
-				parse(jsonstring,it,&subobj,name,reviver,sys);
+				parse(jsonstring,it,&subobj,name,reviver,wrk);
 				needvalue = false;
 				break;
 			default:
@@ -533,21 +533,21 @@ void JSON::parseObject(const tiny_string &jsonstring, CharIterator& it, ASObject
 		throwError<SyntaxError>(kJSONInvalidParseInput);
 }
 
-void JSON::parseArray(const tiny_string &jsonstring, CharIterator& it, ASObject** parent, multiname &key, asAtom reviver, SystemState* sys)
+void JSON::parseArray(const tiny_string &jsonstring, CharIterator& it, ASObject** parent, multiname &key, asAtom reviver, ASWorker* wrk)
 {
 	it++; // ignore '['
-	ASObject* subobj = Class<Array>::getInstanceSNoArgs(sys);
+	ASObject* subobj = Class<Array>::getInstanceSNoArgs(wrk);
 	if (*parent == nullptr)
 		*parent = subobj;
 	else 
 	{
 		asAtom v = asAtomHandler::fromObject(subobj);
-		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED);
+		(*parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_UINT;
 	name.name_ui = 0;
-	name.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
+	name.ns.push_back(nsNameAndKind(wrk->getSystemState(),"",NAMESPACE));
 	name.isAttribute = false;
 	bool done = false;
 	bool needdata = false;
@@ -572,7 +572,7 @@ void JSON::parseArray(const tiny_string &jsonstring, CharIterator& it, ASObject*
 				it++;
 				break;
 			default:
-				parse(jsonstring,it,&subobj,name, reviver,sys);
+				parse(jsonstring,it,&subobj,name, reviver,wrk);
 				needdata = false;
 				break;
 		}

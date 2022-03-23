@@ -26,6 +26,7 @@
 #include "compat.h"
 #include "backends/security.h"
 #include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Vector.h"
@@ -86,29 +87,29 @@ void Capabilities::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getPlayerType)
 {
-	switch (sys->flashMode)
+	switch (wrk->getSystemState()->flashMode)
 	{
 		case SystemState::AVMPLUS:
-			ret = asAtomHandler::fromString(sys,"AVMPlus");
+			ret = asAtomHandler::fromString(wrk->getSystemState(),"AVMPlus");
 			break;
 		case SystemState::AIR:
-			ret = asAtomHandler::fromString(sys,"Desktop");
+			ret = asAtomHandler::fromString(wrk->getSystemState(),"Desktop");
 			break;
 		default:
-			ret = asAtomHandler::fromString(sys,"PlugIn");
+			ret = asAtomHandler::fromString(wrk->getSystemState(),"PlugIn");
 			break;
 	}
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getLanguage)
 {
-	ret = asAtomHandler::fromString(sys,"en");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"en");
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getCPUArchitecture)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Capabilities.cpuArchitecture is not implemented");
-	ret = asAtomHandler::fromString(sys,"x86");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"x86");
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getIsDebugger)
@@ -128,21 +129,21 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getLocalFileReadDisable)
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getManufacturer)
 {
-	ret = asAtomHandler::fromString(sys,MANUFACTURER);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),MANUFACTURER);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getOS)
 {
 #ifdef _WIN32
-	ret = asAtomHandler::fromString(sys,"Windows");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"Windows");
 #else
-	ret = asAtomHandler::fromString(sys,"Linux");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"Linux");
 #endif
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getVersion)
 {
-	ret = asAtomHandler::fromString(sys,EMULATED_VERSION);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),EMULATED_VERSION);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getServerString)
@@ -155,7 +156,7 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getServerString)
 	res += MANUFACTURER;
 
 	SDL_DisplayMode screen;
-	if (sys->getEngineData()->getScreenData(&screen)) {
+	if (wrk->getSystemState()->getEngineData()->getScreenData(&screen)) {
 		gint width = screen.w;
 		gint height = screen.h;
 		char buf[40];
@@ -203,7 +204,7 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getServerString)
 	supports DTS-HD High Resolution Audio	DTH
 	supports DTS-HD Master Audio	DTM
 	*/
-	ret = asAtomHandler::fromString(sys,res);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),res);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_avHardwareDisable)
@@ -297,18 +298,18 @@ ASFUNCTIONBODY_ATOM(Capabilities,_hasVideoEncoder)
 
 ASFUNCTIONBODY_ATOM(Capabilities,_maxLevelIDC)
 {
-    ret = asAtomHandler::fromString(sys,"");
+    ret = asAtomHandler::fromString(wrk->getSystemState(),"");
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_pixelAspectRatio)
 {
     LOG(LOG_NOT_IMPLEMENTED,"Capabilities.pixelAspectRatio always returns 1");
-    asAtomHandler::setNumber(ret,sys,1);
+    asAtomHandler::setNumber(ret,wrk,1);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_screenColor)
 {
-    ret = asAtomHandler::fromString(sys,"color");
+    ret = asAtomHandler::fromString(wrk->getSystemState(),"color");
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_supports32BitProcesses)
@@ -320,30 +321,30 @@ ASFUNCTIONBODY_ATOM(Capabilities,_supports32BitProcesses)
 ASFUNCTIONBODY_ATOM(Capabilities,_supports64BitProcesses)
 {
     LOG(LOG_NOT_IMPLEMENTED,"Capabilities.supports64BitProcesses always returns \"none\"");
-    ret = asAtomHandler::fromString(sys,"none");
+    ret = asAtomHandler::fromString(wrk->getSystemState(),"none");
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_touchscreenType)
 {
     LOG(LOG_NOT_IMPLEMENTED,"Capabilities.touchscreenType always returns empty string");
-    ret = asAtomHandler::fromString(sys,"none");
+    ret = asAtomHandler::fromString(wrk->getSystemState(),"none");
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenResolutionX)
 {
 	SDL_DisplayMode screen;
-	if (!sys->getEngineData()->getScreenData(&screen))
-		asAtomHandler::setInt(ret,sys,0);
+	if (!wrk->getSystemState()->getEngineData()->getScreenData(&screen))
+		asAtomHandler::setInt(ret,wrk,0);
 	else
-		asAtomHandler::setInt(ret,sys,screen.w);
+		asAtomHandler::setInt(ret,wrk,screen.w);
 }
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenResolutionY)
 {
 	SDL_DisplayMode screen;
-	if (!sys->getEngineData()->getScreenData(&screen))
-		asAtomHandler::setInt(ret,sys,0);
+	if (!wrk->getSystemState()->getEngineData()->getScreenData(&screen))
+		asAtomHandler::setInt(ret,wrk,0);
 	else
-		asAtomHandler::setInt(ret,sys,screen.h);
+		asAtomHandler::setInt(ret,wrk,screen.h);
 }
 ASFUNCTIONBODY_ATOM(Capabilities,_getHasAccessibility)
 {
@@ -353,11 +354,11 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getHasAccessibility)
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenDPI)
 {
-	number_t dpi = sys->getEngineData()->getScreenDPI();
-	asAtomHandler::setNumber(ret,sys,dpi);
+	number_t dpi = wrk->getSystemState()->getEngineData()->getScreenDPI();
+	asAtomHandler::setNumber(ret,wrk,dpi);
 }
 
-ApplicationDomain::ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p):ASObject(c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN),defaultDomainMemory(Class<ByteArray>::getInstanceSNoArgs(c->getSystemState())), parentDomain(p)
+ApplicationDomain::ApplicationDomain(ASWorker* wrk, Class_base* c, _NR<ApplicationDomain> p):ASObject(wrk,c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN),defaultDomainMemory(Class<ByteArray>::getInstanceSNoArgs(wrk)), parentDomain(p)
 {
 	defaultDomainMemory->setLength(MIN_DOMAIN_MEMORY_LIMIT);
 	currentDomainMemory=defaultDomainMemory.getPtr();
@@ -367,17 +368,17 @@ void ApplicationDomain::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	//Static
-	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentDomain),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",Class<IFunction>::getFunction(c->getSystemState(),_getMinDomainMemoryLength),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentDomain,0,Class<ApplicationDomain>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",Class<IFunction>::getFunction(c->getSystemState(),_getMinDomainMemoryLength,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	//Instance
-	c->setDeclaredMethodByQName("hasDefinition","",Class<IFunction>::getFunction(c->getSystemState(),hasDefinition),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getDefinition","",Class<IFunction>::getFunction(c->getSystemState(),getDefinition),NORMAL_METHOD,true);
-	REGISTER_GETTER_SETTER(c,domainMemory);
-	REGISTER_GETTER(c,parentDomain);
+	c->setDeclaredMethodByQName("hasDefinition","",Class<IFunction>::getFunction(c->getSystemState(),hasDefinition,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDefinition","",Class<IFunction>::getFunction(c->getSystemState(),getDefinition,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,domainMemory,ByteArray);
+	REGISTER_GETTER_RESULTTYPE(c,parentDomain,ApplicationDomain);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_CB(ApplicationDomain,domainMemory,cbDomainMemory);
-ASFUNCTIONBODY_GETTER(ApplicationDomain,parentDomain);
+ASFUNCTIONBODY_GETTER_SETTER_CB(ApplicationDomain,domainMemory,cbDomainMemory)
+ASFUNCTIONBODY_GETTER(ApplicationDomain,parentDomain)
 
 void ApplicationDomain::cbDomainMemory(_NR<ByteArray> oldvalue)
 {
@@ -406,19 +407,19 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 		// C++ constructor
 		return;
 	else if(parentDomain.isNull())
-		th->parentDomain = _MR(sys->systemDomain);
+		th->parentDomain = _MR(wrk->getSystemState()->systemDomain);
 	else
 		th->parentDomain = parentDomain;
 }
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_getMinDomainMemoryLength)
 {
-	asAtomHandler::setUInt(ret,sys,(uint32_t)MIN_DOMAIN_MEMORY_LIMIT);
+	asAtomHandler::setUInt(ret,wrk,(uint32_t)MIN_DOMAIN_MEMORY_LIMIT);
 }
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_getCurrentDomain)
 {
-	_NR<ApplicationDomain> res=ABCVm::getCurrentApplicationDomain(getWorker() ? getWorker()->currentCallContext : getVm(sys)->currentCallContext);
+	_NR<ApplicationDomain> res=ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
 	res->incRef();
 	ret = asAtomHandler::fromObject(res.getPtr());
 }
@@ -427,7 +428,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 {
 	ApplicationDomain* th = asAtomHandler::as<ApplicationDomain>(obj);
 	assert(argslen==1);
-	const tiny_string& tmp=asAtomHandler::toString(args[0],sys);
+	const tiny_string& tmp=asAtomHandler::toString(args[0],wrk);
 
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
@@ -435,15 +436,15 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 	tiny_string nsName;
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
-	name.name_s_id=sys->getUniqueStringId(tmpName);
+	name.name_s_id=wrk->getSystemState()->getUniqueStringId(tmpName);
 	if (nsName != "")
-		name.ns.push_back(nsNameAndKind(sys,nsName,NAMESPACE));
+		name.ns.push_back(nsNameAndKind(wrk->getSystemState(),nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,"Looking for definition of " << name);
 	ASObject* target;
 	asAtom o=asAtomHandler::invalidAtom;
 	ret = asAtomHandler::invalidAtom;
-	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(o,name,target);
+	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(o,name,target,wrk);
 	if(asAtomHandler::isInvalid(o))
 		asAtomHandler::setBool(ret,false);
 	else
@@ -462,7 +463,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 {
 	ApplicationDomain* th = asAtomHandler::as<ApplicationDomain>(obj);
 	assert(argslen==1);
-	const tiny_string& tmp=asAtomHandler::toString(args[0],sys);
+	const tiny_string& tmp=asAtomHandler::toString(args[0],wrk);
 
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
@@ -470,16 +471,16 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 	tiny_string nsName;
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
-	name.name_s_id=sys->getUniqueStringId(tmpName);
+	name.name_s_id=wrk->getSystemState()->getUniqueStringId(tmpName);
 	if (nsName != "")
-		name.ns.push_back(nsNameAndKind(sys,nsName,NAMESPACE));
+		name.ns.push_back(nsNameAndKind(wrk->getSystemState(),nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,"Looking for definition of " << name);
 	ret = asAtomHandler::invalidAtom;
 	ASObject* target;
-	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
+	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target,wrk);
 	if(asAtomHandler::isInvalid(ret))
-		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved(sys));
+		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved(wrk->getSystemState()));
 
 	//TODO: specs says that also namespaces and function may be returned
 	//assert_and_throw(o->getObjectType()==T_CLASS);
@@ -510,23 +511,23 @@ ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObjec
 		name.hasEmptyNS=false;
 	}
 	asAtom ret=asAtomHandler::invalidAtom;
-	getVariableAndTargetByMultiname(ret,name, target);
-	return asAtomHandler::toObject(ret,getSystemState());
+	getVariableAndTargetByMultiname(ret,name, target,getInstanceWorker());
+	return asAtomHandler::toObject(ret,getInstanceWorker());
 }
 
-bool ApplicationDomain::findTargetByMultiname(const multiname& name, ASObject*& target)
+bool ApplicationDomain::findTargetByMultiname(const multiname& name, ASObject*& target, ASWorker* wrk)
 {
 	//Check in the parent first
 	if(!parentDomain.isNull())
 	{
-		bool ret=parentDomain->findTargetByMultiname(name, target);
+		bool ret=parentDomain->findTargetByMultiname(name, target,wrk);
 		if(ret)
 			return true;
 	}
 
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
-		bool ret=globalScopes[i]->hasPropertyByMultiname(name,true,true);
+		bool ret=globalScopes[i]->hasPropertyByMultiname(name,true,true,wrk);
 		if(ret)
 		{
 			target=globalScopes[i];
@@ -537,12 +538,12 @@ bool ApplicationDomain::findTargetByMultiname(const multiname& name, ASObject*& 
 }
 
 
-GET_VARIABLE_RESULT ApplicationDomain::getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target)
+GET_VARIABLE_RESULT ApplicationDomain::getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target, ASWorker* wrk)
 {
 	GET_VARIABLE_RESULT res = GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
-		res = globalScopes[i]->getVariableByMultiname(ret,name,NO_INCREF);
+		res = globalScopes[i]->getVariableByMultiname(ret,name,NO_INCREF,wrk);
 		if(asAtomHandler::isValid(ret))
 		{
 			target=globalScopes[i];
@@ -558,15 +559,15 @@ GET_VARIABLE_RESULT ApplicationDomain::getVariableAndTargetByMultiname(asAtom& r
 	}
 	if(!parentDomain.isNull())
 	{
-		res = parentDomain->getVariableAndTargetByMultiname(ret,name, target);
+		res = parentDomain->getVariableAndTargetByMultiname(ret,name, target,wrk);
 		if(asAtomHandler::isValid(ret))
 			return res;
 	}
 	return res;
 }
-void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(asAtom& ret, const multiname& name, ASObject*& target)
+void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(asAtom& ret, const multiname& name, ASObject*& target, ASWorker* wrk)
 {
-	getVariableAndTargetByMultiname(ret,name, target);
+	getVariableAndTargetByMultiname(ret,name, target,wrk);
 	if (asAtomHandler::isValid(ret))
 		return;
 	if (name.ns.size() >= 1 && name.ns[0].nsNameId == BUILTIN_STRINGS::STRING_AS3VECTOR)
@@ -593,17 +594,17 @@ void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(a
 			}
 			ASObject* tntarget;
 			asAtom typeobj=asAtomHandler::invalidAtom;
-			getVariableAndTargetByMultiname(typeobj,tn, tntarget);
+			getVariableAndTargetByMultiname(typeobj,tn, tntarget,wrk);
 			if (asAtomHandler::isValid(typeobj))
 			{
 				const Type* t = asAtomHandler::getObject(typeobj)->as<Type>();
 				this->incRef();
-				ret = asAtomHandler::fromObject(Template<Vector>::getTemplateInstance(getWorker() ? getWorker()->rootClip.getPtr() : getSystemState()->mainClip,t,_NR<ApplicationDomain>(this)).getPtr());
+				ret = asAtomHandler::fromObject(Template<Vector>::getTemplateInstance(wrk->rootClip.getPtr(),t,_NR<ApplicationDomain>(this)).getPtr());
 			}
 		}
 	}
 }
-ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname& name)
+ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname& name,ASWorker* wrk)
 {
 	auto it = classesBeingDefined.find(&name);
 	if (it != classesBeingDefined.end())
@@ -613,16 +614,16 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 	for(uint32_t i=0;i<globalScopes.size();i++)
 	{
 		asAtom o=asAtomHandler::invalidAtom;
-		globalScopes[i]->getVariableByMultinameOpportunistic(o,name);
+		globalScopes[i]->getVariableByMultinameOpportunistic(o,name,wrk);
 		if(asAtomHandler::isValid(o))
 		{
 			// No incRef, return a reference borrowed from globalScopes
-			return asAtomHandler::toObject(o,getSystemState());
+			return asAtomHandler::toObject(o,wrk);
 		}
 	}
 	if(!parentDomain.isNull())
 	{
-		ASObject* ret=parentDomain->getVariableByMultinameOpportunistic(name);
+		ASObject* ret=parentDomain->getVariableByMultinameOpportunistic(name,wrk);
 		if(ret)
 			return ret;
 	}
@@ -644,8 +645,8 @@ void ApplicationDomain::checkDomainMemory()
 	currentDomainMemory=domainMemory.getPtr();
 }
 
-LoaderContext::LoaderContext(Class_base* c):
-	ASObject(c,T_OBJECT,SUBTYPE_LOADERCONTEXT),allowCodeImport(true),checkPolicyFile(false),imageDecodingPolicy("onDemand")
+LoaderContext::LoaderContext(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c,T_OBJECT,SUBTYPE_LOADERCONTEXT),allowCodeImport(true),checkPolicyFile(false),imageDecodingPolicy("onDemand")
 {
 }
 
@@ -677,12 +678,12 @@ ASFUNCTIONBODY_ATOM(LoaderContext,_constructor)
 		(th->securityDomain, NullRef);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, allowCodeImport);
-ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, applicationDomain);
-ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, checkPolicyFile);
-ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, parameters);
-ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, securityDomain);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(LoaderContext, imageDecodingPolicy);
+ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, allowCodeImport)
+ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, applicationDomain)
+ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, checkPolicyFile)
+ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, parameters)
+ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, securityDomain)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(LoaderContext, imageDecodingPolicy)
 
 bool LoaderContext::getCheckPolicyFile()
 {
@@ -711,7 +712,7 @@ ASFUNCTIONBODY_ATOM(SecurityDomain,_constructor)
 
 ASFUNCTIONBODY_ATOM(SecurityDomain,_getCurrentDomain)
 {
-	_NR<SecurityDomain> res=ABCVm::getCurrentSecurityDomain(getWorker() ? getWorker()->currentCallContext : getVm(sys)->currentCallContext);
+	_NR<SecurityDomain> res=ABCVm::getCurrentSecurityDomain(wrk->currentCallContext);
 	res->incRef();
 	ret = asAtomHandler::fromObject(res.getPtr());
 }
@@ -742,29 +743,29 @@ void Security::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Security,_getExactSettings)
 {
-	asAtomHandler::setBool(ret,sys->securityManager->getExactSettings());
+	asAtomHandler::setBool(ret,wrk->getSystemState()->securityManager->getExactSettings());
 }
 
 ASFUNCTIONBODY_ATOM(Security,_setExactSettings)
 {
 	assert(args && argslen==1);
-	if(sys->securityManager->getExactSettingsLocked())
+	if(wrk->getSystemState()->securityManager->getExactSettingsLocked())
 	{
-		throw Class<SecurityError>::getInstanceS(sys,"SecurityError: Security.exactSettings already set");
+		throw Class<SecurityError>::getInstanceS(wrk,"SecurityError: Security.exactSettings already set");
 	}
-	sys->securityManager->setExactSettings(asAtomHandler::Boolean_concrete(args[0]));
+	wrk->getSystemState()->securityManager->setExactSettings(asAtomHandler::Boolean_concrete(args[0]));
 }
 
 ASFUNCTIONBODY_ATOM(Security,_getSandboxType)
 {
-	if(sys->securityManager->getSandboxType() == SecurityManager::REMOTE)
-		ret = asAtomHandler::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::REMOTE));
-	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_TRUSTED)
-		ret = asAtomHandler::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED));
-	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
-		ret = asAtomHandler::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE));
-	else if(sys->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_NETWORK)
-		ret = asAtomHandler::fromString(sys,sys->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK));
+	if(wrk->getSystemState()->securityManager->getSandboxType() == SecurityManager::REMOTE)
+		ret = asAtomHandler::fromString(wrk->getSystemState(),wrk->getSystemState()->securityManager->getSandboxName(SecurityManager::REMOTE));
+	else if(wrk->getSystemState()->securityManager->getSandboxType() == SecurityManager::LOCAL_TRUSTED)
+		ret = asAtomHandler::fromString(wrk->getSystemState(),wrk->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_TRUSTED));
+	else if(wrk->getSystemState()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
+		ret = asAtomHandler::fromString(wrk->getSystemState(),wrk->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_FILE));
+	else if(wrk->getSystemState()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_NETWORK)
+		ret = asAtomHandler::fromString(wrk->getSystemState(),wrk->getSystemState()->securityManager->getSandboxName(SecurityManager::LOCAL_WITH_NETWORK));
 	else
 		assert_and_throw(false);
 }
@@ -781,9 +782,9 @@ ASFUNCTIONBODY_ATOM(Security, allowInsecureDomain)
 
 ASFUNCTIONBODY_ATOM(Security, loadPolicyFile)
 {
-	tiny_string url = asAtomHandler::toString(args[0],sys);
-	LOG(LOG_INFO, "Loading policy file: " << sys->mainClip->getOrigin().goToURL(url));
-	sys->securityManager->addPolicyFile(sys->mainClip->getOrigin().goToURL(url));
+	tiny_string url = asAtomHandler::toString(args[0],wrk);
+	LOG(LOG_INFO, "Loading policy file: " << wrk->getSystemState()->mainClip->getOrigin().goToURL(url));
+	wrk->getSystemState()->securityManager->addPolicyFile(wrk->getSystemState()->mainClip->getOrigin().goToURL(url));
 	assert_and_throw(argslen == 1);
 }
 
@@ -794,22 +795,22 @@ ASFUNCTIONBODY_ATOM(Security, showSettings)
 
 ASFUNCTIONBODY_ATOM(Security, pageDomain)
 {
-	tiny_string s = sys->mainClip->getBaseURL().getProtocol()+"://"+sys->mainClip->getBaseURL().getHostname();
-	ret = asAtomHandler::fromString(sys,s);
+	tiny_string s = wrk->getSystemState()->mainClip->getBaseURL().getProtocol()+"://"+wrk->getSystemState()->mainClip->getBaseURL().getHostname();
+	ret = asAtomHandler::fromString(wrk->getSystemState(),s);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark, fscommand)
 {
 	assert_and_throw(argslen >= 1 && argslen <= 2);
 	assert_and_throw(asAtomHandler::isString(args[0]));
-	tiny_string command = asAtomHandler::toString(args[0],sys);
+	tiny_string command = asAtomHandler::toString(args[0],wrk);
 	// according to specs fscommand is a void method, but the abcasm tests seem to expect a result value, so we set the result to undefined
 	ret = asAtomHandler::undefinedAtom;
 	if(command == "quit")
 	{
-		if (getWorker() && !getWorker()->isPrimordial) // only allow quit from main worker
+		if (!wrk->isPrimordial) // only allow quit from main worker
 			return;
-		sys->setShutdownFlag();
+		wrk->getSystemState()->setShutdownFlag();
 	}
 }
 
@@ -826,7 +827,7 @@ void System::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(System,totalMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "System.totalMemory not implemented");
-	asAtomHandler::setUInt(ret,sys,1024);
+	asAtomHandler::setUInt(ret,wrk,1024);
 }
 ASFUNCTIONBODY_ATOM(System,disposeXML)
 {
@@ -854,14 +855,45 @@ ASFUNCTIONBODY_ATOM(System,gc)
 	asAtomHandler::setUndefined(ret);
 }
 
-ASWorker::ASWorker(Class_base* c):
-	EventDispatcher(c),loader(_MR(Class<Loader>::getInstanceS(c->getSystemState()))),parser(nullptr),
-	giveAppPrivileges(false),started(false),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
+extern uint32_t asClassCount;
+
+ASWorker::ASWorker(SystemState* s):
+	EventDispatcher(this,nullptr),parser(nullptr),
+	giveAppPrivileges(false),started(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(true),state("running")
 {
 	subtype = SUBTYPE_WORKER;
+	setSystemState(s);
+	// TODO: it seems that AIR applications have a higher default value for max_recursion
+	// I haven't found any documentation about that, so we just set it to a value that seems to work...
+	limits.max_recursion = s->flashMode == SystemState::AIR ? 2048 : 256;
+	limits.max_recursion = 256;
+	limits.script_timeout = 20;
+	stacktrace = new stacktrace_entry[limits.max_recursion];
+}
+
+ASWorker::ASWorker(Class_base* c):
+	EventDispatcher(c->getSystemState()->worker,c),parser(nullptr),
+	giveAppPrivileges(false),started(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
+{
+	subtype = SUBTYPE_WORKER;
+	// TODO: it seems that AIR applications have a higher default value for max_recursion
+	// I haven't found any documentation about that, so we just set it to a value that seems to work...
 	limits.max_recursion = c->getSystemState()->flashMode == SystemState::AIR ? 2048 : 256;
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
+	loader = _MR(Class<Loader>::getInstanceS(this));
+}
+ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
+	EventDispatcher(wrk,c),parser(nullptr),
+	giveAppPrivileges(false),started(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
+{
+	subtype = SUBTYPE_WORKER;
+	// TODO: it seems that AIR applications have a higher default value for max_recursion
+	// I haven't found any documentation about that, so we just set it to a value that seems to work...
+	limits.max_recursion = c->getSystemState()->flashMode == SystemState::AIR ? 2048 : 256;
+	limits.script_timeout = 20;
+	stacktrace = new stacktrace_entry[limits.max_recursion];
+	loader = _MR(Class<Loader>::getInstanceS(this));
 }
 
 void ASWorker::finalize()
@@ -893,6 +925,7 @@ void ASWorker::finalize()
 	delete[] stacktrace;
 	loader.reset();
 	swf.reset();
+	delete[] freelist;
 }
 
 Prototype* ASWorker::getClassPrototype(const Class_base* cls)
@@ -900,7 +933,7 @@ Prototype* ASWorker::getClassPrototype(const Class_base* cls)
 	auto it = protoypeMap.find(cls);
 	if (it == protoypeMap.end())
 	{
-		Prototype* p = cls->prototype->clonePrototype();
+		Prototype* p = cls->prototype->clonePrototype(this);
 		it = protoypeMap.insert(make_pair(cls,_MR(p))).first;
 	}
 	return it->second.getPtr();
@@ -934,14 +967,14 @@ void ASWorker::execute()
 	streambuf *sbuf = new bytes_buf(swf->bytes,swf->getLength());
 	istream s(sbuf);
 	parsemutex.lock();
-	parser = new ParseThread(s,_MR(Class<ApplicationDomain>::getInstanceS(this->getSystemState(),_MR(getSystemState()->systemDomain))),getSystemState()->mainClip->securityDomain,loader.getPtr(),"");
+	parser = new ParseThread(s,_MR(Class<ApplicationDomain>::getInstanceS(this,_MR(getSystemState()->systemDomain))),getSystemState()->mainClip->securityDomain,loader.getPtr(),"");
 	parsemutex.unlock();
 	getSystemState()->addWorker(this);
 	this->incRef();
-	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"workerState")),true);
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"workerState")),true);
 	if (!this->threadAborting)
 	{
-		LOG(LOG_INFO,"start worker"<<this->toDebugString()<<" "<<this->isPrimordial<<" "<<getWorker());
+		LOG(LOG_INFO,"start worker"<<this->toDebugString()<<" "<<this->isPrimordial<<" "<<this);
 		parser->execute();
 	}
 	parsemutex.lock();
@@ -1008,7 +1041,7 @@ void ASWorker::jobFence()
 	state ="terminated";
 	this->incRef();
 	getSystemState()->removeWorker(this);
-	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"workerState")),true);
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"workerState")),true);
 	sem_event_cond.signal();
 }
 
@@ -1018,6 +1051,8 @@ void ASWorker::threadAbort()
 }
 bool ASWorker::addEvent(_NR<EventDispatcher> obj, _R<Event> ev)
 {
+	if (this->threadAborting)
+		return false;
 	Locker l(event_queue_mutex);
 	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	RELEASE_WRITE(ev->queued,true);
@@ -1025,30 +1060,50 @@ bool ASWorker::addEvent(_NR<EventDispatcher> obj, _R<Event> ev)
 	return true;
 }
 
-ASFUNCTIONBODY_GETTER(ASWorker, state);
-ASFUNCTIONBODY_GETTER(ASWorker, isPrimordial);
+tiny_string ASWorker::getDefaultXMLNamespace() const
+{
+	return getSystemState()->getStringFromUniqueId(currentCallContext ? currentCallContext->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY);
+}
+
+uint32_t ASWorker::getDefaultXMLNamespaceID() const
+{
+	return currentCallContext ? currentCallContext->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY;
+}
+
+void ASWorker::dumpStacktrace()
+{
+	tiny_string strace;
+	for (uint32_t i = cur_recursion; i > 0; i--)
+	{
+		strace += "    at ";
+		strace += asAtomHandler::toObject(stacktrace[i-1].object,this)->getClassName();
+		strace += "/";
+		strace += this->getSystemState()->getStringFromUniqueId(stacktrace[i-1].name);
+		strace += "()\n";
+	}
+	LOG(LOG_INFO,"current stacktrace:\n" << strace);
+}
+
+ASFUNCTIONBODY_GETTER(ASWorker, state)
+ASFUNCTIONBODY_GETTER(ASWorker, isPrimordial)
 
 ASFUNCTIONBODY_ATOM(ASWorker,_getCurrent)
 {
-	ASWorker* w = getWorker();
-	if(!w)
-		w=sys->worker;
-	w->incRef();
-	ret = asAtomHandler::fromObject(w);
+	ret = asAtomHandler::fromObject(wrk);
 }
 ASFUNCTIONBODY_ATOM(ASWorker,getSharedProperty)
 {
 	tiny_string key;
 	ARG_UNPACK_ATOM(key);
-	Locker l(sys->workerDomain->workersharedobjectmutex);
+	Locker l(wrk->getSystemState()->workerDomain->workersharedobjectmutex);
 	
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
-	m.name_s_id=sys->getUniqueStringId(key);
-	m.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
+	m.name_s_id=wrk->getSystemState()->getUniqueStringId(key);
+	m.ns.push_back(nsNameAndKind(wrk->getSystemState(),"",NAMESPACE));
 	m.isAttribute = false;
-	if (sys->workerDomain->workerSharedObject->hasPropertyByMultiname(m,true,false))
-		sys->workerDomain->workerSharedObject->getVariableByMultiname(ret,m);
+	if (wrk->getSystemState()->workerDomain->workerSharedObject->hasPropertyByMultiname(m,true,false,wrk))
+		wrk->getSystemState()->workerDomain->workerSharedObject->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk);
 	else
 		asAtomHandler::setNull(ret);
 }
@@ -1059,8 +1114,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,isSupported)
 ASFUNCTIONBODY_ATOM(ASWorker,_addEventListener)
 {
 	ASWorker* th = asAtomHandler::as<ASWorker>(obj);
-	th->worker = th;
-	EventDispatcher::addEventListener(ret,sys,obj,args,argslen);
+	EventDispatcher::addEventListener(ret,th,obj,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(ASWorker,createMessageChannel)
 {
@@ -1069,7 +1123,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,createMessageChannel)
 	ARG_UNPACK_ATOM(receiver);
 	if (receiver.isNull())
 		throwError<ArgumentError>(kInvalidArgumentError,"receiver");
-	MessageChannel* channel = Class<MessageChannel>::getInstanceSNoArgs(sys);
+	MessageChannel* channel = Class<MessageChannel>::getInstanceSNoArgs(th);
 	th->incRef();
 	channel->sender = _MR(th);
 	channel->receiver = receiver;
@@ -1077,21 +1131,21 @@ ASFUNCTIONBODY_ATOM(ASWorker,createMessageChannel)
 }
 ASFUNCTIONBODY_ATOM(ASWorker,_removeEventListener)
 {
-	EventDispatcher::removeEventListener(ret,sys,obj,args,argslen);
+	EventDispatcher::removeEventListener(ret,wrk,obj,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(ASWorker,setSharedProperty)
 {
 	tiny_string key;
 	asAtom value=asAtomHandler::invalidAtom;
 	ARG_UNPACK_ATOM(key)(value);
-	Locker l(sys->workerDomain->workersharedobjectmutex);
+	Locker l(wrk->getSystemState()->workerDomain->workersharedobjectmutex);
 	ASATOM_INCREF(value);
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
-	m.name_s_id=sys->getUniqueStringId(key);
-	m.ns.push_back(nsNameAndKind(sys,"",NAMESPACE));
+	m.name_s_id=wrk->getSystemState()->getUniqueStringId(key);
+	m.ns.push_back(nsNameAndKind(wrk->getSystemState(),"",NAMESPACE));
 	m.isAttribute = false;
-	sys->workerDomain->workerSharedObject->setVariableByMultiname(m,value,CONST_NOT_ALLOWED);
+	wrk->getSystemState()->workerDomain->workerSharedObject->setVariableByMultiname(m,value,CONST_NOT_ALLOWED,nullptr,wrk);
 }
 ASFUNCTIONBODY_ATOM(ASWorker,start)
 {
@@ -1101,7 +1155,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,start)
 	if (!th->swf.isNull())
 	{
 		th->started = true;
-		sys->addJob(th);
+		wrk->getSystemState()->addJob(th);
 	}
 	asAtomHandler::setUndefined(ret);
 }
@@ -1123,15 +1177,15 @@ ASFUNCTIONBODY_ATOM(ASWorker,terminate)
 	}
 }
 
-WorkerDomain::WorkerDomain(Class_base* c):
-	ASObject(c)
+WorkerDomain::WorkerDomain(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 	subtype = SUBTYPE_WORKERDOMAIN;
 	asAtom v=asAtomHandler::invalidAtom;
-	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : getSystemState()->mainClip;
-	Template<Vector>::getInstanceS(v,root,Class<ASWorker>::getClass(getSystemState()),NullRef);
+	RootMovieClip* root = wrk->rootClip.getPtr();
+	Template<Vector>::getInstanceS(wrk,v,root,Class<ASWorker>::getClass(getSystemState()),NullRef);
 	workerlist = _R<Vector>(asAtomHandler::as<Vector>(v));
-	workerSharedObject = _MR(Class<ASObject>::getInstanceS(getSystemState()));
+	workerSharedObject = _MR(Class<ASObject>::getInstanceS(wrk));
 	workerSharedObject->setRefConstant();
 }
 
@@ -1162,7 +1216,7 @@ ASFUNCTIONBODY_ATOM(WorkerDomain,_constructor)
 
 ASFUNCTIONBODY_ATOM(WorkerDomain,_getCurrent)
 {
-	ret = asAtomHandler::fromObject(sys->workerDomain);
+	ret = asAtomHandler::fromObject(wrk->getSystemState()->workerDomain);
 }
 ASFUNCTIONBODY_ATOM(WorkerDomain,_isSupported)
 {
@@ -1170,30 +1224,30 @@ ASFUNCTIONBODY_ATOM(WorkerDomain,_isSupported)
 }
 ASFUNCTIONBODY_ATOM(WorkerDomain,createWorker)
 {
-	ASWorker* w = Class<ASWorker>::getInstanceS(sys);
-	ARG_UNPACK_ATOM(w->swf)(w->giveAppPrivileges, false);
-	if (w->giveAppPrivileges)
+	ASWorker* wk = Class<ASWorker>::getInstanceS(wrk);
+	ARG_UNPACK_ATOM(wk->swf)(wk->giveAppPrivileges, false);
+	if (wk->giveAppPrivileges)
 		LOG(LOG_NOT_IMPLEMENTED,"WorkerDomain.createWorker: giveAppPrivileges is ignored");
-	ret = asAtomHandler::fromObject(w);
+	ret = asAtomHandler::fromObject(wk);
 }
 ASFUNCTIONBODY_ATOM(WorkerDomain,createWorkerFromPrimordial)
 {
-	ASWorker* w = Class<ASWorker>::getInstanceS(sys);
+	ASWorker* wk = Class<ASWorker>::getInstanceS(wrk->getSystemState()->worker);
 	
 	
-	ByteArray* ba = Class<ByteArray>::getInstanceS(sys);
-	FileStreamCache* sc = (FileStreamCache*)sys->getEngineData()->createFileStreamCache(sys);
-	sc->useExistingFile(sys->getDumpedSWFPath());
+	ByteArray* ba = Class<ByteArray>::getInstanceS(wk);
+	FileStreamCache* sc = (FileStreamCache*)wrk->getSystemState()->getEngineData()->createFileStreamCache(wrk->getSystemState());
+	sc->useExistingFile(wrk->getSystemState()->getDumpedSWFPath());
 	
-	ba->append(sc->createReader(),sys->swffilesize);
-	w->swf = _MR(ba);
-	ret = asAtomHandler::fromObject(w);
+	ba->append(sc->createReader(),wrk->getSystemState()->swffilesize);
+	wk->swf = _MR(ba);
+	ret = asAtomHandler::fromObject(wk);
 }
 ASFUNCTIONBODY_ATOM(WorkerDomain,createWorkerFromByteArray)
 {
-	ASWorker* w = Class<ASWorker>::getInstanceS(sys);
-	ARG_UNPACK_ATOM(w->swf);
-	ret = asAtomHandler::fromObject(w);
+	ASWorker* wk = Class<ASWorker>::getInstanceS(wrk);
+	ARG_UNPACK_ATOM(wk->swf);
+	ret = asAtomHandler::fromObject(wk);
 }
 
 ASFUNCTIONBODY_ATOM(WorkerDomain,listWorkers)

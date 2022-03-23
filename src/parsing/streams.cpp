@@ -211,5 +211,5 @@ int liblzma_filter::fillBuffer()
 
 void memorystream::handleError(const char* msg)
 {
-	throw lightspark::Class<lightspark::VerifyError>::getInstanceS(lightspark::getSys(),msg);
+	throw lightspark::Class<lightspark::VerifyError>::getInstanceS(lightspark::getWorker(),msg);
 }

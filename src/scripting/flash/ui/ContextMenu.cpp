@@ -22,7 +22,7 @@
 using namespace std;
 using namespace lightspark;
 
-ContextMenu::ContextMenu(Class_base* c):EventDispatcher(c),isSupported(true),customItems(Class<Array>::getInstanceSNoArgs(c->getSystemState())),builtInItems(Class<ContextMenuBuiltInItems>::getInstanceS(c->getSystemState()))
+ContextMenu::ContextMenu(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),isSupported(true),customItems(Class<Array>::getInstanceSNoArgs(wrk)),builtInItems(Class<ContextMenuBuiltInItems>::getInstanceS(wrk))
 {
 	subtype=SUBTYPE_CONTEXTMENU;
 }
@@ -49,92 +49,92 @@ void ContextMenu::getCurrentContextMenuItems(std::vector<_R<NativeMenuItem> >& i
 			if (asAtomHandler::is<NativeMenuItem>(item))
 				asAtomHandler::as<NativeMenuItem>(item)->addToMenu(items);
 		}
-		NativeMenuItem* n = Class<NativeMenuItem>::getInstanceSNoArgs(getSystemState());
+		NativeMenuItem* n = Class<NativeMenuItem>::getInstanceSNoArgs(getInstanceWorker());
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
-	getVisibleBuiltinContextMenuItems(this,items,getSystemState());
+	getVisibleBuiltinContextMenuItems(this,items,getInstanceWorker());
 }
 
-void ContextMenu::getVisibleBuiltinContextMenuItems(ContextMenu *m, std::vector<Ref<NativeMenuItem> >& items, SystemState* sys)
+void ContextMenu::getVisibleBuiltinContextMenuItems(ContextMenu *m, std::vector<Ref<NativeMenuItem> >& items, ASWorker* worker)
 {
 	NativeMenuItem* n;
 	if (!m || m->builtInItems->save)
 	{
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Save";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
 	if (!m || m->builtInItems->zoom)
 	{
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Zoom In";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Zoom Out";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="100%";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Show all";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
 	if (!m || m->builtInItems->quality)
 	{
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Quality";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
 	if (!m || m->builtInItems->play)
 	{
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Play";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Loop";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
 	if (!m || m->builtInItems->forwardAndBack)
 	{
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Rewind";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Forward";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Back";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
 	if (!m || m->builtInItems->print)
 	{
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Print";
 		items.push_back(_MR(n));
-		n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
-	n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+	n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 	n->label="Settings";
 	items.push_back(_MR(n));
-	n = Class<NativeMenuItem>::getInstanceSNoArgs(sys);
+	n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 	n->label="About";
 	items.push_back(_MR(n));
 }
@@ -145,7 +145,7 @@ ASFUNCTIONBODY_GETTER_SETTER(ContextMenu,builtInItems);
 
 ASFUNCTIONBODY_ATOM(ContextMenu,_constructor)
 {
-	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,wrk,obj, NULL, 0);
 }
 
 ASFUNCTIONBODY_ATOM(ContextMenu,hideBuiltInItems)
@@ -163,7 +163,7 @@ ASFUNCTIONBODY_ATOM(ContextMenu,hideBuiltInItems)
 ASFUNCTIONBODY_ATOM(ContextMenu,clone)
 {
 	ContextMenu* th=asAtomHandler::as<ContextMenu>(obj);
-	ContextMenu* res = Class<ContextMenu>::getInstanceSNoArgs(sys);
+	ContextMenu* res = Class<ContextMenu>::getInstanceSNoArgs(wrk);
 	if (th->builtInItems)
 	{
 		res->builtInItems->forwardAndBack=th->builtInItems->forwardAndBack;

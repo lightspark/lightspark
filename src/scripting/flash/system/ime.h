@@ -28,7 +28,7 @@ namespace lightspark
 class IME: public ASObject
 {
 public:
-	IME(Class_base* c):ASObject(c){}
+	IME(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 
 	ASFUNCTION_ATOM(compositionAbandoned);

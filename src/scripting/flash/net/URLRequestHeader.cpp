@@ -4,7 +4,7 @@
 
 using namespace lightspark;
 
-URLRequestHeader::URLRequestHeader(Class_base* c) : ASObject(c)
+URLRequestHeader::URLRequestHeader(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
 {
 }
 

@@ -31,7 +31,7 @@ class NumberFormatter : public ASObject
 private:
 	std::locale currlocale;
 public:
-	NumberFormatter(Class_base* c);
+	NumberFormatter(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(formatNumber);

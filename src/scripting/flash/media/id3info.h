@@ -28,7 +28,7 @@ namespace lightspark
 class ID3Info: public ASObject
 {
 public:
-	ID3Info(Class_base* c):ASObject(c){}
+	ID3Info(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
     ASPROPERTY_GETTER_SETTER(tiny_string, album);
     ASPROPERTY_GETTER_SETTER(tiny_string, artist);

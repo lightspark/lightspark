@@ -35,7 +35,7 @@ private:
 	std::locale currlocale;
 
 public:
-	CurrencyFormatter(Class_base* c);
+	CurrencyFormatter(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(format);

@@ -146,23 +146,23 @@ else asAtomHandler::set(*(context->stackp++),val)
 	context->stackp-=n; \
 	asAtom* ret= context->stackp;
 
-#define RUNTIME_STACK_POP_ASOBJECT(context,ret, sys) \
-	if(USUALLY_TRUE(context->stackp!=context->stack)) ret=asAtomHandler::toObject(*(--context->stackp),sys); \
+#define RUNTIME_STACK_POP_ASOBJECT(context,ret) \
+	if(USUALLY_TRUE(context->stackp!=context->stack)) ret=asAtomHandler::toObject(*(--context->stackp),context->worker); \
 	else context->handleError(kStackUnderflowError);
 
-#define RUNTIME_STACK_POP_CREATE_ASOBJECT(context,ret, sys) \
+#define RUNTIME_STACK_POP_CREATE_ASOBJECT(context,ret) \
 	if(USUALLY_FALSE(context->stackp==context->stack)) \
 		context->handleError(kStackUnderflowError); \
-	ASObject* ret = asAtomHandler::toObject(*(--context->stackp),sys);
+	ASObject* ret = asAtomHandler::toObject(*(--context->stackp),context->worker);
 
 #define RUNTIME_STACK_PEEK(context,ret) \
-	ret= USUALLY_TRUE(context->stackp != context->stack) ? (context->stackp-1) : NULL; 
+	ret= USUALLY_TRUE(context->stackp != context->stack) ? (context->stackp-1) : nullptr; 
 
-#define RUNTIME_STACK_PEEK_ASOBJECT(context,ret, sys) \
-	ret= USUALLY_TRUE(context->stackp != context->stack) ? asAtomHandler::toObject(*(context->stackp-1),sys) : NULL; 
+#define RUNTIME_STACK_PEEK_ASOBJECT(context,ret) \
+	ret= USUALLY_TRUE(context->stackp != context->stack) ? asAtomHandler::toObject(*(context->stackp-1),context->worker) : nullptr; 
 
 #define RUNTIME_STACK_PEEK_CREATE(context,ret) \
-	asAtom* ret = USUALLY_TRUE(context->stackp != context->stack) ? (context->stackp-1) : NULL; 
+	asAtom* ret = USUALLY_TRUE(context->stackp != context->stack) ? (context->stackp-1) : nullptr; 
 
 #define RUNTIME_STACK_POINTER_CREATE(context,ret) \
 	if(USUALLY_FALSE(context->stackp==context->stack)) \

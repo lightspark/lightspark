@@ -228,11 +228,11 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 				other->nextValue(nextValue,index);
 
 				if(asAtomHandler::isInteger(nextName))
-					objectValue->setProperty(asAtomHandler::toInt(nextName), ExtVariant(objectsMap, _MR(asAtomHandler::toObject(nextValue,getSys()))));
+					objectValue->setProperty(asAtomHandler::toInt(nextName), ExtVariant(objectsMap, _MR(asAtomHandler::toObject(nextValue,other->getInstanceWorker()))));
 				else
 				{
 					allNumericProperties = false;
-					objectValue->setProperty(asAtomHandler::toString(nextName,other->getSystemState()).raw_buf(), ExtVariant(objectsMap, _MR(asAtomHandler::toObject(nextValue,getSys()))));
+					objectValue->setProperty(asAtomHandler::toString(nextName,other->getInstanceWorker()).raw_buf(), ExtVariant(objectsMap, _MR(asAtomHandler::toObject(nextValue,other->getInstanceWorker()))));
 				}
 			}
 
@@ -253,23 +253,23 @@ ExtVariant::ExtVariant(std::map<const ASObject*, std::unique_ptr<ExtObject>>& ob
 }
 
 // Conversion to ASObject
-ASObject* ExtVariant::getASObject(SystemState *sys, std::map<const lightspark::ExtObject*, lightspark::ASObject*>& objectsMap) const
+ASObject* ExtVariant::getASObject(ASWorker *wrk, std::map<const lightspark::ExtObject*, lightspark::ASObject*>& objectsMap) const
 {
 	//don't create ASObjects from cache, as we are not in the vm thread
 	ASObject* asobj;
 	switch(getType())
 	{
 	case EV_STRING:
-		asobj = Class<ASString>::getInstanceS(sys,getString().c_str());
+		asobj = Class<ASString>::getInstanceS(wrk,getString().c_str());
 		break;
 	case EV_INT32:
-		asobj = Class<Integer>::getInstanceS(sys,getInt());
+		asobj = Class<Integer>::getInstanceS(wrk,getInt());
 		break;
 	case EV_DOUBLE:
-		asobj = Class<Number>::getInstanceS(sys,getDouble());
+		asobj = Class<Number>::getInstanceS(wrk,getDouble());
 		break;
 	case EV_BOOLEAN:
-		asobj = Class<Boolean>::getInstanceS(sys,getBoolean());
+		asobj = Class<Boolean>::getInstanceS(wrk,getBoolean());
 		break;
 	case EV_OBJECT:
 		{
@@ -287,7 +287,7 @@ ASObject* ExtVariant::getASObject(SystemState *sys, std::map<const lightspark::E
 			// We are converting an array, so lets set indexes
 			if(objValue->getType() == ExtObject::EO_ARRAY)
 			{
-				asobj = Class<Array>::getInstanceSNoArgs(sys);
+				asobj = Class<Array>::getInstanceSNoArgs(wrk);
 				objectsMap[objValue] = asobj;
 
 				count = objValue->getLength();
@@ -295,14 +295,14 @@ ASObject* ExtVariant::getASObject(SystemState *sys, std::map<const lightspark::E
 				for(uint32_t i = 0; i < count; i++)
 				{
 					const ExtVariant& property = objValue->getProperty(i);
-					asAtom v = asAtomHandler::fromObject(property.getASObject(sys,objectsMap));
+					asAtom v = asAtomHandler::fromObject(property.getASObject(wrk,objectsMap));
 					static_cast<Array*>(asobj)->set(i, v);
 				}
 			}
 			// We are converting an object, so lets set variables
 			else
 			{
-				asobj = Class<ASObject>::getInstanceS(sys);
+				asobj = Class<ASObject>::getInstanceS(wrk);
 				objectsMap[objValue] = asobj;
 			
 				ExtIdentifier** ids;
@@ -317,19 +317,19 @@ ASObject* ExtVariant::getASObject(SystemState *sys, std::map<const lightspark::E
 						if(ids[i]->getType() == ExtIdentifier::EI_STRING)
 						{
 							asobj->setVariableByQName(ids[i]->getString(), "",
-									property.getASObject(sys,objectsMap), DYNAMIC_TRAIT);
+									property.getASObject(wrk,objectsMap), DYNAMIC_TRAIT);
 						}
 						else
 						{
 							conv.str("");
 							conv << ids[i]->getInt();
-							if(asobj->hasPropertyByMultiname(QName(sys->getUniqueStringId(conv.str()),BUILTIN_STRINGS::EMPTY),true,true))
+							if(asobj->hasPropertyByMultiname(QName(wrk->getSystemState()->getUniqueStringId(conv.str()),BUILTIN_STRINGS::EMPTY),true,true,wrk))
 							{
 								LOG(LOG_NOT_IMPLEMENTED,"ExtVariant::getASObject: duplicate property " << conv.str());
 								continue;
 							}
 							asobj->setVariableByQName(conv.str().c_str(), "",
-									property.getASObject(sys,objectsMap), DYNAMIC_TRAIT);
+									property.getASObject(wrk,objectsMap), DYNAMIC_TRAIT);
 						}
 						delete ids[i];
 					}
@@ -339,18 +339,18 @@ ASObject* ExtVariant::getASObject(SystemState *sys, std::map<const lightspark::E
 		}
 		break;
 	case EV_NULL:
-		asobj = sys->getNullRef();
+		asobj = wrk->getSystemState()->getNullRef();
 		break;
 	case EV_VOID:
 	default:
-		asobj = sys->getUndefinedRef();
+		asobj = wrk->getSystemState()->getUndefinedRef();
 		break;
 	}
 	return asobj;
 }
 
 /* -- ExtASCallback -- */
-ExtASCallback::ExtASCallback(asAtom _func):funcWasCalled(false), func(_func), result(NULL), asArgs(NULL)
+ExtASCallback::ExtASCallback(asAtom _func):funcWasCalled(false), func(_func), result(nullptr), asArgs(nullptr)
 {
 	ASATOM_INCREF(func);
 }
@@ -380,7 +380,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	asArgs = new ASObject*[argc];
 	std::map<const ExtObject*, ASObject*> objectsMap;
 	for(uint32_t i = 0; i < argc; i++)
-		asArgs[i] = args[i]->getASObject(asAtomHandler::getObject(func)->getSystemState(),objectsMap);
+		asArgs[i] = args[i]->getASObject(asAtomHandler::getObject(func)->getInstanceWorker(),objectsMap);
 
 	if(!synchronous)
 	{
@@ -401,7 +401,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 	{
 		try
 		{
-			asAtom* newArgs=NULL;
+			asAtom* newArgs=nullptr;
 			if (argc > 0)
 			{
 				newArgs=g_newa(asAtom, argc);
@@ -413,8 +413,8 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 
 			/* TODO: shouldn't we pass some global object instead of Null? */
 			asAtom res=asAtomHandler::invalidAtom;
-			asAtomHandler::callFunction(func,res,asAtomHandler::nullAtom, newArgs, argc,false);
-			result = asAtomHandler::toObject(res,asAtomHandler::getObject(func)->getSystemState());
+			asAtomHandler::callFunction(func,asAtomHandler::getObject(func)->getInstanceWorker(),res,asAtomHandler::nullAtom, newArgs, argc,false);
+			result = asAtomHandler::toObject(res,asAtomHandler::getObject(func)->getInstanceWorker());
 		}
 		// Catch AS exceptions and pass them on
 		catch(ASObject* _exception)

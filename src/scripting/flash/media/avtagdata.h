@@ -28,7 +28,7 @@ namespace lightspark
 class AVTagData: public ASObject
 {
 public:
-	AVTagData(Class_base* c);
+	AVTagData(ASWorker* wrk,Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	ASPROPERTY_GETTER(tiny_string, data);

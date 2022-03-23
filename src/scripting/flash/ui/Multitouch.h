@@ -27,7 +27,7 @@ namespace lightspark
 class Multitouch : public ASObject
 {
 public:
-	Multitouch(Class_base* c):ASObject(c),inputMode("gesture") {}
+	Multitouch(ASWorker* wrk,Class_base* c):ASObject(wrk,c),inputMode("gesture") {}
 	static void sinit(Class_base* c);
 	ASPROPERTY_GETTER_SETTER(tiny_string,inputMode);
 	ASFUNCTION_ATOM(getMaxTouchPoints);
@@ -38,7 +38,7 @@ public:
 class MultitouchInputMode : public ASObject
 {
 public:
-	MultitouchInputMode(Class_base* c):ASObject(c){}
+	MultitouchInputMode(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 }

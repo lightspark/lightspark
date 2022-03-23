@@ -28,7 +28,7 @@ namespace lightspark
 class MediaVideoDecoder: public ASObject
 {
 public:
-	MediaVideoDecoder(Class_base* c):ASObject(c){}
+	MediaVideoDecoder(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

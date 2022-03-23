@@ -46,7 +46,7 @@ void AVM1Sound::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)
 {
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
-	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,wrk,obj, NULL, 0);
 
 	ARG_UNPACK_ATOM(th->clip,NullRef);
 }
@@ -59,7 +59,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 		LOG(LOG_ERROR,"AVM1:Sound.attachSound called without argument");
 		return;
 	}
-	uint32_t nameID = asAtomHandler::toStringId(args[0],th->getSystemState());
+	uint32_t nameID = asAtomHandler::toStringId(args[0],wrk);
 	DefineSoundTag *soundTag = dynamic_cast<DefineSoundTag *>(th->clip.isNull() || th->clip->getRoot().isNull() ? th->getSystemState()->mainClip->dictionaryLookupByName(nameID) : th->clip->getRoot()->dictionaryLookupByName(nameID));
 	if (!soundTag)
 	{
@@ -84,9 +84,9 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getVolume)
 {
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	if (th->soundChannel)
-		asAtomHandler::setNumber(ret,sys,th->soundChannel->soundTransform->volume*100);
+		asAtomHandler::setNumber(ret,wrk,th->soundChannel->soundTransform->volume*100);
 	else
-		asAtomHandler::setInt(ret,sys,0);
+		asAtomHandler::setInt(ret,wrk,0);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,setVolume)
 {
@@ -100,9 +100,9 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getPan)
 {
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	if (th->soundChannel)
-		asAtomHandler::setNumber(ret,sys,th->soundChannel->soundTransform->pan*100);
+		asAtomHandler::setNumber(ret,wrk,th->soundChannel->soundTransform->pan*100);
 	else
-		asAtomHandler::setInt(ret,sys,0);
+		asAtomHandler::setInt(ret,wrk,0);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,setPan)
 {
@@ -117,7 +117,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,stop)
 	if (argslen == 1)
 		LOG(LOG_NOT_IMPLEMENTED,"stopping sound with linkage id");
 	else
-		sys->audioManager->stopAllSounds();
+		wrk->getSystemState()->audioManager->stopAllSounds();
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,getPosition)
 {
@@ -125,10 +125,10 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getPosition)
 	if (th->soundChannel)
 	{
 		asAtom o = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
-		SoundChannel::getPosition(ret,sys,o,args,argslen);
+		SoundChannel::getPosition(ret,wrk,o,args,argslen);
 	}
 	else
-		asAtomHandler::setInt(ret,sys,0);
+		asAtomHandler::setInt(ret,wrk,0);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,loadSound)
 {
@@ -141,9 +141,9 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,loadSound)
 	if (url.find("://") == tiny_string::npos)
 	{
 		// relative url, so we add the main url
-		realurl = sys->mainClip->getOrigin().getProtocol()+"://";
-		realurl += sys->mainClip->getOrigin().getHostname()+":";
-		realurl += Integer::toString(sys->mainClip->getOrigin().getPort())+"/";
+		realurl = wrk->getSystemState()->mainClip->getOrigin().getProtocol()+"://";
+		realurl += wrk->getSystemState()->mainClip->getOrigin().getHostname()+":";
+		realurl += Integer::toString(wrk->getSystemState()->mainClip->getOrigin().getPort())+"/";
 		realurl += url;
 	}
 	else
@@ -156,7 +156,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,loadSound)
 	{
 		//Notify an error during loading
 		th->incRef();
-		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
+		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(wrk)));
 		return;
 	}
 
@@ -165,12 +165,13 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,loadSound)
 	if(th->downloader->hasFailed())
 	{
 		th->incRef();
-		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
+		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(wrk)));
 	}
 }
 
 void AVM1Sound::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
+	ASWorker* wrk = getInstanceWorker();
 	if (dispatcher == this->soundChannel.getPtr())
 	{
 		if (e->type == "soundComplete")
@@ -180,7 +181,7 @@ void AVM1Sound::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			m.name_type=multiname::NAME_STRING;
 			m.isAttribute = false;
 			m.name_s_id=getSystemState()->getUniqueStringId("onSoundComplete");
-			getVariableByMultiname(func,m);
+			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::is<AVM1Function>(func))
 			{
 				asAtom ret=asAtomHandler::invalidAtom;
@@ -199,7 +200,7 @@ void AVM1Sound::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			m.name_type=multiname::NAME_STRING;
 			m.isAttribute = false;
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
-			getVariableByMultiname(func,m);
+			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::is<AVM1Function>(func))
 			{
 				asAtom ret=asAtomHandler::invalidAtom;
@@ -210,7 +211,7 @@ void AVM1Sound::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			{
 				asAtom ret = asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::fromObject(this);
-				this->play(ret,getSystemState(),obj,nullptr,0);
+				this->play(ret,wrk,obj,nullptr,0);
 			}
 		}
 	}

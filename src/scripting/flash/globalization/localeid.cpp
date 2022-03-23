@@ -55,9 +55,9 @@ ASFUNCTIONBODY_ATOM(LocaleID,_constructor)
 	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
 	std::string locale = th->requestedLocaleIDName;
 	th->name = th->requestedLocaleIDName;
-	if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
+	if (wrk->getSystemState()->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
-		std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
+		std::string localeName = wrk->getSystemState()->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
 		th->currlocale = std::locale(localeName.c_str());
 		th->actualLocaleIDName = th->requestedLocaleIDName;
 		th->lastOperationStatus="noError";
@@ -81,7 +81,7 @@ ASFUNCTIONBODY_ATOM(LocaleID,determinePreferredLocales)
 ASFUNCTIONBODY_ATOM(LocaleID,getKeysAndValues)
 {
 	LocaleID* th =asAtomHandler::as<LocaleID>(obj);
-	ASObject* object = Class<ASObject>::getInstanceS(th->getSystemState());
+	ASObject* object = Class<ASObject>::getInstanceS(wrk);
 	std::string str(th->name.raw_buf());
 	size_t pos = str.find("@");
 	std::string keyValueDelim("=");
@@ -122,59 +122,59 @@ ASFUNCTIONBODY_ATOM(LocaleID,getKeysAndValues)
 ASFUNCTIONBODY_ATOM(LocaleID,getLanguage)
 {
 	LocaleID* th =asAtomHandler::as<LocaleID>(obj);
-	auto locale = sys->localeManager->getLocaleId(th->name);
+	auto locale = wrk->getSystemState()->localeManager->getLocaleId(th->name);
 	if (locale != nullptr)
 	{
-		ret = asAtomHandler::fromString(sys,locale->language);
+		ret = asAtomHandler::fromString(wrk->getSystemState(),locale->language);
 		th->lastOperationStatus="noError";
 		return;
 	}
-	ret = asAtomHandler::fromString(sys,"");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"");
 }
 
 ASFUNCTIONBODY_ATOM(LocaleID,getRegion)
 {
 	LocaleID* th =asAtomHandler::as<LocaleID>(obj);
-	auto locale = sys->localeManager->getLocaleId(th->name);
+	auto locale = wrk->getSystemState()->localeManager->getLocaleId(th->name);
 	if (locale != nullptr)
 	{
-		ret = asAtomHandler::fromString(sys,locale->region);
+		ret = asAtomHandler::fromString(wrk->getSystemState(),locale->region);
 		th->lastOperationStatus="noError";
 		return;
 	}
-	ret = asAtomHandler::fromString(sys,"");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"");
 }
 
 ASFUNCTIONBODY_ATOM(LocaleID,getScript)
 {
 	LocaleID* th =asAtomHandler::as<LocaleID>(obj);
-	auto locale = sys->localeManager->getLocaleId(th->name);
+	auto locale = wrk->getSystemState()->localeManager->getLocaleId(th->name);
 	if (locale != nullptr)
 	{
-		ret = asAtomHandler::fromString(sys,locale->script);
+		ret = asAtomHandler::fromString(wrk->getSystemState(),locale->script);
 		th->lastOperationStatus="noError";
 		return;
 	}
-	ret = asAtomHandler::fromString(sys,"");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"");
 }
 
 ASFUNCTIONBODY_ATOM(LocaleID,getVariant)
 {
 	LocaleID* th =asAtomHandler::as<LocaleID>(obj);
-	auto locale = sys->localeManager->getLocaleId(th->name);
+	auto locale = wrk->getSystemState()->localeManager->getLocaleId(th->name);
 	if (locale != nullptr)
 	{
-		ret = asAtomHandler::fromString(sys,locale->variant);
+		ret = asAtomHandler::fromString(wrk->getSystemState(),locale->variant);
 		th->lastOperationStatus="noError";
 		return;
 	}
-	ret = asAtomHandler::fromString(sys,"");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"");
 }
 
 ASFUNCTIONBODY_ATOM(LocaleID,isRightToLeft)
 {
 	LocaleID* th =asAtomHandler::as<LocaleID>(obj);
-	auto locale = sys->localeManager->getLocaleId(th->name);
+	auto locale = wrk->getSystemState()->localeManager->getLocaleId(th->name);
 	if (locale != nullptr)
 	{
 		ret = asAtomHandler::fromBool(locale->isRightToLeft);

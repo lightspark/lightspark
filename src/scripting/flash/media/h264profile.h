@@ -28,7 +28,7 @@ namespace lightspark
 class H264Profile: public ASObject
 {
 public:
-	H264Profile(Class_base* c):ASObject(c){}
+	H264Profile(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

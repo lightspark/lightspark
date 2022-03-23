@@ -29,7 +29,7 @@ namespace lightspark
 class ExternalInterface: public ASObject
 {
 public:
-	ExternalInterface(Class_base* c):ASObject(c){}
+	ExternalInterface(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_getAvailable);
 	ASFUNCTION_ATOM(_getObjectID);

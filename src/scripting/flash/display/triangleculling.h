@@ -28,7 +28,7 @@ namespace lightspark
 class TriangleCulling: public ASObject
 {
 public:
-	TriangleCulling(Class_base* c):ASObject(c){}
+	TriangleCulling(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

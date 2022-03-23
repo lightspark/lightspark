@@ -66,14 +66,14 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,sendAndLoad)
 		if (target->is<AVM1LoadVars>())
 		{
 			AVM1LoadVars* t = target->as<AVM1LoadVars>();
-			th->copyValues(t);
+			th->copyValues(t,wrk);
 			if (t->loader.isNull())
-				t->loader = _MR(Class<URLLoader>::getInstanceS(sys));
+				t->loader = _MR(Class<URLLoader>::getInstanceS(wrk));
 			t->incRef();
-			URLRequest* req = Class<URLRequest>::getInstanceS(sys,strurl,method,_MR(t));
+			URLRequest* req = Class<URLRequest>::getInstanceS(wrk,strurl,method,_MR(t));
 			asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
 			asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(t->loader.getPtr());
-			URLLoader::load(ret,sys,loaderobj,&urlarg,1);
+			URLLoader::load(ret,wrk,loaderobj,&urlarg,1);
 		}
 		else
 			LOG(LOG_NOT_IMPLEMENTED,"LoadVars.sendAndLoad with target "<<target->toDebugString());
@@ -88,16 +88,16 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,load)
 	ARG_UNPACK_ATOM (strurl);
 
 	if (th->loader.isNull())
-		th->loader = _MR(Class<URLLoader>::getInstanceS(sys));
+		th->loader = _MR(Class<URLLoader>::getInstanceS(wrk));
 	th->incRef();
-	URLRequest* req = Class<URLRequest>::getInstanceS(sys,strurl,"GET",_MR(th));
+	URLRequest* req = Class<URLRequest>::getInstanceS(wrk,strurl,"GET",_MR(th));
 	asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
 	asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(th->loader.getPtr());
-	URLLoader::load(ret,sys,loaderobj,&urlarg,1);
+	URLLoader::load(ret,wrk,loaderobj,&urlarg,1);
 }
-multiname* AVM1LoadVars::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname* AVM1LoadVars::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset,ASWorker* wrk)
 {
-	multiname* res = URLVariables::setVariableByMultiname(name,o,allowConst,alreadyset);
+	multiname* res = URLVariables::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 	if (name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
 	{
 		this->incRef();
@@ -118,7 +118,7 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			m.name_type=multiname::NAME_STRING;
 			m.isAttribute = false;
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
-			getVariableByMultiname(func,m);
+			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 			if (asAtomHandler::is<AVM1Function>(func))
 			{
 				asAtom ret=asAtomHandler::invalidAtom;

@@ -28,7 +28,7 @@ namespace lightspark
 class JPEGEncoderOptions: public ASObject
 {
 public:
-	JPEGEncoderOptions(Class_base* c):ASObject(c){}
+	JPEGEncoderOptions(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(uint32_t, quality);

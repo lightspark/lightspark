@@ -94,7 +94,7 @@ private:
 	unordered_map<uint32_t,_NR<IFunction>> avm1ClassConstructors;
 	unordered_map<uint32_t,AVM1InitActionTag*> avm1InitActionTags;
 public:
-	RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
+	RootMovieClip(ASWorker* wrk,_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
 	~RootMovieClip();
 	void destroyTags();
 	bool destruct() override;
@@ -133,7 +133,7 @@ public:
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o);
 	void setVariableByMultiname(multiname& name, asAtom o);
 	void setVariableByString(const std::string& s, ASObject* o);*/
-	static RootMovieClip* getInstance(_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain);
+	static RootMovieClip* getInstance(ASWorker* wrk, _NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain);
 	/*
 	 * The application domain for this clip
 	 */
@@ -554,8 +554,6 @@ public:
 	void waitMainSignal() DLL_PUBLIC;
 	void sendMainSignal() DLL_PUBLIC;
 
-	void dumpStacktrace();
-	
 	// static class properties are named static_<classname>_<propertyname>
 	_NR<SoundTransform> static_SoundMixer_soundTransform;
 	int static_SoundMixer_bufferTime;
@@ -567,7 +565,7 @@ public:
 	Mutex initializedMutex;
 	Cond initializedCond;
 	void waitInitialized();
-	void getClassInstanceByName(asAtom &ret, const tiny_string& clsname);
+	void getClassInstanceByName(ASWorker* wrk, asAtom &ret, const tiny_string& clsname);
 	Mutex resetParentMutex;
 	void addDisplayObjectToResetParentList(DisplayObject* child)
 	{

@@ -34,7 +34,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(tiny_string,streamName);
 	ASPROPERTY_GETTER_SETTER(tiny_string,transition);
 public:
-	NetStreamPlayOptions(Class_base* c);
+	NetStreamPlayOptions(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };

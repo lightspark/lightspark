@@ -28,8 +28,8 @@
 
 using namespace lightspark;
 
-GraphicsPath::GraphicsPath(Class_base* c):
-	ASObject(c), winding("evenOdd")
+GraphicsPath::GraphicsPath(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c), winding("evenOdd")
 {
 }
 
@@ -77,17 +77,17 @@ void GraphicsPath::finalize()
 
 void GraphicsPath::ensureValid()
 {
-	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : getSystemState()->mainClip;
+	RootMovieClip* root = getInstanceWorker()->rootClip.getPtr();
 	if (commands.isNull())
 	{
 		asAtom v=asAtomHandler::invalidAtom;
-		Template<Vector>::getInstanceS(v,root,Class<Integer>::getClass(getSystemState()),NullRef);
+		Template<Vector>::getInstanceS(getInstanceWorker(),v,root,Class<Integer>::getClass(getSystemState()),NullRef);
 		commands = _MNR(asAtomHandler::as<Vector>(v));
 	}
 	if (data.isNull())
 	{
 		asAtom v=asAtomHandler::invalidAtom;
-		Template<Vector>::getInstanceS(v,root,Class<Number>::getClass(getSystemState()),NullRef);
+		Template<Vector>::getInstanceS(getInstanceWorker(),v,root,Class<Number>::getClass(getSystemState()),NullRef);
 		data = _MNR(asAtomHandler::as<Vector>(v));
 	}
 }
@@ -156,7 +156,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideLineTo)
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::LINE_TO));
 	th->commands->append(v);
-	asAtom n = asAtomHandler::fromNumber(sys,0.0,false);
+	asAtom n = asAtomHandler::fromNumber(wrk,0.0,false);
 	ASATOM_INCREF(n);
 	th->data->append(n);
 	ASATOM_INCREF(n);
@@ -177,7 +177,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideMoveTo)
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::MOVE_TO));
 	th->commands->append(v);
-	asAtom n = asAtomHandler::fromNumber(sys,0.0,false);
+	asAtom n = asAtomHandler::fromNumber(wrk,0.0,false);
 	ASATOM_INCREF(n);
 	th->data->append(n);
 	ASATOM_INCREF(n);

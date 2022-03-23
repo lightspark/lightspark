@@ -54,12 +54,12 @@ private:
 	bool hasChanged;
 	void dorender(bool closepath);
 public:
-	Graphics(Class_base* c):ASObject(c),owner(nullptr),movex(0),movey(0),inFilling(false),hasChanged(false)
+	Graphics(ASWorker* wrk, Class_base* c):ASObject(wrk,c),owner(nullptr),movex(0),movey(0),inFilling(false),hasChanged(false)
 	{
 //		throw RunTimeException("Cannot instantiate a Graphics object");
 	}
-	Graphics(Class_base* c, TokenContainer* _o)
-		: ASObject(c),owner(_o),movex(0),movey(0),inFilling(false),hasChanged(false) {}
+	Graphics(ASWorker* wrk, Class_base* c, TokenContainer* _o)
+		: ASObject(wrk,c),owner(_o),movex(0),movey(0),inFilling(false),hasChanged(false) {}
 	void startDrawJob();
 	void endDrawJob();
 	bool destruct() override;

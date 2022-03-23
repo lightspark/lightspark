@@ -25,15 +25,15 @@
 using namespace std;
 using namespace lightspark;
 
-CompressionAlgorithm::CompressionAlgorithm(Class_base* c):
-	ASObject(c)
+CompressionAlgorithm::CompressionAlgorithm(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 
 void CompressionAlgorithm::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED|CLASS_FINAL);
-	c->setVariableByQName("DEFLATE","",abstract_s(c->getSystemState(),"deflate"),CONSTANT_TRAIT);
-	c->setVariableByQName("LZMA","",abstract_s(c->getSystemState(),"lzma"),CONSTANT_TRAIT);
-	c->setVariableByQName("ZLIB","",abstract_s(c->getSystemState(),"zlib"),CONSTANT_TRAIT);
+	c->setVariableByQName("DEFLATE","",abstract_s(c->getInstanceWorker(),"deflate"),CONSTANT_TRAIT);
+	c->setVariableByQName("LZMA","",abstract_s(c->getInstanceWorker(),"lzma"),CONSTANT_TRAIT);
+	c->setVariableByQName("ZLIB","",abstract_s(c->getInstanceWorker(),"zlib"),CONSTANT_TRAIT);
 }

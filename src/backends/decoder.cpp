@@ -1435,9 +1435,9 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 		m.name_type=multiname::NAME_STRING;
 		m.name_s_id=netstream->getSystemState()->getUniqueStringId("duration");
 		m.isAttribute = false;
-		ASObject* dataobj = Class<ASObject>::getInstanceS(netstream->getSystemState());
+		ASObject* dataobj = Class<ASObject>::getInstanceS(netstream->getInstanceWorker());
 		asAtom v = asAtomHandler::fromInt(formatCtx->duration/AV_TIME_BASE);
-		dataobj->setVariableByMultiname(m,v,ASObject::CONST_NOT_ALLOWED);
+		dataobj->setVariableByMultiname(m,v,ASObject::CONST_NOT_ALLOWED,nullptr,netstream->getInstanceWorker());
 		dataobjectlist.push_back(asAtomHandler::fromObjectNoPrimitive(dataobj));
 		netstream->sendClientNotification("onMetaData",dataobjectlist);
 	}

@@ -28,7 +28,7 @@ namespace lightspark
 class ContextMenuBuiltInItems : public ASObject
 {
 public:
-	ContextMenuBuiltInItems(Class_base* c);
+	ContextMenuBuiltInItems(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(bool,forwardAndBack);

@@ -40,7 +40,7 @@ private:
 	void MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t millisecond, bool bIsLocalTime);
 	static number_t parse(tiny_string str);
 public:
-	Date(Class_base* c);
+	Date(ASWorker* wrk,Class_base* c);
 	bool destruct()
 	{
 		if (datetimeUTC)
@@ -131,7 +131,7 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk);
 };
 }
 #endif /* SCRIPTING_TOPLEVEL_DATE_H */

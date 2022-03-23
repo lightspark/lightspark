@@ -47,7 +47,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(tiny_string,contentType);
 	ASPROPERTY_GETTER_SETTER(_R<Array>,requestHeaders);
 public:
-	URLRequest(Class_base* c, const tiny_string u="", const tiny_string m="GET", _NR<ASObject> d = NullRef);
+	URLRequest(ASWorker* wrk,Class_base* c, const tiny_string u="", const tiny_string m="GET", _NR<ASObject> d = NullRef);
 	void finalize() override;
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -68,7 +68,7 @@ public:
 class URLRequestMethod: public ASObject
 {
 public:
-	URLRequestMethod(Class_base* c):ASObject(c){}
+	URLRequestMethod(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base*);
 };
 
@@ -78,8 +78,8 @@ private:
 	void decode(const tiny_string& s);
 	tiny_string toString_priv();
 public:
-	URLVariables(Class_base* c):ASObject(c){}
-	URLVariables(Class_base* c,const tiny_string& s);
+	URLVariables(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
+	URLVariables(ASWorker* wrk,Class_base* c,const tiny_string& s);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -91,7 +91,7 @@ public:
 class URLLoaderDataFormat: public ASObject
 {
 public:
-	URLLoaderDataFormat(Class_base* c):ASObject(c){}
+	URLLoaderDataFormat(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base*);
 };
 
@@ -99,7 +99,7 @@ public:
 class SharedObjectFlushStatus: public ASObject
 {
 public:
-	SharedObjectFlushStatus(Class_base* c):ASObject(c){}
+	SharedObjectFlushStatus(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base*);
 };
 
@@ -108,9 +108,9 @@ class SharedObject: public EventDispatcher
 private:
 	tiny_string name;
 public:
-	SharedObject(Class_base* c);
+	SharedObject(ASWorker* wrk,Class_base* c);
 	bool destruct() override;
-	bool doFlush();
+	bool doFlush(ASWorker* wrk);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(getLocal);
 	ASFUNCTION_ATOM(getRemote);
@@ -144,7 +144,7 @@ public:
 class DynamicPropertyOutput:public ASObject
 {
 public:
-	DynamicPropertyOutput(Class_base* c):ASObject(c){}
+	DynamicPropertyOutput(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(writeDynamicProperty);
 };
@@ -152,7 +152,7 @@ public:
 class ObjectEncoding: public ASObject
 {
 public:
-	ObjectEncoding(Class_base* c):ASObject(c){}
+	ObjectEncoding(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base*);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, dynamicPropertyWriter);
 };
@@ -177,7 +177,7 @@ private:
 	URLLoaderThread *job;
 	uint64_t timestamp_last_progress;
 public:
-	URLLoader(Class_base* c);
+	URLLoader(ASWorker* wrk,Class_base* c);
 	void finalize() override;
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -208,7 +208,7 @@ private:
 	asAtom result;
 	asAtom status;
 public:
-	Responder(Class_base* c):ASObject(c),result(asAtomHandler::invalidAtom),status(asAtomHandler::invalidAtom){}
+	Responder(ASWorker* wrk,Class_base* c):ASObject(wrk,c),result(asAtomHandler::invalidAtom),status(asAtomHandler::invalidAtom){}
 	static void sinit(Class_base*);
 	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);
@@ -239,7 +239,7 @@ private:
 	void threadAbort() override;
 	void jobFence() override;
 public:
-	NetConnection(Class_base* c);
+	NetConnection(ASWorker* wrk,Class_base* c);
 	void finalize() override;
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -266,7 +266,7 @@ public:
 class NetStreamAppendBytesAction: public ASObject
 {
 public:
-	NetStreamAppendBytesAction(Class_base* c):ASObject(c){}
+	NetStreamAppendBytesAction(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base*);
 };
 
@@ -330,7 +330,7 @@ private:
 	_NR<ByteArray> datagenerationbuffer;
 	StreamDecoder* streamDecoder;
 public:
-	NetStream(Class_base* c);
+	NetStream(ASWorker* wrk,Class_base* c);
 	~NetStream();
 	void finalize() override;
 	static void sinit(Class_base*);
@@ -432,7 +432,7 @@ public:
 class LocalConnection: public EventDispatcher
 {
 public:
-	LocalConnection(Class_base* c);
+	LocalConnection(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,isSupported);
@@ -448,7 +448,7 @@ public:
 class NetGroup: public EventDispatcher
 {
 public:
-	NetGroup(Class_base* c);
+	NetGroup(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -456,14 +456,14 @@ public:
 class FileReference: public EventDispatcher
 {
 public:
-	FileReference(Class_base* c);
+	FileReference(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
 class FileFilter: public ASObject
 {
 public:
-	FileFilter(Class_base* c);
+	FileFilter(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string,description);
@@ -474,15 +474,15 @@ public:
 class DRMManager: public EventDispatcher
 {
 public:
-	DRMManager(Class_base* c);
+	DRMManager(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASPROPERTY_GETTER(bool,isSupported);
 };
 
-void navigateToURL(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void sendToURL(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void registerClassAlias(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void getClassByAlias(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void navigateToURL(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void sendToURL(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void registerClassAlias(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void getClassByAlias(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
 
 }
 

@@ -32,7 +32,7 @@ class GraphicsStroke: public ASObject, public IGraphicsStroke, public IGraphicsD
 protected:
 	void validateFill(_NR<ASObject> oldValue);
 public:
-	GraphicsStroke(Class_base* c);
+	GraphicsStroke(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);

@@ -43,17 +43,17 @@ void Mouse::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Mouse, hide)
 {
-	sys->showMouseCursor(false);
+	wrk->getSystemState()->showMouseCursor(false);
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, show)
 {
-	sys->showMouseCursor(true);
+	wrk->getSystemState()->showMouseCursor(true);
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, getCursor)
 {
-	ret = asAtomHandler::fromString(sys,"auto");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"auto");
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, setCursor)
@@ -90,7 +90,7 @@ void MouseCursor::sinit(Class_base* c)
 	c->setVariableAtomByQName("HAND",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"hand"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("IBEAM",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"ibeam"),CONSTANT_TRAIT);
 }
-MouseCursorData::MouseCursorData(Class_base *c):ASObject(c),frameRate(0)
+MouseCursorData::MouseCursorData(ASWorker* wrk, Class_base *c):ASObject(wrk,c),frameRate(0)
 {
 }
 

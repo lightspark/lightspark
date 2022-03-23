@@ -483,17 +483,17 @@ void SecurityManager::checkURLStaticAndThrow(const URLInfo& url,
 			allowedSandboxesLocal, restrictLocalDirectory);
 	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
 	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
-		throw Class<SecurityError>::getInstanceS(getSys(),"SecurityError: "
+		throw Class<SecurityError>::getInstanceS(getSys()->worker,"SecurityError: "
 				"connect to network");
 	//Local-with-filesystem sandbox can't access network
 	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
-		throw Class<SecurityError>::getInstanceS(getSys(),"SecurityError: "
+		throw Class<SecurityError>::getInstanceS(getSys()->worker,"SecurityError: "
 				"connect to local file");
 	else if(evaluationResult == SecurityManager::NA_PORT)
-		throw Class<SecurityError>::getInstanceS(getSys(),"SecurityError: "
+		throw Class<SecurityError>::getInstanceS(getSys()->worker,"SecurityError: "
 				"connect to restricted port");
 	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
-		throw Class<SecurityError>::getInstanceS(getSys(),"SecurityError: "
+		throw Class<SecurityError>::getInstanceS(getSys()->worker,"SecurityError: "
 				"not allowed to navigate up for local files");
 }
 
@@ -663,7 +663,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSocketConnection(cons
 		}
 	}
 
-	LOG(LOG_INFO, _("SECURITY: DISALLOWED: No policy file explicitly allowed access"));
+	LOG(LOG_INFO, "SECURITY: DISALLOWED: No policy file explicitly allowed access");
 	delete files;
 
 	return NA_CROSSDOMAIN_POLICY;

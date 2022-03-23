@@ -1066,10 +1066,11 @@ struct preloadstate
 	std::vector<bool> defaultlocaltypescacheable;
 	std::vector<bool> canlocalinitialize;
 	SyntheticFunction* function;
+	ASWorker* worker;
 	method_info* mi;
 	std::vector<preloadedcodebuffer> preloadedcode;
 	bool duplocalresult;
-	preloadstate(SyntheticFunction* _f, method_info* _mi):function(_f),mi(_mi),duplocalresult(false) {}
+	preloadstate(SyntheticFunction* _f, ASWorker* _w):function(_f),worker(_w),mi(_f->getMethodInfo()),duplocalresult(false) {}
 };
 
 struct operands
@@ -2414,34 +2415,34 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 			switch (operator_start)
 			{
 				case ABC_OP_OPTIMZED_SUBTRACT:
-					asAtomHandler::subtract(res,state.mi->context->root->getSystemState(),*op2,false);
+					asAtomHandler::subtract(res,state.worker,*op2,false);
 					break;
 				case ABC_OP_OPTIMZED_MULTIPLY:
-					asAtomHandler::multiply(res,state.mi->context->root->getSystemState(),*op2,false);
+					asAtomHandler::multiply(res,state.worker,*op2,false);
 					break;
 				case ABC_OP_OPTIMZED_DIVIDE:
-					asAtomHandler::divide(res,state.mi->context->root->getSystemState(),*op2,false);
+					asAtomHandler::divide(res,state.worker,*op2,false);
 					break;
 				case ABC_OP_OPTIMZED_MODULO:
-					asAtomHandler::modulo(res,state.mi->context->root->getSystemState(),*op2);
+					asAtomHandler::modulo(res,state.worker,*op2);
 					break;
 				case ABC_OP_OPTIMZED_LSHIFT:
-					asAtomHandler::lshift(res,state.mi->context->root->getSystemState(),*op2);
+					asAtomHandler::lshift(res,state.worker,*op2);
 					break;
 				case ABC_OP_OPTIMZED_RSHIFT:
-					asAtomHandler::rshift(res,state.mi->context->root->getSystemState(),*op2);
+					asAtomHandler::rshift(res,state.worker,*op2);
 					break;
 				case ABC_OP_OPTIMZED_URSHIFT:
-					asAtomHandler::urshift(res,state.mi->context->root->getSystemState(),*op2);
+					asAtomHandler::urshift(res,state.worker,*op2);
 					break;
 				case ABC_OP_OPTIMZED_BITAND:
-					asAtomHandler::bit_and(res,state.mi->context->root->getSystemState(),*op2);
+					asAtomHandler::bit_and(res,state.worker,*op2);
 					break;
 				case ABC_OP_OPTIMZED_BITOR:
-					asAtomHandler::bit_or(res,state.mi->context->root->getSystemState(),*op2);
+					asAtomHandler::bit_or(res,state.worker,*op2);
 					break;
 				case ABC_OP_OPTIMZED_BITXOR:
-					asAtomHandler::bit_xor(res,state.mi->context->root->getSystemState(),*op2);
+					asAtomHandler::bit_xor(res,state.worker,*op2);
 					break;
 				default:
 					LOG(LOG_ERROR,"setupInstructionTwoArguments: trying to collapse invalid opcode:"<<hex<<operator_start);
@@ -2954,12 +2955,12 @@ void removeInitializeLocalToConstant(preloadstate& state,int32_t value)
 	}
 }
 
-void ABCVm::preloadFunction(SyntheticFunction* function)
+void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 {
 	method_info* mi=function->mi;
 
 	const int code_len=mi->body->code.size();
-	preloadstate state(function,mi);
+	preloadstate state(function,wrk);
 	std::map<int32_t,int32_t> jumppositions;
 	std::map<int32_t,int32_t> jumpstartpositions;
 	std::map<int32_t,int32_t> switchpositions;
@@ -3190,7 +3191,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
 				if (p1 > p && constantsstack.size()>1 && 
 						asAtomHandler::isEqual(constantsstack[constantsstack.size()-1]
-												,function->getSystemState()
+												, wrk
 												, constantsstack[constantsstack.size()-1])
 						)//opcode is preceded by two constants, so we can compare them and check for unreachable code
 				{
@@ -3217,7 +3218,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
 				if (p1 > p && constantsstack.size()>1 && 
 						!asAtomHandler::isEqual(constantsstack[constantsstack.size()-1]
-												,function->getSystemState()
+												, wrk
 												, constantsstack[constantsstack.size()-1])
 						)//opcode is preceded by two constants, so we can compare them and check for unreachable code
 				{
@@ -4026,7 +4027,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						{
 							if (!cls->isSealed)
 								break;
-							v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed);
+							v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed,false,wrk);
 							if (v)
 								break;
 							cls = cls->super.getPtr();
@@ -4067,7 +4068,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								break;
 							}
 							ASObject* obj = asAtomHandler::getObjectNoCheck(it->object);
-							if (obj->hasPropertyByMultiname(*name, false, true))
+							if (obj->hasPropertyByMultiname(*name, false, true,wrk))
 							{
 								found = true;
 								done=true;
@@ -4103,8 +4104,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							{
 								break;
 							}
-							ASObject* obj = asAtomHandler::toObject(it->object,mi->context->root->getSystemState());
-							if (obj->hasPropertyByMultiname(*name, false, true))
+							ASObject* obj = asAtomHandler::toObject(it->object,wrk);
+							if (obj->hasPropertyByMultiname(*name, false, true,wrk))
 							{
 								found = true;
 								done=true;
@@ -4132,7 +4133,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						if (name->cachedType)
 							target = name->cachedType->getGlobalScope();
 						if (!target || (target->is<Global>() && target->as<Global>()->isAVM1()))
-							mi->context->root->applicationDomain->findTargetByMultiname(*name, target);
+							mi->context->root->applicationDomain->findTargetByMultiname(*name, target,wrk);
 						if (target)
 						{
 							o=asAtomHandler::fromObjectNoPrimitive(target);
@@ -4194,7 +4195,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				{
 					if (function->isStatic)
 					{
-						variable* v = function->inClass->findVariableByMultiname(*name,nullptr);
+						variable* v = function->inClass->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 						if (v)
 						{
 							if (v->kind == TRAIT_KIND::CONSTANT_TRAIT)
@@ -4236,7 +4237,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 						Class_base* cls = function->inClass;
 						do
 						{
-							v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed);
+							v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed,false,wrk);
 							if (!v)
 								cls = cls->super.getPtr();
 						}
@@ -4280,9 +4281,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									&& v->slotid)
 								{
 									asAtom o = asAtomHandler::invalidAtom;
-									cls->getInstance(o,false,nullptr,0);
+									cls->getInstance(wrk,o,false,nullptr,0);
 									cls->setupDeclaredTraits(asAtomHandler::getObject(o),false);
-									variable* v1 = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr);
+									variable* v1 = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 									if (!asAtomHandler::isPrimitive(o) && v1 && v1->slotid)
 									{
 										// convert to getslot on local[0]
@@ -4332,7 +4333,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							&& function->inClass->isFinal // TODO also enable optimization for classes where it is guarranteed that the method is not overridden in derived classes
 							&& function->inClass->getInterfaces().empty()) // class doesn't implement any interfaces
 					{
-						variable* v = function->inClass->findVariableByMultiname(*name,nullptr);
+						variable* v = function->inClass->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 						if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
 							function->simpleGetterOrSetterName = name;
 					}
@@ -4350,7 +4351,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								break;
 							if (asAtomHandler::is<Class_inherit>(it->object))
 								asAtomHandler::as<Class_inherit>(it->object)->checkScriptInit();
-							r = asAtomHandler::toObject(it->object,mi->context->root->getSystemState())->getVariableByMultiname(o,*name, opt);
+							r = asAtomHandler::toObject(it->object,wrk)->getVariableByMultiname(o,*name, opt,wrk);
 							if(asAtomHandler::isValid(o))
 								break;
 							++it;
@@ -4359,7 +4360,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					if(asAtomHandler::isInvalid(o))
 					{
 						GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF);
-						mi->context->root->applicationDomain->getVariableByMultiname(o,*name,opt);
+						mi->context->root->applicationDomain->getVariableByMultiname(o,*name,opt,wrk);
 					}
 					if(asAtomHandler::isInvalid(o))
 					{
@@ -4370,13 +4371,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 					// fast check for builtin classes if no custom class with same name is defined
 					if(asAtomHandler::isInvalid(o) && mi->context->root->customClasses.find(name->name_s_id) == mi->context->root->customClasses.end())
 					{
-						ASObject* cls = mi->context->root->getSystemState()->systemDomain->getVariableByMultinameOpportunistic(*name);
+						ASObject* cls = mi->context->root->getSystemState()->systemDomain->getVariableByMultinameOpportunistic(*name,wrk);
 						if (cls)
 							o = asAtomHandler::fromObject(cls);
 					}
 					if(asAtomHandler::isInvalid(o))
 					{
-						ASObject* cls = mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name);
+						ASObject* cls = mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name,wrk);
 						if (cls)
 							o = asAtomHandler::fromObject(cls);
 					}
@@ -4433,7 +4434,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								break;
 							if (asAtomHandler::is<Class_inherit>(it->object))
 								asAtomHandler::as<Class_inherit>(it->object)->checkScriptInit();
-							asAtomHandler::toObject(it->object,mi->context->root->getSystemState())->getVariableByMultiname(o,*name, opt);
+							asAtomHandler::toObject(it->object,wrk)->getVariableByMultiname(o,*name, opt,wrk);
 							if(asAtomHandler::isValid(o))
 								break;
 							++it;
@@ -4529,12 +4530,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									if (it->objtype->is<Class_inherit>())
 										it->objtype->as<Class_inherit>()->checkScriptInit();
 									// check if we can replace setProperty by setSlot
-									it->objtype->getInstance(o,false,nullptr,0);
+									it->objtype->getInstance(wrk,o,false,nullptr,0);
 									it->objtype->setupDeclaredTraits(asAtomHandler::getObject(o),false);
-									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr);
+									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 									if (!v && it->objtype->is<Class_inherit>())
 									{
-										v = it->objtype->findVariableByMultiname(*name,nullptr);
+										v = it->objtype->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 										if (v && v->kind != DECLARED_TRAIT)
 											v=nullptr;
 									}
@@ -4615,7 +4616,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									&& function->inClass->isFinal // TODO also enable optimization for classes where it is guarranteed that the method is not overridden in derived classes
 									&& function->inClass->getInterfaces().empty()) // class doesn't implement any interfaces
 							{
-								variable* v = function->inClass->findVariableByMultiname(*name,nullptr);
+								variable* v = function->inClass->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 								if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
 									function->simpleGetterOrSetterName = name;
 							}
@@ -4701,7 +4702,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									&& function->inClass->isFinal // TODO also enable optimization for classes where it is guarranteed that the method is not overridden in derived classes
 									&& function->inClass->getInterfaces().empty()) // class doesn't implement any interfaces
 							{
-								variable* v = function->inClass->findVariableByMultiname(*name,nullptr);
+								variable* v = function->inClass->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 								if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
 									function->simpleGetterOrSetterName = name;
 							}
@@ -4849,7 +4850,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									it->objtype->as<Class_inherit>()->checkScriptInit();
 								// check if we can replace getProperty by getSlot
 								asAtom o = asAtomHandler::invalidAtom;
-								it->objtype->getInstance(o,false,nullptr,0);
+								it->objtype->getInstance(wrk,o,false,nullptr,0);
 								it->objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
 								ASObject* obj =asAtomHandler::getObject(o);
 								if (obj)
@@ -4894,7 +4895,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							it->objtype->as<Class_inherit>()->checkScriptInit();
 						// check if we can replace getProperty by getSlot
 						asAtom o = asAtomHandler::invalidAtom;
-						it->objtype->getInstance(o,false,nullptr,0);
+						it->objtype->getInstance(wrk,o,false,nullptr,0);
 						it->objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
 						ASObject* obj =asAtomHandler::getObject(o);
 						if (obj)
@@ -5432,7 +5433,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							&& state.operandlist[state.operandlist.size()-2].type != OP_LOCAL
 							&& state.operandlist[state.operandlist.size()-2].type != OP_CACHED_SLOT
 							&& asAtomHandler::isEqual(*function->mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-1].type,state.operandlist[state.operandlist.size()-1].index)
-													  ,function->getSystemState()
+													  , wrk
 													  ,*function->mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-2].type,state.operandlist[state.operandlist.size()-2].index)
 													  ))
 					{
@@ -5490,7 +5491,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 							&& state.operandlist[state.operandlist.size()-2].type != OP_LOCAL
 							&& state.operandlist[state.operandlist.size()-2].type != OP_CACHED_SLOT
 							&& !asAtomHandler::isEqual(*function->mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-1].type,state.operandlist[state.operandlist.size()-1].index)
-													   ,function->getSystemState()
+													   , wrk
 													   ,*function->mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-2].type,state.operandlist[state.operandlist.size()-2].index)
 													   ))
 					{
@@ -6057,7 +6058,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								if(a)
 								{
 									asAtom o;
-									a->getVariableByMultiname(o,*name);
+									a->getVariableByMultiname(o,*name,GET_VARIABLE_OPTION::NONE,wrk);
 									if (asAtomHandler::isObject(o))
 									{
 										constructor = asAtomHandler::getObject(o);
@@ -6153,7 +6154,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										cls->findVariableByMultiname(
 										*name,
 										cls->as<Class_base>(),
-										nullptr,nullptr,false):
+										nullptr,nullptr,false,wrk):
 										cls->as<Class_base>()->getBorrowedVariableByMultiname(*name);
 						}
 						else if (canCallFunctionDirect(typestack[typestack.size()-operationcount].obj,name,true))
@@ -6164,7 +6165,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										cls->findVariableByMultiname(
 											*name,
 											cls->as<Class_base>(),
-											nullptr,nullptr,false):
+											nullptr,nullptr,false,wrk):
 										cls->as<Class_base>()->getBorrowedVariableByMultiname(*name);
 						}
 						if (!v
@@ -6175,7 +6176,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								&& canCallFunctionDirect(state.operandlist.at(state.operandlist.size()-operationcount),name))
 						{
 							cls = state.operandlist[state.operandlist.size()-operationcount].objtype;
-							v=cls->findVariableByMultiname(*name,cls->as<Class_base>());
+							v=cls->findVariableByMultiname(*name,cls->as<Class_base>(),nullptr,nullptr,false,wrk);
 							if (v && !asAtomHandler::is<SyntheticFunction>(v->var))
 								v=nullptr;
 						}
@@ -6290,7 +6291,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 											 (typestack[typestack.size()-2].obj->is<Class_base>() && typestack[typestack.size()-2].obj->as<Class_base>()->isSealed)))
 									{
 										asAtom func = asAtomHandler::invalidAtom;
-										typestack[typestack.size()-2].obj->getVariableByMultiname(func,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF));
+										typestack[typestack.size()-2].obj->getVariableByMultiname(func,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF),wrk);
 										if (asAtomHandler::isInvalid(func) && typestack[typestack.size()-2].obj->is<Class_base>())
 										{
 											variable* mvar = typestack[typestack.size()-2].obj->as<Class_base>()->getBorrowedVariableByMultiname(*name);
@@ -6680,7 +6681,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 								if (asAtomHandler::getObject(*a))
 								{
 									bool isborrowed=false;
-									variable* v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,asAtomHandler::getObject(*a)->getClass(),nullptr,&isborrowed);
+									variable* v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,asAtomHandler::getObject(*a)->getClass(),nullptr,&isborrowed,false,wrk);
 									if (v && v->kind == CONSTANT_TRAIT && asAtomHandler::isInvalid(v->getter))
 									{
 										state.operandlist.back().removeArg(state);
@@ -6709,7 +6710,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 										{
 											// ensure init script is run
 											asAtom ret = asAtomHandler::invalidAtom;
-											asAtomHandler::getObject(*a)->getVariableByMultiname(ret,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF));
+											asAtomHandler::getObject(*a)->getVariableByMultiname(ret,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF),wrk);
 										}
 										if (setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_GETSLOT_SETSLOT))
 										{
@@ -6758,10 +6759,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 									if (state.operandlist.back().objtype->is<Class_inherit>())
 										state.operandlist.back().objtype->as<Class_inherit>()->checkScriptInit();
 									// check if we can replace getProperty by getSlot
-									state.operandlist.back().objtype->getInstance(o,false,nullptr,0);
+									state.operandlist.back().objtype->getInstance(wrk,o,false,nullptr,0);
 									state.operandlist.back().objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
 
-									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr);
+									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 									if (v && v->slotid)
 									{
 										resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
@@ -7207,7 +7208,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function)
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);
-				activationobject = new_activationObject(function->getSystemState());
+				activationobject = new_activationObject(wrk);
 				activationobject->Variables.Variables.reserve(mi->body->trait_count);
 				std::vector<multiname*> additionalslots;
 				for(unsigned int i=0;i<mi->body->trait_count;i++)

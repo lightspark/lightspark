@@ -28,7 +28,7 @@ namespace lightspark
 class AVNetworkingParams: public ASObject
 {
 public:
-	AVNetworkingParams(Class_base* c):ASObject(c){}
+	AVNetworkingParams(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string,appendRandomQueryParameter);

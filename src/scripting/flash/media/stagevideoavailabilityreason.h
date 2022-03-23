@@ -28,7 +28,7 @@ namespace lightspark
 class StageVideoAvailabilityReason: public ASObject
 {
 public:
-	StageVideoAvailabilityReason(Class_base* c):ASObject(c){}
+	StageVideoAvailabilityReason(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

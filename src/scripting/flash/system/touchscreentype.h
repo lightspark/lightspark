@@ -28,7 +28,7 @@ namespace lightspark
 class TouchscreenType: public ASObject
 {
 public:
-	TouchscreenType(Class_base* c):ASObject(c){}
+	TouchscreenType(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

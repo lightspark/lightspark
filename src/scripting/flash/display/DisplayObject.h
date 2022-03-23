@@ -180,7 +180,7 @@ public:
 	/*
 	   Used to link DisplayObjects the invalidation queue
 	*/
-	DisplayObject(Class_base* c);
+	DisplayObject(ASWorker* wrk, Class_base* c);
 	void finalize() override;
 	bool destruct() override;
 	MATRIX getMatrix(bool includeRotation = true) const;
@@ -202,8 +202,8 @@ public:
 	{
 		throw RunTimeException("DisplayObject::getScaleFactor");
 	}
-	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
-	bool deleteVariableByMultiname(const multiname& name) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
+	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	virtual void removeAVM1Listeners();
 	void AVM1registerPrototypeListeners();
 

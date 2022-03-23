@@ -45,7 +45,7 @@ void MessageChannel::finalize()
 	while (!messagequeue.empty())
 		messagequeue.pop();
 }
-ASFUNCTIONBODY_GETTER(MessageChannel, state);
+ASFUNCTIONBODY_GETTER(MessageChannel, state)
 
 ASFUNCTIONBODY_ATOM(MessageChannel,messageAvailable)
 {
@@ -57,16 +57,22 @@ ASFUNCTIONBODY_ATOM(MessageChannel,messageAvailable)
 ASFUNCTIONBODY_ATOM(MessageChannel,_addEventListener)
 {
 	MessageChannel* th=asAtomHandler::as<MessageChannel>(obj);
-	th->worker = th->receiver->isPrimordial ? nullptr : th->receiver.getPtr();
-	EventDispatcher::addEventListener(ret,sys,obj,args,argslen);
+	if (argslen >=2 && asAtomHandler::isFunction(args[1]))
+	{
+		// the function will be executed in the receiver worker, so set its worker accordingly
+		asAtomHandler::as<IFunction>(args[1])->setWorker(th->receiver.getPtr());
+		asAtomHandler::as<IFunction>(args[1])->objfreelist=nullptr;
+		
+	}
+	EventDispatcher::addEventListener(ret,wrk,obj,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MessageChannel,_removeEventListener)
 {
-	EventDispatcher::removeEventListener(ret,sys,obj,args,argslen);
+	EventDispatcher::removeEventListener(ret,wrk,obj,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MessageChannel,_toString)
 {
-	EventDispatcher::_toString(ret,sys,obj,args,argslen);
+	EventDispatcher::_toString(ret,wrk,obj,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MessageChannel,close)
 {
@@ -116,7 +122,7 @@ ASFUNCTIONBODY_ATOM(MessageChannel,send)
 {
 	MessageChannel* th=asAtomHandler::as<MessageChannel>(obj);
 	if (th->state!= "open")
-		throw Class<IOError>::getInstanceS(sys,"MessageChannel closed");
+		throw Class<IOError>::getInstanceS(wrk,"MessageChannel closed");
 	_NR<ASObject> msg;
 	int queueLimit;
 	ARG_UNPACK_ATOM(msg)(queueLimit,-1);
@@ -131,14 +137,17 @@ ASFUNCTIONBODY_ATOM(MessageChannel,send)
 			|| msg->is<ASMutex>()
 			|| msg->is<ASCondition>()
 			)
+	{
+		msg->objfreelist=nullptr; // message will be used in another thread, make it not reusable
 		th->messagequeue.push(msg);
+	}
 	else
 	{
-		ByteArray* b = Class<ByteArray>::getInstanceSNoArgs(sys);
-		b->writeObject(msg.getPtr());
+		ByteArray* b = Class<ByteArray>::getInstanceSNoArgs(th->receiver.getPtr());
+		b->writeObject(msg.getPtr(),th->receiver.getPtr());
 		b->setPosition(0);
 		th->messagequeue.push(_MR(b));
 	}
 	th->incRef();
-	getVm(sys)->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(sys,"channelMessage")),true);
+	getVm(wrk->getSystemState())->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(th->receiver.getPtr(),"channelMessage")));
 }

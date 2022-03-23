@@ -24,8 +24,8 @@
 
 using namespace lightspark;
 
-GraphicsSolidFill::GraphicsSolidFill(Class_base* c):
-	ASObject(c), alpha(1.0), color(0)
+GraphicsSolidFill::GraphicsSolidFill(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c), alpha(1.0), color(0)
 {
 }
 

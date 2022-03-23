@@ -34,19 +34,24 @@ private:
 	/* the Template<T>* this class was generated from */
 	const Template_base* templ;
 	std::vector<const Type*> types;
+	asfreelist freelist;
 public:
 	TemplatedClass(const QName& name, const std::vector<const Type*>& _types, Template_base* _templ, MemoryAccount* m)
-		: Class<T>(name, m), templ(_templ), types(_types)
+		: Class<T>(name,ClassName<T>::id, m), templ(_templ), types(_types)
 	{
 	}
+	asfreelist* getFreeList(ASWorker*) override
+	{
+		return &freelist;
+	}
 
-	void getInstance(asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr)
+	void getInstance(ASWorker* wrk,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr)
 	{
 		if(realClass==nullptr)
 			realClass=this;
-		ret = asAtomHandler::fromObject(realClass->freelist[0].getObjectFromFreeList());
+		ret = asAtomHandler::fromObject(realClass->getFreeList(wrk)->getObjectFromFreeList());
 		if (asAtomHandler::isInvalid(ret))
-			ret=asAtomHandler::fromObject(new (realClass->memoryAccount) T(realClass));
+			ret=asAtomHandler::fromObject(new (realClass->memoryAccount) T(wrk,realClass));
 		asAtomHandler::resetCached(ret);
 		asAtomHandler::as<T>(ret)->setTypes(types);
 		if(construct)
@@ -56,10 +61,10 @@ public:
 	/* This function is called for as3 code like v = Vector.<String>(["Hello", "World"])
 	 * this->types will be Class<ASString> on entry of this function.
 	 */
-	void generator(asAtom& ret, asAtom* args, const unsigned int argslen)
+	void generator(ASWorker* wrk,asAtom& ret, asAtom* args, const unsigned int argslen)
 	{
 		asAtom th = asAtomHandler::fromObject(this);
-		T::generator(ret,this->getSystemState(),th,args,argslen);
+		T::generator(ret,wrk,th,args,argslen);
 	}
 
 	const Template_base* getTemplate() const
@@ -76,7 +81,7 @@ public:
 		types.push_back(type);
 	}
 
-	bool coerce(SystemState* sys,asAtom& o) const
+	bool coerce(ASWorker* wrk,asAtom& o) const
 	{
 		if (asAtomHandler::isUndefined(o))
 		{
@@ -104,7 +109,7 @@ template<class T>
 class Template : public Template_base
 {
 public:
-	Template(QName name) : Template_base(name) {}
+	Template(ASWorker* wrk,QName name) : Template_base(wrk,name) {}
 
 	QName getQName(SystemState* sys, const std::vector<const Type*>& types)
 	{
@@ -136,7 +141,7 @@ public:
 			MemoryAccount* m = appdomain->getSystemState()->allocateMemoryAccount(instantiatedQName.getQualifiedName(appdomain->getSystemState()));
 			ret=new (m) TemplatedClass<T>(instantiatedQName,types,this,m);
 			appdomain->instantiatedTemplates.insert(std::make_pair(instantiatedQName,ret));
-			ret->prototype = _MNR(new_objectPrototype(appdomain->getSystemState()));
+			ret->prototype = _MNR(new_objectPrototype(appdomain->getInstanceWorker()));
 			T::sinit(ret);
 			if(ret->super)
 				ret->prototype->prevPrototype=ret->super->prototype;
@@ -164,7 +169,7 @@ public:
 			MemoryAccount* m = appdomain->getSystemState()->allocateMemoryAccount(qname.getQualifiedName(appdomain->getSystemState()));
 			ret=new (m) TemplatedClass<T>(qname,types,this,m);
 			appdomain->instantiatedTemplates.insert(std::make_pair(qname,ret));
-			ret->prototype = _MNR(new_objectPrototype(appdomain->getSystemState()));
+			ret->prototype = _MNR(new_objectPrototype(appdomain->getInstanceWorker()));
 			T::sinit(ret);
 			if(ret->super)
 				ret->prototype->prevPrototype=ret->super->prototype;
@@ -194,9 +199,9 @@ public:
 		templ->decRef();
 		return ret;
 	}
-	static void getInstanceS(asAtom& ret, RootMovieClip* root,const Type* type,_NR<ApplicationDomain> appdomain)
+	static void getInstanceS(ASWorker* wrk,asAtom& ret, RootMovieClip* root,const Type* type,_NR<ApplicationDomain> appdomain)
 	{
-		getTemplateInstance(root,type,appdomain).getPtr()->getInstance(ret,true,nullptr,0);
+		getTemplateInstance(root,type,appdomain).getPtr()->getInstance(wrk,ret,true,nullptr,0);
 	}
 
 	static Template<T>* getTemplate(RootMovieClip* root,const QName& name)
@@ -206,8 +211,9 @@ public:
 		if(it==root->templates.end()) //This class is not yet in the map, create it
 		{
 			MemoryAccount* m = root->getSystemState()->allocateMemoryAccount(name.getQualifiedName(root->getSystemState()));
-			ret=new (m) Template<T>(name);
-			ret->prototype = _MNR(new_objectPrototype(root->getSystemState()));
+			ASWorker* wrk = root->getInstanceWorker();
+			ret=new (m) Template<T>(wrk,name);
+			ret->prototype = _MNR(new_objectPrototype(wrk));
 			ret->addPrototypeGetter(root->getSystemState());
 			root->templates.insert(std::make_pair(name,ret));
 		}
@@ -251,27 +257,27 @@ public:
 		sortComparatorWrapper(asAtom c):comparator(c){}
 		number_t compare(const asAtom& d1, const asAtom& d2);
 	};
-	Vector(Class_base* c, const Type *vtype=NULL);
+	Vector(ASWorker* wrk,Class_base* c, const Type *vtype=nullptr);
 	~Vector();
 	bool destruct() override;
 	
 	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {}
-	static void generator(asAtom& ret, SystemState* sys, asAtom& o_class, asAtom* args, const unsigned int argslen);
+	static void generator(asAtom& ret, ASWorker* wrk, asAtom& o_class, asAtom* args, const unsigned int argslen);
 
 	void setTypes(const std::vector<const Type*>& types);
 	bool sameType(const Class_base* cls) const;
 
 	//Overloads
 	tiny_string toString();
-	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset=nullptr) override;
-	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset) override;
-	FORCE_INLINE void setVariableByIntegerNoCoerce(int index, asAtom &o, bool* alreadyset)
+	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
+	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk) override;
+	FORCE_INLINE void setVariableByIntegerNoCoerce(int index, asAtom &o, bool* alreadyset,ASWorker* wrk)
 	{
 		if (USUALLY_FALSE(index < 0))
 		{
-			setVariableByInteger_intern(index,o,ASObject::CONST_ALLOWED,alreadyset);
+			setVariableByInteger_intern(index,o,ASObject::CONST_ALLOWED,alreadyset,wrk);
 			return;
 		}
 		*alreadyset=false;
@@ -296,15 +302,15 @@ public:
 	}
 	void throwRangeError(int index);
 	
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt) override;
-	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt) override;
-	FORCE_INLINE void getVariableByIntegerDirect(asAtom& ret, int index)
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk) override;
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt,ASWorker* wrk) override;
+	FORCE_INLINE void getVariableByIntegerDirect(asAtom& ret, int index, ASWorker* wrk)
 	{
 		if (index >=0 && uint32_t(index) < size())
 			ret = vec[index];
 		else
-			getVariableByIntegerIntern(ret,index);
+			getVariableByIntegerIntern(ret,index,GET_VARIABLE_OPTION::NONE,wrk);
 	}
 	static bool isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index, bool *isNumber = nullptr);
 
@@ -368,11 +374,11 @@ public:
 	ASFUNCTION_ATOM(insertAt);
 	ASFUNCTION_ATOM(removeAt);
 
-	ASObject* describeType() const override;
+	ASObject* describeType(ASWorker* wrk) const override;
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap) override;
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk) override;
 };
 
 }

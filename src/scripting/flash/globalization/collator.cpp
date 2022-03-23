@@ -48,9 +48,9 @@ ASFUNCTIONBODY_ATOM(Collator,_constructor)
 	Collator* th =asAtomHandler::as<Collator>(obj);
 	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
 	ARG_UNPACK_ATOM(th->initialMode);
-	if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
+	if (wrk->getSystemState()->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
-		std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
+		std::string localeName = wrk->getSystemState()->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
 		th->currlocale = std::locale(localeName.c_str());
 		th->actualLocaleIDName = th->requestedLocaleIDName;
 		th->lastOperationStatus="noError";
@@ -308,12 +308,12 @@ ASFUNCTIONBODY_ATOM(Collator,equals)
 ASFUNCTIONBODY_ATOM(Collator,getAvailableLocaleIDNames)
 {
 	Collator* th = asAtomHandler::as<Collator>(obj);
-	Array* res=Class<Array>::getInstanceSNoArgs(sys);
-	std::vector<std::string> localeIds = sys->localeManager->getAvailableLocaleIDNames();
+	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
+	std::vector<std::string> localeIds = wrk->getSystemState()->localeManager->getAvailableLocaleIDNames();
 	for (std::vector<std::string>::iterator it = localeIds.begin(); it != localeIds.end(); ++it)
 	{
 		tiny_string value = (*it);
-		res->push(asAtomHandler::fromObject(abstract_s(sys, value)));
+		res->push(asAtomHandler::fromObject(abstract_s(wrk, value)));
 	}
 	th->lastOperationStatus="noError";
 	ret = asAtomHandler::fromObject(res);

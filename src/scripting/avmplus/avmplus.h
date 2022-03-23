@@ -28,7 +28,7 @@ class ApplicationDomain;
 class avmplusFile : public ASObject
 {
 public:
-	avmplusFile(Class_base* c);
+	avmplusFile(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(exists);
 	ASFUNCTION_ATOM(read);
@@ -40,7 +40,7 @@ public:
 class avmplusSystem : public ASObject
 {
 public:
-	avmplusSystem(Class_base* c);
+	avmplusSystem(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(getFeatures);
 	ASFUNCTION_ATOM(queueCollection);
@@ -67,7 +67,7 @@ class avmplusDomain : public ASObject
 private:
 	_NR<ApplicationDomain> appdomain;
 public:
-	avmplusDomain(Class_base* c);
+	avmplusDomain(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(load);
@@ -79,6 +79,6 @@ public:
 	ASFUNCTION_ATOM(_setDomainMemory);
 };
 
-void casi32(asAtom& ret,SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void casi32(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
 }
 #endif /* SCRIPTING_AVMPLUS_AVMPLUS_H */

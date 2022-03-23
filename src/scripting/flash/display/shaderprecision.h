@@ -28,7 +28,7 @@ namespace lightspark
 class ShaderPrecision: public ASObject
 {
 public:
-	ShaderPrecision(Class_base* c):ASObject(c){}
+	ShaderPrecision(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

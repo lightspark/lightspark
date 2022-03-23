@@ -28,7 +28,7 @@ namespace lightspark
 class NetGroupReceiveMode: public ASObject
 {
 public:
-	NetGroupReceiveMode(Class_base* c):ASObject(c){}
+	NetGroupReceiveMode(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

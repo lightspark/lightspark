@@ -47,7 +47,7 @@ class ByteArray;
 class Event: public ASObject
 {
 public:
-	Event(Class_base* cb, const tiny_string& t = "Event", bool b=false, bool c=false, CLASS_SUBTYPE st=SUBTYPE_EVENT);
+	Event(ASWorker* wrk, Class_base* cb, const tiny_string& t = "Event", bool b=false, bool c=false, CLASS_SUBTYPE st=SUBTYPE_EVENT);
 	void finalize() override;
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -86,7 +86,7 @@ private:
 	bool handled;
 public:
 	WaitableEvent(const tiny_string& t = "Event", bool b=false, bool c=false)
-		: Event(nullptr,t,b,c,SUBTYPE_WAITABLE_EVENT), handled(false) {}
+		: Event(nullptr,nullptr,t,b,c,SUBTYPE_WAITABLE_EVENT), handled(false) {}
 	void wait();
 	void signal();
 	void finalize() override ;
@@ -95,7 +95,7 @@ public:
 class EventPhase: public ASObject
 {
 public:
-	EventPhase(Class_base* c):ASObject(c){}
+	EventPhase(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	enum
 	{
 		CAPTURING_PHASE = 1,
@@ -116,7 +116,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(uint32_t, keyLocation);
 	SDL_Keycode sdlkeycode;
 public:
-	KeyboardEvent(Class_base* c, tiny_string _type="", uint32_t _charcode=0, uint32_t _keycode=0, SDL_Keymod modifiers=KMOD_NONE, SDL_Keycode _sdlkeycode=SDLK_UNKNOWN);
+	KeyboardEvent(ASWorker* wrk, Class_base* c, tiny_string _type="", uint32_t _charcode=0, uint32_t _keycode=0, SDL_Keymod modifiers=KMOD_NONE, SDL_Keycode _sdlkeycode=SDLK_UNKNOWN);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_GETTER_SETTER(altKey);
@@ -133,7 +133,7 @@ public:
 class FocusEvent: public Event
 {
 public:
-	FocusEvent(Class_base* c, tiny_string _type="focusEvent");
+	FocusEvent(ASWorker* wrk,Class_base* c, tiny_string _type="focusEvent");
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -141,7 +141,7 @@ public:
 class FullScreenEvent: public Event
 {
 public:
-	FullScreenEvent(Class_base* c);
+	FullScreenEvent(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -151,7 +151,7 @@ class NetStatusEvent: public Event
 private:
 	Event* cloneImpl() const override ;
 public:
-	NetStatusEvent(Class_base* cb, const tiny_string& l="", const tiny_string& c="");
+	NetStatusEvent(ASWorker* wrk,Class_base* cb, const tiny_string& l="", const tiny_string& c="");
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	tiny_string statuscode;
@@ -160,7 +160,7 @@ public:
 class HTTPStatusEvent: public Event
 {
 public:
-	HTTPStatusEvent(Class_base* c):Event(c){}
+	HTTPStatusEvent(ASWorker* wrk, Class_base* c):Event(wrk,c){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -170,7 +170,7 @@ class TextEvent: public Event
 protected:
 	ASPROPERTY_GETTER_SETTER(tiny_string,text);
 public:
-	TextEvent(Class_base* c, const tiny_string& t = "textEvent");
+	TextEvent(ASWorker* wrk, Class_base* c, const tiny_string& t = "textEvent");
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -182,7 +182,7 @@ protected:
 	Event* cloneImpl() const override;
 	ASPROPERTY_GETTER(int32_t,errorID);
 public:
-	ErrorEvent(Class_base* c, const tiny_string& t = "error", const std::string& e = "", int id = 0);
+	ErrorEvent(ASWorker* wrk, Class_base* c, const tiny_string& t = "error", const std::string& e = "", int id = 0);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -192,21 +192,21 @@ class IOErrorEvent: public ErrorEvent
 private:
 	Event* cloneImpl() const override;
 public:
-	IOErrorEvent(Class_base* c, const tiny_string& t = "ioError", const std::string& e = "", int id = 0);
+	IOErrorEvent(ASWorker* wrk, Class_base* c, const tiny_string& t = "ioError", const std::string& e = "", int id = 0);
 	static void sinit(Class_base*);
 };
 
 class SecurityErrorEvent: public ErrorEvent
 {
 public:
-	SecurityErrorEvent(Class_base* c, const std::string& e = "");
+	SecurityErrorEvent(ASWorker* wrk, Class_base* c, const std::string& e = "");
 	static void sinit(Class_base*);
 };
 
 class AsyncErrorEvent: public ErrorEvent
 {
 public:
-	AsyncErrorEvent(Class_base* c);
+	AsyncErrorEvent(ASWorker* wrk, Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -214,7 +214,7 @@ public:
 class UncaughtErrorEvent: public ErrorEvent
 {
 public:
-	UncaughtErrorEvent(Class_base* c);
+	UncaughtErrorEvent(ASWorker* wrk, Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -228,8 +228,8 @@ public:
 	Mutex accesmutex;
 	ASPROPERTY_GETTER_SETTER(int32_t,bytesLoaded);
 	ASPROPERTY_GETTER_SETTER(int32_t,bytesTotal);
-	ProgressEvent(Class_base* c);
-	ProgressEvent(Class_base* c, uint32_t loaded, uint32_t total, const tiny_string& t="progress");
+	ProgressEvent(ASWorker* wrk, Class_base* c);
+	ProgressEvent(ASWorker* wrk, Class_base* c, uint32_t loaded, uint32_t total, const tiny_string& t="progress");
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -237,8 +237,8 @@ public:
 class TimerEvent: public Event
 {
 public:
-	TimerEvent(Class_base* c):Event(c, "DEPRECATED"){}
-	TimerEvent(Class_base* c,const tiny_string& t):Event(c,t,true){}
+	TimerEvent(ASWorker* wrk, Class_base* c):Event(wrk, c, "DEPRECATED"){}
+	TimerEvent(ASWorker* wrk, Class_base* c,const tiny_string& t):Event(wrk,c,t,true){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(updateAfterEvent);
 };
@@ -249,8 +249,8 @@ private:
 	uint32_t modifiers; 
 	Event* cloneImpl() const override;
 public:
-	MouseEvent(Class_base* c);
-	MouseEvent(Class_base* c, const tiny_string& t, number_t lx, number_t ly,
+	MouseEvent(ASWorker* wrk, Class_base* c);
+	MouseEvent(ASWorker* wrk, Class_base* c, const tiny_string& t, number_t lx, number_t ly,
 		   bool b=true, SDL_Keymod _modifiers=KMOD_NONE,bool _buttonDown = false,
 		   _NR<InteractiveObject> relObj = NullRef, int32_t delta=1);
 	static void sinit(Class_base*);
@@ -275,7 +275,7 @@ public:
 class NativeDragEvent: public MouseEvent
 {
 public:
-	NativeDragEvent(Class_base* c);
+	NativeDragEvent(ASWorker* wrk, Class_base* c);
 	
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
@@ -284,7 +284,7 @@ public:
 class InvokeEvent: public Event
 {
 public:
-	InvokeEvent(Class_base* c) : Event(c, "invoke"){}
+	InvokeEvent(ASWorker* wrk, Class_base* c) : Event(wrk,c, "invoke"){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -329,9 +329,8 @@ private:
 	asAtom forcedTarget;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) {}
-	ASWorker* worker; // the worker in which the events will be handled (nullptr for primordial worker)
 public:
-	EventDispatcher(Class_base* c);
+	EventDispatcher(ASWorker* wrk, Class_base* c);
 	void finalize() override;
 	bool destruct() override;
 	// is called when a new event is added to the event queue
@@ -354,7 +353,7 @@ public:
 class StatusEvent: public Event
 {
 public:
-	StatusEvent(Class_base* c) : Event(c, "StatusEvent") {}
+	StatusEvent(ASWorker* wrk, Class_base* c) : Event(wrk,c, "StatusEvent") {}
 	static void sinit(Class_base*);
 };
 
@@ -363,7 +362,7 @@ class DataEvent: public TextEvent
 private:
 	Event* cloneImpl() const override;
 public:
-	DataEvent(Class_base* c, const tiny_string& _data="") : TextEvent(c, "data"), data(_data) {}
+	DataEvent(ASWorker* wrk, Class_base* c, const tiny_string& _data="") : TextEvent(wrk,c, "data"), data(_data) {}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string, data);
@@ -477,7 +476,7 @@ friend class ABCVm;
 private:
 	_NR<DisplayObject> clip;
 public:
-	InitFrameEvent(_NR<DisplayObject> m) : Event(nullptr, "InitFrameEvent"),clip(m) {}
+	InitFrameEvent(_NR<DisplayObject> m) : Event(nullptr,nullptr, "InitFrameEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const override { return INIT_FRAME; }
 };
 
@@ -487,7 +486,7 @@ friend class ABCVm;
 private:
 	_NR<DisplayObject> clip;
 public:
-	ExecuteFrameScriptEvent(_NR<DisplayObject> m):Event(nullptr, "ExecuteFrameScriptEvent"),clip(m) {}
+	ExecuteFrameScriptEvent(_NR<DisplayObject> m):Event(nullptr,nullptr, "ExecuteFrameScriptEvent"),clip(m) {}
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const override { return EXECUTE_FRAMESCRIPT; }
 };
@@ -498,7 +497,7 @@ friend class ABCVm;
 private:
 	_NR<DisplayObject> clip;
 public:
-	AdvanceFrameEvent(_NR<DisplayObject> m=NullRef): Event(nullptr,"AdvanceFrameEvent"),clip(m) {}
+	AdvanceFrameEvent(_NR<DisplayObject> m=NullRef): Event(nullptr,nullptr,"AdvanceFrameEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const override { return ADVANCE_FRAME; }
 };
 class RootConstructedEvent: public Event
@@ -507,7 +506,7 @@ friend class ABCVm;
 private:
 	_NR<DisplayObject> clip;
 public:
-	RootConstructedEvent(_NR<DisplayObject> m): Event(nullptr,"RootConstructedEvent"),clip(m) {}
+	RootConstructedEvent(_NR<DisplayObject> m): Event(nullptr,nullptr,"RootConstructedEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const override { return ROOTCONSTRUCTEDEVENT; }
 };
 
@@ -522,7 +521,7 @@ public:
 class FlushInvalidationQueueEvent: public Event
 {
 public:
-	FlushInvalidationQueueEvent():Event(NULL, "FlushInvalidationQueueEvent"){}
+	FlushInvalidationQueueEvent():Event(nullptr,nullptr, "FlushInvalidationQueueEvent"){}
 	EVENT_TYPE getEventType() const override { return FLUSH_INVALIDATION_QUEUE; }
 };
 
@@ -543,14 +542,14 @@ private:
 	_NR<InteractiveObject> target;
 	tiny_string text;
 public:
-	TextInputEvent(_NR<InteractiveObject> m, const tiny_string& s) : Event(nullptr, "TextInputEvent"),target(m),text(s) {}
+	TextInputEvent(_NR<InteractiveObject> m, const tiny_string& s) : Event(nullptr,nullptr, "TextInputEvent"),target(m),text(s) {}
 	EVENT_TYPE getEventType() const override { return TEXTINPUT_EVENT; }
 };
 
 class DRMErrorEvent: public ErrorEvent
 {
 public:
-	DRMErrorEvent(Class_base* c);
+	DRMErrorEvent(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -558,7 +557,7 @@ public:
 class DRMStatusEvent: public Event
 {
 public:
-	DRMStatusEvent(Class_base* c);
+	DRMStatusEvent(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -568,7 +567,7 @@ class VideoEvent: public Event
 private:
 	Event* cloneImpl() const override;
 public:
-	VideoEvent(Class_base* c);
+	VideoEvent(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(tiny_string,status);
@@ -579,7 +578,7 @@ class StageVideoEvent: public Event
 private:
 	Event* cloneImpl() const override;
 public:
-	StageVideoEvent(Class_base* c);
+	StageVideoEvent(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(tiny_string,colorSpace);
@@ -591,7 +590,7 @@ class StageVideoAvailabilityEvent: public Event
 private:
 	Event* cloneImpl() const override;
 public:
-	StageVideoAvailabilityEvent(Class_base* c);
+	StageVideoAvailabilityEvent(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(tiny_string,availability);
@@ -602,8 +601,8 @@ class ContextMenuEvent: public Event
 private:
 	Event* cloneImpl() const override;
 public:
-	ContextMenuEvent(Class_base* c) : Event(c, "ContextMenuEvent") {}
-	ContextMenuEvent(Class_base* c, tiny_string t, _NR<InteractiveObject> target, _NR<InteractiveObject> owner) : Event(c, t,false,false,SUBTYPE_CONTEXTMENUEVENT),mouseTarget(target),contextMenuOwner(owner) {}
+	ContextMenuEvent(ASWorker* wrk, Class_base* c) : Event(wrk,c, "ContextMenuEvent") {}
+	ContextMenuEvent(ASWorker* wrk, Class_base* c, tiny_string t, _NR<InteractiveObject> target, _NR<InteractiveObject> owner) : Event(wrk,c, t,false,false,SUBTYPE_CONTEXTMENUEVENT),mouseTarget(target),contextMenuOwner(owner) {}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<InteractiveObject>,mouseTarget);
@@ -613,34 +612,34 @@ public:
 class TouchEvent: public Event
 {
 public:
-	TouchEvent(Class_base* c) : Event(c, "TouchEvent") {}
+	TouchEvent(ASWorker* wrk, Class_base* c) : Event(wrk,c, "TouchEvent") {}
 	static void sinit(Class_base*);
 };
 
 class GestureEvent: public Event
 {
 public:
-	GestureEvent(Class_base* c, const tiny_string& t = "GestureEvent") : Event(c, t) {}
+	GestureEvent(ASWorker* wrk, Class_base* c, const tiny_string& t = "GestureEvent") : Event(wrk,c, t) {}
 	static void sinit(Class_base*);
 };
 
 class PressAndTapGestureEvent: public GestureEvent
 {
 public:
-	PressAndTapGestureEvent(Class_base* c) : GestureEvent(c, "PressAndTapGestureEvent") {}
+	PressAndTapGestureEvent(ASWorker* wrk, Class_base* c) : GestureEvent(wrk,c, "PressAndTapGestureEvent") {}
 	static void sinit(Class_base*);
 };
 class TransformGestureEvent: public GestureEvent
 {
 public:
-	TransformGestureEvent(Class_base* c) : GestureEvent(c, "TransformGestureEvent") {}
+	TransformGestureEvent(ASWorker* wrk, Class_base* c) : GestureEvent(wrk,c, "TransformGestureEvent") {}
 	static void sinit(Class_base*);
 };
 
 class UncaughtErrorEvents: public EventDispatcher
 {
 public:
-	UncaughtErrorEvents(Class_base* c);
+	UncaughtErrorEvents(ASWorker* wrk, Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -650,8 +649,8 @@ class SampleDataEvent: public Event
 private:
 	Event* cloneImpl() const override;
 public:
-	SampleDataEvent(Class_base* c);
-	SampleDataEvent(Class_base* c,_NR<ByteArray> _data,number_t _pos);
+	SampleDataEvent(ASWorker* wrk, Class_base* c);
+	SampleDataEvent(ASWorker* wrk, Class_base* c,_NR<ByteArray> _data,number_t _pos);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toString);
@@ -664,8 +663,8 @@ class ThrottleEvent: public Event
 private:
 	Event* cloneImpl() const override;
 public:
-	ThrottleEvent(Class_base* c) : Event(c, "throttle",false,false,SUBTYPE_THROTTLE_EVENT),targetFrameRate(0) {}
-	ThrottleEvent(Class_base* c,const tiny_string _state,number_t _targetFrameRate) : Event(c, "throttle",false,false,SUBTYPE_THROTTLE_EVENT),state(_state),targetFrameRate(_targetFrameRate) {}
+	ThrottleEvent(ASWorker* wrk, Class_base* c) : Event(wrk,c, "throttle",false,false,SUBTYPE_THROTTLE_EVENT),targetFrameRate(0) {}
+	ThrottleEvent(ASWorker* wrk, Class_base* c,const tiny_string _state,number_t _targetFrameRate) : Event(wrk,c, "throttle",false,false,SUBTYPE_THROTTLE_EVENT),state(_state),targetFrameRate(_targetFrameRate) {}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toString);
@@ -675,7 +674,7 @@ public:
 class ThrottleType: public ASObject
 {
 public:
-	ThrottleType(Class_base* c):ASObject(c){}
+	ThrottleType(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
@@ -684,8 +683,8 @@ class GameInputEvent: public Event
 private:
 	Event* cloneImpl() const override;
 public:
-	GameInputEvent(Class_base* c);
-	GameInputEvent(Class_base* c,_NR<GameInputDevice> _device);
+	GameInputEvent(ASWorker* wrk, Class_base* c);
+	GameInputEvent(ASWorker* wrk, Class_base* c,_NR<GameInputDevice> _device);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(_NR<GameInputDevice>,device);

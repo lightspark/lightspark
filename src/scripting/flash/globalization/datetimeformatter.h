@@ -34,7 +34,7 @@ private:
 	tiny_string pattern;
 	std::locale currlocale;
 public:
-	DateTimeFormatter(Class_base* c);
+	DateTimeFormatter(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	static tiny_string buildDateTimePattern(tiny_string dateStyle, tiny_string timeStyle);
 	static std::string buildInternalFormat(std::string pattern);

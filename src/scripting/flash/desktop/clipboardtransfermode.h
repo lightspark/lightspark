@@ -28,7 +28,7 @@ namespace lightspark
 class ClipboardTransferMode: public ASObject
 {
 public:
-	ClipboardTransferMode(Class_base* c):ASObject(c){}
+	ClipboardTransferMode(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

@@ -274,7 +274,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_constructor)
 	int port;
 	ARG_UNPACK_ATOM (host, "") (port, 0);
 
-	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
+	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	host_is_null = argslen > 0 && asAtomHandler::is<Null>(args[0]);
@@ -301,7 +301,7 @@ ASFUNCTIONBODY_ATOM(ASSocket, _close)
 ASFUNCTIONBODY_ATOM(ASSocket,_getObjectEncoding)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
-	asAtomHandler::setUInt(ret,sys,th->objectEncoding);
+	asAtomHandler::setUInt(ret,wrk,th->objectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,_setObjectEncoding)
@@ -319,17 +319,17 @@ ASFUNCTIONBODY_ATOM(ASSocket,_setObjectEncoding)
 void ASSocket::connect(tiny_string host, int port)
 {
 	if (port <= 0 || port > 65535)
-		throw Class<SecurityError>::getInstanceS(getSystemState(),"Invalid port");
+		throw Class<SecurityError>::getInstanceS(getInstanceWorker(),"Invalid port");
 
 	if (host.empty())
 		host = getSys()->mainClip->getOrigin().getHostname();
 
 	if (isConnected())
-		throw Class<IOError>::getInstanceS(getSystemState(),"Already connected");
+		throw Class<IOError>::getInstanceS(getInstanceWorker(),"Already connected");
 
 	// Host shouldn't contain scheme or port
 	if (host.strchr(':') != nullptr)
-		throw Class<SecurityError>::getInstanceS(getSystemState(),"Invalid hostname");
+		throw Class<SecurityError>::getInstanceS(getInstanceWorker(),"Invalid hostname");
 
 	// Check sandbox and policy file
 	size_t buflen = host.numBytes() + 22;
@@ -348,7 +348,7 @@ void ASSocket::connect(tiny_string host, int port)
 	if(evaluationResult != SecurityManager::ALLOWED)
 	{
 		incRef();
-		getVm(getSystemState())->addEvent(_MR(this), _MR(Class<SecurityErrorEvent>::getInstanceS(getSystemState(),"No policy file allows socket connection")));
+		getVm(getSystemState())->addEvent(_MR(this), _MR(Class<SecurityErrorEvent>::getInstanceS(getInstanceWorker(),"No policy file allows socket connection")));
 		return;
 	}
 
@@ -380,11 +380,11 @@ ASFUNCTIONBODY_ATOM(ASSocket, bytesAvailable)
 	if (th->job)
 	{
 		th->job->datareceive->lock();
-		asAtomHandler::setUInt(ret,sys,th->job->datareceive->getLength());
+		asAtomHandler::setUInt(ret,wrk,th->job->datareceive->getLength());
 		th->job->datareceive->unlock();
 	}
 	else
-		asAtomHandler::setUInt(ret,sys,0);
+		asAtomHandler::setUInt(ret,wrk,0);
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,_getEndian)
@@ -394,21 +394,21 @@ ASFUNCTIONBODY_ATOM(ASSocket,_getEndian)
 	if (th->job)
 	{
 		if(th->job->datasend->getLittleEndian())
-			ret = asAtomHandler::fromString(sys,Endian::littleEndian);
+			ret = asAtomHandler::fromString(wrk->getSystemState(),Endian::littleEndian);
 		else
-			ret = asAtomHandler::fromString(sys,Endian::bigEndian);
+			ret = asAtomHandler::fromString(wrk->getSystemState(),Endian::bigEndian);
 	}
 	else
-		ret = asAtomHandler::fromString(sys,Endian::bigEndian);
+		ret = asAtomHandler::fromString(wrk->getSystemState(),Endian::bigEndian);
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,_setEndian)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	bool v = false;
-	if(asAtomHandler::toString(args[0],sys) == Endian::littleEndian)
+	if(asAtomHandler::toString(args[0],wrk) == Endian::littleEndian)
 		v = true;
-	else if(asAtomHandler::toString(args[0],sys) == Endian::bigEndian)
+	else if(asAtomHandler::toString(args[0],wrk) == Endian::bigEndian)
 		v = false;
 	else
 		throwError<ArgumentError>(kInvalidEnumError, "endian");
@@ -433,7 +433,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readBoolean)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
+		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
 	}
 	asAtomHandler::setBool(ret,res!=0);
 }
@@ -452,9 +452,9 @@ ASFUNCTIONBODY_ATOM(ASSocket,readByte)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
+		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
 	}
-	asAtomHandler::setInt(ret,sys,int32_t(res));
+	asAtomHandler::setInt(ret,wrk,int32_t(res));
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,readBytes)
@@ -484,7 +484,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readBytes)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
+		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
 	}
 }
 
@@ -584,7 +584,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeUTFBytes)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
+		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
 	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeBytes)
@@ -613,7 +613,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeBytes)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
+		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
 	}
 }
 
@@ -630,11 +630,11 @@ ASFUNCTIONBODY_ATOM(ASSocket,readUTFBytes)
 		th->job->datareceive->readUTFBytes(length,data);
 		th->job->datareceive->removeFrontBytes(length);
 		th->job->datareceive->unlock();
-		asAtomHandler::set(ret,asAtomHandler::fromString(sys,data));
+		asAtomHandler::set(ret,asAtomHandler::fromString(wrk->getSystemState(),data));
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
+		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
 	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,_flush)
@@ -647,7 +647,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_flush)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
+		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
 	}
 }
 
@@ -657,7 +657,7 @@ bool ASSocket::isConnected()
 	return job && job->isConnected();
 }
 
-ASSocket::ASSocket(Class_base* c) : EventDispatcher(c), job(nullptr), objectEncoding(OBJECT_ENCODING::AMF3), timeout(20000)
+ASSocket::ASSocket(ASWorker* wrk, Class_base* c) : EventDispatcher(wrk,c), job(nullptr), objectEncoding(OBJECT_ENCODING::AMF3), timeout(20000)
 {
 }
 
@@ -677,8 +677,8 @@ ASSocketThread::ASSocketThread(_R<ASSocket> _owner, const tiny_string& _hostname
 : owner(_owner), hostname(_hostname), port(_port), timeout(_timeout)
 {
 	sendQueue = g_async_queue_new();
-	datasend = _MR(Class<ByteArray>::getInstanceS(owner->getSystemState()));
-	datareceive = _MR(Class<ByteArray>::getInstanceS(owner->getSystemState()));
+	datasend = _MR(Class<ByteArray>::getInstanceS(owner->getInstanceWorker()));
+	datareceive = _MR(Class<ByteArray>::getInstanceS(owner->getInstanceWorker()));
 #ifdef _WIN32
 	HANDLE readPipe, writePipe;
 	if (!CreatePipe(&readPipe,&writePipe,nullptr,0))
@@ -723,13 +723,13 @@ void ASSocketThread::execute()
 	if (!sock.connect(hostname, port))
 	{
 		owner->incRef();
-		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 		return;
 	}
 	if (!threadAborting)
 	{
 		owner->incRef();
-		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"connect")));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getInstanceWorker(),"connect")));
 	}
 
 //	bool first=true;
@@ -751,7 +751,7 @@ void ASSocketThread::execute()
 		if (status  < 0)
 		{
 			owner->incRef();
-			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
+			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 			return;
 		}
 
@@ -763,7 +763,7 @@ void ASSocketThread::execute()
 			if (nbytes < 0)
 			{
 				owner->incRef();
-				getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
+				getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 				return;
 			}
 			else if (nbytes == 0)
@@ -782,7 +782,7 @@ void ASSocketThread::execute()
 //				// send connect event only after first succesful communication
 //				first = false;
 //				owner->incRef();
-//				getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"connect")));
+//				getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getInstanceWorker(),"connect")));
 //			}
 		}
 		else if (FD_ISSET(sock.fileDescriptor(), &readfds))
@@ -802,20 +802,20 @@ void ASSocketThread::readSocket(const SocketIO& sock)
 		buf[nbytes] = '\0';
 		datareceive->writeBytes(buf,nbytes);
 		owner->incRef();
-		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<ProgressEvent>::getInstanceS(owner->getSystemState(),nbytes,0,"socketData")));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<ProgressEvent>::getInstanceS(owner->getInstanceWorker(),nbytes,0,"socketData")));
 	}
 	else if (nbytes == 0)
 	{
 		// The server has closed the socket
 		owner->incRef();
-		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"close")));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getInstanceWorker(),"close")));
 		threadAborting = true;
 	}
 	else
 	{
 		// Error
 		owner->incRef();
-		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 		threadAborting = true;
 	}
 }
@@ -839,7 +839,7 @@ void ASSocketThread::executeCommand(char cmd, SocketIO& sock)
 		{
 			sock.close();
 			owner->incRef();
-			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"close")));
+			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getInstanceWorker(),"close")));
 			threadAborting = true;
 			break;
 		}

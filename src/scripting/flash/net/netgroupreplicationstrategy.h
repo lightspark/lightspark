@@ -28,7 +28,7 @@ namespace lightspark
 class NetGroupReplicationStrategy: public ASObject
 {
 public:
-	NetGroupReplicationStrategy(Class_base* c):ASObject(c){}
+	NetGroupReplicationStrategy(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

@@ -39,7 +39,7 @@ void BitmapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source,
 
 BitmapFilter* BitmapFilter::cloneImpl() const
 {
-	return Class<BitmapFilter>::getInstanceS(getSystemState());
+	return Class<BitmapFilter>::getInstanceS(getInstanceWorker());
 }
 
 // blur algorithm taken from haxe https://github.com/haxelime/lime/blob/develop/src/lime/_internal/graphics/StackBlur.hx
@@ -432,13 +432,13 @@ ASFUNCTIONBODY_ATOM(BitmapFilter,clone)
 	ret = asAtomHandler::fromObject(th->cloneImpl());
 }
 
-GlowFilter::GlowFilter(Class_base* c):
-	BitmapFilter(c,SUBTYPE_GLOWFILTER), alpha(1.0), blurX(6.0), blurY(6.0), color(0xFF0000),
+GlowFilter::GlowFilter(ASWorker* wrk, Class_base* c):
+	BitmapFilter(wrk,c,SUBTYPE_GLOWFILTER), alpha(1.0), blurX(6.0), blurY(6.0), color(0xFF0000),
 	inner(false), knockout(false), quality(1), strength(2.0)
 {
 }
-GlowFilter::GlowFilter(Class_base* c,const GLOWFILTER& filter):
-	BitmapFilter(c,SUBTYPE_GLOWFILTER), alpha(filter.GlowColor.af()), blurX(filter.BlurX), blurY(filter.BlurY), color(RGB(filter.GlowColor.Red,filter.GlowColor.Green,filter.GlowColor.Blue).toUInt()),
+GlowFilter::GlowFilter(ASWorker* wrk, Class_base* c, const GLOWFILTER& filter):
+	BitmapFilter(wrk,c,SUBTYPE_GLOWFILTER), alpha(filter.GlowColor.af()), blurX(filter.BlurX), blurY(filter.BlurY), color(RGB(filter.GlowColor.Red,filter.GlowColor.Green,filter.GlowColor.Blue).toUInt()),
 	inner(filter.InnerGlow), knockout(filter.Knockout), quality(filter.Passes), strength(filter.Strength)
 {
 }
@@ -456,14 +456,14 @@ void GlowFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, strength);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, alpha);
-ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, blurX);
-ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, blurY);
-ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, color);
-ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, inner);
-ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, knockout);
-ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, quality);
-ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, strength);
+ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, alpha)
+ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, blurX)
+ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, blurY)
+ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, color)
+ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, inner)
+ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, knockout)
+ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, quality)
+ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, strength)
 
 ASFUNCTIONBODY_ATOM(GlowFilter,_constructor)
 {
@@ -480,7 +480,7 @@ ASFUNCTIONBODY_ATOM(GlowFilter,_constructor)
 
 BitmapFilter* GlowFilter::cloneImpl() const
 {
-	GlowFilter *cloned = Class<GlowFilter>::getInstanceS(getSystemState());
+	GlowFilter *cloned = Class<GlowFilter>::getInstanceS(getInstanceWorker());
 	cloned->alpha = alpha;
 	cloned->blurX = blurX;
 	cloned->blurY = blurY;
@@ -504,14 +504,14 @@ void GlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, c
 	delete[] tmpdata;
 }
 
-DropShadowFilter::DropShadowFilter(Class_base* c):
-	BitmapFilter(c,SUBTYPE_DROPSHADOWFILTER), alpha(1.0), angle(45), blurX(4.0), blurY(4.0),
+DropShadowFilter::DropShadowFilter(ASWorker* wrk,Class_base* c):
+	BitmapFilter(wrk,c,SUBTYPE_DROPSHADOWFILTER), alpha(1.0), angle(45), blurX(4.0), blurY(4.0),
 	color(0), distance(4.0), hideObject(false), inner(false),
 	knockout(false), quality(1), strength(1.0)
 {
 }
-DropShadowFilter::DropShadowFilter(Class_base* c,const DROPSHADOWFILTER& filter):
-	BitmapFilter(c,SUBTYPE_DROPSHADOWFILTER), alpha(filter.DropShadowColor.af()), angle(filter.Angle), blurX(filter.BlurX), blurY(filter.BlurY),
+DropShadowFilter::DropShadowFilter(ASWorker* wrk,Class_base* c,const DROPSHADOWFILTER& filter):
+	BitmapFilter(wrk,c,SUBTYPE_DROPSHADOWFILTER), alpha(filter.DropShadowColor.af()), angle(filter.Angle), blurX(filter.BlurX), blurY(filter.BlurY),
 	color(RGB(filter.DropShadowColor.Red,filter.DropShadowColor.Green,filter.DropShadowColor.Blue).toUInt()), distance(filter.Distance), hideObject(false), inner(filter.InnerShadow),
 	knockout(filter.Knockout), quality(filter.Passes), strength(filter.Strength)
 {
@@ -550,17 +550,17 @@ void DropShadowFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, strength);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, alpha);
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, angle);
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, blurX);
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, blurY);
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, color);
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, distance);
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, hideObject);
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, inner);
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, knockout);
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, quality);
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, strength);
+ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, alpha)
+ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, angle)
+ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, blurX)
+ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, blurY)
+ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, color)
+ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, distance)
+ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, hideObject)
+ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, inner)
+ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, knockout)
+ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, quality)
+ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, strength)
 
 ASFUNCTIONBODY_ATOM(DropShadowFilter,_constructor)
 {
@@ -580,7 +580,7 @@ ASFUNCTIONBODY_ATOM(DropShadowFilter,_constructor)
 
 BitmapFilter* DropShadowFilter::cloneImpl() const
 {
-	DropShadowFilter *cloned = Class<DropShadowFilter>::getInstanceS(getSystemState());
+	DropShadowFilter *cloned = Class<DropShadowFilter>::getInstanceS(getInstanceWorker());
 	cloned->alpha = alpha;
 	cloned->angle = angle;
 	cloned->blurX = blurX;
@@ -595,30 +595,30 @@ BitmapFilter* DropShadowFilter::cloneImpl() const
 	return cloned;
 }
 
-GradientGlowFilter::GradientGlowFilter(Class_base* c):
-	BitmapFilter(c,SUBTYPE_GRADIENTGLOWFILTER),distance(4.0),angle(45), blurX(4.0), blurY(4.0), strength(1), quality(1), type("inner"), knockout(false)
+GradientGlowFilter::GradientGlowFilter(ASWorker* wrk, Class_base* c):
+	BitmapFilter(wrk,c,SUBTYPE_GRADIENTGLOWFILTER),distance(4.0),angle(45), blurX(4.0), blurY(4.0), strength(1), quality(1), type("inner"), knockout(false)
 {
 }
-GradientGlowFilter::GradientGlowFilter(Class_base* c, const GRADIENTGLOWFILTER& filter):
-	BitmapFilter(c,SUBTYPE_GRADIENTGLOWFILTER),distance(filter.Distance),angle(filter.Angle), blurX(filter.BlurX), blurY(filter.BlurY), strength(filter.Strength), quality(filter.Passes),
+GradientGlowFilter::GradientGlowFilter(ASWorker* wrk, Class_base* c, const GRADIENTGLOWFILTER& filter):
+	BitmapFilter(wrk,c,SUBTYPE_GRADIENTGLOWFILTER),distance(filter.Distance),angle(filter.Angle), blurX(filter.BlurX), blurY(filter.BlurY), strength(filter.Strength), quality(filter.Passes),
 	type(filter.InnerGlow ? "inner": "outer"),// TODO: is type set based on "onTop" ?
 	knockout(filter.Knockout)
 {
 	if (filter.GradientColors.size())
 	{
-		colors = _MR(Class<Array>::getInstanceSNoArgs(c->getSystemState()));
-		alphas = _MR(Class<Array>::getInstanceSNoArgs(c->getSystemState()));
+		colors = _MR(Class<Array>::getInstanceSNoArgs(wrk));
+		alphas = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		auto it = filter.GradientColors.begin();
 		while (it != filter.GradientColors.end())
 		{
 			colors->push(asAtomHandler::fromUInt(RGB(it->Red,it->Green,it->Blue).toUInt()));
-			alphas->push(asAtomHandler::fromNumber(c->getSystemState(),it->af(),false));
+			alphas->push(asAtomHandler::fromNumber(wrk,it->af(),false));
 			it++;
 		}
 	}
 	if (filter.GradientRatio.size())
 	{
-		ratios = _MR(Class<Array>::getInstanceSNoArgs(c->getSystemState()));
+		ratios = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		auto it = filter.GradientRatio.begin();
 		while (it != filter.GradientRatio.end())
 		{
@@ -662,17 +662,17 @@ void GradientGlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* s
 	delete[] tmpdata;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, distance);
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, angle);
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, colors);
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, alphas);
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, ratios);
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, blurX);
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, blurY);
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, strength);
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, quality);
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, type);
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, knockout);
+ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, distance)
+ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, angle)
+ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, colors)
+ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, alphas)
+ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, ratios)
+ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, blurX)
+ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, blurY)
+ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, strength)
+ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, quality)
+ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, type)
+ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, knockout)
 
 ASFUNCTIONBODY_ATOM(GradientGlowFilter,_constructor)
 {
@@ -682,7 +682,7 @@ ASFUNCTIONBODY_ATOM(GradientGlowFilter,_constructor)
 
 BitmapFilter* GradientGlowFilter::cloneImpl() const
 {
-	GradientGlowFilter *cloned = Class<GradientGlowFilter>::getInstanceS(getSystemState());
+	GradientGlowFilter *cloned = Class<GradientGlowFilter>::getInstanceS(getInstanceWorker());
 	cloned->distance = distance;
 	cloned->angle = angle;
 	cloned->colors = colors;
@@ -697,16 +697,16 @@ BitmapFilter* GradientGlowFilter::cloneImpl() const
 	return cloned;
 }
 
-BevelFilter::BevelFilter(Class_base* c):
-	BitmapFilter(c,SUBTYPE_BEVELFILTER), angle(45), blurX(4.0), blurY(4.0),distance(4.0),
+BevelFilter::BevelFilter(ASWorker* wrk,Class_base* c):
+	BitmapFilter(wrk,c,SUBTYPE_BEVELFILTER), angle(45), blurX(4.0), blurY(4.0),distance(4.0),
 	highlightAlpha(1.0), highlightColor(0xFFFFFF),
 	knockout(false), quality(1),
 	shadowAlpha(1.0), shadowColor(0x000000),
 	strength(1), type("inner")
 {
 }
-BevelFilter::BevelFilter(Class_base* c,const BEVELFILTER& filter):
-	BitmapFilter(c,SUBTYPE_BEVELFILTER),angle(filter.Angle),blurX(filter.BlurX), blurY(filter.BlurY),distance(filter.Distance), 
+BevelFilter::BevelFilter(ASWorker* wrk, Class_base* c, const BEVELFILTER& filter):
+	BitmapFilter(wrk,c,SUBTYPE_BEVELFILTER),angle(filter.Angle),blurX(filter.BlurX), blurY(filter.BlurY),distance(filter.Distance), 
 	highlightAlpha(filter.HighlightColor.af()), highlightColor(RGB(filter.HighlightColor.Red,filter.HighlightColor.Green,filter.HighlightColor.Blue).toUInt()),
 	knockout(filter.Knockout), quality(filter.Passes),
 	shadowAlpha(filter.ShadowColor.af()), shadowColor(RGB(filter.ShadowColor.Red,filter.ShadowColor.Green,filter.ShadowColor.Blue).toUInt()),
@@ -733,18 +733,18 @@ void BevelFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,type);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,angle);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,blurX);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,blurY);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,distance);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,highlightAlpha);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,highlightColor);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,knockout);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,quality);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,shadowAlpha);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,shadowColor);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,strength);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,type);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,angle)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,blurX)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,blurY)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,distance)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,highlightAlpha)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,highlightColor)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,knockout)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,quality)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,shadowAlpha)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,shadowColor)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,strength)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,type)
 
 void BevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
 {
@@ -772,7 +772,7 @@ ASFUNCTIONBODY_ATOM(BevelFilter,_constructor)
 
 BitmapFilter* BevelFilter::cloneImpl() const
 {
-	BevelFilter* cloned = Class<BevelFilter>::getInstanceS(getSystemState());
+	BevelFilter* cloned = Class<BevelFilter>::getInstanceS(getInstanceWorker());
 	cloned->angle = angle;
 	cloned->blurX = blurX;
 	cloned->blurY = blurY;
@@ -787,18 +787,18 @@ BitmapFilter* BevelFilter::cloneImpl() const
 	cloned->type = type;
 	return cloned;
 }
-ColorMatrixFilter::ColorMatrixFilter(Class_base* c):
-	BitmapFilter(c,SUBTYPE_COLORMATRIXFILTER)
+ColorMatrixFilter::ColorMatrixFilter(ASWorker* wrk, Class_base* c):
+	BitmapFilter(wrk,c,SUBTYPE_COLORMATRIXFILTER)
 {
 }
-ColorMatrixFilter::ColorMatrixFilter(Class_base* c,const COLORMATRIXFILTER& filter):
-	BitmapFilter(c,SUBTYPE_COLORMATRIXFILTER)
+ColorMatrixFilter::ColorMatrixFilter(ASWorker* wrk, Class_base* c, const COLORMATRIXFILTER& filter):
+	BitmapFilter(wrk,c,SUBTYPE_COLORMATRIXFILTER)
 {
-	matrix = _MR(Class<Array>::getInstanceSNoArgs(c->getSystemState()));
+	matrix = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 	for (uint32_t i = 0; i < 20 ; i++)
 	{
 		FLOAT f = filter.Matrix[i];
-		matrix->push(asAtomHandler::fromNumber(c->getSystemState(),f,false));
+		matrix->push(asAtomHandler::fromNumber(wrk,f,false));
 	}
 }
 
@@ -853,7 +853,7 @@ void ColorMatrixFilter::applyFilter(BitmapContainer* target, BitmapContainer* so
 	delete[] tmpdata;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(ColorMatrixFilter, matrix);
+ASFUNCTIONBODY_GETTER_SETTER(ColorMatrixFilter, matrix)
 
 ASFUNCTIONBODY_ATOM(ColorMatrixFilter,_constructor)
 {
@@ -863,7 +863,7 @@ ASFUNCTIONBODY_ATOM(ColorMatrixFilter,_constructor)
 
 BitmapFilter* ColorMatrixFilter::cloneImpl() const
 {
-	ColorMatrixFilter *cloned = Class<ColorMatrixFilter>::getInstanceS(getSystemState());
+	ColorMatrixFilter *cloned = Class<ColorMatrixFilter>::getInstanceS(getInstanceWorker());
 	if (!matrix.isNull())
 	{
 		matrix->incRef();
@@ -871,12 +871,12 @@ BitmapFilter* ColorMatrixFilter::cloneImpl() const
 	}
 	return cloned;
 }
-BlurFilter::BlurFilter(Class_base* c):
-	BitmapFilter(c,SUBTYPE_BLURFILTER),blurX(4.0),blurY(4.0),quality(1)
+BlurFilter::BlurFilter(ASWorker* wrk,Class_base* c):
+	BitmapFilter(wrk,c,SUBTYPE_BLURFILTER),blurX(4.0),blurY(4.0),quality(1)
 {
 }
-BlurFilter::BlurFilter(Class_base* c,const BLURFILTER& filter):
-	BitmapFilter(c,SUBTYPE_BLURFILTER),blurX(filter.BlurX),blurY(filter.BlurY),quality(filter.Passes)
+BlurFilter::BlurFilter(ASWorker* wrk,Class_base* c,const BLURFILTER& filter):
+	BitmapFilter(wrk,c,SUBTYPE_BLURFILTER),blurX(filter.BlurX),blurY(filter.BlurY),quality(filter.Passes)
 {
 }
 
@@ -888,9 +888,9 @@ void BlurFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, quality);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, blurX);
-ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, blurY);
-ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, quality);
+ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, blurX)
+ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, blurY)
+ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, quality)
 
 ASFUNCTIONBODY_ATOM(BlurFilter,_constructor)
 {
@@ -917,15 +917,15 @@ void BlurFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, c
 }
 BitmapFilter* BlurFilter::cloneImpl() const
 {
-	BlurFilter* cloned = Class<BlurFilter>::getInstanceS(getSystemState());
+	BlurFilter* cloned = Class<BlurFilter>::getInstanceS(getInstanceWorker());
 	cloned->blurX = blurX;
 	cloned->blurY = blurY;
 	cloned->quality = quality;
 	return cloned;
 }
 
-ConvolutionFilter::ConvolutionFilter(Class_base* c):
-	BitmapFilter(c,SUBTYPE_CONVOLUTIONFILTER),
+ConvolutionFilter::ConvolutionFilter(ASWorker* wrk,Class_base* c):
+	BitmapFilter(wrk,c,SUBTYPE_CONVOLUTIONFILTER),
 	alpha(0.0),
 	bias(0.0),
 	clamp(true),
@@ -936,8 +936,8 @@ ConvolutionFilter::ConvolutionFilter(Class_base* c):
 	preserveAlpha(true)
 {
 }
-ConvolutionFilter::ConvolutionFilter(Class_base* c, const CONVOLUTIONFILTER& filter):
-	BitmapFilter(c,SUBTYPE_CONVOLUTIONFILTER),
+ConvolutionFilter::ConvolutionFilter(ASWorker* wrk,Class_base* c, const CONVOLUTIONFILTER& filter):
+	BitmapFilter(wrk,c,SUBTYPE_CONVOLUTIONFILTER),
 	alpha(filter.DefaultColor.af()),
 	bias((FLOAT)filter.Bias),
 	clamp(filter.Clamp),
@@ -950,11 +950,11 @@ ConvolutionFilter::ConvolutionFilter(Class_base* c, const CONVOLUTIONFILTER& fil
 	LOG(LOG_NOT_IMPLEMENTED,"ConvolutionFilter from Tag");
 	if (filter.Matrix.size())
 	{
-		matrix = _MR(Class<Array>::getInstanceSNoArgs(c->getSystemState()));
+		matrix = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		auto it = filter.Matrix.begin();
 		while (it != filter.Matrix.end())
 		{
-			matrix->push(asAtomHandler::fromNumber(c->getSystemState(),(FLOAT)*it,false));
+			matrix->push(asAtomHandler::fromNumber(wrk,(FLOAT)*it,false));
 			it++;
 		}
 	}
@@ -1063,15 +1063,15 @@ void ConvolutionFilter::applyFilter(BitmapContainer* target, BitmapContainer* so
 	delete[] tmpdata;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,alpha);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,bias);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,clamp);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,color);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,divisor);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,matrix);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,matrixX);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,matrixY);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,preserveAlpha);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,alpha)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,bias)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,clamp)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,color)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,divisor)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,matrix)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,matrixX)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,matrixY)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,preserveAlpha)
 
 ASFUNCTIONBODY_ATOM(ConvolutionFilter,_constructor)
 {
@@ -1081,7 +1081,7 @@ ASFUNCTIONBODY_ATOM(ConvolutionFilter,_constructor)
 
 BitmapFilter* ConvolutionFilter::cloneImpl() const
 {
-	ConvolutionFilter* cloned = Class<ConvolutionFilter>::getInstanceS(getSystemState());
+	ConvolutionFilter* cloned = Class<ConvolutionFilter>::getInstanceS(getInstanceWorker());
 	cloned->alpha = alpha;
 	cloned->bias = bias;
 	cloned->clamp = clamp;
@@ -1094,8 +1094,8 @@ BitmapFilter* ConvolutionFilter::cloneImpl() const
 	return cloned;
 }
 
-DisplacementMapFilter::DisplacementMapFilter(Class_base* c):
-	BitmapFilter(c,SUBTYPE_DISPLACEMENTFILTER)
+DisplacementMapFilter::DisplacementMapFilter(ASWorker* wrk,Class_base* c):
+	BitmapFilter(wrk,c,SUBTYPE_DISPLACEMENTFILTER)
 {
 }
 
@@ -1191,15 +1191,15 @@ void DisplacementMapFilter::applyFilter(BitmapContainer* target, BitmapContainer
 	delete[] tmpdata;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,alpha);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,color);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,componentX);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,componentY);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mapBitmap);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mapPoint);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mode);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleX);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleY);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,alpha)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,color)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,componentX)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,componentY)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mapBitmap)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mapPoint)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mode)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleX)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleY)
 
 ASFUNCTIONBODY_ATOM(DisplacementMapFilter,_constructor)
 {
@@ -1209,7 +1209,7 @@ ASFUNCTIONBODY_ATOM(DisplacementMapFilter,_constructor)
 
 BitmapFilter* DisplacementMapFilter::cloneImpl() const
 {
-	DisplacementMapFilter* cloned = Class<DisplacementMapFilter>::getInstanceS(getSystemState());
+	DisplacementMapFilter* cloned = Class<DisplacementMapFilter>::getInstanceS(getInstanceWorker());
 	cloned->alpha = alpha;
 	cloned->color = color;
 	cloned->componentX = componentX;
@@ -1222,8 +1222,8 @@ BitmapFilter* DisplacementMapFilter::cloneImpl() const
 	return cloned;
 }
 
-GradientBevelFilter::GradientBevelFilter(Class_base* c):
-	BitmapFilter(c,SUBTYPE_GRADIENTBEVELFILTER),
+GradientBevelFilter::GradientBevelFilter(ASWorker* wrk,Class_base* c):
+	BitmapFilter(wrk,c,SUBTYPE_GRADIENTBEVELFILTER),
 	angle(45),
 	blurX(4.0),
 	blurY(4.0),
@@ -1234,8 +1234,8 @@ GradientBevelFilter::GradientBevelFilter(Class_base* c):
 	type("inner")
 {
 }
-GradientBevelFilter::GradientBevelFilter(Class_base* c, const GRADIENTBEVELFILTER& filter):
-	BitmapFilter(c,SUBTYPE_GRADIENTBEVELFILTER),
+GradientBevelFilter::GradientBevelFilter(ASWorker* wrk,Class_base* c, const GRADIENTBEVELFILTER& filter):
+	BitmapFilter(wrk,c,SUBTYPE_GRADIENTBEVELFILTER),
 	angle(filter.Angle),
 	blurX(filter.BlurX),
 	blurY(filter.BlurY),
@@ -1249,19 +1249,19 @@ GradientBevelFilter::GradientBevelFilter(Class_base* c, const GRADIENTBEVELFILTE
 		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter onTop flag");
 	if (filter.GradientColors.size())
 	{
-		colors = _MR(Class<Array>::getInstanceSNoArgs(c->getSystemState()));
-		alphas = _MR(Class<Array>::getInstanceSNoArgs(c->getSystemState()));
+		colors = _MR(Class<Array>::getInstanceSNoArgs(wrk));
+		alphas = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		auto it = filter.GradientColors.begin();
 		while (it != filter.GradientColors.end())
 		{
 			colors->push(asAtomHandler::fromUInt(RGB(it->Red,it->Green,it->Blue).toUInt()));
-			alphas->push(asAtomHandler::fromNumber(c->getSystemState(),it->af(),false));
+			alphas->push(asAtomHandler::fromNumber(wrk,it->af(),false));
 			it++;
 		}
 	}
 	if (filter.GradientRatio.size())
 	{
-		ratios = _MR(Class<Array>::getInstanceSNoArgs(c->getSystemState()));
+		ratios = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		auto it = filter.GradientRatio.begin();
 		while (it != filter.GradientRatio.end())
 		{
@@ -1288,17 +1288,17 @@ void GradientBevelFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,type);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,alphas);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,angle);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,blurX);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,blurY);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,colors);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,distance);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,knockout);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,quality);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,ratios);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,strength);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,type);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,alphas)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,angle)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,blurX)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,blurY)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,colors)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,distance)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,knockout)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,quality)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,ratios)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,strength)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,type)
 
 void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
 {
@@ -1328,7 +1328,7 @@ ASFUNCTIONBODY_ATOM(GradientBevelFilter,_constructor)
 
 BitmapFilter* GradientBevelFilter::cloneImpl() const
 {
-	GradientBevelFilter* cloned = Class<GradientBevelFilter>::getInstanceS(getSystemState());
+	GradientBevelFilter* cloned = Class<GradientBevelFilter>::getInstanceS(getInstanceWorker());
 	cloned->alphas = alphas;
 	cloned->angle = angle;
 	cloned->blurX = blurX;
@@ -1343,8 +1343,8 @@ BitmapFilter* GradientBevelFilter::cloneImpl() const
 	return cloned;
 }
 
-ShaderFilter::ShaderFilter(Class_base* c):
-	BitmapFilter(c,SUBTYPE_SHADERFILTER)
+ShaderFilter::ShaderFilter(ASWorker* wrk,Class_base* c):
+	BitmapFilter(wrk,c,SUBTYPE_SHADERFILTER)
 {
 }
 
@@ -1366,7 +1366,7 @@ ASFUNCTIONBODY_ATOM(ShaderFilter,_constructor)
 
 BitmapFilter* ShaderFilter::cloneImpl() const
 {
-	return Class<ShaderFilter>::getInstanceS(getSystemState());
+	return Class<ShaderFilter>::getInstanceS(getInstanceWorker());
 }
 
 void BitmapFilterQuality::sinit(Class_base* c)

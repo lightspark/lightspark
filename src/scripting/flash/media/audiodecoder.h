@@ -28,7 +28,7 @@ namespace lightspark
 class MediaAudioDecoder: public ASObject
 {
 public:
-	MediaAudioDecoder(Class_base* c):ASObject(c){}
+	MediaAudioDecoder(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

@@ -28,20 +28,20 @@ namespace lightspark
 class Sample : public ASObject
 {
 public:
-	Sample(Class_base* c);
+	Sample(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 };
 
 class DeleteObjectSample : public Sample
 {
 public:
-	DeleteObjectSample(Class_base* c);
+	DeleteObjectSample(ASWorker* wrk, Class_base* c);
 	static void sinit(Class_base*);
 };
 class NewObjectSample : public Sample
 {
 public:
-	NewObjectSample(Class_base* c);
+	NewObjectSample(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASPROPERTY_GETTER(_NR<ASObject>,object);
 	ASPROPERTY_GETTER(number_t,size);
@@ -49,29 +49,29 @@ public:
 class StackFrame : public ASObject
 {
 public:
-	StackFrame(Class_base* c);
+	StackFrame(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_toString);
 };
 
 
-void clearSamples(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void getGetterInvocationCount(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void getInvocationCount(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void getSetterInvocationCount(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void getLexicalScopes(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void getMasterString(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void getMemberNames(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void getSampleCount(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void getSamples(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void getSize(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void getSavedThis(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void isGetterSetter(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void pauseSampling(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void sampleInternalAllocs(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void setSamplerCallback(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void startSampling(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
-void stopSampling(asAtom& ret, SystemState* sys, asAtom& obj,asAtom* args, const unsigned int argslen);
+void clearSamples(asAtom& ret,ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getGetterInvocationCount(asAtom& ret,ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getInvocationCount(asAtom& ret,ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getSetterInvocationCount(asAtom& ret,ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getLexicalScopes(asAtom& ret,ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getMasterString(asAtom& ret,ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getMemberNames(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getSampleCount(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getSamples(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getSize(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void getSavedThis(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void isGetterSetter(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void pauseSampling(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void sampleInternalAllocs(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void setSamplerCallback(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void startSampling(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
+void stopSampling(asAtom& ret, ASWorker* wrk, asAtom& obj,asAtom* args, const unsigned int argslen);
 
 
 

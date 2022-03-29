@@ -28,7 +28,7 @@ namespace lightspark
 class NumberParseResult: public ASObject
 {
 public:
-    NumberParseResult(Class_base* c):ASObject(c){}
+    NumberParseResult(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
     ASFUNCTION_ATOM(_constructor);
     ASPROPERTY_GETTER(int32_t, endIndex);
     ASPROPERTY_GETTER(int32_t, startIndex);

@@ -94,28 +94,28 @@ ASFUNCTIONBODY_ATOM(Boolean,_constructor)
 
 ASFUNCTIONBODY_ATOM(Boolean,_toString)
 {
-	if(Class<Boolean>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj)) //See ECMA 15.6.4
+	if(Class<Boolean>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj)) //See ECMA 15.6.4
 	{
-		ret = asAtomHandler::fromString(sys,"false");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"false");
 		return;
 	}
 
 	if(!asAtomHandler::is<Boolean>(obj))
-		throw Class<TypeError>::getInstanceS(sys,"");
+		throw Class<TypeError>::getInstanceS(wrk,"");
 
-	ret = asAtomHandler::fromString(sys,asAtomHandler::toString(obj,sys));
+	ret = asAtomHandler::fromString(wrk->getSystemState(),asAtomHandler::toString(obj,wrk));
 }
 
 ASFUNCTIONBODY_ATOM(Boolean,_valueOf)
 {
-	if(Class<Boolean>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
+	if(Class<Boolean>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
 		asAtomHandler::setBool(ret,false);
 		return;
 	}
 
 	if(!asAtomHandler::is<Boolean>(obj))
-			throw Class<TypeError>::getInstanceS(sys,"");
+			throw Class<TypeError>::getInstanceS(wrk,"");
 
 	//The ecma3 spec is unspecific, but testing showed that we should return
 	//a new object
@@ -124,7 +124,7 @@ ASFUNCTIONBODY_ATOM(Boolean,_valueOf)
 
 void Boolean::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap)
+				std::map<const Class_base*, uint32_t>& traitsMap,ASWorker* wrk)
 {
 	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{

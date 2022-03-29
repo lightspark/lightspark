@@ -30,7 +30,7 @@ namespace lightspark
 class CompressionAlgorithm : public ASObject
 {
 public:
-	CompressionAlgorithm(Class_base* c);
+	CompressionAlgorithm(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 };
 

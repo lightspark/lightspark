@@ -28,7 +28,7 @@ namespace lightspark
 class MessageChannelState: public ASObject
 {
 public:
-	MessageChannelState(Class_base* c):ASObject(c){}
+	MessageChannelState(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

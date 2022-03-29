@@ -211,10 +211,10 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 				while (it != tag.dataobjectlist.end())
 				{
 					ASObject* o = asAtomHandler::getObject((*it));
-					if(o && o->hasPropertyByMultiname(m,true,false))
+					if(o && o->hasPropertyByMultiname(m,true,false,o->getInstanceWorker()))
 					{
 						asAtom v=asAtomHandler::invalidAtom;
-						o->getVariableByMultiname(v,m);
+						o->getVariableByMultiname(v,m,GET_VARIABLE_OPTION::NONE,o->getInstanceWorker());
 						frameRate = asAtomHandler::toNumber(v);
 						break;
 					}
@@ -226,7 +226,7 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 			break;
 		}
 		default:
-			LOG(LOG_ERROR,_("Unexpected tag type ") << (int)TagType << _(" in FLV"));
+			LOG(LOG_ERROR,"Unexpected tag type " << (int)TagType << " in FLV");
 			return false;
 	}
 	return true;

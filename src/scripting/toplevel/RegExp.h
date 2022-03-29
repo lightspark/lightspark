@@ -29,8 +29,8 @@ namespace lightspark
 class RegExp: public ASObject
 {
 public:
-	RegExp(Class_base* c);
-	RegExp(Class_base* c, const tiny_string& _re);
+	RegExp(ASWorker* wrk,Class_base* c);
+	RegExp(ASWorker* wrk, Class_base* c, const tiny_string& _re);
 	pcre* compile(bool isutf8);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

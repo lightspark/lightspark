@@ -44,13 +44,13 @@ ASFUNCTIONBODY_GETTER_SETTER_STATIC(Multitouch, inputMode);
 ASFUNCTIONBODY_ATOM(Multitouch, getMaxTouchPoints)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	asAtomHandler::setInt(ret,sys,1);
+	asAtomHandler::setInt(ret,wrk,1);
 }
 
 ASFUNCTIONBODY_ATOM(Multitouch, getSupportedGestures)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	ret = asAtomHandler::fromObject(Class<Vector>::getInstanceS(sys)); 
+	ret = asAtomHandler::fromObject(Class<Vector>::getInstanceS(wrk)); 
 }
 ASFUNCTIONBODY_ATOM(Multitouch, getSupportsGestureEvents)
 {
@@ -66,7 +66,7 @@ ASFUNCTIONBODY_ATOM(Multitouch, getSupportsTouchEvents)
 void MultitouchInputMode::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
-	c->setVariableByQName("GESTURE","",abstract_s(c->getSystemState(),"gesture"),CONSTANT_TRAIT);
-	c->setVariableByQName("NONE","",abstract_s(c->getSystemState(),"none"),CONSTANT_TRAIT);
-	c->setVariableByQName("TOUCH_POINT","",abstract_s(c->getSystemState(),"touchPoint"),CONSTANT_TRAIT);
+	c->setVariableByQName("GESTURE","",abstract_s(c->getInstanceWorker(),"gesture"),CONSTANT_TRAIT);
+	c->setVariableByQName("NONE","",abstract_s(c->getInstanceWorker(),"none"),CONSTANT_TRAIT);
+	c->setVariableByQName("TOUCH_POINT","",abstract_s(c->getInstanceWorker(),"touchPoint"),CONSTANT_TRAIT);
 }

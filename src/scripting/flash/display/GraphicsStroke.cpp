@@ -26,8 +26,8 @@
 
 using namespace lightspark;
 
-GraphicsStroke::GraphicsStroke(Class_base* c):
-	ASObject(c), caps("none"), joints("round"), miterLimit(3.0),
+GraphicsStroke::GraphicsStroke(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c), caps("none"), joints("round"), miterLimit(3.0),
 	pixelHinting(false), scaleMode("normal"),
 	thickness(std::numeric_limits<double>::quiet_NaN())
 {

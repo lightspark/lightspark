@@ -24,8 +24,8 @@
 
 using namespace lightspark;
 
-PrintJob::PrintJob(Class_base* c):
-	EventDispatcher(c),isSupported(false)
+PrintJob::PrintJob(ASWorker* wrk, Class_base* c):
+	EventDispatcher(wrk,c),isSupported(false)
 {
 }
 
@@ -38,13 +38,13 @@ ASFUNCTIONBODY_GETTER(PrintJob, isSupported);
 
 ASFUNCTIONBODY_ATOM(PrintJob,_constructor)
 {
-	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,wrk,obj, NULL, 0);
 	//PrintJob* th=Class<PrintJob>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"PrintJob is not implemented");
 }
 
-PrintJobOptions::PrintJobOptions(Class_base* c):
-	ASObject(c)
+PrintJobOptions::PrintJobOptions(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 

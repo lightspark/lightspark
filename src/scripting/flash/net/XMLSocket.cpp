@@ -85,7 +85,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket,_constructor)
 	int port;
 	ARG_UNPACK_ATOM (host, "") (port, 0);
 
-	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
+	EventDispatcher::_constructor(ret,wrk,obj,NULL,0);
 
 	XMLSocket* th=asAtomHandler::as<XMLSocket>(obj);
 	host_is_null = argslen > 0 && asAtomHandler::is<Null>(args[0]);
@@ -112,17 +112,17 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _close)
 void XMLSocket::connect(tiny_string host, int port)
 {
 	if (port <= 0 || port > 65535)
-		throw Class<SecurityError>::getInstanceS(getSystemState(),"Invalid port");
+		throw Class<SecurityError>::getInstanceS(getInstanceWorker(),"Invalid port");
 
 	if (host.empty())
 		host = getSys()->mainClip->getOrigin().getHostname();
 
 	if (isConnected())
-		throw Class<IOError>::getInstanceS(getSystemState(),"Already connected");
+		throw Class<IOError>::getInstanceS(getInstanceWorker(),"Already connected");
 
 	// Host shouldn't contain scheme or port
 	if (host.strchr(':') != nullptr)
-		throw Class<SecurityError>::getInstanceS(getSystemState(),"Invalid hostname");
+		throw Class<SecurityError>::getInstanceS(getInstanceWorker(),"Invalid hostname");
 
 	// Check sandbox and policy file
 	size_t buflen = host.numBytes() + 22;
@@ -140,7 +140,7 @@ void XMLSocket::connect(tiny_string host, int port)
 	if(evaluationResult != SecurityManager::ALLOWED)
 	{
 		incRef();
-		getVm(getSystemState())->addEvent(_MR(this), _MR(Class<SecurityErrorEvent>::getInstanceS(getSystemState(),"No policy file allows socket connection")));
+		getVm(getSystemState())->addEvent(_MR(this), _MR(Class<SecurityErrorEvent>::getInstanceS(getInstanceWorker(),"No policy file allows socket connection")));
 		return;
 	}
 
@@ -178,7 +178,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _send)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(sys,"Socket is not connected");
+		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
 	}
 }
 
@@ -203,6 +203,7 @@ void XMLSocket::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
 	if (dispatcher == this)
 	{
+		ASWorker* wrk = getInstanceWorker();
 		if (e->type == "connect")
 		{
 			asAtom func=asAtomHandler::invalidAtom;
@@ -210,7 +211,7 @@ void XMLSocket::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			m.name_type=multiname::NAME_STRING;
 			m.isAttribute = false;
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONCONNECT;
-			getVariableByMultiname(func,m);
+			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::is<AVM1Function>(func))
 			{
 				asAtom ret=asAtomHandler::invalidAtom;
@@ -226,7 +227,7 @@ void XMLSocket::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			m.name_type=multiname::NAME_STRING;
 			m.isAttribute = false;
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONDATA;
-			getVariableByMultiname(func,m);
+			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::is<AVM1Function>(func))
 			{
 				asAtom ret=asAtomHandler::invalidAtom;
@@ -242,7 +243,7 @@ void XMLSocket::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			m.name_type=multiname::NAME_STRING;
 			m.isAttribute = false;
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONCLOSE;
-			getVariableByMultiname(func,m);
+			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::is<AVM1Function>(func))
 			{
 				asAtom ret=asAtomHandler::invalidAtom;
@@ -303,14 +304,14 @@ void XMLSocketThread::execute()
 	{
 		owner->incRef();
 		if (owner->getSystemState()->mainClip->needsActionScript3())
-			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
+			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 		else
-			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"connect")));
+			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getInstanceWorker(),"connect")));
 		return;
 	}
 
 	owner->incRef();
-	getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"connect")));
+	getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getInstanceWorker(),"connect")));
 
 	struct timeval timeout;
 	int maxfd;
@@ -331,7 +332,7 @@ void XMLSocketThread::execute()
 		if (status  < 0)
 		{
 			owner->incRef();
-			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
+			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 			return;
 		}
 
@@ -343,7 +344,7 @@ void XMLSocketThread::execute()
 			if (nbytes < 0)
 			{
 				owner->incRef();
-				getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
+				getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 				return;
 			}
 			else if (nbytes == 0)
@@ -375,20 +376,20 @@ void XMLSocketThread::readSocket(const SocketIO& sock)
 		buf[nbytes] = '\0';
 		tiny_string data(buf, true);
 		owner->incRef();
-		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<DataEvent>::getInstanceS(owner->getSystemState(),data)));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<DataEvent>::getInstanceS(owner->getInstanceWorker(),data)));
 	}
 	else if (nbytes == 0)
 	{
 		// The server has closed the socket
 		owner->incRef();
-		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getSystemState(),"close")));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getInstanceWorker(),"close")));
 		threadAborting = true;
 	}
 	else
 	{
 		// Error
 		owner->incRef();
-		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getSystemState())));
+		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 		threadAborting = true;
 	}
 }

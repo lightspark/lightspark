@@ -99,16 +99,16 @@ void IDataOutput::linkTraits(Class_base* c)
 ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 {
 	//CHECK: what to do if ns is empty
-	ASObject* target=asAtomHandler::toObject(args[0],sys);
+	ASObject* target=asAtomHandler::toObject(args[0],wrk);
 	Class_base* c;
 	switch(target->getObjectType())
 	{
 		case T_NULL:
-			ret = asAtomHandler::fromString(sys,"null");
+			ret = asAtomHandler::fromString(wrk->getSystemState(),"null");
 			return;
 		case T_UNDEFINED:
 			// Testing shows that this really returns "void"!
-			ret = asAtomHandler::fromString(sys,"void");
+			ret = asAtomHandler::fromString(wrk->getSystemState(),"void");
 			return;
 		case T_CLASS:
 			c=static_cast<Class_base*>(target);
@@ -124,7 +124,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 				c=target->getClass();
 			break;
 		case T_TEMPLATE:
-			ret = asAtomHandler::fromString(sys, target->as<Template_base>()->getTemplateName().getQualifiedName(sys));
+			ret = asAtomHandler::fromString(wrk->getSystemState(), target->as<Template_base>()->getTemplateName().getQualifiedName(wrk->getSystemState()));
 			return;
 		default:
 			assert_and_throw(target->getClass());
@@ -138,7 +138,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
 {
 	//CHECK: what to do is ns is empty
-	ASObject* target=asAtomHandler::toObject(args[0],sys);
+	ASObject* target=asAtomHandler::toObject(args[0],wrk);
 	Class_base* c;
 	if(target->getObjectType()!=T_CLASS)
 	{
@@ -157,17 +157,17 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
 ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 {
 	assert_and_throw(args && argslen==1);
-	const tiny_string& tmp=asAtomHandler::toString(args[0],sys);
+	const tiny_string& tmp=asAtomHandler::toString(args[0],wrk);
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 
 	tiny_string nsName;
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
-	name.name_s_id=sys->getUniqueStringId(tmpName);
+	name.name_s_id=wrk->getSystemState()->getUniqueStringId(tmpName);
 	if (nsName != "")
 	{
-		name.ns.push_back(nsNameAndKind(sys,nsName,NAMESPACE));
+		name.ns.push_back(nsNameAndKind(wrk->getSystemState(),nsName,NAMESPACE));
 		name.hasEmptyNS=false;
 	}
 
@@ -175,9 +175,9 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 	ASObject* target;
 	ret = asAtomHandler::invalidAtom;
 	if (nsName.empty() || nsName.startsWith("flash."))
-		sys->systemDomain->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
+		wrk->getSystemState()->systemDomain->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target,wrk);
 	if(asAtomHandler::isInvalid(ret))
-		ABCVm::getCurrentApplicationDomain(getWorker() ? getWorker()->currentCallContext : getVm(sys)->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target);
+		ABCVm::getCurrentApplicationDomain(wrk->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target,wrk);
 
 	if(asAtomHandler::isInvalid(ret))
 	{
@@ -185,15 +185,16 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 	}
 
 	assert_and_throw(asAtomHandler::isClass(ret));
+	assert(!asAtomHandler::getObject(ret)->is<Class_inherit>() || asAtomHandler::getObject(ret)->getInstanceWorker() == wrk);
 
-	LOG(LOG_CALLS,"Getting definition for " << name);
+	LOG(LOG_CALLS,"Getting definition for " << name<<" "<<asAtomHandler::toDebugString(ret)<<" "<<asAtomHandler::getObject(ret)->getInstanceWorker());
 	ASATOM_INCREF(ret);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,describeType)
 {
 	assert_and_throw(argslen>=1);
-	ret = asAtomHandler::fromObject(asAtomHandler::toObject(args[0],sys)->describeType());
+	ret = asAtomHandler::fromObject(asAtomHandler::toObject(args[0],wrk)->describeType(wrk));
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
@@ -201,7 +202,7 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 	_NR<ASObject> o;
 	uint32_t flags;
 	ARG_UNPACK_ATOM(o)(flags);
-	ASObject* res = Class<ASObject>::getInstanceS(sys);
+	ASObject* res = Class<ASObject>::getInstanceS(wrk);
 
 	if (o)
 	{
@@ -215,17 +216,17 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 		multiname m(nullptr);
 		m.name_type=multiname::NAME_STRING;
 		m.isAttribute = false;
-		m.name_s_id=sys->getUniqueStringId("name");
-		v = asAtomHandler::fromString(sys,cls->getQualifiedClassName(true));
-		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED);
-		m.name_s_id=sys->getUniqueStringId("isDynamic");
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("name");
+		v = asAtomHandler::fromString(wrk->getSystemState(),cls->getQualifiedClassName(true));
+		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("isDynamic");
 		v = asAtomHandler::fromBool(!cls->isSealed);
-		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED);
-		m.name_s_id=sys->getUniqueStringId("isFinal");
+		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("isFinal");
 		v = asAtomHandler::fromBool(!cls->isFinal);
-		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED);
+		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED,nullptr,wrk);
 	
-		ASObject* traits = Class<ASObject>::getInstanceS(sys);
+		ASObject* traits = Class<ASObject>::getInstanceS(wrk);
 	
 		bool INCLUDE_BASES = flags & 0x0002;
 		bool INCLUDE_INTERFACES = flags & 0x0004;
@@ -244,16 +245,16 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 			}
 			if (INCLUDE_BASES)
 			{
-				Array* bases = Class<Array>::getInstanceS(sys);
+				Array* bases = Class<Array>::getInstanceS(wrk);
 				Class_base* baseclass = cls;
 				while (baseclass)
 				{
-					bases->push(asAtomHandler::fromString(sys,baseclass->getQualifiedClassName(true)));
+					bases->push(asAtomHandler::fromString(wrk->getSystemState(),baseclass->getQualifiedClassName(true)));
 					baseclass = baseclass->super.getPtr();
 				}
-				m.name_s_id=sys->getUniqueStringId("bases");
+				m.name_s_id=wrk->getSystemState()->getUniqueStringId("bases");
 				v = asAtomHandler::fromObject(bases);
-				traits->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED);
+				traits->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED,nullptr,wrk);
 			}
 			if (INCLUDE_INTERFACES)
 			{
@@ -268,9 +269,9 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 				LOG(LOG_NOT_IMPLEMENTED,"describeTypeJSON flag INCLUDE_ACCESSORS || INCLUDE_METHODS || INCLUDE_VARIABLES");
 			}
 		}
-		m.name_s_id=sys->getUniqueStringId("traits");
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("traits");
 		v = asAtomHandler::fromObjectNoPrimitive(traits);
-		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED);
+		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED,nullptr,wrk);
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"avmplus.describeTypeJSON with flags:"<<hex<<flags);
@@ -279,8 +280,8 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 
 ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 {
-	uint64_t res=compat_msectiming() - sys->startTime;
-	asAtomHandler::setInt(ret,sys,(int32_t)res);
+	uint64_t res=compat_msectiming() - wrk->getSystemState()->startTime;
+	asAtomHandler::setInt(ret,wrk,(int32_t)res);
 }
 
 
@@ -298,13 +299,13 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 		
 		paramstart = 3;
 		delayarg = 2;
-		ASObject* oref = asAtomHandler::toObject(args[0],sys);
+		ASObject* oref = asAtomHandler::toObject(args[0],wrk);
 		multiname m(nullptr);
 		m.name_type=multiname::NAME_STRING;
 		m.isAttribute = false;
-		m.name_s_id= asAtomHandler::toStringId(args[1],sys);
+		m.name_s_id= asAtomHandler::toStringId(args[1],wrk);
 		func = asAtomHandler::invalidAtom;
-		oref->getVariableByMultiname(func,m);
+		oref->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isInvalid(func))
 		{
 			ASObject* pr = oref->getprop_prototype();
@@ -315,16 +316,16 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 				m2.isAttribute = false;
 				m2.name_s_id= BUILTIN_STRINGS::STRING_PROTO;
 				asAtom p= asAtomHandler::invalidAtom;
-				oref->getVariableByMultiname(p,m2);
+				oref->getVariableByMultiname(p,m2,GET_VARIABLE_OPTION::NONE,wrk);
 				if (asAtomHandler::isObject(p))
 					pr = asAtomHandler::getObjectNoCheck(p);
 			}
 			if (pr)
-				pr->getVariableByMultiname(func,m);
+				pr->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 		}
 		if (asAtomHandler::isInvalid(func) && oref->is<DisplayObject>())
 		{
-			uint32_t nameidlower = sys->getUniqueStringId(asAtomHandler::toString(args[1],sys).lowercase());
+			uint32_t nameidlower = wrk->getSystemState()->getUniqueStringId(asAtomHandler::toString(args[1],wrk).lowercase());
 			AVM1Function* f = oref->as<DisplayObject>()->AVM1GetFunction(nameidlower);
 			if (f)
 				func = asAtomHandler::fromObjectNoPrimitive(f);
@@ -353,9 +354,9 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 	//incRef the function
 	ASATOM_INCREF(func);
 	//Add interval through manager
-	uint32_t id = sys->intervalManager->setInterval(func, callbackArgs, argslen-paramstart,
+	uint32_t id = wrk->getSystemState()->intervalManager->setInterval(func, callbackArgs, argslen-paramstart,
 			o, asAtomHandler::toInt(args[delayarg]));
-	asAtomHandler::setInt(ret,sys,(int32_t)id);
+	asAtomHandler::setInt(ret,wrk,(int32_t)id);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
@@ -379,32 +380,32 @@ ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 	//incRef the function
 	ASATOM_INCREF(args[0]);
 	//Add timeout through manager
-	uint32_t id = sys->intervalManager->setTimeout(args[0], callbackArgs, argslen-2,
+	uint32_t id = wrk->getSystemState()->intervalManager->setTimeout(args[0], callbackArgs, argslen-2,
 			o, asAtomHandler::toInt(args[1]));
-	asAtomHandler::setInt(ret,sys,(int32_t)id);
+	asAtomHandler::setInt(ret,wrk,(int32_t)id);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,clearInterval)
 {
 	assert_and_throw(argslen == 1);
-	sys->intervalManager->clearInterval(asAtomHandler::toInt(args[0]), IntervalRunner::INTERVAL, true);
+	wrk->getSystemState()->intervalManager->clearInterval(asAtomHandler::toInt(args[0]), IntervalRunner::INTERVAL, true);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,clearTimeout)
 {
 	assert_and_throw(argslen == 1);
-	sys->intervalManager->clearInterval(asAtomHandler::toInt(args[0]), IntervalRunner::TIMEOUT, true);
+	wrk->getSystemState()->intervalManager->clearInterval(asAtomHandler::toInt(args[0]), IntervalRunner::TIMEOUT, true);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,escapeMultiByte)
 {
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
-	ret = asAtomHandler::fromObject(abstract_s(getSys(),URLInfo::encode(str, URLInfo::ENCODE_ESCAPE)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,URLInfo::encode(str, URLInfo::ENCODE_ESCAPE)));
 }
 ASFUNCTIONBODY_ATOM(lightspark,unescapeMultiByte)
 {
 	tiny_string str;
 	ARG_UNPACK_ATOM (str, "undefined");
-	ret = asAtomHandler::fromObject(abstract_s(getSys(),URLInfo::decode(str, URLInfo::ENCODE_ESCAPE)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,URLInfo::decode(str, URLInfo::ENCODE_ESCAPE)));
 }

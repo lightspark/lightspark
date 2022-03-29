@@ -32,7 +32,7 @@ class ContextMenuItem : public NativeMenuItem
 private:
 	_NR<IFunction> callbackfunction;
 public:
-	ContextMenuItem(Class_base* c):NativeMenuItem(c){}
+	ContextMenuItem(ASWorker* wrk,Class_base* c):NativeMenuItem(wrk,c){}
 	void defaultEventBehavior(_R<Event> e) override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);

@@ -30,7 +30,7 @@ namespace lightspark
 class PrintJob: public EventDispatcher
 {
 public:
-	PrintJob(Class_base* c);
+	PrintJob(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,isSupported);
@@ -39,7 +39,7 @@ public:
 class PrintJobOptions: public ASObject
 {
 public:
-	PrintJobOptions(Class_base* c);
+	PrintJobOptions(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -47,7 +47,7 @@ public:
 class PrintJobOrientation: public ASObject
 {
 public:
-	PrintJobOrientation(Class_base* c) : ASObject(c) {}
+	PrintJobOrientation(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base*);
 };
 

@@ -40,10 +40,10 @@ private:
 	std::set<Bitmap*> users;
 	void notifyUsers() const;
 public:
-	BitmapData(Class_base* c);
-	BitmapData(Class_base* c, _R<BitmapContainer> b);
-	BitmapData(Class_base* c, const BitmapData& other);
-	BitmapData(Class_base* c, uint32_t width, uint32_t height);
+	BitmapData(ASWorker* wrk,Class_base* c);
+	BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b);
+	BitmapData(ASWorker* wrk, Class_base* c, const BitmapData& other);
+	BitmapData(ASWorker* wrk,Class_base* c, uint32_t width, uint32_t height);
 	static void sinit(Class_base* c);
 	_NR<BitmapContainer> getBitmapContainer() const { return pixels; }
 	int getWidth() const { return pixels->getWidth(); }

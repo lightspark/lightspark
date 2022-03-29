@@ -37,7 +37,7 @@
 using namespace lightspark;
 using namespace std;
 
-SoundTransform::SoundTransform(Class_base* c): ASObject(c,T_OBJECT,SUBTYPE_SOUNDTRANSFORM),volume(1.0),pan(0.0),leftToLeft(1.0),leftToRight(0),rightToLeft(0),rightToRight(1.0)
+SoundTransform::SoundTransform(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_SOUNDTRANSFORM),volume(1.0),pan(0.0),leftToLeft(1.0),leftToRight(0),rightToLeft(0),rightToRight(1.0)
 {
 }
 
@@ -114,8 +114,8 @@ void Video::resetDecoder()
 	}
 }
 
-Video::Video(Class_base* c, uint32_t w, uint32_t h, DefineVideoStreamTag *v)
-	: DisplayObject(c),width(w),height(h),videoWidth(0),videoHeight(0),
+Video::Video(ASWorker* wk, Class_base* c, uint32_t w, uint32_t h, DefineVideoStreamTag *v)
+	: DisplayObject(wk,c),width(w),height(h),videoWidth(0),videoHeight(0),
 	  netStream(NullRef),deblocking(v ? v->VideoFlagsDeblocking:0),smoothing(v ? v->VideoFlagsSmoothing : false),videotag(v),embeddedVideoDecoder(nullptr),lastuploadedframe(UINT32_MAX)
 {
 	subtype=SUBTYPE_VIDEO;
@@ -275,19 +275,19 @@ ASFUNCTIONBODY_ATOM(Video,_constructor)
 ASFUNCTIONBODY_ATOM(Video,_getVideoWidth)
 {
 	Video* th=asAtomHandler::as<Video>(obj);
-	asAtomHandler::setUInt(ret,sys,th->videoWidth);
+	asAtomHandler::setUInt(ret,wrk,th->videoWidth);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_getVideoHeight)
 {
 	Video* th=asAtomHandler::as<Video>(obj);
-	asAtomHandler::setUInt(ret,sys,th->videoHeight);
+	asAtomHandler::setUInt(ret,wrk,th->videoHeight);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_getWidth)
 {
 	Video* th=asAtomHandler::as<Video>(obj);
-	asAtomHandler::setUInt(ret,sys,th->width);
+	asAtomHandler::setUInt(ret,wrk,th->width);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_setWidth)
@@ -301,7 +301,7 @@ ASFUNCTIONBODY_ATOM(Video,_setWidth)
 ASFUNCTIONBODY_ATOM(Video,_getHeight)
 {
 	Video* th=asAtomHandler::as<Video>(obj);
-	asAtomHandler::setUInt(ret,sys,th->height);
+	asAtomHandler::setUInt(ret,wrk,th->height);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_setHeight)
@@ -347,15 +347,15 @@ _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 		return NullRef;
 }
 
-Sound::Sound(Class_base* c)
-	:EventDispatcher(c),downloader(nullptr),soundData(nullptr),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),buffertime(1000),
+Sound::Sound(ASWorker* wrk, Class_base* c)
+	:EventDispatcher(wrk,c),downloader(nullptr),soundData(nullptr),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),buffertime(1000),
 	 container(true),sampledataprocessed(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(-1)
 {
 	subtype=SUBTYPE_SOUND;
 }
 
-Sound::Sound(Class_base* c, _R<StreamCache> data, AudioFormat _format, number_t duration_in_ms)
-	:EventDispatcher(c),downloader(nullptr),soundData(data),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),buffertime(1000),
+Sound::Sound(ASWorker* wrk,Class_base* c, _R<StreamCache> data, AudioFormat _format, number_t duration_in_ms)
+	:EventDispatcher(wrk,c),downloader(nullptr),soundData(data),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),buffertime(1000),
 	 container(false),sampledataprocessed(true),format(_format),
 	 bytesLoaded(soundData->getReceivedLength()),
 	 bytesTotal(soundData->getReceivedLength()),length(duration_in_ms)
@@ -393,9 +393,9 @@ void Sound::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Sound,_constructor)
 {
-	EventDispatcher::_constructor(ret,sys,obj, nullptr, 0);
+	EventDispatcher::_constructor(ret,wrk,obj, nullptr, 0);
 	if (argslen>0)
-		Sound::load(ret,sys,obj, args, argslen);
+		Sound::load(ret,wrk,obj, args, argslen);
 }
 
 ASFUNCTIONBODY_ATOM(Sound,load)
@@ -419,7 +419,7 @@ ASFUNCTIONBODY_ATOM(Sound,load)
 	{
 		//Notify an error during loading
 		th->incRef();
-		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
+		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(wrk)));
 		return;
 	}
 	_R<StreamCache> c(_MR(new MemoryStreamCache(th->getSystemState())));
@@ -446,7 +446,7 @@ ASFUNCTIONBODY_ATOM(Sound,load)
 	if(th->downloader->hasFailed())
 	{
 		th->incRef();
-		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(th->getSystemState())));
+		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(wrk)));
 	}
 }
 
@@ -458,14 +458,14 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 	_NR<SoundTransform> soundtransform;
 	
 	ARG_UNPACK_ATOM(startTime, 0)(loops,0)(soundtransform,NullRef);
-	if (!sys->mainClip->usesActionScript3) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
+	if (!wrk->getSystemState()->mainClip->usesActionScript3) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
 		startTime *= 1000;
 	if (soundtransform.isNull())
-		soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(sys));
+		soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(wrk));
 	if (th->container)
 	{
 		RELEASE_WRITE(th->sampledataprocessed,true);
-		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(sys,NullRef, AudioFormat(LINEAR_PCM_FLOAT_PLATFORM_ENDIAN,44100,2),nullptr,th));
+		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(wrk,NullRef, AudioFormat(LINEAR_PCM_FLOAT_PLATFORM_ENDIAN,44100,2),nullptr,th));
 		th->soundChannel->setLoops(loops);
 		th->soundChannel->soundTransform = soundtransform;
 		th->soundChannel->play(startTime);
@@ -483,7 +483,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
 			return;
 		}
-		SoundChannel* s = Class<SoundChannel>::getInstanceS(sys,th->soundData, th->format);
+		SoundChannel* s = Class<SoundChannel>::getInstanceS(wrk,th->soundData, th->format);
 		s->setStartTime(startTime);
 		s->setLoops(loops);
 		s->soundTransform = soundtransform;
@@ -534,7 +534,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 				th->rawDataStreamBuf = th->soundData->createReader();
 				th->rawDataStream = new istream(th->rawDataStreamBuf);
 				th->rawDataStream->exceptions ( istream::failbit | istream::badbit );
-				th->rawDataStreamDecoder=new FFMpegStreamDecoder(nullptr,sys->getEngineData(),*th->rawDataStream,&th->format,th->soundData->hasTerminated() ? th->soundData->getReceivedLength() : -1,true);
+				th->rawDataStreamDecoder=new FFMpegStreamDecoder(nullptr,wrk->getSystemState()->getEngineData(),*th->rawDataStream,&th->format,th->soundData->hasTerminated() ? th->soundData->getReceivedLength() : -1,true);
 			}
 			if(!th->rawDataStreamDecoder->isValid())
 			{
@@ -648,12 +648,12 @@ void Sound::requestSampleDataEvent(size_t position)
 {
 	RELEASE_WRITE(sampledataprocessed,false);
 	// request more data
-	_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceSNoArgs(getSystemState()));
+	_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceSNoArgs(getInstanceWorker()));
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 	data->setLittleEndian(true);
 #endif
 	incRef();
-	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<SampleDataEvent>::getInstanceS(getSystemState(),data,position)));
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<SampleDataEvent>::getInstanceS(getInstanceWorker(),data,position)));
 }
 
 void Sound::setBytesTotal(uint32_t b)
@@ -670,7 +670,7 @@ void Sound::setBytesLoaded(uint32_t b)
 		if (progressEvent.isNull())
 		{
 			this->incRef();
-			progressEvent = _MR(Class<ProgressEvent>::getInstanceS(getSystemState(),bytesLoaded,bytesTotal));
+			progressEvent = _MR(Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal));
 			progressEvent->incRef();
 			getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
 		}
@@ -691,14 +691,14 @@ void Sound::setBytesLoaded(uint32_t b)
 		if(bytesLoaded==bytesTotal)
 		{
 			this->incRef();
-			getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
+			getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"complete")));
 		}
 	}
 }
 
-ASFUNCTIONBODY_GETTER(Sound,bytesLoaded);
-ASFUNCTIONBODY_GETTER(Sound,bytesTotal);
-ASFUNCTIONBODY_GETTER(Sound,length);
+ASFUNCTIONBODY_GETTER(Sound,bytesLoaded)
+ASFUNCTIONBODY_GETTER(Sound,bytesTotal)
+ASFUNCTIONBODY_GETTER(Sound,length)
 
 void SoundMixer::sinit(Class_base* c)
 {
@@ -708,12 +708,12 @@ void SoundMixer::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_STATIC(c,bufferTime);
 	REGISTER_GETTER_SETTER_STATIC(c,soundTransform);
 }
-ASFUNCTIONBODY_GETTER_SETTER_STATIC(SoundMixer,bufferTime);
-ASFUNCTIONBODY_GETTER_SETTER_STATIC(SoundMixer,soundTransform);
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(SoundMixer,bufferTime)
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(SoundMixer,soundTransform)
 
 ASFUNCTIONBODY_ATOM(SoundMixer,stopAll)
 {
-	sys->audioManager->stopAllSounds();
+	wrk->getSystemState()->audioManager->stopAllSounds();
 }
 ASFUNCTIONBODY_ATOM(SoundMixer,computeSpectrum)
 {
@@ -745,9 +745,9 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
 
-SoundChannel::SoundChannel(Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, Sound* _sampleproducer)
-	: EventDispatcher(c),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
-	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(c->getSystemState()))),
+SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, Sound* _sampleproducer)
+	: EventDispatcher(wrk,c),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
+	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(wrk))),
 	leftPeak(1),rightPeak(1),semSampleData(0)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
@@ -871,9 +871,9 @@ void SoundChannel::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,soundTransform,SoundTransform);
 }
 
-ASFUNCTIONBODY_GETTER(SoundChannel,leftPeak);
-ASFUNCTIONBODY_GETTER(SoundChannel,rightPeak);
-ASFUNCTIONBODY_GETTER_SETTER_CB(SoundChannel,soundTransform,validateSoundTransform);
+ASFUNCTIONBODY_GETTER(SoundChannel,leftPeak)
+ASFUNCTIONBODY_GETTER(SoundChannel,rightPeak)
+ASFUNCTIONBODY_GETTER_SETTER_CB(SoundChannel,soundTransform,validateSoundTransform)
 
 void SoundChannel::finalize()
 {
@@ -893,7 +893,7 @@ void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)
 
 ASFUNCTIONBODY_ATOM(SoundChannel,_constructor)
 {
-	EventDispatcher::_constructor(ret,sys,obj, nullptr, 0);
+	EventDispatcher::_constructor(ret,wrk,obj, nullptr, 0);
 }
 
 ASFUNCTIONBODY_ATOM(SoundChannel, stop)
@@ -906,9 +906,9 @@ ASFUNCTIONBODY_ATOM(SoundChannel, stop)
 ASFUNCTIONBODY_ATOM(SoundChannel,getPosition)
 {
 	if(!asAtomHandler::is<SoundChannel>(obj))
-		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
 	SoundChannel* th = asAtomHandler::as<SoundChannel>(obj);
-	asAtomHandler::setUInt(ret,sys,th->audioStream ? th->audioStream->getPlayedTime() : th->startTime);
+	asAtomHandler::setUInt(ret,wrk,th->audioStream ? th->audioStream->getPlayedTime() : th->startTime);
 }
 void SoundChannel::execute()
 {
@@ -930,7 +930,7 @@ void SoundChannel::execute()
 		if (!ACQUIRE_READ(stopped))
 		{
 			incRef();
-			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"soundComplete")));
+			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"soundComplete")));
 		}
 		if (loopstogo)
 			loopstogo--;
@@ -1102,11 +1102,13 @@ void SoundChannel::playStreamFromSamples()
 	if(waitForFlush)
 	{
 		//Put the decoders in the flushing state and wait for the complete consumption of contents
+		mutex.lock();
 		if(audioDecoder)
 		{
 			audioDecoder->setFlushing();
 			audioDecoder->waitFlushed();
 		}
+		mutex.unlock();
 	}
 
 	mutex.lock();
@@ -1118,7 +1120,7 @@ void SoundChannel::playStreamFromSamples()
 	if (sampleDecoder)
 		delete sampleDecoder;
 	incRef();
-	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"soundComplete")));
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"soundComplete")));
 }
 
 
@@ -1189,7 +1191,7 @@ void SoundChannel::checkEnvelope()
 		if (audioStream)
 			audioStream->setPanning(itprev->LeftLevel,itprev->RightLevel);
 		if (soundTransform.isNull())
-			soundTransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(getSystemState()));
+			soundTransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(getInstanceWorker()));
 		soundTransform->leftToLeft=leftPeak;
 		soundTransform->rightToRight=rightPeak;
 	}
@@ -1204,7 +1206,7 @@ void StageVideo::sinit(Class_base *c)
 }
 
 
-StageVideo::StageVideo(Class_base* c):EventDispatcher(c),videoWidth(0),videoHeight(0)
+StageVideo::StageVideo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),videoWidth(0),videoHeight(0)
 {
 }
 
@@ -1216,13 +1218,13 @@ void StageVideo::finalize()
 ASFUNCTIONBODY_ATOM(StageVideo,_getVideoWidth)
 {
 	StageVideo* th=asAtomHandler::as<StageVideo>(obj);
-	asAtomHandler::setUInt(ret,sys,th->videoWidth);
+	asAtomHandler::setUInt(ret,wrk,th->videoWidth);
 }
 
 ASFUNCTIONBODY_ATOM(StageVideo,_getVideoHeight)
 {
 	StageVideo* th=asAtomHandler::as<StageVideo>(obj);
-	asAtomHandler::setUInt(ret,sys,th->videoHeight);
+	asAtomHandler::setUInt(ret,wrk,th->videoHeight);
 }
 
 ASFUNCTIONBODY_ATOM(StageVideo,attachNetStream)
@@ -1250,16 +1252,16 @@ ASFUNCTIONBODY_ATOM(StageVideo,attachNetStream)
 void StageVideoAvailability::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("AVAILABLE","",abstract_s(c->getSystemState(),"available"),DECLARED_TRAIT);
-	c->setVariableByQName("UNAVAILABLE","",abstract_s(c->getSystemState(),"unavailable"),DECLARED_TRAIT);
+	c->setVariableByQName("AVAILABLE","",abstract_s(c->getInstanceWorker(),"available"),DECLARED_TRAIT);
+	c->setVariableByQName("UNAVAILABLE","",abstract_s(c->getInstanceWorker(),"unavailable"),DECLARED_TRAIT);
 }
 
 void VideoStatus::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableByQName("ACCELERATED","",abstract_s(c->getSystemState(),"accelerated"),DECLARED_TRAIT);
-	c->setVariableByQName("SOFTWARE","",abstract_s(c->getSystemState(),"software"),DECLARED_TRAIT);
-	c->setVariableByQName("UNAVAILABLE","",abstract_s(c->getSystemState(),"unavailable"),DECLARED_TRAIT);
+	c->setVariableByQName("ACCELERATED","",abstract_s(c->getInstanceWorker(),"accelerated"),DECLARED_TRAIT);
+	c->setVariableByQName("SOFTWARE","",abstract_s(c->getInstanceWorker(),"software"),DECLARED_TRAIT);
+	c->setVariableByQName("UNAVAILABLE","",abstract_s(c->getInstanceWorker(),"unavailable"),DECLARED_TRAIT);
 }
 void Microphone::sinit(Class_base* c)
 {

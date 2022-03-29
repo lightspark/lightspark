@@ -31,7 +31,7 @@ bool Boolean_concrete(const ASObject* obj);
 class Boolean: public ASObject
 {
 public:
-	Boolean(Class_base* c, bool v=false):ASObject(c,T_BOOLEAN),val(v) {}
+	Boolean(ASWorker* wrk,Class_base* c, bool v=false):ASObject(wrk,c,T_BOOLEAN),val(v) {}
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o){}
 	bool val;
@@ -54,7 +54,7 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk);
 };
 
 }

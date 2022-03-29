@@ -33,7 +33,7 @@ class ElementFormat;
 class ContentElement: public ASObject
 {
 public:
-	ContentElement(Class_base* c): ASObject(c,T_OBJECT,SUBTYPE_CONTENTELEMENT),elementFormat(NULL) {}
+	ContentElement(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_CONTENTELEMENT),elementFormat(NULL) {}
 	static void sinit(Class_base* c);
 	ASPROPERTY_GETTER(tiny_string,rawText);
 	ASPROPERTY_GETTER_SETTER(_NR<ElementFormat>,elementFormat);
@@ -43,7 +43,7 @@ class FontDescription;
 class ElementFormat: public ASObject
 {
 public:
-	ElementFormat(Class_base* c);
+	ElementFormat(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_clone);
@@ -70,7 +70,7 @@ public:
 class FontLookup: public ASObject
 {
 public:
-	FontLookup(Class_base* c): ASObject(c) {}
+	FontLookup(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 
@@ -86,7 +86,7 @@ private:
     tiny_string renderingMode;
 
 public:
-	FontDescription(Class_base* c): ASObject(c,T_OBJECT,SUBTYPE_FONTDESCRIPTION), 
+	FontDescription(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_FONTDESCRIPTION), 
         cffHinting("horizontalStem"), fontLookup("device"), fontName("_serif"), fontPosture("normal"), fontWeight("normal"),locked(false), renderingMode("cff") {}
 	static void sinit(Class_base* c);
     bool destruct();
@@ -120,20 +120,20 @@ public:
 class FontPosture: public ASObject
 {
 public:
-	FontPosture(Class_base* c): ASObject(c) {}
+	FontPosture(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 class FontWeight: public ASObject
 {
 public:
-	FontWeight(Class_base* c): ASObject(c) {}
+	FontWeight(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 
 class FontMetrics: public ASObject
 {
 public:
-	FontMetrics(Class_base* c): ASObject(c) {}
+	FontMetrics(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -141,27 +141,27 @@ public:
 class Kerning: public ASObject
 {
 public:
-	Kerning(Class_base* c): ASObject(c) {}
+	Kerning(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 class LineJustification: public ASObject
 {
 public:
-	LineJustification(Class_base* c): ASObject(c) {}
+	LineJustification(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 
 class TextBaseline: public ASObject
 {
 public:
-	TextBaseline(Class_base* c): ASObject(c) {}
+	TextBaseline(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 
 class TextJustifier: public ASObject
 {
 public:
-	TextJustifier(Class_base* c): ASObject(c) {}
+	TextJustifier(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -169,7 +169,7 @@ public:
 class SpaceJustifier: public TextJustifier
 {
 public:
-	SpaceJustifier(Class_base* c): TextJustifier(c) {}
+	SpaceJustifier(ASWorker* wrk,Class_base* c): TextJustifier(wrk,c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -177,7 +177,7 @@ public:
 class EastAsianJustifier: public TextJustifier
 {
 public:
-	EastAsianJustifier(Class_base* c): TextJustifier(c) {}
+	EastAsianJustifier(ASWorker* wrk,Class_base* c): TextJustifier(wrk,c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -186,7 +186,7 @@ class TextLine;
 class TextBlock: public ASObject
 {
 public:
-	TextBlock(Class_base* c);
+	TextBlock(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(createTextLine);
@@ -213,7 +213,7 @@ class TextElement: public ContentElement
 private:
 	void settext_cb(tiny_string oldValue);
 public:
-	TextElement(Class_base* c): ContentElement(c) { subtype = SUBTYPE_TEXTELEMENT; }
+	TextElement(ASWorker* wrk,Class_base* c): ContentElement(wrk,c) { subtype = SUBTYPE_TEXTELEMENT; }
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(replaceText);
@@ -223,7 +223,7 @@ public:
 class GroupElement: public ContentElement
 {
 public:
-	GroupElement(Class_base* c): ContentElement(c) {}
+	GroupElement(ASWorker* wrk,Class_base* c): ContentElement(wrk,c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -238,7 +238,7 @@ private:
 	bool renderImpl(RenderContext& ctxt) const override;
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
-	TextLine(Class_base* c,tiny_string linetext = "", _NR<TextBlock> owner=NullRef);
+	TextLine(ASWorker* wrk,Class_base* c,tiny_string linetext = "", _NR<TextBlock> owner=NullRef);
 	static void sinit(Class_base* c);
 	void updateSizes();
 	ASFUNCTION_ATOM(_constructor);
@@ -263,7 +263,7 @@ public:
 class TabStop: public ASObject
 {
 public:
-	TabStop(Class_base* c): ASObject(c) {}
+	TabStop(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -271,61 +271,61 @@ public:
 class BreakOpportunity: public ASObject
 {
 public:
-	BreakOpportunity(Class_base* c): ASObject(c) {}
+	BreakOpportunity(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 class CFFHinting: public ASObject
 {
 public:
-	CFFHinting(Class_base* c): ASObject(c) {}
+	CFFHinting(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 class DigitCase: public ASObject
 {
 public:
-	DigitCase(Class_base* c): ASObject(c) {}
+	DigitCase(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 class DigitWidth: public ASObject
 {
 public:
-	DigitWidth(Class_base* c): ASObject(c) {}
+	DigitWidth(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 class JustificationStyle: public ASObject
 {
 public:
-	JustificationStyle(Class_base* c): ASObject(c) {}
+	JustificationStyle(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 class LigatureLevel: public ASObject
 {
 public:
-	LigatureLevel(Class_base* c): ASObject(c) {}
+	LigatureLevel(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 class RenderingMode: public ASObject
 {
 public:
-	RenderingMode(Class_base* c): ASObject(c) {}
+	RenderingMode(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 class TabAlignment: public ASObject
 {
 public:
-	TabAlignment(Class_base* c): ASObject(c) {}
+	TabAlignment(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 class TextLineValidity: public ASObject
 {
 public:
-	TextLineValidity(Class_base* c): ASObject(c) {}
+	TextLineValidity(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 class TextRotation: public ASObject
 {
 public:
-	TextRotation(Class_base* c): ASObject(c) {}
+	TextRotation(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 

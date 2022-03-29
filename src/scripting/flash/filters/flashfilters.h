@@ -36,7 +36,7 @@ protected:
 	static void fillGradientColors(number_t* gradientalphas, uint32_t* gradientcolors, Array* ratios, Array* alphas, Array* colors);
 	static void applyGradientFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout);
 public:
-	BitmapFilter(Class_base* c, CLASS_SUBTYPE st=SUBTYPE_BITMAPFILTER):ASObject(c,T_OBJECT,st){}
+	BitmapFilter(ASWorker* wrk,Class_base* c, CLASS_SUBTYPE st=SUBTYPE_BITMAPFILTER):ASObject(wrk,c,T_OBJECT,st){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(clone);
 	virtual void applyFilter(BitmapContainer* target, BitmapContainer* source,const RECT& sourceRect, int xpos, int ypos);
@@ -56,8 +56,8 @@ private:
 	ASPROPERTY_GETTER_SETTER(number_t, strength);
 	BitmapFilter* cloneImpl() const override;
 public:
-	GlowFilter(Class_base* c);
-	GlowFilter(Class_base* c,const GLOWFILTER& filter);
+	GlowFilter(ASWorker* wrk,Class_base* c);
+	GlowFilter(ASWorker* wrk,Class_base* c,const GLOWFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
@@ -80,8 +80,8 @@ private:
 	ASPROPERTY_GETTER_SETTER(number_t, strength);
 	BitmapFilter* cloneImpl() const override;
 public:
-	DropShadowFilter(Class_base* c);
-	DropShadowFilter(Class_base* c,const DROPSHADOWFILTER& filter);
+	DropShadowFilter(ASWorker* wrk,Class_base* c);
+	DropShadowFilter(ASWorker* wrk,Class_base* c,const DROPSHADOWFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
@@ -93,8 +93,8 @@ class GradientGlowFilter: public BitmapFilter
 private:
 	BitmapFilter* cloneImpl() const override;
 public:
-	GradientGlowFilter(Class_base* c);
-	GradientGlowFilter(Class_base* c, const GRADIENTGLOWFILTER& filter);
+	GradientGlowFilter(ASWorker* wrk,Class_base* c);
+	GradientGlowFilter(ASWorker* wrk,Class_base* c, const GRADIENTGLOWFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t,distance);
@@ -117,8 +117,8 @@ class BevelFilter: public BitmapFilter
 private:
 	BitmapFilter* cloneImpl() const override;
 public:
-	BevelFilter(Class_base* c);
-	BevelFilter(Class_base* c,const BEVELFILTER& filter);
+	BevelFilter(ASWorker* wrk,Class_base* c);
+	BevelFilter(ASWorker* wrk,Class_base* c,const BEVELFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t, angle);
@@ -141,8 +141,8 @@ class ColorMatrixFilter: public BitmapFilter
 private:
 	BitmapFilter* cloneImpl() const override;
 public:
-	ColorMatrixFilter(Class_base* c);
-	ColorMatrixFilter(Class_base* c,const COLORMATRIXFILTER& filter);
+	ColorMatrixFilter(ASWorker* wrk,Class_base* c);
+	ColorMatrixFilter(ASWorker* wrk,Class_base* c,const COLORMATRIXFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, matrix);
@@ -153,8 +153,8 @@ class BlurFilter: public BitmapFilter
 private:
 	BitmapFilter* cloneImpl() const override;
 public:
-	BlurFilter(Class_base* c);
-	BlurFilter(Class_base* c,const BLURFILTER& filter);
+	BlurFilter(ASWorker* wrk,Class_base* c);
+	BlurFilter(ASWorker* wrk,Class_base* c,const BLURFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t, blurX);
@@ -168,8 +168,8 @@ class ConvolutionFilter: public BitmapFilter
 private:
 	BitmapFilter* cloneImpl() const override;
 public:
-	ConvolutionFilter(Class_base* c);
-	ConvolutionFilter(Class_base* c,const CONVOLUTIONFILTER& filter);
+	ConvolutionFilter(ASWorker* wrk,Class_base* c);
+	ConvolutionFilter(ASWorker* wrk,Class_base* c,const CONVOLUTIONFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t,alpha);
@@ -188,7 +188,7 @@ class DisplacementMapFilter: public BitmapFilter
 private:
 	BitmapFilter* cloneImpl() const override;
 public:
-	DisplacementMapFilter(Class_base* c);
+	DisplacementMapFilter(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t,alpha);
@@ -207,8 +207,8 @@ class GradientBevelFilter: public BitmapFilter
 private:
 	BitmapFilter* cloneImpl() const override;
 public:
-	GradientBevelFilter(Class_base* c);
-	GradientBevelFilter(Class_base* c, const GRADIENTBEVELFILTER& filter);
+	GradientBevelFilter(ASWorker* wrk,Class_base* c);
+	GradientBevelFilter(ASWorker* wrk,Class_base* c, const GRADIENTBEVELFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, alphas);
@@ -230,7 +230,7 @@ class ShaderFilter: public BitmapFilter
 private:
 	BitmapFilter* cloneImpl() const override;
 public:
-	ShaderFilter(Class_base* c);
+	ShaderFilter(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
@@ -239,21 +239,21 @@ public:
 class BitmapFilterQuality: public ASObject
 {
 public:
-	BitmapFilterQuality(Class_base* c):ASObject(c) {}
+	BitmapFilterQuality(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 
 class DisplacementMapFilterMode: public ASObject
 {
 public:
-	DisplacementMapFilterMode(Class_base* c):ASObject(c) {}
+	DisplacementMapFilterMode(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 
 class BitmapFilterType: public ASObject
 {
 public:
-	BitmapFilterType(Class_base* c):ASObject(c) {}
+	BitmapFilterType(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 };
 

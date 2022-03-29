@@ -22,7 +22,7 @@
 using namespace std;
 using namespace lightspark;
 
-NetStreamInfo::NetStreamInfo(Class_base* c):ASObject(c)
+NetStreamInfo::NetStreamInfo(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
 	,audioBufferByteLength(-1)
 	,audioBufferLength(-1)
 	,audioByteCount(-1)

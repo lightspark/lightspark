@@ -31,10 +31,10 @@ class AVM1XMLDocument: public XMLDocument
 {
 	_NR<URLLoader> loader;
 public:
-	AVM1XMLDocument(Class_base* c):XMLDocument(c){}
+	AVM1XMLDocument(ASWorker* wrk,Class_base* c):XMLDocument(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(load);
-	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 };
 

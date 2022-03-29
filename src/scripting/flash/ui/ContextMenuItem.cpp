@@ -45,7 +45,7 @@ void ContextMenuItem::defaultEventBehavior(Ref<Event> e)
 		{
 			asAtom caller = asAtomHandler::fromObjectNoPrimitive(callbackfunction.getPtr());
 			asAtom ret = asAtomHandler::invalidAtom;
-			asAtomHandler::callFunction(caller,ret,obj,nullptr,0,false);
+			asAtomHandler::callFunction(caller,getInstanceWorker(),ret,obj,nullptr,0,false);
 		}
 	}
 	
@@ -57,7 +57,7 @@ void ContextMenuItem::addToMenu(std::vector<_R<NativeMenuItem> > &items)
 	{
 		if (this->separatorBefore)
 		{
-			NativeMenuItem* n = Class<NativeMenuItem>::getInstanceSNoArgs(getSystemState());
+			NativeMenuItem* n = Class<NativeMenuItem>::getInstanceSNoArgs(getInstanceWorker());
 			n->isSeparator = true;
 			items.push_back(_MR(n));
 		}
@@ -66,18 +66,18 @@ void ContextMenuItem::addToMenu(std::vector<_R<NativeMenuItem> > &items)
 	}
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(ContextMenuItem,separatorBefore);
-ASFUNCTIONBODY_GETTER_SETTER(ContextMenuItem,visible);
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuItem,separatorBefore)
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuItem,visible)
 
 ASFUNCTIONBODY_ATOM(ContextMenuItem,_constructor)
 {
 	ContextMenuItem* th=asAtomHandler::as<ContextMenuItem>(obj);
-	if (sys->mainClip->usesActionScript3)
+	if (wrk->getSystemState()->mainClip->usesActionScript3)
 		ARG_UNPACK_ATOM(th->label,"")(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true);
 	else
 	{
 		// contrary to spec constructors without label and callbackfunction are allowed
 		ARG_UNPACK_ATOM(th->label,"")(th->callbackfunction,NullRef)(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true);
 	}
-	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
+	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 }

@@ -81,7 +81,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x01:
 			{
 				//bkpt
-				LOG_CALL( _("bkpt") );
+				LOG_CALL( "bkpt" );
 				break;
 			}
 			case 0x02:
@@ -119,7 +119,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x07:
 			{
 				//dxnslate
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v);
 				dxnslate(context, v);
 				break;
 			}
@@ -138,8 +138,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//ifnlt
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifNLT(v1, v2);
 				if(cond)
 				{
@@ -153,8 +153,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//ifnle
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifNLE(v1, v2);
 				if(cond)
 				{
@@ -168,8 +168,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//ifngt
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifNGT(v1, v2);
 				if(cond)
 				{
@@ -183,8 +183,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//ifnge
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifNGE(v1, v2);
 				if(cond)
 				{
@@ -209,7 +209,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 				bool cond=ifTrue(v1);
 				if(cond)
 				{
@@ -224,7 +224,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 				bool cond=ifFalse(v1);
 				if(cond)
 				{
@@ -239,8 +239,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifEq(v1, v2);
 				if(cond)
 				{
@@ -255,8 +255,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifNE(v1, v2);
 				if(cond)
 				{
@@ -271,8 +271,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifLT(v1, v2);
 				if(cond)
 				{
@@ -287,8 +287,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifLE(v1, v2);
 				if(cond)
 				{
@@ -303,8 +303,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifGT(v1, v2);
 				if(cond)
 				{
@@ -319,8 +319,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifGE(v1, v2);
 				if(cond)
 				{
@@ -335,8 +335,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifStrictEq(v1, v2);
 				if(cond)
 				{
@@ -351,8 +351,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t dest=data->uints[0];
 				instructionPointer+=4;
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				bool cond=ifStrictNE(v1, v2);
 				if(cond)
 				{
@@ -365,10 +365,10 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//lookupswitch
 				uint32_t defaultdest=data->uints[0];
-				LOG_CALL(_("Switch default dest ") << defaultdest);
+				LOG_CALL("Switch default dest " << defaultdest);
 				uint32_t count=data->uints[1];
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,index_obj,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,index_obj);
 				assert_and_throw(index_obj->getObjectType()==T_INTEGER);
 				unsigned int index=index_obj->toUInt();
 				index_obj->decRef();
@@ -396,16 +396,16 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x1e:
 			{
 				//nextname
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(nextName(v1,v2)));
 				break;
 			}
 			case 0x1f:
 			{
 				//hasnext
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(hasNext(v1,v2)));
 				break;
 			}
@@ -424,8 +424,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x23:
 			{
 				//nextvalue
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(nextValue(v1,v2)));
 				break;
 			}
@@ -464,7 +464,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x28:
 			{
 				//pushnan
-				RUNTIME_STACK_PUSH(context,asAtomHandler::fromNumber(context->mi->context->root->getSystemState(), Number::NaN,false));
+				RUNTIME_STACK_PUSH(context,asAtomHandler::fromNumber(context->worker, Number::NaN,false));
 				break;
 			}
 			case 0x29:
@@ -530,7 +530,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				instructionPointer+=8;
 				pushDouble(context, t);
 
-				ASObject* d=abstract_d(function->getSystemState(),t);
+				ASObject* d=abstract_d(context->worker,t);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(d));
 				break;
 			}
@@ -728,15 +728,15 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x47:
 			{
 				//returnvoid
-				LOG_CALL(_("returnVoid"));
+				LOG_CALL("returnVoid");
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				return NULL;
 			}
 			case 0x48:
 			{
 				//returnvalue
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,ret,function->getSystemState());
-				LOG_CALL(_("returnValue ") << ret);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,ret);
+				LOG_CALL("returnValue " << ret);
 				PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
 				return ret;
 			}
@@ -790,7 +790,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//sxi1
 				LOG_CALL( "sxi1");
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,arg1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,arg1);
 				int32_t ret=arg1->toUInt() & 0x1;
 				arg1->decRef();
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromInt(ret));
@@ -800,7 +800,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//sxi8
 				LOG_CALL( "sxi8");
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,arg1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,arg1);
 				int32_t ret=(int8_t)arg1->toUInt();
 				arg1->decRef();
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromInt(ret));
@@ -810,7 +810,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//sxi16
 				LOG_CALL( "sxi16");
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,arg1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,arg1);
 				int32_t ret=(int16_t)arg1->toUInt();
 				arg1->decRef();
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromInt(ret));
@@ -908,11 +908,11 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//setproperty
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,value,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,value);
 
 				multiname* name=context->mi->context->getMultiname(t,context);
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj);
 
 				setProperty(value,obj,name);
 				name->resetNameIfObject();
@@ -925,12 +925,12 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				instructionPointer+=4;
 				if (asAtomHandler::isInvalid(context->locals[i]))
 				{
-					LOG_CALL( _("getLocal ") << i << " not set, pushing Undefined");
+					LOG_CALL( "getLocal " << i << " not set, pushing Undefined");
 					RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(function->getSystemState()->getUndefinedRef()));
 					break;
 				}
 				ASATOM_INCREF(context->locals[i]);
-				LOG_CALL( _("getLocal ") << i << _(": ") << asAtomHandler::toDebugString(context->locals[i]) );
+				LOG_CALL( "getLocal " << i << ": " << asAtomHandler::toDebugString(context->locals[i]) );
 				RUNTIME_STACK_PUSH(context,context->locals[i]);
 				break;
 			}
@@ -939,7 +939,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//setlocal
 				uint32_t i=data->uints[0];
 				instructionPointer+=4;
-				LOG_CALL( _("setLocal ") << i );
+				LOG_CALL( "setLocal " << i );
 				RUNTIME_STACK_POP_CREATE(context,obj)
 				if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 				{
@@ -962,7 +962,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				assert_and_throw(context->curr_scope_stack > t);
 				asAtom ret=context->scope_stack[t];
 				ASATOM_INCREF(ret);
-				LOG_CALL( _("getScopeObject: ") << asAtomHandler::toDebugString(ret));
+				LOG_CALL( "getScopeObject: " << asAtomHandler::toDebugString(ret));
 
 				RUNTIME_STACK_PUSH(context,ret);
 				break;
@@ -974,7 +974,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				instructionPointer+=4;
 				multiname* name=context->mi->context->getMultiname(t,context);
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj);
 
 				ASObject* ret=getProperty(obj,name);
 				name->resetNameIfObject();
@@ -991,7 +991,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				multiname* name=context->mi->context->getMultiname(t,context);
 				LOG_CALL("initProperty "<<*name);
 				RUNTIME_STACK_POP_CREATE(context,obj);
-				asAtomHandler::toObject(*obj,context->mi->context->root->getSystemState())->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED);
+				asAtomHandler::toObject(*obj,context->worker)->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,nullptr,context->worker);
 				ASATOM_DECREF_POINTER(obj);
 				name->resetNameIfObject();
 				break;
@@ -1002,7 +1002,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
 				multiname* name = context->mi->context->getMultiname(t,context);
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj);
 				bool ret = deleteProperty(obj,name);
 				name->resetNameIfObject();
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
@@ -1013,8 +1013,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//getslot
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,function->getSystemState());
-				ASObject* ret=getSlot(obj, t);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj);
+				ASObject* ret=getSlot(context,obj, t);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
@@ -1024,10 +1024,10 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				uint32_t t=data->uints[0];
 				instructionPointer+=4;
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 
-				setSlot(v1, v2, t);
+				setSlot(context,v1, v2, t);
 				break;
 			}
 			case 0x6e:
@@ -1048,25 +1048,25 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 
 				Global* globalscope = getGlobalScope(context);
 				RUNTIME_STACK_POP_CREATE(context,obj);
-				globalscope->setSlot(t-1,*obj);
+				globalscope->setSlot(context->worker,t-1,*obj);
 				break;
 			}
 			case 0x70:
 			{
 				//convert_s
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(convert_s(val)));
 				break;
 			}
 			case 0x71:
 			{
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(esc_xelem(val)));
 				break;
 			}
 			case 0x72:
 			{
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(esc_xattr(val)));
 				break;
 			}case 0x73:
@@ -1077,7 +1077,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				{
 					int32_t v= asAtomHandler::toIntStrict(*pval);
 					ASATOM_DECREF_POINTER(pval);
-					asAtomHandler::setInt(*pval,function->getSystemState(),v);
+					asAtomHandler::setInt(*pval,context->worker,v);
 				}
 				break;
 			}
@@ -1089,7 +1089,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				{
 					uint32_t v= asAtomHandler::toUInt(*pval);
 					ASATOM_DECREF_POINTER(pval);
-					asAtomHandler::setUInt(*pval,function->getSystemState(),v);
+					asAtomHandler::setUInt(*pval,context->worker,v);
 				}
 				break;
 			}
@@ -1101,7 +1101,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				{
 					number_t v= asAtomHandler::toNumber(*pval);
 					ASATOM_DECREF_POINTER(pval);
-					asAtomHandler::setNumber(*pval,function->getSystemState(),v);
+					asAtomHandler::setNumber(*pval,context->worker,v);
 				}
 				break;
 			}
@@ -1135,7 +1135,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x78:
 			{
 				//checkfilter
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(checkfilter(val)));
 				break;
 			}
@@ -1154,7 +1154,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 
 				RUNTIME_STACK_POP_CREATE(context,o);
 				asAtom v = *o;
-				if (type->coerce(function->getSystemState(),*o))
+				if (type->coerce(function->getInstanceWorker(),*o))
 					ASATOM_DECREF(v);
 				RUNTIME_STACK_PUSH(context,*o);
 
@@ -1170,7 +1170,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x85:
 			{
 				//coerce_s
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(val->is<ASString>() ? val : coerce_s(val)));
 				break;
 			}
@@ -1181,7 +1181,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				instructionPointer+=4;
 				multiname* name=context->mi->context->getMultiname(t,NULL);
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
 				ASObject* ret=asType(context->mi->context, v1, name);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
@@ -1190,8 +1190,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x87:
 			{
 				//astypelate
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 
 				ASObject* ret=asTypelate(v1, v2);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
@@ -1200,24 +1200,24 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x90:
 			{
 				//negate
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
 				ASObject* ret;
 				if ((val->is<Integer>() || val->is<UInteger>() || (val->is<Number>() && !val->as<Number>()->isfloat)) && val->toInt64() != 0 && val->toInt64() == val->toInt())
-					ret=abstract_di(function->getSystemState(),negate_i(val));
+					ret=abstract_di(context->worker,negate_i(val));
 				else
-					ret=abstract_d(function->getSystemState(),negate(val));
+					ret=abstract_d(context->worker,negate(val));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0x91:
 			{
 				//increment
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
 				ASObject* ret;
 				if (val->is<Integer>() || (val->is<Number>() && !val->as<Number>()->isfloat))
-					ret=abstract_di(function->getSystemState(),increment_i(val));
+					ret=abstract_di(context->worker,increment_i(val));
 				else
-					ret=abstract_d(function->getSystemState(),increment(val));
+					ret=abstract_d(context->worker,increment(val));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
@@ -1232,12 +1232,12 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x93:
 			{
 				//decrement
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
 				ASObject* ret;
 				if (val->is<Integer>() || val->is<UInteger>() || (val->is<Number>() && !val->as<Number>()->isfloat))
-					ret=abstract_di(function->getSystemState(),decrement_di(val));
+					ret=abstract_di(context->worker,decrement_di(val));
 				else
-					ret=abstract_d(function->getSystemState(),decrement(val));
+					ret=abstract_d(context->worker,decrement(val));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
@@ -1252,7 +1252,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x95:
 			{
 				//typeof
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
 				ASObject* ret=typeOf(val);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
@@ -1260,24 +1260,24 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x96:
 			{
 				//not
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
-				ASObject* ret=abstract_b(function->getSystemState(),_not(val));
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
+				ASObject* ret=abstract_b(context->sys,_not(val));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0x97:
 			{
 				//bitnot
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
-				ASObject* ret=abstract_i(function->getSystemState(),bitNot(val));
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
+				ASObject* ret=abstract_i(context->worker,bitNot(val));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xa0:
 			{
 				//add
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
 				ASObject* ret=add(v2, v1);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
@@ -1287,8 +1287,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			{
 				//subtract
 				//Be careful, operands in subtract implementation are swapped
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
 				ASObject* ret;
 				// if both values are Integers or int Numbers the result is also an int Number
@@ -1297,21 +1297,21 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				{
 					int64_t num1=v1->toInt64();
 					int64_t num2=v2->toInt64();
-					LOG_CALL(_("subtractI ")  << num1 << '-' << num2);
+					LOG_CALL("subtractI "  << num1 << '-' << num2);
 					v1->decRef();
 					v2->decRef();
-					ret = abstract_di(function->getSystemState(), num1-num2);
+					ret = abstract_di(context->worker, num1-num2);
 				}
 				else
-					ret=abstract_d(function->getSystemState(),subtract(v2, v1));
+					ret=abstract_d(context->worker,subtract(v2, v1));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xa2:
 			{
 				//multiply
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
 				ASObject* ret;
 				// if both values are Integers or int Numbers the result is also an int Number
@@ -1320,31 +1320,31 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				{
 					int64_t num1=v1->toInt64();
 					int64_t num2=v2->toInt64();
-					LOG_CALL(_("multiplyI ")  << num1 << '*' << num2);
+					LOG_CALL("multiplyI "  << num1 << '*' << num2);
 					v1->decRef();
 					v2->decRef();
-					ret = abstract_di(function->getSystemState(), num1*num2);
+					ret = abstract_di(context->worker, num1*num2);
 				}
 				else
-					ret=abstract_d(function->getSystemState(),multiply(v2, v1));
+					ret=abstract_d(context->worker,multiply(v2, v1));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xa3:
 			{
 				//divide
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
-				ASObject* ret=abstract_d(function->getSystemState(),divide(v2, v1));
+				ASObject* ret=abstract_d(context->worker,divide(v2, v1));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xa4:
 			{
 				//modulo
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
 				ASObject* ret;
 				// if both values are Integers or int Numbers the result is also an int Number
@@ -1353,144 +1353,144 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				{
 					int64_t num1=v1->toInt64();
 					int64_t num2=v2->toInt64();
-					LOG_CALL(_("moduloI ")  << num1 << '%' << num2);
+					LOG_CALL("moduloI "  << num1 << '%' << num2);
 					v1->decRef();
 					v2->decRef();
 					if (num2 == 0)
-						ret=abstract_d(function->getSystemState(),Number::NaN);
+						ret=abstract_d(context->worker,Number::NaN);
 					else
-						ret = abstract_di(function->getSystemState(), num1%num2);
+						ret = abstract_di(context->worker, num1%num2);
 				}
 				else
-					ret=abstract_d(function->getSystemState(),modulo(v1, v2));
+					ret=abstract_d(context->worker,modulo(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xa5:
 			{
 				//lshift
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 
-				ASObject* ret=abstract_i(function->getSystemState(),lShift(v1, v2));
+				ASObject* ret=abstract_i(context->worker,lShift(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xa6:
 			{
 				//rshift
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 
-				ASObject* ret=abstract_i(function->getSystemState(),rShift(v1, v2));
+				ASObject* ret=abstract_i(context->worker,rShift(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xa7:
 			{
 				//urshift
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 
-				ASObject* ret=abstract_i(function->getSystemState(),urShift(v1, v2));
+				ASObject* ret=abstract_i(context->worker,urShift(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xa8:
 			{
 				//bitand
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 
-				ASObject* ret=abstract_i(function->getSystemState(),bitAnd(v1, v2));
+				ASObject* ret=abstract_i(context->worker,bitAnd(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xa9:
 			{
 				//bitor
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 
-				ASObject* ret=abstract_i(function->getSystemState(),bitOr(v1, v2));
+				ASObject* ret=abstract_i(context->worker,bitOr(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xaa:
 			{
 				//bitxor
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 
-				ASObject* ret=abstract_i(function->getSystemState(),bitXor(v1, v2));
+				ASObject* ret=abstract_i(context->worker,bitXor(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xab:
 			{
 				//equals
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
-				ASObject* ret=abstract_b(function->getSystemState(),equals(v1, v2));
+				ASObject* ret=abstract_b(context->sys,equals(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xac:
 			{
 				//strictequals
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
-				ASObject* ret=abstract_b(function->getSystemState(),strictEquals(v1, v2));
+				ASObject* ret=abstract_b(context->sys,strictEquals(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xad:
 			{
 				//lessthan
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
-				ASObject* ret=abstract_b(function->getSystemState(),lessThan(v1, v2));
+				ASObject* ret=abstract_b(context->sys,lessThan(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xae:
 			{
 				//lessequals
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
-				ASObject* ret=abstract_b(function->getSystemState(),lessEquals(v1, v2));
+				ASObject* ret=abstract_b(context->sys,lessEquals(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xaf:
 			{
 				//greaterthan
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
-				ASObject* ret=abstract_b(function->getSystemState(),greaterThan(v1, v2));
+				ASObject* ret=abstract_b(context->sys,greaterThan(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xb0:
 			{
 				//greaterequals
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
-				ASObject* ret=abstract_b(function->getSystemState(),greaterEquals(v1, v2));
+				ASObject* ret=abstract_b(context->sys,greaterEquals(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xb1:
 			{
 				//instanceof
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,type,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,value,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,type);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,value);
 				bool ret=instanceOf(value, type);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
 				break;
@@ -1502,45 +1502,45 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				instructionPointer+=4;
 				multiname* name=context->mi->context->getMultiname(t,NULL);
 
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
-				ASObject* ret=abstract_b(function->getSystemState(),isType(context->mi->context, v1, name));
+				ASObject* ret=abstract_b(context->sys,isType(context->mi->context, v1, name));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xb3:
 			{
 				//istypelate
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 
-				ASObject* ret=abstract_b(function->getSystemState(),isTypelate(v1, v2));
+				ASObject* ret=abstract_b(context->sys,isTypelate(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xb4:
 			{
 				//in
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 
-				ASObject* ret=abstract_b(function->getSystemState(),in(v1, v2));
+				ASObject* ret=abstract_b(context->sys,in(v1, v2));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xc0:
 			{
 				//increment_i
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
-				ASObject* ret=abstract_i(function->getSystemState(),increment_i(val));
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
+				ASObject* ret=abstract_i(context->worker,increment_i(val));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xc1:
 			{
 				//decrement_i
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
-				ASObject* ret=abstract_i(function->getSystemState(),decrement_i(val));
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
+				ASObject* ret=abstract_i(context->worker,decrement_i(val));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
@@ -1563,38 +1563,38 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0xc4:
 			{
 				//negate_i
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val,function->getSystemState());
-				ASObject* ret=abstract_i(function->getSystemState(),negate_i(val));
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,val);
+				ASObject* ret=abstract_i(context->worker,negate_i(val));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xc5:
 			{
 				//add_i
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
-				ASObject* ret=abstract_i(function->getSystemState(),add_i(v2, v1));
+				ASObject* ret=abstract_i(context->worker,add_i(v2, v1));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xc6:
 			{
 				//subtract_i
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
-				ASObject* ret=abstract_i(function->getSystemState(),subtract_i(v2, v1));
+				ASObject* ret=abstract_i(context->worker,subtract_i(v2, v1));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
 			case 0xc7:
 			{
 				//multiply_i
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2,function->getSystemState());
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v1);
 
-				ASObject* ret=abstract_i(function->getSystemState(),multiply_i(v2, v1));
+				ASObject* ret=abstract_i(context->worker,multiply_i(v2, v1));
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(ret));
 				break;
 			}
@@ -1607,7 +1607,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				int i=opcode&3;
 				if (asAtomHandler::isInvalid(context->locals[i]))
 				{
-					LOG_CALL( _("getLocal ") << i << " not set, pushing Undefined");
+					LOG_CALL( "getLocal " << i << " not set, pushing Undefined");
 					RUNTIME_STACK_PUSH(context,asAtomHandler::fromObject(function->getSystemState()->getUndefinedRef()));
 					break;
 				}
@@ -1635,14 +1635,14 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0xf2:
 			{
 				//bkptline
-				LOG_CALL( _("bkptline") );
+				LOG_CALL( "bkptline" );
 				instructionPointer+=4;
 				break;
 			}
 			case 0xf3:
 			{
 				//timestamp
-				LOG_CALL( _("timestamp") );
+				LOG_CALL( "timestamp" );
 				instructionPointer+=4;
 				break;
 			}
@@ -1654,7 +1654,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				instructionPointer+=4;
 
 				RUNTIME_STACK_POP_CREATE(context,value);
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj,function->getSystemState());
+				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj);
 
 				LOG_CALL("setSlotNoCoerce " << t);
 				obj->setSlotNoCoerce(t-1,*value);
@@ -1669,7 +1669,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 
 				RUNTIME_STACK_POP_CREATE(context,o);
 				asAtom v = *o;
-				if (type->coerce(function->getSystemState(),*o))
+				if (type->coerce(function->getInstanceWorker(),*o))
 					ASATOM_DECREF(v);
 				RUNTIME_STACK_PUSH(context,*o);
 
@@ -1706,14 +1706,14 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				LOG_CALL( "getLexOnce " << *name);
 				ASObject* target;
 				asAtom obj=asAtomHandler::invalidAtom;
-				ABCVm::getCurrentApplicationDomain(context)->getVariableAndTargetByMultiname(obj,*name,target);
+				ABCVm::getCurrentApplicationDomain(context)->getVariableAndTargetByMultiname(obj,*name,target,context->worker);
 				//The object must exists, since it was found during optimization
 				assert_and_throw(asAtomHandler::isValid(obj));
 				char* rewriteableCode = &(mi->body->code[0]);
 				OpcodeData* rewritableData=reinterpret_cast<OpcodeData*>(rewriteableCode+instructionPointer);
 				//Rewrite this to a pushearly
 				rewriteableCode[instructionPointer-1]=0xff;
-				rewritableData->objs[0]=asAtomHandler::toObject(obj,function->getSystemState());
+				rewritableData->objs[0]=asAtomHandler::toObject(obj,context->worker);
 				//Also push the object right away
 				ASATOM_INCREF(obj);
 				RUNTIME_STACK_PUSH(context,obj);
@@ -1732,8 +1732,8 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				break;
 			}
 			default:
-				LOG(LOG_ERROR,_("Not interpreted instruction @") << instructionPointer);
-				LOG(LOG_ERROR,_("dump ") << hex << (unsigned int)opcode << dec);
+				LOG(LOG_ERROR,"Not interpreted instruction @" << instructionPointer);
+				LOG(LOG_ERROR,"dump " << hex << (unsigned int)opcode << dec);
 				throw ParseException("Not implemented instruction in fast interpreter");
 		}
 		PROF_ACCOUNT_TIME(mi->profTime[instructionPointer],profilingCheckpoint(startTime));
@@ -1742,6 +1742,6 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 #undef PROF_ACCOUNT_TIME 
 #undef PROF_IGNORE_TIME
 	//We managed to execute all the function
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,returnvalue,function->getSystemState());
+	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,returnvalue);
 	return returnvalue;
 }

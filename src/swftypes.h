@@ -129,6 +129,7 @@ class MovieClip;
 class Frame;
 class AVM1Function;
 class AVM1context;
+class ASWorker;
 struct namespace_info;
 
 struct multiname;
@@ -454,7 +455,7 @@ struct multiname: public memory_reporter
 
 	const tiny_string qualifiedString(SystemState *sys, bool forDescribeType=false) const;
 	/* sets name_type, name_s/name_d based on the object n */
-	void setName(union asAtom &n, SystemState *sys);
+	void setName(union asAtom &n, ASWorker* w);
 	void resetNameIfObject();
 	inline bool isQName() const { return ns.size() == 1; }
 	bool toUInt(SystemState *sys, uint32_t& out, bool acceptStringFractions=false, bool* isNumber=nullptr) const;
@@ -1575,17 +1576,17 @@ public:
 	uint32_t startactionpos;
 	std::vector<uint8_t> actions;
 };
-
-ASObject* abstract_i(SystemState *sys, int32_t i);
-ASObject* abstract_ui(SystemState *sys, uint32_t i);
-ASObject* abstract_d(SystemState *sys, number_t i);
-ASObject* abstract_d_constant(SystemState *sys, number_t i);
-ASObject* abstract_di(SystemState *sys, int64_t i);
-ASObject* abstract_s(SystemState *sys);
-ASObject* abstract_s(SystemState *sys, const char* s, uint32_t len);
-ASObject* abstract_s(SystemState *sys, const char* s);
-ASObject* abstract_s(SystemState *sys, const tiny_string& s);
-ASObject* abstract_s(SystemState *sys, uint32_t stringId);
+class ASWorker;
+ASObject* abstract_i(ASWorker* wrk, int32_t i);
+ASObject* abstract_ui(ASWorker* wrk, uint32_t i);
+ASObject* abstract_d(ASWorker* wrk, number_t i);
+ASObject* abstract_d_constant(ASWorker* wrk, number_t i);
+ASObject* abstract_di(ASWorker* wrk, int64_t i);
+ASObject* abstract_s(ASWorker* wrk);
+ASObject* abstract_s(ASWorker* wrk, const char* s, uint32_t len);
+ASObject* abstract_s(ASWorker* wrk, const char* s);
+ASObject* abstract_s(ASWorker* wrk, const tiny_string& s);
+ASObject* abstract_s(ASWorker* wrk, uint32_t stringId);
 ASObject* abstract_null(SystemState *sys);
 ASObject* abstract_undefined(SystemState *sys);
 ASObject* abstract_b(SystemState *sys, bool b);

@@ -39,7 +39,7 @@ class Capabilities: public ASObject
 public:
 	DLL_PUBLIC static const char* EMULATED_VERSION;
 	static const char* MANUFACTURER;
-	Capabilities(Class_base* c):ASObject(c){}
+	Capabilities(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_getLanguage);
 	ASFUNCTION_ATOM(_getPlayerType);
@@ -86,7 +86,7 @@ private:
 	void cbDomainMemory(_NR<ByteArray> oldvalue);
 public:
 	ByteArray* currentDomainMemory;
-	ApplicationDomain(Class_base* c, _NR<ApplicationDomain> p=NullRef);
+	ApplicationDomain(ASWorker* wrk, Class_base* c, _NR<ApplicationDomain> p=NullRef);
 	void finalize() override;
 	std::map<const multiname*, Class_base*> classesBeingDefined;
 	std::map<QName, Class_base*> instantiatedTemplates;
@@ -98,15 +98,15 @@ public:
 	void registerGlobalScope(Global* scope);
 	Global* getLastGlobalScope() const  { return globalScopes.back(); }
 	ASObject* getVariableByString(const std::string& name, ASObject*& target);
-	bool findTargetByMultiname(const multiname& name, ASObject*& target);
-	GET_VARIABLE_RESULT getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target);
-	void getVariableAndTargetByMultinameIncludeTemplatedClasses(asAtom& ret, const multiname& name, ASObject*& target);
+	bool findTargetByMultiname(const multiname& name, ASObject*& target, ASWorker* wrk);
+	GET_VARIABLE_RESULT getVariableAndTargetByMultiname(asAtom& ret, const multiname& name, ASObject*& target,ASWorker* wrk);
+	void getVariableAndTargetByMultinameIncludeTemplatedClasses(asAtom& ret, const multiname& name, ASObject*& target, ASWorker* wrk);
 
 	/*
 	 * This method is an opportunistic resolution operator used by the optimizer:
 	 * Only returns the value if the variable has been already defined.
 	 */
-	ASObject* getVariableByMultinameOpportunistic(const multiname& name);
+	ASObject* getVariableByMultinameOpportunistic(const multiname& name, ASWorker* wrk);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getCurrentDomain);
 	ASFUNCTION_ATOM(_getMinDomainMemoryLength);
@@ -177,14 +177,14 @@ public:
 		uint32_t addr=asAtomHandler::toUInt(*arg1);
 		number_t ret=appDomain->readFromDomainMemory<float>(addr);
 		ASATOM_DECREF_POINTER(arg1);
-		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getSystemState(),ret,false));
+		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getInstanceWorker(),ret,false));
 	}
 	static FORCE_INLINE void loadFloat(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1)
 	{
 		uint32_t addr=asAtomHandler::toUInt(arg1);
 		number_t res=appDomain->readFromDomainMemory<float>(addr);
 		asAtom oldret = ret;
-		if (asAtomHandler::replaceNumber(ret,appDomain->getSystemState(),res))
+		if (asAtomHandler::replaceNumber(ret,appDomain->getInstanceWorker(),res))
 			ASATOM_DECREF(oldret);
 	}
 	static FORCE_INLINE void loadDouble(ApplicationDomain* appDomain,call_context *th)
@@ -193,14 +193,14 @@ public:
 		uint32_t addr=asAtomHandler::toUInt(*arg1);
 		number_t res=appDomain->readFromDomainMemory<double>(addr);
 		ASATOM_DECREF_POINTER(arg1);
-		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getSystemState(),res,false));
+		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getInstanceWorker(),res,false));
 	}
 	static FORCE_INLINE void loadDouble(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1)
 	{
 		uint32_t addr=asAtomHandler::toUInt(arg1);
 		number_t res=appDomain->readFromDomainMemory<double>(addr);
 		asAtom oldret = ret;
-		if (asAtomHandler::replaceNumber(ret,appDomain->getSystemState(),res))
+		if (asAtomHandler::replaceNumber(ret,appDomain->getInstanceWorker(),res))
 			ASATOM_DECREF(oldret);
 	}
 
@@ -243,7 +243,7 @@ public:
 class LoaderContext: public ASObject
 {
 public:
-	LoaderContext(Class_base* c);
+	LoaderContext(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(bool, allowCodeImport);
@@ -260,7 +260,7 @@ public:
 class SecurityDomain: public ASObject
 {
 public:
-	SecurityDomain(Class_base* c):ASObject(c){}
+	SecurityDomain(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -270,7 +270,7 @@ public:
 class Security: public ASObject
 {
 public:
-	Security(Class_base* c):ASObject(c){}
+	Security(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_getExactSettings);
 	ASFUNCTION_ATOM(_setExactSettings);
@@ -282,12 +282,12 @@ public:
 	ASFUNCTION_ATOM(pageDomain);
 };
 
-void fscommand(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen);
+void fscommand(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen);
 
 class System: public ASObject
 {
 public:
-	System(Class_base* c):ASObject(c){}
+	System(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(totalMemory);
 	ASFUNCTION_ATOM(disposeXML);
@@ -314,7 +314,11 @@ private:
 	std::deque<eventType> events_queue;
 	map<const Class_base*,_R<Prototype>> protoypeMap;
 public:
+	asfreelist* freelist;
+	asfreelist freelist_syntheticfunction;
+	ASWorker(SystemState* s); // constructor for primordial worker only to be used in SystemState constructor
 	ASWorker(Class_base* c);
+	ASWorker(ASWorker* wrk,Class_base* c);
 	void finalize() override;
 	Prototype* getClassPrototype(const Class_base* cls);
 	static void sinit(Class_base*);
@@ -322,6 +326,8 @@ public:
 	//  TODO merge stacktrace handling with ABCVm
 	abc_limits limits;
 	call_context* currentCallContext;
+	/* The current recursion level. Each call increases this by one,
+	 * each return from a call decreases this. */
 	uint32_t cur_recursion;
 	stacktrace_entry* stacktrace;
 	FORCE_INLINE call_context* incStack(asAtom o, uint32_t f)
@@ -356,6 +362,9 @@ public:
 	void threadAbort() override;
 	bool addEvent(_NR<EventDispatcher> obj ,_R<Event> ev);
 	_NR<RootMovieClip> rootClip;
+	tiny_string getDefaultXMLNamespace() const;
+	uint32_t getDefaultXMLNamespaceID() const;
+	void dumpStacktrace();
 };
 class WorkerDomain: public ASObject
 {
@@ -366,7 +375,7 @@ private:
 	_NR<Vector> workerlist;
 	_NR<ASObject> workerSharedObject;
 public:
-	WorkerDomain(Class_base* c);
+	WorkerDomain(ASWorker* wrk, Class_base* c);
 	void finalize() override;
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
@@ -381,21 +390,21 @@ public:
 class WorkerState: public ASObject
 {
 public:
-	WorkerState(Class_base* c):ASObject(c){}
+	WorkerState(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class ImageDecodingPolicy: public ASObject
 {
 public:
-	ImageDecodingPolicy(Class_base* c):ASObject(c){}
+	ImageDecodingPolicy(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class IMEConversionMode: public ASObject
 {
 public:
-	IMEConversionMode(Class_base* c):ASObject(c){}
+	IMEConversionMode(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

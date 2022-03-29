@@ -27,8 +27,8 @@
 
 using namespace lightspark;
 
-GraphicsGradientFill::GraphicsGradientFill(Class_base* c):
-	ASObject(c), focalPointRatio(0), interpolationMethod("rgb"),
+GraphicsGradientFill::GraphicsGradientFill(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c), focalPointRatio(0), interpolationMethod("rgb"),
 	spreadMethod("pad"), type("linear")
 {
 }

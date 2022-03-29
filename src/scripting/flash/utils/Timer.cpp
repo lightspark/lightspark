@@ -34,7 +34,7 @@ void Timer::tick()
 	//This will be executed once if repeatCount was originally 1
 	//Otherwise it's executed until stopMe is set to true
 	this->incRef();
-	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getSystemState(),"timer")));
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getInstanceWorker(),"timer")));
 
 	currentCount++;
 	if(repeatCount!=0)
@@ -42,7 +42,7 @@ void Timer::tick()
 		if(currentCount==repeatCount)
 		{
 			this->incRef();
-			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getSystemState(),"timerComplete")));
+			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getInstanceWorker(),"timerComplete")));
 			stopMe=true;
 			running=false;
 		}
@@ -71,7 +71,7 @@ void Timer::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Timer,_constructor)
 {
-	EventDispatcher::_constructor(ret,sys,obj,NULL,0);
+	EventDispatcher::_constructor(ret,wrk,obj,NULL,0);
 	Timer* th=asAtomHandler::as<Timer>(obj);
 
 	th->delay=asAtomHandler::toInt(args[0]);
@@ -82,13 +82,13 @@ ASFUNCTIONBODY_ATOM(Timer,_constructor)
 ASFUNCTIONBODY_ATOM(Timer,_getCurrentCount)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	asAtomHandler::setUInt(ret,sys,th->currentCount);
+	asAtomHandler::setUInt(ret,wrk,th->currentCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getRepeatCount)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	asAtomHandler::setUInt(ret,sys,th->repeatCount);
+	asAtomHandler::setUInt(ret,wrk,th->repeatCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setRepeatCount)
@@ -114,7 +114,7 @@ ASFUNCTIONBODY_ATOM(Timer,_getRunning)
 ASFUNCTIONBODY_ATOM(Timer,_getDelay)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	asAtomHandler::setUInt(ret,sys,th->delay);
+	asAtomHandler::setUInt(ret,wrk,th->delay);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setDelay)
@@ -122,7 +122,7 @@ ASFUNCTIONBODY_ATOM(Timer,_setDelay)
 	assert_and_throw(argslen==1);
 	int32_t newdelay = asAtomHandler::toInt(args[0]);
 	if (newdelay<0)
-		throw Class<RangeError>::getInstanceS(sys,"delay must be positive", 2066);
+		throw Class<RangeError>::getInstanceS(wrk,"delay must be positive", 2066);
 
 	Timer* th=asAtomHandler::as<Timer>(obj);
 	th->delay=newdelay;
@@ -139,9 +139,9 @@ ASFUNCTIONBODY_ATOM(Timer,start)
 	th->tickJobInstance = _MNR(th);
 	// according to spec Adobe handles timers 60 times per second, so minimum delay is 17 ms
 	if(th->repeatCount==1)
-		sys->addWait(th->delay < 17 ? 17 : th->delay,th);
+		wrk->getSystemState()->addWait(th->delay < 17 ? 17 : th->delay,th);
 	else
-		sys->addTick(th->delay < 17 ? 17 : th->delay,th);
+		wrk->getSystemState()->addTick(th->delay < 17 ? 17 : th->delay,th);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,reset)
@@ -150,7 +150,7 @@ ASFUNCTIONBODY_ATOM(Timer,reset)
 	if(th->running)
 	{
 		//This spin waits if the timer is running right now
-		sys->removeJob(th);
+		wrk->getSystemState()->removeJob(th);
 		//NOTE: although no new events will be sent now there might be old events in the queue.
 		//Is this behaviour right?
 		//This is not anymore used by the timer, so it can die
@@ -166,7 +166,7 @@ ASFUNCTIONBODY_ATOM(Timer,stop)
 	if(th->running)
 	{
 		//This spin waits if the timer is running right now
-		sys->removeJob(th);
+		wrk->getSystemState()->removeJob(th);
 		//NOTE: although no new events will be sent now there might be old events in the queue.
 		//Is this behaviour right?
 

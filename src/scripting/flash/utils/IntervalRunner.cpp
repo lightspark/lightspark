@@ -34,7 +34,7 @@ using namespace lightspark;
 
 IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id, asAtom _callback, asAtom* _args,
 		const unsigned int _argslen, asAtom _obj):
-	EventDispatcher(NULL),type(_type), id(_id), callback(_callback),obj(_obj),argslen(_argslen)
+	EventDispatcher(nullptr,nullptr),type(_type), id(_id), callback(_callback),obj(_obj),argslen(_argslen)
 {
 	args = new asAtom[argslen];
 	for(uint32_t i=0; i<argslen; i++)

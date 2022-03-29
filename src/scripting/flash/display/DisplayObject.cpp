@@ -102,7 +102,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 	return renderImpl(ctxt);
 }
 
-DisplayObject::DisplayObject(Class_base* c):EventDispatcher(c),matrix(Class<Matrix>::getInstanceS(c->getSystemState())),tx(0),ty(0),rotation(0),
+DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),onStage(false),
 	visible(true),mask(),invalidateQueueNext(),loaderInfo(),loadedFrom(c->getSystemState()->mainClip),hasChanged(true),legacy(false),cacheAsBitmap(false),
@@ -257,24 +257,24 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, metaData);
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_filters)
 {
 	if(!asAtomHandler::is<DisplayObject>(obj))
-		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
 	if(argslen != 0)
-		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter");
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	if (th->filters.isNull())
-		th->filters = _MR(Class<Array>::getInstanceSNoArgs(sys));
+		th->filters = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 	th->filters->incRef();
 	ret = asAtomHandler::fromObject(th->filters.getPtr());
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 {
 	if(!asAtomHandler::is<DisplayObject>(obj))
-		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
 	if(argslen != 1)
-		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter");
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(sys,args[0],th->filters);
-	th->requestInvalidation(sys,true);
+	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(wrk,args[0],th->filters);
+	th->requestInvalidation(wrk->getSystemState(),true);
 }
 bool DisplayObject::computeCacheAsBitmap() const
 {
@@ -302,25 +302,25 @@ bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_cacheAsBitmap)
 {
 	if(!asAtomHandler::is<DisplayObject>(obj))
-		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
 	if(argslen != 0)
-		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter");
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	ret = asAtomHandler::fromBool(th->computeCacheAsBitmap());
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,_setter_cacheAsBitmap)
 {
 	if(!asAtomHandler::is<DisplayObject>(obj))
-		throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
 	if(argslen != 1)
-		throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter");
+		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter");
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	if (th->filters.isNull() || th->filters->size()==0)
 	{
 		if (th->cacheAsBitmap != asAtomHandler::toInt(args[0]))
 		{
 			th->cacheAsBitmap = asAtomHandler::toInt(args[0]);
-			th->requestInvalidation(sys,true);
+			th->requestInvalidation(wrk->getSystemState(),true);
 		}
 	}
 }
@@ -330,7 +330,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getTransform)
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	
 	th->incRef();
-	ret = asAtomHandler::fromObject(Class<Transform>::getInstanceS(sys,_MR(th)));
+	ret = asAtomHandler::fromObject(Class<Transform>::getInstanceS(wrk,_MR(th)));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setTransform)
@@ -362,7 +362,7 @@ void DisplayObject::setMatrix(_NR<Matrix> m)
 	{
 		Locker locker(spinlock);
 		if (matrix.isNull())
-			matrix= _MR(Class<Matrix>::getInstanceS(this->getSystemState()));
+			matrix= _MR(Class<Matrix>::getInstanceS(this->getInstanceWorker()));
 		if(matrix->matrix!=m->matrix)
 		{
 			matrix->matrix=m->matrix;
@@ -385,7 +385,7 @@ void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 	{
 		Locker locker(spinlock);
 		if (matrix.isNull())
-			matrix= _MR(Class<Matrix>::getInstanceS(this->getSystemState()));
+			matrix= _MR(Class<Matrix>::getInstanceS(this->getInstanceWorker()));
 		if(m.getTranslateX() != tx ||
 			m.getTranslateY() != ty ||
 			m.getScaleX() != sx ||
@@ -410,7 +410,7 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 	if (filterlist.Filters.size())
 	{
 		if (filters.isNull())
-			filters = _MR(Class<Array>::getInstanceSNoArgsNoFreelist(getSystemState()));
+			filters = _MR(Class<Array>::getInstanceS(getInstanceWorker()));
 		filters->resize(0);
 		auto it = filterlist.Filters.cbegin();
 		while (it != filterlist.Filters.cend())
@@ -418,28 +418,28 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 			switch(it->FilterID)
 			{
 				case 0:
-					filters->push(asAtomHandler::fromObject(Class<DropShadowFilter>::getInstanceS(getSystemState(),it->DropShadowFilter)));
+					filters->push(asAtomHandler::fromObject(Class<DropShadowFilter>::getInstanceS(getInstanceWorker(),it->DropShadowFilter)));
 					break;
 				case 1:
-					filters->push(asAtomHandler::fromObject(Class<BlurFilter>::getInstanceS(getSystemState(),it->BlurFilter)));
+					filters->push(asAtomHandler::fromObject(Class<BlurFilter>::getInstanceS(getInstanceWorker(),it->BlurFilter)));
 					break;
 				case 2:
-					filters->push(asAtomHandler::fromObject(Class<GlowFilter>::getInstanceS(getSystemState(),it->GlowFilter)));
+					filters->push(asAtomHandler::fromObject(Class<GlowFilter>::getInstanceS(getInstanceWorker(),it->GlowFilter)));
 					break;
 				case 3:
-					filters->push(asAtomHandler::fromObject(Class<BevelFilter>::getInstanceS(getSystemState(),it->BevelFilter)));
+					filters->push(asAtomHandler::fromObject(Class<BevelFilter>::getInstanceS(getInstanceWorker(),it->BevelFilter)));
 					break;
 				case 4:
-					filters->push(asAtomHandler::fromObject(Class<GradientGlowFilter>::getInstanceS(getSystemState(),it->GradientGlowFilter)));
+					filters->push(asAtomHandler::fromObject(Class<GradientGlowFilter>::getInstanceS(getInstanceWorker(),it->GradientGlowFilter)));
 					break;
 				case 5:
-					filters->push(asAtomHandler::fromObject(Class<ConvolutionFilter>::getInstanceS(getSystemState(),it->ConvolutionFilter)));
+					filters->push(asAtomHandler::fromObject(Class<ConvolutionFilter>::getInstanceS(getInstanceWorker(),it->ConvolutionFilter)));
 					break;
 				case 6:
-					filters->push(asAtomHandler::fromObject(Class<ColorMatrixFilter>::getInstanceS(getSystemState(),it->ColorMatrixFilter)));
+					filters->push(asAtomHandler::fromObject(Class<ColorMatrixFilter>::getInstanceS(getInstanceWorker(),it->ColorMatrixFilter)));
 					break;
 				case 7:
-					filters->push(asAtomHandler::fromObject(Class<GradientBevelFilter>::getInstanceS(getSystemState(),it->GradientBevelFilter)));
+					filters->push(asAtomHandler::fromObject(Class<GradientBevelFilter>::getInstanceS(getInstanceWorker(),it->GradientBevelFilter)));
 					break;
 				default:
 					LOG(LOG_ERROR,"Unsupported Filter Id " << (int)it->FilterID);
@@ -766,7 +766,7 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 				getClass()->handleConstruction(obj,nullptr,0,true);
 			}
 
-			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"addedToStage"));
+			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
 			// the main clip is added to stage after the base class is constructed,
 			// but there may be addedToStage event handlers added in the constructor of the derived class,
 			// so we can't execute the event directly for the main clip
@@ -782,7 +782,7 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 		}
 		else if(onStage==false)
 		{
-			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"removedFromStage"));
+			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"removedFromStage"));
 			if(isVmThread())
 				ABCVm::publicHandleEvent(this,e);
 			else
@@ -818,7 +818,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 		th->alpha=val;
 		th->hasChanged=true;
 		if(th->onStage)
-			th->requestInvalidation(sys);
+			th->requestInvalidation(wrk->getSystemState());
 	}
 }
 
@@ -826,9 +826,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getAlpha)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	if (th->loadedFrom->usesActionScript3)
-		asAtomHandler::setNumber(ret,sys,th->alpha);
+		asAtomHandler::setNumber(ret,wrk,th->alpha);
 	else // AVM1 uses alpha values from 0-100
-		asAtomHandler::setNumber(ret,sys,th->alpha*100.0);
+		asAtomHandler::setNumber(ret,wrk,th->alpha*100.0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMask)
@@ -862,7 +862,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setMask)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleX)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->sx);
+	asAtomHandler::setNumber(ret,wrk,th->sx);
 }
 
 void DisplayObject::setScaleX(number_t val)
@@ -894,7 +894,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleX)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleY)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->sy);
+	asAtomHandler::setNumber(ret,wrk,th->sy);
 }
 
 void DisplayObject::setScaleY(number_t val)
@@ -926,7 +926,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleY)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleZ)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->sz);
+	asAtomHandler::setNumber(ret,wrk,th->sz);
 }
 
 void DisplayObject::setScaleZ(number_t val)
@@ -959,7 +959,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleZ)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getX)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->tx);
+	asAtomHandler::setNumber(ret,wrk,th->tx);
 }
 
 void DisplayObject::setX(number_t val)
@@ -1029,7 +1029,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setX)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getY)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->ty);
+	asAtomHandler::setNumber(ret,wrk,th->ty);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setY)
@@ -1043,7 +1043,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setY)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getZ)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->tz);
+	asAtomHandler::setNumber(ret,wrk,th->tz);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setZ)
@@ -1061,7 +1061,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getBounds)
 
 	if(asAtomHandler::is<Undefined>(args[0]) || asAtomHandler::is<Null>(args[0]))
 	{
-		ret =  asAtomHandler::fromObject(Class<Rectangle>::getInstanceS(sys));
+		ret =  asAtomHandler::fromObject(Class<Rectangle>::getInstanceS(wrk));
 		return;
 	}
 	if (!asAtomHandler::is<DisplayObject>(args[0]))
@@ -1086,7 +1086,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getBounds)
 			m = targetMatrix.getInverted().multiplyMatrix(m);
 	}
 
-	Rectangle* res=Class<Rectangle>::getInstanceS(sys);
+	Rectangle* res=Class<Rectangle>::getInstanceS(wrk);
 	number_t x1,x2,y1,y2;
 	bool r=th->getBounds(x1,x2,y1,y2, m);
 	if(r)
@@ -1119,7 +1119,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getLoaderInfo)
 	if (r.isNull())
 	{
 		// if this DisplayObject is not yet added to the stage we just use the mainclip
-		r = _MR(th->loadedFrom ? th->loadedFrom : sys->mainClip);
+		r = _MR(th->loadedFrom ? th->loadedFrom : wrk->getSystemState()->mainClip);
 		r->incRef();
 	}
 	if(r.isNull() || r->loaderInfo.isNull())
@@ -1181,7 +1181,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getBlendMode)
 		default: res = "normal"; break;
 	}
 
-	ret = asAtomHandler::fromString(sys,res);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),res);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,_setBlendMode)
 {
@@ -1216,7 +1216,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,localToGlobal)
 
 	th->localToGlobal(pt->getX(), pt->getY(), tempx, tempy);
 
-	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(sys,tempx, tempy));
+	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,tempx, tempy));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,globalToLocal)
@@ -1230,7 +1230,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,globalToLocal)
 
 	th->globalToLocal(pt->getX(), pt->getY(), tempx, tempy);
 
-	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(sys,tempx, tempy));
+	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,tempx, tempy));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setRotation)
@@ -1248,7 +1248,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setRotation)
 		th->rotation=val;
 		th->hasChanged=true;
 		if(th->onStage)
-			th->requestInvalidation(sys);
+			th->requestInvalidation(wrk->getSystemState());
 	}
 }
 
@@ -1314,7 +1314,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getRoot)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getRotation)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->rotation);
+	asAtomHandler::setNumber(ret,wrk,th->rotation);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setVisible)
@@ -1325,7 +1325,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setVisible)
 	if (newval != th->visible)
 	{
 		th->visible=newval;
-		th->requestInvalidation(sys);
+		th->requestInvalidation(wrk->getSystemState());
 	}
 }
 
@@ -1370,7 +1370,7 @@ _NR<Stage> DisplayObject::getStage()
 ASFUNCTIONBODY_ATOM(DisplayObject,_getWidth)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->computeWidth());
+	asAtomHandler::setNumber(ret,wrk,th->computeWidth());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
@@ -1400,7 +1400,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getHeight)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->computeHeight());
+	asAtomHandler::setNumber(ret,wrk,th->computeHeight());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setHeight)
@@ -1435,13 +1435,13 @@ Vector2f DisplayObject::getLocalMousePos()
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseX)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->getLocalMousePos().x);
+	asAtomHandler::setNumber(ret,wrk,th->getLocalMousePos().x);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->getLocalMousePos().y);
+	asAtomHandler::setNumber(ret,wrk,th->getLocalMousePos().y);
 }
 
 _NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
@@ -1491,12 +1491,12 @@ void DisplayObject::initFrame()
 		 */
 		if(parent)
 		{
-			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"added"));
+			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"added"));
 			ABCVm::publicHandleEvent(this,e);
 		}
 		if(onStage)
 		{
-			_R<Event> e=_MR(Class<Event>::getInstanceS(getSystemState(),"addedToStage"));
+			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
 			ABCVm::publicHandleEvent(this,e);
 		}
 	}
@@ -1590,14 +1590,14 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 			bool ret=mask->getBounds(xmin,xmax,ymin,ymax,mask->getConcatenatedMatrix());
 			if(ret==false)
 				return;
-			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getSystemState(),xmax-xmin,ymax-ymin));
+			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getInstanceWorker(),xmax-xmin,ymax-ymin));
 			//Forge a matrix. It must contain the right rotation and scaling while translation
 			//only compensate for the xmin/ymin offset
 			MATRIX m=mask->getConcatenatedMatrix();
 			m.x0 -= xmin;
 			m.y0 -= ymin;
 			data->drawDisplayObject(mask.getPtr(), m,false,false);
-			_R<Bitmap> bmp(Class<Bitmap>::getInstanceS(getSystemState(),data));
+			_R<Bitmap> bmp(Class<Bitmap>::getInstanceS(getInstanceWorker(),data));
 
 			//The created bitmap is already correctly scaled and rotated
 			//Just apply the needed offset
@@ -1701,9 +1701,9 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 				|| cachedBitmap->getBitmapSize().width != w
 				|| cachedBitmap->getBitmapSize().height != h)
 		{
-			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getSystemState(),w,h));
+			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getInstanceWorker(),w,h));
 			data->incRef();
-			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getSystemState(),data));
+			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getInstanceWorker(),data));
 		}
 		MATRIX m0=m;
 		m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));
@@ -1852,9 +1852,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	}
 }
 
-multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk)
 {
-	multiname* res = EventDispatcher::setVariableByMultiname(name,o,allowConst,alreadyset);
+	multiname* res = EventDispatcher::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 	if (!needsActionScript3())
 	{
 		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
@@ -1891,13 +1891,13 @@ void DisplayObject::AVM1registerPrototypeListeners()
 		multiname name(nullptr);
 		name.name_type = multiname::NAME_STRING;
 		name.name_s_id = BUILTIN_STRINGS::STRING_ONENTERFRAME;
-		if (pr->hasPropertyByMultiname(name,true,false))
+		if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 		{
 			getSystemState()->registerFrameListener(this);
 			getSystemState()->stage->AVM1AddEventListener(this);
 		}
 		name.name_s_id = BUILTIN_STRINGS::STRING_ONLOAD;
-		if (pr->hasPropertyByMultiname(name,true,false))
+		if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 		{
 			getSystemState()->registerFrameListener(this);
 			getSystemState()->stage->AVM1AddEventListener(this);
@@ -1905,37 +1905,37 @@ void DisplayObject::AVM1registerPrototypeListeners()
 		if (this->is<InteractiveObject>())
 		{
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
-			if (pr->hasPropertyByMultiname(name,true,false))
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
-			if (pr->hasPropertyByMultiname(name,true,false))
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEUP;
-			if (pr->hasPropertyByMultiname(name,true,false))
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONPRESS;
-			if (pr->hasPropertyByMultiname(name,true,false))
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEWHEEL;
-			if (pr->hasPropertyByMultiname(name,true,false))
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASE;
-			if (pr->hasPropertyByMultiname(name,true,false))
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
@@ -1944,9 +1944,9 @@ void DisplayObject::AVM1registerPrototypeListeners()
 		pr = pr->getprop_prototype();
 	}
 }
-bool DisplayObject::deleteVariableByMultiname(const multiname& name)
+bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
-	bool res = EventDispatcher::deleteVariableByMultiname(name);
+	bool res = EventDispatcher::deleteVariableByMultiname(name,wrk);
 	if (!this->loadedFrom->usesActionScript3)
 	{
 		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
@@ -1981,7 +1981,7 @@ void DisplayObject::removeAVM1Listeners()
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->sx*100.0);
+	asAtomHandler::setNumber(ret,wrk,th->sx*100.0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleX)
@@ -1997,7 +1997,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleX)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleY)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->sy*100.0);
+	asAtomHandler::setNumber(ret,wrk,th->sy*100.0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleY)
@@ -2031,7 +2031,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getRoot)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getURL)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	ret = asAtomHandler::fromString(sys,th->loadedFrom->getOrigin().getURL());
+	ret = asAtomHandler::fromString(wrk->getSystemState(),th->loadedFrom->getOrigin().getURL());
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_hitTest)
 {
@@ -2044,16 +2044,16 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_hitTest)
 			{
 				if (asAtomHandler::is<DisplayObject>(args[0]))
 				{
-					hitTestObject(ret,sys,obj,args,1);
+					hitTestObject(ret,wrk,obj,args,1);
 				}
 				else
 				{
-					tiny_string s = asAtomHandler::toString(args[0],sys);
+					tiny_string s = asAtomHandler::toString(args[0],wrk);
 					DisplayObject* path = asAtomHandler::as<DisplayObject>(obj)->AVM1GetClipFromPath(s);
 					if (path)
 					{
 						asAtom pathobj = asAtomHandler::fromObject(path);
-						hitTestObject(ret,sys,obj,&pathobj,1);
+						hitTestObject(ret,wrk,obj,&pathobj,1);
 					}
 					else
 						LOG(LOG_ERROR,"AVM1_hitTest:clip not found:"<<asAtomHandler::toDebugString(args[0]));
@@ -2064,7 +2064,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_hitTest)
 		}
 	}
 	else
-		hitTestPoint(ret,sys,obj,args,argslen);
+		hitTestPoint(ret,wrk,obj,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_localToGlobal)
 {
@@ -2072,28 +2072,28 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_localToGlobal)
 	assert_and_throw(argslen == 1);
 
 	
-	ASObject* pt=asAtomHandler::toObject(args[0],sys);
+	ASObject* pt=asAtomHandler::toObject(args[0],wrk);
 	
 	asAtom x = asAtomHandler::fromInt(0);
 	asAtom y = asAtomHandler::fromInt(0);
 	multiname mx(nullptr);
 	mx.name_type=multiname::NAME_STRING;
-	mx.name_s_id=sys->getUniqueStringId("x");
+	mx.name_s_id=wrk->getSystemState()->getUniqueStringId("x");
 	mx.isAttribute = false;
-	pt->getVariableByMultiname(x,mx);
+	pt->getVariableByMultiname(x,mx,GET_VARIABLE_OPTION::NONE,wrk);
 	multiname my(nullptr);
 	my.name_type=multiname::NAME_STRING;
-	my.name_s_id=sys->getUniqueStringId("y");
+	my.name_s_id=wrk->getSystemState()->getUniqueStringId("y");
 	my.isAttribute = false;
-	pt->getVariableByMultiname(y,my);
+	pt->getVariableByMultiname(y,my,GET_VARIABLE_OPTION::NONE,wrk);
 
 	number_t tempx, tempy;
 
 	th->localToGlobal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy);
-	asAtomHandler::setNumber(x,sys,tempx);
-	asAtomHandler::setNumber(y,sys,tempy);
-	pt->setVariableByMultiname(mx,x,CONST_ALLOWED);
-	pt->setVariableByMultiname(my,y,CONST_ALLOWED);
+	asAtomHandler::setNumber(x,wrk,tempx);
+	asAtomHandler::setNumber(y,wrk,tempy);
+	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,nullptr,wrk);
+	pt->setVariableByMultiname(my,y,CONST_ALLOWED,nullptr,wrk);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_globalToLocal)
@@ -2102,56 +2102,56 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_globalToLocal)
 	assert_and_throw(argslen == 1);
 
 	
-	ASObject* pt=asAtomHandler::toObject(args[0],sys);
+	ASObject* pt=asAtomHandler::toObject(args[0],wrk);
 	
 	asAtom x = asAtomHandler::fromInt(0);
 	asAtom y = asAtomHandler::fromInt(0);
 	multiname mx(nullptr);
 	mx.name_type=multiname::NAME_STRING;
-	mx.name_s_id=sys->getUniqueStringId("x");
+	mx.name_s_id=wrk->getSystemState()->getUniqueStringId("x");
 	mx.isAttribute = false;
-	pt->getVariableByMultiname(x,mx);
+	pt->getVariableByMultiname(x,mx,GET_VARIABLE_OPTION::NONE,wrk);
 	multiname my(nullptr);
 	my.name_type=multiname::NAME_STRING;
-	my.name_s_id=sys->getUniqueStringId("y");
+	my.name_s_id=wrk->getSystemState()->getUniqueStringId("y");
 	my.isAttribute = false;
-	pt->getVariableByMultiname(y,my);
+	pt->getVariableByMultiname(y,my,GET_VARIABLE_OPTION::NONE,wrk);
 
 	number_t tempx, tempy;
 
 	th->globalToLocal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy);
-	asAtomHandler::setNumber(x,sys,tempx);
-	asAtomHandler::setNumber(y,sys,tempy);
-	pt->setVariableByMultiname(mx,x,CONST_ALLOWED);
-	pt->setVariableByMultiname(my,y,CONST_ALLOWED);
+	asAtomHandler::setNumber(x,wrk,tempx);
+	asAtomHandler::setNumber(y,wrk,tempy);
+	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,nullptr,wrk);
+	pt->setVariableByMultiname(my,y,CONST_ALLOWED,nullptr,wrk);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesLoaded)
 {
-	if (sys->mainClip->loaderInfo)
+	if (wrk->getSystemState()->mainClip->loaderInfo)
 	{
-		asAtomHandler::setUInt(ret,sys,sys->mainClip->loaderInfo->getBytesLoaded());
+		asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->mainClip->loaderInfo->getBytesLoaded());
 	}
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesTotal)
 {
-	if (sys->mainClip->loaderInfo)
+	if (wrk->getSystemState()->mainClip->loaderInfo)
 	{
-		asAtomHandler::setUInt(ret,sys,sys->mainClip->loaderInfo->getBytesTotal());
+		asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->mainClip->loaderInfo->getBytesTotal());
 	}
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getQuality)
 {
-	ret = asAtomHandler::fromString(sys,sys->stage->quality.uppercase());
+	ret = asAtomHandler::fromString(wrk->getSystemState(),wrk->getSystemState()->stage->quality.uppercase());
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setQuality)
 {
 	if (argslen > 0)
-		sys->stage->quality = asAtomHandler::toString(args[0],sys).uppercase();
+		wrk->getSystemState()->stage->quality = asAtomHandler::toString(args[0],wrk).uppercase();
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getAlpha)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,sys,th->alpha*100.0);
+	asAtomHandler::setNumber(ret,wrk,th->alpha*100.0);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 {
@@ -2164,14 +2164,14 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 		th->alpha=val;
 		th->hasChanged=true;
 		if(th->onStage)
-			th->requestInvalidation(sys);
+			th->requestInvalidation(wrk->getSystemState());
 	}
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 
-	ASObject* o =  Class<ASObject>::getInstanceS(sys);
+	ASObject* o =  Class<ASObject>::getInstanceS(wrk);
 	ret = asAtomHandler::fromObject(o);
 	DisplayObject* target= th;
 	if(argslen>=1) // contrary to spec adobe allows getBounds with zero parameters
@@ -2208,18 +2208,18 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 	asAtom v=asAtomHandler::invalidAtom;
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=sys->getUniqueStringId("xMin");
-	v = asAtomHandler::fromNumber(sys,x1,false);
-	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
-	name.name_s_id=sys->getUniqueStringId("xMax");
-	v = asAtomHandler::fromNumber(sys,x2,false);
-	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
-	name.name_s_id=sys->getUniqueStringId("yMin");
-	v = asAtomHandler::fromNumber(sys,y1,false);
-	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
-	name.name_s_id=sys->getUniqueStringId("yMax");
-	v = asAtomHandler::fromNumber(sys,y2,false);
-	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED);
+	name.name_s_id=wrk->getSystemState()->getUniqueStringId("xMin");
+	v = asAtomHandler::fromNumber(wrk,x1,false);
+	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+	name.name_s_id=wrk->getSystemState()->getUniqueStringId("xMax");
+	v = asAtomHandler::fromNumber(wrk,x2,false);
+	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+	name.name_s_id=wrk->getSystemState()->getUniqueStringId("yMin");
+	v = asAtomHandler::fromNumber(wrk,y1,false);
+	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+	name.name_s_id=wrk->getSystemState()->getUniqueStringId("yMax");
+	v = asAtomHandler::fromNumber(wrk,y2,false);
+	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED,nullptr,wrk);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_swapDepths)
 {
@@ -2241,7 +2241,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_swapDepths)
 		newargs[0] = asAtomHandler::fromObject(child1);
 		newargs[1] = asAtomHandler::fromObject(child2);
 		asAtom obj = asAtomHandler::fromObject(th->getParent());
-		DisplayObjectContainer::swapChildren(ret,sys,obj,newargs,2);
+		DisplayObjectContainer::swapChildren(ret,wrk,obj,newargs,2);
 	}
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getDepth)
@@ -2347,7 +2347,7 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 	objName.name_s_id=getSystemState()->getUniqueStringId(subpath);
 	objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	asAtom ret=asAtomHandler::invalidAtom;
-	getVariableByMultiname(ret,objName);
+	getVariableByMultiname(ret,objName,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 	if (asAtomHandler::is<DisplayObject>(ret))
 	{
 		if (pos == tiny_string::npos)
@@ -2402,7 +2402,7 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 			multiname objName(NULL);
 			objName.name_type=multiname::NAME_STRING;
 			objName.name_s_id=nameIdOriginal;
-			setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED);
+			setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 		}
 		AVM1UpdateVariableBindings(nameId,v);
 	}
@@ -2443,7 +2443,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 			m.name_type=multiname::NAME_STRING;
 			m.name_s_id=getSystemState()->getUniqueStringId(name);
 			m.isAttribute = false;
-			getSystemState()->avm1global->getVariableByMultiname(ret,m);
+			getSystemState()->avm1global->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 			if(!asAtomHandler::isInvalid(ret))
 				return ret;
 		}
@@ -2493,9 +2493,9 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 		m.name_type=multiname::NAME_STRING;
 		m.name_s_id=getSystemState()->getUniqueStringId(name);
 		m.isAttribute = false;
-		getVariableByMultiname(ret,m);
+		getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 		if (asAtomHandler::isInvalid(ret))// get Variable from root movie
-			loadedFrom->getVariableByMultiname(ret,m);
+			loadedFrom->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 	}
 	return ret;
 }
@@ -2523,7 +2523,7 @@ asAtom DisplayObject::getVariableBindingValue(const tiny_string &name)
 		if (asAtomHandler::isValid(obj))
 		{
 			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-			ret = asAtomHandler::toObject(obj,getSystemState())->getVariableBindingValue(localname);
+			ret = asAtomHandler::toObject(obj,getInstanceWorker())->getVariableBindingValue(localname);
 		}
 	}
 	return ret;

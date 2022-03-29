@@ -331,7 +331,7 @@ ASFUNCTIONBODY_ATOM(Keyboard, numLock)
 
 ASFUNCTIONBODY_ATOM(Keyboard, physicalKeyboardType)
 {
-	ret = asAtomHandler::fromString(sys,"alphanumeric");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"alphanumeric");
 }
 
 ASFUNCTIONBODY_ATOM(Keyboard, isAccessible)

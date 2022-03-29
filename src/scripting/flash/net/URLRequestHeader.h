@@ -29,7 +29,7 @@ namespace lightspark
 class URLRequestHeader: public ASObject
 {
 public:
-	URLRequestHeader(Class_base* c);
+	URLRequestHeader(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -37,6 +37,6 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string, value);
 };
 
-};
+}
 
 #endif

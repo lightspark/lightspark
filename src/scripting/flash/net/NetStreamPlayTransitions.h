@@ -25,7 +25,7 @@ namespace lightspark
 class NetStreamPlayTransitions: public ASObject
 {
 public:
-	NetStreamPlayTransitions(Class_base* c);
+	NetStreamPlayTransitions(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 };
 

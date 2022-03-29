@@ -48,7 +48,7 @@ ASFUNCTIONBODY_ATOM(TextRenderer,_setAdvancedAntiAliasingTable)
 ASFUNCTIONBODY_ATOM(TextRenderer,_getDisplayMode)
 {
     LOG(LOG_NOT_IMPLEMENTED,"TextRenderer.displayMode is not fully implemented and always returns \"default\"");
-	ret = asAtomHandler::fromString(sys,"default"); // "default" is default value
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"default"); // "default" is default value
 }
 
 ASFUNCTIONBODY_ATOM(TextRenderer,_setDisplayMode)

@@ -30,7 +30,7 @@ class BitmapContainer;
 class Rectangle: public ASObject
 {
 public:
-	Rectangle(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_RECTANGLE),x(0),y(0),width(0),height(0){}
+	Rectangle(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_RECTANGLE),x(0),y(0),width(0),height(0){}
 	number_t x,y,width,height;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -83,7 +83,7 @@ private:
 	number_t x,y;
 	static number_t lenImpl(number_t x, number_t y);
 public:
-	Point(Class_base* c,number_t _x = 0, number_t _y = 0):ASObject(c,T_OBJECT,SUBTYPE_POINT),x(_x),y(_y){}
+	Point(ASWorker* wrk,Class_base* c,number_t _x = 0, number_t _y = 0):ASObject(wrk,c,T_OBJECT,SUBTYPE_POINT),x(_x),y(_y){}
 	bool destruct() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -123,11 +123,11 @@ protected:
 	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
 	number_t redOffset,greenOffset,blueOffset,alphaOffset;
 public:
-	ColorTransform(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_COLORTRANSFORM)
+	ColorTransform(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_COLORTRANSFORM)
 	  ,redMultiplier(1.0),greenMultiplier(1.0),blueMultiplier(1.0),alphaMultiplier(1.0)
 	  ,redOffset(0.0),greenOffset(0.0),blueOffset(0.0),alphaOffset(0.0)
 	{}
-	ColorTransform(Class_base* c, const CXFORMWITHALPHA& cx);
+	ColorTransform(ASWorker* wrk,Class_base* c, const CXFORMWITHALPHA& cx);
 	// returning r,g,b,a values are between 0.0 and 1.0
 	void applyTransformation(const RGBA &color, float& r, float& g, float& b, float &a);
 	uint8_t* applyTransformation(BitmapContainer* bm);
@@ -168,8 +168,8 @@ friend class DisplayObject;
 private:
 	MATRIX matrix;
 public:
-	Matrix(Class_base* c);
-	Matrix(Class_base* c,const MATRIX& m);
+	Matrix(ASWorker* wrk,Class_base* c);
+	Matrix(ASWorker* wrk,Class_base* c,const MATRIX& m);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	void _createBox(number_t scaleX, number_t scaleY, number_t angle, number_t x, number_t y);
@@ -217,8 +217,8 @@ friend class DisplayObject;
 private:
 	_NR<DisplayObject> owner;
 public:
-	Transform(Class_base* c);
-	Transform(Class_base* c, _R<DisplayObject> o);
+	Transform(ASWorker* wrk,Class_base* c);
+	Transform(ASWorker* wrk, Class_base* c, _R<DisplayObject> o);
 	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -236,7 +236,7 @@ public:
 class Vector3D: public ASObject
 {
 public:
-	Vector3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_VECTOR3D),w(0),x(0),y(0),z(0){}
+	Vector3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_VECTOR3D),w(0),x(0),y(0),z(0){}
 	number_t w, x, y, z;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -286,7 +286,7 @@ private:
 	number_t getDeterminant();
 	void identity();
 public:
-	Matrix3D(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_MATRIX3D){}
+	Matrix3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_MATRIX3D){}
 	static void sinit(Class_base* c);
 	bool destruct();
 	ASFUNCTION_ATOM(_constructor);
@@ -321,7 +321,7 @@ public:
 class PerspectiveProjection: public ASObject
 {
 public:
-	PerspectiveProjection(Class_base* c):ASObject(c),fieldOfView(0),focalLength(0) {}
+	PerspectiveProjection(ASWorker* wrk,Class_base* c):ASObject(wrk,c),fieldOfView(0),focalLength(0) {}
 	static void sinit(Class_base* c);
 	bool destruct();
 	ASFUNCTION_ATOM(_constructor);

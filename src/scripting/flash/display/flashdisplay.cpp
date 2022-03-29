@@ -62,29 +62,29 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 	return s;
 }
 
-LoaderInfo::LoaderInfo(Class_base* c):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
+LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
 	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
-	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(c->getSystemState()));
-	parameters = _MR(Class<ASObject>::getInstanceS(c->getSystemState()));
-	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(c->getSystemState()));
+	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(wrk));
+	parameters = _MR(Class<ASObject>::getInstanceS(wrk));
+	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(wrk));
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
 }
 
-LoaderInfo::LoaderInfo(Class_base* c, _R<Loader> l):EventDispatcher(c),applicationDomain(NullRef),securityDomain(NullRef),
+LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, _R<Loader> l):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
 	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
-	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(c->getSystemState()));
-	parameters = _MR(Class<ASObject>::getInstanceS(c->getSystemState()));
-	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(c->getSystemState()));
+	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(wrk));
+	parameters = _MR(Class<ASObject>::getInstanceS(wrk));
+	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(wrk));
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
 }
 
@@ -190,7 +190,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 			if (progressEvent.isNull())
 			{
 				this->incRef();
-				progressEvent = _MR(Class<ProgressEvent>::getInstanceS(getSystemState(),bytesLoaded,bytesTotal));
+				progressEvent = _MR(Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal));
 				getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
 			}
 			else
@@ -214,7 +214,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 			if(getVm(getSystemState()))
 			{
 				this->incRef();
-				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
+				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"complete")));
 			}
 			loadStatus=COMPLETE;
 		}
@@ -224,14 +224,14 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 void LoaderInfo::sendInit()
 {
 	this->incRef();
-	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"init")));
+	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"init")));
 	assert(loadStatus==STARTED);
 	loadStatus=INIT_SENT;
 	if(bytesTotal && bytesLoaded==bytesTotal)
 	{
 		//The clip is also complete now
 		this->incRef();
-		getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getSystemState(),"complete")));
+		getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"complete")));
 		loadStatus=COMPLETE;
 	}
 }
@@ -268,7 +268,7 @@ void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)
 	//uses AS3. See specs.
 	if (setParameters)
 	{
-		parameters = _MR(Class<ASObject>::getInstanceS(getSystemState()));
+		parameters = _MR(Class<ASObject>::getInstanceS(getInstanceWorker()));
 		SystemState::parseParametersFromURLIntoObject(url, parameters);
 	}
 }
@@ -276,13 +276,13 @@ void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)
 ASFUNCTIONBODY_ATOM(LoaderInfo,_constructor)
 {
 	//LoaderInfo* th=static_cast<LoaderInfo*>(obj);
-	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
+	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getLoaderURL)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(sys,th->loaderURL));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->loaderURL));
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getContent)
@@ -294,7 +294,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getContent)
 	else
 	{
 		asAtom a = asAtomHandler::fromObject(th->loader.getPtr());
-		Loader::_getContent(ret,sys,a,nullptr,0);
+		Loader::_getContent(ret,wrk,a,nullptr,0);
 	}
 }
 
@@ -322,21 +322,21 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getURL)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 
-	ret = asAtomHandler::fromObject(abstract_s(sys,th->url));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->url));
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesLoaded)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 	// we always return bytesLoadedPublic to ensure it shows the same value as the last handled ProgressEvent
-	asAtomHandler::setUInt(ret,sys,th->bytesLoadedPublic);
+	asAtomHandler::setUInt(ret,wrk,th->bytesLoadedPublic);
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesTotal)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 
-	asAtomHandler::setUInt(ret,sys,th->bytesTotal);
+	asAtomHandler::setUInt(ret,wrk,th->bytesTotal);
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytes)
@@ -344,14 +344,14 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytes)
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 
 	if (th->bytesData.isNull())
-		th->bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(sys));
+		th->bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(wrk));
 	if (th->loader.isNull()) //th is the LoaderInfo of the main clip
 	{
-		if (th->bytesData->getLength() == 0 && sys->mainClip->parsethread)
-			sys->mainClip->parsethread->getSWFByteArray(th->bytesData.getPtr());
+		if (th->bytesData->getLength() == 0 && wrk->getSystemState()->mainClip->parsethread)
+			wrk->getSystemState()->mainClip->parsethread->getSWFByteArray(th->bytesData.getPtr());
 	}
 	else if (!th->loader->getContent().isNull())
-		th->bytesData->writeObject(th->loader->getContent().getPtr());
+		th->bytesData->writeObject(th->loader->getContent().getPtr(),wrk);
 	ret = asAtomHandler::fromObject(th->bytesData.getPtr());
 }
 
@@ -376,22 +376,22 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getWidth)
 	_NR<Loader> l = th->loader;
 	if(l.isNull())
 	{
-		if (th == sys->mainClip->loaderInfo.getPtr())
+		if (th == wrk->getSystemState()->mainClip->loaderInfo.getPtr())
 		{
-			asAtomHandler::setInt(ret,sys,sys->mainClip->getNominalWidth());
+			asAtomHandler::setInt(ret,wrk,wrk->getSystemState()->mainClip->getNominalWidth());
 			return;
 		}
-		asAtomHandler::setInt(ret,sys,0);
+		asAtomHandler::setInt(ret,wrk,0);
 		return;
 	}
 	_NR<DisplayObject> o=l->getContent();
 	if (o.isNull())
 	{
-		asAtomHandler::setInt(ret,sys,0);
+		asAtomHandler::setInt(ret,wrk,0);
 		return;
 	}
 
-	asAtomHandler::setInt(ret,sys,o->getNominalWidth());
+	asAtomHandler::setInt(ret,wrk,o->getNominalWidth());
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getHeight)
@@ -401,22 +401,22 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getHeight)
 	_NR<Loader> l = th->loader;
 	if(l.isNull())
 	{
-		if (th == sys->mainClip->loaderInfo.getPtr())
+		if (th == wrk->getSystemState()->mainClip->loaderInfo.getPtr())
 		{
-			asAtomHandler::setInt(ret,sys,sys->mainClip->getNominalHeight());
+			asAtomHandler::setInt(ret,wrk,wrk->getSystemState()->mainClip->getNominalHeight());
 			return;
 		}
-		asAtomHandler::setInt(ret,sys,0);
+		asAtomHandler::setInt(ret,wrk,0);
 		return;
 	}
 	_NR<DisplayObject> o=l->getContent();
 	if (o.isNull())
 	{
-		asAtomHandler::setInt(ret,sys,0);
+		asAtomHandler::setInt(ret,wrk,0);
 		return;
 	}
 
-	asAtomHandler::setInt(ret,sys,o->getNominalHeight());
+	asAtomHandler::setInt(ret,wrk,o->getNominalHeight());
 }
 
 LoaderThread::LoaderThread(_R<URLRequest> request, _R<Loader> ldr)
@@ -454,22 +454,22 @@ void LoaderThread::execute()
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
 			loaderInfo->incRef();
-			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS(loader->getSystemState())));
+			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
 			loader->incRef();
-			getVm(loader->getSystemState())->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS(loader->getSystemState())));
+			getVm(loader->getSystemState())->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
 			delete sbuf;
 			// downloader will be deleted in jobFence
 			return;
 		}
 		loaderInfo->incRef();
-		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS(loader->getSystemState(),"open")));
+		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS(loader->getInstanceWorker(),"open")));
 	}
 	else if(source==BYTES)
 	{
 		assert_and_throw(bytes->bytes);
 
 		loaderInfo->incRef();
-		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS(loader->getSystemState(),"open")));
+		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS(loader->getInstanceWorker(),"open")));
 		loaderInfo->setBytesTotal(bytes->getLength());
 		loaderInfo->setBytesLoaded(bytes->getLength());
 
@@ -507,7 +507,7 @@ void LoaderThread::execute()
 		if(!threadAborting)
 		{
 			loaderInfo->incRef();
-			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS(loader->getSystemState())));
+			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
 		}
 		return;
 	}
@@ -526,9 +526,9 @@ void LoaderThread::execute()
 ASFUNCTIONBODY_ATOM(Loader,_constructor)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
-	DisplayObjectContainer::_constructor(ret,sys,obj,nullptr,0);
+	DisplayObjectContainer::_constructor(ret,wrk,obj,nullptr,0);
 	th->contentLoaderInfo->setLoaderURL(th->getSystemState()->mainClip->getOrigin().getParsedURL());
-	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(sys));
+	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(wrk));
 }
 
 ASFUNCTIONBODY_ATOM(Loader,_getContent)
@@ -578,15 +578,14 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	this->contentLoaderInfo->resetState();
 	//Check if a security domain has been manually set
 	SecurityDomain* secDomain=nullptr;
-	SecurityDomain* curSecDomain=getWorker() ? getWorker()->rootClip->securityDomain.getPtr()
-											 : getVm(this->getSystemState())->currentCallContext ? ABCVm::getCurrentSecurityDomain(getVm(this->getSystemState())->currentCallContext).getPtr():this->getSystemState()->mainClip->securityDomain.getPtr();
+	SecurityDomain* curSecDomain=getInstanceWorker()->rootClip->securityDomain.getPtr();
 	if(context)
 	{
 		if (context->securityDomain)
 		{
 			//The passed domain must be the current one. See Loader::load specs.
 			if(context->securityDomain!=curSecDomain)
-				throw Class<SecurityError>::getInstanceS(this->getSystemState(),"SecurityError: securityDomain must be current one");
+				throw Class<SecurityError>::getInstanceS(this->getInstanceWorker(),"SecurityError: securityDomain must be current one");
 			secDomain=curSecDomain;
 		}
 
@@ -599,8 +598,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
 	//the passed applicationDomain is ignored
-	RootMovieClip* currentRoot=getWorker() ? getWorker()->rootClip.getPtr()
-										   : getVm(this->getSystemState())->currentCallContext ? getVm(this->getSystemState())->currentCallContext->mi->context->root.getPtr():this->getSystemState()->mainClip;
+	RootMovieClip* currentRoot=getInstanceWorker()->rootClip.getPtr();
 	// empty origin is possible if swf is loaded by loadBytes()
 	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==this->url.getHostname() || secDomain)
 	{
@@ -608,7 +606,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 		_NR<ApplicationDomain> parentDomain = currentRoot->applicationDomain;
 		//Support for LoaderContext
 		if(!context || context->applicationDomain.isNull())
-			this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getSystemState(),parentDomain));
+			this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getInstanceWorker(),parentDomain));
 		else
 			this->contentLoaderInfo->applicationDomain = context->applicationDomain;
 		this->contentLoaderInfo->securityDomain = _NR<SecurityDomain>(curSecDomain);
@@ -617,15 +615,15 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	{
 		//Different domain
 		_NR<ApplicationDomain> parentDomain = _MR(this->getSystemState()->systemDomain);
-		this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getSystemState(),parentDomain));
-		this->contentLoaderInfo->securityDomain = _MR(Class<SecurityDomain>::getInstanceS(this->getSystemState()));
+		this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getInstanceWorker(),parentDomain));
+		this->contentLoaderInfo->securityDomain = _MR(Class<SecurityDomain>::getInstanceS(this->getInstanceWorker()));
 	}
 
 	if(!this->url.isValid())
 	{
 		//Notify an error during loading
 		this->incRef();
-		this->getSystemState()->currentVm->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS(this->getSystemState())));
+		this->getSystemState()->currentVm->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS(this->getInstanceWorker())));
 		return;
 	}
 
@@ -640,7 +638,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 		if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 		{
 			// should this dispatch SecurityErrorEvent instead of throwing?
-			throw Class<SecurityError>::getInstanceS(this->getSystemState(),
+			throw Class<SecurityError>::getInstanceS(this->getInstanceWorker(),
 				"SecurityError: connection to domain not allowed by securityManager");
 		}
 	}
@@ -665,13 +663,13 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 	_NR<LoaderContext> context;
 	ARG_UNPACK_ATOM (bytes)(context, NullRef);
 
-	_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getWorker() ? getWorker()->currentCallContext : getVm(th->getSystemState())->currentCallContext);
+	_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
 	if(context.isNull() || context->applicationDomain.isNull())
-		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(sys,parentDomain));
+		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(wrk,parentDomain));
 	else
 		th->contentLoaderInfo->applicationDomain = context->applicationDomain;
 	//Always loaded in the current security domain
-	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(getWorker() ? getWorker()->currentCallContext : getVm(th->getSystemState())->currentCallContext);
+	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(wrk->currentCallContext);
 	th->contentLoaderInfo->securityDomain = curSecDomain;
 
 	th->allowCodeImport = context.isNull() || context->getAllowCodeImport();
@@ -685,7 +683,7 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 		LoaderThread *thread=new LoaderThread(_MR(bytes), _MR(th));
 		Locker l(th->spinlock);
 		th->jobs.push_back(thread);
-		sys->addJob(thread);
+		wrk->getSystemState()->addJob(thread);
 	}
 	else
 		LOG(LOG_INFO, "Empty ByteArray passed to Loader.loadBytes");
@@ -726,7 +724,7 @@ void Loader::unload()
 	if(loaded)
 	{
 		contentLoaderInfo->incRef();
-		getVm(getSystemState())->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS(getSystemState(),"unload")));
+		getVm(getSystemState())->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS(getInstanceWorker(),"unload")));
 		loaded=false;
 	}
 
@@ -746,10 +744,10 @@ void Loader::finalize()
 	avm1target.reset();
 }
 
-Loader::Loader(Class_base* c):DisplayObjectContainer(c),content(NullRef),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
+Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(NullRef),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
 {
 	incRef();
-	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(c->getSystemState(),_MR(this)));
+	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(wrk,_MR(this)));
 }
 
 Loader::~Loader()
@@ -769,7 +767,7 @@ void Loader::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,uncaughtErrorEvents,UncaughtErrorEvents);
 }
 
-ASFUNCTIONBODY_GETTER(Loader,uncaughtErrorEvents);
+ASFUNCTIONBODY_GETTER(Loader,uncaughtErrorEvents)
 
 void Loader::threadFinished(IThreadJob* finishedJob)
 {
@@ -828,7 +826,7 @@ void Loader::setContent(_R<DisplayObject> o)
 		o->loaderInfo->setComplete();
 }
 
-Sprite::Sprite(Class_base* c):DisplayObjectContainer(c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),hasMouse(false),dragged(false),buttonMode(false),useHandCursor(true)
+Sprite::Sprite(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),hasMouse(false),dragged(false),buttonMode(false),useHandCursor(true)
 {
 	subtype=SUBTYPE_SPRITE;
 }
@@ -911,7 +909,7 @@ ASFUNCTIONBODY_ATOM(Sprite,_startDrag)
 	{
 		Rectangle* rect = Class<Rectangle>::cast(asAtomHandler::getObject(args[1]));
 		if(!rect)
-			throw Class<ArgumentError>::getInstanceS(sys,"Wrong type");
+			throw Class<ArgumentError>::getInstanceS(wrk,"Wrong type");
 		bounds = new RECT(rect->getRect());
 	}
 
@@ -923,13 +921,13 @@ ASFUNCTIONBODY_ATOM(Sprite,_startDrag)
 	}
 
 	th->incRef();
-	sys->getInputThread()->startDrag(_MR(th), bounds, offset);
+	wrk->getSystemState()->getInputThread()->startDrag(_MR(th), bounds, offset);
 }
 
 ASFUNCTIONBODY_ATOM(Sprite,_stopDrag)
 {
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
-	sys->getInputThread()->stopDrag(th);
+	wrk->getSystemState()->getInputThread()->stopDrag(th);
 }
 
 ASFUNCTIONBODY_GETTER(Sprite, hitArea);
@@ -968,7 +966,7 @@ ASFUNCTIONBODY_ATOM(Sprite,getSoundTransform)
 	}
 	if (!th->soundtransform)
 	{
-		th->soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(sys));
+		th->soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(wrk));
 		if (th->sound)
 			th->sound->soundTransform = th->soundtransform;
 	}
@@ -1267,14 +1265,14 @@ void Sprite::markSoundFinished()
 ASFUNCTIONBODY_ATOM(Sprite,_constructor)
 {
 	//Sprite* th=Class<Sprite>::cast(obj);
-	DisplayObjectContainer::_constructor(ret,sys,obj,nullptr,0);
+	DisplayObjectContainer::_constructor(ret,wrk,obj,nullptr,0);
 }
 
 _NR<Graphics> Sprite::getGraphics()
 {
 	//Probably graphics is not used often, so create it here
 	if(graphics.isNull())
-		graphics=_MR(Class<Graphics>::getInstanceS(getSystemState(),this));
+		graphics=_MR(Class<Graphics>::getInstanceS(getInstanceWorker(),this));
 	return graphics;
 }
 
@@ -1302,11 +1300,11 @@ ASFUNCTIONBODY_ATOM(Sprite,_getGraphics)
 	ret = asAtomHandler::fromObject(g.getPtr());
 }
 
-FrameLabel::FrameLabel(Class_base* c):ASObject(c)
+FrameLabel::FrameLabel(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
 {
 }
 
-FrameLabel::FrameLabel(Class_base* c, const FrameLabel_data& data):ASObject(c),FrameLabel_data(data)
+FrameLabel::FrameLabel(ASWorker* wrk, Class_base* c, const FrameLabel_data& data):ASObject(wrk,c),FrameLabel_data(data)
 {
 }
 
@@ -1324,13 +1322,13 @@ void FrameLabel::buildTraits(ASObject* o)
 ASFUNCTIONBODY_ATOM(FrameLabel,_getFrame)
 {
 	FrameLabel* th=asAtomHandler::as<FrameLabel>(obj);
-	asAtomHandler::setUInt(ret,sys,th->frame);
+	asAtomHandler::setUInt(ret,wrk,th->frame);
 }
 
 ASFUNCTIONBODY_ATOM(FrameLabel,_getName)
 {
 	FrameLabel* th=asAtomHandler::as<FrameLabel>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(sys,th->name));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->name));
 }
 
 /*
@@ -1359,11 +1357,11 @@ void Scene_data::addFrameLabel(uint32_t frame, const tiny_string& label)
 	labels.push_back(FrameLabel_data(frame,label));
 }
 
-Scene::Scene(Class_base* c):ASObject(c)
+Scene::Scene(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
 {
 }
 
-Scene::Scene(Class_base* c, const Scene_data& data, uint32_t _numFrames):ASObject(c),Scene_data(data),numFrames(_numFrames)
+Scene::Scene(ASWorker* wrk, Class_base* c, const Scene_data& data, uint32_t _numFrames):ASObject(wrk,c),Scene_data(data),numFrames(_numFrames)
 {
 }
 
@@ -1378,11 +1376,11 @@ void Scene::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(Scene,_getLabels)
 {
 	Scene* th=asAtomHandler::as<Scene>(obj);
-	Array* res = Class<Array>::getInstanceSNoArgs(sys);
+	Array* res = Class<Array>::getInstanceSNoArgs(wrk);
 	res->resize(th->labels.size());
 	for(size_t i=0; i<th->labels.size(); ++i)
 	{
-		asAtom v = asAtomHandler::fromObject(Class<FrameLabel>::getInstanceS(sys,th->labels[i]));
+		asAtom v = asAtomHandler::fromObject(Class<FrameLabel>::getInstanceS(wrk,th->labels[i]));
 		res->set(i, v,false,false);
 	}
 	ret = asAtomHandler::fromObject(res);
@@ -1391,7 +1389,7 @@ ASFUNCTIONBODY_ATOM(Scene,_getLabels)
 ASFUNCTIONBODY_ATOM(Scene,_getName)
 {
 	Scene* th=asAtomHandler::as<Scene>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(sys,th->name));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->name));
 }
 
 ASFUNCTIONBODY_ATOM(Scene,_getNumFrames)
@@ -1492,14 +1490,14 @@ void MovieClip::buildTraits(ASObject* o)
 {
 }
 
-MovieClip::MovieClip(Class_base* c):Sprite(c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
+MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
   ,inAVM1Attachment(false),isAVM1Loaded(false),avm1PrevScriptedClip(nullptr),avm1NextScriptedClip(nullptr)
   ,actions(nullptr),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
 
-MovieClip::MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
+MovieClip::MovieClip(ASWorker* wrk, Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(wrk,c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
   ,inAVM1Attachment(false),isAVM1Loaded(false),avm1PrevScriptedClip(nullptr),avm1NextScriptedClip(nullptr)
   ,actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true)
 {
@@ -1688,15 +1686,15 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	assert_and_throw(argslen==1 || argslen==2);
 	if(argslen==2 && needsActionScript3())
 	{
-		sceneName = asAtomHandler::toString(args[1],getSystemState());
+		sceneName = asAtomHandler::toString(args[1],getInstanceWorker());
 	}
 	if(asAtomHandler::isString(args[0]))
 	{
-		uint32_t dest=getFrameIdByLabel(asAtomHandler::toString(args[0],getSystemState()), sceneName);
+		uint32_t dest=getFrameIdByLabel(asAtomHandler::toString(args[0],getInstanceWorker()), sceneName);
 		if(dest==FRAME_NOT_FOUND)
 		{
 			dest= 0;
-			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getSystemState())<<" in scene "<<sceneName<<" at movieclip "<<getTagID()<<" "<<this->hasFinishedLoading());
+			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getInstanceWorker())<<" in scene "<<sceneName<<" at movieclip "<<getTagID()<<" "<<this->hasFinishedLoading());
 //			throwError<ArgumentError>(kInvalidArgumentError,asAtomHandler::toString(args[0],));
 		}
 
@@ -1797,7 +1795,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 		th->advanceFrame();
 		th->initFrame();
 		th->incRef();
-		sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
+		wrk->getSystemState()->currentVm->addEvent(NullRef, _MR(new (wrk->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
 	}
 	else if (th->state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
 		th->advanceFrame();
@@ -1819,7 +1817,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 		th->advanceFrame();
 		th->initFrame();
 		th->incRef();
-		sys->currentVm->addEvent(NullRef, _MR(new (sys->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
+		wrk->getSystemState()->currentVm->addEvent(NullRef, _MR(new (wrk->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
 	}
 	else if (th->state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
 		th->advanceFrame();
@@ -1828,19 +1826,19 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	asAtomHandler::setUInt(ret,sys,th->getFramesLoaded());
+	asAtomHandler::setUInt(ret,wrk,th->getFramesLoaded());
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getTotalFrames)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	asAtomHandler::setUInt(ret,sys,th->totalFrames_unreliable);
+	asAtomHandler::setUInt(ret,wrk,th->totalFrames_unreliable);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getScenes)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	Array* res = Class<Array>::getInstanceSNoArgs(sys);
+	Array* res = Class<Array>::getInstanceSNoArgs(wrk);
 	res->resize(th->scenes.size());
 	uint32_t numFrames;
 	for(size_t i=0; i<th->scenes.size(); ++i)
@@ -1849,7 +1847,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getScenes)
 			numFrames = th->totalFrames_unreliable - th->scenes[i].startframe;
 		else
 			numFrames = th->scenes[i].startframe - th->scenes[i+1].startframe;
-		asAtom v = asAtomHandler::fromObject(Class<Scene>::getInstanceS(sys,th->scenes[i],numFrames));
+		asAtom v = asAtomHandler::fromObject(Class<Scene>::getInstanceS(wrk,th->scenes[i],numFrames));
 		res->set(i, v,false,false);
 	}
 	ret = asAtomHandler::fromObject(res);
@@ -1875,7 +1873,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentScene)
 	else
 		numFrames = th->scenes[curScene].startframe - th->scenes[curScene+1].startframe;
 
-	ret = asAtomHandler::fromObject(Class<Scene>::getInstanceS(sys,th->scenes[curScene],numFrames));
+	ret = asAtomHandler::fromObject(Class<Scene>::getInstanceS(wrk,th->scenes[curScene],numFrames));
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrame)
@@ -1884,9 +1882,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrame)
 	//currentFrame is 1-based and relative to current scene
 	if (th->state.explicit_FP)
 		// if frame is set explicitly, the currentframe property should be set to next_FP, even if it is not displayed yet
-		asAtomHandler::setInt(ret,sys,th->state.next_FP+1 - th->scenes[th->getCurrentScene()].startframe);
+		asAtomHandler::setInt(ret,wrk,th->state.next_FP+1 - th->scenes[th->getCurrentScene()].startframe);
 	else
-		asAtomHandler::setInt(ret,sys,th->state.FP+1 - th->scenes[th->getCurrentScene()].startframe);
+		asAtomHandler::setInt(ret,wrk,th->state.FP+1 - th->scenes[th->getCurrentScene()].startframe);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrameLabel)
@@ -1897,7 +1895,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrameLabel)
 		for(size_t j=0;j<th->scenes[i].labels.size();++j)
 			if(th->scenes[i].labels[j].frame == th->state.FP)
 			{
-				ret = asAtomHandler::fromObject(abstract_s(sys,th->scenes[i].labels[j].name));
+				ret = asAtomHandler::fromObject(abstract_s(wrk,th->scenes[i].labels[j].name));
 				return;
 			}
 	}
@@ -1924,7 +1922,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabel)
 	if(label.empty())
 		asAtomHandler::setNull(ret);
 	else
-		ret = asAtomHandler::fromObject(abstract_s(sys,label));
+		ret = asAtomHandler::fromObject(abstract_s(wrk,label));
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabels)
@@ -1932,11 +1930,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabels)
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	Scene_data& sc = th->scenes[th->getCurrentScene()];
 
-	Array* res = Class<Array>::getInstanceSNoArgs(sys);
+	Array* res = Class<Array>::getInstanceSNoArgs(wrk);
 	res->resize(sc.labels.size());
 	for(size_t i=0; i<sc.labels.size(); ++i)
 	{
-		asAtom v = asAtomHandler::fromObject(Class<FrameLabel>::getInstanceS(sys,sc.labels[i]));
+		asAtom v = asAtomHandler::fromObject(Class<FrameLabel>::getInstanceS(wrk,sc.labels[i]));
 		res->set(i, v,false,false);
 	}
 	ret = asAtomHandler::fromObject(res);
@@ -1944,7 +1942,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabels)
 
 ASFUNCTIONBODY_ATOM(MovieClip,_constructor)
 {
-	Sprite::_constructor(ret,sys,obj,nullptr,0);
+	Sprite::_constructor(ret,wrk,obj,nullptr,0);
 /*	th->setVariableByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),swapDepths));
 	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),createEmptyMovieClip));*/
 }
@@ -2145,8 +2143,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	if (argslen != 3 && argslen != 4)
 		throw RunTimeException("AVM1: invalid number of arguments for attachMovie");
 	int Depth = asAtomHandler::toInt(args[2]);
-	uint32_t nameId = asAtomHandler::toStringId(args[1],sys);
-	DictionaryTag* placedTag = th->loadedFrom->dictionaryLookupByName(asAtomHandler::toStringId(args[0],sys));
+	uint32_t nameId = asAtomHandler::toStringId(args[1],wrk);
+	DictionaryTag* placedTag = th->loadedFrom->dictionaryLookupByName(asAtomHandler::toStringId(args[0],wrk));
 	if (!placedTag)
 	{
 		ret=asAtomHandler::undefinedAtom;
@@ -2165,7 +2163,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		ASObject* o = asAtomHandler::getObject(args[3]);
 		if (o)
 		{
-			o->copyValues(toAdd);
+			o->copyValues(toAdd,wrk);
 		}
 	}
 	if(th->hasLegacyChildAt(Depth) )
@@ -2202,8 +2200,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	if (argslen < 2)
 		throw RunTimeException("AVM1: invalid number of arguments for CreateEmptyMovieClip");
 	int Depth = asAtomHandler::toInt(args[1]);
-	uint32_t nameId = asAtomHandler::toStringId(args[0],sys);
-	AVM1MovieClip* toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(sys);
+	uint32_t nameId = asAtomHandler::toStringId(args[0],wrk);
+	AVM1MovieClip* toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(wrk);
 	toAdd->name = nameId;
 	toAdd->setMouseEnabled(false);
 	if(th->hasLegacyChildAt(Depth) )
@@ -2228,9 +2226,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
 			multiname m(nullptr);
 			m.name_type=multiname::NAME_STRING;
 			m.name_s_id=th->name;
-			m.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
+			m.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			m.isAttribute = false;
-			th->getParent()->deleteVariableByMultiname(m);
+			th->getParent()->deleteVariableByMultiname(m,wrk);
 		}
 		th->getParent()->_removeChild(th);
 	}
@@ -2247,13 +2245,13 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1DuplicateMovieClip)
 		return;
 	}
 	int Depth = asAtomHandler::toInt(args[1]);
-	uint32_t nameId = asAtomHandler::toStringId(args[0],sys);
+	uint32_t nameId = asAtomHandler::toStringId(args[0],wrk);
 	AVM1MovieClip* toAdd=nullptr;
 	DefineSpriteTag* tag = (DefineSpriteTag*)th->loadedFrom->dictionaryLookup(th->getTagID());
 	if (tag)
-		toAdd=Class<AVM1MovieClip>::getInstanceS(sys,*tag,th->getTagID(),nameId);
+		toAdd=Class<AVM1MovieClip>::getInstanceS(wrk,*tag,th->getTagID(),nameId);
 	else
-		toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(sys);
+		toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(wrk);
 	toAdd->setLegacyMatrix(th->getMatrix());
 	toAdd->name = nameId;
 	toAdd->setMouseEnabled(false);
@@ -2261,8 +2259,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1DuplicateMovieClip)
 	toAdd->tokens.stroketokens = th->tokens.stroketokens;
 	if (argslen > 2)
 	{
-		ASObject* initobj = asAtomHandler::toObject(args[2],sys);
-		initobj->copyValues(toAdd);
+		ASObject* initobj = asAtomHandler::toObject(args[2],wrk);
+		initobj->copyValues(toAdd,wrk);
 	}
 	if(th->getParent()->hasLegacyChildAt(Depth))
 	{
@@ -2280,28 +2278,28 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1Clear)
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	Graphics* g = th->getGraphics().getPtr();
 	asAtom o = asAtomHandler::fromObject(g);
-	Graphics::clear(ret,sys,o,args,argslen);
+	Graphics::clear(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1MoveTo)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	Graphics* g = th->getGraphics().getPtr();
 	asAtom o = asAtomHandler::fromObject(g);
-	Graphics::moveTo(ret,sys,o,args,argslen);
+	Graphics::moveTo(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1LineTo)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	Graphics* g = th->getGraphics().getPtr();
 	asAtom o = asAtomHandler::fromObject(g);
-	Graphics::lineTo(ret,sys,o,args,argslen);
+	Graphics::lineTo(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1LineStyle)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	Graphics* g = th->getGraphics().getPtr();
 	asAtom o = asAtomHandler::fromObject(g);
-	Graphics::lineStyle(ret,sys,o,args,argslen);
+	Graphics::lineStyle(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginFill)
 {
@@ -2309,29 +2307,29 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginFill)
 	Graphics* g = th->getGraphics().getPtr();
 	asAtom o = asAtomHandler::fromObject(g);
 	if(argslen>=2)
-		args[1]=asAtomHandler::fromNumber(sys,asAtomHandler::toNumber(args[1])/100.0,false);
+		args[1]=asAtomHandler::fromNumber(wrk,asAtomHandler::toNumber(args[1])/100.0,false);
 	
-	Graphics::beginFill(ret,sys,o,args,argslen);
+	Graphics::beginFill(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginGradientFill)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	Graphics* g = th->getGraphics().getPtr();
 	asAtom o = asAtomHandler::fromObject(g);
-	Graphics::beginGradientFill(ret,sys,o,args,argslen);
+	Graphics::beginGradientFill(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1EndFill)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	Graphics* g = th->getGraphics().getPtr();
 	asAtom o = asAtomHandler::fromObject(g);
-	Graphics::endFill(ret,sys,o,args,argslen);
+	Graphics::endFill(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1GetNextHighestDepth)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	uint32_t n = th->getMaxLegacyChildDepth();
-	asAtomHandler::setUInt(ret,sys,n == UINT32_MAX ? 0 : n+1);
+	asAtomHandler::setUInt(ret,wrk,n == UINT32_MAX ? 0 : n+1);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
 {
@@ -2347,9 +2345,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
 
 	AVM1BitmapData* data = asAtomHandler::as<AVM1BitmapData>(args[0]);
 	data->incRef();
-	Bitmap* toAdd = Class<AVM1Bitmap>::getInstanceS(sys,_MR(data));
+	Bitmap* toAdd = Class<AVM1Bitmap>::getInstanceS(wrk,_MR(data));
 	if (argslen > 2)
-		toAdd->pixelSnapping = asAtomHandler::toString(args[2],sys);
+		toAdd->pixelSnapping = asAtomHandler::toString(args[2],wrk);
 	if (argslen > 3)
 		toAdd->smoothing = asAtomHandler::Boolean_concrete(args[3]);
 	if(th->hasLegacyChildAt(Depth) )
@@ -2378,7 +2376,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1getInstanceAtDepth)
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1getSWFVersion)
 {
-	asAtomHandler::setUInt(ret,sys,sys->getSwfVersion());
+	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->getSwfVersion());
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 {
@@ -2387,7 +2385,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 	tiny_string method;
 	ARG_UNPACK_ATOM(url,"")(method,"GET");
 	
-	AVM1MovieClipLoader* ld = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(sys);
+	AVM1MovieClipLoader* ld = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
 	th->avm1loader = _MR(ld);
 	ld->load(url,method,th);
 }
@@ -2407,8 +2405,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 	uint32_t width;
 	uint32_t height;
 	ARG_UNPACK_ATOM(instanceName)(depth)(x)(y)(width)(height);
-	AVM1TextField* tf = Class<AVM1TextField>::getInstanceS(sys);
-	tf->name = sys->getUniqueStringId(instanceName);
+	AVM1TextField* tf = Class<AVM1TextField>::getInstanceS(wrk);
+	tf->name = wrk->getSystemState()->getUniqueStringId(instanceName);
 	tf->setX(x);
 	tf->setY(y);
 	tf->width = width;
@@ -2420,11 +2418,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=tf->name;
-		objName.ns.emplace_back(sys,BUILTIN_STRINGS::EMPTY,NAMESPACE);
+		objName.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		asAtom v = asAtomHandler::fromObjectNoPrimitive(tf);
-		th->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED);
+		th->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
 	}
-	if (sys->getSwfVersion() >= 8)
+	if (wrk->getSystemState()->getSwfVersion() >= 8)
 	{
 		tf->incRef();
 		ret = asAtomHandler::fromObjectNoPrimitive(tf);
@@ -2461,7 +2459,7 @@ void DisplayObjectContainer::buildTraits(ASObject* o)
 {
 }
 
-DisplayObjectContainer::DisplayObjectContainer(Class_base* c):InteractiveObject(c),mouseChildren(true),tabChildren(true)
+DisplayObjectContainer::DisplayObjectContainer(ASWorker* wrk, Class_base* c):InteractiveObject(wrk,c),mouseChildren(true),tabChildren(true)
 {
 	subtype=SUBTYPE_DISPLAYOBJECTCONTAINER;
 }
@@ -2505,7 +2503,7 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,c
 		return;
 	DisplayObject* o = mapDepthToLegacyChild.at(depth);
 	if (o->colorTransform.isNull())
-		o->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(getSystemState(),colortransform));
+		o->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(getInstanceWorker(),colortransform));
 	else
 		o->colorTransform->setProperties(colortransform);
 	o->hasChanged=true;
@@ -2528,7 +2526,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED);
+		setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 		
 	}
 
@@ -2575,7 +2573,7 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		asAtom v = asAtomHandler::fromObject(obj);
-		setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED);
+		setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 	}
 
 	mapDepthToLegacyChild.insert(make_pair(depth,obj));
@@ -2679,7 +2677,7 @@ void DisplayObjectContainer::finalize()
 	InteractiveObject::finalize();
 }
 
-InteractiveObject::InteractiveObject(Class_base* c):DisplayObject(c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
+InteractiveObject::InteractiveObject(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
 {
 	subtype=SUBTYPE_INTERACTIVE_OBJECT;
 }
@@ -2697,7 +2695,7 @@ InteractiveObject::~InteractiveObject()
 
 ASFUNCTIONBODY_ATOM(InteractiveObject,_constructor)
 {
-	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
+	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 }
 
 ASFUNCTIONBODY_ATOM(InteractiveObject,_setMouseEnabled)
@@ -2765,7 +2763,7 @@ _NR<InteractiveObject> InteractiveObject::getCurrentContextMenuItems(std::vector
 	{
 		if (this->getParent())
 			return getParent()->getCurrentContextMenuItems(items);
-		ContextMenu::getVisibleBuiltinContextMenuItems(nullptr,items,getSystemState());
+		ContextMenu::getVisibleBuiltinContextMenuItems(nullptr,items,getInstanceWorker());
 	}
 	else
 		this->contextMenu->as<ContextMenu>()->getCurrentContextMenuItems(items);
@@ -2845,13 +2843,13 @@ void DisplayObjectContainer::setOnStage(bool staged, bool force,bool inskipping)
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_constructor)
 {
-	InteractiveObject::_constructor(ret,sys,obj,nullptr,0);
+	InteractiveObject::_constructor(ret,wrk,obj,nullptr,0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getNumChildren)
 {
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
-	asAtomHandler::setInt(ret,sys,(int32_t)th->dynamicDisplayList.size());
+	asAtomHandler::setInt(ret,wrk,(int32_t)th->dynamicDisplayList.size());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getMouseChildren)
@@ -3043,7 +3041,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChildAt)
 
 	//Notify the object
 	d->incRef();
-	getVm(sys)->addEvent(d,_MR(Class<Event>::getInstanceS(sys,"added")));
+	getVm(wrk->getSystemState())->addEvent(d,_MR(Class<Event>::getInstanceS(wrk,"added")));
 
 	//incRef again as the value is getting returned
 	d->incRef();
@@ -3069,7 +3067,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChild)
 
 	//Notify the object
 	d->incRef();
-	getVm(sys)->addEvent(d,_MR(Class<Event>::getInstanceS(sys,"added")));
+	getVm(wrk->getSystemState())->addEvent(d,_MR(Class<Event>::getInstanceS(wrk,"added")));
 
 	d->incRef();
 	ret = asAtomHandler::fromObject(d.getPtr());
@@ -3089,7 +3087,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChild)
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
 	d->incRef();
 	if(!th->_removeChild(d))
-		throw Class<ArgumentError>::getInstanceS(sys,"removeChild: child not in list", 2025);
+		throw Class<ArgumentError>::getInstanceS(wrk,"removeChild: child not in list", 2025);
 
 	//As we return the child we have to incRef it
 	d->incRef();
@@ -3108,7 +3106,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 	{
 		Locker l(th->mutexDisplayList);
 		if(index>=int(th->dynamicDisplayList.size()) || index<0)
-			throw Class<RangeError>::getInstanceS(sys,"removeChildAt: invalid index", 2025);
+			throw Class<RangeError>::getInstanceS(wrk,"removeChildAt: invalid index", 2025);
 		std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 		for(int32_t i=0;i<index;i++)
 			++it;
@@ -3121,7 +3119,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 			th->mapLegacyChildToDepth.erase(it2);
 		}
 		child->setOnStage(false,false);
-		sys->addDisplayObjectToResetParentList(child);
+		wrk->getSystemState()->addDisplayObjectToResetParentList(child);
 		//incRef before the refrence is destroyed
 		child->incRef();
 		th->dynamicDisplayList.erase(it);
@@ -3205,7 +3203,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildren)
 		std::vector<_R<DisplayObject>>::iterator it1=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child1);
 		std::vector<_R<DisplayObject>>::iterator it2=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child2);
 		if(it1==th->dynamicDisplayList.end() || it2==th->dynamicDisplayList.end())
-			throw Class<ArgumentError>::getInstanceS(sys,"Argument is not child of this object", 2025);
+			throw Class<ArgumentError>::getInstanceS(wrk,"Argument is not child of this object", 2025);
 
 		std::iter_swap(it1, it2);
 	}
@@ -3237,7 +3235,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getChildByName)
 {
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
 	assert_and_throw(argslen==1);
-	uint32_t wantedName=asAtomHandler::toStringId(args[0],sys);
+	uint32_t wantedName=asAtomHandler::toStringId(args[0],wrk);
 	std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 	ASObject* res=nullptr;
 	for(;it!=th->dynamicDisplayList.end();++it)
@@ -3264,7 +3262,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getChildAt)
 	assert_and_throw(argslen==1);
 	unsigned int index=asAtomHandler::toInt(args[0]);
 	if(index>=th->dynamicDisplayList.size())
-		throw Class<RangeError>::getInstanceS(sys,"getChildAt: invalid index", 2025);
+		throw Class<RangeError>::getInstanceS(wrk,"getChildAt: invalid index", 2025);
 	std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
@@ -3280,7 +3278,7 @@ int DisplayObjectContainer::getChildIndex(_R<DisplayObject> child)
 	do
 	{
 		if(it == dynamicDisplayList.end())
-			throw Class<ArgumentError>::getInstanceS(getSystemState(),"getChildIndex: child not in list", 2025);
+			throw Class<ArgumentError>::getInstanceS(getInstanceWorker(),"getChildIndex: child not in list", 2025);
 		if(*it == child)
 			break;
 		ret++;
@@ -3302,7 +3300,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getChildIndex)
 	_R<DisplayObject> d= _MR(asAtomHandler::as<DisplayObject>(args[0]));
 	d->incRef();
 
-	asAtomHandler::setInt(ret,sys,th->getChildIndex(d));
+	asAtomHandler::setInt(ret,wrk,th->getChildIndex(d));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getObjectsUnderPoint)
@@ -3310,7 +3308,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getObjectsUnderPoint)
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
 	_NR<Point> point;
 	ARG_UNPACK_ATOM(point);
-	Array* res = Class<Array>::getInstanceSNoArgs(th->getSystemState());
+	Array* res = Class<Array>::getInstanceSNoArgs(wrk);
 	if (!point.isNull())
 		th->getObjectsFromPoint(point.getPtr(),res);
 	ret = asAtomHandler::fromObject(res);
@@ -3362,12 +3360,12 @@ _NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t 
 	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? last : _NR<DisplayObject>(this),x-xmin,y-ymin, type);
 }
 
-Shape::Shape(Class_base* c):DisplayObject(c),TokenContainer(this),graphics(NullRef),fromTag(nullptr)
+Shape::Shape(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),TokenContainer(this),graphics(NullRef),fromTag(nullptr)
 {
 }
 
-Shape::Shape(Class_base* c, float scaling, DefineShapeTag* tag):
-	DisplayObject(c),TokenContainer(this, *tag->tokens, scaling),graphics(NullRef),fromTag(tag)
+Shape::Shape(ASWorker* wrk, Class_base* c, float scaling, DefineShapeTag* tag):
+	DisplayObject(wrk,c),TokenContainer(this, *tag->tokens, scaling),graphics(NullRef),fromTag(tag)
 {
 }
 
@@ -3417,7 +3415,7 @@ void Shape::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(c->getSystemState(),_getGraphics),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(c->getSystemState(),_getGraphics,0,Class<Graphics>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 }
 
 IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
@@ -3427,24 +3425,24 @@ IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix,
 
 ASFUNCTIONBODY_ATOM(Shape,_constructor)
 {
-	DisplayObject::_constructor(ret,sys,obj,nullptr,0);
+	DisplayObject::_constructor(ret,wrk,obj,nullptr,0);
 }
 
 ASFUNCTIONBODY_ATOM(Shape,_getGraphics)
 {
 	Shape* th=asAtomHandler::as<Shape>(obj);
 	if(th->graphics.isNull())
-		th->graphics=_MR(Class<Graphics>::getInstanceS(sys,th));
+		th->graphics=_MR(Class<Graphics>::getInstanceS(wrk,th));
 	th->graphics->incRef();
 	ret = asAtomHandler::fromObject(th->graphics.getPtr());
 }
 
-MorphShape::MorphShape(Class_base* c):DisplayObject(c),TokenContainer(this),morphshapetag(nullptr),currentratio(0)
+MorphShape::MorphShape(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),TokenContainer(this),morphshapetag(nullptr),currentratio(0)
 {
 	scaling = 1.0f/20.0f;
 }
 
-MorphShape::MorphShape(Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(c),TokenContainer(this),morphshapetag(_morphshapetag),currentratio(0)
+MorphShape::MorphShape(ASWorker* wrk,Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(wrk,c),TokenContainer(this),morphshapetag(_morphshapetag),currentratio(0)
 {
 	scaling = 1.0f/20.0f;
 	if (this->morphshapetag)
@@ -3545,7 +3543,7 @@ void Stage::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,softKeyboardRect,Rectangle);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,align,onAlign);
+ASFUNCTIONBODY_GETTER_SETTER_STRINGID_CB(Stage,align,onAlign)
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,colorCorrection,onColorCorrection);
 ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,displayState,onDisplayState);
 ASFUNCTIONBODY_GETTER_SETTER(Stage,showDefaultContextMenu);  // stub
@@ -3589,9 +3587,9 @@ void Stage::onDisplayState(const tiny_string&)
 	getSystemState()->getEngineData()->setDisplayState(displayState,getSystemState());
 }
 
-void Stage::onAlign(const tiny_string& /*oldValue*/)
+void Stage::onAlign(uint32_t /*oldValue*/)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Stage.align = " << align);
+	LOG(LOG_NOT_IMPLEMENTED, "Stage.align = " << getSystemState()->getStringFromUniqueId(align));
 }
 
 void Stage::onColorCorrection(const tiny_string& oldValue)
@@ -3639,7 +3637,7 @@ void Stage::eventListenerAdded(const tiny_string& eventName)
 		// StageVideoAvailabilityEvent is dispatched directly after an eventListener is added
 		// see https://www.adobe.com/devnet/flashplayer/articles/stage_video.html 
 		this->incRef();
-		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS(getSystemState())));
+		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS(getInstanceWorker())));
 	}
 }
 bool Stage::renderStage3D()
@@ -3677,26 +3675,26 @@ void Stage::buildTraits(ASObject* o)
 {
 }
 
-Stage::Stage(Class_base* c):
-	DisplayObjectContainer(c),avm1ScriptMovieClipFirst(nullptr),avm1ScriptMovieClipLast(nullptr), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
+Stage::Stage(ASWorker* wrk, Class_base* c):
+	DisplayObjectContainer(wrk,c),avm1ScriptMovieClipFirst(nullptr),avm1ScriptMovieClipLast(nullptr), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
 {
 	subtype = SUBTYPE_STAGE;
 	RELEASE_WRITE(this->invalidated,false);
 	onStage = true;
 	asAtom v=asAtomHandler::invalidAtom;
-	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : getSystemState()->mainClip;
-	Template<Vector>::getInstanceS(v,root,Class<Stage3D>::getClass(getSystemState()),NullRef);
+	RootMovieClip* root = wrk->rootClip.getPtr();
+	Template<Vector>::getInstanceS(wrk,v,root,Class<Stage3D>::getClass(getSystemState()),NullRef);
 	stage3Ds = _R<Vector>(asAtomHandler::as<Vector>(v));
 	// according to specs, Desktop computers usually have 4 Stage3D objects available
-	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(c->getSystemState()));
+	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(wrk));
 	stage3Ds->append(v);
-	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(c->getSystemState()));
+	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(wrk));
 	stage3Ds->append(v);
-	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(c->getSystemState()));
+	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(wrk));
 	stage3Ds->append(v);
-	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(c->getSystemState()));
+	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(wrk));
 	stage3Ds->append(v);
-	softKeyboardRect = _R<Rectangle>(Class<Rectangle>::getInstanceS(getSystemState()));
+	softKeyboardRect = _R<Rectangle>(Class<Rectangle>::getInstanceS(wrk));
 }
 
 _NR<Stage> Stage::getStage()
@@ -3761,7 +3759,7 @@ uint32_t Stage::internalGetHeight() const
 ASFUNCTIONBODY_ATOM(Stage,_getStageWidth)
 {
 	Stage* th=asAtomHandler::as<Stage>(obj);
-	asAtomHandler::setUInt(ret,sys,th->internalGetWidth());
+	asAtomHandler::setUInt(ret,wrk,th->internalGetWidth());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setStageWidth)
@@ -3773,7 +3771,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setStageWidth)
 ASFUNCTIONBODY_ATOM(Stage,_getStageHeight)
 {
 	Stage* th=asAtomHandler::as<Stage>(obj);
-	asAtomHandler::setUInt(ret,sys,th->internalGetHeight());
+	asAtomHandler::setUInt(ret,wrk,th->internalGetHeight());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setStageHeight)
@@ -3784,26 +3782,26 @@ ASFUNCTIONBODY_ATOM(Stage,_setStageHeight)
 
 ASFUNCTIONBODY_ATOM(Stage,_getLoaderInfo)
 {
-	asAtom a = asAtomHandler::fromObject(sys->mainClip);
-	RootMovieClip::_getLoaderInfo(ret,sys,a,nullptr,0);
+	asAtom a = asAtomHandler::fromObject(wrk->getSystemState()->mainClip);
+	RootMovieClip::_getLoaderInfo(ret,wrk,a,nullptr,0);
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_getScaleMode)
 {
 	//Stage* th=asAtomHandler::as<Stage>(obj);
-	switch(sys->scaleMode)
+	switch(wrk->getSystemState()->scaleMode)
 	{
 		case SystemState::EXACT_FIT:
-			ret = asAtomHandler::fromString(sys,"exactFit");
+			ret = asAtomHandler::fromString(wrk->getSystemState(),"exactFit");
 			return;
 		case SystemState::SHOW_ALL:
-			ret = asAtomHandler::fromString(sys,"showAll");
+			ret = asAtomHandler::fromString(wrk->getSystemState(),"showAll");
 			return;
 		case SystemState::NO_BORDER:
-			ret = asAtomHandler::fromString(sys,"noBorder");
+			ret = asAtomHandler::fromString(wrk->getSystemState(),"noBorder");
 			return;
 		case SystemState::NO_SCALE:
-			ret = asAtomHandler::fromString(sys,"noScale");
+			ret = asAtomHandler::fromString(wrk->getSystemState(),"noScale");
 			return;
 	}
 }
@@ -3811,20 +3809,20 @@ ASFUNCTIONBODY_ATOM(Stage,_getScaleMode)
 ASFUNCTIONBODY_ATOM(Stage,_setScaleMode)
 {
 	//Stage* th=asAtomHandler::as<Stage>(obj);
-	const tiny_string& arg0=asAtomHandler::toString(args[0],sys);
-	SystemState::SCALE_MODE oldScaleMode = sys->scaleMode;
+	const tiny_string& arg0=asAtomHandler::toString(args[0],wrk);
+	SystemState::SCALE_MODE oldScaleMode = wrk->getSystemState()->scaleMode;
 	if(arg0=="exactFit")
-		sys->scaleMode=SystemState::EXACT_FIT;
+		wrk->getSystemState()->scaleMode=SystemState::EXACT_FIT;
 	else if(arg0=="showAll")
-		sys->scaleMode=SystemState::SHOW_ALL;
+		wrk->getSystemState()->scaleMode=SystemState::SHOW_ALL;
 	else if(arg0=="noBorder")
-		sys->scaleMode=SystemState::NO_BORDER;
+		wrk->getSystemState()->scaleMode=SystemState::NO_BORDER;
 	else if(arg0=="noScale")
-		sys->scaleMode=SystemState::NO_SCALE;
+		wrk->getSystemState()->scaleMode=SystemState::NO_SCALE;
 
-	if (oldScaleMode != sys->scaleMode)
+	if (oldScaleMode != wrk->getSystemState()->scaleMode)
 	{
-		RenderThread* rt=sys->getRenderThread();
+		RenderThread* rt=wrk->getSystemState()->getRenderThread();
 		rt->requestResize(UINT32_MAX, UINT32_MAX, true);
 	}
 }
@@ -3832,8 +3830,8 @@ ASFUNCTIONBODY_ATOM(Stage,_setScaleMode)
 ASFUNCTIONBODY_ATOM(Stage,_getStageVideos)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Accelerated rendering through StageVideo not implemented, SWF should fall back to Video");
-	RootMovieClip* root = getWorker() ? getWorker()->rootClip.getPtr() : sys->mainClip;
-	Template<Vector>::getInstanceS(ret,root,Class<StageVideo>::getClass(sys),NullRef);
+	RootMovieClip* root = wrk->rootClip.getPtr();
+	Template<Vector>::getInstanceS(wrk,ret,root,Class<StageVideo>::getClass(wrk->getSystemState()),NullRef);
 }
 
 _NR<InteractiveObject> Stage::getFocusTarget()
@@ -3856,13 +3854,13 @@ void Stage::setFocusTarget(_NR<InteractiveObject> f)
 	if (focus)
 	{
 		focus->lostFocus();
-		getVm(getSystemState())->addEvent(focus,_MR(Class<FocusEvent>::getInstanceS(getSystemState(),"focusOut")));
+		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusOut")));
 	}
 	focus = f;
 	if (focus)
 	{
 		focus->gotFocus();
-		getVm(getSystemState())->addEvent(focus,_MR(Class<FocusEvent>::getInstanceS(getSystemState(),"focusIn")));
+		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"custcfocusIn")));
 	}
 }
 
@@ -3875,6 +3873,8 @@ void Stage::checkResetFocusTarget(InteractiveObject* removedtarget)
 
 void Stage::addHiddenObject(MovieClip* o)
 {
+	if (!o->getInstanceWorker()->isPrimordial)
+		return;
 	auto it = hiddenobjects.find(o);
 	if (it != hiddenobjects.end())
 		return;
@@ -4044,7 +4044,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 				m.name_type=multiname::NAME_STRING;
 				m.isAttribute = false;
 				m.name_s_id=getSystemState()->getUniqueStringId("onResize");
-				(*it)->getVariableByMultiname(func,m);
+				(*it)->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 				if (asAtomHandler::is<AVM1Function>(func))
 				{
 					asAtom ret=asAtomHandler::invalidAtom;
@@ -4191,9 +4191,9 @@ ASFUNCTIONBODY_ATOM(Stage,_getFrameRate)
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	_NR<RootMovieClip> root = th->getRoot();
 	if (root.isNull())
-		asAtomHandler::setNumber(ret,sys,sys->mainClip->getFrameRate());
+		asAtomHandler::setNumber(ret,wrk,wrk->getSystemState()->mainClip->getFrameRate());
 	else
-		asAtomHandler::setNumber(ret,sys,root->getFrameRate());
+		asAtomHandler::setNumber(ret,wrk,root->getFrameRate());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setFrameRate)
@@ -4208,12 +4208,12 @@ ASFUNCTIONBODY_ATOM(Stage,_setFrameRate)
 
 ASFUNCTIONBODY_ATOM(Stage,_getAllowFullScreen)
 {
-	asAtomHandler::setBool(ret,sys->allowFullscreen);
+	asAtomHandler::setBool(ret,wrk->getSystemState()->allowFullscreen);
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_getAllowFullScreenInteractive)
 {
-	asAtomHandler::setBool(ret,sys->allowFullscreenInteractive);
+	asAtomHandler::setBool(ret,wrk->getSystemState()->allowFullscreenInteractive);
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_getColorCorrectionSupport)
@@ -4244,7 +4244,7 @@ ASFUNCTIONBODY_ATOM(Stage,_getColor)
 	_NR<RootMovieClip> root = th->getRoot();
 	if (!root.isNull())
 		rgb = root->getBackground();
-	asAtomHandler::setUInt(ret,sys,rgb.toUInt());
+	asAtomHandler::setUInt(ret,wrk,rgb.toUInt());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setColor)
@@ -4303,8 +4303,8 @@ void StageDisplayState::sinit(Class_base* c)
 	c->setVariableAtomByQName("NORMAL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"normal"),CONSTANT_TRAIT);
 }
 
-Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
-	DisplayObject(c),smoothing(false)
+Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
+	DisplayObject(wrk,c),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	if(li)
@@ -4314,7 +4314,7 @@ Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE typ
 		loaderInfo->setWaitedObject(_MR(this));
 	}
 
-	bitmapData = _MR(Class<BitmapData>::getInstanceS(c->getSystemState()));
+	bitmapData = _MR(Class<BitmapData>::getInstanceS(wrk));
 	bitmapData->addUser(this);
 	if(!s)
 		return;
@@ -4349,7 +4349,7 @@ Bitmap::Bitmap(Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE typ
 	afterConstruction();
 }
 
-Bitmap::Bitmap(Class_base* c, _R<BitmapData> data) : DisplayObject(c),smoothing(false)
+Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data) : DisplayObject(wrk,c),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	bitmapData = data;
@@ -4387,7 +4387,7 @@ ASFUNCTIONBODY_ATOM(Bitmap,_constructor)
 	Bitmap* th = asAtomHandler::as<Bitmap>(obj);
 	ARG_UNPACK_ATOM(_bitmapData, NullRef)(_pixelSnapping, "auto")(th->smoothing, false);
 
-	DisplayObject::_constructor(ret,sys,obj,nullptr,0);
+	DisplayObject::_constructor(ret,wrk,obj,nullptr,0);
 
 	if(_pixelSnapping!="auto")
 		LOG(LOG_NOT_IMPLEMENTED, "Bitmap constructor doesn't support pixelSnapping:"<<_pixelSnapping);
@@ -4427,9 +4427,9 @@ bool Bitmap::renderImpl(RenderContext& ctxt) const
 	return defaultRender(ctxt);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,bitmapData,onBitmapData);
-ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,smoothing,onSmoothingChanged);
-ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged);
+ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,bitmapData,onBitmapData)
+ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,smoothing,onSmoothingChanged)
+ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged)
 
 void Bitmap::updatedData()
 {
@@ -4989,9 +4989,9 @@ bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, nu
 	return ret;
 }
 
-SimpleButton::SimpleButton(Class_base* c, DisplayObject *dS, DisplayObject *hTS,
+SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 				DisplayObject *oS, DisplayObject *uS, DefineButtonTag *tag)
-	: DisplayObjectContainer(c), downState(dS), hitTestState(hTS), overState(oS), upState(uS),
+	: DisplayObjectContainer(wrk,c), downState(dS), hitTestState(hTS), overState(oS), upState(uS),
 	  buttontag(tag),currentState(STATE_OUT),enabled(true),useHandCursor(true),hasMouse(false)
 {
 	/* When called from DefineButton2Tag::instance, they are not constructed yet
@@ -5146,7 +5146,7 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 	/* This _must_ not call the DisplayObjectContainer
 	 * see note at the class declaration.
 	 */
-	InteractiveObject::_constructor(ret,sys,obj,nullptr,0);
+	InteractiveObject::_constructor(ret,wrk,obj,nullptr,0);
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
 	_NR<DisplayObject> upState;
 	_NR<DisplayObject> overState;
@@ -5447,7 +5447,7 @@ void DisplayObjectContainer::executeFrameScript()
 		(*it)->executeFrameScript();
 }
 
-multiname *DisplayObjectContainer::setVariableByMultiname(multiname& name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset)
+multiname *DisplayObjectContainer::setVariableByMultiname(multiname& name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk)
 {
 // TODO I disable this for now as gamesmenu from homestarrunner doesn't work with it (I don't know which swf file required this...)
 //	if (asAtomHandler::is<DisplayObject>(o))
@@ -5466,12 +5466,12 @@ multiname *DisplayObjectContainer::setVariableByMultiname(multiname& name, asAto
 //			}
 //		}
 //	}
-	return InteractiveObject::setVariableByMultiname(name,o,allowConst,alreadyset);
+	return InteractiveObject::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 }
 
-bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name)
+bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name, ASWorker* wrk)
 {
-	variable* v = findVariableByMultiname(name,this->getClass());
+	variable* v = findVariableByMultiname(name,this->getClass(),nullptr,nullptr,false,wrk);
 	if (v && v->kind == TRAIT_KIND::DYNAMIC_TRAIT && asAtomHandler::is<DisplayObject>(v->var))
 	{
 		DisplayObject* obj = asAtomHandler::as<DisplayObject>(v->var);
@@ -5481,7 +5481,7 @@ bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name)
 			_removeChild(obj);
 		}
 	}
-	return InteractiveObject::deleteVariableByMultiname(name);
+	return InteractiveObject::deleteVariableByMultiname(name,wrk);
 }
 
 /* Go through the hierarchy and add all
@@ -5589,7 +5589,7 @@ void MovieClip::AVM1HandleScripts()
 		m.isAttribute = false;
 	
 		m.name_s_id= isAVM1Loaded ? BUILTIN_STRINGS::STRING_ONENTERFRAME : BUILTIN_STRINGS::STRING_ONLOAD;
-		getVariableByMultiname(func,m);
+		getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
 			asAtom ret=asAtomHandler::invalidAtom;
@@ -5648,7 +5648,7 @@ void MovieClip::executeFrameScript()
 		inExecuteFramescript = true;
 		asAtom v=asAtomHandler::invalidAtom;
 		asAtom obj = asAtomHandler::getClosureAtom(frameScripts[f]);
-		asAtomHandler::callFunction(frameScripts[f],v,obj,nullptr,0,false);
+		asAtomHandler::callFunction(frameScripts[f],getInstanceWorker(),v,obj,nullptr,0,false);
 		ASATOM_DECREF(v);
 		inExecuteFramescript = false;
 	}
@@ -5843,7 +5843,7 @@ void AVM1Movie::buildTraits(ASObject* o)
 
 ASFUNCTIONBODY_ATOM(AVM1Movie,_constructor)
 {
-	DisplayObject::_constructor(ret,sys,obj,nullptr,0);
+	DisplayObject::_constructor(ret,wrk,obj,nullptr,0);
 }
 
 void Shader::sinit(Class_base* c)
@@ -5904,7 +5904,7 @@ bool Stage3D::renderImpl(RenderContext &ctxt) const
 	return context3D->renderImpl(ctxt);
 }
 
-Stage3D::Stage3D(Class_base* c):EventDispatcher(c),x(0),y(0),visible(true)
+Stage3D::Stage3D(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),x(0),y(0),visible(true)
 {
 	subtype = SUBTYPE_STAGE3D;
 }
@@ -5919,15 +5919,15 @@ void Stage3D::sinit(Class_base *c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,visible,Boolean);
 	REGISTER_GETTER_RESULTTYPE(c,context3D,Context3D);
 }
-ASFUNCTIONBODY_GETTER_SETTER(Stage3D,x);
-ASFUNCTIONBODY_GETTER_SETTER(Stage3D,y);
-ASFUNCTIONBODY_GETTER_SETTER(Stage3D,visible);
-ASFUNCTIONBODY_GETTER(Stage3D,context3D);
+ASFUNCTIONBODY_GETTER_SETTER(Stage3D,x)
+ASFUNCTIONBODY_GETTER_SETTER(Stage3D,y)
+ASFUNCTIONBODY_GETTER_SETTER(Stage3D,visible)
+ASFUNCTIONBODY_GETTER(Stage3D,context3D)
 
 ASFUNCTIONBODY_ATOM(Stage3D,_constructor)
 {
 	//Stage3D* th=asAtomHandler::as<Stage3D>(obj);
-	EventDispatcher::_constructor(ret,sys,obj,nullptr,0);
+	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 }
 ASFUNCTIONBODY_ATOM(Stage3D,requestContext3D)
 {
@@ -5936,10 +5936,10 @@ ASFUNCTIONBODY_ATOM(Stage3D,requestContext3D)
 	tiny_string profile;
 	ARG_UNPACK_ATOM(context3DRenderMode,"auto")(profile,"baseline");
 	
-	th->context3D = _MR(Class<Context3D>::getInstanceS(sys));
-	th->context3D->driverInfo = sys->getEngineData()->driverInfoString;
+	th->context3D = _MR(Class<Context3D>::getInstanceS(wrk));
+	th->context3D->driverInfo = wrk->getSystemState()->getEngineData()->driverInfoString;
 	th->incRef();
-	getVm(sys)->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(sys,"context3DCreate")));
+	getVm(wrk->getSystemState())->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(wrk,"context3DCreate")));
 }
 ASFUNCTIONBODY_ATOM(Stage3D,requestContext3DMatchingProfiles)
 {

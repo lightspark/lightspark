@@ -4,8 +4,8 @@
 
 using namespace lightspark;
 
-Sample::Sample(Class_base* c):
-	ASObject(c)
+Sample::Sample(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 
@@ -15,8 +15,8 @@ void Sample::sinit(Class_base* c)
 }
 
 
-DeleteObjectSample::DeleteObjectSample(Class_base* c):
-	Sample(c)
+DeleteObjectSample::DeleteObjectSample(ASWorker* wrk,Class_base* c):
+	Sample(wrk,c)
 {
 }
 
@@ -26,8 +26,8 @@ void DeleteObjectSample::sinit(Class_base* c)
 }
 
 
-NewObjectSample::NewObjectSample(Class_base* c):
-	Sample(c)
+NewObjectSample::NewObjectSample(ASWorker* wrk, Class_base* c):
+	Sample(wrk,c)
 {
 }
 
@@ -40,8 +40,8 @@ void NewObjectSample::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(NewObjectSample,object);
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(NewObjectSample,size);
 
-StackFrame::StackFrame(Class_base* c):
-	ASObject(c)
+StackFrame::StackFrame(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 
@@ -67,7 +67,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getGetterInvocationCount)
 	_NR<ASQName> qname;
 	ARG_UNPACK_ATOM (o)(qname);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getGetterInvocationCount not implemented");
-	asAtomHandler::setInt(ret,sys,0);
+	asAtomHandler::setInt(ret,wrk,0);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getInvocationCount)
 {
@@ -75,7 +75,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getInvocationCount)
 	_NR<ASQName> qname;
 	ARG_UNPACK_ATOM (o)(qname);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getInvocationCount not implemented");
-	asAtomHandler::setInt(ret,sys,0);
+	asAtomHandler::setInt(ret,wrk,0);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getSetterInvocationCount)
 {
@@ -83,14 +83,14 @@ ASFUNCTIONBODY_ATOM(lightspark,getSetterInvocationCount)
 	_NR<ASQName> qname;
 	ARG_UNPACK_ATOM (o)(qname);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getSetterInvocationCount not implemented");
-	asAtomHandler::setInt(ret,sys,0);
+	asAtomHandler::setInt(ret,wrk,0);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getLexicalScopes)
 {
 	_NR<IFunction> func;
 	ARG_UNPACK_ATOM (func);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getLexicalScopes not implemented");
-	Array* res=Class<Array>::getInstanceSNoArgs(sys);
+	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
 	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getMasterString)
@@ -111,7 +111,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getMemberNames)
 ASFUNCTIONBODY_ATOM(lightspark,getSampleCount)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getSampleCount not implemented");
-	asAtomHandler::setInt(ret,sys,-1);
+	asAtomHandler::setInt(ret,wrk,-1);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getSamples)
 {
@@ -124,7 +124,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getSize)
 	_NR<ASObject> o;
 	ARG_UNPACK_ATOM (o);
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getSize not implemented");
-	asAtomHandler::setInt(ret,sys,0);
+	asAtomHandler::setInt(ret,wrk,0);
 }
 ASFUNCTIONBODY_ATOM(lightspark,getSavedThis)
 {

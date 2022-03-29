@@ -22,7 +22,7 @@
 using namespace std;
 using namespace lightspark;
 
-ASMutex::ASMutex(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_MUTEX),lockcount(0)
+ASMutex::ASMutex(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_MUTEX),lockcount(0)
 {
 	
 }

@@ -28,7 +28,7 @@ namespace lightspark
 class CurrencyParseResult: public ASObject
 {
 public:
-    CurrencyParseResult(Class_base* c):ASObject(c){}
+    CurrencyParseResult(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
     ASFUNCTION_ATOM(_constructor);
     ASPROPERTY_GETTER(tiny_string, currencyString);
     ASPROPERTY_GETTER(number_t, value);

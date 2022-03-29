@@ -29,8 +29,8 @@
 
 using namespace lightspark;
 
-FileStream::FileStream(Class_base* c):
-	EventDispatcher(c),filesize(0),bytesAvailable(0),position(0)
+FileStream::FileStream(ASWorker* wrk,Class_base* c):
+	EventDispatcher(wrk,c),filesize(0),bytesAvailable(0),position(0)
 {
 	subtype=SUBTYPE_FILESTREAM;
 }
@@ -46,8 +46,8 @@ void FileStream::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,bytesAvailable,UInteger);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,position,Number);
 }
-ASFUNCTIONBODY_GETTER(FileStream, bytesAvailable);
-ASFUNCTIONBODY_GETTER_SETTER_CB(FileStream, position,afterPositionChange);
+ASFUNCTIONBODY_GETTER(FileStream, bytesAvailable)
+ASFUNCTIONBODY_GETTER_SETTER_CB(FileStream, position,afterPositionChange)
 void FileStream::afterPositionChange(number_t oldposition)
 {
 	bytesAvailable = filesize-position;
@@ -57,14 +57,14 @@ void FileStream::afterPositionChange(number_t oldposition)
 
 ASFUNCTIONBODY_ATOM(FileStream,_constructor)
 {
-	EventDispatcher::_constructor(ret,sys,obj, nullptr, 0);
+	EventDispatcher::_constructor(ret,wrk,obj, nullptr, 0);
 }
 
 ASFUNCTIONBODY_ATOM(FileStream,open)
 {
 	FileStream* th=asAtomHandler::as<FileStream>(obj);
 	ARG_UNPACK_ATOM(th->file)(th->fileMode);
-	th->bytesAvailable = th->filesize = sys->getEngineData()->FileSize(sys,th->file->getFullPath(),true);
+	th->bytesAvailable = th->filesize = wrk->getSystemState()->getEngineData()->FileSize(wrk->getSystemState(),th->file->getFullPath(),true);
 	if (th->fileMode == "read")
 		th->stream.open(th->file->getFullPath().raw_buf(),ios_base::in|ios_base::binary);
 	else if (th->fileMode == "write")
@@ -94,9 +94,9 @@ ASFUNCTIONBODY_ATOM(FileStream,readBytes)
 	uint32_t length;
 	ARG_UNPACK_ATOM(bytes)(offset,0)(length,UINT32_MAX);
 	if (!th->stream.is_open())
-		throw Class<IOError>::getInstanceS(sys,"FileStream is not open");
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not open");
 	if (th->fileMode != "read" && th->fileMode != "update")
-		throw Class<IOError>::getInstanceS(sys,"FileStream is not readable");
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not readable");
 	if (length != UINT32_MAX && th->bytesAvailable < length)
 		throwError<EOFError>(kEOFError);
 	length = min(length,th->bytesAvailable);
@@ -108,9 +108,9 @@ ASFUNCTIONBODY_ATOM(FileStream,readUnsignedByte)
 {
 	FileStream* th=asAtomHandler::as<FileStream>(obj);
 	if (!th->stream.is_open())
-		throw Class<IOError>::getInstanceS(sys,"FileStream is not open");
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not open");
 	if (th->fileMode != "read" && th->fileMode != "update")
-		throw Class<IOError>::getInstanceS(sys,"FileStream is not readable");
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not readable");
 	if (th->bytesAvailable==0)
 		throwError<EOFError>(kEOFError);
 	uint8_t b;
@@ -127,9 +127,9 @@ ASFUNCTIONBODY_ATOM(FileStream,writeBytes)
 	uint32_t length;
 	ARG_UNPACK_ATOM(bytes)(offset,0)(length,UINT32_MAX);
 	if (!th->stream.is_open())
-		throw Class<IOError>::getInstanceS(sys,"FileStream is not open");
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not open");
 	if (th->fileMode == "read")
-		throw Class<IOError>::getInstanceS(sys,"FileStream is not writable");
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not writable");
 	uint8_t* buf = bytes->getBuffer(bytes->getLength(),false);
 	uint32_t len = length;
 	if (length == UINT32_MAX || offset+length > bytes->getLength())
@@ -137,8 +137,8 @@ ASFUNCTIONBODY_ATOM(FileStream,writeBytes)
 	th->stream.write((char*)buf+offset,len);
 }
 
-ASFile::ASFile(Class_base* c, const tiny_string _path, bool _exists):
-	FileReference(c),path(_path),exists(_exists)
+ASFile::ASFile(ASWorker* wrk,Class_base* c, const tiny_string _path, bool _exists):
+	FileReference(wrk,c),path(_path),exists(_exists)
 {
 	subtype=SUBTYPE_FILE;
 }
@@ -151,12 +151,12 @@ void ASFile::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("resolvePath", "", Class<IFunction>::getFunction(c->getSystemState(),resolvePath,1,Class<ASFile>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("createDirectory", "", Class<IFunction>::getFunction(c->getSystemState(),createDirectory), NORMAL_METHOD, true);
 }
-ASFUNCTIONBODY_GETTER(ASFile, exists);
-ASFUNCTIONBODY_GETTER_STATIC(ASFile, applicationDirectory);
+ASFUNCTIONBODY_GETTER(ASFile, exists)
+ASFUNCTIONBODY_GETTER_STATIC(ASFile, applicationDirectory)
 
 ASFUNCTIONBODY_ATOM(ASFile,_constructor)
 {
-	FileReference::_constructor(ret,sys,obj, nullptr, 0);
+	FileReference::_constructor(ret,wrk,obj, nullptr, 0);
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
 	tiny_string filename;
 	ARG_UNPACK_ATOM(filename,"");
@@ -167,22 +167,22 @@ ASFUNCTIONBODY_ATOM(ASFile,_constructor)
 		// "app-storage:/preferences.xml"
 		// "file:///C:/Documents%20and%20Settings/bob/Desktop" (the desktop on Bob's Windows computer)
 		// "file:///Users/bob/Desktop" (the desktop on Bob's Mac computer)
-		th->path = sys->getEngineData()->FileFullPath(sys,filename);
-		th->exists = sys->getEngineData()->FileExists(sys,th->path,true);
+		th->path = wrk->getSystemState()->getEngineData()->FileFullPath(wrk->getSystemState(),filename);
+		th->exists = wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),th->path,true);
 	}
 }
 ASFUNCTIONBODY_ATOM(ASFile,resolvePath)
 {
 	//ASFile* th=Class<FileReference>::cast(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"File.resolvePath is not implemented");
-	ASFile* res = Class<ASFile>::getInstanceS(sys);
+	ASFile* res = Class<ASFile>::getInstanceS(wrk);
 	ret = asAtomHandler::fromObjectNoPrimitive(res);
 }
 
 ASFUNCTIONBODY_ATOM(ASFile,createDirectory)
 {
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
-	if (!sys->getEngineData()->FileCreateDirectory(sys,th->path,true))
+	if (!wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),th->path,true))
 		throwError<IOError>(kFileWriteError,th->path);
 }
 

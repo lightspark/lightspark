@@ -28,7 +28,7 @@ namespace lightspark
 class SystemUpdater: public ASObject
 {
 public:
-	SystemUpdater(Class_base* c):ASObject(c){}
+	SystemUpdater(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
     ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(cancel);

@@ -596,8 +596,8 @@ lightspark::Downloader* ppDownloadManager::download(const lightspark::URLInfo& u
 	}
 
 	bool cached = false;
-	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::download '") <<cache.getPtr()<<" "<< url.getParsedURL() << 
-			"'" << (cached ? _(" - cached") : ""));
+	LOG(LOG_INFO, "NET: PLUGIN: DownloadManager::download '" <<cache.getPtr()<<" "<< url.getParsedURL() << 
+			"'" << (cached ? " - cached" : ""));
 	//Register this download
 	ppDownloader* downloader=new ppDownloader(url.getParsedURL(), cache, m_instance, owner);
 	addDownloader(downloader);
@@ -613,7 +613,7 @@ lightspark::Downloader* ppDownloadManager::downloadWithData(const lightspark::UR
 		return StandaloneDownloadManager::downloadWithData(url, cache, data, headers, owner);
 	}
 
-	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::downloadWithData '") << url.getParsedURL());
+	LOG(LOG_INFO, "NET: PLUGIN: DownloadManager::downloadWithData '" << url.getParsedURL());
 	//Register this download
 	ppDownloader* downloader=new ppDownloader(url.getParsedURL(), cache, data, headers, m_instance, owner);
 	addDownloader(downloader);
@@ -1272,7 +1272,7 @@ bool ppPluginInstance::executeScript(const std::string script, const ExtVariant 
 	std::map<int64_t, std::unique_ptr<ExtObject>> ppObjectsMap;
 	ppVariantObject tmp(ppObjectsMap, resultVariant);
 	std::map<const ExtObject*, ASObject*> asObjectsMap;
-	*(result) = tmp.getASObject(m_sys,asObjectsMap);
+	*(result) = tmp.getASObject(m_sys->worker,asObjectsMap);
 	return true;
 }
 

@@ -28,7 +28,7 @@ namespace lightspark
 class MicrophoneEnhancedMode: public ASObject
 {
 public:
-	MicrophoneEnhancedMode(Class_base* c):ASObject(c){}
+	MicrophoneEnhancedMode(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

@@ -30,8 +30,8 @@
 
 using namespace lightspark;
 
-avmplusFile::avmplusFile(Class_base* c):
-	ASObject(c)
+avmplusFile::avmplusFile(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 
@@ -49,31 +49,31 @@ ASFUNCTIONBODY_ATOM(avmplusFile,exists)
 {
 	tiny_string filename;
 	ARG_UNPACK_ATOM(filename);
-	asAtomHandler::setBool(ret,sys->getEngineData()->FileExists(sys,filename,false));
+	asAtomHandler::setBool(ret,wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),filename,false));
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,read)
 {
 	tiny_string filename;
 	ARG_UNPACK_ATOM(filename);
-	if (!sys->getEngineData()->FileExists(sys,filename,false))
+	if (!wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),filename,false))
 		throwError<ASError>(kFileOpenError,filename);
-	ret = asAtomHandler::fromObject(abstract_s(sys,sys->getEngineData()->FileRead(sys,filename,false)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,wrk->getSystemState()->getEngineData()->FileRead(wrk->getSystemState(),filename,false)));
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,write)
 {
 	tiny_string filename;
 	tiny_string data;
 	ARG_UNPACK_ATOM(filename)(data);
-	sys->getEngineData()->FileWrite(sys,filename,data,false);
+	wrk->getSystemState()->getEngineData()->FileWrite(wrk->getSystemState(),filename,data,false);
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,readByteArray)
 {
 	tiny_string filename;
 	ARG_UNPACK_ATOM(filename);
-	if (!sys->getEngineData()->FileExists(sys,filename,false))
+	if (!wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),filename,false))
 		throwError<ASError>(kFileOpenError,filename);
-	ByteArray* res = Class<ByteArray>::getInstanceS(sys);
-	sys->getEngineData()->FileReadByteArray(sys,filename,res,0,UINT32_MAX,false);
+	ByteArray* res = Class<ByteArray>::getInstanceS(wrk);
+	wrk->getSystemState()->getEngineData()->FileReadByteArray(wrk->getSystemState(),filename,res,0,UINT32_MAX,false);
 	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)
@@ -81,11 +81,11 @@ ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)
 	tiny_string filename;
 	_NR<ByteArray> data;
 	ARG_UNPACK_ATOM(filename)(data);
-	sys->getEngineData()->FileWriteByteArray(sys,filename,data.getPtr(),0,UINT32_MAX,false);
+	wrk->getSystemState()->getEngineData()->FileWriteByteArray(wrk->getSystemState(),filename,data.getPtr(),0,UINT32_MAX,false);
 }
 
-avmplusSystem::avmplusSystem(Class_base* c):
-	ASObject(c)
+avmplusSystem::avmplusSystem(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 
@@ -115,54 +115,54 @@ void avmplusSystem::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,getFeatures)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.getFeatures is unimplemented."));
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.getFeatures is unimplemented.");
 	ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,getRunmode)
 {
-	ret = asAtomHandler::fromString(sys,sys->useJit ? "jit":"interpreted");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),wrk->getSystemState()->useJit ? "jit":"interpreted");
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,queueCollection)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.queueCollection is unimplemented."));
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.queueCollection is unimplemented.");
 	asAtomHandler::setUndefined(ret);
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,forceFullCollection)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.forceFullCollection is unimplemented."));
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.forceFullCollection is unimplemented.");
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,getAvmplusVersion)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.getAvmplusVersion is unimplemented."));
-	ret = asAtomHandler::fromString(sys,"0");
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.getAvmplusVersion is unimplemented.");
+	ret = asAtomHandler::fromString(wrk->getSystemState(),"0");
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,pauseForGCIfCollectionImminent)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.pauseForGCIfCollectionImminent is unimplemented."));
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.pauseForGCIfCollectionImminent is unimplemented.");
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,isDebugger)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.isDebugger is unimplemented."));
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.isDebugger is unimplemented.");
 	asAtomHandler::setBool(ret,false);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,isGlobal)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.isGlobal is unimplemented."));
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.isGlobal is unimplemented.");
 	asAtomHandler::setBool(ret,false);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_freeMemory)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.freeMemory is unimplemented."));
-	asAtomHandler::setUInt(ret,sys,1024);
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.freeMemory is unimplemented.");
+	asAtomHandler::setUInt(ret,wrk,1024);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_totalMemory)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.totalMemory is unimplemented."));
-	asAtomHandler::setUInt(ret,sys,1024);
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.totalMemory is unimplemented.");
+	asAtomHandler::setUInt(ret,wrk,1024);
 }
 //#include <sys/resource.h>
 //#include <stdio.h>
@@ -186,28 +186,28 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,_totalMemory)
 //}
 ASFUNCTIONBODY_ATOM(avmplusSystem,_privateMemory)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.privateMemory is unimplemented."));
-	asAtomHandler::setUInt(ret,sys,1024);
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.privateMemory is unimplemented.");
+	asAtomHandler::setUInt(ret,wrk,1024);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_swfVersion)
 {
-	asAtomHandler::setUInt(ret,sys,sys->getSwfVersion());
+	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->getSwfVersion());
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,argv)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.argv is unimplemented."));
-	ret = asAtomHandler::fromObject(Class<Array>::getInstanceS(sys));
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.argv is unimplemented.");
+	ret = asAtomHandler::fromObject(Class<Array>::getInstanceS(wrk));
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,exec)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.exec is unimplemented."));
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.exec is unimplemented.");
 	if (argslen == 0)
 		throwError<ArgumentError>(kWrongArgumentCountError,"exec",">0",Integer::toString(argslen));
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,write)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.write is unimplemented."));
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.write is unimplemented.");
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,sleep)
 {
@@ -217,7 +217,7 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,sleep)
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,exit)
 {
-	LOG(LOG_NOT_IMPLEMENTED, _("avmplus.System.exit is unimplemented."));
+	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.exit is unimplemented.");
 	ret = asAtomHandler::undefinedAtom;
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,canonicalizeNumber)
@@ -232,11 +232,11 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,canonicalizeNumber)
 		case T_UINTEGER:
 		case T_NULL:
 		case T_UNDEFINED:
-			asAtomHandler::setNumber(ret,sys,o->toNumber());
+			asAtomHandler::setNumber(ret,wrk,o->toNumber());
 			break;
 		case T_QNAME:
 		case T_NAMESPACE:
-			asAtomHandler::setNumber(ret,sys,Number::NaN);
+			asAtomHandler::setNumber(ret,wrk,Number::NaN);
 			break;
 		default:
 			o->incRef();
@@ -245,8 +245,8 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,canonicalizeNumber)
 	}
 }
 
-avmplusDomain::avmplusDomain(Class_base* c):
-	ASObject(c)
+avmplusDomain::avmplusDomain(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 
@@ -267,20 +267,20 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_constructor)
 	ARG_UNPACK_ATOM(parentDomain);
 	avmplusDomain* th = asAtomHandler::as<avmplusDomain>(obj);
 	if (parentDomain.isNull())
-		th->appdomain = ABCVm::getCurrentApplicationDomain(getWorker() ? getWorker()->currentCallContext :getVm(sys)->currentCallContext);
+		th->appdomain = ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
 	else
-		th->appdomain = _NR<ApplicationDomain>(Class<ApplicationDomain>::getInstanceS(sys,parentDomain->appdomain));
+		th->appdomain = _NR<ApplicationDomain>(Class<ApplicationDomain>::getInstanceS(wrk,parentDomain->appdomain));
 }
 
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getCurrentDomain)
 {
-	avmplusDomain* res = Class<avmplusDomain>::getInstanceSNoArgs(sys);
-	res->appdomain = ABCVm::getCurrentApplicationDomain(getWorker() ? getWorker()->currentCallContext :getVm(sys)->currentCallContext);
+	avmplusDomain* res = Class<avmplusDomain>::getInstanceSNoArgs(wrk);
+	res->appdomain = ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
 	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getMinDomainMemoryLength)
 {
-	asAtomHandler::setUInt(ret,sys,MIN_DOMAIN_MEMORY_LIMIT);
+	asAtomHandler::setUInt(ret,wrk,MIN_DOMAIN_MEMORY_LIMIT);
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 {
@@ -290,17 +290,17 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 	ARG_UNPACK_ATOM(filename)(swfVersion, 0);
 	if (swfVersion != 0)
 		LOG(LOG_NOT_IMPLEMENTED, "avmplus.Domain.load is unimplemented for swfVersion "<<swfVersion);
-	if (!sys->getEngineData()->FileExists(sys,filename,false))
+	if (!wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),filename,false))
 		throwError<ASError>(kFileOpenError,filename);
-	_NR<ByteArray> bytes = _NR<ByteArray>(Class<ByteArray>::getInstanceS(sys));
-	sys->getEngineData()->FileReadByteArray(sys,filename,bytes.getPtr(),0,UINT32_MAX,false);
+	_NR<ByteArray> bytes = _NR<ByteArray>(Class<ByteArray>::getInstanceS(wrk));
+	wrk->getSystemState()->getEngineData()->FileReadByteArray(wrk->getSystemState(),filename,bytes.getPtr(),0,UINT32_MAX,false);
 
 	// execute loaded abc file
-	MemoryStreamCache mc(sys);
+	MemoryStreamCache mc(wrk->getSystemState());
 	mc.append(bytes->getBuffer(bytes->getLength(),false),bytes->getLength());
 	std::streambuf *sbuf = mc.createReader();
 	std::istream s(sbuf);
-	RootMovieClip* root=getWorker() ? getWorker()->currentCallContext->mi->context->root.getPtr() :getVm(sys)->currentCallContext->mi->context->root.getPtr();
+	RootMovieClip* root=wrk->currentCallContext->mi->context->root.getPtr();
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
 	root->incRef();
@@ -318,13 +318,13 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
 
 	if (swfversion != 0)
 		LOG(LOG_NOT_IMPLEMENTED,"Domain.loadBytes ignores parameter swfVersion");
-	MemoryStreamCache mc(sys);
+	MemoryStreamCache mc(wrk->getSystemState());
 	mc.append(bytes->getBuffer(bytes->getLength(),false),bytes->getLength());
 	std::streambuf *sbuf = mc.createReader();
 	std::istream s(sbuf);
 	
 	// execute loaded abc bytes
-	RootMovieClip* root=getWorker() ? getWorker()->currentCallContext->mi->context->root.getPtr() :getVm(sys)->currentCallContext->mi->context->root.getPtr();
+	RootMovieClip* root=wrk->currentCallContext->mi->context->root.getPtr();
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
 	root->incRef();
@@ -335,7 +335,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,getClass)
 {
-	getDefinitionByName(ret,sys,obj,args,argslen);
+	getDefinitionByName(ret,wrk,obj,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getDomainMemory)
 {
@@ -369,13 +369,13 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_setDomainMemory)
 
 ASFUNCTIONBODY_ATOM(lightspark,casi32)
 {
-	if (sys->mainClip 
-			&& sys->mainClip->applicationDomain
-			&& sys->mainClip->applicationDomain->domainMemory)
+	if (wrk->rootClip
+			&& wrk->rootClip->applicationDomain
+			&& wrk->rootClip->applicationDomain->domainMemory)
 	{
-		asAtom a = asAtomHandler::fromObject(sys->mainClip->applicationDomain->domainMemory.getPtr());
-		ByteArray::atomicCompareAndSwapIntAt(ret,sys,a,args,argslen);
+		asAtom a = asAtomHandler::fromObject(wrk->rootClip->applicationDomain->domainMemory.getPtr());
+		ByteArray::atomicCompareAndSwapIntAt(ret,wrk,a,args,argslen);
 	}
 	else
-		asAtomHandler::setInt(ret,sys,0);
+		asAtomHandler::setInt(ret,wrk,0);
 }

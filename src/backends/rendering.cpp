@@ -63,7 +63,7 @@ RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),refreshNeeded(false),screenshotneeded(false),inSettings(false),canrender(false),
 	cairoTextureContextSettings(nullptr),cairoTextureContext(nullptr)
 {
-	LOG(LOG_INFO,_("RenderThread this=") << this);
+	LOG(LOG_INFO,"RenderThread this=" << this);
 #ifdef _WIN32
 	fontPath = "TimesNewRoman.ttf";
 #else
@@ -87,7 +87,7 @@ void RenderThread::stop()
 RenderThread::~RenderThread()
 {
 	wait();
-	LOG(LOG_INFO,_("~RenderThread this=") << this);
+	LOG(LOG_INFO,"~RenderThread this=" << this);
 }
 
 void RenderThread::handleNewTexture()
@@ -182,7 +182,7 @@ int RenderThread::worker(void* d)
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,_("Exception in RenderThread, stopping rendering: ") << e.what());
+		LOG(LOG_ERROR,"Exception in RenderThread, stopping rendering: " << e.what());
 		//TODO: add a comandline switch to disable rendering. Then add that commandline switch
 		//to the test runner script and uncomment the next line
 		//m_sys->setError(e.cause);
@@ -218,7 +218,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		newWidth=0;
 		newHeight=0;
 		//End of order critical part
-		LOG(LOG_INFO,_("Window resized to ") << windowWidth << 'x' << windowHeight);
+		LOG(LOG_INFO,"Window resized to " << windowWidth << 'x' << windowHeight);
 		commonGLResize();
 		m_sys->resizeCompleted();
 		if (profile && chronometer)
@@ -462,7 +462,7 @@ bool RenderThread::loadShaderPrograms()
 	const char *fs = 
 #include "lightspark.frag"
 ;
-	engineData->exec_glShaderSource(f, 1, &fs,NULL);
+	engineData->exec_glShaderSource(f, 1, &fs,nullptr);
 	uint32_t g = engineData->exec_glCreateShader_GL_VERTEX_SHADER();
 	
 	bool ret=true;
@@ -471,7 +471,7 @@ bool RenderThread::loadShaderPrograms()
 	int stat;
 	engineData->exec_glCompileShader(f);
 	engineData->exec_glGetShaderInfoLog(f,1024,&a,str);
-	LOG(LOG_INFO,_("Fragment shader compilation ") << str);
+	LOG(LOG_INFO,"Fragment shader compilation " << str);
 	engineData->exec_glGetShaderiv_GL_COMPILE_STATUS(f, &stat);
 	if (!stat)
 	{
@@ -482,10 +482,10 @@ bool RenderThread::loadShaderPrograms()
 	const char *fs2 = 
 #include "lightspark.vert"
 ;
-	engineData->exec_glShaderSource(g, 1, &fs2,NULL);
+	engineData->exec_glShaderSource(g, 1, &fs2,nullptr);
 
 	engineData->exec_glGetShaderInfoLog(g,1024,&a,str);
-	LOG(LOG_INFO,_("Vertex shader compilation ") << str);
+	LOG(LOG_INFO,"Vertex shader compilation " << str);
 
 	engineData->exec_glCompileShader(g);
 	engineData->exec_glGetShaderiv_GL_COMPILE_STATUS(g, &stat);
@@ -583,7 +583,7 @@ void RenderThread::commonGLInit(int width, int height)
 
 	if(handleGLErrors())
 	{
-		LOG(LOG_ERROR,_("GL errors during initialization"));
+		LOG(LOG_ERROR,"GL errors during initialization");
 	}
 }
 
@@ -649,7 +649,7 @@ void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 		newHeight=windowHeight;
 	resizeNeeded=true;
 	m_sys->stage->incRef();
-	getVm(m_sys)->addEvent(_MR(m_sys->stage),_MR(Class<Event>::getInstanceS(m_sys,"resize")));
+	getVm(m_sys)->addEvent(_MR(m_sys->stage),_MR(Class<Event>::getInstanceS(m_sys->worker,"resize")));
 	
 	event.signal();
 }
@@ -887,7 +887,7 @@ void RenderThread::draw(bool force)
 	if(diff>0) /* is one seconds elapsed? */
 	{
 		time_s=time_d;
-		LOG(LOG_INFO,_("FPS: ") << dec << frameCount<<" "<<(getVm(m_sys) ? getVm(m_sys)->getEventQueueSize() : 0));
+		LOG(LOG_INFO,"FPS: " << dec << frameCount<<" "<<(getVm(m_sys) ? getVm(m_sys)->getEventQueueSize() : 0));
 		frameCount=0;
 		secsCount++;
 	}
@@ -933,7 +933,7 @@ uint32_t RenderThread::allocateNewGLTexture() const
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0, largeTextureSize, largeTextureSize, 0, 0);
 	if(handleGLErrors())
 	{
-		LOG(LOG_ERROR,_("Can't allocate large texture... Aborting"));
+		LOG(LOG_ERROR,"Can't allocate large texture... Aborting");
 		::abort();
 	}
 	return tmp;

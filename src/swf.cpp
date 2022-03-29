@@ -92,8 +92,8 @@ ASWorker* lightspark::getWorker()
 }
 
 
-RootMovieClip::RootMovieClip(_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
-	MovieClip(c),
+RootMovieClip::RootMovieClip(ASWorker* wrk, _NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
+	MovieClip(wrk,c),
 	parsingIsFailed(false),waitingforparser(false),Background(0xFF,0xFF,0xFF),frameRate(0),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
@@ -176,7 +176,7 @@ void SystemState::addBroadcastEvent(const tiny_string& event)
 	Locker l(mutexFrameListeners);
 	if(!frameListeners.empty())
 	{
-		_R<Event> e(Class<Event>::getInstanceS(this,event));
+		_R<Event> e(Class<Event>::getInstanceS(this->worker,event));
 		auto it=frameListeners.begin();
 		for(;it!=frameListeners.end();it++)
 		{
@@ -186,10 +186,10 @@ void SystemState::addBroadcastEvent(const tiny_string& event)
 	}
 }
 
-RootMovieClip* RootMovieClip::getInstance(_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
+RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk,_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass(getSys());
-	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(li, appDomain, secDomain, movieClipClass);
+	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(wrk,li, appDomain, secDomain, movieClipClass);
 	ret->constructIndicator = true;
 	ret->constructorCallComplete = true;
 	ret->loadedFrom=ret;
@@ -247,7 +247,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),
 	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),avm1global(nullptr),
-	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),exitOnError(ERROR_NONE),singleworker(true),
+	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),exitOnError(ERROR_NONE),
+	systemDomain(nullptr),worker(nullptr),workerDomain(nullptr),singleworker(true),
 	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
 	static_SoundMixer_bufferTime(0),static_Multitouch_inputMode("gesture"),isinitialized(false)
 {
@@ -300,9 +301,11 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 
 	null=new (unaccountedMemory) Null;
 	null->setSystemState(this);
+	null->setWorker(this->worker);
 	null->setRefConstant();
 	undefined=new (unaccountedMemory) Undefined;
 	undefined->setSystemState(this);
+	undefined->setWorker(this->worker);
 	undefined->setRefConstant();
 
 	builtinClasses = new Class_base*[asClassCount];
@@ -310,27 +313,38 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 
 	//Untangle the messy relationship between class objects and the Class class
 	Class_object* classObject = Class_object::getClass(this);
+
+	worker = new (unaccountedMemory) ASWorker(this);
+	worker->setRefConstant();
+	Class<ASWorker>::getClass(this)->setupDeclaredTraits(worker);
+	worker->setClass(Class<ASWorker>::getClass(this));
+	worker->constructionComplete();
+	worker->setConstructIndicator();
+
+	classObject->setWorker(worker);
+
 	//Getting the Object class object will set the classdef to the Class_object
 	//like any other class. This happens inside Class_base constructor
 	_R<Class_base> asobjectClass = Class<ASObject>::getRef(this);
+
 	//The only bit remaining is setting the Object class as the super class for Class
 	classObject->setSuper(asobjectClass);
 	classObject->decRef();
 	objClassRef = asobjectClass.getPtr();
 
-	trueRef=Class<Boolean>::getInstanceS(this,true);
+	trueRef=Class<Boolean>::getInstanceS(this->worker,true);
 	trueRef->setRefConstant();
-	falseRef=Class<Boolean>::getInstanceS(this,false);
+	falseRef=Class<Boolean>::getInstanceS(this->worker,false);
 	falseRef->setRefConstant();
 	
-	nanAtom = asAtomHandler::fromNumber(this,Number::NaN,true);
+	nanAtom = asAtomHandler::fromNumber(this->worker,Number::NaN,true);
 
-	systemDomain = Class<ApplicationDomain>::getInstanceS(this);
+	systemDomain = Class<ApplicationDomain>::getInstanceS(this->worker);
 	systemDomain->setRefConstant();
-	_NR<ApplicationDomain> applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(this,_MR(systemDomain)));
-	_NR<SecurityDomain> securityDomain = _MR(Class<SecurityDomain>::getInstanceS(this));
+	_NR<ApplicationDomain> applicationDomain=_MR(Class<ApplicationDomain>::getInstanceS(this->worker,_MR(systemDomain)));
+	_NR<SecurityDomain> securityDomain = _MR(Class<SecurityDomain>::getInstanceS(this->worker));
 
-    static_SoundMixer_soundTransform  = _MR(Class<SoundTransform>::getInstanceS(this));
+	static_SoundMixer_soundTransform  = _MR(Class<SoundTransform>::getInstanceS(this->worker));
 	static_SoundMixer_soundTransform->setRefConstant();
 	threadPool=new ThreadPool(this);
 	downloadThreadPool=new ThreadPool(this);
@@ -341,15 +355,19 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
 	localeManager = new LocaleManager();
-    currencyManager = new CurrencyManager();
+	currencyManager = new CurrencyManager();
 
-	_NR<LoaderInfo> loaderInfo=_MR(Class<LoaderInfo>::getInstanceS(this));
+	_NR<LoaderInfo> loaderInfo=_MR(Class<LoaderInfo>::getInstanceS(this->worker));
 	loaderInfo->applicationDomain = applicationDomain;
 	loaderInfo->setBytesLoaded(0);
 	loaderInfo->setBytesTotal(0);
-	mainClip=RootMovieClip::getInstance(loaderInfo, applicationDomain, securityDomain);
+	mainClip=RootMovieClip::getInstance(this->worker,loaderInfo, applicationDomain, securityDomain);
 	mainClip->setRefConstant();
-	stage=Class<Stage>::getInstanceS(this);
+	worker->rootClip = _MR(mainClip);
+	workerDomain = Class<WorkerDomain>::getInstanceSNoArgs(this->worker);
+	workerDomain->setRefConstant();
+	addWorker(worker);
+	stage=Class<Stage>::getInstanceS(this->worker);
 	stage->setRefConstant();
 	stage->setRoot(_MR(mainClip));
 	//Get starting time
@@ -404,12 +422,12 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 
 	_NR<ASObject> params=getParameters();
 	if(params.isNull())
-		params=_MNR(Class<ASObject>::getInstanceS(getSys()));
+		params=_MNR(Class<ASObject>::getInstanceS(this->worker));
 	//Add arguments to SystemState
 	string vars(v);
 	uint32_t cur=0;
 	char* pfile = getenv("LIGHTSPARK_PLUGIN_PARAMFILE");
-        ofstream f;
+	ofstream f;
 	if(pfile)
 		f.open(pfile, ios::binary|ios::out);
 	while(cur<vars.size())
@@ -461,11 +479,11 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 				f << varName << endl << varValue << endl;
 
 			/* That does occur in the wild */
-			if(params->hasPropertyByMultiname(QName(getUniqueStringId(varName),BUILTIN_STRINGS::EMPTY), true, true))
+			if(params->hasPropertyByMultiname(QName(getUniqueStringId(varName),BUILTIN_STRINGS::EMPTY), true, true,this->worker))
 				LOG(LOG_ERROR,"Flash parameters has duplicate key '" << varName << "' - ignoring");
 			else
 				params->setVariableByQName(varName,"",
-					lightspark::Class<lightspark::ASString>::getInstanceS(this,varValue),DYNAMIC_TRAIT);
+					lightspark::Class<lightspark::ASString>::getInstanceS(this->worker,varValue),DYNAMIC_TRAIT);
 		}
 		cur=n2+1;
 	}
@@ -480,14 +498,14 @@ void SystemState::parseParametersFromFile(const char* f)
 		LOG(LOG_ERROR,"Parameters file not found");
 		return;
 	}
-	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS(this));
+	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS(this->worker));
 	while(!i.eof())
 	{
 		string name,value;
 		getline(i,name);
 		getline(i,value);
 
-		ret->setVariableByQName(name,"",abstract_s(this,value),DYNAMIC_TRAIT);
+		ret->setVariableByQName(name,"",abstract_s(this->worker,value),DYNAMIC_TRAIT);
 		cout << name << ' ' << value << endl;
 	}
 	setParameters(ret);
@@ -498,7 +516,7 @@ void SystemState::parseParametersFromURL(const URLInfo& url)
 {
 	_NR<ASObject> params=getParameters();
 	if(params.isNull())
-		params=_MNR(Class<ASObject>::getInstanceS(this));
+		params=_MNR(Class<ASObject>::getInstanceS(this->worker));
 
 	parseParametersFromURLIntoObject(url, params);
 	setParameters(params);
@@ -510,11 +528,11 @@ void SystemState::parseParametersFromURLIntoObject(const URLInfo& url, _R<ASObje
 	std::list< std::pair<tiny_string, tiny_string> >::iterator it;
 	for (it=queries.begin(); it!=queries.end(); ++it)
 	{
-		if(outParams->hasPropertyByMultiname(QName(outParams->getSystemState()->getUniqueStringId(it->first),BUILTIN_STRINGS::EMPTY), true, true))
+		if(outParams->hasPropertyByMultiname(QName(outParams->getSystemState()->getUniqueStringId(it->first),BUILTIN_STRINGS::EMPTY), true, true,outParams->getInstanceWorker()))
 			LOG(LOG_ERROR,"URL query parameters has duplicate key '" << it->first << "' - ignoring");
 		else
 			outParams->setVariableByQName(it->first,"",
-			   lightspark::Class<lightspark::ASString>::getInstanceS(outParams->getSystemState(),it->second),DYNAMIC_TRAIT);
+			   lightspark::Class<lightspark::ASString>::getInstanceS(outParams->getInstanceWorker(),it->second),DYNAMIC_TRAIT);
 	}
 }
 
@@ -620,7 +638,7 @@ void SystemState::systemFinalize()
 	auto it = sharedobjectmap.begin();
 	while (it != sharedobjectmap.end())
 	{
-		it->second->doFlush();
+		it->second->doFlush(worker);
 		it = sharedobjectmap.erase(it);
 	}
 	mainClip->destroyTags();
@@ -707,6 +725,7 @@ void SystemState::destroy()
 	 * 'classes' and 'templates' maps.
 	 */
 
+	setTLSWorker(this->worker);
 	for(uint32_t i=0;i<asClassCount;i++)
 	{
 		if(builtinClasses[i])
@@ -1139,14 +1158,6 @@ void SystemState::needsAVM2(bool avm2)
 		LOG(LOG_INFO,"Creating VM");
 		MemoryAccount* vmDataMemory=this->allocateMemoryAccount("VM_Data");
 		currentVm=new ABCVm(this, vmDataMemory);
-		workerDomain = Class<WorkerDomain>::getInstanceS(this);
-		workerDomain->setRefConstant();
-		worker = Class<ASWorker>::getInstanceS(this);
-		worker->isPrimordial = true;
-		worker->state ="running";
-		worker->setRefConstant();
-		addWorker(worker);
-		//setTLSWorker(worker);
 	}
 	else
 		vmVersion=AVM1;
@@ -1162,7 +1173,7 @@ void SystemState::setParamsAndEngine(EngineData* e, bool s)
 	standalone=s;
 	if (flashMode == SystemState::AIR)
 	{
-		static_ASFile_applicationDirectory=_MNR(Class<ASFile>::getInstanceS(this,getEngineData()->FileFullPath(this,""),true));
+		static_ASFile_applicationDirectory=_MNR(Class<ASFile>::getInstanceS(this->worker,getEngineData()->FileFullPath(this,""),true));
 	}
 	
 	if(vmVersion)
@@ -1560,6 +1571,11 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 void ParseThread::execute()
 {
 	tls_set(parse_thread_tls,this);
+	if(!parsedObject.isNull() && parsedObject->getInstanceWorker())
+		setTLSWorker(parsedObject->getInstanceWorker());
+	else
+		setTLSWorker(getSys()->worker);
+
 	try
 	{
 		UI8 Signature[4];
@@ -1607,7 +1623,7 @@ void ParseThread::parseSWF(UI8 ver)
 	{
 		_NR<LoaderInfo> li=loader->getContentLoaderInfo();
 		li->incRef();
-		getVm(loader->getSystemState())->addEvent(li,_MR(Class<SecurityErrorEvent>::getInstanceS(loader->getSystemState(),
+		getVm(loader->getSystemState())->addEvent(li,_MR(Class<SecurityErrorEvent>::getInstanceS(loader->getInstanceWorker(),
 			"Cannot import a SWF file when LoaderContext.allowCodeImport is false."))); // 3226
 		return;
 	}
@@ -1617,12 +1633,9 @@ void ParseThread::parseSWF(UI8 ver)
 	if(parsedObject.isNull())
 	{
 		_NR<LoaderInfo> li=loader->getContentLoaderInfo();
-		root=RootMovieClip::getInstance(li, applicationDomain, securityDomain);
-		if (getWorker())
-		{
-			root->incRef();
-			getWorker()->rootClip = _MR(root);
-		}
+		root=RootMovieClip::getInstance(applicationDomain->getInstanceWorker(),li, applicationDomain, securityDomain);
+		root->incRef();
+		applicationDomain->getInstanceWorker()->rootClip = _MR(root);
 		parsedObject=_MNR(root);
 		li->setWaitedObject(parsedObject);
 		if(!url.empty())
@@ -1866,9 +1879,9 @@ void ParseThread::parseBitmap()
 	}
 	_NR<Bitmap> tmp;
 	if (loader->needsActionScript3())
-		tmp = _MNR(Class<Bitmap>::getInstanceS(loader->getSystemState(),li, &f, fileType));
+		tmp = _MNR(Class<Bitmap>::getInstanceS(loader->getInstanceWorker(),li, &f, fileType));
 	else
-		tmp = _MNR(Class<AVM1Bitmap>::getInstanceS(loader->getSystemState(),li, &f, fileType));
+		tmp = _MNR(Class<AVM1Bitmap>::getInstanceS(loader->getInstanceWorker(),li, &f, fileType));
 	{
 		Locker l(objectSpinlock);
 		parsedObject=tmp;
@@ -1911,7 +1924,7 @@ void ParseThread::threadAbort()
 	if(parsedObject.isNull())
 		return;
 	RootMovieClip* root=getRootMovie();
-	if(root==NULL)
+	if(root==nullptr)
 		return;
 	root->parsingFailed();
 }
@@ -1981,7 +1994,7 @@ void RootMovieClip::constructionComplete()
 {
 	if(isConstructed())
 		return;
-	if (!isVmThread() && !getWorker())
+	if (!isVmThread() && !getInstanceWorker()->isPrimordial)
 	{
 		this->incRef();
 		getVm(getSystemState())->prependEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this))));
@@ -2216,10 +2229,10 @@ void SystemState::resizeCompleted()
 	if(currentVm && scaleMode==NO_SCALE)
 	{
 		stage->incRef();
-		currentVm->addEvent(_MR(stage),_MR(Class<Event>::getInstanceS(this,"resize",false)));
+		currentVm->addEvent(_MR(stage),_MR(Class<Event>::getInstanceS(this->worker,"resize",false)));
 		
 		stage->incRef();
-		currentVm->addEvent(_MR(stage),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS(this)));
+		currentVm->addEvent(_MR(stage),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS(this->worker)));
 	}
 }
 
@@ -2418,20 +2431,6 @@ void SystemState::sendMainSignal()
 	mainsignalCond.broadcast();
 }
 
-void SystemState::dumpStacktrace()
-{
-	tiny_string stacktrace;
-	for (uint32_t i = getVm(this)->cur_recursion; i > 0; i--)
-	{
-		stacktrace += "    at ";
-		stacktrace += asAtomHandler::toObject(getVm(this)->stacktrace[i-1].object,this)->getClassName();
-		stacktrace += "/";
-		stacktrace += this->getStringFromUniqueId(getVm(this)->stacktrace[i-1].name);
-		stacktrace += "()\n";
-	}
-	LOG(LOG_INFO,"current stacktrace:\n" << stacktrace);
-}
-
 void SystemState::waitInitialized()
 {
 	if (isinitialized)
@@ -2442,7 +2441,7 @@ void SystemState::waitInitialized()
 	}
 }
 
-void SystemState::getClassInstanceByName(asAtom& ret, const tiny_string &clsname)
+void SystemState::getClassInstanceByName(ASWorker* wrk,asAtom& ret, const tiny_string &clsname)
 {
 	Class_base* c= nullptr;
 	auto it = classnamemap.find(clsname);
@@ -2451,14 +2450,14 @@ void SystemState::getClassInstanceByName(asAtom& ret, const tiny_string &clsname
 		asAtom cls = asAtomHandler::invalidAtom;
 		asAtom tmp = asAtomHandler::invalidAtom;
 		asAtom args = asAtomHandler::fromString(this,clsname);
-		getDefinitionByName(cls,this,tmp,&args,1);
+		getDefinitionByName(cls,wrk,tmp,&args,1);
 		assert_and_throw(asAtomHandler::isValid(cls));
 		c = asAtomHandler::getObjectNoCheck(cls)->as<Class_base>();
 		classnamemap[clsname]=c;
 	}
 	else
 		c = it->second;
-	c->getInstance(ret,true,nullptr,0);
+	c->getInstance(wrk,ret,true,nullptr,0);
 }
 /* This is run in vm's thread context */
 void RootMovieClip::initFrame()
@@ -2577,7 +2576,7 @@ void RootMovieClip::checkBinding(DictionaryTag *tag)
 	{
 		ASObject* target;
 		asAtom o=asAtomHandler::invalidAtom;
-		applicationDomain->getVariableAndTargetByMultiname(o,clsname,target);
+		applicationDomain->getVariableAndTargetByMultiname(o,clsname,target,getInstanceWorker());
 		if (asAtomHandler::isValid(o))
 			typeObject=asAtomHandler::getObject(o);
 	}
@@ -2647,7 +2646,7 @@ void RootMovieClip::setupAVM1RootMovie()
 		// I haven't found anything in the documentation but gnash also does this
 		_NR<ASObject> params = getSystemState()->getParameters();
 		if (params)
-			params->copyValues(this);
+			params->copyValues(this,getInstanceWorker());
 	}
 }
 

@@ -33,7 +33,7 @@ class Shader;
 class GraphicsShaderFill: public ASObject, public IGraphicsFill, public IGraphicsData
 {
 public:
-	GraphicsShaderFill(Class_base* c);
+	GraphicsShaderFill(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);

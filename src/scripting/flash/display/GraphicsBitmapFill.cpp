@@ -26,8 +26,8 @@
 
 using namespace lightspark;
 
-GraphicsBitmapFill::GraphicsBitmapFill(Class_base* c):
-	ASObject(c), repeat(true), smooth(false)
+GraphicsBitmapFill::GraphicsBitmapFill(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c), repeat(true), smooth(false)
 {
 }
 

@@ -28,7 +28,7 @@ namespace lightspark
 class Orientation3D: public ASObject
 {
 public:
-	Orientation3D(Class_base* c):ASObject(c){}
+	Orientation3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

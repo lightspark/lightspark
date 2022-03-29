@@ -25,8 +25,8 @@
 
 using namespace lightspark;
 
-GraphicsShaderFill::GraphicsShaderFill(Class_base* c):
-	ASObject(c)
+GraphicsShaderFill::GraphicsShaderFill(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 

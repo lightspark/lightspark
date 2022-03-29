@@ -27,8 +27,8 @@
 
 using namespace lightspark;
 
-NumberFormatter::NumberFormatter(Class_base* c):
-	ASObject(c)
+NumberFormatter::NumberFormatter(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 
@@ -74,9 +74,9 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,_constructor)
 {
 	NumberFormatter* th =asAtomHandler::as<NumberFormatter>(obj);
 	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
-	if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
+	if (wrk->getSystemState()->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
-		std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
+		std::string localeName = wrk->getSystemState()->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
 		th->currlocale = std::locale(localeName.c_str());
 		th->actualLocaleIDName = th->requestedLocaleIDName;
 		th->lastOperationStatus="noError";
@@ -87,7 +87,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,_constructor)
 		th->lastOperationStatus="usingDefaultWarning";
 	}
 
-    std::locale l =  std::locale::global(th->currlocale);
+	std::locale l =  std::locale::global(th->currlocale);
 
 	char localSeparatorChar = std::use_facet< std::numpunct<char> >(std::cout.getloc()).thousands_sep();
 	char localDecimalChar = std::use_facet< std::numpunct<char> >(std::cout.getloc()).decimal_point();
@@ -99,7 +99,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,_constructor)
 	th->negativeNumberFormat = 1;
 	th->negativeSymbol = "-";
 	th->useGrouping = false;
-    std::locale::global(l);
+	std::locale::global(l);
 }
 
 ASFUNCTIONBODY_ATOM(NumberFormatter,formatInt)
@@ -107,7 +107,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,formatInt)
 	NumberFormatter* th =asAtomHandler::as<NumberFormatter>(obj);
 	if (th->digitsType)
 	{
-        LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.digitsType is not implemented");
+		LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.digitsType is not implemented");
 	}
 	LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.formatInt is not really tested for all formats");
 	
@@ -116,17 +116,17 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,formatInt)
 	tiny_string res;
 	if (value > 1.72e308)
 	{
-		ret = asAtomHandler::fromString(sys,"0");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"0");
 		return;
 	}
 	std::stringstream ss;
-    ss.imbue(th->currlocale);
+	ss.imbue(th->currlocale);
 	res = ss.str();
 	if (res == "nan")
 	{
 		res = "NaN";
 	}
-	ret = asAtomHandler::fromString(sys,res);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),res);
 	th->lastOperationStatus="noError";
 }
 
@@ -135,7 +135,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,formatUint)
 	NumberFormatter* th =asAtomHandler::as<NumberFormatter>(obj);
 	if (th->digitsType)
 	{
-        LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.digitsType is not implemented");
+		LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.digitsType is not implemented");
 	}
 
 	LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.formatUint is not really tested for all formats");
@@ -145,7 +145,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,formatUint)
 	tiny_string res;
 	if (value > 1.72e308)
 	{
-		ret = asAtomHandler::fromString(sys,"0");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"0");
 		return;
 	}
 	std::stringstream ss;
@@ -156,24 +156,24 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,formatUint)
 		res = "NaN";
 	}
 	th->lastOperationStatus="noError";
-	ret = asAtomHandler::fromString(sys,res);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),res);
 }
 
 ASFUNCTIONBODY_ATOM(NumberFormatter,parse)
 {
-    NumberFormatter* th =asAtomHandler::as<NumberFormatter>(obj);
-    LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.parse is fully tested and implemented");
-	NumberParseResult* npr = Class<NumberParseResult>::getInstanceS(sys);
+	NumberFormatter* th =asAtomHandler::as<NumberFormatter>(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.parse is fully tested and implemented");
+	NumberParseResult* npr = Class<NumberParseResult>::getInstanceS(wrk);
 
 	tiny_string parseString;
 	ARG_UNPACK_ATOM(parseString);
 
-    std::locale l =  std::locale::global(th->currlocale);
+	std::locale l =  std::locale::global(th->currlocale);
 
-    if (parseString.raw_buf() == nullptr)
-    {
-        throwError<TypeError>(kNullArgumentError);
-    }
+	if (parseString.raw_buf() == nullptr)
+	{
+		throwError<TypeError>(kNullArgumentError);
+	}
 
 	std::string stringToParse = parseString;
 
@@ -194,16 +194,16 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,parse)
 		return;
 	}
 
-    int32_t currIndex = 0;
+	int32_t currIndex = 0;
 
 	npr->startIndex = currIndex;
-    npr->endIndex = currIndex;
+	npr->endIndex = currIndex;
 
 	std::string output = "";
 
-    std::string::iterator it = stringToParse.begin();
+	std::string::iterator it = stringToParse.begin();
 
-    bool found = false;
+	bool found = false;
 
     if ((*it) == '(' && th->negativeNumberFormat == 0)
     {
@@ -391,7 +391,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,parse)
 	else
 	{
 		th->lastOperationStatus="noError";
-        ret = asAtomHandler::fromNumber(sys,num, true);
+        ret = asAtomHandler::fromNumber(wrk,num, true);
 	}
     npr->value = num;
     ret = asAtomHandler::fromObject(npr);
@@ -437,7 +437,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,parseNumber)
 	else
 	{
 		th->lastOperationStatus="noError";
-		ret = asAtomHandler::fromNumber(sys,num, true);
+		ret = asAtomHandler::fromNumber(wrk,num, true);
 	}
     std::locale::global(l);
 }
@@ -647,7 +647,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,formatNumber)
 	{
 		number = "NaN";
 	}
-    ret = asAtomHandler::fromString(sys,number);
+    ret = asAtomHandler::fromString(wrk->getSystemState(),number);
 	th->lastOperationStatus="noError";
     std::locale::global(l);
 }
@@ -660,12 +660,12 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,getAvailableLocaleIDNames)
         LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.digitsType is not implemented");
 	}
 	
-	Array* res=Class<Array>::getInstanceSNoArgs(sys);
-	std::vector<std::string> localeIds = sys->localeManager->getAvailableLocaleIDNames();
+	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
+	std::vector<std::string> localeIds = wrk->getSystemState()->localeManager->getAvailableLocaleIDNames();
 	for (std::vector<std::string>::iterator it = localeIds.begin(); it != localeIds.end(); ++it)
 	{
 		tiny_string value = (*it);
-		res->push(asAtomHandler::fromObject(abstract_s(sys, value)));
+		res->push(asAtomHandler::fromObject(abstract_s(wrk, value)));
 	}
 	th->lastOperationStatus="noError";
 	ret = asAtomHandler::fromObject(res);

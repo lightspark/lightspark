@@ -74,7 +74,7 @@ protected:
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	~InteractiveObject();
 public:
-	InteractiveObject(Class_base* c);
+	InteractiveObject(ASWorker* wrk,Class_base* c);
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityImplementation>,accessibilityImplementation);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,contextMenu); // adobe seems to allow DisplayObjects, too
 	ASPROPERTY_GETTER_SETTER(bool,tabEnabled);
@@ -136,7 +136,7 @@ public:
 	void _removeAllChildren();
 	void removeAVM1Listeners() override;
 	int getChildIndex(_R<DisplayObject> child);
-	DisplayObjectContainer(Class_base* c);
+	DisplayObjectContainer(ASWorker* wrk,Class_base* c);
 	bool destruct() override;
 	void finalize() override;
 	bool hasLegacyChildAt(int32_t depth);
@@ -157,8 +157,8 @@ public:
 	void declareFrame() override;
 	void initFrame() override;
 	void executeFrameScript() override;
-	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr) override;
-	bool deleteVariableByMultiname(const multiname& name) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
+	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -218,7 +218,7 @@ private:
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
 public:
-	SimpleButton(Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
+	SimpleButton(ASWorker* wrk,Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
 	void constructionComplete() override;
 	void finalize() override;
@@ -259,8 +259,8 @@ protected:
 	
 	DefineShapeTag* fromTag;
 public:
-	Shape(Class_base* c);
-	Shape(Class_base* c, float scaling, DefineShapeTag *tag);
+	Shape(ASWorker* wrk,Class_base* c);
+	Shape(ASWorker* wrk,Class_base* c, float scaling, DefineShapeTag *tag);
 	void setupShape(lightspark::DefineShapeTag *tag, float _scaling);
 	uint32_t getTagID() const override;
 	bool destruct() override;
@@ -287,8 +287,8 @@ protected:
 		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
-	MorphShape(Class_base* c);
-	MorphShape(Class_base* c, DefineMorphShapeTag* _morphshapetag);
+	MorphShape(ASWorker* wrk,Class_base* c);
+	MorphShape(ASWorker* wrk, Class_base* c, DefineMorphShapeTag* _morphshapetag);
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
@@ -338,8 +338,8 @@ public:
 	ASPROPERTY_GETTER(_NR<UncaughtErrorEvents>,uncaughtErrorEvents);
 	ASPROPERTY_GETTER(bool,parentAllowsChild);
 	ASPROPERTY_GETTER(number_t,frameRate);
-	LoaderInfo(Class_base* c);
-	LoaderInfo(Class_base* c, _R<Loader> l);
+	LoaderInfo(ASWorker*,Class_base* c);
+	LoaderInfo(ASWorker*,Class_base* c, _R<Loader> l);
 	bool destruct();
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -408,7 +408,7 @@ protected:
 	_NR<DisplayObject> avm1target;
 	void loadIntern(URLRequest* r, LoaderContext* context);
 public:
-	Loader(Class_base* c);
+	Loader(ASWorker* wrk, Class_base* c);
 	~Loader();
 	void finalize() override;
 	void threadFinished(IThreadJob* job) override;
@@ -461,7 +461,7 @@ protected:
 	void markSoundFinished();
 public:
 	bool dragged;
-	Sprite(Class_base* c);
+	Sprite(ASWorker* wrk,Class_base* c);
 	void setSound(SoundChannel* s, bool forstreaming);
 	void appendSound(unsigned char* buf, int len, uint32_t frame);
 	void setSoundStartFrame(uint32_t frame) { soundstartframe=frame; }
@@ -501,8 +501,8 @@ struct FrameLabel_data
 class FrameLabel: public ASObject, public FrameLabel_data
 {
 public:
-	FrameLabel(Class_base* c);
-	FrameLabel(Class_base* c, const FrameLabel_data& data);
+	FrameLabel(ASWorker* wrk,Class_base* c);
+	FrameLabel(ASWorker* wrk,Class_base* c, const FrameLabel_data& data);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_getFrame);
@@ -523,8 +523,8 @@ class Scene: public ASObject, public Scene_data
 {
 	uint32_t numFrames;
 public:
-	Scene(Class_base* c);
-	Scene(Class_base* c, const Scene_data& data, uint32_t _numFrames);
+	Scene(ASWorker* wrk,Class_base* c);
+	Scene(ASWorker* wrk,Class_base* c, const Scene_data& data, uint32_t _numFrames);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getLabels);
@@ -615,8 +615,8 @@ public:
 	RunState state;
 	_NR<AVM1MovieClipLoader> avm1loader;
 	Frame* getCurrentFrame();
-	MovieClip(Class_base* c);
-	MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID);
+	MovieClip(ASWorker* wrk,Class_base* c);
+	MovieClip(ASWorker* wrk,Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID);
 	bool destruct() override;
 	void finalize() override;
 	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
@@ -722,15 +722,15 @@ protected:
 public:
 	void defaultEventBehavior(_R<Event> e) override;
 	ACQUIRE_RELEASE_FLAG(invalidated);
+	void onAlign(uint32_t);
 	void forceInvalidation();
-	void onAlign(const tiny_string&);
 	bool renderStage3D();
 	void onDisplayState(const tiny_string&);
 	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void setOnStage(bool staged, bool force,bool inskipping=false) override { assert(false); /* we are the stage */}
 	_NR<RootMovieClip> getRoot() override;
 	void setRoot(_NR<RootMovieClip> _root);
-	Stage(Class_base* c);
+	Stage(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	_NR<Stage> getStage() override;
@@ -764,7 +764,7 @@ public:
 	ASFUNCTION_ATOM(_invalidate);
 	ASFUNCTION_ATOM(_getColor);
 	ASFUNCTION_ATOM(_setColor);
-	ASPROPERTY_GETTER_SETTER(tiny_string,align);
+	ASPROPERTY_GETTER_SETTER(uint32_t,align);
 	ASPROPERTY_GETTER_SETTER(tiny_string,colorCorrection);
 	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);
 	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,fullScreenSourceRect);
@@ -791,7 +791,7 @@ public:
 class StageScaleMode: public ASObject
 {
 public:
-	StageScaleMode(Class_base* c):ASObject(c){}
+	StageScaleMode(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o)
 	{
@@ -801,7 +801,7 @@ public:
 class StageAlign: public ASObject
 {
 public:
-	StageAlign(Class_base* c):ASObject(c){}
+	StageAlign(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o)
 	{
@@ -811,14 +811,14 @@ public:
 class StageQuality: public ASObject
 {
 public:
-	StageQuality(Class_base* c):ASObject(c){}
+	StageQuality(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class StageDisplayState: public ASObject
 {
 public:
-	StageDisplayState(Class_base* c):ASObject(c){}
+	StageDisplayState(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
@@ -828,7 +828,7 @@ friend class Stage;
 protected:
 	bool renderImpl(RenderContext &ctxt) const;
 public:
-	Stage3D(Class_base* c);
+	Stage3D(ASWorker* wrk, Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(requestContext3D);
@@ -843,35 +843,35 @@ public:
 class LineScaleMode: public ASObject
 {
 public:
-	LineScaleMode(Class_base* c):ASObject(c){}
+	LineScaleMode(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class BlendMode: public ASObject
 {
 public:
-	BlendMode(Class_base* c):ASObject(c){}
+	BlendMode(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class GradientType: public ASObject
 {
 public:
-	GradientType(Class_base* c):ASObject(c){}
+	GradientType(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class InterpolationMethod: public ASObject
 {
 public:
-	InterpolationMethod(Class_base* c):ASObject(c){}
+	InterpolationMethod(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class SpreadMethod: public ASObject
 {
 public:
-	SpreadMethod(Class_base* c):ASObject(c){}
+	SpreadMethod(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
@@ -879,14 +879,14 @@ class GraphicsPathCommand: public ASObject
 {
 public:
 	enum {NO_OP=0, MOVE_TO, LINE_TO, CURVE_TO, WIDE_MOVE_TO, WIDE_LINE_TO, CUBIC_CURVE_TO};
-	GraphicsPathCommand(Class_base* c):ASObject(c){}
+	GraphicsPathCommand(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class GraphicsPathWinding: public ASObject
 {
 public:
-	GraphicsPathWinding(Class_base* c):ASObject(c){}
+	GraphicsPathWinding(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 
 };
@@ -902,20 +902,20 @@ public:
 class PixelSnapping: public ASObject
 {
 public:
-	PixelSnapping(Class_base* c):ASObject(c){}
+	PixelSnapping(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class CapsStyle: public ASObject
 {
 public:
-	CapsStyle(Class_base* c):ASObject(c){}
+	CapsStyle(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 class JointStyle: public ASObject
 {
 public:
-	JointStyle(Class_base* c):ASObject(c){}
+	JointStyle(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
@@ -934,8 +934,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string,pixelSnapping);
 	/* Call this after updating any member of 'data' */
 	void updatedData();
-	Bitmap(Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
-	Bitmap(Class_base* c, _R<BitmapData> data);
+	Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
+	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data);
 	~Bitmap();
 	bool destruct() override;
 	static void sinit(Class_base* c);
@@ -951,7 +951,7 @@ public:
 class AVM1Movie: public DisplayObject
 {
 public:
-	AVM1Movie(Class_base* c):DisplayObject(c){}
+	AVM1Movie(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c){}
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -960,7 +960,7 @@ public:
 class Shader : public ASObject
 {
 public:
-	Shader(Class_base* c):ASObject(c){}
+	Shader(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -969,7 +969,7 @@ class BitmapDataChannel : public ASObject
 {
 public:
 	enum {RED=1, GREEN=2, BLUE=4, ALPHA=8};
-	BitmapDataChannel(Class_base* c):ASObject(c){}
+	BitmapDataChannel(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	static unsigned int channelShift(uint32_t channelConstant);
@@ -978,7 +978,7 @@ public:
 class ActionScriptVersion: public ASObject
 {
 public:
-	ActionScriptVersion(Class_base* c):ASObject(c){}
+	ActionScriptVersion(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

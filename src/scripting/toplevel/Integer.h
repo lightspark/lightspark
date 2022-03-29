@@ -33,7 +33,7 @@ friend class ABCVm;
 friend class ABCContext;
 friend ASObject* abstract_i(SystemState* sys, int32_t i);
 public:
-	Integer(Class_base* c,int32_t v=0):ASObject(c,T_INTEGER),val(v){}
+	Integer(ASWorker* wrk,Class_base* c,int32_t v=0):ASObject(wrk,c,T_INTEGER),val(v){}
 	int32_t val;
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
@@ -63,7 +63,7 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk);
 	/*
 	 * This method skips trailing spaces and zeroes
 	 */

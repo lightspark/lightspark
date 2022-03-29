@@ -151,23 +151,23 @@ ASFUNCTIONBODY_ATOM(UInteger,_constructor)
 ASFUNCTIONBODY_ATOM(UInteger,generator)
 {
 	if (argslen == 0)
-		asAtomHandler::setUInt(ret,sys,(uint32_t)0);
+		asAtomHandler::setUInt(ret,wrk,(uint32_t)0);
 	else
-		asAtomHandler::setUInt(ret,sys,asAtomHandler::toUInt(args[0]));
+		asAtomHandler::setUInt(ret,wrk,asAtomHandler::toUInt(args[0]));
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_valueOf)
 {
-	if(Class<UInteger>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
+	if(Class<UInteger>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		asAtomHandler::setUInt(ret,sys,(uint32_t)0);
+		asAtomHandler::setUInt(ret,wrk,(uint32_t)0);
 		return;
 	}
 
 	if(!asAtomHandler::isUInteger(obj))
-			throw Class<TypeError>::getInstanceS(sys,"");
+			throw Class<TypeError>::getInstanceS(wrk,"");
 
-	asAtomHandler::setUInt(ret,sys,asAtomHandler::toUInt(obj));
+	asAtomHandler::setUInt(ret,wrk,asAtomHandler::toUInt(obj));
 }
 
 void UInteger::sinit(Class_base* c)
@@ -190,9 +190,9 @@ void UInteger::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(UInteger,_toString)
 {
-	if(Class<UInteger>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
+	if(Class<UInteger>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		ret = asAtomHandler::fromString(sys,"0");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"0");
 		return;
 	}
 
@@ -203,12 +203,12 @@ ASFUNCTIONBODY_ATOM(UInteger,_toString)
 	{
 		char buf[20];
 		snprintf(buf,20,"%u",asAtomHandler::toUInt(obj));
-		ret = asAtomHandler::fromObject(abstract_s(sys,buf));
+		ret = asAtomHandler::fromObject(abstract_s(wrk,buf));
 	}
 	else
 	{
 		tiny_string s=Number::toStringRadix(asAtomHandler::toNumber(obj), radix);
-		ret = asAtomHandler::fromObject(abstract_s(sys,s));
+		ret = asAtomHandler::fromObject(abstract_s(wrk,s));
 	}
 }
 
@@ -242,31 +242,31 @@ ASFUNCTIONBODY_ATOM(UInteger,_toExponential)
 		else
 			fractionDigits = imin(imax((int32_t)ceil(::log10(v)), 1), 20);
 	}
-	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toExponentialString(v, fractionDigits)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,Number::toExponentialString(v, fractionDigits)));
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_toFixed)
 {
 	int fractiondigits;
 	ARG_UNPACK_ATOM (fractiondigits, 0);
-	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toFixedString(asAtomHandler::toNumber(obj), fractiondigits)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,Number::toFixedString(asAtomHandler::toNumber(obj), fractiondigits)));
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_toPrecision)
 {
 	if (argslen == 0 || asAtomHandler::is<Undefined>(args[0]))
 	{
-		ret = asAtomHandler::fromObject(abstract_s(sys,asAtomHandler::toString(obj,sys)));
+		ret = asAtomHandler::fromObject(abstract_s(wrk,asAtomHandler::toString(obj,wrk)));
 		return;
 	}
 	int precision;
 	ARG_UNPACK_ATOM (precision);
-	ret = asAtomHandler::fromObject(abstract_s(sys,Number::toPrecisionString(asAtomHandler::toNumber(obj), precision)));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,Number::toPrecisionString(asAtomHandler::toNumber(obj), precision)));
 }
 
 void UInteger::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap)
+				std::map<const Class_base*, uint32_t>& traitsMap,ASWorker* wrk)
 {
 	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{

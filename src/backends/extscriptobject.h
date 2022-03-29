@@ -148,7 +148,7 @@ public:
 	 * ExtObject instances are always owned by the objectMaps
 	 */
 	ExtObject* getObject() const { return objectValue; }
-	ASObject* getASObject(SystemState* sys,std::map<const lightspark::ExtObject*, lightspark::ASObject*>& objectsMap) const;
+	ASObject* getASObject(ASWorker* wrk, std::map<const lightspark::ExtObject*, lightspark::ASObject*>& objectsMap) const;
 protected:
 	std::string strValue;
 	ExtObject* objectValue;

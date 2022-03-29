@@ -21,7 +21,7 @@
 using namespace std;
 using namespace lightspark;
 
-NetStreamPlayTransitions::NetStreamPlayTransitions(Class_base* c):ASObject(c)
+NetStreamPlayTransitions::NetStreamPlayTransitions(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
 {
 	
 }
@@ -29,12 +29,12 @@ NetStreamPlayTransitions::NetStreamPlayTransitions(Class_base* c):ASObject(c)
 void NetStreamPlayTransitions::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL);
-	c->setVariableByQName("APPEND","",abstract_s(c->getSystemState(),"append"),CONSTANT_TRAIT);
-	c->setVariableByQName("APPEND_AND_WAIT","",abstract_s(c->getSystemState(),"appendAndWait"),CONSTANT_TRAIT);
-	c->setVariableByQName("RESET","",abstract_s(c->getSystemState(),"reset"),CONSTANT_TRAIT);
-	c->setVariableByQName("RESUME","",abstract_s(c->getSystemState(),"resume"),CONSTANT_TRAIT);
-	c->setVariableByQName("STOP","",abstract_s(c->getSystemState(),"stop"),CONSTANT_TRAIT);
-	c->setVariableByQName("SWAP","",abstract_s(c->getSystemState(),"swap"),CONSTANT_TRAIT);
-	c->setVariableByQName("SWITCH","",abstract_s(c->getSystemState(),"switch"),CONSTANT_TRAIT);
+	c->setVariableByQName("APPEND","",abstract_s(c->getInstanceWorker(),"append"),CONSTANT_TRAIT);
+	c->setVariableByQName("APPEND_AND_WAIT","",abstract_s(c->getInstanceWorker(),"appendAndWait"),CONSTANT_TRAIT);
+	c->setVariableByQName("RESET","",abstract_s(c->getInstanceWorker(),"reset"),CONSTANT_TRAIT);
+	c->setVariableByQName("RESUME","",abstract_s(c->getInstanceWorker(),"resume"),CONSTANT_TRAIT);
+	c->setVariableByQName("STOP","",abstract_s(c->getInstanceWorker(),"stop"),CONSTANT_TRAIT);
+	c->setVariableByQName("SWAP","",abstract_s(c->getInstanceWorker(),"swap"),CONSTANT_TRAIT);
+	c->setVariableByQName("SWITCH","",abstract_s(c->getInstanceWorker(),"switch"),CONSTANT_TRAIT);
 }
 

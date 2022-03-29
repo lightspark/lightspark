@@ -23,12 +23,12 @@
 using namespace std;
 using namespace lightspark;
 
-RegExp::RegExp(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_REGEXP),dotall(false),global(false),ignoreCase(false),
+RegExp::RegExp(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_REGEXP),dotall(false),global(false),ignoreCase(false),
 	extended(false),multiline(false),lastIndex(0)
 {
 }
 
-RegExp::RegExp(Class_base* c, const tiny_string& _re):ASObject(c,T_OBJECT,SUBTYPE_REGEXP),dotall(false),global(false),ignoreCase(false),
+RegExp::RegExp(ASWorker* wrk,Class_base* c, const tiny_string& _re):ASObject(wrk,c,T_OBJECT,SUBTYPE_REGEXP),dotall(false),global(false),ignoreCase(false),
 	extended(false),multiline(false),lastIndex(0),source(_re)
 {
 }
@@ -76,10 +76,10 @@ ASFUNCTIONBODY_ATOM(RegExp,_constructor)
 		return;
 	}
 	else if(argslen > 0)
-		th->source=asAtomHandler::toString(args[0],sys).raw_buf();
+		th->source=asAtomHandler::toString(args[0],wrk).raw_buf();
 	if(argslen>1 && !asAtomHandler::is<Undefined>(args[1]))
 	{
-		const tiny_string& flags=asAtomHandler::toString(args[1],sys);
+		const tiny_string& flags=asAtomHandler::toString(args[1],wrk);
 		for(auto i=flags.begin();i!=flags.end();++i)
 		{
 			switch(*i)
@@ -113,7 +113,7 @@ ASFUNCTIONBODY_ATOM(RegExp,generator)
 {
 	if(argslen == 0)
 	{
-		ret = asAtomHandler::fromObject(Class<RegExp>::getInstanceS(getSys(),""));
+		ret = asAtomHandler::fromObject(Class<RegExp>::getInstanceS(wrk,""));
 	}
 	else if(asAtomHandler::is<RegExp>(args[0]))
 	{
@@ -124,7 +124,7 @@ ASFUNCTIONBODY_ATOM(RegExp,generator)
 	{
 		if (argslen > 1)
 			LOG(LOG_NOT_IMPLEMENTED, "RegExp generator: flags argument not implemented");
-		ret = asAtomHandler::fromObject(Class<RegExp>::getInstanceS(sys,asAtomHandler::toString(args[0],sys)));
+		ret = asAtomHandler::fromObject(Class<RegExp>::getInstanceS(wrk,asAtomHandler::toString(args[0],wrk)));
 	}
 }
 
@@ -140,7 +140,7 @@ ASFUNCTIONBODY_ATOM(RegExp,exec)
 {
 	RegExp* th=static_cast<RegExp*>(asAtomHandler::getObject(obj));
 	assert_and_throw(argslen==1);
-	const tiny_string& arg0=asAtomHandler::toString(args[0],sys);
+	const tiny_string& arg0=asAtomHandler::toString(args[0],wrk);
 	ret = asAtomHandler::fromObject(th->match(arg0));
 }
 
@@ -205,16 +205,16 @@ ASObject *RegExp::match(const tiny_string& str)
 		lastIndex=0;
 		return getSystemState()->getNullRef();
 	}
-	Array* a=Class<Array>::getInstanceSNoArgs(getSystemState());
+	Array* a=Class<Array>::getInstanceSNoArgs(getInstanceWorker());
 	//Push the whole result and the captured strings
 	for(int i=0;i<capturingGroups+1;i++)
 	{
 		if(ovector[i*2] >= 0)
-			a->push(asAtomHandler::fromObject(abstract_s(getSystemState(), str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) )));
+			a->push(asAtomHandler::fromObject(abstract_s(getInstanceWorker(), str.substr_bytes(ovector[i*2],ovector[i*2+1]-ovector[i*2]) )));
 		else
 			a->push(asAtomHandler::fromObject(getSystemState()->getUndefinedRef()));
 	}
-	a->setVariableByQName("input","",abstract_s(getSystemState(),str),DYNAMIC_TRAIT);
+	a->setVariableByQName("input","",abstract_s(getInstanceWorker(),str),DYNAMIC_TRAIT);
 
 	// pcre_exec returns byte position, so we have to convert it to character position 
 	tiny_string tmp = str.substr_bytes(0, ovector[0]);
@@ -244,7 +244,7 @@ ASFUNCTIONBODY_ATOM(RegExp,test)
 	}
 	RegExp* th=asAtomHandler::as<RegExp>(obj);
 
-	const tiny_string& arg0 = asAtomHandler::toString(args[0],sys);
+	const tiny_string& arg0 = asAtomHandler::toString(args[0],wrk);
 	pcre* pcreRE = th->compile(!arg0.isSinglebyte());
 	if (!pcreRE)
 	{
@@ -273,13 +273,13 @@ ASFUNCTIONBODY_ATOM(RegExp,test)
 
 ASFUNCTIONBODY_ATOM(RegExp,_toString)
 {
-	if(Class<RegExp>::getClass(sys)->prototype->getObj() == asAtomHandler::getObject(obj))
+	if(Class<RegExp>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		ret = asAtomHandler::fromString(sys,"/(?:)/");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"/(?:)/");
 		return;
 	}
 	if(!asAtomHandler::is<RegExp>(obj))
-		throw Class<TypeError>::getInstanceS(sys,"RegExp.toString is not generic");
+		throw Class<TypeError>::getInstanceS(wrk,"RegExp.toString is not generic");
 
 	RegExp* th=asAtomHandler::as<RegExp>(obj);
 	tiny_string res;
@@ -294,7 +294,7 @@ ASFUNCTIONBODY_ATOM(RegExp,_toString)
 		res += "m";
 	if(th->dotall)
 		res += "s";
-	ret = asAtomHandler::fromObject(abstract_s(sys,res));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,res));
 }
 
 pcre* RegExp::compile(bool isutf8)

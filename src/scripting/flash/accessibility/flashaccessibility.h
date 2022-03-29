@@ -35,7 +35,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(tiny_string, shortcut);
 	ASPROPERTY_GETTER_SETTER(bool, silent);
 public:
-	AccessibilityProperties(Class_base* c);
+	AccessibilityProperties(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -43,7 +43,7 @@ public:
 class AccessibilityImplementation : public ASObject
 {
 public:
-	AccessibilityImplementation(Class_base* c):ASObject(c){}
+	AccessibilityImplementation(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 };
@@ -53,7 +53,7 @@ class Accessibility : public ASObject
 private:
 	_NR<AccessibilityProperties> properties;
 public:
-	Accessibility(Class_base* c):ASObject(c),properties(NULL){}
+	Accessibility(ASWorker* wrk,Class_base* c):ASObject(wrk,c),properties(nullptr){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(updateProperties);
 };

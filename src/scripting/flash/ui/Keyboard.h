@@ -28,7 +28,7 @@ namespace lightspark
 class Keyboard : public ASObject
 {
 public:
-	Keyboard(Class_base* c):ASObject(c){}
+	Keyboard(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(capsLock);
 	ASFUNCTION_ATOM(hasVirtualKeyboard);
@@ -40,14 +40,14 @@ public:
 class KeyboardType : public ASObject
 {
 public:
-	KeyboardType(Class_base* c):ASObject(c){}
+	KeyboardType(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
 class KeyLocation : public ASObject
 {
 public:
-	KeyLocation(Class_base* c):ASObject(c){}
+	KeyLocation(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

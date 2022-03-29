@@ -34,7 +34,7 @@ class Endian : public ASObject
 public:
 	static const char* bigEndian;
 	static const char* littleEndian;
-	Endian(Class_base* c):ASObject(c){}
+	Endian(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 
@@ -58,18 +58,18 @@ public:
 
 
 
-void getQualifiedClassName(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void getQualifiedSuperclassName(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void getDefinitionByName(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void getTimer(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void setInterval(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void setTimeout(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void clearInterval(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void clearTimeout(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void describeType(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void describeTypeJSON(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void escapeMultiByte(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
-void unescapeMultiByte(asAtom& ret,SystemState* sys,asAtom& obj,asAtom* args, const unsigned int argslen);
+void getQualifiedClassName(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void getQualifiedSuperclassName(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void getDefinitionByName(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void getTimer(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void setInterval(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void setTimeout(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void clearInterval(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void clearTimeout(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void describeType(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void describeTypeJSON(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void escapeMultiByte(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
+void unescapeMultiByte(asAtom& ret,ASWorker* wrk,asAtom& obj,asAtom* args, const unsigned int argslen);
 }
 
 #endif /* SCRIPTING_FLASH_UTILS_FLASHUTILS_H */

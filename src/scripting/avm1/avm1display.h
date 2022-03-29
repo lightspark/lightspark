@@ -33,8 +33,8 @@ namespace lightspark
 class AVM1MovieClip: public MovieClip
 {
 public:
-	AVM1MovieClip(Class_base* c):MovieClip(c){}
-	AVM1MovieClip(Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID,uint32_t nameID=BUILTIN_STRINGS::EMPTY):MovieClip(c,f,defineSpriteTagID) 
+	AVM1MovieClip(ASWorker* wrk,Class_base* c):MovieClip(wrk,c){}
+	AVM1MovieClip(ASWorker* wrk,Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID,uint32_t nameID=BUILTIN_STRINGS::EMPTY):MovieClip(wrk,c,f,defineSpriteTagID) 
 	{
 		name=nameID;
 	}
@@ -48,24 +48,24 @@ public:
 class AVM1Shape: public Shape
 {
 public:
-	AVM1Shape(Class_base* c):Shape(c){}
-	AVM1Shape(Class_base* c, float scaling, DefineShapeTag* tag):Shape(c,scaling,tag) {}
+	AVM1Shape(ASWorker* wrk,Class_base* c):Shape(wrk,c){}
+	AVM1Shape(ASWorker* wrk,Class_base* c, float scaling, DefineShapeTag* tag):Shape(wrk,c,scaling,tag) {}
 	static void sinit(Class_base* c);
 };
 
 class AVM1SimpleButton: public SimpleButton
 {
 public:
-	AVM1SimpleButton(Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
+	AVM1SimpleButton(ASWorker* wrk,Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr)
-		:SimpleButton(c,dS,hTS,oS,uS,tag) {}
+		:SimpleButton(wrk,c,dS,hTS,oS,uS,tag) {}
 	
 	static void sinit(Class_base* c);
 };
 class AVM1Stage: public Stage
 {
 public:
-	AVM1Stage(Class_base* c):Stage(c) {}
+	AVM1Stage(ASWorker* wrk,Class_base* c):Stage(wrk,c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_getDisplayState);
 	ASFUNCTION_ATOM(_setDisplayState);
@@ -84,7 +84,7 @@ private:
 	std::list<IThreadJob *> jobs;
 	std::set<_R<ASObject> > listeners;
 public:
-	AVM1MovieClipLoader(Class_base* c):Loader(c){}
+	AVM1MovieClipLoader(ASWorker* wrk,Class_base* c):Loader(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(loadClip);
@@ -99,7 +99,7 @@ class AVM1Color: public ASObject
 {
 	_NR<DisplayObject> target;
 public:
-	AVM1Color(Class_base* c):ASObject(c) {}
+	AVM1Color(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 	bool destruct() override;
 	ASFUNCTION_ATOM(_constructor);
@@ -112,7 +112,7 @@ public:
 class AVM1Broadcaster: public ASObject
 {
 public:
-	AVM1Broadcaster(Class_base* c):ASObject(c) {}
+	AVM1Broadcaster(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(initialize);
 	ASFUNCTION_ATOM(broadcastMessage);
@@ -123,10 +123,10 @@ public:
 class AVM1BitmapData: public BitmapData
 {
 public:
-	AVM1BitmapData(Class_base* c):BitmapData(c) {}
-	AVM1BitmapData(Class_base* c, _R<BitmapContainer> b):BitmapData(c,b) {}
-	AVM1BitmapData(Class_base* c, const BitmapData& other):BitmapData(c,other) {}
-	AVM1BitmapData(Class_base* c, uint32_t width, uint32_t height):BitmapData(c,width,height) {}
+	AVM1BitmapData(ASWorker* wrk,Class_base* c):BitmapData(wrk,c) {}
+	AVM1BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b):BitmapData(wrk,c,b) {}
+	AVM1BitmapData(ASWorker* wrk,Class_base* c, const BitmapData& other):BitmapData(wrk,c,other) {}
+	AVM1BitmapData(ASWorker* wrk,Class_base* c, uint32_t width, uint32_t height):BitmapData(wrk,c,width,height) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(loadBitmap);
 };
@@ -134,8 +134,8 @@ public:
 class AVM1Bitmap: public Bitmap
 {
 public:
-	AVM1Bitmap(Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = nullptr, FILE_TYPE type=FT_UNKNOWN):Bitmap(c,li,s,type) {}
-	AVM1Bitmap(Class_base* c, _R<AVM1BitmapData> data):Bitmap(c,_R<BitmapData>(data)) {}
+	AVM1Bitmap(ASWorker* wrk,Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = nullptr, FILE_TYPE type=FT_UNKNOWN):Bitmap(wrk,c,li,s,type) {}
+	AVM1Bitmap(ASWorker* wrk,Class_base* c, _R<AVM1BitmapData> data):Bitmap(wrk,c,_R<BitmapData>(data)) {}
 	static void sinit(Class_base* c);
 };
 

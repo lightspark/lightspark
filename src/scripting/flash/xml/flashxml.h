@@ -39,8 +39,8 @@ protected:
 	tiny_string toString_priv(pugi::xml_node outputNode);
 	pugi::xml_node getParentNode();
 public:
-	XMLNode(Class_base* c):ASObject(c),root(NullRef),node(NULL){}
-	XMLNode(Class_base* c, _NR<XMLDocument> _r, pugi::xml_node _n);
+	XMLNode(ASWorker* wrk,Class_base* c):ASObject(wrk,c),root(NullRef),node(nullptr){}
+	XMLNode(ASWorker* wrk,Class_base* c, _NR<XMLDocument> _r, pugi::xml_node _n);
 	bool destruct()
 	{
 		root.reset();
@@ -72,7 +72,7 @@ friend class XMLNode;
 private:
 	pugi::xml_node rootNode;
 public:
-	XMLDocument(Class_base* c, tiny_string s="");
+	XMLDocument(ASWorker* wrk,Class_base* c, tiny_string s="");
 	void parseXMLImpl(const std::string& str);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
@@ -86,7 +86,7 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk);
 };
 
 };

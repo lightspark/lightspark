@@ -28,7 +28,7 @@ namespace lightspark
 class TextRenderer: public ASObject
 {
 public:
-	TextRenderer(Class_base* c):ASObject(c){}
+	TextRenderer(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
     ASFUNCTION_ATOM(_getDisplayMode);
 	ASFUNCTION_ATOM(_setDisplayMode);

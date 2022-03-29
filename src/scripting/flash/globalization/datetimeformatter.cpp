@@ -26,8 +26,8 @@
 
 using namespace lightspark;
 
-DateTimeFormatter::DateTimeFormatter(Class_base* c):
-	ASObject(c)
+DateTimeFormatter::DateTimeFormatter(ASWorker* wrk, Class_base* c):
+	ASObject(wrk,c)
 {
 }
 
@@ -63,7 +63,7 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,_constructor)
 	}
 	else
 	{
-		throw Class<ArgumentError>::getInstanceS(sys,"dateStyle value is not valid", kInvalidArgumentError);
+		throw Class<ArgumentError>::getInstanceS(wrk,"dateStyle value is not valid", kInvalidArgumentError);
 	}
 	if (timeStyle == "long" || timeStyle == "medium" ||
 		timeStyle == "short" || timeStyle == "none")
@@ -72,12 +72,12 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,_constructor)
 	}
 	else
 	{
-		throw Class<ArgumentError>::getInstanceS(sys,"timeStyle value is not valid", kInvalidArgumentError);
+		throw Class<ArgumentError>::getInstanceS(wrk,"timeStyle value is not valid", kInvalidArgumentError);
 	}
 
-	if (sys->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
+	if (wrk->getSystemState()->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
-		std::string localeName = sys->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
+		std::string localeName = wrk->getSystemState()->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
 		th->currlocale = std::locale(localeName.c_str());
 		th->actualLocaleIDName = th->requestedLocaleIDName;
 		th->lastOperationStatus="noError";
@@ -123,13 +123,13 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,format)
 		{
 			value = value.substr(1,value.numBytes());
 		}
-		ret = asAtomHandler::fromString(sys,value);
+		ret = asAtomHandler::fromString(wrk->getSystemState(),value);
 		std::locale::global(l);
 		th->lastOperationStatus = "noError";
 	}
 	else
 	{
-		ret = asAtomHandler::fromString(sys,"");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"");
 	}
 }
 
@@ -155,25 +155,25 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,formatUTC)
 		{
 			value = value.substr(1,value.numBytes());
 		}
-		ret = asAtomHandler::fromString(sys,value);
+		ret = asAtomHandler::fromString(wrk->getSystemState(),value);
 		std::locale::global(l);
 		th->lastOperationStatus = "noError";
 	}
 	else
 	{
-		ret = asAtomHandler::fromString(sys,"");
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"");
 	}
 }
 
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,getAvailableLocaleIDNames)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
-	Array* res=Class<Array>::getInstanceSNoArgs(sys);
-	std::vector<std::string> localeIds = sys->localeManager->getAvailableLocaleIDNames();
+	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
+	std::vector<std::string> localeIds = wrk->getSystemState()->localeManager->getAvailableLocaleIDNames();
 	for (std::vector<std::string>::iterator it = localeIds.begin(); it != localeIds.end(); ++it)
 	{
 		tiny_string value = (*it);
-		res->push(asAtomHandler::fromObject(abstract_s(sys, value)));
+		res->push(asAtomHandler::fromObject(abstract_s(wrk, value)));
 	}
 	th->lastOperationStatus="noError";
 	ret = asAtomHandler::fromObject(res);
@@ -182,13 +182,13 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,getAvailableLocaleIDNames)
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,getDateStyle)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
-	ret = asAtomHandler::fromString(sys,th->dateStyle);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),th->dateStyle);
 }
 
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,getDateTimePattern)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
-	ret = asAtomHandler::fromString(sys,th->pattern);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),th->pattern);
 }
 
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,getFirstWeekday)
@@ -204,7 +204,7 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,getMonthNames)
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,getTimeStyle)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
-	ret = asAtomHandler::fromString(sys,th->timeStyle);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),th->timeStyle);
 }
 
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,getWeekdayNames)
@@ -225,7 +225,7 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,setDateTimeStyles)
 	}
 	else
 	{
-		throw Class<ArgumentError>::getInstanceS(sys,"dateStyle value is not valid", kInvalidArgumentError);
+		throw Class<ArgumentError>::getInstanceS(wrk,"dateStyle value is not valid", kInvalidArgumentError);
 	}
 	if (timeStyle == "long" || timeStyle == "medium" ||
 		timeStyle == "short" || timeStyle == "none")
@@ -234,7 +234,7 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,setDateTimeStyles)
 	}
 	else
 	{
-		throw Class<ArgumentError>::getInstanceS(sys,"timeStyle value is not valid", kInvalidArgumentError);
+		throw Class<ArgumentError>::getInstanceS(wrk,"timeStyle value is not valid", kInvalidArgumentError);
 	}
 }
 

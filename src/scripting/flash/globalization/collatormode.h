@@ -28,7 +28,7 @@ namespace lightspark
 class CollatorMode: public ASObject
 {
 public:
-	CollatorMode(Class_base* c):ASObject(c){}
+	CollatorMode(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

@@ -26,13 +26,13 @@ namespace lightspark
 class GameInput : public EventDispatcher
 {
 public:
-	GameInput(Class_base* c);
+	GameInput(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 };
 class GameInputDevice : public ASObject
 {
 public:
-	GameInputDevice(Class_base* c):ASObject(c,T_OBJECT,SUBTYPE_GAMEINPUTDEVICE) {}
+	GameInputDevice(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_GAMEINPUTDEVICE) {}
 	static void sinit(Class_base* c);
 };
 

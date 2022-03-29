@@ -28,24 +28,24 @@ namespace lightspark
 class JSON : public ASObject
 {
 public:
-	JSON(Class_base* c);
+	JSON(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	ASFUNCTION_ATOM(_parse);
 	ASFUNCTION_ATOM(_stringify);
-	static ASObject* doParse(const tiny_string &jsonstring, asAtom reviver, SystemState* sys);
+	static ASObject* doParse(const tiny_string &jsonstring, asAtom reviver, ASWorker* wrk);
 private:
-	static void parseAll(const tiny_string &jsonstring, ASObject** parent , multiname &key, asAtom reviver, SystemState* sys);
-	static void parse(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, SystemState* sys);
-	static void parseTrue(CharIterator& it, ASObject **parent, multiname &key, SystemState* sys);
-	static void parseFalse(CharIterator& it, ASObject **parent, multiname &key, SystemState* sys);
-	static void parseNull(CharIterator& it, ASObject **parent, multiname &key, SystemState* sys);
-	static void parseString(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, SystemState* sys, tiny_string *result = nullptr);
-	static void parseNumber(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, SystemState* sys);
-	static void parseObject(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, SystemState* sys);
-	static void parseArray(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, SystemState* sys);
+	static void parseAll(const tiny_string &jsonstring, ASObject** parent , multiname &key, asAtom reviver, ASWorker* wrk);
+	static void parse(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, ASWorker* wrk);
+	static void parseTrue(CharIterator& it, ASObject **parent, multiname &key, ASWorker* wrk);
+	static void parseFalse(CharIterator& it, ASObject **parent, multiname &key, ASWorker* wrk);
+	static void parseNull(CharIterator& it, ASObject **parent, multiname &key, ASWorker* wrk);
+	static void parseString(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, ASWorker* wrk, tiny_string *result = nullptr);
+	static void parseNumber(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, ASWorker* wrk);
+	static void parseObject(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, ASWorker* wrk);
+	static void parseArray(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, ASWorker* wrk);
 };
 
 }

@@ -114,7 +114,7 @@ int ThreadPool::job_worker(void *d)
 		}
 		catch(LightsparkException& e)
 		{
-			LOG(LOG_ERROR,_("Exception in ThreadPool ") << e.what());
+			LOG(LOG_ERROR,"Exception in ThreadPool " << e.what());
 			data->pool->m_sys->setError(e.cause);
 		}
 		catch(std::exception& e)

@@ -90,7 +90,7 @@ public:
 	};
 	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
-	Array(Class_base* c);
+	Array(ASWorker *w,Class_base* c);
 	bool destruct() override;
 	
 	//These utility methods are also used by ByteArray
@@ -151,15 +151,15 @@ public:
 	uint64_t size();
 	void push(asAtom o);
 	void resize(uint64_t n);
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt) override;
-	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt=NONE) override;
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	
-	int32_t getVariableByMultiname_i(const multiname& name) override;
-	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
-	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset) override;
-	bool deleteVariableByMultiname(const multiname& name) override;
-	void setVariableByMultiname_i(multiname& name, int32_t value) override;
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
+	int32_t getVariableByMultiname_i(const multiname& name, ASWorker* wrk) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
+	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk) override;
+	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
+	void setVariableByMultiname_i(multiname& name, int32_t value,ASWorker* wrk) override;
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk) override;
 	tiny_string toString();
 	uint32_t nextNameIndex(uint32_t cur_index) override;
 	void nextName(asAtom &ret, uint32_t index) override;
@@ -167,7 +167,7 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap) override;
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk) override;
 	virtual tiny_string toJSON(std::vector<ASObject *> &path,asAtom replacer, const tiny_string &spaces,const tiny_string& filter) override;
 };
 

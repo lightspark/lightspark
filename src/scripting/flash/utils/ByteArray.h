@@ -57,7 +57,7 @@ public:
 	{
 		if (shareable) mutex.unlock();
 	}
-	ByteArray(Class_base* c, uint8_t* b = nullptr, uint32_t l = 0);
+	ByteArray(ASWorker* wrk,Class_base* c, uint8_t* b = nullptr, uint32_t l = 0);
 	~ByteArray();
 	//Helper interface for serialization
 	bool peekByte(uint8_t& b);
@@ -124,8 +124,8 @@ public:
 	void writeShort(uint16_t val);
 	void writeUnsignedInt(uint32_t val);
 	void writeUTF(const tiny_string& str);
-	uint32_t writeObject(ASObject* obj);
-	void writeSharedObject(ASObject* obj, const tiny_string& name);
+	uint32_t writeObject(ASObject* obj,ASWorker* wrk);
+	void writeSharedObject(ASObject* obj, const tiny_string& name, ASWorker* wrk);
 	void writeStringVR(std::map<tiny_string, uint32_t>& stringMap, const tiny_string& s);
 	void writeStringAMF0(const tiny_string& s);
 	void writeXMLString(std::map<const ASObject*, uint32_t>& objMap, ASObject *xml, const tiny_string& s);
@@ -244,17 +244,17 @@ public:
 
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
-	GET_VARIABLE_RESULT getVariableByMultiname(asAtom &ret, const multiname& name,GET_VARIABLE_OPTION opt=NONE) override;
-	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt) override;
-	int32_t getVariableByMultiname_i(const multiname& name) override;
-	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset=nullptr) override;
-	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool *alreadyset) override;
-	void setVariableByMultiname_i(multiname& name, int32_t value) override;
-	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype) override;
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom &ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	int32_t getVariableByMultiname_i(const multiname& name, ASWorker* wrk) override;
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
+	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool *alreadyset,ASWorker* wrk) override;
+	void setVariableByMultiname_i(multiname& name, int32_t value,ASWorker* wrk) override;
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk) override;
 
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap) override;
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk) override;
 };
 
 }

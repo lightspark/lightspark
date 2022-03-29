@@ -22,7 +22,7 @@
 using namespace std;
 using namespace lightspark;
 
-GameInput::GameInput(Class_base* c):EventDispatcher(c)
+GameInput::GameInput(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c)
 {
 }
 

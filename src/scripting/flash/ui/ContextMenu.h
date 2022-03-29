@@ -31,7 +31,7 @@ class Array;
 class ContextMenu : public EventDispatcher
 {
 public:
-	ContextMenu(Class_base* c);
+	ContextMenu(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(hideBuiltInItems);
@@ -40,7 +40,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,customItems);
 	ASPROPERTY_GETTER_SETTER(_NR<ContextMenuBuiltInItems>,builtInItems);
 	void getCurrentContextMenuItems(std::vector<_R<NativeMenuItem>>& items);
-	static void getVisibleBuiltinContextMenuItems(ContextMenu* m, std::vector<Ref<NativeMenuItem> > &items, SystemState *sys);
+	static void getVisibleBuiltinContextMenuItems(ContextMenu* m, std::vector<Ref<NativeMenuItem> > &items, ASWorker* worker);
 };
 
 }

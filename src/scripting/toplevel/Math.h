@@ -28,7 +28,7 @@ namespace lightspark
 class Math: public ASObject
 {
 public:
-	Math(Class_base* c):ASObject(c){}
+	Math(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 
 	ASFUNCTION_ATOM(_constructor);

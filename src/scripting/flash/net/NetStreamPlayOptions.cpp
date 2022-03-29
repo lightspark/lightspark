@@ -22,7 +22,7 @@
 using namespace std;
 using namespace lightspark;
 
-NetStreamPlayOptions::NetStreamPlayOptions(Class_base* c):EventDispatcher(c),len(-1),offset(-1),start(-2)
+NetStreamPlayOptions::NetStreamPlayOptions(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),len(-1),offset(-1),start(-2)
 {
 	
 }
@@ -46,6 +46,6 @@ ASFUNCTIONBODY_GETTER_SETTER(NetStreamPlayOptions,transition);
 
 ASFUNCTIONBODY_ATOM(NetStreamPlayOptions,_constructor)
 {
-	EventDispatcher::_constructor(ret,sys,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,wrk,obj, NULL, 0);
 }
 

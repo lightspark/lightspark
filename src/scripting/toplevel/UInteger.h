@@ -30,7 +30,7 @@ class UInteger: public ASObject
 friend ASObject* abstract_ui(SystemState* sys, uint32_t i);
 public:
 	uint32_t val;
-	UInteger(Class_base* c,uint32_t v=0):ASObject(c,T_UINTEGER),val(v){}
+	UInteger(ASWorker* wrk,Class_base* c,uint32_t v=0):ASObject(wrk,c,T_UINTEGER),val(v){}
 
 	static void sinit(Class_base* c);
 	tiny_string toString();
@@ -53,7 +53,7 @@ public:
 	std::string toDebugString() { return toString()+"ui"; }
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk);
 };
 
 }

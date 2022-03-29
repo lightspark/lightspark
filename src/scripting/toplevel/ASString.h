@@ -33,11 +33,11 @@ namespace lightspark
  */
 class ASString: public ASObject
 {
-	friend ASObject* abstract_s(SystemState* sys);
-	friend ASObject* abstract_s(SystemState* sys, const char* s, uint32_t len);
-	friend ASObject* abstract_s(SystemState* sys, const char* s);
-	friend ASObject* abstract_s(SystemState* sys, const tiny_string& s);
-	friend ASObject* abstract_s(SystemState* sys, uint32_t stringId);
+	friend ASObject* abstract_s(ASWorker* w);
+	friend ASObject* abstract_s(ASWorker* wrk, const char* s, uint32_t len);
+	friend ASObject* abstract_s(ASWorker* wrk, const char* s);
+	friend ASObject* abstract_s(ASWorker* wrk, const tiny_string& s);
+	friend ASObject* abstract_s(ASWorker* wrk, uint32_t stringId);
 private:
 	number_t parseStringInfinite(const char *s, char **end) const;
 	tiny_string data;
@@ -46,12 +46,12 @@ private:
 	// speeds up direct access to characters by position
 	std::vector<uint32_t> charpositions;
 public:
-	ASString(Class_base* c);
-	ASString(Class_base* c, const std::string& s);
-	ASString(Class_base* c, const tiny_string& s);
-	ASString(Class_base* c, const Glib::ustring& s);
-	ASString(Class_base* c, const char* s);
-	ASString(Class_base* c, const char* s, uint32_t len);
+	ASString(ASWorker* wrk,Class_base* c);
+	ASString(ASWorker* wrk,Class_base* c, const std::string& s);
+	ASString(ASWorker* wrk,Class_base* c, const tiny_string& s);
+	ASString(ASWorker* wrk,Class_base* c, const Glib::ustring& s);
+	ASString(ASWorker* wrk,Class_base* c, const char* s);
+	ASString(ASWorker* wrk,Class_base* c, const char* s, uint32_t len);
 	bool hasId:1;
 	bool datafilled:1;
 	FORCE_INLINE tiny_string& getData()
@@ -104,7 +104,7 @@ public:
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk);
 	std::string toDebugString() { return std::string("\"") + std::string(getData()) + "\""; }
 	static bool isEcmaSpace(uint32_t c);
 	static bool isEcmaLineTerminator(uint32_t c);
@@ -143,7 +143,7 @@ public:
 };
 
 template<>
-inline bool Class<ASString>::coerce(SystemState* sys,asAtom& o) const
+inline bool Class<ASString>::coerce(ASWorker* wrk,asAtom& o) const
 {
 	if (asAtomHandler::isString(o))
 		return false;
@@ -157,7 +157,7 @@ inline bool Class<ASString>::coerce(SystemState* sys,asAtom& o) const
 	}
 	if(!asAtomHandler::isConstructed(o))
 		return false;
-	uint32_t stringID =asAtomHandler::toStringId(o,sys);
+	uint32_t stringID =asAtomHandler::toStringId(o,wrk);
 	o = asAtomHandler::fromStringID(stringID);
 	return true;
 }

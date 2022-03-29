@@ -28,7 +28,7 @@ namespace lightspark
 class MicrophoneEnhancedOptions: public ASObject
 {
 public:
-	MicrophoneEnhancedOptions(Class_base* c):ASObject(c){}
+	MicrophoneEnhancedOptions(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 	ASPROPERTY_GETTER_SETTER(int, echoPath);
 	ASPROPERTY_GETTER_SETTER(int, isVoiceDetected);

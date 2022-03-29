@@ -32,7 +32,7 @@ class Vector;
 class GraphicsTrianglePath: public ASObject, public IGraphicsPath, public IGraphicsData
 {
 public:
-	GraphicsTrianglePath(Class_base* c);
+	GraphicsTrianglePath(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	void finalize() override;
 	ASFUNCTION_ATOM(_constructor);

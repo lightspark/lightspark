@@ -28,7 +28,7 @@ namespace lightspark
 class ColorCorrectionSupport: public ASObject
 {
 public:
-	ColorCorrectionSupport(Class_base* c):ASObject(c){}
+	ColorCorrectionSupport(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

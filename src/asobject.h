@@ -25,7 +25,7 @@
 #include <limits>
 
 #define ASFUNCTION_ATOM(name) \
-	static void name(asAtom& ret,SystemState* sys, asAtom& , asAtom* args, const unsigned int argslen)
+	static void name(asAtom& ret,ASWorker* wrk, asAtom& , asAtom* args, const unsigned int argslen)
 
 /* declare setter/getter and associated member variable */
 #define ASPROPERTY_GETTER(type,name) \
@@ -63,123 +63,123 @@
 
 /* general purpose body for an AS function */
 #define ASFUNCTIONBODY_ATOM(c,name) \
-	void c::name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen)
+	void c::name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen)
 
 /* full body for a getter declared by ASPROPERTY_GETTER or ASFUNCTION_GETTER */
 #define ASFUNCTIONBODY_GETTER(c,name) \
-	void c::_getter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
 		c* th = asAtomHandler::as<c>(obj); \
 		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
-		ArgumentConversionAtom<decltype(th->name)>::toAbstract(ret,sys,th->name); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		ArgumentConversionAtom<decltype(th->name)>::toAbstract(ret,wrk,th->name); \
 	}
 
 #define ASFUNCTIONBODY_GETTER_STATIC(c,name) \
-	void c::_getter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(asAtomHandler::getObject(obj) != Class<c>::getRef(sys).getPtr()) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
+		if(asAtomHandler::getObject(obj) != Class<c>::getRef(wrk->getSystemState()).getPtr()) \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
 		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
-		ArgumentConversionAtom<decltype(sys->static_##c##_##name)>::toAbstract(ret,sys,sys->static_##c##_##name); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		ArgumentConversionAtom<decltype(wrk->getSystemState()->static_##c##_##name)>::toAbstract(ret,wrk,wrk->getSystemState()->static_##c##_##name); \
 	}
 
 #define ASFUNCTIONBODY_GETTER_STRINGID(c,name) \
-	void c::_getter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
 		c* th = asAtomHandler::as<c>(obj); \
 		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
 		ret = asAtomHandler::fromStringID(th->name); \
 	}
 
 #define ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
-	void c::_getter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
 		c* th = asAtomHandler::as<c>(obj); \
 		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
 		LOG(LOG_NOT_IMPLEMENTED,asAtomHandler::getObject(obj)->getClassName() <<"."<< #name << " getter is not implemented"); \
-		ArgumentConversionAtom<decltype(th->name)>::toAbstract(ret,sys,th->name); \
+		ArgumentConversionAtom<decltype(th->name)>::toAbstract(ret,wrk,th->name); \
 	}
 
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER */
 #define ASFUNCTIONBODY_SETTER(c,name) \
-	void c::_setter_##name(asAtom& ret,SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_setter_##name(asAtom& ret,ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
 		c* th = asAtomHandler::as<c>(obj); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
-		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(sys,args[0],th->name); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
 	}
 #define ASFUNCTIONBODY_SETTER_STATIC(c,name) \
-	void c::_setter_##name(asAtom& ret,SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(asAtomHandler::getObject(obj) != Class<c>::getRef(sys).getPtr()) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
+		if(asAtomHandler::getObject(obj) != Class<c>::getRef(wrk->getSystemState()).getPtr()) \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
-		sys->static_##c##_##name = ArgumentConversionAtom<decltype(sys->static_##c##_##name)>::toConcrete(sys,args[0],sys->static_##c##_##name); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		wrk->getSystemState()->static_##c##_##name = ArgumentConversionAtom<decltype(wrk->getSystemState()->static_##c##_##name)>::toConcrete(wrk,args[0],wrk->getSystemState()->static_##c##_##name); \
 	}
 
 #define ASFUNCTIONBODY_SETTER_STRINGID(c,name) \
-	void c::_setter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
 		c* th = asAtomHandler::as<c>(obj); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
-		th->name = asAtomHandler::toStringId(args[0],sys); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		th->name = asAtomHandler::toStringId(args[0],wrk); \
 	}
 
 #define ASFUNCTIONBODY_SETTER_NOT_IMPLEMENTED(c,name) \
-	void c::_setter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
 		c* th = asAtomHandler::as<c>(obj); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
 		LOG(LOG_NOT_IMPLEMENTED,asAtomHandler::getObject(obj)->getClassName() <<"."<< #name << " setter is not implemented"); \
-		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(sys,args[0],th->name); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
 	}
 
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER.
  * After the property has been updated, the callback member function is called with the old value
  * as parameter */
 #define ASFUNCTIONBODY_SETTER_CB(c,name,callback) \
-	void c::_setter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
 		c* th = asAtomHandler::as<c>(obj); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
 		decltype(th->name) oldValue = th->name; \
-		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(sys,args[0],th->name); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
 		th->callback(oldValue); \
 	}
 
 #define ASFUNCTIONBODY_SETTER_STRINGID_CB(c,name,callback) \
-	void c::_setter_##name(asAtom& ret, SystemState* sys, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
 		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Function applied to wrong object"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
 		c* th = asAtomHandler::as<c>(obj); \
 		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(sys,"Arguments provided in getter"); \
+			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
 		decltype(th->name) oldValue = th->name; \
-		th->name = asAtomHandler::toStringId(args[0],sys); \
+		th->name = asAtomHandler::toStringId(args[0],wrk); \
 		th->callback(oldValue); \
 	}
 
@@ -356,8 +356,8 @@ private:
 	static void decRef(asAtom& a);
 	static void replaceBool(asAtom &a, ASObject* obj);
 	static bool Boolean_concrete_string(asAtom &a);
-	static TRISTATE isLessIntern(asAtom& a,SystemState *sys, asAtom& v2);
-	static bool isEqualIntern(asAtom& a,SystemState *sys, asAtom& v2);
+	static TRISTATE isLessIntern(asAtom& a, ASWorker* w, asAtom& v2);
+	static bool isEqualIntern(asAtom& a, ASWorker* w, asAtom& v2);
 public:
 	static FORCE_INLINE asAtom fromType(SWFOBJECT_TYPE _t)
 	{
@@ -418,10 +418,10 @@ public:
 #endif
 		return a;
 	}
-	static FORCE_INLINE asAtom fromNumber(SystemState* sys, number_t val,bool constant)
+	static FORCE_INLINE asAtom fromNumber(ASWorker* wrk, number_t val,bool constant)
 	{
 		asAtom a=asAtomHandler::invalidAtom;
-		a.uintval =((LIGHTSPARK_ATOM_VALTYPE)(constant ? abstract_d_constant(sys,val) : abstract_d(sys,val))|ATOM_NUMBERPTR);
+		a.uintval =((LIGHTSPARK_ATOM_VALTYPE)(constant ? abstract_d_constant(wrk,val) : abstract_d(wrk,val))|ATOM_NUMBERPTR);
 		return a;
 	}
 	
@@ -431,7 +431,7 @@ public:
 		a.uintval =(ATOM_INVALID_UNDEFINED_NULL_BOOL | ATOMTYPE_BOOL_BIT | (val ? 0x80 : 0));
 		return a;
 	}
-	static ASObject* toObject(asAtom& a, SystemState* sys,bool isconstant=false);
+	static ASObject* toObject(asAtom& a, ASWorker* wrk, bool isconstant=false);
 	// returns NULL if this atom is a primitive;
 	static FORCE_INLINE ASObject* getObject(const asAtom& a);
 	static FORCE_INLINE ASObject* getObjectNoCheck(const asAtom& a);
@@ -468,24 +468,24 @@ public:
 	 * Return the asAtom the function returned.
 	 * if coerceresult is false, the result of the function will not be coerced into the type provided by the method_info
 	 */
-	static void callFunction(asAtom& caller, asAtom& ret, asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true, bool coercearguments=true);
+	static void callFunction(asAtom& caller, ASWorker* wrk, asAtom& ret, asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true, bool coercearguments=true);
 	// returns invalidAtom for not-primitive values
-	static void getVariableByMultiname(asAtom& a, asAtom &ret, SystemState *sys, const multiname& name);
+	static void getVariableByMultiname(asAtom& a, asAtom &ret, SystemState *sys, const multiname& name, ASWorker* wrk);
 	static Class_base* getClass(asAtom& a,SystemState *sys, bool followclass=true);
 	static bool canCacheMethod(asAtom& a,const multiname* name);
-	static void fillMultiname(asAtom& a,SystemState *sys, multiname& name);
+	static void fillMultiname(asAtom& a, ASWorker *wrk, multiname& name);
 	static void replace(asAtom& a,ASObject* obj);
 	static FORCE_INLINE void set(asAtom& a,const asAtom& b)
 	{
 		a.uintval = b.uintval;
 	}
-	static bool stringcompare(asAtom& a, SystemState* sys, uint32_t stringID);
-	static bool functioncompare(asAtom& a, SystemState* sys,asAtom& v2);
+	static bool stringcompare(asAtom& a, ASWorker* wrk, uint32_t stringID);
+	static bool functioncompare(asAtom& a, ASWorker* wrk, asAtom& v2);
 	static std::string toDebugString(asAtom& a);
 	static FORCE_INLINE void applyProxyProperty(asAtom& a,SystemState *sys, multiname& name);
-	static FORCE_INLINE TRISTATE isLess(asAtom& a,SystemState *sys, asAtom& v2);
-	static FORCE_INLINE bool isEqual(asAtom& a,SystemState *sys, asAtom& v2);
-	static FORCE_INLINE bool isEqualStrict(asAtom& a,SystemState *sys, asAtom& v2);
+	static FORCE_INLINE TRISTATE isLess(asAtom& a, ASWorker* wrk, asAtom& v2);
+	static FORCE_INLINE bool isEqual(asAtom& a, ASWorker* wrk, asAtom& v2);
+	static FORCE_INLINE bool isEqualStrict(asAtom& a, ASWorker* wrk, asAtom& v2);
 	static FORCE_INLINE bool isConstructed(const asAtom& a);
 	static FORCE_INLINE bool isPrimitive(const asAtom& a);
 	static FORCE_INLINE bool isNumeric(const asAtom& a); 
@@ -508,7 +508,7 @@ public:
 	static FORCE_INLINE bool isTemplate(const asAtom& a);
 	static FORCE_INLINE SWFOBJECT_TYPE getObjectType(const asAtom& a);
 	static FORCE_INLINE bool checkArgumentConversion(const asAtom& a,const asAtom& obj);
-	static asAtom asTypelate(asAtom& a, asAtom& b);
+	static asAtom asTypelate(asAtom& a, asAtom& b, ASWorker* wrk);
 	static bool isTypelate(asAtom& a,ASObject* type);
 	static bool isTypelate(asAtom& a,asAtom& t);
 	static FORCE_INLINE number_t toNumber(const asAtom& a);
@@ -518,9 +518,9 @@ public:
 	static FORCE_INLINE int32_t toIntStrict(const asAtom& a);
 	static FORCE_INLINE int64_t toInt64(const asAtom& a);
 	static FORCE_INLINE uint32_t toUInt(asAtom& a);
-	static tiny_string toString(const asAtom &a, SystemState *sys);
-	static tiny_string toLocaleString(const asAtom &a);
-	static uint32_t toStringId(asAtom &a, SystemState *sys);
+	static tiny_string toString(const asAtom &a, ASWorker* wrk);
+	static tiny_string toLocaleString(const asAtom &a, ASWorker* wrk);
+	static uint32_t toStringId(asAtom &a, ASWorker* wrk);
 	static FORCE_INLINE asAtom typeOf(asAtom& a);
 	static bool Boolean_concrete(asAtom& a);
 	static bool Boolean_concrete_object(asAtom& a);
@@ -528,40 +528,40 @@ public:
 	static FORCE_INLINE int32_t getInt(const asAtom& a) { assert((a.uintval&0x7) == ATOM_INTEGER || (a.uintval&0x7) == ATOM_UINTEGER); return a.intval>>3; }
 	static FORCE_INLINE uint32_t getUInt(const asAtom& a) { assert((a.uintval&0x7) == ATOM_UINTEGER || (a.uintval&0x7) == ATOM_INTEGER); return a.uintval>>3; }
 	static FORCE_INLINE uint32_t getStringId(const asAtom& a) { assert((a.uintval&0x7) == ATOM_STRINGID); return a.uintval>>3; }
-	static FORCE_INLINE void setInt(asAtom& a,SystemState* sys, int64_t val);
-	static FORCE_INLINE void setUInt(asAtom& a,SystemState* sys, uint32_t val);
-	static void setNumber(asAtom& a,SystemState* sys,number_t val);
-	static bool replaceNumber(asAtom& a,SystemState* sys,number_t val);
+	static FORCE_INLINE void setInt(asAtom& a,ASWorker* wrk, int64_t val);
+	static FORCE_INLINE void setUInt(asAtom& a, ASWorker* wrk, uint32_t val);
+	static void setNumber(asAtom& a,ASWorker* w,number_t val);
+	static bool replaceNumber(asAtom& a, ASWorker* w, number_t val);
 	static FORCE_INLINE void setBool(asAtom& a,bool val);
 	static FORCE_INLINE void setNull(asAtom& a);
 	static FORCE_INLINE void setUndefined(asAtom& a);
-	static void setFunction(asAtom& a,ASObject* obj, ASObject* closure);
-	static FORCE_INLINE void increment(asAtom& a,SystemState* sys);
-	static FORCE_INLINE void decrement(asAtom& a,SystemState* sys);
-	static FORCE_INLINE void increment_i(asAtom& a,SystemState* sys, int32_t amount=1);
-	static FORCE_INLINE void decrement_i(asAtom& a,SystemState* sys, int32_t amount=1);
-	static bool add(asAtom& a,asAtom& v2, SystemState *sys,bool forceint);
-	static void addreplace(asAtom& ret, SystemState* sys, asAtom &v1, asAtom &v2,bool forceint);
-	static FORCE_INLINE void bitnot(asAtom& a,SystemState* sys);
-	static FORCE_INLINE void subtract(asAtom& a,SystemState* sys,asAtom& v2,bool forceint);
-	static FORCE_INLINE void subtractreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom& v2,bool forceint);
-	static FORCE_INLINE void multiply(asAtom& a,SystemState* sys,asAtom& v2,bool forceint);
-	static FORCE_INLINE void multiplyreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2,bool forceint);
-	static FORCE_INLINE void divide(asAtom& a,SystemState* sys,asAtom& v2,bool forceint);
-	static FORCE_INLINE void dividereplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom& v2,bool forceint);
-	static FORCE_INLINE void modulo(asAtom& a,SystemState* sys,asAtom& v2);
-	static FORCE_INLINE void moduloreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2);
-	static FORCE_INLINE void lshift(asAtom& a,SystemState* sys,asAtom& v1);
-	static FORCE_INLINE void rshift(asAtom& a,SystemState* sys,asAtom& v1);
-	static FORCE_INLINE void urshift(asAtom& a,SystemState* sys,asAtom& v1);
-	static FORCE_INLINE void bit_and(asAtom& a,SystemState* sys,asAtom& v1);
-	static FORCE_INLINE void bit_or(asAtom& a,SystemState* sys,asAtom& v1);
-	static FORCE_INLINE void bit_xor(asAtom& a,SystemState* sys,asAtom& v1);
+	static void setFunction(asAtom& a, ASObject* obj, ASObject* closure, ASWorker* wrk);
+	static FORCE_INLINE void increment(asAtom& a, ASWorker* wrk);
+	static FORCE_INLINE void decrement(asAtom& a, ASWorker* wrk);
+	static FORCE_INLINE void increment_i(asAtom& a, ASWorker* wrk, int32_t amount=1);
+	static FORCE_INLINE void decrement_i(asAtom& a, ASWorker* wrk, int32_t amount=1);
+	static bool add(asAtom& a, asAtom& v2, ASWorker *wrk, bool forceint);
+	static void addreplace(asAtom& ret, ASWorker* wrk, asAtom &v1, asAtom &v2,bool forceint);
+	static FORCE_INLINE void bitnot(asAtom& a, ASWorker* wrk);
+	static FORCE_INLINE void subtract(asAtom& a,ASWorker* wrk,asAtom& v2,bool forceint);
+	static FORCE_INLINE void subtractreplace(asAtom& ret, ASWorker* wrk,const asAtom& v1, const asAtom& v2,bool forceint);
+	static FORCE_INLINE void multiply(asAtom& a,ASWorker* wrk,asAtom& v2,bool forceint);
+	static FORCE_INLINE void multiplyreplace(asAtom& ret, ASWorker* wrk,const asAtom& v1, const asAtom &v2,bool forceint);
+	static FORCE_INLINE void divide(asAtom& a,ASWorker* wrk,asAtom& v2,bool forceint);
+	static FORCE_INLINE void dividereplace(asAtom& ret, ASWorker* wrk,const asAtom& v1, const asAtom& v2,bool forceint);
+	static FORCE_INLINE void modulo(asAtom& a,ASWorker* wrk,asAtom& v2);
+	static FORCE_INLINE void moduloreplace(asAtom& ret, ASWorker* wrk,const asAtom& v1, const asAtom &v2);
+	static FORCE_INLINE void lshift(asAtom& a,ASWorker* wrk,asAtom& v1);
+	static FORCE_INLINE void rshift(asAtom& a,ASWorker* wrk,asAtom& v1);
+	static FORCE_INLINE void urshift(asAtom& a,ASWorker* wrk,asAtom& v1);
+	static FORCE_INLINE void bit_and(asAtom& a,ASWorker* wrk,asAtom& v1);
+	static FORCE_INLINE void bit_or(asAtom& a,ASWorker* wrk,asAtom& v1);
+	static FORCE_INLINE void bit_xor(asAtom& a, ASWorker* wrk, asAtom& v1);
 	static FORCE_INLINE void _not(asAtom& a);
-	static FORCE_INLINE void negate_i(asAtom& a,SystemState* sys);
-	static FORCE_INLINE void add_i(asAtom& a,SystemState* sys,asAtom& v2);
-	static FORCE_INLINE void subtract_i(asAtom& a,SystemState* sys,asAtom& v2);
-	static FORCE_INLINE void multiply_i(asAtom& a,SystemState* sys,asAtom& v2);
+	static FORCE_INLINE void negate_i(asAtom& a,ASWorker* wrk);
+	static FORCE_INLINE void add_i(asAtom& a,ASWorker* wrk,asAtom& v2);
+	static FORCE_INLINE void subtract_i(asAtom& a,ASWorker* wrk,asAtom& v2);
+	static FORCE_INLINE void multiply_i(asAtom& a,ASWorker* wrk,asAtom& v2);
 	template<class T> static bool is(asAtom& a);
 	template<class T> static T* as(asAtom& a) 
 	{ 
@@ -594,7 +594,7 @@ struct variable
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
 		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k),isResolved(false),isenumerable(true),issealed(false),isrefcounted(true) {}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
-	void setVar(asAtom v, ASObject* obj, bool _isrefcounted = true);
+	void setVar(ASWorker* wrk,asAtom v, ASObject* obj, bool _isrefcounted = true);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
@@ -772,7 +772,7 @@ public:
 	Class_base* getSlotType(unsigned int n);
 	
 	uint32_t findInstanceSlotByMultiname(multiname* name, SystemState *sys);
-	FORCE_INLINE bool setSlot(unsigned int n, asAtom &o, ASObject* obj);
+	FORCE_INLINE bool setSlot(ASWorker* wrk, unsigned int n, asAtom &o, ASObject* obj);
 	/*
 	 * This version of the call is guarantee to require no type conversion
 	 * this is verified at optimization time
@@ -810,7 +810,7 @@ public:
 	void check() const;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap, bool forsharedobject=false);
+				std::map<const Class_base*, uint32_t>& traitsMap, bool forsharedobject, ASWorker* wrk);
 	void dumpVariables();
 	void destroyContents();
 	bool cloneInstance(variables_map& map);
@@ -820,6 +820,9 @@ public:
 enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 //for toPrimitive
 enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
+class ASWorker;
+
+extern ASWorker* getWorker();
 
 class ASObject: public memory_reporter, public RefCountable
 {
@@ -855,8 +858,9 @@ private:
 	variable* findSettable(const multiname& name, bool* has_getter=nullptr) DLL_LOCAL;
 	multiname* proxyMultiName;
 	SystemState* sys;
+	ASWorker* worker;
 protected:
-	ASObject(MemoryAccount* m):objfreelist(nullptr),Variables(m),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),
+	ASObject(MemoryAccount* m):objfreelist(nullptr),Variables(m),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),worker(nullptr),
 		stringId(UINT32_MAX),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
 	{
 #ifndef NDEBUG
@@ -877,7 +881,6 @@ protected:
 	bool traitsInitialized:1;
 	bool constructIndicator:1;
 	bool constructorCallComplete:1; // indicates that the constructor including all super constructors has been called
-	void setClass(Class_base* c);
 	static variable* findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter);
 	static FORCE_INLINE const variable* findGettableImplConst(SystemState* sys, const variables_map& map, const multiname& name, uint32_t* nsRealId = nullptr)
 	{
@@ -938,7 +941,10 @@ protected:
 		if (objfreelist)
 		{
 			if (!getCached())
+			{
+				assert(getWorker() == this->getInstanceWorker());
 				dodestruct = !objfreelist->pushObjectToFreeList(this);
+			}
 			else
 				dodestruct = false;
 		}
@@ -957,10 +963,10 @@ protected:
 		return dodestruct;
 	}
 public:
-	ASObject(Class_base* c,SWFOBJECT_TYPE t = T_OBJECT,CLASS_SUBTYPE subtype = SUBTYPE_NOT_SET);
+	ASObject(ASWorker* wrk, Class_base* c,SWFOBJECT_TYPE t = T_OBJECT,CLASS_SUBTYPE subtype = SUBTYPE_NOT_SET);
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t> traitsMap,bool usedynamicPropertyWriter=true, bool forSharedObject = false);
+				std::map<const Class_base*, uint32_t> traitsMap, ASWorker* wrk, bool usedynamicPropertyWriter=true, bool forSharedObject = false);
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	bool initialized:1;
@@ -970,6 +976,7 @@ public:
 	bool implEnable:1;
 
 	inline Class_base* getClass() const { return classdef; }
+	void setClass(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	// constructor for subclasses that can't be instantiated.
 	// Throws ArgumentError.
@@ -1009,37 +1016,37 @@ public:
 	// because otherwise it will not be properly deleted on application exit.
 	void setRefConstant();
 
-	virtual GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE)
+	virtual GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 	{
-		return getVariableByMultinameIntern(ret,name,classdef,opt);
+		return getVariableByMultinameIntern(ret,name,classdef,opt,wrk);
 	}
-	virtual GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt=NONE)
+	virtual GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 	{
-		return getVariableByIntegerIntern(ret,index,opt);
+		return getVariableByIntegerIntern(ret,index,opt,wrk);
 	}
 	// AVM1 needs to check the "protoype" variable in addition to the normal behaviour
-	GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt=NONE);
+	GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk);
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code
 	 */
-	variable *findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t* nsRealID = nullptr, bool* isborrowed=nullptr, bool considerdynamic=false);
+	virtual variable *findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t* nsRealID, bool* isborrowed, bool considerdynamic, ASWorker* wrk);
 	/*
 	 * Gets a variable of this object. It looks through all classes (beginning at cls),
 	 * then the prototype chain, and then instance variables.
 	 * If the property found is a getter, it is called and its return value returned.
 	 */
-	GET_VARIABLE_RESULT getVariableByMultinameIntern(asAtom& ret, const multiname& name, Class_base* cls, GET_VARIABLE_OPTION opt=NONE);
-	GET_VARIABLE_RESULT getVariableByIntegerIntern(asAtom& ret, int index, GET_VARIABLE_OPTION opt=NONE)
+	GET_VARIABLE_RESULT getVariableByMultinameIntern(asAtom& ret, const multiname& name, Class_base* cls, GET_VARIABLE_OPTION opt,ASWorker* wrk);
+	GET_VARIABLE_RESULT getVariableByIntegerIntern(asAtom& ret, int index, GET_VARIABLE_OPTION opt,ASWorker* wrk)
 	{
 		multiname m(nullptr);
 		m.name_type = multiname::NAME_INT;
 		m.name_i = index;
-		return getVariableByMultiname(ret,m,opt);
+		return getVariableByMultiname(ret,m,opt,wrk);
 	}
-	virtual int32_t getVariableByMultiname_i(const multiname& name);
+	virtual int32_t getVariableByMultiname_i(const multiname& name, ASWorker* wrk);
 	/* Simple getter interface for the common case */
-	void getVariableByMultiname(asAtom& ret, const tiny_string& name, std::list<tiny_string> namespaces);
+	void getVariableByMultiname(asAtom& ret, const tiny_string& name, std::list<tiny_string> namespaces,ASWorker* wrk);
 	/*
 	 * Execute a AS method on this object. Returns the value
 	 * returned by the function. One reference of each args[i] is
@@ -1047,20 +1054,20 @@ public:
 	 * thrown.
 	 */
 	void executeASMethod(asAtom &ret, const tiny_string& methodName, std::list<tiny_string> namespaces, asAtom *args, uint32_t num_args);
-	virtual void setVariableByMultiname_i(multiname &name, int32_t value);
+	virtual void setVariableByMultiname_i(multiname &name, int32_t value, ASWorker* wrk);
 	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
 	/*
 	 * If alreadyset is not null, it has to be initialized to false by the caller.
 	 * It will be set to true if the old and new value are the same.
 	 * In that case the old value will not be decReffed.
 	 */
-	virtual multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset=nullptr)
+	virtual multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 	{
-		return setVariableByMultiname_intern(name,o,allowConst,classdef,alreadyset);
+		return setVariableByMultiname_intern(name,o,allowConst,classdef,alreadyset,wrk);
 	}
-	virtual void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+	virtual void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 	{
-		setVariableByInteger_intern(index,o,allowConst,alreadyset);
+		setVariableByInteger_intern(index,o,allowConst,alreadyset,wrk);
 	}
 	/*
 	 * Sets  variable of this object. It looks through all classes (beginning at cls),
@@ -1069,13 +1076,13 @@ public:
 	 * If no property is found, an instance variable is created.
 	 * Setting CONSTANT_TRAIT is only allowed if allowConst is true
 	 */
-	multiname* setVariableByMultiname_intern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset);
-	void setVariableByInteger_intern(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset)
+	multiname* setVariableByMultiname_intern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset, ASWorker* wrk);
+	void setVariableByInteger_intern(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 	{
 		multiname m(nullptr);
 		m.name_type = multiname::NAME_INT;
 		m.name_i = index;
-		setVariableByMultiname(m,o,allowConst,alreadyset);
+		setVariableByMultiname(m,o,allowConst,alreadyset,wrk);
 	}
 	
 	// sets dynamic variable without checking for existence
@@ -1089,7 +1096,7 @@ public:
 	 */
 	void initializeVariableByMultiname(multiname &name, asAtom& o, multiname* typemname,
 			ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id, bool isenumerable);
-	virtual bool deleteVariableByMultiname(const multiname& name);
+	virtual bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	variable *setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
@@ -1102,7 +1109,7 @@ public:
 	void setDeclaredMethodAtomByQName(const tiny_string& name, const tiny_string& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom f, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
-	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype);
+	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk);
 	FORCE_INLINE asAtom getSlot(unsigned int n)
 	{
 		return Variables.getSlot(n);
@@ -1119,9 +1126,9 @@ public:
 	{
 		return Variables.getSlotKind(n);
 	}
-	FORCE_INLINE bool setSlot(unsigned int n,asAtom o)
+	FORCE_INLINE bool setSlot(ASWorker* wrk,unsigned int n,asAtom o)
 	{
-		return Variables.setSlot(n,o,this);
+		return Variables.setSlot(wrk,n,o,this);
 	}
 	FORCE_INLINE bool setSlotNoCoerce(unsigned int n,asAtom o)
 	{
@@ -1161,6 +1168,14 @@ public:
 	inline void setSystemState(SystemState* s)
 	{
 		sys = s;
+	}
+	inline ASWorker* getInstanceWorker() const
+	{
+		return worker;
+	}
+	inline void setWorker(ASWorker* w)
+	{
+		worker = w;
 	}
 
 	/* Implements ECMA's 9.8 ToString operation, but returns the concrete value */
@@ -1230,9 +1245,9 @@ public:
 	*/
 	virtual void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap);
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker*wrk);
 
-	virtual ASObject *describeType() const;
+	virtual ASObject *describeType(ASWorker* wrk) const;
 
 	virtual tiny_string toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter);
 	/* returns true if the current object is of type T */
@@ -1286,16 +1301,16 @@ public:
 	
 	
 	// copies all dynamic values to the target
-	void copyValues(ASObject* target);
+	void copyValues(ASObject* target, ASWorker* wrk);
 };
 
 
-FORCE_INLINE bool variables_map::setSlot(unsigned int n, asAtom &o, ASObject* obj)
+FORCE_INLINE bool variables_map::setSlot(ASWorker* wrk,unsigned int n, asAtom &o, ASObject* obj)
 {
 	assert_and_throw(n < slotcount);
 	if (slots_vars[n]->var.uintval != o.uintval)
 	{
-		slots_vars[n]->setVar(o,obj);
+		slots_vars[n]->setVar(wrk,o,obj);
 		if (asAtomHandler::is<SyntheticFunction>(slots_vars[n]->var))
 			obj->checkFunctionScope(asAtomHandler::getObjectNoCheck(o));
 		return slots_vars[n]->var.uintval == o.uintval; // setVar may coerce the object into a new instance, so we need to check if incRef is necessary
@@ -1540,7 +1555,7 @@ FORCE_INLINE int32_t asAtomHandler::toInt(const asAtom& a)
         return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : 0;
     else if ((a.uintval&0x7)==ATOM_STRINGID)
     {
-        ASObject* s = abstract_s(getSys(),a.uintval>>3);
+        ASObject* s = abstract_s(getWorker(),a.uintval>>3);
         int32_t ret = s->toInt();
         s->decRef();
         return ret;
@@ -1560,7 +1575,7 @@ FORCE_INLINE int32_t asAtomHandler::toIntStrict(const asAtom& a)
 			return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : 0;
 		case ATOM_STRINGID:
 		{
-			ASObject* s = abstract_s(getSys(),a.uintval>>3);
+			ASObject* s = abstract_s(getWorker(),a.uintval>>3);
 			int32_t ret = s->toIntStrict();
 			s->decRef();
 			return ret;
@@ -1582,7 +1597,7 @@ FORCE_INLINE number_t asAtomHandler::toNumber(const asAtom& a)
 			return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : (a.uintval&ATOMTYPE_UNDEFINED_BIT) ? numeric_limits<double>::quiet_NaN() : 0;
 		case ATOM_STRINGID:
 		{
-			ASObject* s = abstract_s(getSys(),a.uintval>>3);
+			ASObject* s = abstract_s(getWorker(),a.uintval>>3);
 			number_t ret = s->toNumber();
 			s->decRef();
 			return ret;
@@ -1604,7 +1619,7 @@ FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a, uint32_t swfversion
 			return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : (a.uintval&ATOMTYPE_UNDEFINED_BIT) && swfversion > 6 ? numeric_limits<double>::quiet_NaN() : 0;
 		case ATOM_STRINGID:
 		{
-			ASObject* s = abstract_s(getSys(),a.uintval>>3);
+			ASObject* s = abstract_s(getWorker(),a.uintval>>3);
 			number_t ret = s->toNumber();
 			s->decRef();
 			return ret;
@@ -1643,7 +1658,7 @@ FORCE_INLINE int64_t asAtomHandler::toInt64(const asAtom& a)
 			return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : 0;
 		case ATOM_STRINGID:
 		{
-			ASObject* s = abstract_s(getSys(),a.uintval>>3);
+			ASObject* s = abstract_s(getWorker(),a.uintval>>3);
 			int64_t ret = s->toInt64();
 			s->decRef();
 			return ret;
@@ -1665,7 +1680,7 @@ FORCE_INLINE uint32_t asAtomHandler::toUInt(asAtom& a)
 			return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : 0;
 		case ATOM_STRINGID:	
 		{
-			ASObject* s = abstract_s(getSys(),a.uintval>>3);
+			ASObject* s = abstract_s(getWorker(),a.uintval>>3);
 			uint32_t ret = s->toUInt();
 			s->decRef();
 			return ret;
@@ -1695,7 +1710,7 @@ FORCE_INLINE void asAtomHandler::applyProxyProperty(asAtom& a,SystemState* sys,m
 	}
 }
 
-FORCE_INLINE bool asAtomHandler::isEqualStrict(asAtom& a, SystemState *sys, asAtom &v2)
+FORCE_INLINE bool asAtomHandler::isEqualStrict(asAtom& a, ASWorker* wrk, asAtom &v2)
 {
 	if(getObjectType(a)!=getObjectType(v2))
 	{
@@ -1755,7 +1770,7 @@ FORCE_INLINE bool asAtomHandler::isEqualStrict(asAtom& a, SystemState *sys, asAt
 				return false;
 		}
 	}
-	return isEqual(a,sys,v2);
+	return isEqual(a,wrk,v2);
 }
 
 FORCE_INLINE bool asAtomHandler::isConstructed(const asAtom& a)
@@ -1793,7 +1808,7 @@ FORCE_INLINE bool asAtomHandler::checkArgumentConversion(const asAtom& a,const a
 	return false;
 }
 
-FORCE_INLINE void asAtomHandler::setInt(asAtom& a,SystemState* sys, int64_t val)
+FORCE_INLINE void asAtomHandler::setInt(asAtom& a, ASWorker* wrk, int64_t val)
 {
 #ifdef LIGHTSPARK_64
 	a.intval = ((int64_t)val<<3)|ATOM_INTEGER;
@@ -1801,11 +1816,11 @@ FORCE_INLINE void asAtomHandler::setInt(asAtom& a,SystemState* sys, int64_t val)
 	if (val >=-(1<<28)  && val <=(1<<28))
 		a.intval = (val<<3)|ATOM_INTEGER;
 	else
-		setNumber(a,sys,val);
+		setNumber(a,wrk,val);
 #endif
 }
 
-FORCE_INLINE void asAtomHandler::setUInt(asAtom& a,SystemState* sys, uint32_t val)
+FORCE_INLINE void asAtomHandler::setUInt(asAtom& a, ASWorker* wrk, uint32_t val)
 {
 #ifdef LIGHTSPARK_64
 	a.uintval = ((uint64_t)val<<3)|ATOM_UINTEGER;
@@ -1813,7 +1828,7 @@ FORCE_INLINE void asAtomHandler::setUInt(asAtom& a,SystemState* sys, uint32_t va
 	if (val <(1<<29))
 		a.uintval = (val<<3)|ATOM_UINTEGER;
 	else
-		setNumber(a,sys,val);
+		setNumber(a,wrk,val);
 #endif
 }
 
@@ -1830,7 +1845,7 @@ FORCE_INLINE void asAtomHandler::setUndefined(asAtom& a)
 {
 	a.uintval = ATOM_INVALID_UNDEFINED_NULL_BOOL | ATOMTYPE_UNDEFINED_BIT;
 }
-FORCE_INLINE void asAtomHandler::increment(asAtom& a,SystemState* sys)
+FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk)
 {
 	switch(a.uintval&0x7)
 	{
@@ -1839,13 +1854,13 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a,SystemState* sys)
 			switch (a.uintval&0x70)
 			{
 				case ATOMTYPE_NULL_BIT:
-					setInt(a,sys,1);
+					setInt(a,wrk,1);
 					break;
 				case ATOMTYPE_UNDEFINED_BIT:
-					setNumber(a,sys,numeric_limits<double>::quiet_NaN());
+					setNumber(a,wrk,numeric_limits<double>::quiet_NaN());
 					break;
 				case ATOMTYPE_BOOL_BIT:
-					setInt(a,sys,(a.uintval & 0x80 ? 1 : 0)+1);
+					setInt(a,wrk,(a.uintval & 0x80 ? 1 : 0)+1);
 					break;
 				default:
 					return;
@@ -1853,32 +1868,32 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a,SystemState* sys)
 			break;
 		}
 		case ATOM_INTEGER:
-			setInt(a,sys,(a.intval>>3)+1);
+			setInt(a,wrk,(a.intval>>3)+1);
 			break;
 		case ATOM_UINTEGER:
-			setUInt(a,sys,(a.uintval>>3)+1);
+			setUInt(a,wrk,(a.uintval>>3)+1);
 			break;
 		case ATOM_NUMBERPTR:
-			setNumber(a,sys,toNumber(a)+1);
+			setNumber(a,wrk,toNumber(a)+1);
 			break;
 		case ATOM_STRINGID:
 		{
-			ASObject* s = abstract_s(sys,a.uintval>>3);
+			ASObject* s = abstract_s(wrk,a.uintval>>3);
 			number_t n = s->toNumber();
-			setNumber(a,sys,n+1);
+			setNumber(a,wrk,n+1);
 			s->decRef();
 			break;
 		}
 		default:
 		{
 			number_t n=toNumber(a);
-			setNumber(a,sys,n+1);
+			setNumber(a,wrk,n+1);
 			break;
 		}
 	}
 }
 
-FORCE_INLINE void asAtomHandler::decrement(asAtom& a,SystemState* sys)
+FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk)
 {
 	switch(a.uintval&0x7)
 	{
@@ -1887,13 +1902,13 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a,SystemState* sys)
 			switch (a.uintval&0x70)
 			{
 				case ATOMTYPE_NULL_BIT:
-					setInt(a,sys,-1);
+					setInt(a,wrk,-1);
 					break;
 				case ATOMTYPE_UNDEFINED_BIT:
-					setNumber(a,sys,numeric_limits<double>::quiet_NaN());
+					setNumber(a,wrk,numeric_limits<double>::quiet_NaN());
 					break;
 				case ATOMTYPE_BOOL_BIT:
-					setInt(a,sys,(a.uintval & 0x80 ? 1 : 0)-1);
+					setInt(a,wrk,(a.uintval & 0x80 ? 1 : 0)-1);
 					break;
 				default:
 					return;
@@ -1901,71 +1916,71 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a,SystemState* sys)
 			break;
 		}
 		case ATOM_INTEGER:
-			setInt(a,sys,(a.uintval>>3)-1);
+			setInt(a,wrk,(a.uintval>>3)-1);
 			break;
 		case ATOM_UINTEGER:
 		{
 			if (a.uintval>>3 > 0)
-				setUInt(a,sys,(a.uintval>>3)-1);
+				setUInt(a,wrk,(a.uintval>>3)-1);
 			else
 			{
 				number_t val = a.uintval>>3;
-				setNumber(a,sys,val-1);
+				setNumber(a,wrk,val-1);
 			}
 			break;
 		}
 		case ATOM_NUMBERPTR:
-			setNumber(a,sys,toNumber(a)-1);
+			setNumber(a,wrk,toNumber(a)-1);
 			break;
 		case ATOM_STRINGID:
 		{
-			ASObject* s = abstract_s(sys,a.uintval>>3);
+			ASObject* s = abstract_s(wrk,a.uintval>>3);
 			number_t n = s->toNumber();
-			setNumber(a,sys,n-1);
+			setNumber(a,wrk,n-1);
 			s->decRef();
 			break;
 		}
 		default:
 		{
 			number_t n=toNumber(a);
-			setNumber(a,sys,n-1);
+			setNumber(a,wrk,n-1);
 			break;
 		}
 	}
 
 }
 
-FORCE_INLINE void asAtomHandler::increment_i(asAtom& a, SystemState* sys, int32_t amount)
+FORCE_INLINE void asAtomHandler::increment_i(asAtom& a, ASWorker* wrk, int32_t amount)
 {
 	if ((a.uintval&0x7) == ATOM_INTEGER)
-		setInt(a,sys,int32_t(a.intval>>3)+amount);
+		setInt(a,wrk,int32_t(a.intval>>3)+amount);
 	else
-		setInt(a,sys,toInt(a)+amount);
+		setInt(a,wrk,toInt(a)+amount);
 }
-FORCE_INLINE void asAtomHandler::decrement_i(asAtom& a, SystemState* sys, int32_t amount)
+FORCE_INLINE void asAtomHandler::decrement_i(asAtom& a, ASWorker* wrk, int32_t amount)
 {
 	if ((a.uintval&0x7) == ATOM_INTEGER)
-		setInt(a,sys,int32_t(a.intval>>3)-amount);
+		setInt(a,wrk,int32_t(a.intval>>3)-amount);
 	else
-		setInt(a,sys,toInt(a)-amount);
+		setInt(a,wrk,toInt(a)-amount);
 }
 
-FORCE_INLINE void asAtomHandler::bit_xor(asAtom& a,SystemState* sys,asAtom &v1)
+FORCE_INLINE void asAtomHandler::bit_xor(asAtom& a, ASWorker* wrk, asAtom &v1)
 {
 	int32_t i1=toInt(v1);
 	int32_t i2=toInt(a);
 	LOG_CALL("bitXor " << std::hex << i1 << '^' << i2 << std::dec);
-	setInt(a,sys,i1^i2);
+	setInt(a,wrk,i1^i2);
 }
 
-FORCE_INLINE void asAtomHandler::bitnot(asAtom& a,SystemState* sys)
+FORCE_INLINE void asAtomHandler::bitnot(asAtom& a, ASWorker* wrk)
 {
 	int32_t i1=toInt(a);
 	LOG_CALL("bitNot " << std::hex << i1 << std::dec);
-	setInt(a,sys,~i1);
+	setInt(a,wrk,~i1);
 }
 
-FORCE_INLINE void asAtomHandler::subtract(asAtom& a,SystemState* sys,asAtom &v2, bool forceint)
+FORCE_INLINE void asAtomHandler::subtract(asAtom& a, ASWorker* wrk, asAtom &v2, bool forceint)
 {
 	if( ((a.uintval&0x7) == ATOM_INTEGER || (a.uintval&0x7) == ATOM_UINTEGER) &&
 		(isInteger(v2) || (v2.uintval&0x7) ==ATOM_UINTEGER))
@@ -1976,11 +1991,11 @@ FORCE_INLINE void asAtomHandler::subtract(asAtom& a,SystemState* sys,asAtom &v2,
 		LOG_CALL("subtractI " << num1 << '-' << num2);
 		int64_t res = num1-num2;
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
-			setInt(a,sys,int32_t(res));
+			setInt(a,wrk,int32_t(res));
 		else if (res >= 0 && res < UINT32_MAX>>3)
-			setUInt(a,sys,res);
+			setUInt(a,wrk,res);
 		else
-			setNumber(a,sys,res);
+			setNumber(a,wrk,res);
 	}
 	else
 	{
@@ -1989,12 +2004,12 @@ FORCE_INLINE void asAtomHandler::subtract(asAtom& a,SystemState* sys,asAtom &v2,
 	
 		LOG_CALL("subtract " << num1 << '-' << num2);
 		if (forceint)
-			setInt(a,sys,num1-num2);
+			setInt(a,wrk,num1-num2);
 		else
-			setNumber(a,sys,num1-num2);
+			setNumber(a,wrk,num1-num2);
 	}
 }
-FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret,SystemState* sys,const asAtom &v1, const asAtom &v2, bool forceint)
+FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret, ASWorker* wrk, const asAtom &v1, const asAtom &v2, bool forceint)
 {
 	if( ((v1.uintval&0x7) == ATOM_INTEGER || (v1.uintval&0x7) == ATOM_UINTEGER) &&
 		(isInteger(v2) || (v2.uintval&0x7) ==ATOM_UINTEGER))
@@ -2006,11 +2021,11 @@ FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret,SystemState* sys,co
 		ASATOM_DECREF(ret);
 		int64_t res = num1-num2;
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
-			setInt(ret,sys,int32_t(res));
+			setInt(ret,wrk,int32_t(res));
 		else if (res >= 0 && res < UINT32_MAX>>3)
-			setUInt(ret,sys,res);
+			setUInt(ret,wrk,res);
 		else
-			setNumber(ret,sys,res);
+			setNumber(ret,wrk,res);
 	}
 	else
 	{
@@ -2021,16 +2036,16 @@ FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret,SystemState* sys,co
 		LOG_CALL("subtractreplace "  << num1 << '-' << num2);
 		if (forceint)
 		{
-			setInt(ret,sys,num1-num2);
+			setInt(ret,wrk,num1-num2);
 			if (o)
 				o->decRef();
 		}
-		else if (replaceNumber(ret,sys,num1-num2) && o)
+		else if (replaceNumber(ret,wrk,num1-num2) && o)
 			o->decRef();
 	}
 }
 
-FORCE_INLINE void asAtomHandler::multiply(asAtom& a,SystemState* sys,asAtom &v2, bool forceint)
+FORCE_INLINE void asAtomHandler::multiply(asAtom& a, ASWorker* wrk, asAtom &v2, bool forceint)
 {
 	if( ((a.uintval&0x7) == ATOM_INTEGER || (a.uintval&0x7) == ATOM_UINTEGER) &&
 		(isInteger(v2) || (v2.uintval&0x7) ==ATOM_UINTEGER))
@@ -2041,11 +2056,11 @@ FORCE_INLINE void asAtomHandler::multiply(asAtom& a,SystemState* sys,asAtom &v2,
 		LOG_CALL("multiplyI " << num1 << '*' << num2);
 		int64_t res = num1*num2;
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
-			setInt(a,sys,res);
+			setInt(a,wrk,res);
 		else if (res >= 0 && res < UINT32_MAX>>3)
-			setUInt(a,sys,res);
+			setUInt(a,wrk,res);
 		else
-			setNumber(a,sys,res);
+			setNumber(a,wrk,res);
 	}
 	else
 	{
@@ -2053,13 +2068,13 @@ FORCE_INLINE void asAtomHandler::multiply(asAtom& a,SystemState* sys,asAtom &v2,
 		double num2=toNumber(a);
 		LOG_CALL("multiply "  << num1 << '*' << num2);
 		if (forceint)
-			setInt(a,sys,num1*num2);
+			setInt(a,wrk,num1*num2);
 		else 
-			setNumber(a,sys,num1*num2);
+			setNumber(a,wrk,num1*num2);
 	}
 }
 
-FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2,bool forceint)
+FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, ASWorker* wrk, const asAtom& v1, const asAtom &v2, bool forceint)
 {
 	if( ((v1.uintval&0x7) == ATOM_INTEGER || (v1.uintval&0x7) == ATOM_UINTEGER) &&
 		(isInteger(v2) || (v2.uintval&0x7) ==ATOM_UINTEGER))
@@ -2072,11 +2087,11 @@ FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, SystemState* sys,c
 		int64_t res = num1*num2;
 		
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
-			setInt(ret,sys,res);
+			setInt(ret,wrk,res);
 		else if (res >= 0 && res < UINT32_MAX>>3)
-			setUInt(ret,sys,res);
+			setUInt(ret,wrk,res);
 		else
-			setNumber(ret,sys,res);
+			setNumber(ret,wrk,res);
 	}
 	else
 	{
@@ -2086,16 +2101,16 @@ FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, SystemState* sys,c
 		LOG_CALL("multiplyreplace "  << num1 << '*' << num2);
 		if (forceint)
 		{
-			setInt(ret,sys,num1*num2);
+			setInt(ret,wrk,num1*num2);
 			if (o)
 				o->decRef();
 		}
-		else if (replaceNumber(ret,sys,num1*num2) && o)
+		else if (replaceNumber(ret,wrk,num1*num2) && o)
 			o->decRef();
 	}
 }
 
-FORCE_INLINE void asAtomHandler::divide(asAtom& a,SystemState* sys,asAtom &v2, bool forceint)
+FORCE_INLINE void asAtomHandler::divide(asAtom& a, ASWorker* wrk, asAtom &v2, bool forceint)
 {
 	double num1=toNumber(a);
 	double num2=toNumber(v2);
@@ -2105,19 +2120,19 @@ FORCE_INLINE void asAtomHandler::divide(asAtom& a,SystemState* sys,asAtom &v2, b
 	if (std::isinf(num1))
 	{
 		if (std::isinf(num2) || std::isnan(num2))
-			setNumber(a,sys,numeric_limits<double>::quiet_NaN());
+			setNumber(a,wrk,numeric_limits<double>::quiet_NaN());
 		else
 		{
 			bool needssign = (std::signbit(num1) || std::signbit(num2)) && !(std::signbit(num1) && std::signbit(num2)); 
-			setNumber(a,sys, needssign  ? -numeric_limits<double>::infinity() : numeric_limits<double>::infinity());
+			setNumber(a,wrk, needssign  ? -numeric_limits<double>::infinity() : numeric_limits<double>::infinity());
 		}
 	}
 	else if (forceint)
-		setInt(a,sys,num1/num2);
+		setInt(a,wrk,num1/num2);
 	else
-		setNumber(a,sys,num1/num2);
+		setNumber(a,wrk,num1/num2);
 }
-FORCE_INLINE void asAtomHandler::dividereplace(asAtom& ret,SystemState* sys,const asAtom& v1, const asAtom &v2,bool forceint)
+FORCE_INLINE void asAtomHandler::dividereplace(asAtom& ret, ASWorker* wrk, const asAtom& v1, const asAtom &v2, bool forceint)
 {
 	double num1=toNumber(v1);
 	double num2=toNumber(v2);
@@ -2142,16 +2157,16 @@ FORCE_INLINE void asAtomHandler::dividereplace(asAtom& ret,SystemState* sys,cons
 	LOG_CALL("dividereplace "  << num1 << '/' << num2);
 	if (forceint)
 	{
-		setInt(ret,sys,num1/num2);
+		setInt(ret,wrk,num1/num2);
 		if (o)
 			o->decRef();
 	}
-	else if (replaceNumber(ret,sys,res) && o)
+	else if (replaceNumber(ret,wrk,res) && o)
 		o->decRef();
 	
 }
 
-FORCE_INLINE void asAtomHandler::modulo(asAtom& a,SystemState* sys,asAtom &v2)
+FORCE_INLINE void asAtomHandler::modulo(asAtom& a, ASWorker* wrk, asAtom &v2)
 {
 	// if both values are Integers the result is also an int
 	if( ((a.uintval&0x7) == ATOM_INTEGER || (a.uintval&0x7) == ATOM_UINTEGER) &&
@@ -2161,9 +2176,9 @@ FORCE_INLINE void asAtomHandler::modulo(asAtom& a,SystemState* sys,asAtom &v2)
 		int32_t num2=toInt(v2);
 		LOG_CALL("moduloI "  << num1 << '%' << num2);
 		if (num2 == 0)
-			setNumber(a,sys,numeric_limits<double>::quiet_NaN());
+			setNumber(a,wrk,numeric_limits<double>::quiet_NaN());
 		else
-			setInt(a,sys,num1%num2);
+			setInt(a,wrk,num1%num2);
 	}
 	else
 	{
@@ -2171,10 +2186,10 @@ FORCE_INLINE void asAtomHandler::modulo(asAtom& a,SystemState* sys,asAtom &v2)
 		number_t num2=toNumber(v2);
 		LOG_CALL("modulo "  << num1 << '%' << num2);
 		/* fmod returns NaN if num2 == 0 as the spec mandates */
-		setNumber(a,sys,::fmod(num1,num2));
+		setNumber(a,wrk,::fmod(num1,num2));
 	}
 }
-FORCE_INLINE void asAtomHandler::moduloreplace(asAtom& ret, SystemState* sys,const asAtom& v1, const asAtom &v2)
+FORCE_INLINE void asAtomHandler::moduloreplace(asAtom& ret, ASWorker* wrk, const asAtom& v1, const asAtom &v2)
 {
 	// if both values are Integers the result is also an int
 	if( ((v1.uintval&0x7) == ATOM_INTEGER || (v1.uintval&0x7) == ATOM_UINTEGER) &&
@@ -2185,9 +2200,9 @@ FORCE_INLINE void asAtomHandler::moduloreplace(asAtom& ret, SystemState* sys,con
 		ASATOM_DECREF(ret);
 		LOG_CALL("moduloreplaceI "  << num1 << '%' << num2);
 		if (num2 == 0)
-			setNumber(ret,sys,numeric_limits<double>::quiet_NaN());
+			setNumber(ret,wrk,numeric_limits<double>::quiet_NaN());
 		else
-			setInt(ret,sys,num1%num2);
+			setInt(ret,wrk,num1%num2);
 	}
 	else
 	{
@@ -2196,48 +2211,48 @@ FORCE_INLINE void asAtomHandler::moduloreplace(asAtom& ret, SystemState* sys,con
 		LOG_CALL("moduloreplace "  << num1 << '%' << num2);
 		/* fmod returns NaN if num2 == 0 as the spec mandates */
 		ASObject* o = getObject(ret);
-		if (replaceNumber(ret,sys,::fmod(num1,num2)) && o)
+		if (replaceNumber(ret,wrk,::fmod(num1,num2)) && o)
 			o->decRef();
 	}
 }
 
-FORCE_INLINE void asAtomHandler::lshift(asAtom& a,SystemState* sys,asAtom &v1)
+FORCE_INLINE void asAtomHandler::lshift(asAtom& a, ASWorker* wrk, asAtom &v1)
 {
 	int32_t i2=toInt(a);
 	uint32_t i1=toUInt(v1)&0x1f;
 	LOG_CALL("lShift "<<std::hex<<i2<<"<<"<<i1<<std::dec);
 	//Left shift are supposed to always work in 32bit
-	setInt(a,sys,i2<<i1);
+	setInt(a,wrk,i2<<i1);
 }
 
-FORCE_INLINE void asAtomHandler::rshift(asAtom& a,SystemState* sys,asAtom &v1)
+FORCE_INLINE void asAtomHandler::rshift(asAtom& a, ASWorker* wrk, asAtom &v1)
 {
 	int32_t i2=toInt(a);
 	uint32_t i1=toUInt(v1)&0x1f;
 	LOG_CALL("rShift "<<std::hex<<i2<<">>"<<i1<<std::dec);
-	setInt(a,sys,i2>>i1);
+	setInt(a,wrk,i2>>i1);
 }
 
-FORCE_INLINE void asAtomHandler::urshift(asAtom& a,SystemState* sys,asAtom &v1)
+FORCE_INLINE void asAtomHandler::urshift(asAtom& a, ASWorker* wrk, asAtom &v1)
 {
 	uint32_t i2=toUInt(a);
 	uint32_t i1=toUInt(v1)&0x1f;
 	LOG_CALL("urShift "<<std::hex<<i2<<">>"<<i1<<std::dec);
-	setInt(a,sys,i2>>i1);
+	setInt(a,wrk,i2>>i1);
 }
-FORCE_INLINE void asAtomHandler::bit_and(asAtom& a,SystemState* sys,asAtom &v1)
+FORCE_INLINE void asAtomHandler::bit_and(asAtom& a, ASWorker* wrk, asAtom &v1)
 {
 	int32_t i1=toInt(v1);
 	int32_t i2=toInt(a);
 	LOG_CALL("bitAnd_oo " << std::hex << i1 << '&' << i2 << std::dec);
-	setInt(a,sys,i1&i2);
+	setInt(a,wrk,i1&i2);
 }
-FORCE_INLINE void asAtomHandler::bit_or(asAtom& a,SystemState* sys,asAtom &v1)
+FORCE_INLINE void asAtomHandler::bit_or(asAtom& a, ASWorker* wrk, asAtom &v1)
 {
 	int32_t i1=toInt(v1);
 	int32_t i2=toInt(a);
 	LOG_CALL("bitOr " << std::hex << i1 << '|' << i2 << std::dec);
-	setInt(a,sys,i1|i2);
+	setInt(a,wrk,i1|i2);
 }
 FORCE_INLINE void asAtomHandler::_not(asAtom& a)
 {
@@ -2247,14 +2262,14 @@ FORCE_INLINE void asAtomHandler::_not(asAtom& a)
 	setBool(a,ret);
 }
 
-FORCE_INLINE void asAtomHandler::negate_i(asAtom& a,SystemState* sys)
+FORCE_INLINE void asAtomHandler::negate_i(asAtom& a, ASWorker* wrk)
 {
 	LOG_CALL("negate_i");
 	int n=toInt(a);
-	setInt(a,sys,-n);
+	setInt(a,wrk,-n);
 }
 
-FORCE_INLINE void asAtomHandler::add_i(asAtom& a,SystemState* sys,asAtom &v2)
+FORCE_INLINE void asAtomHandler::add_i(asAtom& a, ASWorker* wrk, asAtom &v2)
 {
 	int64_t num2=toInt(v2);
 	int64_t num1=toInt(a);
@@ -2262,27 +2277,27 @@ FORCE_INLINE void asAtomHandler::add_i(asAtom& a,SystemState* sys,asAtom &v2)
 	LOG_CALL("add_i " << num1 << '+' << num2);
 	int64_t res = num1+num2;
 	if (res >= INT32_MAX || res <= INT32_MIN)
-		setNumber(a,sys,res);
+		setNumber(a,wrk,res);
 	else
-		setInt(a,sys,res);
+		setInt(a,wrk,res);
 }
 
-FORCE_INLINE void asAtomHandler::subtract_i(asAtom& a,SystemState* sys,asAtom &v2)
+FORCE_INLINE void asAtomHandler::subtract_i(asAtom& a, ASWorker* wrk, asAtom &v2)
 {
 	int num2=toInt(v2);
 	int num1=toInt(a);
 
 	LOG_CALL("subtract_i " << num1 << '-' << num2);
-	setInt(a,sys,num1-num2);
+	setInt(a,wrk,num1-num2);
 }
 
-FORCE_INLINE void asAtomHandler::multiply_i(asAtom& a,SystemState* sys,asAtom &v2)
+FORCE_INLINE void asAtomHandler::multiply_i(asAtom& a, ASWorker* wrk, asAtom &v2)
 {
 	int num1=toInt(a);
 	int num2=toInt(v2);
 	LOG_CALL("multiply_i "  << num1 << '*' << num2);
 	int64_t res = num1*num2;
-	setInt(a,sys,res);
+	setInt(a,wrk,res);
 }
 
 FORCE_INLINE bool asAtomHandler::isNumeric(const asAtom& a)
@@ -2391,16 +2406,16 @@ FORCE_INLINE asAtom asAtomHandler::typeOf(asAtom& a)
 	}
 	return asAtomHandler::fromStringID(ret);
 }
-bool asAtomHandler::isEqual(asAtom& a, SystemState *sys, asAtom &v2)
+bool asAtomHandler::isEqual(asAtom& a, ASWorker* wrk, asAtom &v2)
 {
 	if ((((a.intval ^ ATOM_INTEGER) | (v2.intval ^ ATOM_INTEGER)) & 7) == 0)
 		return (a.intval == v2.intval);
 	if (a.uintval == v2.uintval && 
 			((a.uintval&0x7) != ATOM_NUMBERPTR)) // number needs special handling for NaN
 		return true;
-	return isEqualIntern(a,sys,v2);
+	return isEqualIntern(a,wrk,v2);
 }
-TRISTATE asAtomHandler::isLess(asAtom& a,SystemState *sys, asAtom &v2)
+TRISTATE asAtomHandler::isLess(asAtom& a, ASWorker* wrk, asAtom &v2)
 {
 	if ((((a.intval ^ ATOM_INTEGER) | (v2.intval ^ ATOM_INTEGER)) & 7) == 0)
 		return (a.intval < v2.intval)?TTRUE:TFALSE;
@@ -2409,7 +2424,7 @@ TRISTATE asAtomHandler::isLess(asAtom& a,SystemState *sys, asAtom &v2)
 	{
 		return a.uintval == ATOMTYPE_UNDEFINED_BIT ? TUNDEFINED : TFALSE;
 	}
-	return isLessIntern(a,sys,v2);
+	return isLessIntern(a,wrk,v2);
 }
 /* implements ecma3's ToBoolean() operation, see section 9.2, but returns the value instead of an Boolean object */
 FORCE_INLINE bool asAtomHandler::Boolean_concrete(asAtom& a)

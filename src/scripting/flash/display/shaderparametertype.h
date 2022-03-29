@@ -28,7 +28,7 @@ namespace lightspark
 class ShaderParameterType: public ASObject
 {
 public:
-	ShaderParameterType(Class_base* c):ASObject(c){}
+	ShaderParameterType(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };
 

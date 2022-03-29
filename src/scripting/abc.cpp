@@ -1550,7 +1550,7 @@ int ABCVm::Run(void* d)
 		;
 
 	/* set TLS variable for isVmThread() */
-        tls_set(is_vm_thread, GINT_TO_POINTER(1));
+	tls_set(is_vm_thread, GINT_TO_POINTER(1));
 #ifndef NDEBUG
 	inStartupOrClose= false;
 #endif

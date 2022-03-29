@@ -86,8 +86,8 @@ lightspark::Downloader* NPDownloadManager::download(const lightspark::URLInfo& u
 	// typeinfo for FileStreamCache
 	//bool cached = dynamic_cast<FileStreamCache *>(cache.getPtr()) != NULL;
 	bool cached = false;
-	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::download '") << url.getParsedURL() << 
-			"'" << (cached ? _(" - cached") : ""));
+	LOG(LOG_INFO, "NET: PLUGIN: DownloadManager::download '" << url.getParsedURL() << 
+			"'" << (cached ? " - cached" : ""));
 	//Register this download
 	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cache, instance, owner);
 	addDownloader(downloader);
@@ -113,7 +113,7 @@ lightspark::Downloader* NPDownloadManager::downloadWithData(const lightspark::UR
 		return StandaloneDownloadManager::downloadWithData(url, cache, data, headers, owner);
 	}
 
-	LOG(LOG_INFO, _("NET: PLUGIN: DownloadManager::downloadWithData '") << url.getParsedURL());
+	LOG(LOG_INFO, "NET: PLUGIN: DownloadManager::downloadWithData '" << url.getParsedURL());
 	//Register this download
 	NPDownloader* downloader=new NPDownloader(url.getParsedURL(), cache, data, headers, instance, owner);
 	addDownloader(downloader);
@@ -198,7 +198,7 @@ NPDownloader::NPDownloader(const lightspark::tiny_string& _url, _R<StreamCache> 
 void NPDownloader::dlStartCallback(void* t)
 {
 	NPDownloader* th=static_cast<NPDownloader*>(t);
-	LOG(LOG_INFO,_("Start download for ") << th->url);
+	LOG(LOG_INFO,"Start download for " << th->url);
 	NPError e=NPERR_NO_ERROR;
 	if(th->data.empty())
 		e=NPN_GetURLNotify(th->instance, th->url.raw_buf(), NULL, th);
@@ -301,7 +301,8 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 	LOG(LOG_INFO,"NS_DestroyPluginInstance " << aPlugin);
 	if(aPlugin)
 		delete (nsPluginInstance *)aPlugin;
-	setTLSSys( NULL );
+	setTLSSys( nullptr );
+	setTLSWorker(nullptr);
 }
 
 ////////////////////////////////////////
@@ -310,11 +311,12 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : 
 	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mWindow(0),
-	mainDownloaderStreambuf(NULL),mainDownloaderStream(NULL),
-	mainDownloader(NULL),scriptObject(NULL),m_pt(NULL),lastclicktime(0)
+	mainDownloaderStreambuf(nullptr),mainDownloaderStream(nullptr),
+	mainDownloader(nullptr),scriptObject(nullptr),m_pt(nullptr),lastclicktime(0)
 {
 	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2013 Alessandro Pignotti and others");
-	setTLSSys( NULL );
+	setTLSSys( nullptr );
+	setTLSWorker(nullptr);
 	m_sys=new lightspark::SystemState(0, lightspark::SystemState::FLASH);
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
@@ -367,7 +369,8 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");
 	EngineData::mainthread_running = true;
 	//The sys var should be NULL in this thread
-	setTLSSys( NULL );
+	setTLSSys( nullptr );
+	setTLSWorker(nullptr);
 }
 
 nsPluginInstance::~nsPluginInstance()
@@ -375,6 +378,7 @@ nsPluginInstance::~nsPluginInstance()
 	LOG(LOG_INFO, "~nsPluginInstance " << this);
 	//Shutdown the system
 	setTLSSys(m_sys);
+	setTLSWorker(m_sys->worker);
 	if(mainDownloader)
 		mainDownloader->stop();
 	if (mainDownloaderStreambuf)
@@ -392,12 +396,13 @@ nsPluginInstance::~nsPluginInstance()
 	m_sys->destroy();
 	delete m_sys;
 	delete m_pt;
-	setTLSSys(NULL);
+	setTLSSys(nullptr);
+	setTLSWorker(nullptr);
 }
 
 NPBool nsPluginInstance::init(NPWindow* aWindow)
 {
-  if(aWindow == NULL)
+  if(aWindow == nullptr)
     return FALSE;
   
   if (SetWindow(aWindow) == NPERR_NO_ERROR)
@@ -675,7 +680,7 @@ string nsPluginInstance::getPageURL() const
 	{
 		if(url.UTF8Characters[i]&0x80)
 		{
-			LOG(LOG_ERROR,_("Cannot handle UTF8 URLs"));
+			LOG(LOG_ERROR,"Cannot handle UTF8 URLs");
 			return "";
 		}
 	}
@@ -686,15 +691,16 @@ string nsPluginInstance::getPageURL() const
 
 void nsPluginInstance::asyncDownloaderDestruction(const char *url, NPDownloader* dl) const
 {
-	LOG(LOG_INFO,_("Async destruction for ") << url);
+	LOG(LOG_INFO,"Async destruction for " << url);
 	m_sys->downloadManager->destroy(dl);
 }
 
 NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool seekable, uint16_t* stype)
 {
 	NPDownloader* dl=static_cast<NPDownloader*>(stream->notifyData);
-	LOG(LOG_INFO,_("Newstream for ") << stream->url);
+	LOG(LOG_INFO,"Newstream for " << stream->url);
 	setTLSSys( m_sys );
+	setTLSWorker(m_sys->worker);
 	if(dl)
 	{
 		//Check if async destructin of this downloader has been requested
@@ -757,6 +763,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 	//The downloader is set as the private data for this stream
 	stream->pdata=dl;
 	setTLSSys( nullptr );
+	setTLSWorker(nullptr);
 	return NPERR_NO_ERROR;
 }
 
@@ -779,6 +786,7 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 	if(stream->pdata)
 	{
 		setTLSSys( m_sys );
+		setTLSWorker(m_sys->worker);
 		NPDownloader* dl=static_cast<NPDownloader*>(stream->pdata);
 
 		//Check if async destructin of this downloader has been requested
@@ -794,7 +802,8 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 		if(dl->hasFailed())
 			return -1;
 		dl->append((uint8_t*)buffer,len);
-		setTLSSys( NULL );
+		setTLSSys( nullptr );
+		setTLSWorker(nullptr);
 		return len;
 	}
 	else
@@ -804,12 +813,14 @@ int32_t nsPluginInstance::Write(NPStream *stream, int32_t offset, int32_t len, v
 void nsPluginInstance::downloaderFinished(NPDownloader* dl, const char *url, NPReason reason) const
 {
 	setTLSSys(m_sys);
+	setTLSWorker(m_sys->worker);
 	//Check if async destruction of this downloader has been requested
 	if(dl->state==NPDownloader::ASYNC_DESTROY)
 	{
 		dl->setFailed();
 		asyncDownloaderDestruction(url, dl);
-		setTLSSys(NULL);
+		setTLSSys(nullptr);
+		setTLSWorker(nullptr);
 		return;
 	}
 	dl->state=NPDownloader::STREAM_DESTROYED;
@@ -818,19 +829,20 @@ void nsPluginInstance::downloaderFinished(NPDownloader* dl, const char *url, NPR
 	switch(reason)
 	{
 		case NPRES_DONE:
-			LOG(LOG_INFO,_("Download complete ") << url);
+			LOG(LOG_INFO,"Download complete " << url);
 			dl->setFinished();
 			break;
 		case NPRES_USER_BREAK:
-			LOG(LOG_ERROR,_("Download stopped ") << url);
+			LOG(LOG_ERROR,"Download stopped " << url);
 			dl->setFailed();
 			break;
 		case NPRES_NETWORK_ERR:
-			LOG(LOG_ERROR,_("Download error ") << url);
+			LOG(LOG_ERROR,"Download error " << url);
 			dl->setFailed();
 			break;
 	}
-	setTLSSys(NULL);
+	setTLSSys(nullptr);
+	setTLSWorker(nullptr);
 	return;
 }
 
@@ -1052,7 +1064,7 @@ void nsPluginInstance::asyncOpenPage(void *data)
 
 	NPError e = NPN_GetURL(page->instance, page->url.raw_buf(), page->window.raw_buf());
 	if (e != NPERR_NO_ERROR)
-		LOG(LOG_ERROR, _("Failed to open a page in the browser"));
+		LOG(LOG_ERROR, "Failed to open a page in the browser");
 	
 	delete page;
 }

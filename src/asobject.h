@@ -402,7 +402,7 @@ public:
 #else
 		a.intval = ((val<<3)|ATOM_INTEGER);
 		if (val <-(1<<28)  && val > (1<<28))
-			a.uintval =((LIGHTSPARK_ATOM_VALTYPE)(abstract_d(getSys(),val))|ATOM_NUMBERPTR);
+			a.uintval =((LIGHTSPARK_ATOM_VALTYPE)(abstract_d(getWorker(),val))|ATOM_NUMBERPTR);
 #endif
 		return a;
 	}
@@ -414,7 +414,7 @@ public:
 #else
 		a.uintval =((val<<3)|ATOM_UINTEGER);
 		if (val >= (1<<29))
-			a.uintval =((LIGHTSPARK_ATOM_VALTYPE)(abstract_d(getSys(),val))|ATOM_NUMBERPTR);
+			a.uintval =((LIGHTSPARK_ATOM_VALTYPE)(abstract_d(getWorker(),val))|ATOM_NUMBERPTR);
 #endif
 		return a;
 	}

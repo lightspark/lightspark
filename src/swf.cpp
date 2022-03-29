@@ -1571,10 +1571,6 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 void ParseThread::execute()
 {
 	tls_set(parse_thread_tls,this);
-	if(!parsedObject.isNull() && parsedObject->getInstanceWorker())
-		setTLSWorker(parsedObject->getInstanceWorker());
-	else
-		setTLSWorker(getSys()->worker);
 
 	try
 	{

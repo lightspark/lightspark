@@ -69,6 +69,7 @@ bool ppExtScriptObject::invoke(const ExtIdentifier& method_name, uint32_t argc, 
 void ppExtScriptObject::handleExternalCall(ExtIdentifier &method_name, uint32_t argc, PP_Var *argv, PP_Var *exception)
 {
 	setTLSSys(getSystemState());
+	setTLSWorker(getSystemState()->worker);
 	externalcallresult = PP_MakeUndefined();
 	LOG(LOG_INFO,"ppExtScriptObject::handleExternalCall:"<< method_name.getString());
 	std::map<int64_t, std::unique_ptr<ExtObject>> objectsMap;

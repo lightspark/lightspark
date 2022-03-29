@@ -646,6 +646,7 @@ void ppDownloader::dlStartCallback(void* userdata,int result)
 {
 	ppDownloader* th = (ppDownloader*)userdata;
 	setTLSSys(th->m_sys);
+	setTLSWorker(th->m_sys->worker);
 	
 	if (result < 0)
 	{
@@ -684,6 +685,7 @@ void ppDownloader::dlReadResponseCallback(void* userdata,int result)
 {
 	ppDownloader* th = (ppDownloader*)userdata;
 	setTLSSys(th->m_sys);
+	setTLSWorker(th->m_sys->worker);
 	if (result < 0)
 	{
 		LOG(LOG_ERROR,"download failed:"<<result<<" "<<th->getURL()<<" "<<th->downloadedlength<<"/"<<th->getLength());
@@ -711,6 +713,7 @@ void ppDownloader::dlStartDownloadCallback(void* userdata,int result)
 {
 	ppDownloader* th = (ppDownloader*)userdata;
 	setTLSSys(th->m_sys);
+	setTLSWorker(th->m_sys->worker);
 	const tiny_string strurl = th->getURL();
 	LOG_CALL("dlStartDownloadCallback:"<<th->data.size()<<" "<<strurl);
 	th->ppurlloader = g_urlloader_interface->Create(th->m_pluginInstance->getppInstance());
@@ -828,6 +831,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	m_last_size.height = 0;
 	m_graphics = 0;
 	setTLSSys( nullptr );
+	setTLSWorker(nullptr);
 	m_sys=new lightspark::SystemState(0, lightspark::SystemState::FLASH);
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
@@ -876,6 +880,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	
 	//The sys var should be NULL in this thread
 	setTLSSys( nullptr );
+	setTLSWorker(nullptr);
 }
 int ppPluginInstance::worker(void* d)
 {
@@ -909,6 +914,7 @@ ppPluginInstance::~ppPluginInstance()
 {
 	//Shutdown the system
 	setTLSSys(m_sys);
+	setTLSWorker(m_sys->worker);
 	if(mainDownloader)
 		mainDownloader->stop();
 	if (mainDownloaderStreambuf)
@@ -929,11 +935,13 @@ ppPluginInstance::~ppPluginInstance()
 	g_messageloop_interface->PostQuit(m_messageloop,PP_TRUE);
 	SDL_WaitThread(m_ppLoopThread,nullptr);
 	setTLSSys(nullptr);
+	setTLSWorker(nullptr);
 }
 
 void ppPluginInstance::handleResize(PP_Resource view)
 {
 	setTLSSys(m_sys);
+	setTLSWorker(m_sys->worker);
 	struct PP_Rect position;
 	if (g_view_interface->GetRect(view, &position) == PP_FALSE)
 	{
@@ -1122,6 +1130,7 @@ static uint16_t getppKeyModifier(PP_Resource input_event)
 PP_Bool ppPluginInstance::handleInputEvent(PP_Resource input_event)
 {
 	setTLSSys(m_sys);
+	setTLSWorker(m_sys->worker);
 	SDL_Event ev;
 	switch (g_inputevent_interface->GetType(input_event))
 	{
@@ -1245,10 +1254,11 @@ void ppPluginInstance::executeScriptAsync(ExtScriptObject::HOST_CALL_DATA *data)
 bool ppPluginInstance::executeScript(const std::string script, const ExtVariant **args, uint32_t argc, ASObject **result)
 {
 	setTLSSys(m_sys);
+	setTLSWorker(m_sys->worker);
 	PP_Var scr = g_var_interface->VarFromUtf8(script.c_str(),script.length());
 	PP_Var exception = PP_MakeUndefined();
 	PP_Var func = g_instance_private_interface->ExecuteScript(m_ppinstance,scr,&exception);
-	*result = NULL;
+	*result = nullptr;
 	uint32_t len;
 	if (exception.type == PP_VARTYPE_STRING)
 	{
@@ -1329,6 +1339,7 @@ static void Messaging_HandleMessage(PP_Instance instance, struct PP_Var message)
 static bool PPP_Class_HasProperty(void* object,struct PP_Var name,struct PP_Var* exception)
 {
 	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	setTLSWorker(((ppExtScriptObject*)object)->getSystemState()->worker);
 	LOG_CALL("PPP_Class_HasProperty");
 	uint32_t len;
 	switch (name.type)
@@ -1347,6 +1358,7 @@ static bool PPP_Class_HasProperty(void* object,struct PP_Var name,struct PP_Var*
 static bool PPP_Class_HasMethod(void* object,struct PP_Var name,struct PP_Var* exception)
 {
 	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	setTLSWorker(((ppExtScriptObject*)object)->getSystemState()->worker);
 	LOG_CALL("PPP_Class_Method");
 	uint32_t len;
 	switch (name.type)
@@ -1364,6 +1376,7 @@ static bool PPP_Class_HasMethod(void* object,struct PP_Var name,struct PP_Var* e
 static struct PP_Var PPP_Class_GetProperty(void* object,struct PP_Var name,struct PP_Var* exception)
 {
 	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	setTLSWorker(((ppExtScriptObject*)object)->getSystemState()->worker);
 	LOG_CALL("PPP_Class_GetProperty");
 	ExtVariant v;
 	uint32_t len;
@@ -1387,6 +1400,7 @@ static struct PP_Var PPP_Class_GetProperty(void* object,struct PP_Var name,struc
 static void PPP_Class_GetAllPropertyNames(void* object,uint32_t* property_count,struct PP_Var** properties,struct PP_Var* exception)
 {
 	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	setTLSWorker(((ppExtScriptObject*)object)->getSystemState()->worker);
 	LOG_CALL("PPP_Class_GetAllPropertyNames");
 	ExtIdentifier** ids = NULL;
 	bool success = ((ppExtScriptObject*)object)->enumerate(&ids, property_count);
@@ -1409,17 +1423,18 @@ static void PPP_Class_GetAllPropertyNames(void* object,uint32_t* property_count,
 	}
 	else
 	{
-		properties = NULL;
+		properties = nullptr;
 		property_count = 0;
 	}
 
-	if(ids != NULL)
+	if(ids != nullptr)
 		delete ids;
 }
 
 static void PPP_Class_SetProperty(void* object,struct PP_Var name,struct PP_Var value,struct PP_Var* exception)
 {
 	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	setTLSWorker(((ppExtScriptObject*)object)->getSystemState()->worker);
 	LOG_CALL("PPP_Class_SetProperty");
 	uint32_t len;
 	std::map<int64_t, std::unique_ptr<ExtObject>> objectsMap;
@@ -1440,6 +1455,7 @@ static void PPP_Class_SetProperty(void* object,struct PP_Var name,struct PP_Var 
 static void PPP_Class_RemoveProperty(void* object,struct PP_Var name,struct PP_Var* exception)
 {
 	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	setTLSWorker(((ppExtScriptObject*)object)->getSystemState()->worker);
 	LOG_CALL("PPP_Class_RemoveProperty");
 	uint32_t len;
 	switch (name.type)
@@ -1463,6 +1479,7 @@ static struct PP_Var PPP_Class_Call(void* object,struct PP_Var name,uint32_t arg
 	ppPluginInstance* instance = ((ppExtScriptObject*)object)->getInstance();
 	
 	setTLSSys(((ppExtScriptObject*)object)->getSystemState());
+	setTLSWorker(((ppExtScriptObject*)object)->getSystemState()->worker);
 	uint32_t len;
 	ExtIdentifier method_name;
 	switch (name.type)

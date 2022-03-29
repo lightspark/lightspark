@@ -2148,16 +2148,6 @@ void Array::resize(uint64_t n)
 				++it2;
 		}
 	}
-	else
-	{
-		uint32_t oldsize=currentsize;
-		currentsize = n;
-		for (uint32_t i = oldsize; i < currentsize && i < ARRAY_SIZE_THRESHOLD; i++)
-		{
-			asAtom a = asAtomHandler::invalidAtom;
-			set(i,a,false,false);
-		}
-	}
 	currentsize = n;
 }
 

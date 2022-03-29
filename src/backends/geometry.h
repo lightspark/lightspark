@@ -121,27 +121,29 @@ struct tokensVector
 	}
 };
 
-enum SHAPE_PATH_SEGMENT_TYPE { PATH_START=0, PATH_STRAIGHT, PATH_CURVE_QUADRATIC };
 
 class ShapePathSegment {
 public:
-	SHAPE_PATH_SEGMENT_TYPE type;
-	uint64_t i;
-	ShapePathSegment(SHAPE_PATH_SEGMENT_TYPE _t, uint64_t _i):type(_t),i(_i){}
-	bool operator==(const ShapePathSegment& v)const{return v.i == i;}
+	uint64_t from;
+	uint64_t quadctrl;
+	uint64_t to;
+	ShapePathSegment(uint64_t from, uint64_t quadctrl, uint64_t to): from(from), quadctrl(quadctrl), to(to) {}
+	ShapePathSegment reverse() const {return ShapePathSegment(to, quadctrl, from);}
 };
 
 class ShapesBuilder
 {
 private:
-	void joinOutlines();
+	std::vector<ShapePathSegment> currentSubpath;
+	std::map< unsigned int, std::vector<ShapePathSegment> > filledShapesMap;
+	std::map< unsigned int, std::vector<ShapePathSegment> > strokeShapesMap;
+
 	static bool isOutlineEmpty(const std::vector<ShapePathSegment>& outline);
-	inline uint64_t makeVertex(const Vector2& v) const { return (uint64_t(v.y)<<32) | (uint64_t(v.x)&0xffffffff); }
+	static uint64_t makeVertex(const Vector2& v) { return (uint64_t(v.y)<<32) | (uint64_t(v.x)&0xffffffff); }
 public:
-	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > filledShapesMap;
-	std::map< unsigned int, std::vector< std::vector<ShapePathSegment> > > strokeShapesMap;
-	std::vector<ShapePathSegment>* extendOutline(std::vector<std::vector<ShapePathSegment> >* outlines, const Vector2& v1, const Vector2& v2, std::vector<ShapePathSegment>* lastOutline);
-	std::vector<ShapePathSegment>* extendOutlineCurve(std::vector<std::vector<ShapePathSegment> >* outlines, const Vector2& start, const Vector2& control, const Vector2& end, std::vector<ShapePathSegment>* lastOutline);
+	void extendOutline(const Vector2& v1, const Vector2& v2);
+	void extendOutlineCurve(const Vector2& start, const Vector2& control, const Vector2& end);
+	void endSubpathForStyles(unsigned fill0, unsigned fill1, unsigned stroke);
 	/**
 		Generate a sequence of cachable tokens that defines the geomtries
 		@param styles This list is supposed to survive until as long as the returned tokens array

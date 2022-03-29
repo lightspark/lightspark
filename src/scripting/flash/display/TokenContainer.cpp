@@ -60,12 +60,6 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 	unsigned int color0=0;
 	unsigned int color1=0;
 	unsigned int linestyle=0;
-	vector< vector<ShapePathSegment> >* outlinesForColor0=nullptr;
-	vector<ShapePathSegment>* lastoutlinesForColor0=nullptr;
-	vector< vector<ShapePathSegment> >* outlinesForColor1=nullptr;
-	vector<ShapePathSegment>* lastoutlinesForColor1=nullptr;
-	vector< vector<ShapePathSegment> >* outlinesForStroke=nullptr;
-	vector<ShapePathSegment>* lastoutlinesForStroke=nullptr;
 
 	ShapesBuilder shapesBuilder;
 
@@ -77,23 +71,12 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 		const SHAPERECORD* cur=&shapeRecords[i];
 		if(cur->TypeFlag)
 		{
-			if (outlinesForColor0 == outlinesForColor1)
-			{
-				lastoutlinesForColor0=nullptr;
-				lastoutlinesForColor1=nullptr;
-			}
 			if(cur->StraightFlag)
 			{
 				cursor.x += cur->DeltaX;
 				cursor.y += cur->DeltaY;
 				Vector2 p2(matrix.multiply2D(cursor));
-
-				if(color0)
-					lastoutlinesForColor0=shapesBuilder.extendOutline(outlinesForColor0,p1,p2,lastoutlinesForColor0);
-				if(color1)
-					lastoutlinesForColor1=shapesBuilder.extendOutline(outlinesForColor1,p1,p2,lastoutlinesForColor1);
-				if(linestyle)
-					lastoutlinesForStroke=shapesBuilder.extendOutline(outlinesForStroke,p1,p2,lastoutlinesForStroke);
+				shapesBuilder.extendOutline(p1, p2);
 				p1.x=p2.x;
 				p1.y=p2.y;
 			}
@@ -106,21 +89,14 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 				cursor.y += cur->AnchorDeltaY;
 				Vector2 p3(matrix.multiply2D(cursor));
 
-				if(color0)
-					lastoutlinesForColor0=shapesBuilder.extendOutlineCurve(outlinesForColor0,p1,p2,p3,lastoutlinesForColor0);
-				if(color1)
-					lastoutlinesForColor1=shapesBuilder.extendOutlineCurve(outlinesForColor1,p1,p2,p3,lastoutlinesForColor1);
-				if(linestyle)
-					lastoutlinesForStroke=shapesBuilder.extendOutlineCurve(outlinesForStroke,p1,p2,p3,lastoutlinesForStroke);
+				shapesBuilder.extendOutlineCurve(p1, p2, p3);
 				p1.x=p3.x;
 				p1.y=p3.y;
 			}
 		}
 		else
 		{
-			lastoutlinesForColor0=nullptr;
-			lastoutlinesForColor1=nullptr;
-			lastoutlinesForStroke=nullptr;
+			shapesBuilder.endSubpathForStyles(color0, color1, linestyle);
 			if(cur->StateMoveTo)
 			{
 				cursor.x= cur->MoveDeltaX-shapebounds.Xmin;
@@ -130,23 +106,11 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 				p1.y = tmp.y;
 			}
 			if(cur->StateLineStyle)
-			{
 				linestyle = cur->LineStyle;
-				if (linestyle)
-					outlinesForStroke=&shapesBuilder.strokeShapesMap[linestyle];
-			}
 			if(cur->StateFillStyle1)
-			{
 				color1=cur->FillStyle1;
-				if (color1)
-					outlinesForColor1=&shapesBuilder.filledShapesMap[color1];
-			}
 			if(cur->StateFillStyle0)
-			{
 				color0=cur->FillStyle0;
-				if (color0)
-					outlinesForColor0=&shapesBuilder.filledShapesMap[color0];
-			}
 		}
 	}
 
@@ -159,12 +123,6 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 	unsigned int color0=0;
 	unsigned int color1=0;
 	unsigned int linestyle=0;
-	vector< vector<ShapePathSegment> >* outlinesForColor0=nullptr;
-	vector<ShapePathSegment>* lastoutlinesForColor0=nullptr;
-	vector< vector<ShapePathSegment> >* outlinesForColor1=nullptr;
-	vector<ShapePathSegment>* lastoutlinesForColor1=nullptr;
-	vector< vector<ShapePathSegment> >* outlinesForStroke=nullptr;
-	vector<ShapePathSegment>* lastoutlinesForStroke=nullptr;
 
 	const MATRIX matrix;
 	ShapesBuilder shapesBuilder;
@@ -186,23 +144,13 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 		const SHAPERECORD* curend=&(*itend);
 		if(curstart->TypeFlag)
 		{
-			if (outlinesForColor0 == outlinesForColor1)
-			{
-				lastoutlinesForColor0=nullptr;
-				lastoutlinesForColor1=nullptr;
-			}
 			if(curstart->StraightFlag)
 			{
 				cursor.x += curstart->DeltaX+(curend->DeltaX-curstart->DeltaX)*curratiofactor;
 				cursor.y += curstart->DeltaY+(curend->DeltaY-curstart->DeltaY)*curratiofactor;
 				Vector2 p2(matrix.multiply2D(cursor));
 
-				if(color0)
-					lastoutlinesForColor0=shapesBuilder.extendOutline(outlinesForColor0,p1,p2,lastoutlinesForColor0);
-				if(color1)
-					lastoutlinesForColor1=shapesBuilder.extendOutline(outlinesForColor1,p1,p2,lastoutlinesForColor1);
-				if(linestyle)
-					lastoutlinesForStroke=shapesBuilder.extendOutline(outlinesForStroke,p1,p2,lastoutlinesForStroke);
+				shapesBuilder.extendOutline(p1, p2);
 				p1.x=p2.x;
 				p1.y=p2.y;
 			}
@@ -215,21 +163,14 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 				cursor.y += curstart->AnchorDeltaY+(curend->AnchorDeltaY-curstart->AnchorDeltaY)*curratiofactor;
 				Vector2 p3(matrix.multiply2D(cursor));
 
-				if(color0)
-					lastoutlinesForColor0=shapesBuilder.extendOutlineCurve(outlinesForColor0,p1,p2,p3,lastoutlinesForColor0);
-				if(color1)
-					lastoutlinesForColor1=shapesBuilder.extendOutlineCurve(outlinesForColor1,p1,p2,p3,lastoutlinesForColor1);
-				if(linestyle)
-					lastoutlinesForStroke=shapesBuilder.extendOutlineCurve(outlinesForStroke,p1,p2,p3,lastoutlinesForStroke);
+				shapesBuilder.extendOutlineCurve(p1, p2, p3);
 				p1.x=p3.x;
 				p1.y=p3.y;
 			}
 		}
 		else
 		{
-			lastoutlinesForColor0=nullptr;
-			lastoutlinesForColor1=nullptr;
-			lastoutlinesForStroke=nullptr;
+			shapesBuilder.endSubpathForStyles(color0, color1, linestyle);
 			if(curstart->StateMoveTo)
 			{
 				cursor.x=(curstart->MoveDeltaX-boundsx)+(curend->MoveDeltaX-curstart->MoveDeltaX)*curratiofactor;
@@ -239,23 +180,11 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 				p1.y = tmp.y;
 			}
 			if(curstart->StateLineStyle)
-			{
 				linestyle = curstart->LineStyle;
-				if (linestyle)
-					outlinesForStroke=&shapesBuilder.strokeShapesMap[linestyle];
-			}
 			if(curstart->StateFillStyle1)
-			{
 				color1=curstart->StateFillStyle1;
-				if (color1)
-					outlinesForColor1=&shapesBuilder.filledShapesMap[color1];
-			}
 			if(curstart->StateFillStyle0)
-			{
 				color0=curstart->StateFillStyle0;
-				if (color0)
-					outlinesForColor0=&shapesBuilder.filledShapesMap[color0];
-			}
 		}
 		itstart++;
 		itend++;

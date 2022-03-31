@@ -5998,27 +5998,42 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				int32_t p = code.tellg();
 #ifdef ENABLE_OPTIMIZATION
 				bool checkresulttype=true;
-				if (state.jumptargets.find(p) != state.jumptargets.end())
+				if (!coercereturnvalue) // there was no returnvalue opcode yet that needs coercion, so we keep checking
 				{
-					Class_base* resulttype = state.jumptargeteresulttypes[p];
-					checkresulttype = resulttype && resulttype == typestack.back().obj;
-					if (!checkresulttype)
+					if (state.jumptargets.find(p) != state.jumptargets.end())
 					{
-						clearOperands(state,true,&lastlocalresulttype);
-						coercereturnvalue = true;
+						Class_base* resulttype = state.jumptargeteresulttypes[p];
+						checkresulttype = resulttype && resulttype == typestack.back().obj;
+						if (!checkresulttype)
+						{
+							clearOperands(state,true,&lastlocalresulttype);
+							coercereturnvalue = true;
+						}
 					}
-				}
-				if (checkresulttype)
-				{
-					if (dynamic_cast<const Class_base*>(mi->returnType) == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
-							(!typestack.back().obj
-							|| !typestack.back().obj->is<Class_base>() 
-							|| (dynamic_cast<const Class_base*>(mi->returnType) && !typestack.back().obj->as<Class_base>()->isSubClass(dynamic_cast<const Class_base*>(mi->returnType)))))
+					if (checkresulttype)
 					{
-						coercereturnvalue = !checkmatchingLastObjtype(state,(Class_base*)(dynamic_cast<const Class_base*>(mi->returnType)),Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr());
+						if (state.operandlist.size() > 0 && state.operandlist.back().objtype && dynamic_cast<const Class_base*>(mi->returnType))
+						{
+							if (checkmatchingLastObjtype(state,(Class_base*)(dynamic_cast<const Class_base*>(mi->returnType)),state.operandlist.back().objtype)
+									|| state.operandlist.back().objtype->isSubClass(dynamic_cast<const Class_base*>(mi->returnType)))
+							{
+								// return type matches type of last operand, no need to continue checking
+								checkresulttype=false;
+							}
+						}
 					}
-					else
-						coercereturnvalue = true;
+					if (checkresulttype)
+					{
+						if (dynamic_cast<const Class_base*>(mi->returnType) == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
+								(!typestack.back().obj
+								 || !typestack.back().obj->is<Class_base>() 
+								 || (dynamic_cast<const Class_base*>(mi->returnType) && !typestack.back().obj->as<Class_base>()->isSubClass(dynamic_cast<const Class_base*>(mi->returnType)))))
+						{
+							coercereturnvalue = !checkmatchingLastObjtype(state,(Class_base*)(dynamic_cast<const Class_base*>(mi->returnType)),Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr());
+						}
+						else
+							coercereturnvalue = true;
+					}
 				}
 				if (state.operandlist.size() > 0 && state.operandlist.back().type == OP_LOCAL && state.operandlist.back().index == (int32_t)mi->body->getReturnValuePos())
 				{

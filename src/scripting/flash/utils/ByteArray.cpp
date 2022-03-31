@@ -170,54 +170,6 @@ uint8_t* ByteArray::getBufferIntern(unsigned int size, bool enableResize)
 	return bytes;
 }
 
-uint16_t ByteArray::endianIn(uint16_t value)
-{
-	if(littleEndian)
-		return GUINT16_TO_LE(value);
-	else
-		return GUINT16_TO_BE(value);
-}
-
-uint32_t ByteArray::endianIn(uint32_t value)
-{
-	if(littleEndian)
-		return GUINT32_TO_LE(value);
-	else
-		return GUINT32_TO_BE(value);
-}
-
-uint64_t ByteArray::endianIn(uint64_t value)
-{
-	if(littleEndian)
-		return GUINT64_TO_LE(value);
-	else
-		return GUINT64_TO_BE(value);
-}
-
-uint16_t ByteArray::endianOut(uint16_t value)
-{
-	if(littleEndian)
-		return GUINT16_FROM_LE(value);
-	else
-		return GUINT16_FROM_BE(value);
-}
-
-uint32_t ByteArray::endianOut(uint32_t value)
-{
-	if(littleEndian)
-		return GUINT32_FROM_LE(value);
-	else
-		return GUINT32_FROM_BE(value);
-}
-
-uint64_t ByteArray::endianOut(uint64_t value)
-{
-	if(littleEndian)
-		return GUINT64_FROM_LE(value);
-	else
-		return GUINT64_FROM_BE(value);
-}
-
 ASFUNCTIONBODY_ATOM(ByteArray,_constructor)
 {
 }

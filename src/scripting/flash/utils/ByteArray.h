@@ -234,13 +234,49 @@ public:
 	}
 	uint32_t getLength() const { return len; }
 
-	uint16_t endianIn(uint16_t value);
-	uint32_t endianIn(uint32_t value);
-	uint64_t endianIn(uint64_t value);
+	FORCE_INLINE uint16_t endianIn(uint16_t value)
+	{
+		if(littleEndian)
+			return GUINT16_TO_LE(value);
+		else
+			return GUINT16_TO_BE(value);
+	}
+	FORCE_INLINE uint32_t endianIn(uint32_t value)
+	{
+		if(littleEndian)
+			return GUINT32_TO_LE(value);
+		else
+			return GUINT32_TO_BE(value);
+	}
+	FORCE_INLINE uint64_t endianIn(uint64_t value)
+	{
+		if(littleEndian)
+			return GUINT64_TO_LE(value);
+		else
+			return GUINT64_TO_BE(value);
+	}
 
-	uint16_t endianOut(uint16_t value);
-	uint32_t endianOut(uint32_t value);
-	uint64_t endianOut(uint64_t value);
+	FORCE_INLINE uint16_t endianOut(uint16_t value)
+	{
+		if(littleEndian)
+			return GUINT16_FROM_LE(value);
+		else
+			return GUINT16_FROM_BE(value);
+	}
+	FORCE_INLINE uint32_t endianOut(uint32_t value)
+	{
+		if(littleEndian)
+			return GUINT32_FROM_LE(value);
+		else
+			return GUINT32_FROM_BE(value);
+	}
+	FORCE_INLINE uint64_t endianOut(uint64_t value)
+	{
+		if(littleEndian)
+			return GUINT64_FROM_LE(value);
+		else
+			return GUINT64_FROM_BE(value);
+	}
 
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

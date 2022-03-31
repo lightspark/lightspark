@@ -646,8 +646,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		priority=asAtomHandler::toInt(args[3]);
 
 	const tiny_string& eventName=asAtomHandler::toString(args[0],wrk);
-
-	if(th->is<DisplayObject>() && (eventName=="enterFrame"
+	if(wrk->isPrimordial // don't register frame listeners for background workers
+			&& th->is<DisplayObject>() && (eventName=="enterFrame"
 				|| eventName=="exitFrame"
 				|| eventName=="frameConstructed"
 				|| eventName=="render") )

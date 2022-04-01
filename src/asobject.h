@@ -564,6 +564,10 @@ public:
 	static FORCE_INLINE void add_i(asAtom& a,ASWorker* wrk,asAtom& v2);
 	static FORCE_INLINE void subtract_i(asAtom& a,ASWorker* wrk,asAtom& v2);
 	static FORCE_INLINE void multiply_i(asAtom& a,ASWorker* wrk,asAtom& v2);
+	static void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
+						  std::map<const ASObject*, uint32_t>& objMap,
+						  std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk,
+						  asAtom& a);
 	template<class T> static bool is(asAtom& a);
 	template<class T> static T* as(asAtom& a) 
 	{ 

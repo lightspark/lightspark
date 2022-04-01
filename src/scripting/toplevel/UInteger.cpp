@@ -268,6 +268,11 @@ void UInteger::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap,ASWorker* wrk)
 {
+	serializeValue(out,val);
+}
+
+void UInteger::serializeValue(ByteArray* out, int32_t val)
+{
 	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{
 		out->writeByte(amf0_number_marker);

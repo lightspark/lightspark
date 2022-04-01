@@ -2080,7 +2080,7 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 			out->writeStringAMF0(out->getSystemState()->getStringFromUniqueId(it->first));
 		else
 			out->writeStringVR(stringMap,out->getSystemState()->getStringFromUniqueId(it->first));
-		asAtomHandler::toObject(it->second.var,out->getInstanceWorker())->serialize(out, stringMap, objMap, traitsMap,wrk);
+		asAtomHandler::serialize(out,stringMap,objMap,traitsMap,wrk,it->second.var);
 		if (forsharedobject)
 		{
 			// it seems that on shared objects an additional 0 is written after each property
@@ -3306,6 +3306,60 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 					o->decRef();
 			}
 		}
+	}
+}
+
+void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap, std::map<const ASObject*, uint32_t>& objMap, std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk, asAtom& a)
+{
+	switch (a.uintval&0x7)
+	{
+		case ATOM_INTEGER:
+			Integer::serializeValue(out,asAtomHandler::getInt(a));
+			break;
+		case ATOM_UINTEGER:
+			UInteger::serializeValue(out,asAtomHandler::getUInt(a));
+			break;
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+			switch (a.uintval&0xf0)
+			{
+				case ATOMTYPE_NULL_BIT: 
+					if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
+						out->writeByte(amf0_undefined_marker);
+					else
+						out->writeByte(undefined_marker);
+					break;
+				case ATOMTYPE_UNDEFINED_BIT: // UNDEFINED
+					if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
+						out->writeByte(amf0_null_marker);
+					else
+						out->writeByte(null_marker);
+					break;
+				default: // BOOL
+					if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
+					{
+						out->writeByte(amf0_boolean_marker);
+						out->writeByte(a.uintval == asAtomHandler::trueAtom.uintval ? 1:0);
+					}
+					else
+						out->writeByte(a.uintval == asAtomHandler::trueAtom.uintval ? true_marker : false_marker);
+					break;
+			}
+			break;
+		case ATOM_STRINGID:
+			if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
+			{
+				out->writeByte(amf0_string_marker);
+				out->writeStringAMF0(out->getSystemState()->getStringFromUniqueId(asAtomHandler::getStringId(a)));
+			}
+			else
+			{
+				out->writeByte(string_marker);
+				out->writeStringVR(stringMap, out->getSystemState()->getStringFromUniqueId(asAtomHandler::getStringId(a)));
+			}
+			break;
+		default:
+			asAtomHandler::getObjectNoCheck(a)->serialize(out, stringMap, objMap, traitsMap, wrk);
+			break;
 	}
 }
 void asAtomHandler::setFunction(asAtom& a, ASObject *obj, ASObject *closure, ASWorker* wrk)

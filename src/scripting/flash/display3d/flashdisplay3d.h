@@ -101,11 +101,14 @@ class RenderContext;
 class VertexBuffer3D;
 class Program3D;
 
-enum RENDER_ACTION { RENDER_CLEAR,RENDER_CONFIGUREBACKBUFFER,RENDER_SETPROGRAM,RENDER_RENDERTOBACKBUFFER,RENDER_TOTEXTURE,RENDER_DELETEPROGRAM,
+enum RENDER_ACTION { RENDER_CLEAR,RENDER_CONFIGUREBACKBUFFER,RENDER_RENDERTOBACKBUFFER,RENDER_TOTEXTURE,
+					 RENDER_SETPROGRAM,RENDER_UPLOADPROGRAM,RENDER_DELETEPROGRAM,
 					 RENDER_SETVERTEXBUFFER,RENDER_DRAWTRIANGLES,RENDER_DELETEBUFFER,
 					 RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX,RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR,RENDER_SETTEXTUREAT,
 					 RENDER_SETBLENDFACTORS,RENDER_SETDEPTHTEST,RENDER_SETCULLING,RENDER_LOADTEXTURE,RENDER_LOADCUBETEXTURE,
-					 RENDER_SETSCISSORRECTANGLE, RENDER_SETCOLORMASK, RENDER_SETSAMPLERSTATE, RENDER_DELETETEXTURE };
+					 RENDER_SETSCISSORRECTANGLE, RENDER_SETCOLORMASK, RENDER_SETSAMPLERSTATE, RENDER_DELETETEXTURE,
+					 RENDER_CREATEINDEXBUFFER,RENDER_UPLOADINDEXBUFFER,RENDER_DELETEINDEXBUFFER,
+					 RENDER_CREATEVERTEXBUFFER,RENDER_UPLOADVERTEXBUFFER,RENDER_DELETEVERTEXBUFFER };
 struct renderaction
 {
 	RENDER_ACTION action;
@@ -144,7 +147,6 @@ private:
 	uint32_t textureframebufferID;
 	uint32_t depthRenderBuffer;
 	uint32_t stencilRenderBuffer;
-	uint32_t vertexbufferIDs[8] = {UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX};
 	Program3D* currentprogram;
 	bool renderingToTexture;
 	bool enableDepthAndStencilBackbuffer;
@@ -312,11 +314,11 @@ protected:
 	uint32_t bufferID;
 	vector<uint16_t> data;
 	tiny_string bufferUsage;
-	bool upload_needed;
+	bool disposed;
 public:
-	IndexBuffer3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_INDEXBUFFER3D),bufferID(UINT32_MAX),upload_needed(false){}
+	IndexBuffer3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_INDEXBUFFER3D),bufferID(UINT32_MAX),disposed(false){}
 	IndexBuffer3D(ASWorker* wrk,Class_base* c, Context3D* ctx,int _numVertices,tiny_string _bufferUsage);
-	~IndexBuffer3D();
+	bool destruct() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(dispose);
 	ASFUNCTION_ATOM(uploadFromByteArray);
@@ -327,7 +329,7 @@ class Program3D: public ASObject
 {
 friend class Context3D;
 private:
-	_NR<Context3D> context3D;
+	Context3D* context;
 	uint32_t gpu_program;
 protected:
 	uint32_t vcPositionScale;
@@ -338,9 +340,10 @@ protected:
 	std::vector<RegisterMapEntry> vertexattributes;
 	std::vector<RegisterMapEntry> fragmentregistermap;
 	std::vector<RegisterMapEntry> fragmentattributes;
+	bool disposed;
 public:
-	Program3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_PROGRAM3D),gpu_program(UINT32_MAX),vcPositionScale(UINT32_MAX){}
-	Program3D(ASWorker* wrk,Class_base* c,_NR<Context3D> _ct):ASObject(wrk,c,T_OBJECT,SUBTYPE_PROGRAM3D),context3D(_ct),gpu_program(UINT32_MAX),vcPositionScale(UINT32_MAX){}
+	Program3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_PROGRAM3D),gpu_program(UINT32_MAX),vcPositionScale(UINT32_MAX),disposed(false){}
+	Program3D(ASWorker* wrk,Class_base* c,Context3D* _ct):ASObject(wrk,c,T_OBJECT,SUBTYPE_PROGRAM3D),context(_ct),gpu_program(UINT32_MAX),vcPositionScale(UINT32_MAX),disposed(false){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(dispose);
 	ASFUNCTION_ATOM(upload);
@@ -355,10 +358,11 @@ protected:
 	vector<float> data;
 	tiny_string bufferUsage;
 	bool disposed;
+	uint32_t bufferID;
 public:
-	VertexBuffer3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_VERTEXBUFFER3D),context(nullptr),numVertices(0),data32PerVertex(0),disposed(false){}
+	VertexBuffer3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_VERTEXBUFFER3D),context(nullptr),numVertices(0),data32PerVertex(0),disposed(false),bufferID(UINT32_MAX){}
 	VertexBuffer3D(ASWorker* wrk,Class_base* c, Context3D* ctx,int _numVertices,int32_t _data32PerVertex,tiny_string _bufferUsage);
-	~VertexBuffer3D();
+	bool destruct() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(dispose);
 	ASFUNCTION_ATOM(uploadFromByteArray);

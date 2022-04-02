@@ -607,6 +607,24 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	_NR<TextLine> textLine = _NR<TextLine>(Class<TextLine>::getInstanceS(wrk,linetext, _MNR(th)));
 	textLine->width = (uint32_t)width;
 	textLine->previousLine = previousLine;
+
+	// Set baseline font
+	textLine->font = th->baselineZero;
+
+	// Set font from FontDescription in TextBlock if possible
+ 	if (!th->baselineFontDescription.isNull())
+	{
+ 		textLine->font = th->baselineFontDescription->fontName;
+	}
+
+	// Set font from FontDescription in TextElement if possible
+	auto elementFormat = th->content->as<TextElement>()->elementFormat;
+	if (!elementFormat.isNull() &&
+		!elementFormat->fontDescription.isNull()   )
+	{
+		th->content->as<TextElement>()->elementFormat->fontDescription->fontName;
+	}
+
 	textLine->updateSizes();
 	if (textLine->width > textLine->textWidth)
 	{
@@ -755,10 +773,7 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(TextElement, text,settext_cb);
 ASFUNCTIONBODY_ATOM(TextElement,_constructor)
 {
 	TextElement* th=asAtomHandler::as<TextElement>(obj);
-	ARG_UNPACK_ATOM (th->text, "");
-	if (argslen > 1)
-		LOG(LOG_NOT_IMPLEMENTED, "TextElement constructor ignores some parameters");
-
+    	ARG_UNPACK_ATOM (th->text, "")(th->elementFormat, NullRef);
 }
 ASFUNCTIONBODY_ATOM(TextElement, replaceText)
 {

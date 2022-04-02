@@ -112,9 +112,14 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			int a;
 			int stat;
 			Program3D* p = action.dataobject->as<Program3D>();
-			//LOG(LOG_INFO,"setProgram:"<<p<<" "<<p->gpu_program);
+			//LOG(LOG_INFO,"uploadProgram:"<<p<<" "<<p->gpu_program);
 			uint32_t f= UINT32_MAX;
 			uint32_t g= UINT32_MAX;
+			if (p->gpu_program == UINT32_MAX)
+			{
+				needslink=true;
+				p->gpu_program = engineData->exec_glCreateProgram();
+			}
 			if (!p->vertexprogram.empty())
 			{
 				needslink= true;
@@ -146,11 +151,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 					LOG(LOG_ERROR,"Fragment shader compilation:" << str);
 					throw RunTimeException("Could not compile fragment shader");
 				}
-			}
-			if (p->gpu_program == UINT32_MAX)
-			{
-				needslink=true;
-				p->gpu_program = engineData->exec_glCreateProgram();
 			}
 			if (!p->vertexprogram.empty())
 				engineData->exec_glAttachShader(p->gpu_program,g);
@@ -616,7 +616,7 @@ void Context3D::setSamplers(EngineData *engineData)
 			engineData->exec_glUniform1i(sampid, currentprogram->samplerState[i].n);
 		}
 		else
-			LOG(LOG_ERROR,"sampler not found in program:"<<currentprogram->samplerState[i].n<<" "<<currentprogram->gpu_program<<" "<<sampid);
+			LOG(LOG_ERROR,"sampler not found in program:"<<currentprogram->samplerState[i].n<<" "<<currentprogram->gpu_program<<" "<<sampid<<" "<<currentprogram);
 	}
 }
 
@@ -1112,7 +1112,11 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgram)
 	_NR<Program3D> program;
 	ARG_UNPACK_ATOM(program);
 	if (!program.isNull())
-		th->addAction(RENDER_SETPROGRAM,program.getPtr());
+	{
+		if (program->gpu_program == UINT32_MAX)
+			th->addAction(RENDER_ACTION::RENDER_UPLOADPROGRAM,program.getPtr());
+		th->addAction(RENDER_ACTION::RENDER_SETPROGRAM,program.getPtr());
+	}
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromByteArray)
 {
@@ -1633,11 +1637,7 @@ ASFUNCTIONBODY_ATOM(Program3D,upload)
 		th->fragmentprogram = AGALtoGLSL(fragmentProgram.getPtr(),false,th->samplerState,th->fragmentregistermap,th->fragmentattributes);
 //		LOG(LOG_INFO,"fragment shader:"<<th<<"\n"<<th->fragmentprogram);
 	}
-	renderaction action;
-	action.action =RENDER_ACTION::RENDER_UPLOADPROGRAM;
-	th->incRef();
-	action.dataobject = _MR(th);
-	th->context->addAction(action);
+	th->context->addAction(RENDER_ACTION::RENDER_UPLOADPROGRAM,th);
 	th->context->rendermutex.unlock();
 }
 

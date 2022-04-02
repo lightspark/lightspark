@@ -1134,20 +1134,22 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case IDLE_EVENT:
 			{
-				Locker l(event_queue_mutex);
 				// DisplayObjects that are removed from the display list keep their Parent set until all removedFromStage events are handled
 				// see http://www.senocular.com/flash/tutorials/orderofoperations/#ObjectDestruction
 				m_sys->resetParentList();
-				while (!idleevents_queue.empty())
 				{
-					events_queue.push_back(idleevents_queue.front());
-					idleevents_queue.pop_front();
-				}
-				isIdle = true;
+					Locker l(event_queue_mutex);
+					while (!idleevents_queue.empty())
+					{
+						events_queue.push_back(idleevents_queue.front());
+						idleevents_queue.pop_front();
+					}
+					isIdle = true;
 #ifndef NDEBUG
-//				if (getEventQueueSize() == 0)
-//					ASObject::dumpObjectCounters(100);
+//					if (getEventQueueSize() == 0)
+//						ASObject::dumpObjectCounters(100);
 #endif
+				}
 				break;
 			}
 			case FLUSH_INVALIDATION_QUEUE:

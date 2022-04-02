@@ -731,7 +731,10 @@ void Loader::unload()
 	// removeChild may execute AS code, release the lock before
 	// calling
 	if(content_copy)
+	{
+		content_copy->incRef();
 		_removeChild(content_copy);
+	}
 
 	contentLoaderInfo->resetState();
 }
@@ -2927,7 +2930,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 			return getSystemState()->isInResetParentList(child);
 
 		child->setOnStage(false,false,inskipping);
-		if (direct)
+		if (direct || !this->isOnStage())
 			child->setParent(nullptr);
 		else
 			getSystemState()->addDisplayObjectToResetParentList(child);

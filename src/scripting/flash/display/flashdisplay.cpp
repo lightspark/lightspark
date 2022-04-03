@@ -1729,7 +1729,11 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.explicit_FP = true;
 	state.stop_FP = stop;
 	if (!needsActionScript3())
+	{
+		if (stop && state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+			advanceFrame();
 		return;
+	}
 	if (inExecuteFramescript)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 

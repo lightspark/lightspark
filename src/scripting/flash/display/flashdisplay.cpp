@@ -5115,29 +5115,21 @@ void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefr
 	if (!upState.isNull())
 	{
 		upState->hasChanged = true;
-		if (upState->colorTransform.isNull())
-			upState->colorTransform = this->colorTransform;
 		upState->requestInvalidation(q,forceTextureRefresh);
 	}
 	if (!overState.isNull())
 	{
 		overState->hasChanged = true;
-		if (overState->colorTransform.isNull())
-			overState->colorTransform = this->colorTransform;
 		overState->requestInvalidation(q,forceTextureRefresh);
 	}
 	if (!downState.isNull())
 	{
 		downState->hasChanged = true;
-		if (downState->colorTransform.isNull())
-			downState->colorTransform = this->colorTransform;
 		downState->requestInvalidation(q,forceTextureRefresh);
 	}
 	if (!hitTestState.isNull())
 	{
 		hitTestState->hasChanged = true;
-		if (hitTestState->colorTransform.isNull())
-			hitTestState->colorTransform = this->colorTransform;
 		hitTestState->requestInvalidation(q,forceTextureRefresh);
 	}
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);

@@ -537,6 +537,7 @@ private:
 	//Synchronization
 	Mutex event_queue_mutex;
 	Cond sem_event_cond;
+	Mutex deletable_objects_mutex;
 
 	//Event handling
 	volatile bool shuttingdown;

@@ -775,7 +775,7 @@ void ABCVm::shutdown()
 
 void ABCVm::addDeletableObject(ASObject *obj)
 {
-	Locker l(event_queue_mutex);
+	Locker l(deletable_objects_mutex);
 	deletableObjects.push_back(obj);
 }
 
@@ -1646,12 +1646,14 @@ int ABCVm::Run(void* d)
 #endif
 	while(true)
 	{
-		th->event_queue_mutex.lock();
-		while(th->events_queue.empty() && !th->shuttingdown)
-			th->sem_event_cond.wait(th->event_queue_mutex);
+		th->deletable_objects_mutex.lock();
 		for (auto it = th->deletableObjects.begin(); it != th->deletableObjects.end(); it++)
 			(*it)->decRef();
 		th->deletableObjects.clear();
+		th->deletable_objects_mutex.unlock();
+		th->event_queue_mutex.lock();
+		while(th->events_queue.empty() && !th->shuttingdown)
+			th->sem_event_cond.wait(th->event_queue_mutex);
 		if(th->shuttingdown)
 		{
 			//If the queue is empty stop immediately

@@ -40,6 +40,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,customItems);
 	ASPROPERTY_GETTER_SETTER(_NR<ContextMenuBuiltInItems>,builtInItems);
 	void getCurrentContextMenuItems(std::vector<_R<NativeMenuItem>>& items);
+	InteractiveObject* owner;
 	static void getVisibleBuiltinContextMenuItems(ContextMenu* m, std::vector<Ref<NativeMenuItem> > &items, ASWorker* worker);
 };
 

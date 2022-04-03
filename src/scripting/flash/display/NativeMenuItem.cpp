@@ -30,14 +30,15 @@ void NativeMenuItem::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,enabled);
 }
 
-void NativeMenuItem::addToMenu(std::vector<_R<NativeMenuItem> > &items)
+void NativeMenuItem::addToMenu(std::vector<_R<NativeMenuItem> > &items, ContextMenu* menu)
 {
 	this->incRef();
 	items.push_back(_MR(this));
+	this->menu=menu;
 }
-ASFUNCTIONBODY_GETTER_SETTER(NativeMenuItem,label);
-ASFUNCTIONBODY_GETTER(NativeMenuItem,isSeparator);
-ASFUNCTIONBODY_GETTER_SETTER(NativeMenuItem,enabled);
+ASFUNCTIONBODY_GETTER_SETTER(NativeMenuItem,label)
+ASFUNCTIONBODY_GETTER(NativeMenuItem,isSeparator)
+ASFUNCTIONBODY_GETTER_SETTER(NativeMenuItem,enabled)
 
 ASFUNCTIONBODY_ATOM(NativeMenuItem,_constructor)
 {

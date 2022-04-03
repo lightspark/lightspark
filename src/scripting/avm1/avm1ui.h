@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2013  Antti Ajanki (antti.ajanki@iki.fi)
+    Copyright (C) 2011-2013  Alessandro Pignotti (a.pignotti@sssup.it)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -17,29 +17,23 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_FLASH_UI_CONTEXTMENUITEM_H
-#define SCRIPTING_FLASH_UI_CONTEXTMENUITEM_H
+#ifndef SCRIPTING_AVM1_AVM1UI_H
+#define SCRIPTING_AVM1_AVM1UI_H
+
 
 #include "asobject.h"
-#include "scripting/flash/events/flashevents.h"
-#include "scripting/flash/display/NativeMenuItem.h"
+#include "scripting/flash/ui/ContextMenuItem.h"
 
 namespace lightspark
 {
 
-class ContextMenuItem : public NativeMenuItem
+class AVM1ContextMenuItem: public ContextMenuItem
 {
-protected:
-	_NR<IFunction> callbackfunction;
 public:
-	ContextMenuItem(ASWorker* wrk,Class_base* c):NativeMenuItem(wrk,c){}
-	void defaultEventBehavior(_R<Event> e) override;
+	AVM1ContextMenuItem(ASWorker* wrk,Class_base* c):ContextMenuItem(wrk,c){}
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	static void sinit(Class_base* c);
-	ASFUNCTION_ATOM(_constructor);
-	ASPROPERTY_GETTER_SETTER(bool, separatorBefore);
-	ASPROPERTY_GETTER_SETTER(bool, visible);
-	void addToMenu(std::vector<_R<NativeMenuItem>>& items,ContextMenu* menu) override;
 };
 
 }
-#endif // SCRIPTING_FLASH_UI_CONTEXTMENUITEM_H
+#endif // SCRIPTING_AVM1_AVM1UI_H

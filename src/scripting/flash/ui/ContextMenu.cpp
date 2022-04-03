@@ -22,7 +22,7 @@
 using namespace std;
 using namespace lightspark;
 
-ContextMenu::ContextMenu(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),isSupported(true),customItems(Class<Array>::getInstanceSNoArgs(wrk)),builtInItems(Class<ContextMenuBuiltInItems>::getInstanceS(wrk))
+ContextMenu::ContextMenu(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),isSupported(true),customItems(Class<Array>::getInstanceSNoArgs(wrk)),builtInItems(Class<ContextMenuBuiltInItems>::getInstanceS(wrk)),owner(nullptr)
 {
 	subtype=SUBTYPE_CONTEXTMENU;
 }
@@ -47,7 +47,7 @@ void ContextMenu::getCurrentContextMenuItems(std::vector<_R<NativeMenuItem> >& i
 			asAtom item = asAtomHandler::invalidAtom;;
 			customItems->at_nocheck(item,i);
 			if (asAtomHandler::is<NativeMenuItem>(item))
-				asAtomHandler::as<NativeMenuItem>(item)->addToMenu(items);
+				asAtomHandler::as<NativeMenuItem>(item)->addToMenu(items,this);
 		}
 		NativeMenuItem* n = Class<NativeMenuItem>::getInstanceSNoArgs(getInstanceWorker());
 		n->isSeparator = true;

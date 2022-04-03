@@ -231,6 +231,7 @@ SET(LIBSPARK_SOURCES
   scripting/avm1/avm1display.cpp
   scripting/avm1/avm1net.cpp
   scripting/avm1/avm1text.cpp
+  scripting/avm1/avm1ui.cpp
   scripting/avm1/avm1xml.cpp
   scripting/avm1/avm1media.cpp
   scripting/avm1_interpreter.cpp

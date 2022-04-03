@@ -16,6 +16,7 @@
 **************************************************************************/
 
 #include "ContextMenuItem.h"
+#include "ContextMenu.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 
@@ -38,9 +39,20 @@ void ContextMenuItem::defaultEventBehavior(Ref<Event> e)
 	{
 		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 		this->incRef();
-		// TODO it is not known what arguments are needed to add to function call
 		if (callbackfunction->is<AVM1Function>())
-			callbackfunction->as<AVM1Function>()->call(nullptr,&obj,nullptr,0);
+		{
+			asAtom args[2];
+			if (this->menu && this->menu->owner)
+			{
+				this->menu->owner->incRef();
+				args[0]=asAtomHandler::fromObjectNoPrimitive(this->menu->owner);
+			}
+			else
+				args[0]=asAtomHandler::nullAtom;
+			this->incRef();
+			args[1]=asAtomHandler::fromObjectNoPrimitive(this);
+			callbackfunction->as<AVM1Function>()->call(nullptr,&obj,args,2);
+		}
 		else
 		{
 			asAtom caller = asAtomHandler::fromObjectNoPrimitive(callbackfunction.getPtr());
@@ -51,7 +63,7 @@ void ContextMenuItem::defaultEventBehavior(Ref<Event> e)
 	
 }
 
-void ContextMenuItem::addToMenu(std::vector<_R<NativeMenuItem> > &items)
+void ContextMenuItem::addToMenu(std::vector<_R<NativeMenuItem> > &items, ContextMenu* menu)
 {
 	if (this->visible)
 	{
@@ -63,6 +75,7 @@ void ContextMenuItem::addToMenu(std::vector<_R<NativeMenuItem> > &items)
 		}
 		this->incRef();
 		items.push_back(_MR(this));
+		this->menu = menu;
 	}
 }
 

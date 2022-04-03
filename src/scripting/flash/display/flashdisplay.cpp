@@ -2783,21 +2783,27 @@ void InteractiveObject::sinit(Class_base* c)
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
 	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(c->getSystemState(),_setMouseEnabled),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseEnabled),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mouseEnabled","",Class<IFunction>::getFunction(c->getSystemState(),_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(c->getSystemState(),_setDoubleClickEnabled),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(c->getSystemState(),_getDoubleClickEnabled),GETTER_METHOD,true);
-	REGISTER_GETTER_SETTER(c, accessibilityImplementation);
-	REGISTER_GETTER_SETTER(c, contextMenu);
-	REGISTER_GETTER_SETTER(c, tabEnabled);
-	REGISTER_GETTER_SETTER(c, tabIndex);
-	REGISTER_GETTER_SETTER(c, focusRect);
+	c->setDeclaredMethodByQName("doubleClickEnabled","",Class<IFunction>::getFunction(c->getSystemState(),_getDoubleClickEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, accessibilityImplementation,AccessibilityImplementation);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, contextMenu,ASObject);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, tabEnabled,Boolean);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, tabIndex,Integer);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, focusRect,ASObject);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, accessibilityImplementation);
-ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, contextMenu);
-ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabEnabled);
-ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabIndex);
-ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, focusRect); // stub
+ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, accessibilityImplementation)
+ASFUNCTIONBODY_GETTER_SETTER_CB(InteractiveObject, contextMenu,onContextMenu)
+ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabEnabled)
+ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabIndex)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(InteractiveObject, focusRect) // stub
+
+void InteractiveObject::onContextMenu(_NR<ASObject> /*oldValue*/)
+{
+	if (this->contextMenu->is<ContextMenu>())
+		this->contextMenu->as<ContextMenu>()->owner = this;
+}
 
 void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 {

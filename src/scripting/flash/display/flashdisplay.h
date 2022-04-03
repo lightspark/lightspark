@@ -72,6 +72,7 @@ protected:
 			return true;
 	}
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
+	void onContextMenu(_NR<ASObject> oldValue);
 	~InteractiveObject();
 public:
 	InteractiveObject(ASWorker* wrk,Class_base* c);

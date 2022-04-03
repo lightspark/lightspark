@@ -28,6 +28,8 @@ namespace lightspark
 
 class DLL_PUBLIC NativeMenuItem: public EventDispatcher
 {
+protected:
+	ContextMenu* menu;
 public:
 	NativeMenuItem(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),isSeparator(false),enabled(true){}
 	static void sinit(Class_base* c);
@@ -35,7 +37,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string, label);
 	ASPROPERTY_GETTER(bool, isSeparator);
 	ASPROPERTY_GETTER_SETTER(bool, enabled);
-	virtual void addToMenu(std::vector<_R<NativeMenuItem>>& items);
+	virtual void addToMenu(std::vector<_R<NativeMenuItem>>& items,ContextMenu* menu);
 };
 
 }

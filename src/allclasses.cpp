@@ -145,6 +145,7 @@
 #include "scripting/avm1/avm1media.h"
 #include "scripting/avm1/avm1net.h"
 #include "scripting/avm1/avm1text.h"
+#include "scripting/avm1/avm1ui.h"
 #include "scripting/avm1/avm1xml.h"
 
 using namespace lightspark;

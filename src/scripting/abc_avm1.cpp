@@ -23,9 +23,9 @@
 #include "scripting/avm1/avm1media.h"
 #include "scripting/avm1/avm1net.h"
 #include "scripting/avm1/avm1text.h"
+#include "scripting/avm1/avm1ui.h"
 #include "scripting/avm1/avm1xml.h"
 #include "scripting/flash/filters/flashfilters.h"
-#include "scripting/flash/ui/ContextMenuItem.h"
 #include "scripting/flash/ui/ContextMenu.h"
 #include "scripting/abc.h"
 using namespace lightspark;
@@ -61,7 +61,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("Stage","",Class<AVM1Stage>::getRef(m_sys));
 	builtinavm1->registerBuiltin("SharedObject","",Class<AVM1SharedObject>::getRef(m_sys));
 	builtinavm1->registerBuiltin("ContextMenu","",Class<ContextMenu>::getRef(m_sys));
-	builtinavm1->registerBuiltin("ContextMenuItem","",Class<ContextMenuItem>::getRef(m_sys));
+	builtinavm1->registerBuiltin("ContextMenuItem","",Class<AVM1ContextMenuItem>::getRef(m_sys));
 	builtinavm1->registerBuiltin("TextField","",Class<AVM1TextField>::getRef(m_sys));
 	builtinavm1->registerBuiltin("TextFormat","",Class<TextFormat>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XML","",Class<AVM1XMLDocument>::getRef(m_sys));

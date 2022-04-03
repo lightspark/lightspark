@@ -1582,7 +1582,13 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	bool isMask;
 	_NR<DisplayObject> mask;
 	computeMasksAndMatrix(target, masks, totalMatrix,false,isMask,mask);
-	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
+	MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
+	totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
+	totalMatrix.xx = abs(totalMatrix.xx);
+	totalMatrix.yy = abs(totalMatrix.yy);
+	totalMatrix.x0 = 0;
+	totalMatrix.y0 = 0;
+	
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	MATRIX totalMatrix2;
 	owner->computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask);
@@ -1614,7 +1620,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		Currently, the TextField is stretched in case of scaling.
 	*/
 	cachedSurface.isValid=true;
-	return new CairoPangoRenderer(*this,totalMatrix,
+	return new CairoPangoRenderer(*this,totalMatrix2,
 				x, y, ceil(width), ceil(height),
 				rx, ry, ceil(rwidth), ceil(rheight), rotation,
 				xscale,yscale,

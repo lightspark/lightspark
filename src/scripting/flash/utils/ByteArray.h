@@ -59,6 +59,7 @@ public:
 	}
 	ByteArray(ASWorker* wrk,Class_base* c, uint8_t* b = nullptr, uint32_t l = 0);
 	~ByteArray();
+	bool destruct() override;
 	//Helper interface for serialization
 	bool peekByte(uint8_t& b);
 	FORCE_INLINE bool readByte(uint8_t& b)

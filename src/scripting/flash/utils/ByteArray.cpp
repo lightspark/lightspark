@@ -51,18 +51,31 @@ ByteArray::ByteArray(ASWorker* wrk, Class_base* c, uint8_t* b, uint32_t l):ASObj
 
 ByteArray::~ByteArray()
 {
+}
+
+bool ByteArray::destruct()
+{
 	if(bytes)
 	{
 #ifdef MEMORY_USAGE_PROFILING
 		getClass()->memoryAccount->removeBytes(real_len);
 #endif
-		free(bytes);
+		delete[] bytes;
+		bytes = nullptr;
 	}
+	currentObjectEncoding = OBJECT_ENCODING::AMF3;
+	position = 0;
+	real_len = 0;
+	len = 0;
+	shareable = false;
+	littleEndian = false;
+	return ASObject::destruct();
 }
 
 void ByteArray::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_getLength,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_setLength),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesAvailable,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
@@ -134,7 +147,7 @@ uint8_t* ByteArray::getBufferIntern(unsigned int size, bool enableResize)
 	{
 		len=size;
 		real_len=len;
-		bytes = (uint8_t*) malloc(len);
+		bytes = new uint8_t[len];
 		memset(bytes,0,len);
 #ifdef MEMORY_USAGE_PROFILING
 		getClass()->memoryAccount->addBytes(len);
@@ -267,9 +280,9 @@ void ByteArray::setLength(uint32_t newLen)
 #ifdef MEMORY_USAGE_PROFILING
 			getClass()->memoryAccount->removeBytes(real_len);
 #endif
-			free(bytes);
+			delete[] bytes;
 		}
-		bytes = NULL;
+		bytes = nullptr;
 		real_len = newLen;
 	}
 	len = newLen;
@@ -1557,7 +1570,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,unshift)
 	th->unlock();
 	asAtomHandler::setUInt(ret,wrk,res);
 }
-ASFUNCTIONBODY_GETTER(ByteArray,shareable);
+ASFUNCTIONBODY_GETTER(ByteArray,shareable)
 ASFUNCTIONBODY_ATOM(ByteArray,_setter_shareable)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);

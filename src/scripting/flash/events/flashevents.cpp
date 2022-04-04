@@ -583,7 +583,7 @@ void EventDispatcher::finalize()
 		auto it2 = it->second.begin();
 		while (it2 != it->second.end())
 		{
-			(*it2).resetClosure();
+			ASATOM_DECREF((*it2).f);
 			it2 = it->second.erase(it2);
 		}
 		it = handlers.erase(it);
@@ -599,7 +599,7 @@ bool EventDispatcher::destruct()
 		auto it2 = it->second.begin();
 		while (it2 != it->second.end())
 		{
-			(*it2).resetClosure();
+			ASATOM_DECREF((*it2).f);
 			it2 = it->second.erase(it2);
 		}
 		it = handlers.erase(it);
@@ -711,8 +711,6 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),ls);
 		if(it!=h->second.end())
 		{
-			if (asAtomHandler::isFunction(it->f))
-				asAtomHandler::as<IFunction>(it->f)->closure_this.reset();
 			ASATOM_DECREF(it->f);
 			h->second.erase(it);
 		}
@@ -1629,8 +1627,14 @@ SampleDataEvent::SampleDataEvent(ASWorker* wrk, Class_base* c) : Event(wrk,c, "s
 {
 }
 
-SampleDataEvent::SampleDataEvent(ASWorker* wrk, Class_base* c, NullableRef<ByteArray> _data, number_t _pos) : Event(wrk,c, "sampleData",false,false,SUBTYPE_SAMPLEDATA_EVENT),data(_data),position(_pos) 
+SampleDataEvent::SampleDataEvent(ASWorker* wrk, Class_base* c, _NR<ByteArray> _data, number_t _pos) : Event(wrk,c, "sampleData",false,false,SUBTYPE_SAMPLEDATA_EVENT),data(_data),position(_pos) 
 {
+}
+
+bool SampleDataEvent::destruct()
+{
+	data.reset();
+	return Event::destruct();
 }
 
 void ThrottleEvent::sinit(Class_base* c)

@@ -651,6 +651,7 @@ private:
 public:
 	SampleDataEvent(ASWorker* wrk, Class_base* c);
 	SampleDataEvent(ASWorker* wrk, Class_base* c,_NR<ByteArray> _data,number_t _pos);
+	bool destruct() override;
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toString);

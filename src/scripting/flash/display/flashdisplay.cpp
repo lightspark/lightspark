@@ -5567,6 +5567,12 @@ void MovieClip::AVM1HandleScripts()
 {
 	if (isAVM1Loaded && !this->isOnStage())
 		return;
+	if (state.last_FP > (int)state.FP && state.FP==0 && !state.explicit_FP)
+	{
+		// clip was rewinded automatically from last to first frame,
+		// we have to make sure the first frame is declared
+		declareFrame();
+	}
 	auto itbind = variablebindings.begin();
 	while (itbind != variablebindings.end())
 	{

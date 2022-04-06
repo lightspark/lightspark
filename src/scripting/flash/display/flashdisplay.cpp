@@ -1487,7 +1487,7 @@ void MovieClip::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, enabled,Boolean);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled);
+ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 
 void MovieClip::buildTraits(ASObject* o)
 {
@@ -1671,6 +1671,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	if (th->state.stop_FP)
 	{
+		if (!th->needsActionScript3() && th->state.next_FP == th->state.FP)
+			th->state.next_FP++;
 		th->state.stop_FP=false;
 		if (th->isOnStage())
 		{

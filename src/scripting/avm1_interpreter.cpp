@@ -255,7 +255,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionStop "<<clip->toDebugString());
 					break;
 				}
-				uint32_t frame = clip->as<MovieClip>()->state.FP;
+				uint32_t frame = clip->as<MovieClip>()->state.explicit_FP ? clip->as<MovieClip>()->state.next_FP : clip->as<MovieClip>()->state.FP;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStop ");
 				clip->as<MovieClip>()->AVM1gotoFrame(frame,true,true);
 				break;

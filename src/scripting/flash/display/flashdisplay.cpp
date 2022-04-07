@@ -1674,6 +1674,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 		if (!th->needsActionScript3() && th->state.next_FP == th->state.FP)
 			th->state.next_FP++;
 		th->state.stop_FP=false;
+		th->state.explicit_play=true;
 		if (th->isOnStage())
 		{
 			if (th->needsActionScript3())
@@ -1729,6 +1730,8 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	}
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
+	if (state.stop_FP != stop && !stop)
+		state.explicit_play=true;
 	state.stop_FP = stop;
 	if (!needsActionScript3())
 	{
@@ -1772,7 +1775,11 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 	state.next_FP = frame;
 	state.explicit_FP = true;
 	if (switchplaystate)
+	{
+		if (state.stop_FP != stop && !stop)
+			state.explicit_play=true;
 		state.stop_FP = stop;
+	}
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,gotoAndStop)
@@ -2237,7 +2244,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
 			m.name_s_id=th->name;
 			m.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			m.isAttribute = false;
-			th->getParent()->deleteVariableByMultiname(m,wrk);
+			// don't remove the child by name here because another DisplayObject may have been added with this name after this clip was added
+			th->getParent()->deleteVariableByMultinameWithoutRemovingChild(m,wrk);
 		}
 		th->getParent()->_removeChild(th);
 	}
@@ -3951,8 +3959,9 @@ void Stage::advanceFrame()
 		MovieClip* clip = avm1ScriptMovieClipFirst;
 		while (clip)
 		{
+			MovieClip* nextclip = clip->avm1NextScriptedClip;
 			clip->AVM1HandleScripts();
-			clip = clip->avm1NextScriptedClip;
+			clip = nextclip;
 		}
 		DisplayObjectContainer::declareFrame();
 	}
@@ -5612,12 +5621,13 @@ void MovieClip::AVM1HandleScripts()
 	}
 	// TODO: check if the conditions when to execute the frame scripts are correct:
 	// - clip was just initialized and is accessed for the first time
-	// - clip is currently playing (not stopped)
+	// - clip is currently playing (not stopped) and was not set explicitely
 	// - playhead was explicitely set before calling the onEnterFrame handlers
 	// - playhead was explicitely set during calling the onEnterFrame handlers but didn't change the current frame
-	if (!isAVM1Loaded || !state.stop_FP || wasexplicit || (this->state.explicit_FP && (state.FP==state.next_FP)))
+	if (!isAVM1Loaded || (!this->state.explicit_play && !state.stop_FP) || wasexplicit || (this->state.explicit_FP && (state.FP==state.next_FP)))
 		AVM1ExecuteFrameActions(state.FP);
 	state.explicit_FP=false;
+	state.explicit_play=false;
 	isAVM1Loaded=true;
 }
 void MovieClip::initFrame()
@@ -5647,13 +5657,14 @@ void MovieClip::initFrame()
 		frameScriptToExecute=state.FP;
 	}
 	state.creatingframe=false;
+	state.explicit_play=false;
 }
 
 void MovieClip::executeFrameScript()
 {
 	Sprite::executeFrameScript();
 	state.explicit_FP=false;
-	
+	state.explicit_play=false;
 	if (frameScriptToExecute != UINT32_MAX)
 	{
 		uint32_t f = frameScriptToExecute;

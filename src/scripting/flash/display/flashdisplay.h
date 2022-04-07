@@ -160,6 +160,11 @@ public:
 	void executeFrameScript() override;
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
+	inline bool deleteVariableByMultinameWithoutRemovingChild(const multiname& name, ASWorker* wrk)
+	{
+		return InteractiveObject::deleteVariableByMultiname(name,wrk);
+	}
+	
 	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

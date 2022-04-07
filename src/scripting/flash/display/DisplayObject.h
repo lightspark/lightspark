@@ -100,6 +100,8 @@ private:
 	void gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const;
 	std::map<uint32_t,asAtom> avm1variables;
 	std::map<uint32_t,_NR<AVM1Function>> avm1functions;
+	uint32_t avm1mouselistenercount;
+	uint32_t avm1framelistenercount;
 protected:
 	_NR<Bitmap> cachedBitmap;
 	std::multimap<uint32_t,_NR<DisplayObject>> variablebindings;

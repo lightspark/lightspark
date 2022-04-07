@@ -104,7 +104,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),constructed(false),useLegacyMatrix(true),
-	needsTextureRecalculation(true),textureRecalculationSkippable(false),onStage(false),
+	needsTextureRecalculation(true),textureRecalculationSkippable(false),avm1mouselistenercount(0),avm1framelistenercount(0),onStage(false),
 	visible(true),mask(),invalidateQueueNext(),loaderInfo(),loadedFrom(c->getSystemState()->mainClip),hasChanged(true),legacy(false),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
@@ -136,6 +136,8 @@ void DisplayObject::finalize()
 		cachedSurface.tex=nullptr;
 	cachedSurface.isChunkOwner=true;
 	cachedSurface.isValid=false;
+	avm1mouselistenercount=0;
+	avm1framelistenercount=0;
 }
 
 bool DisplayObject::destruct()
@@ -169,6 +171,8 @@ bool DisplayObject::destruct()
 	useLegacyMatrix=true;
 	onStage=false;
 	visible=true;
+	avm1mouselistenercount=0;
+	avm1framelistenercount=0;
 	filters.reset();
 	legacy=false;
 	cacheAsBitmap=false;
@@ -246,13 +250,13 @@ void DisplayObject::sinit(Class_base* c)
 	IBitmapDrawable::linkTraits(c);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_STRINGID(DisplayObject,name);
-ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties);
-ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,scrollRect);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, opaqueBackground);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, metaData);
+ASFUNCTIONBODY_GETTER_SETTER_STRINGID(DisplayObject,name)
+ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties)
+ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,scrollRect)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, opaqueBackground)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, metaData)
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_filters)
 {
@@ -1864,7 +1868,14 @@ multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CON
 			{
 				getSystemState()->registerFrameListener(this);
 				getSystemState()->stage->AVM1AddEventListener(this);
+				avm1framelistenercount++;
 				setIsEnumerable(name, false);
+			}
+			else // value is not a function, we remove the FrameListener
+			{
+				avm1framelistenercount--;
+				if (avm1framelistenercount==0)
+					getSystemState()->unregisterFrameListener(this);
 			}
 		}
 		if (this->is<InteractiveObject>() && (
@@ -1877,6 +1888,7 @@ multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CON
 		{
 			this->as<InteractiveObject>()->setMouseEnabled(true);
 			getSystemState()->stage->AVM1AddMouseListener(this);
+			avm1mouselistenercount++;
 			setIsEnumerable(name, false);
 		}
 	}
@@ -1895,12 +1907,14 @@ void DisplayObject::AVM1registerPrototypeListeners()
 		{
 			getSystemState()->registerFrameListener(this);
 			getSystemState()->stage->AVM1AddEventListener(this);
+			avm1framelistenercount++;
 		}
 		name.name_s_id = BUILTIN_STRINGS::STRING_ONLOAD;
 		if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 		{
 			getSystemState()->registerFrameListener(this);
 			getSystemState()->stage->AVM1AddEventListener(this);
+			avm1framelistenercount++;
 		}
 		if (this->is<InteractiveObject>())
 		{
@@ -1909,36 +1923,42 @@ void DisplayObject::AVM1registerPrototypeListeners()
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
+				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
+				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEUP;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
+				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONPRESS;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
+				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEWHEEL;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
+				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASE;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				getSystemState()->stage->AVM1AddMouseListener(this);
+				avm1mouselistenercount++;
 			}
 		}
 		pr = pr->getprop_prototype();
@@ -1952,7 +1972,9 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* w
 		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
 		{
-			getSystemState()->unregisterFrameListener(this);
+			avm1framelistenercount--;
+			if (avm1framelistenercount==0)
+				getSystemState()->unregisterFrameListener(this);
 		}
 		if (this->is<InteractiveObject>() && (
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
@@ -1963,7 +1985,9 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* w
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE))
 		{
 			this->as<InteractiveObject>()->setMouseEnabled(false);
-			getSystemState()->stage->AVM1RemoveMouseListener(this);
+			avm1mouselistenercount--;
+			if (avm1mouselistenercount==0)
+				getSystemState()->stage->AVM1RemoveMouseListener(this);
 		}
 		tiny_string s = name.normalizedNameUnresolved(getSystemState()).lowercase();
 		AVM1SetVariable(s,asAtomHandler::undefinedAtom,false);
@@ -1976,6 +2000,8 @@ void DisplayObject::removeAVM1Listeners()
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
 	getSystemState()->stage->AVM1RemoveEventListener(this);
 	getSystemState()->unregisterFrameListener(this);
+	avm1mouselistenercount=0;
+	avm1framelistenercount=0;
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)

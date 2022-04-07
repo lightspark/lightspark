@@ -77,45 +77,45 @@ public:
 class FontDescription: public ASObject
 {
 private:
-    tiny_string cffHinting;
-    tiny_string fontLookup;
+	tiny_string cffHinting;
+	tiny_string fontLookup;
 
-    tiny_string fontPosture;
-    tiny_string fontWeight;
-    bool locked;
-    tiny_string renderingMode;
+	tiny_string fontPosture;
+	tiny_string fontWeight;
+	bool locked;
+	tiny_string renderingMode;
 
 public:
-  tiny_string fontName;
+	tiny_string fontName;
 	FontDescription(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_FONTDESCRIPTION),
-        cffHinting("horizontalStem"), fontLookup("device"), fontName("_serif"), fontPosture("normal"), fontWeight("normal"),locked(false), renderingMode("cff") {}
+		cffHinting("horizontalStem"), fontLookup("device"), fontPosture("normal"), fontWeight("normal"),locked(false), renderingMode("cff"), fontName("_serif") {}
 	static void sinit(Class_base* c);
-    bool destruct();
+	bool destruct() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_clone);
 	ASFUNCTION_ATOM(isFontCompatible);
 	ASFUNCTION_ATOM(isDeviceFontCompatible);
 
-    ASFUNCTION_ATOM(_getCffHinting);
-    ASFUNCTION_ATOM(_setCffHinting);
+	ASFUNCTION_ATOM(_getCffHinting);
+	ASFUNCTION_ATOM(_setCffHinting);
 
-    ASFUNCTION_ATOM(_getFontLookup);
-    ASFUNCTION_ATOM(_setFontLookup);
+	ASFUNCTION_ATOM(_getFontLookup);
+	ASFUNCTION_ATOM(_setFontLookup);
 
-    ASFUNCTION_ATOM(_getFontName);
-    ASFUNCTION_ATOM(_setFontName);
+	ASFUNCTION_ATOM(_getFontName);
+	ASFUNCTION_ATOM(_setFontName);
 
-    ASFUNCTION_ATOM(_getFontPosture);
-    ASFUNCTION_ATOM(_setFontPosture);
+	ASFUNCTION_ATOM(_getFontPosture);
+	ASFUNCTION_ATOM(_setFontPosture);
 
-    ASFUNCTION_ATOM(_getFontWeight);
-    ASFUNCTION_ATOM(_setFontWeight);
+	ASFUNCTION_ATOM(_getFontWeight);
+	ASFUNCTION_ATOM(_setFontWeight);
 
-    ASFUNCTION_ATOM(_getLocked);
-    ASFUNCTION_ATOM(_setLocked);
+	ASFUNCTION_ATOM(_getLocked);
+	ASFUNCTION_ATOM(_setLocked);
 
-    ASFUNCTION_ATOM(_getRenderingMode);
-    ASFUNCTION_ATOM(_setRenderingMode);
+	ASFUNCTION_ATOM(_getRenderingMode);
+	ASFUNCTION_ATOM(_setRenderingMode);
 };
 
 class FontPosture: public ASObject

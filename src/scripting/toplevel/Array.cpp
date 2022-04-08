@@ -2160,7 +2160,6 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 		LOG(LOG_NOT_IMPLEMENTED,"serializing Array in AMF0 not implemented");
 		return;
 	}
-	assert_and_throw(objMap.find(this)==objMap.end());
 	out->writeByte(array_marker);
 	//Check if the array has been already serialized
 	auto it=objMap.find(this);

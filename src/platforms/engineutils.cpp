@@ -82,6 +82,7 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 	{
 		sys = (SystemState*)event->user.data1;
 		setTLSSys(sys);
+		setTLSWorker(sys->worker);
 	}
 	else if (event->type == LS_USEREVENT_EXEC)
 	{

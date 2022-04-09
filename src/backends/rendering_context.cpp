@@ -289,7 +289,7 @@ bool GLRenderContext::handleGLErrors() const
 		if(engineData && engineData->getGLError(err))
 		{
 			errorCount++;
-			LOG(LOG_ERROR,_("GL error ")<< err);
+			LOG(LOG_ERROR,"GL error "<< err);
 		}
 		else
 			break;
@@ -297,7 +297,7 @@ bool GLRenderContext::handleGLErrors() const
 
 	if(errorCount)
 	{
-		LOG(LOG_ERROR,_("Ignoring ") << errorCount << _(" openGL errors"));
+		LOG(LOG_ERROR,"Ignoring " << errorCount << " openGL errors");
 	}
 	return errorCount;
 }

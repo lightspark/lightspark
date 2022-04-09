@@ -1325,6 +1325,8 @@ void SystemState::AsyncDrawJobCompleted(AsyncDrawJob *j)
 	drawjobLock.lock();
 	drawJobsNew.erase(j);
 	drawJobsPending.erase(j);
+	if (getRenderThread())
+		getRenderThread()->canrender = drawJobsPending.empty();
 	drawjobLock.unlock();
 }
 void SystemState::swapAsyncDrawJobQueue()

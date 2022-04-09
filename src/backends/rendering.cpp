@@ -69,7 +69,7 @@ RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 #else
 	fontPath = "Serif";
 #endif
-	gettimeofday(&time_s, NULL);
+	gettimeofday(&time_s, nullptr);
 }
 
 void RenderThread::start(EngineData* data)
@@ -157,6 +157,7 @@ int RenderThread::worker(void* d)
 {
 	RenderThread *th = (RenderThread *)d;
 	setTLSSys(th->m_sys);
+	setTLSWorker(th->m_sys->worker);
 	/* set TLS variable for getRenderThread() */
 	tls_set(renderThread, th);
 
@@ -882,7 +883,7 @@ void RenderThread::draw(bool force)
 	renderNeeded=true;
 	event.signal();
 
-	gettimeofday(&time_d, NULL);
+	gettimeofday(&time_d, nullptr);
 	int diff = time_d.tv_sec-time_s.tv_sec;
 	if(diff>0) /* is one seconds elapsed? */
 	{

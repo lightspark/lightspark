@@ -148,7 +148,7 @@ istream& lightspark::operator>>(istream& in, method_info_simple& v)
 		{
 			in >> v.options[i].val >> v.options[i].kind;
 			if(v.options[i].kind>0x1a)
-				LOG(LOG_ERROR,_("Unexpected options type"));
+				LOG(LOG_ERROR,"Unexpected options type");
 		}
 	}
 	if(v.flags&0x80)
@@ -189,7 +189,7 @@ istream& lightspark::operator >>(istream& in, ns_set_info& v)
 	{
 		in >> v.ns[i];
 		if(v.ns[i]==0)
-			LOG(LOG_ERROR,_("0 not allowed"));
+			LOG(LOG_ERROR,"0 not allowed");
 	}
 	return in;
 }
@@ -237,7 +237,7 @@ istream& lightspark::operator>>(istream& in, multiname_info& v)
 			break;
 		}
 		default:
-			LOG(LOG_ERROR,_("Unexpected multiname kind ") << hex << v.kind);
+			LOG(LOG_ERROR,"Unexpected multiname kind " << hex << v.kind);
 			throw UnsupportedException("Unexpected namespace kind");
 	}
 	return in;
@@ -304,7 +304,7 @@ istream& lightspark::operator>>(istream& in, traits_info& v)
 			in >> v.disp_id >> v.method;
 			break;
 		default:
-			LOG(LOG_ERROR,_("Unexpected kind ") << v.kind);
+			LOG(LOG_ERROR,"Unexpected kind " << v.kind);
 			break;
 	}
 

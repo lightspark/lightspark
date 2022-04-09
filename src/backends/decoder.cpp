@@ -224,11 +224,11 @@ void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, 
 }
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
 FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecParameters* codecPar, double frameRateHint):
-	ownedContext(true),curBuffer(0),codecContext(NULL),curBufferOffset(0),embeddedvideotag(nullptr)
+	ownedContext(true),curBuffer(0),codecContext(nullptr),curBufferOffset(0),embeddedvideotag(nullptr)
 {
 	status=INIT;
 #ifdef HAVE_AVCODEC_ALLOC_CONTEXT3
-	codecContext=avcodec_alloc_context3(NULL);
+	codecContext=avcodec_alloc_context3(nullptr);
 #else
 	codecContext=avcodec_alloc_context();
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -286,7 +286,7 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint)
 	}
 	const AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
 #ifdef HAVE_AVCODEC_OPEN2
-	if(avcodec_open2(codecContext, codec, NULL)<0)
+	if(avcodec_open2(codecContext, codec, nullptr)<0)
 #else
 	if(avcodec_open(codecContext, codec)<0)
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -841,7 +841,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecParameters* codecP
 #else
 FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecContext* _c):engine(eng),ownedContext(false),codecContext(_c)
 #if defined HAVE_LIBAVRESAMPLE || defined HAVE_LIBSWRESAMPLE
-	,resamplecontext(NULL)
+	,resamplecontext(nullptr)
 #endif
 {
 	status=INIT;
@@ -849,7 +849,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecContext* _c):engin
 	assert(codec);
 
 #ifdef HAVE_AVCODEC_OPEN2
-	if(avcodec_open2(codecContext, codec, NULL)<0)
+	if(avcodec_open2(codecContext, codec, nullptr)<0)
 #else
 	if(avcodec_open(codecContext, codec)<0)
 #endif //HAVE_AVCODEC_ALLOC_CONTEXT3
@@ -1337,13 +1337,14 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 		AVProbeData probeData;
 		probeData.filename="lightspark_stream";
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
-		probeData.mime_type=NULL;
+		probeData.mime_type=nullptr;
 #endif
 		probeData.buf=new uint8_t[8192+AVPROBE_PADDING_SIZE];
 		memset(probeData.buf,0,8192+AVPROBE_PADDING_SIZE);
-		stream.read((char*)probeData.buf,8192);
+		int readcount=streamsize == -1 ? 8192 : min(8192,streamsize);
+		stream.read((char*)probeData.buf,readcount);
 		int read=stream.gcount();
-		if(read!=8192)
+		if(read!=readcount)
 			LOG(LOG_ERROR,"Not sufficient data is available from the stream:"<<read);
 		probeData.buf_size=read;
 

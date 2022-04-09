@@ -49,6 +49,9 @@ private:
 	static int job_worker(void* d);
 	SystemState* m_sys;
 	volatile bool stopFlag;
+	uint32_t runcount;
+	void runAdditionalThread(IThreadJob* j);
+	static int additional_job_worker(void* d);
 public:
 	ThreadPool(SystemState* s);
 	~ThreadPool();

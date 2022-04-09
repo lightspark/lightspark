@@ -44,9 +44,13 @@ bool AudioStream::init(double volume)
 {
 	unmutevolume = curvolume = volume;
 	mixer_channel = manager->engineData->audio_StreamInit(this);
-	manager->engineData->audio_StreamSetVolume(mixer_channel, curvolume);
-	isPaused = false;
-	return true;
+	if (mixer_channel >= 0)
+	{
+		manager->engineData->audio_StreamSetVolume(mixer_channel, curvolume);
+		isPaused = false;
+		return true;
+	}
+	return false;
 }
 
 void AudioStream::startMixing()

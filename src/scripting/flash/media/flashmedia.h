@@ -37,7 +37,7 @@ class NetStream;
 class StreamCache;
 class SoundChannel;
 class DefineVideoStreamTag;
-class StartSoundTag;
+class DefineSoundTag;
 
 class Sound: public EventDispatcher, public ILoadable
 {
@@ -122,6 +122,7 @@ private:
 public:
 	SoundChannel(ASWorker* wrk,Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), const SOUNDINFO* _soundinfo=nullptr, Sound* _sampleproducer = nullptr);
 	~SoundChannel();
+	DefineSoundTag* fromSoundTag;
 	void appendStreamBlock(unsigned char* buf, int len);
 	void appendSampleData(ByteArray* data);
 	void play(number_t starttime=0);
@@ -131,6 +132,7 @@ public:
 	void setLoops(int32_t loops) {loopstogo=loops;}
 	static void sinit(Class_base* c);
 	void finalize() override;
+	bool destruct() override;
 	bool isPlaying() { return !ACQUIRE_READ(stopped); }
 	bool isStarting() { return ACQUIRE_READ(starting); }
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);

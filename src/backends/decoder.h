@@ -92,6 +92,8 @@ public:
 	virtual void setFlushing()=0;
 	void waitFlushed()
 	{
+		if (status != VALID)
+			return;
 		flushed.wait();
 	}
 };

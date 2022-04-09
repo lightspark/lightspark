@@ -592,11 +592,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					clip = originalclip;
 				else
 				{
-					clip = clip->AVM1GetClipFromPath(s);
-					if (!clip)
-					{
-						LOG(LOG_ERROR,"AVM1: ActionSetTarget2 clip not found:"<<s);
-					}
+					DisplayObject* c = clip->AVM1GetClipFromPath(s);
+					if (!c)
+						LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetTarget2 clip not found:"<<s);
+					else
+						clip = c;
 				}
 				break;
 			}
@@ -1722,7 +1722,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							}
 						}
 						if (asAtomHandler::is<Function>(func))
+						{
 							asAtomHandler::as<Function>(func)->call(ret,wrk,scriptobject.uintval == super.uintval ? scopestack[0] : scriptobject,args,numargs);
+							asAtomHandler::as<Function>(func)->decRef();
+						}
 						else if (asAtomHandler::is<AVM1Function>(func))
 						{
 							if (scriptobject.uintval == super.uintval)

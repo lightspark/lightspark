@@ -885,8 +885,8 @@ void Sprite::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("soundTransform","",Class<IFunction>::getFunction(c->getSystemState(),setSoundTransform),SETTER_METHOD,true);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(Sprite, buttonMode);
-ASFUNCTIONBODY_GETTER_SETTER_CB(Sprite, useHandCursor,afterSetUseHandCursor);
+ASFUNCTIONBODY_GETTER_SETTER(Sprite, buttonMode)
+ASFUNCTIONBODY_GETTER_SETTER_CB(Sprite, useHandCursor,afterSetUseHandCursor)
 
 void Sprite::afterSetUseHandCursor(bool /*oldValue*/)
 {
@@ -933,7 +933,7 @@ ASFUNCTIONBODY_ATOM(Sprite,_stopDrag)
 	wrk->getSystemState()->getInputThread()->stopDrag(th);
 }
 
-ASFUNCTIONBODY_GETTER(Sprite, hitArea);
+ASFUNCTIONBODY_GETTER(Sprite, hitArea)
 
 ASFUNCTIONBODY_ATOM(Sprite,_setter_hitArea)
 {
@@ -1409,6 +1409,14 @@ void Frame::destroyTags()
 	auto it2=avm1actions.begin();
 	for(;it2!=avm1actions.end();++it2)
 		delete (*it2);
+}
+
+void Frame::removeActionTags()
+{
+	auto it2=avm1actions.begin();
+	for(;it2!=avm1actions.end();++it2)
+		delete (*it2);
+	avm1actions.clear();
 }
 
 void Frame::execute(DisplayObjectContainer* displayList, bool inskipping)
@@ -2207,7 +2215,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		}
 		toAdd->as<MovieClip>()->inAVM1Attachment=false;
 	}
-	toAdd->incRef();
 	ret=asAtomHandler::fromObjectNoPrimitive(toAdd);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
@@ -2247,6 +2254,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
 			// don't remove the child by name here because another DisplayObject may have been added with this name after this clip was added
 			th->getParent()->deleteVariableByMultinameWithoutRemovingChild(m,wrk);
 		}
+		th->incRef();
 		th->getParent()->_removeChild(th);
 	}
 }
@@ -2950,7 +2958,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 			return getSystemState()->isInResetParentList(child);
 
 		child->setOnStage(false,false,inskipping);
-		if (direct || !this->isOnStage())
+		if (direct || !this->isOnStage() || inskipping)
 			child->setParent(nullptr);
 		else
 			getSystemState()->addDisplayObjectToResetParentList(child);
@@ -3914,6 +3922,9 @@ void Stage::removeHiddenObject(MovieClip* o)
 
 void Stage::AVM1AddScriptedMovieClip(MovieClip* clip)
 {
+	if (needsActionScript3())
+		return;
+	Locker l(avm1ScriptMutex);
 	if (clip->avm1PrevScriptedClip || clip->avm1NextScriptedClip || this->avm1ScriptMovieClipFirst == clip)
 		return;
 	if (!this->avm1ScriptMovieClipFirst)
@@ -3931,6 +3942,9 @@ void Stage::AVM1AddScriptedMovieClip(MovieClip* clip)
 
 void Stage::AVM1RemoveScriptedMovieClip(MovieClip* clip)
 {
+	if (needsActionScript3())
+		return;
+	Locker l(avm1ScriptMutex);
 	if (!clip->avm1PrevScriptedClip && !clip->avm1NextScriptedClip)
 		return;
 	if (clip->avm1PrevScriptedClip)
@@ -3956,11 +3970,35 @@ void Stage::advanceFrame()
 	}
 	if (!needsActionScript3())
 	{
+		avm1ScriptMutex.lock();
 		MovieClip* clip = avm1ScriptMovieClipFirst;
+		avm1ScriptMutex.unlock();
+		MovieClip* prevclip = nullptr;
 		while (clip)
 		{
-			MovieClip* nextclip = clip->avm1NextScriptedClip;
+			clip->incRef();
 			clip->AVM1HandleScripts();
+			avm1ScriptMutex.lock();
+			MovieClip* nextclip = clip->avm1NextScriptedClip;
+			if (prevclip)
+			{
+				if (clip != prevclip->avm1NextScriptedClip)
+					nextclip = prevclip->avm1NextScriptedClip;
+				else
+					prevclip = clip;
+			}
+			else
+			{
+				if (clip != avm1ScriptMovieClipFirst)
+				{
+					nextclip = avm1ScriptMovieClipFirst;
+					prevclip = nullptr;
+				}
+				else
+					prevclip = clip;
+			}
+			avm1ScriptMutex.unlock();
+			clip->decRef();
 			clip = nextclip;
 		}
 		DisplayObjectContainer::declareFrame();
@@ -5621,11 +5659,16 @@ void MovieClip::AVM1HandleScripts()
 	}
 	// TODO: check if the conditions when to execute the frame scripts are correct:
 	// - clip was just initialized and is accessed for the first time
-	// - clip is currently playing (not stopped) and was not set explicitely
-	// - playhead was explicitely set before calling the onEnterFrame handlers
-	// - playhead was explicitely set during calling the onEnterFrame handlers but didn't change the current frame
-	if (!isAVM1Loaded || (!this->state.explicit_play && !state.stop_FP) || wasexplicit || (this->state.explicit_FP && (state.FP==state.next_FP)))
+	// - clip has more than one frame and
+	//    - clip is currently playing (not stopped) and was not set explicitely or
+	//    - playhead was explicitely set before calling the onEnterFrame handlers or
+	//    - playhead was explicitely set during calling the onEnterFrame handlers but didn't change the current frame
+	if (!isAVM1Loaded ||
+			((!this->hasFinishedLoading() || this->getFramesLoaded()>1) &&
+			 ((!this->state.explicit_play && !state.stop_FP) || wasexplicit || (this->state.explicit_FP && (state.FP==state.next_FP)))))
+	{
 		AVM1ExecuteFrameActions(state.FP);
+	}
 	state.explicit_FP=false;
 	state.explicit_play=false;
 	isAVM1Loaded=true;

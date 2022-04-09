@@ -469,6 +469,7 @@ public:
 	bool dragged;
 	Sprite(ASWorker* wrk,Class_base* c);
 	void setSound(SoundChannel* s, bool forstreaming);
+	SoundChannel* getSoundChannel() const { return sound.getPtr(); }
 	void appendSound(unsigned char* buf, int len, uint32_t frame);
 	void setSoundStartFrame(uint32_t frame) { soundstartframe=frame; }
 	bool destruct() override;
@@ -554,6 +555,7 @@ public:
 	 * the objects that are instance of tags
 	 */
 	void destroyTags();
+	void removeActionTags();
 };
 
 class FrameContainer
@@ -703,6 +705,7 @@ public:
 	uint32_t internalGetWidth() const;
 private:
 	Mutex avm1listenerMutex;
+	Mutex avm1ScriptMutex;
 	void onColorCorrection(const tiny_string&);
 	void onFullScreenSourceRect(_NR<Rectangle>);
 	// Keyboard focus object is accessed from the VM thread (AS

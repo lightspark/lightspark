@@ -742,12 +742,13 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 	ARG_UNPACK_ATOM(th->bufferTime,1000)(th->checkPolicyFile,false);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime);
-ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile);
+ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime)
+ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile)
 
 SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, Sound* _sampleproducer)
 	: EventDispatcher(wrk,c),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
-	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),soundTransform(_MR(Class<SoundTransform>::getInstanceS(wrk))),
+	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),
+	fromSoundTag(nullptr),soundTransform(_MR(Class<SoundTransform>::getInstanceS(wrk))),
 	leftPeak(1),rightPeak(1),semSampleData(0)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
@@ -863,6 +864,7 @@ void SoundChannel::markFinished()
 void SoundChannel::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED | CLASS_FINAL);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),getPosition),GETTER_METHOD,true);
 
@@ -878,8 +880,51 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(SoundChannel,soundTransform,validateSoundTransfo
 void SoundChannel::finalize()
 {
 	EventDispatcher::finalize();
+	stream.reset();
+	sampleproducer=nullptr;
+	starting=true;
+	stopped=true;
+	terminated=true;
+	audioDecoder=nullptr;
+	audioStream=nullptr;
+	format=AudioFormat(CODEC_NONE,0,0);
+	soundinfo=nullptr;
+	oldVolume=-1.0;
+	startTime=0;
+	loopstogo=0;
+	streamposition=0;
+	streamdatafinished=false;
+	restartafterabort=false;
+	fromSoundTag=nullptr;
 	soundTransform.reset();
+	leftPeak=1;
+	rightPeak=1;
 	threadAbort();
+}
+
+bool SoundChannel::destruct()
+{
+	stream.reset();
+	sampleproducer=nullptr;
+	starting=true;
+	stopped=true;
+	terminated=true;
+	audioDecoder=nullptr;
+	audioStream=nullptr;
+	format=AudioFormat(CODEC_NONE,0,0);
+	soundinfo=nullptr;
+	oldVolume=-1.0;
+	startTime=0;
+	loopstogo=0;
+	streamposition=0;
+	streamdatafinished=false;
+	restartafterabort=false;
+	fromSoundTag=nullptr;
+	soundTransform=_MR(Class<SoundTransform>::getInstanceS(this->getInstanceWorker()));
+	leftPeak=1;
+	rightPeak=1;
+	threadAbort();
+	return EventDispatcher::destruct();
 }
 
 void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)
@@ -1012,7 +1057,7 @@ void SoundChannel::playStream()
 	if(waitForFlush)
 	{
 		//Put the decoders in the flushing state and wait for the complete consumption of contents
-		if(streamDecoder && streamDecoder->audioDecoder)
+		if(audioStream && streamDecoder && streamDecoder->audioDecoder)
 		{
 			streamDecoder->audioDecoder->setFlushing();
 			streamDecoder->audioDecoder->waitFlushed();
@@ -1086,7 +1131,7 @@ void SoundChannel::playStreamFromSamples()
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR, "Exception in SoundChannel " << e.cause);
+		LOG(LOG_ERROR, "Exception in SoundChannel from samples: " << e.cause);
 		threadAbort();
 		waitForFlush=false;
 	}
@@ -1096,14 +1141,14 @@ void SoundChannel::playStreamFromSamples()
 	}
 	catch(exception& e)
 	{
-		LOG(LOG_ERROR, "Exception in reading SoundChannel: "<<e.what());
+		LOG(LOG_ERROR, "Exception in reading SoundChannel from samples: "<<e.what());
 	}
 	streamdatafinished=false;
 	if(waitForFlush)
 	{
 		//Put the decoders in the flushing state and wait for the complete consumption of contents
 		mutex.lock();
-		if(audioDecoder)
+		if(audioStream && audioDecoder)
 		{
 			audioDecoder->setFlushing();
 			audioDecoder->waitFlushed();

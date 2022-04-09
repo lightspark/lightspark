@@ -283,7 +283,6 @@ public:
 	int getChannels() const;
 	_R<MemoryStreamCache> getSoundData() const;
 	std::streambuf *createSoundStream() const;
-	_NR<SoundChannel> soundchannel;
 	_NR<SoundChannel> createSoundChannel(const SOUNDINFO* soundinfo);
 	// indicates if this channel is attached to a Sound object
 	bool isAttached;
@@ -642,10 +641,10 @@ public:
 	~DefineSpriteTag();
 	int getId() const override { return SpriteID; }
 	ASObject* instance(Class_base* c=nullptr) override;
-	void setSoundStartFrame(uint32_t frame) 
+	void setSoundStartFrame()
 	{
 		if (soundstartframe == UINT32_MAX)
-			soundstartframe=frame;
+			soundstartframe=frames.size();
 	}
 };
 

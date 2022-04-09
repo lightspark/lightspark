@@ -2550,9 +2550,7 @@ void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
 {
 	if (inskipping) // it seems that StartSoundTags are not executed if we are skipping the frame due to a gotoframe action
 		return;
-	DefineSoundTag *soundTag = \
-		dynamic_cast<DefineSoundTag *>(parent->loadedFrom->dictionaryLookup(SoundId));
-
+	DefineSoundTag *soundTag = dynamic_cast<DefineSoundTag *>(parent->loadedFrom->dictionaryLookup(SoundId));
 	if (!soundTag)
 		return;
 
@@ -2560,30 +2558,36 @@ void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "StartSoundTag: some modifiers not supported");
 	}
-	if (soundTag->soundchannel.isNull())
+	SoundChannel* sound=nullptr;
+	if (parent->is<Sprite>())
 	{
-		soundTag->soundchannel = _NR<SoundChannel>(Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getInstanceWorker(),
+		sound = parent->as<Sprite>()->getSoundChannel();
+		if (sound && sound->fromSoundTag != soundTag) // sprite is currently not bound to this sound tag
+			sound = nullptr;
+	}
+	if (!sound)
+	{
+		sound = Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getInstanceWorker(),
 			soundTag->getSoundData(),
 			AudioFormat(soundTag->getAudioCodec(),
 						soundTag->getSampleRate(),
 						soundTag->getChannels()),
-			&this->SoundInfo));
-		soundTag->soundchannel->setConstant();
+			&this->SoundInfo);
+		sound->fromSoundTag = soundTag;
+		if (parent->is<Sprite>())
+			parent->as<Sprite>()->setSound(sound,false);
 	}
-	if (parent->is<Sprite>())
-		parent->as<Sprite>()->setSound(soundTag->soundchannel.getPtr(),false);
 	if (SoundInfo.SyncStop)
 	{
-		if (soundTag && soundTag->soundchannel)
-			soundTag->soundchannel->threadAbort();
+		sound->threadAbort();
 		return;
 	}
-	// it seems that adobe ignores the StartSoundTag if SoundInfo.SyncNoMultiple is set and the tag is attached to a Sound object by actionscript
+	// it seems that adobe ignores the StartSoundTag if SoundInfo.SyncNoMultiple is set and the tag is attached to a Sound object created by actionscript
 	if (SoundInfo.SyncNoMultiple && soundTag->isAttached)
 		return;
-	if (this->SoundInfo.SyncNoMultiple && soundTag->soundchannel->isPlaying())
+	if (this->SoundInfo.SyncNoMultiple && sound->isPlaying())
 		return;
-	soundTag->soundchannel->play(0);
+	sound->play(0);
 }
 
 ScriptLimitsTag::ScriptLimitsTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -2880,7 +2884,7 @@ SoundStreamBlockTag::SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootM
 		if (!sprite->soundheadtag)
 			throw ParseException("SoundStreamBlock tag without SoundStreamHeadTag.");
 		decodeSoundBlock(sprite->soundheadtag->SoundData.getPtr(),(LS_AUDIO_CODEC)sprite->soundheadtag->StreamSoundCompression,inData,len);
-		sprite->setSoundStartFrame(sprite->getFramesLoaded());
+		sprite->setSoundStartFrame();
 	}
 	else if (root)
 		root->appendSound(inData,len, root->getFramesLoaded());

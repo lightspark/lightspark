@@ -23,10 +23,11 @@
 #include "compat.h"
 #include "logger.h"
 #include "swf.h"
+#include "scripting/flash/system/flashsystem.h"
 
 using namespace lightspark;
 
-ThreadPool::ThreadPool(SystemState* s):num_jobs(0),stopFlag(false)
+ThreadPool::ThreadPool(SystemState* s):num_jobs(0),stopFlag(false),runcount(0)
 {
 	m_sys=s;
 	for(uint32_t i=0;i<NUM_THREADS;i++)
@@ -97,6 +98,7 @@ int ThreadPool::job_worker(void *d)
 		IThreadJob* myJob=data->pool->jobs.front();
 		data->pool->jobs.pop_front();
 		data->pool->curJobs[data->index]=myJob;
+		data->pool->runcount++;
 		l.release();
 
 		setTLSWorker(myJob->fromWorker);
@@ -127,6 +129,7 @@ int ThreadPool::job_worker(void *d)
 
 		l.acquire();
 		data->pool->curJobs[data->index]=nullptr;
+		data->pool->runcount--;
 		l.release();
 
 		//jobFencing is allowed to happen outside the mutex
@@ -145,7 +148,47 @@ void ThreadPool::addJob(IThreadJob* j)
 		return;
 	}
 	assert(j);
-	jobs.push_back(j);
-	num_jobs.signal();
+	if (runcount == NUM_THREADS)
+	{
+		// no slot available, we create an additional thread
+		runAdditionalThread(j);
+	}
+	else
+	{
+		jobs.push_back(j);
+		num_jobs.signal();
+	}
+}
+void ThreadPool::runAdditionalThread(IThreadJob* j)
+{
+	SDL_Thread* t = SDL_CreateThread(additional_job_worker,"additionalThread",j);
+	SDL_DetachThread(t);
 }
 
+int ThreadPool::additional_job_worker(void* d)
+{
+	IThreadJob* myJob=(IThreadJob*)d;
+
+	setTLSSys(myJob->fromWorker->getSystemState());
+	setTLSWorker(myJob->fromWorker);
+	try
+	{
+		myJob->execute();
+	}
+	catch(JobTerminationException& ex)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Job terminated");
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR,"Exception in AdditionalThread " << e.what());
+		myJob->fromWorker->getSystemState()->setError(e.cause);
+	}
+	catch(std::exception& e)
+	{
+		LOG(LOG_ERROR,"std Exception in AdditionalThread:"<<myJob<<" "<<e.what());
+		myJob->fromWorker->getSystemState()->setError(e.what());
+	}
+	myJob->jobFence();
+	return 0;
+}

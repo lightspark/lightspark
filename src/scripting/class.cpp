@@ -92,12 +92,13 @@ void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, a
 	if (this->needsBindingCheck()) // it seems possible that an instance of a class is constructed before the binding of the class is available, so we have to check for a binding here
 	{
 		worker->rootClip->bindClass(this->class_name,this);
-		this->bindingchecked=true;
+		if (worker->rootClip->hasFinishedLoading())
+			this->bindingchecked=true;
 	}
 	if(tag)
 	{
 		ret=asAtomHandler::fromObject(tag->instance(realClass));
-		if (instancefactory.isNull())
+		if (instancefactory.isNull() && this->bindingchecked)
 			instancefactory = _MR(tag->instance(realClass));
 	}
 	else
@@ -105,7 +106,7 @@ void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, a
 		assert_and_throw(super);
 		//Our super should not construct, we are going to do it ourselves
 		super->getInstance(worker,ret,false,nullptr,0,realClass);
-		if (instancefactory.isNull())
+		if (instancefactory.isNull() && this->bindingchecked)
 		{
 			asAtom instance=asAtomHandler::invalidAtom;
 			super->getInstance(worker,instance,false,nullptr,0,realClass);
@@ -205,6 +206,12 @@ GET_VARIABLE_RESULT Class_inherit::getVariableByMultiname(asAtom& ret, const mul
 {
 	checkScriptInit();
 	return Class_base::getVariableByMultiname(ret,name,opt,wrk);
+}
+
+variable* Class_inherit::findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t* nsRealID, bool* isborrowed, bool considerdynamic, ASWorker* wrk)
+{
+	checkScriptInit();
+	return Class_base::findVariableByMultiname(name, cls, nsRealID, isborrowed, considerdynamic, wrk);
 }
 string Class_inherit::toDebugString()
 {

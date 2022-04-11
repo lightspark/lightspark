@@ -1632,8 +1632,11 @@ void ParseThread::parseSWF(UI8 ver)
 	{
 		_NR<LoaderInfo> li=loader->getContentLoaderInfo();
 		root=RootMovieClip::getInstance(applicationDomain->getInstanceWorker(),li, applicationDomain, securityDomain);
-		root->incRef();
-		applicationDomain->getInstanceWorker()->rootClip = _MR(root);
+		if (!applicationDomain->getInstanceWorker()->isPrimordial)
+		{
+			root->incRef();
+			applicationDomain->getInstanceWorker()->rootClip = _MR(root);
+		}
 		parsedObject=_MNR(root);
 		li->setWaitedObject(parsedObject);
 		if(!url.empty())

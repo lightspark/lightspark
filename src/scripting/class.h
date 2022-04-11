@@ -103,6 +103,7 @@ public:
 	bool isBuiltin() const override { return false; }
 	bool hasoverriddenmethod(multiname* name) const override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	variable* findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t* nsRealID, bool* isborrowed, bool considerdynamic, ASWorker* wrk) override;
 	std::string toDebugString() override;
 };
 

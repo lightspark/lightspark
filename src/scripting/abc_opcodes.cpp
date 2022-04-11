@@ -1273,7 +1273,7 @@ int32_t ABCVm::add_i(ASObject* val2, ASObject* val1)
 
 ASObject* ABCVm::add_oi(ASObject* val2, int32_t val1)
 {
-	ASObject* res =NULL;
+	ASObject* res =nullptr;
 	//Implement ECMA add algorithm, for XML and default
 	if(val2->getObjectType()==T_INTEGER)
 	{
@@ -1313,7 +1313,7 @@ ASObject* ABCVm::add_oi(ASObject* val2, int32_t val1)
 
 ASObject* ABCVm::add_od(ASObject* val2, number_t val1)
 {
-	ASObject* res = NULL;
+	ASObject* res = nullptr;
 	//Implement ECMA add algorithm, for XML and default
 	if(val2->getObjectType()==T_NUMBER)
 	{
@@ -1596,7 +1596,7 @@ void ABCVm::getSuper(call_context* th, int n)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
-	Class_base* cls = NULL;
+	Class_base* cls = nullptr;
 	if (th->inClass && !th->inClass->super.isNull())
 		cls = th->inClass->super.getPtr();
 	else if (obj->getClass() && !obj->getClass()->super.isNull())
@@ -1616,7 +1616,7 @@ void ABCVm::getSuper(call_context* th, int n)
 
 bool ABCVm::getLex(call_context* th, int n)
 {
-	multiname* name=th->mi->context->getMultiname(n,NULL);
+	multiname* name=th->mi->context->getMultiname(n,nullptr);
 	//getlex is specified not to allow runtime multinames
 	assert_and_throw(name->isStatic);
 	return getLex_multiname(th,name,UINT32_MAX);
@@ -1713,6 +1713,8 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 	}
 	else
 		RUNTIME_STACK_PUSH(th,o);
+	if (asAtomHandler::is<Class_inherit>(o))
+		asAtomHandler::as<Class_inherit>(o)->checkScriptInit();
 	return canCache && !asAtomHandler::isPrimitive(o); // don't cache primitive values as they may change
 }
 
@@ -1745,7 +1747,7 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 
 	vector<scope_entry>::reverse_iterator it;
 	bool found=false;
-	ASObject* ret=NULL;
+	ASObject* ret=nullptr;
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
 		found=asAtomHandler::toObject(th->scope_stack[i-1],th->worker)->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true,th->worker);
@@ -1838,7 +1840,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found");
-			multiname m(NULL);
+			multiname m(nullptr);
 			m.name_type = multiname::NAME_STRING;
 			m.name_s_id = name->name_s_id;
 			m.isAttribute = false;
@@ -1934,7 +1936,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 		else
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"findPropStrict: " << *name << " not found");
-			multiname m(NULL);
+			multiname m(nullptr);
 			m.name_type = multiname::NAME_STRING;
 			m.name_s_id = name->name_s_id;
 			m.isAttribute = false;
@@ -2116,8 +2118,8 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	LOG_CALL("isTypelate");
 	bool real_ret=false;
 
-	Class_base* objc=NULL;
-	Class_base* c=NULL;
+	Class_base* objc=nullptr;
+	Class_base* c=nullptr;
 	switch (type->getObjectType())
 	{
 		case T_INTEGER:
@@ -2388,7 +2390,7 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 	LOG_CALL("hasNext2 " << n << ' ' << m);
 	ASObject* obj=asAtomHandler::getObject(th->locals[n]);
 	//If the local is not assigned or is a primitive bail out
-	if(obj==NULL)
+	if(obj==nullptr)
 		return false;
 
 	uint32_t curIndex=asAtomHandler::toUInt(th->locals[m]);
@@ -2430,7 +2432,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj);
 	LOG_CALL("getDescendants " << *name << " " <<name->isAttribute<< " "<<obj->getClassName());
 	XML::XMLVector ret;
-	XMLList* targetobject = NULL;
+	XMLList* targetobject = nullptr;
 	if(obj->getClass()==Class<XML>::getClass(obj->getSystemState()))
 	{
 		XML* xmlObj=Class<XML>::cast(obj);
@@ -2573,7 +2575,7 @@ void ABCVm::SetAllClassLinks()
 		if (!cls)
 			continue;
 		if (ABCVm::newClassRecursiveLink(cls, cls))
-			classesToLinkInterfaces[i] = NULL;
+			classesToLinkInterfaces[i] = nullptr;
 	}
 }
 void ABCVm::AddClassLinks(Class_base* target)
@@ -2654,7 +2656,6 @@ void ABCVm::newClass(call_context* th, int n)
 		th->mi->context->root->applicationDomain->classesBeingDefined.insert(make_pair(mname, ret));
 		th->mi->context->root->customClasses.insert(make_pair(mname->name_s_id,ret));
 	}
-		
 	ret->isFinal = th->mi->context->instances[n].isFinal();
 	ret->isSealed = th->mi->context->instances[n].isSealed();
 	ret->isInterface = th->mi->context->instances[n].isInterface();

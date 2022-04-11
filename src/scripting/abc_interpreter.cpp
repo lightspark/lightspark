@@ -3694,9 +3694,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 		uint8_t prevopcode=opcode;
 		opcode = code.readbyte();
 //		if (typestack.empty() || typestack.back().obj==nullptr)
-//			LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<hex<<(int)opcode);
+//			LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<state.preloadedcode.size()<<" "<<hex<<(int)opcode);
 //		else
-//			LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<typestack.back().obj->toDebugString()<<" "<<hex<<(int)opcode);
+//			LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<typestack.back().obj->toDebugString()<<" "<<state.preloadedcode.size()<<" "<< hex<<(int)opcode);
 		if (opcode_skipped)
 			opcode_skipped=false;
 		else
@@ -4390,8 +4390,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					if (asAtomHandler::is<Class_base>(o))
 					{
 						resulttype = asAtomHandler::as<Class_base>(o);
-						if (resulttype->is<Class_inherit>())
-							resulttype->as<Class_inherit>()->checkScriptInit();
 						if (asAtomHandler::as<Class_base>(o)->isConstructed() || asAtomHandler::as<Class_base>(o)->isBuiltin())
 						{
 							addCachedConstant(state,mi, o,code);

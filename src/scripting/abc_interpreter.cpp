@@ -3917,6 +3917,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				{
 					state.jumptargeteresulttypes.erase(code.tellg()+1);
 					state.jumptargets[code.tellg()+1]++;
+					clearOperands(state,true,&lastlocalresulttype);
 				}
 				if (skippablekills.count(t))
 				{
@@ -5231,6 +5232,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				{
 					state.jumptargeteresulttypes.erase(code.tellg()+1);
 					state.jumptargets[code.tellg()+1]++;
+					clearOperands(state,true,&lastlocalresulttype);
 				}
 				opcode_skipped=true;
 				break;

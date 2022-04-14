@@ -34,7 +34,7 @@ SamplerRegister SamplerRegister::parse (uint64_t v, bool isVertexProgram)
 	sr.isVertexProgram = isVertexProgram;
 	sr.f = ((v >> 60) & 0xF); // filter
 	sr.m = ((v >> 56) & 0xF); // mipmap
-	sr.w = ((v >> 52) & 0xF); // wrap
+	sr.w = ((v >> 52) & 0xF) ? 3 : 0; // wrap (AGAL doesn't seem to differentiate between WRAP_S and WRAP_T, so set flag for both)
 	sr.s = ((v >> 48) & 0xF); // special
 	sr.d = ((v >> 44) & 0xF); // dimension
 	sr.t = ((v >> 40) & 0xF); // texture
@@ -312,7 +312,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			}
 			engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
 
-			uint32_t count = action.udata2 * 3;
+			uint32_t count = action.udata2;
 			engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(action.udata3);
 			engineData->exec_glDrawElements_GL_TRIANGLES_GL_UNSIGNED_SHORT(count,(void*)(action.udata1*sizeof(uint16_t)));
 			if (currentprogram)
@@ -458,9 +458,9 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata2 = wrap + filter + mipfilter
 			if (currentprogram && action.udata1 < currentprogram->samplerState.size())
 			{
-				currentprogram->samplerState[action.udata1].w = (action.udata2 & 0xf)-1; //wrap
-				currentprogram->samplerState[action.udata1].f = ((action.udata2 & 0xf0) >>4)-1; //filter
-				currentprogram->samplerState[action.udata1].m = ((action.udata2 & 0xf00) >>8)-1 ; //mipfilter
+				currentprogram->samplerState[action.udata1].w = (action.udata2 & 0xf); //wrap
+				currentprogram->samplerState[action.udata1].f = ((action.udata2 & 0xf0) >>4); //filter
+				currentprogram->samplerState[action.udata1].m = ((action.udata2 & 0xf00) >>8) ; //mipfilter
 			}
 			break;
 		case RENDER_DELETETEXTURE:
@@ -639,18 +639,39 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 		return false;
 	}
 	EngineData* engineData = getSystemState()->getEngineData();
+
+	// set state to default values
 	if (currentprogram)
 		engineData->exec_glUseProgram(currentprogram->gpu_program);
+	if (enableDepthAndStencilBackbuffer)
+	{
+		engineData->exec_glEnable_GL_DEPTH_TEST();
+		engineData->exec_glEnable_GL_STENCIL_TEST();
+	}
+	else
+	{
+		engineData->exec_glDisable_GL_DEPTH_TEST();
+		engineData->exec_glDisable_GL_STENCIL_TEST();
+	}
+	engineData->exec_glDepthMask(true);
+	engineData->exec_glDepthFunc(LESS);
+	engineData->exec_glCullFace(FACE_NONE);
+	engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ZERO);
+	engineData->exec_glColorMask(true,true,true,true);
+
+	// execute rendering actions
 	for (uint32_t i = 0; i < actions[1-currentactionvector].size(); i++)
 	{
 		renderaction& action = actions[1-currentactionvector][i];
 		handleRenderAction(engineData,action);
 	}
+
+	// cleanup for stage rendering
 	engineData->exec_glDisable_GL_DEPTH_TEST();
+	engineData->exec_glCullFace(FACE_NONE);
 	engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(0);
 	engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
 	engineData->exec_glUseProgram(0);
-	
 	if (renderingToTexture)
 	{
 		textureframebufferID = UINT32_MAX;
@@ -740,7 +761,7 @@ void Context3D::loadCubeTexture(CubeTexture *tex)
 }
 
 Context3D::Context3D(ASWorker* wrk, Class_base *c):EventDispatcher(wrk,c),samplers{UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX},currentactionvector(0)
-  ,textureframebuffer(UINT32_MAX),textureframebufferID(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX),currentprogram(NULL)
+  ,textureframebuffer(UINT32_MAX),textureframebufferID(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX),currentprogram(nullptr)
   ,renderingToTexture(false),enableDepthAndStencilBackbuffer(true),enableDepthAndStencilTextureBuffer(true),swapbuffers(false),backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
   ,maxBackBufferHeight(16384),maxBackBufferWidth(16384)
 {
@@ -977,7 +998,7 @@ ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_DRAWTRIANGLES;
 	action.udata1 = firstIndex < 0 ? 0 : firstIndex;
-	action.udata2 = numTriangles == -1 ? indexBuffer->data.size() : numTriangles;
+	action.udata2 = numTriangles == -1 ? indexBuffer->data.size() : numTriangles*3;
 	action.udata3 = indexBuffer->bufferID;
 	th->actions[th->currentactionvector].push_back(action);
 	if (th->enableErrorChecking)
@@ -1240,13 +1261,13 @@ ASFUNCTIONBODY_ATOM(Context3D,setSamplerStateAt)
 	action.udata1 = uint32_t(sampler);
 	action.udata2 = 0;
 	if (wrap == "clamp")
-		action.udata2 |= 0x1;
+		action.udata2 |= 0x0;
 	else if (wrap == "repeat")
-		action.udata2 |= 0x2;
-	else if (wrap == "clamp_u_repeat_v")
 		action.udata2 |= 0x3;
+	else if (wrap == "clamp_u_repeat_v")
+		action.udata2 |= 0x1;
 	else if (wrap == "repeat_u_clamp_v")
-		action.udata2 |= 0x4;
+		action.udata2 |= 0x2;
 
 	if (filter == "anisotropic16x")
 	{
@@ -1269,16 +1290,16 @@ ASFUNCTIONBODY_ATOM(Context3D,setSamplerStateAt)
 		action.udata2 |= 0x30;
 	}
 	else if (filter == "linear")
-		action.udata2 |= 0x20;
-	else if (filter == "nearest")
 		action.udata2 |= 0x10;
+	else if (filter == "nearest")
+		action.udata2 |= 0x00;
 
 	if (mipfilter == "miplinear")
-		action.udata2 |= 0x300;
-	else if (mipfilter == "mipnearest")
 		action.udata2 |= 0x200;
-	else if (mipfilter == "mipnone")
+	else if (mipfilter == "mipnearest")
 		action.udata2 |= 0x100;
+	else if (mipfilter == "mipnone")
+		action.udata2 |= 0x000;
 
 	th->addAction(action);
 }

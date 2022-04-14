@@ -57,7 +57,7 @@ struct SamplerRegister
 	int32_t s; // special flags bit
 	int32_t t; // texture format (0=none, dxt1=1, dxt5=2)
 	RegisterType type;
-	int32_t w; // wrap (0=clamp 1=repeat)
+	int32_t w; // wrap (0=clamp 1=repeat_wrap_s 2=repeat_wrap_t 3=repeat)
 	uint32_t program_sampler_id;
 
 	static SamplerRegister parse (uint64_t v, bool isVertexProgram);

@@ -47,7 +47,7 @@ asfreelist::~asfreelist()
 	freelistsize = 0;
 }
 
-string ASObject::toDebugString()
+string ASObject::toDebugString() const
 {
 	check();
 	string ret;
@@ -503,7 +503,7 @@ variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TR
 			if(!(ret->second.kind & traitKinds))
 			{
 				assert(createKind==NO_CREATE_TRAIT);
-				return NULL;
+				return nullptr;
 			}
 			return &ret->second;
 		}

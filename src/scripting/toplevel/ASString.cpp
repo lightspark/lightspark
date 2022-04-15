@@ -684,6 +684,21 @@ void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	}
 }
 
+string ASString::toDebugString() const 
+{
+	tiny_string ret;
+	if (!datafilled)
+		ret = std::string("\"") + std::string(getSystemState()->getStringFromUniqueId(stringId)) + "\"_id";
+	else
+		ret = std::string("\"") + std::string(data) + "\"";
+#ifndef _NDEBUG
+	char buf[300];
+	sprintf(buf,"(%p / %d%s) ",this,this->getRefCount(),this->isConstructed()?"":" not constructed");
+	ret += buf;
+#endif
+	return ret;
+}
+
 ASFUNCTIONBODY_ATOM(ASString,slice)
 {
 	tiny_string data = asAtomHandler::toString(obj,wrk);

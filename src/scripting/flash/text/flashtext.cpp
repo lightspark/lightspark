@@ -1217,7 +1217,7 @@ void TextField::setHtmlText(const tiny_string& html)
 	}
 }
 
-std::string TextField::toDebugString()
+std::string TextField::toDebugString() const
 {
 	std::string res = InteractiveObject::toDebugString();
 	res += " \"";

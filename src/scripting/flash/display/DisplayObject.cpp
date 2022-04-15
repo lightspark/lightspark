@@ -1667,7 +1667,7 @@ void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool
 	this->tx=origtx;
 	this->ty=origty;
 }
-string DisplayObject::toDebugString()
+string DisplayObject::toDebugString() const
 {
 	std::string res = EventDispatcher::toDebugString();
 	res += "tag=";

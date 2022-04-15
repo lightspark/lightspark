@@ -62,7 +62,7 @@ public:
 	ASFUNCTION_ATOM(toPrecision);
 	ASFUNCTION_ATOM(toFixed);
 	ASFUNCTION_ATOM(_valueOf);
-	tiny_string toString();
+	tiny_string toString() const;
 	static tiny_string toString(number_t val) { return toString(val,DTOSTR_NORMAL,15);}
 	static tiny_string toStringRadix(number_t val, int radix);
 	static tiny_string toExponentialString(double v, int32_t fractionDigits);
@@ -117,7 +117,7 @@ public:
 	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(generator);
-	std::string toDebugString() override;
+	std::string toDebugString() const override;
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

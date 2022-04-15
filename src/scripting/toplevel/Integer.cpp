@@ -206,7 +206,7 @@ bool Integer::isEqual(ASObject* o)
 	}
 }
 
-tiny_string Integer::toString()
+tiny_string Integer::toString() const
 {
 	return Integer::toString(val);
 }

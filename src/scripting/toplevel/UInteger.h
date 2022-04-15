@@ -33,7 +33,7 @@ public:
 	UInteger(ASWorker* wrk,Class_base* c,uint32_t v=0):ASObject(wrk,c,T_UINTEGER),val(v){}
 
 	static void sinit(Class_base* c);
-	tiny_string toString();
+	tiny_string toString() const;
 	static tiny_string toString(uint32_t val);
 	inline number_t toNumber() { return val; }
 	inline bool destruct() { val=0; return destructIntern();}
@@ -50,7 +50,7 @@ public:
 	ASFUNCTION_ATOM(_toExponential);
 	ASFUNCTION_ATOM(_toFixed);
 	ASFUNCTION_ATOM(_toPrecision);
-	std::string toDebugString() { return toString()+"ui"; }
+	std::string toDebugString() const override { return toString()+"ui"; }
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk);

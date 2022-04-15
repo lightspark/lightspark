@@ -27,7 +27,7 @@
 using namespace std;
 using namespace lightspark;
 
-tiny_string UInteger::toString()
+tiny_string UInteger::toString() const
 {
 	return UInteger::toString(val);
 }

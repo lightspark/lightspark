@@ -221,7 +221,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, useRichTextClipboard);
 	ASFUNCTION_ATOM(_setTextFieldX);
 
-	std::string toDebugString() override;
+	std::string toDebugString() const override;
 };
 
 class TextFormat: public ASObject

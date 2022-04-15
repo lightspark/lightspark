@@ -312,7 +312,7 @@ ASObject *IFunction::describeType(ASWorker* wrk) const
 	return XML::createFromNode(wrk, root);
 }
 
-std::string IFunction::toDebugString()
+std::string IFunction::toDebugString() const
 {
 	string ret = ASObject::toDebugString()+(closure_this ? "(closure:"+closure_this->toDebugString()+")":"")+(clonedFrom ?" cloned":"");
 #ifndef _NDEBUG
@@ -564,7 +564,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	{
 		try
 		{
-			if(mi->body->exceptions.size() || (val==NULL && getSystemState()->useInterpreter))
+			if(!mi->body->exceptions.empty() || (val==nullptr && getSystemState()->useInterpreter))
 			{
 				if(codeStatus == method_body_info::OPTIMIZED && getSystemState()->useFastInterpreter)
 				{

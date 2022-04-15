@@ -213,7 +213,7 @@ variable* Class_inherit::findVariableByMultiname(const multiname& name, Class_ba
 	checkScriptInit();
 	return Class_base::findVariableByMultiname(name, cls, nsRealID, isborrowed, considerdynamic, wrk);
 }
-string Class_inherit::toDebugString()
+string Class_inherit::toDebugString() const
 {
 	std::string res = Class_base::toDebugString();
 	res += "tag=";

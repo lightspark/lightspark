@@ -334,7 +334,7 @@ public:
 	void AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj);
 	AVM1Function *AVM1GetFunction(uint32_t nameID);
 	void DrawToBitmap(BitmapData* bm, const MATRIX& initialMatrix, bool smoothing, bool forcachedbitmap);
-	std::string toDebugString() override;
+	std::string toDebugString() const override;
 };
 }
 #endif /* SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H */

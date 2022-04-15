@@ -245,7 +245,7 @@ ASFUNCTIONBODY_ATOM(Number,generator)
 		asAtomHandler::setNumber(ret,wrk,asAtomHandler::toNumber(args[0]));
 }
 
-tiny_string Number::toString()
+tiny_string Number::toString() const
 {
 	return Number::toString(isfloat ? dval : ival);
 }
@@ -647,7 +647,7 @@ void Number::sinit(Class_base* c)
 	}
 }
 
-string Number::toDebugString()
+string Number::toDebugString() const
 {
 	string ret = toString()+(isfloat ? "d" : "di");
 #ifndef NDEBUG

@@ -306,7 +306,7 @@ FFMpegVideoDecoder::~FFMpegVideoDecoder()
 	avcodec_close(codecContext);
 	if(ownedContext)
 		av_free(codecContext);
-	av_free(frameIn);
+	av_frame_free(&frameIn);
 }
 
 //setSize is called from the routine that inserts new frames
@@ -725,7 +725,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC audioCodec
 #endif
 {
 	switchCodec(audioCodec,initdata,datalen);
-#if HAVE_AVCODEC_DECODE_AUDIO4
+#if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
 	frameIn=av_frame_alloc();
 #endif
 }
@@ -804,7 +804,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng, LS_AUDIO_CODEC lscodec, 
 
 	if(fillDataAndCheckValidity())
 		status=VALID;
-#ifdef HAVE_AVCODEC_DECODE_AUDIO4
+#if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
 	frameIn=av_frame_alloc();
 #endif
 }
@@ -834,7 +834,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecParameters* codecP
 
 	if(fillDataAndCheckValidity())
 		status=VALID;
-#ifdef HAVE_AVCODEC_DECODE_AUDIO4
+#if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
 	frameIn=av_frame_alloc();
 #endif
 }
@@ -877,6 +877,9 @@ FFMpegAudioDecoder::~FFMpegAudioDecoder()
 #elif defined HAVE_LIBAVRESAMPLE
 	if (resamplecontext)
 		avresample_free(&resamplecontext);
+#endif
+#if (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
+	av_frame_free(&frameIn);
 #endif
 }
 
@@ -1452,6 +1455,8 @@ FFMpegStreamDecoder::~FFMpegStreamDecoder()
 	delete videoDecoder;
 	audioDecoder=nullptr;
 	videoDecoder=nullptr;
+	customAudioDecoder=nullptr;
+	customVideoDecoder=nullptr;
 	if(formatCtx)
 	{
 #ifdef HAVE_AVIO_ALLOC_CONTEXT

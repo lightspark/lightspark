@@ -2215,6 +2215,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		}
 		toAdd->as<MovieClip>()->inAVM1Attachment=false;
 	}
+	toAdd->incRef();
 	ret=asAtomHandler::fromObjectNoPrimitive(toAdd);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)

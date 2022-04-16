@@ -306,7 +306,11 @@ FFMpegVideoDecoder::~FFMpegVideoDecoder()
 	avcodec_close(codecContext);
 	if(ownedContext)
 		av_free(codecContext);
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 0, 0)
 	av_frame_free(&frameIn);
+#else
+	av_free(frameIn);
+#endif
 }
 
 //setSize is called from the routine that inserts new frames
@@ -868,7 +872,9 @@ FFMpegAudioDecoder::~FFMpegAudioDecoder()
 	avcodec_close(codecContext);
 	if(ownedContext)
 		av_free(codecContext);
-#if HAVE_AVCODEC_DECODE_AUDIO4
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 0, 0)
+	av_frame_free(&frameIn);
+#elif HAVE_AVCODEC_DECODE_AUDIO4
 	av_free(frameIn);
 #endif
 #ifdef HAVE_LIBSWRESAMPLE
@@ -877,9 +883,6 @@ FFMpegAudioDecoder::~FFMpegAudioDecoder()
 #elif defined HAVE_LIBAVRESAMPLE
 	if (resamplecontext)
 		avresample_free(&resamplecontext);
-#endif
-#if (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
-	av_frame_free(&frameIn);
 #endif
 }
 

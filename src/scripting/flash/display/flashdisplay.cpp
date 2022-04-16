@@ -2587,6 +2587,12 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 		if(it!=dynamicDisplayList.end())
 		{
 			insertpos = it-dynamicDisplayList.begin()+1;
+			it++;
+			while(it!=dynamicDisplayList.end() && !(*it)->legacy)
+			{
+				it++; // skip all children previously added through actionscript
+				insertpos++;
+			}
 		}
 	}
 	

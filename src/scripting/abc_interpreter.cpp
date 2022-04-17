@@ -1034,6 +1034,15 @@ abc_function ABCVm::abcfunctions[]={
 	abc_declocal_i_postfix, // 0x351 ABC_OP_OPTIMZED_DECLOCAL_I_POSTFIX
 	abc_lookupswitch_constant, // 0x352 ABC_OP_OPTIMZED_LOOKUPSWITCH
 	abc_lookupswitch_local,
+	abc_ifnle_constant_constant, // 0x354 ABC_OP_OPTIMZED_IFNLE
+	abc_ifnle_local_constant,
+	abc_ifnle_constant_local,
+	abc_ifnle_local_local,
+
+	abc_ifngt_constant_constant, // 0x358 ABC_OP_OPTIMZED_IFNGT
+	abc_ifngt_local_constant,
+	abc_ifngt_constant_local,
+	abc_ifngt_local_local,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1298,6 +1307,8 @@ struct operands
 #define ABC_OP_OPTIMZED_INCLOCAL_I_POSTFIX 0x00000350
 #define ABC_OP_OPTIMZED_DECLOCAL_I_POSTFIX 0x00000351
 #define ABC_OP_OPTIMZED_LOOKUPSWITCH 0x00000352
+#define ABC_OP_OPTIMZED_IFNLE 0x00000354
+#define ABC_OP_OPTIMZED_IFNGT 0x00000358
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -2165,6 +2176,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				clearOperands(state,false,nullptr,checkchanged);
 			break;
 		case 0x0c://ifnlt
+		case 0x0d://ifnle
+		case 0x0e://ifngt
 		case 0x0f://ifnge
 		case 0x13://ifeq
 		case 0x14://ifne
@@ -5254,17 +5267,21 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x0d://ifnle
-			case 0x0e://ifngt
-			{
 				state.canlocalinitialize.clear();
 				removetypestack(typestack,2);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				jumppositions[state.preloadedcode.size()] = code.reads24();
-				jumpstartpositions[state.preloadedcode.size()] = code.tellg();
-				state.preloadedcode.push_back((uint32_t)opcode);
+				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFNLE,opcode,code);
+				jumppositions[state.preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
-			}
+			case 0x0e://ifngt
+				state.canlocalinitialize.clear();
+				removetypestack(typestack,2);
+				setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_IFNGT,opcode,code);
+				jumppositions[state.preloadedcode.size()-1] = code.reads24();
+				jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
+				clearOperands(state,true,&lastlocalresulttype);
+				break;
 			case 0x10://jump
 			{
 				state.canlocalinitialize.clear();

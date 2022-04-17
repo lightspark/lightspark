@@ -104,6 +104,78 @@ void ABCVm::abc_ifnge_local_local(call_context* context)
 	else
 		++(context->exec_pos);
 }
+void ABCVm::abc_ifnle_constant_constant(call_context* context)
+{
+	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg2_constant,context->worker,*context->exec_pos->arg1_constant) == TFALSE);
+	LOG_CALL("ifNLE_cc (" << ((cond)?"taken)":"not taken)"));
+	if(cond)
+		context->exec_pos += context->exec_pos->arg3_int;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnle_local_constant(call_context* context)
+{
+	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg2_constant,context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)) == TFALSE);
+	LOG_CALL("ifNLE_lc (" << ((cond)?"taken)":"not taken)"));
+	if(cond)
+		context->exec_pos += context->exec_pos->arg3_int;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnle_constant_local(call_context* context)
+{
+	bool cond=!(asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker,*context->exec_pos->arg1_constant) == TFALSE);
+	LOG_CALL("ifNLE_cl (" << ((cond)?"taken)":"not taken)"));
+	if(cond)
+		context->exec_pos += context->exec_pos->arg3_int;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifnle_local_local(call_context* context)
+{
+	bool cond=!(asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)) == TFALSE);
+	LOG_CALL("ifNLE_ll (" << ((cond)?"taken)":"not taken)")<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
+	if(cond)
+		context->exec_pos += context->exec_pos->arg3_int;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifngt_constant_constant(call_context* context)
+{
+	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg2_constant,context->worker,*context->exec_pos->arg1_constant) == TTRUE);
+	LOG_CALL("ifNGT_cc (" << ((cond)?"taken)":"not taken)"));
+	if(cond)
+		context->exec_pos += context->exec_pos->arg3_int;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifngt_local_constant(call_context* context)
+{
+	bool cond=!(asAtomHandler::isLess(*context->exec_pos->arg2_constant,context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)) == TTRUE);
+	LOG_CALL("ifNGT_lc (" << ((cond)?"taken)":"not taken)"));
+	if(cond)
+		context->exec_pos += context->exec_pos->arg3_int;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifngt_constant_local(call_context* context)
+{
+	bool cond=!(asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker,*context->exec_pos->arg1_constant) == TTRUE);
+	LOG_CALL("ifNGT_cl (" << ((cond)?"taken)":"not taken)"));
+	if(cond)
+		context->exec_pos += context->exec_pos->arg3_int;
+	else
+		++(context->exec_pos);
+}
+void ABCVm::abc_ifngt_local_local(call_context* context)
+{
+	bool cond=!(asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)) == TTRUE);
+	LOG_CALL("ifNGT_ll (" << ((cond)?"taken)":"not taken)")<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
+	if(cond)
+		context->exec_pos += context->exec_pos->arg3_int;
+	else
+		++(context->exec_pos);
+}
 void ABCVm::abc_iftrue_constant(call_context* context)
 {
 	bool cond=asAtomHandler::Boolean_concrete(*context->exec_pos->arg1_constant);

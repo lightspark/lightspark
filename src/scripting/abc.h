@@ -574,7 +574,15 @@ private:
 	static void abc_ifnlt_constant_local(call_context* context);
 	static void abc_ifnlt_local_local(call_context* context);
 	static void abc_ifnle(call_context* context);
+	static void abc_ifnle_constant_constant(call_context* context);
+	static void abc_ifnle_local_constant(call_context* context);
+	static void abc_ifnle_constant_local(call_context* context);
+	static void abc_ifnle_local_local(call_context* context);
 	static void abc_ifngt(call_context* context);
+	static void abc_ifngt_constant_constant(call_context* context);
+	static void abc_ifngt_local_constant(call_context* context);
+	static void abc_ifngt_constant_local(call_context* context);
+	static void abc_ifngt_local_local(call_context* context);
 	static void abc_ifnge(call_context* context);
 	static void abc_ifnge_constant_constant(call_context* context);
 	static void abc_ifnge_local_constant(call_context* context);

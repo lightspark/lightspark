@@ -240,8 +240,11 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 		throwError<TypeError>(kNullArgumentError);
 	if (async)
 		LOG(LOG_NOT_IMPLEMENTED,"Texture.uploadCompressedTextureFromByteArray async loading");
+	th->context->rendermutex.lock();
+	th->needrefresh = true;
 	th->parseAdobeTextureFormat(data.getPtr(),byteArrayOffset,false,th->hasalpha);
 	th->context->addAction(RENDER_LOADTEXTURE,th);
+	th->context->rendermutex.unlock();
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 {
@@ -251,12 +254,13 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 	ARG_UNPACK_ATOM(source)(miplevel,0);
 	if (source.isNull())
 		throwError<TypeError>(kNullArgumentError);
-	th->needrefresh = true;
 	if (miplevel > 0 && ((uint32_t)1<<(miplevel-1) > max(th->width,th->height)))
 	{
 		LOG(LOG_ERROR,"invalid miplevel:"<<miplevel<<" "<<(1<<(miplevel-1))<<" "<< th->width<<" "<<th->height);
 		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
 	}
+	th->context->rendermutex.lock();
+	th->needrefresh = true;
 	if (th->bitmaparray.size() <= miplevel)
 		th->bitmaparray.resize(miplevel+1);
 	uint32_t mipsize = (th->width>>miplevel)*(th->height>>miplevel)*4;
@@ -276,6 +280,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 		}
 	}
 	th->context->addAction(RENDER_LOADTEXTURE,th);
+	th->context->rendermutex.unlock();
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 {
@@ -286,12 +291,13 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 	ARG_UNPACK_ATOM(data)(byteArrayOffset)(miplevel,0);
 	if (data.isNull())
 		throwError<TypeError>(kNullArgumentError);
-	th->needrefresh = true;
 	if (miplevel > 0 && ((uint32_t)1<<(miplevel-1) > max(th->width,th->height)))
 	{
 		LOG(LOG_ERROR,"invalid miplevel:"<<miplevel<<" "<<(1<<(miplevel-1))<<" "<< th->width<<" "<<th->height);
 		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
 	}
+	th->context->rendermutex.lock();
+	th->needrefresh = true;
 	if (th->bitmaparray.size() <= miplevel)
 		th->bitmaparray.resize(miplevel+1);
 	uint32_t mipsize = (th->width>>miplevel)*(th->height>>miplevel)*4;
@@ -321,6 +327,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 #endif
 	data->setPosition(byteArrayOffset+bytesneeded);
 	th->context->addAction(RENDER_LOADTEXTURE,th);
+	th->context->rendermutex.unlock();
 }
 
 
@@ -348,7 +355,6 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 	ARG_UNPACK_ATOM(source)(side)(miplevel,0);
 	if (source.isNull())
 		throwError<TypeError>(kNullArgumentError);
-	th->needrefresh = true;
 	if (miplevel > 0 && ((uint32_t)1<<(miplevel-1) > th->width))
 	{
 		LOG(LOG_ERROR,"invalid miplevel:"<<miplevel<<" "<<(1<<(miplevel-1))<<" "<< th->width);
@@ -367,6 +373,8 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 		throwError<ArgumentError>(kInvalidArgumentError,"source");
 	}
 
+	th->context->rendermutex.lock();
+	th->needrefresh = true;
 	uint32_t mipsize = (th->width>>miplevel)*(th->width>>miplevel)*4;
 	th->bitmaparray[th->max_miplevel*side + miplevel].resize(mipsize);
 	for (uint32_t i = 0; i < bitmap_size; i++)
@@ -383,6 +391,7 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 		}
 	}
 	th->context->addAction(RENDER_LOADCUBETEXTURE,th);
+	th->context->rendermutex.unlock();
 }
 ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromByteArray)
 {
@@ -408,13 +417,14 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 
 	if (source.isNull())
 		throwError<TypeError>(kNullArgumentError);
+	assert_and_throw(th->height == uint32_t(source->getHeight()) && th->width == uint32_t(source->getWidth()));
+	th->context->rendermutex.lock();
 	th->needrefresh = true;
 	if (th->bitmaparray.size() == 0)
 		th->bitmaparray.resize(1);
 	uint32_t bytesneeded = th->width*th->height*4;
 	th->bitmaparray[0].resize(bytesneeded);
 
-	assert_and_throw(th->height == uint32_t(source->getHeight()) && th->width == uint32_t(source->getWidth()));
 	for (uint32_t i = 0; i < th->height; i++)
 	{
 		for (uint32_t j = 0; j < th->width; j++)
@@ -429,6 +439,7 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 		}
 	}
 	th->context->addAction(RENDER_LOADTEXTURE,th);
+	th->context->rendermutex.unlock();
 }
 ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 {
@@ -438,6 +449,7 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 	ARG_UNPACK_ATOM(data)(byteArrayOffset);
 	if (data.isNull())
 		throwError<TypeError>(kNullArgumentError);
+	th->context->rendermutex.lock();
 	th->needrefresh = true;
 	if (th->bitmaparray.size() == 0)
 		th->bitmaparray.resize(1);
@@ -467,6 +479,7 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 #endif
 	data->setPosition(byteArrayOffset+bytesneeded);
 	th->context->addAction(RENDER_LOADTEXTURE,th);
+	th->context->rendermutex.unlock();
 }
 
 void VideoTexture::sinit(Class_base *c)
@@ -477,8 +490,8 @@ void VideoTexture::sinit(Class_base *c)
 	c->setDeclaredMethodByQName("attachCamera","",Class<IFunction>::getFunction(c->getSystemState(),attachCamera),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(c->getSystemState(),attachNetStream),NORMAL_METHOD,true);
 }
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(VideoTexture,videoHeight);
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(VideoTexture,videoWidth);
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(VideoTexture,videoHeight)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(VideoTexture,videoWidth)
 
 ASFUNCTIONBODY_ATOM(VideoTexture,attachCamera)
 {

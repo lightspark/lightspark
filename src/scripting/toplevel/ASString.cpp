@@ -687,7 +687,7 @@ void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 string ASString::toDebugString() const 
 {
 	tiny_string ret;
-	if (!datafilled)
+	if (!datafilled && hasId)
 		ret = std::string("\"") + std::string(getSystemState()->getStringFromUniqueId(stringId)) + "\"_id";
 	else
 		ret = std::string("\"") + std::string(data) + "\"";

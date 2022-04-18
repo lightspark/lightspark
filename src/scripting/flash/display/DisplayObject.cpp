@@ -873,7 +873,6 @@ void DisplayObject::setScaleX(number_t val)
 {
 	if (std::isnan(val))
 		return;
-	ROUND_TO_TWIPS(val);
 	//Apply the difference
 	if(sx!=val)
 	{
@@ -905,7 +904,6 @@ void DisplayObject::setScaleY(number_t val)
 {
 	if (std::isnan(val))
 		return;
-	ROUND_TO_TWIPS(val);
 	//Apply the difference
 	if(sy!=val)
 	{

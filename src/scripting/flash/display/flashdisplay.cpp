@@ -2599,13 +2599,32 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 	_addChildAt(_MR(obj),insertpos,inskipping);
 	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{
-		obj->incRef();
 		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		asAtom v = asAtomHandler::fromObject(obj);
-		setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+		bool set=true;
+		if (!loadedFrom->usesActionScript3 && !obj->legacy)
+		{
+			variable* v = this->findVariableByMultiname(objName,this->getClass(),nullptr,nullptr,true,loadedFrom->getInstanceWorker());
+			if (v && asAtomHandler::is<DisplayObject>(v->var))
+			{
+				// it seems that in AVM1 the variable for a named child is not set if
+				// - a variable with the same name already exists and
+				// - that variable is a DisplayObject and
+				// - the new displayobject was constructed from actionscript and
+				// - the depth of the existing DisplayObject is lower than that of the new DisplayObject
+				auto it = this->mapLegacyChildToDepth.find(asAtomHandler::as<DisplayObject>(v->var));
+				if (it != this->mapLegacyChildToDepth.end() && it->second < depth)
+					set = false;
+			}
+		}
+		if (set)
+		{
+			obj->incRef();
+			asAtom v = asAtomHandler::fromObject(obj);
+			setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+		}
 	}
 
 	mapDepthToLegacyChild.insert(make_pair(depth,obj));

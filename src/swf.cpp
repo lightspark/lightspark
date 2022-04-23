@@ -2009,12 +2009,9 @@ void RootMovieClip::constructionComplete()
 	MovieClip::constructionComplete();
 	if (!needsActionScript3())
 	{
-		advanceFrame();
 		declareFrame();
-		AVM1HandleScripts();
-		initFrame();
 	}
-	
+
 	incRef();
 	getSystemState()->stage->_addChildAt(_MR(this),0);
 	this->setOnStage(true,true);

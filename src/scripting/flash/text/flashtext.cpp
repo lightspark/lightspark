@@ -70,9 +70,9 @@ std::vector<asAtom> *ASFont::getFontList()
 	static std::vector<asAtom> fontlist;
 	return &fontlist;
 }
-ASFUNCTIONBODY_GETTER(ASFont, fontName);
-ASFUNCTIONBODY_GETTER(ASFont, fontStyle);
-ASFUNCTIONBODY_GETTER(ASFont, fontType);
+ASFUNCTIONBODY_GETTER(ASFont, fontName)
+ASFUNCTIONBODY_GETTER(ASFont, fontStyle)
+ASFUNCTIONBODY_GETTER(ASFont, fontType)
 
 ASFUNCTIONBODY_ATOM(ASFont,enumerateFonts)
 {
@@ -556,7 +556,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getTextFormat)
 	TextFormat *format=Class<TextFormat>::getInstanceS(wrk);
 
 	format->color= asAtomHandler::fromUInt(th->textColor.toUInt());
-	format->font = th->font;
+	format->font = asAtomHandler::fromString(wrk->getSystemState(),th->font);
 	format->size = asAtomHandler::fromUInt(th->fontSize);
 
 	LOG(LOG_NOT_IMPLEMENTED, "getTextFormat is not fully implemeted");
@@ -591,11 +591,30 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	if(!asAtomHandler::isNull(tf->color))
 		th->textColor = asAtomHandler::toUInt(tf->color);
 	bool updatesizes = false;
-	if (tf->font != "")
+
+	tiny_string align="left";
+	if (!asAtomHandler::isNull(tf->align))
+		align = asAtomHandler::toString(tf->align,wrk);
+	AUTO_SIZE newAutoSize = th->autoSize;
+	if(align == "none")
+		newAutoSize = AS_NONE;
+	else if (align == "left")
+		newAutoSize = AS_LEFT;
+	else if (align == "right")
+		newAutoSize = AS_RIGHT;
+	else if (align == "center")
+		newAutoSize = AS_CENTER;
+	if (th->autoSize != newAutoSize)
 	{
-		if (tf->font != th->font)
+		th->autoSize = newAutoSize;
+		updatesizes = true;
+	}
+	if(!asAtomHandler::isNull(tf->font))
+	{
+		tiny_string fnt = asAtomHandler::toString(tf->font,wrk);
+		if (fnt != th->font)
 			updatesizes = true;
-		th->font = tf->font;
+		th->font = fnt;
 		th->fontID = UINT32_MAX;
 	}
 	if (!asAtomHandler::isNull(tf->size) && th->fontSize != asAtomHandler::toUInt(tf->size))
@@ -619,7 +638,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getDefaultTextFormat)
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	
 	TextFormat* tf = Class<TextFormat>::getInstanceS(wrk);
-	tf->font = th->font;
+	tf->font = asAtomHandler::fromString(wrk->getSystemState(),th->font);
 	tf->bold = th->isBold ? asAtomHandler::trueAtom : asAtomHandler::nullAtom;
 	tf->italic = th->isItalic ? asAtomHandler::trueAtom : asAtomHandler::nullAtom;
 	LOG(LOG_NOT_IMPLEMENTED,"getDefaultTextFormat does not get all fields of TextFormat");
@@ -635,21 +654,24 @@ ASFUNCTIONBODY_ATOM(TextField,_setDefaultTextFormat)
 
 	if(!asAtomHandler::isNull(tf->color))
 		th->textColor = asAtomHandler::toUInt(tf->color);
-	if (tf->font != "")
+	if(!asAtomHandler::isNull(tf->font))
 	{
-		th->font = tf->font;
+		th->font = asAtomHandler::toString(tf->font,wrk);
 		th->fontID = UINT32_MAX;
 	}
 	if (!asAtomHandler::isNull(tf->size))
 		th->fontSize = asAtomHandler::toUInt(tf->size);
+	tiny_string align="left";
+	if (!asAtomHandler::isNull(tf->align))
+		align = asAtomHandler::toString(tf->align,wrk);
 	AUTO_SIZE newAutoSize = th->autoSize;
-	if(tf->align == "none")
+	if(align == "none")
 		newAutoSize = AS_NONE;
-	else if (tf->align == "left")
+	else if (align == "left")
 		newAutoSize = AS_LEFT;
-	else if (tf->align == "right")
+	else if (align == "right")
 		newAutoSize = AS_RIGHT;
-	else if (tf->align == "center")
+	else if (align == "center")
 		newAutoSize = AS_CENTER;
 	th->isBold=asAtomHandler::toInt(tf->bold);
 	th->isItalic=asAtomHandler::toInt(tf->italic);
@@ -2016,24 +2038,42 @@ void TextFormat::sinit(Class_base* c)
 
 bool TextFormat::destruct()
 {
+	ASATOM_DECREF(blockIndent);
 	blockIndent = asAtomHandler::nullAtom;
+	ASATOM_DECREF(bold);
 	bold = asAtomHandler::nullAtom;
+	ASATOM_DECREF(bullet);
 	bullet = asAtomHandler::nullAtom;
+	ASATOM_DECREF(color);
 	color = asAtomHandler::nullAtom;
+	ASATOM_DECREF(indent);
 	indent = asAtomHandler::nullAtom;
+	ASATOM_DECREF(italic);
 	italic = asAtomHandler::nullAtom;
+	ASATOM_DECREF(kerning);
 	kerning = asAtomHandler::nullAtom;
+	ASATOM_DECREF(leading);
 	leading = asAtomHandler::nullAtom;
+	ASATOM_DECREF(leftMargin);
 	leftMargin = asAtomHandler::nullAtom;
+	ASATOM_DECREF(letterSpacing);
 	letterSpacing = asAtomHandler::nullAtom;
+	ASATOM_DECREF(rightMargin);
 	rightMargin = asAtomHandler::nullAtom;
 	tabStops.reset();
+	ASATOM_DECREF(underline);
 	underline = asAtomHandler::nullAtom;
-	display = "";
-	align="";
-	url="";
-	target="";
-	font="";
+	ASATOM_DECREF(display);
+	display = asAtomHandler::nullAtom;
+	ASATOM_DECREF(align);
+	align = asAtomHandler::nullAtom;
+	ASATOM_DECREF(url);
+	url = asAtomHandler::nullAtom;
+	ASATOM_DECREF(target);
+	target = asAtomHandler::nullAtom;
+	ASATOM_DECREF(font);
+	font = asAtomHandler::nullAtom;
+	ASATOM_DECREF(size);
 	size=asAtomHandler::nullAtom;
 	return destructIntern();
 }
@@ -2041,49 +2081,46 @@ bool TextFormat::destruct()
 ASFUNCTIONBODY_ATOM(TextFormat,_constructor)
 {
 	TextFormat* th=asAtomHandler::as<TextFormat>(obj);
-	ARG_UNPACK_ATOM (th->font, "")
+	ARG_UNPACK_ATOM (th->font, asAtomHandler::nullAtom)
 		(th->size,asAtomHandler::nullAtom)
 		(th->color,asAtomHandler::nullAtom)
 		(th->bold,asAtomHandler::nullAtom)
 		(th->italic,asAtomHandler::nullAtom)
 		(th->underline,asAtomHandler::nullAtom)
-		(th->url,"")
-		(th->target,"")
-		(th->align,"left")
+		(th->url,asAtomHandler::nullAtom)
+		(th->target,asAtomHandler::nullAtom)
+		(th->align,asAtomHandler::nullAtom)
 		(th->leftMargin,asAtomHandler::nullAtom)
 		(th->rightMargin,asAtomHandler::nullAtom)
 		(th->indent,asAtomHandler::nullAtom)
 		(th->leading,asAtomHandler::nullAtom);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_CB(TextFormat,align,onAlign);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,blockIndent);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,bold);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,bullet);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,color);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,font);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,indent);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,italic);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,kerning);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,leading);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,leftMargin);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,letterSpacing);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,rightMargin);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,size);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,tabStops);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,target);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,underline);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,url);
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,display);
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextFormat,align,onAlign)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,blockIndent)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,bold)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,bullet)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,color)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,font)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,indent)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,italic)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,kerning)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,leading)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,leftMargin)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,letterSpacing)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,rightMargin)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,size)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,tabStops)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,target)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,underline)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,url)
+ASFUNCTIONBODY_GETTER_SETTER(TextFormat,display)
 
-void TextFormat::buildTraits(ASObject* o)
+void TextFormat::onAlign(const asAtom& old)
 {
-}
-
-void TextFormat::onAlign(const tiny_string& old)
-{
-	if (align != "" && align != "center" && align != "end" && align != "justify" && 
-	    align != "left" && align != "right" && align != "start")
+	tiny_string a = asAtomHandler::toString(align,getInstanceWorker());
+	if (a != "" && a != "center" && a != "end" && a != "justify" && 
+	    a != "left" && a != "right" && a != "start")
 	{
 		align = old;
 		throwError<ArgumentError>(kInvalidEnumError, "align");

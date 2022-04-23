@@ -227,19 +227,18 @@ public:
 class TextFormat: public ASObject
 {
 private:
-	void onAlign(const tiny_string& old);
+	void onAlign(const asAtom& old);
 public:
 	TextFormat(ASWorker* wrk,Class_base* c);
 	bool destruct();
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
-	ASPROPERTY_GETTER_SETTER(tiny_string,align);
+	ASPROPERTY_GETTER_SETTER_ATOM(align);
 	ASPROPERTY_GETTER_SETTER_ATOM(blockIndent);
 	ASPROPERTY_GETTER_SETTER_ATOM(bold);
 	ASPROPERTY_GETTER_SETTER_ATOM(bullet);
 	ASPROPERTY_GETTER_SETTER_ATOM(color);
-	ASPROPERTY_GETTER_SETTER(tiny_string,font);
+	ASPROPERTY_GETTER_SETTER_ATOM(font);
 	ASPROPERTY_GETTER_SETTER_ATOM(indent);
 	ASPROPERTY_GETTER_SETTER_ATOM(italic);
 	ASPROPERTY_GETTER_SETTER_ATOM(kerning);
@@ -249,10 +248,10 @@ public:
 	ASPROPERTY_GETTER_SETTER_ATOM(rightMargin);
 	ASPROPERTY_GETTER_SETTER_ATOM(size);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,tabStops);
-	ASPROPERTY_GETTER_SETTER(tiny_string,target);
+	ASPROPERTY_GETTER_SETTER_ATOM(target);
 	ASPROPERTY_GETTER_SETTER_ATOM(underline);
-	ASPROPERTY_GETTER_SETTER(tiny_string,url);
-	ASPROPERTY_GETTER_SETTER(tiny_string,display);
+	ASPROPERTY_GETTER_SETTER_ATOM(url);
+	ASPROPERTY_GETTER_SETTER_ATOM(display);
 };
 
 class TextFieldType: public ASObject

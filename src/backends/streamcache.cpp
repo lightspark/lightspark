@@ -107,7 +107,7 @@ MemoryChunk::~MemoryChunk()
 }
 
 MemoryStreamCache::MemoryStreamCache(SystemState* _sys):StreamCache(_sys),
-	writeChunk(NULL), nextChunkSize(0)
+	writeChunk(nullptr), nextChunkSize(0)
 {
 }
 
@@ -194,7 +194,7 @@ void MemoryStreamCache::openForWriting()
 MemoryStreamCache::Reader::Reader(_R<MemoryStreamCache> b) :
 	buffer(b), chunkIndex(0), chunkStartOffset(0)
 {
-	setg(NULL, NULL, NULL);
+	setg(nullptr, nullptr, nullptr);
 }
 
 /**
@@ -231,7 +231,7 @@ int MemoryStreamCache::Reader::underflow()
 	unsigned char *cursor;
 	unsigned char *end = chunk->buffer + used;
 
-	if (gptr() == NULL)
+	if (gptr() == nullptr)
 	{
 		// On the first call gptr() is NULL (as set in the
 		// constructor). Nothing has been read yet.
@@ -383,7 +383,7 @@ void FileStreamCache::openCache()
 	if (cache.is_open())
 	{
 		markFinished(true);
-		throw RunTimeException(_("FileStreamCache::openCache called twice"));
+		throw RunTimeException("FileStreamCache::openCache called twice");
 	}
 
 	//Create a temporary file(name)
@@ -395,7 +395,7 @@ void FileStreamCache::openCache()
 	if(fd == -1)
 	{
 		markFinished(true);
-		throw RunTimeException(_("FileStreamCache::openCache: cannot create temporary file"));
+		throw RunTimeException("FileStreamCache::openCache: cannot create temporary file");
 	}
 
 	//We are using fstream to read/write to the cache, so we don't need this FD
@@ -419,7 +419,7 @@ void FileStreamCache::openExistingCache(const tiny_string& filename, bool forWri
 	if (cache.is_open())
 	{
 		markFinished(true);
-		throw RunTimeException(_("FileStreamCache::openCache called twice"));
+		throw RunTimeException("FileStreamCache::openCache called twice");
 	}
 
 	cacheFilename = filename;
@@ -434,10 +434,10 @@ void FileStreamCache::openExistingCache(const tiny_string& filename, bool forWri
 	if (!cache.is_open())
 	{
 		markFinished(true);
-		throw RunTimeException(_("FileStreamCache::openCache: cannot open temporary cache file"));
+		throw RunTimeException("FileStreamCache::openCache: cannot open temporary cache file");
 	}
 
-	LOG(LOG_INFO, _("NET: Downloading to cache file: ") << cacheFilename);
+	LOG(LOG_INFO, "NET: Downloading to cache file: " << cacheFilename);
 }
 
 void FileStreamCache::useExistingFile(const tiny_string& filename)

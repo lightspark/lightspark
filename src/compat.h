@@ -49,13 +49,6 @@
 	#include <io.h> //for close(), unlink()
 #endif
 
-// TODO: This should be reworked to use CMake feature detection where possible
-
-/* gettext support */
-#include <locale.h>
-#include <libintl.h>
-#define _(STRING) gettext(STRING)
-
 
 #include <glib.h>
 #include <cstdlib>

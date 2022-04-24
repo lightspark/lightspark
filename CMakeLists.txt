@@ -225,7 +225,6 @@ SET(CMAKE_INSTALL_RPATH "${PRIVATELIBDIR}")
 
 # Libraries we need
 INCLUDE(FindPkgConfig REQUIRED)
-INCLUDE(FindGettext REQUIRED)
 
 IF (ENABLE_LLVM)
 	ADD_DEFINITIONS(-DLLVM_ENABLED)
@@ -553,10 +552,6 @@ if(UNIX)
          )
   INSTALL(FILES media/lightspark.desktop DESTINATION ${DATADIR}/applications )
 endif(UNIX)
-
-# generate locales for gettext
-GETTEXT_CREATE_TRANSLATIONS(i18n/lightspark.pot ALL i18n/pl.po i18n/fr.po
-        i18n/zh_CN.po)
 
 if(UNIX)
 	INSTALL(FILES etc/xdg/lightspark.conf

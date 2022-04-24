@@ -107,7 +107,7 @@ cleanup:
 	delete[] urlBuf;
 #else
 	//ENABLE_RTMP not defined
-	LOG(LOG_ERROR,_("NET: RTMP not enabled in this build. Downloader will always fail."));
+	LOG(LOG_ERROR,"NET: RTMP not enabled in this build. Downloader will always fail.");
 	setFailed();
 	return;
 #endif

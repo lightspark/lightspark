@@ -124,7 +124,7 @@ Config::Config():
 	//If cache dir doesn't exist, create it
 	if (g_mkdir_with_parents(cacheDirectory.c_str(),S_IRUSR | S_IWUSR | S_IXUSR))
 	{
-		LOG(LOG_INFO, _("Could not create cache directory, falling back to default cache directory: ") <<
+		LOG(LOG_INFO, "Could not create cache directory, falling back to default cache directory: " <<
 				defaultCacheDirectory);
 		cacheDirectory = defaultCacheDirectory;
 	}
@@ -211,5 +211,5 @@ void Config::handleEntry()
 	else if(group == "cache" && key == "prefix")
 		cachePrefix = value;
 	else
-		LOG(LOG_ERROR,_("Invalid entry encountered in configuration file") << ": '" << group << "/" << key << "'='" << value << "'");
+		LOG(LOG_ERROR,"Invalid entry encountered in configuration file" << ": '" << group << "/" << key << "'='" << value << "'");
 }

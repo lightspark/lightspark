@@ -198,7 +198,8 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("displayAsPassword","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getdisplayAsPassword),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("displayAsPassword","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setdisplayAsPassword),SETTER_METHOD,true);
 
-	// special handling neccessary when setting x
+	// special handling neccessary when getting/setting x
+	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getTextFieldX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setTextFieldX),SETTER_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c, alwaysShowSelection);
@@ -225,27 +226,27 @@ void TextField::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, useRichTextClipboard);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(TextField, alwaysShowSelection); // stub
-ASFUNCTIONBODY_GETTER_SETTER(TextField, background);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, backgroundColor);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, border);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, borderColor);
-ASFUNCTIONBODY_GETTER(TextField, caretIndex);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, condenseWhite);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, embedFonts); // stub
-ASFUNCTIONBODY_GETTER_SETTER(TextField, maxChars); // stub
-ASFUNCTIONBODY_GETTER_SETTER(TextField, multiline);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, mouseWheelEnabled); // stub
-ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollH, validateScrollH);
-ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollV, validateScrollV);
-ASFUNCTIONBODY_GETTER_SETTER(TextField, selectable);
-ASFUNCTIONBODY_GETTER(TextField, selectionBeginIndex);
-ASFUNCTIONBODY_GETTER(TextField, selectionEndIndex);
-ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, sharpness, validateSharpness); // stub
-ASFUNCTIONBODY_GETTER_SETTER(TextField, styleSheet); // stub
-ASFUNCTIONBODY_GETTER_SETTER(TextField, textColor);
-ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, thickness, validateThickness); // stub
-ASFUNCTIONBODY_GETTER_SETTER(TextField, useRichTextClipboard); // stub
+ASFUNCTIONBODY_GETTER_SETTER(TextField, alwaysShowSelection) // stub
+ASFUNCTIONBODY_GETTER_SETTER(TextField, background)
+ASFUNCTIONBODY_GETTER_SETTER(TextField, backgroundColor)
+ASFUNCTIONBODY_GETTER_SETTER(TextField, border)
+ASFUNCTIONBODY_GETTER_SETTER(TextField, borderColor)
+ASFUNCTIONBODY_GETTER(TextField, caretIndex)
+ASFUNCTIONBODY_GETTER_SETTER(TextField, condenseWhite)
+ASFUNCTIONBODY_GETTER_SETTER(TextField, embedFonts) // stub
+ASFUNCTIONBODY_GETTER_SETTER(TextField, maxChars) // stub
+ASFUNCTIONBODY_GETTER_SETTER(TextField, multiline)
+ASFUNCTIONBODY_GETTER_SETTER(TextField, mouseWheelEnabled) // stub
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollH, validateScrollH)
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, scrollV, validateScrollV)
+ASFUNCTIONBODY_GETTER_SETTER(TextField, selectable)
+ASFUNCTIONBODY_GETTER(TextField, selectionBeginIndex)
+ASFUNCTIONBODY_GETTER(TextField, selectionEndIndex)
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, sharpness, validateSharpness) // stub
+ASFUNCTIONBODY_GETTER_SETTER(TextField, styleSheet) // stub
+ASFUNCTIONBODY_GETTER_SETTER(TextField, textColor)
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextField, thickness, validateThickness) // stub
+ASFUNCTIONBODY_GETTER_SETTER(TextField, useRichTextClipboard) // stub
 
 void TextField::finalize()
 {
@@ -271,7 +272,10 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	if ((!this->legacy || (tag==nullptr) || autoSize!=AS_NONE))
 	{
 		xmin=tag ? tag->Bounds.Xmin/20.0f : 0.0f;
-		xmax=max(0.0f,float(textWidth+autosizeposition))+2*TEXTFIELD_PADDING+ (tag ? tag->Bounds.Xmin/20.0f : 0.0f);
+		if (wordWrap)
+			xmax=max(0.0f,float(width))+ (tag ? tag->Bounds.Xmin/20.0f : 0.0f);
+		else
+			xmax=max(0.0f,float(textWidth+autosizeposition))+2*TEXTFIELD_PADDING+ (tag ? tag->Bounds.Xmin/20.0f : 0.0f);
 		ymin=tag ? tag->Bounds.Ymin/20.0f : 0.0f;
 		ymax=max(0.0f,float(height)+(tag ? tag->Bounds.Ymin/20.0f :0.0f));
 		return true;
@@ -357,7 +361,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setAutoSize)
 	tiny_string autoSizeString;
 	ARG_UNPACK_ATOM(autoSizeString);
 
-	AUTO_SIZE newAutoSize = AS_NONE;
+	ALIGNMENT newAutoSize = AS_NONE;
 	if(autoSizeString == "none" || (!th->loadedFrom->usesActionScript3 && autoSizeString=="false"))
 		newAutoSize = AS_NONE;
 	else if (autoSizeString == "left" || (!th->loadedFrom->usesActionScript3 && autoSizeString=="true"))
@@ -383,6 +387,33 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 {
 	if (autoSize == AS_NONE)
 	{
+		switch (align)
+		{
+			case AS_RIGHT:
+				linemutex->lock();
+				for (auto it = textlines.begin(); it != textlines.end(); it++)
+				{
+					if ((int)(*it).textwidth< originalWidth)
+						(*it).autosizeposition = (originalWidth-(*it).textwidth);
+					else
+						(*it).autosizeposition = 0;
+				}
+				linemutex->unlock();
+				break;
+			case AS_CENTER:
+				linemutex->lock();
+				for (auto it = textlines.begin(); it != textlines.end(); it++)
+				{
+					if ((int)(*it).textwidth< originalWidth)
+						(*it).autosizeposition = (originalWidth-(*it).textwidth)/2;
+					else
+						(*it).autosizeposition = 0;
+				}
+				linemutex->unlock();
+				break;
+			default:
+				break;
+		}
 		if (updatewidth && !wordWrap)
 			width = originalWidth;
 		return;
@@ -495,6 +526,11 @@ ASFUNCTIONBODY_ATOM(TextField,_setHeight)
 	//else do nothing as the height is determined by autoSize
 }
 
+ASFUNCTIONBODY_ATOM(TextField,_getTextFieldX)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+	asAtomHandler::setNumber(ret,wrk,th->originalXPosition+th->autosizeposition);
+}
 ASFUNCTIONBODY_ATOM(TextField,_setTextFieldX)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
@@ -595,18 +631,18 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	tiny_string align="left";
 	if (!asAtomHandler::isNull(tf->align))
 		align = asAtomHandler::toString(tf->align,wrk);
-	AUTO_SIZE newAutoSize = th->autoSize;
+	ALIGNMENT newAlign = th->align;
 	if(align == "none")
-		newAutoSize = AS_NONE;
+		newAlign = AS_NONE;
 	else if (align == "left")
-		newAutoSize = AS_LEFT;
+		newAlign = AS_LEFT;
 	else if (align == "right")
-		newAutoSize = AS_RIGHT;
+		newAlign = AS_RIGHT;
 	else if (align == "center")
-		newAutoSize = AS_CENTER;
-	if (th->autoSize != newAutoSize)
+		newAlign = AS_CENTER;
+	if (th->align != newAlign)
 	{
-		th->autoSize = newAutoSize;
+		th->align = newAlign;
 		updatesizes = true;
 	}
 	if(!asAtomHandler::isNull(tf->font))
@@ -664,20 +700,20 @@ ASFUNCTIONBODY_ATOM(TextField,_setDefaultTextFormat)
 	tiny_string align="left";
 	if (!asAtomHandler::isNull(tf->align))
 		align = asAtomHandler::toString(tf->align,wrk);
-	AUTO_SIZE newAutoSize = th->autoSize;
+	ALIGNMENT newAlign = th->align;
 	if(align == "none")
-		newAutoSize = AS_NONE;
+		newAlign = AS_NONE;
 	else if (align == "left")
-		newAutoSize = AS_LEFT;
+		newAlign = AS_LEFT;
 	else if (align == "right")
-		newAutoSize = AS_RIGHT;
+		newAlign = AS_RIGHT;
 	else if (align == "center")
-		newAutoSize = AS_CENTER;
+		newAlign = AS_CENTER;
 	th->isBold=asAtomHandler::toInt(tf->bold);
 	th->isItalic=asAtomHandler::toInt(tf->italic);
-	if (th->autoSize != newAutoSize)
+	if (th->align != newAlign)
 	{
-		th->autoSize = newAutoSize;
+		th->align = newAlign;
 		th->setSizeAndPositionFromAutoSize();
 	}
 	LOG(LOG_NOT_IMPLEMENTED,"setDefaultTextFormat does not set all fields of TextFormat");
@@ -1130,68 +1166,72 @@ void TextField::updateSizes()
 	if (!currentRoot) currentRoot=this->getRoot().getPtr();
 	if (!currentRoot) currentRoot = getSystemState()->mainClip;
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
-	if (embeddedfont && embeddedfont->hasGlyphs(getText()))
+	bool embedded = embeddedfont && embeddedfont->hasGlyphs(getText());
+	scaling = 1.0f/1024.0f/20.0f;
+	th=0;
+	number_t w,h;
+	linemutex->lock();
+	auto it = textlines.begin();
+	while (it != textlines.end())
 	{
-		scaling = 1.0f/1024.0f/20.0f;
-		th=0;
-		number_t w,h;
-		linemutex->lock();
-		auto it = textlines.begin();
-		while (it != textlines.end())
-		{
+		if (embedded)
 			embeddedfont->getTextBounds((*it).text,fontSize,w,h);
-			(*it).textwidth=w;
-			if (!wordWrap && w>tw)
-				tw = w;
-			bool listchanged=false;
-			if (wordWrap && width > TEXTFIELD_PADDING*2 && uint32_t(w) > width-TEXTFIELD_PADDING*2)
+		else
+			CairoPangoRenderer::getBounds(*this, (*it).text,w, h);
+		(*it).textwidth=w;
+		w += (*it).autosizeposition;
+		if (!wordWrap && w>tw)
+			tw = w;
+		bool listchanged=false;
+		if (wordWrap && width > TEXTFIELD_PADDING*2 && uint32_t(w) > width-TEXTFIELD_PADDING*2)
+		{
+			// calculate lines for wordwrap
+			tiny_string text =(*it).text;
+			uint32_t c= text.rfind(" ");// TODO check for other whitespace characters
+			while (c != tiny_string::npos && c != 0)
 			{
-				// calculate lines for wordwrap
-				tiny_string text =(*it).text;
-				uint32_t c= text.rfind(" ");// TODO check for other whitespace characters
-				while (c != tiny_string::npos && c != 0)
-				{
+				if (embedded)
 					embeddedfont->getTextBounds(text.substr(0,c),fontSize,w,h);
-					if (w <= width-TEXTFIELD_PADDING*2)
+				else
+					CairoPangoRenderer::getBounds(*this,text.substr(0,c), w, h);
+				if (w <= width-TEXTFIELD_PADDING*2)
+				{
+					if(w>tw)
+						tw = w;
+					(*it).textwidth=w;
+					(*it).text = text.substr(0,c);
+					textline t;
+					t.autosizeposition=0;
+					t.text=text.substr(c+1,UINT32_MAX);
+					if (embedded)
+						embeddedfont->getTextBounds(t.text,fontSize,w,h);
+					else
+						CairoPangoRenderer::getBounds(*this,t.text, w, h);
+					t.textwidth=w;
+					w += (*it).autosizeposition;
+					it = textlines.insert(++it,t);
+					listchanged=true;
+					text =t.text;
+					if (uint32_t(w) <= width-TEXTFIELD_PADDING*2)
 					{
 						if(w>tw)
 							tw = w;
-						(*it).textwidth=w;
-						(*it).text = text.substr(0,c);
-						textline t;
-						t.autosizeposition=0;
-						t.text=text.substr(c+1,UINT32_MAX);
-						embeddedfont->getTextBounds(t.text,fontSize,w,h);
-						t.textwidth=w;
-						it = textlines.insert(++it,t);
-						listchanged=true;
-						text =t.text;
-						if (uint32_t(w) <= width-TEXTFIELD_PADDING*2)
-						{
-							if(w>tw)
-								tw = w;
-							break;
-						}
-						c=text.numChars();
+						break;
 					}
-					c= text.rfind(" ",c-1);// TODO check for other whitespace characters
+					c=text.numChars();
 				}
+				c= text.rfind(" ",c-1);// TODO check for other whitespace characters
 			}
-			if (!listchanged)
-				it++;
-			th+=h;
-			if (it != textlines.end())
-				th+=this->leading;
 		}
-		linemutex->unlock();
-		if(w>tw)
-			tw = w;
+		if (!listchanged)
+			it++;
+		th+=h;
+		if (it != textlines.end())
+			th+=this->leading;
 	}
-	else
-	{
-		uint32_t w,h;
-		CairoPangoRenderer::getBounds(*this, w, h, tw, th);
-	}
+	linemutex->unlock();
+	if(w>tw)
+		tw = w;
 	textWidth=tw;
 	textHeight=th;
 }
@@ -1246,7 +1286,7 @@ std::string TextField::toDebugString() const
 	res += this->getText(0);
 	res += "\";";
 	char buf[100];
-	sprintf(buf,"%dx%d %5.2f",textWidth,textHeight,autosizeposition);
+	sprintf(buf,"%dx%d %5.2f %d/%d %s",textWidth,textHeight,autosizeposition,autoSize,align,font.raw_buf());
 	res += buf;
 	return res;
 }
@@ -1901,11 +1941,11 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			if (attrname == "align")
 			{
 				if (value == "left")
-					textdata->autoSize = TextData::AS_LEFT;
+					textdata->align = TextData::AS_LEFT;
 				if (value == "center")
-					textdata->autoSize = TextData::AS_CENTER;
+					textdata->align = TextData::AS_CENTER;
 				if (value == "right")
-					textdata->autoSize = TextData::AS_RIGHT;
+					textdata->align = TextData::AS_RIGHT;
 			}
 			else
 			{

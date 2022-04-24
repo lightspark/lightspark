@@ -901,19 +901,12 @@ ASFUNCTIONBODY_ATOM(TextLine, getUnjustifiedTextWidth)
 
 void TextLine::updateSizes()
 {
-	uint32_t w,h,tw,th;
+	number_t w,h;
 	w = width;
 	h = height;
 	//Compute (text)width, (text)height
-	CairoPangoRenderer::getBounds(*this, w, h, tw, th);
-	if (w == 0)
-		w = tw;
-	if (h == 0)
-		h = th;
-	width = w; //TODO: check the case when w,h == 0
-	
+	CairoPangoRenderer::getBounds(*this,this->getText(), w, h);
 	textWidth = w;
-	height = h;
 	textHeight = h;
 }
 

@@ -391,13 +391,19 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 		switch(Align)
 		{
 			case 0:
-				textData.autoSize = AutoSize ? TextData::AS_LEFT : TextData::AS_NONE;
+				textData.align = TextData::AS_NONE;
+				if (AutoSize)
+					textData.autoSize = TextData::AS_LEFT;
 				break;
 			case 1:
 				textData.autoSize = TextData::AS_RIGHT;
+				if (AutoSize)
+					textData.autoSize = TextData::AS_RIGHT;
 				break;
 			case 2:
 				textData.autoSize = TextData::AS_CENTER;
+				if (AutoSize)
+					textData.autoSize = TextData::AS_CENTER;
 				break;
 			case 3:
 				LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Align justify on ID "<<CharacterID);

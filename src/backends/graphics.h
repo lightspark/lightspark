@@ -377,7 +377,7 @@ public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
 	TextData() : width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), background(false), backgroundColor(0xFFFFFF),
 		border(false), borderColor(0x000000), multiline(false),isBold(false),isItalic(false), textColor(0x000000),
-		autoSize(AS_NONE), fontSize(12), wordWrap(false),caretblinkstate(false),isPassword(false) {}
+		autoSize(AS_NONE),align(AS_NONE), fontSize(12), wordWrap(false),caretblinkstate(false),isPassword(false) {}
 	uint32_t width;
 	uint32_t height;
 	int32_t leading;
@@ -395,8 +395,9 @@ public:
 	bool isBold;
 	bool isItalic;
 	RGB textColor;
-	enum AUTO_SIZE {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
-	AUTO_SIZE autoSize;
+	enum ALIGNMENT {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
+	ALIGNMENT autoSize;
+	ALIGNMENT align;
 	uint32_t fontSize;
 	bool wordWrap;
 	bool caretblinkstate;
@@ -436,7 +437,7 @@ class CairoPangoRenderer : public CairoRenderer
 	void executeDraw(cairo_t* cr) override;
 	TextData textData;
 	uint32_t caretIndex;
-	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData, uint32_t line=UINT32_MAX);
+	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData, const tiny_string& text);
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override;
 	static PangoRectangle lineExtents(PangoLayout *layout, int lineNumber);
 public:
@@ -458,7 +459,7 @@ public:
 		@param _texttData The textData being tested
 		@param w,h,tw,th are the (text)width and (text)height of the textData.
 	*/
-	static bool getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th, uint32_t line=UINT32_MAX);
+	static bool getBounds(const TextData& tData, const tiny_string& text, number_t& tw, number_t& th);
 	static std::vector<LineData> getLineData(const TextData& _textData);
 };
 

@@ -804,12 +804,10 @@ void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator
 	}
 }
 
-void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData& tData, uint32_t line)
+void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData& tData, const tiny_string& text)
 {
 	PangoFontDescription* desc;
 
-	assert(line==UINT32_MAX || tData.getLineCount()>line);
-	tiny_string text = tData.getText(line);
 	if (tData.isPassword)
 	{
 		tiny_string pwtxt;
@@ -820,40 +818,6 @@ void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData
 	else
 		pango_layout_set_text(layout, text.raw_buf(), -1);
 
-	/* setup alignment */
-	PangoAlignment alignment;
-
-	switch(tData.autoSize)
-	{
-		case TextData::AUTO_SIZE::AS_NONE://TODO:check
-		case TextData::AUTO_SIZE::AS_LEFT:
-		{
-			alignment = PANGO_ALIGN_LEFT;
-			break;
-		}
-		case TextData::AUTO_SIZE::AS_RIGHT:
-		{
-			alignment = PANGO_ALIGN_RIGHT;
-			break;
-		}
-		case TextData::AUTO_SIZE::AS_CENTER:
-		{
-			alignment = PANGO_ALIGN_CENTER;
-			break;
-		}
-		default:
-			assert(false);
-			return; // silence warning about uninitialised alignment
-	}
-	pango_layout_set_alignment(layout,alignment);
-	pango_layout_set_spacing(layout,PANGO_SCALE*tData.leading);
-
-	//In case wordWrap is true, we already have the right width
-	if(tData.wordWrap == true)
-	{
-		pango_layout_set_width(layout,PANGO_SCALE*tData.width);
-		pango_layout_set_wrap(layout,PANGO_WRAP_WORD);//I think this is what Adobe does
-	}
 
 	/* setup font description */
 	desc = pango_font_description_new();
@@ -870,15 +834,14 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 	PangoLayout* layout;
 
 	layout = pango_cairo_create_layout(cr);
-	pangoLayoutFromData(layout, textData);
 
 	int xpos=0;
 	switch(textData.autoSize)
 	{
-		case TextData::AUTO_SIZE::AS_RIGHT:
+		case TextData::ALIGNMENT::AS_RIGHT:
 			xpos = textData.width-textData.textWidth;
 			break;
-		case TextData::AUTO_SIZE::AS_CENTER:
+		case TextData::ALIGNMENT::AS_CENTER:
 			xpos = (textData.width-textData.textWidth)/2;
 			break;
 		default:
@@ -903,7 +866,23 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 	cairo_translate(cr, xpos, 0);
 	cairo_set_source_rgb (cr, textData.textColor.Red/255., textData.textColor.Green/255., textData.textColor.Blue/255.);
 	cairo_translate(cr, translateX, translateY);
-	pango_cairo_show_layout(cr, layout);
+	for (auto it = textData.textlines.begin(); it != textData.textlines.end(); it++)
+	{
+		cairo_translate(cr, it->autosizeposition, 0);
+		tiny_string text = it->text;
+		pangoLayoutFromData(layout, textData,text);
+		if (textData.isPassword)
+		{
+			tiny_string pwtxt;
+			for (uint32_t i = 0; i < text.numChars(); i++)
+				pwtxt+="*";
+			pango_layout_set_text(layout, pwtxt.raw_buf(), -1);
+		}
+		else
+			pango_layout_set_text(layout, text.raw_buf(), -1);
+		pango_cairo_show_layout(cr, layout);
+		cairo_translate(cr, -it->autosizeposition, 0);
+	}
 	cairo_translate(cr, -translateX, -translateY);
 	cairo_translate(cr, -xpos, 0);
 
@@ -921,14 +900,13 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 		uint32_t thend=PANGO_PIXELS(PANGO_SCALE*textData.fontSize)+TEXTFIELD_PADDING;
 		if (!textData.textlines.empty())
 		{
-			uint32_t w,h,tw1,th1;
+			number_t tw1,th1;
 			tiny_string currenttext = textData.getText(0);
 			if (caretIndex < currenttext.numChars())
 			{
-				textData.textlines[0].text = textData.textlines[0].text.substr(0,caretIndex);
+				currenttext = currenttext.substr(0,caretIndex);
 			}
-			getBounds(textData,w,h,tw1,th1,0);
-			textData.textlines[0].text = currenttext;
+			getBounds(textData,currenttext,tw1,th1);
 			tw += tw1;
 		}
 		tw+=xpos;
@@ -942,7 +920,7 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 	g_object_unref(layout);
 }
 
-bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint32_t& h, uint32_t& tw, uint32_t& th, uint32_t line)
+bool CairoPangoRenderer::getBounds(const TextData& tData, const tiny_string& text, number_t& tw, number_t& th)
 {
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(nullptr, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 	cairo_t *cr=cairo_create(cairoSurface);
@@ -950,7 +928,7 @@ bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint3
 	PangoLayout* layout;
 
 	layout = pango_cairo_create_layout(cr);
-	pangoLayoutFromData(layout, _textData,line);
+	pangoLayoutFromData(layout, tData,text);
 
 	PangoRectangle ink_rect, logical_rect;
 	pango_layout_get_pixel_extents(layout,&ink_rect,&logical_rect);//TODO: check the rounding during pango conversion
@@ -962,13 +940,7 @@ bool CairoPangoRenderer::getBounds(const TextData& _textData, uint32_t& w, uint3
 	//This should be safe check precision
 	tw = ink_rect.width + ink_rect.x;
 	th = ink_rect.height + ink_rect.y;
-	if(_textData.autoSize != TextData::AUTO_SIZE::AS_NONE)
-	{
-		h = logical_rect.height;
-		if(!_textData.wordWrap)
-			w = logical_rect.width;
-	}
-	return (h!=0) && (w!=0);
+	return (th!=0) && (tw!=0);
 }
 
 PangoRectangle CairoPangoRenderer::lineExtents(PangoLayout *layout, int lineNumber)
@@ -999,8 +971,8 @@ std::vector<LineData> CairoPangoRenderer::getLineData(const TextData& _textData)
 
 	PangoLayout* layout;
 	layout = pango_cairo_create_layout(cr);
-	pangoLayoutFromData(layout, _textData);
 	tiny_string text = _textData.getText();
+	pangoLayoutFromData(layout, _textData,text);
 
 	int XOffset = _textData.scrollH;
 	int YOffset = PANGO_PIXELS(lineExtents(layout, _textData.scrollV-1).y);

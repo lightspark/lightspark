@@ -219,6 +219,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, thickness);
 	ASFUNCTION_GETTER_SETTER(type);
 	ASPROPERTY_GETTER_SETTER(bool, useRichTextClipboard);
+	ASFUNCTION_ATOM(_getTextFieldX);
 	ASFUNCTION_ATOM(_setTextFieldX);
 
 	std::string toDebugString() const override;

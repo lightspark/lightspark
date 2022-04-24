@@ -815,8 +815,9 @@ int ABCVm::getEventQueueSize()
 
 void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 {
-	if (dispatcher && dispatcher->is<DisplayObject>() && event->type == "enterFrame" && 
-				dispatcher->is<RootMovieClip>() && dispatcher->as<RootMovieClip>()->isWaitingForParser()) // enterFrame event is only executed for DisplayObjects that are on stage
+	if (dispatcher && dispatcher->is<DisplayObject>() && event->type == "enterFrame" && (
+				(dispatcher->is<RootMovieClip>() && dispatcher->as<RootMovieClip>()->isWaitingForParser()) || // RootMovieClip is not yet completely parsed
+				(dispatcher->as<DisplayObject>()->legacy && !dispatcher->as<DisplayObject>()->isOnStage()))) // it seems that enterFrame event is only executed for DisplayObjects that are on stage or added from ActionScript
 		return;
 	if (event->is<ProgressEvent>())
 	{

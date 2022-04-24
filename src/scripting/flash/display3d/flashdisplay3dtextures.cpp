@@ -241,9 +241,13 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 	if (async)
 		LOG(LOG_NOT_IMPLEMENTED,"Texture.uploadCompressedTextureFromByteArray async loading");
 	th->context->rendermutex.lock();
-	th->needrefresh = true;
 	th->parseAdobeTextureFormat(data.getPtr(),byteArrayOffset,false,th->hasalpha);
-	th->context->addAction(RENDER_LOADTEXTURE,th);
+	renderaction action;
+	action.action = RENDER_LOADTEXTURE;
+	th->incRef();
+	action.dataobject = _MR(th);
+	action.udata1=UINT32_MAX; // upload all mipmaps?
+	th->context->addAction(action);
 	th->context->rendermutex.unlock();
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
@@ -260,7 +264,6 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
 	}
 	th->context->rendermutex.lock();
-	th->needrefresh = true;
 	if (th->bitmaparray.size() <= miplevel)
 		th->bitmaparray.resize(miplevel+1);
 	uint32_t mipsize = (th->width>>miplevel)*(th->height>>miplevel)*4;
@@ -279,7 +282,12 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+3] = (uint8_t)((((*data) >>24) & 0xff)           );
 		}
 	}
-	th->context->addAction(RENDER_LOADTEXTURE,th);
+	renderaction action;
+	action.action = RENDER_LOADTEXTURE;
+	th->incRef();
+	action.dataobject = _MR(th);
+	action.udata1=miplevel;
+	th->context->addAction(action);
 	th->context->rendermutex.unlock();
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
@@ -297,7 +305,6 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
 	}
 	th->context->rendermutex.lock();
-	th->needrefresh = true;
 	if (th->bitmaparray.size() <= miplevel)
 		th->bitmaparray.resize(miplevel+1);
 	uint32_t mipsize = (th->width>>miplevel)*(th->height>>miplevel)*4;
@@ -326,7 +333,12 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 	}
 #endif
 	data->setPosition(byteArrayOffset+bytesneeded);
-	th->context->addAction(RENDER_LOADTEXTURE,th);
+	renderaction action;
+	action.action = RENDER_LOADTEXTURE;
+	th->incRef();
+	action.dataobject = _MR(th);
+	action.udata1=miplevel;
+	th->context->addAction(action);
 	th->context->rendermutex.unlock();
 }
 
@@ -374,7 +386,6 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 	}
 
 	th->context->rendermutex.lock();
-	th->needrefresh = true;
 	uint32_t mipsize = (th->width>>miplevel)*(th->width>>miplevel)*4;
 	th->bitmaparray[th->max_miplevel*side + miplevel].resize(mipsize);
 	for (uint32_t i = 0; i < bitmap_size; i++)
@@ -419,7 +430,6 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 		throwError<TypeError>(kNullArgumentError);
 	assert_and_throw(th->height == uint32_t(source->getHeight()) && th->width == uint32_t(source->getWidth()));
 	th->context->rendermutex.lock();
-	th->needrefresh = true;
 	if (th->bitmaparray.size() == 0)
 		th->bitmaparray.resize(1);
 	uint32_t bytesneeded = th->width*th->height*4;
@@ -438,7 +448,12 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 			th->bitmaparray[0][i*th->width*4 + j*4+3] = (uint8_t)((((*data) >>24) & 0xff)           );
 		}
 	}
-	th->context->addAction(RENDER_LOADTEXTURE,th);
+	renderaction action;
+	action.action = RENDER_LOADTEXTURE;
+	th->incRef();
+	action.dataobject = _MR(th);
+	action.udata1=0;
+	th->context->addAction(action);
 	th->context->rendermutex.unlock();
 }
 ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
@@ -450,7 +465,6 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 	if (data.isNull())
 		throwError<TypeError>(kNullArgumentError);
 	th->context->rendermutex.lock();
-	th->needrefresh = true;
 	if (th->bitmaparray.size() == 0)
 		th->bitmaparray.resize(1);
 	uint32_t bytesneeded = th->height*th->width*4;
@@ -478,7 +492,12 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 	}
 #endif
 	data->setPosition(byteArrayOffset+bytesneeded);
-	th->context->addAction(RENDER_LOADTEXTURE,th);
+	renderaction action;
+	action.action = RENDER_LOADTEXTURE;
+	th->incRef();
+	action.dataobject = _MR(th);
+	action.udata1=0;
+	th->context->addAction(action);
 	th->context->rendermutex.unlock();
 }
 

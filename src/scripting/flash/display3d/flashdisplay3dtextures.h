@@ -38,17 +38,16 @@ protected:
 	uint32_t height;
 	TEXTUREFORMAT format;
 	vector<vector<uint8_t>> bitmaparray;
-	bool needrefresh;
 	bool hasalpha;
 	Context3D* context;
 	void parseAdobeTextureFormat(ByteArray* data, int32_t byteArrayOffset, bool forCubeTexture, bool &hasalpha);
 	void setFormat(const tiny_string& f);
 public:
 	TextureBase(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c)
-	  ,textureID(UINT32_MAX),width(0),height(0),format(BGRA),needrefresh(false),hasalpha(true),context(nullptr)
+	  ,textureID(UINT32_MAX),width(0),height(0),format(BGRA),hasalpha(true),context(nullptr)
 	{ subtype = SUBTYPE_TEXTUREBASE;}
 	TextureBase(ASWorker* wrk,Class_base* c,Context3D* _context):EventDispatcher(wrk,c)
-	  ,textureID(UINT32_MAX),width(0),height(0),format(BGRA),needrefresh(false),hasalpha(true),context(_context)
+	  ,textureID(UINT32_MAX),width(0),height(0),format(BGRA),hasalpha(true),context(_context)
 	{ subtype = SUBTYPE_TEXTUREBASE;}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(dispose);

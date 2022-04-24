@@ -83,17 +83,24 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			break;
 		case RENDER_CONFIGUREBACKBUFFER:
 			//action.udata1 = enableDepthAndStencil
-			//LOG(LOG_INFO,"RENDER_CONFIGUREBACKBUFFER:"<<action.udata1);
+			//action.udata2 = backBufferWidth
+			//action.udata3 = backBufferHeight
 			enableDepthAndStencilBackbuffer = action.udata1;
-			if (action.udata1)
+			backBufferWidth= action.udata2;
+			backBufferHeight=action.udata3;
+			if (!renderingToTexture)
 			{
-				engineData->exec_glEnable_GL_STENCIL_TEST();
-				engineData->exec_glEnable_GL_DEPTH_TEST();
-			}
-			else
-			{
-				engineData->exec_glDisable_GL_STENCIL_TEST();
-				engineData->exec_glDisable_GL_DEPTH_TEST();
+				engineData->exec_glViewport(0,0,action.udata2,action.udata3);
+				if (action.udata1)
+				{
+					engineData->exec_glEnable_GL_STENCIL_TEST();
+					engineData->exec_glEnable_GL_DEPTH_TEST();
+				}
+				else
+				{
+					engineData->exec_glDisable_GL_STENCIL_TEST();
+					engineData->exec_glDisable_GL_DEPTH_TEST();
+				}
 			}
 			break;
 		case RENDER_SETPROGRAM:
@@ -191,8 +198,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		case RENDER_RENDERTOBACKBUFFER:
 			if (renderingToTexture)
 			{
-				engineData->exec_glBindTexture_GL_TEXTURE_2D(textureframebufferID);
-				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(0);
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 				engineData->exec_glFrontFace(false);
@@ -222,22 +227,23 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			break;
 		case RENDER_TOTEXTURE:
 		{
-			//action.dataobject = TextureBase
-			//action.udata1 = enableDepthAndStencil
+			//action.udata1 = textureID
+			//action.udata2 = width
+			//action.udata3 = height
+			//action.fdata[0] = enableDepthAndStencil
+			if (action.udata1 == UINT32_MAX)
+				action.udata1 = currenttextureid;
 			if (textureframebuffer == UINT32_MAX)
 				textureframebuffer = engineData->exec_glGenFramebuffer();
 			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(textureframebuffer);
-			TextureBase* tex = action.dataobject->as<TextureBase>();
-			if (tex->textureID == UINT32_MAX || tex->needrefresh)
-			{
-				loadTexture(tex);
-			}
-			textureframebufferID = tex->textureID;
-			engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
-			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(tex->textureID);
+			textureframebufferID = action.udata1;
+			engineData->exec_glBindTexture_GL_TEXTURE_2D(textureframebufferID);
+			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(textureframebufferID);
 			engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
-			enableDepthAndStencilTextureBuffer = action.udata1;
-			if (action.udata1)//enableDepthAndStencil
+			enableDepthAndStencilTextureBuffer = action.fdata[0];
+			if (enableDepthAndStencilTextureBuffer)
 			{
 				if (depthRenderBuffer == UINT32_MAX)
 					depthRenderBuffer = engineData->exec_glGenRenderbuffer();
@@ -245,7 +251,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				if (engineData->supportPackedDepthStencil)
 				{
 					engineData->exec_glBindRenderbuffer(depthRenderBuffer);
-					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(tex->width,tex->height);
+					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(action.udata2,action.udata3);
 					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(depthRenderBuffer);
 				}
 				else
@@ -253,9 +259,9 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 					if (stencilRenderBuffer == UINT32_MAX)
 						stencilRenderBuffer = engineData->exec_glGenRenderbuffer();
 					engineData->exec_glBindRenderbuffer(depthRenderBuffer);
-					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_COMPONENT16(tex->width,tex->height);
+					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_COMPONENT16(action.udata2,action.udata3);
 					engineData->exec_glBindRenderbuffer(stencilRenderBuffer);
-					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(tex->width,tex->height);
+					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(action.udata2,action.udata3);
 					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_ATTACHMENT(depthRenderBuffer);
 					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(stencilRenderBuffer);
 					engineData->exec_glBindRenderbuffer(0);
@@ -268,7 +274,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				engineData->exec_glDisable_GL_DEPTH_TEST();
 				engineData->exec_glDisable_GL_STENCIL_TEST();
 			}
-			engineData->exec_glViewport(0,0,tex->width,tex->height);
+			engineData->exec_glViewport(0,0,action.udata2,action.udata3);
 			engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 			vcposdata[1] = -1.0;
 			setPositionScale(engineData);
@@ -409,11 +415,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			{
 				TextureBase* tex = action.dataobject->as<TextureBase>();
 				//LOG(LOG_INFO,"RENDER_SETTEXTUREAT:"<<tex->textureID<<" "<<action.udata1<<" "<<tex->needrefresh);
-				if (tex->textureID == UINT32_MAX || tex->needrefresh)
-				{
-					engineData->exec_glActiveTexture_GL_TEXTURE0(action.udata1);
-					loadTexture(tex);
-				}
 				samplers[action.udata1] = tex->textureID;
 			}
 			break;
@@ -439,8 +440,19 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			engineData->exec_glCullFace((TRIANGLE_FACE)action.udata1);
 			break;
 		}
+		case RENDER_GENERATETEXTURE:
+			//action.dataobject = TextureBase
+			if (!action.dataobject.isNull())
+			{
+				TextureBase* tex = action.dataobject->as<TextureBase>();
+				loadTexture(tex,0);
+				currenttextureid=tex->textureID;
+			}
+			break;
 		case RENDER_LOADTEXTURE:
-			loadTexture(action.dataobject->as<TextureBase>());
+			//action.dataobject = TextureBase
+			//action.udata1 = miplevel
+			loadTexture(action.dataobject->as<TextureBase>(),action.udata1);
 			break;
 		case RENDER_LOADCUBETEXTURE:
 			loadCubeTexture(action.dataobject->as<CubeTexture>());
@@ -674,6 +686,9 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	engineData->exec_glUseProgram(0);
 	if (renderingToTexture)
 	{
+		engineData->exec_glBindTexture_GL_TEXTURE_2D(textureframebufferID);
+		engineData->exec_glGenerateMipmap_GL_TEXTURE_2D();
+		engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 		textureframebufferID = UINT32_MAX;
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 		engineData->exec_glFrontFace(false);
@@ -697,71 +712,76 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	return true;
 }
 
-void Context3D::loadTexture(TextureBase *tex)
+void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 {
 	EngineData* engineData = getSystemState()->getEngineData();
-	if (tex->textureID == UINT32_MAX || tex->needrefresh)
+	if (tex->textureID == UINT32_MAX)
+		engineData->exec_glGenTextures(1, &(tex->textureID));
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+	if (tex->bitmaparray.size() == 0)
+		engineData->exec_glTexImage2D_GL_TEXTURE_2D(0, tex->width, tex->height, 0, nullptr,tex->format);
+	else if (level == UINT32_MAX)
 	{
-		if (tex->textureID == UINT32_MAX)
-			engineData->exec_glGenTextures(1, &(tex->textureID));
-		engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
-		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
-		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-		if (tex->bitmaparray.size() == 0)
-			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, tex->width, tex->height, 0, nullptr,tex->hasalpha);
-		else
+		for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
 		{
-			for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
+			if (tex->bitmaparray[i].size() > 0)
 			{
-				if (tex->bitmaparray[i].size() > 0)
-					engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->format);
-				else
-					engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, nullptr,tex->format);
+				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->format);
+				tex->bitmaparray[i].clear();
 			}
+			else
+				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, nullptr,tex->format);
 		}
-		engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
-		tex->needrefresh = false;
 	}
+	else 
+	{
+		if (tex->bitmaparray.size() > level && tex->bitmaparray[level].size() > 0)
+		{
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[level].data(),tex->format);
+			tex->bitmaparray[level].clear();
+		}
+		else
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, nullptr,tex->format);
+	}
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 }
 void Context3D::loadCubeTexture(CubeTexture *tex)
 {
 	EngineData* engineData = getSystemState()->getEngineData();
-	if (tex->textureID == UINT32_MAX || tex->needrefresh)
+	if (tex->textureID == UINT32_MAX)
+		engineData->exec_glGenTextures(1, &(tex->textureID));
+	engineData->exec_glBindTexture_GL_TEXTURE_CUBE_MAP(tex->textureID);
+	engineData->exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+	engineData->exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+	if (tex->bitmaparray.size() == 0)
 	{
-		if (tex->textureID == UINT32_MAX)
-			engineData->exec_glGenTextures(1, &(tex->textureID));
-		engineData->exec_glBindTexture_GL_TEXTURE_CUBE_MAP(tex->textureID);
-		engineData->exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
-		engineData->exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-		if (tex->bitmaparray.size() == 0)
-		{
-			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(0,0, tex->width, tex->height, 0, nullptr);
-			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(1,0, tex->width, tex->height, 0, nullptr);
-			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(2,0, tex->width, tex->height, 0, nullptr);
-			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(3,0, tex->width, tex->height, 0, nullptr);
-			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(4,0, tex->width, tex->height, 0, nullptr);
-			engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(5,0, tex->width, tex->height, 0, nullptr);
-		}
-		else
-		{
-			uint32_t side = 0;
-			for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
-			{
-				if (i % tex->max_miplevel == 1) // next side
-					side++;
-				if (tex->bitmaparray[i].size() > 0)
-					engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data());
-				else
-					engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,i, tex->width>>i, tex->height>>i, 0, nullptr);
-			}
-		}
-		engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
-		tex->needrefresh = false;
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(0,0, tex->width, tex->height, 0, nullptr);
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(1,0, tex->width, tex->height, 0, nullptr);
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(2,0, tex->width, tex->height, 0, nullptr);
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(3,0, tex->width, tex->height, 0, nullptr);
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(4,0, tex->width, tex->height, 0, nullptr);
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(5,0, tex->width, tex->height, 0, nullptr);
 	}
+	else
+	{
+		uint32_t side = 0;
+		for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
+		{
+			if (i % tex->max_miplevel == 1) // next side
+				side++;
+			if (tex->bitmaparray[i].size() > 0)
+				engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data());
+			else
+				engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,i, tex->width>>i, tex->height>>i, 0, nullptr);
+		}
+	}
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 }
 
 Context3D::Context3D(ASWorker* wrk, Class_base *c):EventDispatcher(wrk,c),samplers{UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX},currentactionvector(0)
-  ,textureframebuffer(UINT32_MAX),textureframebufferID(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX),currentprogram(nullptr)
+  ,textureframebuffer(UINT32_MAX),textureframebufferID(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX),currentprogram(nullptr),currenttextureid(UINT32_MAX)
   ,renderingToTexture(false),enableDepthAndStencilBackbuffer(true),enableDepthAndStencilTextureBuffer(true),swapbuffers(false),backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
   ,maxBackBufferHeight(16384),maxBackBufferWidth(16384)
 {
@@ -864,12 +884,16 @@ ASFUNCTIONBODY_ATOM(Context3D,configureBackBuffer)
 	int antiAlias;
 	bool wantsBestResolution;
 	bool wantsBestResolutionOnBrowserZoom;
-	ARG_UNPACK_ATOM(th->backBufferWidth)(th->backBufferHeight)(antiAlias)(th->enableDepthAndStencilBackbuffer, true)(wantsBestResolution,false)(wantsBestResolutionOnBrowserZoom,false);
+	uint32_t w;
+	uint32_t h;
+	ARG_UNPACK_ATOM(w)(h)(antiAlias)(th->enableDepthAndStencilBackbuffer, true)(wantsBestResolution,false)(wantsBestResolutionOnBrowserZoom,false);
 	if (antiAlias || wantsBestResolution || wantsBestResolutionOnBrowserZoom)
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.configureBackBuffer does not use all parameters:"<<antiAlias<<" "<<wantsBestResolution<<" "<<wantsBestResolutionOnBrowserZoom);
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_CONFIGUREBACKBUFFER;
 	action.udata1 = th->enableDepthAndStencilBackbuffer ? 1:0;
+	action.udata2 = w;
+	action.udata3 = h;
 	th->addAction(action);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
@@ -1134,9 +1158,11 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgram)
 	ARG_UNPACK_ATOM(program);
 	if (!program.isNull())
 	{
+		th->rendermutex.lock();
 		if (program->gpu_program == UINT32_MAX)
 			th->addAction(RENDER_ACTION::RENDER_UPLOADPROGRAM,program.getPtr());
 		th->addAction(RENDER_ACTION::RENDER_SETPROGRAM,program.getPtr());
+		th->rendermutex.unlock();
 	}
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromByteArray)
@@ -1232,21 +1258,23 @@ ASFUNCTIONBODY_ATOM(Context3D,setRenderToTexture)
 	int32_t antiAlias;
 	int32_t surfaceSelector;
 	int32_t colorOutputIndex;
-	renderaction action;
-	ARG_UNPACK_ATOM(action.dataobject)(enableDepthAndStencil,false)(antiAlias,0)(surfaceSelector, 0)(colorOutputIndex, 0);
-	if (action.dataobject.isNull())
-		throwError<ArgumentError>(kCheckTypeFailedError,
-								  "null",
-								  Class<TextureBase>::getClass(wrk->getSystemState())->getQualifiedClassName());
-	if (!action.dataobject->is<TextureBase>())
-		throwError<ArgumentError>(kCheckTypeFailedError,
-								  action.dataobject->getClassName(),
-								  Class<TextureBase>::getClass(wrk->getSystemState())->getQualifiedClassName());
+	_NR<TextureBase> tex;
+	ARG_UNPACK_ATOM(tex)(enableDepthAndStencil,false)(antiAlias,0)(surfaceSelector, 0)(colorOutputIndex, 0);
 	if (antiAlias!=0 || surfaceSelector!=0 || colorOutputIndex!=0)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setRenderToTexture ignores parameters antiAlias, surfaceSelector, colorOutput");
+	th->rendermutex.lock();
+	if (tex->textureID == UINT32_MAX)
+	{
+		th->addAction(RENDER_ACTION::RENDER_GENERATETEXTURE,tex.getPtr());
+	}
+	renderaction action;
 	action.action = RENDER_ACTION::RENDER_TOTEXTURE;
-	action.udata1 = enableDepthAndStencil ? 1 : 0;
+	action.udata1 = tex->textureID;
+	action.udata2 = tex->width;
+	action.udata3 = tex->height;
+	action.fdata[0] = enableDepthAndStencil ? 1 : 0;
 	th->addAction(action);
+	th->rendermutex.unlock();
 }
 ASFUNCTIONBODY_ATOM(Context3D,setSamplerStateAt)
 {
@@ -1346,6 +1374,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setTextureAt)
 	ARG_UNPACK_ATOM(sampler)(texture);
 	if (sampler >= CONTEXT3D_SAMPLER_COUNT)
 		throwError<RangeError>(kParamRangeError);
+	th->rendermutex.lock();
 	if (!texture.isNull())
 		texture->incRef();
 	renderaction action;
@@ -1353,6 +1382,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setTextureAt)
 	action.dataobject = texture;
 	action.udata1 = sampler;
 	th->actions[th->currentactionvector].push_back(action);
+	th->rendermutex.unlock();
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,setVertexBufferAt)

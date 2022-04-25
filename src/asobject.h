@@ -1811,6 +1811,8 @@ FORCE_INLINE bool asAtomHandler::checkArgumentConversion(const asAtom& a,const a
 	}
 	if (isNumeric(a) && isNumeric(obj))
 		return true;
+	if (isString(a) && isString(obj))
+		return true;
 	return false;
 }
 

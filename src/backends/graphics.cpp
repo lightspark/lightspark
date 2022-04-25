@@ -589,7 +589,7 @@ uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 		*isBufferOwner=true;
 	if (bufsize)
 		*bufsize=width*height*4;
-	if(width==0 || height==0 || !Config::getConfig()->isRenderingEnabled())
+	if(width<=0 || height<=0 || !Config::getConfig()->isRenderingEnabled())
 		return nullptr;
 
 	uint8_t* ret=nullptr;

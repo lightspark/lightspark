@@ -653,7 +653,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 		th->font = fnt;
 		th->fontID = UINT32_MAX;
 	}
-	if (!asAtomHandler::isNull(tf->size) && th->fontSize != asAtomHandler::toUInt(tf->size))
+	if (!asAtomHandler::isNull(tf->size) && th->fontSize != asAtomHandler::toUInt(tf->size) && asAtomHandler::toUInt(tf->size)>0)
 	{
 		th->fontSize = asAtomHandler::toUInt(tf->size);
 		updatesizes = true;
@@ -695,7 +695,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setDefaultTextFormat)
 		th->font = asAtomHandler::toString(tf->font,wrk);
 		th->fontID = UINT32_MAX;
 	}
-	if (!asAtomHandler::isNull(tf->size))
+	if (!asAtomHandler::isNull(tf->size) && asAtomHandler::toUInt(tf->size) > 0)
 		th->fontSize = asAtomHandler::toUInt(tf->size);
 	tiny_string align="left";
 	if (!asAtomHandler::isNull(tf->align))

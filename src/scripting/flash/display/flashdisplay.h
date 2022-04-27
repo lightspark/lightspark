@@ -741,7 +741,6 @@ public:
 	void setRoot(_NR<RootMovieClip> _root);
 	Stage(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	_NR<Stage> getStage() override;
 	_NR<InteractiveObject> getFocusTarget();
 	void setFocusTarget(_NR<InteractiveObject> focus);
@@ -773,6 +772,8 @@ public:
 	ASFUNCTION_ATOM(_invalidate);
 	ASFUNCTION_ATOM(_getColor);
 	ASFUNCTION_ATOM(_setColor);
+	ASFUNCTION_ATOM(_isFocusInaccessible);
+	ASFUNCTION_ATOM(_getNativeWindow);
 	ASPROPERTY_GETTER_SETTER(uint32_t,align);
 	ASPROPERTY_GETTER_SETTER(tiny_string,colorCorrection);
 	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);
@@ -783,6 +784,7 @@ public:
 	ASPROPERTY_GETTER(bool,allowsFullScreen);
 	ASPROPERTY_GETTER(_NR<Vector>, stage3Ds);
 	ASPROPERTY_GETTER(_NR<Rectangle>, softKeyboardRect);
+	ASPROPERTY_GETTER(number_t,contentsScaleFactor);
 	
 	void AVM1HandleEvent(EventDispatcher *dispatcher, Event* e) override;
 	void AVM1AddKeyboardListener(ASObject* o);

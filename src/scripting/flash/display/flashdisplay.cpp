@@ -3588,6 +3588,8 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("invalidate","",Class<IFunction>::getFunction(c->getSystemState(),_invalidate),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),_getColor,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),_setColor),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("isFocusInaccessible","",Class<IFunction>::getFunction(c->getSystemState(),_isFocusInaccessible,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("nativeWindow","",Class<IFunction>::getFunction(c->getSystemState(),_getNativeWindow),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,align,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,colorCorrection,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,displayState,ASString);
@@ -3598,18 +3600,20 @@ void Stage::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,allowsFullScreen,Boolean);
 	REGISTER_GETTER_RESULTTYPE(c,stage3Ds,Vector);
 	REGISTER_GETTER_RESULTTYPE(c,softKeyboardRect,Rectangle);
+	REGISTER_GETTER_RESULTTYPE(c,contentsScaleFactor,Number);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_STRINGID_CB(Stage,align,onAlign)
-ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,colorCorrection,onColorCorrection);
-ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,displayState,onDisplayState);
-ASFUNCTIONBODY_GETTER_SETTER(Stage,showDefaultContextMenu);  // stub
-ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,fullScreenSourceRect,onFullScreenSourceRect);
-ASFUNCTIONBODY_GETTER_SETTER(Stage,quality);
-ASFUNCTIONBODY_GETTER_SETTER(Stage,stageFocusRect);  // stub
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,allowsFullScreen);  // stub
-ASFUNCTIONBODY_GETTER(Stage,stage3Ds); 
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,softKeyboardRect);  // stub
+ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,colorCorrection,onColorCorrection)
+ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,displayState,onDisplayState)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Stage,showDefaultContextMenu)
+ASFUNCTIONBODY_GETTER_SETTER_CB(Stage,fullScreenSourceRect,onFullScreenSourceRect)
+ASFUNCTIONBODY_GETTER_SETTER(Stage,quality)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Stage,stageFocusRect)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,allowsFullScreen)
+ASFUNCTIONBODY_GETTER(Stage,stage3Ds)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,softKeyboardRect)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,contentsScaleFactor)
 
 void Stage::onDisplayState(const tiny_string&)
 {
@@ -3728,12 +3732,10 @@ bool Stage::renderImpl(RenderContext &ctxt) const
 	return DisplayObjectContainer::renderImpl(ctxt);
 }
 
-void Stage::buildTraits(ASObject* o)
-{
-}
-
-Stage::Stage(ASWorker* wrk, Class_base* c):
-	DisplayObjectContainer(wrk,c),avm1ScriptMovieClipFirst(nullptr),avm1ScriptMovieClipLast(nullptr), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high"),stageFocusRect(false),allowsFullScreen(false)
+Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
+  ,avm1ScriptMovieClipFirst(nullptr),avm1ScriptMovieClipLast(nullptr)
+  ,colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high")
+  ,stageFocusRect(false),allowsFullScreen(false),contentsScaleFactor(1.0)
 {
 	subtype = SUBTYPE_STAGE;
 	RELEASE_WRITE(this->invalidated,false);
@@ -3889,6 +3891,17 @@ ASFUNCTIONBODY_ATOM(Stage,_getStageVideos)
 	LOG(LOG_NOT_IMPLEMENTED, "Accelerated rendering through StageVideo not implemented, SWF should fall back to Video");
 	RootMovieClip* root = wrk->rootClip.getPtr();
 	Template<Vector>::getInstanceS(wrk,ret,root,Class<StageVideo>::getClass(wrk->getSystemState()),NullRef);
+}
+
+ASFUNCTIONBODY_ATOM(Stage,_isFocusInaccessible)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Stage.isFocusInaccessible always returns false");
+	ret = asAtomHandler::falseAtom;
+}
+ASFUNCTIONBODY_ATOM(Stage,_getNativeWindow)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"Stage.nativeWindow always returns null");
+	ret = asAtomHandler::nullAtom;
 }
 
 _NR<InteractiveObject> Stage::getFocusTarget()

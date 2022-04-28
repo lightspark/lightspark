@@ -122,6 +122,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/GraphicsStroke.cpp
   scripting/flash/display/GraphicsTrianglePath.cpp
   scripting/flash/display/NativeMenuItem.cpp
+  scripting/flash/display/NativeWindow.cpp
   scripting/flash/display/jpegencoderoptions.cpp
   scripting/flash/display/jpegxrencoderoptions.cpp
   scripting/flash/display/pngencoderoptions.cpp
@@ -175,6 +176,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/net/NetStreamInfo.cpp
   scripting/flash/net/NetStreamPlayOptions.cpp
   scripting/flash/net/NetStreamPlayTransitions.cpp
+  scripting/flash/net/DatagramSocket.cpp
   scripting/flash/printing/flashprinting.cpp
   scripting/flash/errors/flasherrors.cpp
   scripting/flash/sampler/flashsampler.cpp

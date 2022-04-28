@@ -42,6 +42,7 @@
 #include "scripting/flash/display/shaderprecision.h"
 #include "scripting/flash/display/swfversion.h"
 #include "scripting/flash/display/triangleculling.h"
+#include "scripting/flash/display/NativeWindow.h"
 
 #include "scripting/class.h"
 #include "scripting/abc.h"
@@ -108,4 +109,7 @@ void ABCVm::registerClassesFlashDisplay(Global* builtin)
 	builtin->registerBuiltin("PixelSnapping","flash.display",Class<PixelSnapping>::getRef(m_sys));
 	builtin->registerBuiltin("CapsStyle","flash.display",Class<CapsStyle>::getRef(m_sys));
 	builtin->registerBuiltin("JointStyle","flash.display",Class<JointStyle>::getRef(m_sys));
+	
+	if(m_sys->flashMode==SystemState::AIR)
+		builtin->registerBuiltin("NativeWindow","flash.display",Class<NativeWindow>::getRef(m_sys));
 }

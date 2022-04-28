@@ -28,6 +28,7 @@
 #include "scripting/flash/net/netgroupreplicationstrategy.h"
 #include "scripting/flash/net/netgroupsendmode.h"
 #include "scripting/flash/net/netgroupsendresult.h"
+#include "scripting/flash/net/DatagramSocket.h"
 
 #include "scripting/class.h"
 #include "scripting/abc.h"
@@ -69,6 +70,8 @@ void ABCVm::registerClassesFlashNet(Global* builtin)
 	builtin->registerBuiltin("NetGroupReplicationStrategy","flash.net",Class<NetGroupReplicationStrategy>::getRef(m_sys));
 	builtin->registerBuiltin("NetGroupSendMode","flash.net",Class<NetGroupSendMode>::getRef(m_sys));
 	builtin->registerBuiltin("NetGroupSendResult","flash.net",Class<NetGroupSendResult>::getRef(m_sys));
+	if(m_sys->flashMode==SystemState::AIR)
+		builtin->registerBuiltin("DatagramSocket","flash.net",Class<DatagramSocket>::getRef(m_sys));
 
 	builtin->registerBuiltin("DRMManager","flash.net.drm",Class<DRMManager>::getRef(m_sys));
 }

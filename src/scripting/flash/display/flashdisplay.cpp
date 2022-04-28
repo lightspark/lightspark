@@ -22,6 +22,7 @@
 #include "backends/security.h"
 #include "scripting/abc.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/NativeWindow.h"
 #include "scripting/avm1/avm1display.h"
 #include "scripting/flash/display/Graphics.h"
 #include "swf.h"
@@ -3589,7 +3590,6 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),_getColor,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("color","",Class<IFunction>::getFunction(c->getSystemState(),_setColor),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("isFocusInaccessible","",Class<IFunction>::getFunction(c->getSystemState(),_isFocusInaccessible,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("nativeWindow","",Class<IFunction>::getFunction(c->getSystemState(),_getNativeWindow),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,align,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,colorCorrection,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,displayState,ASString);
@@ -3601,6 +3601,7 @@ void Stage::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,stage3Ds,Vector);
 	REGISTER_GETTER_RESULTTYPE(c,softKeyboardRect,Rectangle);
 	REGISTER_GETTER_RESULTTYPE(c,contentsScaleFactor,Number);
+	REGISTER_GETTER_RESULTTYPE(c,nativeWindow,NativeWindow);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_STRINGID_CB(Stage,align,onAlign)
@@ -3614,6 +3615,7 @@ ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,allowsFullScreen)
 ASFUNCTIONBODY_GETTER(Stage,stage3Ds)
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,softKeyboardRect)
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,contentsScaleFactor)
+ASFUNCTIONBODY_GETTER(Stage,nativeWindow)
 
 void Stage::onDisplayState(const tiny_string&)
 {
@@ -3754,6 +3756,8 @@ Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
 	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(wrk));
 	stage3Ds->append(v);
 	softKeyboardRect = _R<Rectangle>(Class<Rectangle>::getInstanceS(wrk));
+	if (wrk->getSystemState()->flashMode == SystemState::AIR)
+		nativeWindow = _MR(Class<NativeWindow>::getInstanceSNoArgs(wrk));
 }
 
 _NR<Stage> Stage::getStage()
@@ -3897,11 +3901,6 @@ ASFUNCTIONBODY_ATOM(Stage,_isFocusInaccessible)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Stage.isFocusInaccessible always returns false");
 	ret = asAtomHandler::falseAtom;
-}
-ASFUNCTIONBODY_ATOM(Stage,_getNativeWindow)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"Stage.nativeWindow always returns null");
-	ret = asAtomHandler::nullAtom;
 }
 
 _NR<InteractiveObject> Stage::getFocusTarget()

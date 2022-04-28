@@ -27,6 +27,7 @@
 #include "backends/netutils.h"
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/display/TokenContainer.h"
+#include "scripting/flash/display/NativeWindow.h"
 #include "abcutils.h"
 #include <unordered_set>
 
@@ -773,7 +774,6 @@ public:
 	ASFUNCTION_ATOM(_getColor);
 	ASFUNCTION_ATOM(_setColor);
 	ASFUNCTION_ATOM(_isFocusInaccessible);
-	ASFUNCTION_ATOM(_getNativeWindow);
 	ASPROPERTY_GETTER_SETTER(uint32_t,align);
 	ASPROPERTY_GETTER_SETTER(tiny_string,colorCorrection);
 	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);
@@ -785,6 +785,7 @@ public:
 	ASPROPERTY_GETTER(_NR<Vector>, stage3Ds);
 	ASPROPERTY_GETTER(_NR<Rectangle>, softKeyboardRect);
 	ASPROPERTY_GETTER(number_t,contentsScaleFactor);
+	ASPROPERTY_GETTER(_NR<NativeWindow>,nativeWindow);
 	
 	void AVM1HandleEvent(EventDispatcher *dispatcher, Event* e) override;
 	void AVM1AddKeyboardListener(ASObject* o);

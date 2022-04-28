@@ -5889,8 +5889,13 @@ void MovieClip::afterConstruction()
 	// only if state.FP was not changed during construction
 	if(frameScripts.count(0) && state.FP == 0)
 	{
-		if (frameScripts.count(0))
-			frameScriptToExecute = 0;
+		// it seems that the framescript for frame 0 is executed _before_ any enterframe event is handled
+		inExecuteFramescript = true;
+		asAtom v=asAtomHandler::invalidAtom;
+		asAtom obj = asAtomHandler::getClosureAtom(frameScripts[0]);
+		asAtomHandler::callFunction(frameScripts[0],getInstanceWorker(),v,obj,nullptr,0,false);
+		ASATOM_DECREF(v);
+		inExecuteFramescript = false;
 	}
 	if (!this->loadedFrom->usesActionScript3 && !this->inAVM1Attachment)
 	{

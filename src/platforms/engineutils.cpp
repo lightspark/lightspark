@@ -307,6 +307,18 @@ bool EngineData::FileCreateDirectory(SystemState* sys, const tiny_string &filena
 	return false;
 }
 
+bool EngineData::FilePathIsAbsolute(const tiny_string& filename)
+{
+	LOG(LOG_ERROR,"FilePathIsAbsolute not implemented");
+	return false;
+}
+
+tiny_string EngineData::FileGetApplicationStorageDir()
+{
+	LOG(LOG_ERROR,"FileGetApplicationStorageDir not implemented");
+	return "";
+}
+
 void EngineData::initGLEW()
 {
 //For now GLEW does not work with GLES2

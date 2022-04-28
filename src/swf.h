@@ -560,6 +560,7 @@ public:
 	_NR<ASObject> static_ObjectEncoding_dynamicPropertyWriter;
 	tiny_string static_Multitouch_inputMode;
 	_NR<ASFile> static_ASFile_applicationDirectory;
+	_NR<ASFile> static_ASFile_applicationStorageDirectory;
 
 	ACQUIRE_RELEASE_FLAG(isinitialized);
 	Mutex initializedMutex;

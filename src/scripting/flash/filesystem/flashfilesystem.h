@@ -43,14 +43,18 @@ public:
 	ASFUNCTION_ATOM(open);
 	ASFUNCTION_ATOM(close);
 	ASFUNCTION_ATOM(readBytes);
+	ASFUNCTION_ATOM(readUTF);
 	ASFUNCTION_ATOM(readUnsignedByte);
 	ASPROPERTY_GETTER(uint32_t,bytesAvailable);
 	ASPROPERTY_GETTER_SETTER(number_t,position);
 	ASFUNCTION_ATOM(writeBytes);
+	ASFUNCTION_ATOM(writeUTF);
 };
 
 class ASFile: public FileReference
 {
+private:
+	void setupFile(const tiny_string& filename,ASWorker* wrk);
 	tiny_string path;
 public:
 	ASFile(ASWorker* wrk,Class_base* c, const tiny_string _path="", bool _exists=false);
@@ -58,6 +62,7 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,exists);
 	ASPROPERTY_GETTER(_NR<ASFile>,applicationDirectory);
+	ASPROPERTY_GETTER(_NR<ASFile>,applicationStorageDirectory);
 	ASFUNCTION_ATOM(resolvePath);
 	ASFUNCTION_ATOM(createDirectory);
 	const tiny_string& getFullPath() const { return path; }

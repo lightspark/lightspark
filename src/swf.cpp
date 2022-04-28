@@ -1174,6 +1174,7 @@ void SystemState::setParamsAndEngine(EngineData* e, bool s)
 	if (flashMode == SystemState::AIR)
 	{
 		static_ASFile_applicationDirectory=_MNR(Class<ASFile>::getInstanceS(this->worker,getEngineData()->FileFullPath(this,""),true));
+		static_ASFile_applicationStorageDirectory=_MNR(Class<ASFile>::getInstanceS(this->worker,getEngineData()->FileGetApplicationStorageDir(),true));
 	}
 	
 	if(vmVersion)

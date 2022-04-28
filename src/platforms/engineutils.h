@@ -186,6 +186,8 @@ public:
 	virtual void FileReadByteArray(SystemState* sys,const tiny_string &filename,ByteArray* res, uint32_t startpos, uint32_t length, bool isfullpath);
 	virtual void FileWriteByteArray(SystemState* sys,const tiny_string& filename, ByteArray* data,uint32_t startpos, uint32_t length, bool isfullpath);
 	virtual bool FileCreateDirectory(SystemState* sys,const tiny_string& filename, bool isfullpath);
+	virtual bool FilePathIsAbsolute(const tiny_string& filename);
+	virtual tiny_string FileGetApplicationStorageDir();
 	
 	void initGLEW();
 	void resizePixelBuffers(uint32_t w, uint32_t h);

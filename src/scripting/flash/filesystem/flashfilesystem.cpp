@@ -41,8 +41,10 @@ void FileStream::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("open", "", Class<IFunction>::getFunction(c->getSystemState(),open), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("close", "", Class<IFunction>::getFunction(c->getSystemState(),close), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("readBytes", "", Class<IFunction>::getFunction(c->getSystemState(),readBytes), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readUTF", "", Class<IFunction>::getFunction(c->getSystemState(),readUTF,0,Class<ASString>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("readUnsignedByte", "", Class<IFunction>::getFunction(c->getSystemState(),readUnsignedByte,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("writeBytes", "", Class<IFunction>::getFunction(c->getSystemState(),writeBytes), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("writeUTF", "", Class<IFunction>::getFunction(c->getSystemState(),writeUTF), NORMAL_METHOD, true);
 	REGISTER_GETTER_RESULTTYPE(c,bytesAvailable,UInteger);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,position,Number);
 }
@@ -64,15 +66,25 @@ ASFUNCTIONBODY_ATOM(FileStream,open)
 {
 	FileStream* th=asAtomHandler::as<FileStream>(obj);
 	ARG_UNPACK_ATOM(th->file)(th->fileMode);
-	th->bytesAvailable = th->filesize = wrk->getSystemState()->getEngineData()->FileSize(wrk->getSystemState(),th->file->getFullPath(),true);
+	tiny_string fullpath = th->file->getFullPath();
+	th->bytesAvailable = th->filesize = wrk->getSystemState()->getEngineData()->FileSize(wrk->getSystemState(),fullpath,true);
 	if (th->fileMode == "read")
 		th->stream.open(th->file->getFullPath().raw_buf(),ios_base::in|ios_base::binary);
 	else if (th->fileMode == "write")
+	{
+		wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),fullpath,true);
 		th->stream.open(th->file->getFullPath().raw_buf(),ios_base::out|ios_base::binary|ios_base::trunc);
+	}
 	else if (th->fileMode == "update")
+	{
+		wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),fullpath,true);
 		th->stream.open(th->file->getFullPath().raw_buf(),ios_base::in|ios_base::out|ios_base::binary);
+	}
 	else if (th->fileMode == "append")
+	{
+		wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),fullpath,true);
 		th->stream.open(th->file->getFullPath().raw_buf(),ios_base::out|ios_base::binary|ios_base::ate);
+	}
 	else
 		LOG(LOG_ERROR,"invalid filemode:"<<th->fileMode);
 	th->position=0;
@@ -103,6 +115,18 @@ ASFUNCTIONBODY_ATOM(FileStream,readBytes)
 	th->stream.read((char*)(bytes->getBufferNoCheck()+offset),length);
 	th->position+= length;
 	th->bytesAvailable = th->filesize-th->position;
+}
+ASFUNCTIONBODY_ATOM(FileStream,readUTF)
+{
+	FileStream* th=asAtomHandler::as<FileStream>(obj);
+	if (!th->stream.is_open())
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not open");
+	if (th->fileMode != "read" && th->fileMode != "update")
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not readable");
+	uint16_t len;
+	th->stream.read((char*)&len,2);
+	tiny_string s(th->stream,len);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),s);
 }
 ASFUNCTIONBODY_ATOM(FileStream,readUnsignedByte)
 {
@@ -136,11 +160,25 @@ ASFUNCTIONBODY_ATOM(FileStream,writeBytes)
 		len = bytes->getLength()-offset;
 	th->stream.write((char*)buf+offset,len);
 }
+ASFUNCTIONBODY_ATOM(FileStream,writeUTF)
+{
+	FileStream* th=asAtomHandler::as<FileStream>(obj);
+	tiny_string value;
+	ARG_UNPACK_ATOM(value);
+	if (!th->stream.is_open())
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not open");
+	if (th->fileMode == "read")
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not writable");
+	uint16_t len = value.numBytes();
+	th->stream.write((char*)&len,2);
+	th->stream.write(value.raw_buf(),value.numBytes());
+}
 
 ASFile::ASFile(ASWorker* wrk,Class_base* c, const tiny_string _path, bool _exists):
 	FileReference(wrk,c),path(_path),exists(_exists)
 {
 	subtype=SUBTYPE_FILE;
+	setupFile(_path,wrk);
 }
 
 void ASFile::sinit(Class_base* c)
@@ -148,11 +186,13 @@ void ASFile::sinit(Class_base* c)
 	CLASS_SETUP(c, FileReference, _constructor, CLASS_SEALED);
 	REGISTER_GETTER_RESULTTYPE(c,exists,Boolean);
 	REGISTER_GETTER_STATIC_RESULTTYPE(c,applicationDirectory,ASFile);
+	REGISTER_GETTER_STATIC_RESULTTYPE(c,applicationStorageDirectory,ASFile);
 	c->setDeclaredMethodByQName("resolvePath", "", Class<IFunction>::getFunction(c->getSystemState(),resolvePath,1,Class<ASFile>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("createDirectory", "", Class<IFunction>::getFunction(c->getSystemState(),createDirectory), NORMAL_METHOD, true);
 }
 ASFUNCTIONBODY_GETTER(ASFile, exists)
 ASFUNCTIONBODY_GETTER_STATIC(ASFile, applicationDirectory)
+ASFUNCTIONBODY_GETTER_STATIC(ASFile, applicationStorageDirectory)
 
 ASFUNCTIONBODY_ATOM(ASFile,_constructor)
 {
@@ -160,29 +200,50 @@ ASFUNCTIONBODY_ATOM(ASFile,_constructor)
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
 	tiny_string filename;
 	ARG_UNPACK_ATOM(filename,"");
-	if (filename!="")
+	th->setupFile(filename,wrk);
+}
+void ASFile::setupFile(const tiny_string& filename, ASWorker* wrk)
+{
+	if (!filename.empty())
 	{
 		// TODO handle URLs (see actionscript3 documentation)
 		// "app:/DesktopPathTest.xml"
 		// "app-storage:/preferences.xml"
 		// "file:///C:/Documents%20and%20Settings/bob/Desktop" (the desktop on Bob's Windows computer)
 		// "file:///Users/bob/Desktop" (the desktop on Bob's Mac computer)
-		th->path = wrk->getSystemState()->getEngineData()->FileFullPath(wrk->getSystemState(),filename);
-		th->exists = wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),th->path,true);
+		path = filename;
+		exists = wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),path,true);
 	}
 }
+
+
 ASFUNCTIONBODY_ATOM(ASFile,resolvePath)
 {
-	//ASFile* th=Class<FileReference>::cast(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"File.resolvePath is not implemented");
-	ASFile* res = Class<ASFile>::getInstanceS(wrk);
+	ASFile* th=asAtomHandler::as<ASFile>(obj);
+	tiny_string path;
+	ARG_UNPACK_ATOM(path);
+	tiny_string fullpath;
+	if (wrk->getSystemState()->getEngineData()->FilePathIsAbsolute(path))
+		fullpath = path;
+	else
+	{
+		fullpath = th->path;
+		fullpath += G_DIR_SEPARATOR_S;
+		fullpath += path;
+	}
+	ASFile* res = Class<ASFile>::getInstanceS(wrk,fullpath);
 	ret = asAtomHandler::fromObjectNoPrimitive(res);
 }
 
 ASFUNCTIONBODY_ATOM(ASFile,createDirectory)
 {
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
-	if (!wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),th->path,true))
+	tiny_string p = th->path;
+	// ensure that directory name ends with a directory separator
+	if (!p.endsWith(G_DIR_SEPARATOR_S))
+		p += G_DIR_SEPARATOR_S;
+	
+	if (!wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),p,true))
 		throwError<IOError>(kFileWriteError,th->path);
 }
 

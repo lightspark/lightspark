@@ -43,6 +43,7 @@ class StandaloneEngineData: public EngineData
 {
 	SDL_GLContext mSDLContext;
 	char* mBaseDir;
+	tiny_string mApplicationStoragePath;
 	void removedir(const char* dir)
 	{
 		GDir* d = g_dir_open(dir,0,nullptr);
@@ -80,9 +81,17 @@ class StandaloneEngineData: public EngineData
 		return st.st_size;
 	}
 public:
-	StandaloneEngineData(const tiny_string& datapath)
+	StandaloneEngineData(const tiny_string& filedatapath)
 	{
-		sharedObjectDatapath=datapath;
+		sharedObjectDatapath = Config::getConfig()->getCacheDirectory();
+		sharedObjectDatapath += G_DIR_SEPARATOR_S;
+		sharedObjectDatapath += "data";
+		sharedObjectDatapath += filedatapath;
+
+		mApplicationStoragePath = Config::getConfig()->getCacheDirectory();
+		mApplicationStoragePath += G_DIR_SEPARATOR_S;
+		mApplicationStoragePath += "appstorage";
+		mApplicationStoragePath += filedatapath;
 		mBaseDir = g_get_current_dir();
 	}
 	~StandaloneEngineData()
@@ -294,7 +303,22 @@ public:
 		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
 		if (p.empty())
 			return false;
+		if (!p.endsWith(G_DIR_SEPARATOR_S))
+		{
+			// if filename doesn't end with a directory separator, it is treated as a full path to a file
+			gchar* dir = g_path_get_dirname(p.raw_buf());
+			p=dir;
+			g_free(dir);
+		}
 		return g_mkdir_with_parents(p.raw_buf(),0755) == 0;
+	}
+	bool FilePathIsAbsolute(const tiny_string& filename)
+	{
+		return g_path_is_absolute(filename.raw_buf());
+	}
+	tiny_string FileGetApplicationStorageDir()
+	{
+		return mApplicationStoragePath;
 	}
 };
 
@@ -543,12 +567,8 @@ int main(int argc, char* argv[])
 	tiny_string filedatapath = absolutepath;
 	if (filedatapath.find(homedir) == 0) // remove home dir, if file is located below home dir
 		filedatapath = filedatapath.substr_bytes(homedir.numBytes(),UINT32_MAX);
-	tiny_string sharedobjectdatapath = Config::getConfig()->getCacheDirectory();
-	sharedobjectdatapath += G_DIR_SEPARATOR_S;
-	sharedobjectdatapath += "data";
-	sharedobjectdatapath += filedatapath;
 
-	sys->setParamsAndEngine(new StandaloneEngineData(sharedobjectdatapath), true);
+	sys->setParamsAndEngine(new StandaloneEngineData(filedatapath), true);
 	// on standalone local storage is always allowed
 	sys->getEngineData()->setLocalStorageAllowedMarker(true);
 

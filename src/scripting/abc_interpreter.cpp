@@ -3966,9 +3966,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			}
-			case 0x09://label
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				break;
 			case 0x1c://pushwith
 				removetypestack(typestack,1);
 				scopelist.push_back(scope_entry(asAtomHandler::invalidAtom,true));
@@ -5221,6 +5218,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x01://bkpt
 			case 0x02://nop
 			case 0x82://coerce_a
+			case 0x09://label
 			{
 				//skip
 				int32_t p = code.tellg();

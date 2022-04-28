@@ -307,6 +307,8 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata1 = firstIndex
 			//action.udata2 = numTriangles
 			//action.udata3 = bufferID
+			if (action.udata3 == UINT32_MAX)
+				action.udata3 = action.dataobject->as<IndexBuffer3D>()->bufferID;
 			if (currentprogram)
 			{
 				setPositionScale(engineData);
@@ -1024,7 +1026,17 @@ ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
 	action.udata1 = firstIndex < 0 ? 0 : firstIndex;
 	action.udata2 = numTriangles == -1 ? indexBuffer->data.size() : numTriangles*3;
 	action.udata3 = indexBuffer->bufferID;
-	th->actions[th->currentactionvector].push_back(action);
+	if (indexBuffer->bufferID==UINT32_MAX)
+	{
+		// IndexBuffer3D was created during this loop, so it doesn't hava a bufferID yet
+		th->rendermutex.lock();
+		indexBuffer->incRef();
+		action.dataobject = indexBuffer;
+		th->actions[th->currentactionvector].push_back(action);
+		th->rendermutex.unlock();
+	}
+	else
+		th->actions[th->currentactionvector].push_back(action);
 	if (th->enableErrorChecking)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.drawTriangles with errorchecking");
 }
@@ -1569,6 +1581,7 @@ bool IndexBuffer3D::destruct()
 	{
 		renderaction action;
 		action.action =RENDER_ACTION::RENDER_DELETEBUFFER;
+		action.udata1 = bufferID;
 		context->addAction(action);
 	}
 	return ASObject::destruct();
@@ -1704,6 +1717,7 @@ bool VertexBuffer3D::destruct()
 	{
 		renderaction action;
 		action.action =RENDER_ACTION::RENDER_DELETEBUFFER;
+		action.udata1 = bufferID;
 		context->addAction(action);
 	}
 	return ASObject::destruct();

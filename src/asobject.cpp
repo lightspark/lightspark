@@ -956,12 +956,12 @@ void variable::setVar(ASWorker* wrk, asAtom v, ASObject *obj, bool _isrefcounted
 	}
 	if(isResolved && type)
 		type->coerce(wrk,v);
-	if(isrefcounted && asAtomHandler::getObject(var))
+	if(isrefcounted && asAtomHandler::isObject(var))
 	{
 		LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
 		if (obj->is<Activation_object>() && (asAtomHandler::is<SyntheticFunction>(var) || asAtomHandler::is<AVM1Function>(var)))
-			asAtomHandler::getObject(var)->decActivationCount();
-		ASATOM_DECREF(var);
+			asAtomHandler::getObjectNoCheck(var)->decActivationCount();
+		asAtomHandler::getObjectNoCheck(var)->decRef();
 	}
 	var=v;
 	isrefcounted = _isrefcounted;

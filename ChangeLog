@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* partial support for loading AIR extensions by command line parameter
 	* improved support for Stage3D
 	* remove dependency on gettext (we don't have any strings that need translation anyway)
 	* partially implement some Adobe AIR classes in flash.filesystem

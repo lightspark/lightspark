@@ -134,6 +134,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display3d/flashdisplay3dtextures.cpp
   scripting/flash/events/flashevents.cpp
   scripting/flash/external/ExternalInterface.cpp
+  scripting/flash/external/ExtensionContext.cpp
   scripting/flash/filters/flashfilters.cpp
   scripting/flash/filesystem/flashfilesystem.cpp
   scripting/flash/geom/flashgeom.cpp

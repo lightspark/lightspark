@@ -1361,6 +1361,7 @@ class DisplayObjectContainer;
 class DropShadowFilter;
 class ElementFormat;
 class Event;
+class ExtensionContext;
 class FileMode;
 class FileReference;
 class FileStream;
@@ -1469,9 +1470,10 @@ template<> inline bool ASObject::is<DisplayObjectContainer>() const { return sub
 template<> inline bool ASObject::is<DropShadowFilter>() const { return subtype==SUBTYPE_DROPSHADOWFILTER; }
 template<> inline bool ASObject::is<ElementFormat>() const { return subtype==SUBTYPE_ELEMENTFORMAT; }
 template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT || subtype==SUBTYPE_SAMPLEDATA_EVENT || subtype == SUBTYPE_THROTTLE_EVENT || subtype == SUBTYPE_CONTEXTMENUEVENT || subtype == SUBTYPE_GAMEINPUTEVENT; }
+template<> inline bool ASObject::is<ExtensionContext>() const { return subtype==SUBTYPE_EXTENSIONCONTEXT; }
 template<> inline bool ASObject::is<FontDescription>() const { return subtype==SUBTYPE_FONTDESCRIPTION; }
 template<> inline bool ASObject::is<FileMode>() const { return subtype==SUBTYPE_FILEMODE; }
-template<> inline bool ASObject::is<FileReference>() const { return subtype==SUBTYPE_FILESTREAM||subtype==SUBTYPE_FILEREFERENCE; }
+template<> inline bool ASObject::is<FileReference>() const { return subtype==SUBTYPE_FILE||subtype==SUBTYPE_FILEREFERENCE; }
 template<> inline bool ASObject::is<FileStream>() const { return subtype==SUBTYPE_FILESTREAM; }
 template<> inline bool ASObject::is<Function_object>() const { return subtype==SUBTYPE_FUNCTIONOBJECT; }
 template<> inline bool ASObject::is<Function>() const { return subtype==SUBTYPE_FUNCTION; }

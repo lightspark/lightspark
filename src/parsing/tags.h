@@ -36,7 +36,8 @@ class DisplayObjectContainer;
 class DefineSpriteTag;
 class AdditionalDataTag;
 
-enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG,AVM1ACTION_TAG,AVM1INITACTION_TAG,BUTTONSOUND_TAG};
+enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG,
+			  AVM1ACTION_TAG,AVM1INITACTION_TAG,BUTTONSOUND_TAG, FILEATTRIBUTES_TAG,METADATA_TAG,BACKGROUNDCOLOR_TAG,ENABLEDEBUGGER_TAG};
 
 void ignore(std::istream& i, int count);
 
@@ -417,6 +418,7 @@ private:
 public:
 	SetBackgroundColorTag(RECORDHEADER h, std::istream& in);
 	void execute(RootMovieClip* root) const override;
+	TAGTYPE getType() const override { return BACKGROUNDCOLOR_TAG; }
 };
 class DefineButtonTag;
 class DefineButtonSoundTag: public Tag
@@ -816,6 +818,7 @@ private:
 	STRING XmlString;
 public:
 	MetadataTag(RECORDHEADER h, std::istream& in);
+	TAGTYPE getType() const override { return METADATA_TAG; }
 };
 
 class CSMTextSettingsTag: public Tag
@@ -858,6 +861,7 @@ public:
 	UB ActionScript3;
 	UB UseNetwork;
 	FileAttributesTag(RECORDHEADER h, std::istream& in);
+	TAGTYPE getType() const override { return FILEATTRIBUTES_TAG; }
 };
 
 class EnableDebuggerTag: public Tag
@@ -866,6 +870,7 @@ private:
 	STRING DebugPassword;
 public:
 	EnableDebuggerTag(RECORDHEADER h, std::istream& in);
+	TAGTYPE getType() const override { return ENABLEDEBUGGER_TAG; }
 };
 
 class EnableDebugger2Tag: public Tag
@@ -875,6 +880,7 @@ private:
 	STRING DebugPassword;
 public:
 	EnableDebugger2Tag(RECORDHEADER h, std::istream& in);
+	TAGTYPE getType() const override { return ENABLEDEBUGGER_TAG; }
 };
 
 class DebugIDTag: public Tag

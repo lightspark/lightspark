@@ -115,6 +115,7 @@
 #include "scripting/flash/globalization/numberparseresult.h"
 #include "scripting/flash/globalization/stringtools.h"
 #include "scripting/flash/external/ExternalInterface.h"
+#include "scripting/flash/external/ExtensionContext.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/media/audiodecoder.h"
 #include "scripting/flash/media/audiooutputchangereason.h"

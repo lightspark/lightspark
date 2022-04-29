@@ -1574,7 +1574,6 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 void ParseThread::execute()
 {
 	tls_set(parse_thread_tls,this);
-
 	try
 	{
 		UI8 Signature[4];
@@ -1615,7 +1614,6 @@ void ParseThread::execute()
 		LOG(LOG_ERROR,"Stream exception in ParseThread " << e.what());
 	}
 }
-
 void ParseThread::parseSWF(UI8 ver)
 {
 	if (loader && !loader->allowLoadingSWF())
@@ -1692,6 +1690,9 @@ void ParseThread::parseSWF(UI8 ver)
 			if(root == root->getSystemState()->mainClip)
 			{
 				root->getSystemState()->needsAVM2(!usegnash || root->usesActionScript3);
+				if (!usegnash || root->usesActionScript3)
+					parseExtensions(root);
+				
 				if(usegnash && fat && !fat->ActionScript3)
 				{
 					delete fat;
@@ -1708,6 +1709,7 @@ void ParseThread::parseSWF(UI8 ver)
 		else if(root == root->getSystemState()->mainClip)
 		{
 			root->getSystemState()->needsAVM2(true);
+			parseExtensions(root);
 		}
 		root->setupAVM1RootMovie();
 
@@ -1794,6 +1796,7 @@ void ParseThread::parseSWF(UI8 ver)
 					queuedTags.push(stag);
 					break;
 				}
+				case BACKGROUNDCOLOR_TAG:
 				case CONTROL_TAG:
 				{
 					/* The spec is not clear about that,
@@ -1830,6 +1833,11 @@ void ParseThread::parseSWF(UI8 ver)
 						delete tag;
 					break;
 				}
+				case ENABLEDEBUGGER_TAG:
+				case METADATA_TAG:
+				case FILEATTRIBUTES_TAG:
+					delete tag;
+					break;
 				case TAG:
 				{
 					//Not yet implemented tag, ignore it
@@ -1859,6 +1867,102 @@ void ParseThread::parseSWF(UI8 ver)
 	}
 	root->markSoundFinished();
 	LOG(LOG_TRACE,"End of parsing");
+}
+
+void ParseThread::parseExtensions(RootMovieClip* root)
+{
+	for (auto it = extensions.begin(); it != extensions.end(); it++)
+	{
+		LOG(LOG_INFO,"loading extension:"<<(*it));
+		lsfilereader r((*it).raw_buf());
+		istream fext(&r);
+		UI8 Signature[4];
+		fext >> Signature[0] >> Signature[1] >> Signature[2] >> Signature[3];
+		FILE_TYPE extfileType=recognizeFile(Signature[0],Signature[1],Signature[2],Signature[3]);
+		if(extfileType==FT_SWF || extfileType==FT_COMPRESSED_SWF || extfileType==FT_LZMA_COMPRESSED_SWF)
+		{
+			uncompressing_filter* extuncompressingFilter=nullptr;
+			std::streambuf* extbackend=nullptr;
+			// read the SWF header of the extension, most values are ignored
+			UI32_SWF extFileLength;
+			RECT extFrameSize;
+			UI16_SWF extFrameRate;
+			UI16_SWF extFrameCount;
+			fext >> extFileLength;
+			//Enable decompression if needed
+			if(extfileType==FT_SWF)
+			{
+				LOG(LOG_INFO, "Uncompressed SWF extension: Version " << (int)Signature[3]);
+			}
+			else
+			{
+				//The file is compressed, create a filtering streambuf
+				extbackend=fext.rdbuf();
+				if(extfileType==FT_COMPRESSED_SWF)
+				{
+					LOG(LOG_INFO, "zlib compressed SWF extension: Version " << (int)Signature[3]);
+					extuncompressingFilter = new zlib_filter(extbackend);
+				}
+				else if(fileType==FT_LZMA_COMPRESSED_SWF)
+				{
+					LOG(LOG_INFO, "lzma compressed SWF extension: Version " << (int)Signature[3]);
+					extuncompressingFilter = new liblzma_filter(extbackend);
+				}
+				fext.rdbuf(extuncompressingFilter);
+			}
+			fext >> extFrameSize >> extFrameRate >> extFrameCount;
+
+			// parse the swf body
+			TagFactory extfactory(fext);
+			Tag* tag=extfactory.readTag(root);
+			bool done=false;
+			while(!done)
+			{
+				switch(tag->getType())
+				{
+					case SHOW_TAG:
+					case END_TAG:
+					{
+						done=true;
+						delete tag;
+						break;
+					}
+					case ABC_TAG:
+					{
+						const ControlTag* stag = static_cast<const ControlTag*>(tag);
+						stag->execute(root);
+						delete stag;
+						break;
+					}
+					case ENABLEDEBUGGER_TAG:
+					case BACKGROUNDCOLOR_TAG:
+					case METADATA_TAG:
+					case FILEATTRIBUTES_TAG:
+						delete tag;
+						break;
+					default:
+					{
+						LOG(LOG_NOT_IMPLEMENTED,"tag type in extension not handled:"<<(int)tag->getType());
+						delete tag;
+						break;
+					}
+				}
+				if(root->getSystemState()->shouldTerminate() || threadAborting)
+					break;
+				if (!done)
+					tag=extfactory.readTag(root);
+			}
+			if(extuncompressingFilter)
+			{
+				//Restore the istream
+				fext.rdbuf(extbackend);
+				delete extuncompressingFilter;
+			}
+			LOG(LOG_INFO,"loading extension done:"<<(*it));
+		}
+		else
+			LOG(LOG_ERROR,"extension is not a valid swf file:"<<(*it));
+	}
 }
 
 void ParseThread::parseBitmap()

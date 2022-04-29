@@ -199,6 +199,7 @@ REGISTER_CLASS_NAME(VideoEvent,"flash.events")
 
 //External interface (browser interaction)
 REGISTER_CLASS_NAME(ExternalInterface,"flash.external")
+REGISTER_CLASS_NAME(ExtensionContext,"flash.external")
 
 //filesystem
 REGISTER_CLASS_NAME2(ASFile,"File","flash.filesystem")

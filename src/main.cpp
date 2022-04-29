@@ -89,9 +89,9 @@ public:
 		sharedObjectDatapath += filedatapath;
 
 		mApplicationStoragePath = Config::getConfig()->getCacheDirectory();
+		mApplicationStoragePath += filedatapath;
 		mApplicationStoragePath += G_DIR_SEPARATOR_S;
 		mApplicationStoragePath += "appstorage";
-		mApplicationStoragePath += filedatapath;
 		mBaseDir = g_get_current_dir();
 	}
 	~StandaloneEngineData()
@@ -339,6 +339,7 @@ int main(int argc, char* argv[])
 	SystemState::ERROR_TYPE exitOnError=SystemState::ERROR_PARSING;
 	LOG_LEVEL log_level=LOG_INFO;
 	SystemState::FLASH_MODE flashMode=SystemState::FLASH;
+	std::vector<tiny_string> extensions;
 
 	LOG(LOG_INFO,"Lightspark version " << VERSION << " Copyright 2009-2013 Alessandro Pignotti and others");
 
@@ -389,6 +390,18 @@ int main(int argc, char* argv[])
 				break;
 			}
 			paramsFileName=argv[i];
+		}
+		else if (strcmp(argv[i],"-le")==0 || 
+				 strcmp(argv[i],"--load-extension")==0)
+		{
+			i++;
+			if(i==argc)
+			{
+				fileName=nullptr;
+				break;
+			}
+			tiny_string ext = argv[i];
+			extensions.push_back(ext);
 		}
 #ifdef PROFILING_SUPPORT
 		else if(strcmp(argv[i],"-o")==0 || 
@@ -470,6 +483,7 @@ int main(int argc, char* argv[])
 			" [--profiling-output|-o profiling-file]" <<
 #endif
 			" [--ignore-unhandled-exceptions|-ne]"
+			" [--load-extension|-le extension-file"
 			" [--version|-v]" <<
 			" <file.swf>");
 		exit(1);
@@ -499,6 +513,7 @@ int main(int argc, char* argv[])
 	//NOTE: see SystemState declaration
 	SystemState* sys = new SystemState(fileSize, flashMode);
 	ParseThread* pt = new ParseThread(f, sys->mainClip);
+	pt->addExtensions(extensions);
 	setTLSSys(sys);
 	setTLSWorker(sys->worker);
 

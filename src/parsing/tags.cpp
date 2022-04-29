@@ -508,6 +508,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				empty=true;
 				break;
 			}
+			case BACKGROUNDCOLOR_TAG:
 			case SYMBOL_CLASS_TAG:
 			case ABC_TAG:
 			case CONTROL_TAG:
@@ -531,6 +532,11 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				break;
 			case AVM1INITACTION_TAG:
 				LOG(LOG_NOT_IMPLEMENTED,"InitActionTag inside sprite "<< SpriteID);
+				delete tag;
+				break;
+			case ENABLEDEBUGGER_TAG:
+			case METADATA_TAG:
+			case FILEATTRIBUTES_TAG:
 				delete tag;
 				break;
 			case TAG:

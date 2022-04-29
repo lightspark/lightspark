@@ -630,11 +630,13 @@ public:
 	_NR<DisplayObject> getParsedObject();
 	RootMovieClip* getRootMovie() const;
 	static FILE_TYPE recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4);
-	void execute();
+	void execute() override;
 	_NR<ApplicationDomain> applicationDomain;
 	_NR<SecurityDomain> securityDomain;
 	void getSWFByteArray(ByteArray* ba);
+	void addExtensions(std::vector<tiny_string>& ext) { extensions = ext; }
 private:
+	std::vector<tiny_string> extensions;
 	std::istream& f;
 	uncompressing_filter* uncompressingFilter;
 	std::streambuf* backend;
@@ -644,12 +646,13 @@ private:
 	Mutex objectSpinlock;
 	tiny_string url;
 	FILE_TYPE fileType;
-	void threadAbort();
-	void jobFence() {}
+	void threadAbort() override;
+	void jobFence() override {}
 	void parseSWFHeader(RootMovieClip *root, UI8 ver);
 	void parseSWF(UI8 ver);
 	void parseBitmap();
 	void setRootMovie(RootMovieClip *root);
+	void parseExtensions(RootMovieClip* root);
 };
 
 /* Returns the thread-specific SystemState */

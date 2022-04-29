@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/external/ExternalInterface.h"
+#include "scripting/flash/external/ExtensionContext.h"
 
 #include "scripting/class.h"
 #include "scripting/abc.h"
@@ -26,4 +27,6 @@ using namespace lightspark;
 void ABCVm::registerClassesFlashExternal(Global* builtin)
 {
 	builtin->registerBuiltin("ExternalInterface","flash.external",Class<ExternalInterface>::getRef(m_sys));
+	if(m_sys->flashMode==SystemState::AIR)
+		builtin->registerBuiltin("ExtensionContext","flash.external",Class<ExtensionContext>::getRef(m_sys));
 }

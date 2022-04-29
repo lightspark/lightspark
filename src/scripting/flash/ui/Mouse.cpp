@@ -34,11 +34,12 @@ void Mouse::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("hide","",Class<IFunction>::getFunction(c->getSystemState(),hide),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("show","",Class<IFunction>::getFunction(c->getSystemState(),show),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("cursor","",Class<IFunction>::getFunction(c->getSystemState(),getCursor),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("cursor","",Class<IFunction>::getFunction(c->getSystemState(),getCursor,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("cursor","",Class<IFunction>::getFunction(c->getSystemState(),setCursor),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsCursor","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsCursor),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsNativeCursor","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsNativeCursor),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsCursor","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsCursor,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsNativeCursor","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsNativeCursor,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("registerCursor","",Class<IFunction>::getFunction(c->getSystemState(),registerCursor),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("unregisterCursor","",Class<IFunction>::getFunction(c->getSystemState(),unregisterCursor),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, hide)
@@ -81,6 +82,12 @@ ASFUNCTIONBODY_ATOM(Mouse, registerCursor)
 	ARG_UNPACK_ATOM(cursorName) (mousecursordata);
 	LOG(LOG_NOT_IMPLEMENTED,"Mouse.registerCursor is not implemented");
 }
+ASFUNCTIONBODY_ATOM(Mouse, unregisterCursor)
+{
+	tiny_string cursorName;
+	ARG_UNPACK_ATOM(cursorName);
+	LOG(LOG_NOT_IMPLEMENTED,"Mouse.unregisterCursor is not implemented");
+}
 void MouseCursor::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
@@ -102,9 +109,9 @@ void MouseCursorData::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, hotSpot);
 
 }
-ASFUNCTIONBODY_GETTER_SETTER(MouseCursorData, data);
-ASFUNCTIONBODY_GETTER_SETTER(MouseCursorData, frameRate);
-ASFUNCTIONBODY_GETTER_SETTER(MouseCursorData, hotSpot);
+ASFUNCTIONBODY_GETTER_SETTER(MouseCursorData, data)
+ASFUNCTIONBODY_GETTER_SETTER(MouseCursorData, frameRate)
+ASFUNCTIONBODY_GETTER_SETTER(MouseCursorData, hotSpot)
 
 ASFUNCTIONBODY_ATOM(MouseCursorData,_constructor)
 {

@@ -39,6 +39,7 @@ public:
 	ASFUNCTION_ATOM(getSupportsCursor);
 	ASFUNCTION_ATOM(getSupportsNativeCursor);
 	ASFUNCTION_ATOM(registerCursor);
+	ASFUNCTION_ATOM(unregisterCursor);
 };
 
 class MouseCursor : public ASObject

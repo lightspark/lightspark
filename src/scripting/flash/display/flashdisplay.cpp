@@ -681,6 +681,11 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 	if(bytes->getLength()!=0)
 	{
 		th->incRef();
+		// better work on a copy of the source bytearray as it may be modified by actionscript before loading is completed
+		ByteArray* b = Class<ByteArray>::getInstanceSNoArgs(wrk);
+		b->writeBytes(bytes->getBufferNoCheck(),bytes->getLength());
+		bytes = _MR(b);
+
 		LoaderThread *thread=new LoaderThread(_MR(bytes), _MR(th));
 		Locker l(th->spinlock);
 		th->jobs.push_back(thread);

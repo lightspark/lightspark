@@ -35,6 +35,7 @@
 #include "backends/streamcache.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/toplevel/Number.h"
 
 using namespace std;
 using namespace lightspark;
@@ -975,18 +976,19 @@ void NetConnection::execute()
 	headers.push_back("Content-Type: application/x-amf");
 	_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache(getSys())));
 	downloader=getSys()->downloadManager->downloadWithData(uri, cache,
-			messageData, headers, NULL);
+			messageData, headers, nullptr);
 	//Get the whole answer
 	cache->waitForTermination();
 	if(cache->hasFailed()) //Check to see if the download failed for some reason
 	{
 		LOG(LOG_ERROR, "NetConnection::execute(): Download of URL failed: " << uri);
-//		getVm()->addEvent(contentLoaderInfo,_MR(Class<IOErrorEvent>::getInstanceS()));
+		this->incRef();
+		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS(getInstanceWorker())));
 		{
 			//Acquire the lock to ensure consistency in threadAbort
 			Locker l(downloaderLock);
-			getSys()->downloadManager->destroy(downloader);
-			downloader = NULL;
+			getSystemState()->downloadManager->destroy(downloader);
+			downloader = nullptr;
 		}
 		return;
 	}
@@ -1000,8 +1002,8 @@ void NetConnection::execute()
 	{
 		//Acquire the lock to ensure consistency in threadAbort
 		Locker l(downloaderLock);
-		getSys()->downloadManager->destroy(downloader);
-		downloader = NULL;
+		getSystemState()->downloadManager->destroy(downloader);
+		downloader = nullptr;
 	}
 	_R<ParseRPCMessageEvent> event=_MR(new (getSystemState()->unaccountedMemory) ParseRPCMessageEvent(message, client, responder));
 	getVm(getSystemState())->addEvent(NullRef,event);
@@ -2627,12 +2629,15 @@ ASFUNCTIONBODY_ATOM(NetGroup,_constructor)
 FileReference::FileReference(ASWorker* wrk, Class_base* c):
 	EventDispatcher(wrk,c)
 {
+	subtype = SUBTYPE_FILEREFERENCE;
 }
 
 void FileReference::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	REGISTER_GETTER_RESULTTYPE(c,size,Number);
 }
+ASFUNCTIONBODY_GETTER(FileReference, size)
 
 ASFUNCTIONBODY_ATOM(FileReference,_constructor)
 {

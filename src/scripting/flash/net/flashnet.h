@@ -459,6 +459,8 @@ public:
 	FileReference(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
+	ASPROPERTY_GETTER(number_t,size);
+	
 };
 class FileFilter: public ASObject
 {

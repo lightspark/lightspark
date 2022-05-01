@@ -21,6 +21,7 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/abc.h"
 #include "scripting/argconv.h"
@@ -30,7 +31,7 @@
 using namespace lightspark;
 
 FileStream::FileStream(ASWorker* wrk,Class_base* c):
-	EventDispatcher(wrk,c),filesize(0),bytesAvailable(0),position(0)
+	EventDispatcher(wrk,c),filesize(0),littleEndian(false),bytesAvailable(0),position(0)
 {
 	subtype=SUBTYPE_FILESTREAM;
 }
@@ -38,11 +39,18 @@ FileStream::FileStream(ASWorker* wrk,Class_base* c):
 void FileStream::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(c->getSystemState(),_getEndian,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(c->getSystemState(),_setEndian),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("open", "", Class<IFunction>::getFunction(c->getSystemState(),open), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("close", "", Class<IFunction>::getFunction(c->getSystemState(),close), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("readBytes", "", Class<IFunction>::getFunction(c->getSystemState(),readBytes), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("readUTF", "", Class<IFunction>::getFunction(c->getSystemState(),readUTF,0,Class<ASString>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readByte", "", Class<IFunction>::getFunction(c->getSystemState(),readByte,0,Class<Integer>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("readUnsignedByte", "", Class<IFunction>::getFunction(c->getSystemState(),readUnsignedByte,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readShort", "", Class<IFunction>::getFunction(c->getSystemState(),readShort,0,Class<Integer>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readUnsignedShort", "", Class<IFunction>::getFunction(c->getSystemState(),readUnsignedShort,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readInt", "", Class<IFunction>::getFunction(c->getSystemState(),readInt,0,Class<Integer>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readUnsignedInt", "", Class<IFunction>::getFunction(c->getSystemState(),readUnsignedInt,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("writeBytes", "", Class<IFunction>::getFunction(c->getSystemState(),writeBytes), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("writeUTF", "", Class<IFunction>::getFunction(c->getSystemState(),writeUTF), NORMAL_METHOD, true);
 	REGISTER_GETTER_RESULTTYPE(c,bytesAvailable,UInteger);
@@ -50,6 +58,7 @@ void FileStream::sinit(Class_base* c)
 }
 ASFUNCTIONBODY_GETTER(FileStream, bytesAvailable)
 ASFUNCTIONBODY_GETTER_SETTER_CB(FileStream, position,afterPositionChange)
+
 void FileStream::afterPositionChange(number_t oldposition)
 {
 	bytesAvailable = filesize-position;
@@ -60,6 +69,26 @@ void FileStream::afterPositionChange(number_t oldposition)
 ASFUNCTIONBODY_ATOM(FileStream,_constructor)
 {
 	EventDispatcher::_constructor(ret,wrk,obj, nullptr, 0);
+}
+
+ASFUNCTIONBODY_ATOM(FileStream,_getEndian)
+{
+	FileStream* th=asAtomHandler::as<FileStream>(obj);
+	if(th->littleEndian)
+		ret = asAtomHandler::fromString(wrk->getSystemState(),Endian::littleEndian);
+	else
+		ret = asAtomHandler::fromString(wrk->getSystemState(),Endian::bigEndian);
+}
+
+ASFUNCTIONBODY_ATOM(FileStream,_setEndian)
+{
+	FileStream* th=asAtomHandler::as<FileStream>(obj);
+	if(asAtomHandler::toString(args[0],wrk) == Endian::littleEndian)
+		th->littleEndian = true;
+	else if(asAtomHandler::toString(args[0],wrk) == Endian::bigEndian)
+		th->littleEndian = false;
+	else
+		throwError<ArgumentError>(kInvalidEnumError, "endian");
 }
 
 ASFUNCTIONBODY_ATOM(FileStream,open)
@@ -87,6 +116,11 @@ ASFUNCTIONBODY_ATOM(FileStream,open)
 	}
 	else
 		LOG(LOG_ERROR,"invalid filemode:"<<th->fileMode);
+	if (!th->stream.is_open())
+	{
+		LOG(LOG_ERROR,"FileStream couldn't be opened:"<<th->file->getFullPath()<<" "<<th->fileMode);
+		throw Class<IOError>::getInstanceS(wrk,"FileStream couldn't be opened");
+	}
 	th->position=0;
 }
 ASFUNCTIONBODY_ATOM(FileStream,close)
@@ -112,7 +146,7 @@ ASFUNCTIONBODY_ATOM(FileStream,readBytes)
 	if (length != UINT32_MAX && th->bytesAvailable < length)
 		throwError<EOFError>(kEOFError);
 	length = min(length,th->bytesAvailable);
-	th->stream.read((char*)(bytes->getBufferNoCheck()+offset),length);
+	th->stream.read((char*)(bytes->getBuffer(max(bytes->getLength(),length+offset),true)+offset),length);
 	th->position+= length;
 	th->bytesAvailable = th->filesize-th->position;
 }
@@ -123,10 +157,33 @@ ASFUNCTIONBODY_ATOM(FileStream,readUTF)
 		throw Class<IOError>::getInstanceS(wrk,"FileStream is not open");
 	if (th->fileMode != "read" && th->fileMode != "update")
 		throw Class<IOError>::getInstanceS(wrk,"FileStream is not readable");
+	if (th->bytesAvailable < 2)
+		throwError<EOFError>(kEOFError);
 	uint16_t len;
 	th->stream.read((char*)&len,2);
+	len = th->endianOut(len);
+	th->position+=2;
+	if (th->bytesAvailable < (int32_t)len)
+		throwError<EOFError>(kEOFError);
 	tiny_string s(th->stream,len);
+	th->position+= len;
+	th->bytesAvailable = th->filesize-th->position;
 	ret = asAtomHandler::fromString(wrk->getSystemState(),s);
+}
+ASFUNCTIONBODY_ATOM(FileStream,readByte)
+{
+	FileStream* th=asAtomHandler::as<FileStream>(obj);
+	if (!th->stream.is_open())
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not open");
+	if (th->fileMode != "read" && th->fileMode != "update")
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not readable");
+	if (th->bytesAvailable==0)
+		throwError<EOFError>(kEOFError);
+	int8_t b;
+	th->stream.read((char*)&b,1);
+	th->position++;
+	th->bytesAvailable = th->filesize-th->position;
+	ret= asAtomHandler::fromInt(b);
 }
 ASFUNCTIONBODY_ATOM(FileStream,readUnsignedByte)
 {
@@ -138,10 +195,70 @@ ASFUNCTIONBODY_ATOM(FileStream,readUnsignedByte)
 	if (th->bytesAvailable==0)
 		throwError<EOFError>(kEOFError);
 	uint8_t b;
-	th->stream>>b;
+	th->stream.read((char*)&b,1);
 	th->position++;
 	th->bytesAvailable = th->filesize-th->position;
 	ret= asAtomHandler::fromUInt(b);
+}
+ASFUNCTIONBODY_ATOM(FileStream,readShort)
+{
+	FileStream* th=asAtomHandler::as<FileStream>(obj);
+	if (!th->stream.is_open())
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not open");
+	if (th->fileMode != "read" && th->fileMode != "update")
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not readable");
+	if (th->bytesAvailable<2)
+		throwError<EOFError>(kEOFError);
+	uint16_t val;
+	th->stream.read((char*)&val,2);
+	th->position+=2;
+	th->bytesAvailable = th->filesize-th->position;
+	ret= asAtomHandler::fromInt((int32_t)th->endianOut(val));
+}
+ASFUNCTIONBODY_ATOM(FileStream,readUnsignedShort)
+{
+	FileStream* th=asAtomHandler::as<FileStream>(obj);
+	if (!th->stream.is_open())
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not open");
+	if (th->fileMode != "read" && th->fileMode != "update")
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not readable");
+	if (th->bytesAvailable<2)
+		throwError<EOFError>(kEOFError);
+	uint16_t val;
+	th->stream.read((char*)&val,2);
+	th->position+=2;
+	th->bytesAvailable = th->filesize-th->position;
+	ret= asAtomHandler::fromUInt(th->endianOut(val));
+}
+ASFUNCTIONBODY_ATOM(FileStream,readInt)
+{
+	FileStream* th=asAtomHandler::as<FileStream>(obj);
+	if (!th->stream.is_open())
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not open");
+	if (th->fileMode != "read" && th->fileMode != "update")
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not readable");
+	if (th->bytesAvailable<4)
+		throwError<EOFError>(kEOFError);
+	uint32_t val;
+	th->stream.read((char*)&val,4);
+	th->position+=4;
+	th->bytesAvailable = th->filesize-th->position;
+	ret= asAtomHandler::fromInt((int32_t)th->endianOut(val));
+}
+ASFUNCTIONBODY_ATOM(FileStream,readUnsignedInt)
+{
+	FileStream* th=asAtomHandler::as<FileStream>(obj);
+	if (!th->stream.is_open())
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not open");
+	if (th->fileMode != "read" && th->fileMode != "update")
+		throw Class<IOError>::getInstanceS(wrk,"FileStream is not readable");
+	if (th->bytesAvailable<4)
+		throwError<EOFError>(kEOFError);
+	uint32_t val;
+	th->stream.read((char*)&val,4);
+	th->position+=4;
+	th->bytesAvailable = th->filesize-th->position;
+	ret= asAtomHandler::fromUInt(th->endianOut(val));
 }
 ASFUNCTIONBODY_ATOM(FileStream,writeBytes)
 {
@@ -170,6 +287,7 @@ ASFUNCTIONBODY_ATOM(FileStream,writeUTF)
 	if (th->fileMode == "read")
 		throw Class<IOError>::getInstanceS(wrk,"FileStream is not writable");
 	uint16_t len = value.numBytes();
+	len = th->endianIn(len);
 	th->stream.write((char*)&len,2);
 	th->stream.write(value.raw_buf(),value.numBytes());
 }
@@ -213,6 +331,7 @@ void ASFile::setupFile(const tiny_string& filename, ASWorker* wrk)
 		// "file:///Users/bob/Desktop" (the desktop on Bob's Mac computer)
 		path = filename;
 		exists = wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),path,true);
+		size = wrk->getSystemState()->getEngineData()->FileSize(wrk->getSystemState(),path,true);
 	}
 }
 

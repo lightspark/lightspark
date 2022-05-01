@@ -35,16 +35,68 @@ class FileStream: public EventDispatcher
 	tiny_string fileMode;
 	fstream stream;
 	uint32_t filesize;
+	bool littleEndian;
 	void afterPositionChange(number_t oldposition);
+	FORCE_INLINE uint16_t endianIn(uint16_t value)
+	{
+		if(littleEndian)
+			return GUINT16_TO_LE(value);
+		else
+			return GUINT16_TO_BE(value);
+	}
+	FORCE_INLINE uint32_t endianIn(uint32_t value)
+	{
+		if(littleEndian)
+			return GUINT32_TO_LE(value);
+		else
+			return GUINT32_TO_BE(value);
+	}
+	FORCE_INLINE uint64_t endianIn(uint64_t value)
+	{
+		if(littleEndian)
+			return GUINT64_TO_LE(value);
+		else
+			return GUINT64_TO_BE(value);
+	}
+
+	FORCE_INLINE uint16_t endianOut(uint16_t value)
+	{
+		if(littleEndian)
+			return GUINT16_FROM_LE(value);
+		else
+			return GUINT16_FROM_BE(value);
+	}
+	FORCE_INLINE uint32_t endianOut(uint32_t value)
+	{
+		if(littleEndian)
+			return GUINT32_FROM_LE(value);
+		else
+			return GUINT32_FROM_BE(value);
+	}
+	FORCE_INLINE uint64_t endianOut(uint64_t value)
+	{
+		if(littleEndian)
+			return GUINT64_FROM_LE(value);
+		else
+			return GUINT64_FROM_BE(value);
+	}
+	
 public:
 	FileStream(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_getEndian);
+	ASFUNCTION_ATOM(_setEndian);
 	ASFUNCTION_ATOM(open);
 	ASFUNCTION_ATOM(close);
 	ASFUNCTION_ATOM(readBytes);
 	ASFUNCTION_ATOM(readUTF);
+	ASFUNCTION_ATOM(readByte);
 	ASFUNCTION_ATOM(readUnsignedByte);
+	ASFUNCTION_ATOM(readShort);
+	ASFUNCTION_ATOM(readUnsignedShort);
+	ASFUNCTION_ATOM(readInt);
+	ASFUNCTION_ATOM(readUnsignedInt);
 	ASPROPERTY_GETTER(uint32_t,bytesAvailable);
 	ASPROPERTY_GETTER_SETTER(number_t,position);
 	ASFUNCTION_ATOM(writeBytes);

@@ -233,6 +233,7 @@ public:
 	void DeinitOpenGL() override;
 	bool getGLError(uint32_t &errorCode) const override;
 	tiny_string getGLDriverInfo() override;
+	void getGlCompressedTextureFormats() override;
 	void exec_glUniform1f(int location,float v0) override;
 	void exec_glUniform2f(int location,float v0, float v1) override;
 	void exec_glUniform4f(int location,float v0, float v1, float v2, float v3) override;
@@ -308,7 +309,7 @@ public:
 	void exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, uint32_t filter, uint32_t mipmap, uint32_t wrap) override;
 	void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, bool hasalpha) override;
 	void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels) override;
-	void exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, TEXTUREFORMAT format) override;
+	void exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize) override;
 	void exec_glDrawBuffer_GL_BACK() override;
 	void exec_glClearColor(float red,float green,float blue,float alpha) override;
 	void exec_glClearStencil(uint32_t stencil) override;

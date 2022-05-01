@@ -125,7 +125,7 @@ public:
 
 	inline void seekg(unsigned int offset)
 	{
-		if (offset >= lastcodepos-code)
+		if (offset >= (unsigned int)(lastcodepos-code))
 			codepos = lastcodepos;
 		else
 			codepos = code+offset;

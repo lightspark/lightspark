@@ -55,6 +55,7 @@ enum BLEND_FACTOR { BLEND_ONE,BLEND_ZERO,BLEND_SRC_ALPHA,BLEND_SRC_COLOR,BLEND_D
 enum VERTEXBUFFER_FORMAT { BYTES_4=0, FLOAT_1, FLOAT_2, FLOAT_3, FLOAT_4 };
 enum CLEARMASK { COLOR = 0x1, DEPTH = 0x2, STENCIL = 0x4 };
 enum TEXTUREFORMAT { BGRA, BGRA_PACKED, BGR_PACKED, COMPRESSED, COMPRESSED_ALPHA, RGBA_HALF_FLOAT };
+enum TEXTUREFORMAT_COMPRESSED { UNCOMPRESSED, DXT5 };
 
 // this is only used for font rendering in PPAPI plugin
 class externalFontRenderer : public IDrawable
@@ -114,6 +115,7 @@ public:
 	bool supportPackedDepthStencil;
 	bool hasExternalFontRenderer;
 	tiny_string driverInfoString;
+	std::vector<TEXTUREFORMAT_COMPRESSED> compressed_texture_formats;
 	EngineData();
 	virtual ~EngineData();
 	virtual bool isSizable() const = 0;
@@ -210,6 +212,7 @@ public:
 	virtual uint8_t* getCurrentPixBuf() const;
 	virtual uint8_t* switchCurrentPixBuf(uint32_t w, uint32_t h);
 	virtual tiny_string getGLDriverInfo();
+	virtual void getGlCompressedTextureFormats();
 	virtual void exec_glUniform1f(int location,float v0);
 	virtual void exec_glUniform2f(int location,float v0, float v1);
 	virtual void exec_glUniform4f(int location,float v0, float v1,float v2, float v3);
@@ -285,7 +288,7 @@ public:
 	virtual void exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, uint32_t filter, uint32_t mipmap, uint32_t wrap);
 	virtual void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, bool hasalpha);
 	virtual void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels);
-	virtual void exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, TEXTUREFORMAT format);
+	virtual void exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize);
 	virtual void exec_glDrawBuffer_GL_BACK();
 	virtual void exec_glClearColor(float red,float green,float blue,float alpha);
 	virtual void exec_glClearStencil(uint32_t stencil);

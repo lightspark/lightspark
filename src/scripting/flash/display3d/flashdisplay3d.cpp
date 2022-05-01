@@ -407,17 +407,20 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		{
 			//action.dataobject = TextureBase
 			//action.udata1 = sampler
-			if (action.dataobject.isNull())
+			//action.udata2 = textureID
+			//action.udata3 = removetexture
+			if (action.udata2==UINT32_MAX)
+				action.udata2=currenttextureid;
+			if (action.udata3)
 			{
-				//LOG(LOG_INFO,"RENDER_SETTEXTUREAT remove:"<<action.udata1);
+				//LOG(LOG_INFO,"RENDER_SETTEXTUREAT remove:"<<action.udata1<<" "<<currentprogram->gpu_program);
 				engineData->exec_glActiveTexture_GL_TEXTURE0(action.udata1);
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 			}
 			else
 			{
-				TextureBase* tex = action.dataobject->as<TextureBase>();
-				//LOG(LOG_INFO,"RENDER_SETTEXTUREAT:"<<tex->textureID<<" "<<action.udata1<<" "<<tex->needrefresh);
-				samplers[action.udata1] = tex->textureID;
+				//LOG(LOG_INFO,"RENDER_SETTEXTUREAT:"<<action.udata2<<" "<<action.udata1<<" "<<currentprogram->gpu_program);
+				samplers[action.udata1] = action.udata2;
 			}
 			break;
 		}
@@ -447,7 +450,10 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			if (!action.dataobject.isNull())
 			{
 				TextureBase* tex = action.dataobject->as<TextureBase>();
-				loadTexture(tex,0);
+				if (tex->is<CubeTexture>())
+					loadCubeTexture(tex->as<CubeTexture>());
+				else
+					loadTexture(tex,0);
 				currenttextureid=tex->textureID;
 			}
 			break;
@@ -723,29 +729,29 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 	if (tex->bitmaparray.size() == 0)
-		engineData->exec_glTexImage2D_GL_TEXTURE_2D(0, tex->width, tex->height, 0, nullptr,tex->format);
+		engineData->exec_glTexImage2D_GL_TEXTURE_2D(0, tex->width, tex->height, 0, nullptr,TEXTUREFORMAT::BGRA,TEXTUREFORMAT_COMPRESSED::UNCOMPRESSED,0);
 	else if (level == UINT32_MAX)
 	{
 		for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
 		{
 			if (tex->bitmaparray[i].size() > 0)
 			{
-				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->format);
+				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size());
 				tex->bitmaparray[i].clear();
 			}
 			else
-				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, nullptr,tex->format);
+				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, nullptr,TEXTUREFORMAT::BGRA,TEXTUREFORMAT_COMPRESSED::UNCOMPRESSED,0);
 		}
 	}
 	else 
 	{
 		if (tex->bitmaparray.size() > level && tex->bitmaparray[level].size() > 0)
 		{
-			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[level].data(),tex->format);
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[level].data(),tex->format,tex->compressedformat,tex->bitmaparray[level].size());
 			tex->bitmaparray[level].clear();
 		}
 		else
-			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, nullptr,tex->format);
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, nullptr,tex->format,tex->compressedformat,0);
 	}
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 }
@@ -1391,8 +1397,18 @@ ASFUNCTIONBODY_ATOM(Context3D,setTextureAt)
 		texture->incRef();
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_SETTEXTUREAT;
-	action.dataobject = texture;
 	action.udata1 = sampler;
+	if (!texture.isNull())
+	{
+		if (texture->textureID == UINT32_MAX)
+		{
+			th->addAction(RENDER_ACTION::RENDER_GENERATETEXTURE,texture.getPtr());
+		}
+		action.udata2 = texture->textureID;
+	}
+	else
+		action.udata2 = UINT32_MAX;
+	action.udata3 = texture.isNull() ? 1 : 0;
 	th->actions[th->currentactionvector].push_back(action);
 	th->rendermutex.unlock();
 }

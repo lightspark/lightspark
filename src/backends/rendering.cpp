@@ -534,6 +534,7 @@ void RenderThread::commonGLInit(int width, int height)
 	//Load shaders
 	loadShaderPrograms();
 	engineData->driverInfoString = engineData->getGLDriverInfo();
+	engineData->getGlCompressedTextureFormats();
 
 	engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 	engineData->exec_glEnable_GL_BLEND();

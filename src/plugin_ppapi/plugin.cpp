@@ -75,6 +75,7 @@
 #include "ppapi/c/ppb_message_loop.h"
 
 #include "GLES2/gl2.h"
+#include "GLES2/gl2ext.h"
 
 #ifdef _WIN32
 #define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_BYTE
@@ -1986,6 +1987,23 @@ tiny_string ppPluginEngineData::getGLDriverInfo()
 	return res;
 }
 
+void ppPluginEngineData::getGlCompressedTextureFormats()
+{
+	int32_t numformats;
+	g_gles2_interface->GetIntegerv(instance->m_graphics,GL_NUM_COMPRESSED_TEXTURE_FORMATS,&numformats);
+	if (numformats == 0)
+		return;
+	int32_t* formats = new int32_t[numformats];
+	g_gles2_interface->GetIntegerv(instance->m_graphics,GL_COMPRESSED_TEXTURE_FORMATS,formats);
+	for (int32_t i = 0; i < numformats; i++)
+	{
+		LOG(LOG_INFO,"OpenGL supported compressed texture format:"<<hex<<formats[i]);
+		if (formats[i] == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
+			compressed_texture_formats.push_back(TEXTUREFORMAT_COMPRESSED::DXT5);
+	}
+	delete [] formats;
+}
+
 void ppPluginEngineData::exec_glUniform1f(int location, float v0)
 {
 	g_gles2_interface->Uniform1f(instance->m_graphics,location,v0);
@@ -2453,7 +2471,7 @@ void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8
 {
 	g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
 }
-void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels, TEXTUREFORMAT format)
+void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize)
 {
 	switch (format)
 	{
@@ -2466,9 +2484,21 @@ void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t w
 		case TEXTUREFORMAT::BGR_PACKED:
 			g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
 			break;
-		case TEXTUREFORMAT::RGBA_HALF_FLOAT:
 		case TEXTUREFORMAT::COMPRESSED:
 		case TEXTUREFORMAT::COMPRESSED_ALPHA:
+		{
+			switch (compressedformat)
+			{
+				case TEXTUREFORMAT_COMPRESSED::DXT5:
+					g_gles2_interface->CompressedTexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, border, compressedImageSize, pixels);
+					break;
+				default:
+					LOG(LOG_NOT_IMPLEMENTED,"upload texture in compressed format "<<compressedformat);
+					break;
+			}
+			break;
+		}
+		case TEXTUREFORMAT::RGBA_HALF_FLOAT:
 			LOG(LOG_NOT_IMPLEMENTED,"upload texture in format "<<format);
 			break;
 		default:
@@ -2526,6 +2556,7 @@ void ppPluginEngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
 {
 	g_gles2_interface->GetIntegerv(instance->m_graphics,GL_MAX_TEXTURE_SIZE,data);
 }
+
 void ppPluginEngineData::exec_glGenerateMipmap_GL_TEXTURE_2D()
 {
 	g_gles2_interface->GenerateMipmap(instance->m_graphics,GL_TEXTURE_2D);

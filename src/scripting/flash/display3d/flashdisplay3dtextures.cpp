@@ -5,12 +5,14 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/display3d/flashdisplay3d.h"
+#include "abc.h"
+#include <lzma.h>
 #define INITGUID
 #include "3rdparty/jxrlib/jxrgluelib/JXRGlue.h"
 
 namespace lightspark
 {
-bool decodejxr(uint8_t* bytes, uint32_t texlen, vector<uint8_t>& result, uint32_t width, uint32_t height, bool hasalpha)
+bool decodejxr(uint8_t* bytes, uint32_t texlen, vector<uint8_t>& result, uint32_t width, uint32_t height, PKPixelFormatGUID format, uint32_t bpp)
 {
 	PKFactory* pFactory = nullptr;
 	PKCodecFactory* pCodecFactory = nullptr;
@@ -35,9 +37,9 @@ bool decodejxr(uint8_t* bytes, uint32_t texlen, vector<uint8_t>& result, uint32_
 		LOG(LOG_ERROR,"decodejxr:Decoder.Initialize failed");
 	if (success && !(success = (pCodecFactory->CreateFormatConverter(&pConverter)>=0)))
 		LOG(LOG_ERROR,"decodejxr:CreateFormatConverter failed");
-	if (success && !(success = (pConverter->Initialize(pConverter, pDecoder, nullptr, hasalpha ? GUID_PKPixelFormat32bppRGBA : GUID_PKPixelFormat24bppRGB)>=0)))
+	if (success && !(success = (pConverter->Initialize(pConverter, pDecoder, nullptr, format)>=0)))
 		LOG(LOG_ERROR,"decodejxr:Converter.Initialize failed");
-	if (success && !(success = (pConverter->Copy(pConverter, &rect, result.data(), width*(hasalpha ? 4 : 3))>=0)))
+	if (success && !(success = (pConverter->Copy(pConverter, &rect, result.data(), width*bpp)>=0)))
 		LOG(LOG_ERROR,"decodejxr:Converter.Copy failed");
 	
 	if (pConverter) pConverter->Release(&pConverter);
@@ -45,6 +47,51 @@ bool decodejxr(uint8_t* bytes, uint32_t texlen, vector<uint8_t>& result, uint32_
 	if (pFactory) pFactory->Release(&pFactory);
 	if (pCodecFactory) pCodecFactory->Release(&pCodecFactory);
 	return success;
+}
+bool decodelzma(ByteArray* data, std::vector<uint8_t>& result)
+{
+	uint32_t lzmadatalen;
+	data->readUnsignedInt(lzmadatalen);
+	if (lzmadatalen)
+	{
+		lzma_stream strm = LZMA_STREAM_INIT;
+		lzma_ret ret = lzma_alone_decoder(&strm, UINT64_MAX);
+		if (ret != LZMA_OK)
+		{
+			LOG(LOG_ERROR,"Failed to initialize lzma decoder in parseAdobeTextureFormat");
+			return false;
+		}
+		uint8_t* inbuffer = new uint8_t[lzmadatalen+sizeof(int64_t)];
+		memcpy(inbuffer,(const uint8_t*)(data->getBufferNoCheck()+data->getPosition()),5);
+		// insert length into lzma buffer to match liblzma format (see liblzma_filter constructor)
+		for (unsigned int j=0; j<sizeof(int64_t); j++)
+			inbuffer[5 + j] = 0xFF;
+		memcpy(inbuffer+5+sizeof(int64_t),(const uint8_t*)(data->getBufferNoCheck()+data->getPosition()+5),lzmadatalen-5);
+		
+		strm.next_in = inbuffer;
+		strm.avail_in = lzmadatalen+sizeof(int64_t);
+		strm.avail_out = result.size();
+		strm.next_out = (uint8_t *)result.data();
+		while (strm.avail_in!=0)
+		{
+			do
+			{
+				lzma_ret ret=lzma_code(&strm, LZMA_RUN);
+				
+				if(ret==LZMA_STREAM_END || strm.avail_in==0)
+					break;
+				else if(ret!=LZMA_OK)
+				{
+					LOG(LOG_ERROR,"lzma decoder error:"<<ret);
+					break;
+				}
+			}
+			while(strm.avail_out!=0);
+		}
+		lzma_end(&strm);
+		data->setPosition(data->getPosition()+lzmadatalen);
+	}
+	return lzmadatalen;
 }
 void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffset, bool forCubeTexture, bool& hasalpha)
 {
@@ -54,6 +101,7 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 		LOG(LOG_ERROR,"not enough bytes to read");
 		throwError<RangeError>(kParamRangeError);
 	}
+	uint8_t oldpos = data->getPosition();
 	data->setPosition(byteArrayOffset);
 	uint8_t b1, b2, b3;
 	data->readByte(b1);
@@ -82,13 +130,13 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 		data->readByte(atfversion);
 		data->readUnsignedInt(len);
 		data->readByte(formatbyte);
+		len--; // remove formatbyte from len;
 	}
 	if (data->getLength()-data->getPosition() < len)
 	{
-		LOG(LOG_ERROR,"not enough bytes to read");
+		LOG(LOG_ERROR,"not enough bytes to read:"<<len<<" "<<data->getPosition()<<"/"<<data->getLength()<<" "<<byteArrayOffset);
 		throwError<RangeError>(kParamRangeError);
 	}
-	uint32_t endposition = data->getPosition()+len;
 	bool cubetexture = formatbyte&0x80;
 	if (forCubeTexture != cubetexture)
 	{
@@ -116,20 +164,20 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 	}
 	width = 1<<b1;
 	height = 1<<b2;
-	uint32_t texcount = b2 * (forCubeTexture ? 6 : 1);
 	
+	uint32_t texcount = b3 * (forCubeTexture ? 6 : 1);
 	if (bitmaparray.size() < texcount)
 		bitmaparray.resize(texcount);
 	uint32_t tmpwidth = width;
-	uint32_t tmpheight = width;
+	uint32_t tmpheight = height;
 	uint8_t* maintexbytes=nullptr;
 	uint32_t maintexlen=0;
-	for (uint32_t i = 0; i < texcount; i++)
+	for (uint32_t level = 0; level < texcount; level++)
 	{
 		switch (format)
 		{
-			case 0:
-			case 1:
+			case 0x0://RGB888
+			case 0x1://RGBA8888
 			{
 				uint32_t texlen;
 				if (atfversion == 0)
@@ -141,21 +189,21 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 				}
 				else
 					data->readUnsignedInt(texlen);
-				if (bitmaparray[i].size() < tmpwidth*tmpheight*(format == 0 ? 3 : 4))
-					bitmaparray[i].resize(tmpwidth*tmpheight*(format == 0 ? 3 : 4));
+				if (bitmaparray[level].size() < tmpwidth*tmpheight*(format == 0 ? 3 : 4))
+					bitmaparray[level].resize(tmpwidth*tmpheight*(format == 0 ? 3 : 4));
 				if (texlen == 0)
 				{
 					if (maintexbytes)
 					{
 						// fallback to main image if no data for mipmap image available
-						decodejxr(maintexbytes,maintexlen,bitmaparray[i],tmpwidth,tmpheight,format == 1);
+						decodejxr(maintexbytes,maintexlen,bitmaparray[level],tmpwidth,tmpheight,format == 1 ? GUID_PKPixelFormat32bppRGBA : GUID_PKPixelFormat24bppRGB, format == 1 ? 4 : 3);
 					}
 				}
 				else
 				{
 					uint8_t* texbytes = new uint8_t[texlen];
 					data->readBytes(data->getPosition(),texlen,texbytes);
-					if (decodejxr(texbytes,texlen,bitmaparray[i],tmpwidth,tmpheight,format == 1))
+					if (decodejxr(texbytes,texlen,bitmaparray[level],tmpwidth,tmpheight,format == 1 ? GUID_PKPixelFormat32bppRGBA : GUID_PKPixelFormat24bppRGB, format == 1 ? 4 : 3))
 					{
 						if (maintexbytes == nullptr)
 						{
@@ -171,7 +219,7 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 						if (maintexbytes)
 						{
 							// fallback to main image if decoding of mipmap image fails
-							decodejxr(maintexbytes,maintexlen,bitmaparray[i],tmpwidth,tmpheight,format == 1);
+							decodejxr(maintexbytes,maintexlen,bitmaparray[level],tmpwidth,tmpheight,format == 1 ? GUID_PKPixelFormat32bppRGBA : GUID_PKPixelFormat24bppRGB, format == 1 ? 4 : 3);
 						}
 					}
 				}
@@ -181,12 +229,87 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 				tmpheight >>= 1;
 				break;
 			}
+			case 0xd://compressed lossy with alpha
+			{
+				if (this->format != TEXTUREFORMAT::COMPRESSED_ALPHA)
+					throwError<ArgumentError>(kInvalidArgumentError,"Texture format mismatch");
+				this->compressedformat = TEXTUREFORMAT_COMPRESSED::DXT5;
+				uint32_t blocks = max(1,tmpwidth/4)*max(1,tmpheight/4);
+				uint32_t tmp;
+
+				// read LZMA DXT5AlphaData
+				std::vector<uint8_t> alphadata;
+				alphadata.resize(blocks*6); // 6 byte per 4x4 block
+				bool hasalphadata=decodelzma(data,alphadata);
+				
+				// read JPEG-XR DXT5AlphaImageData
+				std::vector<uint8_t> alphaimagedata;
+				data->readUnsignedInt(tmp);
+				if (hasalphadata)
+				{
+					alphaimagedata.resize(blocks*2); // 2 byte per 4x4 block
+					decodejxr(data->getBufferNoCheck()+data->getPosition(),tmp,alphaimagedata,max(1,tmpwidth/4),max(2,tmpheight/2),GUID_PKPixelFormat8bppGray,1);
+				}
+				data->setPosition(data->getPosition()+tmp);
+				
+				// read LZMA DXT5Data
+				std::vector<uint8_t> rgbdata;
+				rgbdata.resize(blocks*4);// 4 byte per 4x4 block
+				bool hasrgbdata=decodelzma(data,rgbdata);
+
+				// read JPEG-XR DXT5ImageData
+				std::vector<uint8_t> rgbimagedata;
+				data->readUnsignedInt(tmp);
+				if (hasrgbdata)
+				{
+					rgbimagedata.resize(blocks*4); // 4 byte per 4x4 block
+					decodejxr(data->getBufferNoCheck()+data->getPosition(),tmp,rgbimagedata,max(1,tmpwidth/4),max(2,tmpheight/2),GUID_PKPixelFormat16bppRGB565,2);
+				}
+				data->setPosition(data->getPosition()+tmp);
+
+				if (hasalphadata && hasrgbdata)
+				{
+					bitmaparray[level].resize(tmpwidth*tmpheight);
+					uint32_t i = 0;
+					for (uint32_t j=0; j < tmpwidth*tmpheight/16; j++)
+					{
+						bitmaparray[level][i++]=alphaimagedata[j*2  ];
+						bitmaparray[level][i++]=alphaimagedata[j*2+1];
+						bitmaparray[level][i++]=alphadata[j*6  ];
+						bitmaparray[level][i++]=alphadata[j*6+1];
+						bitmaparray[level][i++]=alphadata[j*6+2];
+						bitmaparray[level][i++]=alphadata[j*6+3];
+						bitmaparray[level][i++]=alphadata[j*6+4];
+						bitmaparray[level][i++]=alphadata[j*6+5];
+						bitmaparray[level][i++]=rgbimagedata[j*4  ];
+						bitmaparray[level][i++]=rgbimagedata[j*4+1];
+						bitmaparray[level][i++]=rgbimagedata[j*4+2];
+						bitmaparray[level][i++]=rgbimagedata[j*4+3];
+						bitmaparray[level][i++]=rgbdata[j*4  ];
+						bitmaparray[level][i++]=rgbdata[j*4+1];
+						bitmaparray[level][i++]=rgbdata[j*4+2];
+						bitmaparray[level][i++]=rgbdata[j*4+3];
+					}
+				}
+				else
+					bitmaparray[level].clear();
+					
+				//skip all other formats
+				for (uint32_t j = 0; j < 14; j++)
+				{
+					data->readUnsignedInt(tmp);
+					data->setPosition(data->getPosition()+tmp);
+				}
+				tmpwidth >>= 1;
+				tmpheight >>= 1;
+				break;
+			}
 			default:
 				LOG(LOG_NOT_IMPLEMENTED,"uploadCompressedTextureFromByteArray format not yet supported:"<<hex<<format);
 				break;
 		}
 	}
-	data->setPosition(endposition);
+	data->setPosition(oldpos);
 	if (maintexbytes)
 		delete[] maintexbytes;
 }
@@ -209,7 +332,7 @@ void TextureBase::setFormat(const tiny_string& f)
 
 void TextureBase::sinit(Class_base *c)
 {
-	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
+	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
 	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(TextureBase,dispose)
@@ -238,10 +361,14 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 	ARG_UNPACK_ATOM(data)(byteArrayOffset)(async,false);
 	if (data.isNull())
 		throwError<TypeError>(kNullArgumentError);
-	if (async)
-		LOG(LOG_NOT_IMPLEMENTED,"Texture.uploadCompressedTextureFromByteArray async loading");
 	th->context->rendermutex.lock();
 	th->parseAdobeTextureFormat(data.getPtr(),byteArrayOffset,false,th->hasalpha);
+	if (async)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Texture.uploadCompressedTextureFromByteArray async loading");
+		th->incRef();
+		getVm(wrk->getSystemState())->addEvent(_MR(th), _MR(Class<Event>::getInstanceS(wrk,"textureReady")));
+	}
 	renderaction action;
 	action.action = RENDER_LOADTEXTURE;
 	th->incRef();

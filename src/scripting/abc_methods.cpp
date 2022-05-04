@@ -554,7 +554,7 @@ void ABCVm::abc_newfunction(call_context* context)
 void ABCVm::abc_call(call_context* context)
 {
 	uint32_t t = context->exec_pos->arg1_uint;
-	method_info* called_mi=NULL;
+	method_info* called_mi=nullptr;
 	call(context,t,&called_mi);
 	++(context->exec_pos);
 }
@@ -1220,7 +1220,7 @@ void ABCVm::abc_modulo(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::modulo(*pval,context->worker,*v2);
+	asAtomHandler::modulo(*pval,context->worker,*v2,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 	ASATOM_DECREF_POINTER(v2);
 	if (o)
 		o->decRef();

@@ -1144,7 +1144,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom x = PopStack(stack);
 				asAtom tmp = x;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionModulo "<<asAtomHandler::toDebugString(x)<<" % "<<asAtomHandler::toDebugString(y));
-				asAtomHandler::modulo(x,wrk,y);
+				asAtomHandler::modulo(x,wrk,y,false);
 				ASATOM_DECREF(y);
 				ASATOM_DECREF(tmp);
 				PushStack(stack,x);

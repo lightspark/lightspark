@@ -551,8 +551,8 @@ public:
 	static FORCE_INLINE void multiplyreplace(asAtom& ret, ASWorker* wrk,const asAtom& v1, const asAtom &v2,bool forceint);
 	static FORCE_INLINE void divide(asAtom& a,ASWorker* wrk,asAtom& v2,bool forceint);
 	static FORCE_INLINE void dividereplace(asAtom& ret, ASWorker* wrk,const asAtom& v1, const asAtom& v2,bool forceint);
-	static FORCE_INLINE void modulo(asAtom& a,ASWorker* wrk,asAtom& v2);
-	static FORCE_INLINE void moduloreplace(asAtom& ret, ASWorker* wrk,const asAtom& v1, const asAtom &v2);
+	static FORCE_INLINE void modulo(asAtom& a,ASWorker* wrk,asAtom& v2,bool forceint);
+	static FORCE_INLINE void moduloreplace(asAtom& ret, ASWorker* wrk, const asAtom& v1, const asAtom &v2, bool forceint);
 	static FORCE_INLINE void lshift(asAtom& a,ASWorker* wrk,asAtom& v1);
 	static FORCE_INLINE void rshift(asAtom& a,ASWorker* wrk,asAtom& v1);
 	static FORCE_INLINE void urshift(asAtom& a,ASWorker* wrk,asAtom& v1);
@@ -2180,7 +2180,7 @@ FORCE_INLINE void asAtomHandler::dividereplace(asAtom& ret, ASWorker* wrk, const
 	
 }
 
-FORCE_INLINE void asAtomHandler::modulo(asAtom& a, ASWorker* wrk, asAtom &v2)
+FORCE_INLINE void asAtomHandler::modulo(asAtom& a, ASWorker* wrk, asAtom &v2, bool forceint)
 {
 	// if both values are Integers the result is also an int
 	if( ((a.uintval&0x7) == ATOM_INTEGER || (a.uintval&0x7) == ATOM_UINTEGER) &&
@@ -2189,7 +2189,7 @@ FORCE_INLINE void asAtomHandler::modulo(asAtom& a, ASWorker* wrk, asAtom &v2)
 		int32_t num1=toInt(a);
 		int32_t num2=toInt(v2);
 		LOG_CALL("moduloI "  << num1 << '%' << num2);
-		if (num2 == 0)
+		if (!forceint && num2 == 0)
 			setNumber(a,wrk,numeric_limits<double>::quiet_NaN());
 		else
 			setInt(a,wrk,num1%num2);
@@ -2200,10 +2200,13 @@ FORCE_INLINE void asAtomHandler::modulo(asAtom& a, ASWorker* wrk, asAtom &v2)
 		number_t num2=toNumber(v2);
 		LOG_CALL("modulo "  << num1 << '%' << num2);
 		/* fmod returns NaN if num2 == 0 as the spec mandates */
-		setNumber(a,wrk,::fmod(num1,num2));
+		if (forceint)
+			setInt(a,wrk,::fmod(num1,num2));
+		else 
+			setNumber(a,wrk,::fmod(num1,num2));
 	}
 }
-FORCE_INLINE void asAtomHandler::moduloreplace(asAtom& ret, ASWorker* wrk, const asAtom& v1, const asAtom &v2)
+FORCE_INLINE void asAtomHandler::moduloreplace(asAtom& ret, ASWorker* wrk, const asAtom& v1, const asAtom &v2, bool forceint)
 {
 	// if both values are Integers the result is also an int
 	if( ((v1.uintval&0x7) == ATOM_INTEGER || (v1.uintval&0x7) == ATOM_UINTEGER) &&
@@ -2213,10 +2216,10 @@ FORCE_INLINE void asAtomHandler::moduloreplace(asAtom& ret, ASWorker* wrk, const
 		int32_t num2=toInt(v2);
 		ASATOM_DECREF(ret);
 		LOG_CALL("moduloreplaceI "  << num1 << '%' << num2);
-		if (num2 == 0)
+		if (!forceint && num2 == 0)
 			setNumber(ret,wrk,numeric_limits<double>::quiet_NaN());
 		else
-			setInt(ret,wrk,num1%num2);
+			setInt(ret,wrk,num2 == 0 ? 0 :num1%num2);
 	}
 	else
 	{
@@ -2225,7 +2228,13 @@ FORCE_INLINE void asAtomHandler::moduloreplace(asAtom& ret, ASWorker* wrk, const
 		LOG_CALL("moduloreplace "  << num1 << '%' << num2);
 		/* fmod returns NaN if num2 == 0 as the spec mandates */
 		ASObject* o = getObject(ret);
-		if (replaceNumber(ret,wrk,::fmod(num1,num2)) && o)
+		if (forceint)
+		{
+			setInt(ret,wrk,::fmod(num1,num2));
+			if (o)
+				o->decRef();
+		}
+		else if (replaceNumber(ret,wrk,::fmod(num1,num2)) && o)
 			o->decRef();
 	}
 }

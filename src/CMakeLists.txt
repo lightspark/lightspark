@@ -240,28 +240,23 @@ SET(LIBSPARK_SOURCES
   scripting/avm1_interpreter.cpp
   platforms/engineutils.cpp
   3rdparty/pugixml/src/pugixml.cpp
-  3rdparty/jxrlib/image/decode/decode.c
-  3rdparty/jxrlib/image/decode/postprocess.c
-  3rdparty/jxrlib/image/decode/segdec.c
-  3rdparty/jxrlib/image/decode/strdec.c
-  3rdparty/jxrlib/image/decode/strInvTransform.c
-  3rdparty/jxrlib/image/decode/strPredQuantDec.c
-  3rdparty/jxrlib/image/decode/JXRTranscode.c
-  3rdparty/jxrlib/image/encode/encode.c
-  3rdparty/jxrlib/image/encode/segenc.c
-  3rdparty/jxrlib/image/encode/strenc.c
-  3rdparty/jxrlib/image/encode/strFwdTransform.c
-  3rdparty/jxrlib/image/encode/strPredQuantEnc.c
-  3rdparty/jxrlib/image/sys/adapthuff.c
-  3rdparty/jxrlib/image/sys/image.c
-  3rdparty/jxrlib/image/sys/strcodec.c
-  3rdparty/jxrlib/image/sys/strPredQuant.c
-  3rdparty/jxrlib/image/sys/strTransform.c
-  3rdparty/jxrlib/image/sys/perfTimerANSI.c
-  3rdparty/jxrlib/jxrgluelib/JXRGlue.c
-  3rdparty/jxrlib/jxrgluelib/JXRMeta.c
-  3rdparty/jxrlib/jxrgluelib/JXRGluePFC.c
-  3rdparty/jxrlib/jxrgluelib/JXRGlueJxr.c
+  3rdparty/jpegxr/cr_parse.cpp
+  3rdparty/jpegxr/cw_emit.cpp
+  3rdparty/jpegxr/jpegxr_algo.cpp
+  3rdparty/jpegxr/jpegxr_api.cpp
+  3rdparty/jpegxr/jpegxr_flags.cpp
+  3rdparty/jpegxr/jpegxr_init.cpp
+  3rdparty/jpegxr/jpegxr_io.cpp
+  3rdparty/jpegxr/jpegxr_pixelformat.cpp
+  3rdparty/jpegxr/r_parse.cpp
+  3rdparty/jpegxr/r_strip.cpp
+  3rdparty/jpegxr/r_tile_frequency.cpp
+  3rdparty/jpegxr/r_tile_spatial.cpp
+  3rdparty/jpegxr/w_emit.cpp
+  3rdparty/jpegxr/w_strip.cpp
+  3rdparty/jpegxr/w_tile_frequency.cpp
+  3rdparty/jpegxr/w_tile_spatial.cpp
+  3rdparty/jpegxr/x_strip.cpp
   3rdparty/avmplus/core/BigInteger.cpp
   3rdparty/avmplus/core/BigInteger.h
   3rdparty/avmplus/core/d2a.cpp

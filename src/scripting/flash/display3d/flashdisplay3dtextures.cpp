@@ -7,46 +7,148 @@
 #include "scripting/flash/display3d/flashdisplay3d.h"
 #include "abc.h"
 #include <lzma.h>
-#define INITGUID
-#include "3rdparty/jxrlib/jxrgluelib/JXRGlue.h"
+#include "3rdparty/jpegxr/jpegxr.h" // jpeg-xr decoding library taken from https://github.com/adobe/dds2atf/
 
 namespace lightspark
 {
-bool decodejxr(uint8_t* bytes, uint32_t texlen, vector<uint8_t>& result, uint32_t width, uint32_t height, PKPixelFormatGUID format, uint32_t bpp)
+enum LSJXRDATAFORMAT { RGB888,RGB8888,DXT5AlphaImageData,DXT5ImageData};
+struct lsjxrdata
 {
-	PKFactory* pFactory = nullptr;
-	PKCodecFactory* pCodecFactory = nullptr;
-	PKImageDecode* pDecoder = nullptr;
-	PKFormatConverter* pConverter = nullptr;
-	struct WMPStream* pDecodeStream = nullptr;
-	PKRect rect;
-	rect.X=0;
-	rect.Y=0;
-	rect.Width=width;
-	rect.Height=height;
-	bool success = true;
-	if (success && !(success = (PKCreateFactory(&pFactory, PK_SDK_VERSION)>=0)))
-		LOG(LOG_ERROR,"decodejxr:PKCreateFactory failed");
-	if (success && !(success = (PKCreateCodecFactory(&pCodecFactory, WMP_SDK_VERSION)>=0)))
-		LOG(LOG_ERROR,"decodejxr:PKCreateCodecFactory failed");
-	if (success && !(success = (PKImageDecode_Create_WMP(&pDecoder)>=0)))
-		LOG(LOG_ERROR,"decodejxr:PKImageDecode_Create_WMP failed");
-	if (success && !(success = (pFactory->CreateStreamFromMemory(&pDecodeStream,bytes,texlen)>=0)))
-		LOG(LOG_ERROR,"decodejxr:CreateStreamFromMemory failed");
-	if (success && !(success = (pDecoder->Initialize(pDecoder,pDecodeStream)>=0)))
-		LOG(LOG_ERROR,"decodejxr:Decoder.Initialize failed");
-	if (success && !(success = (pCodecFactory->CreateFormatConverter(&pConverter)>=0)))
-		LOG(LOG_ERROR,"decodejxr:CreateFormatConverter failed");
-	if (success && !(success = (pConverter->Initialize(pConverter, pDecoder, nullptr, format)>=0)))
-		LOG(LOG_ERROR,"decodejxr:Converter.Initialize failed");
-	if (success && !(success = (pConverter->Copy(pConverter, &rect, result.data(), width*bpp)>=0)))
-		LOG(LOG_ERROR,"decodejxr:Converter.Copy failed");
-	
-	if (pConverter) pConverter->Release(&pConverter);
-	if (pDecoder) pDecoder->Release(&pDecoder);
-	if (pFactory) pFactory->Release(&pFactory);
-	if (pCodecFactory) pCodecFactory->Release(&pCodecFactory);
-	return success;
+	LSJXRDATAFORMAT dataformat;
+	vector<uint8_t>* result;
+};
+
+void jpegxrcallback(jxr_image_t image, int mx, int my, int* data)
+{
+	lsjxrdata* imgdata =(lsjxrdata*)jxr_get_user_data(image);
+	int32_t w = jxr_get_IMAGE_WIDTH(image);
+	switch (imgdata->dataformat)
+	{
+		case DXT5AlphaImageData:
+		{
+			uint32_t pos=my*16*w+mx*16;
+			for (uint32_t i=0; i < 16*16 && pos < imgdata->result->size(); i++)
+			{
+				(*imgdata->result)[pos++] = data[i]&0xff;
+				if ((i+1)%(16)==0)
+					pos += w-16;
+			}
+			break;
+		}
+		case DXT5ImageData:
+		{
+			uint32_t n=3;
+			uint32_t pos=my*16*2*w+mx*16*2;
+			for (uint32_t i=0; i < 16*16*n && pos < imgdata->result->size(); i+=n)
+			{
+				int r = data[i];
+				int g = data[i+1];
+				int b = data[i+2];
+				// the r,g,b values are already computed to 5-6-5 format
+				// convert to 2 byte rgb565 with the lower byte first
+				(*imgdata->result)[pos++] = ((g<<5)&0xe0) | b;
+				(*imgdata->result)[pos++] = ((r<<3)&0xf8) | ((g>>3)&0x07);
+				if ((i+n)%(16*n)==0)
+					pos += (w-16)*2;
+			}
+			break;
+		}
+		case RGB888:
+		{
+			uint32_t n=3;
+			uint32_t pos=my*16*3*w+mx*16*3;
+			for (uint32_t i=0; i < 16*16*n && pos < imgdata->result->size(); i+=n)
+			{
+				int r = data[i];
+				int g = data[i+1];
+				int b = data[i+2];
+				(*imgdata->result)[pos++] = b;
+				(*imgdata->result)[pos++] = g;
+				(*imgdata->result)[pos++] = r;
+				if ((i+n)%(16*n)==0)
+					pos += (w-16)*3;
+			}
+			break;
+		}
+		case RGB8888:
+		{
+			uint32_t n=4;
+			uint32_t pos=my*16*4*w+mx*16*4;
+			for (uint32_t i=0; i < 16*16*n && pos < imgdata->result->size(); i+=n)
+			{
+				int r = data[i];
+				int g = data[i+1];
+				int b = data[i+2];
+				int a = data[i+3];
+				(*imgdata->result)[pos++] = b;
+				(*imgdata->result)[pos++] = g;
+				(*imgdata->result)[pos++] = r;
+				(*imgdata->result)[pos++] = a;
+				if ((i+n)%(16*n)==0)
+					pos += (w-16)*4;
+			}
+			break;
+		}
+		default:
+			break;
+	}
+}
+bool decodejxr(uint8_t* bytes, uint32_t texlen, vector<uint8_t>& result, uint32_t width, uint32_t height, LSJXRDATAFORMAT format, uint32_t bpp)
+{
+	jxr_container_t container = jxr_create_container();
+	int rc;
+	if ((rc =jxr_read_image_container(container,bytes,texlen)) < 0)
+	{
+		LOG(LOG_ERROR,"decodejxr: couldn't create container:"<<rc);
+		return false;
+	}
+	if ((rc = jxrc_image_count(container)) < 1)
+	{
+		LOG(LOG_ERROR,"decodejxr: invalid image count:"<<rc);
+		return false;
+	}
+	uint32_t pos = jxrc_image_offset(container, 0);
+	uint32_t len = jxrc_image_bytecount(container, 0);
+	jxr_image_t image = jxr_create_input();
+	result.resize(width*height*bpp);
+	jxr_set_block_output(image,jpegxrcallback);
+	lsjxrdata imgdata;
+	imgdata.result = &result;
+	imgdata.dataformat = format;
+	jxr_set_user_data(image, (void*)&imgdata);
+	jxrc_t_pixelFormat pixel_format;
+	switch (format)
+	{
+		case RGB888:
+			pixel_format = JXRC_FMT_24bppRGB;
+			break;
+		case RGB8888:
+			pixel_format = JXRC_FMT_32bppBGRA;
+			break;
+		case DXT5AlphaImageData:
+			pixel_format = JXRC_FMT_8bppGray;
+			break;
+		case DXT5ImageData:
+			pixel_format = JXRC_FMT_16bppBGR565;
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"decodejxr: format not implemented:"<<format);
+			jxr_destroy(image);
+			jxr_destroy_container(container);
+			return false;
+	}
+
+	jxr_set_container_parameters(image,pixel_format,width,height,0,0,0,0);
+	if ((rc = jxr_read_image_bitstream(image,bytes+pos,len))< 0)
+	{
+		LOG(LOG_ERROR,"decodejxr: failed to decode image:"<<rc);
+		jxr_destroy(image);
+		jxr_destroy_container(container);
+		return false;
+	}
+	jxr_destroy(image);
+	jxr_destroy_container(container);
+	return true;
 }
 bool decodelzma(ByteArray* data, std::vector<uint8_t>& result)
 {
@@ -93,7 +195,7 @@ bool decodelzma(ByteArray* data, std::vector<uint8_t>& result)
 	}
 	return lzmadatalen;
 }
-void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffset, bool forCubeTexture, bool& hasalpha)
+void TextureBase::parseAdobeTextureFormat(ByteArray *data, int32_t byteArrayOffset, bool forCubeTexture)
 {
 	// https://www.adobe.com/devnet/archive/flashruntimes/articles/atf-file-format.html
 	if (data->getLength()-byteArrayOffset < 20)
@@ -170,8 +272,6 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 		bitmaparray.resize(texcount);
 	uint32_t tmpwidth = width;
 	uint32_t tmpheight = height;
-	uint8_t* maintexbytes=nullptr;
-	uint32_t maintexlen=0;
 	for (uint32_t level = 0; level < texcount; level++)
 	{
 		switch (format)
@@ -191,39 +291,15 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 					data->readUnsignedInt(texlen);
 				if (bitmaparray[level].size() < tmpwidth*tmpheight*(format == 0 ? 3 : 4))
 					bitmaparray[level].resize(tmpwidth*tmpheight*(format == 0 ? 3 : 4));
-				if (texlen == 0)
-				{
-					if (maintexbytes)
-					{
-						// fallback to main image if no data for mipmap image available
-						decodejxr(maintexbytes,maintexlen,bitmaparray[level],tmpwidth,tmpheight,format == 1 ? GUID_PKPixelFormat32bppRGBA : GUID_PKPixelFormat24bppRGB, format == 1 ? 4 : 3);
-					}
-				}
-				else
+				if (texlen != 0)
 				{
 					uint8_t* texbytes = new uint8_t[texlen];
 					data->readBytes(data->getPosition(),texlen,texbytes);
-					if (decodejxr(texbytes,texlen,bitmaparray[level],tmpwidth,tmpheight,format == 1 ? GUID_PKPixelFormat32bppRGBA : GUID_PKPixelFormat24bppRGB, format == 1 ? 4 : 3))
-					{
-						if (maintexbytes == nullptr)
-						{
-							maintexbytes = texbytes;
-							maintexlen = texlen;
-							texbytes = nullptr;
-						}
-						else
-							delete[] texbytes;
-					}
-					else
-					{
-						if (maintexbytes)
-						{
-							// fallback to main image if decoding of mipmap image fails
-							decodejxr(maintexbytes,maintexlen,bitmaparray[level],tmpwidth,tmpheight,format == 1 ? GUID_PKPixelFormat32bppRGBA : GUID_PKPixelFormat24bppRGB, format == 1 ? 4 : 3);
-						}
-					}
+					decodejxr(texbytes,texlen,bitmaparray[level],tmpwidth,tmpheight,format == 1 ? RGB8888 : RGB888, format == 1 ? 4 : 3);
+					delete[] texbytes;
 				}
-				hasalpha = (format == 1);
+				if (format == 0)
+					this->format=TEXTUREFORMAT::BGR;
 				data->setPosition(data->getPosition()+texlen);
 				tmpwidth >>= 1;
 				tmpheight >>= 1;
@@ -234,7 +310,7 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 				if (this->format != TEXTUREFORMAT::COMPRESSED_ALPHA)
 					throwError<ArgumentError>(kInvalidArgumentError,"Texture format mismatch");
 				this->compressedformat = TEXTUREFORMAT_COMPRESSED::DXT5;
-				uint32_t blocks = max(1,tmpwidth/4)*max(1,tmpheight/4);
+				uint32_t blocks = max(uint32_t(1),tmpwidth/4)*max(uint32_t(1),tmpheight/4);
 				uint32_t tmp;
 
 				// read LZMA DXT5AlphaData
@@ -248,7 +324,7 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 				if (hasalphadata)
 				{
 					alphaimagedata.resize(blocks*2); // 2 byte per 4x4 block
-					decodejxr(data->getBufferNoCheck()+data->getPosition(),tmp,alphaimagedata,max(1,tmpwidth/4),max(2,tmpheight/2),GUID_PKPixelFormat8bppGray,1);
+					decodejxr(data->getBufferNoCheck()+data->getPosition(),tmp,alphaimagedata,max(uint32_t(1),tmpwidth/4),max(uint32_t(2),tmpheight/2),DXT5AlphaImageData,1);
 				}
 				data->setPosition(data->getPosition()+tmp);
 				
@@ -263,32 +339,32 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 				if (hasrgbdata)
 				{
 					rgbimagedata.resize(blocks*4); // 4 byte per 4x4 block
-					decodejxr(data->getBufferNoCheck()+data->getPosition(),tmp,rgbimagedata,max(1,tmpwidth/4),max(2,tmpheight/2),GUID_PKPixelFormat16bppRGB565,2);
+					decodejxr(data->getBufferNoCheck()+data->getPosition(),tmp,rgbimagedata,max(uint32_t(1),tmpwidth/4),max(uint32_t(2),tmpheight/2),DXT5ImageData,2);
 				}
 				data->setPosition(data->getPosition()+tmp);
 
 				if (hasalphadata && hasrgbdata)
 				{
 					bitmaparray[level].resize(tmpwidth*tmpheight);
-					uint32_t i = 0;
+					uint32_t pos = 0;
 					for (uint32_t j=0; j < tmpwidth*tmpheight/16; j++)
 					{
-						bitmaparray[level][i++]=alphaimagedata[j*2  ];
-						bitmaparray[level][i++]=alphaimagedata[j*2+1];
-						bitmaparray[level][i++]=alphadata[j*6  ];
-						bitmaparray[level][i++]=alphadata[j*6+1];
-						bitmaparray[level][i++]=alphadata[j*6+2];
-						bitmaparray[level][i++]=alphadata[j*6+3];
-						bitmaparray[level][i++]=alphadata[j*6+4];
-						bitmaparray[level][i++]=alphadata[j*6+5];
-						bitmaparray[level][i++]=rgbimagedata[j*4  ];
-						bitmaparray[level][i++]=rgbimagedata[j*4+1];
-						bitmaparray[level][i++]=rgbimagedata[j*4+2];
-						bitmaparray[level][i++]=rgbimagedata[j*4+3];
-						bitmaparray[level][i++]=rgbdata[j*4  ];
-						bitmaparray[level][i++]=rgbdata[j*4+1];
-						bitmaparray[level][i++]=rgbdata[j*4+2];
-						bitmaparray[level][i++]=rgbdata[j*4+3];
+						bitmaparray[level][pos++]=alphaimagedata[j*2  ];
+						bitmaparray[level][pos++]=alphaimagedata[j*2+1];
+						bitmaparray[level][pos++]=alphadata[j*6  ];
+						bitmaparray[level][pos++]=alphadata[j*6+1];
+						bitmaparray[level][pos++]=alphadata[j*6+2];
+						bitmaparray[level][pos++]=alphadata[j*6+3];
+						bitmaparray[level][pos++]=alphadata[j*6+4];
+						bitmaparray[level][pos++]=alphadata[j*6+5];
+						bitmaparray[level][pos++]=rgbimagedata[j*4  ];
+						bitmaparray[level][pos++]=rgbimagedata[j*4+1];
+						bitmaparray[level][pos++]=rgbimagedata[j*4+2];
+						bitmaparray[level][pos++]=rgbimagedata[j*4+3];
+						bitmaparray[level][pos++]=rgbdata[j*4  ];
+						bitmaparray[level][pos++]=rgbdata[j*4+1];
+						bitmaparray[level][pos++]=rgbdata[j*4+2];
+						bitmaparray[level][pos++]=rgbdata[j*4+3];
 					}
 				}
 				else
@@ -310,8 +386,6 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data,int32_t byteArrayOffse
 		}
 	}
 	data->setPosition(oldpos);
-	if (maintexbytes)
-		delete[] maintexbytes;
 }
 
 void TextureBase::setFormat(const tiny_string& f)
@@ -362,7 +436,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 	if (data.isNull())
 		throwError<TypeError>(kNullArgumentError);
 	th->context->rendermutex.lock();
-	th->parseAdobeTextureFormat(data.getPtr(),byteArrayOffset,false,th->hasalpha);
+	th->parseAdobeTextureFormat(data.getPtr(),byteArrayOffset,false);
 	if (async)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"Texture.uploadCompressedTextureFromByteArray async loading");
@@ -373,7 +447,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 	action.action = RENDER_LOADTEXTURE;
 	th->incRef();
 	action.dataobject = _MR(th);
-	action.udata1=UINT32_MAX; // upload all mipmaps?
+	action.udata1=UINT32_MAX;
 	th->context->addAction(action);
 	th->context->rendermutex.unlock();
 }

@@ -453,7 +453,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				if (tex->is<CubeTexture>())
 					loadCubeTexture(tex->as<CubeTexture>());
 				else
-					loadTexture(tex,0);
+					loadTexture(tex,UINT32_MAX);
 				currenttextureid=tex->textureID;
 			}
 			break;
@@ -723,12 +723,13 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 {
 	EngineData* engineData = getSystemState()->getEngineData();
-	if (tex->textureID == UINT32_MAX)
+	bool newtex = tex->textureID == UINT32_MAX;
+	if (newtex)
 		engineData->exec_glGenTextures(1, &(tex->textureID));
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(tex->textureID);
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-	if (tex->bitmaparray.size() == 0)
+	if (newtex && tex->bitmaparray.size() == 0)
 		engineData->exec_glTexImage2D_GL_TEXTURE_2D(0, tex->width, tex->height, 0, nullptr,TEXTUREFORMAT::BGRA,TEXTUREFORMAT_COMPRESSED::UNCOMPRESSED,0);
 	else if (level == UINT32_MAX)
 	{
@@ -739,8 +740,6 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size());
 				tex->bitmaparray[i].clear();
 			}
-			else
-				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, nullptr,TEXTUREFORMAT::BGRA,TEXTUREFORMAT_COMPRESSED::UNCOMPRESSED,0);
 		}
 	}
 	else 
@@ -750,8 +749,6 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[level].data(),tex->format,tex->compressedformat,tex->bitmaparray[level].size());
 			tex->bitmaparray[level].clear();
 		}
-		else
-			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, nullptr,tex->format,tex->compressedformat,0);
 	}
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 }

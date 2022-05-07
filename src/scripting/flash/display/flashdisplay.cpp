@@ -4479,10 +4479,9 @@ void Bitmap::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	REGISTER_GETTER_SETTER(c,bitmapData);
-	REGISTER_GETTER_SETTER(c,smoothing);
-	REGISTER_GETTER_SETTER(c,pixelSnapping);
-
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,bitmapData,BitmapData);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,smoothing,Boolean);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,pixelSnapping,ASString);
 }
 
 ASFUNCTIONBODY_ATOM(Bitmap,_constructor)
@@ -5720,8 +5719,15 @@ void MovieClip::initFrame()
 {
 	/* Now the new legacy display objects are there, so we can also init their
 	 * first frame (top-down) and call their constructors (bottom-up) */
-	auto it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();it++)
+
+	// work on a copy because initframe may alter the displaylist
+	std::vector < _R<DisplayObject> > tmplist;
+	{
+		Locker l(mutexDisplayList);
+		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
+	}
+	auto it=tmplist.begin();
+	for(;it!=tmplist.end();it++)
 		(*it)->initFrame();
 
 	/* Set last_FP to reflect the frame that we have initialized currently.

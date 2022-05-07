@@ -970,7 +970,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		dispatcher->incRef();
 		dispatcher->getSystemState()->stage->setFocusTarget(_MNR(dispatcher->as<InteractiveObject>()));
 	}
-	if (dispatcher->is<DisplayObject>())
+	if (dispatcher->is<DisplayObject>() || dispatcher->is<LoaderInfo>())
 		dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event.getPtr());
 	else
 		dispatcher->AVM1HandleEvent(dispatcher,event.getPtr());

@@ -626,7 +626,7 @@ bool SharedObject::destruct()
 void SharedObject::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
-	c->setDeclaredMethodByQName("getLocal","",Class<IFunction>::getFunction(c->getSystemState(),getLocal),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("getLocal","",Class<IFunction>::getFunction(c->getSystemState(),getLocal,1,Class<SharedObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("getRemote","",Class<IFunction>::getFunction(c->getSystemState(),getRemote),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("flush","",Class<IFunction>::getFunction(c->getSystemState(),flush),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
@@ -647,10 +647,10 @@ void SharedObject::sinit(Class_base* c)
 	getSys()->staticSharedObjectPreventBackup = false;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(SharedObject,client);
-ASFUNCTIONBODY_GETTER(SharedObject,data);
-ASFUNCTIONBODY_SETTER(SharedObject,fps);
-ASFUNCTIONBODY_GETTER_SETTER(SharedObject,objectEncoding);
+ASFUNCTIONBODY_GETTER_SETTER(SharedObject,client)
+ASFUNCTIONBODY_GETTER(SharedObject,data)
+ASFUNCTIONBODY_SETTER(SharedObject,fps)
+ASFUNCTIONBODY_GETTER_SETTER(SharedObject,objectEncoding)
 
 ASFUNCTIONBODY_ATOM(SharedObject,_getDefaultObjectEncoding)
 {

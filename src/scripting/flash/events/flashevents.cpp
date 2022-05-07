@@ -139,9 +139,9 @@ void Event::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopPropagation","",Class<IFunction>::getFunction(c->getSystemState(),stopPropagation),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopImmediatePropagation","",Class<IFunction>::getFunction(c->getSystemState(),stopImmediatePropagation),NORMAL_METHOD,true);
-	REGISTER_GETTER(c,currentTarget);
+	REGISTER_GETTER_RESULTTYPE(c,currentTarget,ASObject);
 	REGISTER_GETTER_RESULTTYPE(c,target,ASObject);
-	REGISTER_GETTER(c,type);
+	REGISTER_GETTER_RESULTTYPE(c,type,ASString);
 	REGISTER_GETTER_RESULTTYPE(c,eventPhase,UInteger);
 	REGISTER_GETTER_RESULTTYPE(c,bubbles,Boolean);
 	REGISTER_GETTER_RESULTTYPE(c,cancelable,Boolean);

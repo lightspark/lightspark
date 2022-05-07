@@ -62,10 +62,6 @@ static int need_windowing_flag(jxr_image_t image);
 static int need_trim_flexbits_flag(jxr_image_t image);
 
 
-static void w_MB_FLEXBITS(jxr_image_t image, struct wbitstream*str,
-                          int alpha_flag,
-                          unsigned tx, unsigned ty,
-                          unsigned mx, unsigned my);
 static void w_BLOCK_FLEXBITS(jxr_image_t image, struct wbitstream*str,
                              unsigned tx, unsigned ty,
                              unsigned mx, unsigned my,
@@ -163,6 +159,8 @@ static int fill_in_image_defaults(jxr_image_t image)
             assert((image->window_extra_left & 0x1) == 0);
             assert((image->window_extra_right & 0x1) == 0);
             break;
+		default:
+			break;
     }
 
     /* Force scaling ON if we are using a subsampled color format. */
@@ -2205,10 +2203,13 @@ static void w_REFINE_CBP(jxr_image_t image, struct wbitstream*str, int cbp_block
         switch (num_cbp) {
             case 4:
                 _jxr_wbitstream_uint1(str, 0);
+				// falls through
             case 2:
                 _jxr_wbitstream_uint1(str, 0);
+				// falls through
             case 1:
                 _jxr_wbitstream_uint1(str, 0);
+				// falls through
             case 0:
                 _jxr_wbitstream_uint1(str, 1);
                 break;

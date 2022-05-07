@@ -327,12 +327,12 @@ static void overlap_level1_up2_444(jxr_image_t image, int use_my, int ch)
 {
     /* 16 Coeffs per MB */
     assert(ch == 0 || (image->use_clr_fmt != 2/*YUV422*/ && image->use_clr_fmt !=1/* YUV420*/));
-    int tx = 0; /* XXXX */
+    uint32_t tx = 0; /* XXXX */
     assert(use_my >= 2);
-    int top_my = use_my - 2;
-    int idx;
+    uint32_t top_my = use_my - 2;
+    uint32_t idx;
 
-    int ty = 0;
+    uint32_t ty = 0;
     /* Figure out which tile row the current strip of macroblocks belongs to. */
     while(top_my > image->tile_row_position[ty]+image->tile_row_height[ty] - 1)
         ty++;
@@ -370,7 +370,7 @@ static void overlap_level1_up2_444(jxr_image_t image, int use_my, int ch)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. finish up with 4Overlap filters. */
@@ -402,7 +402,7 @@ static void overlap_level1_up2_444(jxr_image_t image, int use_my, int ch)
         }
 
         for (idx = 0 ; idx < image->tile_column_width[tx] ; idx += 1) {
-            if ((top_my+1) < (int) EXTENDED_HEIGHT_BLOCKS(image)) {
+            if ((top_my+1) < EXTENDED_HEIGHT_BLOCKS(image)) {
 
                 if ((tx == 0 && idx==0 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && LEFT_X(idx) && !BOTTOM_Y(top_my))) {
@@ -430,7 +430,7 @@ static void overlap_level1_up2_444(jxr_image_t image, int use_my, int ch)
                             up0+ 2, up0+ 3, up1+ 0, up1+ 1,
                             up0+ 6, up0+ 7, up1+ 4, up1+ 5);
                 }
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     int*tp0 = MACROBLK_UP2(image,ch,tx,image->tile_column_width[tx]-1).data;
@@ -451,12 +451,12 @@ static void overlap_level1_up2_444(jxr_image_t image, int use_my, int ch)
 static void overlap_level1_up2_422(jxr_image_t image, int use_my, int ch)
 {
     assert(ch > 0 && image->use_clr_fmt == 2/*YUV422*/);
-    int tx = 0; /* XXXX */
+    uint32_t tx = 0; /* XXXX */
     assert(use_my >= 2);
-    int top_my = use_my - 2;
-    int idx;
+    uint32_t top_my = use_my - 2;
+    uint32_t idx;
 
-    int ty = 0;
+    uint32_t ty = 0;
     /* Figure out which tile row the current strip of macroblocks belongs to. */
     while(top_my > image->tile_row_position[ty]+image->tile_row_height[ty] - 1)
         ty++;
@@ -486,7 +486,7 @@ static void overlap_level1_up2_422(jxr_image_t image, int use_my, int ch)
 
 
     /* Bottom edge */
-    if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
+    if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
     {
         for(tx = 0; tx < image->tile_columns; tx++)
         {
@@ -544,7 +544,7 @@ static void overlap_level1_up2_422(jxr_image_t image, int use_my, int ch)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. finish up with 4Overlap filters. */
@@ -573,7 +573,7 @@ static void overlap_level1_up2_422(jxr_image_t image, int use_my, int ch)
                         _jxr_2OverlapFilter(tp0+6, up0+0);
                 }
 
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     int*tp0 = MACROBLK_UP2(image,ch,tx,image->tile_column_width[tx]-1).data;
@@ -637,7 +637,7 @@ static void overlap_level1_up2_422(jxr_image_t image, int use_my, int ch)
     }
 
     /* Bottom edge */
-    if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
+    if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
     {
         for(tx = 0; tx < image->tile_columns; tx++)
         {
@@ -663,12 +663,12 @@ static void overlap_level1_up2_420(jxr_image_t image, int use_my, int ch)
 {
     /* 4 coeffs*/
     assert(ch > 0 && image->use_clr_fmt == 1/*YUV420*/);
-    int tx = 0; /* XXXX */
+    uint32_t tx = 0; /* XXXX */
     assert(use_my >= 2);
-    int top_my = use_my - 2;
+    uint32_t top_my = use_my - 2;
 
-    int idx;
-    int ty = 0;
+    uint32_t idx;
+    uint32_t ty = 0;
     /* Figure out which tile row the current strip of macroblocks belongs to. */
     while(top_my > image->tile_row_position[ty]+image->tile_row_height[ty] - 1)
         ty++;
@@ -695,7 +695,7 @@ static void overlap_level1_up2_420(jxr_image_t image, int use_my, int ch)
     }
 
     /* Bottom edge */
-    if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
+    if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
     {
         for(tx = 0; tx < image->tile_columns; tx++)
         {
@@ -733,7 +733,7 @@ static void overlap_level1_up2_420(jxr_image_t image, int use_my, int ch)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. finish up with 4Overlap filters. */
@@ -761,7 +761,7 @@ static void overlap_level1_up2_420(jxr_image_t image, int use_my, int ch)
                         _jxr_2OverlapFilter(tp0+2, up0+0);
                 }
 
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     /* Right edge across vertical MBs */
@@ -814,7 +814,7 @@ static void overlap_level1_up2_420(jxr_image_t image, int use_my, int ch)
 
 
     /* Bottom edge */
-    if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
+    if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
     {
         for(tx = 0; tx < image->tile_columns; tx++)
         {
@@ -877,14 +877,14 @@ static int*R2B42(int*data, int x, int y)
 static void overlap_level2_up3_444(jxr_image_t image, int use_my, int ch)
 {
     assert(ch == 0 || (image->use_clr_fmt != 2/*YUV422*/ && image->use_clr_fmt !=1/* YUV420*/));
-    int tx = 0; /* XXXX */
+    uint32_t tx = 0; /* XXXX */
     assert(use_my >= 3);
-    int top_my = use_my - 3;
-    int idx;
+    uint32_t top_my = use_my - 3;
+    uint32_t idx;
 
     DEBUG("Overlap Level2 for row %d\n", top_my);
 
-    int ty = 0;
+    uint32_t ty = 0;
     /* Figure out which tile row the current strip of macroblocks belongs to. */
     while(top_my > image->tile_row_position[ty]+image->tile_row_height[ty] - 1)
         ty++;
@@ -951,7 +951,7 @@ static void overlap_level2_up3_444(jxr_image_t image, int use_my, int ch)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. finish up with 4Overlap filters. */
@@ -1023,7 +1023,7 @@ static void overlap_level2_up3_444(jxr_image_t image, int use_my, int ch)
                 }
             }
 
-            if ((top_my+1) < (int) EXTENDED_HEIGHT_BLOCKS(image)) {
+            if ((top_my+1) < EXTENDED_HEIGHT_BLOCKS(image)) {
 
                 int*dp = MACROBLK_UP3(image,ch,tx,idx).data;
                 int*up = MACROBLK_UP2(image,ch,tx,idx).data;
@@ -1064,7 +1064,7 @@ static void overlap_level2_up3_444(jxr_image_t image, int use_my, int ch)
                             R2B(up,14, 0),R2B(up,15, 0),R2B(un, 0, 0),R2B(un, 1, 0),
                             R2B(up,14, 1),R2B(up,15, 1),R2B(un, 0, 1),R2B(un, 1, 1));
                 }
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     /* Across vertical blocks, right edge */
@@ -1079,15 +1079,15 @@ static void overlap_level2_up3_444(jxr_image_t image, int use_my, int ch)
 static void overlap_level2_up3_422(jxr_image_t image, int use_my, int ch)
 {
     assert(ch > 0 && image->use_clr_fmt == 2/*YUV422*/);
-    int tx = 0; /* XXXX */
+    uint32_t tx = 0; /* XXXX */
     assert(use_my >= 3);
-    int top_my = use_my - 3;
-    int idx;
+    uint32_t top_my = use_my - 3;
+    uint32_t idx;
 
 
     DEBUG("Overlap Level2 for row %d\n", top_my);
 
-    int ty = 0;
+    uint32_t ty = 0;
     /* Figure out which tile row the current strip of macroblocks belongs to. */
     while(top_my > image->tile_row_position[ty]+image->tile_row_height[ty] - 1)
         ty++;
@@ -1156,7 +1156,7 @@ static void overlap_level2_up3_422(jxr_image_t image, int use_my, int ch)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. finish up with 4Overlap filters. */
@@ -1230,7 +1230,7 @@ static void overlap_level2_up3_422(jxr_image_t image, int use_my, int ch)
                         R2B42(dp,6,13),R2B42(dp,7,13),R2B42(np,0,13),R2B42(np,1,13));
             }
 
-            if ((top_my+1) < (int) EXTENDED_HEIGHT_BLOCKS(image)) {
+            if ((top_my+1) < EXTENDED_HEIGHT_BLOCKS(image)) {
 
                 /* Blocks that MB below */
                 int*dp = MACROBLK_UP3(image,ch,tx,idx).data;
@@ -1262,7 +1262,7 @@ static void overlap_level2_up3_422(jxr_image_t image, int use_my, int ch)
                             R2B42(up,6, 0),R2B42(up,7, 0),R2B42(un,0, 0),R2B42(un,1, 0),
                             R2B42(up,6, 1),R2B42(up,7, 1),R2B42(un,0, 1),R2B42(un,1, 1));
                 }
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     _jxr_4OverlapFilter(R2B42(dp,6,14),R2B42(dp,6,15),R2B42(up,6,0),R2B42(up,6,1));
@@ -1278,15 +1278,15 @@ static void overlap_level2_up3_422(jxr_image_t image, int use_my, int ch)
 static void overlap_level2_up3_420(jxr_image_t image, int use_my, int ch)
 {
     assert(ch > 0 && image->use_clr_fmt == 1/*YUV420*/);
-    int tx = 0; /* XXXX */
+    uint32_t tx = 0; /* XXXX */
     assert(use_my >= 3);
-    int top_my = use_my - 3;
-    int idx;
+    uint32_t top_my = use_my - 3;
+    uint32_t idx;
 
 
     DEBUG("Overlap Level2 (YUV420) for row %d\n", top_my);
 
-    int ty = 0;
+    uint32_t ty = 0;
 
     /* Figure out which tile row the current strip of macroblocks belongs to. */
     while(top_my > image->tile_row_position[ty]+image->tile_row_height[ty] - 1)
@@ -1344,7 +1344,7 @@ static void overlap_level2_up3_420(jxr_image_t image, int use_my, int ch)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. finish up with 4Overlap filters. */
@@ -1443,7 +1443,7 @@ static void overlap_level2_up3_420(jxr_image_t image, int use_my, int ch)
                     R2B42(dp,6,5),R2B42(dp,7,5),R2B42(np,0,5),R2B42(np,1,5));
             }
 
-            if ((top_my+1) < (int) EXTENDED_HEIGHT_BLOCKS(image)) {
+            if ((top_my+1) < EXTENDED_HEIGHT_BLOCKS(image)) {
 
                 int*dp = MACROBLK_UP3(image,ch,tx,idx).data;
                 int*up = MACROBLK_UP2(image,ch,tx,idx).data;
@@ -1476,7 +1476,7 @@ static void overlap_level2_up3_420(jxr_image_t image, int use_my, int ch)
                             R2B42(up,6,0),R2B42(up,7,0),R2B42(un,0,0),R2B42(un,1,0),
                             R2B42(up,6,1),R2B42(up,7,1),R2B42(un,0,1),R2B42(un,1,1));
                 }
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     /* Across vertical blocks, right edge */
@@ -1816,7 +1816,7 @@ static void scale_and_emit_top(jxr_image_t image, int /*tx*/, int use_my)
     int clip_hig = 255;
     int idx;
     int buffer[(MAX_CHANNELS + 1)*256];
-    memset(buffer, 0,(MAX_CHANNELS + 1)*256);
+    memset(buffer, 0,(MAX_CHANNELS + 1)*256*sizeof(int));
     unsigned int bSkipColorTransform = 0;
 
     

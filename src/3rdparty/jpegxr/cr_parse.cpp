@@ -699,6 +699,7 @@ unsigned long jxrc_spatial_xfrm_primary(jxr_container_t container, int image)
             spatial_xfrm = (unsigned long) ifd[idx].value_.v_byte[0];
             break;
         default:
+			spatial_xfrm=0;
             assert(0);
             break;
     }
@@ -832,6 +833,7 @@ unsigned long jxrc_image_width(jxr_container_t container, int image)
             width = (unsigned long) ifd[idx].value_.v_byte[0];
             break;
         default:
+			width=0;
             assert(0);
             break;
     }
@@ -868,6 +870,7 @@ unsigned long jxrc_image_height(jxr_container_t container, int image)
             height = (unsigned long) ifd[idx].value_.v_byte[0];
             break;
         default:
+			height=0;
             assert(0);
             break;
     }
@@ -952,6 +955,7 @@ unsigned long jxrc_image_offset(jxr_container_t container, int image)
             pos = (unsigned long) ifd[idx].value_.v_byte[0];
             break;
         default:
+			pos=0;
             assert(0);
             break;
     }
@@ -988,6 +992,7 @@ unsigned long jxrc_image_bytecount(jxr_container_t container, int image)
             pos = (unsigned long) ifd[idx].value_.v_byte[0];
             break;
         default:
+			pos=0;
             assert(0);
             break;
     }
@@ -1024,6 +1029,7 @@ unsigned long jxrc_alpha_offset(jxr_container_t container, int image)
             pos = (unsigned long) ifd[idx].value_.v_byte[0];
             break;
         default:
+			pos=0;
             assert(0);
             break;
     }
@@ -1061,6 +1067,7 @@ unsigned long jxrc_alpha_bytecount(jxr_container_t container, int image)
             pos = (unsigned long) ifd[idx].value_.v_byte[0];
             break;
         default:
+			pos=0;
             assert(0);
             break;
     }
@@ -1130,6 +1137,7 @@ int jxrc_padding_data(jxr_container_t container, int image)
     assert(ifd[idx].type == 7);
     assert(ifd[idx].cnt > 1);
 
+#ifndef NDEBUG
     unsigned char * data;
     if (ifd[idx].cnt <= 4)
         data = (unsigned char *) ifd[idx].value_.v_sbyte;
@@ -1138,6 +1146,7 @@ int jxrc_padding_data(jxr_container_t container, int image)
 
     assert(data[0] == 0x1c);
     assert(data[1] == 0xea);
+#endif
 #ifndef JPEGXR_ADOBE_EXT
     unsigned i;
 #endif //#ifndef JPEGXR_ADOBE_EXT
@@ -1171,6 +1180,8 @@ static int read_ifd(jxr_container_t container
     int ifd_tag_prev = 0;
     int alpha_tag_check = 0;
     uint32_t ifd_off;
+
+	(void)ifd_tag_prev;
 
 #ifdef JPEGXR_ADOBE_EXT
 	rc = rb.read(buf,2);
@@ -1262,14 +1273,14 @@ static int read_ifd(jxr_container_t container
                     DEBUG("%02x", cur[idx].value_.p_byte[bb]);
 #endif
                 if (cur[idx].type == 2) {
-                    int cc;
+                    uint32_t cc;
                     for (cc = 1 ; cc < cur[idx].cnt ; cc += 1)
                         assert((cur[idx].value_.p_byte[cc - 1] != 0) || (cur[idx].value_.p_byte[cc] != 0));
                 }
             }
             else {
                 if (cur[idx].type == 2) {
-                    int cc;
+                    uint32_t cc;
                     for (cc = 1 ; cc < cur[idx].cnt ; cc += 1)
                         assert((cur[idx].value_.v_byte[cc - 1] != 0) || (cur[idx].value_.v_byte[cc] != 0));
                 }

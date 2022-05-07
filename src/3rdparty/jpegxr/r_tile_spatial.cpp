@@ -69,6 +69,10 @@ int _jxr_r_TILE_SPATIAL(jxr_image_t image, struct rbitstream*str,
     s3 = _jxr_rbitstream_uint8(str); /* reserved */
     DEBUG(" TILE_STARTCODE == %02x %02x %02x (reserved: %02x)\n", s0, s1, s2, s3);
 
+	(void)s0;
+	(void)s1;
+	(void)s2;
+	(void)s3;
     image->trim_flexbits = 0;
     if (TRIM_FLEXBITS_FLAG(image)) {
         image->trim_flexbits =_jxr_rbitstream_uint4(str);

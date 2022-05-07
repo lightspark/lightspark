@@ -367,7 +367,6 @@ static void wflush_process_strip(jxr_image_t image, int ty)
             use_num_channels = 1;
 
         int tx;
-        image->model_hp;
         for (tx = 0; tx < (int) image->tile_columns ; tx += 1) {
             if (image->tile_columns > 1)
                 _jxr_w_load_hpcbp_state(image, tx);
@@ -904,6 +903,7 @@ static void collect_and_scale_up4(jxr_image_t image, int ty)
     int scale = image->scaled_flag? 3 : 0;
     int bias;
     int round;
+	(void)round;
 #ifndef JPEGXR_ADOBE_EXT
     int shift_bits = image->shift_bits;
 #endif //#ifndef JPEGXR_ADOBE_EXT
@@ -989,7 +989,7 @@ static void collect_and_scale_up4(jxr_image_t image, int ty)
         image->inp_fun(image, mx, my, buffer); 
 
         /* Pad to the bottom by repeating the last pixel */
-        if ((my+1) == EXTENDED_HEIGHT_BLOCKS(image) && ((image->height1+image->window_extra_top+1) % 16 != 0)) {
+        if ((my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) && ((image->height1+image->window_extra_top+1) % 16 != 0)) {
             int last_y = (image->height1 + image->window_extra_top) % 16;
             int ydx;
             for (ydx = last_y+1 ; ydx < 16 ; ydx += 1) {
@@ -1009,7 +1009,7 @@ static void collect_and_scale_up4(jxr_image_t image, int ty)
         }
 
         /* Pad to the right by repeating the last pixel */
-        if ((mx+1) == EXTENDED_WIDTH_BLOCKS(image) && ((image->width1+image->window_extra_left+1) % 16 != 0)) {
+        if ((mx+1) == (int) EXTENDED_WIDTH_BLOCKS(image) && ((image->width1+image->window_extra_left+1) % 16 != 0)) {
             int last_x = (image->width1 + image->window_extra_left) % 16;
             int ydx ;
             for (ydx = 0; ydx < 16 ; ydx += 1) {
@@ -1191,9 +1191,9 @@ static int*R2B42(int*data, int x, int y)
 static void first_prefilter444_up2(jxr_image_t image, int ch, int ty)
 {
     assert(ch == 0 || (image->use_clr_fmt != 2/*YUV422*/ && image->use_clr_fmt !=1/* YUV420*/));
-    int tx = 0; /* XXXX */
-    int top_my = image->cur_my + 2;
-    int idx;
+    uint32_t tx = 0; /* XXXX */
+    uint32_t top_my = image->cur_my + 2;
+    uint32_t idx;
 
     if (top_my >= image->tile_row_height[ty])
         top_my -= image->tile_row_height[ty++];
@@ -1265,7 +1265,7 @@ static void first_prefilter444_up2(jxr_image_t image, int ch, int ty)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. finish up with 4Pre filters. */
@@ -1337,7 +1337,7 @@ static void first_prefilter444_up2(jxr_image_t image, int ch, int ty)
                 }
             }
 
-            if ((top_my+1) < (int) EXTENDED_HEIGHT_BLOCKS(image)) {
+            if ((top_my+1) < EXTENDED_HEIGHT_BLOCKS(image)) {
 
                 int*dp = MACROBLK_UP2(image,ch,tx,idx).data;
                 int*up = MACROBLK_UP3(image,ch,tx,idx).data;
@@ -1378,7 +1378,7 @@ static void first_prefilter444_up2(jxr_image_t image, int ch, int ty)
                             R2B(up,14, 0),R2B(up,15, 0),R2B(un, 0, 0),R2B(un, 1, 0),
                             R2B(up,14, 1),R2B(up,15, 1),R2B(un, 0, 1),R2B(un, 1, 1));
                 }
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     /* Across vertical blocks, right edge */
@@ -1393,11 +1393,10 @@ static void first_prefilter444_up2(jxr_image_t image, int ch, int ty)
 static void first_prefilter422_up2(jxr_image_t image, int ch, int ty)
 {
     assert(ch > 0 && image->use_clr_fmt == 2/*YUV422*/);
-    int tx = 0; /* XXXX */
+    uint32_t tx = 0; /* XXXX */
 
-    int top_my = image->cur_my + 2;
-    assert(top_my >= 0 );
-    int idx;
+    uint32_t top_my = image->cur_my + 2;
+    uint32_t idx;
 
     if (top_my >= image->tile_row_height[ty])
         top_my -= image->tile_row_height[ty++];
@@ -1469,7 +1468,7 @@ static void first_prefilter422_up2(jxr_image_t image, int ch, int ty)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. finish up with 4Pre filters. */
@@ -1544,7 +1543,7 @@ static void first_prefilter422_up2(jxr_image_t image, int ch, int ty)
                         R2B42(dp,6,13),R2B42(dp,7,13),R2B42(np,0,13),R2B42(np,1,13));
             }
 
-            if ((top_my+1) < (int) EXTENDED_HEIGHT_BLOCKS(image)) {
+            if ((top_my+1) < EXTENDED_HEIGHT_BLOCKS(image)) {
 
                 /* Blocks that MB below */
                 int*dp = MACROBLK_UP2(image,ch,tx,idx).data;
@@ -1576,7 +1575,7 @@ static void first_prefilter422_up2(jxr_image_t image, int ch, int ty)
                             R2B42(up,6, 0),R2B42(up,7, 0),R2B42(un,0, 0),R2B42(un,1, 0),
                             R2B42(up,6, 1),R2B42(up,7, 1),R2B42(un,0, 1),R2B42(un,1, 1));
                 }
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     _jxr_4PreFilter(R2B42(dp,6,14),R2B42(dp,6,15),R2B42(up,6,0),R2B42(up,6,1));
@@ -1590,9 +1589,9 @@ static void first_prefilter422_up2(jxr_image_t image, int ch, int ty)
 static void first_prefilter420_up2(jxr_image_t image, int ch, int ty)
 {
     assert(ch > 0 && image->use_clr_fmt == 1/*YUV420*/);
-    int tx = 0; /* XXXX */
-    int top_my = image->cur_my + 2;
-    int idx;
+    uint32_t tx = 0; /* XXXX */
+    uint32_t top_my = image->cur_my + 2;
+    uint32_t idx;
 
     if (top_my >= image->tile_row_height[ty])
         top_my -= image->tile_row_height[ty++];
@@ -1654,7 +1653,7 @@ static void first_prefilter420_up2(jxr_image_t image, int ch, int ty)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. finish up with 4Pre filters. */
@@ -1715,7 +1714,7 @@ static void first_prefilter420_up2(jxr_image_t image, int ch, int ty)
                     R2B42(dp,6,5),R2B42(dp,7,5),R2B42(np,0,5),R2B42(np,1,5));
             }
 
-            if ((top_my+1) < (int) EXTENDED_HEIGHT_BLOCKS(image)) {
+            if ((top_my+1) < EXTENDED_HEIGHT_BLOCKS(image)) {
 
                 int*dp = MACROBLK_UP2(image,ch,tx,idx).data;
                 int*up = MACROBLK_UP3(image,ch,tx,idx).data;
@@ -1748,7 +1747,7 @@ static void first_prefilter420_up2(jxr_image_t image, int ch, int ty)
                             R2B42(up,6,0),R2B42(up,7,0),R2B42(un,0,0),R2B42(un,1,0),
                             R2B42(up,6,1),R2B42(up,7,1),R2B42(un,0,1),R2B42(un,1,1));
                 }
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     /* Across vertical blocks, right edge */
@@ -1785,8 +1784,8 @@ static void first_prefilter_up2(jxr_image_t image, int ty)
 
 static void PCT_stage2_up1(jxr_image_t image, int ch, int ty)
 {
-    int tx = 0;
-    int use_my = image->cur_my + 1;
+    uint32_t tx = 0;
+    uint32_t use_my = image->cur_my + 1;
 
     /* make adjustments based on tiling */
     if (use_my == image->tile_row_height[ty]) {
@@ -1960,9 +1959,9 @@ static void PCT_stage2_up1(jxr_image_t image, int ch, int ty)
 static void second_prefilter444_up1(jxr_image_t image, int ch, int ty)
 {
     assert(ch == 0 || (image->use_clr_fmt != 2/*YUV422*/ && image->use_clr_fmt !=1/* YUV420*/));
-    int tx = 0; /* XXXX */
-    int top_my = image->cur_my + 1;
-    int idx;
+    uint32_t tx = 0; /* XXXX */
+    uint32_t top_my = image->cur_my + 1;
+    uint32_t idx;
 
     if (top_my >= image->tile_row_height[ty])
         top_my -= image->tile_row_height[ty++];
@@ -2003,7 +2002,7 @@ static void second_prefilter444_up1(jxr_image_t image, int ch, int ty)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. finish up with 4Pre filters. */
@@ -2035,7 +2034,7 @@ static void second_prefilter444_up1(jxr_image_t image, int ch, int ty)
         }
 
         for (idx = 0 ; idx < image->tile_column_width[tx] ; idx += 1) {
-            if ((top_my+1) < (int) EXTENDED_HEIGHT_BLOCKS(image)) {
+            if ((top_my+1) < EXTENDED_HEIGHT_BLOCKS(image)) {
 
                 if ((tx == 0 && idx==0 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && LEFT_X(idx) && !BOTTOM_Y(top_my))) {
@@ -2063,7 +2062,7 @@ static void second_prefilter444_up1(jxr_image_t image, int ch, int ty)
                             up0+ 2, up0+ 3, up1+ 0, up1+ 1,
                             up0+ 6, up0+ 7, up1+ 4, up1+ 5);
                 }
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     int*tp0 = MACROBLK_UP1(image,ch,tx,image->tile_column_width[tx]-1).data;
@@ -2082,9 +2081,9 @@ static void second_prefilter444_up1(jxr_image_t image, int ch, int ty)
 static void second_prefilter422_up1(jxr_image_t image, int ch, int ty)
 {
     assert(ch > 0);
-    int tx = 0; /* XXXX */
-    int top_my = image->cur_my + 1;
-    int idx;
+    uint32_t tx = 0; /* XXXX */
+    uint32_t top_my = image->cur_my + 1;
+    uint32_t idx;
 
     if (top_my >= image->tile_row_height[ty])
         top_my -= image->tile_row_height[ty++];
@@ -2116,7 +2115,7 @@ static void second_prefilter422_up1(jxr_image_t image, int ch, int ty)
 
 
     /* Bottom edge */
-    if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
+    if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
     {
         for(tx = 0; tx < image->tile_columns; tx++)
         {
@@ -2174,7 +2173,7 @@ static void second_prefilter422_up1(jxr_image_t image, int ch, int ty)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. finish up with 4Pre filters. */
@@ -2203,7 +2202,7 @@ static void second_prefilter422_up1(jxr_image_t image, int ch, int ty)
                         _jxr_2PreFilter(tp0+6, up0+0);
                 }
 
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     int*tp0 = MACROBLK_UP1(image,ch,tx,image->tile_column_width[tx]-1).data;
@@ -2267,7 +2266,7 @@ static void second_prefilter422_up1(jxr_image_t image, int ch, int ty)
     }
 
     /* Bottom edge */
-    if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
+    if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
     {
         for(tx = 0; tx < image->tile_columns; tx++)
         {
@@ -2292,9 +2291,9 @@ static void second_prefilter422_up1(jxr_image_t image, int ch, int ty)
 static void second_prefilter420_up1(jxr_image_t image, int ch, int ty)
 {
     assert(ch > 0);
-    int tx = 0; /* XXXX */
-    int top_my = image->cur_my + 1;
-    int idx;
+    uint32_t tx = 0; /* XXXX */
+    uint32_t top_my = image->cur_my + 1;
+    uint32_t idx;
 
     if (top_my >= image->tile_row_height[ty])
         top_my -= image->tile_row_height[ty++];
@@ -2324,7 +2323,7 @@ static void second_prefilter420_up1(jxr_image_t image, int ch, int ty)
     }
 
     /* Bottom edge */
-    if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
+    if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
     {
         for(tx = 0; tx < image->tile_columns; tx++)
         {
@@ -2362,7 +2361,7 @@ static void second_prefilter420_up1(jxr_image_t image, int ch, int ty)
         }
 
         /* Bottom edge */
-        if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
+        if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my))) {
 
             /* This is the last row, so there is no UP below
             TOP. */
@@ -2390,7 +2389,7 @@ static void second_prefilter420_up1(jxr_image_t image, int ch, int ty)
                         _jxr_2PreFilter(tp0+2, up0+0);
                 }
 
-                if((image->tile_column_position[tx] + idx == (int) EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
+                if((image->tile_column_position[tx] + idx == EXTENDED_WIDTH_BLOCKS(image)-1 && !image->disableTileOverlapFlag) ||
                     (image->disableTileOverlapFlag && RIGHT_X(idx) && !BOTTOM_Y(top_my)))
                 {
                     /* Right edge across vertical MBs */
@@ -2443,7 +2442,7 @@ static void second_prefilter420_up1(jxr_image_t image, int ch, int ty)
 
 
     /* Bottom edge */
-    if ((top_my+1) == (int) EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
+    if ((top_my+1) == EXTENDED_HEIGHT_BLOCKS(image) || (image->disableTileOverlapFlag && BOTTOM_Y(top_my)))
     {
         for(tx = 0; tx < image->tile_columns; tx++)
         {
@@ -2507,8 +2506,8 @@ static void dclphp_unshuffle(int*data, int dclp_count)
 
 static void PCT_stage1_up2(jxr_image_t image, int ch, int ty)
 {
-    int tx = 0;
-    int use_my = image->cur_my + 2;
+    uint32_t tx = 0;
+    uint32_t use_my = image->cur_my + 2;
 
     /* make adjustments based on tiling */
     if (use_my >= image->tile_row_height[ty]) {
@@ -2668,7 +2667,7 @@ static int w_calculate_mbdc_mode(jxr_image_t image, int tx, int mx, int my)
 */
 static void w_predict_up1_dclp(jxr_image_t image, int tx, int ty, int mx)
 {
-    int my = image->cur_my + 1;
+    uint32_t my = image->cur_my + 1;
 
     /* make adjustments based on tiling */
     if (my == image->tile_row_height[ty]) {
@@ -3065,7 +3064,7 @@ static void w_predict_lp420(jxr_image_t image, int tx, int mx, int /*my*/, int c
 */
 static void calculate_hpcbp_up1(jxr_image_t image, int tx, int ty, int mx)
 {
-    int use_my = image->cur_my + 1;
+    uint32_t use_my = image->cur_my + 1;
 
     /* make adjustments based on tiling */
     if (use_my == image->tile_row_height[ty]) {
@@ -3132,7 +3131,7 @@ static void calculate_hpcbp_up1(jxr_image_t image, int tx, int ty, int mx)
 
 static void w_PredCBP(jxr_image_t image, unsigned tx, unsigned ty, unsigned mx)
 {
-    int use_my = image->cur_my+1;
+    uint32_t use_my = image->cur_my+1;
     if (use_my == image->tile_row_height[ty]) {
         use_my = 0;
         ty += 1;

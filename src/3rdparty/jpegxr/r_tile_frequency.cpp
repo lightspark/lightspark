@@ -69,8 +69,14 @@ int _jxr_r_TILE_DC(jxr_image_t image, struct rbitstream*str,
 
     _jxr_r_TILE_HEADER_DC(image, str, 0 /* alpha */, tx, ty);
     if (ALPHACHANNEL_FLAG(image))
-        _jxr_r_TILE_HEADER_DC(image->alpha, str, 1, tx, ty);
+	{
+		_jxr_r_TILE_HEADER_DC(image->alpha, str, 1, tx, ty);
+	}
 
+	(void)s0;
+	(void)s1;
+	(void)s2;
+	(void)s3;
 
     /* Now form and write out all the compressed data for the
     tile. This involves scanning the macroblocks, and the
@@ -127,6 +133,7 @@ int _jxr_r_TILE_LP(jxr_image_t image, struct rbitstream*str,
         DEBUG(" TILE_LOWPASS ERROR: Invalid marker.\n");
         return JXR_EC_ERROR;
     }
+	(void)s3;
 
     _jxr_r_TILE_HEADER_LOWPASS(image, str, 0 /* alpha */, tx, ty);
     if (ALPHACHANNEL_FLAG(image))
@@ -201,6 +208,7 @@ int _jxr_r_TILE_HP(jxr_image_t image, struct rbitstream*str,
         DEBUG(" TILE_HIGHPASS ERROR: Invalid marker.\n");
         return JXR_EC_ERROR;
     }
+	(void)s3;
 
     _jxr_r_TILE_HEADER_HIGHPASS(image, str, 0 /* alpha */, tx, ty);
     if (ALPHACHANNEL_FLAG(image))
@@ -285,6 +293,7 @@ int _jxr_r_TILE_FLEXBITS(jxr_image_t image, struct rbitstream*str,
         DEBUG(" TILE_FLEXBITS ERROR: Invalid marker.\n");
         return JXR_EC_ERROR;
     }
+	(void)s3;
 
     image->trim_flexbits = 0;
     if (TRIM_FLEXBITS_FLAG(image)) {

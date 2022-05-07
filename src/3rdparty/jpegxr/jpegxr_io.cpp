@@ -342,7 +342,7 @@ static void put_byte(struct wbitstream*str)
 {
     assert(str->bits_ready == 8);
 #ifdef JPEGXR_ADOBE_EXT
-    str->putc(str->byte);
+    str->putbyte(str->byte);
 #else //#ifdef JPEGXR_ADOBE_EXT
     fputc(str->byte, str->fd);
 #endif //#ifdef JPEGXR_ADOBE_EXT

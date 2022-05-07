@@ -150,7 +150,7 @@ public:
 		return m_pos;
 	}
 
-	inline void putc(uint8_t c) {
+	inline void putbyte(uint8_t c) {
 		if ( !m_dptr ) {
 			m_dptr = (uint8_t *)jpegxr_malloc(65536);
 			m_size = 65536;
@@ -183,7 +183,7 @@ public:
 			return 0;
 		}
 		for ( ; len > 0 ; len-- ) {
-			putc(*data++);
+			putbyte(*data++);
 			wb++;
 		}
 		return wb;

@@ -245,7 +245,8 @@ static int r_image_header(jxr_image_t image, struct rbitstream*str)
 
     version_sub_info = _jxr_rbitstream_uint3(str);
     DEBUG("  Version: %u.%u\n", version_info, version_sub_info);
-
+	(void)version_info;
+	(void)version_sub_info;
     /* Read some of the flags as a group. There are a bunch of
     small flag values together here, so it is economical to
     just collect them all at once. */
@@ -768,6 +769,7 @@ static int64_t r_PROFILE_LEVEL_INFO(jxr_image_t image, struct rbitstream*str)
         last_flag = _jxr_rbitstream_uint1(str); /* LAST_FLAG */
         num_bytes += 4;
     }
+	(void)reserved_l;
 
     return num_bytes;
 }
@@ -2396,7 +2398,7 @@ static int r_DECODE_INDEX(jxr_image_t image, struct rbitstream*str,
 
 static int r_DECODE_RUN(jxr_image_t /*image*/, struct rbitstream*str, int max_run)
 {
-    int run;
+    int run=0;
 
     if (max_run < 5) {
         DEBUG(" DECODE_RUN max_run=%d (<5) bitpos=%zu\n",
@@ -2503,7 +2505,7 @@ static void r_PredCBP(jxr_image_t image, int*diff_cbp,
         _jxr_InitializeCBPModel(image);
     }
 
-    assert(my == image->cur_my);
+    assert(my == (unsigned)image->cur_my);
     switch (image->use_clr_fmt) {
         case 1: /*YUV420*/
             MACROBLK_CUR_HPCBP(image, 0, tx, mx)

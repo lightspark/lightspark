@@ -149,6 +149,7 @@ Config::Config():
 		}
 		else
 			dataDirectory = tmpdir;
+		delete[] tmpdir;
 	}
 
 #ifdef _WIN32

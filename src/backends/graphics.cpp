@@ -696,7 +696,10 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 			cairo_identity_matrix(cr);
 			ret=cairo_in_fill(cr, x, y);
 			if (ret)
+			{
+				cairo_destroy(cr);
 				break;
+			}
 		}
 		cairo_destroy(cr);
 	}

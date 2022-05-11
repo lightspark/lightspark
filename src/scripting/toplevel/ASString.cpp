@@ -171,6 +171,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	pcre* pcreRE=pcre_compile(restr.raw_buf(), options, &error, &errorOffset,nullptr);
 	if(error)
 	{
+		pcre_free(pcreRE);
 		asAtomHandler::setInt(ret,wrk,res);
 		return;
 	}
@@ -196,6 +197,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 		asAtomHandler::setInt(ret,wrk,res);
 		return;
 	}
+	pcre_free(pcreRE);
 	res=ovector[0];
 	// pcre_exec returns byte position, so we have to convert it to character position 
 	tiny_string tmp = data.substr_bytes(0, res);

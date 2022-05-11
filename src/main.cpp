@@ -53,7 +53,10 @@ class StandaloneEngineData: public EngineData
 		{
 			const char* filename = g_dir_read_name (d);
 			if (!filename)
+			{
+				g_dir_close(d);
 				return;
+			}
 			string path = dir;
 			path += G_DIR_SEPARATOR_S;
 			path += filename;

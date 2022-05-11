@@ -165,11 +165,13 @@ uint8_t* ByteArray::getBufferIntern(unsigned int size, bool enableResize)
 		while(real_len < size)
 			real_len += BA_CHUNK_SIZE;
 		// Reallocate the buffer, in chunks of BA_CHUNK_SIZE bytes
-		uint8_t* bytes2 = (uint8_t*) realloc(bytes, real_len);
+		uint8_t* bytes2 = new uint8_t[real_len];
+		assert_and_throw(bytes2);
+		memcpy(bytes2,bytes,prevLen);
+		delete[] bytes;
 #ifdef MEMORY_USAGE_PROFILING
 		getClass()->memoryAccount->addBytes(real_len-prev_real_len);
 #endif
-		assert_and_throw(bytes2);
 		bytes = bytes2;
 		if(prevLen<size)
 			memset(bytes+prevLen,0,real_len-prevLen);
@@ -1246,7 +1248,7 @@ void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 #ifdef MEMORY_USAGE_PROFILING
 		getClass()->memoryAccount->removeBytes(real_len);
 #endif
-		free(bytes);
+		delete[] bytes;
 	}
 	bytes=buf;
 	real_len=bufLen;
@@ -1500,9 +1502,9 @@ ASFUNCTIONBODY_ATOM(ByteArray,clear)
 #ifdef MEMORY_USAGE_PROFILING
 		th->getClass()->memoryAccount->removeBytes(th->real_len);
 #endif
-		free(th->bytes);
+		delete[] th->bytes;
 	}
-	th->bytes = NULL;
+	th->bytes = nullptr;
 	th->len=0;
 	th->real_len=0;
 	th->position=0;

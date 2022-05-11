@@ -1169,7 +1169,8 @@ void TextField::updateSizes()
 	bool embedded = embeddedfont && embeddedfont->hasGlyphs(getText());
 	scaling = 1.0f/1024.0f/20.0f;
 	th=0;
-	number_t w,h;
+	number_t w=0;
+	number_t h=0;
 	linemutex->lock();
 	auto it = textlines.begin();
 	while (it != textlines.end())

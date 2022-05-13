@@ -425,10 +425,10 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	}
 	if(asAtomHandler::isValid(o) && !asAtomHandler::is<Proxy>(obj))
 	{
-		if (canCache 
-				&& instrptr 
-				&& name->isStatic 
-				&& (instrptr->local3.flags & ABC_OP_NOTCACHEABLE)==0 
+		if (canCache
+				&& instrptr
+				&& name->isStatic
+				&& (instrptr->local3.flags & ABC_OP_NOTCACHEABLE)==0
 				&& asAtomHandler::canCacheMethod(obj,name)
 				&& asAtomHandler::getObject(o) 
 				&& (asAtomHandler::is<Class_base>(obj) || asAtomHandler::as<IFunction>(o)->inClass == asAtomHandler::getClass(obj,th->sys)))
@@ -437,7 +437,8 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 			instrptr->local3.flags |= ABC_OP_CACHED;
 			instrptr->cacheobj1 = asAtomHandler::getClass(obj,th->sys);
 			instrptr->cacheobj2 = asAtomHandler::getObject(o);
-			instrptr->cacheobj2->incRef();
+			if (instrptr->cacheobj2->is<IFunction>() && instrptr->cacheobj2->as<IFunction>()->clonedFrom)
+				instrptr->cacheobj2->setRefConstant();
 			LOG_CALL("caching callproperty:"<<*name<<" "<<instrptr->cacheobj1->toDebugString()<<" "<<instrptr->cacheobj2->toDebugString());
 		}
 //		else
@@ -2650,6 +2651,7 @@ void ABCVm::newClass(call_context* th, int n)
 		MemoryAccount* m = th->sys->allocateMemoryAccount(className.getQualifiedName(th->sys));
 		ret=new (m) Class_inherit(className, m,nullptr,nullptr);
 		ret->setWorker(th->worker);
+		ret->setRefConstant();
 
 		LOG_CALL("add classes defined:"<<*mname<<" "<<th->mi->context);
 		//Add the class to the ones being currently defined in this context
@@ -2716,7 +2718,9 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->initializeProtectedNamespace(th->mi->context->getString(ns_info.name),ns_info,th->mi->context->root.getPtr());
 	}
 
-	ret->setDeclaredMethodByQName(BUILTIN_STRINGS::STRING_TOSTRING,nsNameAndKind(ret->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),Class<IFunction>::getFunction(ret->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
+	IFunction* f = Class<IFunction>::getFunction(ret->getSystemState(),Class_base::_toString);
+	f->setRefConstant();
+	ret->setDeclaredMethodByQName(BUILTIN_STRINGS::STRING_TOSTRING,nsNameAndKind(ret->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),f,NORMAL_METHOD,false);
 
 	if (th->parent_scope_stack)
 		ret->class_scope = th->parent_scope_stack->scope;
@@ -2755,6 +2759,7 @@ void ABCVm::newClass(call_context* th, int n)
 		}
 #endif
 		SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(th->worker,constructor,constructor->numArgs());
+		constructorFunc->setRefConstant();
 		constructorFunc->acquireScope(ret->class_scope);
 		constructorFunc->addToScope(scope_entry(asAtomHandler::fromObject(ret),false));
 		constructorFunc->inClass = ret;
@@ -2766,6 +2771,7 @@ void ABCVm::newClass(call_context* th, int n)
 
 	//Add prototype variable
 	ret->prototype = _MNR(new_objectPrototype(ret->getInstanceWorker()));
+	ret->prototype->getObj()->setRefConstant();
 	//Add the constructor variable to the class prototype
 	ret->prototype->setVariableByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),ret, DECLARED_TRAIT);
 	if(ret->super)
@@ -2812,6 +2818,7 @@ void ABCVm::newClass(call_context* th, int n)
 	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(th->worker,m,m->numArgs());
 	cinit->fromNewFunction=true;
 	cinit->inClass = ret;
+	cinit->setRefConstant();
 	//cinit must inherit the current scope
 	if (th->parent_scope_stack)
 		cinit->acquireScope(th->parent_scope_stack->scope);
@@ -2897,6 +2904,7 @@ void ABCVm::popScope(call_context* th)
 	LOG_CALL("popScope");
 	assert_and_throw(th->curr_scope_stack);
 	th->curr_scope_stack--;
+	ASATOM_DECREF(th->scope_stack[th->curr_scope_stack]);
 }
 
 bool ABCVm::lessThan(ASObject* obj1, ASObject* obj2)

@@ -1448,8 +1448,9 @@ void ByteArray::uncompress_zlib(bool raw)
 	getClass()->memoryAccount->addBytes(len-real_len);
 #endif
 	real_len = len;
-	uint8_t* bytes2=(uint8_t*) realloc(bytes, len);
+	uint8_t* bytes2 = new uint8_t[len];
 	assert_and_throw(bytes2);
+	delete[] bytes;
 	bytes = bytes2;
 	memcpy(bytes, &buf[0], len);
 	position=0;

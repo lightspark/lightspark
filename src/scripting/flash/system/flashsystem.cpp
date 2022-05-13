@@ -396,7 +396,19 @@ void ApplicationDomain::finalize()
 		i->second->decRef();
 	globalScopes.clear();
 }
-
+void ApplicationDomain::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	if (domainMemory)
+		domainMemory->prepareShutdown();
+	defaultDomainMemory->prepareShutdown();
+	if (parentDomain)
+		parentDomain->prepareShutdown();
+	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
+		it->second->prepareShutdown();
+}
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 {
 	ApplicationDomain* th = asAtomHandler::as<ApplicationDomain>(obj);
@@ -928,6 +940,27 @@ void ASWorker::finalize()
 	delete[] freelist;
 }
 
+void ASWorker::prepareShutdown()
+{
+	if(preparedforshutdown)
+		return;
+	parsemutex.lock();
+	ASObject::prepareShutdown();
+	if (rootClip)
+	{
+		for(auto it = rootClip->customClasses.begin(); it != rootClip->customClasses.end(); ++it)
+			it->second->prepareShutdown();
+		for(auto it = rootClip->templates.begin(); it != rootClip->templates.end(); ++it)
+			it->second->prepareShutdown();
+		rootClip->prepareShutdown();
+	}
+	if (loader)
+		loader->prepareShutdown();
+	if (swf)
+		swf->prepareShutdown();
+	parsemutex.unlock();
+}
+
 Prototype* ASWorker::getClassPrototype(const Class_base* cls)
 {
 	auto it = protoypeMap.find(cls);
@@ -1089,6 +1122,7 @@ ASFUNCTIONBODY_GETTER(ASWorker, isPrimordial)
 
 ASFUNCTIONBODY_ATOM(ASWorker,_getCurrent)
 {
+	wrk->incRef();
 	ret = asAtomHandler::fromObject(wrk);
 }
 ASFUNCTIONBODY_ATOM(ASWorker,getSharedProperty)

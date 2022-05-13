@@ -819,6 +819,7 @@ public:
 				std::map<const Class_base*, uint32_t>& traitsMap, bool forsharedobject, ASWorker* wrk);
 	void dumpVariables();
 	void destroyContents();
+	void prepareShutdown();
 	bool cloneInstance(variables_map& map);
 	void removeAllDeclaredProperties();
 };
@@ -867,7 +868,7 @@ private:
 	ASWorker* worker;
 protected:
 	ASObject(MemoryAccount* m):objfreelist(nullptr),Variables(m),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),worker(nullptr),
-		stringId(UINT32_MAX),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+		stringId(UINT32_MAX),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
 	{
 #ifndef NDEBUG
 		//Stuff only used in debugging
@@ -878,7 +879,6 @@ protected:
 	ASObject(const ASObject& o);
 	virtual ~ASObject()
 	{
-		destroy();
 	}
 	uint32_t stringId;
 	SWFOBJECT_TYPE type;
@@ -887,6 +887,7 @@ protected:
 	bool traitsInitialized:1;
 	bool constructIndicator:1;
 	bool constructorCallComplete:1; // indicates that the constructor including all super constructors has been called
+	bool preparedforshutdown:1;
 	static variable* findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter);
 	static FORCE_INLINE const variable* findGettableImplConst(SystemState* sys, const variables_map& map, const multiname& name, uint32_t* nsRealId = nullptr)
 	{
@@ -923,8 +924,6 @@ protected:
 	   The destruct method must be callable multiple time with the same effects (no double frees).
 	*/
 	bool destruct() override;
-	// called when object is really destroyed
-	virtual void destroy(){}
 
 	FORCE_INLINE bool destructIntern()
 	{
@@ -1288,6 +1287,8 @@ public:
 	{
 		Variables.destroyContents();
 	}
+	// this is called when shutting down the application, so remove all pointers to freelist to avoid any caching of ASObjects
+	virtual void prepareShutdown();
 	CLASS_SUBTYPE getSubtype() const { return subtype;}
 	// copies all variables into the target
 	// returns false if cloning is not possible

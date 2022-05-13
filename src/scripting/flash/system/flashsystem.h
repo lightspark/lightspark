@@ -88,6 +88,7 @@ public:
 	ByteArray* currentDomainMemory;
 	ApplicationDomain(ASWorker* wrk, Class_base* c, _NR<ApplicationDomain> p=NullRef);
 	void finalize() override;
+	void prepareShutdown() override;
 	std::map<const multiname*, Class_base*> classesBeingDefined;
 	std::map<QName, Class_base*> instantiatedTemplates;
 
@@ -320,6 +321,7 @@ public:
 	ASWorker(Class_base* c);
 	ASWorker(ASWorker* wrk,Class_base* c);
 	void finalize() override;
+	void prepareShutdown() override;
 	Prototype* getClassPrototype(const Class_base* cls);
 	static void sinit(Class_base*);
 

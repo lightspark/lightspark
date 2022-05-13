@@ -99,6 +99,7 @@ public:
 	void destroyTags();
 	bool destruct() override;
 	void finalize() override;
+	void prepareShutdown() override;
 	bool hasFinishedLoading() override { return ACQUIRE_READ(finishedLoading); }
 	bool isWaitingForParser() { return waitingforparser; }
 	void constructionComplete() override;

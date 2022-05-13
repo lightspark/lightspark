@@ -191,6 +191,42 @@ bool DisplayObject::destruct()
 	return EventDispatcher::destruct();
 }
 
+void DisplayObject::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	
+	if (cachedBitmap)
+		cachedBitmap->prepareShutdown();
+	if (cachedAsBitmapOf)
+		cachedAsBitmapOf->prepareShutdown();
+	if (maskOf)
+		maskOf->prepareShutdown();
+	if (mask)
+		mask->prepareShutdown();
+	if (matrix)
+		matrix->prepareShutdown();;
+	if (loaderInfo)
+		loaderInfo->prepareShutdown();;
+	if (invalidateQueueNext)
+		invalidateQueueNext->prepareShutdown();
+	if (accessibilityProperties)
+		accessibilityProperties->prepareShutdown();
+	if (colorTransform)
+		colorTransform->prepareShutdown();
+	if (filters)
+		filters->prepareShutdown();
+	if (scrollRect)
+		scrollRect->prepareShutdown();
+	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
+	{
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			o->prepareShutdown();
+	}
+}
+
 void DisplayObject::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED);

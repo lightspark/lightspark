@@ -104,6 +104,8 @@ void AudioStream::setPanning(uint16_t left, int16_t right)
 AudioStream::~AudioStream()
 {
 	manager->engineData->audio_StreamDeinit(mixer_channel);
+	if (audiobuffer)
+		delete[] audiobuffer;
 	manager->removeStream(this);
 }
 

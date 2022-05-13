@@ -33,6 +33,8 @@ class ContextMenu : public EventDispatcher
 public:
 	ContextMenu(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
+	bool destruct() override;
+	void prepareShutdown() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(hideBuiltInItems);
 	ASFUNCTION_ATOM(clone);

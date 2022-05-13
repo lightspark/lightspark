@@ -92,6 +92,7 @@ public:
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	Array(ASWorker *w,Class_base* c);
 	bool destruct() override;
+	void prepareShutdown() override;
 	
 	//These utility methods are also used by ByteArray
 	static bool isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index);
@@ -149,7 +150,7 @@ public:
 	
 	bool set(unsigned int index, asAtom &o, bool checkbounds = true, bool addref = true);
 	uint64_t size();
-	void push(asAtom o);
+	void push(asAtom o);// push doesn't increment the refcount, so the caller has to take care of that
 	void resize(uint64_t n);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;

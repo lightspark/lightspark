@@ -128,13 +128,13 @@ ASFUNCTIONBODY_ATOM(RegExp,generator)
 	}
 }
 
-ASFUNCTIONBODY_GETTER(RegExp, dotall);
-ASFUNCTIONBODY_GETTER(RegExp, global);
-ASFUNCTIONBODY_GETTER(RegExp, ignoreCase);
-ASFUNCTIONBODY_GETTER(RegExp, extended);
-ASFUNCTIONBODY_GETTER(RegExp, multiline);
-ASFUNCTIONBODY_GETTER_SETTER(RegExp, lastIndex);
-ASFUNCTIONBODY_GETTER(RegExp, source);
+ASFUNCTIONBODY_GETTER(RegExp, dotall)
+ASFUNCTIONBODY_GETTER(RegExp, global)
+ASFUNCTIONBODY_GETTER(RegExp, ignoreCase)
+ASFUNCTIONBODY_GETTER(RegExp, extended)
+ASFUNCTIONBODY_GETTER(RegExp, multiline)
+ASFUNCTIONBODY_GETTER_SETTER(RegExp, lastIndex)
+ASFUNCTIONBODY_GETTER(RegExp, source)
 
 ASFUNCTIONBODY_ATOM(RegExp,exec)
 {
@@ -150,7 +150,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	if (!pcreRE)
 		return getSystemState()->getNullRef();
 	int capturingGroups;
-	int infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
+	int infoOk=pcre_fullinfo(pcreRE, nullptr, PCRE_INFO_CAPTURECOUNT, &capturingGroups);
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
@@ -158,7 +158,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	}
 	//Get information about named capturing groups
 	int namedGroups;
-	infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_NAMECOUNT, &namedGroups);
+	infoOk=pcre_fullinfo(pcreRE, nullptr, PCRE_INFO_NAMECOUNT, &namedGroups);
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
@@ -166,7 +166,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	}
 	//Get information about the size of named entries
 	int namedSize;
-	infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_NAMEENTRYSIZE, &namedSize);
+	infoOk=pcre_fullinfo(pcreRE, nullptr, PCRE_INFO_NAMEENTRYSIZE, &namedSize);
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
@@ -178,7 +178,7 @@ ASObject *RegExp::match(const tiny_string& str)
 		char name[0];
 	};
 	char* entries;
-	infoOk=pcre_fullinfo(pcreRE, NULL, PCRE_INFO_NAMETABLE, &entries);
+	infoOk=pcre_fullinfo(pcreRE, nullptr, PCRE_INFO_NAMETABLE, &entries);
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);

@@ -1423,10 +1423,9 @@ int EngineData::audio_StreamInit(AudioStream* s)
 
 	uint32_t len = LIGHTSPARK_AUDIO_BUFFERSIZE;
 
-	uint8_t *buf = new uint8_t[len];
-	memset(buf,0,len);
-	Mix_Chunk* chunk = Mix_QuickLoad_RAW(buf, len);
-	delete[] buf;
+	s->audiobuffer = new uint8_t[len];
+	memset(s->audiobuffer,0,len);
+	Mix_Chunk* chunk = Mix_QuickLoad_RAW(s->audiobuffer, len);
 
 
 	mixer_channel = Mix_PlayChannel(-1, chunk, -1);

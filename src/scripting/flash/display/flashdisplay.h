@@ -89,8 +89,8 @@ public:
 	ASFUNCTION_ATOM(_getDoubleClickEnabled);
 	bool destruct() override;
 	void finalize() override;
+	void prepareShutdown() override;
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	virtual void lostFocus() {}
 	virtual void gotFocus() {} 
 	virtual void textInputChanged(const tiny_string& newtext) {} 
@@ -141,6 +141,7 @@ public:
 	DisplayObjectContainer(ASWorker* wrk,Class_base* c);
 	bool destruct() override;
 	void finalize() override;
+	void prepareShutdown() override;
 	bool hasLegacyChildAt(int32_t depth);
 	// this does not test if a DisplayObject exists at the provided depth
 	DisplayObject* getLegacyChildAt(int32_t depth);
@@ -229,6 +230,7 @@ public:
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
 	void constructionComplete() override;
 	void finalize() override;
+	void prepareShutdown() override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	uint32_t getTagID() const override;
@@ -347,7 +349,8 @@ public:
 	ASPROPERTY_GETTER(number_t,frameRate);
 	LoaderInfo(ASWorker*,Class_base* c);
 	LoaderInfo(ASWorker*,Class_base* c, _R<Loader> l);
-	bool destruct();
+	bool destruct() override;
+	void prepareShutdown() override;
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -475,6 +478,7 @@ public:
 	void setSoundStartFrame(uint32_t frame) { soundstartframe=frame; }
 	bool destruct() override;
 	void finalize() override;
+	void prepareShutdown() override;
 	void startDrawJob() override;
 	void endDrawJob() override;
 	static void sinit(Class_base* c);
@@ -628,6 +632,7 @@ public:
 	MovieClip(ASWorker* wrk,Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID);
 	bool destruct() override;
 	void finalize() override;
+	void prepareShutdown() override;
 	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);
@@ -730,6 +735,8 @@ protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
 	bool renderImpl(RenderContext& ctxt) const override;
 public:
+	bool destruct() override;
+	void prepareShutdown() override;
 	void defaultEventBehavior(_R<Event> e) override;
 	ACQUIRE_RELEASE_FLAG(invalidated);
 	void onAlign(uint32_t);
@@ -840,6 +847,8 @@ friend class Stage;
 protected:
 	bool renderImpl(RenderContext &ctxt) const;
 public:
+	bool destruct() override;
+	void prepareShutdown() override;
 	Stage3D(ASWorker* wrk, Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);

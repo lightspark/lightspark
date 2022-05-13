@@ -179,7 +179,6 @@ protected:
 	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION_ATOM(_toString);
 	void initStandardProps();
-	void destroy() override;
 public:
 	virtual asfreelist* getFreeList(ASWorker* w)
 	{
@@ -222,6 +221,7 @@ public:
 	Class_base(const Class_object*c);
 	~Class_base();
 	void finalize() override;
+	void prepareShutdown() override;
 	virtual void getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr)=0;
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
@@ -351,10 +351,6 @@ public:
 	Prototype():obj(nullptr),workerDynamicClassVars(nullptr),originalPrototypeVars(nullptr),isSealed(false) {}
 	virtual ~Prototype()
 	{
-		if (originalPrototypeVars)
-			originalPrototypeVars->decRef();
-		if (workerDynamicClassVars)
-			workerDynamicClassVars->decRef();
 	}
 	_NR<Prototype> prevPrototype;
 	inline void incRef() { obj->incRef(); }
@@ -380,7 +376,8 @@ class ObjectPrototype: public ASObject, public Prototype
 {
 public:
 	ObjectPrototype(ASWorker* wrk,Class_base* c);
-	inline void finalize() override { prevPrototype.reset(); }
+	void finalize() override;
+	void prepareShutdown();
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	bool isEqual(ASObject* r) override;
@@ -406,7 +403,7 @@ class ArrayPrototype: public Array, public Prototype
 {
 public:
 	ArrayPrototype(ASWorker* wrk,Class_base* c);
-	inline void finalize() override { prevPrototype.reset(); }
+	void finalize() override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	bool isEqual(ASObject* r) override;
@@ -444,7 +441,7 @@ public:
 	Function_object(ASWorker* wrk, Class_base* c, _R<ASObject> p);
 	_NR<ASObject> functionPrototype;
 	void finalize() override { functionPrototype.reset(); }
-
+	void prepareShutdown() override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 };
 
@@ -485,6 +482,7 @@ public:
 		prototype.reset();
 		return destructIntern();
 	}
+	void prepareShutdown() override;
 	IFunction* bind(_NR<ASObject> c, ASWorker* wrk)
 	{
 		IFunction* ret=nullptr;
@@ -553,7 +551,7 @@ protected:
 		returnTypeAllArgsInt=nullptr;
 		return IFunction::destruct();
 	}
-	
+	void prepareShutdown() override;
 public:
 	/**
 	 * This executes a C++ function.
@@ -590,6 +588,10 @@ public:
 	FunctionPrototype(ASWorker* wrk,Class_base* c, _NR<Prototype> p);
 	inline bool destruct() override
 	{
+		if (originalPrototypeVars)
+			originalPrototypeVars->decRef();
+		if (workerDynamicClassVars)
+			workerDynamicClassVars->decRef();
 		prevPrototype.reset();
 		return Function::destruct();
 	}

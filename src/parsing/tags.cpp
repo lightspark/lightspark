@@ -1298,7 +1298,14 @@ BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),b
 	bitmap->setConstant();
 }
 
-_R<BitmapContainer> BitmapTag::getBitmap() const {
+BitmapTag::~BitmapTag()
+{
+	BitmapContainer* b = bitmap.getPtr();
+	bitmap.reset();
+	delete b;
+}
+
+_NR<BitmapContainer> BitmapTag::getBitmap() const {
 	return bitmap;
 }
 void BitmapTag::loadBitmap(uint8_t* inData, int datasize, const uint8_t *tablesData, int tablesLen)
@@ -2864,7 +2871,7 @@ SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in, RootMov
 	in>>StreamSoundSampleCount;
 	if (StreamSoundCompression == LS_AUDIO_CODEC::MP3) 
 		in>>LatencySeek;
-	SoundData->incRef();
+	SoundData->setConstant();
 	if (StreamSoundSampleCount == 0) // ignore sounds with no samples
 		return;
 	if (sprite)
@@ -2875,6 +2882,13 @@ SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in, RootMov
 	{
 		setSoundChannel(root);
 	}
+}
+
+SoundStreamHeadTag::~SoundStreamHeadTag()
+{
+	MemoryStreamCache* c = SoundData.getPtr();
+	SoundData.reset();
+	delete c;
 }
 
 void SoundStreamHeadTag::setSoundChannel(Sprite *spr)

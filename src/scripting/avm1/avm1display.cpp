@@ -600,6 +600,7 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,addListener)
 	{
 		// TODO spec is not clear if listener can be added multiple times
 		Array* listeners = asAtomHandler::as<Array>(l);
+		listener->incRef();
 		listeners->push(asAtomHandler::fromObjectNoPrimitive(listener.getPtr()));
 	}
 	ret = asAtomHandler::trueAtom;

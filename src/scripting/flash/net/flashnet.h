@@ -110,6 +110,7 @@ private:
 public:
 	SharedObject(ASWorker* wrk,Class_base* c);
 	bool destruct() override;
+	void prepareShutdown() override;
 	bool doFlush(ASWorker* wrk);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(getLocal);

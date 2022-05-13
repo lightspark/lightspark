@@ -564,8 +564,8 @@ void SystemState::stopEngines()
 	securityManager=nullptr;
 	delete localeManager;
 	localeManager=nullptr;
-    delete currencyManager;
-    currencyManager=NULL;
+	delete currencyManager;
+	currencyManager=nullptr;
 	delete threadPool;
 	threadPool=nullptr;
 	delete downloadThreadPool;
@@ -646,15 +646,20 @@ void SystemState::systemFinalize()
 
 SystemState::~SystemState()
 {
-	// 1) remove all references to variables as they might point to other constant reffed objects
+	// 1) remove all references to freelists
+	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
+	{
+		(*it)->prepareShutdown();
+	}
+	// 2) remove all references to variables as they might point to other constant reffed objects
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
 		(*it)->destroyContents();
 		(*it)->finalize();
 	}
-	// 2) delete builtin classes
+	// 3) delete builtin classes
 	delete[] builtinClasses;
-	// 3) delete the constant reffed objects
+	// 4) delete the constant reffed objects
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
 		delete (*it);
@@ -2615,6 +2620,17 @@ void RootMovieClip::finalize()
 	securityDomain.reset();
 	parsethread=nullptr;
 	MovieClip::finalize();
+}
+
+void RootMovieClip::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	MovieClip::prepareShutdown();
+	if (applicationDomain)
+		applicationDomain->prepareShutdown();
+	if (securityDomain)
+		securityDomain->prepareShutdown();
 }
 
 void RootMovieClip::addBinding(const tiny_string& name, DictionaryTag *tag)

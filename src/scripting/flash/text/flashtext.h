@@ -140,8 +140,8 @@ public:
 	TextField(ASWorker* wrk,Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true, const char* varname="", DefineEditTextTag* _tag=nullptr);
 	~TextField();
 	void finalize() override;
+	void prepareShutdown() override;
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	void setHtmlText(const tiny_string& html);
 	void avm1SyncTagVar();
 	void UpdateVariableBinding(asAtom v) override;

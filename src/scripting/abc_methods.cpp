@@ -889,6 +889,8 @@ void ABCVm::abc_getProperty(call_context* context)
 			context->exec_pos->local3.flags = ABC_OP_CACHED;
 			instrptr->cacheobj1 = obj->getClass();
 			instrptr->cacheobj2 = f;
+			if (f->clonedFrom)
+				f->incRef();
 			instrptr->cacheobj3 = closure;
 		}
 	}
@@ -1417,7 +1419,10 @@ void ABCVm::abc_in(call_context* context)
 
 	LOG_CALL( "in" );
 	if(v1->is<Null>())
+	{
+		v1->decRef();
 		throwError<TypeError>(kConvertNullToObjectError);
+	}
 
 	multiname name(nullptr);
 	asAtomHandler::fillMultiname(*pval,context->worker,name);

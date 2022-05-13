@@ -260,7 +260,7 @@ public:
 	Vector(ASWorker* wrk,Class_base* c, const Type *vtype=nullptr);
 	~Vector();
 	bool destruct() override;
-	
+	void prepareShutdown() override;
 	
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o) {}

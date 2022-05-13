@@ -159,7 +159,20 @@ void IFunction::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),IFunction::_toString),NORMAL_METHOD,false);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype);
+void IFunction::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	if (closure_this)
+		closure_this->prepareShutdown();
+	closure_this.reset();
+	if (prototype)
+		prototype->prepareShutdown();
+	prototype.reset();
+}
+
+ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype)
 ASFUNCTIONBODY_ATOM(IFunction,_length)
 {
 	if (asAtomHandler::is<IFunction>(obj))
@@ -180,7 +193,7 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 	asAtom newObj=asAtomHandler::invalidAtom;
 	asAtom* newArgs=nullptr;
 	int newArgsLen=0;
-	if(th->closure_this)
+	if(th->inClass && th->closure_this)
 		newObj = asAtomHandler::fromObject(th->closure_this.getPtr());
 	else
 	{
@@ -235,7 +248,7 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 	asAtom newObj=asAtomHandler::invalidAtom;
 	asAtom* newArgs=nullptr;
 	uint32_t newArgsLen=0;
-	if(th->closure_this)
+	if(th->inClass && th->closure_this)
 		newObj = asAtomHandler::fromObject(th->closure_this.getPtr());
 	else
 	{
@@ -626,7 +639,6 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 					cc->exec_pos = mi->body->preloadedcode.data()+exc.target;
 					cc->runtime_stack_clear();
 					*(cc->stackp++)=asAtomHandler::fromObject(excobj);
-					excobj->incRef();
 					while (cc->curr_scope_stack != (mi->needsscope ? 1 : 0))
 					{
 						--cc->curr_scope_stack;
@@ -643,6 +655,32 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				if (!wrk)
 					Log::calls_indent--;
 #endif
+				for(asAtom* i=cc->locals+1;i< cc->lastlocal;++i)
+				{
+					LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
+					ASATOM_DECREF_POINTER(i);
+				}
+				if (cc->locals[0].uintval != obj.uintval)
+					ASATOM_DECREF_POINTER(cc->locals);
+				asAtom* lastscope=cc->scope_stack+cc->curr_scope_stack;
+				for(asAtom* i=cc->scope_stack+(mi->needsscope ? 1:0);i< lastscope;++i)
+				{
+					ASATOM_DECREF_POINTER(i);
+				}
+				if (mi->needsscope && cc->scope_stack[0].uintval != obj.uintval)
+					ASATOM_DECREF_POINTER(cc->scope_stack);
+				cc->curr_scope_stack=0;
+				if (!isMethod())
+					this->decRef(); //free local ref
+				for (auto it = cc->dynamicfunctions.begin(); it != cc->dynamicfunctions.end(); it++)
+				{
+					LOG_CALL("dynamicfunc:"<<(*it)->toDebugString());
+					(*it)->decRef();
+				}
+				cc->dynamicfunctions.clear();
+
+				if (recursive_call)
+					delete cc;
 				throw;
 			}
 			continue;
@@ -708,7 +746,7 @@ bool SyntheticFunction::destruct()
 	// the scope may contain objects that have pointers to this function
 	// which may lead to calling destruct() recursively
 	// so we have to make sure to cleanup the func_scope only once
-	if (!func_scope.isNull() && !inClass)
+	if (!func_scope.isNull() && fromNewFunction)
 	{
 		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
 		{
@@ -810,6 +848,26 @@ IFunction* Function::clone(ASWorker* wrk)
 	ret->subtype = this->subtype;
 	ret->isStatic = this->isStatic;
 	return ret;
+}
+
+void Function::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	if (prototype)
+	{
+		// remove constructor variable from prototye if it is a not refcounted pointer to this
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_STRING;
+		m.name_s_id = BUILTIN_STRINGS::STRING_CONSTRUCTOR;
+		uint32_t nsRealID;
+		bool isborrowed;
+		variable* v = prototype->findVariableByMultiname(m,nullptr,&nsRealID,&isborrowed,false,this->getInstanceWorker());
+		if (v)
+			v->var = asAtomHandler::invalidAtom;
+		prototype->prepareShutdown();
+	}
+	IFunction::prepareShutdown();
 }
 
 bool Function::isEqual(ASObject* r)
@@ -1339,7 +1397,7 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 {
 	if(buildAndLink)
 	{
-		setupDeclaredTraits(asAtomHandler::getObject(target));
+		setupDeclaredTraits(asAtomHandler::getObjectNoCheck(target));
 	}
 
 	if(constructor)
@@ -1371,15 +1429,6 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 }
 
 
-void Class_base::destroy()
-{
-	if(constructor)
-	{
-		constructor->decRef();
-		constructor=nullptr;
-	}
-}
-
 void Class_base::finalize()
 {
 	borrowedVariables.destroyContents();
@@ -1403,7 +1452,21 @@ void Class_base::finalize()
 	isInterface = false;
 	use_protected = false;
 }
-
+void Class_base::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	borrowedVariables.prepareShutdown();
+	if(constructor)
+		constructor->prepareShutdown();
+	if (constructorprop)
+		constructorprop->prepareShutdown();
+	if (prototype && prototype->getObj())
+		prototype->getObj()->prepareShutdown();
+	if (super)
+		super->prepareShutdown();
+}
 Template_base::Template_base(ASWorker* wrk,QName name) : ASObject(wrk,(Class_base*)(nullptr)),template_name(name)
 {
 	type = T_TEMPLATE;
@@ -2813,6 +2876,7 @@ multiname *Global::setVariableByMultiname(multiname &name, asAtom &o, ASObject::
 void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o, NS_KIND nskind)
 {
 	o->incRef();
+	o->setRefConstant();
 	if (o->is<Class_base>())
 		o->as<Class_base>()->setGlobalScope(this);
 	setVariableByQName(name,nsNameAndKind(getSystemState(),ns,nskind),o.getPtr(),CONSTANT_TRAIT);
@@ -3284,6 +3348,26 @@ ObjectPrototype::ObjectPrototype(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
 	obj = this;
 	this->objfreelist=nullptr; // prototypes are not reusable
 	originalPrototypeVars = new_asobject(wrk);
+	originalPrototypeVars->objfreelist=nullptr;
+	originalPrototypeVars->setRefConstant();
+}
+
+void ObjectPrototype::finalize()
+{
+	if (originalPrototypeVars)
+		originalPrototypeVars->decRef();
+	if (workerDynamicClassVars)
+		workerDynamicClassVars->decRef();
+	prevPrototype.reset();
+}
+
+void ObjectPrototype::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	if (prevPrototype)
+		prevPrototype->getObj()->prepareShutdown();
 }
 bool ObjectPrototype::isEqual(ASObject* r)
 {
@@ -3331,6 +3415,17 @@ ArrayPrototype::ArrayPrototype(ASWorker* wrk, Class_base* c) : Array(wrk,c)
 	obj = this;
 	this->objfreelist=nullptr; // prototypes are not reusable
 	originalPrototypeVars = new_asobject(wrk);
+	originalPrototypeVars->objfreelist=nullptr;
+	originalPrototypeVars->setRefConstant();
+}
+
+void ArrayPrototype::finalize()
+{
+	if (originalPrototypeVars)
+		originalPrototypeVars->decRef();
+	if (workerDynamicClassVars)
+		workerDynamicClassVars->decRef();
+	prevPrototype.reset();
 }
 bool ArrayPrototype::isEqual(ASObject* r)
 {
@@ -3390,6 +3485,8 @@ FunctionPrototype::FunctionPrototype(ASWorker* wrk, Class_base* c, _NR<Prototype
 	obj = this;
 	this->objfreelist=nullptr; // prototypes are not reusable
 	originalPrototypeVars = new_asobject(wrk);
+	originalPrototypeVars->objfreelist=nullptr;
+	originalPrototypeVars->setRefConstant();
 }
 
 GET_VARIABLE_RESULT FunctionPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
@@ -3421,6 +3518,26 @@ Function_object::Function_object(ASWorker* wrk,Class_base* c, _R<ASObject> p) : 
 	traitsInitialized = true;
 	constructIndicator = true;
 	constructorCallComplete = true;
+}
+
+void Function_object::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	if (functionPrototype)
+	{
+		// remove constructor variable from prototye as it is a not refcounted pointer to this
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_STRING;
+		m.name_s_id = BUILTIN_STRINGS::STRING_CONSTRUCTOR;
+		uint32_t nsRealID;
+		bool isborrowed;
+		variable* v = functionPrototype->findVariableByMultiname(m,nullptr,&nsRealID,&isborrowed,false,this->getInstanceWorker());
+		if (v)
+			v->var = asAtomHandler::invalidAtom;
+		functionPrototype->prepareShutdown();
+	}
+	ASObject::prepareShutdown();
 }
 
 GET_VARIABLE_RESULT Function_object::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
@@ -3504,4 +3621,5 @@ void Prototype::copyOriginalValues(Prototype* target)
 		this->prevPrototype->copyOriginalValues(target);
 	originalPrototypeVars->copyValues(target->getObj(),target->getObj()->getInstanceWorker());
 	target->workerDynamicClassVars = new_asobject(target->getObj()->getInstanceWorker());
+	target->getObj()->setRefConstant();
 }

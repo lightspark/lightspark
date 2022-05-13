@@ -333,6 +333,7 @@ public:
 	EventDispatcher(ASWorker* wrk, Class_base* c);
 	void finalize() override;
 	bool destruct() override;
+	void prepareShutdown() override;
 	// is called when a new event is added to the event queue
 	virtual void onNewEvent(Event* ev){}
 	// is called after an event was handled by the event queue

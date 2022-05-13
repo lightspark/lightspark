@@ -312,7 +312,8 @@ private:
 	SI16_SWF LatencySeek;
 public:
 	SoundStreamHeadTag(RECORDHEADER h, std::istream& s, RootMovieClip* root,DefineSpriteTag* sprite);
-	_R<MemoryStreamCache> SoundData;
+	~SoundStreamHeadTag();
+	_NR<MemoryStreamCache> SoundData;
 	void setSoundChannel(Sprite* spr);
 	void execute(DisplayObjectContainer *parent,bool inskipping) override {}
 };
@@ -662,12 +663,13 @@ class BitmapContainer;
 class BitmapTag: public DictionaryTag
 {
 protected:
-        _R<BitmapContainer> bitmap;
-    void loadBitmap(uint8_t* inData, int datasize, const uint8_t *tablesData=nullptr, int tablesLen=0);
+	_NR<BitmapContainer> bitmap;
+	void loadBitmap(uint8_t* inData, int datasize, const uint8_t *tablesData=nullptr, int tablesLen=0);
 public:
 	BitmapTag(RECORDHEADER h,RootMovieClip* root);
+	~BitmapTag();
 	ASObject* instance(Class_base* c=nullptr) override;
-	_R<BitmapContainer> getBitmap() const;
+	_NR<BitmapContainer> getBitmap() const;
 };
 
 class JPEGTablesTag: public Tag

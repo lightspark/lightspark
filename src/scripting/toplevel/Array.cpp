@@ -52,6 +52,25 @@ bool Array::destruct()
 	return destructIntern();
 }
 
+void Array::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	for (auto it=data_first.begin() ; it != data_first.end(); ++it)
+	{
+		ASObject* o = asAtomHandler::getObject(*it);
+		if (o)
+			o->prepareShutdown();
+	}
+	for (auto it=data_second.begin() ; it != data_second.end(); ++it)
+	{
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			o->prepareShutdown();
+	}
+}
+
 void Array::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
@@ -189,6 +208,7 @@ ASFUNCTIONBODY_ATOM(Array,_concat)
 			auto itother1=otherArray->data_first.begin();
 			for(;itother1!=otherArray->data_first.end(); ++itother1)
 			{
+				ASATOM_INCREF(*itother1);
 				res->push(*itother1);
 				newSize++;
 			}
@@ -203,6 +223,7 @@ ASFUNCTIONBODY_ATOM(Array,_concat)
 		else
 		{
 			//Insert the argument
+			ASATOM_INCREF(args[i]);
 			res->push(args[i]);
 		}
 	}
@@ -669,6 +690,7 @@ ASFUNCTIONBODY_ATOM(Array,slice)
 	for(uint32_t i=startIndex; i<endIndex && i< th->currentsize; i++) 
 	{
 		asAtom a = th->at((uint32_t)i);
+		ASATOM_INCREF(a);
 		if (asAtomHandler::isValid(a))
 			res->push(a);
 		j++;
@@ -752,6 +774,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 	//Insert requested values starting at startIndex
 	for(unsigned int i=2;i<argslen;i++)
 	{
+		ASATOM_INCREF(args[i]);
 		th->push(args[i]);
 	}
 	// move remembered items to new position
@@ -1446,6 +1469,7 @@ ASFUNCTIONBODY_ATOM(Array,_push)
 	uint64_t s = th->currentsize;
 	for(unsigned int i=0;i<argslen;i++)
 	{
+		ASATOM_INCREF(args[i]);
 		th->push(args[i]);
 	}
 	// currentsize is set even if push fails
@@ -1488,6 +1512,7 @@ ASFUNCTIONBODY_ATOM(Array,_push_as3)
 	{
 		if (th->size() >= UINT32_MAX)
 			break;
+		ASATOM_INCREF(args[i]);
 		th->push(args[i]);
 	}
 	asAtomHandler::setInt(ret,wrk,(int32_t)th->size());
@@ -1546,6 +1571,7 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 			RegExp::exec(funcRet,wrk,args[0],args,1);
 		}
 		assert_and_throw(asAtomHandler::isValid(funcRet));
+		ASATOM_INCREF(funcRet);
 		arrayRet->push(funcRet);
 	}
 
@@ -2339,6 +2365,6 @@ void Array::push(asAtom o)
 	if (getSystemState()->getSwfVersion() > 12 && getClass() && getClass()->isSealed)
 		throwError<ReferenceError>(kWriteSealedError,"push",getClass()->getQualifiedClassName());
 	currentsize++;
-	set(currentsize-1,o);
+	set(currentsize-1,o,false,false);
 }
 

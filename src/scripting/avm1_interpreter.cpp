@@ -443,6 +443,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						argarray = Class<Array>::getInstanceS(wrk);
 						for (uint32_t i = 0; i < num_args; i++)
 						{
+							ASATOM_INCREF(args[i]);
 							argarray->push(args[i]);
 						}
 					}

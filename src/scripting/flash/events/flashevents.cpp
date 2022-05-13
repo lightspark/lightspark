@@ -606,7 +606,28 @@ bool EventDispatcher::destruct()
 	}
 	return ASObject::destruct();
 }
-
+void EventDispatcher::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	ASObject* t = asAtomHandler::getObject(forcedTarget);
+	if (t)
+		t->prepareShutdown();
+	auto it=handlers.begin();
+	while(it!=handlers.end())
+	{
+		auto it2 = it->second.begin();
+		while (it2 != it->second.end())
+		{
+			ASObject* f = asAtomHandler::getObject((*it2).f);
+			if (f)
+				f->prepareShutdown();
+			it2++;
+		}
+		it++;
+	}
+}
 void EventDispatcher::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);

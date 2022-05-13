@@ -250,7 +250,9 @@ ASFUNCTIONBODY_ATOM(ASString,match)
 			prevLastIndex = re->lastIndex;
 
 			assert(match->is<Array>());
-			resarr->push(match->as<Array>()->at(0));
+			asAtom a = match->as<Array>()->at(0);
+			ASATOM_INCREF(a);
+			resarr->push(a);
 		}
 
 		// According to ECMA we should return Null if resarr
@@ -292,7 +294,7 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 	tiny_string data = asAtomHandler::toString(obj,wrk);
 	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
 	uint32_t limit = 0x7fffffff;
-	if(argslen == 0 )
+	if(argslen == 0)
 	{
 		res->push(asAtomHandler::fromObject(abstract_s(wrk,data)));
 		ret = asAtomHandler::fromObject(res);

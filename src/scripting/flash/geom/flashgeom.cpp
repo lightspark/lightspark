@@ -1466,14 +1466,17 @@ void Vector3D::sinit(Class_base* c)
 	Vector3D* tx = new (c->memoryAccount) Vector3D(c->getInstanceWorker(),c);
 	tx->x = 1;
 	c->setVariableByQName("X_AXIS","", tx, DECLARED_TRAIT);
+	tx->setRefConstant();
 
 	Vector3D* ty = new (c->memoryAccount) Vector3D(c->getInstanceWorker(),c);
 	ty->y = 1;
 	c->setVariableByQName("Y_AXIS","", ty, DECLARED_TRAIT);
+	ty->setRefConstant();
 
 	Vector3D* tz = new (c->memoryAccount) Vector3D(c->getInstanceWorker(),c);
 	tz->z = 1;
 	c->setVariableByQName("Z_AXIS","", tz, DECLARED_TRAIT);
+	tz->setRefConstant();
 
 	// properties
 	c->setDeclaredMethodByQName("w","",Class<IFunction>::getFunction(c->getSystemState(),_get_w,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);

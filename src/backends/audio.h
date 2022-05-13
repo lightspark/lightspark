@@ -72,9 +72,13 @@ private:
 	struct timeval starttime;
 	int mixer_channel;
 public:
+	uint8_t* audiobuffer;
 	bool init(double volume);
 	void startMixing();
-	AudioStream(AudioManager* _manager,IThreadJob* _producer,uint64_t _playedtime):manager(_manager),decoder(NULL),producer(_producer),hasStarted(false),isPaused(true),mixingStarted(false),playedtime(_playedtime) { }
+	AudioStream(AudioManager* _manager,IThreadJob* _producer,uint64_t _playedtime):manager(_manager),decoder(nullptr),producer(_producer)
+	  ,hasStarted(false),isPaused(true),mixingStarted(false),playedtime(_playedtime),mixer_channel(-1),audiobuffer(nullptr)
+	{
+	}
 
 	void SetPause(bool pause_on);
 	uint32_t getPlayedTime();

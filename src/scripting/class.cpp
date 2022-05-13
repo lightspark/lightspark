@@ -34,7 +34,9 @@ Prototype* lightspark::new_objectPrototype(ASWorker* wrk)
 {
 	//Create a Prototype object, the class should be ASObject
 	Class_base* c=Class<ASObject>::getClass(wrk->getSystemState());
-	return new (c->memoryAccount) ObjectPrototype(wrk,c);
+	Prototype* p = new (c->memoryAccount) ObjectPrototype(wrk,c);
+	p->getObj()->setRefConstant();
+	return p;
 }
 
 Prototype* lightspark::new_functionPrototype(ASWorker* wrk,Class_base* functionClass, _NR<Prototype> p)
@@ -83,6 +85,24 @@ void Class_inherit::finalize()
 	
 }
 
+void Class_inherit::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	Class_base::prepareShutdown();
+	if (instancefactory)
+		instancefactory->prepareShutdown();
+	auto it = class_scope.begin();
+	while (it != class_scope.end())
+	{
+		ASObject* o = asAtomHandler::getObject((*it).object);
+		if (o)
+			o->prepareShutdown();
+		it++;
+	}
+	class_scope.clear();
+}
+
 void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	checkScriptInit();
@@ -99,7 +119,10 @@ void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, a
 	{
 		ret=asAtomHandler::fromObject(tag->instance(realClass));
 		if (instancefactory.isNull() && this->bindingchecked)
+		{
 			instancefactory = _MR(tag->instance(realClass));
+			instancefactory->setRefConstant();
+		}
 	}
 	else
 	{
@@ -111,6 +134,7 @@ void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, a
 			asAtom instance=asAtomHandler::invalidAtom;
 			super->getInstance(worker,instance,false,nullptr,0,realClass);
 			instancefactory = _MR(asAtomHandler::getObject(instance));
+			instancefactory->setRefConstant();
 		}
 	}
 	if(construct)
@@ -159,6 +183,7 @@ void Class_inherit::setupDeclaredTraits(ASObject *target, bool checkclone)
 				instancefactory->implEnable=bak;
 
 				instancefactory->traitsInitialized = true;
+				instancefactory->setRefConstant();
 				cloneable = instancefactory->cloneInstance(target);
 			}
 			else

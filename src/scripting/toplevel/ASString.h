@@ -91,14 +91,14 @@ public:
 	ASFUNCTION_ATOM(_getLength);
 	ASFUNCTION_ATOM(localeCompare);
 	ASFUNCTION_ATOM(localeCompare_prototype);
-	bool isEqual(ASObject* r);
-	TRISTATE isLess(ASObject* r);
-	TRISTATE isLessAtom(asAtom& r);
-	number_t toNumber();
-	int32_t toInt();
-	int32_t toIntStrict();
-	uint32_t toUInt();
-	int64_t toInt64();
+	bool isEqual(ASObject* r) override;
+	TRISTATE isLess(ASObject* r) override;
+	TRISTATE isLessAtom(asAtom& r) override;
+	number_t toNumber() override;
+	int32_t toInt() override;
+	int32_t toIntStrict() override;
+	uint32_t toUInt() override;
+	int64_t toInt64() override;
 	
 	ASFUNCTION_ATOM(generator);
 	//Serialization interface
@@ -108,8 +108,8 @@ public:
 	std::string toDebugString() const override;
 	static bool isEcmaSpace(uint32_t c);
 	static bool isEcmaLineTerminator(uint32_t c);
-	inline bool destruct() 
-	{ 
+	inline bool destruct() override
+	{
 		data.clear(); 
 		hasId = false;
 		datafilled=false; 

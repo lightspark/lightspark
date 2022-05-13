@@ -699,7 +699,6 @@ asAtom Amf3Deserializer::parseStrictArrayAMF0(std::vector<tiny_string>& stringMa
 	while(count)
 	{
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
-		ASATOM_INCREF(value);
 		ret->push(value);
 		count--;
 	}

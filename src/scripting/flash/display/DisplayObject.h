@@ -185,6 +185,7 @@ public:
 	DisplayObject(ASWorker* wrk, Class_base* c);
 	void finalize() override;
 	bool destruct() override;
+	void prepareShutdown() override;
 	MATRIX getMatrix(bool includeRotation = true) const;
 	bool isConstructed() const override { return ACQUIRE_READ(constructed); }
 	/**

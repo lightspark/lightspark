@@ -2238,6 +2238,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				Class_inherit* prot = obj->as<Class_inherit>();
 				f->inClass = prot;
 				f->isStatic = !isBorrowed;
+				f->setRefConstant();
 
 
 				//Methods save a copy of the scope stack of the class

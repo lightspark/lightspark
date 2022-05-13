@@ -1267,6 +1267,8 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 				}
 				cacheptr->cacheobj1 = asAtomHandler::getClass(obj,context->sys);
 				cacheptr->cacheobj3 = asAtomHandler::getObject(o);
+				if (cacheptr->cacheobj3->is<IFunction>() && cacheptr->cacheobj3->as<IFunction>()->clonedFrom)
+					cacheptr->cacheobj3->setRefConstant();
 				LOG_CALL("caching callproperty:"<<*name<<" "<<cacheptr->cacheobj1->toDebugString()<<" "<<cacheptr->cacheobj3->toDebugString());
 			}
 			else
@@ -1276,7 +1278,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 			}
 			obj = asAtomHandler::getClosureAtom(o,obj);
 			asAtomHandler::callFunction(o,context->worker,ret,obj,args,argsnum,refcounted,needreturn && coercearguments,coercearguments);
-			if (!(cacheptr->local2.flags & ABC_OP_CACHED) && asAtomHandler::as<IFunction>(o)->clonedFrom && asAtomHandler::is<SyntheticFunction>(o))
+			if (!(cacheptr->local2.flags & ABC_OP_CACHED) && asAtomHandler::as<IFunction>(o)->clonedFrom)
 				asAtomHandler::as<IFunction>(o)->decRef();
 			if (needreturn && asAtomHandler::isInvalid(ret))
 				ret = asAtomHandler::undefinedAtom;
@@ -2077,8 +2079,6 @@ void ABCVm::abc_getlex_localresult(call_context* context)
 	assert(instrptr->local3.pos > 0);
 	if ((instrptr->local3.flags&ABC_OP_CACHED) == ABC_OP_CACHED)
 	{
-		if(instrptr->cacheobj2)
-			instrptr->cacheobj2->incRef();
 		asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 		asAtomHandler::setFunction(CONTEXT_GETLOCAL(context,instrptr->local3.pos),instrptr->cacheobj1,nullptr,context->worker);//,instrptr->cacheobj2);
 		ASATOM_INCREF(CONTEXT_GETLOCAL(context,instrptr->local3.pos));
@@ -2104,11 +2104,15 @@ void ABCVm::abc_setPropertyStaticName(call_context* context)
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF_POINTER(obj);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF_POINTER(obj);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
@@ -2177,6 +2181,7 @@ void ABCVm::abc_setPropertyStaticName_local_constant(call_context* context)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
+	o->incRef(); // this is neccessary for reference counting in case of exception thrown in setVariableByMultiname
 	multiname* simplesettername = nullptr;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
 		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,nullptr,context->worker);
@@ -2184,6 +2189,7 @@ void ABCVm::abc_setPropertyStaticName_local_constant(call_context* context)
 		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,nullptr,context->worker);
 	if (simplesettername)
 		context->exec_pos->cachedmultiname2 = simplesettername;
+	o->decRef(); // this is neccessary for reference counting in case of exception thrown in setVariableByMultiname
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyStaticName_constant_local(call_context* context)
@@ -2241,6 +2247,7 @@ void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
+	o->incRef(); // this is neccessary for reference counting in case of exception thrown in setVariableByMultiname
 	ASATOM_INCREF_POINTER(value);
 	bool alreadyset=false;
 	multiname* simplesettername = nullptr;
@@ -2252,6 +2259,7 @@ void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
 		context->exec_pos->cachedmultiname2 = simplesettername;
 	if (alreadyset)
 		ASATOM_DECREF_POINTER(value);
+	o->decRef(); // this is neccessary for reference counting in case of exception thrown in setVariableByMultiname
 	++(context->exec_pos);
 }
 void ABCVm::abc_setPropertyInteger(call_context* context)
@@ -2266,11 +2274,15 @@ void ABCVm::abc_setPropertyInteger(call_context* context)
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF_POINTER(obj);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF_POINTER(obj);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
@@ -2300,11 +2312,13 @@ void ABCVm::abc_setPropertyInteger_constant_constant_constant(call_context* cont
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
@@ -2333,11 +2347,13 @@ void ABCVm::abc_setPropertyInteger_constant_local_constant(call_context* context
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
@@ -2366,11 +2382,13 @@ void ABCVm::abc_setPropertyInteger_constant_constant_local(call_context* context
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
@@ -2433,11 +2451,13 @@ void ABCVm::abc_setPropertyInteger_local_constant_constant(call_context* context
 	if(asAtomHandler::isNull(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
@@ -2466,11 +2486,13 @@ void ABCVm::abc_setPropertyInteger_local_local_constant(call_context* context)
 	if(asAtomHandler::isNull(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
@@ -2569,11 +2591,13 @@ void ABCVm::abc_setPropertyIntegerVector_constant_constant_constant(call_context
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
@@ -2597,11 +2621,13 @@ void ABCVm::abc_setPropertyIntegerVector_constant_local_constant(call_context* c
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
@@ -2625,11 +2651,13 @@ void ABCVm::abc_setPropertyIntegerVector_constant_constant_local(call_context* c
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
@@ -2682,11 +2710,13 @@ void ABCVm::abc_setPropertyIntegerVector_local_constant_constant(call_context* c
 	if(asAtomHandler::isNull(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 
@@ -2710,11 +2740,13 @@ void ABCVm::abc_setPropertyIntegerVector_local_local_constant(call_context* cont
 	if(asAtomHandler::isNull(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		ASATOM_DECREF_POINTER(value);
 		throwError<TypeError>(kConvertUndefinedToObjectError);
 	}
 

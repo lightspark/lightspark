@@ -122,6 +122,19 @@ bool Vector::destruct()
 	return destructIntern();
 }
 
+void Vector::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	for(unsigned int i=0;i<size();i++)
+	{
+		ASObject* v = asAtomHandler::getObject(vec[i]);
+		if (v)
+			v->prepareShutdown();
+	}
+}
+
 void Vector::setTypes(const std::vector<const Type *> &types)
 {
 	assert(vec_type == nullptr);

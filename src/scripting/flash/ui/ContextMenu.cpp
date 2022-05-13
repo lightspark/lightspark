@@ -37,6 +37,25 @@ void ContextMenu::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,builtInItems);
 }
 
+bool ContextMenu::destruct()
+{
+	customItems.reset();
+	builtInItems.reset();
+	return EventDispatcher::destruct();
+}
+
+void ContextMenu::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	if (customItems)
+		customItems->prepareShutdown();
+	if(builtInItems)
+		builtInItems->prepareShutdown();
+	
+}
+
 void ContextMenu::getCurrentContextMenuItems(std::vector<_R<NativeMenuItem> >& items)
 {
 	if (!customItems.isNull() && customItems->size())
@@ -145,7 +164,7 @@ ASFUNCTIONBODY_GETTER_SETTER(ContextMenu,builtInItems);
 
 ASFUNCTIONBODY_ATOM(ContextMenu,_constructor)
 {
-	EventDispatcher::_constructor(ret,wrk,obj, NULL, 0);
+	EventDispatcher::_constructor(ret,wrk,obj, nullptr, 0);
 }
 
 ASFUNCTIONBODY_ATOM(ContextMenu,hideBuiltInItems)
@@ -181,6 +200,7 @@ ASFUNCTIONBODY_ATOM(ContextMenu,clone)
 		{
 			asAtom a=asAtomHandler::invalidAtom;
 			th->customItems->at_nocheck(a,i);
+			ASATOM_INCREF(a);
 			res->customItems->push(a);
 		}
 	}

@@ -152,6 +152,33 @@ bool LoaderInfo::destruct()
 	return EventDispatcher::destruct();
 }
 
+void LoaderInfo::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	if (sharedEvents)
+		sharedEvents->prepareShutdown();
+	if (loader)
+		loader->prepareShutdown();
+	if (applicationDomain)
+		applicationDomain->prepareShutdown();
+	if (securityDomain)
+		securityDomain->prepareShutdown();
+	if (waitedObject)
+		waitedObject->prepareShutdown();
+	if (bytesData)
+		bytesData->prepareShutdown();
+	if (uncaughtErrorEvents)
+		uncaughtErrorEvents->prepareShutdown();
+	if (parameters)
+		parameters->prepareShutdown();
+	if (uncaughtErrorEvents)
+		uncaughtErrorEvents->prepareShutdown();
+	if (progressEvent)
+		progressEvent->prepareShutdown();
+}
+
 void LoaderInfo::resetState()
 {
 	Locker l(spinlock);
@@ -852,6 +879,8 @@ bool Sprite::destruct()
 	streamingsound=false;
 	hasMouse=false;
 	tokens.clear();
+	sound.reset();
+	soundtransform.reset();
 	return DisplayObjectContainer::destruct();
 }
 
@@ -862,7 +891,26 @@ void Sprite::finalize()
 	hitArea.reset();
 	hitTarget.reset();
 	tokens.clear();
+	sound.reset();
+	soundtransform.reset();
 	DisplayObjectContainer::finalize();
+}
+
+void Sprite::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	DisplayObjectContainer::prepareShutdown();
+	if (graphics)
+		graphics->prepareShutdown();
+	if (hitArea)
+		hitArea->prepareShutdown();
+	if (hitTarget)
+		hitTarget->prepareShutdown();
+	if (sound)
+		sound->prepareShutdown();
+	if (soundtransform)
+		soundtransform->prepareShutdown();
 }
 
 void Sprite::startDrawJob()
@@ -1553,6 +1601,7 @@ bool MovieClip::destruct()
 	actions=nullptr;
 
 	enabled = true;
+	avm1loader.reset();
 	return Sprite::destruct();
 }
 
@@ -1569,6 +1618,23 @@ void MovieClip::finalize()
 	scenes.clear();
 	state.reset();
 	Sprite::finalize();
+}
+
+void MovieClip::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	Sprite::prepareShutdown();
+	auto it = frameScripts.begin();
+	while (it != frameScripts.end())
+	{
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			o->prepareShutdown();
+		it++;
+	}
+	if (avm1loader)
+		avm1loader->prepareShutdown();
 }
 
 /* Returns a Scene_data pointer for a scene called sceneName, or for
@@ -2734,6 +2800,20 @@ void DisplayObjectContainer::finalize()
 	InteractiveObject::finalize();
 }
 
+void DisplayObjectContainer::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	InteractiveObject::prepareShutdown();
+	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+		(*it)->prepareShutdown();
+	for (auto it = namedRemovedLegacyChildren.begin(); it != namedRemovedLegacyChildren.end(); it++)
+	{
+		if ((*it).second)
+			(*it).second->prepareShutdown();
+	}
+}
+
 InteractiveObject::InteractiveObject(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
 {
 	subtype=SUBTYPE_INTERACTIVE_OBJECT;
@@ -2787,6 +2867,7 @@ bool InteractiveObject::destruct()
 	mouseEnabled = true;
 	doubleClickEnabled =false;
 	accessibilityImplementation.reset();
+	focusRect.reset();
 	tabEnabled = false;
 	tabIndex = -1;
 	return DisplayObject::destruct();
@@ -2795,11 +2876,21 @@ void InteractiveObject::finalize()
 {
 	contextMenu.reset();
 	accessibilityImplementation.reset();
+	focusRect.reset();
 	DisplayObject::finalize();
 }
 
-void InteractiveObject::buildTraits(ASObject* o)
+void InteractiveObject::prepareShutdown()
 {
+	if (preparedforshutdown)
+		return;
+	DisplayObject::prepareShutdown();
+	if (contextMenu)
+		contextMenu->prepareShutdown();
+	if (accessibilityImplementation)
+		accessibilityImplementation->prepareShutdown();
+	if (focusRect)
+		focusRect->prepareShutdown();
 }
 
 void InteractiveObject::defaultEventBehavior(Ref<Event> e)
@@ -3391,7 +3482,10 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 			{
 				if (xmin <= point->getX() && xmax >= point->getX()
 						&& ymin <= point->getY() && ymax >= point->getY())
-						ar->push(asAtomHandler::fromObject((*it).getPtr()));
+				{
+					(*it)->incRef();
+					ar->push(asAtomHandler::fromObject((*it).getPtr()));
+				}
 			}
 			if ((*it)->is<DisplayObjectContainer>())
 				(*it)->as<DisplayObjectContainer>()->getObjectsFromPoint(point,ar);
@@ -3738,10 +3832,32 @@ bool Stage::renderImpl(RenderContext &ctxt) const
 	}
 	return DisplayObjectContainer::renderImpl(ctxt);
 }
+bool Stage::destruct()
+{
+	fullScreenSourceRect.reset();
+	stage3Ds.reset();
+	softKeyboardRect.reset();
+	nativeWindow.reset();
+	return DisplayObjectContainer::destruct();
+}
+void Stage::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	DisplayObjectContainer::prepareShutdown();
+	if (fullScreenSourceRect)
+		fullScreenSourceRect->prepareShutdown();
+	if (stage3Ds)
+		stage3Ds->prepareShutdown();
+	if (softKeyboardRect)
+		softKeyboardRect->prepareShutdown();
+	if (nativeWindow)
+		nativeWindow->prepareShutdown();
+}
 
 Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
   ,avm1ScriptMovieClipFirst(nullptr),avm1ScriptMovieClipLast(nullptr)
-  ,colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high")
+  ,align(c->getSystemState()->getUniqueStringId("TL")), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high")
   ,stageFocusRect(false),allowsFullScreen(false),contentsScaleFactor(1.0)
 {
 	subtype = SUBTYPE_STAGE;
@@ -3752,14 +3868,26 @@ Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
 	Template<Vector>::getInstanceS(wrk,v,root,Class<Stage3D>::getClass(getSystemState()),NullRef);
 	stage3Ds = _R<Vector>(asAtomHandler::as<Vector>(v));
 	// according to specs, Desktop computers usually have 4 Stage3D objects available
-	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(wrk));
+	ASObject* o = Class<Stage3D>::getInstanceS(wrk);
+	o->setRefConstant();
+	v =asAtomHandler::fromObject(o);
 	stage3Ds->append(v);
-	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(wrk));
+
+	o = Class<Stage3D>::getInstanceS(wrk);
+	o->setRefConstant();
+	v =asAtomHandler::fromObject(o);
 	stage3Ds->append(v);
-	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(wrk));
+
+	o = Class<Stage3D>::getInstanceS(wrk);
+	o->setRefConstant();
+	v =asAtomHandler::fromObject(o);
 	stage3Ds->append(v);
-	v =asAtomHandler::fromObject(Class<Stage3D>::getInstanceS(wrk));
+
+	o = Class<Stage3D>::getInstanceS(wrk);
+	o->setRefConstant();
+	v =asAtomHandler::fromObject(o);
 	stage3Ds->append(v);
+
 	softKeyboardRect = _R<Rectangle>(Class<Rectangle>::getInstanceS(wrk));
 	if (wrk->getSystemState()->flashMode == SystemState::AIR)
 		nativeWindow = _MR(Class<NativeWindow>::getInstanceSNoArgs(wrk));
@@ -5184,6 +5312,29 @@ void SimpleButton::finalize()
 	hasMouse=false;
 	buttontag=nullptr;
 }
+
+void SimpleButton::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	DisplayObjectContainer::prepareShutdown();
+	if(downState)
+		downState->prepareShutdown();
+	if(hitTestState)
+		hitTestState->prepareShutdown();
+	if(overState)
+		overState->prepareShutdown();
+	if(upState)
+		upState->prepareShutdown();
+	if(soundchannel_OverUpToIdle)
+		soundchannel_OverUpToIdle->prepareShutdown();
+	if(soundchannel_IdleToOverUp)
+		soundchannel_IdleToOverUp->prepareShutdown();
+	if(soundchannel_OverUpToOverDown)
+		soundchannel_OverUpToOverDown->prepareShutdown();
+	if(soundchannel_OverDownToOverUp)
+		soundchannel_OverDownToOverUp->prepareShutdown();
+}
 IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	if (computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
@@ -6028,6 +6179,21 @@ bool Stage3D::renderImpl(RenderContext &ctxt) const
 Stage3D::Stage3D(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),x(0),y(0),visible(true)
 {
 	subtype = SUBTYPE_STAGE3D;
+}
+
+bool Stage3D::destruct()
+{
+	context3D.reset();
+	return EventDispatcher::destruct();
+}
+
+void Stage3D::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	if (context3D)
+		context3D->prepareShutdown();
 }
 
 void Stage3D::sinit(Class_base *c)

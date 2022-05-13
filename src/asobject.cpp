@@ -162,9 +162,11 @@ tiny_string ASObject::toString()
 	default:
 		{
 			//everything else is an Object regarding to the spec
-				asAtom ret = asAtomHandler::fromObject(this);
-				toPrimitive(ret,STRING_HINT);
-				return asAtomHandler::toString(ret,getWorker());
+			asAtom ret = asAtomHandler::fromObject(this);
+			toPrimitive(ret,STRING_HINT);
+			tiny_string s= asAtomHandler::toString(ret,getWorker());
+			ASATOM_DECREF(ret);
+			return s;
 		}
 	}
 }
@@ -583,8 +585,6 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	{
 		assert(this->is<Class_base>());
 		obj=this->as<Class_base>()->borrowedVariables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
-		if (!this->is<Class_inherit>() || this->as<Class_base>()->isSealed || this->as<Class_base>()->isFinal)
-			o->setRefConstant();
 	}
 	else
 	{
@@ -592,6 +592,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	}
 	if(this->is<Class_base>() && !this->is<Class_inherit>())
 	{
+		o->setRefConstant();
 		Class_base* cls = this->as<Class_base>()->super.getPtr();
 		while (cls)
 		{
@@ -768,6 +769,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 
 	if (obj && (obj->kind == CONSTANT_TRAIT && allowConst==CONST_NOT_ALLOWED))
 	{
+		ASATOM_DECREF(o);
+		decRef();
 		if (asAtomHandler::isFunction(obj->var) || asAtomHandler::isValid(obj->setter))
 			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
 		else
@@ -782,6 +785,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		obj=cls->findBorrowedSettable(name,&has_getter);
 		if(obj && (obj->issealed || cls->isFinal || cls->isSealed) && asAtomHandler::isInvalid(obj->setter))
 		{
+			ASATOM_DECREF(o);
+			decRef();
 			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 		}
 		// no setter and dynamic variables are allowed, so we force creation of a dynamic variable
@@ -800,6 +805,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 			((asAtomHandler::isFunction(protoObj->var)) ||
 			 asAtomHandler::isValid(protoObj->setter)))
 		{
+			ASATOM_DECREF(o);
+			decRef();
 			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 		}
 	}
@@ -808,12 +815,16 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	{
 		if(has_getter)  // Is this a read-only property?
 		{
+			ASATOM_DECREF(o);
+			decRef();
 			throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 		}
 
 		// Properties can not be added to a sealed class
 		if (cls && cls->isSealed)
 		{
+			ASATOM_DECREF(o);
+			decRef();
 			ABCContext* c = nullptr;
 			c = wrk->currentCallContext ? wrk->currentCallContext->mi->context : nullptr;
 			const Type* type =c ? Type::getTypeFromMultiname(&name,c) : nullptr;
@@ -827,7 +838,11 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		if(!obj)
 		{
 			if(this->is<Global>() && !name.hasGlobalNS)
+			{
+				ASATOM_DECREF(o);
+				decRef();
 				throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), this->getClassName());
+			}
 			
 			variables_map::var_iterator inserted=Variables.Variables.insert(Variables.Variables.cbegin(),
 				make_pair(name.normalizedNameId(getSystemState()),variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind())));
@@ -960,7 +975,10 @@ void variable::setVar(ASWorker* wrk, asAtom v, ASObject *obj, bool _isrefcounted
 	{
 		LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
 		if (obj->is<Activation_object>() && (asAtomHandler::is<SyntheticFunction>(var) || asAtomHandler::is<AVM1Function>(var)))
-			asAtomHandler::getObjectNoCheck(var)->decActivationCount();
+		{
+			if (asAtomHandler::getObjectNoCheck(var)->getActivationCount() > asAtomHandler::getObjectNoCheck(var)->getRefCount())
+				asAtomHandler::getObjectNoCheck(var)->decActivationCount();
+		}
 		asAtomHandler::getObjectNoCheck(var)->decRef();
 	}
 	var=v;
@@ -1581,6 +1599,15 @@ void ASObject::check() const
 #endif
 	//	Variables.check();
 }
+void ASObject::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	preparedforshutdown=true;
+	objfreelist=nullptr;
+	Variables.prepareShutdown();
+}
+
 
 void ASObject::setRefConstant()
 {
@@ -1691,7 +1718,23 @@ void variables_map::destroyContents()
 	slots_vars.clear();
 	slotcount=0;
 }
-
+void variables_map::prepareShutdown()
+{
+	var_iterator it=Variables.begin();
+	while(it!=Variables.cend())
+	{
+		ASObject* v = asAtomHandler::getObject(it->second.var);
+		if (v)
+			v->prepareShutdown();
+		v = asAtomHandler::getObject(it->second.getter);
+		if (v)
+			v->prepareShutdown();
+		v = asAtomHandler::getObject(it->second.setter);
+		if (v)
+			v->prepareShutdown();
+		it++;
+	}
+}
 bool variables_map::cloneInstance(variables_map &map)
 {
 	if (!cloneable)
@@ -1731,7 +1774,12 @@ void ASObject::dumpObjectCounters(uint32_t threshhold)
 	while (it != objectcounter.end())
 	{
 		if (it->second > threshhold)
-			LOG(LOG_INFO,"counter:"<<it->first->toDebugString()<<":"<<it->second<<"-"<<getSys()->worker->freelist[it->first->classID].freelistsize<<"="<<(it->second-getSys()->worker->freelist[it->first->classID].freelistsize));
+		{
+			if (it->first->classID==UINT32_MAX)
+				LOG(LOG_INFO,"counter:"<<it->first->toDebugString()<<":"<<it->second);
+			else
+				LOG(LOG_INFO,"counter:"<<it->first->toDebugString()<<":"<<it->second<<"-"<<getSys()->worker->freelist[it->first->classID].freelistsize<<"="<<(it->second-getSys()->worker->freelist[it->first->classID].freelistsize));
+		}
 		c += it->second;
 		it++;
 	}
@@ -1741,7 +1789,7 @@ void ASObject::dumpObjectCounters(uint32_t threshhold)
 ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE st):
 	objfreelist(c ? c->getFreeList(wrk) : nullptr),
 	Variables(c?c->memoryAccount:nullptr),classdef(c),proxyMultiName(nullptr),sys(c?c->sys:nullptr),worker(wrk),
-	stringId(UINT32_MAX),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+	stringId(UINT32_MAX),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1755,7 +1803,7 @@ ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE
 #endif
 }
 ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),Variables((o.classdef)?o.classdef->memoryAccount:nullptr),classdef(nullptr),proxyMultiName(nullptr),sys(o.classdef? o.classdef->sys : nullptr),worker(o.worker),
-	stringId(o.stringId),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),implEnable(true)
+	stringId(o.stringId),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging

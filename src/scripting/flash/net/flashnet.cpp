@@ -622,7 +622,16 @@ bool SharedObject::destruct()
 		client=data;// this is just to set client to "something else" to avoid that this SharedObject has a pointer to itself during destruction
 	return EventDispatcher::destruct();
 }
-
+void SharedObject::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	if (client.getPtr()!=this)
+		client->prepareShutdown();
+	if (data)
+		data->prepareShutdown();
+}
 void SharedObject::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
@@ -2314,6 +2323,7 @@ void URLVariables::decode(const tiny_string& s)
 				if(!asAtomHandler::isArray(curValue))
 				{
 					arr=Class<Array>::getInstanceSNoArgs(getInstanceWorker());
+					ASATOM_INCREF(curValue);
 					arr->push(curValue);
 					asAtom v = asAtomHandler::fromObject(arr);
 					setVariableByMultiname(propName,v,ASObject::CONST_NOT_ALLOWED,nullptr,getInstanceWorker());

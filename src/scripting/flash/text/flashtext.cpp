@@ -255,8 +255,15 @@ void TextField::finalize()
 	styleSheet.reset();
 }
 
-void TextField::buildTraits(ASObject* o)
+void TextField::prepareShutdown()
 {
+	if (preparedforshutdown)
+		return;
+	InteractiveObject::prepareShutdown();
+	if(restrictChars)
+		restrictChars->prepareShutdown();
+	if (styleSheet)
+		styleSheet->prepareShutdown();
 }
 
 bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const

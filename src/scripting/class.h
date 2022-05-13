@@ -74,6 +74,7 @@ public:
 		return Class_base::destruct();
 	}
 	void finalize() override;
+	void prepareShutdown() override;
 	asfreelist* getFreeList(ASWorker*) override
 	{
 		return &freelist;

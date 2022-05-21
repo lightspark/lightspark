@@ -739,6 +739,18 @@ private:
 
 	static void abc_newfunction(call_context* context);// 0x40
 	static void abc_call(call_context* context);
+	static void abc_callvoid_constant_constant(call_context* context);
+	static void abc_callvoid_local_constant(call_context* context);
+	static void abc_callvoid_constant_local(call_context* context);
+	static void abc_callvoid_local_local(call_context* context);
+	static void abc_call_constant_constant(call_context* context);
+	static void abc_call_local_constant(call_context* context);
+	static void abc_call_constant_local(call_context* context);
+	static void abc_call_local_local(call_context* context);
+	static void abc_call_constant_constant_localresult(call_context* context);
+	static void abc_call_local_constant_localresult(call_context* context);
+	static void abc_call_constant_local_localresult(call_context* context);
+	static void abc_call_local_local_localresult(call_context* context);
 	static void abc_construct(call_context* context);
 	static void abc_construct_constant(call_context* context);
 	static void abc_construct_local(call_context* context);

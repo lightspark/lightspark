@@ -7497,3 +7497,188 @@ void ABCVm::abc_lookupswitch_local(call_context* context)
 
 	context->exec_pos = dest;
 }
+
+void callFunctionClassRegexp(call_context* context, asAtom& f, asAtom& obj, asAtom& ret)
+{
+	obj = asAtomHandler::getClosureAtom(f,obj);
+	uint32_t argcount = context->exec_pos->local3.flags;
+	asAtom* args = g_newa(asAtom,argcount);
+	for (uint32_t i = argcount; i > 0 ; i--)
+	{
+		(++(context->exec_pos));
+		if (context->exec_pos->arg2_uint == OPERANDTYPES::OP_LOCAL || context->exec_pos->arg2_uint == OPERANDTYPES::OP_CACHED_SLOT)
+		{
+			args[i-1] = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+			ASATOM_INCREF(args[i-1]);
+		}
+		else
+			args[i-1] = *context->exec_pos->arg1_constant;
+	}
+	if(asAtomHandler::is<IFunction>(f))
+		asAtomHandler::callFunction(f,context->worker,ret,obj,args,argcount,false);
+	else if(asAtomHandler::is<Class_base>(f))
+	{
+		Class_base* c=asAtomHandler::as<Class_base>(f);
+		c->generator(context->worker,ret,args,argcount);
+	}
+	else if(asAtomHandler::is<RegExp>(f))
+	{
+		RegExp::exec(ret,context->worker,f,args,argcount);
+	}
+	else
+	{
+		LOG(LOG_ERROR,"trying to call an object as a function:"<<asAtomHandler::toDebugString(f) <<" on "<<asAtomHandler::toDebugString(obj));
+		throwError<TypeError>(kCallOfNonFunctionError, "Object");
+	}
+}
+
+void ABCVm::abc_callvoid_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = *instrptr->arg1_constant;
+	asAtom obj = *instrptr->arg2_constant;
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("callvoid_cc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callvoid_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom obj = *instrptr->arg2_constant;
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("callvoid_lc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	++(context->exec_pos);
+}
+
+void ABCVm::abc_callvoid_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = *instrptr->arg1_constant;
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("callvoid_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_callvoid_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("callvoid_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	++(context->exec_pos);
+}
+
+void ABCVm::abc_call_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = *instrptr->arg1_constant;
+	asAtom obj = *instrptr->arg2_constant;
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("call_cc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_call_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom obj = *instrptr->arg2_constant;
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("call_lc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_call_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = *instrptr->arg1_constant;
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("call_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_call_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("call_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_call_constant_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = *instrptr->arg1_constant;
+	asAtom obj = *instrptr->arg2_constant;
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("call_ccl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_call_local_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom obj = *instrptr->arg2_constant;
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("call_lcl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_call_constant_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = *instrptr->arg1_constant;
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("call_cll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_call_local_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	obj = asAtomHandler::getClosureAtom(func,obj);
+	LOG_CALL("call_lll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<context->exec_pos->local3.flags);
+	asAtom ret;
+	callFunctionClassRegexp(context, func, obj,ret);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}

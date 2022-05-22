@@ -643,11 +643,11 @@ void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 	}
 	if (w != UINT32_MAX)
 		newWidth=w;
-	else
+	else if (newWidth == 0)
 		newWidth=windowWidth;
 	if (h != UINT32_MAX)
 		newHeight=h;
-	else
+	else if (newHeight == 0)
 		newHeight=windowHeight;
 	resizeNeeded=true;
 	m_sys->stage->incRef();

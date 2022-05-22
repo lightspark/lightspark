@@ -62,8 +62,8 @@ protected:
 	ASPROPERTY_GETTER(uint32_t,bytesTotal);
 	ASPROPERTY_GETTER(number_t,length);
 	//ILoadable interface
-	void setBytesTotal(uint32_t b);
-	void setBytesLoaded(uint32_t b);
+	void setBytesTotal(uint32_t b) override;
+	void setBytesLoaded(uint32_t b) override;
 	_NR<ProgressEvent> progressEvent;
 public:
 	Sound(ASWorker* wrk,Class_base* c);
@@ -76,7 +76,7 @@ public:
 	ASFUNCTION_ATOM(close);
 	ASFUNCTION_ATOM(extract);
 	ASFUNCTION_ATOM(loadCompressedDataFromByteArray);
-	void afterExecution(_R<Event> e);
+	void afterExecution(_R<Event> e) override;
 	void requestSampleDataEvent(size_t position);
 	number_t getBufferTime() const { return buffertime; }
 	inline bool getSampleDataProcessed() const { return container && ACQUIRE_READ(sampledataprocessed); }
@@ -156,8 +156,6 @@ private:
 	uint32_t width, height;
 	mutable uint32_t videoWidth, videoHeight;
 	_NR<NetStream> netStream;
-	ASPROPERTY_GETTER_SETTER(int32_t, deblocking);
-	ASPROPERTY_GETTER_SETTER(bool, smoothing);
 	DefineVideoStreamTag* videotag;
 	VideoDecoder* embeddedVideoDecoder;
 	uint32_t lastuploadedframe;
@@ -172,6 +170,8 @@ public:
 	uint32_t getTagID() const override;
 	~Video();
 	static void sinit(Class_base*);
+	ASPROPERTY_GETTER_SETTER(int32_t, deblocking);
+	ASPROPERTY_GETTER_SETTER(bool, smoothing);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getVideoWidth);
 	ASFUNCTION_ATOM(_getVideoHeight);

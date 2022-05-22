@@ -1690,6 +1690,7 @@ void variables_map::dumpVariables()
 			case NO_CREATE_TRAIT:
 			default:
 				assert(false);
+				continue;
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<< hex<<it->first<<dec<<" "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
@@ -4076,7 +4077,5 @@ ASObject *asAtomHandler::toObject(asAtom& a, ASWorker* wrk, bool isconstant)
 			throw RunTimeException("calling toObject on invalid asAtom, should not happen");
 			break;
 	}
-	if (isconstant)
-		getObjectNoCheck(a)->setRefConstant();
 	return getObjectNoCheck(a);
 }

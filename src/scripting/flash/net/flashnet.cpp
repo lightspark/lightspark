@@ -1323,8 +1323,6 @@ void NetStream::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,useHardwareDecoder);
 	c->setDeclaredMethodByQName("info","",Class<IFunction>::getFunction(c->getSystemState(),_getInfo),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("publish","",Class<IFunction>::getFunction(c->getSystemState(),publish),NORMAL_METHOD,true);
-	if (!c->getSystemState()->mainClip->usesActionScript3)
-		c->setDeclaredMethodByQName("setBufferTime","",Class<IFunction>::getFunction(c->getSystemState(),_setter_bufferTime),NORMAL_METHOD,true);
 }
 
 void NetStream::buildTraits(ASObject* o)
@@ -1965,7 +1963,7 @@ void NetStream::execute()
 		countermutex.lock();
 		framesdecoded = 0;
 		frameRate=0;
-		videoDecoder = NULL;
+		videoDecoder = nullptr;
 		this->prevstreamtime = streamTime;
 		this->bufferLength = 0;
 		countermutex.unlock();
@@ -2022,17 +2020,17 @@ void NetStream::execute()
 				}
 			}
 			
-			if(videoDecoder==NULL && streamDecoder->videoDecoder)
+			if(videoDecoder==nullptr && streamDecoder->videoDecoder)
 			{
 				videoDecoder=streamDecoder->videoDecoder;
 				this->incRef();
 				getVm(getSystemState())->addEvent(_MR(this),
 								  _MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Play.Start")));
 			}
-			if(audioDecoder==NULL && streamDecoder->audioDecoder)
+			if(audioDecoder==nullptr && streamDecoder->audioDecoder)
 				audioDecoder=streamDecoder->audioDecoder;
 			
-			if(audioStream==NULL && audioDecoder && audioDecoder->isValid())
+			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
 				audioStream=getSys()->audioManager->createStream(audioDecoder,streamDecoder->hasVideo(),nullptr,0,soundTransform ? soundTransform->volume : 1.0);
 			if(!tickStarted && isReady() && frameRate && ((framesdecoded / frameRate) >= this->bufferTime))
 			{
@@ -2099,16 +2097,16 @@ void NetStream::execute()
 	{
 		Locker l(mutex);
 		//Change the state to invalid to avoid locking
-		videoDecoder=NULL;
-		audioDecoder=NULL;
+		videoDecoder=nullptr;
+		audioDecoder=nullptr;
 		//Clean up everything for a possible re-run
 		if (downloader)
 			getSys()->downloadManager->destroy(downloader);
 		//This transition is critical, so the mutex is needed
-		downloader=NULL;
+		downloader=nullptr;
 		if (audioStream)
 			delete audioStream;
-		audioStream=NULL;
+		audioStream=nullptr;
 	}
 	if (streamDecoder)
 	{
@@ -2146,8 +2144,7 @@ void NetStream::sendClientNotification(const tiny_string& name, std::list<asAtom
 {
 	if (client.isNull())
 		return;
-
-	multiname callbackName(NULL);
+	multiname callbackName(nullptr);
 	callbackName.name_type=multiname::NAME_STRING;
 	callbackName.name_s_id=getSys()->getUniqueStringId(name);
 	callbackName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));

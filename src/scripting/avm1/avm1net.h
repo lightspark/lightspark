@@ -67,6 +67,14 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class AVM1NetStream: public NetStream
+{
+public:
+	AVM1NetStream(ASWorker* wrk,Class_base* c):NetStream(wrk,c){}
+	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(avm1pause);
+	void AVM1HandleEvent(EventDispatcher *dispatcher, Event *e) override;
+};
 
 }
 #endif // SCRIPTING_AVM1_AVM1NET_H

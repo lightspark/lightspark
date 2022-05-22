@@ -215,6 +215,7 @@ public:
 			ret=new (m) Template<T>(wrk,name);
 			ret->prototype = _MNR(new_objectPrototype(wrk));
 			ret->addPrototypeGetter(root->getSystemState());
+			ret->setRefConstant();
 			root->templates.insert(std::make_pair(name,ret));
 		}
 		else

@@ -1485,13 +1485,12 @@ void FFMpegStreamDecoder::jumpToPosition(number_t position)
 bool FFMpegStreamDecoder::decodeNextFrame()
 {
 	AVPacket pkt;
-    int ret=av_read_frame(formatCtx, &pkt);
+	int ret=av_read_frame(formatCtx, &pkt);
 	if(ret<0)
 		return false;
 	auto time_base=formatCtx->streams[pkt.stream_index]->time_base;
 	//Should use dts
-	uint32_t mtime=pkt.dts*1000*(time_base.den ? time_base.num/time_base.den : time_base.num);
-
+	uint32_t mtime=pkt.dts*1000*(time_base.den ? (number_t)time_base.num/(number_t)time_base.den : (number_t)time_base.num);
 	if (pkt.stream_index==(int)audioIndex)
 	{
 		if (customAudioDecoder)

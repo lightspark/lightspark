@@ -141,3 +141,77 @@ void AVM1XMLSocket::sinit(Class_base* c)
 	XMLSocket::sinit(c);
 	c->isSealed=false;
 }
+
+void AVM1NetStream::sinit(Class_base *c)
+{
+	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("pause","",Class<IFunction>::getFunction(c->getSystemState(),avm1pause),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("seek","",Class<IFunction>::getFunction(c->getSystemState(),seek),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesLoaded),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesTotal),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("time","",Class<IFunction>::getFunction(c->getSystemState(),_getTime),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentFPS","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentFPS),GETTER_METHOD,true);
+	REGISTER_GETTER(c, bufferLength);
+	REGISTER_GETTER(c, bufferTime);
+	c->setDeclaredMethodByQName("setBufferTime","",Class<IFunction>::getFunction(c->getSystemState(),_setter_bufferTime),NORMAL_METHOD,true);
+}
+ASFUNCTIONBODY_ATOM(AVM1NetStream,avm1pause)
+{
+	AVM1NetStream* th=asAtomHandler::as<AVM1NetStream>(obj);
+	bool pause;
+	if (argslen==0)
+		th->togglePause(ret,wrk,obj, nullptr, 0);
+	else
+	{
+		ARG_UNPACK_ATOM (pause);
+		if (pause)
+			th->pause(ret,wrk,obj, nullptr, 0);
+		else
+			th->resume(ret,wrk,obj, nullptr, 0);
+	}
+	
+}
+void AVM1NetStream::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
+{
+	if (dispatcher == this)
+	{
+		if (e->type == "netStatus")
+		{
+			asAtom func=asAtomHandler::invalidAtom;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+			m.name_s_id=getSystemState()->getUniqueStringId("onStatus");
+			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,dispatcher->getInstanceWorker());
+			if (asAtomHandler::isInvalid(func)) //class AVM1NetStream is dynamic, so we also have to check the prototype variable
+			{
+				multiname mproto(nullptr);
+				mproto.name_type=multiname::NAME_STRING;
+				mproto.isAttribute = false;
+				mproto.name_s_id=BUILTIN_STRINGS::PROTOTYPE;
+				asAtom proto = asAtomHandler::invalidAtom;
+				getVariableByMultiname(proto,mproto,GET_VARIABLE_OPTION::NONE,dispatcher->getInstanceWorker());
+				if (asAtomHandler::isObject(proto))
+				{
+					asAtomHandler::getObjectNoCheck(proto)->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,dispatcher->getInstanceWorker());
+				}
+			}
+			
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtom ret=asAtomHandler::invalidAtom;
+				asAtom obj = asAtomHandler::fromObject(this);
+				
+				multiname minfo(nullptr);
+				minfo.name_type=multiname::NAME_STRING;
+				minfo.isAttribute = false;
+				minfo.name_s_id=getSystemState()->getUniqueStringId("info");
+				asAtom arg0 = asAtomHandler::invalidAtom;
+				e->getVariableByMultiname(arg0,minfo,GET_VARIABLE_OPTION::NONE,dispatcher->getInstanceWorker());
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,&arg0,1);
+			}
+		}
+	}
+}

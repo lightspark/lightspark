@@ -658,4 +658,6 @@ void AVM1Bitmap::sinit(Class_base *c)
 {
 	Bitmap::sinit(c);
 	DisplayObject::AVM1SetupMethods(c);
+	c->setDeclaredMethodByQName("forceSmoothing","",Class<IFunction>::getFunction(c->getSystemState(),_getter_smoothing),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("forceSmoothing","",Class<IFunction>::getFunction(c->getSystemState(),_setter_smoothing),SETTER_METHOD,true);
 }

@@ -1996,6 +1996,7 @@ void ParseThread::parseBitmap()
 	{
 		Locker l(objectSpinlock);
 		parsedObject=tmp;
+		tmp->setNeedsTextureRecalculation();
 	}
 	if (li.getPtr())
 		li->setComplete();

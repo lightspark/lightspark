@@ -69,7 +69,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("XMLSocket","",Class<AVM1XMLSocket>::getRef(m_sys));
 
 	builtinavm1->registerBuiltin("NetConnection","",Class<AVM1NetConnection>::getRef(m_sys));
-	builtinavm1->registerBuiltin("NetStream","",Class<NetStream>::getRef(m_sys));
+	builtinavm1->registerBuiltin("NetStream","",Class<AVM1NetStream>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Video","",Class<AVM1Video>::getRef(m_sys));
 	builtinavm1->registerBuiltin("AsBroadcaster","",Class<AVM1Broadcaster>::getRef(m_sys));
 	builtinavm1->registerBuiltin("LocalConnection","",Class<AVM1LocalConnection>::getRef(m_sys));

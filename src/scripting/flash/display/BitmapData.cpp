@@ -71,6 +71,7 @@ BitmapData::BitmapData(ASWorker* wrk,Class_base* c, uint32_t width, uint32_t hei
 void BitmapData::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass(c->getSystemState()));
 	c->setDeclaredMethodByQName("draw","",Class<IFunction>::getFunction(c->getSystemState(),draw),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
@@ -111,6 +112,22 @@ void BitmapData::sinit(Class_base* c)
 	IBitmapDrawable::linkTraits(c);
 }
 
+bool BitmapData::destruct()
+{
+	pixels = _MR(new BitmapContainer(getClass()->memoryAccount));
+	locked = 0;
+	transparent = true;
+	users.clear();
+	return ASObject::destruct();
+}
+
+void BitmapData::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	pixels.reset();
+	ASObject::prepareShutdown();
+}
 void BitmapData::addUser(Bitmap* b)
 {
 	users.insert(b);
@@ -137,9 +154,9 @@ void BitmapData::notifyUsers() const
 	if (!pixels.isNull())
 	{
 		if (pixels->checkTexture())
-        {
-		    getSystemState()->getRenderThread()->addUploadJob(this->pixels.getPtr());
-        }
+		{
+			getSystemState()->getRenderThread()->addUploadJob(this->pixels.getPtr());
+		}
 	}
 	for(auto it=users.begin();it!=users.end();it++)
 		(*it)->updatedData();
@@ -191,7 +208,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 	th->transparent=transparent;
 }
 
-ASFUNCTIONBODY_GETTER(BitmapData, transparent);
+ASFUNCTIONBODY_GETTER(BitmapData, transparent)
 
 ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 {
@@ -909,7 +926,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 	if (inputRect.isNull())
 		throwError<TypeError>(kNullPointerError, "rect");
 	if (inputColorTransform.isNull())
-		throwError<TypeError>(kNullPointerError, "inputVector");
+		throwError<TypeError>(kNullPointerError, "inputColor");
 
 	RECT rect;
 	th->pixels->clipRect(inputRect->getRect(), rect);

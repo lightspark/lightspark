@@ -82,8 +82,8 @@ void Video::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, smoothing);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(Video, deblocking);
-ASFUNCTIONBODY_GETTER_SETTER(Video, smoothing);
+ASFUNCTIONBODY_GETTER_SETTER(Video, deblocking)
+ASFUNCTIONBODY_GETTER_SETTER(Video, smoothing)
 
 bool Video::destruct()
 {
@@ -119,6 +119,11 @@ Video::Video(ASWorker* wk, Class_base* c, uint32_t w, uint32_t h, DefineVideoStr
 	  netStream(NullRef),deblocking(v ? v->VideoFlagsDeblocking:0),smoothing(v ? v->VideoFlagsSmoothing : false),videotag(v),embeddedVideoDecoder(nullptr),lastuploadedframe(UINT32_MAX)
 {
 	subtype=SUBTYPE_VIDEO;
+	if (videotag)
+	{
+		videoWidth=videotag->Width;
+		videoHeight=videotag->Height;
+	}
 }
 
 void Video::checkRatio(uint32_t ratio, bool inskipping)
@@ -231,14 +236,13 @@ bool Video::renderImpl(RenderContext& ctxt) const
 	{
 		//All operations here should be non blocking
 		ctxt.setProperties(this->getBlendMode());
-		MATRIX totalMatrix = getConcatenatedMatrix();
+		MATRIX totalMatrix = getParent()->getConcatenatedMatrix();
 
 		float scalex;
 		float scaley;
 		int offx,offy;
 		getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
 		totalMatrix.scale(scalex, scaley);
-
 		//Enable YUV to RGB conversion
 		//width and height will not change now (the Video mutex is acquired)
 		ctxt.renderTextured(embeddedVideoDecoder ? embeddedVideoDecoder->getTexture() : netStream->getTexture(),
@@ -275,12 +279,26 @@ ASFUNCTIONBODY_ATOM(Video,_constructor)
 ASFUNCTIONBODY_ATOM(Video,_getVideoWidth)
 {
 	Video* th=asAtomHandler::as<Video>(obj);
+	if (th->videoWidth == 0 && !th->netStream.isNull() && th->netStream->lockIfReady())
+	{
+		//Get size
+		th->videoWidth=th->netStream->getVideoWidth();
+		th->videoHeight=th->netStream->getVideoHeight();
+		th->netStream->unlock();
+	}
 	asAtomHandler::setUInt(ret,wrk,th->videoWidth);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_getVideoHeight)
 {
 	Video* th=asAtomHandler::as<Video>(obj);
+	if (th->videoHeight == 0 && !th->netStream.isNull() && th->netStream->lockIfReady())
+	{
+		//Get size
+		th->videoWidth=th->netStream->getVideoWidth();
+		th->videoHeight=th->netStream->getVideoHeight();
+		th->netStream->unlock();
+	}
 	asAtomHandler::setUInt(ret,wrk,th->videoHeight);
 }
 

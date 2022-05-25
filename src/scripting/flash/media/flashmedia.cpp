@@ -702,7 +702,6 @@ void Sound::setBytesLoaded(uint32_t b)
 			if (!progressEvent->queued)
 			{
 				this->incRef();
-				progressEvent->incRef();
 				getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
 			}
 		}
@@ -766,7 +765,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile)
 SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, Sound* _sampleproducer)
 	: EventDispatcher(wrk,c),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
 	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),
-	fromSoundTag(nullptr),soundTransform(_MR(Class<SoundTransform>::getInstanceS(wrk))),
+	fromSoundTag(nullptr),
 	leftPeak(1),rightPeak(1),semSampleData(0)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
@@ -893,7 +892,19 @@ void SoundChannel::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER(SoundChannel,leftPeak)
 ASFUNCTIONBODY_GETTER(SoundChannel,rightPeak)
-ASFUNCTIONBODY_GETTER_SETTER_CB(SoundChannel,soundTransform,validateSoundTransform)
+ASFUNCTIONBODY_SETTER_CB(SoundChannel,soundTransform,validateSoundTransform)
+ASFUNCTIONBODY_ATOM(SoundChannel,_getter_soundTransform)
+{
+	if(!asAtomHandler::is<SoundChannel>(obj)) \
+		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
+	SoundChannel* th = asAtomHandler::as<SoundChannel>(obj); \
+	if(argslen != 0) \
+		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+	if (!th->soundTransform)
+		th->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
+	th->soundTransform->incRef();
+	ret = asAtomHandler::fromObject(th->soundTransform.getPtr());
+}
 
 void SoundChannel::finalize()
 {
@@ -938,11 +949,20 @@ bool SoundChannel::destruct()
 	streamdatafinished=false;
 	restartafterabort=false;
 	fromSoundTag=nullptr;
-	soundTransform=_MR(Class<SoundTransform>::getInstanceS(this->getInstanceWorker()));
+	soundTransform.reset();
 	leftPeak=1;
 	rightPeak=1;
 	threadAbort();
 	return EventDispatcher::destruct();
+}
+
+void SoundChannel::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	if (soundTransform)
+		soundTransform->prepareShutdown();
 }
 
 void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)
@@ -1200,13 +1220,7 @@ void SoundChannel::jobFence()
 		RELEASE_WRITE(stopped,false);
 		RELEASE_WRITE(terminated,false);
 	}
-	// ensure that this is moved to freelist in vm thread
-	if (getVm(getSystemState()))
-	{
-		getVm(getSystemState())->addDeletableObject(this);
-	}
-	else
-		this->decRef();
+	this->decRef();
 	mutex.unlock();
 }
 

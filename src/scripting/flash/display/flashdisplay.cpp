@@ -231,7 +231,6 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 				if (!progressEvent->queued)
 				{
 					this->incRef();
-					progressEvent->incRef();
 					getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
 				}
 			}
@@ -1726,8 +1725,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 			LOG(LOG_ERROR,"Not a function");
 			return;
 		}
-		ASATOM_INCREF(args[i+1]);
-		th->frameScripts[frame]=args[i+1];
+		IFunction* func = asAtomHandler::as<IFunction>(args[i+1]);
+		func->closure_this.reset();
+		asAtom f;
+		asAtomHandler::setFunction(f,func,th,wrk);
+		th->frameScripts[frame]=f;
 	}
 }
 
@@ -2792,6 +2794,9 @@ bool DisplayObjectContainer::destruct()
 
 void DisplayObjectContainer::finalize()
 {
+	//Release every child
+	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+		(*it)->setParent(nullptr);
 	dynamicDisplayList.clear();
 	legacyChildrenMarkedForDeletion.clear();
 	mapDepthToLegacyChild.clear();
@@ -3188,7 +3193,6 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChildAt)
 	int index=asAtomHandler::toInt(args[1]);
 
 	//Cast to object
-	ASATOM_INCREF(args[0]);
 	_R<DisplayObject> d=_MR(asAtomHandler::as<DisplayObject>(args[0]));
 	assert_and_throw(index >= 0 && (size_t)index<=th->dynamicDisplayList.size());
 	th->_addChildAt(d,index);
@@ -3215,7 +3219,6 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChild)
 	assert_and_throw(asAtomHandler::is<DisplayObject>(args[0]));
 
 	//Cast to object
-	ASATOM_INCREF(args[0]);
 	_R<DisplayObject> d=_MR(asAtomHandler::as<DisplayObject>(args[0]));
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
@@ -3274,7 +3277,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 		}
 		child->setOnStage(false,false);
 		wrk->getSystemState()->addDisplayObjectToResetParentList(child);
-		//incRef before the refrence is destroyed
+		//incRef before the reference is destroyed
 		child->incRef();
 		th->dynamicDisplayList.erase(it);
 	}
@@ -4820,6 +4823,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 void SimpleButton::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, InteractiveObject, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(c->getSystemState(),_getUpState),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(c->getSystemState(),_setUpState),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("downState","",Class<IFunction>::getFunction(c->getSystemState(),_getDownState),GETTER_METHOD,true);
@@ -5226,6 +5230,7 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DisplayObject *dS, Disp
 	: DisplayObjectContainer(wrk,c), downState(dS), hitTestState(hTS), overState(oS), upState(uS),
 	  buttontag(tag),currentState(STATE_OUT),enabled(true),useHandCursor(true),hasMouse(false)
 {
+	subtype = SUBTYPE_SIMPLEBUTTON;
 	/* When called from DefineButton2Tag::instance, they are not constructed yet
 	 * TODO: construct them here for once, or each time they become visible?
 	 */
@@ -5311,6 +5316,19 @@ void SimpleButton::finalize()
 	useHandCursor=true;
 	hasMouse=false;
 	buttontag=nullptr;
+}
+
+bool SimpleButton::destruct()
+{
+	downState.reset();
+	hitTestState.reset();
+	overState.reset();
+	upState.reset();
+	enabled=true;
+	useHandCursor=true;
+	hasMouse=false;
+	buttontag=nullptr;
+	return DisplayObjectContainer::destruct();
 }
 
 void SimpleButton::prepareShutdown()
@@ -5415,23 +5433,17 @@ void SimpleButton::reflectState(BUTTONSTATE oldstate)
 {
 	assert(dynamicDisplayList.empty() || dynamicDisplayList.size() == 1);
 	if(!dynamicDisplayList.empty())
+	{
+		dynamicDisplayList.front()->incRef();
 		_removeChild(dynamicDisplayList.front().getPtr(),true);
+	}
 
 	if((currentState == UP || currentState == STATE_OUT) && !upState.isNull())
-	{
-		upState->incRef();
 		_addChildAt(upState,0);
-	}
 	else if(currentState == DOWN && !downState.isNull())
-	{
-		downState->incRef();
 		_addChildAt(downState,0);
-	}
 	else if(currentState == OVER && !overState.isNull())
-	{
-		overState->incRef();
 		_addChildAt(overState,0);
-	}
 	if ((oldstate == OVER || oldstate == UP) && currentState == STATE_OUT && soundchannel_OverUpToIdle)
 		soundchannel_OverUpToIdle->play();
 	if (oldstate == STATE_OUT && (currentState == OVER || currentState == UP) && soundchannel_IdleToOverUp)
@@ -5917,6 +5929,8 @@ void MovieClip::executeFrameScript()
 		asAtom obj = asAtomHandler::getClosureAtom(frameScripts[f]);
 		asAtomHandler::callFunction(frameScripts[f],getInstanceWorker(),v,obj,nullptr,0,false);
 		ASATOM_DECREF(v);
+		ASATOM_DECREF(frameScripts[f]);
+		frameScripts.erase(f);
 		inExecuteFramescript = false;
 	}
 }
@@ -6057,6 +6071,8 @@ void MovieClip::afterConstruction()
 		asAtom obj = asAtomHandler::getClosureAtom(frameScripts[0]);
 		asAtomHandler::callFunction(frameScripts[0],getInstanceWorker(),v,obj,nullptr,0,false);
 		ASATOM_DECREF(v);
+		ASATOM_DECREF(frameScripts[0]);
+		frameScripts.erase(0);
 		inExecuteFramescript = false;
 	}
 	if (!this->loadedFrom->usesActionScript3 && !this->inAVM1Attachment)

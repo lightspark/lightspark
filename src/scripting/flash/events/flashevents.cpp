@@ -583,7 +583,9 @@ void EventDispatcher::finalize()
 		auto it2 = it->second.begin();
 		while (it2 != it->second.end())
 		{
-			ASATOM_DECREF((*it2).f);
+			IFunction* f = asAtomHandler::as<IFunction>((*it2).f);
+			getSystemState()->unregisterListenerFunction(f);
+			f->decRef();
 			it2 = it->second.erase(it2);
 		}
 		it = handlers.erase(it);
@@ -599,7 +601,9 @@ bool EventDispatcher::destruct()
 		auto it2 = it->second.begin();
 		while (it2 != it->second.end())
 		{
-			ASATOM_DECREF((*it2).f);
+			IFunction* f = asAtomHandler::as<IFunction>((*it2).f);
+			getSystemState()->unregisterListenerFunction(f);
+			f->decRef();
 			it2 = it->second.erase(it2);
 		}
 		it = handlers.erase(it);
@@ -665,6 +669,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		useCapture=asAtomHandler::Boolean_concrete(args[2]);
 	if(argslen>=4)
 		priority=asAtomHandler::toInt(args[3]);
+	if(argslen>=5 &&asAtomHandler::toInt(args[4]))
+		LOG(LOG_NOT_IMPLEMENTED,"EventDispatcher::addEventListener parameter useWeakReference is ignored");
 
 	const tiny_string& eventName=asAtomHandler::toString(args[0],wrk);
 	if(wrk->isPrimordial // don't register frame listeners for background workers
@@ -683,15 +689,17 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		const listener newListener(args[1], priority, useCapture, wrk);
 		//Ordered insertion
 		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
+		IFunction* newfunc = asAtomHandler::as<IFunction>(args[1]);
 		// check if a listener that matches type, use_capture and function is already registered
 		if (insertionPoint != listeners.end() && (*insertionPoint).use_capture == newListener.use_capture)
 		{
-			IFunction* newfunc = asAtomHandler::as<IFunction>(args[1]);
 			IFunction* insertPointFunc = asAtomHandler::as<IFunction>((*insertionPoint).f);
 			if (insertPointFunc == newfunc || (insertPointFunc->clonedFrom && insertPointFunc->clonedFrom == newfunc->clonedFrom && insertPointFunc->closure_this==newfunc->closure_this))
 				return; // don't register the same listener twice
 		}
-		ASATOM_INCREF(args[1]);
+		newfunc->incRef();
+		if (newfunc->clonedFrom)
+			th->getSystemState()->registerListenerFunction(newfunc);
 		listeners.insert(insertionPoint,newListener);
 	}
 	th->eventListenerAdded(eventName);
@@ -732,6 +740,9 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),ls);
 		if(it!=h->second.end())
 		{
+			ASObject* listenerfunc = asAtomHandler::getObject(it->f);
+			if (listenerfunc && listenerfunc->is<IFunction>() && listenerfunc->as<IFunction>()->clonedFrom)
+				th->getSystemState()->unregisterListenerFunction(listenerfunc->as<IFunction>());
 			ASATOM_DECREF(it->f);
 			h->second.erase(it);
 		}
@@ -831,9 +842,15 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	{
 		if( (e->eventPhase == EventPhase::BUBBLING_PHASE && tmpListener[i].use_capture)
 		||  (e->eventPhase == EventPhase::CAPTURING_PHASE && !tmpListener[i].use_capture))
+		{
+			ASATOM_DECREF(tmpListener[i].f);
 			continue;
+		}
 		if (tmpListener[i].worker != e->getInstanceWorker()) // only handle listeners that are available in the current worker
+		{
+			ASATOM_DECREF(tmpListener[i].f);
 			continue;
+		}
 		if (e->immediatePropagationStopped)
 			break;
 		asAtom arg0= asAtomHandler::fromObject(e.getPtr());

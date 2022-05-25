@@ -1964,7 +1964,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				uint32_t pos2 = code.skipu30FromPosition(pos);
 				uint32_t argcount = code.peeku30FromPosition(pos2);
 				if (state.jumptargets.find(pos) == state.jumptargets.end()
-						&& argcount==0 && state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
+						&& argsneeded && argcount==0 && state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
 				{
 					pos = code.skipu30FromPosition(pos2);
 					b = code.peekbyteFromPosition(pos);
@@ -6550,7 +6550,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											 (typestack[typestack.size()-2].obj->is<Class_base>() && typestack[typestack.size()-2].obj->as<Class_base>()->isSealed)))
 									{
 										asAtom func = asAtomHandler::invalidAtom;
-										typestack[typestack.size()-2].obj->getVariableByMultiname(func,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF),wrk);
+										GET_VARIABLE_RESULT r = typestack[typestack.size()-2].obj->getVariableByMultiname(func,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF),wrk);
 										if (asAtomHandler::isInvalid(func) && typestack[typestack.size()-2].obj->is<Class_base>())
 										{
 											variable* mvar = typestack[typestack.size()-2].obj->as<Class_base>()->getBorrowedVariableByMultiname(*name);
@@ -6592,6 +6592,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											resulttype = f->getReturnType();
 											if (!resulttype)
 												LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method3:"<<*name<<" "<<typestack[typestack.size()-2].obj->toDebugString());
+										}
+										if (r & GETVAR_ISNEWOBJECT)
+										{
+											ASATOM_DECREF(func);
 										}
 									}
 									if (state.operandlist.size() > 1 && !isGenerator)

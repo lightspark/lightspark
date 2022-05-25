@@ -186,6 +186,17 @@ void SystemState::addBroadcastEvent(const tiny_string& event)
 	}
 }
 
+void SystemState::registerListenerFunction(IFunction* f)
+{
+	Locker l(mutexFrameListeners);
+	listenerfunctionlist.insert(f);
+}
+void SystemState::unregisterListenerFunction(IFunction* f)
+{
+	Locker l(mutexFrameListeners);
+	listenerfunctionlist.erase(f);
+}
+
 RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk,_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass(getSys());
@@ -643,27 +654,42 @@ void SystemState::systemFinalize()
 	}
 	mainClip->destroyTags();
 }
-
+#ifndef NDEBUG
+std::set<ASObject*> lightspark::memcheckset;
+#endif
 SystemState::~SystemState()
 {
-	// 1) remove all references to freelists
+	// 1) set all not removed event listeners to constant
+	for (auto it = listenerfunctionlist.begin(); it != listenerfunctionlist.end(); it++)
+	{
+		(*it)->closure_this->setRefConstant();
+		(*it)->setRefConstant();
+	}
+	// 2) remove all references to freelists
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
 		(*it)->prepareShutdown();
 	}
-	// 2) remove all references to variables as they might point to other constant reffed objects
+	// 3) remove all references to variables as they might point to other constant reffed objects
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
 		(*it)->destroyContents();
 		(*it)->finalize();
 	}
-	// 3) delete builtin classes
+	
+	// 4) delete builtin classes
 	delete[] builtinClasses;
-	// 4) delete the constant reffed objects
+	// 5) delete the constant reffed objects
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
 		delete (*it);
 	}
+#ifndef NDEBUG
+	for (auto it = memcheckset.begin(); it != memcheckset.end(); it++)
+	{
+		LOG(LOG_ERROR,"memcheck leak found:"<<(*it)<<" "<<(*it)->getObjectType()<<" "<<(*it)->getSubtype());
+	}
+#endif
 }
 
 void SystemState::destroy()

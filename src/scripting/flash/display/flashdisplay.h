@@ -230,6 +230,7 @@ public:
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
 	void constructionComplete() override;
 	void finalize() override;
+	bool destruct() override;
 	void prepareShutdown() override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;

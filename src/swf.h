@@ -275,6 +275,7 @@ private:
 
 	Mutex mutexFrameListeners;
 	std::set<DisplayObject*> frameListeners;
+	std::set<IFunction*> listenerfunctionlist;
 	/*
 	   The head of the invalidate queue
 	*/
@@ -493,6 +494,10 @@ public:
 	void unregisterFrameListener(DisplayObject* clip);
 	void addBroadcastEvent(const tiny_string& event);
 
+	// keep track of event listener functions
+	void registerListenerFunction(IFunction* f);
+	void unregisterListenerFunction(IFunction* f);
+	
 	//Invalidation queue management
 	void addToInvalidateQueue(_R<DisplayObject> d) override;
 	void flushInvalidationQueue();

@@ -81,7 +81,10 @@ string ASObject::toDebugString() const
 	}
 #ifndef _NDEBUG
 	char buf[300];
-	sprintf(buf,"(%p / %d%s) ",this,this->getRefCount(),this->isConstructed()?"":" not constructed");
+	if (this->getConstant())
+		sprintf(buf,"(%p%s) ",this,this->isConstructed()?"":" not constructed");
+	else
+		sprintf(buf,"(%p / %d%s) ",this,this->getRefCount(),this->isConstructed()?"":" not constructed");
 	ret += buf;
 #endif
 	return ret;
@@ -1546,6 +1549,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 			{
 				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<asAtomHandler::toDebugString(obj->var));
 				asAtomHandler::setFunction(ret,asAtomHandler::getObject(obj->var),this,wrk);
+				// the function is always cloned
+				res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT);
 			}
 		}
 		else
@@ -1795,6 +1800,7 @@ ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
+	memcheckset.insert(this);
 	if (c)
 	{
 		uint32_t x = objectcounter[c];
@@ -1809,6 +1815,7 @@ ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),Variables((o.cl
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
+	memcheckset.insert(this);
 #endif
 	assert(o.Variables.size()==0);
 }

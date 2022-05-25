@@ -133,6 +133,7 @@ public:
 	static void sinit(Class_base* c);
 	void finalize() override;
 	bool destruct() override;
+	void prepareShutdown() override;
 	bool isPlaying() { return !ACQUIRE_READ(stopped); }
 	bool isStarting() { return ACQUIRE_READ(starting); }
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);

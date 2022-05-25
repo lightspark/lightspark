@@ -598,6 +598,12 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 		spr->setSoundStartFrame(this->soundstartframe);
 	spr->loadedFrom=this->loadedFrom;
 	spr->loadedFrom->AVM1checkInitActions(spr);
+	if (!loadedFrom->usesActionScript3)
+	{
+		spr->setConstructIndicator();
+		spr->constructionComplete();
+		spr->afterConstruction();
+	}
 	return spr;
 }
 
@@ -1295,14 +1301,11 @@ ASObject* DefineFont4Tag::instance(Class_base* c)
 
 BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),bitmap(_MR(new BitmapContainer(root->getSystemState()->tagsMemory)))
 {
-	bitmap->setConstant();
 }
 
 BitmapTag::~BitmapTag()
 {
-	BitmapContainer* b = bitmap.getPtr();
 	bitmap.reset();
-	delete b;
 }
 
 _NR<BitmapContainer> BitmapTag::getBitmap() const {

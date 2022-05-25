@@ -1939,7 +1939,7 @@ multiname *Array::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOW
 	if(index>=size())
 		resize((uint64_t)index+1);
 
-	if (!set(index, o,false))
+	if (!set(index, o,false,false))
 	{
 		if (alreadyset)
 			*alreadyset=true;
@@ -1966,7 +1966,7 @@ void Array::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_F
 	}
 	if(uint64_t(index)>=size())
 		resize((uint64_t)index+1);
-	*alreadyset = !set(index, o,false);
+	*alreadyset = !set(index, o,false,false);
 }
 
 bool Array::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)

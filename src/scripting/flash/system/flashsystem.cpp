@@ -938,6 +938,7 @@ void ASWorker::finalize()
 	loader.reset();
 	swf.reset();
 	delete[] freelist;
+	EventDispatcher::finalize();
 }
 
 void ASWorker::prepareShutdown()
@@ -945,7 +946,7 @@ void ASWorker::prepareShutdown()
 	if(preparedforshutdown)
 		return;
 	parsemutex.lock();
-	ASObject::prepareShutdown();
+	EventDispatcher::prepareShutdown();
 	if (rootClip)
 	{
 		for(auto it = rootClip->customClasses.begin(); it != rootClip->customClasses.end(); ++it)

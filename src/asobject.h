@@ -830,6 +830,9 @@ enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 class ASWorker;
 
 extern ASWorker* getWorker();
+#ifndef NDEBUG
+extern std::set<ASObject*> memcheckset;
+#endif
 
 class ASObject: public memory_reporter, public RefCountable
 {
@@ -879,6 +882,9 @@ protected:
 	ASObject(const ASObject& o);
 	virtual ~ASObject()
 	{
+#ifndef NDEBUG
+		memcheckset.erase(this);
+#endif
 	}
 	uint32_t stringId;
 	SWFOBJECT_TYPE type;
@@ -1404,6 +1410,7 @@ class RootMovieClip;
 class SampleDataEvent;
 class ShaderFilter;
 class SharedObject;
+class SimpleButton;
 class Sound;
 class SoundChannel;
 class Sprite;
@@ -1466,7 +1473,7 @@ template<> inline bool ASObject::is<CubeTexture>() const { return subtype==SUBTY
 template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
 template<> inline bool ASObject::is<DatagramSocket>() const { return subtype==SUBTYPE_DATAGRAMSOCKET; }
 template<> inline bool ASObject::is<DisplacementFilter>() const { return subtype==SUBTYPE_DISPLACEMENTFILTER; }
-template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_VIDEO; }
+template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_VIDEO || subtype == SUBTYPE_SIMPLEBUTTON; }
 template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE; }
 template<> inline bool ASObject::is<DropShadowFilter>() const { return subtype==SUBTYPE_DROPSHADOWFILTER; }
 template<> inline bool ASObject::is<ElementFormat>() const { return subtype==SUBTYPE_ELEMENTFORMAT; }
@@ -1487,7 +1494,7 @@ template<> inline bool ASObject::is<GradientBevelFilter>() const { return subtyp
 template<> inline bool ASObject::is<IFunction>() const { return type==T_FUNCTION; }
 template<> inline bool ASObject::is<IndexBuffer3D>() const { return subtype==SUBTYPE_INDEXBUFFER3D; }
 template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
-template<> inline bool ASObject::is<InteractiveObject>() const { return subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP; }
+template<> inline bool ASObject::is<InteractiveObject>() const { return subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_SIMPLEBUTTON; }
 template<> inline bool ASObject::is<KeyboardEvent>() const { return subtype==SUBTYPE_KEYBOARD_EVENT; }
 template<> inline bool ASObject::is<LoaderContext>() const { return subtype==SUBTYPE_LOADERCONTEXT; }
 template<> inline bool ASObject::is<LoaderInfo>() const { return subtype==SUBTYPE_LOADERINFO; }
@@ -1513,6 +1520,7 @@ template<> inline bool ASObject::is<RootMovieClip>() const { return subtype==SUB
 template<> inline bool ASObject::is<SampleDataEvent>() const { return subtype==SUBTYPE_SAMPLEDATA_EVENT; }
 template<> inline bool ASObject::is<ShaderFilter>() const { return subtype==SUBTYPE_SHADERFILTER; }
 template<> inline bool ASObject::is<SharedObject>() const { return subtype==SUBTYPE_SHAREDOBJECT; }
+template<> inline bool ASObject::is<SimpleButton>() const { return subtype==SUBTYPE_SIMPLEBUTTON; }
 template<> inline bool ASObject::is<Sound>() const { return subtype==SUBTYPE_SOUND; }
 template<> inline bool ASObject::is<SoundChannel>() const { return subtype==SUBTYPE_SOUNDCHANNEL; }
 template<> inline bool ASObject::is<SoundTransform>() const { return subtype==SUBTYPE_SOUNDTRANSFORM; }
@@ -1889,8 +1897,12 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk)
 			setUInt(a,wrk,(a.uintval>>3)+1);
 			break;
 		case ATOM_NUMBERPTR:
-			setNumber(a,wrk,toNumber(a)+1);
+		{
+			asAtom oldval = a;
+			if (replaceNumber(a,wrk,toNumber(a)+1))
+				asAtomHandler::getObjectNoCheck(oldval)->decRef();
 			break;
+		}
 		case ATOM_STRINGID:
 		{
 			ASObject* s = abstract_s(wrk,a.uintval>>3);
@@ -1902,6 +1914,7 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk)
 		default:
 		{
 			number_t n=toNumber(a);
+			asAtomHandler::getObjectNoCheck(a)->decRef();
 			setNumber(a,wrk,n+1);
 			break;
 		}
@@ -1945,8 +1958,12 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk)
 			break;
 		}
 		case ATOM_NUMBERPTR:
-			setNumber(a,wrk,toNumber(a)-1);
+		{
+			asAtom oldval = a;
+			if (replaceNumber(a,wrk,toNumber(a)-1))
+				asAtomHandler::getObjectNoCheck(oldval)->decRef();
 			break;
+		}
 		case ATOM_STRINGID:
 		{
 			ASObject* s = abstract_s(wrk,a.uintval>>3);
@@ -1958,6 +1975,7 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk)
 		default:
 		{
 			number_t n=toNumber(a);
+			asAtomHandler::getObjectNoCheck(a)->decRef();
 			setNumber(a,wrk,n-1);
 			break;
 		}
@@ -2509,10 +2527,6 @@ FORCE_INLINE void asAtomHandler::resetCached(const asAtom& a)
 
 inline ASObject* asfreelist::getObjectFromFreeList()
 {
-#ifndef NDEBUG
-	// all ASObjects must be created in the VM thread
-	//assert_and_throw(isVmThread());
-#endif
 	assert(freelistsize>=0);
 	ASObject* o = freelistsize ? freelist[--freelistsize] :nullptr;
 	LOG_CALL("getfromfreelist:"<<freelistsize<<" "<<o<<" "<<this);
@@ -2520,10 +2534,6 @@ inline ASObject* asfreelist::getObjectFromFreeList()
 }
 inline bool asfreelist::pushObjectToFreeList(ASObject *obj)
 {
-#ifndef NDEBUG
-	// all ASObjects must be created in the VM thread
-	//assert_and_throw(isVmThread());
-#endif
 	assert(obj->isLastRef());
 	if (freelistsize < FREELIST_SIZE)
 	{

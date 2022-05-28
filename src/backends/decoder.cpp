@@ -89,7 +89,7 @@ TextureChunk& VideoDecoder::getTexture()
 void VideoDecoder::uploadFence()
 {
 	assert(fenceCount);
-	ATOMIC_DECREMENT(fenceCount);
+	fenceCount--;
 	if (markedForDeletion && fenceCount==0)
 		delete this;
 }
@@ -114,7 +114,7 @@ VideoDecoder::~VideoDecoder()
 
 void VideoDecoder::waitForFencing()
 {
-	ATOMIC_INCREMENT(fenceCount);
+	fenceCount++;
 }
 
 #ifdef ENABLE_LIBAVCODEC

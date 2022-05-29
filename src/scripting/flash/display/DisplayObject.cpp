@@ -112,6 +112,16 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 //	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
 
+void DisplayObject::markAsChanged()
+{
+	if (!computeCacheAsBitmap())
+	{
+		hasChanged = true;
+		if (onStage)
+			requestInvalidation(getSystemState());
+	}
+}
+
 DisplayObject::~DisplayObject() {}
 
 void DisplayObject::finalize()

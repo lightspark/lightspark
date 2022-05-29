@@ -263,11 +263,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 	ColorTransform* ct = owner->colorTransform.getPtr();
 	DisplayObjectContainer* p = owner->getParent();
-	while (!ct && p)
-	{
-		ct = p->colorTransform.getPtr();
-		p = p->getParent();
-	}
 	if(width==0 || height==0)
 		return nullptr;
 	if (ct)
@@ -280,6 +275,37 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		greenOffset=ct->greenOffset;
 		blueOffset=ct->blueOffset;
 		alphaOffset=ct->alphaOffset;
+	}
+	while (p)
+	{
+		if (p->colorTransform)
+		{
+			if (!ct)
+			{
+				ct = p->colorTransform.getPtr();
+				redMultiplier=ct->redMultiplier;
+				greenMultiplier=ct->greenMultiplier;
+				blueMultiplier=ct->blueMultiplier;
+				alphaMultiplier=ct->alphaMultiplier;
+				redOffset=ct->redOffset;
+				greenOffset=ct->greenOffset;
+				blueOffset=ct->blueOffset;
+				alphaOffset=ct->alphaOffset;
+			}
+			else
+			{
+				ct = p->colorTransform.getPtr();
+				redMultiplier*=ct->redMultiplier;
+				greenMultiplier*=ct->greenMultiplier;
+				blueMultiplier*=ct->blueMultiplier;
+				alphaMultiplier*=ct->alphaMultiplier;
+				redOffset+=ct->redOffset;
+				greenOffset+=ct->greenOffset;
+				blueOffset+=ct->blueOffset;
+				alphaOffset+=ct->alphaOffset;
+			}
+		}
+		p = p->getParent();
 	}
 	number_t regpointx = 0.0;
 	number_t regpointy = 0.0;

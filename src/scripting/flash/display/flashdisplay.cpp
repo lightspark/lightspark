@@ -2549,15 +2549,18 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, tabChildren);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(DisplayObjectContainer, tabChildren);
-
-void DisplayObjectContainer::buildTraits(ASObject* o)
-{
-}
+ASFUNCTIONBODY_GETTER_SETTER(DisplayObjectContainer, tabChildren)
 
 DisplayObjectContainer::DisplayObjectContainer(ASWorker* wrk, Class_base* c):InteractiveObject(wrk,c),mouseChildren(true),tabChildren(true)
 {
 	subtype=SUBTYPE_DISPLAYOBJECTCONTAINER;
+}
+
+void DisplayObjectContainer::markAsChanged()
+{
+	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+		(*it)->markAsChanged();
+	DisplayObject::markAsChanged();
 }
 
 bool DisplayObjectContainer::hasLegacyChildAt(int32_t depth)
@@ -2602,8 +2605,7 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,c
 		o->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(getInstanceWorker(),colortransform));
 	else
 		o->colorTransform->setProperties(colortransform);
-	o->hasChanged=true;
-	o->requestInvalidation(getSystemState());
+	markAsChanged();
 }
 
 void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)

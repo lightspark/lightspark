@@ -139,6 +139,7 @@ public:
 	void removeAVM1Listeners() override;
 	int getChildIndex(_R<DisplayObject> child);
 	DisplayObjectContainer(ASWorker* wrk,Class_base* c);
+	void markAsChanged() override;
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
@@ -167,9 +168,7 @@ public:
 		return InteractiveObject::deleteVariableByMultiname(name,wrk);
 	}
 	
-	
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getNumChildren);
 	ASFUNCTION_ATOM(addChild);

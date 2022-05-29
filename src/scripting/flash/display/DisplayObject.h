@@ -183,6 +183,7 @@ public:
 	   Used to link DisplayObjects the invalidation queue
 	*/
 	DisplayObject(ASWorker* wrk, Class_base* c);
+	virtual void markAsChanged();
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;

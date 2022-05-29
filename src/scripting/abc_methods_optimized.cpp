@@ -1405,7 +1405,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 			asAtomHandler::setUndefined(ret);
 		}
 	}
-	LOG_CALL("End of calling " << *name<<" "<<asAtomHandler::toDebugString(ret)<<" "<<asAtomHandler::toDebugString(obj));
+	LOG_CALL("End of calling " << *name<<" "<<asAtomHandler::toDebugString(ret));
 }
 void ABCVm::abc_callpropertyStaticName(call_context* context)
 {

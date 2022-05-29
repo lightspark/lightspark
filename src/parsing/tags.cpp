@@ -1809,8 +1809,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 	}
 	if (parent && parent->computeCacheAsBitmap())
 	{
-		parent->incRef();
-		obj->cachedAsBitmapOf=_MR(parent);
+		obj->cachedAsBitmapOf=parent;
 	}
 	else
 		obj->cachedAsBitmapOf=parent->cachedAsBitmapOf;

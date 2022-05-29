@@ -353,7 +353,6 @@ public:
 	bool destruct() override;
 	void prepareShutdown() override;
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getLoaderURL);
 	ASFUNCTION_ATOM(_getURL);
@@ -369,11 +368,11 @@ public:
 	void objectHasLoaded(_R<DisplayObject> obj);
 	void setWaitedObject(_NR<DisplayObject> w);
 	//ILoadable interface
-	void setBytesTotal(uint32_t b)
+	void setBytesTotal(uint32_t b) override
 	{
 		bytesTotal=b;
 	}
-	void setBytesLoaded(uint32_t b);
+	void setBytesLoaded(uint32_t b) override;
 	void setBytesLoadedPublic(uint32_t b) { bytesLoadedPublic = b; }
 	uint32_t getBytesLoaded() { return bytesLoaded; }
 	uint32_t getBytesTotal() { return bytesTotal; }
@@ -960,6 +959,8 @@ public:
 	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data);
 	~Bitmap();
 	bool destruct() override;
+	void finalize() override;
+	void prepareShutdown() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;

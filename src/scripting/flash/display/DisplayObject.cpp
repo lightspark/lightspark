@@ -105,7 +105,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),avm1mouselistenercount(0),avm1framelistenercount(0),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),loadedFrom(c->getSystemState()->mainClip),hasChanged(true),legacy(false),cacheAsBitmap(false),
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),cachedAsBitmapOf(nullptr),loadedFrom(c->getSystemState()->mainClip),hasChanged(true),legacy(false),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -119,7 +119,7 @@ void DisplayObject::finalize()
 	getSystemState()->unregisterFrameListener(this);
 	EventDispatcher::finalize();
 	cachedBitmap.reset();
-	cachedAsBitmapOf.reset();
+	cachedAsBitmapOf=nullptr;
 	maskOf.reset();
 	parent=nullptr;
 	eventparentmap.clear();
@@ -145,7 +145,7 @@ bool DisplayObject::destruct()
 	// TODO make all DisplayObject derived classes reusable
 	getSystemState()->unregisterFrameListener(this);
 	cachedBitmap.reset();
-	cachedAsBitmapOf.reset();
+	cachedAsBitmapOf=nullptr;
 	maskOf.reset();
 	parent=nullptr;
 	eventparentmap.clear();
@@ -1300,8 +1300,7 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 			getSystemState()->removeFromResetParentList(this);
 			if (p->computeCacheAsBitmap())
 			{
-				p->incRef();
-				cachedAsBitmapOf = _MNR(p);
+				cachedAsBitmapOf = p;
 			}
 			else
 				cachedAsBitmapOf = p->cachedAsBitmapOf;
@@ -1568,7 +1567,7 @@ void DisplayObject::afterConstruction()
 
 void DisplayObject::invalidateCachedAsBitmapOf()
 {
-	DisplayObject* c = cachedAsBitmapOf.getPtr();
+	DisplayObject* c = cachedAsBitmapOf;
 	while (c)
 	{
 		c->hasChanged=true;
@@ -1578,7 +1577,7 @@ void DisplayObject::invalidateCachedAsBitmapOf()
 			c->requestInvalidation(c->getSystemState());
 			break;
 		}
-		c = c->cachedAsBitmapOf.getPtr();
+		c = c->cachedAsBitmapOf;
 	}
 }
 
@@ -1740,7 +1739,6 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 				|| cachedBitmap->getBitmapSize().height != h)
 		{
 			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getInstanceWorker(),w,h));
-			data->incRef();
 			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getInstanceWorker(),data));
 		}
 		MATRIX m0=m;

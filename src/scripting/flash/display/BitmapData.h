@@ -46,6 +46,7 @@ public:
 	BitmapData(ASWorker* wrk,Class_base* c, uint32_t width, uint32_t height);
 	static void sinit(Class_base* c);
 	bool destruct() override;
+	void finalize() override;
 	void prepareShutdown() override;
 	_NR<BitmapContainer> getBitmapContainer() const { return pixels; }
 	int getWidth() const { return pixels->getWidth(); }

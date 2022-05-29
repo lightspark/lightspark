@@ -114,11 +114,18 @@ void BitmapData::sinit(Class_base* c)
 
 bool BitmapData::destruct()
 {
+	users.clear();
 	pixels = _MR(new BitmapContainer(getClass()->memoryAccount));
 	locked = 0;
 	transparent = true;
-	users.clear();
 	return ASObject::destruct();
+}
+
+void BitmapData::finalize()
+{
+	users.clear();
+	pixels.reset();
+	ASObject::finalize();
 }
 
 void BitmapData::prepareShutdown()

@@ -114,18 +114,14 @@ void LoaderInfo::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,frameRate,Number);
 }
 
-ASFUNCTIONBODY_GETTER(LoaderInfo,parameters);
-ASFUNCTIONBODY_GETTER(LoaderInfo,actionScriptVersion);
-ASFUNCTIONBODY_GETTER(LoaderInfo,childAllowsParent);
-ASFUNCTIONBODY_GETTER(LoaderInfo,contentType);
-ASFUNCTIONBODY_GETTER(LoaderInfo,swfVersion);
-ASFUNCTIONBODY_GETTER(LoaderInfo,uncaughtErrorEvents);
-ASFUNCTIONBODY_GETTER(LoaderInfo,parentAllowsChild);
-ASFUNCTIONBODY_GETTER(LoaderInfo,frameRate);
-
-void LoaderInfo::buildTraits(ASObject* o)
-{
-}
+ASFUNCTIONBODY_GETTER(LoaderInfo,parameters)
+ASFUNCTIONBODY_GETTER(LoaderInfo,actionScriptVersion)
+ASFUNCTIONBODY_GETTER(LoaderInfo,childAllowsParent)
+ASFUNCTIONBODY_GETTER(LoaderInfo,contentType)
+ASFUNCTIONBODY_GETTER(LoaderInfo,swfVersion)
+ASFUNCTIONBODY_GETTER(LoaderInfo,uncaughtErrorEvents)
+ASFUNCTIONBODY_GETTER(LoaderInfo,parentAllowsChild)
+ASFUNCTIONBODY_GETTER(LoaderInfo,frameRate)
 
 bool LoaderInfo::destruct()
 {
@@ -4604,6 +4600,21 @@ bool Bitmap::destruct()
 	bitmapData.reset();
 	smoothing = false;
 	return DisplayObject::destruct();
+}
+
+void Bitmap::finalize()
+{
+	bitmapData.reset();
+	DisplayObject::finalize();
+}
+
+void Bitmap::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	if (bitmapData)
+		bitmapData->prepareShutdown();
 }
 
 void Bitmap::sinit(Class_base* c)

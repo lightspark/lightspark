@@ -155,7 +155,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,scrollRect);
 	_NR<ColorTransform> colorTransform;
 	// pointer to the ancestor of this DisplayObject that is cached as Bitmap
-	_NR<DisplayObject> cachedAsBitmapOf;
+	DisplayObject* cachedAsBitmapOf;
 	void invalidateCachedAsBitmapOf();
 	void setNeedsTextureRecalculation(bool skippable=false);
 	void resetNeedsTextureRecalculation() { needsTextureRecalculation=false; }

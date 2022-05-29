@@ -4504,6 +4504,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,0x66,code,true, false,resulttype,p,true,false,false,false);
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
 									}
+									ASATOM_DECREF(o);
 								}
 								else
 								{
@@ -5080,7 +5081,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								it->objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
 								ASObject* obj =asAtomHandler::getObject(o);
 								if (obj)
+								{
 									resulttype = obj->getSlotType(t);
+									obj->decRef();
+								}
 							}
 							addCachedSlot(state,it->index,t,code,resulttype);
 							typestack.push_back(typestackentry(resulttype,false));
@@ -5125,7 +5129,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						it->objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
 						ASObject* obj =asAtomHandler::getObject(o);
 						if (obj)
+						{
 							resulttype = obj->getSlotType(t);
+							obj->decRef();
+						}
 					}
 				}
 #endif

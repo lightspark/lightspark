@@ -573,6 +573,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	if (wrk->isPrimordial)
 		Log::calls_indent++;
 #endif
+	bool exceptioncaught=false;
 	while (true)
 	{
 		try
@@ -639,12 +640,13 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 					cc->exec_pos = mi->body->preloadedcode.data()+exc.target;
 					cc->runtime_stack_clear();
 					*(cc->stackp++)=asAtomHandler::fromObject(excobj);
-					while (cc->curr_scope_stack != (mi->needsscope ? 1 : 0))
+					while (cc->curr_scope_stack != (mi->needsscope && !exceptioncaught ? 1 : 0))
 					{
 						--cc->curr_scope_stack;
 						ASATOM_DECREF(cc->scope_stack[cc->curr_scope_stack]);
 					}
 					cc->curr_scope_stack=0;
+					exceptioncaught=true;
 					break;
 				}
 			}
@@ -663,11 +665,11 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				if (cc->locals[0].uintval != obj.uintval)
 					ASATOM_DECREF_POINTER(cc->locals);
 				asAtom* lastscope=cc->scope_stack+cc->curr_scope_stack;
-				for(asAtom* i=cc->scope_stack+(mi->needsscope ? 1:0);i< lastscope;++i)
+				for(asAtom* i=cc->scope_stack+(mi->needsscope && !exceptioncaught ? 1:0);i< lastscope;++i)
 				{
 					ASATOM_DECREF_POINTER(i);
 				}
-				if (mi->needsscope && cc->scope_stack[0].uintval != obj.uintval)
+				if (mi->needsscope && !exceptioncaught && cc->scope_stack[0].uintval != obj.uintval)
 					ASATOM_DECREF_POINTER(cc->scope_stack);
 				cc->curr_scope_stack=0;
 				if (!isMethod())
@@ -722,11 +724,12 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		ASATOM_DECREF_POINTER(cc->locals);
 
 	asAtom* lastscope=cc->scope_stack+cc->curr_scope_stack;
-	for(asAtom* i=cc->scope_stack+(mi->needsscope ? 1:0);i< lastscope;++i)
+	for(asAtom* i=cc->scope_stack+(mi->needsscope && !exceptioncaught ? 1:0);i< lastscope;++i)
 	{
+		LOG_CALL("scopestack:"<<asAtomHandler::toDebugString(*i));
 		ASATOM_DECREF_POINTER(i);
 	}
-	if (mi->needsscope && cc->scope_stack[0].uintval != obj.uintval)
+	if (mi->needsscope && !exceptioncaught && cc->scope_stack[0].uintval != obj.uintval)
 		ASATOM_DECREF_POINTER(cc->scope_stack);
 	cc->curr_scope_stack=0;
 	if (!isMethod())

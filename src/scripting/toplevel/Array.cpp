@@ -1429,7 +1429,7 @@ ASFUNCTIONBODY_ATOM(Array,unshift)
 		th->data_second.clear();
 		for (auto it=tmp.begin(); it != tmp.end(); ++it )
 		{
-			th->set(it->first,it->second,false);
+			th->set(it->first,it->second,false,false);
 		}
 	}
 	asAtomHandler::setUInt(ret,wrk,(int32_t)th->size());

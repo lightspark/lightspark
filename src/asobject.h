@@ -830,9 +830,6 @@ enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 class ASWorker;
 
 extern ASWorker* getWorker();
-#ifndef NDEBUG
-extern std::set<ASObject*> memcheckset;
-#endif
 
 class ASObject: public memory_reporter, public RefCountable
 {
@@ -870,22 +867,10 @@ private:
 	SystemState* sys;
 	ASWorker* worker;
 protected:
-	ASObject(MemoryAccount* m):objfreelist(nullptr),Variables(m),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),worker(nullptr),
-		stringId(UINT32_MAX),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
-	{
-#ifndef NDEBUG
-		//Stuff only used in debugging
-		initialized=false;
-#endif
-	}
+	ASObject(MemoryAccount* m);
 	
 	ASObject(const ASObject& o);
-	virtual ~ASObject()
-	{
-#ifndef NDEBUG
-		memcheckset.erase(this);
-#endif
-	}
+	virtual ~ASObject();
 	uint32_t stringId;
 	SWFOBJECT_TYPE type;
 	CLASS_SUBTYPE subtype;
@@ -1293,7 +1278,7 @@ public:
 	{
 		Variables.destroyContents();
 	}
-	// this is called when shutting down the application, so remove all pointers to freelist to avoid any caching of ASObjects
+	// this is called when shutting down the application, removes all pointers to freelist to avoid any caching of ASObjects
 	virtual void prepareShutdown();
 	CLASS_SUBTYPE getSubtype() const { return subtype;}
 	// copies all variables into the target
@@ -1391,6 +1376,7 @@ class LoaderInfo;
 class Matrix;
 class Matrix3D;
 class MessageChannel;
+class MorphShape;
 class MouseEvent;
 class MovieClip;
 class Namespace;
@@ -1410,6 +1396,7 @@ class RootMovieClip;
 class SampleDataEvent;
 class ShaderFilter;
 class SharedObject;
+class Shape;
 class SimpleButton;
 class Sound;
 class SoundChannel;
@@ -1473,7 +1460,7 @@ template<> inline bool ASObject::is<CubeTexture>() const { return subtype==SUBTY
 template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
 template<> inline bool ASObject::is<DatagramSocket>() const { return subtype==SUBTYPE_DATAGRAMSOCKET; }
 template<> inline bool ASObject::is<DisplacementFilter>() const { return subtype==SUBTYPE_DISPLACEMENTFILTER; }
-template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_VIDEO || subtype == SUBTYPE_SIMPLEBUTTON; }
+template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_VIDEO || subtype == SUBTYPE_SIMPLEBUTTON || subtype == SUBTYPE_SHAPE || subtype == SUBTYPE_MORPHSHAPE; }
 template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE; }
 template<> inline bool ASObject::is<DropShadowFilter>() const { return subtype==SUBTYPE_DROPSHADOWFILTER; }
 template<> inline bool ASObject::is<ElementFormat>() const { return subtype==SUBTYPE_ELEMENTFORMAT; }
@@ -1504,6 +1491,7 @@ template<> inline bool ASObject::is<NetStream>() const { return subtype==SUBTYPE
 template<> inline bool ASObject::is<Matrix>() const { return subtype==SUBTYPE_MATRIX; }
 template<> inline bool ASObject::is<Matrix3D>() const { return subtype==SUBTYPE_MATRIX3D; }
 template<> inline bool ASObject::is<MessageChannel>() const { return subtype==SUBTYPE_MESSAGECHANNEL; }
+template<> inline bool ASObject::is<MorphShape>() const { return subtype==SUBTYPE_MORPHSHAPE; }
 template<> inline bool ASObject::is<MouseEvent>() const { return subtype==SUBTYPE_MOUSE_EVENT; }
 template<> inline bool ASObject::is<MovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP || subtype == SUBTYPE_MOVIECLIP; }
 template<> inline bool ASObject::is<Null>() const { return type==T_NULL; }
@@ -1519,6 +1507,7 @@ template<> inline bool ASObject::is<RegExp>() const { return subtype==SUBTYPE_RE
 template<> inline bool ASObject::is<RootMovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP; }
 template<> inline bool ASObject::is<SampleDataEvent>() const { return subtype==SUBTYPE_SAMPLEDATA_EVENT; }
 template<> inline bool ASObject::is<ShaderFilter>() const { return subtype==SUBTYPE_SHADERFILTER; }
+template<> inline bool ASObject::is<Shape>() const { return subtype==SUBTYPE_SHAPE; }
 template<> inline bool ASObject::is<SharedObject>() const { return subtype==SUBTYPE_SHAREDOBJECT; }
 template<> inline bool ASObject::is<SimpleButton>() const { return subtype==SUBTYPE_SIMPLEBUTTON; }
 template<> inline bool ASObject::is<Sound>() const { return subtype==SUBTYPE_SOUND; }

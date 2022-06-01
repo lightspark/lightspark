@@ -409,7 +409,7 @@ void ASObject::call_valueOf(asAtom& ret)
 
 	ASWorker* wrk = getWorker();
 	asAtom o=asAtomHandler::invalidAtom;
-	getVariableByMultiname(o,valueOfName,SKIP_IMPL,wrk);
+	getVariableByMultiname(o,valueOfName,GET_VARIABLE_OPTION(SKIP_IMPL|NO_INCREF),wrk);
 	if (!asAtomHandler::isFunction(o))
 		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
 
@@ -442,7 +442,7 @@ void ASObject::call_toString(asAtom &ret)
 
 	ASWorker* wrk = getWorker();
 	asAtom o=asAtomHandler::invalidAtom;
-	getVariableByMultiname(o,toStringName,SKIP_IMPL,wrk);
+	getVariableByMultiname(o,toStringName,GET_VARIABLE_OPTION(SKIP_IMPL|NO_INCREF),wrk);
 	if (!asAtomHandler::isFunction(o))
 		throwError<TypeError>(kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
 
@@ -759,7 +759,6 @@ variable* ASObject::findSettable(const multiname& name, bool* has_getter)
 {
 	return findSettableImpl(getSystemState(),Variables, name, has_getter);
 }
-
 
 multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset, ASWorker* wrk)
 {
@@ -1772,6 +1771,8 @@ void variables_map::removeAllDeclaredProperties()
 }
 
 #ifndef NDEBUG
+Mutex memcheckmutex;
+std::set<ASObject*> memcheckset;
 std::map<Class_base*,uint32_t> ASObject::objectcounter;
 void ASObject::dumpObjectCounters(uint32_t threshhold)
 {
@@ -1800,7 +1801,9 @@ ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
+	memcheckmutex.lock();
 	memcheckset.insert(this);
+	memcheckmutex.unlock();
 	if (c)
 	{
 		uint32_t x = objectcounter[c];
@@ -1815,9 +1818,32 @@ ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),Variables((o.cl
 #ifndef NDEBUG
 	//Stuff only used in debugging
 	initialized=false;
+	memcheckmutex.lock();
 	memcheckset.insert(this);
+	memcheckmutex.unlock();
 #endif
 	assert(o.Variables.size()==0);
+}
+
+ASObject::ASObject(MemoryAccount* m):objfreelist(nullptr),Variables(m),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),worker(nullptr),
+	stringId(UINT32_MAX),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
+{
+#ifndef NDEBUG
+	//Stuff only used in debugging
+	initialized=false;
+	memcheckmutex.lock();
+	memcheckset.insert(this);
+	memcheckmutex.unlock();
+#endif
+}
+
+ASObject::~ASObject()
+{
+#ifndef NDEBUG
+	memcheckmutex.lock();
+	memcheckset.erase(this);
+	memcheckmutex.unlock();
+#endif
 }
 
 void ASObject::setClass(Class_base* c)
@@ -3094,7 +3120,16 @@ uint32_t asAtomHandler::toStringId(asAtom& a, ASWorker* wrk)
 {
 	if (isStringID(a))
 		return a.uintval>>3;
-	return toObject(a,wrk)->toStringId();
+	if (isObject(a))
+	{
+		assert(getObjectNoCheck(a) && getObjectNoCheck(a)->getRefCount() >= 1);
+		return getObjectNoCheck(a)->toStringId();
+	}
+	asAtom b=a;
+	ASObject* o = toObject(b,wrk);
+	uint32_t ret = o->toStringId();
+	o->decRef();
+	return ret;
 }
 
 
@@ -3158,7 +3193,7 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 		else if (res >= 0 && res < (1<<29))
 			setUInt(a,wrk,res);
 		else
-			setNumber(a,wrk,res);
+			return replaceNumber(a,wrk,res);
 	}
 	else if((isInteger(a) || isUInteger(a) || isNumber(a)) &&
 			(isNumber(v2) || isInteger(v2) || isUInteger(v2)))
@@ -3169,7 +3204,7 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 		if (forceint)
 			setInt(a,wrk,num1+num2);
 		else
-			setNumber(a,wrk,num1+num2);
+			return replaceNumber(a,wrk,num1+num2);
 	}
 	else if(isString(a) || isString(v2))
 	{
@@ -3242,7 +3277,7 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 				if (forceint)
 					setInt(a,wrk,result);
 				else
-					setNumber(a,wrk,result);
+					return replaceNumber(a,wrk,result);
 			}
 		}
 	}
@@ -3259,6 +3294,7 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 		int64_t num1=toInt64(v1);
 		int64_t num2=toInt64(v2);
 		int64_t res = num1+num2;
+		ASATOM_DECREF(ret);
 		LOG_CALL("addI replace " << num1 << '+' << num2 <<"="<<res);
 		if (forceint || (res >= -(1<<28) && res < (1<<28)))
 			setInt(ret,wrk,res);

@@ -1283,11 +1283,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			{
 				asAtom arg1 = PopStack(stack);
 				asAtom arg2 = PopStack(stack);
-				asAtom tmp = arg2;
+				ASObject* o = asAtomHandler::getObject(arg2);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionAdd2 "<<asAtomHandler::toDebugString(arg2)<<" + "<<asAtomHandler::toDebugString(arg1));
-				asAtomHandler::add(arg2,arg1,wrk,false);
+				if (asAtomHandler::add(arg2,arg1,wrk,false))
+				{
+					if (o)
+						o->decRef();
+				}
 				ASATOM_DECREF(arg1);
-				ASATOM_DECREF(tmp);
 				PushStack(stack,arg2);
 				break;
 			}

@@ -3520,11 +3520,13 @@ _NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t 
 
 Shape::Shape(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),TokenContainer(this),graphics(NullRef),fromTag(nullptr)
 {
+	subtype=SUBTYPE_SHAPE;
 }
 
 Shape::Shape(ASWorker* wrk, Class_base* c, float scaling, DefineShapeTag* tag):
 	DisplayObject(wrk,c),TokenContainer(this, *tag->tokens, scaling),graphics(NullRef),fromTag(tag)
 {
+	subtype=SUBTYPE_SHAPE;
 }
 
 void Shape::setupShape(DefineShapeTag* tag, float _scaling)
@@ -3597,11 +3599,13 @@ ASFUNCTIONBODY_ATOM(Shape,_getGraphics)
 
 MorphShape::MorphShape(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),TokenContainer(this),morphshapetag(nullptr),currentratio(0)
 {
+	subtype=SUBTYPE_MORPHSHAPE;
 	scaling = 1.0f/20.0f;
 }
 
 MorphShape::MorphShape(ASWorker* wrk,Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(wrk,c),TokenContainer(this),morphshapetag(_morphshapetag),currentratio(0)
 {
+	subtype=SUBTYPE_MORPHSHAPE;
 	scaling = 1.0f/20.0f;
 	if (this->morphshapetag)
 		this->morphshapetag->getTokensForRatio(tokens,0);

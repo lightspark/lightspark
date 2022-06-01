@@ -1177,10 +1177,10 @@ void ABCVm::abc_add(call_context* context)
 	ASObject* o = asAtomHandler::getObject(*pval);
 	if (asAtomHandler::add(*pval,*v2,context->worker,context->exec_pos->local3.flags & ABC_OP_FORCEINT))
 	{
-		ASATOM_DECREF_POINTER(v2);
 		if (o)
 			o->decRef();
 	}
+	ASATOM_DECREF_POINTER(v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract(call_context* context)

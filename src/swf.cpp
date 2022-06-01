@@ -655,7 +655,7 @@ void SystemState::systemFinalize()
 	mainClip->destroyTags();
 }
 #ifndef NDEBUG
-std::set<ASObject*> lightspark::memcheckset;
+extern std::set<ASObject*> memcheckset;
 #endif
 SystemState::~SystemState()
 {

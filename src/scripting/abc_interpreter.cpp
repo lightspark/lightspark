@@ -1493,7 +1493,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 	uint32_t dupskipped=UINT32_MAX;
 	for (auto it = state.operandlist.begin(); it != state.operandlist.end(); it++)
 	{
-		if (it->type != OP_LOCAL)
+		if (it->type != OP_LOCAL && it->type != OP_CACHED_SLOT)
 			continue;
 		if (uint32_t(it->index) > state.mi->body->getReturnValuePos()) // local result index already used
 		{

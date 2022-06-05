@@ -122,7 +122,7 @@ public:
 	/*
 		Upload data to memory mapped to the graphics card (note: size is guaranteed to be enough
 	*/
-	virtual void upload(uint8_t* data, uint32_t w, uint32_t h)=0;
+	virtual uint8_t* upload(bool refresh)=0;
 	virtual TextureChunk& getTexture()=0;
 	/*
 		Signal the completion of the upload to the texture
@@ -262,7 +262,7 @@ public:
 	void threadAbort() override;
 	void jobFence() override;
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
+	uint8_t* upload(bool refresh) override;
 	void sizeNeeded(uint32_t& w, uint32_t& h) const override;
 	TextureChunk& getTexture() override;
 	void uploadFence() override;
@@ -513,7 +513,7 @@ public:
 	virtual ~CharacterRenderer() { delete[] data; }
 	//ITextureUploadable interface
 	void sizeNeeded(uint32_t& w, uint32_t& h) const override { w=width; h=height;}
-	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
+	uint8_t* upload(bool refresh) override;
 	TextureChunk& getTexture() override;
 	void uploadFence() override {}
 };

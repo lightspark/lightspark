@@ -101,9 +101,6 @@ protected:
 	virtual SDL_Window* createWidget(uint32_t w,uint32_t h)=0;
 public:
 	bool incontextmenupreparing; // needed for PPAPI plugin only
-	uint8_t* currentPixelBufPtr;
-	uint32_t pixelBufferWidth;
-	uint32_t pixelBufferHeight;
 	SDL_Window* widget;
 	static uint32_t userevent;
 	static SDL_Thread* mainLoopThread;
@@ -192,7 +189,6 @@ public:
 	virtual tiny_string FileGetApplicationStorageDir();
 	
 	void initGLEW();
-	void resizePixelBuffers(uint32_t w, uint32_t h);
 
 	/* show/hide mouse cursor, must be called from mainLoopThread */
 	static void showMouseCursor(SystemState *sys);
@@ -209,8 +205,6 @@ public:
 	virtual void InitOpenGL() = 0;
 	virtual void DeinitOpenGL() = 0;
 	virtual bool getGLError(uint32_t& errorCode) const;
-	virtual uint8_t* getCurrentPixBuf() const;
-	virtual uint8_t* switchCurrentPixBuf(uint32_t w, uint32_t h);
 	virtual tiny_string getGLDriverInfo();
 	virtual void getGlCompressedTextureFormats();
 	virtual void exec_glUniform1f(int location,float v0);

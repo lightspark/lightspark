@@ -100,6 +100,8 @@ public:
 class DefineVideoStreamTag;
 class VideoDecoder: public Decoder, public ITextureUploadable
 {
+protected:
+	uint8_t* decodedframebuffer;
 public:
 	VideoDecoder();
 	virtual ~VideoDecoder();
@@ -163,8 +165,9 @@ public:
 		flushing=true;
 	}
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) override
+	uint8_t* upload(bool refresh) override
 	{
+		return nullptr;
 	}
 };
 #ifdef ENABLE_LIBAVCODEC
@@ -262,7 +265,7 @@ public:
 		}
 	}
 	//ITextureUploadable interface
-	void upload(uint8_t* data, uint32_t w, uint32_t h) override;
+	uint8_t* upload(bool refresh) override;
 };
 #endif
 

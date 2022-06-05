@@ -1052,10 +1052,10 @@ void AsyncDrawJob::jobFence()
 		delete this;
 }
 
-void AsyncDrawJob::upload(uint8_t* data, uint32_t w, uint32_t h)
+uint8_t* AsyncDrawJob::upload(bool refresh)
 {
 	assert(surfaceBytes);
-	memcpy(data, surfaceBytes, w*h*4);
+	return surfaceBytes;
 }
 
 void AsyncDrawJob::sizeNeeded(uint32_t& w, uint32_t& h) const
@@ -1165,15 +1165,15 @@ uint8_t *BitmapRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 }
 
 
-void CharacterRenderer::upload(uint8_t *data, uint32_t w, uint32_t h)
+uint8_t* CharacterRenderer::upload(bool refresh)
 {
-	memcpy(data, this->data, w*h*4);
+	return this->data;
 }
 
 TextureChunk& CharacterRenderer::getTexture()
 {
 	if(!chunk.resizeIfLargeEnough(width, height))
-	chunk=getSys()->getRenderThread()->allocateTexture(width, height,false);
+		chunk=getSys()->getRenderThread()->allocateTexture(width, height,false);
 	return chunk;
 }
 

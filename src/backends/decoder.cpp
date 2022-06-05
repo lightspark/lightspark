@@ -56,6 +56,20 @@ bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 		LOG(LOG_INFO,"VIDEO DEC: Video frame size " << frameWidth << 'x' << frameHeight);
 		resizeGLBuffers=true;
 		videoTexture=getSys()->getRenderThread()->allocateTexture(frameWidth, frameHeight, true);
+#ifdef _WIN32
+		if (decodedframebuffer)
+			_aligned_free(decodedframebuffer);
+		decodedframebuffer = (uint8_t*)_aligned_malloc(frameWidth*frameHeight*4, 16);
+		if (!decodedframebuffer) {
+			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
+		}
+#else
+		if (decodedframebuffer)
+			free(decodedframebuffer);
+		if(posix_memalign((void **)&decodedframebuffer, 16, frameWidth*frameHeight*4)) {
+			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
+		}
+#endif
 		return true;
 	}
 	else
@@ -98,7 +112,7 @@ void VideoDecoder::markForDestruction()
 {
 	markedForDeletion=true;
 }
-VideoDecoder::VideoDecoder():frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),lastframe(UINT32_MAX),currentframe(UINT32_MAX),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false)
+VideoDecoder::VideoDecoder():decodedframebuffer(nullptr),frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),lastframe(UINT32_MAX),currentframe(UINT32_MAX),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false)
 {
 }
 
@@ -110,6 +124,13 @@ VideoDecoder::~VideoDecoder()
 		if(rt)
 			rt->releaseTexture(getTexture());
 	}
+#ifdef _WIN32
+	if (decodedframebuffer)
+		_aligned_free(decodedframebuffer);
+#else
+	if (decodedframebuffer)
+		free(decodedframebuffer);
+#endif
 }
 
 void VideoDecoder::waitForFencing()
@@ -565,11 +586,12 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t tim
 		streamingbuffers.commitLast();
 }
 
-void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h)
+uint8_t* FFMpegVideoDecoder::upload(bool refresh)
 {
+	assert_and_throw(decodedframebuffer);
+	if (!refresh)
+		return decodedframebuffer;
 	Locker l(mutex);
-	//Verify that the size are right
-	assert_and_throw(w==((frameWidth+15)&0xfffffff0) && h==frameHeight);
 	if (embeddedvideotag) // on embedded video we decode the frames during upload
 	{
 		if (currentframe < lastframe)
@@ -583,22 +605,22 @@ void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h)
 		{
 			VideoFrameTag* t = embeddedvideotag->getFrame(i);
 			if (!t)
-				return;
+				return decodedframebuffer;
 			decodeData(t->getData(), t->getNumBytes(), (i == currentframe) ? 0 : UINT32_MAX);
 			lastframe = i;
 		}
 		if(embeddedbuffers.isEmpty())
-			return;
+			return decodedframebuffer;
 	}
 	else
 	{
 		if(streamingbuffers.isEmpty())
-			return;
+			return decodedframebuffer;
 	}
 
 	//At least a frame is available
 	YUVBuffer* cur=embeddedvideotag ? &embeddedbuffers.front() : &streamingbuffers.front();
-	fastYUV420ChannelsToYUV0Buffer(cur->ch[0],cur->ch[1],cur->ch[2],data,frameWidth,frameHeight);
+	fastYUV420ChannelsToYUV0Buffer(cur->ch[0],cur->ch[1],cur->ch[2],decodedframebuffer,frameWidth,frameHeight);
 	if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)
 	{
 		uint32_t texw= (frameWidth+15)&0xfffffff0;
@@ -607,10 +629,11 @@ void FFMpegVideoDecoder::upload(uint8_t* data, uint32_t w, uint32_t h)
 			for(uint32_t j=0;j<frameWidth;j++)
 			{
 				uint32_t pixelCoordFull=i*texw+j;
-				data[pixelCoordFull*4+3]=cur->ch[3][i*frameWidth+j];
+				decodedframebuffer[pixelCoordFull*4+3]=cur->ch[3][i*frameWidth+j];
 			}
 		}
 	}
+	return decodedframebuffer;
 }
 
 void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const

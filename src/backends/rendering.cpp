@@ -110,7 +110,7 @@ void RenderThread::finalizeUpload()
 	TextureChunk& tex=u->getTexture();
 	u->contentScale(tex.xContentScale, tex.yContentScale);
 	u->contentOffset(tex.xOffset, tex.yOffset);
-	loadChunkBGRA(tex, w, h, engineData->getCurrentPixBuf());
+	loadChunkBGRA(tex, w, h, u->upload(false));
 	u->uploadFence();
 	prevUploadJob=nullptr;
 }
@@ -121,16 +121,9 @@ void RenderThread::handleUpload()
 	assert(u);
 	uint32_t w,h;
 	u->sizeNeeded(w,h);
-	engineData->resizePixelBuffers(w,h);
-
-	uint8_t* buf= engineData->switchCurrentPixBuf(w,h);
-	if (!buf)
-	{
-		handleGLErrors();
-		return;
-	}
-	u->upload(buf, w, h);
-
+	
+	//force creation of buffer if neccessary
+	u->upload(true);
 	//Get the texture to be sure it's allocated when the upload comes
 	u->getTexture();
 	prevUploadJob=u;
@@ -540,7 +533,7 @@ void RenderThread::commonGLInit(int width, int height)
 	engineData->exec_glEnable_GL_BLEND();
 
 	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
-	//Viewport setup is left for GLResize	
+	//Viewport setup is left for GLResize
 
 	//Get the maximum allowed texture size, up to 8192
 	int maxTexSize;
@@ -1089,7 +1082,7 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t h, uint8_t* data)
 {
 	//Fast bailout if the TextureChunk is not valid
-	if(chunk.chunks==nullptr)
+	if(chunk.chunks==nullptr || data == nullptr)
 		return;
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
 	//TODO: Detect continuos

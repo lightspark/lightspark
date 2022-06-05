@@ -56,20 +56,12 @@ bool EngineData::sdl_needinit = true;
 bool EngineData::enablerendering = true;
 SDL_Cursor* EngineData::handCursor = nullptr;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),currentPixelBufPtr(nullptr),pixelBufferWidth(0),pixelBufferHeight(0),widget(0), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
+EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
 {
 }
 
 EngineData::~EngineData()
 {
-	if (currentPixelBufPtr) {
-#ifdef _WIN32
-		_aligned_free(currentPixelBufPtr);
-#else
-		free(currentPixelBufPtr);
-#endif
-		currentPixelBufPtr = nullptr;
-	}
 	if (handCursor)
 		SDL_FreeCursor(handCursor);
 	handCursor=nullptr;
@@ -727,31 +719,6 @@ bool EngineData::getGLError(uint32_t &errorCode) const
 	return errorCode!=GL_NO_ERROR;
 }
 
-uint8_t *EngineData::getCurrentPixBuf() const
-{
-	return currentPixelBufPtr;
-}
-
-uint8_t *EngineData::switchCurrentPixBuf(uint32_t w, uint32_t h)
-{
-	//TODO See if a more elegant way of handling the non-PBO case can be found.
-	//for now, each frame is uploaded one at a time synchronously to the server
-	if(!currentPixelBufPtr)
-#ifdef _WIN32
-		currentPixelBufPtr = (uint8_t*)_aligned_malloc(w*h*4, 16);
-		if (!currentPixelBufPtr) {
-			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
-			return nullptr;
-		}
-#else
-		if(posix_memalign((void **)&currentPixelBufPtr, 16, w*h*4)) {
-			LOG(LOG_ERROR, "posix_memalign could not allocate memory");
-			return nullptr;
-		}
-#endif
-	return currentPixelBufPtr;
-}
-
 tiny_string EngineData::getGLDriverInfo()
 {
 	tiny_string res = "OpenGL Vendor=";
@@ -780,23 +747,6 @@ void EngineData::getGlCompressedTextureFormats()
 			compressed_texture_formats.push_back(TEXTUREFORMAT_COMPRESSED::DXT5);
 	}
 	delete [] formats;
-}
-
-void EngineData::resizePixelBuffers(uint32_t w, uint32_t h)
-{
-	if(w<=pixelBufferWidth && h<=pixelBufferHeight)
-		return;
-	
-	pixelBufferWidth=w;
-	pixelBufferHeight=h;
-	if (currentPixelBufPtr) {
-#ifdef _WIN32
-		_aligned_free(currentPixelBufPtr);
-#else
-		free(currentPixelBufPtr);
-#endif
-		currentPixelBufPtr = nullptr;
-	}
 }
 
 void EngineData::exec_glUniform1f(int location,float v0)

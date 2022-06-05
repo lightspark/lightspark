@@ -39,6 +39,15 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+extern "C" {
+#ifdef ENABLE_GLES2
+extern NVGcontext* nvgCreateGLES2(int flags);
+extern void nvgDeleteGLES2(NVGcontext* ctx);
+#else
+extern NVGcontext* nvgCreateGL2(int flags);
+extern void nvgDeleteGL2(NVGcontext* ctx);
+#endif
+}
 //The interpretation of texture data change with the endianness
 #if __BYTE_ORDER == __BIG_ENDIAN
 #define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_INT_8_8_8_8_REV
@@ -56,7 +65,7 @@ bool EngineData::sdl_needinit = true;
 bool EngineData::enablerendering = true;
 SDL_Cursor* EngineData::handCursor = nullptr;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
+EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr),nvgcontext(nullptr), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
 {
 }
 
@@ -65,6 +74,13 @@ EngineData::~EngineData()
 	if (handCursor)
 		SDL_FreeCursor(handCursor);
 	handCursor=nullptr;
+#ifdef ENABLE_GLES2
+	if (nvgcontext)
+		nvgDeleteGLES2(nvgcontext);
+#else
+	if (nvgcontext)
+		nvgDeleteGL2(nvgcontext);
+#endif
 }
 bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 {
@@ -341,6 +357,13 @@ void EngineData::initGLEW()
 	}
 	supportPackedDepthStencil = GLEW_EXT_packed_depth_stencil;
 #endif
+#ifdef ENABLE_GLES2
+	nvgcontext=nvgCreateGLES2(0);
+#else
+	nvgcontext=nvgCreateGL2(0);
+#endif
+	if (nvgcontext == nullptr)
+		LOG(LOG_ERROR,"couldn't initialize nanovg");
 }
 
 void EngineData::showWindow(uint32_t w, uint32_t h)
@@ -1229,13 +1252,21 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, in
 			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
 			break;
 		case TEXTUREFORMAT::BGR:
+#if ENABLE_GLES2
+			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+#else
 			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_BYTE, pixels);
+#endif
 			break;
 		case TEXTUREFORMAT::BGRA_PACKED:
 			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
 			break;
 		case TEXTUREFORMAT::BGR_PACKED:
+#if ENABLE_GLES2
+			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
+#else
 			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_SHORT_5_6_5, pixels);
+#endif
 			break;
 		case TEXTUREFORMAT::COMPRESSED:
 		case TEXTUREFORMAT::COMPRESSED_ALPHA:

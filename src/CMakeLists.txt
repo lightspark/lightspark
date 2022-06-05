@@ -239,6 +239,7 @@ SET(LIBSPARK_SOURCES
   scripting/avm1/avm1media.cpp
   scripting/avm1_interpreter.cpp
   platforms/engineutils.cpp
+  3rdparty/nanovg/src/nanovg.c
   3rdparty/pugixml/src/pugixml.cpp
   3rdparty/jpegxr/cr_parse.cpp
   3rdparty/jpegxr/cw_emit.cpp

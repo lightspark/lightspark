@@ -30,6 +30,10 @@
 
 #define LIGHTSPARK_AUDIO_BUFFERSIZE 512
 
+extern "C" {
+struct NVGcontext;
+}
+
 namespace lightspark
 {
 
@@ -102,6 +106,7 @@ protected:
 public:
 	bool incontextmenupreparing; // needed for PPAPI plugin only
 	SDL_Window* widget;
+	NVGcontext* nvgcontext;
 	static uint32_t userevent;
 	static SDL_Thread* mainLoopThread;
 	uint32_t width;

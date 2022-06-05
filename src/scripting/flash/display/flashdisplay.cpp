@@ -942,12 +942,25 @@ void Sprite::afterSetUseHandCursor(bool /*oldValue*/)
 	handleMouseCursor(hasMouse);
 }
 
-void Sprite::buildTraits(ASObject* o)
-{
-}
-
 IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
+	if (this->graphics)
+	{
+		this->graphics->refreshTokens();
+		if (graphics->shouldRenderToGL())
+		{
+			// we can currently only render with nanovg if this sprite and it's parents don't have a colorTransformation
+			ColorTransform* ct = this->colorTransform.getPtr();
+			DisplayObjectContainer* p = this->getParent();
+			while (!ct && p)
+			{
+				ct = p->colorTransform.getPtr();
+				p = p->getParent();
+			}
+			if (!ct)
+				return nullptr;
+		}
+	}
 	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,true);
 }
 
@@ -1073,6 +1086,8 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	bool ret;
 	ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax);
 	number_t txmin,txmax,tymin,tymax;
+	if (graphics)
+		graphics->refreshTokens();
 	if(TokenContainer::boundsRect(txmin,txmax,tymin,tymax))
 	{
 		if(ret==true)
@@ -1099,7 +1114,17 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 	if (requestInvalidationForCacheAsBitmap(q))
 		return;
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
-	TokenContainer::requestInvalidation(q,forceTextureRefresh);
+	if (graphics)
+	{
+		if(skipRender())
+			return;
+		incRef();
+		if (forceTextureRefresh)
+			setNeedsTextureRecalculation();
+		q->addToInvalidateQueue(_MR(this));
+	}
+	else
+		TokenContainer::requestInvalidation(q,forceTextureRefresh);
 }
 
 bool DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
@@ -1157,8 +1182,10 @@ void DisplayObjectContainer::eraseRemovedLegacyChild(uint32_t name)
 
 bool Sprite::renderImpl(RenderContext& ctxt) const
 {
+	if (this->graphics)
+		this->graphics->refreshTokens();
 	//Draw the dynamically added graphics, if any
-	bool ret = defaultRender(ctxt);
+	bool ret = TokenContainer::renderImpl(ctxt);
 
 	bool ret2 =DisplayObjectContainer::renderImpl(ctxt);
 	return ret && ret2;
@@ -3499,7 +3526,11 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax) const
 {
 	if (!this->legacy || (fromTag==nullptr))
+	{
+		if (graphics)
+			graphics->refreshTokens();
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
+	}
 	xmin=fromTag->ShapeBounds.Xmin/20.0;
 	xmax=fromTag->ShapeBounds.Xmax/20.0;
 	ymin=fromTag->ShapeBounds.Ymin/20.0;
@@ -3578,8 +3609,15 @@ void Shape::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("graphics","",Class<IFunction>::getFunction(c->getSystemState(),_getGraphics,0,Class<Graphics>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 }
 
+void Shape::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
+{
+	TokenContainer::requestInvalidation(q,forceTextureRefresh);
+}
+
 IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
+	if (this->graphics)
+		this->graphics->refreshTokens();
 	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,!graphics.isNull());
 }
 

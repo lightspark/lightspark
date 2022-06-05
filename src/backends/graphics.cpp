@@ -281,23 +281,18 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 
 	bool empty=true;
 
-	cairo_t *stroke_cr = cairo_create(cairo_get_group_target(cr));
-	cairo_scale(stroke_cr, scaleCorrection, scaleCorrection);
 	if (xstart || ystart)
 	{
 		cairo_matrix_t mat;
 		cairo_get_matrix(cr,&mat);
 		cairo_matrix_translate(&mat,-xstart,-ystart);
 		cairo_set_matrix(cr, &mat);
-		cairo_set_matrix(stroke_cr, &mat);
 	}
-	cairo_push_group(stroke_cr);
 	// Make sure not to draw anything until a fill is set.
-	cairo_set_operator(stroke_cr, CAIRO_OPERATOR_DEST);
 	cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 
-	#define PATH(operation, args...) \
-		operation(instroke?stroke_cr:cr, ## args);
+#define PATH(operation, args...) \
+	operation(cr, ## args);
 
 	bool instroke = false;
 	int tokentype = 1;
@@ -394,7 +389,11 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						}
 						break;
 					}
-					cairo_fill(cr);
+					if (instroke)
+						cairo_stroke(cr);
+					else
+						cairo_fill(cr);
+					instroke=false;
 					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 					const FILLSTYLE* style = p1.fillStyle;
 					if (style->FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
@@ -412,7 +411,6 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				case SET_STROKE:
 				{
 					GeomToken p1(*(++it),false);
-					instroke = true;
 					if(skipPaint)
 					{
 						if (starttoken)
@@ -423,9 +421,13 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						}
 						break;
 					}
-					cairo_stroke(stroke_cr);
+					if (instroke)
+						cairo_stroke(cr);
+					else
+						cairo_fill(cr);
+					instroke = true;
 					const LINESTYLE2* style = p1.lineStyle;
-					cairo_set_operator(stroke_cr, CAIRO_OPERATOR_OVER);
+					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 					if (style->HasFillFlag)
 					{
 						if (style->FillType.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
@@ -434,7 +436,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						cairo_pattern_t* pattern = FILLSTYLEToCairo(style->FillType, scaleCorrection,isMask);
 						if (pattern)
 						{
-							cairo_set_source(stroke_cr, pattern);
+							cairo_set_source(cr, pattern);
 							cairo_pattern_destroy(pattern);
 						}
 					} else {
@@ -444,23 +446,23 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						g = color.gf();
 						b = color.bf();
 						a = isMask ? 1.0 : color.af();
-						cairo_set_source_rgba(stroke_cr, r, g, b, a);
+						cairo_set_source_rgba(cr, r, g, b, a);
 					}
 					// TODO: EndCapStyle
 					if (style->StartCapStyle == 0)
-						cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_ROUND);
+						cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
 					else if (style->StartCapStyle == 1)
-						cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_BUTT);
+						cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
 					else if (style->StartCapStyle == 2)
-						cairo_set_line_cap(stroke_cr, CAIRO_LINE_CAP_SQUARE);
+						cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
 
 					if (style->JointStyle == 0)
-						cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_ROUND);
+						cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
 					else if (style->JointStyle == 1)
-						cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_BEVEL);
+						cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
 					else if (style->JointStyle == 2) {
-						cairo_set_line_join(stroke_cr, CAIRO_LINE_JOIN_MITER);
-						cairo_set_miter_limit(stroke_cr, style->MiterLimitFactor);
+						cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);
+						cairo_set_miter_limit(cr, style->MiterLimitFactor);
 					}
 					//Width == 0 should be a hairline, but
 					//cairo does not support hairlines.
@@ -468,14 +470,14 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					//substitute, because it is affected
 					//by transformations.
 					if (style->Width == 0)
-						cairo_set_line_width(stroke_cr, 1);
+						cairo_set_line_width(cr, 1);
 					else if (style->Width < 20) // would result in line with < 1 what seems to lead to no rendering at all
-						cairo_set_line_width(stroke_cr, 5);
+						cairo_set_line_width(cr, 5);
 					else 
 					{
 						double linewidth = (double)(style->Width / 20.0 / scaleCorrection);
 						//cairo_device_to_user_distance(stroke_cr, &linewidth, &linewidth);
-						cairo_set_line_width(stroke_cr, linewidth);
+						cairo_set_line_width(cr, linewidth);
 					}
 					break;
 				}
@@ -508,9 +510,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						}
 						break;
 					}
-					cairo_stroke(stroke_cr);
+					cairo_stroke(cr);
 					// Clear source.
-					cairo_set_operator(stroke_cr, CAIRO_OPERATOR_DEST);
+					cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 					break;
 				case FILL_TRANSFORM_TEXTURE:
 				{
@@ -542,21 +544,11 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 
 	if(!skipPaint)
 	{
-		cairo_fill(cr);
 		if (instroke)
-			cairo_stroke(stroke_cr);
+			cairo_stroke(cr);
+		else
+			cairo_fill(cr);
 	}
-
-	cairo_pattern_t *stroke_pattern = cairo_pop_group(stroke_cr);
-	cairo_set_source(cr, stroke_pattern);
-	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-
-	if(!skipPaint)
-		cairo_paint(cr);
-
-	cairo_pattern_destroy(stroke_pattern);
-	cairo_destroy(stroke_cr);
-
 	return empty;
 }
 

@@ -763,10 +763,8 @@ bool SyntheticFunction::destruct()
 						o->as<Activation_object>()->removeDynamicFunctionUsage(this);
 						// the ActivationObject has references to other dynamic functions, so we have to keep it and this function alive
 						if (this->getActivationCount() > 1)
-						{
 							this->decActivationCount();
-							return false;
-						}
+						return false;
 					}
 				}
 				o->decRef();

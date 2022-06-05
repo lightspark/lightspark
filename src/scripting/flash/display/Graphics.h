@@ -52,7 +52,9 @@ private:
 	int movey;
 	bool inFilling;
 	bool hasChanged;
+	tokensVector tokens;
 	void dorender(bool closepath);
+	void updateTokenBounds(int x, int y);
 public:
 	Graphics(ASWorker* wrk, Class_base* c):ASObject(wrk,c),owner(nullptr),movex(0),movey(0),inFilling(false),hasChanged(false)
 	{
@@ -63,8 +65,9 @@ public:
 	void startDrawJob();
 	void endDrawJob();
 	bool destruct() override;
+	void refreshTokens();
+	bool shouldRenderToGL();
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	FILLSTYLE& addFillStyle(FILLSTYLE& fs) { fillStyles.push_back(fs); return fillStyles.back();}
 	LINESTYLE2& addLineStyle(LINESTYLE2& ls) { lineStyles.push_back(ls); return lineStyles.back();}
 	static FILLSTYLE createGradientFill(const tiny_string& type,

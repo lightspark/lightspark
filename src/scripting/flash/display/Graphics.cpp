@@ -60,17 +60,13 @@ void Graphics::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(c->getSystemState(),endFill),NORMAL_METHOD,true);
 }
 
-void Graphics::buildTraits(ASObject* o)
-{
-}
-
 //TODO: Add spinlock
 void Graphics::checkAndSetScaling()
 {
 	if(owner->scaling != 1.0f)
 	{
 		owner->scaling = 1.0f;
-		owner->tokens.clear();
+		tokens.clear();
 	}
 }
 
@@ -81,22 +77,21 @@ ASFUNCTIONBODY_ATOM(Graphics,_constructor)
 ASFUNCTIONBODY_ATOM(Graphics,clear)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 	th->inFilling = false;
 	th->hasChanged = false;
-	th->owner->tokens.clear();
+	th->tokens.clear();
+	th->tokens.canRenderToGL=true;
+	th->tokens.boundsRect = RECT();
 	th->fillStyles.clear();
 	th->lineStyles.clear();
 	th->owner->owner->hasChanged=true;
-	th->owner->owner->setNeedsTextureRecalculation();
 	th->owner->owner->requestInvalidation(wrk->getSystemState());
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,moveTo)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 	assert_and_throw(argslen==2);
 	if (th->inFilling)
@@ -104,34 +99,35 @@ ASFUNCTIONBODY_ATOM(Graphics,moveTo)
 
 	int32_t x=asAtomHandler::toInt(args[0]);
 	int32_t y=asAtomHandler::toInt(args[1]);
+	th->updateTokenBounds(x,y);
 	th->movex = x;
 	th->movey = y;
 	if (th->inFilling)
 	{
-		th->owner->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y)).uval);
 	}
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y)).uval);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,lineTo)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	assert_and_throw(argslen==2);
 	th->checkAndSetScaling();
 
 	int x=asAtomHandler::toInt(args[0]);
 	int y=asAtomHandler::toInt(args[1]);
+	th->updateTokenBounds(x,y);
 
 	if (th->inFilling)
 	{
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y)).uval);
 	}
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y)).uval);
 
 	th->hasChanged = true;
 	if (!th->inFilling)
@@ -141,25 +137,27 @@ ASFUNCTIONBODY_ATOM(Graphics,lineTo)
 ASFUNCTIONBODY_ATOM(Graphics,curveTo)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	int controlX=asAtomHandler::toInt(args[0]);
 	int controlY=asAtomHandler::toInt(args[1]);
 
 	int anchorX=asAtomHandler::toInt(args[2]);
 	int anchorY=asAtomHandler::toInt(args[3]);
+	th->updateTokenBounds(controlX,controlY);
+	th->updateTokenBounds(anchorX,anchorY);
 
 	if (th->inFilling)
 	{
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_QUADRATIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(controlX, controlY)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(anchorX, anchorY)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_QUADRATIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(controlX, controlY)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(anchorX, anchorY)).uval);
 	}
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_QUADRATIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(controlX, controlY)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(anchorX, anchorY)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_QUADRATIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(controlX, controlY)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(anchorX, anchorY)).uval);
 
 	th->hasChanged = true;
 	if (!th->inFilling)
@@ -169,9 +167,9 @@ ASFUNCTIONBODY_ATOM(Graphics,curveTo)
 ASFUNCTIONBODY_ATOM(Graphics,cubicCurveTo)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	assert_and_throw(argslen==6);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	int control1X=asAtomHandler::toInt(args[0]);
 	int control1Y=asAtomHandler::toInt(args[1]);
@@ -181,18 +179,21 @@ ASFUNCTIONBODY_ATOM(Graphics,cubicCurveTo)
 
 	int anchorX=asAtomHandler::toInt(args[4]);
 	int anchorY=asAtomHandler::toInt(args[5]);
+	th->updateTokenBounds(control1X,control1Y);
+	th->updateTokenBounds(control2X,control2Y);
+	th->updateTokenBounds(anchorX,anchorY);
 
 	if (th->inFilling)
 	{
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(control1X, control1Y)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(control2X, control2Y)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(anchorX, anchorY)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(control1X, control1Y)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(control2X, control2Y)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(anchorX, anchorY)).uval);
 	}
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(control1X, control1Y)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(control2X, control2Y)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(anchorX, anchorY)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(control1X, control1Y)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(control2X, control2Y)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(anchorX, anchorY)).uval);
 
 	th->hasChanged = true;
 	if (!th->inFilling)
@@ -211,9 +212,9 @@ const double KAPPA = 0.55228474983079356;
 ASFUNCTIONBODY_ATOM(Graphics,drawRoundRect)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	assert_and_throw(argslen==5 || argslen==6);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	double x=asAtomHandler::toNumber(args[0]);
 	double y=asAtomHandler::toNumber(args[1]);
@@ -221,6 +222,8 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRect)
 	double height=asAtomHandler::toNumber(args[3]);
 	double ellipseWidth=asAtomHandler::toNumber(args[4]);
 	double ellipseHeight;
+	th->updateTokenBounds(x,y);
+	th->updateTokenBounds(x+width,y+height);
 	if (argslen == 6)
 		ellipseHeight=asAtomHandler::toNumber(args[5]);
 
@@ -248,92 +251,92 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRect)
 	if (th->inFilling)
 	{
 		// D
-		th->owner->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight)).uval);
 	
 		// D -> E
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight+kappaH)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y+height)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth, y+height)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight+kappaH)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y+height)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth, y+height)).uval);
 	
 		// E -> F
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+ellipseWidth, y+height)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+ellipseWidth, y+height)).uval);
 	
 		// F -> G
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+ellipseWidth-kappaW, y+height)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y+height-kappaH)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y+height-ellipseHeight)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+ellipseWidth-kappaW, y+height)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y+height-kappaH)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y+height-ellipseHeight)).uval);
 
 		// G -> H
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y+ellipseHeight)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y+ellipseHeight)).uval);
 	
 		// H -> A
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y+ellipseHeight-kappaH)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+ellipseWidth-kappaW, y)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+ellipseWidth, y)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x, y+ellipseHeight-kappaH)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+ellipseWidth-kappaW, y)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+ellipseWidth, y)).uval);
 
 		// A -> B
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth, y)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth, y)).uval);
 	
 		// B -> C
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width, y+kappaH)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width, y+ellipseHeight)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width, y+kappaH)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width, y+ellipseHeight)).uval);
 
 		// C -> D
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight)).uval);
 	}
 	// D
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight)).uval);
 
 	// D -> E
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight+kappaH)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y+height)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth, y+height)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight+kappaH)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y+height)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth, y+height)).uval);
 
 	// E -> F
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+ellipseWidth, y+height)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+ellipseWidth, y+height)).uval);
 
 	// F -> G
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+ellipseWidth-kappaW, y+height)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y+height-kappaH)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y+height-ellipseHeight)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+ellipseWidth-kappaW, y+height)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y+height-kappaH)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y+height-ellipseHeight)).uval);
 
 	// G -> H
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y+ellipseHeight)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y+ellipseHeight)).uval);
 
 	// H -> A
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y+ellipseHeight-kappaH)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+ellipseWidth-kappaW, y)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+ellipseWidth, y)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x, y+ellipseHeight-kappaH)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+ellipseWidth-kappaW, y)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+ellipseWidth, y)).uval);
 
 	// A -> B
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth, y)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth, y)).uval);
 
 	// B -> C
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width, y+kappaH)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width, y+ellipseHeight)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width, y+kappaH)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width, y+ellipseHeight)).uval);
 
 	// C -> D
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+width, y+height-ellipseHeight)).uval);
 
 	th->hasChanged = true;
 	th->dorender(true);
@@ -343,14 +346,16 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Graphics.drawRoundRectComplex currently draws a normal rect");
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	assert_and_throw(argslen>=4);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	int x=asAtomHandler::toInt(args[0]);
 	int y=asAtomHandler::toInt(args[1]);
 	int width=asAtomHandler::toInt(args[2]);
 	int height=asAtomHandler::toInt(args[3]);
+	th->updateTokenBounds(x,y);
+	th->updateTokenBounds(x+width,y+height);
 
 	const Vector2 a(x,y);
 	const Vector2 b(x+width,y);
@@ -359,27 +364,27 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 
 	if (th->inFilling)
 	{
-		th->owner->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(a).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(b).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(c).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(d).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(a).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(a).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(b).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(c).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(d).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(a).uval);
 	}
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(a).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(b).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(c).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(d).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(a).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(a).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(b).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(c).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(d).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(a).uval);
 
 	th->hasChanged = true;
 	th->dorender(true);
@@ -388,73 +393,75 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	assert_and_throw(argslen==3);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	double x=asAtomHandler::toNumber(args[0]);
 	double y=asAtomHandler::toNumber(args[1]);
 	double radius=asAtomHandler::toNumber(args[2]);
+	th->updateTokenBounds(x+radius,y+radius);
+	th->updateTokenBounds(x-radius,y-radius);
 
 	double kappa = KAPPA*radius;
 
 	if (th->inFilling)
 	{
 		// right
-		th->owner->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+radius, y)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+radius, y)).uval);
 
 		// bottom
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+radius, y+kappa )).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+kappa , y+radius)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x       , y+radius)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+radius, y+kappa )).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+kappa , y+radius)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x       , y+radius)).uval);
 
 		// left
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x-kappa , y+radius)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x-radius, y+kappa )).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x-radius, y       )).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x-kappa , y+radius)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x-radius, y+kappa )).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x-radius, y       )).uval);
 
 		// top
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x-radius, y-kappa )).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x-kappa , y-radius)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x       , y-radius)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x-radius, y-kappa )).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x-kappa , y-radius)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x       , y-radius)).uval);
 
 		// back to right
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+kappa , y-radius)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+radius, y-kappa )).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(x+radius, y       )).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+kappa , y-radius)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+radius, y-kappa )).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(x+radius, y       )).uval);
 	}
 	// right
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+radius, y)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+radius, y)).uval);
 
 	// bottom
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+radius, y+kappa )).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+kappa , y+radius)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x       , y+radius)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+radius, y+kappa )).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+kappa , y+radius)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x       , y+radius)).uval);
 
 	// left
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x-kappa , y+radius)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x-radius, y+kappa )).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x-radius, y       )).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x-kappa , y+radius)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x-radius, y+kappa )).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x-radius, y       )).uval);
 
 	// top
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x-radius, y-kappa )).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x-kappa , y-radius)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x       , y-radius)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x-radius, y-kappa )).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x-kappa , y-radius)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x       , y-radius)).uval);
 
 	// back to right
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+kappa , y-radius)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+radius, y-kappa )).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+radius, y       )).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+kappa , y-radius)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+radius, y-kappa )).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+radius, y       )).uval);
 
 	th->hasChanged = true;
 	th->dorender(true);
@@ -463,14 +470,16 @@ ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
 ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	double left=asAtomHandler::toNumber(args[0]);
 	double top=asAtomHandler::toNumber(args[1]);
 	double width=asAtomHandler::toNumber(args[2]);
 	double height=asAtomHandler::toNumber(args[3]);
+	th->updateTokenBounds(left,top);
+	th->updateTokenBounds(left+width,top+height);
 
 	double xkappa = KAPPA*width/2.0;
 	double ykappa = KAPPA*height/2.0;
@@ -478,60 +487,60 @@ ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 	if (th->inFilling)
 	{
 		// right
-		th->owner->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0)).uval);
 
 		// bottom
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width , top+height/2.0+ykappa)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0+xkappa, top+height)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0, top+height)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width , top+height/2.0+ykappa)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0+xkappa, top+height)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0, top+height)).uval);
 
 		// left
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0-xkappa, top+height)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left, top+height/2.0+ykappa)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left, top+height/2.0)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0-xkappa, top+height)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left, top+height/2.0+ykappa)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left, top+height/2.0)).uval);
 
 		// top
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left, top+height/2.0-ykappa)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0-xkappa, top)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0, top)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left, top+height/2.0-ykappa)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0-xkappa, top)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0, top)).uval);
 
 		// back to right
-		th->owner->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0+xkappa, top)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0-ykappa)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width/2.0+xkappa, top)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0-ykappa)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0)).uval);
 	}
 	// right
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0)).uval);
 
 	// bottom
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width , top+height/2.0+ykappa)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0+xkappa, top+height)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0, top+height)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width , top+height/2.0+ykappa)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0+xkappa, top+height)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0, top+height)).uval);
 
 	// left
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0-xkappa, top+height)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left, top+height/2.0+ykappa)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left, top+height/2.0)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0-xkappa, top+height)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left, top+height/2.0+ykappa)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left, top+height/2.0)).uval);
 
 	// top
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left, top+height/2.0-ykappa)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0-xkappa, top)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0, top)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left, top+height/2.0-ykappa)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0-xkappa, top)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0, top)).uval);
 
 	// back to right
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0+xkappa, top)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0-ykappa)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width/2.0+xkappa, top)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0-ykappa)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0)).uval);
 
 	th->hasChanged = true;
 	th->dorender(true);
@@ -540,14 +549,16 @@ ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	int x=asAtomHandler::toInt(args[0]);
 	int y=asAtomHandler::toInt(args[1]);
 	int width=asAtomHandler::toInt(args[2]);
 	int height=asAtomHandler::toInt(args[3]);
+	th->updateTokenBounds(x,y);
+	th->updateTokenBounds(x+width,y+height);
 
 	const Vector2 a(x,y);
 	const Vector2 b(x+width,y);
@@ -556,27 +567,27 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 
 	if (th->inFilling)
 	{
-		th->owner->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(a)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(b)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(c)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(d)).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-		th->owner->tokens.filltokens.emplace_back(GeomToken(Vector2(a)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(MOVE).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(a)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(b)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(c)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(d)).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+		th->tokens.filltokens.emplace_back(GeomToken(Vector2(a)).uval);
 	}
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(a)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(b)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(c)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(d)).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(Vector2(a)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(MOVE).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(a)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(b)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(c)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(d)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(STRAIGHT).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(a)).uval);
 
 	th->hasChanged = true;
 	th->dorender(true);
@@ -585,8 +596,8 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 ASFUNCTIONBODY_ATOM(Graphics,drawPath)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	_NR<Vector> commands;
 	_NR<Vector> data;
@@ -597,8 +608,8 @@ ASFUNCTIONBODY_ATOM(Graphics,drawPath)
 		throwError<ArgumentError>(kInvalidParamError);
 
 	if (th->inFilling)
-		pathToTokens(commands, data, winding, th->owner->tokens.filltokens);
-	pathToTokens(commands, data, winding, th->owner->tokens.stroketokens);
+		pathToTokens(commands, data, winding, th->tokens.filltokens);
+	pathToTokens(commands, data, winding, th->tokens.stroketokens);
 	th->hasChanged = true;
 	th->dorender(true);
 }
@@ -751,17 +762,17 @@ void Graphics::solveVertexMapping(double x1, double y1,
 
 void Graphics::dorender(bool closepath)
 {
+	
 	if (hasChanged)
 	{
 		if (inFilling && closepath)
 		{
-			owner->tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-			owner->tokens.filltokens.emplace_back(GeomToken(Vector2(movex, movey)).uval);
-			owner->tokens.filltokens.emplace_back(GeomToken(CLEAR_FILL).uval);
+			tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens.emplace_back(GeomToken(Vector2(movex, movey)).uval);
+			tokens.filltokens.emplace_back(GeomToken(CLEAR_FILL).uval);
 		}
 		owner->owner->legacy=false;
 		owner->owner->hasChanged=true;
-		owner->owner->setNeedsTextureRecalculation(true);
 		owner->owner->requestInvalidation(getSystemState());
 		hasChanged = false;
 	}
@@ -781,6 +792,7 @@ bool Graphics::destruct()
 {
 	Locker l(drawMutex);
 	fillStyles.clear();
+	tokens.clear();
 	owner=nullptr;
 	movex=0;
 	movey=0;
@@ -789,11 +801,38 @@ bool Graphics::destruct()
 	return ASObject::destruct();
 }
 
+void Graphics::refreshTokens()
+{
+	Locker l(drawMutex);
+	owner->tokens.filltokens = tokens.filltokens;
+	owner->tokens.stroketokens = tokens.stroketokens;
+	owner->tokens.canRenderToGL = tokens.canRenderToGL;
+	owner->tokens.boundsRect = tokens.boundsRect;
+	owner->owner->setNeedsTextureRecalculation(true);
+}
+
+bool Graphics::shouldRenderToGL()
+{
+	return tokens.shouldRenderToGL();
+}
+
+void Graphics::updateTokenBounds(int x, int y)
+{
+	if (x < tokens.boundsRect.Xmin)
+		tokens.boundsRect.Xmin=x;
+	if (x > tokens.boundsRect.Xmax)
+		tokens.boundsRect.Xmax=x;
+	if (y < tokens.boundsRect.Ymin)
+		tokens.boundsRect.Ymin=y;
+	if (y > tokens.boundsRect.Ymax)
+		tokens.boundsRect.Ymax=y;
+}
+
 ASFUNCTIONBODY_ATOM(Graphics,drawTriangles)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	_NR<Vector> vertices;
 	_NR<Vector> indices;
@@ -802,8 +841,8 @@ ASFUNCTIONBODY_ATOM(Graphics,drawTriangles)
 	ARG_UNPACK_ATOM (vertices) (indices, NullRef) (uvtData, NullRef) (culling, "none");
 
 	if (th->inFilling)
-		drawTrianglesToTokens(vertices, indices, uvtData, culling, th->owner->tokens.filltokens);
-	drawTrianglesToTokens(vertices, indices, uvtData, culling, th->owner->tokens.stroketokens);
+		drawTrianglesToTokens(vertices, indices, uvtData, culling, th->tokens.filltokens);
+	drawTrianglesToTokens(vertices, indices, uvtData, culling, th->tokens.stroketokens);
 	th->hasChanged = true;
 	if (!th->inFilling)
 		th->dorender(true);
@@ -939,8 +978,8 @@ void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, 
 ASFUNCTIONBODY_ATOM(Graphics,drawGraphicsData)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	_NR<Vector> graphicsData;
 	ARG_UNPACK_ATOM(graphicsData);
@@ -954,7 +993,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawGraphicsData)
 			continue;
 		}
 
-		graphElement->appendToTokens(th->owner->tokens.filltokens,th);
+		graphElement->appendToTokens(th->tokens.filltokens,th);
 	}
 	th->hasChanged = true;
 	if (!th->inFilling)
@@ -964,14 +1003,14 @@ ASFUNCTIONBODY_ATOM(Graphics,drawGraphicsData)
 ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 
 	if (argslen == 0)
 	{
-		th->owner->tokens.stroketokens.emplace_back(GeomToken(CLEAR_STROKE).uval);
+		th->tokens.stroketokens.emplace_back(GeomToken(CLEAR_STROKE).uval);
 		return;
 	}
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 	number_t thickness;
 	uint32_t color;
 	number_t alpha;
@@ -1023,15 +1062,15 @@ ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 	else if (joints == "miter")
 		style.JointStyle = 2;
 	style.MiterLimitFactor = miterLimit;
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(SET_STROKE).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(th->addLineStyle(style)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(SET_STROKE).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(th->addLineStyle(style)).uval);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	_NR<BitmapData> bitmap;
 	_NR<Matrix> matrix;
@@ -1046,15 +1085,15 @@ ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
 	style.HasFillFlag = true;
 	style.FillType = createBitmapFill(bitmap, matrix, repeat, smooth);
 
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(SET_STROKE).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(th->addLineStyle(style)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(SET_STROKE).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(th->addLineStyle(style)).uval);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,lineGradientStyle)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	tiny_string type;
 	_NR<Array> colors;
@@ -1074,15 +1113,15 @@ ASFUNCTIONBODY_ATOM(Graphics,lineGradientStyle)
 					    spreadMethod, interpolationMethod,
 					    focalPointRatio);
 
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(SET_STROKE).uval);
-	th->owner->tokens.stroketokens.emplace_back(GeomToken(th->addLineStyle(style)).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(SET_STROKE).uval);
+	th->tokens.stroketokens.emplace_back(GeomToken(th->addLineStyle(style)).uval);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	tiny_string type;
 	_NR<Array> colors;
@@ -1153,8 +1192,8 @@ ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 					     spreadMethod, interpolationMethod,
 					     focalPointRatio);
 	th->inFilling=true;
-	th->owner->tokens.filltokens.emplace_back(GeomToken(SET_FILL).uval);
-	th->owner->tokens.filltokens.emplace_back(GeomToken(th->addFillStyle(style)).uval);
+	th->tokens.filltokens.emplace_back(GeomToken(SET_FILL).uval);
+	th->tokens.filltokens.emplace_back(GeomToken(th->addFillStyle(style)).uval);
 }
 
 FILLSTYLE Graphics::createGradientFill(const tiny_string& type,
@@ -1175,7 +1214,7 @@ FILLSTYLE Graphics::createGradientFill(const tiny_string& type,
 	if (NumGradient != (int)alphas->size() || NumGradient != (int)ratios->size())
 		return style;
 
-	if (NumGradient < 1 || NumGradient > 15)
+	if ((NumGradient < 1) || (NumGradient > 15))
 		return style;
 
 	if(type == "linear")
@@ -1260,7 +1299,6 @@ FILLSTYLE Graphics::createSolidFill(uint32_t color, uint8_t alpha)
 ASFUNCTIONBODY_ATOM(Graphics,beginBitmapFill)
 {
 	Graphics* th = asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	_NR<BitmapData> bitmap;
 	_NR<Matrix> matrix;
 	bool repeat, smooth;
@@ -1270,18 +1308,18 @@ ASFUNCTIONBODY_ATOM(Graphics,beginBitmapFill)
 		return;
 
 	th->checkAndSetScaling();
+	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 	th->dorender(true);
 	th->inFilling=true;
 
 	FILLSTYLE style=createBitmapFill(bitmap, matrix, repeat, smooth);
-	th->owner->tokens.filltokens.emplace_back(GeomToken(SET_FILL).uval);
-	th->owner->tokens.filltokens.emplace_back(GeomToken(th->addFillStyle(style)).uval);
+	th->tokens.filltokens.emplace_back(GeomToken(SET_FILL).uval);
+	th->tokens.filltokens.emplace_back(GeomToken(th->addFillStyle(style)).uval);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,beginFill)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 	th->dorender(true);
 	uint32_t color=0;
@@ -1292,14 +1330,13 @@ ASFUNCTIONBODY_ATOM(Graphics,beginFill)
 		alpha=(uint8_t(asAtomHandler::toNumber(args[1])*0xff));
 	th->inFilling=true;
 	FILLSTYLE style = Graphics::createSolidFill(color, alpha);
-	th->owner->tokens.filltokens.emplace_back(GeomToken(SET_FILL).uval);
-	th->owner->tokens.filltokens.emplace_back(GeomToken(th->addFillStyle(style)).uval);
+	th->tokens.filltokens.emplace_back(GeomToken(SET_FILL).uval);
+	th->tokens.filltokens.emplace_back(GeomToken(th->addFillStyle(style)).uval);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,endFill)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	th->checkAndSetScaling();
 	th->dorender(true);
 
@@ -1311,15 +1348,15 @@ ASFUNCTIONBODY_ATOM(Graphics,endFill)
 ASFUNCTIONBODY_ATOM(Graphics,copyFrom)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	Locker l(th->drawMutex);
 	_NR<Graphics> source;
 	ARG_UNPACK_ATOM(source);
 	if (source.isNull())
 		return;
 
-	th->owner->tokens.filltokens.assign(source->owner->tokens.filltokens.begin(),
-				 source->owner->tokens.filltokens.end());
-	th->owner->tokens.stroketokens.assign(source->owner->tokens.stroketokens.begin(),
-				 source->owner->tokens.stroketokens.end());
+	th->tokens.filltokens.assign(source->tokens.filltokens.begin(),
+				 source->tokens.filltokens.end());
+	th->tokens.stroketokens.assign(source->tokens.stroketokens.begin(),
+				 source->tokens.stroketokens.end());
+	th->tokens.canRenderToGL=source->tokens.canRenderToGL;
 	th->hasChanged = true;
 }

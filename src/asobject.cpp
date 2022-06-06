@@ -903,9 +903,9 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		if (isfunc)
 		{
 			if (obj->kind == CONSTANT_TRAIT)
-				asAtomHandler::getObject(o)->setRefConstant();
+				asAtomHandler::getObjectNoCheck(o)->setRefConstant();
 			else
-				checkFunctionScope(asAtomHandler::getObject(o)->as<SyntheticFunction>());
+				checkFunctionScope(asAtomHandler::getObjectNoCheck(o)->as<SyntheticFunction>());
 		}
 	}
 	return retval;

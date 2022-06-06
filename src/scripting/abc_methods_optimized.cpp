@@ -7747,3 +7747,70 @@ void ABCVm::abc_call_local_local_localresult(call_context* context)
 	ASATOM_DECREF(oldres);
 	++(context->exec_pos);
 }
+void ABCVm::abc_coerce_constant(call_context* context)
+{
+	LOG_CALL("coerce_c");
+	asAtom res = *context->exec_pos->arg1_constant;
+	multiname* mn = context->exec_pos->cachedmultiname2;
+	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
+	if (type == nullptr)
+	{
+		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
+		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+	}
+	if (!type->coerce(context->worker,res))
+		ASATOM_INCREF(res);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_coerce_local(call_context* context)
+{
+	LOG_CALL("coerce_l:"<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
+	asAtom res =CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	multiname* mn = context->exec_pos->cachedmultiname2;
+	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
+	if (type == nullptr)
+	{
+		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
+		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+	}
+	if (!type->coerce(context->worker,res))
+		ASATOM_INCREF(res);
+	RUNTIME_STACK_PUSH(context,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_coerce_constant_localresult(call_context* context)
+{
+	LOG_CALL("coerce_cl");
+	asAtom res = *context->exec_pos->arg1_constant;
+	multiname* mn = context->exec_pos->cachedmultiname2;
+	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
+	if (type == nullptr)
+	{
+		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
+		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+	}
+	if (!type->coerce(context->worker,res))
+		ASATOM_INCREF(res);
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_coerce_local_localresult(call_context* context)
+{
+	LOG_CALL("coerce_ll:"<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
+	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	multiname* mn = context->exec_pos->cachedmultiname2;
+	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
+	if (type == nullptr)
+	{
+		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
+		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+	}
+	
+	if (!type->coerce(context->worker,res))
+		ASATOM_INCREF(res);
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+	++(context->exec_pos);
+}

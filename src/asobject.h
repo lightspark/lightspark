@@ -783,16 +783,8 @@ public:
 	 * This version of the call is guarantee to require no type conversion
 	 * this is verified at optimization time
 	 */
-	FORCE_INLINE bool setSlotNoCoerce(unsigned int n, asAtom o, ASObject* obj)
-	{
-		assert_and_throw(n < slotcount);
-		if (slots_vars[n]->var.uintval != o.uintval)
-		{
-			slots_vars[n]->setVarNoCoerce(o,obj);
-			return asAtomHandler::isObject(o);
-		}
-		return false;
-	}
+	FORCE_INLINE bool setSlotNoCoerce(unsigned int n, asAtom o, ASObject* obj);
+
 	FORCE_INLINE void initSlot(unsigned int n, variable *v)
 	{
 		if (n>slots_vars.capacity())
@@ -1316,6 +1308,19 @@ FORCE_INLINE bool variables_map::setSlot(ASWorker* wrk,unsigned int n, asAtom &o
 	if (asAtomHandler::is<SyntheticFunction>(slots_vars[n]->var))
 		obj->checkFunctionScope(asAtomHandler::getObjectNoCheck(o));
 	return true;
+}
+
+FORCE_INLINE bool variables_map::setSlotNoCoerce(unsigned int n, asAtom o, ASObject* obj)
+{
+	assert_and_throw(n < slotcount);
+	if (slots_vars[n]->var.uintval != o.uintval)
+	{
+		slots_vars[n]->setVarNoCoerce(o,obj);
+		if (asAtomHandler::is<SyntheticFunction>(slots_vars[n]->var))
+			obj->checkFunctionScope(asAtomHandler::getObjectNoCheck(o));
+		return asAtomHandler::isObject(o);
+	}
+	return false;
 }
 
 class AVM1Function;

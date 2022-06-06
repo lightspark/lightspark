@@ -937,6 +937,10 @@ private:
 	static void abc_checkfilter(call_context* context);
 
 	static void abc_coerce(call_context* context); // 0x80
+	static void abc_coerce_constant(call_context* context);
+	static void abc_coerce_local(call_context* context);
+	static void abc_coerce_constant_localresult(call_context* context);
+	static void abc_coerce_local_localresult(call_context* context);
 	static void abc_coerce_a(call_context* context);
 	static void abc_coerce_s(call_context* context);
 	static void abc_astype(call_context* context);

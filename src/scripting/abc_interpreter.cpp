@@ -1057,10 +1057,10 @@ abc_function ABCVm::abcfunctions[]={
 	abc_call_constant_local_localresult,
 	abc_call_local_local_localresult,
 
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_coerce_constant,// 0x368 ABC_OP_OPTIMZED_COERCE
+	abc_coerce_local,
+	abc_coerce_constant_localresult,
+	abc_coerce_local_localresult,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1332,6 +1332,7 @@ struct operands
 #define ABC_OP_OPTIMZED_IFNGT 0x00000358
 #define ABC_OP_OPTIMZED_CALL_VOID 0x0000035c
 #define ABC_OP_OPTIMZED_CALL 0x00000360
+#define ABC_OP_OPTIMZED_COERCE 0x00000368
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -1839,6 +1840,13 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				candup=false;
 				uint32_t t = code.peeku30FromPosition(pos);
 				multiname* name =  state.mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+				if (argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
+				{
+					pos = code.skipu30FromPosition(pos);
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
 				if (name->isStatic && !argsneeded)
 				{
 					const Type* tp = Type::getTypeFromMultiname(name,state.mi->context);
@@ -2279,6 +2287,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x74://convert_u
 		case 0x75://convert_d
 		case 0x76://convert_b
+		case 0x80://coerce
 		case 0xc0://increment_i
 		case 0xc1://decrement_i
 		case 0x35://li8
@@ -2681,23 +2690,6 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 	}
 	else
 		state.preloadedcode.push_back((uint32_t)opcode);
-	if (state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
-	{
-		switch (code.peekbyte())
-		{
-			case 0x75://convert_d
-				if (skip_conversion || (resulttype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr()))
-				{
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-					code.readbyte();
-				}
-				break;
-			case 0x82://coerce_a
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				code.readbyte();
-				break;
-		}
-	}
 	if (checklocalresult)
 	{
 		if (hasoperands)
@@ -5161,13 +5153,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				int32_t t = code.readu30();
 				bool skip = false;
 				ASObject* tobj = nullptr;
+				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+				assert_and_throw(name->isStatic);
 #ifdef ENABLE_OPTIMIZATION
 				// skip coerce followed by coerce
 				skip = (state.jumptargets.find(p) == state.jumptargets.end() && code.peekbyte() == 0x80);//coerce
 				if (!skip && state.jumptargets.find(p) == state.jumptargets.end() && typestack.size() > 0)
 				{
-					multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
-					assert_and_throw(name->isStatic);
 					const Type* tp = Type::getTypeFromMultiname(name, mi->context);
 					const Class_base* cls =dynamic_cast<const Class_base*>(tp);
 					tobj = typestack.back().obj;
@@ -5192,10 +5184,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #endif
 				if (!skip)
 				{
-					state.preloadedcode.push_back((uint32_t)opcode);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-					state.preloadedcode.back().pcode.arg1_uint = t;
-					clearOperands(state,true,&lastlocalresulttype);
+					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_COERCE,opcode,code,true,true,tobj && tobj->is<Class_base>() ? tobj->as<Class_base>() : nullptr,p,true);
+					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
 				}
 				else
 					opcode_skipped=true;

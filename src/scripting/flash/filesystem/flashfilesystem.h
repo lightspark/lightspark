@@ -117,6 +117,8 @@ public:
 	ASPROPERTY_GETTER(_NR<ASFile>,applicationStorageDirectory);
 	ASFUNCTION_ATOM(resolvePath);
 	ASFUNCTION_ATOM(createDirectory);
+	ASFUNCTION_ATOM(_getURL);
+	ASFUNCTION_ATOM(_setURL);
 	const tiny_string& getFullPath() const { return path; }
 };
 class FileMode: public ASObject

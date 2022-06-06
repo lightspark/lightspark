@@ -307,6 +307,8 @@ void ASFile::sinit(Class_base* c)
 	REGISTER_GETTER_STATIC_RESULTTYPE(c,applicationStorageDirectory,ASFile);
 	c->setDeclaredMethodByQName("resolvePath", "", Class<IFunction>::getFunction(c->getSystemState(),resolvePath,1,Class<ASFile>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("createDirectory", "", Class<IFunction>::getFunction(c->getSystemState(),createDirectory), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_getURL,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_setURL),SETTER_METHOD,true);
 }
 ASFUNCTIONBODY_GETTER(ASFile, exists)
 ASFUNCTIONBODY_GETTER_STATIC(ASFile, applicationDirectory)
@@ -335,6 +337,27 @@ void ASFile::setupFile(const tiny_string& filename, ASWorker* wrk)
 	}
 }
 
+
+ASFUNCTIONBODY_ATOM(ASFile,_getURL)
+{
+	ASFile* th=asAtomHandler::as<ASFile>(obj);
+	tiny_string url = URLInfo::encode(th->path,URLInfo::ENCODE_URI);
+	url = tiny_string("file://")+url;
+	ret = asAtomHandler::fromObjectNoPrimitive(abstract_s(wrk,url));
+}
+ASFUNCTIONBODY_ATOM(ASFile,_setURL)
+{
+	ASFile* th=asAtomHandler::as<ASFile>(obj);
+	tiny_string url;
+	ARG_UNPACK_ATOM(url);
+	if (url.find("file://")==0)
+	{
+		tiny_string fullpath = URLInfo::decode(url.substr_bytes(7,UINT32_MAX),URLInfo::ENCODE_URI);
+		th->setupFile(fullpath,wrk);
+	}
+	else
+		throwError<ArgumentError>(kInvalidParamError, "url");
+}
 
 ASFUNCTIONBODY_ATOM(ASFile,resolvePath)
 {

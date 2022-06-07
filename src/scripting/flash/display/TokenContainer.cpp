@@ -53,9 +53,17 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 		NVGcontext* nvgctxt = owner->getSystemState()->getEngineData()->nvgcontext;
 		if (nvgctxt)
 		{
+			int offsetX;
+			int offsetY;
+			float scaleX;
+			float scaleY;
+			owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight, offsetX, offsetY, scaleX, scaleY);
+			
 			nvgBeginFrame(nvgctxt, owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight, 1.0);
 
 			MATRIX m = owner->getConcatenatedMatrix();
+			m.scale(scaleX,scaleY);
+			m.translate(offsetX,offsetY);
 			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
 			NVGcolor startcolor = nvgRGBA(0,0,0,0);
 			nvgFillColor(nvgctxt,startcolor);

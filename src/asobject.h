@@ -1891,12 +1891,8 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk)
 			setUInt(a,wrk,(a.uintval>>3)+1);
 			break;
 		case ATOM_NUMBERPTR:
-		{
-			asAtom oldval = a;
-			if (replaceNumber(a,wrk,toNumber(a)+1))
-				asAtomHandler::getObjectNoCheck(oldval)->decRef();
+			setNumber(a,wrk,toNumber(a)+1);
 			break;
-		}
 		case ATOM_STRINGID:
 		{
 			ASObject* s = abstract_s(wrk,a.uintval>>3);
@@ -1908,7 +1904,6 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk)
 		default:
 		{
 			number_t n=toNumber(a);
-			asAtomHandler::getObjectNoCheck(a)->decRef();
 			setNumber(a,wrk,n+1);
 			break;
 		}
@@ -1952,12 +1947,8 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk)
 			break;
 		}
 		case ATOM_NUMBERPTR:
-		{
-			asAtom oldval = a;
-			if (replaceNumber(a,wrk,toNumber(a)-1))
-				asAtomHandler::getObjectNoCheck(oldval)->decRef();
+			setNumber(a,wrk,toNumber(a)-1);
 			break;
-		}
 		case ATOM_STRINGID:
 		{
 			ASObject* s = abstract_s(wrk,a.uintval>>3);
@@ -1969,7 +1960,6 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk)
 		default:
 		{
 			number_t n=toNumber(a);
-			asAtomHandler::getObjectNoCheck(a)->decRef();
 			setNumber(a,wrk,n-1);
 			break;
 		}

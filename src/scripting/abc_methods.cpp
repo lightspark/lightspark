@@ -1126,7 +1126,9 @@ void ABCVm::abc_increment(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("increment "<<asAtomHandler::toDebugString(*pval));
+	asAtom oldval = *pval;
 	asAtomHandler::increment(*pval,context->worker);
+	ASATOM_DECREF(oldval);
 	++(context->exec_pos);
 }
 void ABCVm::abc_inclocal(call_context* context)
@@ -1138,7 +1140,9 @@ void ABCVm::abc_inclocal(call_context* context)
 void ABCVm::abc_decrement(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	asAtom oldval = *pval;
 	asAtomHandler::decrement(*pval,context->worker);
+	ASATOM_DECREF(oldval);
 	++(context->exec_pos);
 }
 void ABCVm::abc_declocal(call_context* context)

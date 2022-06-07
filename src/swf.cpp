@@ -2146,7 +2146,6 @@ void RootMovieClip::constructionComplete()
 	MovieClip::constructionComplete();
 	if (!needsActionScript3())
 	{
-		advanceFrame();
 		declareFrame();
 		AVM1HandleScripts();
 		initFrame();

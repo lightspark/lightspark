@@ -612,6 +612,7 @@ private:
 	bool isAVM1Loaded;
 	MovieClip* avm1PrevScriptedClip;
 	MovieClip* avm1NextScriptedClip;
+	void currentFrameChanged(bool newframe);
 protected:
 	const CLIPACTIONS* actions;
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */

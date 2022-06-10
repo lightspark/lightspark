@@ -1833,14 +1833,19 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 				compat_msleep(100);
 		}
 	}
+	bool newframe = state.FP != next_FP;
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	if (state.stop_FP != stop && !stop)
 		state.explicit_play=true;
 	state.stop_FP = stop;
+	currentFrameChanged(newframe);
+}
+void MovieClip::currentFrameChanged(bool newframe)
+{
 	if (!needsActionScript3())
 	{
-		if (stop && state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+		if (state.stop_FP && state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
 			advanceFrame();
 		return;
 	}
@@ -1849,7 +1854,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 
 	if (!this->isOnStage())
 	{
-		if (stop)
+		if (state.stop_FP)
 		{
 			advanceFrame();
 			initFrame();
@@ -1859,10 +1864,20 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		else
 			this->getSystemState()->stage->addHiddenObject(this);
 	}
-	else if (state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
-			advanceFrame();
+	if (newframe && getSystemState()->getSwfVersion()>= 10)
+	{
+		// according to http://www.senocular.com/flash/tutorials/orderofoperations/
+		// a subset of the normal events are added when navigation commands are executed when changing to a new frame by actionscript
+		advanceFrame();
+		initFrame();
+		this->incRef();
+		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(this->getInstanceWorker(),"frameConstructed")));
+		this->incRef();
+		getVm(getSystemState())->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+		this->incRef();
+		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(this->getInstanceWorker(),"exitFrame")));
+	}
 }
-
 void MovieClip::AVM1gotoFrameLabel(const tiny_string& label,bool stop, bool switchplaystate)
 {
 	uint32_t dest=getFrameIdByLabel(label, "");
@@ -1903,45 +1918,22 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
+	bool newframe = th->state.FP != th->getFramesLoaded()-1;
 	th->state.next_FP = th->state.FP == th->getFramesLoaded()-1 ? th->state.FP : th->state.FP+1;
 	th->state.explicit_FP=true;
 	th->state.stop_FP=true;
-	if (!th->needsActionScript3())
-		return;
-	
-	if (th->inExecuteFramescript)
-		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
-	if (!th->isOnStage())
-	{
-		th->advanceFrame();
-		th->initFrame();
-		th->incRef();
-		wrk->getSystemState()->currentVm->addEvent(NullRef, _MR(new (wrk->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
-	}
-	else if (th->state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
-		th->advanceFrame();
+	th->currentFrameChanged(newframe);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
+	bool newframe = th->state.FP != 0;
 	th->state.next_FP = th->state.FP == 0 ? th->state.FP : th->state.FP-1;
 	th->state.explicit_FP=true;
 	th->state.stop_FP=true;
-	if (!th->needsActionScript3())
-		return;
-	if (th->inExecuteFramescript)
-		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
-	if (!th->isOnStage())
-	{
-		th->advanceFrame();
-		th->initFrame();
-		th->incRef();
-		wrk->getSystemState()->currentVm->addEvent(NullRef, _MR(new (wrk->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(th))));
-	}
-	else if (th->state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
-		th->advanceFrame();
+	th->currentFrameChanged(newframe);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)
@@ -5975,19 +5967,17 @@ void MovieClip::executeFrameScript()
 	Sprite::executeFrameScript();
 	state.explicit_FP=false;
 	state.explicit_play=false;
-	if (frameScriptToExecute != UINT32_MAX)
+	if (frameScriptToExecute != UINT32_MAX && this->isOnStage())
 	{
 		uint32_t f = frameScriptToExecute;
-		frameScriptToExecute = UINT32_MAX;
 		inExecuteFramescript = true;
 		asAtom v=asAtomHandler::invalidAtom;
 		asAtom obj = asAtomHandler::getClosureAtom(frameScripts[f]);
 		asAtomHandler::callFunction(frameScripts[f],getInstanceWorker(),v,obj,nullptr,0,false);
 		ASATOM_DECREF(v);
-		ASATOM_DECREF(frameScripts[f]);
-		frameScripts.erase(f);
 		inExecuteFramescript = false;
 	}
+	frameScriptToExecute = UINT32_MAX;
 }
 
 void MovieClip::checkRatio(uint32_t ratio, bool inskipping)
@@ -6126,8 +6116,6 @@ void MovieClip::afterConstruction()
 		asAtom obj = asAtomHandler::getClosureAtom(frameScripts[0]);
 		asAtomHandler::callFunction(frameScripts[0],getInstanceWorker(),v,obj,nullptr,0,false);
 		ASATOM_DECREF(v);
-		ASATOM_DECREF(frameScripts[0]);
-		frameScripts.erase(0);
 		inExecuteFramescript = false;
 	}
 	if (!this->loadedFrom->usesActionScript3 && !this->inAVM1Attachment)

@@ -1573,10 +1573,6 @@ void MovieClip::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 
-void MovieClip::buildTraits(ASObject* o)
-{
-}
-
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
   ,inAVM1Attachment(false),isAVM1Loaded(false),avm1PrevScriptedClip(nullptr),avm1NextScriptedClip(nullptr)
   ,actions(nullptr),totalFrames_unreliable(1),enabled(true)
@@ -4206,7 +4202,6 @@ void Stage::advanceFrame()
 			clip->decRef();
 			clip = nextclip;
 		}
-		DisplayObjectContainer::declareFrame();
 	}
 }
 
@@ -5789,6 +5784,24 @@ bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name, AS
 	return InteractiveObject::deleteVariableByMultiname(name,wrk);
 }
 
+void MovieClip::AVM1HandleConstruction()
+{
+	if (inAVM1Attachment)
+		return;
+	AVM1Function* constr = this->loadedFrom->AVM1getClassConstructor(fromDefineSpriteTag);
+	if (constr)
+	{
+		constr->incRef();
+		_NR<ASObject> pr = _MNR(constr);
+		setprop_prototype(pr);
+		asAtom ret = asAtomHandler::invalidAtom;
+		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
+		constr->call(&ret,&obj,nullptr,0);
+		AVM1registerPrototypeListeners();
+	}
+	setConstructIndicator();
+	constructionComplete();
+}
 /* Go through the hierarchy and add all
  * legacy objects which are new in the current
  * frame top-down. At the same time, call their
@@ -5836,11 +5849,14 @@ void MovieClip::declareFrame()
 	//      super();
 	//      // code here will be executed _after_ childclip was constructed
 	//  }
-	if (needsActionScript3() && !this->getConstructIndicator())
+	if (!this->getConstructIndicator())
 	{
-		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
-		getClass()->handleConstruction(obj,nullptr,0,true);
-	}	
+		if (needsActionScript3())
+		{
+			asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
+			getClass()->handleConstruction(obj,nullptr,0,true);
+		}
+	}
 	bool newFrame = (int)state.FP != state.last_FP;
 	if (newFrame ||!state.frameadvanced)
 	{
@@ -6078,15 +6094,12 @@ void MovieClip::advanceFrame()
 	if (int(state.FP) >= state.last_FP) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
 		DisplayObjectContainer::advanceFrame();
 	
-	if (needsActionScript3())
+	declareFrame();
+	if (state.explicit_FP)
 	{
-		declareFrame();
-		if (state.explicit_FP)
-		{
-			// setting state.frameadvanced ensures that the frame is not declared multiple times
-			// if it was set by an actionscript command.
-			state.frameadvanced = true;
-		}
+		// setting state.frameadvanced ensures that the frame is not declared multiple times
+		// if it was set by an actionscript command.
+		state.frameadvanced = true;
 	}
 }
 
@@ -6119,18 +6132,6 @@ void MovieClip::afterConstruction()
 		ASATOM_DECREF(v);
 		this->decRef();
 		inExecuteFramescript = false;
-	}
-	if (!this->loadedFrom->usesActionScript3 && !this->inAVM1Attachment)
-	{
-		AVM1Function* constr = this->loadedFrom->AVM1getClassConstructor(fromDefineSpriteTag);
-		if (constr)
-		{
-			setprop_prototype(constr->prototype);
-			asAtom ret = asAtomHandler::invalidAtom;
-			asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
-			constr->call(&ret,&obj,nullptr,0);
-			AVM1registerPrototypeListeners();
-		}
 	}
 }
 

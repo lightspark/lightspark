@@ -296,7 +296,6 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 	if (!asAtomHandler::isFunction(args[0])) // AVM1 also allows setInterval with arguments object,functionname,interval,params...
 	{
 		assert_and_throw(argslen >= 3);
-		
 		paramstart = 3;
 		delayarg = 2;
 		ASObject* oref = asAtomHandler::toObject(args[0],wrk);
@@ -309,19 +308,13 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 		if (asAtomHandler::isInvalid(func))
 		{
 			ASObject* pr = oref->getprop_prototype();
-			if (!pr)
+			while (pr)
 			{
-				multiname m2(nullptr);
-				m2.name_type=multiname::NAME_STRING;
-				m2.isAttribute = false;
-				m2.name_s_id= BUILTIN_STRINGS::STRING_PROTO;
-				asAtom p= asAtomHandler::invalidAtom;
-				oref->getVariableByMultiname(p,m2,GET_VARIABLE_OPTION::NONE,wrk);
-				if (asAtomHandler::isObject(p))
-					pr = asAtomHandler::getObjectNoCheck(p);
-			}
-			if (pr)
 				pr->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+				if (asAtomHandler::isValid(func))
+					break;
+				pr = pr->getprop_prototype();
+			}
 		}
 		if (asAtomHandler::isInvalid(func) && oref->is<DisplayObject>())
 		{

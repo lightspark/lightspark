@@ -2467,10 +2467,19 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 		}
 		if (setMember)
 		{
-			multiname objName(NULL);
+			multiname objName(nullptr);
 			objName.name_type=multiname::NAME_STRING;
 			objName.name_s_id=nameIdOriginal;
-			setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+			ASObject* o = this;
+			
+			while (o && !o->hasPropertyByMultiname(objName,true,true,loadedFrom->getInstanceWorker()))
+			{
+				o=o->getprop_prototype();
+			}
+			if (o)
+				o->setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+			else
+				setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 		}
 		AVM1UpdateVariableBindings(nameId,v);
 	}

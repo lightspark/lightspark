@@ -2682,9 +2682,16 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 		ASATOM_DECREF(c);
 		return;
 	}
-	// when calling builtin functions, normally no refcounting is needed
-	// if it is, it has to be done inside the called function
-	getObjectNoCheck(caller)->as<Function>()->call(ret,wrk, c, args, num_args);
+	if (getObjectNoCheck(caller)->is<AVM1Function>())
+	{
+		getObjectNoCheck(caller)->as<AVM1Function>()->call(&ret,&c, args, num_args);
+	}
+	else
+	{
+		// when calling builtin functions, normally no refcounting is needed
+		// if it is, it has to be done inside the called function
+		getObjectNoCheck(caller)->as<Function>()->call(ret,wrk, c, args, num_args);
+	}
 	if (args_refcounted)
 	{
 		for (uint32_t i = 0; i < num_args; i++)

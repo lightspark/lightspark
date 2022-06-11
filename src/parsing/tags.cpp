@@ -598,12 +598,6 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 		spr->setSoundStartFrame(this->soundstartframe);
 	spr->loadedFrom=this->loadedFrom;
 	spr->loadedFrom->AVM1checkInitActions(spr);
-	if (!loadedFrom->usesActionScript3)
-	{
-		spr->setConstructIndicator();
-		spr->constructionComplete();
-		spr->afterConstruction();
-	}
 	return spr;
 }
 

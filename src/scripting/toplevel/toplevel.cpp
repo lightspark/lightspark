@@ -3626,3 +3626,25 @@ void Prototype::copyOriginalValues(Prototype* target)
 	target->workerDynamicClassVars = new_asobject(target->getObj()->getInstanceWorker());
 	target->getObj()->setRefConstant();
 }
+
+asAtom AVM1Function::computeSuper()
+{
+	asAtom newsuper = superobj;
+	if (asAtomHandler::isValid(newsuper))
+		return newsuper;
+	ASObject* pr =getprop_prototype();
+	if (!pr)
+		pr= this->prototype.getPtr();
+	if (pr)
+	{
+		pr->incRef();
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+		m.name_s_id = BUILTIN_STRINGS::STRING_CONSTRUCTOR;
+		pr->getVariableByMultiname(newsuper,m,GET_VARIABLE_OPTION::NONE,clip->getInstanceWorker());
+		if (asAtomHandler::isInvalid(newsuper))
+			LOG(LOG_ERROR,"no super found:"<<pr->toDebugString());
+	}
+	return newsuper;
+}

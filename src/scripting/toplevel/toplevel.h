@@ -704,15 +704,28 @@ protected:
 		// no cloning needed in AVM1
 		return nullptr;
 	}
+	asAtom computeSuper();
 public:
-	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller=nullptr, asAtom* super=nullptr)
+	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller=nullptr)
 	{
-		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,super? super : &superobj);
+		if (needsSuper())
+		{
+			asAtom newsuper = computeSuper();
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,&newsuper);
+		}
+		else
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject);
 	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target, ASWorker* wrk) override
 	{
 		asAtom obj = asAtomHandler::fromObject(target);
-		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,&superobj);
+		if (needsSuper())
+		{
+			asAtom newsuper = computeSuper();
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,&newsuper);
+		}
+		else
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject);
 		return nullptr;
 	}
 	FORCE_INLINE Class_base* getReturnType() override
@@ -730,6 +743,14 @@ public:
 	FORCE_INLINE DisplayObject* getClip() const
 	{
 		return clip;
+	}
+	FORCE_INLINE bool needsSuper() const
+	{
+		return preloadSuper && !suppressSuper;
+	}
+	FORCE_INLINE asAtom getSuper() const
+	{
+		return superobj;
 	}
 };
 

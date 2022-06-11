@@ -634,7 +634,6 @@ public:
 	void prepareShutdown() override;
 	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	/*
 	 * returns true if all frames of this MovieClip are loaded
 	 * this is overwritten in RootMovieClip, because that one is
@@ -682,6 +681,7 @@ public:
 	void AVM1ExecuteFrameActionsFromLabel(const tiny_string &label);
 	void AVM1ExecuteFrameActions(uint32_t frame);
 	void AVM1HandleScripts();
+	void AVM1HandleConstruction();
 
 	ASFUNCTION_ATOM(AVM1AttachMovie);
 	ASFUNCTION_ATOM(AVM1CreateEmptyMovieClip);

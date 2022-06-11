@@ -391,7 +391,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					}
 					if (instroke)
 						cairo_stroke(cr);
-					else
+					else if (!tokens.filltokens.empty())
 						cairo_fill(cr);
 					instroke=false;
 					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
@@ -423,7 +423,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					}
 					if (instroke)
 						cairo_stroke(cr);
-					else
+					else if (!tokens.filltokens.empty())
 						cairo_fill(cr);
 					instroke = true;
 					const LINESTYLE2* style = p1.lineStyle;
@@ -464,13 +464,15 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);
 						cairo_set_miter_limit(cr, style->MiterLimitFactor);
 					}
-					//Width == 0 should be a hairline, but
-					//cairo does not support hairlines.
-					//Line width 1 is not a perfect
-					//substitute, because it is affected
-					//by transformations.
 					if (style->Width == 0)
-						cairo_set_line_width(cr, 1);
+					{
+						//Width == 0 should be a hairline, but
+						//cairo does not support hairlines.
+						//using cairo_device_to_user_distance seems to work instead
+						double linewidth = 1.0;
+						cairo_device_to_user_distance(cr,&linewidth,&linewidth);
+						cairo_set_line_width(cr, linewidth);
+					}
 					else if (style->Width < 20) // would result in line with < 1 what seems to lead to no rendering at all
 						cairo_set_line_width(cr, 5);
 					else 
@@ -546,7 +548,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	{
 		if (instroke)
 			cairo_stroke(cr);
-		else
+		else if (!tokens.filltokens.empty())
 			cairo_fill(cr);
 	}
 	return empty;

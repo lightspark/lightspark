@@ -1749,10 +1749,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 			return;
 		}
 		IFunction* func = asAtomHandler::as<IFunction>(args[i+1]);
+		func->incRef();
 		func->closure_this.reset();
-		asAtom f;
-		asAtomHandler::setFunction(f,func,th,wrk);
-		th->frameScripts[frame]=f;
+		th->frameScripts[frame]=args[i+1];
 	}
 }
 
@@ -5972,9 +5971,11 @@ void MovieClip::executeFrameScript()
 		uint32_t f = frameScriptToExecute;
 		inExecuteFramescript = true;
 		asAtom v=asAtomHandler::invalidAtom;
-		asAtom obj = asAtomHandler::getClosureAtom(frameScripts[f]);
+		this->incRef();
+		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 		asAtomHandler::callFunction(frameScripts[f],getInstanceWorker(),v,obj,nullptr,0,false);
 		ASATOM_DECREF(v);
+		this->decRef();
 		inExecuteFramescript = false;
 	}
 	frameScriptToExecute = UINT32_MAX;
@@ -6102,7 +6103,6 @@ void MovieClip::constructionComplete()
 		initFrame();
 	}
 }
-
 void MovieClip::afterConstruction()
 {
 	getSystemState()->stage->AVM1AddScriptedMovieClip(this);
@@ -6113,9 +6113,11 @@ void MovieClip::afterConstruction()
 		// it seems that the framescript for frame 0 is executed _before_ any enterframe event is handled
 		inExecuteFramescript = true;
 		asAtom v=asAtomHandler::invalidAtom;
-		asAtom obj = asAtomHandler::getClosureAtom(frameScripts[0]);
+		this->incRef();
+		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 		asAtomHandler::callFunction(frameScripts[0],getInstanceWorker(),v,obj,nullptr,0,false);
 		ASATOM_DECREF(v);
+		this->decRef();
 		inExecuteFramescript = false;
 	}
 	if (!this->loadedFrom->usesActionScript3 && !this->inAVM1Attachment)

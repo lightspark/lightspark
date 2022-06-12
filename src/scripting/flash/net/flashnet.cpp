@@ -1434,7 +1434,10 @@ ASFUNCTIONBODY_ATOM(NetStream,_constructor)
 	tiny_string value;
 	_NR<NetConnection> netConnection;
 
-	ARG_UNPACK_ATOM(netConnection)(value, "connectToFMS");
+	if (wrk->rootClip->usesActionScript3)
+		ARG_UNPACK_ATOM(netConnection)(value, "connectToFMS");
+	else
+		ARG_UNPACK_ATOM(netConnection, NullRef)(value, "connectToFMS");
 
 	if(value == "directConnections")
 		th->peerID = DIRECT_CONNECTIONS;
@@ -1442,6 +1445,8 @@ ASFUNCTIONBODY_ATOM(NetStream,_constructor)
 		th->peerID = CONNECT_TO_FMS;
 
 	th->incRef();
+	if (netConnection.isNull())
+		netConnection = _MR(Class<NetConnection>::getInstanceSNoArgs(wrk));
 	netConnection->incRef();
 	th->connection=netConnection;
 	th->client = _NR<ASObject>(th);
@@ -1513,7 +1518,7 @@ ASFUNCTIONBODY_ATOM(NetStream,play)
 					"not allowed to navigate up for local files");
 	}
 
-	assert_and_throw(th->downloader==NULL);
+	assert_and_throw(th->downloader==nullptr);
 
 	//Until buffering is implemented, set a fake value. The BBC
 	//news player panics if bufferLength is smaller than 2.
@@ -1847,7 +1852,7 @@ void NetStream::tick()
 		assert(audioDecoder);
 		if (streamTime == 0)
 			streamTime=audioStream->getPlayedTime()+audioDecoder->initialTime;
-		else if (this->bufferLength > 0)
+		else if (this->bufferLength > 0.0)
 			streamTime+=1000/frameRate;
 	}
 	else

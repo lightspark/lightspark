@@ -148,7 +148,7 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 			//If the framerate is known give the right timing, otherwise use decodedTime from audio
 			uint32_t frameTime=(frameRate!=0.0)?(decodedVideoFrames*1000/frameRate):decodedTime;
 
-			if(videoDecoder==NULL)
+			if(videoDecoder==nullptr)
 			{
 				//If the isHeader flag is on then the decoder becomes the owner of the data
 				if(tag.isHeader())
@@ -165,7 +165,7 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 				{
 					//First packet but no special handling
 #ifdef ENABLE_LIBAVCODEC
-					videoDecoder=new FFMpegVideoDecoder(tag.codec,NULL,0,frameRate);
+					videoDecoder=new FFMpegVideoDecoder(tag.codec,nullptr,0,frameRate);
 #else
 					videoDecoder=new NullVideoDecoder();
 #endif

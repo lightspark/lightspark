@@ -390,7 +390,6 @@ void FFMpegVideoDecoder::skipAll()
 
 bool FFMpegVideoDecoder::discardFrame()
 {
-	Locker locker(mutex);
 	//We don't want ot block if no frame is available
 	if (embeddedvideotag)
 	{
@@ -420,7 +419,6 @@ bool FFMpegVideoDecoder::discardFrame()
 
 bool FFMpegVideoDecoder::decodeData(uint8_t* data, uint32_t datalen, uint32_t time)
 {
-	Locker locker(mutex);
 	if(datalen==0)
 		return false;
 #if defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME
@@ -591,7 +589,6 @@ uint8_t* FFMpegVideoDecoder::upload(bool refresh)
 	assert_and_throw(decodedframebuffer);
 	if (!refresh)
 		return decodedframebuffer;
-	Locker l(mutex);
 	if (embeddedvideotag) // on embedded video we decode the frames during upload
 	{
 		if (currentframe < lastframe)
@@ -617,7 +614,6 @@ uint8_t* FFMpegVideoDecoder::upload(bool refresh)
 		if(streamingbuffers.isEmpty())
 			return decodedframebuffer;
 	}
-
 	//At least a frame is available
 	YUVBuffer* cur=embeddedvideotag ? &embeddedbuffers.front() : &streamingbuffers.front();
 	fastYUV420ChannelsToYUV0Buffer(cur->ch[0],cur->ch[1],cur->ch[2],decodedframebuffer,frameWidth,frameHeight);

@@ -217,7 +217,6 @@ private:
 	AVCodecContext* codecContext;
 	BlockingCircularQueue<YUVBuffer,FFMPEGVIDEODECODERBUFFERSIZE> streamingbuffers;
 	BlockingCircularQueue<YUVBuffer,2> embeddedbuffers;
-	Mutex mutex;
 	AVFrame* frameIn;
 	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t time);
 	void setSize(uint32_t w, uint32_t h);

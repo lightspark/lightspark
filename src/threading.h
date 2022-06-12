@@ -195,7 +195,7 @@ private:
 	Semaphore usedBuffers;
 	uint32_t bufferHead;
 	uint32_t bufferTail;
-	bool empty;
+	ACQUIRE_RELEASE_FLAG(empty);
 public:
 	BlockingCircularQueue():freeBuffers(size),usedBuffers(0),bufferHead(0),bufferTail(0),empty(true)
 	{

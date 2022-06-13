@@ -689,15 +689,9 @@ protected:
 	bool suppressThis;
 	bool preloadThis;
 	bool preloadGlobal;
-	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,Activation_object* act,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,std::map<uint32_t,asAtom> scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false)
-		:IFunction(wrk,c,SUBTYPE_AVM1FUNCTION),clip(cl),activationobject(act),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),scopevariables(scope),
-		  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal)
-	{
-		if (ctx)
-			context.avm1strings.assign(ctx->avm1strings.begin(),ctx->avm1strings.end());
-		context.keepLocals=true;
-		superobj = asAtomHandler::invalidAtom;
-	}
+	bool clipIsRefcounted;
+	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,Activation_object* act,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,std::map<uint32_t,asAtom> scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false);
+	~AVM1Function();
 	method_info* getMethodInfo() const override { return nullptr; }
 	IFunction* clone(ASWorker* wrk) override
 	{
@@ -752,6 +746,7 @@ public:
 	{
 		return superobj;
 	}
+	void resetClipRefcounted();
 };
 
 /*
@@ -814,6 +809,7 @@ public:
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(wrk->getSystemState());
 		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(wrk,c, clip, act,ctx, params,actions,scope,paramregisternumbers,preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
+		ret->objfreelist = nullptr;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		return ret;

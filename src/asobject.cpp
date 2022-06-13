@@ -2026,7 +2026,14 @@ void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 				if (asAtomHandler::isFunction(v))
 					v = asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<IFunction>(v)->createFunctionInstance(wrk));
 				else if (asAtomHandler::isObject(v))
+				{
+					asAtomHandler::getObjectNoCheck(v)->incRef();
 					asAtomHandler::getObjectNoCheck(v)->objfreelist=nullptr;
+				}
+			}
+			else
+			{
+				ASATOM_INCREF(v);
 			}
 			target->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 		}

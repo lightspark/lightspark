@@ -1345,7 +1345,9 @@ void TextField::avm1SyncTagVar()
 					value = asAtomHandler::fromNumber(getInstanceWorker(),n,false);
 				else
 					value = asAtomHandler::fromString(getSystemState(),getText());
+				ASATOM_INCREF(value); // ensure that value is not destructed during AVM1SetVariable
 				par->as<MovieClip>()->AVM1SetVariable(tagvarname,value);
+				ASATOM_DECREF(value);
 				break;
 			}
 			par = par->getParent();
@@ -1371,6 +1373,7 @@ void TextField::afterLegacyInsert()
 				asAtom value = par->as<MovieClip>()->getVariableBindingValue(tagvarname);
 				if (asAtomHandler::isValid(value) && !asAtomHandler::isUndefined(value))
 					this->setText(asAtomHandler::toString(value,getInstanceWorker()).raw_buf());
+				ASATOM_DECREF(value);
 				break;
 			}
 			par = par->getParent();

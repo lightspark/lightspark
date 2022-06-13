@@ -69,16 +69,11 @@ private:
 	AS_BLENDMODE blendMode;
 	// if true, this displayobject is the root object of a loaded file (swf or image)
 	bool isLoadedRoot;
+	bool ismask;
 public:
 	UI16_SWF Ratio;
 	int ClipDepth;
 private:
-	/**
-	  	The object we are masking, if any
-	*/
-	_NR<DisplayObject> maskOf;
-	void becomeMaskOf(_NR<DisplayObject> m);
-
 	// the parent is not handled as a _NR<DisplayObjectContainer> because that will lead to circular dependencies in refcounting
 	// and the parent can never be destructed
 	DisplayObjectContainer* parent;
@@ -231,7 +226,7 @@ public:
 	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly);
 	virtual void setOnStage(bool staged, bool force, bool inskipping=false);
 	bool isOnStage() const { return onStage; }
-	bool isMask() const { return !maskOf.isNull(); }
+	bool isMask() const { return ismask; }
 	// checks for visibility depending on parent visibility 
 	bool isVisible() const;
 	bool isLoadedRootObject() const { return isLoadedRoot; }

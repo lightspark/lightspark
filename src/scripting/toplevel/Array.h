@@ -91,6 +91,7 @@ public:
 	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	Array(ASWorker *w,Class_base* c);
+	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
 	
@@ -145,7 +146,6 @@ public:
 		}
 		if (asAtomHandler::isInvalid(ret))
 			asAtomHandler::setUndefined(ret);
-		ASATOM_INCREF(ret);
 	}
 	
 	bool set(unsigned int index, asAtom &o, bool checkbounds = true, bool addref = true);

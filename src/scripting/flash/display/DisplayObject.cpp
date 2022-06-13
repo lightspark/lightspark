@@ -103,7 +103,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 }
 
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ClipDepth(0),maskOf(),parent(nullptr),constructed(false),useLegacyMatrix(true),
+	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),ClipDepth(0),parent(nullptr),constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),avm1mouselistenercount(0),avm1framelistenercount(0),onStage(false),
 	visible(true),mask(),invalidateQueueNext(),loaderInfo(),cachedAsBitmapOf(nullptr),loadedFrom(c->getSystemState()->mainClip),hasChanged(true),legacy(false),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
@@ -130,7 +130,6 @@ void DisplayObject::finalize()
 	EventDispatcher::finalize();
 	cachedBitmap.reset();
 	cachedAsBitmapOf=nullptr;
-	maskOf.reset();
 	parent=nullptr;
 	eventparentmap.clear();
 	mask.reset();
@@ -139,6 +138,13 @@ void DisplayObject::finalize()
 	colorTransform.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
+	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
+	{
+		ASATOM_DECREF(it->second);
+	}
+	avm1variables.clear();
+	variablebindings.clear();
+	avm1functions.clear();
 	loadedFrom=getSystemState()->mainClip;
 	hasChanged = true;
 	needsTextureRecalculation=true;
@@ -148,6 +154,7 @@ void DisplayObject::finalize()
 	cachedSurface.isValid=false;
 	avm1mouselistenercount=0;
 	avm1framelistenercount=0;
+	EventDispatcher::finalize();
 }
 
 bool DisplayObject::destruct()
@@ -156,7 +163,7 @@ bool DisplayObject::destruct()
 	getSystemState()->unregisterFrameListener(this);
 	cachedBitmap.reset();
 	cachedAsBitmapOf=nullptr;
-	maskOf.reset();
+	ismask=false;
 	parent=nullptr;
 	eventparentmap.clear();
 	mask.reset();
@@ -188,7 +195,9 @@ bool DisplayObject::destruct()
 	cacheAsBitmap=false;
 	name=BUILTIN_STRINGS::EMPTY;
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
+	{
 		ASATOM_DECREF(it->second);
+	}
 	avm1variables.clear();
 	variablebindings.clear();
 	avm1functions.clear();
@@ -211,8 +220,6 @@ void DisplayObject::prepareShutdown()
 		cachedBitmap->prepareShutdown();
 	if (cachedAsBitmapOf)
 		cachedAsBitmapOf->prepareShutdown();
-	if (maskOf)
-		maskOf->prepareShutdown();
 	if (mask)
 		mask->prepareShutdown();
 	if (matrix)
@@ -512,11 +519,6 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 	
 }
 
-void DisplayObject::becomeMaskOf(_NR<DisplayObject> m)
-{
-	maskOf=m;
-}
-
 void DisplayObject::setMask(_NR<DisplayObject> m)
 {
 	bool mustInvalidate=(mask!=m || (m && m->hasChanged)) && onStage;
@@ -524,15 +526,14 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 	if(!mask.isNull())
 	{
 		//Remove previous mask
-		mask->becomeMaskOf(NullRef);
+		mask->ismask=false;
 	}
 
 	mask=m;
 	if(!mask.isNull())
 	{
 		//Use new mask
-		this->incRef();
-		mask->becomeMaskOf(_MR(this));
+		mask->ismask=true;
 	}
 
 	if(mustInvalidate && onStage)
@@ -1664,7 +1665,7 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 {
 	const DisplayObject* cur=this;
 	bool gatherMasks = true;
-	isMask = cur->ClipDepth || !cur->maskOf.isNull();
+	isMask = cur->ClipDepth || cur->ismask;
 	mask = cur->mask;
 	while(cur && cur!=target)
 	{
@@ -1673,9 +1674,9 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 		{
 			if (!cur->mask.isNull() && mask.isNull())
 				mask=cur->mask;
-			if (cur->ClipDepth || !cur->maskOf.isNull())
+			if (cur->ClipDepth || cur->ismask)
 				isMask=true;
-			if(!cur->maskOf.isNull())
+			if(cur->ismask)
 			{
 				//Stop gathering masks if any level of the hierarchy it's a mask
 				masks.clear();
@@ -2453,14 +2454,21 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 		if (it != avm1variables.end())
 			ASATOM_DECREF(it->second);
 		if (asAtomHandler::isUndefined(v))
+		{
 			avm1variables.erase(nameId);
+			if (asAtomHandler::is<AVM1Function>(v))
+			{
+				avm1functions.erase(nameIdOriginal);
+			}
+		}
 		else
 		{
-			ASATOM_INCREF(v);
 			avm1variables[nameId] = v;
 			if (asAtomHandler::is<AVM1Function>(v))
 			{
 				AVM1Function* f = asAtomHandler::as<AVM1Function>(v);
+				if (f->getClip() == this)
+					f->resetClipRefcounted(); // this avoids that this DisplayObject never destroyed because the function still has a reference count
 				f->incRef();
 				avm1functions[nameIdOriginal] = _MR(f);
 			}
@@ -2471,15 +2479,18 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 			objName.name_type=multiname::NAME_STRING;
 			objName.name_s_id=nameIdOriginal;
 			ASObject* o = this;
-			
 			while (o && !o->hasPropertyByMultiname(objName,true,true,loadedFrom->getInstanceWorker()))
 			{
 				o=o->getprop_prototype();
 			}
+			ASATOM_INCREF(v);
+			bool alreadyset;
 			if (o)
-				o->setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+				o->setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,&alreadyset,loadedFrom->getInstanceWorker());
 			else
-				setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+				setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,&alreadyset,loadedFrom->getInstanceWorker());
+			if (alreadyset)
+				ASATOM_DECREF(v);
 		}
 		AVM1UpdateVariableBindings(nameId,v);
 	}
@@ -2526,7 +2537,10 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 		}
 		auto it = avm1variables.find(getSystemState()->getUniqueStringId(name.lowercase()));
 		if (it != avm1variables.end())
+		{
+			ASATOM_INCREF(it->second);
 			return it->second;
+		}
 	}
 	else if (pos == 0)
 	{
@@ -2552,6 +2566,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 		DisplayObject* clip = AVM1GetClipFromPath(path);
 		if (clip && clip != this)
 		{
+			clip->incRef();
 			ret = asAtomHandler::fromObjectNoPrimitive(clip);
 			return ret;
 		}
@@ -2559,6 +2574,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 		clip = AVM1GetClipFromPath(path);
 		if (clip && clip != this)
 		{
+			clip->incRef();
 			ret = asAtomHandler::fromObjectNoPrimitive(clip);
 			return ret;
 		}
@@ -2645,8 +2661,8 @@ void DisplayObject::AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj)
 	}
 	if (obj)
 	{
-		obj->incRef();
 		avm1functions[nameID] = obj;
+		obj->incRef();
 		avm1variables[nameID] = asAtomHandler::fromObject(obj.getPtr());
 	}
 	else

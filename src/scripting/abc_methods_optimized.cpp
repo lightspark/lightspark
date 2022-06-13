@@ -3251,6 +3251,7 @@ void ABCVm::abc_getPropertyStaticName_local(call_context* context)
 	{
 		LOG_CALL( "getProperty_sl " << name->name_i << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
 		asAtomHandler::as<Array>(CONTEXT_GETLOCAL(context,instrptr->local_pos1))->at_nocheck(prop,name->name_i);
+		ASATOM_INCREF(prop);
 	}
 	else
 	{
@@ -3333,6 +3334,7 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 	{
 		LOG_CALL( "getProperty_slli " << name->name_i << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
 		asAtomHandler::as<Array>(CONTEXT_GETLOCAL(context,instrptr->local_pos1))->at_nocheck(CONTEXT_GETLOCAL(context,instrptr->local3.pos),name->name_i);
+		ASATOM_INCREF(CONTEXT_GETLOCAL(context,instrptr->local3.pos));
 	}
 	else
 	{

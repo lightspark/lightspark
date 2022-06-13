@@ -2260,9 +2260,12 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	}
 	ASObject *instance = placedTag->instance();
 	DisplayObject* toAdd=dynamic_cast<DisplayObject*>(instance);
-	if(!toAdd && instance)
+	if(!toAdd)
 	{
-		LOG(LOG_NOT_IMPLEMENTED, "AVM1: attachMovie adding non-DisplayObject to display list:"<<instance->toDebugString());
+		if (instance)
+			LOG(LOG_NOT_IMPLEMENTED, "AVM1: attachMovie adding non-DisplayObject to display list:"<<instance->toDebugString());
+		else
+			LOG(LOG_NOT_IMPLEMENTED, "AVM1: attachMovie couldn't create instance of item:"<<placedTag->getId());
 		return;
 	}
 	toAdd->name = nameId;
@@ -2274,6 +2277,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 			o->copyValues(toAdd,wrk);
 		}
 	}
+	if (toAdd->is<MovieClip>())
+	{
+		toAdd->as<MovieClip>()->declareFrame();
+		toAdd->as<MovieClip>()->inAVM1Attachment=true;
+	}
 	if(th->hasLegacyChildAt(Depth) )
 	{
 		th->deleteLegacyChildAt(Depth,false);
@@ -2281,11 +2289,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	}
 	else
 		th->insertLegacyChildAt(Depth,toAdd);
-	if (toAdd->is<MovieClip>())
-		toAdd->as<MovieClip>()->inAVM1Attachment=true;
-	toAdd->setConstructIndicator();
-	toAdd->constructionComplete();
-	toAdd->afterConstruction();
 	if (toAdd->is<MovieClip>())
 	{
 		// call constructor here to avoid recursive construction
@@ -2300,6 +2303,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		toAdd->as<MovieClip>()->inAVM1Attachment=false;
 	}
 	toAdd->incRef();
+	toAdd->setConstructIndicator();
+	toAdd->constructionComplete();
+	toAdd->afterConstruction();
 	ret=asAtomHandler::fromObjectNoPrimitive(toAdd);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
@@ -4847,7 +4853,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	if (originalsource)
 	{
 		if (!isMask)
-			isMask = originalsource->ClipDepth || !originalsource->maskOf.isNull();
+			isMask = originalsource->ClipDepth || originalsource->ismask;
 		if (!mask)
 			mask = originalsource->mask;
 	}
@@ -5894,9 +5900,11 @@ void MovieClip::AVM1HandleScripts()
 	{
 		asAtom v = getVariableBindingValue(getSystemState()->getStringFromUniqueId((*itbind).first));
 		(*itbind).second->UpdateVariableBinding(v);
+		ASATOM_DECREF(v);
 		itbind++;
 	}
 	bool wasexplicit = state.explicit_FP;
+	bool wasexplicitplay = state.explicit_play;
 	if (actions && !this->state.explicit_FP)
 	{
 		for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
@@ -5922,6 +5930,7 @@ void MovieClip::AVM1HandleScripts()
 			asAtom ret=asAtomHandler::invalidAtom;
 			asAtom obj = asAtomHandler::fromObject(this);
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			asAtomHandler::as<AVM1Function>(func)->decRef();
 		}
 	}
 	// TODO: check if the conditions when to execute the frame scripts are correct:
@@ -5932,7 +5941,10 @@ void MovieClip::AVM1HandleScripts()
 	//    - playhead was explicitely set during calling the onEnterFrame handlers but didn't change the current frame
 	if (!isAVM1Loaded ||
 			((!this->hasFinishedLoading() || this->getFramesLoaded()>1) &&
-			 ((!this->state.explicit_play && !state.stop_FP) || wasexplicit || (this->state.explicit_FP && (state.FP==state.next_FP)))))
+			 ((!this->state.explicit_play && !state.stop_FP)
+			  || wasexplicit
+			  || wasexplicitplay
+			  || (this->state.explicit_FP && (state.FP==state.next_FP)))))
 	{
 		AVM1ExecuteFrameActions(state.FP);
 	}

@@ -51,6 +51,7 @@ void AVM1MovieClip::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("_name","",Class<IFunction>::getFunction(c->getSystemState(),_setter_name),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("startDrag","",Class<IFunction>::getFunction(c->getSystemState(),startDrag),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopDrag","",Class<IFunction>::getFunction(c->getSystemState(),stopDrag),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("attachAudio","",Class<IFunction>::getFunction(c->getSystemState(),attachAudio),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1MovieClip,startDrag)
@@ -89,6 +90,12 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClip,startDrag)
 ASFUNCTIONBODY_ATOM(AVM1MovieClip,stopDrag)
 {
 	Sprite::_stopDrag(ret,wrk,obj,nullptr,0);
+}
+
+ASFUNCTIONBODY_ATOM(AVM1MovieClip,attachAudio)
+{
+	AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"AVM1MovieClip.attachAudio");
 }
 
 void AVM1Shape::sinit(Class_base* c)
@@ -568,6 +575,7 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,broadcastMessage)
 				if (asAtomHandler::is<Function>(f))
 				{
 					asAtomHandler::as<Function>(f)->call(res,wrk,o,nullptr,0);
+					asAtomHandler::as<Function>(f)->decRef();
 				}
 				else if (asAtomHandler::is<SyntheticFunction>(f))
 				{

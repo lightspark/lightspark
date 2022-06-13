@@ -36,6 +36,20 @@ Array::Array(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_ARRAY),currentsize(0
 {
 }
 
+void Array::finalize()
+{
+	for (auto it=data_first.begin() ; it != data_first.end(); ++it)
+	{
+		ASATOM_DECREF_POINTER(it);
+	}
+	for (auto it=data_second.begin() ; it != data_second.end(); ++it)
+	{
+		ASATOM_DECREF(it->second);
+	}
+	data_first.clear();
+	data_second.clear();
+}
+
 bool Array::destruct()
 {
 	for (auto it=data_first.begin() ; it != data_first.end(); ++it)

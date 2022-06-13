@@ -43,6 +43,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(startDrag);
 	ASFUNCTION_ATOM(stopDrag);
+	ASFUNCTION_ATOM(attachAudio);
 };
 
 class AVM1Shape: public Shape

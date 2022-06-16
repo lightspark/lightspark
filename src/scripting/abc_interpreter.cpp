@@ -4360,7 +4360,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				{
 					if (v && function->inClass->isSealed 
 							&& !function->isFromNewFunction() 
-							&& (function != cls->getConstructor())
+							&& (function != cls->getConstructor() || !isborrowed)
 							&& (!function->isStatic || !isborrowed ))
 					{
 						asAtom value = asAtomHandler::fromObjectNoPrimitive(cls);

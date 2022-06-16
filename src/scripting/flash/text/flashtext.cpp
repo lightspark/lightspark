@@ -1431,7 +1431,10 @@ void TextField::textInputChanged(const tiny_string &newtext)
 	tiny_string tmptext = getText();
 	if (maxChars == 0 || tmptext.numChars()+newtext.numChars() <= uint32_t(maxChars))
 	{
-		tmptext.replace(caretIndex,0,newtext);
+		if (caretIndex < tmptext.numChars())
+			tmptext.replace(caretIndex,0,newtext);
+		else
+			tmptext+=newtext;
 		caretIndex+= newtext.numChars();
 	}
 	this->updateText(tmptext);
@@ -1515,7 +1518,10 @@ void TextField::defaultEventBehavior(_R<Event> e)
 					{
 						caretIndex--;
 						tiny_string tmptext = getText();
-						tmptext.replace(caretIndex,1,"");
+						if (caretIndex < tmptext.numChars())
+							tmptext.replace(caretIndex,1,"");
+						else
+							tmptext = tmptext.substr(0,tmptext.numChars()-1);
 						setText(tmptext.raw_buf());
 						textUpdated();
 					}

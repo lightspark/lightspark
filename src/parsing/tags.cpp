@@ -1551,6 +1551,17 @@ DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* r
 {
 	LOG(LOG_TRACE,"DefineShapeTag");
 	in >> ShapeId >> ShapeBounds >> Shapes;
+
+	if (root->version < 8)
+	{
+		for (auto& s : Shapes.FillStyles.FillStyles)
+		{
+			if (s.FillStyleType == REPEATING_BITMAP)
+				s.FillStyleType = NON_SMOOTHED_REPEATING_BITMAP;
+			else if (s.FillStyleType == CLIPPED_BITMAP)
+				s.FillStyleType = NON_SMOOTHED_CLIPPED_BITMAP;
+		}
+	}
 }
 
 DefineShapeTag::~DefineShapeTag()

@@ -121,6 +121,26 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 			if (asAtomHandler::is<AVM1Function>(func))
 			{
+				if (loader->getDataFormat()=="text")
+				{
+					// TODO how are '&' or '=' handled when inside keys/values?
+					tiny_string s = loader->getData()->toString();
+					std::list<tiny_string> spl = s.split((uint32_t)'&');
+					for (auto it = spl.begin(); it != spl.end(); it++)
+					{
+						std::list<tiny_string> spl2 = (*it).split((uint32_t)'=');
+						if (spl2.size() ==2)
+						{
+							multiname mdata(nullptr);
+							mdata.name_type=multiname::NAME_STRING;
+							mdata.isAttribute = false;
+							tiny_string key =spl2.front();
+							mdata.name_s_id = getSystemState()->getUniqueStringId(key);
+							asAtom value = asAtomHandler::fromString(getSystemState(),spl2.back());
+							this->setVariableByMultiname(mdata,value,ASObject::CONST_ALLOWED,nullptr,this->getInstanceWorker());
+						}
+					}
+				}
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::fromObject(this);
 				asAtom args[1];

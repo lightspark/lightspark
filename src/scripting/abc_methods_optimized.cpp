@@ -4945,9 +4945,13 @@ void ABCVm::abc_add_local_constant(call_context* context)
 {
 	LOG_CALL("add_lc");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	ASObject* o = asAtomHandler::getObject(res);
+	if (o)
+		o->incRef(); // ensure old value is not replaced
 	if (!asAtomHandler::add(res,*context->exec_pos->arg2_constant,context->worker,context->exec_pos->local3.flags & ABC_OP_FORCEINT))
 	{
-		ASATOM_INCREF(res);
+		if (o)
+			o->decRef();
 	}
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
@@ -4964,9 +4968,13 @@ void ABCVm::abc_add_local_local(call_context* context)
 {
 	LOG_CALL("add_ll");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	if (!asAtomHandler::add(res,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker,context->exec_pos->local3.flags & ABC_OP_FORCEINT))
+	ASObject* o = asAtomHandler::getObject(res);
+	if (o)
+		o->incRef(); // ensure old value is not replaced
+	if (asAtomHandler::add(res,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker,context->exec_pos->local3.flags & ABC_OP_FORCEINT))
 	{
-		ASATOM_INCREF(res);
+		if (o)
+			o->decRef();
 	}
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);

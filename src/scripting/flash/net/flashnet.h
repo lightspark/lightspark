@@ -181,7 +181,6 @@ public:
 	URLLoader(ASWorker* wrk,Class_base* c);
 	void finalize() override;
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	void threadFinished(IThreadJob *job) override;
 	void setData(_NR<ASObject> data);
 	ASObject* getData() const

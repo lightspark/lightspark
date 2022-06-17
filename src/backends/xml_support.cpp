@@ -28,12 +28,19 @@ using namespace std;
 
 const pugi::xml_node XMLBase::buildFromString(const tiny_string& str,
 										unsigned int xmlparsemode,
-										const tiny_string& default_ns)
+										const tiny_string& default_ns,
+										pugi::xml_parse_result* parseresult)
 {
 	tiny_string buf = quirkEncodeNull(removeWhitespace(str));
 	if (buf.numBytes() > 0 && buf.charAt(0) == '<')
 	{
 		pugi::xml_parse_result res = xmldoc.load_buffer((void*)buf.raw_buf(),buf.numBytes(),xmlparsemode);
+		if (parseresult)
+		{
+			// error handling is done in the caller
+			*parseresult = res;
+			return xmldoc.root();
+		}
 		switch (res.status)
 		{
 			case pugi::status_ok:

@@ -305,7 +305,7 @@ tiny_string XMLNode::toString_priv(pugi::xml_node outputNode)
 }
 
 XMLDocument::XMLDocument(ASWorker* wrk, Class_base* c, tiny_string s)
-  : XMLNode(wrk,c),rootNode(nullptr),ignoreWhite(false)
+  : XMLNode(wrk,c),rootNode(nullptr),status(0),ignoreWhite(false)
 {
 	if(!s.empty())
 	{
@@ -323,11 +323,7 @@ void XMLDocument::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, ignoreWhite);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(XMLDocument, ignoreWhite);
-
-void XMLDocument::buildTraits(ASObject* o)
-{
-}
+ASFUNCTIONBODY_GETTER_SETTER(XMLDocument, ignoreWhite)
 
 ASFUNCTIONBODY_ATOM(XMLDocument,_constructor)
 {
@@ -352,12 +348,45 @@ void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& str
 	out->writeXMLString(objMap, this, toString());
 }
 
-void XMLDocument::parseXMLImpl(const string& str)
+int XMLDocument::parseXMLImpl(const string& str)
 {
 	unsigned int parsemode = pugi::parse_full |pugi::parse_fragment;
 	if (!ignoreWhite) parsemode |= pugi::parse_ws_pcdata;
 
-	node=rootNode=buildFromString(str, parsemode);
+	if (this->getInstanceWorker()->rootClip->usesActionScript3)
+	{
+		node=rootNode=buildFromString(str, parsemode);
+		return 0;
+	}
+	else
+	{
+		// don't throw exception when in AVM1, return status value instead
+		pugi::xml_parse_result parseresult;
+		node=rootNode=buildFromString(str, parsemode,"",&parseresult);
+		switch (parseresult.status)
+		{
+			case pugi::status_ok:
+				return 0;
+			case pugi::status_end_element_mismatch:
+				return -9;
+			case pugi::status_unrecognized_tag:
+				return -6;
+			case pugi::status_bad_pi:
+				return -3;
+			case pugi::status_bad_attribute:
+				return -8;
+			case pugi::status_bad_cdata:
+				return -2;
+			case pugi::status_bad_doctype:
+				return -4;
+			case pugi::status_bad_comment:
+				return -5;
+			default:
+				LOG(LOG_ERROR,"xml parser error:"<<str<<" "<<parseresult.status<<" "<<parseresult.description());
+				return -1000;
+			
+		}
+	}
 }
 
 ASFUNCTIONBODY_ATOM(XMLDocument,_toString)

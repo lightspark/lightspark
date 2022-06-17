@@ -773,6 +773,18 @@ void Loader::finalize()
 	content.reset();
 	contentLoaderInfo.reset();
 	avm1target.reset();
+	uncaughtErrorEvents.reset();
+}
+bool Loader::destruct()
+{
+	url = URLInfo();
+	loaded=false;
+	allowCodeImport=true;
+	content.reset();
+	contentLoaderInfo.reset();
+	avm1target.reset();
+	uncaughtErrorEvents.reset();
+	return DisplayObjectContainer::destruct();
 }
 
 Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(NullRef),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
@@ -788,6 +800,7 @@ Loader::~Loader()
 void Loader::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("contentLoaderInfo","",Class<IFunction>::getFunction(c->getSystemState(),_getContentLoaderInfo,0,Class<LoaderInfo>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("content","",Class<IFunction>::getFunction(c->getSystemState(),_getContent,0,Class<DisplayObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
@@ -805,10 +818,6 @@ void Loader::threadFinished(IThreadJob* finishedJob)
 	Locker l(spinlock);
 	jobs.remove(finishedJob);
 	delete finishedJob;
-}
-
-void Loader::buildTraits(ASObject* o)
-{
 }
 
 void Loader::setContent(_R<DisplayObject> o)
@@ -1635,6 +1644,7 @@ void MovieClip::finalize()
 	frameScripts.clear();
 	scenes.clear();
 	state.reset();
+	avm1loader.reset();
 	Sprite::finalize();
 }
 
@@ -1800,7 +1810,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		if(dest==FRAME_NOT_FOUND)
 		{
 			dest= 0;
-			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getInstanceWorker())<<" in scene "<<sceneName<<" at movieclip "<<getTagID()<<" "<<this->hasFinishedLoading());
+			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getInstanceWorker())<<" in scene "<<sceneName<<" at movieclip "<<getTagID()<<" "<<this->state.FP);
 //			throwError<ArgumentError>(kInvalidArgumentError,asAtomHandler::toString(args[0],));
 		}
 

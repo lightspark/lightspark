@@ -66,12 +66,12 @@ private:
 	static uint32_t decodeHexDigit(CharIterator& c, const CharIterator& end);
 	static bool isSurrogateUTF8Sequence(const char *octets, unsigned int numOctets);
 public:
-	URLInfo():invalidReason(IS_EMPTY),valid(false) {};
+	URLInfo():invalidReason(IS_EMPTY),valid(false) {}
 	URLInfo(const tiny_string& u);
-	~URLInfo() {};
+	~URLInfo() {}
 	bool isValid() const { return valid; }
 	bool isEmpty() const { return !valid && invalidReason == IS_EMPTY; }
-	INVALID_REASON getInvalidReason() const { return invalidReason; };
+	INVALID_REASON getInvalidReason() const { return invalidReason; }
 
 	//Remove extraneous slashes, .. and . from URLs
 	tiny_string normalizePath(const tiny_string& u);
@@ -101,16 +101,16 @@ public:
 	bool operator==(const URLInfo& subject) const
 	{ return getParsedURL() == subject.getParsedURL(); }
 
-	const tiny_string& getURL() const { return url; };
-	const tiny_string& getParsedURL() const { return valid ? parsedURL : url; };
-	const tiny_string& getProtocol() const { return protocol; };
-	const tiny_string& getHostname() const { return hostname; };
-	uint16_t getPort() const { return port; };
-	const tiny_string& getPath() const { return path; };
-	const tiny_string& getPathDirectory() const { return pathDirectory; };
-	const tiny_string& getPathFile() const { return pathFile; };
-	const tiny_string& getQuery() const { return query; };
-	const tiny_string& getFragment() const { return fragment; };
+	const tiny_string& getURL() const { return url; }
+	const tiny_string& getParsedURL() const { return valid ? parsedURL : url; }
+	const tiny_string& getProtocol() const { return protocol; }
+	const tiny_string& getHostname() const { return hostname; }
+	uint16_t getPort() const { return port; }
+	const tiny_string& getPath() const { return path; }
+	const tiny_string& getPathDirectory() const { return pathDirectory; }
+	const tiny_string& getPathFile() const { return pathFile; }
+	const tiny_string& getQuery() const { return query; }
+	const tiny_string& getFragment() const { return fragment; }
 	std::list< std::pair<tiny_string, tiny_string> > getQueryKeyValue() const;
 
 	bool isRTMP() const;

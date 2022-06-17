@@ -98,7 +98,7 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,load)
 multiname* AVM1LoadVars::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset,ASWorker* wrk)
 {
 	multiname* res = URLVariables::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
-	if (name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
+	if (name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD || name.name_s_id == BUILTIN_STRINGS::STRING_ONDATA)
 	{
 		this->incRef();
 		getSystemState()->stage->AVM1AddEventListener(this);
@@ -117,35 +117,50 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			multiname m(nullptr);
 			m.name_type=multiname::NAME_STRING;
 			m.isAttribute = false;
-			m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONDATA;
 			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 			if (asAtomHandler::is<AVM1Function>(func))
 			{
-				if (loader->getDataFormat()=="text")
-				{
-					// TODO how are '&' or '=' handled when inside keys/values?
-					tiny_string s = loader->getData()->toString();
-					std::list<tiny_string> spl = s.split((uint32_t)'&');
-					for (auto it = spl.begin(); it != spl.end(); it++)
-					{
-						std::list<tiny_string> spl2 = (*it).split((uint32_t)'=');
-						if (spl2.size() ==2)
-						{
-							multiname mdata(nullptr);
-							mdata.name_type=multiname::NAME_STRING;
-							mdata.isAttribute = false;
-							tiny_string key =spl2.front();
-							mdata.name_s_id = getSystemState()->getUniqueStringId(key);
-							asAtom value = asAtomHandler::fromString(getSystemState(),spl2.back());
-							this->setVariableByMultiname(mdata,value,ASObject::CONST_ALLOWED,nullptr,this->getInstanceWorker());
-						}
-					}
-				}
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::fromObject(this);
 				asAtom args[1];
-				args[0] = e->type == "complete" ? asAtomHandler::trueAtom : asAtomHandler::falseAtom;
+				args[0] = asAtomHandler::fromObject(loader->getData());
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
+				asAtomHandler::as<AVM1Function>(func)->decRef();
+			}
+			else
+			{
+				m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
+				getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
+				if (asAtomHandler::is<AVM1Function>(func))
+				{
+					if (loader->getDataFormat()=="text")
+					{
+						// TODO how are '&' or '=' handled when inside keys/values?
+						tiny_string s = loader->getData()->toString();
+						std::list<tiny_string> spl = s.split((uint32_t)'&');
+						for (auto it = spl.begin(); it != spl.end(); it++)
+						{
+							std::list<tiny_string> spl2 = (*it).split((uint32_t)'=');
+							if (spl2.size() ==2)
+							{
+								multiname mdata(nullptr);
+								mdata.name_type=multiname::NAME_STRING;
+								mdata.isAttribute = false;
+								tiny_string key =spl2.front();
+								mdata.name_s_id = getSystemState()->getUniqueStringId(key);
+								asAtom value = asAtomHandler::fromString(getSystemState(),spl2.back());
+								this->setVariableByMultiname(mdata,value,ASObject::CONST_ALLOWED,nullptr,this->getInstanceWorker());
+							}
+						}
+					}
+					asAtom ret=asAtomHandler::invalidAtom;
+					asAtom obj = asAtomHandler::fromObject(this);
+					asAtom args[1];
+					args[0] = e->type == "complete" ? asAtomHandler::trueAtom : asAtomHandler::falseAtom;
+					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
+					asAtomHandler::as<AVM1Function>(func)->decRef();
+				}
 			}
 		}
 	}

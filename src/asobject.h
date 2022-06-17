@@ -1420,6 +1420,7 @@ class ThrottleEvent;
 class Type;
 class UInteger;
 class Undefined;
+class URLLoader;
 class Vector;
 class Vector3D;
 class VertexBuffer3D;
@@ -1534,6 +1535,7 @@ template<> inline bool ASObject::is<ThrottleEvent>() const { return subtype==SUB
 template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<UInteger>() const { return type==T_UINTEGER; }
 template<> inline bool ASObject::is<Undefined>() const { return type==T_UNDEFINED; }
+template<> inline bool ASObject::is<URLLoader>() const { return subtype == SUBTYPE_URLLOADER; }
 template<> inline bool ASObject::is<Vector>() const { return subtype==SUBTYPE_VECTOR; }
 template<> inline bool ASObject::is<Vector3D>() const { return subtype==SUBTYPE_VECTOR3D; }
 template<> inline bool ASObject::is<VertexBuffer3D>() const { return subtype==SUBTYPE_VERTEXBUFFER3D; }

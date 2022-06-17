@@ -29,8 +29,10 @@ void AVM1XMLDocument::sinit(Class_base* c)
 	XMLDocument::sinit(c);
 	c->isSealed = false;
 	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
-	
+	REGISTER_GETTER(c, status);
 }
+
+ASFUNCTIONBODY_GETTER(AVM1XMLDocument,status)
 
 ASFUNCTIONBODY_ATOM(AVM1XMLDocument,load)
 {
@@ -70,7 +72,7 @@ void AVM1XMLDocument::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 			if (e->type == "complete" && loader->getData())
 			{
 				std::string str = loader->getData()->toString().raw_buf();
-				this->parseXMLImpl(str);
+				this->status = this->parseXMLImpl(str);
 			}
 			asAtom func=asAtomHandler::invalidAtom;
 			multiname m(nullptr);

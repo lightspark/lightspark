@@ -361,7 +361,7 @@ void Downloader::append(uint8_t* buf, uint32_t added)
  */
 void Downloader::parseHeaders(const char* _headers, bool _setLength)
 {
-	if(_headers == NULL)
+	if(_headers == nullptr)
 		return;
 
 	std::string headersStr(_headers);
@@ -603,7 +603,8 @@ void CurlDownloader::execute()
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
 		//Its probably a good idea to limit redirections, 100 should be more than enough
 		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 100);
-		curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/5.0");
+		// TODO use same useragent as adobe
+		//curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/5.0");
 		// Empty string means that CURL will decompress if the
 		// server send a compressed file. (This has been
 		// renamed to CURLOPT_ACCEPT_ENCODING in newer CURL,
@@ -870,11 +871,11 @@ void DownloaderThreadBase::jobFence()
 	//Get a copy of the downloader, do hold the lock less time.
 	//It's safe to set this->downloader to NULL, this is the last function that will
 	//be called over this thread job
-	Downloader* d=NULL;
+	Downloader* d=nullptr;
 	{
 		Locker l(downloaderLock);
 		d=downloader;
-		downloader=NULL;
+		downloader=nullptr;
 	}
 	if(d)
 		getSys()->downloadManager->destroy(d);
@@ -886,7 +887,7 @@ void DownloaderThreadBase::threadAbort()
 {
 	//We have to stop the downloader
 	Locker l(downloaderLock);
-	if(downloader != NULL)
+	if(downloader != nullptr)
 		downloader->stop();
 	threadAborting=true;
 }

@@ -71,11 +71,12 @@ class XMLDocument: public XMLNode, public XMLBase
 friend class XMLNode;
 private:
 	pugi::xml_node rootNode;
+protected:
+	int32_t status; // only needed for AVM1
 public:
 	XMLDocument(ASWorker* wrk,Class_base* c, tiny_string s="");
-	void parseXMLImpl(const std::string& str);
+	int parseXMLImpl(const std::string& str);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	tiny_string toString();
 	ASPROPERTY_GETTER_SETTER(bool, ignoreWhite);
 	ASFUNCTION_ATOM(_constructor);

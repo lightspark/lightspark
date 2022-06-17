@@ -424,8 +424,9 @@ void URLLoaderThread::execute()
 	}
 }
 
-URLLoader::URLLoader(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),dataFormat("text"),data(),job(NULL),timestamp_last_progress(0)
+URLLoader::URLLoader(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),dataFormat("text"),data(),job(nullptr),timestamp_last_progress(0)
 {
+	subtype=SUBTYPE_URLLOADER;
 }
 
 void URLLoader::finalize()
@@ -450,10 +451,6 @@ void URLLoader::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_SETTER(URLLoader, bytesLoaded)
 ASFUNCTIONBODY_GETTER_SETTER(URLLoader, bytesTotal)
 
-void URLLoader::buildTraits(ASObject* o)
-{
-}
-
 void URLLoader::threadFinished(IThreadJob *finishedJob)
 {
 	// If this is the current job, we are done. If these are not
@@ -462,7 +459,7 @@ void URLLoader::threadFinished(IThreadJob *finishedJob)
 	// job.
 	Locker l(spinlock);
 	if(finishedJob==job)
-		job=NULL;
+		job=nullptr;
 
 	delete finishedJob;
 }
@@ -860,7 +857,7 @@ void ObjectEncoding::sinit(Class_base* c)
 	c->setVariableAtomByQName("AMF3",nsNameAndKind(),asAtomHandler::fromUInt(AMF3),DECLARED_TRAIT);
 	c->setVariableAtomByQName("DEFAULT",nsNameAndKind(),asAtomHandler::fromUInt(DEFAULT),DECLARED_TRAIT);
 }
-ASFUNCTIONBODY_GETTER_SETTER_STATIC(ObjectEncoding,dynamicPropertyWriter);
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(ObjectEncoding,dynamicPropertyWriter)
 
 // this is a global counter to produce uinque IDs for NetConnections
 // TODO maybe it would be better to use some form of GUID

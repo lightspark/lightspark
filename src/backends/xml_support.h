@@ -34,9 +34,11 @@ class XMLBase
 protected:
 	//The parser will destroy the document and all the childs on destruction
 	pugi::xml_document xmldoc;
+	// if parseresult is not null, this method will not throw an exception on invalid xml
 	const pugi::xml_node buildFromString(const tiny_string& str,
 										unsigned int xmlparsemode,
-										const tiny_string& default_ns=tiny_string());
+										const tiny_string& default_ns=tiny_string(),
+										pugi::xml_parse_result* parseresult=nullptr);
 
 	static std::string quirkXMLDeclarationInMiddle(const std::string& str);
 	static std::string quirkEncodeNull(const std::string value);

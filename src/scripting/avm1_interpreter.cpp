@@ -1160,8 +1160,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (result)
 					*result = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionReturn ");
-				Log::calls_indent--;
-				return;
+				it = actionlist.end();
+				break;
 			}
 			case 0x3f: // ActionModulo
 			{

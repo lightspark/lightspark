@@ -420,9 +420,9 @@ public:
 	Loader(ASWorker* wrk, Class_base* c);
 	~Loader();
 	void finalize() override;
+	bool destruct() override;
 	void threadFinished(IThreadJob* job) override;
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(close);
 	ASFUNCTION_ATOM(load);

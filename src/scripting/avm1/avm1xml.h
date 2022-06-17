@@ -34,6 +34,7 @@ public:
 	AVM1XMLDocument(ASWorker* wrk,Class_base* c):XMLDocument(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(load);
+	ASFUNCTION_ATOM(_getter_status);
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 };

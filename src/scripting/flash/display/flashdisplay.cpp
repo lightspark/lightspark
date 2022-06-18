@@ -842,6 +842,13 @@ void Loader::setContent(_R<DisplayObject> o)
 
 	if (!avm1target.isNull())
 	{
+		o->tx = avm1target->tx;
+		o->ty = avm1target->ty;
+		o->tz = avm1target->tz;
+		o->rotation = avm1target->rotation;
+		o->sx = avm1target->sx;
+		o->sy = avm1target->sy;
+		o->sz = avm1target->sz;
 		DisplayObjectContainer* p = avm1target->getParent();
 		if (p)
 		{
@@ -5802,8 +5809,11 @@ bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name, AS
 
 void MovieClip::AVM1HandleConstruction()
 {
-	if (inAVM1Attachment)
+	if (inAVM1Attachment || constructorCallComplete)
 		return;
+	setConstructIndicator();
+	constructionComplete();
+	setConstructorCallComplete();
 	AVM1Function* constr = this->loadedFrom->AVM1getClassConstructor(fromDefineSpriteTag);
 	if (constr)
 	{
@@ -5815,8 +5825,7 @@ void MovieClip::AVM1HandleConstruction()
 		constr->call(&ret,&obj,nullptr,0);
 		AVM1registerPrototypeListeners();
 	}
-	setConstructIndicator();
-	constructionComplete();
+	afterConstruction();
 }
 /* Go through the hierarchy and add all
  * legacy objects which are new in the current
@@ -5984,7 +5993,12 @@ void MovieClip::initFrame()
 	state.last_FP=state.FP;
 
 	/* call our own constructor, if necassary */
-	DisplayObject::initFrame();
+	if (!isConstructed())
+	{
+		DisplayObject::initFrame();
+		if (!loadedFrom->usesActionScript3)
+			AVM1HandleConstruction();
+	}
 
 	/* Run framescripts if this is a new frame. We do it at the end because our constructor
 	 * may just have registered one. 

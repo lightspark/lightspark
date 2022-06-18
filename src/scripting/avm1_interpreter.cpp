@@ -953,6 +953,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					break;
 				}
 				IFunction* c = asAtomHandler::as<IFunction>(subconstr);
+				c->setRefConstant();
 				c->prototype = _MNR(Class<ASObject>::getInstanceS(wrk));
 				c->prototype->incRef();
 				_NR<ASObject> probj = _MR(c->prototype);
@@ -1394,7 +1395,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				{
 					uint32_t nameID = asAtomHandler::toStringId(name,wrk);
 					ASObject* o = asAtomHandler::toObject(scriptobject,wrk);
-					if (!o->getConstructIndicator() && o->is<MovieClip>())
+					if (o->is<MovieClip>())
 						o->as<MovieClip>()->AVM1HandleConstruction();
 					int step = 2; // we search in two steps, first with the normal name, then with name in lowercase (TODO find some faster method for case insensitive check for members)
 					while (step)
@@ -1528,6 +1529,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (asAtomHandler::isInvalid(ret))
 						asAtomHandler::setUndefined(ret);
 				}
+				if (asAtomHandler::is<MovieClip>(ret))
+				{
+					MovieClip* c = asAtomHandler::as<MovieClip>(ret);
+					c->AVM1HandleConstruction();
+				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember done "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name)<<" " <<asAtomHandler::toDebugString(ret));
 				ASATOM_DECREF(name);
 				ASATOM_DECREF(scriptobject);
@@ -1543,7 +1549,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (asAtomHandler::isObject(scriptobject) || asAtomHandler::isFunction(scriptobject) || asAtomHandler::isArray(scriptobject))
 				{
 					ASObject* o = asAtomHandler::getObject(scriptobject);
-					if (!o->getConstructIndicator() && o->is<MovieClip>())
+					if (o->is<MovieClip>())
 						o->as<MovieClip>()->AVM1HandleConstruction();
 					multiname m(nullptr);
 					switch (asAtomHandler::getObjectType(name))
@@ -1668,7 +1674,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					{
 						Class_base* cls = asAtomHandler::as<Class_base>(scriptobject);
 						if (!asAtomHandler::getObjectNoCheck(scopestack[0])->isConstructed())
+						{
 							cls->handleConstruction(scopestack[0],args,numargs,true);
+							if (asAtomHandler::is<MovieClip>(scopestack[0]))
+								asAtomHandler::as<MovieClip>(scopestack[0])->AVM1HandleConstruction();
+						}
 						LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod from class done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 					}
 					else if (asAtomHandler::isObject(scriptobject))
@@ -1735,7 +1745,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (asAtomHandler::isValid(scriptobject))
 					{
 						ASObject* scrobj = asAtomHandler::toObject(scriptobject,wrk);
-						if (!scrobj->getConstructIndicator() && scrobj->is<MovieClip>())
+						if (scrobj->is<MovieClip>())
 							scrobj->as<MovieClip>()->AVM1HandleConstruction();
 						scrobj->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::DONT_CHECK_CLASS,wrk);
 						if (!asAtomHandler::isValid(func))

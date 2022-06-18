@@ -1944,6 +1944,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 				result=true;
 			}
 		}
+		func=asAtomHandler::invalidAtom;
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEUP;
 		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::is<AVM1Function>(func))

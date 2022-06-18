@@ -700,6 +700,9 @@ protected:
 	}
 	asAtom computeSuper();
 public:
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
 	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller=nullptr)
 	{
 		if (needsSuper())

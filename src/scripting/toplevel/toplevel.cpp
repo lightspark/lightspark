@@ -3674,11 +3674,52 @@ asAtom AVM1Function::computeSuper()
 	return newsuper;
 }
 
+void AVM1Function::finalize()
+{
+	if (activationobject)
+	{
+		activationobject->decRef();
+		if (clipIsRefcounted)
+			clip->decRef();
+		activationobject=nullptr;
+		clip=nullptr;
+	}
+	clipIsRefcounted=false;
+	IFunction::finalize();
+}
+
+bool AVM1Function::destruct()
+{
+	if (activationobject)
+	{
+		activationobject->decRef();
+		if (clipIsRefcounted)
+			clip->decRef();
+		activationobject=nullptr;
+		clip=nullptr;
+	}
+	clipIsRefcounted=false;
+	return IFunction::destruct();
+}
+
+void AVM1Function::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	IFunction::prepareShutdown();
+	if (activationobject)
+	{
+		activationobject->prepareShutdown();
+	}
+	clip->prepareShutdown();
+}
+
 void AVM1Function::resetClipRefcounted()
 {
 	if (clipIsRefcounted)
 	{
 		clipIsRefcounted=false;
-		clip->decRef();
+		clip->setRefConstant();
+		this->setRefConstant();
 	}
 }

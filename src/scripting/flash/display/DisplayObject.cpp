@@ -402,10 +402,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setTransform)
 	}
 }
 
-void DisplayObject::buildTraits(ASObject* o)
-{
-}
-
 void DisplayObject::setMatrix(_NR<Matrix> m)
 {
 	bool mustInvalidate=false;
@@ -1492,7 +1488,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 	asAtomHandler::setNumber(ret,wrk,th->getLocalMousePos().y);
 }
 
-_NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	if((!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && !isMask())
 		return NullRef;
@@ -1515,11 +1511,11 @@ _NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, n
 		}
 		number_t maskX, maskY;
 		maskMatrix.getInverted().multiply2D(globalX,globalY,maskX,maskY);
-		if(mask->hitTest(last, maskX, maskY, type,false)==false)
+		if(mask->hitTest(last, maskX, maskY, type,false,ignore)==false)
 			return NullRef;
 	}
 
-	return hitTestImpl(last, x,y, type,interactiveObjectsOnly);
+	return hitTestImpl(last, x,y, type,interactiveObjectsOnly,ignore);
 }
 
 /* Display objects have no children in general,
@@ -1893,7 +1889,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		// right thing to do?
 		th->incRef();
 		_NR<DisplayObject> hit = th->hitTest(_MR(th), localX, localY,
-						     HIT_TYPE::GENERIC_HIT_INVISIBLE,false);
+						     HIT_TYPE::GENERIC_HIT_INVISIBLE,false,NullRef);
 
 		asAtomHandler::setBool(ret,!hit.isNull());
 	}
@@ -1927,6 +1923,9 @@ multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CON
 			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
 			name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
 			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEWHEEL ||
+			name.name_s_id == BUILTIN_STRINGS::STRING_ONROLLOVER ||
+			name.name_s_id == BUILTIN_STRINGS::STRING_ONROLLOUT ||
+			name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE ||
 			name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE))
 		{
 			this->as<InteractiveObject>()->setMouseEnabled(true);
@@ -1996,6 +1995,27 @@ void DisplayObject::AVM1registerPrototypeListeners()
 				getSystemState()->stage->AVM1AddMouseListener(this);
 				avm1mouselistenercount++;
 			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONROLLOVER;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+				avm1mouselistenercount++;
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONROLLOUT;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+				avm1mouselistenercount++;
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+			{
+				this->as<InteractiveObject>()->setMouseEnabled(true);
+				getSystemState()->stage->AVM1AddMouseListener(this);
+				avm1mouselistenercount++;
+			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASE;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
@@ -2025,6 +2045,9 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* w
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEWHEEL ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONROLLOVER ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONROLLOUT ||
+				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE))
 		{
 			this->as<InteractiveObject>()->setMouseEnabled(false);

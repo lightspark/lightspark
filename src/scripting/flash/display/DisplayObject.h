@@ -134,7 +134,7 @@ protected:
 	{
 		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
 	}
-	virtual _NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
+	virtual _NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 	{
 		throw RunTimeException("DisplayObject::hitTestImpl: Derived class must implement this!");
 	}
@@ -223,7 +223,7 @@ public:
 	
 	bool Render(RenderContext& ctxt,bool force=false);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
-	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly);
+	_NR<DisplayObject> hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore);
 	virtual void setOnStage(bool staged, bool force, bool inskipping=false);
 	bool isOnStage() const { return onStage; }
 	bool isMask() const { return ismask; }
@@ -255,7 +255,6 @@ public:
 	number_t getNominalWidth();
 	number_t getNominalHeight();
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_getVisible);
 	ASFUNCTION_ATOM(_setVisible);
 	ASFUNCTION_ATOM(_getStage);

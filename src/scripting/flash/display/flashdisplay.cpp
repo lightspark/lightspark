@@ -1211,7 +1211,7 @@ bool Sprite::renderImpl(RenderContext& ctxt) const
 Subclasses of DisplayObjectContainer must still check
 isHittable() to see if they should send out events.
 */
-_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	_NR<DisplayObject> ret = NullRef;
 	//Test objects added at runtime, in reverse order
@@ -1219,6 +1219,8 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 	std::vector<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
 	for(;j!=dynamicDisplayList.rend();++j)
 	{
+		if ((*j).getPtr()==ignore.getPtr())
+			continue;
 		//Don't check masks
 		if((*j)->isMask())
 			continue;
@@ -1231,11 +1233,11 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 		if (this != getSystemState()->mainClip)
 		{
 			this->incRef();
-			ret=(*j)->hitTest(_MR(this), localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly);
+			ret=(*j)->hitTest(_MR(this), localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly,ignore);
 		}
 		else
 		{
-			ret=(*j)->hitTest(NullRef, localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly);
+			ret=(*j)->hitTest(NullRef, localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly,ignore);
 		}
 		if(!ret.isNull())
 		{
@@ -1276,14 +1278,14 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 	return ret;
 }
 
-_NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	//Did we hit a children?
 	_NR<DisplayObject> ret = NullRef;
 	if (dragged) // no hitting when in drag/drop mode
 		return ret;
 	this->incRef();
-	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,interactiveObjectsOnly);
+	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,interactiveObjectsOnly,ignore);
 
 	if (ret.isNull() && hitArea.isNull())
 	{
@@ -2120,11 +2122,18 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 		return false;
 	if (dispatcher->is<DisplayObject>())
 	{
-		number_t x,y,xg,yg;
-		dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,xg,yg);
-		this->globalToLocal(xg,yg,x,y);
-		this->incRef();
-		_NR<DisplayObject> dispobj=hitTest(_MR(this),x,y, DisplayObject::MOUSE_CLICK,true);
+		DisplayObject* dispobj=nullptr;
+		if (dispatcher == this)
+			dispobj=this;
+		else
+		{
+			number_t x,y,xg,yg;
+			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,xg,yg);
+			this->globalToLocal(xg,yg,x,y);
+			this->incRef();
+			_NR<DisplayObject> d =hitTest(_MR(this),x,y, DisplayObject::MOUSE_CLICK,true,NullRef);
+			dispobj = d.getPtr();
+		}
 		if (actions)
 		{
 			for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
@@ -2152,7 +2161,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 				}
 			}
 		}
-		AVM1HandleMouseEventStandard(dispobj.getPtr(),e);
+		AVM1HandleMouseEventStandard(dispobj,e);
 	}
 	return false;
 }
@@ -2234,6 +2243,8 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("prevFrame","",Class<IFunction>::getFunction(c->getSystemState(),prevFrame),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(c->getSystemState(),nextFrame),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createTextField","",Class<IFunction>::getFunction(c->getSystemState(),AVM1CreateTextField),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),InteractiveObject::_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),InteractiveObject::_setMouseEnabled),SETTER_METHOD,true);
 }
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
@@ -3548,7 +3559,7 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 	return true;
 }
 
-_NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
+_NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	number_t xmin, xmax, ymin, ymax;
 	boundsRect(xmin, xmax, ymin, ymax);
@@ -3683,7 +3694,7 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 	return true;
 }
 
-_NR<DisplayObject> MorphShape::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type, bool interactiveObjectsOnly)
+_NR<DisplayObject> MorphShape::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type, bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	number_t xmin, xmax, ymin, ymax;
 	boundsRect(xmin, xmax, ymin, ymax);
@@ -3956,10 +3967,10 @@ ASFUNCTIONBODY_ATOM(Stage,_constructor)
 {
 }
 
-_NR<DisplayObject> Stage::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Stage::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	_NR<DisplayObject> ret;
-	ret = DisplayObjectContainer::hitTestImpl(last, x, y, type, interactiveObjectsOnly);
+	ret = DisplayObjectContainer::hitTestImpl(last, x, y, type, interactiveObjectsOnly,ignore);
 	if(!ret)
 	{
 		/* If nothing else is hit, we hit the stage */
@@ -4760,7 +4771,7 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return true;
 }
 
-_NR<DisplayObject> Bitmap::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Bitmap::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	//Simple check inside the area, opacity data should not be considered
 	//NOTE: on the X axis the 0th line must be ignored, while the one past the width is valid
@@ -4936,7 +4947,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
 			number_t x1,y1;
 			this->globalToLocal(x,y,x1,y1);
-			_NR<DisplayObject> d = hitTest(NullRef,x1,y1, DisplayObject::MOUSE_CLICK,true);
+			_NR<DisplayObject> d = hitTest(NullRef,x1,y1, DisplayObject::MOUSE_CLICK,true,NullRef);
 			dispobj=d.getPtr();
 		}
 		if (dispobj!= this)
@@ -5169,7 +5180,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 }
 
 
-_NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	_NR<DisplayObject> ret = NullRef;
 	if(hitTestState)
@@ -5180,7 +5191,7 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 		number_t localX, localY;
 		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		this->incRef();
-		ret = hitTestState->hitTest(_MR(this), localX,localY, type,false);
+		ret = hitTestState->hitTest(_MR(this), localX,localY, type,false,ignore);
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been

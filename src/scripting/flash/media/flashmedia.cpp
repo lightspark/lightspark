@@ -356,7 +356,7 @@ ASFUNCTIONBODY_ATOM(Video,clear)
 	LOG(LOG_NOT_IMPLEMENTED,"clear is not implemented");
 }
 
-_NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	//TODO: support masks
 	if(x>=0 && x<=width && y>=0 && y<=height)

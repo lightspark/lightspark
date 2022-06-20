@@ -55,6 +55,7 @@ private:
 	_NR<Sprite> curDragged;
 	_NR<InteractiveObject> currentMouseOver;
 	_NR<InteractiveObject> lastMouseDownTarget;
+	_NR<InteractiveObject> lastRolledOver;
 	SDL_Keymod lastKeymod;
 	set<AS3KeyCode> keyDownSet;
 	SDL_Keycode lastKeyDown;
@@ -68,7 +69,7 @@ private:
 		MATRIX m;
 		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
 	};
-	_NR<InteractiveObject> getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type);
+	_NR<InteractiveObject> getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type, _NR<DisplayObject> ignore=NullRef);
 	void handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);
 	void handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);
 	void handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed, uint8_t button);

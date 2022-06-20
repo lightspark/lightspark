@@ -255,14 +255,14 @@ bool InputThread::handleContextMenuEvent(SDL_Event *event)
 	return ret;
 }
 
-_NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type)
+_NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type, _NR<DisplayObject> ignore)
 {
 	_NR<InteractiveObject> selected = NullRef;
 	if (m_sys->getRenderThread()->inSettings)
 		return selected;
 	try
 	{
-		_NR<DisplayObject> dispobj=m_sys->stage->hitTest(NullRef,x,y, type,true);
+		_NR<DisplayObject> dispobj=m_sys->stage->hitTest(NullRef,x,y, type,true,ignore);
 		if(!dispobj.isNull() && dispobj->is<InteractiveObject>())
 		{
 			dispobj->incRef();
@@ -391,8 +391,8 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 			currentMouseOver->globalToLocal(x,y,clocalX,clocalY);
 			m_sys->currentVm->addIdleEvent(currentMouseOver,
 				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOut",clocalX,clocalY,true,buttonState,pressed,selected)));
-			m_sys->currentVm->addIdleEvent(currentMouseOver,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",clocalX,clocalY,true,buttonState,pressed,selected)));
+			if (selected.isNull())
+				m_sys->currentVm->addIdleEvent(currentMouseOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",clocalX,clocalY,true,buttonState,pressed,selected)));
 			currentMouseOver.reset();
 		}
 		if (selected.isNull())
@@ -407,9 +407,17 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 		{
 			m_sys->currentVm->addIdleEvent(selected,
 				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOver",localX,localY,true,buttonState,pressed,currentMouseOver)));
-			m_sys->currentVm->addIdleEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOver",localX,localY,true,buttonState,pressed,currentMouseOver)));
 			currentMouseOver = selected;
+		}
+		// it seems that rollOver/rollOut events are created for InteractiveObjects that are not chldren but covered by the current selected target
+		_NR<InteractiveObject> rolledover = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK,selected);
+		if (rolledover && rolledover != lastRolledOver)
+		{
+			if (lastRolledOver)
+				m_sys->currentVm->addIdleEvent(lastRolledOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",localX,localY,true,buttonState,pressed,rolledover)));
+			m_sys->currentVm->addIdleEvent(rolledover,
+				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOver",localX,localY,true,buttonState,pressed,lastRolledOver)));
+			lastRolledOver = rolledover;
 		}
 	}
 }
@@ -421,12 +429,12 @@ void InputThread::handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, 
 
 	int delta = 1;
 #if SDL_VERSION_ATLEAST(2, 0, 4)
- 	if(direction==SDL_MOUSEWHEEL_NORMAL)
- 		delta = 1;
- 	else if(direction==SDL_MOUSEWHEEL_FLIPPED)
- 		delta = -1;
- 	else
- 		return;
+	if(direction==SDL_MOUSEWHEEL_NORMAL)
+		delta = 1;
+	else if(direction==SDL_MOUSEWHEEL_FLIPPED)
+		delta = -1;
+	else
+		return;
 #endif
 
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);

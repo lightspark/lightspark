@@ -112,6 +112,12 @@ void VideoDecoder::markForDestruction()
 {
 	markedForDeletion=true;
 }
+
+void VideoDecoder::clearFrameBuffer()
+{
+	if (decodedframebuffer)
+		memset(decodedframebuffer,0,frameWidth*frameHeight*4);
+}
 VideoDecoder::VideoDecoder():decodedframebuffer(nullptr),frameRate(0),framesdecoded(0),framesdropped(0),frameWidth(0),frameHeight(0),lastframe(UINT32_MAX),currentframe(UINT32_MAX),fenceCount(0),resizeGLBuffers(false),markedForDeletion(false)
 {
 }

@@ -875,7 +875,7 @@ bool EventDispatcher::hasEventListener(const tiny_string& eventName)
 		return true;
 }
 
-NetStatusEvent::NetStatusEvent(ASWorker* wrk, Class_base* c, const tiny_string& level, const tiny_string& code):Event(wrk,c, "netStatus")
+NetStatusEvent::NetStatusEvent(ASWorker* wrk, Class_base* c, const tiny_string& level, const tiny_string& code):Event(wrk,c, "netStatus"),statuscode(code)
 {
 	ASObject* info=Class<ASObject>::getInstanceS(wrk);
 	info->setVariableAtomByQName("level",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),level),DECLARED_TRAIT);

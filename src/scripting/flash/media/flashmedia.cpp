@@ -353,7 +353,11 @@ ASFUNCTIONBODY_ATOM(Video,attachNetStream)
 }
 ASFUNCTIONBODY_ATOM(Video,clear)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"clear is not implemented");
+	Video* th=asAtomHandler::as<Video>(obj);
+	if (th->embeddedVideoDecoder)
+		th->embeddedVideoDecoder->clearFrameBuffer();
+	if (th->netStream)
+		th->netStream->clearFrameBuffer();
 }
 
 _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)

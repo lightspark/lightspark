@@ -632,6 +632,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 			this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getInstanceWorker(),parentDomain));
 		else
 			this->contentLoaderInfo->applicationDomain = context->applicationDomain;
+		curSecDomain->incRef();
 		this->contentLoaderInfo->securityDomain = _NR<SecurityDomain>(curSecDomain);
 	}
 	else
@@ -1791,7 +1792,12 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 	if (th->state.stop_FP)
 	{
 		if (!th->needsActionScript3() && th->state.next_FP == th->state.FP)
-			th->state.next_FP++;
+		{
+			if (th->state.FP == th->getFramesLoaded()-1)
+				th->state.next_FP = 0;
+			else
+				th->state.next_FP++;
+		}
 		th->state.stop_FP=false;
 		th->state.explicit_play=true;
 		if (th->isOnStage())
@@ -2765,7 +2771,9 @@ DisplayObject *DisplayObjectContainer::findLegacyChildByTagID(uint32_t tagid)
 int DisplayObjectContainer::findLegacyChildDepth(DisplayObject *obj)
 {
 	auto it = mapLegacyChildToDepth.find(obj);
-	return it->second;
+	if (it != mapLegacyChildToDepth.end())
+		return it->second;
+	return 0;
 }
 
 void DisplayObjectContainer::transformLegacyChildAt(int32_t depth, const MATRIX& mat)

@@ -132,6 +132,7 @@ public:
 	void markForDestruction();
 	bool isUploading() { return fenceCount; }
 	void setVideoFrameToDecode(uint32_t frame) { currentframe=frame; }
+	void clearFrameBuffer();
 protected:
 	TextureChunk videoTexture;
 	uint32_t frameWidth;

@@ -334,7 +334,6 @@ public:
 	~NetStream();
 	void finalize() override;
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(play);
 	ASFUNCTION_ATOM(play2);
@@ -427,6 +426,8 @@ public:
 		@pre the object should be locked
 	*/
 	void unlock();
+	
+	void clearFrameBuffer();
 };
 
 class LocalConnection: public EventDispatcher

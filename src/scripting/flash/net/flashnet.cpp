@@ -1322,10 +1322,6 @@ void NetStream::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("publish","",Class<IFunction>::getFunction(c->getSystemState(),publish),NORMAL_METHOD,true);
 }
 
-void NetStream::buildTraits(ASObject* o)
-{
-}
-
 ASFUNCTIONBODY_GETTER(NetStream, backBufferLength)
 ASFUNCTIONBODY_GETTER_SETTER(NetStream, backBufferTime)
 ASFUNCTIONBODY_GETTER(NetStream, bufferLength)
@@ -1530,7 +1526,7 @@ ASFUNCTIONBODY_ATOM(NetStream,play)
 	else //The URL is valid so we can start the download and add ourself as a job
 	{
 		StreamCache *cache = wrk->getSystemState()->getEngineData()->createFileStreamCache(th->getSystemState());
-		th->downloader=wrk->getSystemState()->downloadManager->download(th->url, _MR(cache), NULL);
+		th->downloader=wrk->getSystemState()->downloadManager->download(th->url, _MR(cache), nullptr);
 		th->streamTime=0;
 		//To be decreffed in jobFence
 		th->incRef();
@@ -1587,14 +1583,16 @@ ASFUNCTIONBODY_ATOM(NetStream,togglePause)
 ASFUNCTIONBODY_ATOM(NetStream,close)
 {
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
-	//TODO: set the time property to 0
-	
 	//Everything is stopped in threadAbort
 	if(!th->closed)
 	{
 		th->threadAbort();
-		th->incRef();
-		getVm(wrk->getSystemState())->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS(wrk,"status", "NetStream.Play.Stop")));
+		th->prevstreamtime = th->streamTime=0;
+		if (th->audioStream)
+			th->audioStream->setPlayedTime(0);
+		if (th->audioDecoder)
+			th->audioDecoder->initialTime=0;
+		th->framesdecoded=0;
 	}
 	LOG(LOG_CALLS, "NetStream::close called");
 }
@@ -1608,12 +1606,20 @@ ASFUNCTIONBODY_ATOM(NetStream,seek)
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	int pos;
 	ARG_UNPACK_ATOM(pos);
-	
 	th->countermutex.lock();
 	if (th->streamDecoder)
 	{
+		if (th->audioDecoder)
+			th->audioDecoder->skipAll();
+		if (th->videoDecoder)
+			th->videoDecoder->skipAll();
+		th->prevstreamtime = th->streamTime=pos*1000;
+		if (th->audioStream)
+			th->audioStream->setPlayedTime(0);
+		if (th->audioDecoder)
+			th->audioDecoder->initialTime=pos*1000;
 		th->streamDecoder->jumpToPosition(pos*1000);
-		th->streamTime=pos;
+		th->framesdecoded=0;
 	}
 	th->countermutex.unlock();
 	if(th->paused)
@@ -1899,6 +1905,12 @@ void NetStream::unlock()
 	mutex.unlock();
 }
 
+void NetStream::clearFrameBuffer()
+{
+	if (videoDecoder)
+		videoDecoder->clearFrameBuffer();
+}
+
 void NetStream::execute()
 {
 	//checkPolicyFile only applies to per-pixel access, loading and playing is always allowed.
@@ -1951,17 +1963,18 @@ void NetStream::execute()
 		}
 		else
 		{
+			countermutex.lock();
 			streamDecoder=new BuiltinStreamDecoder(s,this);
 			if (!streamDecoder->isValid()) // not FLV stream, so we try ffmpeg detection
 			{
+				delete streamDecoder;
 				s.seekg(0);
 				streamDecoder=new FFMpegStreamDecoder(this,this->getSystemState()->getEngineData(),s);
 			}
+			countermutex.unlock();
 			if(!streamDecoder->isValid())
 				threadAbort();
 		}
-
-		
 		countermutex.lock();
 		framesdecoded = 0;
 		frameRate=0;
@@ -2021,7 +2034,6 @@ void NetStream::execute()
 					}
 				}
 			}
-			
 			if(videoDecoder==nullptr && streamDecoder->videoDecoder)
 			{
 				videoDecoder=streamDecoder->videoDecoder;
@@ -2087,10 +2099,13 @@ void NetStream::execute()
 		if(videoDecoder)
 			videoDecoder->waitFlushed();
 
-		this->incRef();
-		getVm(getSystemState())->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Play.Stop")));
-		this->incRef();
-		getVm(getSystemState())->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Buffer.Flush")));
+		if (!this->closed)
+		{
+			this->incRef();
+			getVm(getSystemState())->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Buffer.Flush")));
+			this->incRef();
+			getVm(getSystemState())->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Play.Stop")));
+		}
 	}
 	//Before deleting stops ticking, removeJobs also spin waits for termination
 	getSystemState()->removeJob(this);

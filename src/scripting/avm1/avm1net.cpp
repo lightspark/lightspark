@@ -246,6 +246,7 @@ void AVM1NetStream::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				asAtom arg0 = asAtomHandler::invalidAtom;
 				e->getVariableByMultiname(arg0,minfo,GET_VARIABLE_OPTION::NONE,dispatcher->getInstanceWorker());
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,&arg0,1);
+				asAtomHandler::as<AVM1Function>(func)->decRef();
 			}
 		}
 	}

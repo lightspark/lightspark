@@ -242,6 +242,12 @@ void DisplayObject::prepareShutdown()
 		if (o)
 			o->prepareShutdown();
 	}
+	for (auto it = avm1functions.begin(); it != avm1functions.end(); it++)
+	{
+		ASObject* o = it->second.getPtr();
+		if (o)
+			o->prepareShutdown();
+	}
 }
 
 void DisplayObject::sinit(Class_base* c)

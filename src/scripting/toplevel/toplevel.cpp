@@ -3627,8 +3627,8 @@ void Prototype::copyOriginalValues(Prototype* target)
 	target->getObj()->setRefConstant();
 }
 
-AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, Activation_object* act, AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a, std::map<uint32_t, asAtom> scope, std::vector<uint8_t> _registernumbers, bool _preloadParent, bool _preloadRoot, bool _suppressSuper, bool _preloadSuper, bool _suppressArguments, bool _preloadArguments, bool _suppressThis, bool _preloadThis, bool _preloadGlobal)
-	:IFunction(wrk,c,SUBTYPE_AVM1FUNCTION),clip(cl),activationobject(act),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),scopevariables(scope),
+AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, Activation_object* act, AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a, std::vector<uint8_t> _registernumbers, bool _preloadParent, bool _preloadRoot, bool _suppressSuper, bool _preloadSuper, bool _suppressArguments, bool _preloadArguments, bool _suppressThis, bool _preloadThis, bool _preloadGlobal)
+	:IFunction(wrk,c,SUBTYPE_AVM1FUNCTION),clip(cl),activationobject(act),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),
 	  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal),clipIsRefcounted(act != nullptr)
 {
 	if (ctx)
@@ -3650,6 +3650,11 @@ AVM1Function::~AVM1Function()
 		if (clipIsRefcounted)
 			clip->decRef();
 	}
+	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
+	{
+		ASATOM_DECREF(it->second);
+	}
+	scopevariables.clear();
 }
 
 asAtom AVM1Function::computeSuper()
@@ -3685,6 +3690,11 @@ void AVM1Function::finalize()
 		clip=nullptr;
 	}
 	clipIsRefcounted=false;
+	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
+	{
+		ASATOM_DECREF(it->second);
+	}
+	scopevariables.clear();
 	IFunction::finalize();
 }
 
@@ -3699,6 +3709,11 @@ bool AVM1Function::destruct()
 		clip=nullptr;
 	}
 	clipIsRefcounted=false;
+	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
+	{
+		ASATOM_DECREF(it->second);
+	}
+	scopevariables.clear();
 	return IFunction::destruct();
 }
 
@@ -3721,5 +3736,24 @@ void AVM1Function::resetClipRefcounted()
 		clipIsRefcounted=false;
 		clip->setRefConstant();
 		this->setRefConstant();
+	}
+}
+
+void AVM1Function::filllocals(std::map<uint32_t, asAtom>& locals)
+{
+	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
+	{
+		ASATOM_INCREF(it->second);
+		locals[it->first]=it->second;
+	}
+}
+
+void AVM1Function::setscopevariables(std::map<uint32_t, asAtom>& locals)
+{
+	for (auto it = locals.begin(); it != locals.end(); it++)
+	{
+		ASATOM_DECREF(scopevariables [it->first]);
+		ASATOM_INCREF(it->second);
+		scopevariables [it->first]=it->second;
 	}
 }

@@ -1871,6 +1871,7 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 		AVM1getVariableByMultiname(f,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 		if (asAtomHandler::is<AVM1Function>(f))
 			asAtomHandler::as<AVM1Function>(f)->call(nullptr,nullptr,nullptr,0);
+		ASATOM_DECREF(f);
 	}
 	if (e->type =="keyUp")
 	{
@@ -1881,6 +1882,7 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 		AVM1getVariableByMultiname(f,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 		if (asAtomHandler::is<AVM1Function>(f))
 			asAtomHandler::as<AVM1Function>(f)->call(nullptr,nullptr,nullptr,0);
+		ASATOM_DECREF(f);
 	}
 	return false; 
 }
@@ -1908,6 +1910,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 			result=true;
 		}
+		ASATOM_DECREF(func);
 	}
 	else if (e->type == "mouseDown")
 	{
@@ -1921,6 +1924,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 				result=true;
 			}
+			ASATOM_DECREF(func);
 		}
 		func=asAtomHandler::invalidAtom;
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
@@ -1930,6 +1934,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 			result=true;
 		}
+		ASATOM_DECREF(func);
 	}
 	else if (e->type == "mouseUp")
 	{
@@ -1943,6 +1948,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 				result=true;
 			}
+			ASATOM_DECREF(func);
 		}
 		func=asAtomHandler::invalidAtom;
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEUP;
@@ -1952,6 +1958,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 			result=true;
 		}
+		ASATOM_DECREF(func);
 	}
 	else if (e->type == "mouseWheel")
 	{
@@ -1962,6 +1969,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 			result=true;
 		}
+		ASATOM_DECREF(func);
 	}
 	else if (e->type == "releaseOutside")
 	{
@@ -1972,6 +1980,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 			result=true;
 		}
+		ASATOM_DECREF(func);
 	}
 	else if (e->type == "rollOver")
 	{
@@ -1985,6 +1994,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 				result=true;
 			}
+			ASATOM_DECREF(func);
 		}
 	}
 	else if (e->type == "rollOut")
@@ -1999,6 +2009,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 				result=true;
 			}
+			ASATOM_DECREF(func);
 		}
 	}
 	else if (e->type == "mouseOver" || e->type == "mouseOut" || e->type == "click")

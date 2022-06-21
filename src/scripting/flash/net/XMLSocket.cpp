@@ -218,6 +218,7 @@ void XMLSocket::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				asAtom obj = asAtomHandler::fromObject(this);
 				asAtom arg0 = asAtomHandler::fromBool(this->isConnected());
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,&arg0,1);
+				asAtomHandler::as<AVM1Function>(func)->decRef();
 			}
 		}
 		else if (e->type == "data")
@@ -234,6 +235,7 @@ void XMLSocket::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				asAtom obj = asAtomHandler::fromObject(this);
 				asAtom arg0 = asAtomHandler::fromString(getSystemState(),e->as<DataEvent>()->data);
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,&arg0,1);
+				asAtomHandler::as<AVM1Function>(func)->decRef();
 			}
 		}
 		else if (e->type == "close")
@@ -249,6 +251,7 @@ void XMLSocket::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::fromObject(this);
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				asAtomHandler::as<AVM1Function>(func)->decRef();
 			}
 		}
 	}

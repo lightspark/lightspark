@@ -3013,7 +3013,7 @@ void AVM1InitActionTag::executeDirect(MovieClip* clip) const
 	clip->incRef();
 	std::map<uint32_t,asAtom> m;
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString()<<" "<<sprite->getId());
-	ACTIONRECORD::executeActions(clip,sprite->getAVM1Context(),actions,startactionpos,m);
+	ACTIONRECORD::executeActions(clip,sprite->getAVM1Context(),actions,startactionpos,m,true);
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions done "<< clip->toDebugString()<<" "<<sprite->getId());
 }
 

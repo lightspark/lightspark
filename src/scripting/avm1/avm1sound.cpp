@@ -187,6 +187,7 @@ void AVM1Sound::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::fromObject(this);
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				asAtomHandler::as<AVM1Function>(func)->decRef();
 			}
 		}
 	}
@@ -206,6 +207,7 @@ void AVM1Sound::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::fromObject(this);
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				asAtomHandler::as<AVM1Function>(func)->decRef();
 			}
 			if (isStreaming)
 			{

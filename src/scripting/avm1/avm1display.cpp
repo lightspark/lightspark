@@ -262,6 +262,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					else
 						args[0] = asAtomHandler::undefinedAtom;
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
+					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
 			}
 			else if (e->type == "init")
@@ -285,6 +286,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					else
 						args[0] = asAtomHandler::undefinedAtom;
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
+					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
 			}
 			else if (e->type == "progress")
@@ -311,6 +313,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					args[1] = asAtomHandler::fromInt(ev->bytesLoaded);
 					args[2] = asAtomHandler::fromInt(ev->bytesTotal);
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,3);
+					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
 			}
 			else if (e->type == "complete")
@@ -334,6 +337,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					else
 						args[0] = asAtomHandler::undefinedAtom;
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
+					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
 			}
 			else if (e->type == "ioError")
@@ -349,6 +353,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					asAtom ret=asAtomHandler::invalidAtom;
 					asAtom obj = asAtomHandler::fromObject(this);
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
 			}
 			it++;
@@ -584,6 +589,7 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,broadcastMessage)
 				else if (asAtomHandler::is<AVM1Function>(f))
 				{
 					asAtomHandler::as<AVM1Function>(f)->call(&res,&o,nullptr,0);
+					asAtomHandler::as<AVM1Function>(f)->decRef();
 				}
 			}
 		}

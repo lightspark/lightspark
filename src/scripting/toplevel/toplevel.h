@@ -690,7 +690,7 @@ protected:
 	bool preloadThis;
 	bool preloadGlobal;
 	bool clipIsRefcounted;
-	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,Activation_object* act,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,std::map<uint32_t,asAtom> scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false);
+	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,Activation_object* act,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false);
 	~AVM1Function();
 	method_info* getMethodInfo() const override { return nullptr; }
 	IFunction* clone(ASWorker* wrk) override
@@ -703,15 +703,17 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
-	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller=nullptr)
+	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller=nullptr, std::map<uint32_t,asAtom>* locals=nullptr)
 	{
+		if (locals)
+			this->setscopevariables(*locals);
 		if (needsSuper())
 		{
 			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,&newsuper);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,&newsuper);
 		}
 		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject);
 	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target, ASWorker* wrk) override
 	{
@@ -719,10 +721,10 @@ public:
 		if (needsSuper())
 		{
 			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,&newsuper);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,&newsuper);
 		}
 		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject);
 		return nullptr;
 	}
 	FORCE_INLINE Class_base* getReturnType() override
@@ -750,6 +752,8 @@ public:
 		return superobj;
 	}
 	void resetClipRefcounted();
+	void filllocals(std::map<uint32_t,asAtom>& locals);
+	void setscopevariables(std::map<uint32_t,asAtom>& locals);
 };
 
 /*
@@ -808,10 +812,10 @@ public:
 		c->handleConstruction(obj,nullptr,0,true);
 		return ret;
 	}
-	static AVM1Function* getAVM1Function(ASWorker* wrk,DisplayObject* clip,Activation_object* act, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<uint8_t>& actions,std::map<uint32_t,asAtom> scope, std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)
+	static AVM1Function* getAVM1Function(ASWorker* wrk,DisplayObject* clip,Activation_object* act, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<uint8_t>& actions, std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(wrk->getSystemState());
-		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(wrk,c, clip, act,ctx, params,actions,scope,paramregisternumbers,preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
+		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(wrk,c, clip, act,ctx, params,actions,paramregisternumbers,preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
 		ret->objfreelist = nullptr;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;

@@ -6038,7 +6038,7 @@ void MovieClip::executeFrameScript()
 	Sprite::executeFrameScript();
 	state.explicit_FP=false;
 	state.explicit_play=false;
-	if (frameScriptToExecute != UINT32_MAX && this->isOnStage())
+	if (frameScriptToExecute != UINT32_MAX)
 	{
 		uint32_t f = frameScriptToExecute;
 		inExecuteFramescript = true;

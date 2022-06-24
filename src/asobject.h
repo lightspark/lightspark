@@ -1305,9 +1305,7 @@ FORCE_INLINE bool variables_map::setSlot(ASWorker* wrk,unsigned int n, asAtom &o
 			obj->checkFunctionScope(asAtomHandler::getObjectNoCheck(o));
 		return slots_vars[n]->var.uintval == o.uintval; // setVar may coerce the object into a new instance, so we need to check if incRef is necessary
 	}
-	if (asAtomHandler::is<SyntheticFunction>(slots_vars[n]->var))
-		obj->checkFunctionScope(asAtomHandler::getObjectNoCheck(o));
-	return true;
+	return false;
 }
 
 FORCE_INLINE bool variables_map::setSlotNoCoerce(unsigned int n, asAtom o, ASObject* obj)

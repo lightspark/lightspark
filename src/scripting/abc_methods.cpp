@@ -1067,8 +1067,18 @@ void ABCVm::abc_checkfilter(call_context* context)
 }
 void ABCVm::abc_coerce(call_context* context)
 {
-	uint32_t t = context->exec_pos->arg1_uint;
-	coerce(context, t);
+	multiname* mn = context->exec_pos->cachedmultiname2;
+	LOG_CALL("coerce " << *mn);
+	RUNTIME_STACK_POINTER_CREATE(context,o);
+	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
+	if (type == nullptr)
+	{
+		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
+		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+	}
+	asAtom v= *o;
+	if (type->coerce(context->worker,*o))
+		ASATOM_DECREF(v);
 	++(context->exec_pos);
 }
 void ABCVm::abc_coerce_a(call_context* context)

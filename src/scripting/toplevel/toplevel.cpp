@@ -794,6 +794,8 @@ bool SyntheticFunction::isEqual(ASObject *r)
 
 Class_base *SyntheticFunction::getReturnType()
 {
+	if (!mi->returnType)
+		checkParamTypes();
 	return (Class_base*)dynamic_cast<const Class_base*>(mi->returnType);
 }
 
@@ -806,15 +808,13 @@ void SyntheticFunction::checkParamTypes()
 	{
 		const Type* t = Type::getTypeFromMultiname(mi->paramTypeName(i), mi->context);
 		if (!t)
-			throwError<ReferenceError>(kClassNotFoundError, mi->paramTypeName(i)->qualifiedString(getSystemState()));
+			return;
 		mi->paramTypes.push_back(t);
 		if(t != Type::anyType)
 			mi->hasExplicitTypes = true;
 	}
 
 	const Type* t = Type::getTypeFromMultiname(mi->returnTypeName(), mi->context);
-	if (!t)
-		throwError<ReferenceError>(kClassNotFoundError, mi->returnTypeName()->qualifiedString(getSystemState()));
 	mi->returnType = t;
 }
 

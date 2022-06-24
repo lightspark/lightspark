@@ -303,7 +303,10 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 		if(asAtomHandler::isValid(funcRet))
 		{
 			if(asAtomHandler::Boolean_concrete(funcRet))
+			{
+				ASATOM_INCREF(origval);
 				res->push(origval);
+			}
 			ASATOM_DECREF(funcRet);
 		}
 		ASATOM_DECREF(origval);

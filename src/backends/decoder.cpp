@@ -669,8 +669,10 @@ void AudioDecoder::operator delete(void* addr)
 
 bool AudioDecoder::discardFrame()
 {
-	//We don't want ot block if no frame is available
+	//We don't want to block if no frame is available
 	bool ret=samplesBuffer.nonBlockingPopFront();
+	if (!ret)
+		LOG(LOG_ERROR,"discardFrame blocking");
 	if(flushing && samplesBuffer.isEmpty()) //End of our work
 	{
 		status=FLUSHED;
@@ -760,8 +762,13 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC audioCodec
 }
 void FFMpegAudioDecoder::switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen)
 {
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 63, 100)
+	if (codecContext)
+		avcodec_free_context(&codecContext);
+#else
 	if (codecContext)
 		avcodec_close(codecContext);
+#endif
 #ifdef HAVE_LIBSWRESAMPLE
 	if (resamplecontext)
 		swr_free(&resamplecontext);
@@ -894,9 +901,16 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecContext* _c):engin
 
 FFMpegAudioDecoder::~FFMpegAudioDecoder()
 {
-	avcodec_close(codecContext);
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 63, 100)
 	if(ownedContext)
+		avcodec_free_context(&codecContext);
+#else
+	if(ownedContext)
+	{
+		avcodec_close(codecContext);
 		av_free(codecContext);
+	}
+#endif
 #if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 0, 0)
 	av_frame_free(&frameIn);
 #elif HAVE_AVCODEC_DECODE_AUDIO4
@@ -1208,13 +1222,6 @@ int FFMpegAudioDecoder::resampleFrame(FrameSamples& curTail)
 #endif
 	AVSampleFormat outputsampleformat = forExtraction ? AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
 	int outputsampleformatsize = forExtraction ? sizeof(float) : sizeof(int16_t);
-	if(frameIn->format == outputsampleformat && sample_rate == framesamplerate && channel_layout == frameIn->channel_layout)
-	{
-		//This is suboptimal but equivalent to what libavcodec
-		//does for the compatibility version of avcodec_decode_audio3
-		memcpy(curTail.samples, frameIn->extended_data[0], frameIn->linesize[0]);
-		return frameIn->linesize[0];
-	}
 	int maxLen;
 #ifdef HAVE_LIBSWRESAMPLE
 	if (!resamplecontext)

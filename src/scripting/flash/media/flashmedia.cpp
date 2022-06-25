@@ -1014,7 +1014,7 @@ void SoundChannel::execute()
 			playStreamFromSamples();
 		else
 			playStream();
-		if (!ACQUIRE_READ(stopped))
+		if (!ACQUIRE_READ(starting))
 		{
 			incRef();
 			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"soundComplete")));
@@ -1075,6 +1075,12 @@ void SoundChannel::playStream()
 					oldVolume = soundTransform->volume;
 				}
 				checkEnvelope();
+			}
+			else if (audioDecoder && audioDecoder->isValid())
+			{
+				// no audio available, consume data anyway
+				int16_t buf[512];
+				audioDecoder->copyFrame(buf,512);
 			}
 			
 			if(threadAborting)
@@ -1206,8 +1212,6 @@ void SoundChannel::playStreamFromSamples()
 	mutex.unlock();
 	if (sampleDecoder)
 		delete sampleDecoder;
-	incRef();
-	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"soundComplete")));
 }
 
 

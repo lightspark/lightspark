@@ -1445,9 +1445,11 @@ void EngineData::audio_StreamDeinit(int channel)
 {
 	if (channel != -1)
 	{
-		Mix_Chunk* chunk = Mix_GetChunk(channel);
+		Mix_UnregisterEffect(channel,mixer_effect_ffmpeg_cb);
 		Mix_HaltChannel(channel);
-		Mix_FreeChunk(chunk);
+		Mix_Chunk* chunk = Mix_GetChunk(channel);
+		if (chunk)
+			Mix_FreeChunk(chunk);
 	}
 }
 

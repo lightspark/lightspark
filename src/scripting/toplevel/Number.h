@@ -35,7 +35,6 @@ friend ASObject* abstract_di(ASWorker* worker,int32_t i);
 friend class ABCContext;
 friend class ABCVm;
 private:
-	static void purgeTrailingZeroes(char* buf);
 	static tiny_string purgeExponentLeadingZeros(const tiny_string& exponentialForm);
 	static int32_t countSignificantDigits(double v);
 	enum DTOSTRMODE { DTOSTR_NORMAL, DTOSTR_FIXED, DTOSTR_PRECISION, DTOSTR_EXPONENTIAL };
@@ -114,7 +113,6 @@ public:
 	}
 	TRISTATE isLess(ASObject* o) override;
 	bool isEqual(ASObject* o) override;
-	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(generator);
 	std::string toDebugString() const override;

@@ -35,14 +35,14 @@ public:
 	static void sinit(Class_base* c);
 	tiny_string toString() const;
 	static tiny_string toString(uint32_t val);
-	inline number_t toNumber() { return val; }
-	inline bool destruct() { val=0; return destructIntern();}
-	inline int32_t toInt() { return val; }
-	inline int64_t toInt64() { return val; }
-	inline uint32_t toUInt() { return val; }
-	TRISTATE isLess(ASObject* r);
-	TRISTATE isLessAtom(asAtom& r);
-	bool isEqual(ASObject* o);
+	inline number_t toNumber() override { return val; }
+	inline bool destruct() override { val=0; return destructIntern();}
+	inline int32_t toInt() override { return val; }
+	inline int64_t toInt64() override { return val; }
+	inline uint32_t toUInt() override { return val; }
+	TRISTATE isLess(ASObject* r) override;
+	TRISTATE isLessAtom(asAtom& r) override;
+	bool isEqual(ASObject* o) override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	ASFUNCTION_ATOM(_toString);
@@ -53,7 +53,7 @@ public:
 	std::string toDebugString() const override { return toString()+"ui"; }
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk);
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk) override;
 	static void serializeValue(ByteArray* out,int32_t val);
 };
 

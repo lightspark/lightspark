@@ -130,62 +130,6 @@ TRISTATE Number::isLess(ASObject* o)
 	}
 }
 
-/*
- * This purges trailing zeros from the right, i.e.
- * "144124.45600" -> "144124.456"
- * "144124.000" -> "144124"
- * "144124.45600e+12" -> "144124.456e+12"
- * "144124.45600e+07" -> 144124.456e+7"
- * and it transforms the ',' into a '.' if found.
- */
-void Number::purgeTrailingZeroes(char* buf)
-{
-	int i=strlen(buf)-1;
-	uint32_t Epos = 0;
-	if(i>4 && buf[i-3] == 'e')
-	{
-		Epos = i-3;
-		i=i-4;
-	}
-	for(;i>0;i--)
-	{
-		if(buf[i]!='0')
-			break;
-	}
-	bool commaFound=false;
-	if(buf[i]==',' || buf[i]=='.')
-	{
-		i--;
-		commaFound=true;
-	}
-	if(Epos)
-	{
-		//copy e+12 to the current place
-		strncpy(buf+i+1,buf+Epos,5);
-		if(buf[i+3] == '0')
-		{
-			//this looks like e+07, so turn it into e+7
-			buf[i+3] = buf[i+4];
-			buf[i+4] = '\0';
-		}
-	}
-	else
-		buf[i+1]='\0';
-
-	if(commaFound)
-		return;
-
-	//Also change the comma to the point if needed
-	for(;i>0;i--)
-	{
-		if(buf[i]==',')
-		{
-			buf[i]='.';
-			break;
-		}
-	}
-}
-
 ASFUNCTIONBODY_ATOM(Number,_toString)
 {
 	if(Class<Number>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
@@ -602,17 +546,17 @@ void Number::sinit(Class_base* c)
 	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),numeric_limits<double>::max(),true),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),numeric_limits<double>::min(),true),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("NaN",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),numeric_limits<double>::quiet_NaN(),true),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(c->getSystemState(),toFixed,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(c->getSystemState(),toExponential,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toPrecision",AS3,Class<IFunction>::getFunction(c->getSystemState(),toPrecision,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),_valueOf),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),Number::_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(c->getSystemState(),Number::_toLocaleString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toFixed","",Class<IFunction>::getFunction(c->getSystemState(),Number::toFixed, 1),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toExponential","",Class<IFunction>::getFunction(c->getSystemState(),Number::toExponential, 1),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toPrecision","",Class<IFunction>::getFunction(c->getSystemState(),Number::toPrecision, 1),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),_valueOf),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toFixed",AS3,Class<IFunction>::getFunction(c->getSystemState(),toFixed,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toExponential",AS3,Class<IFunction>::getFunction(c->getSystemState(),toExponential,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toPrecision",AS3,Class<IFunction>::getFunction(c->getSystemState(),toPrecision,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),_valueOf,0,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),Number::_toString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",Class<IFunction>::getFunction(c->getSystemState(),Number::_toLocaleString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toFixed","",Class<IFunction>::getFunction(c->getSystemState(),Number::toFixed,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toExponential","",Class<IFunction>::getFunction(c->getSystemState(),Number::toExponential,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toPrecision","",Class<IFunction>::getFunction(c->getSystemState(),Number::toPrecision,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),_valueOf,0,Class<Number>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 
 	// if needed add AVMPLUS definitions
 	if(c->getSystemState()->flashMode==SystemState::AVMPLUS)
@@ -696,7 +640,7 @@ ASFUNCTIONBODY_ATOM(Number,toFixed)
 
 tiny_string Number::toFixedString(double v, int32_t fractionDigits)
 {
-	if (fractionDigits < 0 || fractionDigits > 20)
+	if ((fractionDigits < 0) || (fractionDigits > 20))
 		throwError<RangeError>(kInvalidPrecisionError);
 	return toString(v,DTOSTR_FIXED,fractionDigits);
 }

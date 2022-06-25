@@ -1045,7 +1045,9 @@ void TextField::replaceText(unsigned int begin, unsigned int end, const tiny_str
 	{
 		text = text.substr(0, begin) + newText + text.substr(end, text.end());
 	}
+	linemutex->lock();
 	setText(text.raw_buf());
+	linemutex->unlock();
 	textUpdated();
 }
 
@@ -1269,6 +1271,7 @@ tiny_string TextField::toHtmlText()
 
 void TextField::setHtmlText(const tiny_string& html)
 {
+	linemutex->lock();
 	HtmlTextParser parser;
 	if (condenseWhite)
 	{
@@ -1279,6 +1282,7 @@ void TextField::setHtmlText(const tiny_string& html)
 	{
 		parser.parseTextAndFormating(html, this);
 	}
+	linemutex->unlock();
 	if (this->isConstructed())
 	{
 		hasChanged=true;
@@ -1325,7 +1329,9 @@ void TextField::updateText(const tiny_string& new_text)
 {
 	if (getText() == new_text)
 		return;
+	linemutex->lock();
 	setText(new_text.raw_buf());
+	linemutex->unlock();
 	textUpdated();
 }
 
@@ -1372,7 +1378,11 @@ void TextField::afterLegacyInsert()
 				par->as<MovieClip>()->setVariableBinding(tagvarname,_MR(this));
 				asAtom value = par->as<MovieClip>()->getVariableBindingValue(tagvarname);
 				if (asAtomHandler::isValid(value) && !asAtomHandler::isUndefined(value))
+				{
+					linemutex->lock();
 					this->setText(asAtomHandler::toString(value,getInstanceWorker()).raw_buf());
+					linemutex->unlock();
+				}
 				ASATOM_DECREF(value);
 				break;
 			}
@@ -1522,7 +1532,9 @@ void TextField::defaultEventBehavior(_R<Event> e)
 							tmptext.replace(caretIndex,1,"");
 						else
 							tmptext = tmptext.substr(0,tmptext.numChars()-1);
+						linemutex->lock();
 						setText(tmptext.raw_buf());
+						linemutex->unlock();
 						textUpdated();
 					}
 					break;

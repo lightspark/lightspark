@@ -7824,3 +7824,150 @@ void ABCVm::abc_coerce_local_localresult(call_context* context)
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
 	++(context->exec_pos);
 }
+
+void ABCVm::abc_sxi1_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi1_c");
+	int32_t res=asAtomHandler::toUInt(*instrptr->arg1_constant)&0x1 ? -1 : 0;
+	ASATOM_DECREF(*instrptr->arg1_constant);
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sxi1_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi1_l");
+	int32_t res=asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1))&0x1 ? -1 : 0;
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sxi1_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi1_cl");
+	int32_t res=asAtomHandler::toUInt(*instrptr->arg1_constant)&0x1 ? -1 : 0;
+	ASATOM_DECREF(*instrptr->arg1_constant);
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sxi1_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi1_ll");
+	int32_t res=asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1))&0x1 ? -1 : 0;
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+
+void ABCVm::abc_sxi8_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi8_c");
+	int32_t res=(int8_t)asAtomHandler::toUInt(*instrptr->arg1_constant);
+	ASATOM_DECREF(*instrptr->arg1_constant);
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sxi8_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi8_l");
+	int32_t res=(int8_t)asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sxi8_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi8_cl");
+	int32_t res=asAtomHandler::toUInt(*instrptr->arg1_constant)&0x1 ? -1 : 0;
+	ASATOM_DECREF(*instrptr->arg1_constant);
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sxi8_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi8_ll");
+	int32_t res=(int8_t)asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+
+void ABCVm::abc_sxi16_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi16_c");
+	int32_t res=(int8_t)asAtomHandler::toUInt(*instrptr->arg1_constant);
+	ASATOM_DECREF(*instrptr->arg1_constant);
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sxi16_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi16_l");
+	int32_t res=(int16_t)asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sxi16_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi16_cl");
+	int32_t res=(int16_t)asAtomHandler::toUInt(*instrptr->arg1_constant);
+	ASATOM_DECREF(*instrptr->arg1_constant);
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}
+void ABCVm::abc_sxi16_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	LOG_CALL( "sxi16_ll");
+	int32_t res=(int16_t)asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ASATOM_DECREF(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setInt(ret,context->worker,res);
+	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
+	ASATOM_DECREF(oldres);
+	++(context->exec_pos);
+}

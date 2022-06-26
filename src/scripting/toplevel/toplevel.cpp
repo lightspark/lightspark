@@ -1142,8 +1142,8 @@ const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context)
 						it++;
 					}
 				}
-				assert_and_throw(instancetype);
-				typeObject = Template<Vector>::getTemplateInstance(context->root.getPtr(),instancetype,context->root->applicationDomain).getPtr();
+				if (instancetype)
+					typeObject = Template<Vector>::getTemplateInstance(context->root.getPtr(),instancetype,context->root->applicationDomain).getPtr();
 			}
 			else
 			{

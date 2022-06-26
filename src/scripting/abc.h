@@ -809,8 +809,20 @@ private:
 	
 	
 	static void abc_sxi1(call_context* context); // 0x50
+	static void abc_sxi1_constant(call_context* context);
+	static void abc_sxi1_local(call_context* context);
+	static void abc_sxi1_constant_localresult(call_context* context);
+	static void abc_sxi1_local_localresult(call_context* context);
 	static void abc_sxi8(call_context* context);
+	static void abc_sxi8_constant(call_context* context);
+	static void abc_sxi8_local(call_context* context);
+	static void abc_sxi8_constant_localresult(call_context* context);
+	static void abc_sxi8_local_localresult(call_context* context);
 	static void abc_sxi16(call_context* context);
+	static void abc_sxi16_constant(call_context* context);
+	static void abc_sxi16_local(call_context* context);
+	static void abc_sxi16_constant_localresult(call_context* context);
+	static void abc_sxi16_local_localresult(call_context* context);
 	static void abc_constructgenerictype(call_context* context);
 	static void abc_newobject(call_context* context);
 	static void abc_newarray(call_context* context);

@@ -1061,6 +1061,24 @@ abc_function ABCVm::abcfunctions[]={
 	abc_coerce_local,
 	abc_coerce_constant_localresult,
 	abc_coerce_local_localresult,
+	abc_sxi1_constant,// 0x36c ABC_OP_OPTIMZED_SXI1
+	abc_sxi1_local,
+	abc_sxi1_constant_localresult,
+	abc_sxi1_local_localresult,
+
+	abc_sxi8_constant,// 0x370 ABC_OP_OPTIMZED_SXI8
+	abc_sxi8_local,
+	abc_sxi8_constant_localresult,
+	abc_sxi8_local_localresult,
+	abc_sxi16_constant,// 0x374 ABC_OP_OPTIMZED_SXI16
+	abc_sxi16_local,
+	abc_sxi16_constant_localresult,
+	abc_sxi16_local_localresult,
+
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1333,6 +1351,9 @@ struct operands
 #define ABC_OP_OPTIMZED_CALL_VOID 0x0000035c
 #define ABC_OP_OPTIMZED_CALL 0x00000360
 #define ABC_OP_OPTIMZED_COERCE 0x00000368
+#define ABC_OP_OPTIMZED_SXI1 0x0000036c
+#define ABC_OP_OPTIMZED_SXI8 0x00000370
+#define ABC_OP_OPTIMZED_SXI16 0x00000374
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -1892,6 +1913,9 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x37://li32
 			case 0x38://lf32
 			case 0x39://lf64
+			case 0x50://sxi1
+			case 0x51://sxi8
+			case 0x52://sxi16
 				candup=false;
 				if (argsneeded)
 				{
@@ -2302,6 +2326,9 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x38://lf32
 		case 0x39://lf64
 		case 0x1b://lookupswitch
+		case 0x50://sxi1
+		case 0x51://sxi8
+		case 0x52://sxi16
 			if (!argsneeded && (state.jumptargets.find(pos) == state.jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result
@@ -5183,7 +5210,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						tobj = (Class_base*)cls;
 				}
 #endif
-				if (!skip)
+				if (!skip || jumppoints.find(code.tellg()+1)!= jumppoints.end())
 				{
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_COERCE,opcode,code,true,true,tobj && tobj->is<Class_base>() ? tobj->as<Class_base>() : nullptr,p,true);
 					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
@@ -7647,8 +7674,20 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				break;
 			}
 			case 0x50://sxi1
+				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_SXI1,opcode,code,true,true,Class<Integer>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);
+				removetypestack(typestack,1);
+				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				break;
 			case 0x51://sxi8
+				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_SXI8,opcode,code,true,true,Class<Integer>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);
+				removetypestack(typestack,1);
+				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				break;
 			case 0x52://sxi16
+				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_SXI16,opcode,code,true,true,Class<Integer>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);
+				removetypestack(typestack,1);
+				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				break;
 			case 0xf3://timestamp
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();

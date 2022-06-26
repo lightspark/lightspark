@@ -76,7 +76,7 @@ public:
 	 * then an exception is thrown.
 	 * The caller does not own the object returned.
 	 */
-	static const Type* getTypeFromMultiname(multiname* mn, ABCContext* context);
+	static const Type* getTypeFromMultiname(multiname* mn, ABCContext* context, bool opportunistic=false);
 	/*
 	 * Checks if the type is already in sys->classes
 	 */
@@ -515,7 +515,7 @@ public:
 	ASObject *describeType(ASWorker* wrk) const override;
 	uint32_t functionname;
 	virtual multiname* callGetter(asAtom& ret, ASObject* target,ASWorker* wrk) =0;
-	virtual Class_base* getReturnType() =0;
+	virtual Class_base* getReturnType(bool opportunistic=false) =0;
 	std::string toDebugString() const override;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
@@ -575,7 +575,7 @@ public:
 		val_atom(ret,wrk,c,nullptr,0);
 		return nullptr;
 	}
-	Class_base* getReturnType() override;
+	Class_base* getReturnType(bool opportunistic=false) override;
 	Class_base* getArgumentDependentReturnType(bool allargsint);
 };
 
@@ -661,8 +661,8 @@ public:
 	FORCE_INLINE multiname* getSimpleName() {
 		return simpleGetterOrSetterName;
 	}
-	Class_base* getReturnType() override;
-	void checkParamTypes();
+	Class_base* getReturnType(bool opportunistic=false) override;
+	void checkParamTypes(bool opportunistic=false);
 	bool canSkipCoercion(int param, Class_base* cls);
 	inline bool isFromNewFunction() { return fromNewFunction; }
 };
@@ -727,7 +727,7 @@ public:
 			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject);
 		return nullptr;
 	}
-	FORCE_INLINE Class_base* getReturnType() override
+	FORCE_INLINE Class_base* getReturnType(bool opportunistic=false) override
 	{
 		return nullptr;
 	}

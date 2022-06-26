@@ -792,21 +792,22 @@ bool SyntheticFunction::isEqual(ASObject *r)
 			 this->inClass == r->as<SyntheticFunction>()->inClass);
 }
 
-Class_base *SyntheticFunction::getReturnType()
+Class_base *SyntheticFunction::getReturnType(bool opportunistic)
 {
 	if (!mi->returnType)
-		checkParamTypes();
+		checkParamTypes(opportunistic);
 	return (Class_base*)dynamic_cast<const Class_base*>(mi->returnType);
 }
 
-void SyntheticFunction::checkParamTypes()
+void SyntheticFunction::checkParamTypes(bool opportunistic)
 {
 	assert(!mi->returnType);
 	mi->hasExplicitTypes = false;
 	mi->paramTypes.reserve(mi->numArgs());
+	mi->paramTypes.clear();
 	for(size_t i=0;i < mi->numArgs();++i)
 	{
-		const Type* t = Type::getTypeFromMultiname(mi->paramTypeName(i), mi->context);
+		const Type* t = Type::getTypeFromMultiname(mi->paramTypeName(i), mi->context,opportunistic);
 		if (!t)
 			return;
 		mi->paramTypes.push_back(t);
@@ -814,7 +815,7 @@ void SyntheticFunction::checkParamTypes()
 			mi->hasExplicitTypes = true;
 	}
 
-	const Type* t = Type::getTypeFromMultiname(mi->returnTypeName(), mi->context);
+	const Type* t = Type::getTypeFromMultiname(mi->returnTypeName(), mi->context,opportunistic);
 	mi->returnType = t;
 }
 
@@ -881,7 +882,7 @@ bool Function::isEqual(ASObject* r)
 	return (val_atom==f->val_atom);
 }
 
-Class_base *Function::getReturnType()
+Class_base *Function::getReturnType(bool opportunistic)
 {
 	if (!returnType && inClass && this->functionname)
 		LOG(LOG_NOT_IMPLEMENTED,"no returntype given for "<<inClass->toDebugString()<<" "<<getSystemState()->getStringFromUniqueId(this->functionname));
@@ -1082,7 +1083,7 @@ const Type* Type::getBuiltinType(ASWorker* wrk, multiname* mn)
  * by running ABCContext::exec() for all ABCContexts.
  * Therefore, all classes are at least declared.
  */
-const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context)
+const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool opportunistic)
 {
 	if(mn == 0) //multiname idx zero indicates any type
 		return Type::anyType;
@@ -1112,11 +1113,16 @@ const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context)
 		typeObject = i->second;
 	else
 	{
-		ASObject* target;
-		asAtom o=asAtomHandler::invalidAtom;
-		context->root->applicationDomain->getVariableAndTargetByMultiname(o,*mn,target,context->root->getInstanceWorker());
-		if (asAtomHandler::isValid(o))
-			typeObject=asAtomHandler::toObject(o,context->root->getInstanceWorker());
+		if (opportunistic)
+			typeObject = context->root->applicationDomain->getVariableByMultinameOpportunistic(*mn,context->root->getInstanceWorker());
+		else
+		{
+			ASObject* target;
+			asAtom o=asAtomHandler::invalidAtom;
+			context->root->applicationDomain->getVariableAndTargetByMultiname(o,*mn,target,context->root->getInstanceWorker());
+			if (asAtomHandler::isValid(o))
+				typeObject=asAtomHandler::toObject(o,context->root->getInstanceWorker());
+		}
 	}
 	if(!typeObject)
 	{
@@ -1124,7 +1130,7 @@ const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context)
 		{
 			if (mn->templateinstancenames.size() == 1)
 			{
-				const Type* instancetype = getTypeFromMultiname(mn->templateinstancenames.front(),context);
+				const Type* instancetype = getTypeFromMultiname(mn->templateinstancenames.front(),context,opportunistic);
 				if (instancetype==nullptr)
 				{
 					multiname* mti = mn->templateinstancenames.front();

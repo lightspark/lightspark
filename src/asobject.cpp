@@ -628,8 +628,8 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	}
 	if (type != SETTER_METHOD)
 	{
-		if (o->getReturnType())
-			obj->setResultType((const Type*)o->getReturnType());
+		if (o->getReturnType(true))
+			obj->setResultType((const Type*)o->getReturnType(true));
 	}
 	o->functionname = nameId;
 }

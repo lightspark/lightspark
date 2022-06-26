@@ -834,6 +834,8 @@ void System::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("disposeXML","",Class<IFunction>::getFunction(c->getSystemState(),disposeXML),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("pauseForGCIfCollectionImminent","",Class<IFunction>::getFunction(c->getSystemState(),pauseForGCIfCollectionImminent),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("gc","",Class<IFunction>::getFunction(c->getSystemState(),gc),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("pause","",Class<IFunction>::getFunction(c->getSystemState(),pause),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("resume","",Class<IFunction>::getFunction(c->getSystemState(),resume),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(System,totalMemory)
@@ -864,6 +866,16 @@ ASFUNCTIONBODY_ATOM(System,pauseForGCIfCollectionImminent)
 ASFUNCTIONBODY_ATOM(System,gc)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "System.gc not implemented");
+	asAtomHandler::setUndefined(ret);
+}
+ASFUNCTIONBODY_ATOM(System,pause)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "System.pause not implemented");
+	asAtomHandler::setUndefined(ret);
+}
+ASFUNCTIONBODY_ATOM(System,resume)
+{
+	LOG(LOG_NOT_IMPLEMENTED, "System.resume not implemented");
 	asAtomHandler::setUndefined(ret);
 }
 

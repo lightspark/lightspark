@@ -294,6 +294,8 @@ public:
 	ASFUNCTION_ATOM(disposeXML);
 	ASFUNCTION_ATOM(pauseForGCIfCollectionImminent);
 	ASFUNCTION_ATOM(gc);
+	ASFUNCTION_ATOM(pause);
+	ASFUNCTION_ATOM(resume);
 };
 class WorkerDomain;
 class ParseThread;

@@ -100,7 +100,7 @@ class SoundChannel : public EventDispatcher, public IThreadJob
 {
 private:
 	_NR<StreamCache> stream;
-	Sound* sampleproducer;
+	_NR<Sound> sampleproducer;
 	Mutex mutex;
 	ACQUIRE_RELEASE_FLAG(starting);
 	ACQUIRE_RELEASE_FLAG(stopped);
@@ -120,7 +120,7 @@ private:
 	bool restartafterabort;
 	void checkEnvelope();
 public:
-	SoundChannel(ASWorker* wrk,Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), const SOUNDINFO* _soundinfo=nullptr, Sound* _sampleproducer = nullptr);
+	SoundChannel(ASWorker* wrk,Class_base* c, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), const SOUNDINFO* _soundinfo=nullptr, _NR<Sound> _sampleproducer = NullRef);
 	~SoundChannel();
 	DefineSoundTag* fromSoundTag;
 	void appendStreamBlock(unsigned char* buf, int len);

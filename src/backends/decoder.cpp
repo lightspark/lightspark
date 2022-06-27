@@ -672,7 +672,7 @@ bool AudioDecoder::discardFrame()
 	//We don't want to block if no frame is available
 	bool ret=samplesBuffer.nonBlockingPopFront();
 	if (!ret)
-		LOG(LOG_ERROR,"discardFrame blocking");
+		LOG(LOG_ERROR,"discardFrame blocking "<<flushing<<" "<<samplesBuffer.isEmpty());
 	if(flushing && samplesBuffer.isEmpty()) //End of our work
 	{
 		status=FLUSHED;

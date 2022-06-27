@@ -480,14 +480,20 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 	_NR<SoundTransform> soundtransform;
 	
 	ARG_UNPACK_ATOM(startTime, 0)(loops,0)(soundtransform,NullRef);
-	if (!wrk->getSystemState()->mainClip->usesActionScript3) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
+	if (!wrk->rootClip->usesActionScript3) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
 		startTime *= 1000;
 	if (soundtransform.isNull())
 		soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(wrk));
 	if (th->container)
 	{
+		if (!wrk->rootClip->usesActionScript3)
+		{
+			LOG(LOG_ERROR,"playing sound without attached tag, ignored");
+			return;
+		}
 		RELEASE_WRITE(th->sampledataprocessed,true);
-		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(wrk,NullRef, AudioFormat(LINEAR_PCM_FLOAT_PLATFORM_ENDIAN,44100,2),nullptr,th));
+		th->incRef();
+		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(wrk,NullRef, AudioFormat(LINEAR_PCM_FLOAT_PLATFORM_ENDIAN,44100,2),nullptr,_MNR(th)));
 		th->soundChannel->setLoops(loops);
 		th->soundChannel->soundTransform = soundtransform;
 		th->soundChannel->play(startTime);
@@ -766,7 +772,7 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile)
 
-SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, Sound* _sampleproducer)
+SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, NullableRef<Sound> _sampleproducer)
 	: EventDispatcher(wrk,c),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
 	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),
 	fromSoundTag(nullptr),
@@ -914,7 +920,7 @@ void SoundChannel::finalize()
 {
 	EventDispatcher::finalize();
 	stream.reset();
-	sampleproducer=nullptr;
+	sampleproducer.reset();
 	starting=true;
 	stopped=true;
 	terminated=true;
@@ -938,7 +944,7 @@ void SoundChannel::finalize()
 bool SoundChannel::destruct()
 {
 	stream.reset();
-	sampleproducer=nullptr;
+	sampleproducer.reset();
 	starting=true;
 	stopped=true;
 	terminated=true;
@@ -1063,6 +1069,7 @@ void SoundChannel::playStream()
 			if(audioDecoder==nullptr && streamDecoder->audioDecoder)
 				audioDecoder=streamDecoder->audioDecoder;
 
+			mutex.lock();
 			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
 				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,startTime,soundTransform ? soundTransform->volume : 1.0);
 
@@ -1082,7 +1089,7 @@ void SoundChannel::playStream()
 				int16_t buf[512];
 				audioDecoder->copyFrame(buf,512);
 			}
-			
+			mutex.unlock();
 			if(threadAborting)
 				throw JobTerminationException();
 		}

@@ -330,6 +330,7 @@ public:
 	void setVariableBinding(tiny_string& name, _NR<DisplayObject> obj);
 	void AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj);
 	AVM1Function *AVM1GetFunction(uint32_t nameID);
+	virtual void AVM1HandleEventScriptsAfter() {}
 	void DrawToBitmap(BitmapData* bm, const MATRIX& initialMatrix, bool smoothing, bool forcachedbitmap);
 	std::string toDebugString() const override;
 };

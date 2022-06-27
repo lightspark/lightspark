@@ -1791,6 +1791,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	if (th->state.stop_FP)
 	{
+		th->state.stop_FP=false;
+		th->state.explicit_play=th->state.creatingframe;
 		if (!th->needsActionScript3() && th->state.next_FP == th->state.FP)
 		{
 			if (th->state.FP == th->getFramesLoaded()-1)
@@ -1798,8 +1800,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 			else
 				th->state.next_FP++;
 		}
-		th->state.stop_FP=false;
-		th->state.explicit_play=true;
 		if (th->isOnStage())
 		{
 			if (th->needsActionScript3())
@@ -1857,7 +1857,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	if (state.stop_FP != stop && !stop)
-		state.explicit_play=true;
+		state.explicit_play=state.creatingframe;
 	state.stop_FP = stop;
 	currentFrameChanged(newframe);
 }
@@ -1865,7 +1865,7 @@ void MovieClip::currentFrameChanged(bool newframe)
 {
 	if (!needsActionScript3())
 	{
-		if (state.stop_FP && state.creatingframe) // this can occur if we are between the advanceFrame and the initFrame calls (that means we are currently executing an enterFrame event)
+		if (newframe)
 			advanceFrame();
 		return;
 	}
@@ -1917,7 +1917,7 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 	if (switchplaystate)
 	{
 		if (state.stop_FP != stop && !stop)
-			state.explicit_play=true;
+			state.explicit_play=state.creatingframe;
 		state.stop_FP = stop;
 	}
 }
@@ -2098,6 +2098,7 @@ void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_strin
 
 void MovieClip::afterLegacyInsert()
 {
+	getSystemState()->stage->AVM1AddScriptedMovieClip(this);
 }
 
 void MovieClip::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping)
@@ -2313,16 +2314,16 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	}
 	if (toAdd->is<MovieClip>())
 	{
-		toAdd->as<MovieClip>()->declareFrame();
 		toAdd->as<MovieClip>()->inAVM1Attachment=true;
+		toAdd->declareFrame();
 	}
 	if(th->hasLegacyChildAt(Depth) )
 	{
 		th->deleteLegacyChildAt(Depth,false);
-		th->insertLegacyChildAt(Depth,toAdd);
+		th->insertLegacyChildAt(Depth,toAdd,false,false);
 	}
 	else
-		th->insertLegacyChildAt(Depth,toAdd);
+		th->insertLegacyChildAt(Depth,toAdd,false,false);
 	if (toAdd->is<MovieClip>())
 	{
 		// call constructor here to avoid recursive construction
@@ -2355,10 +2356,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	if(th->hasLegacyChildAt(Depth) )
 	{
 		th->deleteLegacyChildAt(Depth,false);
-		th->insertLegacyChildAt(Depth,toAdd);
+		th->insertLegacyChildAt(Depth,toAdd,false,false);
 	}
 	else
-		th->insertLegacyChildAt(Depth,toAdd);
+		th->insertLegacyChildAt(Depth,toAdd,false,false);
 	toAdd->constructionComplete();
 	toAdd->afterConstruction();
 	toAdd->incRef();
@@ -2415,10 +2416,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1DuplicateMovieClip)
 	if(th->getParent()->hasLegacyChildAt(Depth))
 	{
 		th->getParent()->deleteLegacyChildAt(Depth,false);
-		th->getParent()->insertLegacyChildAt(Depth,toAdd);
+		th->getParent()->insertLegacyChildAt(Depth,toAdd,false,false);
 	}
 	else
-		th->getParent()->insertLegacyChildAt(Depth,toAdd);
+		th->getParent()->insertLegacyChildAt(Depth,toAdd,false,false);
 	toAdd->constructionComplete();
 	toAdd->incRef();
 	ret=asAtomHandler::fromObject(toAdd);
@@ -2503,10 +2504,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
 	if(th->hasLegacyChildAt(Depth) )
 	{
 		th->deleteLegacyChildAt(Depth,false);
-		th->insertLegacyChildAt(Depth,toAdd);
+		th->insertLegacyChildAt(Depth,toAdd,false,false);
 	}
 	else
-		th->insertLegacyChildAt(Depth,toAdd);
+		th->insertLegacyChildAt(Depth,toAdd,false,false);
 	toAdd->incRef();
 	ret=asAtomHandler::fromObject(toAdd);
 }
@@ -2689,7 +2690,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 	assert_and_throw(ret);
 }
 
-void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* obj, bool inskipping)
+void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* obj, bool inskipping, bool fromtag)
 {
 	if(hasLegacyChildAt(depth))
 	{
@@ -2714,10 +2715,13 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 		{
 			insertpos = it-dynamicDisplayList.begin()+1;
 			it++;
-			while(it!=dynamicDisplayList.end() && !(*it)->legacy)
+			if(fromtag)
 			{
-				it++; // skip all children previously added through actionscript
-				insertpos++;
+				while(it!=dynamicDisplayList.end() && !(*it)->legacy)
+				{
+					it++; // skip all children previously added through actionscript
+					insertpos++;
+				}
 			}
 		}
 	}
@@ -4193,13 +4197,25 @@ void Stage::AVM1RemoveScriptedMovieClip(MovieClip* clip)
 	if (clip->avm1PrevScriptedClip)
 		clip->avm1PrevScriptedClip->avm1NextScriptedClip=clip->avm1NextScriptedClip;
 	else
+	{
 		this->avm1ScriptMovieClipFirst=clip->avm1NextScriptedClip;
-	if (!clip->avm1NextScriptedClip)
-		this->avm1ScriptMovieClipLast=clip->avm1PrevScriptedClip;
-	else
+		this->avm1ScriptMovieClipFirst->avm1PrevScriptedClip=nullptr;
+	}
+	if (clip->avm1NextScriptedClip)
 		clip->avm1NextScriptedClip->avm1PrevScriptedClip=clip->avm1PrevScriptedClip;
+	else
+	{
+		this->avm1ScriptMovieClipLast=clip->avm1PrevScriptedClip;
+		clip->avm1PrevScriptedClip->avm1NextScriptedClip=nullptr;
+	}
 	clip->avm1PrevScriptedClip=nullptr;
 	clip->avm1NextScriptedClip=nullptr;
+}
+
+void Stage::AVM1AddSkipEventsClip(MovieClip* clip)
+{
+	clip->incRef();
+	avm1skipeventslist.push_back(_MR(clip));
 }
 
 void Stage::advanceFrame()
@@ -4217,36 +4233,50 @@ void Stage::advanceFrame()
 		MovieClip* clip = avm1ScriptMovieClipFirst;
 		avm1ScriptMutex.unlock();
 		MovieClip* prevclip = nullptr;
+		MovieClip* nextclip = nullptr;
 		while (clip)
 		{
 			clip->incRef();
 			clip->AVM1HandleScripts();
+			clip->AVM1HandleEventScriptsAfter();
 			avm1ScriptMutex.lock();
-			MovieClip* nextclip = clip->avm1NextScriptedClip;
 			if (prevclip)
 			{
-				if (clip != prevclip->avm1NextScriptedClip)
+				if (!clip->avm1NextScriptedClip && !clip->avm1PrevScriptedClip) // clip was removed from list during script execution
 					nextclip = prevclip->avm1NextScriptedClip;
-				else
+				else 
+				{
+					nextclip = clip->avm1NextScriptedClip;
 					prevclip = clip;
+				}
 			}
 			else
 			{
-				if (clip != avm1ScriptMovieClipFirst)
+				if (clip != avm1ScriptMovieClipFirst) // clip was removed from list during script execution
 				{
 					nextclip = avm1ScriptMovieClipFirst;
 					prevclip = nullptr;
 				}
 				else
+				{
+					nextclip = clip->avm1NextScriptedClip;
 					prevclip = clip;
+				}
 			}
 			avm1ScriptMutex.unlock();
 			clip->decRef();
 			clip = nextclip;
 		}
+		// special handling for all MovieClips that moved to a _previous_ frame
+		// it seems that in those cases the event handlers are not called, but the frame scripts are executed
+		for (auto it = avm1skipeventslist.begin(); it != avm1skipeventslist.end(); it++)
+		{
+			(*it)->advanceFrame();
+			(*it)->AVM1ExecuteFrameActions((*it)->state.FP);
+		}
+		avm1skipeventslist.clear();
 	}
 }
-
 void Stage::initFrame()
 {
 	DisplayObjectContainer::initFrame();
@@ -5790,6 +5820,20 @@ void DisplayObjectContainer::executeFrameScript()
 		(*it)->executeFrameScript();
 }
 
+void DisplayObjectContainer::AVM1HandleEventScriptsAfter()
+{
+	// elements of the dynamicDisplayList may be removed during AVM1HandleEventScripts() calls,
+	// so we create a temporary list containing all elements
+	std::vector < _R<DisplayObject> > tmplist;
+	{
+		Locker l(mutexDisplayList);
+		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
+	}
+	auto it=tmplist.begin();
+	for(;it!=tmplist.end();it++)
+		(*it)->AVM1HandleEventScriptsAfter();
+}
+
 multiname *DisplayObjectContainer::setVariableByMultiname(multiname& name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk)
 {
 // TODO I disable this for now as gamesmenu from homestarrunner doesn't work with it (I don't know which swf file required this...)
@@ -5917,41 +5961,26 @@ void MovieClip::declareFrame()
 				++iter;
 			}
 		}
-		if (newFrame && needsActionScript3())
+		if (newFrame)
 			state.frameadvanced=true;
 	}
 	// remove all legacy objects that have not been handled in the PlaceObject/RemoveObject tags
 	LegacyChildEraseDeletionMarked();
 	DisplayObjectContainer::declareFrame();
 }
-void MovieClip::AVM1HandleScripts()
+void MovieClip::AVM1HandleEventScriptsAfter()
 {
-	if (isAVM1Loaded && !this->isOnStage())
+	if (isAVM1Loaded)
+	{
+		DisplayObjectContainer::AVM1HandleEventScriptsAfter();
 		return;
-	if (state.last_FP > (int)state.FP && state.FP==0 && !state.explicit_FP)
-	{
-		// clip was rewinded automatically from last to first frame,
-		// we have to make sure the first frame is declared
-		declareFrame();
 	}
-	auto itbind = variablebindings.begin();
-	while (itbind != variablebindings.end())
-	{
-		asAtom v = getVariableBindingValue(getSystemState()->getStringFromUniqueId((*itbind).first));
-		(*itbind).second->UpdateVariableBinding(v);
-		ASATOM_DECREF(v);
-		itbind++;
-	}
-	bool wasexplicit = state.explicit_FP;
-	bool wasexplicitplay = state.explicit_play;
 	if (actions && !this->state.explicit_FP)
 	{
 		for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
 		{
 			std::map<uint32_t,asAtom> m;
-			if (!isAVM1Loaded && it->EventFlags.ClipEventLoad)
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
-			if (isAVM1Loaded && it->EventFlags.ClipEventEnterFrame)
+			if (it->EventFlags.ClipEventLoad)
 				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
 		}
 	}
@@ -5962,7 +5991,48 @@ void MovieClip::AVM1HandleScripts()
 		m.name_type=multiname::NAME_STRING;
 		m.isAttribute = false;
 	
-		m.name_s_id= isAVM1Loaded ? BUILTIN_STRINGS::STRING_ONENTERFRAME : BUILTIN_STRINGS::STRING_ONLOAD;
+		m.name_s_id= BUILTIN_STRINGS::STRING_ONLOAD;
+		getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
+		if (asAtomHandler::is<AVM1Function>(func))
+		{
+			asAtom ret=asAtomHandler::invalidAtom;
+			asAtom obj = asAtomHandler::fromObject(this);
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			asAtomHandler::as<AVM1Function>(func)->decRef();
+		}
+	}
+	AVM1ExecuteFrameActions(0);
+	isAVM1Loaded=true;
+	DisplayObjectContainer::AVM1HandleEventScriptsAfter();
+}
+void MovieClip::AVM1HandleScripts()
+{
+	if (!isAVM1Loaded || !this->isOnStage())
+		return;
+	auto itbind = variablebindings.begin();
+	while (itbind != variablebindings.end())
+	{
+		asAtom v = getVariableBindingValue(getSystemState()->getStringFromUniqueId((*itbind).first));
+		(*itbind).second->UpdateVariableBinding(v);
+		ASATOM_DECREF(v);
+		itbind++;
+	}
+	if (!this->state.explicit_FP && isAVM1Loaded)
+	{
+		if (actions)
+		{
+			for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
+			{
+				std::map<uint32_t,asAtom> m;
+				if (it->EventFlags.ClipEventEnterFrame)
+					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+			}
+		}
+		asAtom func=asAtomHandler::invalidAtom;
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+		m.name_s_id= BUILTIN_STRINGS::STRING_ONENTERFRAME;
 		getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
@@ -5973,23 +6043,32 @@ void MovieClip::AVM1HandleScripts()
 		}
 	}
 	// TODO: check if the conditions when to execute the frame scripts are correct:
-	// - clip was just initialized and is accessed for the first time
 	// - clip has more than one frame and
-	//    - clip is currently playing (not stopped) and was not set explicitely or
-	//    - playhead was explicitely set before calling the onEnterFrame handlers or
-	//    - playhead was explicitely set during calling the onEnterFrame handlers but didn't change the current frame
-	if (!isAVM1Loaded ||
-			((!this->hasFinishedLoading() || this->getFramesLoaded()>1) &&
-			 ((!this->state.explicit_play && !state.stop_FP)
-			  || wasexplicit
-			  || wasexplicitplay
-			  || (this->state.explicit_FP && (state.FP==state.next_FP)))))
+	//    - clip is currently playing (not stopped) and was not changed explicitely
+	//    - clip is root movie and was changed by gotoandplay
+	//    - clip was explicitely stopped but didn't change the current frame
+	if ((!this->hasFinishedLoading() || this->getFramesLoaded()>1) && 
+			((!state.explicit_play && !state.stop_FP)
+			 || (this->is<RootMovieClip>() && !state.stop_FP && this->state.explicit_FP && state.explicit_play)
+			 || (state.stop_FP && state.explicit_FP && !state.explicit_play && ((int)state.FP!=state.last_FP))
+			 ))
 	{
+		state.explicit_FP=false;
+		state.explicit_play=false;
 		AVM1ExecuteFrameActions(state.FP);
 	}
-	state.explicit_FP=false;
-	state.explicit_play=false;
-	isAVM1Loaded=true;
+	else
+	{
+		state.explicit_FP=false;
+		state.explicit_play=false;
+	}
+	if ((!this->is<RootMovieClip>() && state.next_FP < state.FP && state.explicit_play))
+	{
+		// playhead was explicitely moved backwards and set to play in the last executed actions
+		getSystemState()->stage->AVM1AddSkipEventsClip(this);
+		state.explicit_FP=false;
+		state.explicit_play=false;
+	}
 }
 void MovieClip::initFrame()
 {
@@ -6030,14 +6109,13 @@ void MovieClip::initFrame()
 		frameScriptToExecute=state.FP;
 	}
 	state.creatingframe=false;
-	state.explicit_play=false;
 }
 
 void MovieClip::executeFrameScript()
 {
 	Sprite::executeFrameScript();
-	state.explicit_FP=false;
-	state.explicit_play=false;
+	if (needsActionScript3())
+		state.explicit_FP=false;
 	if (frameScriptToExecute != UINT32_MAX)
 	{
 		uint32_t f = frameScriptToExecute;
@@ -6085,11 +6163,7 @@ void DisplayObjectContainer::advanceFrame()
  */
 void MovieClip::advanceFrame()
 {
-	getSystemState()->stage->AVM1AddScriptedMovieClip(this);
-	if (state.stop_FP)
-		stopSound();
-	else
-		checkSound(state.next_FP);
+	checkSound(state.next_FP);
 	if (state.frameadvanced && state.explicit_FP)
 	{
 		// frame was advanced more than once in one EnterFrame event, so initFrame was not called
@@ -6130,7 +6204,8 @@ void MovieClip::advanceFrame()
 				LOG(LOG_ERROR,"state.next_FP >= getFramesLoaded:"<< state.next_FP<<" "<<getFramesLoaded() <<" "<<toDebugString()<<" "<<getTagID());
 			state.next_FP = state.FP;
 		}
-		return;
+		else
+			return;
 	}
 
 	if (state.next_FP != state.FP)
@@ -6147,7 +6222,7 @@ void MovieClip::advanceFrame()
 			state.next_FP = 0;
 	}
 	// ensure the legacy objects of the current frame are created
-	if (int(state.FP) >= state.last_FP) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
+	if (int(state.FP) >= state.last_FP) // no need to advance frame if we are moving backwards in the timeline, as the timeline will be rebuild anyway
 		DisplayObjectContainer::advanceFrame();
 	
 	declareFrame();
@@ -6161,7 +6236,7 @@ void MovieClip::advanceFrame()
 
 void MovieClip::constructionComplete()
 {
-	DisplayObject::constructionComplete();
+	Sprite::constructionComplete();
 
 	/* If this object was 'new'ed from AS code, the first
 	 * frame has not been initalized yet, so init the frame
@@ -6174,7 +6249,6 @@ void MovieClip::constructionComplete()
 }
 void MovieClip::afterConstruction()
 {
-	getSystemState()->stage->AVM1AddScriptedMovieClip(this);
 	// set framescript of frame 0 after construction is completed
 	// only if state.FP was not changed during construction
 	if(frameScripts.count(0) && state.FP == 0)

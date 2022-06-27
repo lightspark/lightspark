@@ -2138,22 +2138,22 @@ void RootMovieClip::constructionComplete()
 		getVm(getSystemState())->prependEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this))));
 		return;
 	}
+	getSystemState()->stage->AVM1AddScriptedMovieClip(this);
 	if (this!=getSystemState()->mainClip)
 	{
 		MovieClip::constructionComplete();
 		return;
 	}
 	MovieClip::constructionComplete();
-	if (!needsActionScript3())
-	{
-		declareFrame();
-		AVM1HandleScripts();
-		initFrame();
-	}
 	
 	incRef();
 	getSystemState()->stage->_addChildAt(_MR(this),0);
 	this->setOnStage(true,true);
+	if (!needsActionScript3())
+	{
+		getSystemState()->stage->advanceFrame();
+		initFrame();
+	}
 	if (!loaderInfo.isNull())
 		loaderInfo->setComplete();
 	getSystemState()->addTick(1000/frameRate,getSystemState());

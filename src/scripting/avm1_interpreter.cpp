@@ -220,7 +220,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionNextFrame "<<clip->toDebugString());
 					break;
 				}
-				uint32_t frame = clip->as<MovieClip>()->state.FP+1;
+				uint32_t frame = clip->as<MovieClip>()->state.explicit_FP ? clip->as<MovieClip>()->state.next_FP+1 : clip->as<MovieClip>()->state.FP+1;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNextFrame "<<frame);
 				clip->as<MovieClip>()->AVM1gotoFrame(frame,true,true);
 				break;
@@ -232,7 +232,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionPreviousFrame "<<clip->toDebugString());
 					break;
 				}
-				uint32_t frame = clip->as<MovieClip>()->state.FP > 0 ? clip->as<MovieClip>()->state.FP-1 : 0;
+				uint32_t frame = clip->as<MovieClip>()->state.explicit_FP ? clip->as<MovieClip>()->state.next_FP-1 : clip->as<MovieClip>()->state.FP-1;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPreviousFrame "<<frame);
 				clip->as<MovieClip>()->AVM1gotoFrame(frame,true,true);
 				break;
@@ -495,7 +495,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						multiname m(nullptr);
 						m.name_type=multiname::NAME_STRING;
 						m.isAttribute = false;
-						m.name_s_id=asAtomHandler::toStringId(name,wrk);
+						if (s.startsWith("_")) // internal variable names are always lowercase (e.g. "_x","_y"...)
+							m.name_s_id=wrk->getSystemState()->getUniqueStringId(s.lowercase());
+						else
+							m.name_s_id=asAtomHandler::toStringId(name,wrk);
 						o->getVariableByMultiname(res,m,GET_VARIABLE_OPTION::NONE,wrk);
 					}
 				}
@@ -827,7 +830,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					DefineSpriteTag* tag = (DefineSpriteTag*)clip->loadedFrom->dictionaryLookup(source->getTagID());
 					AVM1MovieClip* ret=Class<AVM1MovieClip>::getInstanceS(wrk,*tag,source->getTagID(),asAtomHandler::toStringId(target,wrk));
 					ret->setLegacyMatrix(source->getMatrix());
-					parent->as<MovieClip>()->insertLegacyChildAt(depth,ret);
+					parent->as<MovieClip>()->insertLegacyChildAt(depth,ret,false,false);
 					ret->incRef();
 					clip->getSystemState()->currentVm->addEvent(NullRef, _MR(new (clip->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(ret))));
 				}
@@ -2538,11 +2541,18 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				ASATOM_DECREF(a);
 				break;
 			}
+			case 0x33: // ActionAsciiToChar
+			{
+				asAtom a = PopStack(stack);
+				asAtom ret = asAtomHandler::fromStringID(asAtomHandler::toInt(a));
+				ASATOM_DECREF(a);
+				PushStack(stack,ret);
+				break;
+			}
 			case 0x14: // ActionStringLength
 			case 0x29: // ActionStringLess
 			case 0x31: // ActionMBStringLength
 			case 0x32: // ActionCharToAscii
-			case 0x33: // ActionAsciiToChar
 			case 0x35: // ActionMBStringExtract
 			case 0x36: // ActionMBCharToAscii
 			case 0x37: // ActionMBAsciiToChar
@@ -2576,7 +2586,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				break;
 		}
 	}
-	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" executeActions done");
 	for (int i = 0; i <= curdepth; i++)
 	{
 		ASATOM_DECREF(scopestack[i]);
@@ -2599,5 +2608,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		clip->decRef();
 	if (argarray)
 		argarray->decRef();
+	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" executeActions done");
 	Log::calls_indent--;
 }

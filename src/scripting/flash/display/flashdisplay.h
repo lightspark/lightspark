@@ -150,7 +150,7 @@ public:
 	void checkRatioForLegacyChildAt(int32_t depth, uint32_t ratio, bool inskipping);
 	void checkColorTransformForLegacyChildAt(int32_t depth, const CXFORMWITHALPHA& colortransform);
 	void deleteLegacyChildAt(int32_t depth, bool inskipping);
-	void insertLegacyChildAt(int32_t depth, DisplayObject* obj,bool inskipping=false);
+	void insertLegacyChildAt(int32_t depth, DisplayObject* obj, bool inskipping=false, bool fromtag=true);
 	DisplayObject* findLegacyChildByTagID(uint32_t tagid);
 	int findLegacyChildDepth(DisplayObject* obj);
 	void transformLegacyChildAt(int32_t depth, const MATRIX& mat);
@@ -161,6 +161,7 @@ public:
 	void declareFrame() override;
 	void initFrame() override;
 	void executeFrameScript() override;
+	void AVM1HandleEventScriptsAfter() override;
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	inline bool deleteVariableByMultinameWithoutRemovingChild(const multiname& name, ASWorker* wrk)
@@ -680,6 +681,7 @@ public:
 	static void AVM1SetupMethods(Class_base* c);
 	void AVM1ExecuteFrameActionsFromLabel(const tiny_string &label);
 	void AVM1ExecuteFrameActions(uint32_t frame);
+	void AVM1HandleEventScriptsAfter() override;
 	void AVM1HandleScripts();
 	void AVM1HandleConstruction();
 
@@ -730,6 +732,7 @@ private:
 	// this is needed to execute the scripts in the correct order
 	MovieClip* avm1ScriptMovieClipFirst;
 	MovieClip* avm1ScriptMovieClipLast;
+	std::list<_R<MovieClip>> avm1skipeventslist;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
 	bool renderImpl(RenderContext& ctxt) const override;
@@ -804,6 +807,7 @@ public:
 	bool AVM1RemoveResizeListener(ASObject *o);
 	void AVM1AddScriptedMovieClip(MovieClip* clip);
 	void AVM1RemoveScriptedMovieClip(MovieClip* clip);
+	void AVM1AddSkipEventsClip(MovieClip* clip);
 };
 
 class StageScaleMode: public ASObject

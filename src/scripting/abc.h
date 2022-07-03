@@ -322,6 +322,7 @@ private:
 	enum STATUS { CREATED=0, STARTED, TERMINATED };
 	STATUS status;
 	bool isIdle;
+	bool canFlushInvalidationQueue;
 
 	void registerClassesFlashAccessibility(Global* builtin);
 	void registerClassesFlashConcurrent(Global* builtin);

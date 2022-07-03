@@ -745,7 +745,7 @@ void ABCContext::dumpProfilingData(ostream& f) const
 /*
  * nextNamespaceBase is set to 2 since 0 is the empty namespace and 1 is the AS3 namespace
  */
-ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(true),shuttingdown(false),
+ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(true),canFlushInvalidationQueue(true),shuttingdown(false),
 	events_queue(reporter_allocator<eventType>(m)),idleevents_queue(reporter_allocator<eventType>(m)),nextNamespaceBase(2),
 	vmDataMemory(m)
 {
@@ -1359,11 +1359,14 @@ void ABCVm::handleFrontEvent()
 	{
 		//handle event without lock
 		handleEvent(e);
+		if (e.second->getEventType() == INIT_FRAME) // don't flush between initFrame and executeFrameScript
+			canFlushInvalidationQueue=false;
+		if (e.second->getEventType() == EXECUTE_FRAMESCRIPT) // don't flush between initFrame and executeFrameScript
+			canFlushInvalidationQueue=true;
 		//Flush the invalidation queue
-		if (!e.first.isNull() || 
-				(e.second->getEventType() != EXTERNAL_CALL 
-				 && e.second->getEventType() != INIT_FRAME) // don't flush between initFrame and executeFrameScript
-				)
+		if (canFlushInvalidationQueue && (!e.first.isNull() || 
+				(e.second->getEventType() != EXTERNAL_CALL)
+				))
 			m_sys->flushInvalidationQueue();
 		if (!e.first.isNull())
 			e.first->afterHandleEvent(e.second.getPtr());

@@ -1144,7 +1144,10 @@ ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 		if (!mat.isNull())
 		{
 			if (mat->is<Matrix>())
+			{
+				mat->incRef();
 				matrix = _MR(mat->as<Matrix>());
+			}
 			else 
 			{
 				multiname m(nullptr);

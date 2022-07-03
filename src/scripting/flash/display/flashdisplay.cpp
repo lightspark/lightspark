@@ -5562,7 +5562,7 @@ void SimpleButton::reflectState(BUTTONSTATE oldstate)
 		soundchannel_OverUpToIdle->play();
 	if (oldstate == STATE_OUT && (currentState == OVER || currentState == UP) && soundchannel_IdleToOverUp)
 		soundchannel_IdleToOverUp->play();
-	if (oldstate == UP && currentState == DOWN && soundchannel_OverUpToOverDown)
+	if ((oldstate == OVER || oldstate == UP) && currentState == DOWN && soundchannel_OverUpToOverDown)
 		soundchannel_OverUpToOverDown->play();
 	if (oldstate == DOWN && currentState == UP && soundchannel_OverDownToOverUp)
 		soundchannel_OverDownToOverUp->play();

@@ -1396,6 +1396,13 @@ void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)
 	}
 }
 
+void mixer_effect_ffmpeg_done_cb(int chan, void * udata)
+{
+	AudioStream *s = (AudioStream*)udata;
+	if (!s)
+		return;
+	s->setIsDone();
+}
 
 
 int EngineData::audio_StreamInit(AudioStream* s)
@@ -1409,10 +1416,23 @@ int EngineData::audio_StreamInit(AudioStream* s)
 	Mix_Chunk* chunk = Mix_QuickLoad_RAW(s->audiobuffer, len);
 
 
+	int grouptag = s->getGroupTag();
 	mixer_channel = Mix_PlayChannel(-1, chunk, -1);
+	if ((mixer_channel < 0) && (grouptag > 0) && (Mix_GroupAvailable(grouptag) < 8))
+	{
+		// if we have more that 7 channels playing the same sound,
+		// remove oldest running channel with same SoundID and create new channel
+		int oldestchannel = Mix_GroupOldest(grouptag);
+		if (oldestchannel != -1)
+		{
+			audio_StreamDeinit(oldestchannel);
+			mixer_channel = Mix_PlayChannel(-1, chunk, -1);
+		}
+	}
 	if (mixer_channel >= 0)
 	{
-		Mix_RegisterEffect(mixer_channel, mixer_effect_ffmpeg_cb, nullptr, s);
+		Mix_GroupChannel(mixer_channel,grouptag);
+		Mix_RegisterEffect(mixer_channel, mixer_effect_ffmpeg_cb, mixer_effect_ffmpeg_done_cb, s);
 		Mix_Resume(mixer_channel);
 	}
 	return mixer_channel;
@@ -1446,7 +1466,6 @@ void EngineData::audio_StreamDeinit(int channel)
 	if (channel != -1)
 	{
 		Mix_HaltChannel(channel);
-		Mix_UnregisterEffect(channel,mixer_effect_ffmpeg_cb);
 		Mix_Chunk* chunk = Mix_GetChunk(channel);
 		if (chunk)
 			Mix_FreeChunk(chunk);
@@ -1471,10 +1490,13 @@ void EngineData::audio_ManagerCloseMixer()
 bool EngineData::audio_ManagerOpenMixer()
 {
 #if __BYTE_ORDER == __BIG_ENDIAN
-	return Mix_OpenAudio (audio_getSampleRate(), AUDIO_S16MSB, 2, LIGHTSPARK_AUDIO_BUFFERSIZE) >= 0;
+	bool res = Mix_OpenAudio (audio_getSampleRate(), AUDIO_S16MSB, 2, LIGHTSPARK_AUDIO_BUFFERSIZE) >= 0;
 #else
-	return Mix_OpenAudio (audio_getSampleRate(), AUDIO_S16LSB, 2, LIGHTSPARK_AUDIO_BUFFERSIZE) >= 0;
+	bool res = Mix_OpenAudio (audio_getSampleRate(), AUDIO_S16LSB, 2, LIGHTSPARK_AUDIO_BUFFERSIZE) >= 0;
 #endif
+	if (res)
+		Mix_AllocateChannels(32); // it seems that Adobe allows 32 channels max
+	return res;
 }
 
 void EngineData::audio_ManagerDeinit()

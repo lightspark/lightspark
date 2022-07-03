@@ -101,9 +101,21 @@ void AudioStream::setPanning(uint16_t left, int16_t right)
 	manager->engineData->audio_StreamSetPanning(mixer_channel,left, right);
 }
 
+void AudioStream::setIsDone()
+{
+	RELEASE_WRITE(isdone,true);
+	decoder->skipAll();
+}
+
+bool AudioStream::getIsDone() const
+{
+	return ACQUIRE_READ(isdone);
+}
+
 AudioStream::~AudioStream()
 {
-	manager->engineData->audio_StreamDeinit(mixer_channel);
+	if (!isdone)
+		manager->engineData->audio_StreamDeinit(mixer_channel);
 	if (audiobuffer)
 		delete[] audiobuffer;
 	manager->removeStream(this);
@@ -163,7 +175,7 @@ void AudioManager::stopAllSounds()
 	}
 }
 
-AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused, IThreadJob* producer, uint32_t playedTime, double volume)
+AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused, IThreadJob* producer, int grouptag, uint32_t playedTime, double volume)
 {
 	Locker l(streamMutex);
 	if (!audio_available)
@@ -179,7 +191,7 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 		mixeropened = 1;
 	}
 
-	AudioStream *stream = new AudioStream(this,producer,playedTime);
+	AudioStream *stream = new AudioStream(this,producer,grouptag,playedTime);
 	stream->decoder = decoder;
 	if (!stream->init(volume))
 	{

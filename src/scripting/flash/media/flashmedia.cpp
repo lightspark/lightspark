@@ -1071,10 +1071,21 @@ void SoundChannel::playStream()
 
 			mutex.lock();
 			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
-				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,startTime,soundTransform ? soundTransform->volume : 1.0);
+				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,this->fromSoundTag ? this->fromSoundTag->getId() : -1,startTime,soundTransform ? soundTransform->volume : 1.0);
 
 			if(audioStream)
 			{
+				if (audioStream->getIsDone())
+				{
+					// stream was stopped by mixer
+					delete audioStream;
+					audioStream=nullptr;
+					RELEASE_WRITE(stopped,true);
+					streamDecoder->audioDecoder->skipAll();
+					waitForFlush=false;
+					mutex.unlock();
+					break;
+				}
 				//TODO: use soundTransform->pan
 				if(soundTransform && soundTransform->volume != oldVolume)
 				{
@@ -1085,7 +1096,7 @@ void SoundChannel::playStream()
 			}
 			else if (audioDecoder && audioDecoder->isValid())
 			{
-				// no audio available, consume data anyway
+				// no audiostream available, consume data anyway
 				int16_t buf[512];
 				audioDecoder->copyFrame(buf,512);
 			}
@@ -1112,7 +1123,7 @@ void SoundChannel::playStream()
 	if(waitForFlush)
 	{
 		//Put the decoders in the flushing state and wait for the complete consumption of contents
-		if(audioStream && streamDecoder && streamDecoder->audioDecoder)
+		if(audioStream && !audioStream->getIsDone() && streamDecoder && streamDecoder->audioDecoder)
 		{
 			streamDecoder->audioDecoder->setFlushing();
 			streamDecoder->audioDecoder->waitFlushed();
@@ -1122,8 +1133,11 @@ void SoundChannel::playStream()
 	{
 		mutex.lock();
 		audioDecoder=nullptr;
-		delete audioStream;
-		audioStream=nullptr;
+		if (audioStream)
+		{
+			delete audioStream;
+			audioStream=nullptr;
+		}
 		mutex.unlock();
 	}
 	if (streamDecoder)
@@ -1158,7 +1172,7 @@ void SoundChannel::playStreamFromSamples()
 			if (bufferfilled)
 			{
 				if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
-					audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,startTime,soundTransform ? soundTransform->volume : 1.0);
+					audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,-1,startTime,soundTransform ? soundTransform->volume : 1.0);
 				
 				if(audioStream)
 				{

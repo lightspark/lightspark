@@ -44,7 +44,7 @@ private:
 public:
 	AudioManager(EngineData* engine);
 
-	AudioStream *createStream(AudioDecoder *decoder, bool startpaused, IThreadJob *producer, uint32_t playedTime, double volume);
+	AudioStream *createStream(AudioDecoder *decoder, bool startpaused, IThreadJob *producer, int grouptag, uint32_t playedTime, double volume);
 
 	void toggleMuteAll() { muteAllStreams ? unmuteAll() : muteAll(); }
 	bool allMuted() { return muteAllStreams; }
@@ -63,9 +63,11 @@ private:
 	AudioManager* manager;
 	AudioDecoder *decoder;
 	IThreadJob* producer;
+	int grouptag;
 	bool hasStarted;
 	bool isPaused;
 	bool mixingStarted;
+	ACQUIRE_RELEASE_FLAG(isdone);
 	double curvolume;
 	double unmutevolume;
 	uint64_t playedtime;
@@ -75,8 +77,8 @@ public:
 	uint8_t* audiobuffer;
 	bool init(double volume);
 	void startMixing();
-	AudioStream(AudioManager* _manager,IThreadJob* _producer,uint64_t _playedtime):manager(_manager),decoder(nullptr),producer(_producer)
-	  ,hasStarted(false),isPaused(true),mixingStarted(false),playedtime(_playedtime),mixer_channel(-1),audiobuffer(nullptr)
+	AudioStream(AudioManager* _manager,IThreadJob* _producer, int _grouptag,uint64_t _playedtime):manager(_manager),decoder(nullptr),producer(_producer),grouptag(_grouptag)
+	  ,hasStarted(false),isPaused(true),mixingStarted(false),isdone(false),playedtime(_playedtime),mixer_channel(-1),audiobuffer(nullptr)
 	{
 	}
 
@@ -90,8 +92,11 @@ public:
 	void setVolume(double volume);
 	void setPlayedTime(uint64_t p) { playedtime = p; }
 	void setPanning(uint16_t left, int16_t right);
+	void setIsDone();
+	bool getIsDone() const;
 	inline double getVolume() const { return curvolume; }
 	inline AudioDecoder *getDecoder() const { return decoder; }
+	inline int getGroupTag() const { return grouptag; }
 	~AudioStream();
 };
 

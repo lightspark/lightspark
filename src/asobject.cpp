@@ -826,7 +826,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		}
 
 		// Properties can not be added to a sealed class
-		if (cls && cls->isSealed)
+		if (cls && cls->isSealed && 
+				(this->getInstanceWorker()->rootClip->needsActionScript3() || !this->isPrimitive())) // primitives in AVM1 seem to be dynamic
 		{
 			ASATOM_DECREF(o);
 			decRef();

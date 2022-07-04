@@ -684,6 +684,7 @@ public:
 	void AVM1HandleEventScriptsAfter() override;
 	void AVM1HandleScripts();
 	void AVM1HandleConstruction();
+	MovieClip* AVM1CloneSprite(asAtom target, uint32_t Depth, ASObject* initobj);
 
 	ASFUNCTION_ATOM(AVM1AttachMovie);
 	ASFUNCTION_ATOM(AVM1CreateEmptyMovieClip);

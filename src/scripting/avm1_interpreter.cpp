@@ -823,16 +823,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				{
 					DisplayObjectContainer* parent = source->getParent();
 					if (!parent || !parent->is<MovieClip>())
-					{
 						LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCloneSprite: the clip has no parent:"<<asAtomHandler::toDebugString(target)<<" "<<source->toDebugString()<<" "<<depth);
-						break;
-					}
-					DefineSpriteTag* tag = (DefineSpriteTag*)clip->loadedFrom->dictionaryLookup(source->getTagID());
-					AVM1MovieClip* ret=Class<AVM1MovieClip>::getInstanceS(wrk,*tag,source->getTagID(),asAtomHandler::toStringId(target,wrk));
-					ret->setLegacyMatrix(source->getMatrix());
-					parent->as<MovieClip>()->insertLegacyChildAt(depth,ret,false,false);
-					ret->incRef();
-					clip->getSystemState()->currentVm->addEvent(NullRef, _MR(new (clip->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(ret))));
+					else if (!source->is<MovieClip>())
+						LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCloneSprite: the source is not a MovieClip:"<<asAtomHandler::toDebugString(target)<<" "<<source->toDebugString()<<" "<<depth);
+					else
+						source->as<MovieClip>()->AVM1CloneSprite(target,depth,nullptr);
 				}
 				else
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCloneSprite source clip not found:"<<asAtomHandler::toDebugString(target)<<" "<<asAtomHandler::toDebugString(sp)<<" "<<depth);

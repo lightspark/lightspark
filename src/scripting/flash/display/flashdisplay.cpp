@@ -1524,9 +1524,14 @@ void Frame::execute(DisplayObjectContainer* displayList, bool inskipping)
 }
 void Frame::AVM1executeActions(MovieClip* clip)
 {
+	bool wasonstage = clip->isOnStage();
 	auto it2=avm1actions.begin();
 	for(;it2!=avm1actions.end();++it2)
+	{
 		(*it2)->execute(clip,&avm1context);
+		if (wasonstage && !clip->isOnStage()) // it seems that script execution is stopped if the clip was removed from stage by previous script
+			break;
+	}
 }
 
 FrameContainer::FrameContainer():framesLoaded(0)
@@ -1865,7 +1870,7 @@ void MovieClip::currentFrameChanged(bool newframe)
 {
 	if (!needsActionScript3())
 	{
-		if (newframe)
+		if (newframe && state.creatingframe)
 			advanceFrame();
 		return;
 	}
@@ -2396,33 +2401,47 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1DuplicateMovieClip)
 		return;
 	}
 	int Depth = asAtomHandler::toInt(args[1]);
-	uint32_t nameId = asAtomHandler::toStringId(args[0],wrk);
-	AVM1MovieClip* toAdd=nullptr;
-	DefineSpriteTag* tag = (DefineSpriteTag*)th->loadedFrom->dictionaryLookup(th->getTagID());
-	if (tag)
-		toAdd=Class<AVM1MovieClip>::getInstanceS(wrk,*tag,th->getTagID(),nameId);
-	else
-		toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(wrk);
-	toAdd->setLegacyMatrix(th->getMatrix());
-	toAdd->name = nameId;
-	toAdd->setMouseEnabled(false);
-	toAdd->tokens.filltokens = th->tokens.filltokens;
-	toAdd->tokens.stroketokens = th->tokens.stroketokens;
+	ASObject* initobj = nullptr;
 	if (argslen > 2)
-	{
-		ASObject* initobj = asAtomHandler::toObject(args[2],wrk);
-		initobj->copyValues(toAdd,wrk);
-	}
-	if(th->getParent()->hasLegacyChildAt(Depth))
-	{
-		th->getParent()->deleteLegacyChildAt(Depth,false);
-		th->getParent()->insertLegacyChildAt(Depth,toAdd,false,false);
-	}
-	else
-		th->getParent()->insertLegacyChildAt(Depth,toAdd,false,false);
-	toAdd->constructionComplete();
+		initobj = asAtomHandler::toObject(args[2],wrk);
+	MovieClip* toAdd=th->AVM1CloneSprite(args[0],Depth,initobj);
 	toAdd->incRef();
 	ret=asAtomHandler::fromObject(toAdd);
+}
+MovieClip* MovieClip::AVM1CloneSprite(asAtom target, uint32_t Depth,ASObject* initobj)
+{
+	uint32_t nameId = asAtomHandler::toStringId(target,getInstanceWorker());
+	AVM1MovieClip* toAdd=nullptr;
+	DefineSpriteTag* tag = (DefineSpriteTag*)loadedFrom->dictionaryLookup(getTagID());
+	if (tag)
+	{
+		toAdd= tag->instance()->as<AVM1MovieClip>();
+		toAdd->legacy=true;
+	}
+	else
+		toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(getInstanceWorker());
+	
+	if (initobj)
+		initobj->copyValues(toAdd,getInstanceWorker());
+	toAdd->loadedFrom=this->loadedFrom;
+	toAdd->setLegacyMatrix(getMatrix());
+	toAdd->colorTransform = this->colorTransform;
+	toAdd->name = nameId;
+	if (this->actions)
+		toAdd->setupActions(*actions);
+	toAdd->tokens.filltokens = this->tokens.filltokens;
+	toAdd->tokens.stroketokens = this->tokens.stroketokens;
+	if(getParent()->hasLegacyChildAt(Depth))
+	{
+		getParent()->deleteLegacyChildAt(Depth,false);
+		getParent()->insertLegacyChildAt(Depth,toAdd,false,false);
+	}
+	else
+		getParent()->insertLegacyChildAt(Depth,toAdd,false,false);
+	toAdd->constructionComplete();
+	if (state.creatingframe)
+		toAdd->advanceFrame();
+	return toAdd;
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1Clear)
 {

@@ -508,6 +508,7 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 		}
 		hasChanged=true;
 		setNeedsTextureRecalculation();
+		requestInvalidation(getSystemState());
 	}
 	else
 	{
@@ -516,6 +517,7 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 			filters->resize(0);
 			hasChanged=true;
 			setNeedsTextureRecalculation();
+			requestInvalidation(getSystemState());
 		}
 	}
 	

@@ -6036,6 +6036,8 @@ void MovieClip::AVM1HandleScripts()
 		ASATOM_DECREF(v);
 		itbind++;
 	}
+	bool wasexplicit = state.explicit_FP;
+	bool wasexplicitplay = state.explicit_play;
 	if (!this->state.explicit_FP && isAVM1Loaded)
 	{
 		if (actions)
@@ -6064,11 +6066,11 @@ void MovieClip::AVM1HandleScripts()
 	// TODO: check if the conditions when to execute the frame scripts are correct:
 	// - clip has more than one frame and
 	//    - clip is currently playing (not stopped) and was not changed explicitely
-	//    - clip is root movie and was changed by gotoandplay
+	//    - clip is root movie and was changed by gotoandplay before executing onEnterFrame
 	//    - clip was explicitely stopped but didn't change the current frame
 	if ((!this->hasFinishedLoading() || this->getFramesLoaded()>1) && 
 			((!state.explicit_play && !state.stop_FP)
-			 || (this->is<RootMovieClip>() && !state.stop_FP && this->state.explicit_FP && state.explicit_play)
+			 || (this->is<RootMovieClip>() && !state.stop_FP && wasexplicit && wasexplicitplay)
 			 || (state.stop_FP && state.explicit_FP && !state.explicit_play && ((int)state.FP!=state.last_FP))
 			 ))
 	{

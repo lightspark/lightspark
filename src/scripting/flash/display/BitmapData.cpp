@@ -290,6 +290,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.mask=drawable->getMask();
 		surface.matrix = drawable->getMatrix();
 		surface.isValid=true;
+		surface.isInitialized=true;
 		delete drawable;
 	}
 	d->Render(ctxt,true);

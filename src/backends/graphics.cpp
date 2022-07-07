@@ -1096,6 +1096,7 @@ TextureChunk& AsyncDrawJob::getTexture()
 	surface.alphaOffset=drawable->getAlphaOffset();
 	surface.matrix=drawable->getMatrix();
 	surface.isValid=true;
+	surface.isInitialized=true;
 	return *surface.tex;
 }
 

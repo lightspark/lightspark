@@ -152,6 +152,7 @@ void DisplayObject::finalize()
 		cachedSurface.tex=nullptr;
 	cachedSurface.isChunkOwner=true;
 	cachedSurface.isValid=false;
+	cachedSurface.isInitialized=false;
 	avm1mouselistenercount=0;
 	avm1framelistenercount=0;
 	EventDispatcher::finalize();
@@ -207,6 +208,7 @@ bool DisplayObject::destruct()
 		cachedSurface.tex->makeEmpty();
 	cachedSurface.isChunkOwner=true;
 	cachedSurface.isValid=false;
+	cachedSurface.isInitialized=false;
 	return EventDispatcher::destruct();
 }
 
@@ -667,7 +669,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 	const CachedSurface& surface=ctxt.getCachedSurface(this);
 	/* surface is only modified from within the render thread
 	 * so we need no locking here */
-	if(!surface.isValid || !surface.tex || !surface.tex->isValid())
+	if(!surface.isValid || !surface.isInitialized || !surface.tex || !surface.tex->isValid())
 		return true;
 	if (surface.tex->width == 0 || surface.tex->height == 0)
 		return true;
@@ -767,6 +769,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface.alphaOffset=d->getAlphaOffset();
 	cachedSurface.matrix=d->getMatrix();
 	cachedSurface.isValid=true;
+	cachedSurface.isInitialized=true;
 }
 //TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
 //this way they have less pb with precision.

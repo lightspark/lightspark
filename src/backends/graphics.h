@@ -76,7 +76,7 @@ class CachedSurface
 public:
 	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0),
 		redMultiplier(1.0), greenMultiplier(1.0), blueMultiplier(1.0), alphaMultiplier(1.0), redOffset(0.0), greenOffset(0.0), blueOffset(0.0), alphaOffset(0.0)
-		,isMask(false),smoothing(true),isChunkOwner(true),isValid(false){}
+		,isMask(false),smoothing(true),isChunkOwner(true),isValid(false),isInitialized(false){}
 	~CachedSurface()
 	{
 		if (isChunkOwner && tex)
@@ -107,6 +107,7 @@ public:
 	bool smoothing;
 	bool isChunkOwner;
 	bool isValid;
+	bool isInitialized;
 };
 
 

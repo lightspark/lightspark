@@ -138,6 +138,7 @@ public:
 	}
 	void signalSurfaceRefresh()
 	{
+		Locker l(mutexRefreshSurfaces);
 		if (!surfacesToRefresh.empty())
 		{
 			refreshNeeded=true;

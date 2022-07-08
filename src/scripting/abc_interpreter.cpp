@@ -5209,8 +5209,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					if (skip || cls != nullptr)
 						tobj = (Class_base*)cls;
 				}
+				if (skip)
+				{
+					// check if this coerce is followed by a non-skippable jump
+					uint8_t bjump = code.peekbyte();
+					uint32_t pos = code.tellg()+1;
+					skipjump(state,bjump,code,pos,false);
+					skip = jumppoints.find(pos)==jumppoints.end();
+				}
 #endif
-				if (!skip || jumppoints.find(code.tellg()+1)!= jumppoints.end())
+				if (!skip)
 				{
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_COERCE,opcode,code,true,true,tobj && tobj->is<Class_base>() ? tobj->as<Class_base>() : nullptr,p,true);
 					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;

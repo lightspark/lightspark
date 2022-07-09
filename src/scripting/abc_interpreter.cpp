@@ -5209,6 +5209,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					if (skip || cls != nullptr)
 						tobj = (Class_base*)cls;
 				}
+				if (!skip && state.operandlist.size()>0 && state.operandlist.back().type==OP_NULL) // coerce following a pushnull can be skipped
+					skip=true;
 				if (skip)
 				{
 					// check if this coerce is followed by a non-skippable jump

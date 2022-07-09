@@ -217,7 +217,9 @@ void DisplayObject::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	EventDispatcher::prepareShutdown();
-	
+
+	if (cachedSurface.mask)
+		cachedSurface.mask->prepareShutdown();
 	if (cachedBitmap)
 		cachedBitmap->prepareShutdown();
 	if (cachedAsBitmapOf)

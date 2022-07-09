@@ -1871,7 +1871,7 @@ void MovieClip::currentFrameChanged(bool newframe)
 {
 	if (!needsActionScript3())
 	{
-		if (newframe && state.creatingframe)
+		if (newframe && (this->is<RootMovieClip>() || state.creatingframe))
 			advanceFrame();
 		return;
 	}
@@ -1922,12 +1922,14 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 		frame = 0;
 	state.next_FP = frame;
 	state.explicit_FP = true;
+	bool newframe = (int)state.FP != frame;
 	if (switchplaystate)
 	{
 		if (state.stop_FP != stop && !stop)
 			state.explicit_play=state.creatingframe;
 		state.stop_FP = stop;
 	}
+	currentFrameChanged(newframe);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,gotoAndStop)

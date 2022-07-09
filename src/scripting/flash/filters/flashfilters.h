@@ -147,6 +147,7 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, matrix);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
+	void prepareShutdown() override;
 };
 class BlurFilter: public BitmapFilter
 {

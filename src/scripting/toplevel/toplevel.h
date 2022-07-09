@@ -377,7 +377,7 @@ class ObjectPrototype: public ASObject, public Prototype
 public:
 	ObjectPrototype(ASWorker* wrk,Class_base* c);
 	void finalize() override;
-	void prepareShutdown();
+	void prepareShutdown() override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	bool isEqual(ASObject* r) override;

@@ -99,12 +99,12 @@ public:
 	int32_t toIntStrict() override;
 	uint32_t toUInt() override;
 	int64_t toInt64() override;
-	
+
 	ASFUNCTION_ATOM(generator);
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
-				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk);
+				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk) override;
 	std::string toDebugString() const override;
 	static bool isEcmaSpace(uint32_t c);
 	static bool isEcmaLineTerminator(uint32_t c);

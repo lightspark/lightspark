@@ -871,6 +871,13 @@ BitmapFilter* ColorMatrixFilter::cloneImpl() const
 	}
 	return cloned;
 }
+
+void ColorMatrixFilter::prepareShutdown()
+{
+	if (matrix)
+		matrix->prepareShutdown();
+}
+
 BlurFilter::BlurFilter(ASWorker* wrk,Class_base* c):
 	BitmapFilter(wrk,c,SUBTYPE_BLURFILTER),blurX(4.0),blurY(4.0),quality(1)
 {

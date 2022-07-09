@@ -45,7 +45,8 @@ public:
 		return &freelist;
 	}
 
-	void getInstance(ASWorker* wrk,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr)
+	void getInstance(ASWorker* wrk,asAtom& ret, bool construct, asAtom* args,
+			const unsigned int argslen, Class_base* realClass=nullptr) override
 	{
 		if(realClass==nullptr)
 			realClass=this;
@@ -61,13 +62,13 @@ public:
 	/* This function is called for as3 code like v = Vector.<String>(["Hello", "World"])
 	 * this->types will be Class<ASString> on entry of this function.
 	 */
-	void generator(ASWorker* wrk,asAtom& ret, asAtom* args, const unsigned int argslen)
+	void generator(ASWorker* wrk,asAtom& ret, asAtom* args, const unsigned int argslen) override
 	{
 		asAtom th = asAtomHandler::fromObject(this);
 		T::generator(ret,wrk,th,args,argslen);
 	}
 
-	const Template_base* getTemplate() const
+	const Template_base* getTemplate() const override
 	{
 		return templ;
 	}
@@ -81,7 +82,7 @@ public:
 		types.push_back(type);
 	}
 
-	bool coerce(ASWorker* wrk,asAtom& o) const
+	bool coerce(ASWorker* wrk,asAtom& o) const override
 	{
 		if (asAtomHandler::isUndefined(o))
 		{

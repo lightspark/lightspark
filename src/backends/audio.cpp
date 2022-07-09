@@ -211,8 +211,8 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 AudioManager::~AudioManager()
 {
 	Locker l(streamMutex);
-	for (stream_iterator it = streams.begin(); it != streams.end(); ++it) {
-		delete *it;
+	while (streams.size()) {
+		delete streams.front();
 	}
 	if (mixeropened)
 	{

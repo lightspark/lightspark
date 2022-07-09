@@ -240,12 +240,12 @@ public:
 		if (p.empty())
 			return;
 		std::ofstream file;
-		
+
 		file.open(p.raw_buf(), std::ios::out|std::ios::binary);
 		file << data;
 		file.close();
 	}
-	uint8_t FileReadUnsignedByte(SystemState* sys, const tiny_string& filename, uint32_t startpos, bool isfullpath)
+	uint8_t FileReadUnsignedByte(SystemState* sys, const tiny_string& filename, uint32_t startpos, bool isfullpath) override
 	{
 		if (!isvalidfilename(filename))
 			return 0;
@@ -315,11 +315,11 @@ public:
 		}
 		return g_mkdir_with_parents(p.raw_buf(),0755) == 0;
 	}
-	bool FilePathIsAbsolute(const tiny_string& filename)
+	bool FilePathIsAbsolute(const tiny_string& filename) override
 	{
 		return g_path_is_absolute(filename.raw_buf());
 	}
-	tiny_string FileGetApplicationStorageDir()
+	tiny_string FileGetApplicationStorageDir() override
 	{
 		return mApplicationStoragePath;
 	}

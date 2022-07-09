@@ -1597,14 +1597,14 @@ void MovieClip::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 
-MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
+MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
   ,inAVM1Attachment(false),isAVM1Loaded(false),avm1PrevScriptedClip(nullptr),avm1NextScriptedClip(nullptr)
   ,actions(nullptr),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
 
-MovieClip::MovieClip(ASWorker* wrk, Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(wrk,c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
+MovieClip::MovieClip(ASWorker* wrk, Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(wrk,c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
   ,inAVM1Attachment(false),isAVM1Loaded(false),avm1PrevScriptedClip(nullptr),avm1NextScriptedClip(nullptr)
   ,actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true)
 {
@@ -1631,6 +1631,7 @@ bool MovieClip::destruct()
 	
 	fromDefineSpriteTag = UINT32_MAX;
 	frameScriptToExecute = UINT32_MAX;
+	lastFrameScriptExecuted = UINT32_MAX;
 	lastratio=0;
 	totalFrames_unreliable = 1;
 	inExecuteFramescript=false;
@@ -1877,6 +1878,8 @@ void MovieClip::currentFrameChanged(bool newframe)
 	if (inExecuteFramescript)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 
+	if (newframe && !state.creatingframe)
+		lastFrameScriptExecuted=UINT32_MAX;
 	if (!this->isOnStage())
 	{
 		if (state.stop_FP)
@@ -1889,7 +1892,7 @@ void MovieClip::currentFrameChanged(bool newframe)
 		else
 			this->getSystemState()->stage->addHiddenObject(this);
 	}
-	if (newframe && getSystemState()->getSwfVersion()>= 10)
+	else if (newframe && getSystemState()->getSwfVersion()>= 10)
 	{
 		// according to http://www.senocular.com/flash/tutorials/orderofoperations/
 		// a subset of the normal events are added when navigation commands are executed when changing to a new frame by actionscript
@@ -6140,14 +6143,18 @@ void MovieClip::executeFrameScript()
 	if (frameScriptToExecute != UINT32_MAX)
 	{
 		uint32_t f = frameScriptToExecute;
-		inExecuteFramescript = true;
-		asAtom v=asAtomHandler::invalidAtom;
-		this->incRef();
-		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
-		asAtomHandler::callFunction(frameScripts[f],getInstanceWorker(),v,obj,nullptr,0,false);
-		ASATOM_DECREF(v);
-		this->decRef();
-		inExecuteFramescript = false;
+		if (lastFrameScriptExecuted != f)
+		{
+			lastFrameScriptExecuted = f;
+			inExecuteFramescript = true;
+			asAtom v=asAtomHandler::invalidAtom;
+			this->incRef();
+			asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
+			asAtomHandler::callFunction(frameScripts[f],getInstanceWorker(),v,obj,nullptr,0,false);
+			ASATOM_DECREF(v);
+			this->decRef();
+			inExecuteFramescript = false;
+		}
 	}
 	frameScriptToExecute = UINT32_MAX;
 }
@@ -6283,6 +6290,7 @@ void MovieClip::afterConstruction()
 		ASATOM_DECREF(v);
 		this->decRef();
 		inExecuteFramescript = false;
+		lastFrameScriptExecuted=0;
 	}
 }
 

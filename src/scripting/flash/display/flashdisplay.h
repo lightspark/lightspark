@@ -607,6 +607,7 @@ private:
 	std::map<uint32_t,asAtom > frameScripts;
 	uint32_t fromDefineSpriteTag;
 	uint32_t frameScriptToExecute;
+	uint32_t lastFrameScriptExecuted;
 	uint32_t lastratio;
 	bool inExecuteFramescript;
 	bool inAVM1Attachment;

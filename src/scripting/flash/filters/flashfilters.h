@@ -110,6 +110,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool,knockout);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 	uint32_t getMaxFilterBorder() const override { return ceil(max(blurX,blurY)); }
+	void prepareShutdown() override;
 };
 
 class BevelFilter: public BitmapFilter
@@ -183,6 +184,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, matrixY);
 	ASPROPERTY_GETTER_SETTER(bool, preserveAlpha);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
+	void prepareShutdown() override;
 };
 class DisplacementMapFilter: public BitmapFilter
 {
@@ -202,6 +204,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t,scaleX);
 	ASPROPERTY_GETTER_SETTER(number_t,scaleY);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
+	void prepareShutdown() override;
 };
 class GradientBevelFilter: public BitmapFilter
 {
@@ -225,6 +228,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string, type);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos) override;
 	uint32_t getMaxFilterBorder() const override { return ceil(max(blurX,blurY)); }
+	void prepareShutdown() override;
 };
 class ShaderFilter: public BitmapFilter
 {

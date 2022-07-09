@@ -662,6 +662,19 @@ void GradientGlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* s
 	delete[] tmpdata;
 }
 
+void GradientGlowFilter::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	BitmapFilter::prepareShutdown();
+	if (colors)
+		colors->prepareShutdown();
+	if (alphas)
+		alphas->prepareShutdown();
+	if (ratios)
+		ratios->prepareShutdown();
+}
+
 ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, distance)
 ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, angle)
 ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, colors)
@@ -874,6 +887,9 @@ BitmapFilter* ColorMatrixFilter::cloneImpl() const
 
 void ColorMatrixFilter::prepareShutdown()
 {
+	if (preparedforshutdown)
+		return;
+	BitmapFilter::prepareShutdown();
 	if (matrix)
 		matrix->prepareShutdown();
 }
@@ -1070,6 +1086,15 @@ void ConvolutionFilter::applyFilter(BitmapContainer* target, BitmapContainer* so
 	delete[] tmpdata;
 }
 
+void ConvolutionFilter::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	BitmapFilter::prepareShutdown();
+	if (matrix)
+		matrix->prepareShutdown();
+}
+
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,alpha)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,bias)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,clamp)
@@ -1196,6 +1221,17 @@ void DisplacementMapFilter::applyFilter(BitmapContainer* target, BitmapContainer
 		data[targetpos+3] = max(int32_t(0),min(int32_t(0xff),alphaResult));
 	}
 	delete[] tmpdata;
+}
+
+void DisplacementMapFilter::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	BitmapFilter::prepareShutdown();
+	if (mapBitmap)
+		mapBitmap->prepareShutdown();
+	if (mapPoint)
+		mapPoint->prepareShutdown();
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,alpha)
@@ -1325,6 +1361,19 @@ void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* 
 	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos(angle     ) * distance, ypos+sin(angle     ) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout);
 	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos(angle+M_PI) * distance, ypos+sin(angle+M_PI) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout);
 	delete[] tmpdata;
+}
+
+void GradientBevelFilter::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	BitmapFilter::prepareShutdown();
+	if (colors)
+		colors->prepareShutdown();
+	if (alphas)
+		alphas->prepareShutdown();
+	if (ratios)
+		ratios->prepareShutdown();
 }
 
 ASFUNCTIONBODY_ATOM(GradientBevelFilter,_constructor)

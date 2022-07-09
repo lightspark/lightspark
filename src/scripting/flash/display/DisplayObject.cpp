@@ -220,8 +220,6 @@ void DisplayObject::prepareShutdown()
 	
 	if (cachedBitmap)
 		cachedBitmap->prepareShutdown();
-	if (cachedAsBitmapOf)
-		cachedAsBitmapOf->prepareShutdown();
 	if (mask)
 		mask->prepareShutdown();
 	if (matrix)

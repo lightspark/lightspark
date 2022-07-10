@@ -216,8 +216,8 @@ private:
 	bool ownedContext;
 	uint32_t curBuffer;
 	AVCodecContext* codecContext;
-	BlockingCircularQueue<YUVBuffer,FFMPEGVIDEODECODERBUFFERSIZE> streamingbuffers;
-	BlockingCircularQueue<YUVBuffer,2> embeddedbuffers;
+	BlockingCircularQueue<YUVBuffer> streamingbuffers;
+	BlockingCircularQueue<YUVBuffer> embeddedbuffers;
 	AVFrame* frameIn;
 	void copyFrameToBuffers(const AVFrame* frameIn, uint32_t time);
 	void setSize(uint32_t w, uint32_t h);
@@ -290,15 +290,13 @@ protected:
 public:
 	uint32_t sampleRate;
 protected:
-	BlockingCircularQueue<FrameSamples,150> samplesBuffer;
+	BlockingCircularQueue<FrameSamples> samplesBuffer;
 	virtual void samplesconsumed(uint32_t samples) {}
 public:
 	/**
 	  	The AudioDecoder contains audio buffers that must be aligned to 16 bytes, so we redefine the allocator
 	*/
-	void* operator new(size_t);
-	void operator delete(void*);
-	AudioDecoder():sampleRate(0),channelCount(0),initialTime(-1),forExtraction(false){}
+	AudioDecoder(uint32_t size):sampleRate(0),samplesBuffer(size),channelCount(0),initialTime(-1),forExtraction(false){}
 	virtual ~AudioDecoder(){}
 	virtual void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen)=0;
 	virtual uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time)=0;
@@ -347,7 +345,7 @@ public:
 class NullAudioDecoder: public AudioDecoder
 {
 public:
-	NullAudioDecoder()
+	NullAudioDecoder():AudioDecoder(0)
 	{
 		status=VALID;
 		sampleRate=44100;
@@ -367,7 +365,7 @@ private:
 protected:
 	void samplesconsumed(uint32_t samples) override;
 public:
-	SampleDataAudioDecoder(SoundChannel* _soundchannel):AudioDecoder(),soundchannel(_soundchannel)
+	SampleDataAudioDecoder(SoundChannel* _soundchannel,uint32_t buffertime):AudioDecoder(buffertime),soundchannel(_soundchannel)
 	{
 		sampleRate=44100;
 		channelCount=2;
@@ -401,15 +399,15 @@ private:
 	int resampleFrame(FrameSamples& curTail);
 #endif
 public:
-	FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen);
-	FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC codec, int sampleRate, int channels,bool);
+	FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen, uint32_t buffertime);
+	FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC codec, int sampleRate, int channels, uint32_t buffertime,bool);
 	/*
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
-	FFMpegAudioDecoder(EngineData* eng,AVCodecParameters* codecPar);
+	FFMpegAudioDecoder(EngineData* eng,AVCodecParameters* codecPar, uint32_t buffertime);
 #else
-	FFMpegAudioDecoder(EngineData* eng,AVCodecContext* codecContext);
+	FFMpegAudioDecoder(EngineData* eng,AVCodecContext* codecContext, uint32_t buffertime);
 #endif
 	~FFMpegAudioDecoder();
 	/*
@@ -462,7 +460,7 @@ private:
 #endif
 	int availablestreamlength;
 public:
-	FFMpegStreamDecoder(NetStream* ns,EngineData* eng,std::istream& s, AudioFormat* format = nullptr, int streamsize = -1, bool forExtraction=false);
+	FFMpegStreamDecoder(NetStream* ns,EngineData* eng,std::istream& s, uint32_t buffertime, AudioFormat* format = nullptr, int streamsize = -1, bool forExtraction=false);
 	~FFMpegStreamDecoder();
 	void jumpToPosition(number_t position) override;
 	bool decodeNextFrame() override;

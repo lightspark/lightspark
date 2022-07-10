@@ -53,6 +53,16 @@ bool AudioStream::init(double volume)
 	return false;
 }
 
+void AudioStream::deinit()
+{
+	if (!isdone)
+		manager->engineData->audio_StreamDeinit(mixer_channel);
+	mixer_channel=-1;
+	if (audiobuffer)
+		delete[] audiobuffer;
+	audiobuffer=nullptr;
+}
+
 void AudioStream::startMixing()
 {
 	if(mixingStarted)
@@ -78,7 +88,7 @@ void AudioStream::SetPause(bool pause_on)
 
 bool AudioStream::ispaused()
 {
-	return 	isPaused;
+	return isPaused;
 }
 
 void AudioStream::mute()
@@ -114,11 +124,6 @@ bool AudioStream::getIsDone() const
 
 AudioStream::~AudioStream()
 {
-	if (!isdone)
-		manager->engineData->audio_StreamDeinit(mixer_channel);
-	if (audiobuffer)
-		delete[] audiobuffer;
-	manager->removeStream(this);
 }
 
 AudioManager::AudioManager(EngineData *engine):muteAllStreams(false),audio_available(false),mixeropened(0),engineData(engine)
@@ -130,7 +135,7 @@ void AudioManager::muteAll()
 {
 	Locker l(streamMutex);
 	muteAllStreams = true;
-	for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
+	for (auto it = streams.begin();it != streams.end(); ++it )
 	{
 		(*it)->mute();
 	}
@@ -139,7 +144,7 @@ void AudioManager::unmuteAll()
 {
 	Locker l(streamMutex);
 	muteAllStreams = false;
-	for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
+	for (auto it = streams.begin();it != streams.end(); ++it )
 	{
 		(*it)->unmute();
 	}
@@ -148,7 +153,9 @@ void AudioManager::unmuteAll()
 void AudioManager::removeStream(AudioStream *s)
 {
 	Locker l(streamMutex);
-	streams.remove(s);
+	streams.erase(s);
+	s->deinit();
+	delete s;
 	if (streams.empty())
 	{
 		engineData->audio_ManagerCloseMixer();
@@ -163,7 +170,7 @@ void AudioManager::stopAllSounds()
 	list<IThreadJob*> producers;
 	{
 		Locker l(streamMutex);
-		for ( stream_iterator it = streams.begin();it != streams.end(); ++it )
+		for (auto it = streams.begin();it != streams.end(); ++it )
 		{
 			if ((*it)->producer)
 				producers.push_back((*it)->producer);
@@ -202,7 +209,7 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 		stream->pause();
 	else
 		stream->hasStarted=true;
-	streams.push_back(stream);
+	streams.insert(stream);
 
 	return stream;
 }
@@ -211,8 +218,11 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 AudioManager::~AudioManager()
 {
 	Locker l(streamMutex);
-	while (streams.size()) {
-		delete streams.front();
+	auto it = streams.begin();
+	while (it != streams.end())
+	{
+		delete *it;
+		it++;
 	}
 	if (mixeropened)
 	{

@@ -24,6 +24,7 @@
 #include "compat.h"
 #include "backends/decoder.h"
 #include <iostream>
+#include <unordered_set>
 
 namespace lightspark
 {
@@ -38,8 +39,7 @@ private:
 	bool audio_available;
 	int mixeropened;
 	EngineData* engineData;
-	std::list<AudioStream *> streams;
-	typedef std::list<AudioStream *>::iterator stream_iterator;
+	std::unordered_set<AudioStream *> streams;
 	Mutex streamMutex;
 public:
 	AudioManager(EngineData* engine);
@@ -76,6 +76,7 @@ private:
 public:
 	uint8_t* audiobuffer;
 	bool init(double volume);
+	void deinit();
 	void startMixing();
 	AudioStream(AudioManager* _manager,IThreadJob* _producer, int _grouptag,uint64_t _playedtime):manager(_manager),decoder(nullptr),producer(_producer),grouptag(_grouptag)
 	  ,hasStarted(false),isPaused(true),mixingStarted(false),isdone(false),playedtime(_playedtime),mixer_channel(-1),audiobuffer(nullptr)

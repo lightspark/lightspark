@@ -2488,7 +2488,7 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 		// detect real sample rate regardless of value provided in the tag
 		std::streambuf *sbuf = SoundData->createReader();
 		istream s(sbuf);
-		FFMpegStreamDecoder* streamDecoder=new FFMpegStreamDecoder(nullptr,root->getSystemState()->getEngineData(),s);
+		FFMpegStreamDecoder* streamDecoder=new FFMpegStreamDecoder(nullptr,root->getSystemState()->getEngineData(),s,0);
 		realSampleRate  = streamDecoder->getAudioSampleRate();
 		delete streamDecoder;
 		delete sbuf;
@@ -2563,7 +2563,7 @@ std::streambuf *DefineSoundTag::createSoundStream() const
 
 _NR<SoundChannel> DefineSoundTag::createSoundChannel(const SOUNDINFO* soundinfo)
 {
-	return _MR(Class<SoundChannel>::getInstanceS(loadedFrom->getInstanceWorker(),SoundData, AudioFormat(getAudioCodec(), getSampleRate(), getChannels()),soundinfo));
+	return _MR(Class<SoundChannel>::getInstanceS(loadedFrom->getInstanceWorker(),1,SoundData, AudioFormat(getAudioCodec(), getSampleRate(), getChannels()),soundinfo));
 }
 
 StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
@@ -2593,7 +2593,7 @@ void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	}
 	if (!sound)
 	{
-		sound = Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getInstanceWorker(),
+		sound = Class<SoundChannel>::getInstanceS(soundTag->loadedFrom->getInstanceWorker(),1,
 			soundTag->getSoundData(),
 			AudioFormat(soundTag->getAudioCodec(),
 						soundTag->getSampleRate(),
@@ -2900,7 +2900,7 @@ SoundStreamHeadTag::~SoundStreamHeadTag()
 
 void SoundStreamHeadTag::setSoundChannel(Sprite *spr)
 {
-	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(spr->getInstanceWorker(),
+	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(spr->getInstanceWorker(),1,
 								SoundData,
 								AudioFormat(LS_AUDIO_CODEC(StreamSoundCompression),StreamSoundRate,StreamSoundType+1));
 	spr->setSound(schannel,true);

@@ -25,8 +25,8 @@
 
 using namespace lightspark;
 
-BuiltinStreamDecoder::BuiltinStreamDecoder(std::istream& _s, NetStream* _ns):
-	stream(_s),prevSize(0),decodedAudioBytes(0),decodedVideoFrames(0),decodedTime(0),frameRate(0.0),netstream(_ns),headerbuf(NULL),headerLen(0)
+BuiltinStreamDecoder::BuiltinStreamDecoder(std::istream& _s, NetStream* _ns, uint32_t _buffertime):
+	stream(_s),prevSize(0),decodedAudioBytes(0),decodedVideoFrames(0),decodedTime(0),frameRate(0.0),netstream(_ns),headerbuf(nullptr),headerLen(0),buffertime(_buffertime)
 {
 	STREAM_TYPE t=classifyStream(stream);
 	if(t==FLV_STREAM)
@@ -98,7 +98,7 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 				{
 					case AAC:
 #ifdef ENABLE_LIBAVCODEC
-						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat,nullptr,0);// tag.packetData, tag.packetLen);
+						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat,nullptr,0,buffertime);// tag.packetData, tag.packetLen);
 #else
 						audioDecoder=new NullAudioDecoder();
 #endif
@@ -106,7 +106,7 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 						break;
 					case MP3:
 #ifdef ENABLE_LIBAVCODEC
-						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat,nullptr,0);
+						audioDecoder=new FFMpegAudioDecoder(netstream->getSystemState()->getEngineData(), tag.SoundFormat,nullptr,0,buffertime);
 #else
 						audioDecoder=new NullAudioDecoder();
 #endif

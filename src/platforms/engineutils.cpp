@@ -1415,7 +1415,6 @@ int EngineData::audio_StreamInit(AudioStream* s)
 	memset(s->audiobuffer,0,len);
 	Mix_Chunk* chunk = Mix_QuickLoad_RAW(s->audiobuffer, len);
 
-
 	int grouptag = s->getGroupTag();
 	mixer_channel = Mix_PlayChannel(-1, chunk, -1);
 	if ((mixer_channel < 0) && (grouptag > 0) && (Mix_GroupAvailable(grouptag) < 8))
@@ -1426,6 +1425,7 @@ int EngineData::audio_StreamInit(AudioStream* s)
 		if (oldestchannel != -1)
 		{
 			audio_StreamDeinit(oldestchannel);
+			chunk = Mix_QuickLoad_RAW(s->audiobuffer, len);
 			mixer_channel = Mix_PlayChannel(-1, chunk, -1);
 		}
 	}

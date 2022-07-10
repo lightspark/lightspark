@@ -44,8 +44,9 @@ private:
 	NetStream* netstream;
 	uint8_t* headerbuf;
 	uint32_t headerLen;
+	uint32_t buffertime;
 public:
-	BuiltinStreamDecoder(std::istream& _s, NetStream* _ns);
+	BuiltinStreamDecoder(std::istream& _s, NetStream* _ns, uint32_t _buffertime);
 	~BuiltinStreamDecoder();
 	bool decodeNextFrame() override;
 	void jumpToPosition(number_t position) override;

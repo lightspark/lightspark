@@ -185,26 +185,33 @@ public:
 	void setWorker(ASWorker* w) { fromWorker = w;}
 };
 
-template<class T, uint32_t size>
+template<class T>
 class BlockingCircularQueue
 {
 private:
-	T queue[size];
+	T* queue;
 	//Counting semaphores for the queue
 	Semaphore freeBuffers;
 	Semaphore usedBuffers;
 	uint32_t bufferHead;
 	uint32_t bufferTail;
+	uint32_t size;
 	ACQUIRE_RELEASE_FLAG(empty);
 public:
-	BlockingCircularQueue():freeBuffers(size),usedBuffers(0),bufferHead(0),bufferTail(0),empty(true)
+	BlockingCircularQueue(uint32_t _size):freeBuffers(_size),usedBuffers(0),bufferHead(0),bufferTail(0),size(_size),empty(true)
 	{
+		aligned_malloc((void**)&queue,16,size*sizeof(T));
 	}
 	template<class GENERATOR>
-	BlockingCircularQueue(const GENERATOR& g):freeBuffers(size),usedBuffers(0),bufferHead(0),bufferTail(0),empty(true)
+	BlockingCircularQueue(uint32_t _size,const GENERATOR& g):freeBuffers(_size),usedBuffers(0),bufferHead(0),bufferTail(0),empty(true)
 	{
+		aligned_malloc((void**)&queue,16,(size+1)*sizeof(T));
 		for(uint32_t i=0;i<size;i++)
 			g.init(queue[i]);
+	}
+	~BlockingCircularQueue()
+	{
+		aligned_free(queue);
 	}
 	bool isEmpty() const { return empty; }
 	T& front()

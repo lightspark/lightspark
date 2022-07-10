@@ -493,7 +493,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		}
 		RELEASE_WRITE(th->sampledataprocessed,true);
 		th->incRef();
-		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(wrk,NullRef, AudioFormat(LINEAR_PCM_FLOAT_PLATFORM_ENDIAN,44100,2),nullptr,_MNR(th)));
+		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(wrk,::ceil(th->buffertime/1000.0),NullRef, AudioFormat(LINEAR_PCM_FLOAT_PLATFORM_ENDIAN,44100,2),nullptr,_MNR(th)));
 		th->soundChannel->setLoops(loops);
 		th->soundChannel->soundTransform = soundtransform;
 		th->soundChannel->play(startTime);
@@ -511,7 +511,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
 			return;
 		}
-		SoundChannel* s = Class<SoundChannel>::getInstanceS(wrk,th->soundData, th->format);
+		SoundChannel* s = Class<SoundChannel>::getInstanceS(wrk,::ceil(th->buffertime/1000.0),th->soundData, th->format);
 		s->setStartTime(startTime);
 		s->setLoops(loops);
 		s->soundTransform = soundtransform;
@@ -562,7 +562,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 				th->rawDataStreamBuf = th->soundData->createReader();
 				th->rawDataStream = new istream(th->rawDataStreamBuf);
 				th->rawDataStream->exceptions ( istream::failbit | istream::badbit );
-				th->rawDataStreamDecoder=new FFMpegStreamDecoder(nullptr,wrk->getSystemState()->getEngineData(),*th->rawDataStream,&th->format,th->soundData->hasTerminated() ? th->soundData->getReceivedLength() : -1,true);
+				th->rawDataStreamDecoder=new FFMpegStreamDecoder(nullptr,wrk->getSystemState()->getEngineData(),*th->rawDataStream,::ceil(th->getBufferTime()/1000.0),&th->format,th->soundData->hasTerminated() ? th->soundData->getReceivedLength() : -1,true);
 			}
 			if(!th->rawDataStreamDecoder->isValid())
 			{
@@ -772,8 +772,8 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile)
 
-SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, NullableRef<Sound> _sampleproducer)
-	: EventDispatcher(wrk,c),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
+SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, uint32_t _buffertimeseconds, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, NullableRef<Sound> _sampleproducer)
+	: EventDispatcher(wrk,c),buffertimeseconds(_buffertimeseconds),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
 	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),
 	fromSoundTag(nullptr),
 	leftPeak(1),rightPeak(1),semSampleData(0)
@@ -1012,7 +1012,7 @@ void SoundChannel::execute()
 		mutex.lock();
 		if (audioStream)
 		{
-			delete audioStream;
+			getSys()->audioManager->removeStream(audioStream);
 			audioStream=nullptr;
 		}
 		mutex.unlock();
@@ -1047,7 +1047,7 @@ void SoundChannel::playStream()
 	try
 	{
 #ifdef ENABLE_LIBAVCODEC
-		streamDecoder=new FFMpegStreamDecoder(nullptr,this->getSystemState()->getEngineData(),s,&format,stream->hasTerminated() ? stream->getReceivedLength() : -1);
+		streamDecoder=new FFMpegStreamDecoder(nullptr,this->getSystemState()->getEngineData(),s,buffertimeseconds,&format,stream->hasTerminated() ? stream->getReceivedLength() : -1);
 		if(!streamDecoder->isValid())
 		{
 			LOG(LOG_ERROR,"invalid streamDecoder");
@@ -1078,7 +1078,7 @@ void SoundChannel::playStream()
 				if (audioStream->getIsDone())
 				{
 					// stream was stopped by mixer
-					delete audioStream;
+					getSys()->audioManager->removeStream(audioStream);
 					audioStream=nullptr;
 					RELEASE_WRITE(stopped,true);
 					streamDecoder->audioDecoder->skipAll();
@@ -1134,12 +1134,12 @@ void SoundChannel::playStream()
 		mutex.lock();
 		audioDecoder=nullptr;
 		if (audioStream)
-		{
-			delete audioStream;
-			audioStream=nullptr;
-		}
+			getSys()->audioManager->removeStream(audioStream);
+		audioStream=nullptr;
 		mutex.unlock();
 	}
+	if (streamDecoder && streamDecoder->audioDecoder)
+		streamDecoder->audioDecoder->skipAll();
 	if (streamDecoder)
 		delete streamDecoder;
 	delete sbuf;
@@ -1153,7 +1153,7 @@ void SoundChannel::playStreamFromSamples()
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
-		sampleDecoder=new SampleDataAudioDecoder(this);
+		sampleDecoder=new SampleDataAudioDecoder(this,100);
 		bool bufferfilled=false;
 		while(!ACQUIRE_READ(stopped))
 		{
@@ -1228,7 +1228,7 @@ void SoundChannel::playStreamFromSamples()
 	mutex.lock();
 	audioDecoder=nullptr;
 	if (audioStream)
-		delete audioStream;
+		getSys()->audioManager->removeStream(audioStream);
 	audioStream=nullptr;
 	mutex.unlock();
 	if (sampleDecoder)

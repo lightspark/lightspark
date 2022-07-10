@@ -1964,12 +1964,12 @@ void NetStream::execute()
 		else
 		{
 			countermutex.lock();
-			streamDecoder=new BuiltinStreamDecoder(s,this);
+			streamDecoder=new BuiltinStreamDecoder(s,this,::ceil(bufferTime));
 			if (!streamDecoder->isValid()) // not FLV stream, so we try ffmpeg detection
 			{
 				delete streamDecoder;
 				s.seekg(0);
-				streamDecoder=new FFMpegStreamDecoder(this,this->getSystemState()->getEngineData(),s);
+				streamDecoder=new FFMpegStreamDecoder(this,this->getSystemState()->getEngineData(),s,::ceil(bufferTime));
 			}
 			countermutex.unlock();
 			if(!streamDecoder->isValid())
@@ -2122,7 +2122,7 @@ void NetStream::execute()
 		//This transition is critical, so the mutex is needed
 		downloader=nullptr;
 		if (audioStream)
-			delete audioStream;
+			getSys()->audioManager->removeStream(audioStream);
 		audioStream=nullptr;
 	}
 	if (streamDecoder)

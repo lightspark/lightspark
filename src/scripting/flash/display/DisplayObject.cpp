@@ -126,7 +126,7 @@ DisplayObject::~DisplayObject() {}
 
 void DisplayObject::finalize()
 {
-	getSystemState()->unregisterFrameListener(this);
+	removeAVM1Listeners();
 	EventDispatcher::finalize();
 	cachedBitmap.reset();
 	cachedAsBitmapOf=nullptr;
@@ -161,7 +161,7 @@ void DisplayObject::finalize()
 bool DisplayObject::destruct()
 {
 	// TODO make all DisplayObject derived classes reusable
-	getSystemState()->unregisterFrameListener(this);
+	removeAVM1Listeners();
 	cachedBitmap.reset();
 	cachedAsBitmapOf=nullptr;
 	ismask=false;
@@ -2073,6 +2073,8 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* w
 }
 void DisplayObject::removeAVM1Listeners()
 {
+	if (needsActionScript3())
+		return;
 	getSystemState()->stage->AVM1RemoveMouseListener(this);
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
 	getSystemState()->stage->AVM1RemoveEventListener(this);

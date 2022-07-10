@@ -37,7 +37,17 @@ void AVM1MovieClip::afterConstruction()
 bool AVM1MovieClip::destruct()
 {
 	avm1loader.reset();
+	color.reset();
 	return MovieClip::destruct();
+}
+
+void AVM1MovieClip::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	MovieClip::prepareShutdown();
+	if (color)
+		color->prepareShutdown();
 }
 
 void AVM1MovieClip::sinit(Class_base* c)
@@ -52,6 +62,12 @@ void AVM1MovieClip::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("startDrag","",Class<IFunction>::getFunction(c->getSystemState(),startDrag),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopDrag","",Class<IFunction>::getFunction(c->getSystemState(),stopDrag),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attachAudio","",Class<IFunction>::getFunction(c->getSystemState(),attachAudio),NORMAL_METHOD,true);
+}
+
+void AVM1MovieClip::setColor(AVM1Color* c)
+{
+	c->incRef();
+	this->color = _MNR(c);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1MovieClip,startDrag)
@@ -94,7 +110,7 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClip,stopDrag)
 
 ASFUNCTIONBODY_ATOM(AVM1MovieClip,attachAudio)
 {
-	AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
+//	AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"AVM1MovieClip.attachAudio");
 }
 
@@ -388,7 +404,16 @@ void AVM1Color::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(AVM1Color,_constructor)
 {
 	AVM1Color* th=asAtomHandler::as<AVM1Color>(obj);
-	ARG_UNPACK_ATOM(th->target);
+	_NR<DisplayObject> t;
+	ARG_UNPACK_ATOM(t);
+	if (t)
+	{
+		if (t->is<AVM1MovieClip>())
+			t->as<AVM1MovieClip>()->setColor(th);
+		else
+			LOG(LOG_NOT_IMPLEMENTED,"constructing AVM1Color without MovieClip as target:"<<t->toDebugString());
+		th->target=t->as<AVM1MovieClip>();
+	}
 }
 ASFUNCTIONBODY_ATOM(AVM1Color,getRGB)
 {
@@ -528,7 +553,7 @@ ASFUNCTIONBODY_ATOM(AVM1Color,setTransform)
 }
 bool AVM1Color::destruct()
 {
-	target.reset();
+	target=nullptr;
 	return ASObject::destruct();
 }
 

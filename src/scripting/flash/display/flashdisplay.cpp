@@ -761,7 +761,6 @@ void Loader::unload()
 	// calling
 	if(content_copy)
 	{
-		content_copy->incRef();
 		_removeChild(content_copy);
 	}
 
@@ -2390,7 +2389,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
 			// don't remove the child by name here because another DisplayObject may have been added with this name after this clip was added
 			th->getParent()->deleteVariableByMultinameWithoutRemovingChild(m,wrk);
 		}
-		th->incRef();
 		th->getParent()->_removeChild(th);
 	}
 }
@@ -2707,7 +2705,6 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 		
 	}
 
-	obj->incRef();
 	obj->afterLegacyDelete(this,inskipping);
 	//this also removes it from depthToLegacyChild
 	bool ret = _removeChild(obj,false,inskipping);
@@ -2863,7 +2860,10 @@ bool DisplayObjectContainer::destruct()
 {
 	//Release every child
 	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+	{
 		(*it)->setParent(nullptr);
+		(*it)->removeAVM1Listeners();
+	}
 	dynamicDisplayList.clear();
 	mouseChildren = true;
 	tabChildren = true;
@@ -2878,7 +2878,10 @@ void DisplayObjectContainer::finalize()
 {
 	//Release every child
 	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+	{
 		(*it)->setParent(nullptr);
+		(*it)->removeAVM1Listeners();
+	}
 	dynamicDisplayList.clear();
 	legacyChildrenMarkedForDeletion.clear();
 	mapDepthToLegacyChild.clear();
@@ -3131,7 +3134,6 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 			return;
 		else
 		{
-			child->incRef();
 			child->getParent()->_removeChild(child.getPtr(),inskipping);
 		}
 	}
@@ -3163,6 +3165,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 
 	{
 		Locker l(mutexDisplayList);
+		child->incRef();
 		std::vector<_R<DisplayObject>>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),_MR(child));
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
@@ -3324,7 +3327,6 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChild)
 	}
 	//Cast to object
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
-	d->incRef();
 	if(!th->_removeChild(d))
 		throw Class<ArgumentError>::getInstanceS(wrk,"removeChild: child not in list", 2025);
 
@@ -4325,6 +4327,7 @@ void Stage::executeFrameScript()
 
 void Stage::finalize()
 {
+	DisplayObjectContainer::finalize();
 	focus.reset();
 	root.reset();
 	hiddenobjects.clear();
@@ -4335,7 +4338,6 @@ void Stage::finalize()
 	fullScreenSourceRect.reset();
 	stage3Ds.reset();
 	softKeyboardRect.reset();
-	DisplayObjectContainer::finalize();
 }
 
 void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
@@ -5572,7 +5574,6 @@ void SimpleButton::reflectState(BUTTONSTATE oldstate)
 	assert(dynamicDisplayList.empty() || dynamicDisplayList.size() == 1);
 	if(!dynamicDisplayList.empty())
 	{
-		dynamicDisplayList.front()->incRef();
 		_removeChild(dynamicDisplayList.front().getPtr(),true);
 	}
 
@@ -5888,7 +5889,6 @@ bool DisplayObjectContainer::deleteVariableByMultiname(const multiname &name, AS
 		DisplayObject* obj = asAtomHandler::as<DisplayObject>(v->var);
 		if (!obj->legacy)
 		{
-			obj->incRef();
 			_removeChild(obj);
 		}
 	}

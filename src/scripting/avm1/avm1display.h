@@ -30,8 +30,13 @@
 
 namespace lightspark
 {
+class AVM1Color;
+
 class AVM1MovieClip: public MovieClip
 {
+private:
+	// this is only needed to make this movieclip the owner of the color (avoids circular references if color is also set as variable)
+	_NR<AVM1Color> color;
 public:
 	AVM1MovieClip(ASWorker* wrk,Class_base* c):MovieClip(wrk,c){}
 	AVM1MovieClip(ASWorker* wrk,Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID,uint32_t nameID=BUILTIN_STRINGS::EMPTY):MovieClip(wrk,c,f,defineSpriteTagID) 
@@ -40,10 +45,12 @@ public:
 	}
 	void afterConstruction() override;
 	bool destruct() override;
+	void prepareShutdown() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(startDrag);
 	ASFUNCTION_ATOM(stopDrag);
 	ASFUNCTION_ATOM(attachAudio);
+	void setColor(AVM1Color* c);
 };
 
 class AVM1Shape: public Shape
@@ -98,9 +105,9 @@ public:
 
 class AVM1Color: public ASObject
 {
-	_NR<DisplayObject> target;
+	AVM1MovieClip* target;
 public:
-	AVM1Color(ASWorker* wrk,Class_base* c):ASObject(wrk,c) {}
+	AVM1Color(ASWorker* wrk,Class_base* c):ASObject(wrk,c),target(nullptr) {}
 	static void sinit(Class_base* c);
 	bool destruct() override;
 	ASFUNCTION_ATOM(_constructor);

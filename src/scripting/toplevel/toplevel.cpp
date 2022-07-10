@@ -3740,8 +3740,7 @@ void AVM1Function::resetClipRefcounted()
 	if (clipIsRefcounted)
 	{
 		clipIsRefcounted=false;
-		clip->setRefConstant();
-		this->setRefConstant();
+		clip->decRef();
 	}
 }
 

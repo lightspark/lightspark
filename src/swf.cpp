@@ -2069,12 +2069,14 @@ void ParseThread::threadAbort()
 
 bool RootMovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {
-	RECT f=getFrameSize();
-	xmin=f.Xmin/20;
-	ymin=f.Ymin/20;
-	xmax=f.Xmax/20;
-	ymax=f.Ymax/20;
-	return true;
+	// at least for hittest the bounds of the root are computed by the bounds of its contents
+	return MovieClip::boundsRect(xmin, xmax, ymin, ymax);
+//	RECT f=getFrameSize();
+//	xmin=f.Xmin/20;
+//	ymin=f.Ymin/20;
+//	xmax=f.Xmax/20;
+//	ymax=f.Ymax/20;
+//	return true;
 }
 
 void RootMovieClip::setFrameSize(const lightspark::RECT& f)

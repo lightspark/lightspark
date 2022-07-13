@@ -2814,7 +2814,10 @@ void DisplayObjectContainer::purgeLegacyChildren()
 	while( i != mapDepthToLegacyChild.end() )
 	{
 		if (i->first < 0)
+		{
 			legacyChildrenMarkedForDeletion.insert(i->first);
+			i->second->markedForLegacyDeletion=true;
+		}
 		i++;
 	}
 }
@@ -6142,7 +6145,7 @@ void MovieClip::executeFrameScript()
 	Sprite::executeFrameScript();
 	if (needsActionScript3())
 		state.explicit_FP=false;
-	if (frameScriptToExecute != UINT32_MAX)
+	if (frameScriptToExecute != UINT32_MAX && !markedForLegacyDeletion)
 	{
 		uint32_t f = frameScriptToExecute;
 		if (lastFrameScriptExecuted != f)

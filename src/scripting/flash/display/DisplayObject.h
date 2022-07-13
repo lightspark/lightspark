@@ -163,6 +163,7 @@ public:
 	bool hasChanged;
 	// this is set to true for DisplayObjects that are placed from a tag
 	bool legacy;
+	bool markedForLegacyDeletion;
 	/**
 	 * cacheAsBitmap is true also if any filter is used
 	 */

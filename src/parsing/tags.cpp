@@ -1872,7 +1872,10 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 				if (toAdd->getTagID() != CharacterId)
 					toAdd=nullptr;
 				else
+				{
 					toAdd->incRef();
+					toAdd->markedForLegacyDeletion=false;
+				}
 				parent->eraseRemovedLegacyChild(nameID);
 			}
 		}

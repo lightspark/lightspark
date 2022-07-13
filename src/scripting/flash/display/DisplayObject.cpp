@@ -105,7 +105,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),ClipDepth(0),parent(nullptr),constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),avm1mouselistenercount(0),avm1framelistenercount(0),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),cachedAsBitmapOf(nullptr),loadedFrom(c->getSystemState()->mainClip),hasChanged(true),legacy(false),cacheAsBitmap(false),
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),cachedAsBitmapOf(nullptr),loadedFrom(c->getSystemState()->mainClip),hasChanged(true),legacy(false),markedForLegacyDeletion(false),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -193,6 +193,7 @@ bool DisplayObject::destruct()
 	avm1framelistenercount=0;
 	filters.reset();
 	legacy=false;
+	markedForLegacyDeletion=false;
 	cacheAsBitmap=false;
 	name=BUILTIN_STRINGS::EMPTY;
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)

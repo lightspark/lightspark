@@ -1749,8 +1749,8 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 				maxfilterborder = max(maxfilterborder,asAtomHandler::as<BitmapFilter>(f)->getMaxFilterBorder());
 		}
 	}
-	uint32_t w=ceil(xmax-xmin)+maxfilterborder*2;
-	uint32_t h=ceil(ymax-ymin)+maxfilterborder*2;
+	uint32_t w=(ceil(xmax-xmin)+maxfilterborder*2)*initialMatrix.getScaleX();
+	uint32_t h=(ceil(ymax-ymin)+maxfilterborder*2)*initialMatrix.getScaleY();
 	if (needsTextureRecalculation|| !cachedBitmap)
 	{
 		if (!cachedBitmap
@@ -1762,6 +1762,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		}
 		MATRIX m0=m;
 		m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));
+		m0.scale(initialMatrix.getScaleX(),initialMatrix.getScaleY());
 		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,true,true);
 		if (filters)
 		{
@@ -1770,7 +1771,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 				asAtom f = asAtomHandler::invalidAtom;
 				filters->at_nocheck(f,i);
 				if (asAtomHandler::is<BitmapFilter>(f))
-					asAtomHandler::as<BitmapFilter>(f)->applyFilter(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0);
+					asAtomHandler::as<BitmapFilter>(f)->applyFilter(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0,initialMatrix.getScaleX(),initialMatrix.getScaleY());
 			}
 		}
 		// apply colortransform for cached bitmap after the filters are applied
@@ -1793,7 +1794,8 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		*pcachedBitmap = cachedBitmap;
 	this->resetNeedsTextureRecalculation();
 	this->hasChanged=false;
-	MATRIX m1(1,1,0,0,xmin-maxfilterborder,ymin-maxfilterborder);
+	MATRIX m1(1,1,0,0,(xmin-maxfilterborder)*initialMatrix.getScaleX(),(ymin-maxfilterborder)*initialMatrix.getScaleY());
+	m1.scale(1.0/initialMatrix.getScaleX(),1.0/initialMatrix.getScaleY());
 	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this->getParent(),m1,this);
 }
 
@@ -1878,7 +1880,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		return;
 	}
 
-	bool insideBoundingBox = (xmin <= x) && (x < xmax) && (ymin <= y) && (y < ymax);
+	bool insideBoundingBox = (xmin < x) && (x < xmax) && (ymin < y) && (y < ymax);
 
 	if (!shapeFlag)
 	{

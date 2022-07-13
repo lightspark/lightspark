@@ -1279,7 +1279,7 @@ std::istream& lightspark::operator>>(std::istream& stream, DROPSHADOWFILTER& v)
 	v.InnerShadow = UB(1,bs);
 	v.Knockout = UB(1,bs);
 	v.CompositeSource = UB(1,bs);
-	bs.discard(5);
+	v.Passes = UB(5,bs);
 
 	return stream;
 }
@@ -1309,7 +1309,7 @@ std::istream& lightspark::operator>>(std::istream& stream, BEVELFILTER& v)
 	v.Knockout = UB(1,bs);
 	v.CompositeSource = UB(1,bs);
 	v.OnTop = UB(1,bs);
-	bs.discard(4);
+	v.Passes = UB(4,bs);
 
 	return stream;
 }
@@ -1339,7 +1339,8 @@ std::istream& lightspark::operator>>(std::istream& stream, GRADIENTGLOWFILTER& v
 	v.InnerGlow = UB(1,bs);
 	v.Knockout = UB(1,bs);
 	v.CompositeSource = UB(1,bs);
-	bs.discard(5);
+	v.OnTop = UB(1,bs);
+	v.Passes = UB(4,bs);
 
 	return stream;
 }

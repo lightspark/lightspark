@@ -1303,7 +1303,7 @@ public:
     FIXED BlurY;
     FIXED Angle;
     FIXED Distance;
-    UB Passes;
+    int Passes;
     FIXED8 Strength;
     bool InnerShadow;
     bool Knockout;
@@ -1315,7 +1315,7 @@ class BLURFILTER
 public:
 	FIXED BlurX;
 	FIXED BlurY;
-	UB Passes;
+	int Passes;
 };
 
 class GLOWFILTER
@@ -1340,7 +1340,7 @@ public:
     FIXED BlurY;
     FIXED Angle;
     FIXED Distance;
-    UB Passes;
+    int Passes;
     FIXED8 Strength;
     bool InnerShadow;
     bool Knockout;
@@ -1357,11 +1357,12 @@ public:
     FIXED BlurY;
     FIXED Angle;
     FIXED Distance;
-    UB Passes;
+    int Passes;
     FIXED8 Strength;
     bool InnerGlow;
     bool Knockout;
     bool CompositeSource;
+	bool OnTop;
 };
 
 class CONVOLUTIONFILTER
@@ -1392,7 +1393,7 @@ public:
     FIXED BlurY;
     FIXED Angle;
     FIXED Distance;
-    UB Passes;
+    int Passes;
     FIXED8 Strength;
     bool InnerShadow;
     bool Knockout;

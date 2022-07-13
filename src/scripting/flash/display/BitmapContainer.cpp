@@ -35,14 +35,14 @@ BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
 
 BitmapContainer::~BitmapContainer()
 {
-        if (bitmaptexture.isValid())
-        {
-                RenderThread* rt = getSys()->getRenderThread();
-                if (rt)
-                {
-                        getSys()->getRenderThread()->releaseTexture(bitmaptexture);
-                }
+	if (bitmaptexture.isValid())
+	{
+		RenderThread* rt = getSys()->getRenderThread();
+		if (rt)
+		{
+			getSys()->getRenderThread()->releaseTexture(bitmaptexture);
 		}
+	}
 }
 
 uint8_t* BitmapContainer::getRectangleData(const RECT& sourceRect)
@@ -171,16 +171,16 @@ void BitmapContainer::uploadFence()
 }
 bool BitmapContainer::checkTexture()
 {
-    if (isEmpty()) {
-        return false;
-    }
+	if (isEmpty()) {
+		return false;
+	}
 
 	if (!bitmaptexture.isValid())
 	{
 		bitmaptexture=getSys()->getRenderThread()->allocateTexture(width, height, true);
 	}
 	incRef();// is decreffed in uploadFence
-    return true;
+	return true;
 }
 
 void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)
@@ -301,7 +301,7 @@ void BitmapContainer::applyFilter(_R<BitmapContainer> source,
 	int32_t clippedX;
 	int32_t clippedY;
 	clipRect(source, sourceRect, destX, destY, clippedSourceRect, clippedX, clippedY);
-	filter->applyFilter(this,source.getPtr(),clippedSourceRect,destX,destY);
+	filter->applyFilter(this,source.getPtr(),clippedSourceRect,destX,destY,1.0,1.0);
 }
 
 void BitmapContainer::fillRectangle(const RECT& inputRect, uint32_t color, bool useAlpha)

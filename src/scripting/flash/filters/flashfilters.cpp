@@ -32,7 +32,7 @@ void BitmapFilter::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
 }
 
-void BitmapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+void BitmapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos,number_t scalex,number_t scaley)
 {
 	LOG(LOG_ERROR,"applyFilter for "<<this->toDebugString());
 }
@@ -66,8 +66,10 @@ int SHG_TABLE[] =
 	17, 16, 17, 17, 16, 17, 15, 16, 17, 14, 17, 16, 15, 17, 16, 17, 13, 17, 16, 17, 17, 16, 17, 14, 17, 16, 17, 16, 17, 16, 17, 9
 };
 
-void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, number_t blurx, number_t blury, int quality)
+void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, number_t blurx, number_t blury, int quality, number_t scalex, number_t scaley)
 {
+	blurx*=scalex;
+	blury*=scaley;
 	int radiusX = int(round(blurx)) >> 1;
 	int radiusY = int(round(blury)) >> 1;
 	if (radiusX >= int(sizeof(MUL_TABLE)/sizeof(int)))
@@ -273,8 +275,10 @@ void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, num
 		}
 	}
 }
-void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout)
+void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout,number_t scalex,number_t scaley)
 {
+	xpos *= scalex;
+	ypos *= scaley;
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
 	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
 	uint32_t size = width*height;
@@ -368,8 +372,10 @@ void BitmapFilter::fillGradientColors(number_t* gradientalphas, uint32_t* gradie
 		gradientcolors[i] = color;
 	}
 }
-void BitmapFilter::applyGradientFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout)
+void BitmapFilter::applyGradientFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout,number_t scalex,number_t scaley)
 {
+	xpos *= scalex;
+	ypos *= scaley;
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
 	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
 	uint32_t size = width*height;
@@ -491,7 +497,7 @@ BitmapFilter* GlowFilter::cloneImpl() const
 	cloned->strength = strength;
 	return cloned;
 }
-void GlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+void GlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos,number_t scalex,number_t scaley)
 {
 	uint8_t* tmpdata = nullptr;
 	if (source)
@@ -499,8 +505,8 @@ void GlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, c
 	else
 		tmpdata = target->getRectangleData(sourceRect);
 
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
-	applyDropShadowFilter(target, tmpdata, sourceRect, xpos, ypos, strength, alpha, color, inner, knockout);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
+	applyDropShadowFilter(target, tmpdata, sourceRect, xpos, ypos, strength, alpha, color, inner, knockout,scalex,scaley);
 	delete[] tmpdata;
 }
 
@@ -516,7 +522,7 @@ DropShadowFilter::DropShadowFilter(ASWorker* wrk,Class_base* c,const DROPSHADOWF
 	knockout(filter.Knockout), quality(filter.Passes), strength(filter.Strength)
 {
 }
-void DropShadowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+void DropShadowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
 {
 	xpos += cos(angle) * distance;
 	ypos +=	sin(angle) * distance;
@@ -528,8 +534,8 @@ void DropShadowFilter::applyFilter(BitmapContainer* target, BitmapContainer* sou
 	else
 		tmpdata = target->getRectangleData(sourceRect);
 
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
-	applyDropShadowFilter(target, tmpdata, sourceRect, xpos, ypos, strength, alpha, color, inner, knockout);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
+	applyDropShadowFilter(target, tmpdata, sourceRect, xpos, ypos, strength, alpha, color, inner, knockout,scalex,scaley);
 	delete[] tmpdata;
 }
 
@@ -646,7 +652,7 @@ void GradientGlowFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, knockout);
 }
 
-void GradientGlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+void GradientGlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
 {
 	uint8_t* tmpdata = nullptr;
 	if (source)
@@ -657,8 +663,8 @@ void GradientGlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* s
 	number_t gradientalphas[256];
 	uint32_t gradientcolors[256];
 	fillGradientColors(gradientalphas,gradientcolors,this->ratios.getPtr(), this->alphas.getPtr(), this->colors.getPtr());
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
-	applyGradientFilter(target, tmpdata, sourceRect, xpos, ypos, strength, gradientalphas, gradientcolors, type=="inner", knockout);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
+	applyGradientFilter(target, tmpdata, sourceRect, xpos, ypos, strength, gradientalphas, gradientcolors, type=="inner", knockout,scalex,scaley);
 	delete[] tmpdata;
 }
 
@@ -759,7 +765,7 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,shadowColor)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,strength)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,type)
 
-void BevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+void BevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
 {
 	if (type=="full")
 		LOG(LOG_NOT_IMPLEMENTED,"BevelFilter type 'full'");
@@ -769,10 +775,10 @@ void BevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, 
 	else
 		tmpdata = target->getRectangleData(sourceRect);
 
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
-	// TODO I've not found any useful documentation how BevelFilter should be implemented, so we just apply two dropShadowFilters with different angles and colors
-	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos(angle     ) * distance, ypos+sin(angle     ) * distance, strength, shadowAlpha   , shadowColor   , type=="inner", knockout);
-	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos(angle+M_PI) * distance, ypos+sin(angle+M_PI) * distance, strength, highlightAlpha, highlightColor, type=="inner", knockout);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
+	// TODO I've not found any useful documentation how BevelFilter should be implemented, so we just apply two dropShadowFilters with different angles and colors on the blurred data
+	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos(angle+M_PI) * distance, ypos+sin(angle+M_PI) * distance, strength, highlightAlpha, highlightColor, type=="inner", knockout,scalex,scaley);
+	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos(angle     ) * distance, ypos+sin(angle     ) * distance, strength, shadowAlpha   , shadowColor   , type=="inner", knockout,scalex,scaley);
 	delete[] tmpdata;
 
 }
@@ -821,8 +827,10 @@ void ColorMatrixFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, matrix);
 }
 
-void ColorMatrixFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+void ColorMatrixFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
 {
+	xpos *= scalex;
+	ypos *= scaley;
 	assert_and_throw(matrix->size() >= 20);
 	number_t m[20];
 	for (int i=0; i < 20; i++)
@@ -920,14 +928,14 @@ ASFUNCTIONBODY_ATOM(BlurFilter,_constructor)
 	BlurFilter *th = asAtomHandler::as<BlurFilter>(obj);
 	ARG_UNPACK_ATOM(th->blurX,4.0)(th->blurY,4.0)(th->quality,1);
 }
-void BlurFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+void BlurFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
 {
 	uint8_t* tmpdata = nullptr;
 	if (source)
 		tmpdata = source->getRectangleData(sourceRect);
 	else
 		tmpdata = target->getRectangleData(sourceRect);
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
 
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
 	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
@@ -997,8 +1005,10 @@ void ConvolutionFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,preserveAlpha);
 }
 
-void ConvolutionFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+void ConvolutionFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
 {
+	xpos *= scalex;
+	ypos *= scaley;
 	// spec is not really clear how this should be implemented, especially when using something different than a 3x3 matrix:
 	// "
 	// For a 3 x 3 matrix convolution, the following formula is used for each independent color channel:
@@ -1145,8 +1155,10 @@ void DisplacementMapFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,scaleY);
 }
 
-void DisplacementMapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+void DisplacementMapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
 {
+	xpos *= scalex;
+	ypos *= scaley;
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
 	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
 	uint32_t size = width*height;
@@ -1343,7 +1355,7 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,ratios)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,strength)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,type)
 
-void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
 {
 	if (type=="full")
 		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter type 'full'");
@@ -1356,10 +1368,10 @@ void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* 
 	number_t gradientalphas[256];
 	uint32_t gradientcolors[256];
 	fillGradientColors(gradientalphas,gradientcolors,this->ratios.getPtr(), this->alphas.getPtr(), this->colors.getPtr());
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
 	// TODO I've not found any useful documentation how BevelFilter should be implemented, so we just apply two dropShadowFilters with different angles
-	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos(angle     ) * distance, ypos+sin(angle     ) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout);
-	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos(angle+M_PI) * distance, ypos+sin(angle+M_PI) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout);
+	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos(angle+M_PI) * distance, ypos+sin(angle+M_PI) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout,scalex,scaley);
+	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos(angle     ) * distance, ypos+sin(angle     ) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout,scalex,scaley);
 	delete[] tmpdata;
 }
 
@@ -1409,7 +1421,7 @@ void ShaderFilter::sinit(Class_base* c)
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
 }
 
-void ShaderFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos)
+void ShaderFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"applyFilter for ShaderFilter");
 }

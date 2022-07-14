@@ -288,7 +288,10 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 		return true;
 	}
 	xmin=tag->Bounds.Xmin/20.0f;
-	xmax=max(0.0f,float(textWidth)+tag->Bounds.Xmin/20.0f);
+	if (wordWrap)
+		xmax=max(0.0f,float(width)+tag->Bounds.Xmin/20.0f);
+	else
+		xmax=max(0.0f,float(textWidth)+2*TEXTFIELD_PADDING+tag->Bounds.Xmin/20.0f);
 	ymin=tag->Bounds.Ymin/20.0f;
 	ymax=max(0.0f,float(height)+tag->Bounds.Ymin/20.0f);
 	return true;
@@ -1702,7 +1705,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 																					rx, ry, ceil(rwidth), ceil(rheight), rotation,xscale,yscale,isMask,mask, 1.0f,getConcatenatedAlpha(), masks,
 																					1.0f,1.0f,1.0f,1.0f,
 																					0.0f,0.0f,0.0f,0.0f,
-																					smoothing);
+																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE);
 	if (res != nullptr)
 		return res;
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
@@ -1719,7 +1722,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				1.0f, getConcatenatedAlpha(), masks,
 				1.0f,1.0f,1.0f,1.0f,
 				0.0f,0.0f,0.0f,0.0f,
-				smoothing,caretIndex);
+				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,caretIndex);
 }
 
 bool TextField::renderImpl(RenderContext& ctxt) const
@@ -1810,13 +1813,13 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, this->borderColor,false, m);
+						isMask, mask,3.0, this->borderColor,SMOOTH_MODE::SMOOTH_NONE, m);
 				m = totalMatrix2.multiplyMatrix(MATRIX(bxmax-bxmin-2, bymax-bymin-2, 0, 0, 1, 1));
 				m.scale(scalex, scaley);
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, this->backgroundColor,false, m);
+						isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m);
 			}
 			else if (this->background)
 			{
@@ -1825,7 +1828,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, this->backgroundColor,false, m);
+						isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m);
 			}
 
 			if (this->caretblinkstate)
@@ -1848,7 +1851,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, tcolor,true, m);
+						isMask, mask,3.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m);
 			}
 		}
 		number_t ypos=-TEXTFIELD_PADDING/yscale;
@@ -1858,7 +1861,7 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 			number_t xpos = (tag ? tag->Bounds.Xmin/20.0f : 0.0f)+autosizeposition+(*itl).autosizeposition;
 			for (auto it = (*itl).text.begin(); it!= (*itl).text.end(); it++)
 			{
-				const TextureChunk* tex = embeddedfont->getCharTexture(it,this->fontSize*yscale,codetableindex);
+				const TextureChunk* tex = embeddedfont->getCharTexture(it,this->fontSize*yscale*scaley,codetableindex);
 				number_t adv = embeddedfont->getRenderCharAdvance(codetableindex)*fontSize;
 				if (tex)
 				{
@@ -1884,12 +1887,12 @@ bool TextField::renderImpl(RenderContext& ctxt) const
 					computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,mask);
 					computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
 					ctxt.setProperties(bl);
-					MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(1 / xscale, 1 / yscale, 0, 0, xpos, ypos));
+					MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(1 / (xscale*scalex), 1 / (yscale*scaley), 0, 0, xpos, ypos));
 					m.scale(scalex, scaley);
 					ctxt.renderTextured(*tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
 										redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 										redOffset, greenOffset, blueOffset, alphaOffset,
-										isMask, mask,2.0, tcolor,true, m);
+										isMask, mask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m);
 					xpos += adv ? adv : bxmax-bxmin;
 				}
 				else

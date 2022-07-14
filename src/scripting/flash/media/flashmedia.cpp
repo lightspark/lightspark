@@ -249,7 +249,7 @@ bool Video::renderImpl(RenderContext& ctxt) const
 			clippedAlpha(), RenderContext::YUV_MODE,
 			1.0f,1.0f,1.0f,1.0f,
 			0.0f,0.0f,0.0f,0.0f,
-			false,false,0.0,RGB(),false,totalMatrix);
+			false,false,0.0,RGB(),SMOOTH_MODE::SMOOTH_NONE,totalMatrix);
 		if (!videotag)
 			netStream->unlock();
 		return false;

@@ -35,6 +35,8 @@
 namespace lightspark
 {
 
+enum SMOOTH_MODE { SMOOTH_NONE=0, SMOOTH_SUBPIXEL=1, SMOOTH_ANTIALIAS=2 };
+
 class DisplayObject;
 class InvalidateQueue;
 class ColorTransform;
@@ -76,7 +78,7 @@ class CachedSurface
 public:
 	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0),
 		redMultiplier(1.0), greenMultiplier(1.0), blueMultiplier(1.0), alphaMultiplier(1.0), redOffset(0.0), greenOffset(0.0), blueOffset(0.0), alphaOffset(0.0)
-		,isMask(false),smoothing(true),isChunkOwner(true),isValid(false),isInitialized(false){}
+		,isMask(false),smoothing(SMOOTH_MODE::SMOOTH_ANTIALIAS),isChunkOwner(true),isValid(false),isInitialized(false){}
 	~CachedSurface()
 	{
 		if (isChunkOwner && tex)
@@ -104,7 +106,7 @@ public:
 	MATRIX matrix;
 	_NR<DisplayObject> mask;
 	bool isMask;
-	bool smoothing;
+	SMOOTH_MODE smoothing;
 	bool isChunkOwner;
 	bool isValid;
 	bool isInitialized;
@@ -177,7 +179,7 @@ protected:
 	float alphaOffset;
 	bool isMask;
 	_NR<DisplayObject> mask;
-	bool smoothing;
+	SMOOTH_MODE smoothing;
 	/**
 	  The whole transformation matrix that is applied to the rendered object
 	*/
@@ -189,7 +191,7 @@ public:
 		bool im, _NR<DisplayObject> _mask,
 		float a, const std::vector<MaskData>& m,
 		float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
-		float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset, bool _smoothing,
+		float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset, SMOOTH_MODE _smoothing,
 		const MATRIX& _m):
 		masks(m),width(w),height(h),xOffset(x),yOffset(y),xOffsetTransformed(rx),yOffsetTransformed(ry),widthTransformed(rw),heightTransformed(rh),rotation(r),
 		alpha(a), xscale(xs), yscale(ys), xContentScale(xcs), yContentScale(ycs),
@@ -225,7 +227,7 @@ public:
 	float getYContentScale() const { return yContentScale; }
 	bool getIsMask() const { return isMask; }
 	_NR<DisplayObject> getMask() const { return mask; }
-	bool getSmoothing() const { return smoothing; }
+	SMOOTH_MODE getSmoothing() const { return smoothing; }
 	float getRedMultiplier() const { return redMultiplier; }
 	float getGreenMultiplier() const { return greenMultiplier; }
 	float getBlueMultiplier() const { return blueMultiplier; }
@@ -297,7 +299,7 @@ public:
 				  , float _s, float _a, const std::vector<MaskData>& m
 				  , float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier
 				  , float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset
-				  , bool _smoothing);
+				  , SMOOTH_MODE _smoothing);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 	bool isCachedSurfaceUsable(const DisplayObject*) const override;
@@ -351,7 +353,7 @@ public:
 			float _s, float _a, const std::vector<MaskData>& _ms,
 			float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
 			float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,
-			bool _smoothing,number_t _xstart, number_t _ystart);
+			SMOOTH_MODE _smoothing,number_t _xstart, number_t _ystart);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 
@@ -450,7 +452,7 @@ public:
 			float _s, float _a, const std::vector<MaskData>& _ms,
 			float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
 			float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,
-			bool _smoothing,uint32_t _ci)
+			SMOOTH_MODE _smoothing,uint32_t _ci)
 		: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs, _ys,_im,_mask,_s,_a,_ms,
 						_redMultiplier, _greenMultiplier, _blueMultiplier, _alphaMultiplier,
 						_redOffset, _greenOffset, _blueOffset, _alphaOffset,
@@ -476,7 +478,7 @@ public:
 				  , float _a, const std::vector<MaskData>& m
 				  , float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier
 				  , float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset
-				  , bool _smoothing, const MATRIX& _m);
+				  , SMOOTH_MODE _smoothing, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}

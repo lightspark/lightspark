@@ -342,7 +342,7 @@ public:
 
 	// Text rendering
 	uint8_t* getFontPixelBuffer(int32_t externalressource,int width,int height) override;
-	int32_t setupFontRenderer(const TextData &_textData, float a, bool smoothing) override;
+	int32_t setupFontRenderer(const TextData &_textData, float a, SMOOTH_MODE smoothing) override;
 };
 
 }

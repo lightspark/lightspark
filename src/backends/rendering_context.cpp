@@ -149,7 +149,7 @@ void GLRenderContext::setProperties(AS_BLENDMODE blendmode)
 void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 									 float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 									 float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-									 bool isMask, bool hasMask, float directMode, RGB directColor, bool smooth, const MATRIX& matrix)
+									 bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix)
 {
 	if (isMask)
 	{
@@ -162,7 +162,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	{
 		engineData->exec_glUniform1f(maskUniform, hasMask ? 1 : 0);
 	}
-	if (!smooth)
+	if (smooth == SMOOTH_MODE::SMOOTH_NONE)
 	{
 		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
 		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
@@ -367,7 +367,7 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, uint8_t* sourceBuf, ui
 void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask, float directMode, RGB directColor, bool smooth,const MATRIX& matrix)
+			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix)
 {
 	if (alpha != 1.0)
 		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured alpha not implemented:"<<alpha);
@@ -376,7 +376,22 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 	uint8_t* buf=(uint8_t*)chunk.chunks;
 	cairo_surface_t* chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height);
 	cairo_save(cr);
-	cairo_set_antialias(cr,smooth && !isMask ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
+	if (isMask)
+		cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
+	else
+	{
+		switch (smooth)
+		{
+			case SMOOTH_MODE::SMOOTH_NONE:
+				break;
+			case SMOOTH_MODE::SMOOTH_SUBPIXEL:
+				cairo_set_antialias(cr,CAIRO_ANTIALIAS_SUBPIXEL);
+				break;
+			case SMOOTH_MODE::SMOOTH_ANTIALIAS:
+				cairo_set_antialias(cr,CAIRO_ANTIALIAS_DEFAULT);
+				break;
+		}
+	}
 
 	MATRIX m = matrix.multiplyMatrix(MATRIX(1, 1, 0, 0, chunk.xOffset / chunk.xContentScale, chunk.yOffset / chunk.yContentScale));
 	cairo_set_matrix(cr, &m);

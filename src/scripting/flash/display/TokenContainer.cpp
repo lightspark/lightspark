@@ -393,7 +393,7 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 	q->addToInvalidateQueue(_MR(owner));
 }
 
-IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap, bool fromgraphics)
+IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix, SMOOTH_MODE smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap, bool fromgraphics)
 {
 	if (owner->computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=owner))
 	{
@@ -514,7 +514,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, scaling,owner->getConcatenatedAlpha(), masks
 				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
 				, redOffset,greenOffset,blueOffset,alphaOffset
-				, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE, regpointx, regpointy);
+				, smoothing, regpointx, regpointy);
 }
 
 _NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const

@@ -977,7 +977,7 @@ IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix
 				return nullptr;
 		}
 	}
-	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,true);
+	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,true);
 }
 
 ASFUNCTIONBODY_ATOM(Sprite,_startDrag)
@@ -3680,7 +3680,7 @@ IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix,
 {
 	if (this->graphics)
 		this->graphics->refreshTokens();
-	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,!graphics.isNull());
+	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,!graphics.isNull());
 }
 
 ASFUNCTIONBODY_ATOM(Shape,_constructor)
@@ -3718,7 +3718,7 @@ void MorphShape::sinit(Class_base* c)
 
 IDrawable* MorphShape::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
-	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,false);
+	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 }
 
 bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax) const

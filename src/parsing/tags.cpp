@@ -1041,8 +1041,7 @@ void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 
 number_t DefineFont3Tag::getRenderCharStartYPos() const
 {
-	// not in the specs but it seems that Adobe subtracts the FontDescent from the vertical starting point for rendering
-	return 1024.0*20.0 - ((FontAscent+FontDescent) < 1024.0*20.0 ? number_t(FontDescent) : 0);
+	return FontAscent;
 }
 
 number_t DefineFont3Tag::getRenderCharAdvance(uint32_t index) const
@@ -1056,7 +1055,7 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 {
 	int tokenscaling = fontpixelsize * this->scaling;
 	width=0;
-	height= (number_t(FontAscent+FontDescent+FontLeading)/1024.0/20.0)* tokenscaling;
+	height= (number_t(FontAscent+FontDescent)/1024.0/20.0)* tokenscaling;
 	number_t tmpwidth=0;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
@@ -1096,7 +1095,7 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 		}
 	}
 	if (width < tmpwidth)
-		width = tmpwidth;
+		width = ceil(tmpwidth);
 }
 
 DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root),CodeTableOffset(0)
@@ -1224,14 +1223,13 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 	Vector2 curPos;
 
 	int tokenscaling = fontpixelsize * this->scaling;
-	curPos.y = (this->FontAscent + startposy*1024)*this->scaling;
-
+	curPos.y = getRenderCharStartYPos()*this->scaling;
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
+		assert (*it != 13 && *it != 10);
 		if (*it == 13 || *it == 10)
 		{
-			curPos.x = 0;
-			curPos.y += (20+leading)*1024 * this->scaling;
+			LOG(LOG_ERROR,"fillTextToken called for char \\r or \\n, should not happen:"<<text);
 		}
 		else
 		{
@@ -1243,8 +1241,8 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 					const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
 					Vector2 glyphPos = curPos*tokenscaling;
 					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
-							   glyphPos.x+startposx*1024*20* this->scaling,
-							   glyphPos.y);
+							   glyphPos.x+startposx*1024*20,
+							   glyphPos.y+startposy*1024*20);
 					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillstyleColor,glyphMatrix);
 					if (FontFlagsHasLayout)
 						curPos.x += FontAdvanceTable[i];
@@ -1262,7 +1260,7 @@ DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 {
 	LOG(LOG_TRACE,"DefineFont4");
 	int dest=in.tellg();
-        dest+=h.getLength();
+	dest+=h.getLength();
 
 	in >> FontID;
 	BitStream bs(in);

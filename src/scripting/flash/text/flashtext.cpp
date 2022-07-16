@@ -1666,7 +1666,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		linemutex->unlock();
 		if (tokens.empty())
 			return nullptr;
-		return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,false);
+		return TokenContainer::invalidate(target, initialMatrix,SMOOTH_MODE::SMOOTH_SUBPIXEL,q,cachedBitmap,false);
 	}
 	if (computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
@@ -2286,7 +2286,7 @@ void StaticText::sinit(Class_base* c)
 
 IDrawable* StaticText::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
-	return TokenContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap,false);
+	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 }
 bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
 {

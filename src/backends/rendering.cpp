@@ -769,10 +769,13 @@ bool RenderThread::coreRendering()
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 	engineData->exec_glFrontFace(false);
 	engineData->exec_glDrawBuffer_GL_BACK();
-	//Clear the back buffer
-	RGB bg=m_sys->mainClip->getBackground();
-	engineData->exec_glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
-	engineData->exec_glClear_GL_COLOR_BUFFER_BIT();
+	if (!m_sys->stage->renderStage3D()) // no need to clear the backbuffer when using Stage3D
+	{
+		//Clear the back buffer
+		RGB bg=m_sys->mainClip->getBackground();
+		engineData->exec_glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
+		engineData->exec_glClear_GL_COLOR_BUFFER_BIT();
+	}
 	engineData->exec_glUseProgram(gpu_program);
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);

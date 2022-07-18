@@ -1372,6 +1372,10 @@ void EngineData::exec_glScissor(int32_t x, int32_t y, int32_t width, int32_t hei
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(x,y,width,height);
 }
+void EngineData::exec_glDisable_GL_SCISSOR_TEST()
+{
+	glDisable(GL_SCISSOR_TEST);
+}
 
 void EngineData::exec_glColorMask(bool red, bool green, bool blue, bool alpha)
 {

@@ -2592,6 +2592,10 @@ void ppPluginEngineData::exec_glScissor(int32_t x, int32_t y, int32_t width, int
 	g_gles2_interface->Enable(instance->m_graphics,GL_SCISSOR_TEST);
 	g_gles2_interface->Scissor(instance->m_graphics,x,y,width,height);
 }
+void ppPluginEngineData::exec_glDisable_GL_SCISSOR_TEST()
+{
+	g_gles2_interface->Disable(instance->m_graphics,GL_SCISSOR_TEST);
+}
 
 void ppPluginEngineData::exec_glColorMask(bool red, bool green, bool blue, bool alpha)
 {

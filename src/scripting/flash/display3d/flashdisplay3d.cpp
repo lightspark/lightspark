@@ -499,8 +499,12 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			loadCubeTexture(action.dataobject->as<CubeTexture>());
 			break;
 		case RENDER_SETSCISSORRECTANGLE:
+			// action.udata1 = 0 => scissoring is disabled
 			// action.fdata = x,y,width,height
-			engineData->exec_glScissor(action.fdata[0],action.fdata[1],action.fdata[2],action.fdata[3]);
+			if (action.udata1)
+				engineData->exec_glScissor(action.fdata[0],action.fdata[1],action.fdata[2],action.fdata[3]);
+			else
+				engineData->exec_glDisable_GL_SCISSOR_TEST();
 			break;
 		case RENDER_SETCOLORMASK:
 			// action.udata1 = red | green | blue | alpha
@@ -1285,6 +1289,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setScissorRectangle)
 	{
 		if (th->actions[th->currentactionvector].back().action==RENDER_ACTION::RENDER_SETSCISSORRECTANGLE)
 		{
+			th->actions[th->currentactionvector].back().udata1=1;
 			th->actions[th->currentactionvector].back().fdata[0] = rectangle->x;
 			th->actions[th->currentactionvector].back().fdata[1] = rectangle->y;
 			th->actions[th->currentactionvector].back().fdata[2] = rectangle->width;
@@ -1294,12 +1299,20 @@ ASFUNCTIONBODY_ATOM(Context3D,setScissorRectangle)
 		{
 			renderaction action;
 			action.action = RENDER_ACTION::RENDER_SETSCISSORRECTANGLE;
+			action.udata1=1;
 			action.fdata[0] = rectangle->x;
 			action.fdata[1] = rectangle->y;
 			action.fdata[2] = rectangle->width;
 			action.fdata[3] = rectangle->height;
 			th->addAction(action);
 		}
+	}
+	else
+	{
+		renderaction action;
+		action.action = RENDER_ACTION::RENDER_SETSCISSORRECTANGLE;
+		action.udata1=0;
+		th->addAction(action);
 	}
 }
 ASFUNCTIONBODY_ATOM(Context3D,setRenderToBackBuffer)

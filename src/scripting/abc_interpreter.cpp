@@ -1449,8 +1449,12 @@ void setOperandModified(preloadstate& state,OPERANDTYPES type, int index)
 
 bool canCallFunctionDirect(operands& op,multiname* name, bool ignoreoverridden=false)
 {
-	if (op.objtype && op.objtype->is<Class_inherit>())
+	if (op.objtype && op.objtype->is<Class_inherit>() && !op.objtype->isConstructed())
+	{
+		if (op.objtype->getInstanceWorker()->rootClip && !op.objtype->getInstanceWorker()->rootClip->hasFinishedLoading())
+			return false;
 		op.objtype->as<Class_inherit>()->checkScriptInit();
+	}
 	return ((op.type == OP_LOCAL || op.type == OP_CACHED_CONSTANT || op.type == OP_CACHED_SLOT) &&
 		op.objtype &&
 		!op.objtype->isInterface && // it's not an interface
@@ -1465,8 +1469,12 @@ bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden)
 	if (!obj || !obj->is<Class_base>())
 		return false;
 	Class_base* objtype = obj->as<Class_base>();
-	if (objtype->is<Class_inherit>())
+	if (objtype->is<Class_inherit>() && !objtype->isConstructed())
+	{
+		if (objtype->getInstanceWorker()->rootClip && !objtype->getInstanceWorker()->rootClip->hasFinishedLoading())
+			return false;
 		objtype->as<Class_inherit>()->checkScriptInit();
+	}
 	return !objtype->isInterface && // it's not an interface
 		objtype->isSealed && // it's sealed
 		(

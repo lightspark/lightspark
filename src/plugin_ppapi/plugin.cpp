@@ -2471,7 +2471,7 @@ void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8
 {
 	g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
 }
-void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize)
+void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize)
 {
 	switch (format)
 	{
@@ -2479,12 +2479,18 @@ void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t 
 			g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 			break;
 		case TEXTUREFORMAT::BGR:
+			for (int i = 0; i < width*height*3; i += 3) {
+				uint8_t t = ((uint8_t*)pixels)[i];
+				((uint8_t*)pixels)[i] = ((uint8_t*)pixels)[i+2];
+				((uint8_t*)pixels)[i+2] = t;
+			}
 			g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 			break;
 		case TEXTUREFORMAT::BGRA_PACKED:
 			g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
 			break;
 		case TEXTUREFORMAT::BGR_PACKED:
+			LOG(LOG_NOT_IMPLEMENTED,"textureformat BGR_PACKED for opengl es");
 			g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
 			break;
 		case TEXTUREFORMAT::COMPRESSED:

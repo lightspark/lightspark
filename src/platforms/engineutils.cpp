@@ -188,6 +188,11 @@ static int mainloop_runner(void*)
 				sdl_available = !SDL_InitSubSystem ( SDL_INIT_VIDEO );
 			else
 				sdl_available = !SDL_Init ( SDL_INIT_VIDEO );
+#ifdef ENABLE_GLES2
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
 		}
 	}
 	if (!sdl_available)
@@ -853,7 +858,9 @@ void EngineData::exec_glBindBuffer_GL_ARRAY_BUFFER(uint32_t buffer)
 }
 void EngineData::exec_glEnable_GL_TEXTURE_2D()
 {
+#ifndef ENABLE_GLES2
 	glEnable(GL_TEXTURE_2D);
+#endif
 }
 void EngineData::exec_glEnable_GL_BLEND()
 {
@@ -910,7 +917,9 @@ void EngineData::exec_glEnable_GL_STENCIL_TEST()
 
 void EngineData::exec_glDisable_GL_TEXTURE_2D()
 {
+#ifndef ENABLE_GLES2
 	glDisable(GL_TEXTURE_2D);
+#endif
 }
 void EngineData::exec_glFlush()
 {
@@ -1244,7 +1253,7 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(in
 {
 	glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
 }
-void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize)
+void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize)
 {
 	switch (format)
 	{
@@ -1253,6 +1262,11 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, in
 			break;
 		case TEXTUREFORMAT::BGR:
 #if ENABLE_GLES2
+			for (int i = 0; i < width*height*3; i += 3) {
+				uint8_t t = ((uint8_t*)pixels)[i];
+				((uint8_t*)pixels)[i] = ((uint8_t*)pixels)[i+2];
+				((uint8_t*)pixels)[i+2] = t;
+			}
 			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 #else
 			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_BYTE, pixels);
@@ -1263,6 +1277,7 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, in
 			break;
 		case TEXTUREFORMAT::BGR_PACKED:
 #if ENABLE_GLES2
+			LOG(LOG_NOT_IMPLEMENTED,"textureformat BGR_PACKED for opengl es");
 			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
 #else
 			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_SHORT_5_6_5, pixels);

@@ -3912,7 +3912,10 @@ bool Stage::renderStage3D()
 	for (uint32_t i = 0; i < stage3Ds->size(); i++)
 	{
 		asAtom a=stage3Ds->at(i);
-		if (!asAtomHandler::as<Stage3D>(a)->context3D.isNull() && asAtomHandler::as<Stage3D>(a)->visible)
+		if (!asAtomHandler::as<Stage3D>(a)->context3D.isNull()
+				&& asAtomHandler::as<Stage3D>(a)->context3D->backBufferHeight != 0
+				&& asAtomHandler::as<Stage3D>(a)->context3D->backBufferWidth != 0
+				&& asAtomHandler::as<Stage3D>(a)->visible)
 			return true;
 	}
 	return false;

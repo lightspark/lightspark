@@ -748,11 +748,6 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 		sb += "\n";
 	}
 
-	//TODO
-//	if (limitedProfile == null) {
-//		var version:String = GL.getParameter (GL.VERSION);
-//		limitedProfile = (version.indexOf ("OpenGL ES") > -1 || version.indexOf ("WebGL") > -1);
-//	}
 
 	// combine parts into final progam
 	tiny_string glsl;
@@ -760,14 +755,13 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 	glsl += (isVertexProgram ? "vertex" : "fragment");
 	glsl += " shader\n";
 
-// TODO
-//	if (limitedProfile) {
-//		glsl += "#version 100\n");
-//		// Required to set the default precision of vectors
-//		glsl += "precision highp float;\n");
-//	} else {
-		glsl += "#version 120\n";
-//	}
+#ifdef ENABLE_GLES2
+	glsl += "#version 100\n";
+	// Required to set the default precision of vectors
+	glsl += "precision highp float;\n";
+#else
+	glsl += "#version 120\n";
+#endif
 	glsl += map.toGLSL (false);
 	if (isVertexProgram) {
 		// this is needed for flipping render textures upside down

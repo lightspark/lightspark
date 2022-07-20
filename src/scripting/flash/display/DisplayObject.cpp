@@ -1734,8 +1734,9 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		return nullptr;
 	number_t xmin,xmax,ymin,ymax;
 	MATRIX m=getMatrix();
-	bool ret=getBounds(xmin,xmax,ymin,ymax,m);
-	if(ret==false || xmax-xmin >= 8192 || ymax-ymin >= 8192 || ((xmax-xmin)*(ymax-ymin)) >= 16777216)
+	number_t scalex = abs(initialMatrix.getScaleX());
+	number_t scaley = abs(initialMatrix.getScaleY());
+	if (!getBounds(xmin,xmax,ymin,ymax,m))
 		return nullptr;
 	uint32_t maxfilterborder=0;
 	if (filters)
@@ -1749,20 +1750,21 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 				maxfilterborder = max(maxfilterborder,asAtomHandler::as<BitmapFilter>(f)->getMaxFilterBorder());
 		}
 	}
-	uint32_t w=(ceil(xmax-xmin)+maxfilterborder*2)*initialMatrix.getScaleX();
-	uint32_t h=(ceil(ymax-ymin)+maxfilterborder*2)*initialMatrix.getScaleY();
-	if (needsTextureRecalculation|| !cachedBitmap)
+	uint32_t w=(ceil(xmax-xmin)+maxfilterborder*2) * scalex;
+	uint32_t h=(ceil(ymax-ymin)+maxfilterborder*2) * scaley;
+	if (w >= 8192 || h >= 8192 || (w * h) >= 16777216)
+		return nullptr;
+	bool sizeOk = cachedBitmap && cachedBitmap->getBitmapSize().width == w && cachedBitmap->getBitmapSize().height == h;
+	if (needsTextureRecalculation || !sizeOk)
 	{
-		if (!cachedBitmap
-				|| cachedBitmap->getBitmapSize().width != w
-				|| cachedBitmap->getBitmapSize().height != h)
+		if (!sizeOk)
 		{
 			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getInstanceWorker(),w,h));
 			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getInstanceWorker(),data));
 		}
 		MATRIX m0=m;
 		m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));
-		m0.scale(initialMatrix.getScaleX(),initialMatrix.getScaleY());
+		m0.scale(scalex, scaley);
 		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,true,true);
 		if (filters)
 		{
@@ -1771,7 +1773,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 				asAtom f = asAtomHandler::invalidAtom;
 				filters->at_nocheck(f,i);
 				if (asAtomHandler::is<BitmapFilter>(f))
-					asAtomHandler::as<BitmapFilter>(f)->applyFilter(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0,initialMatrix.getScaleX(),initialMatrix.getScaleY());
+					asAtomHandler::as<BitmapFilter>(f)->applyFilter(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0, scalex, scaley);
 			}
 		}
 		// apply colortransform for cached bitmap after the filters are applied
@@ -1781,7 +1783,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 			ct->applyTransformation(cachedBitmap->bitmapData->getBitmapContainer()->getData()
 									,cachedBitmap->bitmapData->getBitmapContainer()->getWidth()*cachedBitmap->bitmapData->getBitmapContainer()->getHeight()*4);
 		}
-		
+
 		cachedBitmap->resetNeedsTextureRecalculation();
 		cachedBitmap->hasChanged=true;
 		if (!this->cachedAsBitmapOf)
@@ -1794,8 +1796,8 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		*pcachedBitmap = cachedBitmap;
 	this->resetNeedsTextureRecalculation();
 	this->hasChanged=false;
-	MATRIX m1(1,1,0,0,(xmin-maxfilterborder)*initialMatrix.getScaleX(),(ymin-maxfilterborder)*initialMatrix.getScaleY());
-	m1.scale(1.0/initialMatrix.getScaleX(),1.0/initialMatrix.getScaleY());
+	MATRIX m1(1,1,0,0,(xmin-maxfilterborder)*scalex,(ymin-maxfilterborder)*scaley);
+	m1.scale(1.0 / scalex, 1.0 / scaley);
 	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this->getParent(),m1,this);
 }
 

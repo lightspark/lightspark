@@ -22,6 +22,7 @@
 
 #include "swftypes.h"
 #include <unordered_map>
+#include <unordered_set>
 #include <limits>
 
 #define ASFUNCTION_ATOM(name) \
@@ -483,7 +484,7 @@ public:
 	}
 	static bool stringcompare(asAtom& a, ASWorker* wrk, uint32_t stringID);
 	static bool functioncompare(asAtom& a, ASWorker* wrk, asAtom& v2);
-	static std::string toDebugString(asAtom& a);
+	static std::string toDebugString(const asAtom a);
 	static FORCE_INLINE void applyProxyProperty(asAtom& a,SystemState *sys, multiname& name);
 	static FORCE_INLINE TRISTATE isLess(asAtom& a, ASWorker* wrk, asAtom& v2);
 	static FORCE_INLINE bool isEqual(asAtom& a, ASWorker* wrk, asAtom& v2);
@@ -840,6 +841,8 @@ public:
 	asfreelist* objfreelist;
 private:
 	variables_map Variables;
+	// list of ASObjects which have a (not refcounted) reference to this ASObject (used to avoid circular references)
+	unordered_set<ASObject*> ownedObjects;
 	Class_base* classdef;
 	inline const variable* findGettable(const multiname& name, uint32_t* nsRealId = nullptr) const DLL_LOCAL
 	{
@@ -911,6 +914,9 @@ protected:
 	FORCE_INLINE bool destructIntern()
 	{
 		destroyContents();
+		for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
+			(*it)->decRef();
+		ownedObjects.clear();
 		if (proxyMultiName)
 		{
 			delete proxyMultiName;
@@ -1226,6 +1232,7 @@ public:
 	{
 	}
 
+	void addOwnedObject(ASObject* obj);
 	/**
 	  Serialization interface
 

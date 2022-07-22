@@ -275,6 +275,7 @@ public:
 	uint32_t getTagID() const override;
 	bool destruct() override;
 	void finalize() override;
+	void prepareShutdown() override;
 	void startDrawJob() override;
 	void endDrawJob() override;
 
@@ -322,7 +323,7 @@ private:
 	tiny_string url;
 	tiny_string loaderURL;
 	_NR<EventDispatcher> sharedEvents;
-	_NR<Loader> loader;
+	Loader* loader;
 	_NR<ByteArray> bytesData;
 	/*
 	 * waitedObject is the object we are supposed to wait,
@@ -341,6 +342,8 @@ private:
 	 * sendInit should be called with the spinlock held
 	 */
 	void sendInit();
+	// set of events that need refcounting of loader
+	std::unordered_set<Event*> loaderevents;
 public:
 	ASPROPERTY_GETTER(uint32_t,actionScriptVersion);
 	ASPROPERTY_GETTER(uint32_t,swfVersion);
@@ -349,9 +352,11 @@ public:
 	ASPROPERTY_GETTER(bool,parentAllowsChild);
 	ASPROPERTY_GETTER(number_t,frameRate);
 	LoaderInfo(ASWorker*,Class_base* c);
-	LoaderInfo(ASWorker*,Class_base* c, _R<Loader> l);
+	LoaderInfo(ASWorker*, Class_base* c, Loader* l);
 	bool destruct() override;
 	void prepareShutdown() override;
+	void afterHandleEvent(Event* ev) override;
+	void addLoaderEvent(Event* ev);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getLoaderURL);
@@ -422,6 +427,7 @@ public:
 	~Loader();
 	void finalize() override;
 	bool destruct() override;
+	void prepareShutdown() override;
 	void threadFinished(IThreadJob* job) override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);

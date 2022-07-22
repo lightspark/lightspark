@@ -51,6 +51,14 @@ ByteArray::ByteArray(ASWorker* wrk, Class_base* c, uint8_t* b, uint32_t l):ASObj
 
 ByteArray::~ByteArray()
 {
+	if(bytes)
+	{
+#ifdef MEMORY_USAGE_PROFILING
+		getClass()->memoryAccount->removeBytes(real_len);
+#endif
+		delete[] bytes;
+		bytes = nullptr;
+	}
 }
 
 bool ByteArray::destruct()
@@ -70,6 +78,18 @@ bool ByteArray::destruct()
 	shareable = false;
 	littleEndian = false;
 	return ASObject::destruct();
+}
+
+void ByteArray::finalize()
+{
+	if(bytes)
+	{
+#ifdef MEMORY_USAGE_PROFILING
+		getClass()->memoryAccount->removeBytes(real_len);
+#endif
+		delete[] bytes;
+		bytes = nullptr;
+	}
 }
 
 void ByteArray::sinit(Class_base* c)

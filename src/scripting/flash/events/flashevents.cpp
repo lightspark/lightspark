@@ -577,6 +577,7 @@ EventDispatcher::EventDispatcher(ASWorker* wrk, Class_base* c):ASObject(wrk,c),f
 
 void EventDispatcher::finalize()
 {
+	forcedTarget = asAtomHandler::invalidAtom;
 	auto it=handlers.begin();
 	while(it!=handlers.end())
 	{
@@ -813,6 +814,11 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,_constructor)
 			forcedTarget=asAtomHandler::invalidAtom;
 		else if(!asAtomHandler::toObject(forcedTarget,wrk)->getClass()->isSubClass(InterfaceClass<IEventDispatcher>::getClass(wrk->getSystemState())))
 			throw Class<ArgumentError>::getInstanceS(wrk,"Wrong argument for EventDispatcher");
+		else
+		{
+			asAtomHandler::getObject(forcedTarget)->addOwnedObject(th);
+			ASATOM_DECREF(forcedTarget);// decreffed because forcedTarget is now owner of this EventDispatcher
+		}
 	}
 	th->forcedTarget=forcedTarget;
 }

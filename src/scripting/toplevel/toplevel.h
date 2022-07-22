@@ -482,6 +482,12 @@ public:
 		prototype.reset();
 		return destructIntern();
 	}
+	inline void finalize() override
+	{
+		closure_this.reset();
+		prototype.reset();
+	}
+	
 	void prepareShutdown() override;
 	IFunction* bind(_NR<ASObject> c, ASWorker* wrk)
 	{
@@ -626,6 +632,8 @@ public:
 	~SyntheticFunction() {}
 	void call(ASWorker* wrk, asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args, bool coerceresult, bool coercearguments);
 	bool destruct() override;
+	void finalize() override;
+	void prepareShutdown() override;
 	method_info* getMethodInfo() const override { return mi; }
 	
 	_NR<scope_entry_list> func_scope;

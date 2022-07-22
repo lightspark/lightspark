@@ -293,7 +293,6 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 		ASATOM_INCREF(origval);
 		if(argslen==1)
 		{
-			ASATOM_INCREF(closure);
 			asAtomHandler::callFunction(f,wrk,funcRet,closure, params, 3,false);
 		}
 		else

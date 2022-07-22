@@ -47,6 +47,7 @@ public:
 	}
 	inline bool getConstant() const { return isConstant; }
 	inline bool getInDestruction() const { return inDestruction; }
+	inline void resetInDestruction() { inDestruction=false; }
 	inline bool getCached() const { return cached; }
 	inline void setCached() { cached=true; }
 	inline void resetCached() { cached=false; }

@@ -250,6 +250,12 @@ void ASObject::nextValue(asAtom& ret,uint32_t index)
 	getValueAt(ret,index-1);
 }
 
+void ASObject::addOwnedObject(ASObject* obj)
+{
+	obj->incRef(); // will be decreffed when this is destructed
+	ownedObjects.insert(obj);
+}
+
 void ASObject::sinit(Class_base* c)
 {
 	c->setDeclaredMethodByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(c->getSystemState(),hasOwnProperty,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
@@ -409,12 +415,14 @@ void ASObject::call_valueOf(asAtom& ret)
 
 	ASWorker* wrk = getWorker();
 	asAtom o=asAtomHandler::invalidAtom;
-	getVariableByMultiname(o,valueOfName,GET_VARIABLE_OPTION(SKIP_IMPL|NO_INCREF),wrk);
+	bool refcounted = getVariableByMultiname(o,valueOfName,GET_VARIABLE_OPTION(SKIP_IMPL|NO_INCREF),wrk) & GETVAR_ISNEWOBJECT;
 	if (!asAtomHandler::isFunction(o))
 		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtomHandler::fromObject(this);
 	asAtomHandler::callFunction(o,wrk,ret,v,nullptr,0,false);
+	if (refcounted)
+		ASATOM_DECREF(o);
 }
 
 bool ASObject::has_toString()
@@ -442,12 +450,14 @@ void ASObject::call_toString(asAtom &ret)
 
 	ASWorker* wrk = getWorker();
 	asAtom o=asAtomHandler::invalidAtom;
-	getVariableByMultiname(o,toStringName,GET_VARIABLE_OPTION(SKIP_IMPL|NO_INCREF),wrk);
+	bool refcounted = getVariableByMultiname(o,toStringName,GET_VARIABLE_OPTION(SKIP_IMPL|NO_INCREF),wrk) & GETVAR_ISNEWOBJECT;
 	if (!asAtomHandler::isFunction(o))
 		throwError<TypeError>(kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
 
 	asAtom v =asAtomHandler::fromObject(this);
 	asAtomHandler::callFunction(o,wrk,ret,v,nullptr,0,false);
+	if (refcounted)
+		ASATOM_DECREF(o);
 }
 
 tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter)
@@ -1530,34 +1540,37 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		//Call the getter
 		LOG_CALL("Calling the getter intern for " << name << " on " << this->toDebugString());
 		assert(asAtomHandler::isFunction(obj->getter));
-		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,asAtomHandler::getClosure(obj->getter) ? asAtomHandler::getClosure(obj->getter) : this,wrk);
+		ASObject* closure = asAtomHandler::getClosure(obj->getter);
+		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closure ? closure : this,wrk);
 		LOG_CALL("End of getter"<< ' ' << asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
 	}
 	else
 	{
 		assert_and_throw(asAtomHandler::isInvalid(obj->setter));
-		if (!(opt & NO_INCREF))
-			ASATOM_INCREF(obj->var);
-		if(asAtomHandler::isFunction(obj->var) && asAtomHandler::getObject(obj->var)->as<IFunction>()->isMethod())
+		if(asAtomHandler::isFunction(obj->var) && asAtomHandler::as<IFunction>(obj->var)->isMethod())
 		{
-			if (asAtomHandler::getClosure(obj->var))
+			ASObject* closure = asAtomHandler::getClosure(obj->var);
+			if (closure)
 			{
-				LOG_CALL("function " << name << " is already bound to "<<asAtomHandler::toDebugString(obj->var) );
-				if (asAtomHandler::getObject(obj->var)->as<IFunction>()->clonedFrom)
+				LOG_CALL("function " << name << " is already bound to "<<closure->toDebugString());
+				if (asAtomHandler::as<IFunction>(obj->var)->clonedFrom)
 					ASATOM_INCREF(obj->var);
-				asAtomHandler::getClosure(obj->var)->incRef();
 				asAtomHandler::set(ret,obj->var);
 			}
 			else
 			{
 				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<asAtomHandler::toDebugString(obj->var));
-				asAtomHandler::setFunction(ret,asAtomHandler::getObject(obj->var),this,wrk);
+				asAtomHandler::setFunction(ret,asAtomHandler::getObjectNoCheck(obj->var),this,wrk);
 				// the function is always cloned
 				res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT);
 			}
 		}
 		else
+		{
+			if (!(opt & NO_INCREF))
+				ASATOM_INCREF(obj->var);
 			asAtomHandler::set(ret,obj->var);
+		}
 	}
 	return res;
 }
@@ -1614,6 +1627,8 @@ void ASObject::prepareShutdown()
 	preparedforshutdown=true;
 	objfreelist=nullptr;
 	Variables.prepareShutdown();
+	for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
+		(*it)->prepareShutdown();
 }
 
 
@@ -2674,7 +2689,7 @@ bool asAtomHandler::functioncompare(asAtom& a, ASWorker* wrk, asAtom& v2)
 }
 ASObject* asAtomHandler::getClosure(asAtom& a)
 {
-	return (getObject(a) && getObject(a)->is<IFunction>()) ? getObject(a)->as<IFunction>()->closure_this.getPtr() : nullptr;
+	return (is<IFunction>(a)) ? as<IFunction>(a)->closure_this.getPtr() : nullptr;
 }
 asAtom asAtomHandler::getClosureAtom(asAtom& a, asAtom defaultAtom)
 {
@@ -2858,7 +2873,7 @@ void asAtomHandler::replaceBool(asAtom& a, ASObject *obj)
 	a.uintval = obj->as<Boolean>()->val ? 0x100 : 0;
 }
 
-std::string asAtomHandler::toDebugString(asAtom& a)
+std::string asAtomHandler::toDebugString(const asAtom a)
 {
 	switch(a.uintval&0x7)
 	{

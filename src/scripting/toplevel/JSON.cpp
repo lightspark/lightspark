@@ -230,7 +230,7 @@ void JSON::parse(const tiny_string &jsonstring, CharIterator& it, ASObject** par
 
 		asAtom funcret=asAtomHandler::invalidAtom;
 		asAtom closure = asAtomHandler::getClosure(reviver) ? asAtomHandler::fromObject(asAtomHandler::getClosure(reviver)) : asAtomHandler::nullAtom;
-		
+		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(reviver,wrk,funcret,closure, params, 2,true);
 		if(asAtomHandler::isValid(funcret))
 		{

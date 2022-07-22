@@ -66,7 +66,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(NullRef),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(nullptr),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
@@ -76,7 +76,7 @@ LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),appli
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
 }
 
-LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, _R<Loader> l):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
+LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, Loader* l):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
 	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
@@ -126,7 +126,7 @@ ASFUNCTIONBODY_GETTER(LoaderInfo,frameRate)
 bool LoaderInfo::destruct()
 {
 	sharedEvents.reset();
-	loader.reset();
+	loader=nullptr;
 	applicationDomain.reset();
 	securityDomain.reset();
 	waitedObject.reset();
@@ -145,6 +145,7 @@ bool LoaderInfo::destruct()
 	parameters.reset();
 	uncaughtErrorEvents.reset();
 	progressEvent.reset();
+	loaderevents.clear();
 	return EventDispatcher::destruct();
 }
 
@@ -155,8 +156,6 @@ void LoaderInfo::prepareShutdown()
 	EventDispatcher::prepareShutdown();
 	if (sharedEvents)
 		sharedEvents->prepareShutdown();
-	if (loader)
-		loader->prepareShutdown();
 	if (applicationDomain)
 		applicationDomain->prepareShutdown();
 	if (securityDomain)
@@ -173,6 +172,25 @@ void LoaderInfo::prepareShutdown()
 		uncaughtErrorEvents->prepareShutdown();
 	if (progressEvent)
 		progressEvent->prepareShutdown();
+}
+
+void LoaderInfo::afterHandleEvent(Event* ev)
+{
+	auto it = loaderevents.find(ev);
+	if (it != loaderevents.end())
+	{
+		this->loader->decRef();
+		loaderevents.erase(it);
+	}
+}
+
+void LoaderInfo::addLoaderEvent(Event* ev)
+{
+	if (this->loader)
+	{
+		this->loader->incRef();
+		loaderevents.insert(ev);
+	}
 }
 
 void LoaderInfo::resetState()
@@ -215,6 +233,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 			{
 				this->incRef();
 				progressEvent = _MR(Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal));
+				this->addLoaderEvent(progressEvent.getPtr());
 				getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
 			}
 			else
@@ -227,6 +246,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 				if (!progressEvent->queued)
 				{
 					this->incRef();
+					this->addLoaderEvent(progressEvent.getPtr());
 					getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
 				}
 			}
@@ -237,7 +257,9 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 			if(getVm(getSystemState()))
 			{
 				this->incRef();
-				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"complete")));
+				auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"complete");
+				this->addLoaderEvent(ev);
+				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev));
 			}
 			loadStatus=COMPLETE;
 		}
@@ -247,14 +269,18 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 void LoaderInfo::sendInit()
 {
 	this->incRef();
-	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"init")));
+	auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"init");
+	this->addLoaderEvent(ev);
+	getVm(getSystemState())->addEvent(_MR(this),_MR(ev));
 	assert(loadStatus==STARTED);
 	loadStatus=INIT_SENT;
 	if(bytesTotal && bytesLoaded==bytesTotal)
 	{
 		//The clip is also complete now
 		this->incRef();
-		getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"complete")));
+		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"complete");
+		this->addLoaderEvent(ev);
+		getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev));
 		loadStatus=COMPLETE;
 	}
 }
@@ -270,10 +296,10 @@ void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
 	Locker l(spinlock);
 	if(waitedObject != obj)
 		return;
-	if(!loader.isNull() && obj==waitedObject)
+	if(loader && obj==waitedObject)
 		loader->setContent(obj);
 
-	if (!loader.isNull() && !loader->getParent() && waitedObject->is<MovieClip>()) // loader has no parent, ensure init/complete events are sended anyway
+	if (loader && !loader->getParent() && waitedObject->is<MovieClip>()) // loader has no parent, ensure init/complete events are sended anyway
 		loader->getSystemState()->stage->addHiddenObject(waitedObject->as<MovieClip>());
 		
 	waitedObject.reset();
@@ -312,11 +338,11 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getContent)
 {
 	//Use Loader::getContent
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
-	if(th->loader.isNull())
+	if(!th->loader)
 		asAtomHandler::setUndefined(ret);
 	else
 	{
-		asAtom a = asAtomHandler::fromObject(th->loader.getPtr());
+		asAtom a = asAtomHandler::fromObject(th->loader);
 		Loader::_getContent(ret,wrk,a,nullptr,0);
 	}
 }
@@ -324,12 +350,12 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getContent)
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getLoader)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
-	if(th->loader.isNull())
+	if(!th->loader)
 		asAtomHandler::setUndefined(ret);
 	else
 	{
 		th->loader->incRef();
-		ret = asAtomHandler::fromObject(th->loader.getPtr());
+		ret = asAtomHandler::fromObject(th->loader);
 	}
 }
 
@@ -368,7 +394,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytes)
 
 	if (th->bytesData.isNull())
 		th->bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(wrk));
-	if (th->loader.isNull()) //th is the LoaderInfo of the main clip
+	if (!th->loader) //th is the LoaderInfo of the main clip
 	{
 		if (th->bytesData->getLength() == 0 && wrk->getSystemState()->mainClip->parsethread)
 			wrk->getSystemState()->mainClip->parsethread->getSWFByteArray(th->bytesData.getPtr());
@@ -396,8 +422,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getWidth)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 
-	_NR<Loader> l = th->loader;
-	if(l.isNull())
+	if(!th->loader)
 	{
 		if (th == wrk->getSystemState()->mainClip->loaderInfo.getPtr())
 		{
@@ -407,7 +432,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getWidth)
 		asAtomHandler::setInt(ret,wrk,0);
 		return;
 	}
-	_NR<DisplayObject> o=l->getContent();
+	_NR<DisplayObject> o=th->loader->getContent();
 	if (o.isNull())
 	{
 		asAtomHandler::setInt(ret,wrk,0);
@@ -421,8 +446,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getHeight)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 
-	_NR<Loader> l = th->loader;
-	if(l.isNull())
+	if(!th->loader)
 	{
 		if (th == wrk->getSystemState()->mainClip->loaderInfo.getPtr())
 		{
@@ -432,7 +456,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getHeight)
 		asAtomHandler::setInt(ret,wrk,0);
 		return;
 	}
-	_NR<DisplayObject> o=l->getContent();
+	_NR<DisplayObject> o=th->loader->getContent();
 	if (o.isNull())
 	{
 		asAtomHandler::setInt(ret,wrk,0);
@@ -476,23 +500,27 @@ void LoaderThread::execute()
 		if(cache->hasFailed()) //Check to see if the download failed for some reason
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
-			loaderInfo->incRef();
-			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
-			loader->incRef();
+			auto ev = Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker());
+			loaderInfo->addLoaderEvent(ev);
+			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev));
+
 			getVm(loader->getSystemState())->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
 			delete sbuf;
 			// downloader will be deleted in jobFence
 			return;
 		}
-		loaderInfo->incRef();
-		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS(loader->getInstanceWorker(),"open")));
+		auto ev = Class<Event>::getInstanceS(loader->getInstanceWorker(),"open");
+		loaderInfo->addLoaderEvent(ev);
+		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev));
 	}
 	else if(source==BYTES)
 	{
 		assert_and_throw(bytes->bytes);
 
-		loaderInfo->incRef();
-		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<Event>::getInstanceS(loader->getInstanceWorker(),"open")));
+		auto ev = Class<Event>::getInstanceS(loader->getInstanceWorker(),"open");
+		loaderInfo->addLoaderEvent(ev);
+		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev));
+
 		loaderInfo->setBytesTotal(bytes->getLength());
 		loaderInfo->setBytesLoaded(bytes->getLength());
 
@@ -529,8 +557,9 @@ void LoaderThread::execute()
 		// The stream did not contain RootMovieClip or Bitmap
 		if(!threadAborting)
 		{
-			loaderInfo->incRef();
-			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
+			auto ev = Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker());
+			loaderInfo->addLoaderEvent(ev);
+			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev));
 		}
 		return;
 	}
@@ -753,7 +782,9 @@ void Loader::unload()
 	if(loaded)
 	{
 		contentLoaderInfo->incRef();
-		getVm(getSystemState())->addEvent(contentLoaderInfo,_MR(Class<Event>::getInstanceS(getInstanceWorker(),"unload")));
+		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"unload");
+		contentLoaderInfo->addLoaderEvent(ev);
+		getVm(getSystemState())->addEvent(contentLoaderInfo,_MR(ev));
 		loaded=false;
 	}
 
@@ -786,11 +817,23 @@ bool Loader::destruct()
 	uncaughtErrorEvents.reset();
 	return DisplayObjectContainer::destruct();
 }
-
+void Loader::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	DisplayObjectContainer::prepareShutdown();
+	if (content)
+		content->prepareShutdown();
+	if (contentLoaderInfo)
+		contentLoaderInfo->prepareShutdown();
+	if (avm1target)
+		avm1target->prepareShutdown();
+	if (uncaughtErrorEvents)
+		uncaughtErrorEvents->prepareShutdown();
+}
 Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(NullRef),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
 {
-	incRef();
-	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(wrk,_MR(this)));
+	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(wrk,this));
 }
 
 Loader::~Loader()
@@ -3643,13 +3686,22 @@ bool Shape::destruct()
 {
 	graphics.reset();
 	fromTag=nullptr;
-	return 	DisplayObject::destruct();
+	return DisplayObject::destruct();
 }
 
 void Shape::finalize()
 {
 	graphics.reset();
 	DisplayObject::finalize();
+}
+
+void Shape::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	DisplayObject::prepareShutdown();
+	if (graphics)
+		graphics->prepareShutdown();
 }
 
 void Shape::startDrawJob()
@@ -3975,6 +4027,7 @@ Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
 	RootMovieClip* root = wrk->rootClip.getPtr();
 	Template<Vector>::getInstanceS(wrk,v,root,Class<Stage3D>::getClass(getSystemState()),NullRef);
 	stage3Ds = _R<Vector>(asAtomHandler::as<Vector>(v));
+	stage3Ds->setRefConstant();
 	// according to specs, Desktop computers usually have 4 Stage3D objects available
 	ASObject* o = Class<Stage3D>::getInstanceS(wrk);
 	o->setRefConstant();
@@ -3998,7 +4051,10 @@ Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
 
 	softKeyboardRect = _R<Rectangle>(Class<Rectangle>::getInstanceS(wrk));
 	if (wrk->getSystemState()->flashMode == SystemState::AIR)
+	{
 		nativeWindow = _MR(Class<NativeWindow>::getInstanceSNoArgs(wrk));
+		nativeWindow->setRefConstant();
+	}
 }
 
 _NR<Stage> Stage::getStage()
@@ -4342,7 +4398,6 @@ void Stage::finalize()
 	avm1EventListeners.clear();
 	avm1ResizeListeners.clear();
 	fullScreenSourceRect.reset();
-	stage3Ds.reset();
 	softKeyboardRect.reset();
 }
 

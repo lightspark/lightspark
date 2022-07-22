@@ -758,12 +758,12 @@ bool SyntheticFunction::destruct()
 			{
 				if (o->is<Activation_object>())
 				{
-					if (o->as<Activation_object>()->hasDynamicFunctionUsages())
+					if (o->as<Activation_object>()->removeDynamicFunctionUsage(this))
 					{
-						o->as<Activation_object>()->removeDynamicFunctionUsage(this);
-						// the ActivationObject has references to other dynamic functions, so we have to keep it and this function alive
-						if (this->getActivationCount() > 1)
-							this->decActivationCount();
+						// the ActivationObject has a reference to this, so this function will be destructed when the ActivationObject is destructed
+						this->resetInDestruction();
+						if (o->isLastRef())
+							o->decRef();
 						return false;
 					}
 				}
@@ -781,6 +781,61 @@ bool SyntheticFunction::destruct()
 	mi = nullptr;
 	fromNewFunction = false;
 	return IFunction::destruct();
+}
+
+void SyntheticFunction::finalize()
+{
+	// the scope may contain objects that have pointers to this function
+	// which may lead to calling destruct() recursively
+	// so we have to make sure to cleanup the func_scope only once
+	if (!func_scope.isNull() && fromNewFunction)
+	{
+		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
+		{
+			ASObject* o = asAtomHandler::getObject(it->object);
+			if (o && !o->is<Global>())
+			{
+				if (o->is<Activation_object>())
+				{
+					o->as<Activation_object>()->removeDynamicFunctionUsage(this);
+					{
+						// the ActivationObject has a reference to this, so this function will be destructed when the ActivationObject is destructed
+						this->resetInDestruction();
+						if (o->isLastRef())
+							o->decRef();
+						return;
+					}
+				}
+				o->decRef();
+			}
+		}
+	}
+	for (auto it = dynamicreferencedobjects.begin();it != dynamicreferencedobjects.end(); it++)
+	{
+		(*it)->decRef();
+	}
+	dynamicreferencedobjects.clear();
+	func_scope.reset();
+}
+
+void SyntheticFunction::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	IFunction::prepareShutdown();
+	if (!func_scope.isNull())
+	{
+		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
+		{
+			ASObject* o = asAtomHandler::getObject(it->object);
+			if (o)
+				o->prepareShutdown();
+		}
+	}
+	for (auto it = dynamicreferencedobjects.begin();it != dynamicreferencedobjects.end(); it++)
+	{
+		(*it)->prepareShutdown();
+	}
 }
 
 bool SyntheticFunction::isEqual(ASObject *r)
@@ -3377,6 +3432,10 @@ void ObjectPrototype::prepareShutdown()
 	ASObject::prepareShutdown();
 	if (prevPrototype)
 		prevPrototype->getObj()->prepareShutdown();
+	if (originalPrototypeVars)
+		originalPrototypeVars->prepareShutdown();
+	if (workerDynamicClassVars)
+		workerDynamicClassVars->prepareShutdown();
 }
 bool ObjectPrototype::isEqual(ASObject* r)
 {

@@ -420,8 +420,12 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		// according to spec, callproplex should use null as the "this", but 
 		// using null or undefined as "this" indicates use of the global object
 		// see avm2overview chapter 2.4
-		obj = asAtomHandler::fromObject(getGlobalScope(th));
-		ASATOM_INCREF(obj);
+		asAtom obj2 = asAtomHandler::fromObject(getGlobalScope(th));
+		if (obj.uintval != obj2.uintval)
+		{
+			ASATOM_INCREF(obj2);
+			ASATOM_DECREF(obj);
+		}
 	}
 	if(asAtomHandler::isValid(o) && !asAtomHandler::is<Proxy>(obj))
 	{
@@ -430,21 +434,24 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 				&& name->isStatic
 				&& (instrptr->local3.flags & ABC_OP_NOTCACHEABLE)==0
 				&& asAtomHandler::canCacheMethod(obj,name)
-				&& asAtomHandler::getObject(o) 
-				&& (asAtomHandler::is<Class_base>(obj) || asAtomHandler::as<IFunction>(o)->inClass == asAtomHandler::getClass(obj,th->sys)))
+				&& asAtomHandler::getObject(o)
+				&& (asAtomHandler::is<Class_base>(obj) || (!asAtomHandler::as<IFunction>(o)->clonedFrom && asAtomHandler::as<IFunction>(o)->inClass == asAtomHandler::getClass(obj,th->sys))))
 		{
 			// cache method if multiname is static and it is a method of a sealed class
 			instrptr->local3.flags |= ABC_OP_CACHED;
 			instrptr->cacheobj1 = asAtomHandler::getClass(obj,th->sys);
-			instrptr->cacheobj2 = asAtomHandler::getObject(o);
-			if (instrptr->cacheobj2->is<IFunction>() && instrptr->cacheobj2->as<IFunction>()->clonedFrom)
-				instrptr->cacheobj2->setRefConstant();
+			instrptr->cacheobj2 = asAtomHandler::getObjectNoCheck(o);
 			LOG_CALL("caching callproperty:"<<*name<<" "<<instrptr->cacheobj1->toDebugString()<<" "<<instrptr->cacheobj2->toDebugString());
 		}
 //		else
 //			LOG(LOG_ERROR,"callprop caching failed:"<<canCache<<" "<<*name<<" "<<name->isStatic<<" "<<asAtomHandler::toDebugString(obj));
-		obj = asAtomHandler::getClosureAtom(o,obj);
-		callImpl(th, o, obj, args, m, keepReturn);
+		asAtom obj2 = asAtomHandler::getClosureAtom(o,obj);
+		if (obj.uintval != obj2.uintval)
+		{
+			ASATOM_INCREF(obj2);
+			ASATOM_DECREF(obj);
+		}
+		callImpl(th, o, obj2, args, m, keepReturn);
 	}
 	else
 	{
@@ -783,7 +790,7 @@ number_t ABCVm::multiply(ASObject* val2, ASObject* val1)
 	double num2=val2->toNumber();
 	val1->decRef();
 	val2->decRef();
-	LOG_CALL("multiply "  << num1 << '*' << num2);
+	LOG_CALL("multiply_i "  << num1 << '*' << num2);
 	return num1*num2;
 }
 
@@ -2931,9 +2938,13 @@ void ABCVm::call(call_context* th, int m, method_info** called_mi)
 	asAtom f=asAtomHandler::invalidAtom;
 	RUNTIME_STACK_POP(th,f);
 	LOG_CALL("call " << m << ' ' << asAtomHandler::toDebugString(f));
-	obj = asAtomHandler::getClosureAtom(f,obj);
-	ASATOM_INCREF(obj);
-	callImpl(th, f, obj, args, m, true);
+	asAtom obj2 = asAtomHandler::getClosureAtom(f,obj);
+	if (obj.uintval != obj2.uintval)
+	{
+		ASATOM_INCREF(obj2);
+		ASATOM_DECREF(obj);
+	}
+	callImpl(th, f, obj2, args, m, true);
 }
 // this consumes one reference of f, obj and of each arg
 void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int m, bool keepReturn)
@@ -3125,7 +3136,7 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 		{
 			AVM1Function* constr = value->as<DisplayObject>()->loadedFrom->AVM1getClassConstructor(value->as<DisplayObject>()->getTagID());
 			bool res = type== constr;
-			if (!res)
+			if (!res && constr)
 			{
 				ASObject* pr = constr->prototype.getPtr();
 				while (pr)

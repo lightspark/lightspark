@@ -40,11 +40,17 @@ void Array::finalize()
 {
 	for (auto it=data_first.begin() ; it != data_first.end(); ++it)
 	{
-		ASATOM_DECREF_POINTER(it);
+		ASObject* obj = asAtomHandler::getObject(*it);
+		*it = asAtomHandler::invalidAtom;
+		if (obj)
+			obj->removeStoredMember();
 	}
 	for (auto it=data_second.begin() ; it != data_second.end(); ++it)
 	{
-		ASATOM_DECREF(it->second);
+		ASObject* obj = asAtomHandler::getObject(it->second);
+		it->second = asAtomHandler::invalidAtom;
+		if (obj)
+			obj->removeStoredMember();
 	}
 	data_first.clear();
 	data_second.clear();
@@ -54,11 +60,17 @@ bool Array::destruct()
 {
 	for (auto it=data_first.begin() ; it != data_first.end(); ++it)
 	{
-		ASATOM_DECREF_POINTER(it);
+		ASObject* obj = asAtomHandler::getObject(*it);
+		*it = asAtomHandler::invalidAtom;
+		if (obj)
+			obj->removeStoredMember();
 	}
 	for (auto it=data_second.begin() ; it != data_second.end(); ++it)
 	{
-		ASATOM_DECREF(it->second);
+		ASObject* obj = asAtomHandler::getObject(it->second);
+		it->second = asAtomHandler::invalidAtom;
+		if (obj)
+			obj->removeStoredMember();
 	}
 	data_first.clear();
 	data_second.clear();
@@ -149,10 +161,6 @@ void Array::sinit(Class_base* c)
 	c->prototype->setVariableByQName("unshift","",Class<IFunction>::getFunction(c->getSystemState(),unshift),DYNAMIC_TRAIT);
 }
 
-void Array::buildTraits(ASObject* o)
-{
-}
-
 ASFUNCTIONBODY_ATOM(Array,_constructor)
 {
 	Array* th=asAtomHandler::as<Array>(obj);
@@ -202,13 +210,23 @@ ASFUNCTIONBODY_ATOM(Array,_concat)
 	for(;it1 != th->data_first.end();++it1)
 	{
 		res->data_first.push_back(*it1);
-		ASATOM_INCREF((*it1));
+		ASObject* ob = asAtomHandler::getObject(*it1);
+		if (ob)
+		{
+			ob->incRef();
+			ob->addStoredMember();
+		}
 	}
 	auto it2=th->data_second.begin();
 	for(;it2 != th->data_second.end();++it2)
 	{
 		res->data_second[it2->first]=it2->second;
-		ASATOM_INCREF(res->data_second[it2->first]);
+		ASObject* ob = asAtomHandler::getObject(it2->second);
+		if (ob)
+		{
+			ob->incRef();
+			ob->addStoredMember();
+		}
 	}
 
 	for(unsigned int i=0;i<argslen;i++)
@@ -670,6 +688,12 @@ ASFUNCTIONBODY_ATOM(Array,shift)
 	th->data_second.clear();
 	th->data_second.insert(tmp.begin(),tmp.end());
 	th->resize(th->size()-1);
+	ASObject* o = asAtomHandler::getObject(ret);
+	if (o)
+	{
+		o->incRef();// will be decreffed in removeStoreMember
+		o->removeStoredMember();
+	}
 }
 
 int Array::capIndex(int i)
@@ -742,9 +766,9 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 		{
 			asAtom a = th->at((uint32_t)startIndex+i);
 			if (asAtomHandler::isValid(a))
-				res->set(i,a,false);
+				res->set(i,a,false,true,false);
 		}
-		// delete items from current array
+		// delete items from current array (no need to decref/removemember, as they are added to the result)
 		for (int i = 0; i < deleteCount; i++)
 		{
 			if (i+startIndex < ARRAY_SIZE_THRESHOLD)
@@ -864,7 +888,6 @@ ASFUNCTIONBODY_ATOM(Array,indexOf)
 	asAtomHandler::setInt(ret,wrk,res);
 }
 
-
 ASFUNCTIONBODY_ATOM(Array,_pop)
 {
 	if (!asAtomHandler::is<Array>(obj))
@@ -910,6 +933,15 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 			th->data_first.pop_back();
 			if (asAtomHandler::isInvalid(ret))
 				asAtomHandler::setUndefined(ret);
+			else
+			{
+				ASObject* o = asAtomHandler::getObject(ret);
+				if (o)
+				{
+					o->incRef();// will be decreffed in removeStoreMember
+					o->removeStoredMember();
+				}
+			}
 		}
 	}
 	else
@@ -919,6 +951,12 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 		{
 			ret=it->second;
 			th->data_second.erase(it);
+			ASObject* o = asAtomHandler::getObject(ret);
+			if (o)
+			{
+				o->incRef();// will be decreffed in removeStoreMember
+				o->removeStoredMember();
+			}
 		}
 		else
 			asAtomHandler::setUndefined(ret);
@@ -1216,7 +1254,11 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	int i = 0;
 	for(;ittmp != tmp.end();++ittmp)
 	{
-		th->set(i++,*ittmp,false);
+		if (i < ARRAY_SIZE_THRESHOLD)
+			th->data_first.push_back(*ittmp);
+		else
+			th->data_second[i] = *ittmp;
+		i++;
 	}
 	ASATOM_INCREF(obj);
 	ret = obj;
@@ -1382,7 +1424,11 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 	uint32_t i = 0;
 	for(;ittmp != tmp.end();++ittmp)
 	{
-		th->set(i++, ittmp->dataAtom,false);
+		if (i < ARRAY_SIZE_THRESHOLD)
+			th->data_first.push_back(ittmp->dataAtom);
+		else
+			th->data_second[i] = ittmp->dataAtom;
+		i++;
 	}
 	// according to spec sortOn should return "nothing"(?), but it seems that the array is returned
 	ASATOM_INCREF(obj);
@@ -1439,13 +1485,18 @@ ASFUNCTIONBODY_ATOM(Array,unshift)
 		for(uint32_t i=0;i<argslen;i++)
 		{
 			tmp[i] = args[i];
-			ASATOM_INCREF(args[i]);
+			ASObject* ob = asAtomHandler::getObject(args[i]);
+			if (ob)
+			{
+				ob->incRef();
+				ob->addStoredMember();
+			}
 		}
 		th->data_first.clear();
 		th->data_second.clear();
 		for (auto it=tmp.begin(); it != tmp.end(); ++it )
 		{
-			th->set(it->first,it->second,false,false);
+			th->set(it->first,it->second,false,false,false);
 		}
 	}
 	asAtomHandler::setUInt(ret,wrk,(int32_t)th->size());
@@ -1722,6 +1773,12 @@ ASFUNCTIONBODY_ATOM(Array,removeAt)
 	}
 	th->data_second.clear();
 	th->data_second.insert(tmp.begin(),tmp.end());
+	ASObject* o = asAtomHandler::getObject(ret);
+	if (o)
+	{
+		o->incRef();
+		o->removeStoredMember();
+	}
 }
 int32_t Array::getVariableByMultiname_i(const multiname& name, ASWorker* wrk)
 {
@@ -1998,7 +2055,9 @@ bool Array::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 		return true;
 	if (index < data_first.size())
 	{
-		ASATOM_DECREF(data_first.at(index));
+		ASObject* obj = asAtomHandler::getObject(data_first.at(index));
+		if (obj)
+			obj->removeStoredMember();
 		data_first[index]=asAtomHandler::invalidAtom;
 		return true;
 	}
@@ -2006,7 +2065,9 @@ bool Array::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 	auto it = data_second.find(index);
 	if(it == data_second.end())
 		return true;
-	ASATOM_DECREF(it->second);
+	ASObject* obj = asAtomHandler::getObject(it->second);
+	if (obj)
+		obj->removeStoredMember();
 	data_second.erase(it);
 	return true;
 }
@@ -2166,6 +2227,53 @@ void Array::outofbounds(unsigned int index) const
 {
 	throwError<RangeError>(kInvalidArrayLengthError, Number::toString(index));
 }
+uint32_t Array::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+{
+	if (obj==this && !firstcall)
+		return 1;
+	uint32_t res=0;
+	for (auto it = data_first.begin(); it != data_first.end(); it++)
+	{
+		if (res>needed)
+			return res;
+		if (asAtomHandler::isObject(*it))
+		{
+			ASObject* o = asAtomHandler::getObjectNoCheck(*it);
+			if (o == obj)
+				++res;
+			if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
+			{
+				uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
+				if (r == UINT32_MAX)
+					return UINT32_MAX;
+				res += r;
+			}
+		}
+	}
+	for (auto it = data_second.begin(); it != data_second.end(); it++)
+	{
+		if (res>needed)
+			return res;
+		if (asAtomHandler::isObject(it->second))
+		{
+			ASObject* o = asAtomHandler::getObjectNoCheck(it->second);
+			if (o == obj)
+				++res;
+			if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
+			{
+				uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
+				if (r == UINT32_MAX)
+					return UINT32_MAX;
+				res += r;
+			}
+		}
+	}
+	uint32_t r = ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
+	if (r == UINT32_MAX)
+		return UINT32_MAX;
+	res += r;
+	return res;
+}
 
 void Array::resize(uint64_t n)
 {
@@ -2176,7 +2284,9 @@ void Array::resize(uint64_t n)
 			auto it1 = data_first.begin()+n;
 			while (it1 != data_first.end())
 			{
-				ASATOM_DECREF((*it1));
+				ASObject* o = asAtomHandler::getObject(*it1);
+				if (o)
+					o->removeStoredMember();
 				it1 = data_first.erase(it1);
 			}
 		}
@@ -2187,7 +2297,9 @@ void Array::resize(uint64_t n)
 			{
 				auto it2a = it2;
 				++it2;
-				ASATOM_DECREF(it2a->second);
+				ASObject* o = asAtomHandler::getObject(it2a->second);
+				if (o)
+					o->removeStoredMember();
 				data_second.erase(it2a);
 			}
 			else
@@ -2231,14 +2343,14 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 				if (asAtomHandler::isInvalid(data_first.at(i)))
 					out->writeByte(null_marker);
 				else
-					asAtomHandler::toObject(data_first.at(i),wrk)->serialize(out, stringMap, objMap, traitsMap,wrk);
+					asAtomHandler::serialize(out,stringMap, objMap, traitsMap,wrk,data_first.at(i));
 			}
 			else
 			{
 				if (data_second.find(i) == data_second.end())
 					out->writeByte(null_marker);
 				else
-					asAtomHandler::toObject(data_second.at(i),wrk)->serialize(out, stringMap, objMap, traitsMap,wrk);
+					asAtomHandler::serialize(out,stringMap, objMap, traitsMap,wrk,data_second.at(i));
 			}
 		}
 	}
@@ -2314,7 +2426,7 @@ Array::~Array()
 {
 }
 
-bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
+bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref, bool addmember)
 {
 	bool ret = true;
 	if(index<currentsize)
@@ -2326,12 +2438,26 @@ bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
 				if (data_first.at(index).uintval == o.uintval)
 					ret = false;
 				else
-					ASATOM_DECREF(data_first.at(index));
+				{
+					asAtom oldvar = data_first.at(index);
+					ASObject* obj = asAtomHandler::getObject(oldvar);
+					if (obj)
+						obj->removeStoredMember();
+				}
 			}
 			else
 				data_first.resize(index+1);
-			if (addref && ret)
-				ASATOM_INCREF(o);
+			if (ret)
+			{
+				ASObject* obj = asAtomHandler::getObject(o);
+				if (obj)
+				{
+					if (addref)
+						obj->incRef();
+					if (addmember)
+						obj->addStoredMember();
+				}
+			}
 			data_first[index]=o;
 		}
 		else
@@ -2341,10 +2467,24 @@ bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref)
 				if (data_second[index].uintval == o.uintval)
 					ret = false;
 				else
-					ASATOM_DECREF(data_second[index]);
+				{
+					asAtom oldvar = data_second[index];
+					ASObject* obj = asAtomHandler::getObject(oldvar);
+					if (obj)
+						obj->removeStoredMember();
+				}
 			}
-			if (addref && ret)
-				ASATOM_INCREF(o);
+			if (ret)
+			{
+				ASObject* obj = asAtomHandler::getObject(o);
+				if (obj)
+				{
+					if (addref)
+						obj->incRef();
+					if (addmember)
+						obj->addStoredMember();
+				}
+			}
 			data_second[index]=o;
 		}
 	}

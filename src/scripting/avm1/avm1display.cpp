@@ -413,6 +413,7 @@ ASFUNCTIONBODY_ATOM(AVM1Color,_constructor)
 		else
 			LOG(LOG_NOT_IMPLEMENTED,"constructing AVM1Color without MovieClip as target:"<<t->toDebugString());
 		th->target=t->as<AVM1MovieClip>();
+		t->addOwnedObject(th);
 	}
 }
 ASFUNCTIONBODY_ATOM(AVM1Color,getRGB)

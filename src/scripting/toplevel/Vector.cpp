@@ -115,7 +115,10 @@ bool Vector::destruct()
 {
 	for(unsigned int i=0;i<size();i++)
 	{
-		ASATOM_DECREF(vec[i]);
+		ASObject* obj = asAtomHandler::getObject(vec[i]);
+		vec[i]=asAtomHandler::invalidAtom;
+		if (obj)
+			obj->removeStoredMember();
 	}
 	vec.clear();
 	vec_type=nullptr;
@@ -134,6 +137,36 @@ void Vector::prepareShutdown()
 			v->prepareShutdown();
 	}
 }
+uint32_t Vector::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+{
+	if (obj==this && !firstcall)
+		return 1;
+	uint32_t res=0;
+	for (auto it = vec.begin(); it != vec.end(); it++)
+	{
+		if (res>needed)
+			return res;
+		if (asAtomHandler::isObject(*it))
+		{
+			ASObject* o = asAtomHandler::getObjectNoCheck(*it);
+			if (o == obj)
+				++res;
+			if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
+			{
+				uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
+				if (r == UINT32_MAX)
+					return UINT32_MAX;
+				res += r;
+			}
+		}
+	}
+	uint32_t r = ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
+	if (r == UINT32_MAX)
+		return UINT32_MAX;
+	res += r;
+	return res;
+}
+
 
 void Vector::setTypes(const std::vector<const Type *> &types)
 {
@@ -167,11 +200,14 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 		Array* a = asAtomHandler::as<Array>(args[0]);
 		for(unsigned int i=0;i<a->size();++i)
 		{
-			asAtom obj = a->at(i);
+			asAtom o = a->at(i);
 			//Convert the elements of the array to the type of this vector
-			if (!type->coerce(wrk,obj))
-				ASATOM_INCREF(obj);
-			res->vec.push_back(obj);
+			if (!type->coerce(wrk,o))
+				ASATOM_INCREF(o);
+			ASObject* obj = asAtomHandler::getObject(o);
+			if (obj)
+				obj->addStoredMember();
+			res->vec.push_back(o);
 		}
 		res->setIsInitialized(true);
 	}
@@ -194,10 +230,13 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 			res = asAtomHandler::as<Vector>(ret);
 			for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
 			{
-				asAtom v = *i;
-				if (!type->coerce(wrk,v))
-					ASATOM_INCREF(v);
-				res->vec.push_back(v);
+				asAtom o = *i;
+				if (!type->coerce(wrk,o))
+					ASATOM_INCREF(o);
+				ASObject* obj = asAtomHandler::getObject(o);
+				if (obj)
+					obj->addStoredMember();
+				res->vec.push_back(o);
 			}
 		}
 	}
@@ -232,7 +271,12 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 	for(;it != th->vec.end();++it)
 	{
 		res->vec[index]=*it;
-		ASATOM_INCREF(res->vec[index]);
+		ASObject* obj = asAtomHandler::getObject(*it);
+		if (obj)
+		{
+			obj->incRef();
+			obj->addStoredMember();
+		}
 		index++;
 	}
 	//Insert the arguments in the vector
@@ -250,7 +294,12 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 				{
 					res->vec[index]= *it;
 					th->vec_type->coerceForTemplate(th->getInstanceWorker(),res->vec[index]);
-					ASATOM_INCREF(res->vec[index]);
+					ASObject* obj = asAtomHandler::getObject(*it);
+					if (obj)
+					{
+						obj->incRef();
+						obj->addStoredMember();
+					}
 				}
 				index++;
 			}
@@ -260,6 +309,9 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 			asAtom v = args[pos];
 			if (!th->vec_type->coerce(th->getInstanceWorker(),v))
 				ASATOM_INCREF(v);
+			ASObject* obj = asAtomHandler::getObject(v);
+			if (obj)
+				obj->addStoredMember();
 			res->vec[index] = v;
 			index++;
 		}
@@ -300,7 +352,12 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 		{
 			if(asAtomHandler::Boolean_concrete(funcRet))
 			{
-				ASATOM_INCREF(th->vec[i]);
+				ASObject* obj = asAtomHandler::getObject(th->vec[i]);
+				if (obj)
+				{
+					obj->incRef();
+					obj->addStoredMember();
+				}
 				res->vec.push_back(th->vec[i]);
 			}
 			ASATOM_DECREF(funcRet);
@@ -397,6 +454,9 @@ void Vector::append(asAtom &o)
 	asAtom v = o;
 	if (vec_type->coerce(getInstanceWorker(),v))
 		ASATOM_DECREF(v);
+	ASObject* obj = asAtomHandler::getObject(v);
+	if (obj)
+		obj->addStoredMember();
 	vec.push_back(o);
 }
 
@@ -406,6 +466,7 @@ void Vector::remove(ASObject *o)
 	{
 		if (asAtomHandler::getObject(*it) == o)
 		{
+			o->removeStoredMember();
 			vec.erase(it);
 			break;
 		}
@@ -452,6 +513,9 @@ ASFUNCTIONBODY_ATOM(Vector,push)
 		asAtom v = args[i];
 		if (!th->vec_type->coerce(th->getInstanceWorker(),v))
 			ASATOM_INCREF(v);
+		ASObject* obj = asAtomHandler::getObject(v);
+		if (obj)
+			obj->addStoredMember();
 		th->vec.push_back(v);
 	}
 	asAtomHandler::setUInt(ret,wrk,(uint32_t)th->vec.size());
@@ -470,6 +534,12 @@ ASFUNCTIONBODY_ATOM(Vector,_pop)
 		return;
 	}
 	ret = th->vec[size-1];
+	ASObject* ob = asAtomHandler::getObject(ret);
+	if (ob)
+	{
+		ob->incRef(); // will be decreffed in removeStoreMember
+		ob->removeStoredMember();
+	}
 	th->vec.pop_back();
 }
 
@@ -488,7 +558,11 @@ ASFUNCTIONBODY_ATOM(Vector,setLength)
 	if(len <= th->vec.size())
 	{
 		for(size_t i=len; i< th->vec.size(); ++i)
-			ASATOM_DECREF(th->vec[i]);
+		{
+			ASObject* ob = asAtomHandler::getObject(th->vec[i]);
+			if (ob)
+				ob->removeStoredMember();
+		}
 	}
 	th->vec.resize(len, th->getDefaultValue());
 }
@@ -630,6 +704,12 @@ ASFUNCTIONBODY_ATOM(Vector,shift)
 		th->vec[i-1]=th->vec[i];
 	}
 	th->vec.resize(th->size()-1, th->getDefaultValue());
+	ASObject* ob = asAtomHandler::getObject(ret);
+	if (ob)
+	{
+		ob->incRef(); // will be decreffed in removeStoreMember
+		ob->removeStoredMember();
+	}
 }
 
 int Vector::capIndex(int i) const
@@ -686,7 +766,12 @@ ASFUNCTIONBODY_ATOM(Vector,slice)
 		{
 			res->vec[j] =th->vec[i];
 			if (!th->vec_type->coerce(th->getInstanceWorker(),res->vec[j]))
+			{
 				ASATOM_INCREF(res->vec[j]);
+				ASObject* obj = asAtomHandler::getObject(res->vec[j]);
+				if (obj)
+					obj->addStoredMember();
+			}
 		}
 		j++;
 	}
@@ -715,12 +800,12 @@ ASFUNCTIONBODY_ATOM(Vector,splice)
 	res->vec.resize(deleteCount, th->getDefaultValue());
 	if(deleteCount)
 	{
-		// write deleted items to return array
+		// write deleted items to return vector
 		for(int i=0;i<deleteCount;i++)
 		{
 			res->vec[i] = th->vec[startIndex+i];
 		}
-		// delete items from current array
+		// delete items from current vector (no need to decref/removemember, as they are added to the result)
 		for (int i = 0; i < deleteCount; i++)
 		{
 			th->vec[startIndex+i] = th->getDefaultValue();
@@ -743,7 +828,12 @@ ASFUNCTIONBODY_ATOM(Vector,splice)
 	//Insert requested values starting at startIndex
 	for(unsigned int i=2;i<argslen;i++)
 	{
-		ASATOM_INCREF(args[i]);
+		ASObject* obj = asAtomHandler::getObject(args[i]);
+		if (obj)
+		{
+			obj->incRef();
+			obj->addStoredMember();
+		}
 		th->vec.push_back(args[i]);
 	}
 	// move remembered items to new position
@@ -1084,7 +1174,14 @@ ASFUNCTIONBODY_ATOM(Vector,unshift)
 		{
 			th->vec[i] = args[i];
 			if (!th->vec_type->coerce(th->getInstanceWorker(),th->vec[i]))
-				ASATOM_INCREF(th->vec[i]);
+			{
+				ASObject* obj = asAtomHandler::getObject(th->vec[i]);
+				if (obj)
+				{
+					obj->incRef();
+					obj->addStoredMember();
+				}
+			}
 		}
 	}
 	asAtomHandler::setInt(ret,wrk,(int32_t)th->size());
@@ -1112,7 +1209,12 @@ ASFUNCTIONBODY_ATOM(Vector,_map)
 		asAtom funcRet=asAtomHandler::invalidAtom;
 		asAtomHandler::callFunction(func,wrk,funcRet,thisObject, funcArgs, 3,false);
 		assert_and_throw(asAtomHandler::isValid(funcRet));
-		ASATOM_INCREF(funcRet);
+		ASObject* obj = asAtomHandler::getObject(funcRet);
+		if (obj)
+		{
+			obj->incRef();
+			obj->addStoredMember();
+		}
 		res->vec.push_back(funcRet);
 	}
 
@@ -1154,16 +1256,16 @@ ASFUNCTIONBODY_ATOM(Vector,insertAt)
 		index = th->vec.size()+(index);
 	if (index < 0)
 		index = 0;
+	ASObject* ob = asAtomHandler::getObject(o);
+	if (ob)
+	{
+		ob->incRef();
+		ob->addStoredMember();
+	}
 	if ((uint32_t)index >= th->vec.size())
-	{
-		ASATOM_INCREF(o);
 		th->vec.push_back(o);
-	}
 	else
-	{
-		ASATOM_INCREF(o);
 		th->vec.insert(th->vec.begin()+index,o);
-	}
 }
 
 ASFUNCTIONBODY_ATOM(Vector,removeAt)
@@ -1180,6 +1282,9 @@ ASFUNCTIONBODY_ATOM(Vector,removeAt)
 	if ((uint32_t)index < th->vec.size())
 	{
 		ret = th->vec[index];
+		ASObject* ob = asAtomHandler::getObject(ret);
+		if (ob)
+			ob->removeStoredMember();
 		th->vec.erase(th->vec.begin()+index);
 	}
 	else
@@ -1332,13 +1437,21 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 		}
 		else
 		{
-			ASATOM_DECREF(vec[index]);
+			ASObject* obj = asAtomHandler::getObject(vec[index]);
+			if (obj)
+				obj->removeStoredMember();
+			obj = asAtomHandler::getObject(o);
+			if (obj)
+				obj->addStoredMember();
 			vec[index] = o;
 		}
 	}
 	else if(!fixed && index == vec.size())
 	{
-		vec.push_back( o );
+		ASObject* obj = asAtomHandler::getObject(o);
+		if (obj)
+			obj->addStoredMember();
+		vec.push_back(o);
 	}
 	else
 	{
@@ -1366,7 +1479,12 @@ void Vector::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_
 	{
 		if (vec[index].uintval != o.uintval)
 		{
-			ASATOM_DECREF(vec[index]);
+			ASObject* obj = asAtomHandler::getObject(vec[index]);
+			if (obj)
+				obj->removeStoredMember();
+			obj = asAtomHandler::getObject(o);
+			if (obj)
+				obj->addStoredMember();
 			vec[index] = o;
 		}
 		else
@@ -1374,7 +1492,10 @@ void Vector::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_
 	}
 	else if(!fixed && size_t(index) == vec.size())
 	{
-		vec.push_back( o );
+		ASObject* obj = asAtomHandler::getObject(o);
+		if (obj)
+			obj->addStoredMember();
+		vec.push_back(o);
 	}
 	else
 	{
@@ -1566,7 +1687,7 @@ void Vector::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 					out->serializeDouble(asAtomHandler::toNumber(vec[i]));
 					break;
 				case vector_object_marker:
-					asAtomHandler::toObject(vec[i],getInstanceWorker())->serialize(out, stringMap, objMap, traitsMap,wrk);
+					asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,vec[i]);
 					break;
 			}
 		}

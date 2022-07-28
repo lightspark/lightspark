@@ -50,9 +50,10 @@ public:
 	XMLList(ASWorker* wrk,Class_base* c,const XML::XMLVector& r);
 	XMLList(ASWorker* wrk,Class_base* c,const XML::XMLVector& r,XMLList* targetobject,const multiname& targetproperty);
 	XMLList(ASWorker* wrk,Class_base* c,const std::string& str);
+	void finalize() override;
 	bool destruct() override;
+	void prepareShutdown() override;
 	
-	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
 	static XMLList* create(ASWorker* wrk, const XML::XMLVector& r, XMLList *targetobject, const multiname &targetproperty);
 	ASFUNCTION_ATOM(_constructor);

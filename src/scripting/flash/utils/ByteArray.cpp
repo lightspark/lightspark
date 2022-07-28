@@ -125,7 +125,7 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("readUnsignedByte","",Class<IFunction>::getFunction(c->getSystemState(),readUnsignedByte,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readUnsignedInt","",Class<IFunction>::getFunction(c->getSystemState(),readUnsignedInt,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readUnsignedShort","",Class<IFunction>::getFunction(c->getSystemState(),readUnsignedShort,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readObject","",Class<IFunction>::getFunction(c->getSystemState(),readObject),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readObject","",Class<IFunction>::getFunction(c->getSystemState(),readObject,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readUTF","",Class<IFunction>::getFunction(c->getSystemState(),readUTF,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readUTFBytes","",Class<IFunction>::getFunction(c->getSystemState(),readUTFBytes,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeBoolean","",Class<IFunction>::getFunction(c->getSystemState(),writeBoolean),NORMAL_METHOD,true);
@@ -561,6 +561,18 @@ uint32_t ByteArray::writeObject(ASObject* obj, ASWorker* wrk)
 	obj->serialize(this, stringMap, objMap,traitsMap,wrk);
 	return position-oldPosition;
 }
+uint32_t ByteArray::writeAtomObject(asAtom obj, ASWorker* wrk)
+{
+	//Return the length of the serialized object
+
+	//TODO: support custom serialization
+	map<tiny_string, uint32_t> stringMap;
+	map<const ASObject*, uint32_t> objMap;
+	map<const Class_base*, uint32_t> traitsMap;
+	uint32_t oldPosition=position;
+	asAtomHandler::serialize(this,stringMap,objMap,traitsMap,wrk,obj);
+	return position-oldPosition;
+}
 void ByteArray::writeSharedObject(ASObject* obj, const tiny_string& name, ASWorker* wrk)
 {
 	// write amf header
@@ -599,7 +611,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeObject)
 	//Validate parameters
 	assert_and_throw(argslen==1);
 	th->lock();
-	th->writeObject(asAtomHandler::toObject(args[0],wrk),wrk);
+	th->writeAtomObject(args[0],wrk);
 	th->unlock();
 }
 
@@ -990,7 +1002,6 @@ ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 		asAtomHandler::setUndefined(ret);
 		return;
 	}
-	ASATOM_INCREF(ret);
 }
 // replicate adobe behaviour where invalid UTF8 chars are treated as single chars
 // this is very expensive for big strings, so always do validateUtf8 first to check if parseUtf8 is neccessary

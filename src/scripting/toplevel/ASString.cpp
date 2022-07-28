@@ -688,7 +688,7 @@ void ASString::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	}
 }
 
-string ASString::toDebugString() const 
+string ASString::toDebugString() const
 {
 	tiny_string ret;
 	if (!datafilled && hasId)
@@ -697,7 +697,7 @@ string ASString::toDebugString() const
 		ret = std::string("\"") + std::string(data) + "\"";
 #ifndef _NDEBUG
 	char buf[300];
-	sprintf(buf,"(%p / %d%s) ",this,this->getRefCount(),this->isConstructed()?"":" not constructed");
+	sprintf(buf,"(%p/%d/%d%s) ",this,this->getRefCount(),this->storedmembercount,this->isConstructed()?"":" not constructed");
 	ret += buf;
 #endif
 	return ret;

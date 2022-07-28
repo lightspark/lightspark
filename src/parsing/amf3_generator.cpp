@@ -190,7 +190,6 @@ asAtom Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 		if(varName=="")
 			break;
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
-		ASATOM_INCREF(value);
 		ret->setVariableAtomByQName(varName,nsNameAndKind(),value, DYNAMIC_TRAIT);
 	}
 
@@ -301,7 +300,6 @@ asAtom Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& s
 			case vector_object_marker:
 			{
 				asAtom value=parseValue(stringMap, objMap, traitsMap);
-				ASATOM_INCREF(value);
 				ret->append(value);
 				break;
 			}
@@ -347,12 +345,34 @@ asAtom Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringMap,
 	{
 		asAtom key=parseValue(stringMap, objMap, traitsMap);
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
-		multiname name(NULL);
-		name.name_type=multiname::NAME_OBJECT;
-		name.name_o = asAtomHandler::toObject(key,input->getInstanceWorker());
+		multiname name(nullptr);
+		if (asAtomHandler::isString(key))
+		{
+			name.name_type=multiname::NAME_STRING;
+			name.name_s_id=asAtomHandler::toStringId(key,input->getInstanceWorker());
+			ASATOM_DECREF(key);
+		}
+		else if (asAtomHandler::isInteger(key))
+		{
+			name.name_type=multiname::NAME_INT;
+			name.name_i=asAtomHandler::getInt(key);
+		}
+		else if (asAtomHandler::isUInteger(key))
+		{
+			name.name_type=multiname::NAME_UINT;
+			name.name_ui=asAtomHandler::getUInt(key);
+		}
+		else if (asAtomHandler::isNumber(key))
+		{
+			name.name_type=multiname::NAME_NUMBER;
+			name.name_d=asAtomHandler::toNumber(key);
+		}
+		else
+		{
+			name.name_type=multiname::NAME_OBJECT;
+			name.name_o = asAtomHandler::getObject(key);
+		}
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
-		ASATOM_INCREF(key);
-		ASATOM_INCREF(value);
 		ret->setVariableByMultiname(name,value,ASObject::CONST_ALLOWED,nullptr,input->getInstanceWorker());
 	}
 	return asAtomHandler::fromObject(ret);
@@ -434,10 +454,11 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		asAtom tmpArg[1] = { asAtomHandler::fromObject(input) };
 		asAtom r=asAtomHandler::invalidAtom;
 		asAtomHandler::callFunction(o,input->getInstanceWorker(),r,ret, tmpArg, 1,false);
+		ASATOM_DECREF(o);
 		return ret;
 	}
 
-	TraitsRef traits(NULL);
+	TraitsRef traits(nullptr);
 	if((objRef&0x02)==0)
 	{
 		uint32_t traitsRef=objRef>>2;
@@ -472,14 +493,12 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 	for(uint32_t i=0;i<traits.traitsNames.size();i++)
 	{
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
-		ASATOM_INCREF(value);
 
-		multiname name(NULL);
+		multiname name(nullptr);
 		name.name_type=multiname::NAME_STRING;
 		name.name_s_id=input->getSystemState()->getUniqueStringId(traits.traitsNames[i]);
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		name.isAttribute=false;
-			
 		asAtomHandler::getObject(ret)->setVariableByMultiname_intern(name,value,ASObject::CONST_ALLOWED,traits.type,nullptr,input->getInstanceWorker());
 	}
 
@@ -490,7 +509,6 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		if(varName=="")
 			break;
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
-		ASATOM_INCREF(value);
 		asAtomHandler::getObject(ret)->setVariableAtomByQName(varName,nsNameAndKind(),value,DYNAMIC_TRAIT);
 	}
 	return ret;
@@ -675,7 +693,6 @@ asAtom Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
 			throw ParseException("empty key in AMF0 ECMA array");
 		}
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
-		ASATOM_INCREF(value);
 		// contrary to Adobe AMF specs integer names are treated as indexes inside the array
 		m.name_s_id = ar->getSystemState()->getUniqueStringId(varName);
 		m.isInteger=Array::isIntegerWithoutLeadingZeros(varName);
@@ -730,7 +747,6 @@ asAtom Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringMap,
 			throw ParseException("empty key in AMF0 object");
 		}
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
-		ASATOM_INCREF(value);
 
 		if (clsname == "")
 			asAtomHandler::getObjectNoCheck(ret)->setVariableAtomByQName(varName,nsNameAndKind(),value,DYNAMIC_TRAIT);

@@ -412,24 +412,8 @@ public:
 
 class Activation_object: public ASObject
 {
-	// this is used to keep track of dynamic functions that are added as variables of this ActivationObject
-	// and used elsewhere in the code
-	unordered_set<SyntheticFunction*> dynamicfunctions;
 public:
 	Activation_object(ASWorker* wrk, Class_base* c) : ASObject(wrk,c,T_OBJECT,SUBTYPE_ACTIVATIONOBJECT) {}
-	inline void addDynamicFunctionUsage(SyntheticFunction* f) 
-	{ 
-		dynamicfunctions.insert(f);
-	}
-	inline bool removeDynamicFunctionUsage(SyntheticFunction* f) 
-	{ 
-		return dynamicfunctions.erase(f); 
-	}
-	inline bool hasDynamicFunctionUsages() const
-	{
-		return !dynamicfunctions.empty();
-	}
-	
 };
 
 /* Special object returned when new func() syntax is used.
@@ -499,7 +483,6 @@ public:
 		ret->isStatic=isStatic;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
-		ret->setActivationCount(this->getActivationCount());
 		return ret;
 	}
 	IFunction* createFunctionInstance(ASWorker* wrk)
@@ -510,7 +493,6 @@ public:
 		ret->isStatic=isStatic;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
-		ret->setActivationCount(this->getActivationCount());
 		return ret;
 	}
 	ASFUNCTION_ATOM(apply);
@@ -617,7 +599,6 @@ friend class ABCContext;
 friend class Class<IFunction>;
 friend class Class_base;
 private:
-	vector<ASObject*> dynamicreferencedobjects;
 	/* Data structure with information directly loaded from the SWF */
 	method_info* mi;
 	/* Pointer to JIT-compiled function or NULL if not yet compiled */
@@ -634,6 +615,7 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
+	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
 	method_info* getMethodInfo() const override { return mi; }
 	
 	_NR<scope_entry_list> func_scope;
@@ -650,10 +632,6 @@ public:
 		if (func_scope.isNull())
 			func_scope = _NR<scope_entry_list>(new scope_entry_list());
 		func_scope->scope.emplace_back(s);
-	}
-	void addDynamicReferenceObject(ASObject* o)
-	{
-		dynamicreferencedobjects.push_back(o);
 	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target,ASWorker* wrk) override
 	{

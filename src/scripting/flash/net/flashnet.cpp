@@ -40,7 +40,7 @@
 using namespace std;
 using namespace lightspark;
 
-URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const tiny_string m, _NR<ASObject> d):ASObject(wrk,c),method(m=="POST" ? POST : GET),url(u),data(d),contentType("application/x-www-form-urlencoded"),
+URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const tiny_string m, _NR<ASObject> d):ASObject(wrk,c,T_OBJECT,SUBTYPE_URLREQUEST),method(m=="POST" ? POST : GET),url(u),data(d),contentType("application/x-www-form-urlencoded"),
 	requestHeaders(Class<Array>::getInstanceSNoArgs(wrk))
 {
 }

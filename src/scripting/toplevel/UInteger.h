@@ -50,11 +50,11 @@ public:
 	ASFUNCTION_ATOM(_toExponential);
 	ASFUNCTION_ATOM(_toFixed);
 	ASFUNCTION_ATOM(_toPrecision);
-	std::string toDebugString() const override { return toString()+"ui"; }
+	std::string toDebugString() const override;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk) override;
-	static void serializeValue(ByteArray* out,int32_t val);
+	static void serializeValue(ByteArray* out,uint32_t val);
 };
 
 }

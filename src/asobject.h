@@ -601,19 +601,12 @@ struct variable
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
 		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k),isResolved(false),isenumerable(true),issealed(false),isrefcounted(true) {}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
-	void setVar(ASWorker* wrk,asAtom v, ASObject* obj, bool _isrefcounted = true);
+	void setVar(ASWorker* wrk, asAtom v, bool _isrefcounted = true);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
-	FORCE_INLINE void setVarNoCoerce(asAtom &v, ASObject *obj)
-	{
-		if(isrefcounted && asAtomHandler::isObject(var))
-			preparereplacevar(obj);
-		var=v;
-		isrefcounted = asAtomHandler::isObject(v);
-	}
-	void preparereplacevar(ASObject *obj);
-	
+	void setVarNoCoerce(asAtom &v);
+
 	void setResultType(const Type* t)
 	{
 		isResolved=true;
@@ -656,7 +649,9 @@ public:
 	uint32_t slotcount;
 	// indicates if this map was initialized with no variables with non-primitive values
 	bool cloneable;
-	variables_map(MemoryAccount* m);
+	variables_map():slotcount(0),cloneable(true)
+	{
+	}
 	/**
 	   Find a variable in the map
 
@@ -667,13 +662,7 @@ public:
 	variable* findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
 	variable* findObjVar(SystemState* sys,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
 	// adds a dynamic variable without checking if a variable with this name already exists
-	FORCE_INLINE void setDynamicVarNoCheck(uint32_t nameID,asAtom& v)
-	{
-		var_iterator inserted=Variables.insert(Variables.cbegin(),
-				make_pair(nameID,variable(DYNAMIC_TRAIT,nsNameAndKind())));
-		asAtomHandler::set(inserted->second.var,v);
-	}
-
+	void setDynamicVarNoCheck(uint32_t nameID,asAtom& v);
 	/**
 	 * Const version of findObjVar, useful when looking for getters
 	 */
@@ -779,12 +768,12 @@ public:
 	Class_base* getSlotType(unsigned int n);
 	
 	uint32_t findInstanceSlotByMultiname(multiname* name, SystemState *sys);
-	FORCE_INLINE bool setSlot(ASWorker* wrk, unsigned int n, asAtom &o, ASObject* obj);
+	FORCE_INLINE bool setSlot(ASWorker* wrk, unsigned int n, asAtom &o);
 	/*
 	 * This version of the call is guarantee to require no type conversion
 	 * this is verified at optimization time
 	 */
-	FORCE_INLINE bool setSlotNoCoerce(unsigned int n, asAtom o, ASObject* obj);
+	FORCE_INLINE void setSlotNoCoerce(unsigned int n, asAtom o);
 
 	FORCE_INLINE void initSlot(unsigned int n, variable *v)
 	{
@@ -815,6 +804,7 @@ public:
 	void prepareShutdown();
 	bool cloneInstance(variables_map& map);
 	void removeAllDeclaredProperties();
+	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed);
 };
 
 enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
@@ -837,6 +827,7 @@ friend class SystemState;
 friend struct variable;
 friend class variables_map;
 friend class RootMovieClip;
+friend class asAtomHandler;
 public:
 	asfreelist* objfreelist;
 private:
@@ -867,6 +858,7 @@ protected:
 	ASObject(const ASObject& o);
 	virtual ~ASObject();
 	uint32_t stringId;
+	uint32_t storedmembercount; // count how often this object is stored as a member of another object (needed for cyclic reference detection)
 	SWFOBJECT_TYPE type;
 	CLASS_SUBTYPE subtype;
 	
@@ -915,7 +907,9 @@ protected:
 	{
 		destroyContents();
 		for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
-			(*it)->decRef();
+		{
+			(*it)->removeStoredMember();
+		}
 		ownedObjects.clear();
 		if (proxyMultiName)
 		{
@@ -927,6 +921,7 @@ protected:
 		constructIndicator = false;
 		constructorCallComplete =false;
 		implEnable = true;
+		storedmembercount=0;
 #ifndef NDEBUG
 		//Stuff only used in debugging
 		initialized=false;
@@ -971,6 +966,21 @@ public:
 
 	inline Class_base* getClass() const { return classdef; }
 	void setClass(Class_base* c);
+	FORCE_INLINE void addStoredMember()
+	{
+		assert(storedmembercount<uint32_t(this->getRefCount()) || this->getConstant());
+		storedmembercount++;
+	}
+	void removeStoredMember();
+	virtual uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall);
+	FORCE_INLINE bool canHaveCyclicMemberReference()
+	{
+		return type == T_ARRAY || type == T_CLASS || type == T_PROXY || type == T_TEMPLATE || type == T_FUNCTION ||
+				(type == T_OBJECT && 
+				subtype != SUBTYPE_DATE && 
+				subtype != SUBTYPE_URLREQUEST); // TODO check other subtypes
+	}
+	
 	ASFUNCTION_ATOM(_constructor);
 	// constructor for subclasses that can't be instantiated.
 	// Throws ArgumentError.
@@ -1122,11 +1132,11 @@ public:
 	}
 	FORCE_INLINE bool setSlot(ASWorker* wrk,unsigned int n,asAtom o)
 	{
-		return Variables.setSlot(wrk,n,o,this);
+		return Variables.setSlot(wrk,n,o);
 	}
-	FORCE_INLINE bool setSlotNoCoerce(unsigned int n,asAtom o)
+	FORCE_INLINE void setSlotNoCoerce(unsigned int n,asAtom o)
 	{
-		return Variables.setSlotNoCoerce(n,o,this);
+		Variables.setSlotNoCoerce(n,o);
 	}
 	FORCE_INLINE Class_base* getSlotType(unsigned int n)
 	{
@@ -1283,13 +1293,7 @@ public:
 	// copies all variables into the target
 	// returns false if cloning is not possible
 	bool cloneInstance(ASObject* target);
-	
-	/*!
-	 * \brief checks for circular dependencies within the function scope
-	 * \param o the function to check
-	 */
-	void checkFunctionScope(ASObject *o);
-	
+
 	virtual asAtom getVariableBindingValue(const tiny_string &name);
 	virtual void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) { }
 	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
@@ -1302,31 +1306,49 @@ public:
 };
 
 
-FORCE_INLINE bool variables_map::setSlot(ASWorker* wrk,unsigned int n, asAtom &o, ASObject* obj)
+FORCE_INLINE bool variables_map::setSlot(ASWorker* wrk,unsigned int n, asAtom &o)
 {
 	assert_and_throw(n < slotcount);
 	if (slots_vars[n]->var.uintval != o.uintval)
 	{
-		slots_vars[n]->setVar(wrk,o,obj);
-		if (asAtomHandler::is<SyntheticFunction>(slots_vars[n]->var))
-			obj->checkFunctionScope(asAtomHandler::getObjectNoCheck(o));
+		slots_vars[n]->setVar(wrk,o);
 		return slots_vars[n]->var.uintval == o.uintval; // setVar may coerce the object into a new instance, so we need to check if incRef is necessary
 	}
 	return false;
 }
 
-FORCE_INLINE bool variables_map::setSlotNoCoerce(unsigned int n, asAtom o, ASObject* obj)
+FORCE_INLINE void variables_map::setSlotNoCoerce(unsigned int n, asAtom o)
 {
 	assert_and_throw(n < slotcount);
 	if (slots_vars[n]->var.uintval != o.uintval)
-	{
-		slots_vars[n]->setVarNoCoerce(o,obj);
-		if (asAtomHandler::is<SyntheticFunction>(slots_vars[n]->var))
-			obj->checkFunctionScope(asAtomHandler::getObjectNoCheck(o));
-		return asAtomHandler::isObject(o);
-	}
-	return false;
+		slots_vars[n]->setVarNoCoerce(o);
 }
+FORCE_INLINE void variables_map::setDynamicVarNoCheck(uint32_t nameID,asAtom& v)
+{
+	var_iterator inserted=Variables.insert(Variables.cbegin(),
+			make_pair(nameID,variable(DYNAMIC_TRAIT,nsNameAndKind())));
+	ASObject* o = asAtomHandler::getObject(v);
+	if (o && !o->getConstant())
+		o->addStoredMember();
+	asAtomHandler::set(inserted->second.var,v);
+}
+FORCE_INLINE void variable::setVarNoCoerce(asAtom &v)
+{
+	asAtom oldvar = var;
+	var=v;
+	if(isrefcounted && asAtomHandler::isObject(oldvar))
+	{
+		LOG_CALL("remove old var no coerce:"<<asAtomHandler::toDebugString(oldvar));
+		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
+	}
+	isrefcounted = asAtomHandler::isObject(v);
+	if(isrefcounted)
+	{
+		asAtomHandler::getObjectNoCheck(v)->incRef();
+		asAtomHandler::getObjectNoCheck(v)->addStoredMember();
+	}
+}
+
 
 class AVM1Function;
 class Activation_object;
@@ -1357,6 +1379,7 @@ class ContextMenuEvent;
 class CubeTexture;
 class DatagramSocket;
 class Date;
+class Dictionary;
 class DisplacementFilter;
 class DisplayObject;
 class DisplayObjectContainer;
@@ -1426,6 +1449,7 @@ class Type;
 class UInteger;
 class Undefined;
 class URLLoader;
+class URLRequest;
 class Vector;
 class Vector3D;
 class VertexBuffer3D;
@@ -1470,6 +1494,7 @@ template<> inline bool ASObject::is<ConvolutionFilter>() const { return subtype=
 template<> inline bool ASObject::is<CubeTexture>() const { return subtype==SUBTYPE_CUBETEXTURE; }
 template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
 template<> inline bool ASObject::is<DatagramSocket>() const { return subtype==SUBTYPE_DATAGRAMSOCKET; }
+template<> inline bool ASObject::is<Dictionary>() const { return subtype==SUBTYPE_DICTIONARY; }
 template<> inline bool ASObject::is<DisplacementFilter>() const { return subtype==SUBTYPE_DISPLACEMENTFILTER; }
 template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_VIDEO || subtype == SUBTYPE_SIMPLEBUTTON || subtype == SUBTYPE_SHAPE || subtype == SUBTYPE_MORPHSHAPE; }
 template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE; }
@@ -1541,6 +1566,7 @@ template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<UInteger>() const { return type==T_UINTEGER; }
 template<> inline bool ASObject::is<Undefined>() const { return type==T_UNDEFINED; }
 template<> inline bool ASObject::is<URLLoader>() const { return subtype == SUBTYPE_URLLOADER; }
+template<> inline bool ASObject::is<URLRequest>() const { return subtype == SUBTYPE_URLREQUEST; }
 template<> inline bool ASObject::is<Vector>() const { return subtype==SUBTYPE_VECTOR; }
 template<> inline bool ASObject::is<Vector3D>() const { return subtype==SUBTYPE_VECTOR3D; }
 template<> inline bool ASObject::is<VertexBuffer3D>() const { return subtype==SUBTYPE_VERTEXBUFFER3D; }
@@ -2501,12 +2527,12 @@ FORCE_INLINE bool asAtomHandler::isTemplate(const asAtom& a) { return isObject(a
 
 FORCE_INLINE ASObject* asAtomHandler::getObject(const asAtom& a)
 {
-	assert(!(a.uintval & ATOMTYPE_OBJECT_BIT) || !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getCached());
+	assert(!(a.uintval & ATOMTYPE_OBJECT_BIT) || !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getCached() || ((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getInDestruction());
 	return a.uintval & ATOMTYPE_OBJECT_BIT ? (ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)) : nullptr;
 }
 FORCE_INLINE ASObject* asAtomHandler::getObjectNoCheck(const asAtom& a)
 {
-	assert(!(a.uintval & ATOMTYPE_OBJECT_BIT) || !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getCached());
+	assert(!(a.uintval & ATOMTYPE_OBJECT_BIT) || !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getCached() || ((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getInDestruction());
 	return (ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7));
 }
 FORCE_INLINE void asAtomHandler::resetCached(const asAtom& a)

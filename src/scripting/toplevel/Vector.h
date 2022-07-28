@@ -263,9 +263,9 @@ public:
 	~Vector();
 	bool destruct() override;
 	void prepareShutdown() override;
-	
+	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
+
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o) {}
 	static void generator(asAtom& ret, ASWorker* wrk, asAtom& o_class, asAtom* args, const unsigned int argslen);
 
 	void setTypes(const std::vector<const Type*>& types);
@@ -287,7 +287,12 @@ public:
 		{
 			if (vec[index].uintval != o.uintval)
 			{
-				ASATOM_DECREF(vec[index]);
+				ASObject* obj = asAtomHandler::getObject(vec[index]);
+				if (obj)
+					obj->removeStoredMember();
+				obj = asAtomHandler::getObject(o);
+				if (obj)
+					obj->addStoredMember();
 				vec[index] = o;
 			}
 			else
@@ -295,7 +300,10 @@ public:
 		}
 		else if(!fixed && size_t(index) == vec.size())
 		{
-			vec.push_back( o );
+			ASObject* obj = asAtomHandler::getObject(o);
+			if (obj)
+				obj->addStoredMember();
+			vec.push_back(o);
 		}
 		else
 		{
@@ -333,7 +341,15 @@ public:
 	void set(uint32_t index, asAtom v)
 	{
 		if (index < size())
+		{
+			ASObject* obj = asAtomHandler::getObject(vec[index]);
+			if (obj)
+				obj->removeStoredMember();
+			obj = asAtomHandler::getObject(v);
+			if (obj)
+				obj->addStoredMember();
 			vec[index] = v;
+		}
 	}
 	//Get value at index, or return defaultValue (a borrowed
 	//reference) if index is out-of-range

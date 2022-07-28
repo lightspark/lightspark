@@ -165,8 +165,10 @@ void IFunction::prepareShutdown()
 		return;
 	ASObject::prepareShutdown();
 	if (closure_this)
+	{
 		closure_this->prepareShutdown();
-	closure_this.reset();
+		closure_this.fakeRelease();
+	}
 	if (prototype)
 		prototype->prepareShutdown();
 	prototype.reset();
@@ -329,11 +331,15 @@ std::string IFunction::toDebugString() const
 {
 	string ret = ASObject::toDebugString()+(closure_this ? "(closure:"+closure_this->toDebugString()+")":"")+(clonedFrom ?" cloned":"");
 #ifndef _NDEBUG
-	if (this->getActivationCount() > 1)
+	if (functionname)
 	{
-		char buf[300];
-		sprintf(buf," (activationcount:%d)",this->getActivationCount());
-		ret += buf;
+		ret +=" n:";
+		ret += getSystemState()->getStringFromUniqueId(functionname);
+	}
+	if (inClass)
+	{
+		ret += " c:";
+		ret += inClass->toDebugString();
 	}
 #endif
 	return ret;
@@ -378,6 +384,7 @@ IFunction* SyntheticFunction::clone(ASWorker* wrk)
 	ret->objfreelist = &wrk->freelist_syntheticfunction;
 	ret->subtype = this->subtype;
 	ret->isStatic = this->isStatic;
+	ret->storedmembercount=0;
 	return ret;
 }
 
@@ -721,7 +728,10 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		ASATOM_DECREF_POINTER(i);
 	}
 	if (cc->locals[0].uintval != obj.uintval)
+	{
+		LOG_CALL("locals0:"<<asAtomHandler::toDebugString(cc->locals[0]));
 		ASATOM_DECREF_POINTER(cc->locals);
+	}
 
 	asAtom* lastscope=cc->scope_stack+cc->curr_scope_stack;
 	for(asAtom* i=cc->scope_stack+(mi->needsscope && !exceptioncaught ? 1:0);i< lastscope;++i)
@@ -730,7 +740,10 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		ASATOM_DECREF_POINTER(i);
 	}
 	if (mi->needsscope && !exceptioncaught && cc->scope_stack[0].uintval != obj.uintval)
+	{
+		LOG_CALL("scopestack0:"<<asAtomHandler::toDebugString(cc->scope_stack[0]));
 		ASATOM_DECREF_POINTER(cc->scope_stack);
+	}
 	cc->curr_scope_stack=0;
 	if (!isMethod())
 		this->decRef(); //free local ref
@@ -749,33 +762,15 @@ bool SyntheticFunction::destruct()
 	// the scope may contain objects that have pointers to this function
 	// which may lead to calling destruct() recursively
 	// so we have to make sure to cleanup the func_scope only once
-	if (!func_scope.isNull() && fromNewFunction)
+	if (!func_scope.isNull() && fromNewFunction && func_scope->isLastRef())
 	{
 		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
 		{
 			ASObject* o = asAtomHandler::getObject(it->object);
 			if (o && !o->is<Global>())
-			{
-				if (o->is<Activation_object>())
-				{
-					if (o->as<Activation_object>()->removeDynamicFunctionUsage(this))
-					{
-						// the ActivationObject has a reference to this, so this function will be destructed when the ActivationObject is destructed
-						this->resetInDestruction();
-						if (o->isLastRef())
-							o->decRef();
-						return false;
-					}
-				}
-				o->decRef();
-			}
+				o->removeStoredMember();
 		}
 	}
-	for (auto it = dynamicreferencedobjects.begin();it != dynamicreferencedobjects.end(); it++)
-	{
-		(*it)->decRef();
-	}
-	dynamicreferencedobjects.clear();
 	func_scope.reset();
 	val = nullptr;
 	mi = nullptr;
@@ -788,33 +783,15 @@ void SyntheticFunction::finalize()
 	// the scope may contain objects that have pointers to this function
 	// which may lead to calling destruct() recursively
 	// so we have to make sure to cleanup the func_scope only once
-	if (!func_scope.isNull() && fromNewFunction)
+	if (!func_scope.isNull() && fromNewFunction && func_scope->isLastRef())
 	{
 		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
 		{
 			ASObject* o = asAtomHandler::getObject(it->object);
 			if (o && !o->is<Global>())
-			{
-				if (o->is<Activation_object>())
-				{
-					o->as<Activation_object>()->removeDynamicFunctionUsage(this);
-					{
-						// the ActivationObject has a reference to this, so this function will be destructed when the ActivationObject is destructed
-						this->resetInDestruction();
-						if (o->isLastRef())
-							o->decRef();
-						return;
-					}
-				}
-				o->decRef();
-			}
+				o->removeStoredMember();
 		}
 	}
-	for (auto it = dynamicreferencedobjects.begin();it != dynamicreferencedobjects.end(); it++)
-	{
-		(*it)->decRef();
-	}
-	dynamicreferencedobjects.clear();
 	func_scope.reset();
 }
 
@@ -832,10 +809,38 @@ void SyntheticFunction::prepareShutdown()
 				o->prepareShutdown();
 		}
 	}
-	for (auto it = dynamicreferencedobjects.begin();it != dynamicreferencedobjects.end(); it++)
+}
+uint32_t SyntheticFunction::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+{
+	if (obj==this && !firstcall)
+		return 1;
+	uint32_t res=0;
+	if (!func_scope.isNull() && fromNewFunction && func_scope->isLastRef())
 	{
-		(*it)->prepareShutdown();
+		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
+		{
+			if (res>needed)
+				return res;
+			if (asAtomHandler::isObject(it->object))
+			{
+				ASObject* o = asAtomHandler::getObjectNoCheck(it->object);
+				if (o == obj)
+					++res;
+				if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
+				{
+					uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
+					if (r == UINT32_MAX)
+						return UINT32_MAX;
+					res += r;
+				}
+			}
+		}
 	}
+	uint32_t r = ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
+	if (r == UINT32_MAX)
+		return UINT32_MAX;
+	res += r;
+	return res;
 }
 
 bool SyntheticFunction::isEqual(ASObject *r)
@@ -906,6 +911,7 @@ IFunction* Function::clone(ASWorker* wrk)
 	ret->objfreelist = &wrk->freelist[getClass()->classID];
 	ret->subtype = this->subtype;
 	ret->isStatic = this->isStatic;
+	ret->storedmembercount=0;
 	return ret;
 }
 
@@ -1220,7 +1226,7 @@ const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool 
 }
 
 Class_base::Class_base(const QName& name, uint32_t _classID, MemoryAccount* m):ASObject(getSys()->worker,Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),
-	qualifiedClassnameID(UINT32_MAX),global(nullptr),borrowedVariables(m),
+	qualifiedClassnameID(UINT32_MAX),global(nullptr),
 	context(nullptr),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false),classID(_classID)
 {
 	setSystemState(getSys());
@@ -1228,7 +1234,7 @@ Class_base::Class_base(const QName& name, uint32_t _classID, MemoryAccount* m):A
 }
 
 Class_base::Class_base(const Class_object* c):ASObject((MemoryAccount*)nullptr),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(nullptr),
-	qualifiedClassnameID(UINT32_MAX),global(nullptr),borrowedVariables(nullptr),
+	qualifiedClassnameID(UINT32_MAX),global(nullptr),
 	context(nullptr),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(nullptr),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false),classID(UINT32_MAX)
 {
 	type=T_CLASS;
@@ -2837,6 +2843,7 @@ IFunction* Class<IFunction>::getNopFunction()
 	IFunction* ret=new (this->memoryAccount) Function(getInstanceWorker(),this, ASNop);
 	//Similarly to newFunction, we must create a prototype object
 	ret->prototype = _MR(new_asobject(getInstanceWorker()));
+	ret->incRef();
 	ret->prototype->setVariableByQName("constructor","",ret,DECLARED_TRAIT);
 	return ret;
 }

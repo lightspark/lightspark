@@ -63,6 +63,13 @@ XML::XML(ASWorker* wrk,Class_base* c, const pugi::xml_node& _n, XML* parent, boo
 	createTree(_n,fromXMLList);
 }
 
+void XML::finalize()
+{
+	childrenlist.reset();
+	attributelist.reset();
+	procinstlist.reset();
+	namespacedefs.clear();
+}
 bool XML::destruct()
 {
 	xmldoc.reset();
@@ -79,6 +86,23 @@ bool XML::destruct()
 	procinstlist.reset();
 	namespacedefs.clear();
 	return destructIntern();
+}
+
+void XML::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	if (childrenlist)
+		childrenlist->prepareShutdown();
+	if (attributelist)
+		attributelist->prepareShutdown();
+	if (procinstlist)
+		procinstlist->prepareShutdown();
+	for (auto it = namespacedefs.begin(); it != namespacedefs.end(); it++)
+	{
+		(*it)->prepareShutdown();
+	}
 }
 
 void XML::sinit(Class_base* c)
@@ -2738,7 +2762,6 @@ void XML::createTree(const pugi::xml_node& rootnode,bool fromXMLList)
 	if (this->childrenlist.isNull() || this->childrenlist->nodes.size() > 0)
 	{
 		this->childrenlist = _MR(Class<XMLList>::getInstanceSNoArgs(getInstanceWorker()));
-		this->childrenlist->incRef();
 	}
 	if (!parentNode && !fromXMLList)
 	{

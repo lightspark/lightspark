@@ -2254,6 +2254,8 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			else
 			{
 				assert(scriptid != -1);
+				if (obj->getConstant())
+					f->setRefConstant();
 				f->addToScope(scope_entry(asAtomHandler::fromObject(obj),false));
 			}
 			if(kind == traits_info::Getter)

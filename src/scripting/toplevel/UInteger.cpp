@@ -230,6 +230,17 @@ bool UInteger::isEqual(ASObject* o)
 	}
 }
 
+string UInteger::toDebugString() const
+{
+	tiny_string ret = toString()+"ui";
+#ifndef _NDEBUG
+	char buf[300];
+	sprintf(buf,"(%p/%d/%d%s) ",this,this->getRefCount(),this->storedmembercount,this->isConstructed()?"":" not constructed");
+	ret += buf;
+#endif
+	return ret;
+}
+
 ASFUNCTIONBODY_ATOM(UInteger,_toExponential)
 {
 	double v = asAtomHandler::toNumber(obj);
@@ -271,7 +282,7 @@ void UInteger::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	serializeValue(out,val);
 }
 
-void UInteger::serializeValue(ByteArray* out, int32_t val)
+void UInteger::serializeValue(ByteArray* out, uint32_t val)
 {
 	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{

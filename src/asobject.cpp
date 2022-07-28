@@ -82,9 +82,9 @@ string ASObject::toDebugString() const
 #ifndef _NDEBUG
 	char buf[300];
 	if (this->getConstant())
-		sprintf(buf,"(%p%s) ",this,this->isConstructed()?"":" not constructed");
+		sprintf(buf,"(%p%s)",this,this->isConstructed()?"":" not constructed");
 	else
-		sprintf(buf,"(%p / %d%s) ",this,this->getRefCount(),this->isConstructed()?"":" not constructed");
+		sprintf(buf,"(%p/%d/%d/%d%s)",this,this->getRefCount(),this->storedmembercount,this->getConstant(),this->isConstructed()?"":" not constructed");
 	ret += buf;
 #endif
 	return ret;
@@ -253,6 +253,7 @@ void ASObject::nextValue(asAtom& ret,uint32_t index)
 void ASObject::addOwnedObject(ASObject* obj)
 {
 	obj->incRef(); // will be decreffed when this is destructed
+	obj->addStoredMember();
 	ownedObjects.insert(obj);
 }
 
@@ -504,9 +505,6 @@ bool ASObject::isConstructed() const
 {
 	return traitsInitialized && constructIndicator;
 }
-variables_map::variables_map(MemoryAccount *m):slotcount(0),cloneable(true)
-{
-}
 
 variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
 {
@@ -620,7 +618,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 		case NORMAL_METHOD:
 		{
 			asAtom v = asAtomHandler::fromObject(o);
-			obj->setVarNoCoerce(v,this);
+			obj->setVarNoCoerce(v);
 			break;
 		}
 		case GETTER_METHOD:
@@ -691,7 +689,7 @@ void ASObject::setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind
 	{
 		case NORMAL_METHOD:
 		{
-			obj->setVar(this->getInstanceWorker(),f,this);
+			obj->setVar(this->getInstanceWorker(),f,!o->getConstant());
 			break;
 		}
 		case GETTER_METHOD:
@@ -736,7 +734,9 @@ bool ASObject::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 
 	assert(asAtomHandler::isInvalid(obj->getter) && asAtomHandler::isInvalid(obj->setter) && asAtomHandler::isValid(obj->var));
 	//Now dereference the value
-	ASATOM_DECREF(obj->var);
+	ASObject* o = asAtomHandler::getObject(obj->var);
+	if (o)
+		o->removeStoredMember();
 
 	//Now kill the variable
 	Variables.killObjVar(getSystemState(),name);
@@ -888,8 +888,6 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		{
 			if (obj->kind == CONSTANT_TRAIT)
 				asAtomHandler::getObjectNoCheck(o)->setRefConstant();
-			else
-				checkFunctionScope(asAtomHandler::getObjectNoCheck(o)->as<SyntheticFunction>());
 		}
 		if (alreadyset)
 			*alreadyset=false;
@@ -908,18 +906,16 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 				*alreadyset = true;
 			else
 			{
-				obj->setVar(wrk,o,this);
+				obj->setVar(wrk,o);
 				*alreadyset = o.uintval != obj->var.uintval; // setVar may coerce the object into a new instance, so we need to check if decRef is necessary
 			}
 		}
 		else
-			obj->setVar(wrk,o,this);
+			obj->setVar(wrk,o);
 		if (isfunc)
 		{
 			if (obj->kind == CONSTANT_TRAIT)
 				asAtomHandler::getObjectNoCheck(o)->setRefConstant();
-			else
-				checkFunctionScope(asAtomHandler::getObjectNoCheck(o)->as<SyntheticFunction>());
 		}
 	}
 	return retval;
@@ -948,7 +944,7 @@ variable *ASObject::setVariableAtomByQName(const tiny_string& name, const nsName
 variable *ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable, bool isRefcounted)
 {
 	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
-	obj->setVar(this->getInstanceWorker(),o,this,isRefcounted);
+	obj->setVar(this->getInstanceWorker(),o,isRefcounted && asAtomHandler::isObject(o) && !asAtomHandler::getObjectNoCheck(o)->getConstant());
 	obj->isenumerable=isEnumerable;
 	return obj;
 }
@@ -973,8 +969,11 @@ variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, c
 	{
 		traitTypemname=_t;
 	}
+	ASObject* o = asAtomHandler::getObject(var);
+	if (o && !o->getConstant())
+		o->addStoredMember();
 }
-void variable::setVar(ASWorker* wrk, asAtom v, ASObject *obj, bool _isrefcounted)
+void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 {
 	//Resolve the typename if we have one
 	//currentCallContext may be NULL when inserting legacy
@@ -987,26 +986,16 @@ void variable::setVar(ASWorker* wrk, asAtom v, ASObject *obj, bool _isrefcounted
 	}
 	if(isResolved && type)
 		type->coerce(wrk,v);
-	if(isrefcounted && asAtomHandler::isObject(var))
-	{
-		LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
-		if (obj->is<Activation_object>() && (asAtomHandler::is<SyntheticFunction>(var) || asAtomHandler::is<AVM1Function>(var)))
-		{
-			if (asAtomHandler::getObjectNoCheck(var)->getActivationCount() > asAtomHandler::getObjectNoCheck(var)->getRefCount())
-				asAtomHandler::getObjectNoCheck(var)->decActivationCount();
-		}
-		asAtomHandler::getObjectNoCheck(var)->decRef();
-	}
+	asAtom oldvar = var;
 	var=v;
+	if(isrefcounted && asAtomHandler::isObject(oldvar))
+	{
+		LOG_CALL("remove old var:"<<asAtomHandler::toDebugString(oldvar));
+		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
+	}
+	if(asAtomHandler::isObject(v) && _isrefcounted)
+		asAtomHandler::getObjectNoCheck(v)->addStoredMember();
 	isrefcounted = _isrefcounted;
-}
-
-void variable::preparereplacevar(ASObject *obj)
-{
-	LOG_CALL("replacing:"<<asAtomHandler::toDebugString(var));
-	if (obj->is<Activation_object>() && (asAtomHandler::is<SyntheticFunction>(var) || asAtomHandler::is<AVM1Function>(var)))
-		asAtomHandler::getObject(var)->decActivationCount();
-	ASATOM_DECREF(var);
 }
 
 void variables_map::killObjVar(SystemState* sys,const multiname& mname)
@@ -1356,26 +1345,6 @@ void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 bool ASObject::cloneInstance(ASObject *target)
 {
 	return Variables.cloneInstance(target->Variables);
-}
-
-void ASObject::checkFunctionScope(ASObject* o)
-{
-	SyntheticFunction* f = o->as<SyntheticFunction>();
-	if (this->is<Global>() || this->is<Function_object>() || !getInstanceWorker()->currentCallContext->mi->needsActivation())
-		return;
-	for (auto it = f->func_scope->scope.rbegin(); it != f->func_scope->scope.rend(); it++)
-	{
-		if (asAtomHandler::getObject(it->object) != this)
-			continue;
-		if (this->is<Activation_object>())
-		{
-			f->incActivationCount();
-			this->as<Activation_object>()->addDynamicFunctionUsage(f);
-		}
-		else
-			f->addDynamicReferenceObject(this);
-		break;
-	}
 }
 
 asAtom ASObject::getVariableBindingValue(const tiny_string &name)
@@ -1733,11 +1702,15 @@ void variables_map::destroyContents()
 	{
 		if (it->second.isrefcounted)
 		{
-			ASATOM_DECREF(it->second.var);
 			ASATOM_DECREF(it->second.setter);
 			ASATOM_DECREF(it->second.getter);
+			ASObject* o = asAtomHandler::getObject(it->second.var);
+			it = Variables.erase(it);
+			if (o)
+				o->removeStoredMember();
 		}
-		it = Variables.erase(it);
+		else
+			it = Variables.erase(it);
 	}
 	slots_vars.clear();
 	slotcount=0;
@@ -1789,6 +1762,41 @@ void variables_map::removeAllDeclaredProperties()
 	}
 }
 
+uint32_t variables_map::countCylicMemberReferences(ASObject* obj, uint32_t needed)
+{
+	if (!obj->canHaveCyclicMemberReference())
+		return 0;
+	uint32_t res=0;
+	var_iterator it=Variables.begin();
+	while(it!=Variables.cend())
+	{
+		ASObject* o = asAtomHandler::getObject(it->second.var);
+		if (o == obj)
+		{
+			++res;
+			if (res>needed)
+				return res;
+		}
+		it++;
+	}
+	it=Variables.begin();
+	while(it!=Variables.cend())
+	{
+		ASObject* o = asAtomHandler::getObject(it->second.var);
+		if (o && !o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
+		{
+			uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
+			if (r == UINT32_MAX)
+				return UINT32_MAX;
+			res += r;
+			if (res>needed)
+				return res;
+		}
+		it++;
+	}
+	return res;
+}
+
 #ifndef NDEBUG
 Mutex memcheckmutex;
 std::set<ASObject*> memcheckset;
@@ -1814,8 +1822,8 @@ void ASObject::dumpObjectCounters(uint32_t threshhold)
 #endif
 ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE st):
 	objfreelist(c ? c->getFreeList(wrk) : nullptr),
-	Variables(c?c->memoryAccount:nullptr),classdef(c),proxyMultiName(nullptr),sys(c?c->sys:nullptr),worker(wrk),
-	stringId(UINT32_MAX),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
+	classdef(c),proxyMultiName(nullptr),sys(c?c->sys:nullptr),worker(wrk),
+	stringId(UINT32_MAX),storedmembercount(0),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1831,8 +1839,8 @@ ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE
 	}
 #endif
 }
-ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),Variables((o.classdef)?o.classdef->memoryAccount:nullptr),classdef(nullptr),proxyMultiName(nullptr),sys(o.classdef? o.classdef->sys : nullptr),worker(o.worker),
-	stringId(o.stringId),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
+ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),classdef(nullptr),proxyMultiName(nullptr),sys(o.classdef? o.classdef->sys : nullptr),worker(o.worker),
+	stringId(o.stringId),storedmembercount(o.storedmembercount),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1844,8 +1852,8 @@ ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),Variables((o.cl
 	assert(o.Variables.size()==0);
 }
 
-ASObject::ASObject(MemoryAccount* m):objfreelist(nullptr),Variables(m),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),worker(nullptr),
-	stringId(UINT32_MAX),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
+ASObject::ASObject(MemoryAccount* m):objfreelist(nullptr),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),worker(nullptr),
+	stringId(UINT32_MAX),storedmembercount(0),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1872,6 +1880,36 @@ void ASObject::setClass(Class_base* c)
 	classdef=c;
 	if(c)
 		this->sys = c->sys;
+}
+
+void ASObject::removeStoredMember()
+{
+	if (getConstant() || getCached())
+		return;
+	if (!this->getInDestruction())
+	{
+		assert(storedmembercount);
+		assert(storedmembercount<=uint32_t(this->getRefCount()));
+		storedmembercount--;
+		if (storedmembercount && ((uint32_t)this->getRefCount() == storedmembercount+1) && this->canHaveCyclicMemberReference())
+		{
+			uint32_t c = this->countCylicMemberReferences(this,storedmembercount,true);
+			assert(c == UINT32_MAX || c <= storedmembercount || this->preparedforshutdown);
+			if (c == storedmembercount)
+			{
+				LOG_CALL("matching number of cyclicreferences detected:"<<this->toDebugString());
+				this->resetRefCount();
+			}
+		}
+	}
+	decRef();
+}
+
+uint32_t ASObject::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+{
+	if (obj==this && !firstcall)
+		return 1;
+	return Variables.countCylicMemberReferences(obj,needed);
 }
 
 bool ASObject::destruct()
@@ -2177,7 +2215,9 @@ void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, 
 		args[1] = asAtomHandler::fromObject(o);
 		asAtomHandler::callFunction(wr,wrk,ret,v,args,2,false);
 		o->serializeDynamicProperties(out, stringMap, objMap, traitsMap,wrk,false,false);
-		delete o;
+		o->decRef();
+		ASATOM_DECREF(wr);
+		ASATOM_DECREF(v);
 	}
 	else
 		Variables.serialize(out, stringMap, objMap, traitsMap,forSharedObject,wrk);
@@ -2286,6 +2326,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 		asAtom v=asAtomHandler::fromObject(this);
 		asAtom r=asAtomHandler::invalidAtom;
 		asAtomHandler::callFunction(o,wrk,r,v, tmpArg, 1,false);
+		ASATOM_DECREF(o);
 		return;
 	}
 
@@ -2315,7 +2356,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 						continue;
 					}
 					out->writeStringAMF0(getSystemState()->getStringFromUniqueId(varIt->first));
-					asAtomHandler::toObject(varIt->second.var,wrk)->serialize(out, stringMap, objMap, traitsMap,wrk);
+					asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,varIt->second.var);
 				}
 			}
 		}
@@ -2368,7 +2409,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 				//Skip variable with a namespace, like protected ones
 				continue;
 			}
-			asAtomHandler::toObject(varIt->second.var,wrk)->serialize(out, stringMap, objMap, traitsMap,wrk);
+			asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,varIt->second.var);
 		}
 	}
 	if(!type->isSealed)
@@ -2651,7 +2692,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& prototype,uint32_t nameID)
 	{
 		obj->incRef();
 		asAtom v = asAtomHandler::fromObject(obj);
-		ret->setVar(this->getInstanceWorker(),v,this);
+		ret->setVar(this->getInstanceWorker(),v);
 	}
 }
 
@@ -2887,7 +2928,7 @@ std::string asAtomHandler::toDebugString(const asAtom a)
 #ifndef NDEBUG
 			assert(getObject(a));
 			char buf[300];
-			sprintf(buf,"(%p / %d/%d)",getObject(a),getObject(a)->getRefCount(),getObject(a)->getConstant());
+			sprintf(buf,"(%p/%d/%d/%d)",getObject(a),getObject(a)->getRefCount(),getObject(a)->storedmembercount,getObject(a)->getConstant());
 			ret += buf;
 #endif
 			return ret;
@@ -3459,13 +3500,13 @@ void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
 			switch (a.uintval&0xf0)
 			{
-				case ATOMTYPE_NULL_BIT: 
+				case ATOMTYPE_UNDEFINED_BIT: // UNDEFINED
 					if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 						out->writeByte(amf0_undefined_marker);
 					else
 						out->writeByte(undefined_marker);
 					break;
-				case ATOMTYPE_UNDEFINED_BIT: // UNDEFINED
+				case ATOMTYPE_NULL_BIT: 
 					if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 						out->writeByte(amf0_null_marker);
 					else

@@ -94,13 +94,13 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
+	uint32_t countCylicMemberReferences(ASObject* obj,uint32_t needed, bool firstcall) override;
 	
 	//These utility methods are also used by ByteArray
 	static bool isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index);
 	static bool isValidQName(const tiny_string& name, const tiny_string& ns, unsigned int& index);
 
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
@@ -148,7 +148,7 @@ public:
 			asAtomHandler::setUndefined(ret);
 	}
 	
-	bool set(unsigned int index, asAtom &o, bool checkbounds = true, bool addref = true);
+	bool set(unsigned int index, asAtom &o, bool checkbounds = true, bool addref = true, bool addmember=true);
 	uint64_t size();
 	void push(asAtom o);// push doesn't increment the refcount, so the caller has to take care of that
 	void resize(uint64_t n);

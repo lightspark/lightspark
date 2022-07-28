@@ -415,18 +415,6 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 			tmpcls = tmpcls->super;
 		}
 	}
-	if (callproplex)
-	{
-		// according to spec, callproplex should use null as the "this", but 
-		// using null or undefined as "this" indicates use of the global object
-		// see avm2overview chapter 2.4
-		asAtom obj2 = asAtomHandler::fromObject(getGlobalScope(th));
-		if (obj.uintval != obj2.uintval)
-		{
-			ASATOM_INCREF(obj2);
-			ASATOM_DECREF(obj);
-		}
-	}
 	if(asAtomHandler::isValid(o) && !asAtomHandler::is<Proxy>(obj))
 	{
 		if (canCache
@@ -445,7 +433,16 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		}
 //		else
 //			LOG(LOG_ERROR,"callprop caching failed:"<<canCache<<" "<<*name<<" "<<name->isStatic<<" "<<asAtomHandler::toDebugString(obj));
-		asAtom obj2 = asAtomHandler::getClosureAtom(o,obj);
+		asAtom obj2 = obj;
+		if (callproplex)
+		{
+			// according to spec, callproplex should use null as the "this", but 
+			// using null or undefined as "this" indicates use of the global object
+			// see avm2overview chapter 2.4
+			obj2 = asAtomHandler::fromObject(getGlobalScope(th));
+		}
+		else
+			obj2 = asAtomHandler::getClosureAtom(o,obj);
 		if (obj.uintval != obj2.uintval)
 		{
 			ASATOM_INCREF(obj2);
@@ -857,7 +854,12 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 		for (auto it = asAtomHandler::getObject(f)->as<SyntheticFunction>()->func_scope->scope.begin();
 			 it != asAtomHandler::getObject(f)->as<SyntheticFunction>()->func_scope->scope.end(); it++)
 		{
-			ASATOM_INCREF((it->object));
+			ASObject* obj = asAtomHandler::getObject(it->object);
+			if (obj && !obj->getConstant())
+			{
+				obj->incRef();
+				obj->addStoredMember();
+			}
 		}
 		if (sf->mi->body && !sf->mi->needsActivation())
 		{
@@ -2358,7 +2360,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 	name->resetNameIfObject();
 
-	LOG_CALL("Constructing");
+	LOG_CALL("Constructing "<<asAtomHandler::toDebugString(o));
 	asAtom ret=asAtomHandler::invalidAtom;
 	try
 	{
@@ -3025,14 +3027,20 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 		{
 			ASObject* o = asAtomHandler::getObject(it->object);
 			if (o && !o->is<Global>())
+			{
 				o->incRef();
+				o->addStoredMember();
+			}
 		}
 	}
 	for(uint32_t i = 0 ; i < th->curr_scope_stack; i++)
 	{
 		ASObject* o = asAtomHandler::getObject(th->scope_stack[i]);
 		if (o && !o->is<Global>())
+		{
 			o->incRef();
+			o->addStoredMember();
+		}
 		f->addToScope(scope_entry(th->scope_stack[i],th->scope_stack_dynamic[i]));
 	}
 	//Create the prototype object

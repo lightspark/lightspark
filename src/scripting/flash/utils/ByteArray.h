@@ -127,6 +127,7 @@ public:
 	void writeUnsignedInt(uint32_t val);
 	void writeUTF(const tiny_string& str);
 	uint32_t writeObject(ASObject* obj,ASWorker* wrk);
+	uint32_t writeAtomObject(asAtom obj,ASWorker* wrk);
 	void writeSharedObject(ASObject* obj, const tiny_string& name, ASWorker* wrk);
 	void writeStringVR(std::map<tiny_string, uint32_t>& stringMap, const tiny_string& s);
 	void writeStringAMF0(const tiny_string& s);

@@ -30,19 +30,59 @@
 using namespace std;
 using namespace lightspark;
 
-Dictionary::Dictionary(ASWorker* wrk,Class_base* c):ASObject(wrk,c),
+Dictionary::Dictionary(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_DICTIONARY),
 	data(std::less<dictType::key_type>(), reporter_allocator<dictType::value_type>(c->memoryAccount)),weakkeys(false)
 {
+}
+
+void Dictionary::finalize()
+{
+	auto it=data.begin();
+	while (it != data.end())
+	{
+		ASObject* key = it->first;
+		ASObject* obj = asAtomHandler::getObject(it->second);
+		it = data.erase(it);
+		key->removeStoredMember();
+		if (obj)
+			obj->removeStoredMember();
+	}
+}
+
+bool Dictionary::destruct()
+{
+	auto it=data.begin();
+	while (it != data.end())
+	{
+		ASObject* key = it->first;
+		ASObject* obj = asAtomHandler::getObject(it->second);
+		it = data.erase(it);
+		key->removeStoredMember();
+		if (obj)
+			obj->removeStoredMember();
+	}
+	weakkeys=false;
+	return destructIntern();
+}
+void Dictionary::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	for (auto it=data.begin() ; it != data.end(); ++it)
+	{
+		it->first->prepareShutdown();
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			o->prepareShutdown();
+	}
 }
 
 void Dictionary::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	c->isReusable=true;
 	c->prototype->setVariableByQName("toJSON",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toJSON),DYNAMIC_TRAIT);
-}
-
-void Dictionary::buildTraits(ASObject* o)
-{
 }
 
 ASFUNCTIONBODY_ATOM(Dictionary,_constructor)
@@ -104,22 +144,33 @@ multiname *Dictionary::setVariableByMultiname(multiname& name, asAtom& o, CONST_
 			default:
 				break;
 		}
-		name.name_o->incRef();
-		_R<ASObject> name_o(name.name_o);
 
-		Dictionary::dictType::iterator it=findKey(name_o.getPtr());
+		Dictionary::dictType::iterator it=findKey(name.name_o);
 		if(it!=data.end())
 		{
 			if (alreadyset && it->second.uintval == o.uintval)
 				*alreadyset=true;
 			else
 			{
-				ASATOM_DECREF(it->second);
+				asAtom oldvar = it->second;
+				ASObject* obj = asAtomHandler::getObject(oldvar);
+				if (obj)
+					obj->removeStoredMember();
 				it->second=o;
+				obj = asAtomHandler::getObject(o);
+				if (obj)
+					obj->addStoredMember();
 			}
 		}
 		else
-			data.insert(make_pair(name_o,o));
+		{
+			name.name_o->incRef();
+			name.name_o->addStoredMember();
+			ASObject* obj = asAtomHandler::getObject(o);
+			if (obj)
+				obj->addStoredMember();
+			data.insert(make_pair(name.name_o,o));
+		}
 	}
 	else
 	{
@@ -164,14 +215,15 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 			default:
 				break;
 		}
-		name.name_o->incRef();
-		_R<ASObject> name_o(name.name_o);
 
-		Dictionary::dictType::iterator it=findKey(name_o.getPtr());
+		Dictionary::dictType::iterator it=findKey(name.name_o);
 		if(it != data.end())
 		{
-			ASATOM_DECREF(it->second);
+			ASObject* obj = asAtomHandler::getObject(it->second);
+			if (obj)
+				obj->removeStoredMember();
 			data.erase(it);
+			name.name_o->removeStoredMember();
 			return true;
 		}
 		return false;
@@ -187,7 +239,6 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 		return ASObject::deleteVariableByMultiname(name,wrk);
 	}
 }
-
 GET_VARIABLE_RESULT Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt,ASWorker* wrk)
 {
 	if((opt & GET_VARIABLE_OPTION::SKIP_IMPL)==0 && implEnable)
@@ -219,17 +270,14 @@ GET_VARIABLE_RESULT Dictionary::getVariableByMultiname(asAtom& ret, const multin
 					break;
 			}
 			bool islastref = name.name_o->isLastRef();
-			name.name_o->incRef();
-			_R<ASObject> name_o(name.name_o);
 
-			Dictionary::dictType::iterator it=findKey(name_o.getPtr());
+			Dictionary::dictType::iterator it=findKey(name.name_o);
 			if(it != data.end())
 			{
 				ret = it->second;
-				if (islastref)
+				if (islastref && weakkeys)
 				{
-					LOG(LOG_INFO,"erasing weak key from dictionary:"<< name.name_o->toDebugString());
-					name.name_o->decRef();
+					name.name_o->removeStoredMember();
 					data.erase(it);
 				}
 				else
@@ -291,11 +339,7 @@ bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDyna
 			default:
 				break;
 		}
-
-		name.name_o->incRef();
-		_R<ASObject> name_o(name.name_o);
-
-		Dictionary::dictType::iterator it=findKey(name_o.getPtr());
+		Dictionary::dictType::iterator it=findKey(name.name_o);
 		return it != data.end();
 	}
 	else
@@ -336,7 +380,7 @@ void Dictionary::nextName(asAtom& ret,uint32_t index)
 		for(unsigned int i=1;i<index;i++)
 			++it;
 		it->first->incRef();
-		ret = asAtomHandler::fromObject(it->first.getPtr());
+		ret = asAtomHandler::fromObject(it->first);
 	}
 	else
 	{
@@ -364,6 +408,35 @@ void Dictionary::nextValue(asAtom& ret,uint32_t index)
 	}
 }
 
+uint32_t Dictionary::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+{
+	if (obj==this && !firstcall)
+		return 1;
+	uint32_t res=0;
+	for (auto it = data.begin(); it != data.end(); it++)
+	{
+		if (res>needed)
+			return res;
+		if (asAtomHandler::isObject(it->second))
+		{
+			ASObject* o = asAtomHandler::getObjectNoCheck(it->second);
+			if (o == obj)
+				++res;
+			if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
+			{
+				uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
+				if (r == UINT32_MAX)
+					return UINT32_MAX;
+				res += r;
+			}
+		}
+	}
+	uint32_t r =ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
+	if (r == UINT32_MAX)
+		return UINT32_MAX;
+	res += r;
+	return res;
+}
 tiny_string Dictionary::toString()
 {
 	std::stringstream retstr;
@@ -421,9 +494,9 @@ void Dictionary::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stri
 		{
 			asAtom v=asAtomHandler::invalidAtom;
 			nextName(v,tmp);
-			asAtomHandler::toObject(v,getInstanceWorker())->serialize(out, stringMap, objMap, traitsMap,wrk);
+			asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,v);
 			nextValue(v,tmp);
-			asAtomHandler::toObject(v,getInstanceWorker())->serialize(out, stringMap, objMap, traitsMap,wrk);
+			asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,v);
 		}
 	}
 }

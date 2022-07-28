@@ -579,6 +579,8 @@ ASFUNCTIONBODY_ATOM(Loader,_constructor)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
 	DisplayObjectContainer::_constructor(ret,wrk,obj,nullptr,0);
+	if (!th->contentLoaderInfo)
+		th->contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(wrk,th));
 	th->contentLoaderInfo->setLoaderURL(th->getSystemState()->mainClip->getOrigin().getParsedURL());
 	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(wrk));
 }

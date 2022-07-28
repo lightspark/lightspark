@@ -102,6 +102,12 @@ XMLList* XMLList::create(ASWorker* wrk,const XML::XMLVector& r, XMLList *targeto
 	return res;
 }
 
+void XMLList::finalize()
+{
+	if (targetobject)
+		targetobject->decRef();
+	nodes.clear();
+}
 bool XMLList::destruct()
 {
 	if (targetobject)
@@ -111,6 +117,19 @@ bool XMLList::destruct()
 	targetobject = nullptr;
 	targetproperty = multiname(this->getClass()->memoryAccount);
 	return destructIntern();
+}
+
+void XMLList::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	if (targetobject)
+		targetobject->prepareShutdown();
+	for (auto it = nodes.begin(); it != nodes.end(); it++)
+	{
+		(*it)->prepareShutdown();
+	}
 }
 
 void XMLList::sinit(Class_base* c)

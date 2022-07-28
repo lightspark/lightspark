@@ -82,7 +82,9 @@ public:
 	XML(ASWorker* wrk,Class_base* c);
 	XML(ASWorker* wrk,Class_base* c,const std::string& str);
 	XML(ASWorker* wrk,Class_base* c,const pugi::xml_node& _n, XML* parent=nullptr, bool fromXMLList=false);
+	void finalize() override;
 	bool destruct() override;
+	void prepareShutdown() override;
 	
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toString);
@@ -143,7 +145,6 @@ public:
 	ASFUNCTION_ATOM(setNotification);
 	ASFUNCTION_ATOM(notification);
 
-	static void buildTraits(ASObject* o){}
 	static void sinit(Class_base* c);
 	
 	static bool getPrettyPrinting();

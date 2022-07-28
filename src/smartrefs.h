@@ -29,18 +29,17 @@ namespace lightspark
 class RefCountable {
 private:
 	ATOMIC_INT32(ref_count);
-	int32_t activation_refcount;
 	bool isConstant:1;
 	bool inDestruction:1;
 	bool cached:1;
 protected:
-	RefCountable() : ref_count(1),activation_refcount(1),isConstant(false),inDestruction(false),cached(false) {}
+	RefCountable() : ref_count(1),isConstant(false),inDestruction(false),cached(false) {}
 
 public:
 	virtual ~RefCountable() {}
 
 	int getRefCount() const { return ref_count; }
-	inline bool isLastRef() const { return !isConstant && ref_count == activation_refcount; }
+	inline bool isLastRef() const { return !isConstant && ref_count==1; }
 	inline void setConstant()
 	{
 		isConstant=true;
@@ -51,10 +50,6 @@ public:
 	inline bool getCached() const { return cached; }
 	inline void setCached() { cached=true; }
 	inline void resetCached() { cached=false; }
-	inline void incActivationCount() { activation_refcount++; }
-	inline void decActivationCount() { activation_refcount--; }
-	inline void setActivationCount(int32_t c) { activation_refcount=c; }
-	inline int32_t getActivationCount() const { return activation_refcount; }
 	inline void incRef()
 	{
 		if (!isConstant)
@@ -65,7 +60,6 @@ public:
 		if (inDestruction)
 			return true;
 		inDestruction = true;
-		activation_refcount=1;
 		ref_count=1;
 		if (destruct())
 		{
@@ -83,7 +77,7 @@ public:
 		if (!isConstant && !cached)
 		{
 			assert(ref_count>0);
-			if (ref_count == activation_refcount)
+			if (ref_count == 1)
 				return handleDestruction();
 			else
 				--ref_count;
@@ -93,6 +87,10 @@ public:
 	virtual bool destruct()
 	{
 		return true;
+	}
+	inline void resetRefCount()
+	{
+		ref_count=1;
 	}
 };
 

@@ -31,27 +31,17 @@ class Dictionary: public ASObject
 {
 friend class ABCVm;
 private:
-	typedef std::map<_R<ASObject>,asAtom,std::less<_R<ASObject>>,
-	       reporter_allocator<std::pair<const _R<ASObject>, asAtom>>> dictType;
+	typedef std::map<ASObject*, asAtom> dictType;
 	dictType data;
 	dictType::iterator findKey(ASObject *);
 	bool weakkeys;
 public:
 	Dictionary(ASWorker* wrk,Class_base* c);
-	bool destruct() override
-	{
-		Dictionary::dictType::iterator it = data.begin();
-		while(it!=data.end())
-		{
-			ASATOM_DECREF(it->second);
-			it++;
-		}
-		data.clear();
-		return destructIntern();
-	}
-	
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_toJSON);
 
@@ -69,6 +59,7 @@ public:
 	uint32_t nextNameIndex(uint32_t cur_index) override;
 	void nextName(asAtom &ret, uint32_t index) override;
 	void nextValue(asAtom &ret, uint32_t index) override;
+	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
 
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

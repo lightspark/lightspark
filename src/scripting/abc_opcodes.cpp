@@ -434,9 +434,9 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 //		else
 //			LOG(LOG_ERROR,"callprop caching failed:"<<canCache<<" "<<*name<<" "<<name->isStatic<<" "<<asAtomHandler::toDebugString(obj));
 		asAtom obj2 = obj;
-		if (callproplex)
+		if (callproplex && asAtomHandler::is<IFunction>(o) && !asAtomHandler::as<IFunction>(o)->inClass)
 		{
-			// according to spec, callproplex should use null as the "this", but 
+			// according to spec, callproplex should use null as the "this" if the function is not a method, but
 			// using null or undefined as "this" indicates use of the global object
 			// see avm2overview chapter 2.4
 			obj2 = asAtomHandler::fromObject(getGlobalScope(th));

@@ -1277,19 +1277,22 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 	//Check if the object is already in the queue
 	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail)
 		return;
-	DisplayObject* o = d->getParent();
-	while (o)
+	if (d->getNeedsTextureRecalculation())
 	{
-		if (o->getCachedBitmap())
+		DisplayObject* o = d->getParent();
+		while (o)
 		{
-			// ancestor is cached as bitmap, needs to be redrawn
-			o->incRef();
-			o->hasChanged=true;
-			o->setNeedsTextureRecalculation();
-			addToInvalidateQueue(_MR(o));
-			return;
+			if (o->getCachedBitmap())
+			{
+				// ancestor is cached as bitmap, needs to be redrawn
+				o->incRef();
+				o->hasChanged=true;
+				o->setNeedsTextureRecalculation();
+				addToInvalidateQueue(_MR(o));
+				return;
+			}
+			o = o->getParent();
 		}
-		o = o->getParent();
 	}
 	if(!invalidateQueueHead)
 		invalidateQueueHead=invalidateQueueTail=d;

@@ -5217,7 +5217,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					if (skip || cls != nullptr)
 						tobj = (Class_base*)cls;
 				}
-				if (!skip && state.operandlist.size()>0 && state.operandlist.back().type==OP_NULL) // coerce following a pushnull can be skipped
+				if (!skip && state.operandlist.size()>0 && state.operandlist.back().type==OP_NULL  // coerce following a pushnull can be skipped if not coercing to a numeric value
+						&& tobj != Class<Number>::getRef(mi->context->root->getSystemState()).getPtr()
+						&& tobj != Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr()
+						&& tobj != Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr()
+						&& tobj != Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr())
 					skip=true;
 				if (skip)
 				{

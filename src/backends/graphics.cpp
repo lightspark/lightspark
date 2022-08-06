@@ -863,9 +863,11 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 	cairo_translate(cr, xpos, 0);
 	cairo_set_source_rgb (cr, textData.textColor.Red/255., textData.textColor.Green/255., textData.textColor.Blue/255.);
 	cairo_translate(cr, translateX, translateY);
+	int32_t linepos=0;
 	for (auto it = textData.textlines.begin(); it != textData.textlines.end(); it++)
 	{
-		cairo_translate(cr, it->autosizeposition, 0);
+		
+		cairo_translate(cr, it->autosizeposition, linepos);
 		tiny_string text = it->text;
 		pangoLayoutFromData(layout, textData,text);
 		if (textData.isPassword)
@@ -878,7 +880,8 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 		else
 			pango_layout_set_text(layout, text.raw_buf(), -1);
 		pango_cairo_show_layout(cr, layout);
-		cairo_translate(cr, -it->autosizeposition, 0);
+		cairo_translate(cr, -it->autosizeposition, -linepos);
+		linepos += textData.fontSize+textData.leading;
 	}
 	cairo_translate(cr, -translateX, -translateY);
 	cairo_translate(cr, -xpos, 0);

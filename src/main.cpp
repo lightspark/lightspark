@@ -339,6 +339,8 @@ int main(int argc, char* argv[])
 	bool useFastInterpreter=false;
 	bool useJit=false;
 	bool ignoreUnhandledExceptions = false;
+	bool startInFullScreenMode=false;
+	double startscalefactor=1.0;
 	SystemState::ERROR_TYPE exitOnError=SystemState::ERROR_PARSING;
 	LOG_LEVEL log_level=LOG_INFO;
 	SystemState::FLASH_MODE flashMode=SystemState::FLASH;
@@ -372,6 +374,18 @@ int main(int argc, char* argv[])
 			useJit=true;
 		else if(strcmp(argv[i],"-ne")==0 || strcmp(argv[i],"--ignore-unhandled-exceptions")==0)
 			ignoreUnhandledExceptions=true;
+		else if(strcmp(argv[i],"-fs")==0 || strcmp(argv[i],"--fullscreen")==0)
+			startInFullScreenMode=true;
+		else if(strcmp(argv[i],"-sc")==0 || strcmp(argv[i],"--scale")==0)
+		{
+			i++;
+			if(i==argc)
+			{
+				fileName=nullptr;
+				break;
+			}
+			startscalefactor = max(1.0,atof(argv[i]));
+		}
 		else if(strcmp(argv[i],"-l")==0 || strcmp(argv[i],"--log-level")==0)
 		{
 			i++;
@@ -486,6 +500,8 @@ int main(int argc, char* argv[])
 			" [--profiling-output|-o profiling-file]" <<
 #endif
 			" [--ignore-unhandled-exceptions|-ne]"
+			" [--fullscreen|-fs]"
+			" [--scale|-sc]"
 			" [--load-extension|-le extension-file"
 			" [--version|-v]" <<
 			" <file.swf>");
@@ -589,6 +605,8 @@ int main(int argc, char* argv[])
 	sys->setParamsAndEngine(new StandaloneEngineData(filedatapath), true);
 	// on standalone local storage is always allowed
 	sys->getEngineData()->setLocalStorageAllowedMarker(true);
+	sys->getEngineData()->startInFullScreenMode=startInFullScreenMode;
+	sys->getEngineData()->startscalefactor=startscalefactor;
 
 	sys->securityManager->setSandboxType(sandboxType);
 	if(sandboxType == SecurityManager::REMOTE)

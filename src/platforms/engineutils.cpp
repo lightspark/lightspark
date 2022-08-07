@@ -65,7 +65,8 @@ bool EngineData::sdl_needinit = true;
 bool EngineData::enablerendering = true;
 SDL_Cursor* EngineData::handCursor = nullptr;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr),nvgcontext(nullptr), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false)
+EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr),nvgcontext(nullptr), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false),
+	startInFullScreenMode(false),startscalefactor(1.0)
 {
 }
 

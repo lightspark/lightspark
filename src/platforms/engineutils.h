@@ -116,6 +116,8 @@ public:
 	bool needrenderthread;
 	bool supportPackedDepthStencil;
 	bool hasExternalFontRenderer;
+	bool startInFullScreenMode;
+	double startscalefactor;
 	tiny_string driverInfoString;
 	std::vector<TEXTUREFORMAT_COMPRESSED> compressed_texture_formats;
 	EngineData();

@@ -929,12 +929,15 @@ void SystemState::delayedCreation(SystemState* sys)
 {
 	sys->audioManager=new AudioManager(sys->engineData);
 	sys->localstorageallowed =sys->getEngineData()->getLocalStorageAllowedMarker();
-	int32_t reqWidth=(sys->mainClip->getFrameSize().Xmax-sys->mainClip->getFrameSize().Xmin)/20;
-	int32_t reqHeight=(sys->mainClip->getFrameSize().Ymax-sys->mainClip->getFrameSize().Ymin)/20;
+	int32_t reqWidth=((sys->mainClip->getFrameSize().Xmax-sys->mainClip->getFrameSize().Xmin)/20)*sys->engineData->startscalefactor;
+	int32_t reqHeight=((sys->mainClip->getFrameSize().Ymax-sys->mainClip->getFrameSize().Ymin)/20)*sys->engineData->startscalefactor;
 
 	if (EngineData::enablerendering)
+	{
 		sys->engineData->showWindow(reqWidth, reqHeight);
-
+		if (sys->engineData->startInFullScreenMode)
+			sys->engineData->setDisplayState("fullScreen",sys);
+	}
 	sys->inputThread->start(sys->engineData);
 
 	if(EngineData::enablerendering && Config::getConfig()->isRenderingEnabled())

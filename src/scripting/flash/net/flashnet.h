@@ -45,12 +45,13 @@ private:
 	tiny_string getContentTypeHeader() const;
 	void validateHeaderName(const tiny_string& headerName) const;
 	ASPROPERTY_GETTER_SETTER(tiny_string,contentType);
-	ASPROPERTY_GETTER_SETTER(_R<Array>,requestHeaders);
+	ASPROPERTY_GETTER_SETTER(_NR<Array>,requestHeaders);
 public:
 	URLRequest(ASWorker* wrk,Class_base* c, const tiny_string u="", const tiny_string m="GET", _NR<ASObject> d = NullRef);
 	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getURL);
 	ASFUNCTION_ATOM(_setURL);

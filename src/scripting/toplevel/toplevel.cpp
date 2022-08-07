@@ -1279,7 +1279,9 @@ void Class_base::initStandardProps()
 	constructorprop = _NR<ObjectConstructor>(new_objectConstructor(this,0));
 	addConstructorGetter();
 
-	setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
+	Function* f = Class<IFunction>::getFunction(getSystemState(),Class_base::_toString);
+	f->setRefConstant();
+	setDeclaredMethodByQName("toString","",f,NORMAL_METHOD,false);
 	prototype->setVariableByQName("constructor","",this,DECLARED_TRAIT);
 
 	if(super)

@@ -2126,7 +2126,9 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				Class_inherit* ci=new (m) Class_inherit(className, m,t,obj->is<Global>() ? obj->as<Global>() : nullptr);
 				root->customClasses.insert(make_pair(mname->name_s_id,ci));
 				ci->isInterface = true;
-				ci->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(obj->getSystemState(),Class_base::_toString),NORMAL_METHOD,false);
+				Function* f = Class<IFunction>::getFunction(obj->getSystemState(),Class_base::_toString);
+				f->setRefConstant();
+				ci->setDeclaredMethodByQName("toString",AS3,f,NORMAL_METHOD,false);
 				LOG(LOG_CALLS,"Building class traits");
 				for(unsigned int i=0;i<classes[t->classi].trait_count;i++)
 					buildTrait(ci,additionalslots,&classes[t->classi].traits[i],false);

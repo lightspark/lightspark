@@ -2318,6 +2318,7 @@ FORCE_INLINE void asAtomHandler::_not(asAtom& a)
 	LOG_CALL("not:" <<toDebugString(a)<<" "<<!Boolean_concrete(a));
 	
 	bool ret=!Boolean_concrete(a);
+	ASATOM_DECREF(a);
 	setBool(a,ret);
 }
 

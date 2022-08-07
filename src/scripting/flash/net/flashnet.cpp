@@ -48,6 +48,7 @@ URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const 
 void URLRequest::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_setURL),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_getURL,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("method","",Class<IFunction>::getFunction(c->getSystemState(),_setMethod),SETTER_METHOD,true);
@@ -58,10 +59,6 @@ void URLRequest::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("digest","",Class<IFunction>::getFunction(c->getSystemState(),_getDigest,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,contentType,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,requestHeaders,Array);
-}
-
-void URLRequest::buildTraits(ASObject* o)
-{
 }
 
 URLInfo URLRequest::getRequestURL() const
@@ -152,6 +149,8 @@ void URLRequest::validateHeaderName(const tiny_string& headerName) const
 std::list<tiny_string> URLRequest::getHeaders() const
 {
 	list<tiny_string> headers;
+	if (requestHeaders.isNull())
+		return headers;
 	int headerTotalLen = 0;
 	for (unsigned i=0; i<requestHeaders->size(); i++)
 	{
@@ -220,6 +219,28 @@ void URLRequest::finalize()
 {
 	ASObject::finalize();
 	data.reset();
+	requestHeaders.reset();
+}
+
+bool URLRequest::destruct()
+{
+	method=GET;
+	url="";
+	digest="";
+	data.reset();
+	requestHeaders.reset();
+	return ASObject::destruct();
+}
+
+void URLRequest::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	if (data)
+		data->prepareShutdown();
+	if (requestHeaders)
+		requestHeaders->prepareShutdown();
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_constructor)
@@ -355,7 +376,6 @@ void URLLoaderThread::execute()
 	bool success=false;
 	if(!downloader->hasFailed())
 	{
-		loader->incRef();
 		getVm(loader->getSystemState())->addEvent(loader,_MR(Class<Event>::getInstanceS(loader->getInstanceWorker(),"open")));
 
 		cache->waitForTermination();
@@ -403,16 +423,13 @@ void URLLoaderThread::execute()
 		//Send a complete event for this object
 		loader->setData(data);
 
-		loader->incRef();
 		getVm(loader->getSystemState())->addEvent(loader,_MR(Class<ProgressEvent>::getInstanceS(loader->getInstanceWorker(),downloader->getLength(),downloader->getLength())));
 		//Send a complete event for this object
-		loader->incRef();
 		getVm(loader->getSystemState())->addEvent(loader,_MR(Class<Event>::getInstanceS(loader->getInstanceWorker(),"complete")));
 	}
 	else if(!success && !threadAborting)
 	{
 		//Notify an error during loading
-		loader->incRef();
 		getVm(loader->getSystemState())->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
 	}
 

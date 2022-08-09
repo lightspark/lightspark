@@ -52,6 +52,8 @@ extern "C"
 #define CODEC_ID_PCM_F32BE AV_CODEC_ID_PCM_F32BE
 #define CODEC_ID_PCM_F32LE AV_CODEC_ID_PCM_F32LE
 #define CODEC_ID_ADPCM_SWF AV_CODEC_ID_ADPCM_SWF
+#define CODEC_ID_GIF AV_CODEC_ID_GIF
+
 #endif
 #define MAX_AUDIO_FRAME_SIZE AVCODEC_MAX_AUDIO_FRAME_SIZE
 }
@@ -203,14 +205,26 @@ private:
 			ch[2]=nullptr;
 			ch[3]=nullptr;
 		}
+		void init()
+		{
+			ch[0]=nullptr;
+			ch[1]=nullptr;
+			ch[2]=nullptr;
+			ch[3]=nullptr;
+		}
+		void cleanup()
+		{
+			setDecodedData(nullptr);
+		}
 	};
 	class YUVBufferGenerator
 	{
 	private:
 		uint32_t bufferSize;
 		bool hasAlpha;
+		bool hasChannels;
 	public:
-		YUVBufferGenerator(uint32_t b, bool _hasalpha):bufferSize(b),hasAlpha(_hasalpha){}
+		YUVBufferGenerator(uint32_t b, bool _hasalpha, bool _haschannels):bufferSize(b),hasAlpha(_hasalpha),hasChannels(_haschannels){}
 		void init(YUVBuffer& buf) const;
 	};
 	bool ownedContext;
@@ -281,11 +295,15 @@ protected:
 		uint32_t len;
 		uint32_t time;
 		FrameSamples():current(samples),len(0),time(0){}
-	};
-	class FrameSamplesGenerator
-	{
-	public:
-		void init(FrameSamples& f) const {f.len=0;}
+		void init()
+		{
+			len=0;
+			time=0;
+		}
+		void cleanup()
+		{
+		}
+		
 	};
 public:
 	uint32_t sampleRate;
@@ -452,6 +470,7 @@ private:
 	//Helpers for custom I/O of libavformat
 	uint8_t* avioBuffer;
 	static int avioReadPacket(void* t, uint8_t* buf, int buf_size);
+	static int64_t avioSeek(void *opaque, int64_t offset, int whence);
 	//NOTE: this will become AVIOContext in FFMpeg 0.7
 #if LIBAVUTIL_VERSION_MAJOR < 51
 	ByteIOContext* avioContext;
@@ -459,6 +478,7 @@ private:
 	AVIOContext* avioContext;
 #endif
 	int availablestreamlength;
+	int fullstreamlength;
 public:
 	FFMpegStreamDecoder(NetStream* ns,EngineData* eng,std::istream& s, uint32_t buffertime, AudioFormat* format = nullptr, int streamsize = -1, bool forExtraction=false);
 	~FFMpegStreamDecoder();

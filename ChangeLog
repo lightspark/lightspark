@@ -2,8 +2,9 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
-	* add commandline parameter to start lightspark in fullscreen mode
-	* add commandline parameter to start lightspark with a scaled window (useful for 4k screens)
+	* implement support for GIF images (single image GIFs only)
+	* add commandline parameter (--fullscreen) to start lightspark in fullscreen mode
+	* add commandline parameter (--scale <factor>) to start lightspark with a scaled window (useful for 4k screens)
 	* embed nanovg for faster rendering of large vector graphics
 	* less memory usage
 	* partial support for loading AIR extensions by command line parameter

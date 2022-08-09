@@ -232,6 +232,16 @@ void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, 
 		assert(frameRateHint!=0.0);
 		frameRate=frameRateHint;
 	}
+	else if(codecId==GIF)
+	{
+		//TODO: serialize access to avcodec_open
+		codec=avcodec_find_decoder(CODEC_ID_GIF);
+		assert(codec);
+
+		//Exploit the frame rate information
+		assert(frameRateHint!=0.0);
+		frameRate=frameRateHint;
+	}
 	if (initdata)
 	{
 		codecContext->extradata=initdata;
@@ -271,6 +281,9 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecParameters* codecPar, double frame
 			break;
 		case CODEC_ID_VP6F:
 			videoCodec=VP6;
+			break;
+		case CODEC_ID_GIF:
+			videoCodec=GIF;
 			break;
 		default:
 			return;
@@ -351,9 +364,9 @@ void FFMpegVideoDecoder::setSize(uint32_t w, uint32_t h)
 		//As the size changed, reset the buffer
 		uint32_t bufferSize=frameWidth*frameHeight/**4*/;
 		if (embeddedvideotag)
-			embeddedbuffers.regen(YUVBufferGenerator(bufferSize,this->codecContext->pix_fmt==AV_PIX_FMT_YUVA420P));
+			embeddedbuffers.regen(YUVBufferGenerator(bufferSize,this->codecContext->pix_fmt==AV_PIX_FMT_YUVA420P, this->codecContext->pix_fmt!=AV_PIX_FMT_BGRA));
 		else
-			streamingbuffers.regen(YUVBufferGenerator(bufferSize,this->codecContext->pix_fmt==AV_PIX_FMT_YUVA420P));
+			streamingbuffers.regen(YUVBufferGenerator(bufferSize,this->codecContext->pix_fmt==AV_PIX_FMT_YUVA420P, this->codecContext->pix_fmt!=AV_PIX_FMT_BGRA));
 	}
 }
 
@@ -569,19 +582,41 @@ void FFMpegVideoDecoder::copyFrameToBuffers(const AVFrame* frameIn, uint32_t tim
 	curTail=embeddedvideotag ?  &embeddedbuffers.acquireLast() : &streamingbuffers.acquireLast();
 	//Only one thread may access the tail
 	int offset[3]={0,0,0};
-	for(uint32_t y=0;y<frameHeight;y++)
+	// ffmpeg seems to decode GIFs in AV_PIX_FMT_BGRA format and puts all data in first channel
+	if (codecContext->pix_fmt==AV_PIX_FMT_BGRA)
 	{
-		memcpy(curTail->ch[0]+offset[0],frameIn->data[0]+(y*frameIn->linesize[0]),frameWidth);
-		if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)
-			memcpy(curTail->ch[3]+offset[0],frameIn->data[3]+(y*frameIn->linesize[0]),frameWidth);
-		offset[0]+=frameWidth;
+		uint32_t fw = frameWidth*4;
+		for(uint32_t y=0;y<frameHeight;y++)
+		{
+			for(uint32_t x=0;x<frameWidth;x++)
+			{
+				// convert BGRA to RGBA
+				curTail->ch[0][fw*y+x*4+2] = frameIn->data[0][y*frameIn->linesize[0]+x*4  ];
+				curTail->ch[0][fw*y+x*4+1] = frameIn->data[0][y*frameIn->linesize[0]+x*4+1];
+				curTail->ch[0][fw*y+x*4  ] = frameIn->data[0][y*frameIn->linesize[0]+x*4+2];
+				curTail->ch[0][fw*y+x*4+3] = frameIn->data[0][y*frameIn->linesize[0]+x*4+3];
+			}
+		}
 	}
-	for(uint32_t y=0;y<frameHeight/2;y++)
+	else
 	{
-		memcpy(curTail->ch[1]+offset[1],frameIn->data[1]+(y*frameIn->linesize[1]),frameWidth/2);
-		memcpy(curTail->ch[2]+offset[2],frameIn->data[2]+(y*frameIn->linesize[2]),frameWidth/2);
-		offset[1]+=frameWidth/2;
-		offset[2]+=frameWidth/2;
+		for(uint32_t y=0;y<frameHeight;y++)
+		{
+			memcpy(curTail->ch[0]+offset[0],frameIn->data[0]+(y*frameIn->linesize[0]),frameWidth);
+			if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)
+				memcpy(curTail->ch[3]+offset[0],frameIn->data[3]+(y*frameIn->linesize[0]),frameWidth);
+			offset[0]+=frameWidth;
+		}
+		if (codecContext->pix_fmt!=AV_PIX_FMT_BGRA)
+		{
+			for(uint32_t y=0;y<frameHeight/2;y++)
+			{
+				memcpy(curTail->ch[1]+offset[1],frameIn->data[1]+(y*frameIn->linesize[1]),frameWidth/2);
+				memcpy(curTail->ch[2]+offset[2],frameIn->data[2]+(y*frameIn->linesize[2]),frameWidth/2);
+				offset[1]+=frameWidth/2;
+				offset[2]+=frameWidth/2;
+			}
+		}
 	}
 	curTail->time=time;
 	if (embeddedvideotag)
@@ -622,16 +657,23 @@ uint8_t* FFMpegVideoDecoder::upload(bool refresh)
 	}
 	//At least a frame is available
 	YUVBuffer* cur=embeddedvideotag ? &embeddedbuffers.front() : &streamingbuffers.front();
-	fastYUV420ChannelsToYUV0Buffer(cur->ch[0],cur->ch[1],cur->ch[2],decodedframebuffer,frameWidth,frameHeight);
-	if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)
+	if (codecContext->pix_fmt==AV_PIX_FMT_BGRA)
 	{
-		uint32_t texw= (frameWidth+15)&0xfffffff0;
-		for(uint32_t i=0;i<frameHeight;i++)
+		memcpy(decodedframebuffer,cur->ch[0],frameWidth*frameHeight*4);
+	}
+	else
+	{
+		fastYUV420ChannelsToYUV0Buffer(cur->ch[0],cur->ch[1],cur->ch[2],decodedframebuffer,frameWidth,frameHeight);
+		if (codecContext->pix_fmt==AV_PIX_FMT_YUVA420P)
 		{
-			for(uint32_t j=0;j<frameWidth;j++)
+			uint32_t texw= (frameWidth+15)&0xfffffff0;
+			for(uint32_t i=0;i<frameHeight;i++)
 			{
-				uint32_t pixelCoordFull=i*texw+j;
-				decodedframebuffer[pixelCoordFull*4+3]=cur->ch[3][i*frameWidth+j];
+				for(uint32_t j=0;j<frameWidth;j++)
+				{
+					uint32_t pixelCoordFull=i*texw+j;
+					decodedframebuffer[pixelCoordFull*4+3]=cur->ch[3][i*frameWidth+j];
+				}
 			}
 		}
 	}
@@ -643,16 +685,26 @@ void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
 	if(buf.ch[0])
 	{
 		aligned_free(buf.ch[0]);
-		aligned_free(buf.ch[1]);
-		aligned_free(buf.ch[2]);
-		if (buf.ch[3])
-			aligned_free(buf.ch[3]);
+		if (hasChannels)
+		{
+			aligned_free(buf.ch[1]);
+			aligned_free(buf.ch[2]);
+			if (buf.ch[3])
+				aligned_free(buf.ch[3]);
+		}
 	}
-	aligned_malloc((void**)&buf.ch[0], 16, bufferSize);
-	aligned_malloc((void**)&buf.ch[1], 16, bufferSize/4);
-	aligned_malloc((void**)&buf.ch[2], 16, bufferSize/4);
-	if (hasAlpha)
-		aligned_malloc((void**)&buf.ch[3], 16, bufferSize);
+	if (hasChannels)
+	{
+		aligned_malloc((void**)&buf.ch[0], 16, bufferSize);
+		aligned_malloc((void**)&buf.ch[1], 16, bufferSize/4);
+		aligned_malloc((void**)&buf.ch[2], 16, bufferSize/4);
+		if (hasAlpha)
+			aligned_malloc((void**)&buf.ch[3], 16, bufferSize);
+	}
+	else
+	{
+		aligned_malloc((void**)&buf.ch[0], 16, bufferSize*4);
+	}
 }
 #endif //ENABLE_LIBAVCODEC
 
@@ -1299,13 +1351,13 @@ StreamDecoder::~StreamDecoder()
 #ifdef ENABLE_LIBAVCODEC
 FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::istream& s, uint32_t buffertime, AudioFormat* format, int streamsize, bool forExtraction)
  : netstream(ns),audioFound(false),videoFound(false),stream(s),formatCtx(nullptr),audioIndex(-1),
-   videoIndex(-1),customAudioDecoder(nullptr),customVideoDecoder(nullptr),avioContext(nullptr),availablestreamlength(streamsize)
+   videoIndex(-1),customAudioDecoder(nullptr),customVideoDecoder(nullptr),avioContext(nullptr),availablestreamlength(streamsize),fullstreamlength(streamsize)
 {
 	int aviobufsize = streamsize == -1 ? 4096 : min(4096, streamsize);
 	valid=false;
 	avioBuffer = (uint8_t*)av_malloc(aviobufsize);
 #ifdef HAVE_AVIO_ALLOC_CONTEXT
-	avioContext=avio_alloc_context(avioBuffer,aviobufsize,0,this,avioReadPacket,nullptr,nullptr);
+	avioContext=avio_alloc_context(avioBuffer,aviobufsize,0,this,avioReadPacket,nullptr,streamsize < 0 ? nullptr : avioSeek);
 #else
 	avioContext=av_alloc_put_byte(avioBuffer,aviobufsize,0,this,avioReadPacket,nullptr,nullptr);
 #endif
@@ -1390,7 +1442,12 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 	int ret=av_open_input_stream(&formatCtx, avioContext, "lightspark_stream", fmt, nullptr);
 #endif
 	if(ret<0)
+	{
+		char buf[1000];
+		av_strerror(ret, buf, 1000);
+		LOG(LOG_ERROR,"could not open ffmpeg stream:"<<buf);
 		return;
+	}
 	if (!format)
 	{
 #ifdef HAVE_AVFORMAT_FIND_STREAM_INFO
@@ -1429,6 +1486,8 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 	{
 		//Pass the frame rate from the container, the once from the codec is often wrong
 		AVStream *stream = formatCtx->streams[videoIndex];
+		if (stream->nb_frames > 1 && stream->codecpar->codec_id==CODEC_ID_GIF)
+			LOG(LOG_NOT_IMPLEMENTED,"GIF with multiple frames is not properly handled yet");
 #if LIBAVUTIL_VERSION_MAJOR < 54
 		AVRational rateRational = stream->r_frame_rate;
 #else
@@ -1449,7 +1508,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 			customAudioDecoder=new FFMpegAudioDecoder(eng,format->codec,format->sampleRate,format->channels,buffertime,true);
 		else
 #if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
-			customAudioDecoder=new FFMpegAudioDecoder(eng,formatCtx->streams[audioIndex]->codecpar,buffertime);
+			customAudioDecoder=new FFMpegAudioDecoder(eng,formatCtx->streams[audioIndex]->codecpar,customVideoDecoder ? FFMPEGVIDEODECODERBUFFERSIZE*buffertime : buffertime);
 #else
 			customAudioDecoder=new FFMpegAudioDecoder(eng,formatCtx->streams[audioIndex]->codec,buffertime);
 #endif
@@ -1561,6 +1620,27 @@ int FFMpegStreamDecoder::avioReadPacket(void* t, uint8_t* buf, int buf_size)
 	if (th->availablestreamlength != -1)
 		th->availablestreamlength -= ret;
 	return ret;
+}
+
+int64_t FFMpegStreamDecoder::avioSeek(void* opaque, int64_t offset, int whence)
+{
+	FFMpegStreamDecoder* th=static_cast<FFMpegStreamDecoder*>(opaque);
+	switch (whence)
+	{
+		case SEEK_SET:
+			th->stream.seekg(offset,ios_base::beg);
+			th->availablestreamlength = th->fullstreamlength-offset;
+			return th->stream.tellg();
+		case SEEK_CUR:
+			th->availablestreamlength = th->stream.tellg()+offset;
+			th->stream.seekg(offset,ios_base::cur);
+			return th->stream.tellg();
+		case SEEK_END:
+			th->stream.seekg(offset,ios_base::end);
+			th->availablestreamlength = -offset;
+			return th->stream.tellg();
+	}
+	return -1;
 }
 #endif //ENABLE_LIBAVCODEC
 

@@ -1312,7 +1312,7 @@ void BitmapTag::loadBitmap(uint8_t* inData, int datasize, const uint8_t *tablesD
 	else if(inData[0]==0xff && inData[1]==0xd8 && inData[2]==0xff)
 		bitmap->fromJPEG(inData,datasize,tablesData,tablesLen);
 	else if(inData[0]=='G' && inData[1]=='I' && inData[2]=='F' && inData[3]=='8')
-		LOG(LOG_ERROR,"GIF image found, not yet supported, ID :"<<getId());
+		bitmap->fromGIF(inData,datasize,loadedFrom->getSystemState());
 	else if(inData[0]==0xff && inData[1]==0xd9)
 		// I've found swf files with broken jpegs that start with the jpeg "end of file" magic bytes and two times the "begin of file" magic bytes
 		// so we just ignore the first 4 bytes

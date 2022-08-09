@@ -23,6 +23,7 @@
 #include "scripting/flash/filters/flashfilters.h"
 #include "backends/rendering.h"
 #include "backends/image.h"
+#include "backends/decoder.h"
 #include "swf.h"
 
 using namespace std;
@@ -131,6 +132,33 @@ bool BitmapContainer::fromPNG(uint8_t* data, int len)
 	assert_and_throw((int32_t)w >= 0 && (int32_t)h >= 0);
 	BITMAP_FORMAT format=hasAlpha ? ARGB32 : RGB24;
 	return fromRGB(rgb, (int32_t)w, (int32_t)h, format,true);
+}
+bool BitmapContainer::fromGIF(uint8_t* data, int len, SystemState* sys)
+{
+#ifdef ENABLE_LIBAVCODEC
+	MemoryStreamCache gifdata(sys);
+	gifdata.append(data, len);
+	gifdata.markFinished();
+	std::streambuf *sbuf = gifdata.createReader();
+	istream s(sbuf);
+	FFMpegStreamDecoder* streamDecoder=new FFMpegStreamDecoder(nullptr,sys->getEngineData(),s,0,nullptr,gifdata.getReceivedLength());
+	if(streamDecoder->videoDecoder)
+	{
+		uint32_t w,h;
+		streamDecoder->videoDecoder->sizeNeeded(w,h);
+		// TODO how are GIFs with multiple frames handled?
+		if (streamDecoder->decodeNextFrame())
+		{
+			uint8_t* frame =streamDecoder->videoDecoder->upload(true);
+			return fromRGB(frame, (int32_t)w, (int32_t)h, ARGB32,true);
+		}
+	}
+	delete streamDecoder;
+	delete sbuf;
+#else
+	LOG(LOG_ERROR,"can't decode gif image because ffmpeg is not available");
+#endif
+	return false;
 }
 
 bool BitmapContainer::fromPalette(uint8_t* inData, uint32_t w, uint32_t h, uint32_t inStride, uint8_t* palette, unsigned numColors, unsigned paletteBPP)

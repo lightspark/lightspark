@@ -119,9 +119,11 @@ private:
 	uint32_t streamposition;
 	bool streamdatafinished;
 	bool restartafterabort;
+	bool forstreaming;
 	void checkEnvelope();
 public:
-	SoundChannel(ASWorker* wrk,Class_base* c, uint32_t _buffertimeseconds=1, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), const SOUNDINFO* _soundinfo=nullptr, _NR<Sound> _sampleproducer = NullRef);
+	SoundChannel(ASWorker* wrk,Class_base* c, uint32_t _buffertimeseconds=1, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), const SOUNDINFO* _soundinfo=nullptr
+			, _NR<Sound> _sampleproducer = NullRef, bool _forstreaming=false);
 	~SoundChannel();
 	DefineSoundTag* fromSoundTag;
 	void appendStreamBlock(unsigned char* buf, int len);

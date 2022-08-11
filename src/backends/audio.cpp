@@ -165,7 +165,6 @@ void AudioManager::removeStream(AudioStream *s)
 
 void AudioManager::stopAllSounds()
 {
-	muteAll();
 	// use temporary list of producers to avoid deadlock, as threadAbort() leads to removeStream();
 	list<IThreadJob*> producers;
 	{

@@ -2903,7 +2903,8 @@ void SoundStreamHeadTag::setSoundChannel(Sprite *spr)
 {
 	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(spr->getInstanceWorker(),1,
 								SoundData,
-								AudioFormat(LS_AUDIO_CODEC(StreamSoundCompression),StreamSoundRate,StreamSoundType+1));
+								AudioFormat(LS_AUDIO_CODEC(StreamSoundCompression),StreamSoundRate,StreamSoundType+1),
+								nullptr, NullRef, true);
 	spr->setSound(schannel,true);
 }
 

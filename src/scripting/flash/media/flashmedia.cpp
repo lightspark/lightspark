@@ -772,10 +772,9 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile)
 
-SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, uint32_t _buffertimeseconds, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, NullableRef<Sound> _sampleproducer)
+SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, uint32_t _buffertimeseconds, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, NullableRef<Sound> _sampleproducer, bool _forstreaming)
 	: EventDispatcher(wrk,c),buffertimeseconds(_buffertimeseconds),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
-	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),
-	fromSoundTag(nullptr),
+	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),forstreaming(_forstreaming),fromSoundTag(nullptr),
 	leftPeak(1),rightPeak(1),semSampleData(0)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
@@ -934,6 +933,7 @@ void SoundChannel::finalize()
 	streamposition=0;
 	streamdatafinished=false;
 	restartafterabort=false;
+	forstreaming=false;
 	fromSoundTag=nullptr;
 	soundTransform.reset();
 	leftPeak=1;
@@ -958,6 +958,7 @@ bool SoundChannel::destruct()
 	streamposition=0;
 	streamdatafinished=false;
 	restartafterabort=false;
+	forstreaming=false;
 	fromSoundTag=nullptr;
 	soundTransform.reset();
 	leftPeak=1;
@@ -1047,7 +1048,7 @@ void SoundChannel::playStream()
 	try
 	{
 #ifdef ENABLE_LIBAVCODEC
-		streamDecoder=new FFMpegStreamDecoder(nullptr,this->getSystemState()->getEngineData(),s,buffertimeseconds,&format,stream->hasTerminated() ? stream->getReceivedLength() : -1);
+		streamDecoder=new FFMpegStreamDecoder(nullptr,this->getSystemState()->getEngineData(),s,buffertimeseconds,&format,stream->hasTerminated() && !forstreaming ? stream->getReceivedLength() : -1);
 		if(!streamDecoder->isValid())
 		{
 			LOG(LOG_ERROR,"invalid streamDecoder");

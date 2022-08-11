@@ -181,6 +181,7 @@ private:
 public:
 	URLLoader(ASWorker* wrk,Class_base* c);
 	void finalize() override;
+	void prepareShutdown() override;
 	static void sinit(Class_base*);
 	void threadFinished(IThreadJob *job) override;
 	void setData(_NR<ASObject> data);

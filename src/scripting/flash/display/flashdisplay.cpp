@@ -3996,12 +3996,50 @@ bool Stage::renderImpl(RenderContext &ctxt) const
 }
 bool Stage::destruct()
 {
-	fullScreenSourceRect.reset();
+	focus.reset();
+	root.reset();
 	stage3Ds.reset();
-	softKeyboardRect.reset();
 	nativeWindow.reset();
+	hiddenobjects.clear();
+	fullScreenSourceRect.reset();
+	softKeyboardRect.reset();
+
+	// erasing an avm1 listener might change the list, so we can't use clear() here
+	while (!avm1KeyboardListeners.empty())
+		avm1KeyboardListeners.pop_back();
+	while (!avm1MouseListeners.empty())
+		avm1MouseListeners.pop_back();
+	while (!avm1EventListeners.empty())
+		avm1EventListeners.pop_back();
+	while (!avm1ResizeListeners.empty())
+		avm1ResizeListeners.pop_back();
+
 	return DisplayObjectContainer::destruct();
 }
+
+void Stage::finalize()
+{
+	focus.reset();
+	root.reset();
+	stage3Ds.reset();
+	nativeWindow.reset();
+	hiddenobjects.clear();
+	fullScreenSourceRect.reset();
+	softKeyboardRect.reset();
+
+	// erasing an avm1 listener might change the list, so we can't use clear() here
+	while (!avm1KeyboardListeners.empty())
+		avm1KeyboardListeners.pop_back();
+	while (!avm1MouseListeners.empty())
+		avm1MouseListeners.pop_back();
+	while (!avm1EventListeners.empty())
+		avm1EventListeners.pop_back();
+	while (!avm1ResizeListeners.empty())
+		avm1ResizeListeners.pop_back();
+
+	DisplayObjectContainer::finalize();
+}
+
 void Stage::prepareShutdown()
 {
 	if (this->preparedforshutdown)
@@ -4015,6 +4053,20 @@ void Stage::prepareShutdown()
 		softKeyboardRect->prepareShutdown();
 	if (nativeWindow)
 		nativeWindow->prepareShutdown();
+	if (focus)
+		focus->prepareShutdown();
+	if (root)
+		root->prepareShutdown();
+	for (auto it = hiddenobjects.begin(); it != hiddenobjects.end(); it++)
+		(*it)->prepareShutdown();
+	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
+		(*it)->prepareShutdown();
+	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
+		(*it)->prepareShutdown();
+	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
+		(*it)->prepareShutdown();
+	for (auto it = avm1ResizeListeners.begin(); it != avm1ResizeListeners.end(); it++)
+		(*it)->prepareShutdown();
 }
 
 Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
@@ -4387,20 +4439,6 @@ void Stage::executeFrameScript()
 		(*it)->executeFrameScript();
 		it++;
 	}
-}
-
-void Stage::finalize()
-{
-	DisplayObjectContainer::finalize();
-	focus.reset();
-	root.reset();
-	hiddenobjects.clear();
-	avm1KeyboardListeners.clear();
-	avm1MouseListeners.clear();
-	avm1EventListeners.clear();
-	avm1ResizeListeners.clear();
-	fullScreenSourceRect.reset();
-	softKeyboardRect.reset();
 }
 
 void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)

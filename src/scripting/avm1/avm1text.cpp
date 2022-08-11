@@ -31,3 +31,8 @@ void AVM1TextField::sinit(Class_base* c)
 	c->isSealed = false;
 	c->setDeclaredMethodByQName("setNewTextFormat","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setDefaultTextFormat),NORMAL_METHOD,true);
 }
+void AVM1TextFormat::sinit(Class_base* c)
+{
+	TextFormat::sinit(c);
+	c->isSealed = false;
+}

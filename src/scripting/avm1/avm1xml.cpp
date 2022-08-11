@@ -24,6 +24,21 @@
 using namespace std;
 using namespace lightspark;
 
+void AVM1XMLDocument::finalize()
+{
+	XMLDocument::finalize();
+	loader.reset();
+}
+
+void AVM1XMLDocument::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	XMLDocument::prepareShutdown();
+	if (loader)
+		loader->prepareShutdown();
+}
+
 void AVM1XMLDocument::sinit(Class_base* c)
 {
 	XMLDocument::sinit(c);
@@ -45,6 +60,7 @@ ASFUNCTIONBODY_ATOM(AVM1XMLDocument,load)
 	asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
 	asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(th->loader.getPtr());
 	URLLoader::load(ret,wrk,loaderobj,&urlarg,1);
+	req->decRef();
 }
 
 multiname* AVM1XMLDocument::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset,ASWorker* wrk)
@@ -56,7 +72,6 @@ multiname* AVM1XMLDocument::setVariableByMultiname(multiname& name, asAtom& o, C
 		{
 			if (loader.isNull())
 				loader = _MR(Class<URLLoader>::getInstanceS(wrk));
-			this->incRef();
 			getSystemState()->stage->AVM1AddEventListener(this);
 			setIsEnumerable(name, false);
 		}

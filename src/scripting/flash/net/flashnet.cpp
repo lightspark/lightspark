@@ -452,6 +452,15 @@ void URLLoader::finalize()
 	data.reset();
 }
 
+void URLLoader::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	if (data)
+		data->prepareShutdown();
+}
+
 void URLLoader::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);

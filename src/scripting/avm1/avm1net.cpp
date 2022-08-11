@@ -100,7 +100,6 @@ multiname* AVM1LoadVars::setVariableByMultiname(multiname& name, asAtom& o, CONS
 	multiname* res = URLVariables::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 	if (name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD || name.name_s_id == BUILTIN_STRINGS::STRING_ONDATA)
 	{
-		this->incRef();
 		getSystemState()->stage->AVM1AddEventListener(this);
 		setIsEnumerable(name, false);
 	}

@@ -32,6 +32,8 @@ class AVM1XMLDocument: public XMLDocument
 	_NR<URLLoader> loader;
 public:
 	AVM1XMLDocument(ASWorker* wrk,Class_base* c):XMLDocument(wrk,c){}
+	void finalize() override;
+	void prepareShutdown() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(load);
 	ASFUNCTION_ATOM(_getter_status);

@@ -3011,7 +3011,6 @@ void AVM1InitActionTag::executeDirect(MovieClip* clip) const
 		LOG(LOG_ERROR,"sprite not found for InitActionTag:"<<SpriteId);
 		return;
 	}
-	clip->incRef();
 	std::map<uint32_t,asAtom> m;
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString()<<" "<<sprite->getId());
 	ACTIONRECORD::executeActions(clip,sprite->getAVM1Context(),actions,startactionpos,m,true);

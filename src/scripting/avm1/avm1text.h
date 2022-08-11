@@ -36,6 +36,13 @@ public:
 	{}
 	static void sinit(Class_base* c);
 };
+class AVM1TextFormat: public TextFormat
+{
+public:
+	AVM1TextFormat(ASWorker* wrk,Class_base* c):TextFormat(wrk,c)
+	{}
+	static void sinit(Class_base* c);
+};
 
 }
 #endif // SCRIPTING_AVM1_AVM1TEXT_H

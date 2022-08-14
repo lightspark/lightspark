@@ -178,6 +178,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		if (paramregisternumbers[i] != 0)
 		{
 			ASATOM_INCREF(args[i]);
+			ASATOM_DECREF(registers[paramregisternumbers[i]]);
 			registers[paramregisternumbers[i]] = args[i];
 		}
 	}
@@ -2052,6 +2053,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				ASATOM_INCREF(a);
 				uint8_t num = *it++;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStoreRegister "<<(int)num<<" "<<asAtomHandler::toDebugString(a));
+				ASATOM_DECREF(registers[num]);
 				registers[num] = a;
 				break;
 			}

@@ -30,12 +30,15 @@ namespace lightspark
 class AVM1Sound: public Sound
 {
 private:
-	_NR<MovieClip> clip;
+	MovieClip* clip;
 	bool loading;
 	bool isStreaming;
 public:
-	AVM1Sound(ASWorker* wrk,Class_base* c):Sound(wrk,c),loading(false),isStreaming(false){}
-	AVM1Sound(ASWorker* wrk,Class_base* c, _R<StreamCache> soundData, AudioFormat format, number_t duration_in_ms):Sound(wrk,c,soundData,format,duration_in_ms),loading(false),isStreaming(false) {}
+	AVM1Sound(ASWorker* wrk,Class_base* c):Sound(wrk,c),clip(nullptr),loading(false),isStreaming(false){}
+	AVM1Sound(ASWorker* wrk,Class_base* c, _R<StreamCache> soundData, AudioFormat format, number_t duration_in_ms):Sound(wrk,c,soundData,format,duration_in_ms),
+		clip(nullptr),loading(false),isStreaming(false)
+	{
+	}
 	static void sinit(Class_base* c);
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 

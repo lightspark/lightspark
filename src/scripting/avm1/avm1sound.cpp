@@ -48,7 +48,13 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	EventDispatcher::_constructor(ret,wrk,obj, NULL, 0);
 
-	ARG_UNPACK_ATOM(th->clip,NullRef);
+	_NR<MovieClip> target;
+	ARG_UNPACK_ATOM(target,NullRef);
+	if (target)
+	{
+		th->clip = target.getPtr();
+		th->clip->addOwnedObject(th);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
@@ -60,7 +66,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 		return;
 	}
 	uint32_t nameID = asAtomHandler::toStringId(args[0],wrk);
-	DefineSoundTag *soundTag = dynamic_cast<DefineSoundTag *>(th->clip.isNull() || th->clip->getRoot().isNull() ? th->getSystemState()->mainClip->dictionaryLookupByName(nameID) : th->clip->getRoot()->dictionaryLookupByName(nameID));
+	DefineSoundTag *soundTag = dynamic_cast<DefineSoundTag *>(!th->clip || th->clip->getRoot().isNull() ? th->getSystemState()->mainClip->dictionaryLookupByName(nameID) : th->clip->getRoot()->dictionaryLookupByName(nameID));
 	if (!soundTag)
 	{
 		LOG(LOG_ERROR,"AVM1:Sound.attachSound called for wrong tag:"<<asAtomHandler::toDebugString(args[0]));

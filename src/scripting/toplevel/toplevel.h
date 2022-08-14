@@ -689,6 +689,7 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
+	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
 	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller=nullptr, std::map<uint32_t,asAtom>* locals=nullptr)
 	{
 		if (locals)

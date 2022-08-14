@@ -53,6 +53,8 @@ Mutex executeactionmutex;
 void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, const std::vector<uint8_t> &actionlist, uint32_t startactionpos, std::map<uint32_t, asAtom> &scopevariables, bool fromInitAction, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
 								  bool preloadParent, bool preloadRoot, bool suppressSuper, bool preloadSuper, bool suppressArguments, bool preloadArguments, bool suppressThis, bool preloadThis, bool preloadGlobal, AVM1Function *caller, AVM1Function *callee, Activation_object *actobj, asAtom *superobj)
 {
+	if (clip->is<MovieClip>())
+		clip->as<MovieClip>()->AVM1HandleConstruction();
 	Locker l(executeactionmutex);
 	bool clip_isTarget=false;
 	assert(!clip->needsActionScript3());
@@ -165,7 +167,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	}
 	for (uint32_t i = 0; i < paramregisternumbers.size() && i < num_args; i++)
 	{
-		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" set argument "<<i<<" "<<(int)paramregisternumbers[i]<<" "<<asAtomHandler::toDebugString(args[i]));
+		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" set argument "<<i<<" "<<(int)paramregisternumbers[i]<<" "<<clip->getSystemState()->getStringFromUniqueId(paramnames[i])<<" "<<asAtomHandler::toDebugString(args[i]));
 		ASATOM_INCREF(args[i]);
 		ASATOM_DECREF(locals[paramnames[i]]);
 		locals[paramnames[i]] = args[i];
@@ -1595,16 +1597,22 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					}
 					else
 					{
-						if (asAtomHandler::is<AVM1Function>(value) && asAtomHandler::as<AVM1Function>(value)->needsSuper())
+						if (asAtomHandler::is<AVM1Function>(value))
 						{
-							asAtom a =asAtomHandler::as<AVM1Function>(value)->getSuper();
-							if (asAtomHandler::isInvalid(a))
+							AVM1Function* f = asAtomHandler::as<AVM1Function>(value);
+							if (f->getClip() != o)
+								f->resetClipRefcounted();
+							if (f->needsSuper())
 							{
-								ASObject* sup = o->getprop_prototype();
-								if (!sup && o->getClass() != Class<ASObject>::getRef(wrk->getSystemState()).getPtr())
-									sup = o->getClass();
-								if (sup)
-									asAtomHandler::as<AVM1Function>(value)->setSuper(asAtomHandler::fromObjectNoPrimitive(sup));
+								asAtom a =asAtomHandler::as<AVM1Function>(value)->getSuper();
+								if (asAtomHandler::isInvalid(a))
+								{
+									ASObject* sup = o->getprop_prototype();
+									if (!sup && o->getClass() != Class<ASObject>::getRef(wrk->getSystemState()).getPtr())
+										sup = o->getClass();
+									if (sup)
+										asAtomHandler::as<AVM1Function>(value)->setSuper(asAtomHandler::fromObjectNoPrimitive(sup));
+								}
 							}
 						}
 						bool hassetter=false;
@@ -2166,8 +2174,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				vector<uint8_t> code;
 				code.assign(it,it+codesize);
 				it += codesize;
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction2 "<<name<<" "<<paramcount<<" "<<flag1<<flag2<<flag3<<flag4<<flag5<<flag6<<flag7<<flag8<<flag9<<" "<<codesize);
 				Activation_object* act = name == "" ? new_activationObject(wrk) : nullptr;
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction2 "<<name<<" "<<paramcount<<" "<<flag1<<flag2<<flag3<<flag4<<flag5<<flag6<<flag7<<flag8<<flag9<<" "<<codesize<<" "<<act);
 				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,act,context,funcparamnames,code,registernumber,flag1, flag2, flag3, flag4, flag5, flag6, flag7, flag8, flag9);
 				//Create the prototype object
 				f->prototype = _MR(new_asobject(f->getSystemState()->worker));

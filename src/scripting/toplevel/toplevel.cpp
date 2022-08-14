@@ -3711,6 +3711,7 @@ AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, Acti
 	{
 		// incRef to ensure clip is valid as long as this anonymous function is not destroyed (will be decreffed in AVM1Function destructor)
 		clip->incRef();
+		clip->addStoredMember();
 	}
 	context.keepLocals=true;
 	superobj = asAtomHandler::invalidAtom;
@@ -3722,7 +3723,7 @@ AVM1Function::~AVM1Function()
 	{
 		activationobject->decRef();
 		if (clipIsRefcounted)
-			clip->decRef();
+			clip->removeStoredMember();
 	}
 	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
 	{
@@ -3759,7 +3760,7 @@ void AVM1Function::finalize()
 	{
 		activationobject->decRef();
 		if (clipIsRefcounted)
-			clip->decRef();
+			clip->removeStoredMember();
 		activationobject=nullptr;
 		clip=nullptr;
 	}
@@ -3778,7 +3779,7 @@ bool AVM1Function::destruct()
 	{
 		activationobject->decRef();
 		if (clipIsRefcounted)
-			clip->decRef();
+			clip->removeStoredMember();
 		activationobject=nullptr;
 		clip=nullptr;
 	}
@@ -3803,12 +3804,36 @@ void AVM1Function::prepareShutdown()
 	clip->prepareShutdown();
 }
 
+uint32_t AVM1Function::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+{
+	if (obj==this && !firstcall)
+		return 1;
+	uint32_t res=0;
+	if (activationobject)
+	{
+		if (activationobject == obj)
+			++res;
+		if (!activationobject->getConstant() && activationobject->isLastRef() && activationobject->canHaveCyclicMemberReference())
+		{
+			uint32_t r = activationobject->countCylicMemberReferences(obj,needed-res,false);
+			if (r == UINT32_MAX)
+				return UINT32_MAX;
+			res += r;
+		}
+	}
+	uint32_t r = ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
+	if (r == UINT32_MAX)
+		return UINT32_MAX;
+	res += r;
+	return res;
+}
+
 void AVM1Function::resetClipRefcounted()
 {
 	if (clipIsRefcounted)
 	{
 		clipIsRefcounted=false;
-		clip->decRef();
+		clip->removeStoredMember();
 	}
 }
 

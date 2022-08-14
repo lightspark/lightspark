@@ -2171,7 +2171,7 @@ void RootMovieClip::constructionComplete()
 	MovieClip::constructionComplete();
 	
 	incRef();
-	getSystemState()->stage->_addChildAt(_MR(this),0);
+	getSystemState()->stage->_addChildAt(this,0);
 	this->setOnStage(true,true);
 	if (!needsActionScript3())
 	{

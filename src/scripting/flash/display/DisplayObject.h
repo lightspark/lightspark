@@ -145,6 +145,12 @@ public:
 	AS_BLENDMODE getBlendMode() const { return blendMode; }
 	void constructionComplete() override;
 	void afterConstruction() override;
+	virtual void prepareDestruction()
+	{
+		destroyContents();
+		setParent(nullptr);
+		removeAVM1Listeners();
+	}
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);

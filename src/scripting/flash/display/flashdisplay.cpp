@@ -216,8 +216,7 @@ void LoaderInfo::setContent(DisplayObject *o)
 {
 	if (loader)
 	{
-		o->incRef();
-		loader->setContent(_MR(o));
+		loader->setContent(o);
 	}
 }
 void LoaderInfo::setBytesLoaded(uint32_t b)
@@ -291,12 +290,12 @@ void LoaderInfo::setWaitedObject(_NR<DisplayObject> w)
 	waitedObject = w;
 }
 
-void LoaderInfo::objectHasLoaded(_R<DisplayObject> obj)
+void LoaderInfo::objectHasLoaded(DisplayObject* obj)
 {
 	Locker l(spinlock);
 	if(waitedObject != obj)
 		return;
-	if(loader && obj==waitedObject)
+	if(loader && obj==waitedObject.getPtr())
 		loader->setContent(obj);
 
 	if (loader && !loader->getParent() && waitedObject->is<MovieClip>()) // loader has no parent, ensure init/complete events are sended anyway
@@ -570,7 +569,7 @@ void LoaderThread::execute()
 			if (!local_pt.getRootMovie()->usesActionScript3)
 				local_pt.getRootMovie()->setIsInitialized(false);
 			local_pt.getRootMovie()->incRef();
-			loader->setContent(_MR(local_pt.getRootMovie()));
+			loader->setContent(local_pt.getRootMovie());
 		}
 	}
 }
@@ -865,7 +864,7 @@ void Loader::threadFinished(IThreadJob* finishedJob)
 	delete finishedJob;
 }
 
-void Loader::setContent(_R<DisplayObject> o)
+void Loader::setContent(DisplayObject* o)
 {
 	// content may have already been set.
 	// this can happen if setContent was already called from ObjectHasLoaded 
@@ -874,12 +873,13 @@ void Loader::setContent(_R<DisplayObject> o)
 		return;
 	{
 		Locker l(mutexDisplayList);
-		dynamicDisplayList.clear();
+		clearDisplayList();
 	}
 
 	{
 		Locker l(spinlock);
-		content=o;
+		o->incRef();
+		content=_MR(o);
 		content->isLoadedRoot = true;
 		loaded=true;
 	}
@@ -907,11 +907,13 @@ void Loader::setContent(_R<DisplayObject> o)
 				depth =p->findLegacyChildDepth(avm1target.getPtr());
 				p->deleteLegacyChildAt(depth,false);
 			}
+			o->incRef();
 			p->_addChildAt(o,depth);
 		}
 	}
 	else
 	{
+		o->incRef();
 		_addChildAt(o, 0);
 	}
 	if (!o->loaderInfo.isNull())
@@ -1116,7 +1118,7 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 		return false;
 
 	Locker l(mutexDisplayList);
-	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	auto it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		number_t txmin,txmax,tymin,tymax;
@@ -1200,7 +1202,7 @@ bool DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
 	}
 	Locker l(mutexDisplayList);
 	//Now draw also the display list
-	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	auto it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		(*it)->Render(ctxt);
@@ -1261,10 +1263,10 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 	_NR<DisplayObject> ret = NullRef;
 	//Test objects added at runtime, in reverse order
 	Locker l(mutexDisplayList);
-	std::vector<_R<DisplayObject>>::const_reverse_iterator j=dynamicDisplayList.rbegin();
+	auto j=dynamicDisplayList.rbegin();
 	for(;j!=dynamicDisplayList.rend();++j)
 	{
-		if ((*j).getPtr()==ignore.getPtr())
+		if ((*j)==ignore.getPtr())
 			continue;
 		//Don't check masks
 		if((*j)->isMask())
@@ -2642,7 +2644,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 	tf->setY(y);
 	tf->width = width;
 	tf->height = height;
-	th->_addChildAt(_MR(tf),depth);
+	th->_addChildAt(tf,depth);
 	if(tf->name != BUILTIN_STRINGS::EMPTY)
 	{
 		tf->incRef();
@@ -2788,8 +2790,7 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 	}
 	if (preobj)
 	{
-		preobj->incRef();
-		auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),_MR(preobj));
+		auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),preobj);
 		if(it!=dynamicDisplayList.end())
 		{
 			insertpos = it-dynamicDisplayList.begin()+1;
@@ -2805,7 +2806,7 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 		}
 	}
 	
-	_addChildAt(_MR(obj),insertpos,inskipping);
+	_addChildAt(obj,insertpos,inskipping);
 	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{
 		multiname objName(nullptr);
@@ -2919,13 +2920,9 @@ void DisplayObjectContainer::checkClipDepth()
 
 bool DisplayObjectContainer::destruct()
 {
-	//Release every child
-	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
-	{
-		(*it)->setParent(nullptr);
-		(*it)->removeAVM1Listeners();
-	}
-	dynamicDisplayList.clear();
+	// clear all member variables in the display list first to properly handle cyclic reference detection
+	prepareDestruction();
+	clearDisplayList();
 	mouseChildren = true;
 	tabChildren = true;
 	legacyChildrenMarkedForDeletion.clear();
@@ -2937,13 +2934,9 @@ bool DisplayObjectContainer::destruct()
 
 void DisplayObjectContainer::finalize()
 {
-	//Release every child
-	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
-	{
-		(*it)->setParent(nullptr);
-		(*it)->removeAVM1Listeners();
-	}
-	dynamicDisplayList.clear();
+	// clear all member variables in the display list first to properly handle cyclic reference detection
+	prepareDestruction();
+	clearDisplayList();
 	legacyChildrenMarkedForDeletion.clear();
 	mapDepthToLegacyChild.clear();
 	mapLegacyChildToDepth.clear();
@@ -2962,6 +2955,53 @@ void DisplayObjectContainer::prepareShutdown()
 	{
 		if ((*it).second)
 			(*it).second->prepareShutdown();
+	}
+}
+
+uint32_t DisplayObjectContainer::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+{
+	if (obj==this && !firstcall)
+		return 1;
+	uint32_t res=0;
+	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+	{
+		if (res>needed)
+			return res;
+		ASObject* o = (*it);
+		if (o == obj)
+			++res;
+		if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
+		{
+			uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
+			if (r == UINT32_MAX)
+				return UINT32_MAX;
+			res += r;
+		}
+	}
+	uint32_t r = InteractiveObject::countCylicMemberReferences(obj,needed-res,firstcall);
+	if (r == UINT32_MAX)
+		return UINT32_MAX;
+	res += r;
+	return res;
+}
+
+void DisplayObjectContainer::prepareDestruction()
+{
+	DisplayObject::prepareDestruction();
+	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+	{
+		(*it)->prepareDestruction();
+	}
+}
+
+void DisplayObjectContainer::cloneDisplayList(std::vector<Ref<DisplayObject> >& displayListCopy)
+{
+	Locker l(mutexDisplayList);
+	displayListCopy.reserve(dynamicDisplayList.size());
+	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+	{
+		(*it)->incRef();
+		displayListCopy.push_back(_MR(*it));
 	}
 }
 
@@ -3100,7 +3140,7 @@ void InteractiveObject::onContextMenu(_NR<ASObject> /*oldValue*/)
 void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 {
 	tiny_string indent(std::string(2*level, ' '));
-	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	auto it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		Vector2f pos = (*it)->getXY();
@@ -3128,19 +3168,14 @@ void DisplayObjectContainer::setOnStage(bool staged, bool force,bool inskipping)
 {
 	if(staged!=onStage||force)
 	{
-		//Make a copy of display list, and release the mutex
-		//before calling setOnStage
+		//Make a copy of display list before calling setOnStage
 		std::vector<_R<DisplayObject>> displayListCopy;
-		{
-			Locker l(mutexDisplayList);
-			displayListCopy.assign(dynamicDisplayList.begin(),
-						   dynamicDisplayList.end());
-		}
+		cloneDisplayList(displayListCopy);
 		InteractiveObject::setOnStage(staged,force,inskipping);
 		//Notify children
 		//calling InteractiveObject::setOnStage may have changed the onStage state of the children,
 		//but the addedToStage/removedFromStage event must always be dispatched
-		std::vector<_R<DisplayObject>>::const_iterator it=displayListCopy.begin();
+		auto it=displayListCopy.begin();
 		for(;it!=displayListCopy.end();++it)
 			(*it)->setOnStage(staged,true,inskipping);
 	}
@@ -3176,7 +3211,7 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceT
 	if (requestInvalidationForCacheAsBitmap(q))
 		return;
 	Locker l(mutexDisplayList);
-	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	auto it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		(*it)->hasChanged = true;
@@ -3184,21 +3219,21 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceT
 	}
 }
 
-void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int index, bool inskipping)
+void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int index, bool inskipping)
 {
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
-	if(child->getParent() && !getSystemState()->isInResetParentList(child.getPtr()))
+	if(child->getParent() && !getSystemState()->isInResetParentList(child))
 	{
 		//Child already in this container
 		if(child->getParent()==this)
 			return;
 		else
 		{
-			child->getParent()->_removeChild(child.getPtr(),inskipping);
+			child->getParent()->_removeChild(child,inskipping);
 		}
 	}
-	getSystemState()->removeFromResetParentList(child.getPtr());
+	getSystemState()->removeFromResetParentList(child);
 	child->setParent(this);
 	{
 		Locker l(mutexDisplayList);
@@ -3207,13 +3242,14 @@ void DisplayObjectContainer::_addChildAt(_R<DisplayObject> child, unsigned int i
 			dynamicDisplayList.push_back(child);
 		else
 		{
-			std::vector<_R<DisplayObject>>::iterator it=dynamicDisplayList.begin();
+			auto it=dynamicDisplayList.begin();
 			for(unsigned int i=0;i<index;i++)
 				++it;
 			dynamicDisplayList.insert(it,child);
 		}
+		child->addStoredMember();
 	}
-	if (!onStage || child.getPtr() != getSystemState()->mainClip)
+	if (!onStage || child != getSystemState()->mainClip)
 		child->setOnStage(onStage,false,inskipping);
 }
 
@@ -3226,8 +3262,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 
 	{
 		Locker l(mutexDisplayList);
-		child->incRef();
-		std::vector<_R<DisplayObject>>::iterator it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),_MR(child));
+		auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
 
@@ -3245,7 +3280,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 			mapDepthToLegacyChild.erase(it2->second);
 			mapLegacyChildToDepth.erase(it2);
 		}
-
+		(*it)->removeStoredMember();
 		dynamicDisplayList.erase(it);
 	}
 	return true;
@@ -3257,20 +3292,21 @@ void DisplayObjectContainer::_removeAllChildren()
 	auto it=dynamicDisplayList.begin();
 	while (it!=dynamicDisplayList.end())
 	{
-		_R<DisplayObject> child = *it;
+		DisplayObject* child = *it;
 		child->setOnStage(false,false);
-		getSystemState()->addDisplayObjectToResetParentList(child.getPtr());
+		getSystemState()->addDisplayObjectToResetParentList(child);
 		child->setMask(NullRef);
 		if (!needsActionScript3())
 			child->removeAVM1Listeners();
 
 		//Erase this from the legacy child map (if it is in there)
-		auto it2 = mapLegacyChildToDepth.find(child.getPtr());
+		auto it2 = mapLegacyChildToDepth.find(child);
 		if (it2 != mapLegacyChildToDepth.end())
 		{
 			mapDepthToLegacyChild.erase(it2->second);
 			mapLegacyChildToDepth.erase(it2);
 		}
+		child->removeStoredMember();
 		it = dynamicDisplayList.erase(it);
 	}
 }
@@ -3283,19 +3319,18 @@ void DisplayObjectContainer::removeAVM1Listeners()
 	auto it=dynamicDisplayList.begin();
 	while (it!=dynamicDisplayList.end())
 	{
-		_R<DisplayObject> child = *it;
-		child->removeAVM1Listeners();
+		(*it)->removeAVM1Listeners();
 		it++;
 	}
 	DisplayObject::removeAVM1Listeners();
 }
 
-bool DisplayObjectContainer::_contains(_R<DisplayObject> d)
+bool DisplayObjectContainer::_contains(DisplayObject* d)
 {
 	if(d==this)
 		return true;
 
-	std::vector<_R<DisplayObject>>::const_iterator it=dynamicDisplayList.begin();
+	auto it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		if(*it==d)
@@ -3318,8 +3353,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,contains)
 
 	//Cast to object
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
-	d->incRef();
-	bool res=th->_contains(_MR(d));
+	bool res=th->_contains(d);
 	asAtomHandler::setBool(ret,res);
 }
 
@@ -3339,17 +3373,18 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChildAt)
 	int index=asAtomHandler::toInt(args[1]);
 
 	//Cast to object
-	_R<DisplayObject> d=_MR(asAtomHandler::as<DisplayObject>(args[0]));
+	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
 	assert_and_throw(index >= 0 && (size_t)index<=th->dynamicDisplayList.size());
+	d->incRef();
 	th->_addChildAt(d,index);
 
 	//Notify the object
 	d->incRef();
-	getVm(wrk->getSystemState())->addEvent(d,_MR(Class<Event>::getInstanceS(wrk,"added")));
+	getVm(wrk->getSystemState())->addEvent(_MR(d),_MR(Class<Event>::getInstanceS(wrk,"added")));
 
 	//incRef again as the value is getting returned
 	d->incRef();
-	ret = asAtomHandler::fromObject(d.getPtr());
+	ret = asAtomHandler::fromObject(d);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChild)
@@ -3365,15 +3400,16 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChild)
 	assert_and_throw(asAtomHandler::is<DisplayObject>(args[0]));
 
 	//Cast to object
-	_R<DisplayObject> d=_MR(asAtomHandler::as<DisplayObject>(args[0]));
+	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
+	d->incRef();
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	//Notify the object
 	d->incRef();
-	getVm(wrk->getSystemState())->addEvent(d,_MR(Class<Event>::getInstanceS(wrk,"added")));
+	getVm(wrk->getSystemState())->addEvent(_MR(d),_MR(Class<Event>::getInstanceS(wrk,"added")));
 
 	d->incRef();
-	ret = asAtomHandler::fromObject(d.getPtr());
+	ret = asAtomHandler::fromObject(d);
 }
 
 //Only from VM context
@@ -3388,11 +3424,12 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChild)
 	}
 	//Cast to object
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
+	//As we return the child we have to incRef it
+	d->incRef();
+
 	if(!th->_removeChild(d))
 		throw Class<ArgumentError>::getInstanceS(wrk,"removeChild: child not in list", 2025);
 
-	//As we return the child we have to incRef it
-	d->incRef();
 	ret = asAtomHandler::fromObject(d);
 }
 
@@ -3409,10 +3446,10 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 		Locker l(th->mutexDisplayList);
 		if(index>=int(th->dynamicDisplayList.size()) || index<0)
 			throw Class<RangeError>::getInstanceS(wrk,"removeChildAt: invalid index", 2025);
-		std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
+		auto it=th->dynamicDisplayList.begin();
 		for(int32_t i=0;i<index;i++)
 			++it;
-		child=(*it).getPtr();
+		child=(*it);
 		//Erase this from the legacy child map (if it is in there)
 		auto it2 = th->mapLegacyChildToDepth.find(child);
 		if (it2 != th->mapLegacyChildToDepth.end())
@@ -3422,11 +3459,11 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 		}
 		child->setOnStage(false,false);
 		wrk->getSystemState()->addDisplayObjectToResetParentList(child);
-		//incRef before the reference is destroyed
+		//As we return the child we incRef it
 		child->incRef();
+		child->removeStoredMember();
 		th->dynamicDisplayList.erase(it);
 	}
-	//As we return the child we don't decRef it
 	ret = asAtomHandler::fromObject(child);
 }
 
@@ -3440,7 +3477,12 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildren)
 		Locker l(th->mutexDisplayList);
 		if (endindex > th->dynamicDisplayList.size())
 			endindex = (uint32_t)th->dynamicDisplayList.size();
-		th->dynamicDisplayList.erase(th->dynamicDisplayList.begin()+beginindex,th->dynamicDisplayList.begin()+endindex);
+		auto it = th->dynamicDisplayList.begin()+beginindex;
+		while (it != th->dynamicDisplayList.begin()+endindex)
+		{
+			(*it)->removeStoredMember();
+			it = th->dynamicDisplayList.erase(it);
+		}
 	}
 }
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
@@ -3451,7 +3493,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
 	//Validate object type
 	assert_and_throw(asAtomHandler::is<DisplayObject>(args[0]));
 	ASATOM_INCREF(args[0]);
-	_R<DisplayObject> child = _MR(asAtomHandler::as<DisplayObject>(args[0]));
+	DisplayObject* child = asAtomHandler::as<DisplayObject>(args[0]);
 
 	int index=asAtomHandler::toInt(args[1]);
 	int curIndex = th->getChildIndex(child);
@@ -3461,20 +3503,23 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
 
 	Locker l(th->mutexDisplayList);
 
-	child->incRef();
-	th->dynamicDisplayList.erase(th->dynamicDisplayList.begin()+curIndex); //remove from old position
+	auto itrem = th->dynamicDisplayList.begin()+curIndex;
+	(*itrem)->removeStoredMember();
+	th->dynamicDisplayList.erase(itrem); //remove from old position
 
-	std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
+	auto it=th->dynamicDisplayList.begin();
 	int i = 0;
 	for(;it != th->dynamicDisplayList.end(); ++it)
 		if(i++ == index)
 		{
 			child->incRef();
+			child->addStoredMember();
 			th->dynamicDisplayList.insert(it, child);
 			return;
 		}
 
 	child->incRef();
+	child->addStoredMember();
 	th->dynamicDisplayList.push_back(child);
 }
 
@@ -3495,15 +3540,13 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildren)
 	}
 
 	//Cast to object
-	ASATOM_INCREF(args[0]);
-	_R<DisplayObject> child1=_MR(asAtomHandler::as<DisplayObject>(args[0]));
-	ASATOM_INCREF(args[1]);
-	_R<DisplayObject> child2=_MR(asAtomHandler::as<DisplayObject>(args[1]));
+	DisplayObject* child1=asAtomHandler::as<DisplayObject>(args[0]);
+	DisplayObject* child2=asAtomHandler::as<DisplayObject>(args[1]);
 
 	{
 		Locker l(th->mutexDisplayList);
-		std::vector<_R<DisplayObject>>::iterator it1=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child1);
-		std::vector<_R<DisplayObject>>::iterator it2=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child2);
+		auto it1=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child1);
+		auto it2=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child2);
 		if(it1==th->dynamicDisplayList.end() || it2==th->dynamicDisplayList.end())
 			throw Class<ArgumentError>::getInstanceS(wrk,"Argument is not child of this object", 2025);
 
@@ -3538,13 +3581,13 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getChildByName)
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
 	assert_and_throw(argslen==1);
 	uint32_t wantedName=asAtomHandler::toStringId(args[0],wrk);
-	std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
+	auto it=th->dynamicDisplayList.begin();
 	ASObject* res=nullptr;
 	for(;it!=th->dynamicDisplayList.end();++it)
 	{
 		if((*it)->name==wantedName)
 		{
-			res=(*it).getPtr();
+			res=(*it);
 			break;
 		}
 	}
@@ -3565,17 +3608,17 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getChildAt)
 	unsigned int index=asAtomHandler::toInt(args[0]);
 	if(index>=th->dynamicDisplayList.size())
 		throw Class<RangeError>::getInstanceS(wrk,"getChildAt: invalid index", 2025);
-	std::vector<_R<DisplayObject>>::iterator it=th->dynamicDisplayList.begin();
+	auto it=th->dynamicDisplayList.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
 
 	(*it)->incRef();
-	ret = asAtomHandler::fromObject((*it).getPtr());
+	ret = asAtomHandler::fromObject(*it);
 }
 
-int DisplayObjectContainer::getChildIndex(_R<DisplayObject> child)
+int DisplayObjectContainer::getChildIndex(DisplayObject* child)
 {
-	std::vector<_R<DisplayObject>>::const_iterator it = dynamicDisplayList.begin();
+	auto it = dynamicDisplayList.begin();
 	int ret = 0;
 	do
 	{
@@ -3599,8 +3642,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getChildIndex)
 	assert_and_throw(asAtomHandler::is<DisplayObject>(args[0]));
 
 	//Cast to object
-	_R<DisplayObject> d= _MR(asAtomHandler::as<DisplayObject>(args[0]));
-	d->incRef();
+	DisplayObject* d= asAtomHandler::as<DisplayObject>(args[0]);
 
 	asAtomHandler::setInt(ret,wrk,th->getChildIndex(d));
 }
@@ -3632,7 +3674,7 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 						&& ymin <= point->getY() && ymax >= point->getY())
 				{
 					(*it)->incRef();
-					ar->push(asAtomHandler::fromObject((*it).getPtr()));
+					ar->push(asAtomHandler::fromObject(*it));
 				}
 			}
 			if ((*it)->is<DisplayObjectContainer>())
@@ -3640,6 +3682,17 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 			it++;
 		}
 
+	}
+}
+
+void DisplayObjectContainer::clearDisplayList()
+{
+	auto it = dynamicDisplayList.rbegin();
+	while (it != dynamicDisplayList.rend())
+	{
+		(*it)->removeStoredMember();
+		dynamicDisplayList.pop_back();
+		it = dynamicDisplayList.rbegin();
 	}
 }
 
@@ -4019,13 +4072,29 @@ bool Stage::destruct()
 
 	// erasing an avm1 listener might change the list, so we can't use clear() here
 	while (!avm1KeyboardListeners.empty())
-		avm1KeyboardListeners.pop_back();
+	{
+		avm1KeyboardListeners.back()->removeStoredMember();
+		if (!avm1KeyboardListeners.empty())
+			avm1KeyboardListeners.pop_back();
+	}
 	while (!avm1MouseListeners.empty())
-		avm1MouseListeners.pop_back();
+	{
+		avm1MouseListeners.back()->removeStoredMember();
+		if (!avm1MouseListeners.empty())
+			avm1MouseListeners.pop_back();
+	}
 	while (!avm1EventListeners.empty())
-		avm1EventListeners.pop_back();
+	{
+		avm1EventListeners.back()->removeStoredMember();
+		if (!avm1EventListeners.empty())
+			avm1EventListeners.pop_back();
+	}
 	while (!avm1ResizeListeners.empty())
-		avm1ResizeListeners.pop_back();
+	{
+		avm1ResizeListeners.back()->removeStoredMember();
+		if (!avm1ResizeListeners.empty())
+			avm1ResizeListeners.pop_back();
+	}
 
 	return DisplayObjectContainer::destruct();
 }
@@ -4042,13 +4111,29 @@ void Stage::finalize()
 
 	// erasing an avm1 listener might change the list, so we can't use clear() here
 	while (!avm1KeyboardListeners.empty())
-		avm1KeyboardListeners.pop_back();
+	{
+		avm1KeyboardListeners.back()->removeStoredMember();
+		if (!avm1KeyboardListeners.empty())
+			avm1KeyboardListeners.pop_back();
+	}
 	while (!avm1MouseListeners.empty())
-		avm1MouseListeners.pop_back();
+	{
+		avm1MouseListeners.back()->removeStoredMember();
+		if (!avm1MouseListeners.empty())
+			avm1MouseListeners.pop_back();
+	}
 	while (!avm1EventListeners.empty())
-		avm1EventListeners.pop_back();
+	{
+		avm1EventListeners.back()->removeStoredMember();
+		if (!avm1EventListeners.empty())
+			avm1EventListeners.pop_back();
+	}
 	while (!avm1ResizeListeners.empty())
-		avm1ResizeListeners.pop_back();
+	{
+		avm1ResizeListeners.back()->removeStoredMember();
+		if (!avm1ResizeListeners.empty())
+			avm1ResizeListeners.pop_back();
+	}
 
 	DisplayObjectContainer::finalize();
 }
@@ -4467,52 +4552,65 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 			getSystemState()->getInputThread()->setLastKeyUp(e->as<KeyboardEvent>());
 		}
 		avm1listenerMutex.lock();
-		vector<_R<ASObject>> tmplisteners = avm1KeyboardListeners;
+		vector<ASObject*> tmplisteners = avm1KeyboardListeners;
 		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
 		auto it = tmplisteners.rbegin();
 		while (it != tmplisteners.rend())
 		{
+			(*it)->incRef();
 			if ((*it)->AVM1HandleKeyboardEvent(e->as<KeyboardEvent>()))
+			{
+				(*it)->decRef();
 				break;
+			}
+			(*it)->decRef();
 			it++;
 		}
 	}
 	else if (e->is<MouseEvent>())
 	{
 		avm1listenerMutex.lock();
-		vector<_R<ASObject>> tmplisteners = avm1MouseListeners;
+		vector<ASObject*> tmplisteners = avm1MouseListeners;
 		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
 		auto it = tmplisteners.rbegin();
 		while (it != tmplisteners.rend())
 		{
+			(*it)->incRef();
 			if ((*it)->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>()))
+			{
+				(*it)->decRef();
 				break;
+			}
+			(*it)->decRef();
 			it++;
 		}
 	}
 	else
 	{
 		avm1listenerMutex.lock();
-		vector<_R<ASObject>> tmplisteners = avm1EventListeners;
+		vector<ASObject*> tmplisteners = avm1EventListeners;
 		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
 		auto it = tmplisteners.rbegin();
 		while (it != tmplisteners.rend())
 		{
+			(*it)->incRef();
 			(*it)->AVM1HandleEvent(dispatcher, e);
+			(*it)->decRef();
 			it++;
 		}
 		if (!avm1ResizeListeners.empty() && dispatcher==this && e->type=="resize")
 		{
 			avm1listenerMutex.lock();
-			vector<_R<ASObject>> tmplisteners = avm1ResizeListeners;
+			vector<ASObject*> tmplisteners = avm1ResizeListeners;
 			avm1listenerMutex.unlock();
 			// eventhandlers may change the listener list, so we work on a copy
 			auto it = tmplisteners.rbegin();
 			while (it != tmplisteners.rend())
 			{
+				(*it)->incRef();
 				asAtom func=asAtomHandler::invalidAtom;
 				multiname m(nullptr);
 				m.name_type=multiname::NAME_STRING;
@@ -4526,6 +4624,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
+				(*it)->decRef();
 				it++;
 			}
 		}
@@ -4537,11 +4636,12 @@ void Stage::AVM1AddKeyboardListener(ASObject *o)
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
 	{
-		if ((*it).getPtr() == o)
+		if ((*it) == o)
 			return;
 	}
 	o->incRef();
-	avm1KeyboardListeners.push_back(_MR(o));
+	o->addStoredMember();
+	avm1KeyboardListeners.push_back(o);
 }
 
 void Stage::AVM1RemoveKeyboardListener(ASObject *o)
@@ -4549,8 +4649,9 @@ void Stage::AVM1RemoveKeyboardListener(ASObject *o)
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
 	{
-		if ((*it).getPtr() == o)
+		if ((*it) == o)
 		{
+			o->removeStoredMember();
 			avm1KeyboardListeners.erase(it);
 			break;
 		}
@@ -4561,11 +4662,12 @@ void Stage::AVM1AddMouseListener(ASObject *o)
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
 	{
-		if ((*it).getPtr() == o)
+		if ((*it) == o)
 			return;
 	}
 	o->incRef();
-	avm1MouseListeners.push_back(_MR(o));
+	o->addStoredMember();
+	avm1MouseListeners.push_back(o);
 }
 
 void Stage::AVM1RemoveMouseListener(ASObject *o)
@@ -4573,8 +4675,9 @@ void Stage::AVM1RemoveMouseListener(ASObject *o)
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
 	{
-		if ((*it).getPtr() == o)
+		if ((*it) == o)
 		{
+			o->removeStoredMember();
 			avm1MouseListeners.erase(it);
 			break;
 		}
@@ -4585,19 +4688,21 @@ void Stage::AVM1AddEventListener(ASObject *o)
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
 	{
-		if ((*it).getPtr() == o)
+		if ((*it) == o)
 			return;
 	}
 	o->incRef();
-	avm1EventListeners.push_back(_MR(o));
+	o->addStoredMember();
+	avm1EventListeners.push_back(o);
 }
 void Stage::AVM1RemoveEventListener(ASObject *o)
 {
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
 	{
-		if ((*it).getPtr() == o)
+		if ((*it) == o)
 		{
+			o->removeStoredMember();
 			avm1EventListeners.erase(it);
 			break;
 		}
@@ -4609,11 +4714,11 @@ void Stage::AVM1AddResizeListener(ASObject *o)
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1ResizeListeners.begin(); it != avm1ResizeListeners.end(); it++)
 	{
-		if ((*it).getPtr() == o)
+		if ((*it) == o)
 			return;
 	}
 	o->incRef();
-	avm1ResizeListeners.push_back(_MR(o));
+	avm1ResizeListeners.push_back(o);
 }
 
 bool Stage::AVM1RemoveResizeListener(ASObject *o)
@@ -4621,8 +4726,9 @@ bool Stage::AVM1RemoveResizeListener(ASObject *o)
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1ResizeListeners.begin(); it != avm1ResizeListeners.end(); it++)
 	{
-		if ((*it).getPtr() == o)
+		if ((*it) == o)
 		{
+			o->removeStoredMember();
 			avm1ResizeListeners.erase(it);
 			// it's not mentioned in the specs but I assume we return true if we found the listener object
 			return true;
@@ -5688,15 +5794,24 @@ void SimpleButton::reflectState(BUTTONSTATE oldstate)
 	assert(dynamicDisplayList.empty() || dynamicDisplayList.size() == 1);
 	if(!dynamicDisplayList.empty())
 	{
-		_removeChild(dynamicDisplayList.front().getPtr(),true);
+		_removeChild(dynamicDisplayList.front(),true);
 	}
 
 	if((currentState == UP || currentState == STATE_OUT) && !upState.isNull())
-		_addChildAt(upState,0);
+	{
+		upState->incRef();
+		_addChildAt(upState.getPtr(),0);
+	}
 	else if(currentState == DOWN && !downState.isNull())
-		_addChildAt(downState,0);
+	{
+		downState->incRef();
+		_addChildAt(downState.getPtr(),0);
+	}
 	else if(currentState == OVER && !overState.isNull())
-		_addChildAt(overState,0);
+	{
+		overState->incRef();
+		_addChildAt(overState.getPtr(),0);
+	}
 	if ((oldstate == OVER || oldstate == UP) && currentState == STATE_OUT && soundchannel_OverUpToIdle)
 		soundchannel_OverUpToIdle->play();
 	if (oldstate == STATE_OUT && (currentState == OVER || currentState == UP) && soundchannel_IdleToOverUp)
@@ -5911,11 +6026,8 @@ void DisplayObjectContainer::declareFrame()
 {
 	// elements of the dynamicDisplayList may be removed/added during declareFrame() calls,
 	// so we create a temporary list containing all elements
-	std::vector < _R<DisplayObject> > tmplist;
-	{
-		Locker l(mutexDisplayList);
-		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
-	}
+	std::vector<_R<DisplayObject>> tmplist;
+	cloneDisplayList(tmplist);
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
 		(*it)->declareFrame();
@@ -5933,11 +6045,8 @@ void DisplayObjectContainer::initFrame()
 
 	// elements of the dynamicDisplayList may be removed during initFrame() calls,
 	// so we create a temporary list containing all elements
-	std::vector < _R<DisplayObject> > tmplist;
-	{
-		Locker l(mutexDisplayList);
-		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
-	}
+	std::vector<_R<DisplayObject>> tmplist;
+	cloneDisplayList(tmplist);
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
 		(*it)->initFrame();
@@ -5949,11 +6058,8 @@ void DisplayObjectContainer::executeFrameScript()
 {
 	// elements of the dynamicDisplayList may be removed during executeFrameScript() calls,
 	// so we create a temporary list containing all elements
-	std::vector < _R<DisplayObject> > tmplist;
-	{
-		Locker l(mutexDisplayList);
-		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
-	}
+	std::vector<_R<DisplayObject>> tmplist;
+	cloneDisplayList(tmplist);
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
 		(*it)->executeFrameScript();
@@ -5963,11 +6069,8 @@ void DisplayObjectContainer::AVM1HandleEventScriptsAfter()
 {
 	// elements of the dynamicDisplayList may be removed during AVM1HandleEventScripts() calls,
 	// so we create a temporary list containing all elements
-	std::vector < _R<DisplayObject> > tmplist;
-	{
-		Locker l(mutexDisplayList);
-		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
-	}
+	std::vector<_R<DisplayObject>> tmplist;
+	cloneDisplayList(tmplist);
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
 		(*it)->AVM1HandleEventScriptsAfter();
@@ -6216,11 +6319,8 @@ void MovieClip::initFrame()
 	 * first frame (top-down) and call their constructors (bottom-up) */
 
 	// work on a copy because initframe may alter the displaylist
-	std::vector < _R<DisplayObject> > tmplist;
-	{
-		Locker l(mutexDisplayList);
-		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
-	}
+	std::vector<_R<DisplayObject>> tmplist;
+	cloneDisplayList(tmplist);
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
 		(*it)->initFrame();
@@ -6291,11 +6391,8 @@ void DisplayObjectContainer::advanceFrame()
 {
 	// elements of the dynamicDisplayList may be removed during advanceFrame() calls,
 	// so we create a temporary list containing all elements
-	std::vector < _R<DisplayObject> > tmplist;
-	{
-		Locker l(mutexDisplayList);
-		tmplist.assign(dynamicDisplayList.begin(),dynamicDisplayList.end());
-	}
+	std::vector<_R<DisplayObject>> tmplist;
+	cloneDisplayList(tmplist);
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
 		(*it)->advanceFrame();

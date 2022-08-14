@@ -1576,7 +1576,7 @@ void DisplayObject::afterConstruction()
 	if(!loaderInfo.isNull())
 	{
 		this->incRef();
-		loaderInfo->objectHasLoaded(_MR(this));
+		loaderInfo->objectHasLoaded(this);
 	}
 //	hasChanged=true;
 //	needsTextureRecalculation=true;
@@ -2509,7 +2509,7 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 			{
 				AVM1Function* f = asAtomHandler::as<AVM1Function>(v);
 				if (f->getClip() == this)
-					f->resetClipRefcounted(); // this avoids that this DisplayObject never destroyed because the function still has a reference count
+					f->resetClipRefcounted(); // this avoids that this DisplayObject is never destroyed because the function still has a reference count
 				f->incRef();
 				avm1functions[nameIdOriginal] = _MR(f);
 			}
@@ -2658,6 +2658,7 @@ asAtom DisplayObject::getVariableBindingValue(const tiny_string &name)
 		{
 			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
 			ret = asAtomHandler::toObject(obj,getInstanceWorker())->getVariableBindingValue(localname);
+			ASATOM_DECREF(obj);
 		}
 	}
 	return ret;

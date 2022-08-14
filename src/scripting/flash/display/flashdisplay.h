@@ -108,11 +108,12 @@ private:
 	unordered_map<DisplayObject*,int32_t> mapLegacyChildToDepth;
 	map<int32_t,_NR<DisplayObject>> namedRemovedLegacyChildren;
 	set<int32_t> legacyChildrenMarkedForDeletion;
-	bool _contains(_R<DisplayObject> child);
+	bool _contains(DisplayObject* child);
 	void getObjectsFromPoint(Point* point, Array* ar);
 protected:
 	//This is shared between RenderThread and VM
-	std::vector < _R<DisplayObject> > dynamicDisplayList;
+	std::vector < DisplayObject* > dynamicDisplayList;
+	void clearDisplayList();
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
@@ -132,17 +133,20 @@ public:
 	void eraseRemovedLegacyChild(uint32_t name);
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
-	void _addChildAt(_R<DisplayObject> child, unsigned int index, bool inskipping=false);
+	void _addChildAt(DisplayObject* child, unsigned int index, bool inskipping=false);
 	void dumpDisplayList(unsigned int level=0);
 	bool _removeChild(DisplayObject* child, bool direct=false, bool inskipping=false);
 	void _removeAllChildren();
 	void removeAVM1Listeners() override;
-	int getChildIndex(_R<DisplayObject> child);
+	int getChildIndex(DisplayObject* child);
 	DisplayObjectContainer(ASWorker* wrk,Class_base* c);
 	void markAsChanged() override;
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
+	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
+	void prepareDestruction() override;
+	void cloneDisplayList(std::vector<_R<DisplayObject>>& displayListCopy);
 	bool hasLegacyChildAt(int32_t depth);
 	// this does not test if a DisplayObject exists at the provided depth
 	DisplayObject* getLegacyChildAt(int32_t depth);
@@ -370,7 +374,7 @@ public:
 	ASFUNCTION_ATOM(_getSharedEvents);
 	ASFUNCTION_ATOM(_getWidth);
 	ASFUNCTION_ATOM(_getHeight);
-	void objectHasLoaded(_R<DisplayObject> obj);
+	void objectHasLoaded(DisplayObject* obj);
 	void setWaitedObject(_NR<DisplayObject> w);
 	//ILoadable interface
 	void setBytesTotal(uint32_t b) override
@@ -443,7 +447,7 @@ public:
 	{
 		return 0;
 	}
-	void setContent(_R<DisplayObject> o);
+	void setContent(DisplayObject* o);
 	_NR<DisplayObject> getContent() { return content; }
 	_R<LoaderInfo> getContentLoaderInfo() { return contentLoaderInfo; }
 	bool allowLoadingSWF() { return allowCodeImport; }
@@ -732,10 +736,10 @@ private:
 	// currently used when Loader contents are added and the Loader is not on stage
 	// or a MovieClip is not on stage but set to "play" from AS3 code
 	unordered_set<MovieClip*> hiddenobjects;
-	vector<_R<ASObject>> avm1KeyboardListeners;
-	vector<_R<ASObject>> avm1MouseListeners;
-	vector<_R<ASObject>> avm1EventListeners;
-	vector<_R<ASObject>> avm1ResizeListeners;
+	vector<ASObject*> avm1KeyboardListeners;
+	vector<ASObject*> avm1MouseListeners;
+	vector<ASObject*> avm1EventListeners;
+	vector<ASObject*> avm1ResizeListeners;
 	// double linked list of AVM1 MovieClips currently on Stage that have scripts to execute
 	// this is needed to execute the scripts in the correct order
 	MovieClip* avm1ScriptMovieClipFirst;

@@ -1862,24 +1862,32 @@ ASFUNCTIONBODY_ATOM(MovieClip,play)
 
 void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 {
-	uint32_t next_FP;
+	uint32_t next_FP=0;
 	tiny_string sceneName;
 	assert_and_throw(argslen==1 || argslen==2);
 	if(argslen==2 && needsActionScript3())
 	{
 		sceneName = asAtomHandler::toString(args[1],getInstanceWorker());
 	}
+	uint32_t dest=FRAME_NOT_FOUND;
 	if(asAtomHandler::isString(args[0]))
 	{
-		uint32_t dest=getFrameIdByLabel(asAtomHandler::toString(args[0],getInstanceWorker()), sceneName);
+		tiny_string label = asAtomHandler::toString(args[0],getInstanceWorker());
+		dest=getFrameIdByLabel(label, sceneName);
 		if(dest==FRAME_NOT_FOUND)
 		{
-			dest= 0;
-			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getInstanceWorker())<<" in scene "<<sceneName<<" at movieclip "<<getTagID()<<" "<<this->state.FP);
-//			throwError<ArgumentError>(kInvalidArgumentError,asAtomHandler::toString(args[0],));
+			number_t ret=0;
+			if (Integer::fromStringFlashCompatible(label.raw_buf(),ret,10,true))
+			{
+				// it seems that at least for AVM1 Adobe treats number strings as frame numbers
+				dest = getFrameIdByNumber(ret-1, sceneName);
+			}
+			if(dest==FRAME_NOT_FOUND)
+			{
+				dest=0;
+				LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getInstanceWorker())<<" in scene "<<sceneName<<" at movieclip "<<getTagID()<<" "<<this->state.FP);
+			}
 		}
-
-		next_FP = dest;
 	}
 	else
 	{
@@ -1887,7 +1895,11 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		if(inFrameNo == 0)
 			inFrameNo = 1;
 
-		next_FP = getFrameIdByNumber(inFrameNo-1, sceneName);
+		dest = getFrameIdByNumber(inFrameNo-1, sceneName);
+	}
+	if (dest!=FRAME_NOT_FOUND)
+	{
+		next_FP=dest;
 		while(next_FP >= getFramesLoaded())
 		{
 			if (hasFinishedLoading())
@@ -1973,7 +1985,8 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate)
 			state.explicit_play=state.creatingframe;
 		state.stop_FP = stop;
 	}
-	currentFrameChanged(newframe);
+	if (!state.frameadvanced)
+		currentFrameChanged(newframe);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,gotoAndStop)

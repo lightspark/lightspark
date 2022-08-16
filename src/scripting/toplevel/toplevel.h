@@ -365,7 +365,8 @@ public:
 	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind);
 	void setVariableByQName(uint32_t nameID, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind);
 	void setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind);
-
+	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable= true);
+	
 	virtual Prototype* clonePrototype(ASWorker* wrk) = 0;
 };
 
@@ -443,7 +444,7 @@ protected:
 	IFunction(ASWorker* wrk,Class_base *c, CLASS_SUBTYPE st);
 	virtual IFunction* clone(ASWorker* wrk)=0;
 public:
-	_NR<ASObject> closure_this;
+	ASObject* closure_this;
 	static void sinit(Class_base* c);
 	/* If this is a method, inClass is the class this is defined in.
 	 * If this is a function, inClass == NULL
@@ -462,23 +463,30 @@ public:
 		clonedFrom=nullptr;
 		functionname=0;
 		length=0;
-		closure_this.reset();
+		if (closure_this)
+			closure_this->removeStoredMember();
+		closure_this=nullptr;
 		prototype.reset();
 		return destructIntern();
 	}
 	inline void finalize() override
 	{
-		closure_this.reset();
+		if (closure_this)
+			closure_this->removeStoredMember();
+		closure_this=nullptr;
 		prototype.reset();
 	}
 	
 	void prepareShutdown() override;
-	IFunction* bind(_NR<ASObject> c, ASWorker* wrk)
+	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall);
+	IFunction* bind(ASObject* c, ASWorker* wrk)
 	{
 		IFunction* ret=nullptr;
 		ret=clone(wrk);
 		ret->setClass(getClass());
 		ret->closure_this=c;
+		ret->closure_this->incRef();
+		ret->closure_this->addStoredMember();
 		ret->clonedFrom=this;
 		ret->isStatic=isStatic;
 		ret->constructIndicator = true;
@@ -766,6 +774,7 @@ public:
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		Function*  ret = new (c->memoryAccount) Function(c->getInstanceWorker(),c);
 		ret->objfreelist = &c->getInstanceWorker()->freelist[c->classID];
+		ret->setRefConstant();
 		ret->resetCached();
 		ret->val_atom = v;
 		ret->returnType = returnType;

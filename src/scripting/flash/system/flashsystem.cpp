@@ -1085,8 +1085,8 @@ void ASWorker::execute()
 void ASWorker::jobFence()
 {
 	state ="terminated";
-	this->incRef();
 	getSystemState()->removeWorker(this);
+	this->incRef();
 	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"workerState")),true);
 	sem_event_cond.signal();
 }
@@ -1172,8 +1172,11 @@ ASFUNCTIONBODY_ATOM(ASWorker,createMessageChannel)
 		throwError<ArgumentError>(kInvalidArgumentError,"receiver");
 	MessageChannel* channel = Class<MessageChannel>::getInstanceSNoArgs(th);
 	th->incRef();
-	channel->sender = _MR(th);
-	channel->receiver = receiver;
+	th->addStoredMember();
+	channel->sender = th;
+	receiver->incRef();
+	receiver->addStoredMember();
+	channel->receiver = receiver.getPtr();
 	ret = asAtomHandler::fromObjectNoPrimitive(channel);
 }
 ASFUNCTIONBODY_ATOM(ASWorker,_removeEventListener)

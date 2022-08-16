@@ -50,7 +50,10 @@ bool listener::operator==(const listener &r)
 void listener::resetClosure()
 {
 	if (asAtomHandler::isFunction(f) && asAtomHandler::as<IFunction>(f)->closure_this)
-		asAtomHandler::as<IFunction>(f)->closure_this.reset();
+	{
+		asAtomHandler::as<IFunction>(f)->closure_this->removeStoredMember();
+		asAtomHandler::as<IFunction>(f)->closure_this=nullptr;
+	}
 }
 
 void IEventDispatcher::linkTraits(Class_base* c)
@@ -861,7 +864,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 			break;
 		asAtom arg0= asAtomHandler::fromObject(e.getPtr());
 		IFunction* func = asAtomHandler::as<IFunction>(tmpListener[i].f);
-		asAtom v = asAtomHandler::fromObject(func->closure_this ? func->closure_this.getPtr() : this);
+		asAtom v = asAtomHandler::fromObject(func->closure_this ? func->closure_this : this);
 		asAtom ret=asAtomHandler::invalidAtom;
 		asAtomHandler::callFunction(tmpListener[i].f,tmpListener[i].worker,ret,v,&arg0,1,false);
 		ASATOM_DECREF(ret);

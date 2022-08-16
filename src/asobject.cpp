@@ -80,6 +80,7 @@ string ASObject::toDebugString() const
 		assert(false);
 	}
 #ifndef _NDEBUG
+	assert(storedmembercount<=uint32_t(this->getRefCount()) || this->getConstant());
 	char buf[300];
 	if (this->getConstant())
 		sprintf(buf,"(%p%s)",this,this->isConstructed()?"":" not constructed");
@@ -1697,20 +1698,22 @@ variables_map::~variables_map()
 
 void variables_map::destroyContents()
 {
-	var_iterator it=Variables.begin();
-	while(it!=Variables.cend())
+	while(!Variables.empty())
 	{
+		var_iterator it=Variables.begin();
 		if (it->second.isrefcounted)
 		{
-			ASATOM_DECREF(it->second.setter);
-			ASATOM_DECREF(it->second.getter);
+			asAtom getter=it->second.getter;
+			asAtom setter=it->second.getter;
 			ASObject* o = asAtomHandler::getObject(it->second.var);
-			it = Variables.erase(it);
+			Variables.erase(it);
 			if (o)
 				o->removeStoredMember();
+			ASATOM_DECREF(setter);
+			ASATOM_DECREF(getter);
 		}
 		else
-			it = Variables.erase(it);
+			Variables.erase(it);
 	}
 	slots_vars.clear();
 	slotcount=0;
@@ -1718,7 +1721,7 @@ void variables_map::destroyContents()
 void variables_map::prepareShutdown()
 {
 	var_iterator it=Variables.begin();
-	while(it!=Variables.cend())
+	while(it!=Variables.end())
 	{
 		ASObject* v = asAtomHandler::getObject(it->second.var);
 		if (v)
@@ -2730,7 +2733,7 @@ bool asAtomHandler::functioncompare(asAtom& a, ASWorker* wrk, asAtom& v2)
 }
 ASObject* asAtomHandler::getClosure(asAtom& a)
 {
-	return (is<IFunction>(a)) ? as<IFunction>(a)->closure_this.getPtr() : nullptr;
+	return (is<IFunction>(a)) ? as<IFunction>(a)->closure_this : nullptr;
 }
 asAtom asAtomHandler::getClosureAtom(asAtom& a, asAtom defaultAtom)
 {
@@ -3545,8 +3548,7 @@ void asAtomHandler::setFunction(asAtom& a, ASObject *obj, ASObject *closure, ASW
 	// type may be T_CLASS or T_FUNCTION
 	if (closure &&obj->is<IFunction>())
 	{
-		closure->incRef();
-		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(obj->as<IFunction>()->bind(_MR(closure),wrk))|ATOM_OBJECTPTR;
+		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(obj->as<IFunction>()->bind(closure,wrk))|ATOM_OBJECTPTR;
 	}
 	else
 	{

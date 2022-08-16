@@ -30,6 +30,7 @@ using namespace lightspark;
 void MessageChannel::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED|CLASS_FINAL);
+	c->isReusable=true;
 	REGISTER_GETTER(c, state);
 	c->setDeclaredMethodByQName("messageAvailable","",Class<IFunction>::getFunction(c->getSystemState(),messageAvailable,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("addEventListener","",Class<IFunction>::getFunction(c->getSystemState(),_addEventListener),NORMAL_METHOD,true);
@@ -42,9 +43,110 @@ void MessageChannel::sinit(Class_base* c)
 
 void MessageChannel::finalize()
 {
-	while (!messagequeue.empty())
-		messagequeue.pop();
+	{
+		Locker l(messagequeuemutex);
+		auto it = messagequeue.begin();
+		while (it != messagequeue.end())
+		{
+			(*it)->removeStoredMember();
+			it = messagequeue.erase(it);
+		}
+	}
+	if (sender)
+		sender->removeStoredMember();
+	sender=nullptr;
+	if (receiver)
+		receiver->removeStoredMember();
+	receiver=nullptr;
 }
+bool MessageChannel::destruct()
+{
+	{
+		Locker l(messagequeuemutex);
+		auto it = messagequeue.begin();
+		while (it != messagequeue.end())
+		{
+			(*it)->removeStoredMember();
+			it = messagequeue.erase(it);
+		}
+	}
+	if (sender)
+		sender->removeStoredMember();
+	sender=nullptr;
+	if (receiver)
+		receiver->removeStoredMember();
+	receiver=nullptr;
+	return EventDispatcher::destruct();
+}
+void MessageChannel::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	{
+		Locker l(messagequeuemutex);
+		for (auto it = messagequeue.begin(); it != messagequeue.end(); it++)
+			(*it)->prepareShutdown();
+	}
+	if (sender)
+		sender->prepareShutdown();
+	if (receiver)
+		receiver->prepareShutdown();
+}
+uint32_t MessageChannel::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+{
+	if (obj==this && !firstcall)
+		return 1;
+	uint32_t res=0;
+	{
+		Locker l(messagequeuemutex);
+		for (auto it = messagequeue.begin(); it != messagequeue.end(); it++)
+		{
+			if (res>needed)
+				return res;
+			ASObject* o = (*it);
+			if (o == obj)
+				++res;
+			if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
+			{
+				uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
+				if (r == UINT32_MAX)
+					return UINT32_MAX;
+				res += r;
+			}
+		}
+	}
+	if (sender)
+	{
+		if (sender == obj)
+			++res;
+		if (!sender->getConstant() && sender->isLastRef() && sender->canHaveCyclicMemberReference())
+		{
+			uint32_t r = sender->countCylicMemberReferences(obj,needed-res,false);
+			if (r == UINT32_MAX)
+				return UINT32_MAX;
+			res += r;
+		}
+	}
+	if (receiver)
+	{
+		if (receiver == obj)
+			++res;
+		if (!receiver->getConstant() && receiver->isLastRef() && receiver->canHaveCyclicMemberReference())
+		{
+			uint32_t r = receiver->countCylicMemberReferences(obj,needed-res,false);
+			if (r == UINT32_MAX)
+				return UINT32_MAX;
+			res += r;
+		}
+	}
+	uint32_t r = EventDispatcher::countCylicMemberReferences(obj,needed-res,firstcall);
+	if (r == UINT32_MAX)
+		return UINT32_MAX;
+	res += r;
+	return res;
+}
+
 ASFUNCTIONBODY_GETTER(MessageChannel, state)
 
 ASFUNCTIONBODY_ATOM(MessageChannel,messageAvailable)
@@ -60,7 +162,7 @@ ASFUNCTIONBODY_ATOM(MessageChannel,_addEventListener)
 	if (argslen >=2 && asAtomHandler::isFunction(args[1]))
 	{
 		// the function will be executed in the receiver worker, so set its worker accordingly
-		asAtomHandler::as<IFunction>(args[1])->setWorker(th->receiver.getPtr());
+		asAtomHandler::as<IFunction>(args[1])->setWorker(th->receiver);
 		asAtomHandler::as<IFunction>(args[1])->objfreelist=nullptr;
 		
 	}
@@ -104,18 +206,23 @@ ASFUNCTIONBODY_ATOM(MessageChannel,receive)
 		}
 	}
 	
-	_NR<ASObject> msg = th->messagequeue.front();
-	th->messagequeue.pop();
+	ASObject* msg = th->messagequeue.front();
+	th->messagequeue.pop_front();
 	if (msg->is<ASWorker>()
 			|| msg->is<MessageChannel>()
 			|| (msg->is<ByteArray>() && msg->as<ByteArray>()->shareable)
 			|| msg->is<ASMutex>()
 			|| msg->is<ASCondition>()
 			)
-		ret = asAtomHandler::fromObjectNoPrimitive(msg.getPtr());
+	{
+		msg->incRef();
+		msg->removeStoredMember();
+		ret = asAtomHandler::fromObjectNoPrimitive(msg);
+	}
 	else
 	{
 		ret = msg->as<ByteArray>()->readObject();
+		msg->removeStoredMember();
 	}
 }
 ASFUNCTIONBODY_ATOM(MessageChannel,send)
@@ -139,15 +246,18 @@ ASFUNCTIONBODY_ATOM(MessageChannel,send)
 			)
 	{
 		msg->objfreelist=nullptr; // message will be used in another thread, make it not reusable
-		th->messagequeue.push(msg);
+		msg->incRef();
+		msg->addStoredMember();
+		th->messagequeue.push_back(msg.getPtr());
 	}
 	else
 	{
-		ByteArray* b = Class<ByteArray>::getInstanceSNoArgs(th->receiver.getPtr());
-		b->writeObject(msg.getPtr(),th->receiver.getPtr());
+		ByteArray* b = Class<ByteArray>::getInstanceSNoArgs(th->receiver);
+		b->writeObject(msg.getPtr(),th->receiver);
 		b->setPosition(0);
-		th->messagequeue.push(_MR(b));
+		b->addStoredMember();
+		th->messagequeue.push_back(b);
 	}
 	th->incRef();
-	getVm(wrk->getSystemState())->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(th->receiver.getPtr(),"channelMessage")));
+	getVm(wrk->getSystemState())->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(th->receiver,"channelMessage")));
 }

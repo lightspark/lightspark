@@ -30,16 +30,20 @@ class MessageChannel: public EventDispatcher
 {
 private:
 	Mutex messagequeuemutex;
-	std::queue<_R<ASObject>> messagequeue;
+	std::list<ASObject*> messagequeue;
 public:
-	MessageChannel(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),state("open")
+	MessageChannel(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),sender(nullptr),receiver(nullptr),state("open")
 	{
 		subtype=SUBTYPE_MESSAGECHANNEL;
 	}
 	static void sinit(Class_base* c);
 	void finalize() override;
-	_NR<ASWorker> sender;
-	_NR<ASWorker> receiver;
+	bool destruct() override;
+	void prepareShutdown() override;
+	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall);
+	
+	ASWorker* sender;
+	ASWorker* receiver;
 	ASFUNCTION_ATOM(messageAvailable);
 	ASPROPERTY_GETTER(tiny_string,state);
 	ASFUNCTION_ATOM(_addEventListener);

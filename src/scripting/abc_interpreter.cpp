@@ -6529,7 +6529,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									{
 										if (canCallFunctionDirect(state.operandlist.back(),name))
 										{
-											if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this.isNull())
+											if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this==nullptr)
 											{
 												ASObject* cls = state.operandlist.back().objtype;
 												if (opcode == 0x46)
@@ -6651,7 +6651,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										it++;
 										if (canCallFunctionDirect((*it),name))
 										{
-											if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this.isNull())
+											if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this==nullptr)
 											{
 												if (asAtomHandler::is<SyntheticFunction>(v->var))
 												{
@@ -6807,7 +6807,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										{
 											if (canCallFunctionDirect((*it),name))
 											{
-												if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this.isNull())
+												if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this==nullptr)
 												{
 													if (asAtomHandler::is<SyntheticFunction>(v->var))
 													{

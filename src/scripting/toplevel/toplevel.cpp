@@ -141,7 +141,7 @@ multiname *Undefined::setVariableByMultiname(multiname& name, asAtom& o, CONST_A
 	return nullptr;
 }
 
-IFunction::IFunction(ASWorker* wrk,Class_base* c,CLASS_SUBTYPE st):ASObject(wrk,c,T_FUNCTION,st),length(0),inClass(nullptr),isStatic(false),clonedFrom(nullptr),functionname(0)
+IFunction::IFunction(ASWorker* wrk,Class_base* c,CLASS_SUBTYPE st):ASObject(wrk,c,T_FUNCTION,st),length(0),closure_this(nullptr),inClass(nullptr),isStatic(false),clonedFrom(nullptr),functionname(0)
 {
 }
 
@@ -165,13 +165,34 @@ void IFunction::prepareShutdown()
 		return;
 	ASObject::prepareShutdown();
 	if (closure_this)
-	{
 		closure_this->prepareShutdown();
-		closure_this.fakeRelease();
-	}
 	if (prototype)
 		prototype->prepareShutdown();
 	prototype.reset();
+}
+
+uint32_t IFunction::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+{
+	if (obj==this && !firstcall)
+		return 1;
+	uint32_t res=0;
+	if (closure_this)
+	{
+		if (closure_this == obj)
+			++res;
+		if (!closure_this->getConstant() && closure_this->isLastRef() && closure_this->canHaveCyclicMemberReference())
+		{
+			uint32_t r = closure_this->countCylicMemberReferences(obj,needed-res,false);
+			if (r == UINT32_MAX)
+				return UINT32_MAX;
+			res += r;
+		}
+	}
+	uint32_t r = ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
+	if (r == UINT32_MAX)
+		return UINT32_MAX;
+	res += r;
+	return res;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype)
@@ -196,7 +217,7 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 	asAtom* newArgs=nullptr;
 	int newArgsLen=0;
 	if(th->inClass && th->closure_this)
-		newObj = asAtomHandler::fromObject(th->closure_this.getPtr());
+		newObj = asAtomHandler::fromObject(th->closure_this);
 	else
 	{
 		//Validate parameters
@@ -251,7 +272,7 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 	asAtom* newArgs=nullptr;
 	uint32_t newArgsLen=0;
 	if(th->inClass && th->closure_this)
-		newObj = asAtomHandler::fromObject(th->closure_this.getPtr());
+		newObj = asAtomHandler::fromObject(th->closure_this);
 	else
 	{
 		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
@@ -836,7 +857,7 @@ uint32_t SyntheticFunction::countCylicMemberReferences(ASObject* obj, uint32_t n
 			}
 		}
 	}
-	uint32_t r = ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
+	uint32_t r = IFunction::countCylicMemberReferences(obj,needed-res,firstcall);
 	if (r == UINT32_MAX)
 		return UINT32_MAX;
 	res += r;
@@ -3692,6 +3713,11 @@ void Prototype::setVariableAtomByQName(const tiny_string &name, const nsNameAndK
 	originalPrototypeVars->setVariableAtomByQName(nameID,ns,o,traitKind);
 }
 
+void Prototype::setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, IFunction* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
+{
+	obj->setDeclaredMethodByQName(name, ns, o, type, isBorrowed, isEnumerable);
+	o->setRefConstant();
+}
 void Prototype::copyOriginalValues(Prototype* target)
 {
 	if (this->prevPrototype)
@@ -3821,7 +3847,7 @@ uint32_t AVM1Function::countCylicMemberReferences(ASObject* obj, uint32_t needed
 			res += r;
 		}
 	}
-	uint32_t r = ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
+	uint32_t r = IFunction::countCylicMemberReferences(obj,needed-res,firstcall);
 	if (r == UINT32_MAX)
 		return UINT32_MAX;
 	res += r;

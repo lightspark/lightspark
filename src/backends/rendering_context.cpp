@@ -130,7 +130,7 @@ void GLRenderContext::setProperties(AS_BLENDMODE blendmode)
 	switch (blendmode)
 	{
 		case BLENDMODE_NORMAL:
-			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
+			engineData->exec_glBlendFunc(BLEND_SRC_ALPHA,BLEND_ONE_MINUS_SRC_ALPHA);
 			break;
 		case BLENDMODE_MULTIPLY:
 			engineData->exec_glBlendFunc(BLEND_DST_COLOR,BLEND_ONE_MINUS_SRC_ALPHA);

@@ -4010,6 +4010,7 @@ void ABCVm::abc_callFunctionSyntheticMultiArgs(call_context* context)
 	RUNTIME_STACK_POP_N_CREATE(context,argcount+1,args);
 	asAtom ret;
 	func->call(context->worker,ret,*args, args+1, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	ASATOM_DECREF_POINTER(args);
 	RUNTIME_STACK_PUSH(context,ret);
 	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();

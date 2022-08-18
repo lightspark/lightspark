@@ -46,7 +46,7 @@ protected:
 	std::vector<uint8_t> postData;
 	Downloader* downloader;
 	_NR<StreamCache> soundData;
-	_NR<SoundChannel> soundChannel;
+	SoundChannel* soundChannel;
 	StreamDecoder* rawDataStreamDecoder;
 	int32_t rawDataStartPosition;
 	streambuf* rawDataStreamBuf;
@@ -65,11 +65,17 @@ protected:
 	void setBytesTotal(uint32_t b) override;
 	void setBytesLoaded(uint32_t b) override;
 	_NR<ProgressEvent> progressEvent;
+	void setSoundChannel(SoundChannel* channel);
 public:
 	Sound(ASWorker* wrk,Class_base* c);
 	Sound(ASWorker* wrk, Class_base* c, _R<StreamCache> soundData, AudioFormat format, number_t duration_in_ms);
 	~Sound();
 	static void sinit(Class_base*);
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
+	
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(load);
 	ASFUNCTION_ATOM(play);
@@ -101,7 +107,7 @@ class SoundChannel : public EventDispatcher, public IThreadJob
 private:
 	uint32_t buffertimeseconds;
 	_NR<StreamCache> stream;
-	_NR<Sound> sampleproducer;
+	Sound* sampleproducer;
 	Mutex mutex;
 	ACQUIRE_RELEASE_FLAG(starting);
 	ACQUIRE_RELEASE_FLAG(stopped);
@@ -123,7 +129,7 @@ private:
 	void checkEnvelope();
 public:
 	SoundChannel(ASWorker* wrk,Class_base* c, uint32_t _buffertimeseconds=1, _NR<StreamCache> stream=NullRef, AudioFormat format=AudioFormat(CODEC_NONE,0,0), const SOUNDINFO* _soundinfo=nullptr
-			, _NR<Sound> _sampleproducer = NullRef, bool _forstreaming=false);
+			, Sound* _sampleproducer = nullptr, bool _forstreaming=false);
 	~SoundChannel();
 	DefineSoundTag* fromSoundTag;
 	void appendStreamBlock(unsigned char* buf, int len);
@@ -137,6 +143,7 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
+	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
 	bool isPlaying() { return !ACQUIRE_READ(stopped); }
 	bool isStarting() { return ACQUIRE_READ(starting); }
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);

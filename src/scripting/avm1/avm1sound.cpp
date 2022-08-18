@@ -79,11 +79,11 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 	th->format= AudioFormat(soundTag->getAudioCodec(), soundTag->getSampleRate(), soundTag->getChannels());
 	th->container=false;
 	th->length = soundTag->getDurationInMS();
-	th->soundChannel =soundTag->createSoundChannel(nullptr);
+	th->setSoundChannel(soundTag->createSoundChannel(nullptr));
 	if(th->clip)
 	{
 		th->soundChannel->incRef();
-		th->clip->setSound(th->soundChannel.getPtr(),false);
+		th->clip->setSound(th->soundChannel,false);
 	}
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,getVolume)
@@ -130,7 +130,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getPosition)
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	if (th->soundChannel)
 	{
-		asAtom o = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
+		asAtom o = asAtomHandler::fromObjectNoPrimitive(th->soundChannel);
 		SoundChannel::getPosition(ret,wrk,o,args,argslen);
 	}
 	else
@@ -178,7 +178,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,loadSound)
 void AVM1Sound::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
 	ASWorker* wrk = getInstanceWorker();
-	if (dispatcher == this->soundChannel.getPtr())
+	if (dispatcher == this->soundChannel)
 	{
 		if (e->type == "soundComplete")
 		{

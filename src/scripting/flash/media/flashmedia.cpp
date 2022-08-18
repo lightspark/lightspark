@@ -370,14 +370,14 @@ _NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, numbe
 }
 
 Sound::Sound(ASWorker* wrk, Class_base* c)
-	:EventDispatcher(wrk,c),downloader(nullptr),soundData(nullptr),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),buffertime(1000),
+	:EventDispatcher(wrk,c),downloader(nullptr),soundData(nullptr),soundChannel(nullptr),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),buffertime(1000),
 	 container(true),sampledataprocessed(true),format(CODEC_NONE, 0, 0),bytesLoaded(0),bytesTotal(0),length(-1)
 {
 	subtype=SUBTYPE_SOUND;
 }
 
 Sound::Sound(ASWorker* wrk,Class_base* c, _R<StreamCache> data, AudioFormat _format, number_t duration_in_ms)
-	:EventDispatcher(wrk,c),downloader(nullptr),soundData(data),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),buffertime(1000),
+	:EventDispatcher(wrk,c),downloader(nullptr),soundData(data),soundChannel(nullptr),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),buffertime(1000),
 	 container(false),sampledataprocessed(true),format(_format),
 	 bytesLoaded(soundData->getReceivedLength()),
 	 bytesTotal(soundData->getReceivedLength()),length(duration_in_ms)
@@ -387,17 +387,6 @@ Sound::Sound(ASWorker* wrk,Class_base* c, _R<StreamCache> data, AudioFormat _for
 
 Sound::~Sound()
 {
-	if(downloader && getSystemState()->downloadManager)
-		getSystemState()->downloadManager->destroy(downloader);
-	if (rawDataStreamDecoder)
-		delete rawDataStreamDecoder;
-	rawDataStreamDecoder=nullptr;
-	if (rawDataStream)
-		delete rawDataStream;
-	rawDataStream=nullptr;
-	if (rawDataStreamBuf)
-		delete rawDataStreamBuf;
-	rawDataStreamBuf=nullptr;
 }
 
 void Sound::sinit(Class_base* c)
@@ -411,6 +400,77 @@ void Sound::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,bytesLoaded,UInteger);
 	REGISTER_GETTER_RESULTTYPE(c,bytesTotal,UInteger);
 	REGISTER_GETTER_RESULTTYPE(c,length,Number);
+}
+
+void Sound::finalize()
+{
+	if(downloader && getSystemState()->downloadManager)
+		getSystemState()->downloadManager->destroy(downloader);
+	if (rawDataStreamDecoder)
+		delete rawDataStreamDecoder;
+	rawDataStreamDecoder=nullptr;
+	if (rawDataStream)
+		delete rawDataStream;
+	rawDataStream=nullptr;
+	if (rawDataStreamBuf)
+		delete rawDataStreamBuf;
+	rawDataStreamBuf=nullptr;
+	if (soundChannel)
+		soundChannel->removeStoredMember();
+	soundChannel=nullptr;
+	EventDispatcher::finalize();
+}
+
+bool Sound::destruct()
+{
+	if(downloader && getSystemState()->downloadManager)
+		getSystemState()->downloadManager->destroy(downloader);
+	if (rawDataStreamDecoder)
+		delete rawDataStreamDecoder;
+	rawDataStreamDecoder=nullptr;
+	if (rawDataStream)
+		delete rawDataStream;
+	rawDataStream=nullptr;
+	if (rawDataStreamBuf)
+		delete rawDataStreamBuf;
+	rawDataStreamBuf=nullptr;
+	if (soundChannel)
+		soundChannel->removeStoredMember();
+	soundChannel=nullptr;
+	return EventDispatcher::destruct();
+}
+
+void Sound::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	if (soundChannel)
+		soundChannel->prepareShutdown();
+}
+
+uint32_t Sound::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+{
+	if (obj==this && !firstcall)
+		return 1;
+	uint32_t res=0;
+	if (soundChannel)
+	{
+		if (soundChannel == obj)
+			++res;
+		if (!soundChannel->getConstant() && soundChannel->isLastRef() && soundChannel->canHaveCyclicMemberReference())
+		{
+			uint32_t r = soundChannel->countCylicMemberReferences(obj,needed-res,false);
+			if (r == UINT32_MAX)
+				return UINT32_MAX;
+			res += r;
+		}
+	}
+	uint32_t r = EventDispatcher::countCylicMemberReferences(obj,needed-res,firstcall);
+	if (r == UINT32_MAX)
+		return UINT32_MAX;
+	res += r;
+	return res;
 }
 
 ASFUNCTIONBODY_ATOM(Sound,_constructor)
@@ -492,13 +552,12 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 			return;
 		}
 		RELEASE_WRITE(th->sampledataprocessed,true);
-		th->incRef();
-		th->soundChannel = _MR(Class<SoundChannel>::getInstanceS(wrk,::ceil(th->buffertime/1000.0),NullRef, AudioFormat(LINEAR_PCM_FLOAT_PLATFORM_ENDIAN,44100,2),nullptr,_MNR(th)));
+		th->setSoundChannel(Class<SoundChannel>::getInstanceS(wrk,::ceil(th->buffertime/1000.0),NullRef, AudioFormat(LINEAR_PCM_FLOAT_PLATFORM_ENDIAN,44100,2),nullptr,th));
 		th->soundChannel->setLoops(loops);
 		th->soundChannel->soundTransform = soundtransform;
 		th->soundChannel->play(startTime);
 		th->soundChannel->incRef();
-		ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
+		ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel);
 	}
 	else
 	{
@@ -508,7 +567,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 			th->soundChannel->soundTransform = soundtransform;
 			th->soundChannel->play(startTime);
 			th->soundChannel->incRef();
-			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel.getPtr());
+			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel);
 			return;
 		}
 		SoundChannel* s = Class<SoundChannel>::getInstanceS(wrk,::ceil(th->buffertime/1000.0),th->soundData, th->format);
@@ -723,6 +782,12 @@ void Sound::setBytesLoaded(uint32_t b)
 	}
 }
 
+void Sound::setSoundChannel(SoundChannel* channel)
+{
+	soundChannel = channel;
+	soundChannel->addStoredMember();
+}
+
 ASFUNCTIONBODY_GETTER(Sound,bytesLoaded)
 ASFUNCTIONBODY_GETTER(Sound,bytesTotal)
 ASFUNCTIONBODY_GETTER(Sound,length)
@@ -772,7 +837,7 @@ ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile)
 
-SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, uint32_t _buffertimeseconds, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, NullableRef<Sound> _sampleproducer, bool _forstreaming)
+SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, uint32_t _buffertimeseconds, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, Sound* _sampleproducer, bool _forstreaming)
 	: EventDispatcher(wrk,c),buffertimeseconds(_buffertimeseconds),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
 	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),forstreaming(_forstreaming),fromSoundTag(nullptr),
 	leftPeak(1),rightPeak(1),semSampleData(0)
@@ -780,6 +845,11 @@ SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, uint32_t _buffertimesec
 	subtype=SUBTYPE_SOUNDCHANNEL;
 	if (soundinfo && soundinfo->HasLoops)
 		setLoops(soundinfo->LoopCount);
+	if (sampleproducer)
+	{
+		sampleproducer->incRef();
+		sampleproducer->addStoredMember();
+	}
 }
 
 SoundChannel::~SoundChannel()
@@ -919,7 +989,9 @@ void SoundChannel::finalize()
 {
 	EventDispatcher::finalize();
 	stream.reset();
-	sampleproducer.reset();
+	if (sampleproducer)
+		sampleproducer->removeStoredMember();
+	sampleproducer=nullptr;
 	starting=true;
 	stopped=true;
 	terminated=true;
@@ -944,7 +1016,9 @@ void SoundChannel::finalize()
 bool SoundChannel::destruct()
 {
 	stream.reset();
-	sampleproducer.reset();
+	if (sampleproducer)
+		sampleproducer->removeStoredMember();
+	sampleproducer=nullptr;
 	starting=true;
 	stopped=true;
 	terminated=true;
@@ -974,6 +1048,32 @@ void SoundChannel::prepareShutdown()
 	EventDispatcher::prepareShutdown();
 	if (soundTransform)
 		soundTransform->prepareShutdown();
+	if (sampleproducer)
+		sampleproducer->prepareShutdown();
+}
+
+uint32_t SoundChannel::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+{
+	if (obj==this && !firstcall)
+		return 1;
+	uint32_t res=0;
+	if (sampleproducer)
+	{
+		if (sampleproducer == obj)
+			++res;
+		if (!sampleproducer->getConstant() && sampleproducer->isLastRef() && sampleproducer->canHaveCyclicMemberReference())
+		{
+			uint32_t r = sampleproducer->countCylicMemberReferences(obj,needed-res,false);
+			if (r == UINT32_MAX)
+				return UINT32_MAX;
+			res += r;
+		}
+	}
+	uint32_t r = EventDispatcher::countCylicMemberReferences(obj,needed-res,firstcall);
+	if (r == UINT32_MAX)
+		return UINT32_MAX;
+	res += r;
+	return res;
 }
 
 void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)

@@ -2562,9 +2562,9 @@ std::streambuf *DefineSoundTag::createSoundStream() const
 	return SoundData->createReader();
 }
 
-_NR<SoundChannel> DefineSoundTag::createSoundChannel(const SOUNDINFO* soundinfo)
+SoundChannel* DefineSoundTag::createSoundChannel(const SOUNDINFO* soundinfo)
 {
-	return _MR(Class<SoundChannel>::getInstanceS(loadedFrom->getInstanceWorker(),1,SoundData, AudioFormat(getAudioCodec(), getSampleRate(), getChannels()),soundinfo));
+	return Class<SoundChannel>::getInstanceS(loadedFrom->getInstanceWorker(),1,SoundData, AudioFormat(getAudioCodec(), getSampleRate(), getChannels()),soundinfo);
 }
 
 StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
@@ -2904,7 +2904,7 @@ void SoundStreamHeadTag::setSoundChannel(Sprite *spr)
 	SoundChannel *schannel = Class<SoundChannel>::getInstanceS(spr->getInstanceWorker(),1,
 								SoundData,
 								AudioFormat(LS_AUDIO_CODEC(StreamSoundCompression),StreamSoundRate,StreamSoundType+1),
-								nullptr, NullRef, true);
+								nullptr, nullptr, true);
 	spr->setSound(schannel,true);
 }
 

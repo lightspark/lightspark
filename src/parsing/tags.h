@@ -284,7 +284,7 @@ public:
 	int getChannels() const;
 	_R<MemoryStreamCache> getSoundData() const;
 	std::streambuf *createSoundStream() const;
-	_NR<SoundChannel> createSoundChannel(const SOUNDINFO* soundinfo);
+	SoundChannel* createSoundChannel(const SOUNDINFO* soundinfo);
 	// indicates if this channel is attached to a Sound object
 	bool isAttached;
 };

@@ -3795,6 +3795,8 @@ void Shape::sinit(Class_base* c)
 
 void Shape::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
+	if (this->graphics)
+		this->graphics->refreshTokens();
 	TokenContainer::requestInvalidation(q,forceTextureRefresh);
 }
 

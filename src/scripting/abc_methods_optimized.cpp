@@ -1264,8 +1264,10 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 				cacheptr->local2.flags |= ABC_OP_NOTCACHEABLE;
 				cacheptr->local2.flags &= ~ABC_OP_CACHED;
 			}
-			obj = asAtomHandler::getClosureAtom(o,obj);
-			asAtomHandler::callFunction(o,context->worker,ret,obj,args,argsnum,refcounted,needreturn && coercearguments,coercearguments);
+			asAtom closure = asAtomHandler::getClosureAtom(o,obj);
+			if (refcounted && closure.uintval != obj.uintval && !(cacheptr->local2.flags & ABC_OP_CACHED) && asAtomHandler::as<IFunction>(o)->clonedFrom)
+				ASATOM_INCREF(closure);
+			asAtomHandler::callFunction(o,context->worker,ret,closure,args,argsnum,refcounted,needreturn && coercearguments,coercearguments);
 			if (!(cacheptr->local2.flags & ABC_OP_CACHED) && asAtomHandler::as<IFunction>(o)->clonedFrom)
 				asAtomHandler::as<IFunction>(o)->decRef();
 			if (needreturn && asAtomHandler::isInvalid(ret))

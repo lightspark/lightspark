@@ -125,6 +125,7 @@ ASFUNCTIONBODY_GETTER(LoaderInfo,frameRate)
 
 bool LoaderInfo::destruct()
 {
+	Locker l(spinlock);
 	sharedEvents.reset();
 	loader=nullptr;
 	applicationDomain.reset();
@@ -176,6 +177,7 @@ void LoaderInfo::prepareShutdown()
 
 void LoaderInfo::afterHandleEvent(Event* ev)
 {
+	Locker l(spinlock);
 	auto it = loaderevents.find(ev);
 	if (it != loaderevents.end())
 	{
@@ -188,6 +190,7 @@ void LoaderInfo::addLoaderEvent(Event* ev)
 {
 	if (this->loader)
 	{
+		Locker l(spinlock);
 		this->loader->incRef();
 		loaderevents.insert(ev);
 	}
@@ -782,7 +785,6 @@ void Loader::unload()
 	
 	if(loaded)
 	{
-		contentLoaderInfo->incRef();
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"unload");
 		contentLoaderInfo->addLoaderEvent(ev);
 		getVm(getSystemState())->addEvent(contentLoaderInfo,_MR(ev));
@@ -867,7 +869,7 @@ void Loader::threadFinished(IThreadJob* finishedJob)
 void Loader::setContent(DisplayObject* o)
 {
 	// content may have already been set.
-	// this can happen if setContent was already called from ObjectHasLoaded 
+	// this can happen if setContent was already called from ObjectHasLoaded
 	// and is called again at the end of LoaderThread::execute
 	if (o->getParent() == this || (!avm1target.isNull() && o->getParent()))
 		return;

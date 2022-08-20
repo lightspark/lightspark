@@ -1575,7 +1575,6 @@ void DisplayObject::afterConstruction()
 {
 	if(!loaderInfo.isNull())
 	{
-		this->incRef();
 		loaderInfo->objectHasLoaded(this);
 	}
 //	hasChanged=true;

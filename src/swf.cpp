@@ -1672,7 +1672,6 @@ void ParseThread::parseSWF(UI8 ver)
 	if (loader && !loader->allowLoadingSWF())
 	{
 		_NR<LoaderInfo> li=loader->getContentLoaderInfo();
-		li->incRef();
 		getVm(loader->getSystemState())->addEvent(li,_MR(Class<SecurityErrorEvent>::getInstanceS(loader->getInstanceWorker(),
 			"Cannot import a SWF file when LoaderContext.allowCodeImport is false."))); // 3226
 		return;

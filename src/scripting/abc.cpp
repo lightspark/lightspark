@@ -1204,6 +1204,8 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
 	if(isVmThread() && ev->is<WaitableEvent>())
 	{
 		handleEvent( make_pair(obj,ev) );
+		if (obj)
+			obj->afterHandleEvent(ev.getPtr());
 		return true;
 	}
 
@@ -1241,6 +1243,8 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool isGlobalMessag
 	{
 		RELEASE_WRITE(ev->queued,true);
 		handleEvent( make_pair(obj,ev) );
+		if (obj)
+			obj->afterHandleEvent(ev.getPtr());
 		return true;
 	}
 
@@ -1252,6 +1256,8 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool isGlobalMessag
 	{
 		if (ev->is<WaitableEvent>())
 			ev->as<WaitableEvent>()->signal();
+		if (obj)
+			obj->afterHandleEvent(ev.getPtr());
 		return false;
 	}
 	if (!obj.isNull())
@@ -1271,6 +1277,11 @@ void ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	//If the system should terminate new events are not accepted
 	if(shuttingdown)
 		return;
+	if (!obj.isNull() && ev->getInstanceWorker() && !ev->getInstanceWorker()->isPrimordial)
+	{
+		ev->getInstanceWorker()->addEvent(obj,ev);
+		return;
+	}
 	idleevents_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	RELEASE_WRITE(ev->queued,true);
 }

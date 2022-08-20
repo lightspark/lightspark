@@ -1027,6 +1027,7 @@ void ASWorker::execute()
 	delete parser;
 	parser = nullptr;
 	parsemutex.unlock();
+	loader.reset();
 	while (!this->threadAborting)
 	{
 		event_queue_mutex.lock();
@@ -1043,7 +1044,10 @@ void ASWorker::execute()
 		try
 		{
 			if (dispatcher)
+			{
 				dispatcher->handleEvent(e);
+				dispatcher->afterHandleEvent(e.getPtr());
+			}
 		}
 		catch(LightsparkException& e)
 		{
@@ -1098,7 +1102,11 @@ void ASWorker::threadAbort()
 bool ASWorker::addEvent(_NR<EventDispatcher> obj, _R<Event> ev)
 {
 	if (this->threadAborting)
+	{
+		if (obj)
+			obj->afterHandleEvent(ev.getPtr());
 		return false;
+	}
 	Locker l(event_queue_mutex);
 	events_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	RELEASE_WRITE(ev->queued,true);

@@ -1235,7 +1235,7 @@ FILLSTYLE Graphics::createGradientFill(const tiny_string& type,
 		asAtom al = alphas->at(i);
 		asAtom cl = colors->at(i);
 		asAtom ra = ratios->at(i);
-		record.Color = RGBA(asAtomHandler::toUInt(cl), (int)asAtomHandler::toNumber(al)*255);
+		record.Color = RGBA(asAtomHandler::toUInt(cl), (int)(asAtomHandler::toNumber(al)*255.0));
 		record.Ratio = asAtomHandler::toUInt(ra);
 		grad.GradientRecords.push_back(record);
 	}

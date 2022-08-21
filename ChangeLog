@@ -1,6 +1,6 @@
 lightspark: An open source flash player implementation
 
-Version NEXT:
+Version 0.8.6:
 
 	* implement support for GIF images (single image GIFs only)
 	* add commandline parameter (--fullscreen) to start lightspark in fullscreen mode

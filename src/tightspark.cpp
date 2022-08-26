@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
 	sys->useInterpreter=useInterpreter;
 	sys->useJit=useJit;
 
-	wrk->getSystemState()->mainClip->setOrigin(string("file://") + fileNames[0]);
+	sys->mainClip->setOrigin(string("file://") + fileNames[0]);
 
 #ifndef _WIN32
 	struct rlimit rl;
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
 		ifstream f(fileNames[i]);
 		if(f.is_open())
 		{
-			wrk->getSystemState()->mainClip->incRef();
+			sys->mainClip->incRef();
 			ABCContext* context=new ABCContext(_MR(sys->mainClip), f, vm);
 			contexts.push_back(context);
 			f.close();

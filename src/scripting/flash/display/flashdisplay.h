@@ -451,6 +451,7 @@ public:
 	_NR<DisplayObject> getContent() { return content; }
 	_R<LoaderInfo> getContentLoaderInfo() { return contentLoaderInfo; }
 	bool allowLoadingSWF() { return allowCodeImport; }
+	bool hasAVM1Target() const { return !avm1target.isNull(); }
 };
 
 class Sprite: public DisplayObjectContainer, public TokenContainer

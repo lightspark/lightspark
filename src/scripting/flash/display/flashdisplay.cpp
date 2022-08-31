@@ -301,7 +301,7 @@ void LoaderInfo::objectHasLoaded(DisplayObject* obj)
 	if(loader && obj==waitedObject.getPtr())
 		loader->setContent(obj);
 
-	if (loader && !loader->getParent() && waitedObject->is<MovieClip>()) // loader has no parent, ensure init/complete events are sended anyway
+	if (loader && !loader->getParent() && !loader->hasAVM1Target() && waitedObject->is<MovieClip>()) // loader has no parent, ensure init/complete events are sended anyway
 		loader->getSystemState()->stage->addHiddenObject(waitedObject->as<MovieClip>());
 		
 	waitedObject.reset();
@@ -403,6 +403,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytes)
 	}
 	else if (!th->loader->getContent().isNull())
 		th->bytesData->writeObject(th->loader->getContent().getPtr(),wrk);
+	th->bytesData->incRef();
 	ret = asAtomHandler::fromObject(th->bytesData.getPtr());
 }
 
@@ -1933,7 +1934,7 @@ void MovieClip::currentFrameChanged(bool newframe)
 {
 	if (!needsActionScript3())
 	{
-		if (newframe && (this->is<RootMovieClip>() || state.creatingframe))
+		if (newframe && (this == getInstanceWorker()->rootClip.getPtr() || state.creatingframe))
 			advanceFrame();
 		return;
 	}

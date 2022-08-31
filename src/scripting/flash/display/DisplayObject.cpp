@@ -153,6 +153,7 @@ void DisplayObject::finalize()
 	cachedSurface.isChunkOwner=true;
 	cachedSurface.isValid=false;
 	cachedSurface.isInitialized=false;
+	cachedSurface.wasUpdated=false;
 	avm1mouselistenercount=0;
 	avm1framelistenercount=0;
 	EventDispatcher::finalize();
@@ -210,6 +211,7 @@ bool DisplayObject::destruct()
 	cachedSurface.isChunkOwner=true;
 	cachedSurface.isValid=false;
 	cachedSurface.isInitialized=false;
+	cachedSurface.wasUpdated=false;
 	return EventDispatcher::destruct();
 }
 
@@ -771,6 +773,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface.matrix=d->getMatrix();
 	cachedSurface.isValid=true;
 	cachedSurface.isInitialized=true;
+	cachedSurface.wasUpdated=true;
 }
 //TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
 //this way they have less pb with precision.

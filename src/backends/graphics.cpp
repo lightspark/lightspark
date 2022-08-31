@@ -1015,6 +1015,7 @@ AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(
 
 AsyncDrawJob::~AsyncDrawJob()
 {
+	owner->cachedSurface.wasUpdated=false;
 	owner->getSystemState()->AsyncDrawJobCompleted(this);
 	delete drawable;
 	if (surfaceBytes && isBufferOwner)
@@ -1076,30 +1077,33 @@ TextureChunk& AsyncDrawJob::getTexture()
 	}
 	if(!surface.tex->resizeIfLargeEnough(width, height))
 		*surface.tex=owner->getSystemState()->getRenderThread()->allocateTexture(width, height,false);
-	surface.xOffset=drawable->getXOffset();
-	surface.yOffset=drawable->getYOffset();
-	surface.xOffsetTransformed=drawable->getXOffsetTransformed();
-	surface.yOffsetTransformed=drawable->getYOffsetTransformed();
-	surface.widthTransformed=drawable->getWidthTransformed();
-	surface.heightTransformed=drawable->getHeightTransformed();
-	surface.alpha=drawable->getAlpha();
-	surface.rotation=drawable->getRotation();
-	surface.xscale = drawable->getXScale();
-	surface.yscale = drawable->getYScale();
-	surface.isMask = drawable->getIsMask();
-	surface.mask = drawable->getMask();
-	surface.smoothing = drawable->getSmoothing();
-	surface.redMultiplier=drawable->getRedMultiplier();
-	surface.greenMultiplier=drawable->getGreenMultiplier();
-	surface.blueMultiplier=drawable->getBlueMultiplier();
-	surface.alphaMultiplier=drawable->getAlphaMultiplier();
-	surface.redOffset=drawable->getRedOffset();
-	surface.greenOffset=drawable->getGreenOffset();
-	surface.blueOffset=drawable->getBlueOffset();
-	surface.alphaOffset=drawable->getAlphaOffset();
-	surface.matrix=drawable->getMatrix();
-	surface.isValid=true;
-	surface.isInitialized=true;
+	if (!surface.wasUpdated) // surface may have already been changed by DisplayObject::updateCachedSurface() before it was uploaded
+	{
+		surface.xOffset=drawable->getXOffset();
+		surface.yOffset=drawable->getYOffset();
+		surface.xOffsetTransformed=drawable->getXOffsetTransformed();
+		surface.yOffsetTransformed=drawable->getYOffsetTransformed();
+		surface.widthTransformed=drawable->getWidthTransformed();
+		surface.heightTransformed=drawable->getHeightTransformed();
+		surface.alpha=drawable->getAlpha();
+		surface.rotation=drawable->getRotation();
+		surface.xscale = drawable->getXScale();
+		surface.yscale = drawable->getYScale();
+		surface.isMask = drawable->getIsMask();
+		surface.mask = drawable->getMask();
+		surface.smoothing = drawable->getSmoothing();
+		surface.redMultiplier=drawable->getRedMultiplier();
+		surface.greenMultiplier=drawable->getGreenMultiplier();
+		surface.blueMultiplier=drawable->getBlueMultiplier();
+		surface.alphaMultiplier=drawable->getAlphaMultiplier();
+		surface.redOffset=drawable->getRedOffset();
+		surface.greenOffset=drawable->getGreenOffset();
+		surface.blueOffset=drawable->getBlueOffset();
+		surface.alphaOffset=drawable->getAlphaOffset();
+		surface.matrix=drawable->getMatrix();
+		surface.isValid=true;
+		surface.isInitialized=true;
+	}
 	return *surface.tex;
 }
 

@@ -449,28 +449,14 @@ void Sound::prepareShutdown()
 		soundChannel->prepareShutdown();
 }
 
-uint32_t Sound::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+bool Sound::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (obj==this && !firstcall)
-		return 1;
-	uint32_t res=0;
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	if (soundChannel)
-	{
-		if (soundChannel == obj)
-			++res;
-		if (!soundChannel->getConstant() && soundChannel->isLastRef() && soundChannel->canHaveCyclicMemberReference())
-		{
-			uint32_t r = soundChannel->countCylicMemberReferences(obj,needed-res,false);
-			if (r == UINT32_MAX)
-				return UINT32_MAX;
-			res += r;
-		}
-	}
-	uint32_t r = EventDispatcher::countCylicMemberReferences(obj,needed-res,firstcall);
-	if (r == UINT32_MAX)
-		return UINT32_MAX;
-	res += r;
-	return res;
+		ret = soundChannel->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 ASFUNCTIONBODY_ATOM(Sound,_constructor)
@@ -1052,28 +1038,14 @@ void SoundChannel::prepareShutdown()
 		sampleproducer->prepareShutdown();
 }
 
-uint32_t SoundChannel::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+bool SoundChannel::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (obj==this && !firstcall)
-		return 1;
-	uint32_t res=0;
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	if (sampleproducer)
-	{
-		if (sampleproducer == obj)
-			++res;
-		if (!sampleproducer->getConstant() && sampleproducer->isLastRef() && sampleproducer->canHaveCyclicMemberReference())
-		{
-			uint32_t r = sampleproducer->countCylicMemberReferences(obj,needed-res,false);
-			if (r == UINT32_MAX)
-				return UINT32_MAX;
-			res += r;
-		}
-	}
-	uint32_t r = EventDispatcher::countCylicMemberReferences(obj,needed-res,firstcall);
-	if (r == UINT32_MAX)
-		return UINT32_MAX;
-	res += r;
-	return res;
+		ret = sampleproducer->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)
@@ -1121,6 +1093,8 @@ void SoundChannel::execute()
 			playStreamFromSamples();
 		else
 			playStream();
+		if (threadAborting)
+			break;
 		if (!ACQUIRE_READ(starting))
 		{
 			incRef();
@@ -1540,6 +1514,6 @@ ASFUNCTIONBODY_ATOM(H264VideoStreamSettings,setProfileLevel)
 	ARG_UNPACK_ATOM(th->profile)(th->level);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(H264VideoStreamSettings, codec);
-ASFUNCTIONBODY_GETTER(H264VideoStreamSettings, level);
-ASFUNCTIONBODY_GETTER(H264VideoStreamSettings, profile);
+ASFUNCTIONBODY_GETTER_SETTER(H264VideoStreamSettings, codec)
+ASFUNCTIONBODY_GETTER(H264VideoStreamSettings, level)
+ASFUNCTIONBODY_GETTER(H264VideoStreamSettings, profile)

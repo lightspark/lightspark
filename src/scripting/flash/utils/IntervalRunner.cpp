@@ -36,6 +36,7 @@ IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id,
 		const unsigned int _argslen, asAtom _obj):
 	EventDispatcher(nullptr,nullptr),type(_type), id(_id), callback(_callback),obj(_obj),argslen(_argslen)
 {
+	LOG(LOG_ERROR,"construct IntervalRunner:"<<this<<" "<<asAtomHandler::toDebugString(obj));
 	args = new asAtom[argslen];
 	for(uint32_t i=0; i<argslen; i++)
 		args[i] = _args[i];
@@ -43,6 +44,7 @@ IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id,
 
 IntervalRunner::~IntervalRunner()
 {
+	LOG(LOG_ERROR,"destruct IntervalRunner:"<<this<<" "<<asAtomHandler::toDebugString(obj));
 	for(uint32_t i=0; i<argslen; i++)
 		ASATOM_DECREF(args[i]);
 	delete[] args;
@@ -59,6 +61,7 @@ void IntervalRunner::tick()
 		ASATOM_INCREF(args[i]);
 	}
 	ASATOM_INCREF(obj);
+	LOG(LOG_ERROR,"tick:"<<asAtomHandler::toDebugString(obj)<<" "<<type);
 	_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(callback, obj, args, argslen));
 	getVm(getSys())->addEvent(NullRef,event);
 	event->wait();

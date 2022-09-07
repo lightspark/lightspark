@@ -74,7 +74,7 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
-	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(load);
@@ -143,7 +143,7 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
-	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	bool isPlaying() { return !ACQUIRE_READ(stopped); }
 	bool isStarting() { return ACQUIRE_READ(starting); }
 	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);

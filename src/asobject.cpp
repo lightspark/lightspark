@@ -734,13 +734,14 @@ bool ASObject::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 		return false;
 
 	assert(asAtomHandler::isInvalid(obj->getter) && asAtomHandler::isInvalid(obj->setter) && asAtomHandler::isValid(obj->var));
-	//Now dereference the value
+
 	ASObject* o = asAtomHandler::getObject(obj->var);
+	//Now kill the variable
+	Variables.killObjVar(getSystemState(),name);
+	//Now dereference the value
 	if (o)
 		o->removeStoredMember();
 
-	//Now kill the variable
-	Variables.killObjVar(getSystemState(),name);
 	return true;
 }
 
@@ -1604,7 +1605,7 @@ void ASObject::prepareShutdown()
 
 void ASObject::setRefConstant()
 {
-	getSystemState()->registerConstantRef(this);
+	getInstanceWorker()->registerConstantRef(this);
 	setConstant();
 }
 GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt,ASWorker* wrk)
@@ -1765,39 +1766,39 @@ void variables_map::removeAllDeclaredProperties()
 	}
 }
 
-uint32_t variables_map::countCylicMemberReferences(ASObject* obj, uint32_t needed)
+bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, ASObject* parent)
 {
-	if (!obj->canHaveCyclicMemberReference())
-		return 0;
-	uint32_t res=0;
-	var_iterator it=Variables.begin();
+	gcstate.ancestors.insert(parent);
+	bool ret = false;
+	auto it=Variables.cbegin();
 	while(it!=Variables.cend())
 	{
 		ASObject* o = asAtomHandler::getObject(it->second.var);
-		if (o == obj)
+		if (o && !o->getConstant() && !o->getInDestruction() && o->canHaveCyclicMemberReference())
 		{
-			++res;
-			if (res>needed)
-				return res;
+			if (o==gcstate.startobj)
+			{
+				gcstate.incCount(o);
+				ret = true;
+			}
+			else if ((uint32_t)o->getRefCount()==o->storedmembercount && o != parent)
+			{
+				if (o->countAllCylicMemberReferences(gcstate))
+				{
+					auto itc = gcstate.checkedobjects.find(o);
+					(*itc).second.hasmember=true;
+					ret = true;
+				}
+			}
+			if (parent == gcstate.startobj)
+			{
+				gcstate.ancestors.clear();
+				gcstate.ancestors.insert(parent);
+			}
 		}
 		it++;
 	}
-	it=Variables.begin();
-	while(it!=Variables.cend())
-	{
-		ASObject* o = asAtomHandler::getObject(it->second.var);
-		if (o && !o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
-		{
-			uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
-			if (r == UINT32_MAX)
-				return UINT32_MAX;
-			res += r;
-			if (res>needed)
-				return res;
-		}
-		it++;
-	}
-	return res;
+	return ret;
 }
 
 #ifndef NDEBUG
@@ -1887,32 +1888,88 @@ void ASObject::setClass(Class_base* c)
 
 void ASObject::removeStoredMember()
 {
-	if (getConstant() || getCached())
+	if (getConstant() || getCached() || this->getInDestruction())
 		return;
-	if (!this->getInDestruction())
+	assert(storedmembercount);
+	assert(storedmembercount<=uint32_t(this->getRefCount()));
+	storedmembercount--;
+	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1) && !getInstanceWorker()->isInGarbageCollection())
 	{
-		assert(storedmembercount);
-		assert(storedmembercount<=uint32_t(this->getRefCount()));
-		storedmembercount--;
-		if (storedmembercount && ((uint32_t)this->getRefCount() == storedmembercount+1) && this->canHaveCyclicMemberReference())
+		getInstanceWorker()->addObjectToGarbageCollector(this);
+		return;
+	}
+	decRef();
+}
+
+void ASObject::handleGarbageCollection()
+{
+	if (getConstant() || getCached() || this->getInDestruction())
+		return;
+	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1))
+	{
+		garbagecollectorstate gcstate(this);
+		this->countCylicMemberReferences(gcstate);
+		uint32_t c =0;
+		for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 		{
-			uint32_t c = this->countCylicMemberReferences(this,storedmembercount,true);
-			assert(c == UINT32_MAX || c <= storedmembercount || this->preparedforshutdown);
-			if (c == storedmembercount)
+			if ((*it).first == this)
 			{
-				LOG_CALL("matching number of cyclicreferences detected:"<<this->toDebugString());
-				this->resetRefCount();
+				if (c != UINT32_MAX)
+					c = (*it).second.count;
 			}
+			else if ((*it).second.count!=(uint32_t)(*it).first->getRefCount() && (*it).second.hasmember)
+			{
+				c = UINT32_MAX;
+				break;
+			}
+		}
+		assert(c == UINT32_MAX || c <= storedmembercount || this->preparedforshutdown);
+		if (c == storedmembercount)
+		{
+			resetRefCount();
 		}
 	}
 	decRef();
 }
 
-uint32_t ASObject::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (obj==this && !firstcall)
-		return 1;
-	return Variables.countCylicMemberReferences(obj,needed);
+	return Variables.countCylicMemberReferences(gcstate,this);
+}
+
+bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = false;
+	if (this == gcstate.startobj)
+	{
+		gcstate.incCount(this);
+		ret = true;
+	}
+	else if (!getConstant() && !getInDestruction() && canHaveCyclicMemberReference())
+	{
+		if (gcstate.ancestors.find(this)==gcstate.ancestors.end())
+		{
+			gcstate.level++;
+			auto it = gcstate.countedobjects.find(this);
+			if (it != gcstate.countedobjects.end()) // object was already counted once, don't count its members again
+			{
+				gcstate.incCount(this);
+				ret = true;
+			}
+			else
+			{
+				ret = countCylicMemberReferences(gcstate);
+				gcstate.incCount(this);
+				gcstate.countedobjects.insert(this);
+			}
+			gcstate.level--;
+		}
+		else if (gcstate.checkedobjects.find(this)==gcstate.checkedobjects.end())
+		{
+			gcstate.incCount(this);
+		}
+	}
+	return ret;
 }
 
 bool ASObject::destruct()
@@ -4209,4 +4266,15 @@ ASObject *asAtomHandler::toObject(asAtom& a, ASWorker* wrk, bool isconstant)
 			break;
 	}
 	return getObjectNoCheck(a);
+}
+
+int garbagecollectorstate::incCount(ASObject* o)
+{
+	auto itc = checkedobjects.find(o);
+	if (itc == checkedobjects.end())
+		itc = checkedobjects.insert(make_pair(o,cyclicmembercount{1,false})).first;
+	else
+		(*itc).second.count++;
+	assert((int)(*itc).second.count <= o->getRefCount());
+	return (*itc).second.count;
 }

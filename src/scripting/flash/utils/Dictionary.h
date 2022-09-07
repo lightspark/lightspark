@@ -59,7 +59,7 @@ public:
 	uint32_t nextNameIndex(uint32_t cur_index) override;
 	void nextName(asAtom &ret, uint32_t index) override;
 	void nextValue(asAtom &ret, uint32_t index) override;
-	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
+	bool countCylicMemberReferences(lightspark::garbagecollectorstate& gcstate) override;
 
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

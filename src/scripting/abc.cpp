@@ -1011,6 +1011,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			{
 				//no need to lock as this is the vm thread
 				shuttingdown=true;
+				getSys()->signalTerminated();
 				break;
 			}
 			case FUNCTION:
@@ -1135,6 +1136,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case IDLE_EVENT:
 			{
+				m_sys->worker->processGarbageCollection();
 				// DisplayObjects that are removed from the display list keep their Parent set until all removedFromStage events are handled
 				// see http://www.senocular.com/flash/tutorials/orderofoperations/#ObjectDestruction
 				m_sys->resetParentList();

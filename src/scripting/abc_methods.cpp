@@ -1111,7 +1111,10 @@ void ABCVm::abc_astypelate(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	*pval = asAtomHandler::asTypelate(*pval,*v1,context->worker);
+	asAtom a = asAtomHandler::asTypelate(*pval,*v1,context->worker);
+	if (asAtomHandler::isNull(a))
+		ASATOM_DECREF_POINTER(pval);
+	*pval = a;
 	++(context->exec_pos);
 }
 void ABCVm::abc_negate(call_context* context)

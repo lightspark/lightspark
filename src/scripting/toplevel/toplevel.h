@@ -478,7 +478,7 @@ public:
 	}
 	
 	void prepareShutdown() override;
-	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall);
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	IFunction* bind(ASObject* c, ASWorker* wrk)
 	{
 		IFunction* ret=nullptr;
@@ -623,7 +623,7 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
-	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	method_info* getMethodInfo() const override { return mi; }
 	
 	_NR<scope_entry_list> func_scope;
@@ -697,7 +697,7 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
-	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller=nullptr, std::map<uint32_t,asAtom>* locals=nullptr)
 	{
 		if (locals)

@@ -93,58 +93,21 @@ void MessageChannel::prepareShutdown()
 	if (receiver)
 		receiver->prepareShutdown();
 }
-uint32_t MessageChannel::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+bool MessageChannel::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (obj==this && !firstcall)
-		return 1;
-	uint32_t res=0;
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	{
 		Locker l(messagequeuemutex);
 		for (auto it = messagequeue.begin(); it != messagequeue.end(); it++)
-		{
-			if (res>needed)
-				return res;
-			ASObject* o = (*it);
-			if (o == obj)
-				++res;
-			if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
-			{
-				uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
-				if (r == UINT32_MAX)
-					return UINT32_MAX;
-				res += r;
-			}
-		}
+			ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
 	}
 	if (sender)
-	{
-		if (sender == obj)
-			++res;
-		if (!sender->getConstant() && sender->isLastRef() && sender->canHaveCyclicMemberReference())
-		{
-			uint32_t r = sender->countCylicMemberReferences(obj,needed-res,false);
-			if (r == UINT32_MAX)
-				return UINT32_MAX;
-			res += r;
-		}
-	}
+		ret = sender->countAllCylicMemberReferences(gcstate) || ret;
 	if (receiver)
-	{
-		if (receiver == obj)
-			++res;
-		if (!receiver->getConstant() && receiver->isLastRef() && receiver->canHaveCyclicMemberReference())
-		{
-			uint32_t r = receiver->countCylicMemberReferences(obj,needed-res,false);
-			if (r == UINT32_MAX)
-				return UINT32_MAX;
-			res += r;
-		}
-	}
-	uint32_t r = EventDispatcher::countCylicMemberReferences(obj,needed-res,firstcall);
-	if (r == UINT32_MAX)
-		return UINT32_MAX;
-	res += r;
-	return res;
+		ret = receiver->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 ASFUNCTIONBODY_GETTER(MessageChannel, state)
@@ -233,7 +196,7 @@ ASFUNCTIONBODY_ATOM(MessageChannel,send)
 	_NR<ASObject> msg;
 	int queueLimit;
 	ARG_UNPACK_ATOM(msg)(queueLimit,-1);
-	if (msg.isNull())
+	if (msg.isNull() || th->receiver==nullptr)
 		return;
 	if (queueLimit != -1)
 		LOG(LOG_NOT_IMPLEMENTED,"MessageChannel.send ignores parameter queueLimit");

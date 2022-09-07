@@ -144,7 +144,7 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
-	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	void prepareDestruction() override;
 	void cloneDisplayList(std::vector<_R<DisplayObject>>& displayListCopy);
 	bool hasLegacyChildAt(int32_t depth);

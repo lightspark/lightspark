@@ -263,7 +263,7 @@ public:
 	~Vector();
 	bool destruct() override;
 	void prepareShutdown() override;
-	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall) override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 
 	static void sinit(Class_base* c);
 	static void generator(asAtom& ret, ASWorker* wrk, asAtom& o_class, asAtom* args, const unsigned int argslen);

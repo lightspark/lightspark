@@ -1821,10 +1821,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 		}
 		IFunction* func = asAtomHandler::as<IFunction>(args[i+1]);
 		func->incRef();
-		if (func->closure_this)
-			func->closure_this->removeStoredMember();
+		ASObject* c = func->closure_this;
 		func->closure_this=nullptr;
 		th->frameScripts[frame]=args[i+1];
+		if (c)
+			c->removeStoredMember();
 	}
 }
 
@@ -2963,31 +2964,17 @@ void DisplayObjectContainer::prepareShutdown()
 	}
 }
 
-uint32_t DisplayObjectContainer::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+bool DisplayObjectContainer::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (obj==this && !firstcall)
-		return 1;
-	uint32_t res=0;
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = InteractiveObject::countCylicMemberReferences(gcstate);
+	Locker l(mutexDisplayList);
 	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
 	{
-		if (res>needed)
-			return res;
-		ASObject* o = (*it);
-		if (o == obj)
-			++res;
-		if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
-		{
-			uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
-			if (r == UINT32_MAX)
-				return UINT32_MAX;
-			res += r;
-		}
+		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
 	}
-	uint32_t r = InteractiveObject::countCylicMemberReferences(obj,needed-res,firstcall);
-	if (r == UINT32_MAX)
-		return UINT32_MAX;
-	res += r;
-	return res;
+	return ret;
 }
 
 void DisplayObjectContainer::prepareDestruction()
@@ -3311,8 +3298,8 @@ void DisplayObjectContainer::_removeAllChildren()
 			mapDepthToLegacyChild.erase(it2->second);
 			mapLegacyChildToDepth.erase(it2);
 		}
-		child->removeStoredMember();
 		it = dynamicDisplayList.erase(it);
+		child->removeStoredMember();
 	}
 }
 
@@ -3466,8 +3453,8 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 		wrk->getSystemState()->addDisplayObjectToResetParentList(child);
 		//As we return the child we incRef it
 		child->incRef();
-		child->removeStoredMember();
 		th->dynamicDisplayList.erase(it);
+		child->removeStoredMember();
 	}
 	ret = asAtomHandler::fromObject(child);
 }
@@ -3485,8 +3472,9 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildren)
 		auto it = th->dynamicDisplayList.begin()+beginindex;
 		while (it != th->dynamicDisplayList.begin()+endindex)
 		{
-			(*it)->removeStoredMember();
+			ASObject* child = (*it);
 			it = th->dynamicDisplayList.erase(it);
+			child->removeStoredMember();
 		}
 	}
 }
@@ -3509,7 +3497,6 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
 	Locker l(th->mutexDisplayList);
 
 	auto itrem = th->dynamicDisplayList.begin()+curIndex;
-	(*itrem)->removeStoredMember();
 	th->dynamicDisplayList.erase(itrem); //remove from old position
 
 	auto it=th->dynamicDisplayList.begin();
@@ -3517,14 +3504,9 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
 	for(;it != th->dynamicDisplayList.end(); ++it)
 		if(i++ == index)
 		{
-			child->incRef();
-			child->addStoredMember();
 			th->dynamicDisplayList.insert(it, child);
 			return;
 		}
-
-	child->incRef();
-	child->addStoredMember();
 	th->dynamicDisplayList.push_back(child);
 }
 
@@ -3695,9 +3677,10 @@ void DisplayObjectContainer::clearDisplayList()
 	auto it = dynamicDisplayList.rbegin();
 	while (it != dynamicDisplayList.rend())
 	{
-		(*it)->removeStoredMember();
+		ASObject* c = (*it);
 		dynamicDisplayList.pop_back();
 		it = dynamicDisplayList.rbegin();
+		c->removeStoredMember();
 	}
 }
 
@@ -4658,8 +4641,8 @@ void Stage::AVM1RemoveKeyboardListener(ASObject *o)
 	{
 		if ((*it) == o)
 		{
-			o->removeStoredMember();
 			avm1KeyboardListeners.erase(it);
+			o->removeStoredMember();
 			break;
 		}
 	}
@@ -4684,8 +4667,8 @@ void Stage::AVM1RemoveMouseListener(ASObject *o)
 	{
 		if ((*it) == o)
 		{
-			o->removeStoredMember();
 			avm1MouseListeners.erase(it);
+			o->removeStoredMember();
 			break;
 		}
 	}
@@ -4709,8 +4692,8 @@ void Stage::AVM1RemoveEventListener(ASObject *o)
 	{
 		if ((*it) == o)
 		{
-			o->removeStoredMember();
 			avm1EventListeners.erase(it);
+			o->removeStoredMember();
 			break;
 		}
 	}
@@ -4735,8 +4718,8 @@ bool Stage::AVM1RemoveResizeListener(ASObject *o)
 	{
 		if ((*it) == o)
 		{
-			o->removeStoredMember();
 			avm1ResizeListeners.erase(it);
+			o->removeStoredMember();
 			// it's not mentioned in the specs but I assume we return true if we found the listener object
 			return true;
 		}
@@ -6257,14 +6240,6 @@ void MovieClip::AVM1HandleScripts()
 {
 	if (!isAVM1Loaded || !this->isOnStage())
 		return;
-	auto itbind = variablebindings.begin();
-	while (itbind != variablebindings.end())
-	{
-		asAtom v = getVariableBindingValue(getSystemState()->getStringFromUniqueId((*itbind).first));
-		(*itbind).second->UpdateVariableBinding(v);
-		ASATOM_DECREF(v);
-		itbind++;
-	}
 	bool wasexplicit = state.explicit_FP;
 	bool wasexplicitplay = state.explicit_play;
 	if (!this->state.explicit_FP && isAVM1Loaded)
@@ -6360,6 +6335,14 @@ void MovieClip::initFrame()
 
 void MovieClip::executeFrameScript()
 {
+	auto itbind = variablebindings.begin();
+	while (itbind != variablebindings.end())
+	{
+		asAtom v = getVariableBindingValue(getSystemState()->getStringFromUniqueId((*itbind).first));
+		(*itbind).second->UpdateVariableBinding(v);
+		ASATOM_DECREF(v);
+		itbind++;
+	}
 	Sprite::executeFrameScript();
 	if (needsActionScript3())
 		state.explicit_FP=false;

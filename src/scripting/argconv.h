@@ -54,6 +54,10 @@ class ArgumentConversionAtom
 {
 public:
 	static T toConcrete(ASWorker* wrk,asAtom obj,const T& v);
+	static T toConcreteNoRefcount(ASWorker* wrk,asAtom obj,const T& v)
+	{
+		return toConcrete(wrk,obj,v);
+	}
 	static void toAbstract(asAtom& ret, ASWorker* wrk,const T& val);
 };
 
@@ -84,6 +88,19 @@ public:
 			ret = val;
 		}
 	}
+	// special case for ARG_UNPACK_ATOM: no incRef is needed for asAtoms
+	static asAtom toConcreteNoRefcount(ASWorker* wrk,asAtom obj,const asAtom& v)
+	{
+		if(asAtomHandler::isNull(obj))
+			return asAtomHandler::nullAtom;
+		if(asAtomHandler::isUndefined(obj))
+			return asAtomHandler::undefinedAtom;
+		if(asAtomHandler::isValid(v) && !asAtomHandler::isNull(v) && !asAtomHandler::isUndefined(v) && !asAtomHandler::checkArgumentConversion(v,obj))
+			throwError<ArgumentError>(kCheckTypeFailedError,
+									  asAtomHandler::toObject(obj,wrk)->getClassName(),
+									  "?"); // TODO
+		return obj;
+	}
 };
 
 template<class T>
@@ -104,6 +121,10 @@ public:
 	{
 		val->incRef();
 		ret = asAtomHandler::fromObject(val.getPtr());
+	}
+	static Ref<T> toConcreteNoRefcount(ASWorker* wrk,asAtom obj,const Ref<T>& v)
+	{
+		return toConcrete(wrk,obj,v);
 	}
 };
 
@@ -136,6 +157,10 @@ public:
 			ret = asAtomHandler::fromObject(val.getPtr());
 		}
 	}
+	static NullableRef<T> toConcreteNoRefcount(ASWorker* wrk,asAtom obj,const NullableRef<T>& v)
+	{
+		return toConcrete(wrk,obj,v);
+	}
 };
 
 template<>
@@ -157,6 +182,10 @@ public:
 			val->incRef();
 			ret = asAtomHandler::fromObject(val.getPtr());
 		}
+	}
+	static NullableRef<ASObject> toConcreteNoRefcount(ASWorker* wrk,asAtom obj,const NullableRef<ASObject>& v)
+	{
+		return toConcrete(wrk,obj,v);
 	}
 };
 
@@ -268,7 +297,7 @@ public:
 		if(argslen == 0)
 			throwError<ArgumentError>(kWrongArgumentCountError, "object", "?", "?");
 
-		v = ArgumentConversionAtom<T>::toConcrete(wrk,args[0],v);
+		v = ArgumentConversionAtom<T>::toConcreteNoRefcount(wrk,args[0],v);
 		args++;
 		argslen--;
 		return *this;
@@ -277,7 +306,7 @@ public:
 	{
 		if(argslen > 0)
 		{
-			v = ArgumentConversionAtom<T>::toConcrete(wrk,args[0],v);
+			v = ArgumentConversionAtom<T>::toConcreteNoRefcount(wrk,args[0],v);
 			args++;
 			argslen--;
 		}
@@ -287,6 +316,7 @@ public:
 		}
 		return *this;
 	}
+
 #ifndef NDEBUG
 	~ArgUnpackAtom()
 	{

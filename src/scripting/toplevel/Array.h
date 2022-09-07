@@ -94,7 +94,7 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
-	uint32_t countCylicMemberReferences(ASObject* obj,uint32_t needed, bool firstcall) override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	
 	//These utility methods are also used by ByteArray
 	static bool isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index);

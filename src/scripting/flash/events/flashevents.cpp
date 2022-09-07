@@ -51,8 +51,9 @@ void listener::resetClosure()
 {
 	if (asAtomHandler::isFunction(f) && asAtomHandler::as<IFunction>(f)->closure_this)
 	{
-		asAtomHandler::as<IFunction>(f)->closure_this->removeStoredMember();
+		ASObject* o = asAtomHandler::as<IFunction>(f)->closure_this;
 		asAtomHandler::as<IFunction>(f)->closure_this=nullptr;
+		o->removeStoredMember();
 	}
 }
 
@@ -581,39 +582,28 @@ EventDispatcher::EventDispatcher(ASWorker* wrk, Class_base* c):ASObject(wrk,c),f
 void EventDispatcher::finalize()
 {
 	forcedTarget = asAtomHandler::invalidAtom;
-	auto it=handlers.begin();
-	while(it!=handlers.end())
-	{
-		auto it2 = it->second.begin();
-		while (it2 != it->second.end())
-		{
-			IFunction* f = asAtomHandler::as<IFunction>((*it2).f);
-			getSystemState()->unregisterListenerFunction(f);
-			f->decRef();
-			it2 = it->second.erase(it2);
-		}
-		it = handlers.erase(it);
-	}
+	clearEventListeners();
 	ASObject::finalize();
 }
 bool EventDispatcher::destruct()
 {
 	forcedTarget = asAtomHandler::invalidAtom;
-	auto it=handlers.begin();
-	while(it!=handlers.end())
-	{
-		auto it2 = it->second.begin();
-		while (it2 != it->second.end())
-		{
-			IFunction* f = asAtomHandler::as<IFunction>((*it2).f);
-			getSystemState()->unregisterListenerFunction(f);
-			f->decRef();
-			it2 = it->second.erase(it2);
-		}
-		it = handlers.erase(it);
-	}
+	clearEventListeners();
 	return ASObject::destruct();
 }
+bool EventDispatcher::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	for (auto it = handlers.begin(); it != handlers.end(); it++)
+	{
+		for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
+			ret = asAtomHandler::getObjectNoCheck((*it2).f)->countAllCylicMemberReferences(gcstate) || ret;
+	}
+	return ret;
+}
+
 void EventDispatcher::prepareShutdown()
 {
 	if (this->preparedforshutdown)
@@ -636,6 +626,24 @@ void EventDispatcher::prepareShutdown()
 		it++;
 	}
 }
+void EventDispatcher::clearEventListeners()
+{
+	auto it=handlers.begin();
+	while(it!=handlers.end())
+	{
+		auto it2 = it->second.begin();
+		while (it2 != it->second.end())
+		{
+			IFunction* f = asAtomHandler::as<IFunction>((*it2).f);
+			getSystemState()->unregisterListenerFunction(f);
+			it2 = it->second.erase(it2);
+			f->removeStoredMember();
+		}
+		it = handlers.erase(it);
+	}
+}
+
+
 void EventDispatcher::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
@@ -702,6 +710,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 				return; // don't register the same listener twice
 		}
 		newfunc->incRef();
+		newfunc->addStoredMember();
 		if (newfunc->clonedFrom)
 			th->getSystemState()->registerListenerFunction(newfunc);
 		listeners.insert(insertionPoint,newListener);
@@ -747,8 +756,9 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 			ASObject* listenerfunc = asAtomHandler::getObject(it->f);
 			if (listenerfunc && listenerfunc->is<IFunction>() && listenerfunc->as<IFunction>()->clonedFrom)
 				th->getSystemState()->unregisterListenerFunction(listenerfunc->as<IFunction>());
-			ASATOM_DECREF(it->f);
+			assert(listenerfunc);
 			h->second.erase(it);
+			listenerfunc->removeStoredMember();
 		}
 		if(h->second.empty()) //Remove the entry from the map
 			th->handlers.erase(h);
@@ -820,7 +830,6 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,_constructor)
 		else
 		{
 			asAtomHandler::getObject(forcedTarget)->addOwnedObject(th);
-			ASATOM_DECREF(forcedTarget);// decreffed because forcedTarget is now owner of this EventDispatcher
 		}
 	}
 	th->forcedTarget=forcedTarget;

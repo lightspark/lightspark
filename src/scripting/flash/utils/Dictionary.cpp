@@ -408,35 +408,19 @@ void Dictionary::nextValue(asAtom& ret,uint32_t index)
 	}
 }
 
-uint32_t Dictionary::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+bool Dictionary::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (obj==this && !firstcall)
-		return 1;
-	uint32_t res=0;
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	for (auto it = data.begin(); it != data.end(); it++)
 	{
-		if (res>needed)
-			return res;
 		if (asAtomHandler::isObject(it->second))
-		{
-			ASObject* o = asAtomHandler::getObjectNoCheck(it->second);
-			if (o == obj)
-				++res;
-			if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
-			{
-				uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
-				if (r == UINT32_MAX)
-					return UINT32_MAX;
-				res += r;
-			}
-		}
+			ret = asAtomHandler::getObjectNoCheck(it->second)->countAllCylicMemberReferences(gcstate) || ret;
 	}
-	uint32_t r =ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
-	if (r == UINT32_MAX)
-		return UINT32_MAX;
-	res += r;
-	return res;
+	return ret;
 }
+
 tiny_string Dictionary::toString()
 {
 	std::stringstream retstr;

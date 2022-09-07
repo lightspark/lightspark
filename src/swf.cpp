@@ -310,15 +310,6 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	bitmapTokenMemory = allocateMemoryAccount("Tokens.Bitmap");
 	spriteTokenMemory = allocateMemoryAccount("Tokens.Sprite");
 
-	null=new (unaccountedMemory) Null;
-	null->setSystemState(this);
-	null->setWorker(this->worker);
-	null->setRefConstant();
-	undefined=new (unaccountedMemory) Undefined;
-	undefined->setSystemState(this);
-	undefined->setWorker(this->worker);
-	undefined->setRefConstant();
-
 	builtinClasses = new Class_base*[asClassCount];
 	memset(builtinClasses,0,asClassCount*sizeof(Class_base*));
 
@@ -331,6 +322,20 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	worker->setClass(Class<ASWorker>::getClass(this));
 	worker->constructionComplete();
 	worker->setConstructIndicator();
+
+	// needs to be done after worker is constructed
+	classObject->setWorker(this->worker);
+	classObject->setRefConstant();
+
+	null=new (unaccountedMemory) Null;
+	null->setSystemState(this);
+	null->setWorker(this->worker);
+	null->setRefConstant();
+	undefined=new (unaccountedMemory) Undefined;
+	undefined->setSystemState(this);
+	undefined->setWorker(this->worker);
+	undefined->setRefConstant();
+
 
 	classObject->setWorker(worker);
 
@@ -659,36 +664,17 @@ extern std::set<ASObject*> memcheckset;
 #endif
 SystemState::~SystemState()
 {
-	// 1) set all not removed event listeners to constant
-	for (auto it = listenerfunctionlist.begin(); it != listenerfunctionlist.end(); it++)
-	{
-		(*it)->closure_this->setRefConstant();
-		(*it)->setRefConstant();
-	}
-	// 2) remove all references to freelists
-	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
-	{
-		(*it)->prepareShutdown();
-	}
-	// 3) remove all references to variables as they might point to other constant reffed objects
-	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
-	{
-		(*it)->destroyContents();
-		(*it)->finalize();
-	}
-	
-	// 4) delete builtin classes
+	logAtom = asAtomHandler::invalidAtom;
+	// finalize main worker
+	worker->finalize();
+	delete worker;
 	delete[] builtinClasses;
-	// 5) delete the constant reffed objects
-	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
-	{
-		delete (*it);
-	}
 #ifndef NDEBUG
 	for (auto it = memcheckset.begin(); it != memcheckset.end(); it++)
 	{
 		LOG(LOG_ERROR,"memcheck leak found:"<<(*it)<<" "<<(*it)->getObjectType()<<" "<<(*it)->getSubtype());
 	}
+	LOG(LOG_ERROR,"memleaks found:"<<memcheckset.size());
 #endif
 }
 
@@ -771,12 +757,6 @@ void SystemState::destroy()
 	if(currentVm)
 		currentVm->finalize();
 
-	//Free classes by decRef'ing them
-	for(uint32_t i=0;i<asClassCount;i++)
-	{
-		if(builtinClasses[i])
-			builtinClasses[i]->decRef();
-	}
 	for(auto i = mainClip->customClasses.begin(); i != mainClip->customClasses.end(); ++i)
 		i->second->decRef();
 
@@ -850,14 +830,21 @@ void SystemState::setShutdownFlag()
 	Locker l(rootMutex);
 	if(currentVm)
 	{
+		workerDomain->stopAllBackgroundWorkers();
 		_R<ShutdownEvent> e(new (unaccountedMemory) ShutdownEvent);
 		currentVm->addEvent(NullRef,e);
 	}
+	else
+	{
+		terminated.signal();
+	}
 	shutdown=true;
-
+}
+void SystemState::signalTerminated()
+{
+	Locker l(rootMutex);
 	terminated.signal();
 }
-
 void SystemState::setLocalStorageAllowed(bool allowed)
 {
 	localstorageallowed = allowed;
@@ -881,7 +868,7 @@ void SystemState::addWorker(ASWorker *w)
 void SystemState::removeWorker(ASWorker *w)
 {
 	Locker l(workerMutex);
-	workerDomain->workerlist->remove(w);
+	workerDomain->removeWorker(w);
 	singleworker=workerDomain->workerlist->size() <= 1;
 
 }
@@ -1671,7 +1658,7 @@ void ParseThread::parseSWF(UI8 ver)
 {
 	if (loader && !loader->allowLoadingSWF())
 	{
-		_NR<LoaderInfo> li=loader->getContentLoaderInfo();
+		_R<LoaderInfo> li=loader->getContentLoaderInfo();
 		getVm(loader->getSystemState())->addEvent(li,_MR(Class<SecurityErrorEvent>::getInstanceS(loader->getInstanceWorker(),
 			"Cannot import a SWF file when LoaderContext.allowCodeImport is false."))); // 3226
 		return;
@@ -1681,7 +1668,7 @@ void ParseThread::parseSWF(UI8 ver)
 	RootMovieClip* root=nullptr;
 	if(parsedObject.isNull())
 	{
-		_NR<LoaderInfo> li=loader->getContentLoaderInfo();
+		_R<LoaderInfo> li=loader->getContentLoaderInfo();
 		root=RootMovieClip::getInstance(applicationDomain->getInstanceWorker(),li, applicationDomain, securityDomain);
 		if (!applicationDomain->getInstanceWorker()->isPrimordial)
 		{
@@ -1707,7 +1694,7 @@ void ParseThread::parseSWF(UI8 ver)
 		parseSWFHeader(root, ver);
 		if (loader)
 		{
-			_NR<LoaderInfo> li=loader->getContentLoaderInfo();
+			_R<LoaderInfo> li=loader->getContentLoaderInfo();
 			li->swfVersion = root->version;
 		}
 		
@@ -2019,8 +2006,7 @@ void ParseThread::parseExtensions(RootMovieClip* root)
 
 void ParseThread::parseBitmap()
 {
-	_NR<LoaderInfo> li;
-	li=loader->getContentLoaderInfo();
+	_R<LoaderInfo> li=loader->getContentLoaderInfo();
 	switch (fileType)
 	{
 		case FILE_TYPE::FT_PNG:

@@ -168,31 +168,18 @@ void IFunction::prepareShutdown()
 		closure_this->prepareShutdown();
 	if (prototype)
 		prototype->prepareShutdown();
-	prototype.reset();
 }
 
-uint32_t IFunction::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+bool IFunction::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (obj==this && !firstcall)
-		return 1;
-	uint32_t res=0;
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (closure_this)
-	{
-		if (closure_this == obj)
-			++res;
-		if (!closure_this->getConstant() && closure_this->isLastRef() && closure_this->canHaveCyclicMemberReference())
-		{
-			uint32_t r = closure_this->countCylicMemberReferences(obj,needed-res,false);
-			if (r == UINT32_MAX)
-				return UINT32_MAX;
-			res += r;
-		}
-	}
-	uint32_t r = ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
-	if (r == UINT32_MAX)
-		return UINT32_MAX;
-	res += r;
-	return res;
+		ret = closure_this->countAllCylicMemberReferences(gcstate) || ret;
+	if (prototype)
+		ret = prototype->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype)
@@ -671,7 +658,8 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 					while (cc->curr_scope_stack != (mi->needsscope && !exceptioncaught ? 1 : 0))
 					{
 						--cc->curr_scope_stack;
-						ASATOM_DECREF(cc->scope_stack[cc->curr_scope_stack]);
+						if (asAtomHandler::isObject(cc->scope_stack[cc->curr_scope_stack]))
+							asAtomHandler::getObjectNoCheck(cc->scope_stack[cc->curr_scope_stack])->removeStoredMember();
 					}
 					cc->curr_scope_stack=0;
 					exceptioncaught=true;
@@ -695,20 +683,24 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				asAtom* lastscope=cc->scope_stack+cc->curr_scope_stack;
 				for(asAtom* i=cc->scope_stack+(mi->needsscope && !exceptioncaught ? 1:0);i< lastscope;++i)
 				{
-					ASATOM_DECREF_POINTER(i);
+					LOG_CALL("scopestack exc:"<<asAtomHandler::toDebugString(*i));
+					if (asAtomHandler::isObject(*i))
+						asAtomHandler::getObjectNoCheck(*i)->removeStoredMember();
 				}
 				if (mi->needsscope && !exceptioncaught && cc->scope_stack[0].uintval != obj.uintval)
-					ASATOM_DECREF_POINTER(cc->scope_stack);
+				{
+					LOG_CALL("scopestack0 exc:"<<asAtomHandler::toDebugString(cc->scope_stack[0]));
+					if (asAtomHandler::isObject(*cc->scope_stack))
+						asAtomHandler::getObjectNoCheck(*cc->scope_stack)->removeStoredMember();
+				}
 				cc->curr_scope_stack=0;
 				if (!isMethod())
 					this->decRef(); //free local ref
-				for (auto it = cc->dynamicfunctions.begin(); it != cc->dynamicfunctions.end(); it++)
+				if (cc->activationObject)
 				{
-					LOG_CALL("dynamicfunc:"<<(*it)->toDebugString());
-					(*it)->decRef();
+					cc->activationObject->removeStoredMember();
+					cc->activationObject=nullptr;
 				}
-				cc->dynamicfunctions.clear();
-
 				if (recursive_call)
 					delete cc;
 				throw;
@@ -758,22 +750,23 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	for(asAtom* i=cc->scope_stack+(mi->needsscope && !exceptioncaught ? 1:0);i< lastscope;++i)
 	{
 		LOG_CALL("scopestack:"<<asAtomHandler::toDebugString(*i));
-		ASATOM_DECREF_POINTER(i);
+		if (asAtomHandler::isObject(*i))
+			asAtomHandler::getObjectNoCheck(*i)->removeStoredMember();
 	}
 	if (mi->needsscope && !exceptioncaught && cc->scope_stack[0].uintval != obj.uintval)
 	{
 		LOG_CALL("scopestack0:"<<asAtomHandler::toDebugString(cc->scope_stack[0]));
-		ASATOM_DECREF_POINTER(cc->scope_stack);
+		if (asAtomHandler::isObject(*cc->scope_stack))
+			asAtomHandler::getObjectNoCheck(*cc->scope_stack)->removeStoredMember();
 	}
 	cc->curr_scope_stack=0;
 	if (!isMethod())
 		this->decRef(); //free local ref
-	for (auto it = cc->dynamicfunctions.begin(); it != cc->dynamicfunctions.end(); it++)
+	if (cc->activationObject)
 	{
-		LOG_CALL("dynamicfunc:"<<(*it)->toDebugString());
-		(*it)->decRef();
+		cc->activationObject->removeStoredMember();
+		cc->activationObject=nullptr;
 	}
-	cc->dynamicfunctions.clear();
 	if (recursive_call)
 		delete cc;
 }
@@ -783,7 +776,7 @@ bool SyntheticFunction::destruct()
 	// the scope may contain objects that have pointers to this function
 	// which may lead to calling destruct() recursively
 	// so we have to make sure to cleanup the func_scope only once
-	if (!func_scope.isNull() && fromNewFunction && func_scope->isLastRef())
+	if (!func_scope.isNull() && fromNewFunction)
 	{
 		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
 		{
@@ -804,7 +797,7 @@ void SyntheticFunction::finalize()
 	// the scope may contain objects that have pointers to this function
 	// which may lead to calling destruct() recursively
 	// so we have to make sure to cleanup the func_scope only once
-	if (!func_scope.isNull() && fromNewFunction && func_scope->isLastRef())
+	if (!func_scope.isNull() && fromNewFunction)
 	{
 		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
 		{
@@ -814,6 +807,7 @@ void SyntheticFunction::finalize()
 		}
 	}
 	func_scope.reset();
+	IFunction::finalize();
 }
 
 void SyntheticFunction::prepareShutdown()
@@ -831,37 +825,20 @@ void SyntheticFunction::prepareShutdown()
 		}
 	}
 }
-uint32_t SyntheticFunction::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+bool SyntheticFunction::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (obj==this && !firstcall)
-		return 1;
-	uint32_t res=0;
-	if (!func_scope.isNull() && fromNewFunction && func_scope->isLastRef())
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = IFunction::countCylicMemberReferences(gcstate);
+	if (!func_scope.isNull() && func_scope->isLastRef())
 	{
 		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
 		{
-			if (res>needed)
-				return res;
 			if (asAtomHandler::isObject(it->object))
-			{
-				ASObject* o = asAtomHandler::getObjectNoCheck(it->object);
-				if (o == obj)
-					++res;
-				if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
-				{
-					uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
-					if (r == UINT32_MAX)
-						return UINT32_MAX;
-					res += r;
-				}
-			}
+				ret = asAtomHandler::getObjectNoCheck(it->object)->countAllCylicMemberReferences(gcstate) || ret;
 		}
 	}
-	uint32_t r = IFunction::countCylicMemberReferences(obj,needed-res,firstcall);
-	if (r == UINT32_MAX)
-		return UINT32_MAX;
-	res += r;
-	return res;
+	return ret;
 }
 
 bool SyntheticFunction::isEqual(ASObject *r)
@@ -1264,7 +1241,6 @@ Class_base::Class_base(const Class_object* c):ASObject((MemoryAccount*)nullptr),
 	//The super is Class<ASObject> but we set it in SystemState constructor to avoid an infinite loop
 
 	setSystemState(getSys());
-	setRefConstant();
 }
 
 /*
@@ -3830,28 +3806,14 @@ void AVM1Function::prepareShutdown()
 	clip->prepareShutdown();
 }
 
-uint32_t AVM1Function::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (obj==this && !firstcall)
-		return 1;
-	uint32_t res=0;
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = IFunction::countCylicMemberReferences(gcstate);
 	if (activationobject)
-	{
-		if (activationobject == obj)
-			++res;
-		if (!activationobject->getConstant() && activationobject->isLastRef() && activationobject->canHaveCyclicMemberReference())
-		{
-			uint32_t r = activationobject->countCylicMemberReferences(obj,needed-res,false);
-			if (r == UINT32_MAX)
-				return UINT32_MAX;
-			res += r;
-		}
-	}
-	uint32_t r = IFunction::countCylicMemberReferences(obj,needed-res,firstcall);
-	if (r == UINT32_MAX)
-		return UINT32_MAX;
-	res += r;
-	return res;
+		ret = activationobject->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void AVM1Function::resetClipRefcounted()

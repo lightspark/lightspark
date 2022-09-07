@@ -137,36 +137,18 @@ void Vector::prepareShutdown()
 			v->prepareShutdown();
 	}
 }
-uint32_t Vector::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+bool Vector::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (obj==this && !firstcall)
-		return 1;
-	uint32_t res=0;
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	for (auto it = vec.begin(); it != vec.end(); it++)
 	{
-		if (res>needed)
-			return res;
 		if (asAtomHandler::isObject(*it))
-		{
-			ASObject* o = asAtomHandler::getObjectNoCheck(*it);
-			if (o == obj)
-				++res;
-			if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
-			{
-				uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
-				if (r == UINT32_MAX)
-					return UINT32_MAX;
-				res += r;
-			}
-		}
+			ret = asAtomHandler::getObjectNoCheck(*it)->countAllCylicMemberReferences(gcstate) || ret;
 	}
-	uint32_t r = ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
-	if (r == UINT32_MAX)
-		return UINT32_MAX;
-	res += r;
-	return res;
+	return ret;
 }
-
 
 void Vector::setTypes(const std::vector<const Type *> &types)
 {
@@ -1283,9 +1265,9 @@ ASFUNCTIONBODY_ATOM(Vector,removeAt)
 	{
 		ret = th->vec[index];
 		ASObject* ob = asAtomHandler::getObject(ret);
+		th->vec.erase(th->vec.begin()+index);
 		if (ob)
 			ob->removeStoredMember();
-		th->vec.erase(th->vec.begin()+index);
 	}
 	else
 		throwError<RangeError>(kOutOfRangeError);

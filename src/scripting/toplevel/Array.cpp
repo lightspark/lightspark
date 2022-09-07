@@ -2227,52 +2227,22 @@ void Array::outofbounds(unsigned int index) const
 {
 	throwError<RangeError>(kInvalidArrayLengthError, Number::toString(index));
 }
-uint32_t Array::countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall)
+bool Array::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (obj==this && !firstcall)
-		return 1;
-	uint32_t res=0;
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	for (auto it = data_first.begin(); it != data_first.end(); it++)
 	{
-		if (res>needed)
-			return res;
 		if (asAtomHandler::isObject(*it))
-		{
-			ASObject* o = asAtomHandler::getObjectNoCheck(*it);
-			if (o == obj)
-				++res;
-			if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
-			{
-				uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
-				if (r == UINT32_MAX)
-					return UINT32_MAX;
-				res += r;
-			}
-		}
+			ret = asAtomHandler::getObjectNoCheck(*it)->countAllCylicMemberReferences(gcstate) || ret;
 	}
 	for (auto it = data_second.begin(); it != data_second.end(); it++)
 	{
-		if (res>needed)
-			return res;
 		if (asAtomHandler::isObject(it->second))
-		{
-			ASObject* o = asAtomHandler::getObjectNoCheck(it->second);
-			if (o == obj)
-				++res;
-			if (!o->getConstant() && o->isLastRef() && o->canHaveCyclicMemberReference())
-			{
-				uint32_t r = o->countCylicMemberReferences(obj,needed-res,false);
-				if (r == UINT32_MAX)
-					return UINT32_MAX;
-				res += r;
-			}
-		}
+			ret = asAtomHandler::getObjectNoCheck(it->second)->countAllCylicMemberReferences(gcstate) || ret;
 	}
-	uint32_t r = ASObject::countCylicMemberReferences(obj,needed-res,firstcall);
-	if (r == UINT32_MAX)
-		return UINT32_MAX;
-	res += r;
-	return res;
+	return ret;
 }
 
 void Array::resize(uint64_t n)
@@ -2285,9 +2255,9 @@ void Array::resize(uint64_t n)
 			while (it1 != data_first.end())
 			{
 				ASObject* o = asAtomHandler::getObject(*it1);
+				it1 = data_first.erase(it1);
 				if (o)
 					o->removeStoredMember();
-				it1 = data_first.erase(it1);
 			}
 		}
 		auto it2=data_second.begin();
@@ -2298,9 +2268,9 @@ void Array::resize(uint64_t n)
 				auto it2a = it2;
 				++it2;
 				ASObject* o = asAtomHandler::getObject(it2a->second);
+				data_second.erase(it2a);
 				if (o)
 					o->removeStoredMember();
-				data_second.erase(it2a);
 			}
 			else
 				++it2;

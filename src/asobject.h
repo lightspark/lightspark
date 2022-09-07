@@ -613,6 +613,29 @@ struct variable
 		type=t;
 	}
 };
+// struct used to count cyclic references
+struct cyclicmembercount
+{
+	uint32_t count; // number of references counted
+	bool hasmember; // indicates if the member object has any references to the main object in it's members
+};
+// struct used to keep track of entries when executing garbage collection
+struct garbagecollectorstate
+{
+	std::unordered_map<ASObject*,cyclicmembercount> checkedobjects;
+	std::unordered_set<ASObject*> ancestors;
+	std::unordered_set<ASObject*> countedobjects;
+	ASObject* startobj;
+	int level;
+	int incCount(ASObject* o);
+	FORCE_INLINE bool checkAncestors(ASObject* o)
+	{
+		return ancestors.find(o)!=ancestors.end();
+	}
+	garbagecollectorstate(ASObject* _startobj):startobj(_startobj),level(0)
+	{
+	}
+};
 
 struct varName
 {
@@ -804,7 +827,7 @@ public:
 	void prepareShutdown();
 	bool cloneInstance(variables_map& map);
 	void removeAllDeclaredProperties();
-	uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed);
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate, ASObject* parent);
 };
 
 enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
@@ -828,6 +851,7 @@ friend struct variable;
 friend class variables_map;
 friend class RootMovieClip;
 friend class asAtomHandler;
+friend class ASWorker;
 public:
 	asfreelist* objfreelist;
 private:
@@ -972,7 +996,8 @@ public:
 		storedmembercount++;
 	}
 	void removeStoredMember();
-	virtual uint32_t countCylicMemberReferences(ASObject* obj, uint32_t needed, bool firstcall);
+	void handleGarbageCollection();
+	virtual bool countCylicMemberReferences(garbagecollectorstate& gcstate);
 	FORCE_INLINE bool canHaveCyclicMemberReference()
 	{
 		return type == T_ARRAY || type == T_CLASS || type == T_PROXY || type == T_TEMPLATE || type == T_FUNCTION ||
@@ -980,6 +1005,7 @@ public:
 				subtype != SUBTYPE_DATE && 
 				subtype != SUBTYPE_URLREQUEST); // TODO check other subtypes
 	}
+	bool countAllCylicMemberReferences(garbagecollectorstate& gcstate);
 	
 	ASFUNCTION_ATOM(_constructor);
 	// constructor for subclasses that can't be instantiated.

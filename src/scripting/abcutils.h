@@ -60,7 +60,7 @@ struct call_context
 	int32_t argarrayposition; // position of argument array in locals ( -1 if no argument array needed)
 	asAtom* scope_stack;
 	bool* scope_stack_dynamic;
-	std::vector<SyntheticFunction*> dynamicfunctions;
+	ASObject* activationObject;
 	asAtom** localslots;
 	method_info* mi;
 	/* This is the function's inClass that is currently executing. It is used
@@ -78,7 +78,7 @@ struct call_context
 		stackp(nullptr),exec_pos(nullptr),
 		max_stackp(nullptr),
 		parent_scope_stack(nullptr),curr_scope_stack(0),argarrayposition(-1),
-		scope_stack(nullptr),scope_stack_dynamic(nullptr),localslots(nullptr),mi(_mi),
+		scope_stack(nullptr),scope_stack_dynamic(nullptr),activationObject(nullptr),localslots(nullptr),mi(_mi),
 		inClass(nullptr),sys(nullptr),worker(nullptr),defaultNamespaceUri(0)
 	{
 	}

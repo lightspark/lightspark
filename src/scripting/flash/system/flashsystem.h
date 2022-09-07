@@ -310,12 +310,15 @@ private:
 	ParseThread* parser;
 	bool giveAppPrivileges;
 	bool started;
+	bool inGarbageCollection;
 	//Synchronization
 	Mutex event_queue_mutex;
 	Cond sem_event_cond;
 	typedef std::pair<_NR<EventDispatcher>,_R<Event>> eventType;
 	std::deque<eventType> events_queue;
 	map<const Class_base*,_R<Prototype>> protoypeMap;
+	std::unordered_set<ASObject*> garbagecollection;
+	set<ASObject*> constantrefs;
 public:
 	asfreelist* freelist;
 	asfreelist freelist_syntheticfunction;
@@ -364,11 +367,20 @@ public:
 	void execute() override;
 	void jobFence() override;
 	void threadAbort() override;
+	void afterHandleEvent(Event* ev) override;
 	bool addEvent(_NR<EventDispatcher> obj ,_R<Event> ev);
 	_NR<RootMovieClip> rootClip;
 	tiny_string getDefaultXMLNamespace() const;
 	uint32_t getDefaultXMLNamespaceID() const;
 	void dumpStacktrace();
+	void addObjectToGarbageCollector(ASObject* o) { garbagecollection.insert(o); }
+	void removeObjectFromGarbageCollector(ASObject* o) { garbagecollection.erase(o); }
+	void processGarbageCollection();
+	FORCE_INLINE bool isInGarbageCollection() const { return inGarbageCollection; }
+	void registerConstantRef(ASObject* obj)
+	{
+		constantrefs.insert(obj);
+	}
 };
 class WorkerDomain: public ASObject
 {
@@ -378,10 +390,15 @@ private:
 	Mutex workersharedobjectmutex;
 	_NR<Vector> workerlist;
 	_NR<ASObject> workerSharedObject;
+	std::unordered_set<MessageChannel*> messagechannellist;
 public:
 	WorkerDomain(ASWorker* wrk, Class_base* c);
 	void finalize() override;
+	void prepareShutdown() override;
 	static void sinit(Class_base*);
+	void addMessageChannel(MessageChannel* c);
+	void removeWorker(ASWorker* w);
+	void stopAllBackgroundWorkers();
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getCurrent);
 	ASFUNCTION_ATOM(_isSupported);

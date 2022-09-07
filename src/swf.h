@@ -318,7 +318,6 @@ private:
 	Cond mainsignalCond;
 	void systemFinalize();
 	std::map<tiny_string, Class_base *> classnamemap;
-	set<ASObject*> constantrefs;
 	unordered_set<DisplayObject*> listResetParent;
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
@@ -350,13 +349,10 @@ public:
 	bool isShuttingDown() const DLL_PUBLIC;
 	bool isOnError() const DLL_PUBLIC;
 	void setShutdownFlag() DLL_PUBLIC;
+	void signalTerminated();
 	std::map<tiny_string, _R<SharedObject> > sharedobjectmap;
 	bool localStorageAllowed() const { return localstorageallowed; }
 	void setLocalStorageAllowed(bool allowed);
-	void registerConstantRef(ASObject* obj)
-	{
-		constantrefs.insert(obj);
-	}
 	void tick() override;
 	void tickFence() override;
 	RenderThread* getRenderThread() const { return renderThread; }
@@ -474,7 +470,7 @@ public:
 	IntervalManager* intervalManager;
 	SecurityManager* securityManager;
 	LocaleManager* localeManager;
-    CurrencyManager* currencyManager;
+	CurrencyManager* currencyManager;
 	ExtScriptObject* extScriptObject;
 
 	enum SCALE_MODE { EXACT_FIT=0, NO_BORDER=1, NO_SCALE=2, SHOW_ALL=3 };
@@ -578,6 +574,7 @@ public:
 	{
 		Locker l(resetParentMutex);
 		child->incRef();
+		child->addStoredMember();
 		listResetParent.insert(child);
 	}
 	void resetParentList()
@@ -587,7 +584,7 @@ public:
 		while (it != listResetParent.end())
 		{
 			(*it)->setParent(nullptr);
-			(*it)->decRef();
+			(*it)->removeStoredMember();
 			it = listResetParent.erase(it);
 		}
 	}
@@ -611,7 +608,7 @@ public:
 		{
 			if ((*it)==d)
 			{
-				d->decRef();
+				d->removeStoredMember();
 				listResetParent.erase(it);
 				break;
 			}

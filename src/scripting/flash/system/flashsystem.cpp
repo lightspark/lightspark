@@ -883,7 +883,7 @@ extern uint32_t asClassCount;
 
 ASWorker::ASWorker(SystemState* s):
 	EventDispatcher(this,nullptr),parser(nullptr),
-	giveAppPrivileges(false),started(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(true),state("running")
+	giveAppPrivileges(false),started(false),inGarbageCollection(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(true),state("running")
 {
 	subtype = SUBTYPE_WORKER;
 	setSystemState(s);
@@ -897,7 +897,7 @@ ASWorker::ASWorker(SystemState* s):
 
 ASWorker::ASWorker(Class_base* c):
 	EventDispatcher(c->getSystemState()->worker,c),parser(nullptr),
-	giveAppPrivileges(false),started(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
+	giveAppPrivileges(false),started(false),inGarbageCollection(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
 {
 	subtype = SUBTYPE_WORKER;
 	// TODO: it seems that AIR applications have a higher default value for max_recursion
@@ -909,7 +909,7 @@ ASWorker::ASWorker(Class_base* c):
 }
 ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 	EventDispatcher(wrk,c),parser(nullptr),
-	giveAppPrivileges(false),started(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
+	giveAppPrivileges(false),started(false),inGarbageCollection(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
 {
 	subtype = SUBTYPE_WORKER;
 	// TODO: it seems that AIR applications have a higher default value for max_recursion
@@ -922,6 +922,19 @@ ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 
 void ASWorker::finalize()
 {
+	// remove all references to freelists
+	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
+	{
+		(*it)->prepareShutdown();
+	}
+	// remove all references to variables as they might point to other constant reffed objects
+	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
+	{
+		if ((*it) == this)
+			continue;
+		(*it)->destroyContents();
+		(*it)->finalize();
+	}
 	if (!isPrimordial)
 	{
 		threadAborting = true;
@@ -951,6 +964,15 @@ void ASWorker::finalize()
 	swf.reset();
 	delete[] freelist;
 	EventDispatcher::finalize();
+	processGarbageCollection();
+	// destruct all constant refs except this worker
+	auto itf = constantrefs.begin();
+	while (itf != constantrefs.end())
+	{
+		if ((*itf) != this)
+			delete (*itf);
+		itf = constantrefs.erase(itf);
+	}
 }
 
 void ASWorker::prepareShutdown()
@@ -1020,7 +1042,7 @@ void ASWorker::execute()
 	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"workerState")),true);
 	if (!this->threadAborting)
 	{
-		LOG(LOG_INFO,"start worker"<<this->toDebugString()<<" "<<this->isPrimordial<<" "<<this);
+		LOG(LOG_INFO,"start worker "<<this->toDebugString()<<" "<<this->isPrimordial<<" "<<this);
 		parser->execute();
 	}
 	parsemutex.lock();
@@ -1028,11 +1050,17 @@ void ASWorker::execute()
 	parser = nullptr;
 	parsemutex.unlock();
 	loader.reset();
+	if (swf)
+	{
+		swf->objfreelist=nullptr;
+		swf.reset();
+	}
 	while (!this->threadAborting)
 	{
 		event_queue_mutex.lock();
 		while(events_queue.empty() && !this->threadAborting)
 			sem_event_cond.wait(event_queue_mutex);
+		processGarbageCollection();
 		if (this->threadAborting)
 			break;
 
@@ -1089,7 +1117,7 @@ void ASWorker::execute()
 void ASWorker::jobFence()
 {
 	state ="terminated";
-	getSystemState()->removeWorker(this);
+	rootClip.reset();
 	this->incRef();
 	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"workerState")),true);
 	sem_event_cond.signal();
@@ -1097,7 +1125,18 @@ void ASWorker::jobFence()
 
 void ASWorker::threadAbort()
 {
+	threadAborting=true;
 	sem_event_cond.signal();
+	if (this->isPrimordial)
+		getSystemState()->removeWorker(this);
+}
+
+void ASWorker::afterHandleEvent(Event* ev)
+{
+	if (ev->type=="workerState" && state=="terminated")
+	{
+		getSystemState()->removeWorker(this);
+	}
 }
 bool ASWorker::addEvent(_NR<EventDispatcher> obj, _R<Event> ev)
 {
@@ -1136,6 +1175,19 @@ void ASWorker::dumpStacktrace()
 		strace += "()\n";
 	}
 	LOG(LOG_INFO,"current stacktrace:\n" << strace);
+}
+
+void ASWorker::processGarbageCollection()
+{
+	inGarbageCollection=true;
+	while (!garbagecollection.empty())
+	{
+		auto it = garbagecollection.begin();
+		ASObject* o = *it;
+		garbagecollection.erase(it);
+		o->handleGarbageCollection();
+	}
+	inGarbageCollection=false;
 }
 
 ASFUNCTIONBODY_GETTER(ASWorker, state)
@@ -1185,6 +1237,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,createMessageChannel)
 	receiver->incRef();
 	receiver->addStoredMember();
 	channel->receiver = receiver.getPtr();
+	wrk->getSystemState()->workerDomain->addMessageChannel(channel);
 	ret = asAtomHandler::fromObjectNoPrimitive(channel);
 }
 ASFUNCTIONBODY_ATOM(ASWorker,_removeEventListener)
@@ -1244,13 +1297,31 @@ WorkerDomain::WorkerDomain(ASWorker* wrk, Class_base* c):
 	Template<Vector>::getInstanceS(wrk,v,root,Class<ASWorker>::getClass(getSystemState()),NullRef);
 	workerlist = _R<Vector>(asAtomHandler::as<Vector>(v));
 	workerSharedObject = _MR(Class<ASObject>::getInstanceS(wrk));
-	workerSharedObject->setRefConstant();
 }
 
 void WorkerDomain::finalize()
 {
+	auto it = messagechannellist.begin();
+	while (it != messagechannellist.end())
+	{
+		(*it)->decRef();
+		it = messagechannellist.erase(it);
+	}
 	workerlist.reset();
 	workerSharedObject.reset();
+}
+
+void WorkerDomain::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	if (workerlist)
+		workerlist->prepareShutdown();
+	if (workerSharedObject)
+		workerSharedObject->prepareShutdown();
+	for(auto it = messagechannellist.begin(); it != messagechannellist.end(); ++it)
+		(*it)->prepareShutdown();
 }
 
 void WorkerDomain::sinit(Class_base* c)
@@ -1266,6 +1337,51 @@ void WorkerDomain::sinit(Class_base* c)
 		c->setDeclaredMethodByQName("createWorkerFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),createWorkerFromByteArray),NORMAL_METHOD,true);
 	}
 
+}
+
+void WorkerDomain::addMessageChannel(MessageChannel* c)
+{
+	c->incRef();
+	messagechannellist.insert(c);
+}
+
+void WorkerDomain::removeWorker(ASWorker* w)
+{
+	workerlist->remove(w);
+	auto it = messagechannellist.begin();
+	while (it != messagechannellist.end())
+	{
+		if ((*it)->sender == w || (*it)->receiver == w)
+		{
+			if ((*it)->sender == w)
+			{
+				(*it)->sender->removeStoredMember();
+				(*it)->sender=nullptr;
+			}
+			if ((*it)->receiver == w)
+			{
+				(*it)->receiver->removeStoredMember();
+				(*it)->receiver=nullptr;
+			}
+			(*it)->clearEventListeners();
+			(*it)->decRef();
+			it = messagechannellist.erase(it);
+		}
+		else
+			it++;
+	}
+}
+
+void WorkerDomain::stopAllBackgroundWorkers()
+{
+	for (uint32_t i= 0; i < workerlist->size(); i++)
+	{
+		asAtom w = workerlist->at(i);
+		if (asAtomHandler::is<ASWorker>(w))
+		{
+			asAtomHandler::as<ASWorker>(w)->threadAbort();
+		}
+	}
 }
 ASFUNCTIONBODY_ATOM(WorkerDomain,_constructor)
 {

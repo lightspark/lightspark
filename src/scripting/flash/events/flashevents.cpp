@@ -661,6 +661,8 @@ void EventDispatcher::dumpHandlers()
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 {
+	if(!asAtomHandler::is<EventDispatcher>(obj))
+		throw Class<TypeError>::getInstanceS(wrk,"Function called on an object that does not implement EventDispatcher");
 	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
 	if(!asAtomHandler::isString(args[0]) || !asAtomHandler::isFunction(args[1]))
 		//throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
@@ -711,6 +713,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,_hasEventListener)
 {
+	if(!asAtomHandler::is<EventDispatcher>(obj))
+		throw Class<TypeError>::getInstanceS(wrk,"Function called on an object that does not implement EventDispatcher");
 	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
 	const tiny_string& eventName=asAtomHandler::toString(args[0],wrk);
 	asAtomHandler::setBool(ret,th->hasEventListener(eventName));
@@ -718,6 +722,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,_hasEventListener)
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 {
+	if(!asAtomHandler::is<EventDispatcher>(obj))
+		throw Class<TypeError>::getInstanceS(wrk,"Function called on an object that does not implement EventDispatcher");
 	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
 	
 	if (asAtomHandler::isNull(args[1])) // it seems that null is allowed as function
@@ -768,6 +774,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 {
+	if(!asAtomHandler::is<EventDispatcher>(obj))
+		throw Class<TypeError>::getInstanceS(wrk,"Function called on an object that does not implement EventDispatcher");
 	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
 	if(!asAtomHandler::is<Event>(args[0]))
 	{
@@ -808,6 +816,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,_constructor)
 {
+	if(!asAtomHandler::is<EventDispatcher>(obj))
+		throw Class<TypeError>::getInstanceS(wrk,"Function called on an object that does not implement EventDispatcher");
 	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
 	asAtom forcedTarget=asAtomHandler::invalidAtom;
 	ARG_UNPACK_ATOM(forcedTarget, asAtomHandler::nullAtom);

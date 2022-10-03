@@ -664,7 +664,6 @@ extern std::set<ASObject*> memcheckset;
 #endif
 SystemState::~SystemState()
 {
-	logAtom = asAtomHandler::invalidAtom;
 	// finalize main worker
 	worker->finalize();
 	delete worker;

@@ -2,7 +2,7 @@ Source: lightspark
 Section: utils
 Priority: optional
 Maintainer: Alessandro Pignotti <a.pignotti@sssup.it>
-Build-Depends: g++ (>=4.5), cmake, nasm, debhelper (>= 7), libgl1-mesa-dev, libxext-dev, libcurl4-gnutls-dev | libcurl4-openssl-dev, zlib1g-dev, libavcodec-dev, libglew1.5-dev, libcairo2-dev, libjpeg8-dev, libavformat-dev, libavresample-dev, libpango1.0-dev, librtmp-dev, liblzma-dev, libfreetype6-dev, libpng-dev, libsdl2-dev, libsdl2-mixer-dev
+Build-Depends: g++ (>=4.5), cmake, nasm, debhelper (>= 7), libgl1-mesa-dev, libxext-dev, libcurl4-gnutls-dev | libcurl4-openssl-dev, zlib1g-dev, libavcodec-dev, libglew-dev, libcairo2-dev, libjpeg8-dev, libavformat-dev, libswresample-dev, libpango1.0-dev, librtmp-dev, liblzma-dev, libfreetype6-dev, libpng-dev, libsdl2-dev, libsdl2-mixer-dev
 Standards-Version: 3.8.4
 Homepage: http://lightspark.github.io
 Vcs-git: git://github.com/lightspark/lightspark.git

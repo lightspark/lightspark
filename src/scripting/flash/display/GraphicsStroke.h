@@ -35,6 +35,7 @@ public:
 	GraphicsStroke(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	void finalize() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(tiny_string, caps);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, fill); // really IGraphicsFill

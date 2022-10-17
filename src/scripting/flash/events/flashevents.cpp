@@ -635,7 +635,6 @@ void EventDispatcher::clearEventListeners()
 		while (it2 != it->second.end())
 		{
 			IFunction* f = asAtomHandler::as<IFunction>((*it2).f);
-			getSystemState()->unregisterListenerFunction(f);
 			it2 = it->second.erase(it2);
 			f->removeStoredMember();
 		}
@@ -711,8 +710,6 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		}
 		newfunc->incRef();
 		newfunc->addStoredMember();
-		if (newfunc->clonedFrom)
-			th->getSystemState()->registerListenerFunction(newfunc);
 		listeners.insert(insertionPoint,newListener);
 	}
 	th->eventListenerAdded(eventName);
@@ -754,8 +751,6 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 		if(it!=h->second.end())
 		{
 			ASObject* listenerfunc = asAtomHandler::getObject(it->f);
-			if (listenerfunc && listenerfunc->is<IFunction>() && listenerfunc->as<IFunction>()->clonedFrom)
-				th->getSystemState()->unregisterListenerFunction(listenerfunc->as<IFunction>());
 			assert(listenerfunc);
 			h->second.erase(it);
 			listenerfunc->removeStoredMember();

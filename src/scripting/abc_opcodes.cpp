@@ -493,6 +493,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 					}
 				}
 				LOG_CALL("End of calling proxy custom caller " << *name);
+				ASATOM_DECREF(oproxy);
 				return;
 			}
 			else if(asAtomHandler::isValid(o))
@@ -855,16 +856,6 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 	if (asAtomHandler::is<SyntheticFunction>(f))
 	{
 		SyntheticFunction* sf=asAtomHandler::as<SyntheticFunction>(f);
-		for (auto it = asAtomHandler::getObject(f)->as<SyntheticFunction>()->func_scope->scope.begin();
-			 it != asAtomHandler::getObject(f)->as<SyntheticFunction>()->func_scope->scope.end(); it++)
-		{
-			ASObject* obj = asAtomHandler::getObject(it->object);
-			if (obj && !obj->getConstant())
-			{
-				obj->incRef();
-				obj->addStoredMember();
-			}
-		}
 		if (sf->mi->body && !sf->mi->needsActivation())
 		{
 			LOG_CALL("Building method traits " <<sf->mi->body->trait_count);
@@ -2395,6 +2386,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	if (asAtomHandler::getObject(ret))
 		asAtomHandler::getObject(ret)->setConstructorCallComplete();
 
+	ASATOM_DECREF(o);
 	ASATOM_DECREF(obj);
 	LOG_CALL("End of constructing " << asAtomHandler::toDebugString(ret));
 }
@@ -2728,7 +2720,7 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->use_protected=true;
 		int ns=th->mi->context->instances[n].protectedNs;
 		const namespace_info& ns_info=th->mi->context->constant_pool.namespaces[ns];
-		ret->initializeProtectedNamespace(th->mi->context->getString(ns_info.name),ns_info,th->mi->context->root.getPtr());
+		ret->initializeProtectedNamespace(th->mi->context->getString(ns_info.name),ns_info,th->mi->context->root);
 	}
 
 	IFunction* f = Class<IFunction>::getFunction(ret->getSystemState(),Class_base::_toString);
@@ -2909,9 +2901,6 @@ ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
 #ifndef NDEBUG
 	act->initialized=true;
 #endif
-	act->incRef();
-	act->addStoredMember();
-	th->activationObject=act;
 	return act;
 }
 

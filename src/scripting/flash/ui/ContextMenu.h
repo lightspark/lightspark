@@ -35,6 +35,7 @@ public:
 	static void sinit(Class_base* c);
 	bool destruct() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(hideBuiltInItems);
 	ASFUNCTION_ATOM(clone);

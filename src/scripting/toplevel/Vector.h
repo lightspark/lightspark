@@ -262,6 +262,7 @@ public:
 	Vector(ASWorker* wrk,Class_base* c, const Type *vtype=nullptr);
 	~Vector();
 	bool destruct() override;
+	void finalize() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 

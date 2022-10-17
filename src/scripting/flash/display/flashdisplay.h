@@ -90,6 +90,7 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	static void sinit(Class_base* c);
 	virtual void lostFocus() {}
 	virtual void gotFocus() {} 
@@ -358,6 +359,7 @@ public:
 	LoaderInfo(ASWorker*,Class_base* c);
 	LoaderInfo(ASWorker*, Class_base* c, Loader* l);
 	bool destruct() override;
+	void finalize() override;
 	void prepareShutdown() override;
 	void afterHandleEvent(Event* ev) override;
 	void addLoaderEvent(Event* ev);

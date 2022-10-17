@@ -300,11 +300,10 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 	mc.append(bytes->getBuffer(bytes->getLength(),false),bytes->getLength());
 	std::streambuf *sbuf = mc.createReader();
 	std::istream s(sbuf);
-	RootMovieClip* root=wrk->currentCallContext->mi->context->root.getPtr();
+	RootMovieClip* root=wrk->currentCallContext->mi->context->root;
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
-	root->incRef();
-	ABCContext* context = new ABCContext(_MR(root), s, getVm(root->getSystemState()));
+	ABCContext* context = new ABCContext(root, s, getVm(root->getSystemState()));
 	context->exec(false);
 	root->applicationDomain = origdomain;
 	delete sbuf;
@@ -324,11 +323,10 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
 	std::istream s(sbuf);
 	
 	// execute loaded abc bytes
-	RootMovieClip* root=wrk->currentCallContext->mi->context->root.getPtr();
+	RootMovieClip* root=wrk->currentCallContext->mi->context->root;
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
-	root->incRef();
-	ABCContext* context = new ABCContext(_MR(root), s, getVm(root->getSystemState()));
+	ABCContext* context = new ABCContext(root, s, getVm(root->getSystemState()));
 	context->exec(false);
 	root->applicationDomain = origdomain;
 	delete sbuf;

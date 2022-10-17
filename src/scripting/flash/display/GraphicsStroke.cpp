@@ -56,6 +56,16 @@ void GraphicsStroke::finalize()
 	fill.reset();
 }
 
+bool GraphicsStroke::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	if (fill)
+		ret = fill->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+}
+
 ASFUNCTIONBODY_ATOM(GraphicsStroke,_constructor)
 {
 	GraphicsStroke* th = asAtomHandler::as<GraphicsStroke>(obj);
@@ -70,13 +80,13 @@ ASFUNCTIONBODY_ATOM(GraphicsStroke,_constructor)
 	th->validateFill(NullRef);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, caps);
-ASFUNCTIONBODY_GETTER_SETTER_CB(GraphicsStroke, fill, validateFill);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, joints);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, miterLimit);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, pixelHinting);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, scaleMode);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, thickness);
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, caps)
+ASFUNCTIONBODY_GETTER_SETTER_CB(GraphicsStroke, fill, validateFill)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, joints)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, miterLimit)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, pixelHinting)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, scaleMode)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsStroke, thickness)
 
 void GraphicsStroke::validateFill(_NR<ASObject> oldValue)
 {

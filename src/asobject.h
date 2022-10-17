@@ -890,6 +890,7 @@ protected:
 	bool constructIndicator:1;
 	bool constructorCallComplete:1; // indicates that the constructor including all super constructors has been called
 	bool preparedforshutdown:1;
+	bool markedforgarbagecollection:1;
 	static variable* findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter);
 	static FORCE_INLINE const variable* findGettableImplConst(SystemState* sys, const variables_map& map, const multiname& name, uint32_t* nsRealId = nullptr)
 	{
@@ -929,6 +930,8 @@ protected:
 
 	FORCE_INLINE bool destructIntern()
 	{
+		if (markedforgarbagecollection)
+			removefromGarbageCollection();
 		destroyContents();
 		for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
 		{
@@ -944,6 +947,7 @@ protected:
 		traitsInitialized =false;
 		constructIndicator = false;
 		constructorCallComplete =false;
+		markedforgarbagecollection=false;
 		implEnable = true;
 		storedmembercount=0;
 #ifndef NDEBUG
@@ -994,7 +998,14 @@ public:
 	{
 		assert(storedmembercount<uint32_t(this->getRefCount()) || this->getConstant());
 		storedmembercount++;
+		if (markedforgarbagecollection)
+		{
+			removefromGarbageCollection();
+			decRef();
+		}
 	}
+	bool isMarkedForGarbageCollection() const { return markedforgarbagecollection; }
+	void removefromGarbageCollection();
 	void removeStoredMember();
 	void handleGarbageCollection();
 	virtual bool countCylicMemberReferences(garbagecollectorstate& gcstate);

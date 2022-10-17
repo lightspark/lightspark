@@ -75,6 +75,10 @@ string ASObject::toDebugString() const
 	{
 		ret = "[event]";
 	}
+	else if (this->preparedforshutdown)
+	{
+		ret = "[object prepared for shutdown]";
+	}
 	else
 	{
 		assert(false);
@@ -1596,6 +1600,7 @@ void ASObject::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	preparedforshutdown=true;
+	classdef=nullptr;
 	objfreelist=nullptr;
 	Variables.prepareShutdown();
 	for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
@@ -1827,7 +1832,7 @@ void ASObject::dumpObjectCounters(uint32_t threshhold)
 ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE st):
 	objfreelist(c ? c->getFreeList(wrk) : nullptr),
 	classdef(c),proxyMultiName(nullptr),sys(c?c->sys:nullptr),worker(wrk),
-	stringId(UINT32_MAX),storedmembercount(0),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
+	stringId(UINT32_MAX),storedmembercount(0),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),markedforgarbagecollection(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1844,7 +1849,7 @@ ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE
 #endif
 }
 ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),classdef(nullptr),proxyMultiName(nullptr),sys(o.classdef? o.classdef->sys : nullptr),worker(o.worker),
-	stringId(o.stringId),storedmembercount(o.storedmembercount),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
+	stringId(o.stringId),storedmembercount(o.storedmembercount),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),markedforgarbagecollection(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1857,7 +1862,7 @@ ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),classdef(nullpt
 }
 
 ASObject::ASObject(MemoryAccount* m):objfreelist(nullptr),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),worker(nullptr),
-	stringId(UINT32_MAX),storedmembercount(0),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),implEnable(true)
+	stringId(UINT32_MAX),storedmembercount(0),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),markedforgarbagecollection(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1886,16 +1891,28 @@ void ASObject::setClass(Class_base* c)
 		this->sys = c->sys;
 }
 
+void ASObject::removefromGarbageCollection()
+{
+	getInstanceWorker()->removeObjectFromGarbageCollector(this);
+	markedforgarbagecollection=false;
+}
+
 void ASObject::removeStoredMember()
 {
-	if (getConstant() || getCached() || this->getInDestruction())
+	if (getConstant() || getCached() || this->getInDestruction() || getInstanceWorker()->isDeletedInGarbageCollection(this))
 		return;
 	assert(storedmembercount);
 	assert(storedmembercount<=uint32_t(this->getRefCount()));
 	storedmembercount--;
-	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1) && !getInstanceWorker()->isInGarbageCollection())
+	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1))
 	{
-		getInstanceWorker()->addObjectToGarbageCollector(this);
+		if (getInstanceWorker()->isInGarbageCollection() || this->markedforgarbagecollection)
+			handleGarbageCollection();
+		else
+		{
+			getInstanceWorker()->addObjectToGarbageCollector(this);
+			this->markedforgarbagecollection=true;
+		}
 		return;
 	}
 	decRef();
@@ -1909,6 +1926,7 @@ void ASObject::handleGarbageCollection()
 	{
 		garbagecollectorstate gcstate(this);
 		this->countCylicMemberReferences(gcstate);
+		markedforgarbagecollection=false;
 		uint32_t c =0;
 		for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 		{
@@ -1920,6 +1938,10 @@ void ASObject::handleGarbageCollection()
 			else if ((*it).second.count!=(uint32_t)(*it).first->getRefCount() && (*it).second.hasmember)
 			{
 				c = UINT32_MAX;
+				if ((*it).first->isMarkedForGarbageCollection())
+				{
+					getInstanceWorker()->addObjectToGarbageCollector(this);
+				}
 				break;
 			}
 		}
@@ -1927,6 +1949,7 @@ void ASObject::handleGarbageCollection()
 		if (c == storedmembercount)
 		{
 			resetRefCount();
+			getInstanceWorker()->setDeletedInGarbageCollection(this);
 		}
 	}
 	decRef();
@@ -1945,7 +1968,7 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 		gcstate.incCount(this);
 		ret = true;
 	}
-	else if (!getConstant() && !getInDestruction() && canHaveCyclicMemberReference())
+	else if (!getConstant() && !getInDestruction() && canHaveCyclicMemberReference() && !markedforgarbagecollection && !getInstanceWorker()->isDeletedInGarbageCollection(this))
 	{
 		if (gcstate.ancestors.find(this)==gcstate.ancestors.end())
 		{
@@ -1964,7 +1987,7 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 			}
 			gcstate.level--;
 		}
-		else if (gcstate.checkedobjects.find(this)==gcstate.checkedobjects.end())
+		else
 		{
 			gcstate.incCount(this);
 		}

@@ -389,6 +389,7 @@ void ApplicationDomain::finalize()
 {
 	ASObject::finalize();
 	domainMemory.reset();
+	defaultDomainMemory.reset();
 	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
 		it->second->finalize();
 	//Free template instantations by decRef'ing them
@@ -403,7 +404,8 @@ void ApplicationDomain::prepareShutdown()
 	ASObject::prepareShutdown();
 	if (domainMemory)
 		domainMemory->prepareShutdown();
-	defaultDomainMemory->prepareShutdown();
+	if (defaultDomainMemory)
+		defaultDomainMemory->prepareShutdown();
 	if (parentDomain)
 		parentDomain->prepareShutdown();
 	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
@@ -883,7 +885,8 @@ extern uint32_t asClassCount;
 
 ASWorker::ASWorker(SystemState* s):
 	EventDispatcher(this,nullptr),parser(nullptr),
-	giveAppPrivileges(false),started(false),inGarbageCollection(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(true),state("running")
+	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),
+	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(true),state("running")
 {
 	subtype = SUBTYPE_WORKER;
 	setSystemState(s);
@@ -893,11 +896,13 @@ ASWorker::ASWorker(SystemState* s):
 	limits.max_recursion = 256;
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
+	gettimeofday(&last_garbagecollection, nullptr);
 }
 
 ASWorker::ASWorker(Class_base* c):
 	EventDispatcher(c->getSystemState()->worker,c),parser(nullptr),
-	giveAppPrivileges(false),started(false),inGarbageCollection(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
+	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),
+	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
 {
 	subtype = SUBTYPE_WORKER;
 	// TODO: it seems that AIR applications have a higher default value for max_recursion
@@ -906,10 +911,12 @@ ASWorker::ASWorker(Class_base* c):
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
 	loader = _MR(Class<Loader>::getInstanceS(this));
+	gettimeofday(&last_garbagecollection, nullptr);
 }
 ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 	EventDispatcher(wrk,c),parser(nullptr),
-	giveAppPrivileges(false),started(false),inGarbageCollection(false),freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
+	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),
+	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
 {
 	subtype = SUBTYPE_WORKER;
 	// TODO: it seems that AIR applications have a higher default value for max_recursion
@@ -918,23 +925,30 @@ ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
 	loader = _MR(Class<Loader>::getInstanceS(this));
+	gettimeofday(&last_garbagecollection, nullptr);
 }
 
 void ASWorker::finalize()
 {
+	if (!this->preparedforshutdown)
+		this->prepareShutdown();
+	protoypeMap.clear();
 	// remove all references to freelists
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
 		(*it)->prepareShutdown();
 	}
+	destroyContents();
+	constantrefs.erase(this);
 	// remove all references to variables as they might point to other constant reffed objects
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
-		if ((*it) == this)
-			continue;
 		(*it)->destroyContents();
+		(*it)->destruct();
 		(*it)->finalize();
 	}
+	if (inShutdown)
+		return;
 	if (!isPrimordial)
 	{
 		threadAborting = true;
@@ -958,21 +972,34 @@ void ASWorker::finalize()
 			rootClip->customClasses.clear();
 			rootClip.reset();
 		}
+		for(size_t i=0;i<contexts.size();++i)
+		{
+			delete contexts[i];
+		}
 	}
 	delete[] stacktrace;
 	loader.reset();
 	swf.reset();
-	delete[] freelist;
 	EventDispatcher::finalize();
-	processGarbageCollection();
-	// destruct all constant refs except this worker
-	auto itf = constantrefs.begin();
-	while (itf != constantrefs.end())
+	processGarbageCollection(true);
+	setTLSWorker(nullptr);
+	// destruct all constant refs except classes
+	inShutdown=true;
+	std::unordered_set<ASObject*> tmp = constantrefs;
+	auto it =tmp.begin();
+	while (it != tmp.end())
 	{
-		if ((*itf) != this)
-			delete (*itf);
-		itf = constantrefs.erase(itf);
+		ASObject* o = (*it);
+		if (o->is<ASWorker>())
+		{
+			it++;
+			continue;
+		}
+		it = tmp.erase(it);
+		delete o;
 	}
+	delete[] freelist;
+	freelist=nullptr;
 }
 
 void ASWorker::prepareShutdown()
@@ -1001,6 +1028,8 @@ Prototype* ASWorker::getClassPrototype(const Class_base* cls)
 	auto it = protoypeMap.find(cls);
 	if (it == protoypeMap.end())
 	{
+		if (inShutdown)
+			return nullptr;
 		Prototype* p = cls->prototype->clonePrototype(this);
 		it = protoypeMap.insert(make_pair(cls,_MR(p))).first;
 	}
@@ -1055,14 +1084,20 @@ void ASWorker::execute()
 		swf->objfreelist=nullptr;
 		swf.reset();
 	}
-	while (!this->threadAborting)
+	while (true)
 	{
 		event_queue_mutex.lock();
 		while(events_queue.empty() && !this->threadAborting)
 			sem_event_cond.wait(event_queue_mutex);
-		processGarbageCollection();
+		processGarbageCollection(false);
 		if (this->threadAborting)
-			break;
+		{
+			if(events_queue.empty())
+			{
+				event_queue_mutex.unlock();
+				break;
+			}
+		}
 
 		_NR<EventDispatcher> dispatcher=events_queue.front().first;
 		_R<Event> e=events_queue.front().second;
@@ -1176,10 +1211,16 @@ void ASWorker::dumpStacktrace()
 	}
 	LOG(LOG_INFO,"current stacktrace:\n" << strace);
 }
-
-void ASWorker::processGarbageCollection()
+void ASWorker::processGarbageCollection(bool force)
 {
+	struct timeval currtime;
+	gettimeofday(&currtime, nullptr);
+	int diff =  last_garbagecollection.tv_sec-currtime.tv_sec;
+	if (!force && diff < 10) // ony execute garbagecollection every 10 seconds
+		return;
+	last_garbagecollection = currtime;
 	inGarbageCollection=true;
+	garbagecollectiondeleted.clear();
 	while (!garbagecollection.empty())
 	{
 		auto it = garbagecollection.begin();

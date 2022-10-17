@@ -56,6 +56,18 @@ void ContextMenu::prepareShutdown()
 	
 }
 
+bool ContextMenu::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	if (customItems)
+		ret = customItems->countAllCylicMemberReferences(gcstate) || ret;
+	if (builtInItems)
+		ret = builtInItems->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+}
+
 void ContextMenu::getCurrentContextMenuItems(std::vector<_R<NativeMenuItem> >& items)
 {
 	if (!customItems.isNull() && customItems->size())

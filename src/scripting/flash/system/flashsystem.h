@@ -26,6 +26,7 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/toplevel/Error.h"
 #include "scripting/flash/events/flashevents.h"
+#include <sys/time.h>
 
 #define MIN_DOMAIN_MEMORY_LIMIT 1024
 namespace lightspark
@@ -82,7 +83,7 @@ class ApplicationDomain: public ASObject
 {
 private:
 	std::vector<Global*> globalScopes;
-	_R<ByteArray> defaultDomainMemory;
+	_NR<ByteArray> defaultDomainMemory;
 	void cbDomainMemory(_NR<ByteArray> oldvalue);
 public:
 	ByteArray* currentDomainMemory;
@@ -311,6 +312,7 @@ private:
 	bool giveAppPrivileges;
 	bool started;
 	bool inGarbageCollection;
+	bool inShutdown;
 	//Synchronization
 	Mutex event_queue_mutex;
 	Cond sem_event_cond;
@@ -318,7 +320,10 @@ private:
 	std::deque<eventType> events_queue;
 	map<const Class_base*,_R<Prototype>> protoypeMap;
 	std::unordered_set<ASObject*> garbagecollection;
-	set<ASObject*> constantrefs;
+	std::unordered_set<ASObject*> garbagecollectiondeleted;
+	std::unordered_set<ASObject*> constantrefs;
+	struct timeval last_garbagecollection;
+	std::vector<ABCContext*> contexts;
 public:
 	asfreelist* freelist;
 	asfreelist freelist_syntheticfunction;
@@ -327,6 +332,7 @@ public:
 	ASWorker(ASWorker* wrk,Class_base* c);
 	void finalize() override;
 	void prepareShutdown() override;
+	void addABCContext(ABCContext* c) { contexts.push_back(c); }
 	Prototype* getClassPrototype(const Class_base* cls);
 	static void sinit(Class_base*);
 
@@ -373,14 +379,33 @@ public:
 	tiny_string getDefaultXMLNamespace() const;
 	uint32_t getDefaultXMLNamespaceID() const;
 	void dumpStacktrace();
-	void addObjectToGarbageCollector(ASObject* o) { garbagecollection.insert(o); }
-	void removeObjectFromGarbageCollector(ASObject* o) { garbagecollection.erase(o); }
-	void processGarbageCollection();
+	void addObjectToGarbageCollector(ASObject* o)
+	{
+		garbagecollection.insert(o);
+	}
+	void removeObjectFromGarbageCollector(ASObject* o)
+	{
+		garbagecollection.erase(o);
+		garbagecollectiondeleted.erase(o);
+		constantrefs.erase(o);
+	}
+	void processGarbageCollection(bool force);
 	FORCE_INLINE bool isInGarbageCollection() const { return inGarbageCollection; }
+	FORCE_INLINE bool isDeletedInGarbageCollection(ASObject* o) const
+	{
+		return inGarbageCollection && garbagecollectiondeleted.find(o) != garbagecollectiondeleted.end();
+	}
+	void setDeletedInGarbageCollection(ASObject* o)
+	{
+		garbagecollectiondeleted.insert(o);
+	}
 	void registerConstantRef(ASObject* obj)
 	{
+		if (inShutdown)
+			return;
 		constantrefs.insert(obj);
 	}
+	bool isShuttingDown() const { return inShutdown;}
 };
 class WorkerDomain: public ASObject
 {

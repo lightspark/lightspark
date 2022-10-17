@@ -1783,7 +1783,7 @@ nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 {
 	const namespace_info& ns=c->constant_pool.namespaces[nsContextIndex];
 	nsNameId=c->getString(ns.name);
-	nsNameAndKindImpl tmp(nsNameId, (NS_KIND)(int)ns.kind,((NS_KIND)(int)ns.kind)==PROTECTED_NAMESPACE ? c->root.getPtr() : nullptr);
+	nsNameAndKindImpl tmp(nsNameId, (NS_KIND)(int)ns.kind,((NS_KIND)(int)ns.kind)==PROTECTED_NAMESPACE ? c->root : nullptr);
 	//Give an id hint, in case the namespace is created in the map
 	c->root->getSystemState()->getUniqueNamespaceId(tmp, c->namespaceBaseId+nsContextIndex, nsRealId, nsId);
 	//Special handling for private namespaces, they are always compared by id

@@ -582,7 +582,10 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 
 	//obtain a local reference to this function, as it may delete itself
 	if (!isMethod())
+	{
 		this->incRef();
+		this->addStoredMember();
+	}
 
 #ifndef NDEBUG
 	if (wrk->isPrimordial)
@@ -696,11 +699,6 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				cc->curr_scope_stack=0;
 				if (!isMethod())
 					this->decRef(); //free local ref
-				if (cc->activationObject)
-				{
-					cc->activationObject->removeStoredMember();
-					cc->activationObject=nullptr;
-				}
 				if (recursive_call)
 					delete cc;
 				throw;
@@ -761,12 +759,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	}
 	cc->curr_scope_stack=0;
 	if (!isMethod())
-		this->decRef(); //free local ref
-	if (cc->activationObject)
-	{
-		cc->activationObject->removeStoredMember();
-		cc->activationObject=nullptr;
-	}
+		this->removeStoredMember();//free local ref
 	if (recursive_call)
 		delete cc;
 }
@@ -830,7 +823,7 @@ bool SyntheticFunction::countCylicMemberReferences(garbagecollectorstate& gcstat
 	if (gcstate.checkAncestors(this))
 		return false;
 	bool ret = IFunction::countCylicMemberReferences(gcstate);
-	if (!func_scope.isNull() && func_scope->isLastRef())
+	if (!func_scope.isNull())
 	{
 		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
 		{
@@ -1208,13 +1201,13 @@ const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool 
 					}
 				}
 				if (instancetype)
-					typeObject = Template<Vector>::getTemplateInstance(context->root.getPtr(),instancetype,context->root->applicationDomain).getPtr();
+					typeObject = Template<Vector>::getTemplateInstance(context->root,instancetype,context->root->applicationDomain).getPtr();
 			}
 			else
 			{
 				LOG(LOG_NOT_IMPLEMENTED,"getTypeFromMultiname with "<<mn->templateinstancenames.size()<<" instance types");
 				QName qname(mn->name_s_id,mn->ns[0].nsNameId);
-				typeObject = Template<Vector>::getTemplateInstance(context->root.getPtr(),qname,context,context->root->applicationDomain).getPtr();
+				typeObject = Template<Vector>::getTemplateInstance(context->root,qname,context,context->root->applicationDomain).getPtr();
 			}
 		}
 	}
@@ -1514,6 +1507,7 @@ void Class_base::finalize()
 		constructor=nullptr;
 	}
 	context = nullptr;
+	global = nullptr;
 	length = 1;
 	class_index = -1;
 	isFinal = false;
@@ -1525,6 +1519,7 @@ void Class_base::prepareShutdown()
 {
 	if (this->preparedforshutdown)
 		return;
+	this->isReusable=false;
 	ASObject::prepareShutdown();
 	borrowedVariables.prepareShutdown();
 	if(constructor)
@@ -3426,9 +3421,14 @@ void ObjectPrototype::finalize()
 {
 	if (originalPrototypeVars)
 		originalPrototypeVars->decRef();
+	originalPrototypeVars=nullptr;
 	if (workerDynamicClassVars)
 		workerDynamicClassVars->decRef();
+	workerDynamicClassVars=nullptr;
 	prevPrototype.reset();
+	if (obj)
+		obj->decRef();
+	obj=nullptr;
 }
 
 void ObjectPrototype::prepareShutdown()
@@ -3497,9 +3497,14 @@ void ArrayPrototype::finalize()
 {
 	if (originalPrototypeVars)
 		originalPrototypeVars->decRef();
+	originalPrototypeVars=nullptr;
 	if (workerDynamicClassVars)
 		workerDynamicClassVars->decRef();
+	workerDynamicClassVars=nullptr;
 	prevPrototype.reset();
+	if (obj)
+		obj->decRef();
+	obj=nullptr;
 }
 bool ArrayPrototype::isEqual(ASObject* r)
 {
@@ -3599,18 +3604,7 @@ void Function_object::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	if (functionPrototype)
-	{
-		// remove constructor variable from prototye as it is a not refcounted pointer to this
-		multiname m(nullptr);
-		m.name_type = multiname::NAME_STRING;
-		m.name_s_id = BUILTIN_STRINGS::STRING_CONSTRUCTOR;
-		uint32_t nsRealID;
-		bool isborrowed;
-		variable* v = functionPrototype->findVariableByMultiname(m,nullptr,&nsRealID,&isborrowed,false,this->getInstanceWorker());
-		if (v)
-			v->var = asAtomHandler::invalidAtom;
 		functionPrototype->prepareShutdown();
-	}
 	ASObject::prepareShutdown();
 }
 
@@ -3699,7 +3693,8 @@ void Prototype::copyOriginalValues(Prototype* target)
 	if (this->prevPrototype)
 		this->prevPrototype->copyOriginalValues(target);
 	originalPrototypeVars->copyValues(target->getObj(),target->getObj()->getInstanceWorker());
-	target->workerDynamicClassVars = new_asobject(target->getObj()->getInstanceWorker());
+	if (!target->workerDynamicClassVars)
+		target->workerDynamicClassVars = new_asobject(target->getObj()->getInstanceWorker());
 	target->getObj()->setRefConstant();
 }
 

@@ -207,7 +207,7 @@ friend class method_info;
 private:
 	bool scriptsdeclared;
 public:
-	_R<RootMovieClip> root;
+	RootMovieClip* root;
 
 	method_info* get_method(unsigned int m);
 	uint32_t getString(unsigned int s) const;
@@ -294,7 +294,7 @@ public:
 	multiname* getMultiname(unsigned int m, call_context* th);
 	multiname* getMultinameImpl(asAtom& rt1, ASObject* rt2, unsigned int m, bool isrefcounted = true);
 	void buildInstanceTraits(ASObject* obj, int class_index);
-	ABCContext(_R<RootMovieClip> r, std::istream& in, ABCVm* vm) DLL_PUBLIC;
+	ABCContext(RootMovieClip* r, std::istream& in, ABCVm* vm) DLL_PUBLIC;
 	~ABCContext();
 	void declareScripts();
 	void exec(bool lazy);
@@ -1391,7 +1391,7 @@ public:
 
 	bool addEvent(_NR<EventDispatcher>,_R<Event>, bool isGlobalMessage=false) DLL_PUBLIC;
 	bool prependEvent(_NR<EventDispatcher>, _R<Event> , bool force=false) DLL_PUBLIC;
-	void addIdleEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
+	bool addIdleEvent(_NR<EventDispatcher>,_R<Event> ) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();
 	bool hasEverStarted() const { return status!=CREATED; }

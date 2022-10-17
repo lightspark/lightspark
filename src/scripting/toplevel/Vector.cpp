@@ -125,6 +125,19 @@ bool Vector::destruct()
 	return destructIntern();
 }
 
+void Vector::finalize()
+{
+	for(unsigned int i=0;i<size();i++)
+	{
+		ASObject* obj = asAtomHandler::getObject(vec[i]);
+		vec[i]=asAtomHandler::invalidAtom;
+		if (obj)
+			obj->removeStoredMember();
+	}
+	vec.clear();
+	vec_type=nullptr;
+}
+
 void Vector::prepareShutdown()
 {
 	if (this->preparedforshutdown)

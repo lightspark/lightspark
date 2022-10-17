@@ -33,7 +33,6 @@ public:
 	Rectangle(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_RECTANGLE),x(0),y(0),width(0),height(0){}
 	number_t x,y,width,height;
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	const RECT getRect() const;
 	bool destruct() override;
 	// properties
@@ -86,7 +85,6 @@ public:
 	Point(ASWorker* wrk,Class_base* c,number_t _x = 0, number_t _y = 0):ASObject(wrk,c,T_OBJECT,SUBTYPE_POINT),x(_x),y(_y){}
 	bool destruct() override;
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getX);
 	ASFUNCTION_ATOM(_getY);
@@ -134,7 +132,6 @@ public:
 	void applyTransformation(uint8_t* bm, uint32_t size);
 	void setProperties(const CXFORMWITHALPHA& cx);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	bool destruct() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(setColor);
@@ -171,10 +168,9 @@ public:
 	Matrix(ASWorker* wrk,Class_base* c);
 	Matrix(ASWorker* wrk,Class_base* c,const MATRIX& m);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	void _createBox(number_t scaleX, number_t scaleY, number_t angle, number_t x, number_t y);
 	MATRIX getMATRIX() const;
-	bool destruct();
+	bool destruct() override;
 	ASFUNCTION_ATOM(_constructor);
 	
 	//Methods
@@ -221,8 +217,10 @@ public:
 	Transform(ASWorker* wrk, Class_base* c, _R<DisplayObject> o);
 	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
-	bool destruct();
+	bool destruct() override;
+	void finalize() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	ASFUNCTION_ATOM(_getColorTransform);
 	ASFUNCTION_ATOM(_setColorTransform);
 	ASFUNCTION_ATOM(_getMatrix);
@@ -239,8 +237,7 @@ public:
 	Vector3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_VECTOR3D),w(0),x(0),y(0),z(0){}
 	number_t w, x, y, z;
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
-	bool destruct();
+	bool destruct() override;
 	ASFUNCTION_ATOM(_constructor);
 	
 	//Methods
@@ -288,7 +285,7 @@ private:
 public:
 	Matrix3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_MATRIX3D){}
 	static void sinit(Class_base* c);
-	bool destruct();
+	bool destruct() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(clone);
 	ASFUNCTION_ATOM(decompose);
@@ -323,7 +320,9 @@ class PerspectiveProjection: public ASObject
 public:
 	PerspectiveProjection(ASWorker* wrk,Class_base* c):ASObject(wrk,c),fieldOfView(0),focalLength(0) {}
 	static void sinit(Class_base* c);
-	bool destruct();
+	bool destruct() override;
+	void finalize() override;
+	void prepareShutdown() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(number_t, fieldOfView);
 	ASPROPERTY_GETTER_SETTER(number_t, focalLength);

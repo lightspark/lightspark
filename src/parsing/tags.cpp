@@ -3059,8 +3059,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	LOG(LOG_CALLS,"DoABCTag");
 
 	RootMovieClip* root=getParseThread()->getRootMovie();
-	root->incRef();
-	context=new ABCContext(_MR(root), in, getVm(root->getSystemState()));
+	context=new ABCContext(root, in, getVm(root->getSystemState()));
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -3077,7 +3076,10 @@ void DoABCTag::execute(RootMovieClip* root) const
 	if (root->getInstanceWorker()->isPrimordial)
 		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
 	else
+	{
+		root->getInstanceWorker()->addABCContext(context);
 		context->exec(false);
+	}
 }
 
 DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -3088,8 +3090,7 @@ DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	LOG(LOG_CALLS,"DoABCDefineTag Name: " << Name);
 
 	RootMovieClip* root=getParseThread()->getRootMovie();
-	root->incRef();
-	context=new ABCContext(_MR(root), in, getVm(root->getSystemState()));
+	context=new ABCContext(root, in, getVm(root->getSystemState()));
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -3110,7 +3111,10 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 	if (root->getInstanceWorker()->isPrimordial)
 		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,lazy)));
 	else
+	{
+		root->getInstanceWorker()->addABCContext(context);
 		context->exec(lazy);
+	}
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)

@@ -114,8 +114,7 @@ int main(int argc, char* argv[])
 		ifstream f(fileNames[i]);
 		if(f.is_open())
 		{
-			sys->mainClip->incRef();
-			ABCContext* context=new ABCContext(_MR(sys->mainClip), f, vm);
+			ABCContext* context=new ABCContext(sys->mainClip, f, vm);
 			contexts.push_back(context);
 			f.close();
 			vm->addEvent(NullRef,_MR(new (sys->unaccountedMemory) ABCContextInitEvent(context,false)));

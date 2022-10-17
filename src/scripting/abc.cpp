@@ -548,7 +548,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 	}
 	return ret;
 }
-ABCContext::ABCContext(_R<RootMovieClip> r, istream& in, ABCVm* vm):scriptsdeclared(false),root(r),constant_pool(vm->vmDataMemory),
+ABCContext::ABCContext(RootMovieClip* r, istream& in, ABCVm* vm):scriptsdeclared(false),root(r),constant_pool(vm->vmDataMemory),
 	methods(reporter_allocator<method_info>(vm->vmDataMemory)),
 	metadata(reporter_allocator<metadata_info>(vm->vmDataMemory)),
 	instances(reporter_allocator<instance_info>(vm->vmDataMemory)),
@@ -1136,7 +1136,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case IDLE_EVENT:
 			{
-				m_sys->worker->processGarbageCollection();
+				m_sys->worker->processGarbageCollection(false);
 				// DisplayObjects that are removed from the display list keep their Parent set until all removedFromStage events are handled
 				// see http://www.senocular.com/flash/tutorials/orderofoperations/#ObjectDestruction
 				m_sys->resetParentList();
@@ -1273,19 +1273,21 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool isGlobalMessag
 	}
 	return true;
 }
-void ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
+bool ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 {
 	Locker l(event_queue_mutex);
 	//If the system should terminate new events are not accepted
 	if(shuttingdown)
-		return;
-	if (!obj.isNull() && ev->getInstanceWorker() && !ev->getInstanceWorker()->isPrimordial)
 	{
-		ev->getInstanceWorker()->addEvent(obj,ev);
-		return;
+		if (obj)
+			obj->afterHandleEvent(ev.getPtr());
+		return false;
 	}
+	if (!obj.isNull() && ev->getInstanceWorker() && !ev->getInstanceWorker()->isPrimordial)
+		return ev->getInstanceWorker()->addEvent(obj,ev);
 	idleevents_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	RELEASE_WRITE(ev->queued,true);
+	return true;
 }
 
 Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)
@@ -1406,9 +1408,12 @@ void ABCVm::handleFrontEvent()
 		}
 		else
 			m_sys->setError("Unhandled ActionScript exception");
-		/* do not allow any more event to be enqueued */
-		shuttingdown = true;
-		signalEventWaiters();
+		if (!m_sys->isShuttingDown())
+		{
+			/* do not allow any more event to be enqueued */
+			shuttingdown = true;
+			signalEventWaiters();
+		}
 	}
 }
 
@@ -2151,7 +2156,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 					ci->use_protected=true;
 					int ns=instances[t->classi].protectedNs;
 					const namespace_info& ns_info=constant_pool.namespaces[ns];
-					ci->initializeProtectedNamespace(getString(ns_info.name),ns_info,root.getPtr());
+					ci->initializeProtectedNamespace(getString(ns_info.name),ns_info,root);
 				}
 				LOG(LOG_CALLS,"Adding immutable object traits to class");
 				//Class objects also contains all the methods/getters/setters declared for instances

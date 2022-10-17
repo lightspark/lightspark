@@ -80,10 +80,6 @@ void Rectangle::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 }
 
-void Rectangle::buildTraits(ASObject* o)
-{
-}
-
 const lightspark::RECT Rectangle::getRect() const
 {
 	return lightspark::RECT(x,x+width,y,y+height);
@@ -605,10 +601,6 @@ void ColorTransform::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 }
 
-void ColorTransform::buildTraits(ASObject* o)
-{
-}
-
 bool ColorTransform::destruct()
 {
 	redMultiplier=1.0;
@@ -841,10 +833,6 @@ void Point::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 }
 
-void Point::buildTraits(ASObject* o)
-{
-}
-
 ASFUNCTIONBODY_ATOM(Point,_toString)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
@@ -1039,6 +1027,40 @@ bool Transform::destruct()
 	return destructIntern();
 }
 
+void Transform::finalize()
+{
+	owner.reset();
+	perspectiveProjection.reset();
+	matrix3D.reset();
+}
+
+void Transform::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	if (owner)
+		owner->prepareShutdown();
+	if (perspectiveProjection)
+		perspectiveProjection->prepareShutdown();
+	if (matrix3D)
+		matrix3D->prepareShutdown();
+}
+
+bool Transform::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	if (owner)
+		ret = owner->countAllCylicMemberReferences(gcstate) || ret;
+	if (perspectiveProjection)
+		ret = perspectiveProjection->countAllCylicMemberReferences(gcstate) || ret;
+	if (matrix3D)
+		ret = matrix3D->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+}
+
 void Transform::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
@@ -1051,8 +1073,8 @@ void Transform::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, perspectiveProjection);
 	REGISTER_GETTER_SETTER(c, matrix3D);
 }
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, perspectiveProjection);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, matrix3D);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, perspectiveProjection)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, matrix3D)
 
 ASFUNCTIONBODY_ATOM(Transform,_constructor)
 {
@@ -1107,10 +1129,6 @@ ASFUNCTIONBODY_ATOM(Transform,_getConcatenatedMatrix)
 {
 	Transform* th=asAtomHandler::as<Transform>(obj);
 	ret = asAtomHandler::fromObject(Class<Matrix>::getInstanceS(wrk,th->owner->getConcatenatedMatrix()));
-}
-
-void Transform::buildTraits(ASObject* o)
-{
 }
 
 Matrix::Matrix(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_MATRIX)
@@ -1183,10 +1201,6 @@ ASFUNCTIONBODY_ATOM(Matrix,_constructor)
 		th->matrix.x0 = asAtomHandler::toNumber(args[4]);
 	if (argslen == 6)
 		th->matrix.y0 = asAtomHandler::toNumber(args[5]);
-}
-
-void Matrix::buildTraits(ASObject* o)
-{
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_toString)
@@ -1531,10 +1545,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,_constructor)
 		th->z = asAtomHandler::toNumber(args[2]);
 	if (argslen == 4)
 		th->w = asAtomHandler::toNumber(args[3]);
-}
-
-void Vector3D::buildTraits(ASObject* o)
-{
 }
 
 bool Vector3D::destruct()
@@ -2646,6 +2656,22 @@ bool PerspectiveProjection::destruct()
 	projectionCenter.reset();
 	return destructIntern();
 }
+
+void PerspectiveProjection::finalize()
+{
+	projectionCenter.reset();
+}
+
+void PerspectiveProjection::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	if (projectionCenter)
+		projectionCenter->prepareShutdown();
+	
+}
+
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, fieldOfView)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, focalLength)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(PerspectiveProjection, projectionCenter)

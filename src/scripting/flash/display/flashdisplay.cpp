@@ -150,6 +150,23 @@ bool LoaderInfo::destruct()
 	return EventDispatcher::destruct();
 }
 
+void LoaderInfo::finalize()
+{
+	Locker l(spinlock);
+	sharedEvents.reset();
+	loader=nullptr;
+	applicationDomain.reset();
+	securityDomain.reset();
+	waitedObject.reset();
+	bytesData.reset();
+	uncaughtErrorEvents.reset();
+	parameters.reset();
+	uncaughtErrorEvents.reset();
+	progressEvent.reset();
+	loaderevents.clear();
+	EventDispatcher::finalize();
+}
+
 void LoaderInfo::prepareShutdown()
 {
 	if (preparedforshutdown)
@@ -191,8 +208,12 @@ void LoaderInfo::addLoaderEvent(Event* ev)
 	if (this->loader)
 	{
 		Locker l(spinlock);
-		this->loader->incRef();
-		loaderevents.insert(ev);
+		auto it = loaderevents.find(ev);
+		if (it == loaderevents.end())
+		{
+			this->loader->incRef();
+			loaderevents.insert(ev);
+		}
 	}
 }
 
@@ -272,8 +293,8 @@ void LoaderInfo::sendInit()
 {
 	this->incRef();
 	auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"init");
-	this->addLoaderEvent(ev);
-	getVm(getSystemState())->addEvent(_MR(this),_MR(ev));
+	if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
+		this->addLoaderEvent(ev);
 	assert(loadStatus==STARTED);
 	loadStatus=INIT_SENT;
 	if(bytesTotal && bytesLoaded==bytesTotal)
@@ -281,8 +302,8 @@ void LoaderInfo::sendInit()
 		//The clip is also complete now
 		this->incRef();
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"complete");
-		this->addLoaderEvent(ev);
-		getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev));
+		if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
+			this->addLoaderEvent(ev);
 		loadStatus=COMPLETE;
 	}
 }
@@ -504,8 +525,8 @@ void LoaderThread::execute()
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
 			auto ev = Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker());
-			loaderInfo->addLoaderEvent(ev);
-			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev));
+			if (getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev)))
+				loaderInfo->addLoaderEvent(ev);
 
 			getVm(loader->getSystemState())->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
 			delete sbuf;
@@ -513,16 +534,16 @@ void LoaderThread::execute()
 			return;
 		}
 		auto ev = Class<Event>::getInstanceS(loader->getInstanceWorker(),"open");
-		loaderInfo->addLoaderEvent(ev);
-		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev));
+		if (getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev)))
+			loaderInfo->addLoaderEvent(ev);
 	}
 	else if(source==BYTES)
 	{
 		assert_and_throw(bytes->bytes);
 
 		auto ev = Class<Event>::getInstanceS(loader->getInstanceWorker(),"open");
-		loaderInfo->addLoaderEvent(ev);
-		getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev));
+		if (getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev)))
+			loaderInfo->addLoaderEvent(ev);
 
 		loaderInfo->setBytesTotal(bytes->getLength());
 		loaderInfo->setBytesLoaded(bytes->getLength());
@@ -561,8 +582,8 @@ void LoaderThread::execute()
 		if(!threadAborting)
 		{
 			auto ev = Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker());
-			loaderInfo->addLoaderEvent(ev);
-			getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev));
+			if (getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev)))
+				loaderInfo->addLoaderEvent(ev);
 		}
 		return;
 	}
@@ -787,8 +808,8 @@ void Loader::unload()
 	if(loaded)
 	{
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"unload");
-		contentLoaderInfo->addLoaderEvent(ev);
-		getVm(getSystemState())->addEvent(contentLoaderInfo,_MR(ev));
+		if (getVm(getSystemState())->addEvent(contentLoaderInfo,_MR(ev)))
+			contentLoaderInfo->addLoaderEvent(ev);
 		loaded=false;
 	}
 
@@ -3074,6 +3095,20 @@ void InteractiveObject::prepareShutdown()
 		accessibilityImplementation->prepareShutdown();
 	if (focusRect)
 		focusRect->prepareShutdown();
+}
+
+bool InteractiveObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = DisplayObject::countCylicMemberReferences(gcstate);
+	if (contextMenu)
+		ret = contextMenu->countAllCylicMemberReferences(gcstate) || ret;
+	if (accessibilityImplementation)
+		ret = accessibilityImplementation->countAllCylicMemberReferences(gcstate) || ret;
+	if (focusRect)
+		ret = focusRect->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void InteractiveObject::defaultEventBehavior(Ref<Event> e)

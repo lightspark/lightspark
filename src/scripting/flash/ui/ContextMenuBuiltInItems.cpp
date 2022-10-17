@@ -41,14 +41,14 @@ void ContextMenuBuiltInItems::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,zoom);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,forwardAndBack);
-ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,loop);
-ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,play);
-ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,print);
-ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,quality);
-ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,rewind);
-ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,save);
-ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,zoom);
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,forwardAndBack)
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,loop)
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,play)
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,print)
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,quality)
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,rewind)
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,save)
+ASFUNCTIONBODY_GETTER_SETTER(ContextMenuBuiltInItems,zoom)
 
 ASFUNCTIONBODY_ATOM(ContextMenuBuiltInItems,_constructor)
 {

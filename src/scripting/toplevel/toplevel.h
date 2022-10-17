@@ -353,8 +353,8 @@ public:
 	{
 	}
 	_NR<Prototype> prevPrototype;
-	inline void incRef() { obj->incRef(); }
-	inline void decRef() { obj->decRef(); }
+	inline void incRef() { if (obj) obj->incRef(); }
+	inline void decRef() { if (obj) obj->decRef(); }
 	inline ASObject* getObj() {return obj; }
 	inline ASObject* getWorkerDynamicClassVars() const {return workerDynamicClassVars; }
 	bool isSealed;
@@ -394,8 +394,8 @@ class ObjectConstructor: public ASObject
 	uint32_t _length;
 public:
 	ObjectConstructor(ASWorker* wrk, Class_base* c,uint32_t length);
-	void incRef() { getClass()->incRef(); }
-	void decRef() { getClass()->decRef(); }
+	void incRef() { if (getClass()) getClass()->incRef(); }
+	void decRef() { if (getClass()) getClass()->decRef(); }
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	bool isEqual(ASObject* r) override;
 };
@@ -471,6 +471,8 @@ public:
 	}
 	inline void finalize() override
 	{
+		inClass=nullptr;
+		clonedFrom=nullptr;
 		if (closure_this)
 			closure_this->removeStoredMember();
 		closure_this=nullptr;
@@ -589,7 +591,22 @@ public:
 		if (workerDynamicClassVars)
 			workerDynamicClassVars->decRef();
 		prevPrototype.reset();
+		if (obj)
+			obj->decRef();
+		obj=nullptr;
 		return Function::destruct();
+	}
+	void finalize() override
+	{
+		if (originalPrototypeVars)
+			originalPrototypeVars->decRef();
+		if (workerDynamicClassVars)
+			workerDynamicClassVars->decRef();
+		prevPrototype.reset();
+		if (obj)
+			obj->decRef();
+		obj=nullptr;
+		Function::finalize();
 	}
 	
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;

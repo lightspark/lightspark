@@ -415,6 +415,7 @@ bool Dictionary::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	for (auto it = data.begin(); it != data.end(); it++)
 	{
+		ret = it->first->countAllCylicMemberReferences(gcstate) || ret;
 		if (asAtomHandler::isObject(it->second))
 			ret = asAtomHandler::getObjectNoCheck(it->second)->countAllCylicMemberReferences(gcstate) || ret;
 	}

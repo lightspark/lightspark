@@ -186,17 +186,6 @@ void SystemState::addBroadcastEvent(const tiny_string& event)
 	}
 }
 
-void SystemState::registerListenerFunction(IFunction* f)
-{
-	Locker l(mutexFrameListeners);
-	listenerfunctionlist.insert(f);
-}
-void SystemState::unregisterListenerFunction(IFunction* f)
-{
-	Locker l(mutexFrameListeners);
-	listenerfunctionlist.erase(f);
-}
-
 RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk,_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass(getSys());
@@ -664,10 +653,13 @@ extern std::set<ASObject*> memcheckset;
 #endif
 SystemState::~SystemState()
 {
+	workerDomain->finalize();
+	workerDomain=nullptr;
 	// finalize main worker
 	worker->finalize();
 	delete worker;
 	delete[] builtinClasses;
+	builtinClasses=nullptr;
 #ifndef NDEBUG
 	for (auto it = memcheckset.begin(); it != memcheckset.end(); it++)
 	{
@@ -694,6 +686,7 @@ void SystemState::destroy()
 		//we will start it here.
 		if(!currentVm->hasEverStarted())
 			currentVm->start();
+		l.release();
 		currentVm->shutdown();
 	}
 
@@ -746,6 +739,7 @@ void SystemState::destroy()
 	{
 		if(builtinClasses[i])
 			builtinClasses[i]->finalize();
+		builtinClasses[i]=nullptr;
 	}
 	for(auto it = mainClip->customClasses.begin(); it != mainClip->customClasses.end(); ++it)
 		it->second->finalize();
@@ -1671,7 +1665,6 @@ void ParseThread::parseSWF(UI8 ver)
 		root=RootMovieClip::getInstance(applicationDomain->getInstanceWorker(),li, applicationDomain, securityDomain);
 		if (!applicationDomain->getInstanceWorker()->isPrimordial)
 		{
-			root->incRef();
 			applicationDomain->getInstanceWorker()->rootClip = _MR(root);
 		}
 		parsedObject=_MNR(root);

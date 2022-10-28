@@ -159,6 +159,11 @@ private:
 	void resetAttribs(EngineData* engineData, std::vector<RegisterMapEntry> &attributes);
 	void setSamplers(EngineData* engineData);
 	void setPositionScale(EngineData *engineData);
+	unordered_set<Program3D*> programlist;
+	unordered_set<TextureBase*> texturelist;
+	unordered_set<IndexBuffer3D*> indexbufferlist;
+	unordered_set<VertexBuffer3D*> vectorbufferlist;
+	void disposeintern();
 protected:
 	bool renderImpl(RenderContext &ctxt);
 	void loadTexture(TextureBase* tex, uint32_t level);
@@ -167,6 +172,10 @@ public:
 	Mutex rendermutex;
 	Context3D(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
+	bool destruct() override;
+	void finalize() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+	void prepareShutdown() override;
 
 	void addAction(RENDER_ACTION type, ASObject* dataobject);
 	void addAction(renderaction action);

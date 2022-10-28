@@ -687,6 +687,34 @@ void Context3D::setPositionScale(EngineData *engineData)
 	}
 }
 
+void Context3D::disposeintern()
+{
+	while (!programlist.empty())
+	{
+		auto it = programlist.begin();
+		(*it)->removeStoredMember();
+		programlist.erase(it);
+	}
+	while (!texturelist.empty())
+	{
+		auto it = texturelist.begin();
+		(*it)->removeStoredMember();
+		texturelist.erase(it);
+	}
+	while (!indexbufferlist.empty())
+	{
+		auto it = indexbufferlist.begin();
+		(*it)->removeStoredMember();
+		indexbufferlist.erase(it);
+	}
+	while (!vectorbufferlist.empty())
+	{
+		auto it = vectorbufferlist.begin();
+		(*it)->removeStoredMember();
+		vectorbufferlist.erase(it);
+	}
+}
+
 bool Context3D::renderImpl(RenderContext &ctxt)
 {
 	Locker l(rendermutex);
@@ -849,7 +877,7 @@ void Context3D::addAction(RENDER_ACTION type, ASObject *dataobject)
 
 void Context3D::addAction(renderaction action)
 {
-	if (!getSystemState()->getRenderThread()->isStarted())
+	if (!getSystemState()->getRenderThread() || !getSystemState()->getRenderThread()->isStarted())
 		return;
 	actions[currentactionvector].push_back(action);
 }
@@ -897,6 +925,48 @@ void Context3D::sinit(lightspark::Class_base *c)
 	c->setDeclaredMethodByQName("setVertexBufferAt","",Class<IFunction>::getFunction(c->getSystemState(),setVertexBufferAt),NORMAL_METHOD,true);
 }
 
+bool Context3D::destruct()
+{
+	disposeintern();
+	return EventDispatcher::destruct();
+}
+
+void Context3D::finalize()
+{
+	disposeintern();
+	EventDispatcher::finalize();
+}
+
+bool Context3D::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	for (auto it = programlist.begin(); it != programlist.end(); it++)
+		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
+	for (auto it = texturelist.begin(); it != texturelist.end(); it++)
+		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
+	for (auto it = indexbufferlist.begin(); it != indexbufferlist.end(); it++)
+		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
+	for (auto it = vectorbufferlist.begin(); it != vectorbufferlist.end(); it++)
+		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+}
+
+void Context3D::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	for (auto it = programlist.begin(); it != programlist.end(); it++)
+		(*it)->prepareShutdown();
+	for (auto it = texturelist.begin(); it != texturelist.end(); it++)
+		(*it)->prepareShutdown();
+	for (auto it = indexbufferlist.begin(); it != indexbufferlist.end(); it++)
+		(*it)->prepareShutdown();
+	for (auto it = vectorbufferlist.begin(); it != vectorbufferlist.end(); it++)
+		(*it)->prepareShutdown();
+}
 
 
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Context3D,backBufferHeight)
@@ -915,7 +985,7 @@ ASFUNCTIONBODY_ATOM(Context3D,supportsVideoTexture)
 ASFUNCTIONBODY_ATOM(Context3D,dispose)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.dispose does nothing");
+	th->disposeintern();
 	bool recreate;
 	ARG_UNPACK_ATOM(recreate,true);
 	th->driverInfo = "Disposed";
@@ -945,6 +1015,9 @@ ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
 	CubeTexture* res = Class<CubeTexture>::getInstanceS(wrk,th);
+	res->incRef();
+	res->addStoredMember();
+	th->texturelist.insert(res);
 	uint32_t size;
 	ARG_UNPACK_ATOM(size)(format)(optimizeForRenderToTexture)(streamingLevels,0);
 	uint32_t i = size;
@@ -967,6 +1040,9 @@ ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
 	RectangleTexture* res = Class<RectangleTexture>::getInstanceS(wrk,th);
+	res->incRef();
+	res->addStoredMember();
+	th->texturelist.insert(res);
 	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
 	res->setFormat(format);
 	if (optimizeForRenderToTexture || streamingLevels != 0)
@@ -980,6 +1056,9 @@ ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
 	Texture* res = Class<Texture>::getInstanceS(wrk,th);
+	res->incRef();
+	res->addStoredMember();
+	th->texturelist.insert(res);
 	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
 	res->setFormat(format);
 	if (optimizeForRenderToTexture || streamingLevels != 0)
@@ -990,12 +1069,20 @@ ASFUNCTIONBODY_ATOM(Context3D,createVideoTexture)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.createVideoTexture does nothing");
-	ret = asAtomHandler::fromObject(Class<VideoTexture>::getInstanceS(wrk,th));
+	VideoTexture* res = Class<VideoTexture>::getInstanceS(wrk,th);
+	res->incRef();
+	res->addStoredMember();
+	th->texturelist.insert(res);
+	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createProgram)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
-	ret = asAtomHandler::fromObject(Class<Program3D>::getInstanceS(wrk,th));
+	Program3D* p = Class<Program3D>::getInstanceS(wrk,th);
+	p->incRef();
+	p->addStoredMember();
+	th->programlist.insert(p);
+	ret = asAtomHandler::fromObject(p);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createVertexBuffer)
 {

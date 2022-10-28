@@ -721,7 +721,7 @@ void Sound::requestSampleDataEvent(size_t position)
 {
 	RELEASE_WRITE(sampledataprocessed,false);
 	// request more data
-	_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceSNoArgs(getInstanceWorker()));
+	_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(getInstanceWorker()));
 #if G_BYTE_ORDER == G_LITTLE_ENDIAN
 	data->setLittleEndian(true);
 #endif

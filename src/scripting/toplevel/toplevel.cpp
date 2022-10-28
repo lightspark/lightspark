@@ -698,7 +698,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				}
 				cc->curr_scope_stack=0;
 				if (!isMethod())
-					this->decRef(); //free local ref
+					this->removeStoredMember();//free local ref
 				if (recursive_call)
 					delete cc;
 				throw;

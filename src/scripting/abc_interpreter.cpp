@@ -4611,7 +4611,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					if(asAtomHandler::isInvalid(o))
 					{
 						GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF);
-						mi->context->root->applicationDomain->getVariableByMultiname(o,*name,opt,wrk);
+						r = mi->context->root->applicationDomain->getVariableByMultiname(o,*name,opt,wrk);
 					}
 					if(asAtomHandler::isInvalid(o))
 					{
@@ -4667,10 +4667,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						if (slotid != UINT32_MAX)
 						{
 							state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX_FROMSLOT);
-							state.preloadedcode.back().pcode.arg3_uint=slotid;
+							state.preloadedcode.back().pcode.arg1_uint=slotid;
 							state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 							checkForLocalResult(state,code,1,nullptr);
 							typestack.push_back(typestackentry(nullptr,false));
+							if (r & GETVAR_ISNEWOBJECT)
+								ASATOM_DECREF(o);
 							break;
 						}
 					}
@@ -4678,6 +4680,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				else if (!function->fromNewFunction && !function->isStatic)
 				{
 					asAtom o=asAtomHandler::invalidAtom;
+					GET_VARIABLE_RESULT r = GETVAR_NORMAL;
 					if(!function->func_scope.isNull()) // check scope stack
 					{
 						auto it=function->func_scope->scope.rbegin();
@@ -4690,7 +4693,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								break;
 							if (asAtomHandler::is<Class_inherit>(it->object))
 								asAtomHandler::as<Class_inherit>(it->object)->checkScriptInit();
-							asAtomHandler::toObject(it->object,wrk)->getVariableByMultiname(o,*name, opt,wrk);
+							r=asAtomHandler::toObject(it->object,wrk)->getVariableByMultiname(o,*name, opt,wrk);
 							if(asAtomHandler::isValid(o))
 								break;
 							++it;
@@ -4714,6 +4717,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						typestack.push_back(typestackentry(resulttype,true));
 						break;
 					}
+					if (r & GETVAR_ISNEWOBJECT)
+						ASATOM_DECREF(o);
 				}
 #endif
 				state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX);
@@ -6371,7 +6376,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									if (asAtomHandler::isObject(o))
 									{
 										constructor = asAtomHandler::getObject(o);
-										if (constructor->is<Class_base>())
+										if (!constructor->getConstant())
+										{
+											// constructor is a dynamically set function, don't cache
+											constructor->decRef();
+											constructor=nullptr;
+										}
+										else if (constructor->is<Class_base>())
 											resulttype = constructor->as<Class_base>();
 										else if (constructor->is<IFunction>())
 											resulttype = constructor->as<IFunction>()->getReturnType();
@@ -7026,7 +7037,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										{
 											// ensure init script is run
 											asAtom ret = asAtomHandler::invalidAtom;
-											asAtomHandler::getObject(*a)->getVariableByMultiname(ret,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX|NO_INCREF),wrk);
+											asAtomHandler::getObject(*a)->getVariableByMultiname(ret,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX),wrk);
+											ASATOM_DECREF(ret);
 										}
 										if (setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_GETSLOT_SETSLOT))
 										{

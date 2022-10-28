@@ -1202,14 +1202,12 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 		asAtomHandler::getVariableByMultiname(obj,o,context->sys,*name,context->worker);
 		canCache = asAtomHandler::isValid(o);
 	}
-	bool isnewobject=false;
 	if(asAtomHandler::isInvalid(o))
 	{
 		pobj = asAtomHandler::toObject(obj,context->worker);
 		//We should skip the special implementation of get
-		GET_VARIABLE_RESULT varres = pobj->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION(SKIP_IMPL | NO_INCREF),context->worker);
+		GET_VARIABLE_RESULT varres = pobj->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION(SKIP_IMPL),context->worker);
 		canCache = varres & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
-		isnewobject = varres & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT;
 	}
 	name->resetNameIfObject();
 	if(asAtomHandler::isInvalid(o) && asAtomHandler::is<Class_base>(obj))
@@ -1218,7 +1216,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 		_NR<Class_base> tmpcls = asAtomHandler::as<Class_base>(obj)->super;
 		while (tmpcls && !tmpcls.isNull())
 		{
-			tmpcls->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION(SKIP_IMPL | NO_INCREF),context->worker);
+			tmpcls->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION(SKIP_IMPL),context->worker);
 			if(asAtomHandler::isValid(o))
 			{
 				canCache = true;
@@ -1393,8 +1391,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 		}
 	}
 
-	if (isnewobject)
-		ASATOM_DECREF(o);
+	ASATOM_DECREF(o);
 	LOG_CALL("End of calling " << *name<<" "<<asAtomHandler::toDebugString(ret));
 }
 void ABCVm::abc_callpropertyStaticName(call_context* context)
@@ -1892,6 +1889,7 @@ void ABCVm::abc_callpropvoidStaticNameCached(call_context* context)
 	asAtom ret=asAtomHandler::invalidAtom;
 	callprop_intern(context,ret,*obj,args,argcount,name,instrptr,false,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(ret);
+	ASATOM_DECREF_POINTER(obj);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callpropvoidStaticNameCached_constant(call_context* context)
@@ -2879,8 +2877,7 @@ void ABCVm::abc_getProperty_constant_constant_localresult(call_context* context)
 	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->worker);
 	LOG_CALL( "getProperty_ccl " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
-	if (!(obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NO_INCREF,context->worker) & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
-		ASATOM_INCREF(prop);
+	obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE,context->worker);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
@@ -2897,8 +2894,7 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 		int n = asAtomHandler::toInt(*instrptr->arg2_constant);
 		LOG_CALL( "getProperty_lcl int " << n << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
 		ASObject* obj= asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-		if (!(obj->getVariableByInteger(prop,n,GET_VARIABLE_OPTION::NO_INCREF,context->worker) & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
-			ASATOM_INCREF(prop);
+		obj->getVariableByInteger(prop,n,GET_VARIABLE_OPTION::NONE,context->worker);
 		if(asAtomHandler::isInvalid(prop))
 		{
 			multiname m(nullptr);
@@ -2912,8 +2908,7 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 		multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,nullptr,t,false);
 		ASObject* obj= asAtomHandler::toObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1),context->worker);
 		LOG_CALL( "getProperty_lcl " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
-		if (!(obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NO_INCREF,context->worker) & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
-			ASATOM_INCREF(prop);
+		obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE,context->worker);
 		if(asAtomHandler::isInvalid(prop))
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
@@ -2929,8 +2924,7 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 	ASObject* obj= asAtomHandler::toObject(*instrptr->arg1_constant,context->worker,true);
 	LOG_CALL( "getProperty_cll " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
-	if (!(obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NO_INCREF,context->worker) & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
-		ASATOM_INCREF(prop);
+	obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE,context->worker);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyException(obj,name,prop);
 	name->resetNameIfObject();
@@ -2947,8 +2941,7 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 		int n = asAtomHandler::toInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2));
 		LOG_CALL( "getProperty_lll int " << n << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
 		ASObject* obj= asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-		if (!(obj->getVariableByInteger(prop,n,GET_VARIABLE_OPTION::NO_INCREF,context->worker) & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
-			ASATOM_INCREF(prop);
+		obj->getVariableByInteger(prop,n,GET_VARIABLE_OPTION::NONE,context->worker);
 		if(asAtomHandler::isInvalid(prop))
 		{
 			multiname m(nullptr);
@@ -2962,8 +2955,7 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 		multiname* name=context->mi->context->getMultinameImpl(CONTEXT_GETLOCAL(context,instrptr->local_pos2),nullptr,t,false);
 		ASObject* obj= asAtomHandler::toObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1),context->worker);
 		LOG_CALL( "getProperty_lll " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
-		if (!(obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NO_INCREF,context->worker) & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
-			ASATOM_INCREF(prop);
+		obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE,context->worker);
 		if(asAtomHandler::isInvalid(prop))
 			checkPropertyException(obj,name,prop);
 		name->resetNameIfObject();
@@ -3102,12 +3094,14 @@ void ABCVm::abc_getPropertyInteger_local_constant_localresult(call_context* cont
 	LOG_CALL( "getPropertyInteger_lcl " << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	if (obj->is<Vector>())
+	{
 		obj->as<Vector>()->getVariableByIntegerDirect(prop,index,context->worker);
+		ASATOM_INCREF(prop);
+	}
 	else
-		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF,context->worker);
+		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyExceptionInteger(obj,index,prop);
-	ASATOM_INCREF(prop);
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
 }
@@ -3121,12 +3115,14 @@ void ABCVm::abc_getPropertyInteger_constant_local_localresult(call_context* cont
 	LOG_CALL( "getPropertyInteger_cll " << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	if (obj->is<Vector>())
+	{
 		obj->as<Vector>()->getVariableByIntegerDirect(prop,index,context->worker);
+		ASATOM_INCREF(prop);
+	}
 	else
-		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF,context->worker);
+		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyExceptionInteger(obj,index,prop);
-	ASATOM_INCREF(prop);
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
 }
@@ -3140,12 +3136,14 @@ void ABCVm::abc_getPropertyInteger_local_local_localresult(call_context* context
 	LOG_CALL( "getPropertyInteger_lll " << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	if (obj->is<Vector>())
+	{
 		obj->as<Vector>()->getVariableByIntegerDirect(prop,index,context->worker);
+		ASATOM_INCREF(prop);
+	}
 	else
-		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NO_INCREF,context->worker);
+		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyExceptionInteger(obj,index,prop);
-	ASATOM_INCREF(prop);
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
 }
@@ -3237,7 +3235,7 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 	asAtom prop=asAtomHandler::invalidAtom;
 	if(asAtomHandler::isInvalid(prop))
 	{
-		GET_VARIABLE_RESULT getvarres = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF | GET_VARIABLE_OPTION::DONT_CALL_GETTER),context->worker);
+		GET_VARIABLE_RESULT getvarres = obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::DONT_CALL_GETTER,context->worker);
 		bool isgetter = getvarres & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 		if (isgetter)
 		{
@@ -3255,8 +3253,6 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 			}
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 		}
-		else if (!(getvarres & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
-			ASATOM_INCREF(prop);
 	}
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyException(obj,name,prop);
@@ -3318,7 +3314,7 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 //		}
 		if(asAtomHandler::isInvalid(prop))
 		{
-			GET_VARIABLE_RESULT getvarres = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF | GET_VARIABLE_OPTION::DONT_CALL_GETTER),context->worker);
+			GET_VARIABLE_RESULT getvarres = obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::DONT_CALL_GETTER,context->worker);
 			bool isgetter = getvarres & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 			if (isgetter)
 			{
@@ -3339,8 +3335,6 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 			else
 			{
 				LOG_CALL("getProperty_sll " << *name << ' ' << obj->toDebugString()<<" "<<instrptr->local3.pos<<" "<<asAtomHandler::toDebugString(prop));
-				if (!(getvarres & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
-					ASATOM_INCREF(prop);
 			}
 
 		}
@@ -3360,7 +3354,7 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 	asAtom prop=asAtomHandler::invalidAtom;
 	if(asAtomHandler::isInvalid(prop))
 	{
-		GET_VARIABLE_RESULT getvarres = obj->getVariableByMultiname(prop,*name,(GET_VARIABLE_OPTION)(GET_VARIABLE_OPTION::NO_INCREF | GET_VARIABLE_OPTION::DONT_CALL_GETTER),context->worker);
+		GET_VARIABLE_RESULT getvarres = obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::DONT_CALL_GETTER,context->worker);
 		bool isgetter = getvarres & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 		if (isgetter)
 		{
@@ -3378,8 +3372,6 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 			}
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 		}
-		else if (!(getvarres & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT))
-			ASATOM_INCREF(prop);
 	}
 	if(asAtomHandler::isInvalid(prop))
 		checkPropertyException(obj,name,prop);
@@ -4242,7 +4234,7 @@ void ABCVm::abc_getslot_constant_localresult(call_context* context)
 	asAtom res = asAtomHandler::getObject(*instrptr->arg1_constant)->getSlotNoCheck(t);
 	ASATOM_INCREF(res);
 	replacelocalresult(context,instrptr->local3.pos,res);
-	LOG_CALL("getSlot_cl " << t << " " << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local3.pos)));
+	LOG_CALL("getSlot_cl " << t << " " << asAtomHandler::toDebugString(res));
 }
 void ABCVm::abc_getslot_local_localresult(call_context* context)
 {
@@ -7554,9 +7546,9 @@ void ABCVm::abc_coerce_constant_localresult(call_context* context)
 }
 void ABCVm::abc_coerce_local_localresult(call_context* context)
 {
-	LOG_CALL("coerce_ll:"<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	multiname* mn = context->exec_pos->cachedmultiname2;
+	LOG_CALL("coerce_ll:"<<*mn<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
 	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
 	if (type == nullptr)
 	{

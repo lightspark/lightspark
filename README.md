@@ -46,6 +46,12 @@ RPMFusion is required and will be enabled as part of this process.
 sudo dnf install https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm
 sudo dnf builddep lightspark
 ```
+
+### Archlinux
+```
+sudo pacman -S ffmpeg pango rtmpdump glew sdl2_mixer git cmake nasm
+```
+
 If you want commands for a distro not listed here, please [create an issue](https://github.com/lightspark/lightspark/issues) if it doesn't already exist.
 
 If JIT compilation using llvm is enabled (this is disabled by default), you also need the development packages for llvm (version 2.8 or >= 3.0).

@@ -48,16 +48,24 @@ private:
 	DictionaryTag* tag;
 	bool bindedToRoot;
 	bool bindingchecked;
+	bool inScriptInit;
 	void recursiveBuild(ASObject* target) const;
 	const traits_info* classtrait;
 	_NR<ASObject> instancefactory;
 	asfreelist freelist;
 public:
 	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait, Global* _global);
-	void checkScriptInit()
+	bool checkScriptInit()
 	{
 		if (global)
+		{
+			if (inScriptInit)
+				return false;
+			inScriptInit=true;
 			global->checkScriptInit();
+			inScriptInit=false;
+		}
+		return true;
 	}
 	bool destruct() override
 	{

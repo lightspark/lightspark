@@ -1453,7 +1453,8 @@ bool canCallFunctionDirect(operands& op,multiname* name, bool ignoreoverridden=f
 	{
 		if (op.objtype->getInstanceWorker()->rootClip && !op.objtype->getInstanceWorker()->rootClip->hasFinishedLoading())
 			return false;
-		op.objtype->as<Class_inherit>()->checkScriptInit();
+		if (!op.objtype->as<Class_inherit>()->checkScriptInit())
+			return false;
 	}
 	return ((op.type == OP_LOCAL || op.type == OP_CACHED_CONSTANT || op.type == OP_CACHED_SLOT) &&
 		op.objtype &&
@@ -1473,7 +1474,8 @@ bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden)
 	{
 		if (objtype->getInstanceWorker()->rootClip && !objtype->getInstanceWorker()->rootClip->hasFinishedLoading())
 			return false;
-		objtype->as<Class_inherit>()->checkScriptInit();
+		if (!objtype->as<Class_inherit>()->checkScriptInit())
+			return false;
 	}
 	return !objtype->isInterface && // it's not an interface
 		objtype->isSealed && // it's sealed

@@ -63,7 +63,7 @@ Activation_object* lightspark::new_activationObject(ASWorker* wrk)
 }
 
 
-Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_global):Class_base(name, UINT32_MAX,m),tag(nullptr),bindedToRoot(false),bindingchecked(false),classtrait(_classtrait)
+Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_global):Class_base(name, UINT32_MAX,m),tag(nullptr),bindedToRoot(false),bindingchecked(false),inScriptInit(false),classtrait(_classtrait)
 {
 	this->global=_global;
 	this->incRef(); //create on reference for the classes map

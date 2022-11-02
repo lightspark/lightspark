@@ -52,11 +52,12 @@ private:
 	int movey;
 	bool inFilling;
 	bool hasChanged;
+	bool needsRefresh;
 	tokensVector tokens;
 	void dorender(bool closepath);
 	void updateTokenBounds(int x, int y);
 public:
-	Graphics(ASWorker* wrk, Class_base* c):ASObject(wrk,c),owner(nullptr),movex(0),movey(0),inFilling(false),hasChanged(false)
+	Graphics(ASWorker* wrk, Class_base* c):ASObject(wrk,c),owner(nullptr),movex(0),movey(0),inFilling(false),hasChanged(false),needsRefresh(true)
 	{
 //		throw RunTimeException("Cannot instantiate a Graphics object");
 	}

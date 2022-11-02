@@ -762,7 +762,7 @@ void Graphics::solveVertexMapping(double x1, double y1,
 
 void Graphics::dorender(bool closepath)
 {
-	
+	needsRefresh = true;
 	if (hasChanged)
 	{
 		if (inFilling && closepath)
@@ -798,17 +798,22 @@ bool Graphics::destruct()
 	movey=0;
 	inFilling=false;
 	hasChanged=false;
+	needsRefresh = true;
 	return ASObject::destruct();
 }
 
 void Graphics::refreshTokens()
 {
 	Locker l(drawMutex);
-	owner->tokens.filltokens = tokens.filltokens;
-	owner->tokens.stroketokens = tokens.stroketokens;
-	owner->tokens.canRenderToGL = tokens.canRenderToGL;
-	owner->tokens.boundsRect = tokens.boundsRect;
-	owner->owner->setNeedsTextureRecalculation(true);
+	if (needsRefresh)
+	{
+		owner->tokens.filltokens = tokens.filltokens;
+		owner->tokens.stroketokens = tokens.stroketokens;
+		owner->tokens.canRenderToGL = tokens.canRenderToGL;
+		owner->tokens.boundsRect = tokens.boundsRect;
+		owner->owner->setNeedsTextureRecalculation(true);
+		needsRefresh = false;
+	}
 }
 
 bool Graphics::shouldRenderToGL()
@@ -1010,7 +1015,6 @@ ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 		th->tokens.stroketokens.emplace_back(GeomToken(CLEAR_STROKE).uval);
 		return;
 	}
-	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 	number_t thickness;
 	uint32_t color;
 	number_t alpha;

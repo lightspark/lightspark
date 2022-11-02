@@ -115,7 +115,10 @@ void BitmapData::sinit(Class_base* c)
 bool BitmapData::destruct()
 {
 	users.clear();
-	pixels = _MR(new BitmapContainer(getClass()->memoryAccount));
+	if (preparedforshutdown)
+		pixels.reset();
+	else
+		pixels = _MR(new BitmapContainer(getClass()->memoryAccount));
 	locked = 0;
 	transparent = true;
 	return ASObject::destruct();

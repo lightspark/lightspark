@@ -1355,9 +1355,19 @@ _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject> last, number_t x, numb
 	_NR<DisplayObject> ret = NullRef;
 	if (dragged) // no hitting when in drag/drop mode
 		return ret;
-	this->incRef();
-	ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,interactiveObjectsOnly,ignore);
-
+	if (!hitArea.isNull() && interactiveObjectsOnly)
+	{
+		this->incRef();
+		number_t xout,yout,xout2,yout2;
+		localToGlobal(x,y,xout,yout);
+		hitArea->globalToLocal(xout,yout,xout2,yout2);
+		ret = hitArea->hitTestImpl(_MR(this),xout2,yout2, type,interactiveObjectsOnly,NullRef);
+	}
+	if (ret.isNull())
+	{
+		this->incRef();
+		ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,interactiveObjectsOnly,ignore);
+	}
 	if (ret.isNull() && hitArea.isNull())
 	{
 		//The coordinates are locals
@@ -3760,6 +3770,8 @@ void Shape::setupShape(DefineShapeTag* tag, float _scaling)
 {
 	tokens.filltokens.assign(tag->tokens->filltokens.begin(),tag->tokens->filltokens.end());
 	tokens.stroketokens.assign(tag->tokens->stroketokens.begin(),tag->tokens->stroketokens.end());
+	tokens.canRenderToGL = tag->tokens->canRenderToGL;
+	tokens.boundsRect = tag->tokens->boundsRect;
 	fromTag = tag;
 	cachedSurface.isChunkOwner=false;
 	cachedSurface.tex=&tag->chunk;

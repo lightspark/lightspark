@@ -409,8 +409,9 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOver",localX,localY,true,buttonState,pressed,currentMouseOver)));
 			currentMouseOver = selected;
 		}
-		// it seems that rollOver/rollOut events are created for InteractiveObjects that are not chldren but covered by the current selected target
-		_NR<InteractiveObject> rolledover = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK,selected);
+		// it seems that rollOver/rollOut events are created for InteractiveObjects
+		// that are not chldren but covered by the current selected target (only if the selected target has no hitArea)
+		_NR<InteractiveObject> rolledover = selected->is<Sprite>() && !selected->as<Sprite>()->hitArea.isNull() ? selected : getMouseTarget(x, y, DisplayObject::MOUSE_CLICK,selected);
 		if (rolledover && rolledover != lastRolledOver)
 		{
 			if (lastRolledOver)

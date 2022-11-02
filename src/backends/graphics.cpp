@@ -207,7 +207,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 
 			for(uint32_t i=0;i<gradrecords.size();i++)
 			{
-				double ratio = gradrecords[i].Ratio / 255.0;
+				double ratio = number_t(gradrecords[i].Ratio) / 255.0;
 				const RGBA& color=gradrecords[i].Color;
 				cairo_pattern_add_color_stop_rgba(pattern, ratio,color.rf(), color.gf(),color.bf(), color.af());
 			}
@@ -381,7 +381,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					GeomToken p1(*(++it),false);
 					if(skipPaint)
 					{
-						if (starttoken)
+						if (starttoken && !empty)
 						{
 							cairo_close_path(cr);
 							*starttoken=it-itbegin + 1 +(tokentype > 2 ? tokens.filltokens.size() : 0);
@@ -413,7 +413,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					GeomToken p1(*(++it),false);
 					if(skipPaint)
 					{
-						if (starttoken)
+						if (starttoken && !empty)
 						{
 							cairo_close_path(cr);
 							*starttoken=it-itbegin + 1 +(tokentype > 2 ? tokens.filltokens.size() : 0);

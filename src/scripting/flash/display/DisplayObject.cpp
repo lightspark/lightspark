@@ -346,7 +346,21 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 }
 bool DisplayObject::computeCacheAsBitmap() const
 {
-	return cacheAsBitmap || (!filters.isNull() && filters->size()!=0);
+	
+	if (cacheAsBitmap || (!filters.isNull() && filters->size()!=0) || blendMode==BLENDMODE_LAYER)
+	{
+		number_t bxmin,bxmax,bymin,bymax;
+		if(!boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax))
+		{
+			//No contents, nothing to do
+			return false;
+		}
+		// check if size of resulting bitmap is too large (see Adobe reference for DisplayObject.cacheAsBitmap)
+		uint32_t w=(ceil(bxmax-bxmin));
+		uint32_t h=(ceil(bymax-bymin));
+		return (w <= 8192 && h <= 8192 && (w * h) <= 16777216);
+	}
+	return false;
 }
 
 bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
@@ -1768,6 +1782,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));
 		m0.scale(scalex, scaley);
 		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,true,true);
+		cachedBitmap->blendMode=this->blendMode;
 		if (filters)
 		{
 			for (uint32_t i = 0; i < filters->size(); i++)

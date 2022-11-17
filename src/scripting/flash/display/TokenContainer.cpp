@@ -48,29 +48,40 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 
 bool TokenContainer::renderImpl(RenderContext& ctxt) const
 {
-	if (ctxt.contextType== RenderContext::GL && !tokens.empty() && tokens.shouldRenderToGL())
+	if (ctxt.contextType== RenderContext::GL && !tokens.empty() && tokens.canRenderToGL && !owner->isMask() && !owner->computeCacheAsBitmap() && owner->getBlendMode()==BLENDMODE_NORMAL)
 	{
 		NVGcontext* nvgctxt = owner->getSystemState()->getEngineData()->nvgcontext;
 		if (nvgctxt)
 		{
+			if (owner->getConcatenatedAlpha() == 0)
+				return false;
+			number_t xmin,xmax,ymin,ymax;
+			if (!owner->boundsRect(xmin,xmax,ymin,ymax))
+				return owner->defaultRender(ctxt);
+
 			int offsetX;
 			int offsetY;
 			float scaleX;
 			float scaleY;
 			owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight, offsetX, offsetY, scaleX, scaleY);
 			
+
+			nvgResetTransform(nvgctxt);
 			nvgBeginFrame(nvgctxt, owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight, 1.0);
 
 			MATRIX m = owner->getConcatenatedMatrix();
-			m.scale(scaleX,scaleY);
-			m.translate(offsetX,offsetY);
-			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
+			m.scale(scaleX*scaling,scaleY*scaling);
+			if (owner->hasGraphics())
+				m.translate(offsetX,offsetY);
+			else
+				m.translate(offsetX+xmin*m.getScaleX(),offsetY+ymin*m.getScaleY());
+			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0/scaling,m.y0/scaling);
 			NVGcolor startcolor = nvgRGBA(0,0,0,0);
+			nvgBeginPath(nvgctxt);
 			nvgFillColor(nvgctxt,startcolor);
 			nvgStrokeColor(nvgctxt,startcolor);
-			nvgBeginPath(nvgctxt);
-
 			bool instroke = false;
+
 			int tokentype = 1;
 			while (tokentype)
 			{
@@ -132,19 +143,15 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 						case SET_FILL:
 						{
 							GeomToken p1(*(++it),false);
-							nvgClosePath(nvgctxt);
 							if (instroke)
 								nvgStroke(nvgctxt);
-							else
-								nvgFill(nvgctxt);
-							nvgBeginPath(nvgctxt);
 							instroke=false;
 							const FILLSTYLE* style = p1.fillStyle;
 							switch (style->FillStyleType)
 							{
 								case SOLID_FILL:
 								{
-									NVGcolor c = nvgRGBA(style->Color.Red,style->Color.Green,style->Color.Blue,style->Color.Alpha);
+									NVGcolor c = nvgRGBA(style->Color.Red,style->Color.Green,style->Color.Blue,style->Color.af()*owner->getConcatenatedAlpha()*255.0);
 									nvgFillColor(nvgctxt,c);
 									break;
 								}
@@ -157,12 +164,8 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 						case SET_STROKE:
 						{
 							GeomToken p1(*(++it),false);
-							nvgClosePath(nvgctxt);
-							if (instroke)
-								nvgStroke(nvgctxt);
-							else
+							if (!instroke)
 								nvgFill(nvgctxt);
-							nvgBeginPath(nvgctxt);
 							instroke = true;
 							const LINESTYLE2* style = p1.lineStyle;
 							if (style->HasFillFlag)
@@ -172,7 +175,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 							else
 							{
 								NVGcolor c;
-								c.a = style->Color.af();
+								c.a = style->Color.af()*owner->getConcatenatedAlpha();
 								c.r = style->Color.rf();
 								c.g = style->Color.gf();
 								c.b = style->Color.bf();
@@ -193,19 +196,17 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 								nvgLineJoin(nvgctxt, NVG_MITER);
 								nvgMiterLimit(nvgctxt,style->MiterLimitFactor);
 							}
-							nvgStrokeWidth(nvgctxt,style->Width== 0 ? 1.0f :(float)style->Width);
+							nvgStrokeWidth(nvgctxt,style->Width== 0 ? 1.0f :(float)style->Width*scaling);
 							break;
 						}
 						case CLEAR_FILL:
 						case FILL_KEEP_SOURCE:
-							nvgClosePath(nvgctxt);
-							nvgFill(nvgctxt);
-							if(p.type==CLEAR_FILL)
-								nvgFillColor(nvgctxt,startcolor);
+//							nvgFill(nvgctxt);
+//							if(p.type==CLEAR_FILL)
+//								nvgFillColor(nvgctxt,startcolor);
 							break;
 						case CLEAR_STROKE:
 							instroke = false;
-							nvgClosePath(nvgctxt);
 							nvgStroke(nvgctxt);
 							nvgStrokeColor(nvgctxt,startcolor);
 							break;
@@ -219,6 +220,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 				nvgStroke(nvgctxt);
 			else
 				nvgFill(nvgctxt);
+			nvgClosePath(nvgctxt);
 			nvgEndFrame(nvgctxt);
 			owner->getSystemState()->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(0);
 			owner->getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
@@ -242,6 +244,7 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 								  const std::list<LINESTYLE2>& lineStyles,
 								  const RECT& shapebounds)
 {
+	tokens.boundsRect = shapebounds;
 	Vector2 cursor;
 	unsigned int color0=0;
 	unsigned int color1=0;
@@ -385,8 +388,24 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 		return;
 	if (owner->requestInvalidationForCacheAsBitmap(q))
 		return;
-	if (q && !q->isSoftwareQueue && !tokens.empty() && tokens.canRenderToGL)
-		return;
+	if (q && !q->isSoftwareQueue && !tokens.empty() && tokens.canRenderToGL && !owner->isMask() && !owner->computeCacheAsBitmap())
+	{
+		ColorTransform* ct = owner->colorTransform.getPtr();
+		DisplayObjectContainer* p = owner->getParent();
+		while (!ct &&p)
+		{
+			if (p->colorTransform)
+			{
+				ct = p->colorTransform.getPtr();
+				break;
+			}
+			p = p->getParent();
+		}
+		if (ct)
+			tokens.canRenderToGL=false; // TODO nanogl rendering with colorTransform not yet implemented
+		else
+			return;
+	}
 	owner->incRef();
 	if (forceTextureRefresh)
 		owner->setNeedsTextureRecalculation();
@@ -399,8 +418,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	{
 		return owner->getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
 	}
-	if (q && !q->isSoftwareQueue && tokens.canRenderToGL)
-		return nullptr;
 	number_t x,y,rx,ry;
 	number_t width,height;
 	number_t rwidth,rheight;
@@ -497,6 +514,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		}
 		p = p->getParent();
 	}
+	if (!ct && q && !q->isSoftwareQueue && tokens.canRenderToGL && !owner->isMask() && !owner->computeCacheAsBitmap())
+		return nullptr;
 	number_t regpointx = 0.0;
 	number_t regpointy = 0.0;
 	if (fromgraphics)

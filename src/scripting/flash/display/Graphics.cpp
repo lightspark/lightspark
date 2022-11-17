@@ -818,7 +818,7 @@ void Graphics::refreshTokens()
 
 bool Graphics::shouldRenderToGL()
 {
-	return tokens.shouldRenderToGL();
+	return tokens.canRenderToGL;
 }
 
 void Graphics::updateTokenBounds(int x, int y)
@@ -1024,7 +1024,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 	tiny_string joints;
 	number_t miterLimit;
 	ARG_UNPACK_ATOM(thickness,Number::NaN)(color, 0)(alpha, 1.0)(pixelHinting,false)(scaleMode,"normal")(caps,"")(joints,"")(miterLimit,3);
-	UI16_SWF _thickness = UI16_SWF(imax(thickness * 20, 0));
+	UI16_SWF _thickness = UI16_SWF(imax(thickness, 0));
 	
 	LINESTYLE2 style(0xff);
 	style.Color = RGBA(color, ((int)(alpha*255.0))&0xff);

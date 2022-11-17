@@ -174,6 +174,8 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 		//Set the fill style
 		tokens.filltokens.push_back(GeomToken(SET_FILL).uval);
 		tokens.filltokens.push_back(GeomToken(*stylesIt).uval);
+		if ((*stylesIt).FillStyleType != SOLID_FILL) // TODO fillstyles other than solid fill not yet implemented for nanoGL
+			tokens.canRenderToGL=false;
 		vector<ShapePathSegment>& segments = it->second;
 		for (size_t j = 0; j < segments.size(); ++j)
 		{
@@ -214,6 +216,8 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 			vector<ShapePathSegment>& segments = it->second;
 			tokens.stroketokens.push_back(GeomToken(SET_STROKE).uval);
 			tokens.stroketokens.push_back(GeomToken(*stylesIt).uval);
+			if ((*stylesIt).HasFillFlag) // TODO linestyles with fill flag not yet implemented for nanoGL
+				tokens.canRenderToGL=false;
 			for (size_t j = 0; j < segments.size(); ++j)
 			{
 				ShapePathSegment segment = segments[j];

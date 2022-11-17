@@ -122,15 +122,6 @@ struct tokensVector
 	{
 		return filltokens.empty() && stroketokens.empty();
 	}
-	bool shouldRenderToGL() const
-	{
-		// when the resulting texture will be very large
-		// it should be faster to render the tokens on graphic card using nanovg
-		// threshhold currently is 500 pixels in one dimension, not sure if that is a good one...
-		return (canRenderToGL &&
-				((boundsRect.Xmax-boundsRect.Xmin) > 500 ||
-				(boundsRect.Ymax-boundsRect.Ymin) > 500));
-	}
 };
 
 

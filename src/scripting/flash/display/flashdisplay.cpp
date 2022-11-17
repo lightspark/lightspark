@@ -1034,7 +1034,7 @@ IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix
 	if (this->graphics)
 	{
 		this->graphics->refreshTokens();
-		if (graphics->shouldRenderToGL())
+		if (graphics->shouldRenderToGL() && !isMask() && !computeCacheAsBitmap())
 		{
 			// we can currently only render with nanovg if this sprite and it's parents don't have a colorTransformation
 			ColorTransform* ct = this->colorTransform.getPtr();

@@ -189,6 +189,7 @@ static int mainloop_runner(void*)
 				sdl_available = !SDL_InitSubSystem ( SDL_INIT_VIDEO );
 			else
 				sdl_available = !SDL_Init ( SDL_INIT_VIDEO );
+			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8); // needed for nanovg
 #ifdef ENABLE_GLES2
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
@@ -364,9 +365,9 @@ void EngineData::initGLEW()
 	supportPackedDepthStencil = GLEW_EXT_packed_depth_stencil;
 #endif
 #ifdef ENABLE_GLES2
-	nvgcontext=nvgCreateGLES2(0);
+	nvgcontext=nvgCreateGLES2(3);
 #else
-	nvgcontext=nvgCreateGL2(0);
+	nvgcontext=nvgCreateGL2(3);
 #endif
 	if (nvgcontext == nullptr)
 		LOG(LOG_ERROR,"couldn't initialize nanovg");

@@ -289,6 +289,7 @@ public:
 	ASFUNCTION_ATOM(_getGraphics);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
+	bool hasGraphics() const override { return !graphics.isNull(); }
 };
 
 class DefineMorphShapeTag;
@@ -512,6 +513,7 @@ public:
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	_NR<Graphics> getGraphics();
 	void handleMouseCursor(bool rollover) override;
+	bool hasGraphics() const override { return !graphics.isNull(); }
 };
 
 struct FrameLabel_data

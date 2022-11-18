@@ -423,7 +423,9 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 				&& (instrptr->local3.flags & ABC_OP_NOTCACHEABLE)==0
 				&& asAtomHandler::canCacheMethod(obj,name)
 				&& asAtomHandler::getObject(o)
-				&& (asAtomHandler::is<Class_base>(obj) || (!asAtomHandler::as<IFunction>(o)->clonedFrom && asAtomHandler::as<IFunction>(o)->inClass == asAtomHandler::getClass(obj,th->sys))))
+				&& !asAtomHandler::as<IFunction>(o)->clonedFrom
+				&& ((asAtomHandler::is<Class_base>(obj) && asAtomHandler::as<IFunction>(o)->inClass == asAtomHandler::as<Class_base>(obj))
+					|| (asAtomHandler::as<IFunction>(o)->inClass && asAtomHandler::getClass(obj,th->sys)->isSubClass(asAtomHandler::as<IFunction>(o)->inClass))))
 		{
 			// cache method if multiname is static and it is a method of a sealed class
 			instrptr->local3.flags |= ABC_OP_CACHED;

@@ -130,6 +130,7 @@ void GLRenderContext::setProperties(AS_BLENDMODE blendmode)
 	switch (blendmode)
 	{
 		case BLENDMODE_NORMAL:
+		case BLENDMODE_LAYER: // layer implies rendering to bitmap, so no special blending needed
 			engineData->exec_glBlendFunc(BLEND_SRC_ALPHA,BLEND_ONE_MINUS_SRC_ALPHA);
 			break;
 		case BLENDMODE_MULTIPLY:
@@ -315,14 +316,16 @@ CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t he
 	cr=cairo_create(cairoSurface);
 	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
 	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
-	masksurface=nullptr;
 }
 
 CairoRenderContext::~CairoRenderContext()
 {
 	cairo_destroy(cr);
-	if (masksurface)
-		cairo_surface_destroy(masksurface);
+	while (!masksurfaces.empty())
+	{
+		cairo_surface_destroy(masksurfaces.back().first);
+		masksurfaces.pop_back();
+	}
 }
 
 cairo_surface_t* CairoRenderContext::getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height)
@@ -399,24 +402,21 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 
 	if(isMask)
 	{
-		if (masksurface) // reset previous mask
-			cairo_surface_destroy(masksurface);
-		masksurface = chunkSurface;
+		MATRIX maskmatrix;
 		cairo_get_matrix(cr, &maskmatrix);
+		masksurfaces.push_back(make_pair(chunkSurface,maskmatrix));
 	}
 	cairo_set_source_surface(cr, chunkSurface, 0,0);
 	if (hasMask)
 	{
-		if (masksurface)
+		for (auto it=masksurfaces.begin(); it!=masksurfaces.end(); it++)
 		{
 			// apply mask
 			cairo_save(cr);
-			cairo_set_matrix(cr,&maskmatrix);
-			cairo_mask_surface(cr,masksurface,0,0);
+			cairo_set_matrix(cr,&it->second);
+			cairo_mask_surface(cr,it->first,0,0);
 			cairo_restore(cr);
 		}
-		else
-			LOG(LOG_ERROR,"surface has mask without a mask");
 	}
 	else if(!isMask)
 		cairo_paint(cr);

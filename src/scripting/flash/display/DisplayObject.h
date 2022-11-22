@@ -262,6 +262,7 @@ public:
 	// Nominal width and heigt are the size before scaling and rotation
 	number_t getNominalWidth();
 	number_t getNominalHeight();
+	DisplayObject* getMask() const { return mask.getPtr(); }
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_getVisible);
 	ASFUNCTION_ATOM(_setVisible);

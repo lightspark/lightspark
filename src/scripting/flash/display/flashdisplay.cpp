@@ -5056,6 +5056,13 @@ void Bitmap::onPixelSnappingChanged(tiny_string snapping)
 
 bool Bitmap::renderImpl(RenderContext& ctxt) const
 {
+	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
+	{
+		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
+		if (d)
+			d->Render(ctxt);
+		return false;
+	}
 	return defaultRender(ctxt);
 }
 

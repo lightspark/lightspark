@@ -346,11 +346,10 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 }
 bool DisplayObject::computeCacheAsBitmap() const
 {
-	
 	if (cacheAsBitmap || (!filters.isNull() && filters->size()!=0) || blendMode==BLENDMODE_LAYER)
 	{
 		number_t bxmin,bxmax,bymin,bymax;
-		if(!boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax))
+		if(!boundsRect(bxmin,bxmax,bymin,bymax))
 		{
 			//No contents, nothing to do
 			return false;
@@ -706,7 +705,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt) const
 	if (surface.isMask)
 		ctxt.currentMask=this;
 	// ensure that the matching mask is rendered before rendering this DisplayObject
-	if (ctxt.contextType == RenderContext::GL && surface.mask && surface.mask && ctxt.currentMask != surface.mask.getPtr())
+	if (ctxt.contextType == RenderContext::GL && surface.mask && ctxt.currentMask != surface.mask.getPtr())
 		surface.mask->defaultRender(ctxt);
 	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
 			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
@@ -1710,6 +1709,8 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 		}
 		cur=cur->getParent();
 	}
+	if (mask.isNull() && !isMask)
+		mask = target->mask;
 }
 void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool smoothing, bool forcachedbitmap)
 {

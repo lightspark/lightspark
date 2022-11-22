@@ -297,6 +297,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		delete drawable;
 		target->resetNeedsTextureRecalculation();
 	}
+	if (d->getMask())
+		d->getMask()->Render(ctxt,true);
 	d->Render(ctxt,true);
 }
 

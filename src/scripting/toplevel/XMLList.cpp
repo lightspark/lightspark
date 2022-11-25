@@ -938,8 +938,6 @@ multiname* XMLList::setVariableByMultinameIntern(multiname& name, asAtom& o, CON
 	{
 		if (tmplist)
 		{
-			if (tmplist->nodes.size() > 1)
-				throwError<TypeError>(kXMLAssigmentOneItemLists);
 			if (!tmpprop.isEmpty())
 			{
 				XML* tmp = Class<XML>::getInstanceSNoArgs(getInstanceWorker());

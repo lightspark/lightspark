@@ -1894,7 +1894,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	ARG_UNPACK_ATOM (x) (y) (shapeFlag, false);
 
 	number_t xmin, xmax, ymin, ymax;
-	if (!th->boundsRectGlobal(xmin, xmax, ymin, ymax))
+	if (!th->isOnStage() || !th->boundsRectGlobal(xmin, xmax, ymin, ymax))
 	{
 		asAtomHandler::setBool(ret,false);
 		return;

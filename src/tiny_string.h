@@ -175,6 +175,10 @@ public:
 	{
 		return isASCII;
 	}
+	inline bool hasNullEntries() const
+	{
+		return hasNull;
+	}
 	inline void checkValidUTF()
 	{
 		if (!isASCII && !g_utf8_validate(buf,numBytes(),nullptr))
@@ -189,12 +193,56 @@ public:
 	tiny_string substr(uint32_t start, uint32_t len) const;
 	tiny_string substr(uint32_t start, const CharIterator& end) const;
 	/* start and len are indices of bytes */
-	tiny_string substr_bytes(uint32_t start, uint32_t len) const;
+	tiny_string substr_bytes(uint32_t start, uint32_t len, bool resultisascii=false) const;
 	/* finds the first occurence of char in the utf-8 string
 	 * Return NULL if not found, else ptr to beginning of first occurence of c */
 	char* strchr(char c) const;
 	char* strchrr(char c) const;
 	/*explicit*/ operator std::string() const;
+
+	FORCE_INLINE void setValue(const char* s,int _numbytes, int _numchars, bool _isASCII, bool _hasNull, bool copy)
+	{
+		if(copy)
+		{
+			resetToStatic();
+			stringSize=_numbytes+1;
+			if(stringSize > STATIC_SIZE)
+				createBuffer(stringSize);
+			memcpy(buf,s,_numbytes);
+			buf[_numbytes]=0;
+		}
+		else
+		{
+			if(type==DYNAMIC)
+			{
+				reportMemoryChange(-stringSize);
+				delete[] buf;
+			}
+			type=READONLY;
+			stringSize=_numbytes+1;
+			buf=(char*)s;
+		}
+		numchars=_numchars;
+		isASCII=_isASCII;
+		hasNull=_hasNull;
+	}
+	FORCE_INLINE void setChar(uint32_t c)
+	{
+		if (type != STATIC)
+			resetToStatic();
+		isASCII = c<0x80;
+		if (isASCII)
+		{
+			buf[0] = c&0xff;
+			stringSize = 2;
+		}
+		else
+			stringSize =  g_unichar_to_utf8(c,buf) + 1;
+		buf[stringSize-1] = '\0';
+		hasNull = c == 0;
+		numchars = 1;
+	}
+	
 	bool startsWith(const char* o) const;
 	bool endsWith(const char* o) const;
 	/* idx is an index of utf-8 characters */

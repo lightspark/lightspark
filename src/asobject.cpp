@@ -3213,6 +3213,59 @@ bool asAtomHandler::isTypelate(asAtom& a,asAtom& t)
 	return real_ret;
 }
 
+void asAtomHandler::getStringView(tiny_string& res, const asAtom& a, ASWorker* wrk)
+{
+	switch(a.uintval&0x7)
+	{
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		{
+			switch (a.uintval&0x70)
+			{
+				case ATOMTYPE_NULL_BIT:
+					res = "null";
+					return;
+				case ATOMTYPE_UNDEFINED_BIT:
+					res = wrk->getSystemState()->getSwfVersion() > 6 ? "undefined" : "";
+					return;
+				case ATOMTYPE_BOOL_BIT:
+					res = a.uintval&0x80 ? "true" : "false";
+					return;
+				default:
+					res = "";
+					return;
+			}
+		}
+		case ATOM_NUMBERPTR:
+			res = Number::toString(toNumber(a));
+			return;
+		case ATOM_INTEGER:
+			res = Integer::toString(a.intval>>3);
+			return;
+		case ATOM_UINTEGER:
+			res = UInteger::toString(a.uintval>>3);
+			return;
+		case ATOM_STRINGID:
+			if ((a.uintval>>3) == 0)
+				res= "";
+			else if ((a.uintval>>3) < BUILTIN_STRINGS_CHAR_MAX)
+				res = tiny_string::fromChar(a.uintval>>3);
+			else
+				res = wrk->getSystemState()->getStringFromUniqueId(a.uintval>>3);
+			return;
+		case ATOM_STRINGPTR:
+		{
+			assert(getObject(a));
+			const tiny_string& s = getObject(a)->as<ASString>()->getData();
+			res.setValue(s.raw_buf(),s.numBytes(),s.numChars(),s.isSinglebyte(),s.hasNullEntries(),false);
+			return;
+		}
+		default:
+			assert(getObject(a));
+			res = getObject(a)->toString();
+			return;
+	}
+}
+
 tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk)
 {
 	switch(a.uintval&0x7)

@@ -291,7 +291,8 @@ ASFUNCTIONBODY_ATOM(ASString,_toString)
 
 ASFUNCTIONBODY_ATOM(ASString,split)
 {
-	tiny_string data = asAtomHandler::toString(obj,wrk);
+	tiny_string data;
+	asAtomHandler::getStringView(data,obj,wrk);
 	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
 	uint32_t limit = 0x7fffffff;
 	if(argslen == 0)
@@ -384,7 +385,8 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 	}
 	else
 	{
-		const tiny_string& del=asAtomHandler::toString(args[0],wrk);
+		tiny_string del;
+		asAtomHandler::getStringView(del,args[0],wrk);
 		if(del.empty())
 		{
 			//the string is empty, so split every character
@@ -413,9 +415,13 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 				match++;
 			if(match==-1)
 				match= len;
-			ASObject* s=abstract_s(wrk,data.substr(start,(match-start)));
 			if (res->size() >= limit)
 				break;
+			ASObject* s;
+			if (data.isSinglebyte()) // fast path for ascii strings to avoid unneccessary buffer copying
+				s=abstract_s(wrk,data.raw_buf()+start,match-start,match-start,data.isSinglebyte(),data.hasNullEntries());
+			else
+				s=abstract_s(wrk,data.substr(start,(match-start)));
 			res->push(asAtomHandler::fromObject(s));
 			start=match+del.numChars();
 			if (start == len)
@@ -423,7 +429,6 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 		}
 		while(start<len && res->size() < limit);
 	}
-
 	ret = asAtomHandler::fromObject(res);
 }
 
@@ -705,7 +710,8 @@ string ASString::toDebugString() const
 
 ASFUNCTIONBODY_ATOM(ASString,slice)
 {
-	tiny_string data = asAtomHandler::toString(obj,wrk);
+	tiny_string data;
+	asAtomHandler::getStringView(data,obj,wrk);
 	int startIndex=0;
 	if(argslen>=1)
 		startIndex=asAtomHandler::toInt(args[0]);
@@ -715,7 +721,7 @@ ASFUNCTIONBODY_ATOM(ASString,slice)
 			startIndex=0;
 	}
 	if(startIndex>(int)data.numChars())
-		startIndex=data.numChars();
+		startIndex=(int)data.numChars();
 
 	int endIndex=0x7fffffff;
 	if(argslen>=2)
@@ -726,11 +732,16 @@ ASFUNCTIONBODY_ATOM(ASString,slice)
 			endIndex=0;
 	}
 	if(endIndex>(int)data.numChars())
-		endIndex=data.numChars();
+		endIndex=(int)data.numChars();
 	if(endIndex<=startIndex)
 		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 	else
-		ret = asAtomHandler::fromObject(abstract_s(wrk,data.substr(startIndex,endIndex-startIndex)));
+	{
+		if (data.isSinglebyte()) // fast path for ascii strings to avoid unneccessary buffer copying
+			ret = asAtomHandler::fromObject(abstract_s(wrk,data.raw_buf()+startIndex,endIndex-startIndex,endIndex-startIndex,data.isSinglebyte(),data.hasNullEntries()));
+		else
+			ret = asAtomHandler::fromObject(abstract_s(wrk,data.substr(startIndex,endIndex-startIndex)));
+	}
 }
 ASFUNCTIONBODY_ATOM(ASString,charAt)
 {
@@ -821,14 +832,16 @@ ASFUNCTIONBODY_ATOM(ASString,indexOf)
 		asAtomHandler::setInt(ret,wrk,-1);
 		return;
 	}
-	tiny_string data = asAtomHandler::toString(obj,wrk);
-	tiny_string arg0=asAtomHandler::toString(args[0],wrk);
+	tiny_string data;
+	asAtomHandler::getStringView(data,obj,wrk);
+	tiny_string arg0;
+	asAtomHandler::getStringView(arg0,args[0],wrk);
 	int startIndex=0;
 	if(argslen>1)
 		startIndex=asAtomHandler::toInt(args[1]);
 	startIndex = imin(imax(startIndex, 0), data.numChars());
 
-	size_t pos = data.find(arg0.raw_buf(), startIndex);
+	size_t pos = data.find(arg0, startIndex);
 	if(pos == data.npos)
 		asAtomHandler::setInt(ret,wrk,-1);
 	else
@@ -838,7 +851,8 @@ ASFUNCTIONBODY_ATOM(ASString,indexOf)
 ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 {
 	assert_and_throw(argslen==1 || argslen==2);
-	tiny_string data = asAtomHandler::toString(obj,wrk);
+	tiny_string data;
+	asAtomHandler::getStringView(data,obj,wrk);
 	tiny_string val=asAtomHandler::toString(args[0],wrk);
 	size_t startIndex=data.npos;
 	if(argslen > 1 && !asAtomHandler::isUndefined(args[1]) && !std::isnan(asAtomHandler::toNumber(args[1])) && !(asAtomHandler::toNumber(args[1]) > 0 && std::isinf(asAtomHandler::toNumber(args[1]))))

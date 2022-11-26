@@ -296,13 +296,12 @@ uint32_t tiny_string::find(const tiny_string& needle, uint32_t start) const
 		const char* p = strstr(buf+start,needle.raw_buf());
 		return (p ? p-buf : npos);
 	}
-	//TODO: omit copy into std::string
-	size_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
-	size_t bytepos = std::string(*this).find(needle.raw_buf(),bytestart,needle.numBytes());
-	if(bytepos == std::string::npos)
+	gchar* gp = g_utf8_offset_to_pointer(buf,start);
+	gchar* found =g_strstr_len(gp,-1,needle.raw_buf());
+	if(found == nullptr)
 		return npos;
 	else
-		return g_utf8_pointer_to_offset(buf,buf+bytepos);
+		return start + g_utf8_pointer_to_offset(gp,found);
 }
 
 uint32_t tiny_string::rfind(const tiny_string& needle, uint32_t start) const
@@ -431,9 +430,11 @@ tiny_string& tiny_string::replace_bytes(uint32_t bytestart, uint32_t bytenum, co
 	return *this;
 }
 
-tiny_string tiny_string::substr_bytes(uint32_t start, uint32_t len) const
+tiny_string tiny_string::substr_bytes(uint32_t start, uint32_t len, bool resultisascii) const
 {
 	tiny_string ret;
+	if (start >= stringSize)
+		return ret;
 	if ((len == UINT32_MAX) || (start+len >= stringSize))
 		len =stringSize-(start+1);
 	assert(start+len < stringSize);
@@ -444,6 +445,11 @@ tiny_string tiny_string::substr_bytes(uint32_t start, uint32_t len) const
 	ret.stringSize = len+1;
 	if (this->isASCII && !this->hasNull)
 		ret.numchars = len;
+	else if (resultisascii)
+	{
+		ret.numchars = len;
+		ret.hasNull=false;
+	}
 	else
 		ret.init();
 	return ret;
@@ -457,8 +463,8 @@ tiny_string tiny_string::substr(uint32_t start, uint32_t len) const
 	if (isASCII)
 		return substr_bytes(start, len);
 	uint32_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
-	uint32_t byteend = g_utf8_offset_to_pointer(buf,start+len) - buf;
-	return substr_bytes(bytestart, byteend-bytestart);
+	uint32_t byteend = g_utf8_offset_to_pointer(buf+bytestart,len) - (buf+bytestart);
+	return substr_bytes(bytestart, byteend,byteend-bytestart == len && !this->hasNull);
 }
 
 tiny_string tiny_string::substr(uint32_t start, const CharIterator& end) const

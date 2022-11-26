@@ -521,6 +521,7 @@ public:
 	static FORCE_INLINE int32_t toIntStrict(const asAtom& a);
 	static FORCE_INLINE int64_t toInt64(const asAtom& a);
 	static FORCE_INLINE uint32_t toUInt(asAtom& a);
+	static void getStringView(tiny_string& res, const asAtom &a, ASWorker* wrk); // this doesn't deep copy the data buffer if parameter a is an ASString
 	static tiny_string toString(const asAtom &a, ASWorker* wrk);
 	static tiny_string toLocaleString(const asAtom &a, ASWorker* wrk);
 	static uint32_t toStringId(asAtom &a, ASWorker* wrk);
@@ -996,7 +997,7 @@ public:
 	void setClass(Class_base* c);
 	FORCE_INLINE void addStoredMember()
 	{
-		assert(storedmembercount<uint32_t(this->getRefCount()) || this->getConstant());
+		assert(storedmembercount<=uint32_t(this->getRefCount()) || this->getConstant());
 		storedmembercount++;
 		if (markedforgarbagecollection)
 		{

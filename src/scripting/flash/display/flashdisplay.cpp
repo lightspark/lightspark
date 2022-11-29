@@ -3517,10 +3517,10 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildren)
 		auto it = th->dynamicDisplayList.begin()+beginindex;
 		while (it != th->dynamicDisplayList.begin()+endindex)
 		{
-			ASObject* child = (*it);
-			it = th->dynamicDisplayList.erase(it);
-			child->removeStoredMember();
+			(*it)->removeStoredMember();
+			it++;
 		}
+		th->dynamicDisplayList.erase(th->dynamicDisplayList.begin()+beginindex,th->dynamicDisplayList.begin()+endindex);
 	}
 }
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)

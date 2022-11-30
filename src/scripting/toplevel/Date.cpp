@@ -870,7 +870,7 @@ int64_t Date::getMsSinceEpoch()
 tiny_string Date::toString()
 {
 	assert_and_throw(implEnable);
-	return toString_priv(false, "%a %b %e %H:%M:%S GMT%z");
+	return toString_priv(false, "%a %b %_e %H:%M:%S GMT%z");
 }
 
 int Date::getYear()
@@ -916,13 +916,13 @@ ASFUNCTIONBODY_ATOM(Date,_toString)
 ASFUNCTIONBODY_ATOM(Date,toUTCString)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(true,"%a %b %e %H:%M:%S UTC")));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(true,"%a %b %_e %H:%M:%S UTC")));
 }
 
 ASFUNCTIONBODY_ATOM(Date,toDateString)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(false,"%a %b %e")));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(false,"%a %b %_e")));
 }
 
 ASFUNCTIONBODY_ATOM(Date,toTimeString)
@@ -940,7 +940,7 @@ ASFUNCTIONBODY_ATOM(Date,toLocaleString)
 		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 		return;
 	}
-	tiny_string res = th->toString_priv(false,"%a %b %e");
+	tiny_string res = th->toString_priv(false,"%a %b %_e");
 	gchar* fs = g_date_time_format(th->datetime, " %I:%M:%S");
 	res += fs;
 	if (g_date_time_get_hour(th->datetime) > 12)
@@ -953,7 +953,7 @@ ASFUNCTIONBODY_ATOM(Date,toLocaleString)
 ASFUNCTIONBODY_ATOM(Date,toLocaleDateString)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(false,"%a %b %e")));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(false,"%a %b %_e")));
 }
 ASFUNCTIONBODY_ATOM(Date,toLocaleTimeString)
 {
@@ -969,7 +969,6 @@ ASFUNCTIONBODY_ATOM(Date,_parse)
 static const char* months[] = { "Jan", "Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
 number_t Date::parse(tiny_string str)
 {
-
 	char mo[4],tzd[20];
 	int c,d=0,h=0,m=0,s=0,y=0,mon=-1;
 	bool bvalid = false;
@@ -1165,7 +1164,6 @@ number_t Date::parse(tiny_string str)
 			}
 		}
 	}
-	
 	return res;
 }
 bool Date::isEqual(ASObject* r)
@@ -1194,7 +1192,7 @@ TRISTATE Date::isLessAtom(asAtom& r)
 
 tiny_string Date::format(const char *fmt, bool utc)
 {
-	gchar* fs = g_date_time_format(utc? this->datetimeUTC : this->datetime, "%a %b %e %H:%M:%S GMT%z");
+	gchar* fs = g_date_time_format(utc? this->datetimeUTC : this->datetime, "%a %b %_e %H:%M:%S GMT%z");
 	tiny_string res(fs);
 	g_free(fs);
 	return res;

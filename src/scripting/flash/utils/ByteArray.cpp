@@ -152,10 +152,6 @@ void ByteArray::sinit(Class_base* c)
 	IDataOutput::linkTraits(c);
 }
 
-void ByteArray::buildTraits(ASObject* o)
-{
-}
-
 uint8_t* ByteArray::getBufferIntern(unsigned int size, bool enableResize)
 {
 	if (size > BA_MAX_SIZE) 
@@ -1416,20 +1412,38 @@ void ByteArray::removeFrontBytes(int count)
 
 
 
-void ByteArray::compress_zlib()
+void ByteArray::compress_zlib(bool raw)
 {
+	z_stream strm;
+	int status;
+
 	if(len==0)
 		return;
 
+	strm.zalloc=Z_NULL;
+	strm.zfree=Z_NULL;
+	strm.opaque=Z_NULL;
+	strm.avail_in=len;
+	strm.next_in=bytes;
+	strm.avail_out=0;
+	status=deflateInit2 (&strm, Z_DEFAULT_COMPRESSION, Z_DEFLATED,
+						 raw ? -15 : 15, 
+						 8,
+						 Z_DEFAULT_STRATEGY);
+	if (status != Z_OK)
+		throw RunTimeException("zlib compress failed");
 	unsigned long buflen=compressBound(len);
-	uint8_t *compressed=(uint8_t*) malloc(buflen);
-	assert_and_throw(compressed);
-
-	if(compress(compressed, &buflen, bytes, len)!=Z_OK)
+	position=0;
+	unsigned char* compressed = new unsigned char[buflen];
+	strm.avail_out = buflen;
+	strm.next_out = compressed;
+	status = deflate (&strm, Z_FINISH);
+	if (status == Z_STREAM_ERROR || strm.avail_in != 0)
 	{
-		free(compressed);
+		delete compressed;
 		throw RunTimeException("zlib compress failed");
 	}
+	deflateEnd(&strm);
 
 	acquireBuffer(compressed, buflen);
 	position=buflen;
@@ -1494,7 +1508,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_compress)
 	// and always uses the zlib algorithm
 	// but tamarin tests do not catch it, so we simply ignore any parameters provided
 	th->lock();
-	th->compress_zlib();
+	th->compress_zlib(false);
 	th->unlock();
 }
 
@@ -1513,7 +1527,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_deflate)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	th->lock();
-	th->compress_zlib();
+	th->compress_zlib(true);
 	th->unlock();
 }
 

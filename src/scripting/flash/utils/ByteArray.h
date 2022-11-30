@@ -43,11 +43,10 @@ protected:
 	uint8_t* bytes;
 	uint32_t real_len;
 	uint32_t len;
-	void compress_zlib();
+	void compress_zlib(bool raw);
 	void uncompress_zlib(bool raw);
 	Mutex mutex;
 	uint8_t* getBufferIntern(unsigned int size, bool enableResize);
-	
 public:
 	FORCE_INLINE void lock()
 	{
@@ -282,7 +281,6 @@ public:
 	}
 
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom &ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	int32_t getVariableByMultiname_i(const multiname& name, ASWorker* wrk) override;

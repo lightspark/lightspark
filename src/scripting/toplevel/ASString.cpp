@@ -146,7 +146,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 		return;
 	}
 
-	int options=PCRE_UTF8|PCRE_NEWLINE_ANY;//|PCRE_JAVASCRIPT_COMPAT;
+	int options=PCRE_UTF8|PCRE_NEWLINE_ANY|PCRE_NO_UTF8_CHECK;//|PCRE_JAVASCRIPT_COMPAT;
 	tiny_string restr;
 	if(asAtomHandler::is<RegExp>(args[0]))
 	{
@@ -189,7 +189,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	int ovector[(capturingGroups+1)*3];
 	int offset=0;
 	//Global is not used in search
-	int rc=pcre_exec(pcreRE, &extra, data.raw_buf(), data.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
+	int rc=pcre_exec(pcreRE, &extra, data.raw_buf(), data.numBytes(), offset, PCRE_NO_UTF8_CHECK, ovector, (capturingGroups+1)*3);
 	if(rc<0)
 	{
 		//No matches or error
@@ -349,7 +349,7 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 		do
 		{
 			//offset is a byte offset that must point to the beginning of an utf8 character
-			int rc=pcre_exec(pcreRE, &extra, data.raw_buf(), data.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
+			int rc=pcre_exec(pcreRE, &extra, data.raw_buf(), data.numBytes(), offset, PCRE_NO_UTF8_CHECK, ovector, (capturingGroups+1)*3);
 			end=ovector[0];
 			if(rc<0)
 				break;
@@ -949,25 +949,24 @@ ASFUNCTIONBODY_ATOM(ASString,fromCharCode)
 
 ASFUNCTIONBODY_ATOM(ASString,replace)
 {
-	tiny_string data = asAtomHandler::toString(obj,wrk);
+	tiny_string data;
+	asAtomHandler::getStringView(data,obj,wrk);
 	enum REPLACE_TYPE { STRING=0, FUNC };
 	REPLACE_TYPE type;
-	ASString* res=abstract_s(wrk,data)->as<ASString>();
-
+	ASString* res=abstract_s(wrk,data.raw_buf(),data.numBytes(), data.numChars(), data.isSinglebyte(), data.hasNullEntries())->as<ASString>();
 	tiny_string replaceWith;
 	if(argslen < 2)
 	{
 		type = STRING;
-		replaceWith="";
 	}
 	else if(!asAtomHandler::isFunction(args[1]))
 	{
 		type = STRING;
-		replaceWith=asAtomHandler::toString(args[1],wrk);
+		asAtomHandler::getStringView(replaceWith,args[1],wrk);
 	}
 	else
 	{
-		replaceWith=asAtomHandler::toString(args[1],wrk);
+		asAtomHandler::getStringView(replaceWith,args[1],wrk);
 		type = FUNC;
 	}
 	if(asAtomHandler::is<RegExp>(args[0]))
@@ -999,7 +998,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 		do
 		{
 			tiny_string replaceWithTmp = replaceWith;
-			int rc=pcre_exec(pcreRE, &extra, res->getData().raw_buf(), res->getData().numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
+			int rc=pcre_exec(pcreRE, &extra, res->getData().raw_buf(), res->getData().numBytes(), offset, PCRE_NO_UTF8_CHECK, ovector, (capturingGroups+1)*3);
 			if(rc<0)
 			{
 				//No matches or error
@@ -1024,56 +1023,56 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 						subargs.push_back(asAtomHandler::undefinedAtom);
 				}
 				subargs.push_back(asAtomHandler::fromInt((int32_t)(ovector[0]-retDiff)));
-				
 				subargs.push_back(asAtomHandler::fromObject(abstract_s(wrk,data)));
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::nullAtom;
 				if (asAtomHandler::as<IFunction>(args[1])->closure_this) // use closure as "this" in function call
 					obj = asAtomHandler::fromObject(asAtomHandler::as<IFunction>(args[1])->closure_this);
 				asAtomHandler::callFunction(args[1],wrk,ret,obj, subargs.data(), subargs.size(),true);
+				ASATOM_DECREF(args[1]);
 				replaceWithTmp=asAtomHandler::toString(ret,wrk).raw_buf();
 				ASATOM_DECREF(ret);
 			} else {
-					size_t pos, ipos = 0;
-					tiny_string group;
-					int i, j;
-					while((pos = replaceWithTmp.find("$", ipos)) != tiny_string::npos) {
-						i = 0;
-						ipos = pos;
-						/* docu is not clear what to do if the $nn value is higher 
+				size_t pos, ipos = 0;
+				tiny_string group;
+				int i, j;
+				while((pos = replaceWithTmp.find("$", ipos)) != tiny_string::npos) {
+					i = 0;
+					ipos = pos;
+					/* docu is not clear what to do if the $nn value is higher 
 						 * than the number of matching groups, 
 						 * but the ecma3/String/eregress_104375 test indicates
 						 * that we should take it as an $n value
 						 */
-						   
-						while (++ipos < replaceWithTmp.numChars() && i<10) {
+					
+					while (++ipos < replaceWithTmp.numChars() && i<10) {
 						j = replaceWithTmp.charAt(ipos)-'0';
-							if ((j <0) || (j> 9) || (rc < 10*i + j))
-								break;
-							i = 10*i + j;
-						}
-						if (i == 0)
-						{
-							switch (replaceWithTmp.charAt(ipos))
-							{
-								case '$':
-									replaceWithTmp.replace(ipos,1,"");
-									break;
-								case '&':
-									replaceWithTmp.replace(ipos-1,2,res->getData().substr_bytes(ovector[0], ovector[1]-ovector[0]));
-									break;
-								case '`':
-									replaceWithTmp.replace(ipos-1,2,prevsubstring);
-									break;
-								case '\'':
-									replaceWithTmp.replace(ipos-1,2,res->getData().substr_bytes(ovector[1],res->getData().numBytes()-ovector[1]));
-									break;
-							}
-							continue;
-						}
-						group = (i >= rc) ? "" : res->getData().substr_bytes(ovector[i*2], ovector[i*2+1]-ovector[i*2]);
-						replaceWithTmp.replace(pos, ipos-pos, group);
+						if ((j <0) || (j> 9) || (rc < 10*i + j))
+							break;
+						i = 10*i + j;
 					}
+					if (i == 0)
+					{
+						switch (replaceWithTmp.charAt(ipos))
+						{
+							case '$':
+								replaceWithTmp.replace(ipos,1,"");
+								break;
+							case '&':
+								replaceWithTmp.replace(ipos-1,2,res->getData().substr_bytes(ovector[0], ovector[1]-ovector[0]));
+								break;
+							case '`':
+								replaceWithTmp.replace(ipos-1,2,prevsubstring);
+								break;
+							case '\'':
+								replaceWithTmp.replace(ipos-1,2,res->getData().substr_bytes(ovector[1],res->getData().numBytes()-ovector[1]));
+								break;
+						}
+						continue;
+					}
+					group = (i >= rc) ? "" : res->getData().substr_bytes(ovector[i*2], ovector[i*2+1]-ovector[i*2]);
+					replaceWithTmp.replace(pos, ipos-pos, group);
+				}
 			}
 			prevsubstring += res->getData().substr_bytes(ovector[0],ovector[1]-ovector[0]);
 			res->hasId = false;
@@ -1085,12 +1084,12 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 			retDiff+=replaceWithTmp.numBytes()-(ovector[1]-ovector[0]);
 		}
 		while(re->global);
-
 		pcre_free(pcreRE);
 	}
 	else
 	{
-		const tiny_string& s=asAtomHandler::toString(args[0],wrk);
+		tiny_string s;
+		asAtomHandler::getStringView(s,args[0],wrk);
 		int index=res->getData().find(s,0);
 		if(index==-1) //No result
 		{
@@ -1100,7 +1099,6 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 		res->hasId = false;
 		res->getData().replace(index,s.numChars(),replaceWith);
 	}
-
 	ret = asAtomHandler::fromObject(res);
 }
 

@@ -3248,7 +3248,7 @@ void asAtomHandler::getStringView(tiny_string& res, const asAtom& a, ASWorker* w
 			if ((a.uintval>>3) == 0)
 				res= "";
 			else if ((a.uintval>>3) < BUILTIN_STRINGS_CHAR_MAX)
-				res = tiny_string::fromChar(a.uintval>>3);
+				res.setChar(a.uintval>>3);
 			else
 				res = wrk->getSystemState()->getStringFromUniqueId(a.uintval>>3);
 			return;

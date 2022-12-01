@@ -424,9 +424,28 @@ tiny_string& tiny_string::replace(uint32_t pos1, uint32_t n1, const tiny_string&
 
 tiny_string& tiny_string::replace_bytes(uint32_t bytestart, uint32_t bytenum, const tiny_string& o)
 {
-	//TODO avoid copy into std::string
-	*this = std::string(*this).replace(bytestart,bytenum,std::string(o));
-	this->init();
+	uint32_t newlen = this->stringSize+o.numBytes()-bytenum;
+	assert(bytestart+bytenum<stringSize);
+	char* newbuf = new char[newlen];
+	memcpy(newbuf,this->raw_buf(),bytestart);
+	memcpy(newbuf+bytestart,o.raw_buf(),o.numBytes());
+	memcpy(newbuf+bytestart+o.numBytes(),this->raw_buf()+bytestart+bytenum,this->stringSize-(bytestart+bytenum));
+	newbuf[newlen-1] = '\0';
+	if(type==DYNAMIC)
+	{
+		reportMemoryChange(-stringSize);
+		delete[] buf;
+	}
+	this->type=DYNAMIC;
+	this->buf=newbuf;
+	this->stringSize=newlen;
+	if (this->isASCII && o.isASCII)
+	{
+		this->numchars = newlen-1;
+		this->hasNull |= o.hasNull;
+	}
+	else
+		this->init();
 	return *this;
 }
 

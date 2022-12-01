@@ -197,7 +197,7 @@ ASObject *RegExp::match(const tiny_string& str)
 		lastIndex=0;
 		return getSystemState()->getNullRef();
 	}
-	int rc=pcre_exec(pcreRE,capturingGroups > 500 ? &extra : nullptr, str.raw_buf(), str.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
+	int rc=pcre_exec(pcreRE,capturingGroups > 500 ? &extra : nullptr, str.raw_buf(), str.numBytes(), offset, PCRE_NO_UTF8_CHECK, ovector, (capturingGroups+1)*3);
 	if(rc<0)
 	{
 		//No matches or error
@@ -265,7 +265,7 @@ ASFUNCTIONBODY_ATOM(RegExp,test)
 	pcre_extra extra;
 	extra.match_limit_recursion=200;
 	extra.flags = PCRE_EXTRA_MATCH_LIMIT_RECURSION;
-	int rc = pcre_exec(pcreRE, &extra, arg0.raw_buf(), arg0.numBytes(), offset, 0, ovector, (capturingGroups+1)*3);
+	int rc = pcre_exec(pcreRE, &extra, arg0.raw_buf(), arg0.numBytes(), offset, PCRE_NO_UTF8_CHECK, ovector, (capturingGroups+1)*3);
 	bool res = (rc >= 0);
 	pcre_free(pcreRE);
 	asAtomHandler::setBool(ret,res);
@@ -299,7 +299,7 @@ ASFUNCTIONBODY_ATOM(RegExp,_toString)
 
 pcre* RegExp::compile(bool isutf8)
 {
-	int options = PCRE_NEWLINE_ANY;
+	int options = PCRE_NEWLINE_ANY | PCRE_NO_UTF8_CHECK;
 	if(isutf8)
 		options |= PCRE_UTF8;
 	if(ignoreCase)

@@ -99,6 +99,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t,rightToLeft);
 	ASPROPERTY_GETTER_SETTER(number_t,rightToRight);
 	static void sinit(Class_base*);
+	bool destruct() override;
 	ASFUNCTION_ATOM(_constructor);
 };
 

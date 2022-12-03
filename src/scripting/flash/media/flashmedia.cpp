@@ -53,6 +53,17 @@ void SoundTransform::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,rightToRight);
 }
 
+bool SoundTransform::destruct()
+{
+	volume=1.0;
+	pan=0.0;
+	leftToLeft=1.0;
+	leftToRight=0;
+	rightToLeft=0;
+	rightToRight=1.0;
+	return ASObject::destruct();
+}
+
 ASFUNCTIONBODY_GETTER_SETTER(SoundTransform,volume)
 ASFUNCTIONBODY_GETTER_SETTER(SoundTransform,pan)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(SoundTransform,leftToLeft)
@@ -524,7 +535,6 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 	number_t startTime;
 	int32_t loops;
 	_NR<SoundTransform> soundtransform;
-	
 	ARG_UNPACK_ATOM(startTime, 0)(loops,0)(soundtransform,NullRef);
 	if (!wrk->rootClip->usesActionScript3) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
 		startTime *= 1000;

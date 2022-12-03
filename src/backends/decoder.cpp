@@ -859,6 +859,21 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng, LS_AUDIO_CODEC lscodec, 
 	codecContext=avcodec_alloc_context3(codec);
 	codecContext->codec_id = codecId;
 	codecContext->sample_rate = sampleRate;
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
+	codecContext->ch_layout.nb_channels = channels;
+	switch (channels)
+	{
+		case 1:
+			codecContext->ch_layout = AV_CHANNEL_LAYOUT_MONO;
+			break;
+		case 2:
+			codecContext->ch_layout = AV_CHANNEL_LAYOUT_STEREO;
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"FFMpegAudioDecoder: channel layout for "<<channels<<" channels");
+			break;
+	}
+#else
 	codecContext->channels = channels;
 	switch (channels)
 	{
@@ -872,6 +887,7 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng, LS_AUDIO_CODEC lscodec, 
 			LOG(LOG_NOT_IMPLEMENTED,"FFMpegAudioDecoder: channel layout for "<<channels<<" channels");
 			break;
 	}
+#endif
 #ifdef HAVE_AVCODEC_OPEN2
 	if(avcodec_open2(codecContext, codec, nullptr)<0)
 #else
@@ -1005,11 +1021,19 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 	else
 		return false;
 
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
+	if(codecContext->ch_layout.nb_channels!=0)
+	{
+		LOG(LOG_INFO, "AUDIO DEC: Audio channels " << codecContext->ch_layout.nb_channels);
+		channelCount=codecContext->ch_layout.nb_channels;
+	}
+#else
 	if(codecContext->channels!=0)
 	{
 		LOG(LOG_INFO, "AUDIO DEC: Audio channels " << codecContext->channels);
 		channelCount=codecContext->channels;
 	}
+#endif
 	else
 		return false;
 
@@ -1251,7 +1275,11 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 int FFMpegAudioDecoder::resampleFrame(FrameSamples& curTail)
 {
 	int sample_rate = engine->audio_getSampleRate();
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
+	AVChannelLayout channel_layout = AV_CHANNEL_LAYOUT_STEREO;
+#else
 	unsigned int channel_layout = AV_CH_LAYOUT_STEREO;
+#endif
 #ifdef HAVE_AV_FRAME_GET_SAMPLE_RATE
 #if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
  	int framesamplerate = av_frame_get_sample_rate(frameIn);
@@ -1268,8 +1296,13 @@ int FFMpegAudioDecoder::resampleFrame(FrameSamples& curTail)
 	if (!resamplecontext)
 	{
 		resamplecontext = swr_alloc();
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
+		av_opt_set_int(resamplecontext, "in_channel_layout",  frameIn->ch_layout.nb_channels, 0);
+		av_opt_set_int(resamplecontext, "out_channel_layout", channel_layout.nb_channels,  0);
+#else
 		av_opt_set_int(resamplecontext, "in_channel_layout",  frameIn->channel_layout, 0);
 		av_opt_set_int(resamplecontext, "out_channel_layout", channel_layout,  0);
+#endif
 		av_opt_set_int(resamplecontext, "in_sample_rate",     framesamplerate,     0);
 		av_opt_set_int(resamplecontext, "out_sample_rate",    sample_rate,     0);
 		av_opt_set_int(resamplecontext, "in_sample_fmt",      frameIn->format,   0);
@@ -1283,7 +1316,11 @@ int FFMpegAudioDecoder::resampleFrame(FrameSamples& curTail)
 
 	if (res >= 0)
 	{
+#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
+		maxLen = swr_convert(resamplecontext, &output, out_samples, (const uint8_t**)frameIn->extended_data, frameIn->nb_samples)*outputsampleformatsize*channel_layout.nb_channels;
+#else
 		maxLen = swr_convert(resamplecontext, &output, out_samples, (const uint8_t**)frameIn->extended_data, frameIn->nb_samples)*outputsampleformatsize*av_get_channel_layout_nb_channels(channel_layout);
+#endif
 		if (maxLen > 0)
 		{
 			memcpy(curTail.samples, output, maxLen);

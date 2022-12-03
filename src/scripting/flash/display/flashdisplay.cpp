@@ -6495,6 +6495,8 @@ void MovieClip::advanceFrame()
 
 	if (state.next_FP != state.FP)
 	{
+		if (!inExecuteFramescript)
+			lastFrameScriptExecuted=UINT32_MAX;
 		state.FP=state.next_FP;
 	}
 	if(!state.stop_FP && getFramesLoaded()>0)

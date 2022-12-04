@@ -56,24 +56,24 @@ void NumberFormatter::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",Class<IFunction>::getFunction(c->getSystemState(),formatNumber),NORMAL_METHOD,true);
 }
 
-ASFUNCTIONBODY_GETTER(NumberFormatter, actualLocaleIDName);
-ASFUNCTIONBODY_GETTER(NumberFormatter, lastOperationStatus);
-ASFUNCTIONBODY_GETTER(NumberFormatter, requestedLocaleIDName);
-ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, fractionalDigits);
-ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, decimalSeparator);
-ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, digitsType);
-ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, groupingPattern);
-ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, groupingSeparator);
-ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, leadingZero);
-ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, negativeNumberFormat);
-ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, negativeSymbol);
-ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, trailingZeros);
-ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, useGrouping);
+ASFUNCTIONBODY_GETTER(NumberFormatter, actualLocaleIDName)
+ASFUNCTIONBODY_GETTER(NumberFormatter, lastOperationStatus)
+ASFUNCTIONBODY_GETTER(NumberFormatter, requestedLocaleIDName)
+ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, fractionalDigits)
+ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, decimalSeparator)
+ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, digitsType)
+ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, groupingPattern)
+ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, groupingSeparator)
+ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, leadingZero)
+ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, negativeNumberFormat)
+ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, negativeSymbol)
+ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, trailingZeros)
+ASFUNCTIONBODY_GETTER_SETTER(NumberFormatter, useGrouping)
 
 ASFUNCTIONBODY_ATOM(NumberFormatter,_constructor)
 {
 	NumberFormatter* th =asAtomHandler::as<NumberFormatter>(obj);
-	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
+	ARG_CHECK(ARG_UNPACK(th->requestedLocaleIDName));
 	if (wrk->getSystemState()->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
 		std::string localeName = wrk->getSystemState()->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
@@ -112,7 +112,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,formatInt)
 	LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.formatInt is not really tested for all formats");
 	
 	int32_t value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 	tiny_string res;
 	if (value > 1.72e308)
 	{
@@ -141,7 +141,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,formatUint)
 	LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.formatUint is not really tested for all formats");
 	
 	uint32_t value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 	tiny_string res;
 	if (value > 1.72e308)
 	{
@@ -166,13 +166,14 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,parse)
 	NumberParseResult* npr = Class<NumberParseResult>::getInstanceS(wrk);
 
 	tiny_string parseString;
-	ARG_UNPACK_ATOM(parseString);
+	ARG_CHECK(ARG_UNPACK(parseString));
 
 	std::locale l =  std::locale::global(th->currlocale);
 
 	if (parseString.raw_buf() == nullptr)
 	{
-		throwError<TypeError>(kNullArgumentError);
+		createError<TypeError>(wrk,kNullArgumentError);
+		return;
 	}
 
 	std::string stringToParse = parseString;
@@ -409,11 +410,12 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,parseNumber)
     LOG(LOG_NOT_IMPLEMENTED,"NumberFormatter.parseNumber is fully not tested and implemented");
 
 	tiny_string parseString;
-	ARG_UNPACK_ATOM(parseString);
+	ARG_CHECK(ARG_UNPACK(parseString));
 
     if (parseString.raw_buf() == nullptr)
     {
-        throwError<TypeError>(kNullArgumentError);
+        createError<TypeError>(wrk,kNullArgumentError);
+		return;
     }
 
 	std::locale l =  std::locale::global(th->currlocale);
@@ -452,7 +454,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,formatNumber)
 	
     std::locale l =  std::locale::global(th->currlocale);
 	number_t value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 	std::string number;
 
 	std::stringstream ss;

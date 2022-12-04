@@ -62,18 +62,18 @@ void Math::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Math,_constructor)
 {
-	throwError<TypeError>(kMathNotConstructorError);
+	createError<TypeError>(wrk,kMathNotConstructorError);
 }
 
 ASFUNCTIONBODY_ATOM(Math,generator)
 {
-	throwError<TypeError>(kMathNotFunctionError);
+	createError<TypeError>(wrk,kMathNotFunctionError);
 }
 
 ASFUNCTIONBODY_ATOM(Math,atan2)
 {
 	number_t n1, n2;
-	ARG_UNPACK_ATOM (n1) (n2);
+	ARG_CHECK(ARG_UNPACK (n1) (n2));
 	asAtomHandler::setNumber(ret,wrk,::atan2(n1,n2));
 }
 
@@ -132,7 +132,7 @@ ASFUNCTIONBODY_ATOM(Math,_min)
 ASFUNCTIONBODY_ATOM(Math,exp)
 {
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	ARG_CHECK(ARG_UNPACK (n));
 	asAtomHandler::setNumber(ret,wrk,::exp(n));
 }
 
@@ -140,7 +140,7 @@ ASFUNCTIONBODY_ATOM(Math,acos)
 {
 	//Angle is in radians
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	ARG_CHECK(ARG_UNPACK (n));
 	asAtomHandler::setNumber(ret,wrk,::acos(n));
 }
 
@@ -148,7 +148,7 @@ ASFUNCTIONBODY_ATOM(Math,asin)
 {
 	//Angle is in radians
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	ARG_CHECK(ARG_UNPACK (n));
 	asAtomHandler::setNumber(ret,wrk,::asin(n));
 }
 
@@ -156,7 +156,7 @@ ASFUNCTIONBODY_ATOM(Math,atan)
 {
 	//Angle is in radians
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	ARG_CHECK(ARG_UNPACK (n));
 	asAtomHandler::setNumber(ret,wrk,::atan(n));
 }
 
@@ -164,7 +164,7 @@ ASFUNCTIONBODY_ATOM(Math,cos)
 {
 	//Angle is in radians
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	ARG_CHECK(ARG_UNPACK (n));
 	asAtomHandler::setNumber(ret,wrk,::cos(n));
 }
 
@@ -172,7 +172,7 @@ ASFUNCTIONBODY_ATOM(Math,sin)
 {
 	//Angle is in radians
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	ARG_CHECK(ARG_UNPACK (n));
 	asAtomHandler::setNumber(ret,wrk,::sin(n));
 }
 
@@ -180,14 +180,17 @@ ASFUNCTIONBODY_ATOM(Math,tan)
 {
 	//Angle is in radians
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	ARG_CHECK(ARG_UNPACK (n));
 	asAtomHandler::setNumber(ret,wrk,::tan(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,abs)
 {
 	if(argslen == 0)
-		throwError<ArgumentError>(kWrongArgumentCountError, "Math", "1", "0");
+	{
+		createError<ArgumentError>(wrk,kWrongArgumentCountError, "Math", "1", "0");
+		return;
+	}
 	asAtom& a = args[0];
 	switch (asAtomHandler::getObjectType(a))
 	{
@@ -233,7 +236,7 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 ASFUNCTIONBODY_ATOM(Math,ceil)
 {
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	ARG_CHECK(ARG_UNPACK (n));
 	if (std::isnan(n))
 		asAtomHandler::setNumber(ret,wrk,Number::NaN);
 	else if (n == 0.)
@@ -253,14 +256,14 @@ ASFUNCTIONBODY_ATOM(Math,ceil)
 ASFUNCTIONBODY_ATOM(Math,log)
 {
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	ARG_CHECK(ARG_UNPACK (n));
 	asAtomHandler::setNumber(ret,wrk,::log(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,floor)
 {
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	ARG_CHECK(ARG_UNPACK (n));
 	if (n == 0.)
 		asAtomHandler::setNumber(ret,wrk,std::signbit(n) ? -0. : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
@@ -281,9 +284,13 @@ ASFUNCTIONBODY_ATOM(Math,round)
 	// for unknown reasons Adobe allows round with zero arguments on AVM1.
 	// I have no idea what the return value should be in that case, for now we just use 1.0
 	if (wrk->getSystemState()->mainClip->usesActionScript3)
-		ARG_UNPACK_ATOM (n);
+	{
+		ARG_CHECK(ARG_UNPACK (n));
+	}
 	else
-		ARG_UNPACK_ATOM (n,1.0);
+	{
+		ARG_CHECK(ARG_UNPACK (n,1.0));
+	}
 	if (std::isnan(n))
 		asAtomHandler::setNumber(ret,wrk,Number::NaN);
 	else if (n < 0 && n >= -0.5)
@@ -301,14 +308,14 @@ ASFUNCTIONBODY_ATOM(Math,round)
 ASFUNCTIONBODY_ATOM(Math,sqrt)
 {
 	number_t n;
-	ARG_UNPACK_ATOM (n);
+	ARG_CHECK(ARG_UNPACK (n));
 	asAtomHandler::setNumber(ret,wrk,::sqrt(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,pow)
 {
 	number_t x, y;
-	ARG_UNPACK_ATOM (x) (y);
+	ARG_CHECK(ARG_UNPACK (x) (y));
 	if (::fabs(x) == 1 && (std::isnan(y) || std::isinf(y)) )
 		asAtomHandler::setNumber(ret,wrk,Number::NaN);
 	else
@@ -319,9 +326,12 @@ ASFUNCTIONBODY_ATOM(Math,random)
 {
 	number_t max=1.0;
 	if(argslen > 0 && wrk->getSystemState()->mainClip->needsActionScript3())
-		throwError<ArgumentError>(kWrongArgumentCountError, "object", "", "");
+	{
+		createError<ArgumentError>(wrk,kWrongArgumentCountError, "object", "", "");
+		return;
+	}
 	else
-		ARG_UNPACK_ATOM(max,1.0);
+		ARG_CHECK(ARG_UNPACK(max,1.0));
 
 	number_t res=rand();
 	res/=(number_t(1.)+RAND_MAX)*max;

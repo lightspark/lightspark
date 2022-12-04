@@ -237,7 +237,7 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 	}
 	else
 	{
-		throwError<ArgumentError>(kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Vector");
+		createError<ArgumentError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Vector");
 	}
 }
 
@@ -245,7 +245,7 @@ ASFUNCTIONBODY_ATOM(Vector,_constructor)
 {
 	uint32_t len;
 	bool fixed;
-	ARG_UNPACK_ATOM (len, 0) (fixed, false);
+	ARG_CHECK(ARG_UNPACK (len, 0) (fixed, false));
 	assert_and_throw(argslen <= 2);
 
 	Vector* th=asAtomHandler::as<Vector>(obj);
@@ -316,10 +316,16 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 
 ASFUNCTIONBODY_ATOM(Vector,filter)
 {
-	if (argslen < 1 || argslen > 2)
-		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.filter", "1", Integer::toString(argslen));
+	if ((argslen < 1) || (argslen > 2))
+	{
+		createError<ArgumentError>(wrk,kWrongArgumentCountError, "Vector.filter", "1", Integer::toString(argslen));
+		return;
+	}
 	if (!asAtomHandler::is<IFunction>(args[0]))
-		throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+	{
+		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+		return;
+	}
 	Vector* th=asAtomHandler::as<Vector>(obj);
 	  
 	asAtom f = args[0];
@@ -363,9 +369,15 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 ASFUNCTIONBODY_ATOM(Vector, some)
 {
 	if (argslen < 1)
-		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.some", "1", Integer::toString(argslen));
+	{
+		createError<ArgumentError>(wrk,kWrongArgumentCountError, "Vector.some", "1", Integer::toString(argslen));
+		return;
+	}
 	if (!asAtomHandler::is<IFunction>(args[0]))
-		throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+	{
+		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+		return;
+	}
 	Vector* th=static_cast<Vector*>(asAtomHandler::getObject(obj));
 	asAtom f = args[0];
 	asAtom params[3];
@@ -401,9 +413,15 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 {
 	Vector* th=static_cast<Vector*>(asAtomHandler::getObject(obj));
 	if (argslen < 1)
-		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.every", "1", Integer::toString(argslen));
+	{
+		createError<ArgumentError>(wrk,kWrongArgumentCountError, "Vector.every", "1", Integer::toString(argslen));
+		return;
+	}
 	if (!asAtomHandler::is<IFunction>(args[0]))
-		throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+	{
+		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+		return;
+	}
 	asAtom f = args[0];
 	asAtom params[3];
 	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
@@ -428,7 +446,10 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 		if(asAtomHandler::isValid(ret))
 		{
 			if (asAtomHandler::isUndefined(ret) || asAtomHandler::isNull(ret))
-				throwError<TypeError>(kCallOfNonFunctionError, asAtomHandler::toString(ret,wrk));
+			{
+				createError<TypeError>(wrk,kCallOfNonFunctionError, asAtomHandler::toString(ret,wrk));
+				return;
+			}
 			if(!asAtomHandler::Boolean_concrete(ret))
 			{
 				return;
@@ -444,7 +465,8 @@ void Vector::append(asAtom &o)
 	if (fixed)
 	{
 		ASATOM_DECREF(o);
-		throwError<RangeError>(kVectorFixedError);
+		createError<RangeError>(getInstanceWorker(),kVectorFixedError);
+		return;
 	}
 	asAtom v = o;
 	if (vec_type->coerce(getInstanceWorker(),v))
@@ -500,7 +522,10 @@ ASFUNCTIONBODY_ATOM(Vector,push)
 {
 	Vector* th=static_cast<Vector*>(asAtomHandler::getObject(obj));
 	if (th->fixed)
-		throwError<RangeError>(kVectorFixedError);
+	{
+		createError<RangeError>(wrk,kVectorFixedError);
+		return;
+	}
 	for(size_t i = 0; i < argslen; ++i)
 	{
 		//The proprietary player violates the specification and allows elements of any type to be pushed;
@@ -520,7 +545,10 @@ ASFUNCTIONBODY_ATOM(Vector,_pop)
 {
 	Vector* th=asAtomHandler::as<Vector>(obj);
 	if (th->fixed)
-		throwError<RangeError>(kVectorFixedError);
+	{
+		createError<RangeError>(wrk,kVectorFixedError);
+		return;
+	}
 	uint32_t size =th->size();
 	if (size == 0)
 	{
@@ -547,9 +575,12 @@ ASFUNCTIONBODY_ATOM(Vector,setLength)
 {
 	Vector* th = asAtomHandler::as<Vector>(obj);
 	if (th->fixed)
-		throwError<RangeError>(kVectorFixedError);
+	{
+		createError<RangeError>(wrk,kVectorFixedError);
+		return;
+	}
 	uint32_t len;
-	ARG_UNPACK_ATOM (len);
+	ARG_CHECK(ARG_UNPACK (len));
 	if(len <= th->vec.size())
 	{
 		for(size_t i=len; i< th->vec.size(); ++i)
@@ -571,7 +602,7 @@ ASFUNCTIONBODY_ATOM(Vector,setFixed)
 {
 	Vector* th = asAtomHandler::as<Vector>(obj);
 	bool fixed;
-	ARG_UNPACK_ATOM (fixed);
+	ARG_CHECK(ARG_UNPACK (fixed));
 	th->fixed = fixed;
 }
 
@@ -579,9 +610,15 @@ ASFUNCTIONBODY_ATOM(Vector,forEach)
 {
 	Vector* th=asAtomHandler::as<Vector>(obj);
 	if (argslen < 1)
-		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.forEach", "1", Integer::toString(argslen));
+	{
+		createError<ArgumentError>(wrk,kWrongArgumentCountError, "Vector.forEach", "1", Integer::toString(argslen));
+		return;
+	}
 	if (!asAtomHandler::is<IFunction>(args[0]))
-		throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+	{
+		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+		return;
+	}
 	asAtom f = args[0];
 	asAtom params[3];
 	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
@@ -680,7 +717,10 @@ ASFUNCTIONBODY_ATOM(Vector,shift)
 {
 	Vector* th=asAtomHandler::as<Vector>(obj);
 	if (th->fixed)
-		throwError<RangeError>(kVectorFixedError);
+	{
+		createError<RangeError>(wrk,kVectorFixedError);
+		return;
+	}
 	if(!th->size())
 	{
 		asAtomHandler::setNull(ret);
@@ -776,7 +816,10 @@ ASFUNCTIONBODY_ATOM(Vector,splice)
 {
 	Vector* th=asAtomHandler::as<Vector>(obj);
 	if (th->fixed)
-		throwError<RangeError>(kVectorFixedError);
+	{
+		createError<RangeError>(wrk,kVectorFixedError);
+		return;
+	}
 	int startIndex=asAtomHandler::toInt(args[0]);
 	//By default, delete all the element up to the end
 	//Use the array len, it will be capped below
@@ -1102,7 +1145,10 @@ recurse:
 ASFUNCTIONBODY_ATOM(Vector,_sort)
 {
 	if (argslen != 1)
-		throwError<ArgumentError>(kWrongArgumentCountError, "Vector.sort", "1", Integer::toString(argslen));
+	{
+		createError<ArgumentError>(wrk,kWrongArgumentCountError, "Vector.sort", "1", Integer::toString(argslen));
+		return;
+	}
 	Vector* th=static_cast<Vector*>(asAtomHandler::getObject(obj));
 	
 	asAtom comp=asAtomHandler::invalidAtom;
@@ -1154,7 +1200,10 @@ ASFUNCTIONBODY_ATOM(Vector,unshift)
 {
 	Vector* th=asAtomHandler::as<Vector>(obj);
 	if (th->fixed)
-		throwError<RangeError>(kVectorFixedError);
+	{
+		createError<RangeError>(wrk,kVectorFixedError);
+		return;
+	}
 	if (argslen > 0)
 	{
 		uint32_t s = th->size();
@@ -1188,10 +1237,13 @@ ASFUNCTIONBODY_ATOM(Vector,_map)
 	asAtom thisObject=asAtomHandler::invalidAtom;
 	
 	if (argslen >= 1 && !asAtomHandler::is<IFunction>(args[0]))
-		throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+	{
+		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+		return;
+	}
 	asAtom func=asAtomHandler::invalidAtom;
 
-	ARG_UNPACK_ATOM(func)(thisObject,asAtomHandler::nullAtom);
+	ARG_CHECK(ARG_UNPACK(func)(thisObject,asAtomHandler::nullAtom));
 	th->getClass()->getInstance(wrk,ret,true,nullptr,0);
 	Vector* res= asAtomHandler::as<Vector>(ret);
 
@@ -1242,10 +1294,13 @@ ASFUNCTIONBODY_ATOM(Vector,insertAt)
 {
 	Vector* th=asAtomHandler::as<Vector>(obj);
 	if (th->fixed)
-		throwError<RangeError>(kOutOfRangeError);
+	{
+		createError<RangeError>(wrk,kOutOfRangeError);
+		return;
+	}
 	int32_t index;
 	asAtom o=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(index)(o);
+	ARG_CHECK(ARG_UNPACK(index)(o));
 
 	if (index < 0 && th->vec.size() >= (uint32_t)(-index))
 		index = th->vec.size()+(index);
@@ -1267,9 +1322,12 @@ ASFUNCTIONBODY_ATOM(Vector,removeAt)
 {
 	Vector* th=asAtomHandler::as<Vector>(obj);
 	if (th->fixed)
-		throwError<RangeError>(kOutOfRangeError);
+	{
+		createError<RangeError>(wrk,kOutOfRangeError);
+		return;
+	}
 	int32_t index;
-	ARG_UNPACK_ATOM(index);
+	ARG_CHECK(ARG_UNPACK(index));
 	if (index < 0)
 		index = th->vec.size()+index;
 	if (index < 0)
@@ -1283,7 +1341,7 @@ ASFUNCTIONBODY_ATOM(Vector,removeAt)
 			ob->removeStoredMember();
 	}
 	else
-		throwError<RangeError>(kOutOfRangeError);
+		createError<RangeError>(wrk,kOutOfRangeError);
 }
 
 bool Vector::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk)
@@ -1326,27 +1384,28 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 			case multiname::NAME_NUMBER:
 				if (getSystemState()->getSwfVersion() >= 11 
 						|| (uint32_t(name.name_d) == name.name_d && name.name_d < UINT32_MAX))
-					throwError<RangeError>(kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
 				else
-					throwError<ReferenceError>(kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
-				break;
+					createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 			case multiname::NAME_INT:
 				if (getSystemState()->getSwfVersion() >= 11
 						|| name.name_i >= (int32_t)vec.size())
-					throwError<RangeError>(kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
 				else
-					throwError<ReferenceError>(kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
-				break;
+					createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 			case multiname::NAME_UINT:
-				throwError<RangeError>(kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
-				break;
+				createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 			case multiname::NAME_STRING:
 				if (isNumber)
 				{
 					if (getSystemState()->getSwfVersion() >= 11 )
-						throwError<RangeError>(kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+						createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
 					else
-						throwError<ReferenceError>(kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+						createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+					return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 				}
 				break;
 			default:
@@ -1355,7 +1414,7 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 
 		GET_VARIABLE_RESULT res = getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 		if (asAtomHandler::isInvalid(ret))
-			throwError<ReferenceError>(kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+			createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
 		return res;
 	}
 	if(index < vec.size())
@@ -1366,7 +1425,7 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 	}
 	else
 	{
-		throwError<RangeError>(kOutOfRangeError,
+		createError<RangeError>(getInstanceWorker(),kOutOfRangeError,
 				       Integer::toString(index),
 				       Integer::toString(vec.size()));
 	}
@@ -1398,26 +1457,29 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 			case multiname::NAME_NUMBER:
 				if (getSystemState()->getSwfVersion() >= 11 
 						|| (this->fixed && ((int32_t(name.name_d) != name.name_d) || name.name_d >= (int32_t)vec.size() || name.name_d < 0)))
-					throwError<RangeError>(kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
 				else
-					throwError<ReferenceError>(kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
-				break;
+					createError<ReferenceError>(getInstanceWorker(),kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+				return nullptr;
 			case multiname::NAME_INT:
 				if (getSystemState()->getSwfVersion() >= 11
 						|| (this->fixed && (name.name_i >= (int32_t)vec.size() || name.name_i < 0)))
-					throwError<RangeError>(kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
 				else
-					throwError<ReferenceError>(kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
-				break;
+					createError<ReferenceError>(getInstanceWorker(),kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+				return nullptr;
 			case multiname::NAME_UINT:
-				throwError<RangeError>(kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
-				break;
+				createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+				return nullptr;
 			default:
 				break;
 		}
 		
 		if (!ASObject::hasPropertyByMultiname(name,false,true,wrk))
-			throwError<ReferenceError>(kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+		{
+			createError<ReferenceError>(getInstanceWorker(),kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+			return nullptr;
+		}
 		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset,wrk);
 	}
 	asAtom v = o;
@@ -1452,7 +1514,7 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 	{
 		/* Spec says: one may not set a value with an index more than
 		 * one beyond the current final index. */
-		throwError<RangeError>(kOutOfRangeError,
+		createError<RangeError>(getInstanceWorker(),kOutOfRangeError,
 				       Integer::toString(index),
 				       Integer::toString(vec.size()));
 	}
@@ -1496,7 +1558,7 @@ void Vector::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_
 	{
 		/* Spec says: one may not set a value with an index more than
 		 * one beyond the current final index. */
-		throwError<RangeError>(kOutOfRangeError,
+		createError<RangeError>(getInstanceWorker(),kOutOfRangeError,
 				       Integer::toString(index),
 				       Integer::toString(vec.size()));
 	}
@@ -1506,7 +1568,7 @@ void Vector::throwRangeError(int index)
 {
 	/* Spec says: one may not set a value with an index more than
 	 * one beyond the current final index. */
-	throwError<RangeError>(kOutOfRangeError,
+	createError<RangeError>(getInstanceWorker(),kOutOfRangeError,
 				   Integer::toString(index),
 				   Integer::toString(vec.size()));
 }
@@ -1571,7 +1633,10 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, asAtom replacer, const
 		return res;
 	// check for cylic reference
 	if (std::find(path.begin(),path.end(), this) != path.end())
-		throwError<TypeError>(kJSONCyclicStructure);
+	{
+		createError<TypeError>(getInstanceWorker(),kJSONCyclicStructure);
+		return res;
+	}
 
 	path.push_back(this);
 	res += "[";

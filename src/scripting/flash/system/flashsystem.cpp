@@ -415,7 +415,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 {
 	ApplicationDomain* th = asAtomHandler::as<ApplicationDomain>(obj);
 	_NR<ApplicationDomain> parentDomain;
-	ARG_UNPACK_ATOM (parentDomain, NullRef);
+	ARG_CHECK(ARG_UNPACK (parentDomain, NullRef));
 	if(!th->parentDomain.isNull())
 		// Don't override parentDomain if it was set in the
 		// C++ constructor
@@ -494,7 +494,10 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 	ASObject* target;
 	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target,wrk);
 	if(asAtomHandler::isInvalid(ret))
-		throwError<ReferenceError>(kClassNotFoundError,name.normalizedNameUnresolved(wrk->getSystemState()));
+	{
+		createError<ReferenceError>(wrk,kClassNotFoundError,name.normalizedNameUnresolved(wrk->getSystemState()));
+		return;
+	}
 
 	//TODO: specs says that also namespaces and function may be returned
 	//assert_and_throw(o->getObjectType()==T_CLASS);
@@ -646,7 +649,7 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 
 void ApplicationDomain::throwRangeError()
 {
-	throwError<RangeError>(kInvalidRangeError);
+	createError<RangeError>(getWorker(),kInvalidRangeError);
 }
 
 void ApplicationDomain::checkDomainMemory()
@@ -687,9 +690,9 @@ void LoaderContext::finalize()
 ASFUNCTIONBODY_ATOM(LoaderContext,_constructor)
 {
 	LoaderContext* th=asAtomHandler::as<LoaderContext>(obj);
-	ARG_UNPACK_ATOM (th->checkPolicyFile, false)
+	ARG_CHECK(ARG_UNPACK (th->checkPolicyFile, false)
 		(th->applicationDomain, NullRef)
-		(th->securityDomain, NullRef);
+		(th->securityDomain, NullRef));
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(LoaderContext, allowCodeImport)
@@ -765,7 +768,8 @@ ASFUNCTIONBODY_ATOM(Security,_setExactSettings)
 	assert(args && argslen==1);
 	if(wrk->getSystemState()->securityManager->getExactSettingsLocked())
 	{
-		throw Class<SecurityError>::getInstanceS(wrk,"SecurityError: Security.exactSettings already set");
+		createError<SecurityError>(wrk,0,"SecurityError: Security.exactSettings already set");
+		return;
 	}
 	wrk->getSystemState()->securityManager->setExactSettings(asAtomHandler::Boolean_concrete(args[0]));
 }
@@ -848,7 +852,7 @@ ASFUNCTIONBODY_ATOM(System,totalMemory)
 ASFUNCTIONBODY_ATOM(System,disposeXML)
 {
 	_NR<XML> xmlobj;
-	ARG_UNPACK_ATOM (xmlobj);
+	ARG_CHECK(ARG_UNPACK (xmlobj));
 	LOG(LOG_NOT_IMPLEMENTED,"disposeXML only removes the node from its parent");
 	if (!xmlobj.isNull() && xmlobj->getParentNode()->is<XML>())
 	{
@@ -862,7 +866,7 @@ ASFUNCTIONBODY_ATOM(System,disposeXML)
 ASFUNCTIONBODY_ATOM(System,pauseForGCIfCollectionImminent)
 {
 	number_t imminence;
-	ARG_UNPACK_ATOM (imminence,0.75);
+	ARG_CHECK(ARG_UNPACK (imminence,0.75));
 	LOG(LOG_NOT_IMPLEMENTED, "System.pauseForGCIfCollectionImminent not implemented");
 }
 ASFUNCTIONBODY_ATOM(System,gc)
@@ -1054,7 +1058,7 @@ void ASWorker::sinit(Class_base* c)
 
 void ASWorker::throwStackOverflow()
 {
-	throwError<ASError>(kStackOverflowError);
+	createError<ASError>(this,kStackOverflowError);
 }
 
 void ASWorker::execute()
@@ -1242,7 +1246,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,_getCurrent)
 ASFUNCTIONBODY_ATOM(ASWorker,getSharedProperty)
 {
 	tiny_string key;
-	ARG_UNPACK_ATOM(key);
+	ARG_CHECK(ARG_UNPACK(key));
 	Locker l(wrk->getSystemState()->workerDomain->workersharedobjectmutex);
 	
 	multiname m(nullptr);
@@ -1268,9 +1272,12 @@ ASFUNCTIONBODY_ATOM(ASWorker,createMessageChannel)
 {
 	ASWorker* th = asAtomHandler::as<ASWorker>(obj);
 	_NR<ASWorker> receiver;
-	ARG_UNPACK_ATOM(receiver);
+	ARG_CHECK(ARG_UNPACK(receiver));
 	if (receiver.isNull())
-		throwError<ArgumentError>(kInvalidArgumentError,"receiver");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"receiver");
+		return;
+	}
 	MessageChannel* channel = Class<MessageChannel>::getInstanceSNoArgs(th);
 	th->incRef();
 	th->addStoredMember();
@@ -1289,7 +1296,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,setSharedProperty)
 {
 	tiny_string key;
 	asAtom value=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(key)(value);
+	ARG_CHECK(ARG_UNPACK(key)(value));
 	Locker l(wrk->getSystemState()->workerDomain->workersharedobjectmutex);
 	ASATOM_INCREF(value);
 	multiname m(nullptr);
@@ -1303,7 +1310,10 @@ ASFUNCTIONBODY_ATOM(ASWorker,start)
 {
 	ASWorker* th = asAtomHandler::as<ASWorker>(obj);
 	if (th->started)
-		throwError<ASError>(kWorkerAlreadyStarted);
+	{
+		createError<ASError>(wrk,kWorkerAlreadyStarted);
+		return;
+	}
 	if (!th->swf.isNull())
 	{
 		th->started = true;
@@ -1440,7 +1450,7 @@ ASFUNCTIONBODY_ATOM(WorkerDomain,_isSupported)
 ASFUNCTIONBODY_ATOM(WorkerDomain,createWorker)
 {
 	ASWorker* wk = Class<ASWorker>::getInstanceS(wrk);
-	ARG_UNPACK_ATOM(wk->swf)(wk->giveAppPrivileges, false);
+	ARG_CHECK(ARG_UNPACK(wk->swf)(wk->giveAppPrivileges, false));
 	if (wk->giveAppPrivileges)
 		LOG(LOG_NOT_IMPLEMENTED,"WorkerDomain.createWorker: giveAppPrivileges is ignored");
 	ret = asAtomHandler::fromObject(wk);
@@ -1461,7 +1471,7 @@ ASFUNCTIONBODY_ATOM(WorkerDomain,createWorkerFromPrimordial)
 ASFUNCTIONBODY_ATOM(WorkerDomain,createWorkerFromByteArray)
 {
 	ASWorker* wk = Class<ASWorker>::getInstanceS(wrk);
-	ARG_UNPACK_ATOM(wk->swf);
+	ARG_CHECK(ARG_UNPACK(wk->swf));
 	ret = asAtomHandler::fromObject(wk);
 }
 

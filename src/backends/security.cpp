@@ -483,17 +483,17 @@ void SecurityManager::checkURLStaticAndThrow(const URLInfo& url,
 			allowedSandboxesLocal, restrictLocalDirectory);
 	//Network sandboxes can't access local files (this should be a SecurityErrorEvent)
 	if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
-		throw Class<SecurityError>::getInstanceS(getSys()->worker,"SecurityError: "
+		createError<SecurityError>(getSys()->worker,0,"SecurityError: "
 				"connect to network");
 	//Local-with-filesystem sandbox can't access network
 	else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
-		throw Class<SecurityError>::getInstanceS(getSys()->worker,"SecurityError: "
+		createError<SecurityError>(getSys()->worker,0,"SecurityError: "
 				"connect to local file");
 	else if(evaluationResult == SecurityManager::NA_PORT)
-		throw Class<SecurityError>::getInstanceS(getSys()->worker,"SecurityError: "
+		createError<SecurityError>(getSys()->worker,0,"SecurityError: "
 				"connect to restricted port");
 	else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
-		throw Class<SecurityError>::getInstanceS(getSys()->worker,"SecurityError: "
+		createError<SecurityError>(getSys()->worker,0,"SecurityError: "
 				"not allowed to navigate up for local files");
 }
 

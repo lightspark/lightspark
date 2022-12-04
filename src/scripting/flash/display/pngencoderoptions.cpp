@@ -33,7 +33,7 @@ void PNGEncoderOptions::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(PNGEncoderOptions,_constructor)
 {
 	PNGEncoderOptions* th =asAtomHandler::as<PNGEncoderOptions>(obj);
-	ARG_UNPACK_ATOM(th->fastCompression);
+	ARG_CHECK(ARG_UNPACK(th->fastCompression));
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(PNGEncoderOptions, fastCompression);
+ASFUNCTIONBODY_GETTER_SETTER(PNGEncoderOptions, fastCompression)

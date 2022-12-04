@@ -1438,7 +1438,7 @@ void ABCVm::not_impl(int n)
 
 void call_context::handleError(int errorcode)
 {
-	throwError<ASError>(errorcode);
+	createError<ASError>(getWorker(),errorcode);
 }
 
 bool ABCContext::isinstance(ASObject* obj, multiname* name)

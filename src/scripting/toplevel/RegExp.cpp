@@ -65,7 +65,10 @@ ASFUNCTIONBODY_ATOM(RegExp,_constructor)
 	if(argslen > 0 && asAtomHandler::is<RegExp>(args[0]))
 	{
 		if(argslen > 1 && !asAtomHandler::is<Undefined>(args[1]))
-			throwError<TypeError>(kRegExpFlagsArgumentError);
+		{
+			createError<TypeError>(wrk,kRegExpFlagsArgumentError);
+			return;
+		}
 		RegExp *src=asAtomHandler::as<RegExp>(args[0]);
 		th->source=src->source;
 		th->dotall=src->dotall;
@@ -279,7 +282,10 @@ ASFUNCTIONBODY_ATOM(RegExp,_toString)
 		return;
 	}
 	if(!asAtomHandler::is<RegExp>(obj))
-		throw Class<TypeError>::getInstanceS(wrk,"RegExp.toString is not generic");
+	{
+		createError<TypeError>(wrk,0,"RegExp.toString is not generic");
+		return;
+	}
 
 	RegExp* th=asAtomHandler::as<RegExp>(obj);
 	tiny_string res;

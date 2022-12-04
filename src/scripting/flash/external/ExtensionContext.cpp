@@ -37,7 +37,7 @@ void ExtensionContext::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(ExtensionContext,createExtensionContext)
 {
 	ExtensionContext* ctxt = Class<ExtensionContext>::getInstanceSNoArgs(wrk);
-	ARG_UNPACK_ATOM(ctxt->extensionID)(ctxt->contextType);
+	ARG_CHECK(ARG_UNPACK(ctxt->extensionID)(ctxt->contextType));
 	ret = asAtomHandler::fromObjectNoPrimitive(ctxt);
 }
 ASFUNCTIONBODY_ATOM(ExtensionContext,_call)

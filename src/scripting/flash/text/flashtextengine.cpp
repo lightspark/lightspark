@@ -109,10 +109,10 @@ ASFUNCTIONBODY_GETTER_SETTER(ElementFormat,typographicCase)
 ASFUNCTIONBODY_ATOM(ElementFormat,_constructor)
 {
 	ElementFormat* th=asAtomHandler::as<ElementFormat>(obj);
-	ARG_UNPACK_ATOM(th->fontDescription, NullRef)(th->fontSize, 12.0)(th->color, 0x000000) (th->alpha, 1.0)(th->textRotation, "auto")
+	ARG_CHECK(ARG_UNPACK(th->fontDescription, NullRef)(th->fontSize, 12.0)(th->color, 0x000000) (th->alpha, 1.0)(th->textRotation, "auto")
 			(th->dominantBaseline, "roman") (th->alignmentBaseline, "useDominantBaseline") (th->baselineShift, 0.0)(th->kerning, "on")
 			(th->trackingRight, 0.0)(th->trackingLeft, 0.0)(th->locale, "en")(th->breakOpportunity, "auto")(th->digitCase, "default")
-			(th->digitWidth, "default")(th->ligatureLevel, "common")(th->typographicCase, "default");
+			(th->digitWidth, "default")(th->ligatureLevel, "common")(th->typographicCase, "default"));
 }
 ASFUNCTIONBODY_ATOM(ElementFormat, _clone)
 {
@@ -191,7 +191,7 @@ bool FontDescription::destruct()
 ASFUNCTIONBODY_ATOM(FontDescription,_constructor)
 {
     FontDescription* th=asAtomHandler::as<FontDescription>(obj);
-    ARG_UNPACK_ATOM(th->fontName, "_serif")(th->fontWeight, "normal")(th->fontPosture, "normal")(th->fontLookup, "device")(th->renderingMode, "cff")(th->cffHinting, "horizontalStem");
+    ARG_CHECK(ARG_UNPACK(th->fontName, "_serif")(th->fontWeight, "normal")(th->fontPosture, "normal")(th->fontLookup, "device")(th->renderingMode, "cff")(th->cffHinting, "horizontalStem"));
 }
 
 ASFUNCTIONBODY_ATOM(FontDescription, _clone)
@@ -214,17 +214,23 @@ ASFUNCTIONBODY_ATOM(FontDescription, isFontCompatible)
 	tiny_string fontName;
 	tiny_string fontWeight;
 	tiny_string fontPosture;
-	ARG_UNPACK_ATOM(fontName)(fontWeight)(fontPosture);
+	ARG_CHECK(ARG_UNPACK(fontName)(fontWeight)(fontPosture));
 	bool italic = false;
 	bool bold = false;
 	if (fontWeight == "bold")
 		bold = true;
 	else if (fontWeight != "normal")
-		throwError<ArgumentError>(kInvalidArgumentError,"fontWeight");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"fontWeight");
+		return;
+	}
 	if (fontPosture == "italic")
 		italic = true;
 	else if (fontPosture != "normal")
-		throwError<ArgumentError>(kInvalidArgumentError,"fontPosture");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"fontPosture");
+		return;
+	}
 	tiny_string fontStyle = bold ? (italic ? "boldItalic" : "bold") : (italic ? "italic" : "regular");
 	std::vector<asAtom>* flist = ASFont::getFontList();
 	auto it = flist->begin();
@@ -250,17 +256,23 @@ ASFUNCTIONBODY_ATOM(FontDescription,isDeviceFontCompatible)
     tiny_string fontName;
     tiny_string fontWeight;
     tiny_string fontPosture;
-    ARG_UNPACK_ATOM(fontName)(fontWeight)(fontPosture);
+    ARG_CHECK(ARG_UNPACK(fontName)(fontWeight)(fontPosture));
     bool italic = false;
     bool bold = false;
     if (fontWeight == "bold")
         bold = true;
     else if (fontWeight != "normal")
-        throwError<ArgumentError>(kInvalidArgumentError,"fontWeight");
+	{
+        createError<ArgumentError>(wrk,kInvalidArgumentError,"fontWeight");
+		return;
+	}
     if (fontPosture == "italic")
         italic = true;
     else if (fontPosture != "normal")
-        throwError<ArgumentError>(kInvalidArgumentError,"fontPosture");
+	{
+        createError<ArgumentError>(wrk,kInvalidArgumentError,"fontPosture");
+		return;
+	}
     tiny_string fontStyle = bold ? (italic ? "boldItalic" : "bold") : (italic ? "italic" : "regular");
     std::vector<asAtom>* flist = ASFont::getFontList();
     auto it = flist->begin();
@@ -290,12 +302,12 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setLocked)
     if (!th->locked)
     {
         bool value;
-        ARG_UNPACK_ATOM(value);
+        ARG_CHECK(ARG_UNPACK(value));
         th->locked = value;
     }
     else
     {
-        throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+        createError<ArgumentError>(wrk,kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
     }
 }
 
@@ -311,12 +323,12 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setFontName)
     if (!th->locked)
     {
         tiny_string value;
-        ARG_UNPACK_ATOM(value);
+        ARG_CHECK(ARG_UNPACK(value));
         th->fontName = value;
     }
 	else
 	{
-		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+		createError<ArgumentError>(wrk,kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
 	}
 }
 
@@ -332,16 +344,17 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setFontWeight)
     if (!th->locked)
     {
         tiny_string value;
-        ARG_UNPACK_ATOM(value);
+        ARG_CHECK(ARG_UNPACK(value));
 		if (value != "bold" && value != "normal")
 		{
-			throwError<ArgumentError>(kInvalidEnumError, "fontWeight");
+			createError<ArgumentError>(wrk,kInvalidEnumError, "fontWeight");
+			return;
 		}
         th->fontWeight = value;
     }
 	else
 	{
-		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+		createError<ArgumentError>(wrk,kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
 	}
 }
 
@@ -357,16 +370,17 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setFontPosture)
     if (!th->locked)
     {
         tiny_string value;
-        ARG_UNPACK_ATOM(value);
+        ARG_CHECK(ARG_UNPACK(value));
 		if (value != "italic" && value != "normal")
 		{
-			throwError<ArgumentError>(kInvalidEnumError, "fontPosture");
+			createError<ArgumentError>(wrk,kInvalidEnumError, "fontPosture");
+			return;
 		}
         th->fontPosture = value;
     }
 	else
 	{
-		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+		createError<ArgumentError>(wrk,kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
 	}
 }
 
@@ -382,16 +396,17 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setFontLookup)
     if (!th->locked)
     {
         tiny_string value;
-        ARG_UNPACK_ATOM(value);
+        ARG_CHECK(ARG_UNPACK(value));
 		if (value != "device" && value != "embeddedCFF")
 		{
-			throwError<ArgumentError>(kInvalidEnumError, "fontLookup");
+			createError<ArgumentError>(wrk,kInvalidEnumError, "fontLookup");
+			return;
 		}
         th->fontLookup = value;
     }
 	else
 	{
-		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+		createError<ArgumentError>(wrk,kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
 	}
 }
 
@@ -407,16 +422,17 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setRenderingMode)
     if (!th->locked)
     {
         tiny_string value;
-        ARG_UNPACK_ATOM(value);
+        ARG_CHECK(ARG_UNPACK(value));
 		if (value != "cff" && value != "normal")
 		{
-			throwError<ArgumentError>(kInvalidEnumError, "renderingMode");
+			createError<ArgumentError>(wrk,kInvalidEnumError, "renderingMode");
+			return;
 		}
         th->renderingMode = value;
     }
 	else
 	{
-		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+		createError<ArgumentError>(wrk,kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
 	}
 }
 
@@ -432,16 +448,17 @@ ASFUNCTIONBODY_ATOM(FontDescription,_setCffHinting)
     if (!th->locked)
     {
         tiny_string value;
-        ARG_UNPACK_ATOM(value);
+        ARG_CHECK(ARG_UNPACK(value));
 		if (value != "horizontalStem" && value != "none")
 		{
-			throwError<ArgumentError>(kInvalidEnumError, "cffHinting");
+			createError<ArgumentError>(wrk,kInvalidEnumError, "cffHinting");
+			return;
 		}
         th->cffHinting = value;
     }
 	else
 	{
-		throwError<ArgumentError>(kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
+		createError<ArgumentError>(wrk,kCantInstantiateError, "The FontDescription object is locked and cannot be modified.");
 	}
 }
 
@@ -502,7 +519,7 @@ void TextJustifier::sinit(Class_base* c)
 }
 ASFUNCTIONBODY_ATOM(TextJustifier,_constructor)
 {
-	throwError<ArgumentError>(kCantInstantiateError, "TextJustifier cannot be instantiated");
+	createError<ArgumentError>(wrk,kCantInstantiateError, "TextJustifier cannot be instantiated");
 }
 void SpaceJustifier::sinit(Class_base* c)
 {
@@ -551,25 +568,25 @@ void TextBlock::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, userData);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, applyNonLinearFontScaling);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineFontDescription);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineFontSize);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineZero);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, bidiLevel);
-ASFUNCTIONBODY_GETTER_SETTER(TextBlock, content);
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, firstInvalidLine );
-ASFUNCTIONBODY_GETTER(TextBlock, firstLine);
-ASFUNCTIONBODY_GETTER(TextBlock, lastLine);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, lineRotation);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, textJustifier);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, tabStops);
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, textLineCreationResult);
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, userData);
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, applyNonLinearFontScaling)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineFontDescription)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineFontSize)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineZero)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, bidiLevel)
+ASFUNCTIONBODY_GETTER_SETTER(TextBlock, content)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, firstInvalidLine )
+ASFUNCTIONBODY_GETTER(TextBlock, firstLine)
+ASFUNCTIONBODY_GETTER(TextBlock, lastLine)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, lineRotation)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, textJustifier)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, tabStops)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, textLineCreationResult)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, userData)
 
 ASFUNCTIONBODY_ATOM(TextBlock,_constructor)
 {
 	TextBlock* th=asAtomHandler::as<TextBlock>(obj);
-	ARG_UNPACK_ATOM (th->content, NullRef);
+	ARG_CHECK(ARG_UNPACK (th->content, NullRef));
 	if (argslen > 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextBlock constructor ignores some parameters");
 }
@@ -581,14 +598,15 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	int32_t width;
 	number_t lineOffset;
 	bool fitSomething;
-	ARG_UNPACK_ATOM (previousLine, NullRef) (width, MAX_LINE_WIDTH) (lineOffset, 0.0) (fitSomething, false);
+	ARG_CHECK(ARG_UNPACK (previousLine, NullRef) (width, MAX_LINE_WIDTH) (lineOffset, 0.0) (fitSomething, false));
 
 	if (argslen > 2)
 		LOG(LOG_NOT_IMPLEMENTED, "TextBlock::createTextLine ignored some parameters");
 
-	if (!fitSomething && (width < 0 || width > MAX_LINE_WIDTH))
+	if (!fitSomething && ((width < 0) || (width > MAX_LINE_WIDTH)))
 	{
-		throwError<ArgumentError>(kOutOfRangeError,"Invalid width");
+		createError<ArgumentError>(wrk,kOutOfRangeError,"Invalid width");
+		return;
 	}
 
 	// TODO handle non TextElement Content
@@ -665,7 +683,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 	int32_t width;
 	number_t lineOffset;
 	bool fitSomething;
-	ARG_UNPACK_ATOM (textLine) (previousLine, NullRef) (width, MAX_LINE_WIDTH) (lineOffset, 0.0) (fitSomething, false);
+	ARG_CHECK(ARG_UNPACK (textLine) (previousLine, NullRef) (width, MAX_LINE_WIDTH) (lineOffset, 0.0) (fitSomething, false));
 
 	if (argslen > 2)
 		LOG(LOG_NOT_IMPLEMENTED, "TextBlock::recreateTextLine ignored some parameters");
@@ -678,19 +696,22 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 		return;
 	}
 
-	if (!fitSomething && (width < 0 || width > MAX_LINE_WIDTH))
+	if (!fitSomething && ((width < 0) || (width > MAX_LINE_WIDTH)))
 	{
-		throwError<ArgumentError>(kOutOfRangeError,"Invalid width");
+		createError<ArgumentError>(wrk,kOutOfRangeError,"Invalid width");
+		return;
 	}
 
 	if (textLine.isNull())
 	{
-		throwError<ArgumentError>(kInvalidArgumentError,"Invalid argument: textLine");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Invalid argument: textLine");
+		return;
 	}
 
 	if (!textLine->textBlock.isNull() && th != textLine->textBlock.getPtr())
 	{
-		throwError<ArgumentError>(kInvalidArgumentError,"Invalid argument: textLine is in different textBlock");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Invalid argument: textLine is in different textBlock");
+		return;
 	}
 	if (fitSomething && textLine->getText().empty())
 		textLine->setText(" ");
@@ -713,7 +734,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
 	TextBlock* th=asAtomHandler::as<TextBlock>(obj);
 	_NR<TextLine> firstLine;
 	_NR<TextLine> lastLine;
-	ARG_UNPACK_ATOM (firstLine) (lastLine);
+	ARG_CHECK(ARG_UNPACK (firstLine) (lastLine));
 
 	// TODO handle non TextElement Content
 	if (th->content.isNull() || !th->content->is<TextElement>())
@@ -721,11 +742,13 @@ ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
 
 	if (firstLine.isNull() || firstLine->textBlock != th)
 	{
-		throwError<ArgumentError>(kInvalidArgumentError,"Invalid argument: firstLine");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Invalid argument: firstLine");
+		return;
 	}
 	if (lastLine.isNull() || lastLine->textBlock != th)
 	{
-		throwError<ArgumentError>(kInvalidArgumentError,"Invalid argument: lastLine");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Invalid argument: lastLine");
+		return;
 	}
 
 	bool afterlast = false;
@@ -768,12 +791,12 @@ void TextElement::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, text);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_CB(TextElement, text,settext_cb);
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextElement, text,settext_cb)
 
 ASFUNCTIONBODY_ATOM(TextElement,_constructor)
 {
 	TextElement* th=asAtomHandler::as<TextElement>(obj);
-    	ARG_UNPACK_ATOM (th->text, "")(th->elementFormat, NullRef);
+    	ARG_CHECK(ARG_UNPACK (th->text, "")(th->elementFormat, NullRef));
 }
 ASFUNCTIONBODY_ATOM(TextElement, replaceText)
 {
@@ -781,9 +804,12 @@ ASFUNCTIONBODY_ATOM(TextElement, replaceText)
 	int beginIndex;
 	int endIndex;
 	tiny_string newtext;
-	ARG_UNPACK_ATOM (beginIndex)(endIndex)(newtext);
-	if (beginIndex < 0 || endIndex < 0 || beginIndex > (int32_t)th->text.numChars())
-		throwError<RangeError>(kParamRangeError);
+	ARG_CHECK(ARG_UNPACK (beginIndex)(endIndex)(newtext));
+	if ((beginIndex < 0) || (endIndex < 0) || (beginIndex > (int32_t)th->text.numChars()))
+	{
+		createError<RangeError>(wrk,kParamRangeError);
+		return;
+	}
 	if (beginIndex > endIndex)
 	{
 		int tmp = endIndex;
@@ -824,7 +850,7 @@ TextLine::TextLine(ASWorker* wrk, Class_base* c, tiny_string linetext, _NR<TextB
 
 void TextLine::sinit(Class_base* c)
 {
-	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_FINAL | CLASS_SEALED);
+	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObjectContainer, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableAtomByQName("MAX_LINE_WIDTH",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)MAX_LINE_WIDTH),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("getBaselinePosition","",Class<IFunction>::getFunction(c->getSystemState(),getBaselinePosition),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descent","",Class<IFunction>::getFunction(c->getSystemState(),getDescent),GETTER_METHOD,true);
@@ -845,22 +871,16 @@ void TextLine::sinit(Class_base* c)
 }
 
 
-ASFUNCTIONBODY_GETTER(TextLine, textBlock);
-ASFUNCTIONBODY_GETTER(TextLine, nextLine);
-ASFUNCTIONBODY_GETTER(TextLine, previousLine);
-ASFUNCTIONBODY_GETTER_SETTER(TextLine, validity);
-ASFUNCTIONBODY_GETTER_SETTER(TextLine, userData);
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, hasGraphicElement);
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, hasTabs);
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, rawTextLength);
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, specifiedWidth);
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, textBlockBeginIndex);
-
-ASFUNCTIONBODY_ATOM(TextLine,_constructor)
-{
-	// Should throw ArgumentError when called from AS code
-	//throw Class<ArgumentError>::getInstanceS("Error #2012: TextLine class cannot be instantiated.");
-}
+ASFUNCTIONBODY_GETTER(TextLine, textBlock)
+ASFUNCTIONBODY_GETTER(TextLine, nextLine)
+ASFUNCTIONBODY_GETTER(TextLine, previousLine)
+ASFUNCTIONBODY_GETTER_SETTER(TextLine, validity)
+ASFUNCTIONBODY_GETTER_SETTER(TextLine, userData)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, hasGraphicElement)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, hasTabs)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, rawTextLength)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, specifiedWidth)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, textBlockBeginIndex)
 
 ASFUNCTIONBODY_ATOM(TextLine, getBaselinePosition)
 {

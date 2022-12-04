@@ -602,10 +602,13 @@ ASFUNCTIONBODY_ATOM(Graphics,drawPath)
 	_NR<Vector> commands;
 	_NR<Vector> data;
 	tiny_string winding;
-	ARG_UNPACK_ATOM (commands) (data) (winding, "evenOdd");
+	ARG_CHECK(ARG_UNPACK(commands) (data) (winding, "evenOdd"));
 
 	if (commands.isNull() || data.isNull())
-		throwError<ArgumentError>(kInvalidParamError);
+	{
+		createError<ArgumentError>(wrk,kInvalidParamError);
+		return;
+	}
 
 	if (th->inFilling)
 		pathToTokens(commands, data, winding, th->tokens.filltokens);
@@ -843,7 +846,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawTriangles)
 	_NR<Vector> indices;
 	_NR<Vector> uvtData;
 	tiny_string culling;
-	ARG_UNPACK_ATOM (vertices) (indices, NullRef) (uvtData, NullRef) (culling, "none");
+	ARG_CHECK(ARG_UNPACK(vertices) (indices, NullRef) (uvtData, NullRef) (culling, "none"));
 
 	if (th->inFilling)
 		drawTrianglesToTokens(vertices, indices, uvtData, culling, th->tokens.filltokens);
@@ -865,7 +868,8 @@ void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, 
 	if ((indices.isNull() && (vertices->size() % 6 != 0)) || 
 	    (!indices.isNull() && (indices->size() % 3 != 0)))
 	{
-		throwError<ArgumentError>(kInvalidParamError);
+		createError<ArgumentError>(getWorker(),kInvalidParamError);
+		return;
 	}
 
 	unsigned int numvertices=vertices->size()/2;
@@ -895,7 +899,8 @@ void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, 
 		}
 		else
 		{
-			throwError<ArgumentError>(kInvalidParamError);
+			createError<ArgumentError>(getWorker(),kInvalidParamError);
+			return;
 		}
 
 		TokenContainer::getTextureSize(tokens, &texturewidth, &textureheight);
@@ -987,7 +992,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawGraphicsData)
 	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	_NR<Vector> graphicsData;
-	ARG_UNPACK_ATOM(graphicsData);
+	ARG_CHECK(ARG_UNPACK(graphicsData));
 
 	for (unsigned int i=0; i<graphicsData->size(); i++)
 	{
@@ -1023,7 +1028,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 	tiny_string caps;
 	tiny_string joints;
 	number_t miterLimit;
-	ARG_UNPACK_ATOM(thickness,Number::NaN)(color, 0)(alpha, 1.0)(pixelHinting,false)(scaleMode,"normal")(caps,"")(joints,"")(miterLimit,3);
+	ARG_CHECK(ARG_UNPACK(thickness,Number::NaN)(color, 0)(alpha, 1.0)(pixelHinting,false)(scaleMode,"normal")(caps,"")(joints,"")(miterLimit,3));
 	UI16_SWF _thickness = UI16_SWF(imax(thickness, 0));
 	
 	LINESTYLE2 style(0xff);
@@ -1079,7 +1084,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
 	_NR<BitmapData> bitmap;
 	_NR<Matrix> matrix;
 	bool repeat, smooth;
-	ARG_UNPACK_ATOM (bitmap) (matrix, NullRef) (repeat, true) (smooth, false);
+	ARG_CHECK(ARG_UNPACK (bitmap) (matrix, NullRef) (repeat, true) (smooth, false));
 
 	if (bitmap.isNull())
 		return;
@@ -1107,8 +1112,8 @@ ASFUNCTIONBODY_ATOM(Graphics,lineGradientStyle)
 	tiny_string spreadMethod;
 	tiny_string interpolationMethod;
 	number_t focalPointRatio;
-	ARG_UNPACK_ATOM (type) (colors) (alphas) (ratios) (matrix, NullRef)
-		(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0);
+	ARG_CHECK(ARG_UNPACK (type) (colors) (alphas) (ratios) (matrix, NullRef)
+		(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0));
 
 	LINESTYLE2 style(0xff);
 	style.Width = th->owner->getCurrentLineWidth();
@@ -1137,14 +1142,14 @@ ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 	number_t focalPointRatio;
 	if (wrk->getSystemState()->mainClip->usesActionScript3)
 	{
-		ARG_UNPACK_ATOM (type) (colors) (alphas) (ratiosParam) (matrix, NullRef)
-				(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0);
+		ARG_CHECK(ARG_UNPACK (type) (colors) (alphas) (ratiosParam) (matrix, NullRef)
+				(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0));
 	}
 	else
 	{
 		_NR<ASObject> mat;
-		ARG_UNPACK_ATOM (type) (colors) (alphas) (ratiosParam) (mat, NullRef)
-				(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0);
+		ARG_CHECK(ARG_UNPACK (type) (colors) (alphas) (ratiosParam) (mat, NullRef)
+				(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0));
 		if (!mat.isNull())
 		{
 			if (mat->is<Matrix>())
@@ -1309,7 +1314,7 @@ ASFUNCTIONBODY_ATOM(Graphics,beginBitmapFill)
 	_NR<BitmapData> bitmap;
 	_NR<Matrix> matrix;
 	bool repeat, smooth;
-	ARG_UNPACK_ATOM (bitmap) (matrix, NullRef) (repeat, true) (smooth, false);
+	ARG_CHECK(ARG_UNPACK (bitmap) (matrix, NullRef) (repeat, true) (smooth, false));
 
 	if(bitmap.isNull())
 		return;
@@ -1356,7 +1361,7 @@ ASFUNCTIONBODY_ATOM(Graphics,copyFrom)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	_NR<Graphics> source;
-	ARG_UNPACK_ATOM(source);
+	ARG_CHECK(ARG_UNPACK(source));
 	if (source.isNull())
 		return;
 

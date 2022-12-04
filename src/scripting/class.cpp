@@ -250,7 +250,7 @@ string Class_inherit::toDebugString() const
 template<>
 void Class<Global>::getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
-	throwError<TypeError>(kConstructOfNonFunctionError);
+	createError<TypeError>(worker,kConstructOfNonFunctionError);
 }
 
 void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tiny_string& interfaceNs)

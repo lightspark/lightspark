@@ -74,7 +74,7 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClip,startDrag)
 {
 	bool lockcenter;
 	number_t x1, y1, x2, y2;
-	ARG_UNPACK_ATOM (lockcenter,false)(x1,0)(y1,0)(x2,0)(y2,0);
+	ARG_CHECK(ARG_UNPACK(lockcenter,false)(x1,0)(y1,0)(x2,0)(y2,0));
 
 	if (argslen > 1)
 	{
@@ -152,7 +152,7 @@ ASFUNCTIONBODY_ATOM(AVM1Stage,_getDisplayState)
 }
 ASFUNCTIONBODY_ATOM(AVM1Stage,_setDisplayState)
 {
-	ARG_UNPACK_ATOM(wrk->getSystemState()->stage->displayState);
+	ARG_CHECK(ARG_UNPACK(wrk->getSystemState()->stage->displayState));
 	wrk->getSystemState()->stage->onDisplayState(wrk->getSystemState()->stage->displayState);
 }
 ASFUNCTIONBODY_ATOM(AVM1Stage,_getShowMenu)
@@ -161,7 +161,7 @@ ASFUNCTIONBODY_ATOM(AVM1Stage,_getShowMenu)
 }
 ASFUNCTIONBODY_ATOM(AVM1Stage,_setShowMenu)
 {
-	ARG_UNPACK_ATOM(wrk->getSystemState()->stage->showDefaultContextMenu);
+	ARG_CHECK(ARG_UNPACK(wrk->getSystemState()->stage->showDefaultContextMenu));
 }
 ASFUNCTIONBODY_ATOM(AVM1Stage,getAlign)
 {
@@ -171,20 +171,20 @@ ASFUNCTIONBODY_ATOM(AVM1Stage,setAlign)
 {
 	uint32_t oldalign=wrk->getSystemState()->stage->align;
 	tiny_string newalign;
-	ARG_UNPACK_ATOM(newalign);
+	ARG_CHECK(ARG_UNPACK(newalign));
 	wrk->getSystemState()->stage->align = wrk->getSystemState()->getUniqueStringId(newalign);
 	wrk->getSystemState()->stage->onAlign(oldalign);
 }
 ASFUNCTIONBODY_ATOM(AVM1Stage,addResizeListener)
 {
 	_NR<ASObject> listener;
-	ARG_UNPACK_ATOM(listener,NullRef);
+	ARG_CHECK(ARG_UNPACK(listener,NullRef));
 	wrk->getSystemState()->stage->AVM1AddResizeListener(listener.getPtr());
 }
 ASFUNCTIONBODY_ATOM(AVM1Stage,removeResizeListener)
 {
 	_NR<ASObject> listener;
-	ARG_UNPACK_ATOM(listener,NullRef);
+	ARG_CHECK(ARG_UNPACK(listener,NullRef));
 	ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1RemoveResizeListener(listener.getPtr()));
 }
 
@@ -205,7 +205,7 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
 	tiny_string strurl;
 	asAtom target = asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM (strurl)(target);
+	ARG_CHECK(ARG_UNPACK(strurl)(target));
 	URLRequest* r = Class<URLRequest>::getInstanceS(wrk,strurl);
 	DisplayObjectContainer* parent = th->getParent();
 	if (!parent)
@@ -220,9 +220,15 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 		t = asAtomHandler::getObject(target)->as<DisplayObject>();
 	}
 	else
-		throwError<ArgumentError>(kInvalidArgumentError,"target");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"target");
+		return;
+	}
 	if (!t)
-		throwError<ArgumentError>(kInvalidArgumentError,"target");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"target");
+		return;
+	}
 	
 	th->loaderInfo = th->getContentLoaderInfo();
 	t->incRef();
@@ -405,7 +411,7 @@ ASFUNCTIONBODY_ATOM(AVM1Color,_constructor)
 {
 	AVM1Color* th=asAtomHandler::as<AVM1Color>(obj);
 	_NR<DisplayObject> t;
-	ARG_UNPACK_ATOM(t);
+	ARG_CHECK(ARG_UNPACK(t));
 	if (t)
 	{
 		if (t->is<AVM1MovieClip>())
@@ -567,7 +573,7 @@ void AVM1Broadcaster::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(AVM1Broadcaster,initialize)
 {
 	_NR<ASObject> listener;
-	ARG_UNPACK_ATOM(listener);
+	ARG_CHECK(ARG_UNPACK(listener));
 	if (!listener.isNull())
 	{
 		Array* listeners = Class<Array>::getInstanceSNoArgs(wrk);
@@ -581,7 +587,7 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,broadcastMessage)
 {
 	ASObject* th = asAtomHandler::getObject(obj);
 	tiny_string msg;
-	ARG_UNPACK_ATOM(msg);
+	ARG_CHECK(ARG_UNPACK(msg));
 	asAtom l = asAtomHandler::invalidAtom;
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
@@ -625,7 +631,7 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,addListener)
 {
 	ASObject* th = asAtomHandler::getObject(obj);
 	_NR<ASObject> listener;
-	ARG_UNPACK_ATOM(listener);
+	ARG_CHECK(ARG_UNPACK(listener));
 	if (listener.isNull())
 	{
 		ret = asAtomHandler::falseAtom;
@@ -649,7 +655,7 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,removeListener)
 {
 	ASObject* th = asAtomHandler::getObject(obj);
 	_NR<ASObject> listener;
-	ARG_UNPACK_ATOM(listener);
+	ARG_CHECK(ARG_UNPACK(listener));
 	ret = asAtomHandler::falseAtom;
 	if (listener.isNull())
 		return;
@@ -686,7 +692,7 @@ void AVM1BitmapData::sinit(Class_base *c)
 ASFUNCTIONBODY_ATOM(AVM1BitmapData,loadBitmap)
 {
 	tiny_string name;
-	ARG_UNPACK_ATOM(name);
+	ARG_CHECK(ARG_UNPACK(name));
 	BitmapTag* tag = dynamic_cast<BitmapTag*>( wrk->rootClip->dictionaryLookupByName(wrk->getSystemState()->getUniqueStringId(name)));
 	if (tag)
 		ret = asAtomHandler::fromObjectNoPrimitive(tag->instance());

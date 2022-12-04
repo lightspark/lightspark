@@ -272,7 +272,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_constructor)
 	tiny_string host;
 	bool host_is_null;
 	int port;
-	ARG_UNPACK_ATOM (host, "") (port, 0);
+	ARG_CHECK(ARG_UNPACK (host, "") (port, 0));
 
 	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 
@@ -309,27 +309,39 @@ ASFUNCTIONBODY_ATOM(ASSocket,_setObjectEncoding)
 	LOG(LOG_NOT_IMPLEMENTED,"setting Socket.objectEncoding has no effect");
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	uint32_t value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 	if(value!=OBJECT_ENCODING::AMF0 && value!=OBJECT_ENCODING::AMF3)
-		throwError<ArgumentError>(kInvalidEnumError, "objectEncoding");
+	{
+		createError<ArgumentError>(wrk,kInvalidEnumError, "objectEncoding");
+		return;
+	}
 
 	th->objectEncoding=value;
 }
 
 void ASSocket::connect(tiny_string host, int port)
 {
-	if (port <= 0 || port > 65535)
-		throw Class<SecurityError>::getInstanceS(getInstanceWorker(),"Invalid port");
+	if ((port <= 0) || (port > 65535))
+	{
+		createError<SecurityError>(getInstanceWorker(),0,"Invalid port");
+		return;
+	}
 
 	if (host.empty())
 		host = getSys()->mainClip->getOrigin().getHostname();
 
 	if (isConnected())
-		throw Class<IOError>::getInstanceS(getInstanceWorker(),"Already connected");
+	{
+		createError<IOError>(getInstanceWorker(),0,"Already connected");
+		return;
+	}
 
 	// Host shouldn't contain scheme or port
 	if (host.strchr(':') != nullptr)
-		throw Class<SecurityError>::getInstanceS(getInstanceWorker(),"Invalid hostname");
+	{
+		createError<SecurityError>(getInstanceWorker(),0,"Invalid hostname");
+		return;
+	}
 
 	// Check sandbox and policy file
 	size_t buflen = host.numBytes() + 22;
@@ -364,7 +376,7 @@ ASFUNCTIONBODY_ATOM(ASSocket, _connect)
 	tiny_string host;
 	bool host_is_null;
 	int port;
-	ARG_UNPACK_ATOM (host) (port);
+	ARG_CHECK(ARG_UNPACK (host) (port));
 	host_is_null = argslen > 0 && asAtomHandler::is<Null>(args[0]);
 
 	if (host_is_null)
@@ -411,7 +423,10 @@ ASFUNCTIONBODY_ATOM(ASSocket,_setEndian)
 	else if(asAtomHandler::toString(args[0],wrk) == Endian::bigEndian)
 		v = false;
 	else
-		throwError<ArgumentError>(kInvalidEnumError, "endian");
+	{
+		createError<ArgumentError>(wrk,kInvalidEnumError, "endian");
+		return;
+	}
 	Locker l(th->joblock);
 	if (th->job)
 	{
@@ -433,7 +448,8 @@ ASFUNCTIONBODY_ATOM(ASSocket,readBoolean)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
+		createError<IOError>(wrk,0,"Socket is not connected");
+		return;
 	}
 	asAtomHandler::setBool(ret,res!=0);
 }
@@ -452,7 +468,8 @@ ASFUNCTIONBODY_ATOM(ASSocket,readByte)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
+		createError<IOError>(wrk,0,"Socket is not connected");
+		return;
 	}
 	asAtomHandler::setInt(ret,wrk,int32_t(res));
 }
@@ -463,7 +480,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readBytes)
 	_NR<ByteArray> data;
 	uint32_t offset;
 	uint32_t length;
-	ARG_UNPACK_ATOM (data)(offset,0)(length,0);
+	ARG_CHECK(ARG_UNPACK (data)(offset,0)(length,0));
 	if (data.isNull())
 		return;
 	Locker l(th->joblock);
@@ -484,7 +501,8 @@ ASFUNCTIONBODY_ATOM(ASSocket,readBytes)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
+		createError<IOError>(wrk,0,"Socket is not connected");
+		return;
 	}
 }
 
@@ -574,7 +592,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeUTFBytes)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	tiny_string data;
-	ARG_UNPACK_ATOM (data);
+	ARG_CHECK(ARG_UNPACK (data));
 	Locker l(th->joblock);
 	if (th->job)
 	{
@@ -584,7 +602,8 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeUTFBytes)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
+		createError<IOError>(wrk,0,"Socket is not connected");
+		return;
 	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeBytes)
@@ -593,13 +612,19 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeBytes)
 	_NR<ByteArray> data;
 	uint32_t offset;
 	uint32_t length;
-	ARG_UNPACK_ATOM (data)(offset,0)(length,0);
+	ARG_CHECK(ARG_UNPACK (data)(offset,0)(length,0));
 	if (data.isNull())
 		return;
 	if (offset >= data->getLength())
-		throwError<RangeError>(kParamRangeError);
+	{
+		createError<RangeError>(wrk,kParamRangeError);
+		return;
+	}
 	if (offset+length > data->getLength())
-		throwError<RangeError>(kParamRangeError);
+	{
+		createError<RangeError>(wrk,kParamRangeError);
+		return;
+	}
 	Locker l(th->joblock);
 	if (th->job)
 	{
@@ -613,7 +638,8 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeBytes)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
+		createError<IOError>(wrk,0,"Socket is not connected");
+		return;
 	}
 }
 
@@ -621,7 +647,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readUTFBytes)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	uint32_t length;
-	ARG_UNPACK_ATOM (length);
+	ARG_CHECK(ARG_UNPACK (length));
 	tiny_string data;
 	Locker l(th->joblock);
 	if (th->job)
@@ -634,7 +660,8 @@ ASFUNCTIONBODY_ATOM(ASSocket,readUTFBytes)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
+		createError<IOError>(wrk,0,"Socket is not connected");
+		return;
 	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,_flush)
@@ -647,7 +674,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_flush)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
+		createError<IOError>(wrk,0,"Socket is not connected");
 	}
 }
 

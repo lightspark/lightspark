@@ -987,7 +987,7 @@ ASFUNCTIONBODY_ATOM(Context3D,dispose)
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	th->disposeintern();
 	bool recreate;
-	ARG_UNPACK_ATOM(recreate,true);
+	ARG_CHECK(ARG_UNPACK(recreate,true));
 	th->driverInfo = "Disposed";
 }
 ASFUNCTIONBODY_ATOM(Context3D,configureBackBuffer)
@@ -998,7 +998,7 @@ ASFUNCTIONBODY_ATOM(Context3D,configureBackBuffer)
 	bool wantsBestResolutionOnBrowserZoom;
 	uint32_t w;
 	uint32_t h;
-	ARG_UNPACK_ATOM(w)(h)(antiAlias)(th->enableDepthAndStencilBackbuffer, true)(wantsBestResolution,false)(wantsBestResolutionOnBrowserZoom,false);
+	ARG_CHECK(ARG_UNPACK(w)(h)(antiAlias)(th->enableDepthAndStencilBackbuffer, true)(wantsBestResolution,false)(wantsBestResolutionOnBrowserZoom,false));
 	if (antiAlias || wantsBestResolution || wantsBestResolutionOnBrowserZoom)
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.configureBackBuffer does not use all parameters:"<<antiAlias<<" "<<wantsBestResolution<<" "<<wantsBestResolutionOnBrowserZoom);
 	renderaction action;
@@ -1019,7 +1019,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
 	res->addStoredMember();
 	th->texturelist.insert(res);
 	uint32_t size;
-	ARG_UNPACK_ATOM(size)(format)(optimizeForRenderToTexture)(streamingLevels,0);
+	ARG_CHECK(ARG_UNPACK(size)(format)(optimizeForRenderToTexture)(streamingLevels,0));
 	uint32_t i = size;
 	while (i)
 	{
@@ -1043,7 +1043,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 	res->incRef();
 	res->addStoredMember();
 	th->texturelist.insert(res);
-	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
+	ARG_CHECK(ARG_UNPACK(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0));
 	res->setFormat(format);
 	if (optimizeForRenderToTexture || streamingLevels != 0)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createRectangleTexture ignores parameters optimizeForRenderToTexture,streamingLevels:"<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
@@ -1059,7 +1059,7 @@ ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 	res->incRef();
 	res->addStoredMember();
 	th->texturelist.insert(res);
-	ARG_UNPACK_ATOM(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0);
+	ARG_CHECK(ARG_UNPACK(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0));
 	res->setFormat(format);
 	if (optimizeForRenderToTexture || streamingLevels != 0)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createTexture ignores parameters optimizeForRenderToTexture,streamingLevels:"<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
@@ -1090,11 +1090,17 @@ ASFUNCTIONBODY_ATOM(Context3D,createVertexBuffer)
 	int32_t numVertices;
 	int32_t data32PerVertex;
 	tiny_string bufferUsage;
-	ARG_UNPACK_ATOM(numVertices)(data32PerVertex)(bufferUsage,"staticDraw");
+	ARG_CHECK(ARG_UNPACK(numVertices)(data32PerVertex)(bufferUsage,"staticDraw"));
 	if (data32PerVertex > 64 || numVertices > 0x10000)
-		throwError<ArgumentError>(kInvalidArgumentError,"Buffer Too Big");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Buffer Too Big");
+		return;
+	}
 	if (data32PerVertex <= 0 || numVertices <= 0)
-		throwError<ArgumentError>(kInvalidArgumentError,"Buffer Has Zero Size");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Buffer Has Zero Size");
+		return;
+	}
 	VertexBuffer3D* buffer = Class<VertexBuffer3D>::getInstanceS(wrk,th, numVertices,data32PerVertex,bufferUsage);
 	th->addAction(RENDER_ACTION::RENDER_CREATEVERTEXBUFFER,buffer);
 	ret = asAtomHandler::fromObject(buffer);
@@ -1104,9 +1110,12 @@ ASFUNCTIONBODY_ATOM(Context3D,createIndexBuffer)
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	int32_t numVertices;
 	tiny_string bufferUsage;
-	ARG_UNPACK_ATOM(numVertices)(bufferUsage,"staticDraw");
+	ARG_CHECK(ARG_UNPACK(numVertices)(bufferUsage,"staticDraw"));
 	if (numVertices >= 0xf0000)
-		throwError<ArgumentError>(kInvalidArgumentError,"Buffer Too Big");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Buffer Too Big");
+		return;
+	}
 	IndexBuffer3D* buffer = Class<IndexBuffer3D>::getInstanceS(wrk,th,numVertices,bufferUsage);
 	th->addAction(RENDER_ACTION::RENDER_CREATEINDEXBUFFER,buffer);
 	ret = asAtomHandler::fromObject(buffer);
@@ -1118,7 +1127,7 @@ ASFUNCTIONBODY_ATOM(Context3D,clear)
 	number_t red,green,blue,alpha,depth;
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_CLEAR;
-	ARG_UNPACK_ATOM(red,0.0)(green,0.0)(blue,0.0)(alpha,1.0)(depth,1.0)(action.udata1,0)(action.udata2,0xffffffff);
+	ARG_CHECK(ARG_UNPACK(red,0.0)(green,0.0)(blue,0.0)(alpha,1.0)(depth,1.0)(action.udata1,0)(action.udata2,0xffffffff));
 	action.fdata[0] = (float)red;
 	action.fdata[1] = (float)green;
 	action.fdata[2] = (float)blue;
@@ -1133,7 +1142,7 @@ ASFUNCTIONBODY_ATOM(Context3D,drawToBitmapData)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Context3D.drawToBitmapData does nothing");
 	_NR<BitmapData> destination;
-	ARG_UNPACK_ATOM(destination);
+	ARG_CHECK(ARG_UNPACK(destination));
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
@@ -1142,7 +1151,7 @@ ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
 	_NR<IndexBuffer3D> indexBuffer;
 	int32_t firstIndex;
 	int32_t numTriangles;
-	ARG_UNPACK_ATOM(indexBuffer)(firstIndex,0)(numTriangles,-1);
+	ARG_CHECK(ARG_UNPACK(indexBuffer)(firstIndex,0)(numTriangles,-1));
 	if (indexBuffer.isNull())
 	{
 		LOG(LOG_ERROR,"Context3d.drawTriangles without indexBuffer");
@@ -1173,7 +1182,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setBlendFactors)
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	tiny_string sourceFactor;
 	tiny_string destinationFactor;
-	ARG_UNPACK_ATOM(sourceFactor)(destinationFactor);
+	ARG_CHECK(ARG_UNPACK(sourceFactor)(destinationFactor));
 	BLEND_FACTOR src = BLEND_ONE, dst = BLEND_ONE;
 	if (sourceFactor == "destinationAlpha")
 		src = BLEND_DST_ALPHA;
@@ -1196,7 +1205,10 @@ ASFUNCTIONBODY_ATOM(Context3D,setBlendFactors)
 	else if (sourceFactor == "zero")
 		src = BLEND_ZERO;
 	else
-		throwError<ArgumentError>(kInvalidArgumentError);
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError);
+		return;
+	}
 	if (destinationFactor == "destinationAlpha")
 		dst = BLEND_DST_ALPHA;
 	else if (destinationFactor == "destinationColor")
@@ -1218,7 +1230,10 @@ ASFUNCTIONBODY_ATOM(Context3D,setBlendFactors)
 	else if (destinationFactor == "zero")
 		dst = BLEND_ZERO;
 	else
-		throwError<ArgumentError>(kInvalidArgumentError);
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError);
+		return;
+	}
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_SETBLENDFACTORS;
 	action.udata1 = src;
@@ -1232,7 +1247,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setColorMask)
 	bool green;
 	bool blue;
 	bool alpha;
-	ARG_UNPACK_ATOM(red)(green)(blue)(alpha);
+	ARG_CHECK(ARG_UNPACK(red)(green)(blue)(alpha));
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_SETCOLORMASK;
 	action.udata1 = 0;
@@ -1246,7 +1261,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setCulling)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	tiny_string triangleFaceToCull;
-	ARG_UNPACK_ATOM(triangleFaceToCull);
+	ARG_CHECK(ARG_UNPACK(triangleFaceToCull));
 	
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_SETCULLING;
@@ -1266,7 +1281,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setDepthTest)
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	bool depthMask;
 	tiny_string passCompareMode;
-	ARG_UNPACK_ATOM(depthMask)(passCompareMode);
+	ARG_CHECK(ARG_UNPACK(depthMask)(passCompareMode));
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_SETDEPTHTEST;
 	action.udata1= depthMask ? 1:0;
@@ -1287,14 +1302,17 @@ ASFUNCTIONBODY_ATOM(Context3D,setDepthTest)
 	else if (passCompareMode =="notEqual")
 		action.udata2 = DEPTH_FUNCTION::NOT_EQUAL;
 	else
-		throwError<ArgumentError>(kInvalidArgumentError,"passCompareMode");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"passCompareMode");
+		return;
+	}
 	th->addAction(action);
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgram)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	_NR<Program3D> program;
-	ARG_UNPACK_ATOM(program);
+	ARG_CHECK(ARG_UNPACK(program));
 	if (!program.isNull())
 	{
 		th->rendermutex.lock();
@@ -1312,7 +1330,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromByteArray)
 	int32_t numRegisters;
 	_NR<ByteArray> data;
 	uint32_t byteArrayOffset;
-	ARG_UNPACK_ATOM(programType)(firstRegister)(numRegisters)(data)(byteArrayOffset);
+	ARG_CHECK(ARG_UNPACK(programType)(firstRegister)(numRegisters)(data)(byteArrayOffset));
 }
 ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromMatrix)
 {
@@ -1321,7 +1339,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromMatrix)
 	uint32_t firstRegister;
 	_NR<Matrix3D> matrix;
 	bool transposedMatrix;
-	ARG_UNPACK_ATOM(programType)(firstRegister)(matrix)(transposedMatrix, false);
+	ARG_CHECK(ARG_UNPACK(programType)(firstRegister)(matrix)(transposedMatrix, false));
 	if (matrix.isNull())
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setProgramConstantsFromMatrix with empty matrix");
 	else
@@ -1342,7 +1360,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromVector)
 	int32_t firstRegister;
 	_NR<Vector> data;
 	int32_t numRegisters;
-	ARG_UNPACK_ATOM(programType)(firstRegister)(data)(numRegisters,-1);
+	ARG_CHECK(ARG_UNPACK(programType)(firstRegister)(data)(numRegisters,-1));
 	if (data.isNull())
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setProgramConstantsFromVector with empty Vector");
 	else
@@ -1355,7 +1373,10 @@ ASFUNCTIONBODY_ATOM(Context3D,setProgramConstantsFromVector)
 		if (action.udata3)
 		{
 			if (action.udata3 > CONTEXT3D_PROGRAM_REGISTERS-action.udata1)
-				throwError<RangeError>(kOutOfRangeError,"Constant Register Out Of Bounds");
+			{
+				createError<RangeError>(wrk,kOutOfRangeError,"Constant Register Out Of Bounds");
+				return;
+			}
 			for (uint32_t i = 0; i < action.udata3*4; i++)
 			{
 				asAtom a = data->at(i);
@@ -1371,7 +1392,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setScissorRectangle)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	_NR<Rectangle> rectangle;
-	ARG_UNPACK_ATOM(rectangle);
+	ARG_CHECK(ARG_UNPACK(rectangle));
 	if (!rectangle.isNull())
 	{
 		if (th->actions[th->currentactionvector].back().action==RENDER_ACTION::RENDER_SETSCISSORRECTANGLE)
@@ -1417,7 +1438,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setRenderToTexture)
 	int32_t surfaceSelector;
 	int32_t colorOutputIndex;
 	_NR<TextureBase> tex;
-	ARG_UNPACK_ATOM(tex)(enableDepthAndStencil,false)(antiAlias,0)(surfaceSelector, 0)(colorOutputIndex, 0);
+	ARG_CHECK(ARG_UNPACK(tex)(enableDepthAndStencil,false)(antiAlias,0)(surfaceSelector, 0)(colorOutputIndex, 0));
 	if (antiAlias!=0 || surfaceSelector!=0 || colorOutputIndex!=0)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setRenderToTexture ignores parameters antiAlias, surfaceSelector, colorOutput");
 	th->rendermutex.lock();
@@ -1441,7 +1462,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setSamplerStateAt)
 	tiny_string wrap;
 	tiny_string filter;
 	tiny_string mipfilter;
-	ARG_UNPACK_ATOM(sampler)(wrap)(filter)(mipfilter);
+	ARG_CHECK(ARG_UNPACK(sampler)(wrap)(filter)(mipfilter));
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_SETSAMPLERSTATE;
 	action.udata1 = uint32_t(sampler);
@@ -1515,7 +1536,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setStencilActions)
 	tiny_string actionOnBothPass;
 	tiny_string actionOnDepthFail;
 	tiny_string actionOnDepthPassStencilFail;
-	ARG_UNPACK_ATOM(triangleFace,"frontAndBack")(compareMode,"always")(actionOnBothPass,"keep")(actionOnDepthFail,"keep")(actionOnDepthPassStencilFail,"keep");
+	ARG_CHECK(ARG_UNPACK(triangleFace,"frontAndBack")(compareMode,"always")(actionOnBothPass,"keep")(actionOnDepthFail,"keep")(actionOnDepthPassStencilFail,"keep"));
 }
 ASFUNCTIONBODY_ATOM(Context3D,setStencilReferenceValue)
 {
@@ -1523,7 +1544,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setStencilReferenceValue)
 	uint32_t referenceValue;
 	uint32_t readMask;
 	uint32_t writeMask;
-	ARG_UNPACK_ATOM(referenceValue)(readMask,255)(writeMask,255);
+	ARG_CHECK(ARG_UNPACK(referenceValue)(readMask,255)(writeMask,255));
 }
 
 ASFUNCTIONBODY_ATOM(Context3D,setTextureAt)
@@ -1531,9 +1552,12 @@ ASFUNCTIONBODY_ATOM(Context3D,setTextureAt)
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	uint32_t sampler;
 	_NR<TextureBase> texture;
-	ARG_UNPACK_ATOM(sampler)(texture);
+	ARG_CHECK(ARG_UNPACK(sampler)(texture));
 	if (sampler >= CONTEXT3D_SAMPLER_COUNT)
-		throwError<RangeError>(kParamRangeError);
+	{
+		createError<RangeError>(wrk,kParamRangeError);
+		return;
+	}
 	th->rendermutex.lock();
 	if (!texture.isNull())
 		texture->incRef();
@@ -1562,9 +1586,12 @@ ASFUNCTIONBODY_ATOM(Context3D,setVertexBufferAt)
 	_NR<VertexBuffer3D> buffer;
 	uint32_t bufferOffset;
 	tiny_string format;
-	ARG_UNPACK_ATOM(index)(buffer)(bufferOffset,0)(format,"float4");
+	ARG_CHECK(ARG_UNPACK(index)(buffer)(bufferOffset,0)(format,"float4"));
 	if (index > 7)
-		throwError<RangeError>(kParamRangeError);
+	{
+		createError<RangeError>(wrk,kParamRangeError);
+		return;
+	}
 	if (buffer.isNull())
 		return;
 	renderaction action;
@@ -1781,11 +1808,17 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromByteArray)
 	uint32_t byteArrayOffset;
 	uint32_t startOffset;
 	uint32_t count;
-	ARG_UNPACK_ATOM(data)(byteArrayOffset)(startOffset)(count);
+	ARG_CHECK(ARG_UNPACK(data)(byteArrayOffset)(startOffset)(count));
 	if (data.isNull())
-		throwError<TypeError>(kNullPointerError);
+	{
+		createError<TypeError>(wrk,kNullPointerError);
+		return;
+	}
 	if (data->getLength() < byteArrayOffset+count*2)
-		throwError<RangeError>(kParamRangeError);
+	{
+		createError<RangeError>(wrk,kParamRangeError);
+		return;
+	}
 	th->context->rendermutex.lock();
 	if (th->data.size() < count+startOffset)
 		th->data.resize(count+startOffset);
@@ -1816,7 +1849,7 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
 	_NR<Vector> data;
 	uint32_t startOffset;
 	uint32_t count;
-	ARG_UNPACK_ATOM(data)(startOffset)(count);
+	ARG_CHECK(ARG_UNPACK(data)(startOffset)(count));
 	th->context->rendermutex.lock();
 	if (th->data.size() < count+startOffset)
 		th->data.resize(count+startOffset);
@@ -1856,7 +1889,7 @@ ASFUNCTIONBODY_ATOM(Program3D,upload)
 	}
 	_NR<ByteArray> vertexProgram;
 	_NR<ByteArray> fragmentProgram;
-	ARG_UNPACK_ATOM(vertexProgram)(fragmentProgram);
+	ARG_CHECK(ARG_UNPACK(vertexProgram)(fragmentProgram));
 	th->context->rendermutex.lock();
 	th->samplerState.clear();
 	if (!vertexProgram.isNull())
@@ -1918,11 +1951,17 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 	uint32_t byteArrayOffset;
 	uint32_t startVertex;
 	uint32_t numVertices;
-	ARG_UNPACK_ATOM(data)(byteArrayOffset)(startVertex)(numVertices);
+	ARG_CHECK(ARG_UNPACK(data)(byteArrayOffset)(startVertex)(numVertices));
 	if (data.isNull())
-		throwError<TypeError>(kNullPointerError);
-	if (data->getLength() < byteArrayOffset+numVertices*th->data32PerVertex*4)
-		throwError<RangeError>(kParamRangeError);
+	{
+		createError<TypeError>(wrk,kNullPointerError);
+		return;
+	}
+	if (data->getLength() < (byteArrayOffset+numVertices*th->data32PerVertex*4))
+	{
+		createError<RangeError>(wrk,kParamRangeError);
+		return;
+	}
 	uint32_t origpos = data->getPosition();
 	data->setPosition(byteArrayOffset);
 	th->context->rendermutex.lock();
@@ -1956,7 +1995,7 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
 	_NR<Vector> data;
 	uint32_t startVertex;
 	uint32_t numVertices;
-	ARG_UNPACK_ATOM(data)(startVertex)(numVertices);
+	ARG_CHECK(ARG_UNPACK(data)(startVertex)(numVertices));
 	th->context->rendermutex.lock();
 	if (th->data.size() < (numVertices+startVertex)* th->data32PerVertex)
 		th->data.resize((numVertices+startVertex)* th->data32PerVertex);

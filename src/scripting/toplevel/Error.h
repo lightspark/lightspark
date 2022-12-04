@@ -27,16 +27,17 @@ namespace lightspark
 {
 
 tiny_string createErrorMessage(int errorID, const tiny_string& arg1, const tiny_string& arg2, const tiny_string& arg3);
-
+void setError(ASObject* error);
 /*
  * Retrieves the error message for the errorID, constructs an Error
- * object and throws it.
+ * object and sets it in the current call_contexts to be handled.
+ * if no call_context is set, the error object is thrown as an exception
  */
 template<class T>
-void throwError(int errorID, const tiny_string& arg1="", const tiny_string& arg2="", const tiny_string& arg3="")
+void createError(ASWorker* wrk, int errorID, const tiny_string& arg1="", const tiny_string& arg2="", const tiny_string& arg3="")
 {
 	tiny_string message = createErrorMessage(errorID, arg1, arg2, arg3);
-	throw Class<T>::getInstanceS(getWorker(),message, errorID);
+	setError(Class<T>::getInstanceS(wrk,message, errorID));
 }
 
 class ASError: public ASObject

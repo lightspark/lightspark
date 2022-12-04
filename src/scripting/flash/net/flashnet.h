@@ -121,7 +121,7 @@ public:
 	ASFUNCTION_ATOM(close);
 	ASFUNCTION_ATOM(connect);
 	ASFUNCTION_ATOM(setProperty);
-	ASPROPERTY_GETTER_SETTER(_R<ASObject>,client);
+	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,client);
 	ASPROPERTY_GETTER(_NR<ASObject>,data);
 	ASFUNCTION_ATOM(_getDefaultObjectEncoding);
 	ASFUNCTION_ATOM(_setDefaultObjectEncoding);

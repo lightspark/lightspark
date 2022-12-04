@@ -671,7 +671,10 @@ void ABCVm::abc_li8_local_localresult(call_context* context)
 	uint32_t addr=asAtomHandler::getUInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	ByteArray* dm = context->mi->context->root->applicationDomain->currentDomainMemory;
 	if(USUALLY_FALSE(dm->getLength() <= addr))
-		throwError<RangeError>(kInvalidRangeError);
+	{
+		createError<RangeError>(context->worker,kInvalidRangeError);
+		return;
+	}
 	(CONTEXT_GETLOCAL(context,instrptr->local3.pos).uintval=(*(dm->getBufferNoCheck()+addr))<<3|ATOM_INTEGER);
 	ASATOM_DECREF(oldres);
 	++(context->exec_pos);
@@ -957,7 +960,10 @@ void ABCVm::abc_si8_local_local(call_context* context)
 	int32_t val=asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	ByteArray* dm = context->mi->context->root->applicationDomain->currentDomainMemory;
 	if(USUALLY_FALSE(dm->getLength() <= addr))
-		throwError<RangeError>(kInvalidRangeError);
+	{
+		createError<RangeError>(context->worker,kInvalidRangeError);
+		return;
+	}
 	*(dm->getBufferNoCheck()+addr)=val;
 
 	++(context->exec_pos);
@@ -1094,7 +1100,7 @@ void ABCVm::construct_noargs_intern(call_context* context,asAtom& ret,asAtom& ob
 
 		default:
 		{
-			throwError<TypeError>(kConstructOfNonFunctionError);
+			createError<TypeError>(context->worker,kConstructOfNonFunctionError);
 		}
 	}
 	if (asAtomHandler::isObject(ret))
@@ -1167,7 +1173,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 			else
 			{
 				LOG(LOG_ERROR,"trying to call an object as a function:"<<asAtomHandler::toDebugString(o) <<" on "<<asAtomHandler::toDebugString(obj));
-				throwError<TypeError>(kCallOfNonFunctionError, "Object");
+				createError<TypeError>(context->worker,kCallOfNonFunctionError, "Object");
 			}
 			if (needreturn && asAtomHandler::isInvalid(ret))
 				ret = asAtomHandler::undefinedAtom;
@@ -1185,13 +1191,15 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 	if(asAtomHandler::is<Null>(obj))
 	{
 		LOG(LOG_ERROR,"trying to call property on null:"<<*name);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+		
 	}
 	if (asAtomHandler::is<Undefined>(obj))
 	{
 		LOG(LOG_ERROR,"trying to call property on undefined2:"<<*name);
-		context->worker->dumpStacktrace();
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 	ASObject* pobj = asAtomHandler::getObject(obj);
 	asAtom o=asAtomHandler::invalidAtom;
@@ -1282,7 +1290,8 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 		else
 		{
 			LOG(LOG_ERROR,"trying to call an object as a function:"<<asAtomHandler::toDebugString(o) <<" on "<<asAtomHandler::toDebugString(obj));
-			throwError<TypeError>(kCallOfNonFunctionError, "Object");
+			createError<TypeError>(context->worker,kCallOfNonFunctionError, "Object");
+			return;
 		}
 	}
 	else
@@ -1319,7 +1328,8 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 					else
 					{
 						LOG(LOG_ERROR,"trying to call an object as a function:"<<asAtomHandler::toDebugString(o) <<" on "<<asAtomHandler::toDebugString(obj));
-						throwError<TypeError>(kCallOfNonFunctionError, "Object");
+						createError<TypeError>(context->worker,kCallOfNonFunctionError, "Object");
+						return;
 					}
 				}
 				else
@@ -1360,7 +1370,8 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 				else
 				{
 					LOG(LOG_ERROR,"trying to call an object as a function:"<<asAtomHandler::toDebugString(o) <<" on "<<asAtomHandler::toDebugString(obj));
-					throwError<TypeError>(kCallOfNonFunctionError, "Object");
+					createError<TypeError>(context->worker,kCallOfNonFunctionError, "Object");
+					return;
 				}
 				LOG_CALL("End of calling proxy " << *name);
 			}
@@ -1370,22 +1381,22 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 			if (pobj->hasPropertyByMultiname(*name,true,true,context->worker))
 			{
 				tiny_string clsname = pobj->getClass()->getQualifiedClassName();
-				throwError<ReferenceError>(kWriteOnlyError, name->normalizedName(context->sys), clsname);
+				createError<ReferenceError>(context->worker,kWriteOnlyError, name->normalizedName(context->sys), clsname);
 			}
 			if (pobj->getClass() && pobj->getClass()->isSealed)
 			{
 				tiny_string clsname = pobj->getClass()->getQualifiedClassName();
-				throwError<ReferenceError>(kReadSealedError, name->normalizedName(context->sys), clsname);
+				createError<ReferenceError>(context->worker,kReadSealedError, name->normalizedName(context->sys), clsname);
 			}
 			if (asAtomHandler::is<Class_base>(obj))
 			{
 				tiny_string clsname = asAtomHandler::as<Class_base>(obj)->class_name.getQualifiedName(context->sys);
-				throwError<TypeError>(kCallOfNonFunctionError, name->qualifiedString(context->sys), clsname);
+				createError<TypeError>(context->worker,kCallOfNonFunctionError, name->qualifiedString(context->sys), clsname);
 			}
 			else
 			{
 				tiny_string clsname = pobj->getClassName();
-				throwError<TypeError>(kCallNotFoundError, name->qualifiedString(context->sys), clsname);
+				createError<TypeError>(context->worker,kCallNotFoundError, name->qualifiedString(context->sys), clsname);
 			}
 			asAtomHandler::setUndefined(ret);
 		}
@@ -1773,16 +1784,13 @@ void ABCVm::constructpropnoargs_intern(call_context* context,asAtom& ret,asAtom&
 	if(asAtomHandler::isInvalid(o))
 	{
 		if (asAtomHandler::is<Undefined>(obj))
-		{
-			ASATOM_DECREF(obj);
-			throwError<TypeError>(kConvertUndefinedToObjectError);
-		}
-		if (asAtomHandler::isPrimitive(obj))
-		{
-			ASATOM_DECREF(obj);
-			throwError<TypeError>(kConstructOfNonFunctionError);
-		}
-		throwError<ReferenceError>(kUndefinedVarError, name->normalizedNameUnresolved(context->sys));
+			createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		else if (asAtomHandler::isPrimitive(obj))
+			createError<TypeError>(context->worker,kConstructOfNonFunctionError);
+		else
+			createError<ReferenceError>(context->worker,kUndefinedVarError, name->normalizedNameUnresolved(context->sys));
+		ASATOM_DECREF(obj);
+		return;
 	}
 	try
 	{
@@ -1796,9 +1804,15 @@ void ABCVm::constructpropnoargs_intern(call_context* context,asAtom& ret,asAtom&
 			constructFunction(ret,context, o, nullptr, 0);
 		}
 		else if (asAtomHandler::isTemplate(o))
-			throwError<TypeError>(kConstructOfNonFunctionError);
+		{
+			createError<TypeError>(context->worker,kConstructOfNonFunctionError);
+			return;
+		}
 		else
-			throwError<TypeError>(kNotConstructorError);
+		{
+			createError<TypeError>(context->worker,kNotConstructorError);
+			return;
+		}
 	}
 	catch(ASObject* exc)
 	{
@@ -2062,14 +2076,16 @@ void ABCVm::abc_setPropertyStaticName(call_context* context)
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
 		ASATOM_DECREF_POINTER(obj);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
 		ASATOM_DECREF_POINTER(obj);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
 	bool alreadyset=false;
@@ -2098,12 +2114,14 @@ void ABCVm::abc_setPropertyStaticName_constant_constant(call_context* context)
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
@@ -2129,12 +2147,14 @@ void ABCVm::abc_setPropertyStaticName_local_constant(call_context* context)
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
 	o->incRef(); // this is neccessary for reference counting in case of exception thrown in setVariableByMultiname
@@ -2161,12 +2181,14 @@ void ABCVm::abc_setPropertyStaticName_constant_local(call_context* context)
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
 	ASATOM_INCREF_POINTER(value);
@@ -2195,12 +2217,14 @@ void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
 	o->incRef(); // this is neccessary for reference counting in case of exception thrown in setVariableByMultiname
@@ -2232,14 +2256,16 @@ void ABCVm::abc_setPropertyInteger(call_context* context)
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
 		ASATOM_DECREF_POINTER(obj);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
 		ASATOM_DECREF_POINTER(obj);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASObject* o = asAtomHandler::getObject(*obj);
@@ -2268,12 +2294,14 @@ void ABCVm::abc_setPropertyInteger_constant_constant_constant(call_context* cont
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASObject* o = asAtomHandler::getObject(*obj);
@@ -2302,12 +2330,14 @@ void ABCVm::abc_setPropertyInteger_constant_local_constant(call_context* context
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASObject* o = asAtomHandler::getObject(*obj);
@@ -2336,12 +2366,14 @@ void ABCVm::abc_setPropertyInteger_constant_constant_local(call_context* context
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASObject* o = asAtomHandler::getObject(*obj);
@@ -2370,12 +2402,14 @@ void ABCVm::abc_setPropertyInteger_constant_local_local(call_context* context)
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASATOM_INCREF_POINTER(value);
@@ -2404,12 +2438,14 @@ void ABCVm::abc_setPropertyInteger_local_constant_constant(call_context* context
 	if(asAtomHandler::isNull(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASObject* o = asAtomHandler::getObject(obj);
@@ -2438,12 +2474,14 @@ void ABCVm::abc_setPropertyInteger_local_local_constant(call_context* context)
 	if(asAtomHandler::isNull(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASObject* o = asAtomHandler::getObject(obj);
@@ -2472,12 +2510,14 @@ void ABCVm::abc_setPropertyInteger_local_constant_local(call_context* context)
 	if(asAtomHandler::isNull(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASATOM_INCREF_POINTER(value);
@@ -2506,12 +2546,14 @@ void ABCVm::abc_setPropertyInteger_local_local_local(call_context* context)
 	if(asAtomHandler::isNull(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASATOM_INCREF_POINTER(value);
@@ -2543,13 +2585,15 @@ void ABCVm::abc_setPropertyIntegerVector_constant_constant_constant(call_context
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	Vector* o = asAtomHandler::as<Vector>(*obj);
@@ -2573,13 +2617,15 @@ void ABCVm::abc_setPropertyIntegerVector_constant_local_constant(call_context* c
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	Vector* o = asAtomHandler::as<Vector>(*obj);
@@ -2603,13 +2649,15 @@ void ABCVm::abc_setPropertyIntegerVector_constant_constant_local(call_context* c
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	Vector* o = asAtomHandler::as<Vector>(*obj);
@@ -2632,12 +2680,14 @@ void ABCVm::abc_setPropertyIntegerVector_constant_local_local(call_context* cont
 	if(asAtomHandler::isNull(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASATOM_INCREF_POINTER(value);
@@ -2662,13 +2712,15 @@ void ABCVm::abc_setPropertyIntegerVector_local_constant_constant(call_context* c
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	Vector* o = asAtomHandler::as<Vector>(obj);
@@ -2692,13 +2744,15 @@ void ABCVm::abc_setPropertyIntegerVector_local_local_constant(call_context* cont
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	Vector* o = asAtomHandler::as<Vector>(obj);
@@ -2721,12 +2775,14 @@ void ABCVm::abc_setPropertyIntegerVector_local_constant_local(call_context* cont
 	if(asAtomHandler::isNull(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASATOM_INCREF_POINTER(value);
@@ -2750,12 +2806,14 @@ void ABCVm::abc_setPropertyIntegerVector_local_local_local(call_context* context
 	if(asAtomHandler::isNull(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	ASATOM_INCREF_POINTER(value);
@@ -2806,7 +2864,7 @@ void ABCVm::abc_getscopeobject_localresult(call_context* context)
 		ASATOM_INCREF(ret);
 		replacelocalresult(context,context->exec_pos->local3.pos,ret);
 	}
-	LOG_CALL("getScopeObject_l " << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos))<<" "<<t);
+	LOG_CALL("getScopeObject_l " << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos))<<" "<<t<<" "<<context->exec_pos->local3.pos);
 	++(context->exec_pos);
 }
 void ABCVm::abc_getProperty_constant_constant(call_context* context)
@@ -2818,9 +2876,8 @@ void ABCVm::abc_getProperty_constant_constant(call_context* context)
 	LOG_CALL( "getProperty_cc " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE, context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyException(obj,name,prop);
-	name->resetNameIfObject();
+	if (checkPropertyException(obj,name,prop))
+		return;
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
 }
@@ -2833,9 +2890,8 @@ void ABCVm::abc_getProperty_local_constant(call_context* context)
 	LOG_CALL( "getProperty_lc " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE, context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyException(obj,name,prop);
-	name->resetNameIfObject();
+	if (checkPropertyException(obj,name,prop))
+		return;
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
 }
@@ -2848,9 +2904,8 @@ void ABCVm::abc_getProperty_constant_local(call_context* context)
 	LOG_CALL( "getProperty_cl " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE, context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyException(obj,name,prop);
-	name->resetNameIfObject();
+	if (checkPropertyException(obj,name,prop))
+		return;
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
 }
@@ -2863,9 +2918,8 @@ void ABCVm::abc_getProperty_local_local(call_context* context)
 	LOG_CALL( "getProperty_ll " << *name <<"("<<instrptr->local_pos2<<")"<< ' ' << obj->toDebugString() <<"("<<instrptr->local_pos1<<")"<< ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE, context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyException(obj,name,prop);
-	name->resetNameIfObject();
+	if (checkPropertyException(obj,name,prop))
+		return;
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
 }
@@ -2878,9 +2932,8 @@ void ABCVm::abc_getProperty_constant_constant_localresult(call_context* context)
 	LOG_CALL( "getProperty_ccl " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE,context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyException(obj,name,prop);
-	name->resetNameIfObject();
+	if (checkPropertyException(obj,name,prop))
+		return;
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
 }
@@ -2895,13 +2948,8 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 		LOG_CALL( "getProperty_lcl int " << n << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
 		ASObject* obj= asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 		obj->getVariableByInteger(prop,n,GET_VARIABLE_OPTION::NONE,context->worker);
-		if(asAtomHandler::isInvalid(prop))
-		{
-			multiname m(nullptr);
-			m.name_type = multiname::NAME_INT;
-			m.name_i = n;
-			checkPropertyException(obj,&m,prop);
-		}
+		if (checkPropertyExceptionInteger(obj,n,prop))
+			return;
 	}
 	else
 	{
@@ -2909,9 +2957,8 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 		ASObject* obj= asAtomHandler::toObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1),context->worker);
 		LOG_CALL( "getProperty_lcl " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 		obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE,context->worker);
-		if(asAtomHandler::isInvalid(prop))
-			checkPropertyException(obj,name,prop);
-		name->resetNameIfObject();
+		if (checkPropertyException(obj,name,prop))
+			return;
 	}
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
@@ -2925,9 +2972,8 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 	LOG_CALL( "getProperty_cll " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE,context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyException(obj,name,prop);
-	name->resetNameIfObject();
+	if (checkPropertyException(obj,name,prop))
+		return;
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
 }
@@ -2942,13 +2988,8 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 		LOG_CALL( "getProperty_lll int " << n << ' ' << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1)));
 		ASObject* obj= asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 		obj->getVariableByInteger(prop,n,GET_VARIABLE_OPTION::NONE,context->worker);
-		if(asAtomHandler::isInvalid(prop))
-		{
-			multiname m(nullptr);
-			m.name_type = multiname::NAME_INT;
-			m.name_i = n;
-			checkPropertyException(obj,&m,prop);
-		}
+		if (checkPropertyExceptionInteger(obj,n,prop))
+			return;
 	}
 	else
 	{
@@ -2956,9 +2997,8 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 		ASObject* obj= asAtomHandler::toObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1),context->worker);
 		LOG_CALL( "getProperty_lll " << *name << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 		obj->getVariableByMultiname(prop,*name,GET_VARIABLE_OPTION::NONE,context->worker);
-		if(asAtomHandler::isInvalid(prop))
-			checkPropertyException(obj,name,prop);
-		name->resetNameIfObject();
+		if (checkPropertyException(obj,name,prop))
+			return;
 	}
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
@@ -2977,8 +3017,8 @@ void ABCVm::abc_getPropertyInteger(call_context* context)
 	}
 	else
 		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyExceptionInteger(obj,index,prop);
+	if (checkPropertyExceptionInteger(obj,index,prop))
+		return;
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
 }
@@ -2998,8 +3038,8 @@ void ABCVm::abc_getPropertyInteger_constant_constant(call_context* context)
 	}
 	else
 		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyExceptionInteger(obj,index,prop);
+	if (checkPropertyExceptionInteger(obj,index,prop))
+		return;
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
 }
@@ -3019,8 +3059,8 @@ void ABCVm::abc_getPropertyInteger_local_constant(call_context* context)
 	}
 	else
 		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyExceptionInteger(obj,index,prop);
+	if (checkPropertyExceptionInteger(obj,index,prop))
+		return;
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
 }
@@ -3040,8 +3080,8 @@ void ABCVm::abc_getPropertyInteger_constant_local(call_context* context)
 	}
 	else
 		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyExceptionInteger(obj,index,prop);
+	if (checkPropertyExceptionInteger(obj,index,prop))
+		return;
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
 }
@@ -3063,8 +3103,8 @@ void ABCVm::abc_getPropertyInteger_local_local(call_context* context)
 	}
 	else
 		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyExceptionInteger(obj,index,prop);
+	if (checkPropertyExceptionInteger(obj,index,prop))
+		return;
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
 }
@@ -3078,8 +3118,8 @@ void ABCVm::abc_getPropertyInteger_constant_constant_localresult(call_context* c
 	LOG_CALL( "getPropertyInteger_ccl " << index << ' ' << obj->toDebugString() << ' '<<obj->isInitialized());
 	asAtom prop=asAtomHandler::invalidAtom;
 	obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyExceptionInteger(obj,index,prop);
+	if (checkPropertyExceptionInteger(obj,index,prop))
+		return;
 	ASATOM_INCREF(prop);
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
@@ -3100,8 +3140,8 @@ void ABCVm::abc_getPropertyInteger_local_constant_localresult(call_context* cont
 	}
 	else
 		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyExceptionInteger(obj,index,prop);
+	if (checkPropertyExceptionInteger(obj,index,prop))
+		return;
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
 }
@@ -3121,8 +3161,8 @@ void ABCVm::abc_getPropertyInteger_constant_local_localresult(call_context* cont
 	}
 	else
 		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyExceptionInteger(obj,index,prop);
+	if (checkPropertyExceptionInteger(obj,index,prop))
+		return;
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
 }
@@ -3142,8 +3182,8 @@ void ABCVm::abc_getPropertyInteger_local_local_localresult(call_context* context
 	}
 	else
 		obj->getVariableByInteger(prop,index,GET_VARIABLE_OPTION::NONE,context->worker);
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyExceptionInteger(obj,index,prop);
+	if (checkPropertyExceptionInteger(obj,index,prop))
+		return;
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
 }
@@ -3175,8 +3215,8 @@ void ABCVm::abc_getPropertyStaticName_constant(call_context* context)
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 		}
 	}
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyException(obj,name,prop);
+	if(checkPropertyException(obj,name,prop))
+		return;
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
 }
@@ -3219,8 +3259,8 @@ void ABCVm::abc_getPropertyStaticName_local(call_context* context)
 				LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 			}
 		}
-		if(asAtomHandler::isInvalid(prop))
-			checkPropertyException(obj,name,prop);
+		if(checkPropertyException(obj,name,prop))
+			return;
 	}
 	RUNTIME_STACK_PUSH(context,prop);
 	++(context->exec_pos);
@@ -3254,9 +3294,8 @@ void ABCVm::abc_getPropertyStaticName_constant_localresult(call_context* context
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 		}
 	}
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyException(obj,name,prop);
-	name->resetNameIfObject();
+	if(checkPropertyException(obj,name,prop))
+		return;
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
 }
@@ -3338,8 +3377,8 @@ void ABCVm::abc_getPropertyStaticName_local_localresult(call_context* context)
 			}
 
 		}
-		if(asAtomHandler::isInvalid(prop))
-			checkPropertyException(obj,name,prop);
+		if(checkPropertyException(obj,name,prop))
+			return;
 		replacelocalresult(context,instrptr->local3.pos,prop);
 	}
 	++(context->exec_pos);
@@ -3373,9 +3412,8 @@ void ABCVm::abc_getPropertyStaticName_localresult(call_context* context)
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 		}
 	}
-	if(asAtomHandler::isInvalid(prop))
-		checkPropertyException(obj,name,prop);
-	name->resetNameIfObject();
+	if(checkPropertyException(obj,name,prop))
+		return;
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	obj->decRef();
 	++(context->exec_pos);
@@ -3388,9 +3426,15 @@ void ABCVm::abc_callFunctionNoArgs_constant(call_context* context)
 	asAtom ret;
 	LOG_CALL("callFunctionNoArgs_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtomHandler::callFunction(func,context->worker,ret,obj,nullptr,0,false,false);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
@@ -3403,9 +3447,15 @@ void ABCVm::abc_callFunctionNoArgs_local(call_context* context)
 	asAtom ret;
 	LOG_CALL("callFunctionNoArgs_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtomHandler::callFunction(func,context->worker,ret,obj,nullptr,0,false,false);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
@@ -3417,9 +3467,15 @@ void ABCVm::abc_callFunctionNoArgs_constant_localresult(call_context* context)
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
 	LOG_CALL("callFunctionNoArgs_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	asAtomHandler::callFunction(func,context->worker,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj,nullptr,0,false,false);
 	ASATOM_DECREF(oldres);
@@ -3432,9 +3488,15 @@ void ABCVm::abc_callFunctionNoArgs_local_localresult(call_context* context)
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
 	LOG_CALL("callFunctionNoArgs_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	asAtomHandler::callFunction(func,context->worker,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj,nullptr,0,false,false);
 	ASATOM_DECREF(oldres);
@@ -3448,9 +3510,15 @@ void ABCVm::abc_callFunctionNoArgs_constant_setslotnocoerce(call_context* contex
 	LOG_CALL("callFunctionNoArgs_cs " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	asAtom res = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtomHandler::callFunction(func,context->worker,res,obj,nullptr,0,false,false);
 	asAtom objslot = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -3465,9 +3533,15 @@ void ABCVm::abc_callFunctionNoArgs_local_setslotnocoerce(call_context* context)
 	LOG_CALL("callFunctionNoArgs_ls " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	asAtom res = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtomHandler::callFunction(func,context->worker,res,obj,nullptr,0,false,false);
 	asAtom objslot = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -3482,9 +3556,15 @@ void ABCVm::abc_callFunctionNoArgsVoid_constant(call_context* context)
 	LOG_CALL("callFunctionNoArgsVoid_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	asAtom ret = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtomHandler::callFunction(func,context->worker,ret,obj,nullptr,0,false,false,false);
 	ASATOM_DECREF(ret);
 	++(context->exec_pos);
@@ -3497,9 +3577,15 @@ void ABCVm::abc_callFunctionNoArgsVoid_local(call_context* context)
 	LOG_CALL("callFunctionNoArgsVoid_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	asAtom ret = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtomHandler::callFunction(func,context->worker,ret,obj,nullptr,0,false,false,false);
 	ASATOM_DECREF(ret);
 	++(context->exec_pos);
@@ -3575,9 +3661,15 @@ void ABCVm::abc_callFunctionBuiltinOneArgVoid_constant_constant(call_context* co
 	LOG_CALL("callFunctionBuiltinOneArgVoid_cc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
 	asAtom ret = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
 	ASATOM_DECREF(ret);
 	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
@@ -3593,9 +3685,15 @@ void ABCVm::abc_callFunctionBuiltinOneArgVoid_local_constant(call_context* conte
 	LOG_CALL("callFunctionBuiltinOneArgVoid_lc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
 	asAtom ret = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
 	ASATOM_DECREF(ret);
 	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
@@ -3611,9 +3709,15 @@ void ABCVm::abc_callFunctionBuiltinOneArgVoid_constant_local(call_context* conte
 	LOG_CALL("callFunctionOneBuiltinArgVoid_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
 	asAtom ret = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
 	ASATOM_DECREF(ret);
 	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
@@ -3629,9 +3733,15 @@ void ABCVm::abc_callFunctionBuiltinOneArgVoid_local_local(call_context* context)
 	LOG_CALL("callFunctionBuiltinOneArgVoid_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
 	asAtom ret = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	if (asAtomHandler::is<Undefined>(obj))
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
 	ASATOM_DECREF(ret);
 	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
@@ -4221,7 +4331,10 @@ void ABCVm::abc_getslot_local(call_context* context)
 	uint32_t t = instrptr->arg2_uint;
 	ASObject* obj = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	if (!obj)
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	asAtom res = obj->getSlotNoCheck(t);
 	LOG_CALL("getSlot_l " << t << " " << asAtomHandler::toDebugString(res));
 	ASATOM_INCREF(res);
@@ -4241,7 +4354,10 @@ void ABCVm::abc_getslot_local_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos++;
 	uint32_t t = instrptr->arg2_uint;
 	if (!asAtomHandler::isObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1)))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	ASObject* obj = asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	asAtom res = obj->getSlotNoCheck(t);
 	asAtom o = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
@@ -4267,7 +4383,10 @@ void ABCVm::abc_getslot_local_setslotnocoerce(call_context* context)
 {
 	uint32_t tget = context->exec_pos->arg2_uint;
 	if (!asAtomHandler::isObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)))
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
 	ASObject* objget = asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
 	asAtom res = objget->getSlotNoCheck(tget);
 	LOG_CALL("getSlot_ls " << tget << " " <<context->exec_pos->local_pos1<<":"<< asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<" "<< asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos)));
@@ -7362,7 +7481,7 @@ void callFunctionClassRegexp(call_context* context, asAtom& f, asAtom& obj, asAt
 	else
 	{
 		LOG(LOG_ERROR,"trying to call an object as a function:"<<asAtomHandler::toDebugString(f) <<" on "<<asAtomHandler::toDebugString(obj));
-		throwError<TypeError>(kCallOfNonFunctionError, "Object");
+		createError<TypeError>(context->worker,kCallOfNonFunctionError, "Object");
 	}
 }
 
@@ -7505,7 +7624,8 @@ void ABCVm::abc_coerce_constant(call_context* context)
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
-		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(getSys()));
+		return;
 	}
 	if (!type->coerce(context->worker,res))
 		ASATOM_INCREF(res);
@@ -7521,7 +7641,8 @@ void ABCVm::abc_coerce_local(call_context* context)
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
-		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(getSys()));
+		return;
 	}
 	if (!type->coerce(context->worker,res))
 		ASATOM_INCREF(res);
@@ -7537,7 +7658,8 @@ void ABCVm::abc_coerce_constant_localresult(call_context* context)
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
-		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(getSys()));
+		return;
 	}
 	if (!type->coerce(context->worker,res))
 		ASATOM_INCREF(res);
@@ -7553,7 +7675,8 @@ void ABCVm::abc_coerce_local_localresult(call_context* context)
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
-		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(getSys()));
+		return;
 	}
 	
 	if (!type->coerce(context->worker,res))

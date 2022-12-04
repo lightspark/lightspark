@@ -70,13 +70,13 @@ ASFUNCTIONBODY_ATOM(GraphicsStroke,_constructor)
 {
 	GraphicsStroke* th = asAtomHandler::as<GraphicsStroke>(obj);
 	_NR<ASObject> fill;
-	ARG_UNPACK_ATOM (th->thickness, std::numeric_limits<double>::quiet_NaN())
+	ARG_CHECK(ARG_UNPACK (th->thickness, std::numeric_limits<double>::quiet_NaN())
 		(th->pixelHinting, false)
 		(th->scaleMode, "normal")
 		(th->caps, "none")
 		(th->joints, "rounds")
 		(th->miterLimit, 3.0)
-		(th->fill, NullRef);
+		(th->fill, NullRef));
 	th->validateFill(NullRef);
 }
 
@@ -94,7 +94,7 @@ void GraphicsStroke::validateFill(_NR<ASObject> oldValue)
 	{
 		tiny_string wrongClass = fill->getClassName();
 		fill = oldValue;
-		throwError<TypeError>(kCheckTypeFailedError, wrongClass, "IGraphicsFill");
+		createError<TypeError>(getInstanceWorker(),kCheckTypeFailedError, wrongClass, "IGraphicsFill");
 	}
 }
 

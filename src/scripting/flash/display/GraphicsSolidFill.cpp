@@ -44,11 +44,11 @@ void GraphicsSolidFill::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(GraphicsSolidFill,_constructor)
 {
 	GraphicsSolidFill* th = asAtomHandler::as<GraphicsSolidFill>(obj);
-	ARG_UNPACK_ATOM (th->color, 0) (th->alpha, 1.0);
+	ARG_CHECK(ARG_UNPACK (th->color, 0) (th->alpha, 1.0));
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsSolidFill, alpha);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsSolidFill, color);
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsSolidFill, alpha)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsSolidFill, color)
 
 FILLSTYLE GraphicsSolidFill::toFillStyle()
 {

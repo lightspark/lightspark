@@ -51,16 +51,16 @@ void GraphicsPath::sinit(Class_base* c)
 	IGraphicsData::linkTraits(c);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsPath, commands);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsPath, data);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsPath, winding);
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsPath, commands)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsPath, data)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsPath, winding)
 
 ASFUNCTIONBODY_ATOM(GraphicsPath,_constructor)
 {
 	_NR<Vector> commands;
 	_NR<Vector> data;
 	GraphicsPath* th = asAtomHandler::as<GraphicsPath>(obj);
-	ARG_UNPACK_ATOM(commands, NullRef)(data, NullRef)(th->winding, "evenOdd");
+	ARG_CHECK(ARG_UNPACK(commands, NullRef)(data, NullRef)(th->winding, "evenOdd"));
 
 	if (!commands.isNull())
 		th->commands = commands;
@@ -99,7 +99,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, curveTo)
 	asAtom cy = asAtomHandler::fromType(T_NUMBER);
 	asAtom ax = asAtomHandler::fromType(T_NUMBER);
 	asAtom ay = asAtomHandler::fromType(T_NUMBER);
-	ARG_UNPACK_ATOM (cx) (cy) (ax) (ay);
+	ARG_CHECK(ARG_UNPACK (cx) (cy) (ax) (ay));
 
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)GraphicsPathCommand::CURVE_TO);
@@ -119,7 +119,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, lineTo)
 	GraphicsPath* th=asAtomHandler::as<GraphicsPath>(obj);
 	asAtom x = asAtomHandler::fromType(T_NUMBER);
 	asAtom y = asAtomHandler::fromType(T_NUMBER);
-	ARG_UNPACK_ATOM (x) (y);
+	ARG_CHECK(ARG_UNPACK (x) (y));
 
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::LINE_TO));
@@ -135,7 +135,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, moveTo)
 	GraphicsPath* th=asAtomHandler::as<GraphicsPath>(obj);
 	asAtom x = asAtomHandler::fromType(T_NUMBER);
 	asAtom y = asAtomHandler::fromType(T_NUMBER);
-	ARG_UNPACK_ATOM (x) (y);
+	ARG_CHECK(ARG_UNPACK (x) (y));
 
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::MOVE_TO));
@@ -151,7 +151,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideLineTo)
 	GraphicsPath* th=asAtomHandler::as<GraphicsPath>(obj);
 	asAtom x = asAtomHandler::fromType(T_NUMBER);
 	asAtom y = asAtomHandler::fromType(T_NUMBER);
-	ARG_UNPACK_ATOM (x) (y);
+	ARG_CHECK(ARG_UNPACK (x) (y));
 
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::LINE_TO));
@@ -172,7 +172,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideMoveTo)
 	GraphicsPath* th=asAtomHandler::as<GraphicsPath>(obj);
 	asAtom x = asAtomHandler::fromType(T_NUMBER);
 	asAtom y = asAtomHandler::fromType(T_NUMBER);
-	ARG_UNPACK_ATOM (x) (y);
+	ARG_CHECK(ARG_UNPACK (x) (y));
 
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)(GraphicsPathCommand::MOVE_TO));

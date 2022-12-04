@@ -42,15 +42,15 @@ ASFUNCTIONBODY_ATOM(AVNetworkingParams,_constructor)
     bool init_readSetCookieHeader = true;
     bool init_useCookieHeaderForAllRequests = false;
     tiny_string init_networkDownVerificationUrl;
-	ARG_UNPACK_ATOM(init_forceNativeNetworking,false)(init_readSetCookieHeader,true)(init_useCookieHeaderForAllRequests,false)(init_networkDownVerificationUrl,"");
+	ARG_CHECK(ARG_UNPACK(init_forceNativeNetworking,false)(init_readSetCookieHeader,true)(init_useCookieHeaderForAllRequests,false)(init_networkDownVerificationUrl,""));
     th->forceNativeNetworking = init_forceNativeNetworking;
     th->readSetCookieHeader = init_readSetCookieHeader;
     th->useCookieHeaderForAllRequests = init_useCookieHeaderForAllRequests;
     th->networkDownVerificationUrl = init_networkDownVerificationUrl;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(AVNetworkingParams,appendRandomQueryParameter);
-ASFUNCTIONBODY_GETTER_SETTER(AVNetworkingParams,forceNativeNetworking);
-ASFUNCTIONBODY_GETTER_SETTER(AVNetworkingParams,networkDownVerificationUrl);
-ASFUNCTIONBODY_GETTER_SETTER(AVNetworkingParams,readSetCookieHeader);
-ASFUNCTIONBODY_GETTER_SETTER(AVNetworkingParams,useCookieHeaderForAllRequests);
+ASFUNCTIONBODY_GETTER_SETTER(AVNetworkingParams,appendRandomQueryParameter)
+ASFUNCTIONBODY_GETTER_SETTER(AVNetworkingParams,forceNativeNetworking)
+ASFUNCTIONBODY_GETTER_SETTER(AVNetworkingParams,networkDownVerificationUrl)
+ASFUNCTIONBODY_GETTER_SETTER(AVNetworkingParams,readSetCookieHeader)
+ASFUNCTIONBODY_GETTER_SETTER(AVNetworkingParams,useCookieHeaderForAllRequests)

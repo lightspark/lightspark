@@ -43,6 +43,6 @@ ASFUNCTIONBODY_GETTER_SETTER(NativeMenuItem,enabled)
 ASFUNCTIONBODY_ATOM(NativeMenuItem,_constructor)
 {
 	NativeMenuItem* th=asAtomHandler::as<NativeMenuItem>(obj);
-	ARG_UNPACK_ATOM(th->label,"")(th->isSeparator,false);
+	ARG_CHECK(ARG_UNPACK(th->label,"")(th->isSeparator,false));
 	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 }

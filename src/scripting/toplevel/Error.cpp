@@ -95,6 +95,18 @@ tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1,
 	LOG(LOG_INFO,"throwing exception:"<<getWorker()<<" id:"<<errorID<<" "<<msg.str());
 	return msg.str();
 }
+void lightspark::setError(ASObject* error)
+{
+	if (error->getInstanceWorker()->currentCallContext)
+	{
+		if (error->getInstanceWorker()->currentCallContext->exceptionthrown)
+			error->decRef();
+		else
+			error->getInstanceWorker()->currentCallContext->exceptionthrown = error;
+	}
+	else
+		throw error;
+}
 
 ASError::ASError(ASWorker* wrk,Class_base* c, const tiny_string& error_message, int id, const tiny_string& error_name):
 	ASObject(wrk,c),errorID(id),name(error_name),message(error_message)

@@ -48,13 +48,13 @@ void GraphicsBitmapFill::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(GraphicsBitmapFill,_constructor)
 {
 	GraphicsBitmapFill* th = asAtomHandler::as<GraphicsBitmapFill>(obj);
-	ARG_UNPACK_ATOM (th->bitmapData, NullRef) (th->matrix, NullRef) (th->repeat, true) (th->smooth, false);
+	ARG_CHECK(ARG_UNPACK(th->bitmapData, NullRef) (th->matrix, NullRef) (th->repeat, true) (th->smooth, false));
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsBitmapFill, bitmapData);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsBitmapFill, matrix);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsBitmapFill, repeat);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsBitmapFill, smooth);
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsBitmapFill, bitmapData)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsBitmapFill, matrix)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsBitmapFill, repeat)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsBitmapFill, smooth)
 
 FILLSTYLE GraphicsBitmapFill::toFillStyle()
 {

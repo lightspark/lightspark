@@ -474,14 +474,14 @@ ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, strength)
 ASFUNCTIONBODY_ATOM(GlowFilter,_constructor)
 {
 	GlowFilter *th = asAtomHandler::as<GlowFilter>(obj);
-	ARG_UNPACK_ATOM (th->color, 0xFF0000)
+	ARG_CHECK(ARG_UNPACK (th->color, 0xFF0000)
 		(th->alpha, 1.0)
 		(th->blurX, 6.0)
 		(th->blurY, 6.0)
 		(th->strength, 2.0)
 		(th->quality, 1)
 		(th->inner, false)
-		(th->knockout, false);
+		(th->knockout, false));
 }
 
 BitmapFilter* GlowFilter::cloneImpl() const
@@ -571,7 +571,7 @@ ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, strength)
 ASFUNCTIONBODY_ATOM(DropShadowFilter,_constructor)
 {
 	DropShadowFilter *th = asAtomHandler::as<DropShadowFilter>(obj);
-	ARG_UNPACK_ATOM (th->distance, 4.0)
+	ARG_CHECK(ARG_UNPACK (th->distance, 4.0)
 		(th->angle, 45)
 		(th->color, 0)
 		(th->alpha, 1.0)
@@ -581,7 +581,7 @@ ASFUNCTIONBODY_ATOM(DropShadowFilter,_constructor)
 		(th->quality, 1)
 		(th->inner, false)
 		(th->knockout, false)
-		(th->hideObject, false);
+		(th->hideObject, false));
 }
 
 BitmapFilter* DropShadowFilter::cloneImpl() const
@@ -696,7 +696,7 @@ ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, knockout)
 ASFUNCTIONBODY_ATOM(GradientGlowFilter,_constructor)
 {
 	GradientGlowFilter *th = asAtomHandler::as<GradientGlowFilter>(obj);
-	ARG_UNPACK_ATOM(th->distance,4.0)(th->angle,45)(th->colors,NullRef)(th->alphas,NullRef)(th->ratios,NullRef)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false);
+	ARG_CHECK(ARG_UNPACK(th->distance,4.0)(th->angle,45)(th->colors,NullRef)(th->alphas,NullRef)(th->ratios,NullRef)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false));
 }
 
 BitmapFilter* GradientGlowFilter::cloneImpl() const
@@ -786,7 +786,7 @@ void BevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, 
 ASFUNCTIONBODY_ATOM(BevelFilter,_constructor)
 {
 	BevelFilter *th = asAtomHandler::as<BevelFilter>(obj);
-	ARG_UNPACK_ATOM(th->distance,4.0)(th->angle,45)(th->highlightColor,0xFFFFFF)(th->highlightAlpha,1.0)(th->shadowColor,0x000000)(th->shadowAlpha,1.0)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false);
+	ARG_CHECK(ARG_UNPACK(th->distance,4.0)(th->angle,45)(th->highlightColor,0xFFFFFF)(th->highlightAlpha,1.0)(th->shadowColor,0x000000)(th->shadowAlpha,1.0)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false));
 }
 
 BitmapFilter* BevelFilter::cloneImpl() const
@@ -879,7 +879,7 @@ ASFUNCTIONBODY_GETTER_SETTER(ColorMatrixFilter, matrix)
 ASFUNCTIONBODY_ATOM(ColorMatrixFilter,_constructor)
 {
 	ColorMatrixFilter *th = asAtomHandler::as<ColorMatrixFilter>(obj);
-	ARG_UNPACK_ATOM(th->matrix,NullRef);
+	ARG_CHECK(ARG_UNPACK(th->matrix,NullRef));
 }
 
 BitmapFilter* ColorMatrixFilter::cloneImpl() const
@@ -926,7 +926,7 @@ ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, quality)
 ASFUNCTIONBODY_ATOM(BlurFilter,_constructor)
 {
 	BlurFilter *th = asAtomHandler::as<BlurFilter>(obj);
-	ARG_UNPACK_ATOM(th->blurX,4.0)(th->blurY,4.0)(th->quality,1);
+	ARG_CHECK(ARG_UNPACK(th->blurX,4.0)(th->blurY,4.0)(th->quality,1));
 }
 void BlurFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
 {
@@ -1118,7 +1118,7 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,preserveAlpha)
 ASFUNCTIONBODY_ATOM(ConvolutionFilter,_constructor)
 {
 	ConvolutionFilter *th = asAtomHandler::as<ConvolutionFilter>(obj);
-	ARG_UNPACK_ATOM(th->matrixX,0)(th->matrixY,0)(th->matrix,NullRef)(th->divisor,1.0)(th->bias,0.0)(th->preserveAlpha,true)(th->clamp,true)(th->color,0)(th->alpha,0.0);
+	ARG_CHECK(ARG_UNPACK(th->matrixX,0)(th->matrixY,0)(th->matrix,NullRef)(th->divisor,1.0)(th->bias,0.0)(th->preserveAlpha,true)(th->clamp,true)(th->color,0)(th->alpha,0.0));
 }
 
 BitmapFilter* ConvolutionFilter::cloneImpl() const
@@ -1259,7 +1259,7 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleY)
 ASFUNCTIONBODY_ATOM(DisplacementMapFilter,_constructor)
 {
 	DisplacementMapFilter *th = asAtomHandler::as<DisplacementMapFilter>(obj);
-	ARG_UNPACK_ATOM(th->mapBitmap,NullRef)(th->mapPoint,NullRef)(th->componentX,0)(th->componentY,0)(th->scaleX,0.0)(th->scaleY,0.0)(th->mode,"wrap")(th->color,0)(th->alpha,0.0);
+	ARG_CHECK(ARG_UNPACK(th->mapBitmap,NullRef)(th->mapPoint,NullRef)(th->componentX,0)(th->componentY,0)(th->scaleX,0.0)(th->scaleY,0.0)(th->mode,"wrap")(th->color,0)(th->alpha,0.0));
 }
 
 BitmapFilter* DisplacementMapFilter::cloneImpl() const
@@ -1391,7 +1391,7 @@ void GradientBevelFilter::prepareShutdown()
 ASFUNCTIONBODY_ATOM(GradientBevelFilter,_constructor)
 {
 	GradientBevelFilter *th = asAtomHandler::as<GradientBevelFilter>(obj);
-	ARG_UNPACK_ATOM(th->distance,4.0)(th->angle,45)(th->colors,NullRef)(th->alphas,NullRef)(th->ratios,NullRef)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false);
+	ARG_CHECK(ARG_UNPACK(th->distance,4.0)(th->angle,45)(th->colors,NullRef)(th->alphas,NullRef)(th->ratios,NullRef)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false));
 }
 
 BitmapFilter* GradientBevelFilter::cloneImpl() const

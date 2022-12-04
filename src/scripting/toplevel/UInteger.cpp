@@ -165,7 +165,10 @@ ASFUNCTIONBODY_ATOM(UInteger,_valueOf)
 	}
 
 	if(!asAtomHandler::isUInteger(obj))
-			throw Class<TypeError>::getInstanceS(wrk,"");
+	{
+		createError<TypeError>(wrk,0,"");
+		return;
+	}
 
 	asAtomHandler::setUInt(ret,wrk,asAtomHandler::toUInt(obj));
 }
@@ -197,7 +200,7 @@ ASFUNCTIONBODY_ATOM(UInteger,_toString)
 	}
 
 	uint32_t radix;
-	ARG_UNPACK_ATOM (radix,10);
+	ARG_CHECK(ARG_UNPACK (radix,10));
 
 	if (radix == 10)
 	{
@@ -245,7 +248,7 @@ ASFUNCTIONBODY_ATOM(UInteger,_toExponential)
 {
 	double v = asAtomHandler::toNumber(obj);
 	int32_t fractionDigits;
-	ARG_UNPACK_ATOM(fractionDigits, 0);
+	ARG_CHECK(ARG_UNPACK(fractionDigits, 0));
 	if (argslen == 0 || asAtomHandler::is<Undefined>(args[0]))
 	{
 		if (v == 0)
@@ -259,7 +262,7 @@ ASFUNCTIONBODY_ATOM(UInteger,_toExponential)
 ASFUNCTIONBODY_ATOM(UInteger,_toFixed)
 {
 	int fractiondigits;
-	ARG_UNPACK_ATOM (fractiondigits, 0);
+	ARG_CHECK(ARG_UNPACK (fractiondigits, 0));
 	ret = asAtomHandler::fromObject(abstract_s(wrk,Number::toFixedString(asAtomHandler::toNumber(obj), fractiondigits)));
 }
 
@@ -271,7 +274,7 @@ ASFUNCTIONBODY_ATOM(UInteger,_toPrecision)
 		return;
 	}
 	int precision;
-	ARG_UNPACK_ATOM (precision);
+	ARG_CHECK(ARG_UNPACK (precision));
 	ret = asAtomHandler::fromObject(abstract_s(wrk,Number::toPrecisionString(asAtomHandler::toNumber(obj), precision)));
 }
 

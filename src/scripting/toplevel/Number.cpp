@@ -138,9 +138,12 @@ ASFUNCTIONBODY_ATOM(Number,_toString)
 		return;
 	}
 	if(!asAtomHandler::isNumeric(obj))
-		throwError<TypeError>(kInvokeOnIncompatibleObjectError, "Number.toString");
+	{
+		createError<TypeError>(wrk,kInvokeOnIncompatibleObjectError, "Number.toString");
+		return;
+	}
 	int radix=10;
-	ARG_UNPACK_ATOM (radix,10);
+	ARG_CHECK(ARG_UNPACK (radix,10));
 
 	if((radix==10) || (asAtomHandler::is<Number>(obj) &&
 					   (std::isnan(asAtomHandler::toNumber(obj)) ||
@@ -514,7 +517,10 @@ tiny_string Number::toString(number_t value, DTOSTRMODE mode, int32_t precision)
 tiny_string Number::toStringRadix(number_t val, int radix)
 {
 	if((radix < 2) || (radix > 36))
-		throwError<RangeError>(kInvalidRadixError, Integer::toString(radix));
+	{
+		createError<RangeError>(getWorker(),kInvalidRadixError, Integer::toString(radix));
+		return "";
+	}
 
 	if(std::isnan(val) || std::isinf(val))
 		return Number::toString(val);
@@ -634,14 +640,17 @@ ASFUNCTIONBODY_ATOM(Number,toFixed)
 {
 	number_t val = asAtomHandler::toNumber(obj);
 	int fractiondigits;
-	ARG_UNPACK_ATOM (fractiondigits,0);
+	ARG_CHECK(ARG_UNPACK (fractiondigits,0));
 	ret = asAtomHandler::fromObject(abstract_s(wrk,toFixedString(val, fractiondigits)));
 }
 
 tiny_string Number::toFixedString(double v, int32_t fractionDigits)
 {
 	if ((fractionDigits < 0) || (fractionDigits > 20))
-		throwError<RangeError>(kInvalidPrecisionError);
+	{
+		createError<RangeError>(getWorker(),kInvalidPrecisionError);
+		return "";
+	}
 	return toString(v,DTOSTR_FIXED,fractionDigits);
 }
 
@@ -649,7 +658,7 @@ ASFUNCTIONBODY_ATOM(Number,toExponential)
 {
 	double v = asAtomHandler::toNumber(obj);
 	int32_t fractionDigits;
-	ARG_UNPACK_ATOM(fractionDigits, 0);
+	ARG_CHECK(ARG_UNPACK(fractionDigits, 0));
 	if (argslen == 0 || asAtomHandler::is<Undefined>(args[0]))
 		fractionDigits = imin(imax(Number::countSignificantDigits(v)-1, 1), 20);
 	ret =asAtomHandler::fromObject(abstract_s(wrk,toExponentialString(v, fractionDigits)));
@@ -657,8 +666,11 @@ ASFUNCTIONBODY_ATOM(Number,toExponential)
 
 tiny_string Number::toExponentialString(double v, int32_t fractionDigits)
 {
-	if (fractionDigits < 0 || fractionDigits > 20)
-		throwError<RangeError>(kInvalidPrecisionError);
+	if ((fractionDigits < 0) || (fractionDigits > 20))
+	{
+		createError<RangeError>(getWorker(),kInvalidPrecisionError);
+		return "";
+	}
 	return toString(v,DTOSTR_EXPONENTIAL,fractionDigits);
 }
 
@@ -746,14 +758,17 @@ ASFUNCTIONBODY_ATOM(Number,toPrecision)
 	}
 
 	int32_t precision;
-	ARG_UNPACK_ATOM(precision);
+	ARG_CHECK(ARG_UNPACK(precision));
 	ret = asAtomHandler::fromObject(abstract_s(wrk,toPrecisionString(v, precision)));
 }
 
 tiny_string Number::toPrecisionString(double v, int32_t precision)
 {
-	if (precision < 1 || precision > 21)
-		throwError<RangeError>(kInvalidPrecisionError);
+	if ((precision < 1) || (precision > 21))
+	{
+		createError<RangeError>(getWorker(),kInvalidPrecisionError);
+		return "";
+	}
 	return toString(v,DTOSTR_PRECISION,precision);
 }
 
@@ -766,8 +781,10 @@ ASFUNCTIONBODY_ATOM(Number,_valueOf)
 	}
 
 	if(!asAtomHandler::isNumeric(obj))
-		throwError<TypeError>(kInvokeOnIncompatibleObjectError);
-
+	{
+		createError<TypeError>(wrk,kInvokeOnIncompatibleObjectError);
+		return;
+	}
 	ASATOM_INCREF(obj);
 	ret = obj;
 }

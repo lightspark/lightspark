@@ -88,7 +88,7 @@ void Dictionary::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(Dictionary,_constructor)
 {
 	Dictionary* th=asAtomHandler::as<Dictionary>(obj);
-	ARG_UNPACK_ATOM(th->weakkeys, false);
+	ARG_CHECK(ARG_UNPACK(th->weakkeys, false));
 }
 
 ASFUNCTIONBODY_ATOM(Dictionary,_toJSON)

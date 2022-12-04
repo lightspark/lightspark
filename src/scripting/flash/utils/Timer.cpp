@@ -122,7 +122,10 @@ ASFUNCTIONBODY_ATOM(Timer,_setDelay)
 	assert_and_throw(argslen==1);
 	int32_t newdelay = asAtomHandler::toInt(args[0]);
 	if (newdelay<0)
-		throw Class<RangeError>::getInstanceS(wrk,"delay must be positive", 2066);
+	{
+		createError<RangeError>(wrk,2066,"delay must be positive");
+		return;
+	}
 
 	Timer* th=asAtomHandler::as<Timer>(obj);
 	th->delay=newdelay;

@@ -478,7 +478,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,setTo)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	number_t x,y,wi,h;
-	ARG_UNPACK_ATOM(x)(y)(wi)(h);
+	ARG_CHECK(ARG_UNPACK(x)(y)(wi)(h));
 	th->x = x;
 	th->y = y;
 	th->width = wi;
@@ -488,7 +488,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,copyFrom)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	_NR<Rectangle> sourcerect;
-	ARG_UNPACK_ATOM(sourcerect);
+	ARG_CHECK(ARG_UNPACK(sourcerect));
 	if (!sourcerect.isNull())
 	{
 		th->x = sourcerect->x;
@@ -996,7 +996,7 @@ ASFUNCTIONBODY_ATOM(Point,setTo)
 	Point* th=asAtomHandler::as<Point>(obj);
 	number_t x;
 	number_t y;
-	ARG_UNPACK_ATOM(x)(y);
+	ARG_CHECK(ARG_UNPACK(x)(y));
 	th->x = x;
 	th->y = y;
 }
@@ -1004,7 +1004,7 @@ ASFUNCTIONBODY_ATOM(Point,copyFrom)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
 	_NR<Point> sourcepoint;
-	ARG_UNPACK_ATOM(sourcepoint);
+	ARG_CHECK(ARG_UNPACK(sourcepoint));
 	if (!sourcepoint.isNull())
 	{
 		th->x = sourcepoint->x;
@@ -1080,7 +1080,7 @@ ASFUNCTIONBODY_ATOM(Transform,_constructor)
 {
 	Transform* th=asAtomHandler::as<Transform>(obj);
 	// it's not in the specs but it seems to be possible to construct a Transform object with an owner as argment
-	ARG_UNPACK_ATOM(th->owner,NullRef);
+	ARG_CHECK(ARG_UNPACK(th->owner,NullRef));
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_getMatrix)
@@ -1100,7 +1100,7 @@ ASFUNCTIONBODY_ATOM(Transform,_setMatrix)
 {
 	Transform* th=asAtomHandler::as<Transform>(obj);
 	_NR<Matrix> m;
-	ARG_UNPACK_ATOM(m);
+	ARG_CHECK(ARG_UNPACK(m));
 	th->owner->setMatrix(m);
 }
 
@@ -1117,12 +1117,16 @@ ASFUNCTIONBODY_ATOM(Transform,_setColorTransform)
 {
 	Transform* th=asAtomHandler::as<Transform>(obj);
 	_NR<ColorTransform> ct;
-	ARG_UNPACK_ATOM(ct);
+	ARG_CHECK(ARG_UNPACK(ct));
 	if (ct.isNull())
-		throwError<TypeError>(kNullPointerError, "colorTransform");
+	{
+		createError<TypeError>(wrk,kNullPointerError, "colorTransform");
+		return;
+	}
 
 	ct->incRef();
 	th->owner->colorTransform = ct;
+	th->owner->hasChanged=true;
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_getConcatenatedMatrix)
@@ -1455,14 +1459,14 @@ ASFUNCTIONBODY_ATOM(Matrix,setTo)
 	//tx -> x0
 	//ty -> y0
 	
-	ARG_UNPACK_ATOM(th->matrix.xx)(th->matrix.yx)(th->matrix.xy)(th->matrix.yy)(th->matrix.x0)(th->matrix.y0);
+	ARG_CHECK(ARG_UNPACK(th->matrix.xx)(th->matrix.yx)(th->matrix.xy)(th->matrix.yy)(th->matrix.x0)(th->matrix.y0));
 }
 ASFUNCTIONBODY_ATOM(Matrix,copyFrom)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
 	
 	_NR<Matrix> sourceMatrix;
-	ARG_UNPACK_ATOM(sourceMatrix);
+	ARG_CHECK(ARG_UNPACK(sourceMatrix));
 	th->matrix.xx = sourceMatrix->matrix.xx;
 	th->matrix.yx = sourceMatrix->matrix.yx;
 	th->matrix.xy = sourceMatrix->matrix.xy;
@@ -1854,7 +1858,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,setTo)
 {
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
 	number_t xa,ya,za;
-	ARG_UNPACK_ATOM(xa)(ya)(za);
+	ARG_CHECK(ARG_UNPACK(xa)(ya)(za));
 	th->x = xa;
 	th->y = ya;
 	th->z = za;
@@ -1863,7 +1867,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,copyFrom)
 {
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
 	_NR<Vector3D> sourcevector;
-	ARG_UNPACK_ATOM(sourcevector);
+	ARG_CHECK(ARG_UNPACK(sourcevector));
 	if (!sourcevector.isNull())
 	{
 		th->w = sourcevector->w;
@@ -2094,7 +2098,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_constructor)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Vector> v;
-	ARG_UNPACK_ATOM(v,NullRef);
+	ARG_CHECK(ARG_UNPACK(v,NullRef));
 	th->identity();
 	if (!v.isNull())
 	{
@@ -2117,7 +2121,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,recompose)
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Vector> components;
 	tiny_string orientationStyle;
-	ARG_UNPACK_ATOM(components)(orientationStyle, "eulerAngles");
+	ARG_CHECK(ARG_UNPACK(components)(orientationStyle, "eulerAngles"));
 
 	asAtomHandler::setBool(ret,false);
 	if (components.isNull() || !components->sameType(Class<Vector3D>::getRef(wrk->getSystemState()).getPtr()) || components->size() < 3)
@@ -2203,7 +2207,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,decompose)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	tiny_string orientationStyle;
-	ARG_UNPACK_ATOM(orientationStyle, "eulerAngles");
+	ARG_CHECK(ARG_UNPACK(orientationStyle, "eulerAngles"));
 
 	asAtom v=asAtomHandler::invalidAtom;
 	RootMovieClip* root = wrk->rootClip.getPtr();
@@ -2319,7 +2323,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,deltaTransformVector)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Vector3D> v;
-	ARG_UNPACK_ATOM(v);
+	ARG_CHECK(ARG_UNPACK(v));
 	Vector3D* result = Class<Vector3D>::getInstanceSNoArgs(wrk);
 	result->x = v->x * th->data[0] + v->y * th->data[4] + v->z * th->data[8];
 	result->y = v->x * th->data[1] + v->y * th->data[5] + v->z * th->data[9];
@@ -2330,22 +2334,25 @@ ASFUNCTIONBODY_ATOM(Matrix3D,prepend)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Matrix3D> rhs;
-	ARG_UNPACK_ATOM(rhs);
+	ARG_CHECK(ARG_UNPACK(rhs));
 	if (rhs.isNull())
-		throwError<ArgumentError>(kInvalidArgumentError,"rhs");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"rhs");
+		return;
+	}
 	th->prepend(rhs->data);
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,prependScale)
 {
 	number_t xScale, yScale, zScale;
-	ARG_UNPACK_ATOM(xScale) (yScale) (zScale);
+	ARG_CHECK(ARG_UNPACK(xScale) (yScale) (zScale));
 	
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prependScale does nothing");
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,prependTranslation)
 {
 	number_t x, y, z;
-	ARG_UNPACK_ATOM(x) (y) (z);
+	ARG_CHECK(ARG_UNPACK(x) (y) (z));
 	
 	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prependTranslation does nothing");
 }
@@ -2353,16 +2360,19 @@ ASFUNCTIONBODY_ATOM(Matrix3D,append)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Matrix3D> lhs;
-	ARG_UNPACK_ATOM(lhs);
+	ARG_CHECK(ARG_UNPACK(lhs));
 	if (lhs.isNull())
-		throwError<ArgumentError>(kInvalidArgumentError,"lhs");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"lhs");
+		return;
+	}
 	th->append(lhs->data);
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,appendTranslation)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	number_t x, y, z;
-	ARG_UNPACK_ATOM(x) (y) (z);
+	ARG_CHECK(ARG_UNPACK(x) (y) (z));
 	th->data[12] += x;
 	th->data[13] += y;
 	th->data[14] += z;
@@ -2375,7 +2385,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,appendRotation)
 	_NR<Vector3D> axis;
 	_NR<Vector3D> pivotPoint;
 	
-	ARG_UNPACK_ATOM(degrees) (axis) (pivotPoint,NullRef);
+	ARG_CHECK(ARG_UNPACK(degrees) (axis) (pivotPoint,NullRef));
 
 	// algorithm taken from https://github.com/openfl/openfl/blob/develop/openfl/geom/Matrix3D.hx
 	number_t tx = 0;
@@ -2433,7 +2443,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,appendScale)
 	number_t xScale;
 	number_t yScale;
 	number_t zScale;
-	ARG_UNPACK_ATOM(xScale) (yScale) (zScale);
+	ARG_CHECK(ARG_UNPACK(xScale) (yScale) (zScale));
 
 	number_t d[4*4];
 	d[0]  = xScale;
@@ -2462,9 +2472,12 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyColumnTo)
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	uint32_t column;
 	_NR<Vector3D> vector3D;
-	ARG_UNPACK_ATOM(column)(vector3D);
+	ARG_CHECK(ARG_UNPACK(column)(vector3D));
 	if (vector3D.isNull())
-		throwError<ArgumentError>(kInvalidArgumentError,"vector3D");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"vector3D");
+		return;
+	}
 	if (column < 4)
 	{
 		vector3D->x = th->data[column*4];
@@ -2480,7 +2493,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataFrom)
 	_NR<Vector> vector;
 	uint32_t index;
 	bool transpose;
-	ARG_UNPACK_ATOM(vector) (index,0) (transpose,false);
+	ARG_CHECK(ARG_UNPACK(vector) (index,0) (transpose,false));
 	if (transpose)
 		LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.copyRawDataFrom ignores parameter 'transpose'");
 	for (uint32_t i = 0; i < vector->size()-index && i < 16; i++)
@@ -2496,7 +2509,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataTo)
 	_NR<Vector> vector;
 	uint32_t index;
 	bool transpose;
-	ARG_UNPACK_ATOM(vector) (index,0) (transpose,false);
+	ARG_CHECK(ARG_UNPACK(vector) (index,0) (transpose,false));
 	if (transpose)
 		LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.copyRawDataFrom ignores parameter 'transpose'");
 	for (uint32_t i = 0; i < vector->size()-index && i < 16; i++)
@@ -2509,9 +2522,12 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyFrom)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Matrix3D> sourceMatrix3D;
-	ARG_UNPACK_ATOM(sourceMatrix3D);
+	ARG_CHECK(ARG_UNPACK(sourceMatrix3D));
 	if (sourceMatrix3D.isNull())
-		throwError<ArgumentError>(kInvalidArgumentError,"sourceMatrix3D");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"sourceMatrix3D");
+		return;
+	}
 	for (uint32_t i = 0; i < 4*4; i++)
 	{
 		th->data[i] = sourceMatrix3D->data[i];
@@ -2521,9 +2537,12 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyToMatrix3D)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Matrix3D> dest;
-	ARG_UNPACK_ATOM(dest);
+	ARG_CHECK(ARG_UNPACK(dest));
 	if (dest.isNull())
-		throwError<ArgumentError>(kInvalidArgumentError,"dest");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"dest");
+		return;
+	}
 	for (uint32_t i = 0; i < 4*4; i++)
 	{
 		dest->data[i] = th->data[i];
@@ -2592,7 +2611,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_set_rawData)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Vector> data;
-	ARG_UNPACK_ATOM(data);
+	ARG_CHECK(ARG_UNPACK(data));
 	// TODO handle not invertible argument
 	for (uint32_t i = 0; i < data->size(); i++)
 	{
@@ -2614,9 +2633,12 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_set_position)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Vector3D> value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 	if (value.isNull())
-		throwError<ArgumentError>(kInvalidArgumentError,"value");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"value");
+		return;
+	}
 	th->data[12] = value->x;
 	th->data[13] = value->y;
 	th->data[14] = value->z;
@@ -2625,9 +2647,12 @@ ASFUNCTIONBODY_ATOM(Matrix3D,transformVector)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	_NR<Vector3D> v;
-	ARG_UNPACK_ATOM(v);
+	ARG_CHECK(ARG_UNPACK(v));
 	if (v.isNull())
-		throwError<ArgumentError>(kInvalidArgumentError,"v");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"v");
+		return;
+	}
 	number_t x = v->x;
 	number_t y = v->y;
 	number_t z = v->z;

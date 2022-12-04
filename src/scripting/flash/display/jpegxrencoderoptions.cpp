@@ -35,9 +35,9 @@ void JPEGXREncoderOptions::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(JPEGXREncoderOptions,_constructor)
 {
 	JPEGXREncoderOptions* th =asAtomHandler::as<JPEGXREncoderOptions>(obj);
-	ARG_UNPACK_ATOM(th->quantization,20)(th->colorSpace,"auto")(th->trimFlexBits,0);
+	ARG_CHECK(ARG_UNPACK(th->quantization,20)(th->colorSpace,"auto")(th->trimFlexBits,0));
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(JPEGXREncoderOptions, colorSpace);
-ASFUNCTIONBODY_GETTER_SETTER(JPEGXREncoderOptions, quantization);
-ASFUNCTIONBODY_GETTER_SETTER(JPEGXREncoderOptions, trimFlexBits);
+ASFUNCTIONBODY_GETTER_SETTER(JPEGXREncoderOptions, colorSpace)
+ASFUNCTIONBODY_GETTER_SETTER(JPEGXREncoderOptions, quantization)
+ASFUNCTIONBODY_GETTER_SETTER(JPEGXREncoderOptions, trimFlexBits)

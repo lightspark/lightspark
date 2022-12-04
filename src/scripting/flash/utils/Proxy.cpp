@@ -44,7 +44,7 @@ void Proxy::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(Proxy,_isAttribute)
 {
 	_NR<ASObject> name;
-	ARG_UNPACK_ATOM(name);
+	ARG_CHECK(ARG_UNPACK(name));
 	multiname mname(nullptr);
 	name->applyProxyProperty(mname);
 	asAtomHandler::setBool(ret,mname.isAttribute);

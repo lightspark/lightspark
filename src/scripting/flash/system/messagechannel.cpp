@@ -149,7 +149,7 @@ ASFUNCTIONBODY_ATOM(MessageChannel,receive)
 {
 	MessageChannel* th=asAtomHandler::as<MessageChannel>(obj);
 	bool blockUntilReceived;
-	ARG_UNPACK_ATOM(blockUntilReceived,false);
+	ARG_CHECK(ARG_UNPACK(blockUntilReceived,false));
 	Locker l(th->messagequeuemutex);
 	if (th->messagequeue.empty())
 	{
@@ -192,10 +192,13 @@ ASFUNCTIONBODY_ATOM(MessageChannel,send)
 {
 	MessageChannel* th=asAtomHandler::as<MessageChannel>(obj);
 	if (th->state!= "open")
-		throw Class<IOError>::getInstanceS(wrk,"MessageChannel closed");
+	{
+		createError<IOError>(wrk,0,"MessageChannel closed");
+		return;
+	}
 	_NR<ASObject> msg;
 	int queueLimit;
-	ARG_UNPACK_ATOM(msg)(queueLimit,-1);
+	ARG_CHECK(ARG_UNPACK(msg)(queueLimit,-1));
 	if (msg.isNull() || th->receiver==nullptr)
 		return;
 	if (queueLimit != -1)

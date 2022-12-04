@@ -39,14 +39,14 @@ using namespace lightspark;
 #define ASFUNCTIONBODY_XML_DELEGATE(name) \
 	void XMLList::name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!asAtomHandler::is<XMLList>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
+		if(!asAtomHandler::is<XMLList>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; } \
 		XMLList* th=asAtomHandler::as<XMLList>(obj); \
 		if(th->nodes.size()==1) {\
 			asAtom a = asAtomHandler::fromObject(th->nodes[0].getPtr()); \
 			XML::name(ret,wrk,a, args, argslen); \
 		} else \
-			throwError<TypeError>(kXMLOnlyWorksWithOneItemLists, #name); \
+			createError<TypeError>(wrk,kXMLOnlyWorksWithOneItemLists, #name); \
 	}
 
 XMLList::XMLList(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLLIST),nodes(c->memoryAccount),constructed(false),targetobject(nullptr),targetproperty(c->memoryAccount)
@@ -115,7 +115,7 @@ bool XMLList::destruct()
 	nodes.clear();
 	constructed = false;
 	targetobject = nullptr;
-	targetproperty = multiname(this->getClass()->memoryAccount);
+	targetproperty = multiname(nullptr);
 	return destructIntern();
 }
 
@@ -246,26 +246,26 @@ void XMLList::buildFromString(ASWorker* wrk, const tiny_string &str)
 		case pugi::status_ok:
 			break;
 		case pugi::status_end_element_mismatch:
-			throwError<TypeError>(kXMLUnterminatedElementTag);
-			break;
+			createError<TypeError>(wrk,kXMLUnterminatedElementTag);
+			return;
 		case pugi::status_unrecognized_tag:
-			throwError<TypeError>(kXMLMalformedElement);
-			break;
+			createError<TypeError>(wrk,kXMLMalformedElement);
+			return;
 		case pugi::status_bad_pi:
-			throwError<TypeError>(kXMLUnterminatedXMLDecl);
-			break;
+			createError<TypeError>(wrk,kXMLUnterminatedXMLDecl);
+			return;
 		case pugi::status_bad_attribute:
-			throwError<TypeError>(kXMLUnterminatedAttribute);
-			break;
+			createError<TypeError>(wrk,kXMLUnterminatedAttribute);
+			return;
 		case pugi::status_bad_cdata:
-			throwError<TypeError>(kXMLUnterminatedCData);
-			break;
+			createError<TypeError>(wrk,kXMLUnterminatedCData);
+			return;
 		case pugi::status_bad_doctype:
-			throwError<TypeError>(kXMLUnterminatedDocTypeDecl);
-			break;
+			createError<TypeError>(wrk,kXMLUnterminatedDocTypeDecl);
+			return;
 		case pugi::status_bad_comment:
-			throwError<TypeError>(kXMLUnterminatedComment);
-			break;
+			createError<TypeError>(wrk,kXMLUnterminatedComment);
+			return;
 		default:
 			LOG(LOG_ERROR,"xmllist parser error:"<<str<<" "<<res.status<<" "<<res.description());
 			break;
@@ -324,7 +324,7 @@ _R<XML> XMLList::reduceToXML() const
 		return nodes[0];
 	else
 	{
-		throwError<TypeError>(kIllegalNamespaceError);
+		createError<TypeError>(getInstanceWorker(),kIllegalNamespaceError);
 		return nodes[0]; // not reached, the previous line throws always
 	}
 }
@@ -389,7 +389,7 @@ ASFUNCTIONBODY_ATOM(XMLList,descendants)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
 	_NR<ASObject> name;
-	ARG_UNPACK_ATOM(name,_NR<ASObject>(abstract_s(wrk,"*")));
+	ARG_CHECK(ARG_UNPACK(name,_NR<ASObject>(abstract_s(wrk,"*"))));
 	XML::XMLVector res;
 	multiname mname(nullptr);
 	name->applyProxyProperty(mname);
@@ -401,7 +401,7 @@ ASFUNCTIONBODY_ATOM(XMLList,elements)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
 	tiny_string name;
-	ARG_UNPACK_ATOM(name, "");
+	ARG_CHECK(ARG_UNPACK(name, ""));
 
 	XML::XMLVector elems;
 	auto it=th->nodes.begin();
@@ -489,7 +489,6 @@ ASFUNCTIONBODY_ATOM(XMLList,children)
 ASFUNCTIONBODY_ATOM(XMLList,text)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
-	ARG_UNPACK_ATOM;
 	XML::XMLVector res;
 	auto it=th->nodes.begin();
 	for(; it!=th->nodes.end(); ++it)
@@ -503,7 +502,7 @@ ASFUNCTIONBODY_ATOM(XMLList,contains)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
 	_NR<ASObject> value;
-	ARG_UNPACK_ATOM (value);
+	ARG_CHECK(ARG_UNPACK (value));
 	if(!value->is<XML>())
 	{
 		asAtomHandler::setBool(ret,false);
@@ -546,7 +545,7 @@ ASFUNCTIONBODY_ATOM(XMLList,attribute)
 		LOG(LOG_NOT_IMPLEMENTED,"XMLList.attribute called with QName");
 
 	tiny_string attrname;
-	ARG_UNPACK_ATOM (attrname);
+	ARG_CHECK(ARG_UNPACK (attrname));
 	multiname mname(NULL);
 	mname.name_type=multiname::NAME_STRING;
 	mname.name_s_id=wrk->getSystemState()->getUniqueStringId(attrname);
@@ -589,7 +588,7 @@ ASFUNCTIONBODY_ATOM(XMLList,processingInstructions)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
 	tiny_string name;
-	ARG_UNPACK_ATOM(name,"*");
+	ARG_CHECK(ARG_UNPACK(name,"*"));
 
 	XMLList *res = Class<XMLList>::getInstanceSNoArgs(wrk);
 	XML::XMLVector nodeprocessingInstructions;
@@ -621,7 +620,7 @@ ASFUNCTIONBODY_ATOM(XMLList,_hasOwnProperty)
 	}
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
 	tiny_string prop;
-	ARG_UNPACK_ATOM(prop);
+	ARG_CHECK(ARG_UNPACK(prop));
 
 	multiname name(NULL);
 	name.name_type=multiname::NAME_STRING;
@@ -982,7 +981,7 @@ multiname* XMLList::setVariableByMultinameIntern(multiname& name, asAtom& o, CON
 	}
 	else
 	{
-		throwError<TypeError>(kXMLAssigmentOneItemLists);
+		createError<TypeError>(getInstanceWorker(),kXMLAssigmentOneItemLists);
 	}
 	return nullptr;
 }

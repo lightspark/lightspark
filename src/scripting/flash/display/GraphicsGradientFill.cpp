@@ -63,24 +63,24 @@ void GraphicsGradientFill::finalize()
 ASFUNCTIONBODY_ATOM(GraphicsGradientFill,_constructor)
 {
 	GraphicsGradientFill* th = asAtomHandler::as<GraphicsGradientFill>(obj);
-	ARG_UNPACK_ATOM (th->type, "linear")
+	ARG_CHECK(ARG_UNPACK (th->type, "linear")
 		(th->colors, NullRef)
 		(th->alphas, NullRef)
 		(th->ratios, NullRef)
 		(th->matrix, NullRef)
 		(th->spreadMethod, "pad")
 		(th->interpolationMethod, "rgb")
-		(th->focalPointRatio, 0);
+		(th->focalPointRatio, 0));
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, alphas);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, colors);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, focalPointRatio);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, interpolationMethod);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, matrix);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, ratios);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, spreadMethod);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, type);
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, alphas)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, colors)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, focalPointRatio)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, interpolationMethod)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, matrix)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, ratios)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, spreadMethod)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsGradientFill, type)
 
 FILLSTYLE GraphicsGradientFill::toFillStyle()
 {

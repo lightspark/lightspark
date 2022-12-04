@@ -444,11 +444,17 @@ tiny_string URLInfo::encodeURI(const tiny_string& u, const std::list<uint32_t>& 
 tiny_string URLInfo::encodeSurrogatePair(CharIterator& c, const CharIterator& end)
 {
 	if ((*c < 0xD800) || (*c >= 0xDC00))
-		throwError<URIError>(kInvalidURIError, "encodeURI");
+	{
+		createError<URIError>(getWorker(),kInvalidURIError, "encodeURI");
+		return "";
+	}
 	uint32_t highSurrogate = *c;
 	++c;
 	if ((c == end) || ((*c < 0xDC00) || (*c > 0xDFFF)))
-		throwError<URIError>(kInvalidURIError, "encodeURI");
+	{
+		createError<URIError>(getWorker(),kInvalidURIError, "encodeURI");
+		return "";
+	}
 	uint32_t lowSurrogate = *c;
 	return encodeSingleChar((highSurrogate - 0xD800)*0x400 +
 				(lowSurrogate - 0xDC00) + 0x10000);
@@ -600,7 +606,10 @@ uint32_t URLInfo::decodeRestOfUTF8Sequence(uint32_t firstOctet, CharIterator& c,
 		mask = mask >> 1;
 	}
 	if (numOctets <= 1 || numOctets > 4)
-		throwError<URIError>(kInvalidURIError, "decodeURI");
+	{
+		createError<URIError>(getWorker(),kInvalidURIError, "decodeURI");
+		return 0;
+	}
 
 	char *octets = (char *)alloca(numOctets);
 	octets[0] = firstOctet;
@@ -618,15 +627,20 @@ uint32_t URLInfo::decodeRestOfUTF8Sequence(uint32_t firstOctet, CharIterator& c,
 	if ((unichar == (gunichar)-1) || 
 	    (unichar == (gunichar)-2) ||
 	    (unichar >= 0x10FFFF))
-		throwError<URIError>(kInvalidURIError, "decodeURI");
-
+	{
+		createError<URIError>(getWorker(),kInvalidURIError, "decodeURI");
+		return 0;
+	}
 	return (uint32_t)unichar;
 }
 
 uint32_t URLInfo::decodeSingleEscapeSequence(CharIterator& c, const CharIterator& end)
 {
 	if (*c != '%')
-		throwError<URIError>(kInvalidURIError, "decodeURI");
+	{
+		createError<URIError>(getWorker(),kInvalidURIError, "decodeURI");
+		return 0;
+	}
 	++c;
 	uint32_t h1 = decodeHexDigit(c, end);
 	uint32_t h2 = decodeHexDigit(c, end);
@@ -646,7 +660,10 @@ bool URLInfo::isSurrogateUTF8Sequence(const char *octets, unsigned int numOctets
 uint32_t URLInfo::decodeHexDigit(CharIterator& c, const CharIterator& end)
 {
 	if (c == end || !isxdigit(*c))
-		throwError<URIError>(kInvalidURIError, "decodeURI");
+	{
+		createError<URIError>(getWorker(),kInvalidURIError, "decodeURI");
+		return 0;
+	}
 
 	gint h = g_unichar_xdigit_value(*c);
 	assert((h >= 0) && (h < 16));

@@ -76,14 +76,14 @@ void XMLSocket::finalize()
 	timeout = 20000;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(XMLSocket, timeout);
+ASFUNCTIONBODY_GETTER_SETTER(XMLSocket, timeout)
 
 ASFUNCTIONBODY_ATOM(XMLSocket,_constructor)
 {
 	tiny_string host;
 	bool host_is_null;
 	int port;
-	ARG_UNPACK_ATOM (host, "") (port, 0);
+	ARG_CHECK(ARG_UNPACK (host, "") (port, 0));
 
 	EventDispatcher::_constructor(ret,wrk,obj,NULL,0);
 
@@ -112,17 +112,23 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _close)
 void XMLSocket::connect(tiny_string host, int port)
 {
 	if (port <= 0 || port > 65535)
-		throw Class<SecurityError>::getInstanceS(getInstanceWorker(),"Invalid port");
+	{
+		createError<SecurityError>(getInstanceWorker(),0,"Invalid port");
+		return;
+	}
 
 	if (host.empty())
 		host = getSys()->mainClip->getOrigin().getHostname();
 
 	if (isConnected())
-		throw Class<IOError>::getInstanceS(getInstanceWorker(),"Already connected");
+	{
+		createError<IOError>(getInstanceWorker(),0,"Already connected");
+		return;
+	}
 
 	// Host shouldn't contain scheme or port
 	if (host.strchr(':') != nullptr)
-		throw Class<SecurityError>::getInstanceS(getInstanceWorker(),"Invalid hostname");
+		createError<SecurityError>(getInstanceWorker(),0,"Invalid hostname");
 
 	// Check sandbox and policy file
 	size_t buflen = host.numBytes() + 22;
@@ -156,7 +162,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _connect)
 	tiny_string host;
 	bool host_is_null;
 	int port;
-	ARG_UNPACK_ATOM (host) (port);
+	ARG_CHECK(ARG_UNPACK (host) (port));
 	host_is_null = argslen > 0 && asAtomHandler::is<Null>(args[0]);
 
 	if (host_is_null)
@@ -169,7 +175,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _send)
 {
 	XMLSocket* th=asAtomHandler::as<XMLSocket>(obj);
 	tiny_string data;
-	ARG_UNPACK_ATOM (data);
+	ARG_CHECK(ARG_UNPACK (data));
 
 	Locker l(th->joblock);
 	if (th->job)
@@ -178,7 +184,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _send)
 	}
 	else
 	{
-		throw Class<IOError>::getInstanceS(wrk,"Socket is not connected");
+		createError<IOError>(wrk,0,"Socket is not connected");
 	}
 }
 

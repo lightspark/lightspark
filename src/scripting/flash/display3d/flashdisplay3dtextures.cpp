@@ -201,7 +201,8 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data, int32_t byteArrayOffs
 	if (data->getLength()-byteArrayOffset < 20)
 	{
 		LOG(LOG_ERROR,"not enough bytes to read");
-		throwError<RangeError>(kParamRangeError);
+		createError<RangeError>(getInstanceWorker(),kParamRangeError);
+		return;
 	}
 	uint8_t oldpos = data->getPosition();
 	data->setPosition(byteArrayOffset);
@@ -212,7 +213,8 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data, int32_t byteArrayOffs
 	if (b1 != 'A' || b2 != 'T' || b3 != 'F')
 	{
 		LOG(LOG_ERROR,"Texture.uploadCompressedTextureFromByteArray no ATF file");
-		throwError<ArgumentError>(kInvalidArgumentError,"data");
+		createError<ArgumentError>(getInstanceWorker(),kInvalidArgumentError,"data");
+		return;
 	}
 	uint8_t atfversion=0;
 	uint8_t formatbyte;
@@ -237,32 +239,37 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data, int32_t byteArrayOffs
 	if (data->getLength()-data->getPosition() < len)
 	{
 		LOG(LOG_ERROR,"not enough bytes to read:"<<len<<" "<<data->getPosition()<<"/"<<data->getLength()<<" "<<byteArrayOffset);
-		throwError<RangeError>(kParamRangeError);
+		createError<RangeError>(getInstanceWorker(),kParamRangeError);
+		return;
 	}
 	bool cubetexture = formatbyte&0x80;
 	if (forCubeTexture != cubetexture)
 	{
 		LOG(LOG_ERROR,"uploadCompressedTextureFromByteArray uploading a "<<(forCubeTexture ? "Texture" : "CubeTexture"));
-		throwError<ArgumentError>(kInvalidArgumentError,"data");
+		createError<ArgumentError>(getInstanceWorker(),kInvalidArgumentError,"data");
+		return;
 	}
 	int format = formatbyte&0x7f;
 	data->readByte(b1);
 	if (b1 > 12)
 	{
 		LOG(LOG_ERROR,"uploadCompressedTextureFromByteArray invalid texture width:"<<int(b1));
-		throwError<ArgumentError>(kInvalidArgumentError,"data");
+		createError<ArgumentError>(getInstanceWorker(),kInvalidArgumentError,"data");
+		return;
 	}
 	data->readByte(b2);
 	if (b2 > 12)
 	{
 		LOG(LOG_ERROR,"uploadCompressedTextureFromByteArray invalid texture height:"<<int(b2));
-		throwError<ArgumentError>(kInvalidArgumentError,"data");
+		createError<ArgumentError>(getInstanceWorker(),kInvalidArgumentError,"data");
+		return;
 	}
 	data->readByte(b3);
 	if (b3 > 13)
 	{
 		LOG(LOG_ERROR,"uploadCompressedTextureFromByteArray invalid texture count:"<<int(b3));
-		throwError<ArgumentError>(kInvalidArgumentError,"data");
+		createError<ArgumentError>(getInstanceWorker(),kInvalidArgumentError,"data");
+		return;
 	}
 	width = 1<<b1;
 	height = 1<<b2;
@@ -308,7 +315,10 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data, int32_t byteArrayOffs
 			case 0xd://compressed lossy with alpha
 			{
 				if (this->format != TEXTUREFORMAT::COMPRESSED_ALPHA)
-					throwError<ArgumentError>(kInvalidArgumentError,"Texture format mismatch");
+				{
+					createError<ArgumentError>(getInstanceWorker(),kInvalidArgumentError,"Texture format mismatch");
+					return;
+				}
 				this->compressedformat = TEXTUREFORMAT_COMPRESSED::DXT5;
 				uint32_t blocks = max(uint32_t(1),tmpwidth/4)*max(uint32_t(1),tmpheight/4);
 				uint32_t tmp;
@@ -432,9 +442,12 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 	_NR<ByteArray> data;
 	int32_t byteArrayOffset;
 	bool async;
-	ARG_UNPACK_ATOM(data)(byteArrayOffset)(async,false);
+	ARG_CHECK(ARG_UNPACK(data)(byteArrayOffset)(async,false));
 	if (data.isNull())
-		throwError<TypeError>(kNullArgumentError);
+	{
+		createError<TypeError>(wrk,kNullArgumentError);
+		return;
+	}
 	th->context->rendermutex.lock();
 	th->parseAdobeTextureFormat(data.getPtr(),byteArrayOffset,false);
 	if (async)
@@ -456,13 +469,17 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 	Texture* th = asAtomHandler::as<Texture>(obj);
 	uint32_t miplevel;
 	_NR<BitmapData> source;
-	ARG_UNPACK_ATOM(source)(miplevel,0);
+	ARG_CHECK(ARG_UNPACK(source)(miplevel,0));
 	if (source.isNull())
-		throwError<TypeError>(kNullArgumentError);
+	{
+		createError<TypeError>(wrk,kNullArgumentError);
+		return;
+	}
 	if (miplevel > 0 && ((uint32_t)1<<(miplevel-1) > max(th->width,th->height)))
 	{
 		LOG(LOG_ERROR,"invalid miplevel:"<<miplevel<<" "<<(1<<(miplevel-1))<<" "<< th->width<<" "<<th->height);
-		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"miplevel");
+		return;
 	}
 	th->context->rendermutex.lock();
 	if (th->bitmaparray.size() <= miplevel)
@@ -497,13 +514,17 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 	_NR<ByteArray> data;
 	uint32_t byteArrayOffset;
 	uint32_t miplevel;
-	ARG_UNPACK_ATOM(data)(byteArrayOffset)(miplevel,0);
+	ARG_CHECK(ARG_UNPACK(data)(byteArrayOffset)(miplevel,0));
 	if (data.isNull())
-		throwError<TypeError>(kNullArgumentError);
+	{
+		createError<TypeError>(wrk,kNullArgumentError);
+		return;
+	}
 	if (miplevel > 0 && ((uint32_t)1<<(miplevel-1) > max(th->width,th->height)))
 	{
 		LOG(LOG_ERROR,"invalid miplevel:"<<miplevel<<" "<<(1<<(miplevel-1))<<" "<< th->width<<" "<<th->height);
-		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"miplevel");
+		return;
 	}
 	th->context->rendermutex.lock();
 	if (th->bitmaparray.size() <= miplevel)
@@ -514,7 +535,8 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 	if (byteArrayOffset + bytesneeded > data->getLength())
 	{
 		LOG(LOG_ERROR,"not enough bytes to read");
-		throwError<RangeError>(kParamRangeError);
+		createError<RangeError>(wrk,kParamRangeError);
+		return;
 	}
 	data->readBytes(byteArrayOffset,bytesneeded,th->bitmaparray[miplevel].data());
 #ifdef ENABLE_GLES
@@ -557,7 +579,7 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadCompressedTextureFromByteArray)
 	_NR<ByteArray> data;
 	int32_t byteArrayOffset;
 	bool async;
-	ARG_UNPACK_ATOM(data)(byteArrayOffset)(async,false);
+	ARG_CHECK(ARG_UNPACK(data)(byteArrayOffset)(async,false));
 }
 ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 {
@@ -565,25 +587,31 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 	_NR<BitmapData> source;
 	uint32_t side;
 	uint32_t miplevel;
-	ARG_UNPACK_ATOM(source)(side)(miplevel,0);
+	ARG_CHECK(ARG_UNPACK(source)(side)(miplevel,0));
 	if (source.isNull())
-		throwError<TypeError>(kNullArgumentError);
+	{
+		createError<TypeError>(wrk,kNullArgumentError);
+		return;
+	}
 	if (miplevel > 0 && ((uint32_t)1<<(miplevel-1) > th->width))
 	{
 		LOG(LOG_ERROR,"invalid miplevel:"<<miplevel<<" "<<(1<<(miplevel-1))<<" "<< th->width);
-		throwError<ArgumentError>(kInvalidArgumentError,"miplevel");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"miplevel");
+		return;
 	}
 	if (side > 5)
 	{
 		LOG(LOG_ERROR,"invalid side:"<<side);
-		throwError<ArgumentError>(kInvalidArgumentError,"side");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"side");
+		return;
 	}
 	uint32_t bitmap_size = 1<<(th->max_miplevel-(miplevel+1));
 	if ((source->getWidth() != source->getHeight())
 		|| (uint32_t(source->getWidth()) != bitmap_size))
 	{
 		LOG(LOG_ERROR,"invalid bitmap:"<<source->getWidth()<<" "<<source->getHeight()<<" "<< th->max_miplevel <<" "<< miplevel);
-		throwError<ArgumentError>(kInvalidArgumentError,"source");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"source");
+		return;
 	}
 
 	th->context->rendermutex.lock();
@@ -612,7 +640,7 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromByteArray)
 	int32_t byteArrayOffset;
 	uint32_t side;
 	uint32_t miplevel;
-	ARG_UNPACK_ATOM(data)(byteArrayOffset)(side)(miplevel,0);
+	ARG_CHECK(ARG_UNPACK(data)(byteArrayOffset)(side)(miplevel,0));
 }
 
 void RectangleTexture::sinit(Class_base *c)
@@ -625,10 +653,13 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 {
 	RectangleTexture* th = asAtomHandler::as<RectangleTexture>(obj);
 	_NR<BitmapData> source;
-	ARG_UNPACK_ATOM(source);
+	ARG_CHECK(ARG_UNPACK(source));
 
 	if (source.isNull())
-		throwError<TypeError>(kNullArgumentError);
+	{
+		createError<TypeError>(wrk,kNullArgumentError);
+		return;
+	}
 	assert_and_throw(th->height == uint32_t(source->getHeight()) && th->width == uint32_t(source->getWidth()));
 	th->context->rendermutex.lock();
 	if (th->bitmaparray.size() == 0)
@@ -662,9 +693,12 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 	RectangleTexture* th = asAtomHandler::as<RectangleTexture>(obj);
 	_NR<ByteArray> data;
 	uint32_t byteArrayOffset;
-	ARG_UNPACK_ATOM(data)(byteArrayOffset);
+	ARG_CHECK(ARG_UNPACK(data)(byteArrayOffset));
 	if (data.isNull())
-		throwError<TypeError>(kNullArgumentError);
+	{
+		createError<TypeError>(wrk,kNullArgumentError);
+		return;
+	}
 	th->context->rendermutex.lock();
 	if (th->bitmaparray.size() == 0)
 		th->bitmaparray.resize(1);
@@ -672,7 +706,8 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 	if (byteArrayOffset + bytesneeded > data->getLength())
 	{
 		LOG(LOG_ERROR,"not enough bytes to read");
-		throwError<RangeError>(kParamRangeError);
+		createError<RangeError>(wrk,kParamRangeError);
+		return;
 	}
 	th->bitmaparray[0].resize(bytesneeded);
 	data->readBytes(byteArrayOffset,bytesneeded,th->bitmaparray[0].data());
@@ -717,13 +752,13 @@ ASFUNCTIONBODY_ATOM(VideoTexture,attachCamera)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"VideoTexture.attachCamera does nothing");
 //	_NR<Camera> theCamera;
-//	ARG_UNPACK_ATOM(theCamera);
+//	ARG_CHECK(ARG_UNPACK(theCamera));
 }
 ASFUNCTIONBODY_ATOM(VideoTexture,attachNetStream)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"VideoTexture.attachNetStream does nothing");
 	_NR<NetStream> netStream;
-	ARG_UNPACK_ATOM(netStream);
+	ARG_CHECK(ARG_UNPACK(netStream));
 }
 
 }

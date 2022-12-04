@@ -55,16 +55,16 @@ void GraphicsTrianglePath::finalize()
 ASFUNCTIONBODY_ATOM(GraphicsTrianglePath,_constructor)
 {
 	GraphicsTrianglePath* th = asAtomHandler::as<GraphicsTrianglePath>(obj);
-	ARG_UNPACK_ATOM (th->vertices, NullRef)
+	ARG_CHECK(ARG_UNPACK (th->vertices, NullRef)
 		(th->indices, NullRef)
 		(th->uvtData, NullRef)
-		(th->culling, "none");
+		(th->culling, "none"));
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, culling);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, indices);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, uvtData);
-ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, vertices);
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, culling)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, indices)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, uvtData)
+ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, vertices)
 
 void GraphicsTrianglePath::appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics)
 {

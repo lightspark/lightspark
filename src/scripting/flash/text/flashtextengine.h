@@ -242,7 +242,6 @@ public:
 	TextLine(ASWorker* wrk,Class_base* c,tiny_string linetext = "", _NR<TextBlock> owner=NullRef);
 	static void sinit(Class_base* c);
 	void updateSizes();
-	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(_NR<TextBlock>, textBlock);
 	ASPROPERTY_GETTER(_NR<TextLine>, nextLine);
 	ASPROPERTY_GETTER(_NR<TextLine>, previousLine);

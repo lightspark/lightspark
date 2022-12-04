@@ -178,7 +178,7 @@ ASFUNCTIONBODY_ATOM(URLStream,load)
 {
 	URLStream* th=asAtomHandler::as<URLStream>(obj);
 	_NR<URLRequest> urlRequest;
-	ARG_UNPACK_ATOM (urlRequest);
+	ARG_CHECK(ARG_UNPACK (urlRequest));
 
 	{
 		Locker l(th->spinlock);

@@ -162,7 +162,7 @@ ASFUNCTIONBODY_ATOM(Event,_constructor)
 		return;
 
 	Event* th=asAtomHandler::as<Event>(obj);
-	ARG_UNPACK_ATOM(th->type)(th->bubbles, false)(th->cancelable, false);
+	ARG_CHECK(ARG_UNPACK(th->type)(th->bubbles, false)(th->cancelable, false));
 }
 
 ASFUNCTIONBODY_GETTER(Event,currentTarget)
@@ -430,7 +430,10 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localX)
 {
 	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
 	if(argslen != 1) 
-		throw Class<ArgumentError>::getInstanceS(wrk,"Wrong number of arguments in setter"); 
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Wrong number of arguments in setter"); 
+		return;
+	}
 	number_t val=asAtomHandler::toNumber(args[0]);
 	th->localX = val;
 	//Change StageXY if target!=NULL else don't do anything
@@ -446,7 +449,10 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localY)
 {
 	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
 	if(argslen != 1) 
-		throw Class<ArgumentError>::getInstanceS(wrk,"Wrong number of arguments in setter"); 
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Wrong number of arguments in setter"); 
+		return;
+	}
 	number_t val=asAtomHandler::toNumber(args[0]);
 	th->localY = val;
 	//Change StageXY if target!=NULL else don't do anything	
@@ -815,13 +821,16 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,_constructor)
 {
 	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
 	asAtom forcedTarget=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(forcedTarget, asAtomHandler::nullAtom);
+	ARG_CHECK(ARG_UNPACK(forcedTarget, asAtomHandler::nullAtom));
 	if(asAtomHandler::isValid(forcedTarget))
 	{
 		if(asAtomHandler::isNull(forcedTarget) || asAtomHandler::isUndefined(forcedTarget))
 			forcedTarget=asAtomHandler::invalidAtom;
 		else if(!asAtomHandler::toObject(forcedTarget,wrk)->getClass()->isSubClass(InterfaceClass<IEventDispatcher>::getClass(wrk->getSystemState())))
-			throw Class<ArgumentError>::getInstanceS(wrk,"Wrong argument for EventDispatcher");
+		{
+			createError<ArgumentError>(wrk,kInvalidArgumentError,"Wrong argument for EventDispatcher");
+			return;
+		}
 		else
 		{
 			asAtomHandler::getObject(forcedTarget)->addOwnedObject(th);

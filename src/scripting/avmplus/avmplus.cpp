@@ -48,30 +48,36 @@ void avmplusFile::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(avmplusFile,exists)
 {
 	tiny_string filename;
-	ARG_UNPACK_ATOM(filename);
+	ARG_CHECK(ARG_UNPACK(filename));
 	asAtomHandler::setBool(ret,wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),filename,false));
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,read)
 {
 	tiny_string filename;
-	ARG_UNPACK_ATOM(filename);
+	ARG_CHECK(ARG_UNPACK(filename));
 	if (!wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),filename,false))
-		throwError<ASError>(kFileOpenError,filename);
+	{
+		createError<ASError>(wrk,kFileOpenError,filename);
+		return;
+	}
 	ret = asAtomHandler::fromObject(abstract_s(wrk,wrk->getSystemState()->getEngineData()->FileRead(wrk->getSystemState(),filename,false)));
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,write)
 {
 	tiny_string filename;
 	tiny_string data;
-	ARG_UNPACK_ATOM(filename)(data);
+	ARG_CHECK(ARG_UNPACK(filename)(data));
 	wrk->getSystemState()->getEngineData()->FileWrite(wrk->getSystemState(),filename,data,false);
 }
 ASFUNCTIONBODY_ATOM(avmplusFile,readByteArray)
 {
 	tiny_string filename;
-	ARG_UNPACK_ATOM(filename);
+	ARG_CHECK(ARG_UNPACK(filename));
 	if (!wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),filename,false))
-		throwError<ASError>(kFileOpenError,filename);
+	{
+		createError<ASError>(wrk,kFileOpenError,filename);
+		return;
+	}
 	ByteArray* res = Class<ByteArray>::getInstanceS(wrk);
 	wrk->getSystemState()->getEngineData()->FileReadByteArray(wrk->getSystemState(),filename,res,0,UINT32_MAX,false);
 	ret = asAtomHandler::fromObject(res);
@@ -80,7 +86,7 @@ ASFUNCTIONBODY_ATOM(avmplusFile,writeByteArray)
 {
 	tiny_string filename;
 	_NR<ByteArray> data;
-	ARG_UNPACK_ATOM(filename)(data);
+	ARG_CHECK(ARG_UNPACK(filename)(data));
 	wrk->getSystemState()->getEngineData()->FileWriteByteArray(wrk->getSystemState(),filename,data.getPtr(),0,UINT32_MAX,false);
 }
 
@@ -203,7 +209,7 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,exec)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.exec is unimplemented.");
 	if (argslen == 0)
-		throwError<ArgumentError>(kWrongArgumentCountError,"exec",">0",Integer::toString(argslen));
+		createError<ArgumentError>(wrk,kWrongArgumentCountError,"exec",">0",Integer::toString(argslen));
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,write)
 {
@@ -212,7 +218,7 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,write)
 ASFUNCTIONBODY_ATOM(avmplusSystem,sleep)
 {
 	uint32_t ms;
-	ARG_UNPACK_ATOM(ms);
+	ARG_CHECK(ARG_UNPACK(ms));
 	compat_msleep(ms);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,exit)
@@ -223,7 +229,7 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,exit)
 ASFUNCTIONBODY_ATOM(avmplusSystem,canonicalizeNumber)
 {
 	_NR<ASObject> o;
-	ARG_UNPACK_ATOM(o);
+	ARG_CHECK(ARG_UNPACK(o));
 	switch(o->getObjectType())
 	{
 		case T_NUMBER:
@@ -264,7 +270,7 @@ void avmplusDomain::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(avmplusDomain,_constructor)
 {
 	_NR<avmplusDomain> parentDomain;
-	ARG_UNPACK_ATOM(parentDomain);
+	ARG_CHECK(ARG_UNPACK(parentDomain));
 	avmplusDomain* th = asAtomHandler::as<avmplusDomain>(obj);
 	if (parentDomain.isNull())
 		th->appdomain = ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
@@ -287,11 +293,14 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 	avmplusDomain* th = asAtomHandler::as<avmplusDomain>(obj);
 	tiny_string filename;
 	uint32_t swfVersion;
-	ARG_UNPACK_ATOM(filename)(swfVersion, 0);
+	ARG_CHECK(ARG_UNPACK(filename)(swfVersion, 0));
 	if (swfVersion != 0)
 		LOG(LOG_NOT_IMPLEMENTED, "avmplus.Domain.load is unimplemented for swfVersion "<<swfVersion);
 	if (!wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),filename,false))
-		throwError<ASError>(kFileOpenError,filename);
+	{
+		createError<ASError>(wrk,kFileOpenError,filename);
+		return;
+	}
 	_NR<ByteArray> bytes = _NR<ByteArray>(Class<ByteArray>::getInstanceS(wrk));
 	wrk->getSystemState()->getEngineData()->FileReadByteArray(wrk->getSystemState(),filename,bytes.getPtr(),0,UINT32_MAX,false);
 
@@ -313,7 +322,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
 	avmplusDomain* th = asAtomHandler::as<avmplusDomain>(obj);
 	_NR<ByteArray> bytes;
 	uint32_t swfversion;
-	ARG_UNPACK_ATOM (bytes)(swfversion, 0);
+	ARG_CHECK(ARG_UNPACK(bytes)(swfversion, 0));
 
 	if (swfversion != 0)
 		LOG(LOG_NOT_IMPLEMENTED,"Domain.loadBytes ignores parameter swfVersion");
@@ -349,7 +358,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_getDomainMemory)
 ASFUNCTIONBODY_ATOM(avmplusDomain,_setDomainMemory)
 {
 	_NR<ByteArray> b;
-	ARG_UNPACK_ATOM(b);
+	ARG_CHECK(ARG_UNPACK(b));
 	avmplusDomain* th = asAtomHandler::as<avmplusDomain>(obj);
 	
 	if (b.isNull())
@@ -360,7 +369,10 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_setDomainMemory)
 	}
 		
 	if (b->getLength() < MIN_DOMAIN_MEMORY_LIMIT)
-		throwError<RangeError>(kEndOfFileError);
+	{
+		createError<RangeError>(wrk,kEndOfFileError);
+		return;
+	}
 	th->appdomain->domainMemory = b;
 	th->appdomain->checkDomainMemory();
 }

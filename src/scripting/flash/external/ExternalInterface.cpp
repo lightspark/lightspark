@@ -82,7 +82,6 @@ ASFUNCTIONBODY_ATOM(ExternalInterface,addCallback)
 		asAtomHandler::setBool(ret,false);
 		return;
 	}
-//		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen == 2);
 
@@ -102,7 +101,6 @@ ASFUNCTIONBODY_ATOM(ExternalInterface,call)
 		asAtomHandler::setNull(ret);
 		return;
 	}
-//		throw Class<ASError>::getInstanceS("Container doesn't support callbacks");
 
 	assert_and_throw(argslen >= 1);
 	const tiny_string& arg0=asAtomHandler::toString(args[0],wrk);

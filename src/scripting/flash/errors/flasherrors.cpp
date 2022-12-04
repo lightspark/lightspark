@@ -26,7 +26,7 @@ using namespace lightspark;
 ASFUNCTIONBODY_ATOM(IOError,_constructor)
 {
 	IOError* th=asAtomHandler::as<IOError>(obj);
-	ARG_UNPACK_ATOM(th->message, "");
+	ARG_CHECK(ARG_UNPACK(th->message, ""));
 }
 
 void IOError::sinit(Class_base* c)
@@ -41,7 +41,7 @@ void IOError::buildTraits(ASObject* o)
 ASFUNCTIONBODY_ATOM(EOFError,_constructor)
 {
 	EOFError* th=asAtomHandler::as<EOFError>(obj);
-	ARG_UNPACK_ATOM(th->message, "");
+	ARG_CHECK(ARG_UNPACK(th->message, ""));
 }
 
 void EOFError::sinit(Class_base* c)
@@ -56,7 +56,7 @@ void EOFError::buildTraits(ASObject* o)
 ASFUNCTIONBODY_ATOM(IllegalOperationError,_constructor)
 {
 	IllegalOperationError* th=asAtomHandler::as<IllegalOperationError>(obj);
-	ARG_UNPACK_ATOM(th->message, "");
+	ARG_CHECK(ARG_UNPACK(th->message, ""));
 }
 
 void IllegalOperationError::sinit(Class_base* c)
@@ -72,7 +72,7 @@ ASFUNCTIONBODY_ATOM(InvalidSWFError,_constructor)
 {
 	InvalidSWFError* th=asAtomHandler::as<InvalidSWFError>(obj);
 	int32_t errorID;
-	ARG_UNPACK_ATOM(th->message, "") (errorID, 0);
+	ARG_CHECK(ARG_UNPACK(th->message, "") (errorID, 0));
 	th->setErrorID(errorID);
 }
 
@@ -88,7 +88,7 @@ void InvalidSWFError::buildTraits(ASObject* o)
 ASFUNCTIONBODY_ATOM(MemoryError,_constructor)
 {
 	MemoryError* th=asAtomHandler::as<MemoryError>(obj);
-	ARG_UNPACK_ATOM(th->message, "");
+	ARG_CHECK(ARG_UNPACK(th->message, ""));
 }
 
 void MemoryError::sinit(Class_base* c)
@@ -103,7 +103,7 @@ void MemoryError::buildTraits(ASObject* o)
 ASFUNCTIONBODY_ATOM(ScriptTimeoutError,_constructor)
 {
 	ScriptTimeoutError* th=asAtomHandler::as<ScriptTimeoutError>(obj);
-	ARG_UNPACK_ATOM(th->message, "");
+	ARG_CHECK(ARG_UNPACK(th->message, ""));
 }
 
 void ScriptTimeoutError::sinit(Class_base* c)
@@ -118,7 +118,7 @@ void ScriptTimeoutError::buildTraits(ASObject* o)
 ASFUNCTIONBODY_ATOM(StackOverflowError,_constructor)
 {
 	StackOverflowError* th=asAtomHandler::as<StackOverflowError>(obj);
-	ARG_UNPACK_ATOM(th->message, "");
+	ARG_CHECK(ARG_UNPACK(th->message, ""));
 }
 
 void StackOverflowError::sinit(Class_base* c)

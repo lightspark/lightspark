@@ -1121,14 +1121,14 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 					RUNTIME_STACK_POP_CREATE(context,ret);
 					(void)ret;
 					LOG(LOG_ERROR,"trying to call convert_o on null");
-					throwError<TypeError>(kConvertNullToObjectError);
+					createError<TypeError>(context->worker,kConvertNullToObjectError);
 				}
 				if (asAtomHandler::isUndefined(*val))
 				{
 					RUNTIME_STACK_POP_CREATE(context,ret);
 					(void)ret;
 					LOG(LOG_ERROR,"trying to call convert_o on undefined");
-					throwError<TypeError>(kConvertUndefinedToObjectError);
+					createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 				}
 				break;
 			}

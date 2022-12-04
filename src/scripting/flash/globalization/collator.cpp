@@ -46,8 +46,7 @@ void Collator::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(Collator,_constructor)
 {
 	Collator* th =asAtomHandler::as<Collator>(obj);
-	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
-	ARG_UNPACK_ATOM(th->initialMode);
+	ARG_CHECK(ARG_UNPACK(th->requestedLocaleIDName)(th->initialMode));
 	if (wrk->getSystemState()->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
 		std::string localeName = wrk->getSystemState()->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
@@ -62,15 +61,15 @@ ASFUNCTIONBODY_ATOM(Collator,_constructor)
 	}
 }
 
-ASFUNCTIONBODY_GETTER(Collator, actualLocaleIDName);
-ASFUNCTIONBODY_GETTER_SETTER(Collator, ignoreCase);
-ASFUNCTIONBODY_GETTER_SETTER(Collator, ignoreCharacterWidth);
-ASFUNCTIONBODY_GETTER_SETTER(Collator, ignoreDiacritics);
-ASFUNCTIONBODY_GETTER_SETTER(Collator, ignoreKanaType);
-ASFUNCTIONBODY_GETTER_SETTER(Collator, ignoreSymbols);
-ASFUNCTIONBODY_GETTER(Collator, lastOperationStatus);
-ASFUNCTIONBODY_GETTER_SETTER(Collator, numericComparison);
-ASFUNCTIONBODY_GETTER(Collator, requestedLocaleIDName);
+ASFUNCTIONBODY_GETTER(Collator, actualLocaleIDName)
+ASFUNCTIONBODY_GETTER_SETTER(Collator, ignoreCase)
+ASFUNCTIONBODY_GETTER_SETTER(Collator, ignoreCharacterWidth)
+ASFUNCTIONBODY_GETTER_SETTER(Collator, ignoreDiacritics)
+ASFUNCTIONBODY_GETTER_SETTER(Collator, ignoreKanaType)
+ASFUNCTIONBODY_GETTER_SETTER(Collator, ignoreSymbols)
+ASFUNCTIONBODY_GETTER(Collator, lastOperationStatus)
+ASFUNCTIONBODY_GETTER_SETTER(Collator, numericComparison)
+ASFUNCTIONBODY_GETTER(Collator, requestedLocaleIDName)
 
 bool Collator::isSymbol(uint32_t character)
 {
@@ -226,7 +225,7 @@ ASFUNCTIONBODY_ATOM(Collator,compare)
 		std::locale l =  std::locale::global(th->currlocale);
 	    tiny_string string1;
 	    tiny_string string2;
-	    ARG_UNPACK_ATOM(string1)(string2);
+	    ARG_CHECK(ARG_UNPACK(string1)(string2));
 		std::string s1 = string1.raw_buf();
 		std::string s2 = string2.raw_buf();
 	    std::locale::global(l);
@@ -277,7 +276,7 @@ ASFUNCTIONBODY_ATOM(Collator,equals)
     {
 		tiny_string string1;
 	    tiny_string string2;
-	    ARG_UNPACK_ATOM(string1)(string2);
+	    ARG_CHECK(ARG_UNPACK(string1)(string2));
 		std::locale l =  std::locale::global(th->currlocale);
 		std::string s1 = string1.raw_buf();
 		std::string s2 = string2.raw_buf();

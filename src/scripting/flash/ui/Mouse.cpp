@@ -60,7 +60,7 @@ ASFUNCTIONBODY_ATOM(Mouse, getCursor)
 ASFUNCTIONBODY_ATOM(Mouse, setCursor)
 {
 	tiny_string cursorName;
-	ARG_UNPACK_ATOM(cursorName);
+	ARG_CHECK(ARG_UNPACK(cursorName));
 	if (cursorName != "auto")
 		LOG(LOG_NOT_IMPLEMENTED,"setting mouse cursor is not implemented");
 }
@@ -79,13 +79,13 @@ ASFUNCTIONBODY_ATOM(Mouse, registerCursor)
 {
 	tiny_string cursorName;
 	_NR<MouseCursorData> mousecursordata;
-	ARG_UNPACK_ATOM(cursorName) (mousecursordata);
+	ARG_CHECK(ARG_UNPACK(cursorName) (mousecursordata));
 	LOG(LOG_NOT_IMPLEMENTED,"Mouse.registerCursor is not implemented");
 }
 ASFUNCTIONBODY_ATOM(Mouse, unregisterCursor)
 {
 	tiny_string cursorName;
-	ARG_UNPACK_ATOM(cursorName);
+	ARG_CHECK(ARG_UNPACK(cursorName));
 	LOG(LOG_NOT_IMPLEMENTED,"Mouse.unregisterCursor is not implemented");
 }
 void MouseCursor::sinit(Class_base* c)

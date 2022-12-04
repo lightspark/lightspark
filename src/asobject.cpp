@@ -171,7 +171,8 @@ tiny_string ASObject::toString()
 		{
 			//everything else is an Object regarding to the spec
 			asAtom ret = asAtomHandler::fromObject(this);
-			toPrimitive(ret,STRING_HINT);
+			if (!toPrimitive(ret,STRING_HINT))
+				return "";
 			tiny_string s= asAtomHandler::toString(ret,getWorker());
 			ASATOM_DECREF(ret);
 			return s;
@@ -355,7 +356,7 @@ int64_t ASObject::toInt64()
 }
 
 /* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
-void ASObject::toPrimitive(asAtom& ret,TP_HINT hint)
+bool ASObject::toPrimitive(asAtom& ret,TP_HINT hint)
 {
 	//See ECMA 8.6.2.6 for default hint regarding Date
 	if(hint == NO_HINT)
@@ -369,7 +370,7 @@ void ASObject::toPrimitive(asAtom& ret,TP_HINT hint)
 	if(isPrimitive())
 	{
 		ret = asAtomHandler::fromObject(this);
-		return;
+		return true;
 	}
 
 	/* for HINT_STRING evaluate first toString, then valueOf
@@ -378,22 +379,23 @@ void ASObject::toPrimitive(asAtom& ret,TP_HINT hint)
 	{
 		call_toString(ret);
 		if(asAtomHandler::isPrimitive(ret))
-			return;
+			return true;
 	}
 	if(has_valueOf())
 	{
 		call_valueOf(ret);
 		if(asAtomHandler::isPrimitive(ret))
-			return;
+			return true;
 	}
 	if(hint != STRING_HINT && has_toString())
 	{
 		call_toString(ret);
 		if(asAtomHandler::isPrimitive(ret))
-			return;
+			return true;
 	}
 
-	throwError<TypeError>(kConvertToPrimitiveError,this->getClassName());
+	createError<TypeError>(getInstanceWorker(),kConvertToPrimitiveError,this->getClassName());
+	return false;
 }
 
 bool ASObject::has_valueOf()
@@ -423,10 +425,12 @@ void ASObject::call_valueOf(asAtom& ret)
 	asAtom o=asAtomHandler::invalidAtom;
 	bool refcounted = getVariableByMultiname(o,valueOfName,GET_VARIABLE_OPTION(SKIP_IMPL|NO_INCREF),wrk) & GETVAR_ISNEWOBJECT;
 	if (!asAtomHandler::isFunction(o))
-		throwError<TypeError>(kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
-
-	asAtom v =asAtomHandler::fromObject(this);
-	asAtomHandler::callFunction(o,wrk,ret,v,nullptr,0,false);
+		createError<TypeError>(getInstanceWorker(),kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
+	else
+	{
+		asAtom v =asAtomHandler::fromObject(this);
+		asAtomHandler::callFunction(o,wrk,ret,v,nullptr,0,false);
+	}
 	if (refcounted)
 		ASATOM_DECREF(o);
 }
@@ -458,10 +462,12 @@ void ASObject::call_toString(asAtom &ret)
 	asAtom o=asAtomHandler::invalidAtom;
 	bool refcounted = getVariableByMultiname(o,toStringName,GET_VARIABLE_OPTION(SKIP_IMPL|NO_INCREF),wrk) & GETVAR_ISNEWOBJECT;
 	if (!asAtomHandler::isFunction(o))
-		throwError<TypeError>(kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
-
-	asAtom v =asAtomHandler::fromObject(this);
-	asAtomHandler::callFunction(o,wrk,ret,v,nullptr,0,false);
+		createError<TypeError>(getInstanceWorker(), kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
+	else
+	{
+		asAtom v =asAtomHandler::fromObject(this);
+		asAtomHandler::callFunction(o,wrk,ret,v,nullptr,0,false);
+	}
 	if (refcounted)
 		ASATOM_DECREF(o);
 }
@@ -486,6 +492,8 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom
 	asAtom v=asAtomHandler::fromObject(this);
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::callFunction(o,getInstanceWorker(), ret,v,nullptr,0,false);
+	if (getInstanceWorker()->currentCallContext && getInstanceWorker()->currentCallContext->exceptionthrown)
+		return res;
 	if (asAtomHandler::isString(ret))
 	{
 		res += "\"";
@@ -722,7 +730,7 @@ bool ASObject::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 		if (classdef && classdef->isSealed)
 		{
 			if (classdef->Variables.findObjVar(getSystemState(),name, DECLARED_TRAIT)!=nullptr)
-				throwError<ReferenceError>(kDeleteSealedError,name.normalizedNameUnresolved(getSystemState()),classdef->getName());
+				createError<ReferenceError>(getInstanceWorker(),kDeleteSealedError,name.normalizedNameUnresolved(getSystemState()),classdef->getName());
 			return false;
 		}
 
@@ -790,12 +798,11 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 
 	if (obj && (obj->kind == CONSTANT_TRAIT && allowConst==CONST_NOT_ALLOWED))
 	{
-		ASATOM_DECREF(o);
-		decRef();
 		if (asAtomHandler::isFunction(obj->var) || asAtomHandler::isValid(obj->setter))
-			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
+			createError<ReferenceError>(getInstanceWorker(),kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
 		else
-			throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
+			createError<ReferenceError>(getInstanceWorker(),kConstWriteError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
+		return nullptr;
 	}
 	if(!obj && cls)
 	{
@@ -806,9 +813,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		obj=cls->findBorrowedSettable(name,&has_getter);
 		if(obj && (obj->issealed || cls->isFinal || cls->isSealed) && asAtomHandler::isInvalid(obj->setter))
 		{
-			ASATOM_DECREF(o);
-			decRef();
-			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
+			createError<ReferenceError>(getInstanceWorker(),kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
+			return nullptr;
 		}
 		// no setter and dynamic variables are allowed, so we force creation of a dynamic variable
 		if (obj && asAtomHandler::isInvalid(obj->setter))
@@ -826,9 +832,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 			((asAtomHandler::isFunction(protoObj->var)) ||
 			 asAtomHandler::isValid(protoObj->setter)))
 		{
-			ASATOM_DECREF(o);
-			decRef();
-			throwError<ReferenceError>(kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
+			createError<ReferenceError>(getInstanceWorker(),kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
+			return nullptr;
 		}
 	}
 
@@ -836,23 +841,22 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	{
 		if(has_getter)  // Is this a read-only property?
 		{
-			ASATOM_DECREF(o);
-			decRef();
-			throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
+			createError<ReferenceError>(getInstanceWorker(), kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
+			return nullptr;
 		}
 
 		// Properties can not be added to a sealed class
 		if (cls && cls->isSealed && 
 				(this->getInstanceWorker()->rootClip->needsActionScript3() || !this->isPrimitive())) // primitives in AVM1 seem to be dynamic
 		{
-			ASATOM_DECREF(o);
-			decRef();
 			ABCContext* c = nullptr;
 			c = wrk->currentCallContext ? wrk->currentCallContext->mi->context : nullptr;
 			const Type* type =c ? Type::getTypeFromMultiname(&name,c) : nullptr;
 			if (type)
-				throwError<ReferenceError>(kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
-			throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), cls->getQualifiedClassName());
+				createError<ReferenceError>(getInstanceWorker(), kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
+			else
+				createError<ReferenceError>(getInstanceWorker(), kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), cls->getQualifiedClassName());
+			return nullptr;
 		}
 
 		obj=Variables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT);
@@ -861,9 +865,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		{
 			if(this->is<Global>() && !name.hasGlobalNS)
 			{
-				ASATOM_DECREF(o);
-				decRef();
-				throwError<ReferenceError>(kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), this->getClassName());
+				createError<ReferenceError>(getInstanceWorker(), kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), this->getClassName());
+				return nullptr;
 			}
 			
 			variables_map::var_iterator inserted=Variables.Variables.insert(Variables.Variables.cbegin(),
@@ -991,7 +994,11 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 		isResolved=true;
 	}
 	if(isResolved && type)
+	{
 		type->coerce(wrk,v);
+		if (wrk->currentCallContext->exceptionthrown)
+			return;
+	}
 	asAtom oldvar = var;
 	var=v;
 	if(isrefcounted && asAtomHandler::isObject(oldvar))
@@ -1167,7 +1174,7 @@ ASFUNCTIONBODY_ATOM(ASObject,generator)
 		ret = args[0];
 	}
 	else if (argslen > 1)
-		throwError<ArgumentError>(kCoerceArgumentCountError,Integer::toString(argslen));
+		createError<ArgumentError>(wrk,kCoerceArgumentCountError,Integer::toString(argslen));
 	else
 		ret = asAtomHandler::fromObject(Class<ASObject>::getInstanceS(wrk));
 }
@@ -1294,8 +1301,8 @@ ASFUNCTIONBODY_ATOM(ASObject,setPropertyIsEnumerable)
 {
 	tiny_string propname;
 	bool isEnum;
-	ARG_UNPACK_ATOM(propname) (isEnum, true);
-	multiname name(NULL);
+	ARG_CHECK(ARG_UNPACK(propname) (isEnum, true));
+	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=asAtomHandler::toStringId(args[0],wrk);
 	name.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
@@ -1308,7 +1315,7 @@ ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 	tiny_string name;
 	_NR<IFunction> getter;
 	_NR<IFunction> setter;
-	ARG_UNPACK_ATOM(name)(getter)(setter);
+	ARG_CHECK(ARG_UNPACK(name)(getter)(setter));
 	if (name.empty())
 		return;
 	if (!getter.isNull())
@@ -1327,7 +1334,7 @@ ASFUNCTIONBODY_ATOM(ASObject,registerClass)
 	ret = asAtomHandler::falseAtom;
 	tiny_string name;
 	_NR<IFunction> theClassConstructor;
-	ARG_UNPACK_ATOM(name)(theClassConstructor);
+	ARG_CHECK(ARG_UNPACK(name)(theClassConstructor));
 	if (name.empty())
 		return;
 	if (!theClassConstructor.isNull())
@@ -1370,7 +1377,7 @@ ASFUNCTIONBODY_ATOM(ASObject,_constructor)
 
 ASFUNCTIONBODY_ATOM(ASObject,_constructorNotInstantiatable)
 {
-	throwError<ArgumentError>(kCantInstantiateError, asAtomHandler::toObject(obj,wrk)->getClassName());
+	createError<ArgumentError>(wrk,kCantInstantiateError, asAtomHandler::toObject(obj,wrk)->getClassName());
 }
 
 void ASObject::initSlot(unsigned int n, variable* v)
@@ -1501,7 +1508,10 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 	{
 		res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_CACHEABLE);
 		if (!(opt & FROM_GETLEX) && obj->kind == INSTANCE_TRAIT && getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
-			throwError<TypeError>(kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
+		{
+			createError<TypeError>(wrk, kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
+			return res;
+		}
 	}
 
 	if(asAtomHandler::isValid(obj->getter))
@@ -1582,7 +1592,10 @@ void ASObject::executeASMethod(asAtom& ret,const tiny_string& methodName,
 	asAtom o=asAtomHandler::invalidAtom;
 	getVariableByMultiname(o,methodName, namespaces,getInstanceWorker());
 	if (!asAtomHandler::isFunction(o))
-		throwError<TypeError>(kCallOfNonFunctionError, methodName);
+	{
+		createError<TypeError>(getInstanceWorker(), kCallOfNonFunctionError, methodName);
+		return;
+	}
 	asAtom v =asAtomHandler::fromObject(this);
 	asAtomHandler::callFunction(o,getInstanceWorker(),ret,v,args,num_args,false);
 }
@@ -1729,7 +1742,7 @@ void variables_map::prepareShutdown()
 	var_iterator it=Variables.begin();
 	while(it!=Variables.end())
 	{
-		ASObject* v = asAtomHandler::getObject(it->second.var);
+		ASObject* v = it->second.isrefcounted ? asAtomHandler::getObject(it->second.var) : nullptr;
 		if (v)
 			v->prepareShutdown();
 		v = asAtomHandler::getObject(it->second.getter);
@@ -1779,7 +1792,7 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 	while(it!=Variables.cend())
 	{
 		ASObject* o = asAtomHandler::getObject(it->second.var);
-		if (o && !o->getConstant() && !o->getInDestruction() && o->canHaveCyclicMemberReference())
+		if (it->second.isrefcounted && o && !o->getConstant() && !o->getInDestruction() && o->canHaveCyclicMemberReference())
 		{
 			if (o==gcstate.startobj)
 			{
@@ -2288,7 +2301,11 @@ void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, 
 		asAtom wr=asAtomHandler::invalidAtom;
 		out->getSystemState()->static_ObjectEncoding_dynamicPropertyWriter->getVariableByMultiname(wr,m,SKIP_IMPL,wrk);
 		if (!asAtomHandler::isFunction(wr))
-			throwError<TypeError>(kCallOfNonFunctionError, m.normalizedNameUnresolved(out->getSystemState()));
+		{
+			o->decRef();
+			ASATOM_DECREF(wr);
+			createError<TypeError>(wrk,kCallOfNonFunctionError, m.normalizedNameUnresolved(out->getSystemState()));
+		}
 	
 		asAtom ret=asAtomHandler::invalidAtom;
 		asAtom v =asAtomHandler::fromObject(out->getSystemState()->static_ObjectEncoding_dynamicPropertyWriter.getPtr());
@@ -2384,7 +2401,10 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	{
 		//Custom serialization necessary
 		if(!serializeTraits)
-			throwError<TypeError>(kInvalidParamError);
+		{
+			createError<TypeError>(wrk,kInvalidParamError);
+			return;
+		}
 		if (amf0)
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"serializing IExternalizable in AMF0 not implemented");
@@ -2580,7 +2600,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 							res += "\\\\";
 							break;
 						default:
-							if (*it < 0x20 || *it > 0xff)
+							if ((*it < 0x20) || (*it > 0xff))
 							{
 								char hexstr[7];
 								sprintf(hexstr,"\\u%04x",*it);
@@ -2655,7 +2675,14 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 				continue;
 			if(varIt->second.ns.hasEmptyName() && (asAtomHandler::isValid(varIt->second.getter) || asAtomHandler::isValid(varIt->second.var)))
 			{
-				ASObject* v = asAtomHandler::isValid(varIt->second.var) ? asAtomHandler::toObject(varIt->second.var,getInstanceWorker()) : nullptr;
+				ASObject* v = nullptr;
+				bool newobj = false;
+				if (asAtomHandler::isValid(varIt->second.var))
+				{
+					asAtom tmp = varIt->second.var;
+					newobj = !asAtomHandler::isObject(varIt->second.var); // variable is not a pointer to an ASObject, so toObject() will create a temporary ASObject that has to be decreffed after usage
+					v = asAtomHandler::toObject(tmp,getInstanceWorker());
+				}
 				if (asAtomHandler::isValid(varIt->second.getter))
 				{
 					asAtom t=asAtomHandler::fromObject(this);
@@ -2670,8 +2697,10 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 						v->getObjectType() != T_NULL &&
 						v->getObjectType() != T_BOOLEAN &&
 						std::find(path.begin(),path.end(), v) != path.end())
-						throwError<TypeError>(kJSONCyclicStructure);
-		
+					{
+						createError<TypeError>(getInstanceWorker(), kJSONCyclicStructure);
+						return res;
+					}
 					if (asAtomHandler::isValid(replacer))
 					{
 						if (!bfirst)
@@ -2711,6 +2740,9 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 						bfirst = false;
 					}
 				}
+
+				if (newobj)
+					v->decRef();
 				if (!bfirst)
 					res += newline+spaces.substr_bytes(0,spaces.numBytes()/2);
 			}
@@ -2756,9 +2788,12 @@ void ASObject::setprop_prototype(_NR<ASObject>& prototype,uint32_t nameID)
 	bool has_getter = false;
 	variable* ret=findSettable(prototypeName,&has_getter);
 	if(!ret && has_getter)
-		throwError<ReferenceError>(kConstWriteError,
+	{
+		createError<ReferenceError>(getInstanceWorker(), kConstWriteError,
 					   prototypeName.normalizedNameUnresolved(getSystemState()),
 					   classdef ? classdef->as<Class_base>()->getQualifiedClassName() : "");
+		return;
+	}
 	if(!ret)
 	{
 		ret = Variables.findObjVar(getSystemState(),prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
@@ -3045,7 +3080,8 @@ asAtom asAtomHandler::asTypelate(asAtom& a, asAtom& b, ASWorker* wrk)
 	if(!isObject(b) || !is<Class_base>(b))
 	{
 		LOG(LOG_ERROR,"trying to call asTypelate on non class object:"<<toDebugString(a));
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(wrk,kConvertNullToObjectError);
+		return asAtomHandler::invalidAtom;
 	}
 	Class_base* c=static_cast<Class_base*>(getObject(b));
 	//Special case numeric types
@@ -3100,20 +3136,21 @@ bool asAtomHandler::isTypelate(asAtom& a,ASObject *type)
 		case T_OBJECT:
 		case T_STRING:
 			LOG(LOG_ERROR,"trying to call isTypelate on object:"<<toDebugString(a));
-			throwError<TypeError>(kIsTypeMustBeClassError);
-			break;
+			createError<TypeError>(type->getInstanceWorker(),kIsTypeMustBeClassError);
+			return false;
 		case T_NULL:
 			LOG(LOG_ERROR,"trying to call isTypelate on null:"<<toDebugString(a));
-			throwError<TypeError>(kConvertNullToObjectError);
-			break;
+			createError<TypeError>(type->getInstanceWorker(),kConvertNullToObjectError);
+			return false;
 		case T_UNDEFINED:
 			LOG(LOG_ERROR,"trying to call isTypelate on undefined:"<<toDebugString(a));
-			throwError<TypeError>(kConvertUndefinedToObjectError);
-			break;
+			createError<TypeError>(type->getInstanceWorker(),kConvertUndefinedToObjectError);
+			return false;
 		case T_CLASS:
 			break;
 		default:
-			throwError<TypeError>(kIsTypeMustBeClassError);
+			createError<TypeError>(type->getInstanceWorker(),kIsTypeMustBeClassError);
+			return false;
 	}
 
 	c=static_cast<Class_base*>(type);
@@ -3164,20 +3201,21 @@ bool asAtomHandler::isTypelate(asAtom& a,asAtom& t)
 		case T_OBJECT:
 		case T_STRING:
 			LOG(LOG_ERROR,"trying to call isTypelate on object:"<<toDebugString(a));
-			throwError<TypeError>(kIsTypeMustBeClassError);
-			break;
+			createError<TypeError>(getWorker(),kIsTypeMustBeClassError);
+			return false;
 		case T_NULL:
 			LOG(LOG_ERROR,"trying to call isTypelate on null:"<<toDebugString(a));
-			throwError<TypeError>(kConvertNullToObjectError);
-			break;
+			createError<TypeError>(getWorker(),kConvertNullToObjectError);
+			return false;
 		case T_UNDEFINED:
 			LOG(LOG_ERROR,"trying to call isTypelate on undefined:"<<toDebugString(a));
-			throwError<TypeError>(kConvertUndefinedToObjectError);
-			break;
+			createError<TypeError>(getWorker(),kConvertUndefinedToObjectError);
+			return false;
 		case T_CLASS:
 			break;
 		default:
-			throwError<TypeError>(kIsTypeMustBeClassError);
+			createError<TypeError>(getWorker(),kIsTypeMustBeClassError);
+			return false;
 	}
 
 	c=asAtomHandler::as<Class_base>(t);

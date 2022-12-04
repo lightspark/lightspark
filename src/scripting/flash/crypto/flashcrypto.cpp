@@ -27,7 +27,7 @@ using namespace lightspark;
 ASFUNCTIONBODY_ATOM(lightspark,generateRandomBytes)
 {
 	uint32_t numbytes;
-	ARG_UNPACK_ATOM (numbytes);
+	ARG_CHECK(ARG_UNPACK(numbytes));
 	std::independent_bits_engine<std::default_random_engine, CHAR_BIT, unsigned char> engine;
 	ByteArray *res = Class<ByteArray>::getInstanceS(wrk);
 

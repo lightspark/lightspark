@@ -31,11 +31,11 @@ void CurrencyParseResult::sinit(Class_base* c)
     REGISTER_GETTER(c, value);
 }
 
-ASFUNCTIONBODY_GETTER(CurrencyParseResult, currencyString);
-ASFUNCTIONBODY_GETTER(CurrencyParseResult, value);
+ASFUNCTIONBODY_GETTER(CurrencyParseResult, currencyString)
+ASFUNCTIONBODY_GETTER(CurrencyParseResult, value)
 
 ASFUNCTIONBODY_ATOM(CurrencyParseResult,_constructor)
 {
     CurrencyParseResult* th =asAtomHandler::as<CurrencyParseResult>(obj);
-	ARG_UNPACK_ATOM(th->value)(th->currencyString,"");
+	ARG_CHECK(ARG_UNPACK(th->value)(th->currencyString,""));
 }

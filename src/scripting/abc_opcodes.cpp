@@ -64,12 +64,16 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 	if(obj->is<Null>())
 	{
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(getWorker(),kConvertNullToObjectError);
+		obj->decRef();
+		return;
 	}
 	if (obj->is<Undefined>())
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(getWorker(),kConvertUndefinedToObjectError);
+		obj->decRef();
+		return;
 	}
 	//Do not allow to set contant traits
 	asAtom v = asAtomHandler::fromObject(value);
@@ -86,14 +90,15 @@ void ABCVm::setProperty_i(int32_t value,ASObject* obj,multiname* name)
 	if(obj->is<Null>())
 	{
 		LOG(LOG_ERROR,"calling setProperty_i on null:" << *name << ' ' << obj->toDebugString()<<" " << value);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(getWorker(),kConvertNullToObjectError);
 	}
-	if (obj->is<Undefined>())
+	else if (obj->is<Undefined>())
 	{
 		LOG(LOG_ERROR,"calling setProperty_i on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(getWorker(),kConvertUndefinedToObjectError);
 	}
-	obj->setVariableByMultiname_i(*name,value,obj->getInstanceWorker());
+	else
+		obj->setVariableByMultiname_i(*name,value,obj->getInstanceWorker());
 	obj->decRef();
 }
 
@@ -180,11 +185,11 @@ ASObject* ABCVm::checkfilter(ASObject* o)
 {
 	LOG_CALL( "checkfilter" );
 	if (o->is<Null>())
-		throwError<TypeError>(kConvertNullToObjectError);
-	if (o->is<Undefined>())
-		throwError<TypeError>(kConvertUndefinedToObjectError);
-	if (!o->is<XML>() && !o->is<XMLList>())
-		throwError<TypeError>(kFilterError, o->getClassName());
+		createError<TypeError>(getWorker(),kConvertNullToObjectError);
+	else if (o->is<Undefined>())
+		createError<TypeError>(getWorker(),kConvertUndefinedToObjectError);
+	else if (!o->is<XML>() && !o->is<XMLList>())
+		createError<TypeError>(getWorker(),kFilterError, o->getClassName());
 	return o;
 }
 
@@ -207,7 +212,8 @@ void ABCVm::coerce(call_context* th, int n)
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
-		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+		createError<TypeError>(th->worker,kClassNotFoundError,mn->qualifiedString(getSys()));
+		return;
 	}
 	asAtom v= *o;
 	if (type->coerce(th->worker,*o))
@@ -377,12 +383,14 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	if(asAtomHandler::is<Null>(obj))
 	{
 		LOG(LOG_ERROR,"trying to call property on null:"<<*name);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(th->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::is<Undefined>(obj))
 	{
 		LOG(LOG_ERROR,"trying to call property on undefined:"<<*name);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(th->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 	bool canCache = false;
 	ASObject* pobj = asAtomHandler::getObject(obj);
@@ -511,26 +519,22 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		if (pobj->hasPropertyByMultiname(*name,true,true,th->worker))
 		{
 			tiny_string clsname = pobj->getClass()->getQualifiedClassName();
-			ASATOM_DECREF(obj);
-			throwError<ReferenceError>(kWriteOnlyError, name->normalizedName(th->sys), clsname);
+			createError<ReferenceError>(th->worker,kWriteOnlyError, name->normalizedName(th->sys), clsname);
 		}
 		if (pobj->getClass() && pobj->getClass()->isSealed)
 		{
 			tiny_string clsname = pobj->getClass()->getQualifiedClassName();
-			ASATOM_DECREF(obj);
-			throwError<ReferenceError>(kReadSealedError, name->normalizedName(th->sys), clsname);
+			createError<ReferenceError>(th->worker,kReadSealedError, name->normalizedName(th->sys), clsname);
 		}
 		if (asAtomHandler::is<Class_base>(obj))
 		{
 			tiny_string clsname = asAtomHandler::as<Class_base>(obj)->class_name.getQualifiedName(th->sys);
-			ASATOM_DECREF(obj);
-			throwError<TypeError>(kCallNotFoundError, name->qualifiedString(th->sys), clsname);
+			createError<TypeError>(th->worker,kCallNotFoundError, name->qualifiedString(th->sys), clsname);
 		}
 		else
 		{
 			tiny_string clsname = pobj->getClassName();
-			ASATOM_DECREF(obj);
-			throwError<TypeError>(kCallNotFoundError, name->qualifiedString(th->sys), clsname);
+			createError<TypeError>(th->worker,kCallNotFoundError, name->qualifiedString(th->sys), clsname);
 		}
 
 		ASATOM_DECREF(obj);
@@ -559,12 +563,14 @@ void ABCVm::callMethod(call_context* th, int n, int m)
 	if(asAtomHandler::is<Null>(obj))
 	{
 		LOG(LOG_ERROR,"trying to call method on null:"<<n);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(th->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::is<Undefined>(obj))
 	{
 		LOG(LOG_ERROR,"trying to call method on undefined:"<<n);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(th->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	asAtom o=asAtomHandler::getObject(obj)->getSlot(n);
@@ -581,7 +587,7 @@ void ABCVm::callMethod(call_context* th, int n, int m)
 			ASATOM_DECREF(args[i]);
 		}
 		ASATOM_DECREF(obj);
-		throwError<TypeError>(kCallNotFoundError, "", clsname);
+		createError<TypeError>(th->worker,kCallNotFoundError, "", clsname);
 	}
 	LOG_CALL("End of calling method " << n);
 }
@@ -608,12 +614,12 @@ ASObject* ABCVm::getProperty(ASObject* obj, multiname* name)
 	if(asAtomHandler::isInvalid(prop))
 	{
 		if (obj->getClass() && obj->getClass()->isSealed)
-			throwError<ReferenceError>(kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
-		if (name->isEmpty())
-			throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
-		if (obj->is<Undefined>())
-			throwError<TypeError>(kConvertUndefinedToObjectError);
-		if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (!obj->getClass() || obj->getClass()->isSealed))
+			createError<ReferenceError>(obj->getInstanceWorker(),kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
+		else if (name->isEmpty())
+			createError<ReferenceError>(obj->getInstanceWorker(),kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
+		else if (obj->is<Undefined>())
+			createError<TypeError>(obj->getInstanceWorker(),kConvertUndefinedToObjectError);
+		else if (Log::getLevel() >= LOG_NOT_IMPLEMENTED && (!obj->getClass() || obj->getClass()->isSealed))
 			LOG(LOG_NOT_IMPLEMENTED,"getProperty: " << name->normalizedNameUnresolved(obj->getSystemState()) << " not found on " << obj->toDebugString() << " "<<obj->getClassName());
 		ret = obj->getSystemState()->getUndefinedRef();
 	}
@@ -848,7 +854,10 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 {
 	//See ECMA 13.2.2
 	if(asAtomHandler::as<IFunction>(f)->inClass)
-		throwError<TypeError>(kCannotCallMethodAsConstructor, "");
+	{
+		createError<TypeError>(th->worker,kCannotCallMethodAsConstructor, "");
+		return;
+	}
 
 	assert(asAtomHandler::as<IFunction>(f)->prototype);
 	ret=asAtomHandler::fromObject(new_functionObject(asAtomHandler::as<IFunction>(f)->prototype));
@@ -943,7 +952,9 @@ void ABCVm::construct(call_context* th, int m)
 
 		default:
 		{
-			throwError<TypeError>(kConstructOfNonFunctionError);
+			createError<TypeError>(th->worker,kConstructOfNonFunctionError);
+			ASATOM_DECREF(obj);
+			return;
 		}
 	}
 	if (asAtomHandler::getObject(ret))
@@ -957,7 +968,10 @@ void ABCVm::constructGenericType(call_context* th, int m)
 {
 	LOG_CALL( "constructGenericType " << m);
 	if (m != 1)
-		throwError<TypeError>(kWrongTypeArgCountError, "function", "1", Integer::toString(m));
+	{
+		createError<TypeError>(th->worker,kWrongTypeArgCountError, "function", "1", Integer::toString(m));
+		return;
+	}
 	ASObject** args=g_newa(ASObject*, m);
 	for(int i=0;i<m;i++)
 	{
@@ -989,7 +1003,13 @@ void ABCVm::constructGenericType(call_context* th, int m)
 		else if(args[i]->is<Null>())
 			t[i] = Type::anyType;
 		else
-			throw Class<TypeError>::getInstanceS(th->worker,"Wrong type in applytype");
+		{
+			obj->decRef();
+			for(int i=0;i<m;i++)
+				args[i]->decRef();
+			createError<TypeError>(th->worker,0,"Wrong type in applytype");
+			return;
+		}
 	}
 	Class_base* o_class = o_template->applyType(t,th->mi->context->root->applicationDomain);
 
@@ -1561,7 +1581,7 @@ void ABCVm::_throw(call_context* th)
 {
 	LOG_CALL("throw");
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,exc);
-	throw exc;
+	setError(exc);
 }
 
 void ABCVm::setSuper(call_context* th, int n)
@@ -1595,12 +1615,18 @@ void ABCVm::getSuper(call_context* th, int n)
 	if(obj->is<Null>())
 	{
 		LOG(LOG_ERROR,"calling getSuper on null:" << *name << ' ' << obj->toDebugString());
-		throwError<TypeError>(kConvertNullToObjectError);
+		name->resetNameIfObject();
+		obj->decRef();
+		createError<TypeError>(th->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (obj->is<Undefined>())
 	{
 		LOG(LOG_ERROR,"calling getSuper on undefined:" << *name << ' ' << obj->toDebugString());
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		name->resetNameIfObject();
+		obj->decRef();
+		createError<TypeError>(th->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	Class_base* cls = nullptr;
@@ -1613,10 +1639,13 @@ void ABCVm::getSuper(call_context* th, int n)
 	asAtom ret=asAtomHandler::invalidAtom;
 	obj->getVariableByMultinameIntern(ret,*name,cls,GET_VARIABLE_OPTION::NONE,th->worker);
 	if (asAtomHandler::isInvalid(ret))
-		throwError<ReferenceError>(kCallOfNonFunctionError,name->normalizedNameUnresolved(obj->getSystemState()));
-
+	{
+		createError<ReferenceError>(th->worker,kCallOfNonFunctionError,name->normalizedNameUnresolved(obj->getSystemState()));
+		name->resetNameIfObject();
+		obj->decRef();
+		return;
+	}
 	name->resetNameIfObject();
-
 	obj->decRef();
 	RUNTIME_STACK_PUSH(th,ret);
 }
@@ -1702,8 +1731,8 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 		if(asAtomHandler::isInvalid(o))
 		{
 			LOG(LOG_NOT_IMPLEMENTED,"getLex: " << *name<< " not found");
-			throwError<ReferenceError>(kUndefinedVarError,name->normalizedNameUnresolved(th->sys));
-			RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(th->sys->getUndefinedRef()));
+			createError<ReferenceError>(th->worker,kUndefinedVarError,name->normalizedNameUnresolved(th->sys));
+			RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(th->worker->getSystemState()->getUndefinedRef()));
 			name->resetNameIfObject();
 			return false;
 		}
@@ -1857,9 +1886,12 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 				if (!r->is<Class_base>())
 					continue;
 				if (r->as<Class_base>()->checkExistingFunction(m))
-					throwError<TypeError>(kCallOfNonFunctionError,name->normalizedNameUnresolved(th->sys));
+				{
+					createError<TypeError>(th->worker,kCallOfNonFunctionError,name->normalizedNameUnresolved(th->sys));
+					return ret;
+				}
 			}
-			throwError<ReferenceError>(kUndefinedVarError,name->normalizedNameUnresolved(th->sys));
+			createError<ReferenceError>(th->worker,kUndefinedVarError,name->normalizedNameUnresolved(th->sys));
 			return th->sys->getUndefinedRef();
 		}
 	}
@@ -1953,9 +1985,15 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 				if (!r->is<Class_base>())
 					continue;
 				if (r->as<Class_base>()->checkExistingFunction(m))
-					throwError<TypeError>(kCallOfNonFunctionError,name->normalizedNameUnresolved(th->sys));
+				{
+					createError<TypeError>(th->worker,kCallOfNonFunctionError,name->normalizedNameUnresolved(th->sys));
+					name->resetNameIfObject();
+					return;
+				}
 			}
-			throwError<ReferenceError>(kUndefinedVarError,name->normalizedNameUnresolved(th->sys));
+			createError<ReferenceError>(th->worker,kUndefinedVarError,name->normalizedNameUnresolved(th->sys));
+			name->resetNameIfObject();
+			return;
 		}
 		// we only cache the property if
 		// - the property was not found in the scope_stack and
@@ -1972,7 +2010,6 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 		}
 	}
 	name->resetNameIfObject();
-
 	assert_and_throw(asAtomHandler::isValid(ret));
 	ASATOM_INCREF(ret);
 }
@@ -2034,28 +2071,37 @@ void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, 
 	if(asAtomHandler::isNull(obj))
 	{
 		LOG(LOG_ERROR,"trying to callStatic on null");
-		throwError<TypeError>(kConvertNullToObjectError);
-	}
-	if (asAtomHandler::isUndefined(obj))
-	{
-		LOG(LOG_ERROR,"trying to callStatic on undefined");
-		throwError<TypeError>(kConvertUndefinedToObjectError);
-	}
-	method_info* mi = th->mi->context->get_method(n);
-	assert_and_throw(mi);
-	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->worker,mi,mi->numArgs());
-	if(f)
-	{
-		asAtom v = asAtomHandler::fromObject(f);
-		callImpl(th, v, obj, args, m, keepReturn);
-	}
-	else
-	{
-		tiny_string clsname = asAtomHandler::toObject(obj,th->worker)->getClassName();
 		ASATOM_DECREF(obj);
 		for(int i=0;i<m;i++)
 			ASATOM_DECREF(args[i]);
-		throwError<ReferenceError>(kCallNotFoundError, "?", clsname);
+		createError<TypeError>(th->worker,kConvertNullToObjectError);
+	}
+	else if (asAtomHandler::isUndefined(obj))
+	{
+		LOG(LOG_ERROR,"trying to callStatic on undefined");
+		ASATOM_DECREF(obj);
+		for(int i=0;i<m;i++)
+			ASATOM_DECREF(args[i]);
+		createError<TypeError>(th->worker,kConvertUndefinedToObjectError);
+	}
+	else
+	{
+		method_info* mi = th->mi->context->get_method(n);
+		assert_and_throw(mi);
+		SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->worker,mi,mi->numArgs());
+		if(f)
+		{
+			asAtom v = asAtomHandler::fromObject(f);
+			callImpl(th, v, obj, args, m, keepReturn);
+		}
+		else
+		{
+			tiny_string clsname = asAtomHandler::toObject(obj,th->worker)->getClassName();
+			ASATOM_DECREF(obj);
+			for(int i=0;i<m;i++)
+				ASATOM_DECREF(args[i]);
+			createError<ReferenceError>(th->worker,kCallNotFoundError, "?", clsname);
+		}
 	}
 	LOG_CALL("End of callStatic ");
 }
@@ -2078,7 +2124,8 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 		for(int i=0;i<m;++i)
 			ASATOM_DECREF(args[i]);
 		LOG(LOG_ERROR,"trying to call super on null:"<<*name);
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(th->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (obj->is<Undefined>())
 	{
@@ -2086,7 +2133,8 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 		for(int i=0;i<m;++i)
 			ASATOM_DECREF(args[i]);
 		LOG(LOG_ERROR,"trying to call super on undefined:"<<*name);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(th->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 
 	assert_and_throw(th->inClass);
@@ -2108,7 +2156,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 		for(int i=0;i<m;i++)
 			ASATOM_DECREF(args[i]);
 		//LOG(LOG_ERROR,"Calling an undefined function " << th->sys->getStringFromUniqueId(name->name_s_id));
-		throwError<ReferenceError>(kCallNotFoundError, name->qualifiedString(th->sys), clsname);
+		createError<ReferenceError>(th->worker,kCallNotFoundError, name->qualifiedString(th->sys), clsname);
 	}
 	LOG_CALL("End of callSuper " << *name);
 }
@@ -2135,20 +2183,29 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 		case T_OBJECT:
 		case T_STRING:
 			LOG(LOG_ERROR,"trying to call isTypelate on object:"<<obj->toDebugString());
-			throwError<TypeError>(kIsTypeMustBeClassError);
-			break;
+			createError<TypeError>(type->getInstanceWorker(),kIsTypeMustBeClassError);
+			obj->decRef();
+			type->decRef();
+			return real_ret;
 		case T_NULL:
 			LOG(LOG_ERROR,"trying to call isTypelate on null:"<<obj->toDebugString());
-			throwError<TypeError>(kConvertNullToObjectError);
-			break;
+			createError<TypeError>(type->getInstanceWorker(),kConvertNullToObjectError);
+			obj->decRef();
+			type->decRef();
+			return real_ret;
 		case T_UNDEFINED:
 			LOG(LOG_ERROR,"trying to call isTypelate on undefined:"<<obj->toDebugString());
-			throwError<TypeError>(kConvertUndefinedToObjectError);
-			break;
+			createError<TypeError>(type->getInstanceWorker(),kConvertUndefinedToObjectError);
+			obj->decRef();
+			type->decRef();
+			return real_ret;
 		case T_CLASS:
 			break;
 		default:
-			throwError<TypeError>(kIsTypeMustBeClassError);
+			createError<TypeError>(type->getInstanceWorker(),kIsTypeMustBeClassError);
+			obj->decRef();
+			type->decRef();
+			return real_ret;
 	}
 
 	c=static_cast<Class_base*>(type);
@@ -2212,7 +2269,9 @@ ASObject* ABCVm::asTypelate(ASObject* type, ASObject* obj)
 	if(!type->is<Class_base>())
 	{
 		LOG(LOG_ERROR,"trying to call asTypelate on non class object:"<<obj->toDebugString());
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(type->getInstanceWorker(),kConvertNullToObjectError);
+		obj->decRef();
+		return nullptr;
 	}
 	Class_base* c=static_cast<Class_base*>(type);
 	//Special case numeric types
@@ -2297,7 +2356,11 @@ bool ABCVm::in(ASObject* val2, ASObject* val1)
 {
 	LOG_CALL( "in" );
 	if(val2->is<Null>())
-		throwError<TypeError>(kConvertNullToObjectError);
+	{
+		createError<TypeError>(getWorker(),kConvertNullToObjectError);
+		val1->decRef();
+		return false;
+	}
 
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_OBJECT;
@@ -2338,51 +2401,48 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	asAtom o=asAtomHandler::invalidAtom;
 	asAtomHandler::toObject(obj,th->worker)->getVariableByMultiname(o,*name,GET_VARIABLE_OPTION::NONE, th->worker);
 
+	name->resetNameIfObject();
 	if(asAtomHandler::isInvalid(o))
 	{
 		for(int i=0;i<m;++i)
 			ASATOM_DECREF(args[i]);
+		ASATOM_DECREF(obj);
 		if (asAtomHandler::is<Undefined>(obj))
-		{
-			ASATOM_DECREF(obj);
-			throwError<TypeError>(kConvertUndefinedToObjectError);
-		}
-		if (asAtomHandler::isPrimitive(obj))
-		{
-			ASATOM_DECREF(obj);
-			throwError<TypeError>(kConstructOfNonFunctionError);
-		}
-		throwError<ReferenceError>(kUndefinedVarError, name->normalizedNameUnresolved(th->sys));
+			createError<TypeError>(th->worker,kConvertUndefinedToObjectError);
+		else if (asAtomHandler::isPrimitive(obj))
+			createError<TypeError>(th->worker,kConstructOfNonFunctionError);
+		else
+			createError<ReferenceError>(th->worker,kUndefinedVarError, name->normalizedNameUnresolved(th->sys));
+		return;
 	}
-
-	name->resetNameIfObject();
-
 	LOG_CALL("Constructing "<<asAtomHandler::toDebugString(o));
 	asAtom ret=asAtomHandler::invalidAtom;
-	try
+	if(asAtomHandler::isClass(o))
 	{
-		if(asAtomHandler::isClass(o))
-		{
-			Class_base* o_class=asAtomHandler::as<Class_base>(o);
-			o_class->getInstance(th->worker,ret,true,args,m);
-		}
-		else if(asAtomHandler::isFunction(o))
-		{
-			constructFunction(ret,th, o, args, m);
-		}
-		else if (asAtomHandler::isTemplate(o))
-			throwError<TypeError>(kConstructOfNonFunctionError);
-		else
-			throwError<TypeError>(kNotConstructorError);
+		Class_base* o_class=asAtomHandler::as<Class_base>(o);
+		o_class->getInstance(th->worker,ret,true,args,m);
 	}
-	catch(ASObject* exc)
+	else if(asAtomHandler::isFunction(o))
 	{
-		LOG_CALL("Exception during object construction. Returning Undefined");
+		constructFunction(ret,th, o, args, m);
+	}
+	else if (asAtomHandler::isTemplate(o))
+	{
 		for(int i=0;i<m;++i)
 			ASATOM_DECREF(args[i]);
-		//Handle eventual exceptions from the constructor, to fix the stack
-		RUNTIME_STACK_PUSH(th,obj);
-		throw;
+		ASATOM_DECREF(o);
+		ASATOM_DECREF(obj);
+		createError<TypeError>(th->worker,kConstructOfNonFunctionError);
+		return;
+	}
+	else
+	{
+		for(int i=0;i<m;++i)
+			ASATOM_DECREF(args[i]);
+		ASATOM_DECREF(o);
+		ASATOM_DECREF(obj);
+		createError<TypeError>(th->worker,kNotConstructorError);
+		return;
 	}
 	RUNTIME_STACK_PUSH(th,ret);
 	if (asAtomHandler::getObject(ret))
@@ -2498,14 +2558,16 @@ void ABCVm::getDescendants(call_context* th, int n)
 		{
 			tiny_string objName = obj->getClassName();
 			obj->decRef();
-			throwError<TypeError>(kDescendentsError, objName);
+			createError<TypeError>(th->worker,kDescendentsError, objName);
+			return;
 		}
 	}
 	else
 	{
 		tiny_string objName = obj->getClassName();
 		obj->decRef();
-		throwError<TypeError>(kDescendentsError, objName);
+		createError<TypeError>(th->worker,kDescendentsError, objName);
+		return;
 	}
 	XMLList* retObj=XMLList::create(th->worker,ret,targetobject,*name);
 	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(retObj));
@@ -2991,7 +3053,7 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 		ASATOM_DECREF(obj);
 		for(int i=0;i<m;++i)
 			ASATOM_DECREF(args[i]);
-		throwError<TypeError>(kCallOfNonFunctionError, "Object");
+		createError<TypeError>(th->worker,kCallOfNonFunctionError, "Object");
 	}
 	LOG_CALL("End of call " << m << ' ' << asAtomHandler::toDebugString(f));
 	ASATOM_DECREF(f);
@@ -3003,7 +3065,11 @@ bool ABCVm::deleteProperty(ASObject* obj, multiname* name)
 	if (name->name_type == multiname::NAME_OBJECT && name->name_o)
 	{
 		if (name->name_o->is<XMLList>())
-			throwError<TypeError>(kDeleteTypeError,name->name_o->getClassName());
+		{
+			createError<TypeError>(getWorker(),kDeleteTypeError,name->name_o->getClassName());
+			name->resetNameIfObject();
+			return false;
+		}
 	}
 	bool ret = obj->deleteVariableByMultiname(*name,obj->getInstanceWorker());
 
@@ -3044,8 +3110,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	}
 	//Create the prototype object
 	f->prototype = _MR(new_asobject(th->worker));
-	f->prototype->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),asAtomHandler::fromObject(f),DECLARED_TRAIT);
-	f->incRef();
+	f->prototype->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),asAtomHandler::fromObject(f),DECLARED_TRAIT,true,false);
 	return f;
 }
 
@@ -3162,7 +3227,10 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 	}
 
 	if(!type->is<Class_base>())
-		throwError<TypeError>(kCantUseInstanceofOnNonObjectError);
+	{
+		createError<TypeError>(value->getInstanceWorker(),kCantUseInstanceofOnNonObjectError);
+		return false;
+	}
 
 	if(value->is<Null>())
 		return false;
@@ -3192,7 +3260,10 @@ Namespace* ABCVm::pushNamespace(call_context* th, int n)
 void ABCVm::dxns(call_context* th, int n)
 {
 	if(!th->mi->hasDXNS())
-		throw Class<VerifyError>::getInstanceS(th->worker,"dxns without SET_DXNS");
+	{
+		createError<VerifyError>(th->worker,0,"dxns without SET_DXNS");
+		return;
+	}
 
 	th->defaultNamespaceUri = th->mi->context->getString(n);
 }
@@ -3201,7 +3272,10 @@ void ABCVm::dxns(call_context* th, int n)
 void ABCVm::dxnslate(call_context* th, ASObject* o)
 {
 	if(!th->mi->hasDXNS())
-		throw Class<VerifyError>::getInstanceS(th->worker,"dxnslate without SET_DXNS");
+	{
+		createError<VerifyError>(th->worker,0,"dxnslate without SET_DXNS");
+		return;
+	}
 
 	th->defaultNamespaceUri = o->toStringId();
 	o->decRef();

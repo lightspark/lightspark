@@ -93,7 +93,7 @@ tiny_string URLRequest::validatedContentType() const
 	if(contentType.find("\r")!=contentType.npos || 
 	   contentType.find("\n")!=contentType.npos)
 	{
-		throw Class<ArgumentError>::getInstanceS(getInstanceWorker(),tiny_string("The HTTP request header ") + contentType + tiny_string(" cannot be set via ActionScript."), 2096);
+		createError<ArgumentError>(getInstanceWorker(),2096,tiny_string("The HTTP request header ") + contentType + tiny_string(" cannot be set via ActionScript."));
 	}
 
 	return contentType;
@@ -128,7 +128,10 @@ void URLRequest::validateHeaderName(const tiny_string& headerName) const
 
 	if ((headerName.strchr('\r') != nullptr) ||
 	     headerName.strchr('\n') != nullptr)
-		throw Class<ArgumentError>::getInstanceS(getInstanceWorker(),"The HTTP request header cannot be set via ActionScript", 2096);
+	{
+		createError<ArgumentError>(getInstanceWorker(),2096,"The HTTP request header cannot be set via ActionScript");
+		return;
+	}
 
 	for (unsigned i=0; i<(sizeof illegalHeaders)/(sizeof illegalHeaders[0]); i++)
 	{
@@ -137,7 +140,7 @@ void URLRequest::validateHeaderName(const tiny_string& headerName) const
 			tiny_string msg("The HTTP request header ");
 			msg += headerName;
 			msg += " cannot be set via ActionScript";
-			throw Class<ArgumentError>::getInstanceS(getInstanceWorker(),msg, 2096);
+			createError<ArgumentError>(getInstanceWorker(),2096,msg);
 		}
 	}
 }
@@ -158,19 +161,28 @@ std::list<tiny_string> URLRequest::getHeaders() const
 
 		// Validate
 		if (!asAtomHandler::is<URLRequestHeader>(headerObject))
-			throwError<TypeError>(kCheckTypeFailedError, asAtomHandler::toObject(headerObject,getInstanceWorker())->getClassName(), "URLRequestHeader");
+		{
+			createError<TypeError>(getInstanceWorker(),kCheckTypeFailedError, asAtomHandler::toObject(headerObject,getInstanceWorker())->getClassName(), "URLRequestHeader");
+			return headers;
+		}
 		URLRequestHeader *header = asAtomHandler::as<URLRequestHeader>(headerObject);
 		tiny_string headerName = header->name;
 		validateHeaderName(headerName);
 		if ((header->value.strchr('\r') != nullptr) ||
 		     header->value.strchr('\n') != nullptr)
-			throw Class<ArgumentError>::getInstanceS(getInstanceWorker(),"Illegal HTTP header value");
+		{
+			createError<ArgumentError>(getInstanceWorker(),0,"Illegal HTTP header value");
+			return headers;
+		}
 		
 		// Should this include the separators?
 		headerTotalLen += header->name.numBytes();
 		headerTotalLen += header->value.numBytes();
 		if (headerTotalLen >= 8192)
-			throw Class<ArgumentError>::getInstanceS(getInstanceWorker(),"Cumulative length of requestHeaders must be less than 8192 characters.", 2145);
+		{
+			createError<ArgumentError>(getInstanceWorker(),2145,"Cumulative length of requestHeaders must be less than 8192 characters.");
+			return headers;
+		}
 
 		// Append header to results
 		headers.push_back(headerName + ": " + header->value);
@@ -246,13 +258,13 @@ void URLRequest::prepareShutdown()
 ASFUNCTIONBODY_ATOM(URLRequest,_constructor)
 {
 	URLRequest* th=asAtomHandler::as<URLRequest>(obj);
-	ARG_UNPACK_ATOM(th->url, "");
+	ARG_CHECK(ARG_UNPACK(th->url, ""));
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_setURL)
 {
 	URLRequest* th=asAtomHandler::as<URLRequest>(obj);
-	ARG_UNPACK_ATOM(th->url);
+	ARG_CHECK(ARG_UNPACK(th->url));
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_getURL)
@@ -322,7 +334,7 @@ ASFUNCTIONBODY_ATOM(URLRequest,_setDigest)
 {
 	URLRequest* th=asAtomHandler::as<URLRequest>(obj);
 	tiny_string value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 
 	int numHexChars = 0;
 	bool validChars = true;
@@ -341,8 +353,11 @@ ASFUNCTIONBODY_ATOM(URLRequest,_setDigest)
 		}
 	}
 
-	if (!validChars || numHexChars != 64)
-		throw Class<ArgumentError>::getInstanceS(wrk,"An invalid digest was supplied", 2034);
+	if (!validChars || (numHexChars != 64))
+	{
+		createError<ArgumentError>(wrk,2034,"An invalid digest was supplied");
+		return;
+	}
 
 	th->digest = value;
 }
@@ -603,10 +618,16 @@ ASFUNCTIONBODY_ATOM(URLLoader,_getData)
 ASFUNCTIONBODY_ATOM(URLLoader,_setData)
 {
 	if(!asAtomHandler::is<URLLoader>(obj))
-		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
+	{
+		createError<ArgumentError>(wrk,0,"Function applied to wrong object");
+		return;
+	}
 	URLLoader* th = asAtomHandler::as<URLLoader>(obj);
 	if(argslen != 1)
-		throw Class<ArgumentError>::getInstanceS(wrk,"Wrong number of arguments in setter");
+	{
+		createError<ArgumentError>(wrk,0,"Wrong number of arguments in setter");
+		return;
+	}
 	ASATOM_INCREF(args[0]);
 	th->setData(_MR(asAtomHandler::toObject(args[0],wrk)));
 }
@@ -709,13 +730,16 @@ ASFUNCTIONBODY_ATOM(SharedObject,getLocal)
 	if (!wrk->getSystemState()->mainClip->usesActionScript3)
 	{
 		// contrary to spec, Adobe allows getLocal() calls with 0 arguments on AVM1
-		ARG_UNPACK_ATOM(name,"") (localPath,"") (secure,false);
+		ARG_CHECK(ARG_UNPACK(name,"") (localPath,"") (secure,false));
 	}
 	else
 	{
-		ARG_UNPACK_ATOM(name) (localPath,"") (secure,false);
+		ARG_CHECK(ARG_UNPACK(name) (localPath,"") (secure,false));
 		if (name=="")
-			throwError<ASError>(0,"invalid name");
+		{
+			createError<ASError>(wrk,0,"invalid name");
+			return;
+		}
 	}
 	if (secure)
 		LOG(LOG_NOT_IMPLEMENTED,"SharedObject.getLocal: parameter 'secure' is ignored");
@@ -770,11 +794,14 @@ ASFUNCTIONBODY_ATOM(SharedObject,flush)
 {
 	SharedObject* th=asAtomHandler::as<SharedObject>(obj);
 	int minDiskSpace=0;
-	ARG_UNPACK_ATOM(minDiskSpace,0);
+	ARG_CHECK(ARG_UNPACK(minDiskSpace,0));
 	if (minDiskSpace != 0)
 		LOG(LOG_NOT_IMPLEMENTED,"SharedObject.flush: parameter minDiskSpace is ignored");
 	if (!th->doFlush(wrk))
-		throwError<ASError>(0,"flushing SharedObject failed");
+	{
+		createError<ASError>(wrk,0,"flushing SharedObject failed");
+		return;
+	}
 	if (!wrk->getSystemState()->mainClip->usesActionScript3)
 		ret = asAtomHandler::trueAtom;
 	else
@@ -803,7 +830,7 @@ ASFUNCTIONBODY_ATOM(SharedObject,setProperty)
 	SharedObject* th=asAtomHandler::as<SharedObject>(obj);
 	asAtom propertyName=asAtomHandler::invalidAtom;
 	asAtom value=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(propertyName)(value,asAtomHandler::nullAtom);
+	ARG_CHECK(ARG_UNPACK(propertyName)(value,asAtomHandler::nullAtom));
 	if (th->data.isNull())
 		th->data=_MR(new_asobject(wrk));
 	multiname m(nullptr);
@@ -866,7 +893,7 @@ ASFUNCTIONBODY_ATOM(DynamicPropertyOutput,writeDynamicProperty)
 	DynamicPropertyOutput* th=asAtomHandler::as<DynamicPropertyOutput>(obj);
 	asAtom name=asAtomHandler::invalidAtom;
 	asAtom value=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(name)(value);
+	ARG_CHECK(ARG_UNPACK(name)(value));
 	multiname m(nullptr);
 	m.name_type = multiname::NAME_STRING;
 	m.name_s_id = asAtomHandler::toStringId(name,wrk);
@@ -944,7 +971,7 @@ ASFUNCTIONBODY_ATOM(NetConnection,call)
 	//2) A Responder instance (optional)
 	//And other arguments to be passed to the server
 	tiny_string command;
-	ARG_UNPACK_ATOM (command) (th->responder, NullRef);
+	ARG_CHECK(ARG_UNPACK (command) (th->responder, NullRef));
 
 	th->messageCount++;
 
@@ -1067,8 +1094,11 @@ ASFUNCTIONBODY_ATOM(NetConnection,connect)
 	//that the official player allows connect(null) in localWithFile.
 	if(!asAtomHandler::isNull(args[0])
 		&& wrk->getSystemState()->securityManager->evaluateSandbox(SecurityManager::LOCAL_WITH_FILE))
-		throw Class<SecurityError>::getInstanceS(wrk,"SecurityError: NetConnection::connect "
+	{
+		createError<SecurityError>(wrk,0,"SecurityError: NetConnection::connect "
 				"from LOCAL_WITH_FILE sandbox");
+		return;
+	}
 
 	bool isNull = false;
 	bool isRTMP = false;
@@ -1090,7 +1120,8 @@ ASFUNCTIONBODY_ATOM(NetConnection,connect)
 		if(wrk->getSystemState()->securityManager->evaluatePoliciesURL(th->uri, true) != SecurityManager::ALLOWED)
 		{
 			//TODO: find correct way of handling this case
-			throw Class<SecurityError>::getInstanceS(wrk,"SecurityError: connection to domain not allowed by securityManager");
+			createError<SecurityError>(wrk,0,"SecurityError: connection to domain not allowed by securityManager");
+			return;
 		}
 		
 		//By spec NetConnection::connect is true for RTMP and remoting and false otherwise
@@ -1143,7 +1174,7 @@ ASFUNCTIONBODY_ATOM(NetConnection,_getConnectedProxyType)
 {
 	NetConnection* th=asAtomHandler::as<NetConnection>(obj);
 	if (!th->_connected)
-		throw Class<ArgumentError>::getInstanceS(wrk,"NetConnection object must be connected.", 2126);
+		createError<ArgumentError>(wrk,2126,"NetConnection object must be connected.");
 	ret = asAtomHandler::fromString(wrk->getSystemState(),"none");
 }
 
@@ -1176,7 +1207,8 @@ ASFUNCTIONBODY_ATOM(NetConnection,_setObjectEncoding)
 	assert_and_throw(argslen == 1);
 	if(th->_connected)
 	{
-		throw Class<ReferenceError>::getInstanceS(wrk,"set NetConnection.objectEncoding after connect");
+		createError<ReferenceError>(wrk,0,"set NetConnection.objectEncoding after connect");
+		return;
 	}
 	int32_t value = asAtomHandler::toInt(args[0]);
 	if(value == 0)
@@ -1191,7 +1223,7 @@ ASFUNCTIONBODY_ATOM(NetConnection,_getProtocol)
 	if(th->_connected)
 		ret = asAtomHandler::fromString(wrk->getSystemState(),th->protocol);
 	else
-		throw Class<ArgumentError>::getInstanceS(wrk,"get NetConnection.protocol before connect");
+		createError<ArgumentError>(wrk,0,"get NetConnection.protocol before connect");
 }
 
 ASFUNCTIONBODY_ATOM(NetConnection,_getProxyType)
@@ -1227,7 +1259,7 @@ ASFUNCTIONBODY_ATOM(NetConnection,_setProxyType)
 {
 	NetConnection* th=asAtomHandler::as<NetConnection>(obj);
 	tiny_string value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 	if (value == "NONE")
 		th->proxyType = PT_NONE;
 	else if (value == "HTTP")
@@ -1239,7 +1271,7 @@ ASFUNCTIONBODY_ATOM(NetConnection,_setProxyType)
 	else if (value == "best")
 		th->proxyType = PT_BEST;
 	else
-		throwError<ArgumentError>(kInvalidEnumError, "proxyType");
+		createError<ArgumentError>(wrk,kInvalidEnumError, "proxyType");
 
 	if (th->proxyType != PT_NONE)
 		LOG(LOG_NOT_IMPLEMENTED, "Unimplemented proxy type " << value);
@@ -1420,7 +1452,10 @@ ASFUNCTIONBODY_ATOM(NetStream,_setClient)
 {
 	assert_and_throw(argslen == 1);
 	if(asAtomHandler::isNull(args[0]))
-		throw Class<TypeError>::getInstanceS(wrk);
+	{
+		createError<TypeError>(wrk,0,"");
+		return;
+	}
 
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 
@@ -1454,9 +1489,13 @@ ASFUNCTIONBODY_ATOM(NetStream,_constructor)
 	_NR<NetConnection> netConnection;
 
 	if (wrk->rootClip->usesActionScript3)
-		ARG_UNPACK_ATOM(netConnection)(value, "connectToFMS");
+	{
+		ARG_CHECK(ARG_UNPACK(netConnection)(value, "connectToFMS"));
+	}
 	else
-		ARG_UNPACK_ATOM(netConnection, NullRef)(value, "connectToFMS");
+	{
+		ARG_CHECK(ARG_UNPACK(netConnection, NullRef)(value, "connectToFMS"));
+	}
 
 	if(value == "directConnections")
 		th->peerID = DIRECT_CONNECTIONS;
@@ -1494,7 +1533,10 @@ ASFUNCTIONBODY_ATOM(NetStream,play)
 		return;
 	}
 	if (th->connection.isNull())
-		throwError<ASError>(0,"not connected");
+	{
+		createError<ASError>(wrk,0,"not connected");
+		return;
+	}
 	
 	if(th->connection->uri.getProtocol()=="http")
 	{
@@ -1523,18 +1565,30 @@ ASFUNCTIONBODY_ATOM(NetStream,play)
 				SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
 				true); //Check for navigating up in local directories (not allowed)
 		if(evaluationResult == SecurityManager::NA_REMOTE_SANDBOX)
-			throw Class<SecurityError>::getInstanceS(wrk,"SecurityError: NetStream::play: "
+		{
+			createError<SecurityError>(wrk,0,"SecurityError: NetStream::play: "
 					"connect to network");
+			return;
+		}
 		//Local-with-filesystem sandbox can't access network
 		else if(evaluationResult == SecurityManager::NA_LOCAL_SANDBOX)
-			throw Class<SecurityError>::getInstanceS(wrk,"SecurityError: NetStream::play: "
+		{
+			createError<SecurityError>(wrk,0,"SecurityError: NetStream::play: "
 					"connect to local file");
+			return;
+		}
 		else if(evaluationResult == SecurityManager::NA_PORT)
-			throw Class<SecurityError>::getInstanceS(wrk,"SecurityError: NetStream::play: "
+		{
+			createError<SecurityError>(wrk,0,"SecurityError: NetStream::play: "
 					"connect to restricted port");
+			return;
+		}
 		else if(evaluationResult == SecurityManager::NA_RESTRICT_LOCAL_DIRECTORY)
-			throw Class<SecurityError>::getInstanceS(wrk,"SecurityError: NetStream::play: "
+		{
+			createError<SecurityError>(wrk,0,"SecurityError: NetStream::play: "
 					"not allowed to navigate up for local files");
+			return;
+		}
 	}
 
 	assert_and_throw(th->downloader==nullptr);
@@ -1631,7 +1685,7 @@ ASFUNCTIONBODY_ATOM(NetStream,seek)
 {
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	int pos;
-	ARG_UNPACK_ATOM(pos);
+	ARG_CHECK(ARG_UNPACK(pos));
 	th->countermutex.lock();
 	if (th->streamDecoder)
 	{
@@ -1665,7 +1719,7 @@ ASFUNCTIONBODY_ATOM(NetStream,attach)
 {
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	_NR<NetConnection> netConnection;
-	ARG_UNPACK_ATOM(netConnection);
+	ARG_CHECK(ARG_UNPACK(netConnection));
 
 	netConnection->incRef();
 	th->connection=netConnection;
@@ -1674,7 +1728,7 @@ ASFUNCTIONBODY_ATOM(NetStream,appendBytes)
 {
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	_NR<ByteArray> bytearray;
-	ARG_UNPACK_ATOM(bytearray);
+	ARG_CHECK(ARG_UNPACK(bytearray));
 
 	if(!bytearray.isNull())
 	{
@@ -1827,7 +1881,7 @@ ASFUNCTIONBODY_ATOM(NetStream,appendBytesAction)
 {
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	tiny_string val;
-	ARG_UNPACK_ATOM(val);
+	ARG_CHECK(ARG_UNPACK(val));
 
 	if (val == "resetBegin")
 	{
@@ -2513,8 +2567,9 @@ ASFUNCTIONBODY_ATOM(lightspark,sendToURL)
 	if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 	{
 		//TODO: find correct way of handling this case (SecurityErrorEvent in this case)
-		throw Class<SecurityError>::getInstanceS(wrk,"SecurityError: sendToURL: "
+		createError<SecurityError>(wrk,0,"SecurityError: sendToURL: "
 				"connection to domain not allowed by securityManager");
+		return;
 	}
 
 	//TODO: should we disallow accessing local files in a directory above 
@@ -2530,7 +2585,7 @@ ASFUNCTIONBODY_ATOM(lightspark,navigateToURL)
 {
 	_NR<URLRequest> request;
 	tiny_string window;
-	ARG_UNPACK_ATOM (request) (window,"");
+	ARG_CHECK(ARG_UNPACK (request) (window,""));
 
 	if (request.isNull())
 		return;
@@ -2715,7 +2770,7 @@ ASFUNCTIONBODY_GETTER_SETTER(FileFilter, macType)
 ASFUNCTIONBODY_ATOM(FileFilter,_constructor)
 {
 	FileFilter* th = asAtomHandler::as<FileFilter>(obj);
-	ARG_UNPACK_ATOM(th->description)(th->extension)(th->macType,"");
+	ARG_CHECK(ARG_UNPACK(th->description)(th->extension)(th->macType,""));
 }
 
 DRMManager::DRMManager(ASWorker* wrk, Class_base* c):
@@ -2747,7 +2802,10 @@ ASFUNCTIONBODY_ATOM(lightspark,getClassByAlias)
 	RootMovieClip* root = wrk->rootClip.getPtr();
 	auto it=root->aliasMap.find(arg0);
 	if(it==root->aliasMap.end())
-		throwError<ReferenceError>(kClassNotFoundError, arg0);
+	{
+		createError<ReferenceError>(wrk,kClassNotFoundError, arg0);
+		return;
+	}
 	it->second->incRef();
 	ret = asAtomHandler::fromObject(it->second.getPtr());
 }

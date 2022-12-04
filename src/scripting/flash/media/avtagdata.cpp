@@ -31,7 +31,7 @@ AVTagData::AVTagData(ASWorker* wrk, Class_base* c):
 ASFUNCTIONBODY_ATOM(AVTagData,_constructor)
 {
 	AVTagData* th=asAtomHandler::as<AVTagData>(obj);
-	ARG_UNPACK_ATOM(th->data)(th->localTime);
+	ARG_CHECK(ARG_UNPACK(th->data)(th->localTime));
 }
 
 void AVTagData::sinit(Class_base* c)
@@ -41,5 +41,5 @@ void AVTagData::sinit(Class_base* c)
 	REGISTER_GETTER(c,localTime);
 }
 
-ASFUNCTIONBODY_GETTER(AVTagData, data);
-ASFUNCTIONBODY_GETTER(AVTagData, localTime);
+ASFUNCTIONBODY_GETTER(AVTagData, data)
+ASFUNCTIONBODY_GETTER(AVTagData, localTime)

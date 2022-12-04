@@ -70,43 +70,43 @@
 #define ASFUNCTIONBODY_GETTER(c,name) \
 	void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
+		if(!asAtomHandler::is<c>(obj)) { \
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
 		c* th = asAtomHandler::as<c>(obj); \
-		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		if(argslen != 0) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; } \
 		ArgumentConversionAtom<decltype(th->name)>::toAbstract(ret,wrk,th->name); \
 	}
 
 #define ASFUNCTIONBODY_GETTER_STATIC(c,name) \
 	void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(asAtomHandler::getObject(obj) != Class<c>::getRef(wrk->getSystemState()).getPtr()) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
-		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		if(asAtomHandler::getObject(obj) != Class<c>::getRef(wrk->getSystemState()).getPtr()) { \
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; } \
+		if(argslen != 0) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; } \
 		ArgumentConversionAtom<decltype(wrk->getSystemState()->static_##c##_##name)>::toAbstract(ret,wrk,wrk->getSystemState()->static_##c##_##name); \
 	}
 
 #define ASFUNCTIONBODY_GETTER_STRINGID(c,name) \
 	void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
+		if(!asAtomHandler::is<c>(obj)) { \
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; } \
 		c* th = asAtomHandler::as<c>(obj); \
-		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		if(argslen != 0) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
 		ret = asAtomHandler::fromStringID(th->name); \
 	}
 
 #define ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
 	void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
 		c* th = asAtomHandler::as<c>(obj); \
-		if(argslen != 0) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		if(argslen != 0) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
 		LOG(LOG_NOT_IMPLEMENTED,asAtomHandler::getObject(obj)->getClassName() <<"."<< #name << " getter is not implemented"); \
 		ArgumentConversionAtom<decltype(th->name)>::toAbstract(ret,wrk,th->name); \
 	}
@@ -115,42 +115,42 @@
 #define ASFUNCTIONBODY_SETTER(c,name) \
 	void c::_setter_##name(asAtom& ret,ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
 		c* th = asAtomHandler::as<c>(obj); \
-		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
 	}
 #define ASFUNCTIONBODY_SETTER_STATIC(c,name) \
 	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(asAtomHandler::getObject(obj) != Class<c>::getRef(wrk->getSystemState()).getPtr()) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
-		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		if(asAtomHandler::getObject(obj) != Class<c>::getRef(wrk->getSystemState()).getPtr()) { \
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
 		wrk->getSystemState()->static_##c##_##name = ArgumentConversionAtom<decltype(wrk->getSystemState()->static_##c##_##name)>::toConcrete(wrk,args[0],wrk->getSystemState()->static_##c##_##name); \
 	}
 
 #define ASFUNCTIONBODY_SETTER_STRINGID(c,name) \
 	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
 		c* th = asAtomHandler::as<c>(obj); \
-		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
 		th->name = asAtomHandler::toStringId(args[0],wrk); \
 	}
 
 #define ASFUNCTIONBODY_SETTER_NOT_IMPLEMENTED(c,name) \
 	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
 		c* th = asAtomHandler::as<c>(obj); \
-		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
 		LOG(LOG_NOT_IMPLEMENTED,asAtomHandler::getObject(obj)->getClassName() <<"."<< #name << " setter is not implemented"); \
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
 	}
@@ -161,11 +161,11 @@
 #define ASFUNCTIONBODY_SETTER_CB(c,name,callback) \
 	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
 		c* th = asAtomHandler::as<c>(obj); \
-		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
 		decltype(th->name) oldValue = th->name; \
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
 		th->callback(oldValue); \
@@ -174,11 +174,11 @@
 #define ASFUNCTIONBODY_SETTER_STRINGID_CB(c,name,callback) \
 	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
-		if(!asAtomHandler::is<c>(obj)) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
 		c* th = asAtomHandler::as<c>(obj); \
-		if(argslen != 1) \
-			throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
 		decltype(th->name) oldValue = th->name; \
 		th->name = asAtomHandler::toStringId(args[0],wrk); \
 		th->callback(oldValue); \
@@ -1232,7 +1232,7 @@ public:
 	/* Implements ECMA's 9.3 ToNumber operation, but returns the concrete value */
 	virtual number_t toNumber();
 	/* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
-	void toPrimitive(asAtom& ret,TP_HINT hint = NO_HINT);
+	bool toPrimitive(asAtom& ret,TP_HINT hint = NO_HINT);
 	bool isPrimitive() const;
 
 	bool isInitialized() const {return traitsInitialized;}

@@ -74,7 +74,7 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(SoundTransform,rightToRight)
 ASFUNCTIONBODY_ATOM(SoundTransform,_constructor)
 {
 	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
-	ARG_UNPACK_ATOM(th->volume, 1.0)(th->pan, 0.0);
+	ARG_CHECK(ARG_UNPACK(th->volume, 1.0)(th->pan, 0.0));
 }
 
 void Video::sinit(Class_base* c)
@@ -483,7 +483,7 @@ ASFUNCTIONBODY_ATOM(Sound,load)
 	_NR<URLRequest> urlRequest;
 	_NR<SoundLoaderContext> context;
 	
-	ARG_UNPACK_ATOM(urlRequest)(context,NullRef);
+	ARG_CHECK(ARG_UNPACK(urlRequest)(context,NullRef));
 	if (!urlRequest.isNull())
 	{
 		th->url = urlRequest->getRequestURL();
@@ -535,7 +535,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 	number_t startTime;
 	int32_t loops;
 	_NR<SoundTransform> soundtransform;
-	ARG_UNPACK_ATOM(startTime, 0)(loops,0)(soundtransform,NullRef);
+	ARG_CHECK(ARG_UNPACK(startTime, 0)(loops,0)(soundtransform,NullRef));
 	if (!wrk->rootClip->usesActionScript3) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
 		startTime *= 1000;
 	if (soundtransform.isNull())
@@ -590,7 +590,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 	_NR<ByteArray> target;
 	int32_t length;
 	int32_t startPosition;
-	ARG_UNPACK_ATOM(target)(length)(startPosition,-1);
+	ARG_CHECK(ARG_UNPACK(target)(length)(startPosition,-1));
 	int32_t readcount=0;
 	int32_t bytelength=length*4*2; // length is in samples (2 32bit floats)
 	int32_t bytestartposition= startPosition*4*2; // startposition is in samples (2 32bit floats)
@@ -699,7 +699,7 @@ ASFUNCTIONBODY_ATOM(Sound,loadCompressedDataFromByteArray)
 	_NR<ByteArray> bytes;
 	uint32_t bytesLength;
 
-	ARG_UNPACK_ATOM(bytes)(bytesLength);
+	ARG_CHECK(ARG_UNPACK(bytes)(bytesLength));
 	_R<StreamCache> c(_MR(new MemoryStreamCache(th->getSystemState())));
 	th->soundData = c;
 	if (bytes)
@@ -808,7 +808,7 @@ ASFUNCTIONBODY_ATOM(SoundMixer,computeSpectrum)
 	_NR<ByteArray> output;
 	bool FFTMode;
 	int stretchFactor;
-	ARG_UNPACK_ATOM (output) (FFTMode,false) (stretchFactor,0);
+	ARG_CHECK(ARG_UNPACK (output) (FFTMode,false) (stretchFactor,0));
 	output->setLength(0);
 	output->setPosition(0);
 	for (int i = 0; i < 4*512; i++) // 512 floats
@@ -827,7 +827,7 @@ void SoundLoaderContext::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(SoundLoaderContext,_constructor)
 {
 	SoundLoaderContext* th=asAtomHandler::as<SoundLoaderContext>(obj);
-	ARG_UNPACK_ATOM(th->bufferTime,1000)(th->checkPolicyFile,false);
+	ARG_CHECK(ARG_UNPACK(th->bufferTime,1000)(th->checkPolicyFile,false));
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime)
@@ -970,11 +970,17 @@ ASFUNCTIONBODY_GETTER(SoundChannel,rightPeak)
 ASFUNCTIONBODY_SETTER_CB(SoundChannel,soundTransform,validateSoundTransform)
 ASFUNCTIONBODY_ATOM(SoundChannel,_getter_soundTransform)
 {
-	if(!asAtomHandler::is<SoundChannel>(obj)) \
-		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object"); \
-	SoundChannel* th = asAtomHandler::as<SoundChannel>(obj); \
-	if(argslen != 0) \
-		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter"); \
+	if(!asAtomHandler::is<SoundChannel>(obj))
+	{
+		createError<ArgumentError>(wrk,0,"Function applied to wrong object");
+		return;
+	}
+	SoundChannel* th = asAtomHandler::as<SoundChannel>(obj);
+	if(argslen != 0)
+	{
+		createError<ArgumentError>(wrk,0,"Arguments provided in getter");
+		return;
+	}
 	if (!th->soundTransform)
 		th->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
 	th->soundTransform->incRef();
@@ -1063,7 +1069,7 @@ void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)
 	if (soundTransform.isNull())
 	{
 		soundTransform = oldValue;
-		throwError<TypeError>(kNullPointerError, "soundTransform");
+		createError<TypeError>(getInstanceWorker(),kNullPointerError, "soundTransform");
 	}
 }
 
@@ -1082,7 +1088,10 @@ ASFUNCTIONBODY_ATOM(SoundChannel, stop)
 ASFUNCTIONBODY_ATOM(SoundChannel,getPosition)
 {
 	if(!asAtomHandler::is<SoundChannel>(obj))
-		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
+	{
+		createError<ArgumentError>(wrk,0,"Function applied to wrong object");
+		return;
+	}
 	SoundChannel* th = asAtomHandler::as<SoundChannel>(obj);
 	asAtomHandler::setUInt(ret,wrk,th->audioStream ? th->audioStream->getPlayedTime() : th->startTime);
 }
@@ -1521,7 +1530,7 @@ ASFUNCTIONBODY_ATOM(H264VideoStreamSettings,setProfileLevel)
 	
 	// TODO: Check inputs to see if they match H264Level and H264Profile
 
-	ARG_UNPACK_ATOM(th->profile)(th->level);
+	ARG_CHECK(ARG_UNPACK(th->profile)(th->level));
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(H264VideoStreamSettings, codec)

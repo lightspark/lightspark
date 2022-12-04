@@ -34,8 +34,8 @@ ASFUNCTIONBODY_ATOM(JPEGLoaderContext,_constructor)
 {
 	JPEGLoaderContext* th =asAtomHandler::as<JPEGLoaderContext>(obj);
 	bool checkPolicyFile = false;
-	ARG_UNPACK_ATOM(th->deblockingFilter, 0.0)(checkPolicyFile, false);
+	ARG_CHECK(ARG_UNPACK(th->deblockingFilter, 0.0)(checkPolicyFile, false));
 	LOG(LOG_NOT_IMPLEMENTED,"JPEGLoaderContext is not implemented.");
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(JPEGLoaderContext, deblockingFilter);
+ASFUNCTIONBODY_GETTER_SETTER(JPEGLoaderContext, deblockingFilter)

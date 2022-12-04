@@ -280,7 +280,8 @@ ASFUNCTIONBODY_ATOM(ASString,_toString)
 	if(!asAtomHandler::is<ASString>(obj))
 	{
 		LOG(LOG_ERROR,"String.toString is not generic:"<<asAtomHandler::toDebugString(obj));
-		throw Class<TypeError>::getInstanceS(wrk,"String.toString is not generic");
+		createError<TypeError>(wrk,0,"String.toString is not generic");
+		return;
 	}
 	assert_and_throw(argslen==0);
 
@@ -493,7 +494,7 @@ ASFUNCTIONBODY_ATOM(ASString,substring)
 	tiny_string data = asAtomHandler::toString(obj,wrk);
 
 	number_t start, end;
-	ARG_UNPACK_ATOM (start,0) (end,0x7fffffff);
+	ARG_CHECK(ARG_UNPACK (start,0) (end,0x7fffffff));
 	if(start<0 || std::isnan(start))
 		start=0;
 	if(start>(int)data.numChars() || std::isinf(start))
@@ -746,7 +747,7 @@ ASFUNCTIONBODY_ATOM(ASString,slice)
 ASFUNCTIONBODY_ATOM(ASString,charAt)
 {
 	number_t index;
-	ARG_UNPACK_ATOM (index, 0);
+	ARG_CHECK(ARG_UNPACK (index, 0));
 	// fast path if obj is ASString
 	if (asAtomHandler::isStringID(obj))
 	{
@@ -790,7 +791,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 {
 	int64_t index;
 	
-	ARG_UNPACK_ATOM (index, 0);
+	ARG_CHECK(ARG_UNPACK (index, 0));
 
 	// fast path if obj is ASString
 	if (asAtomHandler::isStringID(obj))
@@ -896,7 +897,7 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare)
 {
 	tiny_string data = asAtomHandler::toString(obj,wrk);
 	tiny_string other;
-	ARG_UNPACK_ATOM_MORE_ALLOWED(other);
+	ARG_CHECK(ARG_UNPACK_MORE_ALLOWED(other));
 	if (argslen > 1)
 		LOG(LOG_NOT_IMPLEMENTED,"localeCompare with more than one parameter not implemented");
 	if (wrk->getSystemState()->getSwfVersion() < 11)
@@ -914,9 +915,12 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare_prototype)
 {
 	tiny_string data = asAtomHandler::toString(obj,wrk);
 	tiny_string other;
-	ARG_UNPACK_ATOM_MORE_ALLOWED(other);
+	ARG_CHECK(ARG_UNPACK_MORE_ALLOWED(other));
 	if (argslen > 1)
-		throwError<ArgumentError>(kWrongArgumentCountError, "localeCompare", "1",Integer::toString(argslen));
+	{
+		createError<ArgumentError>(wrk,kWrongArgumentCountError, "localeCompare", "1",Integer::toString(argslen));
+		return;
+	}
 
 	if (wrk->getSystemState()->getSwfVersion() < 11)
 	{
@@ -1029,7 +1033,6 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 				if (asAtomHandler::as<IFunction>(args[1])->closure_this) // use closure as "this" in function call
 					obj = asAtomHandler::fromObject(asAtomHandler::as<IFunction>(args[1])->closure_this);
 				asAtomHandler::callFunction(args[1],wrk,ret,obj, subargs.data(), subargs.size(),true);
-				ASATOM_DECREF(args[1]);
 				replaceWithTmp=asAtomHandler::toString(ret,wrk).raw_buf();
 				ASATOM_DECREF(ret);
 			} else {

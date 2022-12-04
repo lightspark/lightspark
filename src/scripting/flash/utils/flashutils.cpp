@@ -181,7 +181,8 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 
 	if(asAtomHandler::isInvalid(ret))
 	{
-		throwError<ReferenceError>(kClassNotFoundError, tmp);
+		createError<ReferenceError>(wrk,kClassNotFoundError, tmp);
+		return;
 	}
 
 	assert_and_throw(asAtomHandler::isClass(ret));
@@ -201,7 +202,7 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 {
 	_NR<ASObject> o;
 	uint32_t flags;
-	ARG_UNPACK_ATOM(o)(flags);
+	ARG_CHECK(ARG_UNPACK(o)(flags));
 	ASObject* res = Class<ASObject>::getInstanceS(wrk);
 
 	if (o)
@@ -393,12 +394,12 @@ ASFUNCTIONBODY_ATOM(lightspark,clearTimeout)
 ASFUNCTIONBODY_ATOM(lightspark,escapeMultiByte)
 {
 	tiny_string str;
-	ARG_UNPACK_ATOM (str, "undefined");
+	ARG_CHECK(ARG_UNPACK (str, "undefined"));
 	ret = asAtomHandler::fromObject(abstract_s(wrk,URLInfo::encode(str, URLInfo::ENCODE_ESCAPE)));
 }
 ASFUNCTIONBODY_ATOM(lightspark,unescapeMultiByte)
 {
 	tiny_string str;
-	ARG_UNPACK_ATOM (str, "undefined");
+	ARG_CHECK(ARG_UNPACK (str, "undefined"));
 	ret = asAtomHandler::fromObject(abstract_s(wrk,URLInfo::decode(str, URLInfo::ENCODE_ESCAPE)));
 }

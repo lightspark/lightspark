@@ -86,11 +86,13 @@ ASFUNCTIONBODY_ATOM(ContextMenuItem,_constructor)
 {
 	ContextMenuItem* th=asAtomHandler::as<ContextMenuItem>(obj);
 	if (wrk->getSystemState()->mainClip->usesActionScript3)
-		ARG_UNPACK_ATOM(th->label,"")(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true);
+	{
+		ARG_CHECK(ARG_UNPACK(th->label,"")(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true));
+	}
 	else
 	{
 		// contrary to spec constructors without label and callbackfunction are allowed
-		ARG_UNPACK_ATOM(th->label,"")(th->callbackfunction,NullRef)(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true);
+		ARG_CHECK(ARG_UNPACK(th->label,"")(th->callbackfunction,NullRef)(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true));
 	}
 	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 }

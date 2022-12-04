@@ -69,7 +69,7 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,_constructor)
 {
 	CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
 	th->fractionalDigits = 0;
-	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
+	ARG_CHECK(ARG_UNPACK(th->requestedLocaleIDName));
 
 	std::string localeId = th->requestedLocaleIDName;
 	std::string isoCurrencyCode = "";
@@ -112,22 +112,22 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,_constructor)
 	std::locale::global(l);
 }
 
-ASFUNCTIONBODY_GETTER(CurrencyFormatter, actualLocaleIDName);
-ASFUNCTIONBODY_GETTER(CurrencyFormatter, currencyISOCode);
-ASFUNCTIONBODY_GETTER(CurrencyFormatter, currencySymbol);
-ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, decimalSeparator);
-ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, digitsType);
-ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, fractionalDigits);
-ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, groupingPattern);
-ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, groupingSeparator);
-ASFUNCTIONBODY_GETTER(CurrencyFormatter, lastOperationStatus);
-ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, leadingZero);
-ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, negativeCurrencyFormat);
-ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, negativeSymbol);
-ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, positiveCurrencyFormat);
-ASFUNCTIONBODY_GETTER(CurrencyFormatter, requestedLocaleIDName);
-ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, trailingZeros);
-ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, useGrouping);
+ASFUNCTIONBODY_GETTER(CurrencyFormatter, actualLocaleIDName)
+ASFUNCTIONBODY_GETTER(CurrencyFormatter, currencyISOCode)
+ASFUNCTIONBODY_GETTER(CurrencyFormatter, currencySymbol)
+ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, decimalSeparator)
+ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, digitsType)
+ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, fractionalDigits)
+ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, groupingPattern)
+ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, groupingSeparator)
+ASFUNCTIONBODY_GETTER(CurrencyFormatter, lastOperationStatus)
+ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, leadingZero)
+ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, negativeCurrencyFormat)
+ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, negativeSymbol)
+ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, positiveCurrencyFormat)
+ASFUNCTIONBODY_GETTER(CurrencyFormatter, requestedLocaleIDName)
+ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, trailingZeros)
+ASFUNCTIONBODY_GETTER_SETTER(CurrencyFormatter, useGrouping)
 
 ASFUNCTIONBODY_ATOM(CurrencyFormatter,format)
 {
@@ -161,7 +161,7 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,format)
 	double value;
 	bool withCurrencySymbol = false; // withCurrencySymbol argument not implemented
 	std::stringstream res;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 	value *= 100;
 	res.imbue(th->currlocale);
 	res << std::showbase << std::setprecision(th->fractionalDigits) << std::put_money(value,!withCurrencySymbol) << std::fixed;
@@ -256,11 +256,12 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,formattingWithCurrencySymbolIsSafe)
 	LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.formattingWithCurrencySymbolIsSafe is not really tested for all formats");
 	tiny_string requestedISOCode;
 	std::string currencyISOCode = th->currencyISOCode;
-	ARG_UNPACK_ATOM(requestedISOCode);
+	ARG_CHECK(ARG_UNPACK(requestedISOCode));
 
 	if (requestedISOCode.raw_buf() == nullptr)
 	{
-		throwError<TypeError>(kNullArgumentError);
+		createError<TypeError>(wrk,kNullArgumentError);
+		return;
 	}
 
 	bool result = (requestedISOCode == currencyISOCode);
@@ -288,11 +289,12 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,parse)
 	LOG(LOG_NOT_IMPLEMENTED,"CurrencyFormatter.parse is not really tested for all formats");
 	std::string inputString;
 	tiny_string input;
-	ARG_UNPACK_ATOM(input);
+	ARG_CHECK(ARG_UNPACK(input));
 
 	if (input.raw_buf() == nullptr)
 	{
-		throwError<TypeError>(kNullArgumentError);
+		createError<TypeError>(wrk,kNullArgumentError);
+		return;
 	}
 
 	inputString = input;
@@ -401,6 +403,6 @@ ASFUNCTIONBODY_ATOM(CurrencyFormatter,parse)
 ASFUNCTIONBODY_ATOM(CurrencyFormatter,setCurrency)
 {
 	CurrencyFormatter* th =asAtomHandler::as<CurrencyFormatter>(obj);
-	ARG_UNPACK_ATOM(th->currencyISOCode)(th->currencySymbol);
+	ARG_CHECK(ARG_UNPACK(th->currencyISOCode)(th->currencySymbol));
 	th->lastOperationStatus="noError";
 }

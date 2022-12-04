@@ -777,14 +777,18 @@ void ABCVm::abc_setproperty(call_context* context)
 		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(obj);
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertNullToObjectError);
+		name->resetNameIfObject();
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
 		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 		ASATOM_DECREF_POINTER(obj);
 		ASATOM_DECREF_POINTER(value);
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		name->resetNameIfObject();
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
 	}
 	//Do not allow to set contant traits
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
@@ -854,7 +858,11 @@ void ABCVm::abc_getProperty(call_context* context)
 			if(asAtomHandler::isInvalid(prop))
 			{
 				multiname* name=context->mi->context->getMultiname(t,context);
-				checkPropertyException(obj,name,prop);
+				if (checkPropertyException(obj,name,prop))
+				{
+					obj->decRef();
+					return;
+				}
 			}
 			obj->decRef();
 			RUNTIME_STACK_PUSH(context,prop);
@@ -895,7 +903,13 @@ void ABCVm::abc_getProperty(call_context* context)
 		}
 	}
 	if(asAtomHandler::isInvalid(prop))
-		checkPropertyException(obj,name,prop);
+	{
+		if (checkPropertyException(obj,name,prop))
+		{
+			obj->decRef();
+			return;
+		}
+	}
 	obj->decRef();
 	name->resetNameIfObject();
 
@@ -1049,12 +1063,12 @@ void ABCVm::abc_convert_o(call_context* context)
 	if (asAtomHandler::isNull(*pval))
 	{
 		LOG(LOG_ERROR,"trying to call convert_o on null");
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
 	}
 	if (asAtomHandler::isUndefined(*pval))
 	{
 		LOG(LOG_ERROR,"trying to call convert_o on undefined");
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 	}
 	++(context->exec_pos);
 }
@@ -1074,7 +1088,8 @@ void ABCVm::abc_coerce(call_context* context)
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
-		throwError<TypeError>(kClassNotFoundError,mn->qualifiedString(getSys()));
+		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(getSys()));
+		return;
 	}
 	asAtom v= *o;
 	if (type->coerce(context->worker,*o))
@@ -1437,8 +1452,10 @@ void ABCVm::abc_in(call_context* context)
 	LOG_CALL( "in" );
 	if(v1->is<Null>())
 	{
+		ASATOM_DECREF_POINTER(pval);
 		v1->decRef();
-		throwError<TypeError>(kConvertNullToObjectError);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
 	}
 
 	multiname name(nullptr);

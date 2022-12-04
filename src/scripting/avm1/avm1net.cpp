@@ -59,7 +59,7 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,sendAndLoad)
 	tiny_string strurl;
 	tiny_string method;
 	_NR<ASObject> target;
-	ARG_UNPACK_ATOM (strurl)(target)(method,"POST");
+	ARG_CHECK(ARG_UNPACK(strurl)(target)(method,"POST"));
 
 	if (target)
 	{
@@ -85,7 +85,7 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,load)
 {
 	AVM1LoadVars* th = asAtomHandler::as<AVM1LoadVars>(obj);
 	tiny_string strurl;
-	ARG_UNPACK_ATOM (strurl);
+	ARG_CHECK(ARG_UNPACK(strurl));
 
 	if (th->loader.isNull())
 		th->loader = _MR(Class<URLLoader>::getInstanceS(wrk));
@@ -199,7 +199,7 @@ ASFUNCTIONBODY_ATOM(AVM1NetStream,avm1pause)
 		th->togglePause(ret,wrk,obj, nullptr, 0);
 	else
 	{
-		ARG_UNPACK_ATOM (pause);
+		ARG_CHECK(ARG_UNPACK(pause));
 		if (pause)
 			th->pause(ret,wrk,obj, nullptr, 0);
 		else

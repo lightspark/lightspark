@@ -121,7 +121,10 @@ public:
 	T readFromDomainMemory(uint32_t addr)
 	{
 		if(currentDomainMemory->getLength() < (addr+sizeof(T)))
+		{
 			throwRangeError();
+			return T(0);
+		}
 		uint8_t* buf=currentDomainMemory->getBufferNoCheck();
 		return *reinterpret_cast<T*>(buf+addr);
 	}
@@ -129,7 +132,10 @@ public:
 	void writeToDomainMemory(uint32_t addr, T val)
 	{
 		if(currentDomainMemory->getLength() < (addr+sizeof(T)))
+		{
 			throwRangeError();
+			return;
+		}
 		uint8_t* buf=currentDomainMemory->getBufferNoCheck();
 		*reinterpret_cast<T*>(buf+addr)=val;
 	}
@@ -159,7 +165,10 @@ public:
 		uint32_t addr=asAtomHandler::toUInt(arg1);
 		ByteArray* dm = appDomain->currentDomainMemory;
 		if(dm->getLength() < (addr+sizeof(T)))
+		{
 			throwRangeError();
+			return;
+		}
 		ret = asAtomHandler::fromInt(*reinterpret_cast<T*>(dm->getBufferNoCheck()+addr));
 	}
 	template<class T>
@@ -169,7 +178,10 @@ public:
 		int32_t val=asAtomHandler::toInt(arg2);
 		ByteArray* dm = appDomain->currentDomainMemory;
 		if(dm->getLength() < (addr+sizeof(T)))
+		{
 			throwRangeError();
+			return;
+		}
 		*reinterpret_cast<T*>(dm->getBufferNoCheck()+addr)=val;
 	}
 	
@@ -348,6 +360,7 @@ public:
 		if(USUALLY_FALSE(cur_recursion == limits.max_recursion))
 		{
 			throwStackOverflow();
+			return currentCallContext;
 		}
 		stacktrace[cur_recursion].set(o,f);
 		++cur_recursion; //increment current recursion depth

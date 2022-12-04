@@ -646,7 +646,7 @@ ASFUNCTIONBODY_ATOM(Loader,load)
 	th->unload();
 	_NR<URLRequest> r;
 	_NR<LoaderContext> context;
-	ARG_UNPACK_ATOM (r)(context, NullRef);
+	ARG_CHECK(ARG_UNPACK (r)(context, NullRef));
 	th->loadIntern(r.getPtr(),context.getPtr());
 }
 void Loader::loadIntern(URLRequest* r, LoaderContext* context)
@@ -663,7 +663,10 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 		{
 			//The passed domain must be the current one. See Loader::load specs.
 			if(context->securityDomain!=curSecDomain)
-				throw Class<SecurityError>::getInstanceS(this->getInstanceWorker(),"SecurityError: securityDomain must be current one");
+			{
+				createError<SecurityError>(this->getInstanceWorker(),0,"SecurityError: securityDomain must be current one");
+				return;
+			}
 			secDomain=curSecDomain;
 		}
 
@@ -717,8 +720,9 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 		if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
 		{
 			// should this dispatch SecurityErrorEvent instead of throwing?
-			throw Class<SecurityError>::getInstanceS(this->getInstanceWorker(),
+			createError<SecurityError>(this->getInstanceWorker(),0,
 				"SecurityError: connection to domain not allowed by securityManager");
+			return;
 		}
 	}
 
@@ -740,7 +744,7 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 
 	_NR<ByteArray> bytes;
 	_NR<LoaderContext> context;
-	ARG_UNPACK_ATOM (bytes)(context, NullRef);
+	ARG_CHECK(ARG_UNPACK (bytes)(context, NullRef));
 
 	_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
 	if(context.isNull() || context->applicationDomain.isNull())
@@ -1056,12 +1060,15 @@ ASFUNCTIONBODY_ATOM(Sprite,_startDrag)
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
 	bool lockCenter = false;
 	const RECT* bounds = nullptr;
-	ARG_UNPACK_ATOM(lockCenter,false);
+	ARG_CHECK(ARG_UNPACK(lockCenter,false));
 	if(argslen > 1)
 	{
 		Rectangle* rect = Class<Rectangle>::cast(asAtomHandler::getObject(args[1]));
 		if(!rect)
-			throw Class<ArgumentError>::getInstanceS(wrk,"Wrong type");
+		{
+			createError<ArgumentError>(wrk,kInvalidArgumentError,"Wrong type");
+			return;
+		}
 		bounds = new RECT(rect->getRect());
 	}
 
@@ -1088,7 +1095,7 @@ ASFUNCTIONBODY_ATOM(Sprite,_setter_hitArea)
 {
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
 	_NR<Sprite> value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 
 	if (!th->hitArea.isNull())
 		th->hitArea->hitTarget.reset();
@@ -2634,7 +2641,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1getInstanceAtDepth)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	int32_t depth;
-	ARG_UNPACK_ATOM(depth);
+	ARG_CHECK(ARG_UNPACK(depth));
 	if (th->hasLegacyChildAt(depth))
 	{
 		DisplayObject* o = th->getLegacyChildAt(depth);
@@ -2653,7 +2660,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 	AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
 	tiny_string url;
 	tiny_string method;
-	ARG_UNPACK_ATOM(url,"")(method,"GET");
+	ARG_CHECK(ARG_UNPACK(url,"")(method,"GET"));
 	
 	AVM1MovieClipLoader* ld = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
 	th->avm1loader = _MR(ld);
@@ -2674,7 +2681,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 	int y;
 	uint32_t width;
 	uint32_t height;
-	ARG_UNPACK_ATOM(instanceName)(depth)(x)(y)(width)(height);
+	ARG_CHECK(ARG_UNPACK(instanceName)(depth)(x)(y)(width)(height));
 	AVM1TextField* tf = Class<AVM1TextField>::getInstanceS(wrk);
 	tf->name = wrk->getSystemState()->getUniqueStringId(instanceName);
 	tf->setX(x);
@@ -3465,7 +3472,10 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChild)
 	d->incRef();
 
 	if(!th->_removeChild(d))
-		throw Class<ArgumentError>::getInstanceS(wrk,"removeChild: child not in list", 2025);
+	{
+		createError<ArgumentError>(wrk,2025,"removeChild: child not in list");
+		return;
+	}
 
 	ret = asAtomHandler::fromObject(d);
 }
@@ -3482,7 +3492,10 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 	{
 		Locker l(th->mutexDisplayList);
 		if(index>=int(th->dynamicDisplayList.size()) || index<0)
-			throw Class<RangeError>::getInstanceS(wrk,"removeChildAt: invalid index", 2025);
+		{
+			createError<RangeError>(wrk,2025,"removeChildAt: invalid index");
+			return;
+		}
 		auto it=th->dynamicDisplayList.begin();
 		for(int32_t i=0;i<index;i++)
 			++it;
@@ -3508,7 +3521,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildren)
 {
 	uint32_t beginindex;
 	uint32_t endindex;
-	ARG_UNPACK_ATOM(beginindex,0)(endindex,0x7fffffff);
+	ARG_CHECK(ARG_UNPACK(beginindex,0)(endindex,0x7fffffff));
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
 	{
 		Locker l(th->mutexDisplayList);
@@ -3580,7 +3593,10 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildren)
 		auto it1=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child1);
 		auto it2=find(th->dynamicDisplayList.begin(),th->dynamicDisplayList.end(),child2);
 		if(it1==th->dynamicDisplayList.end() || it2==th->dynamicDisplayList.end())
-			throw Class<ArgumentError>::getInstanceS(wrk,"Argument is not child of this object", 2025);
+		{
+			createError<ArgumentError>(wrk,2025,"Argument is not child of this object");
+			return;
+		}
 
 		std::iter_swap(it1, it2);
 	}
@@ -3591,11 +3607,14 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildrenAt)
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
 	int index1;
 	int index2;
-	ARG_UNPACK_ATOM(index1)(index2);
+	ARG_CHECK(ARG_UNPACK(index1)(index2));
 
-	if (index1 < 0 || index1 > (int)th->dynamicDisplayList.size() ||
-		index2 < 0 || index2 > (int)th->dynamicDisplayList.size())
-		throwError<RangeError>(kParamRangeError);
+	if ((index1 < 0) || (index1 > (int)th->dynamicDisplayList.size()) ||
+		(index2 < 0) || (index2 > (int)th->dynamicDisplayList.size()))
+	{
+		createError<RangeError>(wrk,kParamRangeError);
+		return;
+	}
 	if (index1 == index2)
 	{
 		return;
@@ -3639,7 +3658,10 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getChildAt)
 	assert_and_throw(argslen==1);
 	unsigned int index=asAtomHandler::toInt(args[0]);
 	if(index>=th->dynamicDisplayList.size())
-		throw Class<RangeError>::getInstanceS(wrk,"getChildAt: invalid index", 2025);
+	{
+		createError<RangeError>(wrk,2025,"getChildAt: invalid index");
+		return;
+	}
 	auto it=th->dynamicDisplayList.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
@@ -3655,7 +3677,10 @@ int DisplayObjectContainer::getChildIndex(DisplayObject* child)
 	do
 	{
 		if(it == dynamicDisplayList.end())
-			throw Class<ArgumentError>::getInstanceS(getInstanceWorker(),"getChildIndex: child not in list", 2025);
+		{
+			createError<ArgumentError>(getInstanceWorker(),2025,"getChildIndex: child not in list");
+			return -1;
+		}
 		if(*it == child)
 			break;
 		ret++;
@@ -3683,7 +3708,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getObjectsUnderPoint)
 {
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
 	_NR<Point> point;
-	ARG_UNPACK_ATOM(point);
+	ARG_CHECK(ARG_UNPACK(point));
 	Array* res = Class<Array>::getInstanceSNoArgs(wrk);
 	if (!point.isNull())
 		th->getObjectsFromPoint(point.getPtr(),res);
@@ -3998,13 +4023,13 @@ void Stage::onDisplayState(const tiny_string&)
 	if (!getSystemState()->allowFullscreen && displayState == "fullScreen")
 	{
 		if (needsActionScript3())
-			throwError<SecurityError>(kInvalidParamError);
+			createError<SecurityError>(getInstanceWorker(),kInvalidParamError);
 		return;
 	}
 	if (!getSystemState()->allowFullscreenInteractive && displayState == "fullScreenInteractive")
 	{
 		if (needsActionScript3())
-			throwError<SecurityError>(kInvalidParamError);
+			createError<SecurityError>(getInstanceWorker(),kInvalidParamError);
 		return;
 	}
 	LOG(LOG_NOT_IMPLEMENTED,"setting display state does not check for the security sandbox!");
@@ -4023,7 +4048,7 @@ void Stage::onColorCorrection(const tiny_string& oldValue)
 	    colorCorrection != "off")
 	{
 		colorCorrection = oldValue;
-		throwError<ArgumentError>(kInvalidEnumError, "colorCorrection");
+		createError<ArgumentError>(this->getInstanceWorker(),kInvalidEnumError, "colorCorrection");
 	}
 }
 
@@ -4793,7 +4818,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setFocus)
 {
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	_NR<InteractiveObject> focus;
-	ARG_UNPACK_ATOM(focus);
+	ARG_CHECK(ARG_UNPACK(focus));
 	th->setFocusTarget(focus);
 }
 
@@ -4818,7 +4843,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setFrameRate)
 {
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	number_t frameRate;
-	ARG_UNPACK_ATOM(frameRate);
+	ARG_CHECK(ARG_UNPACK(frameRate));
 	_NR<RootMovieClip> root = th->getRoot();
 	if (!root.isNull())
 		root->setFrameRate(frameRate);
@@ -4869,7 +4894,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setColor)
 {
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	uint32_t color;
-	ARG_UNPACK_ATOM(color);
+	ARG_CHECK(ARG_UNPACK(color));
 	RGB rgb(color);
 	_NR<RootMovieClip> root = th->getRoot();
 	if (!root.isNull())
@@ -5017,7 +5042,7 @@ ASFUNCTIONBODY_ATOM(Bitmap,_constructor)
 	tiny_string _pixelSnapping;
 	_NR<BitmapData> _bitmapData;
 	Bitmap* th = asAtomHandler::as<Bitmap>(obj);
-	ARG_UNPACK_ATOM(_bitmapData, NullRef)(_pixelSnapping, "auto")(th->smoothing, false);
+	ARG_CHECK(ARG_UNPACK(_bitmapData, NullRef)(_pixelSnapping, "auto")(th->smoothing, false));
 
 	DisplayObject::_constructor(ret,wrk,obj,nullptr,0);
 
@@ -5821,7 +5846,7 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 	_NR<DisplayObject> overState;
 	_NR<DisplayObject> downState;
 	_NR<DisplayObject> hitTestState;
-	ARG_UNPACK_ATOM(upState, NullRef)(overState, NullRef)(downState, NullRef)(hitTestState, NullRef);
+	ARG_CHECK(ARG_UNPACK(upState, NullRef)(overState, NullRef)(downState, NullRef)(hitTestState, NullRef));
 
 	if (!upState.isNull())
 		th->upState = upState;
@@ -6701,7 +6726,7 @@ ASFUNCTIONBODY_ATOM(Stage3D,requestContext3D)
 	Stage3D* th=asAtomHandler::as<Stage3D>(obj);
 	tiny_string context3DRenderMode;
 	tiny_string profile;
-	ARG_UNPACK_ATOM(context3DRenderMode,"auto")(profile,"baseline");
+	ARG_CHECK(ARG_UNPACK(context3DRenderMode,"auto")(profile,"baseline"));
 	
 	th->context3D = _MR(Class<Context3D>::getInstanceS(wrk));
 	th->context3D->driverInfo = wrk->getSystemState()->getEngineData()->driverInfoString;
@@ -6712,7 +6737,7 @@ ASFUNCTIONBODY_ATOM(Stage3D,requestContext3DMatchingProfiles)
 {
 	//Stage3D* th=asAtomHandler::as<Stage3D>(obj);
 	_NR<Vector> profiles;
-	ARG_UNPACK_ATOM(profiles);
+	ARG_CHECK(ARG_UNPACK(profiles));
 	LOG(LOG_NOT_IMPLEMENTED,"Stage3D.requestContext3DMatchingProfiles does nothing");
 }
 

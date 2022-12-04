@@ -325,9 +325,15 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, metaData)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_filters)
 {
 	if(!asAtomHandler::is<DisplayObject>(obj))
-		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Function applied to wrong object");
+		return;
+	}
 	if(argslen != 0)
-		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Arguments provided in getter");
+		return;
+	}
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	if (th->filters.isNull())
 		th->filters = _MR(Class<Array>::getInstanceSNoArgs(wrk));
@@ -337,9 +343,15 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getter_filters)
 ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 {
 	if(!asAtomHandler::is<DisplayObject>(obj))
-		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Function applied to wrong object");
+		return;
+	}
 	if(argslen != 1)
-		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Arguments provided in getter");
+		return;
+	}
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(wrk,args[0],th->filters);
 	th->requestInvalidation(wrk->getSystemState(),true);
@@ -383,18 +395,30 @@ bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_cacheAsBitmap)
 {
 	if(!asAtomHandler::is<DisplayObject>(obj))
-		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Function applied to wrong object");
+		return;
+	}
 	if(argslen != 0)
-		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Arguments provided in getter");
+		return;
+	}
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	ret = asAtomHandler::fromBool(th->computeCacheAsBitmap());
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,_setter_cacheAsBitmap)
 {
 	if(!asAtomHandler::is<DisplayObject>(obj))
-		throw Class<ArgumentError>::getInstanceS(wrk,"Function applied to wrong object");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Function applied to wrong object");
+		return;
+	}
 	if(argslen != 1)
-		throw Class<ArgumentError>::getInstanceS(wrk,"Arguments provided in getter");
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Arguments provided in getter");
+		return;
+	}
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	if (th->filters.isNull() || th->filters->size()==0)
 	{
@@ -418,11 +442,12 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setTransform)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	_NR<Transform> trans;
-	ARG_UNPACK_ATOM(trans);
+	ARG_CHECK(ARG_UNPACK(trans));
 	if (!trans.isNull())
 	{
 		th->setMatrix(trans->owner->matrix);
 		th->colorTransform = trans->owner->colorTransform;
+		th->hasChanged=true;
 	}
 }
 
@@ -882,7 +907,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	number_t val;
-	ARG_UNPACK_ATOM (val);
+	ARG_CHECK(ARG_UNPACK (val));
 	if (!th->loadedFrom->usesActionScript3) // AVM1 uses alpha values from 0-100
 		val /= 100.0;
 	
@@ -1260,7 +1285,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setBlendMode)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	tiny_string val;
-	ARG_UNPACK_ATOM(val);
+	ARG_CHECK(ARG_UNPACK(val));
 
 	th->blendMode = BLENDMODE_NORMAL;
 	if (val == "add") th->blendMode = BLENDMODE_ADD;
@@ -1862,7 +1887,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestObject)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	_NR<DisplayObject> another;
-	ARG_UNPACK_ATOM(another);
+	ARG_CHECK(ARG_UNPACK(another));
 	number_t xmin = 0, xmax, ymin = 0, ymax;
 	if (!th->boundsRectGlobal(xmin, xmax, ymin, ymax))
 	{
@@ -1891,7 +1916,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	number_t x;
 	number_t y;
 	bool shapeFlag;
-	ARG_UNPACK_ATOM (x) (y) (shapeFlag, false);
+	ARG_CHECK(ARG_UNPACK (x) (y) (shapeFlag, false));
 
 	number_t xmin, xmax, ymin, ymax;
 	if (!th->isOnStage() || !th->boundsRectGlobal(xmin, xmax, ymin, ymax))
@@ -2285,7 +2310,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	number_t val;
-	ARG_UNPACK_ATOM (val);
+	ARG_CHECK(ARG_UNPACK (val));
 	val /= 100.0;
 	if(th->alpha != val)
 	{

@@ -72,13 +72,14 @@ struct call_context
 	 * Defaults to empty string according to ECMA-357 13.1.1.1
 	 */
 	uint32_t defaultNamespaceUri;
+	ASObject* exceptionthrown;
 	call_context(method_info* _mi):
 		locals(nullptr),stack(nullptr),
 		stackp(nullptr),exec_pos(nullptr),
 		max_stackp(nullptr),
 		parent_scope_stack(nullptr),curr_scope_stack(0),argarrayposition(-1),
 		scope_stack(nullptr),scope_stack_dynamic(nullptr),localslots(nullptr),mi(_mi),
-		inClass(nullptr),sys(nullptr),worker(nullptr),defaultNamespaceUri(0)
+		inClass(nullptr),sys(nullptr),worker(nullptr),defaultNamespaceUri(0),exceptionthrown(nullptr)
 	{
 	}
 	static void handleError(int errorcode);

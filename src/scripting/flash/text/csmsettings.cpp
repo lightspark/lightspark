@@ -36,9 +36,9 @@ void CSMSettings::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(CSMSettings,_constructor)
 {
 	CSMSettings* th =asAtomHandler::as<CSMSettings>(obj);
-	ARG_UNPACK_ATOM(th->fontSize)(th->insideCutoff)(th->outsideCutoff);
+	ARG_CHECK(ARG_UNPACK(th->fontSize)(th->insideCutoff)(th->outsideCutoff));
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(CSMSettings,fontSize);
-ASFUNCTIONBODY_GETTER_SETTER(CSMSettings,insideCutoff);
-ASFUNCTIONBODY_GETTER_SETTER(CSMSettings,outsideCutoff);
+ASFUNCTIONBODY_GETTER_SETTER(CSMSettings,fontSize)
+ASFUNCTIONBODY_GETTER_SETTER(CSMSettings,insideCutoff)
+ASFUNCTIONBODY_GETTER_SETTER(CSMSettings,outsideCutoff)

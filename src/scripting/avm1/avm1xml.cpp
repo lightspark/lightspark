@@ -55,7 +55,7 @@ ASFUNCTIONBODY_ATOM(AVM1XMLDocument,load)
 	if (th->loader.isNull())
 		th->loader = _MR(Class<URLLoader>::getInstanceS(wrk));
 	tiny_string url;
-	ARG_UNPACK_ATOM(url);
+	ARG_CHECK(ARG_UNPACK(url));
 	URLRequest* req = Class<URLRequest>::getInstanceS(wrk,url);
 	asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
 	asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(th->loader.getPtr());

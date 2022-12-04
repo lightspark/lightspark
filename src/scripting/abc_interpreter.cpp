@@ -46,25 +46,48 @@ uint64_t ABCVm::profilingCheckpoint(uint64_t& startTime)
 	startTime=cur;
 	return ret;
 }
-void ABCVm::checkPropertyException(ASObject* obj,multiname* name, asAtom& prop)
+bool ABCVm::checkPropertyException(ASObject* obj,multiname* name, asAtom& prop)
 {
+	if(asAtomHandler::isValid(prop))
+	{
+		name->resetNameIfObject();
+		return false;
+	}
 	if (name->name_type != multiname::NAME_OBJECT // avoid calling toString() of multiname object
 			&& obj->getClass() && obj->getClass()->findBorrowedSettable(*name))
-		throwError<ReferenceError>(kWriteOnlyError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
+	{
+		createError<ReferenceError>(obj->getInstanceWorker(),kWriteOnlyError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
+		name->resetNameIfObject();
+		return true;
+	}
 	if (obj->getClass() && obj->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(obj->getInstanceWorker(),kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
+		name->resetNameIfObject();
+		return true;
+	}
 	if (name->isEmpty() || (!name->hasEmptyNS && !name->ns.empty()))
-		throwError<ReferenceError>(kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
+	{
+		createError<ReferenceError>(obj->getInstanceWorker(),kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
+		name->resetNameIfObject();
+		return true;
+	}
 	if (obj->is<Undefined>())
-		throwError<TypeError>(kConvertUndefinedToObjectError);
+	{
+		createError<TypeError>(obj->getInstanceWorker(),kConvertUndefinedToObjectError);
+		name->resetNameIfObject();
+		return true;
+	}
+	name->resetNameIfObject();
 	prop = asAtomHandler::undefinedAtom;
+	return false;
 }
-void ABCVm::checkPropertyExceptionInteger(ASObject* obj,int index, asAtom& prop)
+bool ABCVm::checkPropertyExceptionInteger(ASObject* obj,int index, asAtom& prop)
 {
 	multiname m(nullptr);
 	m.name_type = multiname::NAME_INT;
 	m.name_i = index;
-	checkPropertyException(obj,&m, prop);
+	return checkPropertyException(obj,&m, prop);
 }
 
 #ifndef NDEBUG
@@ -105,7 +128,7 @@ void ABCVm::executeFunction(call_context* context)
 #endif
 
 	asAtom* ret = &context->locals[context->mi->body->getReturnValuePos()];
-	while(asAtomHandler::isInvalid(*ret))
+	while(asAtomHandler::isInvalid(*ret) && !context->exceptionthrown)
 	{
 #ifdef PROFILING_SUPPORT
 		uint32_t instructionPointer=context->exec_pos- &context->mi->body->preloadedcode.front();
@@ -4432,7 +4455,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				uint32_t t =code.readu30();
 				multiname* name=mi->context->getMultiname(t,nullptr);
 				if (!name || !name->isStatic)
-					throwError<VerifyError>(kIllegalOpMultinameError,"getlex","multiname not static");
+				{
+					createError<VerifyError>(wrk,kIllegalOpMultinameError,"getlex","multiname not static");
+					break;
+				}
 #ifdef ENABLE_OPTIMIZATION
 				if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 				{
@@ -7747,8 +7773,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				sprintf(stropcode,"%d",opcode);
 				char strcodepos[20];
 				sprintf(strcodepos,"%d",code.tellg());
-				throwError<VerifyError>(kIllegalOpcodeError,function->getSystemState()->getStringFromUniqueId(function->functionname),stropcode,strcodepos);
-				break;
+				createError<VerifyError>(wrk,kIllegalOpcodeError,function->getSystemState()->getStringFromUniqueId(function->functionname),stropcode,strcodepos);
+				return;
 			}
 		}
 	}
@@ -7766,7 +7792,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 		if (state.oldnewpositions.find(p+itj->second) == state.oldnewpositions.end() && p+itj->second < code.tellg())
 		{
 			LOG(LOG_ERROR,"preloadfunction: jump position not found:"<<p<<" "<<itj->second<<" "<<code.tellg());
-			throwError<VerifyError>(kInvalidBranchTargetError);
+			createError<VerifyError>(wrk,kInvalidBranchTargetError);
 		}
 		else
 			state.preloadedcode[itj->first].pcode.arg3_int = (state.oldnewpositions[p+itj->second]-(state.oldnewpositions[p]))+1;

@@ -48,7 +48,7 @@ void StringTools::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(StringTools,_constructor)
 {
 	StringTools* th =asAtomHandler::as<StringTools>(obj);
-	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
+	ARG_CHECK(ARG_UNPACK(th->requestedLocaleIDName));
 	if (wrk->getSystemState()->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
 	{
 		std::string localeName = wrk->getSystemState()->localeManager->getSystemLocaleName(th->requestedLocaleIDName);
@@ -88,7 +88,7 @@ ASFUNCTIONBODY_ATOM(StringTools,toLowerCase)
   try
   {
     tiny_string s;
-    ARG_UNPACK_ATOM(s);
+    ARG_CHECK(ARG_UNPACK(s));
     std::locale l =  std::locale::global(th->currlocale);
     std::string res = s.raw_buf();
 
@@ -114,7 +114,7 @@ ASFUNCTIONBODY_ATOM(StringTools,toUpperCase)
   try
   {
     tiny_string s;
-    ARG_UNPACK_ATOM(s);
+    ARG_CHECK(ARG_UNPACK(s));
     std::locale l =  std::locale::global(th->currlocale);
     std::string res = s.raw_buf();
 

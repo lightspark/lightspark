@@ -44,15 +44,15 @@ void LocaleID::sinit(Class_base* c)
 	REGISTER_GETTER(c, requestedLocaleIDName);
 }
 
-ASFUNCTIONBODY_GETTER(LocaleID, name);
-ASFUNCTIONBODY_GETTER(LocaleID, actualLocaleIDName);
-ASFUNCTIONBODY_GETTER(LocaleID, lastOperationStatus);
-ASFUNCTIONBODY_GETTER(LocaleID, requestedLocaleIDName);
+ASFUNCTIONBODY_GETTER(LocaleID, name)
+ASFUNCTIONBODY_GETTER(LocaleID, actualLocaleIDName)
+ASFUNCTIONBODY_GETTER(LocaleID, lastOperationStatus)
+ASFUNCTIONBODY_GETTER(LocaleID, requestedLocaleIDName)
 
 ASFUNCTIONBODY_ATOM(LocaleID,_constructor)
 {
 	LocaleID* th =asAtomHandler::as<LocaleID>(obj);
-	ARG_UNPACK_ATOM(th->requestedLocaleIDName);
+	ARG_CHECK(ARG_UNPACK(th->requestedLocaleIDName));
 	std::string locale = th->requestedLocaleIDName;
 	th->name = th->requestedLocaleIDName;
 	if (wrk->getSystemState()->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))

@@ -101,7 +101,10 @@ ASFUNCTIONBODY_ATOM(Boolean,_toString)
 	}
 
 	if(!asAtomHandler::is<Boolean>(obj))
-		throw Class<TypeError>::getInstanceS(wrk,"");
+	{
+		createError<TypeError>(wrk,0,"");
+		return;
+	}
 
 	ret = asAtomHandler::fromString(wrk->getSystemState(),asAtomHandler::toString(obj,wrk));
 }
@@ -115,7 +118,10 @@ ASFUNCTIONBODY_ATOM(Boolean,_valueOf)
 	}
 
 	if(!asAtomHandler::is<Boolean>(obj))
-			throw Class<TypeError>::getInstanceS(wrk,"");
+	{
+		createError<TypeError>(wrk,0,"");
+		return;
+	}
 
 	//The ecma3 spec is unspecific, but testing showed that we should return
 	//a new object

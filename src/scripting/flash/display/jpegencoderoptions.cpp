@@ -33,7 +33,7 @@ void JPEGEncoderOptions::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(JPEGEncoderOptions,_constructor)
 {
 	JPEGEncoderOptions* th =asAtomHandler::as<JPEGEncoderOptions>(obj);
-	ARG_UNPACK_ATOM(th->quality,80);
+	ARG_CHECK(ARG_UNPACK(th->quality,80));
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(JPEGEncoderOptions, quality);
+ASFUNCTIONBODY_GETTER_SETTER(JPEGEncoderOptions, quality)

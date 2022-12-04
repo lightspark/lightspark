@@ -57,20 +57,20 @@ void AVM1Key::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(AVM1Key,isDown)
 {
 	int key;
-	ARG_UNPACK_ATOM (key);
+	ARG_CHECK(ARG_UNPACK(key));
 	asAtomHandler::setBool(ret,wrk->getSystemState()->getInputThread()->isKeyDown((AS3KeyCode)key));
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,addListener)
 {
 	_NR<ASObject> listener;
-	ARG_UNPACK_ATOM (listener);
+	ARG_CHECK(ARG_UNPACK(listener));
 	if (listener)
 		wrk->getSystemState()->stage->AVM1AddKeyboardListener(listener.getPtr());
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,removeListener)
 {
 	_NR<ASObject> listener;
-	ARG_UNPACK_ATOM (listener);
+	ARG_CHECK(ARG_UNPACK(listener));
 	if (listener)
 		wrk->getSystemState()->stage->AVM1RemoveKeyboardListener(listener.getPtr());
 }
@@ -115,14 +115,14 @@ ASFUNCTIONBODY_ATOM(AVM1Mouse,show)
 ASFUNCTIONBODY_ATOM(AVM1Mouse,addListener)
 {
 	_NR<ASObject> listener;
-	ARG_UNPACK_ATOM (listener);
+	ARG_CHECK(ARG_UNPACK(listener));
 	if (listener)
 		wrk->getSystemState()->stage->AVM1AddMouseListener(listener.getPtr());
 }
 ASFUNCTIONBODY_ATOM(AVM1Mouse,removeListener)
 {
 	_NR<ASObject> listener;
-	ARG_UNPACK_ATOM (listener);
+	ARG_CHECK(ARG_UNPACK(listener));
 	if (listener)
 		wrk->getSystemState()->stage->AVM1RemoveMouseListener(listener.getPtr());
 }

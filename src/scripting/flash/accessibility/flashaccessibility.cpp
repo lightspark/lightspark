@@ -71,5 +71,5 @@ ASFUNCTIONBODY_ATOM(Accessibility,updateProperties)
 {
 	Accessibility* th=asAtomHandler::as<Accessibility>(obj);
 	LOG(LOG_NOT_IMPLEMENTED, "Accessibility is not supported.");
-	ARG_UNPACK_ATOM (th->properties);
+	ARG_CHECK(ARG_UNPACK(th->properties));
 }

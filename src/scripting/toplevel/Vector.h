@@ -98,7 +98,7 @@ public:
 		else
 		{
 			tiny_string clsname = asAtomHandler::getObject(o) ? asAtomHandler::getObject(o)->getClassName() : "";
-			throwError<TypeError>(kCheckTypeFailedError, clsname,
+			createError<TypeError>(wrk,kCheckTypeFailedError, clsname,
 								  Class<T>::getQualifiedClassName());
 		}
 		return false;

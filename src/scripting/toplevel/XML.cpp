@@ -342,7 +342,7 @@ ASFUNCTIONBODY_ATOM(XML,descendants)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
 	_NR<ASObject> name;
-	ARG_UNPACK_ATOM(name,_NR<ASObject>(abstract_s(wrk,"*")));
+	ARG_CHECK(ARG_UNPACK(name,_NR<ASObject>(abstract_s(wrk,"*"))));
 	XMLVector res;
 	multiname mname(nullptr);
 	name->applyProxyProperty(mname);
@@ -420,12 +420,18 @@ void XML::appendChild(_R<XML> newChild)
 	if (newChild->constructed)
 	{
 		if (this == newChild.getPtr())
-			throwError<TypeError>(kXMLIllegalCyclicalLoop);
+		{
+			createError<TypeError>(getInstanceWorker(),kXMLIllegalCyclicalLoop);
+			return;
+		}
 		XML* node = this->parentNode;
 		while (node)
 		{
 			if (node == newChild.getPtr())
-				throwError<TypeError>(kXMLIllegalCyclicalLoop);
+			{
+				createError<TypeError>(getInstanceWorker(),kXMLIllegalCyclicalLoop);
+				return;
+			}
 			node = node->parentNode;
 		}
 		this->incRef();
@@ -442,7 +448,7 @@ ASFUNCTIONBODY_ATOM(XML,attribute)
 	XML* th=asAtomHandler::as<XML>(obj);
 	tiny_string attrname;
 	//see spec for QName handling
-	ARG_UNPACK_ATOM (attrname);
+	ARG_CHECK(ARG_UNPACK (attrname));
 	uint32_t tmpns = BUILTIN_STRINGS::EMPTY;
 	if(argslen > 0 && asAtomHandler::is<ASQName>(args[0]))
 	{
@@ -886,7 +892,6 @@ void XML::getText(XMLVector& ret)
 ASFUNCTIONBODY_ATOM(XML,text)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
-	ARG_UNPACK_ATOM;
 	XMLVector res;
 	th->getText(res);
 	ret = asAtomHandler::fromObject(XMLList::create(wrk,res,th->getChildrenlist(),multiname(nullptr)));
@@ -897,7 +902,7 @@ ASFUNCTIONBODY_ATOM(XML,elements)
 	XMLVector res;
 	XML* th=asAtomHandler::as<XML>(obj);
 	tiny_string name;
-	ARG_UNPACK_ATOM (name, "");
+	ARG_CHECK(ARG_UNPACK (name, ""));
 	if (name=="*")
 		name="";
 
@@ -951,7 +956,7 @@ ASFUNCTIONBODY_ATOM(XML,addNamespace)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
 	_NR<ASObject> newNamespace;
-	ARG_UNPACK_ATOM(newNamespace);
+	ARG_CHECK(ARG_UNPACK(newNamespace));
 
 
 	uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
@@ -1005,7 +1010,7 @@ ASFUNCTIONBODY_ATOM(XML,contains)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
 	_NR<ASObject> value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 	if(!value->is<XML>())
 		asAtomHandler::setBool(ret,false);
 	else
@@ -1016,7 +1021,7 @@ ASFUNCTIONBODY_ATOM(XML,_namespace)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
 	tiny_string prefix;
-	ARG_UNPACK_ATOM(prefix, "");
+	ARG_CHECK(ARG_UNPACK(prefix, ""));
 
 	pugi::xml_node_type nodetype=th->nodetype;
 	if(prefix.empty() && 
@@ -1049,7 +1054,7 @@ ASFUNCTIONBODY_ATOM(XML,_setLocalName)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
 	_NR<ASObject> newName;
-	ARG_UNPACK_ATOM(newName);
+	ARG_CHECK(ARG_UNPACK(newName));
 
 	if(th->nodetype==pugi::node_pcdata || th->nodetype==pugi::node_comment)
 		return;
@@ -1072,7 +1077,8 @@ void XML::setLocalName(const tiny_string& new_name)
 	asAtom v =asAtomHandler::fromObject(abstract_s(getInstanceWorker(),new_name));
 	if(!isXMLName(getInstanceWorker(),v))
 	{
-		throwError<TypeError>(kXMLInvalidName, new_name);
+		createError<TypeError>(getInstanceWorker(),kXMLInvalidName, new_name);
+		return;
 	}
 	this->nodename = new_name;
 	handleNotification("nameSet",asAtomHandler::fromObject(this),asAtomHandler::nullAtom);
@@ -1082,7 +1088,7 @@ ASFUNCTIONBODY_ATOM(XML,_setName)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
 	_NR<ASObject> newName;
-	ARG_UNPACK_ATOM(newName);
+	ARG_CHECK(ARG_UNPACK(newName));
 
 	if(th->nodetype==pugi::node_pcdata || th->nodetype==pugi::node_comment)
 		return;
@@ -1110,7 +1116,7 @@ ASFUNCTIONBODY_ATOM(XML,_setNamespace)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
 	_NR<ASObject> newNamespace;
-	ARG_UNPACK_ATOM(newNamespace);
+	ARG_CHECK(ARG_UNPACK(newNamespace));
 
 	if(th->nodetype==pugi::node_pcdata ||
 	   th->nodetype==pugi::node_comment ||
@@ -1194,7 +1200,7 @@ ASFUNCTIONBODY_ATOM(XML,_setChildren)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
 	_NR<ASObject> newChildren;
-	ARG_UNPACK_ATOM(newChildren);
+	ARG_CHECK(ARG_UNPACK(newChildren));
 
 	th->childrenlist->clear();
 
@@ -1994,7 +2000,7 @@ bool XML::isValidMultiname(SystemState* sys,const multiname& name, uint32_t& ind
 	// Don't throw for non-numeric NAME_STRING or NAME_OBJECT
 	// because they can still be valid built-in property names.
 	if(!validIndex && (name.name_type==multiname::NAME_INT || name.name_type == multiname::NAME_INT ||name.name_type==multiname::NAME_NUMBER))
-		throwError<RangeError>(kOutOfRangeError, name.normalizedNameUnresolved(sys), "?");
+		createError<RangeError>(getWorker(),kOutOfRangeError, name.normalizedNameUnresolved(sys), "?");
 
 	return validIndex;
 }
@@ -2117,7 +2123,7 @@ ASFUNCTIONBODY_ATOM(XML,_setSettings)
 		return;
 	}
 	_NR<ASObject> arg0;
-	ARG_UNPACK_ATOM(arg0);
+	ARG_CHECK(ARG_UNPACK(arg0));
 	if (arg0->is<Null>() || arg0->is<Undefined>())
 	{
 		setDefaultXMLSettings();
@@ -2198,13 +2204,19 @@ void XML::CheckCyclicReference(XML* node)
 {
 	XML* tmp = node;
 	if (tmp == this)
-		throwError<TypeError>(kXMLIllegalCyclicalLoop);
+	{
+		createError<TypeError>(getInstanceWorker(),kXMLIllegalCyclicalLoop);
+		return;
+	}
 	if (!childrenlist.isNull())
 	{
 		for (auto it = tmp->childrenlist->nodes.begin(); it != tmp->childrenlist->nodes.end(); it++)
 		{
 			if ((*it).getPtr() == this)
-				throwError<TypeError>(kXMLIllegalCyclicalLoop);
+			{
+				createError<TypeError>(getInstanceWorker(),kXMLIllegalCyclicalLoop);
+				return;
+			}
 			CheckCyclicReference((*it).getPtr());
 		}
 	}
@@ -2232,7 +2244,7 @@ ASFUNCTIONBODY_ATOM(XML,insertChildAfter)
 	XML* th=asAtomHandler::as<XML>(obj);
 	_NR<ASObject> child1;
 	_NR<ASObject> child2;
-	ARG_UNPACK_ATOM(child1)(child2);
+	ARG_CHECK(ARG_UNPACK(child1)(child2));
 	if (th->nodetype != pugi::node_element)
 	{
 		asAtomHandler::setUndefined(ret);
@@ -2314,7 +2326,7 @@ ASFUNCTIONBODY_ATOM(XML,insertChildBefore)
 	XML* th=asAtomHandler::as<XML>(obj);
 	_NR<ASObject> child1;
 	_NR<ASObject> child2;
-	ARG_UNPACK_ATOM(child1)(child2);
+	ARG_CHECK(ARG_UNPACK(child1)(child2));
 	if (th->nodetype != pugi::node_element)
 	{
 		asAtomHandler::setUndefined(ret);
@@ -2410,7 +2422,7 @@ ASFUNCTIONBODY_ATOM(XML,removeNamespace)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
 	_NR<ASObject> arg1;
-	ARG_UNPACK_ATOM(arg1);
+	ARG_CHECK(ARG_UNPACK(arg1));
 	Namespace* ns;
 	if (arg1->is<Namespace>())
 		ns = arg1->as<Namespace>();
@@ -2451,7 +2463,7 @@ ASFUNCTIONBODY_ATOM(XML,comments)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
 	tiny_string name;
-	ARG_UNPACK_ATOM(name,"*");
+	ARG_CHECK(ARG_UNPACK(name,"*"));
 	XMLVector res;
 	th->getComments(res);
 	ret = asAtomHandler::fromObject(XMLList::create(wrk,res,th->getChildrenlist(),multiname(nullptr)));
@@ -2475,7 +2487,7 @@ ASFUNCTIONBODY_ATOM(XML,processingInstructions)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
 	tiny_string name;
-	ARG_UNPACK_ATOM(name,"*");
+	ARG_CHECK(ARG_UNPACK(name,"*"));
 	XMLVector res;
 	th->getprocessingInstructions(res,name);
 	ret = asAtomHandler::fromObject(XMLList::create(wrk,res,th->getChildrenlist(),multiname(nullptr)));
@@ -2507,7 +2519,7 @@ ASFUNCTIONBODY_ATOM(XML,_hasOwnProperty)
 	}
 	XML* th=asAtomHandler::as<XML>(obj);
 	tiny_string prop;
-	ARG_UNPACK_ATOM(prop);
+	ARG_CHECK(ARG_UNPACK(prop));
 
 	bool res = false;
 	if (prop == "0")
@@ -3006,15 +3018,14 @@ ASFUNCTIONBODY_ATOM(XML,_prependChild)
 		}
 		else
 		{
-			try
-			{
-				arg=createFromString(wrk,s,true);
-			}
-			catch(ASObject* exception)
+			arg=createFromString(wrk,s,true);
+			if (wrk->currentCallContext->exceptionthrown)
 			{
 				arg=createFromString(wrk,"dummy");
 				//avoid interpretation of the argument, just set it as text node
 				arg->setTextContent(s);
+				wrk->currentCallContext->exceptionthrown->decRef();
+				wrk->currentCallContext->exceptionthrown=nullptr;
 			}
 		}
 	}
@@ -3028,12 +3039,18 @@ void XML::prependChild(_R<XML> newChild)
 	if (newChild->constructed)
 	{
 		if (this == newChild.getPtr())
-			throwError<TypeError>(kXMLIllegalCyclicalLoop);
+		{
+			createError<TypeError>(getInstanceWorker(),kXMLIllegalCyclicalLoop);
+			return;
+		}
 		XML* node = this->parentNode;
 		while (node)
 		{
 			if (node == newChild.getPtr())
-				throwError<TypeError>(kXMLIllegalCyclicalLoop);
+			{
+				createError<TypeError>(getInstanceWorker(),kXMLIllegalCyclicalLoop);
+				return;
+			}
 			node = node->parentNode;
 		}
 		this->incRef();
@@ -3047,7 +3064,7 @@ ASFUNCTIONBODY_ATOM(XML,_replace)
 	XML* th=asAtomHandler::as<XML>(obj);
 	_NR<ASObject> propertyName;
 	_NR<ASObject> value;
-	ARG_UNPACK_ATOM(propertyName) (value);
+	ARG_CHECK(ARG_UNPACK(propertyName) (value));
 
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
@@ -3114,7 +3131,7 @@ ASFUNCTIONBODY_ATOM(XML,_replace)
 ASFUNCTIONBODY_ATOM(XML,setNotification)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
-	ARG_UNPACK_ATOM(th->notifierfunction);
+	ARG_CHECK(ARG_UNPACK(th->notifierfunction));
 }
 ASFUNCTIONBODY_ATOM(XML,notification)
 {

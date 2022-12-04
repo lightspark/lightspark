@@ -54,7 +54,7 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,_constructor)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
 	tiny_string dateStyle, timeStyle;
-	ARG_UNPACK_ATOM(th->requestedLocaleIDName)(dateStyle,"long")(timeStyle,"long");
+	ARG_CHECK(ARG_UNPACK(th->requestedLocaleIDName)(dateStyle,"long")(timeStyle,"long"));
 
 	if (dateStyle == "long" || dateStyle == "medium" ||
 		dateStyle == "short" || dateStyle == "none")
@@ -63,7 +63,8 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,_constructor)
 	}
 	else
 	{
-		throw Class<ArgumentError>::getInstanceS(wrk,"dateStyle value is not valid", kInvalidArgumentError);
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"dateStyle value is not valid");
+		return;
 	}
 	if (timeStyle == "long" || timeStyle == "medium" ||
 		timeStyle == "short" || timeStyle == "none")
@@ -72,7 +73,8 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,_constructor)
 	}
 	else
 	{
-		throw Class<ArgumentError>::getInstanceS(wrk,"timeStyle value is not valid", kInvalidArgumentError);
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"timeStyle value is not valid");
+		return;
 	}
 
 	if (wrk->getSystemState()->localeManager->isLocaleAvailableOnSystem(th->requestedLocaleIDName))
@@ -89,14 +91,14 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,_constructor)
 	}
 }
 
-ASFUNCTIONBODY_GETTER(DateTimeFormatter, actualLocaleIDName);
-ASFUNCTIONBODY_GETTER(DateTimeFormatter, lastOperationStatus);
-ASFUNCTIONBODY_GETTER(DateTimeFormatter, requestedLocaleIDName);
+ASFUNCTIONBODY_GETTER(DateTimeFormatter, actualLocaleIDName)
+ASFUNCTIONBODY_GETTER(DateTimeFormatter, lastOperationStatus)
+ASFUNCTIONBODY_GETTER(DateTimeFormatter, requestedLocaleIDName)
 
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,setDateTimePattern)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
-	ARG_UNPACK_ATOM(th->pattern);
+	ARG_CHECK(ARG_UNPACK(th->pattern));
 	th->dateStyle = "custom";
 	th->timeStyle = "custom";
 	th->lastOperationStatus="noError";
@@ -106,7 +108,7 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,format)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
 	_NR<Date> dt;
-	ARG_UNPACK_ATOM(dt);
+	ARG_CHECK(ARG_UNPACK(dt));
 	tiny_string res;
 	if (!dt.isNull())
 	{
@@ -137,7 +139,7 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,formatUTC)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
 	_NR<Date> dt;
-	ARG_UNPACK_ATOM(dt);
+	ARG_CHECK(ARG_UNPACK(dt));
 	tiny_string res;
 	if (!dt.isNull())
 	{
@@ -216,7 +218,7 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,setDateTimeStyles)
 {
 	DateTimeFormatter* th =asAtomHandler::as<DateTimeFormatter>(obj);
 	tiny_string dateStyle, timeStyle;
-	ARG_UNPACK_ATOM(dateStyle)(timeStyle);
+	ARG_CHECK(ARG_UNPACK(dateStyle)(timeStyle));
 
 	if (dateStyle == "long" || dateStyle == "medium" ||
 		dateStyle == "short" || dateStyle == "none")
@@ -225,7 +227,8 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,setDateTimeStyles)
 	}
 	else
 	{
-		throw Class<ArgumentError>::getInstanceS(wrk,"dateStyle value is not valid", kInvalidArgumentError);
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"dateStyle value is not valid");
+		return;
 	}
 	if (timeStyle == "long" || timeStyle == "medium" ||
 		timeStyle == "short" || timeStyle == "none")
@@ -234,7 +237,7 @@ ASFUNCTIONBODY_ATOM(DateTimeFormatter,setDateTimeStyles)
 	}
 	else
 	{
-		throw Class<ArgumentError>::getInstanceS(wrk,"timeStyle value is not valid", kInvalidArgumentError);
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"timeStyle value is not valid");
 	}
 }
 

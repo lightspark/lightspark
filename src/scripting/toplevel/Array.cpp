@@ -180,7 +180,10 @@ void Array::constructorImpl(asAtom* args, const unsigned int argslen)
 	{
 		uint32_t size = asAtomHandler::toUInt(args[0]);
 		if ((number_t)size != asAtomHandler::toNumber(args[0]))
-			throwError<RangeError>(kArrayIndexNotIntegerError, Number::toString(asAtomHandler::toNumber(args[0])));
+		{
+			createError<RangeError>(getInstanceWorker(),kArrayIndexNotIntegerError, Number::toString(asAtomHandler::toNumber(args[0])));
+			return;
+		}
 		LOG_CALL("Creating array of length " << size);
 		resize(size);
 		for (uint32_t i=0; i <size && i < ARRAY_SIZE_THRESHOLD; i++)
@@ -268,7 +271,7 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
 	_NR<IFunction> func;
 	asAtom f=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(func);
+	ARG_CHECK(ARG_UNPACK(func));
 	if (func.isNull() || th->currentsize == 0)
 	{
 		ret = asAtomHandler::fromObject(res);
@@ -278,8 +281,10 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 	
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,"filter",th->getClass()->getQualifiedClassName());
-
+	{
+		createError<ReferenceError>(wrk,kReadSealedError,"filter",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	asAtom params[3];
 	asAtom funcRet=asAtomHandler::invalidAtom;
 	ASATOM_INCREF(f);
@@ -338,7 +343,7 @@ ASFUNCTIONBODY_ATOM(Array, some)
 	Array* th=asAtomHandler::as<Array>(obj);
 	_NR<IFunction> func;
 	asAtom f=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(func);
+	ARG_CHECK(ARG_UNPACK(func));
 	if (func.isNull() || th->currentsize == 0)
 	{
 		asAtomHandler::setBool(ret,false);
@@ -347,8 +352,10 @@ ASFUNCTIONBODY_ATOM(Array, some)
 	f = asAtomHandler::fromObject(func.getPtr());
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,"some",th->getClass()->getQualifiedClassName());
-
+	{
+		createError<ReferenceError>(wrk,kReadSealedError,"some",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	asAtom params[3];
 
 	ASATOM_INCREF(f);
@@ -401,7 +408,7 @@ ASFUNCTIONBODY_ATOM(Array, every)
 	Array* th=asAtomHandler::as<Array>(obj);
 	_NR<IFunction> func;
 	asAtom f=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(func);
+	ARG_CHECK(ARG_UNPACK(func));
 	if (func.isNull() || th->currentsize == 0)
 	{
 		asAtomHandler::setBool(ret,true);
@@ -410,8 +417,10 @@ ASFUNCTIONBODY_ATOM(Array, every)
 	f = asAtomHandler::fromObject(func.getPtr());
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,"every",th->getClass()->getQualifiedClassName());
-
+	{
+		createError<ReferenceError>(wrk,kReadSealedError,"every",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	asAtom params[3];
 	ASATOM_INCREF(f);
 	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
@@ -468,7 +477,7 @@ ASFUNCTIONBODY_ATOM(Array,_getLength)
 ASFUNCTIONBODY_ATOM(Array,_setLength)
 {
 	uint32_t newLen;
-	ARG_UNPACK_ATOM(newLen);
+	ARG_CHECK(ARG_UNPACK(newLen));
 	Array* th=asAtomHandler::as<Array>(obj);
 	if (th->getClass() && th->getClass()->isSealed)
 		return;
@@ -483,14 +492,17 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 	Array* th=asAtomHandler::as<Array>(obj);
 	_NR<IFunction> func;
 	asAtom f=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(func);
+	ARG_CHECK(ARG_UNPACK(func));
 	asAtomHandler::setUndefined(ret);
 	if (func.isNull() || th->currentsize == 0)
 		return;
 	f = asAtomHandler::fromObject(func.getPtr());
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,"foreach",th->getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(wrk,kReadSealedError,"foreach",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	asAtom params[3];
 
 	ASATOM_INCREF(f);
@@ -564,10 +576,13 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,"lastIndexOf",th->getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(wrk,kReadSealedError,"lastIndexOf",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	number_t index;
 	asAtom arg0=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(arg0) (index, 0x7fffffff);
+	ARG_CHECK(ARG_UNPACK(arg0) (index, 0x7fffffff));
 	int32_t res=-1;
 
 	if(argslen == 1 && th->currentsize == 0)
@@ -721,7 +736,7 @@ ASFUNCTIONBODY_ATOM(Array,slice)
 	uint32_t startIndex;
 	uint32_t endIndex;
 
-	ARG_UNPACK_ATOM(startIndex, 0) (endIndex, 16777215);
+	ARG_CHECK(ARG_UNPACK(startIndex, 0) (endIndex, 16777215));
 	startIndex=th->capIndex(startIndex);
 	endIndex=th->capIndex(endIndex);
 
@@ -745,7 +760,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 	int deleteCount;
 	//By default, delete all the element up to the end
 	//DeleteCount defaults to the array len, it will be capped below
-	ARG_UNPACK_ATOM_MORE_ALLOWED(startIndex) (deleteCount, th->size());
+	ARG_CHECK(ARG_UNPACK_MORE_ALLOWED(startIndex) (deleteCount, th->size()));
 
 	uint32_t totalSize=th->size();
 	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
@@ -760,7 +775,10 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 	{
 		// Derived classes may be sealed!
 		if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-			throwError<ReferenceError>(kReadSealedError,"splice",th->getClass()->getQualifiedClassName());
+		{
+			createError<ReferenceError>(wrk,kReadSealedError,"splice",th->getClass()->getQualifiedClassName());
+			return;
+		}
 		// write deleted items to return array
 		for(int i=0;i<deleteCount;i++)
 		{
@@ -832,11 +850,14 @@ ASFUNCTIONBODY_ATOM(Array,join)
 	Array* th=asAtomHandler::as<Array>(obj);
 	string res;
 	tiny_string del;
-	ARG_UNPACK_ATOM(del, ",");
+	ARG_CHECK(ARG_UNPACK(del, ","));
 
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,"join",th->getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(wrk,kReadSealedError,"join",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	for(uint32_t i=0;i<th->size();i++)
 	{
 		asAtom o = th->at(i);
@@ -853,11 +874,14 @@ ASFUNCTIONBODY_ATOM(Array,indexOf)
 	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,"indexOf",th->getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(wrk,kReadSealedError,"indexOf",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	int32_t res=-1;
 	int32_t index;
 	asAtom arg0=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(arg0) (index, 0);
+	ARG_CHECK(ARG_UNPACK(arg0) (index, 0));
 	if (index < 0) index = th->size()+ index;
 	if (index < 0) index = 0;
 
@@ -1199,7 +1223,10 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,"sort",th->getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(wrk,kReadSealedError,"sort",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	asAtom comp=asAtomHandler::invalidAtom;
 	bool isNumeric=false;
 	bool isCaseInsensitive=false;
@@ -1320,8 +1347,11 @@ bool Array::sortOnComparator::operator()(const sorton_value& d1, const sorton_va
 ASFUNCTIONBODY_ATOM(Array,sortOn)
 {
 	if (argslen != 1 && argslen != 2)
-		throwError<ArgumentError>(kWrongArgumentCountError, "1",
+	{
+		createError<ArgumentError>(wrk,kWrongArgumentCountError, "1",
 					  Integer::toString(argslen));
+		return;
+	}
 	Array* th=asAtomHandler::as<Array>(obj);
 	std::vector<sorton_field> sortfields;
 	if(asAtomHandler::is<Array>(args[0]))
@@ -1468,7 +1498,10 @@ ASFUNCTIONBODY_ATOM(Array,unshift)
 	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() > 12 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kWriteSealedError,"unshift",th->getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(wrk,kWriteSealedError,"unshift",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	if (argslen > 0)
 	{
 		th->resize(th->size()+argslen);
@@ -1590,10 +1623,16 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 	Array* th=asAtomHandler::as<Array>(obj);
 
 	if(argslen < 1)
-		throwError<ArgumentError>(kWrongArgumentCountError, "Array.map", "1", Integer::toString(argslen));
+	{
+		createError<ArgumentError>(wrk,kWrongArgumentCountError, "Array.map", "1", Integer::toString(argslen));
+		return;
+	}
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,"map",th->getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(wrk,kReadSealedError,"map",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	asAtom func=asAtomHandler::invalidAtom;
 	if (!asAtomHandler::is<RegExp>(args[0]))
 	{
@@ -1662,7 +1701,10 @@ ASFUNCTIONBODY_ATOM(Array,_toString)
 	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,"toString",th->getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(wrk,kReadSealedError,"toString",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv()));
 }
 
@@ -1683,7 +1725,10 @@ ASFUNCTIONBODY_ATOM(Array,_toLocaleString)
 	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,"toLocaleString",th->getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(wrk,kReadSealedError,"toLocaleString",th->getClass()->getQualifiedClassName());
+		return;
+	}
 	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(true)));
 }
 
@@ -1692,7 +1737,7 @@ ASFUNCTIONBODY_ATOM(Array,insertAt)
 	Array* th=asAtomHandler::as<Array>(obj);
 	int32_t index;
 	asAtom o=asAtomHandler::invalidAtom;
-	ARG_UNPACK_ATOM(index)(o);
+	ARG_CHECK(ARG_UNPACK(index)(o));
 	if (index < 0 && th->currentsize >= (uint32_t)(-index))
 		index = th->currentsize+(index);
 	if (index < 0)
@@ -1733,7 +1778,7 @@ ASFUNCTIONBODY_ATOM(Array,removeAt)
 {
 	Array* th=asAtomHandler::as<Array>(obj);
 	int32_t index;
-	ARG_UNPACK_ATOM(index);
+	ARG_CHECK(ARG_UNPACK(index));
 	if (index < 0)
 		index = th->currentsize+index;
 	if (index < 0)
@@ -1821,7 +1866,10 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 	}
 
 	if (getClass() && getClass()->isSealed)
-		throwError<ReferenceError>(kReadSealedError,name.normalizedNameUnresolved(getSystemState()),getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(getInstanceWorker(),kReadSealedError,name.normalizedNameUnresolved(getSystemState()),getClass()->getQualifiedClassName());
+		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+	}
 	
 	if (index < ARRAY_SIZE_THRESHOLD)
 	{
@@ -1864,7 +1912,8 @@ GET_VARIABLE_RESULT Array::getVariableByInteger(asAtom &ret, int index, GET_VARI
 	if (getClass() && getClass()->isSealed)
 	{
 		tiny_string s = Integer::toString(index);
-		throwError<ReferenceError>(kReadSealedError,s,getClass()->getQualifiedClassName());
+		createError<ReferenceError>(getInstanceWorker(),kReadSealedError,s,getClass()->getQualifiedClassName());
+		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	}
 	if (index >=0 && uint32_t(index) < size())
 	{
@@ -2006,9 +2055,12 @@ multiname *Array::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOW
 		return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 	// Derived classes may be sealed!
 	if (getClass() && getClass()->isSealed)
-		throwError<ReferenceError>(kWriteSealedError,
+	{
+		createError<ReferenceError>(getInstanceWorker(),kWriteSealedError,
 					   name.normalizedNameUnresolved(getSystemState()),
 					   getClass()->getQualifiedClassName());
+		return nullptr;
+	}
 	if(index>=size())
 		resize((uint64_t)index+1);
 
@@ -2033,9 +2085,10 @@ void Array::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_F
 		multiname m(nullptr);
 		m.name_type = multiname::NAME_INT;
 		m.name_i = index;
-		throwError<ReferenceError>(kWriteSealedError,
+		createError<ReferenceError>(getInstanceWorker(),kWriteSealedError,
 					   m.normalizedNameUnresolved(getSystemState()),
 					   getClass()->getQualifiedClassName());
+		return;
 	}
 	if(uint64_t(index)>=size())
 		resize((uint64_t)index+1);
@@ -2225,7 +2278,7 @@ asAtom Array::at(unsigned int index)
 
 void Array::outofbounds(unsigned int index) const
 {
-	throwError<RangeError>(kInvalidArrayLengthError, Number::toString(index));
+	createError<RangeError>(getInstanceWorker(),kInvalidArrayLengthError, Number::toString(index));
 }
 bool Array::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
@@ -2334,7 +2387,10 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, asAtom replacer, const 
 		return res;
 	// check for cylic reference
 	if (std::find(path.begin(),path.end(), this) != path.end())
-		throwError<TypeError>(kJSONCyclicStructure);
+	{
+		createError<TypeError>(getInstanceWorker(),kJSONCyclicStructure);
+		return res;
+	}
 	
 	path.push_back(this);
 	res += "[";
@@ -2489,7 +2545,10 @@ void Array::push(asAtom o)
 		return;
 	// Derived classes may be sealed!
 	if (getSystemState()->getSwfVersion() > 12 && getClass() && getClass()->isSealed)
-		throwError<ReferenceError>(kWriteSealedError,"push",getClass()->getQualifiedClassName());
+	{
+		createError<ReferenceError>(getInstanceWorker(),kWriteSealedError,"push",getClass()->getQualifiedClassName());
+		return;
+	}
 	currentsize++;
 	set(currentsize-1,o,false,false);
 }

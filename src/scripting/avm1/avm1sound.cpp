@@ -49,7 +49,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)
 	EventDispatcher::_constructor(ret,wrk,obj, NULL, 0);
 
 	_NR<MovieClip> target;
-	ARG_UNPACK_ATOM(target,NullRef);
+	ARG_CHECK(ARG_UNPACK(target,NullRef));
 	if (target)
 	{
 		th->clip = target.getPtr();
@@ -98,7 +98,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setVolume)
 {
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	number_t volume;
-	ARG_UNPACK_ATOM(volume);
+	ARG_CHECK(ARG_UNPACK(volume));
 	if (th->soundChannel)
 		th->soundChannel->soundTransform->volume = volume/100.0;
 }
@@ -114,7 +114,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setPan)
 {
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	number_t pan;
-	ARG_UNPACK_ATOM(pan);
+	ARG_CHECK(ARG_UNPACK(pan));
 	if (th->soundChannel)
 		th->soundChannel->soundTransform->pan = pan/100.0;
 }
@@ -142,7 +142,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,loadSound)
 
 	th->loading=false;
 	tiny_string url;
-	ARG_UNPACK_ATOM(url)(th->isStreaming);
+	ARG_CHECK(ARG_UNPACK(url)(th->isStreaming));
 	tiny_string realurl;
 	if (url.find("://") == tiny_string::npos)
 	{

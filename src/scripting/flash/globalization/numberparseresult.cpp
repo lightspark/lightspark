@@ -32,12 +32,12 @@ void NumberParseResult::sinit(Class_base* c)
     REGISTER_GETTER(c, value);
 }
 
-ASFUNCTIONBODY_GETTER(NumberParseResult, endIndex);
-ASFUNCTIONBODY_GETTER(NumberParseResult, startIndex);
-ASFUNCTIONBODY_GETTER(NumberParseResult, value);
+ASFUNCTIONBODY_GETTER(NumberParseResult, endIndex)
+ASFUNCTIONBODY_GETTER(NumberParseResult, startIndex)
+ASFUNCTIONBODY_GETTER(NumberParseResult, value)
 
 ASFUNCTIONBODY_ATOM(NumberParseResult,_constructor)
 {
     NumberParseResult* th =asAtomHandler::as<NumberParseResult>(obj);
-	ARG_UNPACK_ATOM(th->value)(th->startIndex,0x7fffffff)(th->endIndex,0x7fffffff);
+	ARG_CHECK(ARG_UNPACK(th->value)(th->startIndex,0x7fffffff)(th->endIndex,0x7fffffff));
 }

@@ -155,7 +155,10 @@ void ByteArray::sinit(Class_base* c)
 uint8_t* ByteArray::getBufferIntern(unsigned int size, bool enableResize)
 {
 	if (size > BA_MAX_SIZE) 
-		throwError<ASError>(kOutOfMemoryError);
+	{
+		createError<ASError>(getInstanceWorker(), kOutOfMemoryError);
+		return nullptr;
+	}
 	// The first allocation is exactly the size we need,
 	// the subsequent reallocations happen in increments of BA_CHUNK_SIZE bytes
 	uint32_t prevLen = len;
@@ -235,7 +238,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setEndian)
 	else if(asAtomHandler::toString(args[0],wrk) == Endian::bigEndian)
 		th->littleEndian = false;
 	else
-		throwError<ArgumentError>(kInvalidEnumError, "endian");
+		createError<ArgumentError>(wrk,kInvalidEnumError, "endian");
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getObjectEncoding)
@@ -248,9 +251,12 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setObjectEncoding)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	uint32_t value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 	if(value!=OBJECT_ENCODING::AMF0 && value!=OBJECT_ENCODING::AMF3)
-		throwError<ArgumentError>(kInvalidEnumError, "objectEncoding");
+	{
+		createError<ArgumentError>(wrk,kInvalidEnumError, "objectEncoding");
+		return;
+	}
 
 	th->objectEncoding=value;
 	th->currentObjectEncoding=value;
@@ -328,7 +334,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,readBoolean)
 	if(!th->readByte(res))
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 
 	th->unlock();
@@ -341,7 +348,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readBytes)
 	_NR<ByteArray> out;
 	uint32_t offset;
 	uint32_t length;
-	ARG_UNPACK_ATOM(out)(offset, 0)(length, 0);
+	ARG_CHECK(ARG_UNPACK(out)(offset, 0)(length, 0));
 	
 	th->lock();
 	if(length == 0)
@@ -354,12 +361,14 @@ ASFUNCTIONBODY_ATOM(ByteArray,readBytes)
 	if(th->position+length > th->len)
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 	if((uint64_t)length+offset > 0xFFFFFFFF)
 	{
 		th->unlock();
-		throw Class<RangeError>::getInstanceS(wrk,"length+offset");
+		createError<RangeError>(wrk,0,"length+offset");
+		return;
 	}
 	
 	uint8_t* buf=out->getBuffer(length+offset,true);
@@ -403,7 +412,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUTF)
 	if (!th->readUTF(res))
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 	th->unlock();
 	ret = asAtomHandler::fromObject(abstract_s(wrk,res));
@@ -414,12 +424,13 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUTFBytes)
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	uint32_t length;
 
-	ARG_UNPACK_ATOM (length);
+	ARG_CHECK(ARG_UNPACK (length));
 	th->lock();
 	if(th->position+length > th->len)
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 	tiny_string res;
 	th->readUTFBytes(length,res);
@@ -495,7 +506,8 @@ void ByteArray::writeUTF(const tiny_string& str)
 	getBuffer(position+str.numBytes()+2,true);
 	if(str.numBytes() > 65535)
 	{
-		throwError<RangeError>(kParamRangeError);
+		createError<RangeError>(getInstanceWorker(),kParamRangeError);
+		return;
 	}
 	uint16_t numBytes=endianIn((uint16_t)str.numBytes());
 	memcpy(bytes+position,&numBytes,2);
@@ -533,7 +545,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeMultiByte)
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	tiny_string value;
 	tiny_string charset;
-	ARG_UNPACK_ATOM(value)(charset);
+	ARG_CHECK(ARG_UNPACK(value)(charset));
 
 	// TODO: should convert from UTF-8 to charset
 	LOG(LOG_NOT_IMPLEMENTED, "ByteArray.writeMultiByte doesn't convert charset");
@@ -623,7 +635,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeShort)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	int32_t value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 
 	th->lock();
 	th->writeShort((static_cast<uint16_t>(value & 0xffff)));
@@ -678,7 +690,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeBoolean)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	bool b;
-	ARG_UNPACK_ATOM (b);
+	ARG_CHECK(ARG_UNPACK (b));
 
 	th->lock();
 	if (b)
@@ -802,7 +814,8 @@ ASFUNCTIONBODY_ATOM(ByteArray, readByte)
 	if(!th->readByte(res))
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 	th->unlock();
 	asAtomHandler::setInt(ret,wrk,(int8_t)res);
@@ -818,7 +831,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,readDouble)
 	if(!th->readDouble(res,th->position))
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 	th->position+=8;
 
@@ -836,7 +850,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
 	if(!th->readFloat(res,th->position))
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 	th->position+=4;
 
@@ -853,7 +868,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,readInt)
 	if(th->len < th->position+4)
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 
 	uint32_t res;
@@ -885,7 +901,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,readShort)
 	if(!th->readShort(res))
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 
 	th->unlock();
@@ -900,7 +917,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedByte)
 	if (!th->readByte(res))
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 	th->unlock();
 	asAtomHandler::setUInt(ret,wrk,(uint32_t)res);
@@ -928,7 +946,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedInt)
 	if(!th->readUnsignedInt(res))
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 	th->unlock();
 	asAtomHandler::setUInt(ret,wrk,res);
@@ -944,7 +963,8 @@ ASFUNCTIONBODY_ATOM(ByteArray,readUnsignedShort)
 	if(!th->readShort(res))
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 
 	th->unlock();
@@ -956,13 +976,14 @@ ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	uint32_t strlen;
 	tiny_string charset;
-	ARG_UNPACK_ATOM(strlen)(charset);
+	ARG_CHECK(ARG_UNPACK(strlen)(charset));
 
 	th->lock();
 	if(th->len < th->position+strlen)
 	{
 		th->unlock();
-		throwError<EOFError>(kEOFError);
+		createError<EOFError>(wrk,kEOFError);
+		return;
 	}
 
 	if (charset != "us-ascii" && charset != "utf-8")
@@ -987,7 +1008,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readObject)
 		// it seems that contrary to the specs Adobe returns Undefined when reading from an empty ByteArray
 		asAtomHandler::setUndefined(ret);
 		return;
-		//throwError<EOFError>(kEOFError);
+		//createError<EOFError>(wrk,kEOFError);
 	}
 	ret = th->readObject();
 	th->unlock();
@@ -1221,7 +1242,10 @@ multiname *ByteArray::setVariableByMultiname(multiname& name, asAtom& o, CONST_A
 	if(!Array::isValidMultiname(getSystemState(),name,index))
 		return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 	if (index > BA_MAX_SIZE) 
-		throwError<ASError>(kOutOfMemoryError);
+	{
+		createError<ASError>(wrk,kOutOfMemoryError);
+		return nullptr;
+	}
 
 	lock();
 	if(index>=len)
@@ -1322,7 +1346,10 @@ void ByteArray::writeStringVR(map<tiny_string, uint32_t>& stringMap, const tiny_
 {
 	const uint32_t len=s.numBytes();
 	if(len >= 1<<28)
-		throwError<RangeError>(kParamRangeError);
+	{
+		createError<RangeError>(getInstanceWorker(),kParamRangeError);
+		return;
+	}
 
 	//Check if the string is already in the map
 	auto it=stringMap.find(s);
@@ -1371,7 +1398,10 @@ void ByteArray::writeXMLString(std::map<const ASObject*, uint32_t>& objMap,
 			       const tiny_string& xmlstr)
 {
 	if(xmlstr.numBytes() >= 1<<28)
-		throwError<RangeError>(kParamRangeError);
+	{
+		createError<RangeError>(getInstanceWorker(),kParamRangeError);
+		return;
+	}
 
 	//Check if the XML object has been already serialized
 	auto it=objMap.find(xml);
@@ -1440,7 +1470,7 @@ void ByteArray::compress_zlib(bool raw)
 	status = deflate (&strm, Z_FINISH);
 	if (status == Z_STREAM_ERROR || strm.avail_in != 0)
 	{
-		delete compressed;
+		delete[] compressed;
 		throw RunTimeException("zlib compress failed");
 	}
 	deflateEnd(&strm);
@@ -1465,7 +1495,10 @@ void ByteArray::uncompress_zlib(bool raw)
 	strm.total_out=0;
 	status=inflateInit2(&strm,raw ? -15 : 15);
 	if(status==Z_VERSION_ERROR)
-		throw Class<IOError>::getInstanceS(getInstanceWorker(),"not valid compressed data");
+	{
+		createError<IOError>(getInstanceWorker(),0,"not valid compressed data");
+		return;
+	}
 	else if(status!=Z_OK)
 		throw RunTimeException("zlib uncompress failed");
 
@@ -1479,7 +1512,8 @@ void ByteArray::uncompress_zlib(bool raw)
 		if(status!=Z_OK && status!=Z_STREAM_END)
 		{
 			inflateEnd(&strm);
-			throw Class<IOError>::getInstanceS(getInstanceWorker(),"not valid compressed data");
+			createError<IOError>(getInstanceWorker(),0,"not valid compressed data");
+			return;
 		}
 
 		if(strm.avail_out==0)
@@ -1623,7 +1657,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setter_shareable)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	bool value;
-	ARG_UNPACK_ATOM(value);
+	ARG_CHECK(ARG_UNPACK(value));
 	if (!th->shareable)
 		th->shareable=value;
 }
@@ -1632,17 +1666,19 @@ ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapIntAt)
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 
 	int32_t byteindex,expectedValue,newvalue;
-	ARG_UNPACK_ATOM(byteindex)(expectedValue)(newvalue);
+	ARG_CHECK(ARG_UNPACK(byteindex)(expectedValue)(newvalue));
 
-	if (byteindex < 0 || byteindex%4)
+	if ((byteindex < 0) || (byteindex%4))
 	{
-		throwError<RangeError>(kInvalidRangeError, th->getClassName());
+		createError<RangeError>(wrk,kInvalidRangeError, th->getClassName());
+		return;
 	}
 	th->lock();
 	if(byteindex >= (int32_t)th->len-4)
 	{
 		th->unlock();
-		throwError<RangeError>(kInvalidRangeError, th->getClassName());
+		createError<RangeError>(wrk,kInvalidRangeError, th->getClassName());
+		return;
 	}
 	int32_t res;
 	memcpy(&res,th->bytes+byteindex,4);
@@ -1658,7 +1694,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,atomicCompareAndSwapLength)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	int32_t expectedLength,newLength;
-	ARG_UNPACK_ATOM(expectedLength)(newLength);
+	ARG_CHECK(ARG_UNPACK(expectedLength)(newLength));
 
 	th->lock();
 	int32_t res = th->len;

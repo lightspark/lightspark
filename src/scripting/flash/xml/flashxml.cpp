@@ -62,7 +62,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,_constructor)
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
 	uint32_t type;
 	tiny_string value;
-	ARG_UNPACK_ATOM(type)(value);
+	ARG_CHECK(ARG_UNPACK(type)(value));
 	assert_and_throw(type==1);
 	th->root=_MR(Class<XMLDocument>::getInstanceS(wrk));
 	if(type==1)
@@ -235,7 +235,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,_setNodeName)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
 	tiny_string name;
-	ARG_UNPACK_ATOM(name);
+	ARG_CHECK(ARG_UNPACK(name));
 	if (name.empty())
 		LOG(LOG_NOT_IMPLEMENTED,"XMLNode.setNodeName with empty argument");
 	else
@@ -272,7 +272,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,appendChild)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
 	_NR<XMLNode> c;
-	ARG_UNPACK_ATOM(c);
+	ARG_CHECK(ARG_UNPACK(c));
 	th->node.append_move(c->node);
 	if (!c->root.isNull())
 		c->root->decRef();
@@ -330,7 +330,7 @@ ASFUNCTIONBODY_ATOM(XMLDocument,_constructor)
 	XMLDocument* th=asAtomHandler::as<XMLDocument>(obj);
 	tiny_string source;
 
-	ARG_UNPACK_ATOM(source, "");
+	ARG_CHECK(ARG_UNPACK(source, ""));
 	if(!source.empty())
 		th->parseXMLImpl(source);
 }
@@ -427,7 +427,7 @@ ASFUNCTIONBODY_ATOM(XMLDocument,createElement)
 	XMLDocument* th=asAtomHandler::as<XMLDocument>(obj);
 	assert(th->node==nullptr);
 	tiny_string name;
-	ARG_UNPACK_ATOM(name);
+	ARG_CHECK(ARG_UNPACK(name));
 	pugi::xml_node newNode;
 	newNode.set_name(name.raw_buf());
 	th->incRef();

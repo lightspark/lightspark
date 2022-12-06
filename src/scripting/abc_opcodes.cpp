@@ -1252,13 +1252,19 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 	else
 	{//If none of the above apply, convert both to primitives with no hint
 		asAtom val1p=asAtomHandler::invalidAtom;
-		val1->toPrimitive(val1p,NO_HINT);
+		bool isrefcounted1;
+		val1->toPrimitive(val1p,isrefcounted1);
 		asAtom val2p=asAtomHandler::invalidAtom;
-		val2->toPrimitive(val2p,NO_HINT);
+		bool isrefcounted2;
+		val2->toPrimitive(val2p,isrefcounted2);
 		if(asAtomHandler::is<ASString>(val1p) || asAtomHandler::is<ASString>(val2p))
 		{//If one is String, convert both to strings and concat
 			string a(asAtomHandler::toString(val1p,val1->getInstanceWorker()).raw_buf());
 			string b(asAtomHandler::toString(val2p,val1->getInstanceWorker()).raw_buf());
+			if (isrefcounted1)
+				ASATOM_DECREF(val1p);
+			if (isrefcounted2)
+				ASATOM_DECREF(val2p);
 			LOG_CALL("add " << a << '+' << b);
 			res = abstract_s(val1->getInstanceWorker(),a+b);
 			val1->decRef();
@@ -1269,6 +1275,10 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 		{//Convert both to numbers and add
 			number_t num1=asAtomHandler::toNumber(val1p);
 			number_t num2=asAtomHandler::toNumber(val2p);
+			if (isrefcounted1)
+				ASATOM_DECREF(val1p);
+			if (isrefcounted2)
+				ASATOM_DECREF(val2p);
 			LOG_CALL("addN " << num1 << '+' << num2);
 			number_t result = num1 + num2;
 			res = abstract_d(val1->getInstanceWorker(),result);

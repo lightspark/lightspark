@@ -82,8 +82,11 @@ TRISTATE UInteger::isLess(ASObject* o)
 	else
 	{
 		asAtom val2p=asAtomHandler::invalidAtom;
-		o->toPrimitive(val2p,NUMBER_HINT);
+		bool isrefcounted;
+		o->toPrimitive(val2p,isrefcounted,NUMBER_HINT);
 		double val2=asAtomHandler::toNumber(val2p);
+		if (isrefcounted)
+			ASATOM_DECREF(val2p);
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (val<val2)?TTRUE:TFALSE;
 	}
@@ -130,8 +133,11 @@ TRISTATE UInteger::isLessAtom(asAtom& r)
 	else
 	{
 		asAtom val2p=asAtomHandler::invalidAtom;
-		asAtomHandler::getObject(r)->toPrimitive(val2p,NUMBER_HINT);
+		bool isrefcounted;
+		asAtomHandler::getObject(r)->toPrimitive(val2p,isrefcounted,NUMBER_HINT);
 		double val2=asAtomHandler::toNumber(val2p);
+		if (isrefcounted)
+			ASATOM_DECREF(val2p);
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (val<val2)?TTRUE:TFALSE;
 	}

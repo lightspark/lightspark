@@ -1656,11 +1656,17 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, asAtom replacer, const
 			asAtom funcret=asAtomHandler::invalidAtom;
 			asAtomHandler::callFunction(replacer,getInstanceWorker(),funcret,closure, params, 2,false);
 			if (asAtomHandler::isValid(funcret))
+			{
 				subres = asAtomHandler::toObject(funcret,getInstanceWorker())->toJSON(path,asAtomHandler::invalidAtom,spaces,filter);
+				ASATOM_DECREF(funcret);
+			}
 		}
 		else
 		{
+			bool newobj = !asAtomHandler::isObject(o); // member is not a pointer to an ASObject, so toObject() will create a temporary ASObject that has to be decreffed after usage
 			subres = asAtomHandler::toObject(o,getInstanceWorker())->toJSON(path,replacer,spaces,filter);
+			if (newobj)
+				ASATOM_DECREF(o);
 		}
 		if (!subres.empty())
 		{

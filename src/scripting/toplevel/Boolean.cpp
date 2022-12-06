@@ -199,8 +199,11 @@ TRISTATE Boolean::isLess(ASObject* r)
 		default:
 		{
 			asAtom val2p=asAtomHandler::invalidAtom;
-			r->toPrimitive(val2p);
+			bool isrefcounted;
+			r->toPrimitive(val2p,isrefcounted);
 			double val2=asAtomHandler::toNumber(val2p);
+			if (isrefcounted)
+				ASATOM_DECREF(val2p);
 			if(std::isnan(val2)) return TUNDEFINED;
 			return (val<val2)?TTRUE:TFALSE;
 		}
@@ -239,8 +242,11 @@ TRISTATE Boolean::isLessAtom(asAtom& r)
 		default:
 		{
 			asAtom val2p=asAtomHandler::invalidAtom;
-			asAtomHandler::getObject(r)->toPrimitive(val2p);
+			bool isrefcounted;
+			asAtomHandler::getObject(r)->toPrimitive(val2p,isrefcounted);
 			double val2=asAtomHandler::toNumber(val2p);
+			if (isrefcounted)
+				ASATOM_DECREF(val2p);
 			if(std::isnan(val2)) return TUNDEFINED;
 			return (val<val2)?TTRUE:TFALSE;
 		}

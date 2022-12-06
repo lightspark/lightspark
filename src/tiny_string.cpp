@@ -1209,6 +1209,50 @@ int tiny_string::compare(const tiny_string& r) const
 	return res;
 }
 
+tiny_string tiny_string::toQuotedString() const
+{
+	tiny_string res("\"");
+	for (CharIterator it=this->begin(); it!=this->end(); it++)
+	{
+		switch (*it)
+		{
+			case '\b':
+				res += "\\b";
+				break;
+			case '\f':
+				res += "\\f";
+				break;
+			case '\n':
+				res += "\\n";
+				break;
+			case '\r':
+				res += "\\r";
+				break;
+			case '\t':
+				res += "\\t";
+				break;
+			case '\"':
+				res += "\\\"";
+				break;
+			case '\\':
+				res += "\\\\";
+				break;
+			default:
+				if ((*it < 0x20) || (*it > 0xff))
+				{
+					char hexstr[7];
+					sprintf(hexstr,"\\u%04x",*it);
+					res += hexstr;
+				}
+				else
+					res += *it;
+				break;
+		}
+	}
+	res += "\"";
+	return res;
+}
+
 #ifdef MEMORY_USAGE_PROFILING
 void tiny_string::reportMemoryChange(int32_t change) const
 {

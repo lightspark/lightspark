@@ -248,6 +248,8 @@ ASFUNCTIONBODY_ATOM(RegExp,test)
 	RegExp* th=asAtomHandler::as<RegExp>(obj);
 
 	const tiny_string& arg0 = asAtomHandler::toString(args[0],wrk);
+	if (wrk->currentCallContext->exceptionthrown)
+		return;
 	pcre* pcreRE = th->compile(!arg0.isSinglebyte());
 	if (!pcreRE)
 	{

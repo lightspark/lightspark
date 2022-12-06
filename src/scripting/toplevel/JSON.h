@@ -35,17 +35,17 @@ public:
 	ASFUNCTION_ATOM(generator);
 	ASFUNCTION_ATOM(_parse);
 	ASFUNCTION_ATOM(_stringify);
-	static ASObject* doParse(const tiny_string &jsonstring, asAtom reviver, ASWorker* wrk);
+	static bool doParse(asAtom& res,const tiny_string &jsonstring, asAtom reviver, ASWorker* wrk);
 private:
-	static bool parseAll(const tiny_string &jsonstring, ASObject** parent , multiname &key, asAtom reviver, ASWorker* wrk);
-	static bool parse(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, ASWorker* wrk);
-	static bool parseTrue(CharIterator& it, ASObject **parent, multiname &key, ASWorker* wrk);
-	static bool parseFalse(CharIterator& it, ASObject **parent, multiname &key, ASWorker* wrk);
-	static bool parseNull(CharIterator& it, ASObject **parent, multiname &key, ASWorker* wrk);
-	static bool parseString(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, ASWorker* wrk, tiny_string *result = nullptr);
-	static bool parseNumber(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, ASWorker* wrk);
-	static bool parseObject(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, ASWorker* wrk);
-	static bool parseArray(const tiny_string &jsonstring, CharIterator& it, ASObject **parent, multiname &key, asAtom reviver, ASWorker* wrk);
+	static bool parseAll(const tiny_string &jsonstring, asAtom& parent , multiname &key, asAtom reviver, ASWorker* wrk);
+	static bool parse(const tiny_string &jsonstring, CharIterator& it, asAtom& parent, multiname &key, asAtom reviver, ASWorker* wrk);
+	static bool parseTrue(CharIterator& it, asAtom& parent, multiname &key, ASWorker* wrk);
+	static bool parseFalse(CharIterator& it, asAtom& parent, multiname &key, ASWorker* wrk);
+	static bool parseNull(CharIterator& it, asAtom& parent, multiname &key, ASWorker* wrk);
+	static bool parseString(const tiny_string &jsonstring, CharIterator& it, asAtom& parent, multiname &key, ASWorker* wrk, tiny_string *result = nullptr);
+	static bool parseNumber(const tiny_string &jsonstring, CharIterator& it, asAtom& parent, multiname &key, ASWorker* wrk);
+	static bool parseObject(const tiny_string &jsonstring, CharIterator& it, asAtom& parent, multiname &key, asAtom reviver, ASWorker* wrk);
+	static bool parseArray(const tiny_string &jsonstring, CharIterator& it, asAtom& parent, multiname &key, asAtom reviver, ASWorker* wrk);
 };
 
 }

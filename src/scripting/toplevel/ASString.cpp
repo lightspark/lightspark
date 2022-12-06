@@ -646,14 +646,22 @@ TRISTATE ASString::isLess(ASObject* r)
 	//ECMA-262 11.8.5 algorithm
 	assert_and_throw(implEnable);
 	asAtom rprim=asAtomHandler::invalidAtom;
-	r->toPrimitive(rprim);
+	number_t a=0;
+	number_t b=0;
+	bool isrefcounted;
+	r->toPrimitive(rprim,isrefcounted);
 	if(getObjectType()==T_STRING && asAtomHandler::isString(rprim))
 	{
 		ASString* rstr=static_cast<ASString*>(asAtomHandler::toObject(rprim,getInstanceWorker()));
-		return (getData()<rstr->getData())?TTRUE:TFALSE;
+		TRISTATE res = (getData()<rstr->getData())?TTRUE:TFALSE;
+		if (isrefcounted)
+			ASATOM_DECREF(rprim);
+		return res;
 	}
-	number_t a=toNumber();
-	number_t b=asAtomHandler::toNumber(rprim);
+	a=toNumber();
+	b=asAtomHandler::toNumber(rprim);
+	if (isrefcounted)
+		ASATOM_DECREF(rprim);
 	if(std::isnan(a) || std::isnan(b))
 		return TUNDEFINED;
 	return (a<b)?TTRUE:TFALSE;
@@ -663,9 +671,10 @@ TRISTATE ASString::isLessAtom(asAtom& r)
 {
 	//ECMA-262 11.8.5 algorithm
 	assert_and_throw(implEnable);
+	bool isrefcounted=false;
 	asAtom rprim = r;
 	if (asAtomHandler::getObject(r))
-		asAtomHandler::getObject(r)->toPrimitive(rprim);
+		asAtomHandler::getObject(r)->toPrimitive(rprim,isrefcounted);
 	if(getObjectType()==T_STRING && asAtomHandler::isString(rprim))
 	{
 		ASString* rstr=static_cast<ASString*>(asAtomHandler::toObject(rprim,getInstanceWorker()));
@@ -673,6 +682,8 @@ TRISTATE ASString::isLessAtom(asAtom& r)
 	}
 	number_t a=toNumber();
 	number_t b=asAtomHandler::toNumber(rprim);
+	if (isrefcounted)
+		ASATOM_DECREF(rprim);
 	if(std::isnan(a) || std::isnan(b))
 		return TUNDEFINED;
 	return (a<b)?TTRUE:TFALSE;

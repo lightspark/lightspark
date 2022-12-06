@@ -53,8 +53,12 @@ number_t ASObject::toNumber()
 		{
 			//everything else is an Object regarding to the spec
 			asAtom val2p=asAtomHandler::invalidAtom;
-			toPrimitive(val2p,NUMBER_HINT);
-			return asAtomHandler::toNumber(val2p);
+			bool isrefcounted;
+			toPrimitive(val2p,isrefcounted,NUMBER_HINT);
+			number_t res = asAtomHandler::toNumber(val2p);
+			if (isrefcounted)
+				ASATOM_DECREF(val2p);
+			return res;
 		}
 	}
 }
@@ -122,8 +126,11 @@ TRISTATE Number::isLess(ASObject* o)
 		default:
 		{
 			asAtom val2p=asAtomHandler::invalidAtom;
-			o->toPrimitive(val2p,NUMBER_HINT);
+			bool isrefcounted;
+			o->toPrimitive(val2p,isrefcounted,NUMBER_HINT);
 			double val2=asAtomHandler::toNumber(val2p);
+			if (isrefcounted)
+				ASATOM_DECREF(val2p);
 			if(std::isnan(val2)) return TUNDEFINED;
 			return (toNumber()<val2)?TTRUE:TFALSE;
 		}

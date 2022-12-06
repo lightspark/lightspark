@@ -272,6 +272,7 @@ public:
 	CharIterator end();
 	CharIterator end() const;
 	int compare(const tiny_string& r) const;
+	tiny_string toQuotedString() const;
 };
 
 }

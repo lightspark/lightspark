@@ -601,7 +601,6 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	if (wrk->isPrimordial)
 		Log::calls_indent++;
 #endif
-	bool exceptioncaught=false;
 	while (true)
 	{
 		if(!mi->body->exceptions.empty() || (val==nullptr && getSystemState()->useInterpreter))
@@ -635,6 +634,12 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				
 				if (mi->needsscope && cc->exec_pos == mi->body->preloadedcode.data())
 				{
+					ASObject* o = asAtomHandler::getObject(obj);
+					if (o)
+					{
+						o->incRef();
+						o->addStoredMember();
+					}
 					cc->scope_stack[0] = obj;
 					cc->scope_stack_dynamic[0] = false;
 					cc->curr_scope_stack++;
@@ -666,14 +671,13 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 					cc->exec_pos = mi->body->preloadedcode.data()+exc.target;
 					cc->runtime_stack_clear();
 					*(cc->stackp++)=asAtomHandler::fromObject(excobj);
-					while (cc->curr_scope_stack != (mi->needsscope && !exceptioncaught ? 1 : 0))
+					while (cc->curr_scope_stack)
 					{
+						LOG_CALL("scopestack exception:"<<asAtomHandler::toDebugString(cc->scope_stack[0]));
 						--cc->curr_scope_stack;
 						if (asAtomHandler::isObject(cc->scope_stack[cc->curr_scope_stack]))
 							asAtomHandler::getObjectNoCheck(cc->scope_stack[cc->curr_scope_stack])->removeStoredMember();
 					}
-					cc->curr_scope_stack=0;
-					exceptioncaught=true;
 					break;
 				}
 			}
@@ -728,17 +732,11 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	}
 
 	asAtom* lastscope=cc->scope_stack+cc->curr_scope_stack;
-	for(asAtom* i=cc->scope_stack+(mi->needsscope && !exceptioncaught ? 1:0);i< lastscope;++i)
+	for(asAtom* i=cc->scope_stack;i< lastscope;++i)
 	{
 		LOG_CALL("scopestack:"<<asAtomHandler::toDebugString(*i));
 		if (asAtomHandler::isObject(*i))
 			asAtomHandler::getObjectNoCheck(*i)->removeStoredMember();
-	}
-	if (mi->needsscope && !exceptioncaught && cc->scope_stack[0].uintval != obj.uintval)
-	{
-		LOG_CALL("scopestack0:"<<asAtomHandler::toDebugString(cc->scope_stack[0]));
-		if (asAtomHandler::isObject(*cc->scope_stack))
-			asAtomHandler::getObjectNoCheck(*cc->scope_stack)->removeStoredMember();
 	}
 	if(!mi->needsRest())
 	{
@@ -1000,8 +998,11 @@ TRISTATE Null::isLess(ASObject* r)
 	else
 	{
 		asAtom val2p=asAtomHandler::invalidAtom;
-		r->toPrimitive(val2p,NUMBER_HINT);
+		bool isrefcounted;
+		r->toPrimitive(val2p,isrefcounted,NUMBER_HINT);
 		double val2=asAtomHandler::toNumber(val2p);
+		if (isrefcounted)
+			ASATOM_DECREF(val2p);
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (0<val2)?TTRUE:TFALSE;
 	}
@@ -1043,8 +1044,11 @@ TRISTATE Null::isLessAtom(asAtom& r)
 	else
 	{
 		asAtom val2p=asAtomHandler::invalidAtom;
-		asAtomHandler::getObject(r)->toPrimitive(val2p,NUMBER_HINT);
+		bool isrefcounted;
+		asAtomHandler::getObject(r)->toPrimitive(val2p,isrefcounted,NUMBER_HINT);
 		double val2=asAtomHandler::toNumber(val2p);
+		if (isrefcounted)
+			ASATOM_DECREF(val2p);
 		if(std::isnan(val2)) return TUNDEFINED;
 		return (0<val2)?TTRUE:TFALSE;
 	}

@@ -171,10 +171,12 @@ tiny_string ASObject::toString()
 		{
 			//everything else is an Object regarding to the spec
 			asAtom ret = asAtomHandler::fromObject(this);
-			if (!toPrimitive(ret,STRING_HINT))
-				return "";
-			tiny_string s= asAtomHandler::toString(ret,getWorker());
-			ASATOM_DECREF(ret);
+			tiny_string s;
+			bool isrefcounted;
+			if (toPrimitive(ret,isrefcounted,STRING_HINT))
+				s=asAtomHandler::toString(ret,getWorker());
+			if (isrefcounted)
+				ASATOM_DECREF(ret);
 			return s;
 		}
 	}
@@ -193,14 +195,24 @@ TRISTATE ASObject::isLess(ASObject* r)
 {
 	asAtom o = asAtomHandler::fromObject(r);
 	asAtom ret = asAtomHandler::fromObject(this);
-	toPrimitive(ret);
-	return asAtomHandler::isLess(ret,getInstanceWorker(),o);
+	TRISTATE res = TUNDEFINED;
+	bool isrefcounted;
+	if (toPrimitive(ret,isrefcounted))
+		res = asAtomHandler::isLess(ret,getInstanceWorker(),o);
+	if (isrefcounted)
+		ASATOM_DECREF(ret);
+	return res;
 }
 TRISTATE ASObject::isLessAtom(asAtom& r)
 {
 	asAtom ret = asAtomHandler::fromObject(this);
-	toPrimitive(ret);
-	return asAtomHandler::isLess(ret,getInstanceWorker(),r);
+	TRISTATE res = TUNDEFINED;
+	bool isrefcounted;
+	if (toPrimitive(ret,isrefcounted))
+		res = asAtomHandler::isLess(ret,getInstanceWorker(),r);
+	if (isrefcounted)
+		ASATOM_DECREF(ret);
+	return res;
 }
 
 int variables_map::getNextEnumerable(unsigned int start) const
@@ -300,15 +312,27 @@ bool ASObject::isEqual(ASObject* r)
 		case T_STRING:
 		{
 			asAtom primitive=asAtomHandler::invalidAtom;
-			toPrimitive(primitive);
-			asAtom o = asAtomHandler::fromObject(r);
-			return asAtomHandler::isEqual(primitive,getInstanceWorker(),o);
+			bool res=false;
+			bool isrefcounted;
+			if (toPrimitive(primitive,isrefcounted))
+			{
+				asAtom o = asAtomHandler::fromObject(r);
+				res = asAtomHandler::isEqual(primitive,getInstanceWorker(),o);
+			}
+			if (isrefcounted)
+				ASATOM_DECREF(primitive);
+			return res;
 		}
 		case T_BOOLEAN:
 		{
 			asAtom primitive=asAtomHandler::invalidAtom;
-			toPrimitive(primitive);
-			return asAtomHandler::toNumber(primitive)==r->toNumber();
+			bool res=false;
+			bool isrefcounted;
+			if (toPrimitive(primitive,isrefcounted))
+				res = asAtomHandler::toNumber(primitive)==r->toNumber();
+			if (isrefcounted)
+				ASATOM_DECREF(primitive);
+			return res;
 		}
 		default:
 		{
@@ -344,20 +368,29 @@ uint16_t ASObject::toUInt16()
 int32_t ASObject::toInt()
 {
 	asAtom ret = asAtomHandler::fromObject(this);
-	toPrimitive(ret);
-	return asAtomHandler::toInt(ret);
+	bool isrefcounted;
+	toPrimitive(ret,isrefcounted);
+	int32_t res = asAtomHandler::toInt(ret);
+	if (isrefcounted)
+		ASATOM_DECREF(ret);
+	return res;
 }
 
 int64_t ASObject::toInt64()
 {
 	asAtom ret = asAtomHandler::fromObject(this);
-	toPrimitive(ret);
-	return asAtomHandler::toInt64(ret);
+	bool isrefcounted;
+	toPrimitive(ret,isrefcounted);
+	int32_t res = asAtomHandler::toInt64(ret);
+	if (isrefcounted)
+		ASATOM_DECREF(ret);
+	return res;
 }
 
 /* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
-bool ASObject::toPrimitive(asAtom& ret,TP_HINT hint)
+bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint)
 {
+	isrefcounted=false;
 	//See ECMA 8.6.2.6 for default hint regarding Date
 	if(hint == NO_HINT)
 	{
@@ -379,19 +412,37 @@ bool ASObject::toPrimitive(asAtom& ret,TP_HINT hint)
 	{
 		call_toString(ret);
 		if(asAtomHandler::isPrimitive(ret))
+		{
+			isrefcounted=true;
 			return true;
+		}
+		if (this->getInstanceWorker()->currentCallContext && this->getInstanceWorker()->currentCallContext->exceptionthrown)
+			return false;
+		ASATOM_DECREF(ret);
 	}
 	if(has_valueOf())
 	{
 		call_valueOf(ret);
 		if(asAtomHandler::isPrimitive(ret))
+		{
+			isrefcounted=true;
 			return true;
+		}
+		if (this->getInstanceWorker()->currentCallContext && this->getInstanceWorker()->currentCallContext->exceptionthrown)
+			return false;
+		ASATOM_DECREF(ret);
 	}
 	if(hint != STRING_HINT && has_toString())
 	{
 		call_toString(ret);
 		if(asAtomHandler::isPrimitive(ret))
+		{
+			isrefcounted=true;
 			return true;
+		}
+		if (this->getInstanceWorker()->currentCallContext && this->getInstanceWorker()->currentCallContext->exceptionthrown)
+			return false;
+		ASATOM_DECREF(ret);
 	}
 
 	createError<TypeError>(getInstanceWorker(),kConvertToPrimitiveError,this->getClassName());
@@ -423,7 +474,7 @@ void ASObject::call_valueOf(asAtom& ret)
 
 	ASWorker* wrk = getWorker();
 	asAtom o=asAtomHandler::invalidAtom;
-	bool refcounted = getVariableByMultiname(o,valueOfName,GET_VARIABLE_OPTION(SKIP_IMPL|NO_INCREF),wrk) & GETVAR_ISNEWOBJECT;
+	getVariableByMultiname(o,valueOfName,SKIP_IMPL,wrk);
 	if (!asAtomHandler::isFunction(o))
 		createError<TypeError>(getInstanceWorker(),kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
 	else
@@ -431,8 +482,7 @@ void ASObject::call_valueOf(asAtom& ret)
 		asAtom v =asAtomHandler::fromObject(this);
 		asAtomHandler::callFunction(o,wrk,ret,v,nullptr,0,false);
 	}
-	if (refcounted)
-		ASATOM_DECREF(o);
+	ASATOM_DECREF(o);
 }
 
 bool ASObject::has_toString()
@@ -460,7 +510,7 @@ void ASObject::call_toString(asAtom &ret)
 
 	ASWorker* wrk = getWorker();
 	asAtom o=asAtomHandler::invalidAtom;
-	bool refcounted = getVariableByMultiname(o,toStringName,GET_VARIABLE_OPTION(SKIP_IMPL|NO_INCREF),wrk) & GETVAR_ISNEWOBJECT;
+	getVariableByMultiname(o,toStringName,SKIP_IMPL,wrk);
 	if (!asAtomHandler::isFunction(o))
 		createError<TypeError>(getInstanceWorker(), kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
 	else
@@ -468,8 +518,7 @@ void ASObject::call_toString(asAtom &ret)
 		asAtom v =asAtomHandler::fromObject(this);
 		asAtomHandler::callFunction(o,wrk,ret,v,nullptr,0,false);
 	}
-	if (refcounted)
-		ASATOM_DECREF(o);
+	ASATOM_DECREF(o);
 }
 
 tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter)
@@ -488,10 +537,14 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom
 	asAtom o=asAtomHandler::invalidAtom;
 	getVariableByMultiname(o,toJSONName,SKIP_IMPL,getInstanceWorker());
 	if (!asAtomHandler::isFunction(o))
+	{
+		ASATOM_DECREF(o);
 		return res;
+	}
 	asAtom v=asAtomHandler::fromObject(this);
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::callFunction(o,getInstanceWorker(), ret,v,nullptr,0,false);
+	ASATOM_DECREF(o);
 	if (getInstanceWorker()->currentCallContext && getInstanceWorker()->currentCallContext->exceptionthrown)
 		return res;
 	if (asAtomHandler::isString(ret))
@@ -502,6 +555,7 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom
 	}
 	else 
 		res = asAtomHandler::toObject(ret,getInstanceWorker())->toJSON(path,replacer,spaces,filter);
+	ASATOM_DECREF(ret);
 	ok = true;
 	return res;
 }
@@ -2572,46 +2626,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 		{
 			case T_STRING:
 			{
-				res += "\"";
-				tiny_string sub = this->toString();
-				for (CharIterator it=sub.begin(); it!=sub.end(); it++)
-				{
-					switch (*it)
-					{
-						case '\b':
-							res += "\\b";
-							break;
-						case '\f':
-							res += "\\f";
-							break;
-						case '\n':
-							res += "\\n";
-							break;
-						case '\r':
-							res += "\\r";
-							break;
-						case '\t':
-							res += "\\t";
-							break;
-						case '\"':
-							res += "\\\"";
-							break;
-						case '\\':
-							res += "\\\\";
-							break;
-						default:
-							if ((*it < 0x20) || (*it > 0xff))
-							{
-								char hexstr[7];
-								sprintf(hexstr,"\\u%04x",*it);
-								res += hexstr;
-							}
-							else
-								res += *it;
-							break;
-					}
-				}
-				res += "\"";
+				res = this->toString().toQuotedString();
 				break;
 			}
 			case T_UNDEFINED:
@@ -2683,12 +2698,14 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 					newobj = !asAtomHandler::isObject(varIt->second.var); // variable is not a pointer to an ASObject, so toObject() will create a temporary ASObject that has to be decreffed after usage
 					v = asAtomHandler::toObject(tmp,getInstanceWorker());
 				}
-				if (asAtomHandler::isValid(varIt->second.getter))
+				else if (asAtomHandler::isValid(varIt->second.getter))
 				{
 					asAtom t=asAtomHandler::fromObject(this);
 					asAtom res=asAtomHandler::invalidAtom;
 					asAtomHandler::callFunction(varIt->second.getter,getInstanceWorker(),res,t,NULL,0,false);
-					v=asAtomHandler::toObject(res,getInstanceWorker());
+					newobj = !asAtomHandler::isObject(res); // result is not a pointer to an ASObject, so toObject() will create a temporary ASObject that has to be decreffed after usage
+					asAtom tmp = res;
+					v=asAtomHandler::toObject(tmp,getInstanceWorker());
 				}
 				if(v && v->getObjectType() != T_UNDEFINED && varIt->second.isenumerable)
 				{
@@ -2720,7 +2737,10 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 						asAtom funcret=asAtomHandler::invalidAtom;
 						asAtomHandler::callFunction(replacer,getInstanceWorker(),funcret,asAtomHandler::nullAtom, params, 2,true);
 						if (asAtomHandler::isValid(funcret))
+						{
 							res += asAtomHandler::toString(funcret,getInstanceWorker());
+							ASATOM_DECREF(funcret);
+						}
 						else
 							res += v->toJSON(path,replacer,spaces+spaces,filter);
 						bfirst = false;
@@ -3512,13 +3532,19 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 		else
 		{//If none of the above apply, convert both to primitives with no hint
 			asAtom val1p=asAtomHandler::invalidAtom;
-			val1->toPrimitive(val1p,NO_HINT);
+			bool isrefcounted1;
+			val1->toPrimitive(val1p,isrefcounted1);
 			asAtom val2p=asAtomHandler::invalidAtom;
-			val2->toPrimitive(val2p,NO_HINT);
+			bool isrefcounted2;
+			val2->toPrimitive(val2p,isrefcounted2);
 			if(is<ASString>(val1p) || is<ASString>(val2p))
 			{//If one is String, convert both to strings and concat
 				string as(toString(val1p,wrk).raw_buf());
 				string bs(toString(val2p,wrk).raw_buf());
+				if (isrefcounted1)
+					ASATOM_DECREF(val1p);
+				if (isrefcounted2)
+					ASATOM_DECREF(val2p);
 				LOG_CALL("add " << as << '+' << bs);
 				if (forceint)
 				{
@@ -3532,6 +3558,10 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 			{//Convert both to numbers and add
 				number_t num1=AVM1toNumber(val1p,wrk->getSystemState()->getSwfVersion());
 				number_t num2=AVM1toNumber(val2p,wrk->getSystemState()->getSwfVersion());
+				if (isrefcounted1)
+					ASATOM_DECREF(val1p);
+				if (isrefcounted2)
+					ASATOM_DECREF(val2p);
 				LOG_CALL("addN " << num1 << '+' << num2);
 				number_t result = num1 + num2;
 				if (forceint)
@@ -3625,13 +3655,19 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 		else
 		{//If none of the above apply, convert both to primitives with no hint
 			asAtom val1p=asAtomHandler::invalidAtom;
-			val1->toPrimitive(val1p,NO_HINT);
+			bool isrefcounted1;
+			val1->toPrimitive(val1p,isrefcounted1);
+			bool isrefcounted2;
 			asAtom val2p=asAtomHandler::invalidAtom;
-			val2->toPrimitive(val2p,NO_HINT);
+			val2->toPrimitive(val2p,isrefcounted2);
 			if(is<ASString>(val1p) || is<ASString>(val2p))
 			{//If one is String, convert both to strings and concat
 				string as(toString(val1p,wrk).raw_buf());
 				string bs(toString(val2p,wrk).raw_buf());
+				if (isrefcounted1)
+					ASATOM_DECREF(val1p);
+				if (isrefcounted2)
+					ASATOM_DECREF(val2p);
 				LOG_CALL("add " << as << '+' << bs);
 				ASATOM_DECREF(ret);
 				if (forceint)
@@ -3646,6 +3682,10 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 			{//Convert both to numbers and add
 				number_t num1=AVM1toNumber(val1p,wrk->getSystemState()->getSwfVersion());
 				number_t num2=AVM1toNumber(val2p,wrk->getSystemState()->getSwfVersion());
+				if (isrefcounted1)
+					ASATOM_DECREF(val1p);
+				if (isrefcounted2)
+					ASATOM_DECREF(val2p);
 				LOG_CALL("addN replace primitive " << num1 << '+' << num2);
 				ASObject* o = getObject(ret);
 				if (forceint)
@@ -4321,8 +4361,13 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				case ATOM_STRINGID:
 				{
 					asAtom primitive=asAtomHandler::invalidAtom;
-					getObject(a)->toPrimitive(primitive);
-					return toString(primitive,w) == toString(v2,w);
+					bool res = false;
+					bool isrefcounted;
+					if (getObject(a)->toPrimitive(primitive,isrefcounted))
+						res = toString(primitive,w) == toString(v2,w);
+					if (isrefcounted)
+						ASATOM_DECREF(primitive);
+					return res;
 				}
 				case ATOM_INTEGER:
 				case ATOM_UINTEGER:

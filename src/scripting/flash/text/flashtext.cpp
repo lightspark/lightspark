@@ -2113,6 +2113,7 @@ void TextFormatAlign::sinit(Class_base* c)
 void TextFormat::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	REGISTER_GETTER_SETTER(c,align);
 	REGISTER_GETTER_SETTER(c,blockIndent);
 	REGISTER_GETTER_SETTER(c,bold);
@@ -2135,46 +2136,99 @@ void TextFormat::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,display);
 }
 
+void TextFormat::finalize()
+{
+	ASATOM_REMOVESTOREDMEMBER(blockIndent);
+	ASATOM_REMOVESTOREDMEMBER(bold);
+	ASATOM_REMOVESTOREDMEMBER(bullet);
+	ASATOM_REMOVESTOREDMEMBER(color);
+	ASATOM_REMOVESTOREDMEMBER(indent);
+	ASATOM_REMOVESTOREDMEMBER(italic);
+	ASATOM_REMOVESTOREDMEMBER(kerning);
+	ASATOM_REMOVESTOREDMEMBER(leading);
+	ASATOM_REMOVESTOREDMEMBER(leftMargin);
+	ASATOM_REMOVESTOREDMEMBER(letterSpacing);
+	ASATOM_REMOVESTOREDMEMBER(rightMargin);
+	if (tabStops)
+		tabStops->removeStoredMember();
+	tabStops.reset();
+	ASATOM_REMOVESTOREDMEMBER(underline);
+	ASATOM_REMOVESTOREDMEMBER(display);
+	ASATOM_REMOVESTOREDMEMBER(align);
+	ASATOM_REMOVESTOREDMEMBER(url);
+	ASATOM_REMOVESTOREDMEMBER(target);
+	ASATOM_REMOVESTOREDMEMBER(font);
+	ASATOM_REMOVESTOREDMEMBER(size);
+}
+
 bool TextFormat::destruct()
 {
-	ASATOM_DECREF(blockIndent);
+	ASATOM_REMOVESTOREDMEMBER(blockIndent);
 	blockIndent = asAtomHandler::nullAtom;
-	ASATOM_DECREF(bold);
+	ASATOM_REMOVESTOREDMEMBER(bold);
 	bold = asAtomHandler::nullAtom;
-	ASATOM_DECREF(bullet);
+	ASATOM_REMOVESTOREDMEMBER(bullet);
 	bullet = asAtomHandler::nullAtom;
-	ASATOM_DECREF(color);
+	ASATOM_REMOVESTOREDMEMBER(color);
 	color = asAtomHandler::nullAtom;
-	ASATOM_DECREF(indent);
+	ASATOM_REMOVESTOREDMEMBER(indent);
 	indent = asAtomHandler::nullAtom;
-	ASATOM_DECREF(italic);
+	ASATOM_REMOVESTOREDMEMBER(italic);
 	italic = asAtomHandler::nullAtom;
-	ASATOM_DECREF(kerning);
+	ASATOM_REMOVESTOREDMEMBER(kerning);
 	kerning = asAtomHandler::nullAtom;
-	ASATOM_DECREF(leading);
+	ASATOM_REMOVESTOREDMEMBER(leading);
 	leading = asAtomHandler::nullAtom;
-	ASATOM_DECREF(leftMargin);
+	ASATOM_REMOVESTOREDMEMBER(leftMargin);
 	leftMargin = asAtomHandler::nullAtom;
-	ASATOM_DECREF(letterSpacing);
+	ASATOM_REMOVESTOREDMEMBER(letterSpacing);
 	letterSpacing = asAtomHandler::nullAtom;
-	ASATOM_DECREF(rightMargin);
+	ASATOM_REMOVESTOREDMEMBER(rightMargin);
 	rightMargin = asAtomHandler::nullAtom;
+	if (tabStops)
+		tabStops->removeStoredMember();
 	tabStops.reset();
-	ASATOM_DECREF(underline);
+	ASATOM_REMOVESTOREDMEMBER(underline);
 	underline = asAtomHandler::nullAtom;
-	ASATOM_DECREF(display);
+	ASATOM_REMOVESTOREDMEMBER(display);
 	display = asAtomHandler::nullAtom;
-	ASATOM_DECREF(align);
+	ASATOM_REMOVESTOREDMEMBER(align);
 	align = asAtomHandler::nullAtom;
-	ASATOM_DECREF(url);
+	ASATOM_REMOVESTOREDMEMBER(url);
 	url = asAtomHandler::nullAtom;
-	ASATOM_DECREF(target);
+	ASATOM_REMOVESTOREDMEMBER(target);
 	target = asAtomHandler::nullAtom;
-	ASATOM_DECREF(font);
+	ASATOM_REMOVESTOREDMEMBER(font);
 	font = asAtomHandler::nullAtom;
-	ASATOM_DECREF(size);
+	ASATOM_REMOVESTOREDMEMBER(size);
 	size=asAtomHandler::nullAtom;
 	return destructIntern();
+}
+void TextFormat::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	ASATOM_PREPARESHUTDOWN(blockIndent);
+	ASATOM_PREPARESHUTDOWN(bold);
+	ASATOM_PREPARESHUTDOWN(bullet);
+	ASATOM_PREPARESHUTDOWN(color);
+	ASATOM_PREPARESHUTDOWN(indent);
+	ASATOM_PREPARESHUTDOWN(italic);
+	ASATOM_PREPARESHUTDOWN(kerning);
+	ASATOM_PREPARESHUTDOWN(leading);
+	ASATOM_PREPARESHUTDOWN(leftMargin);
+	ASATOM_PREPARESHUTDOWN(letterSpacing);
+	ASATOM_PREPARESHUTDOWN(rightMargin);
+	if (tabStops)
+		tabStops->prepareShutdown();
+	ASATOM_PREPARESHUTDOWN(underline);
+	ASATOM_PREPARESHUTDOWN(display);
+	ASATOM_PREPARESHUTDOWN(align);
+	ASATOM_PREPARESHUTDOWN(url);
+	ASATOM_PREPARESHUTDOWN(target);
+	ASATOM_PREPARESHUTDOWN(font);
+	ASATOM_PREPARESHUTDOWN(size);
 }
 
 ASFUNCTIONBODY_ATOM(TextFormat,_constructor)
@@ -2193,6 +2247,19 @@ ASFUNCTIONBODY_ATOM(TextFormat,_constructor)
 		(th->rightMargin,asAtomHandler::nullAtom)
 		(th->indent,asAtomHandler::nullAtom)
 		(th->leading,asAtomHandler::nullAtom));
+	ASATOM_ADDSTOREDMEMBER(th->font);
+	ASATOM_ADDSTOREDMEMBER(th->size);
+	ASATOM_ADDSTOREDMEMBER(th->color);
+	ASATOM_ADDSTOREDMEMBER(th->bold);
+	ASATOM_ADDSTOREDMEMBER(th->italic);
+	ASATOM_ADDSTOREDMEMBER(th->underline);
+	ASATOM_ADDSTOREDMEMBER(th->url);
+	ASATOM_ADDSTOREDMEMBER(th->target);
+	ASATOM_ADDSTOREDMEMBER(th->align);
+	ASATOM_ADDSTOREDMEMBER(th->leftMargin);
+	ASATOM_ADDSTOREDMEMBER(th->rightMargin);
+	ASATOM_ADDSTOREDMEMBER(th->indent);
+	ASATOM_ADDSTOREDMEMBER(th->leading);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_CB(TextFormat,align,onAlign)
@@ -2209,7 +2276,7 @@ ASFUNCTIONBODY_GETTER_SETTER(TextFormat,leftMargin)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,letterSpacing)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,rightMargin)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,size)
-ASFUNCTIONBODY_GETTER_SETTER(TextFormat,tabStops)
+ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextFormat,tabStops)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,target)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,underline)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,url)

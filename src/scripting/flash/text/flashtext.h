@@ -231,7 +231,9 @@ private:
 	void onAlign(const asAtom& old);
 public:
 	TextFormat(ASWorker* wrk,Class_base* c);
-	bool destruct();
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER_ATOM(align);

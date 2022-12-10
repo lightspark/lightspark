@@ -79,7 +79,7 @@ public:
 									  "?"); // TODO
 			return asAtomHandler::undefinedAtom;
 		}
-		ASATOM_INCREF(obj);
+		ASATOM_ADDSTOREDMEMBER(obj);
 		return obj;
 	}
 	static void toAbstract(asAtom& ret, ASWorker* wrk,asAtom val)

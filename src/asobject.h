@@ -474,6 +474,7 @@ public:
 	static void callFunction(asAtom& caller, ASWorker* wrk, asAtom& ret, asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true, bool coercearguments=true);
 	// returns invalidAtom for not-primitive values
 	static void getVariableByMultiname(asAtom& a, asAtom &ret, SystemState *sys, const multiname& name, ASWorker* wrk);
+	static bool hasPropertyByMultiname(const asAtom& a, const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk);
 	static Class_base* getClass(asAtom& a,SystemState *sys, bool followclass=true);
 	static bool canCacheMethod(asAtom& a,const multiname* name);
 	static void fillMultiname(asAtom& a, ASWorker *wrk, multiname& name);
@@ -581,6 +582,10 @@ public:
 #define ASATOM_INCREF_POINTER(a) if (asAtomHandler::isObject(*a)) asAtomHandler::getObjectNoCheck(*a)->incRef()
 #define ASATOM_DECREF(a) if (asAtomHandler::isObject(a)) { ASObject* obj_b = asAtomHandler::getObjectNoCheck(a); if (!obj_b->getConstant() && !obj_b->getInDestruction()) obj_b->decRef(); }
 #define ASATOM_DECREF_POINTER(a) if (asAtomHandler::isObject(*a)) { ASObject* obj_b = asAtomHandler::getObject(*a); if (obj_b && !obj_b->getConstant() && !obj_b->getInDestruction()) obj_b->decRef(); }
+#define ASATOM_ADDSTOREDMEMBER(a) if (asAtomHandler::isObject(a)) { asAtomHandler::getObjectNoCheck(a)->incRef();asAtomHandler::getObjectNoCheck(a)->addStoredMember(); }
+#define ASATOM_REMOVESTOREDMEMBER(a) if (asAtomHandler::isObject(a)) { asAtomHandler::getObjectNoCheck(a)->removeStoredMember();}
+#define ASATOM_PREPARESHUTDOWN(a) if (asAtomHandler::isObject(a)) { asAtomHandler::getObjectNoCheck(a)->prepareShutdown();}
+
 struct variable
 {
 	asAtom var;

@@ -1293,7 +1293,7 @@ ASFUNCTIONBODY_ATOM(ASObject,hasOwnProperty)
 	}
 	name.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	name.isAttribute=false;
-	asAtomHandler::setBool(ret,asAtomHandler::toObject(obj,wrk)->hasPropertyByMultiname(name, true, false,wrk));
+	asAtomHandler::setBool(ret,asAtomHandler::hasPropertyByMultiname(obj,name, true, false,wrk));
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,valueOf)
@@ -2950,6 +2950,17 @@ void asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret,SystemState* s
 		default:
 			return;
 	}
+}
+
+bool asAtomHandler::hasPropertyByMultiname(const asAtom& a, const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk)
+{
+	// we use a temporary atom here to avoid converting the source atom into an ASObject if it isn't an ASObject 
+	asAtom tmp = a;
+	bool isobject = asAtomHandler::isObject(tmp);
+	bool found=asAtomHandler::toObject(tmp,wrk)->hasPropertyByMultiname(name, considerDynamic, considerPrototype,wrk);
+	if (!isobject) 
+		ASATOM_DECREF(tmp);
+	return found;
 }
 Class_base *asAtomHandler::getClass(asAtom& a,SystemState* sys,bool followclass)
 {

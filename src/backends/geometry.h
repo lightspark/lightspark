@@ -107,12 +107,12 @@ struct tokensVector
 	std::vector<uint64_t> stroketokens;
 	RECT boundsRect;
 	bool canRenderToGL;
-	tokensVector():canRenderToGL(false) {}
+	tokensVector():canRenderToGL(true) {}
 	void clear()
 	{
 		filltokens.clear();
 		stroketokens.clear();
-		canRenderToGL=false;
+		canRenderToGL=true;
 	}
 	uint32_t size() const
 	{

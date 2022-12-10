@@ -395,7 +395,6 @@ ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	assert_and_throw(argslen==3);
 	th->checkAndSetScaling();
-	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	double x=asAtomHandler::toNumber(args[0]);
 	double y=asAtomHandler::toNumber(args[1]);
@@ -464,7 +463,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
 	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(x+radius, y       )).uval);
 
 	th->hasChanged = true;
-	th->dorender(true);
+	th->dorender(false);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
@@ -472,7 +471,6 @@ ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	assert_and_throw(argslen==4);
 	th->checkAndSetScaling();
-	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	double left=asAtomHandler::toNumber(args[0]);
 	double top=asAtomHandler::toNumber(args[1]);
@@ -543,7 +541,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 	th->tokens.stroketokens.emplace_back(GeomToken(Vector2(left+width, top+height/2.0)).uval);
 
 	th->hasChanged = true;
-	th->dorender(true);
+	th->dorender(false);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,drawRect)
@@ -768,10 +766,13 @@ void Graphics::dorender(bool closepath)
 	needsRefresh = true;
 	if (hasChanged)
 	{
-		if (inFilling && closepath)
+		if (inFilling)
 		{
-			tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens.emplace_back(GeomToken(Vector2(movex, movey)).uval);
+			if (closepath)
+			{
+				tokens.filltokens.emplace_back(GeomToken(STRAIGHT).uval);
+				tokens.filltokens.emplace_back(GeomToken(Vector2(movex, movey)).uval);
+			}
 			tokens.filltokens.emplace_back(GeomToken(CLEAR_FILL).uval);
 		}
 		owner->owner->legacy=false;

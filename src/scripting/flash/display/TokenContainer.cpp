@@ -72,15 +72,16 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 			MATRIX m = owner->getConcatenatedMatrix();
 			m.scale(scaleX*scaling,scaleY*scaling);
 			if (owner->hasGraphics())
-				m.translate(offsetX,offsetY);
+				m.translate(offsetX*scaling,offsetY*scaling);
 			else
-				m.translate(offsetX+xmin*m.getScaleX(),offsetY+ymin*m.getScaleY());
+				m.translate(offsetX*scaling+xmin*m.getScaleX(),offsetY*scaling+ymin*m.getScaleY());
 			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0/scaling,m.y0/scaling);
 			NVGcolor startcolor = nvgRGBA(0,0,0,0);
 			nvgBeginPath(nvgctxt);
 			nvgFillColor(nvgctxt,startcolor);
 			nvgStrokeColor(nvgctxt,startcolor);
 			bool instroke = false;
+			bool renderneeded=false;
 
 			int tokentype = 1;
 			while (tokentype)
@@ -108,6 +109,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 				}
 				if (tokentype == 0)
 					break;
+				renderneeded=false;
 				while (it != itend && tokentype)
 				{
 					GeomToken p(*it,false);
@@ -121,12 +123,14 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 						}
 						case STRAIGHT:
 						{
+							renderneeded=true;
 							GeomToken p1(*(++it),false);
 							nvgLineTo(nvgctxt, (p1.vec.x), (p1.vec.y));
 							break;
 						}
 						case CURVE_QUADRATIC:
 						{
+							renderneeded=true;
 							GeomToken p1(*(++it),false);
 							GeomToken p2(*(++it),false);
 							nvgQuadTo(nvgctxt, (p1.vec.x), (p1.vec.y), (p2.vec.x), (p2.vec.y));
@@ -134,6 +138,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 						}
 						case CURVE_CUBIC:
 						{
+							renderneeded=true;
 							GeomToken p1(*(++it),false);
 							GeomToken p2(*(++it),false);
 							GeomToken p3(*(++it),false);
@@ -143,8 +148,16 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 						case SET_FILL:
 						{
 							GeomToken p1(*(++it),false);
-							if (instroke)
-								nvgStroke(nvgctxt);
+							if (renderneeded)
+							{
+								if (instroke)
+									nvgStroke(nvgctxt);
+								else
+									nvgFill(nvgctxt);
+								renderneeded=false;
+								nvgClosePath(nvgctxt);
+								nvgBeginPath(nvgctxt);
+							}
 							instroke=false;
 							const FILLSTYLE* style = p1.fillStyle;
 							switch (style->FillStyleType)
@@ -164,8 +177,16 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 						case SET_STROKE:
 						{
 							GeomToken p1(*(++it),false);
-							if (!instroke)
-								nvgFill(nvgctxt);
+							if (renderneeded)
+							{
+								if (instroke)
+									nvgStroke(nvgctxt);
+								else
+									nvgFill(nvgctxt);
+								renderneeded=false;
+								nvgClosePath(nvgctxt);
+								nvgBeginPath(nvgctxt);
+							}
 							instroke = true;
 							const LINESTYLE2* style = p1.lineStyle;
 							if (style->HasFillFlag)
@@ -196,18 +217,36 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 								nvgLineJoin(nvgctxt, NVG_MITER);
 								nvgMiterLimit(nvgctxt,style->MiterLimitFactor);
 							}
-							nvgStrokeWidth(nvgctxt,style->Width== 0 ? 1.0f :(float)style->Width*scaling);
+							nvgStrokeWidth(nvgctxt,style->Width== 0 ? 1.0f :(float)style->Width);
 							break;
 						}
 						case CLEAR_FILL:
 						case FILL_KEEP_SOURCE:
-//							nvgFill(nvgctxt);
-//							if(p.type==CLEAR_FILL)
-//								nvgFillColor(nvgctxt,startcolor);
+							if (renderneeded)
+							{
+								if (instroke)
+									nvgStroke(nvgctxt);
+								else
+									nvgFill(nvgctxt);
+								renderneeded=false;
+								nvgClosePath(nvgctxt);
+								nvgBeginPath(nvgctxt);
+							}
+							if(p.type==CLEAR_FILL)
+								nvgFillColor(nvgctxt,startcolor);
 							break;
 						case CLEAR_STROKE:
+							if (renderneeded)
+							{
+								if (instroke)
+									nvgStroke(nvgctxt);
+								else
+									nvgFill(nvgctxt);
+								renderneeded=false;
+								nvgClosePath(nvgctxt);
+								nvgBeginPath(nvgctxt);
+							}
 							instroke = false;
-							nvgStroke(nvgctxt);
 							nvgStrokeColor(nvgctxt,startcolor);
 							break;
 						default:
@@ -216,10 +255,13 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 					it++;
 				}
 			}
-			if (instroke)
-				nvgStroke(nvgctxt);
-			else
-				nvgFill(nvgctxt);
+			if (renderneeded)
+			{
+				if (instroke)
+					nvgStroke(nvgctxt);
+				else
+					nvgFill(nvgctxt);
+			}
 			nvgClosePath(nvgctxt);
 			nvgEndFrame(nvgctxt);
 			owner->getSystemState()->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(0);

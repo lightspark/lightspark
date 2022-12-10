@@ -358,7 +358,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 }
 bool DisplayObject::computeCacheAsBitmap() const
 {
-	if (cacheAsBitmap || (!filters.isNull() && filters->size()!=0) || blendMode==BLENDMODE_LAYER)
+	if (cacheAsBitmap || (!filters.isNull() && filters->size()!=0))// || blendMode==BLENDMODE_LAYER)
 	{
 		number_t bxmin,bxmax,bymin,bymax;
 		if(!boundsRect(bxmin,bxmax,bymin,bymax))

@@ -3254,9 +3254,11 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceT
 	DisplayObject::requestInvalidation(q);
 	if (requestInvalidationForCacheAsBitmap(q))
 		return;
-	Locker l(mutexDisplayList);
-	auto it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();++it)
+	mutexDisplayList.lock();
+	auto tmp = dynamicDisplayList; // use copy of displaylist to avoid deadlock when computing boundsrect for cached bitmaps
+	mutexDisplayList.unlock();
+	auto it=tmp.begin();
+	for(;it!=tmp.end();++it)
 	{
 		(*it)->hasChanged = true;
 		(*it)->requestInvalidation(q,forceTextureRefresh);

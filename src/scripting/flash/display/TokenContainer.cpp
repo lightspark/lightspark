@@ -82,7 +82,6 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 			nvgStrokeColor(nvgctxt,startcolor);
 			bool instroke = false;
 			bool renderneeded=false;
-
 			int tokentype = 1;
 			while (tokentype)
 			{
@@ -109,7 +108,6 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 				}
 				if (tokentype == 0)
 					break;
-				renderneeded=false;
 				while (it != itend && tokentype)
 				{
 					GeomToken p(*it,false);
@@ -430,21 +428,26 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 		return;
 	if (owner->requestInvalidationForCacheAsBitmap(q))
 		return;
-	if (q && !q->isSoftwareQueue && !tokens.empty() && tokens.canRenderToGL && !owner->isMask() && !owner->computeCacheAsBitmap())
+	if (q && !q->isSoftwareQueue && !tokens.empty() && tokens.canRenderToGL && !owner->isMask() && !owner->ClipDepth && !owner->computeCacheAsBitmap())
 	{
 		ColorTransform* ct = owner->colorTransform.getPtr();
+		DisplayObject* m = owner->getMask();
 		DisplayObjectContainer* p = owner->getParent();
-		while (!ct &&p)
+		while (!ct && !m && p)
 		{
 			if (p->colorTransform)
 			{
 				ct = p->colorTransform.getPtr();
 				break;
 			}
+			m = p->getMask();
 			p = p->getParent();
 		}
-		if (ct)
-			tokens.canRenderToGL=false; // TODO nanogl rendering with colorTransform not yet implemented
+		if (ct || m)
+		{
+			tokens.canRenderToGL=false; // TODO nanovg rendering with colorTransform or mask not yet implemented
+			forceTextureRefresh=true;
+		}
 		else
 			return;
 	}

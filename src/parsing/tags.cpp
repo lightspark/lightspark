@@ -1538,6 +1538,7 @@ void DefineTextTag::computeCached()
 			TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
 			curPos.x += ge.GlyphAdvance;
 		}
+		tokens.canRenderToGL=false;
 	}
 }
 

@@ -1050,7 +1050,7 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 	if(isResolved && type)
 	{
 		type->coerce(wrk,v);
-		if (wrk->currentCallContext->exceptionthrown)
+		if (wrk->currentCallContext && wrk->currentCallContext->exceptionthrown)
 			return;
 	}
 	asAtom oldvar = var;

@@ -986,7 +986,8 @@ void ASWorker::finalize()
 	swf.reset();
 	EventDispatcher::finalize();
 	processGarbageCollection(true);
-	setTLSWorker(nullptr);
+	if (getWorker()==this)
+		setTLSWorker(nullptr);
 	// destruct all constant refs except classes
 	inShutdown=true;
 	std::unordered_set<ASObject*> tmp = constantrefs;
@@ -1336,6 +1337,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,terminate)
 		th->threadAbort();
 		asAtomHandler::setBool(ret,th->started);
 		th->started = false;
+		th->getSystemState()->removeWorker(th);
 	}
 }
 

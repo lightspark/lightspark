@@ -83,10 +83,10 @@ ASFUNCTIONBODY_ATOM(Graphics,clear)
 	th->tokens.clear();
 	th->tokens.canRenderToGL=true;
 	th->tokens.boundsRect = RECT();
-	th->fillStyles.clear();
-	th->lineStyles.clear();
-	th->owner->owner->hasChanged=true;
-	th->owner->owner->requestInvalidation(wrk->getSystemState());
+	th->wascleared=true;
+	th->needsRefresh=false;
+	// clear doesn't seem to force immediate rendering, so we have to keep the styles until the owners tokencontainer ist refreshed
+	th->currentstyles=1-th->currentstyles;
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,moveTo)
@@ -795,7 +795,10 @@ void Graphics::endDrawJob()
 bool Graphics::destruct()
 {
 	Locker l(drawMutex);
-	fillStyles.clear();
+	fillStyles[0].clear();
+	lineStyles[0].clear();
+	fillStyles[1].clear();
+	lineStyles[1].clear();
 	tokens.clear();
 	owner=nullptr;
 	movex=0;
@@ -811,6 +814,12 @@ void Graphics::refreshTokens()
 	Locker l(drawMutex);
 	if (needsRefresh)
 	{
+		if (wascleared)
+		{
+			fillStyles[1-currentstyles].clear();
+			lineStyles[1-currentstyles].clear();
+			wascleared=false;
+		}
 		owner->tokens.filltokens = tokens.filltokens;
 		owner->tokens.stroketokens = tokens.stroketokens;
 		owner->tokens.canRenderToGL = tokens.canRenderToGL;

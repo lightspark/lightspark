@@ -6450,7 +6450,7 @@ void MovieClip::checkRatio(uint32_t ratio, bool inskipping)
 {
 	// according to http://wahlers.com.br/claus/blog/hacking-swf-2-placeobject-and-ratio/
 	// if the ratio value is different from the previous ratio value for this MovieClip, this clip is resetted to frame 0
-	if (ratio != 0 && ratio != lastratio)
+	if (ratio != 0 && ratio != lastratio && !state.stop_FP)
 	{
 		this->state.next_FP=0;
 	}

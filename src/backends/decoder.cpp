@@ -1297,8 +1297,8 @@ int FFMpegAudioDecoder::resampleFrame(FrameSamples& curTail)
 	{
 		resamplecontext = swr_alloc();
 #if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
-		av_opt_set_int(resamplecontext, "in_channel_layout",  frameIn->ch_layout.nb_channels, 0);
-		av_opt_set_int(resamplecontext, "out_channel_layout", channel_layout.nb_channels,  0);
+		av_opt_set_chlayout(resamplecontext, "in_chlayout",  &frameIn->ch_layout, 0);
+		av_opt_set_chlayout(resamplecontext, "out_chlayout", &channel_layout,  0);
 #else
 		av_opt_set_int(resamplecontext, "in_channel_layout",  frameIn->channel_layout, 0);
 		av_opt_set_int(resamplecontext, "out_channel_layout", channel_layout,  0);

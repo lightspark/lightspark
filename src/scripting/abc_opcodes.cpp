@@ -1796,7 +1796,7 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 	ASObject* ret=nullptr;
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
-		found=asAtomHandler::toObject(th->scope_stack[i-1],th->worker)->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true,th->worker);
+		found=asAtomHandler::hasPropertyByMultiname(th->scope_stack[i-1],*name, th->scope_stack_dynamic[i-1], true,th->worker);
 
 		if(found)
 		{
@@ -1809,7 +1809,7 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 	{
 		for(it=th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
 		{
-			found=asAtomHandler::toObject(it->object,th->worker)->hasPropertyByMultiname(*name, it->considerDynamic, true,th->worker);
+			found=asAtomHandler::hasPropertyByMultiname(it->object,*name, it->considerDynamic, true,th->worker);
 	
 			if(found)
 			{
@@ -1855,7 +1855,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
-		found=asAtomHandler::toObject(th->scope_stack[i-1],th->worker)->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true,th->worker);
+		found=asAtomHandler::hasPropertyByMultiname(th->scope_stack[i-1],*name, th->scope_stack_dynamic[i-1], true,th->worker);
 		if(found)
 		{
 			//We have to return the object, not the property
@@ -1867,7 +1867,7 @@ ASObject* ABCVm::findPropStrict(call_context* th, multiname* name)
 	{
 		for(it =th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
 		{
-			found=asAtomHandler::toObject(it->object,th->worker)->hasPropertyByMultiname(*name, it->considerDynamic, true,th->worker);
+			found=asAtomHandler::hasPropertyByMultiname(it->object,*name, it->considerDynamic, true,th->worker);
 			if(found)
 			{
 				//We have to return the object, not the property
@@ -1937,7 +1937,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)
 	{
-		found=asAtomHandler::toObject(th->scope_stack[i-1],th->worker)->hasPropertyByMultiname(*name, th->scope_stack_dynamic[i-1], true,th->worker);
+		found=asAtomHandler::hasPropertyByMultiname(th->scope_stack[i-1], *name, th->scope_stack_dynamic[i-1], true,th->worker);
 		if (th->scope_stack_dynamic[i-1])
 			hasdynamic = true;
 		if(found)
@@ -1962,7 +1962,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 	{
 		for(it =th->parent_scope_stack->scope.rbegin();it!=th->parent_scope_stack->scope.rend();++it)
 		{
-			found=asAtomHandler::toObject(it->object,th->worker)->hasPropertyByMultiname(*name, it->considerDynamic, true,th->worker);
+			found=asAtomHandler::hasPropertyByMultiname(it->object,*name, it->considerDynamic, true,th->worker);
 			if (it->considerDynamic)
 				hasdynamic = true;
 			if(found)

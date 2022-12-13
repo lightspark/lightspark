@@ -581,7 +581,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, smoothing, regpointx, regpointy);
 }
 
-_NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const
+bool TokenContainer::hitTestImpl(number_t x, number_t y) const
 {
 	//Masks have been already checked along the way
 
@@ -589,10 +589,10 @@ _NR<DisplayObject> TokenContainer::hitTestImpl(_NR<DisplayObject> last, number_t
 	if(CairoTokenRenderer::hitTest(tokens, scaling, x, y))
 	{
 		owner->endDrawJob();
-		return last;
+		return true;
 	}
 	owner->endDrawJob();
-	return NullRef;
+	return false;
 }
 
 bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scaling, number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)

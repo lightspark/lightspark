@@ -300,12 +300,12 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	return true;
 }
 
-_NR<DisplayObject> TextField::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> TextField::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	/* I suppose one does not have to actually hit a character */
 	number_t xmin,xmax,ymin,ymax;
 	boundsRect(xmin,xmax,ymin,ymax);
-	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax && isHittable(type))
+	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax)
 	{
 		incRef();
 		return _MNR(this);
@@ -2403,14 +2403,12 @@ bool StaticText::renderImpl(RenderContext& ctxt) const
 	return TokenContainer::renderImpl(ctxt);
 }
 
-_NR<DisplayObject> StaticText::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> StaticText::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	number_t xmin,xmax,ymin,ymax;
 	boundsRect(xmin,xmax,ymin,ymax);
 	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax)
 	{
-		if (interactiveObjectsOnly)
-			return last;
 		incRef();
 		return _MNR(this);
 	}

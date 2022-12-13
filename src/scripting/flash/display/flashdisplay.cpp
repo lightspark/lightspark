@@ -1285,13 +1285,10 @@ bool Sprite::renderImpl(RenderContext& ctxt) const
 	return ret && ret2;
 }
 
-/*
-Subclasses of DisplayObjectContainer must still check
-isHittable() to see if they should send out events.
-*/
-_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	_NR<DisplayObject> ret = NullRef;
+	bool hit_this=false;
 	//Test objects added at runtime, in reverse order
 	Locker l(mutexDisplayList);
 	auto j=dynamicDisplayList.rbegin();
@@ -1308,55 +1305,49 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(_NR<DisplayObject> last, 
 
 		number_t localX, localY;
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-		if (this != getSystemState()->mainClip)
+		ret=(*j)->hitTest(localX,localY,type,interactiveObjectsOnly,ignore);
+		
+		if (!ret.isNull() && interactiveObjectsOnly)
 		{
-			this->incRef();
-			ret=(*j)->hitTest(_MR(this), localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly,ignore);
-		}
-		else
-		{
-			ret=(*j)->hitTest(NullRef, localX,localY, mouseChildren ? type : GENERIC_HIT,interactiveObjectsOnly,ignore);
-		}
-		if(!ret.isNull())
-		{
-			if (interactiveObjectsOnly && !ret->is<InteractiveObject>() && mouseChildren)
+			if (!mouseChildren) // When mouseChildren is false, we should get all events of our children
 			{
-				if (this->is<RootMovieClip>())
-					continue;
 				this->incRef();
-				ret = _MNR(this);
-				return ret;
+				ret =_MNR(this);
 			}
-			if (interactiveObjectsOnly && !(*j)->is<InteractiveObject>())
+			else
 			{
-				// we have hit a non-interactive object, so "this" may be the hit target
-				// but we continue to search the children as there may be an InteractiveObject that is also hit
-				this->incRef();
-				ret = _MNR(this);
-				continue;
+				if (mouseEnabled)
+				{
+					if (!ret->is<InteractiveObject>())
+					{
+						// we have hit a non-interactive object, so "this" may be the hit target
+						// but we continue to search the children as there may be an InteractiveObject that is also hit
+						hit_this=true;
+						ret.reset();
+						continue;
+					}
+					else if (!ret->as<InteractiveObject>()->isHittable(type))
+					{
+						// hit is a disabled InteractiveObject, so so "this" may be the hit target
+						// but we continue to search the children as there may be an enabled InteractiveObject that is also hit
+						hit_this=true;
+						ret.reset();
+						continue;
+					}
+				}
 			}
 			break;
 		}
 	}
-	// only check interactive objects
-	if(ret && interactiveObjectsOnly && !ret->is<InteractiveObject>() && mouseChildren)
-		ret.reset();
-	
-	/* When mouseChildren is false, we should get all events of our children */
-	if(ret && !mouseChildren)
+	if (hit_this && ret.isNull())
 	{
-		if (!isHittable(type))
-			ret.reset();
-		else
-		{
-			this->incRef();
-			ret = _MNR(this);
-		}
+		this->incRef();
+		ret =_MNR(this);
 	}
 	return ret;
 }
 
-_NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	//Did we hit a children?
 	_NR<DisplayObject> ret = NullRef;
@@ -1364,38 +1355,31 @@ _NR<DisplayObject> Sprite::hitTestImpl(_NR<DisplayObject> last, number_t x, numb
 		return ret;
 	if (!hitArea.isNull() && interactiveObjectsOnly)
 	{
-		this->incRef();
 		number_t xout,yout,xout2,yout2;
 		localToGlobal(x,y,xout,yout);
 		hitArea->globalToLocal(xout,yout,xout2,yout2);
-		ret = hitArea->hitTestImpl(_MR(this),xout2,yout2, type,interactiveObjectsOnly,NullRef);
+		ret = hitArea->hitTestImpl(xout2,yout2, type,interactiveObjectsOnly,NullRef);
 	}
 	if (ret.isNull())
 	{
-		this->incRef();
-		ret = DisplayObjectContainer::hitTestImpl(_MR(this),x,y, type,interactiveObjectsOnly,ignore);
+		ret = DisplayObjectContainer::hitTestImpl(x,y, type,interactiveObjectsOnly,ignore);
 	}
 	if (ret.isNull() && hitArea.isNull())
 	{
 		//The coordinates are locals
-		this->incRef();
-		ret = TokenContainer::hitTestImpl(_MR(this),x,y, type);
+		if (TokenContainer::hitTestImpl(x,y))
+		{
+			this->incRef();
+			ret = _MR(this);
+		}
 
-		if (!ret.isNull())  //Did we hit the sprite?
+		if (!ret.isNull())  // we hit the sprite?
 		{
 			if (!hitTarget.isNull())
 			{
 				//Another Sprite has registered us
 				//as its hitArea -> relay the hit
-				if (hitTarget->isHittable(type))
-					ret = hitTarget;
-				else
-					ret.reset();
-			}
-			else if (!isHittable(type))
-			{
-				//Hit ignored due to a disabled HIT_TYPE
-				ret = last;
+				ret = hitTarget;
 			}
 		}
 	}
@@ -2250,8 +2234,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 			number_t x,y,xg,yg;
 			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,xg,yg);
 			this->globalToLocal(xg,yg,x,y);
-			this->incRef();
-			_NR<DisplayObject> d =hitTest(_MR(this),x,y, DisplayObject::MOUSE_CLICK,true,NullRef);
+			_NR<DisplayObject> d =hitTest(x,y, DisplayObject::MOUSE_CLICK,true,NullRef);
 			dispobj = d.getPtr();
 		}
 		if (actions)
@@ -3046,7 +3029,6 @@ void InteractiveObject::setOnStage(bool staged, bool force,bool inskipping)
 		getSystemState()->stage->checkResetFocusTarget(this);
 	DisplayObject::setOnStage(staged,force,inskipping);
 }
-
 InteractiveObject::~InteractiveObject()
 {
 }
@@ -3771,15 +3753,18 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 	return true;
 }
 
-_NR<DisplayObject> Shape::hitTestImpl(NullableRef<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> Shape::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	number_t xmin, xmax, ymin, ymax;
 	boundsRect(xmin, xmax, ymin, ymax);
 	if (x<xmin || x>xmax || y<ymin || y>ymax)
 		return NullRef;
-	if (!interactiveObjectsOnly)
+	if (TokenContainer::hitTestImpl(x-xmin,y-ymin))
+	{
 		this->incRef();
-	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? last : _NR<DisplayObject>(this),x-xmin,y-ymin, type);
+		return _MR(this);
+	}
+	return NullRef;
 }
 
 Shape::Shape(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),TokenContainer(this),graphics(NullRef),fromTag(nullptr)
@@ -3919,15 +3904,18 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 	return true;
 }
 
-_NR<DisplayObject> MorphShape::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type, bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> MorphShape::hitTestImpl(number_t x, number_t y, HIT_TYPE type, bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	number_t xmin, xmax, ymin, ymax;
 	boundsRect(xmin, xmax, ymin, ymax);
 	if (x<xmin || x>xmax || y<ymin || y>ymax)
 		return NullRef;
-	if (!interactiveObjectsOnly)
+	if (TokenContainer::hitTestImpl(x-xmin,y-ymin))
+	{
 		this->incRef();
-	return TokenContainer::hitTestImpl(interactiveObjectsOnly ? last : _NR<DisplayObject>(this),x-xmin,y-ymin, type);
+		return _MR(this);
+	}
+	return NullRef;
 }
 
 void MorphShape::checkRatio(uint32_t ratio, bool inskipping)
@@ -4283,10 +4271,10 @@ ASFUNCTIONBODY_ATOM(Stage,_constructor)
 {
 }
 
-_NR<DisplayObject> Stage::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> Stage::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	_NR<DisplayObject> ret;
-	ret = DisplayObjectContainer::hitTestImpl(last, x, y, type, interactiveObjectsOnly,ignore);
+	ret = DisplayObjectContainer::hitTestImpl(x, y, type, interactiveObjectsOnly,ignore);
 	if(!ret)
 	{
 		/* If nothing else is hit, we hit the stage */
@@ -5127,7 +5115,7 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return true;
 }
 
-_NR<DisplayObject> Bitmap::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> Bitmap::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	//Simple check inside the area, opacity data should not be considered
 	//NOTE: on the X axis the 0th line must be ignored, while the one past the width is valid
@@ -5135,13 +5123,8 @@ _NR<DisplayObject> Bitmap::hitTestImpl(_NR<DisplayObject> last, number_t x, numb
 	//NOTE: This is tested behaviour!
 	if(!bitmapData.isNull() && x > 0 && x <= bitmapData->getWidth() && y >=0 && y < bitmapData->getHeight())
 	{
-		if (interactiveObjectsOnly)
-		{
-			// when checking interactive objects only, we need the real object that is hitted, it will be properly handled in the parent
-			this->incRef();
-			return _MR(this);
-		}
-		return last;
+		this->incRef();
+		return _MR(this);
 	}
 	return NullRef;
 }
@@ -5303,7 +5286,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
 			number_t x1,y1;
 			this->globalToLocal(x,y,x1,y1);
-			_NR<DisplayObject> d = hitTest(NullRef,x1,y1, DisplayObject::MOUSE_CLICK,true,NullRef);
+			_NR<DisplayObject> d = hitTest(x1,y1, DisplayObject::MOUSE_CLICK,true,NullRef);
 			dispobj=d.getPtr();
 		}
 		if (dispobj!= this)
@@ -5536,7 +5519,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 }
 
 
-_NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> SimpleButton::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	_NR<DisplayObject> ret = NullRef;
 	if(hitTestState)
@@ -5546,8 +5529,7 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 
 		number_t localX, localY;
 		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-		this->incRef();
-		ret = hitTestState->hitTest(_MR(this), localX,localY, type,false,ignore);
+		ret = hitTestState->hitTest(localX,localY, type,false,ignore);
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been
@@ -5556,7 +5538,7 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(_NR<DisplayObject> last, number_t x
 	 */
 	if(ret)
 	{
-		if(!isHittable(type))
+		if(interactiveObjectsOnly && !isHittable(type))
 			return NullRef;
 
 		if (ret.getPtr() != this)

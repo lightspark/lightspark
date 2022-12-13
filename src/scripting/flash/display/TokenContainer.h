@@ -68,7 +68,7 @@ protected:
 	{
 		return boundsRectFromTokens(tokens,scaling,xmin,xmax,ymin,ymax);
 	}
-	_NR<DisplayObject> hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type) const;
+	bool hitTestImpl(number_t x, number_t y) const;
 	bool renderImpl(RenderContext& ctxt) const;
 	bool tokensEmpty() const { return tokens.empty(); }
 };

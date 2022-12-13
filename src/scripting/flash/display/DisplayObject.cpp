@@ -1541,7 +1541,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 	asAtomHandler::setNumber(ret,wrk,th->getLocalMousePos().y);
 }
 
-_NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> DisplayObject::hitTest(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	if((!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && !isMask())
 		return NullRef;
@@ -1564,11 +1564,11 @@ _NR<DisplayObject> DisplayObject::hitTest(_NR<DisplayObject> last, number_t x, n
 		}
 		number_t maskX, maskY;
 		maskMatrix.getInverted().multiply2D(globalX,globalY,maskX,maskY);
-		if(mask->hitTest(last, maskX, maskY, type,false,ignore)==false)
+		if(mask->hitTest(maskX, maskY, type,false,ignore).isNull())
 			return NullRef;
 	}
 
-	return hitTestImpl(last, x,y, type,interactiveObjectsOnly,ignore);
+	return hitTestImpl(x,y, type,interactiveObjectsOnly,ignore);
 }
 
 /* Display objects have no children in general,
@@ -1946,8 +1946,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 
 		// Hmm, hitTest will also check the mask, is this the
 		// right thing to do?
-		th->incRef();
-		_NR<DisplayObject> hit = th->hitTest(_MR(th), localX, localY,
+		_NR<DisplayObject> hit = th->hitTest(localX, localY,
 						     HIT_TYPE::GENERIC_HIT_INVISIBLE,false,NullRef);
 
 		asAtomHandler::setBool(ret,!hit.isNull());

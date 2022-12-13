@@ -371,11 +371,14 @@ ASFUNCTIONBODY_ATOM(Video,clear)
 		th->netStream->clearFrameBuffer();
 }
 
-_NR<DisplayObject> Video::hitTestImpl(_NR<DisplayObject> last, number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> Video::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
 {
 	//TODO: support masks
 	if(x>=0 && x<=width && y>=0 && y<=height)
-		return last;
+	{
+		this->incRef();
+		return _MR(this);
+	}
 	else
 		return NullRef;
 }

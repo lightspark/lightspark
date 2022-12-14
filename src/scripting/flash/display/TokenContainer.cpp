@@ -33,12 +33,12 @@ using namespace lightspark;
 using namespace std;
 
 
-TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o), scaling(1.0f)
+TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o), scaling(1.0f),renderWithNanoVG(false)
 {
 }
 
 TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling) :
-	owner(_o), scaling(_scaling)
+	owner(_o), scaling(_scaling),renderWithNanoVG(false)
 
 {
 	tokens.filltokens.assign(_tokens.filltokens.begin(),_tokens.filltokens.end());
@@ -48,34 +48,21 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 
 bool TokenContainer::renderImpl(RenderContext& ctxt) const
 {
-	if (ctxt.contextType== RenderContext::GL && !tokens.empty() && tokens.canRenderToGL && !owner->isMask() && !owner->computeCacheAsBitmap() && owner->getBlendMode()==BLENDMODE_NORMAL)
+	if (ctxt.contextType== RenderContext::GL && renderWithNanoVG)
 	{
 		NVGcontext* nvgctxt = owner->getSystemState()->getEngineData()->nvgcontext;
 		if (nvgctxt)
 		{
 			if (owner->getConcatenatedAlpha() == 0)
 				return false;
-			number_t xmin,xmax,ymin,ymax;
-			if (!owner->boundsRect(xmin,xmax,ymin,ymax))
-				return owner->defaultRender(ctxt);
-
-			int offsetX;
-			int offsetY;
-			float scaleX;
-			float scaleY;
-			owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight, offsetX, offsetY, scaleX, scaleY);
-			
-
 			nvgResetTransform(nvgctxt);
 			nvgBeginFrame(nvgctxt, owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight, 1.0);
-
-			MATRIX m = owner->getConcatenatedMatrix();
-			m.scale(scaleX*scaling,scaleY*scaling);
-			if (owner->hasGraphics())
-				m.translate(offsetX*scaling,offsetY*scaling);
-			else
-				m.translate(offsetX*scaling+xmin*m.getScaleX(),offsetY*scaling+ymin*m.getScaleY());
-			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0/scaling,m.y0/scaling);
+			// xOffsetTransformed/yOffsetTransformed contain the offsets from the border of the window
+			nvgTranslate(nvgctxt,owner->cachedSurface.xOffsetTransformed,owner->cachedSurface.yOffsetTransformed);
+			MATRIX m = owner->cachedSurface.matrix;
+			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
+			nvgTranslate(nvgctxt,owner->cachedSurface.xOffset,owner->cachedSurface.yOffset);
+			nvgScale(nvgctxt,scaling,scaling);
 			NVGcolor startcolor = nvgRGBA(0,0,0,0);
 			nvgBeginPath(nvgctxt);
 			nvgFillColor(nvgctxt,startcolor);
@@ -215,7 +202,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt) const
 								nvgLineJoin(nvgctxt, NVG_MITER);
 								nvgMiterLimit(nvgctxt,style->MiterLimitFactor);
 							}
-							nvgStrokeWidth(nvgctxt,style->Width== 0 ? 1.0f :(float)style->Width);
+							nvgStrokeWidth(nvgctxt,style->Width==0 ? 1.0f :(float)style->Width);
 							break;
 						}
 						case CLEAR_FILL:
@@ -428,29 +415,6 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 		return;
 	if (owner->requestInvalidationForCacheAsBitmap(q))
 		return;
-	if (q && !q->isSoftwareQueue && !tokens.empty() && tokens.canRenderToGL && !owner->isMask() && !owner->ClipDepth && !owner->computeCacheAsBitmap())
-	{
-		ColorTransform* ct = owner->colorTransform.getPtr();
-		DisplayObject* m = owner->getMask();
-		DisplayObjectContainer* p = owner->getParent();
-		while (!ct && !m && p)
-		{
-			if (p->colorTransform)
-			{
-				ct = p->colorTransform.getPtr();
-				break;
-			}
-			m = p->getMask();
-			p = p->getParent();
-		}
-		if (ct || m)
-		{
-			tokens.canRenderToGL=false; // TODO nanovg rendering with colorTransform or mask not yet implemented
-			forceTextureRefresh=true;
-		}
-		else
-			return;
-	}
 	owner->incRef();
 	if (forceTextureRefresh)
 		owner->setNeedsTextureRecalculation();
@@ -559,8 +523,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		}
 		p = p->getParent();
 	}
-	if (!ct && q && !q->isSoftwareQueue && tokens.canRenderToGL && !owner->isMask() && !owner->computeCacheAsBitmap())
-		return nullptr;
 	number_t regpointx = 0.0;
 	number_t regpointy = 0.0;
 	if (fromgraphics)
@@ -570,6 +532,39 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		regpointy=bymin;
 	}
 	owner->cachedSurface.isValid=true;
+	if ((!q || !q->isSoftwareQueue) && !tokens.empty() && tokens.canRenderToGL 
+			&& !ct
+			&& mask.isNull()
+			&& !isMask
+			&& !owner->ClipDepth
+			&& !owner->computeCacheAsBitmap() 
+			&& owner->getBlendMode()==BLENDMODE_NORMAL)
+	{
+		renderWithNanoVG=true;
+		int offsetX;
+		int offsetY;
+		float scaleX;
+		float scaleY;
+		owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight,
+					   offsetX, offsetY, scaleX, scaleY);
+		// in the NanoVG case xOffsetTransformed/yOffsetTransformed are used for the offsets from the border of the main window
+		owner->cachedSurface.xOffsetTransformed=offsetX;
+		owner->cachedSurface.yOffsetTransformed=offsetY;
+		if (fromgraphics)
+		{
+			owner->cachedSurface.xOffset=0;
+			owner->cachedSurface.yOffset=0;
+		}
+		else
+		{
+			owner->cachedSurface.xOffset=bxmin;
+			owner->cachedSurface.yOffset=bymin;
+		}
+		owner->cachedSurface.matrix=totalMatrix2;
+		owner->resetNeedsTextureRecalculation();
+		return nullptr;
+	}
+	renderWithNanoVG=false;
 	return new CairoTokenRenderer(tokens,totalMatrix2
 				, x, y, ceil(width), ceil(height)
 				, rx, ry, ceil(rwidth), ceil(rheight), 0

@@ -59,6 +59,7 @@ public:
 	static bool boundsRectFromTokens(const tokensVector& tokens,float scaling, number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
 	uint16_t getCurrentLineWidth() const;
 	float scaling;
+	bool renderWithNanoVG;
 protected:
 	TokenContainer(DisplayObject* _o);
 	TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling);

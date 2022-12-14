@@ -1036,22 +1036,7 @@ void Sprite::afterSetUseHandCursor(bool /*oldValue*/)
 IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	if (this->graphics)
-	{
 		this->graphics->refreshTokens();
-		if (graphics->shouldRenderToGL() && !isMask() && !computeCacheAsBitmap())
-		{
-			// we can currently only render with nanovg if this sprite and it's parents don't have a colorTransformation
-			ColorTransform* ct = this->colorTransform.getPtr();
-			DisplayObjectContainer* p = this->getParent();
-			while (!ct && p)
-			{
-				ct = p->colorTransform.getPtr();
-				p = p->getParent();
-			}
-			if (!ct)
-				return nullptr;
-		}
-	}
 	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,true);
 }
 

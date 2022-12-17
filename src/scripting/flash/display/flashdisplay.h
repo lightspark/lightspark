@@ -111,7 +111,10 @@ private:
 	set<int32_t> legacyChildrenMarkedForDeletion;
 	bool _contains(DisplayObject* child);
 	void getObjectsFromPoint(Point* point, Array* ar);
-	RECT boundsrect;
+	number_t boundsrectXmin;
+	number_t boundsrectYmin;
+	number_t boundsrectXmax;
+	number_t boundsrectYmax;
 	bool boundsrectdirty;
 protected:
 	//This is shared between RenderThread and VM
@@ -121,7 +124,7 @@ protected:
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
-	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
+	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
 	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override
 	{
@@ -145,6 +148,7 @@ public:
 	DisplayObjectContainer(ASWorker* wrk,Class_base* c);
 	void markAsChanged() override;
 	inline void markBoundsRectDirty() { boundsrectdirty=true; }
+	void markBoundsRectDirtyChildren();
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
@@ -228,7 +232,7 @@ private:
 	bool useHandCursor;
 	bool hasMouse;
 	void reflectState(BUTTONSTATE oldstate);
-	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
+	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e) override;
 protected:
@@ -273,7 +277,7 @@ protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
 	bool renderImpl(RenderContext& ctxt) override
 		{ return TokenContainer::renderImpl(ctxt); }
-	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
+	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	
 	DefineShapeTag* fromTag;
 public:
@@ -305,7 +309,7 @@ protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
 	bool renderImpl(RenderContext& ctxt) override
 		{ return TokenContainer::renderImpl(ctxt); }
-	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
+	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
 	MorphShape(ASWorker* wrk,Class_base* c);
 	MorphShape(ASWorker* wrk, Class_base* c, DefineMorphShapeTag* _morphshapetag);
@@ -481,7 +485,7 @@ protected:
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
 	}
 	bool renderImpl(RenderContext& ctxt) override;
-	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
+	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void resetToStart() override;
 	void checkSound(uint32_t frame);// start sound streaming if it is not already playing
 	void stopSound();
@@ -765,7 +769,7 @@ public:
 	void forceInvalidation();
 	bool renderStage3D();
 	void onDisplayState(const tiny_string&);
-	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
+	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void setOnStage(bool staged, bool force,bool inskipping=false) override { assert(false); /* we are the stage */}
 	_NR<RootMovieClip> getRoot() override;
 	void setRoot(_NR<RootMovieClip> _root);
@@ -987,7 +991,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
-	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
+	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;

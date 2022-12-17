@@ -255,14 +255,14 @@ bool InputThread::handleContextMenuEvent(SDL_Event *event)
 	return ret;
 }
 
-_NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type, _NR<DisplayObject> ignore)
+_NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type)
 {
 	_NR<InteractiveObject> selected = NullRef;
 	if (m_sys->getRenderThread()->inSettings)
 		return selected;
 	try
 	{
-		_NR<DisplayObject> dispobj=m_sys->stage->hitTest(x,y, type,true,ignore);
+		_NR<DisplayObject> dispobj=m_sys->stage->hitTest(x,y, type,true);
 		if(!dispobj.isNull() && dispobj->is<InteractiveObject>())
 		{
 			dispobj->incRef();
@@ -409,16 +409,13 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOver",localX,localY,true,buttonState,pressed,currentMouseOver)));
 			currentMouseOver = selected;
 		}
-		// it seems that rollOver/rollOut events are created for InteractiveObjects
-		// that are not chldren but covered by the current selected target (only if the selected target has no hitArea)
-		_NR<InteractiveObject> rolledover = selected->is<Sprite>() && !selected->as<Sprite>()->hitArea.isNull() ? selected : getMouseTarget(x, y, DisplayObject::MOUSE_CLICK,selected);
-		if (rolledover && rolledover != lastRolledOver)
+		if (selected != lastRolledOver)
 		{
 			if (lastRolledOver)
-				m_sys->currentVm->addIdleEvent(lastRolledOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",localX,localY,true,buttonState,pressed,rolledover)));
-			m_sys->currentVm->addIdleEvent(rolledover,
+				m_sys->currentVm->addIdleEvent(lastRolledOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",localX,localY,true,buttonState,pressed,selected)));
+			m_sys->currentVm->addIdleEvent(selected,
 				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOver",localX,localY,true,buttonState,pressed,lastRolledOver)));
-			lastRolledOver = rolledover;
+			lastRolledOver = selected;
 		}
 	}
 }

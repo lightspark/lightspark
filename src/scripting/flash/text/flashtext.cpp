@@ -300,7 +300,7 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	return true;
 }
 
-_NR<DisplayObject> TextField::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> TextField::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	/* I suppose one does not have to actually hit a character */
 	number_t xmin,xmax,ymin,ymax;
@@ -2404,7 +2404,7 @@ bool StaticText::renderImpl(RenderContext& ctxt)
 	return TokenContainer::renderImpl(ctxt);
 }
 
-_NR<DisplayObject> StaticText::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> StaticText::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin,xmax,ymin,ymax;
 	boundsRect(xmin,xmax,ymin,ymax);

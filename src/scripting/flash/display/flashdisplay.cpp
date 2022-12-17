@@ -1134,10 +1134,10 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 		return false;
 	if (!boundsrectdirty)
 	{
-		xmin = boundsrect.Xmin;
-		ymin = boundsrect.Ymin;
-		xmax = boundsrect.Xmax;
-		ymax = boundsrect.Ymax;
+		xmin = boundsrectXmin;
+		ymin = boundsrectYmin;
+		xmax = boundsrectXmax;
+		ymax = boundsrectYmax;
 		return true;
 	}
 
@@ -1165,10 +1165,10 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 			}
 		}
 	}
-	boundsrect.Xmin=xmin;
-	boundsrect.Ymin=ymin;
-	boundsrect.Xmax=xmax;
-	boundsrect.Ymax=ymax;
+	boundsrectXmin=xmin;
+	boundsrectYmin=ymin;
+	boundsrectXmax=xmax;
+	boundsrectYmax=ymax;
 	boundsrectdirty=false;
 	return ret;
 }
@@ -1283,7 +1283,7 @@ bool Sprite::renderImpl(RenderContext& ctxt)
 	return ret && ret2;
 }
 
-_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret = NullRef;
 	bool hit_this=false;
@@ -1292,8 +1292,6 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, D
 	auto j=dynamicDisplayList.rbegin();
 	for(;j!=dynamicDisplayList.rend();++j)
 	{
-		if ((*j)==ignore.getPtr())
-			continue;
 		//Don't check masks
 		if((*j)->isMask())
 			continue;
@@ -1303,7 +1301,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, D
 
 		number_t localX, localY;
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-		ret=(*j)->hitTest(localX,localY,type,interactiveObjectsOnly,ignore);
+		ret=(*j)->hitTest(localX,localY,type,interactiveObjectsOnly);
 		
 		if (!ret.isNull() && interactiveObjectsOnly)
 		{
@@ -1345,7 +1343,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, D
 	return ret;
 }
 
-_NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	//Did we hit a children?
 	_NR<DisplayObject> ret = NullRef;
@@ -1356,11 +1354,11 @@ _NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HI
 		number_t xout,yout,xout2,yout2;
 		localToGlobal(x,y,xout,yout);
 		hitArea->globalToLocal(xout,yout,xout2,yout2);
-		ret = hitArea->hitTestImpl(xout2,yout2, type,interactiveObjectsOnly,NullRef);
+		ret = hitArea->hitTestImpl(xout2,yout2, type,interactiveObjectsOnly);
 	}
 	if (ret.isNull())
 	{
-		ret = DisplayObjectContainer::hitTestImpl(x,y, type,interactiveObjectsOnly,ignore);
+		ret = DisplayObjectContainer::hitTestImpl(x,y, type,interactiveObjectsOnly);
 	}
 	if (ret.isNull() && hitArea.isNull())
 	{
@@ -2232,7 +2230,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 			number_t x,y,xg,yg;
 			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,xg,yg);
 			this->globalToLocal(xg,yg,x,y);
-			_NR<DisplayObject> d =hitTest(x,y, DisplayObject::MOUSE_CLICK,true,NullRef);
+			_NR<DisplayObject> d =hitTest(x,y, DisplayObject::MOUSE_CLICK,true);
 			dispobj = d.getPtr();
 		}
 		if (actions)
@@ -2713,7 +2711,8 @@ void DisplayObjectContainer::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObjectContainer, tabChildren)
 
-DisplayObjectContainer::DisplayObjectContainer(ASWorker* wrk, Class_base* c):InteractiveObject(wrk,c),mouseChildren(true),boundsrectdirty(true),tabChildren(true)
+DisplayObjectContainer::DisplayObjectContainer(ASWorker* wrk, Class_base* c):InteractiveObject(wrk,c),mouseChildren(true),
+	boundsrectXmin(0),boundsrectYmin(0),boundsrectXmax(0),boundsrectYmax(0),boundsrectdirty(true),tabChildren(true)
 {
 	subtype=SUBTYPE_DISPLAYOBJECTCONTAINER;
 }
@@ -2723,6 +2722,16 @@ void DisplayObjectContainer::markAsChanged()
 	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
 		(*it)->markAsChanged();
 	DisplayObject::markAsChanged();
+}
+
+void DisplayObjectContainer::markBoundsRectDirtyChildren()
+{
+	markBoundsRectDirty();
+	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+	{
+		if ((*it)->is<DisplayObjectContainer>())
+			(*it)->as<DisplayObjectContainer>()->markBoundsRectDirtyChildren();
+	}
 }
 
 bool DisplayObjectContainer::hasLegacyChildAt(int32_t depth)
@@ -3752,7 +3761,7 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 	return true;
 }
 
-_NR<DisplayObject> Shape::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> Shape::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin, xmax, ymin, ymax;
 	boundsRect(xmin, xmax, ymin, ymax);
@@ -3903,7 +3912,7 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 	return true;
 }
 
-_NR<DisplayObject> MorphShape::hitTestImpl(number_t x, number_t y, HIT_TYPE type, bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> MorphShape::hitTestImpl(number_t x, number_t y, HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin, xmax, ymin, ymax;
 	boundsRect(xmin, xmax, ymin, ymax);
@@ -4273,10 +4282,10 @@ ASFUNCTIONBODY_ATOM(Stage,_constructor)
 {
 }
 
-_NR<DisplayObject> Stage::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> Stage::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret;
-	ret = DisplayObjectContainer::hitTestImpl(x, y, type, interactiveObjectsOnly,ignore);
+	ret = DisplayObjectContainer::hitTestImpl(x, y, type, interactiveObjectsOnly);
 	if(!ret)
 	{
 		/* If nothing else is hit, we hit the stage */
@@ -5117,7 +5126,7 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return true;
 }
 
-_NR<DisplayObject> Bitmap::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> Bitmap::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	//Simple check inside the area, opacity data should not be considered
 	//NOTE: on the X axis the 0th line must be ignored, while the one past the width is valid
@@ -5288,7 +5297,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
 			number_t x1,y1;
 			this->globalToLocal(x,y,x1,y1);
-			_NR<DisplayObject> d = hitTest(x1,y1, DisplayObject::MOUSE_CLICK,true,NullRef);
+			_NR<DisplayObject> d = hitTest(x1,y1, DisplayObject::MOUSE_CLICK,true);
 			dispobj=d.getPtr();
 		}
 		if (dispobj!= this)
@@ -5521,7 +5530,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 }
 
 
-_NR<DisplayObject> SimpleButton::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> SimpleButton::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret = NullRef;
 	if(hitTestState)
@@ -5531,7 +5540,7 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(number_t x, number_t y, DisplayObje
 
 		number_t localX, localY;
 		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-		ret = hitTestState->hitTest(localX,localY, type,false,ignore);
+		ret = hitTestState->hitTest(localX,localY, type,false);
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been

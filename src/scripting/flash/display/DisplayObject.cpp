@@ -1370,6 +1370,7 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 	{
 		if (p)
 		{
+			// mark old parent as dirty
 			geometryChanged();
 			getSystemState()->removeFromResetParentList(this);
 			if (p->computeCacheAsBitmap())
@@ -1457,6 +1458,10 @@ number_t DisplayObject::computeHeight()
 
 void DisplayObject::geometryChanged()
 {
+	if (this->is<DisplayObjectContainer>())
+	{
+		this->as<DisplayObjectContainer>()->markBoundsRectDirtyChildren();
+	}
 	DisplayObjectContainer* p = this->getParent();
 	while (p)
 	{
@@ -1566,7 +1571,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 	asAtomHandler::setNumber(ret,wrk,th->getLocalMousePos().y);
 }
 
-_NR<DisplayObject> DisplayObject::hitTest(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+_NR<DisplayObject> DisplayObject::hitTest(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	if((!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && !isMask())
 		return NullRef;
@@ -1589,11 +1594,11 @@ _NR<DisplayObject> DisplayObject::hitTest(number_t x, number_t y, HIT_TYPE type,
 		}
 		number_t maskX, maskY;
 		maskMatrix.getInverted().multiply2D(globalX,globalY,maskX,maskY);
-		if(mask->hitTest(maskX, maskY, type,false,ignore).isNull())
+		if(mask->hitTest(maskX, maskY, type,false).isNull())
 			return NullRef;
 	}
 
-	return hitTestImpl(x,y, type,interactiveObjectsOnly,ignore);
+	return hitTestImpl(x,y, type,interactiveObjectsOnly);
 }
 
 /* Display objects have no children in general,
@@ -1972,7 +1977,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		// Hmm, hitTest will also check the mask, is this the
 		// right thing to do?
 		_NR<DisplayObject> hit = th->hitTest(localX, localY,
-						     HIT_TYPE::GENERIC_HIT_INVISIBLE,false,NullRef);
+						     HIT_TYPE::GENERIC_HIT_INVISIBLE,false);
 
 		asAtomHandler::setBool(ret,!hit.isNull());
 	}

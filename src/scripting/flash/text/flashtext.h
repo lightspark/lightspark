@@ -95,7 +95,7 @@ public:
 	enum GRID_FIT_TYPE { GF_NONE, GF_PIXEL, GF_SUBPIXEL };
 	enum TEXT_INTERACTION_MODE { TI_NORMAL, TI_SELECTION };
 private:
-	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
+	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly) override;
 	bool renderImpl(RenderContext& ctxt) override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
@@ -287,7 +287,7 @@ private:
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
 	bool renderImpl(RenderContext& ctxt) override;
-	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
+	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
 	StaticText(ASWorker* wrk,Class_base* c):DisplayObject(wrk,c),TokenContainer(this),tagID(UINT32_MAX) {}
 	StaticText(ASWorker* wrk,Class_base* c, const tokensVector& tokens,const RECT& b,uint32_t _tagID):

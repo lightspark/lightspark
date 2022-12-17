@@ -135,7 +135,7 @@ protected:
 	{
 		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
 	}
-	virtual _NR<DisplayObject> hitTestImpl(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore)
+	virtual _NR<DisplayObject> hitTestImpl(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
 	{
 		throw RunTimeException("DisplayObject::hitTestImpl: Derived class must implement this!");
 	}
@@ -231,7 +231,7 @@ public:
 	
 	bool Render(RenderContext& ctxt,bool force=false);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m);
-	_NR<DisplayObject> hitTest(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore);
+	_NR<DisplayObject> hitTest(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly);
 	virtual void setOnStage(bool staged, bool force, bool inskipping=false);
 	bool isOnStage() const { return onStage; }
 	bool isMask() const { return ismask; }

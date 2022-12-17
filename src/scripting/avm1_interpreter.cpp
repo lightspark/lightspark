@@ -1397,7 +1397,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom scriptobject = PopStack(stack);
 				asAtom ret=asAtomHandler::invalidAtom;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
-				if (asAtomHandler::isNull(scriptobject) || asAtomHandler::isUndefined(scriptobject))
+				if (asAtomHandler::isNull(scriptobject) || asAtomHandler::isUndefined(scriptobject) || asAtomHandler::isInvalid(scriptobject))
 				{
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember called on Null/Undefined, ignored "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
 					asAtomHandler::setUndefined(ret);

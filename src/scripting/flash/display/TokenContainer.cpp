@@ -46,7 +46,7 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 	tokens.canRenderToGL = _tokens.canRenderToGL;
 }
 
-bool TokenContainer::renderImpl(RenderContext& ctxt) const
+bool TokenContainer::renderImpl(RenderContext& ctxt)
 {
 	if (ctxt.contextType== RenderContext::GL && renderWithNanoVG)
 	{

@@ -111,6 +111,8 @@ private:
 	set<int32_t> legacyChildrenMarkedForDeletion;
 	bool _contains(DisplayObject* child);
 	void getObjectsFromPoint(Point* point, Array* ar);
+	RECT boundsrect;
+	bool boundsrectdirty;
 protected:
 	//This is shared between RenderThread and VM
 	std::vector < DisplayObject* > dynamicDisplayList;
@@ -120,12 +122,12 @@ protected:
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
-	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
+	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override
 	{
 		return false;
 	}
-	bool renderImpl(RenderContext& ctxt) const override;
+	bool renderImpl(RenderContext& ctxt) override;
 	virtual void resetToStart() {}
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
 	void LegacyChildEraseDeletionMarked();
@@ -142,6 +144,7 @@ public:
 	int getChildIndex(DisplayObject* child);
 	DisplayObjectContainer(ASWorker* wrk,Class_base* c);
 	void markAsChanged() override;
+	inline void markBoundsRectDirty() { boundsrectdirty=true; }
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
@@ -229,7 +232,7 @@ private:
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e) override;
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
 public:
 	SimpleButton(ASWorker* wrk,Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
@@ -267,8 +270,8 @@ class Shape: public DisplayObject, public TokenContainer
 {
 protected:
 	_NR<Graphics> graphics;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
-	bool renderImpl(RenderContext& ctxt) const override
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
+	bool renderImpl(RenderContext& ctxt) override
 		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
 	
@@ -299,8 +302,8 @@ private:
 	DefineMorphShapeTag* morphshapetag;
 	uint16_t currentratio;
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
-	bool renderImpl(RenderContext& ctxt) const override
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
+	bool renderImpl(RenderContext& ctxt) override
 		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
 public:
@@ -472,12 +475,12 @@ private:
 	bool hasMouse;
 	void afterSetUseHandCursor(bool oldValue);
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
-	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
+	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override
 	{
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
 	}
-	bool renderImpl(RenderContext& ctxt) const override;
+	bool renderImpl(RenderContext& ctxt) override;
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
 	void resetToStart() override;
 	void checkSound(uint32_t frame);// start sound streaming if it is not already playing
@@ -752,7 +755,7 @@ private:
 	std::list<_R<MovieClip>> avm1skipeventslist;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
-	bool renderImpl(RenderContext& ctxt) const override;
+	bool renderImpl(RenderContext& ctxt) override;
 public:
 	bool destruct() override;
 	void prepareShutdown() override;
@@ -968,7 +971,7 @@ private:
 	void onSmoothingChanged(bool);
 	void onPixelSnappingChanged(tiny_string snapping);
 protected:
-	bool renderImpl(RenderContext& ctxt) const override;
+	bool renderImpl(RenderContext& ctxt) override;
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
@@ -976,14 +979,14 @@ public:
 	/* Call this after updating any member of 'data' */
 	void updatedData();
 	Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
-	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data);
+	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload=true);
 	~Bitmap();
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;

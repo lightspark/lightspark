@@ -1109,6 +1109,7 @@ TextureChunk& AsyncDrawJob::getTexture()
 
 void AsyncDrawJob::uploadFence()
 {
+	ITextureUploadable::uploadFence();
 	// ensure that the owner is moved to freelist in vm thread
 	if (getVm(owner->getSystemState()))
 	{

@@ -93,7 +93,7 @@ private:
 	bool useLegacyMatrix;
 	bool needsTextureRecalculation;
 	bool textureRecalculationSkippable;
-	void gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const;
+	void gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks);
 	std::map<uint32_t,asAtom> avm1variables;
 	std::map<uint32_t,_NR<AVM1Function>> avm1functions;
 	uint32_t avm1mouselistenercount;
@@ -118,19 +118,20 @@ protected:
 	void extractValuesFromMatrix();
 	number_t computeWidth();
 	number_t computeHeight();
+	void geometryChanged();
 	bool skipRender() const;
 
-	bool defaultRender(RenderContext& ctxt) const;
-	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+	bool defaultRender(RenderContext& ctxt);
+	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
 	}
-	virtual bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+	virtual bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 	{
 		return boundsRect(xmin, xmax, ymin, ymax);
 	}
 	bool boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
-	virtual bool renderImpl(RenderContext& ctxt) const
+	virtual bool renderImpl(RenderContext& ctxt)
 	{
 		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
 	}
@@ -173,7 +174,7 @@ public:
 	/**
 	 * cacheAsBitmap is true also if any filter is used
 	 */
-	bool computeCacheAsBitmap() const;
+	bool computeCacheAsBitmap();
 	bool requestInvalidationForCacheAsBitmap(InvalidateQueue* q);
 	void computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, _NR<DisplayObject>& mask) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
@@ -229,7 +230,7 @@ public:
 	virtual void endDrawJob() {}
 	
 	bool Render(RenderContext& ctxt,bool force=false);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const;
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m);
 	_NR<DisplayObject> hitTest(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore);
 	virtual void setOnStage(bool staged, bool force, bool inskipping=false);
 	bool isOnStage() const { return onStage; }

@@ -96,8 +96,8 @@ public:
 	enum TEXT_INTERACTION_MODE { TI_NORMAL, TI_SELECTION };
 private:
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
-	bool renderImpl(RenderContext& ctxt) const override;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
+	bool renderImpl(RenderContext& ctxt) override;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	void defaultEventBehavior(_R<Event> e) override;
@@ -285,8 +285,8 @@ private:
 	RECT bounds;
 	uint32_t tagID;
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
-	bool renderImpl(RenderContext& ctxt) const override;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
+	bool renderImpl(RenderContext& ctxt) override;
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
 public:
 	StaticText(ASWorker* wrk,Class_base* c):DisplayObject(wrk,c),TokenContainer(this),tagID(UINT32_MAX) {}

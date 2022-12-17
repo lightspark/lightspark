@@ -233,10 +233,10 @@ class TextLine: public DisplayObjectContainer, public TextData
 private:
 	// Much of the rendering/bounds checking/hit testing code is
 	// similar to TextField and should be shared
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const override;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
-	bool renderImpl(RenderContext& ctxt) const override;
+	bool renderImpl(RenderContext& ctxt) override;
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly, _NR<DisplayObject> ignore) override;
 public:
 	TextLine(ASWorker* wrk,Class_base* c,tiny_string linetext = "", _NR<TextBlock> owner=NullRef);

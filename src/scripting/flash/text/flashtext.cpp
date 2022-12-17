@@ -269,7 +269,7 @@ void TextField::prepareShutdown()
 		styleSheet->prepareShutdown();
 }
 
-bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	if (this->type == ET_EDITABLE && tag)
 	{
@@ -483,6 +483,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 			break;
 	}
 	height = textHeight+TEXTFIELD_PADDING*2;
+	geometryChanged();
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getWidth)
@@ -1752,7 +1753,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,caretIndex);
 }
 
-bool TextField::renderImpl(RenderContext& ctxt) const
+bool TextField::renderImpl(RenderContext& ctxt)
 {
 	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
 	{
@@ -2382,7 +2383,7 @@ IDrawable* StaticText::invalidate(DisplayObject* target, const MATRIX& initialMa
 {
 	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 }
-bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	xmin=bounds.Xmin/20.0;
 	xmax=bounds.Xmax/20.0;
@@ -2391,7 +2392,7 @@ bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numb
 	return true;
 }
 
-bool StaticText::renderImpl(RenderContext& ctxt) const
+bool StaticText::renderImpl(RenderContext& ctxt)
 {
 	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
 	{

@@ -849,12 +849,18 @@ void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 void RenderThread::addUploadJob(ITextureUploadable* u)
 {
 	mutexUploadJobs.lock();
+	if (u->getQueued())
+	{
+		mutexUploadJobs.unlock();
+		return;
+	}
 	if(m_sys->isShuttingDown() || status!=STARTED)
 	{
 		u->uploadFence();
 		mutexUploadJobs.unlock();
 		return;
 	}
+	u->setQueued();
 	uploadJobs.push_back(u);
 	uploadNeeded=true;
 	mutexUploadJobs.unlock();

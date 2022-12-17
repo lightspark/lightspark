@@ -195,6 +195,7 @@ TextureChunk& BitmapContainer::getTexture()
 
 void BitmapContainer::uploadFence()
 {
+	ITextureUploadable::uploadFence();
 	decRef();// is increffed in checkTexture
 }
 bool BitmapContainer::checkTexture()

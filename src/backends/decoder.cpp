@@ -102,6 +102,7 @@ TextureChunk& VideoDecoder::getTexture()
 
 void VideoDecoder::uploadFence()
 {
+	ITextureUploadable::uploadFence();
 	assert(fenceCount);
 	fenceCount--;
 	if (markedForDeletion && fenceCount==0)

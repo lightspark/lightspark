@@ -1126,12 +1126,20 @@ ASFUNCTIONBODY_ATOM(Sprite,setSoundTransform)
 	th->soundtransform =  _MR(asAtomHandler::getObject(args[0])->as<SoundTransform>());
 }
 
-bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	bool ret = false;
 
 	if(dynamicDisplayList.empty())
 		return false;
+	if (!boundsrectdirty)
+	{
+		xmin = boundsrect.Xmin;
+		ymin = boundsrect.Ymin;
+		xmax = boundsrect.Xmax;
+		ymax = boundsrect.Ymax;
+		return true;
+	}
 
 	Locker l(mutexDisplayList);
 	auto it=dynamicDisplayList.begin();
@@ -1157,10 +1165,15 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 			}
 		}
 	}
+	boundsrect.Xmin=xmin;
+	boundsrect.Ymin=ymin;
+	boundsrect.Xmax=xmax;
+	boundsrect.Ymax=ymax;
+	boundsrectdirty=false;
 	return ret;
 }
 
-bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	bool ret;
 	ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax);
@@ -1206,7 +1219,7 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 		TokenContainer::requestInvalidation(q,forceTextureRefresh);
 }
 
-bool DisplayObjectContainer::renderImpl(RenderContext& ctxt) const
+bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 {
 	bool renderingfailed = false;
 	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
@@ -1259,7 +1272,7 @@ void DisplayObjectContainer::eraseRemovedLegacyChild(uint32_t name)
 	namedRemovedLegacyChildren.erase(name);
 }
 
-bool Sprite::renderImpl(RenderContext& ctxt) const
+bool Sprite::renderImpl(RenderContext& ctxt)
 {
 	if (this->graphics)
 		this->graphics->refreshTokens();
@@ -2700,7 +2713,7 @@ void DisplayObjectContainer::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObjectContainer, tabChildren)
 
-DisplayObjectContainer::DisplayObjectContainer(ASWorker* wrk, Class_base* c):InteractiveObject(wrk,c),mouseChildren(true),tabChildren(true)
+DisplayObjectContainer::DisplayObjectContainer(ASWorker* wrk, Class_base* c):InteractiveObject(wrk,c),mouseChildren(true),boundsrectdirty(true),tabChildren(true)
 {
 	subtype=SUBTYPE_DISPLAYOBJECTCONTAINER;
 }
@@ -2936,6 +2949,7 @@ bool DisplayObjectContainer::destruct()
 	prepareDestruction();
 	clearDisplayList();
 	mouseChildren = true;
+	boundsrectdirty = true;
 	tabChildren = true;
 	legacyChildrenMarkedForDeletion.clear();
 	mapDepthToLegacyChild.clear();
@@ -3723,7 +3737,7 @@ void DisplayObjectContainer::clearDisplayList()
 	}
 }
 
-bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax) const
+bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax)
 {
 	if (!this->legacy || (fromTag==nullptr))
 	{
@@ -3875,7 +3889,7 @@ IDrawable* MorphShape::invalidate(DisplayObject* target, const MATRIX& initialMa
 	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 }
 
-bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax) const
+bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax)
 {
 	if (!this->legacy || (morphshapetag==nullptr))
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
@@ -3909,7 +3923,10 @@ void MorphShape::checkRatio(uint32_t ratio, bool inskipping)
 		return;
 	currentratio = ratio;
 	if (this->morphshapetag)
+	{
 		this->morphshapetag->getTokensForRatio(tokens,ratio);
+		geometryChanged();
+	}
 	this->hasChanged = true;
 	this->setNeedsTextureRecalculation(true);
 	if (isOnStage())
@@ -4077,7 +4094,7 @@ bool Stage::renderStage3D()
 	}
 	return false;
 }
-bool Stage::renderImpl(RenderContext &ctxt) const
+bool Stage::renderImpl(RenderContext &ctxt)
 {
 	bool has3d = false;
 	for (uint32_t i = 0; i < stage3Ds->size(); i++)
@@ -4967,11 +4984,11 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li, std::istream *s
 	afterConstruction();
 }
 
-Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data) : DisplayObject(wrk,c),smoothing(false)
+Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload) : DisplayObject(wrk,c),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	bitmapData = data;
-	bitmapData->addUser(this);
+	bitmapData->addUser(this,startupload);
 	Bitmap::updatedData();
 }
 
@@ -5054,7 +5071,7 @@ void Bitmap::onPixelSnappingChanged(tiny_string snapping)
 	pixelSnapping = snapping;
 }
 
-bool Bitmap::renderImpl(RenderContext& ctxt) const
+bool Bitmap::renderImpl(RenderContext& ctxt)
 {
 	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
 	{
@@ -5089,7 +5106,7 @@ void Bitmap::updatedData()
 		requestInvalidation(getSystemState());
 	}
 }
-bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	if (bitmapData.isNull())
 		return false;
@@ -5562,7 +5579,7 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 		DisplayObjectContainer::defaultEventBehavior(e);
 }
 
-bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	bool ret = false;
 	number_t txmin,txmax,tymin,tymax;

@@ -138,9 +138,11 @@ void BitmapData::prepareShutdown()
 	pixels.reset();
 	ASObject::prepareShutdown();
 }
-void BitmapData::addUser(Bitmap* b)
+void BitmapData::addUser(Bitmap* b, bool startupload)
 {
 	users.insert(b);
+	if (!startupload)
+		return;
 	if (!pixels.isNull())
 	{
 		if (pixels->checkTexture())

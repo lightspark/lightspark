@@ -51,7 +51,7 @@ public:
 	_NR<BitmapContainer> getBitmapContainer() const { return pixels; }
 	int getWidth() const { return pixels->getWidth(); }
 	int getHeight() const { return pixels->getHeight(); }
-	void addUser(Bitmap* b);
+	void addUser(Bitmap* b, bool startupload=true);
 	void removeUser(Bitmap* b);
 	/*
 	 * Utility method to draw a DisplayObject on the surface

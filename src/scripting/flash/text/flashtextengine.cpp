@@ -930,7 +930,7 @@ void TextLine::updateSizes()
 	textHeight = h;
 }
 
-bool TextLine::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool TextLine::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	xmin=0;
 	xmax=width;
@@ -991,7 +991,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,0);
 }
 
-bool TextLine::renderImpl(RenderContext& ctxt) const
+bool TextLine::renderImpl(RenderContext& ctxt)
 {
 	return defaultRender(ctxt);
 }

@@ -215,7 +215,7 @@ Video::~Video()
 {
 }
 
-bool Video::renderImpl(RenderContext& ctxt) const
+bool Video::renderImpl(RenderContext& ctxt)
 {
 	Locker l(mutex);
 	if(skipRender())
@@ -268,7 +268,7 @@ bool Video::renderImpl(RenderContext& ctxt) const
 	return true;
 }
 
-bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	xmin=0;
 	xmax=width;

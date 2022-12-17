@@ -116,9 +116,12 @@ public:
 
 class ITextureUploadable
 {
+private:
+	bool queued;
 protected:
 	~ITextureUploadable(){}
 public:
+	ITextureUploadable():queued(false) {}
 	virtual void sizeNeeded(uint32_t& w, uint32_t& h) const=0;
 	virtual void contentScale(float& x, float& y) const {x = 1; y = 1;}
 	// Texture topleft from Shape origin
@@ -132,7 +135,12 @@ public:
 		Signal the completion of the upload to the texture
 		NOTE: fence may be called on shutdown even if the upload has not happen, so be ready for this event
 	*/
-	virtual void uploadFence()=0;
+	virtual void uploadFence()
+	{
+		queued=false;
+	}
+	void setQueued() {queued=true;}
+	bool getQueued() const { return queued;}
 };
 
 class IDrawable
@@ -519,7 +527,6 @@ public:
 	void sizeNeeded(uint32_t& w, uint32_t& h) const override { w=width; h=height;}
 	uint8_t* upload(bool refresh) override;
 	TextureChunk& getTexture() override;
-	void uploadFence() override {}
 };
 
 }

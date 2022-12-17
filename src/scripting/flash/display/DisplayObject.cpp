@@ -49,7 +49,7 @@ Vector2f DisplayObject::getXY()
 	return ret;
 }
 
-bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m) const
+bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m)
 {
 	if(!legacy && !isConstructed())
 		return false;
@@ -356,7 +356,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(wrk,args[0],th->filters);
 	th->requestInvalidation(wrk->getSystemState(),true);
 }
-bool DisplayObject::computeCacheAsBitmap() const
+bool DisplayObject::computeCacheAsBitmap()
 {
 	if (cacheAsBitmap || (!filters.isNull() && filters->size()!=0))// || blendMode==BLENDMODE_LAYER)
 	{
@@ -457,7 +457,10 @@ void DisplayObject::setMatrix(_NR<Matrix> m)
 	if (m.isNull())
 	{
 		if (!matrix.isNull())
+		{
 			mustInvalidate=true;
+			geometryChanged();
+		}
 		matrix= NullRef;
 	}
 	else
@@ -469,6 +472,7 @@ void DisplayObject::setMatrix(_NR<Matrix> m)
 		{
 			matrix->matrix=m->matrix;
 			extractValuesFromMatrix();
+			geometryChanged();
 			mustInvalidate=true;
 		}
 	}
@@ -496,6 +500,7 @@ void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 		{
 			matrix->matrix=m;
 			extractValuesFromMatrix();
+			geometryChanged();
 			afterSetLegacyMatrix();
 			mustInvalidate=true;
 		}
@@ -559,6 +564,7 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 		{
 			filters->resize(0);
 			hasChanged=true;
+			LOG(LOG_ERROR,"setFilters2:"<<this->toDebugString());
 			setNeedsTextureRecalculation();
 			requestInvalidation(getSystemState());
 		}
@@ -704,7 +710,7 @@ bool DisplayObject::skipRender() const
 	return !isMask() && !ClipDepth && (visible==false || clippedAlpha()==0.0);
 }
 
-bool DisplayObject::defaultRender(RenderContext& ctxt) const
+bool DisplayObject::defaultRender(RenderContext& ctxt)
 {
 	// TODO: use scrollRect
 	const CachedSurface& surface=ctxt.getCachedSurface(this);
@@ -974,6 +980,7 @@ void DisplayObject::setScaleX(number_t val)
 	{
 		sx=val;
 		hasChanged=true;
+		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -1005,6 +1012,7 @@ void DisplayObject::setScaleY(number_t val)
 	{
 		sy=val;
 		hasChanged=true;
+		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -1037,6 +1045,7 @@ void DisplayObject::setScaleZ(number_t val)
 	{
 		sz=val;
 		hasChanged=true;
+		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -1073,6 +1082,7 @@ void DisplayObject::setX(number_t val)
 	{
 		tx=val;
 		hasChanged=true;
+		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -1091,6 +1101,7 @@ void DisplayObject::setY(number_t val)
 	{
 		ty=val;
 		hasChanged=true;
+		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -1111,6 +1122,7 @@ void DisplayObject::setZ(number_t val)
 	{
 		tz=val;
 		hasChanged=true;
+		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
 	}
@@ -1345,6 +1357,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setRotation)
 		val = fmod(val+180.0, 360.0) - 180.0;
 		th->rotation=val;
 		th->hasChanged=true;
+		th->geometryChanged();
 		if(th->onStage)
 			th->requestInvalidation(wrk->getSystemState());
 	}
@@ -1357,6 +1370,7 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 	{
 		if (p)
 		{
+			geometryChanged();
 			getSystemState()->removeFromResetParentList(this);
 			if (p->computeCacheAsBitmap())
 			{
@@ -1367,6 +1381,7 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 		}
 		parent=p;
 		hasChanged=true;
+		geometryChanged();
 		if(onStage && !cachedAsBitmapOf && !getSystemState()->isShuttingDown())
 			requestInvalidation(getSystemState());
 	}
@@ -1438,6 +1453,16 @@ number_t DisplayObject::computeHeight()
 	bool ret=getBounds(x1,x2,y1,y2,getMatrix(false));
 
 	return (ret)?(y2-y1):0;
+}
+
+void DisplayObject::geometryChanged()
+{
+	DisplayObjectContainer* p = this->getParent();
+	while (p)
+	{
+		p->markBoundsRectDirty();
+		p=p->getParent();
+	}
 }
 
 number_t DisplayObject::computeWidth()
@@ -1649,7 +1674,7 @@ void DisplayObject::setNeedsTextureRecalculation(bool skippable)
 	cachedSurface.isChunkOwner=true;
 }
 
-void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks) const
+void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks)
 {
 	if(mask.isNull())
 		return;
@@ -1802,7 +1827,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		if (!sizeOk)
 		{
 			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getInstanceWorker(),w,h));
-			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getInstanceWorker(),data));
+			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getInstanceWorker(),data,false));
 		}
 		MATRIX m0=m;
 		m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));

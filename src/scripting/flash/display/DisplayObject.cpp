@@ -863,6 +863,8 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 		*/
 		if(onStage==true)
 		{
+			if (this->is<MovieClip>())
+				getSystemState()->stage->removeHiddenObject(this->as<MovieClip>());
 			// ensure that DisplayObject constructor is called if this was added by PlaceObjectTag
 			// so that event listeners for "addedToStage" defined in constructor are added
 			if (!this->getConstructIndicator() && this->legacy && !inskipping
@@ -883,8 +885,6 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 				this->incRef();
 				getVm(getSystemState())->prependEvent(_MR(this),e);
 			}
-			if (this->is<MovieClip>())
-				getSystemState()->stage->removeHiddenObject(this->as<MovieClip>());
 		}
 		else if(onStage==false)
 		{

@@ -1717,7 +1717,9 @@ bool MovieClip::destruct()
 
 void MovieClip::finalize()
 {
+	getSystemState()->stage->removeHiddenObject(this);
 	frames.clear();
+	getSystemState()->stage->AVM1RemoveScriptedMovieClip(this);
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())
 	{
@@ -4459,6 +4461,7 @@ void Stage::addHiddenObject(MovieClip* o)
 	auto it = hiddenobjects.find(o);
 	if (it != hiddenobjects.end())
 		return;
+	o->incRef();
 	hiddenobjects.insert(o);
 }
 
@@ -4466,7 +4469,10 @@ void Stage::removeHiddenObject(MovieClip* o)
 {
 	auto it = hiddenobjects.find(o);
 	if (it != hiddenobjects.end())
+	{
 		hiddenobjects.erase(it);
+		o->decRef();
+	}
 }
 
 
@@ -4524,8 +4530,9 @@ void Stage::AVM1AddSkipEventsClip(MovieClip* clip)
 void Stage::advanceFrame()
 {
 	DisplayObjectContainer::advanceFrame();
-	auto it = hiddenobjects.begin();
-	while (it != hiddenobjects.end())
+	unordered_set<MovieClip*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
+	auto it = tmp.begin();
+	while (it != tmp.end())
 	{
 		(*it)->advanceFrame();
 		it++;
@@ -4583,8 +4590,9 @@ void Stage::advanceFrame()
 void Stage::initFrame()
 {
 	DisplayObjectContainer::initFrame();
-	auto it = hiddenobjects.begin();
-	while (it != hiddenobjects.end())
+	unordered_set<MovieClip*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
+	auto it = tmp.begin();
+	while (it != tmp.end())
 	{
 		(*it)->initFrame();
 		it++;
@@ -4594,8 +4602,9 @@ void Stage::initFrame()
 void Stage::executeFrameScript()
 {
 	DisplayObjectContainer::executeFrameScript();
-	auto it = hiddenobjects.begin();
-	while (it != hiddenobjects.end())
+	unordered_set<MovieClip*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
+	auto it = tmp.begin();
+	while (it != tmp.end())
 	{
 		(*it)->executeFrameScript();
 		it++;

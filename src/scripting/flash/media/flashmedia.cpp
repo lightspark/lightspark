@@ -1144,6 +1144,8 @@ void SoundChannel::playStream()
 	try
 	{
 #ifdef ENABLE_LIBAVCODEC
+		if(threadAborting)
+			throw JobTerminationException();
 		streamDecoder=new FFMpegStreamDecoder(nullptr,this->getSystemState()->getEngineData(),s,buffertimeseconds,&format,stream->hasTerminated() && !forstreaming ? stream->getReceivedLength() : -1);
 		if(!streamDecoder->isValid())
 		{

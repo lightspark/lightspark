@@ -981,6 +981,7 @@ FFMpegAudioDecoder::~FFMpegAudioDecoder()
 	if (resamplecontext)
 		avresample_free(&resamplecontext);
 #endif
+	resamplecontext=nullptr;
 }
 
 CodecID FFMpegAudioDecoder::LSToFFMpegCodec(LS_AUDIO_CODEC LSCodec)
@@ -1413,6 +1414,8 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 #else
 	AVInputFormat* fmt = nullptr;
 #endif
+	const AVCodec* codec=nullptr;
+	
 	if (format)
 	{
 		switch (format->codec)
@@ -1441,13 +1444,16 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 #endif
 				break;
 			case LS_AUDIO_CODEC::ADPCM:
-				LOG(LOG_NOT_IMPLEMENTED,"audio codec unknown for type "<<(int)format->codec<<", using ffmpeg autodetection");
+				fmt = av_find_input_format("s16le");
+				codec = avcodec_find_decoder(CODEC_ID_ADPCM_SWF);
+				if (!codec)
+					LOG(LOG_NOT_IMPLEMENTED,"audio codec unknown for type "<<(int)format->codec<<", using ffmpeg autodetection");
 				break;
 			case LS_AUDIO_CODEC::CODEC_NONE:
 				break;
 		}
 	}
-	if (fmt == nullptr)
+	if (fmt == nullptr && codec == nullptr)
 	{
 		//Probe the stream format.
 		//NOTE: in FFMpeg 0.7 there is av_probe_input_buffer
@@ -1475,6 +1481,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 #ifdef HAVE_AVIO_ALLOC_CONTEXT
 	formatCtx=avformat_alloc_context();
 	formatCtx->pb = avioContext;
+	formatCtx->audio_codec = codec;
 	int ret=avformat_open_input(&formatCtx, "lightspark_stream", fmt, nullptr);
 #else
 	int ret=av_open_input_stream(&formatCtx, avioContext, "lightspark_stream", fmt, nullptr);

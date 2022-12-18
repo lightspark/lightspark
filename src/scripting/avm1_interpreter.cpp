@@ -1600,8 +1600,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						if (asAtomHandler::is<AVM1Function>(value))
 						{
 							AVM1Function* f = asAtomHandler::as<AVM1Function>(value);
-							if (f->getClip() != o)
-								f->resetClipRefcounted();
 							if (f->needsSuper())
 							{
 								asAtom a =asAtomHandler::as<AVM1Function>(value)->getSuper();

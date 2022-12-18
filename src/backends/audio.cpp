@@ -216,13 +216,6 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 
 AudioManager::~AudioManager()
 {
-	Locker l(streamMutex);
-	auto it = streams.begin();
-	while (it != streams.end())
-	{
-		delete *it;
-		it++;
-	}
 	if (mixeropened)
 	{
 		engineData->audio_ManagerCloseMixer();

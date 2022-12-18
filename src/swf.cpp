@@ -554,6 +554,8 @@ _NR<ASObject> SystemState::getParameters() const
 
 void SystemState::stopEngines()
 {
+	if (audioManager)
+		audioManager->stopAllSounds();
 	if(downloadThreadPool)
 		downloadThreadPool->forceStop();
 	if(threadPool)
@@ -658,6 +660,7 @@ SystemState::~SystemState()
 	// finalize main worker
 	worker->finalize();
 	delete worker;
+	delete stage;
 	delete[] builtinClasses;
 	builtinClasses=nullptr;
 #ifndef NDEBUG

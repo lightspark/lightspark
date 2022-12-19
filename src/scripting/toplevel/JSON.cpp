@@ -52,7 +52,7 @@ ASFUNCTIONBODY_ATOM(JSON,generator)
 bool JSON::doParse(asAtom& res, const tiny_string &jsonstring, asAtom reviver, ASWorker* wrk)
 {
 	multiname dummy(nullptr);
-	
+	res = asAtomHandler::invalidAtom;
 	return parseAll(jsonstring,res,dummy,reviver,wrk);
 }
 

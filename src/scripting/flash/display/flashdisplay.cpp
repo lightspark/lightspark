@@ -1303,32 +1303,35 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, D
 		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
 		ret=(*j)->hitTest(localX,localY,type,interactiveObjectsOnly);
 		
-		if (!ret.isNull() && interactiveObjectsOnly)
+		if (!ret.isNull())
 		{
-			if (!mouseChildren) // When mouseChildren is false, we should get all events of our children
+			if (interactiveObjectsOnly)
 			{
-				this->incRef();
-				ret =_MNR(this);
-			}
-			else
-			{
-				if (mouseEnabled)
+				if (!mouseChildren) // When mouseChildren is false, we should get all events of our children
 				{
-					if (!ret->is<InteractiveObject>())
+					this->incRef();
+					ret =_MNR(this);
+				}
+				else
+				{
+					if (mouseEnabled)
 					{
-						// we have hit a non-interactive object, so "this" may be the hit target
-						// but we continue to search the children as there may be an InteractiveObject that is also hit
-						hit_this=true;
-						ret.reset();
-						continue;
-					}
-					else if (!ret->as<InteractiveObject>()->isHittable(type))
-					{
-						// hit is a disabled InteractiveObject, so so "this" may be the hit target
-						// but we continue to search the children as there may be an enabled InteractiveObject that is also hit
-						hit_this=true;
-						ret.reset();
-						continue;
+						if (!ret->is<InteractiveObject>())
+						{
+							// we have hit a non-interactive object, so "this" may be the hit target
+							// but we continue to search the children as there may be an InteractiveObject that is also hit
+							hit_this=true;
+							ret.reset();
+							continue;
+						}
+						else if (!ret->as<InteractiveObject>()->isHittable(type))
+						{
+							// hit is a disabled InteractiveObject, so so "this" may be the hit target
+							// but we continue to search the children as there may be an enabled InteractiveObject that is also hit
+							hit_this=true;
+							ret.reset();
+							continue;
+						}
 					}
 				}
 			}

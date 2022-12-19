@@ -1478,13 +1478,14 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 		fmt=av_probe_input_format(&probeData,1);
 		delete[] probeData.buf;
 	}
-	if(fmt==nullptr)
+	if (fmt == nullptr && codec == nullptr)
 		return;
 
 #ifdef HAVE_AVIO_ALLOC_CONTEXT
 	formatCtx=avformat_alloc_context();
 	formatCtx->pb = avioContext;
-	formatCtx->audio_codec = codec;
+	if (codec)
+		formatCtx->audio_codec = codec;
 	int ret=avformat_open_input(&formatCtx, "lightspark_stream", fmt, nullptr);
 #else
 	int ret=av_open_input_stream(&formatCtx, avioContext, "lightspark_stream", fmt, nullptr);

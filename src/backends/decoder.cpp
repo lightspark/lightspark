@@ -1414,8 +1414,11 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 #else
 	AVInputFormat* fmt = nullptr;
 #endif
+#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(59, 0, 100)
 	const AVCodec* codec=nullptr;
-	
+#else
+	AVCodec* codec=nullptr;
+#endif
 	if (format)
 	{
 		switch (format->codec)

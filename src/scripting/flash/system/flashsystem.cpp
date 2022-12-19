@@ -995,7 +995,7 @@ void ASWorker::finalize()
 	while (it != tmp.end())
 	{
 		ASObject* o = (*it);
-		if (o->is<ASWorker>())
+		if (o->is<ASWorker>() || o == getSystemState()->stage)
 		{
 			it++;
 			continue;

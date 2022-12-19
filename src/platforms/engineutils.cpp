@@ -144,7 +144,11 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 					{
 						//Signal the renderThread
 						if (sys && sys->getRenderThread())
+						{
 							sys->getRenderThread()->draw(true);
+							// it seems that sometimes the systemstate thread stops ticking when in background, this ensures it starts ticking again...
+							sys->sendMainSignal();
+						}
 						break;
 					}
 					case SDL_WINDOWEVENT_FOCUS_LOST:
@@ -190,6 +194,8 @@ static int mainloop_runner(void*)
 			else
 				sdl_available = !SDL_Init ( SDL_INIT_VIDEO );
 			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8); // needed for nanovg
+			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);// needed for nanovg
+			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);// needed for nanovg
 #ifdef ENABLE_GLES2
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
@@ -365,9 +371,9 @@ void EngineData::initGLEW()
 	supportPackedDepthStencil = GLEW_EXT_packed_depth_stencil;
 #endif
 #ifdef ENABLE_GLES2
-	nvgcontext=nvgCreateGLES2(3);
+	nvgcontext=nvgCreateGLES2(0);
 #else
-	nvgcontext=nvgCreateGL2(3);
+	nvgcontext=nvgCreateGL2(0);
 #endif
 	if (nvgcontext == nullptr)
 		LOG(LOG_ERROR,"couldn't initialize nanovg");

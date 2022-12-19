@@ -197,7 +197,7 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 	}
 	if (strokeShapesMap.size() > 0)
 	{
-		tokens.filltokens.push_back(GeomToken(CLEAR_FILL).uval);
+		tokens.stroketokens.push_back(GeomToken(CLEAR_FILL).uval);
 		it=strokeShapesMap.begin();
 		//For each stroke
 		for(;it!=strokeShapesMap.end();++it)

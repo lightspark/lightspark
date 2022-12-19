@@ -6486,14 +6486,15 @@ void MovieClip::advanceFrame()
 	}
 	state.frameadvanced=false;
 	state.creatingframe=true;
-	if (frameScriptToExecute != UINT32_MAX &&
-			(this->state.FP!=0 || state.FP != state.next_FP)) // don't execute framescript if this is a MovieClip that's advancing for the first time after construction
-	{
-		// an ExecuteFrameScriptEvent was not handled yet, so we execute the script before advancing to next frame
-		// this can happen if a MovieClip was constructed and has been set explicitely to another frame (by gotoAndStop etc.)
-		// before returning to the event loop
-		executeFrameScript();
-	}
+	// this seems to cause more problems than it fixes, so I deactivate executing framescripts without an event for now
+//	if (frameScriptToExecute != UINT32_MAX && 
+//			(this->state.FP!=0 || state.FP != state.next_FP)) // don't execute framescript if this is a MovieClip that's advancing for the first time after construction
+//	{
+//		// an ExecuteFrameScriptEvent was not handled yet, so we execute the script before advancing to next frame
+//		// this can happen if a MovieClip was constructed and has been set explicitely to another frame (by gotoAndStop etc.)
+//		// before returning to the event loop
+//		executeFrameScript();
+//	}
 	/* A MovieClip can only have frames if
 	 * 1a. It is a RootMovieClip
 	 * 1b. or it is a DefineSpriteTag

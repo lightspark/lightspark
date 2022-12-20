@@ -267,6 +267,7 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 				case RADIAL_GRADIENT:
 				case FOCAL_RADIAL_GRADIENT:
 				{
+					tokens.canRenderToGL=false;//  TODO fillstyles other than solid fill not yet implemented for nanoGL
 					number_t gradratio = float(ratio)/65535.0;
 					MATRIX ratiomatrix;
 
@@ -396,6 +397,7 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 				uint8_t compratio = ratio>>8;
 				if (stylesIt->HasFillFlag)
 				{
+					tokens.canRenderToGL=false;// TODO linestyles with fill flag not yet implemented for nanoGL
 					switch (stylesIt->FillType.FillStyleType)
 					{
 						case LINEAR_GRADIENT:

@@ -152,6 +152,7 @@ public:
 		setParent(nullptr);
 		removeAVM1Listeners();
 	}
+	void applyFilters(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos,number_t scalex,number_t scaley);
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);

@@ -173,6 +173,17 @@ bool BitmapContainer::fromPalette(uint8_t* inData, uint32_t w, uint32_t h, uint3
 	return fromRGB(rgb, (int32_t)w, (int32_t)h, paletteBPP == 4 ? ARGB32 : RGB24);
 }
 
+void BitmapContainer::fromRawData(uint8_t* data, uint32_t width, uint32_t height)
+{
+	this->stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	this->width=width;
+	this->height=height;
+	uint32_t dataSize = stride * height;
+	this->data.resize(dataSize);
+	memcpy(this->data.data(),data,dataSize);
+	
+}
+
 void BitmapContainer::clear()
 {
 	data.clear();

@@ -361,11 +361,7 @@ bool DisplayObject::computeCacheAsBitmap()
 	if (cacheAsBitmap || (!filters.isNull() && filters->size()!=0))// || blendMode==BLENDMODE_LAYER)
 	{
 		number_t bxmin,bxmax,bymin,bymax;
-		if(!boundsRect(bxmin,bxmax,bymin,bymax))
-		{
-			//No contents, nothing to do
-			return false;
-		}
+		boundsRect(bxmin,bxmax,bymin,bymax);
 		// check if size of resulting bitmap is too large (see Adobe reference for DisplayObject.cacheAsBitmap)
 		uint32_t w=(ceil(bxmax-bxmin));
 		uint32_t h=(ceil(bymax-bymin));
@@ -1651,7 +1647,21 @@ void DisplayObject::afterConstruction()
 //	hasChanged=true;
 //	needsTextureRecalculation=true;
 //	if(onStage)
-//		requestInvalidation(getSystemState());
+	//		requestInvalidation(getSystemState());
+}
+
+void DisplayObject::applyFilters(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
+{
+	if (filters)
+	{
+		for (uint32_t i = 0; i < filters->size(); i++)
+		{
+			asAtom f = asAtomHandler::invalidAtom;
+			filters->at_nocheck(f,i);
+			if (asAtomHandler::is<BitmapFilter>(f))
+				asAtomHandler::as<BitmapFilter>(f)->applyFilter(target, source, sourceRect, xpos, ypos, scalex, scaley);
+		}
+	}
 }
 
 void DisplayObject::invalidateCachedAsBitmapOf()
@@ -1839,16 +1849,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		m0.scale(scalex, scaley);
 		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,true,true);
 		cachedBitmap->blendMode=this->blendMode;
-		if (filters)
-		{
-			for (uint32_t i = 0; i < filters->size(); i++)
-			{
-				asAtom f = asAtomHandler::invalidAtom;
-				filters->at_nocheck(f,i);
-				if (asAtomHandler::is<BitmapFilter>(f))
-					asAtomHandler::as<BitmapFilter>(f)->applyFilter(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0, scalex, scaley);
-			}
-		}
+		applyFilters(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0, scalex, scaley);
 		// apply colortransform for cached bitmap after the filters are applied
 		ColorTransform* ct = colorTransform.getPtr();
 		if (ct)

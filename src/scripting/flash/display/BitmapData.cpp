@@ -265,6 +265,13 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		bool isBufferOwner=true;
 		uint32_t bufsize=0;
 		uint8_t* buf=drawable->getPixelBuffer(&isBufferOwner,&bufsize);
+		if (!forCachedBitmap && !target->filters.isNull())
+		{
+			BitmapContainer bc(nullptr);
+			bc.fromRawData(buf,drawable->getWidth(),drawable->getHeight());
+			target->applyFilters(&bc,nullptr,RECT(0,bc.getWidth(),0,bc.getHeight()),0,0, drawable->getXScale(), drawable->getYScale());
+			memcpy(buf,bc.getData(),bufsize);
+		}
 		ColorTransform* ct = target->colorTransform.getPtr();
 		DisplayObjectContainer* p = target->getParent();
 		while (!ct && p && p!= d)

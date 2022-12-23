@@ -33,7 +33,7 @@ using namespace lightspark;
 using namespace std;
 
 
-TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o), scaling(1.0f),renderWithNanoVG(false)
+TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o), scaling(1.0f/20.0f),renderWithNanoVG(false)
 {
 }
 

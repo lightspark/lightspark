@@ -371,7 +371,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
-		d->DrawToBitmap(th,initialMatrix,smoothing,false);
+		d->DrawToBitmap(th,initialMatrix,true,false);
 		if (ctransform)
 			ctransform->applyTransformation(th->pixels->getData(),th->getBitmapContainer()->getWidth()*th->getBitmapContainer()->getHeight()*4);
 	}

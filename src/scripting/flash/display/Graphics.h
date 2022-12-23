@@ -43,7 +43,6 @@ private:
 	// we use two lists of styles as the previous styles may still be used after calling clear()
 	std::list<FILLSTYLE> fillStyles[2];
 	std::list<LINESTYLE2> lineStyles[2];
-	void checkAndSetScaling();
 	static void solveVertexMapping(double x1, double y1,
 				       double x2, double y2,
 				       double x3, double y3,

@@ -285,7 +285,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	{
 		cairo_matrix_t mat;
 		cairo_get_matrix(cr,&mat);
-		cairo_matrix_translate(&mat,-xstart,-ystart);
+		cairo_matrix_translate(&mat,-xstart/scaleCorrection,-ystart/scaleCorrection);
 		cairo_set_matrix(cr, &mat);
 	}
 	// Make sure not to draw anything until a fill is set.
@@ -473,12 +473,10 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						cairo_device_to_user_distance(cr,&linewidth,&linewidth);
 						cairo_set_line_width(cr, linewidth);
 					}
-					else if (style->Width < 20) // would result in line with < 1 what seems to lead to no rendering at all
-						cairo_set_line_width(cr, 5);
 					else 
 					{
-						double linewidth = (double)(style->Width / 20.0 / scaleCorrection);
-						//cairo_device_to_user_distance(stroke_cr, &linewidth, &linewidth);
+						double linewidth = (double)(style->Width) * scaleCorrection;
+						cairo_device_to_user_distance(cr,&linewidth,&linewidth);
 						cairo_set_line_width(cr, linewidth);
 					}
 					break;

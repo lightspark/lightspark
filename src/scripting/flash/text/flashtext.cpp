@@ -127,7 +127,7 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 TextField::TextField(ASWorker* wrk, Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname, DefineEditTextTag *_tag)
 	: InteractiveObject(wrk,c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname),tag(_tag),originalXPosition(0),originalWidth(textData.width),
+	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname,true),tagvartarget(nullptr),tag(_tag),originalXPosition(0),originalWidth(textData.width),
 	  fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),linemutex(new Mutex()),
 	  alwaysShowSelection(false),
 	  condenseWhite(false),
@@ -1371,23 +1371,18 @@ void TextField::avm1SyncTagVar()
 	if (!tagvarname.empty()
 		&& tagvarname != "_url") // "_url" is readonly and always read from root movie, no need to update
 	{
-		DisplayObject* par = getParent();
-		while (par)
+		if (tagvartarget)
 		{
-			if (par->is<MovieClip>())
-			{
-				asAtom value=asAtomHandler::invalidAtom;
-				number_t n;
-				if (Integer::fromStringFlashCompatible(getText().raw_buf(),n,10,true))
-					value = asAtomHandler::fromNumber(getInstanceWorker(),n,false);
-				else
-					value = asAtomHandler::fromString(getSystemState(),getText());
-				ASATOM_INCREF(value); // ensure that value is not destructed during AVM1SetVariable
-				par->as<MovieClip>()->AVM1SetVariable(tagvarname,value);
-				ASATOM_DECREF(value);
-				break;
-			}
-			par = par->getParent();
+			LOG(LOG_ERROR,"synctagvar:"<<tagvarname<<" "<<tagvartarget);
+			asAtom value=asAtomHandler::invalidAtom;
+			number_t n;
+			if (Integer::fromStringFlashCompatible(getText().raw_buf(),n,10,true))
+				value = asAtomHandler::fromNumber(getInstanceWorker(),n,false);
+			else
+				value = asAtomHandler::fromString(getSystemState(),getText());
+			ASATOM_INCREF(value); // ensure that value is not destructed during AVM1SetVariable
+			tagvartarget->as<MovieClip>()->AVM1SetVariable(tagvarname,value);
+			ASATOM_DECREF(value);
 		}
 	}
 }
@@ -1401,13 +1396,20 @@ void TextField::afterLegacyInsert()
 {
 	if (!tagvarname.empty())
 	{
-		DisplayObject* par = getParent();
-		while (par)
+		tagvartarget = getParent();
+		uint32_t finddot = tagvarname.rfind(".");
+		if (finddot != tiny_string::npos)
 		{
-			if (par->is<MovieClip>())
+			tiny_string path = tagvarname.substr(0,finddot);
+			tagvartarget = AVM1GetClipFromPath(path);
+			tagvarname = tagvarname.substr(finddot+1,tagvarname.numChars()-(finddot+1));
+		}
+		while (tagvartarget)
+		{
+			if (tagvartarget->is<MovieClip>())
 			{
-				par->as<MovieClip>()->setVariableBinding(tagvarname,_MR(this));
-				asAtom value = par->as<MovieClip>()->getVariableBindingValue(tagvarname);
+				tagvartarget->as<MovieClip>()->setVariableBinding(tagvarname,_MR(this));
+				asAtom value = tagvartarget->as<MovieClip>()->getVariableBindingValue(tagvarname);
 				if (asAtomHandler::isValid(value) && !asAtomHandler::isUndefined(value))
 				{
 					linemutex->lock();
@@ -1417,7 +1419,7 @@ void TextField::afterLegacyInsert()
 				ASATOM_DECREF(value);
 				break;
 			}
-			par = par->getParent();
+			tagvartarget = tagvartarget->getParent();
 		}
 	}
 	avm1SyncTagVar();
@@ -1429,15 +1431,10 @@ void TextField::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping
 {
 	if (!tagvarname.empty() && !inskipping)
 	{
-		while (parent)
+		if (tagvartarget)
 		{
-			if (parent->is<MovieClip>())
-			{
-				parent->as<MovieClip>()->AVM1SetVariable(tagvarname,asAtomHandler::undefinedAtom);
-				parent->as<MovieClip>()->setVariableBinding(tagvarname,NullRef);
-				break;
-			}
-			parent = parent->getParent();
+			tagvartarget->as<MovieClip>()->AVM1SetVariable(tagvarname,asAtomHandler::undefinedAtom);
+			tagvartarget->as<MovieClip>()->setVariableBinding(tagvarname,NullRef);
 		}
 	}
 }

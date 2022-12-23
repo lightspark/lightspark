@@ -122,6 +122,7 @@ private:
 	_NR<ASString> restrictChars;
 	number_t autosizeposition;
 	tiny_string tagvarname;
+	DisplayObject* tagvartarget;
 	Mutex invalidatemutex;
 	DefineEditTextTag* tag;
 	int32_t originalXPosition;

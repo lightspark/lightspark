@@ -1958,7 +1958,7 @@ void MovieClip::currentFrameChanged(bool newframe)
 {
 	if (!needsActionScript3())
 	{
-		if (newframe && (this == getInstanceWorker()->rootClip.getPtr() || state.creatingframe))
+		if (state.stop_FP && newframe && (this == getInstanceWorker()->rootClip.getPtr() || state.creatingframe))
 			advanceFrame();
 		return;
 	}
@@ -4588,6 +4588,17 @@ void Stage::advanceFrame()
 			(*it)->AVM1ExecuteFrameActions((*it)->state.FP);
 		}
 		avm1skipeventslist.clear();
+		
+		// reset all explicit flags
+		avm1ScriptMutex.lock();
+		clip = avm1ScriptMovieClipFirst;
+		while (clip)
+		{
+			clip->state.explicit_play=false;
+			clip->state.explicit_FP=false;
+			clip = clip->avm1NextScriptedClip;
+		}
+		avm1ScriptMutex.unlock();
 	}
 }
 void Stage::initFrame()

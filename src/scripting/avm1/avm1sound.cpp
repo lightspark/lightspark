@@ -106,7 +106,11 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getPan)
 {
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	if (th->soundChannel)
+	{
+		if (!th->soundChannel->soundTransform)
+			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
 		asAtomHandler::setNumber(ret,wrk,th->soundChannel->soundTransform->pan*100);
+	}
 	else
 		asAtomHandler::setInt(ret,wrk,0);
 }
@@ -116,7 +120,11 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setPan)
 	number_t pan;
 	ARG_CHECK(ARG_UNPACK(pan));
 	if (th->soundChannel)
+	{
+		if (!th->soundChannel->soundTransform)
+			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
 		th->soundChannel->soundTransform->pan = pan/100.0;
+	}
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,stop)
 {

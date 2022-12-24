@@ -326,8 +326,9 @@ public:
 	void exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR() override;
 	void exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels) override;
 	void exec_glScissor(int32_t x, int32_t y, int32_t width, int32_t height) override;
-	void exec_glDisable_GL_SCISSOR_TEST();
+	void exec_glDisable_GL_SCISSOR_TEST() override;
 	void exec_glColorMask(bool red, bool green, bool blue, bool alpha) override;
+	void exec_glStencilFunc_GL_ALWAYS() override;
 
 	// Audio handling
 	int audio_StreamInit(AudioStream* s) override;

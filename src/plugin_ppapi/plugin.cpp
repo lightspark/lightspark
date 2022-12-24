@@ -2608,6 +2608,11 @@ void ppPluginEngineData::exec_glColorMask(bool red, bool green, bool blue, bool 
 	g_gles2_interface->ColorMask(instance->m_graphics,red,green,blue,alpha);
 }
 
+void ppPluginEngineData::exec_glStencilFunc_GL_ALWAYS()
+{
+	g_gles2_interface->StencilFunc(instance->m_graphics,GL_ALWAYS, 0, 0xff);
+}
+
 void audio_callback(void* sample_buffer,uint32_t buffer_size_in_bytes,PP_TimeDelta latency,void* user_data)
 {
 	AudioStream *s = (AudioStream*)user_data;

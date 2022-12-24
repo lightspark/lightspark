@@ -1405,6 +1405,11 @@ void EngineData::exec_glColorMask(bool red, bool green, bool blue, bool alpha)
 	glColorMask(red,green,blue,alpha);
 }
 
+void EngineData::exec_glStencilFunc_GL_ALWAYS()
+{
+	glStencilFunc(GL_ALWAYS, 0, 0xff);
+}
+
 
 void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)
 {

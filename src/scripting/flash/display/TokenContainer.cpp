@@ -249,6 +249,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			}
 			nvgClosePath(nvgctxt);
 			nvgEndFrame(nvgctxt);
+			owner->getSystemState()->getEngineData()->exec_glStencilFunc_GL_ALWAYS();
 			owner->getSystemState()->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(0);
 			owner->getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 			owner->getSystemState()->getEngineData()->exec_glUseProgram(((RenderThread&)ctxt).gpu_program);

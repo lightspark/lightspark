@@ -2035,7 +2035,7 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 		gcstate.incCount(this);
 		ret = true;
 	}
-	else if (!getConstant() && !getInDestruction() && canHaveCyclicMemberReference() && !markedforgarbagecollection && !getInstanceWorker()->isDeletedInGarbageCollection(this))
+	else if (!getConstant() && !getInDestruction() && canHaveCyclicMemberReference() && !markedforgarbagecollection && (!getInstanceWorker() || !getInstanceWorker()->isDeletedInGarbageCollection(this)))
 	{
 		if (gcstate.ancestors.find(this)==gcstate.ancestors.end())
 		{

@@ -1437,10 +1437,6 @@ void TextField::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping
 	{
 		if (tagvartarget)
 		{
-			if (getTagID()==7558)
-			{
-				int x=0;
-			}
 			tagvartarget->as<MovieClip>()->setVariableBinding(tagvarname,NullRef);
 		}
 	}

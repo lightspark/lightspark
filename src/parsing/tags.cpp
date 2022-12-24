@@ -1661,6 +1661,7 @@ void DefineMorphShapeTag::getTokensForRatio(tokensVector& tokens, uint32_t ratio
 	}
 	tokens.filltokens.assign(it->second.filltokens.begin(),it->second.filltokens.end());
 	tokens.stroketokens.assign(it->second.stroketokens.begin(),it->second.stroketokens.end());
+	tokens.canRenderToGL=it->second.canRenderToGL;
 }
 
 DefineMorphShape2Tag::DefineMorphShape2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DefineMorphShapeTag(h, root, 2)

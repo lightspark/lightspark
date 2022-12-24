@@ -2405,9 +2405,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	{
 		ASObject* o = asAtomHandler::getObject(args[3]);
 		if (o)
-		{
 			o->copyValues(toAdd,wrk);
-		}
 	}
 	if (toAdd->is<MovieClip>())
 	{
@@ -2438,6 +2436,13 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	toAdd->setConstructIndicator();
 	toAdd->constructionComplete();
 	toAdd->afterConstruction();
+	if (argslen == 4)
+	{
+		// update all bindings _after_ the clip is constructed
+		ASObject* o = asAtomHandler::getObject(args[3]);
+		if (o)
+			o->AVM1UpdateAllBindings(toAdd,wrk);
+	}
 	ret=asAtomHandler::fromObjectNoPrimitive(toAdd);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)

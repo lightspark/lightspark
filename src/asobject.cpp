@@ -2228,6 +2228,20 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	return result;
 }
 
+void ASObject::AVM1UpdateAllBindings(DisplayObject* target, ASWorker* wrk)
+{
+	auto it = Variables.Variables.begin();
+	while (it != Variables.Variables.end())
+	{
+		if (it->second.kind == DYNAMIC_TRAIT || it->second.kind == CONSTANT_TRAIT)
+		{
+			asAtom v=it->second.var;
+			target->AVM1UpdateVariableBindings(it->first,v);
+		}
+		it++;
+	}
+}
+
 void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 {
 	auto it = Variables.Variables.begin();
@@ -2259,11 +2273,6 @@ void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 		it++;
 	}
 }
-
-
-
-
-
 
 uint32_t variables_map::findInstanceSlotByMultiname(multiname* name,SystemState* sys)
 {

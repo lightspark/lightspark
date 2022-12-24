@@ -259,6 +259,7 @@ public:
 	int getId() const override { return CharacterID; }
 	ASObject* instance(Class_base* c=nullptr) override;
 	MATRIX MapToBounds(const MATRIX& mat) override;
+	bool isHTML() const { return HTML; }
 };
 
 class MemoryStreamCache;

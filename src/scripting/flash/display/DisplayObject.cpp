@@ -2486,6 +2486,10 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 	{
 		return loadedFrom;
 	}
+	if (path =="_parent")
+	{
+		return getParent();
+	}
 	if (path.startsWith("/"))
 	{
 		tiny_string newpath = path.substr_bytes(1,path.numBytes()-1);
@@ -2754,15 +2758,8 @@ void DisplayObject::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj
 	else
 	{
 		auto it = variablebindings.find(key);
-		while (it != variablebindings.end() && it->first == key)
-		{
-			if (it->second == obj)
-			{
-				variablebindings.erase(it);
-				break;
-			}
-			it++;
-		}
+		if (it != variablebindings.end() && it->first == key)
+			variablebindings.erase(it);
 	}
 }
 void DisplayObject::AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj)

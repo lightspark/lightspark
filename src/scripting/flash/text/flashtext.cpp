@@ -1302,6 +1302,7 @@ tiny_string TextField::toHtmlText()
 
 void TextField::setHtmlText(const tiny_string& html)
 {
+	tiny_string oldtext = this->getText();
 	linemutex->lock();
 	HtmlTextParser parser;
 	if (condenseWhite)
@@ -1314,7 +1315,7 @@ void TextField::setHtmlText(const tiny_string& html)
 		parser.parseTextAndFormating(html, this);
 	}
 	linemutex->unlock();
-	if (this->isConstructed())
+	if (this->isConstructed() && oldtext != this->getText())
 	{
 		hasChanged=true;
 		setNeedsTextureRecalculation();
@@ -1373,7 +1374,6 @@ void TextField::avm1SyncTagVar()
 	{
 		if (tagvartarget)
 		{
-			LOG(LOG_ERROR,"synctagvar:"<<tagvarname<<" "<<tagvartarget);
 			asAtom value=asAtomHandler::invalidAtom;
 			number_t n;
 			if (Integer::fromStringFlashCompatible(getText().raw_buf(),n,10,true))
@@ -1389,7 +1389,11 @@ void TextField::avm1SyncTagVar()
 
 void TextField::UpdateVariableBinding(asAtom v)
 {
-	updateText(asAtomHandler::toString(v,getInstanceWorker()));
+	tiny_string s = asAtomHandler::toString(v,getInstanceWorker());
+	if (tag->isHTML())
+		setHtmlText(s);
+	else
+		updateText(s);
 }
 
 void TextField::afterLegacyInsert()
@@ -1401,7 +1405,7 @@ void TextField::afterLegacyInsert()
 		if (finddot != tiny_string::npos)
 		{
 			tiny_string path = tagvarname.substr(0,finddot);
-			tagvartarget = AVM1GetClipFromPath(path);
+			tagvartarget = tagvartarget->AVM1GetClipFromPath(path);
 			tagvarname = tagvarname.substr(finddot+1,tagvarname.numChars()-(finddot+1));
 		}
 		while (tagvartarget)
@@ -1433,7 +1437,10 @@ void TextField::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping
 	{
 		if (tagvartarget)
 		{
-			tagvartarget->as<MovieClip>()->AVM1SetVariable(tagvarname,asAtomHandler::undefinedAtom);
+			if (getTagID()==7558)
+			{
+				int x=0;
+			}
 			tagvartarget->as<MovieClip>()->setVariableBinding(tagvarname,NullRef);
 		}
 	}

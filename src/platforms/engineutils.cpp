@@ -172,12 +172,9 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 	}
 	return false;
 }
-
-/* main loop handling */
-static int mainloop_runner(void*)
+bool initSDL()
 {
 	bool sdl_available = !EngineData::sdl_needinit;
-	
 	if (EngineData::sdl_needinit)
 	{
 		if (!EngineData::enablerendering)
@@ -203,7 +200,12 @@ static int mainloop_runner(void*)
 #endif
 		}
 	}
-	if (!sdl_available)
+	return sdl_available;
+}
+/* main loop handling */
+static int mainloop_runner(void*)
+{
+	if (!initSDL())
 	{
 		LOG(LOG_ERROR,"Unable to initialize SDL:"<<SDL_GetError());
 		EngineData::mainthread_initialized.signal();
@@ -229,6 +231,8 @@ static int mainloop_runner(void*)
 }
 void EngineData::mainloop_from_plugin(SystemState* sys)
 {
+	initSDL();
+	EngineData::sdl_needinit = false;
 	SDL_Event event;
 	setTLSSys(sys);
 	while (SDL_PollEvent(&event))

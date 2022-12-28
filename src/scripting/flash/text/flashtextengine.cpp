@@ -34,10 +34,12 @@ void ContentElement::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED);
 	REGISTER_GETTER(c,rawText);
 	REGISTER_GETTER_SETTER(c,elementFormat);
+	REGISTER_GETTER_RESULTTYPE(c,groupElement,GroupElement);
 	c->setVariableAtomByQName("GRAPHIC_ELEMENT",nsNameAndKind(),asAtomHandler::fromUInt(0xFDEF),CONSTANT_TRAIT);
 }
 ASFUNCTIONBODY_GETTER_SETTER(ContentElement,elementFormat)
 ASFUNCTIONBODY_GETTER(ContentElement,rawText)
+ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(ContentElement,groupElement)
 
 ElementFormat::ElementFormat(ASWorker* wrk, Class_base *c): ASObject(wrk,c,T_OBJECT,SUBTYPE_ELEMENTFORMAT),
 	alignmentBaseline("useDominantBaseline"),
@@ -646,33 +648,23 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	textLine->updateSizes();
 	if (textLine->width > textLine->textWidth)
 	{
-		textLine->decRef();
-		th->decRef();
 		asAtomHandler::setNull(ret);
 		return;
 	}
 	if (previousLine.isNull())
 	{
-		textLine->incRef();
 		th->firstLine = textLine;
 		if (th->lastLine.isNull())
-		{
-			textLine->incRef();
 			th->lastLine = textLine;
-		}
 	}
 	else
 	{
 		if (th->lastLine == previousLine)
-		{
-			th->lastLine->decRef();
-			textLine->incRef();
 			th->lastLine = textLine;
-		}
-		textLine->incRef();
 		previousLine->nextLine = textLine;
 	}
 	
+	textLine->incRef();
 	ret = asAtomHandler::fromObject(textLine.getPtr());
 }
 ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
@@ -704,13 +696,17 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 
 	if (textLine.isNull())
 	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError,"Invalid argument: textLine");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"textLine");
 		return;
 	}
-
-	if (!textLine->textBlock.isNull() && th != textLine->textBlock.getPtr())
+	if (textLine == previousLine)
 	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError,"Invalid argument: textLine is in different textBlock");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"previousLine");
+		return;
+	}
+	if (!previousLine.isNull() && !previousLine->textBlock.isNull() && th != previousLine->textBlock.getPtr())
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"previousLine");
 		return;
 	}
 	if (fitSomething && textLine->getText().empty())
@@ -718,13 +714,26 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 	textLine->width = (uint32_t)width;
 	textLine->previousLine = previousLine;
 	textLine->updateSizes();
+	th->incRef();
+	textLine->textBlock= _MNR(th);
 	if (textLine->width > textLine->textWidth)
 	{
 		asAtomHandler::setNull(ret);
 		return;
 	}
-	if (!previousLine.isNull())
+	if (previousLine.isNull())
+	{
+		th->firstLine = textLine;
+		if (th->lastLine.isNull())
+			th->lastLine = textLine;
+	}
+	else
+	{
+		if (th->lastLine == previousLine)
+			th->lastLine = textLine;
 		previousLine->nextLine = textLine;
+	}
+
 	textLine->incRef();
 	ret = asAtomHandler::fromObject(textLine.getPtr());
 }
@@ -740,14 +749,14 @@ ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
 	if (th->content.isNull() || !th->content->is<TextElement>())
 		return;
 
-	if (firstLine.isNull() || firstLine->textBlock != th)
+	if (firstLine.isNull() || (!firstLine->textBlock.isNull() && firstLine->textBlock != th))
 	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError,"Invalid argument: firstLine");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"firstLine");
 		return;
 	}
-	if (lastLine.isNull() || lastLine->textBlock != th)
+	if (lastLine.isNull() || (!lastLine->textBlock.isNull() && lastLine->textBlock != th))
 	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError,"Invalid argument: lastLine");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"lastLine");
 		return;
 	}
 
@@ -768,7 +777,6 @@ ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
 			{
 				tmpLine = firstLine->previousLine;
 				firstLine->previousLine = NullRef;
-				tmpLine->decRef();
 			}
 			firstLine->textBlock = NullRef;
 			firstLine->nextLine = NullRef;
@@ -845,7 +853,6 @@ TextLine::TextLine(ASWorker* wrk, Class_base* c, tiny_string linetext, _NR<TextB
 
 	setText(linetext.raw_buf());
 	updateSizes();
-	requestInvalidation(getSys());
 }
 
 void TextLine::sinit(Class_base* c)
@@ -870,6 +877,14 @@ void TextLine::sinit(Class_base* c)
 	REGISTER_GETTER(c, textBlockBeginIndex);
 }
 
+void TextLine::finalize()
+{
+	textBlock.reset();
+	nextLine.reset();
+	previousLine.reset();
+	userData.reset();
+	DisplayObjectContainer::finalize();
+}
 
 ASFUNCTIONBODY_GETTER(TextLine, textBlock)
 ASFUNCTIONBODY_GETTER(TextLine, nextLine)
@@ -928,6 +943,21 @@ void TextLine::updateSizes()
 	CairoPangoRenderer::getBounds(*this,this->getText(), w, h);
 	textWidth = w;
 	textHeight = h;
+}
+
+string TextLine::toDebugString() const
+{
+	string res = DisplayObjectContainer::toDebugString();
+	res += " (";
+	res += this->validity;
+	res += ")";
+	if (textBlock)
+	{
+		char buf[100];
+		sprintf(buf," ow:%p",textBlock.getPtr());
+		res += buf;
+	}
+	return res;
 }
 
 bool TextLine::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)

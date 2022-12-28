@@ -353,7 +353,7 @@ protected:
 public:
 	TextLineMetrics(ASWorker* wrk,Class_base* c, number_t _x=0, number_t _width=0, number_t _height=0,
 			number_t _ascent=0, number_t _descent=0, number_t _leading=0)
-		: ASObject(wrk,c), ascent(_ascent), descent(_descent),
+		: ASObject(wrk,c,T_OBJECT,SUBTYPE_TEXTLINEMETRICS), ascent(_ascent), descent(_descent),
 		  height(_height), leading(_leading), width(_width), x(_x) {}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);

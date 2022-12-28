@@ -1486,6 +1486,7 @@ class TextElement;
 class TextField;
 class TextFormat;
 class TextLine;
+class TextLineMetrics;
 class Texture;
 class TextureBase;
 class ThrottleEvent;
@@ -1603,6 +1604,7 @@ template<> inline bool ASObject::is<TextElement>() const { return subtype==SUBTY
 template<> inline bool ASObject::is<TextField>() const { return subtype==SUBTYPE_TEXTFIELD; }
 template<> inline bool ASObject::is<TextFormat>() const { return subtype==SUBTYPE_TEXTFORMAT; }
 template<> inline bool ASObject::is<TextLine>() const { return subtype==SUBTYPE_TEXTLINE; }
+template<> inline bool ASObject::is<TextLineMetrics>() const { return subtype==SUBTYPE_TEXTLINEMETRICS; }
 template<> inline bool ASObject::is<Texture>() const { return subtype==SUBTYPE_TEXTURE; }
 template<> inline bool ASObject::is<TextureBase>() const { return subtype==SUBTYPE_TEXTUREBASE || subtype==SUBTYPE_TEXTURE || subtype==SUBTYPE_CUBETEXTURE || subtype==SUBTYPE_RECTANGLETEXTURE || subtype==SUBTYPE_TEXTURE || subtype==SUBTYPE_VIDEOTEXTURE; }
 template<> inline bool ASObject::is<ThrottleEvent>() const { return subtype==SUBTYPE_THROTTLE_EVENT; }

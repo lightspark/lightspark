@@ -30,13 +30,15 @@ namespace lightspark
 {
 
 class ElementFormat;
+class GroupElement;
 class ContentElement: public ASObject
 {
 public:
-	ContentElement(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_CONTENTELEMENT),elementFormat(NULL) {}
+	ContentElement(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_CONTENTELEMENT) {}
 	static void sinit(Class_base* c);
 	ASPROPERTY_GETTER(tiny_string,rawText);
 	ASPROPERTY_GETTER_SETTER(_NR<ElementFormat>,elementFormat);
+	ASPROPERTY_GETTER(_NR<GroupElement>,groupElement);
 };
 
 class FontDescription;
@@ -241,6 +243,7 @@ private:
 public:
 	TextLine(ASWorker* wrk,Class_base* c,tiny_string linetext = "", _NR<TextBlock> owner=NullRef);
 	static void sinit(Class_base* c);
+	void finalize() override;
 	void updateSizes();
 	ASPROPERTY_GETTER(_NR<TextBlock>, textBlock);
 	ASPROPERTY_GETTER(_NR<TextLine>, nextLine);
@@ -258,7 +261,7 @@ public:
 	ASPROPERTY_GETTER(int,rawTextLength);
 	ASPROPERTY_GETTER(number_t,specifiedWidth);
 	ASPROPERTY_GETTER(int,textBlockBeginIndex);
-
+	std::string toDebugString() const override;
 };
 class TabStop: public ASObject
 {

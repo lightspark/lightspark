@@ -82,6 +82,8 @@ bool InputThread::worker(SDL_Event *event)
 				curDragged.reset();
 		}
 	}
+	if (m_sys->isShuttingDown())
+		return false;
 	switch(event->type)
 	{
 		case SDL_KEYDOWN:
@@ -401,12 +403,12 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 		if(currentMouseOver == selected)
 		{
 			m_sys->currentVm->addIdleEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseMove",localX,localY,true,buttonState,pressed)));
+				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseMove",localX,localY,true,buttonState,pressed)),true);
 		}
 		else
 		{
 			m_sys->currentVm->addIdleEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOver",localX,localY,true,buttonState,pressed,currentMouseOver)));
+				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOver",localX,localY,true,buttonState,pressed,currentMouseOver)),true);
 			currentMouseOver = selected;
 		}
 		if (selected != lastRolledOver)

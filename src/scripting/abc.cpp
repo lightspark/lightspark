@@ -1273,7 +1273,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool isGlobalMessag
 	}
 	return true;
 }
-bool ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
+bool ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool removeprevious)
 {
 	Locker l(event_queue_mutex);
 	//If the system should terminate new events are not accepted
@@ -1285,6 +1285,19 @@ bool ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	}
 	if (!obj.isNull() && ev->getInstanceWorker() && !ev->getInstanceWorker()->isPrimordial)
 		return ev->getInstanceWorker()->addEvent(obj,ev);
+	if (removeprevious) 
+	{
+		for (auto it = idleevents_queue.begin(); it != idleevents_queue.end(); it++)
+		{
+			// if an idle event with the same dispatcher and same type was added previously, it is removed
+			// this avoids flooding the event queue with too many "similar" events (e.g. mouseMove)
+			if ((*it).first == obj && (*it).second->type == ev->type)
+			{
+				idleevents_queue.erase(it);
+				break;
+			}
+		}
+	}
 	idleevents_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	RELEASE_WRITE(ev->queued,true);
 	return true;

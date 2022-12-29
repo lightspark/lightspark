@@ -1127,6 +1127,8 @@ ASFUNCTIONBODY_ATOM(Transform,_setColorTransform)
 	ct->incRef();
 	th->owner->colorTransform = ct;
 	th->owner->hasChanged=true;
+	if (th->owner->isOnStage())
+		th->owner->requestInvalidation(wrk->getSystemState());
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_getConcatenatedMatrix)

@@ -25,6 +25,8 @@
 #include "scripting/argconv.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/utils/Timer.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/Number.h"
 
 using namespace std;
 using namespace lightspark;
@@ -58,11 +60,11 @@ void Timer::tickFence()
 void Timer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("currentCount","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentCount),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(c->getSystemState(),_getRepeatCount),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentCount","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentCount,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(c->getSystemState(),_getRepeatCount,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("repeatCount","",Class<IFunction>::getFunction(c->getSystemState(),_setRepeatCount),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("running","",Class<IFunction>::getFunction(c->getSystemState(),_getRunning,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("delay","",Class<IFunction>::getFunction(c->getSystemState(),_getDelay),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("delay","",Class<IFunction>::getFunction(c->getSystemState(),_getDelay,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("delay","",Class<IFunction>::getFunction(c->getSystemState(),_setDelay),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("start","",Class<IFunction>::getFunction(c->getSystemState(),start),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("reset","",Class<IFunction>::getFunction(c->getSystemState(),reset),NORMAL_METHOD,true);
@@ -71,7 +73,7 @@ void Timer::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Timer,_constructor)
 {
-	EventDispatcher::_constructor(ret,wrk,obj,NULL,0);
+	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 	Timer* th=asAtomHandler::as<Timer>(obj);
 
 	th->delay=asAtomHandler::toInt(args[0]);
@@ -82,13 +84,13 @@ ASFUNCTIONBODY_ATOM(Timer,_constructor)
 ASFUNCTIONBODY_ATOM(Timer,_getCurrentCount)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->currentCount);
+	asAtomHandler::setInt(ret,wrk,th->currentCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getRepeatCount)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->repeatCount);
+	asAtomHandler::setInt(ret,wrk,th->repeatCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setRepeatCount)
@@ -114,7 +116,7 @@ ASFUNCTIONBODY_ATOM(Timer,_getRunning)
 ASFUNCTIONBODY_ATOM(Timer,_getDelay)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->delay);
+	asAtomHandler::setNumber(ret,wrk,th->delay);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setDelay)

@@ -1950,7 +1950,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	ARG_CHECK(ARG_UNPACK (x) (y) (shapeFlag, false));
 
 	number_t xmin, xmax, ymin, ymax;
-	if (!th->isOnStage() || !th->boundsRectGlobal(xmin, xmax, ymin, ymax))
+	if (!th->boundsRectGlobal(xmin, xmax, ymin, ymax))
 	{
 		asAtomHandler::setBool(ret,false);
 		return;
@@ -1974,6 +1974,12 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		number_t localX;
 		number_t localY;
 		th->globalToLocal(x, y, localX, localY);
+		if (!th->isOnStage())
+		{
+			// if the DisplayObject is not on stage the local bounds have to be added for hittesting
+			localX += xmin;
+			localY += ymin;
+		}
 
 		// Hmm, hitTest will also check the mask, is this the
 		// right thing to do?

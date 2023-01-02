@@ -959,6 +959,7 @@ bool Sprite::destruct()
 	graphics.reset();
 	hitArea.reset();
 	hitTarget.reset();
+	tokens.clear();
 	dragged = false;
 	buttonMode = false;
 	useHandCursor = true;
@@ -3819,12 +3820,14 @@ bool Shape::destruct()
 {
 	graphics.reset();
 	fromTag=nullptr;
+	tokens.clear();
 	return DisplayObject::destruct();
 }
 
 void Shape::finalize()
 {
 	graphics.reset();
+	tokens.clear();
 	DisplayObject::finalize();
 }
 
@@ -5093,6 +5096,7 @@ void Bitmap::onBitmapData(_NR<BitmapData> old)
 		old->removeUser(this);
 	if(!bitmapData.isNull())
 		bitmapData->addUser(this);
+	geometryChanged();
 	Bitmap::updatedData();
 }
 

@@ -981,8 +981,8 @@ ASFUNCTIONBODY_ATOM(FullScreenEvent,_constructor)
 	Event::_constructor(ret,wrk,obj,args,baseClassArgs);
 }
 
-KeyboardEvent::KeyboardEvent(ASWorker* wrk, Class_base* c, tiny_string _type, uint32_t _charcode, uint32_t _keycode, SDL_Keymod _modifiers, SDL_Keycode _sdlkeycode)
-  : Event(wrk,c, _type,false,false,SUBTYPE_KEYBOARD_EVENT), modifiers(_modifiers), charCode(_charcode), keyCode(_keycode), keyLocation(0),sdlkeycode(_sdlkeycode)
+KeyboardEvent::KeyboardEvent(ASWorker* wrk, Class_base* c, tiny_string _type, uint32_t _sdlscancode, uint32_t _charcode, uint32_t _keycode, SDL_Keymod _modifiers, SDL_Keycode _sdlkeycode)
+  : Event(wrk,c, _type,false,false,SUBTYPE_KEYBOARD_EVENT), modifiers(_modifiers), sdlScanCode(_sdlscancode), charCode(_charcode), keyCode(_keycode), keyLocation(0),sdlkeycode(_sdlkeycode)
 {
 }
 

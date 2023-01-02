@@ -1582,7 +1582,7 @@ void TextField::defaultEventBehavior(_R<Event> e)
 			}
 		}
 		else
-			LOG(LOG_NOT_IMPLEMENTED,"TextField keyDown event handling for modifier "<<modifiers<<" and char code "<<hex<<ev->getCharCode());
+			LOG(LOG_NOT_IMPLEMENTED,"TextField keyDown event handling for modifier "<<modifiers<<" and char code "<<hex<<ev->getSDLScanCode());
 	}
 }
 

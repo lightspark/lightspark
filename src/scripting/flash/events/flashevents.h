@@ -111,12 +111,13 @@ private:
 	Event* cloneImpl() const override ;
 
 	uint32_t modifiers;
+	uint32_t sdlScanCode;
 	ASPROPERTY_GETTER_SETTER(uint32_t, charCode);
 	ASPROPERTY_GETTER_SETTER(uint32_t, keyCode);
 	ASPROPERTY_GETTER_SETTER(uint32_t, keyLocation);
 	SDL_Keycode sdlkeycode;
 public:
-	KeyboardEvent(ASWorker* wrk, Class_base* c, tiny_string _type="", uint32_t _charcode=0, uint32_t _keycode=0, SDL_Keymod modifiers=KMOD_NONE, SDL_Keycode _sdlkeycode=SDLK_UNKNOWN);
+	KeyboardEvent(ASWorker* wrk, Class_base* c, tiny_string _type="", uint32_t _sdlcharcode=0, uint32_t _charcode=0, uint32_t _keycode=0, SDL_Keymod modifiers=KMOD_NONE, SDL_Keycode _sdlkeycode=SDLK_UNKNOWN);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_GETTER_SETTER(altKey);
@@ -124,7 +125,7 @@ public:
 	ASFUNCTION_GETTER_SETTER(controlKey);
 	ASFUNCTION_GETTER_SETTER(ctrlKey);
 	ASFUNCTION_GETTER_SETTER(shiftKey);
-	uint32_t getCharCode() const { return charCode; }
+	uint32_t getSDLScanCode() const { return sdlScanCode; }
 	uint32_t getKeyCode() const { return keyCode; }
 	uint32_t getModifiers() const { return modifiers; }
 	SDL_Keycode getSDLKeyCode() const { return sdlkeycode; }

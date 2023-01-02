@@ -5409,7 +5409,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 	for (auto it = this->buttontag->condactions.begin(); it != this->buttontag->condactions.end(); it++)
 	{
 		bool execute=false;
-		uint32_t code = e->getCharCode();
+		uint32_t code = e->getSDLScanCode();
 		if (e->getModifiers() & KMOD_SHIFT)
 		{
 			switch (it->CondKeyPress)

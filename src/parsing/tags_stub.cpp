@@ -45,12 +45,6 @@ DefineFontAlignZonesTag::DefineFontAlignZonesTag(RECORDHEADER h, std::istream& i
 	skip(in);
 }
 
-DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	in >> CharacterId >> Splitter;
-	LOG(LOG_NOT_IMPLEMENTED,"DefineScalingGridTag Tag on ID " << CharacterId);
-}
-
 CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"CSMTextSettingsTag");

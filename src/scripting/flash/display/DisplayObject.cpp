@@ -30,6 +30,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/toplevel/Number.h"
+#include "parsing/tags.h"
 #include <algorithm>
 
 // adobe seems to use twips as the base of the internal coordinate system, so we have to "round" coordinates to twips
@@ -138,6 +139,7 @@ void DisplayObject::finalize()
 	colorTransform.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
+	scalingGrid.reset();
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
 	{
 		ASATOM_DECREF(it->second);
@@ -174,6 +176,7 @@ bool DisplayObject::destruct()
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
 	colorTransform.reset();
+	scalingGrid.reset();
 	loadedFrom=getSystemState()->mainClip;
 	hasChanged = true;
 	needsTextureRecalculation=true;
@@ -237,6 +240,8 @@ void DisplayObject::prepareShutdown()
 		accessibilityProperties->prepareShutdown();
 	if (colorTransform)
 		colorTransform->prepareShutdown();
+	if (scalingGrid)
+		scalingGrid->prepareShutdown();
 	if (filters)
 		filters->prepareShutdown();
 	if (scrollRect)
@@ -727,6 +732,9 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 			obj = obj->getParent();
 		}
 	}
+	Rectangle* r = this->scalingGrid.getPtr();
+	if (!r && getParent())
+		r = getParent()->scalingGrid.getPtr();
 	ctxt.setProperties(bl);
 	ctxt.lsglLoadIdentity();
 	if (surface.isMask)
@@ -737,7 +745,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
 			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
 			surface.redOffset, surface.greenOffset, surface.blueOffset, surface.alphaOffset,
-			surface.isMask, !surface.mask.isNull(),0.0,RGB(),surface.smoothing,surface.matrix);
+			surface.isMask, !surface.mask.isNull(),0.0,RGB(),surface.smoothing,surface.matrix,r);
 	return false;
 }
 
@@ -1254,15 +1262,19 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getStage)
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScale9Grid)
 {
-	//DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"DispalyObject.Scale9Grid");
-	asAtomHandler::setUndefined(ret);
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	if (th->scalingGrid.getPtr())
+	{
+		th->scalingGrid->incRef();
+		ret = asAtomHandler::fromObjectNoPrimitive(th->scalingGrid.getPtr());
+	}
+	else
+		asAtomHandler::setUndefined(ret);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,_setScale9Grid)
 {
-	//DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"DispalyObject.Scale9Grid");
-	asAtomHandler::setUndefined(ret);
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	ARG_CHECK(ARG_UNPACK(th->scalingGrid));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getBlendMode)
@@ -1381,6 +1393,19 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 		geometryChanged();
 		if(onStage && !cachedAsBitmapOf && !getSystemState()->isShuttingDown())
 			requestInvalidation(getSystemState());
+	}
+}
+
+void DisplayObject::setScalingGrid()
+{
+	RECT* r = loadedFrom->ScalingGridsLookup(this->getTagID());
+	if (r)
+	{
+		this->scalingGrid = _MR(Class<Rectangle>::getInstanceS(getInstanceWorker()));
+		this->scalingGrid->x=r->Xmin/20.0;
+		this->scalingGrid->y=r->Ymin/20.0;
+		this->scalingGrid->width=(r->Xmax-r->Xmin)/20.0;
+		this->scalingGrid->height=(r->Ymax-r->Ymin)/20.0;
 	}
 }
 

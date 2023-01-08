@@ -44,6 +44,7 @@ class ControlTag;
 class DownloadManager;
 class DisplayListTag;
 class DictionaryTag;
+class DefineScalingGridTag;
 class ExtScriptObject;
 class InputThread;
 class IntervalManager;
@@ -75,6 +76,8 @@ private:
 	RGB Background;
 	Mutex dictSpinlock;
 	std::unordered_map < uint32_t, DictionaryTag* > dictionary;
+	Mutex scalinggridsmutex;
+	std::unordered_map < uint32_t, RECT > scalinggrids;
 	std::map < QName, DictionaryTag* > classesToBeBound;
 	std::map < tiny_string,FontTag* > embeddedfonts;
 	std::map < uint32_t,FontTag* > embeddedfontsByID;
@@ -120,6 +123,8 @@ public:
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);
 	DictionaryTag* dictionaryLookupByName(uint32_t nameID);
+	void addToScalingGrids(const DefineScalingGridTag* r);
+	RECT* ScalingGridsLookup(int id);
 	void resizeCompleted();
 	void labelCurrentFrame(const STRING& name);
 	void commitFrame(bool another);

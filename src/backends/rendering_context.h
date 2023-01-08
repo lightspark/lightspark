@@ -29,6 +29,7 @@ namespace lightspark
 
 enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
 
+class Rectangle;
 /*
  * The RenderContext contains all (public) functions that are needed by DisplayObjects to draw themselves.
  */
@@ -63,7 +64,8 @@ public:
 	virtual void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask, float directMode, RGB directColor,SMOOTH_MODE smooth, const MATRIX& matrix)=0;
+			bool isMask, bool hasMask, float directMode, RGB directColor,SMOOTH_MODE smooth, const MATRIX& matrix,
+			Rectangle* scalingGrid=nullptr)=0;
 	/**
 	 * Get the right CachedSurface from an object
 	 */
@@ -104,7 +106,7 @@ protected:
 	std::vector<LargeTexture> largeTextures;
 
 	~GLRenderContext(){}
-
+	void renderpart(const MATRIX& matrix, const TextureChunk& chunk, float cropleft, float croptop, float cropwidth, float cropheight);
 public:
 	enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
 	/*
@@ -120,7 +122,8 @@ public:
 	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask, float directMode, RGB directColor,SMOOTH_MODE smooth, const MATRIX& matrix) override;
+			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
+			Rectangle* scalingGrid=nullptr) override;
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the OpenGL case we just get the CachedSurface inside the object itself
@@ -138,7 +141,7 @@ private:
 	std::map<const DisplayObject*, CachedSurface> customSurfaces;
 	cairo_t* cr;
 	std::list<std::pair<cairo_surface_t*,MATRIX>> masksurfaces;
-	static cairo_surface_t* getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height);
+	static cairo_surface_t* getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height, uint32_t stride);
 	/*
 	 * An invalid surface to be returned for objects with no content
 	 */
@@ -149,7 +152,8 @@ public:
 	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix) override;
+			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
+			Rectangle* scalingGrid=nullptr) override;
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the Cairo case we get the right CachedSurface out of the map

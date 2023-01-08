@@ -508,6 +508,11 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				empty=true;
 				break;
 			}
+			case DEFINESCALINGGRID_TAG:
+			{
+				root->addToScalingGrids(static_cast<DefineScalingGridTag*>(tag));
+				break;
+			}
 			case BACKGROUNDCOLOR_TAG:
 			case SYMBOL_CLASS_TAG:
 			case ABC_TAG:
@@ -598,6 +603,7 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 		spr->setSoundStartFrame(this->soundstartframe);
 	spr->loadedFrom=this->loadedFrom;
 	spr->loadedFrom->AVM1checkInitActions(spr);
+	spr->setScalingGrid();
 	return spr;
 }
 
@@ -2332,6 +2338,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			state->setLegacyMatrix(dict->MapToBounds(i->PlaceMatrix));
 			state->legacy=true;
 			state->name = BUILTIN_STRINGS::EMPTY;
+			state->setScalingGrid();
 			if (i->ButtonHasBlendMode && i->buttonVersion == 2)
 				state->setBlendMode(i->BlendMode);
 			if (i->ButtonHasFilterList)
@@ -2371,6 +2378,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 	SimpleButton* ret= !loadedFrom->usesActionScript3 ?
 				new (realClass->memoryAccount) AVM1SimpleButton(loadedFrom->getInstanceWorker(), realClass, states[0], states[1], states[2], states[3],this) :
 				new (realClass->memoryAccount) SimpleButton(loadedFrom->getInstanceWorker(), realClass, states[0], states[1], states[2], states[3],this);
+	ret->setScalingGrid();
 	return ret;
 }
 
@@ -3173,4 +3181,13 @@ void ScriptLimitsTag::execute(RootMovieClip* root) const
 	}
 	worker->limits.max_recursion = MaxRecursionDepth;
 	worker->limits.script_timeout = ScriptTimeoutSeconds;
+}
+DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):ControlTag(h)
+{
+	in >> CharacterId >> Splitter;
+}
+
+void DefineScalingGridTag::execute(RootMovieClip* root) const
+{
+	root->addToScalingGrids(this);
 }

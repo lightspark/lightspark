@@ -1821,6 +1821,7 @@ void ParseThread::parseSWF(UI8 ver)
 				case ABC_TAG:
 				case ACTION_TAG:
 				case AVM1INITACTION_TAG:
+				case DEFINESCALINGGRID_TAG:
 				{
 					// Add symbol class tags or action to the queue, to be executed when the rest of the 
 					// frame has been parsed. This is to handle invalid SWF files that define ID's
@@ -2219,6 +2220,21 @@ DictionaryTag* RootMovieClip::dictionaryLookupByName(uint32_t nameID)
 		return nullptr;
 	}
 	return it->second;
+}
+
+void RootMovieClip::addToScalingGrids(const DefineScalingGridTag* r)
+{
+	Locker l(scalinggridsmutex);
+	scalinggrids[r->CharacterId] = r->Splitter;
+}
+
+RECT* RootMovieClip::ScalingGridsLookup(int id)
+{
+	Locker l(scalinggridsmutex);
+	auto it = scalinggrids.find(id);
+	if(it==scalinggrids.end())
+		return nullptr;
+	return &(*it).second;
 }
 
 void RootMovieClip::resizeCompleted()

@@ -100,6 +100,7 @@ private:
 	uint32_t avm1framelistenercount;
 protected:
 	_NR<Bitmap> cachedBitmap;
+	_NR<Rectangle> scalingGrid;
 	std::multimap<uint32_t,_NR<DisplayObject>> variablebindings;
 	bool onStage;
 	bool visible;
@@ -184,6 +185,7 @@ public:
 	DisplayObjectContainer* getParent() const { return parent; }
 	bool findParent(DisplayObject* d) const;
 	void setParent(DisplayObjectContainer* p);
+	void setScalingGrid();
 	/*
 	   Used to link DisplayObjects the invalidation queue
 	*/

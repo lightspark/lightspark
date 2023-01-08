@@ -524,6 +524,10 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		}
 		p = p->getParent();
 	}
+	Rectangle* r = owner->scalingGrid.getPtr();
+	if (!r && owner->getParent())
+		r = owner->getParent()->scalingGrid.getPtr();
+	
 	number_t regpointx = 0.0;
 	number_t regpointy = 0.0;
 	if (fromgraphics)
@@ -539,7 +543,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& !isMask
 			&& !owner->ClipDepth
 			&& !owner->computeCacheAsBitmap() 
-			&& owner->getBlendMode()==BLENDMODE_NORMAL)
+			&& owner->getBlendMode()==BLENDMODE_NORMAL
+			&& !r)
 	{
 		renderWithNanoVG=true;
 		int offsetX;

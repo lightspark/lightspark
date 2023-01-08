@@ -37,7 +37,7 @@ class DefineSpriteTag;
 class AdditionalDataTag;
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG,
-			  AVM1ACTION_TAG,AVM1INITACTION_TAG,BUTTONSOUND_TAG, FILEATTRIBUTES_TAG,METADATA_TAG,BACKGROUNDCOLOR_TAG,ENABLEDEBUGGER_TAG};
+			  AVM1ACTION_TAG,AVM1INITACTION_TAG,BUTTONSOUND_TAG, FILEATTRIBUTES_TAG,METADATA_TAG,BACKGROUNDCOLOR_TAG,ENABLEDEBUGGER_TAG,DEFINESCALINGGRID_TAG};
 
 void ignore(std::istream& i, int count);
 
@@ -727,12 +727,14 @@ public:
 	int getId() const override { return CharacterId; }
 };
 
-class DefineScalingGridTag: public Tag
+class DefineScalingGridTag: public ControlTag
 {
 public:
 	UI16_SWF CharacterId;
 	RECT Splitter;
 	DefineScalingGridTag(RECORDHEADER h, std::istream& in);
+	TAGTYPE getType() const override { return DEFINESCALINGGRID_TAG; }
+	void execute(RootMovieClip* root) const override;
 };
 
 class AdditionalDataTag: public Tag

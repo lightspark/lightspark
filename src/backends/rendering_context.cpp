@@ -34,6 +34,7 @@
 #include "backends/rendering_context.h"
 #include "logger.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/geom/flashgeom.h"
 
 using namespace std;
 using namespace lightspark;
@@ -150,7 +151,7 @@ void GLRenderContext::setProperties(AS_BLENDMODE blendmode)
 void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 									 float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 									 float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-									 bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix)
+									 bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid)
 {
 	if (isMask)
 	{
@@ -181,52 +182,165 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	// 3.0 set color for every pixel (renders a filled rectangle)
 	engineData->exec_glUniform1f(directUniform, directMode);
 	engineData->exec_glUniform4f(directColorUniform,float(directColor.Red)/255.0,float(directColor.Green)/255.0,float(directColor.Blue)/255.0,1.0);
+
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
+	assert(chunk.getNumberOfChunks()==((chunk.width+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL)*((chunk.height+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL));
+
+	if (scalingGrid && scalingGrid->width+scalingGrid->x < chunk.width/chunk.xContentScale && scalingGrid->height+scalingGrid->y < chunk.height/chunk.yContentScale && matrix.getRotation()==0)
+	{
+		// rendering with scalingGrid
+
+		MATRIX m;
+		number_t scalex = chunk.xContentScale;
+		number_t scaley = chunk.yContentScale;
+		number_t rightborder = number_t(chunk.width)/scalex-(scalingGrid->x+scalingGrid->width);
+		number_t bottomborder = number_t(chunk.height)/scaley-(scalingGrid->y+scalingGrid->height);
+		number_t scaledleftborder = scalingGrid->x*scalex;
+		number_t scaledtopborder = scalingGrid->y*scaley;
+		number_t scaledrightborder = number_t(chunk.width)-((scalingGrid->x+scalingGrid->width)*scalex);
+		number_t scaledbottomborder = number_t(chunk.height)-((scalingGrid->y+scalingGrid->height)*scaley);
+		number_t scaledinnerwidth = number_t(chunk.width) - (scaledrightborder+scaledleftborder);
+		number_t scaledinnerheight = number_t(chunk.height) - (scaledbottomborder+scaledtopborder);
+		number_t innerwidth = number_t(chunk.width) - (scaledrightborder+scaledleftborder);
+		number_t innerheight = number_t(chunk.height) - (scaledbottomborder+scaledtopborder);
+		number_t innerscalex = innerwidth/(number_t(chunk.width) - (scaledrightborder+scaledleftborder)/scalex);
+		number_t innerscaley = innerheight/(number_t(chunk.height) - (scaledbottomborder+scaledtopborder)/scaley);
+
+		// 1) render unscaled upper left corner
+		m=MATRIX();
+		m.translate(matrix.getTranslateX(),matrix.getTranslateY());
+		renderpart(m,chunk,0,0,scaledleftborder,scaledtopborder);
+
+		// 2) render unscaled upper right corner
+		m=MATRIX();
+		m.translate(matrix.getTranslateX()+(number_t(chunk.width)-rightborder)/scalex*matrix.getScaleX(),matrix.getTranslateY());
+		renderpart(m,chunk,(number_t(chunk.width) - scaledrightborder),0,scaledrightborder,scaledtopborder);
+
+		// 3) render unscaled lower right corner
+		m=MATRIX();
+		m.translate(matrix.getTranslateX()+(number_t(chunk.width)-rightborder)/scalex*matrix.getScaleX(),matrix.getTranslateY()+(number_t(chunk.height)-bottomborder)/scaley*matrix.getScaleY());
+		renderpart(m,chunk,(number_t(chunk.width) - scaledrightborder),(number_t(chunk.height) - scaledbottomborder),scaledrightborder,scaledbottomborder);
+
+		// 4) render unscaled lower left corner
+		m=MATRIX();
+		m.translate(matrix.getTranslateX(),matrix.getTranslateY()+(number_t(chunk.height)-bottomborder)/scaley*matrix.getScaleY());
+		renderpart(m,chunk,0,(number_t(chunk.height) - scaledbottomborder),scaledleftborder,scaledbottomborder);
+
+		// 5) render x-scaled upper border
+		m=MATRIX();
+		m.scale(matrix.getScaleX()/innerscalex,1.0);
+		m.translate(matrix.getTranslateX()+scalingGrid->x,matrix.getTranslateY());
+		renderpart(m,chunk,scaledleftborder,0,number_t(chunk.width) - (scaledrightborder+scaledleftborder),scaledtopborder);
+
+		// 6) render y-scaled right border
+		m=MATRIX();
+		m.scale(1.0,matrix.getScaleY()/innerscaley);
+		m.translate(matrix.getTranslateX()+(number_t(chunk.width)-rightborder)/scalex*matrix.getScaleX(),matrix.getTranslateY()+scalingGrid->y);
+		renderpart(m,chunk,number_t(chunk.width) - scaledrightborder,scaledtopborder,scaledrightborder,scaledinnerheight);
+
+		// 7) render x-scaled bottom border
+		m=MATRIX();
+		m.scale(matrix.getScaleX()/innerscalex,1.0);
+		m.translate(matrix.getTranslateX()+scalingGrid->x,matrix.getTranslateY()+(number_t(chunk.height)-bottomborder)/scaley*matrix.getScaleY());
+		renderpart(m,chunk,scaledleftborder,(number_t(chunk.height) - scaledbottomborder),scaledinnerwidth,scaledbottomborder);
+
+		// 8) render y-scaled left border
+		m=MATRIX();
+		m.scale(1.0,matrix.getScaleY()/innerscaley);
+		m.translate(matrix.getTranslateX(),matrix.getTranslateY()+scalingGrid->y);
+		renderpart(m,chunk,0,scaledtopborder,scaledleftborder,scaledinnerheight);
+
+		// 9) render scaled center
+		m=MATRIX();
+		m.scale(matrix.getScaleX()/innerscalex,matrix.getScaleY()/innerscaley);
+		m.translate(matrix.getTranslateX()+scalingGrid->x,matrix.getTranslateY()+scalingGrid->y);
+		renderpart(m,chunk,scaledleftborder,scaledtopborder,scaledinnerwidth,scaledinnerheight);
+	}
+	else
+		renderpart(matrix,chunk,0,0,chunk.width,chunk.height);
+
+	if (isMask)
+		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+	if (!smooth)
+	{
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+	}
+}
+void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk, float cropleft, float croptop, float cropwidth, float cropheight)
+{
 	//Set matrix
 	float fmatrix[16];
 	matrix.get4DMatrix(fmatrix);
 	lsglLoadMatrixf(fmatrix);
 	setMatrixUniform(LSGL_MODELVIEW);
-
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
-	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
-	float startX, startY, endX, endY;
-	assert(chunk.getNumberOfChunks()==((chunk.width+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL)*((chunk.height+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL));
-
-	uint32_t curChunk=0;
+	
+	uint32_t firstchunkhorizontal = floor(cropleft/float(CHUNKSIZE_REAL));
+	uint32_t firstchunkvertical = floor(croptop/float(CHUNKSIZE_REAL));
+	uint32_t lastchunkhorizontal = ceil((cropleft+cropwidth)/float(CHUNKSIZE_REAL));
+	uint32_t lastchunkvertical = ceil((croptop+cropheight)/float(CHUNKSIZE_REAL));
+	int realchunkcount = (lastchunkhorizontal-firstchunkhorizontal)*(lastchunkvertical-firstchunkvertical);
 	//The 4 corners of each texture are specified as the vertices of 2 triangles,
 	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
 	//Allocate the data on the stack to reduce heap fragmentation
-	float *vertex_coords = g_newa(float,chunk.getNumberOfChunks()*12);
-	float *texture_coords = g_newa(float,chunk.getNumberOfChunks()*12);
-	float realchunkwidth = chunk.width;
-	float realchunkheight = chunk.height;
-
-	int w = chunk.width;
-	int h = chunk.height;
+	float *vertex_coords = g_newa(float,realchunkcount*12);
+	float *texture_coords = g_newa(float,realchunkcount*12);
+	
+	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
+	float realchunkwidth = cropwidth;
+	float realchunkheight = cropheight;
+	uint32_t firstchunk=firstchunkhorizontal+firstchunkvertical*(chunk.width/CHUNKSIZE_REAL);
+	uint32_t curChunk=firstchunk;
 	float tx = chunk.xOffset;
 	float ty = chunk.yOffset;
-	for(uint32_t i=0, k=0;i<realchunkheight;i+=CHUNKSIZE_REAL)
+	float startX, startY, endX, endY;
+	float leftstart = cropleft-firstchunkhorizontal*CHUNKSIZE_REAL;
+	float topstart = croptop-firstchunkvertical*CHUNKSIZE_REAL;
+
+	float startVtop=croptop-firstchunkvertical*CHUNKSIZE_REAL;
+	uint32_t availYForTexture=realchunkheight+topstart;
+	startY = ty / chunk.yContentScale;
+	float heighttoplace=realchunkheight;
+	for(uint32_t i=firstchunkvertical, k=0;i<lastchunkvertical;i++)
 	{
-		startY = (float(h*i)/realchunkheight + ty) / chunk.yContentScale;
-		endY = (min(float(h*(i+CHUNKSIZE_REAL))/realchunkheight,float(h)) + ty) / chunk.yContentScale;
-		for(uint32_t j=0;j<realchunkwidth;j+=CHUNKSIZE_REAL)
+		float heightconsumed;
+		if (startVtop && (realchunkheight < CHUNKSIZE_REAL) && (realchunkheight + topstart > CHUNKSIZE_REAL))
+			heightconsumed = min((float(CHUNKSIZE_REAL) - topstart),float(CHUNKSIZE_REAL));
+		else
+			heightconsumed = min(heighttoplace ,float(CHUNKSIZE_REAL));
+		endY = startY + heightconsumed / chunk.yContentScale;
+		heighttoplace-= heightconsumed;
+		
+		float startULeft=leftstart;
+		float widthtoplace=realchunkwidth;
+		uint32_t availXForTexture=realchunkwidth+leftstart;
+		startX = tx / chunk.xContentScale;
+		const uint32_t availY=min(availYForTexture,uint32_t(CHUNKSIZE_REAL));
+		availYForTexture-=availY;
+		for(uint32_t j=firstchunkhorizontal;j<lastchunkhorizontal;j++)
 		{
-			startX = (float(w*j)/realchunkwidth + tx) / chunk.xContentScale;
-			endX = (min(float(w*(j+CHUNKSIZE_REAL))/realchunkwidth,float(w)) + tx) / chunk.xContentScale;
 			const uint32_t curChunkId=chunk.chunks[curChunk];
 			const uint32_t blockX=((curChunkId%blocksPerSide)*CHUNKSIZE);
 			const uint32_t blockY=((curChunkId/blocksPerSide)*CHUNKSIZE);
-			const uint32_t availX=min(int(realchunkwidth-j),CHUNKSIZE_REAL);
-			const uint32_t availY=min(int(realchunkheight-i),CHUNKSIZE_REAL);
-			float startU=blockX + 1;
+			const uint32_t availX=min(availXForTexture,uint32_t(CHUNKSIZE_REAL));
+			availXForTexture-=availX;
+			float startU=blockX + 1 + startULeft;
 			startU/=float(largeTextureSize);
-			float startV=blockY + 1;
+			float startV=blockY + 1 + startVtop;
 			startV/=float(largeTextureSize);
 			float endU=blockX+availX+1;
 			endU/=float(largeTextureSize);
 			float endV=blockY+availY+1;
 			endV/=float(largeTextureSize);
 
+			float widthconsumed;
+			if (startULeft && (realchunkwidth < CHUNKSIZE_REAL) && (realchunkwidth + leftstart > CHUNKSIZE_REAL))
+				widthconsumed = min((float(CHUNKSIZE_REAL) - leftstart),float(CHUNKSIZE_REAL));
+			else
+				widthconsumed = min(widthtoplace ,float(CHUNKSIZE_REAL));
+			endX = startX + widthconsumed / chunk.xContentScale;
+			widthtoplace-= widthconsumed;
+			
 			//Upper-right triangle of the quad
 			texture_coords[k] = startU;
 			texture_coords[k+1] = startV;
@@ -262,23 +376,19 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 			k+=2;
 
 			curChunk++;
+			startULeft = 0;
+			startX = endX;
 		}
+		startVtop = 0;
+		startY = endY;
 	}
-
 	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, vertex_coords,FLOAT_2);
 	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 0, texture_coords,FLOAT_2);
 	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glEnableVertexAttribArray(TEXCOORD_ATTRIB);
-	engineData->exec_glDrawArrays_GL_TRIANGLES( 0, curChunk*6);
+	engineData->exec_glDrawArrays_GL_TRIANGLES( 0, (curChunk-firstchunk)*6);
 	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glDisableVertexAttribArray(TEXCOORD_ATTRIB);
-	if (isMask)
-		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
-	if (!smooth)
-	{
-		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
-		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-	}
 }
 
 int GLRenderContext::errorCount = 0;
@@ -312,7 +422,7 @@ void GLRenderContext::setMatrixUniform(LSGL_MATRIX m) const
 
 CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height, bool smoothing):RenderContext(CAIRO)
 {
-	cairo_surface_t* cairoSurface=getCairoSurfaceForData(buf, width, height);
+	cairo_surface_t* cairoSurface=getCairoSurfaceForData(buf, width, height,width);
 	cr=cairo_create(cairoSurface);
 	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
 	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
@@ -328,17 +438,16 @@ CairoRenderContext::~CairoRenderContext()
 	}
 }
 
-cairo_surface_t* CairoRenderContext::getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height)
+cairo_surface_t* CairoRenderContext::getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height, uint32_t stride)
 {
-	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
-	assert(cairoWidthStride==width*4);
+	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, stride);
 	return cairo_image_surface_create_for_data(buf, CAIRO_FORMAT_ARGB32, width, height, cairoWidthStride);
 }
 
 void CairoRenderContext::simpleBlit(int32_t destX, int32_t destY, uint8_t* sourceBuf, uint32_t sourceTotalWidth, uint32_t sourceTotalHeight,
 		int32_t sourceX, int32_t sourceY, uint32_t sourceWidth, uint32_t sourceHeight)
 {
-	cairo_surface_t* sourceSurface = getCairoSurfaceForData(sourceBuf, sourceTotalWidth, sourceTotalHeight);
+	cairo_surface_t* sourceSurface = getCairoSurfaceForData(sourceBuf, sourceTotalWidth, sourceTotalHeight, sourceTotalWidth);
 	cairo_pattern_t* sourcePattern = cairo_pattern_create_for_surface(sourceSurface);
 	cairo_surface_destroy(sourceSurface);
 	cairo_pattern_set_filter(sourcePattern, CAIRO_FILTER_NEAREST);
@@ -355,7 +464,7 @@ void CairoRenderContext::simpleBlit(int32_t destX, int32_t destY, uint8_t* sourc
 void CairoRenderContext::transformedBlit(const MATRIX& m, uint8_t* sourceBuf, uint32_t sourceTotalWidth, uint32_t sourceTotalHeight,
 		FILTER_MODE filterMode)
 {
-	cairo_surface_t* sourceSurface = getCairoSurfaceForData(sourceBuf, sourceTotalWidth, sourceTotalHeight);
+	cairo_surface_t* sourceSurface = getCairoSurfaceForData(sourceBuf, sourceTotalWidth, sourceTotalHeight, sourceTotalWidth);
 	cairo_pattern_t* sourcePattern = cairo_pattern_create_for_surface(sourceSurface);
 	cairo_surface_destroy(sourceSurface);
 	cairo_pattern_set_filter(sourcePattern, (filterMode==FILTER_SMOOTH)?CAIRO_FILTER_BILINEAR:CAIRO_FILTER_NEAREST);
@@ -370,14 +479,12 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, uint8_t* sourceBuf, ui
 void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix)
+			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid)
 {
 	if (alpha != 1.0)
 		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured alpha not implemented:"<<alpha);
 	if (colorMode != RGB_MODE)
 		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured colorMode not implemented:"<<(int)colorMode);
-	uint8_t* buf=(uint8_t*)chunk.chunks;
-	cairo_surface_t* chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height);
 	cairo_save(cr);
 	if (isMask)
 		cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
@@ -398,7 +505,135 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 
 	MATRIX m = matrix.multiplyMatrix(MATRIX(1, 1, 0, 0, chunk.xOffset / chunk.xContentScale, chunk.yOffset / chunk.yContentScale));
 	cairo_set_matrix(cr, &m);
-	cairo_scale(cr, 1 / chunk.xContentScale, 1 / chunk.yContentScale);
+
+	uint8_t* buf=(uint8_t*)chunk.chunks;
+	cairo_surface_t* chunkSurface;
+	if (scalingGrid && scalingGrid->width+scalingGrid->x < chunk.width/chunk.xContentScale && scalingGrid->height+scalingGrid->y < chunk.height/chunk.yContentScale && matrix.getRotation()==0)
+	{
+		// rendering with scalingGrid
+
+		int bytestartpos = 0;
+		number_t scalex = chunk.xContentScale;
+		number_t scaley = chunk.yContentScale;
+		number_t xoffset=0;
+		number_t yoffset=0;
+		number_t scaledleftborder = scalingGrid->x*scalex;
+		number_t scaledtopborder = scalingGrid->y*scaley;
+		number_t scaledrightborder = number_t(chunk.width)-((scalingGrid->x+scalingGrid->width)*scalex);
+		number_t scaledbottomborder = number_t(chunk.height)-((scalingGrid->y+scalingGrid->height)*scaley);
+		number_t innerwidth = number_t(chunk.width) - (scaledrightborder+scaledleftborder);
+		number_t innerheight = number_t(chunk.height) - (scaledbottomborder+scaledtopborder);
+		number_t innerscalex = innerwidth/(number_t(chunk.width) - (scaledrightborder+scaledleftborder)/scalex);
+		number_t innerscaley = innerheight/(number_t(chunk.height) - (scaledbottomborder+scaledtopborder)/scaley);
+
+		// 1) render unscaled upper left corner
+		chunkSurface = getCairoSurfaceForData(buf, ceil(scaledleftborder), ceil(scaledtopborder), chunk.width);
+		cairo_save(cr);
+		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
+		cairo_set_source_surface(cr, chunkSurface, 0,0);
+		cairo_paint(cr);
+		cairo_surface_destroy(chunkSurface);
+		cairo_restore(cr);
+
+		// 2) render unscaled upper right corner
+		bytestartpos = int(int(scalingGrid->x+scalingGrid->width)*scalex)*4;
+		xoffset = chunk.width*scalex-scaledrightborder;
+		yoffset = 0;
+		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(scaledrightborder), ceil(scaledtopborder), chunk.width);
+		cairo_save(cr);
+		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
+		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
+		cairo_paint(cr);
+		cairo_surface_destroy(chunkSurface);
+		cairo_restore(cr);
+
+		// 3) render unscaled lower right corner
+		bytestartpos = int(int((scalingGrid->y+scalingGrid->height)*scaley)*chunk.width+int(scalingGrid->x+scalingGrid->width)*scalex)*4;
+		xoffset = chunk.width*scalex-scaledrightborder;
+		yoffset = chunk.height*scaley-scaledbottomborder;
+		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(scaledrightborder), ceil(scaledbottomborder), chunk.width);
+		cairo_save(cr);
+		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
+		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
+		cairo_paint(cr);
+		cairo_surface_destroy(chunkSurface);
+		cairo_restore(cr);
+
+		// 4) render unscaled lower left corner
+		bytestartpos = int(int((scalingGrid->y+scalingGrid->height)*scaley)*chunk.width)*4;
+		xoffset = 0;
+		yoffset = chunk.height*scaley-scaledbottomborder;
+		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(scaledleftborder), ceil(scaledbottomborder), chunk.width);
+		cairo_save(cr);
+		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
+		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
+		cairo_paint(cr);
+		cairo_surface_destroy(chunkSurface);
+		cairo_restore(cr);
+
+		// 5) render x-scaled upper border
+		bytestartpos = int(int(scalingGrid->x)*scalex)*4;
+		xoffset = scalingGrid->x*innerscalex;
+		yoffset = 0;
+		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(innerwidth), ceil(scaledtopborder), chunk.width);
+		cairo_save(cr);
+		cairo_scale(cr, 1.0 / (scalex*innerscalex), 1.0 / (scaley*scaley) );
+		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
+		cairo_paint(cr);
+		cairo_surface_destroy(chunkSurface);
+		cairo_restore(cr);
+
+
+		// 6) render y-scaled right border
+		bytestartpos = int(int((scalingGrid->y)*scaley)*chunk.width+int(scalingGrid->x+scalingGrid->width)*scalex)*4;
+		xoffset = chunk.width*scalex-scaledrightborder;
+		yoffset = scalingGrid->y*innerscaley;
+		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(scaledrightborder), ceil(innerheight), chunk.width);
+		cairo_save(cr);
+		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*innerscaley) );
+		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
+		cairo_paint(cr);
+		cairo_surface_destroy(chunkSurface);
+		cairo_restore(cr);
+
+		// 7) render x-scaled bottom border
+		bytestartpos = int(int((scalingGrid->y+scalingGrid->height)*scaley)*chunk.width+int(scalingGrid->x)*scalex)*4;
+		xoffset = scalingGrid->x*innerscalex;
+		yoffset = chunk.height*scaley-scaledbottomborder;
+		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(innerwidth), ceil(scaledbottomborder), chunk.width);
+		cairo_save(cr);
+		cairo_scale(cr, 1.0 / (scalex*innerscalex), 1.0 / (scaley*scaley) );
+		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
+		cairo_paint(cr);
+		cairo_surface_destroy(chunkSurface);
+		cairo_restore(cr);
+
+		// 8) render y-scaled left border
+		bytestartpos = int(int((scalingGrid->y)*scaley)*chunk.width)*4;
+		xoffset = 0;
+		yoffset = scalingGrid->y*innerscaley;
+		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(scaledrightborder), ceil(innerheight), chunk.width);
+		cairo_save(cr);
+		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*innerscaley) );
+		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
+		cairo_paint(cr);
+		cairo_surface_destroy(chunkSurface);
+		cairo_restore(cr);
+
+		// 9) render scaled center
+		bytestartpos = int(int(scalingGrid->y*scaley)*chunk.width+int(scalingGrid->x*scalex))*4;
+		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(innerwidth), ceil(innerheight), chunk.width);
+		xoffset = scalingGrid->x*innerscalex;
+		yoffset = scalingGrid->y*innerscaley;
+		cairo_scale(cr, 1 / (scalex*innerscalex), 1 / (scaley*innerscaley));
+		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
+	}
+	else
+	{
+		chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height, chunk.width);
+		cairo_scale(cr, 1 / chunk.xContentScale, 1 / chunk.yContentScale);
+		cairo_set_source_surface(cr, chunkSurface, 0,0);
+	}
 
 	if(isMask)
 	{
@@ -406,7 +641,6 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		cairo_get_matrix(cr, &maskmatrix);
 		masksurfaces.push_back(make_pair(chunkSurface,maskmatrix));
 	}
-	cairo_set_source_surface(cr, chunkSurface, 0,0);
 	if (hasMask)
 	{
 		for (auto it=masksurfaces.begin(); it!=masksurfaces.end(); it++)

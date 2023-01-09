@@ -113,6 +113,8 @@ private:
 	ACQUIRE_RELEASE_FLAG(starting);
 	ACQUIRE_RELEASE_FLAG(stopped);
 	ACQUIRE_RELEASE_FLAG(terminated);
+	ACQUIRE_RELEASE_FLAG(stopping);
+	ACQUIRE_RELEASE_FLAG(finished);
 	AudioDecoder* audioDecoder;
 	AudioStream* audioStream;
 	AudioFormat format;

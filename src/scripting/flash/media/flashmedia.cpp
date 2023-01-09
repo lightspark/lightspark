@@ -837,7 +837,7 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile)
 
 SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, uint32_t _buffertimeseconds, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, Sound* _sampleproducer, bool _forstreaming)
-	: EventDispatcher(wrk,c),buffertimeseconds(_buffertimeseconds),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),audioDecoder(nullptr),audioStream(nullptr),
+	: EventDispatcher(wrk,c),buffertimeseconds(_buffertimeseconds),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),stopping(false),finished(false),audioDecoder(nullptr),audioStream(nullptr),
 	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),forstreaming(_forstreaming),fromSoundTag(nullptr),
 	leftPeak(1),rightPeak(1),semSampleData(0)
 {
@@ -1000,6 +1000,8 @@ void SoundChannel::finalize()
 	starting=true;
 	stopped=true;
 	terminated=true;
+	stopping=false;
+	finished=false;
 	audioDecoder=nullptr;
 	audioStream=nullptr;
 	format=AudioFormat(CODEC_NONE,0,0);
@@ -1027,6 +1029,8 @@ bool SoundChannel::destruct()
 	starting=true;
 	stopped=true;
 	terminated=true;
+	stopping=false;
+	finished=false;
 	audioDecoder=nullptr;
 	audioStream=nullptr;
 	format=AudioFormat(CODEC_NONE,0,0);
@@ -1084,6 +1088,7 @@ ASFUNCTIONBODY_ATOM(SoundChannel,_constructor)
 ASFUNCTIONBODY_ATOM(SoundChannel, stop)
 {
 	SoundChannel* th=asAtomHandler::as<SoundChannel>(obj);
+	RELEASE_WRITE(th->stopping,true);
 	th->threadAbort();
 	while (!ACQUIRE_READ(th->stopped) && !ACQUIRE_READ(th->terminated))
 		compat_msleep(10);
@@ -1107,17 +1112,18 @@ void SoundChannel::execute()
 		mutex.lock();
 		if (audioStream)
 		{
-			getSys()->audioManager->removeStream(audioStream);
+			getSystemState()->audioManager->removeStream(audioStream);
 			audioStream=nullptr;
 		}
 		mutex.unlock();
+		RELEASE_WRITE(finished,false);
 		if (sampleproducer)
 			playStreamFromSamples();
 		else
 			playStream();
 		if (threadAborting)
 			break;
-		if (!ACQUIRE_READ(starting))
+		if (ACQUIRE_READ(finished))
 		{
 			incRef();
 			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"soundComplete")));
@@ -1169,6 +1175,11 @@ void SoundChannel::playStream()
 				audioDecoder=streamDecoder->audioDecoder;
 
 			mutex.lock();
+			if(threadAborting)
+			{
+				mutex.unlock();
+				throw JobTerminationException();
+			}
 			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
 				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,this->fromSoundTag ? this->fromSoundTag->getId() : -1,startTime,soundTransform ? soundTransform->volume : 1.0);
 
@@ -1177,7 +1188,7 @@ void SoundChannel::playStream()
 				if (audioStream->getIsDone())
 				{
 					// stream was stopped by mixer
-					getSys()->audioManager->removeStream(audioStream);
+					getSystemState()->audioManager->removeStream(audioStream);
 					audioStream=nullptr;
 					RELEASE_WRITE(stopped,true);
 					streamDecoder->audioDecoder->skipAll();
@@ -1227,13 +1238,17 @@ void SoundChannel::playStream()
 			streamDecoder->audioDecoder->setFlushing();
 			streamDecoder->audioDecoder->waitFlushed();
 		}
+		if (!ACQUIRE_READ(stopping))
+			RELEASE_WRITE(finished,true);// only add soundcomplete event if sound was played until the end
+		else
+			RELEASE_WRITE(stopping,false);
 	}
 
 	{
 		mutex.lock();
 		audioDecoder=nullptr;
 		if (audioStream)
-			getSys()->audioManager->removeStream(audioStream);
+			getSystemState()->audioManager->removeStream(audioStream);
 		audioStream=nullptr;
 		mutex.unlock();
 	}
@@ -1322,6 +1337,10 @@ void SoundChannel::playStreamFromSamples()
 			audioDecoder->waitFlushed();
 		}
 		mutex.unlock();
+		if (!ACQUIRE_READ(stopping))
+			RELEASE_WRITE(finished,true);
+		else
+			RELEASE_WRITE(stopping,false);
 	}
 
 	mutex.lock();
@@ -1348,8 +1367,8 @@ void SoundChannel::jobFence()
 		RELEASE_WRITE(stopped,false);
 		RELEASE_WRITE(terminated,false);
 	}
-	this->decRef();
 	mutex.unlock();
+	this->decRef();
 }
 
 void SoundChannel::threadAbort()

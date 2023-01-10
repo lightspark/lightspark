@@ -1276,6 +1276,9 @@ FILLSTYLE Graphics::createBitmapFill(_R<BitmapData> bitmap, _NR<Matrix> matrix, 
 
 	if(!matrix.isNull())
 		style.Matrix = matrix->getMATRIX();
+	MATRIX m;
+	m.scale(TWIPS_FACTOR,TWIPS_FACTOR);
+	style.Matrix=style.Matrix.multiplyMatrix(m);
 
 	style.bitmap = bitmap->getBitmapContainer();
 

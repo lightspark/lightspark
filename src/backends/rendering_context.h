@@ -106,7 +106,7 @@ protected:
 	std::vector<LargeTexture> largeTextures;
 
 	~GLRenderContext(){}
-	void renderpart(const MATRIX& matrix, const TextureChunk& chunk, float cropleft, float croptop, float cropwidth, float cropheight);
+	void renderpart(const MATRIX& matrix, const TextureChunk& chunk, float cropleft, float croptop, float cropwidth, float cropheight, float tx, float ty);
 public:
 	enum LSGL_MATRIX {LSGL_PROJECTION=0, LSGL_MODELVIEW};
 	/*

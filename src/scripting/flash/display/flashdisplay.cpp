@@ -3804,10 +3804,11 @@ void Shape::setupShape(DefineShapeTag* tag, float _scaling)
 	tokens.canRenderToGL = tag->tokens->canRenderToGL;
 	tokens.boundsRect = tag->tokens->boundsRect;
 	fromTag = tag;
-	cachedSurface.isChunkOwner=false;
-	cachedSurface.tex=&tag->chunk;
-	if (tag->chunk.isValid()) // Shape texture was already created, so we don't have to redo it
-		resetNeedsTextureRecalculation();
+	// TODO caching of texture currently doesn't work if the DefineShapeTag is used by multiple shape objects with different scaling
+//	cachedSurface.isChunkOwner=false;
+//	cachedSurface.tex=&tag->chunk;
+//	if (tag->chunk.isValid()) // Shape texture was already created, so we don't have to redo it
+//		resetNeedsTextureRecalculation();
 	scaling=_scaling;
 }
 

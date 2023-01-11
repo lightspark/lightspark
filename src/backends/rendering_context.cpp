@@ -186,19 +186,21 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
 	assert(chunk.getNumberOfChunks()==((chunk.width+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL)*((chunk.height+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL));
 
-	if (scalingGrid && scalingGrid->width+scalingGrid->x < chunk.width/chunk.xContentScale && scalingGrid->height+scalingGrid->y < chunk.height/chunk.yContentScale && matrix.getRotation()==0)
+	if (scalingGrid && scalingGrid->width+abs(scalingGrid->x) < chunk.width/chunk.xContentScale && scalingGrid->height+abs(scalingGrid->y) < chunk.height/chunk.yContentScale && matrix.getRotation()==0)
 	{
 		// rendering with scalingGrid
 
 		MATRIX m;
 		number_t scalex = chunk.xContentScale;
 		number_t scaley = chunk.yContentScale;
-		number_t rightborder = number_t(chunk.width)/scalex-(scalingGrid->x+scalingGrid->width);
-		number_t bottomborder = number_t(chunk.height)/scaley-(scalingGrid->y+scalingGrid->height);
-		number_t scaledleftborder = scalingGrid->x*scalex;
-		number_t scaledtopborder = scalingGrid->y*scaley;
-		number_t scaledrightborder = number_t(chunk.width)-((scalingGrid->x+scalingGrid->width)*scalex);
-		number_t scaledbottomborder = number_t(chunk.height)-((scalingGrid->y+scalingGrid->height)*scaley);
+		number_t leftborder = abs(scalingGrid->x);
+		number_t topborder = abs(scalingGrid->y);
+		number_t rightborder = number_t(chunk.width)/scalex-(leftborder+scalingGrid->width);
+		number_t bottomborder = number_t(chunk.height)/scaley-(topborder+scalingGrid->height);
+		number_t scaledleftborder = leftborder*scalex;
+		number_t scaledtopborder = topborder*scaley;
+		number_t scaledrightborder = number_t(chunk.width)-((leftborder+scalingGrid->width)*scalex);
+		number_t scaledbottomborder = number_t(chunk.height)-((topborder+scalingGrid->height)*scaley);
 		number_t scaledinnerwidth = number_t(chunk.width) - (scaledrightborder+scaledleftborder);
 		number_t scaledinnerheight = number_t(chunk.height) - (scaledbottomborder+scaledtopborder);
 		number_t innerwidth = number_t(chunk.width) - (scaledrightborder+scaledleftborder);
@@ -208,56 +210,56 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 
 		// 1) render unscaled upper left corner
 		m=MATRIX();
-		m.translate(matrix.getTranslateX(),matrix.getTranslateY());
-		renderpart(m,chunk,0,0,scaledleftborder,scaledtopborder);
+		m.translate(matrix.getTranslateX()+chunk.xOffset,matrix.getTranslateY()+chunk.yOffset);
+		renderpart(m,chunk,0,0,scaledleftborder,scaledtopborder,0,0);
 
 		// 2) render unscaled upper right corner
 		m=MATRIX();
-		m.translate(matrix.getTranslateX()+(number_t(chunk.width)-rightborder)/scalex*matrix.getScaleX(),matrix.getTranslateY());
-		renderpart(m,chunk,(number_t(chunk.width) - scaledrightborder),0,scaledrightborder,scaledtopborder);
+		m.translate(matrix.getTranslateX()+(number_t(chunk.width)-rightborder)/scalex*matrix.getScaleX()+chunk.xOffset,matrix.getTranslateY()+chunk.yOffset);
+		renderpart(m,chunk,(number_t(chunk.width) - scaledrightborder),0,scaledrightborder,scaledtopborder,0,0);
 
 		// 3) render unscaled lower right corner
 		m=MATRIX();
-		m.translate(matrix.getTranslateX()+(number_t(chunk.width)-rightborder)/scalex*matrix.getScaleX(),matrix.getTranslateY()+(number_t(chunk.height)-bottomborder)/scaley*matrix.getScaleY());
-		renderpart(m,chunk,(number_t(chunk.width) - scaledrightborder),(number_t(chunk.height) - scaledbottomborder),scaledrightborder,scaledbottomborder);
+		m.translate(matrix.getTranslateX()+(number_t(chunk.width)-rightborder)/scalex*matrix.getScaleX()+chunk.xOffset,matrix.getTranslateY()+(number_t(chunk.height)-bottomborder)/scaley*matrix.getScaleY()+chunk.yOffset);
+		renderpart(m,chunk,(number_t(chunk.width) - scaledrightborder),(number_t(chunk.height) - scaledbottomborder),scaledrightborder,scaledbottomborder,0,0);
 
 		// 4) render unscaled lower left corner
 		m=MATRIX();
-		m.translate(matrix.getTranslateX(),matrix.getTranslateY()+(number_t(chunk.height)-bottomborder)/scaley*matrix.getScaleY());
-		renderpart(m,chunk,0,(number_t(chunk.height) - scaledbottomborder),scaledleftborder,scaledbottomborder);
+		m.translate(matrix.getTranslateX()+chunk.xOffset,matrix.getTranslateY()+(number_t(chunk.height)-bottomborder)/scaley*matrix.getScaleY()+chunk.yOffset);
+		renderpart(m,chunk,0,(number_t(chunk.height) - scaledbottomborder),scaledleftborder,scaledbottomborder,0,0);
 
 		// 5) render x-scaled upper border
 		m=MATRIX();
 		m.scale(matrix.getScaleX()/innerscalex,1.0);
-		m.translate(matrix.getTranslateX()+scalingGrid->x,matrix.getTranslateY());
-		renderpart(m,chunk,scaledleftborder,0,number_t(chunk.width) - (scaledrightborder+scaledleftborder),scaledtopborder);
+		m.translate(matrix.getTranslateX()+leftborder+chunk.xOffset,matrix.getTranslateY()+chunk.yOffset);
+		renderpart(m,chunk,scaledleftborder,0,number_t(chunk.width) - (scaledrightborder+scaledleftborder),scaledtopborder,0,0);
 
 		// 6) render y-scaled right border
 		m=MATRIX();
 		m.scale(1.0,matrix.getScaleY()/innerscaley);
-		m.translate(matrix.getTranslateX()+(number_t(chunk.width)-rightborder)/scalex*matrix.getScaleX(),matrix.getTranslateY()+scalingGrid->y);
-		renderpart(m,chunk,number_t(chunk.width) - scaledrightborder,scaledtopborder,scaledrightborder,scaledinnerheight);
+		m.translate(matrix.getTranslateX()+(number_t(chunk.width)-rightborder)/scalex*matrix.getScaleX()+chunk.xOffset,matrix.getTranslateY()+topborder+chunk.yOffset);
+		renderpart(m,chunk,number_t(chunk.width) - scaledrightborder,scaledtopborder,scaledrightborder,scaledinnerheight,0,0);
 
 		// 7) render x-scaled bottom border
 		m=MATRIX();
 		m.scale(matrix.getScaleX()/innerscalex,1.0);
-		m.translate(matrix.getTranslateX()+scalingGrid->x,matrix.getTranslateY()+(number_t(chunk.height)-bottomborder)/scaley*matrix.getScaleY());
-		renderpart(m,chunk,scaledleftborder,(number_t(chunk.height) - scaledbottomborder),scaledinnerwidth,scaledbottomborder);
+		m.translate(matrix.getTranslateX()+leftborder+chunk.xOffset,matrix.getTranslateY()+(number_t(chunk.height)-bottomborder)/scaley*matrix.getScaleY()+chunk.yOffset);
+		renderpart(m,chunk,scaledleftborder,(number_t(chunk.height) - scaledbottomborder),scaledinnerwidth,scaledbottomborder,0,0);
 
 		// 8) render y-scaled left border
 		m=MATRIX();
 		m.scale(1.0,matrix.getScaleY()/innerscaley);
-		m.translate(matrix.getTranslateX(),matrix.getTranslateY()+scalingGrid->y);
-		renderpart(m,chunk,0,scaledtopborder,scaledleftborder,scaledinnerheight);
+		m.translate(matrix.getTranslateX()+chunk.xOffset,matrix.getTranslateY()+topborder+chunk.yOffset);
+		renderpart(m,chunk,0,scaledtopborder,scaledleftborder,scaledinnerheight,0,0);
 
 		// 9) render scaled center
 		m=MATRIX();
 		m.scale(matrix.getScaleX()/innerscalex,matrix.getScaleY()/innerscaley);
-		m.translate(matrix.getTranslateX()+scalingGrid->x,matrix.getTranslateY()+scalingGrid->y);
-		renderpart(m,chunk,scaledleftborder,scaledtopborder,scaledinnerwidth,scaledinnerheight);
+		m.translate(matrix.getTranslateX()+leftborder+chunk.xOffset,matrix.getTranslateY()+topborder+chunk.yOffset);
+		renderpart(m,chunk,scaledleftborder,scaledtopborder,scaledinnerwidth,scaledinnerheight,0,0);
 	}
 	else
-		renderpart(matrix,chunk,0,0,chunk.width,chunk.height);
+		renderpart(matrix,chunk,0,0,chunk.width,chunk.height,chunk.xOffset,chunk.yOffset);
 
 	if (isMask)
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
@@ -267,7 +269,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 	}
 }
-void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk, float cropleft, float croptop, float cropwidth, float cropheight)
+void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk, float cropleft, float croptop, float cropwidth, float cropheight,float tx,float ty)
 {
 	//Set matrix
 	float fmatrix[16];
@@ -279,6 +281,7 @@ void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk
 	uint32_t firstchunkvertical = floor(croptop/float(CHUNKSIZE_REAL));
 	uint32_t lastchunkhorizontal = ceil((cropleft+cropwidth)/float(CHUNKSIZE_REAL));
 	uint32_t lastchunkvertical = ceil((croptop+cropheight)/float(CHUNKSIZE_REAL));
+	uint32_t chunkskiphorizontal = ceil(chunk.width/float(CHUNKSIZE_REAL))- lastchunkhorizontal;
 	int realchunkcount = (lastchunkhorizontal-firstchunkhorizontal)*(lastchunkvertical-firstchunkvertical);
 	//The 4 corners of each texture are specified as the vertices of 2 triangles,
 	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
@@ -289,22 +292,20 @@ void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk
 	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
 	float realchunkwidth = cropwidth;
 	float realchunkheight = cropheight;
-	uint32_t firstchunk=firstchunkhorizontal+firstchunkvertical*(chunk.width/CHUNKSIZE_REAL);
-	uint32_t curChunk=firstchunk;
-	float tx = chunk.xOffset;
-	float ty = chunk.yOffset;
+	uint32_t curChunk=firstchunkhorizontal+firstchunkvertical*(chunk.width/CHUNKSIZE_REAL);
+	uint32_t chunkrendercount=0;
 	float startX, startY, endX, endY;
 	float leftstart = cropleft-firstchunkhorizontal*CHUNKSIZE_REAL;
 	float topstart = croptop-firstchunkvertical*CHUNKSIZE_REAL;
 
-	float startVtop=croptop-firstchunkvertical*CHUNKSIZE_REAL;
+	float startVtop=topstart;
 	uint32_t availYForTexture=realchunkheight+topstart;
-	startY = ty / chunk.yContentScale;
+	startY = ty;
 	float heighttoplace=realchunkheight;
 	for(uint32_t i=firstchunkvertical, k=0;i<lastchunkvertical;i++)
 	{
 		float heightconsumed;
-		if (startVtop && (realchunkheight < CHUNKSIZE_REAL) && (realchunkheight + topstart > CHUNKSIZE_REAL))
+		if (startVtop && (realchunkheight + topstart > CHUNKSIZE_REAL))
 			heightconsumed = min((float(CHUNKSIZE_REAL) - topstart),float(CHUNKSIZE_REAL));
 		else
 			heightconsumed = min(heighttoplace ,float(CHUNKSIZE_REAL));
@@ -314,7 +315,7 @@ void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk
 		float startULeft=leftstart;
 		float widthtoplace=realchunkwidth;
 		uint32_t availXForTexture=realchunkwidth+leftstart;
-		startX = tx / chunk.xContentScale;
+		startX = tx;
 		const uint32_t availY=min(availYForTexture,uint32_t(CHUNKSIZE_REAL));
 		availYForTexture-=availY;
 		for(uint32_t j=firstchunkhorizontal;j<lastchunkhorizontal;j++)
@@ -334,7 +335,7 @@ void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk
 			endV/=float(largeTextureSize);
 
 			float widthconsumed;
-			if (startULeft && (realchunkwidth < CHUNKSIZE_REAL) && (realchunkwidth + leftstart > CHUNKSIZE_REAL))
+			if (startULeft && (realchunkwidth + leftstart > CHUNKSIZE_REAL))
 				widthconsumed = min((float(CHUNKSIZE_REAL) - leftstart),float(CHUNKSIZE_REAL));
 			else
 				widthconsumed = min(widthtoplace ,float(CHUNKSIZE_REAL));
@@ -376,9 +377,11 @@ void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk
 			k+=2;
 
 			curChunk++;
+			chunkrendercount++;
 			startULeft = 0;
 			startX = endX;
 		}
+		curChunk += chunkskiphorizontal;
 		startVtop = 0;
 		startY = endY;
 	}
@@ -386,7 +389,7 @@ void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk
 	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 0, texture_coords,FLOAT_2);
 	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glEnableVertexAttribArray(TEXCOORD_ATTRIB);
-	engineData->exec_glDrawArrays_GL_TRIANGLES( 0, (curChunk-firstchunk)*6);
+	engineData->exec_glDrawArrays_GL_TRIANGLES( 0, chunkrendercount*6);
 	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glDisableVertexAttribArray(TEXCOORD_ATTRIB);
 }
@@ -508,7 +511,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 
 	uint8_t* buf=(uint8_t*)chunk.chunks;
 	cairo_surface_t* chunkSurface;
-	if (scalingGrid && scalingGrid->width+scalingGrid->x < chunk.width/chunk.xContentScale && scalingGrid->height+scalingGrid->y < chunk.height/chunk.yContentScale && matrix.getRotation()==0)
+	if (scalingGrid && scalingGrid->width+abs(scalingGrid->x) < chunk.width/chunk.xContentScale && scalingGrid->height+abs(scalingGrid->y) < chunk.height/chunk.yContentScale && matrix.getRotation()==0)
 	{
 		// rendering with scalingGrid
 

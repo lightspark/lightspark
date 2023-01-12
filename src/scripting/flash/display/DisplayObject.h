@@ -176,7 +176,7 @@ public:
 	/**
 	 * cacheAsBitmap is true also if any filter is used
 	 */
-	bool computeCacheAsBitmap();
+	bool computeCacheAsBitmap(bool checksize=true);
 	bool requestInvalidationForCacheAsBitmap(InvalidateQueue* q);
 	void computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, _NR<DisplayObject>& mask) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);

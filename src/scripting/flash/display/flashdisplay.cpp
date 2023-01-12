@@ -1223,7 +1223,7 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 {
 	bool renderingfailed = false;
-	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
+	if (computeCacheAsBitmap(false) && ctxt.contextType == RenderContext::GL)
 	{
 		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
 		if (d)

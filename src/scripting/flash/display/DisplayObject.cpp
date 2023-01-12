@@ -361,16 +361,20 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(wrk,args[0],th->filters);
 	th->requestInvalidation(wrk->getSystemState(),true);
 }
-bool DisplayObject::computeCacheAsBitmap()
+bool DisplayObject::computeCacheAsBitmap(bool checksize)
 {
 	if (cacheAsBitmap || (!filters.isNull() && filters->size()!=0))// || blendMode==BLENDMODE_LAYER)
 	{
-		number_t bxmin,bxmax,bymin,bymax;
-		boundsRect(bxmin,bxmax,bymin,bymax);
-		// check if size of resulting bitmap is too large (see Adobe reference for DisplayObject.cacheAsBitmap)
-		uint32_t w=(ceil(bxmax-bxmin));
-		uint32_t h=(ceil(bymax-bymin));
-		return (w <= 8192 && h <= 8192 && (w * h) <= 16777216);
+		if (checksize)
+		{
+			number_t bxmin,bxmax,bymin,bymax;
+			boundsRect(bxmin,bxmax,bymin,bymax);
+			// check if size of resulting bitmap is too large (see Adobe reference for DisplayObject.cacheAsBitmap)
+			uint32_t w=(ceil(bxmax-bxmin));
+			uint32_t h=(ceil(bymax-bymin));
+			return (w <= 8192 && h <= 8192 && (w * h) <= 16777216);
+		}
+		return true;
 	}
 	return false;
 }

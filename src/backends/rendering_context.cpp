@@ -259,7 +259,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 		renderpart(m,chunk,scaledleftborder,scaledtopborder,scaledinnerwidth,scaledinnerheight,0,0);
 	}
 	else
-		renderpart(matrix,chunk,0,0,chunk.width,chunk.height,chunk.xOffset,chunk.yOffset);
+		renderpart(matrix,chunk,0,0,chunk.width,chunk.height,chunk.xOffset/chunk.xContentScale,chunk.yOffset/chunk.yContentScale);
 
 	if (isMask)
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);

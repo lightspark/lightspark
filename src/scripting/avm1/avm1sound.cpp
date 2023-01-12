@@ -40,7 +40,9 @@ void AVM1Sound::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("getPan","",Class<IFunction>::getFunction(c->getSystemState(),getPan),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setPan","",Class<IFunction>::getFunction(c->getSystemState(),setPan),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),getPosition),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_IgnoreSetter),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("duration","",Class<IFunction>::getFunction(c->getSystemState(),_getter_length),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("duration","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_IgnoreSetter),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("loadSound","",Class<IFunction>::getFunction(c->getSystemState(),loadSound),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)

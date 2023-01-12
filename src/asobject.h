@@ -1037,6 +1037,8 @@ public:
 	ASFUNCTION_ATOM(setPropertyIsEnumerable);
 	ASFUNCTION_ATOM(addProperty);
 	ASFUNCTION_ATOM(registerClass);
+	ASFUNCTION_ATOM(AVM1_IgnoreSetter);
+	
 	void check() const;
 	static void s_incRef(ASObject* o)
 	{

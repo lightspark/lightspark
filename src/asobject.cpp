@@ -843,6 +843,13 @@ variable* ASObject::findSettable(const multiname& name, bool* has_getter)
 
 multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset, ASWorker* wrk)
 {
+	if (name.normalizedNameUnresolved(getSystemState()) == "_1184053038labelDisplay")
+	{
+		LOG(LOG_ERROR,"setval:"<<name<<" "<<this->toDebugString()<<" "<< asAtomHandler::toDebugString(o));
+		asAtomHandler::getObject(o)->dumpVariables();
+		getInstanceWorker()->dumpStacktrace();
+	}
+	
 	multiname *retval = nullptr;
 	check();
 	assert(!cls || classdef->isSubClass(cls));
@@ -1401,6 +1408,10 @@ ASFUNCTIONBODY_ATOM(ASObject,registerClass)
 		ret = asAtomHandler::fromBool(root->AVM1registerTagClass(name,theClassConstructor));
 	}
 }
+ASFUNCTIONBODY_ATOM(ASObject,AVM1_IgnoreSetter)
+{
+	// this is for AVM1 readonly getters, it does nothing and is only needed to avoid an exception if setter is called
+}
 
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 {
@@ -1761,6 +1772,11 @@ void variables_map::dumpVariables()
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<< hex<<it->first<<dec<<" "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
 			asAtomHandler::toDebugString(it->second.var) << ' ' << asAtomHandler::toDebugString(it->second.setter) << ' ' << asAtomHandler::toDebugString(it->second.getter) << ' ' <<it->second.slotid << ' ' );//<<dynamic_cast<const Class_base*>(it->second.type));
+		if (getSys()->getStringFromUniqueId(it->first) == "_1184053038labelDisplay")
+		{
+			asAtomHandler::getObject(it->second.var)->dumpVariables();
+			LOG(LOG_ERROR,"--------------------");
+		}
 	}
 }
 

@@ -4286,16 +4286,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				{
 					if (function->inClass && function->inClass->isSealed && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 					{
-						do
+						if (!cls->hasoverriddenmethod(name))
 						{
-							if (!cls->isSealed)
-								break;
-							v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed,false,wrk);
-							if (v)
-								break;
-							cls = cls->super.getPtr();
+							do
+							{
+								v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed,false,wrk);
+								if (v)
+									break;
+								if (!cls->isSealed)
+									break;
+								cls = cls->super.getPtr();
+							}
+							while (cls);
 						}
-						while (cls && cls->isSealed);
 						if (v)
 						{
 							found =true;

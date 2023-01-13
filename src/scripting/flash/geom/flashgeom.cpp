@@ -1074,7 +1074,12 @@ void Transform::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, matrix3D);
 }
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, perspectiveProjection)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, matrix3D)
+ASFUNCTIONBODY_GETTER_SETTER_CB(Transform, matrix3D,onSetMatrix3D)
+
+void Transform::onSetMatrix3D(_NR<Matrix3D> oldValue)
+{
+	owner->setMatrix3D(this->matrix3D);
+}
 
 ASFUNCTIONBODY_ATOM(Transform,_constructor)
 {

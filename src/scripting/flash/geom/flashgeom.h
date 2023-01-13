@@ -212,6 +212,7 @@ class Transform: public ASObject
 friend class DisplayObject;
 private:
 	_NR<DisplayObject> owner;
+	void onSetMatrix3D(_NR<Matrix3D> oldValue);
 public:
 	Transform(ASWorker* wrk,Class_base* c);
 	Transform(ASWorker* wrk, Class_base* c, _R<DisplayObject> o);

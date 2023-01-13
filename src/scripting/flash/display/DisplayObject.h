@@ -89,6 +89,7 @@ private:
 	 * Also used by Transform
 	 */
 	void setMatrix(_NR<Matrix> m);
+	void setMatrix3D(_NR<Matrix3D> m);
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool useLegacyMatrix;
 	bool needsTextureRecalculation;

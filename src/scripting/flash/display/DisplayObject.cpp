@@ -488,6 +488,32 @@ void DisplayObject::setMatrix(_NR<Matrix> m)
 	}
 }
 
+void DisplayObject::setMatrix3D(_NR<Matrix3D> m)
+{
+	bool mustInvalidate=false;
+	if (!m.isNull())
+	{
+		Locker locker(spinlock);
+		matrix= NullRef;
+		float rawdata[16];
+		m->getRawDataAsFloat(rawdata);
+		this->tx = rawdata[12];
+		this->ty = rawdata[13];
+		this->tz = rawdata[14];
+		this->sx = rawdata[0];
+		this->sy = rawdata[5];
+		this->sz = rawdata[10];
+		LOG(LOG_NOT_IMPLEMENTED,"not all values of Matrix3D are handled in DisplayObject");
+		geometryChanged();
+		mustInvalidate=true;
+	}
+	if(mustInvalidate && onStage)
+	{
+		hasChanged=true;
+		requestInvalidation(getSystemState());
+	}
+}
+
 void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 {
 	if(!useLegacyMatrix)

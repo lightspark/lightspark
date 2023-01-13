@@ -307,6 +307,16 @@ _NR<DisplayObject> TextField::hitTestImpl(number_t x, number_t y, DisplayObject:
 	boundsRect(xmin,xmax,ymin,ymax);
 	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax)
 	{
+		if (this->tag && this->tag->WasStatic && this->type == ET_READ_ONLY && (type == MOUSE_CLICK || type == DOUBLE_CLICK))
+		{
+			// it seems that TextFields are not set as target to MouseEvents if constructed from a DefineEditTextTag that has the flag WasStatic 
+			if (this->getParent())
+			{
+				this->getParent()->incRef();
+				return _MNR(this->getParent());
+			}
+			return NullRef;
+		}
 		incRef();
 		return _MNR(this);
 	}

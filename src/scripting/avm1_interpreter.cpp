@@ -1561,6 +1561,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					ASObject* o = asAtomHandler::getObject(scriptobject);
 					if (o->is<MovieClip>() && !fromInitAction)
 						o->as<MovieClip>()->AVM1HandleConstruction();
+					if (o->is<DisplayObject>())
+						ASATOM_INCREF(value);// incref here to make sure value is not destructed when setting value, reference is consumed in AVM1SetVariableDirect
 					multiname m(nullptr);
 					switch (asAtomHandler::getObjectType(name))
 					{
@@ -1636,11 +1638,15 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						}
 					}
 					if (o->is<DisplayObject>())
+					{
+						o->as<DisplayObject>()->AVM1SetVariableDirect(m.name_s_id,value);
 						o->as<DisplayObject>()->AVM1UpdateVariableBindings(m.name_s_id,value);
+					}
 				}
 				else
 				{
-					LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetMember for scriptobject type "<<asAtomHandler::toDebugString(scriptobject)<<" "<<(int)asAtomHandler::getObjectType(scriptobject)<<" "<<asAtomHandler::toDebugString(name));
+					if (!asAtomHandler::isUndefined(scriptobject))
+						LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetMember for scriptobject type "<<asAtomHandler::toDebugString(scriptobject)<<" "<<(int)asAtomHandler::getObjectType(scriptobject)<<" "<<asAtomHandler::toDebugString(name));
 					ASATOM_DECREF(value);
 				}
 				ASATOM_DECREF(name);

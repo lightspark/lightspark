@@ -2671,6 +2671,33 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 	}
 }
 
+void DisplayObject::AVM1SetVariableDirect(uint32_t nameId, asAtom v)
+{
+	auto it = avm1variables.find(nameId);
+	if (it != avm1variables.end())
+		ASATOM_DECREF(it->second);
+	if (asAtomHandler::isUndefined(v))
+	{
+		avm1variables.erase(nameId);
+		if (asAtomHandler::is<AVM1Function>(v))
+		{
+			avm1functions.erase(nameId);
+		}
+	}
+	else
+	{
+		avm1variables[nameId] = v;
+		if (asAtomHandler::is<AVM1Function>(v))
+		{
+			AVM1Function* f = asAtomHandler::as<AVM1Function>(v);
+			if (f->getClip() == this)
+				f->resetClipRefcounted(); // this avoids that this DisplayObject is never destroyed because the function still has a reference count
+			f->incRef();
+			avm1functions[nameId] = _MR(f);
+		}
+	}
+}
+
 asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvars)
 {
 	uint32_t pos = name.find(":");

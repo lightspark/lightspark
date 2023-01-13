@@ -1426,6 +1426,12 @@ void TextField::afterLegacyInsert()
 			tagvartarget = tagvartarget->getParent();
 		}
 	}
+	if (!loadedFrom->usesActionScript3)
+	{
+		setConstructIndicator();
+		constructionComplete();
+		afterConstruction();
+	}
 	avm1SyncTagVar();
 	updateSizes();
 	setSizeAndPositionFromAutoSize();

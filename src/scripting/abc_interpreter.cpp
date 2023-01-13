@@ -1713,14 +1713,22 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				candup=false;
 				if (state.function->inClass && state.function->inClass->isSealed && !state.function->isFromNewFunction() && !state.mi->needsActivation())
 				{
-					pos = code.skipu30FromPosition(pos);
-					b = code.peekbyteFromPosition(pos);
-					pos++;
-					argsneeded++;
-					lastlocalpos=-1;
+					uint32_t t = code.peeku30FromPosition(pos);
+					if (state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
+					{
+						multiname* name =  state.mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+						if (name->isStatic && !state.function->inClass->hasoverriddenmethod(name))
+						{
+							pos = code.skipu30FromPosition(pos);
+							b = code.peekbyteFromPosition(pos);
+							pos++;
+							argsneeded++;
+							lastlocalpos=-1;
+							break;
+						}
+					}
 				}
-				else
-					keepchecking=false;
+				keepchecking=false;
 				break;
 			case 0x6c://getslot
 				candup=false;

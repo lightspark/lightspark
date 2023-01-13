@@ -2228,7 +2228,7 @@ void RootMovieClip::addToScalingGrids(const DefineScalingGridTag* r)
 	scalinggrids[r->CharacterId] = r->Splitter;
 }
 
-RECT* RootMovieClip::ScalingGridsLookup(int id)
+lightspark::RECT* RootMovieClip::ScalingGridsLookup(int id)
 {
 	Locker l(scalinggridsmutex);
 	auto it = scalinggrids.find(id);

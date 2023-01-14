@@ -3312,8 +3312,12 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 		auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
+	}
+	child->setOnStage(false,false,inskipping);
+	{
+		Locker l(mutexDisplayList);
+		auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 
-		child->setOnStage(false,false,inskipping);
 		if (direct || !this->isOnStage() || inskipping)
 			child->setParent(nullptr);
 		else

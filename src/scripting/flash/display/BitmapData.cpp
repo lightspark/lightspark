@@ -340,9 +340,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 
 	if(!drawable->getClass() || !drawable->getClass()->isSubClass(InterfaceClass<IBitmapDrawable>::getClass(wrk->getSystemState())) )
 	{
-		createError<TypeError>(wrk,kCheckTypeFailedError, 
-				      drawable->getClassName(),
-				      "IBitmapDrawable");
+		if (wrk->rootClip->needsActionScript3())
+			createError<TypeError>(wrk,kCheckTypeFailedError, 
+								   drawable->getClassName(),
+								   "IBitmapDrawable");
 		return;
 	}
 

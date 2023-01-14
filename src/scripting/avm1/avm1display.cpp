@@ -410,8 +410,19 @@ void AVM1Color::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(AVM1Color,_constructor)
 {
 	AVM1Color* th=asAtomHandler::as<AVM1Color>(obj);
-	_NR<DisplayObject> t;
-	ARG_CHECK(ARG_UNPACK(t));
+	if(argslen == 0)
+	{
+		createError<ArgumentError>(wrk,kWrongArgumentCountError, "Color", "1", "0");
+		return;
+	}
+	DisplayObject* t = nullptr;
+	if (asAtomHandler::isString(args[0]))
+	{
+		tiny_string s = asAtomHandler::toString(args[0],wrk);
+		t = wrk->rootClip->AVM1GetClipFromPath(s);
+	}
+	else if (asAtomHandler::is<DisplayObject>(args[0]))
+		t = asAtomHandler::as<DisplayObject>(args[0]);
 	if (t)
 	{
 		if (t->is<AVM1MovieClip>())

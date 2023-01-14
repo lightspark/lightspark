@@ -6374,11 +6374,11 @@ void MovieClip::AVM1HandleScripts()
 	}
 	// TODO: check if the conditions when to execute the frame scripts are correct:
 	// - clip has more than one frame and
-	//    - clip is currently playing (not stopped) and was not changed explicitely
-	//    - clip was explicitely stopped but didn't change the current frame
+	//    - clip is currently playing (not stopped) and was not changed explicitely or
+	//    - clip was explicitely stopped
 	if ((!this->hasFinishedLoading() || this->getFramesLoaded()>1) && 
 			((!state.explicit_play && !state.stop_FP)
-			 || (state.stop_FP && state.explicit_FP && !state.explicit_play && ((int)state.FP!=state.last_FP))
+			 || (state.stop_FP && state.explicit_FP && !state.explicit_play)
 			 ))
 	{
 		state.explicit_FP=false;

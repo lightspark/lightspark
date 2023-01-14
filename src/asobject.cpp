@@ -2272,7 +2272,7 @@ void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 			if (wrk)
 			{
 				// prepare value for use in another worker
-				if (asAtomHandler::isFunction(v))
+				if (wrk->rootClip->needsActionScript3() && asAtomHandler::isFunction(v))
 					v = asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<IFunction>(v)->createFunctionInstance(wrk));
 				else if (asAtomHandler::isObject(v))
 				{

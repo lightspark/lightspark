@@ -2225,7 +2225,7 @@ void DisplayObject::removeAVM1Listeners()
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->sx*100.0);
+	asAtomHandler::setInt(ret,wrk,round(th->sx*100.0));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleX)
@@ -2241,7 +2241,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleX)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleY)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->sy*100.0);
+	asAtomHandler::setInt(ret,wrk,round(th->sy*100.0));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleY)

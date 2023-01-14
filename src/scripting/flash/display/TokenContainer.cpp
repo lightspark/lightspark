@@ -33,12 +33,12 @@ using namespace lightspark;
 using namespace std;
 
 
-TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o), scaling(1.0f/20.0f),renderWithNanoVG(false)
+TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o),colortransform(nullptr), scaling(1.0f/20.0f),renderWithNanoVG(false)
 {
 }
 
 TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling) :
-	owner(_o), scaling(_scaling),renderWithNanoVG(false)
+	owner(_o),colortransform(nullptr), scaling(_scaling),renderWithNanoVG(false)
 
 {
 	tokens.filltokens.assign(_tokens.filltokens.begin(),_tokens.filltokens.end());
@@ -149,7 +149,18 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 							{
 								case SOLID_FILL:
 								{
-									NVGcolor c = nvgRGBA(style->Color.Red,style->Color.Green,style->Color.Blue,style->Color.af()*owner->getConcatenatedAlpha()*255.0);
+									RGBA color = style->Color;
+									float r,g,b,a;
+									if (colortransform)
+										colortransform->applyTransformation(color,r,g,b,a);
+									else
+									{
+										r = color.rf();
+										g = color.gf();
+										b = color.bf();
+										a = color.af();
+									}
+									NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*owner->getConcatenatedAlpha()*255.0);
 									nvgFillColor(nvgctxt,c);
 									break;
 								}
@@ -180,11 +191,18 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 							}
 							else
 							{
-								NVGcolor c;
-								c.a = style->Color.af()*owner->getConcatenatedAlpha();
-								c.r = style->Color.rf();
-								c.g = style->Color.gf();
-								c.b = style->Color.bf();
+								RGBA color = style->Color;
+								float r,g,b,a;
+								if (colortransform)
+									colortransform->applyTransformation(color,r,g,b,a);
+								else
+								{
+									r = color.rf();
+									g = color.gf();
+									b = color.bf();
+									a = color.af();
+								}
+								NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*owner->getConcatenatedAlpha()*255.0);
 								nvgStrokeColor(nvgctxt,c);
 							}
 							// TODO: EndCapStyle
@@ -538,7 +556,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	}
 	owner->cachedSurface.isValid=true;
 	if ((!q || !q->isSoftwareQueue) && !tokens.empty() && tokens.canRenderToGL 
-			&& !ct
 			&& mask.isNull()
 			&& !isMask
 			&& !owner->ClipDepth
@@ -546,6 +563,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& owner->getBlendMode()==BLENDMODE_NORMAL
 			&& !r)
 	{
+		this->colortransform=ct;
 		renderWithNanoVG=true;
 		int offsetX;
 		int offsetY;

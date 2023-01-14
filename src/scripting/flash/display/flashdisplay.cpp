@@ -6590,16 +6590,9 @@ void MovieClip::afterConstruction()
 	// only if state.FP was not changed during construction
 	if(frameScripts.count(0) && state.FP == 0)
 	{
-		// it seems that the framescript for frame 0 is executed _before_ any enterframe event is handled
-		inExecuteFramescript = true;
-		asAtom v=asAtomHandler::invalidAtom;
+		frameScriptToExecute=0;
 		this->incRef();
-		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
-		asAtomHandler::callFunction(frameScripts[0],getInstanceWorker(),v,obj,nullptr,0,false);
-		ASATOM_DECREF(v);
-		this->decRef();
-		inExecuteFramescript = false;
-		lastFrameScriptExecuted=0;
+		getVm(getSystemState())->prependEvent(NullRef, _MR(new (getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}
 }
 

@@ -76,6 +76,7 @@ public:
 	int channels;
 };
 class NetStream;
+class EngineData;
 
 class Decoder
 {
@@ -305,8 +306,14 @@ protected:
 		}
 		
 	};
+#ifdef HAVE_LIBSWRESAMPLE
+	SwrContext* resamplecontext;
+#elif defined HAVE_LIBAVRESAMPLE
+	AVAudioResampleContext* resamplecontext;
+#endif
 public:
 	uint32_t sampleRate;
+	EngineData* engine;
 protected:
 	BlockingCircularQueue<FrameSamples> samplesBuffer;
 	virtual void samplesconsumed(uint32_t samples) {}
@@ -314,8 +321,13 @@ public:
 	/**
 	  	The AudioDecoder contains audio buffers that must be aligned to 16 bytes, so we redefine the allocator
 	*/
-	AudioDecoder(uint32_t size):sampleRate(0),samplesBuffer(size),channelCount(0),initialTime(-1),forExtraction(false){}
-	virtual ~AudioDecoder(){}
+	AudioDecoder(uint32_t size, EngineData* _engine):
+	#if defined HAVE_LIBAVRESAMPLE || defined HAVE_LIBSWRESAMPLE
+		resamplecontext(nullptr),
+	#endif
+		sampleRate(0),engine(_engine),samplesBuffer(size),channelCount(0),initialTime(-1),forExtraction(false)
+	{}
+	virtual ~AudioDecoder();
 	virtual void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen)=0;
 	virtual uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time)=0;
 	bool hasDecodedFrames() const
@@ -363,7 +375,7 @@ public:
 class NullAudioDecoder: public AudioDecoder
 {
 public:
-	NullAudioDecoder():AudioDecoder(0)
+	NullAudioDecoder():AudioDecoder(0,nullptr)
 	{
 		status=VALID;
 		sampleRate=44100;
@@ -383,7 +395,7 @@ private:
 protected:
 	void samplesconsumed(uint32_t samples) override;
 public:
-	SampleDataAudioDecoder(SoundChannel* _soundchannel,uint32_t buffertime):AudioDecoder(buffertime),soundchannel(_soundchannel)
+	SampleDataAudioDecoder(SoundChannel* _soundchannel,uint32_t buffertime,EngineData* engine):AudioDecoder(buffertime,engine),soundchannel(_soundchannel)
 	{
 		sampleRate=44100;
 		channelCount=2;
@@ -397,18 +409,11 @@ public:
 
 
 #ifdef ENABLE_LIBAVCODEC
-class EngineData;
 class FFMpegAudioDecoder: public AudioDecoder
 {
 private:
-	EngineData* engine;
 	bool ownedContext;
 	AVCodecContext* codecContext;
-#ifdef HAVE_LIBSWRESAMPLE
-	SwrContext* resamplecontext;
-#elif defined HAVE_LIBAVRESAMPLE
-	AVAudioResampleContext* resamplecontext;
-#endif
 	std::vector<uint8_t> overflowBuffer;
 	bool fillDataAndCheckValidity();
 	CodecID LSToFFMpegCodec(LS_AUDIO_CODEC lscodec);

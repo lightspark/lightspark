@@ -1267,7 +1267,7 @@ void SoundChannel::playStreamFromSamples()
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
-		sampleDecoder=new SampleDataAudioDecoder(this,100);
+		sampleDecoder=new SampleDataAudioDecoder(this,100,getSystemState()->getEngineData());
 		bool bufferfilled=false;
 		while(!ACQUIRE_READ(stopped))
 		{

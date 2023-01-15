@@ -2788,13 +2788,8 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 
 	if (loadedFrom->version > 4 && checkrootvars)
 	{
-		multiname m(nullptr);
-		m.name_type=multiname::NAME_STRING;
-		m.name_s_id=getSystemState()->getUniqueStringId(name);
-		m.isAttribute = false;
-		getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 		if (asAtomHandler::isInvalid(ret))// get Variable from root movie
-			loadedFrom->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
+			ret = loadedFrom->AVM1GetVariable(name,false);
 	}
 	return ret;
 }

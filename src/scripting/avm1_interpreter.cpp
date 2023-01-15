@@ -2228,6 +2228,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				clip_isTarget=true;
 				if (asAtomHandler::is<DisplayObject>(obj))
 					clip = asAtomHandler::as<DisplayObject>(obj);
+				ASATOM_INCREF(obj);
 				scopestack[curdepth] = obj;
 				scopestackstop[curdepth] = itend;
 				break;

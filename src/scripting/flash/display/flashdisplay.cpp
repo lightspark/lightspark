@@ -1668,14 +1668,14 @@ void MovieClip::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 
-MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),frameScriptToExecute(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
+MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
   ,inAVM1Attachment(false),isAVM1Loaded(false),avm1PrevScriptedClip(nullptr),avm1NextScriptedClip(nullptr)
   ,actions(nullptr),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
 
-MovieClip::MovieClip(ASWorker* wrk, Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(wrk,c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),frameScriptToExecute(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
+MovieClip::MovieClip(ASWorker* wrk, Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(wrk,c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
   ,inAVM1Attachment(false),isAVM1Loaded(false),avm1PrevScriptedClip(nullptr),avm1NextScriptedClip(nullptr)
   ,actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true)
 {
@@ -1701,7 +1701,6 @@ bool MovieClip::destruct()
 	frameScripts.clear();
 	
 	fromDefineSpriteTag = UINT32_MAX;
-	frameScriptToExecute = UINT32_MAX;
 	lastFrameScriptExecuted = UINT32_MAX;
 	lastratio=0;
 	totalFrames_unreliable = 1;
@@ -1806,14 +1805,6 @@ uint32_t MovieClip::getFrameIdByLabel(const tiny_string& label, const tiny_strin
 	}
 
 	return FRAME_NOT_FOUND;
-}
-
-void MovieClip::checkFrameScriptToExecute()
-{
-	if(frameScripts.count(state.FP))
-	{
-		frameScriptToExecute=state.FP;
-	}
 }
 
 /* Return global frame index for frame i (zero-based) in a scene
@@ -6417,7 +6408,6 @@ void MovieClip::initFrame()
 	/* Set last_FP to reflect the frame that we have initialized currently.
 	 * This must be set before the constructor of this MovieClip is run,
 	 * or it will call initFrame(). */
-	bool newFrame = (int)state.FP != state.last_FP;
 	state.last_FP=state.FP;
 
 	/* call our own constructor, if necassary */
@@ -6426,16 +6416,6 @@ void MovieClip::initFrame()
 		DisplayObject::initFrame();
 		if (!loadedFrom->usesActionScript3)
 			AVM1HandleConstruction();
-	}
-
-	/* Run framescripts if this is a new frame. We do it at the end because our constructor
-	 * may just have registered one. 
-	 * if this is called from constructionComplete, the actionscript constructor was not called yet and 
-	 * we can't execute the framescript of the first frame now (it will be executed in afterConstruction)
-	 */
-	if(this->getConstructIndicator() && newFrame && frameScripts.count(state.FP))
-	{
-		frameScriptToExecute=state.FP;
 	}
 	state.creatingframe=false;
 }
@@ -6453,9 +6433,9 @@ void MovieClip::executeFrameScript()
 	Sprite::executeFrameScript();
 	if (needsActionScript3())
 		state.explicit_FP=false;
-	if (frameScriptToExecute != UINT32_MAX && !markedForLegacyDeletion)
+	uint32_t f = frameScripts.count(state.FP) ? state.FP : UINT32_MAX;
+	if (f != UINT32_MAX && !markedForLegacyDeletion)
 	{
-		uint32_t f = frameScriptToExecute;
 		if (lastFrameScriptExecuted != f)
 		{
 			lastFrameScriptExecuted = f;
@@ -6469,7 +6449,6 @@ void MovieClip::executeFrameScript()
 			inExecuteFramescript = false;
 		}
 	}
-	frameScriptToExecute = UINT32_MAX;
 }
 
 void MovieClip::checkRatio(uint32_t ratio, bool inskipping)
@@ -6510,15 +6489,6 @@ void MovieClip::advanceFrame()
 	}
 	state.frameadvanced=false;
 	state.creatingframe=true;
-	// this seems to cause more problems than it fixes, so I deactivate executing framescripts without an event for now
-//	if (frameScriptToExecute != UINT32_MAX && 
-//			(this->state.FP!=0 || state.FP != state.next_FP)) // don't execute framescript if this is a MovieClip that's advancing for the first time after construction
-//	{
-//		// an ExecuteFrameScriptEvent was not handled yet, so we execute the script before advancing to next frame
-//		// this can happen if a MovieClip was constructed and has been set explicitely to another frame (by gotoAndStop etc.)
-//		// before returning to the event loop
-//		executeFrameScript();
-//	}
 	/* A MovieClip can only have frames if
 	 * 1a. It is a RootMovieClip
 	 * 1b. or it is a DefineSpriteTag
@@ -6573,6 +6543,7 @@ void MovieClip::advanceFrame()
 		// if it was set by an actionscript command.
 		state.frameadvanced = true;
 	}
+	markedForLegacyDeletion=false;
 }
 
 void MovieClip::constructionComplete()
@@ -6594,7 +6565,6 @@ void MovieClip::afterConstruction()
 	// only if state.FP was not changed during construction
 	if(frameScripts.count(0) && state.FP == 0)
 	{
-		frameScriptToExecute=0;
 		this->incRef();
 		getVm(getSystemState())->prependEvent(NullRef, _MR(new (getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
 	}

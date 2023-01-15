@@ -2166,7 +2166,6 @@ void RootMovieClip::constructionComplete()
 void RootMovieClip::afterConstruction()
 {
 	DisplayObject::afterConstruction();
-	checkFrameScriptToExecute();
 }
 void RootMovieClip::revertFrame()
 {

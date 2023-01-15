@@ -7094,7 +7094,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							}
 							if (state.operandlist.size() > 0 && (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_CONSTANT || state.operandlist.back().type == OP_CACHED_SLOT) && state.operandlist.back().objtype)
 							{
-								if (canCallFunctionDirect(state.operandlist.back(),name))
+								bool isClassOperator=false;
+								if (state.operandlist.back().type == OP_CACHED_CONSTANT)
+								{
+									asAtom* a = mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
+									isClassOperator = asAtomHandler::is<Class_base>(*a);
+								}
+								if (!isClassOperator && canCallFunctionDirect(state.operandlist.back(),name))
 								{
 									variable* v = state.operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
 									if (v && asAtomHandler::is<IFunction>(v->getter))
@@ -7111,7 +7117,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										break;
 									}
 								}
-								if (canCallFunctionDirect(state.operandlist.back(),name,true))
+								if (!isClassOperator && canCallFunctionDirect(state.operandlist.back(),name,true))
 								{
 									variable* v = state.operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
 									if (v)
@@ -7120,16 +7126,25 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									}
 								}
 								if (state.operandlist.back().objtype && !state.operandlist.back().objtype->isInterface && state.operandlist.back().objtype->isInitialized()
-										&& (!typestack.back().obj || !typestack.back().classvar))
+										&& (!typestack.back().obj || !typestack.back().classvar || isClassOperator))
 								{
-									asAtom o = asAtomHandler::invalidAtom;
-									if (state.operandlist.back().objtype->is<Class_inherit>())
-										state.operandlist.back().objtype->as<Class_inherit>()->checkScriptInit();
 									// check if we can replace getProperty by getSlot
-									state.operandlist.back().objtype->getInstance(wrk,o,false,nullptr,0);
-									state.operandlist.back().objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
-
-									variable* v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+									variable* v = nullptr;
+									asAtom o = asAtomHandler::invalidAtom;
+									if (isClassOperator)
+									{
+										asAtom* a = mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
+										v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+									}
+									else
+									{
+										if (state.operandlist.back().objtype->is<Class_inherit>())
+											state.operandlist.back().objtype->as<Class_inherit>()->checkScriptInit();
+										state.operandlist.back().objtype->getInstance(wrk,o,false,nullptr,0);
+										state.operandlist.back().objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
+										
+										v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+									}
 									if (v && v->slotid)
 									{
 										resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;

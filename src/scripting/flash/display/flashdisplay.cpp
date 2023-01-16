@@ -2736,6 +2736,17 @@ void DisplayObjectContainer::markBoundsRectDirtyChildren()
 	}
 }
 
+void DisplayObjectContainer::setChildrenCachedAsBitmapOf(DisplayObject* cachedBitmapObject)
+{
+	if (this != cachedBitmapObject)
+		this->cachedAsBitmapOf=cachedBitmapObject;
+	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+	{
+		if ((*it)->is<DisplayObjectContainer>())
+			(*it)->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(cachedBitmapObject);
+	}
+}
+
 bool DisplayObjectContainer::hasLegacyChildAt(int32_t depth)
 {
 	auto i = mapDepthToLegacyChild.find(depth);

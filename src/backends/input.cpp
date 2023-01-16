@@ -75,6 +75,8 @@ bool InputThread::worker(SDL_Event *event)
 			Locker locker(mutexListeners);
 			if (lastMouseDownTarget && !lastMouseDownTarget->isOnStage())
 				lastMouseDownTarget.reset();
+			if (lastMouseUpTarget && !lastMouseUpTarget->isOnStage())
+				lastMouseUpTarget.reset();
 		}
 		{
 			Locker locker(mutexDragged);
@@ -82,7 +84,7 @@ bool InputThread::worker(SDL_Event *event)
 				curDragged.reset();
 		}
 	}
-	if (m_sys->isShuttingDown())
+	if (!m_sys || m_sys->isShuttingDown())
 		return false;
 	switch(event->type)
 	{
@@ -188,10 +190,19 @@ bool InputThread::worker(SDL_Event *event)
 			ret=true;
 			break;
 		}
-		case SDL_WINDOWEVENT_LEAVE:
+		case SDL_WINDOWEVENT:
 		{
-			handleMouseLeave();
-			ret=true;
+			switch (event->window.event)
+			{
+				case SDL_WINDOWEVENT_LEAVE:
+				{
+					handleMouseLeave();
+					ret=true;
+					break;
+				}
+				default:
+					break;
+			}
 			break;
 		}
 		default:
@@ -304,6 +315,22 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod butt
 	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::DOUBLE_CLICK);
 	if (selected.isNull())
 		return;
+	if (!selected->isHittable(DisplayObject::DOUBLE_CLICK))
+	{
+		// no double click hit found, add additional down-up-click sequence
+		if (lastMouseUpTarget)
+		{
+			// add mousedown event for last mouseUp target
+			number_t localX, localY;
+			lastMouseUpTarget->globalToLocal(x,y,localX,localY);
+			m_sys->currentVm->addIdleEvent(lastMouseUpTarget,
+										   _MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseDown",localX,localY,true,buttonState,pressed)));
+			// reset lastMouseDownTarget to lastMouseUpTarget to ensure a normal "click" event is sended
+			Locker locker(mutexListeners);
+			lastMouseDownTarget = lastMouseUpTarget;
+		}
+		return;
+	}
 	number_t localX, localY;
 	selected->globalToLocal(x,y,localX,localY);
 	m_sys->currentVm->addIdleEvent(selected,
@@ -328,6 +355,7 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 	m_sys->currentVm->addIdleEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseUp",localX,localY,true,buttonState,pressed)));
 	mutexListeners.lock();
+	lastMouseUpTarget=selected;
 	if(lastMouseDownTarget==selected)
 	{
 		lastMouseDownTarget=NullRef;
@@ -359,8 +387,8 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 	mousePos.y=y;
 	if (m_sys->getRenderThread()->inSettings)
 		return;
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
 	mutexDragged.lock();
-	// Handle current drag operation
 	if(curDragged)
 	{
 		Vector2f local;
@@ -379,46 +407,40 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 
 		curDragged->setX(local.x);
 		curDragged->setY(local.y);
-		mutexDragged.unlock();
 	}
-	// Handle non-drag mouse movement
+	mutexDragged.unlock();
+	number_t localX, localY;
+	if(!currentMouseOver.isNull() && currentMouseOver != selected)
+	{
+		number_t clocalX, clocalY;
+		currentMouseOver->globalToLocal(x,y,clocalX,clocalY);
+		m_sys->currentVm->addIdleEvent(currentMouseOver,
+			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOut",clocalX,clocalY,true,buttonState,pressed,selected)));
+		if (selected.isNull())
+			m_sys->currentVm->addIdleEvent(currentMouseOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",clocalX,clocalY,true,buttonState,pressed,selected)));
+		currentMouseOver.reset();
+	}
+	if (selected.isNull())
+		return;
+	selected->globalToLocal(x,y,localX,localY);
+	if(currentMouseOver == selected)
+	{
+		m_sys->currentVm->addIdleEvent(selected,
+			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseMove",localX,localY,true,buttonState,pressed)),true);
+	}
 	else
 	{
-		mutexDragged.unlock();
-		_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
-		number_t localX, localY;
-		if(!currentMouseOver.isNull() && currentMouseOver != selected)
-		{
-			number_t clocalX, clocalY;
-			currentMouseOver->globalToLocal(x,y,clocalX,clocalY);
-			m_sys->currentVm->addIdleEvent(currentMouseOver,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOut",clocalX,clocalY,true,buttonState,pressed,selected)));
-			if (selected.isNull())
-				m_sys->currentVm->addIdleEvent(currentMouseOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",clocalX,clocalY,true,buttonState,pressed,selected)));
-			currentMouseOver.reset();
-		}
-		if (selected.isNull())
-			return;
-		selected->globalToLocal(x,y,localX,localY);
-		if(currentMouseOver == selected)
-		{
-			m_sys->currentVm->addIdleEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseMove",localX,localY,true,buttonState,pressed)),true);
-		}
-		else
-		{
-			m_sys->currentVm->addIdleEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOver",localX,localY,true,buttonState,pressed,currentMouseOver)),true);
-			currentMouseOver = selected;
-		}
-		if (selected != lastRolledOver)
-		{
-			if (lastRolledOver)
-				m_sys->currentVm->addIdleEvent(lastRolledOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",localX,localY,true,buttonState,pressed,selected)));
-			m_sys->currentVm->addIdleEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOver",localX,localY,true,buttonState,pressed,lastRolledOver)));
-			lastRolledOver = selected;
-		}
+		m_sys->currentVm->addIdleEvent(selected,
+			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOver",localX,localY,true,buttonState,pressed,currentMouseOver)),true);
+		currentMouseOver = selected;
+	}
+	if (selected != lastRolledOver)
+	{
+		if (lastRolledOver)
+			m_sys->currentVm->addIdleEvent(lastRolledOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",localX,localY,true,buttonState,pressed,selected)));
+		m_sys->currentVm->addIdleEvent(selected,
+			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOver",localX,localY,true,buttonState,pressed,lastRolledOver)));
+		lastRolledOver = selected;
 	}
 }
 

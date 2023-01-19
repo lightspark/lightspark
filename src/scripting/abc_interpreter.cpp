@@ -4292,7 +4292,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				Class_base* cls = function->inClass;
 				if (name && name->isStatic && !function->isFromNewFunction())
 				{
-					if (function->inClass && function->inClass->isSealed && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
+					if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 					{
 						if (!cls->hasoverriddenmethod(name))
 						{
@@ -4435,8 +4435,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				}
 				else if(!done)
 				{
-					if (v && function->inClass->isSealed 
-							&& !function->isFromNewFunction() 
+					if (v && !function->isFromNewFunction()
 							&& (function != cls->getConstructor() || !isborrowed)
 							&& (!function->isStatic || !isborrowed ))
 					{
@@ -4823,7 +4822,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									}
 								}
 								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT || it->type == OP_CACHED_SLOT) 
-										&& it->objtype && !it->objtype->isInterface && it->objtype->isInitialized()
+										&& it->objtype && !it->objtype->isInterface && it->objtype->isInitialized() && it->objtype->isSealed
 										&& (!typestack[typestack.size()-2].obj || !typestack[typestack.size()-2].classvar))
 								{
 									asAtom o = asAtomHandler::invalidAtom;
@@ -7041,7 +7040,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								{
 									bool isborrowed=false;
 									variable* v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,asAtomHandler::getObject(*a)->getClass(),nullptr,&isborrowed,false,wrk);
-									if (v && v->kind == CONSTANT_TRAIT && asAtomHandler::isInvalid(v->getter))
+									if (v && v->kind == CONSTANT_TRAIT && asAtomHandler::isInvalid(v->getter) )
 									{
 										state.operandlist.back().removeArg(state);
 										state.operandlist.pop_back();
@@ -7069,7 +7068,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										else
 											resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
 									}
-									if (v && v->slotid && (!typestack.back().obj || !typestack.back().classvar))
+									if (v && v->slotid && (!typestack.back().obj || !typestack.back().classvar) && (!asAtomHandler::is<Class_base>(*a) || v->kind!=INSTANCE_TRAIT))
 									{
 										Class_base* resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
 										if (asAtomHandler::getObject(*a)->is<Global>())
@@ -7135,6 +7134,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									{
 										asAtom* a = mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
 										v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+										if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
+											v=nullptr;
 									}
 									else
 									{

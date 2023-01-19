@@ -186,6 +186,12 @@ jobs:
       run: |
         x86_64-w64-mingw32.static-cmake .
         make
+     - name: Upload   
+       uses: marvinpinto/action-automatic-releases@v1.2.1
+     env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      with:
+        automatic_release_tag: continuous
 
   mxe32:
     name: Windows 32-bit (MXE Cross Build)
@@ -240,3 +246,9 @@ jobs:
       run: |
         i686-w64-mingw32.static-cmake .
         make
+     - name: Upload   
+       uses: marvinpinto/action-automatic-releases@v1.2.1
+     env:
+        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      with:
+        automatic_release_tag: continuous

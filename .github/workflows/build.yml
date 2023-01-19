@@ -1,6 +1,5 @@
 name: ci
 
-
 on:
   push:
     branches: [ master ]
@@ -85,12 +84,10 @@ jobs:
           libsdl2-mixer-dev \
           libgnutls28-dev \
           liblzma-dev
-
     - name: Run Build
       run: |
         export CXX=`echo $CC | sed -e 's/clang/clang++/;s/gcc/g++/'`
         ./build.sh debug
-
   linux:
     name: Linux / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -130,10 +127,12 @@ jobs:
           libsdl2-mixer-dev \
           libgnutls28-dev \
           liblzma-dev
-
     - name: Run Build
       run: ./build.sh
-
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.2
+      with:
+           path: obj-release
   mxe64:
     name: Windows 64-bit (MXE Cross Build)
     runs-on: ubuntu-18.04
@@ -174,7 +173,6 @@ jobs:
           mxe-x86-64-w64-mingw32.static-ffmpeg \
           mxe-x86-64-w64-mingw32.static-sdl2-mixer
         echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
-
     - name: Configure MXE for NSIS Installer Builds
       run: |
         (cd /usr/lib/mxe/ \
@@ -182,18 +180,16 @@ jobs:
         && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
         && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := x86_64-w64-mingw32.static/" settings.mk \
         && sudo make nsis)
-
     - name: Run MXE Build
       run: |
-        x86_64-w64-mingw32.static-cmake .
+        mkdir build
+        x86_64-w64-mingw32.static-cmake build
+        cd buikd
         make
-     - name: Upload   
-       uses: marvinpinto/action-automatic-releases@v1.2.1
-     env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+      - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.2
       with:
-        automatic_release_tag: continuous
-
+           path: build
   mxe32:
     name: Windows 32-bit (MXE Cross Build)
     runs-on: ubuntu-18.04
@@ -234,7 +230,6 @@ jobs:
           mxe-i686-w64-mingw32.static-ffmpeg \
           mxe-i686-w64-mingw32.static-sdl2-mixer
         echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
-
     - name: Configure MXE for NSIS Installer Builds
       run: |
         (cd /usr/lib/mxe/ \
@@ -242,14 +237,13 @@ jobs:
         && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
         && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := i686-w64-mingw32.static/" settings.mk \
         && sudo make nsis)
-
     - name: Run MXE Build
       run: |
-        i686-w64-mingw32.static-cmake .
+        mkdir build
+        i686-w64-mingw32.static-cmake build
+        cd build
         make
-     - name: Upload   
-       uses: marvinpinto/action-automatic-releases@v1.2.1
-     env:
-        GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3.1.2
       with:
-        automatic_release_tag: continuous
+           path: build

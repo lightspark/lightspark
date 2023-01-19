@@ -173,6 +173,7 @@ jobs:
           mxe-x86-64-w64-mingw32.static-ffmpeg \
           mxe-x86-64-w64-mingw32.static-sdl2-mixer
          echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
+    
     - name: Configure MXE for NSIS Installer Builds
       run: |
         cd /usr/lib/mxe/
@@ -180,12 +181,14 @@ jobs:
         sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk 
         sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := x86_64-w64-mingw32.static/" settings.mk 
         sudo make nsis
+    
     - name: Run MXE Build
       run: |
         mkdir build
         x86_64-w64-mingw32.static-cmake build
         cd build
         make
+      
       - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.1.2
       with:
@@ -230,13 +233,14 @@ jobs:
           mxe-i686-w64-mingw32.static-ffmpeg \
           mxe-i686-w64-mingw32.static-sdl2-mixer
         echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
+        
     - name: Configure MXE for NSIS Installer Builds
       run: |
-        cd /usr/lib/mxe/ \
-        sudo make settings.mk \
-        sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
-        sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := i686-w64-mingw32.static/" settings.mk \
-        sudo make nsis 
+        (cd /usr/lib/mxe/ \
+        && sudo make settings.mk \
+        && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
+        && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := i686-w64-mingw32.static/" settings.mk \
+        && sudo make nsis)
         
     - name: Run MXE Build
       run: |

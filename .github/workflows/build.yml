@@ -176,11 +176,11 @@ jobs:
     
     - name: Configure MXE for NSIS Installer Builds
       run: |
-        cd /usr/lib/mxe/
-        sudo make settings.mk 
-        sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk 
-        sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := x86_64-w64-mingw32.static/" settings.mk 
-        sudo make nsis
+        (cd /usr/lib/mxe/ \
+        && sudo make settings.mk \
+        && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
+        && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := x86_64-w64-mingw32.static/" settings.mk \
+        && sudo make nsis)
     
     - name: Run MXE Build
       run: |

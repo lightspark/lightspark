@@ -118,6 +118,13 @@ jobs:
             liblzma-dev
       - name: Run Build
         run: ./build.sh
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: Linux
+          path: x86_64/Release
+
   mxe64:
     name: Windows 64-bit (MXE Cross Build)
     runs-on: ubuntu-18.04
@@ -180,6 +187,7 @@ jobs:
         with:
           name: Win64
           path: installer.exe
+  
   mxe32:
     name: Windows 32-bit (MXE Cross Build)
     runs-on: ubuntu-18.04

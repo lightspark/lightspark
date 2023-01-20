@@ -189,11 +189,11 @@ jobs:
         make package
         mv -v Lightspark*exe installer.exe
 		
-		- name: Upload a Build Artifact
-		  uses: actions/upload-artifact@v3.1.2
-		  with:
-			 name: Win64
-			 path: installer.exe
+	- name: Upload a Build Artifact
+	  uses: actions/upload-artifact@v3.1.2
+	  with:
+		name: Win64
+		path: installer.exe
 			
   mxe32:
     name: Windows 32-bit (MXE Cross Build)

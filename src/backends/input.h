@@ -55,6 +55,7 @@ private:
 	_NR<Sprite> curDragged;
 	_NR<InteractiveObject> currentMouseOver;
 	_NR<InteractiveObject> lastMouseDownTarget;
+	_NR<InteractiveObject> lastMouseUpTarget;
 	_NR<InteractiveObject> lastRolledOver;
 	SDL_Keymod lastKeymod;
 	set<AS3KeyCode> keyDownSet;

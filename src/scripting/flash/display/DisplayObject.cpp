@@ -359,6 +359,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 	}
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(wrk,args[0],th->filters);
+	if (th->computeCacheAsBitmap() && !th->cachedAsBitmapOf && th->is<DisplayObjectContainer>())
+		th->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(th);
+	
 	th->requestInvalidation(wrk->getSystemState(),true);
 }
 bool DisplayObject::computeCacheAsBitmap(bool checksize)
@@ -430,6 +433,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_cacheAsBitmap)
 		if (th->cacheAsBitmap != asAtomHandler::toInt(args[0]))
 		{
 			th->cacheAsBitmap = asAtomHandler::toInt(args[0]);
+			if (th->computeCacheAsBitmap() && !th->cachedAsBitmapOf && th->is<DisplayObjectContainer>())
+				th->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(th);
 			th->requestInvalidation(wrk->getSystemState(),true);
 		}
 	}

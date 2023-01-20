@@ -149,6 +149,7 @@ public:
 	void markAsChanged() override;
 	inline void markBoundsRectDirty() { boundsrectdirty=true; }
 	void markBoundsRectDirtyChildren();
+	void setChildrenCachedAsBitmapOf(DisplayObject* cachedBitmapObject);
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;

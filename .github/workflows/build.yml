@@ -123,7 +123,11 @@ jobs:
         uses: actions/upload-artifact@v3.1.2
         with:
           name: Linux ${{ matrix.os }}
-          path: /usr/local/lib/lightspark
+          path: |
+            /usr/local/lib/lightspark
+            /usr/local/bin/lightspark
+            /usr/local/lib/mozilla/plugins
+            /usr/local/lib/PepperFlash
 
   mxe64:
     name: Windows 64-bit (MXE Cross Build)

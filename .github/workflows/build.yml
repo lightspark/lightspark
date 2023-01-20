@@ -52,7 +52,7 @@ jobs:
             cxxpackage: g++-10
           }
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3.3.0
 
     - name: Install Dependencies
       run: |
@@ -97,7 +97,7 @@ jobs:
         os: [ubuntu-20.04, ubuntu-18.04]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3.3.0
 
     - name: Install Dependencies
       run: |
@@ -129,10 +129,9 @@ jobs:
           liblzma-dev
     - name: Run Build
       run: ./build.sh
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v3.1.2
-      with:
-           path: obj-release
+	  
+	  
+
   mxe64:
     name: Windows 64-bit (MXE Cross Build)
     runs-on: ubuntu-18.04
@@ -141,10 +140,10 @@ jobs:
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3.3.0
 
     - name: Add MXE Repository to Apt
-      uses: myci-actions/add-deb-repo@4
+      uses: myci-actions/add-deb-repo@10
       with:
         repo: deb http://pkg.mxe.cc/repos/apt bionic main
         repo-name: mxe
@@ -172,8 +171,8 @@ jobs:
           mxe-x86-64-w64-mingw32.static-librtmp \
           mxe-x86-64-w64-mingw32.static-ffmpeg \
           mxe-x86-64-w64-mingw32.static-sdl2-mixer
-         echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
-    
+        echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
+
     - name: Configure MXE for NSIS Installer Builds
       run: |
         (cd /usr/lib/mxe/ \
@@ -181,18 +180,21 @@ jobs:
         && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
         && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := x86_64-w64-mingw32.static/" settings.mk \
         && sudo make nsis)
-    
+
     - name: Run MXE Build
       run: |
-        mkdir build
-        x86_64-w64-mingw32.static-cmake build
-        cd build
+        x86_64-w64-mingw32.static-cmake .
         make
-      
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v3.1.2
-      with:
-           path: build
+		    sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
+        make package
+        mv -v Lightspark*exe installer.exe
+		
+		- name: Upload a Build Artifact
+		  uses: actions/upload-artifact@v3.1.2
+		  with:
+			 name: Win64
+			 path: installer.exe
+			
   mxe32:
     name: Windows 32-bit (MXE Cross Build)
     runs-on: ubuntu-18.04
@@ -201,10 +203,10 @@ jobs:
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3.3.0
 
     - name: Add MXE Repository to Apt
-      uses: myci-actions/add-deb-repo@4
+      uses: myci-actions/add-deb-repo@10
       with:
         repo: deb http://pkg.mxe.cc/repos/apt bionic main
         repo-name: mxe
@@ -233,7 +235,7 @@ jobs:
           mxe-i686-w64-mingw32.static-ffmpeg \
           mxe-i686-w64-mingw32.static-sdl2-mixer
         echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
-        
+
     - name: Configure MXE for NSIS Installer Builds
       run: |
         (cd /usr/lib/mxe/ \
@@ -241,15 +243,18 @@ jobs:
         && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
         && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := i686-w64-mingw32.static/" settings.mk \
         && sudo make nsis)
-        
+
     - name: Run MXE Build
       run: |
-        mkdir build
-        i686-w64-mingw32.static-cmake build
-        cd build
+        i686-w64-mingw32.static-cmake .
         make
-        
-    - name: Upload a Build Artifact
-      uses: actions/upload-artifact@v3.1.2
-      with:
-           path: build
+        sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
+        make package
+        mv -v Lightspark*exe installer.exe
+		
+		- name: Upload a Build Artifact
+		  uses: actions/upload-artifact@v3.1.2
+		  with:
+			 name: Win32
+			 path: installer.exe
+		

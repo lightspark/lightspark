@@ -137,7 +137,7 @@ jobs:
           key-server: keyserver.ubuntu.com
       
       - name: Install MXE Build Environment
-        run: >
+        run: |
           sudo apt update
           sudo apt install \
             nasm \
@@ -160,7 +160,7 @@ jobs:
           echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
       
       - name: Configure MXE for NSIS Installer Builds
-        run: >
+        run: |
           (cd /usr/lib/mxe/ \
           && sudo make settings.mk \
           && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
@@ -168,7 +168,7 @@ jobs:
           && sudo make nsis)
       
       - name: Run MXE Build
-        run: >
+        run: |
           x86_64-w64-mingw32.static-cmake .
           make
           sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
@@ -199,7 +199,7 @@ jobs:
           key-server: keyserver.ubuntu.com
       
       - name: Install MXE Build Environment
-        run: >
+        run: |
           sudo apt update
           sudo apt install \
             nasm \
@@ -222,7 +222,7 @@ jobs:
           echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
       
       - name: Configure MXE for NSIS Installer Builds
-        run: >
+        run: |
           (cd /usr/lib/mxe/ \
           && sudo make settings.mk \
           && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
@@ -230,7 +230,7 @@ jobs:
           && sudo make nsis)
       
       - name: Run MXE Build
-        run: >
+        run: |
           i686-w64-mingw32.static-cmake .
           make
           sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake

@@ -48,6 +48,7 @@ namespace lightspark
 class SystemState;
 class StreamCache;
 class AudioStream;
+class AudioManager;
 class ITickJob;
 class ByteArray;
 class NativeMenuItem;
@@ -196,6 +197,7 @@ public:
 	virtual tiny_string FileGetApplicationStorageDir();
 	
 	void initGLEW();
+	void initNanoVG();
 
 	/* show/hide mouse cursor, must be called from mainLoopThread */
 	static void showMouseCursor(SystemState *sys);
@@ -313,14 +315,13 @@ public:
 	// Audio handling
 	virtual int audio_StreamInit(AudioStream* s);
 	virtual void audio_StreamPause(int channel, bool dopause);
-	virtual void audio_StreamSetVolume(int channel, double volume);
-	virtual void audio_StreamSetPanning(int channel, uint16_t left, uint16_t right);
 	virtual void audio_StreamDeinit(int channel);
 	virtual bool audio_ManagerInit();
-	virtual void audio_ManagerCloseMixer();
-	virtual bool audio_ManagerOpenMixer();
+	virtual void audio_ManagerCloseMixer(AudioManager* manager);
+	virtual bool audio_ManagerOpenMixer(AudioManager* manager);
 	virtual void audio_ManagerDeinit();
 	virtual int audio_getSampleRate();
+	virtual bool audio_useFloatSampleFormat();
 	
 	// Text rendering
 	virtual uint8_t* getFontPixelBuffer(int32_t externalressource,int width,int height) { return nullptr; }

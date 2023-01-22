@@ -46,7 +46,6 @@ bool AudioStream::init(double volume)
 	mixer_channel = manager->engineData->audio_StreamInit(this);
 	if (mixer_channel >= 0)
 	{
-		manager->engineData->audio_StreamSetVolume(mixer_channel, curvolume);
 		isPaused = false;
 		return true;
 	}
@@ -102,13 +101,14 @@ void AudioStream::unmute()
 }
 void AudioStream::setVolume(double volume)
 {
-	manager->engineData->audio_StreamSetVolume(mixer_channel, volume);
 	curvolume = volume;
 }
 
-void AudioStream::setPanning(uint16_t left, int16_t right)
+void AudioStream::setPanning(uint16_t left, uint16_t right)
 {
-	manager->engineData->audio_StreamSetPanning(mixer_channel,left, right);
+	panning[0]=(float)left/32768.0f;
+	panning[1]=(float)right/32768.0f;
+	curvolume=1.0;
 }
 
 void AudioStream::setIsDone()
@@ -153,12 +153,12 @@ void AudioManager::unmuteAll()
 void AudioManager::removeStream(AudioStream *s)
 {
 	Locker l(streamMutex);
-	streams.erase(s);
+	streams.remove(s);
 	s->deinit();
 	delete s;
 	if (streams.empty())
 	{
-		engineData->audio_ManagerCloseMixer();
+		engineData->audio_ManagerCloseMixer(this);
 		mixeropened = false;
 	}
 }
@@ -188,7 +188,7 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 		return nullptr;
 	if (!mixeropened)
 	{
-		if (!engineData->audio_ManagerOpenMixer())
+		if (!engineData->audio_ManagerOpenMixer(this))
 		{
 			LOG(LOG_ERROR,"Couldn't open mixer");
 			audio_available = 0;
@@ -208,7 +208,7 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 		stream->pause();
 	else
 		stream->hasStarted=true;
-	streams.insert(stream);
+	streams.push_back(stream);
 
 	return stream;
 }
@@ -218,7 +218,7 @@ AudioManager::~AudioManager()
 {
 	if (mixeropened)
 	{
-		engineData->audio_ManagerCloseMixer();
+		engineData->audio_ManagerCloseMixer(this);
 	}
 	if (audio_available)
 	{

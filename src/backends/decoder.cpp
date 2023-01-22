@@ -25,7 +25,6 @@
 #include "platforms/fastpaths.h"
 #include "swf.h"
 #include "backends/rendering.h"
-#include "SDL2/SDL_mixer.h"
 #include "scripting/class.h"
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/media/flashmedia.h"
@@ -711,11 +710,28 @@ void FFMpegVideoDecoder::YUVBufferGenerator::init(YUVBuffer& buf) const
 
 bool AudioDecoder::discardFrame()
 {
+	return engine->audio_useFloatSampleFormat() ? discardFrameF32() : discardFrameS16();
+}
+bool AudioDecoder::discardFrameS16()
+{
 	//We don't want to block if no frame is available
-	bool ret=samplesBuffer.nonBlockingPopFront();
+	bool ret= samplesBufferS16.nonBlockingPopFront();
 	if (!ret)
-		LOG(LOG_ERROR,"discardFrame blocking "<<flushing<<" "<<samplesBuffer.isEmpty());
-	if(flushing && samplesBuffer.isEmpty()) //End of our work
+		LOG(LOG_ERROR,"discardFrame blocking "<<flushing<<" "<<samplesBufferS16.isEmpty());
+	if(flushing && samplesBufferS16.isEmpty()) //End of our work
+	{
+		status=FLUSHED;
+		flushed.signal();
+	}
+	return ret;
+}
+bool AudioDecoder::discardFrameF32()
+{
+	//We don't want to block if no frame is available
+	bool ret= samplesBufferF32.nonBlockingPopFront();
+	if (!ret)
+		LOG(LOG_ERROR,"discardFrame blocking "<<flushing<<" "<<samplesBufferF32.isEmpty());
+	if(flushing && samplesBufferF32.isEmpty()) //End of our work
 	{
 		status=FLUSHED;
 		flushed.signal();
@@ -723,10 +739,10 @@ bool AudioDecoder::discardFrame()
 	return ret;
 }
 
-uint32_t AudioDecoder::copyFrame(int16_t* dest, uint32_t len)
+uint32_t AudioDecoder::copyFrameS16(int16_t* dest, uint32_t len)
 {
 	assert(dest);
-	if(samplesBuffer.isEmpty())
+	if(samplesBufferS16.isEmpty())
 	{
 		if(flushing) //End of our work
 		{
@@ -735,14 +751,14 @@ uint32_t AudioDecoder::copyFrame(int16_t* dest, uint32_t len)
 		}
 		return 0;
 	}
-	uint32_t frameSize=min(samplesBuffer.front().len,len);
-	memcpy(dest,samplesBuffer.front().current,frameSize);
-	samplesBuffer.front().len-=frameSize;
-	assert(!(samplesBuffer.front().len&0x80000000));
-	if(samplesBuffer.front().len==0)
+	uint32_t frameSize=min(samplesBufferS16.front().len,len);
+	memcpy(dest,samplesBufferS16.front().current,frameSize);
+	samplesBufferS16.front().len-=frameSize;
+	assert(!(samplesBufferS16.front().len&0x80000000));
+	if(samplesBufferS16.front().len==0)
 	{
-		samplesBuffer.nonBlockingPopFront();
-		if(flushing && samplesBuffer.isEmpty()) //End of our work
+		samplesBufferS16.nonBlockingPopFront();
+		if(flushing && samplesBufferS16.isEmpty()) //End of our work
 		{
 			status=FLUSHED;
 			flushed.signal();
@@ -750,11 +766,54 @@ uint32_t AudioDecoder::copyFrame(int16_t* dest, uint32_t len)
 	}
 	else
 	{
-		samplesBuffer.front().current+=frameSize/2;
-		samplesBuffer.front().time+=frameSize/getBytesPerMSec();
+		samplesBufferS16.front().current+=frameSize/2;
+		samplesBufferS16.front().time+=frameSize/getBytesPerMSec();
 	}
 	samplesconsumed(frameSize/2);
 	return frameSize;
+}
+
+uint32_t AudioDecoder::copyFrameF32(float* dest, uint32_t len)
+{
+	assert(dest);
+	if(samplesBufferF32.isEmpty())
+	{
+		if(flushing) //End of our work
+		{
+			status=FLUSHED;
+			flushed.signal();
+		}
+		return 0;
+	}
+	uint32_t frameSize=min(samplesBufferF32.front().len,len);
+	memcpy(dest,samplesBufferF32.front().current,frameSize);
+	samplesBufferF32.front().len-=frameSize;
+	assert(!(samplesBufferF32.front().len&0x80000000));
+	if(samplesBufferF32.front().len==0)
+	{
+		samplesBufferF32.nonBlockingPopFront();
+		if(flushing && samplesBufferF32.isEmpty()) //End of our work
+		{
+			status=FLUSHED;
+			flushed.signal();
+		}
+	}
+	else
+	{
+		samplesBufferF32.front().current+=frameSize/4;
+		samplesBufferF32.front().time+=frameSize/getBytesPerMSec();
+	}
+	samplesconsumed(frameSize/4);
+	return frameSize;
+}
+
+AudioDecoder::AudioDecoder(uint32_t size, EngineData* _engine):
+#if defined HAVE_LIBAVRESAMPLE || defined HAVE_LIBSWRESAMPLE
+	resamplecontext(nullptr),
+#endif
+	sampleRate(0),engine(_engine),samplesBufferS16(_engine->audio_useFloatSampleFormat() ? 0 : size),samplesBufferF32(_engine->audio_useFloatSampleFormat() ? size : 0),channelCount(0),initialTime(-1),forExtraction(false)
+{
+	
 }
 
 AudioDecoder::~AudioDecoder()
@@ -772,43 +831,75 @@ AudioDecoder::~AudioDecoder()
 
 uint32_t AudioDecoder::getFrontTime() const
 {
-	assert(!samplesBuffer.isEmpty());
-	return samplesBuffer.front().time;
+	assert(!samplesBufferS16.isEmpty() || !samplesBufferF32.isEmpty());
+	return engine->audio_useFloatSampleFormat() ? samplesBufferF32.front().time : samplesBufferS16.front().time;
 }
 
 void AudioDecoder::skipUntil(uint32_t time, uint32_t usecs)
 {
 	assert(isValid());
-//	while(1) //Should loop, but currently only usec adjustements are requested
+	if (engine->audio_useFloatSampleFormat())
 	{
-		if(samplesBuffer.isEmpty())
-			return;
-		FrameSamples& cur=samplesBuffer.front();
-		assert(time==cur.time);
-		if(usecs==0) //Nothing to skip
-			return;
-		//Check how many bytes are needed to fill the gap
-		uint32_t bytesToDiscard=(time-cur.time)*getBytesPerMSec()+usecs*getBytesPerMSec()/1000;
-		bytesToDiscard&=0xfffffffe;
-
-		if(cur.len<=bytesToDiscard) //The whole frame is droppable
-			discardFrame();
-		else
+		//	while(1) //Should loop, but currently only usec adjustements are requested
 		{
-			assert((bytesToDiscard%2)==0);
-			cur.len-=bytesToDiscard;
-			assert(!(cur.len&0x80000000));
-			cur.current+=(bytesToDiscard/2);
-			cur.time=time;
-			return;
+			if(samplesBufferF32.isEmpty())
+				return;
+			FrameSamplesF32& cur=samplesBufferF32.front();
+			assert(time==cur.time);
+			if(usecs==0) //Nothing to skip
+				return;
+			//Check how many bytes are needed to fill the gap
+			uint32_t bytesToDiscard=(time-cur.time)*getBytesPerMSec()+usecs*getBytesPerMSec()/1000;
+			bytesToDiscard&=0xfffffffe;
+			
+			if(cur.len<=bytesToDiscard) //The whole frame is droppable
+				discardFrameF32();
+			else
+			{
+				assert((bytesToDiscard%2)==0);
+				cur.len-=bytesToDiscard;
+				assert(!(cur.len&0x80000000));
+				cur.current+=(bytesToDiscard/2);
+				cur.time=time;
+				return;
+			}
+		}
+	}
+	else
+	{
+		//	while(1) //Should loop, but currently only usec adjustements are requested
+		{
+			if(samplesBufferS16.isEmpty())
+				return;
+			FrameSamplesS16& cur=samplesBufferS16.front();
+			assert(time==cur.time);
+			if(usecs==0) //Nothing to skip
+				return;
+			//Check how many bytes are needed to fill the gap
+			uint32_t bytesToDiscard=(time-cur.time)*getBytesPerMSec()+usecs*getBytesPerMSec()/1000;
+			bytesToDiscard&=0xfffffffe;
+	
+			if(cur.len<=bytesToDiscard) //The whole frame is droppable
+				discardFrameS16();
+			else
+			{
+				assert((bytesToDiscard%2)==0);
+				cur.len-=bytesToDiscard;
+				assert(!(cur.len&0x80000000));
+				cur.current+=(bytesToDiscard/2);
+				cur.time=time;
+				return;
+			}
 		}
 	}
 }
 
 void AudioDecoder::skipAll()
 {
-	while(!samplesBuffer.isEmpty())
-		discardFrame();
+	while(!samplesBufferS16.isEmpty())
+		discardFrameS16();
+	while(!samplesBufferF32.isEmpty())
+		discardFrameF32();
 }
 
 #ifdef ENABLE_LIBAVCODEC
@@ -1040,7 +1131,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 	else
 		return false;
 
-	if(initialTime==(uint32_t)-1 && !samplesBuffer.isEmpty())
+	if(initialTime==(uint32_t)-1 && (!samplesBufferS16.isEmpty() || !samplesBufferF32.isEmpty()))
 	{
 		initialTime=getFrontTime();
 		LOG(LOG_INFO,"AUDIO DEC: Initial timestamp " << initialTime);
@@ -1090,19 +1181,38 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 		}
 		else
 		{
-			FrameSamples& curTail=samplesBuffer.acquireLast();
-			int len = resampleFrame(curTail);
+			if (engine->audio_useFloatSampleFormat())
+			{
+				FrameSamplesF32& curTail=samplesBufferF32.acquireLast();
+				int len = resampleFrame(curTail.samples);
 #if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
-			maxLen = pkt->size - av_frame_get_pkt_size (frameIn);
+				maxLen = pkt->size - av_frame_get_pkt_size (frameIn);
 #else
-			maxLen = pkt->size - frameIn->pkt_size;
+				maxLen = pkt->size - frameIn->pkt_size;
 #endif
-			curTail.len=len;
-			assert(!(curTail.len&0x80000000));
-			assert(len%2==0);
-			curTail.current=curTail.samples;
-			curTail.time=time;
-			samplesBuffer.commitLast();
+				curTail.len=len;
+				assert(!(curTail.len&0x80000000));
+				assert(len%2==0);
+				curTail.current=curTail.samples;
+				curTail.time=time;
+				samplesBufferF32.commitLast();
+			}
+			else
+			{
+				FrameSamplesS16& curTail=samplesBufferS16.acquireLast();
+				int len = resampleFrame(curTail.samples);
+#if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
+				maxLen = pkt->size - av_frame_get_pkt_size (frameIn);
+#else
+				maxLen = pkt->size - frameIn->pkt_size;
+#endif
+				curTail.len=len;
+				assert(!(curTail.len&0x80000000));
+				assert(len%2==0);
+				curTail.current=curTail.samples;
+				curTail.time=time;
+				samplesBufferS16.commitLast();
+			}
 			if(status==INIT && fillDataAndCheckValidity())
 				status=VALID;
 		}
@@ -1126,67 +1236,132 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 	av_packet_free(&pkt);
 	return maxLen;
 #else
-	FrameSamples& curTail=samplesBuffer.acquireLast();
-	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
+	if (engine->audio_useFloatSampleFormat())
+	{
+		FrameSamplesF32& curTail=samplesBufferF32.acquireLast();
+		int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
 #if defined HAVE_AVCODEC_DECODE_AUDIO3 || defined HAVE_AVCODEC_DECODE_AUDIO4
-	AVPacket pkt;
-	av_init_packet(&pkt);
-
-	// If some data was left unprocessed on previous call,
-	// concatenate.
-	std::vector<uint8_t> combinedBuffer;
-	if (overflowBuffer.empty())
-	{
-		pkt.data=data;
-		pkt.size=datalen;
-	}
-	else
-	{
-		combinedBuffer.assign(overflowBuffer.begin(), overflowBuffer.end());
-		if (datalen > 0)
-			combinedBuffer.insert(combinedBuffer.end(), data, data+datalen);
-		pkt.data = &combinedBuffer[0];
-		pkt.size = combinedBuffer.size();
-		overflowBuffer.clear();
-	}
-#ifdef HAVE_AVCODEC_DECODE_AUDIO4
-	av_frame_unref(frameIn);
-	int frameOk=0;
-	int32_t ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, &pkt);
-	if(frameOk==0)
-	{
-		LOG(LOG_ERROR,"not decoded audio:"<<ret);
-	}
-	else
-	{
-		maxLen = resampleFrame(curTail);
-	}
-#else
-	int32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
-#endif
-
-	if (ret > 0)
-	{
-		pkt.data += ret;
-		pkt.size -= ret;
-
-		if (pkt.size > 0)
+		AVPacket pkt;
+		av_init_packet(&pkt);
+		
+		// If some data was left unprocessed on previous call,
+		// concatenate.
+		std::vector<uint8_t> combinedBuffer;
+		if (overflowBuffer.empty())
 		{
-			overflowBuffer.assign(pkt.data, pkt.data+pkt.size);
+			pkt.data=data;
+			pkt.size=datalen;
 		}
-	}
-
+		else
+		{
+			combinedBuffer.assign(overflowBuffer.begin(), overflowBuffer.end());
+			if (datalen > 0)
+				combinedBuffer.insert(combinedBuffer.end(), data, data+datalen);
+			pkt.data = &combinedBuffer[0];
+			pkt.size = combinedBuffer.size();
+			overflowBuffer.clear();
+		}
+#ifdef HAVE_AVCODEC_DECODE_AUDIO4
+		av_frame_unref(frameIn);
+		int frameOk=0;
+		int32_t ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, &pkt);
+		if(frameOk==0)
+		{
+			LOG(LOG_ERROR,"not decoded audio:"<<ret);
+		}
+		else
+		{
+			maxLen = resampleFrame(curTail.samples);
+		}
 #else
-	int32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
+		int32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
 #endif
-
-	curTail.len=maxLen;
-	assert(!(curTail.len&0x80000000));
-	assert(maxLen%2==0);
-	curTail.current=curTail.samples;
-	curTail.time=time;
-	samplesBuffer.commitLast();
-
+		
+		if (ret > 0)
+		{
+			pkt.data += ret;
+			pkt.size -= ret;
+			
+			if (pkt.size > 0)
+			{
+				overflowBuffer.assign(pkt.data, pkt.data+pkt.size);
+			}
+		}
+		
+#else
+		int32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
+#endif
+		
+		curTail.len=maxLen;
+		assert(!(curTail.len&0x80000000));
+		assert(maxLen%2==0);
+		curTail.current=curTail.samples;
+		curTail.time=time;
+		samplesBufferF32.commitLast();
+	}
+	else
+	{
+		FrameSamplesS16& curTail=samplesBufferS16.acquireLast();
+		int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
+#if defined HAVE_AVCODEC_DECODE_AUDIO3 || defined HAVE_AVCODEC_DECODE_AUDIO4
+		AVPacket pkt;
+		av_init_packet(&pkt);
+		
+		// If some data was left unprocessed on previous call,
+		// concatenate.
+		std::vector<uint8_t> combinedBuffer;
+		if (overflowBuffer.empty())
+		{
+			pkt.data=data;
+			pkt.size=datalen;
+		}
+		else
+		{
+			combinedBuffer.assign(overflowBuffer.begin(), overflowBuffer.end());
+			if (datalen > 0)
+				combinedBuffer.insert(combinedBuffer.end(), data, data+datalen);
+			pkt.data = &combinedBuffer[0];
+			pkt.size = combinedBuffer.size();
+			overflowBuffer.clear();
+		}
+#ifdef HAVE_AVCODEC_DECODE_AUDIO4
+		av_frame_unref(frameIn);
+		int frameOk=0;
+		int32_t ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, &pkt);
+		if(frameOk==0)
+		{
+			LOG(LOG_ERROR,"not decoded audio:"<<ret);
+		}
+		else
+		{
+			maxLen = resampleFrame(curTail.samples);
+		}
+#else
+		int32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
+#endif
+		
+		if (ret > 0)
+		{
+			pkt.data += ret;
+			pkt.size -= ret;
+			
+			if (pkt.size > 0)
+			{
+				overflowBuffer.assign(pkt.data, pkt.data+pkt.size);
+			}
+		}
+		
+#else
+		int32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
+#endif
+		
+		curTail.len=maxLen;
+		assert(!(curTail.len&0x80000000));
+		assert(maxLen%2==0);
+		curTail.current=curTail.samples;
+		curTail.time=time;
+		samplesBufferS16.commitLast();
+	}
 	if(status==INIT && fillDataAndCheckValidity())
 		status=VALID;
 
@@ -1210,72 +1385,139 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 		}
 		else
 		{
-			FrameSamples& curTail=samplesBuffer.acquireLast();
-			int len = resampleFrame(curTail);
+			if (engine->audio_useFloatSampleFormat())
+			{
+				FrameSamplesF32& curTail=samplesBufferF32.acquireLast();
+				int len = resampleFrame(curTail.samples);
 #if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
-			maxLen = pkt->size - av_frame_get_pkt_size (frameIn);
+				maxLen = pkt->size - av_frame_get_pkt_size (frameIn);
 #else
-			maxLen = pkt->size - frameIn->pkt_size;
+				maxLen = pkt->size - frameIn->pkt_size;
 #endif
-			curTail.len=len;
-			assert(!(curTail.len&0x80000000));
-			assert(len%2==0);
-			curTail.current=curTail.samples;
-			curTail.time=time;
-			samplesBuffer.commitLast();
+				curTail.len=len;
+				assert(!(curTail.len&0x80000000));
+				assert(len%2==0);
+				curTail.current=curTail.samples;
+				curTail.time=time;
+				samplesBufferF32.commitLast();
+			}
+			else
+			{
+				FrameSamplesS16& curTail=samplesBufferS16.acquireLast();
+				int len = resampleFrame(curTail.samples);
+#if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
+				maxLen = pkt->size - av_frame_get_pkt_size (frameIn);
+#else
+				maxLen = pkt->size - frameIn->pkt_size;
+#endif
+				curTail.len=len;
+				assert(!(curTail.len&0x80000000));
+				assert(len%2==0);
+				curTail.current=curTail.samples;
+				curTail.time=time;
+				samplesBufferS16.commitLast();
+			}
 			if(status==INIT && fillDataAndCheckValidity())
 				status=VALID;
 		}
 	}
 	return maxLen;
 #else
-	FrameSamples& curTail=samplesBuffer.acquireLast();
-	int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
-#if HAVE_AVCODEC_DECODE_AUDIO4
-	av_frame_unref(frameIn);
-	int frameOk=0;
-	int ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, pkt);
-	if(frameOk==0)
+	if (engine->audio_useFloatSampleFormat())
 	{
-		LOG(LOG_ERROR,"not decoded audio:"<<ret);
+		FrameSamplesF32& curTail=samplesBufferF32.acquireLast();
+		int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
+#if HAVE_AVCODEC_DECODE_AUDIO4
+		av_frame_unref(frameIn);
+		int frameOk=0;
+		int ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, pkt);
+		if(frameOk==0)
+		{
+			LOG(LOG_ERROR,"not decoded audio:"<<ret);
+		}
+		else
+		{
+			maxLen = resampleFrame(curTail.samples);
+		}
+#elif HAVE_AVCODEC_DECODE_AUDIO3
+		int ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
+#else
+		int ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, pkt->data, pkt->size);
+#endif
+		
+		if(ret==-1)
+		{
+			//A decoding error occurred, create an empty sample buffer
+			LOG(LOG_ERROR,"Malformed audio packet");
+			curTail.len=0;
+			curTail.current=curTail.samples;
+			curTail.time=time;
+			samplesBufferF32.commitLast();
+			return maxLen;
+		}
+		
+		assert_and_throw(ret==pkt->size);
+		
+		if(status==INIT && fillDataAndCheckValidity())
+			status=VALID;
+		
+		curTail.len=maxLen;
+		assert(!(curTail.len&0x80000000));
+		assert(maxLen%2==0);
+		curTail.current=curTail.samples;
+		curTail.time=time;
+		samplesBufferF32.commitLast();
 	}
 	else
 	{
-		maxLen = resampleFrame(curTail);
-	}
+		FrameSamplesS16& curTail=samplesBufferS16.acquireLast();
+		int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
+#if HAVE_AVCODEC_DECODE_AUDIO4
+		av_frame_unref(frameIn);
+		int frameOk=0;
+		int ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, pkt);
+		if(frameOk==0)
+		{
+			LOG(LOG_ERROR,"not decoded audio:"<<ret);
+		}
+		else
+		{
+			maxLen = resampleFrame(curTail.samples);
+		}
 #elif HAVE_AVCODEC_DECODE_AUDIO3
-	int ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
+		int ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
 #else
-	int ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, pkt->data, pkt->size);
+		int ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, pkt->data, pkt->size);
 #endif
-
-	if(ret==-1)
-	{
-		//A decoding error occurred, create an empty sample buffer
-		LOG(LOG_ERROR,"Malformed audio packet");
-		curTail.len=0;
+		
+		if(ret==-1)
+		{
+			//A decoding error occurred, create an empty sample buffer
+			LOG(LOG_ERROR,"Malformed audio packet");
+			curTail.len=0;
+			curTail.current=curTail.samples;
+			curTail.time=time;
+			samplesBufferS16.commitLast();
+			return maxLen;
+		}
+		
+		assert_and_throw(ret==pkt->size);
+		
+		if(status==INIT && fillDataAndCheckValidity())
+			status=VALID;
+		
+		curTail.len=maxLen;
+		assert(!(curTail.len&0x80000000));
+		assert(maxLen%2==0);
 		curTail.current=curTail.samples;
 		curTail.time=time;
-		samplesBuffer.commitLast();
-		return maxLen;
+		samplesBufferS16.commitLast();
 	}
-
-	assert_and_throw(ret==pkt->size);
-
-	if(status==INIT && fillDataAndCheckValidity())
-		status=VALID;
-
-	curTail.len=maxLen;
-	assert(!(curTail.len&0x80000000));
-	assert(maxLen%2==0);
-	curTail.current=curTail.samples;
-	curTail.time=time;
-	samplesBuffer.commitLast();
 	return maxLen;
 #endif
 }
 #if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
-int FFMpegAudioDecoder::resampleFrame(FrameSamples& curTail)
+int FFMpegAudioDecoder::resampleFrame(void* samples)
 {
 	int sample_rate = engine->audio_getSampleRate();
 #if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
@@ -1292,8 +1534,8 @@ int FFMpegAudioDecoder::resampleFrame(FrameSamples& curTail)
 #else
 	int framesamplerate = frameIn->sample_rate;
 #endif
-	AVSampleFormat outputsampleformat = forExtraction ? AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
-	int outputsampleformatsize = forExtraction ? sizeof(float) : sizeof(int16_t);
+	AVSampleFormat outputsampleformat = forExtraction || engine->audio_useFloatSampleFormat() ? AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
+	int outputsampleformatsize = forExtraction || engine->audio_useFloatSampleFormat() ? sizeof(float) : sizeof(int16_t);
 	int maxLen;
 #ifdef HAVE_LIBSWRESAMPLE
 	if (!resamplecontext)
@@ -1326,12 +1568,12 @@ int FFMpegAudioDecoder::resampleFrame(FrameSamples& curTail)
 #endif
 		if (maxLen > 0)
 		{
-			memcpy(curTail.samples, output, maxLen);
+			memcpy(samples, output, maxLen);
 		}
 		else
 		{
 			LOG(LOG_ERROR, "resampling failed");
-			memset(curTail.samples, 0, frameIn->linesize[0]);
+			memset(samples, 0, frameIn->linesize[0]);
 			maxLen = frameIn->linesize[0];
 		}
 		av_freep(&output);
@@ -1339,7 +1581,7 @@ int FFMpegAudioDecoder::resampleFrame(FrameSamples& curTail)
 	else
 	{
 		LOG(LOG_ERROR, "resampling failed, error code:"<<res);
-		memset(curTail.samples, 0, frameIn->linesize[0]);
+		memset(samples, 0, frameIn->linesize[0]);
 		maxLen = frameIn->linesize[0];
 	}
 #elif defined HAVE_LIBAVRESAMPLE
@@ -1362,22 +1604,23 @@ int FFMpegAudioDecoder::resampleFrame(FrameSamples& curTail)
 	if (res >= 0)
 	{
 		maxLen = avresample_convert(resamplecontext, &output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*outputsampleformatsize*av_get_channel_layout_nb_channels(channel_layout);
-		memcpy(curTail.samples, output, maxLen);
+		memcpy(samples, output, maxLen);
 		av_freep(&output);
 	}
 	else
 	{
 		LOG(LOG_ERROR, "resampling failed, error code:"<<res);
-		memset(curTail.samples, 0, frameIn->linesize[0]);
+		memset(samples, 0, frameIn->linesize[0]);
 		maxLen = frameIn->linesize[0];
 	}
 #else
 	LOG(LOG_ERROR, "unexpected sample format and can't resample, recompile with libswresample");
-	memset(curTail.samples, 0, frameIn->linesize[0]);
+	memset(samples, 0, frameIn->linesize[0]);
 	maxLen = frameIn->linesize[0];
 #endif
 	return maxLen;
 }
+
 #endif
 
 #endif //ENABLE_LIBAVCODEC
@@ -1708,7 +1951,19 @@ uint32_t SampleDataAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint
 		status = INIT;
 	else if (status == INIT)
 		status = VALID;
-	FrameSamples& curTail=samplesBuffer.acquireLast();
+	if (engine->audio_useFloatSampleFormat())
+	{
+		// no need for conversion as Sample data is always 32 bit float
+		FrameSamplesF32& curTail=samplesBufferF32.acquireLast();
+		memcpy(curTail.samples, data, datalen);
+		curTail.len=datalen;
+		curTail.current=curTail.samples;
+		curTail.time=time;
+		samplesBufferF32.commitLast();
+		bufferedsamples += datalen/4;
+		return datalen;
+	}
+	FrameSamplesS16& curTail=samplesBufferS16.acquireLast();
 	uint32_t samplecount = min(datalen/4,MAX_AUDIO_FRAME_SIZE/2);
 #ifdef HAVE_LIBSWRESAMPLE
 	int sample_rate = engine->audio_getSampleRate();
@@ -1813,7 +2068,7 @@ uint32_t SampleDataAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint
 	curTail.len=samplecount*2;
 	curTail.current=curTail.samples;
 	curTail.time=time;
-	samplesBuffer.commitLast();
+	samplesBufferS16.commitLast();
 	bufferedsamples += samplecount;
 	return samplecount*2;
 }

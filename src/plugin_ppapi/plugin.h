@@ -333,14 +333,13 @@ public:
 	// Audio handling
 	int audio_StreamInit(AudioStream* s) override;
 	void audio_StreamPause(int channel, bool dopause) override;
-	void audio_StreamSetVolume(int channel, double volume) override;
-	void audio_StreamSetPanning(int channel, uint16_t left,uint16_t right) override;
 	void audio_StreamDeinit(int channel) override;
 	bool audio_ManagerInit() override;
-	void audio_ManagerCloseMixer() override;
-	bool audio_ManagerOpenMixer() override;
+	void audio_ManagerCloseMixer(AudioManager* manager) override;
+	bool audio_ManagerOpenMixer(AudioManager* manager) override;
 	void audio_ManagerDeinit() override;
 	int audio_getSampleRate() override;
+	bool audio_useFloatSampleFormat() override;
 
 	// Text rendering
 	uint8_t* getFontPixelBuffer(int32_t externalressource,int width,int height) override;

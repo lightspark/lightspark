@@ -555,7 +555,9 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		regpointy=bymin;
 	}
 	owner->cachedSurface.isValid=true;
-	if ((!q || !q->isSoftwareQueue) && !tokens.empty() && tokens.canRenderToGL 
+	if (owner->getSystemState()->getEngineData()->nvgcontext && (!q || !q->isSoftwareQueue) 
+			&& !tokens.empty() 
+			&& tokens.canRenderToGL 
 			&& mask.isNull()
 			&& !isMask
 			&& !owner->ClipDepth

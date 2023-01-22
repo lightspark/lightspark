@@ -22,7 +22,6 @@
 #include "swf.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mouse.h>
-#include <SDL2/SDL_mixer.h>
 #include "backends/input.h"
 #include "backends/rendering.h"
 #include "backends/lsopengl.h"
@@ -374,6 +373,11 @@ void EngineData::initGLEW()
 	}
 	supportPackedDepthStencil = GLEW_EXT_packed_depth_stencil;
 #endif
+	initNanoVG();
+}
+
+void EngineData::initNanoVG()
+{
 #ifdef ENABLE_GLES2
 	nvgcontext=nvgCreateGLES2(0);
 #else
@@ -1414,98 +1418,70 @@ void EngineData::exec_glStencilFunc_GL_ALWAYS()
 	glStencilFunc(GL_ALWAYS, 0, 0xff);
 }
 
-
-void mixer_effect_ffmpeg_cb(int chan, void * stream, int len, void * udata)
+void audioCallback(void * userdata, uint8_t * stream, int len)
 {
-	AudioStream *s = (AudioStream*)udata;
-	if (!s)
-		return;
-	s->startMixing();
-	memset(stream,0,len);
-	uint32_t readcount = 0;
-	while (readcount < ((uint32_t)len))
+	AudioManager* manager = (AudioManager*)userdata;
+
+    SDL_memset(stream, 0, len);
+
 	{
-		uint32_t ret = s->getDecoder()->copyFrame((int16_t *)(((unsigned char*)stream)+readcount), ((uint32_t)len)-readcount);
-		if (!ret)
-			break;
-		readcount += ret;
-	}
-}
+		Locker l(manager->streamMutex);
+		for (auto it = manager->streams.begin(); it != manager->streams.end(); it++)
+		{
+			AudioStream* s = (*it);
+			if (s->ispaused())
+				continue;
+			const float fmaxvolume = 1.0f / ((float)SDL_MIX_MAXVOLUME);
+			const float fvolume = (float)s->getVolume()*(float)SDL_MIX_MAXVOLUME;
+			uint32_t readcount = 0;
+			uint8_t* buf = new uint8_t[len];
+			while (readcount < ((uint32_t)len))
+			{
+				uint32_t ret = s->getDecoder()->copyFrameF32((float *)(buf+readcount), ((uint32_t)len)-readcount);
+				if (!ret)
+					break;
+				float* src32=(float *)(buf+readcount);
+				float* dst32=(float *)(stream+readcount);
+				readcount += ret;
 
-void mixer_effect_ffmpeg_done_cb(int chan, void * udata)
-{
-	AudioStream *s = (AudioStream*)udata;
-	if (!s)
-		return;
-	s->setIsDone();
-}
+				float src1, src2;
+				double dst_sample;
 
+				const double max_audioval = 3.402823466e+38F;
+				const double min_audioval = -3.402823466e+38F;
+				int curpanning=0;
+				while (ret)
+				{
+					src1 = *src32 * fvolume * fmaxvolume * s->getPanning()[curpanning];
+					curpanning = 1-curpanning;
+					src2 = *dst32;
+					src32++;
+					dst_sample = ((double)src1) + ((double)src2);
+					if (dst_sample > max_audioval) {
+						dst_sample = max_audioval;
+					} else if (dst_sample < min_audioval) {
+						dst_sample = min_audioval;
+					}
+					*(dst32++) = (float)dst_sample;
+					ret-=4;
+				}
+			}
+			delete[] buf;
+		}
+    }
+}
 
 int EngineData::audio_StreamInit(AudioStream* s)
 {
-	int mixer_channel = -1;
-
-	uint32_t len = LIGHTSPARK_AUDIO_BUFFERSIZE;
-
-	s->audiobuffer = new uint8_t[len];
-	memset(s->audiobuffer,0,len);
-	Mix_Chunk* chunk = Mix_QuickLoad_RAW(s->audiobuffer, len);
-
-	int grouptag = s->getGroupTag();
-	mixer_channel = Mix_PlayChannel(-1, chunk, -1);
-	if ((mixer_channel < 0) && (grouptag > 0) && (Mix_GroupAvailable(grouptag) < 8))
-	{
-		// if we have more that 7 channels playing the same sound,
-		// remove oldest running channel with same SoundID and create new channel
-		int oldestchannel = Mix_GroupOldest(grouptag);
-		if (oldestchannel != -1)
-		{
-			audio_StreamDeinit(oldestchannel);
-			chunk = Mix_QuickLoad_RAW(s->audiobuffer, len);
-			mixer_channel = Mix_PlayChannel(-1, chunk, -1);
-		}
-	}
-	if (mixer_channel >= 0)
-	{
-		Mix_GroupChannel(mixer_channel,grouptag);
-		Mix_RegisterEffect(mixer_channel, mixer_effect_ffmpeg_cb, mixer_effect_ffmpeg_done_cb, s);
-		Mix_Resume(mixer_channel);
-	}
-	return mixer_channel;
+	return 0;
 }
 
 void EngineData::audio_StreamPause(int channel, bool dopause)
 {
-	if (channel == -1)
-		return;
-	if(dopause)
-		Mix_Pause(channel);
-	else
-		Mix_Resume(channel);
-}
-
-void EngineData::audio_StreamSetVolume(int channel, double volume)
-{
-	int curvolume = SDL_MIX_MAXVOLUME * volume;
-	if (channel != -1)
-		Mix_Volume(channel, curvolume);
-}
-
-void EngineData::audio_StreamSetPanning(int channel, uint16_t left, uint16_t right)
-{
-	if (channel != -1)
-		Mix_SetPanning(channel,left/256,right/256);
 }
 
 void EngineData::audio_StreamDeinit(int channel)
 {
-	if (channel != -1)
-	{
-		Mix_HaltChannel(channel);
-		Mix_Chunk* chunk = Mix_GetChunk(channel);
-		if (chunk)
-			Mix_FreeChunk(chunk);
-	}
 }
 
 bool EngineData::audio_ManagerInit()
@@ -1518,21 +1494,29 @@ bool EngineData::audio_ManagerInit()
 	return sdl_available;
 }
 
-void EngineData::audio_ManagerCloseMixer()
+void EngineData::audio_ManagerCloseMixer(AudioManager* manager)
 {
-	Mix_CloseAudio();
+	if (manager->device)
+	{
+		SDL_PauseAudioDevice(manager->device, 1);
+		SDL_CloseAudioDevice(manager->device);
+	}
 }
 
-bool EngineData::audio_ManagerOpenMixer()
+bool EngineData::audio_ManagerOpenMixer(AudioManager* manager)
 {
-#if G_BYTE_ORDER == G_BIG_ENDIAN
-	bool res = Mix_OpenAudio (audio_getSampleRate(), AUDIO_S16MSB, 2, LIGHTSPARK_AUDIO_BUFFERSIZE) >= 0;
-#else
-	bool res = Mix_OpenAudio (audio_getSampleRate(), AUDIO_S16LSB, 2, LIGHTSPARK_AUDIO_BUFFERSIZE) >= 0;
-#endif
-	if (res)
-		Mix_AllocateChannels(32); // it seems that Adobe allows 32 channels max
-	return res;
+	SDL_AudioSpec spec;
+	spec.freq=audio_getSampleRate();
+	spec.format=AUDIO_F32SYS;
+	spec.channels = 2;
+	spec.samples = LIGHTSPARK_AUDIO_BUFFERSIZE/2;
+	spec.callback = audioCallback;
+	spec.userdata = manager;
+
+	manager->device = SDL_OpenAudioDevice(nullptr, 0, &spec, nullptr, 0);
+	if (manager->device != 0)
+		SDL_PauseAudioDevice(manager->device, 0);
+	return manager->device!=0;
 }
 
 void EngineData::audio_ManagerDeinit()
@@ -1541,12 +1525,15 @@ void EngineData::audio_ManagerDeinit()
 	if (!SDL_WasInit(0))
 		SDL_Quit ();
 }
+bool EngineData::audio_useFloatSampleFormat()
+{
+	return true;
+}
 
 int EngineData::audio_getSampleRate()
 {
 	return 44100;
 }
-
 IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms, float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier, float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset, SMOOTH_MODE smoothing)
 {
 	if (hasExternalFontRenderer)

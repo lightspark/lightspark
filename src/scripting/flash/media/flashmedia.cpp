@@ -641,7 +641,14 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 							break;
 					}
 					uint8_t buf[MAX_AUDIO_FRAME_SIZE];
-					uint32_t read = th->rawDataStreamDecoder->audioDecoder->copyFrame((int16_t *)buf,
+					 
+					uint32_t read = th->getSystemState()->getEngineData()->audio_useFloatSampleFormat() ?
+								th->rawDataStreamDecoder->audioDecoder->copyFrameF32((float *)buf,
+																					  min(th->rawDataStartPosition >= bytestartposition
+																						  ? bytelength-readcount
+																						  : bytestartposition - th->rawDataStartPosition
+																							, MAX_AUDIO_FRAME_SIZE)):
+								th->rawDataStreamDecoder->audioDecoder->copyFrameS16((int16_t *)buf,
 																					  min(th->rawDataStartPosition >= bytestartposition
 																						  ? bytelength-readcount
 																						  : bytestartposition - th->rawDataStartPosition
@@ -1207,8 +1214,16 @@ void SoundChannel::playStream()
 			else if (audioDecoder && audioDecoder->isValid())
 			{
 				// no audiostream available, consume data anyway
-				int16_t buf[512];
-				audioDecoder->copyFrame(buf,512);
+				if (getSystemState()->getEngineData()->audio_useFloatSampleFormat())
+				{
+					float buf[512];
+					audioDecoder->copyFrameF32(buf,512);
+				}
+				else
+				{
+					int16_t buf[512];
+					audioDecoder->copyFrameS16(buf,512);
+				}
 			}
 			mutex.unlock();
 			if(threadAborting)
@@ -1303,8 +1318,16 @@ void SoundChannel::playStreamFromSamples()
 				else if (audioDecoder && audioDecoder->isValid())
 				{
 					// no audio available, consume data anyway
-					int16_t buf[512];
-					audioDecoder->copyFrame(buf,512);
+					if (getSystemState()->getEngineData()->audio_useFloatSampleFormat())
+					{
+						float buf[512];
+						audioDecoder->copyFrameF32(buf,512);
+					}
+					else
+					{
+						int16_t buf[512];
+						audioDecoder->copyFrameS16(buf,512);
+					}
 				}
 			}
 			semSampleData.wait();

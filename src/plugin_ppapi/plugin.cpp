@@ -1960,7 +1960,8 @@ void ppPluginEngineData::DoSwapBuffers()
 
 void ppPluginEngineData::InitOpenGL()
 {
-	
+	//TODO implement nanoVG renderer using EngineData openGL methods
+	//initNanoVG();
 }
 
 void ppPluginEngineData::DeinitOpenGL()
@@ -2622,7 +2623,7 @@ void audio_callback(void* sample_buffer,uint32_t buffer_size_in_bytes,PP_TimeDel
 	uint32_t readcount = 0;
 	while (readcount < buffer_size_in_bytes)
 	{
-		uint32_t ret = s->getDecoder()->copyFrame((int16_t *)(((unsigned char*)sample_buffer)+readcount), buffer_size_in_bytes-readcount);
+		uint32_t ret = s->getDecoder()->copyFrameS16((int16_t *)(((unsigned char*)sample_buffer)+readcount), buffer_size_in_bytes-readcount);
 		if (!ret)
 			break;
 		readcount += ret;
@@ -2630,9 +2631,11 @@ void audio_callback(void* sample_buffer,uint32_t buffer_size_in_bytes,PP_TimeDel
 	if (s->getVolume() != 1.0)
 	{
 		int16_t *p = (int16_t *)sample_buffer;
+		int curpanning=0;
 		for (uint32_t i = 0; i < readcount/2; i++)
 		{
-			*p = (*p)*s->getVolume();
+			*p = (*p)*s->getVolume()*s->getPanning()[curpanning];
+			curpanning =1-curpanning;
 			p++;
 		}
 	}
@@ -2656,16 +2659,6 @@ void ppPluginEngineData::audio_StreamPause(int channel, bool dopause)
 		g_audio_interface->StartPlayback(channel);
 }
 
-void ppPluginEngineData::audio_StreamSetVolume(int channel, double volume)
-{
-	LOG(LOG_NOT_IMPLEMENTED, "setting volume on PPAPI plugin");
-}
-
-void ppPluginEngineData::audio_StreamSetPanning(int channel, uint16_t left, uint16_t right)
-{
-	LOG(LOG_NOT_IMPLEMENTED, "setting panning on PPAPI plugin");
-}
-
 void ppPluginEngineData::audio_StreamDeinit(int channel)
 {
 	g_audio_interface->StopPlayback(channel);
@@ -2678,11 +2671,11 @@ bool ppPluginEngineData::audio_ManagerInit()
 	return audioconfig != 0;
 }
 
-void ppPluginEngineData::audio_ManagerCloseMixer()
+void ppPluginEngineData::audio_ManagerCloseMixer(AudioManager* manager)
 {
 }
 
-bool ppPluginEngineData::audio_ManagerOpenMixer()
+bool ppPluginEngineData::audio_ManagerOpenMixer(AudioManager* manager)
 {
 	return true;
 }
@@ -2695,6 +2688,11 @@ void ppPluginEngineData::audio_ManagerDeinit()
 int ppPluginEngineData::audio_getSampleRate()
 {
 	return PP_AUDIOSAMPLERATE_44100;
+}
+
+bool ppPluginEngineData::audio_useFloatSampleFormat()
+{
+	return false;
 }
 
 uint8_t* ppPluginEngineData::getFontPixelBuffer(int32_t externalressource,int width,int height)

@@ -3133,6 +3133,61 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 	typestack.push_back(typestackentry(Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr(),false));
 }
 
+
+void setupInstructionIncDecInteger(preloadstate& state,memorystream& code,std::vector<typestackentry>& typestack,Class_base** lastlocalresulttype,int& dup_indicator, uint8_t opcode)
+{
+	removetypestack(typestack,1);
+	uint32_t p = code.tellg();
+	// optimize common case of increment/decrement local variable
+#ifdef ENABLE_OPTIMIZATION
+	if (state.operandlist.size() > 0 && 
+			state.operandlist.back().type == OP_LOCAL && 
+			state.operandlist.back().objtype == Class<Integer>::getRef(state.function->getSystemState()).getPtr() &&
+			state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
+	{
+		int32_t t = -1;
+		if (code.peekbyte() == 0x73) //convert_i
+			code.readbyte();
+		switch (code.peekbyte())
+		{
+			case 0x63://setlocal
+				t = code.peekbyteFromPosition(code.tellg()+1);
+				break;
+			case 0xd4://setlocal_0
+				t = 0;
+				break;
+			case 0xd5://setlocal_1
+				t = 1;
+				break;
+			case 0xd6://setlocal_2
+				t = 2;
+				break;
+			case 0xd7://setlocal_3
+				t = 3;
+				break;
+		}
+		if (t == state.operandlist.back().index)
+		{
+			state.operandlist.back().removeArg(state);
+			state.preloadedcode.push_back(opcode == 0xc0 ? ABC_OP_OPTIMZED_INCLOCAL_I : ABC_OP_OPTIMZED_DECLOCAL_I); //inclocal_i/declocal_i
+			state.preloadedcode.back().pcode.arg1_uint = t;
+			state.preloadedcode.back().pcode.arg2_uint = 1;
+			state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+			if (code.readbyte() == 0x63) //setlocal
+				code.readbyte();
+			state.operandlist.pop_back();
+			setOperandModified(state,OP_LOCAL,t);
+			if (dup_indicator)
+				clearOperands(state,false,lastlocalresulttype);
+			return;
+		}
+	}
+#endif
+	setupInstructionOneArgument(state,opcode == 0xc0 ? ABC_OP_OPTIMZED_INCREMENT_I : ABC_OP_OPTIMZED_DECREMENT_I,opcode,code,false,true, Class<Integer>::getRef(state.function->getSystemState()).getPtr(),p,true,true,false,true,opcode == 0xc0 ? ABC_OP_OPTIMZED_INCREMENT_I_SETSLOT : ABC_OP_OPTIMZED_DECREMENT_I_SETSLOT);
+	dup_indicator=0;
+	typestack.push_back(typestackentry(Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr(),false));
+}
+
 bool checkInitializeLocalToConstant(preloadstate& state,int32_t value)
 {
 	value -= state.mi->numArgs()+1;
@@ -4521,7 +4576,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								cls = cls->super.getPtr();
 						}
 						while (!v && cls && cls->isSealed);
-						if (v && asAtomHandler::isValid(v->setter) && cls->is<Class_inherit>() && cls->as<Class_inherit>()->hasoverriddenmethod(name))
+						if (v && cls->is<Class_inherit>() && cls->as<Class_inherit>()->hasoverriddenmethod(name))
 							v=nullptr;
 						if (v)
 						{
@@ -7337,12 +7392,28 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0x91://increment
+#ifdef ENABLE_OPTIMIZATION
+				if (typestack.back().obj == Class<Integer>::getRef(function->getSystemState()).getPtr())
+				{
+					// argument is an int, so we can use the increment_i optimization instead
+					setupInstructionIncDecInteger(state,code,typestack,&lastlocalresulttype,dup_indicator,0xc0);//increment_i
+					break;
+				}
+#endif
 				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_INCREMENT,opcode,code,false,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
 				dup_indicator=0;
 				removetypestack(typestack,1);
 				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0x93://decrement
+#ifdef ENABLE_OPTIMIZATION
+				if (typestack.back().obj == Class<Integer>::getRef(function->getSystemState()).getPtr())
+				{
+					// argument is an int, so we can use the decrement_i optimization instead
+					setupInstructionIncDecInteger(state,code,typestack,&lastlocalresulttype,dup_indicator,0xc1);//decrement_i
+					break;
+				}
+#endif
 				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DECREMENT,opcode,code,false,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
 				dup_indicator=0;
 				removetypestack(typestack,1);
@@ -7481,59 +7552,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				break;
 			case 0xc0://increment_i
 			case 0xc1://decrement_i
-			{
-				removetypestack(typestack,1);
-				uint32_t p = code.tellg();
-				// optimize common case of increment/decrement local variable
-#ifdef ENABLE_OPTIMIZATION
-				if (state.operandlist.size() > 0 && 
-						state.operandlist.back().type == OP_LOCAL && 
-						state.operandlist.back().objtype == Class<Integer>::getRef(function->getSystemState()).getPtr() &&
-						state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
-				{
-					int32_t t = -1;
-					if (code.peekbyte() == 0x73) //convert_i
-						code.readbyte();
-					switch (code.peekbyte())
-					{
-						case 0x63://setlocal
-							t = code.peekbyteFromPosition(code.tellg()+1);
-							break;
-						case 0xd4://setlocal_0
-							t = 0;
-							break;
-						case 0xd5://setlocal_1
-							t = 1;
-							break;
-						case 0xd6://setlocal_2
-							t = 2;
-							break;
-						case 0xd7://setlocal_3
-							t = 3;
-							break;
-					}
-					if (t == state.operandlist.back().index)
-					{
-						state.operandlist.back().removeArg(state);
-						state.preloadedcode.push_back(opcode == 0xc0 ? ABC_OP_OPTIMZED_INCLOCAL_I : ABC_OP_OPTIMZED_DECLOCAL_I); //inclocal_i/declocal_i
-						state.preloadedcode.back().pcode.arg1_uint = t;
-						state.preloadedcode.back().pcode.arg2_uint = 1;
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-						if (code.readbyte() == 0x63) //setlocal
-							code.readbyte();
-						state.operandlist.pop_back();
-						setOperandModified(state,OP_LOCAL,t);
-						if (dup_indicator)
-							clearOperands(state,false,&lastlocalresulttype);
-						break;
-					}
-				}
-#endif
-				setupInstructionOneArgument(state,opcode == 0xc0 ? ABC_OP_OPTIMZED_INCREMENT_I : ABC_OP_OPTIMZED_DECREMENT_I,opcode,code,false,true, Class<Integer>::getRef(function->getSystemState()).getPtr(),p,true,true,false,true,opcode == 0xc0 ? ABC_OP_OPTIMZED_INCREMENT_I_SETSLOT : ABC_OP_OPTIMZED_DECREMENT_I_SETSLOT);
-				dup_indicator=0;
-				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				setupInstructionIncDecInteger(state,code,typestack,&lastlocalresulttype,dup_indicator,opcode);
 				break;
-			}
 			case 0xc5://add_i
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_ADD_I,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_ADD_I_SETSLOT);
 				if (state.preloadedcode.back().opcode==ABC_OP_OPTIMZED_ADD_I+5

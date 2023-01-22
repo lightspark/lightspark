@@ -287,7 +287,7 @@ public:
 class AudioDecoder: public Decoder
 {
 protected:
-	class FrameSamples
+	class FrameSamplesS16
 	{
 	public:
 		int16_t samples[MAX_AUDIO_FRAME_SIZE/2];
@@ -295,7 +295,26 @@ protected:
 		int16_t* current;
 		uint32_t len;
 		uint32_t time;
-		FrameSamples():current(samples),len(0),time(0){}
+		FrameSamplesS16():current(samples),len(0),time(0){}
+		void init()
+		{
+			len=0;
+			time=0;
+		}
+		void cleanup()
+		{
+		}
+		
+	};
+	class FrameSamplesF32
+	{
+	public:
+		float samples[MAX_AUDIO_FRAME_SIZE/2];
+		__attribute__ ((aligned (32)))
+		float* current;
+		uint32_t len;
+		uint32_t time;
+		FrameSamplesF32():current(samples),len(0),time(0){}
 		void init()
 		{
 			len=0;
@@ -315,35 +334,30 @@ public:
 	uint32_t sampleRate;
 	EngineData* engine;
 protected:
-	BlockingCircularQueue<FrameSamples> samplesBuffer;
+	BlockingCircularQueue<FrameSamplesS16> samplesBufferS16;
+	BlockingCircularQueue<FrameSamplesF32> samplesBufferF32;
 	virtual void samplesconsumed(uint32_t samples) {}
+	bool discardFrameS16();
+	bool discardFrameF32();
 public:
 	/**
 	  	The AudioDecoder contains audio buffers that must be aligned to 16 bytes, so we redefine the allocator
 	*/
-	AudioDecoder(uint32_t size, EngineData* _engine):
-	#if defined HAVE_LIBAVRESAMPLE || defined HAVE_LIBSWRESAMPLE
-		resamplecontext(nullptr),
-	#endif
-		sampleRate(0),engine(_engine),samplesBuffer(size),channelCount(0),initialTime(-1),forExtraction(false)
-	{}
+	AudioDecoder(uint32_t size, EngineData* _engine);
 	virtual ~AudioDecoder();
 	virtual void switchCodec(LS_AUDIO_CODEC codecId, uint8_t* initdata, uint32_t datalen)=0;
 	virtual uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time)=0;
 	bool hasDecodedFrames() const
 	{
-		return !samplesBuffer.isEmpty();
-	}
-	uint32_t getFilled() const
-	{
-		return samplesBuffer.len();
+		return !samplesBufferS16.isEmpty() || !samplesBufferF32.isEmpty();
 	}
 	uint32_t getFrontTime() const;
 	uint32_t getBytesPerMSec() const
 	{
 		return sampleRate*channelCount*2/1000;
 	}
-	uint32_t copyFrame(int16_t* dest, uint32_t len) DLL_PUBLIC;
+	uint32_t copyFrameS16(int16_t* dest, uint32_t len) DLL_PUBLIC;
+	uint32_t copyFrameF32(float* dest, uint32_t len) DLL_PUBLIC;
 	/**
 	  	Skip samples until the given time
 
@@ -359,7 +373,7 @@ public:
 	void setFlushing() override
 	{
 		flushing=true;
-		if(samplesBuffer.isEmpty())
+		if(samplesBufferS16.isEmpty() && samplesBufferF32.isEmpty())
 		{
 			status=FLUSHED;
 			flushed.signal();
@@ -419,7 +433,7 @@ private:
 	CodecID LSToFFMpegCodec(LS_AUDIO_CODEC lscodec);
 #if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
 	AVFrame* frameIn;
-	int resampleFrame(FrameSamples& curTail);
+	int resampleFrame(void* samples);
 #endif
 public:
 	FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen, uint32_t buffertime);

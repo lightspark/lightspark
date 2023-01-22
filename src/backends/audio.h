@@ -25,6 +25,7 @@
 #include "backends/decoder.h"
 #include <iostream>
 #include <unordered_set>
+#include <SDL2/SDL.h>
 
 namespace lightspark
 {
@@ -39,9 +40,10 @@ private:
 	bool audio_available;
 	int mixeropened;
 	EngineData* engineData;
-	std::unordered_set<AudioStream *> streams;
-	Mutex streamMutex;
 public:
+	Mutex streamMutex;
+	std::list<AudioStream *> streams;
+	SDL_AudioDeviceID device;
 	AudioManager(EngineData* engine);
 
 	AudioStream *createStream(AudioDecoder *decoder, bool startpaused, IThreadJob *producer, int grouptag, uint32_t playedTime, double volume);
@@ -70,6 +72,7 @@ private:
 	ACQUIRE_RELEASE_FLAG(isdone);
 	double curvolume;
 	double unmutevolume;
+	float panning[2];
 	uint64_t playedtime;
 	struct timeval starttime;
 	int mixer_channel;
@@ -79,7 +82,7 @@ public:
 	void deinit();
 	void startMixing();
 	AudioStream(AudioManager* _manager,IThreadJob* _producer, int _grouptag,uint64_t _playedtime):manager(_manager),decoder(nullptr),producer(_producer),grouptag(_grouptag)
-	  ,hasStarted(false),isPaused(true),mixingStarted(false),isdone(false),playedtime(_playedtime),mixer_channel(-1),audiobuffer(nullptr)
+	  ,hasStarted(false),isPaused(true),mixingStarted(false),isdone(false),curvolume(1.0),unmutevolume(1.0),panning{1.0,1.0},playedtime(_playedtime),mixer_channel(-1),audiobuffer(nullptr)
 	{
 	}
 
@@ -92,10 +95,11 @@ public:
 	void resume() { SetPause(false); }
 	void setVolume(double volume);
 	void setPlayedTime(uint64_t p) { playedtime = p; }
-	void setPanning(uint16_t left, int16_t right);
+	void setPanning(uint16_t left, uint16_t right);
 	void setIsDone();
 	bool getIsDone() const;
 	inline double getVolume() const { return curvolume; }
+	inline float* getPanning() { return panning; }
 	inline AudioDecoder *getDecoder() const { return decoder; }
 	inline int getGroupTag() const { return grouptag; }
 	~AudioStream();

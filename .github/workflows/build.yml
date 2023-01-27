@@ -8,6 +8,41 @@ on:
     branches:
       - master
 jobs:
+
+  draft_release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    continue-on-error: false
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      tag_name: ${{ steps.tag_name.outputs.tag_name }}
+      version: ${{ steps.changelog.outputs.version }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get Tag Name
+        id: tag_name
+        run: echo ::set-output name=tag_name::${GITHUB_REF/refs\/tags\//}
+
+      - name: Generate body from ChangeLog
+        id: changelog
+        run: |
+          export VERSION=`echo "${{ steps.tag_name.outputs.tag_name }}" \
+              | sed -e "s/lightspark-//"`
+          ./.github/parse_changelog.py $VERSION ChangeLog >release.txt
+          echo ::set-output name=version::${VERSION}
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body_path: release.txt
+          draft: true
+          prerelease: false
+  
   compilers:
     name: Compiler Compatibility / ${{ matrix.config.cc }}
     runs-on: ubuntu-20.04

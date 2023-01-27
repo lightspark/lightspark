@@ -118,16 +118,20 @@ jobs:
             liblzma-dev
       - name: Run Build
         run: ./build.sh
-
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3.1.2
+            
+      - name: Upload Installer Release Asset
+        uses: sekwah41/upload-release-assets@v1.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: Linux ${{ matrix.os }}
-          path: |
+          upload_url: ${{ needs.draft_release.outputs.upload_url }}
+          asset_path: |
             /usr/local/lib/lightspark
             /usr/local/bin/lightspark
             /usr/local/lib/mozilla/plugins
             /usr/local/lib/PepperFlash
+          asset_name: Lightspark-v${{ needs.draft_release.outputs.version }}-Linux.zip
+          asset_content_type: application/octet-stream
 
   mxe64:
     name: Windows 64-bit (MXE Cross Build)
@@ -186,11 +190,15 @@ jobs:
           make package
           mv -v Lightspark*exe installer.exe
 
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3.1.2
+      - name: Upload Installer Release Asset
+        uses: sekwah41/upload-release-assets@v1.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: Win64
-          path: installer.exe
+          upload_url: ${{ needs.draft_release.outputs.upload_url }}
+          asset_path: installer.exe
+          asset_name: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win64.exe
+          asset_content_type: application/octet-stream
   
   mxe32:
     name: Windows 32-bit (MXE Cross Build)
@@ -249,8 +257,13 @@ jobs:
           make package
           mv -v Lightspark*exe installer.exe
 
-      - name: Upload a Build Artifact
-        uses: actions/upload-artifact@v3.1.2
+
+      - name: Upload Installer Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          name: Win32
-          path: installer.exe
+          upload_url: ${{ needs.draft_release.outputs.upload_url }}
+          asset_path: sekwah41/upload-release-assets@v1.1.0
+          asset_name: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win32.exe
+          asset_content_type: application/octet-stream

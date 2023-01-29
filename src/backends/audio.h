@@ -42,6 +42,7 @@ private:
 	EngineData* engineData;
 public:
 	Mutex streamMutex;
+	Mutex managerMutex;
 	std::list<AudioStream *> streams;
 	SDL_AudioDeviceID device;
 	AudioManager(EngineData* engine);

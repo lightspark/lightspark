@@ -126,7 +126,7 @@ AudioStream::~AudioStream()
 {
 }
 
-AudioManager::AudioManager(EngineData *engine):muteAllStreams(false),audio_available(false),mixeropened(0),engineData(engine)
+AudioManager::AudioManager(EngineData *engine):muteAllStreams(false),audio_available(false),mixeropened(0),engineData(engine),device(0)
 {
 	audio_available = engine->audio_ManagerInit();
 	mixeropened = 0;
@@ -152,15 +152,21 @@ void AudioManager::unmuteAll()
 
 void AudioManager::removeStream(AudioStream *s)
 {
-	Locker l(streamMutex);
+	streamMutex.lock();
 	streams.remove(s);
 	s->deinit();
 	delete s;
 	if (streams.empty())
 	{
+		streamMutex.unlock();
+		managerMutex.lock();
 		engineData->audio_ManagerCloseMixer(this);
 		mixeropened = false;
+		managerMutex.unlock();
 	}
+	else
+		streamMutex.unlock();
+		
 }
 
 void AudioManager::stopAllSounds()
@@ -183,9 +189,9 @@ void AudioManager::stopAllSounds()
 
 AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused, IThreadJob* producer, int grouptag, uint32_t playedTime, double volume)
 {
-	Locker l(streamMutex);
 	if (!audio_available)
 		return nullptr;
+	managerMutex.lock();
 	if (!mixeropened)
 	{
 		if (!engineData->audio_ManagerOpenMixer(this))
@@ -196,7 +202,8 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 		}
 		mixeropened = 1;
 	}
-
+	managerMutex.unlock();
+	Locker l(streamMutex);
 	AudioStream *stream = new AudioStream(this,producer,grouptag,playedTime);
 	stream->decoder = decoder;
 	if (!stream->init(volume))

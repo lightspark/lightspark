@@ -1501,6 +1501,7 @@ void EngineData::audio_ManagerCloseMixer(AudioManager* manager)
 	{
 		SDL_PauseAudioDevice(manager->device, 1);
 		SDL_CloseAudioDevice(manager->device);
+		manager->device=0;
 	}
 }
 

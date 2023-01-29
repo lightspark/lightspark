@@ -1431,6 +1431,7 @@ void audioCallback(void * userdata, uint8_t * stream, int len)
 			AudioStream* s = (*it);
 			if (s->ispaused())
 				continue;
+			s->startMixing();
 			const float fmaxvolume = 1.0f / ((float)SDL_MIX_MAXVOLUME);
 			const float fvolume = (float)s->getVolume()*(float)SDL_MIX_MAXVOLUME;
 			uint32_t readcount = 0;

@@ -396,7 +396,12 @@ bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
 	else
 	{
 		if (!isMask() && cachedAsBitmapOf && cachedAsBitmapOf->computeCacheAsBitmap() && (q && !q->isSoftwareQueue))
+		{
+			cachedAsBitmapOf->hasChanged=true;
+			cachedAsBitmapOf->incRef();
+			q->addToInvalidateQueue(_MR(cachedAsBitmapOf));
 			return true;
+		}
 	}
 	return false;
 }

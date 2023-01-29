@@ -6449,7 +6449,6 @@ void MovieClip::executeFrameScript()
 		ASATOM_DECREF(v);
 		itbind++;
 	}
-	Sprite::executeFrameScript();
 	if (needsActionScript3())
 		state.explicit_FP=false;
 	uint32_t f = frameScripts.count(state.FP) ? state.FP : UINT32_MAX;
@@ -6468,6 +6467,7 @@ void MovieClip::executeFrameScript()
 			inExecuteFramescript = false;
 		}
 	}
+	Sprite::executeFrameScript();
 }
 
 void MovieClip::checkRatio(uint32_t ratio, bool inskipping)

@@ -277,11 +277,12 @@ void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk
 	lsglLoadMatrixf(fmatrix);
 	setMatrixUniform(LSGL_MODELVIEW);
 	
-	uint32_t firstchunkhorizontal = floor(cropleft/float(CHUNKSIZE_REAL));
-	uint32_t firstchunkvertical = floor(croptop/float(CHUNKSIZE_REAL));
-	uint32_t lastchunkhorizontal = ceil((cropleft+cropwidth)/float(CHUNKSIZE_REAL));
-	uint32_t lastchunkvertical = ceil((croptop+cropheight)/float(CHUNKSIZE_REAL));
-	uint32_t chunkskiphorizontal = ceil(chunk.width/float(CHUNKSIZE_REAL))- lastchunkhorizontal;
+	uint32_t firstchunkhorizontal = floor(float(cropleft)/float(CHUNKSIZE_REAL));
+	uint32_t firstchunkvertical = floor(float(croptop)/float(CHUNKSIZE_REAL));
+	uint32_t lastchunkhorizontal = (cropleft+cropwidth+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL;
+	uint32_t lastchunkvertical = (croptop+cropheight+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL;
+	uint32_t horizontalchunks = (chunk.width+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL;
+	uint32_t chunkskiphorizontal = horizontalchunks - lastchunkhorizontal + firstchunkhorizontal;
 	int realchunkcount = (lastchunkhorizontal-firstchunkhorizontal)*(lastchunkvertical-firstchunkvertical);
 	//The 4 corners of each texture are specified as the vertices of 2 triangles,
 	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
@@ -292,7 +293,7 @@ void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk
 	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
 	float realchunkwidth = cropwidth;
 	float realchunkheight = cropheight;
-	uint32_t curChunk=firstchunkhorizontal+firstchunkvertical*(chunk.width/CHUNKSIZE_REAL);
+	uint32_t curChunk=firstchunkhorizontal+firstchunkvertical*horizontalchunks;
 	uint32_t chunkrendercount=0;
 	float startX, startY, endX, endY;
 	float leftstart = cropleft-firstchunkhorizontal*CHUNKSIZE_REAL;

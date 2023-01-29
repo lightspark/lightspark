@@ -1310,8 +1310,16 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, D
 			{
 				if (!mouseChildren) // When mouseChildren is false, we should get all events of our children
 				{
-					this->incRef();
-					ret =_MNR(this);
+					if (mouseEnabled)
+					{
+						this->incRef();
+						ret =_MNR(this);
+					}
+					else
+					{
+						ret.reset();
+						continue;
+					}
 				}
 				else
 				{

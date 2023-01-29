@@ -33,12 +33,17 @@ using namespace lightspark;
 using namespace std;
 
 
-TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o),colortransform(nullptr), scaling(1.0f/20.0f),renderWithNanoVG(false)
+TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o)
+  ,redMultiplier(1.0),greenMultiplier(1.0),blueMultiplier(1.0),alphaMultiplier(1.0)
+  ,redOffset(0.0),greenOffset(0.0),blueOffset(0.0),alphaOffset(0.0)
+  ,scaling(0.05),renderWithNanoVG(false)
 {
 }
 
-TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling) :
-	owner(_o),colortransform(nullptr), scaling(_scaling),renderWithNanoVG(false)
+TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling) : owner(_o)
+	,redMultiplier(1.0),greenMultiplier(1.0),blueMultiplier(1.0),alphaMultiplier(1.0)
+	,redOffset(0.0),greenOffset(0.0),blueOffset(0.0),alphaOffset(0.0)
+	,scaling(_scaling),renderWithNanoVG(false)
 
 {
 	tokens.filltokens.assign(_tokens.filltokens.begin(),_tokens.filltokens.end());
@@ -151,15 +156,10 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 								{
 									RGBA color = style->Color;
 									float r,g,b,a;
-									if (colortransform)
-										colortransform->applyTransformation(color,r,g,b,a);
-									else
-									{
-										r = color.rf();
-										g = color.gf();
-										b = color.bf();
-										a = color.af();
-									}
+									a = max(0.0f,min(255.0f,float((color.Alpha * alphaMultiplier * 256.0f)/256.0f + alphaOffset)))/256.0f;
+									r = max(0.0f,min(255.0f,float((color.Red   *   redMultiplier * 256.0f)/256.0f +   redOffset)))/256.0f;
+									g = max(0.0f,min(255.0f,float((color.Green * greenMultiplier * 256.0f)/256.0f + greenOffset)))/256.0f;
+									b = max(0.0f,min(255.0f,float((color.Blue  *  blueMultiplier * 256.0f)/256.0f +  blueOffset)))/256.0f;
 									NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*owner->getConcatenatedAlpha()*255.0);
 									nvgFillColor(nvgctxt,c);
 									break;
@@ -193,15 +193,10 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 							{
 								RGBA color = style->Color;
 								float r,g,b,a;
-								if (colortransform)
-									colortransform->applyTransformation(color,r,g,b,a);
-								else
-								{
-									r = color.rf();
-									g = color.gf();
-									b = color.bf();
-									a = color.af();
-								}
+								a = max(0.0f,min(255.0f,float((color.Alpha * alphaMultiplier * 256.0f)/256.0f + alphaOffset)))/256.0f;
+								r = max(0.0f,min(255.0f,float((color.Red   *   redMultiplier * 256.0f)/256.0f +   redOffset)))/256.0f;
+								g = max(0.0f,min(255.0f,float((color.Green * greenMultiplier * 256.0f)/256.0f + greenOffset)))/256.0f;
+								b = max(0.0f,min(255.0f,float((color.Blue  *  blueMultiplier * 256.0f)/256.0f +  blueOffset)))/256.0f;
 								NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*owner->getConcatenatedAlpha()*255.0);
 								nvgStrokeColor(nvgctxt,c);
 							}
@@ -565,7 +560,14 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& owner->getBlendMode()==BLENDMODE_NORMAL
 			&& !r)
 	{
-		this->colortransform=ct;
+		this->redMultiplier=redMultiplier;
+		this->greenMultiplier=greenMultiplier;
+		this->blueMultiplier=blueMultiplier;
+		this->alphaMultiplier=alphaMultiplier;
+		this->redOffset=redOffset;
+		this->greenOffset=greenOffset;
+		this->blueOffset=blueOffset;
+		this->alphaOffset=alphaOffset;
 		renderWithNanoVG=true;
 		int offsetX;
 		int offsetY;

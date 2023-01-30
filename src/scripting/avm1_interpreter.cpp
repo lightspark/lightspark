@@ -1262,7 +1262,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineLocal2 "<<asAtomHandler::toDebugString(name));
 				tiny_string namelower = asAtomHandler::toString(name,wrk).lowercase();
 				uint32_t nameID = clip->getSystemState()->getUniqueStringId(namelower);
-				ASATOM_DECREF(locals[nameID]);
 				if (locals.find(nameID) == locals.end())
 					locals[nameID] = asAtomHandler::undefinedAtom;
 				ASATOM_DECREF(name);
@@ -1639,8 +1638,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					}
 					if (o->is<DisplayObject>())
 					{
-						o->as<DisplayObject>()->AVM1SetVariableDirect(m.name_s_id,value);
 						o->as<DisplayObject>()->AVM1UpdateVariableBindings(m.name_s_id,value);
+						o->as<DisplayObject>()->AVM1SetVariableDirect(m.name_s_id,value);
 					}
 				}
 				else

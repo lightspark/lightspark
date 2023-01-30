@@ -597,7 +597,11 @@ void CurlDownloader::execute()
 		curl_easy_setopt(curl, CURLOPT_WRITEDATA, this);
 		curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, write_header);
 		curl_easy_setopt(curl, CURLOPT_HEADERDATA, this);
+#if LIBCURL_VERSION_NUM>= 0x072000
+		curl_easy_setopt(curl, CURLOPT_XFERINFOFUNCTION, progress_callback);
+#else
 		curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_callback);
+#endif
 		curl_easy_setopt(curl, CURLOPT_PROGRESSDATA, this);
 		curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0);
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);

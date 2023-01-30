@@ -2808,6 +2808,7 @@ void RootMovieClip::setupAVM1RootMovie()
 {
 	if (!usesActionScript3)
 	{
+		getSystemState()->stage->AVM1RootClipAdded();
 		this->classdef = Class<AVM1MovieClip>::getRef(getSystemState()).getPtr();
 		if (!getSystemState()->avm1global)
 			getVm(getSystemState())->registerClassesAVM1();

@@ -57,7 +57,6 @@ class AVM1Shape: public Shape
 {
 public:
 	AVM1Shape(ASWorker* wrk,Class_base* c):Shape(wrk,c){}
-	AVM1Shape(ASWorker* wrk,Class_base* c, float scaling, DefineShapeTag* tag):Shape(wrk,c,scaling,tag) {}
 	static void sinit(Class_base* c);
 };
 

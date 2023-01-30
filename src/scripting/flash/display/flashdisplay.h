@@ -283,7 +283,6 @@ protected:
 	DefineShapeTag* fromTag;
 public:
 	Shape(ASWorker* wrk,Class_base* c);
-	Shape(ASWorker* wrk,Class_base* c, float scaling, DefineShapeTag *tag);
 	void setupShape(lightspark::DefineShapeTag *tag, float _scaling);
 	uint32_t getTagID() const override;
 	bool destruct() override;
@@ -756,6 +755,7 @@ private:
 	MovieClip* avm1ScriptMovieClipFirst;
 	MovieClip* avm1ScriptMovieClipLast;
 	std::list<_R<MovieClip>> avm1skipeventslist;
+	bool hasAVM1Clips;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
 	bool renderImpl(RenderContext& ctxt) override;
@@ -768,6 +768,7 @@ public:
 	void forceInvalidation();
 	bool renderStage3D();
 	void onDisplayState(const tiny_string&);
+	void AVM1RootClipAdded() { hasAVM1Clips = true; }
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void setOnStage(bool staged, bool force,bool inskipping=false) override { assert(false); /* we are the stage */}
 	_NR<RootMovieClip> getRoot() override;

@@ -2855,9 +2855,12 @@ void DisplayObject::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj
 			variablebindings.erase(it);
 	}
 }
-void DisplayObject::AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj)
+void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> obj)
 {
-	auto it = avm1variables.find(nameID);
+	uint32_t nameID = getSystemState()->getUniqueStringId(name);
+	uint32_t nameIDlower = getSystemState()->getUniqueStringId(name.lowercase());
+	
+	auto it = avm1variables.find(nameIDlower);
 	if (it != avm1variables.end())
 	{
 		if (obj && asAtomHandler::isObject(it->second) && asAtomHandler::getObjectNoCheck(it->second) == obj.getPtr())
@@ -2866,14 +2869,24 @@ void DisplayObject::AVM1SetFunction(uint32_t nameID, _NR<AVM1Function> obj)
 	}
 	if (obj)
 	{
-		avm1functions[nameID] = obj;
+		asAtom v = asAtomHandler::fromObjectNoPrimitive(obj.getPtr());
+		avm1functions[nameIDlower] = obj;
 		obj->incRef();
-		avm1variables[nameID] = asAtomHandler::fromObject(obj.getPtr());
+		avm1variables[nameIDlower] = v;
+		
+		multiname objName(nullptr);
+		objName.name_type=multiname::NAME_STRING;
+		objName.name_s_id=nameID;
+		obj->incRef();
+		bool alreadyset;
+		setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,&alreadyset,loadedFrom->getInstanceWorker());
+		if (alreadyset)
+			ASATOM_DECREF(v);
 	}
 	else
 	{
-		avm1functions.erase(nameID);
-		avm1variables.erase(nameID);
+		avm1functions.erase(nameIDlower);
+		avm1variables.erase(nameIDlower);
 	}
 }
 AVM1Function* DisplayObject::AVM1GetFunction(uint32_t nameID)

@@ -73,6 +73,7 @@ private:
 	pugi::xml_node rootNode;
 protected:
 	int32_t status; // only needed for AVM1
+	bool needsActionScript3;
 public:
 	XMLDocument(ASWorker* wrk,Class_base* c, tiny_string s="");
 	int parseXMLImpl(const std::string& str);
@@ -90,5 +91,5 @@ public:
 				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk);
 };
 
-};
+}
 #endif /* SCRIPTING_FLASH_XML_FLASHXML */

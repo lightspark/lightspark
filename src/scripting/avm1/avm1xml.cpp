@@ -66,21 +66,18 @@ ASFUNCTIONBODY_ATOM(AVM1XMLDocument,load)
 multiname* AVM1XMLDocument::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset,ASWorker* wrk)
 {
 	multiname* res = XMLDocument::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
-	if (!getSystemState()->mainClip->usesActionScript3)
+	if (name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
 	{
-		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
-		{
-			if (loader.isNull())
-				loader = _MR(Class<URLLoader>::getInstanceS(wrk));
-			getSystemState()->stage->AVM1AddEventListener(this);
-			setIsEnumerable(name, false);
-		}
+		if (loader.isNull())
+			loader = _MR(Class<URLLoader>::getInstanceS(wrk));
+		getSystemState()->stage->AVM1AddEventListener(this);
+		setIsEnumerable(name, false);
 	}
 	return res;
 }
 void AVM1XMLDocument::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 {
-	if (!getSystemState()->mainClip->usesActionScript3 && dispatcher == loader.getPtr())
+	if (dispatcher == loader.getPtr())
 	{
 		if (e->type == "complete" || e->type=="ioError")
 		{

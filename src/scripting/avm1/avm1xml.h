@@ -31,7 +31,7 @@ class AVM1XMLDocument: public XMLDocument
 {
 	_NR<URLLoader> loader;
 public:
-	AVM1XMLDocument(ASWorker* wrk,Class_base* c):XMLDocument(wrk,c){}
+	AVM1XMLDocument(ASWorker* wrk,Class_base* c):XMLDocument(wrk,c){ needsActionScript3=false; }
 	void finalize() override;
 	void prepareShutdown() override;
 	static void sinit(Class_base* c);

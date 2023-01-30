@@ -2201,10 +2201,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					PushStack(stack,a);
 				}
 				else
-				{
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(name.lowercase());
-					clip->AVM1SetFunction(nameID,_MR(f));
-				}
+					clip->AVM1SetFunction(name,_MR(f));
 				break;
 			}
 			case 0x94: // ActionWith
@@ -2426,10 +2423,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					PushStack(stack,a);
 				}
 				else
-				{
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(name.lowercase());
-					clip->AVM1SetFunction(nameID,_MR(f));
-				}
+					clip->AVM1SetFunction(name,_MR(f));
 				break;
 			}
 			case 0x9d: // ActionIf

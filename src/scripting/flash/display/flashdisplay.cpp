@@ -3805,12 +3805,6 @@ Shape::Shape(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),TokenContainer(t
 	subtype=SUBTYPE_SHAPE;
 }
 
-Shape::Shape(ASWorker* wrk, Class_base* c, float scaling, DefineShapeTag* tag):
-	DisplayObject(wrk,c),TokenContainer(this, *tag->tokens, scaling),graphics(NullRef),fromTag(tag)
-{
-	subtype=SUBTYPE_SHAPE;
-}
-
 void Shape::setupShape(DefineShapeTag* tag, float _scaling)
 {
 	tokens.filltokens.assign(tag->tokens->filltokens.begin(),tag->tokens->filltokens.end());
@@ -4259,7 +4253,7 @@ void Stage::prepareShutdown()
 }
 
 Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
-  ,avm1ScriptMovieClipFirst(nullptr),avm1ScriptMovieClipLast(nullptr)
+  ,avm1ScriptMovieClipFirst(nullptr),avm1ScriptMovieClipLast(nullptr),hasAVM1Clips(false)
   ,align(c->getSystemState()->getUniqueStringId("TL")), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high")
   ,stageFocusRect(false),allowsFullScreen(false),contentsScaleFactor(1.0)
 {
@@ -4504,7 +4498,7 @@ void Stage::removeHiddenObject(MovieClip* o)
 
 void Stage::AVM1AddScriptedMovieClip(MovieClip* clip)
 {
-	if (needsActionScript3())
+	if (!hasAVM1Clips)
 		return;
 	Locker l(avm1ScriptMutex);
 	if (clip->avm1PrevScriptedClip || clip->avm1NextScriptedClip || this->avm1ScriptMovieClipFirst == clip)
@@ -4524,7 +4518,7 @@ void Stage::AVM1AddScriptedMovieClip(MovieClip* clip)
 
 void Stage::AVM1RemoveScriptedMovieClip(MovieClip* clip)
 {
-	if (needsActionScript3())
+	if (!hasAVM1Clips)
 		return;
 	Locker l(avm1ScriptMutex);
 	if (!clip->avm1PrevScriptedClip && !clip->avm1NextScriptedClip)
@@ -4563,7 +4557,7 @@ void Stage::advanceFrame()
 		(*it)->advanceFrame();
 		it++;
 	}
-	if (!needsActionScript3())
+	if (hasAVM1Clips)
 	{
 		avm1ScriptMutex.lock();
 		MovieClip* clip = avm1ScriptMovieClipFirst;

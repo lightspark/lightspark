@@ -305,7 +305,7 @@ tiny_string XMLNode::toString_priv(pugi::xml_node outputNode)
 }
 
 XMLDocument::XMLDocument(ASWorker* wrk, Class_base* c, tiny_string s)
-  : XMLNode(wrk,c),rootNode(nullptr),status(0),ignoreWhite(false)
+  : XMLNode(wrk,c),rootNode(nullptr),status(0),needsActionScript3(true),ignoreWhite(false)
 {
 	if(!s.empty())
 	{
@@ -353,7 +353,7 @@ int XMLDocument::parseXMLImpl(const string& str)
 	unsigned int parsemode = pugi::parse_full |pugi::parse_fragment;
 	if (!ignoreWhite) parsemode |= pugi::parse_ws_pcdata;
 
-	if (this->getInstanceWorker()->rootClip->usesActionScript3)
+	if (needsActionScript3)
 	{
 		node=rootNode=buildFromString(str, parsemode);
 		return 0;
@@ -414,6 +414,8 @@ ASFUNCTIONBODY_ATOM(XMLDocument,firstChild)
 	XMLDocument* th=asAtomHandler::as<XMLDocument>(obj);
 	assert_and_throw(argslen==0);
 	pugi::xml_node newNode=th->rootNode.first_child();
+	if (newNode.type()==pugi::node_declaration) // skip declaration node
+		newNode = newNode.next_sibling();
 	if(newNode.type() == pugi::node_null)
 	{
 		asAtomHandler::setNull(ret);

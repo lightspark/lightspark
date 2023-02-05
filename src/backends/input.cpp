@@ -133,8 +133,7 @@ bool InputThread::worker(SDL_Event *event)
 				m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
 				if (m_sys->mainClip->usesActionScript3)
 				{
-					if (event->button.clicks == 1)
-						handleMouseDown(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
+					handleMouseDown(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
 					if (event->button.clicks == 2)
 						handleMouseDoubleClick(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
 				}

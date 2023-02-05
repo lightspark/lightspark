@@ -3030,9 +3030,21 @@ bool DisplayObjectContainer::countCylicMemberReferences(garbagecollectorstate& g
 void DisplayObjectContainer::prepareDestruction()
 {
 	DisplayObject::prepareDestruction();
-	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+	bool done = false;
+	while (!done)
 	{
-		(*it)->prepareDestruction();
+		done = true;
+		uint32_t size = dynamicDisplayList.size();
+		for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+		{
+			(*it)->prepareDestruction();
+			if (size != dynamicDisplayList.size())
+			{
+				// dynamicDisplayList was altered
+				done = false;
+				break;
+			}
+		}
 	}
 }
 

@@ -15,22 +15,10 @@ jobs:
     continue-on-error: false
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
-      tag_name: ${{ steps.tag_name.outputs.tag_name }}
-      version: ${{ steps.changelog.outputs.version }}
+      #tag_name: ${{ steps.tag_name.outputs.tag_name }} # May need to re-enable this
+      #version: ${{ steps.changelog.outputs.version }} # May need to re-enable this
     steps:
       - uses: actions/checkout@v2
-
-      - name: Get Tag Name
-        id: tag_name
-        run: echo ::set-output name=tag_name::${GITHUB_REF/refs\/tags\//}
-
-      - name: Generate body from ChangeLog
-        id: changelog
-        run: |
-          export VERSION=`echo "${{ steps.tag_name.outputs.tag_name }}" \
-              | sed -e "s/lightspark-//"`
-          ./.github/parse_changelog.py $VERSION ChangeLog >release.txt
-          echo ::set-output name=version::${VERSION}
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -39,10 +27,9 @@ jobs:
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }}
-          body_path: release.txt
           draft: true
-          prerelease: false
-  
+          prerelease: true
+
   compilers:
     name: Compiler Compatibility / ${{ matrix.config.cc }}
     runs-on: ubuntu-20.04
@@ -76,7 +63,7 @@ jobs:
             cxxpackage: g++-10
     steps:
       - uses: actions/checkout@v3.3.0
-     
+
       - name: Install Dependencies
         run: |
           sudo `which apt || which apt-get` update
@@ -107,7 +94,7 @@ jobs:
             libsdl2-mixer-dev \
             libgnutls28-dev \
             liblzma-dev
-     
+
       - name: Run Build
         run: |
           export CXX=`echo $CC | sed -e 's/clang/clang++/;s/gcc/g++/'`
@@ -153,20 +140,6 @@ jobs:
             liblzma-dev
       - name: Run Build
         run: ./build.sh
-            
-      - name: Upload Installer Release Asset
-        uses: sekwah41/upload-release-assets@v1.1.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.draft_release.outputs.upload_url }}
-          asset_path: |
-            /usr/local/lib/lightspark
-            /usr/local/bin/lightspark
-            /usr/local/lib/mozilla/plugins
-            /usr/local/lib/PepperFlash
-          asset_name: Lightspark-v${{ needs.draft_release.outputs.version }}-Linux.zip
-          asset_content_type: application/octet-stream
 
   mxe64:
     name: Windows 64-bit (MXE Cross Build)
@@ -177,7 +150,7 @@ jobs:
       CXXFLAGS: -std=c++11
     steps:
       - uses: actions/checkout@v3.3.0
-      
+
       - name: Add MXE Repository to Apt
         uses: myci-actions/add-deb-repo@10
         with:
@@ -185,7 +158,7 @@ jobs:
           repo-name: mxe
           keys: ${{ secrets.MXE_REPO_KEY }}
           key-server: keyserver.ubuntu.com
-      
+
       - name: Install MXE Build Environment
         run: |
           sudo apt update
@@ -208,7 +181,7 @@ jobs:
             mxe-x86-64-w64-mingw32.static-ffmpeg \
             mxe-x86-64-w64-mingw32.static-sdl2-mixer
           echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
-      
+
       - name: Configure MXE for NSIS Installer Builds
         run: |
           (cd /usr/lib/mxe/ \
@@ -216,7 +189,7 @@ jobs:
           && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
           && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := x86_64-w64-mingw32.static/" settings.mk \
           && sudo make nsis)
-      
+
       - name: Run MXE Build
         run: |
           x86_64-w64-mingw32.static-cmake .
@@ -234,7 +207,7 @@ jobs:
           asset_path: installer.exe
           asset_name: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win64.exe
           asset_content_type: application/octet-stream
-  
+
   mxe32:
     name: Windows 32-bit (MXE Cross Build)
     runs-on: ubuntu-18.04
@@ -244,7 +217,7 @@ jobs:
       CXXFLAGS: -std=c++11
     steps:
       - uses: actions/checkout@v3.3.0
-      
+
       - name: Add MXE Repository to Apt
         uses: myci-actions/add-deb-repo@10
         with:
@@ -252,7 +225,7 @@ jobs:
           repo-name: mxe
           keys: ${{ secrets.MXE_REPO_KEY }}
           key-server: keyserver.ubuntu.com
-      
+
       - name: Install MXE Build Environment
         run: |
           sudo apt update
@@ -275,7 +248,7 @@ jobs:
             mxe-i686-w64-mingw32.static-ffmpeg \
             mxe-i686-w64-mingw32.static-sdl2-mixer
           echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
-      
+
       - name: Configure MXE for NSIS Installer Builds
         run: |
           (cd /usr/lib/mxe/ \
@@ -283,7 +256,7 @@ jobs:
           && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
           && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := i686-w64-mingw32.static/" settings.mk \
           && sudo make nsis)
-      
+
       - name: Run MXE Build
         run: |
           i686-w64-mingw32.static-cmake .
@@ -291,7 +264,6 @@ jobs:
           sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
           make package
           mv -v Lightspark*exe installer.exe
-
 
       - name: Upload Installer Release Asset
         uses: actions/upload-release-asset@v1

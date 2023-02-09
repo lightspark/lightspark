@@ -673,8 +673,8 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 					*(cc->stackp++)=asAtomHandler::fromObject(excobj);
 					while (cc->curr_scope_stack)
 					{
-						LOG_CALL("scopestack exception:"<<asAtomHandler::toDebugString(cc->scope_stack[0]));
 						--cc->curr_scope_stack;
+						LOG_CALL("scopestack exception:"<<asAtomHandler::toDebugString(cc->scope_stack[cc->curr_scope_stack]));
 						if (asAtomHandler::isObject(cc->scope_stack[cc->curr_scope_stack]))
 							asAtomHandler::getObjectNoCheck(cc->scope_stack[cc->curr_scope_stack])->removeStoredMember();
 					}
@@ -1463,37 +1463,41 @@ void Class_base::setConstructor(IFunction* c)
 
 void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int argslen, bool buildAndLink)
 {
+	if (!asAtomHandler::isObject(target))
+		return;
+	ASObject* t = asAtomHandler::getObjectNoCheck(target);
 	if(buildAndLink)
 	{
-		setupDeclaredTraits(asAtomHandler::getObjectNoCheck(target));
+		setupDeclaredTraits(t);
 	}
 
 	if(constructor)
 	{
 		LOG_CALL("handleConstruction for "<<asAtomHandler::toDebugString(target));
-		ASATOM_INCREF(target);
+		t->incRef();
 		asAtom ret=asAtomHandler::invalidAtom;
 		asAtom c = asAtomHandler::fromObject(constructor);
 		asAtomHandler::callFunction(c,asAtomHandler::getObjectNoCheck(target)->getInstanceWorker(),ret,target,args,argslen,true);
-		asAtomHandler::getObject(target)->constructIndicator = true;
-		target = asAtomHandler::fromObject(asAtomHandler::getObject(target));
+		t->constructIndicator = true;
+		target = asAtomHandler::fromObject(asAtomHandler::getObjectNoCheck(target));
 		LOG_CALL("handleConstruction done for "<<asAtomHandler::toDebugString(target));
 	}
 	else
 	{
-		asAtomHandler::getObject(target)->constructIndicator = true;
+		t->constructIndicator = true;
 		for(uint32_t i=0;i<argslen;i++)
 			ASATOM_DECREF(args[i]);
 	}
-	if (this->isBuiltin())
+	if (asAtomHandler::isObject(target))
 	{
 		// Tell the object that the constructor of the builtin object has been called
-		asAtomHandler::getObject(target)->constructionComplete();
+		if (this->isBuiltin())
+			asAtomHandler::getObjectNoCheck(target)->constructionComplete();
+		if(buildAndLink)
+			asAtomHandler::getObjectNoCheck(target)->afterConstruction();
 	}
-	if(buildAndLink)
-	{
-		asAtomHandler::getObject(target)->afterConstruction();
-	}
+	else
+		t->decRef();
 }
 
 

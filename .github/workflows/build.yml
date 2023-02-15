@@ -145,7 +145,7 @@ jobs:
     name: Windows 64-bit (MXE Cross Build)
     runs-on: ubuntu-18.04
     continue-on-error: false
-	needs: draft_release
+    needs: draft_release
     env:
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
@@ -213,7 +213,7 @@ jobs:
     name: Windows 32-bit (MXE Cross Build)
     runs-on: ubuntu-18.04
     continue-on-error: false
-	needs: draft_release
+    needs: draft_release
     env:
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11

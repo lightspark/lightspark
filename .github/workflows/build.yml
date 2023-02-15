@@ -200,7 +200,7 @@ jobs:
           mv -v Lightspark*exe installer.exe
 
       - name: Upload Installer Release Asset
-        uses: sekwah41/upload-release-assets@v1.1.0
+        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -273,6 +273,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.draft_release.outputs.upload_url }}
-          asset_path: sekwah41/upload-release-assets@v1.1.0
+          asset_path: installer.exe
           asset_name: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win32.exe
           asset_content_type: application/octet-stream

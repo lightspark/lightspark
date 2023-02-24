@@ -843,13 +843,6 @@ variable* ASObject::findSettable(const multiname& name, bool* has_getter)
 
 multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset, ASWorker* wrk)
 {
-	if (name.normalizedNameUnresolved(getSystemState()) == "_1184053038labelDisplay")
-	{
-		LOG(LOG_ERROR,"setval:"<<name<<" "<<this->toDebugString()<<" "<< asAtomHandler::toDebugString(o));
-		asAtomHandler::getObject(o)->dumpVariables();
-		getInstanceWorker()->dumpStacktrace();
-	}
-	
 	multiname *retval = nullptr;
 	check();
 	assert(!cls || classdef->isSubClass(cls));
@@ -1862,7 +1855,7 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 	while(it!=Variables.cend())
 	{
 		ASObject* o = asAtomHandler::getObject(it->second.var);
-		if (it->second.isrefcounted && o && !o->getConstant() && !o->getInDestruction() && o->canHaveCyclicMemberReference())
+		if (it->second.isrefcounted && o && !o->getCached() && !o->getConstant() && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->getInstanceWorker()->isDeletedInGarbageCollection(o))
 		{
 			if (o==gcstate.startobj)
 			{
@@ -2021,7 +2014,7 @@ void ASObject::handleGarbageCollection()
 			else if ((*it).second.count!=(uint32_t)(*it).first->getRefCount() && (*it).second.hasmember)
 			{
 				c = UINT32_MAX;
-				if ((*it).first->isMarkedForGarbageCollection())
+				if ((*it).first->isMarkedForGarbageCollection() && !getInstanceWorker()->isDeletedInGarbageCollection(this))
 				{
 					getInstanceWorker()->addObjectToGarbageCollector(this);
 				}
@@ -2051,7 +2044,7 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 		gcstate.incCount(this);
 		ret = true;
 	}
-	else if (!getConstant() && !getInDestruction() && canHaveCyclicMemberReference() && !markedforgarbagecollection && (!getInstanceWorker() || !getInstanceWorker()->isDeletedInGarbageCollection(this)))
+	else if (!getConstant() && !getInDestruction() && !getCached() && canHaveCyclicMemberReference() && !markedforgarbagecollection && (!getInstanceWorker() || !getInstanceWorker()->isDeletedInGarbageCollection(this)))
 	{
 		if (gcstate.ancestors.find(this)==gcstate.ancestors.end())
 		{

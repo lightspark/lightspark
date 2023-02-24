@@ -965,7 +965,7 @@ protected:
 		{
 			if (!getCached())
 			{
-				assert(getWorker() == this->getInstanceWorker());
+				assert(getWorker() == this->getInstanceWorker() || !getWorker());
 				dodestruct = !objfreelist->pushObjectToFreeList(this);
 			}
 			else
@@ -2600,12 +2600,12 @@ inline ASObject* asfreelist::getObjectFromFreeList()
 }
 inline bool asfreelist::pushObjectToFreeList(ASObject *obj)
 {
-	assert(obj->isLastRef());
 	if (freelistsize < FREELIST_SIZE)
 	{
 		assert(freelistsize>=0);
 		LOG_CALL("pushtofreelist:"<<freelistsize<<" "<<obj<<" "<<this);
 		obj->setCached();
+		obj->resetRefCount();
 		freelist[freelistsize++]=obj;
 		return true;
 	}

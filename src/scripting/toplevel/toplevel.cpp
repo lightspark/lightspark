@@ -164,6 +164,8 @@ void IFunction::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	ASObject::prepareShutdown();
+	if (clonedFrom)
+		clonedFrom->prepareShutdown();
 	if (closure_this)
 		closure_this->prepareShutdown();
 	if (prototype)
@@ -899,18 +901,11 @@ void Function::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	if (prototype)
-	{
-		// remove constructor variable from prototye if it is a not refcounted pointer to this
-		multiname m(nullptr);
-		m.name_type = multiname::NAME_STRING;
-		m.name_s_id = BUILTIN_STRINGS::STRING_CONSTRUCTOR;
-		uint32_t nsRealID;
-		bool isborrowed;
-		variable* v = prototype->findVariableByMultiname(m,nullptr,&nsRealID,&isborrowed,false,this->getInstanceWorker());
-		if (v)
-			v->var = asAtomHandler::invalidAtom;
 		prototype->prepareShutdown();
-	}
+	if (returnType)
+		returnType->prepareShutdown();
+	if (returnTypeAllArgsInt)
+		returnTypeAllArgsInt->prepareShutdown();
 	IFunction::prepareShutdown();
 }
 
@@ -1404,7 +1399,7 @@ void Class_base::_getter_constructorprop(asAtom& ret, ASWorker* wrk, asAtom& obj
 
 Prototype* Class_base::getPrototype(ASWorker* wrk) const
 {
-	assert(wrk==getWorker());
+	assert(wrk==getWorker() && !wrk->inFinalization());
 	// workers need their own prototype objects for every class
 	if (prototype.isNull() || this->is<Class_inherit>() || wrk->isPrimordial)
 		return prototype.getPtr();
@@ -1458,6 +1453,8 @@ tiny_string Class_base::toString()
 void Class_base::setConstructor(IFunction* c)
 {
 	assert_and_throw(constructor==nullptr);
+	if (c)
+		c->setRefConstant();
 	constructor=c;
 }
 
@@ -1506,16 +1503,14 @@ void Class_base::finalize()
 	borrowedVariables.destroyContents();
 	super.reset();
 	prototype.reset();
+	interfaces_added.clear();
 	protected_ns = nsNameAndKind(getSystemState(),"",NAMESPACE);
 	ASObject* p =constructorprop.getPtr();
 	constructorprop.reset();
 	if (p)
 		p->decRef();
 	if(constructor)
-	{
-		constructor->decRef();
 		constructor=nullptr;
-	}
 	context = nullptr;
 	global = nullptr;
 	length = 1;
@@ -1534,6 +1529,7 @@ void Class_base::prepareShutdown()
 	borrowedVariables.prepareShutdown();
 	if(constructor)
 		constructor->prepareShutdown();
+	constructor=nullptr;
 	if (constructorprop)
 		constructorprop->prepareShutdown();
 	if (prototype && prototype->getObj())
@@ -3455,31 +3451,12 @@ ObjectPrototype::ObjectPrototype(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
 	originalPrototypeVars->setRefConstant();
 }
 
-void ObjectPrototype::finalize()
-{
-	if (originalPrototypeVars)
-		originalPrototypeVars->decRef();
-	originalPrototypeVars=nullptr;
-	if (workerDynamicClassVars)
-		workerDynamicClassVars->decRef();
-	workerDynamicClassVars=nullptr;
-	prevPrototype.reset();
-	if (obj)
-		obj->decRef();
-	obj=nullptr;
-}
-
 void ObjectPrototype::prepareShutdown()
 {
 	if (preparedforshutdown)
 		return;
 	ASObject::prepareShutdown();
-	if (prevPrototype)
-		prevPrototype->getObj()->prepareShutdown();
-	if (originalPrototypeVars)
-		originalPrototypeVars->prepareShutdown();
-	if (workerDynamicClassVars)
-		workerDynamicClassVars->prepareShutdown();
+	prepShutdown();
 }
 bool ObjectPrototype::isEqual(ASObject* r)
 {
@@ -3518,6 +3495,7 @@ multiname *ObjectPrototype::setVariableByMultiname(multiname &name, asAtom& o, A
 
 ObjectConstructor::ObjectConstructor(ASWorker* wrk, Class_base* c, uint32_t length) : ASObject(wrk,c,T_OBJECT,SUBTYPE_OBJECTCONSTRUCTOR),_length(length)
 {
+	this->setRefConstant();
 	Class<ASObject>::getRef(c->getSystemState())->prototype->incRef();
 	this->prototype = Class<ASObject>::getRef(c->getSystemState())->prototype.getPtr();
 }
@@ -3534,19 +3512,14 @@ ArrayPrototype::ArrayPrototype(ASWorker* wrk, Class_base* c) : Array(wrk,c)
 	originalPrototypeVars->setRefConstant();
 }
 
-void ArrayPrototype::finalize()
+void ArrayPrototype::prepareShutdown()
 {
-	if (originalPrototypeVars)
-		originalPrototypeVars->decRef();
-	originalPrototypeVars=nullptr;
-	if (workerDynamicClassVars)
-		workerDynamicClassVars->decRef();
-	workerDynamicClassVars=nullptr;
-	prevPrototype.reset();
-	if (obj)
-		obj->decRef();
-	obj=nullptr;
+	if (preparedforshutdown)
+		return;
+	Array::prepareShutdown();
+	prepShutdown();
 }
+
 bool ArrayPrototype::isEqual(ASObject* r)
 {
 	if (r->is<ArrayPrototype>())
@@ -3610,6 +3583,14 @@ FunctionPrototype::FunctionPrototype(ASWorker* wrk, Class_base* c, _NR<Prototype
 	originalPrototypeVars = new_asobject(wrk);
 	originalPrototypeVars->objfreelist=nullptr;
 	originalPrototypeVars->setRefConstant();
+}
+
+void FunctionPrototype::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	Function::prepareShutdown();
+	prepShutdown();
 }
 
 GET_VARIABLE_RESULT FunctionPrototype::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)

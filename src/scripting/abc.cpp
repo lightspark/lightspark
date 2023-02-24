@@ -845,7 +845,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	//This is to take care of rollOver/Out
 	bool doTarget = true;
 	//capture phase
-	if(dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass(dispatcher->getSystemState())))
+	if(dispatcher->classdef && dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass(dispatcher->getSystemState())))
 	{
 		event->eventPhase = EventPhase::CAPTURING_PHASE;
 		//We fetch the relatedObject in the case of rollOver/Out

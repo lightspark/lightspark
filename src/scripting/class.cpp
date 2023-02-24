@@ -74,6 +74,7 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_i
 void Class_inherit::finalize()
 {
 	instancefactory.reset();
+	tag=nullptr;
 	auto it = class_scope.begin();
 	while (it != class_scope.end())
 	{
@@ -100,7 +101,6 @@ void Class_inherit::prepareShutdown()
 			o->prepareShutdown();
 		it++;
 	}
-	class_scope.clear();
 }
 
 void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)

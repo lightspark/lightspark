@@ -325,8 +325,10 @@ private:
 	bool started;
 	bool inGarbageCollection;
 	bool inShutdown;
+	bool inFinalize;
 	//Synchronization
 	Mutex event_queue_mutex;
+	Mutex constantrefmutex;
 	Cond sem_event_cond;
 	typedef std::pair<_NR<EventDispatcher>,_R<Event>> eventType;
 	std::deque<eventType> events_queue;
@@ -400,7 +402,6 @@ public:
 	{
 		garbagecollection.erase(o);
 		garbagecollectiondeleted.erase(o);
-		constantrefs.erase(o);
 	}
 	void processGarbageCollection(bool force);
 	FORCE_INLINE bool isInGarbageCollection() const { return inGarbageCollection; }
@@ -412,13 +413,8 @@ public:
 	{
 		garbagecollectiondeleted.insert(o);
 	}
-	void registerConstantRef(ASObject* obj)
-	{
-		if (inShutdown)
-			return;
-		constantrefs.insert(obj);
-	}
-	bool isShuttingDown() const { return inShutdown;}
+	inline bool inFinalization() const { return inFinalize; }
+	void registerConstantRef(ASObject* obj);
 };
 class WorkerDomain: public ASObject
 {

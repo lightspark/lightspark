@@ -637,6 +637,13 @@ void SystemState::saveMemoryUsageInformation(ofstream& out, int snapshotCount) c
 
 void SystemState::systemFinalize()
 {
+	_NR<DisplayObject> cur=invalidateQueueHead;
+	while(!cur.isNull())
+	{
+		_NR<DisplayObject> next=cur->invalidateQueueNext;
+		cur->invalidateQueueNext=NullRef;
+		cur=next;
+	}
 	invalidateQueueHead.reset();
 	invalidateQueueTail.reset();
 	parameters.reset();
@@ -655,12 +662,15 @@ extern std::set<ASObject*> memcheckset;
 #endif
 SystemState::~SystemState()
 {
-	workerDomain->finalize();
-	workerDomain=nullptr;
 	// finalize main worker
 	worker->finalize();
+	workerDomain->finalize();
 	delete worker;
+	delete workerDomain;
 	delete stage;
+	delete objClassRef;
+	if (mainClip)
+		delete mainClip;
 	delete[] builtinClasses;
 	builtinClasses=nullptr;
 #ifndef NDEBUG
@@ -738,27 +748,10 @@ void SystemState::destroy()
 	 */
 
 	setTLSWorker(this->worker);
-	for(uint32_t i=0;i<asClassCount;i++)
-	{
-		if(builtinClasses[i])
-			builtinClasses[i]->finalize();
-		builtinClasses[i]=nullptr;
-	}
-	for(auto it = mainClip->customClasses.begin(); it != mainClip->customClasses.end(); ++it)
-		it->second->finalize();
-	for(auto it = mainClip->templates.begin(); it != mainClip->templates.end(); ++it)
-		it->second->finalize();
 
 	//Here we clean the events queue
 	if(currentVm)
 		currentVm->finalize();
-
-	for(auto i = mainClip->customClasses.begin(); i != mainClip->customClasses.end(); ++i)
-		i->second->decRef();
-
-	//Free templates by decRef'ing them
-	for(auto i = mainClip->templates.begin(); i != mainClip->templates.end(); ++i)
-		i->second->decRef();
 
 	//The Vm must be destroyed this late to clean all managed integers and numbers
 	//This deletes the {int,uint,number}_managers; therefore no Number/.. object may be

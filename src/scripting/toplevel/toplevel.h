@@ -347,6 +347,30 @@ protected:
 	ASObject* workerDynamicClassVars; // this contains dynamically added properties to the class this prototype belongs to if it is added in a background worker
 	ASObject* originalPrototypeVars;
 	void copyOriginalValues(Prototype* target);
+	void reset()
+	{
+		if (originalPrototypeVars)
+			originalPrototypeVars->decRef();
+		originalPrototypeVars=nullptr;
+		if (workerDynamicClassVars)
+			workerDynamicClassVars->decRef();
+		workerDynamicClassVars=nullptr;
+		prevPrototype.reset();
+		if (obj)
+			obj->decRef();
+		obj=nullptr;
+	}
+	void prepShutdown()
+	{
+		if (obj)
+			obj->prepareShutdown();
+		if (prevPrototype)
+			prevPrototype->prepShutdown();
+		if (originalPrototypeVars)
+			originalPrototypeVars->prepareShutdown();
+		if (workerDynamicClassVars)
+			workerDynamicClassVars->prepareShutdown();
+	}
 public:
 	Prototype():obj(nullptr),workerDynamicClassVars(nullptr),originalPrototypeVars(nullptr),isSealed(false) {}
 	virtual ~Prototype()
@@ -377,7 +401,15 @@ class ObjectPrototype: public ASObject, public Prototype
 {
 public:
 	ObjectPrototype(ASWorker* wrk,Class_base* c);
-	void finalize() override;
+	inline bool destruct() override
+	{
+		reset();
+		return ASObject::destruct();
+	}
+	void finalize() override
+	{
+		reset();
+	}
 	void prepareShutdown() override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
@@ -394,6 +426,15 @@ class ObjectConstructor: public ASObject
 	uint32_t _length;
 public:
 	ObjectConstructor(ASWorker* wrk, Class_base* c,uint32_t length);
+	inline bool destruct() override
+	{
+		prototype=nullptr;
+		return ASObject::destruct();
+	}
+	void finalize() override
+	{
+		prototype=nullptr;
+	}
 	void incRef() { if (getClass()) getClass()->incRef(); }
 	void decRef() { if (getClass()) getClass()->decRef(); }
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
@@ -404,7 +445,16 @@ class ArrayPrototype: public Array, public Prototype
 {
 public:
 	ArrayPrototype(ASWorker* wrk,Class_base* c);
-	void finalize() override;
+	inline bool destruct() override
+	{
+		reset();
+		return Array::destruct();
+	}
+	void finalize() override
+	{
+		reset();
+	}
+	void prepareShutdown() override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	bool isEqual(ASObject* r) override;
@@ -540,7 +590,7 @@ protected:
 	Class_base* returnType;
 	// type of the return value if all arguments are integer
 	Class_base* returnTypeAllArgsInt;
-	Function(ASWorker* wrk,Class_base* c,as_atom_function v = nullptr):IFunction(wrk,c,SUBTYPE_FUNCTION),val_atom(v) {}
+	Function(ASWorker* wrk,Class_base* c,as_atom_function v = nullptr):IFunction(wrk,c,SUBTYPE_FUNCTION),val_atom(v),returnType(nullptr),returnTypeAllArgsInt(nullptr) {}
 	method_info* getMethodInfo() const override { return nullptr; }
 	IFunction* clone(ASWorker* wrk) override;
 	bool destruct() override
@@ -548,6 +598,12 @@ protected:
 		returnType=nullptr;
 		returnTypeAllArgsInt=nullptr;
 		return IFunction::destruct();
+	}
+	void finalize() override
+	{
+		returnType=nullptr;
+		returnTypeAllArgsInt=nullptr;
+		IFunction::finalize();
 	}
 	void prepareShutdown() override;
 public:
@@ -586,28 +642,15 @@ public:
 	FunctionPrototype(ASWorker* wrk,Class_base* c, _NR<Prototype> p);
 	inline bool destruct() override
 	{
-		if (originalPrototypeVars)
-			originalPrototypeVars->decRef();
-		if (workerDynamicClassVars)
-			workerDynamicClassVars->decRef();
-		prevPrototype.reset();
-		if (obj)
-			obj->decRef();
-		obj=nullptr;
+		reset();
 		return Function::destruct();
 	}
 	void finalize() override
 	{
-		if (originalPrototypeVars)
-			originalPrototypeVars->decRef();
-		if (workerDynamicClassVars)
-			workerDynamicClassVars->decRef();
-		prevPrototype.reset();
-		if (obj)
-			obj->decRef();
-		obj=nullptr;
+		reset();
 		Function::finalize();
 	}
+	void prepareShutdown() override;
 	
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;

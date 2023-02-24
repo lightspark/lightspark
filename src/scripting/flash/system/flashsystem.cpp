@@ -889,7 +889,7 @@ extern uint32_t asClassCount;
 
 ASWorker::ASWorker(SystemState* s):
 	EventDispatcher(this,nullptr),parser(nullptr),
-	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),
+	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
 	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(true),state("running")
 {
 	subtype = SUBTYPE_WORKER;
@@ -905,7 +905,7 @@ ASWorker::ASWorker(SystemState* s):
 
 ASWorker::ASWorker(Class_base* c):
 	EventDispatcher(c->getSystemState()->worker,c),parser(nullptr),
-	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),
+	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
 	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
 {
 	subtype = SUBTYPE_WORKER;
@@ -919,7 +919,7 @@ ASWorker::ASWorker(Class_base* c):
 }
 ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 	EventDispatcher(wrk,c),parser(nullptr),
-	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),
+	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
 	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
 {
 	subtype = SUBTYPE_WORKER;
@@ -934,6 +934,9 @@ ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 
 void ASWorker::finalize()
 {
+	if (inFinalize)
+		return;
+	inFinalize=true;
 	if (!this->preparedforshutdown)
 		this->prepareShutdown();
 	protoypeMap.clear();
@@ -941,15 +944,6 @@ void ASWorker::finalize()
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
 		(*it)->prepareShutdown();
-	}
-	destroyContents();
-	constantrefs.erase(this);
-	// remove all references to variables as they might point to other constant reffed objects
-	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
-	{
-		(*it)->destroyContents();
-		(*it)->destruct();
-		(*it)->finalize();
 	}
 	if (inShutdown)
 		return;
@@ -981,28 +975,48 @@ void ASWorker::finalize()
 			delete contexts[i];
 		}
 	}
-	delete[] stacktrace;
+	destroyContents();
 	loader.reset();
 	swf.reset();
 	EventDispatcher::finalize();
+	constantrefs.erase(this);
+	// remove all references to variables as they might point to other constant reffed objects
+	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
+	{
+		(*it)->destroyContents();
+		(*it)->destruct();
+		(*it)->finalize();
+	}
+	for (auto it = garbagecollection.begin(); it != garbagecollection.end(); it++)
+	{
+		(*it)->prepareShutdown();
+	}
 	processGarbageCollection(true);
+	inShutdown=true;
 	if (getWorker()==this)
 		setTLSWorker(nullptr);
-	// destruct all constant refs except classes
-	inShutdown=true;
-	std::unordered_set<ASObject*> tmp = constantrefs;
-	auto it =tmp.begin();
-	while (it != tmp.end())
+	// destruct all constant refs
+	auto it = constantrefs.begin();
+	it = constantrefs.begin();
+	while (it != constantrefs.end())
 	{
 		ASObject* o = (*it);
-		if (o->is<ASWorker>() || o == getSystemState()->stage)
+		if (o->is<ASWorker>()
+				|| o == getSystemState()->stage 
+				|| o == getSystemState()->workerDomain
+				|| o == getSystemState()->mainClip
+				|| o == getSystemState()->getObjectClassRef()
+				)
 		{
+			// these will be deleted later
 			it++;
 			continue;
 		}
-		it = tmp.erase(it);
+		it = constantrefs.erase(it);
 		delete o;
 	}
+	constantrefs.clear();
+	delete[] stacktrace;
 	delete[] freelist;
 	freelist=nullptr;
 }
@@ -1033,7 +1047,7 @@ Prototype* ASWorker::getClassPrototype(const Class_base* cls)
 	auto it = protoypeMap.find(cls);
 	if (it == protoypeMap.end())
 	{
-		if (inShutdown)
+		if (inFinalize)
 			return nullptr;
 		Prototype* p = cls->prototype->clonePrototype(this);
 		it = protoypeMap.insert(make_pair(cls,_MR(p))).first;
@@ -1234,6 +1248,15 @@ void ASWorker::processGarbageCollection(bool force)
 		o->handleGarbageCollection();
 	}
 	inGarbageCollection=false;
+}
+
+void ASWorker::registerConstantRef(ASObject* obj)
+{
+	if (inFinalize || obj->getConstant())
+		return;
+	constantrefmutex.lock();
+	constantrefs.insert(obj);
+	constantrefmutex.unlock();
 }
 
 ASFUNCTIONBODY_GETTER(ASWorker, state)

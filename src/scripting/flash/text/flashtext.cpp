@@ -2301,6 +2301,8 @@ ASFUNCTIONBODY_GETTER_SETTER(TextFormat,display)
 
 void TextFormat::onAlign(const asAtom& old)
 {
+	if (asAtomHandler::isNull(align)) // null is also allowed
+		return;
 	tiny_string a = asAtomHandler::toString(align,getInstanceWorker());
 	if (a != "" && a != "center" && a != "end" && a != "justify" && 
 	    a != "left" && a != "right" && a != "start")

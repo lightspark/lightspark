@@ -1236,14 +1236,14 @@ ASObject* ABCVm::add(ASObject* val2, ASObject* val1)
 
 		XMLList* newList=Class<XMLList>::getInstanceS(val1->getInstanceWorker(),true);
 		if(val1->getClass()==xmlClass)
-			newList->append(_MR(static_cast<XML*>(val1)));
+			newList->append(_MNR(static_cast<XML*>(val1)));
 		else //if(val1->getClass()==xmlListClass)
-			newList->append(_MR(static_cast<XMLList*>(val1)));
+			newList->append(_MNR(static_cast<XMLList*>(val1)));
 
 		if(val2->getClass()==xmlClass)
-			newList->append(_MR(static_cast<XML*>(val2)));
+			newList->append(_MNR(static_cast<XML*>(val2)));
 		else //if(val2->getClass()==xmlListClass)
-			newList->append(_MR(static_cast<XMLList*>(val2)));
+			newList->append(_MNR(static_cast<XMLList*>(val2)));
 
 		//The references of val1 and val2 have been passed to the smart references
 		//no decRef is needed

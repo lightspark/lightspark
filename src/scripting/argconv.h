@@ -30,7 +30,8 @@
  * int32_t i;
  * bool b;
  * _NR<DisplayObject> o;
- * ARG_UNPACK (i) (b) (o);
+ * asAtom a = asAtomHandler::invalidAtom;
+ * ARG_CHECK(ARG_UNPACK (i) (b) (o) (a));
  * which coerces the given arguments implicitly (according to ecma) to the types Integer, Boolean, DisplayObject and then puts them
  * into the given variables.
  * ATTENTION: The object 'o' is the same as the argument passed into the function, so changing it will be visible for the caller.
@@ -39,7 +40,7 @@
  * will be emitted if more than the unpacked arguments are provided by the caller.
  *
  * To specify default values, use the (var, defvalue) operator like
- * ARG_UNPACK (i) (b,true) (o,NullRef);
+ * ARG_CHECK(ARG_UNPACK (i) (b,true) (o,NullRef) (a,asAtomHandler::nullAtom));
  * this will work as above if all arguments are supplied. When the second argument is not supplied, no error is thrown and
  * b is set to 'true'. If the third argument is not supplied, not error is thrown and o is set to NullRef. Note that you cannot
  * put a Null into DisplayObject, as Null derives directly from ASObject (i.e. Null is not a subclass DisplayObject).
@@ -77,7 +78,7 @@ public:
 			createError<ArgumentError>(wrk,kCheckTypeFailedError,
 									  asAtomHandler::toObject(obj,wrk)->getClassName(),
 									  "?"); // TODO
-			return asAtomHandler::undefinedAtom;
+			return asAtomHandler::invalidAtom;
 		}
 		ASATOM_ADDSTOREDMEMBER(obj);
 		return obj;

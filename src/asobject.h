@@ -1903,7 +1903,7 @@ FORCE_INLINE bool asAtomHandler::checkArgumentConversion(const asAtom& a,const a
 		return true;
 	if (isString(a) && isString(obj))
 		return true;
-	return false;
+	return asAtomHandler::isInvalid(obj);
 }
 
 FORCE_INLINE void asAtomHandler::setInt(asAtom& a, ASWorker* wrk, int64_t val)

@@ -3537,15 +3537,15 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 			XMLList* newList=Class<XMLList>::getInstanceS(val1->getInstanceWorker(),true);
 			val1->incRef();
 			if(val1->getClass()==xmlClass)
-				newList->append(_MR(static_cast<XML*>(val1)));
+				newList->append(_MNR(static_cast<XML*>(val1)));
 			else //if(val1->getClass()==xmlListClass)
-				newList->append(_MR(static_cast<XMLList*>(val1)));
+				newList->append(_MNR(static_cast<XMLList*>(val1)));
 
 			val2->incRef();
 			if(val2->getClass()==xmlClass)
-				newList->append(_MR(static_cast<XML*>(val2)));
+				newList->append(_MNR(static_cast<XML*>(val2)));
 			else //if(val2->getClass()==xmlListClass)
-				newList->append(_MR(static_cast<XMLList*>(val2)));
+				newList->append(_MNR(static_cast<XMLList*>(val2)));
 
 			if (forceint)
 			{
@@ -3661,15 +3661,15 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 			XMLList* newList=Class<XMLList>::getInstanceS(val1->getInstanceWorker(),true);
 			val1->incRef();
 			if(val1->getClass()==xmlClass)
-				newList->append(_MR(static_cast<XML*>(val1)));
+				newList->append(_MNR(static_cast<XML*>(val1)));
 			else //if(val1->getClass()==xmlListClass)
-				newList->append(_MR(static_cast<XMLList*>(val1)));
+				newList->append(_MNR(static_cast<XMLList*>(val1)));
 
 			val2->incRef();
 			if(val2->getClass()==xmlClass)
-				newList->append(_MR(static_cast<XML*>(val2)));
+				newList->append(_MNR(static_cast<XML*>(val2)));
 			else //if(val2->getClass()==xmlListClass)
-				newList->append(_MR(static_cast<XMLList*>(val2)));
+				newList->append(_MNR(static_cast<XMLList*>(val2)));
 
 			if (forceint)
 			{

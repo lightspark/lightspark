@@ -30,7 +30,7 @@ class XML: public ASObject, public XMLBase
 {
 friend class XMLList;
 public:
-	typedef std::vector<_R<XML>> XMLVector;
+	typedef std::vector<_NR<XML>> XMLVector;
 	typedef std::vector<_R<Namespace>> NSVector;
 private:
 	_NR<XMLList> childrenlist;
@@ -70,14 +70,14 @@ private:
 	void handleNotification(const tiny_string& command, asAtom value, asAtom detail);
 	// Append node or attribute to this. Concatenates adjacent
 	// text nodes.
-	void appendChild(_R<XML> child);
-	void prependChild(_R<XML> child);
+	void appendChild(_NR<XML> child);
+	void prependChild(_NR<XML> child);
 	static void normalizeRecursive(XML *node);
 	void addTextContent(const tiny_string& str);
 	void RemoveNamespace(Namespace *ns);
 	void getComments(XMLVector& ret);
 	void getprocessingInstructions(XMLVector& ret, tiny_string name);
-	void CheckCyclicReference(XML* node);
+	bool CheckCyclicReference(XML* node);
 public:
 	XML(ASWorker* wrk,Class_base* c);
 	XML(ASWorker* wrk,Class_base* c,const std::string& str);

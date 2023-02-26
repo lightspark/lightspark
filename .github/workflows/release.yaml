@@ -1,7 +1,7 @@
 on:
   create:
     tags:
-      - '[0-9]*'
+      - '[0-9]+'
 
 name: Draft Release
 
@@ -80,7 +80,7 @@ jobs:
             mxe-i686-w64-mingw32.static-curl \
             mxe-i686-w64-mingw32.static-librtmp \
             mxe-i686-w64-mingw32.static-ffmpeg \
-            mxe-i686-w64-mingw32.static-sdl2-mixer
+            mxe-i686-w64-mingw32.static-sdl2
           echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
 
       - name: Configure MXE for NSIS Installer Builds
@@ -148,7 +148,7 @@ jobs:
             mxe-x86-64-w64-mingw32.static-curl \
             mxe-x86-64-w64-mingw32.static-librtmp \
             mxe-x86-64-w64-mingw32.static-ffmpeg \
-            mxe-x86-64-w64-mingw32.static-sdl2-mixer
+            mxe-x86-64-w64-mingw32.static-sdl2
           echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
 
       - name: Configure MXE for NSIS Installer Builds

@@ -25,8 +25,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
+          body: This is based on the latest commit.
+          tag_name: latest
+          release_name: "Development release"
           draft: true
           prerelease: true
 
@@ -91,7 +92,6 @@ jobs:
             libjpeg-dev \
             librtmp-dev \
             libsdl2-dev \
-            libsdl2-mixer-dev \
             libgnutls28-dev \
             liblzma-dev
 
@@ -135,7 +135,6 @@ jobs:
             libjpeg-dev \
             librtmp-dev \
             libsdl2-dev \
-            libsdl2-mixer-dev \
             libgnutls28-dev \
             liblzma-dev
       - name: Run Build
@@ -180,7 +179,7 @@ jobs:
             mxe-x86-64-w64-mingw32.static-curl \
             mxe-x86-64-w64-mingw32.static-librtmp \
             mxe-x86-64-w64-mingw32.static-ffmpeg \
-            mxe-x86-64-w64-mingw32.static-sdl2-mixer
+            mxe-x86-64-w64-mingw32.static-sdl2
           echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
 
       - name: Configure MXE for NSIS Installer Builds
@@ -248,7 +247,7 @@ jobs:
             mxe-i686-w64-mingw32.static-curl \
             mxe-i686-w64-mingw32.static-librtmp \
             mxe-i686-w64-mingw32.static-ffmpeg \
-            mxe-i686-w64-mingw32.static-sdl2-mixer
+            mxe-i686-w64-mingw32.static-sdl2
           echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
 
       - name: Configure MXE for NSIS Installer Builds

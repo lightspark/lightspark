@@ -165,7 +165,7 @@ public:
 	bool hasProperty(const multiname& name, bool checkXMLPropsOnly, bool considerDynamic, bool considerPrototype, ASWorker* wrk);
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, lightspark::ASWorker* wrk) override;
 	void setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk) override;
-	multiname *setVariableByMultinameIntern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext, ASWorker* wrk);
+	multiname *setVariableByMultinameIntern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext, bool* alreadyset, ASWorker* wrk);
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	static bool isValidMultiname(SystemState *sys, const multiname& name, uint32_t& index);
 

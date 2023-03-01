@@ -1545,7 +1545,7 @@ GET_VARIABLE_RESULT XML::getVariableByMultiname(asAtom& ret, const multiname& na
 		//Lookup attribute
 		const XMLVector& attributes=getAttributesByMultiname(name,normalizedName);
 		ret = asAtomHandler::fromObject(XMLList::create(getInstanceWorker(),attributes,attributelist.getPtr(),name));
-		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+		return GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT;
 	}
 	else if(XML::isValidMultiname(getSystemState(),name,index))
 	{
@@ -1600,7 +1600,7 @@ GET_VARIABLE_RESULT XML::getVariableByInteger(asAtom &ret, int index, GET_VARIAB
 
 multiname *XML::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
-	return setVariableByMultinameIntern(name, o, allowConst, false,wrk);
+	return setVariableByMultinameIntern(name, o, allowConst, false,alreadyset,wrk);
 }
 void XML::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
@@ -1611,7 +1611,7 @@ void XML::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLA
 	}
 	childrenlist->setVariableByInteger(index,o,allowConst,alreadyset,wrk);
 }
-multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext, ASWorker* wrk)
+multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext, bool* alreadyset,ASWorker* wrk)
 {
 	unsigned int index=0;
 	bool isAttr=name.isAttribute;
@@ -1644,13 +1644,12 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 	}
 	if (childrenlist.isNull())
 		childrenlist = _MR(Class<XMLList>::getInstanceSNoArgs(getInstanceWorker()));
-	
 	if(isAttr)
 	{
 		tiny_string nodeval;
-		if(asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<XMLList>())
+		if(asAtomHandler::is<XMLList>(o))
 		{
-			_NR<XMLList> x = _NR<XMLList>(asAtomHandler::getObject(o)->as<XMLList>());
+			_NR<XMLList> x = _NR<XMLList>(asAtomHandler::as<XMLList>(o));
 			for (auto it2 = x->nodes.begin(); it2 != x->nodes.end(); it2++)
 			{
 				if (nodeval != "")
@@ -1696,7 +1695,7 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 	}
 	else if(XML::isValidMultiname(getSystemState(),name,index))
 	{
-		childrenlist->setVariableByMultinameIntern(name,o,allowConst,replacetext,wrk);
+		childrenlist->setVariableByMultinameIntern(name,o,allowConst,replacetext,alreadyset,wrk);
 	}
 	else
 	{
@@ -1709,17 +1708,17 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 			
 			if (tmpnode->nodenamespace_uri == ns_uri && tmpnode->nodename == normalizedName)
 			{
-				if(asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<XMLList>())
+				if(asAtomHandler::is<XMLList>(o))
 				{
 					if (!found)
 					{
-						_NR<XMLList> x = _NR<XMLList>(Class<XMLList>::getInstanceS(getInstanceWorker(),asAtomHandler::getObject(o)->as<XMLList>()->toXMLString_internal(false)));
+						_NR<XMLList> x = _NR<XMLList>(Class<XMLList>::getInstanceS(getInstanceWorker(),asAtomHandler::getObjectNoCheck(o)->as<XMLList>()->toXMLString_internal(false)));
 						tmpnodes.insert(tmpnodes.end(), x->nodes.begin(),x->nodes.end());
 					}
 				}
-				else if(asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<XML>())
+				else if(asAtomHandler::is<XML>(o))
 				{
-					if (asAtomHandler::getObject(o)->as<XML>()->getNodeKind() == pugi::node_pcdata)
+					if (asAtomHandler::getObjectNoCheck(o)->as<XML>()->getNodeKind() == pugi::node_pcdata)
 					{
 						if (replacetext)
 						{
@@ -1750,7 +1749,7 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 					}
 					else
 					{
-						XML* tmp = asAtomHandler::getObject(o)->as<XML>();
+						XML* tmp = asAtomHandler::getObjectNoCheck(o)->as<XML>();
 						tmp->parentNode = this;
 						if (!found)
 						{
@@ -1781,17 +1780,15 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 					}
 					if (!found)
 					{
-						tmpnode->incRef();
 						tmpnodes.push_back(tmpnode);
 					}
 				}
 				found = true;
+				if (alreadyset)
+					*alreadyset=true;
 			}
 			else
-			{
-				tmpnode->incRef();
 				tmpnodes.push_back(tmpnode);
-			}
 		}
 		if (!found)
 		{
@@ -1799,7 +1796,6 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 			{
 				_NR<XML> tmp = _MNR(asAtomHandler::getObject(o)->as<XML>());
 				tmp->parentNode = this;
-				tmp->incRef();
 				tmpnodes.push_back(tmp);
 			}
 			else
@@ -1837,6 +1833,8 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 				_NR<XML> tmp = _MR<XML>(createFromString(this->getInstanceWorker(),tmpstr));
 				tmp->parentNode = this;
 				tmpnodes.push_back(tmp);
+				if (alreadyset)
+					*alreadyset=true;
 			}
 		}
 		childrenlist->nodes.clear();
@@ -3133,24 +3131,29 @@ ASFUNCTIONBODY_ATOM(XML,_replace)
 	uint32_t index=0;
 	if(XML::isValidMultiname(wrk->getSystemState(),name,index))
 	{
+		bool alreadyset=false;
 		ASATOM_INCREF(value);
-		th->childrenlist->setVariableByMultinameIntern(name,value,CONST_NOT_ALLOWED,true,wrk);
+		th->childrenlist->setVariableByMultinameIntern(name,value,CONST_NOT_ALLOWED,true,&alreadyset,wrk);
+		if (alreadyset)
+			ASATOM_DECREF(value);
+		
 	}	
 	else if (th->hasPropertyByMultiname(name,true,false,wrk))
 	{
 		if (asAtomHandler::is<XMLList>(value))
 		{
-			th->setVariableByMultinameIntern(name,value,CONST_NOT_ALLOWED,true,wrk);
+			th->setVariableByMultinameIntern(name,value,CONST_NOT_ALLOWED,true,nullptr,wrk);
 		}
 		else if (asAtomHandler::is<XML>(value))
 		{
-			th->setVariableByMultinameIntern(name,value,CONST_NOT_ALLOWED,true,wrk);
+			th->setVariableByMultinameIntern(name,value,CONST_NOT_ALLOWED,true,nullptr,wrk);
 		}
 		else
 		{
 			XML* x = createFromString(wrk,asAtomHandler::toString(value,wrk));
 			asAtom v = asAtomHandler::fromObject(x);
-			th->setVariableByMultinameIntern(name,v,CONST_NOT_ALLOWED,true,wrk);
+			th->setVariableByMultinameIntern(name,v,CONST_NOT_ALLOWED,true,nullptr,wrk);
+			x->decRef();
 		}
 	}
 	th->incRef();

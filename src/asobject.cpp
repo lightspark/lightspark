@@ -3535,7 +3535,6 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 			Class_base* xmlClass=Class<XML>::getClass(val1->getSystemState());
 
 			XMLList* newList=Class<XMLList>::getInstanceS(val1->getInstanceWorker(),true);
-			val1->incRef();
 			if(val1->getClass()==xmlClass)
 				newList->append(_MNR(static_cast<XML*>(val1)));
 			else //if(val1->getClass()==xmlListClass)

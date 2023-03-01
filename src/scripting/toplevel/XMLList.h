@@ -38,8 +38,8 @@ private:
 	tiny_string toString_priv();
 	void buildFromString(ASWorker* wrk, const tiny_string& str);
 	std::string extractXMLDeclaration(const std::string& xml, std::string& xmldecl_out);
-	void appendSingleNode(asAtom x);
-	void replace(unsigned int i, asAtom x, const XML::XMLVector& retnodes, CONST_ALLOWED_FLAG allowConst, bool replacetext, ASWorker* wrk);
+	bool appendSingleNode(asAtom x);
+	void replace(unsigned int i, asAtom x, const XML::XMLVector& retnodes, CONST_ALLOWED_FLAG allowConst, bool replacetext, bool* alreadyset, ASWorker* wrk);
 	void getTargetVariables(const multiname& name, XML::XMLVector& retnodes);
 public:
 	XMLList(ASWorker* wrk,Class_base* c);
@@ -100,7 +100,7 @@ public:
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, lightspark::ASWorker* wrk) override;
 	void setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk) override;
-	multiname *setVariableByMultinameIntern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext, ASWorker* wrk);
+	multiname *setVariableByMultinameIntern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext, bool* alreadyset, ASWorker* wrk);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	void getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAttribute, XML::XMLVector& ret);

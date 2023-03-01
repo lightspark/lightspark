@@ -777,11 +777,12 @@ GET_VARIABLE_RESULT XMLList::getVariableByMultiname(asAtom& ret, const multiname
 		for(; it!=nodes.end(); ++it)
 		{
 			asAtom o=asAtomHandler::invalidAtom;
-			(*it)->getVariableByMultiname(o,name,opt,wrk);
-			if(asAtomHandler::getObject(o) ==nullptr|| !asAtomHandler::getObject(o)->is<XMLList>())
-				continue;
+			GET_VARIABLE_RESULT res = (*it)->getVariableByMultiname(o,name,opt,wrk);
+			if(asAtomHandler::is<XMLList>(o))
+				retnodes.insert(retnodes.end(), asAtomHandler::as<XMLList>(o)->nodes.begin(), asAtomHandler::as<XMLList>(o)->nodes.end());
 
-			retnodes.insert(retnodes.end(), asAtomHandler::getObject(o)->as<XMLList>()->nodes.begin(), asAtomHandler::getObject(o)->as<XMLList>()->nodes.end());
+			if (res == GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+				ASATOM_DECREF(o);
 		}
 
 		if(retnodes.size()==0 && (opt & FROM_GETLEX)!=0)
@@ -809,13 +810,13 @@ GET_VARIABLE_RESULT XMLList::getVariableByMultiname(asAtom& ret, const multiname
 		for(; it!=nodes.end(); ++it)
 		{
 			asAtom o=asAtomHandler::invalidAtom;
-			(*it)->getVariableByMultiname(o,name,opt,wrk);
-			ASObject* tmp = asAtomHandler::getObject(o);
-			if (tmp && tmp->is<XMLList>())
+			GET_VARIABLE_RESULT res = (*it)->getVariableByMultiname(o,name,opt,wrk);
+			if(asAtomHandler::is<XMLList>(o))
 			{
-				retnodes.insert(retnodes.end(), asAtomHandler::getObject(o)->as<XMLList>()->nodes.begin(), asAtomHandler::getObject(o)->as<XMLList>()->nodes.end());
-				tmp->decRef();
+				retnodes.insert(retnodes.end(), asAtomHandler::as<XMLList>(o)->nodes.begin(), asAtomHandler::as<XMLList>(o)->nodes.end());
 			}
+			if (res == GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+				ASATOM_DECREF(o);
 		}
 
 		if(retnodes.size()==0 && (opt & FROM_GETLEX)!=0)
@@ -867,7 +868,7 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 
 multiname *XMLList::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
-	return setVariableByMultinameIntern(name, o, allowConst, false,wrk);
+	return setVariableByMultinameIntern(name, o, allowConst, false,alreadyset,wrk);
 }
 void XMLList::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
@@ -899,15 +900,16 @@ void XMLList::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED
 			ASATOM_INCREF(o);
 			targetobject->appendSingleNode(o);
 		}
-		appendSingleNode(o);
+		if (!appendSingleNode(o) && alreadyset)
+			ASATOM_DECREF(o);
 	}
 	else
 	{
-		replace(index, o,retnodes,allowConst,false,wrk);
+		replace(index, o,retnodes,allowConst,false,alreadyset,wrk);
 	}
 }
 
-multiname* XMLList::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext,ASWorker* wrk)
+multiname* XMLList::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext,bool* alreadyset, ASWorker* wrk)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
@@ -935,11 +937,12 @@ multiname* XMLList::setVariableByMultinameIntern(multiname& name, asAtom& o, CON
 				ASATOM_INCREF(o);
 				targetobject->appendSingleNode(o);
 			}
-			appendSingleNode(o);
+			if (!appendSingleNode(o) && alreadyset)
+				ASATOM_DECREF(o);
 		}
 		else
 		{
-			replace(index, o,retnodes,allowConst,replacetext,wrk);
+			replace(index, o,retnodes,allowConst,replacetext,alreadyset,wrk);
 		}
 	}
 	else if (nodes.size() == 0)
@@ -971,21 +974,26 @@ multiname* XMLList::setVariableByMultinameIntern(multiname& name, asAtom& o, CON
 				else
 				{
 					asAtom v = asAtomHandler::fromObject(tmp);
-					tmplist->setVariableByMultinameIntern(tmpprop,v,allowConst, replacetext,wrk);
+					tmplist->setVariableByMultinameIntern(tmpprop,v,allowConst, replacetext,alreadyset,wrk);
 				}
 			}
 			else
 			{
+				ASATOM_INCREF(o);
 				tmplist->appendSingleNode(o);
-				appendSingleNode(o);
+				if (!appendSingleNode(o) && alreadyset)
+					ASATOM_DECREF(o);
 			}
 		}
 		else
-			appendSingleNode(o);
+		{
+			if (!appendSingleNode(o) && alreadyset)
+				ASATOM_DECREF(o);
+		}
 	}
 	else if (nodes.size() == 1)
 	{
-		nodes[0]->setVariableByMultinameIntern(name, o, allowConst,replacetext,wrk);
+		nodes[0]->setVariableByMultinameIntern(name, o, allowConst,replacetext,alreadyset,wrk);
 	}
 	else
 	{
@@ -1076,7 +1084,7 @@ bool XMLList::hasComplexContent() const
 	return !hasSimpleContent();
 }
 
-void XMLList::appendSingleNode(asAtom x)
+bool XMLList::appendSingleNode(asAtom x)
 {
 	if (asAtomHandler::is<XML>(x))
 	{
@@ -1090,7 +1098,7 @@ void XMLList::appendSingleNode(asAtom x)
 			append(list->nodes[0]);
 		}
 		else
-			list->decRef();
+			return false;
 		// do nothing, if length != 1. See ECMA-357, Section
 		// 9.2.1.2
 	}
@@ -1098,7 +1106,9 @@ void XMLList::appendSingleNode(asAtom x)
 	{
 		tiny_string str = asAtomHandler::toString(x,getInstanceWorker());
 		append(_MNR(XML::createFromString(getInstanceWorker(),str)));
+		return false;
 	}
+	return true;
 }
 
 void XMLList::append(_NR<XML> x)
@@ -1121,7 +1131,7 @@ void XMLList::prepend(_NR<XMLList> x)
 	nodes.insert(nodes.begin(),x->nodes.begin(),x->nodes.end());
 }
 
-void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes, CONST_ALLOWED_FLAG allowConst, bool replacetext, ASWorker* wrk)
+void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes, CONST_ALLOWED_FLAG allowConst, bool replacetext,bool* alreadyset, ASWorker* wrk)
 {
 	if (idx >= nodes.size())
 		return;
@@ -1131,7 +1141,7 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 		if (targetobject)
 		{
 			ASATOM_INCREF(o);
-			targetobject->setVariableByMultinameIntern(targetproperty,o,allowConst,replacetext,wrk);
+			targetobject->setVariableByMultinameIntern(targetproperty,o,allowConst,replacetext,alreadyset,wrk);
 		}
 		nodes[idx]->setTextContent(asAtomHandler::toString(o,getInstanceWorker()));
 	}
@@ -1139,7 +1149,7 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 	{
 		if (asAtomHandler::as<XMLList>(o)->nodes.size() == 1)
 		{
-			replace(idx,asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<XMLList>(o)->nodes[0].getPtr()),retnodes,allowConst,replacetext,wrk);
+			replace(idx,asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<XMLList>(o)->nodes[0].getPtr()),retnodes,allowConst,replacetext,alreadyset,wrk);
 			ASATOM_DECREF(o);
 			return;
 		}
@@ -1155,7 +1165,7 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 					m.name_ui = i;
 					m.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 					ASATOM_INCREF(o);
-					targetobject->setVariableByMultinameIntern(m,o,allowConst,replacetext,wrk);
+					targetobject->setVariableByMultinameIntern(m,o,allowConst,replacetext,alreadyset,wrk);
 					break;
 				}
 			}
@@ -1183,7 +1193,7 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 			m.name_ui = idx;
 			m.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			ASATOM_INCREF(o);
-			targetobject->setVariableByMultinameIntern(m,o,allowConst,replacetext,wrk);
+			targetobject->setVariableByMultinameIntern(m,o,allowConst,replacetext,alreadyset,wrk);
 		}
 		if (asAtomHandler::as<XML>(o)->getNodeKind() == pugi::node_pcdata)
 		{
@@ -1224,6 +1234,7 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 			nodes[idx]->nodevalue = asAtomHandler::toString(o,getInstanceWorker());
 			nodes[idx]->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
 			nodes[idx]->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
+			ASATOM_DECREF(o);
 		}
 		else
 		{
@@ -1244,6 +1255,7 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 				tmp->nodevalue = asAtomHandler::toString(o,wrk);
 				tmp->constructed = true;
 				nodes[idx]->childrenlist->append(_MNR(tmp));
+				ASATOM_DECREF(o);
 			}
 		}
 	}

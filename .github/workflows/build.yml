@@ -25,7 +25,7 @@ jobs:
         with:
           body: This is based on the latest commit.
           tag: latest
-          release_name: "Development release"
+          name: "Development release"
           draft: true
           prerelease: true
 

@@ -15,18 +15,16 @@ jobs:
     continue-on-error: false
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
-      #tag_name: ${{ steps.tag_name.outputs.tag_name }} # May need to re-enable this
-      #version: ${{ steps.changelog.outputs.version }} # May need to re-enable this
     steps:
       - uses: actions/checkout@v2
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: ncipollo/release-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           body: This is based on the latest commit.
-          tag_name: latest
+          tag: latest
           release_name: "Development release"
           draft: true
           prerelease: true

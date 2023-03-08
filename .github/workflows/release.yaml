@@ -1,5 +1,5 @@
 on:
-  create:
+  push:
     tags:
       - '[0-9]+'
 
@@ -19,7 +19,7 @@ jobs:
 
       - name: Get Tag Name
         id: tag_name
-        run: echo ::set-output name=tag_name::${GITHUB_REF/refs\/tags\//}
+        run: echo "tag_name=${GITHUB_REF/refs\/tags\//" >> $GITHUB_OUTPUT
 
       - name: Generate body from ChangeLog
         id: changelog
@@ -27,17 +27,17 @@ jobs:
           export VERSION=`echo "${{ steps.tag_name.outputs.tag_name }}" \
               | sed -e "s/lightspark-//"`
           ./.github/parse_changelog.py $VERSION ChangeLog >release.txt
-          echo ::set-output name=version::${VERSION}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Create Release
         id: create_release
-        uses: actions/create-release@v1
+        uses: ncipollo/release-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref }}
           release_name: ${{ github.ref }}
-          body_path: release.txt
+          bodyFile: release.txt
           draft: true
           prerelease: false
 

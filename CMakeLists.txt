@@ -106,7 +106,7 @@ ENDIF(GNASH_EXE_PATH)
 # Setting the value of LIB_SUFFIX if not specified (We could build 32bit version on 64bit)
 # However, some distro don't implement FHS the same way
 # Suse, Redhat put 64bit libs in /lib64; Debian use /lib for 64bit, but specifies /lib32 for 32bit libs
-# See FHS 2.3 for Lib directories under each architecture 
+# See FHS 2.3 for Lib directories under each architecture
 
 IF(CMAKE_SIZEOF_VOID_P STREQUAL "8")
     ADD_DEFINITIONS(-DLIGHTSPARK_64)
@@ -115,7 +115,7 @@ endif(CMAKE_SIZEOF_VOID_P STREQUAL "8")
 SET(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/conf)
 INCLUDE(Pack)
 # If we're gcc, then use nasm to get fastpath.  If MSVC, just use inline asm to get around
-# CMake issues 
+# CMake issues
 IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
    INCLUDE(CMakeASM-NASMCompiler)
 ENDIF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -124,7 +124,7 @@ IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 32")
 	# nasm for assembly optimizations
 	IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	   ENABLE_LANGUAGE(ASM-NASM)        
+	   ENABLE_LANGUAGE(ASM-NASM)
 	ENDIF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "unknown" AND ${CMAKE_SYSTEM} MATCHES "GNU-0.3")
 	# GNU Hurd is i386
@@ -433,7 +433,7 @@ INCLUDE_DIRECTORIES(${SDL2_INCLUDE_DIRS})
 IF(ENABLE_LIBAVCODEC)
   INCLUDE_DIRECTORIES(${FFMPEG_INCLUDE_DIRS})
   SET(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${FFMPEG_LIBRARIES})
-ENDIF(ENABLE_LIBAVCODEC)	
+ENDIF(ENABLE_LIBAVCODEC)
 
 IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   IF(MINGW)
@@ -492,6 +492,7 @@ IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
    SET(CMAKE_CXX_FLAGS
           "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++11 -Wdisabled-optimization -Wextra -Wno-unused-parameter -Wno-invalid-offsetof")
   ENDIF()
+  SET(CMAKE_CXX_FLAGS_MEMORY "-g -O0 -DEXPENSIVE_DEBUG -fsanitize=address")
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
   SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
   SET(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
@@ -502,6 +503,7 @@ ENDIF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 IF(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   SET(CMAKE_CXX_FLAGS
 	  "${CMAKE_CXX_FLAGS} -Wall -Wnon-virtual-dtor -Woverloaded-virtual -Wno-undefined-var-template -pipe -fvisibility=hidden -fvisibility-inlines-hidden -std=c++11 -Wdisabled-optimization -Wextra -Wno-unused-parameter -Wno-invalid-offsetof")
+  SET(CMAKE_CXX_FLAGS_MEMORY "-g -O0 -DEXPENSIVE_DEBUG -fsanitize=address")
   SET(CMAKE_CXX_FLAGS_DEBUG "-g -O0 -DEXPENSIVE_DEBUG")
   SET(CMAKE_CXX_FLAGS_PROFILE "-g -pg -O2")
   SET(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")

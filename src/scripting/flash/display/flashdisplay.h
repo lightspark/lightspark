@@ -170,11 +170,10 @@ public:
 	uint32_t getMaxLegacyChildDepth();
 	void purgeLegacyChildren();
 	void checkClipDepth();
-	void advanceFrame() override;
-	void declareFrame() override;
+	void advanceFrame(bool implicit) override;
+	void declareFrame(bool implicit) override;
 	void initFrame() override;
 	void executeFrameScript() override;
-	void AVM1HandleEventScriptsAfter() override;
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	inline bool deleteVariableByMultinameWithoutRemovingChild(const multiname& name, ASWorker* wrk)
@@ -537,7 +536,6 @@ public:
 	FrameLabel(ASWorker* wrk,Class_base* c);
 	FrameLabel(ASWorker* wrk,Class_base* c, const FrameLabel_data& data);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_getFrame);
 	ASFUNCTION_ATOM(_getName);
 };
@@ -569,7 +567,6 @@ class Frame
 {
 friend class FrameContainer;
 private:
-	std::list<AVM1ActionTag*> avm1actions;
 	AVM1context avm1context;
 public:
 	inline AVM1context* getAVM1Context() { return &avm1context; }
@@ -581,7 +578,6 @@ public:
 	 * the objects that are instance of tags
 	 */
 	void destroyTags();
-	void removeActionTags();
 };
 
 class FrameContainer
@@ -604,7 +600,6 @@ protected:
 	std::list<Frame> frames;
 	std::vector<Scene_data> scenes;
 	void addToFrame(DisplayListTag *r);
-	void addAvm1ActionToFrame(AVM1ActionTag* t);
 	void setFramesLoaded(uint32_t fl) { framesLoaded = fl; }
 	FrameContainer();
 	FrameContainer(const FrameContainer& f);
@@ -633,8 +628,6 @@ private:
 	bool inExecuteFramescript;
 	bool inAVM1Attachment;
 	bool isAVM1Loaded;
-	MovieClip* avm1PrevScriptedClip;
-	MovieClip* avm1NextScriptedClip;
 	void currentFrameChanged(bool newframe);
 protected:
 	const CLIPACTIONS* actions;
@@ -645,7 +638,6 @@ public:
 	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
 	void constructionComplete() override;
 	void afterConstruction() override;
-	void setOnStage(bool staged, bool forced, bool inskipping=false) override;
 	RunState state;
 	_NR<AVM1MovieClipLoader> avm1loader;
 	Frame* getCurrentFrame();
@@ -654,6 +646,8 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
+	void setPlaying();
+	void setStopped();
 	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
 	static void sinit(Class_base* c);
 	/*
@@ -680,8 +674,8 @@ public:
 	ASFUNCTION_ATOM(_getScenes);
 	ASFUNCTION_ATOM(_getCurrentScene);
 
-	void advanceFrame() override;
-	void declareFrame() override;
+	void advanceFrame(bool implicit) override;
+	void declareFrame(bool implicit) override;
 	void initFrame() override;
 	void executeFrameScript() override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
@@ -696,15 +690,16 @@ public:
 	bool AVM1HandleKeyboardEvent(KeyboardEvent *e) override;
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
+	void AVM1AfterAdvance() override;
 	
 	void AVM1gotoFrameLabel(const tiny_string &label, bool stop, bool switchplaystate);
-	void AVM1gotoFrame(int frame, bool stop, bool switchplaystate=false);
+	void AVM1gotoFrame(int frame, bool stop, bool switchplaystate, bool advanceFrame=true);
 	static void AVM1SetupMethods(Class_base* c);
 	void AVM1ExecuteFrameActionsFromLabel(const tiny_string &label);
 	void AVM1ExecuteFrameActions(uint32_t frame);
-	void AVM1HandleEventScriptsAfter() override;
-	void AVM1HandleScripts();
+	void AVM1AddScriptEvents();
 	void AVM1HandleConstruction();
+	bool getAVM1Loaded() const { return isAVM1Loaded; }
 	MovieClip* AVM1CloneSprite(asAtom target, uint32_t Depth, ASObject* initobj);
 
 	ASFUNCTION_ATOM(AVM1AttachMovie);
@@ -725,8 +720,19 @@ public:
 	ASFUNCTION_ATOM(AVM1LoadMovie);
 	ASFUNCTION_ATOM(AVM1UnloadMovie);
 	ASFUNCTION_ATOM(AVM1CreateTextField);
+	
+	std::string toDebugString() const override;
 };
 
+struct AVM1scriptToExecute
+{
+	const std::vector<uint8_t>* actions;
+	uint32_t startactionpos;
+	AVM1context* avm1context;
+	uint32_t event_name_id;
+	MovieClip* clip;
+	void execute();
+};
 class Stage: public DisplayObjectContainer
 {
 public:
@@ -734,7 +740,7 @@ public:
 	uint32_t internalGetWidth() const;
 private:
 	Mutex avm1listenerMutex;
-	Mutex avm1ScriptMutex;
+	Mutex avm1DisplayObjectMutex;
 	void onColorCorrection(const tiny_string&);
 	void onFullScreenSourceRect(_NR<Rectangle>);
 	// Keyboard focus object is accessed from the VM thread (AS
@@ -752,9 +758,9 @@ private:
 	vector<ASObject*> avm1ResizeListeners;
 	// double linked list of AVM1 MovieClips currently on Stage that have scripts to execute
 	// this is needed to execute the scripts in the correct order
-	MovieClip* avm1ScriptMovieClipFirst;
-	MovieClip* avm1ScriptMovieClipLast;
-	std::list<_R<MovieClip>> avm1skipeventslist;
+	DisplayObject* avm1DisplayObjectFirst;
+	DisplayObject* avm1DisplayObjectLast;
+	std::list<AVM1scriptToExecute> avm1scriptstoexecute;
 	bool hasAVM1Clips;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
@@ -781,7 +787,7 @@ public:
 	void checkResetFocusTarget(InteractiveObject* removedtarget);
 	void addHiddenObject(MovieClip* o);
 	void removeHiddenObject(MovieClip* o);
-	void advanceFrame() override;
+	void advanceFrame(bool implicit) override;
 	void initFrame() override;
 	void executeFrameScript() override;
 	void finalize() override;
@@ -829,9 +835,9 @@ public:
 	void AVM1RemoveEventListener(ASObject *o);
 	void AVM1AddResizeListener(ASObject *o);
 	bool AVM1RemoveResizeListener(ASObject *o);
-	void AVM1AddScriptedMovieClip(MovieClip* clip);
-	void AVM1RemoveScriptedMovieClip(MovieClip* clip);
-	void AVM1AddSkipEventsClip(MovieClip* clip);
+	void AVM1AddDisplayObject(DisplayObject* dobj);
+	void AVM1RemoveDisplayObject(DisplayObject* dobj);
+	void AVM1AddScriptToExecute(AVM1scriptToExecute& script);
 };
 
 class StageScaleMode: public ASObject
@@ -839,9 +845,6 @@ class StageScaleMode: public ASObject
 public:
 	StageScaleMode(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o)
-	{
-	}
 };
 
 class StageAlign: public ASObject
@@ -849,9 +852,6 @@ class StageAlign: public ASObject
 public:
 	StageAlign(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o)
-	{
-	}
 };
 
 class StageQuality: public ASObject
@@ -1003,7 +1003,6 @@ class AVM1Movie: public DisplayObject
 public:
 	AVM1Movie(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c){}
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 };
 

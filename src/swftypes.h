@@ -1532,7 +1532,6 @@ public:
 	unsigned int next_FP;
 	bool stop_FP;
 	bool explicit_FP;
-	bool explicit_play;
 	bool creatingframe;
 	bool frameadvanced;
 	RunState();
@@ -1543,7 +1542,6 @@ public:
 		next_FP = 0;
 		stop_FP = false;
 		explicit_FP = false;
-		explicit_play=false;
 		creatingframe = false;
 		frameadvanced = false;
 	}

@@ -1337,10 +1337,10 @@ void SystemState::flushInvalidationQueue()
 				}
 				else
 					renderThread->addRefreshableSurface(d,drawobj);
+				if (getRenderThread()->isStarted())
+					drawobj->resetNeedsTextureRecalculation();
 			}
 			drawobj->hasChanged=false;
-			if (getRenderThread()->isStarted())
-				drawobj->resetNeedsTextureRecalculation();
 		}
 		_NR<DisplayObject> next=cur->invalidateQueueNext;
 		cur->invalidateQueueNext=NullRef;
@@ -1785,7 +1785,7 @@ void ParseThread::parseSWF(UI8 ver)
 				case AVM1ACTION_TAG:
 				{
 					if (!(static_cast<AVM1ActionTag*>(tag)->empty()))
-						root->addAvm1ActionToFrame(static_cast<AVM1ActionTag*>(tag));
+						root->addToFrame(static_cast<AVM1ActionTag*>(tag));
 					empty=false;
 					break;
 				}
@@ -2136,7 +2136,7 @@ void RootMovieClip::constructionComplete()
 		getVm(getSystemState())->prependEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this))));
 		return;
 	}
-	getSystemState()->stage->AVM1AddScriptedMovieClip(this);
+	getSystemState()->stage->AVM1AddDisplayObject(this);
 	if (this!=getSystemState()->mainClip)
 	{
 		MovieClip::constructionComplete();
@@ -2149,7 +2149,7 @@ void RootMovieClip::constructionComplete()
 	this->setOnStage(true,true);
 	if (!needsActionScript3())
 	{
-		getSystemState()->stage->advanceFrame();
+		getSystemState()->stage->advanceFrame(true);
 		initFrame();
 	}
 	if (!loaderInfo.isNull())
@@ -2626,7 +2626,7 @@ void RootMovieClip::initFrame()
 }
 
 /* This is run in vm's thread context */
-void RootMovieClip::advanceFrame()
+void RootMovieClip::advanceFrame(bool implicit)
 {
 	/* We have to wait until enough frames are available */
 	if(getFramesLoaded() == 0 || (state.next_FP>=(uint32_t)getFramesLoaded() && !hasFinishedLoading()))
@@ -2636,7 +2636,7 @@ void RootMovieClip::advanceFrame()
 	}
 	waitingforparser=false;
 
-	MovieClip::advanceFrame();
+	MovieClip::advanceFrame(implicit);
 }
 
 void RootMovieClip::executeFrameScript()

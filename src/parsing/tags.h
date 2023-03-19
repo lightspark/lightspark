@@ -115,7 +115,7 @@ public:
 	void execute(RootMovieClip* root) const override =0;
 };
 
-class AVM1ActionTag: public Tag
+class AVM1ActionTag: public DisplayListTag
 {
 private:
 	std::vector<uint8_t> actions;
@@ -123,8 +123,9 @@ private:
 public:
 	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root, AdditionalDataTag* datatag);
 	TAGTYPE getType() const override { return AVM1ACTION_TAG; }
-	void execute(MovieClip* clip, AVM1context *context);
+	void execute(DisplayObjectContainer* parent,bool inskipping) override;
 	bool empty() { return actions.empty(); }
+	void setActions(AVM1scriptToExecute& script) const;
 };
 class AVM1InitActionTag: public ControlTag
 {

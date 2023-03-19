@@ -90,7 +90,7 @@ private:
 	 * but mainClip->getStage()->* instead.
 	 */
 	void initFrame() override;
-	void advanceFrame() override;
+	void advanceFrame(bool implicit) override;
 	void executeFrameScript() override;
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 	

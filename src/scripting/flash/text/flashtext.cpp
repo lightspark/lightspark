@@ -1445,6 +1445,7 @@ void TextField::afterLegacyInsert()
 	avm1SyncTagVar();
 	updateSizes();
 	setSizeAndPositionFromAutoSize();
+	InteractiveObject::afterLegacyInsert();
 }
 
 void TextField::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping)

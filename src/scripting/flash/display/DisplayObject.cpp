@@ -104,9 +104,10 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 }
 
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),ClipDepth(0),parent(nullptr),constructed(false),useLegacyMatrix(true),
+	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),ClipDepth(0),
+	avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),avm1mouselistenercount(0),avm1framelistenercount(0),onStage(false),
-	visible(true),mask(),invalidateQueueNext(),loaderInfo(),cachedAsBitmapOf(nullptr),loadedFrom(c->getSystemState()->mainClip),hasChanged(true),legacy(false),markedForLegacyDeletion(false),cacheAsBitmap(false),
+	visible(true),mask(),invalidateQueueNext(),loaderInfo(),cachedAsBitmapOf(nullptr),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),legacy(false),markedForLegacyDeletion(false),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -123,10 +124,13 @@ void DisplayObject::markAsChanged()
 	}
 }
 
-DisplayObject::~DisplayObject() {}
+DisplayObject::~DisplayObject()
+{
+}
 
 void DisplayObject::finalize()
 {
+	getSystemState()->stage->AVM1RemoveDisplayObject(this);
 	removeAVM1Listeners();
 	EventDispatcher::finalize();
 	cachedBitmap.reset();
@@ -164,6 +168,7 @@ void DisplayObject::finalize()
 bool DisplayObject::destruct()
 {
 	// TODO make all DisplayObject derived classes reusable
+	getSystemState()->stage->AVM1RemoveDisplayObject(this);
 	removeAVM1Listeners();
 	cachedBitmap.reset();
 	cachedAsBitmapOf=nullptr;
@@ -714,6 +719,10 @@ tiny_string DisplayObject::AVM1GetPath()
 	return res;
 }
 
+void DisplayObject::afterLegacyInsert()
+{
+}
+
 MATRIX DisplayObject::getMatrix(bool includeRotation) const
 {
 	Locker locker(spinlock);
@@ -942,6 +951,7 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 			}
 			if (this->is<InteractiveObject>())
 				getSystemState()->getEngineData()->InteractiveObjectRemovedFromStage();
+			getSystemState()->stage->AVM1RemoveDisplayObject(this);
 		}
 	}
 }
@@ -1667,7 +1677,7 @@ _NR<DisplayObject> DisplayObject::hitTest(number_t x, number_t y, HIT_TYPE type,
  * This is called in vm's thread context */
 void DisplayObject::initFrame()
 {
-	if(!isConstructed() && getClass())
+	if(!isConstructed() && getClass() && needsActionScript3())
 	{
 		asAtom o = asAtomHandler::fromObject(this);
 		getClass()->handleConstruction(o,nullptr,0,true);

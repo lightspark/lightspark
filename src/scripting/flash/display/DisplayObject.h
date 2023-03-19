@@ -73,6 +73,8 @@ private:
 public:
 	UI16_SWF Ratio;
 	int ClipDepth;
+	DisplayObject* avm1PrevDisplayObject;
+	DisplayObject* avm1NextDisplayObject;
 private:
 	// the parent is not handled as a _NR<DisplayObjectContainer> because that will lead to circular dependencies in refcounting
 	// and the parent can never be destructed
@@ -227,7 +229,7 @@ public:
 	virtual void UpdateVariableBinding(asAtom v) {}
 	
 	tiny_string AVM1GetPath();
-	virtual void afterLegacyInsert() {}
+	virtual void afterLegacyInsert();
 	virtual void afterLegacyDelete(DisplayObjectContainer* parent,bool inskipping) {}
 	virtual uint32_t getTagID() const { return UINT32_MAX;}
 	virtual void startDrawJob() {}
@@ -248,8 +250,8 @@ public:
 	virtual _NR<Stage> getStage();
 	void setLegacyMatrix(const MATRIX& m);
 	void setFilters(const FILTERLIST& filterlist);
-	virtual void advanceFrame() {}
-	virtual void declareFrame() {}
+	virtual void advanceFrame(bool implicit) {}
+	virtual void declareFrame(bool implicit) {}
 	virtual void initFrame();
 	virtual void executeFrameScript();
 	virtual bool needsActionScript3() const;
@@ -345,7 +347,7 @@ public:
 	void setVariableBinding(tiny_string& name, _NR<DisplayObject> obj);
 	void AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> obj);
 	AVM1Function *AVM1GetFunction(uint32_t nameID);
-	virtual void AVM1HandleEventScriptsAfter() {}
+	virtual void AVM1AfterAdvance() {}
 	void DrawToBitmap(BitmapData* bm, const MATRIX& initialMatrix, bool smoothing, bool forcachedbitmap);
 	std::string toDebugString() const override;
 };

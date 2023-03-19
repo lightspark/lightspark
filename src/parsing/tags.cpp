@@ -531,7 +531,7 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 			case AVM1ACTION_TAG:
 				if (!(static_cast<AVM1ActionTag*>(tag)->empty()))
 				{
-					addAvm1ActionToFrame(static_cast<AVM1ActionTag*>(tag));
+					addToFrame(static_cast<AVM1ActionTag*>(tag));
 					empty=false;
 				}
 				break;
@@ -1926,6 +1926,9 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			if(PlaceFlagMove || (currchar->getTagID() != CharacterId))
 			{
 				parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
+
+				if (toAdd->is<MovieClip>() && PlaceFlagHasClipAction)
+					toAdd->as<MovieClip>()->setupActions(ClipActions);
 				/* parent becomes the owner of toAdd */
 				parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd,inskipping);
 				currchar=toAdd;
@@ -1935,6 +1938,8 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		}
 		else
 		{
+			if (toAdd->is<MovieClip>() && PlaceFlagHasClipAction)
+				toAdd->as<MovieClip>()->setupActions(ClipActions);
 			/* parent becomes the owner of toAdd */
 			parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd,inskipping);
 			currchar=toAdd;
@@ -1967,7 +1972,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		asAtom v = asAtomHandler::fromObject(currchar);
 		parent->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
 	}
-	if (PlaceFlagHasClipAction)
+	if (exists && PlaceFlagHasClipAction)
 	{
 		parent->setupClipActionsAt(LEGACY_DEPTH_START+Depth,ClipActions);
 	}
@@ -2956,7 +2961,7 @@ void SoundStreamBlockTag::decodeSoundBlock(StreamCache* cache, LS_AUDIO_CODEC co
 	}
 }
 
-AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, AdditionalDataTag *datatag):Tag(h)
+AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, AdditionalDataTag *datatag):DisplayListTag(h)
 {
 	// ActionTags are ignored if FileAttributes.actionScript3 is set
 	if (root->usesActionScript3)
@@ -2974,10 +2979,23 @@ AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, Ad
 	s.read((char*)actions.data()+startactionpos,Header.getLength());
 }
 
-void AVM1ActionTag::execute(MovieClip* clip, AVM1context* context)
+void AVM1ActionTag::execute(DisplayObjectContainer* parent, bool inskipping)
 {
-	std::map<uint32_t,asAtom> m;
-	ACTIONRECORD::executeActions(clip,context,actions, startactionpos,m);
+	if (parent->is<MovieClip>() && !inskipping)// && !parent->as<MovieClip>()->state.stop_FP)
+	{
+		AVM1scriptToExecute script;
+		setActions(script);
+		script.avm1context = parent->as<MovieClip>()->getCurrentFrame()->getAVM1Context();
+		script.event_name_id = UINT32_MAX;
+		script.clip=parent->as<MovieClip>();
+		parent->getSystemState()->stage->AVM1AddScriptToExecute(script);
+	}
+}
+
+void AVM1ActionTag::setActions(AVM1scriptToExecute& script) const
+{
+	script.actions = &actions;
+	script.startactionpos = startactionpos;
 }
 
 AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, AdditionalDataTag* datatag):ControlTag(h)

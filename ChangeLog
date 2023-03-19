@@ -4,6 +4,7 @@ Version NEXT:
 
 	* implement DefineScalingGrid tag
 	* switch to 32bit float audio sampling for standalone player and remove SDL2_mixer dependency
+	* improved support for AVM1 swf files
 
 Version 0.8.6.1:
 

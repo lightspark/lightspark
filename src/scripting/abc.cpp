@@ -1122,9 +1122,9 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
 				if (ev->clip)
-					ev->clip->advanceFrame();
+					ev->clip->advanceFrame(true);
 				else
-					m_sys->stage->advanceFrame();
+					m_sys->stage->advanceFrame(true);
 				break;
 			}
 			case ROOTCONSTRUCTEDEVENT:

@@ -287,7 +287,7 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 		else
 			xmax=max(0.0f,float(textWidth+autosizeposition))+2*TEXTFIELD_PADDING+ (tag ? tag->Bounds.Xmin/20.0f : 0.0f);
 		ymin=tag ? tag->Bounds.Ymin/20.0f : 0.0f;
-		ymax=max(0.0f,float(height)+(tag ? tag->Bounds.Ymin/20.0f :0.0f));
+		ymax=max(0.0f,float(height)+(tag ? tag->Bounds.Ymin/20.0f :0.0f)+2*TEXTFIELD_PADDING);
 		return true;
 	}
 	xmin=tag->Bounds.Xmin/20.0f;
@@ -417,10 +417,11 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 		{
 			case AS_RIGHT:
 				linemutex->lock();
+				autosizeposition = width-textWidth-TEXTFIELD_PADDING*2;
 				for (auto it = textlines.begin(); it != textlines.end(); it++)
 				{
-					if ((int)(*it).textwidth< originalWidth)
-						(*it).autosizeposition = (originalWidth-(*it).textwidth);
+					if ((*it).textwidth < textWidth)
+						(*it).autosizeposition = (textWidth+TEXTFIELD_PADDING*2-(*it).textwidth);
 					else
 						(*it).autosizeposition = 0;
 				}
@@ -428,16 +429,18 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 				break;
 			case AS_CENTER:
 				linemutex->lock();
+				autosizeposition = (width-textWidth-TEXTFIELD_PADDING*2)/2;
 				for (auto it = textlines.begin(); it != textlines.end(); it++)
 				{
-					if ((int)(*it).textwidth< originalWidth)
-						(*it).autosizeposition = (originalWidth-(*it).textwidth)/2;
+					if ((*it).textwidth < textWidth)
+						(*it).autosizeposition = (textWidth+TEXTFIELD_PADDING*2-(*it).textwidth)/2;
 					else
 						(*it).autosizeposition = 0;
 				}
 				linemutex->unlock();
 				break;
 			default:
+				autosizeposition = 0;
 				break;
 		}
 		if (updatewidth && !wordWrap)
@@ -451,7 +454,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 			autosizeposition = 0;
 			if (!wordWrap) // not in the specs but Adobe changes x position if wordWrap is not set
 			{
-				this->setX(originalXPosition + (int(originalWidth - textWidth))*sx);
+				this->setX(originalXPosition + (int(originalWidth-TEXTFIELD_PADDING*2 - textWidth))*sx);
 				if (updatewidth)
 					width = textWidth+TEXTFIELD_PADDING*2;
 			}
@@ -470,7 +473,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 			autosizeposition = 0;
 			if (!wordWrap) // not in the specs but Adobe changes x position if wordWrap is not set
 			{
-				this->setX(originalXPosition + (int(originalWidth - textWidth))/2*sx);
+				this->setX(originalXPosition + (int(originalWidth-TEXTFIELD_PADDING*2 - textWidth))/2*sx);
 				if (updatewidth)
 					width = textWidth+TEXTFIELD_PADDING*2;
 			}
@@ -747,7 +750,10 @@ ASFUNCTIONBODY_ATOM(TextField,_setDefaultTextFormat)
 	if (th->align != newAlign)
 	{
 		th->align = newAlign;
+		th->updateSizes();
 		th->setSizeAndPositionFromAutoSize();
+		th->hasChanged=true;
+		th->setNeedsTextureRecalculation();
 	}
 	LOG(LOG_NOT_IMPLEMENTED,"setDefaultTextFormat does not set all fields of TextFormat");
 }
@@ -1230,9 +1236,6 @@ void TextField::updateSizes()
 		else
 			CairoPangoRenderer::getBounds(*this, (*it).text,w, h);
 		(*it).textwidth=w;
-		w += (*it).autosizeposition;
-		if (!wordWrap && w>tw)
-			tw = w;
 		bool listchanged=false;
 		if (wordWrap && width > TEXTFIELD_PADDING*2 && uint32_t(w) > width-TEXTFIELD_PADDING*2)
 		{
@@ -1259,7 +1262,6 @@ void TextField::updateSizes()
 					else
 						CairoPangoRenderer::getBounds(*this,t.text, w, h);
 					t.textwidth=w;
-					w += (*it).autosizeposition;
 					it = textlines.insert(++it,t);
 					listchanged=true;
 					text =t.text;
@@ -1274,6 +1276,8 @@ void TextField::updateSizes()
 				c= text.rfind(" ",c-1);// TODO check for other whitespace characters
 			}
 		}
+		else if (w>tw)
+			tw = w;
 		if (!listchanged)
 			it++;
 		th+=h;

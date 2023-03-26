@@ -25,6 +25,11 @@ case "$1" in
 		cd obj-debug
 		cmake -DCMAKE_BUILD_TYPE=Debug ..
 		;;
+	-m | --memory)
+		mkdir -p obj-memory
+		cd obj-memory
+		cmake -DCMAKE_BUILD_TYPE=Memory ..
+		;;
 	*)
 		mkdir -p obj-release
 		cd obj-release

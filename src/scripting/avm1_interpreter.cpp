@@ -473,7 +473,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						ASATOM_INCREF(res);
 					}
 				}
-				if (asAtomHandler::isInvalid(res))
+				if (asAtomHandler::isInvalid(res) && !clip_isTarget)
 				{
 					if (actobj)
 					{
@@ -484,7 +484,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						actobj->getVariableByMultiname(res,m,GET_VARIABLE_OPTION::NONE,wrk);
 					}
 				}
-				if (asAtomHandler::isInvalid(res))
+				if (asAtomHandler::isInvalid(res) && !clip_isTarget)
 				{
 					if (asAtomHandler::isObject(scopestack[0]))
 					{
@@ -512,19 +512,28 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				if (asAtomHandler::isInvalid(res))
 				{
-					if (!curdepth && !s.startsWith("/") && !s.startsWith(":") && !clip_isTarget)
+					if (!curdepth && !s.startsWith("/") && !s.startsWith(":"))
 					{
 						// first look for member of clip
 						multiname m(nullptr);
 						m.name_type=multiname::NAME_STRING;
 						m.name_s_id=asAtomHandler::toStringId(name,wrk);
 						m.isAttribute = false;
-						originalclip->getVariableByMultiname(res,m,GET_VARIABLE_OPTION::NONE,wrk);
-						if (asAtomHandler::isInvalid(res))
-							res = originalclip->AVM1GetVariable(s);
+						if (clip_isTarget)
+						{
+							clip->getVariableByMultiname(res,m,GET_VARIABLE_OPTION::NONE,wrk);
+							if (asAtomHandler::isInvalid(res))
+								res = clip->AVM1GetVariable(s,false);
+						}
+						else
+						{
+							originalclip->getVariableByMultiname(res,m,GET_VARIABLE_OPTION::NONE,wrk);
+							if (asAtomHandler::isInvalid(res))
+								res = originalclip->AVM1GetVariable(s,false);
+						}
 					}
 					else
-						res = clip->AVM1GetVariable(s);
+						res = clip->AVM1GetVariable(s,false);
 				}
 				if (asAtomHandler::isInvalid(res))
 				{

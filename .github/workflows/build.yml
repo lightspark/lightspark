@@ -9,10 +9,22 @@ on:
       - master
 jobs:
 
+  delete_previous_release:
+    name: Delete previous Development Release
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: dev-drprasad/delete-tag-and-release@v0.2.1
+      - name: Delete Development Release
+      with:
+        tag_name: latest
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+
   draft_release:
     name: Create Release
     runs-on: ubuntu-latest
     continue-on-error: false
+    needs: delete_previous_release
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
@@ -26,7 +38,7 @@ jobs:
           body: This is based on the latest commit.
           tag: latest
           name: "Development release"
-          draft: true
+          draft: false
           prerelease: true
 
   compilers:

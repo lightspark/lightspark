@@ -160,7 +160,8 @@ void AudioManager::removeStream(AudioStream *s)
 	{
 		streamMutex.unlock();
 		managerMutex.lock();
-		engineData->audio_ManagerCloseMixer(this);
+		if (mixeropened)
+			engineData->audio_ManagerCloseMixer(this);
 		mixeropened = false;
 		managerMutex.unlock();
 	}
@@ -223,6 +224,7 @@ AudioStream* AudioManager::createStream(AudioDecoder* decoder, bool startpaused,
 
 AudioManager::~AudioManager()
 {
+	managerMutex.lock();
 	if (mixeropened)
 	{
 		engineData->audio_ManagerCloseMixer(this);
@@ -231,4 +233,5 @@ AudioManager::~AudioManager()
 	{
 		engineData->audio_ManagerDeinit();
 	}
+	managerMutex.unlock();
 }

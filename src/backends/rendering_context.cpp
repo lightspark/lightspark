@@ -485,8 +485,6 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
 			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid)
 {
-	if (alpha != 1.0)
-		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured alpha not implemented:"<<alpha);
 	if (colorMode != RGB_MODE)
 		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured colorMode not implemented:"<<(int)colorMode);
 	cairo_save(cr);
@@ -535,7 +533,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		cairo_save(cr);
 		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
 		cairo_set_source_surface(cr, chunkSurface, 0,0);
-		cairo_paint(cr);
+		cairo_paint_with_alpha(cr,alpha);
 		cairo_surface_destroy(chunkSurface);
 		cairo_restore(cr);
 
@@ -547,7 +545,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		cairo_save(cr);
 		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
 		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint(cr);
+		cairo_paint_with_alpha(cr,alpha);
 		cairo_surface_destroy(chunkSurface);
 		cairo_restore(cr);
 
@@ -559,7 +557,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		cairo_save(cr);
 		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
 		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint(cr);
+		cairo_paint_with_alpha(cr,alpha);
 		cairo_surface_destroy(chunkSurface);
 		cairo_restore(cr);
 
@@ -571,7 +569,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		cairo_save(cr);
 		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
 		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint(cr);
+		cairo_paint_with_alpha(cr,alpha);
 		cairo_surface_destroy(chunkSurface);
 		cairo_restore(cr);
 
@@ -583,7 +581,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		cairo_save(cr);
 		cairo_scale(cr, 1.0 / (scalex*innerscalex), 1.0 / (scaley*scaley) );
 		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint(cr);
+		cairo_paint_with_alpha(cr,alpha);
 		cairo_surface_destroy(chunkSurface);
 		cairo_restore(cr);
 
@@ -596,7 +594,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		cairo_save(cr);
 		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*innerscaley) );
 		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint(cr);
+		cairo_paint_with_alpha(cr,alpha);
 		cairo_surface_destroy(chunkSurface);
 		cairo_restore(cr);
 
@@ -608,7 +606,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		cairo_save(cr);
 		cairo_scale(cr, 1.0 / (scalex*innerscalex), 1.0 / (scaley*scaley) );
 		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint(cr);
+		cairo_paint_with_alpha(cr,alpha);
 		cairo_surface_destroy(chunkSurface);
 		cairo_restore(cr);
 
@@ -620,7 +618,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		cairo_save(cr);
 		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*innerscaley) );
 		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint(cr);
+		cairo_paint_with_alpha(cr,alpha);
 		cairo_surface_destroy(chunkSurface);
 		cairo_restore(cr);
 
@@ -657,7 +655,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		}
 	}
 	else if(!isMask)
-		cairo_paint(cr);
+		cairo_paint_with_alpha(cr,alpha);
 
 	if (!isMask)
 		cairo_surface_destroy(chunkSurface);

@@ -33,6 +33,7 @@ class AVM1XMLDocument: public XMLDocument
 public:
 	AVM1XMLDocument(ASWorker* wrk,Class_base* c):XMLDocument(wrk,c){ needsActionScript3=false; }
 	void finalize() override;
+	bool destruct() override;
 	void prepareShutdown() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(load);

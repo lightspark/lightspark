@@ -2530,7 +2530,7 @@ bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref, bo
 
 uint64_t Array::size()
 {
-	if (this->getClass()->is<Class_inherit>())
+	if (this->getClass() && this->getClass()->is<Class_inherit>())
 	{
 		multiname lengthName(nullptr);
 		lengthName.name_type=multiname::NAME_STRING;

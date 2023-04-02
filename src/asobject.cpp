@@ -49,7 +49,6 @@ asfreelist::~asfreelist()
 
 string ASObject::toDebugString() const
 {
-	check();
 	string ret;
 	if(this->is<Class_base>())
 	{
@@ -2024,8 +2023,10 @@ void ASObject::handleGarbageCollection()
 		assert(c == UINT32_MAX || c <= storedmembercount || this->preparedforshutdown);
 		if (c == storedmembercount)
 		{
-			resetRefCount();
 			getInstanceWorker()->setDeletedInGarbageCollection(this);
+			this->destruct();
+			this->finalize();
+			return;
 		}
 	}
 	decRef();

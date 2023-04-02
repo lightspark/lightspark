@@ -393,10 +393,11 @@ void ApplicationDomain::finalize()
 	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
 		it->second->finalize();
 	//Free template instantations by decRef'ing them
-	for(auto i = instantiatedTemplates.begin(); i != instantiatedTemplates.end(); ++i)
-		i->second->decRef();
+	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
+		it->second->decRef();
 	globalScopes.clear();
 }
+
 void ApplicationDomain::prepareShutdown()
 {
 	if (this->preparedforshutdown)
@@ -1239,13 +1240,20 @@ void ASWorker::processGarbageCollection(bool force)
 		return;
 	last_garbagecollection = currtime;
 	inGarbageCollection=true;
-	garbagecollectiondeleted.clear();
 	while (!garbagecollection.empty())
 	{
 		auto it = garbagecollection.begin();
 		ASObject* o = *it;
 		garbagecollection.erase(it);
 		o->handleGarbageCollection();
+		while (!garbagecollectiondeleted.empty())
+		{
+			auto it = garbagecollectiondeleted.begin();
+			ASObject* o = *it;
+			garbagecollectiondeleted.erase(it);
+			o->resetRefCount();
+			o->decRef();
+		}
 	}
 	inGarbageCollection=false;
 }

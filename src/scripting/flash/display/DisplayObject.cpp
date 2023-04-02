@@ -150,7 +150,6 @@ void DisplayObject::finalize()
 	}
 	avm1variables.clear();
 	variablebindings.clear();
-	avm1functions.clear();
 	loadedFrom=getSystemState()->mainClip;
 	hasChanged = true;
 	needsTextureRecalculation=true;
@@ -211,7 +210,6 @@ bool DisplayObject::destruct()
 	}
 	avm1variables.clear();
 	variablebindings.clear();
-	avm1functions.clear();
 	if (!cachedSurface.isChunkOwner)
 		cachedSurface.tex=nullptr;
 	if (cachedSurface.tex)
@@ -257,12 +255,20 @@ void DisplayObject::prepareShutdown()
 		if (o)
 			o->prepareShutdown();
 	}
-	for (auto it = avm1functions.begin(); it != avm1functions.end(); it++)
+}
+
+bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
 	{
-		ASObject* o = it->second.getPtr();
+		ASObject* o = asAtomHandler::getObject(it->second);
 		if (o)
-			o->prepareShutdown();
+			ret = o->countAllCylicMemberReferences(gcstate) || ret;
 	}
+	return ret;
 }
 
 void DisplayObject::sinit(Class_base* c)
@@ -2653,25 +2659,9 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 		if (it != avm1variables.end())
 			ASATOM_DECREF(it->second);
 		if (asAtomHandler::isUndefined(v))
-		{
 			avm1variables.erase(nameId);
-			if (asAtomHandler::is<AVM1Function>(v))
-			{
-				avm1functions.erase(nameIdOriginal);
-			}
-		}
 		else
-		{
 			avm1variables[nameId] = v;
-			if (asAtomHandler::is<AVM1Function>(v))
-			{
-				AVM1Function* f = asAtomHandler::as<AVM1Function>(v);
-				if (f->getClip() == this)
-					f->resetClipRefcounted(); // this avoids that this DisplayObject is never destroyed because the function still has a reference count
-				f->incRef();
-				avm1functions[nameIdOriginal] = _MR(f);
-			}
-		}
 		if (setMember)
 		{
 			multiname objName(nullptr);
@@ -2725,22 +2715,10 @@ void DisplayObject::AVM1SetVariableDirect(uint32_t nameId, asAtom v)
 	if (asAtomHandler::isUndefined(v))
 	{
 		avm1variables.erase(nameId);
-		if (asAtomHandler::is<AVM1Function>(v))
-		{
-			avm1functions.erase(nameId);
-		}
 	}
 	else
 	{
 		avm1variables[nameId] = v;
-		if (asAtomHandler::is<AVM1Function>(v))
-		{
-			AVM1Function* f = asAtomHandler::as<AVM1Function>(v);
-			if (f->getClip() == this)
-				f->resetClipRefcounted(); // this avoids that this DisplayObject is never destroyed because the function still has a reference count
-			f->incRef();
-			avm1functions[nameId] = _MR(f);
-		}
 	}
 }
 
@@ -2880,7 +2858,6 @@ void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> o
 	if (obj)
 	{
 		asAtom v = asAtomHandler::fromObjectNoPrimitive(obj.getPtr());
-		avm1functions[nameIDlower] = obj;
 		obj->incRef();
 		avm1variables[nameIDlower] = v;
 		
@@ -2895,15 +2872,14 @@ void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> o
 	}
 	else
 	{
-		avm1functions.erase(nameIDlower);
 		avm1variables.erase(nameIDlower);
 	}
 }
 AVM1Function* DisplayObject::AVM1GetFunction(uint32_t nameID)
 {
-	auto it = avm1functions.find(nameID);
-	if (it != avm1functions.end())
-		return it->second.getPtr();
+	auto it = avm1variables.find(nameID);
+	if (it != avm1variables.end() && asAtomHandler::is<AVM1Function>(it->second))
+		return asAtomHandler::as<AVM1Function>(it->second);
 	return nullptr;
 }
 

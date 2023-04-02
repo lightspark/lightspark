@@ -165,7 +165,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 									break;
 								}
 								default:
-									LOG(LOG_NOT_IMPLEMENTED,"nanovg fillstyle:"<<(int)style->FillStyleType);
+									LOG(LOG_NOT_IMPLEMENTED,"nanovg fillstyle:"<<hex<<(int)style->FillStyleType);
 									break;
 							}
 							break;

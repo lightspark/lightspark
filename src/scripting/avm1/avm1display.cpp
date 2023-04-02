@@ -38,6 +38,7 @@ bool AVM1MovieClip::destruct()
 {
 	avm1loader.reset();
 	color.reset();
+	getSystemState()->stage->AVM1RemoveEventListener(this);
 	return MovieClip::destruct();
 }
 
@@ -523,48 +524,56 @@ ASFUNCTIONBODY_ATOM(AVM1Color,setTransform)
 		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isValid(a))
 			th->target->colorTransform->redMultiplier = asAtomHandler::toNumber(a)/100.0;
+		ASATOM_DECREF(a);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("rb");
 		a = asAtomHandler::invalidAtom;
 		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isValid(a))
 			th->target->colorTransform->redOffset = asAtomHandler::toNumber(a);
+		ASATOM_DECREF(a);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ga");
 		a = asAtomHandler::invalidAtom;
 		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isValid(a))
 			th->target->colorTransform->greenMultiplier = asAtomHandler::toNumber(a)/100.0;
+		ASATOM_DECREF(a);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("gb");
 		a = asAtomHandler::invalidAtom;
 		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isValid(a))
 			th->target->colorTransform->greenOffset = asAtomHandler::toNumber(a);
+		ASATOM_DECREF(a);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ba");
 		a = asAtomHandler::invalidAtom;
 		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isValid(a))
 			th->target->colorTransform->blueMultiplier = asAtomHandler::toNumber(a)/100.0;
+		ASATOM_DECREF(a);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("bb");
 		a = asAtomHandler::invalidAtom;
 		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isValid(a))
 			th->target->colorTransform->blueOffset = asAtomHandler::toNumber(a);
+		ASATOM_DECREF(a);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("aa");
 		a = asAtomHandler::invalidAtom;
 		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isValid(a))
 			th->target->colorTransform->alphaMultiplier = asAtomHandler::toNumber(a)/100.0;
+		ASATOM_DECREF(a);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ab");
 		a = asAtomHandler::invalidAtom;
 		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isValid(a))
 			th->target->colorTransform->alphaOffset = asAtomHandler::toNumber(a);
+		ASATOM_DECREF(a);
 		th->target->hasChanged=true;
 		th->target->requestInvalidation(wrk->getSystemState());
 	}

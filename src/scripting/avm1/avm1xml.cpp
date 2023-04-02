@@ -29,6 +29,12 @@ void AVM1XMLDocument::finalize()
 	XMLDocument::finalize();
 	loader.reset();
 }
+bool AVM1XMLDocument::destruct()
+{
+	loader.reset();
+	getSystemState()->stage->AVM1RemoveEventListener(this);
+	return XMLDocument::destruct();
+}
 
 void AVM1XMLDocument::prepareShutdown()
 {

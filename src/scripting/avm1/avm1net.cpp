@@ -95,6 +95,11 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,load)
 	asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(th->loader.getPtr());
 	URLLoader::load(ret,wrk,loaderobj,&urlarg,1);
 }
+bool AVM1LoadVars::destruct()
+{
+	getSystemState()->stage->AVM1RemoveEventListener(this);
+	return URLVariables::destruct();
+}
 multiname* AVM1LoadVars::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset,ASWorker* wrk)
 {
 	multiname* res = URLVariables::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);

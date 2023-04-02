@@ -98,7 +98,6 @@ private:
 	bool textureRecalculationSkippable;
 	void gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks);
 	std::map<uint32_t,asAtom> avm1variables;
-	std::map<uint32_t,_NR<AVM1Function>> avm1functions;
 	uint32_t avm1mouselistenercount;
 	uint32_t avm1framelistenercount;
 protected:
@@ -197,6 +196,7 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	MATRIX getMatrix(bool includeRotation = true) const;
 	bool isConstructed() const override { return ACQUIRE_READ(constructed); }
 	/**

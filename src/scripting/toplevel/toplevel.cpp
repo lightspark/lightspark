@@ -3725,16 +3725,14 @@ void Prototype::copyOriginalValues(Prototype* target)
 
 AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, Activation_object* act, AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a, std::vector<uint8_t> _registernumbers, bool _preloadParent, bool _preloadRoot, bool _suppressSuper, bool _preloadSuper, bool _suppressArguments, bool _preloadArguments, bool _suppressThis, bool _preloadThis, bool _preloadGlobal)
 	:IFunction(wrk,c,SUBTYPE_AVM1FUNCTION),clip(cl),activationobject(act),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),
-	  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal),clipIsRefcounted(act != nullptr)
+	  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal)
 {
 	if (ctx)
 		context.avm1strings.assign(ctx->avm1strings.begin(),ctx->avm1strings.end());
+	clip->incRef();
+	clip->addStoredMember();
 	if (act)
-	{
-		// incRef to ensure clip is valid as long as this anonymous function is not destroyed (will be decreffed in AVM1Function destructor)
-		clip->incRef();
-		clip->addStoredMember();
-	}
+		act->addStoredMember();
 	context.keepLocals=true;
 	superobj = asAtomHandler::invalidAtom;
 }
@@ -3742,11 +3740,9 @@ AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, Acti
 AVM1Function::~AVM1Function()
 {
 	if (activationobject)
-	{
-		activationobject->decRef();
-		if (clipIsRefcounted)
-			clip->removeStoredMember();
-	}
+		activationobject->removeStoredMember();
+	if (clip)
+		clip->removeStoredMember();
 	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
 	{
 		ASATOM_DECREF(it->second);
@@ -3779,14 +3775,11 @@ asAtom AVM1Function::computeSuper()
 void AVM1Function::finalize()
 {
 	if (activationobject)
-	{
-		activationobject->decRef();
-		if (clipIsRefcounted)
-			clip->removeStoredMember();
-		activationobject=nullptr;
-		clip=nullptr;
-	}
-	clipIsRefcounted=false;
+		activationobject->removeStoredMember();
+	activationobject=nullptr;
+	if (clip)
+		clip->removeStoredMember();
+	clip=nullptr;
 	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
 	{
 		ASATOM_DECREF(it->second);
@@ -3798,14 +3791,11 @@ void AVM1Function::finalize()
 bool AVM1Function::destruct()
 {
 	if (activationobject)
-	{
-		activationobject->decRef();
-		if (clipIsRefcounted)
-			clip->removeStoredMember();
-		activationobject=nullptr;
-		clip=nullptr;
-	}
-	clipIsRefcounted=false;
+		activationobject->removeStoredMember();
+	activationobject=nullptr;
+	if (clip)
+		clip->removeStoredMember();
+	clip=nullptr;
 	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
 	{
 		ASATOM_DECREF(it->second);
@@ -3820,10 +3810,9 @@ void AVM1Function::prepareShutdown()
 		return;
 	IFunction::prepareShutdown();
 	if (activationobject)
-	{
 		activationobject->prepareShutdown();
-	}
-	clip->prepareShutdown();
+	if (clip)
+		clip->prepareShutdown();
 }
 
 bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -3833,16 +3822,9 @@ bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	bool ret = IFunction::countCylicMemberReferences(gcstate);
 	if (activationobject)
 		ret = activationobject->countAllCylicMemberReferences(gcstate) || ret;
+	if (clip)
+		ret = clip->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
-}
-
-void AVM1Function::resetClipRefcounted()
-{
-	if (clipIsRefcounted)
-	{
-		clipIsRefcounted=false;
-		clip->removeStoredMember();
-	}
 }
 
 void AVM1Function::filllocals(std::map<uint32_t, asAtom>& locals)

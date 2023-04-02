@@ -4152,25 +4152,20 @@ bool Stage::destruct()
 	// erasing an avm1 listener might change the list, so we can't use clear() here
 	while (!avm1KeyboardListeners.empty())
 	{
-		avm1KeyboardListeners.back()->removeStoredMember();
+		avm1KeyboardListeners.back()->decRef();
 		if (!avm1KeyboardListeners.empty())
 			avm1KeyboardListeners.pop_back();
 	}
 	while (!avm1MouseListeners.empty())
 	{
-		avm1MouseListeners.back()->removeStoredMember();
+		avm1MouseListeners.back()->decRef();
 		if (!avm1MouseListeners.empty())
 			avm1MouseListeners.pop_back();
 	}
-	while (!avm1EventListeners.empty())
-	{
-		avm1EventListeners.back()->removeStoredMember();
-		if (!avm1EventListeners.empty())
-			avm1EventListeners.pop_back();
-	}
+	avm1EventListeners.clear();
 	while (!avm1ResizeListeners.empty())
 	{
-		avm1ResizeListeners.back()->removeStoredMember();
+		avm1ResizeListeners.back()->decRef();
 		if (!avm1ResizeListeners.empty())
 			avm1ResizeListeners.pop_back();
 	}
@@ -4191,25 +4186,20 @@ void Stage::finalize()
 	// erasing an avm1 listener might change the list, so we can't use clear() here
 	while (!avm1KeyboardListeners.empty())
 	{
-		avm1KeyboardListeners.back()->removeStoredMember();
+		avm1KeyboardListeners.back()->decRef();
 		if (!avm1KeyboardListeners.empty())
 			avm1KeyboardListeners.pop_back();
 	}
 	while (!avm1MouseListeners.empty())
 	{
-		avm1MouseListeners.back()->removeStoredMember();
+		avm1MouseListeners.back()->decRef();
 		if (!avm1MouseListeners.empty())
 			avm1MouseListeners.pop_back();
 	}
-	while (!avm1EventListeners.empty())
-	{
-		avm1EventListeners.back()->removeStoredMember();
-		if (!avm1EventListeners.empty())
-			avm1EventListeners.pop_back();
-	}
+	avm1EventListeners.clear();
 	while (!avm1ResizeListeners.empty())
 	{
-		avm1ResizeListeners.back()->removeStoredMember();
+		avm1ResizeListeners.back()->decRef();
 		if (!avm1ResizeListeners.empty())
 			avm1ResizeListeners.pop_back();
 	}
@@ -4240,8 +4230,7 @@ void Stage::prepareShutdown()
 		(*it)->prepareShutdown();
 	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
 		(*it)->prepareShutdown();
-	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
-		(*it)->prepareShutdown();
+	avm1EventListeners.clear();
 	for (auto it = avm1ResizeListeners.begin(); it != avm1ResizeListeners.end(); it++)
 		(*it)->prepareShutdown();
 }
@@ -4476,6 +4465,7 @@ void Stage::addHiddenObject(MovieClip* o)
 	if (it != hiddenobjects.end())
 		return;
 	o->incRef();
+	o->addStoredMember();
 	hiddenobjects.insert(o);
 }
 
@@ -4485,7 +4475,7 @@ void Stage::removeHiddenObject(MovieClip* o)
 	if (it != hiddenobjects.end())
 	{
 		hiddenobjects.erase(it);
-		o->decRef();
+		o->removeStoredMember();
 	}
 }
 
@@ -4542,7 +4532,7 @@ void Stage::AVM1AddScriptToExecute(AVM1scriptToExecute& script)
 
 void Stage::advanceFrame(bool implicit)
 {
-	if (!hasAVM1Clips)
+	if (getSystemState()->mainClip->usesActionScript3)
 	{
 		DisplayObjectContainer::advanceFrame(implicit);
 		unordered_set<MovieClip*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
@@ -4553,7 +4543,7 @@ void Stage::advanceFrame(bool implicit)
 			it++;
 		}
 	}
-	else
+	if (hasAVM1Clips)
 	{
 		// scripts on AVM1 clips are executed in order of instantiation
 		avm1DisplayObjectMutex.lock();
@@ -4589,6 +4579,8 @@ void Stage::advanceFrame(bool implicit)
 		{
 			if ((*itscr).clip->isOnStage())
 				(*itscr).execute();
+			else if ((*itscr).event_name_id != UINT32_MAX)
+				(*itscr).clip->decRef(); // was increffed in AVM1AddScriptEvents 
 			itscr = avm1scriptstoexecute.erase(itscr);
 		}
 		
@@ -4728,7 +4720,6 @@ void Stage::AVM1AddKeyboardListener(ASObject *o)
 			return;
 	}
 	o->incRef();
-	o->addStoredMember();
 	avm1KeyboardListeners.push_back(o);
 }
 
@@ -4740,7 +4731,7 @@ void Stage::AVM1RemoveKeyboardListener(ASObject *o)
 		if ((*it) == o)
 		{
 			avm1KeyboardListeners.erase(it);
-			o->removeStoredMember();
+			o->decRef();
 			break;
 		}
 	}
@@ -4754,7 +4745,6 @@ void Stage::AVM1AddMouseListener(ASObject *o)
 			return;
 	}
 	o->incRef();
-	o->addStoredMember();
 	avm1MouseListeners.push_back(o);
 }
 
@@ -4766,7 +4756,7 @@ void Stage::AVM1RemoveMouseListener(ASObject *o)
 		if ((*it) == o)
 		{
 			avm1MouseListeners.erase(it);
-			o->removeStoredMember();
+			o->decRef();
 			break;
 		}
 	}
@@ -4779,8 +4769,6 @@ void Stage::AVM1AddEventListener(ASObject *o)
 		if ((*it) == o)
 			return;
 	}
-	o->incRef();
-	o->addStoredMember();
 	avm1EventListeners.push_back(o);
 }
 void Stage::AVM1RemoveEventListener(ASObject *o)
@@ -4791,7 +4779,6 @@ void Stage::AVM1RemoveEventListener(ASObject *o)
 		if ((*it) == o)
 		{
 			avm1EventListeners.erase(it);
-			o->removeStoredMember();
 			break;
 		}
 	}
@@ -4806,6 +4793,7 @@ void Stage::AVM1AddResizeListener(ASObject *o)
 			return;
 	}
 	o->incRef();
+	o->addStoredMember();
 	avm1ResizeListeners.push_back(o);
 }
 
@@ -4817,7 +4805,7 @@ bool Stage::AVM1RemoveResizeListener(ASObject *o)
 		if ((*it) == o)
 		{
 			avm1ResizeListeners.erase(it);
-			o->removeStoredMember();
+			o->decRef();
 			// it's not mentioned in the specs but I assume we return true if we found the listener object
 			return true;
 		}

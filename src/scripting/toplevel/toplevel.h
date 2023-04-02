@@ -743,7 +743,6 @@ protected:
 	bool suppressThis;
 	bool preloadThis;
 	bool preloadGlobal;
-	bool clipIsRefcounted;
 	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,Activation_object* act,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false);
 	~AVM1Function();
 	method_info* getMethodInfo() const override { return nullptr; }
@@ -806,7 +805,6 @@ public:
 	{
 		return superobj;
 	}
-	void resetClipRefcounted();
 	void filllocals(std::map<uint32_t,asAtom>& locals);
 	void setscopevariables(std::map<uint32_t,asAtom>& locals);
 };
@@ -991,7 +989,6 @@ private:
 public:
 	Global(ASWorker* wrk,Class_base* cb, ABCContext* c, int s, bool avm1);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o) {}
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname &name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	void getVariableByMultinameOpportunistic(asAtom& ret, const multiname& name, ASWorker* wrk);

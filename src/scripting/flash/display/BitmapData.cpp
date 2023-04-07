@@ -697,7 +697,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,clone)
 		return;
 	}
 
-	ret = asAtomHandler::fromObject(Class<BitmapData>::getInstanceS(wrk,*th));
+	BitmapData* clone = Class<BitmapData>::getInstanceS(wrk,th->getWidth(),th->getHeight());
+	if (th->getBitmapContainer())
+		memcpy (clone->getBitmapContainer()->getData(),th->getBitmapContainer()->getData(),th->getWidth()*th->getHeight()*4);
+	ret = asAtomHandler::fromObject(clone);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,copyChannel)

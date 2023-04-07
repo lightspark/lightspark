@@ -349,8 +349,10 @@ ASFUNCTIONBODY_ATOM(XML,descendants)
 	ARG_CHECK(ARG_UNPACK(name,_NR<ASObject>(abstract_s(wrk,"*"))));
 	XMLVector res;
 	multiname mname(nullptr);
+	mname.name_s_id = name->toStringId();
+	mname.name_type = multiname::NAME_STRING;
 	name->applyProxyProperty(mname);
-	th->getDescendantsByQName(name->toString(),mname.isQName() ? mname.ns[0].nsNameId : (uint32_t)BUILTIN_STRINGS::EMPTY,mname.isAttribute,res);
+	th->getDescendantsByQName(mname,res);
 	ret = asAtomHandler::fromObject(XMLList::create(wrk,res,th->getChildrenlist(),multiname(nullptr)));
 }
 
@@ -1294,19 +1296,32 @@ pugi::xml_node_type XML::getNodeKind() const
 }
 
 
-void XML::getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAttribute, XMLVector& ret) const
+void XML::getDescendantsByQName(const multiname& name, XMLVector& ret) const
 {
 	if (!constructed)
 		return;
-	if (bIsAttribute && !attributelist.isNull())
+	tiny_string nodename = name.normalizedNameUnresolved(getSystemState());
+	if (name.isAttribute && !attributelist.isNull())
 	{
 		for (uint32_t i = 0; i < attributelist->nodes.size(); i++)
 		{
 			
 			_NR<XML> child= attributelist->nodes[i];
-			if(name=="" || name=="*" || (name == child->nodename && (ns == BUILTIN_STRINGS::STRING_WILDCARD || ns == child->nodenamespace_uri)))
+			if(nodename=="" || nodename=="*" || (nodename == child->nodename))
 			{
-				ret.push_back(child);
+				if (name.ns.empty())
+					ret.push_back(child);
+				else
+				{
+					for (auto it = name.ns.begin(); it != name.ns.end(); it++)
+					{
+						if (it->nsNameId == BUILTIN_STRINGS::STRING_WILDCARD || it->nsNameId == child->nodenamespace_uri)
+						{
+							ret.push_back(child);
+							break;
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1315,11 +1330,26 @@ void XML::getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAt
 	for (uint32_t i = 0; i < childrenlist->nodes.size(); i++)
 	{
 		_NR<XML> child= childrenlist->nodes[i];
-		if(!bIsAttribute && (name=="" || name=="*" || (name == child->nodename && (ns == BUILTIN_STRINGS::STRING_WILDCARD || ns == child->nodenamespace_uri))))
+		if(!name.isAttribute)
 		{
-			ret.push_back(child);
+			if(nodename=="" || nodename=="*" || (nodename == child->nodename))
+			{
+				if (name.ns.empty())
+					ret.push_back(child);
+				else
+				{
+					for (auto it = name.ns.begin(); it != name.ns.end(); it++)
+					{
+						if (it->nsNameId == BUILTIN_STRINGS::STRING_WILDCARD || it->nsNameId == child->nodenamespace_uri)
+						{
+							ret.push_back(child);
+							break;
+						}
+					}
+				}
+			}
 		}
-		child->getDescendantsByQName(name, ns, bIsAttribute, ret);
+		child->getDescendantsByQName(name, ret);
 	}
 }
 

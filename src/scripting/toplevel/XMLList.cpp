@@ -393,8 +393,10 @@ ASFUNCTIONBODY_ATOM(XMLList,descendants)
 	ARG_CHECK(ARG_UNPACK(name,_NR<ASObject>(abstract_s(wrk,"*"))));
 	XML::XMLVector res;
 	multiname mname(nullptr);
+	mname.name_s_id = name->toStringId();
+	mname.name_type = multiname::NAME_STRING;
 	name->applyProxyProperty(mname);
-	th->getDescendantsByQName(name->toString(),BUILTIN_STRINGS::EMPTY,mname.isAttribute,res);
+	th->getDescendantsByQName(mname,res);
 	ret = asAtomHandler::fromObject(create(wrk,res,th->targetobject,multiname(nullptr)));
 }
 
@@ -1043,12 +1045,12 @@ bool XMLList::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 	return bdeleted;
 }
 
-void XMLList::getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAttribute, XML::XMLVector& ret)
+void XMLList::getDescendantsByQName(const multiname& name, XML::XMLVector& ret)
 {
 	auto it=nodes.begin();
 	for(; it!=nodes.end(); ++it)
 	{
-		(*it)->getDescendantsByQName(name, ns, bIsAttribute, ret);
+		(*it)->getDescendantsByQName(name, ret);
 	}
 }
 

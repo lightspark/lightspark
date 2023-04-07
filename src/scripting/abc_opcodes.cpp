@@ -2515,23 +2515,13 @@ void ABCVm::getDescendants(call_context* th, int n)
 	{
 		XML* xmlObj=Class<XML>::cast(obj);
 		targetobject = xmlObj->getChildrenlist();
-		uint32_t ns_uri = BUILTIN_STRINGS::STRING_WILDCARD;
-		if (name->ns.size() > 0)
-			ns_uri = name->ns[0].nsNameId;
-		xmlObj->getDescendantsByQName(name->normalizedName(th->sys), ns_uri,name->isAttribute, ret);
+		xmlObj->getDescendantsByQName(*name, ret);
 	}
 	else if(obj->getClass()==Class<XMLList>::getClass(th->sys))
 	{
 		XMLList* xmlObj=Class<XMLList>::cast(obj);
-		uint32_t ns_uri = BUILTIN_STRINGS::EMPTY;
-		if (name->ns.size() > 0)
-		{
-			ns_uri = name->ns[0].nsNameId;
-			if (ns_uri == BUILTIN_STRINGS::EMPTY && name->ns.size() == 1)
-				ns_uri=BUILTIN_STRINGS::STRING_WILDCARD;
-		}
 		targetobject = xmlObj;
-		xmlObj->getDescendantsByQName(name->normalizedName(th->sys), ns_uri,name->isAttribute, ret);
+		xmlObj->getDescendantsByQName(*name, ret);
 	}
 	else if(obj->is<Proxy>())
 	{

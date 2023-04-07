@@ -157,7 +157,7 @@ public:
 	XMLList* getChildrenlist() { return childrenlist ? childrenlist.getPtr() : nullptr; }
 	
 	
-	void getDescendantsByQName(const tiny_string& name, uint32_t ns, bool bIsAttribute, XMLVector& ret) const;
+	void getDescendantsByQName(const multiname& name, XMLVector& ret) const;
 	void getElementNodes(const tiny_string& name, XMLVector& foundElements);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;

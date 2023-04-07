@@ -4770,7 +4770,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						}
 					}
 				}
-				else if (!function->fromNewFunction && !function->isStatic)
+				else if (!function->fromNewFunction && !function->isStatic && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic))
 				{
 					asAtom o=asAtomHandler::invalidAtom;
 					GET_VARIABLE_RESULT r = GETVAR_NORMAL;

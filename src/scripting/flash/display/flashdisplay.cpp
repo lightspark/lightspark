@@ -4554,7 +4554,8 @@ void Stage::advanceFrame(bool implicit)
 		while (dobj)
 		{
 			dobj->incRef();
-			dobj->advanceFrame(implicit);
+			if (!dobj->needsActionScript3())
+				dobj->advanceFrame(implicit);
 			avm1DisplayObjectMutex.lock();
 			if (!dobj->avm1NextDisplayObject && !dobj->avm1PrevDisplayObject) // clip was removed from list during frame advance
 			{
@@ -6476,6 +6477,17 @@ void MovieClip::constructionComplete()
 	{
 		advanceFrame(true);
 		initFrame();
+		if (getSystemState()->getSwfVersion()>= 10 && state.explicit_FP && needsActionScript3() && getParent())
+		{
+			// it seems that adobe executes framescripts in a very weird way whenever playhead ist explicitely changed (gotoandstop, nextframe etc.):
+			// - first child of new frame is declared
+			// - constructor of first child is called
+			// - inside constructor super constructor is called
+			// - this leads to calling the builtin constructor
+			// - the framescript of the current frame is called 
+			// - the rest of the constructor of the first child is executed
+			getParent()->executeFrameScript();
+		}
 	}
 }
 void MovieClip::afterConstruction()

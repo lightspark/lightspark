@@ -1712,7 +1712,7 @@ void DisplayObject::executeFrameScript()
 
 bool DisplayObject::needsActionScript3() const
 {
-	return this->loadedFrom->usesActionScript3;
+	return this->loadedFrom && this->loadedFrom->usesActionScript3;
 }
 
 void DisplayObject::constructionComplete()

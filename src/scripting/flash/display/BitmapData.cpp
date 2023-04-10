@@ -238,7 +238,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	th->notifyUsers();
 }
 
-void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap)
+void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap, AS_BLENDMODE blendMode)
 {
 	if (forCachedBitmap)
 		d->incRef();
@@ -348,8 +348,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		return;
 	}
 
-	if(!(blendMode.empty() || blendMode == "null") || !clipRect.isNull())
-		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support many parameters:"<<ctransform.isNull()<<" "<<clipRect.isNull()<<" "<<blendMode);
+	if(!clipRect.isNull())
+		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support clipRect parameter");
 
 	if(drawable->is<BitmapData>())
 	{
@@ -373,13 +373,27 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
-		d->DrawToBitmap(th,initialMatrix,true,false);
+		AS_BLENDMODE bl = BLENDMODE_NORMAL;
+		if (blendMode == "add") bl = BLENDMODE_ADD;
+		else if (blendMode == "alpha") bl = BLENDMODE_ALPHA;
+		else if (blendMode == "darken") bl = BLENDMODE_DARKEN;
+		else if (blendMode == "difference") bl = BLENDMODE_DIFFERENCE;
+		else if (blendMode == "erase") bl = BLENDMODE_ERASE;
+		else if (blendMode == "hardlight") bl = BLENDMODE_HARDLIGHT;
+		else if (blendMode == "invert") bl = BLENDMODE_INVERT;
+		else if (blendMode == "layer") bl = BLENDMODE_LAYER;
+		else if (blendMode == "lighten") bl = BLENDMODE_LIGHTEN;
+		else if (blendMode == "multiply") bl = BLENDMODE_MULTIPLY;
+		else if (blendMode == "overlay") bl = BLENDMODE_OVERLAY;
+		else if (blendMode == "screen") bl = BLENDMODE_SCREEN;
+		else if (blendMode == "subtract") bl = BLENDMODE_SUBTRACT;
+		
+		d->DrawToBitmap(th,initialMatrix,true,false,bl);
 		if (ctransform)
 			ctransform->applyTransformation(th->pixels->getData(),th->getBitmapContainer()->getWidth()*th->getBitmapContainer()->getHeight()*4);
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());
-
 	th->notifyUsers();
 }
 

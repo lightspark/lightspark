@@ -125,7 +125,10 @@ const CachedSurface& GLRenderContext::getCachedSurface(const DisplayObject* d) c
 	return d->cachedSurface;
 }
 
-void GLRenderContext::setProperties(AS_BLENDMODE blendmode)
+void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
+									 float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
+									 float redOffset, float greenOffset, float blueOffset, float alphaOffset,
+									 bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid, AS_BLENDMODE blendmode)
 {
 	// TODO handle other blend modes ,maybe with shaders ? (see https://github.com/jamieowen/glsl-blend)
 	switch (blendmode)
@@ -147,12 +150,6 @@ void GLRenderContext::setProperties(AS_BLENDMODE blendmode)
 			LOG(LOG_NOT_IMPLEMENTED,"renderTextured of blend mode "<<(int)blendmode);
 			break;
 	}
-}
-void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
-									 float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
-									 float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-									 bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid)
-{
 	if (isMask)
 	{
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(maskframebuffer);
@@ -483,11 +480,50 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, uint8_t* sourceBuf, ui
 void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid)
+			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid, AS_BLENDMODE blendmode)
 {
 	if (colorMode != RGB_MODE)
 		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured colorMode not implemented:"<<(int)colorMode);
 	cairo_save(cr);
+	switch (blendmode)
+	{
+		case BLENDMODE_NORMAL:
+			cairo_set_operator(cr,CAIRO_OPERATOR_OVER);
+			break;
+		case BLENDMODE_MULTIPLY:
+			cairo_set_operator(cr,CAIRO_OPERATOR_MULTIPLY);
+			break;
+		case BLENDMODE_ADD:
+			cairo_set_operator(cr,CAIRO_OPERATOR_ADD);
+			break;
+		case BLENDMODE_SCREEN:
+			cairo_set_operator(cr,CAIRO_OPERATOR_SCREEN);
+			break;
+		case BLENDMODE_LAYER:
+			cairo_set_operator(cr,CAIRO_OPERATOR_OVER);
+			break;
+		case BLENDMODE_DARKEN:
+			cairo_set_operator(cr,CAIRO_OPERATOR_DARKEN);
+			break;
+		case BLENDMODE_DIFFERENCE:
+			cairo_set_operator(cr,CAIRO_OPERATOR_DIFFERENCE);
+			break;
+		case BLENDMODE_HARDLIGHT:
+			cairo_set_operator(cr,CAIRO_OPERATOR_HARD_LIGHT);
+			break;
+		case BLENDMODE_LIGHTEN:
+			cairo_set_operator(cr,CAIRO_OPERATOR_LIGHTEN);
+			break;
+		case BLENDMODE_OVERLAY:
+			cairo_set_operator(cr,CAIRO_OPERATOR_OVERLAY);
+			break;
+		case BLENDMODE_ERASE:
+			cairo_set_operator(cr,CAIRO_OPERATOR_DEST_OUT);
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"cairo renderTextured of blend mode "<<(int)blendmode);
+			break;
+	}
 	if (isMask)
 		cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
 	else
@@ -671,45 +707,6 @@ const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d
 		return invalidSurface;
 	}
 	return ret->second;
-}
-
-void CairoRenderContext::setProperties(AS_BLENDMODE blendmode)
-{
-	switch (blendmode)
-	{
-		case BLENDMODE_NORMAL:
-			break;
-		case BLENDMODE_MULTIPLY:
-			cairo_set_operator(cr,CAIRO_OPERATOR_MULTIPLY);
-			break;
-		case BLENDMODE_ADD:
-			cairo_set_operator(cr,CAIRO_OPERATOR_ADD);
-			break;
-		case BLENDMODE_SCREEN:
-			cairo_set_operator(cr,CAIRO_OPERATOR_SCREEN);
-			break;
-		case BLENDMODE_LAYER:
-			cairo_set_operator(cr,CAIRO_OPERATOR_OVER);
-			break;
-		case BLENDMODE_DARKEN:
-			cairo_set_operator(cr,CAIRO_OPERATOR_DARKEN);
-			break;
-		case BLENDMODE_DIFFERENCE:
-			cairo_set_operator(cr,CAIRO_OPERATOR_DIFFERENCE);
-			break;
-		case BLENDMODE_HARDLIGHT:
-			cairo_set_operator(cr,CAIRO_OPERATOR_HARD_LIGHT);
-			break;
-		case BLENDMODE_LIGHTEN:
-			cairo_set_operator(cr,CAIRO_OPERATOR_LIGHTEN);
-			break;
-		case BLENDMODE_OVERLAY:
-			cairo_set_operator(cr,CAIRO_OPERATOR_OVERLAY);
-			break;
-		default:
-			LOG(LOG_NOT_IMPLEMENTED,"renderTextured of blend mode "<<(int)blendmode);
-			break;
-	}
 }
 
 CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf, bool isBufferOwner)

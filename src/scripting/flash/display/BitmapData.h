@@ -56,7 +56,7 @@ public:
 	/*
 	 * Utility method to draw a DisplayObject on the surface
 	 */
-	void drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap);
+	void drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap, AS_BLENDMODE blendMode);
 	ASPROPERTY_GETTER(bool, transparent);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(dispose);

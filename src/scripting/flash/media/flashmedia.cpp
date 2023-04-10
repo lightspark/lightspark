@@ -246,7 +246,6 @@ bool Video::renderImpl(RenderContext& ctxt)
 	if (valid)
 	{
 		//All operations here should be non blocking
-		ctxt.setProperties(this->getBlendMode());
 		MATRIX totalMatrix = getParent()->getConcatenatedMatrix();
 
 		float scalex;
@@ -260,7 +259,7 @@ bool Video::renderImpl(RenderContext& ctxt)
 			clippedAlpha(), RenderContext::YUV_MODE,
 			1.0f,1.0f,1.0f,1.0f,
 			0.0f,0.0f,0.0f,0.0f,
-			false,false,0.0,RGB(),SMOOTH_MODE::SMOOTH_NONE,totalMatrix);
+			false,false,0.0,RGB(),SMOOTH_MODE::SMOOTH_NONE,totalMatrix,nullptr,this->getBlendMode());
 		if (!videotag)
 			netStream->unlock();
 		return false;

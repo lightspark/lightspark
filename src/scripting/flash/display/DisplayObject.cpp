@@ -377,7 +377,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 }
 bool DisplayObject::computeCacheAsBitmap(bool checksize)
 {
-	if (cacheAsBitmap || (!filters.isNull() && filters->size()!=0))// || blendMode==BLENDMODE_LAYER)
+	if (cacheAsBitmap || (!filters.isNull() && filters->size()!=0) || blendMode==BLENDMODE_LAYER)
 	{
 		if (checksize)
 		{
@@ -790,7 +790,6 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	Rectangle* r = this->scalingGrid.getPtr();
 	if (!r && getParent())
 		r = getParent()->scalingGrid.getPtr();
-	ctxt.setProperties(bl);
 	ctxt.lsglLoadIdentity();
 	if (surface.isMask)
 		ctxt.currentMask=this;
@@ -800,7 +799,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
 			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
 			surface.redOffset, surface.greenOffset, surface.blueOffset, surface.alphaOffset,
-			surface.isMask, !surface.mask.isNull(),0.0,RGB(),surface.smoothing,surface.matrix,r);
+			surface.isMask, !surface.mask.isNull(),0.0,RGB(),surface.smoothing,surface.matrix,r,bl);
 	return false;
 }
 
@@ -1813,7 +1812,7 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 			MATRIX m=mask->getConcatenatedMatrix();
 			m.x0 -= xmin;
 			m.y0 -= ymin;
-			data->drawDisplayObject(mask.getPtr(), m,false,false);
+			data->drawDisplayObject(mask.getPtr(), m,false,false,mask->blendMode);
 			_R<Bitmap> bmp(Class<Bitmap>::getInstanceS(getInstanceWorker(),data));
 
 			//The created bitmap is already correctly scaled and rotated
@@ -1858,7 +1857,7 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 	if (mask.isNull() && !isMask)
 		mask = target->mask;
 }
-void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool smoothing, bool forcachedbitmap)
+void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode)
 {
 	DisplayObjectContainer* origparent=this->parent;
 	number_t origrotation = this->rotation;
@@ -1873,7 +1872,7 @@ void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool
 	this->sy=1;
 	this->tx=0;
 	this->ty=0;
-	bm->drawDisplayObject(this, initialMatrix,smoothing,forcachedbitmap);
+	bm->drawDisplayObject(this, initialMatrix,smoothing,forcachedbitmap,blendMode);
 	// reset position to original settings
 	this->parent=origparent;
 	this->rotation=origrotation;
@@ -1928,8 +1927,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		MATRIX m0=m;
 		m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));
 		m0.scale(scalex, scaley);
-		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,true,true);
-		cachedBitmap->blendMode=this->blendMode;
+		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,true,true,this->blendMode);
 		applyFilters(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0, scalex, scaley);
 		// apply colortransform for cached bitmap after the filters are applied
 		ColorTransform* ct = colorTransform.getPtr();

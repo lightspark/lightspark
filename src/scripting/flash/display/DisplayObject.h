@@ -348,7 +348,7 @@ public:
 	void AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> obj);
 	AVM1Function *AVM1GetFunction(uint32_t nameID);
 	virtual void AVM1AfterAdvance() {}
-	void DrawToBitmap(BitmapData* bm, const MATRIX& initialMatrix, bool smoothing, bool forcachedbitmap);
+	void DrawToBitmap(BitmapData* bm, const MATRIX& initialMatrix, bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode);
 	std::string toDebugString() const override;
 };
 }

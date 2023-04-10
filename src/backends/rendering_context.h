@@ -65,12 +65,11 @@ public:
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
 			bool isMask, bool hasMask, float directMode, RGB directColor,SMOOTH_MODE smooth, const MATRIX& matrix,
-			Rectangle* scalingGrid=nullptr)=0;
+			Rectangle* scalingGrid=nullptr, AS_BLENDMODE blendmode=BLENDMODE_NORMAL)=0;
 	/**
 	 * Get the right CachedSurface from an object
 	 */
 	virtual const CachedSurface& getCachedSurface(const DisplayObject* obj) const=0;
-	virtual void setProperties(AS_BLENDMODE blendmode) = 0;
 };
 
 class GLRenderContext: public RenderContext
@@ -123,13 +122,12 @@ public:
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
 			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
-			Rectangle* scalingGrid=nullptr) override;
+			Rectangle* scalingGrid=nullptr, AS_BLENDMODE blendmode=BLENDMODE_NORMAL) override;
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the OpenGL case we just get the CachedSurface inside the object itself
 	 */
 	const CachedSurface& getCachedSurface(const DisplayObject* obj) const override;
-	void setProperties(AS_BLENDMODE blendmode) override;
 
 	/* Utility */
 	bool handleGLErrors() const;
@@ -153,13 +151,12 @@ public:
 			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
 			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
 			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
-			Rectangle* scalingGrid=nullptr) override;
+			Rectangle* scalingGrid=nullptr, AS_BLENDMODE blendmode=BLENDMODE_NORMAL) override;
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the Cairo case we get the right CachedSurface out of the map
 	 */
 	const CachedSurface& getCachedSurface(const DisplayObject* obj) const override;
-	void setProperties(AS_BLENDMODE blendmode) override;
 
 	/**
 	 * The CairoRenderContext acquires the ownership of the buffer

@@ -1854,7 +1854,6 @@ bool TextField::renderImpl(RenderContext& ctxt)
 			std::vector<IDrawable::MaskData> masks2;
 			totalMatrix2=getConcatenatedMatrix(true);
 			computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,mask);
-			ctxt.setProperties(bl);
 			if (this->border)
 			{
 				MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(bxmax-bxmin, bymax-bymin));
@@ -1862,13 +1861,13 @@ bool TextField::renderImpl(RenderContext& ctxt)
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, this->borderColor,SMOOTH_MODE::SMOOTH_NONE, m);
+						isMask, mask,3.0, this->borderColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 				m = totalMatrix2.multiplyMatrix(MATRIX(bxmax-bxmin-2, bymax-bymin-2, 0, 0, 1, 1));
 				m.scale(scalex, scaley);
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m);
+						isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 			}
 			else if (this->background)
 			{
@@ -1877,7 +1876,7 @@ bool TextField::renderImpl(RenderContext& ctxt)
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m);
+						isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 			}
 
 			if (this->caretblinkstate)
@@ -1900,7 +1899,7 @@ bool TextField::renderImpl(RenderContext& ctxt)
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
 						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m);
+						isMask, mask,3.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 			}
 		}
 		number_t ypos=-TEXTFIELD_PADDING/yscale;
@@ -1935,13 +1934,12 @@ bool TextField::renderImpl(RenderContext& ctxt)
 					totalMatrix2=getConcatenatedMatrix(true);
 					computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,mask);
 					computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
-					ctxt.setProperties(bl);
 					MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(1 / (xscale*scalex), 1 / (yscale*scaley), 0, 0, xpos, ypos));
 					m.scale(scalex, scaley);
 					ctxt.renderTextured(*tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
 										redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 										redOffset, greenOffset, blueOffset, alphaOffset,
-										isMask, mask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m);
+										isMask, mask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 					xpos += adv ? adv : bxmax-bxmin;
 				}
 				else

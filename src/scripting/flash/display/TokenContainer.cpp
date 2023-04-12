@@ -674,7 +674,7 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			case SET_STROKE:
 			{
 				GeomToken p1(*(++it),false);
-				strokeWidth = (double)(p1.lineStyle->Width / 20.0);
+				strokeWidth = (double)(p1.lineStyle->Width);
 				break;
 			}
 			case SET_FILL:
@@ -722,7 +722,7 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 			case SET_STROKE:
 			{
 				GeomToken p1(*(++it2),false);
-				strokeWidth = (double)(p1.lineStyle->Width / 20.0);
+				strokeWidth = (double)(p1.lineStyle->Width);
 				break;
 			}
 			case SET_FILL:

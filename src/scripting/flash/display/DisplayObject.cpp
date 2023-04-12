@@ -409,6 +409,11 @@ bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
 		if (!isMask() && cachedAsBitmapOf && cachedAsBitmapOf->computeCacheAsBitmap() && (q && !q->isSoftwareQueue))
 		{
 			cachedAsBitmapOf->hasChanged=true;
+			if (getNeedsTextureRecalculation())
+			{
+				cachedAsBitmapOf->setNeedsTextureRecalculation(true);
+				resetNeedsTextureRecalculation();
+			}
 			cachedAsBitmapOf->incRef();
 			q->addToInvalidateQueue(_MR(cachedAsBitmapOf));
 			return true;
@@ -777,10 +782,10 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	if (surface.tex->width == 0 || surface.tex->height == 0)
 		return true;
 
-	AS_BLENDMODE bl = this->blendMode;
-	if (bl == BLENDMODE_NORMAL)
+	AS_BLENDMODE bl = surface.blendmode; // surface.blendmode may be set to something different when rendering to bitmap
+	if (bl == BLENDMODE_NORMAL) 
 	{
-		DisplayObject* obj = this->getParent();
+		DisplayObject* obj = this;
 		while (obj && bl == BLENDMODE_NORMAL)
 		{
 			bl = obj->getBlendMode();
@@ -1376,6 +1381,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setBlendMode)
 	else if (val == "overlay") th->blendMode = BLENDMODE_OVERLAY;
 	else if (val == "screen") th->blendMode = BLENDMODE_SCREEN;
 	else if (val == "subtract") th->blendMode = BLENDMODE_SUBTRACT;
+	if (th->computeCacheAsBitmap() && !th->cachedAsBitmapOf && th->is<DisplayObjectContainer>())
+		th->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(th);
+	
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,localToGlobal)
@@ -1922,7 +1930,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		if (!sizeOk)
 		{
 			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getInstanceWorker(),w,h));
-			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getInstanceWorker(),data,false));
+			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getInstanceWorker(),data,false,this));
 		}
 		MATRIX m0=m;
 		m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));

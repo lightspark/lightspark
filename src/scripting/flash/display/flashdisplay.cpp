@@ -1357,6 +1357,8 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, D
 
 _NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
+	if (this->getTagID()==198)
+		LOG(LOG_ERROR,"hittest:"<<this->toDebugString()<<" "<<x<<"x"<<y<<" "<<type<<" "<<interactiveObjectsOnly);
 	//Did we hit a children?
 	_NR<DisplayObject> ret = NullRef;
 	if (dragged) // no hitting when in drag/drop mode
@@ -2732,6 +2734,8 @@ void DisplayObjectContainer::setChildrenCachedAsBitmapOf(DisplayObject* cachedBi
 	{
 		if ((*it)->is<DisplayObjectContainer>())
 			(*it)->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(cachedBitmapObject);
+		else
+			(*it)->cachedAsBitmapOf=cachedBitmapObject;
 	}
 }
 
@@ -3195,8 +3199,8 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    " (" << pos.x << "," << pos.y << ") " <<
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
-		    ((*it)->isMask() ? "m" : "") << " cd=" <<(*it)->ClipDepth<<" "<<" ca=" <<(*it)->computeCacheAsBitmap()<<" "<<
-			"a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name));
+		    ((*it)->isMask() ? "m" : "") << " cd=" <<(*it)->ClipDepth<<" "<<" ca=" <<(*it)->computeCacheAsBitmap()<<"/"<<(*it)->cachedAsBitmapOf<<" "<<
+			"a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'");
 
 		if ((*it)->is<DisplayObjectContainer>())
 		{
@@ -3300,6 +3304,12 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		}
 		child->addStoredMember();
 	}
+	if (computeCacheAsBitmap())
+		child->cachedAsBitmapOf=this;
+	else
+		child->cachedAsBitmapOf=cachedAsBitmapOf;
+	if (child->is<DisplayObjectContainer>())
+		child->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(child->cachedAsBitmapOf);
 	if (!onStage || child != getSystemState()->mainClip)
 		child->setOnStage(onStage,false,inskipping);
 }
@@ -3318,6 +3328,10 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 			return getSystemState()->isInResetParentList(child);
 	}
 	child->setOnStage(false,false,inskipping);
+	child->cachedAsBitmapOf=nullptr;
+	if (child->is<DisplayObjectContainer>())
+		child->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(nullptr);
+
 	{
 		Locker l(mutexDisplayList);
 		auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
@@ -4962,7 +4976,7 @@ void StageDisplayState::sinit(Class_base* c)
 }
 
 Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
-	DisplayObject(wrk,c),smoothing(false)
+	DisplayObject(wrk,c),cachedBitmapOwner(nullptr),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	if(li)
@@ -5007,7 +5021,7 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li, std::istream *s
 	afterConstruction();
 }
 
-Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload) : DisplayObject(wrk,c),smoothing(false)
+Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload, DisplayObject* owner) : DisplayObject(wrk,c),cachedBitmapOwner(owner),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	bitmapData = data;
@@ -5024,6 +5038,7 @@ bool Bitmap::destruct()
 	if(!bitmapData.isNull())
 		bitmapData->removeUser(this);
 	bitmapData.reset();
+	cachedBitmapOwner=nullptr;
 	smoothing = false;
 	return DisplayObject::destruct();
 }
@@ -5031,6 +5046,7 @@ bool Bitmap::destruct()
 void Bitmap::finalize()
 {
 	bitmapData.reset();
+	cachedBitmapOwner=nullptr;
 	DisplayObject::finalize();
 }
 
@@ -5041,6 +5057,13 @@ void Bitmap::prepareShutdown()
 	ASObject::prepareShutdown();
 	if (bitmapData)
 		bitmapData->prepareShutdown();
+}
+
+void Bitmap::setOnStage(bool staged, bool force, bool inskipping)
+{
+	DisplayObject::setOnStage(staged,force,inskipping);
+	if (bitmapData && isOnStage())
+		bitmapData->checkForUpload();
 }
 
 void Bitmap::sinit(Class_base* c)
@@ -5121,9 +5144,23 @@ void Bitmap::updatedData()
 			cachedSurface.tex=nullptr;
 		return;
 	}
+	if (this->isOnStage())
+		bitmapData->checkForUpload();
 	cachedSurface.tex = &bitmapData->getBitmapContainer()->bitmaptexture;
 	cachedSurface.isChunkOwner=false;
 	hasChanged=true;
+	DisplayObject* d = this->cachedBitmapOwner;
+	if (d)
+	{
+		d->hasChanged=true;
+		d->setNeedsTextureRecalculation();
+		if(d->isOnStage())
+		{
+			bitmapData->checkForUpload();
+			cachedSurface.isValid=true;
+			d->requestInvalidation(getSystemState());
+		}
+	}
 	if(onStage)
 	{
 		cachedSurface.isValid=true;
@@ -6492,12 +6529,11 @@ void MovieClip::constructionComplete()
 }
 void MovieClip::afterConstruction()
 {
-	// set framescript of frame 0 after construction is completed
-	// only if state.FP was not changed during construction
-	if(frameScripts.count(0) && state.FP == 0)
+	if(getSystemState()->getSwfVersion()>= 10 && frameScripts.count(0) && state.FP == 0)
 	{
-		this->incRef();
-		getVm(getSystemState())->prependEvent(NullRef, _MR(new (getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+		// execute framescript of frame 0 after construction is completed
+		// only if state.FP was not changed during construction
+		this->executeFrameScript();
 	}
 }
 

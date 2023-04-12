@@ -38,11 +38,11 @@
 using namespace lightspark;
 using namespace std;
 
-BitmapData::BitmapData(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),transparent(true)
+BitmapData::BitmapData(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),needsupload(true),transparent(true)
 {
 }
 
-BitmapData::BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b):ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(b),locked(0),transparent(true)
+BitmapData::BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b):ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(b),locked(0),needsupload(true),transparent(true)
 {
 	traitsInitialized = true;
 	constructIndicator = true;
@@ -50,7 +50,7 @@ BitmapData::BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b):ASObj
 }
 
 BitmapData::BitmapData(ASWorker* wrk,Class_base* c, const BitmapData& other)
-  : ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(other.pixels),locked(other.locked),transparent(other.transparent)
+  : ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(other.pixels),locked(other.locked),needsupload(other.needsupload),transparent(other.transparent)
 {
 	traitsInitialized = other.traitsInitialized;
 	constructIndicator = other.constructIndicator;
@@ -58,7 +58,7 @@ BitmapData::BitmapData(ASWorker* wrk,Class_base* c, const BitmapData& other)
 }
 
 BitmapData::BitmapData(ASWorker* wrk,Class_base* c, uint32_t width, uint32_t height)
- : ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),transparent(true)
+ : ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),needsupload(true),transparent(true)
 {
 	if (width!=0 && height!=0)
 	{
@@ -143,13 +143,7 @@ void BitmapData::addUser(Bitmap* b, bool startupload)
 	users.insert(b);
 	if (!startupload)
 		return;
-	if (!pixels.isNull())
-	{
-		if (pixels->checkTexture())
-		{
-			getSystemState()->getRenderThread()->addUploadJob(this->pixels.getPtr());
-		}
-	}
+	needsupload=true;
 	b->updatedData();
 }
 
@@ -158,18 +152,21 @@ void BitmapData::removeUser(Bitmap* b)
 	users.erase(b);
 }
 
-void BitmapData::notifyUsers() const
+void BitmapData::checkForUpload()
+{
+	if (!pixels.isNull() && needsupload)
+	{
+		if (pixels->checkTexture())
+			getSystemState()->getRenderThread()->addUploadJob(this->pixels.getPtr());
+		needsupload=false;
+	}
+}
+
+void BitmapData::notifyUsers()
 {
 	if (locked > 0 || users.empty())
 		return;
-
-	if (!pixels.isNull())
-	{
-		if (pixels->checkTexture())
-		{
-			getSystemState()->getRenderThread()->addUploadJob(this->pixels.getPtr());
-		}
-	}
+	needsupload=true;
 	for(auto it=users.begin();it!=users.end();it++)
 		(*it)->updatedData();
 }
@@ -311,6 +308,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.isMask=drawable->getIsMask();
 		surface.mask=drawable->getMask();
 		surface.matrix = drawable->getMatrix();
+		if (!forCachedBitmap)
+			surface.blendmode=blendMode;
 		surface.isValid=true;
 		surface.isInitialized=true;
 		delete drawable;

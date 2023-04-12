@@ -971,6 +971,7 @@ class Bitmap: public DisplayObject
 {
 friend class CairoTokenRenderer;
 private:
+	DisplayObject* cachedBitmapOwner;
 	void onBitmapData(_NR<BitmapData>);
 	void onSmoothingChanged(bool);
 	void onPixelSnappingChanged(tiny_string snapping);
@@ -983,11 +984,12 @@ public:
 	/* Call this after updating any member of 'data' */
 	void updatedData();
 	Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
-	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload=true);
+	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload=true, DisplayObject* owner=nullptr);
 	~Bitmap();
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
+	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;

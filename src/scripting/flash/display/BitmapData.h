@@ -35,10 +35,11 @@ class BitmapData: public ASObject, public IBitmapDrawable
 private:
 	_NR<BitmapContainer> pixels;
 	int locked;
+	bool needsupload;
 	//Avoid cycles by not using automatic references
 	//Bitmap will take care of removing itself when needed
 	std::set<Bitmap*> users;
-	void notifyUsers() const;
+	void notifyUsers();
 public:
 	BitmapData(ASWorker* wrk,Class_base* c);
 	BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b);
@@ -53,6 +54,7 @@ public:
 	int getHeight() const { return pixels->getHeight(); }
 	void addUser(Bitmap* b, bool startupload=true);
 	void removeUser(Bitmap* b);
+	void checkForUpload();
 	/*
 	 * Utility method to draw a DisplayObject on the surface
 	 */

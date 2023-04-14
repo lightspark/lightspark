@@ -488,7 +488,10 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						if (starttoken)
 						{
 							cairo_close_path(cr);
-							*starttoken=it-itbegin + 1 +(tokentype > 2 ? tokens.filltokens.size() : 0);
+							if (tokens.filltokens.empty())
+								*starttoken=-1;
+							else
+								*starttoken=it-itbegin + 1 +(tokentype > 2 ? tokens.filltokens.size() : 0);
 							tokentype=0;
 						}
 						break;

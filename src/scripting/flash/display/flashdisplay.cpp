@@ -1357,8 +1357,6 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, D
 
 _NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
-	if (this->getTagID()==198)
-		LOG(LOG_ERROR,"hittest:"<<this->toDebugString()<<" "<<x<<"x"<<y<<" "<<type<<" "<<interactiveObjectsOnly);
 	//Did we hit a children?
 	_NR<DisplayObject> ret = NullRef;
 	if (dragged) // no hitting when in drag/drop mode
@@ -6309,6 +6307,13 @@ void MovieClip::declareFrame(bool implicit)
 	LegacyChildEraseDeletionMarked();
 	if (needsActionScript3())
 		DisplayObjectContainer::declareFrame(implicit);
+	
+	if(getSystemState()->getSwfVersion()>= 10 && frameScripts.count(0) && state.FP == 0)
+	{
+		// execute framescript of frame 0 after declaration is completed
+		// only if state.FP was not changed during construction
+		this->executeFrameScript();
+	}
 }
 void MovieClip::AVM1AddScriptEvents()
 {
@@ -6529,12 +6534,6 @@ void MovieClip::constructionComplete()
 }
 void MovieClip::afterConstruction()
 {
-	if(getSystemState()->getSwfVersion()>= 10 && frameScripts.count(0) && state.FP == 0)
-	{
-		// execute framescript of frame 0 after construction is completed
-		// only if state.FP was not changed during construction
-		this->executeFrameScript();
-	}
 }
 
 Frame *MovieClip::getCurrentFrame()

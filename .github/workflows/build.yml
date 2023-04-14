@@ -92,7 +92,7 @@ jobs:
             libglew-dev \
             libavcodec-dev \
             libavformat-dev \
-            libavresample-dev \
+            libswresample-dev \
             libcairo2-dev \
             libpango1.0-dev \
             libpng-dev \
@@ -135,7 +135,7 @@ jobs:
             libglew-dev \
             libavcodec-dev \
             libavformat-dev \
-            libavresample-dev \
+            libswresample-dev \
             libcairo2-dev \
             libpango1.0-dev \
             libpng-dev \

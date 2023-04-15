@@ -385,6 +385,10 @@ int64_t ASObject::toInt64()
 		ASATOM_DECREF(ret);
 	return res;
 }
+number_t ASObject::toNumberForComparison()
+{
+	return toNumber();
+}
 
 /* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
 bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint)
@@ -3886,7 +3890,7 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 					}
 				}
 				default:
-					return ((a.intval>>3) < toInt(v2))?TTRUE:TFALSE;
+					return ((a.intval>>3) < getObjectNoCheck(v2)->toNumberForComparison())?TTRUE:TFALSE;
 			}
 			break;
 		}
@@ -3917,7 +3921,7 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 					}
 				}
 				default:
-					return ((a.uintval>>3) < toUInt(v2))?TTRUE:TFALSE;
+					return ((a.uintval>>3) < getObjectNoCheck(v2)->toNumberForComparison())?TTRUE:TFALSE;
 			}
 			break;
 		}
@@ -4159,7 +4163,7 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				case ATOM_STRINGPTR:
 					return (a.intval>>3)==toNumber(v2);
 				default:
-					return (a.intval>>3)==toInt(v2);
+					return (a.intval>>3)==getObjectNoCheck(v2)->toNumberForComparison();
 			}
 			break;
 		}
@@ -4192,7 +4196,7 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				case ATOM_STRINGPTR:
 					return (a.uintval>>3)==toNumber(v2);
 				default:
-					return (a.uintval>>3)==toUInt(v2);
+					return (a.uintval>>3)==getObjectNoCheck(v2)->toNumberForComparison();
 			}
 			break;
 		}
@@ -4255,7 +4259,7 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				case ATOM_STRINGPTR:
 					return getObject(a)->toInt64()==toNumber(v2);
 				default:
-					return getObject(a)->toInt64()==toInt64(v2);
+					return getObjectNoCheck(a)->toInt64()==getObjectNoCheck(v2)->toNumberForComparison();
 			}
 			break;
 		}

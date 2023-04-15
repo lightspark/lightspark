@@ -1238,6 +1238,7 @@ public:
 	uint16_t toUInt16();
 	/* Implements ECMA's 9.3 ToNumber operation, but returns the concrete value */
 	virtual number_t toNumber();
+	virtual number_t toNumberForComparison();
 	/* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
 	bool toPrimitive(asAtom& ret,bool& isrefcounted, TP_HINT hint = NO_HINT);
 	bool isPrimitive() const;

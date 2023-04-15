@@ -2671,7 +2671,7 @@ number_t XML::toNumber()
 {
 	if (!hasSimpleContent())
 		return 0;
-	return parseNumber(toString_priv());
+	return parseNumber(toString_priv(),getSystemState()->getSwfVersion()<11);
 }
 
 bool XML::nodesEqual(XML *a, XML *b) const

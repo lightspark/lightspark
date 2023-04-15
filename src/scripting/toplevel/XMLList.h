@@ -116,6 +116,7 @@ public:
 	int32_t toInt() override;
 	int64_t toInt64() override;
 	number_t toNumber() override;
+	number_t toNumberForComparison() override;
 	bool isEqual(ASObject* r) override;
 	uint32_t nextNameIndex(uint32_t cur_index) override;
 	void nextName(asAtom &ret, uint32_t index) override;

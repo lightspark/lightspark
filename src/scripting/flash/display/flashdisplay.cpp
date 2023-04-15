@@ -6308,10 +6308,10 @@ void MovieClip::declareFrame(bool implicit)
 	if (needsActionScript3())
 		DisplayObjectContainer::declareFrame(implicit);
 	
-	if(getSystemState()->getSwfVersion()>= 10 && frameScripts.count(0) && state.FP == 0)
+	if(this->isOnStage() && getSystemState()->getSwfVersion()>= 10 && frameScripts.count(0) && state.FP == 0)
 	{
 		// execute framescript of frame 0 after declaration is completed
-		// only if state.FP was not changed during construction
+		// only if we are already on stage and state.FP was not changed during construction
 		this->executeFrameScript();
 	}
 }
@@ -6534,6 +6534,12 @@ void MovieClip::constructionComplete()
 }
 void MovieClip::afterConstruction()
 {
+	if(this->isOnStage() && getSystemState()->getSwfVersion()>= 10 && frameScripts.count(0) && state.FP == 0)
+	{
+		// execute framescript of frame 0 after construction is completed
+		// only if state.FP was not changed during construction and script was not already executed after declaration
+		this->executeFrameScript();
+	}
 }
 
 Frame *MovieClip::getCurrentFrame()

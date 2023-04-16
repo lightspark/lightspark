@@ -1236,31 +1236,28 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getBounds)
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	assert_and_throw(argslen==1);
 
-	if(asAtomHandler::is<Undefined>(args[0]) || asAtomHandler::is<Null>(args[0]))
-	{
-		ret =  asAtomHandler::fromObject(Class<Rectangle>::getInstanceS(wrk));
-		return;
-	}
 	if (!asAtomHandler::is<DisplayObject>(args[0]))
 		LOG(LOG_ERROR,"DisplayObject.getBounds invalid type:"<<asAtomHandler::toDebugString(args[0]));
-	assert_and_throw(asAtomHandler::is<DisplayObject>(args[0]));
-	DisplayObject* target=asAtomHandler::as<DisplayObject>(args[0]);
-	//Compute the transformation matrix
 	MATRIX m;
-	DisplayObject* cur=th;
-	while(cur!=nullptr && cur!=target)
+	if (asAtomHandler::is<DisplayObject>(args[0]))
 	{
-		m = cur->getMatrix().multiplyMatrix(m);
-		cur=cur->parent;
-	}
-	if(cur==nullptr)
-	{
-		//We crawled all the parent chain without finding the target
-		//The target is unrelated, compute it's transformation matrix
-		const MATRIX& targetMatrix=target->getConcatenatedMatrix();
-		//If it's not invertible just use the previous computed one
-		if(targetMatrix.isInvertible())
-			m = targetMatrix.getInverted().multiplyMatrix(m);
+		DisplayObject* target=asAtomHandler::as<DisplayObject>(args[0]);
+		//Compute the transformation matrix
+		DisplayObject* cur=th;
+		while(cur!=nullptr && cur!=target)
+		{
+			m = cur->getMatrix().multiplyMatrix(m);
+			cur=cur->parent;
+		}
+		if(cur==nullptr)
+		{
+			//We crawled all the parent chain without finding the target
+			//The target is unrelated, compute it's transformation matrix
+			const MATRIX& targetMatrix=target->getConcatenatedMatrix();
+			//If it's not invertible just use the previous computed one
+			if(targetMatrix.isInvertible())
+				m = targetMatrix.getInverted().multiplyMatrix(m);
+		}
 	}
 
 	Rectangle* res=Class<Rectangle>::getInstanceS(wrk);

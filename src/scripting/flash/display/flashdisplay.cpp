@@ -1367,11 +1367,14 @@ _NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HI
 		localToGlobal(x,y,xout,yout);
 		hitArea->globalToLocal(xout,yout,xout2,yout2);
 		ret = hitArea->hitTestImpl(xout2,yout2, type,interactiveObjectsOnly);
+		if (!ret.isNull())
+		{
+			this->incRef();
+			ret = _MR(this);
+		}
+		return ret;
 	}
-	if (ret.isNull())
-	{
-		ret = DisplayObjectContainer::hitTestImpl(x,y, type,interactiveObjectsOnly);
-	}
+	ret = DisplayObjectContainer::hitTestImpl(x,y, type,interactiveObjectsOnly);
 	if (ret.isNull() && hitArea.isNull())
 	{
 		//The coordinates are locals

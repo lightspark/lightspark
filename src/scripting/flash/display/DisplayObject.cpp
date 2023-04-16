@@ -1236,8 +1236,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getBounds)
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	assert_and_throw(argslen==1);
 
-	if (!asAtomHandler::is<DisplayObject>(args[0]))
-		LOG(LOG_ERROR,"DisplayObject.getBounds invalid type:"<<asAtomHandler::toDebugString(args[0]));
 	MATRIX m;
 	if (asAtomHandler::is<DisplayObject>(args[0]))
 	{

@@ -3200,7 +3200,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    " (" << pos.x << "," << pos.y << ") " <<
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
-		    ((*it)->isMask() ? "m" : "") << " cd=" <<(*it)->ClipDepth<<" "<<" ca=" <<(*it)->computeCacheAsBitmap()<<"/"<<(*it)->cachedAsBitmapOf<<" "<<
+		    ((*it)->isMask() ? "m" : "") << " cd=" <<(*it)->ClipDepth<<" ca=" <<(*it)->computeCacheAsBitmap()<<"/"<<(*it)->cachedAsBitmapOf<<" "<<
 			"a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'");
 
 		if ((*it)->is<DisplayObjectContainer>())
@@ -3305,14 +3305,14 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		}
 		child->addStoredMember();
 	}
+	if (!onStage || child != getSystemState()->mainClip)
+		child->setOnStage(onStage,false,inskipping);
 	if (computeCacheAsBitmap())
 		child->cachedAsBitmapOf=this;
 	else
 		child->cachedAsBitmapOf=cachedAsBitmapOf;
 	if (child->is<DisplayObjectContainer>())
 		child->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(child->cachedAsBitmapOf);
-	if (!onStage || child != getSystemState()->mainClip)
-		child->setOnStage(onStage,false,inskipping);
 }
 
 bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool inskipping)

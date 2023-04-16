@@ -939,7 +939,8 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			event->currentTarget=NullRef;
 		}
 	}
-
+	
+	bool stagehandled=false;
 	//Do bubbling phase
 	if(event->bubbles && !parents.empty())
 	{
@@ -947,6 +948,8 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		auto i = parents.begin();
 		for(;i!=parents.end();++i)
 		{
+			if ((*i)->is<Stage>())
+				stagehandled=true;
 			if (event->immediatePropagationStopped || event->propagationStopped)
 				break;
 			(*i)->incRef();
@@ -956,7 +959,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		}
 	}
 	// ensure that keyboard events are also handled for the stage
-	if (event->is<KeyboardEvent>() && !dispatcher->is<Stage>())
+	if (event->is<KeyboardEvent>() && !stagehandled && !dispatcher->is<Stage>() && dispatcher->is<DisplayObject>())
 	{
 		dispatcher->getSystemState()->stage->incRef();
 		event->currentTarget=_MR(dispatcher->getSystemState()->stage);

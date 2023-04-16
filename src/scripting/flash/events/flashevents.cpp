@@ -813,6 +813,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 	}
 	if(asAtomHandler::isValid(th->forcedTarget))
 		e->setTarget(th->forcedTarget);
+	else
+		e->setTarget(obj);
 	ABCVm::publicHandleEvent(th, e);
 	asAtomHandler::setBool(ret,true);
 }

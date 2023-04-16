@@ -256,7 +256,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		IDrawable* drawable=target->invalidate(d, initialMatrix,smoothing,&queue, nullptr);
 		if(drawable==nullptr)
 			continue;
-		if (forCachedBitmap)
+		if (forCachedBitmap && !target->isMask())
 			target->hasChanged=false;
 		//Compute the matrix for this object
 		bool isBufferOwner=true;

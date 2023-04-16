@@ -796,11 +796,14 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	if (!r && getParent())
 		r = getParent()->scalingGrid.getPtr();
 	ctxt.lsglLoadIdentity();
-	if (surface.isMask)
-		ctxt.currentMask=this;
-	// ensure that the matching mask is rendered before rendering this DisplayObject
-	if (ctxt.contextType == RenderContext::GL && surface.mask && ctxt.currentMask != surface.mask.getPtr())
-		surface.mask->defaultRender(ctxt);
+	if (ctxt.contextType == RenderContext::GL)
+	{
+		if (surface.isMask)
+			ctxt.currentMask=this;
+		// ensure that the matching mask is rendered before rendering this DisplayObject
+		if (surface.mask && ctxt.currentMask != surface.mask.getPtr())
+			surface.mask->defaultRender(ctxt);
+	}
 	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
 			surface.redMultiplier, surface.greenMultiplier, surface.blueMultiplier, surface.alphaMultiplier,
 			surface.redOffset, surface.greenOffset, surface.blueOffset, surface.alphaOffset,
@@ -1945,6 +1948,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 									,cachedBitmap->bitmapData->getBitmapContainer()->getWidth()*cachedBitmap->bitmapData->getBitmapContainer()->getHeight()*4);
 		}
 
+		cachedBitmap->setMask(this->mask);
 		cachedBitmap->resetNeedsTextureRecalculation();
 		cachedBitmap->hasChanged=true;
 		if (!this->cachedAsBitmapOf)

@@ -991,7 +991,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 		th->alpha=val;
 		th->hasChanged=true;
 		if(th->onStage)
-			th->requestInvalidation(wrk->getSystemState());
+			th->requestInvalidation(wrk->getSystemState(),th->computeCacheAsBitmap());
 	}
 }
 

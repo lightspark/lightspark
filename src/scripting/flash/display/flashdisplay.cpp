@@ -6257,6 +6257,7 @@ void MovieClip::declareFrame(bool implicit)
 	{
 		purgeLegacyChildren();
 		resetToStart();
+		traitsInitialized=false; // this ensures that the instance traits are properly setup again in setupDeclaredTraits
 	}
 	//Declared traits must exists before legacy objects are added
 	if (getClass())

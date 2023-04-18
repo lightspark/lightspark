@@ -1783,7 +1783,7 @@ bool TextField::renderImpl(RenderContext& ctxt)
 			d->Render(ctxt);
 		return false;
 	}
-	if (getText().empty() && !this->border && !this->background)
+	if (getText().empty() && !this->border && !this->background && !this->caretblinkstate)
 		return false;
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? this->loadedFrom->getEmbeddedFontByID(fontID) : this->loadedFrom->getEmbeddedFont(font));
 	if (!computeCacheAsBitmap() && (ctxt.contextType == RenderContext::GL) && embeddedfont && embeddedfont->hasGlyphs(getText()))

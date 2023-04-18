@@ -970,8 +970,15 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	}
 	if (event->type == "mouseDown" && dispatcher->is<InteractiveObject>())
 	{
-		dispatcher->incRef();
-		dispatcher->getSystemState()->stage->setFocusTarget(_MNR(dispatcher->as<InteractiveObject>()));
+		// only set new focus target if the current focus is not a child of the dispatcher
+		InteractiveObject* f = dispatcher->getSystemState()->stage->getFocusTarget().getPtr();
+		while (f && f != dispatcher)
+			f=f->getParent();
+		if (!f)
+		{
+			dispatcher->incRef();
+			dispatcher->getSystemState()->stage->setFocusTarget(_MNR(dispatcher->as<InteractiveObject>()));
+		}
 	}
 	if (dispatcher->is<DisplayObject>() || dispatcher->is<LoaderInfo>() || dispatcher->is<URLLoader>())
 		dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event.getPtr());

@@ -81,7 +81,7 @@ bool InputThread::worker(SDL_Event *event)
 		{
 			Locker locker(mutexDragged);
 			if (curDragged && !curDragged->isOnStage())
-				curDragged.reset();
+				stopDrag(curDragged.getPtr());
 		}
 	}
 	if (!m_sys || m_sys->isShuttingDown())

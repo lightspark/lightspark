@@ -3284,7 +3284,7 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 			return;
 		else
 		{
-			child->getParent()->_removeChild(child,inskipping);
+			child->getParent()->_removeChild(child,inskipping,this->isOnStage());
 		}
 	}
 	getSystemState()->removeFromResetParentList(child);
@@ -3315,7 +3315,7 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		child->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(child->cachedAsBitmapOf);
 }
 
-bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool inskipping)
+bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool inskipping, bool keeponstage)
 {
 	if(!child->getParent() || child->getParent()!=this)
 		return false;
@@ -3328,7 +3328,8 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
 	}
-	child->setOnStage(false,false,inskipping);
+	if (!keeponstage)
+		child->setOnStage(false,false,inskipping);
 	child->cachedAsBitmapOf=nullptr;
 	if (child->is<DisplayObjectContainer>())
 		child->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(nullptr);

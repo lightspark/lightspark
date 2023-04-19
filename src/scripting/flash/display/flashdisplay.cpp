@@ -422,8 +422,8 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytes)
 		if (th->bytesData->getLength() == 0 && wrk->getSystemState()->mainClip->parsethread)
 			wrk->getSystemState()->mainClip->parsethread->getSWFByteArray(th->bytesData.getPtr());
 	}
-	else if (!th->loader->getContent().isNull())
-		th->bytesData->writeObject(th->loader->getContent().getPtr(),wrk);
+	else if (th->loader->getContent())
+		th->bytesData->writeObject(th->loader->getContent(),wrk);
 	th->bytesData->incRef();
 	ret = asAtomHandler::fromObject(th->bytesData.getPtr());
 }
@@ -456,8 +456,8 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getWidth)
 		asAtomHandler::setInt(ret,wrk,0);
 		return;
 	}
-	_NR<DisplayObject> o=th->loader->getContent();
-	if (o.isNull())
+	DisplayObject* o=th->loader->getContent();
+	if (!o)
 	{
 		asAtomHandler::setInt(ret,wrk,0);
 		return;
@@ -480,8 +480,8 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getHeight)
 		asAtomHandler::setInt(ret,wrk,0);
 		return;
 	}
-	_NR<DisplayObject> o=th->loader->getContent();
-	if (o.isNull())
+	DisplayObject* o=th->loader->getContent();
+	if (!o)
 	{
 		asAtomHandler::setInt(ret,wrk,0);
 		return;
@@ -613,15 +613,15 @@ ASFUNCTIONBODY_ATOM(Loader,_getContent)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
 	Locker l(th->spinlock);
-	_NR<ASObject> res=th->content;
-	if(res.isNull())
+	ASObject* res=th->content;
+	if(!res)
 	{
 		asAtomHandler::setUndefined(ret);
 		return;
 	}
 
 	res->incRef();
-	ret = asAtomHandler::fromObject(res.getPtr());
+	ret = asAtomHandler::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Loader,_getContentLoaderInfo)
@@ -805,8 +805,9 @@ void Loader::unload()
 		for (auto j=jobs.begin(); j!=jobs.end(); j++)
 			(*j)->threadAbort();
 
-		content_copy=content.getPtr();
-		content.reset();
+		content_copy=content;
+		
+		content = nullptr;
 	}
 	
 	if(loaded)
@@ -822,6 +823,7 @@ void Loader::unload()
 	if(content_copy)
 	{
 		_removeChild(content_copy);
+		content_copy->removeStoredMember();
 	}
 
 	contentLoaderInfo->resetState();
@@ -830,7 +832,9 @@ void Loader::unload()
 void Loader::finalize()
 {
 	DisplayObjectContainer::finalize();
-	content.reset();
+	if (content)
+		content->removeStoredMember();
+	content=nullptr;
 	contentLoaderInfo.reset();
 	avm1target.reset();
 	uncaughtErrorEvents.reset();
@@ -840,11 +844,24 @@ bool Loader::destruct()
 	url = URLInfo();
 	loaded=false;
 	allowCodeImport=true;
-	content.reset();
+	if (content)
+		content->removeStoredMember();
+	content=nullptr;
 	contentLoaderInfo.reset();
 	avm1target.reset();
 	uncaughtErrorEvents.reset();
 	return DisplayObjectContainer::destruct();
+}
+
+bool Loader::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
+	Locker l(mutexDisplayList);
+	if (content)
+		ret = content->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 void Loader::prepareShutdown()
 {
@@ -860,7 +877,7 @@ void Loader::prepareShutdown()
 	if (uncaughtErrorEvents)
 		uncaughtErrorEvents->prepareShutdown();
 }
-Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(NullRef),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
+Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(nullptr),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
 {
 	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(wrk,this));
 }
@@ -907,7 +924,8 @@ void Loader::setContent(DisplayObject* o)
 	{
 		Locker l(spinlock);
 		o->incRef();
-		content=_MR(o);
+		o->addStoredMember();
+		content=o;
 		content->isLoadedRoot = true;
 		loaded=true;
 	}
@@ -2915,7 +2933,16 @@ void DisplayObjectContainer::purgeLegacyChildren()
 		if (i->first < 0)
 		{
 			legacyChildrenMarkedForDeletion.insert(i->first);
-			i->second->markedForLegacyDeletion=true;
+			DisplayObject* obj = i->second;
+			obj->markedForLegacyDeletion=true;
+			if(obj->name != BUILTIN_STRINGS::EMPTY)
+			{
+				multiname objName(nullptr);
+				objName.name_type=multiname::NAME_STRING;
+				objName.name_s_id=obj->name;
+				objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+				setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom,ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+			}
 		}
 		i++;
 	}
@@ -3010,27 +3037,6 @@ bool DisplayObjectContainer::countCylicMemberReferences(garbagecollectorstate& g
 		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
 	}
 	return ret;
-}
-
-void DisplayObjectContainer::prepareDestruction()
-{
-	DisplayObject::prepareDestruction();
-	bool done = false;
-	while (!done)
-	{
-		done = true;
-		uint32_t size = dynamicDisplayList.size();
-		for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
-		{
-			(*it)->prepareDestruction();
-			if (size != dynamicDisplayList.size())
-			{
-				// dynamicDisplayList was altered
-				done = false;
-				break;
-			}
-		}
-	}
 }
 
 void DisplayObjectContainer::cloneDisplayList(std::vector<Ref<DisplayObject> >& displayListCopy)
@@ -4161,6 +4167,8 @@ bool Stage::destruct()
 	root.reset();
 	stage3Ds.reset();
 	nativeWindow.reset();
+	for (auto it = hiddenobjects.begin(); it != hiddenobjects.end(); it++)
+		(*it)->removeStoredMember();
 	hiddenobjects.clear();
 	fullScreenSourceRect.reset();
 	softKeyboardRect.reset();
@@ -4195,6 +4203,8 @@ void Stage::finalize()
 	root.reset();
 	stage3Ds.reset();
 	nativeWindow.reset();
+	for (auto it = hiddenobjects.begin(); it != hiddenobjects.end(); it++)
+		(*it)->removeStoredMember();
 	hiddenobjects.clear();
 	fullScreenSourceRect.reset();
 	softKeyboardRect.reset();
@@ -6258,7 +6268,6 @@ void MovieClip::declareFrame(bool implicit)
 	{
 		purgeLegacyChildren();
 		resetToStart();
-		traitsInitialized=false; // this ensures that the instance traits are properly setup again in setupDeclaredTraits
 	}
 	//Declared traits must exists before legacy objects are added
 	if (getClass())

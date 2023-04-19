@@ -154,7 +154,6 @@ public:
 	void finalize() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
-	void prepareDestruction() override;
 	void cloneDisplayList(std::vector<_R<DisplayObject>>& displayListCopy);
 	bool hasLegacyChildAt(int32_t depth);
 	// this does not test if a DisplayObject exists at the provided depth
@@ -423,7 +422,7 @@ class Loader: public DisplayObjectContainer, public IDownloaderThreadListener
 {
 private:
 	mutable Mutex spinlock;
-	_NR<DisplayObject> content;
+	DisplayObject* content;
 	// There can be multiple jobs, one active and aborted ones
 	// that have not yet terminated
 	std::list<IThreadJob *> jobs;
@@ -440,6 +439,7 @@ public:
 	~Loader();
 	void finalize() override;
 	bool destruct() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	void prepareShutdown() override;
 	void threadFinished(IThreadJob* job) override;
 	static void sinit(Class_base* c);
@@ -457,7 +457,7 @@ public:
 		return 0;
 	}
 	void setContent(DisplayObject* o);
-	_NR<DisplayObject> getContent() { return content; }
+	DisplayObject* getContent() const { return content; }
 	_R<LoaderInfo> getContentLoaderInfo() { return contentLoaderInfo; }
 	bool allowLoadingSWF() { return allowCodeImport; }
 	bool hasAVM1Target() const { return !avm1target.isNull(); }

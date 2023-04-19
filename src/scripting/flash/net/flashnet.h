@@ -82,7 +82,6 @@ public:
 	URLVariables(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
 	URLVariables(ASWorker* wrk,Class_base* c,const tiny_string& s);
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(decode);
 	ASFUNCTION_ATOM(_toString);
@@ -244,7 +243,6 @@ public:
 	NetConnection(ASWorker* wrk,Class_base* c);
 	void finalize() override;
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(connect);
 	ASFUNCTION_ATOM(call);

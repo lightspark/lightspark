@@ -149,7 +149,7 @@ public:
 	AS_BLENDMODE getBlendMode() const { return blendMode; }
 	void constructionComplete() override;
 	void afterConstruction() override;
-	virtual void prepareDestruction()
+	void prepareDestruction()
 	{
 		destroyContents();
 		setParent(nullptr);

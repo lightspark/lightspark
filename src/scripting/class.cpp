@@ -164,6 +164,9 @@ void Class_inherit::setupDeclaredTraits(ASObject *target, bool checkclone)
 {
 	if (!target->traitsInitialized)
 	{
+#ifndef NDEBUG
+		assert(!target->initialized);
+#endif
 		bool cloneable = checkclone && !instancefactory.isNull();
 		if (cloneable)
 		{
@@ -196,10 +199,9 @@ void Class_inherit::setupDeclaredTraits(ASObject *target, bool checkclone)
 			//And restore it
 			target->implEnable=bak;
 		}
-
-	#ifndef NDEBUG
+#ifndef NDEBUG
 		target->initialized=true;
-	#endif
+#endif
 		target->traitsInitialized = true;
 	}
 }

@@ -280,7 +280,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					if (this->getContent())
 					{
 						this->getContent()->incRef();
-						args[0] = asAtomHandler::fromObject(this->getContent().getPtr());
+						args[0] = asAtomHandler::fromObject(this->getContent());
 					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
@@ -304,7 +304,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					if (this->getContent())
 					{
 						this->getContent()->incRef();
-						args[0] = asAtomHandler::fromObject(this->getContent().getPtr());
+						args[0] = asAtomHandler::fromObject(this->getContent());
 					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
@@ -329,7 +329,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					if (this->getContent())
 					{
 						this->getContent()->incRef();
-						args[0] = asAtomHandler::fromObject(this->getContent().getPtr());
+						args[0] = asAtomHandler::fromObject(this->getContent());
 					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
@@ -355,7 +355,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					if (this->getContent())
 					{
 						this->getContent()->incRef();
-						args[0] = asAtomHandler::fromObject(this->getContent().getPtr());
+						args[0] = asAtomHandler::fromObject(this->getContent());
 					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;

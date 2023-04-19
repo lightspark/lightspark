@@ -945,9 +945,6 @@ void NetConnection::sinit(Class_base* c)
 	REGISTER_GETTER(c,nearID);
 }
 
-void NetConnection::buildTraits(ASObject* o)
-{
-}
 
 void NetConnection::finalize()
 {
@@ -2449,10 +2446,6 @@ void URLVariables::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
 }
 
-void URLVariables::buildTraits(ASObject* o)
-{
-}
-
 URLVariables::URLVariables(ASWorker* wrk, Class_base* c, const tiny_string& s):ASObject(wrk,c)
 {
 	decode(s);
@@ -2533,6 +2526,7 @@ tiny_string URLVariables::toString_priv()
 			tmp+=escapedValue;
 			g_free(escapedValue);
 		}
+		ASATOM_DECREF(val);
 	}
 	return tmp;
 }

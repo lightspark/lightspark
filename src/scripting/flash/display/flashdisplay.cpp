@@ -6400,9 +6400,10 @@ void MovieClip::executeFrameScript()
 		return;
 	if (state.explicit_FP)
 	{
-		// it seems that framescripts aren't executed after current frame was changed explicitely from script
 		state.explicit_FP=false;
-		return;
+		// it seems that framescripts aren't executed after current frame was changed explicitely from script (only on swf files < version 10)
+		if (loadedFrom->version < 10)
+			return;
 	}
 	uint32_t f = frameScripts.count(state.FP) ? state.FP : UINT32_MAX;
 	if (f != UINT32_MAX && !markedForLegacyDeletion)

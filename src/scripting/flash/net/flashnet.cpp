@@ -564,6 +564,8 @@ ASFUNCTIONBODY_ATOM(URLLoader,load)
 	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
 	SecurityManager::checkURLStaticAndThrow(url, ~(SecurityManager::LOCAL_WITH_FILE),
 		SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED, true);
+	if (wrk->currentCallContext && wrk->currentCallContext->exceptionthrown)
+		return;
 
 	//TODO: should we disallow accessing local files in a directory above 
 	//the current one like we do with NetStream.play?

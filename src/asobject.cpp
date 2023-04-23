@@ -1768,11 +1768,6 @@ void variables_map::dumpVariables()
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<< hex<<it->first<<dec<<" "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
 			asAtomHandler::toDebugString(it->second.var) << ' ' << asAtomHandler::toDebugString(it->second.setter) << ' ' << asAtomHandler::toDebugString(it->second.getter) << ' ' <<it->second.slotid << ' ' );//<<dynamic_cast<const Class_base*>(it->second.type));
-		if (getSys()->getStringFromUniqueId(it->first) == "_1184053038labelDisplay")
-		{
-			asAtomHandler::getObject(it->second.var)->dumpVariables();
-			LOG(LOG_ERROR,"--------------------");
-		}
 	}
 }
 

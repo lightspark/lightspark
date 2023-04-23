@@ -47,6 +47,7 @@ protected:
 	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y) const;
 public:
 	TextureChunk bitmaptexture;
+	int nanoVGImageHandle;
 	BitmapContainer(MemoryAccount* m);
 	~BitmapContainer();
 	uint32_t getDataSize() const { return data.size(); }

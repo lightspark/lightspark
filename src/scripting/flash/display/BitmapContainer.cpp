@@ -29,8 +29,9 @@
 using namespace std;
 using namespace lightspark;
 
+extern void nanoVGDeleteImage(int image);
 BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
-	data(reporter_allocator<uint8_t>(m))
+	data(reporter_allocator<uint8_t>(m)),nanoVGImageHandle(-1)
 {
 }
 
@@ -44,6 +45,8 @@ BitmapContainer::~BitmapContainer()
 			getSys()->getRenderThread()->releaseTexture(bitmaptexture);
 		}
 	}
+	if (nanoVGImageHandle != -1)
+		nanoVGDeleteImage(nanoVGImageHandle);
 }
 
 uint8_t* BitmapContainer::getRectangleData(const RECT& sourceRect)

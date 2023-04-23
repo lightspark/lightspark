@@ -86,8 +86,8 @@ ASFUNCTIONBODY_ATOM(Graphics,moveTo)
 	if (th->inFilling)
 		th->dorender(true);
 
-	int32_t x=asAtomHandler::toInt(args[0])*TWIPS_FACTOR;
-	int32_t y=asAtomHandler::toInt(args[1])*TWIPS_FACTOR;
+	int32_t x=asAtomHandler::toNumber(args[0])*TWIPS_FACTOR;
+	int32_t y=asAtomHandler::toNumber(args[1])*TWIPS_FACTOR;
 	th->updateTokenBounds(x,y);
 	th->movex = x;
 	th->movey = y;
@@ -105,8 +105,8 @@ ASFUNCTIONBODY_ATOM(Graphics,lineTo)
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	assert_and_throw(argslen==2);
 
-	int x=asAtomHandler::toInt(args[0])*TWIPS_FACTOR;
-	int y=asAtomHandler::toInt(args[1])*TWIPS_FACTOR;
+	int x=asAtomHandler::toNumber(args[0])*TWIPS_FACTOR;
+	int y=asAtomHandler::toNumber(args[1])*TWIPS_FACTOR;
 	th->updateTokenBounds(x,y);
 
 	if (th->inFilling)
@@ -126,13 +126,11 @@ ASFUNCTIONBODY_ATOM(Graphics,curveTo)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	assert_and_throw(argslen==4);
-	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
+	int controlX=asAtomHandler::toNumber(args[0])*TWIPS_FACTOR;
+	int controlY=asAtomHandler::toNumber(args[1])*TWIPS_FACTOR;
 
-	int controlX=asAtomHandler::toInt(args[0])*TWIPS_FACTOR;
-	int controlY=asAtomHandler::toInt(args[1])*TWIPS_FACTOR;
-
-	int anchorX=asAtomHandler::toInt(args[2])*TWIPS_FACTOR;
-	int anchorY=asAtomHandler::toInt(args[3])*TWIPS_FACTOR;
+	int anchorX=asAtomHandler::toNumber(args[2])*TWIPS_FACTOR;
+	int anchorY=asAtomHandler::toNumber(args[3])*TWIPS_FACTOR;
 	th->updateTokenBounds(controlX,controlY);
 	th->updateTokenBounds(anchorX,anchorY);
 
@@ -155,16 +153,15 @@ ASFUNCTIONBODY_ATOM(Graphics,cubicCurveTo)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	assert_and_throw(argslen==6);
-	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
-	int control1X=asAtomHandler::toInt(args[0])*TWIPS_FACTOR;
-	int control1Y=asAtomHandler::toInt(args[1])*TWIPS_FACTOR;
+	int control1X=asAtomHandler::toNumber(args[0])*TWIPS_FACTOR;
+	int control1Y=asAtomHandler::toNumber(args[1])*TWIPS_FACTOR;
 
-	int control2X=asAtomHandler::toInt(args[2])*TWIPS_FACTOR;
-	int control2Y=asAtomHandler::toInt(args[3])*TWIPS_FACTOR;
+	int control2X=asAtomHandler::toNumber(args[2])*TWIPS_FACTOR;
+	int control2Y=asAtomHandler::toNumber(args[3])*TWIPS_FACTOR;
 
-	int anchorX=asAtomHandler::toInt(args[4])*TWIPS_FACTOR;
-	int anchorY=asAtomHandler::toInt(args[5])*TWIPS_FACTOR;
+	int anchorX=asAtomHandler::toNumber(args[4])*TWIPS_FACTOR;
+	int anchorY=asAtomHandler::toNumber(args[5])*TWIPS_FACTOR;
 	th->updateTokenBounds(control1X,control1Y);
 	th->updateTokenBounds(control2X,control2Y);
 	th->updateTokenBounds(anchorX,anchorY);
@@ -205,7 +202,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRect)
 	double width=asAtomHandler::toNumber(args[2])*TWIPS_FACTOR;
 	double height=asAtomHandler::toNumber(args[3])*TWIPS_FACTOR;
 	double ellipseWidth=asAtomHandler::toNumber(args[4])*TWIPS_FACTOR;
-	double ellipseHeight;
+	double ellipseHeight=numeric_limits<double>::quiet_NaN();
 	th->updateTokenBounds(x,y);
 	th->updateTokenBounds(x+width,y+height);
 	if (argslen == 6)
@@ -332,10 +329,10 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	assert_and_throw(argslen>=4);
 
-	int x=asAtomHandler::toInt(args[0])*TWIPS_FACTOR;
-	int y=asAtomHandler::toInt(args[1])*TWIPS_FACTOR;
-	int width=asAtomHandler::toInt(args[2])*TWIPS_FACTOR;
-	int height=asAtomHandler::toInt(args[3])*TWIPS_FACTOR;
+	int x=asAtomHandler::toNumber(args[0])*TWIPS_FACTOR;
+	int y=asAtomHandler::toNumber(args[1])*TWIPS_FACTOR;
+	int width=asAtomHandler::toNumber(args[2])*TWIPS_FACTOR;
+	int height=asAtomHandler::toNumber(args[3])*TWIPS_FACTOR;
 	th->updateTokenBounds(x,y);
 	th->updateTokenBounds(x+width,y+height);
 
@@ -529,10 +526,10 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	assert_and_throw(argslen==4);
 
-	int x=asAtomHandler::toInt(args[0])*TWIPS_FACTOR;
-	int y=asAtomHandler::toInt(args[1])*TWIPS_FACTOR;
-	int width=asAtomHandler::toInt(args[2])*TWIPS_FACTOR;
-	int height=asAtomHandler::toInt(args[3])*TWIPS_FACTOR;
+	int x=asAtomHandler::toNumber(args[0])*TWIPS_FACTOR;
+	int y=asAtomHandler::toNumber(args[1])*TWIPS_FACTOR;
+	int width=asAtomHandler::toNumber(args[2])*TWIPS_FACTOR;
+	int height=asAtomHandler::toNumber(args[3])*TWIPS_FACTOR;
 	th->updateTokenBounds(x,y);
 	th->updateTokenBounds(x+width,y+height);
 
@@ -1063,7 +1060,6 @@ ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 
 	_NR<BitmapData> bitmap;
 	_NR<Matrix> matrix;
@@ -1238,8 +1234,6 @@ FILLSTYLE Graphics::createGradientFill(const tiny_string& type,
 	else
 	{
 		style.Matrix = matrix->getMATRIX();
-		//Conversion from twips to pixels
-		cairo_matrix_scale(&style.Matrix, 1.0f/TWIPS_FACTOR, 1.0f/TWIPS_FACTOR);
 	}
 
 	if (spreadMethod == "pad")
@@ -1304,10 +1298,8 @@ ASFUNCTIONBODY_ATOM(Graphics,beginBitmapFill)
 	if(bitmap.isNull())
 		return;
 
-	th->tokens.canRenderToGL=false; // TODO implement nanoVG rendering
 	th->dorender(true);
 	th->inFilling=true;
-
 	FILLSTYLE style=createBitmapFill(bitmap, matrix, repeat, smooth);
 	th->tokens.filltokens.emplace_back(GeomToken(SET_FILL).uval);
 	th->tokens.filltokens.emplace_back(GeomToken(th->addFillStyle(style)).uval);

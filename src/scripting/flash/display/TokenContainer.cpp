@@ -32,6 +32,42 @@
 using namespace lightspark;
 using namespace std;
 
+void nanoVGDeleteImage(int image)
+{
+	NVGcontext* nvgctxt = getSys()->getEngineData()->nvgcontext;
+	if (nvgctxt)
+		nvgDeleteImage(nvgctxt,image);
+}
+
+int setNanoVGImage(EngineData* engine, NVGcontext* nvgctxt,const FILLSTYLE* style)
+{
+	if (style->bitmap && style->bitmap->nanoVGImageHandle == -1)
+	{
+		style->bitmap->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,style->bitmap->getWidth(),style->bitmap->getHeight(),1,style->bitmap->getData());
+	}
+	engine->exec_glBindTexture_GL_TEXTURE_2D(style->bitmap->nanoVGImageHandle);
+	switch (style->FillStyleType)
+	{
+		case FILL_STYLE_TYPE::REPEATING_BITMAP:
+			engine->exec_glSetTexParameters(0,0,0,0,3);
+			break;
+		case FILL_STYLE_TYPE::CLIPPED_BITMAP:
+			engine->exec_glSetTexParameters(0,0,0,0,0);
+			break;
+		case FILL_STYLE_TYPE::NON_SMOOTHED_REPEATING_BITMAP:
+			engine->exec_glSetTexParameters(0,0,1,0,3);
+			break;
+		case FILL_STYLE_TYPE::NON_SMOOTHED_CLIPPED_BITMAP:
+			engine->exec_glSetTexParameters(0,0,1,0,0);
+			break;
+		default:
+			LOG(LOG_ERROR,"invalid FILL_STYLE_TYPE when creating nanoVG image:"<<hex<<style);
+			break;
+	}
+	engine->exec_glBindTexture_GL_TEXTURE_2D(0);
+	return style->bitmap->nanoVGImageHandle;
+}
+
 
 TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o)
   ,redMultiplier(1.0),greenMultiplier(1.0),blueMultiplier(1.0),alphaMultiplier(1.0)
@@ -162,6 +198,41 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 									b = max(0.0f,min(255.0f,float((color.Blue  *  blueMultiplier * 256.0f)/256.0f +  blueOffset)))/256.0f;
 									NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*owner->getConcatenatedAlpha()*255.0);
 									nvgFillColor(nvgctxt,c);
+									break;
+								}
+								case REPEATING_BITMAP:
+								case CLIPPED_BITMAP:
+								case NON_SMOOTHED_REPEATING_BITMAP:
+								case NON_SMOOTHED_CLIPPED_BITMAP:
+								{
+									
+									int img =setNanoVGImage(owner->getSystemState()->getEngineData(),nvgctxt,style);
+									if (img != -1)
+									{
+										MATRIX m = style->Matrix;
+										NVGpaint pattern = nvgImagePattern(nvgctxt,
+																		   0,
+																		   0,
+																		   style->bitmap->getWidth(),
+																		   style->bitmap->getHeight(),
+																		   0,
+																		   img,
+																		   1.0);
+										pattern.xform[0] = m.xx;
+										pattern.xform[1] = m.yx;
+										pattern.xform[2] = m.xy;
+										pattern.xform[3] = m.yy;
+										pattern.xform[4] = m.x0/scaling - style->ShapeBounds.Xmin;
+										pattern.xform[5] = m.y0/scaling - style->ShapeBounds.Ymin;
+										float r,g,b,a;
+										a = max(0.0f,min(255.0f,float((255.0* alphaMultiplier * 256.0f)/256.0f + alphaOffset)))/256.0f;
+										r = max(0.0f,min(255.0f,float((255.0*  redMultiplier * 256.0f)/256.0f +   redOffset)))/256.0f;
+										g = max(0.0f,min(255.0f,float((255.0* greenMultiplier * 256.0f)/256.0f + greenOffset)))/256.0f;
+										b = max(0.0f,min(255.0f,float((255.0*  blueMultiplier * 256.0f)/256.0f +  blueOffset)))/256.0f;
+										NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
+										pattern.innerColor = pattern.outerColor = c;
+										nvgFillPaint(nvgctxt, pattern);
+									}
 									break;
 								}
 								default:

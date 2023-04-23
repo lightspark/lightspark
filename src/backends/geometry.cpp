@@ -174,8 +174,17 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 		//Set the fill style
 		tokens.filltokens.push_back(GeomToken(SET_FILL).uval);
 		tokens.filltokens.push_back(GeomToken(*stylesIt).uval);
-		if ((*stylesIt).FillStyleType != SOLID_FILL) // TODO fillstyles other than solid fill not yet implemented for nanoGL
-			tokens.canRenderToGL=false;
+		switch ((*stylesIt).FillStyleType)
+		{
+			case LINEAR_GRADIENT:
+			case RADIAL_GRADIENT:
+			case FOCAL_RADIAL_GRADIENT:
+				// TODO gradient fillstyles not yet implemented for nanoGL
+				tokens.canRenderToGL=false;
+				break;
+			default:
+				break;
+		}
 		vector<ShapePathSegment>& segments = it->second;
 		for (size_t j = 0; j < segments.size(); ++j)
 		{

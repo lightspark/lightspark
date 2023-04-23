@@ -1102,19 +1102,15 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 		createError<TypeError>(wrk,kNullPointerError, "inputColor");
 		return;
 	}
-
 	RECT rect;
 	th->pixels->clipRect(inputRect->getRect(), rect);
 	
-	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect);
-
 	unsigned int i = 0;
 	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
 	{
 		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
 		{
-
-			uint32_t pixel = pixelvec[i];
+			uint32_t pixel = th->pixels->getPixel(x, y);;
 
 			int a, r, g, b;
 			a = ((pixel >> 24 )&0xff) * inputColorTransform->alphaMultiplier + inputColorTransform->alphaOffset;

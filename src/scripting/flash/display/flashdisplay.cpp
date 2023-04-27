@@ -3572,21 +3572,24 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildren)
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
 {
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
-	assert_and_throw(argslen==2);
-
-	//Validate object type
-	assert_and_throw(asAtomHandler::is<DisplayObject>(args[0]));
-	ASATOM_INCREF(args[0]);
-	DisplayObject* child = asAtomHandler::as<DisplayObject>(args[0]);
-
-	int index=asAtomHandler::toInt(args[1]);
-	int curIndex = th->getChildIndex(child);
-
-	if(curIndex == index)
+	_NR<DisplayObject> ch;
+	int32_t index;
+	ARG_CHECK(ARG_UNPACK(ch)(index))
+	if (ch.isNull() || ch->getParent() != th)
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError);
 		return;
-
+	}
+	DisplayObject* child = ch.getPtr();
+	int curIndex = th->getChildIndex(child);
+	if(curIndex == index || curIndex < 0)
+		return;
 	Locker l(th->mutexDisplayList);
-
+	if (index < 0 || index > (int)th->dynamicDisplayList.size())
+	{
+		createError<RangeError>(wrk,kParamRangeError);
+		return;
+	}
 	auto itrem = th->dynamicDisplayList.begin()+curIndex;
 	th->dynamicDisplayList.erase(itrem); //remove from old position
 
@@ -3780,7 +3783,9 @@ void DisplayObjectContainer::clearDisplayList()
 	auto it = dynamicDisplayList.rbegin();
 	while (it != dynamicDisplayList.rend())
 	{
-		ASObject* c = (*it);
+		DisplayObject* c = (*it);
+		c->setParent(nullptr);
+		getSystemState()->removeFromResetParentList(c);
 		dynamicDisplayList.pop_back();
 		it = dynamicDisplayList.rbegin();
 		c->removeStoredMember();

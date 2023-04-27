@@ -22,12 +22,13 @@
 #include "swf.h"
 #include "compat.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/Integer.h"
 #include "parsing/amf3_generator.h"
 
 using namespace std;
 using namespace lightspark;
 
-XMLNode::XMLNode(ASWorker* wrk, Class_base* c, _NR<XMLDocument> _r, pugi::xml_node _n):ASObject(wrk,c),root(_r),node(_n)
+XMLNode::XMLNode(ASWorker* wrk, Class_base* c, _NR<XMLDocument> _r, pugi::xml_node _n):ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLNODE),root(_r),node(_n)
 {
 }
 
@@ -35,24 +36,20 @@ void XMLNode::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("attributes","",Class<IFunction>::getFunction(c->getSystemState(),attributes),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("childNodes","",Class<IFunction>::getFunction(c->getSystemState(),XMLNode::childNodes),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(c->getSystemState(),XMLNode::firstChild),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("lastChild","",Class<IFunction>::getFunction(c->getSystemState(),lastChild),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("nextSibling","",Class<IFunction>::getFunction(c->getSystemState(),nextSibling),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("nodeType","",Class<IFunction>::getFunction(c->getSystemState(),_getNodeType),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("nodeName","",Class<IFunction>::getFunction(c->getSystemState(),_getNodeName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("childNodes","",Class<IFunction>::getFunction(c->getSystemState(),XMLNode::childNodes,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(c->getSystemState(),XMLNode::firstChild,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("lastChild","",Class<IFunction>::getFunction(c->getSystemState(),lastChild,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nextSibling","",Class<IFunction>::getFunction(c->getSystemState(),nextSibling,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nodeType","",Class<IFunction>::getFunction(c->getSystemState(),_getNodeType,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nodeName","",Class<IFunction>::getFunction(c->getSystemState(),_getNodeName,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("nodeName","",Class<IFunction>::getFunction(c->getSystemState(),_setNodeName),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("nodeValue","",Class<IFunction>::getFunction(c->getSystemState(),_getNodeValue),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("parentNode","",Class<IFunction>::getFunction(c->getSystemState(),parentNode),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("previousSibling","",Class<IFunction>::getFunction(c->getSystemState(),previousSibling),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("localName","",Class<IFunction>::getFunction(c->getSystemState(),_getLocalName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nodeValue","",Class<IFunction>::getFunction(c->getSystemState(),_getNodeValue,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("parentNode","",Class<IFunction>::getFunction(c->getSystemState(),parentNode,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("previousSibling","",Class<IFunction>::getFunction(c->getSystemState(),previousSibling,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("localName","",Class<IFunction>::getFunction(c->getSystemState(),_getLocalName,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("appendChild","",Class<IFunction>::getFunction(c->getSystemState(),appendChild),NORMAL_METHOD,true);
-}
-
-void XMLNode::buildTraits(ASObject* o)
-{
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,_constructor)
@@ -63,13 +60,14 @@ ASFUNCTIONBODY_ATOM(XMLNode,_constructor)
 	uint32_t type;
 	tiny_string value;
 	ARG_CHECK(ARG_UNPACK(type)(value));
-	assert_and_throw(type==1);
 	th->root=_MR(Class<XMLDocument>::getInstanceS(wrk));
-	if(type==1)
+	if(type==1 || type==3)
 	{
 		th->root->parseXMLImpl(value);
 		th->node=th->root->rootNode;
 	}
+	else
+		LOG(LOG_ERROR,"invalid type for XMLNode constructor:"<<type);
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,firstChild)
@@ -307,6 +305,7 @@ tiny_string XMLNode::toString_priv(pugi::xml_node outputNode)
 XMLDocument::XMLDocument(ASWorker* wrk, Class_base* c, tiny_string s)
   : XMLNode(wrk,c),rootNode(nullptr),status(0),needsActionScript3(true),ignoreWhite(false)
 {
+	subtype=SUBTYPE_XMLDOCUMENT;
 	if(!s.empty())
 	{
 		parseXMLImpl(s);
@@ -317,10 +316,10 @@ void XMLDocument::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, XMLNode, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("parseXML","",Class<IFunction>::getFunction(c->getSystemState(),parseXML),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(c->getSystemState(),XMLDocument::firstChild),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("createElement","",Class<IFunction>::getFunction(c->getSystemState(),XMLDocument::createElement),NORMAL_METHOD,true);
-	REGISTER_GETTER_SETTER(c, ignoreWhite);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("firstChild","",Class<IFunction>::getFunction(c->getSystemState(),XMLDocument::firstChild,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("createElement","",Class<IFunction>::getFunction(c->getSystemState(),XMLDocument::createElement,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, ignoreWhite,Boolean);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(XMLDocument, ignoreWhite)

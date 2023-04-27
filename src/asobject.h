@@ -1506,6 +1506,8 @@ class VideoTexture;
 class WaitableEvent;
 class WorkerDomain;
 class XML;
+class XMLNode;
+class XMLDocument;
 class XMLList;
 
 
@@ -1624,6 +1626,8 @@ template<> inline bool ASObject::is<VideoTexture>() const { return subtype==SUBT
 template<> inline bool ASObject::is<WaitableEvent>() const { return subtype==SUBTYPE_WAITABLE_EVENT; }
 template<> inline bool ASObject::is<WorkerDomain>() const { return subtype==SUBTYPE_WORKERDOMAIN; }
 template<> inline bool ASObject::is<XML>() const { return subtype==SUBTYPE_XML; }
+template<> inline bool ASObject::is<XMLDocument>() const { return subtype==SUBTYPE_XMLDOCUMENT; }
+template<> inline bool ASObject::is<XMLNode>() const { return subtype==SUBTYPE_XMLNODE || subtype==SUBTYPE_XMLDOCUMENT; }
 template<> inline bool ASObject::is<XMLList>() const { return subtype==SUBTYPE_XMLLIST; }
 
 

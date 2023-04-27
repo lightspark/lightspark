@@ -39,7 +39,7 @@ protected:
 	tiny_string toString_priv(pugi::xml_node outputNode);
 	pugi::xml_node getParentNode();
 public:
-	XMLNode(ASWorker* wrk,Class_base* c):ASObject(wrk,c),root(NullRef),node(nullptr){}
+	XMLNode(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLNODE),root(NullRef),node(nullptr){}
 	XMLNode(ASWorker* wrk,Class_base* c, _NR<XMLDocument> _r, pugi::xml_node _n);
 	bool destruct()
 	{
@@ -47,7 +47,6 @@ public:
 		return destructIntern();
 	}
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	tiny_string toString();
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(firstChild);

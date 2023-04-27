@@ -34,7 +34,7 @@ using namespace std;
 
 void nanoVGDeleteImage(int image)
 {
-	NVGcontext* nvgctxt = getSys()->getEngineData()->nvgcontext;
+	NVGcontext* nvgctxt = getSys()->getEngineData() ? getSys()->getEngineData()->nvgcontext : nullptr;
 	if (nvgctxt)
 		nvgDeleteImage(nvgctxt,image);
 }
@@ -291,6 +291,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 						}
 						case CLEAR_FILL:
 						case FILL_KEEP_SOURCE:
+						{
 							if (renderneeded)
 							{
 								if (instroke)
@@ -304,6 +305,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 							if(p.type==CLEAR_FILL)
 								nvgFillColor(nvgctxt,startcolor);
 							break;
+						}
 						case CLEAR_STROKE:
 							if (renderneeded)
 							{
@@ -397,7 +399,7 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 		}
 		else
 		{
-			shapesBuilder.endSubpathForStyles(color0, color1, linestyle);
+			shapesBuilder.endSubpathForStyles(color0, color1, linestyle,false);
 			if(cur->StateMoveTo)
 			{
 				cursor.x= cur->MoveDeltaX-shapebounds.Xmin;
@@ -437,58 +439,87 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 	cursor.x= -boundsx;
 	cursor.y= -boundsy;
 	auto itstart = tag->StartEdges.ShapeRecords.begin();
-	auto itend = tag->StartEdges.ShapeRecords.size() > tag->EndEdges.ShapeRecords.size() ? tag->StartEdges.ShapeRecords.begin() : tag->EndEdges.ShapeRecords.begin();
+	auto itend = tag->EndEdges.ShapeRecords.begin();
 	Vector2 p1(matrix.multiply2D(cursor));
-	while (itstart != tag->StartEdges.ShapeRecords.end())
+	while (itstart != tag->StartEdges.ShapeRecords.end() && itend != tag->EndEdges.ShapeRecords.end())
 	{
 		const SHAPERECORD* curstart=&(*itstart);
 		const SHAPERECORD* curend=&(*itend);
 		if(curstart->TypeFlag)
 		{
+			int controlX;
+			int controlY;
+			int anchorX;
+			int anchorY;
 			if(curstart->StraightFlag)
 			{
-				cursor.x += curstart->DeltaX+(curend->DeltaX-curstart->DeltaX)*curratiofactor;
-				cursor.y += curstart->DeltaY+(curend->DeltaY-curstart->DeltaY)*curratiofactor;
-				Vector2 p2(matrix.multiply2D(cursor));
-
-				shapesBuilder.extendOutline(p1, p2);
-				p1.x=p2.x;
-				p1.y=p2.y;
+				if (curend->StraightFlag)
+				{
+					controlX = curstart->DeltaX/2.0+float(curend->DeltaX/2.0-curstart->DeltaX/2.0)*curratiofactor;
+					controlY = curstart->DeltaY/2.0+float(curend->DeltaY/2.0-curstart->DeltaY/2.0)*curratiofactor;
+					anchorX = curstart->DeltaX/2.0+float(curend->DeltaX/2.0-curstart->DeltaX/2.0)*curratiofactor;
+					anchorY = curstart->DeltaY/2.0+float(curend->DeltaY/2.0-curstart->DeltaY/2.0)*curratiofactor;
+				}
+				else
+				{
+					controlX = curstart->DeltaX/2.0+float(curend->ControlDeltaX-curstart->DeltaX/2.0)*curratiofactor;
+					controlY = curstart->DeltaY/2.0+float(curend->ControlDeltaY-curstart->DeltaY/2.0)*curratiofactor;
+					anchorX = curstart->DeltaX/2.0+float(curend->AnchorDeltaX-curstart->DeltaX/2.0)*curratiofactor;
+					anchorY = curstart->DeltaY/2.0+float(curend->AnchorDeltaY-curstart->DeltaY/2.0)*curratiofactor;
+				}
 			}
 			else
 			{
-				cursor.x += curstart->ControlDeltaX+(curend->ControlDeltaX-curstart->ControlDeltaX)*curratiofactor;
-				cursor.y += curstart->ControlDeltaY+(curend->ControlDeltaY-curstart->ControlDeltaY)*curratiofactor;
-				Vector2 p2(matrix.multiply2D(cursor));
-				cursor.x += curstart->AnchorDeltaX+(curend->AnchorDeltaX-curstart->AnchorDeltaX)*curratiofactor;
-				cursor.y += curstart->AnchorDeltaY+(curend->AnchorDeltaY-curstart->AnchorDeltaY)*curratiofactor;
-				Vector2 p3(matrix.multiply2D(cursor));
-
-				shapesBuilder.extendOutlineCurve(p1, p2, p3);
-				p1.x=p3.x;
-				p1.y=p3.y;
+				if (curend->StraightFlag)
+				{
+					controlX = curstart->ControlDeltaX+float(curend->DeltaX/2.0-curstart->ControlDeltaX)*curratiofactor;
+					controlY = curstart->ControlDeltaY+float(curend->DeltaY/2.0-curstart->ControlDeltaY)*curratiofactor;
+					anchorX = curstart->AnchorDeltaX+float(curend->DeltaX/2.0-curstart->AnchorDeltaX)*curratiofactor;
+					anchorY = curstart->AnchorDeltaY+float(curend->DeltaY/2.0-curstart->AnchorDeltaY)*curratiofactor;
+				}
+				else
+				{
+					controlX = curstart->ControlDeltaX+float(curend->ControlDeltaX-curstart->ControlDeltaX)*curratiofactor;
+					controlY = curstart->ControlDeltaY+float(curend->ControlDeltaY-curstart->ControlDeltaY)*curratiofactor;
+					anchorX = curstart->AnchorDeltaX+float(curend->AnchorDeltaX-curstart->AnchorDeltaX)*curratiofactor;
+					anchorY = curstart->AnchorDeltaY+float(curend->AnchorDeltaY-curstart->AnchorDeltaY)*curratiofactor;
+				}
 			}
+			cursor.x += controlX;
+			cursor.y += controlY;
+			Vector2 p2(matrix.multiply2D(cursor));
+			cursor.x += anchorX;
+			cursor.y += anchorY;
+			Vector2 p3(matrix.multiply2D(cursor));
+			
+			shapesBuilder.extendOutlineCurve(p1, p2, p3);
+			p1.x=p3.x;
+			p1.y=p3.y;
+			itstart++;
+			itend++;
 		}
 		else
 		{
-			shapesBuilder.endSubpathForStyles(color0, color1, linestyle);
+			shapesBuilder.endSubpathForStyles(color0, color1, linestyle,true);
 			if(curstart->StateMoveTo)
 			{
-				cursor.x=(curstart->MoveDeltaX-boundsx)+(curend->MoveDeltaX-curstart->MoveDeltaX)*curratiofactor;
-				cursor.y=(curstart->MoveDeltaY-boundsy)+(curend->MoveDeltaY-curstart->MoveDeltaY)*curratiofactor;
+				cursor.x=(curstart->MoveDeltaX-boundsx)+float(curend->MoveDeltaX-curstart->MoveDeltaX)*curratiofactor;
+				cursor.y=(curstart->MoveDeltaY-boundsy)+float(curend->MoveDeltaY-curstart->MoveDeltaY)*curratiofactor;
 				Vector2 tmp(matrix.multiply2D(cursor));
 				p1.x = tmp.x;
 				p1.y = tmp.y;
+				itstart++;
+				itend++;
 			}
+			else
+				itstart++;
 			if(curstart->StateLineStyle)
 				linestyle = curstart->LineStyle;
 			if(curstart->StateFillStyle1)
-				color1=curstart->StateFillStyle1;
+				color1=curstart->FillStyle1;
 			if(curstart->StateFillStyle0)
-				color0=curstart->StateFillStyle0;
+				color0=curstart->FillStyle0;
 		}
-		itstart++;
-		itend++;
 	}
 	tokens.clear();
 	shapesBuilder.outputMorphTokens(tag->MorphFillStyles.FillStyles,tag->MorphLineStyles.LineStyles2, tokens,ratio,boundsrc);

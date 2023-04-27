@@ -7,6 +7,7 @@ Version NEXT:
 	* improved support for AVM1 swf files
 	* implement "erase" blendmode
 	* use nanoVG for bitmaps in fillstyles
+	* improved support for morphshapes
 
 Version 0.8.6.1:
 

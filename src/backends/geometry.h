@@ -146,7 +146,7 @@ private:
 public:
 	void extendOutline(const Vector2& v1, const Vector2& v2);
 	void extendOutlineCurve(const Vector2& start, const Vector2& control, const Vector2& end);
-	void endSubpathForStyles(unsigned fill0, unsigned fill1, unsigned stroke);
+	void endSubpathForStyles(unsigned fill0, unsigned fill1, unsigned stroke, bool formorphing);
 	/**
 		Generate a sequence of cachable tokens that defines the geomtries
 		@param styles This list is supposed to survive until as long as the returned tokens array

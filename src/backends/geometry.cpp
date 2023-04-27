@@ -126,7 +126,7 @@ void ShapesBuilder::extendOutlineCurve(const Vector2& v1, const Vector2& v2, con
 	currentSubpath.emplace_back(v1Index, v2Index, v3Index);
 }
 
-void ShapesBuilder::endSubpathForStyles(unsigned fill0, unsigned fill1, unsigned stroke)
+void ShapesBuilder::endSubpathForStyles(unsigned fill0, unsigned fill1, unsigned stroke, bool formorphing)
 {
 	if (currentSubpath.empty())
 		return;
@@ -136,9 +136,15 @@ void ShapesBuilder::endSubpathForStyles(unsigned fill0, unsigned fill1, unsigned
 	if (fill0)
 	{
 		auto& segments = filledShapesMap[fill0];
-		for (int i = currentSubpath.size()-1; i >= 0; --i) {
-			segments.push_back(currentSubpath[i].reverse());
+		if (!formorphing || !segments.empty())
+		{
+			for (int i = currentSubpath.size()-1; i >= 0; --i) {
+				segments.push_back(currentSubpath[i].reverse());
+			}
 		}
+		else // it seems that for morphshapes the first subpath has to be added in "normal" order
+			segments.insert(segments.end(), currentSubpath.begin(), currentSubpath.end());
+		
 	}
 
 	if (fill1) {

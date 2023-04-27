@@ -325,6 +325,11 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				tokentype++;
 				break;
 			case 2:
+				if(skipPaint && !tokens.filltokens.empty())
+				{
+					tokentype = 0;
+					break;
+				}
 				it = tokens.stroketokens.begin();
 				itbegin = tokens.stroketokens.begin();
 				itend = tokens.stroketokens.end();
@@ -494,6 +499,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 								*starttoken=it-itbegin + 1 +(tokentype > 2 ? tokens.filltokens.size() : 0);
 							tokentype=0;
 						}
+						if(p.type==CLEAR_FILL)
+							// Clear source.
+							cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 						break;
 					}
 					cairo_fill(cr);

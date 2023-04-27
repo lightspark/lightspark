@@ -412,7 +412,7 @@ bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
 			if (getNeedsTextureRecalculation())
 			{
 				cachedAsBitmapOf->setNeedsTextureRecalculation(true);
-				if (hasGraphics())
+				if (hasGraphics() || legacy)
 					resetNeedsTextureRecalculation();
 			}
 			cachedAsBitmapOf->incRef();

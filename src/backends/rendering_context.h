@@ -173,7 +173,7 @@ public:
 	 */
 	enum FILTER_MODE { FILTER_NONE = 0, FILTER_SMOOTH };
 	void transformedBlit(const MATRIX& m, uint8_t* sourceBuf, uint32_t sourceTotalWidth, uint32_t sourceTotalHeight,
-			FILTER_MODE filterMode);
+			FILTER_MODE filterMode, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 };
 
 }

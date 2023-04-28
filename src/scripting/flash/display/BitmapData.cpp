@@ -235,7 +235,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	th->notifyUsers();
 }
 
-void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap, AS_BLENDMODE blendMode)
+void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap, AS_BLENDMODE blendMode, ColorTransform* ct)
 {
 	if (forCachedBitmap)
 		d->incRef();
@@ -269,14 +269,16 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 			target->applyFilters(&bc,nullptr,RECT(0,bc.getWidth(),0,bc.getHeight()),0,0, drawable->getXScale(), drawable->getYScale());
 			memcpy(buf,bc.getData(),bufsize);
 		}
-		ColorTransform* ct = target->colorTransform.getPtr();
+		ColorTransform* colortransform = ct && !ct->isIdentity() ? ct : nullptr;
+		if (!colortransform)
+			colortransform=target->colorTransform.getPtr();
 		DisplayObjectContainer* p = target->getParent();
-		while (!ct && p && p!= d)
+		while (!colortransform && p && p!= d)
 		{
-			ct = p->colorTransform.getPtr();
+			colortransform = p->colorTransform.getPtr();
 			p = p->getParent();
 		}
-		if (ct)
+		if (colortransform)
 		{
 			if (!isBufferOwner)
 			{
@@ -285,7 +287,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 				memcpy(buf2,buf,bufsize);
 				buf=buf2;
 			}
-			ct->applyTransformation(buf,bufsize);
+			colortransform->applyTransformation(buf,bufsize);
 		}
 		//Construct a CachedSurface using the data
 		CachedSurface& surface=ctxt.allocateCustomSurface(target,buf,isBufferOwner);
@@ -346,26 +348,33 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		return;
 	}
 
-	if(!clipRect.isNull())
-		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support clipRect parameter");
-
 	if(drawable->is<BitmapData>())
 	{
+		if(blendMode != "" && blendMode != "null")
+			LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support blendMode parameter:"<<drawable->toDebugString()<<" "<<blendMode);
 		BitmapData* data=drawable->as<BitmapData>();
 		//Compute the initial matrix, if any
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
-		CairoRenderContext ctxt(th->pixels->getData(), th->pixels->getWidth(), th->pixels->getHeight(),smoothing);
+		uint8_t* bmp = !ctransform.isNull() ? ctransform->applyTransformation(data->pixels.getPtr()) : data->pixels->getData();
+		CairoRenderContext ctxt(th->pixels->getData(), th->pixels->getWidth(), th->pixels->getHeight(),false);
 		//Blit the data while transforming it
-		ctxt.transformedBlit(initialMatrix, data->pixels->getData(),
-				data->pixels->getWidth(), data->pixels->getHeight(),
-				CairoRenderContext::FILTER_NONE);
-		if (ctransform)
-			ctransform->applyTransformation(data->pixels->getData(),data->getBitmapContainer()->getWidth()*data->getBitmapContainer()->getHeight()*4);
+		if (clipRect.isNull())
+			ctxt.transformedBlit(initialMatrix, bmp,
+								 data->pixels->getWidth(), data->pixels->getHeight(),
+								smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,0,0,data->pixels->getWidth(), data->pixels->getHeight());
+		else
+		{
+			ctxt.transformedBlit(initialMatrix, bmp,
+								  data->pixels->getWidth(), data->pixels->getHeight(),
+								  smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,clipRect->x,clipRect->y,clipRect->width,clipRect->height);
+		}
 	}
 	else if(drawable->is<DisplayObject>())
 	{
+		if(!clipRect.isNull())
+			LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support clipRect parameter:"<<drawable->toDebugString()<<" "<<clipRect->x<<"/"<<clipRect->y<<" "<<clipRect->width<<"/"<<clipRect->height);
 		DisplayObject* d=drawable->as<DisplayObject>();
 		//Compute the initial matrix, if any
 		MATRIX initialMatrix;
@@ -385,10 +394,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		else if (blendMode == "overlay") bl = BLENDMODE_OVERLAY;
 		else if (blendMode == "screen") bl = BLENDMODE_SCREEN;
 		else if (blendMode == "subtract") bl = BLENDMODE_SUBTRACT;
-		
-		d->DrawToBitmap(th,initialMatrix,true,false,bl);
-		if (ctransform)
-			ctransform->applyTransformation(th->pixels->getData(),th->getBitmapContainer()->getWidth()*th->getBitmapContainer()->getHeight()*4);
+		d->DrawToBitmap(th,initialMatrix,true,false,bl,ctransform.getPtr());
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());

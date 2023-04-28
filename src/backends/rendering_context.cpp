@@ -463,17 +463,18 @@ void CairoRenderContext::simpleBlit(int32_t destX, int32_t destY, uint8_t* sourc
 }
 
 void CairoRenderContext::transformedBlit(const MATRIX& m, uint8_t* sourceBuf, uint32_t sourceTotalWidth, uint32_t sourceTotalHeight,
-		FILTER_MODE filterMode)
+		FILTER_MODE filterMode, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
 	cairo_surface_t* sourceSurface = getCairoSurfaceForData(sourceBuf, sourceTotalWidth, sourceTotalHeight, sourceTotalWidth);
 	cairo_pattern_t* sourcePattern = cairo_pattern_create_for_surface(sourceSurface);
 	cairo_surface_destroy(sourceSurface);
 	cairo_pattern_set_filter(sourcePattern, (filterMode==FILTER_SMOOTH)?CAIRO_FILTER_BILINEAR:CAIRO_FILTER_NEAREST);
 	cairo_pattern_set_extend(sourcePattern, CAIRO_EXTEND_NONE);
-	cairo_set_matrix(cr, &m);
+	cairo_matrix_t matrix = m.getInverted();
+	cairo_pattern_set_matrix(sourcePattern, &matrix);
 	cairo_set_source(cr, sourcePattern);
 	cairo_pattern_destroy(sourcePattern);
-	cairo_rectangle(cr, 0, 0, sourceTotalWidth, sourceTotalHeight);
+	cairo_rectangle(cr, x, y, w, h);
 	cairo_fill(cr);
 }
 

@@ -1258,19 +1258,15 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 		return;
 	if (d->getNeedsTextureRecalculation())
 	{
-		DisplayObject* o = d->getParent();
-		while (o)
+		DisplayObject* o = d->cachedAsBitmapOf;
+		if (o)
 		{
-			if (o->getCachedBitmap())
-			{
-				// ancestor is cached as bitmap, needs to be redrawn
-				o->incRef();
-				o->hasChanged=true;
-				o->setNeedsTextureRecalculation();
-				addToInvalidateQueue(_MR(o));
-				return;
-			}
-			o = o->getParent();
+			// ancestor is cached as bitmap, needs to be redrawn
+			o->incRef();
+			o->hasChanged=true;
+			o->setNeedsTextureRecalculation();
+			addToInvalidateQueue(_MR(o));
+			return;
 		}
 	}
 	if(!invalidateQueueHead)

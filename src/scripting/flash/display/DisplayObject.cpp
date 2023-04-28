@@ -106,7 +106,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),ClipDepth(0),
 	avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),constructed(false),useLegacyMatrix(true),
-	needsTextureRecalculation(true),textureRecalculationSkippable(false),avm1mouselistenercount(0),avm1framelistenercount(0),onStage(false),
+	needsTextureRecalculation(true),needsNeedsCachedBitmapRecalculation(true),textureRecalculationSkippable(false),avm1mouselistenercount(0),avm1framelistenercount(0),onStage(false),
 	visible(true),mask(),invalidateQueueNext(),loaderInfo(),cachedAsBitmapOf(nullptr),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),legacy(false),markedForLegacyDeletion(false),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
@@ -153,6 +153,7 @@ void DisplayObject::finalize()
 	loadedFrom=getSystemState()->mainClip;
 	hasChanged = true;
 	needsTextureRecalculation=true;
+	needsNeedsCachedBitmapRecalculation=true;
 	if (!cachedSurface.isChunkOwner)
 		cachedSurface.tex=nullptr;
 	cachedSurface.isChunkOwner=true;
@@ -184,6 +185,7 @@ bool DisplayObject::destruct()
 	loadedFrom=getSystemState()->mainClip;
 	hasChanged = true;
 	needsTextureRecalculation=true;
+	needsNeedsCachedBitmapRecalculation=true;
 	tx=0;
 	ty=0;
 	rotation=0;
@@ -371,7 +373,10 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(wrk,args[0],th->filters);
 	if (th->computeCacheAsBitmap() && !th->cachedAsBitmapOf && th->is<DisplayObjectContainer>())
+	{
+		th->setNeedsCachedBitmapRecalculation();
 		th->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(th);
+	}
 	
 	th->requestInvalidation(wrk->getSystemState(),true);
 }
@@ -409,11 +414,10 @@ bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
 		if (!isMask() && cachedAsBitmapOf && cachedAsBitmapOf->computeCacheAsBitmap() && (q && !q->isSoftwareQueue))
 		{
 			cachedAsBitmapOf->hasChanged=true;
-			if (getNeedsTextureRecalculation())
+			if (needsNeedsCachedBitmapRecalculation)
 			{
-				cachedAsBitmapOf->setNeedsTextureRecalculation(true);
-				if (hasGraphics() || legacy)
-					resetNeedsTextureRecalculation();
+				cachedAsBitmapOf->setNeedsCachedBitmapRecalculation();
+				resetNeedsCachedBitmapRecalculation();
 			}
 			cachedAsBitmapOf->incRef();
 			q->addToInvalidateQueue(_MR(cachedAsBitmapOf));
@@ -454,9 +458,15 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_cacheAsBitmap)
 	{
 		if (th->cacheAsBitmap != asAtomHandler::toInt(args[0]))
 		{
+			th->hasChanged=true;
 			th->cacheAsBitmap = asAtomHandler::toInt(args[0]);
 			if (th->computeCacheAsBitmap() && !th->cachedAsBitmapOf && th->is<DisplayObjectContainer>())
+			{
+				th->setNeedsCachedBitmapRecalculation();
 				th->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(th);
+			}
+			else
+				th->setNeedsTextureRecalculation();
 			th->requestInvalidation(wrk->getSystemState(),true);
 		}
 	}
@@ -622,7 +632,6 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 		{
 			filters->resize(0);
 			hasChanged=true;
-			LOG(LOG_ERROR,"setFilters2:"<<this->toDebugString());
 			setNeedsTextureRecalculation();
 			requestInvalidation(getSystemState());
 		}
@@ -991,6 +1000,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 	{
 		th->alpha=val;
 		th->hasChanged=true;
+		th->needsNeedsCachedBitmapRecalculation=true;
 		if(th->onStage)
 			th->requestInvalidation(wrk->getSystemState(),th->computeCacheAsBitmap());
 	}
@@ -1771,6 +1781,7 @@ void DisplayObject::setNeedsTextureRecalculation(bool skippable)
 {
 	textureRecalculationSkippable=skippable;
 	needsTextureRecalculation=true;
+	needsNeedsCachedBitmapRecalculation=true;
 	if (!cachedSurface.isChunkOwner)
 		cachedSurface.tex=nullptr;
 	cachedSurface.isChunkOwner=true;
@@ -1819,7 +1830,7 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 			MATRIX m=mask->getConcatenatedMatrix();
 			m.x0 -= xmin;
 			m.y0 -= ymin;
-			data->drawDisplayObject(mask.getPtr(), m,false,false,mask->blendMode);
+			data->drawDisplayObject(mask.getPtr(), m,false,false,mask->blendMode,mask->colorTransform.getPtr());
 			_R<Bitmap> bmp(Class<Bitmap>::getInstanceS(getInstanceWorker(),data));
 
 			//The created bitmap is already correctly scaled and rotated
@@ -1864,7 +1875,7 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 	if (mask.isNull() && !isMask)
 		mask = target->mask;
 }
-void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode)
+void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode, ColorTransform* ct)
 {
 	DisplayObjectContainer* origparent=this->parent;
 	number_t origrotation = this->rotation;
@@ -1879,7 +1890,7 @@ void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool
 	this->sy=1;
 	this->tx=0;
 	this->ty=0;
-	bm->drawDisplayObject(this, initialMatrix,smoothing,forcachedbitmap,blendMode);
+	bm->drawDisplayObject(this, initialMatrix,smoothing,forcachedbitmap,blendMode,ct);
 	// reset position to original settings
 	this->parent=origparent;
 	this->rotation=origrotation;
@@ -1924,7 +1935,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	if (w >= 8192 || h >= 8192 || (w * h) >= 16777216)
 		return nullptr;
 	bool sizeOk = cachedBitmap && cachedBitmap->getBitmapSize().width == w && cachedBitmap->getBitmapSize().height == h;
-	if (needsTextureRecalculation || !sizeOk)
+	if (needsNeedsCachedBitmapRecalculation || !sizeOk)
 	{
 		if (!sizeOk)
 		{
@@ -1934,16 +1945,8 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		MATRIX m0=m;
 		m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));
 		m0.scale(scalex, scaley);
-		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,true,true,this->blendMode);
+		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,true,true,this->blendMode,nullptr);
 		applyFilters(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0, scalex, scaley);
-		// apply colortransform for cached bitmap after the filters are applied
-		ColorTransform* ct = colorTransform.getPtr();
-		if (ct)
-		{
-			ct->applyTransformation(cachedBitmap->bitmapData->getBitmapContainer()->getData()
-									,cachedBitmap->bitmapData->getBitmapContainer()->getWidth()*cachedBitmap->bitmapData->getBitmapContainer()->getHeight()*4);
-		}
-
 		cachedBitmap->setMask(this->mask);
 		cachedBitmap->resetNeedsTextureRecalculation();
 		cachedBitmap->hasChanged=true;
@@ -1955,11 +1958,11 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	}
 	if (pcachedBitmap)
 		*pcachedBitmap = cachedBitmap;
-	this->resetNeedsTextureRecalculation();
+	this->resetNeedsCachedBitmapRecalculation();
 	this->hasChanged=false;
 	MATRIX m1(1,1,0,0,(xmin-maxfilterborder)*scalex,(ymin-maxfilterborder)*scaley);
 	m1.scale(1.0 / scalex, 1.0 / scaley);
-	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this->getParent(),m1,this);
+	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this->getParent(),m1,this,colorTransform.getPtr());
 }
 
 bool DisplayObject::findParent(DisplayObject *d) const

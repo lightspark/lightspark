@@ -131,6 +131,17 @@ public:
 	uint8_t* applyTransformation(BitmapContainer* bm);
 	void applyTransformation(uint8_t* bm, uint32_t size);
 	void setProperties(const CXFORMWITHALPHA& cx);
+	bool isIdentity() const
+	{
+		return (redMultiplier==1.0 &&
+				greenMultiplier==1.0 &&
+				blueMultiplier==1.0 &&
+				alphaMultiplier==1.0 &&
+				redOffset==0.0 &&
+				greenOffset==0.0 &&
+				blueOffset==0.0 &&
+				alphaOffset==0.0);
+	}
 	static void sinit(Class_base* c);
 	bool destruct() override;
 	ASFUNCTION_ATOM(_constructor);

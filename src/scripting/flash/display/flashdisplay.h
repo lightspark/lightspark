@@ -997,7 +997,7 @@ public:
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
-	IDrawable* invalidateFromSource(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix, DisplayObject* originalsource);
+	IDrawable* invalidateFromSource(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix, DisplayObject* originalsource, ColorTransform* ct);
 };
 
 class AVM1Movie: public DisplayObject

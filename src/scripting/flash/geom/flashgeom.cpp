@@ -544,14 +544,7 @@ uint8_t *ColorTransform::applyTransformation(BitmapContainer* bm)
 
 void ColorTransform::applyTransformation(uint8_t* bm, uint32_t size)
 {
-	if (redMultiplier==1.0 &&
-		greenMultiplier==1.0 &&
-		blueMultiplier==1.0 &&
-		alphaMultiplier==1.0 &&
-		redOffset==0.0 &&
-		greenOffset==0.0 &&
-		blueOffset==0.0 &&
-		alphaOffset==0.0)
+	if (isIdentity())
 		return;
 
 	for (uint32_t i = 0; i < size; i+=4)
@@ -1131,6 +1124,7 @@ ASFUNCTIONBODY_ATOM(Transform,_setColorTransform)
 
 	th->owner->colorTransform = ct;
 	th->owner->hasChanged=true;
+	th->owner->setNeedsCachedBitmapRecalculation();
 	if (th->owner->isOnStage())
 		th->owner->requestInvalidation(wrk->getSystemState());
 }

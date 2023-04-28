@@ -2747,14 +2747,23 @@ void DisplayObjectContainer::markBoundsRectDirtyChildren()
 
 void DisplayObjectContainer::setChildrenCachedAsBitmapOf(DisplayObject* cachedBitmapObject)
 {
+	if (cachedBitmapObject==nullptr && this->computeCacheAsBitmap())
+		return;
+
 	if (this != cachedBitmapObject)
+	{
 		this->cachedAsBitmapOf=cachedBitmapObject;
+		this->setNeedsCachedBitmapRecalculation();
+	}
 	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
 	{
 		if ((*it)->is<DisplayObjectContainer>())
 			(*it)->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(cachedBitmapObject);
 		else
+		{
 			(*it)->cachedAsBitmapOf=cachedBitmapObject;
+			(*it)->setNeedsCachedBitmapRecalculation();
+		}
 	}
 }
 
@@ -3337,6 +3346,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 	if (!keeponstage)
 		child->setOnStage(false,false,inskipping);
 	child->cachedAsBitmapOf=nullptr;
+	child->setNeedsCachedBitmapRecalculation();
 	if (child->is<DisplayObjectContainer>())
 		child->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(nullptr);
 
@@ -5183,6 +5193,12 @@ void Bitmap::updatedData()
 		cachedSurface.isValid=true;
 		requestInvalidation(getSystemState());
 	}
+	setNeedsCachedBitmapRecalculation();
+	if (cachedAsBitmapOf)
+	{
+		cachedAsBitmapOf->setNeedsCachedBitmapRecalculation();
+		cachedAsBitmapOf->requestInvalidation(getSystemState());
+	}
 }
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
@@ -5235,10 +5251,10 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
 	}
-	return invalidateFromSource(target, initialMatrix, this->smoothing, this, MATRIX(),nullptr);
+	return invalidateFromSource(target, initialMatrix, this->smoothing, this, MATRIX(),nullptr,this->colorTransform.getPtr());
 }
 
-IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix,DisplayObject* originalsource)
+IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix,DisplayObject* originalsource, ColorTransform* ct)
 {
 	number_t rx,ry;
 	number_t rwidth,rheight;
@@ -5276,7 +5292,8 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	}
 	totalMatrix2 = totalMatrix2.multiplyMatrix(sourceMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
-	ColorTransform* ct = colorTransform.getPtr();
+	if (!ct)
+		ct = colorTransform.getPtr();
 	DisplayObjectContainer* p = matrixsource ? matrixsource->getParent() :nullptr;
 	while (!ct && p)
 	{

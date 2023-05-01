@@ -109,6 +109,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			nvgFillColor(nvgctxt,startcolor);
 			nvgStrokeColor(nvgctxt,startcolor);
 			bool instroke = false;
+			bool infill = false;
 			bool renderneeded=false;
 			int tokentype = 1;
 			while (tokentype)
@@ -178,13 +179,13 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 							{
 								if (instroke)
 									nvgStroke(nvgctxt);
-								else
+								if (infill)
 									nvgFill(nvgctxt);
 								renderneeded=false;
 								nvgClosePath(nvgctxt);
 								nvgBeginPath(nvgctxt);
 							}
-							instroke=false;
+							infill=true;
 							const FILLSTYLE* style = p1.fillStyle;
 							switch (style->FillStyleType)
 							{
@@ -248,7 +249,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 							{
 								if (instroke)
 									nvgStroke(nvgctxt);
-								else
+								if (infill)
 									nvgFill(nvgctxt);
 								renderneeded=false;
 								nvgClosePath(nvgctxt);
@@ -296,12 +297,13 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 							{
 								if (instroke)
 									nvgStroke(nvgctxt);
-								else
+								if (infill)
 									nvgFill(nvgctxt);
 								renderneeded=false;
 								nvgClosePath(nvgctxt);
 								nvgBeginPath(nvgctxt);
 							}
+							infill=false;
 							if(p.type==CLEAR_FILL)
 								nvgFillColor(nvgctxt,startcolor);
 							break;
@@ -311,7 +313,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 							{
 								if (instroke)
 									nvgStroke(nvgctxt);
-								else
+								if (infill)
 									nvgFill(nvgctxt);
 								renderneeded=false;
 								nvgClosePath(nvgctxt);
@@ -330,7 +332,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			{
 				if (instroke)
 					nvgStroke(nvgctxt);
-				else
+				if (infill)
 					nvgFill(nvgctxt);
 			}
 			nvgClosePath(nvgctxt);
@@ -379,7 +381,7 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 				cursor.x += cur->DeltaX;
 				cursor.y += cur->DeltaY;
 				Vector2 p2(matrix.multiply2D(cursor));
-				shapesBuilder.extendOutline(p1, p2);
+				shapesBuilder.extendOutline(p1, p2,linestyle);
 				p1.x=p2.x;
 				p1.y=p2.y;
 			}
@@ -392,7 +394,7 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 				cursor.y += cur->AnchorDeltaY;
 				Vector2 p3(matrix.multiply2D(cursor));
 
-				shapesBuilder.extendOutlineCurve(p1, p2, p3);
+				shapesBuilder.extendOutlineCurve(p1, p2, p3,linestyle);
 				p1.x=p3.x;
 				p1.y=p3.y;
 			}
@@ -492,7 +494,7 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 			cursor.y += anchorY;
 			Vector2 p3(matrix.multiply2D(cursor));
 			
-			shapesBuilder.extendOutlineCurve(p1, p2, p3);
+			shapesBuilder.extendOutlineCurve(p1, p2, p3,linestyle);
 			p1.x=p3.x;
 			p1.y=p3.y;
 			itstart++;

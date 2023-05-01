@@ -269,7 +269,69 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 
 	return pattern;
 }
+void CairoTokenRenderer::executefill(cairo_t* cr, const FILLSTYLE* style, cairo_pattern_t* pattern)
+{
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	if (style->FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
+		style->FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
+		cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
+	if(pattern)
+		cairo_set_source(cr, pattern);
+	cairo_fill(cr);
+}
 
+void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask)
+{
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	if (style->HasFillFlag)
+	{
+		if (style->FillType.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
+			style->FillType.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
+			cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
+		if (pattern)
+			cairo_set_source(cr, pattern);
+	} else {
+		const RGBA& color = style->Color;
+		float r,g,b,a;
+		r = color.rf();
+		g = color.gf();
+		b = color.bf();
+		a = isMask ? 1.0 : color.af();
+		cairo_set_source_rgba(cr, r, g, b, a);
+	}
+	// TODO: EndCapStyle
+	if (style->StartCapStyle == 0)
+		cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+	else if (style->StartCapStyle == 1)
+		cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
+	else if (style->StartCapStyle == 2)
+		cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
+	
+	if (style->JointStyle == 0)
+		cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+	else if (style->JointStyle == 1)
+		cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
+	else if (style->JointStyle == 2) {
+		cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);
+		cairo_set_miter_limit(cr, style->MiterLimitFactor);
+	}
+	if (style->Width == 0)
+	{
+		//Width == 0 should be a hairline, but
+		//cairo does not support hairlines.
+		//using cairo_device_to_user_distance seems to work instead
+		double linewidth = 1.0;
+		cairo_device_to_user_distance(cr,&linewidth,&linewidth);
+		cairo_set_line_width(cr, linewidth);
+	}
+	else 
+	{
+		double linewidth = (double)(style->Width) * scaleCorrection;
+		cairo_device_to_user_distance(cr,&linewidth,&linewidth);
+		cairo_set_line_width(cr, linewidth);
+	}
+	cairo_stroke(cr);
+}
 bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& tokens, double scaleCorrection, bool skipPaint, bool isMask, number_t xstart, number_t ystart, int* starttoken)
 {
 	if (skipPaint && starttoken && tokens.size()==0)
@@ -280,7 +342,6 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	cairo_scale(cr, scaleCorrection, scaleCorrection);
 
 	bool empty=true;
-
 	if (xstart || ystart)
 	{
 		cairo_matrix_t mat;
@@ -291,10 +352,12 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	// Make sure not to draw anything until a fill is set.
 	cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 
-#define PATH(operation, args...) \
-	operation(cr, ## args);
-
+	const FILLSTYLE* currentfillstyle = nullptr;
+	const LINESTYLE2* currentstrokestyle = nullptr;
+	cairo_pattern_t* currentfillpattern=nullptr;
+	cairo_pattern_t* currentstrokepattern=nullptr;
 	bool instroke = false;
+	bool infill = false;
 	int tokentype = 1;
 	while (tokentype)
 	{
@@ -349,13 +412,17 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				case MOVE:
 				{
 					GeomToken p1(*(++it),false);
-					PATH(cairo_move_to, (p1.vec.x), (p1.vec.y));
+					if(skipPaint && !infill)
+						break;
+					cairo_move_to(cr,(p1.vec.x), (p1.vec.y));
 					break;
 				}
 				case STRAIGHT:
 				{
 					GeomToken p1(*(++it),false);
-					PATH(cairo_line_to, (p1.vec.x), (p1.vec.y));
+					if(skipPaint && !infill)
+						break;
+					cairo_line_to(cr, (p1.vec.x), (p1.vec.y));
 					empty = false;
 					break;
 				}
@@ -363,7 +430,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 				{
 					GeomToken p1(*(++it),false);
 					GeomToken p2(*(++it),false);
-					PATH(quadraticBezier,
+					if(skipPaint && !infill)
+						break;
+					quadraticBezier(cr,
 					   (p1.vec.x), (p1.vec.y),
 					   (p2.vec.x), (p2.vec.y));
 					empty = false;
@@ -374,7 +443,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					GeomToken p1(*(++it),false);
 					GeomToken p2(*(++it),false);
 					GeomToken p3(*(++it),false);
-					PATH(cairo_curve_to,
+					if(skipPaint && !infill)
+						break;
+					cairo_curve_to(cr,
 					   (p1.vec.x), (p1.vec.y),
 					   (p2.vec.x), (p2.vec.y),
 					   (p3.vec.x), (p3.vec.y));
@@ -392,25 +463,18 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 							*starttoken=it-itbegin + 1 +(tokentype > 2 ? tokens.filltokens.size() : 0);
 							tokentype=0;
 						}
+						infill=true;
 						break;
 					}
 					if (instroke)
-						cairo_stroke(cr);
-					else if (!tokens.filltokens.empty())
-						cairo_fill(cr);
-					instroke=false;
-					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-					const FILLSTYLE* style = p1.fillStyle;
-					if (style->FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
-						style->FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
-						cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-					cairo_pattern_t* pattern = FILLSTYLEToCairo(*style, scaleCorrection,isMask);
-					if(pattern)
-					{
-						cairo_set_source(cr, pattern);
-						// Destroy the first reference.
-						cairo_pattern_destroy(pattern);
-					}
+						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask);
+					if (infill)
+						executefill(cr,currentfillstyle,currentfillpattern);
+					infill=true;
+					currentfillstyle=p1.fillStyle;
+					if (currentfillpattern)
+						cairo_pattern_destroy(currentfillpattern);
+					currentfillpattern = FILLSTYLEToCairo(*currentfillstyle, scaleCorrection,isMask);
 					break;
 				}
 				case SET_STROKE:
@@ -427,67 +491,22 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						break;
 					}
 					if (instroke)
-						cairo_stroke(cr);
-					else if (!tokens.filltokens.empty())
-						cairo_fill(cr);
+						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask);
+					if (infill)
+						executefill(cr,currentfillstyle,currentfillpattern);
 					instroke = true;
-					const LINESTYLE2* style = p1.lineStyle;
-					cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-					if (style->HasFillFlag)
-					{
-						if (style->FillType.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
-							style->FillType.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
-							cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
-						cairo_pattern_t* pattern = FILLSTYLEToCairo(style->FillType, scaleCorrection,isMask);
-						if (pattern)
-						{
-							cairo_set_source(cr, pattern);
-							cairo_pattern_destroy(pattern);
-						}
-					} else {
-						const RGBA& color = style->Color;
-						float r,g,b,a;
-						r = color.rf();
-						g = color.gf();
-						b = color.bf();
-						a = isMask ? 1.0 : color.af();
-						cairo_set_source_rgba(cr, r, g, b, a);
-					}
-					// TODO: EndCapStyle
-					if (style->StartCapStyle == 0)
-						cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-					else if (style->StartCapStyle == 1)
-						cairo_set_line_cap(cr, CAIRO_LINE_CAP_BUTT);
-					else if (style->StartCapStyle == 2)
-						cairo_set_line_cap(cr, CAIRO_LINE_CAP_SQUARE);
-
-					if (style->JointStyle == 0)
-						cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
-					else if (style->JointStyle == 1)
-						cairo_set_line_join(cr, CAIRO_LINE_JOIN_BEVEL);
-					else if (style->JointStyle == 2) {
-						cairo_set_line_join(cr, CAIRO_LINE_JOIN_MITER);
-						cairo_set_miter_limit(cr, style->MiterLimitFactor);
-					}
-					if (style->Width == 0)
-					{
-						//Width == 0 should be a hairline, but
-						//cairo does not support hairlines.
-						//using cairo_device_to_user_distance seems to work instead
-						double linewidth = 1.0;
-						cairo_device_to_user_distance(cr,&linewidth,&linewidth);
-						cairo_set_line_width(cr, linewidth);
-					}
-					else 
-					{
-						double linewidth = (double)(style->Width) * scaleCorrection;
-						cairo_device_to_user_distance(cr,&linewidth,&linewidth);
-						cairo_set_line_width(cr, linewidth);
-					}
+					currentstrokestyle = p1.lineStyle;
+					if (currentstrokepattern)
+						cairo_pattern_destroy(currentstrokepattern);
+					if (currentstrokestyle->HasFillFlag)
+						currentstrokepattern = FILLSTYLEToCairo(currentstrokestyle->FillType, scaleCorrection,isMask);
+					else
+						currentstrokepattern = nullptr;
 					break;
 				}
 				case CLEAR_FILL:
 				case FILL_KEEP_SOURCE:
+					infill=false;
 					if(skipPaint)
 					{
 						if (starttoken)
@@ -504,7 +523,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 							cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 						break;
 					}
-					cairo_fill(cr);
+					executefill(cr,currentfillstyle,currentfillpattern);
+					currentfillpattern=nullptr;
 					if(p.type==CLEAR_FILL)
 						// Clear source.
 						cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
@@ -521,7 +541,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						}
 						break;
 					}
-					cairo_stroke(cr);
+					executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask);
+					currentstrokepattern=nullptr;
 					// Clear source.
 					cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 					break;
@@ -541,7 +562,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					cairo_pattern_get_matrix(pattern, &origmat);
 					MATRIX m(p1.value,p2.value,p3.value,p4.value,p5.value,p6.value);
 					cairo_pattern_set_matrix(pattern, &m);
-					cairo_fill(cr);
+					executefill(cr,currentfillstyle,currentfillpattern);
 					cairo_pattern_set_matrix(pattern, &origmat);
 					break;
 				}
@@ -551,15 +572,19 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 			it++;
 		}
 	}
-	#undef PATH
 
 	if(!skipPaint)
 	{
 		if (instroke)
-			cairo_stroke(cr);
-		else if (!tokens.filltokens.empty())
-			cairo_fill(cr);
+			executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask);
+		if (infill)
+			executefill(cr,currentfillstyle,currentfillpattern);
 	}
+	
+	if (currentfillpattern)
+		cairo_pattern_destroy(currentfillpattern);
+	if (currentstrokepattern)
+		cairo_pattern_destroy(currentstrokepattern);
 	return empty;
 }
 

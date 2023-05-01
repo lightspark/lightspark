@@ -328,6 +328,8 @@ public:
 class CairoTokenRenderer : public CairoRenderer
 {
 private:
+	static void executefill(cairo_t* cr, const FILLSTYLE* style, cairo_pattern_t* pattern);
+	static void executestroke(cairo_t* stroke_cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask);
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask);
 	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, bool isMask, number_t xstart, number_t ystart, int* starttoken=nullptr);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);

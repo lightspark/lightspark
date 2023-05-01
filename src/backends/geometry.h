@@ -130,8 +130,9 @@ public:
 	uint64_t from;
 	uint64_t quadctrl;
 	uint64_t to;
-	ShapePathSegment(uint64_t from, uint64_t quadctrl, uint64_t to): from(from), quadctrl(quadctrl), to(to) {}
-	ShapePathSegment reverse() const {return ShapePathSegment(to, quadctrl, from);}
+	int linestyleindex;
+	ShapePathSegment(uint64_t from, uint64_t quadctrl, uint64_t to, int linestyleindex): from(from), quadctrl(quadctrl), to(to),linestyleindex(linestyleindex) {}
+	ShapePathSegment reverse() const {return ShapePathSegment(to, quadctrl, from, linestyleindex);}
 };
 
 class ShapesBuilder
@@ -143,9 +144,10 @@ private:
 
 	static bool isOutlineEmpty(const std::vector<ShapePathSegment>& outline);
 	static uint64_t makeVertex(const Vector2& v) { return (uint64_t(v.y)<<32) | (uint64_t(v.x)&0xffffffff); }
+	std::map<uint16_t,LINESTYLE2>::iterator getStrokeLineStyle(const std::list<MORPHLINESTYLE2>::iterator& stylesIt, uint16_t ratio, std::map<uint16_t, LINESTYLE2>* linestylecache, const RECT& boundsrc);
 public:
-	void extendOutline(const Vector2& v1, const Vector2& v2);
-	void extendOutlineCurve(const Vector2& start, const Vector2& control, const Vector2& end);
+	void extendOutline(const Vector2& v1, const Vector2& v2, int linestyleindex);
+	void extendOutlineCurve(const Vector2& start, const Vector2& control, const Vector2& end, int linestyleindex);
 	void endSubpathForStyles(unsigned fill0, unsigned fill1, unsigned stroke, bool formorphing);
 	/**
 		Generate a sequence of cachable tokens that defines the geomtries

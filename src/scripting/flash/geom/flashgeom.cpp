@@ -526,18 +526,15 @@ uint8_t *ColorTransform::applyTransformation(BitmapContainer* bm)
 		alphaOffset==0.0)
 		return (uint8_t*)bm->getData();
 
-	uint32_t* src = (uint32_t*)bm->getData();
-	uint32_t* dst = (uint32_t*)bm->getDataColorTransformed();
-	uint32_t size = bm->getWidth()*bm->getHeight();
-	for (uint32_t i = 0; i < size; i++)
+	uint8_t* src = bm->getData();
+	uint8_t* dst = bm->getDataColorTransformed();
+	uint32_t size = bm->getWidth()*bm->getHeight()*4;
+	for (uint32_t i = 0; i < size; i+=4)
 	{
-		uint32_t color = *src;
-		*dst =  max(0,min(255,(((int)((color>>24)&0xff) * (int)alphaMultiplier)/256 + (int)alphaOffset)))<<24 |
-				max(0,min(255,(((int)((color>>16)&0xff) * (int)  redMultiplier)/256 + (int)  redOffset)))<<16 |
-				max(0,min(255,(((int)((color>> 8)&0xff) * (int)greenMultiplier)/256 + (int)greenOffset)))<<8 |
-				max(0,min(255,(((int)((color    )&0xff) * (int) blueMultiplier)/256 + (int) blueOffset)));
-		dst++;
-		src++;
+		dst[i+3] = max(0,min(255,int(((number_t(src[i+3]) * alphaMultiplier) + alphaOffset))));
+		dst[i+2] = max(0,min(255,int(((number_t(src[i+2]) *  blueMultiplier) +  blueOffset)*(number_t(dst[i+3])/255.0))));
+		dst[i+1] = max(0,min(255,int(((number_t(src[i+1]) * greenMultiplier) + greenOffset)*(number_t(dst[i+3])/255.0))));
+		dst[i  ] = max(0,min(255,int(((number_t(src[i  ]) *   redMultiplier) +   redOffset)*(number_t(dst[i+3])/255.0))));
 	}
 	return (uint8_t*)bm->getDataColorTransformed();
 }

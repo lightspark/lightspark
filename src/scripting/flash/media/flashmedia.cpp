@@ -590,7 +590,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 {
 	Sound* th=asAtomHandler::as<Sound>(obj);
 	_NR<ByteArray> target;
-	int32_t length;
+	number_t length;
 	int32_t startPosition;
 	ARG_CHECK(ARG_UNPACK(target)(length)(startPosition,-1));
 	int32_t readcount=0;
@@ -676,7 +676,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 					for (int32_t i = 0; i < min(readcount,bytelength); i+=4)
 					{
 						uint32_t* u = (uint32_t*)(&data[i]);
-						*u = GUINT32_TO_BE(*u);
+						*u = GUINT32_TO_LE(*u);
 					}
 				}
 #else
@@ -685,7 +685,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 					for (int32_t i = 0; i < min(readcount,bytelength); i+=4)
 					{
 						uint32_t* u = (uint32_t*)(&data[i]);
-						*u = GUINT32_TO_LE(*u);
+						*u = GUINT32_TO_BE(*u);
 					}
 				}
 #endif
@@ -1129,15 +1129,17 @@ void SoundChannel::execute()
 			playStream();
 		if (threadAborting)
 			break;
-		if (ACQUIRE_READ(finished))
-		{
-			incRef();
-			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"soundComplete")));
-		}
 		if (loopstogo)
 			loopstogo--;
 		else
+		{
+			if (ACQUIRE_READ(finished))
+			{
+				incRef();
+				getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"soundComplete")));
+			}
 			break;
+		}
 		if (ACQUIRE_READ(stopped))
 			break;
 	}
@@ -1165,7 +1167,7 @@ void SoundChannel::playStream()
 			threadAbort();
 			restartafterabort=false;
 		}
-		else
+		else if (this->startTime!=0)
 		{
 			streamDecoder->jumpToPosition(this->startTime);
 			if (audioStream)

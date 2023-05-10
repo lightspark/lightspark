@@ -8,6 +8,7 @@ Version NEXT:
 	* implement "erase" blendmode
 	* use nanoVG for bitmaps in fillstyles
 	* improved support for morphshapes
+	* improved support for adpcm encoded sounds
 
 Version 0.8.6.1:
 

@@ -433,7 +433,7 @@ private:
 	CodecID LSToFFMpegCodec(LS_AUDIO_CODEC lscodec);
 #if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)
 	AVFrame* frameIn;
-	int resampleFrame(void* samples);
+	void resampleFrame(uint8_t** output, int& outputsize);
 #endif
 public:
 	FFMpegAudioDecoder(EngineData* eng,LS_AUDIO_CODEC codec, uint8_t* initdata, uint32_t datalen, uint32_t buffertime);

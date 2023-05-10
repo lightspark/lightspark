@@ -2472,30 +2472,101 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 {
 	LOG(LOG_TRACE,"DefineSound Tag");
 	in >> SoundId;
+	uint8_t sndinfo = in.peek();
 	BitStream bs(in);
 	SoundFormat=UB(4,bs);
 	SoundRate=UB(2,bs);
 	SoundSize=UB(1,bs);
 	SoundType=UB(1,bs);
 	in >> SoundSampleCount;
-
-	//TODO: get rid of the temporary copy
 	unsigned int soundDataLength = h.getLength()-7;
-	unsigned char *tmp = new unsigned char [soundDataLength];
-	in.read((char *)tmp, soundDataLength);
-	unsigned char *tmpp = tmp;
-	// it seems that adobe allows zeros at the beginning of the sound data
-	// at least for MP3 we ignore them, otherwise ffmpeg will not work properly
-	if (SoundFormat == LS_AUDIO_CODEC::MP3)
+	
+	if (SoundFormat == LS_AUDIO_CODEC::ADPCM)
 	{
-		while (*tmpp == 0 && soundDataLength)
+		// split ADPCM sound into packets and embed packets into an flv container so that ffmpeg can properly handle it
+		uint32_t bpos = 0;
+		uint8_t flv[soundDataLength+25];
+		
+		// flv header
+		flv[bpos++] = 'F'; flv[bpos++] = 'L'; flv[bpos++] = 'V';
+		flv[bpos++] = 0x01;
+		flv[bpos++] = 0x04; // indicate audio tag presence
+		flv[bpos++] = 0x00; flv[bpos++] = 0x00; flv[bpos++] = 0x00; flv[bpos++] = 0x09; // DataOffset, end of flv header
+		
+		flv[bpos++] = 0x00; flv[bpos++] = 0x00; flv[bpos++] = 0x00; flv[bpos++] = 0x00; // PreviousTagSize0
+		
+		SoundData->append(flv,bpos);
+		uint32_t timestamp=0;
+		int adpcmcodesize = UB(2,bs);
+		int32_t bitstoprocess=soundDataLength*8-2;
+		uint32_t datalenbits = (16+6+(adpcmcodesize+2)*4095)*(SoundType+1)-6;// 6 bits are stored in the first byte of the packet (with the bps)
+		while (bitstoprocess > 6)
 		{
-			soundDataLength--;
-			tmpp++;
+			bpos=0;
+			flv[bpos++] = 0x08; // audio tag indicator
+			uint32_t datasizepos=bpos;
+			bpos += 3; // skip bytes for dataSize, will be filled later
+			flv[bpos++] = (timestamp>>16) &0xff; // timestamp
+			flv[bpos++] = (timestamp>> 8) &0xff;
+			flv[bpos++] = (timestamp    ) &0xff;
+			flv[bpos++] = (timestamp>>24) &0xff; // timestamp extended
+			timestamp += 4096 *1000 / getSampleRate();
+			flv[bpos++] = 0x00; flv[bpos++] = 0x00; flv[bpos++] = 0x00; // StreamID
+			
+			uint32_t datalenstart=bpos;
+			flv[bpos++] = sndinfo; // sound format
+			
+			// ADPCM packet data
+			flv[bpos++] = ((adpcmcodesize<<6) | UB(6,bs))&0xff;
+			bitstoprocess-=6;
+			for (uint32_t i = 0; (i < datalenbits/8) && (bitstoprocess > 8); i++)
+			{
+				flv[bpos++] = UB(8,bs)&0xff;
+				bitstoprocess-=8;
+			}
+			uint32_t additionalbits = min(uint32_t(datalenbits%8),uint32_t(bitstoprocess));
+			if (additionalbits)
+			{
+				flv[bpos++] = UB(additionalbits,bs);
+				bitstoprocess-=additionalbits;
+			}
+			// compute and set dataSize
+			uint32_t dataSize = bpos-datalenstart;
+			flv[datasizepos++] = (dataSize>>16) &0xff;
+			flv[datasizepos++] = (dataSize>> 8) &0xff;
+			flv[datasizepos++] = (dataSize    ) &0xff;
+			SoundData->append(flv,bpos);
+			
+			// PreviousTagSize
+			uint32_t l = bpos;
+			flv[0] = (l>>24) &0xff;
+			flv[1] = (l>>16) &0xff;
+			flv[2] = (l>> 8) &0xff;
+			flv[3] = (l    ) &0xff;
+			SoundData->append(flv,4);
 		}
 	}
-	SoundData->append(tmpp, soundDataLength);
+	else
+	{
+		//TODO: get rid of the temporary copy
+		uint8_t* tmp = new uint8_t[soundDataLength];
+		in.read((char *)tmp, soundDataLength);
+		unsigned char *tmpp = tmp;
+		// it seems that adobe allows zeros at the beginning of the sound data
+		// at least for MP3 we ignore them, otherwise ffmpeg will not work properly
+		if (SoundFormat == LS_AUDIO_CODEC::MP3)
+		{
+			while (*tmpp == 0 && soundDataLength)
+			{
+				soundDataLength--;
+				tmpp++;
+			}
+		}
+		SoundData->append(tmpp, soundDataLength);
+		delete[] tmp;
+	}
 	SoundData->markFinished();
+
 #ifdef ENABLE_LIBAVCODEC
 	// it seems that ffmpeg doesn't properly detect PCM data, so we only autodetect the sample rate for MP3
 	if (SoundFormat == LS_AUDIO_CODEC::MP3 && soundDataLength >= 8192)
@@ -2509,7 +2580,6 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 		delete sbuf;
 	}
 #endif
-	delete[] tmp;
 }
 
 ASObject* DefineSoundTag::instance(Class_base* c)
@@ -2538,7 +2608,7 @@ LS_AUDIO_CODEC DefineSoundTag::getAudioCodec() const
 }
 number_t DefineSoundTag::getDurationInMS() const
 {
-	return (SoundSampleCount/getSampleRate())*1000;
+	return ((number_t)SoundSampleCount/(number_t)getSampleRate())*1000.0;
 }
 int DefineSoundTag::getSampleRate() const
 {
@@ -2547,13 +2617,13 @@ int DefineSoundTag::getSampleRate() const
 	switch(SoundRate)
 	{
 		case 0:
-			return 5500;
+			return 5512;
 		case 1:
-			return 11000;
+			return 11025;
 		case 2:
-			return 22000;
+			return 22050;
 		case 3:
-			return 44000;
+			return 44100;
 	}
 
 	// not reached

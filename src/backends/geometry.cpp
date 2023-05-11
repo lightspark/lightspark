@@ -229,6 +229,8 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 					//Set the line style for strokes inside filltokens
 					tokens.filltokens.push_back(GeomToken(SET_STROKE).uval);
 					tokens.filltokens.push_back(GeomToken(*linestylesIt).uval);
+					if (tokens.currentLineWidth < (*linestylesIt).Width)
+						tokens.currentLineWidth = (*linestylesIt).Width;
 					if ((*linestylesIt).HasFillFlag) // TODO linestyles with fill flag not yet implemented for nanoGL
 						tokens.canRenderToGL=false;
 					for (size_t k = j; k < segments.size(); ++k)
@@ -280,6 +282,8 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 			vector<ShapePathSegment>& segments = it->second;
 			tokens.stroketokens.push_back(GeomToken(SET_STROKE).uval);
 			tokens.stroketokens.push_back(GeomToken(*stylesIt).uval);
+			if (tokens.currentLineWidth < (*stylesIt).Width)
+				tokens.currentLineWidth = (*stylesIt).Width;
 			if ((*stylesIt).HasFillFlag) // TODO linestyles with fill flag not yet implemented for nanoGL
 				tokens.canRenderToGL=false;
 			for (size_t j = 0; j < segments.size(); ++j)
@@ -567,6 +571,8 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 					//Set the line style for strokes inside filltokens
 					tokens.filltokens.push_back(GeomToken(SET_STROKE).uval);
 					tokens.filltokens.push_back(GeomToken((*itls).second).uval);
+					if (tokens.currentLineWidth < (*itls).second.Width)
+						tokens.currentLineWidth = (*itls).second.Width;
 					if ((*linestylesIt).HasFillFlag) // TODO linestyles with fill flag not yet implemented for nanoGL
 						tokens.canRenderToGL=false;
 					for (size_t k = j; k < segments.size(); ++k)
@@ -620,6 +626,8 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 			vector<ShapePathSegment>& segments = it->second;
 			tokens.stroketokens.push_back(GeomToken(SET_STROKE).uval);
 			tokens.stroketokens.push_back(GeomToken((*itls).second).uval);
+			if (tokens.currentLineWidth < (*itls).second.Width)
+				tokens.currentLineWidth = (*itls).second.Width;
 			for (size_t j = 0; j < segments.size(); ++j)
 			{
 				ShapePathSegment segment = segments[j];

@@ -918,39 +918,5 @@ void TokenContainer::getTextureSize(std::vector<uint64_t>& tokens, int *width, i
 /* Return the width of the latest SET_STROKE */
 uint16_t TokenContainer::getCurrentLineWidth() const
 {
-	uint32_t lastindex=UINT32_MAX;
-	for(uint32_t i=0;i<tokens.stroketokens.size();i++)
-	{
-		switch (GeomToken(tokens.stroketokens[i],false).type)
-		{
-			case SET_FILL:
-			case STRAIGHT:
-			case MOVE:
-				i++;
-				break;
-			case CURVE_QUADRATIC:
-				i+=2;
-				break;
-			case CLEAR_FILL:
-			case CLEAR_STROKE:
-			case FILL_KEEP_SOURCE:
-				break;
-			case CURVE_CUBIC:
-				i+=3;
-				break;
-			case FILL_TRANSFORM_TEXTURE:
-				i+=6;
-				break;
-			case SET_STROKE:
-			{
-				i++;
-				lastindex=i;
-				break;
-			}
-		}
-	}
-	if (lastindex != UINT32_MAX)
-		return GeomToken(tokens.stroketokens[lastindex],false).lineStyle->Width;
-	
-	return 0;
+	return tokens.currentLineWidth;
 }

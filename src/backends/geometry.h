@@ -106,13 +106,15 @@ struct tokensVector
 	std::vector<uint64_t> filltokens;
 	std::vector<uint64_t> stroketokens;
 	RECT boundsRect;
+	uint16_t currentLineWidth;
 	bool canRenderToGL;
-	tokensVector():canRenderToGL(true) {}
+	tokensVector():currentLineWidth(0),canRenderToGL(true) {}
 	void clear()
 	{
 		filltokens.clear();
 		stroketokens.clear();
 		canRenderToGL=true;
+		currentLineWidth=0;
 	}
 	uint32_t size() const
 	{

@@ -1097,9 +1097,18 @@ abc_function ABCVm::abcfunctions[]={
 	abc_sxi16_local,
 	abc_sxi16_constant_localresult,
 	abc_sxi16_local_localresult,
-
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	
+	abc_nextvalue_constant_constant,// 0x378 ABC_OP_OPTIMZED_NEXTVALUE
+	abc_nextvalue_local_constant,
+	abc_nextvalue_constant_local,
+	abc_nextvalue_local_local,
+	abc_nextvalue_constant_constant_localresult,
+	abc_nextvalue_local_constant_localresult,
+	abc_nextvalue_constant_local_localresult,
+	abc_nextvalue_local_local_localresult,
+	
+	abc_hasnext2_localresult,
+	abc_hasnext2_iftrue,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1377,6 +1386,7 @@ struct operands
 #define ABC_OP_OPTIMZED_SXI1 0x0000036c
 #define ABC_OP_OPTIMZED_SXI8 0x00000370
 #define ABC_OP_OPTIMZED_SXI16 0x00000374
+#define ABC_OP_OPTIMZED_NEXTVALUE 0x00000378
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -1697,6 +1707,15 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					pos++;
 					break;
 				}
+				argsneeded++;
+				lastlocalpos=-1;
+				break;
+			case 0x32://hasnext2
+				candup=true;
+				pos = code.skipu30FromPosition(pos);
+				pos = code.skipu30FromPosition(pos);
+				b = code.peekbyteFromPosition(pos);
+				pos++;
 				argsneeded++;
 				lastlocalpos=-1;
 				break;
@@ -2394,6 +2413,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x18://ifge
 		case 0x19://ifstricteq
 		case 0x1a://ifstrictne
+		case 0x23://nextvalue
 		case 0x6d://setslot
 		case 0x87://astypelate
 		case 0xa0://add
@@ -6215,8 +6235,25 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.preloadedcode.back().pcode.arg1_uint = code.readu30();
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				state.preloadedcode.back().pcode.arg2_uint = code.readu30();
-				clearOperands(state,true,&lastlocalresulttype);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(function->getSystemState()).getPtr(),false));
+				Class_base* resulttype = Class<Boolean>::getRef(function->getSystemState()).getPtr();
+#ifdef ENABLE_OPTIMIZATION
+				int32_t p = code.tellg();
+				if (state.jumptargets.find(p) == state.jumptargets.end() && code.peekbyteFromPosition(p) == 0x11) //iftrue
+				{
+					// common case hasnext2 followed by iftrue (for each loop)
+					code.readbyte();
+					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func=abc_hasnext2_iftrue;
+					jumppositions[state.preloadedcode.size()-1] = code.reads24();
+					jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
+					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					clearOperands(state,true,&lastlocalresulttype);
+				}
+				else if (checkForLocalResult(state,code,0,resulttype))
+					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func=abc_hasnext2_localresult;
+				else
+#endif
+					clearOperands(state,true,&lastlocalresulttype);
+				typestack.push_back(typestackentry(resulttype,false));
 				break;
 			}
 			case 0x43://callmethod
@@ -7698,10 +7735,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0x1e://nextname
-			case 0x23://nextvalue
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);
+				removetypestack(typestack,2);
+				typestack.push_back(typestackentry(nullptr,false));
+				break;
+			case 0x23://nextvalue
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_NEXTVALUE,opcode,code,false,false,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(nullptr,false));
 				break;

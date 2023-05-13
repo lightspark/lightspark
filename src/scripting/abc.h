@@ -652,6 +652,14 @@ private:
 	static void abc_pushnull(call_context* context);// 0x20
 	static void abc_pushundefined(call_context* context);
 	static void abc_nextvalue(call_context* context);
+	static void abc_nextvalue_constant_constant(call_context* context);
+	static void abc_nextvalue_local_constant(call_context* context);
+	static void abc_nextvalue_constant_local(call_context* context);
+	static void abc_nextvalue_local_local(call_context* context);
+	static void abc_nextvalue_constant_constant_localresult(call_context* context);
+	static void abc_nextvalue_local_constant_localresult(call_context* context);
+	static void abc_nextvalue_constant_local_localresult(call_context* context);
+	static void abc_nextvalue_local_local_localresult(call_context* context);
 	static void abc_pushbyte(call_context* context);
 	static void abc_pushshort(call_context* context);
 	static void abc_pushtrue(call_context* context);
@@ -677,6 +685,8 @@ private:
 	static void abc_pushScope_local(call_context* context);// 0x30
 	static void abc_pushnamespace(call_context* context);
 	static void abc_hasnext2(call_context* context);
+	static void	abc_hasnext2_localresult(call_context* context);
+	static void	abc_hasnext2_iftrue(call_context* context);
 	static void abc_li8(call_context* context);
 	static void abc_li8_constant(call_context* context);
 	static void abc_li8_local(call_context* context);

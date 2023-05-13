@@ -7821,3 +7821,96 @@ void ABCVm::abc_sxi16_local_localresult(call_context* context)
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
 }
+void ABCVm::abc_nextvalue_constant_constant(call_context* context)
+{
+	LOG_CALL("nextvalue_cc");
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker)->nextValue(ret,asAtomHandler::toUInt(*context->exec_pos->arg2_constant));
+	ASATOM_INCREF(ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_nextvalue_local_constant(call_context* context)
+{
+	LOG_CALL("nextvalue_lc");
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->worker)->nextValue(ret,asAtomHandler::toUInt(*context->exec_pos->arg2_constant));
+	ASATOM_INCREF(ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_nextvalue_constant_local(call_context* context)
+{
+	LOG_CALL("nextvalue_cl");
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker)->nextValue(ret,asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
+	ASATOM_INCREF(ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_nextvalue_local_local(call_context* context)
+{
+	LOG_CALL("nextvalue_ll");
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->worker)->nextValue(ret,asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
+	ASATOM_INCREF(ret);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_nextvalue_constant_constant_localresult(call_context* context)
+{
+	LOG_CALL("nextvalue_ccl");
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker)->nextValue(ret,asAtomHandler::toUInt(*context->exec_pos->arg2_constant));
+	ASATOM_INCREF(ret);
+	replacelocalresult(context,context->exec_pos->local3.pos,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_nextvalue_local_constant_localresult(call_context* context)
+{
+	LOG_CALL("nextvalue_lcl");
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->worker)->nextValue(ret,asAtomHandler::toUInt(*context->exec_pos->arg2_constant));
+	ASATOM_INCREF(ret);
+	replacelocalresult(context,context->exec_pos->local3.pos,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_nextvalue_constant_local_localresult(call_context* context)
+{
+	LOG_CALL("nextvalue_cll");
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker)->nextValue(ret,asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
+	ASATOM_INCREF(ret);
+	replacelocalresult(context,context->exec_pos->local3.pos,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_nextvalue_local_local_localresult(call_context* context)
+{
+	LOG_CALL("nextvalue_lll");
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->worker)->nextValue(ret,asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
+	ASATOM_INCREF(ret);
+	replacelocalresult(context,context->exec_pos->local3.pos,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_hasnext2_localresult(call_context* context)
+{
+	LOG_CALL( "hasnext2_l");
+	uint32_t t = context->exec_pos->arg1_uint;
+	uint32_t t2 = context->exec_pos->arg2_uint;
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtomHandler::setBool(ret,hasNext2(context,t,t2));
+	replacelocalresult(context,context->exec_pos->local3.pos,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_hasnext2_iftrue(call_context* context)
+{
+	LOG_CALL( "hasnext2_iftrue");
+	uint32_t t = context->exec_pos->arg1_uint;
+	uint32_t t2 = context->exec_pos->arg2_uint;
+	if (hasNext2(context,t,t2))
+		context->exec_pos += context->exec_pos->arg3_int;
+	else
+		++(context->exec_pos);
+}
+

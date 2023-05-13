@@ -113,6 +113,7 @@ class ColorTransform: public ASObject
 {
 friend class Bitmap;
 friend class BitmapData;
+friend class BitmapContainer;
 friend class DisplayObject;
 friend class AVM1Color;
 friend class TokenContainer;

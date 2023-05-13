@@ -1143,7 +1143,7 @@ Matrix::Matrix(ASWorker* wrk,Class_base* c, const MATRIX& m):ASObject(wrk,c,T_OB
 void Matrix::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	
+	c->isReusable=true;
 	//Properties
 	c->setDeclaredMethodByQName("a","",Class<IFunction>::getFunction(c->getSystemState(),_get_a,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("b","",Class<IFunction>::getFunction(c->getSystemState(),_get_b,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);

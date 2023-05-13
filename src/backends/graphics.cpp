@@ -224,18 +224,19 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 				return nullptr;
 			if (!style.Matrix.isInvertible())
 				return nullptr;
-
-			cairo_surface_t* surface = nullptr;
-			//Do an explicit cast, the data will not be modified
-			surface = cairo_image_surface_create_for_data ((uint8_t*)bm->getData(),
+			if (bm->cachedCairoPattern == nullptr)
+			{
+				cairo_surface_t* surface = nullptr;
+				//Do an explicit cast, the data will not be modified
+				surface = cairo_image_surface_create_for_data ((uint8_t*)bm->getData(),
 									CAIRO_FORMAT_ARGB32,
 									bm->getWidth(),
 									bm->getHeight(),
 									cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, bm->getWidth()));
-
-			pattern = cairo_pattern_create_for_surface(surface);
-			cairo_surface_destroy(surface);
-
+				bm->cachedCairoPattern = cairo_pattern_create_for_surface(surface);
+				cairo_surface_destroy(surface);
+			}
+			pattern = cairo_pattern_reference(bm->cachedCairoPattern);
 			//Make a copy to invert it
 			cairo_matrix_t mat=style.Matrix;
 			mat.x0 -= style.ShapeBounds.Xmin/20;
@@ -524,6 +525,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						break;
 					}
 					executefill(cr,currentfillstyle,currentfillpattern);
+					if (currentfillpattern)
+						cairo_pattern_destroy(currentfillpattern);
 					currentfillpattern=nullptr;
 					if(p.type==CLEAR_FILL)
 						// Clear source.
@@ -542,6 +545,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						break;
 					}
 					executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask);
+					if (currentstrokepattern)
+						cairo_pattern_destroy(currentstrokepattern);
 					currentstrokepattern=nullptr;
 					// Clear source.
 					cairo_set_operator(cr, CAIRO_OPERATOR_DEST);

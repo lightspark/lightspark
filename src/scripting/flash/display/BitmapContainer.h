@@ -42,12 +42,17 @@ protected:
 	 * ARGB format. stride is the number of bytes per row, may be
 	 * larger than width. */
 	std::vector<uint8_t, reporter_allocator<uint8_t>> data;
-	// buffer to contain the 
+	// buffer to contain the pixels transformed by latest ColorTransformation
 	std::vector<uint8_t> data_colortransformed;
+	// color transformation values currently applied to data_colortransformed
+	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
+	number_t redOffset,greenOffset,blueOffset,alphaOffset;
 	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y) const;
+	void resetColorTransform();
 public:
 	TextureChunk bitmaptexture;
 	int nanoVGImageHandle;
+	cairo_pattern_t* cachedCairoPattern;
 	BitmapContainer(MemoryAccount* m);
 	~BitmapContainer();
 	uint32_t getDataSize() const { return data.size(); }
@@ -58,6 +63,9 @@ public:
 		data_colortransformed.reserve(data.size());
 		return &data_colortransformed[0];
 	}
+	uint8_t *applyColorTransform(ColorTransform* ctransform);
+	uint8_t *applyColorTransform(number_t redMulti, number_t greenMulti, number_t blueMulti, number_t alphaMulti,
+								 number_t redOff, number_t greenOff, number_t blueOff, number_t alphaOff);
 	// this creates a new byte array that has to be deleted by the caller
 	uint8_t* getRectangleData(const RECT& sourceRect);
 	bool fromRGB(uint8_t* rgb, uint32_t width, uint32_t height, BITMAP_FORMAT format, bool frompng = false);

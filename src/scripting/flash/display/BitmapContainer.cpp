@@ -21,6 +21,7 @@
 #include "scripting/flash/display/BitmapContainer.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/filters/flashfilters.h"
+#include "scripting/flash/geom/flashgeom.h"
 #include "backends/rendering.h"
 #include "backends/image.h"
 #include "backends/decoder.h"
@@ -31,7 +32,10 @@ using namespace lightspark;
 
 extern void nanoVGDeleteImage(int image);
 BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
-	data(reporter_allocator<uint8_t>(m)),nanoVGImageHandle(-1)
+	data(reporter_allocator<uint8_t>(m)),
+	redMultiplier(1.0),greenMultiplier(1.0),blueMultiplier(1.0),alphaMultiplier(1.0),
+	redOffset(0),greenOffset(0),blueOffset(0),alphaOffset(0),
+	nanoVGImageHandle(-1),cachedCairoPattern(nullptr)
 {
 }
 
@@ -47,6 +51,81 @@ BitmapContainer::~BitmapContainer()
 	}
 	if (nanoVGImageHandle != -1)
 		nanoVGDeleteImage(nanoVGImageHandle);
+	if (cachedCairoPattern)
+		cairo_pattern_destroy(cachedCairoPattern);
+		
+}
+
+uint8_t* BitmapContainer::applyColorTransform(ColorTransform *ctransform)
+{
+	if (ctransform->redMultiplier==1.0 &&
+		ctransform->greenMultiplier==1.0 &&
+		ctransform->blueMultiplier==1.0 &&
+		ctransform->alphaMultiplier==1.0 &&
+		ctransform->redOffset==0.0 &&
+		ctransform->greenOffset==0.0 &&
+		ctransform->blueOffset==0.0 &&
+		ctransform->alphaOffset==0.0)
+		return getData();
+	if (ctransform->redMultiplier==this->redMultiplier &&
+		ctransform->greenMultiplier==this->greenMultiplier &&
+		ctransform->blueMultiplier==this->blueMultiplier &&
+		ctransform->alphaMultiplier==this->alphaMultiplier &&
+		ctransform->redOffset==this->redOffset &&
+		ctransform->greenOffset==this->greenOffset &&
+		ctransform->blueOffset==this->blueOffset &&
+		ctransform->alphaOffset==this->alphaOffset)
+		return getDataColorTransformed();
+	redMultiplier=ctransform->redMultiplier;
+	greenMultiplier=ctransform->greenMultiplier;
+	blueMultiplier=ctransform->blueMultiplier;
+	alphaMultiplier=ctransform->alphaMultiplier;
+	redOffset=ctransform->redOffset;
+	greenOffset=ctransform->greenOffset;
+	blueOffset=ctransform->blueOffset;
+	alphaOffset=ctransform->alphaOffset;
+	return ctransform->applyTransformation(this);
+}
+
+uint8_t* BitmapContainer::applyColorTransform(number_t redMulti, number_t greenMulti, number_t blueMulti, number_t alphaMulti, number_t redOff, number_t greenOff, number_t blueOff, number_t alphaOff)
+{
+	if (redMulti==1.0 &&
+		greenMulti==1.0 &&
+		blueMulti==1.0 &&
+		alphaMulti==1.0 &&
+		redOff==0.0 &&
+		greenOff==0.0 &&
+		blueOff==0.0 &&
+		alphaOff==0.0)
+		return getData();
+	if (redMulti==this->redMultiplier &&
+		greenMulti==this->greenMultiplier &&
+		blueMulti==this->blueMultiplier &&
+		alphaMulti==this->alphaMultiplier &&
+		redOff==this->redOffset &&
+		greenOff==this->greenOffset &&
+		blueOff==this->blueOffset &&
+		alphaOff==this->alphaOffset)
+		return getDataColorTransformed();
+	redMultiplier=redMulti;
+	greenMultiplier=greenMulti;
+	blueMultiplier=blueMulti;
+	alphaMultiplier=alphaMulti;
+	redOffset=redOff;
+	greenOffset=greenOff;
+	blueOffset=blueOff;
+	alphaOffset=alphaOff;
+	uint8_t* src = getData();
+	uint8_t* dst = getDataColorTransformed();
+	uint32_t size = getWidth()*getHeight()*4;
+	for (uint32_t i = 0; i < size; i+=4)
+	{
+		dst[i+3] = max(0,min(255,int(((number_t(src[i+3]) * alphaMultiplier) + alphaOffset))));
+		dst[i+2] = max(0,min(255,int(((number_t(src[i+2]) *  blueMultiplier) +  blueOffset)*(number_t(dst[i+3])/255.0))));
+		dst[i+1] = max(0,min(255,int(((number_t(src[i+1]) * greenMultiplier) + greenOffset)*(number_t(dst[i+3])/255.0))));
+		dst[i  ] = max(0,min(255,int(((number_t(src[i  ]) *   redMultiplier) +   redOffset)*(number_t(dst[i+3])/255.0))));
+	}
+	return getDataColorTransformed();
 }
 
 uint8_t* BitmapContainer::getRectangleData(const RECT& sourceRect)
@@ -230,7 +309,7 @@ void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)
 {
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return;
-
+	resetColorTransform();
 	uint32_t *p=reinterpret_cast<uint32_t *>(&data[y*stride + 4*x]);
 	*p = ((uint32_t)alpha << 24) + (*p & 0xFFFFFF);
 }
@@ -240,6 +319,7 @@ void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlp
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return;
 
+	resetColorTransform();
 	uint32_t *p=reinterpret_cast<uint32_t *>(&data[y*stride + 4*x]);
 	if(setAlpha)
 	{
@@ -302,6 +382,7 @@ void BitmapContainer::copyRectangle(_R<BitmapContainer> source,
 
 	if (copyWidth <= 0 || copyHeight <= 0)
 		return;
+	resetColorTransform();
 	int sx = clippedSourceRect.Xmin;
 	int sy = clippedSourceRect.Ymin;
 	if (mergeAlpha==false)
@@ -351,17 +432,16 @@ void BitmapContainer::fillRectangle(const RECT& inputRect, uint32_t color, bool 
 {
 	RECT clippedRect;
 	clipRect(inputRect, clippedRect);
-
+	
+	resetColorTransform();
+	uint32_t realcolor = useAlpha ? color : (0xFF000000 | (color & 0xFFFFFF));
 	for(int32_t y=clippedRect.Ymin;y<clippedRect.Ymax;y++)
 	{
 		for(int32_t x=clippedRect.Xmin;x<clippedRect.Xmax;x++)
 		{
 			uint32_t offset=y*stride + x*4;
 			uint32_t* ptr=(uint32_t*)(getData()+offset);
-			if (useAlpha)
-				*ptr = color;
-			else
-				*ptr = 0xFF000000 | (color & 0xFFFFFF);
+			*ptr = realcolor;
 		}
 	}
 }
@@ -403,6 +483,17 @@ inline uint32_t *BitmapContainer::getDataNoBoundsChecking(int32_t x, int32_t y) 
 {
 	return (uint32_t*)&data[y*stride + 4*x];
 }
+void BitmapContainer::resetColorTransform()
+{
+	redMultiplier=1.0;
+	greenMultiplier=1.0;
+	blueMultiplier=1.0;
+	alphaMultiplier=1.0;
+	redOffset=0.0;
+	greenOffset=0.0;
+	blueOffset=0.0;
+	alphaOffset=0.0;
+}
 
 /*
  * Fill a connected area around (startX, startY) with the given color.
@@ -426,6 +517,7 @@ void BitmapContainer::floodFill(int32_t startX, int32_t startY, uint32_t color)
 	if (startX < 0 || startX >= width || startY < 0 || startY >= height)
 		return;
 
+	resetColorTransform();
 	uint32_t seedColor = getPixel(startX, startY);
 
 	// Comment on the codeproject.com: "needed in some cases" ???

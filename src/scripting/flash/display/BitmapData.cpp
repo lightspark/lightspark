@@ -269,16 +269,14 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 			target->applyFilters(&bc,nullptr,RECT(0,bc.getWidth(),0,bc.getHeight()),0,0, drawable->getXScale(), drawable->getYScale());
 			memcpy(buf,bc.getData(),bufsize);
 		}
-		ColorTransform* colortransform = ct && !ct->isIdentity() ? ct : nullptr;
-		if (!colortransform)
-			colortransform=target->colorTransform.getPtr();
+		ColorTransform* colortransform = target->colorTransform.getPtr();
 		DisplayObjectContainer* p = target->getParent();
 		while (!colortransform && p && p!= d)
 		{
 			colortransform = p->colorTransform.getPtr();
 			p = p->getParent();
 		}
-		if (colortransform)
+		if (colortransform && !colortransform->isIdentity())
 		{
 			if (!isBufferOwner)
 			{
@@ -319,6 +317,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 	if (d->getMask())
 		d->getMask()->Render(ctxt,true);
 	d->Render(ctxt,true);
+	if (ct && !ct->isIdentity())
+		ct->applyTransformation(pixels.getPtr());
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,draw)
@@ -333,10 +333,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 	_NR<ASObject> drawable;
 	_NR<Matrix> matrix;
 	_NR<ColorTransform> ctransform;
-	tiny_string blendMode;
+	asAtom blendMode;
 	_NR<Rectangle> clipRect;
 	bool smoothing;
-	ARG_CHECK(ARG_UNPACK(drawable) (matrix, NullRef) (ctransform, NullRef) (blendMode, "")
+	ARG_CHECK(ARG_UNPACK(drawable) (matrix, NullRef) (ctransform, NullRef) (blendMode, asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY))
 					(clipRect, NullRef) (smoothing, false));
 
 	if(!drawable->getClass() || !drawable->getClass()->isSubClass(InterfaceClass<IBitmapDrawable>::getClass(wrk->getSystemState())) )
@@ -348,27 +348,32 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		return;
 	}
 
+	uint32_t blendModeID = BUILTIN_STRINGS::EMPTY;
+	if (asAtomHandler::isStringID(blendMode))
+		blendModeID = asAtomHandler::toStringId(blendMode,wrk);
 	if(drawable->is<BitmapData>())
 	{
-		if(blendMode != "" && blendMode != "null")
-			LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support blendMode parameter:"<<drawable->toDebugString()<<" "<<blendMode);
+		if(blendModeID != BUILTIN_STRINGS::EMPTY)
+			LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support blendMode parameter:"<<drawable->toDebugString()<<" "<<wrk->getSystemState()->getStringFromUniqueId(blendModeID));
 		BitmapData* data=drawable->as<BitmapData>();
 		//Compute the initial matrix, if any
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
-		uint8_t* bmp = !ctransform.isNull() ? ctransform->applyTransformation(data->pixels.getPtr()) : data->pixels->getData();
+		uint8_t* bmp = !ctransform.isNull() ? data->pixels->applyColorTransform(ctransform.getPtr()) : data->pixels->getData();
 		CairoRenderContext ctxt(th->pixels->getData(), th->pixels->getWidth(), th->pixels->getHeight(),false);
 		//Blit the data while transforming it
 		if (clipRect.isNull())
+		{
 			ctxt.transformedBlit(initialMatrix, bmp,
-								 data->pixels->getWidth(), data->pixels->getHeight(),
+								data->pixels->getWidth(), data->pixels->getHeight(),
 								smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,0,0,data->pixels->getWidth(), data->pixels->getHeight());
+		}
 		else
 		{
 			ctxt.transformedBlit(initialMatrix, bmp,
-								  data->pixels->getWidth(), data->pixels->getHeight(),
-								  smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,clipRect->x,clipRect->y,clipRect->width,clipRect->height);
+								data->pixels->getWidth(), data->pixels->getHeight(),
+								smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,clipRect->x,clipRect->y,clipRect->width,clipRect->height);
 		}
 	}
 	else if(drawable->is<DisplayObject>())
@@ -381,19 +386,22 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
 		AS_BLENDMODE bl = BLENDMODE_NORMAL;
-		if (blendMode == "add") bl = BLENDMODE_ADD;
-		else if (blendMode == "alpha") bl = BLENDMODE_ALPHA;
-		else if (blendMode == "darken") bl = BLENDMODE_DARKEN;
-		else if (blendMode == "difference") bl = BLENDMODE_DIFFERENCE;
-		else if (blendMode == "erase") bl = BLENDMODE_ERASE;
-		else if (blendMode == "hardlight") bl = BLENDMODE_HARDLIGHT;
-		else if (blendMode == "invert") bl = BLENDMODE_INVERT;
-		else if (blendMode == "layer") bl = BLENDMODE_LAYER;
-		else if (blendMode == "lighten") bl = BLENDMODE_LIGHTEN;
-		else if (blendMode == "multiply") bl = BLENDMODE_MULTIPLY;
-		else if (blendMode == "overlay") bl = BLENDMODE_OVERLAY;
-		else if (blendMode == "screen") bl = BLENDMODE_SCREEN;
-		else if (blendMode == "subtract") bl = BLENDMODE_SUBTRACT;
+		switch(blendModeID)
+		{
+			case BUILTIN_STRINGS::STRING_ADD: bl = BLENDMODE_ADD; break;
+			case BUILTIN_STRINGS::STRING_ALPHA: bl = BLENDMODE_ALPHA; break;
+			case BUILTIN_STRINGS::STRING_DARKEN: bl = BLENDMODE_DARKEN; break;
+			case BUILTIN_STRINGS::STRING_DIFFERENCE: bl = BLENDMODE_DIFFERENCE; break;
+			case BUILTIN_STRINGS::STRING_ERASE: bl = BLENDMODE_ERASE; break;
+			case BUILTIN_STRINGS::STRING_HARDLIGHT: bl = BLENDMODE_HARDLIGHT; break;
+			case BUILTIN_STRINGS::STRING_INVERT: bl = BLENDMODE_INVERT; break;
+			case BUILTIN_STRINGS::STRING_LAYER: bl = BLENDMODE_LAYER; break;
+			case BUILTIN_STRINGS::STRING_LIGHTEN: bl = BLENDMODE_LIGHTEN; break;
+			case BUILTIN_STRINGS::STRING_MULTIPLY: bl = BLENDMODE_MULTIPLY; break;
+			case BUILTIN_STRINGS::STRING_OVERLAY: bl = BLENDMODE_OVERLAY; break;
+			case BUILTIN_STRINGS::STRING_SCREEN: bl = BLENDMODE_SCREEN; break;
+			case BUILTIN_STRINGS::STRING_SUBTRACT: bl = BLENDMODE_SUBTRACT; break;
+		}
 		d->DrawToBitmap(th,initialMatrix,true,false,bl,ctransform.getPtr());
 	}
 	else

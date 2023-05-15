@@ -3102,6 +3102,7 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 			uint32_t pos = code.tellg();
 			bool ok = state.jumptargets.find(pos) == state.jumptargets.end() && state.jumptargets.find(pos+1) == state.jumptargets.end();
 			bool isnot = code.peekbyteFromPosition(pos) == 0x96; //not
+			bool multiconditions = false;
 			if (ok && isnot)
 			{
 				pos++;
@@ -3112,17 +3113,55 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 				pos++;
 				ok = state.jumptargets.find(pos) == state.jumptargets.end();
 			}
+			if (ok && code.peekbyteFromPosition(pos) == 0x2a //dup
+				&& (code.peekbyteFromPosition(pos+1) == 0x11 || //iftrue
+					code.peekbyteFromPosition(pos+1) == 0x12 ) //iffalse
+				&& code.peeks24FromPosition(pos+2) > 0)
+			{
+				// common case for comparison with multiple conditions like "if (a>0 && b>0)"
+				pos++;
+				multiconditions = true;
+				ok = state.jumptargets.find(pos) == state.jumptargets.end();
+			}
 			if (ok && (state.jumptargets.find(pos+1) == state.jumptargets.end()))
 			{
-				if (code.peekbyteFromPosition(pos) == 0x11 || //iftrue
-						code.peekbyteFromPosition(pos) == 0x12 ) //iffalse
+				int j = code.peeks24FromPosition(pos+1);
+				bool canoptimize = (!multiconditions || code.peekbyteFromPosition(pos+4) == 0x29); //pop
+						
+				if (multiconditions)
+				{
+					if (j <= 0)
+						canoptimize = false;
+					else
+					{
+						int jumppos = pos+j+3+1+1;
+						auto it = state.jumptargets.find(jumppos);
+						if (it != state.jumptargets.end() && (*it).second == 1)
+						{
+							if (code.peekbyteFromPosition(jumppos-1) ==code.peekbyteFromPosition(pos))
+							{
+								// remove old jump target and set new jump target
+								state.jumptargets.erase(it);
+								j += code.peeks24FromPosition(jumppos)+3+1;
+								jumppos += code.peeks24FromPosition(jumppos)+3+1;
+								it = state.jumptargets.find(jumppos+3+1);
+								(*it).second++;
+							}
+							else
+								canoptimize = false;
+						}
+					}
+				}
+				if ((code.peekbyteFromPosition(pos) == 0x11 || //iftrue
+					 code.peekbyteFromPosition(pos) == 0x12 ) //iffalse
+					&& canoptimize)
 				{
 					// comparison operator is followed by iftrue/iffalse, can be optimized into comparison operator with jump (e.g. equals->ifeq/ifne)
 					code.seekg(pos);
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 					uint8_t b = code.readbyte();
 					assert(b== 0x11 || b== 0x12);
-					int j = code.reads24();
+					code.reads24();
 					int32_t p1 = code.tellg();
 					uint32_t opcodeskip = state.preloadedcode.back().opcode - (operator_start+4);
 					if (isnot)
@@ -3134,6 +3173,12 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 					jumpstartpositions[state.preloadedcode.size()-1] = p1;
 					clearOperands(state,true,lastlocalresulttype);
 					removetypestack(typestack,2);
+					if (multiconditions)
+					{
+						// iftrue/iffalse is followed by pop, skip it
+						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						code.readbyte();
+					}
 					return;
 				}
 			}
@@ -5470,6 +5515,27 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								if (state.jumptargets.find(pos) != state.jumptargets.end())
 									break;
 								jump = code.peeks24FromPosition(pos);
+								if (jump >0)
+								{
+									int jumppos = pos+jump+3+1;
+									auto it = state.jumptargets.find(jumppos);
+									if (it != state.jumptargets.end() && (*it).second == 1)
+									{
+										if (code.peekbyteFromPosition(jumppos-1) ==0x12)//iffalse
+										{
+											// optimize common case of checking for multiple conditions like "if (a>0 && b>0)"
+											state.jumptargets.erase(it);
+											jump += code.peeks24FromPosition(jumppos)+3+1;
+											it = state.jumptargets.find(pos+jump+3+1);
+											(*it).second++;
+											pos +=3;
+											is_iftruefalse=true;
+											// dup not needed as we jump straight to the next branch
+											opcode_optimized=ABC_OP_OPTIMZED_IFFALSE+1;
+											break;
+										}
+									}
+								}
 								pos +=3;
 								is_iftruefalse=true;
 								opcode_optimized=ABC_OP_OPTIMZED_IFFALSE_DUP+1;

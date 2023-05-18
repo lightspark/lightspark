@@ -66,7 +66,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(nullptr),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(nullptr),bytesData(NullRef),waitedObject(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
@@ -79,7 +79,7 @@ LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),appli
 LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, Loader* l):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),bytesData(NullRef),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(l),bytesData(NullRef),waitedObject(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
@@ -130,7 +130,9 @@ bool LoaderInfo::destruct()
 	loader=nullptr;
 	applicationDomain.reset();
 	securityDomain.reset();
-	waitedObject.reset();
+	if (waitedObject)
+		waitedObject->removeStoredMember();
+	waitedObject=nullptr;
 	bytesData.reset();
 	contentType = "application/x-shockwave-flash";
 	bytesLoaded = 0;
@@ -157,7 +159,9 @@ void LoaderInfo::finalize()
 	loader=nullptr;
 	applicationDomain.reset();
 	securityDomain.reset();
-	waitedObject.reset();
+	if (waitedObject)
+		waitedObject->removeStoredMember();
+	waitedObject=nullptr;
 	bytesData.reset();
 	uncaughtErrorEvents.reset();
 	parameters.reset();
@@ -190,6 +194,16 @@ void LoaderInfo::prepareShutdown()
 		uncaughtErrorEvents->prepareShutdown();
 	if (progressEvent)
 		progressEvent->prepareShutdown();
+}
+
+bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	if (waitedObject)
+		ret = waitedObject->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void LoaderInfo::afterHandleEvent(Event* ev)
@@ -311,7 +325,14 @@ void LoaderInfo::sendInit()
 void LoaderInfo::setWaitedObject(_NR<DisplayObject> w)
 {
 	Locker l(spinlock);
-	waitedObject = w;
+	if (waitedObject)
+		waitedObject->removeStoredMember();
+	waitedObject = w.getPtr();
+	if (waitedObject)
+	{
+		waitedObject->incRef();
+		waitedObject->addStoredMember();
+	}
 }
 
 void LoaderInfo::objectHasLoaded(DisplayObject* obj)
@@ -319,13 +340,14 @@ void LoaderInfo::objectHasLoaded(DisplayObject* obj)
 	Locker l(spinlock);
 	if(waitedObject != obj)
 		return;
-	if(loader && obj==waitedObject.getPtr())
+	if(loader && obj==waitedObject)
 		loader->setContent(obj);
 
 	if (loader && !loader->getParent() && !loader->hasAVM1Target() && waitedObject->is<MovieClip>()) // loader has no parent, ensure init/complete events are sended anyway
 		loader->getSystemState()->stage->addHiddenObject(waitedObject->as<MovieClip>());
-		
-	waitedObject.reset();
+	if (waitedObject)
+		waitedObject->removeStoredMember();
+	waitedObject=nullptr;;
 }
 
 void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)
@@ -604,7 +626,10 @@ ASFUNCTIONBODY_ATOM(Loader,_constructor)
 	Loader* th=asAtomHandler::as<Loader>(obj);
 	DisplayObjectContainer::_constructor(ret,wrk,obj,nullptr,0);
 	if (!th->contentLoaderInfo)
-		th->contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(wrk,th));
+	{
+		th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(wrk,th);
+		th->contentLoaderInfo->addStoredMember();
+	}
 	th->contentLoaderInfo->setLoaderURL(th->getSystemState()->mainClip->getOrigin().getParsedURL());
 	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(wrk));
 }
@@ -628,7 +653,7 @@ ASFUNCTIONBODY_ATOM(Loader,_getContentLoaderInfo)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
 	th->contentLoaderInfo->incRef();
-	ret = asAtomHandler::fromObject(th->contentLoaderInfo.getPtr());
+	ret = asAtomHandler::fromObject(th->contentLoaderInfo);
 }
 
 ASFUNCTIONBODY_ATOM(Loader,close)
@@ -711,6 +736,8 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 
 	SecurityManager::checkURLStaticAndThrow(this->url, ~(SecurityManager::LOCAL_WITH_FILE),
 		SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED, true);
+	if (getInstanceWorker()->currentCallContext && getInstanceWorker()->currentCallContext->exceptionthrown)
+		return;
 
 	if (context && context->getCheckPolicyFile())
 	{
@@ -813,7 +840,7 @@ void Loader::unload()
 	if(loaded)
 	{
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"unload");
-		if (getVm(getSystemState())->addEvent(contentLoaderInfo,_MR(ev)))
+		if (getVm(getSystemState())->addEvent(getContentLoaderInfo(),_MR(ev)))
 			contentLoaderInfo->addLoaderEvent(ev);
 		loaded=false;
 	}
@@ -835,7 +862,9 @@ void Loader::finalize()
 	if (content)
 		content->removeStoredMember();
 	content=nullptr;
-	contentLoaderInfo.reset();
+	if (contentLoaderInfo)
+		contentLoaderInfo->removeStoredMember();
+	contentLoaderInfo=nullptr;
 	avm1target.reset();
 	uncaughtErrorEvents.reset();
 }
@@ -847,7 +876,9 @@ bool Loader::destruct()
 	if (content)
 		content->removeStoredMember();
 	content=nullptr;
-	contentLoaderInfo.reset();
+	if (contentLoaderInfo)
+		contentLoaderInfo->removeStoredMember();
+	contentLoaderInfo=nullptr;
 	avm1target.reset();
 	uncaughtErrorEvents.reset();
 	return DisplayObjectContainer::destruct();
@@ -858,6 +889,8 @@ bool Loader::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	if (gcstate.checkAncestors(this))
 		return false;
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
+	if (contentLoaderInfo)
+		ret = contentLoaderInfo->countAllCylicMemberReferences(gcstate) || ret;
 	Locker l(mutexDisplayList);
 	if (content)
 		ret = content->countAllCylicMemberReferences(gcstate) || ret;
@@ -877,9 +910,11 @@ void Loader::prepareShutdown()
 	if (uncaughtErrorEvents)
 		uncaughtErrorEvents->prepareShutdown();
 }
-Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(nullptr),contentLoaderInfo(NullRef),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
+Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(nullptr),contentLoaderInfo(nullptr),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
 {
-	contentLoaderInfo=_MR(Class<LoaderInfo>::getInstanceS(wrk,this));
+	subtype=SUBTYPE_LOADER;
+	contentLoaderInfo=Class<LoaderInfo>::getInstanceS(wrk,this);
+	contentLoaderInfo->addStoredMember();
 }
 
 Loader::~Loader()
@@ -964,6 +999,12 @@ void Loader::setContent(DisplayObject* o)
 	}
 	if (!o->loaderInfo.isNull())
 		o->loaderInfo->setComplete();
+}
+
+_NR<LoaderInfo> Loader::getContentLoaderInfo() 
+{
+	contentLoaderInfo->incRef();
+	return _MNR(contentLoaderInfo);
 }
 
 Sprite::Sprite(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),hasMouse(false),dragged(false),buttonMode(false),useHandCursor(true)

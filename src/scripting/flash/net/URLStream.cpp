@@ -199,6 +199,8 @@ ASFUNCTIONBODY_ATOM(URLStream,load)
 	//URLLoader ALWAYS checks for policy files, in contrast to NetStream.play().
 	SecurityManager::checkURLStaticAndThrow(th->url, ~(SecurityManager::LOCAL_WITH_FILE),
 		SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED, true);
+	if (wrk->currentCallContext && wrk->currentCallContext->exceptionthrown)
+		return;
 
 	th->incRef();
 	URLStreamThread *job=new URLStreamThread(urlRequest, _MR(th), th->data);

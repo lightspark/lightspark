@@ -81,7 +81,6 @@ XMLList::XMLList(ASWorker* wrk,Class_base* c, const XML::XMLVector& r, XMLList *
 		this->targetproperty.ns.push_back(*it);
 	}
 }
-
 XMLList* XMLList::create(ASWorker* wrk,const XML::XMLVector& r, XMLList *targetobject, const multiname &targetproperty)
 {
 	XMLList* res = Class<XMLList>::getInstanceSNoArgs(wrk);
@@ -90,7 +89,10 @@ XMLList* XMLList::create(ASWorker* wrk,const XML::XMLVector& r, XMLList *targeto
 	
 	res->targetobject = targetobject;
 	if (res->targetobject)
+	{
 		res->targetobject->incRef();
+		res->targetobject->addStoredMember();
+	}
 	res->targetproperty.name_type = targetproperty.name_type;
 	res->targetproperty.isAttribute = targetproperty.isAttribute;
 	res->targetproperty.name_s_id = targetproperty.name_s_id;
@@ -105,14 +107,14 @@ XMLList* XMLList::create(ASWorker* wrk,const XML::XMLVector& r, XMLList *targeto
 void XMLList::finalize()
 {
 	if (targetobject)
-		targetobject->decRef();
+		targetobject->removeStoredMember();
 	targetobject=nullptr;
 	nodes.clear();
 }
 bool XMLList::destruct()
 {
 	if (targetobject)
-		targetobject->decRef();
+		targetobject->removeStoredMember();
 	nodes.clear();
 	constructed = false;
 	targetobject = nullptr;
@@ -131,6 +133,17 @@ void XMLList::prepareShutdown()
 	{
 		(*it)->prepareShutdown();
 	}
+}
+
+bool XMLList::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	if (targetobject)
+		ret = targetobject->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+	
 }
 
 void XMLList::sinit(Class_base* c)
@@ -530,7 +543,10 @@ ASFUNCTIONBODY_ATOM(XMLList,copy)
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
 	XMLList *dest = Class<XMLList>::getInstanceSNoArgs(wrk);
 	if (th->targetobject)
+	{
 		th->targetobject->incRef();
+		th->targetobject->addStoredMember();
+	}
 	dest->targetobject = th->targetobject;
 	auto it=th->nodes.begin();
 	for(; it!=th->nodes.end(); ++it)

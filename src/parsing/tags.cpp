@@ -2472,12 +2472,12 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 {
 	LOG(LOG_TRACE,"DefineSound Tag");
 	in >> SoundId;
-	uint8_t sndinfo = in.peek();
 	BitStream bs(in);
 	SoundFormat=UB(4,bs);
 	SoundRate=UB(2,bs);
 	SoundSize=UB(1,bs);
 	SoundType=UB(1,bs);
+	uint8_t sndinfo = SoundFormat<<4|SoundRate<<2|SoundSize<<1|SoundType;
 	in >> SoundSampleCount;
 	unsigned int soundDataLength = h.getLength()-7;
 	

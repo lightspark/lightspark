@@ -53,6 +53,7 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	
 	static void sinit(Class_base* c);
 	static XMLList* create(ASWorker* wrk, const XML::XMLVector& r, XMLList *targetobject, const multiname &targetproperty);

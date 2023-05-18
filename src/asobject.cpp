@@ -1659,6 +1659,7 @@ void ASObject::executeASMethod(asAtom& ret,const tiny_string& methodName,
 	}
 	asAtom v =asAtomHandler::fromObject(this);
 	asAtomHandler::callFunction(o,getInstanceWorker(),ret,v,args,num_args,false);
+	ASATOM_DECREF(o);
 }
 
 void ASObject::check() const

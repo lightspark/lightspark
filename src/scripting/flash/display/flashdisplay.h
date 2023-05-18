@@ -344,7 +344,7 @@ private:
 	 * the last object that will notify this LoaderInfo about
 	 * completion
 	 */
-	_NR<DisplayObject> waitedObject;
+	DisplayObject* waitedObject;
 	_NR<ProgressEvent> progressEvent;
 	Mutex spinlock;
 	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
@@ -367,6 +367,7 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	void afterHandleEvent(Event* ev) override;
 	void addLoaderEvent(Event* ev);
 	static void sinit(Class_base* c);
@@ -427,7 +428,7 @@ private:
 	// that have not yet terminated
 	std::list<IThreadJob *> jobs;
 	URLInfo url;
-	_NR<LoaderInfo> contentLoaderInfo;
+	LoaderInfo* contentLoaderInfo;
 	void unload();
 	bool loaded;
 	bool allowCodeImport;
@@ -458,7 +459,7 @@ public:
 	}
 	void setContent(DisplayObject* o);
 	DisplayObject* getContent() const { return content; }
-	_R<LoaderInfo> getContentLoaderInfo() { return contentLoaderInfo; }
+	_NR<LoaderInfo> getContentLoaderInfo();
 	bool allowLoadingSWF() { return allowCodeImport; }
 	bool hasAVM1Target() const { return !avm1target.isNull(); }
 };

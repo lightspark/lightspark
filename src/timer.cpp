@@ -56,7 +56,11 @@ TimerThread::~TimerThread()
 	stop();
 	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	for(;it!=pendingEvents.end();++it)
+	{
+		if ((*it)->job)
+			(*it)->job->tickFence();
 		delete *it;
+	}
 }
 
 void TimerThread::insertNewEvent_nolock(TimingEvent* e)

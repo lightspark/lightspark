@@ -354,6 +354,8 @@ void ASSocket::connect(tiny_string host, int port)
 		~(SecurityManager::LOCAL_WITH_FILE),
 		SecurityManager::LOCAL_WITH_FILE | SecurityManager::LOCAL_TRUSTED,
 		true);
+	if (getInstanceWorker()->currentCallContext && getInstanceWorker()->currentCallContext->exceptionthrown)
+		return;
 
 	SecurityManager::EVALUATIONRESULT evaluationResult;
 	evaluationResult = getSys()->securityManager->evaluateSocketConnection(url, true);

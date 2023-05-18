@@ -543,8 +543,16 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		asAtom* lastlocalpasssed = cc->locals+1+passedToLocals;
 		for(asAtom* i=cc->locals+1;i< lastlocalpasssed;++i)
 		{
-			*i = *argp++;
-			(*itpartype++)->coerce(getInstanceWorker(),*i);
+			*i = *argp;
+			if ((*itpartype) == asAtomHandler::getClass(*i,getSystemState()))
+			{
+				argp++;
+				itpartype++;
+				continue;
+			}
+			if ((*itpartype++)->coerce(getInstanceWorker(),*i))
+				ASATOM_DECREF_POINTER(argp);
+			argp++;
 		}
 	}
 	else if (args)

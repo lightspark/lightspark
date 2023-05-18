@@ -798,6 +798,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 	e->getVariableByMultiname(target,m,GET_VARIABLE_OPTION::NONE,wrk);
 	if(asAtomHandler::isValid(target) && !asAtomHandler::isNull(target) && !asAtomHandler::isUndefined(target))
 	{
+		ASATOM_DECREF(target);
 		//Object must be cloned, cloning is implemented with the clone AS method
 		asAtom cloned=asAtomHandler::invalidAtom;
 		e->executeASMethod(cloned,"clone", {""}, nullptr, 0);
@@ -808,7 +809,6 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 			return;
 		}
 
-		ASATOM_INCREF(cloned);
 		e = _MR(asAtomHandler::getObject(cloned)->as<Event>());
 	}
 	if(asAtomHandler::isValid(th->forcedTarget))

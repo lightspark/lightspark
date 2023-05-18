@@ -79,7 +79,7 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 	asAtom v = asAtomHandler::fromObject(value);
 	bool alreadyset=false;
 	obj->setVariableByMultiname(*name,v,ASObject::CONST_NOT_ALLOWED,&alreadyset,obj->getInstanceWorker());
-	if (alreadyset)
+	if (alreadyset || (obj->getInstanceWorker()->currentCallContext && obj->getInstanceWorker()->currentCallContext->exceptionthrown))
 		value->decRef();
 	obj->decRef();
 }

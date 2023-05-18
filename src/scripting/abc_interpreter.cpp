@@ -6307,6 +6307,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				if (state.jumptargets.find(p) == state.jumptargets.end() && code.peekbyteFromPosition(p) == 0x11) //iftrue
 				{
 					// common case hasnext2 followed by iftrue (for each loop)
+					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 					code.readbyte();
 					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func=abc_hasnext2_iftrue;
 					jumppositions[state.preloadedcode.size()-1] = code.reads24();

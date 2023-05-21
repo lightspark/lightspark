@@ -494,8 +494,16 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 			argumentsArray->set(j,args[j]);
 		}
 		//Add ourself as the callee property
-		incRef();
-		argumentsArray->setVariableByQName("callee","",this,DECLARED_TRAIT);
+		
+		// TODO not really sure how to set the closure of the callee
+		// for now we just set it to the closure of this or the class, if no closure is present
+		if (this->inClass)
+			argumentsArray->setVariableByQName("callee","",this->bind(this->closure_this ? this->closure_this : this->inClass,wrk),DECLARED_TRAIT);
+		else
+		{
+			incRef();
+			argumentsArray->setVariableByQName("callee","",this,DECLARED_TRAIT);
+		}
 	}
 
 	/* setup call_context */

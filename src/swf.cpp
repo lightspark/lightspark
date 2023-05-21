@@ -242,7 +242,7 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 extern uint32_t asClassCount;
 
 SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
-	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),
+	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -818,7 +818,7 @@ void SystemState::setError(const string& c, ERROR_TYPE type)
 void SystemState::setShutdownFlag()
 {
 	Locker l(rootMutex);
-	if(currentVm)
+	if(currentVm && !error)
 	{
 		workerDomain->stopAllBackgroundWorkers();
 		_R<ShutdownEvent> e(new (unaccountedMemory) ShutdownEvent);
@@ -1272,6 +1272,13 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 	}
 	if(!invalidateQueueHead)
 		invalidateQueueHead=invalidateQueueTail=d;
+	else if (influshing)
+	{
+		// DisplayObject added to invalidation queue during flushing, has to be added at tail of queue
+		// this can happen if cached bitmaps are invalidated
+		invalidateQueueTail->invalidateQueueNext=d;
+		invalidateQueueTail=d;
+	}
 	else
 	{
 		d->invalidateQueueNext=invalidateQueueHead;
@@ -1282,8 +1289,18 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 void SystemState::flushInvalidationQueue()
 {
 	if (isShuttingDown())
+	{
+		_NR<DisplayObject> cur=invalidateQueueHead;
+		while(!cur.isNull())
+		{
+			_NR<DisplayObject> next=cur->invalidateQueueNext;
+			cur->invalidateQueueNext=NullRef;
+			cur=next;
+		}
 		return;
+	}
 	Locker l(invalidateQueueLock);
+	influshing=true;
 	_NR<DisplayObject> cur=invalidateQueueHead;
 	while(!cur.isNull())
 	{
@@ -1343,6 +1360,7 @@ void SystemState::flushInvalidationQueue()
 		cur->invalidateQueueNext=NullRef;
 		cur=next;
 	}
+	influshing=false;
 	renderThread->signalSurfaceRefresh();
 	invalidateQueueHead=NullRef;
 	invalidateQueueTail=NullRef;

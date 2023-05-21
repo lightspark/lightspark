@@ -218,6 +218,7 @@ private:
 	bool shutdown;
 	bool firsttick;
 	bool localstorageallowed;
+	bool influshing;
 	RenderThread* renderThread;
 	InputThread* inputThread;
 	EngineData* engineData;

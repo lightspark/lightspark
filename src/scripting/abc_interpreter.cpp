@@ -3150,6 +3150,8 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 							else
 								canoptimize = false;
 						}
+						else
+							canoptimize = false;
 					}
 				}
 				if ((code.peekbyteFromPosition(pos) == 0x11 || //iftrue

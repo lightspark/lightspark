@@ -75,11 +75,15 @@ URLInfo URLRequest::getRequestURL() const
 	else
 	{
 		tiny_string newURL = ret.getParsedURL();
-		if(ret.getQuery() == "")
-			newURL += "?";
-		else
-			newURL += "&amp;";
-		newURL += data->toString();
+		tiny_string s = data->toString();
+		if (!s.empty())
+		{
+			if(ret.getQuery() == "")
+				newURL += "?";
+			else
+				newURL += "&amp;";
+			newURL += s;
+		}
 		ret=ret.goToURL(newURL);
 	}
 	return ret;

@@ -386,9 +386,9 @@ void Downloader::parseHeaders(const char* _headers, bool _setLength)
  */
 void Downloader::parseHeader(std::string header, bool _setLength)
 {
-	if(header.substr(0, 9) == "HTTP/1.1 " || header.substr(0, 9) == "HTTP/1.0 ") 
+	if(header.substr(0, 9) == "HTTP/1.1 " || header.substr(0, 9) == "HTTP/1.0 " || header.substr(0, 7) == "HTTP/2 ") 
 	{
-		std::string status = header.substr(9, 3);
+		std::string status = header.substr(0, 7) == "HTTP/2 " ? header.substr(7, 3) : header.substr(9, 3);
 		requestStatus = atoi(status.c_str());
 		//HTTP error or server error or proxy error, let's fail
 		//TODO: shouldn't we fetch the data anyway
@@ -636,9 +636,6 @@ void CurlDownloader::execute()
 			//data is const, it would not be invalidated
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDS, &data.front());
 			curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, data.size());
-
-			//For POST it's mandatory to set the Content-Type
-			assert(hasContentType);
 		}
 
 		if(headerList)

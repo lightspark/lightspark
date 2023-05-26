@@ -172,7 +172,7 @@ public:
 	 * Do an optionally filtered blit with transformation
 	 */
 	enum FILTER_MODE { FILTER_NONE = 0, FILTER_SMOOTH };
-	void transformedBlit(const MATRIX& m, uint8_t* sourceBuf, uint32_t sourceTotalWidth, uint32_t sourceTotalHeight,
+	void transformedBlit(const MATRIX& m, BitmapContainer* bc, ColorTransform* ct,
 			FILTER_MODE filterMode, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
 };
 

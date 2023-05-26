@@ -34,6 +34,7 @@
 #include "backends/rendering_context.h"
 #include "logger.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/BitmapContainer.h"
 #include "scripting/flash/geom/flashgeom.h"
 
 using namespace std;
@@ -462,10 +463,11 @@ void CairoRenderContext::simpleBlit(int32_t destX, int32_t destY, uint8_t* sourc
 	cairo_fill(cr);
 }
 
-void CairoRenderContext::transformedBlit(const MATRIX& m, uint8_t* sourceBuf, uint32_t sourceTotalWidth, uint32_t sourceTotalHeight,
+void CairoRenderContext::transformedBlit(const MATRIX& m, BitmapContainer* bc, ColorTransform* ct,
 		FILTER_MODE filterMode, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
 {
-	cairo_surface_t* sourceSurface = getCairoSurfaceForData(sourceBuf, sourceTotalWidth, sourceTotalHeight, sourceTotalWidth);
+	uint8_t* bmp = ct ? bc->applyColorTransform(ct) : bc->getData();
+	cairo_surface_t* sourceSurface = getCairoSurfaceForData(bmp, bc->getWidth(), bc->getHeight(), bc->getWidth());
 	cairo_pattern_t* sourcePattern = cairo_pattern_create_for_surface(sourceSurface);
 	cairo_surface_destroy(sourceSurface);
 	cairo_pattern_set_filter(sourcePattern, (filterMode==FILTER_SMOOTH)?CAIRO_FILTER_BILINEAR:CAIRO_FILTER_NEAREST);

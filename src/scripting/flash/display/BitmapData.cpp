@@ -360,19 +360,16 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
 			initialMatrix=matrix->getMATRIX();
-		uint8_t* bmp = !ctransform.isNull() ? data->pixels->applyColorTransform(ctransform.getPtr()) : data->pixels->getData();
 		CairoRenderContext ctxt(th->pixels->getData(), th->pixels->getWidth(), th->pixels->getHeight(),false);
 		//Blit the data while transforming it
 		if (clipRect.isNull())
 		{
-			ctxt.transformedBlit(initialMatrix, bmp,
-								data->pixels->getWidth(), data->pixels->getHeight(),
+			ctxt.transformedBlit(initialMatrix, data->pixels.getPtr(),ctransform.getPtr(),
 								smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,0,0,data->pixels->getWidth(), data->pixels->getHeight());
 		}
 		else
 		{
-			ctxt.transformedBlit(initialMatrix, bmp,
-								data->pixels->getWidth(), data->pixels->getHeight(),
+			ctxt.transformedBlit(initialMatrix, data->pixels.getPtr(),ctransform.getPtr(),
 								smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,clipRect->x,clipRect->y,clipRect->width,clipRect->height);
 		}
 	}

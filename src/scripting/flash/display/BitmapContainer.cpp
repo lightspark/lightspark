@@ -432,17 +432,23 @@ void BitmapContainer::fillRectangle(const RECT& inputRect, uint32_t color, bool 
 {
 	RECT clippedRect;
 	clipRect(inputRect, clippedRect);
+	if (clippedRect.Ymin>=clippedRect.Ymax || clippedRect.Xmin>=clippedRect.Xmax)
+		return;
 	
 	resetColorTransform();
 	uint32_t realcolor = useAlpha ? color : (0xFF000000 | (color & 0xFFFFFF));
-	for(int32_t y=clippedRect.Ymin;y<clippedRect.Ymax;y++)
+	// fill first line
+	for(int32_t x=clippedRect.Xmin;x<clippedRect.Xmax;x++)
 	{
-		for(int32_t x=clippedRect.Xmin;x<clippedRect.Xmax;x++)
-		{
-			uint32_t offset=y*stride + x*4;
-			uint32_t* ptr=(uint32_t*)(getData()+offset);
-			*ptr = realcolor;
-		}
+		uint32_t offset=clippedRect.Ymin*stride + x*4;
+		uint32_t* ptr=(uint32_t*)(getData()+offset);
+		*ptr = realcolor;
+	}
+	// use memcpy to fill all other lines
+	for(int32_t y=clippedRect.Ymin+1;y<clippedRect.Ymax;y++)
+	{
+		uint32_t offset=y*stride + clippedRect.Xmin*4;
+		memcpy(getData()+offset,getData()+clippedRect.Ymin*stride+clippedRect.Xmin*4,(clippedRect.Xmax-clippedRect.Xmin)*4);
 	}
 }
 

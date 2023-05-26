@@ -825,6 +825,12 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		if (dispatcher->is<LoaderInfo>()) // ensure that the LoaderInfo reports the same number as the ProgressEvent for bytesLoaded
 			dispatcher->as<LoaderInfo>()->setBytesLoadedPublic(event->as<ProgressEvent>()->bytesLoaded);
 	}
+	if (event->is<MouseEvent>() && dispatcher && dispatcher->is<DisplayObject>() && !dispatcher->as<DisplayObject>()->isOnStage())
+	{
+		// ignore mouse events if the dispatcher is not on the stage any more
+		// this may happen if the dispatcher was removed from stage after the mouseEvent was added to the event queue
+		return;
+	}
 
 	std::deque<DisplayObject*> parents;
 	//Only set the default target is it's not overridden

@@ -477,7 +477,7 @@ tiny_string tiny_string::substr_bytes(uint32_t start, uint32_t len, bool resulti
 tiny_string tiny_string::substr(uint32_t start, uint32_t len) const
 {
 	assert_and_throw(start <= numChars());
-	if(start+len > numChars())
+	if(len > numChars()-start)
 		len = numChars()-start;
 	if (isASCII)
 		return substr_bytes(start, len);

@@ -541,8 +541,8 @@ public:
 	static FORCE_INLINE void setNull(asAtom& a);
 	static FORCE_INLINE void setUndefined(asAtom& a);
 	static void setFunction(asAtom& a, ASObject* obj, ASObject* closure, ASWorker* wrk);
-	static FORCE_INLINE void increment(asAtom& a, ASWorker* wrk);
-	static FORCE_INLINE void decrement(asAtom& a, ASWorker* wrk);
+	static FORCE_INLINE void increment(asAtom& a, ASWorker* wrk, bool refcounted);
+	static FORCE_INLINE void decrement(asAtom& a, ASWorker* wrk, bool refcounted);
 	static FORCE_INLINE void increment_i(asAtom& a, ASWorker* wrk, int32_t amount=1);
 	static FORCE_INLINE void decrement_i(asAtom& a, ASWorker* wrk, int32_t amount=1);
 	static bool add(asAtom& a, asAtom& v2, ASWorker *wrk, bool forceint);
@@ -1950,7 +1950,7 @@ FORCE_INLINE void asAtomHandler::setUndefined(asAtom& a)
 {
 	a.uintval = ATOM_INVALID_UNDEFINED_NULL_BOOL | ATOMTYPE_UNDEFINED_BIT;
 }
-FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk)
+FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk, bool refcounted)
 {
 	switch(a.uintval&0x7)
 	{
@@ -1979,8 +1979,20 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk)
 			setUInt(a,wrk,(a.uintval>>3)+1);
 			break;
 		case ATOM_NUMBERPTR:
-			setNumber(a,wrk,toNumber(a)+1);
+		{
+			number_t n = getObjectNoCheck(a)->toNumber();
+			if (std::isnan(n) || std::isinf(n))
+				setNumber(a,wrk,n);
+			else if(trunc(n) == n)
+			{
+				if (refcounted)
+					ASATOM_DECREF(a);
+				asAtomHandler::setInt(a,wrk,n+1);
+			}
+			else
+				replaceNumber(a,wrk,n+1);
 			break;
+		}
 		case ATOM_STRINGID:
 		{
 			ASObject* s = abstract_s(wrk,a.uintval>>3);
@@ -1992,13 +2004,20 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk)
 		default:
 		{
 			number_t n=toNumber(a);
-			setNumber(a,wrk,n+1);
+			if (refcounted)
+				ASATOM_DECREF(a);
+			if (std::isnan(n) || std::isinf(n))
+				setNumber(a,wrk,n);
+			else if(trunc(n) == n)
+				asAtomHandler::setInt(a,wrk,n+1);
+			else
+				setNumber(a,wrk,n+1);
 			break;
 		}
 	}
 }
 
-FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk)
+FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool refcounted)
 {
 	switch(a.uintval&0x7)
 	{
@@ -2035,8 +2054,20 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk)
 			break;
 		}
 		case ATOM_NUMBERPTR:
-			setNumber(a,wrk,toNumber(a)-1);
+		{
+			number_t n = getObjectNoCheck(a)->toNumber();
+			if (std::isnan(n) || std::isinf(n))
+				setNumber(a,wrk,n);
+			else if(trunc(n) == n)
+			{
+				if (refcounted)
+					ASATOM_DECREF(a);
+				asAtomHandler::setInt(a,wrk,n-1);
+			}
+			else
+				replaceNumber(a,wrk,n-1);
 			break;
+		}
 		case ATOM_STRINGID:
 		{
 			ASObject* s = abstract_s(wrk,a.uintval>>3);
@@ -2048,7 +2079,14 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk)
 		default:
 		{
 			number_t n=toNumber(a);
-			setNumber(a,wrk,n-1);
+			if (refcounted)
+				ASATOM_DECREF(a);
+			if (std::isnan(n) || std::isinf(n))
+				setNumber(a,wrk,n);
+			else if(trunc(n) == n)
+				asAtomHandler::setInt(a,wrk,n-1);
+			else
+				setNumber(a,wrk,n-1);
 			break;
 		}
 	}

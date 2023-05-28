@@ -21,7 +21,7 @@ jobs:
         id: changelog
         run: |
           export VERSION=`echo "${{ github.ref }}" \
-              | sed -e "s/lightspark-//"`
+              | sed -e "s/refs\/tags\///"`
           ./.github/parse_changelog.py $VERSION ChangeLog >release.txt
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
 

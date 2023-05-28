@@ -1,6 +1,6 @@
 lightspark: An open source flash player implementation
 
-Version NEXT:
+Version 0.8.7:
 
 	* implement DefineScalingGrid tag
 	* switch to 32bit float audio sampling for standalone player and remove SDL2_mixer dependency
@@ -9,6 +9,9 @@ Version NEXT:
 	* use nanoVG for bitmaps in fillstyles
 	* improved support for morphshapes
 	* improved support for adpcm encoded sounds
+	* add garbage collection mechanism for less memory usage
+	* better overall compatibility for many swf files
+	* several performance improvements
 
 Version 0.8.6.1:
 

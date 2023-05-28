@@ -15,7 +15,7 @@ jobs:
       tag_name: ${{ steps.tag_name.outputs.tag_name }}
       version: ${{ steps.changelog.outputs.version }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Generate body from ChangeLog
         id: changelog
@@ -39,14 +39,14 @@ jobs:
 
   mxe32:
     name: Release 32-bit Windows Installer
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     continue-on-error: false
     needs: draft_release
     env:
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Add MXE Repository to Apt
         uses: myci-actions/add-deb-repo@4
@@ -107,14 +107,14 @@ jobs:
 
   mxe64:
     name: Release 64-bit Windows Installer
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     continue-on-error: false
     needs: draft_release
     env:
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Add MXE Repository to Apt
         uses: myci-actions/add-deb-repo@4

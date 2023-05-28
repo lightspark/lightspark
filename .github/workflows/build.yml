@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Delete Development Release
         uses: dev-drprasad/delete-tag-and-release@v0.2.1
         env:
@@ -31,7 +31,7 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Create Release
         id: create_release
         uses: ncipollo/release-action@v1

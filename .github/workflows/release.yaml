@@ -17,10 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Get Tag Name
-        id: tag_name
-        run: echo "tag_name=${GITHUB_REF}/refs\/tags\//" >> $GITHUB_OUTPUT
-
       - name: Generate body from ChangeLog
         id: changelog
         run: |

@@ -189,6 +189,7 @@ enum OPERANDTYPES {
 
 #define ABC_OP_FORCEINT 0x1000 // forces the result of the arithmetic operation to be coerced to int
 #define ABC_OP_CACHED 0x2000
+#define ABC_OP_FROMGLOBAL 0x4000 // indicates that the cached object pointer points to a variable, not an ASObject
 #define ABC_OP_NOTCACHEABLE 0x4000
 #define ABC_OP_COERCED 0x8000 //indicates that the method call doesn't have to coerce the arguments to the expected type
 #define ABC_OP_BITMASK_USED 0xf000 // indicates all bits that are occupied by the flags

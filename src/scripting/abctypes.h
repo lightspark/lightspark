@@ -294,6 +294,7 @@ struct preloadedcodedata
 	{
 		ASObject* cacheobj3;
 		multiname* cachedmultiname3;
+		variable* cachedvar3;
 		asAtom* arg3_constant;
 		struct
 		{

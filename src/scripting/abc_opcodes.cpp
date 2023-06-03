@@ -2901,7 +2901,7 @@ void ABCVm::newClass(call_context* th, int n)
 	{
 		asAtom v = asAtomHandler::fromObject(ret);
 		asAtom f = asAtomHandler::fromObject(cinit);
-		asAtomHandler::callFunction(f,th->worker,ret2,v,nullptr,0,true);
+		asAtomHandler::callFunction(f,th->worker,ret2,v,nullptr,0,true,false,false);
 	}
 	catch(ASObject* exc)
 	{

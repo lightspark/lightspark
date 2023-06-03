@@ -609,10 +609,15 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	//Parameters are ready
 
 	//obtain a local reference to this function, as it may delete itself
-	if (!isMethod())
+	bool hasstoredmember = false;
+	if (!isMethod() && this->fromNewFunction)
 	{
 		this->incRef();
-		this->addStoredMember();
+		if (this->storedmembercount == 0)
+		{
+			hasstoredmember=true;
+			this->addStoredMember();
+		}
 	}
 
 #ifndef NDEBUG
@@ -764,8 +769,14 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		}
 	}
 	cc->curr_scope_stack=0;
-	if (!isMethod())
-		this->removeStoredMember();//free local ref
+	if (!isMethod() && this->fromNewFunction)
+	{
+		//free local ref
+		if (hasstoredmember)
+			this->removeStoredMember();
+		else
+			this->decRef();
+	}
 	if (recursive_call)
 		delete cc;
 }
@@ -880,7 +891,7 @@ bool SyntheticFunction::canSkipCoercion(int param, Class_base *cls)
 {
 	assert(mi->returnType && param < (int)mi->numArgs());
 	
-	return mi->paramTypes[param] == cls ||(
+	return mi->paramTypes[param] == cls || mi->paramTypes[param] == Type::anyType || mi->paramTypes[param] == Type::voidType || (
 		(cls == Class<Number>::getRef(getSystemState()).getPtr() ||
 			cls == Class<Integer>::getRef(getSystemState()).getPtr() ||
 			cls == Class<UInteger>::getRef(getSystemState()).getPtr()) &&

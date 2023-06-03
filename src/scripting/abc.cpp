@@ -1585,7 +1585,7 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtom f =asAtomHandler::fromObject(entry);
-	asAtomHandler::callFunction(f,this->root->getInstanceWorker(),ret,g,nullptr,0,false);
+	asAtomHandler::callFunction(f,this->root->getInstanceWorker(),ret,g,nullptr,0,false,false,false);
 
 	ASATOM_DECREF(ret);
 

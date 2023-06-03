@@ -1710,6 +1710,19 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				argsneeded++;
 				lastlocalpos=-1;
 				break;
+			case 0x64://getglobalscope
+				candup=true;
+				b = code.peekbyteFromPosition(pos);
+				pos++;
+				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
+				{
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					break;
+				}
+				argsneeded++;
+				lastlocalpos=-1;
+				break;
 			case 0x32://hasnext2
 				candup=true;
 				pos = code.skipu30FromPosition(pos);
@@ -2796,9 +2809,9 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 #endif
 	return hasoperands;
 }
-bool checkmatchingLastObjtype(preloadstate& state, const Class_base* resulttype, Class_base* requiredtype)
+bool checkmatchingLastObjtype(preloadstate& state, const Type* resulttype, Class_base* requiredtype)
 {
-	if (requiredtype == resulttype)
+	if (requiredtype == resulttype || resulttype==Type::anyType || resulttype == Type::voidType)
 		return true;
 	if (requiredtype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr() && 
 			(resulttype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr()
@@ -4412,7 +4425,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				bool isborrowed = false;
 				variable* v = nullptr;
 				Class_base* cls = function->inClass;
-				if (name && name->isStatic && !function->isFromNewFunction())
+				if (name && name->isStatic)
 				{
 					if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 					{
@@ -4511,6 +4524,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								{
 									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func=abc_getfuncscopeobject_localresult;
 									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint=spos;
+									resulttype = obj;
 								}
 								else
 								{
@@ -4532,10 +4546,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							mi->context->root->applicationDomain->findTargetByMultiname(*name, target,wrk);
 						if (target)
 						{
-							o=asAtomHandler::fromObjectNoPrimitive(target);
-							addCachedConstant(state,mi, o,code);
-							typestack.push_back(typestackentry(target,false));
-							break;
+							found = true;
+							if (target->is<Global>() && function->isFromNewFunction())
+							{
+								variable* vglobal = target->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+								found = (vglobal->kind & TRAIT_KIND::DECLARED_TRAIT)!=0;
+							}
+							if (found && !function->mi->needsActivation())
+							{
+								o=asAtomHandler::fromObjectNoPrimitive(target);
+								addCachedConstant(state,mi, o,code);
+								typestack.push_back(typestackentry(target,false));
+								break;
+							}
 						}
 					}
 				}
@@ -4972,7 +4995,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										if (contenttype && v->isResolved && dynamic_cast<const Class_base*>(v->type))
 										{
 											Class_base* vtype = (Class_base*)v->type;
-											if (contenttype->isSubClass(vtype)
+											if (contenttype->isSubClass(vtype) || v->type==Type::anyType || v->type==Type::voidType
 												|| (( contenttype == Class<Number>::getRef(function->getSystemState()).getPtr() ||
 													   contenttype == Class<Integer>::getRef(function->getSystemState()).getPtr() ||
 													   contenttype == Class<UInteger>::getRef(function->getSystemState()).getPtr()) &&
@@ -6495,8 +6518,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					function->checkParamTypes();
 				int32_t p = code.tellg();
 #ifdef ENABLE_OPTIMIZATION
-				bool checkresulttype=true;
-				if (!coercereturnvalue) // there was no returnvalue opcode yet that needs coercion, so we keep checking
+				bool checkresulttype=mi->returnType != Type::anyType && mi->returnType != Type::voidType;
+				if (checkresulttype && !coercereturnvalue) // there was no returnvalue opcode yet that needs coercion, so we keep checking
 				{
 					if (state.jumptargets.find(p) != state.jumptargets.end())
 					{
@@ -6512,7 +6535,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					{
 						if (state.operandlist.size() > 0 && state.operandlist.back().objtype && dynamic_cast<const Class_base*>(mi->returnType))
 						{
-							if (checkmatchingLastObjtype(state,(Class_base*)(dynamic_cast<const Class_base*>(mi->returnType)),state.operandlist.back().objtype)
+							if (checkmatchingLastObjtype(state,state.operandlist.back().objtype,(Class_base*)(dynamic_cast<const Class_base*>(mi->returnType)))
 									|| state.operandlist.back().objtype->isSubClass(dynamic_cast<const Class_base*>(mi->returnType)))
 							{
 								// return type matches type of last operand, no need to continue checking
@@ -6522,15 +6545,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					}
 					if (checkresulttype)
 					{
-						if (dynamic_cast<const Class_base*>(mi->returnType) == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
-								(!typestack.back().obj
-								 || !typestack.back().obj->is<Class_base>() 
-								 || (dynamic_cast<const Class_base*>(mi->returnType) && !typestack.back().obj->as<Class_base>()->isSubClass(dynamic_cast<const Class_base*>(mi->returnType)))))
-						{
-							coercereturnvalue = !checkmatchingLastObjtype(state,(Class_base*)(dynamic_cast<const Class_base*>(mi->returnType)),Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr());
-						}
-						else
-							coercereturnvalue = true;
+						coercereturnvalue = true;
 					}
 				}
 				if (state.operandlist.size() > 0 && state.operandlist.back().type == OP_LOCAL && state.operandlist.back().index == (int32_t)mi->body->getReturnValuePos())
@@ -6662,7 +6677,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					SyntheticFunction* func= nullptr;
 					variable* v = nullptr;
 					uint32_t operationcount = argcount+mi->context->constant_pool.multinames[t].runtimeargs+1;
-					if (typestack.size() >= operationcount)
+					bool fromglobal = false;
+					if (typestack.size() >= operationcount && typestack[typestack.size()-operationcount].obj && typestack[typestack.size()-operationcount].obj->is<Global>())
+					{
+						v = typestack[typestack.size()-operationcount].obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+						if (v)
+						{
+							if ((v->kind & TRAIT_KIND::DECLARED_TRAIT) == 0)
+								v=nullptr;
+						}
+						fromglobal= v != nullptr;
+					}
+					if (!v && typestack.size() >= operationcount)
 					{
 						bool isoverridden=false;
 						ASObject* cls = nullptr;
@@ -6701,7 +6727,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						}
 						if (v)
 						{
-							if (asAtomHandler::is<SyntheticFunction>(v->var) && asAtomHandler::as<SyntheticFunction>(v->var)->inClass == cls)
+							if (asAtomHandler::is<SyntheticFunction>(v->var) && (fromglobal || asAtomHandler::as<SyntheticFunction>(v->var)->inClass && asAtomHandler::as<SyntheticFunction>(v->var)->inClass == cls))
 							{
 								func = asAtomHandler::as<SyntheticFunction>(v->var);
 								resulttype = func->getReturnType();
@@ -6727,10 +6753,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							}
 						}
 					}
+					// if variable is taken from Global object, force handling of 1-argument-optimization as multi-argument optimization (for proper handling of variable pointer)
+					int argcountcheckglobal = fromglobal && argcount == 1 ? 2 : argcount;
 					switch (mi->context->constant_pool.multinames[t].runtimeargs)
 					{
 						case 0:
-							switch (argcount)
+							switch (argcountcheckglobal)
 							{
 								case 0:
 									if (state.operandlist.size() > 0
@@ -6772,6 +6800,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									{
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
 										state.preloadedcode.push_back(0);
+										if (fromglobal && v)
+										{
+											state.preloadedcode.back().pcode.local2.flags |= ABC_OP_FROMGLOBAL;
+											state.preloadedcode.back().pcode.cachedvar3 = v;
+										}
 									}
 									else
 									{
@@ -6781,7 +6814,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											state.preloadedcode.back().pcode.local2.pos = argcount;
 											if (skipcoerce)
 												state.preloadedcode.back().pcode.local2.flags = ABC_OP_COERCED;
-											state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj3 = func;
+											if (fromglobal && v)
+											{
+												state.preloadedcode.back().pcode.local2.flags |= ABC_OP_FROMGLOBAL;
+												state.preloadedcode.back().pcode.cachedvar3 = v;
+											}
+											else
+												state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj3 = func;
 										}
 										else
 										{
@@ -6789,6 +6828,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											state.preloadedcode.back().pcode.local2.pos = argcount;
 											if (skipcoerce)
 												state.preloadedcode.back().pcode.local2.flags = ABC_OP_COERCED;
+											if (fromglobal && v)
+											{
+												state.preloadedcode.back().pcode.local2.flags |= ABC_OP_FROMGLOBAL;
+												state.preloadedcode.back().pcode.cachedvar3 = v;
+											}
 											state.preloadedcode.push_back(0);
 											state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
 										}
@@ -6861,7 +6905,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										it++;
 										if (canCallFunctionDirect((*it),name))
 										{
-											if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this==nullptr)
+											if (!fromglobal && v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this==nullptr)
 											{
 												if (asAtomHandler::is<SyntheticFunction>(v->var))
 												{
@@ -6878,7 +6922,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 															state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local3.flags = ABC_OP_COERCED;
 													}
 													state.preloadedcode.push_back(0);
-													state.preloadedcode.back().pcode.cacheobj3 = asAtomHandler::getObject(v->var);
+													if (fromglobal)
+													{
+														state.preloadedcode.back().pcode.local2.flags |= ABC_OP_FROMGLOBAL;
+														state.preloadedcode.back().pcode.cachedvar3 = v;
+													}
+													else
+														state.preloadedcode.back().pcode.cacheobj3 = asAtomHandler::getObject(v->var);
 													removetypestack(typestack,argcount+mi->context->constant_pool.multinames[t].runtimeargs+1);
 													if (opcode == 0x46)
 														typestack.push_back(typestackentry(resulttype,false));
@@ -7019,7 +7069,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											{
 												if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this==nullptr)
 												{
-													if (asAtomHandler::is<SyntheticFunction>(v->var))
+													if (asAtomHandler::is<SyntheticFunction>(v->var) && asAtomHandler::as<SyntheticFunction>(v->var)->inClass)
 													{
 														state.preloadedcode.at(oppos).opcode = (opcode == 0x4f ? ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_MULTIARGS);
 														state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
@@ -7028,7 +7078,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 														it->fillCode(state,0,oppos,true);
 														it->removeArg(state);
 														oppos = state.preloadedcode.size()-1-argcount;
-														state.preloadedcode.at(oppos).pcode.cacheobj3 = asAtomHandler::getObject(v->var);
+														if (fromglobal && v)
+														{
+															state.preloadedcode.at(oppos).pcode.local2.flags |= ABC_OP_FROMGLOBAL;
+															state.preloadedcode.at(oppos).pcode.cachedvar3 = v;
+														}
+														else
+															state.preloadedcode.at(oppos).pcode.cacheobj3 = asAtomHandler::getObject(v->var);
 														removeOperands(state,true,&lastlocalresulttype,argcount+1);
 														if (opcode == 0x46)
 															checkForLocalResult(state,code,2,resulttype,oppos,state.preloadedcode.size()-1);
@@ -7062,6 +7118,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											state.preloadedcode.at(oppos).opcode = (opcode == 0x4f ? ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS_CACHED_CALLER:ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS_CACHED_CALLER);
 											state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
 											state.preloadedcode.at(oppos).pcode.local2.flags = (skipcoerce ? ABC_OP_COERCED : 0);
+											if (fromglobal && v)
+											{
+												state.preloadedcode.at(oppos).pcode.local2.flags |= ABC_OP_FROMGLOBAL;
+												state.preloadedcode.at(oppos).pcode.cachedvar3 = v;
+											}
 											it->removeArg(state);
 											oppos = state.preloadedcode.size()-1-argcount;
 											state.preloadedcode.push_back(0);
@@ -7100,6 +7161,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											state.preloadedcode.back().pcode.local2.pos = argcount;
 											if (skipcoerce)
 												state.preloadedcode.back().pcode.local2.flags = ABC_OP_COERCED;
+											if (fromglobal && v)
+											{
+												state.preloadedcode.back().pcode.local2.flags |= ABC_OP_FROMGLOBAL;
+												state.preloadedcode.back().pcode.cachedvar3 = v;
+											}
 											state.preloadedcode.push_back(0);
 											state.preloadedcode.back().pcode.cachedmultiname2 = name;
 										}

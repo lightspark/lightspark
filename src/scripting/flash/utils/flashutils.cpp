@@ -181,6 +181,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 
 	if(asAtomHandler::isInvalid(ret))
 	{
+		ret = asAtomHandler::undefinedAtom;
 		createError<ReferenceError>(wrk,kClassNotFoundError, tmp);
 		return;
 	}

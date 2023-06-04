@@ -1255,7 +1255,7 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 {
 	Locker l(invalidateQueueLock);
 	//Check if the object is already in the queue
-	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail)
+	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail || !EngineData::enablerendering)
 		return;
 	if (d->getNeedsTextureRecalculation())
 	{

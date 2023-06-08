@@ -1027,6 +1027,14 @@ bool Sprite::destruct()
 	tokens.clear();
 	sound.reset();
 	soundtransform.reset();
+	this->redMultiplier=1.0;
+	this->greenMultiplier=1.0;
+	this->blueMultiplier=1.0;
+	this->alphaMultiplier=1.0;
+	this->redOffset=0;
+	this->greenOffset=0;
+	this->blueOffset=0;
+	this->alphaOffset=0;
 	return DisplayObjectContainer::destruct();
 }
 
@@ -3384,8 +3392,6 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
 	}
-	if (!keeponstage)
-		child->setOnStage(false,false,inskipping);
 	child->cachedAsBitmapOf=nullptr;
 	child->setNeedsCachedBitmapRecalculation();
 	if (child->is<DisplayObjectContainer>())
@@ -3395,9 +3401,9 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 		Locker l(mutexDisplayList);
 		auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
 
-		if (direct || !this->isOnStage() || inskipping)
+		if (direct || !this->isOnStage() || inskipping )
 			child->setParent(nullptr);
-		else
+		else if (!isOnStage() || !isVmThread())
 			getSystemState()->addDisplayObjectToResetParentList(child);
 		child->setMask(NullRef);
 		
@@ -3408,9 +3414,12 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 			mapDepthToLegacyChild.erase(it2->second);
 			mapLegacyChildToDepth.erase(it2);
 		}
-		(*it)->removeStoredMember();
 		dynamicDisplayList.erase(it);
 	}
+	if (!keeponstage)
+		child->setOnStage(false,false,inskipping);
+	child->setParent(nullptr);
+	child->removeStoredMember();
 	return true;
 }
 
@@ -3572,7 +3581,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 	//Validate object type
 	int32_t index=asAtomHandler::toInt(args[0]);
 
-	DisplayObject* child;
+	DisplayObject* child=nullptr;
 	{
 		Locker l(th->mutexDisplayList);
 		if(index>=int(th->dynamicDisplayList.size()) || index<0)
@@ -3584,20 +3593,10 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 		for(int32_t i=0;i<index;i++)
 			++it;
 		child=(*it);
-		//Erase this from the legacy child map (if it is in there)
-		auto it2 = th->mapLegacyChildToDepth.find(child);
-		if (it2 != th->mapLegacyChildToDepth.end())
-		{
-			th->mapDepthToLegacyChild.erase(it2->second);
-			th->mapLegacyChildToDepth.erase(it2);
-		}
-		child->setOnStage(false,false);
-		wrk->getSystemState()->addDisplayObjectToResetParentList(child);
-		//As we return the child we incRef it
-		child->incRef();
-		th->dynamicDisplayList.erase(it);
-		child->removeStoredMember();
 	}
+	//As we return the child we incRef it
+	child->incRef();
+	th->_removeChild(child);
 	ret = asAtomHandler::fromObject(child);
 }
 
@@ -3902,6 +3901,14 @@ bool Shape::destruct()
 	graphics.reset();
 	fromTag=nullptr;
 	tokens.clear();
+	this->redMultiplier=1.0;
+	this->greenMultiplier=1.0;
+	this->blueMultiplier=1.0;
+	this->alphaMultiplier=1.0;
+	this->redOffset=0;
+	this->greenOffset=0;
+	this->blueOffset=0;
+	this->alphaOffset=0;
 	return DisplayObject::destruct();
 }
 

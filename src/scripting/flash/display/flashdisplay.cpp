@@ -1428,7 +1428,8 @@ _NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HI
 	_NR<DisplayObject> ret = NullRef;
 	if (dragged) // no hitting when in drag/drop mode
 		return ret;
-	if (!hitArea.isNull() && interactiveObjectsOnly)
+	ret = DisplayObjectContainer::hitTestImpl(x,y, type,interactiveObjectsOnly);
+	if (ret.isNull() && !hitArea.isNull() && interactiveObjectsOnly)
 	{
 		number_t xout,yout,xout2,yout2;
 		localToGlobal(x,y,xout,yout);
@@ -1441,7 +1442,6 @@ _NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HI
 		}
 		return ret;
 	}
-	ret = DisplayObjectContainer::hitTestImpl(x,y, type,interactiveObjectsOnly);
 	if (ret.isNull() && hitArea.isNull())
 	{
 		//The coordinates are locals

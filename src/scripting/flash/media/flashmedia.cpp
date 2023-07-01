@@ -257,8 +257,7 @@ bool Video::renderImpl(RenderContext& ctxt)
 		//width and height will not change now (the Video mutex is acquired)
 		ctxt.renderTextured(embeddedVideoDecoder ? embeddedVideoDecoder->getTexture() : netStream->getTexture(),
 			clippedAlpha(), RenderContext::YUV_MODE,
-			1.0f,1.0f,1.0f,1.0f,
-			0.0f,0.0f,0.0f,0.0f,
+			ColorTransformBase(),
 			false,false,0.0,RGB(),SMOOTH_MODE::SMOOTH_NONE,totalMatrix,nullptr,this->getBlendMode());
 		if (!videotag)
 			netStream->unlock();

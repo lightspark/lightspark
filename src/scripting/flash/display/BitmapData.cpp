@@ -235,7 +235,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	th->notifyUsers();
 }
 
-void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap, AS_BLENDMODE blendMode, ColorTransform* ct)
+void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap, AS_BLENDMODE blendMode, ColorTransformBase* ct)
 {
 	if (forCachedBitmap)
 		d->incRef();
@@ -244,10 +244,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 	d->hasChanged=true;
 	d->requestInvalidation(&queue);
 	if (forCachedBitmap)
-	{
-		uint8_t* p = pixels->getData();
-		memset(p,0,pixels->getWidth()*pixels->getHeight()*4);
-	}
+		memset(pixels->getData(),0,pixels->getWidth()*pixels->getHeight()*4);
 	CairoRenderContext ctxt(pixels->getData(), pixels->getWidth(), pixels->getHeight(),smoothing);
 	for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
 	{
@@ -262,31 +259,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		bool isBufferOwner=true;
 		uint32_t bufsize=0;
 		uint8_t* buf=drawable->getPixelBuffer(&isBufferOwner,&bufsize);
-		if (!forCachedBitmap && !target->filters.isNull())
-		{
-			BitmapContainer bc(nullptr);
-			bc.fromRawData(buf,drawable->getWidth(),drawable->getHeight());
-			target->applyFilters(&bc,nullptr,RECT(0,bc.getWidth(),0,bc.getHeight()),0,0, drawable->getXScale(), drawable->getYScale());
-			memcpy(buf,bc.getData(),bufsize);
-		}
-		ColorTransform* colortransform = target->colorTransform.getPtr();
-		DisplayObjectContainer* p = target->getParent();
-		while (!colortransform && p && p!= d)
-		{
-			colortransform = p->colorTransform.getPtr();
-			p = p->getParent();
-		}
-		if (colortransform && !colortransform->isIdentity())
-		{
-			if (!isBufferOwner)
-			{
-				isBufferOwner=true;
-				uint8_t* buf2 = new uint8_t[bufsize];
-				memcpy(buf2,buf,bufsize);
-				buf=buf2;
-			}
-			colortransform->applyTransformation(buf,bufsize);
-		}
+		
 		//Construct a CachedSurface using the data
 		CachedSurface& surface=ctxt.allocateCustomSurface(target,buf,isBufferOwner);
 		surface.tex->width=drawable->getWidth();
@@ -308,10 +281,18 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.isMask=drawable->getIsMask();
 		surface.mask=drawable->getMask();
 		surface.matrix = drawable->getMatrix();
-		if (!forCachedBitmap)
-			surface.blendmode=blendMode;
+		AS_BLENDMODE bl = blendMode;
+		DisplayObject* obj = target;
+		while (obj && bl == BLENDMODE_NORMAL)
+		{
+			bl = obj->getBlendMode();
+			obj = obj->getParent();
+		}
+		surface.blendmode=bl;
+		surface.colortransform=drawable->getColorTransform();
 		surface.isValid=true;
 		surface.isInitialized=true;
+		surface.smoothing=smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE;
 		delete drawable;
 	}
 	if (d->getMask())

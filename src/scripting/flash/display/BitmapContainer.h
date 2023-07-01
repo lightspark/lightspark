@@ -45,8 +45,7 @@ protected:
 	// buffer to contain the pixels transformed by latest ColorTransformation
 	std::vector<uint8_t> data_colortransformed;
 	// color transformation values currently applied to data_colortransformed
-	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
-	number_t redOffset,greenOffset,blueOffset,alphaOffset;
+	ColorTransformBase currentcolortransform;
 	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y) const;
 	void resetColorTransform();
 public:
@@ -95,7 +94,7 @@ public:
 			   bool mergeAlpha);
 	void applyFilter(_R<BitmapContainer> source,
 				const RECT& sourceRect,
-				int32_t destX, int32_t destY,
+				number_t destX, number_t destY,
 				BitmapFilter* filter);
 	void fillRectangle(const RECT& rect, uint32_t color, bool useAlpha);
 	bool scroll(int32_t x, int32_t y);

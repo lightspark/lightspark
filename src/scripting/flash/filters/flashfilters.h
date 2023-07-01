@@ -31,15 +31,16 @@ class BitmapFilter: public ASObject
 private:
 	virtual BitmapFilter* cloneImpl() const;
 protected:
-	static void applyBlur(uint8_t* data, uint32_t width, uint32_t height, number_t blurx, number_t blury, int quality, number_t scalex, number_t scaley);
-	static void applyDropShadowFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout, number_t scalex, number_t scaley);
+	void applyBlur(uint8_t* data, uint32_t width, uint32_t height, number_t blurx, number_t blury, int quality);
+	static void applyDropShadowFilter(uint8_t* data, uint32_t datawidth, uint32_t dataheight, uint8_t* tmpdata, const RECT& sourceRect, number_t xpos, number_t ypos, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout, number_t scalex, number_t scaley);
 	static void fillGradientColors(number_t* gradientalphas, uint32_t* gradientcolors, Array* ratios, Array* alphas, Array* colors);
-	static void applyGradientFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout, number_t scalex, number_t scaley);
+	static void applyGradientFilter(uint8_t* data, uint32_t datawidth, uint32_t dataheight, uint8_t* tmpdata, const RECT& sourceRect, number_t xpos, number_t ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout, number_t scalex, number_t scaley);
+	static void applyBevelFilter(BitmapContainer* target, const RECT& sourceRect, uint8_t* tmpdata, DisplayObject* owner, number_t distance, number_t strength, bool inner, bool knockout, uint32_t* gradientcolors, number_t* gradientalphas, number_t angle, number_t xpos, number_t ypos, number_t scalex, number_t scaley);
 public:
 	BitmapFilter(ASWorker* wrk,Class_base* c, CLASS_SUBTYPE st=SUBTYPE_BITMAPFILTER):ASObject(wrk,c,T_OBJECT,st){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(clone);
-	virtual void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley);
+	virtual void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr);
 	virtual uint32_t getMaxFilterBorder() const { return 0; }
 };
 
@@ -60,7 +61,7 @@ public:
 	GlowFilter(ASWorker* wrk,Class_base* c,const GLOWFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley) override;
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	uint32_t getMaxFilterBorder() const override { return ceil(max(blurX,blurY)); }
 };
 
@@ -84,8 +85,8 @@ public:
 	DropShadowFilter(ASWorker* wrk,Class_base* c,const DROPSHADOWFILTER& filter);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley) override;
-	uint32_t getMaxFilterBorder() const override { return ceil(max(blurX,blurY)); }
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
+	uint32_t getMaxFilterBorder() const override { return ceil(max(max(blurX,blurY),distance)); }
 };
 
 class GradientGlowFilter: public BitmapFilter
@@ -108,8 +109,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(int32_t,quality);
 	ASPROPERTY_GETTER_SETTER(tiny_string,type);
 	ASPROPERTY_GETTER_SETTER(bool,knockout);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley) override;
-	uint32_t getMaxFilterBorder() const override { return ceil(max(blurX,blurY)); }
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
+	uint32_t getMaxFilterBorder() const override { return ceil(max(max(blurX,blurY),distance)); }
 	void prepareShutdown() override;
 };
 
@@ -134,8 +135,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(uint32_t,shadowColor);
 	ASPROPERTY_GETTER_SETTER(number_t,strength);
 	ASPROPERTY_GETTER_SETTER(tiny_string,type);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley) override;
-	uint32_t getMaxFilterBorder() const override { return ceil(max(blurX,blurY)); }
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
+	uint32_t getMaxFilterBorder() const override { return ceil(max(max(blurX,blurY),distance)); }
 };
 class ColorMatrixFilter: public BitmapFilter
 {
@@ -147,7 +148,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, matrix);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley) override;
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	void prepareShutdown() override;
 };
 class BlurFilter: public BitmapFilter
@@ -162,7 +163,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, blurX);
 	ASPROPERTY_GETTER_SETTER(number_t, blurY);
 	ASPROPERTY_GETTER_SETTER(int, quality);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley) override;
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	uint32_t getMaxFilterBorder() const override { return ceil(max(blurX,blurY)); }
 };
 class ConvolutionFilter: public BitmapFilter
@@ -183,7 +184,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, matrixX);
 	ASPROPERTY_GETTER_SETTER(number_t, matrixY);
 	ASPROPERTY_GETTER_SETTER(bool, preserveAlpha);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley) override;
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	void prepareShutdown() override;
 };
 class DisplacementMapFilter: public BitmapFilter
@@ -203,7 +204,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string,mode);
 	ASPROPERTY_GETTER_SETTER(number_t,scaleX);
 	ASPROPERTY_GETTER_SETTER(number_t,scaleY);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley) override;
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	void prepareShutdown() override;
 };
 class GradientBevelFilter: public BitmapFilter
@@ -226,8 +227,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, ratios);
 	ASPROPERTY_GETTER_SETTER(number_t, strength);
 	ASPROPERTY_GETTER_SETTER(tiny_string, type);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley) override;
-	uint32_t getMaxFilterBorder() const override { return ceil(max(blurX,blurY)); }
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
+	uint32_t getMaxFilterBorder() const override { return ceil(max(max(blurX,blurY),distance)); }
 	void prepareShutdown() override;
 };
 class ShaderFilter: public BitmapFilter
@@ -238,7 +239,7 @@ public:
 	ShaderFilter(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley) override;
+	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 };
 
 class BitmapFilterQuality: public ASObject

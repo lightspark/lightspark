@@ -41,10 +41,10 @@ void nanoVGDeleteImage(int image)
 
 int setNanoVGImage(EngineData* engine, NVGcontext* nvgctxt,const FILLSTYLE* style)
 {
-	if (style->bitmap && style->bitmap->nanoVGImageHandle == -1)
-	{
+	if (!style->bitmap)
+		return -1;
+	if (style->bitmap->nanoVGImageHandle == -1)
 		style->bitmap->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,style->bitmap->getWidth(),style->bitmap->getHeight(),1,style->bitmap->getData());
-	}
 	engine->exec_glBindTexture_GL_TEXTURE_2D(style->bitmap->nanoVGImageHandle);
 	switch (style->FillStyleType)
 	{
@@ -70,15 +70,11 @@ int setNanoVGImage(EngineData* engine, NVGcontext* nvgctxt,const FILLSTYLE* styl
 
 
 TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o)
-  ,redMultiplier(1.0),greenMultiplier(1.0),blueMultiplier(1.0),alphaMultiplier(1.0)
-  ,redOffset(0.0),greenOffset(0.0),blueOffset(0.0),alphaOffset(0.0)
   ,scaling(0.05),renderWithNanoVG(false)
 {
 }
 
 TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling) : owner(_o)
-	,redMultiplier(1.0),greenMultiplier(1.0),blueMultiplier(1.0),alphaMultiplier(1.0)
-	,redOffset(0.0),greenOffset(0.0),blueOffset(0.0),alphaOffset(0.0)
 	,scaling(_scaling),renderWithNanoVG(false)
 
 {
@@ -193,10 +189,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 								{
 									RGBA color = style->Color;
 									float r,g,b,a;
-									a = max(0.0f,min(255.0f,float((color.Alpha * alphaMultiplier * 256.0f)/256.0f + alphaOffset)))/256.0f;
-									r = max(0.0f,min(255.0f,float((color.Red   *   redMultiplier * 256.0f)/256.0f +   redOffset)))/256.0f;
-									g = max(0.0f,min(255.0f,float((color.Green * greenMultiplier * 256.0f)/256.0f + greenOffset)))/256.0f;
-									b = max(0.0f,min(255.0f,float((color.Blue  *  blueMultiplier * 256.0f)/256.0f +  blueOffset)))/256.0f;
+									currentcolortransform.applyTransformation(color,r,g,b,a);
 									NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*owner->getConcatenatedAlpha()*255.0);
 									nvgFillColor(nvgctxt,c);
 									break;
@@ -226,10 +219,8 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 										pattern.xform[4] = m.x0/scaling - style->ShapeBounds.Xmin;
 										pattern.xform[5] = m.y0/scaling - style->ShapeBounds.Ymin;
 										float r,g,b,a;
-										a = max(0.0f,min(255.0f,float((255.0* alphaMultiplier * 256.0f)/256.0f + alphaOffset)))/256.0f;
-										r = max(0.0f,min(255.0f,float((255.0*  redMultiplier * 256.0f)/256.0f +   redOffset)))/256.0f;
-										g = max(0.0f,min(255.0f,float((255.0* greenMultiplier * 256.0f)/256.0f + greenOffset)))/256.0f;
-										b = max(0.0f,min(255.0f,float((255.0*  blueMultiplier * 256.0f)/256.0f +  blueOffset)))/256.0f;
+										RGBA color(255,255,255,255);
+										currentcolortransform.applyTransformation(color,r,g,b,a);
 										NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
 										pattern.innerColor = pattern.outerColor = c;
 										nvgFillPaint(nvgctxt, pattern);
@@ -265,10 +256,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 							{
 								RGBA color = style->Color;
 								float r,g,b,a;
-								a = max(0.0f,min(255.0f,float((color.Alpha * alphaMultiplier * 256.0f)/256.0f + alphaOffset)))/256.0f;
-								r = max(0.0f,min(255.0f,float((color.Red   *   redMultiplier * 256.0f)/256.0f +   redOffset)))/256.0f;
-								g = max(0.0f,min(255.0f,float((color.Green * greenMultiplier * 256.0f)/256.0f + greenOffset)))/256.0f;
-								b = max(0.0f,min(255.0f,float((color.Blue  *  blueMultiplier * 256.0f)/256.0f +  blueOffset)))/256.0f;
+								currentcolortransform.applyTransformation(color,r,g,b,a);
 								NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*owner->getConcatenatedAlpha()*255.0);
 								nvgStrokeColor(nvgctxt,c);
 							}
@@ -582,14 +570,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		height = 1;
 	}
 
-	float redMultiplier=1.0;
-	float greenMultiplier=1.0;
-	float blueMultiplier=1.0;
-	float alphaMultiplier=1.0;
-	float redOffset=0.0;
-	float greenOffset=0.0;
-	float blueOffset=0.0;
-	float alphaOffset=0.0;
 	MATRIX totalMatrix2;
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
@@ -598,52 +578,11 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
-	ColorTransform* ct = owner->colorTransform.getPtr();
-	DisplayObjectContainer* p = owner->getParent();
 	if(width==0 || height==0)
 		return nullptr;
-	if (ct)
-	{
-		redMultiplier=ct->redMultiplier;
-		greenMultiplier=ct->greenMultiplier;
-		blueMultiplier=ct->blueMultiplier;
-		alphaMultiplier=ct->alphaMultiplier;
-		redOffset=ct->redOffset;
-		greenOffset=ct->greenOffset;
-		blueOffset=ct->blueOffset;
-		alphaOffset=ct->alphaOffset;
-	}
-	while (p)
-	{
-		if (p->colorTransform)
-		{
-			if (!ct)
-			{
-				ct = p->colorTransform.getPtr();
-				redMultiplier=ct->redMultiplier;
-				greenMultiplier=ct->greenMultiplier;
-				blueMultiplier=ct->blueMultiplier;
-				alphaMultiplier=ct->alphaMultiplier;
-				redOffset=ct->redOffset;
-				greenOffset=ct->greenOffset;
-				blueOffset=ct->blueOffset;
-				alphaOffset=ct->alphaOffset;
-			}
-			else
-			{
-				ct = p->colorTransform.getPtr();
-				redMultiplier*=ct->redMultiplier;
-				greenMultiplier*=ct->greenMultiplier;
-				blueMultiplier*=ct->blueMultiplier;
-				alphaMultiplier*=ct->alphaMultiplier;
-				redOffset+=ct->redOffset;
-				greenOffset+=ct->greenOffset;
-				blueOffset+=ct->blueOffset;
-				alphaOffset+=ct->alphaOffset;
-			}
-		}
-		p = p->getParent();
-	}
+	ColorTransformBase ct;
+	ct.fillConcatenated(owner);
+	
 	Rectangle* r = owner->scalingGrid.getPtr();
 	if (!r && owner->getParent())
 		r = owner->getParent()->scalingGrid.getPtr();
@@ -663,18 +602,13 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& mask.isNull()
 			&& !isMask
 			&& !owner->ClipDepth
-			&& !owner->computeCacheAsBitmap() 
+			&& !owner->computeCacheAsBitmap()
 			&& owner->getBlendMode()==BLENDMODE_NORMAL
-			&& !r)
+			&& !r
+			&& (owner->getSystemState()->stage->renderToTextureCount == 0) // TODO implement nanoVG rendering to texture
+		)
 	{
-		this->redMultiplier=redMultiplier;
-		this->greenMultiplier=greenMultiplier;
-		this->blueMultiplier=blueMultiplier;
-		this->alphaMultiplier=alphaMultiplier;
-		this->redOffset=redOffset;
-		this->greenOffset=greenOffset;
-		this->blueOffset=blueOffset;
-		this->alphaOffset=alphaOffset;
+		currentcolortransform = ct;
 		renderWithNanoVG=true;
 		int offsetX;
 		int offsetY;
@@ -706,9 +640,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
 				, isMask, mask
 				, scaling,owner->getConcatenatedAlpha(), masks
-				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
-				, redOffset,greenOffset,blueOffset,alphaOffset
-				, smoothing, regpointx, regpointy);
+				, ct, smoothing, regpointx, regpointy,q && q->isSoftwareQueue);
 }
 
 bool TokenContainer::hitTestImpl(number_t x, number_t y) const
@@ -843,17 +775,10 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 	}
 	if(hasContent)
 	{
-		/* scale the bounding box coordinates and round them to a bigger integer box */
-		#define roundDown(x) \
-			copysign(floor(abs(x)), x)
-		#define roundUp(x) \
-			copysign(ceil(abs(x)), x)
-		xmin = roundDown(xmin*scaling);
-		xmax = roundUp(xmax*scaling);
-		ymin = roundDown(ymin*scaling);
-		ymax = roundUp(ymax*scaling);
-		#undef roundDown
-		#undef roundUp
+		xmin = round(xmin*scaling);
+		xmax = round(xmax*scaling);
+		ymin = round(ymin*scaling);
+		ymax = round(ymax*scaling);
 	}
 	return hasContent;
 

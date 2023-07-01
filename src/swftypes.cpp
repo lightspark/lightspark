@@ -1297,8 +1297,9 @@ std::istream& lightspark::operator>>(std::istream& stream, BLURFILTER& v)
 
 std::istream& lightspark::operator>>(std::istream& stream, BEVELFILTER& v)
 {
+	// contrary to spec HighlightColor is first entry, then ShadowColor
+	stream >> v.HighlightColor; 
 	stream >> v.ShadowColor;
-	stream >> v.HighlightColor;
 	stream >> v.BlurX;
 	stream >> v.BlurY;
 	stream >> v.Angle;
@@ -1727,7 +1728,7 @@ LINESTYLE2::~LINESTYLE2()
 {
 }
 
-LINESTYLE2& LINESTYLE2::operator=(LINESTYLE2 r)
+LINESTYLE2& LINESTYLE2::operator=(const LINESTYLE2& r)
 {
 	StartCapStyle=r.StartCapStyle;
 	JointStyle=r.JointStyle;

@@ -22,6 +22,7 @@
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "backends/rendering.h"
 
 using namespace std;
 using namespace lightspark;
@@ -32,7 +33,7 @@ void BitmapFilter::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
 }
 
-void BitmapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos,number_t scalex,number_t scaley)
+void BitmapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
 	LOG(LOG_ERROR,"applyFilter for "<<this->toDebugString());
 }
@@ -66,10 +67,16 @@ int SHG_TABLE[] =
 	17, 16, 17, 17, 16, 17, 15, 16, 17, 14, 17, 16, 15, 17, 16, 17, 13, 17, 16, 17, 17, 16, 17, 14, 17, 16, 17, 16, 17, 16, 17, 9
 };
 
-void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, number_t blurx, number_t blury, int quality, number_t scalex, number_t scaley)
+void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, number_t blurx, number_t blury, int quality)
 {
-	blurx*=scalex;
-	blury*=scaley;
+	int oX;
+	int oY;
+	float sX;
+	float sY;
+	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, oX, oY, sX, sY);
+
+	blurx*=sX;
+	blury*=sY;
 	int radiusX = int(round(blurx)) >> 1;
 	int radiusY = int(round(blury)) >> 1;
 	if (radiusX >= int(sizeof(MUL_TABLE)/sizeof(int)))
@@ -275,31 +282,31 @@ void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, num
 		}
 	}
 }
-void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout,number_t scalex,number_t scaley)
+
+void BitmapFilter::applyDropShadowFilter(uint8_t* data, uint32_t datawidth, uint32_t dataheight, uint8_t* tmpdata, const RECT& sourceRect, number_t xpos, number_t ypos, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout,number_t scalex,number_t scaley)
 {
 	xpos *= scalex;
 	ypos *= scaley;
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
 	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
 	uint32_t size = width*height;
-
-	uint8_t* data = target->getData();
-	int32_t startpos = ypos*target->getWidth();
-	int32_t targetsize = target->getWidth()*target->getHeight()*4;
-	for (uint32_t i = 0; i < size*4; i+=4)
+	int32_t startpos = round(ypos)*datawidth+round(xpos);
+	int32_t targetsize = datawidth*dataheight*4;
+	for (uint32_t i = 0; i < size; i++)
 	{
-		if (i && i%(width*4)==0)
-			startpos+=target->getWidth();
+		if (i && i%width==0)
+			startpos+=datawidth;
 		if (startpos < 0)
 			continue;
-		int32_t targetpos = (xpos+startpos)*4+i%(width*4);
+		int32_t targetpos = startpos*4+(i%width)*4;
 		if (targetpos < 0)
 			continue;
 		if (targetpos+3 >= targetsize)
 			break;
-		number_t glowalpha = (inner ? 0xff - tmpdata[i+3] : tmpdata[i+3]);
-		number_t srcalpha = max(0.0,min(1.0,glowalpha*alpha*strength/255.0));
+		number_t glowalpha = number_t(inner ? 0xff - tmpdata[i*4+3] : tmpdata[i*4+3])/255.0;
+		number_t srcalpha = max(0.0,min(1.0,glowalpha*alpha*strength));
 		number_t dstalpha = number_t(data[targetpos+3])/255.0;
+		uint32_t newalpha;
 		if (inner)
 		{
 			if (knockout)
@@ -307,14 +314,14 @@ void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, uint8_t* tmpda
 				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha));
 				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha));
 				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha));
-				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*dstalpha));
+				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*dstalpha));
 			}
 			else
 			{
 				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha+number_t(data[targetpos  ])*(1.0-srcalpha)));
 				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+1])*(1.0-srcalpha)));
 				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+2])*(1.0-srcalpha)));
-				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*dstalpha+number_t(data[targetpos+3])*(1.0-srcalpha)));
+				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*dstalpha+number_t(data[targetpos+3])*(1.0-srcalpha)));
 			}
 		}
 		else
@@ -324,30 +331,70 @@ void BitmapFilter::applyDropShadowFilter(BitmapContainer* target, uint8_t* tmpda
 				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)));
 				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)));
 				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)));
-				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0-dstalpha)));
+				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*(1.0-dstalpha)));
 			}
 			else
 			{
 				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos  ])));
 				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+1])));
 				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+2])));
-				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+3])));
+				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+3])));
+			}
+		}
+		data[targetpos+3] = newalpha;
+	}
+}
+void BitmapFilter::fillGradientColors(number_t* gradientalphas, uint32_t* gradientcolors, Array* ratios, Array* alphas, Array* colors)
+{
+	number_t alpha = 1.0;
+	number_t red = 255.0;
+	number_t green = 255.0;
+	number_t blue = 255.0;
+	number_t lastalpha = 0.0;
+	number_t lastred = 0.0;
+	number_t lastgreen = 0.0;
+	number_t lastblue = 0.0;
+	number_t nextalpha = 0.0;
+	number_t nextred = 0.0;
+	number_t nextgreen = 0.0;
+	number_t nextblue = 0.0;
+	number_t deltaAlpha=0.0;
+	number_t deltaRed=0;
+	number_t deltaGreen=0;
+	number_t deltaBlue=0;
+	uint32_t lastratio = 0;
+	uint32_t nextratio = 0;
+	uint32_t ratioidx = 0;
+	number_t ratiostep=1;
+	// get initial entries for ratio 0, if available
+	if (ratios && ratios->size())
+	{
+		asAtom a=asAtomHandler::invalidAtom;
+		ratios->at_nocheck(a,ratioidx);
+		if (asAtomHandler::toUInt(a)==0)
+		{
+			if (alphas && alphas->size() > ratioidx)
+			{
+				asAtom a=asAtomHandler::invalidAtom;
+				alphas->at_nocheck(a,ratioidx);
+				nextalpha = asAtomHandler::toNumber(a);
+			}
+			if (colors && colors->size() > ratioidx)
+			{
+				asAtom a=asAtomHandler::invalidAtom;
+				colors->at_nocheck(a,ratioidx);
+				uint32_t c = asAtomHandler::toUInt(a);
+				nextred = (c>>16)&0xff;
+				nextgreen = (c>>8)&0xff ;
+				nextblue = c&0xff;
 			}
 		}
 	}
-}
-void BitmapFilter::fillGradientColors(number_t* gradientalphas, uint32_t* gradientcolors,Array* ratios,Array* alphas,Array* colors)
-{
-	number_t alpha = 1.0;
-	uint32_t color = 0x000000;
-	uint32_t ratioidx = 0;
-	uint32_t nextratio = 0;
-	uint32_t currratioidx = 0;
 	for (uint32_t i=0; i <256; i++)
 	{
-		if (i >= nextratio)
+		if (i == nextratio)
 		{
-			currratioidx= ratioidx;
+			lastratio = nextratio;
 			ratioidx++;
 			if (ratios && ratios->size() > ratioidx)
 			{
@@ -355,46 +402,150 @@ void BitmapFilter::fillGradientColors(number_t* gradientalphas, uint32_t* gradie
 				ratios->at_nocheck(a,ratioidx);
 				nextratio = asAtomHandler::toUInt(a);
 			}
-		}
-		if (alphas && alphas->size() > currratioidx)
-		{
-			asAtom a=asAtomHandler::invalidAtom;
-			alphas->at_nocheck(a,currratioidx);
-			alpha = asAtomHandler::toNumber(a);
-		}
-		if (colors && colors->size() > currratioidx)
-		{
-			asAtom a=asAtomHandler::invalidAtom;
-			colors->at_nocheck(a,currratioidx);
-			color = asAtomHandler::toUInt(a);
+			lastalpha = alpha = nextalpha;
+			ratiostep = nextratio==lastratio ? 1 : nextratio-lastratio;
+			if (alphas && alphas->size() > ratioidx)
+			{
+				asAtom a=asAtomHandler::invalidAtom;
+				alphas->at_nocheck(a,ratioidx);
+				nextalpha = asAtomHandler::toNumber(a);
+			}
+			deltaAlpha = (nextalpha-lastalpha)/ratiostep;
+			
+			lastred = red = nextred;
+			lastgreen = green = nextgreen;
+			lastblue = blue = nextblue;
+			if (colors && colors->size() > ratioidx)
+			{
+				asAtom a=asAtomHandler::invalidAtom;
+				colors->at_nocheck(a,ratioidx);
+				uint32_t c = asAtomHandler::toUInt(a);
+				nextred = (c>>16)&0xff;
+				nextgreen = (c>>8)&0xff ;
+				nextblue = c&0xff;
+			}
+			deltaRed = (nextred-lastred)/ratiostep;
+			deltaGreen = (nextgreen-lastgreen)/ratiostep;
+			deltaBlue = (nextblue-lastblue)/ratiostep;
 		}
 		gradientalphas[i] = alpha;
-		gradientcolors[i] = color;
+		gradientcolors[i] = (uint32_t(red)&0xff)<<16|(uint32_t(green)&0xff)<<8|(uint32_t(blue)&0xff);
+		
+		alpha += deltaAlpha;
+		red += deltaRed;
+		green += deltaGreen;
+		blue += deltaBlue;
 	}
 }
-void BitmapFilter::applyGradientFilter(BitmapContainer* target, uint8_t* tmpdata, const RECT& sourceRect, int xpos, int ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout,number_t scalex,number_t scaley)
+void BitmapFilter::applyBevelFilter(BitmapContainer* target, const RECT& sourceRect,uint8_t* tmpdata, DisplayObject* owner, number_t distance, number_t strength, bool inner, bool knockout, uint32_t* gradientcolors, number_t* gradientalphas, number_t angle, number_t xpos, number_t ypos, number_t scalex, number_t scaley)
 {
+	// create temporary copy of target to split applying highlight/dropshadow individually on target
+	uint8_t* tmpdatahigh = new uint8_t[target->getDataSize()];
+	uint8_t* tmpdatashadow = new uint8_t[target->getDataSize()];
+	if (inner)
+	{
+		memcpy(tmpdatahigh,target->getData(),target->getDataSize());
+		memcpy(tmpdatashadow,target->getData(),target->getDataSize());
+	}
+	else
+	{
+		memset(tmpdatahigh,0,target->getDataSize());
+		memset(tmpdatashadow,0,target->getDataSize());
+	}
+	// HACK: this is _very_ strange but the rotation of the parent DisplayObject seems to have an influence on the angle used for the dropshadows
+	// we just subtract the current rotation of the parent of the DisplayObject from the angle, that seems to get mostly correct results
+	number_t realangle = angle;
+	if (owner && owner->getParent())
+	{
+		MATRIX m = owner->getParent()->getMatrix();
+		if (m.getScaleX()<0 || m.getScaleY()<0)
+			realangle -= (m.getRotation()+180)*M_PI/180.0;
+		else
+			realangle -= m.getRotation()*M_PI/180.0;
+	}
+	applyDropShadowFilter(tmpdatahigh  ,target->getWidth(),target->getHeight(), tmpdata, sourceRect, xpos+cos(realangle+(inner? 0.0:M_PI)) * distance, ypos+sin(realangle+(inner? 0.0:M_PI)) * distance, 1.0, 1.0, 0xffffff, inner, true,scalex,scaley);
+	applyDropShadowFilter(tmpdatashadow,target->getWidth(),target->getHeight(), tmpdata, sourceRect, xpos+cos(realangle+(inner?M_PI: 0.0)) * distance, ypos+sin(realangle+(inner?M_PI: 0.0)) * distance, 1.0, 1.0, 0xffffff, inner, true,scalex,scaley);
+	uint8_t* datacombined = new uint8_t[target->getDataSize()];
+	for (int i = 0; i < target->getWidth()*target->getHeight(); i++)
+	{
+		int alphahigh = (int) (number_t(tmpdatahigh[i*4+3]) * strength);
+		int alphashadow = (int) (number_t(tmpdatashadow[i*4+3]) * strength);
+		int gradientindex = max(-128,min(127,(alphahigh - alphashadow)/2));
+		datacombined[i*4  ] = (gradientcolors[128 + gradientindex]    )&0xff;
+		datacombined[i*4+1] = (gradientcolors[128 + gradientindex]>>8 )&0xff;
+		datacombined[i*4+2] = (gradientcolors[128 + gradientindex]>>16)&0xff;
+		datacombined[i*4+3] = min(0xffU,uint32_t(gradientalphas[128 + gradientindex]*255.0));
+		if (inner)
+		{
+			// premultiply alpha
+			datacombined[i*4  ] = uint32_t(datacombined[i*4  ])*uint32_t(datacombined[i*4+3])/255;
+			datacombined[i*4+1] = uint32_t(datacombined[i*4+1])*uint32_t(datacombined[i*4+3])/255;
+			datacombined[i*4+2] = uint32_t(datacombined[i*4+2])*uint32_t(datacombined[i*4+3])/255;
+			if (knockout)
+			{
+				target->getData()[i*4  ] = datacombined[i*4  ];
+				target->getData()[i*4+1] = datacombined[i*4+1];
+				target->getData()[i*4+2] = datacombined[i*4+2];
+				target->getData()[i*4+3] = uint32_t(datacombined[i*4+3])*uint32_t(target->getData()[i*4+3])/255;
+			}
+			else
+			{
+				target->getData()[i*4  ] = min(0xffU,uint32_t(number_t(target->getData()[i*4  ])*number_t(1.0-gradientalphas[128 + gradientindex])+datacombined[i*4  ]));
+				target->getData()[i*4+1] = min(0xffU,uint32_t(number_t(target->getData()[i*4+1])*number_t(1.0-gradientalphas[128 + gradientindex])+datacombined[i*4+1]));
+				target->getData()[i*4+2] = min(0xffU,uint32_t(number_t(target->getData()[i*4+2])*number_t(1.0-gradientalphas[128 + gradientindex])+datacombined[i*4+2]));
+			}
+		}
+		else
+		{
+			if (knockout)
+			{
+				target->getData()[i*4  ] = datacombined[i*4  ];
+				target->getData()[i*4+1] = datacombined[i*4+1];
+				target->getData()[i*4+2] = datacombined[i*4+2];
+				target->getData()[i*4+3] = min(0xffU,uint32_t(number_t(datacombined[i*4+3])*number_t(255.0-target->getData()[i*4+3])/255.0));
+			}
+			else
+			{
+				target->getData()[i*4  ] = min(0xffU,uint32_t(number_t(datacombined[i*4  ])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4  ]));
+				target->getData()[i*4+1] = min(0xffU,uint32_t(number_t(datacombined[i*4+1])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4+1]));
+				target->getData()[i*4+2] = min(0xffU,uint32_t(number_t(datacombined[i*4+2])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4+2]));
+				target->getData()[i*4+3] = min(0xffU,uint32_t(number_t(datacombined[i*4+3])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4+3]));
+			}
+		}
+	}
+	delete[] datacombined;
+	delete[] tmpdatahigh;
+	delete[] tmpdatashadow;
+}
+
+void BitmapFilter::applyGradientFilter(uint8_t* data, uint32_t datawidth, uint32_t dataheight, uint8_t* tmpdata, const RECT& sourceRect, number_t xpos, number_t ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout,number_t scalex,number_t scaley)
+{
+	
 	xpos *= scalex;
 	ypos *= scaley;
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
 	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
 	uint32_t size = width*height;
 
-	uint8_t* data = target->getData();
-	uint32_t startpos = ypos*target->getWidth();
-	uint32_t targetsize = target->getWidth()*target->getHeight()*4;
-	for (uint32_t i = 0; i < size*4; i+=4)
+	int32_t startpos = int(ypos)*datawidth+int(xpos);
+	int32_t targetsize = datawidth*dataheight*4;
+	for (uint32_t i = 0; i < size; i++)
 	{
-		if (i && i%(width*4)==0)
-			startpos+=target->getWidth();
-		uint32_t targetpos = (xpos+startpos)*4+i%(width*4);
+		if (i && i%width==0)
+			startpos+=datawidth;
+		if (startpos < 0)
+			continue;
+		int32_t targetpos = startpos*4+(i%width)*4;
+		if (targetpos < 0)
+			continue;
 		if (targetpos+3 >= targetsize)
 			break;
-		number_t glowalpha = (inner ? 0xff - tmpdata[i+3] : tmpdata[i+3]);
-		number_t alpha = alphas[uint32_t(glowalpha)];
-		number_t srcalpha = max(0.0,min(1.0,glowalpha*alpha*strength/255.0));
+		uint32_t glowalpha = max(0U,min(uint32_t(0xff),uint32_t(number_t(inner ? 0xff - tmpdata[i*4+3] : tmpdata[i*4+3])*strength)));
+		number_t alpha = alphas[glowalpha];
+		number_t srcalpha = max(0.0,min(1.0,alpha));
 		number_t dstalpha = number_t(data[targetpos+3])/255.0;
-		uint32_t color = colors[uint32_t(glowalpha)];
+		uint32_t color = colors[glowalpha];
+		uint32_t newalpha;
 		if (inner)
 		{
 			if (knockout)
@@ -402,14 +553,14 @@ void BitmapFilter::applyGradientFilter(BitmapContainer* target, uint8_t* tmpdata
 				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha));
 				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha));
 				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha));
-				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*dstalpha));
+				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*dstalpha));
 			}
 			else
 			{
 				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha+number_t(data[targetpos  ])*(1.0-srcalpha)));
 				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+1])*(1.0-srcalpha)));
 				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+2])*(1.0-srcalpha)));
-				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*dstalpha+number_t(data[targetpos+3])*(1.0-srcalpha)));
+				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*dstalpha+number_t(data[targetpos+3])*(1.0-srcalpha)));
 			}
 		}
 		else
@@ -419,16 +570,24 @@ void BitmapFilter::applyGradientFilter(BitmapContainer* target, uint8_t* tmpdata
 				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)));
 				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)));
 				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)));
-				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0-dstalpha)));
+				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*(1.0-dstalpha)));
 			}
 			else
 			{
 				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos  ])));
 				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+1])));
 				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+2])));
-				data[targetpos+3] = min(uint32_t(0xff),uint32_t(number_t(0xff            )*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+3])));
+				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+3])));
 			}
 		}
+		if (newalpha)
+		{
+			// un-premultiply alpha into result
+			data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t(data[targetpos  ])*255.0/number_t(newalpha)));
+			data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t(data[targetpos+1])*255.0/number_t(newalpha)));
+			data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t(data[targetpos+2])*255.0/number_t(newalpha)));
+		}
+		data[targetpos+3] = newalpha;
 	}
 }
 
@@ -497,16 +656,15 @@ BitmapFilter* GlowFilter::cloneImpl() const
 	cloned->strength = strength;
 	return cloned;
 }
-void GlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos,number_t scalex,number_t scaley)
+void GlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos,number_t scalex,number_t scaley, DisplayObject* owner)
 {
 	uint8_t* tmpdata = nullptr;
 	if (source)
 		tmpdata = source->getRectangleData(sourceRect);
 	else
 		tmpdata = target->getRectangleData(sourceRect);
-
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
-	applyDropShadowFilter(target, tmpdata, sourceRect, xpos, ypos, strength, alpha, color, inner, knockout,scalex,scaley);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	applyDropShadowFilter(target->getData(),target->getWidth(),target->getHeight(), tmpdata, sourceRect, xpos, ypos, strength, alpha, color, inner, knockout,scalex,scaley);
 	delete[] tmpdata;
 }
 
@@ -522,7 +680,7 @@ DropShadowFilter::DropShadowFilter(ASWorker* wrk,Class_base* c,const DROPSHADOWF
 	knockout(filter.Knockout), quality(filter.Passes), strength(filter.Strength)
 {
 }
-void DropShadowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
+void DropShadowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
 	xpos += cos(angle) * distance;
 	ypos +=	sin(angle) * distance;
@@ -534,8 +692,8 @@ void DropShadowFilter::applyFilter(BitmapContainer* target, BitmapContainer* sou
 	else
 		tmpdata = target->getRectangleData(sourceRect);
 
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
-	applyDropShadowFilter(target, tmpdata, sourceRect, xpos, ypos, strength, alpha, color, inner, knockout,scalex,scaley);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	applyDropShadowFilter(target->getData(),target->getWidth(),target->getHeight(), tmpdata, sourceRect, xpos, ypos, strength, alpha, color, inner, knockout,scalex,scaley);
 	delete[] tmpdata;
 }
 
@@ -652,7 +810,7 @@ void GradientGlowFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, knockout);
 }
 
-void GradientGlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
+void GradientGlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
 	uint8_t* tmpdata = nullptr;
 	if (source)
@@ -663,8 +821,8 @@ void GradientGlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* s
 	number_t gradientalphas[256];
 	uint32_t gradientcolors[256];
 	fillGradientColors(gradientalphas,gradientcolors,this->ratios.getPtr(), this->alphas.getPtr(), this->colors.getPtr());
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
-	applyGradientFilter(target, tmpdata, sourceRect, xpos, ypos, strength, gradientalphas, gradientcolors, type=="inner", knockout,scalex,scaley);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	applyGradientFilter(target->getData(),target->getWidth(),target->getHeight(), tmpdata, sourceRect, xpos, ypos, strength, gradientalphas, gradientcolors, type=="inner", knockout,scalex,scaley);
 	delete[] tmpdata;
 }
 
@@ -765,7 +923,7 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,shadowColor)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,strength)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,type)
 
-void BevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
+void BevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
 	if (type=="full")
 		LOG(LOG_NOT_IMPLEMENTED,"BevelFilter type 'full'");
@@ -775,12 +933,23 @@ void BevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, 
 	else
 		tmpdata = target->getRectangleData(sourceRect);
 
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
-	// TODO I've not found any useful documentation how BevelFilter should be implemented, so we just apply two dropShadowFilters with different angles and colors on the blurred data
-	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos(angle+M_PI) * distance, ypos+sin(angle+M_PI) * distance, strength, highlightAlpha, highlightColor, type=="inner", knockout,scalex,scaley);
-	applyDropShadowFilter(target, tmpdata, sourceRect, xpos+cos(angle     ) * distance, ypos+sin(angle     ) * distance, strength, shadowAlpha   , shadowColor   , type=="inner", knockout,scalex,scaley);
-	delete[] tmpdata;
+	// create gradient color list for fixed highlight/shadow colors
+	number_t gradientalphas[256];
+	uint32_t gradientcolors[256];
+	number_t deltashadow = shadowAlpha/128.0;
+	number_t deltahighlight = highlightAlpha/127.0;
+	for (uint32_t i =0;i<128;i++)
+	{
+		gradientalphas[i] = number_t(128-i)*deltashadow;
+		gradientalphas[i+128] = number_t(i)*deltahighlight;
 
+		//precompile alpha to colors
+		gradientcolors[i] = shadowColor;
+		gradientcolors[i+128] = highlightColor;
+	}
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+	applyBevelFilter(target,sourceRect,tmpdata,owner,distance,strength,type=="inner",knockout,gradientcolors,gradientalphas,angle,xpos,ypos,scalex,scaley);
+	delete[] tmpdata;
 }
 
 ASFUNCTIONBODY_ATOM(BevelFilter,_constructor)
@@ -827,7 +996,7 @@ void ColorMatrixFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, matrix);
 }
 
-void ColorMatrixFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
+void ColorMatrixFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
 	xpos *= scalex;
 	ypos *= scaley;
@@ -928,21 +1097,21 @@ ASFUNCTIONBODY_ATOM(BlurFilter,_constructor)
 	BlurFilter *th = asAtomHandler::as<BlurFilter>(obj);
 	ARG_CHECK(ARG_UNPACK(th->blurX,4.0)(th->blurY,4.0)(th->quality,1));
 }
-void BlurFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
+void BlurFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
 	uint8_t* tmpdata = nullptr;
 	if (source)
 		tmpdata = source->getRectangleData(sourceRect);
 	else
 		tmpdata = target->getRectangleData(sourceRect);
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
 
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
 	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
 	uint8_t* data = target->getData();
 	for (uint32_t i = 0; i < height; i++)
 	{
-		memcpy(data+((ypos+i)*width+xpos)*4, tmpdata+i*width*4,width*4);
+		memcpy(data+((int(ypos)+i)*width+int(xpos))*4, tmpdata+i*width*4,width*4);
 	}
 	delete[] tmpdata;
 }
@@ -1005,7 +1174,7 @@ void ConvolutionFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,preserveAlpha);
 }
 
-void ConvolutionFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
+void ConvolutionFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
 	xpos *= scalex;
 	ypos *= scaley;
@@ -1155,7 +1324,7 @@ void DisplacementMapFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,scaleY);
 }
 
-void DisplacementMapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
+void DisplacementMapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
 	xpos *= scalex;
 	ypos *= scaley;
@@ -1355,7 +1524,7 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,ratios)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,strength)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,type)
 
-void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
+void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
 	if (type=="full")
 		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter type 'full'");
@@ -1368,10 +1537,9 @@ void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* 
 	number_t gradientalphas[256];
 	uint32_t gradientcolors[256];
 	fillGradientColors(gradientalphas,gradientcolors,this->ratios.getPtr(), this->alphas.getPtr(), this->colors.getPtr());
-	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality,scalex,scaley);
-	// TODO I've not found any useful documentation how BevelFilter should be implemented, so we just apply two dropShadowFilters with different angles
-	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos(angle+M_PI) * distance, ypos+sin(angle+M_PI) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout,scalex,scaley);
-	applyGradientFilter(target, tmpdata, sourceRect, xpos+cos(angle     ) * distance, ypos+sin(angle     ) * distance, strength, gradientalphas, gradientcolors, type=="inner", knockout,scalex,scaley);
+	applyBlur(tmpdata,sourceRect.Xmax-sourceRect.Xmin,sourceRect.Ymax-sourceRect.Ymin,blurX,blurY,quality);
+
+	applyBevelFilter(target,sourceRect,tmpdata,owner,distance,strength,type=="inner",knockout,gradientcolors,gradientalphas,angle,xpos,ypos,scalex,scaley);
 	delete[] tmpdata;
 }
 
@@ -1421,7 +1589,7 @@ void ShaderFilter::sinit(Class_base* c)
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
 }
 
-void ShaderFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos, number_t scalex, number_t scaley)
+void ShaderFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"applyFilter for ShaderFilter");
 }

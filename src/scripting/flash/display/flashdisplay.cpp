@@ -1027,14 +1027,7 @@ bool Sprite::destruct()
 	tokens.clear();
 	sound.reset();
 	soundtransform.reset();
-	this->redMultiplier=1.0;
-	this->greenMultiplier=1.0;
-	this->blueMultiplier=1.0;
-	this->alphaMultiplier=1.0;
-	this->redOffset=0;
-	this->greenOffset=0;
-	this->blueOffset=0;
-	this->alphaOffset=0;
+	currentcolortransform.resetTransformation();
 	return DisplayObjectContainer::destruct();
 }
 
@@ -1283,14 +1276,12 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 			setNeedsTextureRecalculation();
 		q->addToInvalidateQueue(_MR(this));
 	}
-	else
-		TokenContainer::requestInvalidation(q,forceTextureRefresh);
 }
 
 bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 {
 	bool renderingfailed = false;
-	if (computeCacheAsBitmap(false) && ctxt.contextType == RenderContext::GL)
+	if (ctxt.contextType == RenderContext::GL && computeCacheAsBitmap(false))
 	{
 		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
 		if (d)
@@ -3017,6 +3008,7 @@ uint32_t DisplayObjectContainer::getMaxLegacyChildDepth()
 	}
 	return max >= 0 ? max : UINT32_MAX;
 }
+
 void DisplayObjectContainer::checkClipDepth()
 {
 	DisplayObject* clipobj = nullptr;
@@ -3326,11 +3318,10 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceT
 	DisplayObject::requestInvalidation(q);
 	if (requestInvalidationForCacheAsBitmap(q))
 		return;
-	mutexDisplayList.lock();
-	auto tmp = dynamicDisplayList; // use copy of displaylist to avoid deadlock when computing boundsrect for cached bitmaps
-	mutexDisplayList.unlock();
-	auto it=tmp.begin();
-	for(;it!=tmp.end();++it)
+	std::vector<_R<DisplayObject>> tmplist;
+	cloneDisplayList(tmplist); // use copy of displaylist to avoid deadlock when computing boundsrect for cached bitmaps
+	auto it=tmplist.begin();
+	for(;it!=tmplist.end();++it)
 	{
 		(*it)->hasChanged = true;
 		(*it)->requestInvalidation(q,forceTextureRefresh);
@@ -3901,14 +3892,7 @@ bool Shape::destruct()
 	graphics.reset();
 	fromTag=nullptr;
 	tokens.clear();
-	this->redMultiplier=1.0;
-	this->greenMultiplier=1.0;
-	this->blueMultiplier=1.0;
-	this->alphaMultiplier=1.0;
-	this->redOffset=0;
-	this->greenOffset=0;
-	this->blueOffset=0;
-	this->alphaOffset=0;
+	currentcolortransform.resetTransformation();
 	return DisplayObject::destruct();
 }
 
@@ -4222,7 +4206,16 @@ bool Stage::renderImpl(RenderContext &ctxt)
 		((GLRenderContext&)ctxt).lsglLoadIdentity();
 		((GLRenderContext&)ctxt).setMatrixUniform(GLRenderContext::LSGL_MODELVIEW);
 	}
-	return DisplayObjectContainer::renderImpl(ctxt);
+	if (renderToTextureCount)
+	{
+		// scene has at least one DisplayObject with an extended blend mode, so we need to render everything to a texture to be able to apply the blend mode
+		getSystemState()->getRenderThread()->beginBlendTexture();
+		bool ret = DisplayObjectContainer::renderImpl(ctxt);
+		getSystemState()->getRenderThread()->endBlendTexture();
+		return ret;
+	}
+	else
+		return DisplayObjectContainer::renderImpl(ctxt);
 }
 bool Stage::destruct()
 {
@@ -5101,7 +5094,7 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startuplo
 	subtype=SUBTYPE_BITMAP;
 	bitmapData = data;
 	bitmapData->addUser(this,startupload);
-	Bitmap::updatedData();
+	Bitmap::updatedData(startupload);
 }
 
 Bitmap::~Bitmap()
@@ -5209,7 +5202,7 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,bitmapData,onBitmapData)
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,smoothing,onSmoothingChanged)
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged)
 
-void Bitmap::updatedData()
+void Bitmap::updatedData(bool startupload)
 {
 	if(bitmapData.isNull() || bitmapData->getBitmapContainer().isNull())
 	{
@@ -5229,7 +5222,7 @@ void Bitmap::updatedData()
 	{
 		d->hasChanged=true;
 		d->setNeedsTextureRecalculation();
-		if(d->isOnStage())
+		if(d->isOnStage() && startupload)
 		{
 			bitmapData->checkForUpload();
 			cachedSurface.isValid=true;
@@ -5302,7 +5295,7 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 	return invalidateFromSource(target, initialMatrix, this->smoothing, this, MATRIX(),nullptr,this->colorTransform.getPtr());
 }
 
-IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix,DisplayObject* originalsource, ColorTransform* ct)
+IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix,DisplayObject* originalsource, ColorTransformBase* ct)
 {
 	number_t rx,ry;
 	number_t rwidth,rheight;
@@ -5322,14 +5315,6 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 		if (matrixsource)
 			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask);
 	}
-	float redMultiplier=1.0;
-	float greenMultiplier=1.0;
-	float blueMultiplier=1.0;
-	float alphaMultiplier=1.0;
-	float redOffset=0.0;
-	float greenOffset=0.0;
-	float blueOffset=0.0;
-	float alphaOffset=0.0;
 	MATRIX totalMatrix2;
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
@@ -5340,27 +5325,8 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	}
 	totalMatrix2 = totalMatrix2.multiplyMatrix(sourceMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
-	if (!ct)
-		ct = colorTransform.getPtr();
-	DisplayObjectContainer* p = matrixsource ? matrixsource->getParent() :nullptr;
-	while (!ct && p)
-	{
-		ct = p->colorTransform.getPtr();
-		p = p->getParent();
-	}
 	if (rwidth==0 || rheight==0)
 		return nullptr;
-	if (ct)
-	{
-		redMultiplier=ct->redMultiplier;
-		greenMultiplier=ct->greenMultiplier;
-		blueMultiplier=ct->blueMultiplier;
-		alphaMultiplier=ct->alphaMultiplier;
-		redOffset=ct->redOffset;
-		greenOffset=ct->greenOffset;
-		blueOffset=ct->blueOffset;
-		alphaOffset=ct->alphaOffset;
-	}
 	cachedSurface.isValid=true;
 	if (originalsource)
 	{
@@ -5375,8 +5341,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 				, 1, 1
 				, isMask, mask
 				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
-				, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier
-				, redOffset,greenOffset,blueOffset,alphaOffset,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2);
+				, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2);
 }
 
 void SimpleButton::sinit(Class_base* c)

@@ -22,6 +22,7 @@
 
 #include "compat.h"
 #include "asobject.h"
+#include "backends/graphics.h"
 
 namespace lightspark
 {
@@ -109,7 +110,7 @@ public:
 	number_t getY() const { return y; }
 };
 
-class ColorTransform: public ASObject
+class ColorTransform: public ASObject, public ColorTransformBase
 {
 friend class Bitmap;
 friend class BitmapData;
@@ -118,31 +119,12 @@ friend class DisplayObject;
 friend class AVM1Color;
 friend class TokenContainer;
 friend class TextField;
-protected:
-	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
-	number_t redOffset,greenOffset,blueOffset,alphaOffset;
 public:
 	ColorTransform(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_COLORTRANSFORM)
-	  ,redMultiplier(1.0),greenMultiplier(1.0),blueMultiplier(1.0),alphaMultiplier(1.0)
-	  ,redOffset(0.0),greenOffset(0.0),blueOffset(0.0),alphaOffset(0.0)
 	{}
 	ColorTransform(ASWorker* wrk,Class_base* c, const CXFORMWITHALPHA& cx);
-	// returning r,g,b,a values are between 0.0 and 1.0
-	void applyTransformation(const RGBA &color, float& r, float& g, float& b, float &a);
-	uint8_t* applyTransformation(BitmapContainer* bm);
-	void applyTransformation(uint8_t* bm, uint32_t size);
 	void setProperties(const CXFORMWITHALPHA& cx);
-	bool isIdentity() const
-	{
-		return (redMultiplier==1.0 &&
-				greenMultiplier==1.0 &&
-				blueMultiplier==1.0 &&
-				alphaMultiplier==1.0 &&
-				redOffset==0.0 &&
-				greenOffset==0.0 &&
-				blueOffset==0.0 &&
-				alphaOffset==0.0);
-	}
+	
 	static void sinit(Class_base* c);
 	bool destruct() override;
 	ASFUNCTION_ATOM(_constructor);

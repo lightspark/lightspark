@@ -771,6 +771,7 @@ public:
 	void prepareShutdown() override;
 	void defaultEventBehavior(_R<Event> e) override;
 	ACQUIRE_RELEASE_FLAG(invalidated);
+	ATOMIC_INT32(renderToTextureCount);
 	void onAlign(uint32_t);
 	void forceInvalidation();
 	bool renderStage3D();
@@ -983,7 +984,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
 	ASPROPERTY_GETTER_SETTER(tiny_string,pixelSnapping);
 	/* Call this after updating any member of 'data' */
-	void updatedData();
+	void updatedData(bool startupload=true);
 	Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
 	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload=true, DisplayObject* owner=nullptr);
 	~Bitmap();
@@ -998,7 +999,8 @@ public:
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
-	IDrawable* invalidateFromSource(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix, DisplayObject* originalsource, ColorTransform* ct);
+	IDrawable* invalidateFromSource(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix, DisplayObject* originalsource, lightspark::ColorTransformBase* ct);
+	DisplayObject* getCachedBitmapOwner() const { return cachedBitmapOwner; }
 };
 
 class AVM1Movie: public DisplayObject

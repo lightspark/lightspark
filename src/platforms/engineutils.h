@@ -69,9 +69,7 @@ class externalFontRenderer : public IDrawable
 	class EngineData* m_engine;
 public:
 	externalFontRenderer(const TextData &_textData, class EngineData* engine, int32_t x, int32_t y, int32_t w, int32_t h, int32_t rx, int32_t ry, int32_t rw, int32_t rh, float r, float xs, float ys, bool im, _NR<DisplayObject> _mask, float a, const std::vector<MaskData>& m,
-						 float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
-						 float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset,
-						 SMOOTH_MODE smoothing, const MATRIX &_m);
+						 const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m);
 	
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}
@@ -240,6 +238,7 @@ public:
 	virtual void exec_glDisable_GL_STENCIL_TEST();
 	virtual void exec_glDisable_GL_TEXTURE_2D();
 	virtual void exec_glFlush();
+	virtual void exec_glFinish();
 	virtual uint32_t exec_glCreateShader_GL_FRAGMENT_SHADER();
 	virtual uint32_t exec_glCreateShader_GL_VERTEX_SHADER();
 	virtual void exec_glShaderSource(uint32_t shader, int32_t count, const char **name, int32_t* length);
@@ -327,8 +326,7 @@ public:
 	virtual uint8_t* getFontPixelBuffer(int32_t externalressource,int width,int height) { return nullptr; }
 	virtual int32_t setupFontRenderer(const TextData &_textData,float a, SMOOTH_MODE smoothing) { return 0; }
 	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms,
-									 float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
-									 float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,
+									 const ColorTransformBase& _colortransform,
 									 SMOOTH_MODE smoothing);
 };
 

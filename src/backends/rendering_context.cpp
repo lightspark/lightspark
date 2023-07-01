@@ -51,7 +51,7 @@ const float RenderContext::lsIdentityMatrix[16] = {
 
 const CachedSurface CairoRenderContext::invalidSurface;
 
-RenderContext::RenderContext(CONTEXT_TYPE t):contextType(t),currentMask(nullptr)
+RenderContext::RenderContext(CONTEXT_TYPE t):contextType(t),currentMask(nullptr),currentShaderBlendMode(AS_BLENDMODE::BLENDMODE_NORMAL)
 {
 	lsglLoadIdentity();
 }
@@ -127,16 +127,16 @@ const CachedSurface& GLRenderContext::getCachedSurface(const DisplayObject* d) c
 }
 
 void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
-									 float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
-									 float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-									 bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid, AS_BLENDMODE blendmode)
+									 const ColorTransformBase& colortransform,
+									 bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
+									 AS_BLENDMODE blendmode)
 {
-	// TODO handle other blend modes ,maybe with shaders ? (see https://github.com/jamieowen/glsl-blend)
+	engineData->exec_glUniform1f(blendModeUniform, blendmode == BLENDMODE_NORMAL ? this->currentShaderBlendMode : BLENDMODE_NORMAL);
 	switch (blendmode)
 	{
 		case BLENDMODE_NORMAL:
 		case BLENDMODE_LAYER: // layer implies rendering to bitmap, so no special blending needed
-			engineData->exec_glBlendFunc(BLEND_SRC_ALPHA,BLEND_ONE_MINUS_SRC_ALPHA);
+			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 			break;
 		case BLENDMODE_MULTIPLY:
 			engineData->exec_glBlendFunc(BLEND_DST_COLOR,BLEND_ONE_MINUS_SRC_ALPHA);
@@ -146,6 +146,10 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 			break;
 		case BLENDMODE_SCREEN:
 			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_COLOR);
+			break;
+		case BLENDMODE_OVERLAY: // handled through blendMode uniform
+		case BLENDMODE_HARDLIGHT: // handled through blendMode uniform
+			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 			break;
 		default:
 			LOG(LOG_NOT_IMPLEMENTED,"renderTextured of blend mode "<<(int)blendmode);
@@ -171,8 +175,8 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	engineData->exec_glUniform1f(yuvUniform, (colorMode==YUV_MODE)?1:0);
 	//Set alpha
 	engineData->exec_glUniform1f(alphaUniform, alpha);
-	engineData->exec_glUniform4f(colortransMultiplyUniform, redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier);
-	engineData->exec_glUniform4f(colortransAddUniform, redOffset/255.0,greenOffset/255.0,blueOffset/255.0,alphaOffset/255.0);
+	engineData->exec_glUniform4f(colortransMultiplyUniform, colortransform.redMultiplier,colortransform.greenMultiplier,colortransform.blueMultiplier,colortransform.alphaMultiplier);
+	engineData->exec_glUniform4f(colortransAddUniform, colortransform.redOffset/255.0,colortransform.greenOffset/255.0,colortransform.blueOffset/255.0,colortransform.alphaOffset/255.0);
 	// set mode for direct coloring:
 	// 0.0:no coloring
 	// 1.0 coloring for profiling/error message (?)
@@ -260,8 +264,9 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 		renderpart(matrix,chunk,0,0,chunk.width,chunk.height,chunk.xOffset/chunk.xContentScale,chunk.yOffset/chunk.yContentScale);
 
 	if (isMask)
-		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
-	if (!smooth)
+		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(currentFrameBufferID);
+
+	if (smooth != SMOOTH_MODE::SMOOTH_NONE)
 	{
 		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
@@ -481,9 +486,9 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, BitmapContainer* bc, C
 }
 
 void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
-			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
-			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
-			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid, AS_BLENDMODE blendmode)
+			const ColorTransformBase& colortransform,
+			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
+			AS_BLENDMODE blendmode)
 {
 	if (colorMode != RGB_MODE)
 		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured colorMode not implemented:"<<(int)colorMode);
@@ -534,6 +539,7 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		switch (smooth)
 		{
 			case SMOOTH_MODE::SMOOTH_NONE:
+				cairo_set_antialias(cr,CAIRO_ANTIALIAS_NONE);
 				break;
 			case SMOOTH_MODE::SMOOTH_SUBPIXEL:
 				cairo_set_antialias(cr,CAIRO_ANTIALIAS_SUBPIXEL);
@@ -545,6 +551,11 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 	}
 
 	MATRIX m = matrix.multiplyMatrix(MATRIX(1, 1, 0, 0, chunk.xOffset / chunk.xContentScale, chunk.yOffset / chunk.yContentScale));
+	if (smooth == SMOOTH_MODE::SMOOTH_NONE)
+	{
+		m.x0 = round(m.x0);
+		m.y0 = round(m.y0);
+	}
 	cairo_set_matrix(cr, &m);
 
 	uint8_t* buf=(uint8_t*)chunk.chunks;
@@ -714,6 +725,7 @@ const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d
 
 CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf, bool isBufferOwner)
 {
+	assert(texBuf);
 	auto ret=customSurfaces.insert(make_pair(d, CachedSurface()));
 //	assert(ret.second);
 	CachedSurface& surface=ret.first->second;

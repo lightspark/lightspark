@@ -23,6 +23,7 @@
 #include <stack>
 #include "backends/graphics.h"
 #include "platforms/engineutils.h"
+#include "backends/graphics.h"
 
 namespace lightspark
 {
@@ -47,6 +48,7 @@ public:
 	RenderContext(CONTEXT_TYPE t);
 	CONTEXT_TYPE contextType;
 	const DisplayObject* currentMask;
+	AS_BLENDMODE currentShaderBlendMode;
 
 	/* Modelview matrix manipulation */
 	void lsglLoadIdentity();
@@ -62,10 +64,9 @@ public:
 		Render a quad of given size using the given chunk
 	*/
 	virtual void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
-			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
-			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
+			const ColorTransformBase& colortransform,
 			bool isMask, bool hasMask, float directMode, RGB directColor,SMOOTH_MODE smooth, const MATRIX& matrix,
-			Rectangle* scalingGrid=nullptr, AS_BLENDMODE blendmode=BLENDMODE_NORMAL)=0;
+			Rectangle* scalingGrid, AS_BLENDMODE blendmode)=0;
 	/**
 	 * Get the right CachedSurface from an object
 	 */
@@ -88,8 +89,12 @@ protected:
 	int colortransAddUniform;
 	int directUniform;
 	int directColorUniform;
+	int blendModeUniform;
 	uint32_t maskframebuffer;
 	uint32_t maskTextureID;
+	uint32_t blendframebuffer;
+	uint32_t blendTextureID;
+	uint32_t currentFrameBufferID;
 
 	/* Textures */
 	Mutex mutexLargeTexture;
@@ -119,10 +124,9 @@ public:
 	void lsglOrtho(float l, float r, float b, float t, float n, float f);
 
 	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
-			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
-			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
+			const ColorTransformBase& colortransform,
 			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
-			Rectangle* scalingGrid=nullptr, AS_BLENDMODE blendmode=BLENDMODE_NORMAL) override;
+			Rectangle* scalingGrid, AS_BLENDMODE blendmode) override;
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the OpenGL case we just get the CachedSurface inside the object itself
@@ -148,10 +152,9 @@ public:
 	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height,bool smoothing);
 	virtual ~CairoRenderContext();
 	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
-			float redMultiplier, float greenMultiplier, float blueMultiplier, float alphaMultiplier,
-			float redOffset, float greenOffset, float blueOffset, float alphaOffset,
+			const ColorTransformBase& colortransform,
 			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
-			Rectangle* scalingGrid=nullptr, AS_BLENDMODE blendmode=BLENDMODE_NORMAL) override;
+			Rectangle* scalingGrid, AS_BLENDMODE blendmode) override;
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the Cairo case we get the right CachedSurface out of the map

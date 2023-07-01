@@ -67,17 +67,101 @@ public:
 	void makeEmpty();
 	uint32_t width = 0;
 	uint32_t height = 0;
-	float xContentScale = 1; // scale the bitmap content was generated for
-	float yContentScale = 1;
-	float xOffset = 0; // texture topleft from Shape origin
-	float yOffset = 0;
+	number_t xContentScale = 1; // scale the bitmap content was generated for
+	number_t yContentScale = 1;
+	number_t xOffset = 0; // texture topleft from Shape origin
+	number_t yOffset = 0;
+};
+
+class ColorTransformBase
+{
+public:
+	number_t redMultiplier;
+	number_t greenMultiplier;
+	number_t blueMultiplier;
+	number_t alphaMultiplier;
+	number_t redOffset;
+	number_t greenOffset;
+	number_t blueOffset;
+	number_t alphaOffset;
+	ColorTransformBase():
+		redMultiplier(1.0),
+		greenMultiplier(1.0),
+		blueMultiplier(1.0),
+		alphaMultiplier(1.0),
+		redOffset(0.0),
+		greenOffset(0.0),
+		blueOffset(0.0),
+		alphaOffset(0.0)
+	{}
+	
+	ColorTransformBase(const ColorTransformBase& r)
+	{
+		*this=r;
+	}
+	ColorTransformBase& operator=(const ColorTransformBase& r)
+	{
+		redMultiplier=r.redMultiplier;
+		greenMultiplier=r.greenMultiplier;
+		blueMultiplier=r.blueMultiplier;
+		alphaMultiplier=r.alphaMultiplier;
+		redOffset=r.redOffset;
+		greenOffset=r.greenOffset;
+		blueOffset=r.blueOffset;
+		alphaOffset=r.alphaOffset;
+		return *this;
+	}
+	bool operator==(const ColorTransformBase& r)
+	{
+		return redMultiplier==r.redMultiplier &&
+				greenMultiplier==r.greenMultiplier &&
+				blueMultiplier==r.blueMultiplier &&
+				alphaMultiplier==r.alphaMultiplier &&
+				redOffset==r.redOffset &&
+				greenOffset==r.greenOffset &&
+				blueOffset==r.blueOffset &&
+				alphaOffset==r.alphaOffset;
+	}
+	void fillConcatenated(DisplayObject* src, bool ignoreBlendMode=false);
+	void applyTransformation(uint8_t* bm, uint32_t size);
+	uint8_t* applyTransformation(BitmapContainer* bm);
+	bool isIdentity() const
+	{
+		return (redMultiplier==1.0 &&
+				greenMultiplier==1.0 &&
+				blueMultiplier==1.0 &&
+				alphaMultiplier==1.0 &&
+				redOffset==0.0 &&
+				greenOffset==0.0 &&
+				blueOffset==0.0 &&
+				alphaOffset==0.0);
+	}
+	void resetTransformation()
+	{
+		redMultiplier=1.0;
+		greenMultiplier=1.0;
+		blueMultiplier=1.0;
+		alphaMultiplier=1.0;
+		redOffset=0.0;
+		greenOffset=0.0;
+		blueOffset=0.0;
+		alphaOffset=0.0;
+	}
+	
+	// returning r,g,b,a values are between 0.0 and 1.0
+	void applyTransformation(const RGBA &color, float& r, float& g, float& b, float &a)
+	{
+		a = std::max(0.0f,std::min(255.0f,float((color.Alpha * alphaMultiplier * 255.0f)/255.0f + alphaOffset)))/255.0f;
+		r = std::max(0.0f,std::min(255.0f,float((color.Red   *   redMultiplier * 255.0f)/255.0f +   redOffset)))/255.0f;
+		g = std::max(0.0f,std::min(255.0f,float((color.Green * greenMultiplier * 255.0f)/255.0f + greenOffset)))/255.0f;
+		b = std::max(0.0f,std::min(255.0f,float((color.Blue  *  blueMultiplier * 255.0f)/255.0f +  blueOffset)))/255.0f;
+	}
 };
 
 class CachedSurface
 {
 public:
-	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0),
-		redMultiplier(1.0), greenMultiplier(1.0), blueMultiplier(1.0), alphaMultiplier(1.0), redOffset(0.0), greenOffset(0.0), blueOffset(0.0), alphaOffset(0.0)
+	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0)
 		,blendmode(BLENDMODE_NORMAL),isMask(false),smoothing(SMOOTH_MODE::SMOOTH_ANTIALIAS),isChunkOwner(true),isValid(false),isInitialized(false),wasUpdated(false){}
 	~CachedSurface()
 	{
@@ -85,24 +169,17 @@ public:
 			delete tex;
 	}
 	TextureChunk* tex;
-	int32_t xOffset;
-	int32_t yOffset;
-	int32_t xOffsetTransformed;
-	int32_t yOffsetTransformed;
-	int32_t widthTransformed;
-	int32_t heightTransformed;
+	float xOffset;
+	float yOffset;
+	float xOffsetTransformed;
+	float yOffsetTransformed;
+	float widthTransformed;
+	float heightTransformed;
 	float alpha;
 	float rotation;
 	float xscale;
 	float yscale;
-	float redMultiplier;
-	float greenMultiplier;
-	float blueMultiplier;
-	float alphaMultiplier;
-	float redOffset;
-	float greenOffset;
-	float blueOffset;
-	float alphaOffset;
+	ColorTransformBase colortransform;
 	MATRIX matrix;
 	_NR<DisplayObject> mask;
 	AS_BLENDMODE blendmode;
@@ -124,9 +201,9 @@ protected:
 public:
 	ITextureUploadable():queued(false) {}
 	virtual void sizeNeeded(uint32_t& w, uint32_t& h) const=0;
-	virtual void contentScale(float& x, float& y) const {x = 1; y = 1;}
+	virtual void contentScale(number_t& x, number_t& y) const {x = 1; y = 1;}
 	// Texture topleft from Shape origin
-	virtual void contentOffset(float& x, float& y) const {x = 0; y = 0;}
+	virtual void contentOffset(number_t& x, number_t& y) const {x = 0; y = 0;}
 	/*
 		Upload data to memory mapped to the graphics card (note: size is guaranteed to be enough
 	*/
@@ -164,29 +241,22 @@ protected:
 	/*
 	   The minimal x coordinate for all the points being drawn, in local coordinates
 	*/
-	int32_t xOffset;
+	float xOffset;
 	/*
 	   The minimal y coordinate for all the points being drawn, in local coordinates
 	*/
-	int32_t yOffset;
-	int32_t xOffsetTransformed;
-	int32_t yOffsetTransformed;
-	int32_t widthTransformed;
-	int32_t heightTransformed;
+	float yOffset;
+	float xOffsetTransformed;
+	float yOffsetTransformed;
+	float widthTransformed;
+	float heightTransformed;
 	float rotation;
 	float alpha;
 	float xscale;
 	float yscale;
 	float xContentScale;
 	float yContentScale;
-	float redMultiplier;
-	float greenMultiplier;
-	float blueMultiplier;
-	float alphaMultiplier;
-	float redOffset;
-	float greenOffset;
-	float blueOffset;
-	float alphaOffset;
+	ColorTransformBase colortransform;
 	bool isMask;
 	_NR<DisplayObject> mask;
 	SMOOTH_MODE smoothing;
@@ -195,18 +265,17 @@ protected:
 	*/
 	MATRIX matrix;
 public:
-	IDrawable(int32_t w, int32_t h, int32_t x, int32_t y,
-		int32_t rw, int32_t rh, int32_t rx, int32_t ry, float r,
+	IDrawable(float w, float h, float x, float y,
+		float rw, float rh, float rx, float ry, float r,
 		float xs, float ys, float xcs, float ycs,
 		bool im, _NR<DisplayObject> _mask,
 		float a, const std::vector<MaskData>& m,
-		float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
-		float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset, SMOOTH_MODE _smoothing,
+		const ColorTransformBase& _colortransform,
+		SMOOTH_MODE _smoothing,
 		const MATRIX& _m):
 		masks(m),width(w),height(h),xOffset(x),yOffset(y),xOffsetTransformed(rx),yOffsetTransformed(ry),widthTransformed(rw),heightTransformed(rh),rotation(r),
 		alpha(a), xscale(xs), yscale(ys), xContentScale(xcs), yContentScale(ycs),
-		redMultiplier(_redMultiplier),greenMultiplier(_greenMultiplier),blueMultiplier(_blueMultiplier),alphaMultiplier(_alphaMultiplier),
-		redOffset(_redOffset),greenOffset(_greenOffset),blueOffset(_blueOffset),alphaOffset(_alphaOffset),
+		colortransform(_colortransform),
 		isMask(im),mask(_mask),smoothing(_smoothing), matrix(_m) {}
 	virtual ~IDrawable();
 	/*
@@ -238,14 +307,7 @@ public:
 	bool getIsMask() const { return isMask; }
 	_NR<DisplayObject> getMask() const { return mask; }
 	SMOOTH_MODE getSmoothing() const { return smoothing; }
-	float getRedMultiplier() const { return redMultiplier; }
-	float getGreenMultiplier() const { return greenMultiplier; }
-	float getBlueMultiplier() const { return blueMultiplier; }
-	float getAlphaMultiplier() const { return alphaMultiplier; }
-	float getRedOffset() const { return redOffset; }
-	float getGreenOffset() const { return greenOffset; }
-	float getBlueOffset() const { return blueOffset; }
-	float getAlphaOffset() const { return alphaOffset; }
+	const ColorTransformBase& getColorTransform() const { return colortransform; }
 	MATRIX& getMatrix() { return matrix; }
 };
 
@@ -279,8 +341,8 @@ public:
 	void sizeNeeded(uint32_t& w, uint32_t& h) const override;
 	TextureChunk& getTexture() override;
 	void uploadFence() override;
-	void contentScale(float& x, float& y) const override;
-	void contentOffset(float& x, float& y) const override;
+	void contentScale(number_t& x, number_t& y) const override;
+	void contentOffset(number_t& x, number_t& y) const override;
 	DisplayObject* getOwner() { return owner.getPtr(); }
 };
 
@@ -302,13 +364,12 @@ protected:
 	static void copyRGB15To24(uint32_t& dest, uint8_t* src);
 	static void copyRGB24To24(uint32_t& dest, uint8_t* src);
 public:
-	CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h
-				  , int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r
+	CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h
+				  , float _rx, float _ry, float _rw, float _rh, float _r
 				  , float _xs, float _ys
 				  , bool _im, _NR<DisplayObject> mask
 				  , float _s, float _a, const std::vector<MaskData>& m
-				  , float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier
-				  , float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset
+				  , const ColorTransformBase& _colortransform
 				  , SMOOTH_MODE _smoothing);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
@@ -329,9 +390,9 @@ class CairoTokenRenderer : public CairoRenderer
 {
 private:
 	static void executefill(cairo_t* cr, const FILLSTYLE* style, cairo_pattern_t* pattern);
-	static void executestroke(cairo_t* stroke_cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask);
-	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask);
-	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, bool isMask, number_t xstart, number_t ystart, int* starttoken=nullptr);
+	static void executestroke(cairo_t* stroke_cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask, CairoTokenRenderer* th);
+	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask, CairoTokenRenderer* th);
+	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, bool isMask, number_t xstart, number_t ystart, CairoTokenRenderer* th=nullptr, int* starttoken=nullptr);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
 	/*
 	   The tokens to be drawn
@@ -344,6 +405,7 @@ private:
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override;
 	number_t xstart;
 	number_t ystart;
+	bool softwarerenderer;
 public:
 	/*
 	   CairoTokenRenderer constructor
@@ -363,9 +425,8 @@ public:
 			float _xs, float _ys,
 			bool _im, _NR<DisplayObject> _mask,
 			float _s, float _a, const std::vector<MaskData>& _ms,
-			float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
-			float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,
-			SMOOTH_MODE _smoothing,number_t _xstart, number_t _ystart);
+			const ColorTransformBase& _colortransform,
+			SMOOTH_MODE _smoothing,number_t _xstart, number_t _ystart, bool _softwarerenderer);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 
@@ -462,12 +523,10 @@ public:
 			float _xs, float _ys,
 			bool _im, _NR<DisplayObject> _mask,
 			float _s, float _a, const std::vector<MaskData>& _ms,
-			float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
-			float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,
+			const ColorTransformBase& _colortransform,
 			SMOOTH_MODE _smoothing,uint32_t _ci)
 		: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs, _ys,_im,_mask,_s,_a,_ms,
-						_redMultiplier, _greenMultiplier, _blueMultiplier, _alphaMultiplier,
-						_redOffset, _greenOffset, _blueOffset, _alphaOffset,
+						_colortransform,
 						_smoothing), textData(_textData),caretIndex(_ci) {}
 	/**
 		Helper. Uses Pango to find the size of the textdata
@@ -483,13 +542,12 @@ class BitmapRenderer: public IDrawable
 protected:
 	_NR<BitmapContainer> data;
 public:
-	BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _y, int32_t _w, int32_t _h
-				  , int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r
+	BitmapRenderer(_NR<BitmapContainer> _data, float _x, float _y, float _w, float _h
+				  , float _rx, float _ry, float _rw, float _rh, float _r
 				  , float _xs, float _ys
 				  , bool _im, NullableRef<DisplayObject> mask
 				  , float _a, const std::vector<MaskData>& m
-				  , float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier
-				  , float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset
+				  , const ColorTransformBase& _colortransform
 				  , SMOOTH_MODE _smoothing, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;

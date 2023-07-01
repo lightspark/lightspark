@@ -33,8 +33,6 @@ using namespace lightspark;
 extern void nanoVGDeleteImage(int image);
 BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
 	data(reporter_allocator<uint8_t>(m)),
-	redMultiplier(1.0),greenMultiplier(1.0),blueMultiplier(1.0),alphaMultiplier(1.0),
-	redOffset(0),greenOffset(0),blueOffset(0),alphaOffset(0),
 	nanoVGImageHandle(-1),cachedCairoPattern(nullptr)
 {
 }
@@ -58,32 +56,11 @@ BitmapContainer::~BitmapContainer()
 
 uint8_t* BitmapContainer::applyColorTransform(ColorTransform *ctransform)
 {
-	if (ctransform->redMultiplier==1.0 &&
-		ctransform->greenMultiplier==1.0 &&
-		ctransform->blueMultiplier==1.0 &&
-		ctransform->alphaMultiplier==1.0 &&
-		ctransform->redOffset==0.0 &&
-		ctransform->greenOffset==0.0 &&
-		ctransform->blueOffset==0.0 &&
-		ctransform->alphaOffset==0.0)
+	if (ctransform->isIdentity())
 		return getData();
-	if (ctransform->redMultiplier==this->redMultiplier &&
-		ctransform->greenMultiplier==this->greenMultiplier &&
-		ctransform->blueMultiplier==this->blueMultiplier &&
-		ctransform->alphaMultiplier==this->alphaMultiplier &&
-		ctransform->redOffset==this->redOffset &&
-		ctransform->greenOffset==this->greenOffset &&
-		ctransform->blueOffset==this->blueOffset &&
-		ctransform->alphaOffset==this->alphaOffset)
+	if (*ctransform==currentcolortransform)
 		return getDataColorTransformed();
-	redMultiplier=ctransform->redMultiplier;
-	greenMultiplier=ctransform->greenMultiplier;
-	blueMultiplier=ctransform->blueMultiplier;
-	alphaMultiplier=ctransform->alphaMultiplier;
-	redOffset=ctransform->redOffset;
-	greenOffset=ctransform->greenOffset;
-	blueOffset=ctransform->blueOffset;
-	alphaOffset=ctransform->alphaOffset;
+	currentcolortransform=*ctransform;
 	return ctransform->applyTransformation(this);
 }
 
@@ -98,32 +75,32 @@ uint8_t* BitmapContainer::applyColorTransform(number_t redMulti, number_t greenM
 		blueOff==0.0 &&
 		alphaOff==0.0)
 		return getData();
-	if (redMulti==this->redMultiplier &&
-		greenMulti==this->greenMultiplier &&
-		blueMulti==this->blueMultiplier &&
-		alphaMulti==this->alphaMultiplier &&
-		redOff==this->redOffset &&
-		greenOff==this->greenOffset &&
-		blueOff==this->blueOffset &&
-		alphaOff==this->alphaOffset)
+	if (redMulti==currentcolortransform.redMultiplier &&
+		greenMulti==currentcolortransform.greenMultiplier &&
+		blueMulti==currentcolortransform.blueMultiplier &&
+		alphaMulti==currentcolortransform.alphaMultiplier &&
+		redOff==currentcolortransform.redOffset &&
+		greenOff==currentcolortransform.greenOffset &&
+		blueOff==currentcolortransform.blueOffset &&
+		alphaOff==currentcolortransform.alphaOffset)
 		return getDataColorTransformed();
-	redMultiplier=redMulti;
-	greenMultiplier=greenMulti;
-	blueMultiplier=blueMulti;
-	alphaMultiplier=alphaMulti;
-	redOffset=redOff;
-	greenOffset=greenOff;
-	blueOffset=blueOff;
-	alphaOffset=alphaOff;
+	currentcolortransform.redMultiplier=redMulti;
+	currentcolortransform.greenMultiplier=greenMulti;
+	currentcolortransform.blueMultiplier=blueMulti;
+	currentcolortransform.alphaMultiplier=alphaMulti;
+	currentcolortransform.redOffset=redOff;
+	currentcolortransform.greenOffset=greenOff;
+	currentcolortransform.blueOffset=blueOff;
+	currentcolortransform.alphaOffset=alphaOff;
 	uint8_t* src = getData();
 	uint8_t* dst = getDataColorTransformed();
 	uint32_t size = getWidth()*getHeight()*4;
 	for (uint32_t i = 0; i < size; i+=4)
 	{
-		dst[i+3] = max(0,min(255,int(((number_t(src[i+3]) * alphaMultiplier) + alphaOffset))));
-		dst[i+2] = max(0,min(255,int(((number_t(src[i+2]) *  blueMultiplier) +  blueOffset)*(number_t(dst[i+3])/255.0))));
-		dst[i+1] = max(0,min(255,int(((number_t(src[i+1]) * greenMultiplier) + greenOffset)*(number_t(dst[i+3])/255.0))));
-		dst[i  ] = max(0,min(255,int(((number_t(src[i  ]) *   redMultiplier) +   redOffset)*(number_t(dst[i+3])/255.0))));
+		dst[i+3] = max(0,min(255,int(((number_t(src[i+3]) * currentcolortransform.alphaMultiplier) + currentcolortransform.alphaOffset))));
+		dst[i+2] = max(0,min(255,int(((number_t(src[i+2]) * currentcolortransform. blueMultiplier) + currentcolortransform. blueOffset)*(number_t(dst[i+3])/255.0))));
+		dst[i+1] = max(0,min(255,int(((number_t(src[i+1]) * currentcolortransform.greenMultiplier) + currentcolortransform.greenOffset)*(number_t(dst[i+3])/255.0))));
+		dst[i  ] = max(0,min(255,int(((number_t(src[i  ]) * currentcolortransform.  redMultiplier) + currentcolortransform.  redOffset)*(number_t(dst[i+3])/255.0))));
 	}
 	return getDataColorTransformed();
 }
@@ -275,7 +252,6 @@ void BitmapContainer::clear()
 	height=0;
 	bitmaptexture.makeEmpty();
 }
-
 uint8_t* BitmapContainer::upload(bool refresh)
 {
 	return getData();
@@ -418,7 +394,7 @@ void BitmapContainer::copyRectangle(_R<BitmapContainer> source,
 
 void BitmapContainer::applyFilter(_R<BitmapContainer> source,
 				    const RECT& sourceRect,
-				    int32_t destX, int32_t destY,
+				    number_t destX, number_t destY,
 				    BitmapFilter* filter)
 {
 	RECT clippedSourceRect;
@@ -491,14 +467,7 @@ inline uint32_t *BitmapContainer::getDataNoBoundsChecking(int32_t x, int32_t y) 
 }
 void BitmapContainer::resetColorTransform()
 {
-	redMultiplier=1.0;
-	greenMultiplier=1.0;
-	blueMultiplier=1.0;
-	alphaMultiplier=1.0;
-	redOffset=0.0;
-	greenOffset=0.0;
-	blueOffset=0.0;
-	alphaOffset=0.0;
+	currentcolortransform.resetTransformation();
 }
 
 /*

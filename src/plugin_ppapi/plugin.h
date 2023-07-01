@@ -258,6 +258,7 @@ public:
 	void exec_glDisable_GL_STENCIL_TEST() override;
 	void exec_glDisable_GL_TEXTURE_2D() override;
 	void exec_glFlush() override;
+	void exec_glFinish() override;
 	uint32_t exec_glCreateShader_GL_FRAGMENT_SHADER() override;
 	uint32_t exec_glCreateShader_GL_VERTEX_SHADER() override;
 	void exec_glShaderSource(uint32_t shader, int32_t count, const char** name, int32_t* length) override;

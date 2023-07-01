@@ -1752,8 +1752,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, ceil(width), ceil(height),
 																					rx, ry, ceil(rwidth), ceil(rheight), rotation,xscale,yscale,isMask,mask, 1.0f,getConcatenatedAlpha(), masks,
-																					1.0f,1.0f,1.0f,1.0f,
-																					0.0f,0.0f,0.0f,0.0f,
+																					ColorTransformBase(),
 																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE);
 	if (res != nullptr)
 		return res;
@@ -1769,8 +1768,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				xscale,yscale,
 				isMask,mask,
 				1.0f, getConcatenatedAlpha(), masks,
-				1.0f,1.0f,1.0f,1.0f,
-				0.0f,0.0f,0.0f,0.0f,
+				ColorTransformBase(),
 				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,caretIndex);
 }
 
@@ -1791,36 +1789,15 @@ bool TextField::renderImpl(RenderContext& ctxt)
 		// fast rendering path using pre-generated textures for every glyph
 		float xscale = abs(getConcatenatedMatrix().getScaleX());
 		float yscale = abs(getConcatenatedMatrix().getScaleY());
-		float redMultiplier=1.0;
-		float greenMultiplier=1.0;
-		float blueMultiplier=1.0;
-		float alphaMultiplier=1.0;
-		float redOffset=0.0;
-		float greenOffset=0.0;
-		float blueOffset=0.0;
-		float alphaOffset=0.0;
 		RGB tcolor = this->textColor;
-		ColorTransform* ct = colorTransform.getPtr();
-		DisplayObjectContainer* p = getParent();
-		while (!ct && p)
+		ColorTransformBase ct;
+		ct.fillConcatenated(this);
+		if (!ct.isIdentity())
 		{
-			ct = p->colorTransform.getPtr();
-			p = p->getParent();
-		}
-		if (ct)
-		{
-			redMultiplier=ct->redMultiplier;
-			greenMultiplier=ct->greenMultiplier;
-			blueMultiplier=ct->blueMultiplier;
-			alphaMultiplier=ct->alphaMultiplier;
-			redOffset=ct->redOffset;
-			greenOffset=ct->greenOffset;
-			blueOffset=ct->blueOffset;
-			alphaOffset=ct->alphaOffset;
 			float r,g,b,a;
 			RGBA tmp;
 			tmp = tcolor;
-			ct->applyTransformation(tmp,r,g,b,a);
+			ct.applyTransformation(tmp,r,g,b,a);
 			tcolor.Red=r*255.0;
 			tcolor.Green=g*255.0;
 			tcolor.Blue=b*255.0;
@@ -1859,24 +1836,18 @@ bool TextField::renderImpl(RenderContext& ctxt)
 				MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(bxmax-bxmin, bymax-bymin));
 				m.scale(scalex, scaley);
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
-						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, this->borderColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
+						ct, isMask, mask,3.0, this->borderColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 				m = totalMatrix2.multiplyMatrix(MATRIX(bxmax-bxmin-2, bymax-bymin-2, 0, 0, 1, 1));
 				m.scale(scalex, scaley);
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
-						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
+						ct, isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 			}
 			else if (this->background)
 			{
 				MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(bxmax-bxmin, bymax-bymin));
 				m.scale(scalex, scaley);
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
-						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
+						ct, isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 			}
 
 			if (this->caretblinkstate)
@@ -1897,9 +1868,7 @@ bool TextField::renderImpl(RenderContext& ctxt)
 				MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(2, bymax-bymin-ypadding*2, 0, 0, tw, ypadding));
 				m.scale(scalex, scaley);
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
-						redOffset, greenOffset, blueOffset, alphaOffset,
-						isMask, mask,3.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
+						ct, isMask, mask,3.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 			}
 		}
 		number_t ypos=-TEXTFIELD_PADDING/yscale;
@@ -1937,9 +1906,7 @@ bool TextField::renderImpl(RenderContext& ctxt)
 					MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(1 / (xscale*scalex), 1 / (yscale*scaley), 0, 0, xpos, ypos));
 					m.scale(scalex, scaley);
 					ctxt.renderTextured(*tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-										redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
-										redOffset, greenOffset, blueOffset, alphaOffset,
-										isMask, mask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
+										currentcolortransform, isMask, mask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 					xpos += adv ? adv : bxmax-bxmin;
 				}
 				else

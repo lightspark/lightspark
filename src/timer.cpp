@@ -35,10 +35,8 @@ TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false)
 void TimerThread::stop()
 {
 	if(!stopped)
-	{
 		stopped=true;
-		newEvent.signal();
-	}
+	newEvent.signal();
 }
 
 void TimerThread::wait()

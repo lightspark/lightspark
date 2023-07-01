@@ -1304,7 +1304,7 @@ void SystemState::flushInvalidationQueue()
 	_NR<DisplayObject> cur=invalidateQueueHead;
 	while(!cur.isNull())
 	{
-		if((cur->isOnStage() || cur->isMask()) && cur->hasChanged)
+		if((cur->isOnStage() || cur->isMask()) && cur->hasChanged && !cur->cachedAsBitmapOf)
 		{
 			_NR<DisplayObject> drawobj=cur;
 			_NR<DisplayObject> cachedBitmap;

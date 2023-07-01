@@ -845,12 +845,12 @@ public:
 		if(buf>=0)
 		{
 			int32_t b=buf;
-			return b/65536.0f;
+			return float(b)/65536.0f;
 		}
 		else
 		{
 			int32_t b=-buf;
-			return -(b/65536.0f);
+			return -(float(b)/65536.0f);
 		}
 		//return (buf>>16)+(buf&0xffff)/65536.0f;
 	}
@@ -1090,7 +1090,7 @@ class LINESTYLE2
 public:
 	LINESTYLE2(uint8_t v):StartCapStyle(0),JointStyle(0),HasFillFlag(false),NoHScaleFlag(false),NoVScaleFlag(false),PixelHintingFlag(0),FillType(v),version(v){}
 	LINESTYLE2(const LINESTYLE2& r);
-	LINESTYLE2& operator=(LINESTYLE2 r);
+	LINESTYLE2& operator=(const LINESTYLE2& r);
 	virtual ~LINESTYLE2();
 	int StartCapStyle;
 	int JointStyle;

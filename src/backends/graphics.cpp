@@ -34,6 +34,15 @@
 
 using namespace lightspark;
 
+void saveToPNG(uint8_t* data, uint32_t w, uint32_t h, const char* filename)
+{
+	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(data, CAIRO_FORMAT_ARGB32, w, h, w*4);
+	cairo_t* cr=cairo_create(cairoSurface);
+	cairo_surface_destroy(cairoSurface); 
+	cairo_surface_write_to_png(cairoSurface,filename);
+	cairo_destroy(cr);
+}
+
 TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 {
 	width=w;
@@ -121,14 +130,12 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 	return false;
 }
 
-CairoRenderer::CairoRenderer(const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
+CairoRenderer::CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h, float _rx, float _ry, float _rw, float _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
 		float _s, float _a, const std::vector<MaskData>& _ms,
-		float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
-		float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset,
+		const ColorTransformBase& _colortransform,
 		SMOOTH_MODE _smoothing)
 	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _xs, _ys, _im, _mask,_a, _ms,
-				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
-				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing,_m)
+				_colortransform,_smoothing,_m)
 	, scaleFactor(_s)
 {
 }
@@ -147,7 +154,7 @@ void CairoTokenRenderer::quadraticBezier(cairo_t* cr, double control_x, double c
 	               end_x, end_y);
 }
 
-cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask)
+cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask, CairoTokenRenderer* th)
 {
 	cairo_pattern_t* pattern = nullptr;
 
@@ -156,7 +163,17 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 		case SOLID_FILL:
 		{
 			const RGBA& color = style.Color;
-			pattern = cairo_pattern_create_rgba(color.rf(), color.gf(),color.bf(), isMask ? 1.0 : color.af());
+			float r,g,b,a;
+			if (th && th->softwarerenderer)
+				th->colortransform.applyTransformation(color,r,g,b,a);
+			else
+			{
+				r = color.rf();
+				g = color.gf();
+				b = color.bf();
+				a = isMask ? 1.0 : color.af();
+			}
+			pattern = cairo_pattern_create_rgba(r,g,b,a);
 			break;
 		}
 		case LINEAR_GRADIENT:
@@ -209,7 +226,19 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			{
 				double ratio = number_t(gradrecords[i].Ratio) / 255.0;
 				const RGBA& color=gradrecords[i].Color;
-				cairo_pattern_add_color_stop_rgba(pattern, ratio,color.rf(), color.gf(),color.bf(), color.af());
+				float r,g,b,a;
+				if (th && th->softwarerenderer)
+				{
+					th->colortransform.applyTransformation(color,r,g,b,a);
+				}
+				else
+				{
+					r = color.rf();
+					g = color.gf();
+					b = color.bf();
+					a = color.af();
+				}
+				cairo_pattern_add_color_stop_rgba(pattern, ratio,r,g,b,a);
 			}
 			break;
 		}
@@ -227,8 +256,19 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			if (bm->cachedCairoPattern == nullptr)
 			{
 				cairo_surface_t* surface = nullptr;
-				//Do an explicit cast, the data will not be modified
-				surface = cairo_image_surface_create_for_data ((uint8_t*)bm->getData(),
+				uint8_t* buf = nullptr;
+				if (th && th->softwarerenderer)
+				{
+					//Do an explicit cast, the data will not be modified
+					buf = (uint8_t*)bm->applyColorTransform(th->colortransform.redMultiplier,th->colortransform.greenMultiplier,th->colortransform.blueMultiplier,th->colortransform.alphaMultiplier,
+												  th->colortransform.redOffset,th->colortransform.greenOffset,th->colortransform.blueOffset,th->colortransform.alphaOffset);
+				}
+				else
+				{
+					//Do an explicit cast, the data will not be modified
+					buf = (uint8_t*)bm->getData();
+				}
+				surface = cairo_image_surface_create_for_data (buf,
 									CAIRO_FORMAT_ARGB32,
 									bm->getWidth(),
 									bm->getHeight(),
@@ -239,8 +279,8 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			pattern = cairo_pattern_reference(bm->cachedCairoPattern);
 			//Make a copy to invert it
 			cairo_matrix_t mat=style.Matrix;
-			mat.x0 -= style.ShapeBounds.Xmin/20;
-			mat.y0 -= style.ShapeBounds.Ymin/20;
+			mat.x0 -= number_t(style.ShapeBounds.Xmin)/20.0;
+			mat.y0 -= number_t(style.ShapeBounds.Ymin)/20.0;
 			cairo_status_t st = cairo_matrix_invert(&mat);
 			assert(st == CAIRO_STATUS_SUCCESS);
 			(void)st; // silence warning about unused variable
@@ -254,7 +294,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 				style.FillStyleType == REPEATING_BITMAP)
 				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_REPEAT);
 			else
-				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_PAD);
+				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_NONE);
 
 			if(style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
 			   style.FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP)
@@ -272,6 +312,8 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 }
 void CairoTokenRenderer::executefill(cairo_t* cr, const FILLSTYLE* style, cairo_pattern_t* pattern)
 {
+	if (!style)
+		return;
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	if (style->FillStyleType == NON_SMOOTHED_CLIPPED_BITMAP ||
 		style->FillStyleType == NON_SMOOTHED_REPEATING_BITMAP)
@@ -281,8 +323,10 @@ void CairoTokenRenderer::executefill(cairo_t* cr, const FILLSTYLE* style, cairo_
 	cairo_fill(cr);
 }
 
-void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask)
+void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask, CairoTokenRenderer* th)
 {
+	if (!style)
+		return;
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	if (style->HasFillFlag)
 	{
@@ -294,10 +338,15 @@ void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cai
 	} else {
 		const RGBA& color = style->Color;
 		float r,g,b,a;
-		r = color.rf();
-		g = color.gf();
-		b = color.bf();
-		a = isMask ? 1.0 : color.af();
+		if (th && th->softwarerenderer)
+			th->colortransform.applyTransformation(color,r,g,b,a);
+		else
+		{
+			r = color.rf();
+			g = color.gf();
+			b = color.bf();
+			a = isMask ? 1.0 : color.af();
+		}
 		cairo_set_source_rgba(cr, r, g, b, a);
 	}
 	// TODO: EndCapStyle
@@ -325,15 +374,24 @@ void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cai
 		cairo_device_to_user_distance(cr,&linewidth,&linewidth);
 		cairo_set_line_width(cr, linewidth);
 	}
+	else if (int(style->Width * scaleCorrection) == 1)
+	{
+		// ensure linewidth is properly scaled if Width equals to 1
+		double linewidth = th ? th->xscale : 1.0;
+		cairo_device_to_user_distance(cr,&linewidth,&linewidth);
+		cairo_set_line_width(cr, linewidth);
+	}
 	else 
 	{
 		double linewidth = (double)(style->Width) * scaleCorrection;
+		if (th)
+			linewidth *= th->xscale;
 		cairo_device_to_user_distance(cr,&linewidth,&linewidth);
 		cairo_set_line_width(cr, linewidth);
 	}
 	cairo_stroke(cr);
 }
-bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& tokens, double scaleCorrection, bool skipPaint, bool isMask, number_t xstart, number_t ystart, int* starttoken)
+bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& tokens, double scaleCorrection, bool skipPaint, bool isMask, number_t xstart, number_t ystart, CairoTokenRenderer* th, int* starttoken)
 {
 	if (skipPaint && starttoken && tokens.size()==0)
 	{
@@ -468,14 +526,14 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						break;
 					}
 					if (instroke)
-						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask);
+						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
 					if (infill)
 						executefill(cr,currentfillstyle,currentfillpattern);
 					infill=true;
 					currentfillstyle=p1.fillStyle;
 					if (currentfillpattern)
 						cairo_pattern_destroy(currentfillpattern);
-					currentfillpattern = FILLSTYLEToCairo(*currentfillstyle, scaleCorrection,isMask);
+					currentfillpattern = FILLSTYLEToCairo(*currentfillstyle, scaleCorrection,isMask,th);
 					break;
 				}
 				case SET_STROKE:
@@ -492,7 +550,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						break;
 					}
 					if (instroke)
-						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask);
+						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
 					if (infill)
 						executefill(cr,currentfillstyle,currentfillpattern);
 					instroke = true;
@@ -500,7 +558,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					if (currentstrokepattern)
 						cairo_pattern_destroy(currentstrokepattern);
 					if (currentstrokestyle->HasFillFlag)
-						currentstrokepattern = FILLSTYLEToCairo(currentstrokestyle->FillType, scaleCorrection,isMask);
+						currentstrokepattern = FILLSTYLEToCairo(currentstrokestyle->FillType, scaleCorrection,isMask,th);
 					else
 						currentstrokepattern = nullptr;
 					break;
@@ -544,7 +602,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 						}
 						break;
 					}
-					executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask);
+					executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
 					if (currentstrokepattern)
 						cairo_pattern_destroy(currentstrokepattern);
 					currentstrokepattern=nullptr;
@@ -581,7 +639,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	if(!skipPaint)
 	{
 		if (instroke)
-			executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask);
+			executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
 		if (infill)
 			executefill(cr,currentfillstyle,currentfillpattern);
 	}
@@ -613,7 +671,7 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr)
 	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-	cairoPathFromTokens(cr, tokens, scaleFactor, false,isMask,xstart,ystart);
+	cairoPathFromTokens(cr, tokens, scaleFactor, false,isMask,xstart,ystart,this);
 }
 
 uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
@@ -720,7 +778,7 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 		cairo_t *cr=cairo_create(cairoSurface);
 		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 		cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-		empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,true,0,0,&starttoken);
+		empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,true,0,0,nullptr,&starttoken);
 		if(!empty)
 		{
 			/* reset the matrix so x and y are not scaled
@@ -747,7 +805,7 @@ void CairoTokenRenderer::applyCairoMask(cairo_t* cr,int32_t xOffset,int32_t yOff
 	cairo_translate(cr,xOffset,yOffset);
 	cairo_set_matrix(cr,&mat);
 	
-	cairoPathFromTokens(cr, tokens, scaleFactor, true,true,xstart,ystart);
+	cairoPathFromTokens(cr, tokens, scaleFactor, true,true,xstart,ystart,nullptr);
 	cairo_clip(cr);
 }
 
@@ -755,13 +813,11 @@ CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m,
 									   , int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r
 									   , float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a
 									   , const std::vector<IDrawable::MaskData> &_ms
-									   , float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier
-									   , float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset
-									   , SMOOTH_MODE _smoothing, number_t _xstart, number_t _ystart)
+									   , const ColorTransformBase& _colortransform
+									   , SMOOTH_MODE _smoothing, number_t _xstart, number_t _ystart, bool _softwarerenderer)
 	: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs,_ys,_im,_mask,_s,_a,_ms
-					, _redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier
-					, _redOffset,_greenOffset,_blueOffset,_alphaOffset
-					,_smoothing),tokens(_g),xstart(_xstart),ystart(_ystart)
+					, _colortransform
+					,_smoothing),tokens(_g),xstart(_xstart),ystart(_ystart),softwarerenderer(_softwarerenderer)
 {
 }
 
@@ -1131,14 +1187,7 @@ TextureChunk& AsyncDrawJob::getTexture()
 		surface.isMask = drawable->getIsMask();
 		surface.mask = drawable->getMask();
 		surface.smoothing = drawable->getSmoothing();
-		surface.redMultiplier=drawable->getRedMultiplier();
-		surface.greenMultiplier=drawable->getGreenMultiplier();
-		surface.blueMultiplier=drawable->getBlueMultiplier();
-		surface.alphaMultiplier=drawable->getAlphaMultiplier();
-		surface.redOffset=drawable->getRedOffset();
-		surface.greenOffset=drawable->getGreenOffset();
-		surface.blueOffset=drawable->getBlueOffset();
-		surface.alphaOffset=drawable->getAlphaOffset();
+		surface.colortransform = drawable->getColorTransform();
 		surface.matrix=drawable->getMatrix();
 		surface.isValid=true;
 		surface.isInitialized=true;
@@ -1158,13 +1207,13 @@ void AsyncDrawJob::uploadFence()
 	delete this;
 }
 
-void AsyncDrawJob::contentScale(float& x, float& y) const
+void AsyncDrawJob::contentScale(number_t& x, number_t& y) const
 {
 	x = drawable->getXContentScale();
 	y = drawable->getYContentScale();
 }
 
-void AsyncDrawJob::contentOffset(float& x, float& y) const
+void AsyncDrawJob::contentOffset(number_t& x, number_t& y) const
 {
 	x = drawable->getXOffset();
 	y = drawable->getYOffset();
@@ -1186,13 +1235,11 @@ IDrawable::~IDrawable()
 	}
 }
 
-BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
+BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, float _x, float _y, float _w, float _h, float _rx, float _ry, float _rw, float _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
 		float _a, const std::vector<MaskData>& _ms,
-		float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier,
-		float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset, SMOOTH_MODE _smoothing, const MATRIX& _m)
+		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m)
 	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, 1, 1, _im, _mask,_a, _ms,
-				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
-				_redOffset,_greenOffset,_blueOffset,_alphaOffset,_smoothing,_m)
+				_colortransform,_smoothing,_m)
 	, data(_data)
 {
 }
@@ -1271,4 +1318,80 @@ void TextData::setText(const char* text)
 		textlines.push_back(line);
 	}
 	while (index != tiny_string::npos);
+}
+
+void ColorTransformBase::fillConcatenated(DisplayObject* src, bool ignoreBlendMode)
+{
+	if (src->is<Bitmap>() && src->as<Bitmap>()->getCachedBitmapOwner())
+		src = src->as<Bitmap>()->getCachedBitmapOwner();
+	ColorTransform* ct = src->colorTransform.getPtr();
+	DisplayObjectContainer* p = src->getParent();
+	if (ct)
+	{
+		*this=*ct;
+	}
+	while (p)
+	{
+		if (p->colorTransform)
+		{
+			ct = p->colorTransform.getPtr();
+			if (!ct)
+			{
+				ct = p->colorTransform.getPtr();
+				*this=*ct;
+			}
+			else
+			{
+				ct = p->colorTransform.getPtr();
+				redMultiplier*=ct->redMultiplier;
+				greenMultiplier*=ct->greenMultiplier;
+				blueMultiplier*=ct->blueMultiplier;
+				alphaMultiplier*=ct->alphaMultiplier;
+				redOffset+=ct->redOffset;
+				greenOffset+=ct->greenOffset;
+				blueOffset+=ct->blueOffset;
+				alphaOffset+=ct->alphaOffset;
+			}
+		}
+		if (!ignoreBlendMode && p->isShaderBlendMode(p->getBlendMode()))
+			break;
+		p = p->getParent();
+	}
+}
+void ColorTransformBase::applyTransformation(uint8_t* bm, uint32_t size)
+{
+	if (isIdentity())
+		return;
+
+	for (uint32_t i = 0; i < size; i+=4)
+	{
+		bm[i+3] = max(0,min(255,int(((number_t(bm[i+3]) * alphaMultiplier) + alphaOffset))));
+		bm[i+2] = max(0,min(255,int(((number_t(bm[i+2]) *  blueMultiplier) +  blueOffset)*(number_t(bm[i+3])/255.0))));
+		bm[i+1] = max(0,min(255,int(((number_t(bm[i+1]) * greenMultiplier) + greenOffset)*(number_t(bm[i+3])/255.0))));
+		bm[i  ] = max(0,min(255,int(((number_t(bm[i  ]) *   redMultiplier) +   redOffset)*(number_t(bm[i+3])/255.0))));
+	}
+}
+uint8_t *ColorTransformBase::applyTransformation(BitmapContainer* bm)
+{
+	if (redMultiplier==1.0 &&
+		greenMultiplier==1.0 &&
+		blueMultiplier==1.0 &&
+		alphaMultiplier==1.0 &&
+		redOffset==0.0 &&
+		greenOffset==0.0 &&
+		blueOffset==0.0 &&
+		alphaOffset==0.0)
+		return (uint8_t*)bm->getData();
+
+	uint8_t* src = bm->getData();
+	uint8_t* dst = bm->getDataColorTransformed();
+	uint32_t size = bm->getWidth()*bm->getHeight()*4;
+	for (uint32_t i = 0; i < size; i+=4)
+	{
+		dst[i+3] = max(0,min(255,int(((number_t(src[i+3]) * alphaMultiplier) + alphaOffset))));
+		dst[i+2] = max(0,min(255,int(((number_t(src[i+2]) *  blueMultiplier) +  blueOffset)*(number_t(dst[i+3])/255.0))));
+		dst[i+1] = max(0,min(255,int(((number_t(src[i+1]) * greenMultiplier) + greenOffset)*(number_t(dst[i+3])/255.0))));
+		dst[i  ] = max(0,min(255,int(((number_t(src[i  ]) *   redMultiplier) +   redOffset)*(number_t(dst[i+3])/255.0))));
+	}
+	return (uint8_t*)bm->getDataColorTransformed();
 }

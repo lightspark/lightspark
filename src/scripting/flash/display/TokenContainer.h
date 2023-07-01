@@ -40,8 +40,7 @@ class TokenContainer
 	friend class TextField;
 public:
 	DisplayObject* owner;
-	number_t redMultiplier,greenMultiplier,blueMultiplier,alphaMultiplier;
-	number_t redOffset,greenOffset,blueOffset,alphaOffset;
+	ColorTransformBase currentcolortransform;
 	/* multiply shapes' coordinates by this
 	 * value to get pixel.
 	 * DefineShapeTags set a scaling of 1/20,

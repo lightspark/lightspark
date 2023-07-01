@@ -496,6 +496,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 	th->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target,wrk);
 	if(asAtomHandler::isInvalid(ret))
 	{
+		ret = asAtomHandler::undefinedAtom;
 		createError<ReferenceError>(wrk,kClassNotFoundError,name.normalizedNameUnresolved(wrk->getSystemState()));
 		return;
 	}

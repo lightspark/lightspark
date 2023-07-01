@@ -390,6 +390,51 @@ void RenderThread::renderSettingsPage()
 	mapCairoTexture(width, height,true);
 	engineData->exec_glFlush();
 }
+
+void RenderThread::beginBlendTexture()
+{
+	currentFrameBufferID=blendframebuffer;
+
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(blendframebuffer);
+	RGB bg=m_sys->mainClip->getBackground();
+	engineData->exec_glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
+	engineData->exec_glClear_GL_COLOR_BUFFER_BIT();
+	
+}
+void RenderThread::endBlendTexture()
+{
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+
+	engineData->exec_glUniform1f(blendModeUniform, AS_BLENDMODE::BLENDMODE_NORMAL);
+	engineData->exec_glUniform1f(yuvUniform, 0);
+	engineData->exec_glUniform1f(alphaUniform, 1.0);
+	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
+	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
+	engineData->exec_glUniform1f(directUniform, 0.0);
+	
+	// render blended texture to framebuffer
+
+	lsglLoadIdentity();
+	lsglScalef(1.0f,-1.0f,1);
+	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
+	setMatrixUniform(LSGL_MODELVIEW);
+
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(blendTextureID);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+	float vertex_coords[] = {0,0, float(windowWidth),0, 0,float(windowHeight), float(windowWidth),float(windowHeight)};
+	float texture_coords[] = {0,0, 1,0, 0,1, 1,1};
+	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, vertex_coords,FLOAT_2);
+	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 0, texture_coords,FLOAT_2);
+	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
+	engineData->exec_glEnableVertexAttribArray(TEXCOORD_ATTRIB);
+	engineData->exec_glDrawArrays_GL_TRIANGLE_STRIP(0, 4);
+	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
+	engineData->exec_glDisableVertexAttribArray(TEXCOORD_ATTRIB);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
+
+	currentFrameBufferID=0;
+}
 void RenderThread::generateScreenshot()
 {
 	char* buf = new char[windowWidth*windowHeight*3];
@@ -520,6 +565,7 @@ void RenderThread::commonGLDeinit()
 	engineData->exec_glDeleteTextures(1, &cairoTextureID);
 	engineData->exec_glDeleteTextures(1, &cairoTextureIDSettings);
 	engineData->exec_glDeleteTextures(1, &maskTextureID);
+	engineData->exec_glDeleteTextures(1, &blendTextureID);
 }
 
 void RenderThread::commonGLInit(int width, int height)
@@ -550,6 +596,11 @@ void RenderThread::commonGLInit(int width, int height)
 	if(tex!=-1)
 		engineData->exec_glUniform1i(tex,1);
 
+	// uniform for textures used for blending 
+	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex3");
+	if(tex!=-1)
+		engineData->exec_glUniform1i(tex,2);
+	
 	//The uniform that enables YUV->RGB transform on the texels (needed for video)
 	yuvUniform =engineData->exec_glGetUniformLocation(gpu_program,"yuv");
 	//The uniform that tells the alpha value multiplied to the alpha of every pixel
@@ -565,6 +616,7 @@ void RenderThread::commonGLInit(int width, int height)
 	colortransMultiplyUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformMultiply");
 	colortransAddUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformAdd");
 	directColorUniform=engineData->exec_glGetUniformLocation(gpu_program,"directColor");
+	blendModeUniform=engineData->exec_glGetUniformLocation(gpu_program,"blendMode");
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	engineData->exec_glEnable_GL_TEXTURE_2D();
@@ -575,6 +627,12 @@ void RenderThread::commonGLInit(int width, int height)
 	// create framebuffer for masks
 	maskframebuffer = engineData->exec_glGenFramebuffer();
 	engineData->exec_glGenTextures(1, &maskTextureID);
+
+	// create framebuffer for blending
+	blendframebuffer = engineData->exec_glGenFramebuffer();
+	engineData->exec_glGenTextures(1, &blendTextureID);
+
+	currentFrameBufferID=0;
 
 	if(handleGLErrors())
 	{
@@ -613,6 +671,17 @@ void RenderThread::commonGLResize()
 	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(maskTextureID);
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
 	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
+
+	// setup blend framebuffer
+	engineData->exec_glActiveTexture_GL_TEXTURE0(2);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(blendTextureID);
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(blendframebuffer);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(blendTextureID);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
+	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
+
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);

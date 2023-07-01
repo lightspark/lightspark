@@ -1016,8 +1016,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 				totalMatrix.getScaleX(),totalMatrix.getScaleY(),
 				isMask,mask,
 				1.0f,getConcatenatedAlpha(),masks,
-				1.0f,1.0f,1.0f,1.0f,
-				0.0f,0.0f,0.0f,0.0f,
+				ColorTransformBase(),
 				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,0);
 }
 

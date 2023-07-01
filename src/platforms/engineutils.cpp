@@ -941,6 +941,10 @@ void EngineData::exec_glFlush()
 {
 	glFlush();
 }
+void EngineData::exec_glFinish()
+{
+	glFinish();
+}
 
 uint32_t EngineData::exec_glCreateShader_GL_FRAGMENT_SHADER()
 {
@@ -1536,23 +1540,18 @@ int EngineData::audio_getSampleRate()
 {
 	return 44100;
 }
-IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms, float _redMultiplier, float _greenMultiplier, float _blueMultiplier, float _alphaMultiplier, float _redOffset, float _greenOffset, float _blueOffset, float _alphaOffset, SMOOTH_MODE smoothing)
+IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms, const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing)
 {
 	if (hasExternalFontRenderer)
 		return new externalFontRenderer(_textData,this, _x, _y, _w, _h, _rx,_ry,_rw,_rh,_r,_xs,_ys,_im, _mask, _a, _ms,
-										_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
-										_redOffset,_greenOffset,_blueOffset,_alphaOffset,
-										smoothing,_m);
+										_colortransform, smoothing,_m);
 	return nullptr;
 }
 
 externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData *engine, int32_t x, int32_t y, int32_t w, int32_t h, int32_t rx, int32_t ry, int32_t rw, int32_t rh, float r, float xs, float ys, bool im, _NR<DisplayObject> _mask, float a, const std::vector<IDrawable::MaskData> &m,
-										   float _redMultiplier,float _greenMultiplier,float _blueMultiplier,float _alphaMultiplier,
-										   float _redOffset,float _greenOffset,float _blueOffset,float _alphaOffset,
-										   SMOOTH_MODE smoothing, const MATRIX &_m)
+										   const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m)
 	: IDrawable(w, h, x, y,rw,rh,rx,ry,r,xs,ys, 1, 1, im, _mask, a, m,
-				_redMultiplier,_greenMultiplier,_blueMultiplier,_alphaMultiplier,
-				_redOffset,_greenOffset,_blueOffset,_alphaOffset,smoothing,_m),m_engine(engine)
+				_colortransform,smoothing,_m),m_engine(engine)
 {
 	externalressource = engine->setupFontRenderer(_textData,a,smoothing);
 }

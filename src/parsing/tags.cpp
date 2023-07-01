@@ -717,11 +717,10 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 							, 1, 1
 							, false,_NR<DisplayObject>()
 							, 0.05,1.0, masks
-							, 1.0,1.0,1.0,1.0
-							, 0,0,0,0
-							, SMOOTH_MODE::SMOOTH_SUBPIXEL,0,0);
+							, ColorTransformBase()
+							, SMOOTH_MODE::SMOOTH_SUBPIXEL,0,0,false);
 				uint8_t* buf = r.getPixelBuffer();
-				CharacterRenderer* renderer = new CharacterRenderer(buf,xmax,ymax);
+				CharacterRenderer* renderer = new CharacterRenderer(buf,abs(xmax),abs(ymax));
 				getSys()->getRenderThread()->addUploadJob(renderer);
 				it = getGlyphShapes().at(i).scaledtexturecache.insert(make_pair(tokenscaling,renderer)).first;
 			}
@@ -1582,6 +1581,10 @@ ASObject *DefineShapeTag::instance(Class_base *c)
 		for (auto it = Shapes.FillStyles.FillStyles.begin(); it != Shapes.FillStyles.FillStyles.end(); it++)
 		{
 			it->ShapeBounds = ShapeBounds;
+		}
+		for (auto it = Shapes.LineStyles.LineStyles2.begin(); it != Shapes.LineStyles.LineStyles2.end(); it++)
+		{
+			it->FillType.ShapeBounds = ShapeBounds;
 		}
 		TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,*tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2,ShapeBounds);
 	}

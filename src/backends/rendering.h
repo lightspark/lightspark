@@ -179,6 +179,8 @@ public:
 
 	void renderErrorPage(RenderThread *rt, bool standalone);
 	void renderSettingsPage();
+	void beginBlendTexture();
+	void endBlendTexture();
 	cairo_t *cairoTextureContextSettings;
 	cairo_surface_t *cairoTextureSurfaceSettings;
 	uint8_t *cairoTextureDataSettings;

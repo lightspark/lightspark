@@ -95,7 +95,7 @@ private:
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool useLegacyMatrix;
 	bool needsTextureRecalculation;
-	bool needsNeedsCachedBitmapRecalculation;
+	bool needsCachedBitmapRecalculation;
 	bool textureRecalculationSkippable;
 	void gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks);
 	std::map<uint32_t,asAtom> avm1variables;
@@ -148,6 +148,7 @@ public:
 	void setMask(_NR<DisplayObject> m);
 	void setBlendMode(UI8 blendmode);
 	AS_BLENDMODE getBlendMode() const { return blendMode; }
+	static bool isShaderBlendMode(AS_BLENDMODE bl);
 	void constructionComplete() override;
 	void afterConstruction() override;
 	void prepareDestruction()
@@ -156,7 +157,7 @@ public:
 		setParent(nullptr);
 		removeAVM1Listeners();
 	}
-	void applyFilters(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, int xpos, int ypos,number_t scalex,number_t scaley);
+	void applyFilters(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley);
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
@@ -168,8 +169,8 @@ public:
 	void setNeedsTextureRecalculation(bool skippable=false);
 	void resetNeedsTextureRecalculation() { needsTextureRecalculation=false; }
 	bool getNeedsTextureRecalculation() const { return needsTextureRecalculation; }
-	void setNeedsCachedBitmapRecalculation()  { needsNeedsCachedBitmapRecalculation=true; }
-	void resetNeedsCachedBitmapRecalculation() { needsNeedsCachedBitmapRecalculation=false; }
+	void setNeedsCachedBitmapRecalculation()  { needsCachedBitmapRecalculation=true; }
+	void resetNeedsCachedBitmapRecalculation() { needsCachedBitmapRecalculation=false; }
 	bool getTextureRecalculationSkippable() const { return textureRecalculationSkippable; }
 	// this may differ from the main clip if this instance was generated from a loaded swf, not from the main clip
 	RootMovieClip* loadedFrom;
@@ -351,7 +352,7 @@ public:
 	void AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> obj);
 	AVM1Function *AVM1GetFunction(uint32_t nameID);
 	virtual void AVM1AfterAdvance() {}
-	void DrawToBitmap(BitmapData* bm, const MATRIX& initialMatrix, bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode, ColorTransform* ct);
+	void DrawToBitmap(BitmapData* bm, const MATRIX& initialMatrix, bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode, ColorTransformBase* ct);
 	std::string toDebugString() const override;
 };
 }

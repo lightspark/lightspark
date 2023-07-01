@@ -2151,6 +2151,10 @@ void ppPluginEngineData::exec_glFlush()
 {
 	g_gles2_interface->Flush(instance->m_graphics);
 }
+void ppPluginEngineData::exec_glFinish()
+{
+	g_gles2_interface->Finish(instance->m_graphics);
+}
 
 uint32_t ppPluginEngineData::exec_glCreateShader_GL_FRAGMENT_SHADER()
 {

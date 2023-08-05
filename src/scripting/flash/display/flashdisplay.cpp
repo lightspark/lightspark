@@ -3272,6 +3272,25 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 	}
 }
 
+void DisplayObjectContainer::initVar(DisplayObject* disp_obj)
+{
+	if (disp_obj != nullptr)
+	{
+		asAtom o = asAtomHandler::fromObject(disp_obj);
+		multiname objName(nullptr);
+		objName.name_type = multiname::NAME_STRING;
+		objName.name_s_id = disp_obj->name;
+		objName.ns.emplace_back(disp_obj->getSystemState(), BUILTIN_STRINGS::EMPTY, NAMESPACE);
+
+		if (!dynamicDisplayList.empty() && dynamicDisplayList[0] != nullptr)
+		{
+			auto first_entry = dynamicDisplayList[0];
+			auto instance_worker = first_entry->getInstanceWorker();
+			first_entry->setVariableByMultiname(objName,o,ASObject::CONST_NOT_ALLOWED,nullptr,instance_worker);
+		}
+	}
+}
+
 void DisplayObjectContainer::setOnStage(bool staged, bool force,bool inskipping)
 {
 	if(staged!=onStage||force)
@@ -3504,6 +3523,10 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChildAt)
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
 	assert_and_throw(index >= 0 && (size_t)index<=th->dynamicDisplayList.size());
 	d->incRef();
+	if (d->getParent() != nullptr && d->getParent() != th)
+	{
+		d->placedByScript = true;
+	}
 	th->_addChildAt(d,index);
 
 	//Notify the object
@@ -3530,6 +3553,10 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChild)
 	//Cast to object
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
 	d->incRef();
+	if (d->getParent() != nullptr && d->getParent() != th)
+	{
+		d->placedByScript = true;
+	}
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	//Notify the object
@@ -3560,6 +3587,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChild)
 		createError<ArgumentError>(wrk,2025,"removeChild: child not in list");
 		return;
 	}
+	d->placedByScript = true;
 
 	ret = asAtomHandler::fromObject(d);
 }
@@ -3588,6 +3616,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 	//As we return the child we incRef it
 	child->incRef();
 	th->_removeChild(child);
+	child->placedByScript = true;
 	ret = asAtomHandler::fromObject(child);
 }
 
@@ -3604,6 +3633,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildren)
 		auto it = th->dynamicDisplayList.begin()+beginindex;
 		while (it != th->dynamicDisplayList.begin()+endindex)
 		{
+			(*it)->placedByScript = true;
 			(*it)->removeStoredMember();
 			it++;
 		}
@@ -3633,6 +3663,8 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
 	}
 	auto itrem = th->dynamicDisplayList.begin()+curIndex;
 	th->dynamicDisplayList.erase(itrem); //remove from old position
+
+	child->placedByScript = true;
 
 	auto it=th->dynamicDisplayList.begin();
 	int i = 0;
@@ -3675,6 +3707,9 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildren)
 			return;
 		}
 
+		child1->placedByScript = true;
+		child2->placedByScript = true;
+
 		std::iter_swap(it1, it2);
 	}
 }
@@ -3699,6 +3734,11 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildrenAt)
 
 	{
 		Locker l(th->mutexDisplayList);
+		DisplayObject* child1 = th->dynamicDisplayList[index1];
+		DisplayObject* child2 = th->dynamicDisplayList[index2];
+		child1->placedByScript = true;
+		child2->placedByScript = true;
+
 		std::iter_swap(th->dynamicDisplayList.begin() + index1, th->dynamicDisplayList.begin() + index2);
 	}
 }

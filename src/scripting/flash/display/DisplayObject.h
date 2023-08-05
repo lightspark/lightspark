@@ -176,6 +176,10 @@ public:
 	RootMovieClip* loadedFrom;
 	// this is reset after the drawjob is done to ensure a changed DisplayObject is only rendered once
 	bool hasChanged;
+	// this get's set when a DisplayObject has an explicit name associated with it
+	bool hasExplicitName;
+	// this get's set when a DisplayObject is placed by ActionScript code
+	bool placedByScript;
 	// this is set to true for DisplayObjects that are placed from a tag
 	bool legacy;
 	bool markedForLegacyDeletion;

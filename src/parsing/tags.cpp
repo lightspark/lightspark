@@ -1941,6 +1941,10 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		}
 		else
 		{
+			if (PlaceFlagHasName)
+			{
+				toAdd->hasExplicitName = true;
+			}
 			if (toAdd->is<MovieClip>() && PlaceFlagHasClipAction)
 				toAdd->as<MovieClip>()->setupActions(ClipActions);
 			/* parent becomes the owner of toAdd */

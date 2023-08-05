@@ -117,7 +117,7 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	needsTextureRecalculation(true),needsCachedBitmapRecalculation(true),textureRecalculationSkippable(false),
 	avm1mouselistenercount(0),avm1framelistenercount(0),
 	onStage(false),visible(true),
-	mask(),invalidateQueueNext(),loaderInfo(),cachedAsBitmapOf(nullptr),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),legacy(false),markedForLegacyDeletion(false),cacheAsBitmap(false),
+	mask(),invalidateQueueNext(),loaderInfo(),cachedAsBitmapOf(nullptr),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),hasExplicitName(false),placedByScript(false),legacy(false),markedForLegacyDeletion(false),cacheAsBitmap(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -1766,6 +1766,29 @@ void DisplayObject::initFrame()
 		{
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
 			ABCVm::publicHandleEvent(this,e);
+		}
+
+		if (!placedByScript && hasExplicitName)
+		{
+			incRef();
+			if (auto stage = getSystemState()->stage; needsActionScript3() && stage)
+			{
+				stage->initVar(this);
+			}
+			else if (parent)
+			{
+				asAtom o = asAtomHandler::fromObject(this);
+
+				multiname objName(nullptr);
+				objName.name_type = multiname::NAME_STRING;
+				objName.name_s_id = name;
+				objName.ns.emplace_back(getSystemState(), BUILTIN_STRINGS::EMPTY, NAMESPACE);
+				parent->setVariableByMultiname(objName,o,ASObject::CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
+			}
+			else
+			{
+				decRef();
+			}
 		}
 	}
 }

@@ -2857,7 +2857,8 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 	if(!hasLegacyChildAt(depth))
 		return;
 	DisplayObject* obj = mapDepthToLegacyChild.at(depth);
-	if(obj->name != BUILTIN_STRINGS::EMPTY)
+	if(obj->name != BUILTIN_STRINGS::EMPTY 
+	   && !obj->markedForLegacyDeletion) // member variable was already reset in purgeLegacyChildren
 	{
 		// it seems adobe keeps removed objects and reuses them if they are added through placeObjectTags again
 		obj->incRef();

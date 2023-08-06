@@ -1770,10 +1770,11 @@ void DisplayObject::initFrame()
 
 		if (!placedByScript && hasExplicitName)
 		{
+			bool dont_init = true;
 			incRef();
 			if (auto stage = getSystemState()->stage; needsActionScript3() && stage)
 			{
-				stage->initVar(this);
+				dont_init = stage->initVar(this);
 			}
 			else if (parent)
 			{
@@ -1783,9 +1784,15 @@ void DisplayObject::initFrame()
 				objName.name_type = multiname::NAME_STRING;
 				objName.name_s_id = name;
 				objName.ns.emplace_back(getSystemState(), BUILTIN_STRINGS::EMPTY, NAMESPACE);
-				parent->setVariableByMultiname(objName,o,ASObject::CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
+
+				if (!parent->getClass()->isSealed)
+				{
+					parent->setVariableByMultiname(objName,o,ASObject::CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
+					dont_init = false;
+				}
 			}
-			else
+
+			if (dont_init)
 			{
 				decRef();
 			}

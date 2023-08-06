@@ -3272,7 +3272,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 	}
 }
 
-void DisplayObjectContainer::initVar(DisplayObject* disp_obj)
+bool DisplayObjectContainer::initVar(DisplayObject* disp_obj)
 {
 	if (disp_obj != nullptr)
 	{
@@ -3286,9 +3286,14 @@ void DisplayObjectContainer::initVar(DisplayObject* disp_obj)
 		{
 			auto first_entry = dynamicDisplayList[0];
 			auto instance_worker = first_entry->getInstanceWorker();
-			first_entry->setVariableByMultiname(objName,o,ASObject::CONST_NOT_ALLOWED,nullptr,instance_worker);
+			if (!first_entry->getClass()->isSealed)
+			{
+				first_entry->setVariableByMultiname(objName,o,ASObject::CONST_NOT_ALLOWED,nullptr,instance_worker);
+				return false;
+			}
 		}
 	}
+	return true;
 }
 
 void DisplayObjectContainer::setOnStage(bool staged, bool force,bool inskipping)

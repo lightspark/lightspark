@@ -606,34 +606,58 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 	{
 		if (filters.isNull())
 			filters = _MR(Class<Array>::getInstanceS(getInstanceWorker()));
+		else
+		{
+			// check if filterlist has really changed
+			if (filters->size() == filterlist.Filters.size())
+			{
+				bool filterlistHasChanged=false;
+				for (uint32_t i =0; i < filters->size(); i++)
+				{
+					asAtom f=filters->at(i);
+					if (!asAtomHandler::is<BitmapFilter>(f))
+					{
+						filterlistHasChanged=true;
+						break;
+					}
+					if (!asAtomHandler::as<BitmapFilter>(f)->compareFILTER(filterlist.Filters.at(i)))
+					{
+						filterlistHasChanged=true;
+						break;
+					}
+				}
+				if (!filterlistHasChanged)
+					return;
+			}
+		}
 		filters->resize(0);
 		auto it = filterlist.Filters.cbegin();
 		while (it != filterlist.Filters.cend())
 		{
 			switch(it->FilterID)
 			{
-				case 0:
+				case FILTER::FILTER_DROPSHADOW:
 					filters->push(asAtomHandler::fromObject(Class<DropShadowFilter>::getInstanceS(getInstanceWorker(),it->DropShadowFilter)));
 					break;
-				case 1:
+				case FILTER::FILTER_BLUR:
 					filters->push(asAtomHandler::fromObject(Class<BlurFilter>::getInstanceS(getInstanceWorker(),it->BlurFilter)));
 					break;
-				case 2:
+				case FILTER::FILTER_GLOW:
 					filters->push(asAtomHandler::fromObject(Class<GlowFilter>::getInstanceS(getInstanceWorker(),it->GlowFilter)));
 					break;
-				case 3:
+				case FILTER::FILTER_BEVEL:
 					filters->push(asAtomHandler::fromObject(Class<BevelFilter>::getInstanceS(getInstanceWorker(),it->BevelFilter)));
 					break;
-				case 4:
+				case FILTER::FILTER_GRADIENTGLOW:
 					filters->push(asAtomHandler::fromObject(Class<GradientGlowFilter>::getInstanceS(getInstanceWorker(),it->GradientGlowFilter)));
 					break;
-				case 5:
+				case FILTER::FILTER_CONVOLUTION:
 					filters->push(asAtomHandler::fromObject(Class<ConvolutionFilter>::getInstanceS(getInstanceWorker(),it->ConvolutionFilter)));
 					break;
-				case 6:
+				case FILTER::FILTER_COLORMATRIX:
 					filters->push(asAtomHandler::fromObject(Class<ColorMatrixFilter>::getInstanceS(getInstanceWorker(),it->ColorMatrixFilter)));
 					break;
-				case 7:
+				case FILTER::FILTER_GRADIENTBEVEL:
 					filters->push(asAtomHandler::fromObject(Class<GradientBevelFilter>::getInstanceS(getInstanceWorker(),it->GradientBevelFilter)));
 					break;
 				default:

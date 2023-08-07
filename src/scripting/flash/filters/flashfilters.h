@@ -42,6 +42,7 @@ public:
 	ASFUNCTION_ATOM(clone);
 	virtual void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr);
 	virtual uint32_t getMaxFilterBorder() const { return 0; }
+	virtual bool compareFILTER(const FILTER& filter) const { return false; }
 };
 
 class GlowFilter: public BitmapFilter
@@ -63,6 +64,7 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	uint32_t getMaxFilterBorder() const override { return ceil(max(blurX,blurY)); }
+	bool compareFILTER(const FILTER& filter) const override;
 };
 
 class DropShadowFilter: public BitmapFilter
@@ -87,6 +89,7 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	uint32_t getMaxFilterBorder() const override { return ceil(max(max(blurX,blurY),distance)); }
+	bool compareFILTER(const FILTER& filter) const override;
 };
 
 class GradientGlowFilter: public BitmapFilter
@@ -111,6 +114,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool,knockout);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	uint32_t getMaxFilterBorder() const override { return ceil(max(max(blurX,blurY),distance)); }
+	bool compareFILTER(const FILTER& filter) const override;
 	void prepareShutdown() override;
 };
 
@@ -137,6 +141,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string,type);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	uint32_t getMaxFilterBorder() const override { return ceil(max(max(blurX,blurY),distance)); }
+	bool compareFILTER(const FILTER& filter) const override;
 };
 class ColorMatrixFilter: public BitmapFilter
 {
@@ -149,6 +154,7 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>, matrix);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
+	bool compareFILTER(const FILTER& filter) const override;
 	void prepareShutdown() override;
 };
 class BlurFilter: public BitmapFilter
@@ -165,6 +171,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(int, quality);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	uint32_t getMaxFilterBorder() const override { return ceil(max(blurX,blurY)); }
+	bool compareFILTER(const FILTER& filter) const override;
 };
 class ConvolutionFilter: public BitmapFilter
 {
@@ -185,6 +192,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, matrixY);
 	ASPROPERTY_GETTER_SETTER(bool, preserveAlpha);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
+	bool compareFILTER(const FILTER& filter) const override;
 	void prepareShutdown() override;
 };
 class DisplacementMapFilter: public BitmapFilter
@@ -205,6 +213,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t,scaleX);
 	ASPROPERTY_GETTER_SETTER(number_t,scaleY);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
+	bool compareFILTER(const FILTER& filter) const override { return false; }
 	void prepareShutdown() override;
 };
 class GradientBevelFilter: public BitmapFilter
@@ -229,6 +238,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string, type);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	uint32_t getMaxFilterBorder() const override { return ceil(max(max(blurX,blurY),distance)); }
+	bool compareFILTER(const FILTER& filter) const override;
 	void prepareShutdown() override;
 };
 class ShaderFilter: public BitmapFilter
@@ -240,6 +250,7 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
+	bool compareFILTER(const FILTER& filter) const override { return false; }
 };
 
 class BitmapFilterQuality: public ASObject

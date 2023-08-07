@@ -643,6 +643,21 @@ ASFUNCTIONBODY_ATOM(GlowFilter,_constructor)
 		(th->knockout, false));
 }
 
+bool GlowFilter::compareFILTER(const FILTER& filter) const
+{
+	return filter.FilterID == FILTER::FILTER_GLOW
+			&& filter.GlowFilter.GlowColor.af() == this->alpha
+			&& filter.GlowFilter.BlurX == this->blurX
+			&& filter.GlowFilter.BlurY == this->blurY
+			&& filter.GlowFilter.GlowColor.Red == ((this->color>>16)&0xff)
+			&& filter.GlowFilter.GlowColor.Green == ((this->color>>8)&0xff)
+			&& filter.GlowFilter.GlowColor.Blue == ((this->color)&0xff)
+			&& filter.GlowFilter.InnerGlow == this->inner
+			&& filter.GlowFilter.Knockout == this->knockout
+			&& filter.GlowFilter.Strength == this->strength
+			&& filter.GlowFilter.Passes == this->quality;
+}
+
 BitmapFilter* GlowFilter::cloneImpl() const
 {
 	GlowFilter *cloned = Class<GlowFilter>::getInstanceS(getInstanceWorker());
@@ -740,6 +755,23 @@ ASFUNCTIONBODY_ATOM(DropShadowFilter,_constructor)
 		(th->inner, false)
 		(th->knockout, false)
 		(th->hideObject, false));
+}
+
+bool DropShadowFilter::compareFILTER(const FILTER& filter) const
+{
+	return filter.FilterID == FILTER::FILTER_DROPSHADOW
+			&& filter.DropShadowFilter.DropShadowColor.af() == this->alpha
+			&& filter.DropShadowFilter.Angle == this->angle
+			&& filter.DropShadowFilter.BlurX == this->blurX
+			&& filter.DropShadowFilter.BlurY == this->blurY
+			&& filter.DropShadowFilter.DropShadowColor.Red == ((this->color>>16)&0xff)
+			&& filter.DropShadowFilter.DropShadowColor.Green == ((this->color>>8)&0xff)
+			&& filter.DropShadowFilter.DropShadowColor.Blue == ((this->color)&0xff)
+			&& filter.DropShadowFilter.Distance == this->distance
+			&& filter.DropShadowFilter.InnerShadow == this->inner
+			&& filter.DropShadowFilter.Knockout == this->knockout
+			&& filter.DropShadowFilter.Strength == this->strength
+			&& filter.DropShadowFilter.Passes == this->quality;
 }
 
 BitmapFilter* DropShadowFilter::cloneImpl() const
@@ -857,6 +889,11 @@ ASFUNCTIONBODY_ATOM(GradientGlowFilter,_constructor)
 	ARG_CHECK(ARG_UNPACK(th->distance,4.0)(th->angle,45)(th->colors,NullRef)(th->alphas,NullRef)(th->ratios,NullRef)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false));
 }
 
+bool GradientGlowFilter::compareFILTER(const FILTER& filter) const
+{
+	LOG(LOG_NOT_IMPLEMENTED, "comparing GradientGlowFilter");
+	return false;
+}
 BitmapFilter* GradientGlowFilter::cloneImpl() const
 {
 	GradientGlowFilter *cloned = Class<GradientGlowFilter>::getInstanceS(getInstanceWorker());
@@ -957,6 +994,11 @@ ASFUNCTIONBODY_ATOM(BevelFilter,_constructor)
 	BevelFilter *th = asAtomHandler::as<BevelFilter>(obj);
 	ARG_CHECK(ARG_UNPACK(th->distance,4.0)(th->angle,45)(th->highlightColor,0xFFFFFF)(th->highlightAlpha,1.0)(th->shadowColor,0x000000)(th->shadowAlpha,1.0)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false));
 }
+bool BevelFilter::compareFILTER(const FILTER& filter) const
+{
+	LOG(LOG_NOT_IMPLEMENTED, "comparing BevelFilter");
+	return false;
+}
 
 BitmapFilter* BevelFilter::cloneImpl() const
 {
@@ -1051,6 +1093,22 @@ ASFUNCTIONBODY_ATOM(ColorMatrixFilter,_constructor)
 	ARG_CHECK(ARG_UNPACK(th->matrix,NullRef));
 }
 
+bool ColorMatrixFilter::compareFILTER(const FILTER& filter) const
+{
+	if (filter.FilterID == FILTER::FILTER_COLORMATRIX
+		&& this->matrix && this->matrix->size()==20)
+	{
+		for (uint32_t i =0; i < 20; i++)
+		{
+			FLOAT f = filter.ColorMatrixFilter.Matrix[i];
+			if (f != asAtomHandler::toNumber(this->matrix->at(i)))
+				return false;
+		}
+		return true;
+	}
+	return false;
+}
+
 BitmapFilter* ColorMatrixFilter::cloneImpl() const
 {
 	ColorMatrixFilter *cloned = Class<ColorMatrixFilter>::getInstanceS(getInstanceWorker());
@@ -1115,6 +1173,15 @@ void BlurFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, c
 	}
 	delete[] tmpdata;
 }
+
+bool BlurFilter::compareFILTER(const FILTER& filter) const
+{
+	return filter.FilterID == FILTER::FILTER_BLUR
+			&& filter.BlurFilter.BlurX == this->blurX
+			&& filter.BlurFilter.BlurY == this->blurY
+			&& filter.BlurFilter.Passes == this->quality;
+}
+
 BitmapFilter* BlurFilter::cloneImpl() const
 {
 	BlurFilter* cloned = Class<BlurFilter>::getInstanceS(getInstanceWorker());
@@ -1290,6 +1357,11 @@ ASFUNCTIONBODY_ATOM(ConvolutionFilter,_constructor)
 	ARG_CHECK(ARG_UNPACK(th->matrixX,0)(th->matrixY,0)(th->matrix,NullRef)(th->divisor,1.0)(th->bias,0.0)(th->preserveAlpha,true)(th->clamp,true)(th->color,0)(th->alpha,0.0));
 }
 
+bool ConvolutionFilter::compareFILTER(const FILTER& filter) const
+{
+	LOG(LOG_NOT_IMPLEMENTED, "comparing ConvolutionFilter");
+	return false;
+}
 BitmapFilter* ConvolutionFilter::cloneImpl() const
 {
 	ConvolutionFilter* cloned = Class<ConvolutionFilter>::getInstanceS(getInstanceWorker());
@@ -1562,6 +1634,11 @@ ASFUNCTIONBODY_ATOM(GradientBevelFilter,_constructor)
 	ARG_CHECK(ARG_UNPACK(th->distance,4.0)(th->angle,45)(th->colors,NullRef)(th->alphas,NullRef)(th->ratios,NullRef)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false));
 }
 
+bool GradientBevelFilter::compareFILTER(const FILTER& filter) const
+{
+	LOG(LOG_NOT_IMPLEMENTED, "comparing GradientBevelFilter");
+	return false;
+}
 BitmapFilter* GradientBevelFilter::cloneImpl() const
 {
 	GradientBevelFilter* cloned = Class<GradientBevelFilter>::getInstanceS(getInstanceWorker());

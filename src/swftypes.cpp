@@ -1221,28 +1221,28 @@ std::istream& lightspark::operator>>(std::istream& stream, FILTER& v)
 	stream >> v.FilterID;
 	switch(v.FilterID)
 	{
-		case 0:
+		case FILTER::FILTER_DROPSHADOW:
 			stream >> v.DropShadowFilter;
 			break;
-		case 1:
+		case FILTER::FILTER_BLUR:
 			stream >> v.BlurFilter;
 			break;
-		case 2:
+		case FILTER::FILTER_GLOW:
 			stream >> v.GlowFilter;
 			break;
-		case 3:
+		case FILTER::FILTER_BEVEL: 
 			stream >> v.BevelFilter;
 			break;
-		case 4:
+		case FILTER::FILTER_GRADIENTGLOW:
 			stream >> v.GradientGlowFilter;
 			break;
-		case 5:
+		case FILTER::FILTER_CONVOLUTION:
 			stream >> v.ConvolutionFilter;
 			break;
-		case 6:
+		case FILTER::FILTER_COLORMATRIX:
 			stream >> v.ColorMatrixFilter;
 			break;
-		case 7:
+		case FILTER::FILTER_GRADIENTBEVEL:
 			stream >> v.GradientBevelFilter;
 			break;
 		default:

@@ -30,6 +30,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "parsing/tags.h"
 #include <pango/pangocairo.h>
 
 using namespace lightspark;
@@ -1286,9 +1287,24 @@ tiny_string TextData::getText(uint32_t line) const
 void TextData::setText(const char* text)
 {
 	textlines.clear();
+	appendText(text);
+}
+void TextData::appendText(const char *text)
+{
 	if (*text == 0x00)
 		return;
 	tiny_string t = text;
+	if (getLineCount() && !textlines.back().text.empty())
+	{
+		t = textlines.back().text + t;
+		textlines.pop_back();
+	}
+	number_t w,h;
+	if (embeddedFont)
+		embeddedFont->getTextBounds("",fontSize,w,h);
+	else
+		CairoPangoRenderer::getBounds(*this,"", w, h);
+	
 	uint32_t index = tiny_string::npos;
 	uint32_t index1 = tiny_string::npos;
 	uint32_t index2 = tiny_string::npos;
@@ -1318,6 +1334,27 @@ void TextData::setText(const char* text)
 		textlines.push_back(line);
 	}
 	while (index != tiny_string::npos);
+}
+
+void TextData::getTextSizes(const tiny_string& text, number_t& tw, number_t& th)
+{
+	if (embeddedFont)
+		embeddedFont->getTextBounds(text,fontSize,tw,th);
+	else
+		CairoPangoRenderer::getBounds(*this,text, tw, th);
+	
+}
+
+bool TextData::TextIsEqual(const std::vector<tiny_string>& lines) const
+{
+	if (this->textlines.size() != lines.size())
+		return false;
+	for (uint32_t i = 0; i < this->textlines.size(); i++)
+	{
+		if (this->textlines[i].text != lines[i])
+			return false;
+	}
+	return true;
 }
 
 void ColorTransformBase::fillConcatenated(DisplayObject* src, bool ignoreBlendMode)

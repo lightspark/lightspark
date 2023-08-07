@@ -134,9 +134,11 @@ private:
 	LINESTYLE2 lineStyleBorder;
 	LINESTYLE2 lineStyleCaret;
 	Mutex* linemutex;
+	bool inAVM1syncVar;
 	void getTextBounds(const tiny_string &txt, number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax);
 protected:
 	void afterSetLegacyMatrix() override;
+	FontTag* checkEmbeddedFont();
 public:
 	TextField(ASWorker* wrk,Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true, const char* varname="", DefineEditTextTag* _tag=nullptr);
 	~TextField();
@@ -179,6 +181,7 @@ public:
 	ASFUNCTION_ATOM(_setTextFormat);
 	ASFUNCTION_ATOM(_getDefaultTextFormat);
 	ASFUNCTION_ATOM(_setDefaultTextFormat);
+	ASFUNCTION_ATOM(_getCharIndexAtPoint);
 	ASFUNCTION_ATOM(_getLineIndexAtPoint);
 	ASFUNCTION_ATOM(_getLineIndexOfChar);
 	ASFUNCTION_ATOM(_getLineLength);

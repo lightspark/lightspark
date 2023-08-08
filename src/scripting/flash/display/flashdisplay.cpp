@@ -6454,7 +6454,7 @@ void MovieClip::executeFrameScript()
 	}
 
 	if (state.explicit_FP)
-		currentFrameChanged((int)state.FP != state.last_FP);
+		currentFrameChanged(state.FP != state.next_FP);
 	Sprite::executeFrameScript();
 }
 

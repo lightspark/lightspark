@@ -32,6 +32,16 @@
 using namespace lightspark;
 using namespace std;
 
+FORCE_INLINE bool isRepeating(FILL_STYLE_TYPE type)
+{
+	return type == FILL_STYLE_TYPE::NON_SMOOTHED_REPEATING_BITMAP || type == FILL_STYLE_TYPE::REPEATING_BITMAP;
+}
+
+FORCE_INLINE bool isSmoothed(FILL_STYLE_TYPE type)
+{
+	return type == FILL_STYLE_TYPE::REPEATING_BITMAP || type == FILL_STYLE_TYPE::CLIPPED_BITMAP;
+}
+
 void nanoVGDeleteImage(int image)
 {
 	NVGcontext* nvgctxt = getSys()->getEngineData() ? getSys()->getEngineData()->nvgcontext : nullptr;
@@ -44,27 +54,14 @@ int setNanoVGImage(EngineData* engine, NVGcontext* nvgctxt,const FILLSTYLE* styl
 	if (!style->bitmap)
 		return -1;
 	if (style->bitmap->nanoVGImageHandle == -1)
-		style->bitmap->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,style->bitmap->getWidth(),style->bitmap->getHeight(),1,style->bitmap->getData());
-	engine->exec_glBindTexture_GL_TEXTURE_2D(style->bitmap->nanoVGImageHandle);
-	switch (style->FillStyleType)
 	{
-		case FILL_STYLE_TYPE::REPEATING_BITMAP:
-			engine->exec_glSetTexParameters(0,0,0,0,3);
-			break;
-		case FILL_STYLE_TYPE::CLIPPED_BITMAP:
-			engine->exec_glSetTexParameters(0,0,0,0,0);
-			break;
-		case FILL_STYLE_TYPE::NON_SMOOTHED_REPEATING_BITMAP:
-			engine->exec_glSetTexParameters(0,0,1,0,3);
-			break;
-		case FILL_STYLE_TYPE::NON_SMOOTHED_CLIPPED_BITMAP:
-			engine->exec_glSetTexParameters(0,0,1,0,0);
-			break;
-		default:
-			LOG(LOG_ERROR,"invalid FILL_STYLE_TYPE when creating nanoVG image:"<<hex<<style);
-			break;
+		int imageFlags = NVG_IMAGE_GENERATE_MIPMAPS;
+		if (!isSmoothed(style->FillStyleType))
+			imageFlags |= NVG_IMAGE_NEAREST;
+		if (isRepeating(style->FillStyleType))
+			imageFlags |= NVG_IMAGE_REPEATX|NVG_IMAGE_REPEATY;
+		style->bitmap->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,style->bitmap->getWidth(),style->bitmap->getHeight(),imageFlags,style->bitmap->getData());
 	}
-	engine->exec_glBindTexture_GL_TEXTURE_2D(0);
 	return style->bitmap->nanoVGImageHandle;
 }
 

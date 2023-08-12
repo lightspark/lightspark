@@ -1993,7 +1993,8 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
-	currentFrameChanged(newframe);
+	if (!needsActionScript3())
+		currentFrameChanged(newframe);
 }
 void MovieClip::currentFrameChanged(bool newframe)
 {
@@ -6434,13 +6435,7 @@ void MovieClip::executeFrameScript()
 	}
 	if (!needsActionScript3())
 		return;
-	if (state.explicit_FP)
-	{
-		state.explicit_FP=false;
-		// it seems that framescripts aren't executed after current frame was changed explicitely from script (only on swf files < version 10)
-		if (loadedFrom->version < 10)
-			return;
-	}
+	state.explicit_FP=false;
 	uint32_t f = frameScripts.count(state.FP) ? state.FP : UINT32_MAX;
 	if (f != UINT32_MAX && !markedForLegacyDeletion)
 	{
@@ -6457,6 +6452,9 @@ void MovieClip::executeFrameScript()
 			inExecuteFramescript = false;
 		}
 	}
+
+	if (state.explicit_FP)
+		currentFrameChanged(state.FP != state.next_FP);
 	Sprite::executeFrameScript();
 }
 

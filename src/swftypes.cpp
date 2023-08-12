@@ -370,6 +370,11 @@ lightspark::RECT::RECT(int a, int b, int c, int d):Xmin(a),Xmax(b),Ymin(c),Ymax(
 {
 }
 
+bool RECT::operator==(const RECT& r) const
+{
+	return Xmin==r.Xmin && Xmax==r.Xmax && Ymin==r.Ymin && Ymax==r.Ymax;
+}
+
 std::ostream& lightspark::operator<<(std::ostream& s, const RECT& r)
 {
 	s << '{' << (int)r.Xmin << ',' << r.Xmax << ',' << r.Ymin << ',' << r.Ymax << '}';
@@ -480,6 +485,11 @@ bool MATRIX::operator!=(const MATRIX& r) const
 {
 	return xx!=r.xx || yx!=r.yx || xy!=r.xy || yy!=r.yy ||
 		x0!=r.x0 || y0!=r.y0;
+}
+bool MATRIX::operator==(const MATRIX& r) const
+{
+	return xx==r.xx && yx==r.yx && xy==r.xy && yy==r.yy &&
+		x0==r.x0 && y0==r.y0;
 }
 
 std::ostream& lightspark::operator<<(std::ostream& s, const MATRIX& r)
@@ -1704,7 +1714,7 @@ FILLSTYLE::~FILLSTYLE()
 {
 }
 
-FILLSTYLE& FILLSTYLE::operator=(FILLSTYLE r)
+FILLSTYLE& FILLSTYLE::operator=(const FILLSTYLE& r)
 {
 	Matrix = r.Matrix;
 	Gradient = r.Gradient;
@@ -1715,6 +1725,27 @@ FILLSTYLE& FILLSTYLE::operator=(FILLSTYLE r)
 	FillStyleType = r.FillStyleType;
 	version = r.version;
 	return *this;
+}
+
+bool FILLSTYLE::operator==(const FILLSTYLE& r) const
+{
+	if (FillStyleType != r.FillStyleType ||
+		version != r.version ||
+		!(ShapeBounds == r.ShapeBounds))
+		return false;
+	switch (FillStyleType)
+	{
+		case SOLID_FILL:
+			return Color == r.Color;
+		case LINEAR_GRADIENT:
+		case RADIAL_GRADIENT:
+			return Matrix == r.Matrix && Gradient == r.Gradient;
+		case FOCAL_RADIAL_GRADIENT:
+			return Matrix == r.Matrix && FocalGradient == r.FocalGradient;
+		default:
+			return bitmap == r.bitmap;
+	}
+
 }
 
 LINESTYLE2::LINESTYLE2(const LINESTYLE2& r):StartCapStyle(r.StartCapStyle),JointStyle(r.JointStyle),HasFillFlag(r.HasFillFlag),
@@ -1744,6 +1775,22 @@ LINESTYLE2& LINESTYLE2::operator=(const LINESTYLE2& r)
 	FillType=r.FillType;
 	version=r.version;
 	return *this;
+}
+bool LINESTYLE2::operator==(const LINESTYLE2& r) const
+{
+	return StartCapStyle==r.StartCapStyle
+			&& JointStyle==r.JointStyle
+			&& HasFillFlag==r.HasFillFlag
+			&& NoHScaleFlag==r.NoHScaleFlag
+			&& NoVScaleFlag==r.NoVScaleFlag
+			&& PixelHintingFlag==r.PixelHintingFlag
+			&& NoClose==r.NoClose
+			&& EndCapStyle==r.EndCapStyle
+			&& Width==r.Width
+			&& MiterLimitFactor==r.MiterLimitFactor
+			&& Color==r.Color
+			&& FillType==r.FillType
+			&& version==r.version;
 }
 
 nsNameAndKind::nsNameAndKind(SystemState* sys,const tiny_string& _name, NS_KIND _kind)

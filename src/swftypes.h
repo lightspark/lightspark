@@ -297,7 +297,7 @@ public:
 	STRING(const char* s, int len):String(s,len)
 	{
 	}
-	bool operator==(const STRING& s)
+	bool operator==(const STRING& s) const
 	{
 		if(String.size()!=s.String.size())
 			return false;
@@ -601,6 +601,10 @@ public:
 		Blue=r.Blue;
 		Alpha=255;
 		return *this;
+	}
+	bool operator==(const RGBA& r) const
+	{
+		return Red==r.Red && Green==r.Green && Blue==r.Blue && Alpha==r.Alpha;
 	}
 	float rf() const
 	{
@@ -918,6 +922,16 @@ public:
 public:
 	RECT();
 	RECT(int xmin, int xmax, int ymin, int ymax);
+	RECT(const RECT& r):Xmin(r.Xmin),Xmax(r.Xmax),Ymin(r.Ymin),Ymax(r.Ymax) {}
+	RECT& operator=(const RECT& r)
+	{
+		Xmin=r.Xmin;
+		Xmax=r.Xmax;
+		Ymin=r.Ymin;
+		Ymax=r.Ymax;
+		return *this;
+	}
+	bool operator==(const RECT& r) const;
 };
 
 template<class T> class Vector2Tmpl;
@@ -936,6 +950,7 @@ public:
 	Vector2 multiply2D(const Vector2& in) const;
 	MATRIX multiplyMatrix(const MATRIX& r) const;
 	bool operator!=(const MATRIX& r) const;
+	bool operator==(const MATRIX& r) const;
 	MATRIX getInverted() const;
 	bool isInvertible() const;
 	number_t getTranslateX() const
@@ -1001,6 +1016,10 @@ public:
 	{
 		return Ratio<g.Ratio;
 	}
+	bool operator==(const GRADRECORD& g) const
+	{
+		return Color == g.Color && version == g.version && Ratio == g.Ratio;
+	}
 };
 
 class GRADIENT
@@ -1012,6 +1031,13 @@ public:
 	int InterpolationMode;
 	std::vector<GRADRECORD> GradientRecords;
 	uint8_t version;
+	bool operator==(const GRADIENT& g) const
+	{
+		return version == g.version 
+				&& SpreadMode == g.SpreadMode
+				&& InterpolationMode == g.InterpolationMode
+				&& GradientRecords == g.GradientRecords;
+	}
 };
 
 class FOCALGRADIENT
@@ -1024,6 +1050,15 @@ public:
 	int NumGradient;
 	std::vector<GRADRECORD> GradientRecords;
 	float FocalPoint;
+	bool operator==(const FOCALGRADIENT& g) const
+	{
+		return version == g.version 
+				&& SpreadMode == g.SpreadMode
+				&& InterpolationMode == g.InterpolationMode
+				&& NumGradient == g.NumGradient
+				&& FocalPoint == g.FocalPoint
+				&& GradientRecords == g.GradientRecords;
+	}
 };
 
 class FILLSTYLEARRAY;
@@ -1039,7 +1074,8 @@ class FILLSTYLE
 public:
 	FILLSTYLE(uint8_t v);
 	FILLSTYLE(const FILLSTYLE& r);
-	FILLSTYLE& operator=(FILLSTYLE r);
+	FILLSTYLE& operator=(const FILLSTYLE& r);
+	bool operator==(const FILLSTYLE& r) const;
 	virtual ~FILLSTYLE();
 	MATRIX Matrix;
 	GRADIENT Gradient;
@@ -1091,6 +1127,7 @@ public:
 	LINESTYLE2(uint8_t v):StartCapStyle(0),JointStyle(0),HasFillFlag(false),NoHScaleFlag(false),NoVScaleFlag(false),PixelHintingFlag(0),FillType(v),version(v){}
 	LINESTYLE2(const LINESTYLE2& r);
 	LINESTYLE2& operator=(const LINESTYLE2& r);
+	bool operator==(const LINESTYLE2& r) const;
 	virtual ~LINESTYLE2();
 	int StartCapStyle;
 	int JointStyle;

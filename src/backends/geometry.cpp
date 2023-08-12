@@ -648,3 +648,18 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 		}
 	}
 }
+
+bool tokensVector::operator==(const tokensVector& r)
+{
+	return currentLineWidth == r.currentLineWidth && boundsRect == r.boundsRect && filltokens == r.filltokens && stroketokens == r.stroketokens;
+}
+
+tokensVector& tokensVector::operator=(const tokensVector& r)
+{
+	boundsRect = r.boundsRect;
+	currentLineWidth = r.currentLineWidth;
+	canRenderToGL = r.canRenderToGL;
+	filltokens = r.filltokens;
+	stroketokens = r.stroketokens;
+	return *this;
+}

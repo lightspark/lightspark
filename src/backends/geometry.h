@@ -109,6 +109,7 @@ struct tokensVector
 	uint16_t currentLineWidth;
 	bool canRenderToGL;
 	tokensVector():currentLineWidth(0),canRenderToGL(true) {}
+	tokensVector(const tokensVector& r):filltokens(r.filltokens),stroketokens(r.stroketokens),boundsRect(r.boundsRect),currentLineWidth(r.currentLineWidth),canRenderToGL(r.canRenderToGL) {}
 	void clear()
 	{
 		filltokens.clear();
@@ -124,6 +125,8 @@ struct tokensVector
 	{
 		return filltokens.empty() && stroketokens.empty();
 	}
+	bool operator==(const tokensVector& r);
+	tokensVector& operator=(const tokensVector& r);
 };
 
 

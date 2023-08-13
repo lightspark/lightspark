@@ -50,12 +50,12 @@ Vector2f DisplayObject::getXY()
 	return ret;
 }
 
-bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m)
+bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m, bool visibleOnly)
 {
 	if(!legacy && !isConstructed())
 		return false;
 
-	bool ret=boundsRect(xmin,xmax,ymin,ymax);
+	bool ret=boundsRect(xmin,xmax,ymin,ymax,visibleOnly);
 	if(ret)
 	{
 		number_t tmpX[4];
@@ -81,7 +81,7 @@ number_t DisplayObject::getNominalWidth()
 	if(!isConstructed())
 		return 0;
 
-	bool ret=boundsRect(xmin,xmax,ymin,ymax);
+	bool ret=boundsRect(xmin,xmax,ymin,ymax,false);
 	return ret?(xmax-xmin):0;
 }
 
@@ -92,7 +92,7 @@ number_t DisplayObject::getNominalHeight()
 	if(!isConstructed())
 		return 0;
 
-	bool ret=boundsRect(xmin,xmax,ymin,ymax);
+	bool ret=boundsRect(xmin,xmax,ymin,ymax,false);
 	return ret?(ymax-ymin):0;
 }
 
@@ -403,7 +403,7 @@ bool DisplayObject::computeCacheAsBitmap(bool checksize)
 		if (checksize)
 		{
 			number_t bxmin,bxmax,bymin,bymax;
-			boundsRect(bxmin,bxmax,bymin,bymax);
+			boundsRect(bxmin,bxmax,bymin,bymax,true);
 			// check if size of resulting bitmap is too large (see Adobe reference for DisplayObject.cacheAsBitmap)
 			uint32_t w=(ceil(bxmax-bxmin));
 			uint32_t h=(ceil(bymax-bymin));
@@ -1068,7 +1068,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 	{
 		th->alpha=val;
 		th->hasChanged=true;
-		th->needsCachedBitmapRecalculation=true;
 		if(th->onStage)
 			th->requestInvalidation(wrk->getSystemState(),th->computeCacheAsBitmap());
 	}
@@ -1674,7 +1673,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
 	ROUND_TO_TWIPS(newwidth);
 
 	number_t xmin,xmax,y1,y2;
-	if(!th->boundsRect(xmin,xmax,y1,y2))
+	if(!th->boundsRect(xmin,xmax,y1,y2,false))
 		return;
 
 	number_t width=xmax-xmin;
@@ -1704,7 +1703,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setHeight)
 	ROUND_TO_TWIPS(newheight);
 
 	number_t x1,x2,ymin,ymax;
-	if(!th->boundsRect(x1,x2,ymin,ymax))
+	if(!th->boundsRect(x1,x2,ymin,ymax,false))
 		return;
 
 	number_t height=ymax-ymin;
@@ -1835,6 +1834,8 @@ void DisplayObject::applyFilters(BitmapContainer* target, BitmapContainer* sourc
 
 void DisplayObject::invalidateCachedAsBitmapOf()
 {
+	if (!this->isVisible())
+		return;
 	DisplayObject* c = cachedAsBitmapOf;
 	while (c)
 	{
@@ -1849,11 +1850,12 @@ void DisplayObject::invalidateCachedAsBitmapOf()
 	}
 }
 
-void DisplayObject::setNeedsTextureRecalculation(bool skippable)
+void DisplayObject::setNeedsTextureRecalculation(bool skippable, bool setCachedBitmapRecalculation)
 {
 	textureRecalculationSkippable=skippable;
 	needsTextureRecalculation=true;
-	needsCachedBitmapRecalculation=true;
+	if (setCachedBitmapRecalculation)
+		needsCachedBitmapRecalculation=true;
 	if (!cachedSurface.isChunkOwner)
 		cachedSurface.tex=nullptr;
 	cachedSurface.isChunkOwner=true;
@@ -1986,7 +1988,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		return nullptr;
 	number_t xmin,xmax,ymin,ymax;
 	MATRIX m=getMatrix();
-	if (!getBounds(xmin,xmax,ymin,ymax,m))
+	if (!getBounds(xmin,xmax,ymin,ymax,m,true))
 		return nullptr;
 	uint32_t maxfilterborder=0;
 	if (filters)
@@ -2061,7 +2063,7 @@ bool DisplayObject::findParent(DisplayObject *d) const
 bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 	number_t x1, x2, y1, y2;
-	if (!boundsRect(x1, x2, y1, y2))
+	if (!boundsRect(x1, x2, y1, y2,false))
 		return false;
 
 	localToGlobal(x1, y1, x1, y1);

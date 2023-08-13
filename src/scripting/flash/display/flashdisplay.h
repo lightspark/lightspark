@@ -115,7 +115,12 @@ private:
 	number_t boundsrectYmin;
 	number_t boundsrectXmax;
 	number_t boundsrectYmax;
-	bool boundsrectdirty;
+	bool boundsRectDirty;
+	number_t boundsrectVisibleXmin;
+	number_t boundsrectVisibleYmin;
+	number_t boundsrectVisibleXmax;
+	number_t boundsrectVisibleYmax;
+	bool boundsRectVisibleDirty;
 protected:
 	//This is shared between RenderThread and VM
 	std::vector < DisplayObject* > dynamicDisplayList;
@@ -125,8 +130,8 @@ protected:
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
-	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
+	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override
 	{
 		return false;
 	}
@@ -147,7 +152,7 @@ public:
 	int getChildIndex(DisplayObject* child);
 	DisplayObjectContainer(ASWorker* wrk,Class_base* c);
 	void markAsChanged() override;
-	inline void markBoundsRectDirty() { boundsrectdirty=true; }
+	inline void markBoundsRectDirty() { boundsRectDirty=true; boundsRectVisibleDirty=true; }
 	void markBoundsRectDirtyChildren();
 	void setChildrenCachedAsBitmapOf(DisplayObject* cachedBitmapObject);
 	bool destruct() override;
@@ -235,7 +240,7 @@ private:
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e) override;
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 public:
 	SimpleButton(ASWorker* wrk,Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
@@ -273,7 +278,7 @@ class Shape: public DisplayObject, public TokenContainer
 {
 protected:
 	_NR<Graphics> graphics;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	bool renderImpl(RenderContext& ctxt) override
 		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
@@ -304,7 +309,7 @@ private:
 	DefineMorphShapeTag* morphshapetag;
 	uint16_t currentratio;
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	bool renderImpl(RenderContext& ctxt) override
 		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
@@ -479,9 +484,11 @@ private:
 	bool hasMouse;
 	void afterSetUseHandCursor(bool oldValue);
 protected:
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
-	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
+	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override
 	{
+		if (visibleOnly && !this->isVisible())
+			return false;
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
 	}
 	bool renderImpl(RenderContext& ctxt) override;
@@ -994,7 +1001,7 @@ public:
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;

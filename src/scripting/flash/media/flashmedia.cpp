@@ -266,8 +266,10 @@ bool Video::renderImpl(RenderContext& ctxt)
 	return true;
 }
 
-bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
+	if (visibleOnly && !this->isVisible())
+		return false;
 	xmin=0;
 	xmax=width;
 	ymin=0;

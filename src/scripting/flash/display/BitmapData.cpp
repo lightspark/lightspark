@@ -249,6 +249,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 	for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
 	{
 		DisplayObject* target=(*it).getPtr();
+		if (!target->isVisible())
+			continue;
 		//Get the drawable from each of the added objects
 		IDrawable* drawable=target->invalidate(d, initialMatrix,smoothing,&queue, nullptr);
 		if(drawable==nullptr)

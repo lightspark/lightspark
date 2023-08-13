@@ -537,7 +537,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	number_t width,height;
 	number_t rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
-	if(!owner->boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax))
+	if(!owner->boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax,false))
 	{
 		//No contents, nothing to do
 		return nullptr;

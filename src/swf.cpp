@@ -1267,6 +1267,7 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 			o->hasChanged=true;
 			o->setNeedsTextureRecalculation();
 			addToInvalidateQueue(_MR(o));
+			d->resetNeedsTextureRecalculation();
 			return;
 		}
 	}
@@ -2078,10 +2079,10 @@ void ParseThread::threadAbort()
 	root->parsingFailed();
 }
 
-bool RootMovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool RootMovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
 	// at least for hittest the bounds of the root are computed by the bounds of its contents
-	return MovieClip::boundsRect(xmin, xmax, ymin, ymax);
+	return MovieClip::boundsRect(xmin, xmax, ymin, ymax,visibleOnly);
 //	RECT f=getFrameSize();
 //	xmin=f.Xmin/20;
 //	ymin=f.Ymin/20;

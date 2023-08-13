@@ -1187,13 +1187,26 @@ ASFUNCTIONBODY_ATOM(Sprite,setSoundTransform)
 	th->soundtransform =  _MR(asAtomHandler::getObject(args[0])->as<SoundTransform>());
 }
 
-bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
 	bool ret = false;
 
 	if(dynamicDisplayList.empty())
 		return false;
-	if (!boundsrectdirty)
+	if (visibleOnly)
+	{
+		if (!this->isVisible())
+			return false;
+		if (!boundsRectVisibleDirty)
+		{
+			xmin = boundsrectVisibleXmin;
+			ymin = boundsrectVisibleYmin;
+			xmax = boundsrectVisibleXmax;
+			ymax = boundsrectVisibleYmax;
+			return true;
+		}
+	}
+	else if (!boundsRectDirty)
 	{
 		xmin = boundsrectXmin;
 		ymin = boundsrectYmin;
@@ -1207,7 +1220,7 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		number_t txmin,txmax,tymin,tymax;
-		if((*it)->getBounds(txmin,txmax,tymin,tymax,(*it)->getMatrix()))
+		if((*it)->getBounds(txmin,txmax,tymin,tymax,(*it)->getMatrix(),visibleOnly))
 		{
 			if(ret==true)
 			{
@@ -1226,18 +1239,33 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 			}
 		}
 	}
-	boundsrectXmin=xmin;
-	boundsrectYmin=ymin;
-	boundsrectXmax=xmax;
-	boundsrectYmax=ymax;
-	boundsrectdirty=false;
+	if (ret)
+	{
+		if (visibleOnly)
+		{
+			boundsrectVisibleXmin=xmin;
+			boundsrectVisibleYmin=ymin;
+			boundsrectVisibleXmax=xmax;
+			boundsrectVisibleYmax=ymax;
+			boundsRectVisibleDirty=false;
+		}
+		else
+		{
+			boundsrectXmin=xmin;
+			boundsrectYmin=ymin;
+			boundsrectXmax=xmax;
+			boundsrectYmax=ymax;
+			boundsRectDirty=false;
+		}
+	}
 	return ret;
 }
 
-bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
-	bool ret;
-	ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax);
+	if (visibleOnly && !this->isVisible())
+		return false;
+	bool ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax,visibleOnly);
 	number_t txmin,txmax,tymin,tymax;
 	if (graphics)
 		graphics->refreshTokens();
@@ -2764,7 +2792,9 @@ void DisplayObjectContainer::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObjectContainer, tabChildren)
 
 DisplayObjectContainer::DisplayObjectContainer(ASWorker* wrk, Class_base* c):InteractiveObject(wrk,c),mouseChildren(true),
-	boundsrectXmin(0),boundsrectYmin(0),boundsrectXmax(0),boundsrectYmax(0),boundsrectdirty(true),tabChildren(true)
+	boundsrectXmin(0),boundsrectYmin(0),boundsrectXmax(0),boundsrectYmax(0),boundsRectDirty(true),
+	boundsrectVisibleXmin(0),boundsrectVisibleYmin(0),boundsrectVisibleXmax(0),boundsrectVisibleYmax(0),boundsRectVisibleDirty(true),
+	tabChildren(true)
 {
 	subtype=SUBTYPE_DISPLAYOBJECTCONTAINER;
 }
@@ -3043,7 +3073,8 @@ bool DisplayObjectContainer::destruct()
 	prepareDestruction();
 	clearDisplayList();
 	mouseChildren = true;
-	boundsrectdirty = true;
+	boundsRectDirty = true;
+	boundsRectVisibleDirty = true;
 	tabChildren = true;
 	legacyChildrenMarkedForDeletion.clear();
 	mapDepthToLegacyChild.clear();
@@ -3835,8 +3866,10 @@ void DisplayObjectContainer::clearDisplayList()
 	}
 }
 
-bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax)
+bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax, bool visibleOnly)
 {
+	if (visibleOnly && !this->isVisible())
+		return false;
 	if (!this->legacy || (fromTag==nullptr))
 	{
 		if (graphics)
@@ -3853,7 +3886,7 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 _NR<DisplayObject> Shape::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin, xmax, ymin, ymax;
-	boundsRect(xmin, xmax, ymin, ymax);
+	boundsRect(xmin, xmax, ymin, ymax,false);
 	if (x<xmin || x>xmax || y<ymin || y>ymax)
 		return NullRef;
 	if (TokenContainer::hitTestImpl(x-xmin,y-ymin))
@@ -3985,8 +4018,10 @@ IDrawable* MorphShape::invalidate(DisplayObject* target, const MATRIX& initialMa
 	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 }
 
-bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax)
+bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax, bool visibleOnly)
 {
+	if (visibleOnly && !this->isVisible())
+		return false;
 	if (!this->legacy || (morphshapetag==nullptr))
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
 
@@ -4002,7 +4037,7 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 _NR<DisplayObject> MorphShape::hitTestImpl(number_t x, number_t y, HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin, xmax, ymin, ymax;
-	boundsRect(xmin, xmax, ymin, ymax);
+	boundsRect(xmin, xmax, ymin, ymax,false);
 	if (x<xmin || x>xmax || y<ymin || y>ymax)
 		return NullRef;
 	if (TokenContainer::hitTestImpl(x-xmin,y-ymin))
@@ -5223,7 +5258,7 @@ void Bitmap::updatedData(bool startupload)
 	if (d)
 	{
 		d->hasChanged=true;
-		d->setNeedsTextureRecalculation();
+		d->setNeedsTextureRecalculation(false,false);
 		if(d->isOnStage() && startupload)
 		{
 			bitmapData->checkForUpload();
@@ -5243,8 +5278,10 @@ void Bitmap::updatedData(bool startupload)
 		cachedAsBitmapOf->requestInvalidation(getSystemState());
 	}
 }
-bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
+	if (visibleOnly && !this->isVisible())
+		return false;
 	if (bitmapData.isNull())
 		return false;
 	xmin = 0;
@@ -5302,7 +5339,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	number_t rx,ry;
 	number_t rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
-	if(!boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax))
+	if(!boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax,false))
 	{
 		//No contents, nothing to do
 		return nullptr;
@@ -5690,8 +5727,10 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 		DisplayObjectContainer::defaultEventBehavior(e);
 }
 
-bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax,bool visibleOnly)
 {
+	if (visibleOnly && !this->isVisible())
+		return false;
 	bool ret = false;
 	number_t txmin,txmax,tymin,tymax;
 	if (!upState.isNull() && upState->getBounds(txmin,txmax,tymin,tymax,upState->getMatrix()))
@@ -5893,26 +5932,6 @@ void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefr
 	{
 		incRef();
 		q->addToInvalidateQueue(_MR(this));
-	}
-	if (!upState.isNull())
-	{
-		upState->hasChanged = true;
-		upState->requestInvalidation(q,forceTextureRefresh);
-	}
-	if (!overState.isNull())
-	{
-		overState->hasChanged = true;
-		overState->requestInvalidation(q,forceTextureRefresh);
-	}
-	if (!downState.isNull())
-	{
-		downState->hasChanged = true;
-		downState->requestInvalidation(q,forceTextureRefresh);
-	}
-	if (!hitTestState.isNull())
-	{
-		hitTestState->hasChanged = true;
-		hitTestState->requestInvalidation(q,forceTextureRefresh);
 	}
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 }

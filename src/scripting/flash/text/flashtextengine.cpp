@@ -625,7 +625,6 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	th->content->as<TextElement>()->text = "";
 	th->incRef();
 	_NR<TextLine> textLine = _NR<TextLine>(Class<TextLine>::getInstanceS(wrk,linetext, _MNR(th)));
-	textLine->width = (uint32_t)width;
 	textLine->previousLine = previousLine;
 
 	// Set baseline font
@@ -646,8 +645,10 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	}
 
 	textLine->updateSizes();
-	if (textLine->width > textLine->textWidth)
+	textLine->width = textLine->textWidth;
+	if (width < (int)textLine->textWidth)
 	{
+		th->textLineCreationResult="insufficientWidth";
 		asAtomHandler::setNull(ret);
 		return;
 	}
@@ -665,6 +666,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	}
 	
 	textLine->incRef();
+	th->textLineCreationResult="success";
 	ret = asAtomHandler::fromObject(textLine.getPtr());
 }
 ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
@@ -711,13 +713,14 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 	}
 	if (fitSomething && textLine->getText().empty())
 		textLine->setText(" ");
-	textLine->width = (uint32_t)width;
 	textLine->previousLine = previousLine;
 	textLine->updateSizes();
+	textLine->width = textLine->textWidth;
 	th->incRef();
 	textLine->textBlock= _MNR(th);
-	if (textLine->width > textLine->textWidth)
+	if (width < (int)textLine->textWidth)
 	{
+		th->textLineCreationResult="insufficientWidth";
 		asAtomHandler::setNull(ret);
 		return;
 	}
@@ -735,6 +738,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 	}
 
 	textLine->incRef();
+	th->textLineCreationResult="success";
 	ret = asAtomHandler::fromObject(textLine.getPtr());
 }
 
@@ -860,6 +864,7 @@ void TextLine::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObjectContainer, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableAtomByQName("MAX_LINE_WIDTH",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)MAX_LINE_WIDTH),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("getBaselinePosition","",Class<IFunction>::getFunction(c->getSystemState(),getBaselinePosition),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("flushAtomData","",Class<IFunction>::getFunction(c->getSystemState(),flushAtomData),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("descent","",Class<IFunction>::getFunction(c->getSystemState(),getDescent),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("ascent","",Class<IFunction>::getFunction(c->getSystemState(),getAscent),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(c->getSystemState(),getTextWidth),GETTER_METHOD,true);
@@ -901,6 +906,11 @@ ASFUNCTIONBODY_ATOM(TextLine, getBaselinePosition)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.getBaselinePosition");
 	asAtomHandler::setInt(ret,wrk,0);
+}
+
+ASFUNCTIONBODY_ATOM(TextLine, flushAtomData)
+{
+	// According to specs this method does nothing
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getDescent)
@@ -957,11 +967,16 @@ string TextLine::toDebugString() const
 		sprintf(buf," ow:%p",textBlock.getPtr());
 		res += buf;
 	}
+	res += " \"";
+	res += this->getText();
+	res += "\"";
 	return res;
 }
 
-bool TextLine::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool TextLine::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
+	if (visibleOnly && !this->isVisible())
+		return false;
 	xmin=0;
 	xmax=width;
 	ymin=0;
@@ -988,7 +1003,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	number_t x,y,rx,ry;
 	number_t width,height,rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
-	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
+	if(boundsRect(bxmin,bxmax,bymin,bymax,false)==false)
 	{
 		//No contents, nothing to do
 		return nullptr;
@@ -1028,7 +1043,7 @@ bool TextLine::renderImpl(RenderContext& ctxt)
 _NR<DisplayObject> TextLine::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	number_t xmin,xmax,ymin,ymax;
-	boundsRect(xmin,xmax,ymin,ymax);
+	boundsRect(xmin,xmax,ymin,ymax,false);
 	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax)
 	{
 		incRef();

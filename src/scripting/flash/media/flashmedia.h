@@ -196,7 +196,7 @@ public:
 	ASFUNCTION_ATOM(attachNetStream);
 	ASFUNCTION_ATOM(clear);
 	bool renderImpl(RenderContext& ctxt) override;
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) override;
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	_NR<DisplayObject> hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 };
 

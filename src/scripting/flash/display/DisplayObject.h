@@ -126,13 +126,13 @@ protected:
 	bool skipRender() const;
 
 	bool defaultRender(RenderContext& ctxt);
-	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
 	}
-	virtual bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+	virtual bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 	{
-		return boundsRect(xmin, xmax, ymin, ymax);
+		return boundsRect(xmin, xmax, ymin, ymax, visibleOnly);
 	}
 	bool boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
 	virtual bool renderImpl(RenderContext& ctxt)
@@ -166,7 +166,7 @@ public:
 	// pointer to the ancestor of this DisplayObject that is cached as Bitmap
 	DisplayObject* cachedAsBitmapOf;
 	void invalidateCachedAsBitmapOf();
-	void setNeedsTextureRecalculation(bool skippable=false);
+	void setNeedsTextureRecalculation(bool skippable=false, bool setCachedBitmapRecalculation = true);
 	void resetNeedsTextureRecalculation() { needsTextureRecalculation=false; }
 	bool getNeedsTextureRecalculation() const { return needsTextureRecalculation; }
 	void setNeedsCachedBitmapRecalculation()  { needsCachedBitmapRecalculation=true; }
@@ -240,7 +240,7 @@ public:
 	virtual void endDrawJob() {}
 	
 	bool Render(RenderContext& ctxt,bool force=false);
-	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m);
+	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m, bool visibleOnly=false);
 	_NR<DisplayObject> hitTest(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly);
 	virtual void setOnStage(bool staged, bool force, bool inskipping=false);
 	bool isOnStage() const { return onStage; }

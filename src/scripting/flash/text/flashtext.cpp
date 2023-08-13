@@ -270,8 +270,10 @@ void TextField::prepareShutdown()
 		styleSheet->prepareShutdown();
 }
 
-bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
+	if (visibleOnly && !this->isVisible())
+		return false;
 	if (this->type == ET_EDITABLE && tag)
 	{
 		xmin=tag->Bounds.Xmin/20.0f;
@@ -305,7 +307,7 @@ _NR<DisplayObject> TextField::hitTestImpl(number_t x, number_t y, DisplayObject:
 {
 	/* I suppose one does not have to actually hit a character */
 	number_t xmin,xmax,ymin,ymax;
-	boundsRect(xmin,xmax,ymin,ymax);
+	boundsRect(xmin,xmax,ymin,ymax,false);
 	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax)
 	{
 		if (interactiveObjectsOnly && this->tag && this->tag->WasStatic && this->type == ET_READ_ONLY && (type == MOUSE_CLICK || type == DOUBLE_CLICK))
@@ -787,7 +789,7 @@ ASFUNCTIONBODY_ATOM(TextField, _setter_type)
 
 ASFUNCTIONBODY_ATOM(TextField,_getCharIndexAtPoint)
 {
-	TextField* th=asAtomHandler::as<TextField>(obj);
+//	TextField* th=asAtomHandler::as<TextField>(obj);
 	number_t x;
 	number_t y;
 	ARG_CHECK(ARG_UNPACK(x) (y));
@@ -1673,7 +1675,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	number_t x,y,rx,ry;
 	number_t width,height,rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
-	if(boundsRect(bxmin,bxmax,bymin,bymax)==false)
+	if(boundsRect(bxmin,bxmax,bymin,bymax,false)==false)
 	{
 		//No contents, nothing to do
 		return nullptr;
@@ -1881,7 +1883,7 @@ bool TextField::renderImpl(RenderContext& ctxt)
 		if (this->border || this->background || this->caretblinkstate)
 		{
 			number_t bxmin,bxmax,bymin,bymax;
-			boundsRect(bxmin,bxmax,bymin,bymax);
+			boundsRect(bxmin,bxmax,bymin,bymax,false);
 			TextureChunk tex=getSystemState()->getRenderThread()->allocateTexture(1, 1, true);
 
 			bool isMask;
@@ -2424,8 +2426,10 @@ IDrawable* StaticText::invalidate(DisplayObject* target, const MATRIX& initialMa
 {
 	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 }
-bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
+	if (visibleOnly && !this->isVisible())
+		return false;
 	xmin=bounds.Xmin/20.0;
 	xmax=bounds.Xmax/20.0;
 	ymin=bounds.Ymin/20.0;
@@ -2448,7 +2452,7 @@ bool StaticText::renderImpl(RenderContext& ctxt)
 _NR<DisplayObject> StaticText::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin,xmax,ymin,ymax;
-	boundsRect(xmin,xmax,ymin,ymax);
+	boundsRect(xmin,xmax,ymin,ymax,false);
 	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax)
 	{
 		incRef();

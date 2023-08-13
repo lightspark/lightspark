@@ -1504,8 +1504,8 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 		LOG(LOG_CALLS,"isType on non classed object " << real_ret);
 		return real_ret;
 	}
-
-	assert_and_throw(type->getObjectType()==T_CLASS);
+	if (type->getObjectType()!=T_CLASS)
+		return false;
 	real_ret=objc->isSubClass(c);
 	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?"":"not ") 
 			<< "subclass of " << c->class_name);

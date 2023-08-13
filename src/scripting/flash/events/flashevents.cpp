@@ -1001,6 +1001,7 @@ void KeyboardEvent::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, shiftKey,Boolean);
 	c->setVariableAtomByQName("KEY_DOWN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"keyDown"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("KEY_UP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"keyUp"),DECLARED_TRAIT);
+	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(c->getSystemState(),updateAfterEvent),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent,_constructor)
@@ -1103,6 +1104,11 @@ ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_shiftKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
 	th->modifiers |= KMOD_SHIFT;
+}
+
+ASFUNCTIONBODY_ATOM(KeyboardEvent,updateAfterEvent)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"KeyboardEvent::updateAfterEvent not implemented");
 }
 
 Event* KeyboardEvent::cloneImpl() const

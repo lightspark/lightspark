@@ -125,6 +125,7 @@ public:
 	ASFUNCTION_GETTER_SETTER(controlKey);
 	ASFUNCTION_GETTER_SETTER(ctrlKey);
 	ASFUNCTION_GETTER_SETTER(shiftKey);
+	ASFUNCTION_ATOM(updateAfterEvent);
 	uint32_t getSDLScanCode() const { return sdlScanCode; }
 	uint32_t getKeyCode() const { return keyCode; }
 	uint32_t getModifiers() const { return modifiers; }

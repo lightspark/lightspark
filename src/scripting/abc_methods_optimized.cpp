@@ -4946,7 +4946,8 @@ void ABCVm::abc_increment_local(call_context* context)
 {
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	LOG_CALL("increment_l "<<context->exec_pos->local_pos1<<" "<<asAtomHandler::toDebugString(res));
-	asAtomHandler::increment(res,context->worker,true);
+	if (!asAtomHandler::increment(res,context->worker,false))
+		ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4954,9 +4955,16 @@ void ABCVm::abc_increment_local_localresult(call_context* context)
 {
 	LOG_CALL("increment_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local3.pos<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos))<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	if (context->exec_pos->local3.pos != context->exec_pos->local_pos1)
+	if (context->exec_pos->local_pos1 != context->exec_pos->local3.pos)
+	{
 		ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
-	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		if (asAtomHandler::isNumber(res))
+			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,asAtomHandler::getObjectNoCheck(res)->toNumber());
+		else
+			asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+	}
+	else
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
 	asAtomHandler::increment(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,context->exec_pos->local3.pos == context->exec_pos->local_pos1);
 	++(context->exec_pos);
 }
@@ -4964,7 +4972,8 @@ void ABCVm::abc_decrement_local(call_context* context)
 {
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	LOG_CALL("decrement_l "<<context->exec_pos->local_pos1<<" "<<asAtomHandler::toDebugString(res));
-	asAtomHandler::decrement(res,context->worker,true);
+	if (!asAtomHandler::decrement(res,context->worker,false))
+		ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -4972,9 +4981,16 @@ void ABCVm::abc_decrement_local_localresult(call_context* context)
 {
 	LOG_CALL("decrement_ll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local3.pos<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos)));
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	if (context->exec_pos->local3.pos != context->exec_pos->local_pos1)
+	if (context->exec_pos->local_pos1 != context->exec_pos->local3.pos)
+	{
 		ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
-	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		if (asAtomHandler::isNumber(res))
+			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,asAtomHandler::getObjectNoCheck(res)->toNumber());
+		else
+			asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+	}
+	else
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
 	asAtomHandler::decrement(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,context->exec_pos->local3.pos == context->exec_pos->local_pos1);
 	++(context->exec_pos);
 }

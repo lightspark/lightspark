@@ -541,8 +541,8 @@ public:
 	static FORCE_INLINE void setNull(asAtom& a);
 	static FORCE_INLINE void setUndefined(asAtom& a);
 	static void setFunction(asAtom& a, ASObject* obj, ASObject* closure, ASWorker* wrk);
-	static FORCE_INLINE void increment(asAtom& a, ASWorker* wrk, bool refcounted);
-	static FORCE_INLINE void decrement(asAtom& a, ASWorker* wrk, bool refcounted);
+	static FORCE_INLINE bool increment(asAtom& a, ASWorker* wrk, bool replace);
+	static FORCE_INLINE bool decrement(asAtom& a, ASWorker* wrk, bool refplace);
 	static FORCE_INLINE void increment_i(asAtom& a, ASWorker* wrk, int32_t amount=1);
 	static FORCE_INLINE void decrement_i(asAtom& a, ASWorker* wrk, int32_t amount=1);
 	static bool add(asAtom& a, asAtom& v2, ASWorker *wrk, bool forceint);
@@ -1950,7 +1950,7 @@ FORCE_INLINE void asAtomHandler::setUndefined(asAtom& a)
 {
 	a.uintval = ATOM_INVALID_UNDEFINED_NULL_BOOL | ATOMTYPE_UNDEFINED_BIT;
 }
-FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk, bool refcounted)
+FORCE_INLINE bool asAtomHandler::increment(asAtom& a, ASWorker* wrk, bool replace)
 {
 	switch(a.uintval&0x7)
 	{
@@ -1968,7 +1968,7 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk, bool refcou
 					setInt(a,wrk,(a.uintval & 0x80 ? 1 : 0)+1);
 					break;
 				default:
-					return;
+					return true;
 			}
 			break;
 		}
@@ -1985,12 +1985,14 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk, bool refcou
 				setNumber(a,wrk,n);
 			else if(trunc(n) == n)
 			{
-				if (refcounted)
+				if (replace)
 					ASATOM_DECREF(a);
 				asAtomHandler::setInt(a,wrk,n+1);
 			}
+			else if (replace)
+				return replaceNumber(a,wrk,n+1);
 			else
-				replaceNumber(a,wrk,n+1);
+				setNumber(a,wrk,n+1);
 			break;
 		}
 		case ATOM_STRINGID:
@@ -2004,7 +2006,7 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk, bool refcou
 		default:
 		{
 			number_t n=toNumber(a);
-			if (refcounted)
+			if (replace)
 				ASATOM_DECREF(a);
 			if (std::isnan(n) || std::isinf(n))
 				setNumber(a,wrk,n);
@@ -2015,9 +2017,10 @@ FORCE_INLINE void asAtomHandler::increment(asAtom& a, ASWorker* wrk, bool refcou
 			break;
 		}
 	}
+	return true;
 }
 
-FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool refcounted)
+FORCE_INLINE bool asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool replace)
 {
 	switch(a.uintval&0x7)
 	{
@@ -2035,7 +2038,7 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool refcou
 					setInt(a,wrk,(a.uintval & 0x80 ? 1 : 0)-1);
 					break;
 				default:
-					return;
+					return true;
 			}
 			break;
 		}
@@ -2060,12 +2063,14 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool refcou
 				setNumber(a,wrk,n);
 			else if(trunc(n) == n)
 			{
-				if (refcounted)
+				if (replace)
 					ASATOM_DECREF(a);
 				asAtomHandler::setInt(a,wrk,n-1);
 			}
+			else if (replace)
+				return replaceNumber(a,wrk,n-1);
 			else
-				replaceNumber(a,wrk,n-1);
+				setNumber(a,wrk,n-1);
 			break;
 		}
 		case ATOM_STRINGID:
@@ -2079,7 +2084,7 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool refcou
 		default:
 		{
 			number_t n=toNumber(a);
-			if (refcounted)
+			if (replace)
 				ASATOM_DECREF(a);
 			if (std::isnan(n) || std::isinf(n))
 				setNumber(a,wrk,n);
@@ -2090,7 +2095,7 @@ FORCE_INLINE void asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool refcou
 			break;
 		}
 	}
-
+	return true;
 }
 
 FORCE_INLINE void asAtomHandler::increment_i(asAtom& a, ASWorker* wrk, int32_t amount)
@@ -2226,15 +2231,24 @@ FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, ASWorker* wrk, con
 		int64_t num2=toInt64(v2);
 	
 		LOG_CALL("multiplyreplaceI " << num1 << '*' << num2);
-		ASATOM_DECREF(ret);
+		
+		ASObject* o = getObject(ret);
 		int64_t res = num1*num2;
 		
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
+		{
 			setInt(ret,wrk,res);
+			if (o)
+				o->decRef();
+		}
 		else if (res >= 0 && res < UINT32_MAX>>3)
+		{
 			setUInt(ret,wrk,res);
-		else
-			setNumber(ret,wrk,res);
+			if (o)
+				o->decRef();
+		}
+		else if (replaceNumber(ret,wrk,num1*num2) && o)
+			o->decRef();
 	}
 	else
 	{

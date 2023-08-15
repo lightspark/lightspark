@@ -2021,7 +2021,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
-	if (!needsActionScript3())
+	if (!needsActionScript3() || !this->inExecuteFramescript)
 		currentFrameChanged(newframe);
 }
 void MovieClip::currentFrameChanged(bool newframe)

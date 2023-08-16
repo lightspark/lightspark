@@ -1735,7 +1735,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 	asAtomHandler::setNumber(ret,wrk,th->getLocalMousePos().y);
 }
 
-_NR<DisplayObject> DisplayObject::hitTest(const Vector2f& point, HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> DisplayObject::hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	if((!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && !isMask())
 		return NullRef;
@@ -1743,11 +1743,7 @@ _NR<DisplayObject> DisplayObject::hitTest(const Vector2f& point, HIT_TYPE type,b
 	//First check if there is any mask on this object, if so the point must be inside the mask to go on
 	if(!mask.isNull())
 	{
-		//First compute the global coordinates from the local ones
-		//TODO: we may also pass the global coordinates to all the calls
-		const MATRIX& thisMatrix = this->getConcatenatedMatrix();
-		const auto globalPoint = thisMatrix.multiply2D(point);
-		//Now compute the coordinates local to the mask
+		//Compute the coordinates local to the mask
 		const MATRIX& maskMatrix = mask->getConcatenatedMatrix();
 		if(!maskMatrix.isInvertible())
 		{
@@ -1756,11 +1752,11 @@ _NR<DisplayObject> DisplayObject::hitTest(const Vector2f& point, HIT_TYPE type,b
 			return NullRef;
 		}
 		const auto maskPoint = maskMatrix.getInverted().multiply2D(globalPoint);
-		if(mask->hitTest(maskPoint, type,false).isNull())
+		if(mask->hitTest(globalPoint, maskPoint, type,false).isNull())
 			return NullRef;
 	}
 
-	return hitTestImpl(point, type,interactiveObjectsOnly);
+	return hitTestImpl(globalPoint, localPoint, type,interactiveObjectsOnly);
 }
 
 /* Display objects have no children in general,
@@ -2155,7 +2151,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 
 		// Hmm, hitTest will also check the mask, is this the
 		// right thing to do?
-		_NR<DisplayObject> hit = th->hitTest(Vector2f(localX, localY),
+		_NR<DisplayObject> hit = th->hitTest(Vector2f(x, y), Vector2f(localX, localY),
 						     HIT_TYPE::GENERIC_HIT_INVISIBLE,false);
 
 		asAtomHandler::setBool(ret,!hit.isNull());

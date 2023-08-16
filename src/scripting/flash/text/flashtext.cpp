@@ -303,14 +303,14 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	return true;
 }
 
-_NR<DisplayObject> TextField::hitTestImpl(const Vector2f& point, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> TextField::hitTestImpl(const Vector2f&, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	/* I suppose one does not have to actually hit a character */
 	number_t xmin,xmax,ymin,ymax;
 	// TODO: Add an overload for RECT.
 	boundsRect(xmin,xmax,ymin,ymax,false);
 	//TODO: Add a point intersect function to RECT, and use that instead.
-	if( xmin <= point.x && point.x <= xmax && ymin <= point.y && point.y <= ymax)
+	if( xmin <= localPoint.x && localPoint.x <= xmax && ymin <= localPoint.y && localPoint.y <= ymax)
 	{
 		if (interactiveObjectsOnly && this->tag && this->tag->WasStatic && this->type == ET_READ_ONLY && (type == MOUSE_CLICK || type == DOUBLE_CLICK))
 		{
@@ -2451,13 +2451,13 @@ bool StaticText::renderImpl(RenderContext& ctxt)
 	return TokenContainer::renderImpl(ctxt);
 }
 
-_NR<DisplayObject> StaticText::hitTestImpl(const Vector2f& point, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
+_NR<DisplayObject> StaticText::hitTestImpl(const Vector2f&, const Vector2f& localPoint, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin,xmax,ymin,ymax;
 	// TODO: Add an overload for RECT.
 	boundsRect(xmin,xmax,ymin,ymax,false);
 	//TODO: Add a point intersect function to RECT, and use that instead.
-	if( xmin <= point.x && point.x <= xmax && ymin <= point.y && point.y <= ymax)
+	if( xmin <= localPoint.x && localPoint.x <= xmax && ymin <= localPoint.y && localPoint.y <= ymax)
 	{
 		incRef();
 		return _MNR(this);

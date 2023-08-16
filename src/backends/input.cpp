@@ -274,7 +274,8 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 		return selected;
 	try
 	{
-		_NR<DisplayObject> dispobj=m_sys->stage->hitTest(Vector2f(x, y), type,true);
+		Vector2f point(x, y);
+		_NR<DisplayObject> dispobj=m_sys->stage->hitTest(point, point, type,true);
 		if(!dispobj.isNull() && dispobj->is<InteractiveObject>())
 		{
 			dispobj->incRef();

@@ -435,7 +435,7 @@ public:
 	   @param x The X in local coordinates
 	   @param y The Y in local coordinates
 	*/
-	static bool hitTest(const tokensVector& tokens, float scaleFactor, number_t x, number_t y);
+	static bool hitTest(const tokensVector& tokens, float scaleFactor, const Vector2f& point);
 };
 struct textline
 {

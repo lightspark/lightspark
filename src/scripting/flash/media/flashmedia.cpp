@@ -371,10 +371,11 @@ ASFUNCTIONBODY_ATOM(Video,clear)
 		th->netStream->clearFrameBuffer();
 }
 
-_NR<DisplayObject> Video::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Video::hitTestImpl(const Vector2f& point, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	//TODO: support masks
-	if(x>=0 && x<=width && y>=0 && y<=height)
+	//TODO: Add a point intersect function to RECT, and use that instead.
+	if(point.x>=0 && point.x<=width && point.y>=0 && point.y<=height)
 	{
 		this->incRef();
 		return _MR(this);

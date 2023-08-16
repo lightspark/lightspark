@@ -70,7 +70,7 @@ protected:
 	{
 		return boundsRectFromTokens(tokens,scaling,xmin,xmax,ymin,ymax);
 	}
-	bool hitTestImpl(number_t x, number_t y) const;
+	bool hitTestImpl(const Vector2f& point) const;
 	bool renderImpl(RenderContext& ctxt);
 	bool tokensEmpty() const { return tokens.empty(); }
 };

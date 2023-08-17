@@ -1443,7 +1443,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, D
 
 _NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
-	//Did we hit a children?
+	//Did we hit a child?
 	_NR<DisplayObject> ret = NullRef;
 	if (dragged) // no hitting when in drag/drop mode
 		return ret;
@@ -2269,7 +2269,7 @@ void MovieClip::afterLegacyInsert()
 	Sprite::afterLegacyInsert();
 }
 
-void MovieClip::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping)
+void MovieClip::afterLegacyDelete(bool inskipping)
 {
 	getSystemState()->stage->AVM1RemoveMouseListener(this);
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
@@ -2904,7 +2904,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 		
 	}
 
-	obj->afterLegacyDelete(this,inskipping);
+	obj->afterLegacyDelete(inskipping);
 	//this also removes it from depthToLegacyChild
 	bool ret = _removeChild(obj,false,inskipping);
 	assert_and_throw(ret);
@@ -5408,7 +5408,7 @@ void SimpleButton::afterLegacyInsert()
 	DisplayObjectContainer::afterLegacyInsert();
 }
 
-void SimpleButton::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping)
+void SimpleButton::afterLegacyDelete(bool inskipping)
 {
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
 	getSystemState()->stage->AVM1RemoveMouseListener(this);
@@ -6241,6 +6241,24 @@ void DisplayObjectContainer::executeFrameScript()
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
 		(*it)->executeFrameScript();
+}
+
+void DisplayObjectContainer::afterLegacyInsert()
+{
+	std::vector<_R<DisplayObject>> tmplist;
+	cloneDisplayList(tmplist);
+	auto it=tmplist.begin();
+	for(;it!=tmplist.end();it++)
+		(*it)->afterLegacyInsert();
+}
+
+void DisplayObjectContainer::afterLegacyDelete(bool inskipping)
+{
+	std::vector<_R<DisplayObject>> tmplist;
+	cloneDisplayList(tmplist);
+	auto it=tmplist.begin();
+	for(;it!=tmplist.end();it++)
+		(*it)->afterLegacyDelete(inskipping);
 }
 
 multiname *DisplayObjectContainer::setVariableByMultiname(multiname& name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk)

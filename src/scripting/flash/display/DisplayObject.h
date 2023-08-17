@@ -234,7 +234,7 @@ public:
 	
 	tiny_string AVM1GetPath();
 	virtual void afterLegacyInsert();
-	virtual void afterLegacyDelete(DisplayObjectContainer* parent,bool inskipping) {}
+	virtual void afterLegacyDelete(bool inskipping) {}
 	virtual uint32_t getTagID() const { return UINT32_MAX;}
 	virtual void startDrawJob() {}
 	virtual void endDrawJob() {}

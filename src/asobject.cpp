@@ -2110,7 +2110,6 @@ bool ASObject::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 }
 bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 {
-	bool result = false;
 	asAtom func=asAtomHandler::invalidAtom;
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
@@ -2123,10 +2122,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
 		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::is<AVM1Function>(func))
-		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			result=true;
-		}
 		ASATOM_DECREF(func);
 	}
 	else if (e->type == "mouseDown")
@@ -2137,20 +2133,14 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONPRESS;
 			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::is<AVM1Function>(func))
-			{
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-				result=true;
-			}
 			ASATOM_DECREF(func);
 		}
 		func=asAtomHandler::invalidAtom;
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
 		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::is<AVM1Function>(func))
-		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			result=true;
-		}
 		ASATOM_DECREF(func);
 	}
 	else if (e->type == "mouseUp")
@@ -2161,20 +2151,14 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
 			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::is<AVM1Function>(func))
-			{
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-				result=true;
-			}
 			ASATOM_DECREF(func);
 		}
 		func=asAtomHandler::invalidAtom;
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEUP;
 		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::is<AVM1Function>(func))
-		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			result=true;
-		}
 		ASATOM_DECREF(func);
 	}
 	else if (e->type == "mouseWheel")
@@ -2182,10 +2166,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEWHEEL;
 		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::is<AVM1Function>(func))
-		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			result=true;
-		}
 		ASATOM_DECREF(func);
 	}
 	else if (e->type == "releaseOutside")
@@ -2193,10 +2174,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE;
 		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::is<AVM1Function>(func))
-		{
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			result=true;
-		}
 		ASATOM_DECREF(func);
 	}
 	else if (e->type == "rollOver")
@@ -2207,10 +2185,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOVER;
 			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::is<AVM1Function>(func))
-			{
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-				result=true;
-			}
 			ASATOM_DECREF(func);
 		}
 	}
@@ -2222,10 +2197,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOUT;
 			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::is<AVM1Function>(func))
-			{
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-				result=true;
-			}
 			ASATOM_DECREF(func);
 		}
 	}
@@ -2235,7 +2207,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"handling avm1 mouse event "<<e->type);
-	return result;
+	return false;
 }
 
 void ASObject::AVM1UpdateAllBindings(DisplayObject* target, ASWorker* wrk)

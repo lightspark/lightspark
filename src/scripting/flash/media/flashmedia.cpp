@@ -187,7 +187,7 @@ void Video::checkRatio(uint32_t ratio, bool inskipping)
 	}
 }
 
-void Video::afterLegacyDelete(DisplayObjectContainer *parent, bool inskipping)
+void Video::afterLegacyDelete(bool inskipping)
 {
 	Locker l(mutex);
 	resetDecoder();

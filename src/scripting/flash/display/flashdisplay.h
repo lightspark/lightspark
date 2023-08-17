@@ -178,6 +178,8 @@ public:
 	void declareFrame(bool implicit) override;
 	void initFrame() override;
 	void executeFrameScript() override;
+	void afterLegacyInsert() override;
+	void afterLegacyDelete(bool inskipping) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	inline bool deleteVariableByMultinameWithoutRemovingChild(const multiname& name, ASWorker* wrk)
@@ -268,7 +270,7 @@ public:
 	ASFUNCTION_ATOM(_setUseHandCursor);
 
 	void afterLegacyInsert() override;
-	void afterLegacyDelete(DisplayObjectContainer* parent, bool inskipping) override;
+	void afterLegacyDelete(bool inskipping) override;
 	bool AVM1HandleKeyboardEvent(KeyboardEvent* e) override;
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
 	void handleMouseCursor(bool rollover) override;
@@ -689,7 +691,7 @@ public:
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 
 	void afterLegacyInsert() override;
-	void afterLegacyDelete(DisplayObjectContainer* parent, bool inskipping) override;
+	void afterLegacyDelete(bool inskipping) override;
 
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
 	uint32_t getTagID() const override { return fromDefineSpriteTag; }

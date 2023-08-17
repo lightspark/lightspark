@@ -268,6 +268,17 @@ void TextField::prepareShutdown()
 		restrictChars->prepareShutdown();
 	if (styleSheet)
 		styleSheet->prepareShutdown();
+	if (tagvartarget)
+		tagvartarget->prepareShutdown();
+}
+bool TextField::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = InteractiveObject::countCylicMemberReferences(gcstate);
+	if (tagvartarget)
+		ret = tagvartarget->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
@@ -1467,6 +1478,8 @@ void TextField::afterLegacyInsert()
 			}
 			tagvartarget = tagvartarget->getParent();
 		}
+		tagvartarget->incRef();
+		tagvartarget->addStoredMember();
 	}
 	if (!loadedFrom->usesActionScript3)
 	{
@@ -1480,13 +1493,15 @@ void TextField::afterLegacyInsert()
 	InteractiveObject::afterLegacyInsert();
 }
 
-void TextField::afterLegacyDelete(DisplayObjectContainer *parent,bool inskipping)
+void TextField::afterLegacyDelete(bool inskipping)
 {
 	if (!tagvarname.empty() && !inskipping)
 	{
 		if (tagvartarget)
 		{
 			tagvartarget->as<MovieClip>()->setVariableBinding(tagvarname,NullRef);
+			tagvartarget->removeStoredMember();
+			tagvartarget=nullptr;
 		}
 	}
 }

@@ -144,12 +144,13 @@ public:
 	~TextField();
 	void finalize() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate);
 	static void sinit(Class_base* c);
 	void setHtmlText(const tiny_string& html);
 	void avm1SyncTagVar();
 	void UpdateVariableBinding(asAtom v) override;
 	void afterLegacyInsert() override;
-	void afterLegacyDelete(DisplayObjectContainer* parent, bool inskipping) override;
+	void afterLegacyDelete(bool inskipping) override;
 	void lostFocus() override;
 	void gotFocus() override;
 	void textInputChanged(const tiny_string& newtext) override;

@@ -1068,6 +1068,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 	{
 		th->alpha=val;
 		th->hasChanged=true;
+		th->setNeedsCachedBitmapRecalculation();
 		if(th->onStage)
 			th->requestInvalidation(wrk->getSystemState(),th->computeCacheAsBitmap());
 	}
@@ -2526,6 +2527,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 	{
 		th->alpha=val;
 		th->hasChanged=true;
+		th->setNeedsCachedBitmapRecalculation();
 		if(th->onStage)
 			th->requestInvalidation(wrk->getSystemState());
 	}

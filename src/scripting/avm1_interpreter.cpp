@@ -1679,12 +1679,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (asAtomHandler::is<Function>(scriptobject))
 					{
 						asAtomHandler::as<Function>(scriptobject)->call(ret,wrk,scopestack[0],args,numargs);
-						asAtomHandler::as<Function>(scriptobject)->decRef();
 					}
 					else if (asAtomHandler::is<AVM1Function>(scriptobject))
 					{
 						asAtomHandler::as<AVM1Function>(scriptobject)->call(&ret,&scopestack[0],args,numargs,callee,&locals);
-						asAtomHandler::as<AVM1Function>(scriptobject)->decRef();
 					}
 					else if (asAtomHandler::is<Class_base>(scriptobject))
 					{

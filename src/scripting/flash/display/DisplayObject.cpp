@@ -1680,6 +1680,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
 	number_t newwidth=asAtomHandler::toNumber(args[0]);
 	if (std::isnan(newwidth))
 		return;
+	if (std::isinf(newwidth) && th->needsActionScript3())
+		newwidth = 0;
 	ROUND_TO_TWIPS(newwidth);
 
 	number_t xmin,xmax,y1,y2;
@@ -1710,6 +1712,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setHeight)
 	number_t newheight=asAtomHandler::toNumber(args[0]);
 	if (std::isnan(newheight))
 		return;
+	if (std::isinf(newheight) && th->needsActionScript3())
+		newheight = 0;
 	ROUND_TO_TWIPS(newheight);
 
 	number_t x1,x2,ymin,ymax;

@@ -1736,7 +1736,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 	asAtomHandler::setNumber(ret,wrk,th->getLocalMousePos().y);
 }
 
-_NR<DisplayObject> DisplayObject::hitTest(number_t x, number_t y, HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> DisplayObject::hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	if((!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && !isMask())
 		return NullRef;
@@ -1744,12 +1744,7 @@ _NR<DisplayObject> DisplayObject::hitTest(number_t x, number_t y, HIT_TYPE type,
 	//First check if there is any mask on this object, if so the point must be inside the mask to go on
 	if(!mask.isNull())
 	{
-		//First compute the global coordinates from the local ones
-		//TODO: we may also pass the global coordinates to all the calls
-		const MATRIX& thisMatrix = this->getConcatenatedMatrix();
-		number_t globalX, globalY;
-		thisMatrix.multiply2D(x,y,globalX,globalY);
-		//Now compute the coordinates local to the mask
+		//Compute the coordinates local to the mask
 		const MATRIX& maskMatrix = mask->getConcatenatedMatrix();
 		if(!maskMatrix.isInvertible())
 		{
@@ -1757,13 +1752,12 @@ _NR<DisplayObject> DisplayObject::hitTest(number_t x, number_t y, HIT_TYPE type,
 			//If the mask is zero sized then the object is not visible
 			return NullRef;
 		}
-		number_t maskX, maskY;
-		maskMatrix.getInverted().multiply2D(globalX,globalY,maskX,maskY);
-		if(mask->hitTest(maskX, maskY, type,false).isNull())
+		const auto maskPoint = maskMatrix.getInverted().multiply2D(globalPoint);
+		if(mask->hitTest(globalPoint, maskPoint, type,false).isNull())
 			return NullRef;
 	}
 
-	return hitTestImpl(x,y, type,interactiveObjectsOnly);
+	return hitTestImpl(globalPoint, localPoint, type,interactiveObjectsOnly);
 }
 
 /* Display objects have no children in general,
@@ -2158,7 +2152,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 
 		// Hmm, hitTest will also check the mask, is this the
 		// right thing to do?
-		_NR<DisplayObject> hit = th->hitTest(localX, localY,
+		_NR<DisplayObject> hit = th->hitTest(Vector2f(x, y), Vector2f(localX, localY),
 						     HIT_TYPE::GENERIC_HIT_INVISIBLE,false);
 
 		asAtomHandler::setBool(ret,!hit.isNull());

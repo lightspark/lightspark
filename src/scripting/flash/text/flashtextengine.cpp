@@ -1040,18 +1040,20 @@ bool TextLine::renderImpl(RenderContext& ctxt)
 	return defaultRender(ctxt);
 }
 
-_NR<DisplayObject> TextLine::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> TextLine::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	number_t xmin,xmax,ymin,ymax;
+	// TODO: Add an overload for RECT.
 	boundsRect(xmin,xmax,ymin,ymax,false);
-	if( xmin <= x && x <= xmax && ymin <= y && y <= ymax)
+	//TODO: Add a point intersect function to RECT, and use that instead.
+	if( xmin <= localPoint.x && localPoint.x <= xmax && ymin <= localPoint.y && localPoint.y <= ymax)
 	{
 		incRef();
 		return _MNR(this);
 	}
 	else
 	{
-		return DisplayObjectContainer::hitTestImpl(x, y, type, interactiveObjectsOnly);
+		return DisplayObjectContainer::hitTestImpl(globalPoint, localPoint, type, interactiveObjectsOnly);
 	}
 }
 

@@ -766,7 +766,7 @@ bool CairoRenderer::isCachedSurfaceUsable(const DisplayObject* o) const
 		&& abs(yscale / tex->yContentScale) < 2);
 }
 
-bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, number_t x, number_t y)
+bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, const Vector2f& point)
 {
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(nullptr, CAIRO_FORMAT_ARGB32, 0, 0, 0);
 
@@ -786,7 +786,7 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 			 * by the current cairo transformation
 			 */
 			cairo_identity_matrix(cr);
-			ret=cairo_in_fill(cr, x, y);
+			ret=cairo_in_fill(cr, point.x, point.y);
 			if (ret)
 			{
 				cairo_destroy(cr);

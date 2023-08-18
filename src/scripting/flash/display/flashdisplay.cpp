@@ -1370,7 +1370,7 @@ bool Sprite::renderImpl(RenderContext& ctxt)
 	return ret && ret2;
 }
 
-_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret = NullRef;
 	bool hit_this=false;
@@ -1386,9 +1386,8 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, D
 		if(!(*j)->getMatrix().isInvertible())
 			continue; /* The object is shrunk to zero size */
 
-		number_t localX, localY;
-		(*j)->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-		ret=(*j)->hitTest(localX,localY,type,interactiveObjectsOnly);
+		const auto childPoint = (*j)->getMatrix().getInverted().multiply2D(localPoint);
+		ret=(*j)->hitTest(globalPoint, childPoint,type,interactiveObjectsOnly);
 		
 		if (!ret.isNull())
 		{
@@ -1441,19 +1440,19 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(number_t x, number_t y, D
 	return ret;
 }
 
-_NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Sprite::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	//Did we hit a child?
 	_NR<DisplayObject> ret = NullRef;
 	if (dragged) // no hitting when in drag/drop mode
 		return ret;
-	ret = DisplayObjectContainer::hitTestImpl(x,y, type,interactiveObjectsOnly);
+	ret = DisplayObjectContainer::hitTestImpl(globalPoint, localPoint, type,interactiveObjectsOnly);
 	if (ret.isNull() && !hitArea.isNull() && interactiveObjectsOnly)
 	{
-		number_t xout,yout,xout2,yout2;
-		localToGlobal(x,y,xout,yout);
-		hitArea->globalToLocal(xout,yout,xout2,yout2);
-		ret = hitArea->hitTestImpl(xout2,yout2, type,interactiveObjectsOnly);
+		Vector2f hitPoint;
+		// TODO: Add an overload for Vector2f.
+		hitArea->globalToLocal(globalPoint.x, globalPoint.y, hitPoint.x, hitPoint.y);
+		ret = hitArea->hitTestImpl(globalPoint, hitPoint, type,interactiveObjectsOnly);
 		if (!ret.isNull())
 		{
 			this->incRef();
@@ -1464,7 +1463,7 @@ _NR<DisplayObject> Sprite::hitTestImpl(number_t x, number_t y, DisplayObject::HI
 	if (ret.isNull() && hitArea.isNull())
 	{
 		//The coordinates are locals
-		if (TokenContainer::hitTestImpl(x,y))
+		if (TokenContainer::hitTestImpl(localPoint))
 		{
 			this->incRef();
 			ret = _MR(this);
@@ -2303,9 +2302,10 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 		else
 		{
 			number_t x,y,xg,yg;
+			// TODO: Add overloads for Vector2f.
 			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,xg,yg);
 			this->globalToLocal(xg,yg,x,y);
-			_NR<DisplayObject> d =hitTest(x,y, DisplayObject::MOUSE_CLICK,true);
+			_NR<DisplayObject> d =hitTest(Vector2f(xg,yg), Vector2f(x,y), DisplayObject::MOUSE_CLICK,true);
 			dispobj = d.getPtr();
 		}
 		if (actions)
@@ -3883,13 +3883,15 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 	return true;
 }
 
-_NR<DisplayObject> Shape::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
+_NR<DisplayObject> Shape::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin, xmax, ymin, ymax;
+	// TODO: Add an overload for RECT.
 	boundsRect(xmin, xmax, ymin, ymax,false);
-	if (x<xmin || x>xmax || y<ymin || y>ymax)
+	//TODO: Add a point intersect function to RECT, and use that instead.
+	if (localPoint.x<xmin || localPoint.x>xmax || localPoint.y<ymin || localPoint.y>ymax)
 		return NullRef;
-	if (TokenContainer::hitTestImpl(x-xmin,y-ymin))
+	if (TokenContainer::hitTestImpl(Vector2f(localPoint.x-xmin,localPoint.y-ymin)))
 	{
 		this->incRef();
 		return _MR(this);
@@ -4034,13 +4036,15 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 	return true;
 }
 
-_NR<DisplayObject> MorphShape::hitTestImpl(number_t x, number_t y, HIT_TYPE type, bool interactiveObjectsOnly)
+_NR<DisplayObject> MorphShape::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin, xmax, ymin, ymax;
+	// TODO: Add an overload for RECT.
 	boundsRect(xmin, xmax, ymin, ymax,false);
-	if (x<xmin || x>xmax || y<ymin || y>ymax)
+	//TODO: Add a point intersect function to RECT, and use that instead.
+	if (localPoint.x<xmin || localPoint.x>xmax || localPoint.y<ymin || localPoint.y>ymax)
 		return NullRef;
-	if (TokenContainer::hitTestImpl(x-xmin,y-ymin))
+	if (TokenContainer::hitTestImpl(Vector2f(localPoint.x-xmin,localPoint.y-ymin)))
 	{
 		this->incRef();
 		return _MR(this);
@@ -4406,10 +4410,10 @@ ASFUNCTIONBODY_ATOM(Stage,_constructor)
 {
 }
 
-_NR<DisplayObject> Stage::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Stage::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret;
-	ret = DisplayObjectContainer::hitTestImpl(x, y, type, interactiveObjectsOnly);
+	ret = DisplayObjectContainer::hitTestImpl(globalPoint, localPoint, type, interactiveObjectsOnly);
 	if(!ret)
 	{
 		/* If nothing else is hit, we hit the stage */
@@ -5291,13 +5295,14 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return true;
 }
 
-_NR<DisplayObject> Bitmap::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Bitmap::hitTestImpl(const Vector2f&, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	//Simple check inside the area, opacity data should not be considered
 	//NOTE: on the X axis the 0th line must be ignored, while the one past the width is valid
 	//NOTE: on the Y asix the 0th line is valid, while the one past the width is not
 	//NOTE: This is tested behaviour!
-	if(!bitmapData.isNull() && x > 0 && x <= bitmapData->getWidth() && y >=0 && y < bitmapData->getHeight())
+	//TODO: Add a point intersect function to RECT, and use that instead.
+	if(!bitmapData.isNull() && localPoint.x > 0 && localPoint.x <= bitmapData->getWidth() && localPoint.y >=0 && localPoint.y < bitmapData->getHeight())
 	{
 		this->incRef();
 		return _MR(this);
@@ -5433,10 +5438,12 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 		else
 		{
 			number_t x,y;
+			// TODO: Add an overload for Vector2f.
 			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
 			number_t x1,y1;
+			// TODO: Add an overload for Vector2f.
 			this->globalToLocal(x,y,x1,y1);
-			_NR<DisplayObject> d = hitTest(x1,y1, DisplayObject::MOUSE_CLICK,true);
+			_NR<DisplayObject> d = hitTest(Vector2f(x,y), Vector2f(x1,y1), DisplayObject::MOUSE_CLICK,true);
 			dispobj=d.getPtr();
 		}
 		if (dispobj!= this)
@@ -5669,7 +5676,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 }
 
 
-_NR<DisplayObject> SimpleButton::hitTestImpl(number_t x, number_t y, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> SimpleButton::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret = NullRef;
 	if(hitTestState)
@@ -5677,9 +5684,8 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(number_t x, number_t y, DisplayObje
 		if(!hitTestState->getMatrix().isInvertible())
 			return NullRef;
 
-		number_t localX, localY;
-		hitTestState->getMatrix().getInverted().multiply2D(x,y,localX,localY);
-		ret = hitTestState->hitTest(localX,localY, type,false);
+		const auto hitPoint = hitTestState->getMatrix().getInverted().multiply2D(localPoint);
+		ret = hitTestState->hitTest(globalPoint, hitPoint, type,false);
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been

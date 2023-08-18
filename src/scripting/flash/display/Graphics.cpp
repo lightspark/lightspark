@@ -824,32 +824,36 @@ void Graphics::updateTokenBounds(int x, int y)
 
 void Graphics::AddFillToken(const GeomToken& token)
 {
-	if (tokens[1-currentrenderindex].filltokens.size()<=tokens[currentrenderindex].filltokens.size()
-		|| tokens[1-currentrenderindex].filltokens[tokens[currentrenderindex].size()] != token.uval)
+	if (!tokensHaveChanged && (
+		tokens[1-currentrenderindex].filltokens.size()<=tokens[currentrenderindex].filltokens.size()
+		|| tokens[1-currentrenderindex].filltokens[tokens[currentrenderindex].size()] != token.uval))
 		tokensHaveChanged=true;
 	tokens[currentrenderindex].filltokens.push_back(token.uval);
 }
 void Graphics::AddFillStyleToken(const GeomToken& token)
 {
-	if (tokens[1-currentrenderindex].filltokens.size()<=tokens[currentrenderindex].filltokens.size()
+	if (!tokensHaveChanged && (
+		tokens[1-currentrenderindex].filltokens.size()<=tokens[currentrenderindex].filltokens.size()
 		|| GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()-1]).type != GeomToken(SET_FILL).type
-		|| !(*GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()],false).fillStyle == *(token.fillStyle)))
+		|| !(*GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()],false).fillStyle == *(token.fillStyle))))
 		tokensHaveChanged=true;
 	tokens[currentrenderindex].filltokens.push_back(token.uval);
 }
 
 void Graphics::AddStrokeToken(const GeomToken& token)
 {
-	if (tokens[1-currentrenderindex].stroketokens.size()<=tokens[currentrenderindex].stroketokens.size()
-		|| tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()] != token.uval)
+	if (!tokensHaveChanged && (
+		tokens[1-currentrenderindex].stroketokens.size()<=tokens[currentrenderindex].stroketokens.size()
+		|| tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()] != token.uval))
 		tokensHaveChanged=true;
 	tokens[currentrenderindex].stroketokens.push_back(token.uval);
 }
 void Graphics::AddLineStyleToken(const GeomToken& token)
 {
-	if (tokens[1-currentrenderindex].stroketokens.size()<=tokens[currentrenderindex].stroketokens.size()
+	if (!tokensHaveChanged && (
+		tokens[1-currentrenderindex].stroketokens.size()<=tokens[currentrenderindex].stroketokens.size()
 		|| GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()-1],false).type != GeomToken(SET_STROKE).type
-		|| !(*GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()],false).lineStyle == *(token.lineStyle)))
+		|| !(*GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()],false).lineStyle == *(token.lineStyle))))
 		tokensHaveChanged=true;
 	tokens[currentrenderindex].stroketokens.push_back(token.uval);
 }

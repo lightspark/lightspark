@@ -1220,7 +1220,12 @@ void DisplayObject::setX(number_t val)
 	if(useLegacyMatrix)
 		useLegacyMatrix=false;
 	if (std::isnan(val))
-		return;
+	{
+		if (needsActionScript3())
+			val = 0;
+		else
+			return;
+	}
 	ROUND_TO_TWIPS(val);
 	//Apply translation, it's trivial
 	if(tx!=val)
@@ -1239,7 +1244,12 @@ void DisplayObject::setY(number_t val)
 	if(useLegacyMatrix)
 		useLegacyMatrix=false;
 	if (std::isnan(val))
-		return;
+	{
+		if (needsActionScript3())
+			val = 0;
+		else
+			return;
+	}
 	ROUND_TO_TWIPS(val);
 	//Apply translation, it's trivial
 	if(ty!=val)

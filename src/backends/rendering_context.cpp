@@ -475,10 +475,9 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, BitmapContainer* bc, C
 	cairo_surface_t* sourceSurface = getCairoSurfaceForData(bmp, bc->getWidth(), bc->getHeight(), bc->getWidth());
 	cairo_pattern_t* sourcePattern = cairo_pattern_create_for_surface(sourceSurface);
 	cairo_surface_destroy(sourceSurface);
+	cairo_set_matrix(cr,&m);
 	cairo_pattern_set_filter(sourcePattern, (filterMode==FILTER_SMOOTH)?CAIRO_FILTER_BILINEAR:CAIRO_FILTER_NEAREST);
 	cairo_pattern_set_extend(sourcePattern, CAIRO_EXTEND_NONE);
-	cairo_matrix_t matrix = m.getInverted();
-	cairo_pattern_set_matrix(sourcePattern, &matrix);
 	cairo_set_source(cr, sourcePattern);
 	cairo_pattern_destroy(sourcePattern);
 	cairo_rectangle(cr, x, y, w, h);

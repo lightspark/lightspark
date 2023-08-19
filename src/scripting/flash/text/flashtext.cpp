@@ -1453,7 +1453,7 @@ void TextField::UpdateVariableBinding(asAtom v)
 
 void TextField::afterLegacyInsert()
 {
-	if (!tagvarname.empty())
+	if (!tagvarname.empty() && !getConstructIndicator())
 	{
 		tagvartarget = getParent();
 		uint32_t finddot = tagvarname.rfind(".");
@@ -1483,7 +1483,7 @@ void TextField::afterLegacyInsert()
 		tagvartarget->incRef();
 		tagvartarget->addStoredMember();
 	}
-	if (!loadedFrom->usesActionScript3)
+	if (!loadedFrom->usesActionScript3 && !getConstructIndicator())
 	{
 		setConstructIndicator();
 		constructionComplete();

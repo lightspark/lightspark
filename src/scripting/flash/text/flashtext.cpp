@@ -1480,8 +1480,11 @@ void TextField::afterLegacyInsert()
 			}
 			tagvartarget = tagvartarget->getParent();
 		}
-		tagvartarget->incRef();
-		tagvartarget->addStoredMember();
+		if (tagvartarget)
+		{
+			tagvartarget->incRef();
+			tagvartarget->addStoredMember();
+		}
 	}
 	if (!loadedFrom->usesActionScript3)
 	{

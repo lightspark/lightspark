@@ -2404,7 +2404,7 @@ FORCE_INLINE void asAtomHandler::urshift(asAtom& a, ASWorker* wrk, asAtom &v1)
 	uint32_t i2=toUInt(a);
 	uint32_t i1=toUInt(v1)&0x1f;
 	LOG_CALL("urShift "<<std::hex<<i2<<">>"<<i1<<std::dec);
-	setInt(a,wrk,i2>>i1);
+	setUInt(a,wrk,i2>>i1);
 }
 FORCE_INLINE void asAtomHandler::bit_and(asAtom& a, ASWorker* wrk, asAtom &v1)
 {

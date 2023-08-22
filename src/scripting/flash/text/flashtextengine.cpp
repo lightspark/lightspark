@@ -998,7 +998,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	if (cachedBitmap && computeCacheAsBitmap())
 	{
 		setNeedsTextureRecalculation();
-		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
+		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
 	number_t x,y,rx,ry;
 	number_t width,height,rwidth,rheight;

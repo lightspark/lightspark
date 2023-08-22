@@ -1690,7 +1690,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	Locker l(invalidatemutex);
 	if (cachedBitmap && computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
-		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
+		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
 	number_t x,y,rx,ry;
 	number_t width,height,rwidth,rheight;
@@ -1789,11 +1789,11 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		linemutex->unlock();
 		if (tokens.empty())
 			return nullptr;
-		return TokenContainer::invalidate(target, initialMatrix,SMOOTH_MODE::SMOOTH_SUBPIXEL,q,cachedBitmap,false);
+		return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 	}
 	if (computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
-		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
+		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
 	std::vector<IDrawable::MaskData> masks;
 	bool isMask;

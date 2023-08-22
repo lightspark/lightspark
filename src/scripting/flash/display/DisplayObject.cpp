@@ -2036,7 +2036,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		MATRIX m0=m;
 		m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));
 		m0.scale(scalex, scaley);
-		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,true,true,blendMode,nullptr);
+		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,smoothing,true,blendMode,nullptr);
 		applyFilters(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0, scalex, scaley);
 		cachedBitmap->setMask(this->mask);
 		cachedBitmap->resetNeedsTextureRecalculation();
@@ -2055,7 +2055,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	m1.scale(1.0 / scalex, 1.0 / scaley);
 	ColorTransformBase ct;
 	ct.fillConcatenated(this);
-	return cachedBitmap->invalidateFromSource(target, initialMatrix,true,this->getParent(),m1,this,&ct);
+	return cachedBitmap->invalidateFromSource(target, initialMatrix,smoothing,this->getParent(),m1,this,&ct);
 }
 
 bool DisplayObject::findParent(DisplayObject *d) const

@@ -531,7 +531,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 {
 	if (owner->computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=owner))
 	{
-		return owner->getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
+		return owner->getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing != SMOOTH_MODE::SMOOTH_NONE);
 	}
 	number_t x,y,rx,ry;
 	number_t width,height;

@@ -382,7 +382,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 			case BUILTIN_STRINGS::STRING_SCREEN: bl = BLENDMODE_SCREEN; break;
 			case BUILTIN_STRINGS::STRING_SUBTRACT: bl = BLENDMODE_SUBTRACT; break;
 		}
-		d->DrawToBitmap(th,initialMatrix,true,false,bl,ctransform.getPtr());
+		d->DrawToBitmap(th,initialMatrix,smoothing,false,bl,ctransform.getPtr());
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());

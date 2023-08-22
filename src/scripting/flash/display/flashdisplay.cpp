@@ -5334,7 +5334,7 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 {
 	if (cachedBitmap && computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
-		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
+		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, this->smoothing);
 	}
 	return invalidateFromSource(target, initialMatrix, this->smoothing, this, MATRIX(),nullptr,this->colorTransform.getPtr());
 }
@@ -5924,7 +5924,7 @@ void SimpleButton::prepareShutdown()
 IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	if (computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
-		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap);
+		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	return nullptr;
 }
 void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)

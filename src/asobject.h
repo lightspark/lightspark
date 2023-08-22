@@ -1915,13 +1915,14 @@ FORCE_INLINE bool asAtomHandler::checkArgumentConversion(const asAtom& a,const a
 
 FORCE_INLINE void asAtomHandler::setInt(asAtom& a, ASWorker* wrk, int64_t val)
 {
+	const int32_t val32 = val;
 #ifdef LIGHTSPARK_64
-	a.intval = ((int64_t)val<<3)|ATOM_INTEGER;
+	a.intval = ((int64_t)val32<<3)|ATOM_INTEGER;
 #else
-	if (val >=-(1<<28)  && val <=(1<<28))
-		a.intval = (val<<3)|ATOM_INTEGER;
+	if (val32 >=-(1<<28)  && val32 <=(1<<28))
+		a.intval = (val32<<3)|ATOM_INTEGER;
 	else
-		setNumber(a,wrk,val);
+		setNumber(a,wrk,val32);
 #endif
 }
 
@@ -2204,7 +2205,7 @@ FORCE_INLINE void asAtomHandler::multiply(asAtom& a, ASWorker* wrk, asAtom &v2, 
 		LOG_CALL("multiplyI " << num1 << '*' << num2);
 		int64_t res = num1*num2;
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
-			setInt(a,wrk,res);
+			setInt(a,wrk,int32_t(res));
 		else if (res >= 0 && res < UINT32_MAX>>3)
 			setUInt(a,wrk,res);
 		else
@@ -2237,7 +2238,7 @@ FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, ASWorker* wrk, con
 		
 		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
 		{
-			setInt(ret,wrk,res);
+			setInt(ret,wrk,int32_t(res));
 			if (o)
 				o->decRef();
 		}

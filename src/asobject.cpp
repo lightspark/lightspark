@@ -3471,7 +3471,7 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 		int64_t res = num1+num2;
 		LOG_CALL("addI " << num1 << '+' << num2 <<"="<<res);
 		if (forceint || (res >= -(1<<28) && res < (1<<28)))
-			setInt(a,wrk,res);
+			setInt(a,wrk,int32_t(res));
 		else if (res >= 0 && res < (1<<29))
 			setUInt(a,wrk,res);
 		else
@@ -3588,7 +3588,7 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 		ASATOM_DECREF(ret);
 		LOG_CALL("addI replace " << num1 << '+' << num2 <<"="<<res);
 		if (forceint || (res >= -(1<<28) && res < (1<<28)))
-			setInt(ret,wrk,res);
+			setInt(ret,wrk,int32_t(res));
 		else if (res >= 0 && res < (1<<29))
 			setUInt(ret,wrk,res);
 		else

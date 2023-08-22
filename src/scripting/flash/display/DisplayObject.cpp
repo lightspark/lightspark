@@ -1991,7 +1991,7 @@ string DisplayObject::toDebugString() const
 	res += buf;
 	return res;
 }
-IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MATRIX& initialMatrix,_NR<DisplayObject>* pcachedBitmap)
+IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MATRIX& initialMatrix,_NR<DisplayObject>* pcachedBitmap,bool smoothing)
 {
 	if (!computeCacheAsBitmap())
 		return nullptr;

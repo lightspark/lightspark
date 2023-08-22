@@ -186,7 +186,7 @@ public:
 	bool requestInvalidationForCacheAsBitmap(InvalidateQueue* q);
 	void computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, _NR<DisplayObject>& mask) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
-	IDrawable* getCachedBitmapDrawable(DisplayObject* target, const MATRIX& initialMatrix, _NR<DisplayObject>* pcachedBitmap);
+	IDrawable* getCachedBitmapDrawable(DisplayObject* target, const MATRIX& initialMatrix, _NR<DisplayObject>* pcachedBitmap, bool smoothing);
 	_NR<DisplayObject> getCachedBitmap() const { return cachedBitmap; }
 	DisplayObjectContainer* getParent() const { return parent; }
 	bool findParent(DisplayObject* d) const;

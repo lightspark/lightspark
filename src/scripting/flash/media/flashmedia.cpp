@@ -1115,7 +1115,7 @@ void SoundChannel::execute()
 {
 	// ensure audio manager is initialized
 	getSystemState()->waitInitialized();
-	while (true)
+	for (loopstogo = (loopstogo < 1) ? 1 : loopstogo; loopstogo; --loopstogo)
 	{
 		mutex.lock();
 		if (audioStream)
@@ -1129,21 +1129,16 @@ void SoundChannel::execute()
 			playStreamFromSamples();
 		else
 			playStream();
-		if (threadAborting)
+		if (threadAborting || ACQUIRE_READ(stopped))
 			break;
-		if (loopstogo)
-			loopstogo--;
-		else
+	}
+	if (!loopstogo)
+	{
+		if (ACQUIRE_READ(finished))
 		{
-			if (ACQUIRE_READ(finished))
-			{
-				incRef();
-				getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"soundComplete")));
-			}
-			break;
+			incRef();
+			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"soundComplete")));
 		}
-		if (ACQUIRE_READ(stopped))
-			break;
 	}
 }
 

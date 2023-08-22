@@ -1845,17 +1845,22 @@ void DisplayObject::invalidateCachedAsBitmapOf()
 {
 	if (!this->isVisible())
 		return;
-	DisplayObject* c = cachedAsBitmapOf;
-	while (c)
+
+	if (cachedAsBitmapOf)
 	{
-		c->hasChanged=true;
-		c->setNeedsTextureRecalculation();
-		if (!c->cachedAsBitmapOf)
+		cachedAsBitmapOf->incRef();
+		DisplayObject* c = cachedAsBitmapOf;
+		while (c)
 		{
-			c->requestInvalidation(c->getSystemState());
-			break;
+			c->hasChanged=true;
+			c->setNeedsTextureRecalculation();
+			if (!c->cachedAsBitmapOf)
+			{
+				c->requestInvalidation(c->getSystemState());
+				break;
+			}
+			c = c->cachedAsBitmapOf;
 		}
-		c = c->cachedAsBitmapOf;
 	}
 }
 

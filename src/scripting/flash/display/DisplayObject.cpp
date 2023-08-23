@@ -1846,21 +1846,17 @@ void DisplayObject::invalidateCachedAsBitmapOf()
 	if (!this->isVisible())
 		return;
 
-	if (cachedAsBitmapOf)
+	DisplayObject* c = cachedAsBitmapOf;
+	while (c)
 	{
-		cachedAsBitmapOf->incRef();
-		DisplayObject* c = cachedAsBitmapOf;
-		while (c)
+		c->hasChanged=true;
+		c->setNeedsTextureRecalculation();
+		if (!c->cachedAsBitmapOf)
 		{
-			c->hasChanged=true;
-			c->setNeedsTextureRecalculation();
-			if (!c->cachedAsBitmapOf)
-			{
-				c->requestInvalidation(c->getSystemState());
-				break;
-			}
-			c = c->cachedAsBitmapOf;
+			c->requestInvalidation(c->getSystemState());
+			break;
 		}
+		c = c->cachedAsBitmapOf;
 	}
 }
 
@@ -2761,6 +2757,7 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 	uint32_t pos = name.find(":");
 	if (pos == tiny_string::npos)
 	{
+		ASATOM_INCREF(v); // ensure value is not destructed during binding
 		tiny_string localname = name.lowercase();
 		uint32_t nameIdOriginal = getSystemState()->getUniqueStringId(name);
 		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
@@ -2791,6 +2788,7 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 				ASATOM_DECREF(v);
 		}
 		AVM1UpdateVariableBindings(nameId,v);
+		ASATOM_DECREF(v);
 	}
 	else if (pos == 0)
 	{
@@ -2905,8 +2903,10 @@ void DisplayObject::AVM1UpdateVariableBindings(uint32_t nameID, asAtom& value)
 	auto it = variablebindings.find(nameID);
 	while (it != variablebindings.end() && it->first == nameID)
 	{
+		ASATOM_INCREF(value); // ensure value is not destructed during binding
 		(*it).second->UpdateVariableBinding(value);
 		it++;
+		ASATOM_DECREF(value);
 	}
 }
 asAtom DisplayObject::getVariableBindingValue(const tiny_string &name)

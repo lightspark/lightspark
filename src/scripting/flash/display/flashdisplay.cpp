@@ -4782,11 +4782,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 		while (it != tmplisteners.rend())
 		{
 			(*it)->incRef();
-			if ((*it)->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>()))
-			{
-				(*it)->decRef();
-				break;
-			}
+			(*it)->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
 			(*it)->decRef();
 			it++;
 		}

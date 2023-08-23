@@ -1267,7 +1267,6 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 			o->hasChanged=true;
 			o->setNeedsTextureRecalculation();
 			addToInvalidateQueue(_MR(o));
-			d->resetNeedsTextureRecalculation();
 			return;
 		}
 	}

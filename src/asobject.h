@@ -1984,7 +1984,7 @@ FORCE_INLINE bool asAtomHandler::increment(asAtom& a, ASWorker* wrk, bool replac
 			number_t n = getObjectNoCheck(a)->toNumber();
 			if (std::isnan(n) || std::isinf(n))
 				setNumber(a,wrk,n);
-			else if(trunc(n) == n)
+			else if(trunc(n) == n && n < INT32_MAX)
 			{
 				if (replace)
 					ASATOM_DECREF(a);
@@ -2062,7 +2062,7 @@ FORCE_INLINE bool asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool replac
 			number_t n = getObjectNoCheck(a)->toNumber();
 			if (std::isnan(n) || std::isinf(n))
 				setNumber(a,wrk,n);
-			else if(trunc(n) == n)
+			else if(trunc(n) == n && n > INT32_MIN)
 			{
 				if (replace)
 					ASATOM_DECREF(a);

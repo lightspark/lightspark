@@ -2773,7 +2773,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_URSHIFT:
-				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				resulttype = Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr();
 				// operators are always transformed to uint, so we can do that here if the operators are constants
 				if (op1isconstant)
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_int=asAtomHandler::toUInt(*state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_constant);

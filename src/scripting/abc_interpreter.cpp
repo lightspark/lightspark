@@ -6727,7 +6727,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						}
 						if (v)
 						{
-							if (asAtomHandler::is<SyntheticFunction>(v->var) && (fromglobal || asAtomHandler::as<SyntheticFunction>(v->var)->inClass && asAtomHandler::as<SyntheticFunction>(v->var)->inClass == cls))
+							if (asAtomHandler::is<SyntheticFunction>(v->var) && (fromglobal || (asAtomHandler::as<SyntheticFunction>(v->var)->inClass && asAtomHandler::as<SyntheticFunction>(v->var)->inClass == cls)))
 							{
 								func = asAtomHandler::as<SyntheticFunction>(v->var);
 								resulttype = func->getReturnType();
@@ -7690,7 +7690,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0xa7://urshift
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_URSHIFT,opcode,code,true,true,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_URSHIFT_SETSLOT);
 				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<UInteger>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			case 0xa8://bitand
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_BITAND,opcode,code,true,true,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_BITAND_SETSLOT);

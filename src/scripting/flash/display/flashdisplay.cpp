@@ -2047,7 +2047,7 @@ void MovieClip::currentFrameChanged(bool newframe)
 		else
 			this->getSystemState()->stage->addHiddenObject(this);
 	}
-	else if (newframe && getSystemState()->getSwfVersion()>= 10)
+	else if (newframe)
 	{
 		// according to http://www.senocular.com/flash/tutorials/orderofoperations/
 		// a subset of the normal events are added when navigation commands are executed when changing to a new frame by actionscript

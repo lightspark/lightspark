@@ -36,6 +36,41 @@ void NativeMenuItem::addToMenu(std::vector<_R<NativeMenuItem> > &items, ContextM
 	items.push_back(_MR(this));
 	this->menu=menu;
 }
+
+bool NativeMenuItem::isReservedLabel()
+{
+	static const auto reservedLabels = {
+		"Save",
+		"Zoom In",
+		"Zoom Out",
+		"100%",
+		"Show All",
+		"Quality",
+		"Play",
+		"Loop",
+		"Rewind",
+		"Forward",
+		"Back",
+		"Movie not loaded",
+		"About",
+		"Print",
+		"Show Redraw Regions",
+		"Debugger",
+		"Undo",
+		"Cut",
+		"Copy",
+		"Paste",
+		"Delete",
+		"Select All",
+		"Open",
+		"Open in new window",
+		"Copy link",
+	};
+	bool found = false;
+	for (auto reservedLabel : reservedLabels)
+		found = label == reservedLabel;
+	return found;
+}
 ASFUNCTIONBODY_GETTER_SETTER(NativeMenuItem,label)
 ASFUNCTIONBODY_GETTER(NativeMenuItem,isSeparator)
 ASFUNCTIONBODY_GETTER_SETTER(NativeMenuItem,enabled)

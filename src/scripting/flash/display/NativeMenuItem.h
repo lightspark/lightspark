@@ -38,6 +38,7 @@ public:
 	ASPROPERTY_GETTER(bool, isSeparator);
 	ASPROPERTY_GETTER_SETTER(bool, enabled);
 	virtual void addToMenu(std::vector<_R<NativeMenuItem>>& items,ContextMenu* menu);
+	bool isReservedLabel();
 };
 
 }

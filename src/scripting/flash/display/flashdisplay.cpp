@@ -2022,6 +2022,8 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.stop_FP = stop;
 	if (!needsActionScript3() || !this->inExecuteFramescript)
 		currentFrameChanged(newframe);
+	else
+		state.gotoQueued = true;
 }
 void MovieClip::currentFrameChanged(bool newframe)
 {
@@ -6475,6 +6477,7 @@ void MovieClip::executeFrameScript()
 	if (!needsActionScript3())
 		return;
 	state.explicit_FP=false;
+	state.gotoQueued=false;
 	uint32_t f = frameScripts.count(state.FP) ? state.FP : UINT32_MAX;
 	if (f != UINT32_MAX && !markedForLegacyDeletion)
 	{
@@ -6492,7 +6495,7 @@ void MovieClip::executeFrameScript()
 		}
 	}
 
-	if (state.explicit_FP)
+	if (state.gotoQueued)
 		currentFrameChanged(state.FP != state.next_FP);
 	Sprite::executeFrameScript();
 }

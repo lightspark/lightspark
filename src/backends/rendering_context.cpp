@@ -51,7 +51,7 @@ const float RenderContext::lsIdentityMatrix[16] = {
 
 const CachedSurface CairoRenderContext::invalidSurface;
 
-RenderContext::RenderContext(CONTEXT_TYPE t):contextType(t),currentMask(nullptr),currentShaderBlendMode(AS_BLENDMODE::BLENDMODE_NORMAL)
+RenderContext::RenderContext(CONTEXT_TYPE t,DisplayObject* startobj):contextType(t),currentMask(nullptr),currentShaderBlendMode(AS_BLENDMODE::BLENDMODE_NORMAL),startobject(startobj)
 {
 	lsglLoadIdentity();
 }
@@ -427,7 +427,7 @@ void GLRenderContext::setMatrixUniform(LSGL_MATRIX m) const
 	engineData->exec_glUniformMatrix4fv(uni, 1, false, lsMVPMatrix);
 }
 
-CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height, bool smoothing):RenderContext(CAIRO)
+CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height, bool smoothing, DisplayObject* startobj):RenderContext(CAIRO,startobj)
 {
 	cairo_surface_t* cairoSurface=getCairoSurfaceForData(buf, width, height,width);
 	cr=cairo_create(cairoSurface);
@@ -469,16 +469,17 @@ void CairoRenderContext::simpleBlit(int32_t destX, int32_t destY, uint8_t* sourc
 }
 
 void CairoRenderContext::transformedBlit(const MATRIX& m, BitmapContainer* bc, ColorTransform* ct,
-		FILTER_MODE filterMode, uint32_t x, uint32_t y, uint32_t w, uint32_t h)
+		FILTER_MODE filterMode, number_t x, number_t y, number_t w, number_t h)
 {
 	uint8_t* bmp = ct ? bc->applyColorTransform(ct) : bc->getData();
 	cairo_surface_t* sourceSurface = getCairoSurfaceForData(bmp, bc->getWidth(), bc->getHeight(), bc->getWidth());
 	cairo_pattern_t* sourcePattern = cairo_pattern_create_for_surface(sourceSurface);
 	cairo_surface_destroy(sourceSurface);
-	cairo_set_matrix(cr,&m);
 	cairo_pattern_set_filter(sourcePattern, (filterMode==FILTER_SMOOTH)?CAIRO_FILTER_BILINEAR:CAIRO_FILTER_NEAREST);
 	cairo_pattern_set_extend(sourcePattern, CAIRO_EXTEND_NONE);
 	cairo_set_source(cr, sourcePattern);
+	cairo_matrix_t matrix = m.getInverted();
+	cairo_pattern_set_matrix(sourcePattern, &matrix);
 	cairo_pattern_destroy(sourcePattern);
 	cairo_rectangle(cr, x, y, w, h);
 	cairo_fill(cr);

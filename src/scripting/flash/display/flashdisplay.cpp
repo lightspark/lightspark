@@ -1309,12 +1309,23 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 {
 	bool renderingfailed = false;
-	if (ctxt.contextType == RenderContext::GL && computeCacheAsBitmap(false))
+	if (computeCacheAsBitmap(false))
 	{
-		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
-		if (d)
-			d->Render(ctxt);
-		return renderingfailed;
+		if (ctxt.contextType == RenderContext::GL)
+		{
+			_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
+			if (d)
+				d->Render(ctxt);
+			return renderingfailed;
+		}
+		else
+		{
+			if (ctxt.startobject != this)
+			{
+				defaultRender(ctxt);
+				return renderingfailed;
+			}
+		}
 	}
 	Locker l(mutexDisplayList);
 	//Now draw also the display list
@@ -3018,6 +3029,10 @@ void DisplayObjectContainer::purgeLegacyChildren()
 			legacyChildrenMarkedForDeletion.insert(i->first);
 			DisplayObject* obj = i->second;
 			obj->markedForLegacyDeletion=true;
+			// it seems adobe keeps removed objects and reuses them if they are added through placeObjectTags again
+			obj->incRef();
+			namedRemovedLegacyChildren[obj->name] = _MR(obj);
+
 			if(obj->name != BUILTIN_STRINGS::EMPTY)
 			{
 				multiname objName(nullptr);

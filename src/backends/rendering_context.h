@@ -45,10 +45,11 @@ protected:
 	void lsglMultMatrixf(const float *m);
 public:
 	enum CONTEXT_TYPE { CAIRO=0, GL };
-	RenderContext(CONTEXT_TYPE t);
+	RenderContext(CONTEXT_TYPE t,DisplayObject* startobj=nullptr);
 	CONTEXT_TYPE contextType;
 	const DisplayObject* currentMask;
 	AS_BLENDMODE currentShaderBlendMode;
+	DisplayObject* startobject;
 
 	/* Modelview matrix manipulation */
 	void lsglLoadIdentity();
@@ -149,7 +150,7 @@ private:
 	 */
 	static const CachedSurface invalidSurface;
 public:
-	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height,bool smoothing);
+	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height,bool smoothing,DisplayObject* startobj=nullptr);
 	virtual ~CairoRenderContext();
 	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			const ColorTransformBase& colortransform,
@@ -176,7 +177,7 @@ public:
 	 */
 	enum FILTER_MODE { FILTER_NONE = 0, FILTER_SMOOTH };
 	void transformedBlit(const MATRIX& m, BitmapContainer* bc, ColorTransform* ct,
-			FILTER_MODE filterMode, uint32_t x, uint32_t y, uint32_t w, uint32_t h);
+			FILTER_MODE filterMode, number_t x, number_t y, number_t w, number_t h);
 };
 
 }

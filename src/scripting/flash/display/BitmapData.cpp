@@ -245,7 +245,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 	d->requestInvalidation(&queue);
 	if (forCachedBitmap)
 		memset(pixels->getData(),0,pixels->getWidth()*pixels->getHeight()*4);
-	CairoRenderContext ctxt(pixels->getData(), pixels->getWidth(), pixels->getHeight(),smoothing);
+	CairoRenderContext ctxt(pixels->getData(), pixels->getWidth(), pixels->getHeight(),smoothing,d);
 	for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
 	{
 		DisplayObject* target=(*it).getPtr();
@@ -348,7 +348,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		if (clipRect.isNull())
 		{
 			ctxt.transformedBlit(initialMatrix, data->pixels.getPtr(),ctransform.getPtr(),
-								smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,0,0,data->pixels->getWidth(), data->pixels->getHeight());
+								smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,0,0,th->pixels->getWidth(), th->pixels->getHeight());
 		}
 		else
 		{

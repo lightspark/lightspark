@@ -1201,14 +1201,17 @@ void SystemState::setRenderRate(float rate)
 		return;
 	
 	//The requested rate is different than the current rate, let's reschedule the job
-	renderRate=rate;
-	startRenderTicks();
-
-	if (this->mainClip && this->mainClip->isConstructed())
+	if (rate > 0)
 	{
-		removeJob(this);
-		addTick(1000/renderRate,this);
+		renderRate=rate;
+		startRenderTicks();
+		if (this->mainClip && this->mainClip->isConstructed())
+		{
+			removeJob(this);
+			addTick(1000/renderRate,this);
+		}
 	}
+
 }
 
 void SystemState::addJob(IThreadJob* j)
@@ -2336,37 +2339,41 @@ void SystemState::tick()
 	 */
 
 	currentVm->setIdle(false);
-	if (firsttick)
+
+	if (mainClip && mainClip->getFrameRate() > 0)
 	{
-		// the first AdvanceFrame is done during the construction of the RootMovieClip,
-		// so we skip it here
-		firsttick = false;
+		if (firsttick)
+		{
+			// the first AdvanceFrame is done during the construction of the RootMovieClip,
+			// so we skip it here
+			firsttick = false;
+		}
+		else
+		{
+			/* Step 0: Set current frame number to the next frame 
+			 * Step 1: declare new objects */
+			_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
+			currentVm->addEvent(NullRef, advFrame);
+		}
+
+		/* Step 2: Send enterFrame events, if needed */
+		addBroadcastEvent("enterFrame");
+
+		/* Step 3: create legacy objects, which are new in this frame (top-down),
+		 * run their constructors (bottom-up) */
+		stage->incRef();
+		currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent(_MR(stage))));
+
+		/* Step 4: dispatch frameConstructed events */
+		addBroadcastEvent("frameConstructed");
+
+		/* Step 5: run all frameScripts (bottom-up) */
+		stage->incRef();
+		currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) ExecuteFrameScriptEvent(_MR(stage))));
+
+		/* Step 6: dispatch exitFrame event */
+		addBroadcastEvent("exitFrame");
 	}
-	else
-	{
-		/* Step 0: Set current frame number to the next frame 
-		 * Step 1: declare new objects */
-		_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
-		currentVm->addEvent(NullRef, advFrame);
-	}
-
-	/* Step 2: Send enterFrame events, if needed */
-	addBroadcastEvent("enterFrame");
-
-	/* Step 3: create legacy objects, which are new in this frame (top-down),
-	 * run their constructors (bottom-up) */
-	stage->incRef();
-	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent(_MR(stage))));
-
-	/* Step 4: dispatch frameConstructed events */
-	addBroadcastEvent("frameConstructed");
-
-	/* Step 5: run all frameScripts (bottom-up) */
-	stage->incRef();
-	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) ExecuteFrameScriptEvent(_MR(stage))));
-
-	/* Step 6: dispatch exitFrame event */
-	addBroadcastEvent("exitFrame");
 	/* Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
 	if (stage->invalidated)
 	{

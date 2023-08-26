@@ -51,126 +51,115 @@ protected:
 	void setErrorID(int32_t id) { errorID=id; }
 	static void errorGenerator(ASError *obj, asAtom *args, const unsigned int argslen);
 public:
-	ASError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error");
+	ASError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0, const tiny_string& error_name="Error",CLASS_SUBTYPE subtype=SUBTYPE_ERROR);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	ASFUNCTION_ATOM(_getStackTrace);
 	ASFUNCTION_ATOM(_toString);
 	tiny_string toString();
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 	tiny_string getStackTraceString();
 };
 
 class SecurityError: public ASError
 {
 public:
-	SecurityError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "SecurityError"){}
+	SecurityError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "SecurityError",SUBTYPE_SECURITYERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 };
 
 class ArgumentError: public ASError
 {
 public:
-	ArgumentError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "ArgumentError"){}
+	ArgumentError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "ArgumentError",SUBTYPE_ARGUMENTERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 };
 
 class DefinitionError: public ASError
 {
 public:
-	DefinitionError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "DefinitionError"){}
+	DefinitionError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "DefinitionError",SUBTYPE_DEFINITIONERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 };
 
 class EvalError: public ASError
 {
 public:
-	EvalError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "EvalError"){}
+	EvalError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "EvalError",SUBTYPE_EVALERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 };
 
 class RangeError: public ASError
 {
 public:
-	RangeError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "RangeError"){}
+	RangeError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "RangeError",SUBTYPE_RANGEERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 };
 
 class ReferenceError: public ASError
 {
 public:
-	ReferenceError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "ReferenceError"){}
+	ReferenceError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "ReferenceError",SUBTYPE_REFERENCEERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 };
 
 class SyntaxError: public ASError
 {
 public:
-	SyntaxError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "SyntaxError"){}
+	SyntaxError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "SyntaxError",SUBTYPE_SYNTAXERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 };
 
 class TypeError: public ASError
 {
 public:
-	TypeError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "TypeError"){}
+	TypeError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "TypeError",SUBTYPE_TYPEERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 };
 
 class URIError: public ASError
 {
 public:
-	URIError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "URIError"){}
+	URIError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "URIError",SUBTYPE_URIERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
+
 };
 
 class VerifyError: public ASError
 {
 public:
-	VerifyError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "VerifyError"){}
+	VerifyError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "VerifyError",SUBTYPE_VERIFYERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 };
 
 /* Not found in the spec but used by testcases */
 class UninitializedError: public ASError
 {
 public:
-	UninitializedError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "UninitializedError"){}
+	UninitializedError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : ASError(wrk,c, error_message, id, "UninitializedError",SUBTYPE_UNINITIALIZEDERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(generator);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 };
 
 }

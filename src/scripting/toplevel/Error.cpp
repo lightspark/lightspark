@@ -108,8 +108,8 @@ void lightspark::setError(ASObject* error)
 		throw error;
 }
 
-ASError::ASError(ASWorker* wrk,Class_base* c, const tiny_string& error_message, int id, const tiny_string& error_name):
-	ASObject(wrk,c),errorID(id),name(error_name),message(error_message)
+ASError::ASError(ASWorker* wrk, Class_base* c, const tiny_string& error_message, int id, const tiny_string& error_name, CLASS_SUBTYPE subtype):
+	ASObject(wrk,c,T_OBJECT,subtype),errorID(id),name(error_name),message(error_message)
 {
 	stacktrace = "";
 	for (uint32_t i = wrk->cur_recursion; i > 0; i--)
@@ -202,10 +202,6 @@ ASFUNCTIONBODY_GETTER(ASError, errorID)
 ASFUNCTIONBODY_GETTER_SETTER(ASError, message)
 ASFUNCTIONBODY_GETTER_SETTER(ASError, name)
 
-void ASError::buildTraits(ASObject* o)
-{
-}
-
 ASFUNCTIONBODY_ATOM(SecurityError,_constructor)
 {
 	assert(argslen<=1);
@@ -226,10 +222,6 @@ ASFUNCTIONBODY_ATOM(SecurityError,generator)
 void SecurityError::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-}
-
-void SecurityError::buildTraits(ASObject* o)
-{
 }
 
 ASFUNCTIONBODY_ATOM(ArgumentError,_constructor)
@@ -254,10 +246,6 @@ void ArgumentError::sinit(Class_base* c)
 	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
-void ArgumentError::buildTraits(ASObject* o)
-{
-}
-
 ASFUNCTIONBODY_ATOM(DefinitionError,_constructor)
 {
 	assert(argslen<=1);
@@ -278,10 +266,6 @@ ASFUNCTIONBODY_ATOM(DefinitionError,generator)
 void DefinitionError::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-}
-
-void DefinitionError::buildTraits(ASObject* o)
-{
 }
 
 ASFUNCTIONBODY_ATOM(EvalError,_constructor)
@@ -306,10 +290,6 @@ void EvalError::sinit(Class_base* c)
 	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
-void EvalError::buildTraits(ASObject* o)
-{
-}
-
 ASFUNCTIONBODY_ATOM(RangeError,_constructor)
 {
 	assert(argslen<=1);
@@ -330,10 +310,6 @@ ASFUNCTIONBODY_ATOM(RangeError,generator)
 void RangeError::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-}
-
-void RangeError::buildTraits(ASObject* o)
-{
 }
 
 ASFUNCTIONBODY_ATOM(ReferenceError,_constructor)
@@ -358,10 +334,6 @@ void ReferenceError::sinit(Class_base* c)
 	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
-void ReferenceError::buildTraits(ASObject* o)
-{
-}
-
 ASFUNCTIONBODY_ATOM(SyntaxError,_constructor)
 {
 	assert(argslen<=1);
@@ -382,10 +354,6 @@ ASFUNCTIONBODY_ATOM(SyntaxError,generator)
 void SyntaxError::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-}
-
-void SyntaxError::buildTraits(ASObject* o)
-{
 }
 
 ASFUNCTIONBODY_ATOM(TypeError,_constructor)
@@ -410,10 +378,6 @@ void TypeError::sinit(Class_base* c)
 	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
-void TypeError::buildTraits(ASObject* o)
-{
-}
-
 ASFUNCTIONBODY_ATOM(URIError,_constructor)
 {
 	assert(argslen<=1);
@@ -434,10 +398,6 @@ ASFUNCTIONBODY_ATOM(URIError,generator)
 void URIError::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-}
-
-void URIError::buildTraits(ASObject* o)
-{
 }
 
 ASFUNCTIONBODY_ATOM(VerifyError,_constructor)
@@ -462,10 +422,6 @@ void VerifyError::sinit(Class_base* c)
 	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 }
 
-void VerifyError::buildTraits(ASObject* o)
-{
-}
-
 ASFUNCTIONBODY_ATOM(UninitializedError,_constructor)
 {
 	assert(argslen<=1);
@@ -486,8 +442,4 @@ ASFUNCTIONBODY_ATOM(UninitializedError,generator)
 void UninitializedError::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASError, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-}
-
-void UninitializedError::buildTraits(ASObject* o)
-{
 }

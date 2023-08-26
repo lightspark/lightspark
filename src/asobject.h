@@ -1400,8 +1400,10 @@ FORCE_INLINE void variable::setVarNoCoerce(asAtom &v)
 class AVM1Function;
 class Activation_object;
 class ApplicationDomain;
+class ArgumentError;
 class Array;
 class ASCondition;
+class ASError;
 class ASFile;
 class ASMutex;
 class ASQName;
@@ -1426,12 +1428,15 @@ class ContextMenuEvent;
 class CubeTexture;
 class DatagramSocket;
 class Date;
+class DefinitionError;
 class Dictionary;
 class DisplacementFilter;
 class DisplayObject;
 class DisplayObjectContainer;
 class DropShadowFilter;
+class EastAsianJustifier;
 class ElementFormat;
+class EvalError;
 class Event;
 class ExtensionContext;
 class FileMode;
@@ -1470,37 +1475,47 @@ class Point;
 class Program3D;
 class ProgressEvent;
 class Proxy;
+class RangeError;
 class Rectangle;
 class RectangleTexture;
+class ReferenceError;
 class RegExp;
 class RootMovieClip;
 class SampleDataEvent;
+class SecurityError;
 class ShaderFilter;
 class SharedObject;
 class Shape;
 class SimpleButton;
 class Sound;
 class SoundChannel;
+class SpaceJustifier;
 class Sprite;
 class Stage;
 class Stage3D;
+class SyntaxError;
 class Template_base;
 class TextBlock;
 class TextElement;
 class TextField;
 class TextFormat;
+class TextJustifier;
 class TextLine;
 class TextLineMetrics;
 class Texture;
 class TextureBase;
 class ThrottleEvent;
 class Type;
+class TypeError;
 class UInteger;
 class Undefined;
+class UninitializedError;
+class URIError;
 class URLLoader;
 class URLRequest;
 class Vector;
 class Vector3D;
+class VerifyError;
 class VertexBuffer3D;
 class Video;
 class VideoTexture;
@@ -1517,8 +1532,10 @@ class XMLList;
 template<> inline bool ASObject::is<AVM1Function>() const { return subtype==SUBTYPE_AVM1FUNCTION; }
 template<> inline bool ASObject::is<Activation_object>() const { return subtype==SUBTYPE_ACTIVATIONOBJECT; }
 template<> inline bool ASObject::is<ApplicationDomain>() const { return subtype==SUBTYPE_APPLICATIONDOMAIN; }
+template<> inline bool ASObject::is<ArgumentError>() const { return subtype==SUBTYPE_ARGUMENTERROR; }
 template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
 template<> inline bool ASObject::is<ASCondition>() const { return subtype==SUBTYPE_CONDITION; }
+template<> inline bool ASObject::is<ASError>() const { return subtype==SUBTYPE_ERROR || subtype==SUBTYPE_SECURITYERROR || subtype==SUBTYPE_ARGUMENTERROR || subtype==SUBTYPE_DEFINITIONERROR || subtype==SUBTYPE_EVALERROR || subtype==SUBTYPE_RANGEERROR || subtype==SUBTYPE_REFERENCEERROR || subtype==SUBTYPE_SYNTAXERROR || subtype==SUBTYPE_TYPEERROR || subtype==SUBTYPE_URIERROR || subtype==SUBTYPE_VERIFYERROR || subtype==SUBTYPE_UNINITIALIZEDERROR; }
 template<> inline bool ASObject::is<ASFile>() const { return subtype==SUBTYPE_FILE; }
 template<> inline bool ASObject::is<ASMutex>() const { return subtype==SUBTYPE_MUTEX; }
 template<> inline bool ASObject::is<ASObject>() const { return true; }
@@ -1545,12 +1562,15 @@ template<> inline bool ASObject::is<ConvolutionFilter>() const { return subtype=
 template<> inline bool ASObject::is<CubeTexture>() const { return subtype==SUBTYPE_CUBETEXTURE; }
 template<> inline bool ASObject::is<Date>() const { return subtype==SUBTYPE_DATE; }
 template<> inline bool ASObject::is<DatagramSocket>() const { return subtype==SUBTYPE_DATAGRAMSOCKET; }
+template<> inline bool ASObject::is<DefinitionError>() const { return subtype==SUBTYPE_DEFINITIONERROR; }
 template<> inline bool ASObject::is<Dictionary>() const { return subtype==SUBTYPE_DICTIONARY; }
 template<> inline bool ASObject::is<DisplacementFilter>() const { return subtype==SUBTYPE_DISPLACEMENTFILTER; }
 template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_VIDEO || subtype == SUBTYPE_SIMPLEBUTTON || subtype == SUBTYPE_SHAPE || subtype == SUBTYPE_MORPHSHAPE || subtype==SUBTYPE_LOADER; }
 template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_SIMPLEBUTTON || subtype==SUBTYPE_LOADER; }
 template<> inline bool ASObject::is<DropShadowFilter>() const { return subtype==SUBTYPE_DROPSHADOWFILTER; }
+template<> inline bool ASObject::is<EastAsianJustifier>() const { return subtype==SUBTYPE_EASTASIANJUSTIFIER; }
 template<> inline bool ASObject::is<ElementFormat>() const { return subtype==SUBTYPE_ELEMENTFORMAT; }
+template<> inline bool ASObject::is<EvalError>() const { return subtype==SUBTYPE_EVALERROR; }
 template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT || subtype==SUBTYPE_SAMPLEDATA_EVENT || subtype == SUBTYPE_THROTTLE_EVENT || subtype == SUBTYPE_CONTEXTMENUEVENT || subtype == SUBTYPE_GAMEINPUTEVENT; }
 template<> inline bool ASObject::is<ExtensionContext>() const { return subtype==SUBTYPE_EXTENSIONCONTEXT; }
 template<> inline bool ASObject::is<FontDescription>() const { return subtype==SUBTYPE_FONTDESCRIPTION; }
@@ -1589,39 +1609,49 @@ template<> inline bool ASObject::is<Point>() const { return subtype==SUBTYPE_POI
 template<> inline bool ASObject::is<Program3D>() const { return subtype==SUBTYPE_PROGRAM3D; }
 template<> inline bool ASObject::is<ProgressEvent>() const { return subtype==SUBTYPE_PROGRESSEVENT; }
 template<> inline bool ASObject::is<Proxy>() const { return subtype==SUBTYPE_PROXY; }
+template<> inline bool ASObject::is<RangeError>() const { return subtype==SUBTYPE_RANGEERROR; }
 template<> inline bool ASObject::is<Rectangle>() const { return subtype==SUBTYPE_RECTANGLE; }
 template<> inline bool ASObject::is<RectangleTexture>() const { return subtype==SUBTYPE_RECTANGLETEXTURE; }
+template<> inline bool ASObject::is<ReferenceError>() const { return subtype==SUBTYPE_REFERENCEERROR; }
 template<> inline bool ASObject::is<RegExp>() const { return subtype==SUBTYPE_REGEXP; }
 template<> inline bool ASObject::is<RootMovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP; }
 template<> inline bool ASObject::is<SampleDataEvent>() const { return subtype==SUBTYPE_SAMPLEDATA_EVENT; }
 template<> inline bool ASObject::is<ShaderFilter>() const { return subtype==SUBTYPE_SHADERFILTER; }
+template<> inline bool ASObject::is<SecurityError>() const { return subtype==SUBTYPE_SECURITYERROR; }
 template<> inline bool ASObject::is<Shape>() const { return subtype==SUBTYPE_SHAPE; }
 template<> inline bool ASObject::is<SharedObject>() const { return subtype==SUBTYPE_SHAREDOBJECT; }
 template<> inline bool ASObject::is<SimpleButton>() const { return subtype==SUBTYPE_SIMPLEBUTTON; }
 template<> inline bool ASObject::is<Sound>() const { return subtype==SUBTYPE_SOUND; }
 template<> inline bool ASObject::is<SoundChannel>() const { return subtype==SUBTYPE_SOUNDCHANNEL; }
 template<> inline bool ASObject::is<SoundTransform>() const { return subtype==SUBTYPE_SOUNDTRANSFORM; }
+template<> inline bool ASObject::is<SpaceJustifier>() const { return subtype==SUBTYPE_SPACEJUSTIFIER; }
 template<> inline bool ASObject::is<Sprite>() const { return subtype==SUBTYPE_SPRITE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype == SUBTYPE_MOVIECLIP; }
 template<> inline bool ASObject::is<Stage>() const { return subtype==SUBTYPE_STAGE; }
 template<> inline bool ASObject::is<Stage3D>() const { return subtype==SUBTYPE_STAGE3D; }
+template<> inline bool ASObject::is<SyntaxError>() const { return subtype==SUBTYPE_SYNTAXERROR; }
 template<> inline bool ASObject::is<SyntheticFunction>() const { return subtype==SUBTYPE_SYNTHETICFUNCTION; }
 template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMPLATE; }
 template<> inline bool ASObject::is<TextBlock>() const { return subtype==SUBTYPE_TEXTBLOCK; }
 template<> inline bool ASObject::is<TextElement>() const { return subtype==SUBTYPE_TEXTELEMENT; }
 template<> inline bool ASObject::is<TextField>() const { return subtype==SUBTYPE_TEXTFIELD; }
 template<> inline bool ASObject::is<TextFormat>() const { return subtype==SUBTYPE_TEXTFORMAT; }
+template<> inline bool ASObject::is<TextJustifier>() const { return subtype==SUBTYPE_TEXTJUSTIFIER || subtype==SUBTYPE_SPACEJUSTIFIER || subtype==SUBTYPE_EASTASIANJUSTIFIER; }
 template<> inline bool ASObject::is<TextLine>() const { return subtype==SUBTYPE_TEXTLINE; }
 template<> inline bool ASObject::is<TextLineMetrics>() const { return subtype==SUBTYPE_TEXTLINEMETRICS; }
 template<> inline bool ASObject::is<Texture>() const { return subtype==SUBTYPE_TEXTURE; }
 template<> inline bool ASObject::is<TextureBase>() const { return subtype==SUBTYPE_TEXTUREBASE || subtype==SUBTYPE_TEXTURE || subtype==SUBTYPE_CUBETEXTURE || subtype==SUBTYPE_RECTANGLETEXTURE || subtype==SUBTYPE_TEXTURE || subtype==SUBTYPE_VIDEOTEXTURE; }
 template<> inline bool ASObject::is<ThrottleEvent>() const { return subtype==SUBTYPE_THROTTLE_EVENT; }
 template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
+template<> inline bool ASObject::is<TypeError>() const { return subtype==SUBTYPE_TYPEERROR; }
 template<> inline bool ASObject::is<UInteger>() const { return type==T_UINTEGER; }
 template<> inline bool ASObject::is<Undefined>() const { return type==T_UNDEFINED; }
+template<> inline bool ASObject::is<UninitializedError>() const { return subtype == SUBTYPE_UNINITIALIZEDERROR; }
+template<> inline bool ASObject::is<URIError>() const { return subtype == SUBTYPE_URIERROR; }
 template<> inline bool ASObject::is<URLLoader>() const { return subtype == SUBTYPE_URLLOADER; }
 template<> inline bool ASObject::is<URLRequest>() const { return subtype == SUBTYPE_URLREQUEST; }
 template<> inline bool ASObject::is<Vector>() const { return subtype==SUBTYPE_VECTOR; }
 template<> inline bool ASObject::is<Vector3D>() const { return subtype==SUBTYPE_VECTOR3D; }
+template<> inline bool ASObject::is<VerifyError>() const { return subtype==SUBTYPE_VERIFYERROR; }
 template<> inline bool ASObject::is<VertexBuffer3D>() const { return subtype==SUBTYPE_VERTEXBUFFER3D; }
 template<> inline bool ASObject::is<Video>() const { return subtype==SUBTYPE_VIDEO; }
 template<> inline bool ASObject::is<VideoTexture>() const { return subtype==SUBTYPE_VIDEOTEXTURE; }

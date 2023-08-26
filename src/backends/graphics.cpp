@@ -1312,12 +1312,12 @@ tiny_string TextData::getText(uint32_t line) const
 	return text;
 }
 
-void TextData::setText(const char* text)
+void TextData::setText(const char* text, bool firstlineonly)
 {
 	textlines.clear();
-	appendText(text);
+	appendText(text,firstlineonly);
 }
-void TextData::appendText(const char *text)
+void TextData::appendText(const char *text,bool firstlineonly)
 {
 	if (*text == 0x00)
 		return;
@@ -1336,19 +1336,30 @@ void TextData::appendText(const char *text)
 	uint32_t index = tiny_string::npos;
 	uint32_t index1 = tiny_string::npos;
 	uint32_t index2 = tiny_string::npos;
+	uint32_t index3 = tiny_string::npos;
+	uint32_t index4 = tiny_string::npos;
 	do
 	{
 		index1 = t.find("\n");
 		index2 = t.find("\r");
-		index = min(index1,index2);
+		if (!t.isSinglebyte())
+		{
+			index3 = t.find(tiny_string::fromChar(0x2028));
+			index4 = t.find(tiny_string::fromChar(0x2029));
+		}
+		index = min(index1,min(index2,min(index3,index4)));
 		textline line;
 		line.autosizeposition=0;
 		line.textwidth=UINT32_MAX;
 		if (index != tiny_string::npos)
 		{
 			line.text = t.substr_bytes(0,index).raw_buf();
-			if (index < t.numChars()-1 && (t.charAt(index+1)=='\r' || t.charAt(index+1)=='\n'))
-				t=t.substr_bytes(index+2,UINT32_MAX);
+			if (index < t.numChars()-1)
+			{
+				uint32_t c = t.charAt(index+1);
+				if (c=='\r' || c=='\n' || c==0x2028 || c==0x2029)
+					t=t.substr_bytes(index+2,UINT32_MAX);
+			}
 			else
 				t=t.substr_bytes(index+1,UINT32_MAX);
 		}
@@ -1361,7 +1372,7 @@ void TextData::appendText(const char *text)
 		}
 		textlines.push_back(line);
 	}
-	while (index != tiny_string::npos);
+	while (index != tiny_string::npos && !firstlineonly);
 }
 
 void TextData::getTextSizes(const tiny_string& text, number_t& tw, number_t& th)

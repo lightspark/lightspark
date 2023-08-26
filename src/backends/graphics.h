@@ -484,8 +484,8 @@ public:
 	bool isPassword;
 	FontTag* embeddedFont;
 	tiny_string getText(uint32_t line=UINT32_MAX) const;
-	void setText(const char* text);
-	void appendText(const char* text);
+	void setText(const char* text, bool firstlineonly=false);
+	void appendText(const char* text, bool firstlineonly=false);
 	void getTextSizes(const tiny_string& text, number_t& tw, number_t& th);
 	bool TextIsEqual(const std::vector<tiny_string>& lines) const;
 	uint32_t getLineCount() const { return textlines.size(); }

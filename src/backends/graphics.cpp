@@ -1359,6 +1359,8 @@ void TextData::appendText(const char *text,bool firstlineonly)
 				uint32_t c = t.charAt(index+1);
 				if (c=='\r' || c=='\n' || c==0x2028 || c==0x2029)
 					t=t.substr_bytes(index+2,UINT32_MAX);
+				else
+					t=t.substr_bytes(index+1,UINT32_MAX);
 			}
 			else
 				t=t.substr_bytes(index+1,UINT32_MAX);

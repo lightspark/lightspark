@@ -713,7 +713,9 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	}
 	if (updatesizes)
 	{
-		th->checkEmbeddedFont();
+		th->linemutex->lock();
+		th->checkEmbeddedFont(th);
+		th->linemutex->unlock();
 		th->updateSizes();
 		th->setSizeAndPositionFromAutoSize();
 		th->hasChanged=true;
@@ -1587,7 +1589,9 @@ void TextField::textUpdated()
 	scrollV = 1;
 	selectionBeginIndex = 0;
 	selectionEndIndex = 0;
-	checkEmbeddedFont();
+	linemutex->lock();
+	checkEmbeddedFont(this);
+	linemutex->unlock();
 	updateSizes();
 	setSizeAndPositionFromAutoSize();
 	// TODO implement fast rendering path for not embedded fonts
@@ -1662,28 +1666,6 @@ void TextField::defaultEventBehavior(_R<Event> e)
 		else
 			LOG(LOG_NOT_IMPLEMENTED,"TextField keyDown event handling for modifier "<<modifiers<<" and char code "<<hex<<ev->getSDLScanCode());
 	}
-}
-FontTag* TextField::checkEmbeddedFont()
-{
-	RootMovieClip* currentRoot=this->loadedFrom;
-	if (!currentRoot) currentRoot=this->getRoot().getPtr();
-	if (!currentRoot) currentRoot = getSystemState()->mainClip;
-	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
-	if (embeddedfont)
-	{
-		linemutex->lock();
-		for (auto it = textlines.begin(); it != textlines.end(); it++)
-		{
-			if (!embeddedfont->hasGlyphs((*it).text))
-			{
-				embeddedfont=nullptr;
-				break;
-			}
-		}
-		linemutex->unlock();
-	}
-	this->embeddedFont=embeddedfont;
-	return embeddedfont;
 }
 IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {

@@ -303,6 +303,79 @@ uint32_t tiny_string::find(const tiny_string& needle, uint32_t start) const
 	else
 		return start + g_utf8_pointer_to_offset(gp,found);
 }
+bool tiny_string::getLine(uint32_t& byteindex, tiny_string& line)
+{
+	bool res = false;
+	unsigned char utfpos=0;
+	uint32_t startindex = byteindex;
+	uint32_t endindex = stringSize-byteindex-1;
+	line.isASCII = true;
+	while (!res && byteindex < stringSize-1)
+	{
+		switch((uint8_t)buf[byteindex])
+		{
+			case 0x00:
+				line.hasNull=true;
+				break;
+			case '\n':
+			case '\r':
+				res=true;
+				endindex=byteindex;
+				break;
+			case 0xe2:
+				// utf-8 line separators:
+				// e2 80 a8 (unicode 0x2028)
+				// e2 80 a9 (unicode 0x2029)
+				if (byteindex < stringSize-3)
+				{
+					if ((uint8_t)buf[byteindex+1] == 0x80 && ((uint8_t)buf[byteindex+2] == 0xa8 || (uint8_t)buf[byteindex+2] == 0xa9))
+					{
+						endindex=byteindex;
+						byteindex+=2;
+						res=true;
+						break;
+					}
+				}
+				break;
+		}
+		if (!res)
+		{
+			if (buf[byteindex] & 0x80)
+			{
+				if (utfpos == 0)
+				{
+					utfpos = buf[byteindex];
+				}
+				utfpos = utfpos << 1;
+				if (!(utfpos & 0x80))
+				{
+					line.numchars++;
+					utfpos = 0;
+				}
+				line.isASCII = false;
+			}
+			else
+				line.numchars++;
+		}
+		byteindex++;
+	}
+	//prepare line for new size
+	uint32_t newStringSize=endindex-startindex+1;
+	if(line.type==READONLY)
+		line.resetToStatic();
+	if(line.type==STATIC && newStringSize > STATIC_SIZE)
+		line.createBuffer(newStringSize);
+	else if(line.type==DYNAMIC && newStringSize > line.stringSize)
+		line.resizeBuffer(newStringSize);
+
+	// copy part from startindex to byteindex into line
+	memcpy(line.buf,buf+startindex,newStringSize-1);
+	line.buf[newStringSize-1]=0x00;
+	line.stringSize=newStringSize;
+	if (byteindex>=stringSize-1)
+		byteindex = tiny_string::npos;
+	return res;
+}
 
 uint32_t tiny_string::rfind(const tiny_string& needle, uint32_t start) const
 {

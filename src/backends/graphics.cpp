@@ -1333,46 +1333,22 @@ void TextData::appendText(const char *text,bool firstlineonly)
 	else
 		CairoPangoRenderer::getBounds(*this,"", w, h);
 	
-	uint32_t index = tiny_string::npos;
-	uint32_t index1 = tiny_string::npos;
-	uint32_t index2 = tiny_string::npos;
-	uint32_t index3 = tiny_string::npos;
-	uint32_t index4 = tiny_string::npos;
+	uint32_t index=0;
 	do
 	{
-		index1 = t.find("\n");
-		index2 = t.find("\r");
-		if (!t.isSinglebyte())
-		{
-			index3 = t.find(tiny_string::fromChar(0x2028));
-			index4 = t.find(tiny_string::fromChar(0x2029));
-		}
-		index = min(index1,min(index2,min(index3,index4)));
 		textline line;
 		line.autosizeposition=0;
 		line.textwidth=UINT32_MAX;
-		if (index != tiny_string::npos)
-		{
-			line.text = t.substr_bytes(0,index).raw_buf();
-			if (index < t.numChars()-1)
-			{
-				uint32_t c = t.charAt(index+1);
-				if (c=='\r' || c=='\n' || c==0x2028 || c==0x2029)
-					t=t.substr_bytes(index+2,UINT32_MAX);
-				else
-					t=t.substr_bytes(index+1,UINT32_MAX);
-			}
-			else
-				t=t.substr_bytes(index+1,UINT32_MAX);
-		}
-		else
-		{
-			if (t.numBytes() > 0 &&  t.charAt(t.numBytes()-1)=='\r')
-				line.text = t.substr_bytes(0,t.numBytes()-1).raw_buf();
-			else
-				line.text = t.raw_buf();
-		}
+		bool haslineterminator = t.getLine(index,line.text);
 		textlines.push_back(line);
+		if (firstlineonly && haslineterminator && index==tiny_string::npos)
+		{
+			// we only want the first line, but we have to add an empty line if text ends with line terminator
+			textline line;
+			line.autosizeposition=0;
+			line.textwidth=UINT32_MAX;
+			textlines.push_back(line);
+		}
 	}
 	while (index != tiny_string::npos && !firstlineonly);
 }
@@ -1396,6 +1372,27 @@ bool TextData::TextIsEqual(const std::vector<tiny_string>& lines) const
 			return false;
 	}
 	return true;
+}
+
+FontTag* TextData::checkEmbeddedFont(DisplayObject* d)
+{
+	RootMovieClip* currentRoot=d->loadedFrom;
+	if (!currentRoot) currentRoot=d->getRoot().getPtr();
+	if (!currentRoot) currentRoot = d->getSystemState()->mainClip;
+	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
+	if (embeddedfont)
+	{
+		for (auto it = textlines.begin(); it != textlines.end(); it++)
+		{
+			if (!embeddedfont->hasGlyphs((*it).text))
+			{
+				embeddedfont=nullptr;
+				break;
+			}
+		}
+	}
+	this->embeddedFont=embeddedfont;
+	return embeddedfont;
 }
 
 void ColorTransformBase::fillConcatenated(DisplayObject* src, bool ignoreBlendMode)

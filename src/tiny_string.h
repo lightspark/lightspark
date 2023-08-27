@@ -256,6 +256,10 @@ public:
 	 * returns index of character */
 	uint32_t find(const tiny_string& needle, uint32_t start = 0) const;
 	uint32_t rfind(const tiny_string& needle, uint32_t start = npos) const;
+	// fills line with the text from byteindex up to the next line terminator
+	// upon return byteindex will be set to the index after the next line terminator
+	// returns true if a line terminator was found
+	bool getLine(uint32_t& byteindex, tiny_string& line);
 	tiny_string& replace(uint32_t pos1, uint32_t n1, const tiny_string& o);
 	tiny_string& replace_bytes(uint32_t bytestart, uint32_t bytenum, const tiny_string& o);
 	tiny_string lowercase() const;

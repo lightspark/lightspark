@@ -138,7 +138,6 @@ private:
 	void getTextBounds(const tiny_string &txt, number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax);
 protected:
 	void afterSetLegacyMatrix() override;
-	FontTag* checkEmbeddedFont();
 public:
 	TextField(ASWorker* wrk,Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true, const char* varname="", DefineEditTextTag* _tag=nullptr);
 	~TextField();

@@ -27,6 +27,7 @@
 #include "scripting/argconv.h"
 #include "parsing/tags.h"
 #include "swf.h"
+#include "platforms/engineutils.h"
 
 #define MAX_LINE_WIDTH 1000000
 
@@ -706,9 +707,10 @@ bool TextBlock::fillTextLine(_NR<TextLine> textLine, bool fitSomething, _NR<Text
 	if (fitSomething && linetext.empty())
 		linetext = " ";
 	textLine->setText(linetext.raw_buf(),true);
+	textLine->checkEmbeddedFont(textLine.getPtr());
 	textLine->textBlockBeginIndex = startpos;
-	textLine->rawTextLength=linetext.numChars();
-	return !textLine->getText().empty();
+	textLine->rawTextLength=textLine->getText().numChars();
+	return textLine->rawTextLength>0;
 }
 ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 {
@@ -1078,11 +1080,12 @@ ASFUNCTIONBODY_ATOM(GroupElement,_constructor)
 }
 
 TextLine::TextLine(ASWorker* wrk, Class_base* c, _NR<TextBlock> owner)
-  : DisplayObjectContainer(wrk,c), TextData(),nextLine(nullptr),previousLine(nullptr),userData(nullptr)
+  : DisplayObjectContainer(wrk,c), TextData(), TokenContainer(this),nextLine(nullptr),previousLine(nullptr),userData(nullptr)
   ,hasGraphicElement(false),hasTabs(false),rawTextLength(0),specifiedWidth(0),textBlockBeginIndex(0)
 {
 	subtype = SUBTYPE_TEXTLINE;
 	textBlock = owner;
+	fillstyleTextColor.push_back(0xff);
 }
 
 void TextLine::sinit(Class_base* c)
@@ -1226,15 +1229,19 @@ void TextLine::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 	if (requestInvalidationForCacheAsBitmap(q))
 		return;
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
-	incRef();
-	q->addToInvalidateQueue(_MR(this));
+	if (!tokensEmpty())
+		TokenContainer::requestInvalidation(q,forceTextureRefresh);
+	else
+	{
+		incRef();
+		q->addToInvalidateQueue(_MR(this));
+	}
 }
 
 IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
-	if (cachedBitmap && computeCacheAsBitmap())
+	if (cachedBitmap && computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
-		setNeedsTextureRecalculation();
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
 	number_t x,y,rx,ry;
@@ -1246,26 +1253,71 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 		return nullptr;
 	}
 
-	//Compute the matrix and the masks that are relevant
+	tokens.clear();
+	MATRIX totalMatrix;
+	if (embeddedFont)
+	{
+		scaling = 1.0f/1024.0f/20.0f;
+		fillstyleTextColor.front().FillStyleType=SOLID_FILL;
+		fillstyleTextColor.front().Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
+		int32_t startposy = TEXTFIELD_PADDING;
+		for (auto it = textlines.begin(); it != textlines.end(); it++)
+		{
+			if (isPassword)
+			{
+				tiny_string pwtxt;
+				for (uint32_t i = 0; i < (*it).text.numChars(); i++)
+					pwtxt+="*";
+				embeddedFont->fillTextTokens(tokens,pwtxt,fontSize,fillstyleTextColor,leading,TEXTFIELD_PADDING+(*it).autosizeposition,startposy);
+			}
+			else
+				embeddedFont->fillTextTokens(tokens,(*it).text,fontSize,fillstyleTextColor,leading,TEXTFIELD_PADDING+(*it).autosizeposition,startposy);
+			startposy += this->leading+(embeddedFont->getAscent()+embeddedFont->getDescent()+embeddedFont->getLeading())*fontSize/1024;
+		}
+		if (tokens.empty())
+			return nullptr;
+		return TokenContainer::invalidate(target, initialMatrix,smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
+	}
+	if (computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	{
+		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
+	}
+	std::vector<IDrawable::MaskData> masks;
 	bool isMask;
 	_NR<DisplayObject> mask;
-	MATRIX totalMatrix;
-	std::vector<IDrawable::MaskData> masks;
-	computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask);
-	totalMatrix=initialMatrix.multiplyMatrix(totalMatrix);
+	computeMasksAndMatrix(target, masks, totalMatrix,false,isMask,mask);
+	MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
+	totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
+	totalMatrix.xx = abs(totalMatrix.xx);
+	totalMatrix.yy = abs(totalMatrix.yy);
+	totalMatrix.x0 = 0;
+	totalMatrix.y0 = 0;
+	
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
 	MATRIX totalMatrix2;
 	computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask);
 	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
+	if (getLineCount()==0)
+		return nullptr;
 	if(width==0 || height==0)
 		return nullptr;
-
+	if(totalMatrix.getScaleX() != 1 || totalMatrix.getScaleY() != 1)
+		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<totalMatrix.getScaleX()<<" "<<totalMatrix.getScaleY()<<" "<<this->getText());
 	float rotation = getConcatenatedMatrix().getRotation();
-	return new CairoPangoRenderer(*this, totalMatrix,
+	float xscale = getConcatenatedMatrix().getScaleX();
+	float yscale = getConcatenatedMatrix().getScaleY();
+	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
+	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, ceil(width), ceil(height),
+																					rx, ry, ceil(rwidth), ceil(rheight), rotation,xscale,yscale,isMask,mask, 1.0f,getConcatenatedAlpha(), masks,
+																					ColorTransformBase(),
+																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE);
+	if (res != nullptr)
+		return res;
+	return new CairoPangoRenderer(*this,totalMatrix2,
 				x, y, ceil(width), ceil(height),
 				rx, ry, ceil(rwidth), ceil(rheight), rotation,
-				totalMatrix.getScaleX(),totalMatrix.getScaleY(),
+				xscale,yscale,
 				isMask,mask,
 				1.0f,getConcatenatedAlpha(),masks,
 				ColorTransformBase(),

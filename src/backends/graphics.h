@@ -489,6 +489,7 @@ public:
 	void getTextSizes(const tiny_string& text, number_t& tw, number_t& th);
 	bool TextIsEqual(const std::vector<tiny_string>& lines) const;
 	uint32_t getLineCount() const { return textlines.size(); }
+	FontTag* checkEmbeddedFont(DisplayObject* d);
 };
 
 class LineData {

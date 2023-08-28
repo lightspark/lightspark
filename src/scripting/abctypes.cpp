@@ -325,6 +325,7 @@ istream& lightspark::operator >>(istream& in, exception_info_abc& v)
 	v.from = from;
 	v.to = to;
 	v.target = target;
+	v.exc_class=nullptr;
 	return in;
 }
 

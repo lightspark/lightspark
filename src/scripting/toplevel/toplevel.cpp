@@ -684,10 +684,25 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 			LOG_CALL("pos=" << pos);
 			for (unsigned int i=0;i<mi->body->exceptions.size();i++)
 			{
-				exception_info_abc exc=mi->body->exceptions[i];
-				multiname* name=mi->context->getMultiname(exc.exc_type, NULL);
-				LOG_CALL("f=" << exc.from << " t=" << exc.to << " type=" << *name);
-				if (pos >= exc.from && pos <= exc.to && mi->context->isinstance(excobj, name))
+				exception_info_abc& exc=mi->body->exceptions[i];
+				if (pos < exc.from || pos > exc.to)
+					continue;
+				bool ok = false;
+				if (!exc.exc_class)
+				{
+					multiname* name=mi->context->getMultiname(exc.exc_type, nullptr);
+					if(name->name_s_id == BUILTIN_STRINGS::ANY)
+						ok = true;
+					else
+					{
+						const Type* t = Type::getTypeFromMultiname(name,mi->context,true);
+						exc.exc_class = (Class_base*)dynamic_cast<const Class_base*>(t);
+					}
+				}
+				if (!ok && exc.exc_class)
+					ok = excobj->getClass() && excobj->getClass()->isSubClass(exc.exc_class);
+				LOG_CALL("f=" << exc.from << " t=" << exc.to << " type=" << mi->context->getMultiname(exc.exc_type, nullptr));
+				if (ok)
 				{
 					LOG_CALL("Exception caught in function "<<getSystemState()->getStringFromUniqueId(functionname) << " with closure "<< asAtomHandler::toDebugString(obj));
 					no_handler = false;

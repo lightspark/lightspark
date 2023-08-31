@@ -1602,13 +1602,13 @@ void ABCVm::setSuper(call_context* th, int n)
 
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj);
 
-	assert_and_throw(th->inClass)
-	assert_and_throw(th->inClass->super);
+	assert_and_throw(th->function->inClass)
+	assert_and_throw(th->function->inClass->super);
 	assert_and_throw(obj->getClass());
-	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
+	assert_and_throw(obj->getClass()->isSubClass(th->function->inClass));
 
 	bool alreadyset=false;
-	obj->setVariableByMultiname_intern(*name,*value,ASObject::CONST_NOT_ALLOWED,th->inClass->super.getPtr(),&alreadyset,th->worker);
+	obj->setVariableByMultiname_intern(*name,*value,ASObject::CONST_NOT_ALLOWED,th->function->inClass->super.getPtr(),&alreadyset,th->worker);
 	if (alreadyset)
 		ASATOM_DECREF_POINTER(value);
 	name->resetNameIfObject();
@@ -1640,8 +1640,8 @@ void ABCVm::getSuper(call_context* th, int n)
 	}
 
 	Class_base* cls = nullptr;
-	if (th->inClass && !th->inClass->super.isNull())
-		cls = th->inClass->super.getPtr();
+	if (th->function->inClass && !th->function->inClass->super.isNull())
+		cls = th->function->inClass->super.getPtr();
 	else if (obj->getClass() && !obj->getClass()->super.isNull())
 		cls = obj->getClass()->super.getPtr();
 	assert_and_throw(cls);
@@ -1776,13 +1776,13 @@ void ABCVm::constructSuper(call_context* th, int m)
 	asAtom obj=asAtomHandler::invalidAtom;
 	RUNTIME_STACK_POP(th,obj);
 
-	assert_and_throw(th->inClass);
-	assert_and_throw(th->inClass->super);
+	assert_and_throw(th->function->inClass);
+	assert_and_throw(th->function->inClass->super);
 	assert_and_throw(asAtomHandler::getObject(obj)->getClass());
-	assert_and_throw(asAtomHandler::getObject(obj)->getClass()->isSubClass(th->inClass));
-	LOG_CALL("Super prototype name " << th->inClass->super->class_name);
+	assert_and_throw(asAtomHandler::getObject(obj)->getClass()->isSubClass(th->function->inClass));
+	LOG_CALL("Super prototype name " << th->function->inClass->super->class_name);
 
-	th->inClass->super->handleConstruction(obj,args, m, false);
+	th->function->inClass->super->handleConstruction(obj,args, m, false);
 	ASATOM_DECREF(obj);
 	LOG_CALL("End super construct "<<asAtomHandler::toDebugString(obj));
 }
@@ -2147,12 +2147,12 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 		return;
 	}
 
-	assert_and_throw(th->inClass);
-	assert_and_throw(th->inClass->super);
+	assert_and_throw(th->function->inClass);
+	assert_and_throw(th->function->inClass->super);
 	assert_and_throw(obj->getClass());
-	assert_and_throw(obj->getClass()->isSubClass(th->inClass));
+	assert_and_throw(obj->getClass()->isSubClass(th->function->inClass));
 	asAtom f=asAtomHandler::invalidAtom;
-	obj->getVariableByMultinameIntern(f,*name,th->inClass->super.getPtr(),GET_VARIABLE_OPTION::NONE, th->worker);
+	obj->getVariableByMultinameIntern(f,*name,th->function->inClass->super.getPtr(),GET_VARIABLE_OPTION::NONE, th->worker);
 	name->resetNameIfObject();
 	if(asAtomHandler::isValid(f))
 	{
@@ -2243,7 +2243,7 @@ bool ABCVm::isTypelate(ASObject* type, ASObject* obj)
 	else
 	{
 		real_ret=obj->getObjectType()==type->getObjectType();
-		LOG_CALL("isTypelate on non classed object " << real_ret);
+		LOG_CALL("isTypelate on non classed object " << real_ret <<" "<<obj->toDebugString()<<" "<<type->toDebugString());
 		obj->decRef();
 		type->decRef();
 		return real_ret;

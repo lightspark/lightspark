@@ -535,7 +535,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	cc->exec_pos = mi->body->preloadedcode.data();
 	cc->parent_scope_stack=func_scope.getPtr();
 	cc->defaultNamespaceUri = saved_cc ? saved_cc->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY;
-	cc->inClass = this->inClass;
+	cc->function = this;
 	cc->stackp = cc->stack;
 
 	/* Set the current global object, each script in each DoABCTag has its own */

@@ -309,6 +309,8 @@ bool tiny_string::getLine(uint32_t& byteindex, tiny_string& line)
 	unsigned char utfpos=0;
 	uint32_t startindex = byteindex;
 	uint32_t endindex = stringSize-byteindex-1;
+	if (endindex < startindex)
+		endindex = stringSize-endindex;
 	line.isASCII = true;
 	while (!res && byteindex < stringSize-1)
 	{

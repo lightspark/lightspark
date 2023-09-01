@@ -53,8 +53,8 @@
 using namespace std;
 using namespace lightspark;
 
-Any* const Type::anyType = new Any();
-Void* const Type::voidType = new Void();
+Any* Type::anyType = new Any();
+Void* Type::voidType = new Void();
 
 Null::Null():ASObject(nullptr,nullptr,T_NULL)
 {
@@ -695,7 +695,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 						ok = true;
 					else
 					{
-						const Type* t = Type::getTypeFromMultiname(name,mi->context,true);
+						Type* t = Type::getTypeFromMultiname(name,mi->context,true);
 						exc.exc_class = (Class_base*)dynamic_cast<const Class_base*>(t);
 					}
 				}
@@ -890,7 +890,7 @@ void SyntheticFunction::checkParamTypes(bool opportunistic)
 	mi->paramTypes.clear();
 	for(size_t i=0;i < mi->numArgs();++i)
 	{
-		const Type* t = Type::getTypeFromMultiname(mi->paramTypeName(i), mi->context,opportunistic);
+		Type* t = Type::getTypeFromMultiname(mi->paramTypeName(i), mi->context,opportunistic);
 		if (!t)
 			return;
 		mi->paramTypes.push_back(t);
@@ -898,7 +898,7 @@ void SyntheticFunction::checkParamTypes(bool opportunistic)
 			mi->hasExplicitTypes = true;
 	}
 
-	const Type* t = Type::getTypeFromMultiname(mi->returnTypeName(), mi->context,opportunistic);
+	Type* t = Type::getTypeFromMultiname(mi->returnTypeName(), mi->context,opportunistic);
 	mi->returnType = t;
 }
 
@@ -1132,7 +1132,7 @@ multiname *Null::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWE
 	return nullptr;
 }
 
-const Type* Type::getBuiltinType(ASWorker* wrk, multiname* mn)
+Type* Type::getBuiltinType(ASWorker* wrk, multiname* mn)
 {
 	if(mn->isStatic && mn->cachedType)
 		return mn->cachedType;
@@ -1154,8 +1154,8 @@ const Type* Type::getBuiltinType(ASWorker* wrk, multiname* mn)
 	if(asAtomHandler::isClass(tmp))
 	{
 		if (mn->isStatic)
-			mn->cachedType = dynamic_cast<const Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
-		return dynamic_cast<const Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
+			mn->cachedType = dynamic_cast<Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
+		return dynamic_cast<Class_base*>(asAtomHandler::getObjectNoCheck(tmp));
 	}
 	else
 		return nullptr;
@@ -1166,7 +1166,7 @@ const Type* Type::getBuiltinType(ASWorker* wrk, multiname* mn)
  * by running ABCContext::exec() for all ABCContexts.
  * Therefore, all classes are at least declared.
  */
-const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool opportunistic)
+Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool opportunistic)
 {
 	if(mn == 0) //multiname idx zero indicates any type
 		return Type::anyType;
@@ -1213,7 +1213,7 @@ const Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool 
 		{
 			if (mn->templateinstancenames.size() == 1)
 			{
-				const Type* instancetype = getTypeFromMultiname(mn->templateinstancenames.front(),context,opportunistic);
+				Type* instancetype = getTypeFromMultiname(mn->templateinstancenames.front(),context,opportunistic);
 				if (instancetype==nullptr)
 				{
 					multiname* mti = mn->templateinstancenames.front();
@@ -1312,7 +1312,7 @@ void Class_base::initStandardProps()
 }
 
 
-bool Class_base::coerce(ASWorker* wrk, asAtom& o) const
+bool Class_base::coerce(ASWorker* wrk, asAtom& o)
 {
 	switch (asAtomHandler::getObjectType(o))
 	{
@@ -1354,7 +1354,7 @@ bool Class_base::coerce(ASWorker* wrk, asAtom& o) const
 	return false;
 }
 
-void Class_base::coerceForTemplate(ASWorker* wrk, asAtom &o) const
+void Class_base::coerceForTemplate(ASWorker* wrk, asAtom &o)
 {
 	switch (asAtomHandler::getObjectType(o))
 	{
@@ -1695,11 +1695,14 @@ void Class_base::linkInterface(Class_base* c) const
 	}
 }
 
-bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) const
+bool Class_base::isSubClass(Class_base* cls, bool considerInterfaces)
 {
 //	check();
 	if(cls==this || cls==cls->getSystemState()->getObjectClassRef())
 		return true;
+	auto it = subclasses_map.find(cls);
+	if (it != subclasses_map.end())
+		return (*it).second;
 
 	//Now check the interfaces
 	//an interface can't be subclass of a normal class, we only check the interfaces if cls is an interface itself
@@ -1709,13 +1712,20 @@ bool Class_base::isSubClass(const Class_base* cls, bool considerInterfaces) cons
 		for(unsigned int i=0;i<interfaces.size();i++)
 		{
 			if(interfaces[i]->isSubClass(cls, considerInterfaces))
+			{
+				subclasses_map.insert(make_pair(cls,true));
 				return true;
+			}
 		}
 	}
 
 	//Now ask the super
 	if(super && super->isSubClass(cls, considerInterfaces))
+	{
+		subclasses_map.insert(make_pair(cls,true));
 		return true;
+	}
+	subclasses_map.insert(make_pair(cls,false));
 	return false;
 }
 

@@ -39,7 +39,7 @@ struct OpcodeData
 		double doubles[0];
 		ASObject* objs[0];
 		multiname* names[0];
-		const Type* types[0];
+		Type* types[0];
 	};
 };
 
@@ -1144,7 +1144,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				//coerce
 				multiname* name=data->names[0];
 				char* rewriteableCode = &(mi->body->code[0]);
-				const Type* type = Type::getTypeFromMultiname(name, context->mi->context);
+				Type* type = Type::getTypeFromMultiname(name, context->mi->context);
 				OpcodeData* rewritableData=reinterpret_cast<OpcodeData*>(rewriteableCode+instructionPointer);
 				//Rewrite this to a coerceEarly
 				rewriteableCode[instructionPointer-1]=0xfc;
@@ -1664,7 +1664,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0xfc:
 			{
 				//coerceearly
-				const Type* type = data->types[0];
+				Type* type = data->types[0];
 				LOG_CALL("coerceEarly " << type);
 
 				RUNTIME_STACK_POP_CREATE(context,o);

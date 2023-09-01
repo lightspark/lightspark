@@ -1084,7 +1084,7 @@ void ABCVm::abc_coerce(call_context* context)
 	multiname* mn = context->exec_pos->cachedmultiname2;
 	LOG_CALL("coerce " << *mn);
 	RUNTIME_STACK_POINTER_CREATE(context,o);
-	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
+	Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);

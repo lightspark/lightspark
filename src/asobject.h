@@ -592,7 +592,7 @@ struct variable
 	union
 	{
 		multiname* traitTypemname;
-		const Type* type;
+		Type* type;
 		void* typeUnion;
 	};
 	asAtom setter;
@@ -606,14 +606,14 @@ struct variable
 	bool isrefcounted:1;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
 		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k),isResolved(false),isenumerable(true),issealed(false),isrefcounted(true) {}
-	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* type, const nsNameAndKind &_ns, bool _isenumerable);
+	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* type, const nsNameAndKind &_ns, bool _isenumerable);
 	void setVar(ASWorker* wrk, asAtom v, bool _isrefcounted = true);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
 	void setVarNoCoerce(asAtom &v);
 
-	void setResultType(const Type* t)
+	void setResultType(Type* t)
 	{
 		isResolved=true;
 		type=t;

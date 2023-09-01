@@ -428,7 +428,7 @@ struct multiname: public memory_reporter
 		ASObject* name_o;
 	};
 	std::vector<nsNameAndKind, reporter_allocator<nsNameAndKind>> ns;
-	const Type* cachedType;
+	Type* cachedType;
 	std::vector<multiname*> templateinstancenames;
 	enum NAME_TYPE {NAME_STRING,NAME_INT,NAME_UINT,NAME_NUMBER,NAME_OBJECT};
 	NAME_TYPE name_type:3;

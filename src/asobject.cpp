@@ -707,7 +707,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	if (type != SETTER_METHOD)
 	{
 		if (o->getReturnType(true))
-			obj->setResultType((const Type*)o->getReturnType(true));
+			obj->setResultType(o->getReturnType(true));
 	}
 	o->functionname = nameId;
 }
@@ -908,7 +908,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		{
 			ABCContext* c = nullptr;
 			c = wrk->currentCallContext ? wrk->currentCallContext->mi->context : nullptr;
-			const Type* type =c ? Type::getTypeFromMultiname(&name,c) : nullptr;
+			Type* type =c ? Type::getTypeFromMultiname(&name,c) : nullptr;
 			if (type)
 				createError<ReferenceError>(getInstanceWorker(), kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 			else
@@ -1022,7 +1022,7 @@ void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multina
 	Variables.initializeVar(name, o, typemname, context, traitKind,this,slot_id,isenumerable);
 }
 
-variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, const Type* _type, const nsNameAndKind& _ns, bool _isenumerable)
+variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const nsNameAndKind& _ns, bool _isenumerable)
 		: var(_v),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k),isResolved(false),isenumerable(_isenumerable),issealed(false),isrefcounted(true)
 {
 	if(_type)
@@ -1157,7 +1157,7 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 
 void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id,bool isenumerable)
 {
-	const Type* type = nullptr;
+	Type* type = nullptr;
 	if (typemname->isStatic)
 		type = typemname->cachedType;
 	
@@ -3196,7 +3196,7 @@ bool asAtomHandler::isTypelate(asAtom& a,ASObject *type)
 	if(!objc)
 	{
 		real_ret=getObjectType(a)==type->getObjectType();
-		LOG_CALL("isTypelate on non classed object " << real_ret);
+		LOG_CALL("isTypelate on non classed atom " << real_ret<<" "<<asAtomHandler::toDebugString(a)<<" "<<type->toDebugString());
 		type->decRef();
 		return real_ret;
 	}
@@ -3261,7 +3261,7 @@ bool asAtomHandler::isTypelate(asAtom& a,asAtom& t)
 	if(!objc)
 	{
 		real_ret=getObjectType(a)==asAtomHandler::getObjectType(t);
-		LOG_CALL("isTypelate on non classed object " << real_ret);
+		LOG_CALL("isTypelate on non classed atom/atom " << real_ret<<" "<<asAtomHandler::toDebugString(a)<<" "<<asAtomHandler::toDebugString(t));
 		c->decRef();
 		return real_ret;
 	}

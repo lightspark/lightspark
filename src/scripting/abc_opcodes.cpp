@@ -208,7 +208,7 @@ void ABCVm::coerce(call_context* th, int n)
 
 	RUNTIME_STACK_POINTER_CREATE(th,o);
 
-	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, th->mi->context);
+	Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, th->mi->context);
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
@@ -963,9 +963,42 @@ void ABCVm::construct(call_context* th, int m)
 	LOG_CALL("End of constructing " << asAtomHandler::toDebugString(ret));
 	RUNTIME_STACK_PUSH(th,ret);
 }
+asAtom ABCVm::constructGenericType_intern(ABCContext* context, ASObject* obj, int m, ASObject** args)
+{
+	if(obj->getObjectType() != T_TEMPLATE)
+	{
+		LOG(LOG_NOT_IMPLEMENTED, "constructGenericType of " << obj->getObjectType());
+		obj->decRef();
+		for(int i=0;i<m;i++)
+			args[i]->decRef();
+		return asAtomHandler::undefinedAtom;
+	}
 
+	Template_base* o_template=static_cast<Template_base*>(obj);
+	/* Instantiate the template to obtain a class */
+
+	std::vector<Type*> t(m);
+	for(int i=0;i<m;++i)
+	{
+		if(args[i]->is<Class_base>())
+			t[i] = args[i]->as<Class_base>();
+		else if(args[i]->is<Null>())
+			t[i] = Type::anyType;
+		else
+		{
+			obj->decRef();
+			for(int i=0;i<m;i++)
+				args[i]->decRef();
+			return asAtomHandler::invalidAtom;
+		}
+	}
+	Class_base* o_class = o_template->applyType(t,context->root->applicationDomain);
+	return asAtomHandler::fromObjectNoPrimitive(o_class);
+
+}
 void ABCVm::constructGenericType(call_context* th, int m)
 {
+
 	LOG_CALL( "constructGenericType " << m);
 	if (m != 1)
 	{
@@ -980,38 +1013,15 @@ void ABCVm::constructGenericType(call_context* th, int m)
 
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(th,obj);
 
-	if(obj->getObjectType() != T_TEMPLATE)
+	asAtom res = constructGenericType_intern(th->mi->context, obj, m, args);
+	RUNTIME_STACK_PUSH(th,res);
+	if (asAtomHandler::isInvalid(res))
 	{
-		LOG(LOG_NOT_IMPLEMENTED, "constructGenericType of " << obj->getObjectType());
-		obj->decRef();
-		obj = th->sys->getUndefinedRef();
-		RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(obj));
-		for(int i=0;i<m;i++)
-			args[i]->decRef();
+		createError<TypeError>(th->worker,0,"Wrong type in applytype");
 		return;
 	}
-
-	Template_base* o_template=static_cast<Template_base*>(obj);
-
-	/* Instantiate the template to obtain a class */
-
-	std::vector<const Type*> t(m);
-	for(int i=0;i<m;++i)
-	{
-		if(args[i]->is<Class_base>())
-			t[i] = args[i]->as<Class_base>();
-		else if(args[i]->is<Null>())
-			t[i] = Type::anyType;
-		else
-		{
-			obj->decRef();
-			for(int i=0;i<m;i++)
-				args[i]->decRef();
-			createError<TypeError>(th->worker,0,"Wrong type in applytype");
-			return;
-		}
-	}
-	Class_base* o_class = o_template->applyType(t,th->mi->context->root->applicationDomain);
+	if (asAtomHandler::isUndefined(res))
+		return;
 
 	// Register the type name in the global scope. The type name
 	// is later used by the coerce opcode.
@@ -1023,17 +1033,9 @@ void ABCVm::constructGenericType(call_context* th, int m)
 		assert_and_throw(th->curr_scope_stack > 0);
 		global =asAtomHandler::getObject(th->scope_stack[0]);
 	}
-	QName qname = o_class->class_name;
+	QName qname = asAtomHandler::as<Class_base>(res)->class_name;
 	if (!global->hasPropertyByMultiname(qname, false, false,th->worker))
-	{
-		o_class->incRef();
-		global->setVariableByQName(global->getSystemState()->getStringFromUniqueId(qname.nameId),nsNameAndKind(global->getSystemState(),qname.nsStringId,NAMESPACE),o_class,DECLARED_TRAIT);
-	}
-
-	for(int i=0;i<m;++i)
-		args[i]->decRef();
-
-	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(o_class));
+		global->setVariableAtomByQName(global->getSystemState()->getStringFromUniqueId(qname.nameId),nsNameAndKind(global->getSystemState(),qname.nsStringId,NAMESPACE),res,DECLARED_TRAIT);
 }
 
 ASObject* ABCVm::typeOf(ASObject* obj)

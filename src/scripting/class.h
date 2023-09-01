@@ -259,7 +259,7 @@ public:
 	{
 		T::generator(ret,wrk, asAtomHandler::invalidAtom, args, argslen);
 	}
-	bool coerce(ASWorker* wrk,asAtom& o) const override
+	bool coerce(ASWorker* wrk,asAtom& o) override
 	{
 		return Class_base::coerce(wrk,o);
 	}
@@ -269,7 +269,7 @@ template<>
 void Class<Global>::getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass);
 
 template<>
-inline bool Class<Number>::coerce(ASWorker* wrk,asAtom& o) const
+inline bool Class<Number>::coerce(ASWorker* wrk,asAtom& o)
 {
 	if (asAtomHandler::isNumeric(o))
 		return false;
@@ -279,7 +279,7 @@ inline bool Class<Number>::coerce(ASWorker* wrk,asAtom& o) const
 }
 
 template<>
-inline bool Class<UInteger>::coerce(ASWorker* wrk,asAtom& o) const
+inline bool Class<UInteger>::coerce(ASWorker* wrk,asAtom& o)
 {
 	if (asAtomHandler::isUInteger(o))
 		return false;
@@ -289,7 +289,7 @@ inline bool Class<UInteger>::coerce(ASWorker* wrk,asAtom& o) const
 }
 
 template<>
-inline bool Class<Integer>::coerce(ASWorker* wrk,asAtom& o) const
+inline bool Class<Integer>::coerce(ASWorker* wrk,asAtom& o)
 {
 	if (asAtomHandler::isInteger(o))
 		return false;
@@ -299,7 +299,7 @@ inline bool Class<Integer>::coerce(ASWorker* wrk,asAtom& o) const
 }
 
 template<>
-inline bool Class<Boolean>::coerce(ASWorker* wrk,asAtom& o) const
+inline bool Class<Boolean>::coerce(ASWorker* wrk,asAtom& o)
 {
 	if (asAtomHandler::isBool(o))
 		return false;

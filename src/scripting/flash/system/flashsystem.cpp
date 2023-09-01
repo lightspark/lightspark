@@ -616,7 +616,7 @@ void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(a
 			getVariableAndTargetByMultiname(typeobj,tn, tntarget,wrk);
 			if (asAtomHandler::isValid(typeobj))
 			{
-				const Type* t = asAtomHandler::getObject(typeobj)->as<Type>();
+				Type* t = asAtomHandler::getObject(typeobj)->as<Type>();
 				this->incRef();
 				ret = asAtomHandler::fromObject(Template<Vector>::getTemplateInstance(wrk->rootClip.getPtr(),t,_NR<ApplicationDomain>(this)).getPtr());
 			}

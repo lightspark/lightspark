@@ -67,8 +67,8 @@ protected:
 	/* this is private because one never deletes a Type */
 	~Type() {}
 public:
-	static Any* const anyType;
-	static Void* const voidType;
+	static Any* anyType;
+	static Void* voidType;
 	/*
 	 * This returns the Type for the given multiname.
 	 * It searches for the and object of the type in global object.
@@ -76,19 +76,19 @@ public:
 	 * then an exception is thrown.
 	 * The caller does not own the object returned.
 	 */
-	static const Type* getTypeFromMultiname(multiname* mn, ABCContext* context, bool opportunistic=false);
+	static Type* getTypeFromMultiname(multiname* mn, ABCContext* context, bool opportunistic=false);
 	/*
 	 * Checks if the type is already in sys->classes
 	 */
-	static const Type *getBuiltinType(ASWorker* wrk, multiname* mn);
+	static Type *getBuiltinType(ASWorker* wrk, multiname* mn);
 	/*
 	 * Converts the given object to an object of this type.
 	 * If the argument cannot be converted, it throws a TypeError
 	 * returns true if the atom is really converted into another instance
 	 */
-	virtual bool coerce(ASWorker* wrk, asAtom& o) const=0;
+	virtual bool coerce(ASWorker* wrk, asAtom& o)=0;
 
-	virtual void coerceForTemplate(ASWorker* wrk, asAtom& o) const=0;
+	virtual void coerceForTemplate(ASWorker* wrk, asAtom& o)=0;
 	
 	/* Return "any" for anyType, "void" for voidType and class_name.name for Class_base */
 	virtual tiny_string getName() const=0;
@@ -106,13 +106,12 @@ public:
 	virtual Global* getGlobalScope() const = 0;
 };
 template<> inline Type* ASObject::as<Type>() { return dynamic_cast<Type*>(this); }
-template<> inline const Type* ASObject::as<Type>() const { return dynamic_cast<const Type*>(this); }
 
 class Any: public Type
 {
 public:
-	bool coerce(ASWorker* wrk,asAtom& o) const override { return false; }
-	void coerceForTemplate(ASWorker* wrk, asAtom& o) const override {}
+	bool coerce(ASWorker* wrk,asAtom& o) override { return false; }
+	void coerceForTemplate(ASWorker* wrk, asAtom& o) override {}
 	virtual ~Any() {}
 	tiny_string getName() const override { return "any"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return CANNOT_BIND; }
@@ -124,8 +123,8 @@ public:
 class Void: public Type
 {
 public:
-	bool coerce(ASWorker* wrk,asAtom& o) const override { return false; }
-	void coerceForTemplate(ASWorker* wrk, asAtom& o) const override { }
+	bool coerce(ASWorker* wrk,asAtom& o) override { return false; }
+	void coerceForTemplate(ASWorker* wrk, asAtom& o) override { }
 	virtual ~Void() {}
 	tiny_string getName() const override { return "void"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return NOT_BINDED; }
@@ -143,8 +142,8 @@ private:
 	const method_info* mi;
 public:
 	ActivationType(const method_info* m):mi(m){}
-	bool coerce(ASWorker* wrk,asAtom& o) const override { throw RunTimeException("Coercing to an ActivationType should not happen");}
-	void coerceForTemplate(ASWorker* wrk,asAtom& o) const override { throw RunTimeException("Coercing to an ActivationType should not happen");}
+	bool coerce(ASWorker* wrk,asAtom& o) override { throw RunTimeException("Coercing to an ActivationType should not happen");}
+	void coerceForTemplate(ASWorker* wrk,asAtom& o) override { throw RunTimeException("Coercing to an ActivationType should not happen");}
 	virtual ~ActivationType() {}
 	tiny_string getName() const override { return "activation"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override;
@@ -165,6 +164,7 @@ private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
 	std::unordered_set<uint32_t> overriddenmethods;
+	std::unordered_map<Class_base*,bool> subclasses_map;
 	nsNameAndKind protected_ns;
 	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns,RootMovieClip* root);
 	IFunction* constructor;
@@ -233,7 +233,7 @@ public:
 	 * i.e. this == cls or cls equals some super of this.
 	 * If considerInterfaces is true, check interfaces, too.
 	 */
-	bool isSubClass(const Class_base* cls, bool considerInterfaces=true) const;
+	bool isSubClass(Class_base* cls, bool considerInterfaces=true);
 	const tiny_string getQualifiedClassName(bool forDescribeType = false) const;
 	uint32_t getQualifiedClassNameID();
 	tiny_string getName() const override;
@@ -246,9 +246,9 @@ public:
 	 * Converts the given object to an object of this Class_base's type.
 	 * The returned object must be decRef'ed by caller.
 	 */
-	bool coerce(ASWorker* wrk, asAtom& o) const override;
+	bool coerce(ASWorker* wrk, asAtom& o) override;
 	
-	void coerceForTemplate(ASWorker* wrk, asAtom& o) const override;
+	void coerceForTemplate(ASWorker* wrk, asAtom& o) override;
 
 	void setSuper(_R<Class_base> super_);
 	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = nullptr) const
@@ -293,14 +293,14 @@ private:
 	QName template_name;
 public:
 	Template_base(ASWorker* wrk,QName name);
-	virtual Class_base* applyType(const std::vector<const Type*>& t,_NR<ApplicationDomain> appdomain)=0;
+	virtual Class_base* applyType(const std::vector<Type*>& t,_NR<ApplicationDomain> appdomain)=0;
 	QName getTemplateName() { return template_name; }
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
 	void addPrototypeGetter(SystemState *sys);
 
 
-	bool coerce(ASWorker* wrk, asAtom& o) const override	{ return false;}
-	void coerceForTemplate(ASWorker* wrk, asAtom& o) const override {}
+	bool coerce(ASWorker* wrk, asAtom& o) override { return false;}
+	void coerceForTemplate(ASWorker* wrk, asAtom& o) override {}
 	tiny_string getName() const override { return "template"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return CANNOT_BIND;}
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }

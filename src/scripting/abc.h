@@ -122,8 +122,8 @@ public:
 	multiname* paramTypeName(uint32_t i) const;
 	multiname* returnTypeName() const;
 
-	std::vector<const Type*> paramTypes;
-	const Type* returnType;
+	std::vector<Type*> paramTypes;
+	Type* returnType;
 	
 	bool hasExplicitTypes;
 	// indicates if the function code starts with getlocal_0/pushscope
@@ -354,6 +354,9 @@ private:
 	void registerClasses();
 
 	void registerFunctions();
+	
+	static asAtom constructGenericType_intern(ABCContext* context, ASObject* obj, int m, ASObject** args);
+	
 	//Interpreted AS instructions
 	//If you change a definition here, update the opcode_table_* entry in abc_codesynth
 	static ASObject *hasNext(ASObject* obj, ASObject* cur_index); 
@@ -1398,7 +1401,7 @@ public:
 			const std::vector<InferenceData>& scopeStack, const multiname* name);
 	static EARLY_BIND_STATUS earlyBindForScopeStack(std::ostream& out, const SyntheticFunction* f,
 			const std::vector<InferenceData>& scopeStack, const multiname* name, InferenceData& inferredData);
-	static const Type* getLocalType(const SyntheticFunction* f, unsigned localIndex);
+	static Type* getLocalType(const SyntheticFunction* f, unsigned localIndex);
 
 	bool addEvent(_NR<EventDispatcher>,_R<Event>, bool isGlobalMessage=false) DLL_PUBLIC;
 	bool prependEvent(_NR<EventDispatcher>, _R<Event> , bool force=false) DLL_PUBLIC;

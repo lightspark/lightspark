@@ -223,7 +223,7 @@ asAtom Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& s
 	uint8_t b;
 	if (!input->readByte(b))
 		throw ParseException("Not enough data to parse AMF3 vector");
-	const Type* type =NULL;
+	Type* type =NULL;
 	switch (marker)
 	{
 		case vector_int_marker:

@@ -112,6 +112,7 @@ private:
 	void createBuffer(uint32_t s);
 	void resizeBuffer(uint32_t s);
 	void resetToStatic();
+	void getTrimPositions(uint32_t& start, uint32_t &end) const;
 	void init();
 	bool isASCII:1;
 	bool hasNull:1;
@@ -277,6 +278,12 @@ public:
 	CharIterator end() const;
 	int compare(const tiny_string& r) const;
 	tiny_string toQuotedString() const;
+	// returns string that has whitespace characters removed at begin and end 
+	tiny_string removeWhitespace() const;
+	// returns true if the string is empty or only contains whitespace characters
+	bool isWhiteSpaceOnly() const;
+	// encodes all null bytes instring to xml notation ("&#x0;")
+	tiny_string encodeNull() const;
 };
 
 }

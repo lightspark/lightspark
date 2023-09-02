@@ -41,6 +41,7 @@ private:
 	bool appendSingleNode(asAtom x);
 	void replace(unsigned int i, asAtom x, const XML::XMLVector& retnodes, CONST_ALLOWED_FLAG allowConst, bool replacetext, bool* alreadyset, ASWorker* wrk);
 	void getTargetVariables(const multiname& name, XML::XMLVector& retnodes);
+	void copy(XMLList* res, XML* parent=nullptr);
 public:
 	XMLList(ASWorker* wrk,Class_base* c);
 	/*

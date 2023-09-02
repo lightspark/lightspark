@@ -236,7 +236,8 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 									   "object","undefined","boolean","number","string","function","onRollOver","onRollOut",
 									   "__proto__","target","flash.events:IEventDispatcher","addEventListener","removeEventListener","dispatchEvent","hasEventListener",
 									   "onConnect","onData","onClose","onSelect",
-									   "add","alpha","darken","difference","erase","hardlight","invert","layer","lighten","multiply","overlay","screen","subtract"
+									   "add","alpha","darken","difference","erase","hardlight","invert","layer","lighten","multiply","overlay","screen","subtract",
+									   "text"
 									  };
 
 extern uint32_t asClassCount;

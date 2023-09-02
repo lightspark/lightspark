@@ -957,7 +957,7 @@ private:
 	uint32_t prefix;
 public:
 	Namespace(ASWorker* wrk,Class_base* c);
-	Namespace(ASWorker* wrk, Class_base* c, uint32_t _uri, uint32_t _prefix=BUILTIN_STRINGS::EMPTY, NS_KIND _nskind = NAMESPACE);
+	Namespace(ASWorker* wrk, Class_base* c, uint32_t _uri, uint32_t _prefix=BUILTIN_STRINGS::EMPTY, NS_KIND _nskind = NAMESPACE,bool _prefix_is_undefined=false);
 	static void sinit(Class_base*);
 	static void buildTraits(ASObject* o);
 	ASFUNCTION_ATOM(_constructor);
@@ -971,6 +971,7 @@ public:
 	ASFUNCTION_ATOM(_valueOf);
 	ASFUNCTION_ATOM(_ECMA_valueOf);
 	bool isEqual(ASObject* o) override;
+	NS_KIND getKind() const { return nskind; }
 	uint32_t getURI() const { return uri; }
 	uint32_t getPrefix(bool& is_undefined) { is_undefined=prefix_is_undefined; return prefix; }
 

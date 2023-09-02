@@ -1328,6 +1328,84 @@ tiny_string tiny_string::toQuotedString() const
 	return res;
 }
 
+void tiny_string::getTrimPositions(uint32_t& start, uint32_t& end) const
+{
+	start = 0;
+	end = stringSize-1;
+	if (empty())
+		return;
+	while (start < stringSize)
+	{
+		uint8_t c = buf[start];
+		if (c&0x80) //check for unicode whitspace character
+		{
+			if (!g_unichar_isspace(g_utf8_get_char(buf+start)))
+				break;
+			while (c&0x80) // skip utf8 bytes
+			{
+				c=c<<1;
+				start++;
+			}
+		}
+		else if (!isspace(c))
+			break;
+		else
+			start++;
+	}
+	while (end > start)
+	{
+		uint8_t c = buf[end-1];
+		if (c&0x80) //check for unicode whitspace character
+		{
+			while (((buf[end])&0xc0) == 0x80) // skip utf8 bytes
+			{
+				end--;
+			}
+			if (!g_unichar_isspace(g_utf8_get_char(buf+end)))
+				break;
+		}
+		else if (!isspace(c))
+			break;
+		else
+			end--;
+	}
+}
+
+tiny_string tiny_string::removeWhitespace() const
+{
+	uint32_t start,end;
+	getTrimPositions(start,end);
+	return substr_bytes(start,end-start);
+}
+bool tiny_string::isWhiteSpaceOnly() const
+{
+	uint32_t start,end;
+	getTrimPositions(start,end);
+	return start == end;
+}
+
+tiny_string tiny_string::encodeNull() const
+{
+	if (!this->hasNull)
+		return *this;
+	tiny_string res;
+	auto it = this->begin();
+	while (it != this->end())
+	{
+		switch (*it)
+		{
+			case '\0':
+				res += "&#x0;";
+				break;
+			default:
+				res += *it;
+				break;
+		}
+		it++;
+	}
+	return res;
+}
+
 #ifdef MEMORY_USAGE_PROFILING
 void tiny_string::reportMemoryChange(int32_t change) const
 {

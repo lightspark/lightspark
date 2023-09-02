@@ -2311,7 +2311,7 @@ ASQName::ASQName(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_QNAME),uri_is_nu
 void ASQName::setByXML(XML* node)
 {
 	uri_is_null=false;
-	local_name = getSystemState()->getUniqueStringId(node->getName());
+	local_name = node->getNameID();
 	uri=node->getNamespaceURI();
 }
 
@@ -2580,8 +2580,8 @@ Namespace::Namespace(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_NAMESPACE),n
 {
 }
 
-Namespace::Namespace(ASWorker* wrk,Class_base* c, uint32_t _uri, uint32_t _prefix, NS_KIND _nskind)
-  : ASObject(wrk,c,T_NAMESPACE),nskind(_nskind),prefix_is_undefined(false),uri(_uri),prefix(_prefix)
+Namespace::Namespace(ASWorker* wrk,Class_base* c, uint32_t _uri, uint32_t _prefix, NS_KIND _nskind, bool _prefix_is_undefined)
+  : ASObject(wrk,c,T_NAMESPACE),nskind(_nskind),prefix_is_undefined(_prefix_is_undefined),uri(_uri),prefix(_prefix)
 {
 }
 

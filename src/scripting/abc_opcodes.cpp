@@ -2532,7 +2532,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 		callPropertyName.name_s_id=obj->getSystemState()->getUniqueStringId("getDescendants");
 		callPropertyName.ns.emplace_back(th->sys,flash_proxy,NAMESPACE);
 		asAtom o=asAtomHandler::invalidAtom;
-		obj->getVariableByMultiname(o,callPropertyName,SKIP_IMPL,th->worker);
+		GET_VARIABLE_RESULT res = obj->getVariableByMultiname(o,callPropertyName,SKIP_IMPL,th->worker);
 		
 		if(asAtomHandler::isValid(o))
 		{
@@ -2545,15 +2545,16 @@ void ABCVm::getDescendants(call_context* th, int n)
 			proxyArgs[0]=asAtomHandler::fromObject(namearg);
 
 			//We now suppress special handling
-			LOG_CALL("Proxy::getDescendants");
+			LOG_CALL("Proxy::getDescendants "<<*name<<" "<<asAtomHandler::toDebugString(o));
 			ASATOM_INCREF(o);
 			asAtom v = asAtomHandler::fromObject(obj);
 			asAtom ret=asAtomHandler::invalidAtom;
 			asAtomHandler::callFunction(o,th->worker,ret,v,proxyArgs,1,true);
+			LOG_CALL("Proxy::getDescendants done " << *name<<" "<<asAtomHandler::toDebugString(o));
 			ASATOM_DECREF(o);
 			RUNTIME_STACK_PUSH(th,ret);
-			
-			LOG_CALL("End of calling " << *name);
+			if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+				ASATOM_DECREF(o);
 			return;
 		}
 		else

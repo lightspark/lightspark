@@ -1366,6 +1366,11 @@ void TextField::setHtmlText(const tiny_string& html)
 	{
 		parser.parseTextAndFormating(html, this);
 	}
+	if (getLineCount()>1 && this->textlines.back().text.empty())
+	{
+		//more than one line and last line is empty => remove last line
+		this->textlines.pop_back();
+	}
 	linemutex->unlock();
 
 	if (this->isConstructed() && !this->TextIsEqual(oldtext))

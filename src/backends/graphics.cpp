@@ -1341,9 +1341,9 @@ void TextData::appendText(const char *text,bool firstlineonly)
 		line.textwidth=UINT32_MAX;
 		bool haslineterminator = t.getLine(index,line.text);
 		textlines.push_back(line);
-		if (firstlineonly && haslineterminator && index==tiny_string::npos)
+		if (haslineterminator && index==tiny_string::npos)
 		{
-			// we only want the first line, but we have to add an empty line if text ends with line terminator
+			// add an empty line if text ends with line terminator
 			textline line;
 			line.autosizeposition=0;
 			line.textwidth=UINT32_MAX;

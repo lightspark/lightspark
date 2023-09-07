@@ -283,65 +283,73 @@ void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, num
 	}
 }
 
+uint32_t dropShadowPixel(uint32_t dstpixel, uint8_t tmpalpha, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout)
+{
+	uint32_t ret;
+	uint8_t* ptr = (uint8_t*)&ret;
+	uint8_t* dstptr = (uint8_t*)&dstpixel;
+	number_t glowalpha = number_t(inner ? 0xff - tmpalpha : tmpalpha)/255.0;
+	number_t srcalpha = max(0.0,min(1.0,glowalpha*alpha*strength));
+	number_t dstalpha = number_t(dstptr[3])/255.0;
+	if (inner)
+	{
+		if (knockout)
+		{
+			ptr[0] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha));
+			ptr[1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha));
+			ptr[2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha));
+			ptr[3] = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*dstalpha));
+		}
+		else
+		{
+			ptr[0] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha+number_t(dstptr[0])*(1.0-srcalpha)));
+			ptr[1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha+number_t(dstptr[1])*(1.0-srcalpha)));
+			ptr[2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha+number_t(dstptr[2])*(1.0-srcalpha)));
+			ptr[3] = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*dstalpha+number_t(dstptr[3])*(1.0-srcalpha)));
+		}
+	}
+	else
+	{
+		if (knockout)
+		{
+			ptr[0] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)));
+			ptr[1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)));
+			ptr[2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)));
+			ptr[3] = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*(1.0-dstalpha)));
+		}
+		else
+		{
+			ptr[0] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)+number_t(dstptr[0])));
+			ptr[1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)+number_t(dstptr[1])));
+			ptr[2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)+number_t(dstptr[2])));
+			ptr[3] = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*(1.0-dstalpha)+number_t(dstptr[3])));
+		}
+	}
+	return ret;
+}
+
 void BitmapFilter::applyDropShadowFilter(uint8_t* data, uint32_t datawidth, uint32_t dataheight, uint8_t* tmpdata, const RECT& sourceRect, number_t xpos, number_t ypos, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout,number_t scalex,number_t scaley)
 {
 	xpos *= scalex;
 	ypos *= scaley;
+	uint32_t* datapixel = (uint32_t*)data;
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
 	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
 	uint32_t size = width*height;
 	int32_t startpos = round(ypos)*datawidth+round(xpos);
-	int32_t targetsize = datawidth*dataheight*4;
+	int32_t targetsize = datawidth*dataheight;
 	for (uint32_t i = 0; i < size; i++)
 	{
 		if (i && i%width==0)
 			startpos+=datawidth;
 		if (startpos < 0)
 			continue;
-		int32_t targetpos = startpos*4+(i%width)*4;
+		int32_t targetpos = startpos+(i%width);
 		if (targetpos < 0)
 			continue;
-		if (targetpos+3 >= targetsize)
+		if (targetpos >= targetsize)
 			break;
-		number_t glowalpha = number_t(inner ? 0xff - tmpdata[i*4+3] : tmpdata[i*4+3])/255.0;
-		number_t srcalpha = max(0.0,min(1.0,glowalpha*alpha*strength));
-		number_t dstalpha = number_t(data[targetpos+3])/255.0;
-		uint32_t newalpha;
-		if (inner)
-		{
-			if (knockout)
-			{
-				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha));
-				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha));
-				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha));
-				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*dstalpha));
-			}
-			else
-			{
-				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*dstalpha+number_t(data[targetpos  ])*(1.0-srcalpha)));
-				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+1])*(1.0-srcalpha)));
-				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*dstalpha+number_t(data[targetpos+2])*(1.0-srcalpha)));
-				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*dstalpha+number_t(data[targetpos+3])*(1.0-srcalpha)));
-			}
-		}
-		else
-		{
-			if (knockout)
-			{
-				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)));
-				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)));
-				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)));
-				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*(1.0-dstalpha)));
-			}
-			else
-			{
-				data[targetpos  ] = min(uint32_t(0xff),uint32_t(number_t((color    )&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos  ])));
-				data[targetpos+1] = min(uint32_t(0xff),uint32_t(number_t((color>> 8)&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+1])));
-				data[targetpos+2] = min(uint32_t(0xff),uint32_t(number_t((color>>16)&0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+2])));
-				newalpha = min(uint32_t(0xff),uint32_t(number_t(0xff)*srcalpha*(1.0-dstalpha)+number_t(data[targetpos+3])));
-			}
-		}
-		data[targetpos+3] = newalpha;
+		datapixel[targetpos] = dropShadowPixel(datapixel[targetpos], tmpdata[i*4+3], strength, alpha, color, inner, knockout);
 	}
 }
 void BitmapFilter::fillGradientColors(number_t* gradientalphas, uint32_t* gradientcolors, Array* ratios, Array* alphas, Array* colors)

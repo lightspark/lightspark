@@ -111,28 +111,30 @@ void lightspark::setError(ASObject* error)
 ASError::ASError(ASWorker* wrk, Class_base* c, const tiny_string& error_message, int id, const tiny_string& error_name, CLASS_SUBTYPE subtype):
 	ASObject(wrk,c,T_OBJECT,subtype),errorID(id),name(error_name),message(error_message)
 {
-	stacktrace = "";
 	for (uint32_t i = wrk->cur_recursion; i > 0; i--)
 	{
-		stacktrace += "    at ";
-		stacktrace += asAtomHandler::toObject(wrk->stacktrace[i-1].object,wrk)->getClassName();
-		stacktrace += "/";
-		stacktrace += c->getSystemState()->getStringFromUniqueId(wrk->stacktrace[i-1].name);
-		stacktrace += "()\n";
+		ASObject* o = asAtomHandler::toObject(wrk->stacktrace[i-1].object,wrk);
+		stacktrace.push_back(make_pair(o->getClass() ? o->getClass()->getQualifiedClassNameID() : (uint32_t)BUILTIN_STRINGS::EMPTY,wrk->stacktrace[i-1].name));
 	}
 }
 
 ASFUNCTIONBODY_ATOM(ASError,_getStackTrace)
 {
 	ASError* th=asAtomHandler::as<ASError>(obj);
-
 	ret = asAtomHandler::fromObject(abstract_s(wrk,th->getStackTraceString()));
 }
 tiny_string ASError::getStackTraceString()
 {
 	tiny_string ret = toString();
 	ret += "\n";
-	ret += stacktrace;
+	for (auto it = stacktrace.begin(); it != stacktrace.end(); it++)
+	{
+		ret += "    at ";
+		ret += getSystemState()->getStringFromUniqueId((*it).first);
+		ret += "/";
+		ret += getSystemState()->getStringFromUniqueId((*it).second);
+		ret += "()\n";
+	}
 	return ret;
 }
 

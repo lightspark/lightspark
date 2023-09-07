@@ -37,7 +37,7 @@ private:
 	XML* parentNode;
 	pugi::xml_node_type nodetype;
 	bool isAttribute;
-	tiny_string nodename;
+	uint32_t nodenameID;
 	tiny_string nodevalue;
 	uint32_t nodenamespace_uri;
 	uint32_t nodenamespace_prefix;
@@ -54,7 +54,7 @@ private:
 	bool constructed;
 	bool nodesEqual(XML *a, XML *b) const;
 	XMLVector getAttributes();
-	XMLVector getAttributesByMultiname(const multiname& name, const tiny_string &normalizedName) const;
+	XMLVector getAttributesByMultiname(const multiname& name, uint32_t normalizedNameID) const;
 	XMLVector getValuesByMultiname(_NR<XMLList> nodelist, const multiname& name);
 	XMLList* getAllAttributes();
 	void getText(XMLVector& ret);
@@ -62,10 +62,10 @@ private:
 	 * @param name The name of the wanted children, "*" for all children
 	 *
 	 */
-	void childrenImpl(XMLVector& ret, const tiny_string& name);
-	void childrenImpl(XMLVector& ret, uint32_t index);
+	void childrenImpl(XMLVector& ret, uint32_t nameID);
+	void childrenImplIndex(XMLVector& ret, uint32_t index);
 	uint32_t getNamespacePrefixByURI(uint32_t uri, bool create=false);
-	void setLocalName(const tiny_string& localname);
+	void setLocalName(uint32_t localname);
 	void setNamespace(uint32_t ns_uri, uint32_t ns_prefix=BUILTIN_STRINGS::EMPTY);
 	void handleNotification(const tiny_string& command, asAtom value, asAtom detail);
 	// Append node or attribute to this. Concatenates adjacent
@@ -76,7 +76,7 @@ private:
 	void addTextContent(const tiny_string& str);
 	void RemoveNamespace(Namespace *ns);
 	void getComments(XMLVector& ret);
-	void getprocessingInstructions(XMLVector& ret, tiny_string name);
+	void getprocessingInstructions(XMLVector& ret, uint32_t name);
 	bool CheckCyclicReference(XML* node);
 public:
 	XML(ASWorker* wrk,Class_base* c);
@@ -148,17 +148,18 @@ public:
 	static void sinit(Class_base* c);
 	
 	static bool getPrettyPrinting();
+	static bool getIgnoreComments();
 	static unsigned int getParseMode();
 	static XML* createFromString(ASWorker* wrk, const tiny_string& s, bool usefirstchild=false);
 	static XML* createFromNode(ASWorker* wrk,const pugi::xml_node& _n, XML* parent=nullptr, bool fromXMLList=false);
 
-	const tiny_string getName() const { return nodename;}
+	uint32_t getNameID() const { return nodenameID;}
 	uint32_t getNamespaceURI() const { return nodenamespace_uri;}
 	XMLList* getChildrenlist() { return childrenlist ? childrenlist.getPtr() : nullptr; }
 	
 	
 	void getDescendantsByQName(const multiname& name, XMLVector& ret) const;
-	void getElementNodes(const tiny_string& name, XMLVector& foundElements);
+	void getElementNodes(uint32_t nameID, XMLVector& foundElements);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk) override;
@@ -179,7 +180,7 @@ public:
 	bool hasComplexContent() const;
 	pugi::xml_node_type getNodeKind() const;
 	ASObject *getParentNode();
-	XML *copy();
+	void copy(XML* res, XML* parent=nullptr);
 	void normalize();
 	bool isEqual(ASObject* r) override;
 	uint32_t nextNameIndex(uint32_t cur_index) override;

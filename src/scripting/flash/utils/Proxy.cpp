@@ -38,7 +38,7 @@ using namespace lightspark;
 void Proxy::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject,CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("isAttribute","",Class<IFunction>::getFunction(c->getSystemState(),_isAttribute),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isAttribute","",Class<IFunction>::getFunction(c->getSystemState(),_isAttribute,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(Proxy,_isAttribute)
@@ -105,7 +105,7 @@ GET_VARIABLE_RESULT Proxy::getVariableByMultiname(asAtom& ret, const multiname& 
 	getPropertyName.name_type=multiname::NAME_STRING;
 	getPropertyName.name_s_id=getSystemState()->getUniqueStringId("getProperty");
 	getPropertyName.ns.emplace_back(getSystemState(),flash_proxy,NAMESPACE);
-	getVariableByMultiname(o,getPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL,wrk);
+	res = getVariableByMultiname(o,getPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL,wrk);
 
 	if(asAtomHandler::isInvalid(o))
 	{
@@ -116,13 +116,14 @@ GET_VARIABLE_RESULT Proxy::getVariableByMultiname(asAtom& ret, const multiname& 
 	ASObject* namearg = abstract_s(getInstanceWorker(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
 	asAtom arg = asAtomHandler::fromObject(namearg);
-	ASATOM_INCREF(arg);
 	//We now suppress special handling
 	implEnable=false;
-	LOG_CALL("Proxy::getProperty "<< name.normalizedNameUnresolved(getSystemState()) << " " << this->toDebugString());
+	LOG_CALL("Proxy::getProperty "<< name.normalizedNameUnresolved(getSystemState()) << " " << this->toDebugString() <<" "<<asAtomHandler::toDebugString(o) <<" "<<asAtomHandler::toDebugString(o));
 	asAtom v = asAtomHandler::fromObject(this);
 	ASATOM_INCREF(v);
 	asAtomHandler::callFunction(o,getInstanceWorker(),ret,v,&arg,1,true);
+	if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+		ASATOM_DECREF(o);
 	implEnable=true;
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
@@ -180,7 +181,7 @@ bool Proxy::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 	deletePropertyName.name_s_id=getSystemState()->getUniqueStringId("deleteProperty");
 	deletePropertyName.ns.emplace_back(getSystemState(),flash_proxy,NAMESPACE);
 	asAtom proxyDeleter=asAtomHandler::invalidAtom;
-	getVariableByMultiname(proxyDeleter, deletePropertyName,GET_VARIABLE_OPTION::SKIP_IMPL,wrk);
+	GET_VARIABLE_RESULT res = getVariableByMultiname(proxyDeleter, deletePropertyName,GET_VARIABLE_OPTION::SKIP_IMPL,wrk);
 
 	if(asAtomHandler::isInvalid(proxyDeleter))
 	{
@@ -192,7 +193,6 @@ bool Proxy::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 	ASObject* namearg = abstract_s(getInstanceWorker(),name.normalizedName(getSystemState()));
 	namearg->setProxyProperty(name);
 	asAtom arg = asAtomHandler::fromObject(namearg);
-	ASATOM_INCREF(arg);
 	//We now suppress special handling
 	implEnable=false;
 	LOG_CALL("Proxy::deleteProperty");
@@ -200,6 +200,8 @@ bool Proxy::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 	ASATOM_INCREF(v);
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::callFunction(proxyDeleter,getInstanceWorker(),ret,v,&arg,1,true);
+	if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+		ASATOM_DECREF(proxyDeleter);
 	implEnable=true;
 	return asAtomHandler::Boolean_concrete(ret);
 }

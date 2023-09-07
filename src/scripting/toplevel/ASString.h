@@ -144,7 +144,7 @@ public:
 };
 
 template<>
-inline bool Class<ASString>::coerce(ASWorker* wrk,asAtom& o) const
+inline bool Class<ASString>::coerce(ASWorker* wrk,asAtom& o)
 {
 	if (asAtomHandler::isString(o))
 		return false;

@@ -587,8 +587,9 @@ void ABCVm::abc_pushcachedslot(call_context* context)
 void ABCVm::abc_getlexfromslot(call_context* context)
 {
 	uint32_t t = context->exec_pos->arg1_uint;
-
-	ASObject* s = asAtomHandler::toObject(*context->locals,context->worker);
+	int32_t num = context->exec_pos->arg2_int;
+	asAtom o = num ==-1 ? *context->locals : (context->function->func_scope->scope.rbegin()+num)->object;
+	ASObject* s = asAtomHandler::toObject(o,context->worker);
 	asAtom a = s->getSlot(t);
 	LOG_CALL("getlexfromslot "<<s->toDebugString()<<" "<<t);
 	ASATOM_INCREF(a);
@@ -598,8 +599,9 @@ void ABCVm::abc_getlexfromslot(call_context* context)
 void ABCVm::abc_getlexfromslot_localresult(call_context* context)
 {
 	uint32_t t = context->exec_pos->arg1_uint;
-
-	ASObject* s = asAtomHandler::toObject(*context->locals,context->worker);
+	int32_t num = context->exec_pos->arg2_int;
+	asAtom o = num ==-1 ? *context->locals : (context->function->func_scope->scope.rbegin()+num)->object;
+	ASObject* s = asAtomHandler::toObject(o,context->worker);
 	asAtom a = s->getSlot(t);
 	LOG_CALL("getlexfromslot_l "<<s->toDebugString()<<" "<<t);
 	ASATOM_INCREF(a);
@@ -1112,7 +1114,7 @@ void ABCVm::construct_noargs_intern(call_context* context,asAtom& ret,asAtom& ob
 void ABCVm::abc_construct_constant(call_context* context)
 {
 	asAtom obj= *context->exec_pos->arg1_constant;
-	LOG_CALL( "construct_noargs_c");
+	LOG_CALL( "construct_noargs_c "<<asAtomHandler::toDebugString(obj));
 	asAtom ret=asAtomHandler::invalidAtom;
 	construct_noargs_intern(context,ret,obj);
 	RUNTIME_STACK_PUSH(context,ret);
@@ -1121,7 +1123,7 @@ void ABCVm::abc_construct_constant(call_context* context)
 void ABCVm::abc_construct_local(call_context* context)
 {
 	asAtom obj= CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	LOG_CALL( "construct_noargs_l");
+	LOG_CALL( "construct_noargs_l "<<asAtomHandler::toDebugString(obj));
 	asAtom ret=asAtomHandler::invalidAtom;
 	construct_noargs_intern(context,ret,obj);
 	RUNTIME_STACK_PUSH(context,ret);
@@ -1816,7 +1818,7 @@ void ABCVm::abc_constructsuper_constant(call_context* context)
 {
 	LOG_CALL( "constructSuper_c ");
 	asAtom obj=*context->exec_pos->arg1_constant;
-	context->inClass->super->handleConstruction(obj,nullptr, 0, false);
+	context->function->inClass->super->handleConstruction(obj,nullptr, 0, false);
 	LOG_CALL("End super construct "<<asAtomHandler::toDebugString(obj));
 	++(context->exec_pos);
 }
@@ -1824,7 +1826,7 @@ void ABCVm::abc_constructsuper_local(call_context* context)
 {
 	LOG_CALL( "constructSuper_l ");
 	asAtom obj= CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	context->inClass->super->handleConstruction(obj,nullptr, 0, false);
+	context->function->inClass->super->handleConstruction(obj,nullptr, 0, false);
 	LOG_CALL("End super construct "<<asAtomHandler::toDebugString(obj));
 	++(context->exec_pos);
 }
@@ -4436,7 +4438,7 @@ void ABCVm::abc_getslot_constant_localresult(call_context* context)
 	asAtom res = asAtomHandler::getObject(*instrptr->arg1_constant)->getSlotNoCheck(t);
 	ASATOM_INCREF(res);
 	replacelocalresult(context,instrptr->local3.pos,res);
-	LOG_CALL("getSlot_cl " << t << " " << asAtomHandler::toDebugString(res));
+	LOG_CALL("getSlot_cl " << t << " " << asAtomHandler::toDebugString(res)<<" "<<asAtomHandler::toDebugString(*instrptr->arg1_constant));
 }
 void ABCVm::abc_getslot_local_localresult(call_context* context)
 {
@@ -7724,7 +7726,7 @@ void ABCVm::abc_coerce_constant(call_context* context)
 	LOG_CALL("coerce_c");
 	asAtom res = *context->exec_pos->arg1_constant;
 	multiname* mn = context->exec_pos->cachedmultiname2;
-	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
+	Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
@@ -7741,7 +7743,7 @@ void ABCVm::abc_coerce_local(call_context* context)
 	LOG_CALL("coerce_l:"<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
 	asAtom res =CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	multiname* mn = context->exec_pos->cachedmultiname2;
-	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
+	Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
@@ -7758,7 +7760,7 @@ void ABCVm::abc_coerce_constant_localresult(call_context* context)
 	LOG_CALL("coerce_cl");
 	asAtom res = *context->exec_pos->arg1_constant;
 	multiname* mn = context->exec_pos->cachedmultiname2;
-	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
+	Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
@@ -7775,7 +7777,7 @@ void ABCVm::abc_coerce_local_localresult(call_context* context)
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	multiname* mn = context->exec_pos->cachedmultiname2;
 	LOG_CALL("coerce_ll:"<<*mn<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
-	const Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
+	Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);

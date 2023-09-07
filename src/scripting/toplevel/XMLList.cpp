@@ -402,13 +402,16 @@ ASFUNCTIONBODY_ATOM(XMLList,generator)
 ASFUNCTIONBODY_ATOM(XMLList,descendants)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
-	_NR<ASObject> name;
-	ARG_CHECK(ARG_UNPACK(name,_NR<ASObject>(abstract_s(wrk,"*"))));
+	asAtom name = asAtomHandler::invalidAtom;
+	asAtom defname = asAtomHandler::fromStringID(BUILTIN_STRINGS::STRING_WILDCARD);
+	ARG_CHECK(ARG_UNPACK(name,defname));
 	XML::XMLVector res;
 	multiname mname(nullptr);
-	mname.name_s_id = name->toStringId();
+	mname.name_s_id = asAtomHandler::toStringId(name,wrk);
 	mname.name_type = multiname::NAME_STRING;
-	name->applyProxyProperty(mname);
+	ASObject* o = asAtomHandler::getObject(name);
+	if (o)
+		o->applyProxyProperty(mname);
 	th->getDescendantsByQName(mname,res);
 	ret = asAtomHandler::fromObject(create(wrk,res,th->targetobject,multiname(nullptr)));
 }
@@ -416,14 +419,16 @@ ASFUNCTIONBODY_ATOM(XMLList,descendants)
 ASFUNCTIONBODY_ATOM(XMLList,elements)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
-	tiny_string name;
-	ARG_CHECK(ARG_UNPACK(name, ""));
+	asAtom name = asAtomHandler::invalidAtom;
+	asAtom defname = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
+	ARG_CHECK(ARG_UNPACK (name, defname));
+	uint32_t nameID = asAtomHandler::toStringId(name,wrk);
 
 	XML::XMLVector elems;
 	auto it=th->nodes.begin();
 	for(; it!=th->nodes.end(); ++it)
 	{
-		(*it)->getElementNodes(name, elems);
+		(*it)->getElementNodes(nameID, elems);
 	}
 	ret = asAtomHandler::fromObject(create(wrk,elems,th->targetobject,multiname(nullptr)));
 }
@@ -474,12 +479,12 @@ ASFUNCTIONBODY_ATOM(XMLList,child)
 		auto it=th->nodes.begin();
 		for(; it!=th->nodes.end(); ++it)
 		{
-			(*it)->childrenImpl(res, index);
+			(*it)->childrenImplIndex(res, index);
 		}
 	}
 	else
 	{
-		const tiny_string& arg0=asAtomHandler::toString(args[0],wrk);
+		uint32_t arg0=asAtomHandler::toStringId(args[0],wrk);
 		auto it=th->nodes.begin();
 		for(; it!=th->nodes.end(); ++it)
 		{
@@ -497,7 +502,7 @@ ASFUNCTIONBODY_ATOM(XMLList,children)
 	auto it=th->nodes.begin();
 	for(; it!=th->nodes.end(); ++it)
 	{
-		(*it)->childrenImpl(res, "*");
+		(*it)->childrenImpl(res, BUILTIN_STRINGS::STRING_WILDCARD);
 	}
 	ret = asAtomHandler::fromObject(create(wrk,res,th->targetobject,multiname(nullptr)));
 }
@@ -542,20 +547,28 @@ ASFUNCTIONBODY_ATOM(XMLList,copy)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
 	XMLList *dest = Class<XMLList>::getInstanceSNoArgs(wrk);
-	if (th->targetobject)
-	{
-		th->targetobject->incRef();
-		th->targetobject->addStoredMember();
-	}
-	dest->targetobject = th->targetobject;
-	auto it=th->nodes.begin();
-	for(; it!=th->nodes.end(); ++it)
-	{
-		dest->nodes.push_back(_MNR((*it)->copy()));
-	}
+	th->copy(dest);
 	ret = asAtomHandler::fromObject(dest);
 }
-
+void XMLList::copy(XMLList* res, XML* parent)
+{
+	if (targetobject)
+	{
+		targetobject->incRef();
+		targetobject->addStoredMember();
+	}
+	res->targetobject = targetobject;
+	res->nodes.reserve(nodes.size());
+	auto it=nodes.begin();
+	for(; it!=nodes.end(); ++it)
+	{
+		if (XML::getIgnoreComments() && (*it)->nodetype == pugi::node_comment)
+			continue;
+		_NR<XML> node = _MR(Class<XML>::getInstanceSNoArgs(getInstanceWorker()));
+		(*it)->copy(node.getPtr(),parent);
+		res->nodes.push_back(node);
+	}
+}
 ASFUNCTIONBODY_ATOM(XMLList,attribute)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
@@ -606,15 +619,17 @@ ASFUNCTIONBODY_ATOM(XMLList,comments)
 ASFUNCTIONBODY_ATOM(XMLList,processingInstructions)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
-	tiny_string name;
-	ARG_CHECK(ARG_UNPACK(name,"*"));
+	asAtom name = asAtomHandler::invalidAtom;
+	asAtom defname = asAtomHandler::fromStringID(BUILTIN_STRINGS::STRING_WILDCARD);
+	ARG_CHECK(ARG_UNPACK (name, defname));
+	uint32_t nameID = asAtomHandler::toStringId(name,wrk);
 
 	XMLList *res = Class<XMLList>::getInstanceSNoArgs(wrk);
 	XML::XMLVector nodeprocessingInstructions;
 	auto it=th->nodes.begin();
 	for(; it!=th->nodes.end(); ++it)
 	{
-		(*it)->getprocessingInstructions(nodeprocessingInstructions,name);
+		(*it)->getprocessingInstructions(nodeprocessingInstructions,nameID);
 	}
 	res->nodes.insert(res->nodes.end(), nodeprocessingInstructions.begin(), nodeprocessingInstructions.end());
 	ret = asAtomHandler::fromObject(res);
@@ -686,7 +701,7 @@ void XMLList::normalize()
 		}
 		else if ((*it)->getNodeKind() == pugi::node_pcdata)
 		{
-			if (XMLBase::removeWhitespace((*it)->toString()).empty())
+			if ((*it)->toString().isWhiteSpaceOnly())
 			{
 				it = nodes.erase(it);
 			}
@@ -739,7 +754,7 @@ void XMLList::getTargetVariables(const multiname& name,XML::XMLVector& retnodes)
 	}
 	else
 	{
-		tiny_string normalizedName=name.normalizedName(getSystemState());
+		uint32_t normalizedNameID=name.normalizedNameId(getSystemState());
 		
 		//Only the first namespace is used, is this right?
 		uint32_t namespace_uri = BUILTIN_STRINGS::EMPTY;
@@ -756,7 +771,7 @@ void XMLList::getTargetVariables(const multiname& name,XML::XMLVector& retnodes)
 		for (uint32_t i = 0; i < nodes.size(); i++)
 		{
 			_NR<XML> child= nodes[i];
-			bool nameMatches = (normalizedName=="" || normalizedName==child->nodename  || normalizedName=="*");
+			bool nameMatches = (normalizedNameID==BUILTIN_STRINGS::EMPTY || normalizedNameID==child->nodenameID  || normalizedNameID==BUILTIN_STRINGS::STRING_WILDCARD);
 			bool nsMatches = (namespace_uri==BUILTIN_STRINGS::EMPTY || 
 							  (child->nodenamespace_uri == namespace_uri));
 
@@ -795,12 +810,10 @@ GET_VARIABLE_RESULT XMLList::getVariableByMultiname(asAtom& ret, const multiname
 		for(; it!=nodes.end(); ++it)
 		{
 			asAtom o=asAtomHandler::invalidAtom;
-			GET_VARIABLE_RESULT res = (*it)->getVariableByMultiname(o,name,opt,wrk);
+			(*it)->getVariableByMultiname(o,name,opt,wrk);
 			if(asAtomHandler::is<XMLList>(o))
 				retnodes.insert(retnodes.end(), asAtomHandler::as<XMLList>(o)->nodes.begin(), asAtomHandler::as<XMLList>(o)->nodes.end());
-
-			if (res == GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
-				ASATOM_DECREF(o);
+			ASATOM_DECREF(o);
 		}
 
 		if(retnodes.size()==0 && (opt & FROM_GETLEX)!=0)
@@ -828,13 +841,10 @@ GET_VARIABLE_RESULT XMLList::getVariableByMultiname(asAtom& ret, const multiname
 		for(; it!=nodes.end(); ++it)
 		{
 			asAtom o=asAtomHandler::invalidAtom;
-			GET_VARIABLE_RESULT res = (*it)->getVariableByMultiname(o,name,opt,wrk);
+			(*it)->getVariableByMultiname(o,name,opt,wrk);
 			if(asAtomHandler::is<XMLList>(o))
-			{
 				retnodes.insert(retnodes.end(), asAtomHandler::as<XMLList>(o)->nodes.begin(), asAtomHandler::as<XMLList>(o)->nodes.end());
-			}
-			if (res == GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
-				ASATOM_DECREF(o);
+			ASATOM_DECREF(o);
 		}
 
 		if(retnodes.size()==0 && (opt & FROM_GETLEX)!=0)
@@ -971,16 +981,16 @@ multiname* XMLList::setVariableByMultinameIntern(multiname& name, asAtom& o, CON
 			{
 				XML* tmp = Class<XML>::getInstanceSNoArgs(getInstanceWorker());
 				tmp->nodetype = pugi::node_element;
-				tmp->nodename = targetproperty.normalizedName(getSystemState());
+				tmp->nodenameID = targetproperty.normalizedNameId(getSystemState());
 				tmp->attributelist = _MNR(Class<XMLList>::getInstanceSNoArgs(getInstanceWorker()));
 				tmp->constructed = true;
 				tmp->setVariableByMultiname(name,o,allowConst,nullptr,wrk);
-				tiny_string tmpname = tmpprop.normalizedName(getSystemState());
-				if (retnodes.empty() && tmpname != "" && tmpname != "*")
+				uint32_t tmpnameID = tmpprop.normalizedNameId(getSystemState());
+				if (retnodes.empty() && tmpnameID != BUILTIN_STRINGS::EMPTY && tmpnameID != BUILTIN_STRINGS::STRING_WILDCARD)
 				{
 					XML* tmp2 = Class<XML>::getInstanceSNoArgs(getInstanceWorker());
 					tmp2->nodetype = pugi::node_element;
-					tmp2->nodename = tmpname;
+					tmp2->nodenameID = tmpnameID;
 					tmp2->attributelist = _MNR(Class<XMLList>::getInstanceSNoArgs(getInstanceWorker()));
 					tmp2->constructed = true;
 					asAtom v = asAtomHandler::fromObject(tmp);
@@ -993,6 +1003,8 @@ multiname* XMLList::setVariableByMultinameIntern(multiname& name, asAtom& o, CON
 				{
 					asAtom v = asAtomHandler::fromObject(tmp);
 					tmplist->setVariableByMultinameIntern(tmpprop,v,allowConst, replacetext,alreadyset,wrk);
+					if (getInstanceWorker()->currentCallContext->exceptionthrown)
+						tmp->decRef();
 				}
 			}
 			else
@@ -1219,7 +1231,7 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 			{
 				nodes[idx]->childrenlist->clear();
 				nodes[idx]->nodetype = pugi::node_pcdata;
-				nodes[idx]->nodename = "text";
+				nodes[idx]->nodenameID = BUILTIN_STRINGS::STRING_TEXT;
 				nodes[idx]->nodevalue = asAtomHandler::toString(o,wrk);
 				nodes[idx]->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
 				nodes[idx]->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
@@ -1231,7 +1243,7 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 				XML* tmp = Class<XML>::getInstanceSNoArgs(getInstanceWorker());
 				tmp->parentNode = nodes[idx].getPtr();
 				tmp->nodetype = pugi::node_pcdata;
-				tmp->nodename = "text";
+				tmp->nodenameID = BUILTIN_STRINGS::STRING_TEXT;
 				tmp->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
 				tmp->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
 				tmp->nodevalue = asAtomHandler::toString(o,wrk);
@@ -1248,7 +1260,7 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 		{
 			nodes[idx]->childrenlist->clear();
 			nodes[idx]->nodetype = pugi::node_pcdata;
-			nodes[idx]->nodename = "text";
+			nodes[idx]->nodenameID = BUILTIN_STRINGS::STRING_TEXT;
 			nodes[idx]->nodevalue = asAtomHandler::toString(o,getInstanceWorker());
 			nodes[idx]->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
 			nodes[idx]->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
@@ -1267,7 +1279,7 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 				XML* tmp = Class<XML>::getInstanceSNoArgs(getInstanceWorker());
 				tmp->parentNode = nodes[idx].getPtr();
 				tmp->nodetype = pugi::node_pcdata;
-				tmp->nodename = "text";
+				tmp->nodenameID = BUILTIN_STRINGS::STRING_TEXT;
 				tmp->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
 				tmp->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
 				tmp->nodevalue = asAtomHandler::toString(o,wrk);

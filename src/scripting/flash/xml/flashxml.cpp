@@ -361,7 +361,7 @@ int XMLDocument::parseXMLImpl(const string& str)
 	{
 		// don't throw exception when in AVM1, return status value instead
 		pugi::xml_parse_result parseresult;
-		node=rootNode=buildFromString(str, parsemode,"",&parseresult);
+		node=rootNode=buildFromString(str, parsemode,&parseresult);
 		switch (parseresult.status)
 		{
 			case pugi::status_ok:

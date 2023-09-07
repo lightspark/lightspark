@@ -43,7 +43,7 @@ void createError(ASWorker* wrk, int errorID, const tiny_string& arg1="", const t
 class ASError: public ASObject
 {
 private:
-	tiny_string stacktrace;
+	std::vector<std::pair<uint32_t,uint32_t>> stacktrace;
 	ASPROPERTY_GETTER(int32_t, errorID);
 	ASPROPERTY_GETTER_SETTER(tiny_string, name);
 protected:

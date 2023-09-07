@@ -103,7 +103,7 @@ void Vector::sinit(Class_base* c)
 	c->prototype->setVariableByQName("unshift",nsNameAndKind(c->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),Class<IFunction>::getFunction(c->getSystemState(),unshift),CONSTANT_TRAIT);
 }
 
-Vector::Vector(ASWorker* wrk, Class_base* c, const Type *vtype):ASObject(wrk,c,T_OBJECT,SUBTYPE_VECTOR),vec_type(vtype),fixed(false),vec(reporter_allocator<asAtom>(c->memoryAccount))
+Vector::Vector(ASWorker* wrk, Class_base* c, Type *vtype):ASObject(wrk,c,T_OBJECT,SUBTYPE_VECTOR),vec_type(vtype),fixed(false),vec(reporter_allocator<asAtom>(c->memoryAccount))
 {
 }
 
@@ -163,7 +163,7 @@ bool Vector::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	return ret;
 }
 
-void Vector::setTypes(const std::vector<const Type *> &types)
+void Vector::setTypes(const std::vector<Type *> &types)
 {
 	assert(vec_type == nullptr);
 	if(types.size() == 1)
@@ -183,7 +183,7 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 	assert_and_throw(asAtomHandler::toObject(args[0],wrk)->getClass());
 	assert_and_throw(asAtomHandler::as<TemplatedClass<Vector>>(o_class)->getTypes().size() == 1);
 
-	const Type* type = asAtomHandler::as<TemplatedClass<Vector>>(o_class)->getTypes()[0];
+	Type* type = asAtomHandler::as<TemplatedClass<Vector>>(o_class)->getTypes()[0];
 
 	RootMovieClip* root = wrk->rootClip.getPtr();
 	if(asAtomHandler::is<Array>(args[0]))

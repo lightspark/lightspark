@@ -33,10 +33,10 @@ class TemplatedClass : public Class<T>
 private:
 	/* the Template<T>* this class was generated from */
 	const Template_base* templ;
-	std::vector<const Type*> types;
+	std::vector<Type*> types;
 	asfreelist freelist;
 public:
-	TemplatedClass(const QName& name, const std::vector<const Type*>& _types, Template_base* _templ, MemoryAccount* m)
+	TemplatedClass(const QName& name, const std::vector<Type*>& _types, Template_base* _templ, MemoryAccount* m)
 		: Class<T>(name,ClassName<T>::id, m), templ(_templ), types(_types)
 	{
 	}
@@ -73,16 +73,16 @@ public:
 		return templ;
 	}
 
-	std::vector<const Type*> getTypes() const
+	std::vector<Type*> getTypes() const
 	{
 		return types;
 	}
-	void addType(const Type* type)
+	void addType(Type* type)
 	{
 		types.push_back(type);
 	}
 
-	bool coerce(ASWorker* wrk,asAtom& o) const override
+	bool coerce(ASWorker* wrk,asAtom& o) override
 	{
 		if (asAtomHandler::isUndefined(o))
 		{
@@ -112,7 +112,7 @@ class Template : public Template_base
 public:
 	Template(ASWorker* wrk,QName name) : Template_base(wrk,name) {}
 
-	QName getQName(SystemState* sys, const std::vector<const Type*>& types)
+	QName getQName(SystemState* sys, const std::vector<Type*>& types)
 	{
 		//This is the naming scheme that the ABC compiler uses,
 		//and we need to stay in sync here
@@ -126,7 +126,7 @@ public:
 		return ret;
 	}
 
-	Class_base* applyType(const std::vector<const Type*>& types,_NR<ApplicationDomain> applicationDomain)
+	Class_base* applyType(const std::vector<Type*>& types,_NR<ApplicationDomain> applicationDomain)
 	{
 		_NR<ApplicationDomain> appdomain = applicationDomain;
 		
@@ -161,7 +161,7 @@ public:
 	}
 	Class_base* applyTypeByQName(const QName& qname,_NR<ApplicationDomain> applicationDomain)
 	{
-		const std::vector<const Type*> types;
+		const std::vector<Type*> types;
 		_NR<ApplicationDomain> appdomain = applicationDomain;
 		std::map<QName, Class_base*>::iterator it=appdomain->instantiatedTemplates.find(qname);
 		Class<T>* ret=nullptr;
@@ -183,9 +183,9 @@ public:
 		return ret;
 	}
 
-	static Ref<Class_base> getTemplateInstance(RootMovieClip* root,const Type* type,_NR<ApplicationDomain> appdomain)
+	static Ref<Class_base> getTemplateInstance(RootMovieClip* root,Type* type,_NR<ApplicationDomain> appdomain)
 	{
-		std::vector<const Type*> t(1,type);
+		std::vector<Type*> t(1,type);
 		Template<T>* templ=getTemplate(root);
 		Ref<Class_base> ret=_MR(templ->applyType(t, appdomain));
 		templ->decRef();
@@ -200,7 +200,7 @@ public:
 		templ->decRef();
 		return ret;
 	}
-	static void getInstanceS(ASWorker* wrk,asAtom& ret, RootMovieClip* root,const Type* type,_NR<ApplicationDomain> appdomain)
+	static void getInstanceS(ASWorker* wrk,asAtom& ret, RootMovieClip* root,Type* type,_NR<ApplicationDomain> appdomain)
 	{
 		getTemplateInstance(root,type,appdomain).getPtr()->getInstance(wrk,ret,true,nullptr,0);
 	}
@@ -235,7 +235,7 @@ public:
 
 class Vector: public ASObject
 {
-	const Type* vec_type;
+	Type* vec_type;
 	bool fixed;
 	std::vector<asAtom, reporter_allocator<asAtom>> vec;
 	int capIndex(int i) const;
@@ -259,7 +259,7 @@ public:
 		sortComparatorWrapper(asAtom c):comparator(c){}
 		number_t compare(const asAtom& d1, const asAtom& d2);
 	};
-	Vector(ASWorker* wrk,Class_base* c, const Type *vtype=nullptr);
+	Vector(ASWorker* wrk,Class_base* c, Type *vtype=nullptr);
 	~Vector();
 	bool destruct() override;
 	void finalize() override;
@@ -269,7 +269,7 @@ public:
 	static void sinit(Class_base* c);
 	static void generator(asAtom& ret, ASWorker* wrk, asAtom& o_class, asAtom* args, const unsigned int argslen);
 
-	void setTypes(const std::vector<const Type*>& types);
+	void setTypes(const std::vector<Type*>& types);
 	bool sameType(const Class_base* cls) const;
 
 	//Overloads

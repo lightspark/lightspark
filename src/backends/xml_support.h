@@ -37,15 +37,10 @@ protected:
 	// if parseresult is not null, this method will not throw an exception on invalid xml
 	const pugi::xml_node buildFromString(const tiny_string& str,
 										unsigned int xmlparsemode,
-										const tiny_string& default_ns=tiny_string(),
 										pugi::xml_parse_result* parseresult=nullptr);
 
-	static std::string quirkXMLDeclarationInMiddle(const std::string& str);
-	static std::string quirkEncodeNull(const std::string value);
 public:
-	static tiny_string removeWhitespace(tiny_string val);
 	static const tiny_string encodeToXML(const tiny_string value, bool bIsAttribute);
-	static std::string parserQuirks(const std::string& str);
 };
 
 }

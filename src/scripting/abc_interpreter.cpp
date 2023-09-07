@@ -1869,8 +1869,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				{
 					uint32_t t = code.peeku30FromPosition(pos);
 					multiname* name =  state.mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
-					const Type* tp = Type::getTypeFromMultiname(name, state.mi->context);
-					const Class_base* cls =dynamic_cast<const Class_base*>(tp);
+					Type* tp = Type::getTypeFromMultiname(name, state.mi->context);
+					Class_base* cls =dynamic_cast<Class_base*>(tp);
 					if (cls != Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
 						cls != Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
 						cls != Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
@@ -1954,7 +1954,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				}
 				if (name->isStatic && !argsneeded)
 				{
-					const Type* tp = Type::getTypeFromMultiname(name,state.mi->context);
+					Type* tp = Type::getTypeFromMultiname(name,state.mi->context);
 					if (tp && (state.jumptargets.find(pos) == state.jumptargets.end()))
 					{
 						bool skip = false;
@@ -2809,7 +2809,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 #endif
 	return hasoperands;
 }
-bool checkmatchingLastObjtype(preloadstate& state, const Type* resulttype, Class_base* requiredtype)
+bool checkmatchingLastObjtype(preloadstate& state, Type* resulttype, Class_base* requiredtype)
 {
 	if (requiredtype == resulttype || resulttype==Type::anyType || resulttype == Type::voidType)
 		return true;
@@ -3798,9 +3798,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
 				if (name->isStatic)
 				{
-					const Type* tp = Type::getTypeFromMultiname(name, mi->context);
-					const Class_base* cls =dynamic_cast<const Class_base*>(tp);
-					currenttype = (Class_base*)cls;
+					Type* tp = Type::getTypeFromMultiname(name, mi->context);
+					currenttype = dynamic_cast<Class_base*>(tp);
 				}
 				else
 					currenttype=nullptr;
@@ -4185,6 +4184,47 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x53://constructgenerictype
 			{
 				uint32_t t = code.readu30();
+#ifdef ENABLE_OPTIMIZATION
+				if (t==1 && state.operandlist.size()>t && function->func_scope.getPtr() && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic))
+				{
+					uint32_t i = 0;
+					ASObject** args=g_newa(ASObject*, t);
+					auto it = state.operandlist.rbegin();
+					while (i < t)
+					{
+						if ((*it).type != OP_CACHED_CONSTANT)
+							break;
+						args[t-i-1]=asAtomHandler::toObject(*mi->context->getConstantAtom(OP_CACHED_CONSTANT,(*it).index),function->worker);
+						it++;
+						i++;
+					}
+					if (i >= t)
+					{
+						asAtom ret = constructGenericType_intern(mi->context,asAtomHandler::toObject(*mi->context->getConstantAtom(OP_CACHED_CONSTANT,(*it).index),function->worker),t,args);
+						if (asAtomHandler::isInvalid(ret))
+						{
+							createError<TypeError>(function->worker,0,"Wrong type in applytype");
+							break;
+						}
+						
+						removeOperands(state,true,&lastlocalresulttype,t+1);
+						for (i=0; i < t+1; i++)
+							state.preloadedcode.pop_back(); // remove getlocals
+						addCachedConstant(state,mi, ret,code);
+						removetypestack(typestack,t+1);
+						typestack.push_back(typestackentry(nullptr,false));
+						if (asAtomHandler::isUndefined(ret))
+							break;
+						// Register the type name in the global scope.
+						ASObject* global =asAtomHandler::toObject(function->func_scope->scope.front().object,function->worker);
+						QName qname = asAtomHandler::as<Class_base>(ret)->class_name;
+						if (!global->hasPropertyByMultiname(qname, false, false,function->worker))
+							global->setVariableAtomByQName(global->getSystemState()->getStringFromUniqueId(qname.nameId),nsNameAndKind(global->getSystemState(),qname.nsStringId,NAMESPACE),ret,DECLARED_TRAIT);
+						break;
+					}
+					
+				}
+#endif
 				removetypestack(typestack,t+1);
 				typestack.push_back(typestackentry(nullptr,false));
 				state.preloadedcode.push_back((uint32_t)opcode);
@@ -4666,8 +4706,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								cls = cls->super.getPtr();
 						}
 						while (!v && cls && cls->isSealed);
-						if (v && cls->is<Class_inherit>() && cls->as<Class_inherit>()->hasoverriddenmethod(name))
-							v=nullptr;
 						if (v)
 						{
 							if ((isborrowed || v->kind == INSTANCE_TRAIT) && asAtomHandler::isValid(v->getter))
@@ -4818,7 +4856,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					}
 					if(asAtomHandler::isInvalid(o))
 					{
-						ASObject* cls = mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name,wrk);
+						Type* t = Type::getTypeFromMultiname(name,mi->context,true);
+						Class_base* cls = (Class_base*)dynamic_cast<Class_base*>(t);
 						if (cls)
 							o = asAtomHandler::fromObject(cls);
 					}
@@ -4831,12 +4870,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					if (asAtomHandler::is<Class_base>(o))
 					{
 						resulttype = asAtomHandler::as<Class_base>(o);
-						if (asAtomHandler::as<Class_base>(o)->isConstructed() || asAtomHandler::as<Class_base>(o)->isBuiltin())
-						{
-							addCachedConstant(state,mi, o,code);
-							typestack.push_back(typestackentry(resulttype,true));
-							break;
-						}
+						addCachedConstant(state,mi, o,code);
+						typestack.push_back(typestackentry(resulttype,true));
+						break;
 					}
 					else if (r & GETVAR_ISCONSTANT && !asAtomHandler::isNull(o)) // class may not be constructed yet, so the result is null and we do not cache
 					{
@@ -4851,6 +4887,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						{
 							state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX_FROMSLOT);
 							state.preloadedcode.back().pcode.arg1_uint=slotid;
+							state.preloadedcode.back().pcode.arg2_int=-1;
 							state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 							checkForLocalResult(state,code,1,nullptr);
 							typestack.push_back(typestackentry(nullptr,false));
@@ -4860,48 +4897,137 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						}
 					}
 				}
-				else if (!function->fromNewFunction && !function->isStatic && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic))
+				else if (!function->isStatic && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic))
 				{
-					asAtom o=asAtomHandler::invalidAtom;
-					GET_VARIABLE_RESULT r = GETVAR_NORMAL;
-					if(!function->func_scope.isNull()) // check scope stack
+					if (function->fromNewFunction)
 					{
-						auto it=function->func_scope->scope.rbegin();
-						while(it!=function->func_scope->scope.rend())
+						bool found=false;
+						bool considerDynamic=false;
+						if(!function->func_scope.isNull()) // check scope stack
 						{
-							GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF);
-							if(!it->considerDynamic)
-								opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
-							else
+							int32_t num=0;
+							auto it=function->func_scope->scope.rbegin();
+							while(it!=function->func_scope->scope.rend())
+							{
+								ASObject* o = asAtomHandler::getObject(it->object);
+								if(it->considerDynamic)
+								{
+									considerDynamic=true;
+									break;
+								}
+								if (asAtomHandler::is<Class_inherit>(it->object))
+									asAtomHandler::as<Class_inherit>(it->object)->checkScriptInit();
+								variable* v = o->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+								if (v && (v->slotid != UINT32_MAX))
+								{
+									state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX_FROMSLOT);
+									state.preloadedcode.back().pcode.arg1_uint=v->slotid;
+									state.preloadedcode.back().pcode.arg2_int=num;
+									state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+									checkForLocalResult(state,code,1,nullptr);
+									typestack.push_back(typestackentry(nullptr,false));
+									found=true;
+									break;
+								}
+								++it;
+								++num;
+							}
+						}
+						if (found)
+							break;
+						if (!considerDynamic)
+						{
+							asAtom o=asAtomHandler::invalidAtom;
+							if(asAtomHandler::isInvalid(o))
+							{
+								GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF);
+								mi->context->root->applicationDomain->getVariableByMultiname(o,*name,opt,wrk);
+							}
+							if(asAtomHandler::isInvalid(o))
+							{
+								ASObject* cls = (ASObject*)dynamic_cast<const Class_base*>(name->cachedType);
+								if (cls)
+									o = asAtomHandler::fromObjectNoPrimitive(cls);
+							}
+							// fast check for builtin classes if no custom class with same name is defined
+							if(asAtomHandler::isInvalid(o) && mi->context->root->customClasses.find(name->name_s_id) == mi->context->root->customClasses.end())
+							{
+								ASObject* cls = mi->context->root->getSystemState()->systemDomain->getVariableByMultinameOpportunistic(*name,wrk);
+								if (cls)
+									o = asAtomHandler::fromObject(cls);
+								if (cls && !cls->is<Class_base>() && cls->getConstant())
+								{
+									// global builtin method/constant
+									addCachedConstant(state,mi, o,code);
+									typestack.push_back(typestackentry(cls->getClass(),false));
+									break;
+								}
+							}
+							if(asAtomHandler::isInvalid(o))
+							{
+								Type* t = Type::getTypeFromMultiname(name,mi->context,true);
+								Class_base* cls = dynamic_cast<Class_base*>(t);
+								if (cls)
+									o = asAtomHandler::fromObject(cls);
+							}
+							if (asAtomHandler::is<Template_base>(o))
+							{
+								addCachedConstant(state,mi, o,code);
+								typestack.push_back(typestackentry(nullptr,false));
 								break;
-							if (asAtomHandler::is<Class_inherit>(it->object))
-								asAtomHandler::as<Class_inherit>(it->object)->checkScriptInit();
-							r=asAtomHandler::toObject(it->object,wrk)->getVariableByMultiname(o,*name, opt,wrk);
-							if(asAtomHandler::isValid(o))
+							}
+							if (asAtomHandler::is<Class_base>(o))
+							{
+								resulttype = asAtomHandler::as<Class_base>(o);
+								addCachedConstant(state,mi, o,code);
+								typestack.push_back(typestackentry(resulttype,true));
 								break;
-							++it;
+							}
 						}
 					}
-					if(asAtomHandler::isInvalid(o) || !asAtomHandler::isNull(o))// class may not be constructed yet, so the result is null and we do not cache
+					else
 					{
-						const Type* tp = Type::getTypeFromMultiname(name,mi->context);
-						if (dynamic_cast<const Class_base*>(tp))
+						asAtom o=asAtomHandler::invalidAtom;
+						GET_VARIABLE_RESULT r = GETVAR_NORMAL;
+						if(!function->func_scope.isNull()) // check scope stack
 						{
-							resulttype = (Class_base*)dynamic_cast<const Class_base*>(tp);
-							if (resulttype->is<Class_inherit>())
-								resulttype->as<Class_inherit>()->checkScriptInit();
-							if (resulttype->isConstructed() || resulttype->isBuiltin())
-								o = asAtomHandler::fromObjectNoPrimitive(resulttype);
+							auto it=function->func_scope->scope.rbegin();
+							while(it!=function->func_scope->scope.rend())
+							{
+								GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF);
+								if(!it->considerDynamic)
+									opt=(GET_VARIABLE_OPTION)(opt | SKIP_IMPL);
+								else
+									break;
+								if (asAtomHandler::is<Class_inherit>(it->object))
+									asAtomHandler::as<Class_inherit>(it->object)->checkScriptInit();
+								r=asAtomHandler::toObject(it->object,wrk)->getVariableByMultiname(o,*name, opt,wrk);
+								if(asAtomHandler::isValid(o))
+									break;
+								++it;
+							}
 						}
+						if(asAtomHandler::isInvalid(o) || !asAtomHandler::isNull(o))// class may not be constructed yet, so the result is null and we do not cache
+						{
+							Type* tp = Type::getTypeFromMultiname(name,mi->context);
+							if (dynamic_cast<Class_base*>(tp))
+							{
+								resulttype = dynamic_cast<Class_base*>(tp);
+								if (resulttype->is<Class_inherit>())
+									resulttype->as<Class_inherit>()->checkScriptInit();
+								if (resulttype->isConstructed() || resulttype->isBuiltin())
+									o = asAtomHandler::fromObjectNoPrimitive(resulttype);
+							}
+						}
+						if (asAtomHandler::isValid(o) && !asAtomHandler::isNull(o))// class may not be constructed yet, so the result is null and we do not cache
+						{
+							addCachedConstant(state,mi, o,code);
+							typestack.push_back(typestackentry(resulttype,true));
+							break;
+						}
+						if (r & GETVAR_ISNEWOBJECT)
+							ASATOM_DECREF(o);
 					}
-					if (asAtomHandler::isValid(o) && !asAtomHandler::isNull(o))// class may not be constructed yet, so the result is null and we do not cache
-					{
-						addCachedConstant(state,mi, o,code);
-						typestack.push_back(typestackentry(resulttype,true));
-						break;
-					}
-					if (r & GETVAR_ISNEWOBJECT)
-						ASATOM_DECREF(o);
 				}
 #endif
 				state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX);
@@ -5389,8 +5515,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				skip = (state.jumptargets.find(p) == state.jumptargets.end() && code.peekbyte() == 0x80);//coerce
 				if (!skip && state.jumptargets.find(p) == state.jumptargets.end() && typestack.size() > 0)
 				{
-					const Type* tp = Type::getTypeFromMultiname(name, mi->context);
-					const Class_base* cls =dynamic_cast<const Class_base*>(tp);
+					Type* tp = Type::getTypeFromMultiname(name, mi->context);
+					Class_base* cls =dynamic_cast<Class_base*>(tp);
 					tobj = typestack.back().obj;
 					if (tobj && tobj->is<Class_base>())
 					{
@@ -6536,9 +6662,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						if (state.operandlist.size() > 0 && state.operandlist.back().objtype && dynamic_cast<const Class_base*>(mi->returnType))
 						{
 							if (checkmatchingLastObjtype(state,state.operandlist.back().objtype,(Class_base*)(dynamic_cast<const Class_base*>(mi->returnType)))
-									|| state.operandlist.back().objtype->isSubClass(dynamic_cast<const Class_base*>(mi->returnType)))
+									|| state.operandlist.back().objtype->isSubClass(dynamic_cast<Class_base*>(mi->returnType)))
 							{
 								// return type matches type of last operand, no need to continue checking
+//								if ((state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local3.flags & ABC_OP_FORCEINT)
+//									&& mi->returnType == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
+								
 								checkresulttype=false;
 							}
 						}

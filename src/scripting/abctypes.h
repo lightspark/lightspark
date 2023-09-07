@@ -234,7 +234,7 @@ struct script_info
 	u30 trait_count;
 	std::vector<traits_info> traits;
 };
-
+class Class_base;
 struct exception_info_abc
 {
 	uint32_t from;
@@ -242,6 +242,7 @@ struct exception_info_abc
 	uint32_t target;
 	u30 exc_type;
 	u30 var_name;
+	Class_base* exc_class;
 };
 
 struct method_info_simple

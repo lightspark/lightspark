@@ -447,19 +447,6 @@ void BitmapFilter::fillGradientColors(number_t* gradientalphas, uint32_t* gradie
 }
 void BitmapFilter::applyBevelFilter(BitmapContainer* target, const RECT& sourceRect,uint8_t* tmpdata, DisplayObject* owner, number_t distance, number_t strength, bool inner, bool knockout, uint32_t* gradientcolors, number_t* gradientalphas, number_t angle, number_t xpos, number_t ypos, number_t scalex, number_t scaley)
 {
-	// create temporary copy of target to split applying highlight/dropshadow individually on target
-	uint8_t* tmpdatahigh = new uint8_t[target->getDataSize()];
-	uint8_t* tmpdatashadow = new uint8_t[target->getDataSize()];
-	if (inner)
-	{
-		memcpy(tmpdatahigh,target->getData(),target->getDataSize());
-		memcpy(tmpdatashadow,target->getData(),target->getDataSize());
-	}
-	else
-	{
-		memset(tmpdatahigh,0,target->getDataSize());
-		memset(tmpdatashadow,0,target->getDataSize());
-	}
 	// HACK: this is _very_ strange but the rotation of the parent DisplayObject seems to have an influence on the angle used for the dropshadows
 	// we just subtract the current rotation of the parent of the DisplayObject from the angle, that seems to get mostly correct results
 	number_t realangle = angle;
@@ -471,59 +458,71 @@ void BitmapFilter::applyBevelFilter(BitmapContainer* target, const RECT& sourceR
 		else
 			realangle -= m.getRotation()*M_PI/180.0;
 	}
-	applyDropShadowFilter(tmpdatahigh  ,target->getWidth(),target->getHeight(), tmpdata, sourceRect, xpos+cos(realangle+(inner? 0.0:M_PI)) * distance, ypos+sin(realangle+(inner? 0.0:M_PI)) * distance, 1.0, 1.0, 0xffffff, inner, true,scalex,scaley);
-	applyDropShadowFilter(tmpdatashadow,target->getWidth(),target->getHeight(), tmpdata, sourceRect, xpos+cos(realangle+(inner?M_PI: 0.0)) * distance, ypos+sin(realangle+(inner?M_PI: 0.0)) * distance, 1.0, 1.0, 0xffffff, inner, true,scalex,scaley);
-	uint8_t* datacombined = new uint8_t[target->getDataSize()];
+	Vector2f highlightOffset(xpos+cos(realangle+(inner? 0.0:M_PI)) * distance, ypos+sin(realangle+(inner? 0.0:M_PI)) * distance);
+	Vector2f shadowOffset(xpos+cos(realangle+(inner?M_PI: 0.0)) * distance, ypos+sin(realangle+(inner?M_PI: 0.0)) * distance);
+	int32_t shadowstartpos = round(shadowOffset.y*scaley)*target->getWidth()+round(shadowOffset.x*scalex);
+	int32_t highlightstartpos = round(highlightOffset.y*scaley)*target->getWidth()+round(highlightOffset.x*scalex);
+	uint8_t combinedpixel[4];
+
+	auto applyPixel = [&](int i, int32_t& startpos) -> uint32_t
+	{
+		uint32_t* datapixel = (uint32_t*)target->getData();
+		const int32_t size = target->getDataSize()/4;
+		const int bluroffset = i-startpos;
+		if (i < size)
+		{
+			uint32_t pixel = inner ? datapixel[i] : 0;
+			return i >= startpos && bluroffset < size ? dropShadowPixel(pixel, tmpdata[bluroffset*4+3], 1.0, 1.0, 0xffffff, inner, true) : pixel;
+		}
+		return 0;
+	};
 	for (int i = 0; i < target->getWidth()*target->getHeight(); i++)
 	{
-		int alphahigh = (int) (number_t(tmpdatahigh[i*4+3]) * strength);
-		int alphashadow = (int) (number_t(tmpdatashadow[i*4+3]) * strength);
+		int alphahigh = (int) (number_t(applyPixel(i, highlightstartpos) >> 24) * strength);
+		int alphashadow = (int) (number_t(applyPixel(i, shadowstartpos) >> 24) * strength);
 		int gradientindex = max(-128,min(127,(alphahigh - alphashadow)/2));
-		datacombined[i*4  ] = (gradientcolors[128 + gradientindex]    )&0xff;
-		datacombined[i*4+1] = (gradientcolors[128 + gradientindex]>>8 )&0xff;
-		datacombined[i*4+2] = (gradientcolors[128 + gradientindex]>>16)&0xff;
-		datacombined[i*4+3] = min(0xffU,uint32_t(gradientalphas[128 + gradientindex]*255.0));
+		combinedpixel[0] = (gradientcolors[128 + gradientindex]    )&0xff;
+		combinedpixel[1] = (gradientcolors[128 + gradientindex]>>8 )&0xff;
+		combinedpixel[2] = (gradientcolors[128 + gradientindex]>>16)&0xff;
+		combinedpixel[3] = min(0xffU,uint32_t(gradientalphas[128 + gradientindex]*255.0));
 		if (inner)
 		{
 			// premultiply alpha
-			datacombined[i*4  ] = uint32_t(datacombined[i*4  ])*uint32_t(datacombined[i*4+3])/255;
-			datacombined[i*4+1] = uint32_t(datacombined[i*4+1])*uint32_t(datacombined[i*4+3])/255;
-			datacombined[i*4+2] = uint32_t(datacombined[i*4+2])*uint32_t(datacombined[i*4+3])/255;
+			combinedpixel[0] = uint32_t(combinedpixel[0])*uint32_t(combinedpixel[3])/255;
+			combinedpixel[1] = uint32_t(combinedpixel[1])*uint32_t(combinedpixel[3])/255;
+			combinedpixel[2] = uint32_t(combinedpixel[2])*uint32_t(combinedpixel[3])/255;
 			if (knockout)
 			{
-				target->getData()[i*4  ] = datacombined[i*4  ];
-				target->getData()[i*4+1] = datacombined[i*4+1];
-				target->getData()[i*4+2] = datacombined[i*4+2];
-				target->getData()[i*4+3] = uint32_t(datacombined[i*4+3])*uint32_t(target->getData()[i*4+3])/255;
+				target->getData()[i*4  ] = combinedpixel[0];
+				target->getData()[i*4+1] = combinedpixel[1];
+				target->getData()[i*4+2] = combinedpixel[2];
+				target->getData()[i*4+3] = uint32_t(combinedpixel[3])*uint32_t(target->getData()[i*4+3])/255;
 			}
 			else
 			{
-				target->getData()[i*4  ] = min(0xffU,uint32_t(number_t(target->getData()[i*4  ])*number_t(1.0-gradientalphas[128 + gradientindex])+datacombined[i*4  ]));
-				target->getData()[i*4+1] = min(0xffU,uint32_t(number_t(target->getData()[i*4+1])*number_t(1.0-gradientalphas[128 + gradientindex])+datacombined[i*4+1]));
-				target->getData()[i*4+2] = min(0xffU,uint32_t(number_t(target->getData()[i*4+2])*number_t(1.0-gradientalphas[128 + gradientindex])+datacombined[i*4+2]));
+				target->getData()[i*4  ] = min(0xffU,uint32_t(number_t(target->getData()[i*4  ])*number_t(1.0-gradientalphas[128 + gradientindex])+combinedpixel[0]));
+				target->getData()[i*4+1] = min(0xffU,uint32_t(number_t(target->getData()[i*4+1])*number_t(1.0-gradientalphas[128 + gradientindex])+combinedpixel[1]));
+				target->getData()[i*4+2] = min(0xffU,uint32_t(number_t(target->getData()[i*4+2])*number_t(1.0-gradientalphas[128 + gradientindex])+combinedpixel[2]));
 			}
 		}
 		else
 		{
 			if (knockout)
 			{
-				target->getData()[i*4  ] = datacombined[i*4  ];
-				target->getData()[i*4+1] = datacombined[i*4+1];
-				target->getData()[i*4+2] = datacombined[i*4+2];
-				target->getData()[i*4+3] = min(0xffU,uint32_t(number_t(datacombined[i*4+3])*number_t(255.0-target->getData()[i*4+3])/255.0));
+				target->getData()[i*4  ] = combinedpixel[0];
+				target->getData()[i*4+1] = combinedpixel[1];
+				target->getData()[i*4+2] = combinedpixel[2];
+				target->getData()[i*4+3] = min(0xffU,uint32_t(number_t(combinedpixel[3])*number_t(255.0-target->getData()[i*4+3])/255.0));
 			}
 			else
 			{
-				target->getData()[i*4  ] = min(0xffU,uint32_t(number_t(datacombined[i*4  ])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4  ]));
-				target->getData()[i*4+1] = min(0xffU,uint32_t(number_t(datacombined[i*4+1])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4+1]));
-				target->getData()[i*4+2] = min(0xffU,uint32_t(number_t(datacombined[i*4+2])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4+2]));
-				target->getData()[i*4+3] = min(0xffU,uint32_t(number_t(datacombined[i*4+3])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4+3]));
+				target->getData()[i*4  ] = min(0xffU,uint32_t(number_t(combinedpixel[0])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4  ]));
+				target->getData()[i*4+1] = min(0xffU,uint32_t(number_t(combinedpixel[1])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4+1]));
+				target->getData()[i*4+2] = min(0xffU,uint32_t(number_t(combinedpixel[2])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4+2]));
+				target->getData()[i*4+3] = min(0xffU,uint32_t(number_t(combinedpixel[3])*number_t(255.0-target->getData()[i*4+3])/255.0+target->getData()[i*4+3]));
 			}
 		}
 	}
-	delete[] datacombined;
-	delete[] tmpdatahigh;
-	delete[] tmpdatashadow;
 }
 
 void BitmapFilter::applyGradientFilter(uint8_t* data, uint32_t datawidth, uint32_t dataheight, uint8_t* tmpdata, const RECT& sourceRect, number_t xpos, number_t ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout,number_t scalex,number_t scaley)

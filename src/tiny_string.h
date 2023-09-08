@@ -288,17 +288,20 @@ public:
 	tiny_string encodeNull() const;
 };
 }
+namespace std
+{
 // using djb2 hash function from http://www.cse.yorku.ca/~oz/hash.html
 template <>
-struct std::hash<lightspark::tiny_string>
+struct hash<lightspark::tiny_string>
 {
-	std::size_t operator()(const lightspark::tiny_string& s) const
+	size_t operator()(const lightspark::tiny_string& s) const
 	{
-		std::size_t hash = 5381;
+		size_t hash = 5381;
 		uint32_t n =0;
 		while (n++ < s.stringSize-1)
 			hash = ((hash << 5) + hash) + s.buf[n]; /* hash * 33 + c */
 		return hash;
 	}
 };
+}
 #endif /* TINY_STRING_H */

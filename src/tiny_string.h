@@ -27,6 +27,7 @@
 /* for utf8 handling */
 #include <glib.h>
 #include "compat.h"
+#include <functional>
 
 /* forward declare for tiny_string conversion */
 typedef unsigned char xmlChar;
@@ -88,6 +89,7 @@ public:
 class DLL_PUBLIC tiny_string
 {
 friend std::ostream& operator<<(std::ostream& s, const tiny_string& r);
+friend struct std::hash<lightspark::tiny_string>;
 private:
 	enum TYPE { READONLY=0, STATIC, DYNAMIC };
 	/*must be at least 6 bytes for tiny_string(uint32_t c) constructor */
@@ -285,6 +287,18 @@ public:
 	// encodes all null bytes instring to xml notation ("&#x0;")
 	tiny_string encodeNull() const;
 };
-
 }
+// using djb2 hash function from http://www.cse.yorku.ca/~oz/hash.html
+template <>
+struct std::hash<lightspark::tiny_string>
+{
+	std::size_t operator()(const lightspark::tiny_string& s) const
+	{
+		std::size_t hash = 5381;
+		uint32_t n =0;
+		while (n++ < s.stringSize-1)
+			hash = ((hash << 5) + hash) + s.buf[n]; /* hash * 33 + c */
+		return hash;
+	}
+};
 #endif /* TINY_STRING_H */

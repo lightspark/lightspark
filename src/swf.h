@@ -307,7 +307,7 @@ private:
 	 * Pooling support
 	 */
 	mutable Mutex poolMutex;
-	map<tiny_string, uint32_t> uniqueStringMap;
+	unordered_map<tiny_string, uint32_t> uniqueStringMap;
 	vector<tiny_string> uniqueStringIDMap;
 	uint32_t lastUsedStringId;
 	map<nsNameAndKindImpl, uint32_t> uniqueNamespaceImplMap;

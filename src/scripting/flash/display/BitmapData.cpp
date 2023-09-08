@@ -316,7 +316,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 	_NR<ASObject> drawable;
 	_NR<Matrix> matrix;
 	_NR<ColorTransform> ctransform;
-	asAtom blendMode;
+	asAtom blendMode = asAtomHandler::invalidAtom;
 	_NR<Rectangle> clipRect;
 	bool smoothing;
 	ARG_CHECK(ARG_UNPACK(drawable) (matrix, NullRef) (ctransform, NullRef) (blendMode, asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY))
@@ -332,7 +332,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 	}
 
 	uint32_t blendModeID = BUILTIN_STRINGS::EMPTY;
-	if (asAtomHandler::isStringID(blendMode))
+	if (asAtomHandler::isValid(blendMode) 
+		&& !asAtomHandler::isNull(blendMode)
+		&& !asAtomHandler::isUndefined(blendMode))
 		blendModeID = asAtomHandler::toStringId(blendMode,wrk);
 	if(drawable->is<BitmapData>())
 	{

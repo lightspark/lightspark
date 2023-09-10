@@ -122,6 +122,8 @@ public:
 	{
 	}
 	void SetEngineData(EngineData* data) { engineData = data;}
+	uint32_t getCurrentFramebufferID() const { return currentFrameBufferID; }
+	void setCurrentFramebufferID(uint32_t id) { currentFrameBufferID = id; }
 	void lsglOrtho(float l, float r, float b, float t, float n, float f);
 
 	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,

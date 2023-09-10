@@ -682,6 +682,10 @@ void RenderThread::commonGLResize()
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
 	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
 
+	if (engineData->nvgframebuffer != nullptr)
+		engineData->exec_nvgluDeleteFramebuffer(engineData->nvgframebuffer);
+	engineData->nvgframebuffer = engineData->exec_nvgluCreateFramebuffer(windowWidth, windowHeight, 0);
+
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);

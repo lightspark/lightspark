@@ -37,14 +37,15 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "3rdparty/nanovg/src/nanovg_gl_utils.h"
 
 extern "C" {
 #ifdef ENABLE_GLES2
 extern NVGcontext* nvgCreateGLES2(int flags);
 extern void nvgDeleteGLES2(NVGcontext* ctx);
 #else
-extern NVGcontext* nvgCreateGL2(int flags);
-extern void nvgDeleteGL2(NVGcontext* ctx);
+extern NVGcontext* nvgCreateGL3(int flags);
+extern void nvgDeleteGL3(NVGcontext* ctx);
 #endif
 }
 //The interpretation of texture data change with the endianness
@@ -79,7 +80,7 @@ EngineData::~EngineData()
 		nvgDeleteGLES2(nvgcontext);
 #else
 	if (nvgcontext)
-		nvgDeleteGL2(nvgcontext);
+		nvgDeleteGL3(nvgcontext);
 #endif
 }
 bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
@@ -196,6 +197,11 @@ bool initSDL()
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#else
+			// Needed for NanoVG FBO support.
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
 #endif
 		}
 	}
@@ -381,7 +387,7 @@ void EngineData::initNanoVG()
 #ifdef ENABLE_GLES2
 	nvgcontext=nvgCreateGLES2(0);
 #else
-	nvgcontext=nvgCreateGL2(0);
+	nvgcontext=nvgCreateGL3(0);
 #endif
 	if (nvgcontext == nullptr)
 		LOG(LOG_ERROR,"couldn't initialize nanovg");
@@ -791,6 +797,16 @@ void EngineData::getGlCompressedTextureFormats()
 			compressed_texture_formats.push_back(TEXTUREFORMAT_COMPRESSED::DXT5);
 	}
 	delete [] formats;
+}
+
+NVGLUframebuffer* EngineData::exec_nvgluCreateFramebuffer(int w, int h, int imageFlags)
+{
+	return nvgluCreateFramebuffer(nvgcontext, w, h, imageFlags);
+}
+
+void EngineData::exec_nvgluDeleteFramebuffer(NVGLUframebuffer* fb)
+{
+	nvgluDeleteFramebuffer(fb);
 }
 
 void EngineData::exec_glUniform1f(int location,float v0)

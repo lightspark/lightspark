@@ -27,6 +27,7 @@
 #include "backends/lsopengl.h"
 #include "3rdparty/nanovg/src/nanovg.h"
 #include "3rdparty/nanovg/src/nanovg_gl.h"
+#include "3rdparty/nanovg/src/nanovg_gl_utils.h"
 
 
 using namespace lightspark;
@@ -40,6 +41,25 @@ FORCE_INLINE bool isRepeating(FILL_STYLE_TYPE type)
 FORCE_INLINE bool isSmoothed(FILL_STYLE_TYPE type)
 {
 	return type == FILL_STYLE_TYPE::REPEATING_BITMAP || type == FILL_STYLE_TYPE::CLIPPED_BITMAP;
+}
+
+FORCE_INLINE bool isSupportedGLBlendMode(AS_BLENDMODE mode)
+{
+	switch (mode)
+	{
+		case BLENDMODE_NORMAL:
+		case BLENDMODE_LAYER:
+		case BLENDMODE_MULTIPLY:
+		case BLENDMODE_ADD:
+		case BLENDMODE_SCREEN:
+		case BLENDMODE_OVERLAY:
+		case BLENDMODE_HARDLIGHT:
+			return true;
+			break;
+		default:
+			return false;
+			break;
+	}
 }
 
 void nanoVGDeleteImage(int image)
@@ -82,15 +102,33 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 
 bool TokenContainer::renderImpl(RenderContext& ctxt)
 {
+	SystemState* sys = owner->getSystemState();
+	NVGLUframebuffer* nvgfb = sys->getEngineData()->nvgframebuffer;
+	bool render_to_bitmap = sys->stage->renderToTextureCount;
+	bool has_fbo_bound = false;
+	uint32_t last_framebuffer_id = UINT32_MAX;
 	if (ctxt.contextType== RenderContext::GL && renderWithNanoVG)
 	{
-		NVGcontext* nvgctxt = owner->getSystemState()->getEngineData()->nvgcontext;
+		NVGcontext* nvgctxt = sys->getEngineData()->nvgcontext;
 		if (nvgctxt)
 		{
 			if (owner->getConcatenatedAlpha() == 0)
 				return false;
+			if (nvgfb && render_to_bitmap)
+			{
+				Vector2 size;
+				nvgImageSize(nvgctxt, nvgfb->image, &size.x, &size.y);
+				// TODO: Implement some sort of error handling in case the FBO size isn't the same as the window size.
+				assert(size == Vector2(sys->getRenderThread()->windowWidth, sys->getRenderThread()->windowHeight));
+				nvgluBindFramebuffer(nvgfb);
+				sys->getEngineData()->exec_glViewport(0, 0, size.x, size.y);
+				sys->getEngineData()->exec_glClearColor(0, 0, 0, 0);
+				sys->getEngineData()->exec_glClear((CLEARMASK)(CLEARMASK::COLOR|CLEARMASK::STENCIL));
+				has_fbo_bound = true;
+				last_framebuffer_id = ((GLRenderContext&)ctxt).getCurrentFramebufferID();
+			}
 			nvgResetTransform(nvgctxt);
-			nvgBeginFrame(nvgctxt, owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight, 1.0);
+			nvgBeginFrame(nvgctxt, sys->getRenderThread()->windowWidth, sys->getRenderThread()->windowHeight, 1.0);
 			// xOffsetTransformed/yOffsetTransformed contain the offsets from the border of the window
 			nvgTranslate(nvgctxt,owner->cachedSurface.xOffsetTransformed,owner->cachedSurface.yOffsetTransformed);
 			MATRIX m = owner->cachedSurface.matrix;
@@ -197,7 +235,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 								case NON_SMOOTHED_CLIPPED_BITMAP:
 								{
 									
-									int img =setNanoVGImage(owner->getSystemState()->getEngineData(),nvgctxt,style);
+									int img =setNanoVGImage(sys->getEngineData(),nvgctxt,style);
 									if (img != -1)
 									{
 										MATRIX m = style->Matrix;
@@ -322,16 +360,25 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			}
 			nvgClosePath(nvgctxt);
 			nvgEndFrame(nvgctxt);
-			owner->getSystemState()->getEngineData()->exec_glStencilFunc_GL_ALWAYS();
-			owner->getSystemState()->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(0);
-			owner->getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
-			owner->getSystemState()->getEngineData()->exec_glUseProgram(((RenderThread&)ctxt).gpu_program);
+			sys->getEngineData()->exec_glStencilFunc_GL_ALWAYS();
+			sys->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(0);
+			sys->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
+			sys->getEngineData()->exec_glUseProgram(((RenderThread&)ctxt).gpu_program);
 			((GLRenderContext&)ctxt).lsglLoadIdentity();
 			((GLRenderContext&)ctxt).setMatrixUniform(GLRenderContext::LSGL_MODELVIEW);
-			return false;
+			if (has_fbo_bound)
+				((GLRenderContext&)ctxt).setCurrentFramebufferID(nvgfb->fbo);
+			else
+				return false;
 		}
 	}
-	return owner->defaultRender(ctxt);
+	bool ret = owner->defaultRender(ctxt);
+	if (has_fbo_bound)
+	{
+		((GLRenderContext&)ctxt).setCurrentFramebufferID(last_framebuffer_id);
+		nvgluBindFramebuffer(nullptr);
+	}
+	return ret;
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
@@ -600,9 +647,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& !isMask
 			&& !owner->ClipDepth
 			&& !owner->computeCacheAsBitmap()
-			&& owner->getBlendMode()==BLENDMODE_NORMAL
+			&& isSupportedGLBlendMode(owner->getBlendMode())
 			&& !r
-			&& (owner->getSystemState()->stage->renderToTextureCount == 0) // TODO implement nanoVG rendering to texture
 		)
 	{
 		currentcolortransform = ct;

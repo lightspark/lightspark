@@ -629,8 +629,11 @@ void RenderThread::commonGLInit(int width, int height)
 	engineData->exec_glGenTextures(1, &maskTextureID);
 
 	// create framebuffer for blending
-	blendframebuffer = engineData->exec_glGenFramebuffer();
-	engineData->exec_glGenTextures(1, &blendTextureID);
+	if (!engineData->nvgcontext)
+	{
+		blendframebuffer = engineData->exec_glGenFramebuffer();
+		engineData->exec_glGenTextures(1, &blendTextureID);
+	}
 
 	currentFrameBufferID=0;
 
@@ -673,18 +676,28 @@ void RenderThread::commonGLResize()
 	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
 
 	// setup blend framebuffer
-	engineData->exec_glActiveTexture_GL_TEXTURE0(2);
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(blendTextureID);
-	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(blendframebuffer);
-	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
-	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
-	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(blendTextureID);
-	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
-	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
+	if (engineData->nvgcontext)
+	{
+		if (engineData->nvgframebuffer != nullptr)
+			engineData->exec_nvgluDeleteFramebuffer(engineData->nvgframebuffer);
+		engineData->nvgframebuffer = engineData->exec_nvgluCreateFramebuffer(windowWidth, windowHeight, 0);
+		blendframebuffer = engineData->getNanoVGFrameBufferID();
+		blendTextureID = engineData->getNanoVGFrameBufferTextureID();
+		engineData->exec_glActiveTexture_GL_TEXTURE0(2);
+		engineData->exec_glBindTexture_GL_TEXTURE_2D(blendTextureID);
+	}
+	else
+	{
+		engineData->exec_glActiveTexture_GL_TEXTURE0(2);
+		engineData->exec_glBindTexture_GL_TEXTURE_2D(blendTextureID);
+		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(blendframebuffer);
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+		engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(blendTextureID);
+		engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
+		engineData->exec_glViewport(0,0,windowWidth,windowHeight);
+	}
 
-	if (engineData->nvgframebuffer != nullptr)
-		engineData->exec_nvgluDeleteFramebuffer(engineData->nvgframebuffer);
-	engineData->nvgframebuffer = engineData->exec_nvgluCreateFramebuffer(windowWidth, windowHeight, 0);
 
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 	engineData->exec_glActiveTexture_GL_TEXTURE0(0);

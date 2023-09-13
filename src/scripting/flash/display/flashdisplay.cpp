@@ -1320,10 +1320,9 @@ bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 		}
 		else
 		{
-			if (ctxt.startobject != this)
+			if (ctxt.startobject != this && ctxt.startobject != this->cachedAsBitmapOf)
 			{
 				defaultRender(ctxt);
-				return renderingfailed;
 			}
 		}
 	}

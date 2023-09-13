@@ -65,7 +65,9 @@ bool EngineData::sdl_needinit = true;
 bool EngineData::enablerendering = true;
 SDL_Cursor* EngineData::handCursor = nullptr;
 Semaphore EngineData::mainthread_initialized(0);
-EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr),nvgcontext(nullptr), width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false),
+EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr),
+	nvgcontext(nullptr), nvgframebuffer(nullptr),
+	width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false),
 	startInFullScreenMode(false),startscalefactor(1.0)
 {
 }
@@ -590,6 +592,16 @@ void EngineData::InteractiveObjectRemovedFromStage()
 	SDL_zero(event);
 	event.type = LS_USEREVENT_INTERACTIVEOBJECT_REMOVED_FOM_STAGE;
 	SDL_PushEvent(&event);
+}
+
+uint32_t EngineData::getNanoVGFrameBufferTextureID()
+{
+	return nvgframebuffer ? nvgframebuffer->texture : UINT32_MAX;
+}
+
+uint32_t EngineData::getNanoVGFrameBufferID()
+{
+	return nvgframebuffer ? nvgframebuffer->fbo : UINT32_MAX;
 }
 void EngineData::selectContextMenuItemIntern()
 {

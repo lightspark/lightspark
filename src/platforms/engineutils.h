@@ -178,6 +178,8 @@ public:
 	void selectContextMenuItem();
 	void InteractiveObjectRemovedFromStage();
 
+	uint32_t getNanoVGFrameBufferTextureID();
+	uint32_t getNanoVGFrameBufferID();
 	static bool sdl_needinit;
 	static bool enablerendering;
 	static bool mainthread_running;

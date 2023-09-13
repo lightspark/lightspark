@@ -103,10 +103,6 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 bool TokenContainer::renderImpl(RenderContext& ctxt)
 {
 	SystemState* sys = owner->getSystemState();
-	NVGLUframebuffer* nvgfb = sys->getEngineData()->nvgframebuffer;
-	bool render_to_bitmap = sys->stage->renderToTextureCount;
-	bool has_fbo_bound = false;
-	uint32_t last_framebuffer_id = UINT32_MAX;
 	if (ctxt.contextType== RenderContext::GL && renderWithNanoVG)
 	{
 		NVGcontext* nvgctxt = sys->getEngineData()->nvgcontext;
@@ -114,18 +110,23 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 		{
 			if (owner->getConcatenatedAlpha() == 0)
 				return false;
-			if (nvgfb && render_to_bitmap)
+			switch (owner->getBlendMode())
 			{
-				Vector2 size;
-				nvgImageSize(nvgctxt, nvgfb->image, &size.x, &size.y);
-				// TODO: Implement some sort of error handling in case the FBO size isn't the same as the window size.
-				assert(size == Vector2(sys->getRenderThread()->windowWidth, sys->getRenderThread()->windowHeight));
-				nvgluBindFramebuffer(nvgfb);
-				sys->getEngineData()->exec_glViewport(0, 0, size.x, size.y);
-				sys->getEngineData()->exec_glClearColor(0, 0, 0, 0);
-				sys->getEngineData()->exec_glClear((CLEARMASK)(CLEARMASK::COLOR|CLEARMASK::STENCIL));
-				has_fbo_bound = true;
-				last_framebuffer_id = ((GLRenderContext&)ctxt).getCurrentFramebufferID();
+				case BLENDMODE_NORMAL:
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ONE_MINUS_SRC_ALPHA);
+					break;
+				case BLENDMODE_MULTIPLY:
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_DST_COLOR,NVG_ONE_MINUS_SRC_ALPHA);
+					break;
+				case BLENDMODE_ADD:
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ONE);
+					break;
+				case BLENDMODE_SCREEN:
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ONE_MINUS_SRC_COLOR);
+					break;
+				default:
+					LOG(LOG_NOT_IMPLEMENTED,"renderTextured of nanoVG blend mode "<<(int)owner->getBlendMode());
+					break;
 			}
 			nvgResetTransform(nvgctxt);
 			nvgBeginFrame(nvgctxt, sys->getRenderThread()->windowWidth, sys->getRenderThread()->windowHeight, 1.0);
@@ -366,19 +367,10 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			sys->getEngineData()->exec_glUseProgram(((RenderThread&)ctxt).gpu_program);
 			((GLRenderContext&)ctxt).lsglLoadIdentity();
 			((GLRenderContext&)ctxt).setMatrixUniform(GLRenderContext::LSGL_MODELVIEW);
-			if (has_fbo_bound)
-				((GLRenderContext&)ctxt).setCurrentFramebufferID(nvgfb->fbo);
-			else
-				return false;
+			return false;
 		}
 	}
-	bool ret = owner->defaultRender(ctxt);
-	if (has_fbo_bound)
-	{
-		((GLRenderContext&)ctxt).setCurrentFramebufferID(last_framebuffer_id);
-		nvgluBindFramebuffer(nullptr);
-	}
-	return ret;
+	return owner->defaultRender(ctxt);
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list

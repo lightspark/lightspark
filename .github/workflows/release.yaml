@@ -51,7 +51,7 @@ jobs:
       - name: Add MXE Repository to Apt
         uses: myci-actions/add-deb-repo@4
         with:
-          repo: deb http://pkg.mxe.cc/repos/apt bionic main
+          repo: deb http://pkg.mxe.cc/repos/apt focal main
           repo-name: mxe
           keys: ${{ secrets.MXE_REPO_KEY }}
           key-server: keyserver.ubuntu.com
@@ -93,17 +93,14 @@ jobs:
           make
           sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
           make package
-          mv -v Lightspark*exe installer.exe
+          mv -v Lightspark*exe Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win32.exe
 
       - name: Upload Installer Release Asset
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.draft_release.outputs.upload_url }}
-          asset_path: installer.exe
-          asset_name: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win32.exe
-          asset_content_type: application/octet-stream
+          files: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win32.exe
 
   mxe64:
     name: Release 64-bit Windows Installer
@@ -161,14 +158,11 @@ jobs:
           make
           sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
           make package
-          mv -v Lightspark*exe installer.exe
+          mv -v Lightspark*exe Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win64.exe
 
       - name: Upload Installer Release Asset
-        uses: actions/upload-release-asset@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.draft_release.outputs.upload_url }}
-          asset_path: installer.exe
-          asset_name: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win64.exe
-          asset_content_type: application/octet-stream
+          files: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win64.exe

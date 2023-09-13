@@ -614,10 +614,13 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
 					if (currentfillpattern)
 						cairo_pattern_destroy(currentfillpattern);
-					currentfillpattern=nullptr;
 					if(p.type==CLEAR_FILL)
+					{
 						// Clear source.
 						cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
+						currentfillstyle=nullptr;
+						currentfillpattern=nullptr;
+					}
 					break;
 				case CLEAR_STROKE:
 					instroke = false;
@@ -635,6 +638,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					if (currentstrokepattern)
 						cairo_pattern_destroy(currentstrokepattern);
 					currentstrokepattern=nullptr;
+					currentstrokestyle=nullptr;
 					// Clear source.
 					cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 					break;

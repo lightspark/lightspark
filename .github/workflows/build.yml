@@ -209,6 +209,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tag_name: latest
           files: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win64.exe
 
   mxe32:
@@ -274,4 +275,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tag_name: latest
           files: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win32.exe

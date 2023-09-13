@@ -2780,7 +2780,7 @@ bool XML::nodesEqual(XML *a, XML *b) const
 
 	// name
 	if(a->nodenameID!=b->nodenameID || 
-	   (!a->nodenameID == BUILTIN_STRINGS::EMPTY && 
+	   (a->nodenameID != BUILTIN_STRINGS::EMPTY && 
 	    a->nodenamespace_uri!=b->nodenamespace_uri))
 		return false;
 

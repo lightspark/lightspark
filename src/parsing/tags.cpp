@@ -2701,6 +2701,9 @@ void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
 		return;
 	if (this->SoundInfo.SyncNoMultiple && sound->isPlaying())
 		return;
+	// it seems that sounds are not played if we get here by gotoandstop
+	if (parent->is<MovieClip>() && parent->as<MovieClip>()->state.stop_FP && parent->as<MovieClip>()->state.explicit_FP)
+		return;
 	sound->play(0);
 }
 
@@ -3018,6 +3021,7 @@ void SoundStreamBlockTag::decodeSoundBlock(StreamCache* cache, LS_AUDIO_CODEC co
 	switch (codec)
 	{
 		case LS_AUDIO_CODEC::LINEAR_PCM_PLATFORM_ENDIAN:
+		case LS_AUDIO_CODEC::LINEAR_PCM_LE:
 		case LS_AUDIO_CODEC::ADPCM:
 			cache->append(buf,len);
 			break;

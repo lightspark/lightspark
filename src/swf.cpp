@@ -103,6 +103,7 @@ RootMovieClip::RootMovieClip(ASWorker* wrk, _NR<LoaderInfo> li, _NR<ApplicationD
 	hasSymbolClass=false;
 	hasMainClass=false;
 	usesActionScript3=false;
+	executingFrameScriptCount=0;
 }
 
 RootMovieClip::~RootMovieClip()

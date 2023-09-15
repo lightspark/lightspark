@@ -1910,19 +1910,24 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 	for(uint32_t i=0;i<argslen;i+=2)
 	{
 		uint32_t frame=asAtomHandler::toInt(args[i]);
-
-		if(!asAtomHandler::isFunction(args[i+1]))
+		if (asAtomHandler::isNull(args[i+1])) // argument null seems to imply that the script currently attached to the frame is removed
+		{
+			auto it = th->frameScripts.find(frame);
+			if (it != th->frameScripts.end())
+			{
+				ASATOM_DECREF(it->second);
+				th->frameScripts.erase(it);
+			}
+			continue;
+		}
+		else if(!asAtomHandler::isFunction(args[i+1]))
 		{
 			LOG(LOG_ERROR,"Not a function");
 			return;
 		}
 		IFunction* func = asAtomHandler::as<IFunction>(args[i+1]);
 		func->incRef();
-		ASObject* c = func->closure_this;
-		func->closure_this=nullptr;
 		th->frameScripts[frame]=args[i+1];
-		if (c)
-			c->removeStoredMember();
 	}
 }
 
@@ -2030,7 +2035,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
-	if (!needsActionScript3() || !this->inExecuteFramescript)
+	if (!needsActionScript3() || this->getInstanceWorker()->rootClip->executingFrameScriptCount == 0)
 		currentFrameChanged(newframe);
 	else
 		state.gotoQueued = true;
@@ -2042,7 +2047,7 @@ void MovieClip::currentFrameChanged(bool newframe)
 		advanceFrame(false);
 		return;
 	}
-	if (inExecuteFramescript)
+	if (this->getInstanceWorker()->rootClip->executingFrameScriptCount)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 
 	if (newframe && !state.creatingframe)
@@ -6499,12 +6504,19 @@ void MovieClip::executeFrameScript()
 		{
 			lastFrameScriptExecuted = f;
 			inExecuteFramescript = true;
+			this->getInstanceWorker()->rootClip->executingFrameScriptCount++;
 			asAtom v=asAtomHandler::invalidAtom;
-			this->incRef();
-			asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
+			ASObject* closure_this = asAtomHandler::as<IFunction>(frameScripts[f])->closure_this;
+			if (!closure_this)
+				closure_this=this;
+			closure_this->incRef();
+			asAtom obj = asAtomHandler::fromObjectNoPrimitive(closure_this);
+			ASATOM_INCREF(frameScripts[f]);
 			asAtomHandler::callFunction(frameScripts[f],getInstanceWorker(),v,obj,nullptr,0,false);
+			ASATOM_DECREF(frameScripts[f]);
 			ASATOM_DECREF(v);
-			this->decRef();
+			closure_this->decRef();
+			this->getInstanceWorker()->rootClip->executingFrameScriptCount--;
 			inExecuteFramescript = false;
 		}
 	}

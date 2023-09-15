@@ -1725,7 +1725,8 @@ bool Class_base::isSubClass(Class_base* cls, bool considerInterfaces)
 		subclasses_map.insert(make_pair(cls,true));
 		return true;
 	}
-	subclasses_map.insert(make_pair(cls,false));
+	if (cls->isConstructed() && this->isConstructed())
+		subclasses_map.insert(make_pair(cls,false));
 	return false;
 }
 

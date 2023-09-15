@@ -111,6 +111,7 @@ public:
 	ParseThread* parsethread;
 	uint32_t version;
 	uint32_t fileLength;
+	uint32_t executingFrameScriptCount;
 	bool hasSymbolClass;
 	bool hasMainClass;
 	bool usesActionScript3;

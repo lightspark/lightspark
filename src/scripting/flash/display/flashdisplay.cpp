@@ -2923,8 +2923,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 
 	obj->afterLegacyDelete(inskipping);
 	//this also removes it from depthToLegacyChild
-	bool ret = _removeChild(obj,false,inskipping);
-	assert_and_throw(ret);
+	_removeChild(obj,false,inskipping);
 }
 
 void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* obj, bool inskipping, bool fromtag)

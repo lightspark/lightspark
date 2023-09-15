@@ -4090,6 +4090,31 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 			}
 			break;
 		}
+		case ATOM_OBJECTPTR:
+		{
+			switch (v2.uintval&0x7)
+			{
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_STRINGID:
+				case ATOM_INTEGER:
+				case ATOM_UINTEGER:
+				{
+					TRISTATE tmp = asAtomHandler::isLessIntern(v2,w,a);
+					switch (tmp)
+					{
+						case TFALSE:
+							return TTRUE;
+						case TTRUE:
+							return TFALSE;
+						default:
+							return tmp;
+					}
+				}
+				default:
+					break;
+			}
+			break;
+		}
 		default:
 			break;
 	}

@@ -1409,6 +1409,7 @@ class ASMutex;
 class ASQName;
 class ASString;
 class ASWorker;
+class AVM1Sound;
 class BevelFilter;
 class Bitmap;
 class BitmapData;
@@ -1542,6 +1543,7 @@ template<> inline bool ASObject::is<ASObject>() const { return true; }
 template<> inline bool ASObject::is<ASQName>() const { return type==T_QNAME; }
 template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
 template<> inline bool ASObject::is<ASWorker>() const { return subtype==SUBTYPE_WORKER; }
+template<> inline bool ASObject::is<AVM1Sound>() const { return subtype == SUBTYPE_AVM1SOUND; }
 template<> inline bool ASObject::is<BevelFilter>() const { return subtype==SUBTYPE_BEVELFILTER; }
 template<> inline bool ASObject::is<Bitmap>() const { return subtype==SUBTYPE_BITMAP; }
 template<> inline bool ASObject::is<BitmapData>() const { return subtype==SUBTYPE_BITMAPDATA; }
@@ -1621,7 +1623,7 @@ template<> inline bool ASObject::is<SecurityError>() const { return subtype==SUB
 template<> inline bool ASObject::is<Shape>() const { return subtype==SUBTYPE_SHAPE; }
 template<> inline bool ASObject::is<SharedObject>() const { return subtype==SUBTYPE_SHAREDOBJECT; }
 template<> inline bool ASObject::is<SimpleButton>() const { return subtype==SUBTYPE_SIMPLEBUTTON; }
-template<> inline bool ASObject::is<Sound>() const { return subtype==SUBTYPE_SOUND; }
+template<> inline bool ASObject::is<Sound>() const { return subtype==SUBTYPE_SOUND || subtype == SUBTYPE_AVM1SOUND; }
 template<> inline bool ASObject::is<SoundChannel>() const { return subtype==SUBTYPE_SOUNDCHANNEL; }
 template<> inline bool ASObject::is<SoundTransform>() const { return subtype==SUBTYPE_SOUNDTRANSFORM; }
 template<> inline bool ASObject::is<SpaceJustifier>() const { return subtype==SUBTYPE_SPACEJUSTIFIER; }

@@ -564,13 +564,14 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		if (th->soundChannel)
 		{
 			th->soundChannel->setLoops(loops);
+			th->soundChannel->setSampleProducer(th);
 			th->soundChannel->soundTransform = soundtransform;
 			th->soundChannel->play(startTime);
 			th->soundChannel->incRef();
 			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel);
 			return;
 		}
-		SoundChannel* s = Class<SoundChannel>::getInstanceS(wrk,::ceil(th->buffertime/1000.0),th->soundData, th->format);
+		SoundChannel* s = Class<SoundChannel>::getInstanceS(wrk,::ceil(th->buffertime/1000.0),th->soundData, th->format, nullptr, th);
 		s->setStartTime(startTime);
 		s->setLoops(loops);
 		s->soundTransform = soundtransform;
@@ -1113,6 +1114,7 @@ ASFUNCTIONBODY_ATOM(SoundChannel,getPosition)
 }
 void SoundChannel::execute()
 {
+	bool is_avm2 = getSystemState()->mainClip->needsActionScript3();
 	// ensure audio manager is initialized
 	getSystemState()->waitInitialized();
 	for (loopstogo = (loopstogo < 1) ? 1 : loopstogo; loopstogo; --loopstogo)
@@ -1125,7 +1127,7 @@ void SoundChannel::execute()
 		}
 		mutex.unlock();
 		RELEASE_WRITE(finished,false);
-		if (sampleproducer)
+		if (sampleproducer && is_avm2)
 			playStreamFromSamples();
 		else
 			playStream();
@@ -1136,8 +1138,12 @@ void SoundChannel::execute()
 	{
 		if (ACQUIRE_READ(finished))
 		{
-			incRef();
-			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"soundComplete")));
+			EventDispatcher* ev = is_avm2 ? (EventDispatcher*)this : (EventDispatcher*)sampleproducer;
+			if (ev != nullptr)
+			{
+				ev->incRef();
+				getVm(getSystemState())->addEvent(_MR(ev),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"soundComplete")));
+			}
 		}
 	}
 }

@@ -196,49 +196,43 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,loadSound)
 void AVM1Sound::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
 	ASWorker* wrk = getInstanceWorker();
-	if (dispatcher == this->soundChannel)
+	if (e->type == "soundComplete")
 	{
-		if (e->type == "soundComplete")
+		asAtom func=asAtomHandler::invalidAtom;
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+		m.name_s_id=getSystemState()->getUniqueStringId("onSoundComplete");
+		getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+		if (asAtomHandler::is<AVM1Function>(func))
 		{
-			asAtom func=asAtomHandler::invalidAtom;
-			multiname m(nullptr);
-			m.name_type=multiname::NAME_STRING;
-			m.isAttribute = false;
-			m.name_s_id=getSystemState()->getUniqueStringId("onSoundComplete");
-			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
-			if (asAtomHandler::is<AVM1Function>(func))
-			{
-				asAtom ret=asAtomHandler::invalidAtom;
-				asAtom obj = asAtomHandler::fromObject(this);
-				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-				asAtomHandler::as<AVM1Function>(func)->decRef();
-			}
+			asAtom ret=asAtomHandler::invalidAtom;
+			asAtom obj = asAtomHandler::fromObject(this);
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			asAtomHandler::as<AVM1Function>(func)->decRef();
 		}
 	}
-	if (dispatcher == this)
+	if (e->type == "progress" && !this->loading)
 	{
-		if (e->type == "progress" && !this->loading)
+		this->loading=true;
+		asAtom func=asAtomHandler::invalidAtom;
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
+		getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+		if (asAtomHandler::is<AVM1Function>(func))
 		{
-			this->loading=true;
-			asAtom func=asAtomHandler::invalidAtom;
-			multiname m(nullptr);
-			m.name_type=multiname::NAME_STRING;
-			m.isAttribute = false;
-			m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
-			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
-			if (asAtomHandler::is<AVM1Function>(func))
-			{
-				asAtom ret=asAtomHandler::invalidAtom;
-				asAtom obj = asAtomHandler::fromObject(this);
-				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-				asAtomHandler::as<AVM1Function>(func)->decRef();
-			}
-			if (isStreaming)
-			{
-				asAtom ret = asAtomHandler::invalidAtom;
-				asAtom obj = asAtomHandler::fromObject(this);
-				this->play(ret,wrk,obj,nullptr,0);
-			}
+			asAtom ret=asAtomHandler::invalidAtom;
+			asAtom obj = asAtomHandler::fromObject(this);
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			asAtomHandler::as<AVM1Function>(func)->decRef();
+		}
+		if (isStreaming)
+		{
+			asAtom ret = asAtomHandler::invalidAtom;
+			asAtom obj = asAtomHandler::fromObject(this);
+			this->play(ret,wrk,obj,nullptr,0);
 		}
 	}
 }

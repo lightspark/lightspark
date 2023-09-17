@@ -1152,12 +1152,12 @@ AsyncDrawJob::~AsyncDrawJob()
 
 void AsyncDrawJob::execute()
 {
-	owner->startDrawJob();
+	owner->startDrawJob(owner->computeCacheAsBitmap());
 	if(!threadAborting)
 		surfaceBytes=drawable->getPixelBuffer(&isBufferOwner);
 	if(!threadAborting && surfaceBytes)
 		uploadNeeded=true;
-	owner->endDrawJob();
+	owner->endDrawJob(owner->computeCacheAsBitmap());
 }
 
 void AsyncDrawJob::threadAbort()
@@ -1286,6 +1286,21 @@ uint8_t *BitmapRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 	return data->getData();
 }
 
+CachedBitmapRenderer::CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix, float _x, float _y, float _w, float _h, float _rx, float _ry, float _rw, float _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
+		float _a, const std::vector<MaskData>& _ms,
+		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m)
+	: BitmapRenderer(_source->getCachedBitmap()->as<Bitmap>()->bitmapData->getBitmapContainer(), _x, _y,_w, _h, _rx, _ry, _rw, _rh, _r, _xs, _ys, _im, _mask,_a, _ms,
+				_colortransform,_smoothing,_m)
+	, source(_source),sourceCacheMatrix(_sourceCacheMatrix)
+{
+}
+
+uint8_t* CachedBitmapRenderer::getPixelBuffer(bool* isBufferOwner, uint32_t* bufsize)
+{
+	source->DrawToBitmap(source->getCachedBitmap()->as<Bitmap>()->bitmapData.getPtr(),sourceCacheMatrix,smoothing,true,source->getBlendMode(),nullptr);
+	source->applyFilters(data.getPtr(),nullptr,RECT(0,data->getWidth(),0,data->getHeight()),0,0,xscale,yscale);
+	return BitmapRenderer::getPixelBuffer(isBufferOwner,bufsize);
+}
 
 uint8_t* CharacterRenderer::upload(bool refresh)
 {

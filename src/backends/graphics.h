@@ -563,6 +563,24 @@ public:
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}
 };
 
+class CachedBitmapRenderer: public BitmapRenderer
+{
+protected:
+	_NR<DisplayObject> source;
+	const MATRIX sourceCacheMatrix;
+public:
+	CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix, float _x, float _y, float _w, float _h
+				  , float _rx, float _ry, float _rw, float _rh, float _r
+				  , float _xs, float _ys
+				  , bool _im, NullableRef<DisplayObject> mask
+				  , float _a, const std::vector<MaskData>& m
+				  , const ColorTransformBase& _colortransform
+				  , SMOOTH_MODE _smoothing, const MATRIX& _m);
+	//IDrawable interface
+	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
+	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}
+};
+
 class InvalidateQueue
 {
 protected:

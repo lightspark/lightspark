@@ -159,6 +159,8 @@ public:
 	void finalize() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+	void startDrawJob(bool forcachedbitmap) override;
+	void endDrawJob(bool forcachedbitmap) override;
 	void cloneDisplayList(std::vector<_R<DisplayObject>>& displayListCopy);
 	bool hasLegacyChildAt(int32_t depth);
 	// this does not test if a DisplayObject exists at the provided depth
@@ -293,8 +295,8 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
-	void startDrawJob() override;
-	void endDrawJob() override;
+	void startDrawJob(bool forcachedbitmap) override;
+	void endDrawJob(bool forcachedbitmap) override;
 
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
@@ -509,8 +511,8 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
-	void startDrawJob() override;
-	void endDrawJob() override;
+	void startDrawJob(bool forcachedbitmap) override;
+	void endDrawJob(bool forcachedbitmap) override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
@@ -1008,7 +1010,7 @@ public:
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
-	IDrawable* invalidateFromSource(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix, DisplayObject* originalsource, lightspark::ColorTransformBase* ct);
+	IDrawable* invalidateFromSource(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, ColorTransformBase* ct, DisplayObject* matrixsource, const MATRIX& sourceMatrix=MATRIX(), DisplayObject* originalsource=nullptr, const MATRIX& sourceCacheMatrix=MATRIX(), number_t scalex=1.0, number_t scaley=1.0);
 	DisplayObject* getCachedBitmapOwner() const { return cachedBitmapOwner; }
 };
 

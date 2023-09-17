@@ -1060,14 +1060,16 @@ void Sprite::prepareShutdown()
 		soundtransform->prepareShutdown();
 }
 
-void Sprite::startDrawJob()
+void Sprite::startDrawJob(bool forcachedbitmap)
 {
+	DisplayObjectContainer::startDrawJob(forcachedbitmap);
 	if (graphics)
 		graphics->startDrawJob();
 }
 
-void Sprite::endDrawJob()
+void Sprite::endDrawJob(bool forcachedbitmap)
 {
+	DisplayObjectContainer::endDrawJob(forcachedbitmap);
 	if (graphics)
 		graphics->endDrawJob();
 }
@@ -1096,9 +1098,17 @@ void Sprite::afterSetUseHandCursor(bool /*oldValue*/)
 
 IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
+	IDrawable* res = nullptr;
 	if (this->graphics)
+	{
+		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
-	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,true);
+		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,true);
+		this->graphics->endDrawJob();
+	}
+	else
+		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,true);
+	return res;
 }
 
 ASFUNCTIONBODY_ATOM(Sprite,_startDrag)
@@ -1266,26 +1276,29 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	if (visibleOnly && !this->isVisible())
 		return false;
 	bool ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax,visibleOnly);
-	number_t txmin,txmax,tymin,tymax;
 	if (graphics)
-		graphics->refreshTokens();
-	if(TokenContainer::boundsRect(txmin,txmax,tymin,tymax))
 	{
-		if(ret==true)
+		this->graphics->startDrawJob();
+		graphics->refreshTokens();
+		if(!tokens.empty())
 		{
-			xmin = min(xmin,txmin);
-			xmax = max(xmax,txmax);
-			ymin = min(ymin,tymin);
-			ymax = max(ymax,tymax);
+			if(ret==true)
+			{
+				xmin = min(xmin,number_t(tokens.boundsRect.Xmin)/20.0);
+				xmax = max(xmax,number_t(tokens.boundsRect.Xmax)/20.0);
+				ymin = min(ymin,number_t(tokens.boundsRect.Ymin)/20.0);
+				ymax = max(ymax,number_t(tokens.boundsRect.Ymax)/20.0);
+			}
+			else
+			{
+				xmin=number_t(tokens.boundsRect.Xmin)/20.0;
+				xmax=number_t(tokens.boundsRect.Xmax)/20.0;
+				ymin=number_t(tokens.boundsRect.Ymin)/20.0;
+				ymax=number_t(tokens.boundsRect.Ymax)/20.0;
+			}
+			ret=true;
 		}
-		else
-		{
-			xmin=txmin;
-			xmax=txmax;
-			ymin=tymin;
-			ymax=tymax;
-		}
-		ret=true;
+		this->graphics->endDrawJob();
 	}
 	return ret;
 }
@@ -1371,10 +1384,15 @@ void DisplayObjectContainer::eraseRemovedLegacyChild(uint32_t name)
 
 bool Sprite::renderImpl(RenderContext& ctxt)
 {
+	bool ret = true;
 	if (this->graphics)
+	{
+		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
-	//Draw the dynamically added graphics, if any
-	bool ret = TokenContainer::renderImpl(ctxt);
+		//Draw the dynamically added graphics, if any
+		ret = TokenContainer::renderImpl(ctxt);
+		this->graphics->endDrawJob();
+	}
 
 	bool ret2 =DisplayObjectContainer::renderImpl(ctxt);
 	return ret && ret2;
@@ -3142,6 +3160,32 @@ bool DisplayObjectContainer::countCylicMemberReferences(garbagecollectorstate& g
 	return ret;
 }
 
+void DisplayObjectContainer::startDrawJob(bool forcachedbitmap)
+{
+	if (forcachedbitmap)
+	{
+		std::vector<_R<DisplayObject>> tmplist;
+		cloneDisplayList(tmplist);
+		for (auto it = tmplist.begin(); it != tmplist.end(); it++)
+		{
+			(*it)->startDrawJob(forcachedbitmap);
+		}
+	}
+}
+
+void DisplayObjectContainer::endDrawJob(bool forcachedbitmap)
+{
+	if (forcachedbitmap)
+	{
+		std::vector<_R<DisplayObject>> tmplist;
+		cloneDisplayList(tmplist);
+		for (auto it = tmplist.begin(); it != tmplist.end(); it++)
+		{
+			(*it)->endDrawJob(forcachedbitmap);
+		}
+	}
+}
+
 void DisplayObjectContainer::cloneDisplayList(std::vector<Ref<DisplayObject> >& displayListCopy)
 {
 	Locker l(mutexDisplayList);
@@ -3893,8 +3937,14 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 	if (!this->legacy || (fromTag==nullptr))
 	{
 		if (graphics)
+		{
+			this->graphics->startDrawJob();
 			graphics->refreshTokens();
-		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
+			bool ret = TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
+			this->graphics->endDrawJob();
+			return ret;
+		}
+		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);;
 	}
 	xmin=fromTag->ShapeBounds.Xmin/20.0;
 	xmax=fromTag->ShapeBounds.Xmax/20.0;
@@ -3969,13 +4019,13 @@ void Shape::prepareShutdown()
 		graphics->prepareShutdown();
 }
 
-void Shape::startDrawJob()
+void Shape::startDrawJob(bool forcachedbitmap)
 {
 	if (graphics)
 		graphics->startDrawJob();
 }
 
-void Shape::endDrawJob()
+void Shape::endDrawJob(bool forcachedbitmap)
 {
 	if (graphics)
 		graphics->endDrawJob();
@@ -3991,15 +4041,27 @@ void Shape::sinit(Class_base* c)
 void Shape::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	if (this->graphics)
+	{
+		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
+		this->graphics->endDrawJob();
+	}
 	TokenContainer::requestInvalidation(q,forceTextureRefresh);
 }
 
 IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
+	IDrawable* res = nullptr;
 	if (this->graphics)
+	{
+		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
-	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,!graphics.isNull());
+		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,!graphics.isNull());
+		this->graphics->endDrawJob();
+	}
+	else
+		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,!graphics.isNull());
+	return res;
 }
 
 ASFUNCTIONBODY_ATOM(Shape,_constructor)
@@ -5352,10 +5414,10 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, this->smoothing);
 	}
-	return invalidateFromSource(target, initialMatrix, this->smoothing, this, MATRIX(),nullptr,this->colorTransform.getPtr());
+	return invalidateFromSource(target, initialMatrix, this->smoothing, this->colorTransform.getPtr(), this);
 }
 
-IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, DisplayObject* matrixsource, const MATRIX& sourceMatrix,DisplayObject* originalsource, ColorTransformBase* ct)
+IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, ColorTransformBase* ct, DisplayObject* matrixsource, const MATRIX& sourceMatrix,DisplayObject* originalsource, const MATRIX& sourceCacheMatrix,number_t scalex, number_t scaley)
 {
 	number_t rx,ry;
 	number_t rwidth,rheight;
@@ -5394,6 +5456,14 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 			isMask = originalsource->ClipDepth || originalsource->ismask;
 		if (!mask)
 			mask = originalsource->mask;
+		originalsource->incRef();
+		return new CachedBitmapRenderer(_MR(originalsource),sourceCacheMatrix
+					, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
+					, rx, ry, round(rwidth), round(rheight), 0
+					, scalex, scaley
+					, isMask, mask
+					, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
+					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2);
 	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()

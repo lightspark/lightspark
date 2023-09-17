@@ -86,6 +86,7 @@ private:
 	 * It is the cached version of the object for fast draw on the Stage
 	 */
 	CachedSurface cachedSurface;
+	Mutex drawToBitmapMutex;
 	/*
 	 * Utility function to set internal MATRIX
 	 * Also used by Transform
@@ -171,6 +172,7 @@ public:
 	bool getNeedsTextureRecalculation() const { return needsTextureRecalculation; }
 	void setNeedsCachedBitmapRecalculation()  { needsCachedBitmapRecalculation=true; }
 	void resetNeedsCachedBitmapRecalculation() { needsCachedBitmapRecalculation=false; }
+	bool getNeedsCachedBitmapRecalculation() const { return needsCachedBitmapRecalculation; }
 	bool getTextureRecalculationSkippable() const { return textureRecalculationSkippable; }
 	// this may differ from the main clip if this instance was generated from a loaded swf, not from the main clip
 	RootMovieClip* loadedFrom;
@@ -236,8 +238,8 @@ public:
 	virtual void afterLegacyInsert();
 	virtual void afterLegacyDelete(bool inskipping) {}
 	virtual uint32_t getTagID() const { return UINT32_MAX;}
-	virtual void startDrawJob() {}
-	virtual void endDrawJob() {}
+	virtual void startDrawJob(bool forcachedbitmap) {}
+	virtual void endDrawJob(bool forcachedbitmap) {}
 	
 	bool Render(RenderContext& ctxt,bool force=false);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m, bool visibleOnly=false);

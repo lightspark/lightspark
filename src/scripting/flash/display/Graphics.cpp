@@ -790,9 +790,9 @@ bool Graphics::destruct()
 	return ASObject::destruct();
 }
 
+// this has to be embedded inside calls to startDrawJob/endDrawJob
 void Graphics::refreshTokens()
 {
-	Locker l(drawMutex);
 	if (needsRefresh)
 	{
 		owner->tokens.filltokens = tokens[currentrenderindex].filltokens;

@@ -1961,6 +1961,7 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 }
 void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode, ColorTransformBase* ct)
 {
+	Locker l(drawToBitmapMutex);
 	DisplayObjectContainer* origparent=this->parent;
 	number_t origrotation = this->rotation;
 	number_t origsx = this->sx;
@@ -1996,6 +1997,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 {
 	if (!computeCacheAsBitmap())
 		return nullptr;
+	Locker l(drawToBitmapMutex);
 	number_t xmin,xmax,ymin,ymax;
 	MATRIX m=getMatrix();
 	if (!getBounds(xmin,xmax,ymin,ymax,m,true))
@@ -2026,28 +2028,19 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	uint32_t h=ceil(((ymax-ymin)+number_t(maxfilterborder)*2.0) * scaley);
 	if (w >= 8192 || h >= 8192 || (w * h) >= 16777216)
 		return nullptr;
+	MATRIX m0=m;
+	m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));
+	m0.scale(scalex, scaley);
 	bool sizeOk = cachedBitmap && cachedBitmap->getBitmapSize().width == w && cachedBitmap->getBitmapSize().height == h;
-	if (needsCachedBitmapRecalculation || !sizeOk)
+	
+	if (!sizeOk)
 	{
-		if (!sizeOk)
-		{
-			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getInstanceWorker(),w,h));
-			cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getInstanceWorker(),data,false,this));
-		}
-		MATRIX m0=m;
-		m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));
-		m0.scale(scalex, scaley);
-		DrawToBitmap(cachedBitmap->bitmapData.getPtr(),m0,smoothing,true,blendMode,nullptr);
-		applyFilters(cachedBitmap->bitmapData->getBitmapContainer().getPtr(),nullptr,RECT(0,w,0,h),0,0, scalex, scaley);
-		cachedBitmap->setMask(this->mask);
-		cachedBitmap->resetNeedsTextureRecalculation();
-		cachedBitmap->hasChanged=true;
-		if (!this->cachedAsBitmapOf)
-		{
-			// force texture upload
-			cachedBitmap->bitmapData->addUser(cachedBitmap.getPtr());
-		}
+		_R<BitmapData> data(Class<BitmapData>::getInstanceS(getInstanceWorker(),w,h));
+		cachedBitmap=_MR(Class<Bitmap>::getInstanceS(getInstanceWorker(),data,false,this));
+		this->setNeedsCachedBitmapRecalculation();
 	}
+	if (!this->cachedAsBitmapOf && needsCachedBitmapRecalculation)
+		cachedBitmap->setNeedsTextureRecalculation();
 	if (pcachedBitmap)
 		*pcachedBitmap = cachedBitmap;
 	this->resetNeedsCachedBitmapRecalculation();
@@ -2056,7 +2049,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	m1.scale(1.0 / scalex, 1.0 / scaley);
 	ColorTransformBase ct;
 	ct.fillConcatenated(this);
-	return cachedBitmap->invalidateFromSource(target, initialMatrix,smoothing,this->getParent(),m1,this,&ct);
+	return cachedBitmap->invalidateFromSource(target, initialMatrix,smoothing,&ct,this->getParent(),m1,this,m0,scalex,scaley);
 }
 
 bool DisplayObject::findParent(DisplayObject *d) const

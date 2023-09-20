@@ -5724,27 +5724,21 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(const Vector2f& globalPoint, const 
 
 void SimpleButton::defaultEventBehavior(_R<Event> e)
 {
+	bool is_valid = true;
 	BUTTONSTATE oldstate = currentState;
 	if(e->type == "mouseDown")
-	{
 		currentState = DOWN;
-		reflectState(oldstate);
-	}
-	else if(e->type == "mouseUp")
-	{
+	else if(e->type == "releaseOutside")
 		currentState = UP;
-		reflectState(oldstate);
-	}
-	else if(e->type == "mouseOver")
-	{
+	else if(e->type == "rollOver" || e->type == "mouseOver" || e->type == "mouseUp")
 		currentState = OVER;
-		reflectState(oldstate);
-	}
-	else if(e->type == "mouseOut")
-	{
+	else if(e->type == "rollOut" || e->type == "mouseOut")
 		currentState = STATE_OUT;
+	else
+		is_valid = false;
+
+	if (is_valid)
 		reflectState(oldstate);
-	}
 	else
 		DisplayObjectContainer::defaultEventBehavior(e);
 }

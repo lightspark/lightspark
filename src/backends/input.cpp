@@ -99,6 +99,19 @@ bool InputThread::queueEvent(SDL_Event& event)
 	else
 	{
 		Locker l(mutexQueue);
+		if (!inputEventQueue.empty() && event.type == inputEventQueue.back().type)
+		{
+			switch (event.type)
+			{
+				case SDL_MOUSEMOTION:
+				case SDL_MOUSEWHEEL:
+					inputEventQueue.back() = event;
+					return false;
+					break;
+				default:
+					break;
+			}
+		}
 		inputEventQueue.push_back(event);
 	}
 	eventCond.signal();

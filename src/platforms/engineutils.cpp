@@ -129,7 +129,7 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 	}
 	else
 	{
-		if (sys && sys->getInputThread() && sys->getInputThread()->handleEvent(event))
+		if (sys && sys->getInputThread() && sys->getInputThread()->queueEvent(*event))
 			return false;
 		switch (event->type)
 		{

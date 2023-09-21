@@ -31,7 +31,14 @@
 using namespace lightspark;
 using namespace std;
 
-InputThread::InputThread(SystemState* s):m_sys(s),engineData(nullptr),terminated(false),
+DEFINE_AND_INITIALIZE_TLS(inputThread);
+InputThread* lightspark::getInputThread()
+{
+	InputThread* ret = (InputThread*)tls_get(inputThread);
+	return ret;
+}
+
+InputThread::InputThread(SystemState* s):m_sys(s),engineData(nullptr),status(CREATED),
 	curDragged(),currentMouseOver(),lastMouseDownTarget(),
 	lastKeyUp(SDLK_UNKNOWN), dragLimit(nullptr),button1pressed(false)
 {
@@ -40,24 +47,80 @@ InputThread::InputThread(SystemState* s):m_sys(s),engineData(nullptr),terminated
 
 void InputThread::start(EngineData* e)
 {
+	status = STARTED;
 	engineData = e;
+	t = SDL_CreateThread(InputThread::worker,"InputThread",this);
 }
 
 InputThread::~InputThread()
 {
 	wait();
+	LOG(LOG_INFO, "~InputThread this=" << this);
 }
 
 void InputThread::wait()
 {
-	if(terminated)
-		return;
-	terminated=true;
+	if(status==STARTED)
+	{
+		eventCond.signal();
+		SDL_WaitThread(t,nullptr);
+	}
 }
 
-bool InputThread::worker(SDL_Event *event)
+int InputThread::worker(void* d)
 {
-	bool ret=false;
+	InputThread *th = (InputThread *)d;
+	setTLSSys(th->m_sys);
+	setTLSWorker(th->m_sys->worker);
+	// Set TLS variable for `getInputThread()`.
+	tls_set(inputThread, th);
+
+	while (true)
+	{
+		SDL_Event event;
+		{
+			Locker l(th->mutexQueue);
+			while (th->inputEventQueue.empty())
+				th->eventCond.wait(th->mutexQueue);
+			event = th->inputEventQueue.front();
+			th->inputEventQueue.pop_front();
+		}
+		if (th->handleEvent(&event) < 0)
+			break;
+	}
+	th->status = TERMINATED;
+	return 0;
+}
+
+bool InputThread::queueEvent(SDL_Event& event)
+{
+	if ((event.type == SDL_WINDOWEVENT && event.window.event != SDL_WINDOWEVENT_LEAVE) || event.type == SDL_QUIT)
+		return false;
+	else
+	{
+		Locker l(mutexQueue);
+		if (!inputEventQueue.empty() && event.type == inputEventQueue.back().type)
+		{
+			switch (event.type)
+			{
+				case SDL_MOUSEMOTION:
+				case SDL_MOUSEWHEEL:
+					inputEventQueue.back() = event;
+					return false;
+					break;
+				default:
+					break;
+			}
+		}
+		inputEventQueue.push_back(event);
+	}
+	eventCond.signal();
+	return true;
+}
+
+int InputThread::handleEvent(SDL_Event* event)
+{
+	bool ret = false;
 	if (m_sys && m_sys->getEngineData() && m_sys->getEngineData()->inContextMenu())
 	{
 		ret = handleContextMenuEvent(event);
@@ -85,7 +148,7 @@ bool InputThread::worker(SDL_Event *event)
 		}
 	}
 	if (!m_sys || m_sys->isShuttingDown())
-		return false;
+		return -1;
 	switch(event->type)
 	{
 		case SDL_KEYDOWN:

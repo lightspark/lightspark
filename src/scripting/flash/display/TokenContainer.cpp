@@ -674,7 +674,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, rx, ry, ceil(rwidth), ceil(rheight), 0
 				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
 				, isMask, mask
-				, scaling,owner->getConcatenatedAlpha(), masks
+				, scaling,(!q || !q->isSoftwareQueue ? owner->getConcatenatedAlpha() : owner->clippedAlpha()), masks
 				, ct, smoothing, regpointx, regpointy,q && q->isSoftwareQueue);
 }
 

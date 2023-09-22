@@ -237,10 +237,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 
 void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap, AS_BLENDMODE blendMode, ColorTransformBase* ct)
 {
-	if (forCachedBitmap)
-		d->incRef();
+	d->incRef();
 	//Create an InvalidateQueue to store all the hierarchy of objects that must be drawn
-	SoftwareInvalidateQueue queue(forCachedBitmap ? _MNR(d):NullRef);
+	SoftwareInvalidateQueue queue(_MNR(d));
 	d->hasChanged=true;
 	d->requestInvalidation(&queue);
 	if (forCachedBitmap)
@@ -261,9 +260,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		bool isBufferOwner=true;
 		uint32_t bufsize=0;
 		uint8_t* buf=drawable->getPixelBuffer(&isBufferOwner,&bufsize);
-		
 		//Construct a CachedSurface using the data
-		CachedSurface& surface=ctxt.allocateCustomSurface(target,buf,isBufferOwner);
+		CachedSurface& surface=ctxt.allocateCustomSurface(target != d && target->getCachedBitmap() ? target->getCachedBitmap().getPtr() : target,buf,isBufferOwner);
 		surface.tex->width=drawable->getWidth();
 		surface.tex->height=drawable->getHeight();
 		surface.xOffset=drawable->getXOffset();

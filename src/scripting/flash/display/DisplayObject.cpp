@@ -106,7 +106,11 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 		if (isShaderBlendMode(this->getBlendMode()))
 			ctxt.currentShaderBlendMode=this->getBlendMode();
 	}
-	bool ret = renderImpl(ctxt);
+	bool ret = true;
+	if (ctxt.contextType == RenderContext::CAIRO && (ctxt.startobject != this) && this->getCachedBitmap())
+		ret = this->getCachedBitmap()->renderImpl(ctxt);
+	else
+		ret = renderImpl(ctxt);
 	ctxt.currentShaderBlendMode = oldshaderblendmode;
 	return ret;
 }
@@ -121,7 +125,6 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
-//	name = tiny_string("instance") + Integer::toString(ATOMIC_INCREMENT(instanceCount));
 }
 
 void DisplayObject::markAsChanged()
@@ -835,7 +838,7 @@ bool DisplayObject::skipRender() const
 bool DisplayObject::defaultRender(RenderContext& ctxt)
 {
 	// TODO: use scrollRect
-	const CachedSurface& surface=ctxt.getCachedSurface(this);
+	const CachedSurface& surface=ctxt.getCachedSurface(ctxt.contextType == RenderContext::CAIRO && (ctxt.startobject != this) && this->getCachedBitmap() ? this->getCachedBitmap().getPtr() : this);
 	/* surface is only modified from within the render thread
 	 * so we need no locking here */
 	if(!surface.isValid || !surface.isInitialized || !surface.tex || !surface.tex->isValid())
@@ -1961,28 +1964,7 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 }
 void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode, ColorTransformBase* ct)
 {
-	Locker l(drawToBitmapMutex);
-	DisplayObjectContainer* origparent=this->parent;
-	number_t origrotation = this->rotation;
-	number_t origsx = this->sx;
-	number_t origsy = this->sy;
-	number_t origtx = this->tx;
-	number_t origty = this->ty;
-	// temporarily reset all position settings to avoid matrix manipulation from this DisplayObject
-	this->parent = nullptr;
-	this->rotation=0;
-	this->sx=1;
-	this->sy=1;
-	this->tx=0;
-	this->ty=0;
 	bm->drawDisplayObject(this, initialMatrix,smoothing,forcachedbitmap,blendMode,ct);
-	// reset position to original settings
-	this->parent=origparent;
-	this->rotation=origrotation;
-	this->sx=origsx;
-	this->sy=origsy;
-	this->tx=origtx;
-	this->ty=origty;
 }
 string DisplayObject::toDebugString() const
 {
@@ -1997,7 +1979,6 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 {
 	if (!computeCacheAsBitmap())
 		return nullptr;
-	Locker l(drawToBitmapMutex);
 	number_t xmin,xmax,ymin,ymax;
 	MATRIX m=getMatrix();
 	if (!getBounds(xmin,xmax,ymin,ymax,m,true))

@@ -86,7 +86,6 @@ private:
 	 * It is the cached version of the object for fast draw on the Stage
 	 */
 	CachedSurface cachedSurface;
-	Mutex drawToBitmapMutex;
 	/*
 	 * Utility function to set internal MATRIX
 	 * Also used by Transform

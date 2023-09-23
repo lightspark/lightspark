@@ -385,7 +385,7 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 								  const RECT& shapebounds)
 {
 	tokens.boundsRect = shapebounds;
-	Vector2 cursor;
+	Vector2f cursor;
 	unsigned int color0=0;
 	unsigned int color1=0;
 	unsigned int linestyle=0;
@@ -394,7 +394,7 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 
 	cursor.x= -shapebounds.Xmin;
 	cursor.y= -shapebounds.Ymin;
-	Vector2 p1(matrix.multiply2D(cursor));
+	Vector2f p1(matrix.multiply2D(cursor));
 	for(unsigned int i=0;i<shapeRecords.size();i++)
 	{
 		const SHAPERECORD* cur=&shapeRecords[i];
@@ -404,7 +404,7 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 			{
 				cursor.x += cur->DeltaX;
 				cursor.y += cur->DeltaY;
-				Vector2 p2(matrix.multiply2D(cursor));
+				Vector2f p2(matrix.multiply2D(cursor));
 				shapesBuilder.extendOutline(p1, p2,linestyle);
 				p1.x=p2.x;
 				p1.y=p2.y;
@@ -413,10 +413,10 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 			{
 				cursor.x += cur->ControlDeltaX;
 				cursor.y += cur->ControlDeltaY;
-				Vector2 p2(matrix.multiply2D(cursor));
+				Vector2f p2(matrix.multiply2D(cursor));
 				cursor.x += cur->AnchorDeltaX;
 				cursor.y += cur->AnchorDeltaY;
-				Vector2 p3(matrix.multiply2D(cursor));
+				Vector2f p3(matrix.multiply2D(cursor));
 
 				shapesBuilder.extendOutlineCurve(p1, p2, p3,linestyle);
 				p1.x=p3.x;
@@ -430,7 +430,7 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 			{
 				cursor.x= cur->MoveDeltaX-shapebounds.Xmin;
 				cursor.y= cur->MoveDeltaY-shapebounds.Ymin;
-				Vector2 tmp(matrix.multiply2D(cursor));
+				Vector2f tmp(matrix.multiply2D(cursor));
 				p1.x = tmp.x;
 				p1.y = tmp.y;
 			}

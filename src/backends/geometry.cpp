@@ -68,13 +68,13 @@ static void joinOutlines(vector<ShapePathSegment>& segments)
 	{
 		auto s = segments[i];
 		unconsumed.insert(i);
-		byStartPos.insert(make_pair(s.from, i));
-		byEndPos.insert(make_pair(s.to, i));
+		byStartPos.insert(make_pair(s.from.key, i));
+		byEndPos.insert(make_pair(s.to.key, i));
 	}
 
 	vector<ShapePathSegment> res;
 	int i = -1;
-	ShapePathSegment prev(0, 0, 0, 0);
+	ShapePathSegment prev;
 	while (!unconsumed.empty())
 	{
 		bool reverse = false;
@@ -82,11 +82,11 @@ static void joinOutlines(vector<ShapePathSegment>& segments)
 		{
 			multimap<uint64_t, int>::const_iterator it;
 			auto next_it = unconsumed.upper_bound(i);
-			if (next_it != unconsumed.end() && segments[*next_it].from == prev.to)
+			if (next_it != unconsumed.end() && segments[*next_it].from.key == prev.to.key)
 				i = *next_it;
-			else if ((it = byStartPos.find(prev.to)) != byStartPos.end())
+			else if ((it = byStartPos.find(prev.to.key)) != byStartPos.end())
 				i = it->second;
-			else if ((it = byEndPos.find(prev.to)) != byEndPos.end()) {
+			else if ((it = byEndPos.find(prev.to.key)) != byEndPos.end()) {
 				i = it->second;
 				reverse = true;
 			}
@@ -98,8 +98,8 @@ static void joinOutlines(vector<ShapePathSegment>& segments)
 			i = *unconsumed.begin();
 
 		prev = segments[i];
-		mmremove(byStartPos, prev.from, i);
-		mmremove(byEndPos, prev.to, i);
+		mmremove(byStartPos, prev.from.key, i);
+		mmremove(byEndPos, prev.to.key, i);
 		if (reverse)
 			prev = prev.reverse();
 		res.push_back(prev);
@@ -109,19 +109,19 @@ static void joinOutlines(vector<ShapePathSegment>& segments)
 	segments = res;
 }
 
-void ShapesBuilder::extendOutline(const Vector2& v1, const Vector2& v2, int linestyleindex)
+void ShapesBuilder::extendOutline(const Vector2f& v1, const Vector2f& v2, int linestyleindex)
 {
-	uint64_t v1Index = makeVertex(v1);
-	uint64_t v2Index = makeVertex(v2);
+	floatVec v1Index = makeVertex(v1);
+	floatVec v2Index = makeVertex(v2);
 
 	currentSubpath.emplace_back(v1Index, v2Index, v2Index, linestyleindex);
 }
 
-void ShapesBuilder::extendOutlineCurve(const Vector2& v1, const Vector2& v2, const Vector2& v3, int linestyleindex)
+void ShapesBuilder::extendOutlineCurve(const Vector2f& v1, const Vector2f& v2, const Vector2f& v3, int linestyleindex)
 {
-	uint64_t v1Index = makeVertex(v1);
-	uint64_t v2Index = makeVertex(v2);
-	uint64_t v3Index = makeVertex(v3);
+	floatVec v1Index = makeVertex(v1);
+	floatVec v2Index = makeVertex(v2);
+	floatVec v3Index = makeVertex(v3);
 
 	currentSubpath.emplace_back(v1Index, v2Index, v3Index, linestyleindex);
 }
@@ -194,18 +194,18 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 		for (size_t j = 0; j < segments.size(); ++j)
 		{
 			ShapePathSegment segment = segments[j];
-			if (j == 0 || segment.from != segments[j-1].to) {
+			if (j == 0 || segment.from.key != segments[j-1].to.key) {
 				tokens.filltokens.push_back(GeomToken(MOVE).uval);
-				tokens.filltokens.push_back(GeomToken(segment.from,true).uval);
+				tokens.filltokens.push_back(GeomToken(segment.from).uval);
 			}
-			if (segment.quadctrl == segment.from || segment.quadctrl == segment.to) {
+			if (segment.quadctrl.key == segment.from.key || segment.quadctrl.key == segment.to.key) {
 				tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-				tokens.filltokens.push_back(GeomToken(segment.to,true).uval);
+				tokens.filltokens.push_back(GeomToken(segment.to).uval);
 			}
 			else {
 				tokens.filltokens.push_back(GeomToken(CURVE_QUADRATIC).uval);
-				tokens.filltokens.push_back(GeomToken(segment.quadctrl,true).uval);
-				tokens.filltokens.push_back(GeomToken(segment.to,true).uval);
+				tokens.filltokens.push_back(GeomToken(segment.quadctrl).uval);
+				tokens.filltokens.push_back(GeomToken(segment.to).uval);
 			}
 		}
 		tokens.filltokens.push_back(GeomToken(CLEAR_FILL).uval);
@@ -242,18 +242,18 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 							tokens.filltokens.push_back(GeomToken(CLEAR_STROKE).uval);
 							break;
 						}
-						if (k == j || strokesegment.from != segments[k-1].to) {
+						if (k == j || strokesegment.from.key != segments[k-1].to.key) {
 							tokens.filltokens.push_back(GeomToken(MOVE).uval);
-							tokens.filltokens.push_back(GeomToken(strokesegment.from,true).uval);
+							tokens.filltokens.push_back(GeomToken(strokesegment.from).uval);
 						}
-						if (strokesegment.quadctrl == strokesegment.from || strokesegment.quadctrl == strokesegment.to) {
+						if (strokesegment.quadctrl.key == strokesegment.from.key || strokesegment.quadctrl.key == strokesegment.to.key) {
 							tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-							tokens.filltokens.push_back(GeomToken(strokesegment.to,true).uval);
+							tokens.filltokens.push_back(GeomToken(strokesegment.to).uval);
 						}
 						else {
 							tokens.filltokens.push_back(GeomToken(CURVE_QUADRATIC).uval);
-							tokens.filltokens.push_back(GeomToken(strokesegment.quadctrl,true).uval);
-							tokens.filltokens.push_back(GeomToken(strokesegment.to,true).uval);
+							tokens.filltokens.push_back(GeomToken(strokesegment.quadctrl).uval);
+							tokens.filltokens.push_back(GeomToken(strokesegment.to).uval);
 						}
 					}
 				}
@@ -289,18 +289,18 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 			for (size_t j = 0; j < segments.size(); ++j)
 			{
 				ShapePathSegment segment = segments[j];
-				if (j == 0 || segment.from != segments[j - 1].to) {
+				if (j == 0 || segment.from.key != segments[j - 1].to.key) {
 					tokens.stroketokens.push_back(GeomToken(MOVE).uval);
-					tokens.stroketokens.push_back(GeomToken(segment.from,true).uval);
+					tokens.stroketokens.push_back(GeomToken(segment.from).uval);
 				}
-				if (segment.quadctrl == segment.from || segment.quadctrl == segment.to) {
+				if (segment.quadctrl.key == segment.from.key || segment.quadctrl.key == segment.to.key) {
 					tokens.stroketokens.push_back(GeomToken(STRAIGHT).uval);
-					tokens.stroketokens.push_back(GeomToken(segment.to,true).uval);
+					tokens.stroketokens.push_back(GeomToken(segment.to).uval);
 				}
 				else {
 					tokens.stroketokens.push_back(GeomToken(CURVE_QUADRATIC).uval);
-					tokens.stroketokens.push_back(GeomToken(segment.quadctrl,true).uval);
-					tokens.stroketokens.push_back(GeomToken(segment.to,true).uval);
+					tokens.stroketokens.push_back(GeomToken(segment.quadctrl).uval);
+					tokens.stroketokens.push_back(GeomToken(segment.to).uval);
 				}
 			}
 		}
@@ -534,18 +534,18 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 		for (size_t j = 0; j < segments.size(); ++j)
 		{
 			ShapePathSegment segment = segments[j];
-			if (j == 0 || segment.from != segments[j - 1].to) {
+			if (j == 0 || segment.from.key != segments[j - 1].to.key) {
 				tokens.filltokens.push_back(GeomToken(MOVE).uval);
-				tokens.filltokens.push_back(GeomToken(segment.from,true).uval);
+				tokens.filltokens.push_back(GeomToken(segment.from).uval);
 			}
-			if (segment.quadctrl == segment.from || segment.quadctrl == segment.to) {
+			if (segment.quadctrl.key == segment.from.key || segment.quadctrl.key == segment.to.key) {
 				tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-				tokens.filltokens.push_back(GeomToken(segment.to,true).uval);
+				tokens.filltokens.push_back(GeomToken(segment.to).uval);
 			}
 			else {
 				tokens.filltokens.push_back(GeomToken(CURVE_QUADRATIC).uval);
-				tokens.filltokens.push_back(GeomToken(segment.quadctrl,true).uval);
-				tokens.filltokens.push_back(GeomToken(segment.to,true).uval);
+				tokens.filltokens.push_back(GeomToken(segment.quadctrl).uval);
+				tokens.filltokens.push_back(GeomToken(segment.to).uval);
 			}
 		}
 		tokens.filltokens.push_back(GeomToken(CLEAR_FILL).uval);
@@ -584,18 +584,18 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 							tokens.filltokens.push_back(GeomToken(CLEAR_STROKE).uval);
 							break;
 						}
-						if (k == j || strokesegment.from != segments[k-1].to) {
+						if (k == j || strokesegment.from.key != segments[k-1].to.key) {
 							tokens.filltokens.push_back(GeomToken(MOVE).uval);
-							tokens.filltokens.push_back(GeomToken(strokesegment.from,true).uval);
+							tokens.filltokens.push_back(GeomToken(strokesegment.from).uval);
 						}
-						if (strokesegment.quadctrl == strokesegment.from || strokesegment.quadctrl == strokesegment.to) {
+						if (strokesegment.quadctrl.key == strokesegment.from.key || strokesegment.quadctrl.key == strokesegment.to.key) {
 							tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-							tokens.filltokens.push_back(GeomToken(strokesegment.to,true).uval);
+							tokens.filltokens.push_back(GeomToken(strokesegment.to).uval);
 						}
 						else {
 							tokens.filltokens.push_back(GeomToken(CURVE_QUADRATIC).uval);
-							tokens.filltokens.push_back(GeomToken(strokesegment.quadctrl,true).uval);
-							tokens.filltokens.push_back(GeomToken(strokesegment.to,true).uval);
+							tokens.filltokens.push_back(GeomToken(strokesegment.quadctrl).uval);
+							tokens.filltokens.push_back(GeomToken(strokesegment.to).uval);
 						}
 					}
 				}
@@ -631,18 +631,18 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 			for (size_t j = 0; j < segments.size(); ++j)
 			{
 				ShapePathSegment segment = segments[j];
-				if (j == 0 || segment.from != segments[j - 1].to) {
+				if (j == 0 || segment.from.key != segments[j - 1].to.key) {
 					tokens.stroketokens.push_back(GeomToken(MOVE).uval);
-					tokens.stroketokens.push_back(GeomToken(segment.from,true).uval);
+					tokens.stroketokens.push_back(GeomToken(segment.from).uval);
 				}
-				if (segment.quadctrl == segment.from || segment.quadctrl == segment.to) {
+				if (segment.quadctrl.key == segment.from.key || segment.quadctrl.key == segment.to.key) {
 					tokens.stroketokens.push_back(GeomToken(STRAIGHT).uval);
-					tokens.stroketokens.push_back(GeomToken(segment.to,true).uval);
+					tokens.stroketokens.push_back(GeomToken(segment.to).uval);
 				}
 				else {
 					tokens.stroketokens.push_back(GeomToken(CURVE_QUADRATIC).uval);
-					tokens.stroketokens.push_back(GeomToken(segment.quadctrl,true).uval);
-					tokens.stroketokens.push_back(GeomToken(segment.to,true).uval);
+					tokens.stroketokens.push_back(GeomToken(segment.quadctrl).uval);
+					tokens.stroketokens.push_back(GeomToken(segment.to).uval);
 				}
 			}
 		}

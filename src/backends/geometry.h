@@ -65,6 +65,16 @@ public:
 
 enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE_QUADRATIC, MOVE, SET_FILL, SET_STROKE, CLEAR_FILL, CLEAR_STROKE, CURVE_CUBIC, FILL_KEEP_SOURCE, FILL_TRANSFORM_TEXTURE };
 
+union floatVec
+{
+	uint64_t key;
+	struct
+	{
+		float x;
+		float y;
+	} vec;
+};
+
 struct GeomToken
 {
 	union
@@ -72,8 +82,8 @@ struct GeomToken
 		GEOM_TOKEN_TYPE type;
 		struct
 		{
-			int32_t x;
-			int32_t y;
+			float x;
+			float y;
 		} vec;
 		const FILLSTYLE*  fillStyle; // make sure the pointer is valid until rendering is done
 		const LINESTYLE2* lineStyle; // make sure the pointer is valid until rendering is done
@@ -81,15 +91,14 @@ struct GeomToken
 		uint64_t uval;// this is used to have direct access to the value as it is stored in a vector<uint64_t> for performance
 	};
 	GeomToken(GEOM_TOKEN_TYPE t):type(t) {}
-	GeomToken(uint64_t v, bool isvec)
+	GeomToken(floatVec& v)
 	{
-		if (isvec)
-		{
-			vec.x = (int32_t(v&0xffffffff));
-			vec.y = (int32_t(v>>32));
-		}
-		else
-			uval = v;
+		vec.x = v.vec.x;
+		vec.y = v.vec.y;
+	}
+	GeomToken(uint64_t v, bool /*uint64_indicator*/)
+	{
+		uval = v;
 	}
 	GeomToken(const FILLSTYLE& fs):fillStyle(&fs) {}
 	GeomToken(const LINESTYLE2& ls):lineStyle(&ls) {}
@@ -129,14 +138,20 @@ struct tokensVector
 	tokensVector& operator=(const tokensVector& r);
 };
 
-
 class ShapePathSegment {
 public:
-	uint64_t from;
-	uint64_t quadctrl;
-	uint64_t to;
+	floatVec from;
+	floatVec quadctrl;
+	floatVec to;
 	int linestyleindex;
-	ShapePathSegment(uint64_t from, uint64_t quadctrl, uint64_t to, int linestyleindex): from(from), quadctrl(quadctrl), to(to),linestyleindex(linestyleindex) {}
+	ShapePathSegment(floatVec from, floatVec quadctrl, floatVec to, int linestyleindex): from(from), quadctrl(quadctrl), to(to),linestyleindex(linestyleindex) {}
+	ShapePathSegment()
+	{
+		from.key=0;
+		quadctrl.key=0;
+		to.key=0;
+		linestyleindex=0;
+	}
 	ShapePathSegment reverse() const {return ShapePathSegment(to, quadctrl, from, linestyleindex);}
 };
 
@@ -148,11 +163,17 @@ private:
 	std::map< unsigned int, std::vector<ShapePathSegment> > strokeShapesMap;
 
 	static bool isOutlineEmpty(const std::vector<ShapePathSegment>& outline);
-	static uint64_t makeVertex(const Vector2& v) { return (uint64_t(v.y)<<32) | (uint64_t(v.x)&0xffffffff); }
+	static floatVec makeVertex(const Vector2f& v) 
+	{ 
+		floatVec ret;
+		ret.vec.x = v.x;
+		ret.vec.y = v.y;
+		return ret;
+	}
 	std::map<uint16_t,LINESTYLE2>::iterator getStrokeLineStyle(const std::list<MORPHLINESTYLE2>::iterator& stylesIt, uint16_t ratio, std::map<uint16_t, LINESTYLE2>* linestylecache, const RECT& boundsrc);
 public:
-	void extendOutline(const Vector2& v1, const Vector2& v2, int linestyleindex);
-	void extendOutlineCurve(const Vector2& start, const Vector2& control, const Vector2& end, int linestyleindex);
+	void extendOutline(const Vector2f& v1, const Vector2f& v2, int linestyleindex);
+	void extendOutlineCurve(const Vector2f& start, const Vector2f& control, const Vector2f& end, int linestyleindex);
 	void endSubpathForStyles(unsigned fill0, unsigned fill1, unsigned stroke, bool formorphing);
 	/**
 		Generate a sequence of cachable tokens that defines the geomtries

@@ -1476,7 +1476,7 @@ void DefineTextTag::computeCached()
 		return;
 
 	FontTag* curFont = nullptr;
-	Vector2 curPos;
+	Vector2f curPos;
 
 	/*
 	 * All coordinates are scaled into 1024*20*20 units per pixel.
@@ -1531,7 +1531,7 @@ void DefineTextTag::computeCached()
 			//set fillstyle of each glyph to fillstyle of this TextRecord
 			for (auto it = sr.begin(); it != sr.end(); it++)
 				(*it).FillStyle0 = i+1;
-			Vector2 glyphPos = curPos*twipsScaling;
+			Vector2f glyphPos = curPos*twipsScaling;
 
 			MATRIX glyphMatrix(scaling, scaling, 0, 0, 
 						glyphPos.x,

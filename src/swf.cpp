@@ -2224,14 +2224,26 @@ DictionaryTag* RootMovieClip::dictionaryLookupByName(uint32_t nameID)
 	for(;it!=dictionary.end();++it)
 	{
 		if(it->second->nameID==nameID)
-			break;
+			return it->second;
 	}
+	// tag not found, also check case insensitive
 	if(it==dictionary.end())
 	{
-		LOG(LOG_ERROR,"No such name on dictionary " << getSystemState()->getStringFromUniqueId(nameID) << " for " << origin);
-		return nullptr;
+		
+		tiny_string namelower = getSystemState()->getStringFromUniqueId(nameID).lowercase();
+		it = dictionary.begin();
+		for(;it!=dictionary.end();++it)
+		{
+			if (it->second->nameID == UINT32_MAX)
+				continue;
+			tiny_string dictnamelower = getSystemState()->getStringFromUniqueId(it->second->nameID);
+			dictnamelower = dictnamelower.lowercase();
+			if(dictnamelower==namelower)
+				return it->second;
+		}
 	}
-	return it->second;
+	LOG(LOG_ERROR,"No such name on dictionary " << getSystemState()->getStringFromUniqueId(nameID) << " for " << origin);
+	return nullptr;
 }
 
 void RootMovieClip::addToScalingGrids(const DefineScalingGridTag* r)

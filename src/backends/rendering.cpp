@@ -674,6 +674,11 @@ void RenderThread::commonGLResize()
 	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(maskTextureID);
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
 	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
+	engineData->exec_glDisable_GL_DEPTH_TEST();
+	engineData->exec_glDisable_GL_STENCIL_TEST();
 
 	// setup blend framebuffer
 	if (engineData->nvgcontext)

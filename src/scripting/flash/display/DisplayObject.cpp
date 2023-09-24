@@ -103,7 +103,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 	AS_BLENDMODE oldshaderblendmode = ctxt.currentShaderBlendMode;
 	if (ctxt.contextType == RenderContext::GL)
 	{
-		if (isShaderBlendMode(this->getBlendMode()))
+		if (isShaderBlendMode(this->getBlendMode()) && getSystemState()->stage->renderToTextureCount)
 			ctxt.currentShaderBlendMode=this->getBlendMode();
 	}
 	bool ret = true;
@@ -1853,7 +1853,7 @@ void DisplayObject::invalidateCachedAsBitmapOf()
 	while (c)
 	{
 		c->hasChanged=true;
-		c->setNeedsTextureRecalculation();
+		c->resetNeedsCachedBitmapRecalculation();
 		if (!c->cachedAsBitmapOf)
 		{
 			c->requestInvalidation(c->getSystemState());

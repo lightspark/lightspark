@@ -5450,7 +5450,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	if (rwidth==0 || rheight==0)
 		return nullptr;
 	cachedSurface.isValid=true;
-	if (originalsource)
+	if (originalsource && this->getNeedsTextureRecalculation())
 	{
 		if (!isMask)
 			isMask = originalsource->ClipDepth || originalsource->ismask;

@@ -632,7 +632,9 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		regpointy=bymin;
 	}
 	owner->cachedSurface.isValid=true;
-	if (owner->getSystemState()->getEngineData()->nvgcontext && (!q || !q->isSoftwareQueue) 
+	if (!q || !q->isSoftwareQueue)
+	{
+		if (owner->getSystemState()->getEngineData()->nvgcontext
 			&& !tokens.empty() 
 			&& tokens.canRenderToGL 
 			&& mask.isNull()
@@ -641,34 +643,36 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& !owner->computeCacheAsBitmap()
 			&& isSupportedGLBlendMode(owner->getBlendMode())
 			&& !r
-		)
-	{
-		currentcolortransform = ct;
-		renderWithNanoVG=true;
-		int offsetX;
-		int offsetY;
-		float scaleX;
-		float scaleY;
-		owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight,
-					   offsetX, offsetY, scaleX, scaleY);
-		// in the NanoVG case xOffsetTransformed/yOffsetTransformed are used for the offsets from the border of the main window
-		owner->cachedSurface.xOffsetTransformed=offsetX;
-		owner->cachedSurface.yOffsetTransformed=offsetY;
-		if (fromgraphics)
+			)
 		{
-			owner->cachedSurface.xOffset=0;
-			owner->cachedSurface.yOffset=0;
+			currentcolortransform = ct;
+			renderWithNanoVG=true;
+			int offsetX;
+			int offsetY;
+			float scaleX;
+			float scaleY;
+			owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight,
+															offsetX, offsetY, scaleX, scaleY);
+			// in the NanoVG case xOffsetTransformed/yOffsetTransformed are used for the offsets from the border of the main window
+			owner->cachedSurface.xOffsetTransformed=offsetX;
+			owner->cachedSurface.yOffsetTransformed=offsetY;
+			if (fromgraphics)
+			{
+				owner->cachedSurface.xOffset=0;
+				owner->cachedSurface.yOffset=0;
+			}
+			else
+			{
+				owner->cachedSurface.xOffset=bxmin;
+				owner->cachedSurface.yOffset=bymin;
+			}
+			owner->cachedSurface.matrix=totalMatrix2;
+			owner->resetNeedsTextureRecalculation();
+			return nullptr;
 		}
 		else
-		{
-			owner->cachedSurface.xOffset=bxmin;
-			owner->cachedSurface.yOffset=bymin;
-		}
-		owner->cachedSurface.matrix=totalMatrix2;
-		owner->resetNeedsTextureRecalculation();
-		return nullptr;
+			renderWithNanoVG=false;
 	}
-	renderWithNanoVG=false;
 	return new CairoTokenRenderer(tokens,totalMatrix2
 				, x, y, ceil(width), ceil(height)
 				, rx, ry, ceil(rwidth), ceil(rheight), 0

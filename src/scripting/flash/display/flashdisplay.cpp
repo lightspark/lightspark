@@ -4759,7 +4759,8 @@ void Stage::advanceFrame(bool implicit)
 		while (dobj)
 		{
 			dobj->incRef();
-			if (!dobj->needsActionScript3())
+			if (!dobj->needsActionScript3() &&
+				(!dobj->is<MovieClip>() || dobj->as<MovieClip>()->state.last_FP!=-1)) // MovieClips advance for the first time after construction and should not advance again here
 				dobj->advanceFrame(implicit);
 			avm1DisplayObjectMutex.lock();
 			if (!dobj->avm1NextDisplayObject && !dobj->avm1PrevDisplayObject) // clip was removed from list during frame advance

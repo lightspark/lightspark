@@ -231,6 +231,8 @@ public:
 	void onNewEvent(Event *ev) override;
 	void afterHandleEvent(Event* ev) override;
 	
+	void onSetName(uint32_t oldName);
+
 	virtual void UpdateVariableBinding(asAtom v) {}
 	
 	tiny_string AVM1GetPath();

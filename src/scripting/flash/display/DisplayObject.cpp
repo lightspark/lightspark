@@ -345,13 +345,52 @@ void DisplayObject::sinit(Class_base* c)
 	IBitmapDrawable::linkTraits(c);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_STRINGID(DisplayObject,name)
+ASFUNCTIONBODY_GETTER_SETTER_STRINGID_CB(DisplayObject,name,onSetName)
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties)
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,scrollRect)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, opaqueBackground)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, metaData)
+
+void DisplayObject::onSetName(uint32_t oldName)
+{
+	if (!needsActionScript3() && oldName != name)
+	{
+		auto parent = getParent();
+		if (parent != nullptr)
+		{
+			bool set = false;
+			multiname m(nullptr);
+			m.name_type = multiname::NAME_STRING;
+			m.isAttribute = false;
+			m.name_s_id = name;
+
+			ASWorker* wrk = parent->getInstanceWorker();
+			variable* v = parent->findVariableByMultiname(m,parent->getClass(),nullptr,nullptr,true,wrk);
+			if (v != nullptr && asAtomHandler::is<DisplayObject>(v->var))
+			{
+				auto obj = asAtomHandler::as<DisplayObject>(v->var);
+				if (parent->findLegacyChildDepth(this) < parent->findLegacyChildDepth(obj))
+					set = true;
+			}
+
+			if (set || v == nullptr)
+			{
+				incRef();
+				asAtom val = asAtomHandler::fromObject(this);
+				parent->setVariableByMultiname(m, val, ASObject::CONST_NOT_ALLOWED, nullptr, wrk);
+			}
+
+			if (oldName != BUILTIN_STRINGS::EMPTY && v != nullptr)
+			{
+				m.name_s_id = oldName;
+				v->setVar(wrk, asAtomHandler::undefinedAtom, false);
+				parent->deleteVariableByMultiname(m, wrk);
+			}
+		}
+	}
+}
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_filters)
 {

@@ -1308,7 +1308,7 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 	if (requestInvalidationForCacheAsBitmap(q))
 		return;
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
-	if (graphics)
+	if (graphics || (!this->cachedAsBitmapOf && this->computeCacheAsBitmap()))
 	{
 		if(skipRender())
 			return;
@@ -2854,9 +2854,11 @@ void DisplayObjectContainer::markBoundsRectDirtyChildren()
 void DisplayObjectContainer::setChildrenCachedAsBitmapOf(DisplayObject* cachedBitmapObject)
 {
 	if (cachedBitmapObject==nullptr && this->computeCacheAsBitmap())
-		return;
-
-	if (this != cachedBitmapObject)
+	{
+		this->cachedAsBitmapOf=nullptr;
+		cachedBitmapObject=this;
+	}
+	else if (this != cachedBitmapObject)
 	{
 		this->cachedAsBitmapOf=cachedBitmapObject;
 		this->setNeedsCachedBitmapRecalculation();

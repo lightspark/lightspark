@@ -101,6 +101,7 @@ private:
 	std::map<uint32_t,asAtom> avm1variables;
 	uint32_t avm1mouselistenercount;
 	uint32_t avm1framelistenercount;
+	void updateCachedAsBitmap();
 protected:
 	_NR<Bitmap> cachedBitmap;
 	_NR<Rectangle> scalingGrid;

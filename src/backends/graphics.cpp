@@ -1300,7 +1300,6 @@ uint8_t* CachedBitmapRenderer::getPixelBuffer(bool* isBufferOwner, uint32_t* buf
 {
 	source->DrawToBitmap(source->getCachedBitmap()->as<Bitmap>()->bitmapData.getPtr(),sourceCacheMatrix,smoothing,true,source->getBlendMode(),nullptr);
 	source->applyFilters(data.getPtr(),nullptr,RECT(0,data->getWidth(),0,data->getHeight()),0,0,xscale,yscale);
-	source->hasChanged=true;
 	return BitmapRenderer::getPixelBuffer(isBufferOwner,bufsize);
 }
 

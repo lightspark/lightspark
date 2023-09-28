@@ -428,15 +428,26 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 
 	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(wrk,args[0],th->filters);
 
-	if (th->computeCacheAsBitmap() && !th->cachedAsBitmapOf && th->is<DisplayObjectContainer>())
-	{
-		th->setNeedsCachedBitmapRecalculation();
-		th->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(th);
-	}
+	th->updateCachedAsBitmap();
 	if (isShaderBlendMode(th->blendMode) && !th->computeCacheAsBitmap() && th->onStage && !th->cachedAsBitmapOf)
 		th->getSystemState()->stage->renderToTextureCount++;
 	
 	th->requestInvalidation(wrk->getSystemState(),true);
+}
+void DisplayObject::updateCachedAsBitmap()
+{
+	if (getTagID()==705)
+		LOG(LOG_ERROR,"updateCachedBitmap:"<<this->toDebugString()<<" "<<cachedAsBitmapOf<<" "<<computeCacheAsBitmap());
+	if (!cachedAsBitmapOf && is<DisplayObjectContainer>())
+	{
+		if (computeCacheAsBitmap())
+		{
+			setNeedsCachedBitmapRecalculation();
+			as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(this);
+		}
+		else
+			as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(nullptr);
+	}
 }
 bool DisplayObject::computeCacheAsBitmap(bool checksize)
 {
@@ -512,25 +523,16 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_cacheAsBitmap)
 		return;
 	}
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	if (th->filters.isNull() || th->filters->size()==0)
+	if (th->cacheAsBitmap != asAtomHandler::toInt(args[0]))
 	{
-		if (th->cacheAsBitmap != asAtomHandler::toInt(args[0]))
-		{
-			th->hasChanged=true;
-			if (isShaderBlendMode(th->blendMode) && !th->computeCacheAsBitmap() && th->onStage && !th->cachedAsBitmapOf)
-				th->getSystemState()->stage->renderToTextureCount--;
-			th->cacheAsBitmap = asAtomHandler::toInt(args[0]);
-			if (th->computeCacheAsBitmap() && !th->cachedAsBitmapOf && th->is<DisplayObjectContainer>())
-			{
-				th->setNeedsCachedBitmapRecalculation();
-				th->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(th);
-			}
-			else
-				th->setNeedsTextureRecalculation();
-			if (isShaderBlendMode(th->blendMode) && !th->computeCacheAsBitmap() && th->onStage && !th->cachedAsBitmapOf)
-				th->getSystemState()->stage->renderToTextureCount++;
-			th->requestInvalidation(wrk->getSystemState(),true);
-		}
+		th->hasChanged=true;
+		if (isShaderBlendMode(th->blendMode) && !th->computeCacheAsBitmap() && th->onStage && !th->cachedAsBitmapOf)
+			th->getSystemState()->stage->renderToTextureCount--;
+		th->cacheAsBitmap = asAtomHandler::toInt(args[0]);
+		th->updateCachedAsBitmap();
+		if (isShaderBlendMode(th->blendMode) && !th->computeCacheAsBitmap() && th->onStage && !th->cachedAsBitmapOf)
+			th->getSystemState()->stage->renderToTextureCount++;
+		th->requestInvalidation(wrk->getSystemState(),true);
 	}
 }
 
@@ -722,7 +724,7 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 			requestInvalidation(getSystemState());
 		}
 	}
-	
+	updateCachedAsBitmap();
 }
 
 void DisplayObject::setMask(_NR<DisplayObject> m)
@@ -876,6 +878,8 @@ bool DisplayObject::skipRender() const
 
 bool DisplayObject::defaultRender(RenderContext& ctxt)
 {
+	if (ctxt.contextType == RenderContext::GL && this->cachedAsBitmapOf)
+		return true;
 	// TODO: use scrollRect
 	const CachedSurface& surface=ctxt.getCachedSurface(ctxt.contextType == RenderContext::CAIRO && (ctxt.startobject != this) && this->getCachedBitmap() ? this->getCachedBitmap().getPtr() : this);
 	/* surface is only modified from within the render thread

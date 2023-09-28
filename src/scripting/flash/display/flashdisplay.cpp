@@ -4942,13 +4942,38 @@ void Stage::AVM1RemoveKeyboardListener(ASObject *o)
 void Stage::AVM1AddMouseListener(ASObject *o)
 {
 	Locker l(avm1listenerMutex);
-	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
+	auto it = std::find_if(avm1MouseListeners.begin(), avm1MouseListeners.end(), [&](ASObject* obj)
 	{
-		if ((*it) == o)
-			return;
-	}
+		if (obj == o)
+			return true;
+		if (o->is<DisplayObject>() && obj->is<DisplayObject>())
+		{
+			DisplayObject* dispA = o->as<DisplayObject>();
+			DisplayObject* dispB = obj->as<DisplayObject>();
+
+			if (dispA != nullptr && dispB != nullptr)
+			{
+				auto commonAncestor = dispA->findCommonAncestor(dispB);
+				int parentDepthA = dispA->findParentDepth(commonAncestor);
+				int parentDepthB = dispB->findParentDepth(commonAncestor);
+
+				if (commonAncestor != nullptr)
+				{
+					int depthA = 16384 + commonAncestor->findLegacyChildDepth(dispA->getAncestor(parentDepthB < 0 ? 0 : parentDepthA-1));
+					int depthB = 16384 + commonAncestor->findLegacyChildDepth(dispB->getAncestor(parentDepthA < 0 ? 0 : parentDepthB-1));
+					return depthA < depthB;
+				}
+			}
+		}
+		return false;
+	});
+	if (it != avm1MouseListeners.end() && (*it) == o)
+		return;
 	o->incRef();
-	avm1MouseListeners.push_back(o);
+	if (it != avm1MouseListeners.end())
+		avm1MouseListeners.insert(it, o);
+	else
+		avm1MouseListeners.push_back(o);
 }
 
 void Stage::AVM1RemoveMouseListener(ASObject *o)

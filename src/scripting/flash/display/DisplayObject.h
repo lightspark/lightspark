@@ -190,6 +190,11 @@ public:
 	IDrawable* getCachedBitmapDrawable(DisplayObject* target, const MATRIX& initialMatrix, _NR<DisplayObject>* pcachedBitmap, bool smoothing);
 	_NR<DisplayObject> getCachedBitmap() const { return cachedBitmap; }
 	DisplayObjectContainer* getParent() const { return parent; }
+	int getParentDepth() const;
+	int findParentDepth(DisplayObject* d) const;
+	DisplayObjectContainer* getAncestor(int depth) const;
+	DisplayObjectContainer* findCommonAncestor(DisplayObject* d, int& depth, bool init = true) const;
+	DisplayObjectContainer* findCommonAncestor(DisplayObject* d) const { int dummy; return findCommonAncestor(d, dummy); }
 	bool findParent(DisplayObject* d) const;
 	void setParent(DisplayObjectContainer* p);
 	void setScalingGrid();

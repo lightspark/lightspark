@@ -2081,6 +2081,54 @@ bool DisplayObject::findParent(DisplayObject *d) const
 	return parent->findParent(d);
 }
 
+int DisplayObject::getParentDepth() const
+{
+	int i;
+	DisplayObjectContainer* p;
+	for (i = 0, p = parent; p != nullptr; p = p->parent, ++i);
+	return i;
+}
+
+int DisplayObject::findParentDepth(DisplayObject* d) const
+{
+	if (this != d)
+	{
+		int i;
+		DisplayObjectContainer* p;
+		for (i = 0, p = parent; p != nullptr && p != d; p = p->parent, ++i);
+		return i;
+	}
+	return -1;
+}
+
+DisplayObjectContainer* DisplayObject::getAncestor(int depth) const
+{
+	if (depth < 0)
+		return (DisplayObjectContainer*)this;
+	if (!depth)
+		return parent;
+	if (parent == nullptr)
+		return nullptr;
+	return parent->getAncestor(--depth);
+}
+
+DisplayObjectContainer* DisplayObject::findCommonAncestor(DisplayObject* d, int& depth, bool init) const
+{
+	const DisplayObject* a = this;
+	const DisplayObject* b = d;
+	if (init)
+	{
+		depth = 0;
+		if ((a->getParentDepth() - b->getParentDepth()) < 0)
+			std::swap(a, b);
+	}
+	if (a->parent == nullptr || b == nullptr)
+		return a->parent == nullptr ? (DisplayObjectContainer*)a : nullptr;
+	if (b->findParent(a->parent))
+		return a->parent;
+	return a->parent->findCommonAncestor((DisplayObject*)b, ++depth, false);
+}
+
 // Compute the minimal, axis aligned bounding box in global
 // coordinates
 bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)

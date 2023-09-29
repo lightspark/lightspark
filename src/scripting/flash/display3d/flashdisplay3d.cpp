@@ -467,12 +467,14 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata2 = passCompareMode
 			engineData->exec_glDepthMask(action.udata1);
 			engineData->exec_glDepthFunc((DEPTH_FUNCTION)action.udata2);
+			currentdepthfunction = (DEPTH_FUNCTION)action.udata2;
 			break;
 		}
 		case RENDER_SETCULLING:
 		{
 			//action.udata1 = mode
 			engineData->exec_glCullFace((TRIANGLE_FACE)action.udata1);
+			currentcullface=(TRIANGLE_FACE)action.udata1;
 			break;
 		}
 		case RENDER_GENERATETEXTURE:
@@ -739,8 +741,8 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 		engineData->exec_glDisable_GL_STENCIL_TEST();
 	}
 	engineData->exec_glDepthMask(true);
-	engineData->exec_glDepthFunc(LESS);
-	engineData->exec_glCullFace(FACE_NONE);
+	engineData->exec_glDepthFunc(currentdepthfunction);
+	engineData->exec_glCullFace(currentcullface);
 	engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ZERO);
 	engineData->exec_glColorMask(true,true,true,true);
 
@@ -852,7 +854,9 @@ void Context3D::loadCubeTexture(CubeTexture *tex)
 
 Context3D::Context3D(ASWorker* wrk, Class_base *c):EventDispatcher(wrk,c),samplers{UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX},currentactionvector(0)
   ,textureframebuffer(UINT32_MAX),textureframebufferID(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX),currentprogram(nullptr),currenttextureid(UINT32_MAX)
-  ,renderingToTexture(false),enableDepthAndStencilBackbuffer(true),enableDepthAndStencilTextureBuffer(true),swapbuffers(false),backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
+  ,renderingToTexture(false),enableDepthAndStencilBackbuffer(true),enableDepthAndStencilTextureBuffer(true),swapbuffers(false)
+  ,currentcullface(TRIANGLE_FACE::FACE_NONE),currentdepthfunction(DEPTH_FUNCTION::LESS)
+  ,backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
   ,maxBackBufferHeight(16384),maxBackBufferWidth(16384)
 {
 	subtype = SUBTYPE_CONTEXT3D;
@@ -1166,7 +1170,6 @@ ASFUNCTIONBODY_ATOM(Context3D,drawTriangles)
 	{
 		// IndexBuffer3D was created during this loop, so it doesn't have a bufferID yet
 		th->rendermutex.lock();
-		indexBuffer->incRef();
 		action.dataobject = indexBuffer;
 		th->actions[th->currentactionvector].push_back(action);
 		th->rendermutex.unlock();
@@ -1615,7 +1618,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setVertexBufferAt)
 	{
 		// VertexBuffer was created during this loop, so it doesn't have a bufferID yet
 		th->rendermutex.lock();
-		buffer->incRef();
 		action.dataobject = buffer;
 		th->actions[th->currentactionvector].push_back(action);
 		th->rendermutex.unlock();
@@ -1830,11 +1832,7 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromByteArray)
 		if (data->readShort(d))
 			th->data[startOffset+i] = d;
 	}
-	renderaction action;
-	action.action =RENDER_ACTION::RENDER_UPLOADINDEXBUFFER;
-	th->incRef();
-	action.dataobject = _MR(th);
-	th->context->addAction(action);
+	th->context->addAction(RENDER_ACTION::RENDER_UPLOADINDEXBUFFER,th);
 	th->context->rendermutex.unlock();
 	data->setPosition(origpos);
 }
@@ -1858,11 +1856,7 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
 		asAtom a = data->at(i);
 		th->data[startOffset+i] = asAtomHandler::toUInt(a);
 	}
-	renderaction action;
-	action.action =RENDER_ACTION::RENDER_UPLOADINDEXBUFFER;
-	th->incRef();
-	action.dataobject = _MR(th);
-	th->context->addAction(action);
+	th->context->addAction(RENDER_ACTION::RENDER_UPLOADINDEXBUFFER,th);
 	th->context->rendermutex.unlock();
 }
 
@@ -1976,11 +1970,7 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 		if (data->readUnsignedInt(d.u))
 			th->data[startVertex*th->data32PerVertex+i] = d.f;
 	}
-	renderaction action;
-	action.action =RENDER_ACTION::RENDER_UPLOADVERTEXBUFFER;
-	th->incRef();
-	action.dataobject = _MR(th);
-	th->context->addAction(action);
+	th->context->addAction(RENDER_ACTION::RENDER_UPLOADVERTEXBUFFER,th);
 	th->context->rendermutex.unlock();
 	data->setPosition(origpos);
 }
@@ -2004,11 +1994,7 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
 		asAtom a = data->at(i);
 		th->data[startVertex*th->data32PerVertex+i] = asAtomHandler::toNumber(a);
 	}
-	renderaction action;
-	action.action =RENDER_ACTION::RENDER_UPLOADVERTEXBUFFER;
-	th->incRef();
-	action.dataobject = _MR(th);
-	th->context->addAction(action);
+	th->context->addAction(RENDER_ACTION::RENDER_UPLOADVERTEXBUFFER,th);
 	th->context->rendermutex.unlock();
 }
 

@@ -436,8 +436,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 }
 void DisplayObject::updateCachedAsBitmap()
 {
-	if (getTagID()==705)
-		LOG(LOG_ERROR,"updateCachedBitmap:"<<this->toDebugString()<<" "<<cachedAsBitmapOf<<" "<<computeCacheAsBitmap());
 	if (!cachedAsBitmapOf && is<DisplayObjectContainer>())
 	{
 		if (computeCacheAsBitmap())

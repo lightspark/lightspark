@@ -253,6 +253,7 @@ ASFUNCTIONBODY_ATOM(ASString,match)
 			asAtom a = match->as<Array>()->at(0);
 			ASATOM_INCREF(a);
 			resarr->push(a);
+			match->decRef();
 		}
 
 		// According to ECMA we should return Null if resarr

@@ -153,6 +153,8 @@ private:
 	bool enableDepthAndStencilBackbuffer;
 	bool enableDepthAndStencilTextureBuffer;
 	bool swapbuffers;
+	TRIANGLE_FACE currentcullface;
+	DEPTH_FUNCTION currentdepthfunction;
 	void handleRenderAction(EngineData *engineData, renderaction &action);
 	void setRegisters(EngineData *engineData, std::vector<RegisterMapEntry> &registermap, constantregister *constants, bool isVertex);
 	void setAttribs(EngineData* engineData, std::vector<RegisterMapEntry> &attributes);

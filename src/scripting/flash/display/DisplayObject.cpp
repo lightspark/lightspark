@@ -1975,14 +1975,16 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 	}
 }
 
-void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, _NR<DisplayObject>&mask) const
+void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, _NR<DisplayObject>&mask, number_t& alpha) const
 {
 	const DisplayObject* cur=this;
 	bool gatherMasks = true;
 	isMask = cur->ClipDepth || cur->ismask;
 	mask = cur->mask;
+	alpha = target->clippedAlpha();
 	while(cur && cur!=target)
 	{
+		alpha *= cur->clippedAlpha();
 		totalMatrix=cur->getMatrix(includeRotation).multiplyMatrix(totalMatrix);
 		if(gatherMasks)
 		{

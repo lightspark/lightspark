@@ -5460,17 +5460,18 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	std::vector<IDrawable::MaskData> masks;
 
 	bool isMask;
+	number_t alpha=1.0;
 	if (target)
 	{
 		if (matrixsource)
-			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask);
+			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha);
 	}
 	MATRIX totalMatrix2;
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
 		if (matrixsource)
-			matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask);
+			matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 	totalMatrix2 = totalMatrix2.multiplyMatrix(sourceMatrix);

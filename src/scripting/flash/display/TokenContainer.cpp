@@ -588,10 +588,11 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	std::vector<IDrawable::MaskData> masks;
 
 	bool isMask=false;
+	number_t alpha=1.0;
 	_NR<DisplayObject> mask;
 	if (target)
 	{
-		owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask);
+		owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha);
 		MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
 		totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
 		totalMatrix.xx = abs(totalMatrix.xx);
@@ -612,7 +613,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
-		owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask);
+		owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
@@ -680,7 +681,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, rx, ry, ceil(rwidth), ceil(rheight), 0
 				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
 				, isMask, mask
-				, scaling,(!q || !q->isSoftwareQueue ? owner->getConcatenatedAlpha() : owner->clippedAlpha()), masks
+				, scaling,(!q || !q->isSoftwareQueue ? owner->getConcatenatedAlpha() : alpha), masks
 				, ct, smoothing, regpointx, regpointy,q && q->isSoftwareQueue);
 }
 

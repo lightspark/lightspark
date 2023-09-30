@@ -7840,16 +7840,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				setupInstructionComparison(state,ABC_OP_OPTIMZED_EQUALS,opcode,code,ABC_OP_OPTIMZED_IFEQ,ABC_OP_OPTIMZED_IFNE,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
 				break;
 			case 0xad://lessthan
-				setupInstructionComparison(state,ABC_OP_OPTIMZED_LESSTHAN,opcode,code,ABC_OP_OPTIMZED_IFLT,ABC_OP_OPTIMZED_IFGE,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
+				setupInstructionComparison(state,ABC_OP_OPTIMZED_LESSTHAN,opcode,code,ABC_OP_OPTIMZED_IFLT,ABC_OP_OPTIMZED_IFNLT,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
 				break;
 			case 0xae://lessequals
-				setupInstructionComparison(state,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,ABC_OP_OPTIMZED_IFLE,ABC_OP_OPTIMZED_IFGT,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
+				setupInstructionComparison(state,ABC_OP_OPTIMZED_LESSEQUALS,opcode,code,ABC_OP_OPTIMZED_IFLE,ABC_OP_OPTIMZED_IFNLE,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
 				break;
 			case 0xaf://greaterthan
-				setupInstructionComparison(state,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,ABC_OP_OPTIMZED_IFGT,ABC_OP_OPTIMZED_IFLE,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
+				setupInstructionComparison(state,ABC_OP_OPTIMZED_GREATERTHAN,opcode,code,ABC_OP_OPTIMZED_IFGT,ABC_OP_OPTIMZED_IFNGT,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
 				break;
 			case 0xb0://greaterequals
-				setupInstructionComparison(state,ABC_OP_OPTIMZED_GREATEREQUALS,opcode,code,ABC_OP_OPTIMZED_IFGE,ABC_OP_OPTIMZED_IFLT,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
+				setupInstructionComparison(state,ABC_OP_OPTIMZED_GREATEREQUALS,opcode,code,ABC_OP_OPTIMZED_IFGE,ABC_OP_OPTIMZED_IFNGE,typestack,&lastlocalresulttype,jumppositions, jumpstartpositions);
 				break;
 			case 0xc0://increment_i
 			case 0xc1://decrement_i

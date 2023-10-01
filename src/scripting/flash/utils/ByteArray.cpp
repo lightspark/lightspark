@@ -796,9 +796,9 @@ bool ByteArray::readU29(uint32_t& ret)
 		{
 			ret <<=1;
 			ret |= tmp;
-//			//Sign extend
-//			if(tmp&0x80)
-//				ret|=0xe0000000;
+			//Sign extend
+			if(ret&0x10000000)
+				ret|=0xe0000000;
 		}
 	}
 	return true;
@@ -1324,7 +1324,7 @@ void ByteArray::writeU29(uint32_t val)
 			b=(tmp&0x7f)|0x80;
 		}
 		else
-			b=val&0x7f;
+			b=val&0xff;
 
 		writeByte(b);
 	}

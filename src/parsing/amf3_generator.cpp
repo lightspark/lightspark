@@ -88,7 +88,7 @@ asAtom Amf3Deserializer::parseInteger() const
 	uint32_t tmp;
 	if(!input->readU29(tmp))
 		throw ParseException("Not enough data to parse integer");
-	return asAtomHandler::fromUInt(tmp);
+	return asAtomHandler::fromInt((int32_t)tmp);
 }
 
 asAtom Amf3Deserializer::parseDouble() const

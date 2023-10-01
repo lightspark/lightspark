@@ -62,6 +62,10 @@ void InputThread::wait()
 {
 	if(status==STARTED)
 	{
+		SDL_Event event;
+		SDL_zero(event);
+		event.type = SDL_QUIT;
+		inputEventQueue.push_back(event);
 		eventCond.signal();
 		SDL_WaitThread(t,nullptr);
 	}

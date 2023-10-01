@@ -689,14 +689,13 @@ bool TokenContainer::hitTestImpl(const Vector2f& point) const
 {
 	//Masks have been already checked along the way
 
-	bool forcacheasbitmap = owner->computeCacheAsBitmap();
-	owner->startDrawJob(forcacheasbitmap); // ensure that tokens are not changed during hitTest
+	owner->startDrawJob(false); // ensure that tokens are not changed during hitTest
 	if(CairoTokenRenderer::hitTest(tokens, scaling, point))
 	{
-		owner->endDrawJob(forcacheasbitmap);
+		owner->endDrawJob(false);
 		return true;
 	}
-	owner->endDrawJob(forcacheasbitmap);
+	owner->endDrawJob(false);
 	return false;
 }
 

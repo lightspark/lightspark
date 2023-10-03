@@ -32,7 +32,6 @@
 
 extern "C" {
 struct NVGcontext;
-struct NVGLUframebuffer;
 }
 
 namespace lightspark
@@ -107,7 +106,6 @@ public:
 	bool incontextmenupreparing; // needed for PPAPI plugin only
 	SDL_Window* widget;
 	NVGcontext* nvgcontext;
-	NVGLUframebuffer* nvgframebuffer;
 	static uint32_t userevent;
 	static SDL_Thread* mainLoopThread;
 	uint32_t width;
@@ -178,8 +176,6 @@ public:
 	void selectContextMenuItem();
 	void InteractiveObjectRemovedFromStage();
 
-	uint32_t getNanoVGFrameBufferTextureID();
-	uint32_t getNanoVGFrameBufferID();
 	static bool sdl_needinit;
 	static bool enablerendering;
 	static bool mainthread_running;
@@ -211,10 +207,6 @@ public:
 	virtual double getScreenDPI() = 0;
 	virtual StreamCache* createFileStreamCache(SystemState *sys);
 	
-	// NanoVG methods
-	virtual NVGLUframebuffer* exec_nvgluCreateFramebuffer(int w, int h, int imageFlags);
-	virtual void exec_nvgluDeleteFramebuffer(NVGLUframebuffer* fb);
-
 	// OpenGL methods
 	virtual void DoSwapBuffers() = 0;
 	virtual void InitOpenGL() = 0;

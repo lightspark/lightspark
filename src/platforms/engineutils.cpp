@@ -37,15 +37,14 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include "3rdparty/nanovg/src/nanovg_gl_utils.h"
 
 extern "C" {
 #ifdef ENABLE_GLES2
 extern NVGcontext* nvgCreateGLES2(int flags);
 extern void nvgDeleteGLES2(NVGcontext* ctx);
 #else
-extern NVGcontext* nvgCreateGL3(int flags);
-extern void nvgDeleteGL3(NVGcontext* ctx);
+extern NVGcontext* nvgCreateGL2(int flags);
+extern void nvgDeleteGL2(NVGcontext* ctx);
 #endif
 }
 //The interpretation of texture data change with the endianness
@@ -66,7 +65,7 @@ bool EngineData::enablerendering = true;
 SDL_Cursor* EngineData::handCursor = nullptr;
 Semaphore EngineData::mainthread_initialized(0);
 EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr),
-	nvgcontext(nullptr), nvgframebuffer(nullptr),
+	nvgcontext(nullptr),
 	width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false),
 	startInFullScreenMode(false),startscalefactor(1.0)
 {
@@ -82,7 +81,7 @@ EngineData::~EngineData()
 		nvgDeleteGLES2(nvgcontext);
 #else
 	if (nvgcontext)
-		nvgDeleteGL3(nvgcontext);
+		nvgDeleteGL2(nvgcontext);
 #endif
 }
 bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
@@ -198,11 +197,6 @@ bool initSDL()
 #ifdef ENABLE_GLES2
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-#else
-			// Needed for NanoVG FBO support.
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
 		}
@@ -389,7 +383,7 @@ void EngineData::initNanoVG()
 #ifdef ENABLE_GLES2
 	nvgcontext=nvgCreateGLES2(0);
 #else
-	nvgcontext=nvgCreateGL3(0);
+	nvgcontext=nvgCreateGL2(0);
 #endif
 	if (nvgcontext == nullptr)
 		LOG(LOG_ERROR,"couldn't initialize nanovg");
@@ -594,15 +588,6 @@ void EngineData::InteractiveObjectRemovedFromStage()
 	SDL_PushEvent(&event);
 }
 
-uint32_t EngineData::getNanoVGFrameBufferTextureID()
-{
-	return nvgframebuffer ? nvgframebuffer->texture : UINT32_MAX;
-}
-
-uint32_t EngineData::getNanoVGFrameBufferID()
-{
-	return nvgframebuffer ? nvgframebuffer->fbo : UINT32_MAX;
-}
 void EngineData::selectContextMenuItemIntern()
 {
 	if (contextmenucurrentitem >=0)
@@ -809,16 +794,6 @@ void EngineData::getGlCompressedTextureFormats()
 			compressed_texture_formats.push_back(TEXTUREFORMAT_COMPRESSED::DXT5);
 	}
 	delete [] formats;
-}
-
-NVGLUframebuffer* EngineData::exec_nvgluCreateFramebuffer(int w, int h, int imageFlags)
-{
-	return nvgluCreateFramebuffer(nvgcontext, w, h, imageFlags);
-}
-
-void EngineData::exec_nvgluDeleteFramebuffer(NVGLUframebuffer* fb)
-{
-	nvgluDeleteFramebuffer(fb);
 }
 
 void EngineData::exec_glUniform1f(int location,float v0)

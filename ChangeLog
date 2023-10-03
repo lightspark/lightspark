@@ -2,7 +2,6 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
-	* switch to OpenGL 3.0 (for OpenGL ES we stay at version 2.0)
 	* implement rendering with extended Blendmodes OVERLAY and HARDLIGHT
 	* improved support for flash.text.textengine package
 

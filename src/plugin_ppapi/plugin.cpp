@@ -2018,6 +2018,11 @@ void ppPluginEngineData::exec_glUniform4f(int location, float v0, float v1, floa
 	g_gles2_interface->Uniform4f(instance->m_graphics,location,v0,v1,v2,v3);
 }
 
+void ppPluginEngineData::exec_glUniform1fv(int location, uint32_t size, float* v)
+{
+	g_gles2_interface->Uniform1fv(instance->m_graphics,location,size,v);
+}
+
 void ppPluginEngineData::exec_glBindTexture_GL_TEXTURE_2D(uint32_t id)
 {
 	g_gles2_interface->BindTexture(instance->m_graphics,GL_TEXTURE_2D,id);
@@ -2304,6 +2309,16 @@ void ppPluginEngineData::exec_glDeleteTextures(int32_t n,uint32_t* textures)
 void ppPluginEngineData::exec_glDeleteBuffers(uint32_t size, uint32_t* buffers)
 {
 	g_gles2_interface->DeleteBuffers(instance->m_graphics,size, buffers);
+}
+
+void ppPluginEngineData::exec_glDeleteFramebuffers(uint32_t size,uint32_t* buffers)
+{
+	g_gles2_interface->DeleteFramebuffers(instance->m_graphics,size,buffers);
+}
+
+void ppPluginEngineData::exec_glDeleteRenderbuffers(uint32_t size,uint32_t* buffers)
+{
+	g_gles2_interface->DeleteRenderbuffers(instance->m_graphics,size,buffers);
 }
 
 void ppPluginEngineData::exec_glBlendFunc(BLEND_FACTOR src, BLEND_FACTOR dst)

@@ -1278,6 +1278,8 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 			asAtomHandler::callFunction(o,context->worker,ret,closure,args,argsnum,refcounted,needreturn && coercearguments,coercearguments);
 			if (needreturn && asAtomHandler::isInvalid(ret))
 				ret = asAtomHandler::undefinedAtom;
+			if (refcounted && closure.uintval != obj.uintval)
+				ASATOM_DECREF(obj);
 		}
 		else if(asAtomHandler::is<Class_base>(o))
 		{

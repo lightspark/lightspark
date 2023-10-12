@@ -136,6 +136,15 @@ SET(LIBSPARK_SOURCES
   scripting/flash/external/ExternalInterface.cpp
   scripting/flash/external/ExtensionContext.cpp
   scripting/flash/filters/flashfilters.cpp
+  scripting/flash/filters/BevelFilter.cpp
+  scripting/flash/filters/BlurFilter.cpp
+  scripting/flash/filters/ColorMatrixFilter.cpp
+  scripting/flash/filters/ConvolutionFilter.cpp
+  scripting/flash/filters/DisplacementMapFilter.cpp
+  scripting/flash/filters/DropShadowFilter.cpp
+  scripting/flash/filters/GlowFilter.cpp
+  scripting/flash/filters/GradientBevelFilter.cpp
+  scripting/flash/filters/GradientGlowFilter.cpp
   scripting/flash/filesystem/flashfilesystem.cpp
   scripting/flash/geom/flashgeom.cpp
   scripting/flash/geom/orientation3d.cpp

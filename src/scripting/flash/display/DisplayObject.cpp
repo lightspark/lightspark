@@ -29,6 +29,15 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/filters/flashfilters.h"
+#include "scripting/flash/filters/BevelFilter.h"
+#include "scripting/flash/filters/BlurFilter.h"
+#include "scripting/flash/filters/ColorMatrixFilter.h"
+#include "scripting/flash/filters/ConvolutionFilter.h"
+#include "scripting/flash/filters/DisplacementMapFilter.h"
+#include "scripting/flash/filters/DropShadowFilter.h"
+#include "scripting/flash/filters/GlowFilter.h"
+#include "scripting/flash/filters/GradientBevelFilter.h"
+#include "scripting/flash/filters/GradientGlowFilter.h"
 #include "scripting/toplevel/Number.h"
 #include "parsing/tags.h"
 #include <algorithm>
@@ -101,12 +110,28 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 	if((!legacy && !isConstructed()) || (!force && skipRender()) || clippedAlpha()==0.0)
 		return false;
 	AS_BLENDMODE oldshaderblendmode = ctxt.currentShaderBlendMode;
+	bool ret = true;
 	if (ctxt.contextType == RenderContext::GL)
 	{
+		bool needsFilterRefresh = cachedSurface.needsFilterRefresh && hasFilters();
 		if (isShaderBlendMode(this->getBlendMode()) && getSystemState()->stage->renderToTextureCount)
 			ctxt.currentShaderBlendMode=this->getBlendMode();
+		if (needsFilterRefresh)
+		{
+			number_t xmin,xmax,ymin,ymax;
+			MATRIX m=getMatrix();
+			if (getBounds(xmin,xmax,ymin,ymax,m,true))
+				this->renderFilters(ctxt,getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight);
+			cachedSurface.needsFilterRefresh=false;
+		}
+		if (cachedSurface.cachedFilterTextureID != UINT32_MAX)
+		{
+			getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,nullptr,nullptr);
+			getSystemState()->getRenderThread()->resetCurrentFrameBuffer();
+			ctxt.currentShaderBlendMode = oldshaderblendmode;
+			return ret;
+		}
 	}
-	bool ret = true;
 	if (ctxt.contextType == RenderContext::CAIRO && (ctxt.startobject != this) && this->getCachedBitmap())
 		ret = this->getCachedBitmap()->renderImpl(ctxt);
 	else
@@ -134,6 +159,8 @@ void DisplayObject::markAsChanged()
 		hasChanged = true;
 		if (onStage)
 			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
 	}
 }
 
@@ -233,6 +260,9 @@ bool DisplayObject::destruct()
 	cachedSurface.isValid=false;
 	cachedSurface.isInitialized=false;
 	cachedSurface.wasUpdated=false;
+	if (cachedSurface.cachedFilterTextureID != UINT32_MAX && getSystemState() && getSystemState()->getRenderThread())
+		getSystemState()->getRenderThread()->addDeletedTexture(cachedSurface.cachedFilterTextureID);
+	cachedSurface.cachedFilterTextureID=UINT32_MAX;
 	return EventDispatcher::destruct();
 }
 
@@ -449,7 +479,7 @@ void DisplayObject::updateCachedAsBitmap()
 }
 bool DisplayObject::computeCacheAsBitmap(bool checksize)
 {
-	if (cacheAsBitmap || (!filters.isNull() && filters->size()!=0) || blendMode == BLENDMODE_LAYER)
+	if (cacheAsBitmap || blendMode == BLENDMODE_LAYER)
 	{
 		if (checksize)
 		{
@@ -463,6 +493,29 @@ bool DisplayObject::computeCacheAsBitmap(bool checksize)
 		return true;
 	}
 	return false;
+}
+
+bool DisplayObject::hasFilters() const
+{
+	return filters && filters->size();
+}
+
+void DisplayObject::requestInvalidationFilterParent()
+{
+	if (cachedSurface.cachedFilterTextureID != UINT32_MAX)
+	{
+		cachedSurface.needsFilterRefresh=true;
+	}
+	DisplayObject* p = getParent();
+	while (p)
+	{
+		if (p->cachedSurface.cachedFilterTextureID != UINT32_MAX)
+		{
+			p->requestInvalidationFilterParent();
+			break;
+		}	
+		p = p->getParent();
+	}
 }
 
 bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
@@ -580,10 +633,13 @@ void DisplayObject::setMatrix(_NR<Matrix> m)
 			mustInvalidate=true;
 		}
 	}
-	if(mustInvalidate && onStage)
+	if(mustInvalidate)
 	{
 		hasChanged=true;
-		requestInvalidation(getSystemState());
+		if (onStage)
+			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
 	}
 }
 
@@ -606,10 +662,13 @@ void DisplayObject::setMatrix3D(_NR<Matrix3D> m)
 		geometryChanged();
 		mustInvalidate=true;
 	}
-	if(mustInvalidate && onStage)
+	if(mustInvalidate)
 	{
 		hasChanged=true;
-		requestInvalidation(getSystemState());
+		if (onStage)
+			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
 	}
 }
 
@@ -635,10 +694,13 @@ void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 			mustInvalidate=true;
 		}
 	}
-	if(mustInvalidate && onStage)
+	if(mustInvalidate)
 	{
 		hasChanged=true;
-		requestInvalidation(getSystemState());
+		if (onStage)
+			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
 	}
 }
 
@@ -742,11 +804,13 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 		mask->ismask=true;
 	}
 
-	if(mustInvalidate && onStage)
+	if(mustInvalidate)
 	{
 		hasChanged=true;
-//		needsTextureRecalculation=true;
-		requestInvalidation(getSystemState());
+		if (onStage)
+			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
 	}
 }
 void DisplayObject::setBlendMode(UI8 blendmode)
@@ -998,6 +1062,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface.smoothing=d->getSmoothing();
 	cachedSurface.colortransform = d->getColorTransform();
 	cachedSurface.matrix=d->getMatrix();
+	cachedSurface.needsFilterRefresh=d->getNeedsFilterRefresh();
 	cachedSurface.isValid=true;
 	cachedSurface.isInitialized=true;
 	cachedSurface.wasUpdated=true;
@@ -1039,6 +1104,7 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 		if(getVm(getSystemState())==nullptr)
 			return;
 		changed = true;
+		this->requestInvalidationFilterParent();
 	}
 	if (force || changed)
 	{
@@ -1115,6 +1181,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 		th->setNeedsCachedBitmapRecalculation();
 		if(th->onStage)
 			th->requestInvalidation(wrk->getSystemState(),th->computeCacheAsBitmap());
+		else
+			th->requestInvalidationFilterParent();
+		
 	}
 }
 
@@ -1173,6 +1242,8 @@ void DisplayObject::setScaleX(number_t val)
 		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
 	}
 }
 
@@ -1205,6 +1276,8 @@ void DisplayObject::setScaleY(number_t val)
 		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
 	}
 }
 
@@ -1238,6 +1311,8 @@ void DisplayObject::setScaleZ(number_t val)
 		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
 	}
 }
 
@@ -1280,6 +1355,8 @@ void DisplayObject::setX(number_t val)
 		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
 	}
 }
 
@@ -1304,6 +1381,8 @@ void DisplayObject::setY(number_t val)
 		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
 	}
 }
 
@@ -1325,6 +1404,8 @@ void DisplayObject::setZ(number_t val)
 		geometryChanged();
 		if(onStage)
 			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
 	}
 }
 
@@ -1884,7 +1965,104 @@ void DisplayObject::applyFilters(BitmapContainer* target, BitmapContainer* sourc
 		}
 	}
 }
+void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
+{
+	// rendering of filters currently works as follows:
+	// - generate fbo
+	// - generate texture with window witdth/height as window size and set it as color attachment for fbo
+	// - render DisplayObject to texture
+	// - set texture as "g_tex4" in fragment shader
+	// - generate two more textures with window witdth/height as window size
+	// - for every step (blur, dropshadow...)
+	//   - set uniforms for step
+	//   - set one of the two textures as color attachment for fbo (use first generated texture in first step)
+	//   - render to texture 
+	//   - swap textures
+	// - remember resulting texture in cachedSurface.cachedFilterTextureID
+	
+	// TODO: we should render to a texture the size of the DisplayObject, not the size of the window
 
+	assert(hasFilters());
+
+	EngineData* engineData = getSystemState()->getEngineData();
+	if (cachedSurface.cachedFilterTextureID != UINT32_MAX) // remove previously used texture
+		getSystemState()->getRenderThread()->addDeletedTexture(cachedSurface.cachedFilterTextureID);
+	cachedSurface.cachedFilterTextureID = UINT32_MAX;
+	
+	// render filter source to texture
+	uint32_t filterTextureIDoriginal;
+	engineData->exec_glGenTextures(1, &filterTextureIDoriginal);
+	uint32_t filterframebuffer = engineData->exec_glGenFramebuffer();
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureIDoriginal);
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
+	uint32_t filterrenderbuffer = engineData->exec_glGenRenderbuffer();
+	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(filterrenderbuffer);
+	engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(w, h);
+	engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(filterrenderbuffer);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterTextureIDoriginal);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
+	engineData->exec_glViewport(0,0,w,h);
+	engineData->exec_glClearColor(0,0,0,0);
+	engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+	renderImpl(ctxt);
+	// bind rendered filter source to g_tex4
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
+	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(filterrenderbuffer);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_FILTER);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureIDoriginal);
+	
+	// apply all filter steps
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+	uint32_t filterTextureID1;
+	uint32_t filterTextureID2;
+	engineData->exec_glGenTextures(1, &filterTextureID1);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID1);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
+	engineData->exec_glGenTextures(1, &filterTextureID2);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID2);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
+	uint32_t texture1 = filterTextureIDoriginal;
+	uint32_t texture2 = filterTextureID2;
+	for (uint32_t i = 0; i < filters->size(); i++)
+	{
+		asAtom f = asAtomHandler::invalidAtom;
+		filters->at_nocheck(f,i);
+		if (asAtomHandler::is<BitmapFilter>(f))
+		{
+			float gradientcolors[256*4];
+			asAtomHandler::as<BitmapFilter>(f)->getRenderFilterGradientColors(gradientcolors);
+			float filterdata[FILTERDATA_MAXSIZE];
+			uint32_t step = 0;
+			while (true)
+			{
+				asAtomHandler::as<BitmapFilter>(f)->getRenderFilterArgs(step,filterdata);
+				if (filterdata[0] == 0)
+					break;
+				step++;
+				engineData->exec_glBindTexture_GL_TEXTURE_2D(texture1);
+				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(texture2);
+				engineData->exec_glClearColor(0,0,0,0);
+				engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+				
+				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,filterdata,gradientcolors);
+				if (texture1 == filterTextureIDoriginal)
+					texture1 = filterTextureID1;
+				std::swap(texture1,texture2);
+			}
+		}
+	}
+	
+	getSystemState()->getRenderThread()->resetCurrentFrameBuffer();
+	engineData->exec_glViewport(0,0,getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight);
+	engineData->exec_glDeleteFramebuffers(1,&filterframebuffer);
+	engineData->exec_glDeleteRenderbuffers(1,&filterrenderbuffer);
+	cachedSurface.cachedFilterTextureID=texture1;
+	engineData->exec_glDeleteTextures(1,&texture2);
+	engineData->exec_glDeleteTextures(1,&filterTextureIDoriginal);
+}
 void DisplayObject::invalidateCachedAsBitmapOf()
 {
 	if (!this->isVisible())
@@ -2604,6 +2782,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 		th->setNeedsCachedBitmapRecalculation();
 		if(th->onStage)
 			th->requestInvalidation(wrk->getSystemState());
+		else
+			th->requestInvalidationFilterParent();
 	}
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)

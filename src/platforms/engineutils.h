@@ -61,6 +61,7 @@ enum VERTEXBUFFER_FORMAT { BYTES_4=0, FLOAT_1, FLOAT_2, FLOAT_3, FLOAT_4 };
 enum CLEARMASK { COLOR = 0x1, DEPTH = 0x2, STENCIL = 0x4 };
 enum TEXTUREFORMAT { BGRA, BGRA_PACKED, BGR_PACKED, COMPRESSED, COMPRESSED_ALPHA, RGBA_HALF_FLOAT,BGR };
 enum TEXTUREFORMAT_COMPRESSED { UNCOMPRESSED, DXT5 };
+enum SAMPLEPOSITION { SAMPLEPOS_STANDARD=0,SAMPLEPOS_MASK=1,SAMPLEPOS_BLEND=2,SAMPLEPOS_FILTER=3 };
 
 // this is only used for font rendering in PPAPI plugin
 class externalFontRenderer : public IDrawable
@@ -217,6 +218,7 @@ public:
 	virtual void exec_glUniform1f(int location,float v0);
 	virtual void exec_glUniform2f(int location,float v0, float v1);
 	virtual void exec_glUniform4f(int location,float v0, float v1,float v2, float v3);
+	virtual void exec_glUniform1fv(int location,uint32_t size, float* v);
 	virtual void exec_glBindTexture_GL_TEXTURE_2D(uint32_t id);
 	virtual void exec_glVertexAttribPointer(uint32_t index, int32_t stride, const void* coords, VERTEXBUFFER_FORMAT format);
 	virtual void exec_glEnableVertexAttribArray(uint32_t index);
@@ -268,6 +270,8 @@ public:
 	virtual void exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(uint32_t depthStencilRenderBuffer);
 	virtual void exec_glDeleteTextures(int32_t n,uint32_t* textures);
 	virtual void exec_glDeleteBuffers(uint32_t size, uint32_t* buffers);
+	virtual void exec_glDeleteFramebuffers(uint32_t size,uint32_t* buffers);
+	virtual void exec_glDeleteRenderbuffers(uint32_t size,uint32_t* buffers);
 	virtual void exec_glBlendFunc(BLEND_FACTOR src, BLEND_FACTOR dst);
 	virtual void exec_glCullFace(TRIANGLE_FACE mode);
 	virtual void exec_glActiveTexture_GL_TEXTURE0(uint32_t textureindex);

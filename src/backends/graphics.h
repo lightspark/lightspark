@@ -162,7 +162,7 @@ class CachedSurface
 {
 public:
 	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0)
-		,blendmode(BLENDMODE_NORMAL),isMask(false),smoothing(SMOOTH_MODE::SMOOTH_ANTIALIAS),isChunkOwner(true),isValid(false),isInitialized(false),wasUpdated(false){}
+		,blendmode(BLENDMODE_NORMAL),isMask(false),smoothing(SMOOTH_MODE::SMOOTH_ANTIALIAS),isChunkOwner(true),isValid(false),isInitialized(false),wasUpdated(false),needsFilterRefresh(true),cachedFilterTextureID(UINT32_MAX) {}
 	~CachedSurface()
 	{
 		if (isChunkOwner && tex)
@@ -189,6 +189,9 @@ public:
 	bool isValid;
 	bool isInitialized;
 	bool wasUpdated;
+	volatile bool needsFilterRefresh;
+	uint32_t cachedFilterTextureID;
+	
 };
 
 
@@ -264,6 +267,7 @@ protected:
 	  The whole transformation matrix that is applied to the rendered object
 	*/
 	MATRIX matrix;
+	bool needsFilterRefresh;
 public:
 	IDrawable(float w, float h, float x, float y,
 		float rw, float rh, float rx, float ry, float r,
@@ -276,7 +280,7 @@ public:
 		masks(m),width(w),height(h),xOffset(x),yOffset(y),xOffsetTransformed(rx),yOffsetTransformed(ry),widthTransformed(rw),heightTransformed(rh),rotation(r),
 		alpha(a), xscale(xs), yscale(ys), xContentScale(xcs), yContentScale(ycs),
 		colortransform(_colortransform),
-		isMask(im),mask(_mask),smoothing(_smoothing), matrix(_m) {}
+		isMask(im),mask(_mask),smoothing(_smoothing), matrix(_m),needsFilterRefresh(true) {}
 	virtual ~IDrawable();
 	/*
 	 * This method returns a raster buffer of the image
@@ -309,6 +313,7 @@ public:
 	SMOOTH_MODE getSmoothing() const { return smoothing; }
 	const ColorTransformBase& getColorTransform() const { return colortransform; }
 	MATRIX& getMatrix() { return matrix; }
+	bool getNeedsFilterRefresh() const { return needsFilterRefresh; }
 };
 
 class AsyncDrawJob: public IThreadJob, public ITextureUploadable

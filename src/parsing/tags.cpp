@@ -721,7 +721,14 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 							, SMOOTH_MODE::SMOOTH_SUBPIXEL,0,0,false);
 				uint8_t* buf = r.getPixelBuffer();
 				CharacterRenderer* renderer = new CharacterRenderer(buf,abs(xmax),abs(ymax));
-				getSys()->getRenderThread()->addUploadJob(renderer);
+				//force creation of buffer if neccessary
+				renderer->upload(true);
+				//Get the texture to be sure it's allocated when the upload comes
+				renderer->getTexture();
+				uint32_t w,h;
+				renderer->sizeNeeded(w,h);
+				getSys()->getRenderThread()->loadChunkBGRA(renderer->getTexture(),w,h,buf);
+				renderer->uploadFence();
 				it = getGlyphShapes().at(i).scaledtexturecache.insert(make_pair(tokenscaling,renderer)).first;
 			}
 			return &(*it).second->getTexture();

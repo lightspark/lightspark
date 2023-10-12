@@ -91,11 +91,15 @@ protected:
 	int directUniform;
 	int directColorUniform;
 	int blendModeUniform;
+	int filterdataUniform;
+	int gradientcolorsUniform;
 	uint32_t maskframebuffer;
 	uint32_t maskTextureID;
 	uint32_t blendframebuffer;
+	uint32_t blendrenderbuffer;
 	uint32_t blendTextureID;
 	uint32_t currentFrameBufferID;
+	uint32_t currentRenderBufferID;
 
 	/* Textures */
 	Mutex mutexLargeTexture;
@@ -122,8 +126,6 @@ public:
 	{
 	}
 	void SetEngineData(EngineData* data) { engineData = data;}
-	uint32_t getCurrentFramebufferID() const { return currentFrameBufferID; }
-	void setCurrentFramebufferID(uint32_t id) { currentFrameBufferID = id; }
 	void lsglOrtho(float l, float r, float b, float t, float n, float f);
 
 	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
@@ -135,6 +137,7 @@ public:
 	 * In the OpenGL case we just get the CachedSurface inside the object itself
 	 */
 	const CachedSurface& getCachedSurface(const DisplayObject* obj) const override;
+	void resetCurrentFrameBuffer();
 
 	/* Utility */
 	bool handleGLErrors() const;

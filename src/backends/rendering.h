@@ -28,6 +28,8 @@
 #	include <windef.h>
 #endif
 
+#define FILTERDATA_MAXSIZE 256
+
 namespace lightspark
 {
 class ThreadProfile;
@@ -44,12 +46,12 @@ private:
 
 	static int worker(void* d);
 
-	void commonGLInit(int width, int height);
+	void commonGLInit();
 	void commonGLResize();
 	void commonGLDeinit();
 	ITextureUploadable* prevUploadJob;
 	uint32_t allocateNewGLTexture() const;
-	LargeTexture& allocateNewTexture();
+	LargeTexture& allocateNewTexture(bool direct);
 	bool allocateChunkOnTextureCompact(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
 	bool allocateChunkOnTextureSparse(LargeTexture& tex, TextureChunk& ret, uint32_t blocksW, uint32_t blocksH);
 	//Possible events to be handled
@@ -99,6 +101,7 @@ private:
 		_NR<DisplayObject> displayobject;
 	};
 	std::list<refreshableSurface> surfacesToRefresh;
+	std::list<uint32_t> texturesToDelete;
 public:
 	Mutex mutexRendering;
 	volatile bool screenshotneeded;
@@ -147,8 +150,9 @@ public:
 	}
 	/**
 		Allocates a chunk from the shared texture
+		if direct is true, the openGL texture is generated directly. this can only be used inside the render thread
 	*/
-	TextureChunk allocateTexture(uint32_t w, uint32_t h, bool compact);
+	TextureChunk allocateTexture(uint32_t w, uint32_t h, bool compact, bool direct=false);
 	/**
 		Release texture
 	*/
@@ -181,6 +185,7 @@ public:
 	void renderSettingsPage();
 	void beginBlendTexture();
 	void endBlendTexture();
+	void renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors);
 	cairo_t *cairoTextureContextSettings;
 	cairo_surface_t *cairoTextureSurfaceSettings;
 	uint8_t *cairoTextureDataSettings;
@@ -195,6 +200,11 @@ public:
 	void mapCairoTexture(int w, int h, bool forsettings=false);
 	void renderText(cairo_t *cr, const char *text, int x, int y);
 	void waitRendering();
+	void addDeletedTexture(uint32_t textureID)
+	{
+		Locker l(mutexRendering);
+		texturesToDelete.push_back(textureID);
+	}
 };
 
 RenderThread* getRenderThread();

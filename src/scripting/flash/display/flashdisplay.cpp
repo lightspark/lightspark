@@ -1316,6 +1316,7 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 		if (forceTextureRefresh)
 			setNeedsTextureRecalculation();
 		q->addToInvalidateQueue(_MR(this));
+		requestInvalidationFilterParent();
 	}
 }
 
@@ -3355,7 +3356,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    " (" << pos.x << "," << pos.y << ") " <<
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
-		    ((*it)->isMask() ? "m" : "") << " cd=" <<(*it)->ClipDepth<<" ca=" <<(*it)->computeCacheAsBitmap()<<"/"<<(*it)->cachedAsBitmapOf<<" "<<
+		    ((*it)->isMask() ? "m" : "") <<((*it)->hasFilters() ? "f" : "") << " cd=" <<(*it)->ClipDepth<<" ca=" <<(*it)->computeCacheAsBitmap()<<"/"<<(*it)->cachedAsBitmapOf<<" "<<
 			"a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'");
 
 		if ((*it)->is<DisplayObjectContainer>())
@@ -4325,7 +4326,7 @@ bool Stage::renderImpl(RenderContext &ctxt)
 	if (has3d)
 	{
 		// setup opengl state for additional 2d rendering
-		getSystemState()->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(0);
+		getSystemState()->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 		getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 		getSystemState()->getEngineData()->exec_glUseProgram(((RenderThread&)ctxt).gpu_program);
 		((GLRenderContext&)ctxt).lsglLoadIdentity();
@@ -5433,6 +5434,7 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 	incRef();
 	// texture recalculation is never needed for bitmaps
 	resetNeedsTextureRecalculation();
+	requestInvalidationFilterParent();
 	q->addToInvalidateQueue(_MR(this));
 }
 
@@ -6048,6 +6050,7 @@ void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefr
 		incRef();
 		q->addToInvalidateQueue(_MR(this));
 	}
+	requestInvalidationFilterParent();
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 }
 

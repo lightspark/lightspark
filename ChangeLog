@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* implement filters as glsl shaders
 	* implement rendering with extended Blendmodes OVERLAY and HARDLIGHT
 	* improved support for flash.text.textengine package
 

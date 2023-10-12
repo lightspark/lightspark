@@ -126,12 +126,20 @@ const CachedSurface& GLRenderContext::getCachedSurface(const DisplayObject* d) c
 	return d->cachedSurface;
 }
 
+void GLRenderContext::resetCurrentFrameBuffer()
+{
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(currentFrameBufferID);
+	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(currentRenderBufferID);
+}
+
 void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 									 const ColorTransformBase& colortransform,
 									 bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
 									 AS_BLENDMODE blendmode)
 {
 	engineData->exec_glUniform1f(blendModeUniform, blendmode == BLENDMODE_NORMAL ? this->currentShaderBlendMode : BLENDMODE_NORMAL);
+	float empty=0;
+	engineData->exec_glUniform1fv(filterdataUniform, 1, &empty);
 	switch (blendmode)
 	{
 		case BLENDMODE_NORMAL:
@@ -264,7 +272,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 		renderpart(matrix,chunk,0,0,chunk.width,chunk.height,chunk.xOffset/chunk.xContentScale,chunk.yOffset/chunk.yContentScale);
 
 	if (isMask)
-		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(currentFrameBufferID);
+		resetCurrentFrameBuffer();
 
 	if (smooth != SMOOTH_MODE::SMOOTH_NONE)
 	{
@@ -407,7 +415,7 @@ bool GLRenderContext::handleGLErrors() const
 		if(engineData && engineData->getGLError(err))
 		{
 			errorCount++;
-			LOG(LOG_ERROR,"GL error "<< err);
+			LOG(LOG_ERROR,"GL error "<< hex<<err);
 		}
 		else
 			break;

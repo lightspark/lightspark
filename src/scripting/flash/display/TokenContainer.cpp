@@ -361,7 +361,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			nvgClosePath(nvgctxt);
 			nvgEndFrame(nvgctxt);
 			sys->getEngineData()->exec_glStencilFunc_GL_ALWAYS();
-			sys->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(0);
+			sys->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 			sys->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 			sys->getEngineData()->exec_glUseProgram(((RenderThread&)ctxt).gpu_program);
 			((GLRenderContext&)ctxt).lsglLoadIdentity();
@@ -559,6 +559,8 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 		if(tokens.empty() || owner->skipRender())
 			return;
 	}
+	owner->requestInvalidationFilterParent();
+	
 	if (owner->requestInvalidationForCacheAsBitmap(q))
 		return;
 	owner->incRef();
@@ -645,6 +647,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& !owner->computeCacheAsBitmap()
 			&& isSupportedGLBlendMode(owner->getBlendMode())
 			&& !r
+			&& !owner->getSystemState()->stage->renderToTextureCount
 			)
 		{
 			currentcolortransform = ct;

@@ -159,6 +159,8 @@ public:
 		removeAVM1Listeners();
 	}
 	void applyFilters(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley);
+	void renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h);
+	
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
@@ -181,10 +183,9 @@ public:
 	// this is set to true for DisplayObjects that are placed from a tag
 	bool legacy;
 	bool markedForLegacyDeletion;
-	/**
-	 * cacheAsBitmap is true also if any filter is used
-	 */
 	bool computeCacheAsBitmap(bool checksize=true);
+	bool hasFilters() const;
+	void requestInvalidationFilterParent();
 	bool requestInvalidationForCacheAsBitmap(InvalidateQueue* q);
 	void computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, _NR<DisplayObject>& mask, number_t& alpha) const;
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);

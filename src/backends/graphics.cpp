@@ -1223,6 +1223,7 @@ TextureChunk& AsyncDrawJob::getTexture()
 		surface.smoothing = drawable->getSmoothing();
 		surface.colortransform = drawable->getColorTransform();
 		surface.matrix=drawable->getMatrix();
+		surface.needsFilterRefresh=drawable->getNeedsFilterRefresh();
 		surface.isValid=true;
 		surface.isInitialized=true;
 	}
@@ -1311,7 +1312,7 @@ uint8_t* CharacterRenderer::upload(bool refresh)
 TextureChunk& CharacterRenderer::getTexture()
 {
 	if(!chunk.resizeIfLargeEnough(width, height))
-		chunk=getSys()->getRenderThread()->allocateTexture(width, height,false);
+		chunk=getSys()->getRenderThread()->allocateTexture(width, height,false,true);
 	return chunk;
 }
 

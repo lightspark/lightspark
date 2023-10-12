@@ -237,6 +237,7 @@ public:
 	void exec_glUniform1f(int location,float v0) override;
 	void exec_glUniform2f(int location,float v0, float v1) override;
 	void exec_glUniform4f(int location,float v0, float v1, float v2, float v3) override;
+	void exec_glUniform1fv(int location,uint32_t size, float* v) override;
 	void exec_glBindTexture_GL_TEXTURE_2D(uint32_t id) override;
 	void exec_glVertexAttribPointer(uint32_t index, int32_t stride, const void* coords, VERTEXBUFFER_FORMAT format) override;
 	void exec_glEnableVertexAttribArray(uint32_t index) override;
@@ -288,6 +289,8 @@ public:
 	void exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(uint32_t depthStencilRenderBuffer) override;
 	void exec_glDeleteTextures(int32_t n,uint32_t* textures) override;
 	void exec_glDeleteBuffers(uint32_t size, uint32_t* buffers) override;
+	void exec_glDeleteFramebuffers(uint32_t size, uint32_t* buffers) override;
+	void exec_glDeleteRenderbuffers(uint32_t size, uint32_t* buffers) override;
 	void exec_glBlendFunc(BLEND_FACTOR src, BLEND_FACTOR dst) override;
 	void exec_glCullFace(TRIANGLE_FACE mode) override;
 	void exec_glActiveTexture_GL_TEXTURE0(uint32_t textureindex) override;

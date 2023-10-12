@@ -18,6 +18,15 @@
 **************************************************************************/
 
 #include "scripting/flash/filters/flashfilters.h"
+#include "scripting/flash/filters/BevelFilter.h"
+#include "scripting/flash/filters/BlurFilter.h"
+#include "scripting/flash/filters/ColorMatrixFilter.h"
+#include "scripting/flash/filters/ConvolutionFilter.h"
+#include "scripting/flash/filters/DisplacementMapFilter.h"
+#include "scripting/flash/filters/DropShadowFilter.h"
+#include "scripting/flash/filters/GlowFilter.h"
+#include "scripting/flash/filters/GradientBevelFilter.h"
+#include "scripting/flash/filters/GradientGlowFilter.h"
 
 #include "scripting/class.h"
 #include "scripting/abc.h"

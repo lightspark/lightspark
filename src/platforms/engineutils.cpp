@@ -810,6 +810,11 @@ void EngineData::exec_glUniform4f(int location,float v0,float v1,float v2,float 
 	glUniform4f(location,v0,v1,v2,v3);
 }
 
+void EngineData::exec_glUniform1fv(int location, uint32_t size, float* v)
+{
+	glUniform1fv(location,size,v);
+}
+
 void EngineData::exec_glBindTexture_GL_TEXTURE_2D(uint32_t id)
 {
 	glBindTexture(GL_TEXTURE_2D, id);
@@ -1100,6 +1105,16 @@ void EngineData::exec_glDeleteTextures(int32_t n,uint32_t* textures)
 void EngineData::exec_glDeleteBuffers(uint32_t size, uint32_t* buffers)
 {
 	glDeleteBuffers(size,buffers);
+}
+
+void EngineData::exec_glDeleteFramebuffers(uint32_t size, uint32_t* buffers)
+{
+	glDeleteFramebuffers(size,buffers);
+}
+
+void EngineData::exec_glDeleteRenderbuffers(uint32_t size, uint32_t* buffers)
+{
+	glDeleteRenderbuffers(size,buffers);
 }
 
 void EngineData::exec_glBlendFunc(BLEND_FACTOR src, BLEND_FACTOR dst)

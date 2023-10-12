@@ -141,7 +141,7 @@ void RenderThread::init()
 	windowHeight=engineData->height;
 
 	engineData->InitOpenGL();
-	commonGLInit(windowWidth, windowHeight);
+	commonGLInit();
 	commonGLResize();
 	
 }
@@ -394,16 +394,37 @@ void RenderThread::renderSettingsPage()
 void RenderThread::beginBlendTexture()
 {
 	currentFrameBufferID=blendframebuffer;
+	currentRenderBufferID=blendrenderbuffer;
 
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(blendframebuffer);
 	RGB bg=m_sys->mainClip->getBackground();
 	engineData->exec_glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
-	engineData->exec_glClear_GL_COLOR_BUFFER_BIT();
+	engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
 	
 }
 void RenderThread::endBlendTexture()
 {
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(0);
+
+	// render blended texture to framebuffer
+	renderTextureToFrameBuffer(blendTextureID,windowWidth,windowHeight,nullptr,nullptr);
+
+	currentFrameBufferID=0;
+	currentRenderBufferID=0;
+}
+
+void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors)
+{
+	if (filterdata)
+		engineData->exec_glUniform1fv(filterdataUniform, FILTERDATA_MAXSIZE, filterdata);
+	else
+	{
+		float empty=0;
+		engineData->exec_glUniform1fv(filterdataUniform, 1, &empty);
+	}
+	if (gradientcolors)
+		engineData->exec_glUniform4fv(gradientcolorsUniform, 256, gradientcolors);
 
 	engineData->exec_glUniform1f(blendModeUniform, AS_BLENDMODE::BLENDMODE_NORMAL);
 	engineData->exec_glUniform1f(yuvUniform, 0);
@@ -411,18 +432,17 @@ void RenderThread::endBlendTexture()
 	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
 	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
 	engineData->exec_glUniform1f(directUniform, 0.0);
-	
-	// render blended texture to framebuffer
 
 	lsglLoadIdentity();
 	lsglScalef(1.0f,-1.0f,1);
 	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
 	setMatrixUniform(LSGL_MODELVIEW);
 
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(blendTextureID);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID);
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-	float vertex_coords[] = {0,0, float(windowWidth),0, 0,float(windowHeight), float(windowWidth),float(windowHeight)};
+	float vertex_coords[] = {0,0, float(w),0, 0,float(h), float(w),float(h)};
 	float texture_coords[] = {0,0, 1,0, 0,1, 1,1};
 	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, vertex_coords,FLOAT_2);
 	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 0, texture_coords,FLOAT_2);
@@ -432,8 +452,6 @@ void RenderThread::endBlendTexture()
 	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glDisableVertexAttribArray(TEXCOORD_ATTRIB);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
-
-	currentFrameBufferID=0;
 }
 void RenderThread::generateScreenshot()
 {
@@ -568,7 +586,7 @@ void RenderThread::commonGLDeinit()
 	engineData->exec_glDeleteTextures(1, &blendTextureID);
 }
 
-void RenderThread::commonGLInit(int width, int height)
+void RenderThread::commonGLInit()
 {
 	//Load shaders
 	loadShaderPrograms();
@@ -578,7 +596,7 @@ void RenderThread::commonGLInit(int width, int height)
 	engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 	engineData->exec_glEnable_GL_BLEND();
 
-	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 	//Viewport setup is left for GLResize
 
 	//Get the maximum allowed texture size, up to 8192
@@ -591,15 +609,20 @@ void RenderThread::commonGLInit(int width, int height)
 	engineData->exec_glUseProgram(gpu_program);
 	int tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex1");
 	if(tex!=-1)
-		engineData->exec_glUniform1i(tex,0);
+		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex2");
 	if(tex!=-1)
-		engineData->exec_glUniform1i(tex,1);
+		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_MASK);
 
 	// uniform for textures used for blending 
 	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex3");
 	if(tex!=-1)
-		engineData->exec_glUniform1i(tex,2);
+		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_BLEND);
+
+	// uniform for textures used for filtering 
+	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex4");
+	if(tex!=-1)
+		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_FILTER);
 	
 	//The uniform that enables YUV->RGB transform on the texels (needed for video)
 	yuvUniform =engineData->exec_glGetUniformLocation(gpu_program,"yuv");
@@ -617,6 +640,8 @@ void RenderThread::commonGLInit(int width, int height)
 	colortransAddUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformAdd");
 	directColorUniform=engineData->exec_glGetUniformLocation(gpu_program,"directColor");
 	blendModeUniform=engineData->exec_glGetUniformLocation(gpu_program,"blendMode");
+	filterdataUniform = engineData->exec_glGetUniformLocation(gpu_program,"filterdata");
+	gradientcolorsUniform = engineData->exec_glGetUniformLocation(gpu_program,"gradientcolors");
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	engineData->exec_glEnable_GL_TEXTURE_2D();
@@ -630,9 +655,11 @@ void RenderThread::commonGLInit(int width, int height)
 
 	// create framebuffer for blending
 	blendframebuffer = engineData->exec_glGenFramebuffer();
+	blendrenderbuffer = engineData->exec_glGenRenderbuffer();
 	engineData->exec_glGenTextures(1, &blendTextureID);
 
 	currentFrameBufferID=0;
+	currentRenderBufferID=0;
 
 	if(handleGLErrors())
 	{
@@ -663,7 +690,7 @@ void RenderThread::commonGLResize()
 	setMatrixUniform(LSGL_PROJECTION);
 
 	// setup mask framebuffer
-	engineData->exec_glActiveTexture_GL_TEXTURE0(1);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_MASK);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(maskTextureID);
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(maskframebuffer);
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
@@ -672,27 +699,30 @@ void RenderThread::commonGLResize()
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
 	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
-	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 	engineData->exec_glDisable_GL_DEPTH_TEST();
 	engineData->exec_glDisable_GL_STENCIL_TEST();
 
 	// setup blend framebuffer
-	engineData->exec_glActiveTexture_GL_TEXTURE0(2);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_BLEND);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(blendTextureID);
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(blendframebuffer);
+	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(blendrenderbuffer);
+	engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(windowWidth, windowHeight);
+	engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(blendrenderbuffer);
+	
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(blendTextureID);
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
 	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
-
-
-	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
-	engineData->exec_glActiveTexture_GL_TEXTURE0(0);
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 	engineData->exec_glDisable_GL_DEPTH_TEST();
 	engineData->exec_glDisable_GL_STENCIL_TEST();
+
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 }
 
 void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
@@ -849,7 +879,7 @@ bool RenderThread::coreRendering()
 		//Clear the back buffer
 		RGB bg=m_sys->mainClip->getBackground();
 		engineData->exec_glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
-		engineData->exec_glClear_GL_COLOR_BUFFER_BIT();
+		engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
 	}
 	engineData->exec_glUseProgram(gpu_program);
 	lsglLoadIdentity();
@@ -860,6 +890,12 @@ bool RenderThread::coreRendering()
 	if(m_sys->showProfilingData)
 		plotProfilingData();
 
+	while (!texturesToDelete.empty())
+	{
+		uint32_t id = texturesToDelete.front();
+		engineData->exec_glDeleteTextures(1,&id);
+		texturesToDelete.pop_front();
+	}
 	handleGLErrors();
 	return ret;
 }
@@ -1018,15 +1054,20 @@ uint32_t RenderThread::allocateNewGLTexture() const
 	return tmp;
 }
 
-RenderThread::LargeTexture& RenderThread::allocateNewTexture()
+RenderThread::LargeTexture& RenderThread::allocateNewTexture(bool direct)
 {
-	//Signal that a new texture is needed
-	newTextureNeeded=true;
+	if (!direct)
+	{
+		//Signal that a new texture is needed
+		newTextureNeeded=true;
+	}
 	//Let's allocate the bitmap for the texture blocks, minumum block size is CHUNKSIZE
 	uint32_t bitmapSize=(largeTextureSize/CHUNKSIZE)*(largeTextureSize/CHUNKSIZE)/8;
 	uint8_t* bitmap=new uint8_t[bitmapSize];
 	memset(bitmap,0,bitmapSize);
 	largeTextures.emplace_back(bitmap);
+	if (direct)
+		handleNewTexture();
 	return largeTextures.back();
 }
 
@@ -1116,7 +1157,7 @@ bool RenderThread::allocateChunkOnTextureSparse(LargeTexture& tex, TextureChunk&
 	}
 }
 
-TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
+TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact, bool direct)
 {
 	assert(w && h);
 	Locker l(mutexLargeTexture);
@@ -1146,7 +1187,7 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact)
 		}
 	}
 	//No place found, allocate a new one and try on that
-	LargeTexture& tex=allocateNewTexture();
+	LargeTexture& tex=allocateNewTexture(direct);
 	bool done;
 	if(compact)
 		done=allocateChunkOnTextureCompact(tex, ret, blocksW, blocksH);

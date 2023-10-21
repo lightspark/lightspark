@@ -4843,17 +4843,16 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 		}
 		avm1listenerMutex.lock();
 		vector<ASObject*> tmplisteners = avm1KeyboardListeners;
+		for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
+			(*it)->incRef();
 		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
+		bool handled = false;
 		auto it = tmplisteners.rbegin();
 		while (it != tmplisteners.rend())
 		{
-			(*it)->incRef();
-			if ((*it)->AVM1HandleKeyboardEvent(e->as<KeyboardEvent>()))
-			{
-				(*it)->decRef();
-				break;
-			}
+			if (!handled && (*it)->AVM1HandleKeyboardEvent(e->as<KeyboardEvent>()))
+				handled=true;
 			(*it)->decRef();
 			it++;
 		}
@@ -4862,12 +4861,13 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 	{
 		avm1listenerMutex.lock();
 		vector<ASObject*> tmplisteners = avm1MouseListeners;
+		for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
+			(*it)->incRef();
 		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
 		auto it = tmplisteners.rbegin();
 		while (it != tmplisteners.rend())
 		{
-			(*it)->incRef();
 			(*it)->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
 			(*it)->decRef();
 			it++;
@@ -4891,12 +4891,13 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 		{
 			avm1listenerMutex.lock();
 			vector<ASObject*> tmplisteners = avm1ResizeListeners;
+			for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
+				(*it)->incRef();
 			avm1listenerMutex.unlock();
 			// eventhandlers may change the listener list, so we work on a copy
 			auto it = tmplisteners.rbegin();
 			while (it != tmplisteners.rend())
 			{
-				(*it)->incRef();
 				asAtom func=asAtomHandler::invalidAtom;
 				multiname m(nullptr);
 				m.name_type=multiname::NAME_STRING;

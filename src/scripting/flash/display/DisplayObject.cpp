@@ -1227,7 +1227,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setMask)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleX)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->sx);
+	asAtomHandler::setNumber(ret,wrk,std::abs(th->sx));
 }
 
 void DisplayObject::setScaleX(number_t val)
@@ -1261,7 +1261,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleX)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleY)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->sy);
+	asAtomHandler::setNumber(ret,wrk,std::abs(th->sy));
 }
 
 void DisplayObject::setScaleY(number_t val)
@@ -1295,7 +1295,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleY)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleZ)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->sz);
+	asAtomHandler::setNumber(ret,wrk,std::abs(th->sz));
 }
 
 void DisplayObject::setScaleZ(number_t val)

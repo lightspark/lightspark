@@ -1014,10 +1014,12 @@ public:
 	DisplayObject* getCachedBitmapOwner() const { return cachedBitmapOwner; }
 };
 
-class AVM1Movie: public DisplayObject
+// AVM1Movie is derived from DisplayObjectContainer, but to ActionScript it behaves as a DisplayObject (wimilar to how we handle SimpleButtons)
+// Its only child is the RootMovieClip of the loaded AVM1 swf file
+class AVM1Movie: public DisplayObjectContainer
 {
 public:
-	AVM1Movie(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c){}
+	AVM1Movie(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 };

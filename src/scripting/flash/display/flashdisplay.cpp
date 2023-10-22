@@ -958,9 +958,19 @@ void Loader::setContent(DisplayObject* o)
 
 	{
 		Locker l(spinlock);
-		o->incRef();
-		o->addStoredMember();
-		content=o;
+		if (o->is<RootMovieClip>() && o != getSystemState()->mainClip && !o->as<RootMovieClip>()->usesActionScript3)
+		{
+			AVM1Movie* m = Class<AVM1Movie>::getInstanceS(getInstanceWorker());
+			m->_addChildAt(o,0);
+			m->addStoredMember();
+			content = m;
+		}
+		else
+		{
+			o->incRef();
+			o->addStoredMember();
+			content=o;
+		}
 		content->isLoadedRoot = true;
 		loaded=true;
 	}
@@ -4267,7 +4277,7 @@ void Stage::onColorCorrection(const tiny_string& oldValue)
 void Stage::onFullScreenSourceRect(_NR<Rectangle> /*oldValue*/)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Stage.fullScreenSourceRect");
-	fullScreenSourceRect.reset();
+	//fullScreenSourceRect.reset();
 }
 
 void Stage::defaultEventBehavior(_R<Event> e)

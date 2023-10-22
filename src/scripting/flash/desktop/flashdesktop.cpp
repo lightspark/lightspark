@@ -24,6 +24,8 @@
 #include "scripting/argconv.h"
 #include "scripting/flash/filesystem/flashfilesystem.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/toplevel/XML.h"
+#include "platforms/engineutils.h"
 
 using namespace std;
 using namespace lightspark;
@@ -32,11 +34,8 @@ void NativeApplication::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("nativeApplication", "", Class<IFunction>::getFunction(c->getSystemState(),_getNativeApplication), GETTER_METHOD, false);
+	c->setDeclaredMethodByQName("applicationDescriptor", "", Class<IFunction>::getFunction(c->getSystemState(),_getApplicationDescriptor), GETTER_METHOD, true);
 	c->setDeclaredMethodByQName("addEventListener", "", Class<IFunction>::getFunction(c->getSystemState(),addEventListener), NORMAL_METHOD, true);
-}
-
-void NativeApplication::buildTraits(ASObject* o)
-{
 }
 
 ASFUNCTIONBODY_ATOM(NativeApplication,_constructor)
@@ -48,6 +47,17 @@ ASFUNCTIONBODY_ATOM(NativeApplication,_constructor)
 ASFUNCTIONBODY_ATOM(NativeApplication, _getNativeApplication)
 {
 	ret = asAtomHandler::fromObject(Class<NativeApplication>::getInstanceS(wrk));
+}
+ASFUNCTIONBODY_ATOM(NativeApplication, _getApplicationDescriptor)
+{
+	tiny_string xmlstr;
+	if (wrk->getSystemState()->getEngineData()->getAIRApplicationDescriptor(wrk->getSystemState(),xmlstr))
+	{
+		XML* dsc = Class<XML>::getInstanceS(wrk,xmlstr);
+		ret = asAtomHandler::fromObject(dsc);
+	}
+	else
+		ret = asAtomHandler::undefinedAtom;
 }
 
 ASFUNCTIONBODY_ATOM(NativeApplication, addEventListener)

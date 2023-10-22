@@ -43,6 +43,7 @@ class Responder;
 class GameInputDevice;
 class DefineSpriteTag;
 class ByteArray;
+class Rectangle;
 
 class Event: public ASObject
 {
@@ -281,6 +282,20 @@ public:
 	
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
+};
+
+class NativeWindowBoundsEvent: public Event
+{
+public:
+	NativeWindowBoundsEvent(ASWorker* wrk, Class_base* c);
+	NativeWindowBoundsEvent(ASWorker* wrk, Class_base* c, const tiny_string& t, NullableRef<Rectangle> _beforeBounds, NullableRef<Rectangle> _afterBounds);
+	
+	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_toString);
+	ASPROPERTY_GETTER(_NR<Rectangle>,afterBounds);
+	ASPROPERTY_GETTER(_NR<Rectangle>,beforeBounds);
+	Event* cloneImpl() const override;
 };
 
 class InvokeEvent: public Event

@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/class.h"
+#include "scripting/flash/geom/flashgeom.h"
 #include "parsing/textfile.h"
 #include "backends/rendering.h"
 #include "backends/input.h"
@@ -750,6 +751,20 @@ void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 	resizeNeeded=true;
 	m_sys->stage->incRef();
 	getVm(m_sys)->addEvent(_MR(m_sys->stage),_MR(Class<Event>::getInstanceS(m_sys->worker,"resize")));
+	if (m_sys->stage->nativeWindow)
+	{
+		Rectangle *rectBefore=Class<Rectangle>::getInstanceS(m_sys->worker);
+		rectBefore->x = m_sys->getEngineData()->old_x;
+		rectBefore->y = m_sys->getEngineData()->old_y;
+		rectBefore->width = m_sys->getEngineData()->old_width;
+		rectBefore->height = m_sys->getEngineData()->old_height;
+		Rectangle *rectAfter=Class<Rectangle>::getInstanceS(m_sys->worker);
+		rectAfter->x = m_sys->getEngineData()->x;
+		rectAfter->y = m_sys->getEngineData()->y;
+		rectAfter->width = newWidth;
+		rectAfter->height = newHeight;
+		getVm(m_sys)->addEvent(_MR(m_sys->stage->nativeWindow),_MR(Class<NativeWindowBoundsEvent>::getInstanceS(m_sys->worker,"resizing",_MR(rectBefore),_MR(rectAfter))));
+	}
 	
 	event.signal();
 }

@@ -67,5 +67,6 @@ void ABCVm::registerClassesFlashEvents(Global* builtin)
 	{
 		builtin->registerBuiltin("InvokeEvent","flash.events",Class<InvokeEvent>::getRef(m_sys));
 		builtin->registerBuiltin("NativeDragEvent","flash.events",Class<NativeDragEvent>::getRef(m_sys));
+		builtin->registerBuiltin("NativeWindowBoundsEvent","flash.events",Class<NativeWindowBoundsEvent>::getRef(m_sys));
 	}
 }

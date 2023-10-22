@@ -27,6 +27,7 @@
 #include "scripting/flash/ui/gameinput.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/net/flashnet.h"
 
@@ -559,6 +560,66 @@ ASFUNCTIONBODY_ATOM(NativeDragEvent,_constructor)
 	LOG(LOG_NOT_IMPLEMENTED,"NativeDragEvent: constructor");
 }
 
+NativeWindowBoundsEvent::NativeWindowBoundsEvent(ASWorker* wrk, Class_base* c) : Event(wrk,c, "")
+{
+	
+}
+
+NativeWindowBoundsEvent::NativeWindowBoundsEvent(ASWorker* wrk, Class_base* c, const tiny_string& t, _NR<Rectangle> _beforeBounds, _NR<Rectangle> _afterBounds)
+ : Event(wrk,c,t),afterBounds(_afterBounds),beforeBounds(_beforeBounds)
+{
+}
+
+void NativeWindowBoundsEvent::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
+	c->setVariableAtomByQName("MOVE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"move"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MOVING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"moving"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RESIZE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"resize"),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RESIZING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"resizing"),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	
+	REGISTER_GETTER(c,afterBounds);
+	REGISTER_GETTER(c,beforeBounds);
+}
+
+Event* NativeWindowBoundsEvent::cloneImpl() const
+{
+	return Class<NativeWindowBoundsEvent>::getInstanceS(getInstanceWorker(),type, beforeBounds,afterBounds);
+}
+
+ASFUNCTIONBODY_GETTER(NativeWindowBoundsEvent,afterBounds)
+ASFUNCTIONBODY_GETTER(NativeWindowBoundsEvent,beforeBounds)
+
+ASFUNCTIONBODY_ATOM(NativeWindowBoundsEvent,_constructor)
+{
+	NativeWindowBoundsEvent* th=asAtomHandler::as<NativeWindowBoundsEvent>(obj);
+	ARG_CHECK(ARG_UNPACK(th->type)(th->bubbles, false)(th->cancelable, false)(th->beforeBounds,NullRef)(th->afterBounds,NullRef));
+
+}
+ASFUNCTIONBODY_ATOM(NativeWindowBoundsEvent,_toString)
+{
+	NativeWindowBoundsEvent* th=asAtomHandler::as<NativeWindowBoundsEvent>(obj);
+	tiny_string res = "[NativeWindowBoundsEvent type=";
+	res += th->type;
+	res += " bubbles=";
+	res += th->bubbles ? "true" : "false";
+	res += " cancelable=";
+	res += th->cancelable ? "true" : "false";
+	res += " previousDisplayState=";
+	if (th->beforeBounds)
+		res += th->beforeBounds->toString();
+	else
+		res += "null";
+	res += " currentDisplayState=";
+	if (th->afterBounds)
+		res += th->afterBounds->toString();
+	else
+		res += "null";
+	res += "]";
+	ret = asAtomHandler::fromString(wrk->getSystemState(),res);
+}
+		
 IOErrorEvent::IOErrorEvent(ASWorker* wrk, Class_base* c, const tiny_string& t, const std::string& e, int id) : ErrorEvent(wrk,c, t,e,id)
 {
 }

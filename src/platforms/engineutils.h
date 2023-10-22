@@ -109,8 +109,14 @@ public:
 	NVGcontext* nvgcontext;
 	static uint32_t userevent;
 	static SDL_Thread* mainLoopThread;
+	int x;
+	int y;
 	uint32_t width;
 	uint32_t height;
+	int old_x;
+	int old_y;
+	uint32_t old_width;
+	uint32_t old_height;
 	uint32_t origwidth;
 	uint32_t origheight;
 	bool needrenderthread;
@@ -206,6 +212,8 @@ public:
 	virtual void setClipboardText(const std::string txt);
 	virtual bool getScreenData(SDL_DisplayMode* screen) = 0;
 	virtual double getScreenDPI() = 0;
+	virtual void setWindowPosition(int x, int y, uint32_t width, uint32_t height) {}
+	virtual bool getAIRApplicationDescriptor(SystemState* sys,tiny_string& xmlstring) { return false;}
 	virtual StreamCache* createFileStreamCache(SystemState *sys);
 	
 	// OpenGL methods

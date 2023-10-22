@@ -25,9 +25,9 @@
 
 namespace lightspark
 {
+class Rectangle;
 class NativeWindow: public EventDispatcher
 {
-public:
 public:
 	NativeWindow(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
@@ -36,6 +36,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, height);
 	ASPROPERTY_GETTER_SETTER(number_t, x);
 	ASPROPERTY_GETTER_SETTER(number_t, y);
+	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>, bounds);
 };
 }
 

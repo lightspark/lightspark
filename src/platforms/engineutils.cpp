@@ -33,6 +33,7 @@
 #include "scripting/flash/events/flashevents.h"
 #include "flash/display/NativeMenuItem.h"
 #include "flash/utils/ByteArray.h"
+#include "flash/geom/flashgeom.h"
 #include <glib/gstdio.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -138,8 +139,43 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 				{
 					case SDL_WINDOWEVENT_RESIZED:
 					case SDL_WINDOWEVENT_SIZE_CHANGED:
-						if (sys && (!sys->getEngineData() || !sys->getEngineData()->inFullScreenMode()) &&  sys->getRenderThread())
+						if (sys && (!sys->getEngineData() || !sys->getEngineData()->inFullScreenMode()) && sys->getRenderThread())
 							sys->getRenderThread()->requestResize(event->window.data1,event->window.data2,false);
+						break;
+					case SDL_WINDOWEVENT_MOVED:
+						// TODO there doesn't seem to be a way to detect the starting of window movement in SDL, so for now we emit "moving" and "moved" events for every SDL_WINDOWEVENT_MOVED
+						sys->getEngineData()->x = event->window.data1;
+						sys->getEngineData()->y = event->window.data2;
+						if (sys && getVm(sys) && sys->stage->nativeWindow)
+						{
+							Rectangle *rectBefore=Class<Rectangle>::getInstanceS(sys->worker);
+							rectBefore->x = sys->getEngineData()->old_x;
+							rectBefore->y = sys->getEngineData()->old_y;
+							rectBefore->width = sys->getEngineData()->width;
+							rectBefore->height = sys->getEngineData()->height;
+							Rectangle *rectAfter=Class<Rectangle>::getInstanceS(sys->worker);
+							rectAfter->x = sys->getEngineData()->x;
+							rectAfter->y = sys->getEngineData()->y;
+							rectAfter->width = sys->getEngineData()->width;
+							rectAfter->height = sys->getEngineData()->height;
+							getVm(sys)->addEvent(_MR(sys->stage->nativeWindow),_MR(Class<NativeWindowBoundsEvent>::getInstanceS(sys->worker,"moving",_MR(rectBefore),_MR(rectAfter))));
+						}
+						if (sys && getVm(sys) && sys->stage->nativeWindow)
+						{
+							Rectangle *rectBefore=Class<Rectangle>::getInstanceS(sys->worker);
+							rectBefore->x = sys->getEngineData()->old_x;
+							rectBefore->y = sys->getEngineData()->old_y;
+							rectBefore->width = sys->getEngineData()->width;
+							rectBefore->height = sys->getEngineData()->height;
+							Rectangle *rectAfter=Class<Rectangle>::getInstanceS(sys->worker);
+							rectAfter->x = sys->getEngineData()->x;
+							rectAfter->y = sys->getEngineData()->y;
+							rectAfter->width = sys->getEngineData()->width;
+							rectAfter->height = sys->getEngineData()->height;
+							getVm(sys)->addEvent(_MR(sys->stage->nativeWindow),_MR(Class<NativeWindowBoundsEvent>::getInstanceS(sys->worker,"moved",_MR(rectBefore),_MR(rectAfter))));
+						}
+						sys->getEngineData()->old_x = event->window.data1;
+						sys->getEngineData()->old_y = event->window.data2;
 						break;
 					case SDL_WINDOWEVENT_EXPOSED:
 					{
@@ -400,7 +436,15 @@ void EngineData::showWindow(uint32_t w, uint32_t h)
 		this->width = w;
 	if (this->height == 0)
 		this->height = h;
+	x=0;
+	y=0;
 	widget = createWidget(this->width,this->height);
+	if (widget)
+		SDL_GetWindowPosition(widget,&x,&y);
+	old_x =x;
+	old_y =y;
+	old_width = this->width;
+	old_height = this->height;
 	// plugins create a hidden window that should not be shown
 	if (widget && !(SDL_GetWindowFlags(widget) & SDL_WINDOW_HIDDEN))
 		SDL_ShowWindow(widget);

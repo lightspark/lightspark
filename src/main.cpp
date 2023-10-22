@@ -132,6 +132,14 @@ public:
 		/* Nothing to do because the standalone main window is
 		 * always focused */
 	}
+	void setWindowPosition(int x, int y, uint32_t width, uint32_t height) override
+	{
+		if (widget)
+		{
+			SDL_SetWindowPosition(widget,x,y);
+			SDL_SetWindowSize(widget,width,height);
+		}
+	}
 	void openPageInBrowser(const tiny_string& url, const tiny_string& window) override
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "openPageInBrowser not implemented in the standalone mode");
@@ -175,7 +183,25 @@ public:
 	{
 		SDL_GL_DeleteContext(mSDLContext);
 	}
-
+	bool getAIRApplicationDescriptor(SystemState* sys,tiny_string& xmlstring) override
+	{
+		if (sys->flashMode == SystemState::FLASH_MODE::AIR)
+		{
+			tiny_string swfpath = FileFullPath(sys,sys->getDumpedSWFPath());
+			gchar* dir = g_path_get_dirname(swfpath.raw_buf());
+			std::string p = dir;
+			p += G_DIR_SEPARATOR_S;
+			p += "META-INF";
+			p += G_DIR_SEPARATOR_S;
+			p += "AIR";
+			p += G_DIR_SEPARATOR_S;
+			p += "application.xml";
+			tiny_string filename(p);
+			xmlstring = FileRead(sys,filename,true);
+			return true;
+		}
+		return false;
+	}
 	bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath) override
 	{
 		if (!isvalidfilename(filename))

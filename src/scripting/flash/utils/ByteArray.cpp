@@ -1324,8 +1324,7 @@ void ByteArray::writeU29(uint32_t val)
 			b=(tmp&0x7f)|0x80;
 		}
 		else
-			b=val&0xff;
-
+			b=val&0x7f;
 		writeByte(b);
 	}
 }

@@ -107,8 +107,8 @@ vec4 filter_bevel()
 	float inner = filterdata[1];
 	float knockout = filterdata[2];
 	float strength = filterdata[3];
-	vec2 highlightOffset = vec2(filterdata[4],filterdata[5]);
-	vec2 shadowOffset = vec2(filterdata[6],filterdata[7]);
+	vec2 highlightOffset = vec2(-filterdata[4],filterdata[5]);
+	vec2 shadowOffset = vec2(-filterdata[6],filterdata[7]);
 	float alphahigh = filter_dropshadow(inner,1.0,vec4(1.0,1.0,1.0,1.0),1.0,highlightOffset).a * strength * 256.0;
 	float alphashadow = filter_dropshadow(inner,1.0,vec4(1.0,1.0,1.0,1.0),1.0,shadowOffset).a * strength * 256.0;
 	int gradientindex = 128+clamp(int(alphahigh - alphashadow)/2,-128,127);

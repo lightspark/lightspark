@@ -252,7 +252,7 @@ void main()
 		} else if (filterdata[0]==5.0) {// FILTERSTEP_COLORMATRIX
 			vbase = filter_colormatrix();
 		} else if (filterdata[0]==6.0) {// FILTERSTEP_CONVOLUTION
-			vbase = filter_colormatrix();
+			vbase = filter_convolution();
 		}
 	}
 

@@ -175,7 +175,7 @@ vec4 filter_convolution()
 	//					  src(x, y+1) * a7 + src (x+1,y+1) * a8) / divisor) + bias
 	// "
 	float bias = filterdata[1];
-	float clamp = filterdata[2];
+	float _clamp = filterdata[2];
 	float divisor = filterdata[3];
 	float preserveAlpha = filterdata[4];
 	vec4 color = vec4(filterdata[5],filterdata[6],filterdata[7],filterdata[8]);
@@ -202,7 +202,7 @@ vec4 filter_convolution()
 					|| start.y <= mY/2.0
 					|| start.y >= height-mY/2.0))
 			{
-				if (clamp==1.0)
+				if (_clamp==1.0)
 				{
 					alphaResult += src.a*data;
 					redResult   += src.r*data;

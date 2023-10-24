@@ -76,36 +76,26 @@ vec4 filter_blur()
 }
 vec4 filter_dropshadow(float inner, float knockout, vec4 color, float strength, vec2 startpos)
 {
-	float glowalpha = inner == 1.0 ? 1.0-texture2D(g_tex1,ls_TexCoords[0].xy+startpos).a : texture2D(g_tex1,ls_TexCoords[0].xy+startpos).a;
-	float srcalpha = glowalpha*color.a*strength;
+	vec4 src = texture2D(g_tex1, ls_TexCoords[0].xy+startpos);
+	float glowalpha = inner == 1.0 ? 1.0-src.a : src.a;
+	float srcalpha = color.a*clamp(glowalpha*strength, 0.0, 1.0);
 	vec4 dst = getDstPx(ls_TexCoords[0].xy);
 	float dstalpha = dst.a;
+	color.a = 1.0;
 
-	if (inner==1.0) 
+	if (inner==1.0)
 	{
 		if (knockout==1.0) 
-			return vec4(clamp(color.r*srcalpha*dstalpha,0.0,1.0),
-						clamp(color.g*srcalpha*dstalpha,0.0,1.0),
-						clamp(color.b*srcalpha*dstalpha,0.0,1.0),
-						clamp(srcalpha*dstalpha,0.0,1.0));
+			return color * srcalpha * dstalpha;
 		else
-			return vec4(clamp(color.r*srcalpha*dstalpha+dst.r*(1.0-srcalpha),0.0,1.0),
-						clamp(color.g*srcalpha*dstalpha+dst.g*(1.0-srcalpha),0.0,1.0),
-						clamp(color.b*srcalpha*dstalpha+dst.b*(1.0-srcalpha),0.0,1.0),
-						clamp(srcalpha*dstalpha+dstalpha*(1.0-srcalpha),0.0,1.0));
+			return color * srcalpha * dstalpha + dst * (1.0 - srcalpha);
 	}
 	else
 	{
 		if (knockout==1.0)
-			return vec4(clamp(color.r*srcalpha*(1.0-dstalpha),0.0,1.0),
-						clamp(color.g*srcalpha*(1.0-dstalpha),0.0,1.0),
-						clamp(color.b*srcalpha*(1.0-dstalpha),0.0,1.0),
-						clamp(srcalpha*(1.0-dstalpha),0.0,1.0));
+			return color * srcalpha * (1.0 - dstalpha);
 		else
-			return vec4(clamp(color.r*srcalpha*(1.0-dstalpha)+dst.r,0.0,1.0),
-						clamp(color.g*srcalpha*(1.0-dstalpha)+dst.g,0.0,1.0),
-						clamp(color.b*srcalpha*(1.0-dstalpha)+dst.b,0.0,1.0),
-						clamp(srcalpha*(1.0-dstalpha)+dstalpha,0.0,1.0));
+			return color * srcalpha * (1.0 - dstalpha) + dst;
 	}
 }
 

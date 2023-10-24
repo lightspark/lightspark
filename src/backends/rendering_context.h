@@ -86,6 +86,7 @@ protected:
 	int yuvUniform;
 	int alphaUniform;
 	int maskUniform;
+	int isFirstFilterUniform;
 	int colortransMultiplyUniform;
 	int colortransAddUniform;
 	int directUniform;

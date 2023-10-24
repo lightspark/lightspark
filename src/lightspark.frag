@@ -6,10 +6,12 @@ uniform sampler2D g_tex1;
 uniform sampler2D g_tex2; // mask texture
 uniform sampler2D g_tex3; // blend base texture
 uniform sampler2D g_tex4; // filter original rendered displayobject texture
+uniform sampler2D g_tex5; // previous filter output texture
 uniform float yuv;
 uniform float alpha;
 uniform float direct;
 uniform float mask;
+uniform float isFirstFilter;
 uniform float blendMode;
 varying vec4 ls_TexCoords[2];
 varying vec4 ls_FrontColor;
@@ -51,6 +53,11 @@ float invert_value(float value)
 
 // filter methods
 // TODO all these methods are more or less just taken from their c++ implementation in applyFilter() so they don't take much advantage of vector arithmetics etc.
+vec4 getDstPx(vec2 pos)
+{
+	return isFirstFilter != 0.0 ? texture2D(g_tex4, pos) : texture2D(g_tex5, pos);
+}
+
 vec4 filter_blur()
 {
 	vec4 sum = vec4(0.0);
@@ -71,7 +78,7 @@ vec4 filter_dropshadow(float inner, float knockout, vec4 color, float strength, 
 {
 	float glowalpha = inner == 1.0 ? 1.0-texture2D(g_tex1,ls_TexCoords[0].xy+startpos).a : texture2D(g_tex1,ls_TexCoords[0].xy+startpos).a;
 	float srcalpha = glowalpha*color.a*strength;
-	vec4 dst = texture2D(g_tex4,ls_TexCoords[0].xy);
+	vec4 dst = getDstPx(ls_TexCoords[0].xy);
 	float dstalpha = dst.a;
 
 	if (inner==1.0) 
@@ -113,7 +120,7 @@ vec4 filter_bevel()
 	float alphashadow = filter_dropshadow(inner,1.0,vec4(1.0,1.0,1.0,1.0),1.0,shadowOffset).a * strength * 256.0;
 	int gradientindex = 128+clamp(int(alphahigh - alphashadow)/2,-128,127);
 	vec4 combinedpixel = gradientcolors[gradientindex];
-	vec4 dst = texture2D(g_tex4,ls_TexCoords[0].xy);
+	vec4 dst = getDstPx(ls_TexCoords[0].xy);
 
 	if (inner==1.0)
 	{

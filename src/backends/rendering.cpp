@@ -409,13 +409,13 @@ void RenderThread::endBlendTexture()
 	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(0);
 
 	// render blended texture to framebuffer
-	renderTextureToFrameBuffer(blendTextureID,windowWidth,windowHeight,nullptr,nullptr);
+	renderTextureToFrameBuffer(blendTextureID,windowWidth,windowHeight,nullptr,nullptr,false);
 
 	currentFrameBufferID=0;
 	currentRenderBufferID=0;
 }
 
-void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors)
+void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter)
 {
 	if (filterdata)
 		engineData->exec_glUniform1fv(filterdataUniform, FILTERDATA_MAXSIZE, filterdata);
@@ -433,6 +433,7 @@ void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t
 	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
 	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
 	engineData->exec_glUniform1f(directUniform, 0.0);
+	engineData->exec_glUniform1f(isFirstFilterUniform, (float)isFirstFilter);
 
 	lsglLoadIdentity();
 	lsglScalef(1.0f,-1.0f,1);
@@ -624,6 +625,9 @@ void RenderThread::commonGLInit()
 	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex4");
 	if(tex!=-1)
 		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_FILTER);
+	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex5");
+	if(tex!=-1)
+		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_FILTER_DST);
 	
 	//The uniform that enables YUV->RGB transform on the texels (needed for video)
 	yuvUniform =engineData->exec_glGetUniformLocation(gpu_program,"yuv");
@@ -633,6 +637,8 @@ void RenderThread::commonGLInit()
 	directUniform =engineData->exec_glGetUniformLocation(gpu_program,"direct");
 	//The uniform that indicates if the object to be rendered has a mask (1) or not (0)
 	maskUniform =engineData->exec_glGetUniformLocation(gpu_program,"mask");
+	//The uniform that indicates if this is the first filter (1), or not (0)
+	isFirstFilterUniform =engineData->exec_glGetUniformLocation(gpu_program,"isFirstFilter");
 	//The uniform that contains the coordinate matrix
 	projectionMatrixUniform =engineData->exec_glGetUniformLocation(gpu_program,"ls_ProjectionMatrix");
 	modelviewMatrixUniform =engineData->exec_glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");

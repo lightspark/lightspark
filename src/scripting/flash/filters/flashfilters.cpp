@@ -632,6 +632,13 @@ void BitmapFilter::getRenderFilterArgsBlur(float* args, float blurX, float blurY
 }
 void BitmapFilter::getRenderFilterArgsDropShadow(float* args, bool inner, bool knockout,float strength,uint32_t color,float alpha,float xpos,float ypos) const
 {
+	float width = args[11];
+	float height = args[12];
+	int oX;
+	int oY;
+	float sX;
+	float sY;
+	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, oX, oY, sX, sY);
 	args[0]=float(FILTERSTEP_DROPSHADOW);
 	args[1]=inner;
 	args[2]=knockout;
@@ -641,22 +648,28 @@ void BitmapFilter::getRenderFilterArgsDropShadow(float* args, bool inner, bool k
 	args[5]=c.gf();
 	args[6]=c.bf();
 	args[7]=alpha;
-	args[8]=xpos / float(getSystemState()->getRenderThread()->windowWidth);
-	args[9]=ypos / float(getSystemState()->getRenderThread()->windowHeight);
+	args[8]=(xpos * sX) / float(getSystemState()->getRenderThread()->windowWidth);
+	args[9]=(ypos * sY) / float(getSystemState()->getRenderThread()->windowHeight);
 }
+
 void BitmapFilter::getRenderFilterArgsBevel(float* args, bool inner, bool knockout, float strength, float distance, float angle) const
 {
+	int oX;
+	int oY;
+	float sX;
+	float sY;
 	args[0]=float(FILTERSTEP_BEVEL);
 	args[1]=inner;
 	args[2]=knockout;
 	args[3]=strength;
 
+	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, oX, oY, sX, sY);
 	//highlightOffset
-	args[4]=cos(angle+(inner ? M_PI:0.0)) * distance / float(getSystemState()->getRenderThread()->windowWidth);
-	args[5]=sin(angle+(inner ? 0.0:M_PI)) * distance / float(getSystemState()->getRenderThread()->windowHeight);
+	args[4]=(cos(angle+(inner ? 0.0:M_PI)) * distance * sX) / float(getSystemState()->getRenderThread()->windowWidth);
+	args[5]=(sin(angle+(inner ? 0.0:M_PI)) * distance * sY) / float(getSystemState()->getRenderThread()->windowHeight);
 	//shadowOffset
-	args[6]=cos(angle+(inner ? 0.0:M_PI)) * distance / float(getSystemState()->getRenderThread()->windowWidth);
-	args[7]=sin(angle+(inner ? M_PI:0.0)) * distance / float(getSystemState()->getRenderThread()->windowHeight);
+	args[6]=(cos(angle+(inner ? M_PI:0.0)) * distance * sX) / float(getSystemState()->getRenderThread()->windowWidth);
+	args[7]=(sin(angle+(inner ? M_PI:0.0)) * distance * sY) / float(getSystemState()->getRenderThread()->windowHeight);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapFilter,clone)

@@ -85,7 +85,7 @@ vec4 filter_dropshadow(float inner, float knockout, vec4 color, float strength, 
 			return vec4(clamp(color.r*srcalpha*dstalpha+dst.r*(1.0-srcalpha),0.0,1.0),
 						clamp(color.g*srcalpha*dstalpha+dst.g*(1.0-srcalpha),0.0,1.0),
 						clamp(color.b*srcalpha*dstalpha+dst.b*(1.0-srcalpha),0.0,1.0),
-						clamp((srcalpha*dstalpha+dstalpha)*(1.0-srcalpha),0.0,1.0));
+						clamp(srcalpha*dstalpha+dstalpha*(1.0-srcalpha),0.0,1.0));
 	}
 	else
 	{

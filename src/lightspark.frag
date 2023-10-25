@@ -6,10 +6,12 @@ uniform sampler2D g_tex1;
 uniform sampler2D g_tex2; // mask texture
 uniform sampler2D g_tex3; // blend base texture
 uniform sampler2D g_tex4; // filter original rendered displayobject texture
+uniform sampler2D g_tex5; // previous filter output texture
 uniform float yuv;
 uniform float alpha;
 uniform float direct;
 uniform float mask;
+uniform float isFirstFilter;
 uniform float blendMode;
 varying vec4 ls_TexCoords[2];
 varying vec4 ls_FrontColor;
@@ -51,6 +53,11 @@ float invert_value(float value)
 
 // filter methods
 // TODO all these methods are more or less just taken from their c++ implementation in applyFilter() so they don't take much advantage of vector arithmetics etc.
+vec4 getDstPx(vec2 pos)
+{
+	return isFirstFilter != 0.0 ? texture2D(g_tex4, pos) : texture2D(g_tex5, pos);
+}
+
 vec4 filter_blur()
 {
 	vec4 sum = vec4(0.0);
@@ -69,36 +76,26 @@ vec4 filter_blur()
 }
 vec4 filter_dropshadow(float inner, float knockout, vec4 color, float strength, vec2 startpos)
 {
-	float glowalpha = inner == 1.0 ? 1.0-texture2D(g_tex1,ls_TexCoords[0].xy+startpos).a : texture2D(g_tex1,ls_TexCoords[0].xy+startpos).a;
-	float srcalpha = glowalpha*color.a*strength;
-	vec4 dst = texture2D(g_tex4,ls_TexCoords[0].xy);
+	vec4 src = texture2D(g_tex1, ls_TexCoords[0].xy+startpos);
+	float glowalpha = inner == 1.0 ? 1.0-src.a : src.a;
+	float srcalpha = color.a*clamp(glowalpha*strength, 0.0, 1.0);
+	vec4 dst = getDstPx(ls_TexCoords[0].xy);
 	float dstalpha = dst.a;
+	color.a = 1.0;
 
-	if (inner==1.0) 
+	if (inner==1.0)
 	{
 		if (knockout==1.0) 
-			return vec4(clamp(color.r*srcalpha*dstalpha,0.0,1.0),
-						clamp(color.g*srcalpha*dstalpha,0.0,1.0),
-						clamp(color.b*srcalpha*dstalpha,0.0,1.0),
-						clamp(srcalpha*dstalpha,0.0,1.0));
+			return color * srcalpha * dstalpha;
 		else
-			return vec4(clamp(color.r*srcalpha*dstalpha+dst.r*(1.0-srcalpha),0.0,1.0),
-						clamp(color.g*srcalpha*dstalpha+dst.g*(1.0-srcalpha),0.0,1.0),
-						clamp(color.b*srcalpha*dstalpha+dst.b*(1.0-srcalpha),0.0,1.0),
-						clamp((srcalpha*dstalpha+dstalpha)*(1.0-srcalpha),0.0,1.0));
+			return color * srcalpha * dstalpha + dst * (1.0 - srcalpha);
 	}
 	else
 	{
 		if (knockout==1.0)
-			return vec4(clamp(color.r*srcalpha*(1.0-dstalpha),0.0,1.0),
-						clamp(color.g*srcalpha*(1.0-dstalpha),0.0,1.0),
-						clamp(color.b*srcalpha*(1.0-dstalpha),0.0,1.0),
-						clamp(srcalpha*(1.0-dstalpha),0.0,1.0));
+			return color * srcalpha * (1.0 - dstalpha);
 		else
-			return vec4(clamp(color.r*srcalpha*(1.0-dstalpha)+dst.r,0.0,1.0),
-						clamp(color.g*srcalpha*(1.0-dstalpha)+dst.g,0.0,1.0),
-						clamp(color.b*srcalpha*(1.0-dstalpha)+dst.b,0.0,1.0),
-						clamp(srcalpha*(1.0-dstalpha)+dstalpha,0.0,1.0));
+			return color * srcalpha * (1.0 - dstalpha) + dst;
 	}
 }
 
@@ -107,13 +104,13 @@ vec4 filter_bevel()
 	float inner = filterdata[1];
 	float knockout = filterdata[2];
 	float strength = filterdata[3];
-	vec2 highlightOffset = vec2(filterdata[4],filterdata[5]);
-	vec2 shadowOffset = vec2(filterdata[6],filterdata[7]);
+	vec2 highlightOffset = vec2(-filterdata[4],filterdata[5]);
+	vec2 shadowOffset = vec2(-filterdata[6],filterdata[7]);
 	float alphahigh = filter_dropshadow(inner,1.0,vec4(1.0,1.0,1.0,1.0),1.0,highlightOffset).a * strength * 256.0;
 	float alphashadow = filter_dropshadow(inner,1.0,vec4(1.0,1.0,1.0,1.0),1.0,shadowOffset).a * strength * 256.0;
 	int gradientindex = 128+clamp(int(alphahigh - alphashadow)/2,-128,127);
 	vec4 combinedpixel = gradientcolors[gradientindex];
-	vec4 dst = texture2D(g_tex4,ls_TexCoords[0].xy);
+	vec4 dst = getDstPx(ls_TexCoords[0].xy);
 
 	if (inner==1.0)
 	{
@@ -175,7 +172,7 @@ vec4 filter_convolution()
 	//					  src(x, y+1) * a7 + src (x+1,y+1) * a8) / divisor) + bias
 	// "
 	float bias = filterdata[1];
-	float clamp = filterdata[2];
+	float _clamp = filterdata[2];
 	float divisor = filterdata[3];
 	float preserveAlpha = filterdata[4];
 	vec4 color = vec4(filterdata[5],filterdata[6],filterdata[7],filterdata[8]);
@@ -202,7 +199,7 @@ vec4 filter_convolution()
 					|| start.y <= mY/2.0
 					|| start.y >= height-mY/2.0))
 			{
-				if (clamp==1.0)
+				if (_clamp==1.0)
 				{
 					alphaResult += src.a*data;
 					redResult   += src.r*data;
@@ -255,7 +252,7 @@ void main()
 		} else if (filterdata[0]==5.0) {// FILTERSTEP_COLORMATRIX
 			vbase = filter_colormatrix();
 		} else if (filterdata[0]==6.0) {// FILTERSTEP_CONVOLUTION
-			vbase = filter_colormatrix();
+			vbase = filter_convolution();
 		}
 	}
 

@@ -126,7 +126,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 		}
 		if (cachedSurface.cachedFilterTextureID != UINT32_MAX)
 		{
-			getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,nullptr,nullptr);
+			getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,nullptr,nullptr,false);
 			getSystemState()->getRenderThread()->resetCurrentFrameBuffer();
 			ctxt.currentShaderBlendMode = oldshaderblendmode;
 			return ret;
@@ -2014,6 +2014,16 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_FILTER);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureIDoriginal);
 	
+	// create filter output texture, and bind it to g_tex5
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_FILTER_DST);
+	uint32_t filterDstTexture;
+	engineData->exec_glGenTextures(1, &filterDstTexture);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterDstTexture);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
+
 	// apply all filter steps
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 	uint32_t filterTextureID1;
@@ -2042,16 +2052,20 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 				if (filterdata[0] == 0)
 					break;
 				step++;
-				engineData->exec_glBindTexture_GL_TEXTURE_2D(texture1);
 				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(texture2);
 				engineData->exec_glClearColor(0,0,0,0);
 				engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
 				
-				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,filterdata,gradientcolors);
+				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,filterdata,gradientcolors,!i);
+
 				if (texture1 == filterTextureIDoriginal)
 					texture1 = filterTextureID1;
 				std::swap(texture1,texture2);
 			}
+			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
+			engineData->exec_glClearColor(0,0,0,0);
+			engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+			getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,nullptr,nullptr,false);
 		}
 	}
 	
@@ -2061,6 +2075,7 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	engineData->exec_glDeleteRenderbuffers(1,&filterrenderbuffer);
 	cachedSurface.cachedFilterTextureID=texture1;
 	engineData->exec_glDeleteTextures(1,&texture2);
+	engineData->exec_glDeleteTextures(1,&filterDstTexture);
 	engineData->exec_glDeleteTextures(1,&filterTextureIDoriginal);
 }
 void DisplayObject::invalidateCachedAsBitmapOf()

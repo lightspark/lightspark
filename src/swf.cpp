@@ -2275,8 +2275,15 @@ _NR<RootMovieClip> RootMovieClip::getRoot()
 
 _NR<Stage> RootMovieClip::getStage()
 {
-	getSystemState()->stage->incRef();
-	return _MR(getSystemState()->stage);
+	if (this == getSystemState()->mainClip)
+	{
+		getSystemState()->stage->incRef();
+		return _MR(getSystemState()->stage);
+	}
+	else if (getParent())
+		return getParent()->getStage();
+	else
+		return NullRef;
 }
 
 /*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)

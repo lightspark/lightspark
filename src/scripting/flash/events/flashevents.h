@@ -32,7 +32,7 @@ namespace lightspark
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	FUNCTION,FUNCTION_ASYNC, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
-	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,AVM1INITACTION_EVENT,ROOTCONSTRUCTEDEVENT };
+	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,AVM1INITACTION_EVENT,ROOTCONSTRUCTEDEVENT, LOCALCONNECTIONEVENT };
 
 class ABCContext;
 class DictionaryTag;
@@ -528,6 +528,19 @@ private:
 public:
 	RootConstructedEvent(_NR<DisplayObject> m): Event(nullptr,nullptr,"RootConstructedEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const override { return ROOTCONSTRUCTEDEVENT; }
+};
+class LocalConnectionEvent: public Event
+{
+friend class SystemState;
+private:
+	uint32_t nameID;
+	uint32_t methodID;
+	asAtom* args;
+	uint32_t numargs;
+public:
+	LocalConnectionEvent(uint32_t _nameID, uint32_t _methodID, asAtom* _args, uint32_t _numargs);
+	~LocalConnectionEvent();
+	EVENT_TYPE getEventType() const override { return LOCALCONNECTIONEVENT; }
 };
 
 class IdleEvent: public WaitableEvent

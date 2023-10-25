@@ -82,6 +82,7 @@
 #include "scripting/flash/net/netgroupreplicationstrategy.h"
 #include "scripting/flash/net/netgroupsendmode.h"
 #include "scripting/flash/net/netgroupsendresult.h"
+#include "scripting/flash/net/LocalConnection.h"
 #include "scripting/flash/net/NetStreamInfo.h"
 #include "scripting/flash/net/NetStreamPlayOptions.h"
 #include "scripting/flash/net/NetStreamPlayTransitions.h"

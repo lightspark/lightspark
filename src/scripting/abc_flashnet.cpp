@@ -29,6 +29,7 @@
 #include "scripting/flash/net/netgroupsendmode.h"
 #include "scripting/flash/net/netgroupsendresult.h"
 #include "scripting/flash/net/DatagramSocket.h"
+#include "scripting/flash/net/LocalConnection.h"
 
 #include "scripting/class.h"
 #include "scripting/abc.h"

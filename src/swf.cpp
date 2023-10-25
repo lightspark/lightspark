@@ -2419,6 +2419,24 @@ void SystemState::resizeCompleted()
 		stage->incRef();
 		currentVm->addEvent(_MR(stage),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS(this->worker)));
 	}
+	if (currentVm && stage->nativeWindow)
+	{
+		Rectangle *rectBefore=Class<Rectangle>::getInstanceS(worker);
+		rectBefore->x = getEngineData()->old_x;
+		rectBefore->y = getEngineData()->old_y;
+		rectBefore->width = getEngineData()->old_width;
+		rectBefore->height = getEngineData()->old_height;
+		Rectangle *rectAfter=Class<Rectangle>::getInstanceS(worker);
+		rectAfter->x = getEngineData()->x;
+		rectAfter->y = getEngineData()->y;
+		rectAfter->width = getEngineData()->width;
+		rectAfter->height = getEngineData()->height;
+		currentVm->addEvent(_MR(stage->nativeWindow),_MR(Class<NativeWindowBoundsEvent>::getInstanceS(worker,"resize",_MR(rectBefore),_MR(rectAfter))));
+	}
+	getEngineData()->old_x = getEngineData()->x;
+	getEngineData()->old_y = getEngineData()->y;
+	getEngineData()->old_width = getEngineData()->width;
+	getEngineData()->old_height = getEngineData()->height;
 }
 
 const tiny_string& SystemState::getStringFromUniqueId(uint32_t id) const
@@ -2566,6 +2584,36 @@ void SystemState::windowToStageCoordinates(int windowX, int windowY, int& stageX
 			       offsetX, offsetY, scaleX, scaleY);
 	stageX = (windowX-offsetX)/scaleX;
 	stageY = (windowY-offsetY)/scaleY;
+}
+void SystemState::handleLocalConnectionEvent(LocalConnectionEvent* ev)
+{
+	_NR<ASObject> obj;
+	mutexLocalConnection.lock();
+	LOG_CALL("handleLocalConnectionEvent:"<<getStringFromUniqueId(ev->nameID)<<" "<<getStringFromUniqueId(ev->methodID)<<" "<<ev->numargs);
+	auto it = this->localconnection_client_map.find(ev->nameID);
+	if (it != this->localconnection_client_map.end())
+		obj =(*it).second;
+	else
+		LOG(LOG_ERROR,"no client for LocalConnection found:"<<getStringFromUniqueId(ev->nameID)<<" "<<getStringFromUniqueId(ev->methodID)<<" "<<ev->numargs);
+	mutexLocalConnection.unlock();
+	if (!obj.isNull())
+	{
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.name_s_id=ev->methodID;
+		m.isAttribute = false;
+		asAtom func = asAtomHandler::invalidAtom;
+		(*it).second->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,this->worker);
+		if (asAtomHandler::isFunction(func))
+		{
+			asAtom o = asAtomHandler::fromObject(obj.getPtr());
+			asAtom ret;
+			asAtomHandler::callFunction(func,worker,ret,o,ev->args,ev->numargs,false);
+			ASATOM_DECREF(ret);
+		}
+		else
+			LOG(LOG_ERROR,"no method for LocalConnection found:"<<getStringFromUniqueId(ev->nameID)<<" "<<getStringFromUniqueId(ev->methodID)<<" "<<(*it).second->toDebugString());
+	}
 }
 
 void SystemState::openPageInBrowser(const tiny_string& url, const tiny_string& window)

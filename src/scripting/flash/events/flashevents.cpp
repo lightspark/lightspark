@@ -1873,3 +1873,24 @@ Event* GameInputEvent::cloneImpl() const
 	return clone;
 }
 
+
+LocalConnectionEvent::LocalConnectionEvent(uint32_t _nameID, uint32_t _methodID, asAtom* _args, uint32_t _numargs): Event(nullptr,nullptr,"LocalConnectionEvent")
+  ,nameID(_nameID),methodID(_methodID)
+{
+	numargs=_numargs;
+	args = new asAtom[numargs];
+	for (uint32_t i = 0; i < numargs; i++)
+	{
+		args[i]=_args[i];
+		ASATOM_INCREF(args[i]);
+	}
+}
+
+LocalConnectionEvent::~LocalConnectionEvent()
+{
+	for (uint32_t i = 0; i < numargs; i++)
+	{
+		ASATOM_DECREF(args[i]);
+	}
+	
+}

@@ -430,22 +430,6 @@ public:
 	void clearFrameBuffer();
 };
 
-class LocalConnection: public EventDispatcher
-{
-public:
-	LocalConnection(ASWorker* wrk,Class_base* c);
-	static void sinit(Class_base*);
-	ASFUNCTION_ATOM(_constructor);
-	ASPROPERTY_GETTER(bool,isSupported);
-	ASFUNCTION_ATOM(allowDomain);
-	ASFUNCTION_ATOM(allowInsecureDomain);
-	ASFUNCTION_ATOM(send);
-	ASFUNCTION_ATOM(connect);
-	ASFUNCTION_ATOM(close);
-	ASFUNCTION_ATOM(domain);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,client);
-};
-
 class NetGroup: public EventDispatcher
 {
 public:

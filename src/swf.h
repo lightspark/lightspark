@@ -321,6 +321,8 @@ private:
 	void systemFinalize();
 	std::map<tiny_string, Class_base *> classnamemap;
 	unordered_set<DisplayObject*> listResetParent;
+	Mutex mutexLocalConnection;
+	std::map<uint32_t, _NR<ASObject>> localconnection_client_map;
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	tiny_string getDumpedSWFPath() const { return dumpedSWFPath;}
@@ -364,6 +366,17 @@ public:
 	void needsAVM2(bool n);
 	void stageCoordinateMapping(uint32_t windowWidth, uint32_t windowHeight, int& offsetX, int& offsetY, float& scaleX, float& scaleY);
 	void windowToStageCoordinates(int windowX, int windowY, int& stageX, int& stageY);
+	void setLocalConnectionClient(uint32_t nameID,_NR<ASObject> client)
+	{
+		Locker l(mutexLocalConnection);
+		localconnection_client_map[nameID]=client;
+	}
+	void removeLocalConnectionClient(uint32_t nameID)
+	{
+		Locker l(mutexLocalConnection);
+		localconnection_client_map.erase(nameID);
+	}
+	void handleLocalConnectionEvent(LocalConnectionEvent* ev);
 
 	/**
 	 * Be careful, SystemState constructor does some global initialization that must be done

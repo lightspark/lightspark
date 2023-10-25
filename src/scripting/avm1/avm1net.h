@@ -22,6 +22,7 @@
 
 #include "asobject.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/net/LocalConnection.h"
 #include "scripting/flash/net/XMLSocket.h"
 
 namespace lightspark

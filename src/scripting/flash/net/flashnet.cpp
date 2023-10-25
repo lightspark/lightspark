@@ -504,9 +504,10 @@ void URLLoader::threadFinished(IThreadJob *finishedJob)
 	// job.
 	Locker l(spinlock);
 	if(finishedJob==job)
+	{
 		job=nullptr;
-
 	delete finishedJob;
+	}
 }
 
 void URLLoader::setData(_NR<ASObject> newData)
@@ -2650,69 +2651,6 @@ ASFUNCTIONBODY_ATOM(Responder, onResult)
 	ASATOM_DECREF(ret);
 }
 
-LocalConnection::LocalConnection(ASWorker* wrk, Class_base* c):
-	EventDispatcher(wrk,c),isSupported(false),client(NULL)
-{
-}
-
-void LocalConnection::sinit(Class_base* c)
-{
-	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("allowDomain","",Class<IFunction>::getFunction(c->getSystemState(),allowDomain),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(c->getSystemState(),allowInsecureDomain),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("send","",Class<IFunction>::getFunction(c->getSystemState(),send),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),connect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("domain","",Class<IFunction>::getFunction(c->getSystemState(),domain),GETTER_METHOD,true);
-	REGISTER_GETTER(c,isSupported);
-	REGISTER_GETTER_SETTER(c,client);
-}
-ASFUNCTIONBODY_GETTER(LocalConnection, isSupported)
-ASFUNCTIONBODY_GETTER_SETTER(LocalConnection, client)
-
-ASFUNCTIONBODY_ATOM(LocalConnection,_constructor)
-{
-	EventDispatcher::_constructor(ret,wrk,obj, nullptr, 0);
-	LocalConnection* th=Class<LocalConnection>::cast(asAtomHandler::getObject(obj));
-	th->incRef();
-	th->client = _NR<LocalConnection>(th);
-	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection is not implemented");
-}
-ASFUNCTIONBODY_ATOM(LocalConnection, domain)
-{
-	tiny_string res = wrk->getSystemState()->mainClip->getOrigin().getHostname();
-	if (wrk->getSystemState()->flashMode == SystemState::AIR)
-		LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::domain is not implemented for AIR mode");
-	
-	if (res.empty())
-		res = "localhost";
-	ret = asAtomHandler::fromString(wrk->getSystemState(),res);
-}
-ASFUNCTIONBODY_ATOM(LocalConnection, allowDomain)
-{
-	//LocalConnection* th=obj.as<LocalConnection>();
-	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::allowDomain is not implemented");
-}
-ASFUNCTIONBODY_ATOM(LocalConnection, allowInsecureDomain)
-{
-	//LocalConnection* th=obj.as<LocalConnection>();
-	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::allowInsecureDomain is not implemented");
-}
-ASFUNCTIONBODY_ATOM(LocalConnection, send)
-{
-	//LocalConnection* th=obj.as<LocalConnection>();
-	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::send is not implemented");
-}
-ASFUNCTIONBODY_ATOM(LocalConnection, connect)
-{
-	//LocalConnection* th=obj.as<LocalConnection>();
-	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::connect is not implemented");
-}
-ASFUNCTIONBODY_ATOM(LocalConnection, close)
-{
-	//LocalConnection* th=obj.as<LocalConnection>();
-	LOG(LOG_NOT_IMPLEMENTED,"LocalConnection::close is not implemented");
-}
 
 NetGroup::NetGroup(ASWorker* wrk, Class_base* c):
 	EventDispatcher(wrk,c)

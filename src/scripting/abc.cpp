@@ -1150,6 +1150,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				ev->clip->constructionComplete();
 				break;
 			}
+			case LOCALCONNECTIONEVENT:
+			{
+				LocalConnectionEvent* ev=static_cast<LocalConnectionEvent*>(e.second.getPtr());
+				LOG(LOG_CALLS,"LocalConnectionEvent");
+				m_sys->handleLocalConnectionEvent(ev);
+				break;
+			}
 			case IDLE_EVENT:
 			{
 				m_sys->worker->processGarbageCollection(false);

@@ -4225,8 +4225,10 @@ ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,softKeyboardRect)
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,contentsScaleFactor)
 ASFUNCTIONBODY_GETTER(Stage,nativeWindow)
 
-void Stage::onDisplayState(const tiny_string&)
+void Stage::onDisplayState(const tiny_string& old_value)
 {
+	if (old_value == displayState)
+		return;
 	tiny_string s = displayState.lowercase();
 
 	// AVM1 allows case insensitive values, so we correct them here

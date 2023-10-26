@@ -786,7 +786,7 @@ public:
 	void onAlign(uint32_t);
 	void forceInvalidation();
 	bool renderStage3D();
-	void onDisplayState(const tiny_string&);
+	void onDisplayState(const tiny_string& old_value);
 	void AVM1RootClipAdded() { hasAVM1Clips = true; }
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void setOnStage(bool staged, bool force,bool inskipping=false) override { assert(false); /* we are the stage */}

@@ -152,10 +152,6 @@ void Event::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,cancelable,Boolean);
 }
 
-void Event::buildTraits(ASObject* o)
-{
-}
-
 ASFUNCTIONBODY_ATOM(Event,_constructor)
 {
 	// Event constructor is called with zero arguments internally
@@ -562,12 +558,13 @@ ASFUNCTIONBODY_ATOM(NativeDragEvent,_constructor)
 
 NativeWindowBoundsEvent::NativeWindowBoundsEvent(ASWorker* wrk, Class_base* c) : Event(wrk,c, "")
 {
-	
+	subtype=SUBTYPE_NATIVEWINDOWBOUNDSEVENT;
 }
 
 NativeWindowBoundsEvent::NativeWindowBoundsEvent(ASWorker* wrk, Class_base* c, const tiny_string& t, _NR<Rectangle> _beforeBounds, _NR<Rectangle> _afterBounds)
  : Event(wrk,c,t),afterBounds(_afterBounds),beforeBounds(_beforeBounds)
 {
+	subtype=SUBTYPE_NATIVEWINDOWBOUNDSEVENT;
 }
 
 void NativeWindowBoundsEvent::sinit(Class_base* c)
@@ -579,8 +576,8 @@ void NativeWindowBoundsEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("RESIZING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"resizing"),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	
-	REGISTER_GETTER(c,afterBounds);
-	REGISTER_GETTER(c,beforeBounds);
+	REGISTER_GETTER_RESULTTYPE(c,afterBounds,Rectangle);
+	REGISTER_GETTER_RESULTTYPE(c,beforeBounds,Rectangle);
 }
 
 Event* NativeWindowBoundsEvent::cloneImpl() const

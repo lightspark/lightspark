@@ -51,7 +51,6 @@ public:
 	Event(ASWorker* wrk, Class_base* cb, const tiny_string& t = "Event", bool b=false, bool c=false, CLASS_SUBTYPE st=SUBTYPE_EVENT);
 	void finalize() override;
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	virtual void setTarget(asAtom t) {target = t; }
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_preventDefault);

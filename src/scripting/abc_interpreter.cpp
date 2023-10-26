@@ -7034,7 +7034,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										it++;
 										if (canCallFunctionDirect((*it),name))
 										{
-											if (!fromglobal && v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this==nullptr)
+											if (!fromglobal && v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this==nullptr 
+												&& (!asAtomHandler::as<IFunction>(v->var)->inClass || !state.function->inClass
+													|| !state.function->inClass->isSubClass(asAtomHandler::as<IFunction>(v->var)->inClass))) // function is from a subclass of the caller, so it may not be setup yet if we are currently executing the constructor
 											{
 												if (asAtomHandler::is<SyntheticFunction>(v->var))
 												{

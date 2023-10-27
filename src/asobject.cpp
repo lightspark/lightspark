@@ -2226,6 +2226,8 @@ void ASObject::AVM1UpdateAllBindings(DisplayObject* target, ASWorker* wrk)
 
 void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 {
+	bool needsactionscript3 = (target->is<DisplayObject>() && target->as<DisplayObject>()->needsActionScript3())
+			|| (!target->is<DisplayObject>() && wrk->rootClip->needsActionScript3());
 	auto it = Variables.Variables.begin();
 	while (it != Variables.Variables.end())
 	{
@@ -2238,7 +2240,7 @@ void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 			if (wrk)
 			{
 				// prepare value for use in another worker
-				if (wrk->rootClip->needsActionScript3() && asAtomHandler::isFunction(v))
+				if (needsactionscript3 && asAtomHandler::isFunction(v))
 					v = asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<IFunction>(v)->createFunctionInstance(wrk));
 				else if (asAtomHandler::isObject(v))
 				{

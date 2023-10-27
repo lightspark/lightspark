@@ -6675,7 +6675,7 @@ void MovieClip::advanceFrame(bool implicit)
 		// set last_FP to the FP set by previous advanceFrame
 		state.last_FP=state.FP;
 	}
-	if (needsActionScript3())
+	if (needsActionScript3() || getSystemState()->mainClip->needsActionScript3())
 		state.frameadvanced=false;
 	state.creatingframe=true;
 	/* A MovieClip can only have frames if

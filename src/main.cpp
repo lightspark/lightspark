@@ -579,17 +579,18 @@ int main(int argc, char* argv[])
 			sandboxType = SecurityManager::REMOTE;
 		}
 	}
-#ifndef _WIN32
 	//When running in a local sandbox, set the root URL to the current working dir
 	else if(sandboxType != SecurityManager::REMOTE)
 	{
 		char * cwd = g_get_current_dir();
+#ifdef _WIN32
+		g_strdelimit(cwd,G_DIR_SEPARATOR_S,'/');
+#endif
 		string cwdStr = string("file://") + string(cwd);
 		free(cwd);
 		cwdStr += "/";
 		sys->mainClip->setOrigin(cwdStr, fileName);
 	}
-#endif
 	else
 	{
 		sys->mainClip->setOrigin(string("file://") + fileName);

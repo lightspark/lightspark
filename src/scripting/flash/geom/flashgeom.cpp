@@ -93,6 +93,20 @@ bool Rectangle::destruct()
 	height=0;
 	return destructIntern();
 }
+void Rectangle::addUser(DisplayObject* u)
+{
+	users.insert(u);
+}
+
+void Rectangle::removeUser(DisplayObject* u)
+{
+	users.erase(u);
+}
+void Rectangle::notifyUsers()
+{
+	for(auto it=users.begin();it!=users.end();it++)
+		(*it)->updatedRect();
+}
 
 ASFUNCTIONBODY_ATOM(Rectangle,_constructor)
 {
@@ -117,8 +131,13 @@ ASFUNCTIONBODY_ATOM(Rectangle,_getLeft)
 ASFUNCTIONBODY_ATOM(Rectangle,_setLeft)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	assert_and_throw(argslen==1);
-	th->x=asAtomHandler::toNumber(args[0]);
+	number_t val;
+	ARG_CHECK(ARG_UNPACK(val));
+	if (th->x != val)
+	{
+		th->x=val;
+		th->notifyUsers();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getRight)
@@ -130,8 +149,13 @@ ASFUNCTIONBODY_ATOM(Rectangle,_getRight)
 ASFUNCTIONBODY_ATOM(Rectangle,_setRight)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	assert_and_throw(argslen==1);
-	th->width=(asAtomHandler::toNumber(args[0])-th->x);
+	number_t val;
+	ARG_CHECK(ARG_UNPACK(val));
+	if (th->width != val-th->x)
+	{
+		th->width=val-th->x;
+		th->notifyUsers();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getWidth)
@@ -143,8 +167,13 @@ ASFUNCTIONBODY_ATOM(Rectangle,_getWidth)
 ASFUNCTIONBODY_ATOM(Rectangle,_setWidth)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	assert_and_throw(argslen==1);
-	th->width=asAtomHandler::toNumber(args[0]);
+	number_t val;
+	ARG_CHECK(ARG_UNPACK(val));
+	if (th->width != val)
+	{
+		th->width=val;
+		th->notifyUsers();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getTop)
@@ -156,8 +185,13 @@ ASFUNCTIONBODY_ATOM(Rectangle,_getTop)
 ASFUNCTIONBODY_ATOM(Rectangle,_setTop)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	assert_and_throw(argslen==1);
-	th->y=asAtomHandler::toNumber(args[0]);
+	number_t val;
+	ARG_CHECK(ARG_UNPACK(val));
+	if (th->y != val)
+	{
+		th->y=val;
+		th->notifyUsers();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getBottom)
@@ -169,8 +203,13 @@ ASFUNCTIONBODY_ATOM(Rectangle,_getBottom)
 ASFUNCTIONBODY_ATOM(Rectangle,_setBottom)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	assert_and_throw(argslen==1);
-	th->height=(asAtomHandler::toNumber(args[0])-th->y);
+	number_t val;
+	ARG_CHECK(ARG_UNPACK(val));
+	if (th->height != val-th->y)
+	{
+		th->height=val-th->y;
+		th->notifyUsers();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getBottomRight)
@@ -186,8 +225,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setBottomRight)
 	assert_and_throw(argslen == 1);
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	Point* br = asAtomHandler::as<Point>(args[0]);
-	th->width = br->getX() - th->x;
-	th->height = br->getY() - th->y;
+	if (th->width != br->getX() - th->x || th->height != br->getY() - th->y)
+	{
+		th->width = br->getX() - th->x;
+		th->height = br->getY() - th->y;
+		th->notifyUsers();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getTopLeft)
@@ -203,8 +246,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setTopLeft)
 	assert_and_throw(argslen == 1);
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	Point* br = asAtomHandler::as<Point>(args[0]);
-	th->width = br->getX();
-	th->height = br->getY();
+	if (th->x != br->getX()|| th->y != br->getY())
+	{
+		th->x = br->getX();
+		th->y = br->getY();
+		th->notifyUsers();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getSize)
@@ -220,8 +267,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setSize)
 	assert_and_throw(argslen == 1);
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	Point* br = asAtomHandler::as<Point>(args[0]);
-	th->width = br->getX();
-	th->height = br->getY();
+	if (th->width != br->getX()|| th->height != br->getY())
+	{
+		th->width = br->getX();
+		th->height = br->getY();
+		th->notifyUsers();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_getHeight)
@@ -233,8 +284,13 @@ ASFUNCTIONBODY_ATOM(Rectangle,_getHeight)
 ASFUNCTIONBODY_ATOM(Rectangle,_setHeight)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	assert_and_throw(argslen==1);
-	th->height=asAtomHandler::toNumber(args[0]);
+	number_t val;
+	ARG_CHECK(ARG_UNPACK(val));
+	if (th->height != val)
+	{
+		th->height=val;
+		th->notifyUsers();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,clone)
@@ -302,6 +358,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,inflate)
 	th->width += 2 * dx;
 	th->y -= dy;
 	th->height += 2 * dy;
+	th->notifyUsers();
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,inflatePoint)
@@ -316,6 +373,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,inflatePoint)
 	th->width += 2 * dx;
 	th->y -= dy;
 	th->height += 2 * dy;
+	th->notifyUsers();
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,intersection)
@@ -410,6 +468,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,offset)
 
 	th->x += asAtomHandler::toNumber(args[0]);
 	th->y += asAtomHandler::toNumber(args[1]);
+	th->notifyUsers();
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,offsetPoint)
@@ -420,6 +479,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,offsetPoint)
 
 	th->x += po->getX();
 	th->y += po->getY();
+	th->notifyUsers();
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,setEmpty)
@@ -431,6 +491,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,setEmpty)
 	th->y = 0;
 	th->width = 0;
 	th->height = 0;
+	th->notifyUsers();
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_union)
@@ -483,6 +544,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,setTo)
 	th->y = y;
 	th->width = wi;
 	th->height = h;
+	th->notifyUsers();
 }
 ASFUNCTIONBODY_ATOM(Rectangle,copyFrom)
 {
@@ -495,6 +557,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,copyFrom)
 		th->y = sourcerect->y;
 		th->width = sourcerect->width;
 		th->height = sourcerect->height;
+		th->notifyUsers();
 	}
 }
 

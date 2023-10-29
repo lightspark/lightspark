@@ -139,6 +139,8 @@ public:
 	 */
 	const CachedSurface& getCachedSurface(const DisplayObject* obj) const override;
 	void resetCurrentFrameBuffer();
+	// this is used to keep track of the fbos when rendering filters and some of the ancestors of the filtered object also have filters
+	std::vector<std::pair<uint32_t,uint32_t>> filterframebufferstack;
 
 	/* Utility */
 	bool handleGLErrors() const;

@@ -102,6 +102,7 @@ private:
 	uint32_t avm1mouselistenercount;
 	uint32_t avm1framelistenercount;
 	void updateCachedAsBitmap();
+	void onSetScrollRect(_NR<Rectangle> oldValue);
 protected:
 	_NR<Bitmap> cachedBitmap;
 	_NR<Rectangle> scalingGrid;
@@ -146,6 +147,7 @@ protected:
 	}
 	virtual void afterSetLegacyMatrix() {}
 public:
+	void updatedRect(); // scrollrect was changed
 	void setMask(_NR<DisplayObject> m);
 	void setBlendMode(UI8 blendmode);
 	AS_BLENDMODE getBlendMode() const { return blendMode; }

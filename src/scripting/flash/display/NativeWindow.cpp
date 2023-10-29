@@ -40,8 +40,6 @@ void NativeWindow::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,y,Number);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,bounds,Rectangle);
 }
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(NativeWindow,width)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(NativeWindow,height)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(NativeWindow,x)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(NativeWindow,y)
 
@@ -94,5 +92,73 @@ ASFUNCTIONBODY_ATOM(NativeWindow,_setter_bounds)
 	else
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"nativeWindow.bounds setter for non-main window");
+	}
+}
+ASFUNCTIONBODY_ATOM(NativeWindow,_getter_width)
+{
+	if(argslen != 0)
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Arguments provided in getter");
+		return;
+	}
+	NativeWindow* th=asAtomHandler::as<NativeWindow>(obj);
+	if (th == wrk->getSystemState()->stage->nativeWindow.getPtr())
+	{
+		ret = asAtomHandler::fromUInt(wrk->getSystemState()->getEngineData()->width);
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"nativeWindow.width getter for non-main window");
+		ret = asAtomHandler::fromUInt(0);
+	}
+}
+ASFUNCTIONBODY_ATOM(NativeWindow,_setter_width)
+{
+	NativeWindow* th=asAtomHandler::as<NativeWindow>(obj);
+	number_t _width;
+	ARG_CHECK(ARG_UNPACK(_width));
+	
+	if (th == wrk->getSystemState()->stage->nativeWindow.getPtr())
+	{
+		if (_width > 0)
+			wrk->getSystemState()->getEngineData()->setWindowPosition(wrk->getSystemState()->getEngineData()->x,wrk->getSystemState()->getEngineData()->y,_width,wrk->getSystemState()->getEngineData()->height);
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"nativeWindow.width setter for non-main window");
+	}
+}
+ASFUNCTIONBODY_ATOM(NativeWindow,_getter_height)
+{
+	if(argslen != 0)
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Arguments provided in getter");
+		return;
+	}
+	NativeWindow* th=asAtomHandler::as<NativeWindow>(obj);
+	if (th == wrk->getSystemState()->stage->nativeWindow.getPtr())
+	{
+		ret = asAtomHandler::fromUInt(wrk->getSystemState()->getEngineData()->height);
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"nativeWindow.height getter for non-main window");
+		ret = asAtomHandler::fromUInt(0);
+	}
+}
+ASFUNCTIONBODY_ATOM(NativeWindow,_setter_height)
+{
+	NativeWindow* th=asAtomHandler::as<NativeWindow>(obj);
+	number_t _height;
+	ARG_CHECK(ARG_UNPACK(_height));
+	
+	if (th == wrk->getSystemState()->stage->nativeWindow.getPtr())
+	{
+		if (_height > 0)
+			wrk->getSystemState()->getEngineData()->setWindowPosition(wrk->getSystemState()->getEngineData()->x,wrk->getSystemState()->getEngineData()->y,wrk->getSystemState()->getEngineData()->width,_height);
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"nativeWindow.width setter for non-main window");
 	}
 }

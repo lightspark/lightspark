@@ -2512,6 +2512,14 @@ void SystemState::stageCoordinateMapping(uint32_t windowWidth, uint32_t windowHe
 	r.Ymin/=20;
 	r.Xmax/=20;
 	r.Ymax/=20;
+	if (stage->fullScreenSourceRect)
+	{
+		offsetX=stage->fullScreenSourceRect->x;
+		offsetY=stage->fullScreenSourceRect->y;
+		scaleX=number_t(windowWidth)/stage->fullScreenSourceRect->width;
+		scaleY=number_t(windowHeight)/stage->fullScreenSourceRect->height;
+		return;
+	}
 	//Now compute the scalings and offsets
 	switch(scaleMode)
 	{

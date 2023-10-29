@@ -30,12 +30,18 @@ class BitmapContainer;
 
 class Rectangle: public ASObject
 {
+private:
+	std::set<DisplayObject*> users;
+	void notifyUsers();
 public:
 	Rectangle(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_RECTANGLE),x(0),y(0),width(0),height(0){}
 	number_t x,y,width,height;
 	static void sinit(Class_base* c);
 	const RECT getRect() const;
 	bool destruct() override;
+	void addUser(DisplayObject* u);
+	void removeUser(DisplayObject* u);
+	
 	// properties
 	ASFUNCTION_ATOM(_getBottom);
 	ASFUNCTION_ATOM(_setBottom);

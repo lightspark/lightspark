@@ -4276,10 +4276,17 @@ void Stage::onColorCorrection(const tiny_string& oldValue)
 	}
 }
 
-void Stage::onFullScreenSourceRect(_NR<Rectangle> /*oldValue*/)
+void Stage::onFullScreenSourceRect(_NR<Rectangle> oldValue)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "Stage.fullScreenSourceRect");
-	//fullScreenSourceRect.reset();
+	if ((this->fullScreenSourceRect.isNull() && !oldValue.isNull()) ||
+		(!this->fullScreenSourceRect.isNull() && oldValue.isNull()) ||
+		(!this->fullScreenSourceRect.isNull() && !oldValue.isNull() &&
+		 (this->fullScreenSourceRect->x != oldValue->x ||
+		  this->fullScreenSourceRect->y != oldValue->y ||
+		  this->fullScreenSourceRect->width != oldValue->width ||
+		  this->fullScreenSourceRect->height != oldValue->height)))
+		getSystemState()->getRenderThread()->requestResize(UINT32_MAX,UINT32_MAX,true);
+	
 }
 
 void Stage::defaultEventBehavior(_R<Event> e)
@@ -4341,6 +4348,8 @@ bool Stage::renderImpl(RenderContext &ctxt)
 		getSystemState()->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 		getSystemState()->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 		getSystemState()->getEngineData()->exec_glUseProgram(((RenderThread&)ctxt).gpu_program);
+		getSystemState()->getEngineData()->exec_glViewport(0,0,getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight);
+
 		((GLRenderContext&)ctxt).lsglLoadIdentity();
 		((GLRenderContext&)ctxt).setMatrixUniform(GLRenderContext::LSGL_MODELVIEW);
 	}

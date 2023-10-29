@@ -696,6 +696,13 @@ void RenderThread::commonGLResize()
 	lsglScalef(1.0,-1.0,1);
 	setMatrixUniform(LSGL_PROJECTION);
 
+	// recreate framebuffer for masks
+	engineData->exec_glDeleteFramebuffers(1,&maskframebuffer);
+	engineData->exec_glDeleteTextures(1,&maskTextureID);
+	maskframebuffer = engineData->exec_glGenFramebuffer();
+	engineData->exec_glGenTextures(1, &maskTextureID);
+
+	
 	// setup mask framebuffer
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_MASK);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(maskTextureID);
@@ -710,6 +717,14 @@ void RenderThread::commonGLResize()
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 	engineData->exec_glDisable_GL_DEPTH_TEST();
 	engineData->exec_glDisable_GL_STENCIL_TEST();
+
+	// recreate framebuffer for blending
+	engineData->exec_glDeleteFramebuffers(1,&blendframebuffer);
+	engineData->exec_glDeleteRenderbuffers(1,&blendrenderbuffer);
+	engineData->exec_glDeleteTextures(1,&blendTextureID);
+	blendframebuffer = engineData->exec_glGenFramebuffer();
+	blendrenderbuffer = engineData->exec_glGenRenderbuffer();
+	engineData->exec_glGenTextures(1, &blendTextureID);
 
 	// setup blend framebuffer
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_BLEND);

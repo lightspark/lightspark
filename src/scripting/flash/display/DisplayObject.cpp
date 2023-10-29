@@ -222,6 +222,7 @@ bool DisplayObject::destruct()
 	accessibilityProperties.reset();
 	colorTransform.reset();
 	scalingGrid.reset();
+	scrollRect.reset();
 	loadedFrom=getSystemState()->mainClip;
 	hasChanged = true;
 	needsTextureRecalculation=true;
@@ -377,7 +378,7 @@ void DisplayObject::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER_STRINGID_CB(DisplayObject,name,onSetName)
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties)
-ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,scrollRect)
+ASFUNCTIONBODY_GETTER_SETTER_CB(DisplayObject,scrollRect,onSetScrollRect)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, opaqueBackground)
@@ -420,6 +421,50 @@ void DisplayObject::onSetName(uint32_t oldName)
 			}
 		}
 	}
+}
+void DisplayObject::onSetScrollRect(_NR<Rectangle> oldValue)
+{
+	if (oldValue == this->scrollRect)
+		return;
+	if (!oldValue.isNull())
+		oldValue->removeUser(this);
+	if (!this->scrollRect.isNull())
+	{
+		// not mentioned in the specs, but setting scrollRect actually creates a clone of the provided rect,
+		// so that any future changes to the scrollRect have no effect on the provided rect and vice versa
+		Rectangle* res=Class<Rectangle>::getInstanceS(this->getInstanceWorker());
+		res->x=this->scrollRect->x;
+		res->y=this->scrollRect->y;
+		res->width=this->scrollRect->width;
+		res->height=this->scrollRect->height;
+		
+		this->scrollRect = _MR(res);
+		this->scrollRect->addUser(this);
+	}
+	if ((this->scrollRect.isNull() && !oldValue.isNull()) ||
+		(!this->scrollRect.isNull() && oldValue.isNull()) ||
+		(!this->scrollRect.isNull() && !oldValue.isNull() &&
+		 (this->scrollRect->x != oldValue->x ||
+		  this->scrollRect->y != oldValue->y ||
+		  this->scrollRect->width != oldValue->width ||
+		  this->scrollRect->height != oldValue->height)))
+	{
+		hasChanged = true;
+		if (onStage)
+			requestInvalidation(getSystemState());
+		else
+			requestInvalidationFilterParent();
+	}
+}
+void DisplayObject::updatedRect()
+{
+	assert(!this->scrollRect.isNull());
+	hasChanged = true;
+	if (onStage)
+		requestInvalidation(getSystemState());
+	else
+		requestInvalidationFilterParent();
+	
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_filters)
@@ -2007,6 +2052,7 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	engineData->exec_glViewport(0,0,w,h);
 	engineData->exec_glClearColor(0,0,0,0);
 	engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+	getSystemState()->getRenderThread()->filterframebufferstack.push_back(pair<uint32_t,uint32_t>(filterframebuffer,filterrenderbuffer));
 	renderImpl(ctxt);
 	// bind rendered filter source to g_tex4
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
@@ -2069,7 +2115,16 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 		}
 	}
 	
-	getSystemState()->getRenderThread()->resetCurrentFrameBuffer();
+	getSystemState()->getRenderThread()->filterframebufferstack.pop_back();
+	if (getSystemState()->getRenderThread()->filterframebufferstack.empty())
+		getSystemState()->getRenderThread()->resetCurrentFrameBuffer();
+	else
+	{
+		uint32_t parentframebuffer = getSystemState()->getRenderThread()->filterframebufferstack.back().first;
+		uint32_t parentrenderbuffer = getSystemState()->getRenderThread()->filterframebufferstack.back().second;
+		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(parentframebuffer);
+		engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(parentrenderbuffer);
+	}
 	engineData->exec_glViewport(0,0,getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight);
 	engineData->exec_glDeleteFramebuffers(1,&filterframebuffer);
 	engineData->exec_glDeleteRenderbuffers(1,&filterrenderbuffer);
@@ -2179,6 +2234,8 @@ void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 	{
 		alpha *= cur->clippedAlpha();
 		totalMatrix=cur->getMatrix(includeRotation).multiplyMatrix(totalMatrix);
+		if (!cur->scrollRect.isNull()) // TODO this only sets the scrollrect position, but doesn't crop to the rectangle
+			totalMatrix.translate(-cur->scrollRect->x,-cur->scrollRect->y);
 		if(gatherMasks)
 		{
 			if (!cur->mask.isNull() && mask.isNull())
@@ -2929,6 +2986,7 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(c->getSystemState(),_setTransform),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_rotation","",Class<IFunction>::getFunction(c->getSystemState(),_getRotation),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_rotation","",Class<IFunction>::getFunction(c->getSystemState(),_setRotation),SETTER_METHOD,true);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,scrollRect,Rectangle);
 }
 DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 {

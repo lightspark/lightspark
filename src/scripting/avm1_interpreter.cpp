@@ -1098,7 +1098,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom ret=asAtomHandler::invalidAtom;
 				if (f)
 				{
-					f->call(&ret,nullptr, args,numargs,callee,&locals);
+					f->call(&ret,nullptr, args,numargs,caller,&locals);
 				}
 				else
 				{
@@ -1109,7 +1109,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (asAtomHandler::is<AVM1Function>(func))
 					{
 						asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
-						asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,numargs,callee,&locals);
+						asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,numargs,caller,&locals);
 						asAtomHandler::as<AVM1Function>(func)->decRef();
 					}
 					else if (asAtomHandler::is<Function>(func))
@@ -1140,7 +1140,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						if (asAtomHandler::is<AVM1Function>(func))
 						{
 							asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
-							asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,numargs,callee,&locals);
+							asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,numargs,caller,&locals);
 							asAtomHandler::as<AVM1Function>(func)->decRef();
 						}
 						else if (asAtomHandler::is<Function>(func))
@@ -1221,7 +1221,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						o->setprop_prototype(asAtomHandler::as<AVM1Function>(cls)->prototype);
 						o->setprop_prototype(asAtomHandler::as<AVM1Function>(cls)->prototype,BUILTIN_STRINGS::STRING_PROTO);
 						ret = asAtomHandler::fromObject(o);
-						asAtomHandler::as<AVM1Function>(cls)->call(nullptr,&ret, args,numargs,callee,&locals);
+						asAtomHandler::as<AVM1Function>(cls)->call(nullptr,&ret, args,numargs,caller,&locals);
 						asAtomHandler::as<AVM1Function>(cls)->decRef();
 					}
 					else
@@ -1249,7 +1249,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						o->setprop_prototype(f->prototype,BUILTIN_STRINGS::STRING_PROTO);
 					}
 					ret = asAtomHandler::fromObject(o);
-					f->call(nullptr,&ret, args,numargs,callee,&locals);
+					f->call(nullptr,&ret, args,numargs,caller,&locals);
 				}
 				else if (asAtomHandler::isInvalid(ret))
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject class not found "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
@@ -1618,7 +1618,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 								if (var && asAtomHandler::is<AVM1Function>(var->setter))
 								{
 									ASATOM_INCREF(value);
-									asAtomHandler::as<AVM1Function>(var->setter)->call(nullptr,&scriptobject,&value,1,callee,&locals);
+									asAtomHandler::as<AVM1Function>(var->setter)->call(nullptr,&scriptobject,&value,1,caller,&locals);
 									hassetter=true;
 									break;
 								}
@@ -1682,7 +1682,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					}
 					else if (asAtomHandler::is<AVM1Function>(scriptobject))
 					{
-						asAtomHandler::as<AVM1Function>(scriptobject)->call(&ret,&scopestack[0],args,numargs,callee,&locals);
+						asAtomHandler::as<AVM1Function>(scriptobject)->call(&ret,&scopestack[0],args,numargs,caller,&locals);
 					}
 					else if (asAtomHandler::is<Class_base>(scriptobject))
 					{
@@ -1710,7 +1710,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							}
 							else if (asAtomHandler::is<AVM1Function>(constr))
 							{
-								asAtomHandler::as<AVM1Function>(constr)->call(&ret,&scopestack[0],args,numargs,callee,&locals);
+								asAtomHandler::as<AVM1Function>(constr)->call(&ret,&scopestack[0],args,numargs,caller,&locals);
 								asAtomHandler::as<AVM1Function>(constr)->decRef();
 							}
 							else if (asAtomHandler::is<Class_base>(constr))
@@ -1736,7 +1736,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						AVM1Function* f = asAtomHandler::as<DisplayObject>(scriptobject)->AVM1GetFunction(nameIDlower);
 						if (f)
 						{
-							f->call(&ret,&scriptobject,args,numargs,callee,&locals);
+							f->call(&ret,&scriptobject,args,numargs,caller,&locals);
 							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod from displayobject done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 							done=true;
 						}
@@ -1800,9 +1800,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						else if (asAtomHandler::is<AVM1Function>(func))
 						{
 							if (scriptobject.uintval == super.uintval)
-								asAtomHandler::as<AVM1Function>(func)->call(&ret,&scopestack[0],args,numargs,callee,&locals);
+								asAtomHandler::as<AVM1Function>(func)->call(&ret,&scopestack[0],args,numargs,caller,&locals);
 							else
-								asAtomHandler::as<AVM1Function>(func)->call(&ret,&scriptobject,args,numargs,callee,&locals);
+								asAtomHandler::as<AVM1Function>(func)->call(&ret,&scriptobject,args,numargs,caller,&locals);
 							asAtomHandler::as<AVM1Function>(func)->decRef();
 						}
 						else
@@ -1886,7 +1886,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				else if (asAtomHandler::is<AVM1Function>(func))
 				{
-					asAtomHandler::as<AVM1Function>(func)->call(nullptr,&ret,args,numargs,callee,&locals);
+					asAtomHandler::as<AVM1Function>(func)->call(nullptr,&ret,args,numargs,caller,&locals);
 				}
 				else if (asAtomHandler::is<Class_base>(func))
 				{
@@ -2543,6 +2543,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				break;
 			}
 			case 0x14: // ActionStringLength
+			{
+				asAtom a = PopStack(stack);
+				tiny_string s= asAtomHandler::toString(a,wrk);
+				asAtom ret = asAtomHandler::fromInt(s.numChars());
+				ASATOM_DECREF(a);
+				PushStack(stack,ret);
+				break;
+			}
 			case 0x29: // ActionStringLess
 			case 0x31: // ActionMBStringLength
 			case 0x32: // ActionCharToAscii

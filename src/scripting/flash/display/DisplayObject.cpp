@@ -1117,7 +1117,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
 	getMatrix().multiply2D(xin, yin, xout, yout);
-	if(parent)
+	if(parent && parent != getSystemState()->mainClip)
 		parent->localToGlobal(xout, yout, xout, yout);
 }
 //TODO: Fix precision issues

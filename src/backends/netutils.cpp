@@ -766,8 +766,12 @@ void LocalDownloader::execute()
 		}
 		//Otherwise we follow the normal procedure
 		else {
+			tiny_string s("file://");
+			s += URLInfo::decode(url, URLInfo::ENCODE_ESCAPE);
+			char* filepath =g_filename_from_uri(s.raw_buf(),nullptr,nullptr);
 			std::ifstream file;
-			file.open(url.raw_buf(), std::ios::in|std::ios::binary);
+			file.open(filepath, std::ios::in|std::ios::binary);
+			free(filepath);
 
 			if(file.is_open())
 			{

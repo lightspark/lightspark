@@ -583,11 +583,10 @@ int main(int argc, char* argv[])
 	else if(sandboxType != SecurityManager::REMOTE)
 	{
 		char * cwd = g_get_current_dir();
-#ifdef _WIN32
-		g_strdelimit(cwd,G_DIR_SEPARATOR_S,'/');
-#endif
-		string cwdStr = string("file://") + string(cwd);
+		char* baseurl = g_filename_to_uri(cwd,nullptr,nullptr);
+		string cwdStr = string(baseurl);
 		free(cwd);
+		free(baseurl);
 		cwdStr += "/";
 		sys->mainClip->setOrigin(cwdStr, fileName);
 	}

@@ -1116,9 +1116,20 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 //this way they have less pb with precision.
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
-	getMatrix().multiply2D(xin, yin, xout, yout);
-	if(parent && parent != getSystemState()->mainClip)
-		parent->localToGlobal(xout, yout, xout, yout);
+	if (this == getSystemState()->mainClip)
+	{
+		// don't compute current scaling of the main clip into coordinates
+		xout=xin;
+		yout=yin;
+		xout += tx;
+		yout += ty;
+	}
+	else
+	{
+		getMatrix().multiply2D(xin, yin, xout, yout);
+		if(parent)
+			parent->localToGlobal(xout, yout, xout, yout);
+	}
 }
 //TODO: Fix precision issues
 void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const

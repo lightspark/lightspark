@@ -4918,7 +4918,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								if (asAtomHandler::is<Class_inherit>(it->object))
 									asAtomHandler::as<Class_inherit>(it->object)->checkScriptInit();
 								variable* v = o->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
-								if (v && (v->slotid != UINT32_MAX))
+								if (v && v->slotid && (v->slotid != UINT32_MAX))
 								{
 									state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX_FROMSLOT);
 									state.preloadedcode.back().pcode.arg1_uint=v->slotid;

@@ -1700,6 +1700,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setRotation)
 	if(th->rotation!=val)
 	{
 		val = fmod(val+180.0, 360.0) - 180.0;
+		if (val < -180.0)
+			val += 360.0;
 		th->rotation=val;
 		th->hasChanged=true;
 		th->geometryChanged();

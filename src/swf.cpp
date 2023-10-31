@@ -97,6 +97,7 @@ RootMovieClip::RootMovieClip(ASWorker* wrk, _NR<LoaderInfo> li, _NR<ApplicationD
 	parsingIsFailed(false),waitingforparser(false),Background(0xFF,0xFF,0xFF),frameRate(0),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
+	this->objfreelist=nullptr; // ensure RootMovieClips aren't reused to avoid conflicts with "normal" MovieClips
 	subtype=SUBTYPE_ROOTMOVIECLIP;
 	loaderInfo=li;
 	parsethread=nullptr;

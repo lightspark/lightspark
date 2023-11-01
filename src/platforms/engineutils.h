@@ -190,14 +190,18 @@ public:
 	static bool startSDLMain();
 
 	virtual bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath);
+	virtual bool FileIsHidden(SystemState* sys,const tiny_string& filename, bool isfullpath);
+	virtual bool FileIsDirectory(SystemState* sys,const tiny_string& filename, bool isfullpath);
 	virtual uint32_t FileSize(SystemState* sys,const tiny_string& filename, bool isfullpath);
 	virtual tiny_string FileFullPath(SystemState* sys,const tiny_string& filename);
+	virtual tiny_string FileBasename(SystemState* sys,const tiny_string& filename, bool isfullpath);
 	virtual tiny_string FileRead(SystemState* sys,const tiny_string& filename, bool isfullpath);
 	virtual void FileWrite(SystemState* sys,const tiny_string& filename, const tiny_string& data, bool isfullpath);
 	virtual uint8_t FileReadUnsignedByte(SystemState* sys,const tiny_string &filename, uint32_t startpos, bool isfullpath);
 	virtual void FileReadByteArray(SystemState* sys,const tiny_string &filename,ByteArray* res, uint32_t startpos, uint32_t length, bool isfullpath);
 	virtual void FileWriteByteArray(SystemState* sys,const tiny_string& filename, ByteArray* data,uint32_t startpos, uint32_t length, bool isfullpath);
 	virtual bool FileCreateDirectory(SystemState* sys,const tiny_string& filename, bool isfullpath);
+	virtual bool FilGetDirectoryListing(SystemState* sys, const tiny_string &filename, bool isfullpath, std::vector<tiny_string>& filelist);
 	virtual bool FilePathIsAbsolute(const tiny_string& filename);
 	virtual tiny_string FileGetApplicationStorageDir();
 	

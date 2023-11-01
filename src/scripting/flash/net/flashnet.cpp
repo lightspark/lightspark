@@ -63,7 +63,8 @@ void URLRequest::sinit(Class_base* c)
 
 URLInfo URLRequest::getRequestURL() const
 {
-	URLInfo ret=getSys()->mainClip->getBaseURL().goToURL(url);
+	tiny_string urlencoded = URLInfo::encode(url, URLInfo::ENCODE_SPACES);
+	URLInfo ret=getSys()->mainClip->getBaseURL().goToURL(urlencoded);
 	if(method!=GET)
 		return ret;
 
@@ -2679,8 +2680,10 @@ void FileReference::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	REGISTER_GETTER_RESULTTYPE(c,size,Number);
+	REGISTER_GETTER_RESULTTYPE(c,name,ASString);
 }
 ASFUNCTIONBODY_GETTER(FileReference, size)
+ASFUNCTIONBODY_GETTER(FileReference, name)
 
 ASFUNCTIONBODY_ATOM(FileReference,_constructor)
 {

@@ -323,6 +323,16 @@ bool EngineData::FileExists(SystemState* sys, const tiny_string &filename, bool 
 	LOG(LOG_ERROR,"FileExists not implemented");
 	return false;
 }
+bool EngineData::FileIsHidden(SystemState* sys, const tiny_string &filename, bool isfullpath)
+{
+	LOG(LOG_ERROR,"FileIsHidden not implemented");
+	return false;
+}
+bool EngineData::FileIsDirectory(SystemState* sys, const tiny_string &filename, bool isfullpath)
+{
+	LOG(LOG_ERROR,"FileIsDirectory not implemented");
+	return false;
+}
 
 uint32_t EngineData::FileSize(SystemState* sys, const tiny_string& filename, bool isfullpath)
 {
@@ -333,6 +343,12 @@ uint32_t EngineData::FileSize(SystemState* sys, const tiny_string& filename, boo
 tiny_string EngineData::FileFullPath(SystemState* sys, const tiny_string& filename)
 {
 	LOG(LOG_ERROR,"FileFullPath not implemented");
+	return "";
+}
+
+tiny_string EngineData::FileBasename(SystemState* sys, const tiny_string& filename, bool isfullpath)
+{
+	LOG(LOG_ERROR,"FileBasename not implemented");
 	return "";
 }
 
@@ -366,6 +382,11 @@ void EngineData::FileWriteByteArray(SystemState* sys, const tiny_string &filenam
 bool EngineData::FileCreateDirectory(SystemState* sys, const tiny_string &filename, bool isfullpath)
 {
 	LOG(LOG_ERROR,"FileCreateDirectory not implemented");
+	return false;
+}
+bool EngineData::FilGetDirectoryListing(SystemState* sys, const tiny_string &filename, bool isfullpath, std::vector<tiny_string>& filelist)
+{
+	LOG(LOG_ERROR,"FilGetDirectoryListing not implemented");
 	return false;
 }
 
@@ -411,6 +432,7 @@ void EngineData::initGLEW()
 	}
 	supportPackedDepthStencil = GLEW_EXT_packed_depth_stencil;
 #endif
+	bool ok = SDL_GL_ExtensionSupported("GL_KHR_blend_equation_advanced");
 	initNanoVG();
 }
 

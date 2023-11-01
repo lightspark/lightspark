@@ -445,6 +445,7 @@ public:
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(number_t,size);
+	ASPROPERTY_GETTER(tiny_string,name);
 	
 };
 class FileFilter: public ASObject

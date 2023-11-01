@@ -109,14 +109,17 @@ private:
 	void setupFile(const tiny_string& filename,ASWorker* wrk);
 	tiny_string path;
 public:
-	ASFile(ASWorker* wrk,Class_base* c, const tiny_string _path="", bool _exists=false);
+	ASFile(ASWorker* wrk, Class_base* c, const tiny_string _path="", bool _exists=false, bool _isHidden=false, bool _isDirectory=false);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,exists);
+	ASPROPERTY_GETTER(bool,isHidden);
+	ASPROPERTY_GETTER(bool,isDirectory);
 	ASPROPERTY_GETTER(_NR<ASFile>,applicationDirectory);
 	ASPROPERTY_GETTER(_NR<ASFile>,applicationStorageDirectory);
 	ASFUNCTION_ATOM(resolvePath);
 	ASFUNCTION_ATOM(createDirectory);
+	ASFUNCTION_ATOM(getDirectoryListing);
 	ASFUNCTION_ATOM(_getURL);
 	ASFUNCTION_ATOM(_setURL);
 	const tiny_string& getFullPath() const { return path; }

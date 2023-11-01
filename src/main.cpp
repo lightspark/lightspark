@@ -211,6 +211,28 @@ public:
 			return false;
 		return g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS);
 	}
+	bool FileIsHidden(SystemState* sys,const tiny_string& filename, bool isfullpath) override
+	{
+		if (!isvalidfilename(filename))
+			return false;
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
+		if (p.empty())
+			return false;
+		char* f = g_path_get_basename(p.raw_buf());
+#ifdef _WIN32
+		LOG(LOG_NOT_IMPLEMENTED,"File.IsHidden not properly implemented for windows");
+#endif
+		return *f == '.';
+	}
+	bool FileIsDirectory(SystemState* sys,const tiny_string& filename, bool isfullpath) override
+	{
+		if (!isvalidfilename(filename))
+			return false;
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
+		if (p.empty())
+			return false;
+		return g_file_test(p.raw_buf(),G_FILE_TEST_IS_DIR);
+	}
 
 	uint32_t FileSize(SystemState* sys,const tiny_string& filename, bool isfullpath) override
 	{
@@ -237,6 +259,17 @@ public:
 		p += G_DIR_SEPARATOR_S;
 		p += filename.raw_buf();
 		return p;
+	}
+
+	tiny_string FileBasename(SystemState* sys, const tiny_string& filename, bool isfullpath) override
+	{
+		if (!isvalidfilename(filename))
+			return "";
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
+		if (p.empty())
+			return "";
+		char* b = g_path_get_basename(p.raw_buf());
+		return tiny_string(b);
 	}
 
 	tiny_string FileRead(SystemState* sys,const tiny_string& filename, bool isfullpath) override
@@ -341,6 +374,30 @@ public:
 		}
 		return g_mkdir_with_parents(p.raw_buf(),0755) == 0;
 	}
+	bool FilGetDirectoryListing(SystemState* sys, const tiny_string &filename, bool isfullpath, std::vector<tiny_string>& filelist)
+	{
+		if (!isvalidfilename(filename))
+			return false;
+		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
+		if (p.empty())
+			return false;
+		GDir* dir = g_dir_open(p.raw_buf(),0,nullptr);
+		if (dir)
+		{
+			while (true)
+			{
+				const char* filename = g_dir_read_name(dir);
+				if (!filename)
+					break;
+				tiny_string s(filename,true);
+				filelist.push_back(s);;
+			}
+			g_dir_close(dir);
+			return true;
+		}
+		return false;
+	}
+	
 	bool FilePathIsAbsolute(const tiny_string& filename) override
 	{
 		return g_path_is_absolute(filename.raw_buf());

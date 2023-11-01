@@ -380,8 +380,8 @@ ASFUNCTIONBODY_ATOM(FileStream,writeUTF)
 	th->stream.write(value.raw_buf(),value.numBytes());
 }
 
-ASFile::ASFile(ASWorker* wrk,Class_base* c, const tiny_string _path, bool _exists):
-	FileReference(wrk,c),path(_path),exists(_exists)
+ASFile::ASFile(ASWorker* wrk,Class_base* c, const tiny_string _path, bool _exists, bool _isHidden, bool _isDirectory):
+	FileReference(wrk,c),path(_path),exists(_exists),isHidden(_isHidden),isDirectory(_isDirectory)
 {
 	subtype=SUBTYPE_FILE;
 	setupFile(_path,wrk);
@@ -391,14 +391,19 @@ void ASFile::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, FileReference, _constructor, CLASS_SEALED);
 	REGISTER_GETTER_RESULTTYPE(c,exists,Boolean);
+	REGISTER_GETTER_RESULTTYPE(c,isHidden,Boolean);
+	REGISTER_GETTER_RESULTTYPE(c,isDirectory,Boolean);
 	REGISTER_GETTER_STATIC_RESULTTYPE(c,applicationDirectory,ASFile);
 	REGISTER_GETTER_STATIC_RESULTTYPE(c,applicationStorageDirectory,ASFile);
 	c->setDeclaredMethodByQName("resolvePath", "", Class<IFunction>::getFunction(c->getSystemState(),resolvePath,1,Class<ASFile>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("createDirectory", "", Class<IFunction>::getFunction(c->getSystemState(),createDirectory), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("getDirectoryListing", "", Class<IFunction>::getFunction(c->getSystemState(),getDirectoryListing,0,Class<Array>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_getURL,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_setURL),SETTER_METHOD,true);
 }
 ASFUNCTIONBODY_GETTER(ASFile, exists)
+ASFUNCTIONBODY_GETTER(ASFile, isHidden)
+ASFUNCTIONBODY_GETTER(ASFile, isDirectory)
 ASFUNCTIONBODY_GETTER_STATIC(ASFile, applicationDirectory)
 ASFUNCTIONBODY_GETTER_STATIC(ASFile, applicationStorageDirectory)
 
@@ -421,7 +426,10 @@ void ASFile::setupFile(const tiny_string& filename, ASWorker* wrk)
 		// "file:///Users/bob/Desktop" (the desktop on Bob's Mac computer)
 		path = filename;
 		exists = wrk->getSystemState()->getEngineData()->FileExists(wrk->getSystemState(),path,true);
+		isHidden = wrk->getSystemState()->getEngineData()->FileIsHidden(wrk->getSystemState(),path,true);
+		isDirectory = wrk->getSystemState()->getEngineData()->FileIsDirectory(wrk->getSystemState(),path,true);
 		size = wrk->getSystemState()->getEngineData()->FileSize(wrk->getSystemState(),path,true);
+		name = wrk->getSystemState()->getEngineData()->FileBasename(wrk->getSystemState(),path,true);
 	}
 }
 
@@ -475,6 +483,30 @@ ASFUNCTIONBODY_ATOM(ASFile,createDirectory)
 	
 	if (!wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),p,true))
 		createError<IOError>(wrk,kFileWriteError,th->path);
+}
+
+ASFUNCTIONBODY_ATOM(ASFile,getDirectoryListing)
+{
+	ASFile* th=asAtomHandler::as<ASFile>(obj);
+	tiny_string p = th->path;
+	// ensure that directory name ends with a directory separator
+	if (!p.endsWith(G_DIR_SEPARATOR_S))
+		p += G_DIR_SEPARATOR_S;
+	std::vector<tiny_string> dirlist;
+	if (!wrk->getSystemState()->getEngineData()->FilGetDirectoryListing(wrk->getSystemState(),p,true,dirlist))
+	{
+		createError<IOError>(wrk,kFileOpenError,th->path);
+		return;
+	}
+	Array* res =Class<Array>::getInstanceSNoArgs(wrk);
+	for (auto it = dirlist.begin(); it != dirlist.end(); it++)
+	{
+		ASFile* f=Class<ASFile>::getInstanceSNoArgs(wrk);
+		tiny_string fullpath = p+(*it);
+		f->setupFile(fullpath,wrk);
+		res->push(asAtomHandler::fromObjectNoPrimitive(f));
+	}
+	ret=asAtomHandler::fromObjectNoPrimitive(res);
 }
 
 void FileMode::sinit(Class_base* c)

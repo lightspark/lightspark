@@ -59,6 +59,8 @@ void Graphics::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(c->getSystemState(),beginGradientFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("beginBitmapFill","",Class<IFunction>::getFunction(c->getSystemState(),beginBitmapFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(c->getSystemState(),endFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readGraphicsData","",Class<IFunction>::getFunction(c->getSystemState(),readGraphicsData,1,Class<Vector>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,_constructor)
@@ -1387,3 +1389,17 @@ ASFUNCTIONBODY_ATOM(Graphics,copyFrom)
 	th->tokensHaveChanged=true; // TODO check if tokens really have changed
 	th->hasChanged = true;
 }
+
+ASFUNCTIONBODY_ATOM(Graphics,readGraphicsData)
+{
+	Graphics* th=asAtomHandler::as<Graphics>(obj);
+
+	bool recurse;
+	ARG_CHECK(ARG_UNPACK(recurse,true));
+
+	RootMovieClip* root = wrk->rootClip.getPtr();
+	Template<Vector>::getInstanceS(wrk,ret,root,InterfaceClass<IGraphicsData>::getClass(wrk->getSystemState()),NullRef);
+	Vector *graphicsData = asAtomHandler::as<Vector>(ret);
+	th->owner->owner->fillGraphicsData(graphicsData);
+}
+

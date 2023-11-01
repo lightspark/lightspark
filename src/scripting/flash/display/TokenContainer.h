@@ -61,6 +61,7 @@ public:
 	uint16_t getCurrentLineWidth() const;
 	float scaling;
 	bool renderWithNanoVG;
+	void fillGraphicsData(Vector* v);
 protected:
 	TokenContainer(DisplayObject* _o);
 	TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling);

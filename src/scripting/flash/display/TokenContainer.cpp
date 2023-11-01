@@ -19,6 +19,8 @@
 
 #include <cairo.h>
 #include "scripting/flash/display/TokenContainer.h"
+#include "scripting/flash/display/GraphicsSolidFill.h"
+#include "scripting/toplevel/Vector.h"
 #include "swf.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "parsing/tags.h"
@@ -888,4 +890,103 @@ void TokenContainer::getTextureSize(std::vector<uint64_t>& tokens, int *width, i
 uint16_t TokenContainer::getCurrentLineWidth() const
 {
 	return tokens.currentLineWidth;
+}
+
+void TokenContainer::fillGraphicsData(Vector* v)
+{
+	for (auto it = tokens.filltokens.begin(); it != tokens.filltokens.end(); it++)
+	{
+		GeomToken t(*it,false); 
+		switch (t.type)
+		{
+			case SET_STROKE:
+			case STRAIGHT:
+			case MOVE:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				it++;
+				break;
+			case CURVE_QUADRATIC:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				it+=2;
+				break;
+			case CLEAR_FILL:
+			case CLEAR_STROKE:
+			case FILL_KEEP_SOURCE:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				break;
+			case CURVE_CUBIC:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				it+=3;
+				break;
+			case FILL_TRANSFORM_TEXTURE:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				it+=6;
+				break;
+			case SET_FILL:
+			{
+				it++;
+				const FILLSTYLE* style=GeomToken(*it,false).fillStyle;
+				const FILL_STYLE_TYPE& fstype=style->FillStyleType;
+				if (fstype == SOLID_FILL)
+				{
+					GraphicsSolidFill* f = Class<GraphicsSolidFill>::getInstanceSNoArgs(this->owner->getInstanceWorker());
+					f->color =style->Color.Red<<16|style->Color.Green<<8|style->Color.Blue;
+					f->alpha = style->Color.af();
+					asAtom a=asAtomHandler::fromObjectNoPrimitive(f);
+					v->append(a);
+				}
+				else
+					LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for FillStyle Token type:"<<fstype);
+				break;
+			}
+		}
+	}
+	for (auto it = tokens.stroketokens.begin(); it != tokens.stroketokens.end(); it++)
+	{
+		GeomToken t(*it,false); 
+		switch (t.type)
+		{
+			case SET_STROKE:
+			case STRAIGHT:
+			case MOVE:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				it++;
+				break;
+			case CURVE_QUADRATIC:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				it+=2;
+				break;
+			case CLEAR_FILL:
+			case CLEAR_STROKE:
+			case FILL_KEEP_SOURCE:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				break;
+			case CURVE_CUBIC:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				it+=3;
+				break;
+			case FILL_TRANSFORM_TEXTURE:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				it+=6;
+				break;
+			case SET_FILL:
+			{
+				it++;
+				const FILLSTYLE* style=GeomToken(*it,false).fillStyle;
+				const FILL_STYLE_TYPE& fstype=style->FillStyleType;
+				if (fstype == SOLID_FILL)
+				{
+					GraphicsSolidFill* f = Class<GraphicsSolidFill>::getInstanceSNoArgs(this->owner->getInstanceWorker());
+					f->color =style->Color.Red<<16|style->Color.Green<<8|style->Color.Blue;
+					f->alpha = style->Color.af();
+					asAtom a=asAtomHandler::fromObjectNoPrimitive(f);
+					v->append(a);
+				}
+				else
+					LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for FillStyle Token type:"<<fstype);
+				break;
+			}
+		}
+		
+	}
 }

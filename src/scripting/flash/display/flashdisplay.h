@@ -140,6 +140,7 @@ protected:
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
 	void LegacyChildEraseDeletionMarked();
 public:
+	void fillGraphicsData(Vector* v) override;
 	DisplayObject* findRemovedLegacyChild(uint32_t name);
 	void eraseRemovedLegacyChild(uint32_t name);
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
@@ -289,6 +290,7 @@ protected:
 	
 	DefineShapeTag* fromTag;
 public:
+	void fillGraphicsData(Vector* v) override;
 	Shape(ASWorker* wrk,Class_base* c);
 	void setupShape(lightspark::DefineShapeTag *tag, float _scaling);
 	uint32_t getTagID() const override;
@@ -502,6 +504,7 @@ protected:
 	void stopSound();
 	void markSoundFinished();
 public:
+	void fillGraphicsData(Vector* v) override;
 	bool dragged;
 	Sprite(ASWorker* wrk,Class_base* c);
 	void setSound(SoundChannel* s, bool forstreaming);

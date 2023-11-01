@@ -1371,6 +1371,15 @@ void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
 	namedRemovedLegacyChildren.clear();
 }
 
+void DisplayObjectContainer::fillGraphicsData(Vector* v)
+{
+	std::vector<_R<DisplayObject>> tmplist;
+	cloneDisplayList(tmplist);
+	auto it=tmplist.begin();
+	for(;it!=tmplist.end();it++)
+		(*it)->fillGraphicsData(v);
+}
+
 bool DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
 {
 	auto it = legacyChildrenMarkedForDeletion.find(depth);
@@ -1564,6 +1573,18 @@ void Sprite::markSoundFinished()
 {
 	if (sound)
 		sound->markFinished();
+}
+
+void Sprite::fillGraphicsData(Vector* v)
+{
+	if (this->graphics)
+	{
+		this->graphics->startDrawJob();
+		this->graphics->refreshTokens();
+		TokenContainer::fillGraphicsData(v);
+		this->graphics->endDrawJob();
+	}
+	DisplayObjectContainer::fillGraphicsData(v);
 }
 
 ASFUNCTIONBODY_ATOM(Sprite,_constructor)
@@ -3366,7 +3387,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    " (" << pos.x << "," << pos.y << ") " <<
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
-		    ((*it)->isMask() ? "m" : "") <<((*it)->hasFilters() ? "f" : "") << " cd=" <<(*it)->ClipDepth<<" ca=" <<(*it)->computeCacheAsBitmap()<<"/"<<(*it)->cachedAsBitmapOf<<" "<<
+		    ((*it)->isMask() ? "m" : "") <<((*it)->hasFilters() ? "f" : "") <<((*it)->scrollRect.getPtr() ? "s" : "") << " cd=" <<(*it)->ClipDepth<<" ca=" <<(*it)->computeCacheAsBitmap()<<"/"<<(*it)->cachedAsBitmapOf<<" "<<
 			"a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'");
 
 		if ((*it)->is<DisplayObjectContainer>())
@@ -3980,6 +4001,19 @@ _NR<DisplayObject> Shape::hitTestImpl(const Vector2f& globalPoint, const Vector2
 		return _MR(this);
 	}
 	return NullRef;
+}
+
+void Shape::fillGraphicsData(Vector* v)
+{
+	if (this->graphics)
+	{
+		this->graphics->startDrawJob();
+		this->graphics->refreshTokens();
+		TokenContainer::fillGraphicsData(v);
+		this->graphics->endDrawJob();
+	}
+	else
+		TokenContainer::fillGraphicsData(v);
 }
 
 Shape::Shape(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),TokenContainer(this),graphics(NullRef),fromTag(nullptr)

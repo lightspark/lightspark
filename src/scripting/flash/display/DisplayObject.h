@@ -147,6 +147,7 @@ protected:
 	}
 	virtual void afterSetLegacyMatrix() {}
 public:
+	virtual void fillGraphicsData(Vector* v) {}
 	void updatedRect(); // scrollrect was changed
 	void setMask(_NR<DisplayObject> m);
 	void setBlendMode(UI8 blendmode);

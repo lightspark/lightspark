@@ -122,6 +122,7 @@ public:
 	ASFUNCTION_ATOM(cubicCurveTo);
 	ASFUNCTION_ATOM(clear);
 	ASFUNCTION_ATOM(copyFrom);
+	ASFUNCTION_ATOM(readGraphicsData);
 };
 
 }

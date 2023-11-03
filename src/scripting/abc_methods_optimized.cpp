@@ -2655,6 +2655,7 @@ void ABCVm::abc_setPropertyIntegerVector_constant_constant_constant(call_context
 		return;
 	}
 
+	ASATOM_INCREF_POINTER(value);
 	Vector* o = asAtomHandler::as<Vector>(*obj);
 	bool alreadyset=false;
 	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset,context->worker);
@@ -2687,6 +2688,7 @@ void ABCVm::abc_setPropertyIntegerVector_constant_local_constant(call_context* c
 		return;
 	}
 
+	ASATOM_INCREF_POINTER(value);
 	Vector* o = asAtomHandler::as<Vector>(*obj);
 	bool alreadyset=false;
 	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset,context->worker);
@@ -2719,6 +2721,7 @@ void ABCVm::abc_setPropertyIntegerVector_constant_constant_local(call_context* c
 		return;
 	}
 
+	ASATOM_INCREF_POINTER(value);
 	Vector* o = asAtomHandler::as<Vector>(*obj);
 	bool alreadyset=false;
 	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset,context->worker);
@@ -2782,6 +2785,7 @@ void ABCVm::abc_setPropertyIntegerVector_local_constant_constant(call_context* c
 		return;
 	}
 
+	ASATOM_INCREF_POINTER(value);
 	Vector* o = asAtomHandler::as<Vector>(obj);
 	bool alreadyset=false;
 	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset,context->worker);
@@ -2814,6 +2818,7 @@ void ABCVm::abc_setPropertyIntegerVector_local_local_constant(call_context* cont
 		return;
 	}
 
+	ASATOM_INCREF_POINTER(value);
 	Vector* o = asAtomHandler::as<Vector>(obj);
 	bool alreadyset=false;
 	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset,context->worker);

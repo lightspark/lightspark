@@ -6790,7 +6790,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				assert_and_throw(t < mi->context->constant_pool.multiname_count);
 				uint32_t argcount = code.readu30();
 #ifdef ENABLE_OPTIMIZATION
-				if (opcode == 0x46 && code.peekbyte() == 0x29 && state.jumptargets.find(p+1) == state.jumptargets.end())
+				if (opcode == 0x46 && code.peekbyte() == 0x29 && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 				{
 					// callproperty is followed by pop
 					opcode = 0x4f; // treat call as callpropvoid

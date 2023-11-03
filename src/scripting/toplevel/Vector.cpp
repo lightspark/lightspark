@@ -581,7 +581,7 @@ ASFUNCTIONBODY_ATOM(Vector,setLength)
 	}
 	uint32_t len;
 	ARG_CHECK(ARG_UNPACK (len));
-	if(len <= th->vec.size())
+	if(len < th->vec.size())
 	{
 		for(size_t i=len; i< th->vec.size(); ++i)
 		{
@@ -801,12 +801,10 @@ ASFUNCTIONBODY_ATOM(Vector,slice)
 		{
 			res->vec[j] =th->vec[i];
 			if (!th->vec_type->coerce(th->getInstanceWorker(),res->vec[j]))
-			{
 				ASATOM_INCREF(res->vec[j]);
-				ASObject* obj = asAtomHandler::getObject(res->vec[j]);
-				if (obj)
-					obj->addStoredMember();
-			}
+			ASObject* obj = asAtomHandler::getObject(res->vec[j]);
+			if (obj)
+				obj->addStoredMember();
 		}
 		j++;
 	}
@@ -1218,13 +1216,12 @@ ASFUNCTIONBODY_ATOM(Vector,unshift)
 		{
 			th->vec[i] = args[i];
 			if (!th->vec_type->coerce(th->getInstanceWorker(),th->vec[i]))
+				ASATOM_INCREF(th->vec[i]);
+			ASObject* obj = asAtomHandler::getObject(th->vec[i]);
+			if (obj)
 			{
-				ASObject* obj = asAtomHandler::getObject(th->vec[i]);
-				if (obj)
-				{
-					obj->incRef();
-					obj->addStoredMember();
-				}
+				obj->incRef();
+				obj->addStoredMember();
 			}
 		}
 	}
@@ -1338,7 +1335,10 @@ ASFUNCTIONBODY_ATOM(Vector,removeAt)
 		ASObject* ob = asAtomHandler::getObject(ret);
 		th->vec.erase(th->vec.begin()+index);
 		if (ob)
+		{
+			ob->incRef(); // for result
 			ob->removeStoredMember();
+		}
 	}
 	else
 		createError<RangeError>(wrk,kOutOfRangeError);

@@ -439,7 +439,7 @@ ASFUNCTIONBODY_ATOM(ASFile,_getURL)
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
 	tiny_string url = URLInfo::encode(th->path,URLInfo::ENCODE_URI);
 	url = tiny_string("file://")+url;
-	ret = asAtomHandler::fromObjectNoPrimitive(abstract_s(wrk,url));
+	ret = asAtomHandler::fromString(wrk->getSystemState(),url);
 }
 ASFUNCTIONBODY_ATOM(ASFile,_setURL)
 {

@@ -63,6 +63,7 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(dispose);
 	ASFUNCTION_ATOM(draw);
+	ASFUNCTION_ATOM(drawWithQuality);
 	ASFUNCTION_ATOM(getPixel);
 	ASFUNCTION_ATOM(getPixel32);
 	ASFUNCTION_ATOM(setPixel);

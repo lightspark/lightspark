@@ -74,6 +74,7 @@ void BitmapData::sinit(Class_base* c)
 	c->isReusable=true;
 	c->addImplementedInterface(InterfaceClass<IBitmapDrawable>::getClass(c->getSystemState()));
 	c->setDeclaredMethodByQName("draw","",Class<IFunction>::getFunction(c->getSystemState(),draw),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawWithQuality","",Class<IFunction>::getFunction(c->getSystemState(),drawWithQuality),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getPixel","",Class<IFunction>::getFunction(c->getSystemState(),getPixel,2,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getPixel32","",Class<IFunction>::getFunction(c->getSystemState(),getPixel32,2,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
@@ -303,7 +304,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		ct->applyTransformation(pixels.getPtr());
 }
 
-ASFUNCTIONBODY_ATOM(BitmapData,draw)
+ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
@@ -318,8 +319,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 	asAtom blendMode = asAtomHandler::invalidAtom;
 	_NR<Rectangle> clipRect;
 	bool smoothing;
+	asAtom quality = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(drawable) (matrix, NullRef) (ctransform, NullRef) (blendMode, asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY))
-					(clipRect, NullRef) (smoothing, false));
+					(clipRect, NullRef) (smoothing, false)(quality,asAtomHandler::nullAtom));
 
 	if(!drawable->getClass() || !drawable->getClass()->isSubClass(InterfaceClass<IBitmapDrawable>::getClass(wrk->getSystemState())) )
 	{
@@ -329,6 +331,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 								   "IBitmapDrawable");
 		return;
 	}
+	if (!asAtomHandler::isNull(quality))
+		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.drawWithQuality parameter quality is ignored:"<<asAtomHandler::toDebugString(quality));
 
 	uint32_t blendModeID = BUILTIN_STRINGS::EMPTY;
 	if (asAtomHandler::isValid(blendMode) 
@@ -389,7 +393,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());
 	th->notifyUsers();
 }
-
+ASFUNCTIONBODY_ATOM(BitmapData,draw)
+{
+	drawWithQuality(ret,wrk,obj,args,argslen);
+}
 ASFUNCTIONBODY_ATOM(BitmapData,getPixel)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);

@@ -1836,6 +1836,21 @@ number_t DisplayObject::computeWidth()
 	return (ret)?(x2-x1):0;
 }
 
+int DisplayObject::getRawDepth()
+{
+	return (parent != nullptr) ? parent->findLegacyChildDepth(this) : 0;
+}
+
+int DisplayObject::getDepth()
+{
+	return getRawDepth() + 16384;
+}
+
+int DisplayObject::getClipDepth() const
+{
+	return ClipDepth + 16384;
+}
+
 _NR<RootMovieClip> DisplayObject::getRoot()
 {
 	if(!parent)

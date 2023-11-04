@@ -1613,6 +1613,20 @@ void Vector::nextValue(asAtom& ret,uint32_t index)
 		throw RunTimeException("Vector::nextValue out of bounds");
 }
 
+bool Vector::ensureLength(uint32_t len)
+{
+	if (len > size())
+	{
+		if (fixed)
+		{
+			createError<RangeError>(getInstanceWorker(),kVectorFixedError);
+			return false;
+		}
+		vec.resize(len, getDefaultValue());
+	}
+	return true;
+}
+
 bool Vector::isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index, bool* isNumber)
 {
 	//First of all the multiname has to contain the null namespace

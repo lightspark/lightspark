@@ -271,6 +271,7 @@ public:
 
 	void setTypes(const std::vector<Type*>& types);
 	bool sameType(const Class_base* cls) const;
+	Class_base* getType() const { return (Class_base*)vec_type; }
 
 	//Overloads
 	tiny_string toString();
@@ -339,6 +340,7 @@ public:
 	{
 		return vec.at(index);
 	}
+	bool ensureLength(uint32_t len);
 	void set(uint32_t index, asAtom v)
 	{
 		if (index < size())

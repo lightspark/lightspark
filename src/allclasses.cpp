@@ -109,6 +109,7 @@
 #include "scripting/flash/utils/IntervalManager.h"
 #include "scripting/flash/utils/IntervalRunner.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/Matrix3D.h"
 #include "scripting/flash/geom/orientation3d.h"
 #include "scripting/flash/globalization/datetimeformatter.h"
 #include "scripting/flash/globalization/datetimestyle.h"

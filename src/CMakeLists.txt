@@ -147,6 +147,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/filters/GradientGlowFilter.cpp
   scripting/flash/filesystem/flashfilesystem.cpp
   scripting/flash/geom/flashgeom.cpp
+  scripting/flash/geom/Matrix3D.cpp
   scripting/flash/geom/orientation3d.cpp
   scripting/flash/globalization/datetimeformatter.cpp
   scripting/flash/globalization/datetimestyle.cpp

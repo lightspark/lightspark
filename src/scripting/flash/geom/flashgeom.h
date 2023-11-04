@@ -275,47 +275,6 @@ public:
 	ASFUNCTION_ATOM(_toString);
 };
 
-class Matrix3D: public ASObject
-{
-private:
-	number_t data[4*4];
-	void append(number_t* otherdata);
-	void prepend(number_t *otherdata);
-	number_t getDeterminant();
-	void identity();
-public:
-	Matrix3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_MATRIX3D){}
-	static void sinit(Class_base* c);
-	bool destruct() override;
-	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION_ATOM(clone);
-	ASFUNCTION_ATOM(decompose);
-	ASFUNCTION_ATOM(recompose);
-	ASFUNCTION_ATOM(deltaTransformVector);
-	ASFUNCTION_ATOM(prepend);
-	ASFUNCTION_ATOM(prependScale);
-	ASFUNCTION_ATOM(prependTranslation);
-	ASFUNCTION_ATOM(append);
-	ASFUNCTION_ATOM(appendTranslation);
-	ASFUNCTION_ATOM(appendRotation);
-	ASFUNCTION_ATOM(appendScale);
-	ASFUNCTION_ATOM(copyColumnTo);
-	ASFUNCTION_ATOM(copyRawDataFrom);
-	ASFUNCTION_ATOM(copyRawDataTo);
-	ASFUNCTION_ATOM(copyFrom);
-	ASFUNCTION_ATOM(copyToMatrix3D);
-	ASFUNCTION_ATOM(_identity);
-	ASFUNCTION_ATOM(invert);
-	ASFUNCTION_ATOM(_get_rawData);
-	ASFUNCTION_ATOM(_set_rawData);
-	ASFUNCTION_ATOM(_get_determinant);
-	ASFUNCTION_ATOM(_get_position);
-	ASFUNCTION_ATOM(_set_position);
-	ASFUNCTION_ATOM(transformVector);
-	void getRowAsFloat(uint32_t rownum,float* rowdata);
-	void getColumnAsFloat(uint32_t rownum,float* rowdata);
-	void getRawDataAsFloat(float* rowdata);
-};
 class PerspectiveProjection: public ASObject
 {
 public:

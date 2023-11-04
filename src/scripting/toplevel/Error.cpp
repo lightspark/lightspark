@@ -93,6 +93,8 @@ tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1,
 //	}
 //	Log::setLogLevel(LOG_CALLS);
 	LOG(LOG_INFO,"throwing exception:"<<getWorker()<<" id:"<<errorID<<" "<<msg.str());
+//	getWorker()->dumpStacktrace();
+//	getWorker()->rootClip->dumpDisplayList();
 	return msg.str();
 }
 void lightspark::setError(ASObject* error)

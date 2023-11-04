@@ -40,6 +40,12 @@ void createError(ASWorker* wrk, int errorID, const tiny_string& arg1="", const t
 	setError(Class<T>::getInstanceS(wrk,message, errorID));
 }
 
+template<class T>
+void createErrorWithMessage(ASWorker* wrk, int errorID, const tiny_string& message)
+{
+	setError(Class<T>::getInstanceS(wrk,message, errorID));
+}
+
 class ASError: public ASObject
 {
 private:

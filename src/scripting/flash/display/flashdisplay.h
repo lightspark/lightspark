@@ -163,6 +163,7 @@ public:
 	void startDrawJob(bool forcachedbitmap) override;
 	void endDrawJob(bool forcachedbitmap) override;
 	void cloneDisplayList(std::vector<_R<DisplayObject>>& displayListCopy);
+	bool isEmpty() const { return dynamicDisplayList.empty(); }
 	bool hasLegacyChildAt(int32_t depth);
 	// this does not test if a DisplayObject exists at the provided depth
 	DisplayObject* getLegacyChildAt(int32_t depth);
@@ -277,6 +278,50 @@ public:
 	bool AVM1HandleKeyboardEvent(KeyboardEvent* e) override;
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
 	void handleMouseCursor(bool rollover) override;
+	bool allowAsMask() const override
+	{
+		if (needsActionScript3())
+		{
+			_NR<DisplayObject> stateChild = const_cast<SimpleButton*>(this)->getStateChild();
+			if (!stateChild.isNull() && stateChild->is<DisplayObjectContainer>())
+				return stateChild->as<DisplayObjectContainer>()->isEmpty();
+			return false;
+		}
+		else
+			return !isEmpty();
+	}
+
+	_NR<DisplayObject> getStateChild()
+	{
+		_NR<DisplayObject> ret = NullRef;
+		switch (currentState)
+		{
+			case STATE_OUT:
+			case UP:
+				if (!upState.isNull())
+				{
+					upState->incRef();
+					ret = _MR(upState);
+				}
+			break;
+			case OVER:
+				if (!overState.isNull())
+				{
+					overState->incRef();
+					ret = _MR(overState);
+				}
+			break;
+			case DOWN:
+				if (!downState.isNull())
+				{
+					downState->incRef();
+					ret = _MR(downState);
+				}
+			break;
+			default: break;
+		}
+		return ret;
+	}
 };
 
 class Shape: public DisplayObject, public TokenContainer
@@ -535,6 +580,7 @@ public:
 	_NR<Graphics> getGraphics();
 	void handleMouseCursor(bool rollover) override;
 	bool hasGraphics() const override { return !graphics.isNull(); }
+	bool allowAsMask() const override { return !isEmpty(); }
 };
 
 struct FrameLabel_data

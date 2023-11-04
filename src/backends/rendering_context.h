@@ -72,12 +72,18 @@ public:
 	 * Get the right CachedSurface from an object
 	 */
 	virtual const CachedSurface& getCachedSurface(const DisplayObject* obj) const=0;
+	virtual void pushMask()=0;
+	virtual void popMask()=0;
+	virtual void deactivateMask()=0;
+	virtual void activateMask()=0;
+	virtual bool isDrawingMask() const=0;
 };
 
 class GLRenderContext: public RenderContext
 {
 private:
 	static int errorCount;
+	int maskCount;
 protected:
 	EngineData* engineData;
 	int projectionMatrixUniform;
@@ -123,7 +129,7 @@ public:
 	 * Uploads the current matrix as the specified type.
 	 */
 	void setMatrixUniform(LSGL_MATRIX m) const;
-	GLRenderContext() : RenderContext(GL),engineData(nullptr), largeTextureSize(0)
+	GLRenderContext() : RenderContext(GL),maskCount(0),engineData(nullptr), largeTextureSize(0)
 	{
 	}
 	void SetEngineData(EngineData* data) { engineData = data;}
@@ -138,6 +144,13 @@ public:
 	 * In the OpenGL case we just get the CachedSurface inside the object itself
 	 */
 	const CachedSurface& getCachedSurface(const DisplayObject* obj) const override;
+
+	void pushMask() override;
+	void popMask() override;
+	void deactivateMask() override;
+	void activateMask() override;
+	bool isDrawingMask() const override { return maskCount > 0; }
+
 	void resetCurrentFrameBuffer();
 	// this is used to keep track of the fbos when rendering filters and some of the ancestors of the filtered object also have filters
 	std::vector<std::pair<uint32_t,uint32_t>> filterframebufferstack;
@@ -169,6 +182,12 @@ public:
 	 * In the Cairo case we get the right CachedSurface out of the map
 	 */
 	const CachedSurface& getCachedSurface(const DisplayObject* obj) const override;
+
+	void pushMask() override {}
+	void popMask() override {}
+	void deactivateMask() override {}
+	void activateMask() override {}
+	bool isDrawingMask() const override { return false; }
 
 	/**
 	 * The CairoRenderContext acquires the ownership of the buffer

@@ -326,6 +326,11 @@ public:
 	virtual void exec_glDisable_GL_SCISSOR_TEST();
 	virtual void exec_glColorMask(bool red, bool green, bool blue, bool alpha);
 	virtual void exec_glStencilFunc_GL_ALWAYS();
+	virtual void exec_glStencilFunc_GL_NEVER();
+	virtual void exec_glStencilFunc_GL_EQUAL(int32_t ref, uint32_t mask);
+	virtual void exec_glStencilOp_GL_DECR();
+	virtual void exec_glStencilOp_GL_INCR();
+	virtual void exec_glStencilOp_GL_KEEP();
 
 	// Audio handling
 	virtual int audio_StreamInit(AudioStream* s);

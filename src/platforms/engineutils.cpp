@@ -1506,6 +1506,31 @@ void EngineData::exec_glStencilFunc_GL_ALWAYS()
 	glStencilFunc(GL_ALWAYS, 0, 0xff);
 }
 
+void EngineData::exec_glStencilFunc_GL_NEVER()
+{
+	glStencilFunc(GL_NEVER, 0, 0xff);
+}
+
+void EngineData::exec_glStencilFunc_GL_EQUAL(int32_t ref, uint32_t mask)
+{
+	glStencilFunc(GL_EQUAL, ref, mask);
+}
+
+void EngineData::exec_glStencilOp_GL_INCR()
+{
+	glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+}
+
+void EngineData::exec_glStencilOp_GL_DECR()
+{
+	glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+}
+
+void EngineData::exec_glStencilOp_GL_KEEP()
+{
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+}
+
 void audioCallback(void * userdata, uint8_t * stream, int len)
 {
 	AudioManager* manager = (AudioManager*)userdata;

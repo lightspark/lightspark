@@ -277,6 +277,7 @@ public:
 	virtual bool needsActionScript3() const;
 	virtual void handleMouseCursor(bool rollover) {}
 	virtual bool hasGraphics() const { return false; }
+	virtual bool allowAsMask() const { return true; }
 	Vector2f getLocalMousePos();
 	Vector2f getXY();
 	void setX(number_t x);

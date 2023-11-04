@@ -1351,12 +1351,48 @@ bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 		}
 	}
 	Locker l(mutexDisplayList);
+	int clipDepth = 0;
+	vector<pair<int, DisplayObject*>> clipDepthStack;
 	//Now draw also the display list
 	auto it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
-		(*it)->Render(ctxt);
+		DisplayObject* child = *it;
+		int depth = child->getDepth();
+		// Pop off masks (if any).
+		while (!clipDepthStack.empty() && clipDepth > 0 && depth > clipDepth)
+		{
+			DisplayObject* clipChild = clipDepthStack.back().second;
+			clipDepth = clipDepthStack.back().first;
+			clipDepthStack.pop_back();
+
+			ctxt.deactivateMask();
+			clipChild->Render(ctxt);
+			ctxt.popMask();
+		}
+
+		if (child->getClipDepth() > 0 && child->isMask() && child->allowAsMask())
+		{
+			// Push, and render this mask.
+			clipDepthStack.push_back(make_pair(clipDepth, child));
+			clipDepth = child->getClipDepth();
+
+			ctxt.pushMask();
+			child->Render(ctxt);
+			ctxt.activateMask();
+		}
+		else if (child->isVisible() || ctxt.isDrawingMask())
+			child->Render(ctxt);
+
 	}
+
+	// Pop remaining masks (if any).
+	for_each(clipDepthStack.rbegin(), clipDepthStack.rend(), [&](pair<int, DisplayObject*>& it)
+	{
+		ctxt.deactivateMask();
+		it.second->Render(ctxt);
+		ctxt.popMask();
+	});
 	return renderingfailed;
 }
 

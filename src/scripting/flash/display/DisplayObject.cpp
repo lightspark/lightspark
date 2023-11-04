@@ -1031,7 +1031,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 			{
 				// render object without shader blendmode into texture
 				ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
-						ct, surface.isMask, !surface.mask.isNull(),0.0,RGB(),surface.smoothing,surface.matrix,r,bl);
+						ct, false, false,0.0,RGB(),surface.smoothing,surface.matrix,r,bl);
 				// ensure the object is rendered again with shader blendmode
 				bl = BLENDMODE_NORMAL; 
 			}
@@ -1040,7 +1040,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 		}
 	}
 	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
-			ct, surface.isMask, !surface.mask.isNull(),0.0,RGB(),surface.smoothing,surface.matrix,r,bl);
+			ct, false, false,0.0,RGB(),surface.smoothing,surface.matrix,r,bl);
 	return false;
 }
 

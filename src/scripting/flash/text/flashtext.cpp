@@ -1892,6 +1892,7 @@ bool TextField::renderImpl(RenderContext& ctxt)
 		getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
 
 		uint32_t codetableindex;
+		// TODO: Switch over to using the new masking implementation.
 		if (this->border || this->background || this->caretblinkstate)
 		{
 			number_t bxmin,bxmax,bymin,bymax;

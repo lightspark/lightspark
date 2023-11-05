@@ -42,6 +42,7 @@ protected:
 	Context3D* context;
 	void parseAdobeTextureFormat(ByteArray* data, int32_t byteArrayOffset, bool forCubeTexture);
 	void setFormat(const tiny_string& f);
+	uint32_t getBytesNeeded(uint32_t miplevel);
 public:
 	TextureBase(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c)
 	  ,textureID(UINT32_MAX),width(0),height(0),format(BGRA),compressedformat(UNCOMPRESSED),context(nullptr)

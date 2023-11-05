@@ -11,7 +11,7 @@
 
 namespace lightspark
 {
-enum LSJXRDATAFORMAT { RGB888,RGB8888,DXT5AlphaImageData,DXT5ImageData};
+enum LSJXRDATAFORMAT { RGB888,RGB8888,DXT5AlphaImageData,DXT5ImageData,DXT1ImageData};
 struct lsjxrdata
 {
 	LSJXRDATAFORMAT dataformat;
@@ -35,6 +35,7 @@ void jpegxrcallback(jxr_image_t image, int mx, int my, int* data)
 			}
 			break;
 		}
+		case DXT1ImageData:
 		case DXT5ImageData:
 		{
 			uint32_t n=3;
@@ -128,6 +129,7 @@ bool decodejxr(uint8_t* bytes, uint32_t texlen, vector<uint8_t>& result, uint32_
 		case DXT5AlphaImageData:
 			pixel_format = JXRC_FMT_8bppGray;
 			break;
+		case DXT1ImageData:
 		case DXT5ImageData:
 			pixel_format = JXRC_FMT_16bppBGR565;
 			break;
@@ -312,6 +314,60 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data, int32_t byteArrayOffs
 				tmpheight >>= 1;
 				break;
 			}
+			case 0xc://compressed lossy
+			{
+				if (this->format != TEXTUREFORMAT::COMPRESSED)
+				{
+					createError<ArgumentError>(getInstanceWorker(),kInvalidArgumentError,"Texture format mismatch");
+					return;
+				}
+				this->compressedformat = TEXTUREFORMAT_COMPRESSED::DXT1;
+				uint32_t blocks = max(uint32_t(1),tmpwidth/4)*max(uint32_t(1),tmpheight/4);
+				uint32_t tmp;
+
+				// read LZMA DXT1Data
+				std::vector<uint8_t> rgbdata;
+				rgbdata.resize(blocks*4); // 4 byte per 4x4 block
+				bool hasrgbdata=decodelzma(data,rgbdata);
+
+				// read JPEG-XR DXT1ImageData
+				std::vector<uint8_t> rgbimagedata;
+				data->readUnsignedInt(tmp);
+				if (hasrgbdata)
+				{
+					rgbimagedata.resize(blocks*4); // 4 byte per 4x4 block
+					decodejxr(data->getBufferNoCheck()+data->getPosition(),tmp,rgbimagedata,max(uint32_t(1),tmpwidth/4),max(uint32_t(2),tmpheight/2),DXT1ImageData,2);
+				}
+				data->setPosition(data->getPosition()+tmp);
+				if (hasrgbdata)
+				{
+					bitmaparray[level].resize(tmpwidth*tmpheight/2);
+					uint32_t pos = 0;
+					for (uint32_t j=0; j < tmpwidth*tmpheight/32; j++)
+					{
+						bitmaparray[level][pos++]=rgbimagedata[j*4  ];
+						bitmaparray[level][pos++]=rgbimagedata[j*4+1];
+						bitmaparray[level][pos++]=rgbimagedata[j*4+2];
+						bitmaparray[level][pos++]=rgbimagedata[j*4+3];
+						bitmaparray[level][pos++]=rgbdata[j*4  ];
+						bitmaparray[level][pos++]=rgbdata[j*4+1];
+						bitmaparray[level][pos++]=rgbdata[j*4+2];
+						bitmaparray[level][pos++]=rgbdata[j*4+3];
+					}
+				}
+				else
+					bitmaparray[level].clear();
+					
+				//skip all other formats
+				for (uint32_t j = 0; j < 10; j++)
+				{
+					data->readUnsignedInt(tmp);
+					data->setPosition(data->getPosition()+tmp);
+				}
+				tmpwidth >>= 1;
+				tmpheight >>= 1;
+				break;
+			}
 			case 0xd://compressed lossy with alpha
 			{
 				if (this->format != TEXTUREFORMAT::COMPRESSED_ALPHA)
@@ -413,7 +469,28 @@ void TextureBase::setFormat(const tiny_string& f)
 	else if (f == "rgbaHalfFloat")
 		format = TEXTUREFORMAT::RGBA_HALF_FLOAT;
 }
-
+uint32_t TextureBase::getBytesNeeded(uint32_t miplevel)
+{
+	switch (format)
+	{
+		case TEXTUREFORMAT::BGRA:
+			return (width>>miplevel)*(height>>miplevel)*4;
+		case TEXTUREFORMAT::BGRA_PACKED:
+		case TEXTUREFORMAT::BGR_PACKED:
+			return (width>>miplevel)*(height>>miplevel)*2;
+		case TEXTUREFORMAT::COMPRESSED:
+		case TEXTUREFORMAT::COMPRESSED_ALPHA:
+			LOG(LOG_NOT_IMPLEMENTED,"TextureBase::getBytesNeeded for compressed formats");
+			break;
+		case TEXTUREFORMAT::RGBA_HALF_FLOAT:
+			LOG(LOG_NOT_IMPLEMENTED,"TextureBase::getBytesNeeded for RGBA_HALF_FLOAT");
+			break;
+		default:
+			break;
+	}
+	return (width>>miplevel)*(height>>miplevel)*4;
+}
+ 
 void TextureBase::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
@@ -529,9 +606,9 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 	th->context->rendermutex.lock();
 	if (th->bitmaparray.size() <= miplevel)
 		th->bitmaparray.resize(miplevel+1);
-	uint32_t mipsize = (th->width>>miplevel)*(th->height>>miplevel)*4;
+	uint32_t mipsize = th->getBytesNeeded(miplevel);
 	th->bitmaparray[miplevel].resize(mipsize);
-	uint32_t bytesneeded = (th->height>>miplevel) * (th->width>>miplevel)*4;
+	uint32_t bytesneeded = th->getBytesNeeded(miplevel);
 	if (byteArrayOffset + bytesneeded > data->getLength())
 	{
 		LOG(LOG_ERROR,"not enough bytes to read");
@@ -660,16 +737,18 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 		createError<TypeError>(wrk,kNullArgumentError);
 		return;
 	}
-	assert_and_throw(th->height == uint32_t(source->getHeight()) && th->width == uint32_t(source->getWidth()));
 	th->context->rendermutex.lock();
+	if (th->format != TEXTUREFORMAT::BGRA)
+		LOG(LOG_NOT_IMPLEMENTED,"RectangleTexture.uploadFromBitmapData always uses format BGRA:"<<th->format);
+	th->format = TEXTUREFORMAT::BGRA;
 	if (th->bitmaparray.size() == 0)
 		th->bitmaparray.resize(1);
-	uint32_t bytesneeded = th->width*th->height*4;
+	uint32_t bytesneeded = th->getBytesNeeded(0);
 	th->bitmaparray[0].resize(bytesneeded);
 
-	for (uint32_t i = 0; i < th->height; i++)
+	for (uint32_t i = 0; i < th->height && i < uint32_t(source->getHeight()); i++)
 	{
-		for (uint32_t j = 0; j < th->width; j++)
+		for (uint32_t j = 0; j < th->width && j < uint32_t(source->getWidth()); j++)
 		{
 			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
 			uint32_t* data = (uint32_t*)(&source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4+j*4]);
@@ -702,14 +781,14 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 	th->context->rendermutex.lock();
 	if (th->bitmaparray.size() == 0)
 		th->bitmaparray.resize(1);
-	uint32_t bytesneeded = th->height*th->width*4;
+	uint32_t bytesneeded = th->getBytesNeeded(0);
 	if (byteArrayOffset + bytesneeded > data->getLength())
 	{
 		LOG(LOG_ERROR,"not enough bytes to read");
 		createError<RangeError>(wrk,kParamRangeError);
 		return;
 	}
-	th->bitmaparray[0].resize(bytesneeded);
+	th->bitmaparray[0].resize(th->width*th->height*4);
 	data->readBytes(byteArrayOffset,bytesneeded,th->bitmaparray[0].data());
 #ifdef ENABLE_GLES
 	switch (th->format)

@@ -54,13 +54,14 @@ class ByteArray;
 class NativeMenuItem;
 class InteractiveObject;
 
-enum DEPTH_FUNCTION { ALWAYS, EQUAL, GREATER, GREATER_EQUAL, LESS, LESS_EQUAL, NEVER, NOT_EQUAL };
+enum DEPTHSTENCIL_FUNCTION { DEPTHSTENCIL_ALWAYS, DEPTHSTENCIL_EQUAL, DEPTHSTENCIL_GREATER, DEPTHSTENCIL_GREATER_EQUAL, DEPTHSTENCIL_LESS, DEPTHSTENCIL_LESS_EQUAL, DEPTHSTENCIL_NEVER, DEPTHSTENCIL_NOT_EQUAL };
+enum DEPTHSTENCIL_OP { DEPTHSTENCIL_KEEP, DEPTHSTENCIL_ZERO, DEPTHSTENCIL_REPLACE, DEPTHSTENCIL_INCR, DEPTHSTENCIL_INCR_WRAP, DEPTHSTENCIL_DECR, DEPTHSTENCIL_DECR_WRAP, DEPTHSTENCIL_INVERT };
 enum TRIANGLE_FACE { FACE_BACK, FACE_FRONT, FACE_FRONT_AND_BACK, FACE_NONE };
 enum BLEND_FACTOR { BLEND_ONE,BLEND_ZERO,BLEND_SRC_ALPHA,BLEND_SRC_COLOR,BLEND_DST_ALPHA,BLEND_DST_COLOR,BLEND_ONE_MINUS_SRC_ALPHA,BLEND_ONE_MINUS_SRC_COLOR,BLEND_ONE_MINUS_DST_ALPHA,BLEND_ONE_MINUS_DST_COLOR };
 enum VERTEXBUFFER_FORMAT { BYTES_4=0, FLOAT_1, FLOAT_2, FLOAT_3, FLOAT_4 };
 enum CLEARMASK { COLOR = 0x1, DEPTH = 0x2, STENCIL = 0x4 };
 enum TEXTUREFORMAT { BGRA, BGRA_PACKED, BGR_PACKED, COMPRESSED, COMPRESSED_ALPHA, RGBA_HALF_FLOAT,BGR };
-enum TEXTUREFORMAT_COMPRESSED { UNCOMPRESSED, DXT5 };
+enum TEXTUREFORMAT_COMPRESSED { UNCOMPRESSED, DXT5, DXT1 };
 enum SAMPLEPOSITION { SAMPLEPOS_STANDARD=0,SAMPLEPOS_MASK=1,SAMPLEPOS_BLEND=2,SAMPLEPOS_FILTER=3,SAMPLEPOS_FILTER_DST=4 };
 
 // this is only used for font rendering in PPAPI plugin
@@ -125,6 +126,7 @@ public:
 	bool startInFullScreenMode;
 	double startscalefactor;
 	tiny_string driverInfoString;
+	uint32_t context3dProfile;
 	std::vector<TEXTUREFORMAT_COMPRESSED> compressed_texture_formats;
 	EngineData();
 	virtual ~EngineData();
@@ -247,7 +249,7 @@ public:
 	virtual void exec_glEnable_GL_BLEND();
 	virtual void exec_glEnable_GL_DEPTH_TEST();
 	virtual void exec_glEnable_GL_STENCIL_TEST();
-	virtual void exec_glDepthFunc(DEPTH_FUNCTION depthfunc);
+	virtual void exec_glDepthFunc(DEPTHSTENCIL_FUNCTION depthfunc);
 	virtual void exec_glDisable_GL_DEPTH_TEST();
 	virtual void exec_glDisable_GL_STENCIL_TEST();
 	virtual void exec_glDisable_GL_TEXTURE_2D();
@@ -306,7 +308,7 @@ public:
 	virtual void exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, uint32_t filter, uint32_t mipmap, uint32_t wrap);
 	virtual void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, bool hasalpha);
 	virtual void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels);
-	virtual void exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize);
+	virtual void exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize, bool isRectangleTexture);
 	virtual void exec_glDrawBuffer_GL_BACK();
 	virtual void exec_glClearColor(float red,float green,float blue,float alpha);
 	virtual void exec_glClearStencil(uint32_t stencil);
@@ -331,6 +333,9 @@ public:
 	virtual void exec_glStencilOp_GL_DECR();
 	virtual void exec_glStencilOp_GL_INCR();
 	virtual void exec_glStencilOp_GL_KEEP();
+	virtual void exec_glStencilOpSeparate(TRIANGLE_FACE face, DEPTHSTENCIL_OP sfail, DEPTHSTENCIL_OP dpfail, DEPTHSTENCIL_OP dppass);
+	virtual void exec_glStencilMask(uint32_t mask);
+	virtual void exec_glStencilFunc (DEPTHSTENCIL_FUNCTION func, uint32_t ref, uint32_t mask);
 
 	// Audio handling
 	virtual int audio_StreamInit(AudioStream* s);

@@ -253,7 +253,7 @@ public:
 	void exec_glEnable_GL_TEXTURE_2D() override;
 	void exec_glEnable_GL_BLEND() override;
 	void exec_glEnable_GL_DEPTH_TEST() override;
-	void exec_glDepthFunc(DEPTH_FUNCTION depthfunc) override;
+	void exec_glDepthFunc(DEPTHSTENCIL_FUNCTION depthfunc) override;
 	void exec_glDisable_GL_DEPTH_TEST() override;
 	void exec_glEnable_GL_STENCIL_TEST() override;
 	void exec_glDisable_GL_STENCIL_TEST() override;
@@ -313,7 +313,7 @@ public:
 	void exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, uint32_t filter, uint32_t mipmap, uint32_t wrap) override;
 	void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level, int32_t width, int32_t height, int32_t border, const void* pixels, bool hasalpha) override;
 	void exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels) override;
-	void exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize) override;
+	void exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize, bool isRectangleTexture) override;
 	void exec_glDrawBuffer_GL_BACK() override;
 	void exec_glClearColor(float red,float green,float blue,float alpha) override;
 	void exec_glClearStencil(uint32_t stencil) override;
@@ -333,7 +333,15 @@ public:
 	void exec_glDisable_GL_SCISSOR_TEST() override;
 	void exec_glColorMask(bool red, bool green, bool blue, bool alpha) override;
 	void exec_glStencilFunc_GL_ALWAYS() override;
-
+	void exec_glStencilFunc_GL_NEVER() override;
+	void exec_glStencilFunc_GL_EQUAL(int32_t ref, uint32_t mask) override;
+	void exec_glStencilOp_GL_DECR() override;
+	void exec_glStencilOp_GL_INCR() override;
+	void exec_glStencilOp_GL_KEEP() override;
+	void exec_glStencilOpSeparate(TRIANGLE_FACE face, DEPTHSTENCIL_OP sfail, DEPTHSTENCIL_OP dpfail, DEPTHSTENCIL_OP dppass) override;
+	void exec_glStencilMask(uint32_t mask) override;
+	void exec_glStencilFunc (DEPTHSTENCIL_FUNCTION func, uint32_t ref, uint32_t mask) override;
+	
 	// Audio handling
 	int audio_StreamInit(AudioStream* s) override;
 	void audio_StreamPause(int channel, bool dopause) override;

@@ -432,7 +432,6 @@ void EngineData::initGLEW()
 	}
 	supportPackedDepthStencil = GLEW_EXT_packed_depth_stencil;
 #endif
-	bool ok = SDL_GL_ExtensionSupported("GL_KHR_blend_equation_advanced");
 	initNanoVG();
 }
 
@@ -858,6 +857,8 @@ void EngineData::getGlCompressedTextureFormats()
 		LOG(LOG_INFO,"OpenGL supported compressed texture format:"<<hex<<formats[i]);
 		if (formats[i] == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT)
 			compressed_texture_formats.push_back(TEXTUREFORMAT_COMPRESSED::DXT5);
+		if (formats[i] == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT)
+			compressed_texture_formats.push_back(TEXTUREFORMAT_COMPRESSED::DXT1);
 	}
 	delete [] formats;
 }
@@ -964,32 +965,32 @@ void EngineData::exec_glDisable_GL_STENCIL_TEST()
 {
 	glDisable(GL_STENCIL_TEST);
 }
-void EngineData::exec_glDepthFunc(DEPTH_FUNCTION depthfunc)
+void EngineData::exec_glDepthFunc(DEPTHSTENCIL_FUNCTION depthfunc)
 {
 	switch (depthfunc)
 	{
-		case ALWAYS:
+		case DEPTHSTENCIL_ALWAYS:
 			glDepthFunc(GL_ALWAYS);
 			break;
-		case EQUAL:
+		case DEPTHSTENCIL_EQUAL:
 			glDepthFunc(GL_EQUAL);
 			break;
-		case GREATER:
+		case DEPTHSTENCIL_GREATER:
 			glDepthFunc(GL_GREATER);
 			break;
-		case GREATER_EQUAL:
+		case DEPTHSTENCIL_GREATER_EQUAL:
 			glDepthFunc(GL_GEQUAL);
 			break;
-		case LESS:
+		case DEPTHSTENCIL_LESS:
 			glDepthFunc(GL_LESS);
 			break;
-		case LESS_EQUAL:
+		case DEPTHSTENCIL_LESS_EQUAL:
 			glDepthFunc(GL_LEQUAL);
 			break;
-		case NEVER:
+		case DEPTHSTENCIL_NEVER:
 			glDepthFunc(GL_NEVER);
 			break;
-		case NOT_EQUAL:
+		case DEPTHSTENCIL_NOT_EQUAL:
 			glDepthFunc(GL_NOTEQUAL);
 			break;
 	}
@@ -1357,12 +1358,12 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(in
 {
 	glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
 }
-void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize)
+void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize, bool isRectangleTexture)
 {
 	switch (format)
 	{
 		case TEXTUREFORMAT::BGRA:
-			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
 			break;
 		case TEXTUREFORMAT::BGR:
 #if ENABLE_GLES2
@@ -1371,20 +1372,20 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, in
 				((uint8_t*)pixels)[i] = ((uint8_t*)pixels)[i+2];
 				((uint8_t*)pixels)[i+2] = t;
 			}
-			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 #else
-			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_BYTE, pixels);
+			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_BYTE, pixels);
 #endif
 			break;
 		case TEXTUREFORMAT::BGRA_PACKED:
-			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
+			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
 			break;
 		case TEXTUREFORMAT::BGR_PACKED:
 #if ENABLE_GLES2
 			LOG(LOG_NOT_IMPLEMENTED,"textureformat BGR_PACKED for opengl es");
-			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
+			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
 #else
-			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_SHORT_5_6_5, pixels);
+			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_SHORT_5_6_5, pixels);
 #endif
 			break;
 		case TEXTUREFORMAT::COMPRESSED:
@@ -1393,7 +1394,10 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, in
 			switch (compressedformat)
 			{
 				case TEXTUREFORMAT_COMPRESSED::DXT5:
-					glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, border, compressedImageSize, pixels);
+					glCompressedTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, border, compressedImageSize, pixels);
+					break;
+				case TEXTUREFORMAT_COMPRESSED::DXT1:
+					glCompressedTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, border, compressedImageSize, pixels);
 					break;
 				default:
 					LOG(LOG_NOT_IMPLEMENTED,"upload texture in compressed format "<<compressedformat);
@@ -1529,6 +1533,149 @@ void EngineData::exec_glStencilOp_GL_DECR()
 void EngineData::exec_glStencilOp_GL_KEEP()
 {
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+}
+
+void EngineData::exec_glStencilOpSeparate(TRIANGLE_FACE face, DEPTHSTENCIL_OP sfail, DEPTHSTENCIL_OP dpfail, DEPTHSTENCIL_OP dppass)
+{
+	GLenum glface=GL_FRONT;
+	switch (face)
+	{
+		case FACE_BACK:
+			glface=GL_BACK;
+			break;
+		case FACE_FRONT:
+			glface=GL_FRONT;
+			break;
+		case FACE_FRONT_AND_BACK:
+			glface=GL_FRONT_AND_BACK;
+			break;
+		case FACE_NONE:
+			glface=GL_NONE;
+			break;
+	}
+	GLenum glsfail=GL_KEEP;
+	switch (sfail)
+	{
+		case DEPTHSTENCIL_KEEP: 
+			glsfail=GL_KEEP;
+			break;
+		case DEPTHSTENCIL_ZERO:
+			glsfail=GL_ZERO;
+			break;
+		case DEPTHSTENCIL_REPLACE:
+			glsfail=GL_REPLACE;
+			break;
+		case DEPTHSTENCIL_INCR:
+			glsfail=GL_INCR;
+			break;
+		case DEPTHSTENCIL_INCR_WRAP:
+			glsfail=GL_INCR_WRAP;
+			break;
+		case DEPTHSTENCIL_DECR:
+			glsfail=GL_DECR;
+			break;
+		case DEPTHSTENCIL_DECR_WRAP:
+			glsfail=GL_DECR_WRAP;
+			break;
+		case DEPTHSTENCIL_INVERT:
+			glsfail=GL_INVERT;
+			break;
+	}
+	GLenum gldpfail=GL_KEEP;
+	switch (dpfail)
+	{
+		case DEPTHSTENCIL_KEEP: 
+			gldpfail=GL_KEEP;
+			break;
+		case DEPTHSTENCIL_ZERO:
+			gldpfail=GL_ZERO;
+			break;
+		case DEPTHSTENCIL_REPLACE:
+			gldpfail=GL_REPLACE;
+			break;
+		case DEPTHSTENCIL_INCR:
+			gldpfail=GL_INCR;
+			break;
+		case DEPTHSTENCIL_INCR_WRAP:
+			gldpfail=GL_INCR_WRAP;
+			break;
+		case DEPTHSTENCIL_DECR:
+			gldpfail=GL_DECR;
+			break;
+		case DEPTHSTENCIL_DECR_WRAP:
+			gldpfail=GL_DECR_WRAP;
+			break;
+		case DEPTHSTENCIL_INVERT:
+			gldpfail=GL_INVERT;
+			break;
+	}
+	GLenum gldppass=GL_KEEP;
+	switch (dppass)
+	{
+		case DEPTHSTENCIL_KEEP: 
+			gldppass=GL_KEEP;
+			break;
+		case DEPTHSTENCIL_ZERO:
+			gldppass=GL_ZERO;
+			break;
+		case DEPTHSTENCIL_REPLACE:
+			gldppass=GL_REPLACE;
+			break;
+		case DEPTHSTENCIL_INCR:
+			gldppass=GL_INCR;
+			break;
+		case DEPTHSTENCIL_INCR_WRAP:
+			gldppass=GL_INCR_WRAP;
+			break;
+		case DEPTHSTENCIL_DECR:
+			gldppass=GL_DECR;
+			break;
+		case DEPTHSTENCIL_DECR_WRAP:
+			gldppass=GL_DECR_WRAP;
+			break;
+		case DEPTHSTENCIL_INVERT:
+			gldppass=GL_INVERT;
+			break;
+	}
+	glStencilOpSeparate(glface, glsfail, gldpfail, gldppass);
+}
+
+void EngineData::exec_glStencilMask(uint32_t mask)
+{
+	glStencilMask(mask);
+}
+
+void EngineData::exec_glStencilFunc(DEPTHSTENCIL_FUNCTION func, uint32_t ref, uint32_t mask)
+{
+	uint32_t f = GL_ALWAYS;
+	switch (func)
+	{
+		case DEPTHSTENCIL_ALWAYS:
+			f = GL_ALWAYS;
+			break;
+		case DEPTHSTENCIL_EQUAL:
+			f = GL_EQUAL;
+			break;
+		case DEPTHSTENCIL_GREATER:
+			f = GL_GREATER;
+			break;
+		case DEPTHSTENCIL_GREATER_EQUAL:
+			f = GL_GEQUAL;
+			break;
+		case DEPTHSTENCIL_LESS:
+			f = GL_LESS;
+			break;
+		case DEPTHSTENCIL_LESS_EQUAL:
+			f = GL_LEQUAL;
+			break;
+		case DEPTHSTENCIL_NEVER:
+			f = GL_NEVER;
+			break;
+		case DEPTHSTENCIL_NOT_EQUAL:
+			f = GL_NOTEQUAL;
+			break;
+	}
+	glStencilFunc(f,ref,mask);
 }
 
 void audioCallback(void * userdata, uint8_t * stream, int len)

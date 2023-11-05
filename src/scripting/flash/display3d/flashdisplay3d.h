@@ -108,7 +108,8 @@ enum RENDER_ACTION { RENDER_CLEAR,RENDER_CONFIGUREBACKBUFFER,RENDER_RENDERTOBACK
 					 RENDER_SETBLENDFACTORS,RENDER_SETDEPTHTEST,RENDER_SETCULLING,RENDER_GENERATETEXTURE,RENDER_LOADTEXTURE,RENDER_LOADCUBETEXTURE,
 					 RENDER_SETSCISSORRECTANGLE, RENDER_SETCOLORMASK, RENDER_SETSAMPLERSTATE, RENDER_DELETETEXTURE,
 					 RENDER_CREATEINDEXBUFFER,RENDER_UPLOADINDEXBUFFER,RENDER_DELETEINDEXBUFFER,
-					 RENDER_CREATEVERTEXBUFFER,RENDER_UPLOADVERTEXBUFFER,RENDER_DELETEVERTEXBUFFER };
+					 RENDER_CREATEVERTEXBUFFER,RENDER_UPLOADVERTEXBUFFER,RENDER_DELETEVERTEXBUFFER,
+				     RENDER_SETSTENCILREFERENCEVALUE,RENDER_SETSTENCILACTIONS};
 struct renderaction
 {
 	RENDER_ACTION action;
@@ -154,7 +155,10 @@ private:
 	bool enableDepthAndStencilTextureBuffer;
 	bool swapbuffers;
 	TRIANGLE_FACE currentcullface;
-	DEPTH_FUNCTION currentdepthfunction;
+	DEPTHSTENCIL_FUNCTION currentdepthfunction;
+	DEPTHSTENCIL_FUNCTION currentstencilfunction;
+	uint32_t currentstencilref;
+	uint32_t currentstencilmask;
 	void handleRenderAction(EngineData *engineData, renderaction &action);
 	void setRegisters(EngineData *engineData, std::vector<RegisterMapEntry> &registermap, constantregister *constants, bool isVertex);
 	void setAttribs(EngineData* engineData, std::vector<RegisterMapEntry> &attributes);
@@ -187,7 +191,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool,enableErrorChecking);
 	ASPROPERTY_GETTER_SETTER(int,maxBackBufferHeight);
 	ASPROPERTY_GETTER_SETTER(int,maxBackBufferWidth);
-	ASPROPERTY_GETTER(tiny_string,profile);
+	ASFUNCTION_ATOM(getProfile);
 	ASFUNCTION_ATOM(supportsVideoTexture);
 	ASFUNCTION_ATOM(dispose);
 	ASFUNCTION_ATOM(configureBackBuffer);

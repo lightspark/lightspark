@@ -1570,7 +1570,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_CACHEABLE);
 		if (!(opt & FROM_GETLEX) && obj->kind == INSTANCE_TRAIT && getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
 		{
-			createError<TypeError>(wrk, kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
+			if (getSystemState()->flashMode != SystemState::AIR) // it seems that Adobe AIR doesn't throw an exception when trying to access an instance property from the class
+				createError<TypeError>(wrk, kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
 			return res;
 		}
 	}

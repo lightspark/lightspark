@@ -156,6 +156,7 @@ public:
 	void tick() override;
 	void tickFence() override;
 	uint32_t getTagID() const override;
+	bool allowAsMask() const override { return false; }
 	
 	ASFUNCTION_ATOM(appendText);
 	ASFUNCTION_ATOM(_getAntiAliasType);
@@ -300,6 +301,7 @@ public:
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
 	uint32_t getTagID() const override { return tagID; }
+	bool allowAsMask() const override { return false; }
 };
 
 class FontStyle: public ASObject

@@ -1032,7 +1032,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 			{
 				// render object without shader blendmode into texture
 				ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
-						ct, surface.isMask, !surface.mask.isNull(),0.0,RGB(),surface.smoothing,surface.matrix,r,bl);
+						ct, false, false,0.0,RGB(),surface.smoothing,surface.matrix,r,bl);
 				// ensure the object is rendered again with shader blendmode
 				bl = BLENDMODE_NORMAL; 
 			}
@@ -1041,7 +1041,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 		}
 	}
 	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
-			ct, surface.isMask, !surface.mask.isNull(),0.0,RGB(),surface.smoothing,surface.matrix,r,bl);
+			ct, false, false,0.0,RGB(),surface.smoothing,surface.matrix,r,bl);
 	return false;
 }
 
@@ -1835,6 +1835,21 @@ number_t DisplayObject::computeWidth()
 	bool ret=getBounds(x1,x2,y1,y2,getMatrix(false));
 
 	return (ret)?(x2-x1):0;
+}
+
+int DisplayObject::getRawDepth()
+{
+	return (parent != nullptr) ? parent->findLegacyChildDepth(this) : 0;
+}
+
+int DisplayObject::getDepth()
+{
+	return getRawDepth() + 16384;
+}
+
+int DisplayObject::getClipDepth() const
+{
+	return ClipDepth + 16384;
 }
 
 _NR<RootMovieClip> DisplayObject::getRoot()

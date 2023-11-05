@@ -263,6 +263,9 @@ public:
 	bool isLoadedRootObject() const { return isLoadedRoot; }
 	float clippedAlpha() const;
 	float getRotation() const { return rotation; }
+	int getRawDepth();
+	int getDepth();
+	int getClipDepth() const;
 	virtual _NR<RootMovieClip> getRoot();
 	virtual _NR<Stage> getStage();
 	void setLegacyMatrix(const MATRIX& m);
@@ -274,6 +277,7 @@ public:
 	virtual bool needsActionScript3() const;
 	virtual void handleMouseCursor(bool rollover) {}
 	virtual bool hasGraphics() const { return false; }
+	virtual bool allowAsMask() const { return true; }
 	Vector2f getLocalMousePos();
 	Vector2f getXY();
 	void setX(number_t x);

@@ -126,6 +126,89 @@ const CachedSurface& GLRenderContext::getCachedSurface(const DisplayObject* d) c
 	return d->cachedSurface;
 }
 
+static bool noMask(EngineData* engineData)
+{
+	if (engineData != nullptr)
+	{
+		//engineData->exec_glEnable_GL_STENCIL_TEST();
+		engineData->exec_glStencilFunc_GL_ALWAYS();
+		engineData->exec_glStencilOp_GL_KEEP();
+		engineData->exec_glColorMask(true, true, true, true);
+		return true;
+	}
+	return false;
+}
+
+static bool drawMaskStencil(EngineData* engineData)
+{
+	if (engineData != nullptr)
+	{
+		engineData->exec_glEnable_GL_STENCIL_TEST();
+		engineData->exec_glStencilFunc_GL_EQUAL(0, UINT32_MAX);
+		engineData->exec_glStencilOp_GL_INCR();
+		engineData->exec_glColorMask(false, false, false, false);
+		return true;
+	}
+	return false;
+}
+
+static bool drawMaskedContent(EngineData* engineData)
+{
+	if (engineData != nullptr)
+	{
+		engineData->exec_glEnable_GL_STENCIL_TEST();
+		engineData->exec_glStencilFunc_GL_EQUAL(1, UINT32_MAX);
+		engineData->exec_glStencilOp_GL_KEEP();
+		engineData->exec_glColorMask(true, true, true, true);
+		return true;
+	}
+	return false;
+}
+
+static bool clearMaskStencil(EngineData* engineData)
+{
+	if (engineData != nullptr)
+	{
+		engineData->exec_glEnable_GL_STENCIL_TEST();
+		engineData->exec_glStencilFunc_GL_EQUAL(1, UINT32_MAX);
+		engineData->exec_glStencilOp_GL_DECR();
+		engineData->exec_glColorMask(false, false, false, false);
+		return true;
+	}
+	return false;
+}
+
+void GLRenderContext::pushMask()
+{
+	(void)drawMaskStencil(engineData);
+	if (!(maskCount++))
+	{
+		engineData->exec_glClearStencil(0);
+		engineData->exec_glClear(CLEARMASK::STENCIL);
+	}
+}
+
+void GLRenderContext::popMask()
+{
+	if (!(--maskCount))
+	{
+		engineData->exec_glDisable_GL_STENCIL_TEST();
+		(void)noMask(engineData);
+	}
+	else
+		(void)drawMaskedContent(engineData);
+}
+
+void GLRenderContext::deactivateMask()
+{
+	(void)clearMaskStencil(engineData);
+}
+
+void GLRenderContext::activateMask()
+{
+	(void)drawMaskedContent(engineData);
+}
+
 void GLRenderContext::resetCurrentFrameBuffer()
 {
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(currentFrameBufferID);

@@ -916,7 +916,7 @@ void Context3D::sinit(lightspark::Class_base *c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,enableErrorChecking,Boolean);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,maxBackBufferHeight,Integer);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,maxBackBufferWidth,Integer);
-	c->setDeclaredMethodByQName("profile","",Class<IFunction>::getFunction(c->getSystemState(),supportsVideoTexture,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("profile","",Class<IFunction>::getFunction(c->getSystemState(),getProfile,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("supportsVideoTexture","",Class<IFunction>::getFunction(c->getSystemState(),supportsVideoTexture,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("configureBackBuffer","",Class<IFunction>::getFunction(c->getSystemState(),configureBackBuffer),NORMAL_METHOD,true);

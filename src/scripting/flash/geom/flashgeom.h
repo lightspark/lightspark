@@ -232,49 +232,6 @@ public:
 
 };
 
-class Vector3D: public ASObject
-{
-public:
-	Vector3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_VECTOR3D),w(0),x(0),y(0),z(0){}
-	number_t w, x, y, z;
-	static void sinit(Class_base* c);
-	bool destruct() override;
-	ASFUNCTION_ATOM(_constructor);
-	
-	//Methods
-	ASFUNCTION_ATOM(add);
-	ASFUNCTION_ATOM(angleBetween);
-	ASFUNCTION_ATOM(clone);
-	ASFUNCTION_ATOM(crossProduct);
-	ASFUNCTION_ATOM(decrementBy);
-	ASFUNCTION_ATOM(distance);
-	ASFUNCTION_ATOM(dotProduct);
-	ASFUNCTION_ATOM(equals);
-	ASFUNCTION_ATOM(incrementBy);
-	ASFUNCTION_ATOM(nearEquals);
-	ASFUNCTION_ATOM(negate);
-	ASFUNCTION_ATOM(normalize);
-	ASFUNCTION_ATOM(project);
-	ASFUNCTION_ATOM(scaleBy);
-	ASFUNCTION_ATOM(subtract);
-	ASFUNCTION_ATOM(setTo);
-	ASFUNCTION_ATOM(copyFrom);
-
-	//Properties
-	ASFUNCTION_ATOM(_get_w);
-	ASFUNCTION_ATOM(_get_x);
-	ASFUNCTION_ATOM(_get_y);
-	ASFUNCTION_ATOM(_get_z);
-	ASFUNCTION_ATOM(_get_length);
-	ASFUNCTION_ATOM(_get_lengthSquared);
-
-	ASFUNCTION_ATOM(_set_w);
-	ASFUNCTION_ATOM(_set_x);
-	ASFUNCTION_ATOM(_set_y);
-	ASFUNCTION_ATOM(_set_z);
-	ASFUNCTION_ATOM(_toString);
-};
-
 class PerspectiveProjection: public ASObject
 {
 public:

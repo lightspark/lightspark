@@ -20,6 +20,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Matrix3D.h"
 #include "scripting/flash/geom/orientation3d.h"
+#include "scripting/flash/geom/Vector3D.h"
 
 #include "scripting/class.h"
 #include "scripting/abc.h"

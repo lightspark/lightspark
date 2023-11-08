@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/flash/geom/Matrix3D.h"
+#include "scripting/flash/geom/Vector3D.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
@@ -604,10 +605,33 @@ ASFUNCTIONBODY_ATOM(Matrix3D,prependRotation)
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,prependScale)
 {
+	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	number_t xScale, yScale, zScale;
 	ARG_CHECK(ARG_UNPACK(xScale) (yScale) (zScale));
 	
-	LOG(LOG_NOT_IMPLEMENTED, "Matrix3D.prependScale does nothing");
+	number_t m[16];
+	uint32_t i = 0;
+	m[i++] = xScale;
+	m[i++] = 0.0;
+	m[i++] = 0.0;
+	m[i++] = 0.0;
+
+	m[i++] = 0.0;
+	m[i++] = yScale;
+	m[i++] = 0.0;
+	m[i++] = 0.0;
+
+	m[i++] = 0.0;
+	m[i++] = 0.0;
+	m[i++] = zScale;
+	m[i++] = 0.0;
+
+	m[i++] = 0.0;
+	m[i++] = 0.0;
+	m[i++] = 0.0;
+	m[i++] = 1.0;
+	
+	th->prepend(m);
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,prependTranslation)
 {

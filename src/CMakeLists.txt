@@ -149,6 +149,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/geom/flashgeom.cpp
   scripting/flash/geom/Matrix3D.cpp
   scripting/flash/geom/orientation3d.cpp
+  scripting/flash/geom/Vector3D.cpp
   scripting/flash/globalization/datetimeformatter.cpp
   scripting/flash/globalization/datetimestyle.cpp
   scripting/flash/globalization/lastoperationstatus.cpp

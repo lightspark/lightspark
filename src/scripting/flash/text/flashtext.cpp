@@ -2014,13 +2014,17 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 	while ((pos = rooted.find("<br>",pos)) != tiny_string::npos)
 		rooted.replace_bytes(pos,4,"<br />");
 	pugi::xml_document doc;
-	if (doc.load_buffer(rooted.raw_buf(),rooted.numBytes()).status == pugi::status_ok)
+	pugi::xml_parse_result result = doc.load_buffer(rooted.raw_buf(),rooted.numBytes(), pugi::parse_default & ~pugi::parse_validate_closing_tags);
+	if (result.status == pugi::status_ok)
 	{
 		doc.traverse(*this);
 	}
 	else
 	{
 		LOG(LOG_ERROR, "TextField HTML parser error:"<<rooted);
+		LOG(LOG_ERROR, "Reason: " << result.description());
+		LOG(LOG_ERROR, "Offset: " << result.offset);
+		LOG(LOG_ERROR, "Text at offset: " << (rooted.raw_buf() + result.offset));
 		return;
 	}
 }

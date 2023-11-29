@@ -117,14 +117,14 @@ bool DropShadowFilter::compareFILTER(const FILTER& filter) const
 			&& filter.DropShadowFilter.Strength == this->strength
 			&& filter.DropShadowFilter.Passes == this->quality;
 }
-void DropShadowFilter::getRenderFilterArgs(uint32_t step,float* args) const
+void DropShadowFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
 {
 	if (hideObject)
 		LOG(LOG_NOT_IMPLEMENTED,"DropShadowFilter.hideObject");
 	if (step < (uint32_t)quality)
-		getRenderFilterArgsBlur(args,blurX,blurY);
+		getRenderFilterArgsBlur(args,blurX,blurY,w,h);
 	else if (step == (uint32_t)quality)
-		getRenderFilterArgsDropShadow(args,inner,knockout,strength,color,alpha,cos(angle) * distance,sin(angle) * distance);
+		getRenderFilterArgsDropShadow(args,inner,knockout,strength,color,alpha,cos(angle) * distance,sin(angle) * distance,w,h);
 	else
 		args[0]=0.0;
 }

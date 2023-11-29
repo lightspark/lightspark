@@ -38,9 +38,9 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, blurY);
 	ASPROPERTY_GETTER_SETTER(int, quality);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
-	uint32_t getMaxFilterBorder() const override { return ceil(max(blurX,blurY)); }
+	number_t getMaxFilterBorder() const override { return max(blurX,blurY); }
 	bool compareFILTER(const FILTER& filter) const override;
-	void getRenderFilterArgs(uint32_t step,float* args) const override;
+	void getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const override;
 };
 
 }

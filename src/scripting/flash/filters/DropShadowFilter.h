@@ -46,9 +46,9 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
-	uint32_t getMaxFilterBorder() const override { return ceil(max(max(blurX,blurY),distance)); }
+	number_t getMaxFilterBorder() const override { return max(max(blurX,blurY),distance); }
 	bool compareFILTER(const FILTER& filter) const override;
-	void getRenderFilterArgs(uint32_t step,float* args) const override;
+	void getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const override;
 };
 
 }

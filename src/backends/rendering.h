@@ -180,12 +180,17 @@ public:
 	int gpu_program;
 	volatile uint32_t windowWidth;
 	volatile uint32_t windowHeight;
+	uint32_t currentframebufferWidth;
+	uint32_t currentframebufferHeight;
 
 	void renderErrorPage(RenderThread *rt, bool standalone);
 	void renderSettingsPage();
 	void beginBlendTexture();
 	void endBlendTexture();
-	void renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter);
+	void setViewPort(uint32_t w, uint32_t h);
+	void resetViewPort();
+	void setModelView(const MATRIX& matrix);
+	void renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter, bool flippedvertical);
 	cairo_t *cairoTextureContextSettings;
 	cairo_surface_t *cairoTextureSurfaceSettings;
 	uint8_t *cairoTextureDataSettings;

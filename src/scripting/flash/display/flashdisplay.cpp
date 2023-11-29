@@ -1108,7 +1108,10 @@ void Sprite::afterSetUseHandCursor(bool /*oldValue*/)
 
 IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
-	IDrawable* res = nullptr;
+	IDrawable* res = getFilterDrawable(target,initialMatrix,smoothing,q);
+	if (res)
+		return res;
+
 	if (this->graphics)
 	{
 		this->graphics->startDrawJob();
@@ -4014,7 +4017,8 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 			this->graphics->endDrawJob();
 			return ret;
 		}
-		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);;
+		bool ret = TokenContainer::boundsRect(xmin,xmax,ymin,ymax);;
+		return ret;
 	}
 	xmin=fromTag->ShapeBounds.Xmin/20.0;
 	xmax=fromTag->ShapeBounds.Xmax/20.0;
@@ -4191,13 +4195,11 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 		return false;
 	if (!this->legacy || (morphshapetag==nullptr))
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
-
 	float curratiofactor = float(currentratio)/65535.0;
 	xmin=(morphshapetag->StartBounds.Xmin + (float(morphshapetag->EndBounds.Xmin - morphshapetag->StartBounds.Xmin)*curratiofactor))/20.0;
 	xmax=(morphshapetag->StartBounds.Xmax + (float(morphshapetag->EndBounds.Xmax - morphshapetag->StartBounds.Xmax)*curratiofactor))/20.0;
 	ymin=(morphshapetag->StartBounds.Ymin + (float(morphshapetag->EndBounds.Ymin - morphshapetag->StartBounds.Ymin)*curratiofactor))/20.0;
 	ymax=(morphshapetag->StartBounds.Ymax + (float(morphshapetag->EndBounds.Ymax - morphshapetag->StartBounds.Ymax)*curratiofactor))/20.0;
-
 	return true;
 }
 
@@ -5551,25 +5553,29 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	}
 	//Compute the matrix and the masks that are relevant
 	MATRIX totalMatrix;
+	MATRIX filterMatrix;
+	
 	std::vector<IDrawable::MaskData> masks;
 
 	bool isMask;
+	bool infilter=false;
 	number_t alpha=1.0;
 	if (target)
 	{
 		if (matrixsource)
-			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha);
+			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix);
 	}
 	MATRIX totalMatrix2;
+	MATRIX filterMatrix2;
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
 		if (matrixsource)
-			matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha);
+			infilter = matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 	totalMatrix2 = totalMatrix2.multiplyMatrix(sourceMatrix);
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
 	if (rwidth==0 || rheight==0)
 		return nullptr;
 	cachedSurface.isValid=true;
@@ -5586,7 +5592,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 					, scalex, scaley
 					, isMask, mask
 					, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
-					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2);
+					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2);
 	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
@@ -5594,7 +5600,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 				, 1, 1
 				, isMask, mask
 				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
-				, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2);
+				, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2);
 }
 
 void SimpleButton::sinit(Class_base* c)
@@ -5936,7 +5942,7 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 		DisplayObjectContainer::defaultEventBehavior(e);
 }
 
-bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax,bool visibleOnly)
+bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
 	if (visibleOnly && !this->isVisible())
 		return false;
@@ -6126,6 +6132,9 @@ void SimpleButton::prepareShutdown()
 }
 IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
+	IDrawable* res = getFilterDrawable(target,initialMatrix,smoothing,q);
+	if (res)
+		return res;
 	if (computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	return nullptr;

@@ -88,12 +88,12 @@ bool GlowFilter::compareFILTER(const FILTER& filter) const
 			&& filter.GlowFilter.Passes == this->quality;
 }
 
-void GlowFilter::getRenderFilterArgs(uint32_t step,float* args) const
+void GlowFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
 {
 	if (step < (uint32_t)quality)
-		getRenderFilterArgsBlur(args,blurX,blurY);
+		getRenderFilterArgsBlur(args,blurX,blurY,w,h);
 	else if (step == (uint32_t)quality)
-		getRenderFilterArgsDropShadow(args,inner,knockout,strength,color,alpha,0.0,0.0);
+		getRenderFilterArgsDropShadow(args,inner,knockout,strength,color,alpha,0.0,0.0,w,h);
 	else
 		args[0]=0.0;
 }

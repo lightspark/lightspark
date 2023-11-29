@@ -263,11 +263,12 @@ void main()
 	// add colortransformation
 	vbase = clamp(vbase*colorTransformMultiply+colorTransformAdd,0.0,1.0);
 
-	vec4 vblenddst = texture2D(g_tex3,ls_TexCoords[1].xy);
 
 	if (blendMode==13.0) {//BLENDMODE_OVERLAY
+		vec4 vblenddst = texture2D(g_tex3,ls_TexCoords[1].xy);
 		vbase = applyBlendMode(vbase,vblenddst,blendOverlay(vblenddst.rgb,vbase.rgb));
 	} else if (blendMode==14.0) {//BLENDMODE_HARDLIGHT
+		vec4 vblenddst = texture2D(g_tex3,ls_TexCoords[1].xy);
 		vbase = applyBlendMode(vbase,vblenddst,blendOverlay(vbase.rgb,vblenddst.rgb));
 	}
 	// premultiply alpha again

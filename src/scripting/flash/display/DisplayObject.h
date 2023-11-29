@@ -70,6 +70,7 @@ private:
 	// if true, this displayobject is the root object of a loaded file (swf or image)
 	bool isLoadedRoot;
 	bool ismask;
+	number_t maxfilterborder;
 public:
 	UI16_SWF Ratio;
 	int ClipDepth;
@@ -117,7 +118,7 @@ protected:
 	mutable Mutex spinlock;
 	void computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 			number_t& outXMin, number_t& outYMin, number_t& outWidth, number_t& outHeight,
-			const MATRIX& m) const;
+			const MATRIX& m, bool infilter) const;
 	/*
 	 * Assume the lock is held and the matrix will not change
 	 */
@@ -190,9 +191,10 @@ public:
 	bool hasFilters() const;
 	void requestInvalidationFilterParent();
 	bool requestInvalidationForCacheAsBitmap(InvalidateQueue* q);
-	void computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, _NR<DisplayObject>& mask, number_t& alpha) const;
+	bool computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, _NR<DisplayObject>& mask, number_t& alpha, MATRIX& filterMatrix);
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	IDrawable* getCachedBitmapDrawable(DisplayObject* target, const MATRIX& initialMatrix, _NR<DisplayObject>* pcachedBitmap, bool smoothing);
+	IDrawable* getFilterDrawable(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q);
 	_NR<DisplayObject> getCachedBitmap() const { return cachedBitmap; }
 	DisplayObjectContainer* getParent() const { return parent; }
 	int getParentDepth() const;

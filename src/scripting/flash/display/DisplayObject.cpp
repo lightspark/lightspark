@@ -40,7 +40,6 @@
 #include "scripting/flash/filters/GradientBevelFilter.h"
 #include "scripting/flash/filters/GradientGlowFilter.h"
 #include "scripting/toplevel/Number.h"
-#include "parsing/tags.h"
 #include <algorithm>
 
 // adobe seems to use twips as the base of the internal coordinate system, so we have to "round" coordinates to twips
@@ -112,23 +111,28 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 		return false;
 	AS_BLENDMODE oldshaderblendmode = ctxt.currentShaderBlendMode;
 	bool ret = true;
-	if (ctxt.contextType == RenderContext::GL)
+	if (ctxt.contextType == RenderContext::GL && hasFilters() && (cachedSurface.needsFilterRefresh || cachedSurface.cachedFilterTextureID != UINT32_MAX))
 	{
+		if (!cachedSurface.isInitialized)
+			return true;
 		bool needsFilterRefresh = cachedSurface.needsFilterRefresh && hasFilters();
 		if (isShaderBlendMode(this->getBlendMode()) && getSystemState()->stage->renderToTextureCount)
 			ctxt.currentShaderBlendMode=this->getBlendMode();
 		if (needsFilterRefresh)
 		{
-			number_t xmin,xmax,ymin,ymax;
-			MATRIX m=getMatrix();
-			if (getBounds(xmin,xmax,ymin,ymax,m,true))
-				this->renderFilters(ctxt,getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight);
+			this->renderFilters(ctxt,cachedSurface.widthTransformed,cachedSurface.heightTransformed);
 			cachedSurface.needsFilterRefresh=false;
 		}
 		if (cachedSurface.cachedFilterTextureID != UINT32_MAX)
 		{
-			getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,nullptr,nullptr,false);
-			getSystemState()->getRenderThread()->resetCurrentFrameBuffer();
+			MATRIX m = cachedSurface.filtermatrix;
+			if (!getSystemState()->getRenderThread()->filterframebufferstack.empty())
+			{
+				filterstackentry fe = getSystemState()->getRenderThread()->filterframebufferstack.back();
+				m.translate(fe.filterborderx,fe.filterbordery);
+			}
+			getSystemState()->getRenderThread()->setModelView(m);
+			getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,cachedSurface.widthTransformed,cachedSurface.heightTransformed,nullptr,nullptr,false,true);
 			ctxt.currentShaderBlendMode = oldshaderblendmode;
 			return ret;
 		}
@@ -142,7 +146,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 }
 
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),ClipDepth(0),
+	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),maxfilterborder(0),ClipDepth(0),
 	avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),needsCachedBitmapRecalculation(true),textureRecalculationSkippable(false),
 	avm1mouselistenercount(0),avm1framelistenercount(0),
@@ -214,6 +218,7 @@ bool DisplayObject::destruct()
 	cachedBitmap.reset();
 	cachedAsBitmapOf=nullptr;
 	ismask=false;
+	maxfilterborder=0;
 	parent=nullptr;
 	eventparentmap.clear();
 	mask.reset();
@@ -265,6 +270,7 @@ bool DisplayObject::destruct()
 	if (cachedSurface.cachedFilterTextureID != UINT32_MAX && getSystemState() && getSystemState()->getRenderThread())
 		getSystemState()->getRenderThread()->addDeletedTexture(cachedSurface.cachedFilterTextureID);
 	cachedSurface.cachedFilterTextureID=UINT32_MAX;
+	cachedSurface.needsFilterRefresh=true;
 	return EventDispatcher::destruct();
 }
 
@@ -503,6 +509,14 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 		th->getSystemState()->stage->renderToTextureCount--;
 
 	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(wrk,args[0],th->filters);
+	th->maxfilterborder=0;
+	for (uint32_t i = 0; i < th->filters->size(); i++)
+	{
+		asAtom f = asAtomHandler::invalidAtom;
+		th->filters->at_nocheck(f,i);
+		if (asAtomHandler::is<BitmapFilter>(f))
+			th->maxfilterborder = max(th->maxfilterborder,asAtomHandler::as<BitmapFilter>(f)->getMaxFilterBorder());
+	}
 
 	th->updateCachedAsBitmap();
 	if (isShaderBlendMode(th->blendMode) && !th->computeCacheAsBitmap() && th->onStage && !th->cachedAsBitmapOf)
@@ -525,6 +539,8 @@ void DisplayObject::updateCachedAsBitmap()
 }
 bool DisplayObject::computeCacheAsBitmap(bool checksize)
 {
+	// TODO handle cacheAsBitmap case through filter renderer
+	return false;
 	if (cacheAsBitmap || blendMode == BLENDMODE_LAYER)
 	{
 		if (checksize)
@@ -590,6 +606,11 @@ bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
 			return true;
 		}
 	}
+	if (hasFilters() && (q && !q->isSoftwareQueue))
+	{
+		this->incRef();
+		q->addToInvalidateQueue(_MR(this));
+	}	
 	return false;
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_cacheAsBitmap)
@@ -780,39 +801,46 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 					return;
 			}
 		}
+		maxfilterborder=0;
 		filters->resize(0);
 		auto it = filterlist.Filters.cbegin();
 		while (it != filterlist.Filters.cend())
 		{
+			BitmapFilter* f = nullptr;
 			switch(it->FilterID)
 			{
 				case FILTER::FILTER_DROPSHADOW:
-					filters->push(asAtomHandler::fromObject(Class<DropShadowFilter>::getInstanceS(getInstanceWorker(),it->DropShadowFilter)));
+					f=Class<DropShadowFilter>::getInstanceS(getInstanceWorker(),it->DropShadowFilter);
 					break;
 				case FILTER::FILTER_BLUR:
-					filters->push(asAtomHandler::fromObject(Class<BlurFilter>::getInstanceS(getInstanceWorker(),it->BlurFilter)));
+					f=Class<BlurFilter>::getInstanceS(getInstanceWorker(),it->BlurFilter);
 					break;
 				case FILTER::FILTER_GLOW:
-					filters->push(asAtomHandler::fromObject(Class<GlowFilter>::getInstanceS(getInstanceWorker(),it->GlowFilter)));
+					f=Class<GlowFilter>::getInstanceS(getInstanceWorker(),it->GlowFilter);
 					break;
 				case FILTER::FILTER_BEVEL:
-					filters->push(asAtomHandler::fromObject(Class<BevelFilter>::getInstanceS(getInstanceWorker(),it->BevelFilter)));
+					f=Class<BevelFilter>::getInstanceS(getInstanceWorker(),it->BevelFilter);
 					break;
 				case FILTER::FILTER_GRADIENTGLOW:
-					filters->push(asAtomHandler::fromObject(Class<GradientGlowFilter>::getInstanceS(getInstanceWorker(),it->GradientGlowFilter)));
+					f=Class<GradientGlowFilter>::getInstanceS(getInstanceWorker(),it->GradientGlowFilter);
 					break;
 				case FILTER::FILTER_CONVOLUTION:
-					filters->push(asAtomHandler::fromObject(Class<ConvolutionFilter>::getInstanceS(getInstanceWorker(),it->ConvolutionFilter)));
+					f=Class<ConvolutionFilter>::getInstanceS(getInstanceWorker(),it->ConvolutionFilter);
 					break;
 				case FILTER::FILTER_COLORMATRIX:
-					filters->push(asAtomHandler::fromObject(Class<ColorMatrixFilter>::getInstanceS(getInstanceWorker(),it->ColorMatrixFilter)));
+					f=Class<ColorMatrixFilter>::getInstanceS(getInstanceWorker(),it->ColorMatrixFilter);
 					break;
 				case FILTER::FILTER_GRADIENTBEVEL:
-					filters->push(asAtomHandler::fromObject(Class<GradientBevelFilter>::getInstanceS(getInstanceWorker(),it->GradientBevelFilter)));
+					f=Class<GradientBevelFilter>::getInstanceS(getInstanceWorker(),it->GradientBevelFilter);
 					break;
 				default:
 					LOG(LOG_ERROR,"Unsupported Filter Id " << (int)it->FilterID);
 					break;
+			}
+			if (f)
+			{
+				filters->push(asAtomHandler::fromObject(f));
+				maxfilterborder = max(maxfilterborder,f->getMaxFilterBorder());
 			}
 			it++;
 		}
@@ -822,6 +850,7 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 	}
 	else
 	{
+		maxfilterborder=0;
 		if (!filters.isNull() && filters->size())
 		{
 			filters->resize(0);
@@ -1047,8 +1076,15 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 
 void DisplayObject::computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 		number_t& outXMin, number_t& outYMin, number_t& outWidth, number_t& outHeight,
-		const MATRIX& m) const
+		const MATRIX& m, bool infilter) const
 {
+	if (infilter)
+	{
+		xmin-=maxfilterborder;
+		xmax+=maxfilterborder;
+		ymin-=maxfilterborder;
+		ymax+=maxfilterborder;
+	}
 	//As the transformation is arbitrary we have to check all the four vertices
 	number_t coords[8];
 	m.multiply2D(xmin,ymin,coords[0],coords[1]);
@@ -1108,6 +1144,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface.smoothing=d->getSmoothing();
 	cachedSurface.colortransform = d->getColorTransform();
 	cachedSurface.matrix=d->getMatrix();
+	cachedSurface.filtermatrix=d->getFilterMatrix();
 	cachedSurface.needsFilterRefresh=d->getNeedsFilterRefresh();
 	cachedSurface.isValid=true;
 	cachedSurface.isInitialized=true;
@@ -2043,21 +2080,20 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 {
 	// rendering of filters currently works as follows:
 	// - generate fbo
-	// - generate texture with window witdth/height as window size and set it as color attachment for fbo
+	// - generate texture with computed width/height of this DisplayObject as window size and set it as color attachment for fbo
 	// - render DisplayObject to texture
 	// - set texture as "g_tex4" in fragment shader
-	// - generate two more textures with window witdth/height as window size
-	// - for every step (blur, dropshadow...)
-	//   - set uniforms for step
-	//   - set one of the two textures as color attachment for fbo (use first generated texture in first step)
-	//   - render to texture 
-	//   - swap textures
+	// - generate two more textures with computed width/height of this DisplayObject as window size
+	// - for every filter
+	//   - for every step (blur, dropshadow...)
+	//     - set uniforms for step
+	//     - set one of the two textures as color attachment for fbo (use first generated texture in first step)
+	//     - render to texture 
+	//     - swap textures
+	//   - render resulting texture to "g_tex5"
 	// - remember resulting texture in cachedSurface.cachedFilterTextureID
 	
-	// TODO: we should render to a texture the size of the DisplayObject, not the size of the window
-
 	assert(hasFilters());
-
 	EngineData* engineData = getSystemState()->getEngineData();
 	if (cachedSurface.cachedFilterTextureID != UINT32_MAX) // remove previously used texture
 		getSystemState()->getRenderThread()->addDeletedTexture(cachedSurface.cachedFilterTextureID);
@@ -2078,10 +2114,21 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterTextureIDoriginal);
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
-	engineData->exec_glViewport(0,0,w,h);
+	uint32_t parentframebufferWidth = getSystemState()->getRenderThread()->currentframebufferWidth;
+	uint32_t parentframebufferHeight = getSystemState()->getRenderThread()->currentframebufferHeight;
+	
+	getSystemState()->getRenderThread()->setViewPort(w,h);
 	engineData->exec_glClearColor(0,0,0,0);
 	engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
-	getSystemState()->getRenderThread()->filterframebufferstack.push_back(pair<uint32_t,uint32_t>(filterframebuffer,filterrenderbuffer));
+	filterstackentry fe;
+	fe.filterframebuffer=filterframebuffer;
+	fe.filterrenderbuffer=filterrenderbuffer;
+	
+	number_t bxmin,bxmax,bymin,bymax;
+	boundsRect(bxmin,bxmax,bymin,bymax,false);
+	fe.filterborderx=-bxmin+this->maxfilterborder;
+	fe.filterbordery=-bymin+this->maxfilterborder;
+	getSystemState()->getRenderThread()->filterframebufferstack.push_back(fe);
 	renderImpl(ctxt);
 	// bind rendered filter source to g_tex4
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
@@ -2109,6 +2156,7 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	engineData->exec_glGenTextures(1, &filterTextureID2);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID2);
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
+	getSystemState()->getRenderThread()->setViewPort(w,h);
 	uint32_t texture1 = filterTextureIDoriginal;
 	uint32_t texture2 = filterTextureID2;
 	for (uint32_t i = 0; i < filters->size(); i++)
@@ -2123,16 +2171,14 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 			uint32_t step = 0;
 			while (true)
 			{
-				asAtomHandler::as<BitmapFilter>(f)->getRenderFilterArgs(step,filterdata);
+				asAtomHandler::as<BitmapFilter>(f)->getRenderFilterArgs(step,filterdata,w,h);
 				if (filterdata[0] == 0)
 					break;
 				step++;
 				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(texture2);
 				engineData->exec_glClearColor(0,0,0,0);
 				engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
-				
-				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,filterdata,gradientcolors,!i);
-
+				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,filterdata,gradientcolors,!i,false);
 				if (texture1 == filterTextureIDoriginal)
 					texture1 = filterTextureID1;
 				std::swap(texture1,texture2);
@@ -2140,21 +2186,23 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
 			engineData->exec_glClearColor(0,0,0,0);
 			engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
-			getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,nullptr,nullptr,false);
+			getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,nullptr,nullptr,false, false);
 		}
 	}
-	
+
 	getSystemState()->getRenderThread()->filterframebufferstack.pop_back();
 	if (getSystemState()->getRenderThread()->filterframebufferstack.empty())
+	{
 		getSystemState()->getRenderThread()->resetCurrentFrameBuffer();
+		getSystemState()->getRenderThread()->resetViewPort();
+	}
 	else
 	{
-		uint32_t parentframebuffer = getSystemState()->getRenderThread()->filterframebufferstack.back().first;
-		uint32_t parentrenderbuffer = getSystemState()->getRenderThread()->filterframebufferstack.back().second;
-		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(parentframebuffer);
-		engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(parentrenderbuffer);
+		filterstackentry feparent = getSystemState()->getRenderThread()->filterframebufferstack.back();
+		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(feparent.filterframebuffer);
+		engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(feparent.filterrenderbuffer);
+		getSystemState()->getRenderThread()->setViewPort(parentframebufferWidth,parentframebufferHeight);
 	}
-	engineData->exec_glViewport(0,0,getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight);
 	engineData->exec_glDeleteFramebuffers(1,&filterframebuffer);
 	engineData->exec_glDeleteRenderbuffers(1,&filterrenderbuffer);
 	cachedSurface.cachedFilterTextureID=texture1;
@@ -2252,37 +2300,61 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 	}
 }
 
-void DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, _NR<DisplayObject>&mask, number_t& alpha) const
+bool DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, _NR<DisplayObject>&mask, number_t& alpha, MATRIX& filterMatrix)
 {
-	const DisplayObject* cur=this;
+	DisplayObject* cur=this;
 	bool gatherMasks = true;
 	isMask = cur->ClipDepth || cur->ismask;
 	mask = cur->mask;
 	alpha = target->clippedAlpha();
+	bool gatherFiltermatrix=false;
 	while(cur && cur!=target)
 	{
-		alpha *= cur->clippedAlpha();
-		totalMatrix=cur->getMatrix(includeRotation).multiplyMatrix(totalMatrix);
-		if (!cur->scrollRect.isNull()) // TODO this only sets the scrollrect position, but doesn't crop to the rectangle
-			totalMatrix.translate(-cur->scrollRect->x,-cur->scrollRect->y);
-		if(gatherMasks)
+		// totalMatrix is computed from the start to the first parent that has a filter (if any, otherwise to the target)
+		// filterMatrix is computed from the first filter to the next parent that has a filter (if any, otherwise to the target)
+		if (cur->hasFilters())
 		{
-			if (!cur->mask.isNull() && mask.isNull())
-				mask=cur->mask;
-			if (cur->ClipDepth || cur->ismask)
-				isMask=true;
-			if(cur->ismask)
+			if (gatherFiltermatrix)
+				break;
+			else
 			{
-				//Stop gathering masks if any level of the hierarchy it's a mask
-				masks.clear();
-				masks.shrink_to_fit();
-				gatherMasks=false;
+				number_t bxmin,bxmax,bymin,bymax;
+				cur->boundsRect(bxmin,bxmax,bymin,bymax,false);
+				filterMatrix.translate(bxmin-cur->maxfilterborder,bymin-cur->maxfilterborder);
+				totalMatrix.translate(-bxmin+cur->maxfilterborder,-bymin+cur->maxfilterborder);
+				gatherFiltermatrix=true;
+			}
+		}
+		if (gatherFiltermatrix)
+		{
+			filterMatrix=cur->getMatrix(includeRotation).multiplyMatrix(filterMatrix);
+		}
+		else
+		{
+			alpha *= cur->clippedAlpha();
+			totalMatrix=cur->getMatrix(includeRotation).multiplyMatrix(totalMatrix);
+			if (!cur->scrollRect.isNull()) // TODO this only sets the scrollrect position, but doesn't crop to the rectangle
+				totalMatrix.translate(-cur->scrollRect->x,-cur->scrollRect->y);
+			if(gatherMasks)
+			{
+				if (!cur->mask.isNull() && mask.isNull())
+					mask=cur->mask;
+				if (cur->ClipDepth || cur->ismask)
+					isMask=true;
+				if(cur->ismask)
+				{
+					//Stop gathering masks if any level of the hierarchy it's a mask
+					masks.clear();
+					masks.shrink_to_fit();
+					gatherMasks=false;
+				}
 			}
 		}
 		cur=cur->getParent();
 	}
 	if (mask.isNull() && !isMask)
 		mask = target->mask;
+	return gatherFiltermatrix;
 }
 void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode, ColorTransformBase* ct)
 {
@@ -2305,18 +2377,6 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	MATRIX m=getMatrix();
 	if (!getBounds(xmin,xmax,ymin,ymax,m,true))
 		return nullptr;
-	uint32_t maxfilterborder=0;
-	if (filters)
-	{
-		// get maximum border in pixels around cached bitmap needed to properly apply filters
-		for (uint32_t i = 0; i < filters->size(); i++)
-		{
-			asAtom f = asAtomHandler::invalidAtom;
-			filters->at_nocheck(f,i);
-			if (asAtomHandler::is<BitmapFilter>(f))
-				maxfilterborder = max(maxfilterborder,asAtomHandler::as<BitmapFilter>(f)->getMaxFilterBorder());
-		}
-	}
 	number_t scalex = parent ? abs(parent->getMatrix().getScaleX()) : 1.0;
 	number_t scaley = parent ? abs(parent->getMatrix().getScaleY()) : 1.0;
 	int oX;
@@ -2353,6 +2413,78 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	ColorTransformBase ct;
 	ct.fillConcatenated(this);
 	return cachedBitmap->invalidateFromSource(target, initialMatrix,smoothing,&ct,this->getParent(),m1,this,m0,scalex,scaley);
+}
+
+IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q)
+{
+	if (!hasFilters() || (q && !q->isSoftwareQueue))
+		return nullptr;
+	number_t x,y,rx,ry;
+	number_t width,height;
+	number_t rwidth,rheight;
+	number_t bxmin,bxmax,bymin,bymax;
+	if(!boundsRect(bxmin,bxmax,bymin,bymax,false))
+	{
+		//No contents, nothing to do
+		return nullptr;
+	}
+	//Compute the matrix and the masks that are relevant
+	MATRIX totalMatrix;
+	MATRIX filterMatrix;
+	
+	std::vector<IDrawable::MaskData> masks;
+
+	bool isMask=false;
+	bool infilter = false;
+	number_t alpha=1.0;
+	_NR<DisplayObject> mask;
+	if (target)
+	{
+		infilter = computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix);
+		MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
+		totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
+		totalMatrix.xx = abs(totalMatrix.xx);
+		totalMatrix.yy = abs(totalMatrix.yy);
+		totalMatrix.x0 = 0;
+		totalMatrix.y0 = 0;
+	}
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix,infilter);
+
+	if (isnan(width) || isnan(height))
+	{
+		// on stage with invalid concatenatedMatrix. Create a trash initial texture
+		width = 1;
+		height = 1;
+	}
+	if (width >= 8192 || height >= 8192 || (width * height) >= 16777216)
+		return nullptr;
+
+	MATRIX totalMatrix2;
+	MATRIX filterMatrix2;
+	std::vector<IDrawable::MaskData> masks2;
+	if (target)
+	{
+		infilter = computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2);
+		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
+	}
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
+	if(width==0 || height==0)
+		return nullptr;
+	ColorTransformBase ct;
+	ct.fillConcatenated(this);
+	
+	Rectangle* r = scalingGrid.getPtr();
+	if (!r && getParent())
+		r = getParent()->scalingGrid.getPtr();
+	
+	this->resetNeedsTextureRecalculation();
+	cachedSurface.isValid=true;
+	return new RefreshableDrawable(x, y, ceil(width), ceil(height)
+				, rx, ry, ceil(rwidth), ceil(rheight),0
+				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
+				, isMask, mask
+				, getConcatenatedAlpha(), masks
+				, ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2);
 }
 
 bool DisplayObject::findParent(DisplayObject *d) const

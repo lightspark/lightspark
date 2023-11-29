@@ -71,7 +71,7 @@ class externalFontRenderer : public IDrawable
 	class EngineData* m_engine;
 public:
 	externalFontRenderer(const TextData &_textData, class EngineData* engine, int32_t x, int32_t y, int32_t w, int32_t h, int32_t rx, int32_t ry, int32_t rw, int32_t rh, float r, float xs, float ys, bool im, _NR<DisplayObject> _mask, float a, const std::vector<MaskData>& m,
-						 const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m);
+						 const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m, const MATRIX& _filtermatrix);
 	
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}
@@ -353,7 +353,7 @@ public:
 	virtual int32_t setupFontRenderer(const TextData &_textData,float a, SMOOTH_MODE smoothing) { return 0; }
 	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms,
 									 const ColorTransformBase& _colortransform,
-									 SMOOTH_MODE smoothing);
+									 SMOOTH_MODE smoothing, const MATRIX& _filterMatrix);
 };
 
 }

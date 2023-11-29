@@ -718,7 +718,7 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 							, false,_NR<DisplayObject>()
 							, 0.05,1.0, masks
 							, ColorTransformBase()
-							, SMOOTH_MODE::SMOOTH_SUBPIXEL,0,0,false);
+							, SMOOTH_MODE::SMOOTH_SUBPIXEL,0,0,false,MATRIX());
 				uint8_t* buf = r.getPixelBuffer();
 				CharacterRenderer* renderer = new CharacterRenderer(buf,abs(xmax),abs(ymax));
 				//force creation of buffer if neccessary

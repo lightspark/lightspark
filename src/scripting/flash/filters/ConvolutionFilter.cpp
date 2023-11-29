@@ -199,7 +199,7 @@ bool ConvolutionFilter::compareFILTER(const FILTER& filter) const
 	LOG(LOG_NOT_IMPLEMENTED, "comparing ConvolutionFilter");
 	return false;
 }
-void ConvolutionFilter::getRenderFilterArgs(uint32_t step,float* args) const
+void ConvolutionFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
 {
 	if (step == 0)
 	{
@@ -213,8 +213,8 @@ void ConvolutionFilter::getRenderFilterArgs(uint32_t step,float* args) const
 		args[6]=c.gf();
 		args[7]=c.bf();
 		args[8]=alpha;
-		args[9]=float(getSystemState()->getRenderThread()->windowWidth);
-		args[10]=float(getSystemState()->getRenderThread()->windowHeight);
+		args[9]=float(w);
+		args[10]=float(h);
 		float realMatrixX=abs(floor(matrixX));
 		float realMatrixY=abs(floor(matrixY));
 		if (matrix.isNull() || matrix->size() < realMatrixX*realMatrixY)

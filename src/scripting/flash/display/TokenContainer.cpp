@@ -70,7 +70,7 @@ void nanoVGDeleteImage(int image)
 		nvgDeleteImage(nvgctxt,image);
 }
 
-int setNanoVGImage(EngineData* engine, NVGcontext* nvgctxt,const FILLSTYLE* style)
+int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style)
 {
 	if (!style->bitmap)
 		return -1;
@@ -130,7 +130,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 					break;
 			}
 			nvgResetTransform(nvgctxt);
-			nvgBeginFrame(nvgctxt, sys->getRenderThread()->windowWidth, sys->getRenderThread()->windowHeight, 1.0);
+			nvgBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
 			// xOffsetTransformed/yOffsetTransformed contain the offsets from the border of the window
 			nvgTranslate(nvgctxt,owner->cachedSurface.xOffsetTransformed,owner->cachedSurface.yOffsetTransformed);
 			MATRIX m = owner->cachedSurface.matrix;
@@ -236,8 +236,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 								case NON_SMOOTHED_REPEATING_BITMAP:
 								case NON_SMOOTHED_CLIPPED_BITMAP:
 								{
-									
-									int img =setNanoVGImage(sys->getEngineData(),nvgctxt,style);
+									int img =setNanoVGImage(nvgctxt,style);
 									if (img != -1)
 									{
 										MATRIX m = style->Matrix;
@@ -588,14 +587,17 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	}
 	//Compute the matrix and the masks that are relevant
 	MATRIX totalMatrix;
+	MATRIX filterMatrix;
+	
 	std::vector<IDrawable::MaskData> masks;
 
 	bool isMask=false;
+	bool infilter=false;
 	number_t alpha=1.0;
 	_NR<DisplayObject> mask;
 	if (target)
 	{
-		owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha);
+		infilter=owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix);
 		MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
 		totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
 		totalMatrix.xx = abs(totalMatrix.xx);
@@ -603,7 +605,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		totalMatrix.x0 = 0;
 		totalMatrix.y0 = 0;
 	}
-	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
+	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix,infilter);
 
 	if (isnan(width) || isnan(height))
 	{
@@ -613,13 +615,14 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	}
 
 	MATRIX totalMatrix2;
+	MATRIX filterMatrix2;
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
-		owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha);
+		infilter = owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
-	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
+	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
 	if(width==0 || height==0)
 		return nullptr;
 	ColorTransformBase ct;
@@ -650,19 +653,23 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& isSupportedGLBlendMode(owner->getBlendMode())
 			&& !r
 			&& !owner->getSystemState()->stage->renderToTextureCount
+			&& !owner->hasFilters()
 			)
 		{
 			currentcolortransform = ct;
 			renderWithNanoVG=true;
-			int offsetX;
-			int offsetY;
-			float scaleX;
-			float scaleY;
-			owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight,
-															offsetX, offsetY, scaleX, scaleY);
-			// in the NanoVG case xOffsetTransformed/yOffsetTransformed are used for the offsets from the border of the main window
-			owner->cachedSurface.xOffsetTransformed=offsetX;
-			owner->cachedSurface.yOffsetTransformed=offsetY;
+			if (!infilter)
+			{
+				// in the NanoVG case xOffsetTransformed/yOffsetTransformed are used for the offsets from the border of the main window
+				int offsetX;
+				int offsetY;
+				float scaleX;
+				float scaleY;
+				owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight,
+																offsetX, offsetY, scaleX, scaleY);
+				owner->cachedSurface.xOffsetTransformed=offsetX;
+				owner->cachedSurface.yOffsetTransformed=offsetY;
+			}
 			if (fromgraphics)
 			{
 				owner->cachedSurface.xOffset=0;
@@ -674,6 +681,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				owner->cachedSurface.yOffset=bymin;
 			}
 			owner->cachedSurface.matrix=totalMatrix2;
+			owner->cachedSurface.filtermatrix=filterMatrix2;
 			owner->resetNeedsTextureRecalculation();
 			return nullptr;
 		}
@@ -686,7 +694,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
 				, isMask, mask
 				, scaling,(!q || !q->isSoftwareQueue ? owner->getConcatenatedAlpha() : alpha), masks
-				, ct, smoothing, regpointx, regpointy,q && q->isSoftwareQueue);
+				, ct, smoothing, regpointx, regpointy,q && q->isSoftwareQueue,filterMatrix2);
 }
 
 bool TokenContainer::hitTestImpl(const Vector2f& point) const

@@ -138,8 +138,8 @@ void RenderThread::init()
 	/* This will call initialized.signal() when lighter goes out of scope */
 	SemaphoreLighter lighter(initialized);
 
-	windowWidth=engineData->width;
-	windowHeight=engineData->height;
+	windowWidth=currentframebufferWidth=engineData->width;
+	windowHeight=currentframebufferHeight=engineData->height;
 
 	engineData->InitOpenGL();
 	commonGLInit();
@@ -207,8 +207,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	if(resizeNeeded)
 	{
 		//Order of the operations here matters for requestResize
-		windowWidth=newWidth;
-		windowHeight=newHeight;
+		windowWidth=currentframebufferWidth=newWidth;
+		windowHeight=currentframebufferHeight=newHeight;
 		resizeNeeded=false;
 		newWidth=0;
 		newHeight=0;
@@ -409,13 +409,54 @@ void RenderThread::endBlendTexture()
 	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(0);
 
 	// render blended texture to framebuffer
-	renderTextureToFrameBuffer(blendTextureID,windowWidth,windowHeight,nullptr,nullptr,false);
+	resetViewPort();
+	renderTextureToFrameBuffer(blendTextureID,windowWidth,windowHeight,nullptr,nullptr,false,false);
 
 	currentFrameBufferID=0;
 	currentRenderBufferID=0;
 }
-
-void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter)
+void RenderThread::resetViewPort()
+{
+	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
+	currentframebufferWidth=windowWidth;
+	currentframebufferHeight=windowHeight;
+	lsglLoadIdentity();
+	lsglOrtho(0,windowWidth,0,windowHeight,-100,0);
+	//scaleY is negated to adapt the flash and gl coordinates system
+	//An additional translation is added for the same reason
+	lsglTranslatef(offsetX,windowHeight-offsetY,0);
+	lsglScalef(1.0,-1.0,1);
+	setMatrixUniform(LSGL_PROJECTION);
+	lsglLoadIdentity();
+	lsglScalef(1.0,-1.0,1);
+	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
+	setMatrixUniform(LSGL_MODELVIEW);
+}
+void RenderThread::setViewPort(uint32_t w, uint32_t h)
+{
+	engineData->exec_glViewport(0,0,w,h);
+	currentframebufferWidth=w;
+	currentframebufferHeight=h;
+	lsglLoadIdentity();
+	lsglOrtho(0,w,0,h,-100,0);
+	//scaleY is negated to adapt the flash and gl coordinates system
+	//An additional translation is added for the same reason
+	lsglTranslatef(0,h,0);
+	lsglScalef(1.0,-1.0,1);
+	setMatrixUniform(LSGL_PROJECTION);
+	lsglLoadIdentity();
+	lsglScalef(1.0,-1.0,1);
+	lsglTranslatef(0,h*(-1.0f),0);
+	setMatrixUniform(LSGL_MODELVIEW);
+}
+void RenderThread::setModelView(const MATRIX& matrix)
+{
+	float fmatrix[16];
+	matrix.get4DMatrix(fmatrix);
+	lsglLoadMatrixf(fmatrix);
+	setMatrixUniform(LSGL_MODELVIEW);
+}
+void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter, bool flippedvertical)
 {
 	if (filterdata)
 		engineData->exec_glUniform1fv(filterdataUniform, FILTERDATA_MAXSIZE, filterdata);
@@ -435,19 +476,16 @@ void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t
 	engineData->exec_glUniform1f(directUniform, 0.0);
 	engineData->exec_glUniform1f(isFirstFilterUniform, (float)isFirstFilter);
 
-	lsglLoadIdentity();
-	lsglScalef(1.0f,-1.0f,1);
-	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
-	setMatrixUniform(LSGL_MODELVIEW);
-
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID);
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 	float vertex_coords[] = {0,0, float(w),0, 0,float(h), float(w),float(h)};
+	float vertex_coords_flipped[] = {0,float(h), float(w),float(h), 0,0, float(w),0};
 	float texture_coords[] = {0,0, 1,0, 0,1, 1,1};
-	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, vertex_coords,FLOAT_2);
+	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, flippedvertical ? vertex_coords_flipped : vertex_coords,FLOAT_2);
 	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 0, texture_coords,FLOAT_2);
+	
 	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glEnableVertexAttribArray(TEXCOORD_ATTRIB);
 	engineData->exec_glDrawArrays_GL_TRIANGLE_STRIP(0, 4);

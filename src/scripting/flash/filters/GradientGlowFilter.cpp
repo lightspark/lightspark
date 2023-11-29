@@ -146,12 +146,12 @@ bool GradientGlowFilter::compareFILTER(const FILTER& filter) const
 	LOG(LOG_NOT_IMPLEMENTED, "comparing GradientGlowFilter");
 	return false;
 }
-void GradientGlowFilter::getRenderFilterArgs(uint32_t step,float* args) const
+void GradientGlowFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
 {
 	if (type=="full")
 		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter type 'full'");
 	if (step < (uint32_t)quality)
-		getRenderFilterArgsBlur(args,blurX,blurY);
+		getRenderFilterArgsBlur(args,blurX,blurY,w,h);
 	else if (step == (uint32_t)quality)
 	{
 		args[0]=float(FILTERSTEP_GRADIENT_GLOW);

@@ -78,6 +78,13 @@ public:
 	virtual void activateMask()=0;
 	virtual bool isDrawingMask() const=0;
 };
+struct filterstackentry
+{
+	uint32_t filterframebuffer;
+	uint32_t filterrenderbuffer;
+	number_t filterborderx;
+	number_t filterbordery;
+};
 
 class GLRenderContext: public RenderContext
 {
@@ -153,7 +160,7 @@ public:
 
 	void resetCurrentFrameBuffer();
 	// this is used to keep track of the fbos when rendering filters and some of the ancestors of the filtered object also have filters
-	std::vector<std::pair<uint32_t,uint32_t>> filterframebufferstack;
+	std::vector<filterstackentry> filterframebufferstack;
 
 	/* Utility */
 	bool handleGLErrors() const;

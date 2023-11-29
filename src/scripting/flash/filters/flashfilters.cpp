@@ -46,7 +46,7 @@ void BitmapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source,
 	LOG(LOG_ERROR,"applyFilter for "<<this->toDebugString());
 }
 
-void BitmapFilter::getRenderFilterArgs(uint32_t step,float* args) const 
+void BitmapFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const 
 {
 	args[0]=0; 
 	//Not supposed to be called
@@ -617,7 +617,7 @@ void BitmapFilter::applyGradientFilter(uint8_t* data, uint32_t datawidth, uint32
 	}
 }
 
-void BitmapFilter::getRenderFilterArgsBlur(float* args, float blurX, float blurY) const
+void BitmapFilter::getRenderFilterArgsBlur(float* args, float blurX, float blurY, uint32_t w, uint32_t h) const
 {
 	int oX;
 	int oY;
@@ -627,13 +627,11 @@ void BitmapFilter::getRenderFilterArgsBlur(float* args, float blurX, float blurY
 	args[0]=float(FILTERSTEP_BLUR );
 	args[1]=blurX*sX;
 	args[2]=blurY*sY;
-	args[3]=getSystemState()->getRenderThread()->windowWidth;
-	args[4]=getSystemState()->getRenderThread()->windowHeight;
+	args[3]=w;
+	args[4]=h;
 }
-void BitmapFilter::getRenderFilterArgsDropShadow(float* args, bool inner, bool knockout,float strength,uint32_t color,float alpha,float xpos,float ypos) const
+void BitmapFilter::getRenderFilterArgsDropShadow(float* args, bool inner, bool knockout,float strength,uint32_t color,float alpha,float xpos,float ypos, uint32_t w, uint32_t h) const
 {
-	float width = args[11];
-	float height = args[12];
 	int oX;
 	int oY;
 	float sX;
@@ -648,11 +646,11 @@ void BitmapFilter::getRenderFilterArgsDropShadow(float* args, bool inner, bool k
 	args[5]=c.gf();
 	args[6]=c.bf();
 	args[7]=alpha;
-	args[8]=(xpos * sX) / float(getSystemState()->getRenderThread()->windowWidth);
-	args[9]=(ypos * sY) / float(getSystemState()->getRenderThread()->windowHeight);
+	args[8]=(xpos * sX) / float(w);
+	args[9]=(ypos * sY) / float(h);
 }
 
-void BitmapFilter::getRenderFilterArgsBevel(float* args, bool inner, bool knockout, float strength, float distance, float angle) const
+void BitmapFilter::getRenderFilterArgsBevel(float* args, bool inner, bool knockout, float strength, float distance, float angle, uint32_t w, uint32_t h) const
 {
 	int oX;
 	int oY;
@@ -665,11 +663,11 @@ void BitmapFilter::getRenderFilterArgsBevel(float* args, bool inner, bool knocko
 
 	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, oX, oY, sX, sY);
 	//highlightOffset
-	args[4]=(cos(angle+(inner ? 0.0:M_PI)) * distance * sX) / float(getSystemState()->getRenderThread()->windowWidth);
-	args[5]=(sin(angle+(inner ? 0.0:M_PI)) * distance * sY) / float(getSystemState()->getRenderThread()->windowHeight);
+	args[4]=(cos(angle+(inner ? 0.0:M_PI)) * distance * sX) / float(w);
+	args[5]=(sin(angle+(inner ? 0.0:M_PI)) * distance * sY) / float(h);
 	//shadowOffset
-	args[6]=(cos(angle+(inner ? M_PI:0.0)) * distance * sX) / float(getSystemState()->getRenderThread()->windowWidth);
-	args[7]=(sin(angle+(inner ? M_PI:0.0)) * distance * sY) / float(getSystemState()->getRenderThread()->windowHeight);
+	args[6]=(cos(angle+(inner ? M_PI:0.0)) * distance * sX) / float(w);
+	args[7]=(sin(angle+(inner ? M_PI:0.0)) * distance * sY) / float(h);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapFilter,clone)
@@ -695,7 +693,7 @@ void ShaderFilter::applyFilter(BitmapContainer* target, BitmapContainer* source,
 	LOG(LOG_NOT_IMPLEMENTED,"applyFilter for ShaderFilter");
 }
 
-void ShaderFilter::getRenderFilterArgs(uint32_t step,float* args) const
+void ShaderFilter::getRenderFilterArgs(uint32_t step, float* args, uint32_t w, uint32_t h) const
 {
 	LOG(LOG_NOT_IMPLEMENTED,"getRenderFilterArgs not yet implemented for "<<this->toDebugString());
 	args[0]=0;

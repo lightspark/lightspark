@@ -1256,6 +1256,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 
 	tokens.clear();
 	MATRIX totalMatrix;
+	MATRIX filterMatrix;
 	if (embeddedFont)
 	{
 		scaling = 1.0f/1024.0f/20.0f;
@@ -1287,7 +1288,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	bool isMask;
 	number_t alpha=1.0;
 	_NR<DisplayObject> mask;
-	computeMasksAndMatrix(target, masks, totalMatrix,false,isMask,mask,alpha);
+	bool infilter = computeMasksAndMatrix(target, masks, totalMatrix,false,isMask,mask,alpha,filterMatrix);
 	MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
 	totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
 	totalMatrix.xx = abs(totalMatrix.xx);
@@ -1295,11 +1296,12 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	totalMatrix.x0 = 0;
 	totalMatrix.y0 = 0;
 	
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix);
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix,infilter);
 	MATRIX totalMatrix2;
-	computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask,alpha);
+	MATRIX filterMatrix2;
+	infilter = computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask,alpha,filterMatrix2);
 	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2);
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
 	if (getLineCount()==0)
 		return nullptr;
 	if(width==0 || height==0)
@@ -1313,7 +1315,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, ceil(width), ceil(height),
 																					rx, ry, ceil(rwidth), ceil(rheight), rotation,xscale,yscale,isMask,mask, 1.0f,getConcatenatedAlpha(), masks,
 																					ColorTransformBase(),
-																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE);
+																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,filterMatrix2);
 	if (res != nullptr)
 		return res;
 	return new CairoPangoRenderer(*this,totalMatrix2,
@@ -1323,7 +1325,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 				isMask,mask,
 				1.0f,getConcatenatedAlpha(),masks,
 				ColorTransformBase(),
-				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,0);
+				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,0,filterMatrix2);
 }
 
 bool TextLine::renderImpl(RenderContext& ctxt)

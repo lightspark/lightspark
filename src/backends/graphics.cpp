@@ -1338,7 +1338,7 @@ void TextData::setText(const char* text, bool firstlineonly)
 	textlines.clear();
 	appendText(text,firstlineonly);
 }
-void TextData::appendText(const char *text,bool firstlineonly)
+void TextData::appendText(const char *text,bool firstlineonly,const FormatText* format)
 {
 	if (*text == 0x00)
 		return;
@@ -1358,6 +1358,8 @@ void TextData::appendText(const char *text,bool firstlineonly)
 	do
 	{
 		textline line;
+		if (format != nullptr)
+			line.format = *format;
 		line.autosizeposition=0;
 		line.textwidth=UINT32_MAX;
 		bool haslineterminator = t.getLine(index,line.text);
@@ -1366,12 +1368,19 @@ void TextData::appendText(const char *text,bool firstlineonly)
 		{
 			// add an empty line if text ends with line terminator
 			textline line;
+			if (format != nullptr)
+				line.format = *format;
 			line.autosizeposition=0;
 			line.textwidth=UINT32_MAX;
 			textlines.push_back(line);
 		}
 	}
 	while (index != tiny_string::npos && !firstlineonly);
+}
+
+void TextData::appendFormatText(const char *text, const FormatText& format, bool firstlineonly)
+{
+	appendText(text, firstlineonly, &format);
 }
 
 void TextData::getTextSizes(const tiny_string& text, number_t& tw, number_t& th)

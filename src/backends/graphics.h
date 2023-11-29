@@ -443,13 +443,31 @@ public:
 	*/
 	static bool hitTest(const tokensVector& tokens, float scaleFactor, const Vector2f& point);
 };
+
+struct FormatText
+{
+	bool bullet {false};
+	bool bold {false};
+	bool italic {false};
+	bool underline {false};
+	enum ALIGNMENT {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
+	ALIGNMENT align {AS_NONE};
+	RGB fontColor {0x000000};
+	uint32_t fontSize;
+	tiny_string font;
+	tiny_string url;
+	tiny_string target;
+};
+
 struct textline
 {
 	tiny_string text;
 	number_t autosizeposition;
 	uint32_t textwidth;
 	uint32_t height;
+	FormatText format;
 };
+
 class FontTag;
 class DLL_PUBLIC TextData
 {
@@ -490,7 +508,8 @@ public:
 	FontTag* embeddedFont;
 	tiny_string getText(uint32_t line=UINT32_MAX) const;
 	void setText(const char* text, bool firstlineonly=false);
-	void appendText(const char* text, bool firstlineonly=false);
+	void appendText(const char* text, bool firstlineonly=false, const FormatText* format = nullptr);
+	void appendFormatText(const char* text, const FormatText& format, bool firstlineonly=false);
 	void getTextSizes(const tiny_string& text, number_t& tw, number_t& th);
 	bool TextIsEqual(const std::vector<tiny_string>& lines) const;
 	uint32_t getLineCount() const { return textlines.size(); }

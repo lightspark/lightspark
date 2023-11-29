@@ -1336,7 +1336,17 @@ tiny_string TextField::toHtmlText()
 	//Split text into paragraphs and wraps them into <p> tags
 	for (auto it = textlines.begin(); it != textlines.end(); it++)
 	{
-		root.append_child("p").set_value((*it).text.raw_buf());
+		FormatText& format = (*it).format;
+		pugi::xml_node node = root;
+		if (format.bold)
+			node = node.append_child("b");
+		if (format.italic)
+			node = node.append_child("i");
+		if (format.underline)
+			node = node.append_child("u");
+		if (format.bullet)
+			node = node.append_child("li");
+		node.append_child("p").text().set((*it).text.raw_buf());
 	}
 
 	ostringstream buf;
@@ -2022,6 +2032,7 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 	{
 		textdata->setText("");
 		doc.traverse(*this);
+		formatStack.erase(formatStack.begin(), formatStack.end());
 	}
 	else
 	{
@@ -2033,15 +2044,29 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 	}
 }
 
+FORCE_INLINE bool skipFormatStackPushPop(const tiny_string& name)
+{
+	return name.empty() || name == "br" || name == "sbr";
+}
+
 bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 {
-
 	if (!textdata)
 		return true;
+
+	int currentDepth = depth();
 	tiny_string name = node.name();
 	name = name.lowercase();
 	tiny_string v = node.value();
 	tiny_string newtext;
+	FormatText format = !formatStack.empty() ? formatStack.back() : FormatText {};
+	prevDepth = currentDepth;
+	prevName = name;
+	if (currentDepth < prevDepth && !skipFormatStackPushPop(prevName))
+	{
+		for (int i = currentDepth; i < prevDepth; ++i)
+			formatStack.pop_back();
+	}
 	uint32_t index =v.find("&nbsp;");
 	while (index != tiny_string::npos)
 	{
@@ -2055,7 +2080,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			newtext += "\n";
 			
 	}
-	else if (name == "p")
+	if (name == "p")
 	{
 		if (textdata->multiline)
 		{
@@ -2073,11 +2098,20 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			if (attrname == "align")
 			{
 				if (value == "left")
+				{
 					textdata->align = TextData::AS_LEFT;
+					format.align = FormatText::AS_LEFT;
+				}
 				if (value == "center")
+				{
 					textdata->align = TextData::AS_CENTER;
+					format.align = FormatText::AS_CENTER;
+				}
 				if (value == "right")
+				{
 					textdata->align = TextData::AS_RIGHT;
+					format.align = FormatText::AS_RIGHT;
+				}
 			}
 			else
 			{
@@ -2097,28 +2131,61 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 				if (textdata->font != it->value())
 				{
 					textdata->font = it->value();
+					format.font = it->value();
 					textdata->fontID = UINT32_MAX;
 				}
 			}
 			else if (attrname == "size")
 			{
 				textdata->fontSize = parseFontSize(it->value(), textdata->fontSize);
+				format.fontSize = parseFontSize(it->value(), format.fontSize);
 			}
 			else if (attrname == "color")
 			{
 				textdata->textColor = RGB(tiny_string(it->value()));
+				format.fontColor = RGB(tiny_string(it->value()));
 			}
 			else
 				LOG(LOG_NOT_IMPLEMENTED,"TextField html tag <font>: unsupported attribute:"<<attrname<<" "<<it->value());
 		}
 	}
-	else if (name == "a" || name == "img" || name == "u" ||
-		 name == "li" || name == "b" || name == "i" ||
-		 name == "span" || name == "textformat" || name == "tab")
+	else if (name == "a")
+	{
+		for (auto it : node.attributes())
+		{
+			tiny_string attrname = it.name();
+			attrname = attrname.lowercase();
+			if (attrname == "href")
+				format.url = it.value();
+			else if (attrname == "target")
+				format.target = it.value();
+		}
+	}
+	else if (name == "b")
+	{
+		format.bold = true;
+	}
+	else if (name == "i")
+	{
+		format.italic = true;
+	}
+	else if (name == "u")
+	{
+		format.underline = true;
+	}
+	else if (name == "li" && textdata->multiline)
+	{
+		format.bullet = true;
+	}
+	else if (name == "img" || name == "span" || name == "textformat" ||
+		 name == "tab")
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "Unsupported tag in TextField: " << name);
 	}
-	textdata->appendText(newtext.raw_buf());
+	if (!skipFormatStackPushPop(name))
+		formatStack.push_back(format);
+	if (!newtext.empty())
+		textdata->appendFormatText(newtext.raw_buf(), format);
 	return true;
 }
 

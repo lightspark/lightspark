@@ -80,11 +80,14 @@ private:
 	class HtmlTextParser : public pugi::xml_tree_walker {
 	protected:
 		TextData *textdata;
+		std::vector<FormatText> formatStack;
+		tiny_string prevName;
+		int prevDepth;
 
 		uint32_t parseFontSize(const char *s, uint32_t currentFontSize);
 		bool for_each(pugi::xml_node& node);
 	public:
-		HtmlTextParser() : textdata(NULL) {}
+		HtmlTextParser() : textdata(NULL), formatStack(), prevDepth(-1) {}
 		//Stores the text and formating into a TextData object
 		void parseTextAndFormating(const tiny_string& html, TextData *dest);
 	};

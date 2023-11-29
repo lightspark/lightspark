@@ -2011,8 +2011,6 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 	if (!textdata)
 		return;
 
-	textdata->setText("");
-
 	tiny_string rooted = tiny_string("<root>") + html + tiny_string("</root>");
 	uint32_t pos=0;
 	// ensure <br> tags are properly parsed
@@ -2022,6 +2020,7 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 	pugi::xml_parse_result result = doc.load_buffer(rooted.raw_buf(),rooted.numBytes(), pugi::parse_default & ~pugi::parse_validate_closing_tags);
 	if (result.status == pugi::status_ok)
 	{
+		textdata->setText("");
 		doc.traverse(*this);
 	}
 	else

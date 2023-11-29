@@ -129,6 +129,7 @@ TextField::TextField(ASWorker* wrk, Class_base* c, const TextData& textData, boo
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
 	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname,true),tagvartarget(nullptr),tag(_tag),originalXPosition(0),originalWidth(textData.width),
 	  fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),linemutex(new Mutex()),inAVM1syncVar(false),
+	  inUpdateVarBinding(false),
 	  alwaysShowSelection(false),
 	  condenseWhite(false),
 	  embedFonts(false), maxChars(_tag ? int32_t(_tag->MaxLength) : 0), mouseWheelEnabled(true),
@@ -1451,11 +1452,13 @@ void TextField::avm1SyncTagVar()
 
 void TextField::UpdateVariableBinding(asAtom v)
 {
+	inUpdateVarBinding = true;
 	tiny_string s = asAtomHandler::toString(v,getInstanceWorker());
 	if (tag->isHTML())
 		setHtmlText(s);
 	else
 		updateText(s);
+	inUpdateVarBinding = false;
 }
 
 void TextField::afterLegacyInsert()
@@ -1589,7 +1592,9 @@ uint32_t TextField::getTagID() const
 
 void TextField::textUpdated()
 {
-	avm1SyncTagVar();
+	// Don't sync the bound variable if we're updating the binding.
+	if (!inUpdateVarBinding)
+		avm1SyncTagVar();
 	scrollH = 0;
 	scrollV = 1;
 	selectionBeginIndex = 0;

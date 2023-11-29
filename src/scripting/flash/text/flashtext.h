@@ -135,6 +135,7 @@ private:
 	LINESTYLE2 lineStyleCaret;
 	Mutex* linemutex;
 	bool inAVM1syncVar;
+	bool inUpdateVarBinding;
 	void getTextBounds(const tiny_string &txt, number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax);
 protected:
 	void afterSetLegacyMatrix() override;
@@ -157,6 +158,7 @@ public:
 	void tickFence() override;
 	uint32_t getTagID() const override;
 	bool allowAsMask() const override { return false; }
+	bool isInUpdateVarBinding() const { return inUpdateVarBinding; }
 	
 	ASFUNCTION_ATOM(appendText);
 	ASFUNCTION_ATOM(_getAntiAliasType);

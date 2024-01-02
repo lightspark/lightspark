@@ -752,43 +752,42 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				{
 					asAtom obj = asAtomHandler::fromObject(o);
 					asAtom ret=asAtomHandler::invalidAtom;
-					asAtom valueInt = asAtomHandler::fromInt(asAtomHandler::toInt(value));
 					switch (asAtomHandler::toInt(index))
 					{
 						case 0:// x
-							DisplayObject::_setX(ret,wrk,obj,&valueInt,1);
+							DisplayObject::_setX(ret,wrk,obj,&value,1);
 							ASATOM_DECREF(value);
 							break;
 						case 1:// y
-							DisplayObject::_setY(ret,wrk,obj,&valueInt,1);
+							DisplayObject::_setY(ret,wrk,obj,&value,1);
 							ASATOM_DECREF(value);
 							break;
 						case 2:// xscale
-							DisplayObject::AVM1_setScaleX(ret,wrk,obj,&valueInt,1);
+							DisplayObject::AVM1_setScaleX(ret,wrk,obj,&value,1);
 							ASATOM_DECREF(value);
 							break;
 						case 3:// xscale
-							DisplayObject::AVM1_setScaleY(ret,wrk,obj,&valueInt,1);
+							DisplayObject::AVM1_setScaleY(ret,wrk,obj,&value,1);
 							ASATOM_DECREF(value);
 							break;
 						case 6:// alpha
-							DisplayObject::AVM1_setAlpha(ret,wrk,obj,&valueInt,1);
+							DisplayObject::AVM1_setAlpha(ret,wrk,obj,&value,1);
 							ASATOM_DECREF(value);
 							break;
 						case 7:// visible
-							DisplayObject::_setVisible(ret,wrk,obj,&valueInt,1);
+							DisplayObject::_setVisible(ret,wrk,obj,&value,1);
 							ASATOM_DECREF(value);
 							break;
 						case 8:// width
-							DisplayObject::_setWidth(ret,wrk,obj,&valueInt,1);
+							DisplayObject::_setWidth(ret,wrk,obj,&value,1);
 							ASATOM_DECREF(value);
 							break;
 						case 9:// height
-							DisplayObject::_setHeight(ret,wrk,obj,&valueInt,1);
+							DisplayObject::_setHeight(ret,wrk,obj,&value,1);
 							ASATOM_DECREF(value);
 							break;
 						case 10:// rotation
-							DisplayObject::_setRotation(ret,wrk,obj,&valueInt,1);
+							DisplayObject::_setRotation(ret,wrk,obj,&value,1);
 							ASATOM_DECREF(value);
 							break;
 						case 13:// name

@@ -3395,19 +3395,28 @@ PUGI__NS_BEGIN
 
 						mark = s;
 
-						char_t* name = cursor->name;
-						if (!name) PUGI__THROW_ERROR(status_end_element_mismatch, mark);
-
-						while (PUGI__IS_CHARTYPE(*s, ct_symbol))
+						// Flash Player's TextField HTML allows for tag mismatches.
+						#ifdef PUGIXML_LIGHTSPARK_MODE
+						if (PUGI__OPTSET(parse_validate_closing_tags))
 						{
-							if (*s++ != *name++) PUGI__THROW_ERROR(status_end_element_mismatch, mark);
-						}
+						#endif
+							char_t* name = cursor->name;
+							if (!name) PUGI__THROW_ERROR(status_end_element_mismatch, mark);
 
-						if (*name)
-						{
-							if (*s == 0 && name[0] == endch && name[1] == 0) PUGI__THROW_ERROR(status_bad_end_element, s);
-							else PUGI__THROW_ERROR(status_end_element_mismatch, mark);
+							while (PUGI__IS_CHARTYPE(*s, ct_symbol))
+							{
+								if (*s++ != *name++) PUGI__THROW_ERROR(status_end_element_mismatch, mark);
+							}
+
+							if (*name)
+							{
+								if (*s == 0 && name[0] == endch && name[1] == 0) PUGI__THROW_ERROR(status_bad_end_element, s);
+								else PUGI__THROW_ERROR(status_end_element_mismatch, mark);
+							}
+						#ifdef PUGIXML_LIGHTSPARK_MODE
 						}
+						else PUGI__SCANWHILE_UNROLL(PUGI__IS_CHARTYPE(ss, ct_symbol)); // Scan for a terminator.
+						#endif
 
 						PUGI__POPNODE(); // Pop.
 
@@ -3495,8 +3504,16 @@ PUGI__NS_BEGIN
 				}
 			}
 
-			// check that last tag is closed
-			if (cursor != root) PUGI__THROW_ERROR(status_end_element_mismatch, s);
+			// Flash Player's TextField HTML allows for tag mismatches.
+			#ifdef PUGIXML_LIGHTSPARK_MODE
+			if (PUGI__OPTSET(parse_validate_closing_tags))
+			{
+			#endif
+				// check that last tag is closed
+				if (cursor != root) PUGI__THROW_ERROR(status_end_element_mismatch, s);
+			#ifdef PUGIXML_LIGHTSPARK_MODE
+			}
+			#endif
 
 			return s;
 		}

@@ -450,7 +450,7 @@ public:
 	/*
 	   Specialized decoding used by FFMpegStreamDecoder
 	*/
-	uint32_t decodePacket(AVPacket* pkt, uint32_t time);
+	void decodePacket(AVPacket* pkt, uint32_t time);
 	void switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen) override;
 	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time) override;
 };

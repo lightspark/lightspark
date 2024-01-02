@@ -20,7 +20,6 @@
 #include "compat.h"
 #include <cassert>
 
-#include "backends/audio.h"
 #include "backends/decoder.h"
 #include "platforms/fastpaths.h"
 #include "swf.h"
@@ -1186,6 +1185,8 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 			resampleFrame(&output,len);
 #if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
 			maxLen = av_frame_get_pkt_size (frameIn);
+#elif ( LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(58,29,100) )
+			maxLen = pkt->size;
 #else
 			maxLen = frameIn->pkt_size;
 #endif
@@ -1424,12 +1425,11 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 #endif
 }
 
-uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
+void FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 {
 #if defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME
 	av_frame_unref(frameIn);
 	int ret = avcodec_send_packet(codecContext, pkt);
-	int maxLen = 0;
 	while (ret == 0)
 	{
 		ret = avcodec_receive_frame(codecContext,frameIn);
@@ -1443,11 +1443,6 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 			uint8_t* output=nullptr;
 			int len;
 			resampleFrame(&output,len);
-#if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
-			maxLen = pkt->size - av_frame_get_pkt_size (frameIn);
-#else
-			maxLen = pkt->size - frameIn->pkt_size;
-#endif
 			if (engine->audio_useFloatSampleFormat())
 			{
 				int curpos = 0;
@@ -1490,7 +1485,6 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 				status=VALID;
 		}
 	}
-	return maxLen;
 #else
 	if (engine->audio_useFloatSampleFormat())
 	{
@@ -1620,7 +1614,6 @@ uint32_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 		curTail.time=time;
 		samplesBufferS16.commitLast();
 	}
-	return maxLen;
 #endif
 }
 #if defined HAVE_AVCODEC_DECODE_AUDIO4 || (defined HAVE_AVCODEC_SEND_PACKET && defined HAVE_AVCODEC_RECEIVE_FRAME)

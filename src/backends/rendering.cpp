@@ -631,6 +631,8 @@ void RenderThread::commonGLInit()
 	//Load shaders
 	loadShaderPrograms();
 	engineData->driverInfoString = engineData->getGLDriverInfo();
+	// TODO set context3dPRofile based on available openGL driver / hardware capabilities?
+	engineData->context3dProfile = m_sys->getUniqueStringId("baseline");
 	engineData->getGlCompressedTextureFormats();
 
 	engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);

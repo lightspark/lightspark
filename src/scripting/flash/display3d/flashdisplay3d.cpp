@@ -28,6 +28,7 @@
 #include "backends/rendering.h"
 #include "backends/rendering_context.h"
 #include "scripting/flash/display3d/agalconverter.h"
+#include "scripting/abc.h"
 
 SamplerRegister SamplerRegister::parse (uint64_t v, bool isVertexProgram)
 {
@@ -738,6 +739,15 @@ void Context3D::disposeintern()
 bool Context3D::renderImpl(RenderContext &ctxt)
 {
 	Locker l(rendermutex);
+	auto it = texturestoupload.begin();
+	while (it != texturestoupload.end())
+	{
+		TextureBase* tex = (*it++).getPtr();
+		loadTexture(tex,UINT32_MAX);
+		tex->incRef();
+		getVm(tex->getSystemState())->addEvent(_MR(tex), _MR(Class<Event>::getInstanceS(tex->getInstanceWorker(),"textureReady")));
+	}
+	texturestoupload.clear();
 	if (!swapbuffers || actions[1-currentactionvector].size() == 0)
 	{
 		swapbuffers = false;

@@ -144,7 +144,7 @@ tiny_string ASError::toString()
 {
 	tiny_string ret;
 	ret = name;
-	if(errorID != 0)
+	if(errorID != 0 && !message.startsWith("Error #"))
 		ret += tiny_string(": Error #") + Integer::toString(errorID);
 	if (!message.empty())
 		ret += tiny_string(": ") + message;

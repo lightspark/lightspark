@@ -138,6 +138,7 @@ class Context3D: public EventDispatcher
 friend class Stage3D;
 private:
 	std::vector<renderaction> actions[2];
+	std::vector<_NR<TextureBase>> texturestoupload;
 	constantregister vertexConstants[CONTEXT3D_PROGRAM_REGISTERS];
 	constantregister fragmentConstants[CONTEXT3D_PROGRAM_REGISTERS];
 	attribregister attribs[CONTEXT3D_ATTRIBUTE_COUNT];
@@ -185,6 +186,11 @@ public:
 
 	void addAction(RENDER_ACTION type, ASObject* dataobject);
 	void addAction(renderaction action);
+	void addTextureToUpload(TextureBase* tex)
+	{
+		tex->incRef();
+		texturestoupload.push_back(_MR(tex));
+	}
 	ASPROPERTY_GETTER(int,backBufferHeight);
 	ASPROPERTY_GETTER(int,backBufferWidth);
 	ASPROPERTY_GETTER(tiny_string,driverInfo);

@@ -390,7 +390,7 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 	agal->readUnsignedInt(version);
 	if (version != 1) {
 		LOG(LOG_ERROR,"invalid version for AGAL:"<<version);
-		return "";
+//		return "";
 	}
 	agal->readByte(by);
 	if (by != 0xA1) {

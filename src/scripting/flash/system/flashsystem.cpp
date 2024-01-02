@@ -21,6 +21,7 @@
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/system/messagechannel.h"
+#include "scripting/flash/errors/flasherrors.h"
 #include "scripting/abc.h"
 #include "scripting/argconv.h"
 #include "compat.h"
@@ -1075,7 +1076,7 @@ void ASWorker::sinit(Class_base* c)
 
 void ASWorker::throwStackOverflow()
 {
-	createError<ASError>(this,kStackOverflowError);
+	createError<StackOverflowError>(this,kStackOverflowError);
 }
 
 void ASWorker::execute()

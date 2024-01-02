@@ -518,8 +518,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 	Texture* th = asAtomHandler::as<Texture>(obj);
 	_NR<ByteArray> data;
 	int32_t byteArrayOffset;
-	bool async;
-	ARG_CHECK(ARG_UNPACK(data)(byteArrayOffset)(async,false));
+	ARG_CHECK(ARG_UNPACK(data)(byteArrayOffset)(th->async,false));
 	if (data.isNull())
 	{
 		createError<TypeError>(wrk,kNullArgumentError);
@@ -527,18 +526,19 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 	}
 	th->context->rendermutex.lock();
 	th->parseAdobeTextureFormat(data.getPtr(),byteArrayOffset,false);
-	if (async)
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Texture.uploadCompressedTextureFromByteArray async loading");
-		th->incRef();
-		getVm(wrk->getSystemState())->addEvent(_MR(th), _MR(Class<Event>::getInstanceS(wrk,"textureReady")));
-	}
 	renderaction action;
 	action.action = RENDER_LOADTEXTURE;
 	th->incRef();
-	action.dataobject = _MR(th);
-	action.udata1=UINT32_MAX;
-	th->context->addAction(action);
+	if (th->async)
+	{
+		th->context->addTextureToUpload(th);
+	}
+	else
+	{
+		action.dataobject = _MR(th);
+		action.udata1=UINT32_MAX;
+		th->context->addAction(action);
+	}
 	th->context->rendermutex.unlock();
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)

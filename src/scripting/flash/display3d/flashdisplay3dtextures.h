@@ -36,6 +36,7 @@ protected:
 	uint32_t textureID;
 	uint32_t width;
 	uint32_t height;
+	bool async;
 	TEXTUREFORMAT format;
 	TEXTUREFORMAT_COMPRESSED compressedformat;
 	vector<vector<uint8_t>> bitmaparray;
@@ -45,7 +46,7 @@ protected:
 	uint32_t getBytesNeeded(uint32_t miplevel);
 public:
 	TextureBase(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c)
-	  ,textureID(UINT32_MAX),width(0),height(0),format(BGRA),compressedformat(UNCOMPRESSED),context(nullptr)
+	  ,textureID(UINT32_MAX),width(0),height(0),async(false),format(BGRA),compressedformat(UNCOMPRESSED),context(nullptr)
 	{ subtype = SUBTYPE_TEXTUREBASE;}
 	TextureBase(ASWorker* wrk,Class_base* c,Context3D* _context):EventDispatcher(wrk,c)
 	  ,textureID(UINT32_MAX),width(0),height(0),format(BGRA),compressedformat(UNCOMPRESSED),context(_context)

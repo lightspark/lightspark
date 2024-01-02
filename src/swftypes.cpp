@@ -1488,6 +1488,7 @@ bool CLIPEVENTFLAGS::isNull()
 
 std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONRECORD& v)
 {
+	uint32_t startpos=s.tellg();
 	s >> v.EventFlags;
 	if(v.EventFlags.isNull())
 		return s;
@@ -1500,7 +1501,7 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONRECORD& v)
 	}
 	if (v.datatag)
 	{
-		v.startactionpos=v.datatag->numbytes+v.dataskipbytes;
+		v.startactionpos=v.datatag->numbytes+v.dataskipbytes+(uint32_t(s.tellg())-startpos);
 		v.actions.resize(len+v.startactionpos);
 		memcpy(v.actions.data(),v.datatag->bytes,v.datatag->numbytes);
 	}
@@ -1523,8 +1524,6 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPACTIONS& v)
 	while(1)
 	{
 		CLIPACTIONRECORD t(v.AllEventFlags.getSWFVersion(),v.dataskipbytes+(uint32_t(s.tellg())-startpos),v.datatag);
-		// use datatag only on first clipaction
-		v.datatag=nullptr;
 		s >> t;
 		if(t.isLast())
 			break;

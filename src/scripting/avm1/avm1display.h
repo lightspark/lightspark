@@ -38,9 +38,13 @@ private:
 	// this is only needed to make this movieclip the owner of the color (avoids circular references if color is also set as variable)
 	_NR<AVM1Color> color;
 public:
-	AVM1MovieClip(ASWorker* wrk,Class_base* c):MovieClip(wrk,c){}
+	AVM1MovieClip(ASWorker* wrk,Class_base* c):MovieClip(wrk,c)
+	{
+		subtype = SUBTYPE_AVM1MOVIECLIP;
+	}
 	AVM1MovieClip(ASWorker* wrk,Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID,uint32_t nameID=BUILTIN_STRINGS::EMPTY):MovieClip(wrk,c,f,defineSpriteTagID) 
 	{
+		subtype = SUBTYPE_AVM1MOVIECLIP;
 		name=nameID;
 	}
 	void afterConstruction() override;

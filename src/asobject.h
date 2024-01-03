@@ -1397,7 +1397,6 @@ FORCE_INLINE void variable::setVarNoCoerce(asAtom &v)
 }
 
 
-class AVM1Function;
 class Activation_object;
 class ApplicationDomain;
 class ArgumentError;
@@ -1409,6 +1408,8 @@ class ASMutex;
 class ASQName;
 class ASString;
 class ASWorker;
+class AVM1Function;
+class AVM1MovieClip;
 class AVM1Sound;
 class BevelFilter;
 class Bitmap;
@@ -1532,7 +1533,6 @@ class XMLList;
 
 // this is used to avoid calls to dynamic_cast when testing for some classes
 // keep in mind that when adding a class here you have to take care of the class inheritance and add the new SUBTYPE_ to all apropriate is<> methods 
-template<> inline bool ASObject::is<AVM1Function>() const { return subtype==SUBTYPE_AVM1FUNCTION; }
 template<> inline bool ASObject::is<Activation_object>() const { return subtype==SUBTYPE_ACTIVATIONOBJECT; }
 template<> inline bool ASObject::is<ApplicationDomain>() const { return subtype==SUBTYPE_APPLICATIONDOMAIN; }
 template<> inline bool ASObject::is<ArgumentError>() const { return subtype==SUBTYPE_ARGUMENTERROR; }
@@ -1545,6 +1545,8 @@ template<> inline bool ASObject::is<ASObject>() const { return true; }
 template<> inline bool ASObject::is<ASQName>() const { return type==T_QNAME; }
 template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
 template<> inline bool ASObject::is<ASWorker>() const { return subtype==SUBTYPE_WORKER; }
+template<> inline bool ASObject::is<AVM1Function>() const { return subtype==SUBTYPE_AVM1FUNCTION; }
+template<> inline bool ASObject::is<AVM1MovieClip>() const { return subtype == SUBTYPE_AVM1MOVIECLIP; }
 template<> inline bool ASObject::is<AVM1Sound>() const { return subtype == SUBTYPE_AVM1SOUND; }
 template<> inline bool ASObject::is<BevelFilter>() const { return subtype==SUBTYPE_BEVELFILTER; }
 template<> inline bool ASObject::is<Bitmap>() const { return subtype==SUBTYPE_BITMAP; }
@@ -1569,8 +1571,8 @@ template<> inline bool ASObject::is<DatagramSocket>() const { return subtype==SU
 template<> inline bool ASObject::is<DefinitionError>() const { return subtype==SUBTYPE_DEFINITIONERROR; }
 template<> inline bool ASObject::is<Dictionary>() const { return subtype==SUBTYPE_DICTIONARY; }
 template<> inline bool ASObject::is<DisplacementFilter>() const { return subtype==SUBTYPE_DISPLACEMENTFILTER; }
-template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_VIDEO || subtype == SUBTYPE_SIMPLEBUTTON || subtype == SUBTYPE_SHAPE || subtype == SUBTYPE_MORPHSHAPE || subtype==SUBTYPE_LOADER; }
-template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_SIMPLEBUTTON || subtype==SUBTYPE_LOADER; }
+template<> inline bool ASObject::is<DisplayObject>() const { return subtype==SUBTYPE_DISPLAYOBJECT || subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_BITMAP || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_VIDEO || subtype == SUBTYPE_SIMPLEBUTTON || subtype == SUBTYPE_SHAPE || subtype == SUBTYPE_MORPHSHAPE || subtype==SUBTYPE_LOADER || subtype == SUBTYPE_AVM1MOVIECLIP; }
+template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_SIMPLEBUTTON || subtype==SUBTYPE_LOADER || subtype == SUBTYPE_AVM1MOVIECLIP; }
 template<> inline bool ASObject::is<DropShadowFilter>() const { return subtype==SUBTYPE_DROPSHADOWFILTER; }
 template<> inline bool ASObject::is<EastAsianJustifier>() const { return subtype==SUBTYPE_EASTASIANJUSTIFIER; }
 template<> inline bool ASObject::is<ElementFormat>() const { return subtype==SUBTYPE_ELEMENTFORMAT; }
@@ -1592,7 +1594,7 @@ template<> inline bool ASObject::is<GradientBevelFilter>() const { return subtyp
 template<> inline bool ASObject::is<IFunction>() const { return type==T_FUNCTION; }
 template<> inline bool ASObject::is<IndexBuffer3D>() const { return subtype==SUBTYPE_INDEXBUFFER3D; }
 template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
-template<> inline bool ASObject::is<InteractiveObject>() const { return subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_SIMPLEBUTTON || subtype==SUBTYPE_LOADER; }
+template<> inline bool ASObject::is<InteractiveObject>() const { return subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_SIMPLEBUTTON || subtype==SUBTYPE_LOADER || subtype == SUBTYPE_AVM1MOVIECLIP; }
 template<> inline bool ASObject::is<LocalConnection>() const { return subtype==SUBTYPE_LOCALCONNECTION; }
 template<> inline bool ASObject::is<KeyboardEvent>() const { return subtype==SUBTYPE_KEYBOARD_EVENT; }
 template<> inline bool ASObject::is<Loader>() const { return subtype==SUBTYPE_LOADER; }
@@ -1603,7 +1605,7 @@ template<> inline bool ASObject::is<Matrix3D>() const { return subtype==SUBTYPE_
 template<> inline bool ASObject::is<MessageChannel>() const { return subtype==SUBTYPE_MESSAGECHANNEL; }
 template<> inline bool ASObject::is<MorphShape>() const { return subtype==SUBTYPE_MORPHSHAPE; }
 template<> inline bool ASObject::is<MouseEvent>() const { return subtype==SUBTYPE_MOUSE_EVENT; }
-template<> inline bool ASObject::is<MovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP || subtype == SUBTYPE_MOVIECLIP; }
+template<> inline bool ASObject::is<MovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_AVM1MOVIECLIP; }
 template<> inline bool ASObject::is<Null>() const { return type==T_NULL; }
 template<> inline bool ASObject::is<Namespace>() const { return type==T_NAMESPACE; }
 template<> inline bool ASObject::is<NativeWindow>() const { return subtype==SUBTYPE_NATIVEWINDOW; }
@@ -1631,7 +1633,7 @@ template<> inline bool ASObject::is<Sound>() const { return subtype==SUBTYPE_SOU
 template<> inline bool ASObject::is<SoundChannel>() const { return subtype==SUBTYPE_SOUNDCHANNEL; }
 template<> inline bool ASObject::is<SoundTransform>() const { return subtype==SUBTYPE_SOUNDTRANSFORM; }
 template<> inline bool ASObject::is<SpaceJustifier>() const { return subtype==SUBTYPE_SPACEJUSTIFIER; }
-template<> inline bool ASObject::is<Sprite>() const { return subtype==SUBTYPE_SPRITE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype == SUBTYPE_MOVIECLIP; }
+template<> inline bool ASObject::is<Sprite>() const { return subtype==SUBTYPE_SPRITE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_AVM1MOVIECLIP; }
 template<> inline bool ASObject::is<Stage>() const { return subtype==SUBTYPE_STAGE; }
 template<> inline bool ASObject::is<Stage3D>() const { return subtype==SUBTYPE_STAGE3D; }
 template<> inline bool ASObject::is<SyntaxError>() const { return subtype==SUBTYPE_SYNTAXERROR; }

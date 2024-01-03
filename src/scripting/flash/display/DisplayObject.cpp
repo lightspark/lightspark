@@ -191,7 +191,9 @@ void DisplayObject::finalize()
 	scalingGrid.reset();
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
 	{
-		ASATOM_DECREF(it->second);
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			o->removeStoredMember();
 	}
 	avm1variables.clear();
 	variablebindings.clear();
@@ -255,7 +257,9 @@ bool DisplayObject::destruct()
 	name=BUILTIN_STRINGS::EMPTY;
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
 	{
-		ASATOM_DECREF(it->second);
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			o->removeStoredMember();
 	}
 	avm1variables.clear();
 	variablebindings.clear();
@@ -3242,11 +3246,20 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
 		auto it = avm1variables.find(nameId);
 		if (it != avm1variables.end())
-			ASATOM_DECREF(it->second);
+		{
+			ASObject* o = asAtomHandler::getObject(it->second);
+			if (o)
+				o->removeStoredMember();
+		}
 		if (asAtomHandler::isUndefined(v))
 			avm1variables.erase(nameId);
 		else
+		{
+			ASObject* o = asAtomHandler::getObject(v);
+			if (o)
+				o->addStoredMember();
 			avm1variables[nameId] = v;
+		}
 		if (setMember)
 		{
 			multiname objName(nullptr);
@@ -3275,11 +3288,20 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
 		auto it = avm1variables.find(nameId);
 		if (it != avm1variables.end())
-			ASATOM_DECREF(it->second);
+		{
+			ASObject* o = asAtomHandler::getObject(it->second);
+			if (o)
+				o->removeStoredMember();
+		}
 		if (asAtomHandler::isUndefined(v))
 			avm1variables.erase(nameId);
 		else
+		{
+			ASObject* o = asAtomHandler::getObject(v);
+			if (o)
+				o->addStoredMember();
 			avm1variables[nameId] = v;
+		}
 	}
 	else
 	{
@@ -3297,13 +3319,20 @@ void DisplayObject::AVM1SetVariableDirect(uint32_t nameId, asAtom v)
 {
 	auto it = avm1variables.find(nameId);
 	if (it != avm1variables.end())
-		ASATOM_DECREF(it->second);
+	{
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			o->removeStoredMember();
+	}
 	if (asAtomHandler::isUndefined(v))
 	{
 		avm1variables.erase(nameId);
 	}
 	else
 	{
+		ASObject* o = asAtomHandler::getObject(v);
+		if (o)
+			o->addStoredMember();
 		avm1variables[nameId] = v;
 	}
 }
@@ -3441,12 +3470,15 @@ void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> o
 	{
 		if (obj && asAtomHandler::isObject(it->second) && asAtomHandler::getObjectNoCheck(it->second) == obj.getPtr())
 			return; // function is already set
-		ASATOM_DECREF(it->second);
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			o->removeStoredMember();
 	}
 	if (obj)
 	{
 		asAtom v = asAtomHandler::fromObjectNoPrimitive(obj.getPtr());
 		obj->incRef();
+		obj->addStoredMember();
 		avm1variables[nameIDlower] = v;
 		
 		multiname objName(nullptr);

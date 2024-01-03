@@ -146,8 +146,71 @@ ASFUNCTIONBODY_ATOM(GradientBevelFilter,_constructor)
 
 bool GradientBevelFilter::compareFILTER(const FILTER& filter) const
 {
-	LOG(LOG_NOT_IMPLEMENTED, "comparing GradientBevelFilter");
-	return false;
+	if (filter.GradientBevelFilter.OnTop)
+		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter onTop flag");
+	bool ret = filter.FilterID == FILTER::FILTER_GRADIENTBEVEL
+		   && filter.GradientBevelFilter.Angle == this->angle
+		   && filter.GradientBevelFilter.BlurX == this->blurX
+		   && filter.GradientBevelFilter.BlurY == this->blurY
+		   && filter.GradientBevelFilter.Distance == this->distance
+		   && filter.GradientBevelFilter.Knockout == this->knockout
+		   && filter.GradientBevelFilter.Passes == this->quality
+		   && filter.GradientBevelFilter.Strength == this->strength
+		   && this->type == (filter.GradientBevelFilter.InnerShadow ? "inner" : "outer");
+	if (ret)
+	{
+		if (colors.isNull() || colors->size()!=filter.GradientBevelFilter.GradientColors.size()
+			|| alphas.isNull() || alphas->size()!=filter.GradientBevelFilter.GradientColors.size()
+			|| ratios.isNull() || ratios->size()!=filter.GradientBevelFilter.GradientRatio.size())
+			ret = false;
+	}
+	if (ret)
+	{
+		if (filter.GradientBevelFilter.GradientColors.size())
+		{
+			uint32_t i =0;
+			auto it = filter.GradientBevelFilter.GradientColors.begin();
+			while (it != filter.GradientBevelFilter.GradientColors.end())
+			{
+				asAtom a;
+				colors->at_nocheck(a,i);
+				if (RGB(it->Red,it->Green,it->Blue).toUInt() != asAtomHandler::toUInt(a))
+				{
+					ret = false;
+					break;
+				}
+				alphas->at_nocheck(a,i);
+				if (it->af() != asAtomHandler::toNumber(a))
+				{
+					ret = false;
+					break;
+				}
+				i++;
+				it++;
+			}
+		}
+	}
+	if (ret)
+	{
+		if (filter.GradientBevelFilter.GradientRatio.size())
+		{
+			uint32_t i =0;
+			auto it = filter.GradientBevelFilter.GradientRatio.begin();
+			while (it != filter.GradientBevelFilter.GradientRatio.end())
+			{
+				asAtom a;
+				ratios->at_nocheck(a,i);
+				if (*it != asAtomHandler::toUInt(a))
+				{
+					ret = false;
+					break;
+				}
+				i++;
+				it++;
+			}
+		}
+	}
+	return ret;
 }
 void GradientBevelFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
 {

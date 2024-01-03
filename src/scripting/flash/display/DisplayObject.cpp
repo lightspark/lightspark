@@ -1054,11 +1054,6 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	ColorTransformBase ct = surface.colortransform;
 	if (ctxt.contextType == RenderContext::GL)
 	{
-		if (surface.isMask)
-			ctxt.currentMask=this;
-		// ensure that the matching mask is rendered before rendering this DisplayObject
-		if (surface.mask && ctxt.currentMask != surface.mask.getPtr())
-			surface.mask->defaultRender(ctxt);
 		if (isShaderBlendMode(ctxt.currentShaderBlendMode))
 		{
 			if (bl != BLENDMODE_NORMAL && !isShaderBlendMode(bl))

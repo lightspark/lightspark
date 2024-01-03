@@ -645,7 +645,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	{
 		if (owner->getSystemState()->getEngineData()->nvgcontext
 			&& !tokens.empty() 
-			&& tokens.canRenderToGL 
+			&& tokens.canRenderToGL
+			&& mask.isNull()
 			&& !isMask
 			&& !owner->ClipDepth
 			&& !owner->computeCacheAsBitmap()
@@ -668,6 +669,11 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 																offsetX, offsetY, scaleX, scaleY);
 				owner->cachedSurface.xOffsetTransformed=offsetX;
 				owner->cachedSurface.yOffsetTransformed=offsetY;
+			}
+			else
+			{
+				owner->cachedSurface.xOffsetTransformed=0;
+				owner->cachedSurface.yOffsetTransformed=0;
 			}
 			if (fromgraphics)
 			{

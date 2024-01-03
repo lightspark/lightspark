@@ -646,7 +646,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		if (owner->getSystemState()->getEngineData()->nvgcontext
 			&& !tokens.empty() 
 			&& tokens.canRenderToGL 
-			&& mask.isNull()
 			&& !isMask
 			&& !owner->ClipDepth
 			&& !owner->computeCacheAsBitmap()
@@ -685,8 +684,12 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			owner->resetNeedsTextureRecalculation();
 			return nullptr;
 		}
-		else
+		else if (renderWithNanoVG)
+		{
+			// this was previously rendered with nanoVG but some condition has changed, so we need to recalculate the owners texture
+			owner->setNeedsTextureRecalculation();
 			renderWithNanoVG=false;
+		}
 	}
 	return new CairoTokenRenderer(tokens,totalMatrix2
 				, x, y, ceil(width), ceil(height)

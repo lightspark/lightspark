@@ -580,7 +580,7 @@ public:
 	_NR<Graphics> getGraphics();
 	void handleMouseCursor(bool rollover) override;
 	bool hasGraphics() const override { return !graphics.isNull(); }
-	bool allowAsMask() const override { return !isEmpty(); }
+	bool allowAsMask() const override { return !isEmpty() || !graphics.isNull(); }
 };
 
 struct FrameLabel_data

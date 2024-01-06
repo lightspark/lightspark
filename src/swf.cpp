@@ -1308,16 +1308,21 @@ void SystemState::flushInvalidationQueue()
 	Locker l(invalidateQueueLock);
 	influshing=true;
 	_NR<DisplayObject> cur=invalidateQueueHead;
+	MATRIX initialMatrix;
+	if (!cur.isNull())
+	{
+		float scalex, scaley;
+		int offx, offy;
+		stageCoordinateMapping(renderThread->windowWidth, renderThread->windowHeight, offx, offy, scalex, scaley);
+		initialMatrix.scale(scalex,scaley);
+	}
 	while(!cur.isNull())
 	{
 		if((cur->isOnStage() || cur->isMask()) && cur->hasChanged && !cur->cachedAsBitmapOf)
 		{
 			_NR<DisplayObject> drawobj=cur;
 			_NR<DisplayObject> cachedBitmap;
-			float scalex, scaley;
-			int offx, offy;
-			stageCoordinateMapping(renderThread->windowWidth, renderThread->windowHeight, offx, offy, scalex, scaley);
-			IDrawable* d=cur->invalidate(stage, MATRIX(scalex, scaley), true, nullptr, &cachedBitmap);
+			IDrawable* d=cur->invalidate(stage, initialMatrix, true, nullptr, &cachedBitmap);
 			//Check if the drawable is valid and forge a new job to
 			//render it and upload it to GPU
 			if(d)

@@ -5563,7 +5563,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	if (target)
 	{
 		if (matrixsource)
-			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix);
+			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix,initialMatrix);
 	}
 	MATRIX totalMatrix2;
 	MATRIX filterMatrix2;
@@ -5571,7 +5571,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	if (target)
 	{
 		if (matrixsource)
-			infilter = matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2);
+			infilter = matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 	totalMatrix2 = totalMatrix2.multiplyMatrix(sourceMatrix);

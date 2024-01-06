@@ -2059,7 +2059,7 @@ void DisplayObject::afterConstruction()
 //	hasChanged=true;
 //	needsTextureRecalculation=true;
 //	if(onStage)
-	//		requestInvalidation(getSystemState());
+//		requestInvalidation(getSystemState());
 }
 
 void DisplayObject::applyFilters(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley)
@@ -2125,8 +2125,13 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	
 	number_t bxmin,bxmax,bymin,bymax;
 	boundsRect(bxmin,bxmax,bymin,bymax,false);
-	fe.filterborderx=-bxmin+this->maxfilterborder;
-	fe.filterbordery=-bymin+this->maxfilterborder;
+	int offsetX;
+	int offsetY;
+	float scaleX;
+	float scaleY;
+	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, offsetX, offsetY, scaleX, scaleY);
+	fe.filterborderx=(-bxmin+this->maxfilterborder)*scaleX;
+	fe.filterbordery=(-bymin+this->maxfilterborder)*scaleY;
 	getSystemState()->getRenderThread()->filterframebufferstack.push_back(fe);
 	renderImpl(ctxt);
 	// bind rendered filter source to g_tex4
@@ -2299,7 +2304,7 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 	}
 }
 
-bool DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, _NR<DisplayObject>&mask, number_t& alpha, MATRIX& filterMatrix)
+bool DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, _NR<DisplayObject>&mask, number_t& alpha, MATRIX& filterMatrix, const MATRIX& initialMatrix)
 {
 	DisplayObject* cur=this;
 	bool gatherMasks = true;
@@ -2314,7 +2319,10 @@ bool DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 		if (cur->hasFilters())
 		{
 			if (gatherFiltermatrix)
+			{
+				totalMatrix.translate(maxfilterborder,maxfilterborder);
 				break;
+			}
 			else
 			{
 				number_t bxmin,bxmax,bymin,bymax;
@@ -2353,6 +2361,11 @@ bool DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vect
 	}
 	if (mask.isNull() && !isMask)
 		mask = target->mask;
+	if (gatherFiltermatrix)
+	{
+		filterMatrix.x0*=initialMatrix.getScaleX();
+		filterMatrix.y0*=initialMatrix.getScaleY();
+	}
 	return gatherFiltermatrix;
 }
 void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode, ColorTransformBase* ct)
@@ -2439,7 +2452,7 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 	_NR<DisplayObject> mask;
 	if (target)
 	{
-		infilter = computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix);
+		infilter = computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix,initialMatrix);
 		MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
 		totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
 		totalMatrix.xx = abs(totalMatrix.xx);
@@ -2463,7 +2476,7 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
-		infilter = computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2);
+		infilter = computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);

@@ -1288,7 +1288,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	bool isMask;
 	number_t alpha=1.0;
 	_NR<DisplayObject> mask;
-	bool infilter = computeMasksAndMatrix(target, masks, totalMatrix,false,isMask,mask,alpha,filterMatrix);
+	bool infilter = computeMasksAndMatrix(target, masks, totalMatrix,false,isMask,mask,alpha,filterMatrix,initialMatrix);
 	MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
 	totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
 	totalMatrix.xx = abs(totalMatrix.xx);
@@ -1299,7 +1299,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix,infilter);
 	MATRIX totalMatrix2;
 	MATRIX filterMatrix2;
-	infilter = computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask,alpha,filterMatrix2);
+	infilter = computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
 	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
 	if (getLineCount()==0)

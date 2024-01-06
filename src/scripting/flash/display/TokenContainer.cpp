@@ -597,7 +597,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	_NR<DisplayObject> mask;
 	if (target)
 	{
-		infilter=owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix);
+		infilter=owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix,initialMatrix);
 		MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
 		totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
 		totalMatrix.xx = abs(totalMatrix.xx);
@@ -619,7 +619,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
-		infilter = owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2);
+		infilter = owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);

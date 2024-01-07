@@ -121,9 +121,10 @@ void DropShadowFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w
 {
 	if (hideObject)
 		LOG(LOG_NOT_IMPLEMENTED,"DropShadowFilter.hideObject");
-	if (step < (uint32_t)quality)
-		getRenderFilterArgsBlur(args,blurX,blurY,w,h);
-	else if (step == (uint32_t)quality)
+	uint32_t nextstep;
+	if (getRenderFilterArgsBlur(args,blurX,blurY,w,h,step,quality,nextstep))
+		return;
+	else if (step == nextstep)
 		getRenderFilterArgsDropShadow(args,inner,knockout,strength,color,alpha,cos(angle) * distance,sin(angle) * distance,w,h);
 	else
 		args[0]=0.0;

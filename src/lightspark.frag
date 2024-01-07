@@ -58,21 +58,31 @@ vec4 getDstPx(vec2 pos)
 	return isFirstFilter != 0.0 ? texture2D(g_tex4, pos) : texture2D(g_tex5, pos);
 }
 
-vec4 filter_blur()
+vec4 filter_blur_horizontal()
 {
 	vec4 sum = vec4(0.0);
 	float blurx = filterdata[1]+0.5;
-	float blury = filterdata[2]+0.5;
-	float width = filterdata[3];
-	float height = filterdata[4];
-	for (float i = 0.0; i < blurx; ++i)
+	float width = filterdata[2];
+	float factor = 0.0;
+	for (float i = -blurx/2.0; i < blurx/2.0; ++i)
 	{
-		for (float j = 0.0; j < blury; ++j)
-		{
-			sum += texture2D(g_tex1,ls_TexCoords[0].xy+vec2( (i-blurx/2.0)/width, (j-blury/2.0)/height));
-		}
+		sum += texture2D(g_tex1,ls_TexCoords[0].xy+vec2( i/width, 0.0));
+		factor++;
 	}
-	return sum/vec4(blurx*blury);
+	return sum/vec4(factor);
+}
+vec4 filter_blur_vertical()
+{
+	vec4 sum = vec4(0.0);
+	float blury = filterdata[1]/2.0;
+	float height = filterdata[2];
+	float factor = 0.0;
+	for (float i = -blury/2.0; i < blury/2.0; ++i)
+	{
+		sum += texture2D(g_tex1,ls_TexCoords[0].xy+vec2( 0.0, i/height));
+		factor++;
+	}
+	return sum/vec4(factor);
 }
 vec4 filter_dropshadow(float inner, float knockout, vec4 color, float strength, vec2 startpos)
 {
@@ -241,17 +251,19 @@ void main()
 #endif
 	// apply filter
 	if (filterdata[0] > 0.0) {
-		if (filterdata[0]==1.0) {//FILTERSTEP_BLUR
-			vbase = filter_blur();
-		} else if (filterdata[0]==2.0) {// FILTERSTEP_DROPSHADOW
+		if (filterdata[0]==1.0) { //FILTERSTEP_BLUR_HORIZONTAL
+			vbase = filter_blur_horizontal();
+		} else if (filterdata[0]==2.0) {// FILTERSTEP_BLUR_VERTICAL
+			vbase = filter_blur_vertical();
+		} else if (filterdata[0]==3.0) {// FILTERSTEP_DROPSHADOW
 			vbase = filter_dropshadow(filterdata[1],filterdata[2],vec4(filterdata[4],filterdata[5],filterdata[6],filterdata[7]),filterdata[3],vec2(filterdata[8],filterdata[9]));
-		} else if (filterdata[0]==3.0) {// FILTERSTEP_GRADIENT_GLOW
+		} else if (filterdata[0]==4.0) {// FILTERSTEP_GRADIENT_GLOW
 			vbase = filter_gradientglow();
-		} else if (filterdata[0]==4.0) {// FILTERSTEP_BEVEL
+		} else if (filterdata[0]==5.0) {// FILTERSTEP_BEVEL
 			vbase = filter_bevel();
-		} else if (filterdata[0]==5.0) {// FILTERSTEP_COLORMATRIX
+		} else if (filterdata[0]==6.0) {// FILTERSTEP_COLORMATRIX
 			vbase = filter_colormatrix();
-		} else if (filterdata[0]==6.0) {// FILTERSTEP_CONVOLUTION
+		} else if (filterdata[0]==7.0) {// FILTERSTEP_CONVOLUTION
 			vbase = filter_convolution();
 		}
 	}

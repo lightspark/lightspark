@@ -617,18 +617,59 @@ void BitmapFilter::applyGradientFilter(uint8_t* data, uint32_t datawidth, uint32
 	}
 }
 
-void BitmapFilter::getRenderFilterArgsBlur(float* args, float blurX, float blurY, uint32_t w, uint32_t h) const
+
+bool BitmapFilter::getRenderFilterArgsBlur(float* args, float blurX, float blurY, uint32_t w, uint32_t h, uint32_t step, uint32_t quality, uint32_t& nextstep) const
+{
+	nextstep=step+1;
+	if (blurX==0.0 && blurY==0.0)
+		blurX=1.0; // ensure original pixels are rendered
+	bool twosteps = blurX>0.0 && blurY > 0.0;
+	
+	if (step > (uint32_t)quality*(twosteps ? 2 : 1))
+		return false;
+	if (step == (uint32_t)quality*(twosteps ? 2 : 1))
+	{
+		nextstep=step;
+		return false;
+	}
+	if (twosteps)
+	{
+		if (step%2)
+			getRenderFilterArgsBlurVertical(args,blurY,h);
+		else
+			getRenderFilterArgsBlurHorizontal(args,blurX,w);
+	}
+	else
+	{
+		if (blurX>0.0)
+			getRenderFilterArgsBlurHorizontal(args,blurX,w);
+		else
+			getRenderFilterArgsBlurVertical(args,blurY,h);
+	}
+	return true;
+}
+
+void BitmapFilter::getRenderFilterArgsBlurHorizontal(float* args, float blurX, uint32_t w) const
 {
 	int oX;
 	int oY;
 	float sX;
 	float sY;
 	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, oX, oY, sX, sY);
-	args[0]=float(FILTERSTEP_BLUR );
+	args[0]=float(FILTERSTEP_BLUR_HORIZONTAL );
 	args[1]=blurX*sX;
-	args[2]=blurY*sY;
-	args[3]=w;
-	args[4]=h;
+	args[2]=w;
+}
+void BitmapFilter::getRenderFilterArgsBlurVertical(float* args, float blurY, uint32_t h) const
+{
+	int oX;
+	int oY;
+	float sX;
+	float sY;
+	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, oX, oY, sX, sY);
+	args[0]=float(FILTERSTEP_BLUR_VERTICAL );
+	args[1]=blurY*sY;
+	args[2]=h;
 }
 void BitmapFilter::getRenderFilterArgsDropShadow(float* args, bool inner, bool knockout,float strength,uint32_t color,float alpha,float xpos,float ypos, uint32_t w, uint32_t h) const
 {

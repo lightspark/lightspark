@@ -90,9 +90,10 @@ bool GlowFilter::compareFILTER(const FILTER& filter) const
 
 void GlowFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
 {
-	if (step < (uint32_t)quality)
-		getRenderFilterArgsBlur(args,blurX,blurY,w,h);
-	else if (step == (uint32_t)quality)
+	uint32_t nextstep;
+	if (getRenderFilterArgsBlur(args,blurX,blurY,w,h,step,quality,nextstep))
+		return;
+	else if (step == nextstep)
 		getRenderFilterArgsDropShadow(args,inner,knockout,strength,color,alpha,0.0,0.0,w,h);
 	else
 		args[0]=0.0;

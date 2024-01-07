@@ -81,8 +81,9 @@ bool BlurFilter::compareFILTER(const FILTER& filter) const
 }
 void BlurFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
 {
-	if (step < (uint32_t)quality)
-		getRenderFilterArgsBlur(args,blurX,blurY,w,h);
+	uint32_t nextstep;
+	if (getRenderFilterArgsBlur(args,blurX,blurY,w,h,step,quality,nextstep))
+		return;
 	else
 		args[0]=0.0;
 }

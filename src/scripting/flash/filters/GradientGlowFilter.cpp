@@ -150,9 +150,10 @@ void GradientGlowFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t
 {
 	if (type=="full")
 		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter type 'full'");
-	if (step < (uint32_t)quality)
-		getRenderFilterArgsBlur(args,blurX,blurY,w,h);
-	else if (step == (uint32_t)quality)
+	uint32_t nextstep;
+	if (getRenderFilterArgsBlur(args,blurX,blurY,w,h,step,quality,nextstep))
+		return;
+	else if (step == nextstep)
 	{
 		args[0]=float(FILTERSTEP_GRADIENT_GLOW);
 		args[1]=type=="inner";

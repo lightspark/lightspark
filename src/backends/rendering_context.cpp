@@ -214,15 +214,9 @@ void GLRenderContext::resetCurrentFrameBuffer()
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(currentFrameBufferID);
 	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(currentRenderBufferID);
 }
-
-void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
-									 const ColorTransformBase& colortransform,
-									 bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
-									 AS_BLENDMODE blendmode)
+void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase& colortransform,SMOOTH_MODE smooth,AS_BLENDMODE blendmode)
 {
 	engineData->exec_glUniform1f(blendModeUniform, blendmode == BLENDMODE_NORMAL ? this->currentShaderBlendMode : BLENDMODE_NORMAL);
-	float empty=0;
-	engineData->exec_glUniform1fv(filterdataUniform, 1, &empty);
 	switch (blendmode)
 	{
 		case BLENDMODE_NORMAL:
@@ -246,6 +240,25 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 			LOG(LOG_NOT_IMPLEMENTED,"renderTextured of blend mode "<<(int)blendmode);
 			break;
 	}
+	if (smooth == SMOOTH_MODE::SMOOTH_NONE)
+	{
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+	}
+	//Set alpha
+	engineData->exec_glUniform1f(alphaUniform, alpha);
+	//Set colotransform
+	engineData->exec_glUniform4f(colortransMultiplyUniform, colortransform.redMultiplier,colortransform.greenMultiplier,colortransform.blueMultiplier,colortransform.alphaMultiplier);
+	engineData->exec_glUniform4f(colortransAddUniform, colortransform.redOffset/255.0,colortransform.greenOffset/255.0,colortransform.blueOffset/255.0,colortransform.alphaOffset/255.0);
+}
+void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
+									 const ColorTransformBase& colortransform,
+									 bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
+									 AS_BLENDMODE blendmode)
+{
+	setupRenderingState(alpha,colortransform,smooth,blendmode);
+	float empty=0;
+	engineData->exec_glUniform1fv(filterdataUniform, 1, &empty);
 	if (isMask)
 	{
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(maskframebuffer);
@@ -257,17 +270,6 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	{
 		engineData->exec_glUniform1f(maskUniform, hasMask ? 1 : 0);
 	}
-	if (smooth == SMOOTH_MODE::SMOOTH_NONE)
-	{
-		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
-		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
-	}
-	//Set color mode
-	engineData->exec_glUniform1f(yuvUniform, (colorMode==YUV_MODE)?1:0);
-	//Set alpha
-	engineData->exec_glUniform1f(alphaUniform, alpha);
-	engineData->exec_glUniform4f(colortransMultiplyUniform, colortransform.redMultiplier,colortransform.greenMultiplier,colortransform.blueMultiplier,colortransform.alphaMultiplier);
-	engineData->exec_glUniform4f(colortransAddUniform, colortransform.redOffset/255.0,colortransform.greenOffset/255.0,colortransform.blueOffset/255.0,colortransform.alphaOffset/255.0);
 	// set mode for direct coloring:
 	// 0.0:no coloring
 	// 1.0 coloring for profiling/error message (?)

@@ -1325,11 +1325,18 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 	{
 		if(skipRender())
 			return;
-		incRef();
 		if (forceTextureRefresh)
 			setNeedsTextureRecalculation();
+		incRef();
 		q->addToInvalidateQueue(_MR(this));
-		requestInvalidationFilterParent();
+		requestInvalidationFilterParent(q);
+	}
+	if (this->hasFilters())
+	{
+		if (forceTextureRefresh)
+			setNeedsTextureRecalculation();
+		incRef();
+		q->addToInvalidateQueue(_MR(this));
 	}
 }
 
@@ -3497,6 +3504,16 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceT
 		(*it)->requestInvalidation(q,forceTextureRefresh);
 	}
 }
+void DisplayObjectContainer::requestInvalidationIncludingChildren(InvalidateQueue* q)
+{
+	DisplayObject::requestInvalidationIncludingChildren(q);
+	std::vector<_R<DisplayObject>> tmplist;
+	auto it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();++it)
+	{
+		(*it)->requestInvalidationIncludingChildren(q);
+	}
+}
 
 void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int index, bool inskipping)
 {
@@ -5528,7 +5545,7 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 	incRef();
 	// texture recalculation is never needed for bitmaps
 	resetNeedsTextureRecalculation();
-	requestInvalidationFilterParent();
+	requestInvalidationFilterParent(q);
 	q->addToInvalidateQueue(_MR(this));
 }
 
@@ -6151,7 +6168,7 @@ void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefr
 		incRef();
 		q->addToInvalidateQueue(_MR(this));
 	}
-	requestInvalidationFilterParent();
+	requestInvalidationFilterParent(q);
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 }
 

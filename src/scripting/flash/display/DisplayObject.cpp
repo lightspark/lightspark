@@ -132,7 +132,8 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 				m.translate(fe.filterborderx,fe.filterbordery);
 			}
 			getSystemState()->getRenderThread()->setModelView(m);
-			getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,cachedSurface.widthTransformed,cachedSurface.heightTransformed,nullptr,nullptr,false,true);
+			getSystemState()->getRenderThread()->setupRenderingState(cachedSurface.alpha,cachedSurface.colortransform,cachedSurface.smoothing,cachedSurface.blendmode);
+			getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,cachedSurface.widthTransformed,cachedSurface.heightTransformed,nullptr,nullptr,false,true,false);
 			ctxt.currentShaderBlendMode = oldshaderblendmode;
 			return ret;
 		}
@@ -563,27 +564,38 @@ bool DisplayObject::computeCacheAsBitmap(bool checksize)
 
 bool DisplayObject::hasFilters() const
 {
-	return filters && filters->size();
+	return cacheAsBitmap || blendMode == BLENDMODE_LAYER || (filters && filters->size());
 }
 
-void DisplayObject::requestInvalidationFilterParent()
+void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 {
 	if (cachedSurface.cachedFilterTextureID != UINT32_MAX)
 	{
 		cachedSurface.needsFilterRefresh=true;
+		this->hasChanged=true;
+		if (q)
+			requestInvalidationIncludingChildren(q);
 	}
 	DisplayObject* p = getParent();
 	while (p)
 	{
 		if (p->cachedSurface.cachedFilterTextureID != UINT32_MAX)
 		{
-			p->requestInvalidationFilterParent();
+			p->requestInvalidationFilterParent(q);
 			break;
 		}	
 		p = p->getParent();
 	}
 }
-
+void DisplayObject::requestInvalidationIncludingChildren(InvalidateQueue* q)
+{
+	this->hasChanged=true;
+	if (q)
+	{
+		this->incRef();
+		q->addToInvalidateQueue(_MR(this));
+	}
+}
 bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
 {
 	if (q->getCacheAsBitmapObject())
@@ -610,7 +622,7 @@ bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
 			return true;
 		}
 	}
-	if (hasFilters() && (q && !q->isSoftwareQueue))
+	if (hasFilters() && (q && !q->isSoftwareQueue && this->needsTextureRecalculation))
 	{
 		this->incRef();
 		q->addToInvalidateQueue(_MR(this));
@@ -2163,34 +2175,37 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	getSystemState()->getRenderThread()->setViewPort(w,h);
 	uint32_t texture1 = filterTextureIDoriginal;
 	uint32_t texture2 = filterTextureID2;
-	for (uint32_t i = 0; i < filters->size(); i++)
+	if (!filters.isNull())
 	{
-		asAtom f = asAtomHandler::invalidAtom;
-		filters->at_nocheck(f,i);
-		if (asAtomHandler::is<BitmapFilter>(f))
+		for (uint32_t i = 0; i < filters->size(); i++)
 		{
-			float gradientcolors[256*4];
-			asAtomHandler::as<BitmapFilter>(f)->getRenderFilterGradientColors(gradientcolors);
-			float filterdata[FILTERDATA_MAXSIZE];
-			uint32_t step = 0;
-			while (true)
+			asAtom f = asAtomHandler::invalidAtom;
+			filters->at_nocheck(f,i);
+			if (asAtomHandler::is<BitmapFilter>(f))
 			{
-				asAtomHandler::as<BitmapFilter>(f)->getRenderFilterArgs(step,filterdata,w,h);
-				if (filterdata[0] == 0)
-					break;
-				step++;
-				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(texture2);
+				float gradientcolors[256*4];
+				asAtomHandler::as<BitmapFilter>(f)->getRenderFilterGradientColors(gradientcolors);
+				float filterdata[FILTERDATA_MAXSIZE];
+				uint32_t step = 0;
+				while (true)
+				{
+					asAtomHandler::as<BitmapFilter>(f)->getRenderFilterArgs(step,filterdata,w,h);
+					if (filterdata[0] == 0)
+						break;
+					step++;
+					engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(texture2);
+					engineData->exec_glClearColor(0,0,0,0);
+					engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+					getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,filterdata,gradientcolors,!i,false);
+					if (texture1 == filterTextureIDoriginal)
+						texture1 = filterTextureID1;
+					std::swap(texture1,texture2);
+				}
+				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
 				engineData->exec_glClearColor(0,0,0,0);
 				engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
-				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,filterdata,gradientcolors,!i,false);
-				if (texture1 == filterTextureIDoriginal)
-					texture1 = filterTextureID1;
-				std::swap(texture1,texture2);
+				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,nullptr,nullptr,false, false);
 			}
-			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
-			engineData->exec_glClearColor(0,0,0,0);
-			engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
-			getSystemState()->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,nullptr,nullptr,false, false);
 		}
 	}
 
@@ -2212,7 +2227,10 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	cachedSurface.cachedFilterTextureID=texture1;
 	engineData->exec_glDeleteTextures(1,&texture2);
 	engineData->exec_glDeleteTextures(1,&filterDstTexture);
-	engineData->exec_glDeleteTextures(1,&filterTextureIDoriginal);
+	if (filters.isNull() || filters->size()==0)
+		engineData->exec_glDeleteTextures(1,&filterTextureID1);
+	else
+		engineData->exec_glDeleteTextures(1,&filterTextureIDoriginal);
 }
 void DisplayObject::invalidateCachedAsBitmapOf()
 {
@@ -2429,7 +2447,7 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 
 IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q)
 {
-	if (!hasFilters() || (q && !q->isSoftwareQueue))
+	if (!hasFilters() || (q && q->isSoftwareQueue))
 		return nullptr;
 	number_t x,y,rx,ry;
 	number_t width,height;

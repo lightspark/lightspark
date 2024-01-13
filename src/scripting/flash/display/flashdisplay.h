@@ -145,6 +145,8 @@ public:
 	void eraseRemovedLegacyChild(uint32_t name);
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
+	void requestInvalidationIncludingChildren(InvalidateQueue* q) override;
+	
 	void _addChildAt(DisplayObject* child, unsigned int index, bool inskipping=false);
 	void dumpDisplayList(unsigned int level=0);
 	bool _removeChild(DisplayObject* child, bool direct=false, bool inskipping=false, bool keeponstage=false);

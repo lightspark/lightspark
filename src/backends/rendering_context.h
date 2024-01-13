@@ -159,6 +159,7 @@ public:
 	bool isDrawingMask() const override { return maskCount > 0; }
 
 	void resetCurrentFrameBuffer();
+	void setupRenderingState(float alpha, const ColorTransformBase& colortransform, SMOOTH_MODE smooth, AS_BLENDMODE blendmode);
 	// this is used to keep track of the fbos when rendering filters and some of the ancestors of the filtered object also have filters
 	std::vector<filterstackentry> filterframebufferstack;
 

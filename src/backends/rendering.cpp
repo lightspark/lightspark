@@ -456,7 +456,8 @@ void RenderThread::setModelView(const MATRIX& matrix)
 	lsglLoadMatrixf(fmatrix);
 	setMatrixUniform(LSGL_MODELVIEW);
 }
-void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter, bool flippedvertical)
+
+void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter, bool flippedvertical, bool clearstate)
 {
 	if (filterdata)
 		engineData->exec_glUniform1fv(filterdataUniform, FILTERDATA_MAXSIZE, filterdata);
@@ -467,12 +468,15 @@ void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t
 	}
 	if (gradientcolors)
 		engineData->exec_glUniform4fv(gradientcolorsUniform, 256, gradientcolors);
-
-	engineData->exec_glUniform1f(blendModeUniform, AS_BLENDMODE::BLENDMODE_NORMAL);
+	
+	if (clearstate)
+	{
+		engineData->exec_glUniform1f(blendModeUniform, AS_BLENDMODE::BLENDMODE_NORMAL);
+		engineData->exec_glUniform1f(alphaUniform, 1.0);
+		engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
+		engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
+	}
 	engineData->exec_glUniform1f(yuvUniform, 0);
-	engineData->exec_glUniform1f(alphaUniform, 1.0);
-	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
-	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
 	engineData->exec_glUniform1f(directUniform, 0.0);
 	engineData->exec_glUniform1f(isFirstFilterUniform, (float)isFirstFilter);
 

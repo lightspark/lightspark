@@ -560,7 +560,7 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 		if(tokens.empty() || owner->skipRender())
 			return;
 	}
-	owner->requestInvalidationFilterParent();
+	owner->requestInvalidationFilterParent(q);
 	
 	if (owner->requestInvalidationForCacheAsBitmap(q))
 		return;

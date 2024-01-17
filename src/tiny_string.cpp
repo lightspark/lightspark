@@ -1357,11 +1357,12 @@ void tiny_string::getTrimPositions(uint32_t& start, uint32_t& end) const
 		uint8_t c = buf[end-1];
 		if (c&0x80) //check for unicode whitspace character
 		{
-			while (((buf[end])&0xc0) == 0x80) // skip utf8 bytes
+			do
 			{
 				end--;
 			}
-			if (!g_unichar_isspace(g_utf8_get_char(buf+end)))
+			while (((buf[end])&0xc0) == 0x80); // skip utf8 bytes
+			if (!g_unichar_isspace(g_utf8_get_char(buf+end+1)))
 				break;
 		}
 		else if (!isspace(c))

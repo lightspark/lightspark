@@ -2001,9 +2001,10 @@ bool TextField::renderImpl(RenderContext& ctxt)
 					std::vector<IDrawable::MaskData> masks2;
 					infilter = computeMasksAndMatrix(this->getStage().getPtr(),masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
 					computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
-					totalMatrix2.translate(xpos,ypos);
+					MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(1 / (xscale*scalex), 1 / (yscale*scaley), 0, 0, xpos, ypos));
+					m.scale(scalex, scaley);
 					ctxt.renderTextured(*tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-										currentcolortransform, isMask, mask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, totalMatrix2,nullptr,bl);
+										currentcolortransform, isMask, mask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 					xpos += adv ? adv : bxmax-bxmin;
 				}
 				else

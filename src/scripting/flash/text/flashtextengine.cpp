@@ -1233,7 +1233,7 @@ void TextLine::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 		TokenContainer::requestInvalidation(q,forceTextureRefresh);
 	else
 	{
-		requestInvalidationFilterParent();
+		requestInvalidationFilterParent(q);
 		incRef();
 		q->addToInvalidateQueue(_MR(this));
 	}

@@ -1623,7 +1623,7 @@ void TextField::textUpdated()
 		if(onStage && isVisible())
 			requestInvalidation(this->getSystemState());
 	}
-	requestInvalidationFilterParent();
+	requestInvalidationFilterParent(this->getSystemState());
 	invalidateCachedAsBitmapOf();
 }
 
@@ -1637,7 +1637,7 @@ void TextField::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh
 	{
 		incRef();
 		updateSizes();
-		requestInvalidationFilterParent();
+		requestInvalidationFilterParent(q);
 		q->addToInvalidateQueue(_MR(this));
 	}
 }

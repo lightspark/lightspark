@@ -127,12 +127,28 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 			}
 			if (cachedSurface.cachedFilterTextureID != UINT32_MAX)
 			{
+				int offsetX;
+				int offsetY;
+				float scaleX;
+				float scaleY;
+				getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, offsetX, offsetY, scaleX, scaleY);
 				MATRIX m = cachedSurface.filtermatrix;
 				if (!getSystemState()->getRenderThread()->filterframebufferstack.empty())
 				{
 					filterstackentry fe = getSystemState()->getRenderThread()->filterframebufferstack.back();
 					m.translate(fe.filterborderx,fe.filterbordery);
 				}
+				else
+				{
+					m.x0 = cachedSurface.targetOffset.x*scaleX;
+					m.y0 = cachedSurface.targetOffset.y*scaleY;
+				}
+				auto tx = m.x0;
+				auto ty = m.y0;
+				m = MATRIX();
+				m.x0 = std::round(tx);
+				m.y0 = std::round(ty);
+
 				getSystemState()->getRenderThread()->setModelView(m);
 				getSystemState()->getRenderThread()->setupRenderingState(cachedSurface.alpha,cachedSurface.colortransform,cachedSurface.smoothing,cachedSurface.blendmode);
 				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,cachedSurface.widthTransformed,cachedSurface.heightTransformed,nullptr,nullptr,false,true,false);
@@ -1083,8 +1099,11 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 			ct.fillConcatenated(this,true);
 		}
 	}
+
+	//MATRIX m = surface.matrix;
+	MATRIX m = surface.targetMatrix;
 	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
-			ct, false, false,0.0,RGB(),surface.smoothing,surface.matrix,r,bl);
+			ct, false, false,0.0,RGB(),surface.smoothing,m,r,bl);
 	return false;
 }
 
@@ -2336,6 +2355,34 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 	}
 }
 
+void DisplayObject::computeTargetMatrix(const DisplayObject* target, MATRIX& totalMatrix, bool includeRotation)
+{
+	const DisplayObject* cur=this;
+	Vector2f filterOffset;
+	bool hasFilters = false;
+
+	while(cur && cur!=target)
+	{
+		if (cur->hasFilters() && !hasFilters)
+		{
+			hasFilters = true;
+			filterOffset = Vector2f(cur->maxfilterborder,cur->maxfilterborder);
+		}
+		totalMatrix=cur->getMatrix(includeRotation).multiplyMatrix(totalMatrix);
+		if (!cur->scrollRect.isNull()) // TODO this only sets the scrollrect position, but doesn't crop to the rectangle
+			totalMatrix.translate(-cur->scrollRect->x,-cur->scrollRect->y);
+
+		cur=cur->getParent();
+	}
+	if (hasFilters)
+	{
+		number_t bxmin,bxmax,bymin,bymax;
+		getBounds(bxmin,bxmax,bymin,bymax,totalMatrix,false);
+		cachedSurface.targetOffset = Vector2f(bxmin-filterOffset.x, bymin-filterOffset.y);
+		totalMatrix.translate(-bxmin+filterOffset.x, -bymin+filterOffset.y);
+	}
+}
+
 bool DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, _NR<DisplayObject>&mask, number_t& alpha, MATRIX& filterMatrix, const MATRIX& initialMatrix)
 {
 	DisplayObject* cur=this;
@@ -2509,9 +2556,17 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 	if (target)
 	{
 		infilter = computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
+		{
+			MATRIX targetMatrix;
+			computeTargetMatrix(target,targetMatrix,true);
+			targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
+
+			cachedSurface.targetMatrix=targetMatrix;
+		}
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
+
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,cachedSurface.targetMatrix,infilter);
 	if(width==0 || height==0)
 		return nullptr;
 	ColorTransformBase ct;

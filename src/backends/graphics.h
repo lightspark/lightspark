@@ -182,6 +182,8 @@ public:
 	ColorTransformBase colortransform;
 	MATRIX matrix;
 	MATRIX filtermatrix;
+	MATRIX targetMatrix;
+	Vector2f targetOffset;
 	_NR<DisplayObject> mask;
 	AS_BLENDMODE blendmode;
 	bool isMask;

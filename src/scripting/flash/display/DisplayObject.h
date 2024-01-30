@@ -192,6 +192,7 @@ public:
 	void requestInvalidationFilterParent(InvalidateQueue* q=nullptr);
 	virtual void requestInvalidationIncludingChildren(InvalidateQueue* q);
 	bool requestInvalidationForCacheAsBitmap(InvalidateQueue* q);
+	void computeTargetMatrix(const DisplayObject* target, MATRIX& totalMatrix, bool includeRotation);
 	bool computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, _NR<DisplayObject>& mask, number_t& alpha, MATRIX& filterMatrix, const MATRIX& initialMatrix);
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	IDrawable* getCachedBitmapDrawable(DisplayObject* target, const MATRIX& initialMatrix, _NR<DisplayObject>* pcachedBitmap, bool smoothing);

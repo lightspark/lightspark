@@ -133,7 +133,9 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			nvgBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
 			// xOffsetTransformed/yOffsetTransformed contain the offsets from the border of the window
 			nvgTranslate(nvgctxt,owner->cachedSurface.xOffsetTransformed,owner->cachedSurface.yOffsetTransformed);
-			MATRIX m = owner->cachedSurface.matrix;
+			//MATRIX m = owner->cachedSurface.matrix;
+			MATRIX m = owner->cachedSurface.targetMatrix;
+
 			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
 			nvgTranslate(nvgctxt,owner->cachedSurface.xOffset,owner->cachedSurface.yOffset);
 			nvgScale(nvgctxt,scaling,scaling);
@@ -620,9 +622,16 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	if (target)
 	{
 		infilter = owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
+		{
+			MATRIX targetMatrix;
+			owner->computeTargetMatrix(target,targetMatrix,true);
+			targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
+
+			owner->cachedSurface.targetMatrix=targetMatrix;
+		}
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
-	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
+	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,owner->cachedSurface.targetMatrix,infilter);
 	if(width==0 || height==0)
 		return nullptr;
 	ColorTransformBase ct;

@@ -60,6 +60,8 @@ vec4 getDstPx(vec2 pos)
 
 vec4 filter_blur_horizontal()
 {
+	if (filterdata[1] <= 1.0)
+		return texture2D(g_tex1,ls_TexCoords[0].xy);
 	vec4 sum = vec4(0.0);
 	float blurx = filterdata[1]+0.5;
 	float width = filterdata[2];
@@ -73,6 +75,8 @@ vec4 filter_blur_horizontal()
 }
 vec4 filter_blur_vertical()
 {
+	if (filterdata[1] <= 1.0)
+		return texture2D(g_tex1,ls_TexCoords[0].xy);
 	vec4 sum = vec4(0.0);
 	float blury = filterdata[1]/2.0;
 	float height = filterdata[2];

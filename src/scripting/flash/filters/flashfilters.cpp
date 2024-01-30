@@ -621,8 +621,6 @@ void BitmapFilter::applyGradientFilter(uint8_t* data, uint32_t datawidth, uint32
 bool BitmapFilter::getRenderFilterArgsBlur(float* args, float blurX, float blurY, uint32_t w, uint32_t h, uint32_t step, uint32_t quality, uint32_t& nextstep) const
 {
 	nextstep=step+1;
-	if (blurX==0.0 && blurY==0.0)
-		blurX=1.0; // ensure original pixels are rendered
 	bool twosteps = blurX>0.0 && blurY > 0.0;
 	
 	if (step > (uint32_t)quality*(twosteps ? 2 : 1))

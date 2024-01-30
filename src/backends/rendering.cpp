@@ -948,6 +948,126 @@ void RenderThread::plotProfilingData()
 
 }
 
+void RenderThread::drawDebugPoint(const Vector2f& pos)
+{
+	lsglLoadIdentity();
+	lsglScalef(1.0f,1.0f,1);
+	lsglTranslatef(-offsetX,-offsetY,0);
+	MATRIX mt;
+	mt.scale(scaleX, scaleY);
+	mt.translate(offsetX,offsetY);
+
+	setMatrixUniform(LSGL_MODELVIEW);
+
+	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
+
+	MATRIX m;
+	cairo_get_matrix(cr, &m);
+	cairo_set_matrix(cr, &mt);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	cairo_set_source_rgb(cr, 1, 0, 1);
+	cairo_set_line_width(cr, 1);
+	cairo_rectangle(cr, pos.x-2, pos.y-2, 4, 4);
+	cairo_fill(cr);
+	
+
+	engineData->exec_glUniform1f(directUniform, 0);
+	engineData->exec_glUniform1f(alphaUniform, 1);
+	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
+	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
+	mapCairoTexture(windowWidth, windowHeight);
+
+	cairo_set_matrix(cr, &m);
+	cairo_save(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
+	cairo_paint(cr);
+	cairo_restore(cr);
+}
+
+void RenderThread::drawDebugLine(const Vector2f &a, const Vector2f &b)
+{
+	//Locker l(mutexRendering);
+	lsglLoadIdentity();
+	lsglScalef(1.0f,1.0f,1);
+	lsglTranslatef(-offsetX,-offsetY,0);
+	MATRIX stageMatrix;
+	stageMatrix.scale(scaleX, scaleY);
+	stageMatrix.translate(offsetX,offsetY);
+
+	setMatrixUniform(LSGL_MODELVIEW);
+
+	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
+
+	MATRIX m;
+	cairo_get_matrix(cr, &m);
+	cairo_set_matrix(cr, &stageMatrix);
+
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	cairo_set_source_rgb(cr, 0, 1, 0);
+	cairo_set_line_width(cr, 2);
+	cairo_move_to(cr, a.x, a.y);
+	cairo_line_to(cr, b.x, b.y);
+	cairo_close_path(cr);
+	cairo_stroke(cr);
+	
+
+	engineData->exec_glUniform1f(directUniform, 0);
+	engineData->exec_glUniform1f(alphaUniform, 1);
+	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
+	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
+	mapCairoTexture(windowWidth, windowHeight);
+
+	cairo_set_matrix(cr, &m);
+	cairo_save(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
+	cairo_paint(cr);
+	cairo_restore(cr);
+}
+
+void RenderThread::drawDebugRect(float x, float y, float width, float height, const MATRIX &matrix, bool onlyTranslate)
+{
+	lsglLoadIdentity();
+	lsglScalef(1.0f,1.0f,1);
+	lsglTranslatef(-offsetX,-offsetY,0);
+	MATRIX mt = matrix;
+	if (onlyTranslate)
+	{
+		auto tx = mt.x0;
+		auto ty = mt.y0;
+		mt = MATRIX();
+		mt.x0 = tx;
+		mt.y0 = ty;
+	}
+	mt.scale(scaleX, scaleY);
+	mt.translate(offsetX,offsetY);
+
+	setMatrixUniform(LSGL_MODELVIEW);
+
+	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
+
+	MATRIX m;
+	cairo_get_matrix(cr, &m);
+	cairo_set_matrix(cr, &mt);
+	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
+	cairo_set_source_rgb(cr, 0.0, 0.5, 1);
+	cairo_set_line_width(cr, 1);
+	cairo_rectangle(cr, x, y, width, height);
+	cairo_stroke(cr);
+	
+
+	engineData->exec_glUniform1f(directUniform, 0);
+	engineData->exec_glUniform1f(alphaUniform, 1);
+	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
+	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
+	mapCairoTexture(windowWidth, windowHeight);
+
+	cairo_set_matrix(cr, &m);
+	cairo_save(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
+	cairo_paint(cr);
+	cairo_restore(cr);
+}
+
 bool RenderThread::coreRendering()
 {
 	Locker l(mutexRendering);

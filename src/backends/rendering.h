@@ -92,6 +92,9 @@ private:
 	*/
 	bool coreRendering();
 	void plotProfilingData();
+	void drawDebugPoint(const Vector2f& pos);
+	void drawDebugLine(const Vector2f &a, const Vector2f &b);
+	void drawDebugRect(float x, float y, float width, float height, const MATRIX &matrix, bool onlyTranslate = false);
 	Semaphore initialized;
 	volatile bool refreshNeeded;
 	Mutex mutexRefreshSurfaces;

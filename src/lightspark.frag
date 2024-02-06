@@ -2,11 +2,10 @@ R"(
 #ifdef GL_ES
 precision highp float;
 #endif
-uniform sampler2D g_tex1;
-uniform sampler2D g_tex2; // mask texture
-uniform sampler2D g_tex3; // blend base texture
-uniform sampler2D g_tex4; // filter original rendered displayobject texture
-uniform sampler2D g_tex5; // previous filter output texture
+uniform sampler2D g_tex_standard;
+uniform sampler2D g_tex_blend; // blend base texture
+uniform sampler2D g_tex_filter1; // filter original rendered displayobject texture
+uniform sampler2D g_tex_filter2; // previous filter output texture
 uniform float yuv;
 uniform float alpha;
 uniform float direct;
@@ -55,20 +54,20 @@ float invert_value(float value)
 // TODO all these methods are more or less just taken from their c++ implementation in applyFilter() so they don't take much advantage of vector arithmetics etc.
 vec4 getDstPx(vec2 pos)
 {
-	return isFirstFilter != 0.0 ? texture2D(g_tex4, pos) : texture2D(g_tex5, pos);
+	return isFirstFilter != 0.0 ? texture2D(g_tex_filter1, pos) : texture2D(g_tex_filter2, pos);
 }
 
 vec4 filter_blur_horizontal()
 {
 	if (filterdata[1] <= 1.0)
-		return texture2D(g_tex1,ls_TexCoords[0].xy);
+		return texture2D(g_tex_standard,ls_TexCoords[0].xy);
 	vec4 sum = vec4(0.0);
 	float blurx = filterdata[1]+0.5;
 	float width = filterdata[2];
 	float factor = 0.0;
 	for (float i = -blurx/2.0; i < blurx/2.0; ++i)
 	{
-		sum += texture2D(g_tex1,ls_TexCoords[0].xy+vec2( i/width, 0.0));
+		sum += texture2D(g_tex_standard,ls_TexCoords[0].xy+vec2( i/width, 0.0));
 		factor++;
 	}
 	return sum/vec4(factor);
@@ -76,21 +75,21 @@ vec4 filter_blur_horizontal()
 vec4 filter_blur_vertical()
 {
 	if (filterdata[1] <= 1.0)
-		return texture2D(g_tex1,ls_TexCoords[0].xy);
+		return texture2D(g_tex_standard,ls_TexCoords[0].xy);
 	vec4 sum = vec4(0.0);
 	float blury = filterdata[1]/2.0;
 	float height = filterdata[2];
 	float factor = 0.0;
 	for (float i = -blury/2.0; i < blury/2.0; ++i)
 	{
-		sum += texture2D(g_tex1,ls_TexCoords[0].xy+vec2( 0.0, i/height));
+		sum += texture2D(g_tex_standard,ls_TexCoords[0].xy+vec2( 0.0, i/height));
 		factor++;
 	}
 	return sum/vec4(factor);
 }
 vec4 filter_dropshadow(float inner, float knockout, vec4 color, float strength, vec2 startpos)
 {
-	vec4 src = texture2D(g_tex1, ls_TexCoords[0].xy+startpos);
+	vec4 src = texture2D(g_tex_standard, ls_TexCoords[0].xy+startpos);
 	float glowalpha = inner == 1.0 ? 1.0-src.a : src.a;
 	float srcalpha = color.a*clamp(glowalpha*strength, 0.0, 1.0);
 	vec4 dst = getDstPx(ls_TexCoords[0].xy);
@@ -161,14 +160,14 @@ vec4 filter_gradientglow()
 	float knockout = filterdata[2];
 	float strength = filterdata[3];
 	vec2 startpos = vec2(filterdata[4],filterdata[5]);
-	float glowalpha = inner == 1.0 ? 1.0-texture2D(g_tex1,ls_TexCoords[0].xy+startpos).a : texture2D(g_tex1,ls_TexCoords[0].xy+startpos).a;
+	float glowalpha = inner == 1.0 ? 1.0-texture2D(g_tex_standard,ls_TexCoords[0].xy+startpos).a : texture2D(g_tex_standard,ls_TexCoords[0].xy+startpos).a;
 	vec4 color = gradientcolors[int(glowalpha*256.0)];
 	return filter_dropshadow(inner, knockout,color , strength, startpos);
 }
 
 vec4 filter_colormatrix()
 {
-	vec4 src = texture2D(g_tex1,ls_TexCoords[0].xy);
+	vec4 src = texture2D(g_tex_standard,ls_TexCoords[0].xy);
 	src.rgb *= src.a;
 	float alpha = filterdata[16]*src.r + (filterdata[17]*src.g) + (filterdata[18]*src.b) + (filterdata[19]*src.a) + filterdata[20];
 	return vec4(clamp ((filterdata[ 1]*src.r + (filterdata[ 2]*src.g) + (filterdata[ 3]*src.b) + (filterdata[ 4]*src.a) + filterdata[ 5]/255.0)*alpha, 0.0, 1.0),
@@ -196,7 +195,7 @@ vec4 filter_convolution()
 	float mY=filterdata[12];
 
 	vec2 start = ls_TexCoords[0].xy;
-	vec4 src = texture2D(g_tex1,ls_TexCoords[0].xy);
+	vec4 src = texture2D(g_tex_standard,ls_TexCoords[0].xy);
 
 	float redResult   = 0.0;
 	float greenResult = 0.0;
@@ -230,7 +229,7 @@ vec4 filter_convolution()
 			}
 			else
 			{
-				vec4 dst = texture2D(g_tex1,ls_TexCoords[0].xy+vec2((x-mX/2.0)/width,(y-mY/2.0)/height));
+				vec4 dst = texture2D(g_tex_standard,ls_TexCoords[0].xy+vec2((x-mX/2.0)/width,(y-mY/2.0)/height));
 				alphaResult += dst.a*data;
 				redResult   += dst.r*data;
 				greenResult += dst.g*data;
@@ -246,10 +245,7 @@ vec4 filter_convolution()
 
 void main()
 {
-	vec4 vbase = texture2D(g_tex1,ls_TexCoords[0].xy);
-	// discard everything that doesn't fit the mask
-	if (mask != 0.0 && texture2D(g_tex2,ls_TexCoords[1].xy).a == 0.0)
-		discard;
+	vec4 vbase = texture2D(g_tex_standard,ls_TexCoords[0].xy);
 #ifdef GL_ES
 	vbase.rgb = vbase.bgr;
 #endif
@@ -281,12 +277,15 @@ void main()
 
 
 	if (blendMode==13.0) {//BLENDMODE_OVERLAY
-		vec4 vblenddst = texture2D(g_tex3,ls_TexCoords[1].xy);
+		vec4 vblenddst = texture2D(g_tex_blend,ls_TexCoords[1].xy);
 		vbase = applyBlendMode(vbase,vblenddst,blendOverlay(vblenddst.rgb,vbase.rgb));
 	} else if (blendMode==14.0) {//BLENDMODE_HARDLIGHT
-		vec4 vblenddst = texture2D(g_tex3,ls_TexCoords[1].xy);
+		vec4 vblenddst = texture2D(g_tex_blend,ls_TexCoords[1].xy);
 		vbase = applyBlendMode(vbase,vblenddst,blendOverlay(vbase.rgb,vblenddst.rgb));
 	}
+	// discard everything that doesn't fit the mask so it isn't set in stencil buffer
+	if (mask != 0.0 && vbase.a == 0.0)
+		discard;
 	// premultiply alpha again
 	vbase.rgb *= vbase.a;
 

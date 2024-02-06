@@ -91,6 +91,7 @@ class GLRenderContext: public RenderContext
 private:
 	static int errorCount;
 	int maskCount;
+	bool inMaskRendering;
 protected:
 	EngineData* engineData;
 	int projectionMatrixUniform;
@@ -107,8 +108,6 @@ protected:
 	int blendModeUniform;
 	int filterdataUniform;
 	int gradientcolorsUniform;
-	uint32_t maskframebuffer;
-	uint32_t maskTextureID;
 	uint32_t blendframebuffer;
 	uint32_t blendrenderbuffer;
 	uint32_t blendTextureID;
@@ -136,7 +135,7 @@ public:
 	 * Uploads the current matrix as the specified type.
 	 */
 	void setMatrixUniform(LSGL_MATRIX m) const;
-	GLRenderContext() : RenderContext(GL),maskCount(0),engineData(nullptr), largeTextureSize(0)
+	GLRenderContext() : RenderContext(GL),maskCount(0),inMaskRendering(false),engineData(nullptr), largeTextureSize(0)
 	{
 	}
 	void SetEngineData(EngineData* data) { engineData = data;}

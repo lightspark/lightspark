@@ -626,7 +626,6 @@ void RenderThread::commonGLDeinit()
 	}
 	engineData->exec_glDeleteTextures(1, &cairoTextureID);
 	engineData->exec_glDeleteTextures(1, &cairoTextureIDSettings);
-	engineData->exec_glDeleteTextures(1, &maskTextureID);
 	engineData->exec_glDeleteTextures(1, &blendTextureID);
 }
 
@@ -653,23 +652,20 @@ void RenderThread::commonGLInit()
 
 	//Set uniforms
 	engineData->exec_glUseProgram(gpu_program);
-	int tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex1");
+	int tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex_standard");
 	if(tex!=-1)
 		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_STANDARD);
-	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex2");
-	if(tex!=-1)
-		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_MASK);
 
 	// uniform for textures used for blending 
-	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex3");
+	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex_blend");
 	if(tex!=-1)
 		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_BLEND);
 
 	// uniform for textures used for filtering 
-	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex4");
+	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex_filter1");
 	if(tex!=-1)
 		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_FILTER);
-	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex5");
+	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex_filter2");
 	if(tex!=-1)
 		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_FILTER_DST);
 	
@@ -679,7 +675,7 @@ void RenderThread::commonGLInit()
 	alphaUniform =engineData->exec_glGetUniformLocation(gpu_program,"alpha");
 	//The uniform that tells to draw directly using the selected color
 	directUniform =engineData->exec_glGetUniformLocation(gpu_program,"direct");
-	//The uniform that indicates if the object to be rendered has a mask (1) or not (0)
+	//The uniform that indicates if the object to be rendered is ca mask (1) or not (0)
 	maskUniform =engineData->exec_glGetUniformLocation(gpu_program,"mask");
 	//The uniform that indicates if this is the first filter (1), or not (0)
 	isFirstFilterUniform =engineData->exec_glGetUniformLocation(gpu_program,"isFirstFilter");
@@ -700,9 +696,6 @@ void RenderThread::commonGLInit()
 	engineData->exec_glGenTextures(1, &cairoTextureID);
 	engineData->exec_glGenTextures(1, &cairoTextureIDSettings);
 
-	// create framebuffer for masks
-	maskframebuffer = engineData->exec_glGenFramebuffer();
-	engineData->exec_glGenTextures(1, &maskTextureID);
 
 	// create framebuffer for blending
 	blendframebuffer = engineData->exec_glGenFramebuffer();
@@ -739,28 +732,6 @@ void RenderThread::commonGLResize()
 	lsglTranslatef(offsetX,windowHeight-offsetY,0);
 	lsglScalef(1.0,-1.0,1);
 	setMatrixUniform(LSGL_PROJECTION);
-
-	// recreate framebuffer for masks
-	engineData->exec_glDeleteFramebuffers(1,&maskframebuffer);
-	engineData->exec_glDeleteTextures(1,&maskTextureID);
-	maskframebuffer = engineData->exec_glGenFramebuffer();
-	engineData->exec_glGenTextures(1, &maskTextureID);
-
-	
-	// setup mask framebuffer
-	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_MASK);
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(maskTextureID);
-	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(maskframebuffer);
-	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
-	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
-	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(maskTextureID);
-	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
-	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
-	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
-	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
-	engineData->exec_glDisable_GL_DEPTH_TEST();
-	engineData->exec_glDisable_GL_STENCIL_TEST();
 
 	// recreate framebuffer for blending
 	engineData->exec_glDeleteFramebuffers(1,&blendframebuffer);

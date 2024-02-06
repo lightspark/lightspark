@@ -180,6 +180,7 @@ static bool clearMaskStencil(EngineData* engineData)
 
 void GLRenderContext::pushMask()
 {
+	inMaskRendering=true;
 	(void)drawMaskStencil(engineData);
 	if (!(maskCount++))
 	{
@@ -206,6 +207,7 @@ void GLRenderContext::deactivateMask()
 
 void GLRenderContext::activateMask()
 {
+	inMaskRendering=false;
 	(void)drawMaskedContent(engineData);
 }
 
@@ -259,17 +261,8 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	setupRenderingState(alpha,colortransform,smooth,blendmode);
 	float empty=0;
 	engineData->exec_glUniform1fv(filterdataUniform, 1, &empty);
-	if (isMask)
-	{
-		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(maskframebuffer);
-		engineData->exec_glClearColor(0,0,0,0);
-		engineData->exec_glClear_GL_COLOR_BUFFER_BIT();
-		engineData->exec_glUniform1f(maskUniform, 0);
-	}
-	else
-	{
-		engineData->exec_glUniform1f(maskUniform, hasMask ? 1 : 0);
-	}
+	engineData->exec_glUniform1f(maskUniform, inMaskRendering ? 1 : 0);
+	
 	// set mode for direct coloring:
 	// 0.0:no coloring
 	// 1.0 coloring for profiling/error message (?)
@@ -355,9 +348,6 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	}
 	else
 		renderpart(matrix,chunk,0,0,chunk.width,chunk.height,chunk.xOffset/chunk.xContentScale,chunk.yOffset/chunk.yContentScale);
-
-	if (isMask)
-		resetCurrentFrameBuffer();
 
 	if (smooth != SMOOTH_MODE::SMOOTH_NONE)
 	{

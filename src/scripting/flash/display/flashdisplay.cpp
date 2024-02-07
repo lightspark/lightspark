@@ -5551,7 +5551,7 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 
 IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
-	if (cachedBitmap && computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	if (cachedBitmap && computeCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, this->smoothing);
 	}
@@ -5584,12 +5584,17 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	}
 	MATRIX totalMatrix2;
 	MATRIX filterMatrix2;
+	MATRIX targetMatrix;
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
 		if (matrixsource)
+		{
 			infilter = matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
+			matrixsource->computeTargetMatrix(target,targetMatrix,true);
+		}
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
+		targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
 	}
 	totalMatrix2 = totalMatrix2.multiplyMatrix(sourceMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
@@ -5609,7 +5614,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 					, scalex, scaley
 					, isMask, mask
 					, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
-					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2);
+					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix);
 	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
@@ -5617,7 +5622,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 				, 1, 1
 				, isMask, mask
 				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
-				, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2);
+				, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix);
 }
 
 void SimpleButton::sinit(Class_base* c)
@@ -6152,7 +6157,7 @@ IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initial
 	IDrawable* res = getFilterDrawable(target,initialMatrix,smoothing,q);
 	if (res)
 		return res;
-	if (computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	if (computeCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	return nullptr;
 }

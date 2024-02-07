@@ -283,6 +283,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.mask=drawable->getMask();
 		surface.matrix = drawable->getMatrix();
 		surface.filtermatrix = drawable->getFilterMatrix();
+		surface.targetMatrix = drawable->getTargetMatrix();
 		surface.needsFilterRefresh=false;
 		AS_BLENDMODE bl = blendMode;
 		DisplayObject* obj = target;

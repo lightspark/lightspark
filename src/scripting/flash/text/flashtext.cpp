@@ -1692,7 +1692,7 @@ void TextField::defaultEventBehavior(_R<Event> e)
 IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	Locker l(invalidatemutex);
-	if (cachedBitmap && computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	if (cachedBitmap && computeCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
@@ -1797,7 +1797,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		// it seems that textfields are always rendered with subpixel smoothing when rendering to bitmap
 		return TokenContainer::invalidate(target, initialMatrix,smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 	}
-	if (computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	if (computeCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
@@ -1817,8 +1817,12 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix,infilter);
 	MATRIX totalMatrix2;
 	MATRIX filterMatrix2;
+	MATRIX targetMatrix;
+	
 	infilter = owner->computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
 	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
+	owner->computeTargetMatrix(target,targetMatrix,true);
+	targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
 	if (this->type != ET_EDITABLE)
 	{
@@ -1837,7 +1841,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, ceil(width), ceil(height),
 																					rx, ry, ceil(rwidth), ceil(rheight), rotation,xscale,yscale,isMask,mask, 1.0f,getConcatenatedAlpha(), masks,
 																					ColorTransformBase(),
-																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,filterMatrix2);
+																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,filterMatrix2,targetMatrix);
 	if (res != nullptr)
 		return res;
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
@@ -1853,7 +1857,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				isMask,mask,
 				1.0f, getConcatenatedAlpha(), masks,
 				ColorTransformBase(),
-				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,caretIndex,filterMatrix2);
+				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,caretIndex,filterMatrix2,targetMatrix);
 }
 
 bool TextField::renderImpl(RenderContext& ctxt)

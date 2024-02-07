@@ -574,7 +574,7 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 
 IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix, SMOOTH_MODE smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap, bool fromgraphics)
 {
-	if (owner->computeCacheAsBitmap() && (!q || !q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=owner))
+	if (owner->hasFilters() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=owner))
 	{
 		return owner->getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing != SMOOTH_MODE::SMOOTH_NONE);
 	}
@@ -618,18 +618,14 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 
 	MATRIX totalMatrix2;
 	MATRIX filterMatrix2;
+	MATRIX targetMatrix;
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
 		infilter = owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
-		{
-			MATRIX targetMatrix;
-			owner->computeTargetMatrix(target,targetMatrix,true);
-			targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
-
-			owner->cachedSurface.targetMatrix=targetMatrix;
-		}
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
+		owner->computeTargetMatrix(target,targetMatrix,true);
+		targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
 	}
 	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,owner->cachedSurface.targetMatrix,infilter);
 	if(width==0 || height==0)
@@ -696,6 +692,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			}
 			owner->cachedSurface.matrix=totalMatrix2;
 			owner->cachedSurface.filtermatrix=filterMatrix2;
+			owner->cachedSurface.smoothing = smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE;
 			owner->resetNeedsTextureRecalculation();
 			return nullptr;
 		}
@@ -712,7 +709,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
 				, isMask, mask
 				, scaling,(!q || !q->isSoftwareQueue ? owner->getConcatenatedAlpha() : alpha), masks
-				, ct, smoothing, regpointx, regpointy,q && q->isSoftwareQueue,filterMatrix2);
+				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE, regpointx, regpointy,q && q->isSoftwareQueue,filterMatrix2,targetMatrix);
 }
 
 bool TokenContainer::hitTestImpl(const Vector2f& point) const

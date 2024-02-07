@@ -1363,7 +1363,11 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, in
 	switch (format)
 	{
 		case TEXTUREFORMAT::BGRA:
+#if ENABLE_GLES2
+			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+#else
 			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+#endif
 			break;
 		case TEXTUREFORMAT::BGR:
 #if ENABLE_GLES2
@@ -1372,18 +1376,22 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, in
 				((uint8_t*)pixels)[i] = ((uint8_t*)pixels)[i+2];
 				((uint8_t*)pixels)[i+2] = t;
 			}
-			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 #else
 			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_BYTE, pixels);
 #endif
 			break;
 		case TEXTUREFORMAT::BGRA_PACKED:
+#if ENABLE_GLES2
+			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
+#else
 			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
+#endif
 			break;
 		case TEXTUREFORMAT::BGR_PACKED:
 #if ENABLE_GLES2
 			LOG(LOG_NOT_IMPLEMENTED,"textureformat BGR_PACKED for opengl es");
-			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
+			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
 #else
 			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_SHORT_5_6_5, pixels);
 #endif
@@ -1394,10 +1402,18 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, in
 			switch (compressedformat)
 			{
 				case TEXTUREFORMAT_COMPRESSED::DXT5:
+#if ENABLE_GLES2
+					glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, border, compressedImageSize, pixels);
+#else
 					glCompressedTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, border, compressedImageSize, pixels);
+#endif
 					break;
 				case TEXTUREFORMAT_COMPRESSED::DXT1:
+#if ENABLE_GLES2
+					glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, border, compressedImageSize, pixels);
+#else
 					glCompressedTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, border, compressedImageSize, pixels);
+#endif
 					break;
 				default:
 					LOG(LOG_NOT_IMPLEMENTED,"upload texture in compressed format "<<compressedformat);
@@ -1796,18 +1812,18 @@ int EngineData::audio_getSampleRate()
 {
 	return 44100;
 }
-IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms, const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX& _filterMatrix)
+IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms, const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX& _filterMatrix, const MATRIX& _targetMatrix)
 {
 	if (hasExternalFontRenderer)
 		return new externalFontRenderer(_textData,this, _x, _y, _w, _h, _rx,_ry,_rw,_rh,_r,_xs,_ys,_im, _mask, _a, _ms,
-										_colortransform, smoothing,_m,_filterMatrix);
+										_colortransform, smoothing,_m,_filterMatrix,_targetMatrix);
 	return nullptr;
 }
 
 externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData *engine, int32_t x, int32_t y, int32_t w, int32_t h, int32_t rx, int32_t ry, int32_t rw, int32_t rh, float r, float xs, float ys, bool im, _NR<DisplayObject> _mask, float a, const std::vector<IDrawable::MaskData> &m,
-										   const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m, const MATRIX& _filtermatrix)
+										   const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m, const MATRIX& _filtermatrix, const MATRIX& _targetMatrix)
 	: IDrawable(w, h, x, y,rw,rh,rx,ry,r,xs,ys, 1, 1, im, _mask, a, m,
-				_colortransform,smoothing,_m,_filtermatrix),m_engine(engine)
+				_colortransform,smoothing,_m,_filtermatrix,_targetMatrix),m_engine(engine)
 {
 	externalressource = engine->setupFontRenderer(_textData,a,smoothing);
 }

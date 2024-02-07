@@ -1178,6 +1178,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface.colortransform = d->getColorTransform();
 	cachedSurface.matrix=d->getMatrix();
 	cachedSurface.filtermatrix=d->getFilterMatrix();
+	cachedSurface.targetMatrix=d->getTargetMatrix();
 	cachedSurface.needsFilterRefresh=d->getNeedsFilterRefresh();
 	cachedSurface.isValid=true;
 	cachedSurface.isInitialized=true;
@@ -2172,7 +2173,7 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 		engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_BLEND);
 		engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureIDoriginal);
 		engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
-	}	
+	}
 	getSystemState()->getRenderThread()->filterframebufferstack.push_back(fe);
 	renderImpl(ctxt);
 	// bind rendered filter source to g_tex4
@@ -2462,7 +2463,7 @@ string DisplayObject::toDebugString() const
 }
 IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MATRIX& initialMatrix,_NR<DisplayObject>* pcachedBitmap,bool smoothing)
 {
-	if (!computeCacheAsBitmap())
+	if (!hasFilters())
 		return nullptr;
 	number_t xmin,xmax,ymin,ymax;
 	MATRIX m=getMatrix();
@@ -2552,12 +2553,12 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 
 	MATRIX totalMatrix2;
 	MATRIX filterMatrix2;
+	MATRIX targetMatrix;
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
 		infilter = computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
 		{
-			MATRIX targetMatrix;
 			computeTargetMatrix(target,targetMatrix,true);
 			targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
 
@@ -2583,7 +2584,7 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
 				, isMask, mask
 				, getConcatenatedAlpha(), masks
-				, ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2);
+				, ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix);
 }
 
 bool DisplayObject::findParent(DisplayObject *d) const

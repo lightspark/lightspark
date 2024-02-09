@@ -2741,7 +2741,8 @@ void RootMovieClip::advanceFrame(bool implicit)
 	}
 	waitingforparser=false;
 
-	MovieClip::advanceFrame(implicit);
+	if (!implicit || !usesActionScript3 || !state.explicit_FP)
+		MovieClip::advanceFrame(implicit);
 }
 
 void RootMovieClip::executeFrameScript()

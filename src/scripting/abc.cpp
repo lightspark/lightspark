@@ -83,6 +83,7 @@
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/net/Socket.h"
 
 using namespace std;
 using namespace lightspark;
@@ -824,6 +825,8 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		event->as<ProgressEvent>()->accesmutex.lock();
 		if (dispatcher->is<LoaderInfo>()) // ensure that the LoaderInfo reports the same number as the ProgressEvent for bytesLoaded
 			dispatcher->as<LoaderInfo>()->setBytesLoadedPublic(event->as<ProgressEvent>()->bytesLoaded);
+		else if (dispatcher->is<ASSocket>())
+			dispatcher->as<ASSocket>()->setBytesAvailable(event->as<ProgressEvent>()->bytesLoaded);
 	}
 	if (event->is<MouseEvent>() && dispatcher && dispatcher->is<DisplayObject>() && !dispatcher->as<DisplayObject>()->isOnStage())
 	{

@@ -390,15 +390,7 @@ ASFUNCTIONBODY_ATOM(ASSocket, bytesAvailable)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	Locker l(th->joblock);
-
-	if (th->job)
-	{
-		th->job->datareceive->lock();
-		asAtomHandler::setUInt(ret,wrk,th->job->datareceive->getLength());
-		th->job->datareceive->unlock();
-	}
-	else
-		asAtomHandler::setUInt(ret,wrk,0);
+	asAtomHandler::setUInt(ret,wrk, th->job != nullptr ? th->_bytesAvailable : 0);
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,_getEndian)
@@ -490,7 +482,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readBytes)
 	{
 		th->job->datareceive->lock();
 		if (length == 0)
-			length = th->job->datareceive->getLength();
+			length = th->_bytesAvailable;
 		uint8_t buf[length];
 		th->job->datareceive->readBytes(0,length,buf);
 		th->job->datareceive->setPosition(length);
@@ -686,7 +678,7 @@ bool ASSocket::isConnected()
 	return job && job->isConnected();
 }
 
-ASSocket::ASSocket(ASWorker* wrk, Class_base* c) : EventDispatcher(wrk,c), job(nullptr), objectEncoding(OBJECT_ENCODING::AMF3), timeout(20000)
+ASSocket::ASSocket(ASWorker* wrk, Class_base* c) : EventDispatcher(wrk,c), job(nullptr), objectEncoding(OBJECT_ENCODING::AMF3), _bytesAvailable(0), timeout(20000)
 {
 }
 
@@ -821,15 +813,29 @@ void ASSocketThread::execute()
 	}
 }
 
+ssize_t ASSocketThread::receive()
+{
+	uint8_t buf[4096];
+	ssize_t size;
+	ssize_t total = 0;
+	if (datareceive->getPosition())
+		datareceive->removeFrontBytes(datareceive->getPosition());
+	do
+	{
+		size = sock.receive(buf, sizeof buf);
+		if (size > 0)
+			datareceive->append(buf,size);
+		total += size;
+	}
+	while (size == sizeof(buf));
+	return total;
+}
+
 void ASSocketThread::readSocket(const SocketIO& sock)
 {
-	uint8_t buf[1024];
-	size_t nbytes = sock.receive(buf, sizeof buf - 1);
-
+	ssize_t nbytes = receive();
 	if (nbytes > 0)
 	{
-		buf[nbytes] = '\0';
-		datareceive->writeBytes(buf,nbytes);
 		owner->incRef();
 		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<ProgressEvent>::getInstanceS(owner->getInstanceWorker(),nbytes,0,"socketData")));
 	}

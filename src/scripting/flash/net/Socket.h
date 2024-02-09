@@ -54,6 +54,7 @@ protected:
 	ASSocketThread *job;
 	Mutex joblock; // protect access to job
 	uint8_t objectEncoding;
+	size_t _bytesAvailable;
 
 	ASPROPERTY_GETTER_SETTER(int,timeout);
 	ASFUNCTION_ATOM(_constructor);
@@ -101,6 +102,8 @@ public:
 	static void sinit(Class_base*);
 	void finalize() override;
 	void threadFinished();
+	void setBytesAvailable(size_t size) { _bytesAvailable = size; }
+	size_t getBytesAvailable() const { return _bytesAvailable; }
 };
 
 class ASSocketThread : public IThreadJob
@@ -117,6 +120,7 @@ private:
 	int signalListener;
 
 	int connectSocket();
+	ssize_t receive();
 	void readSocket(const SocketIO& sock);
 	void executeCommand(char cmd, SocketIO& sock);
 protected:

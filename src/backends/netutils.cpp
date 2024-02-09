@@ -18,6 +18,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "version.h"
 #include "backends/security.h"
 #include "scripting/abc.h"
 #include "scripting/class.h"
@@ -608,7 +609,7 @@ void CurlDownloader::execute()
 		//Its probably a good idea to limit redirections, 100 should be more than enough
 		curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 100);
 		// TODO use same useragent as adobe
-		//curl_easy_setopt(curl, CURLOPT_USERAGENT, "Mozilla/5.0");
+		curl_easy_setopt(curl, CURLOPT_USERAGENT, "Lightspark " VERSION);
 		// Empty string means that CURL will decompress if the
 		// server send a compressed file. (This has been
 		// renamed to CURLOPT_ACCEPT_ENCODING in newer CURL,

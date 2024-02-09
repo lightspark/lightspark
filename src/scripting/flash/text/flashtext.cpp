@@ -1686,7 +1686,23 @@ void TextField::defaultEventBehavior(_R<Event> e)
 			}
 		}
 		else
-			LOG(LOG_NOT_IMPLEMENTED,"TextField keyDown event handling for modifier "<<modifiers<<" and char code "<<hex<<ev->getSDLScanCode());
+		{
+			bool handled = false;
+			switch (ev->getKeyCode())
+			{
+				case AS3KEYCODE_V:
+					if (modifiers & KMOD_CTRL)
+					{
+						textInputChanged(tiny_string(SDL_GetClipboardText()));
+						handled = true;
+					}
+					break;
+				default:
+					break;
+			}
+			if (!handled)
+				LOG(LOG_NOT_IMPLEMENTED,"TextField keyDown event handling for modifier "<<modifiers<<" and char code "<<hex<<ev->getSDLScanCode());
+		}
 	}
 }
 IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)

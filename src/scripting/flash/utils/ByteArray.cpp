@@ -1442,7 +1442,8 @@ void ByteArray::append(uint8_t* data, int length)
 }
 void ByteArray::removeFrontBytes(int count)
 {
-	memmove(bytes,bytes+count,count);
+	if (count < (int)len)
+		memmove(bytes,bytes+count,len-count);
 	position -= count;
 	len -= count;
 }

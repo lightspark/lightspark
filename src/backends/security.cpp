@@ -1307,6 +1307,7 @@ bool SocketPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 	ssize_t nbytes = sock.sendAll(socket_policy_cmd, socket_policy_cmd_len);
 	if (nbytes != (int)socket_policy_cmd_len)
 	{
+		LOG(LOG_ERROR, "SECURITY: policy command size isn't the same as the total sent size.");
 		return false;
 	}
 
@@ -1322,6 +1323,7 @@ bool SocketPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 	if (nbytes < 0 && outData.size() == 0)
 	{
 		// error reading from socket
+		LOG(LOG_ERROR, "SECURITY: Failed to read from socket.");
 		return false;
 	}
 
@@ -1329,6 +1331,7 @@ bool SocketPolicyFile::retrievePolicyFile(vector<unsigned char>& outData)
 	// is not '\0' or '>' or '\n'
 	if (outData.size() == 0 || (outData[outData.size()-1] != '\0' && outData[outData.size()-1] != '>' && outData[outData.size()-1] != '\n'))
 	{
+		LOG(LOG_ERROR, "SECURITY: Last character of policy file is invalid.");
 		return false;
 	}
 

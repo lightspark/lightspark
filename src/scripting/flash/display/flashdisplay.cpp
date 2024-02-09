@@ -3059,7 +3059,6 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 		}
 	}
 	
-	_addChildAt(obj,insertpos,inskipping);
 	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{
 		multiname objName(nullptr);
@@ -3089,6 +3088,7 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 			setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 		}
 	}
+	_addChildAt(obj,insertpos,inskipping);
 
 	mapDepthToLegacyChild.insert(make_pair(depth,obj));
 	mapLegacyChildToDepth.insert(make_pair(obj,depth));

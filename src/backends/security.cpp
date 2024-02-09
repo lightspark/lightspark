@@ -363,6 +363,17 @@ URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loa
 						pendingURLPFiles, loadedURLPFiles);
 }
 
+SocketPolicyFile* SecurityManager::getSocketPolicyFile(const URLInfo& url, bool loadPendingPolicies)
+{
+	SocketPolicyFile* policy = getSocketPolicyFileByURL(url);
+
+	if(policy == nullptr)
+		policy = addSocketPolicyFile(url);
+	if(loadPendingPolicies)
+		getSys()->securityManager->loadSocketPolicyFile(policy);
+	return policy;
+}
+
 /**
  * \brief Search for socket policy files relevant to a given URL
  *
@@ -377,18 +388,23 @@ URLPFileList* SecurityManager::searchURLPolicyFiles(const URLInfo& url, bool loa
  */
 SocketPFileList* SecurityManager::searchSocketPolicyFiles(const URLInfo& url, bool loadPendingPolicies)
 {
+	SocketPFileList* result;
+
 	//Get or create the master policy file object
-	URLInfo masterURL = url.goToURL(SocketPolicyFile::MASTER_PORT_URL);
-	SocketPolicyFile* master = getSocketPolicyFileByURL(masterURL);
+	SocketPolicyFile* master = getSocketPolicyFile(url.goToURL(SocketPolicyFile::MASTER_PORT_URL), loadPendingPolicies);
 
-	if(master == nullptr)
-		master = addSocketPolicyFile(masterURL);
-
-	if(loadPendingPolicies)
-		getSys()->securityManager->loadSocketPolicyFile(master);
+	bool useFallback = master->isLoaded() && !master->isValid();
+	//Fallback to the target port, if the master port failed.
+	if (useFallback)
+	{
+		LOG(LOG_INFO, "SECURITY: Master port failed, falling back to target port.");
+		//master = getSocketPolicyFile(url);
+		result = new SocketPFileList;
+		result->push_back(getSocketPolicyFile(url, loadPendingPolicies));
+		return result;
+	}
 
 	//Get applicable policy files
-	SocketPFileList *result;
 	result = searchPolicyFiles<SocketPolicyFile>(url, master, loadPendingPolicies,
 						     pendingSocketPFiles, loadedSocketPFiles);
 

@@ -95,6 +95,8 @@ private:
 	//Master policy file is first-in-line and should be checked first
 	URLPFileList* searchURLPolicyFiles(const URLInfo& url,
 			bool loadPendingPolicies);
+	SocketPolicyFile* getSocketPolicyFile(const URLInfo& url,
+			bool loadPendingPolicies);
 	SocketPFileList* searchSocketPolicyFiles(const URLInfo& url,
 			bool loadPendingPolicies);
 public:

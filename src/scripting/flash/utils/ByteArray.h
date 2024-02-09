@@ -147,6 +147,7 @@ public:
 	}
 	
 	void append(std::streambuf* data, int length);
+	void append(uint8_t* data, int length);
 	/**
 	 * @brief remove bytes from front of buffer
 	 * @param count number of bytes to remove

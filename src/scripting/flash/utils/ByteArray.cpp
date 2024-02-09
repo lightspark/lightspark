@@ -1432,6 +1432,14 @@ void ByteArray::append(streambuf *data, int length)
 	s.read((char*)bytes+oldlen,length);
 	unlock();
 }
+void ByteArray::append(uint8_t* data, int length)
+{
+	lock();
+	int oldlen = len;
+	getBuffer(len+length,true);
+	memcpy(bytes+oldlen,data,length);
+	unlock();
+}
 void ByteArray::removeFrontBytes(int count)
 {
 	memmove(bytes,bytes+count,count);

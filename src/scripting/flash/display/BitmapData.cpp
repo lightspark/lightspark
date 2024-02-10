@@ -284,6 +284,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.matrix = drawable->getMatrix();
 		surface.filtermatrix = drawable->getFilterMatrix();
 		surface.targetMatrix = drawable->getTargetMatrix();
+		surface.targetOffset = drawable->getTargetOffset();
 		surface.needsFilterRefresh=false;
 		AS_BLENDMODE bl = blendMode;
 		DisplayObject* obj = target;

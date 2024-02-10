@@ -1091,7 +1091,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 			{
 				// render object without shader blendmode into texture
 				ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
-						ct, false, false,0.0,RGB(),surface.smoothing,surface.matrix,r,bl);
+						ct, false, false,0.0,RGB(),surface.smoothing,surface.targetMatrix,r,bl);
 				// ensure the object is rendered again with shader blendmode
 				bl = BLENDMODE_NORMAL; 
 			}
@@ -1179,6 +1179,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface.matrix=d->getMatrix();
 	cachedSurface.filtermatrix=d->getFilterMatrix();
 	cachedSurface.targetMatrix=d->getTargetMatrix();
+	cachedSurface.targetOffset=d->getTargetOffset();
 	cachedSurface.needsFilterRefresh=d->getNeedsFilterRefresh();
 	cachedSurface.isValid=true;
 	cachedSurface.isInitialized=true;
@@ -2116,7 +2117,7 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	// - generate fbo
 	// - generate texture with computed width/height of this DisplayObject as window size and set it as color attachment for fbo
 	// - render DisplayObject to texture
-	// - set texture as "g_tex4" in fragment shader
+	// - set texture as "g_tex_filter1" in fragment shader
 	// - generate two more textures with computed width/height of this DisplayObject as window size
 	// - for every filter
 	//   - for every step (blur, dropshadow...)
@@ -2124,7 +2125,7 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	//     - set one of the two textures as color attachment for fbo (use first generated texture in first step)
 	//     - render to texture 
 	//     - swap textures
-	//   - render resulting texture to "g_tex5"
+	//   - render resulting texture to "g_tex_filter2"
 	// - remember resulting texture in cachedSurface.cachedFilterTextureID
 	
 	assert(hasFilters());
@@ -2176,13 +2177,13 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	}
 	getSystemState()->getRenderThread()->filterframebufferstack.push_back(fe);
 	renderImpl(ctxt);
-	// bind rendered filter source to g_tex4
+	// bind rendered filter source to g_tex_filter1
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
 	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(filterrenderbuffer);
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_FILTER);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureIDoriginal);
 	
-	// create filter output texture, and bind it to g_tex5
+	// create filter output texture, and bind it to g_tex_filter2
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_FILTER_DST);
 	uint32_t filterDstTexture;
 	engineData->exec_glGenTextures(1, &filterDstTexture);
@@ -2356,7 +2357,7 @@ void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks
 	}
 }
 
-void DisplayObject::computeTargetMatrix(const DisplayObject* target, MATRIX& totalMatrix, bool includeRotation)
+void DisplayObject::computeTargetMatrix(const DisplayObject* target, MATRIX& totalMatrix,Vector2f& targetOffset, bool includeRotation)
 {
 	const DisplayObject* cur=this;
 	Vector2f filterOffset;
@@ -2379,7 +2380,8 @@ void DisplayObject::computeTargetMatrix(const DisplayObject* target, MATRIX& tot
 	{
 		number_t bxmin,bxmax,bymin,bymax;
 		getBounds(bxmin,bxmax,bymin,bymax,totalMatrix,false);
-		cachedSurface.targetOffset = Vector2f(bxmin-filterOffset.x, bymin-filterOffset.y);
+		targetOffset.x=bxmin-filterOffset.x;
+		targetOffset.y=bymin-filterOffset.y;
 		totalMatrix.translate(-bxmin+filterOffset.x, -bymin+filterOffset.y);
 	}
 }
@@ -2554,20 +2556,17 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 	MATRIX totalMatrix2;
 	MATRIX filterMatrix2;
 	MATRIX targetMatrix;
+	Vector2f targetOffset;
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
 		infilter = computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
-		{
-			computeTargetMatrix(target,targetMatrix,true);
-			targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
-
-			cachedSurface.targetMatrix=targetMatrix;
-		}
+		computeTargetMatrix(target,targetMatrix,targetOffset,true);
+		targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 	}
 
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,cachedSurface.targetMatrix,infilter);
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,targetMatrix,infilter);
 	if(width==0 || height==0)
 		return nullptr;
 	ColorTransformBase ct;
@@ -2584,7 +2583,7 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
 				, isMask, mask
 				, getConcatenatedAlpha(), masks
-				, ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix);
+				, ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix,targetOffset);
 }
 
 bool DisplayObject::findParent(DisplayObject *d) const

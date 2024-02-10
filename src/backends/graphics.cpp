@@ -134,9 +134,9 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 CairoRenderer::CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h, float _rx, float _ry, float _rw, float _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
 		float _s, float _a, const std::vector<MaskData>& _ms,
 		const ColorTransformBase& _colortransform,
-		SMOOTH_MODE _smoothing, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix)
+		SMOOTH_MODE _smoothing, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix, const Vector2f& _targetOffset)
 	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _xs, _ys, _im, _mask,_a, _ms,
-				_colortransform,_smoothing,_m,_filtermatrix,_targetmatrix)
+				_colortransform,_smoothing,_m,_filtermatrix,_targetmatrix,_targetOffset)
 	, scaleFactor(_s)
 {
 }
@@ -847,10 +847,10 @@ CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m,
 									   , float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a
 									   , const std::vector<IDrawable::MaskData> &_ms
 									   , const ColorTransformBase& _colortransform
-									   , SMOOTH_MODE _smoothing, number_t _xstart, number_t _ystart, bool _softwarerenderer, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix)
+									   , SMOOTH_MODE _smoothing, number_t _xstart, number_t _ystart, bool _softwarerenderer, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset)
 	: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs,_ys,_im,_mask,_s,_a,_ms
 					, _colortransform
-					,_smoothing,_filtermatrix, _targetmatrix),tokens(_g),xstart(_xstart),ystart(_ystart),softwarerenderer(_softwarerenderer)
+					,_smoothing,_filtermatrix, _targetmatrix,_targetOffset),tokens(_g),xstart(_xstart),ystart(_ystart),softwarerenderer(_softwarerenderer)
 {
 }
 
@@ -1225,6 +1225,7 @@ TextureChunk& AsyncDrawJob::getTexture()
 		surface.matrix=drawable->getMatrix();
 		surface.filtermatrix=drawable->getFilterMatrix();
 		surface.targetMatrix=drawable->getTargetMatrix();
+		surface.targetOffset=drawable->getTargetOffset();
 		surface.needsFilterRefresh=drawable->getNeedsFilterRefresh();
 		surface.isValid=true;
 		surface.isInitialized=true;
@@ -1274,17 +1275,17 @@ IDrawable::~IDrawable()
 
 RefreshableDrawable::RefreshableDrawable(float _x, float _y, float _w, float _h, float _rx, float _ry, float _rw, float _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
 		float _a, const std::vector<MaskData>& _ms,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix)
+		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset)
 	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, 1, 1, _im, _mask,_a, _ms,
-				_colortransform,_smoothing,_m,_filtermatrix, _targetmatrix)
+				_colortransform,_smoothing,_m,_filtermatrix, _targetmatrix,_targetOffset)
 {
 }
 
 BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, float _x, float _y, float _w, float _h, float _rx, float _ry, float _rw, float _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
 		float _a, const std::vector<MaskData>& _ms,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix)
+		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset)
 	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, 1, 1, _im, _mask,_a, _ms,
-				_colortransform,_smoothing,_m,_filtermatrix, _targetmatrix)
+				_colortransform,_smoothing,_m,_filtermatrix, _targetmatrix,_targetOffset)
 	, data(_data)
 {
 }
@@ -1300,9 +1301,9 @@ uint8_t *BitmapRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 
 CachedBitmapRenderer::CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix, float _x, float _y, float _w, float _h, float _rx, float _ry, float _rw, float _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
 		float _a, const std::vector<MaskData>& _ms,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix)
+		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix, const Vector2f& _targetOffset)
 	: BitmapRenderer(_source->getCachedBitmap()->as<Bitmap>()->bitmapData->getBitmapContainer(), _x, _y,_w, _h, _rx, _ry, _rw, _rh, _r, _xs, _ys, _im, _mask,_a, _ms,
-				_colortransform,_smoothing,_m,_filtermatrix, _targetmatrix)
+				_colortransform,_smoothing,_m,_filtermatrix, _targetmatrix,_targetOffset)
 	, source(_source),sourceCacheMatrix(_sourceCacheMatrix)
 {
 }

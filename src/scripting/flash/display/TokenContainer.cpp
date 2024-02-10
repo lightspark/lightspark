@@ -619,15 +619,16 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	MATRIX totalMatrix2;
 	MATRIX filterMatrix2;
 	MATRIX targetMatrix;
+	Vector2f targetOffset;
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
 		infilter = owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
-		owner->computeTargetMatrix(target,targetMatrix,true);
+		owner->computeTargetMatrix(target,targetMatrix,targetOffset,true);
 		targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
 	}
-	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,owner->cachedSurface.targetMatrix,infilter);
+	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,targetMatrix,infilter);
 	if(width==0 || height==0)
 		return nullptr;
 	ColorTransformBase ct;
@@ -692,6 +693,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			}
 			owner->cachedSurface.matrix=totalMatrix2;
 			owner->cachedSurface.filtermatrix=filterMatrix2;
+			owner->cachedSurface.targetMatrix=targetMatrix;
+			owner->cachedSurface.targetOffset=targetOffset;
 			owner->cachedSurface.smoothing = smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE;
 			owner->resetNeedsTextureRecalculation();
 			return nullptr;
@@ -709,7 +712,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
 				, isMask, mask
 				, scaling,(!q || !q->isSoftwareQueue ? owner->getConcatenatedAlpha() : alpha), masks
-				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE, regpointx, regpointy,q && q->isSoftwareQueue,filterMatrix2,targetMatrix);
+				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE, regpointx, regpointy,q && q->isSoftwareQueue,filterMatrix2,targetMatrix,targetOffset);
 }
 
 bool TokenContainer::hitTestImpl(const Vector2f& point) const

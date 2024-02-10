@@ -5585,13 +5585,14 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 	MATRIX totalMatrix2;
 	MATRIX filterMatrix2;
 	MATRIX targetMatrix;
+	Vector2f targetOffset;
 	std::vector<IDrawable::MaskData> masks2;
 	if (target)
 	{
 		if (matrixsource)
 		{
 			infilter = matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
-			matrixsource->computeTargetMatrix(target,targetMatrix,true);
+			matrixsource->computeTargetMatrix(target,targetMatrix,targetOffset,true);
 		}
 		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
 		targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
@@ -5614,7 +5615,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 					, scalex, scaley
 					, isMask, mask
 					, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
-					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix);
+					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix,targetOffset);
 	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
@@ -5622,7 +5623,7 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 				, 1, 1
 				, isMask, mask
 				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
-				, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix);
+				, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix,targetOffset);
 }
 
 void SimpleButton::sinit(Class_base* c)

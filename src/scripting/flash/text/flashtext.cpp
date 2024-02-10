@@ -1834,10 +1834,10 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	MATRIX totalMatrix2;
 	MATRIX filterMatrix2;
 	MATRIX targetMatrix;
-	
+	Vector2f targetOffset;
 	infilter = owner->computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
 	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
-	owner->computeTargetMatrix(target,targetMatrix,true);
+	owner->computeTargetMatrix(target,targetMatrix,targetOffset,true);
 	targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
 	if (this->type != ET_EDITABLE)
@@ -1857,7 +1857,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, ceil(width), ceil(height),
 																					rx, ry, ceil(rwidth), ceil(rheight), rotation,xscale,yscale,isMask,mask, 1.0f,getConcatenatedAlpha(), masks,
 																					ColorTransformBase(),
-																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,filterMatrix2,targetMatrix);
+																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,filterMatrix2,targetMatrix,targetOffset);
 	if (res != nullptr)
 		return res;
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
@@ -1873,7 +1873,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				isMask,mask,
 				1.0f, getConcatenatedAlpha(), masks,
 				ColorTransformBase(),
-				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,caretIndex,filterMatrix2,targetMatrix);
+				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,caretIndex,filterMatrix2,targetMatrix,targetOffset);
 }
 
 bool TextField::renderImpl(RenderContext& ctxt)

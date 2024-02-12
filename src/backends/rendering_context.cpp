@@ -51,6 +51,18 @@ const float RenderContext::lsIdentityMatrix[16] = {
 
 const CachedSurface CairoRenderContext::invalidSurface;
 
+void TransformStack::push(const Transform2D& _transform)
+{
+	if (!transforms.empty())
+	{
+		auto matrix = transform().matrix.multiplyMatrix(_transform.matrix);
+		auto colorTransform = transform().colorTransform.multiplyTransform(_transform.colorTransform);
+		transforms.push_back(Transform2D(matrix, colorTransform));
+	}
+	else
+		transforms.push_back(_transform);
+}
+
 RenderContext::RenderContext(CONTEXT_TYPE t,DisplayObject* startobj):contextType(t),currentMask(nullptr),currentShaderBlendMode(AS_BLENDMODE::BLENDMODE_NORMAL),startobject(startobj)
 {
 	lsglLoadIdentity();

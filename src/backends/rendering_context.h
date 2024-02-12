@@ -31,6 +31,32 @@ namespace lightspark
 enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
 
 class Rectangle;
+
+struct Transform2D
+{
+	MATRIX matrix;
+	ColorTransformBase colorTransform;
+
+	Transform2D(const MATRIX& _matrix, const ColorTransformBase& _colorTransform) : matrix(_matrix), colorTransform(_colorTransform) {}
+	Transform2D() {}
+	~Transform2D() {}
+};
+
+class TransformStack
+{
+private:
+	std::vector<Transform2D> transforms;
+public:
+	TransformStack() {}
+	~TransformStack() {}
+	void push(const Transform2D& transform);
+	void pop() { transforms.pop_back(); }
+	Transform2D& transform() { return transforms.back(); }
+	Transform2D& frontTransform() { return transforms.front(); }
+	const Transform2D& transform() const { return transforms.back(); }
+	const Transform2D& frontTransform() const { return transforms.front(); }
+};
+
 /*
  * The RenderContext contains all (public) functions that are needed by DisplayObjects to draw themselves.
  */
@@ -43,6 +69,7 @@ protected:
 	std::stack<float*> lsglMatrixStack;
 	~RenderContext(){}
 	void lsglMultMatrixf(const float *m);
+	std::vector<TransformStack> transformStacks;
 public:
 	enum CONTEXT_TYPE { CAIRO=0, GL };
 	RenderContext(CONTEXT_TYPE t,DisplayObject* startobj=nullptr);
@@ -50,6 +77,20 @@ public:
 	const DisplayObject* currentMask;
 	AS_BLENDMODE currentShaderBlendMode;
 	DisplayObject* startobject;
+	TransformStack& transformStack()
+	{
+		if (transformStacks.empty())
+			createTransformStack();
+		return transformStacks.back();
+	}
+	TransformStack& frontTransformStack()
+	{
+		if (transformStacks.empty())
+			createTransformStack();
+		return transformStacks.front();
+	}
+	void createTransformStack() { transformStacks.push_back(TransformStack()); }
+	void removeTransformStack() { transformStacks.pop_back(); }
 
 	/* Modelview matrix manipulation */
 	void lsglLoadIdentity();

@@ -41,6 +41,49 @@ class DisplayObject;
 class InvalidateQueue;
 class ColorTransform;
 
+struct RectF
+{
+	Vector2f min;
+	Vector2f max;
+	Vector2f tl() const { return min; }
+	Vector2f tr() const { return Vector2f(max.x, min.y); }
+	Vector2f bl() const { return Vector2f(min.x, max.y); }
+	Vector2f br() const { return max; }
+	Vector2f size() const { return max - min; }
+	RectF _union(const RectF& r) const
+	{
+		return RectF {
+			Vector2f(
+				dmin(min.x, r.min.x),
+				dmin(min.y, r.min.y)
+			),
+			Vector2f(
+				dmax(max.x, r.max.x),
+				dmax(max.y, r.max.y)
+			)
+
+		};
+	}
+	RectF operator*(const MATRIX& r) const
+	{
+		auto p0 = r.multiply2D(tl());
+		auto p1 = r.multiply2D(bl());
+		auto p2 = r.multiply2D(tr());
+		auto p3 = r.multiply2D(br());
+		return RectF {
+			Vector2f(
+				dmin(dmin(p0.x, p1.x), dmin(p2.x, p3.x)),
+				dmin(dmin(p0.y, p1.y), dmin(p2.y, p3.y))
+			),
+			Vector2f(
+				dmax(dmax(p0.x, p1.x), dmax(p2.x, p3.x)),
+				dmax(dmax(p0.y, p1.y), dmax(p2.y, p3.y))
+			)
+		};
+	}
+	RectF& operator*=(const MATRIX& r) { return *this = *this * r; }
+};
+
 class TextureChunk
 {
 friend class GLRenderContext;

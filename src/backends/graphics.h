@@ -156,6 +156,20 @@ public:
 		g = std::max(0.0f,std::min(255.0f,float((color.Green * greenMultiplier * 255.0f)/255.0f + greenOffset)))/255.0f;
 		b = std::max(0.0f,std::min(255.0f,float((color.Blue  *  blueMultiplier * 255.0f)/255.0f +  blueOffset)))/255.0f;
 	}
+	ColorTransformBase multiplyTransform(const ColorTransformBase& r)
+	{
+		ColorTransformBase ret;
+		ret.redMultiplier = redMultiplier * r.redMultiplier;
+		ret.greenMultiplier = greenMultiplier * r.greenMultiplier;
+		ret.blueMultiplier = blueMultiplier * r.blueMultiplier;
+		ret.alphaMultiplier = alphaMultiplier * r.alphaMultiplier;
+
+		ret.redOffset = redOffset + redMultiplier * r.redOffset;
+		ret.greenOffset = greenOffset + greenMultiplier * r.greenOffset;
+		ret.blueOffset = blueOffset + blueMultiplier * r.blueOffset;
+		ret.alphaOffset = alphaOffset + alphaMultiplier * r.alphaOffset;
+		return ret;
+	}
 };
 
 class CachedSurface

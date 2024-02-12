@@ -186,6 +186,8 @@ public:
 	uint32_t currentframebufferWidth;
 	uint32_t currentframebufferHeight;
 
+	Vector2 getOffset() const { return Vector2(offsetX, offsetY); }
+	Vector2f getScale() const { return Vector2f(scaleX, scaleY); }
 	void renderErrorPage(RenderThread *rt, bool standalone);
 	void renderSettingsPage();
 	void beginBlendTexture();

@@ -129,6 +129,7 @@ protected:
 	bool skipRender() const;
 
 	bool defaultRender(RenderContext& ctxt);
+	RectF boundsRectWithRenderTransform(const MATRIX& matrix, bool includeOwnFilters, const MATRIX& initialMatrix);
 	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");

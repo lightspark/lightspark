@@ -83,6 +83,39 @@ bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 	return ret;
 }
 
+RectF DisplayObject::boundsRectWithRenderTransform(const MATRIX& matrix, bool includeOwnFilters, const MATRIX& initialMatrix)
+{
+	RectF bounds;
+	bool dummy = boundsRectWithoutChildren(bounds.min.x, bounds.max.x, bounds.min.y, bounds.max.y, false);
+	bounds *= matrix;
+	if (is<DisplayObjectContainer>())
+	{
+		std::vector<_R<DisplayObject>> list;
+		as<DisplayObjectContainer>()->cloneDisplayList(list);
+		for (auto child : list)
+		{
+			MATRIX m = matrix.multiplyMatrix(child->getMatrix());
+			bounds = bounds._union(child->boundsRectWithRenderTransform(m, true, initialMatrix));
+		}
+	}
+	if (includeOwnFilters && !filters.isNull())
+	{
+		number_t filterborder = 0;
+		for (uint32_t i = 0; i < filters->size(); i++)
+		{
+			asAtom f = asAtomHandler::invalidAtom;
+			filters->at_nocheck(f,i);
+			if (asAtomHandler::is<BitmapFilter>(f))
+				filterborder = max(filterborder,asAtomHandler::as<BitmapFilter>(f)->getMaxFilterBorder());
+		}
+		bounds.min.x -= filterborder*initialMatrix.getScaleX();
+		bounds.max.x += filterborder*initialMatrix.getScaleX();
+		bounds.min.y -= filterborder*initialMatrix.getScaleY();
+		bounds.max.y += filterborder*initialMatrix.getScaleY();
+	}
+	return bounds;
+}
+
 number_t DisplayObject::getNominalWidth()
 {
 	number_t xmin, xmax, ymin, ymax;

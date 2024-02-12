@@ -140,7 +140,7 @@ number_t DisplayObject::getNominalHeight()
 
 bool DisplayObject::Render(RenderContext& ctxt, bool force)
 {
-	if((!legacy && !isConstructed()) || (!force && skipRender()) || clippedAlpha()==0.0)
+	if((!legacy && !isConstructed()) || (!force && skipRender()) || clippedAlpha()==0.0 || (isMask() && !ClipDepth))
 		return false;
 	AS_BLENDMODE oldshaderblendmode = ctxt.currentShaderBlendMode;
 	bool ret = true;

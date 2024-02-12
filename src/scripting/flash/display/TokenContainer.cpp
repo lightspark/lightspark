@@ -133,8 +133,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			nvgBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
 			// xOffsetTransformed/yOffsetTransformed contain the offsets from the border of the window
 			nvgTranslate(nvgctxt,owner->cachedSurface.xOffsetTransformed,owner->cachedSurface.yOffsetTransformed);
-			//MATRIX m = owner->cachedSurface.matrix;
-			MATRIX m = owner->cachedSurface.targetMatrix;
+			MATRIX m = ctxt.transformStack().transform().matrix;
 
 			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
 			nvgTranslate(nvgctxt,owner->cachedSurface.xOffset,owner->cachedSurface.yOffset);

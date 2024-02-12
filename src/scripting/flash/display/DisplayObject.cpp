@@ -144,6 +144,14 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 		return false;
 	AS_BLENDMODE oldshaderblendmode = ctxt.currentShaderBlendMode;
 	bool ret = true;
+	Vector2f scale = getSystemState()->getRenderThread()->getScale();
+	MATRIX _matrix = getMatrix();
+	MATRIX initialMatrix;
+	initialMatrix.scale(scale.x, scale.y);
+	ctxt.transformStack().push(Transform2D(
+		is<RootMovieClip>() ? initialMatrix : _matrix,
+		!colorTransform.isNull() ? *colorTransform.getPtr() : ColorTransformBase()
+	));
 	if (ctxt.contextType == RenderContext::GL)
 	{
 		if (isShaderBlendMode(this->getBlendMode()) && getSystemState()->stage->renderToTextureCount)
@@ -151,41 +159,43 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 		if (hasFilters() && (cachedSurface.needsFilterRefresh || cachedSurface.cachedFilterTextureID != UINT32_MAX))
 		{
 			if (!cachedSurface.isInitialized)
+			{
+				ctxt.transformStack().pop();
 				return true;
+			}
 			bool needsFilterRefresh = cachedSurface.needsFilterRefresh && hasFilters();
+			auto baseTransform = ctxt.transformStack().transform();
+			RectF bounds = boundsRectWithRenderTransform(baseTransform.matrix, true, initialMatrix);
+			Vector2f offset(bounds.min.x-baseTransform.matrix.x0,bounds.min.y-baseTransform.matrix.y0);
+			Vector2f size = bounds.size();
+
 			if (needsFilterRefresh)
 			{
-				this->renderFilters(ctxt,cachedSurface.widthTransformed,cachedSurface.heightTransformed);
+				MATRIX m = baseTransform.matrix;
+				m.x0 = -offset.x;
+				m.y0 = -offset.y;
+
+				// TODO: Create a new GLRenderContext here
+				ctxt.createTransformStack();
+				ctxt.transformStack().push(Transform2D(m, ColorTransformBase()));
+
+				this->renderFilters(ctxt,size.x,size.y);
+
+				ctxt.transformStack().pop();
+				ctxt.removeTransformStack();
 				cachedSurface.needsFilterRefresh=false;
 			}
 			if (cachedSurface.cachedFilterTextureID != UINT32_MAX)
 			{
-				int offsetX;
-				int offsetY;
-				float scaleX;
-				float scaleY;
-				getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, offsetX, offsetY, scaleX, scaleY);
-				MATRIX m = cachedSurface.filtermatrix;
-				if (!getSystemState()->getRenderThread()->filterframebufferstack.empty())
-				{
-					filterstackentry fe = getSystemState()->getRenderThread()->filterframebufferstack.back();
-					m.translate(fe.filterborderx,fe.filterbordery);
-				}
-				else
-				{
-					m.x0 = cachedSurface.targetOffset.x*scaleX;
-					m.y0 = cachedSurface.targetOffset.y*scaleY;
-				}
-				auto tx = m.x0;
-				auto ty = m.y0;
-				m = MATRIX();
-				m.x0 = std::round(tx);
-				m.y0 = std::round(ty);
+				MATRIX m;
+				m.x0 = std::round(baseTransform.matrix.x0+offset.x);
+				m.y0 = std::round(baseTransform.matrix.y0+offset.y);
 
 				getSystemState()->getRenderThread()->setModelView(m);
 				getSystemState()->getRenderThread()->setupRenderingState(cachedSurface.alpha,cachedSurface.colortransform,cachedSurface.smoothing,cachedSurface.blendmode);
-				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,cachedSurface.widthTransformed,cachedSurface.heightTransformed,nullptr,nullptr,false,true,false);
+				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,size.x,size.y,nullptr,nullptr,false,true,false);
 				ctxt.currentShaderBlendMode = oldshaderblendmode;
+				ctxt.transformStack().pop();
 				return ret;
 			}
 		}
@@ -195,6 +205,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 	else
 		ret = renderImpl(ctxt);
 	ctxt.currentShaderBlendMode = oldshaderblendmode;
+	ctxt.transformStack().pop();
 	return ret;
 }
 
@@ -1133,8 +1144,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 		}
 	}
 
-	//MATRIX m = surface.matrix;
-	MATRIX m = surface.targetMatrix;
+	MATRIX m = ctxt.transformStack().transform().matrix;
 	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
 			ct, false, false,0.0,RGB(),surface.smoothing,m,r,bl);
 	return false;
@@ -2194,13 +2204,9 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	
 	number_t bxmin,bxmax,bymin,bymax;
 	boundsRect(bxmin,bxmax,bymin,bymax,false);
-	int offsetX;
-	int offsetY;
-	float scaleX;
-	float scaleY;
-	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, offsetX, offsetY, scaleX, scaleY);
-	fe.filterborderx=(-bxmin+this->maxfilterborder)*scaleX;
-	fe.filterbordery=(-bymin+this->maxfilterborder)*scaleY;
+	Vector2f scale = getSystemState()->getRenderThread()->getScale();
+	fe.filterborderx=(-bxmin+this->maxfilterborder)*scale.x;
+	fe.filterbordery=(-bymin+this->maxfilterborder)*scale.y;
 	if (getSystemState()->getRenderThread()->filterframebufferstack.empty())
 	{
 		// set original texture as blend texture

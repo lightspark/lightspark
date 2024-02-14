@@ -636,7 +636,7 @@ void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 	{
 		cachedSurface.needsFilterRefresh=true;
 		this->hasChanged=true;
-		if (q)
+		if (q && !q->isSoftwareQueue)
 			requestInvalidationIncludingChildren(q);
 	}
 	DisplayObject* p = getParent();

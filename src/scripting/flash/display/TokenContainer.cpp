@@ -645,7 +645,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		regpointx=bxmin;
 		regpointy=bymin;
 	}
-	owner->cachedSurface.isValid=true;
 	if (!q || !q->isSoftwareQueue)
 	{
 		if (owner->getSystemState()->getEngineData()->nvgcontext
@@ -672,31 +671,31 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				float scaleY;
 				owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight,
 																offsetX, offsetY, scaleX, scaleY);
-				owner->cachedSurface.xOffsetTransformed=offsetX;
-				owner->cachedSurface.yOffsetTransformed=offsetY;
+				rx=offsetX;
+				ry=offsetY;
 			}
 			else
 			{
-				owner->cachedSurface.xOffsetTransformed=0;
-				owner->cachedSurface.yOffsetTransformed=0;
+				ry=0;
+				ry=0;
 			}
 			if (fromgraphics)
 			{
-				owner->cachedSurface.xOffset=0;
-				owner->cachedSurface.yOffset=0;
+				x=0;
+				y=0;
 			}
 			else
 			{
-				owner->cachedSurface.xOffset=bxmin;
-				owner->cachedSurface.yOffset=bymin;
+				x=bxmin;
+				y=bymin;
 			}
-			owner->cachedSurface.matrix=totalMatrix2;
-			owner->cachedSurface.filtermatrix=filterMatrix2;
-			owner->cachedSurface.targetMatrix=targetMatrix;
-			owner->cachedSurface.targetOffset=targetOffset;
-			owner->cachedSurface.smoothing = smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE;
 			owner->resetNeedsTextureRecalculation();
-			return nullptr;
+			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
+										   , rx, ry, ceil(rwidth), ceil(rheight),0
+										   , totalMatrix.getScaleX(), totalMatrix.getScaleY()
+										   , isMask, mask
+										   , (!q || !q->isSoftwareQueue ? owner->getConcatenatedAlpha() : alpha), masks
+										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix,targetOffset);
 		}
 		else if (renderWithNanoVG)
 		{

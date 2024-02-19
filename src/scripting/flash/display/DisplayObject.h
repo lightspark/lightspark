@@ -257,7 +257,7 @@ public:
 	virtual void startDrawJob(bool forcachedbitmap) {}
 	virtual void endDrawJob(bool forcachedbitmap) {}
 	
-	bool Render(RenderContext& ctxt,bool force=false);
+	bool Render(RenderContext& ctxt, bool force=false, const MATRIX* startmatrix=nullptr);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m, bool visibleOnly=false);
 	_NR<DisplayObject> hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly);
 	virtual void setOnStage(bool staged, bool force, bool inskipping=false);

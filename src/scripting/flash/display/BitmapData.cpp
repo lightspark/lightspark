@@ -301,8 +301,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		delete drawable;
 	}
 	if (d->getMask())
-		d->getMask()->Render(ctxt,true);
-	d->Render(ctxt,true);
+		d->getMask()->Render(ctxt,true,&initialMatrix);
+	d->Render(ctxt,true,&initialMatrix);
 	if (ct && !ct->isIdentity())
 		ct->applyTransformation(pixels.getPtr());
 }

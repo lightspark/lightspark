@@ -138,18 +138,18 @@ number_t DisplayObject::getNominalHeight()
 	return ret?(ymax-ymin):0;
 }
 
-bool DisplayObject::Render(RenderContext& ctxt, bool force)
+bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startmatrix)
 {
 	if((!legacy && !isConstructed()) || (!force && skipRender()) || clippedAlpha()==0.0 || (isMask() && !ClipDepth))
 		return false;
 	AS_BLENDMODE oldshaderblendmode = ctxt.currentShaderBlendMode;
 	bool ret = true;
 	Vector2f scale = getSystemState()->getRenderThread()->getScale();
-	MATRIX _matrix = getMatrix();
+	MATRIX _matrix = startmatrix ? *startmatrix : getMatrix();
 	MATRIX initialMatrix;
 	initialMatrix.scale(scale.x, scale.y);
 	ctxt.transformStack().push(Transform2D(
-		is<RootMovieClip>() ? initialMatrix : _matrix,
+		is<RootMovieClip>() && !startmatrix ? initialMatrix : _matrix,
 		!colorTransform.isNull() ? *colorTransform.getPtr() : ColorTransformBase()
 	));
 	if (ctxt.contextType == RenderContext::GL)
@@ -201,7 +201,22 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force)
 		}
 	}
 	if (ctxt.contextType == RenderContext::CAIRO && (ctxt.startobject != this) && this->getCachedBitmap())
+	{
+		auto baseTransform = ctxt.transformStack().transform();
+		RectF bounds = boundsRectWithRenderTransform(baseTransform.matrix, false, initialMatrix);
+		Vector2f offset(bounds.min.x-baseTransform.matrix.x0,bounds.min.y-baseTransform.matrix.y0);
+		MATRIX m = baseTransform.matrix;
+		m.x0 += offset.x;
+		m.y0 += offset.y;
+		
+		ctxt.createTransformStack();
+		ctxt.transformStack().push(Transform2D(m, ColorTransformBase()));
+		
 		ret = this->getCachedBitmap()->renderImpl(ctxt);
+		
+		ctxt.transformStack().pop();
+		ctxt.removeTransformStack();
+	}
 	else
 		ret = renderImpl(ctxt);
 	ctxt.currentShaderBlendMode = oldshaderblendmode;
@@ -1127,6 +1142,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 		r = getParent()->scalingGrid.getPtr();
 	ctxt.lsglLoadIdentity();
 	ColorTransformBase ct = surface.colortransform;
+	MATRIX m = ctxt.transformStack().transform().matrix;
 	if (ctxt.contextType == RenderContext::GL)
 	{
 		if (isShaderBlendMode(ctxt.currentShaderBlendMode))
@@ -1135,7 +1151,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 			{
 				// render object without shader blendmode into texture
 				ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
-						ct, false, false,0.0,RGB(),surface.smoothing,surface.targetMatrix,r,bl);
+						ct, false, false,0.0,RGB(),surface.smoothing,m,r,bl);
 				// ensure the object is rendered again with shader blendmode
 				bl = BLENDMODE_NORMAL; 
 			}
@@ -1144,7 +1160,6 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 		}
 	}
 
-	MATRIX m = ctxt.transformStack().transform().matrix;
 	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
 			ct, false, false,0.0,RGB(),surface.smoothing,m,r,bl);
 	return false;

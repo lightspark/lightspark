@@ -3124,7 +3124,7 @@ void DisplayObjectContainer::purgeLegacyChildren()
 	auto i = mapDepthToLegacyChild.begin();
 	while( i != mapDepthToLegacyChild.end() )
 	{
-		if (i->first < 0)
+		if (i->first < 0 && is<MovieClip>() && i->second->placeFrame > as<MovieClip>()->state.FP)
 		{
 			legacyChildrenMarkedForDeletion.insert(i->first);
 			DisplayObject* obj = i->second;
@@ -6620,14 +6620,16 @@ void MovieClip::declareFrame(bool implicit)
 		if(getFramesLoaded())
 		{
 			auto iter=frames.begin();
-			for(uint32_t i=0;i<=state.FP;i++)
+			uint32_t frame = state.FP;
+			for(state.FP=0;state.FP<=frame;state.FP++)
 			{
-				if((int)state.FP < state.last_FP || (int)i > state.last_FP)
+				if((int)frame < state.last_FP || (int)state.FP > state.last_FP)
 				{
-					iter->execute(this,i!=state.FP);
+					iter->execute(this,state.FP!=frame);
 				}
 				++iter;
 			}
+			state.FP = frame;
 		}
 		if (newFrame)
 			state.frameadvanced=true;

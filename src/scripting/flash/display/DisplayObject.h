@@ -187,6 +187,8 @@ public:
 	bool hasChanged;
 	// this is set to true for DisplayObjects that are placed from a tag
 	bool legacy;
+	// The frame that this clip was placed on.
+	unsigned int placeFrame;
 	bool markedForLegacyDeletion;
 	bool computeCacheAsBitmap(bool checksize=true);
 	bool hasFilters() const;

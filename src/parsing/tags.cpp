@@ -1925,6 +1925,8 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		//The matrix must be set before invoking the constructor
 		toAdd->setLegacyMatrix(Matrix);
 		toAdd->legacy = true;
+		if (toAdd->placeFrame == UINT32_MAX && parent->is<MovieClip>())
+			toAdd->placeFrame = parent->as<MovieClip>()->state.FP;
 
 		setProperties(toAdd, parent);
 

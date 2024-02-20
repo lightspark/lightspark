@@ -2146,10 +2146,6 @@ void DisplayObject::constructionComplete()
 }
 void DisplayObject::afterConstruction()
 {
-	if(!loaderInfo.isNull())
-	{
-		loaderInfo->objectHasLoaded(this);
-	}
 //	hasChanged=true;
 //	needsTextureRecalculation=true;
 //	if(onStage)

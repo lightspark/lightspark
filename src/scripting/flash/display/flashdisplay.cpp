@@ -288,18 +288,6 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 				}
 			}
 		}
-		if(bytesLoaded == bytesTotal && loadStatus==INIT_SENT)
-		{
-			//The clip is also complete now
-			if(getVm(getSystemState()))
-			{
-				this->incRef();
-				auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"complete");
-				this->addLoaderEvent(ev);
-				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev));
-			}
-			loadStatus=COMPLETE;
-		}
 	}
 }
 
@@ -611,7 +599,7 @@ void LoaderThread::execute()
 	}
 	if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
 	{
-		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip && !local_pt.getRootMovie()->hasMainClass)
+		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip)
 		{
 			if (!local_pt.getRootMovie()->usesActionScript3)
 				local_pt.getRootMovie()->setIsInitialized(false);

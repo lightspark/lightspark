@@ -192,7 +192,6 @@ RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk,_NR<LoaderInfo> li, _R<A
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass(getSys());
 	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(wrk,li, appDomain, secDomain, movieClipClass);
-	ret->constructIndicator = true;
 	ret->constructorCallComplete = true;
 	ret->loadedFrom=ret;
 	return ret;

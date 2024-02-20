@@ -772,24 +772,6 @@ void ABCVm::abc_setproperty(call_context* context)
 
 	LOG_CALL("setProperty " << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
 
-	if(asAtomHandler::isNull(*obj))
-	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		ASATOM_DECREF_POINTER(obj);
-		ASATOM_DECREF_POINTER(value);
-		name->resetNameIfObject();
-		createError<TypeError>(context->worker,kConvertNullToObjectError);
-		return;
-	}
-	if (asAtomHandler::isUndefined(*obj))
-	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		ASATOM_DECREF_POINTER(obj);
-		ASATOM_DECREF_POINTER(value);
-		name->resetNameIfObject();
-		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
-		return;
-	}
 	//Do not allow to set contant traits
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
 	bool alreadyset=false;

@@ -61,20 +61,6 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 {
 	LOG_CALL("setProperty " << *name << ' ' << obj<<" "<<obj->toDebugString()<<" " <<value);
 
-	if(obj->is<Null>())
-	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
-		createError<TypeError>(getWorker(),kConvertNullToObjectError);
-		obj->decRef();
-		return;
-	}
-	if (obj->is<Undefined>())
-	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << obj->toDebugString()<<" " <<value->toDebugString());
-		createError<TypeError>(getWorker(),kConvertUndefinedToObjectError);
-		obj->decRef();
-		return;
-	}
 	//Do not allow to set contant traits
 	asAtom v = asAtomHandler::fromObject(value);
 	bool alreadyset=false;
@@ -87,18 +73,7 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 void ABCVm::setProperty_i(int32_t value,ASObject* obj,multiname* name)
 {
 	LOG_CALL("setProperty_i " << *name << ' ' <<obj);
-	if(obj->is<Null>())
-	{
-		LOG(LOG_ERROR,"calling setProperty_i on null:" << *name << ' ' << obj->toDebugString()<<" " << value);
-		createError<TypeError>(getWorker(),kConvertNullToObjectError);
-	}
-	else if (obj->is<Undefined>())
-	{
-		LOG(LOG_ERROR,"calling setProperty_i on undefined:" << *name << ' ' << obj->toDebugString()<<" " << value);
-		createError<TypeError>(getWorker(),kConvertUndefinedToObjectError);
-	}
-	else
-		obj->setVariableByMultiname_i(*name,value,obj->getInstanceWorker());
+	obj->setVariableByMultiname_i(*name,value,obj->getInstanceWorker());
 	obj->decRef();
 }
 

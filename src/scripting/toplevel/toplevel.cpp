@@ -137,8 +137,7 @@ void Undefined::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& strin
 multiname *Undefined::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
 	LOG(LOG_ERROR,"trying to set variable on undefined:"<<name <<" "<<asAtomHandler::toDebugString(o));
-	createError<TypeError>(getInstanceWorker(),kConvertUndefinedToObjectError);
-	return nullptr;
+	return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 }
 
 IFunction::IFunction(ASWorker* wrk,Class_base* c,CLASS_SUBTYPE st):ASObject(wrk,c,T_FUNCTION,st),length(0),closure_this(nullptr),inClass(nullptr),isStatic(false),clonedFrom(nullptr),functionname(0)
@@ -1127,9 +1126,7 @@ void Null::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 multiname *Null::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
 	LOG(LOG_ERROR,"trying to set variable on null:"<<name<<" value:"<<asAtomHandler::toDebugString(o));
-	ASATOM_DECREF(o);
-	createError<TypeError>(wrk,kConvertNullToObjectError);
-	return nullptr;
+	return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 }
 
 Type* Type::getBuiltinType(ASWorker* wrk, multiname* mn)

@@ -2177,6 +2177,8 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	// - remember resulting texture in cachedSurface.cachedFilterTextureID
 	
 	assert(hasFilters());
+	if (w == 0 || h == 0)
+		return;
 	EngineData* engineData = getSystemState()->getEngineData();
 	if (cachedSurface.cachedFilterTextureID != UINT32_MAX) // remove previously used texture
 		getSystemState()->getRenderThread()->addDeletedTexture(cachedSurface.cachedFilterTextureID);

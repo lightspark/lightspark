@@ -433,8 +433,6 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 			mi->cc.localslots[i] = &mi->cc.locals[i];
 		}
 	}
-	if (saved_cc && saved_cc->exceptionthrown)
-		return;
 
 	/* resolve argument and return types */
 	if(!mi->returnType)

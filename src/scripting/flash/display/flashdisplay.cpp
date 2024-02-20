@@ -6637,7 +6637,7 @@ void MovieClip::declareFrame(bool implicit)
 	if (needsActionScript3())
 		DisplayObjectContainer::declareFrame(implicit);
 	
-	if(this->isOnStage() && getSystemState()->getSwfVersion()>= 10 && frameScripts.count(0) && state.FP == 0)
+	if(this->isOnStage() && frameScripts.count(0) && state.FP == 0)
 	{
 		// execute framescript of frame 0 after declaration is completed
 		// only if we are already on stage and state.FP was not changed during construction

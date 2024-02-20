@@ -2131,7 +2131,8 @@ void MovieClip::currentFrameChanged(bool newframe)
 		advanceFrame(false);
 		return;
 	}
-	if (this->getInstanceWorker()->rootClip->executingFrameScriptCount)
+	bool isSysRoot = this->getInstanceWorker()->rootClip == this->getSystemState()->mainClip;
+	if (this->getInstanceWorker()->rootClip->executingFrameScriptCount && isSysRoot)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 
 	if (newframe && !state.creatingframe)
@@ -2142,8 +2143,13 @@ void MovieClip::currentFrameChanged(bool newframe)
 		{
 			advanceFrame(false);
 			initFrame();
-			this->incRef();
-			this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+			if (isSysRoot)
+			{
+				this->incRef();
+				this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+			}
+			else
+				executeFrameScript();
 		}
 		else
 			this->getSystemState()->stage->addHiddenObject(this);
@@ -2156,8 +2162,13 @@ void MovieClip::currentFrameChanged(bool newframe)
 		initFrame();
 		this->incRef();
 		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(this->getInstanceWorker(),"frameConstructed")));
-		this->incRef();
-		getVm(getSystemState())->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+		if (isSysRoot)
+		{
+			this->incRef();
+			getVm(getSystemState())->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
+		}
+		else
+			executeFrameScript();
 		this->incRef();
 		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(this->getInstanceWorker(),"exitFrame")));
 	}

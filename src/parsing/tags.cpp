@@ -3185,7 +3185,12 @@ void DoABCTag::execute(RootMovieClip* root) const
 	LOG(LOG_CALLS,"ABC Exec");
 	/* currentVM will free the context*/
 	if (root->getInstanceWorker()->isPrimordial)
-		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
+	{
+		if (root == root->getSystemState()->mainClip)
+			getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
+		else
+			context->exec(false);
+	}
 	else
 	{
 		root->getInstanceWorker()->addABCContext(context);
@@ -3220,7 +3225,12 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 	// the real start of the main class is done when the symbol with id 0 is detected in SymbolClass tag
 	bool lazy = root->hasSymbolClass || ((int32_t)Flags)&1;
 	if (root->getInstanceWorker()->isPrimordial)
-		getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,lazy)));
+	{
+		if (root == root->getSystemState()->mainClip)
+			getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,lazy)));
+		else
+			context->exec(lazy);
+	}
 	else
 	{
 		root->getInstanceWorker()->addABCContext(context);
@@ -3261,7 +3271,12 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 				getVm(root->getSystemState())->addEvent(_MR(worker),_MR(Class<Event>::getInstanceS(root->getInstanceWorker(),"workerState")));
 			}
 			else
-				getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
+			{
+				if (root == root->getSystemState()->mainClip)
+					getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
+				else
+					getVm(root->getSystemState())->buildClassAndInjectBase(className.raw_buf(),_MR(root));
+			}
 		}
 		else
 		{

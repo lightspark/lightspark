@@ -6854,20 +6854,6 @@ void MovieClip::constructionComplete()
 	{
 		advanceFrame(true);
 		initFrame();
-		if (getSystemState()->getSwfVersion()>= 10 && needsActionScript3() && getParent() 
-			&& (state.explicit_FP || 
-				(getParent()->is<MovieClip>() && getParent()->as<MovieClip>()->state.explicit_FP && (getParent()->as<MovieClip>()->state.last_FP > (int)getParent()->as<MovieClip>()->state.FP))))
-		{
-			// it seems that adobe executes framescripts in a very weird way whenever
-			// the playhead is changed explicitely (gotoandstop, nextframe etc.) or the parent clip is moved backwards:
-			// - first child of new frame is declared
-			// - constructor of first child is called
-			// - inside constructor super constructor is called
-			// - this leads to calling the builtin constructor, so we end up here
-			// - the framescript of the current frame is called 
-			// - the rest of the constructor of the first child is executed
-			getParent()->executeFrameScript();
-		}
 	}
 }
 void MovieClip::afterConstruction()

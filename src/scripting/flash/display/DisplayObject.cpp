@@ -1689,15 +1689,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getLoaderInfo)
 	 * behaviour, even though the documentation states that only
 	 * the main class should have non-null loaderInfo. */
 	_NR<RootMovieClip> r=th->getRoot();
-	if (r.isNull())
-	{
-		// if this DisplayObject is not yet added to the stage we just use the mainclip
-		r = _MR(th->loadedFrom ? th->loadedFrom : wrk->getSystemState()->mainClip);
-		r->incRef();
-	}
 	if(r.isNull() || r->loaderInfo.isNull())
 	{
-		asAtomHandler::setUndefined(ret);
+		asAtomHandler::setNull(ret);
 		return;
 	}
 	

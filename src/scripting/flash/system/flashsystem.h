@@ -352,6 +352,7 @@ public:
 
 	//  TODO merge stacktrace handling with ABCVm
 	abc_limits limits;
+	std::vector<call_context*> callStack;
 	call_context* currentCallContext;
 	/* The current recursion level. Each call increases this by one,
 	 * each return from a call decreases this. */

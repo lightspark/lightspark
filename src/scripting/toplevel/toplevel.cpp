@@ -538,6 +538,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	cc->function = this;
 	cc->stackp = cc->stack;
 
+	wrk->callStack.push_back(cc);
 	/* Set the current global object, each script in each DoABCTag has its own */
 	wrk->currentCallContext = cc;
 
@@ -733,6 +734,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		break;
 	}
 	wrk->decStack(saved_cc);
+	wrk->callStack.pop_back();
 #ifndef NDEBUG
 	if (wrk->isPrimordial)
 		Log::calls_indent--;

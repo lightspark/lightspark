@@ -1434,6 +1434,10 @@ void ABCVm::handleFrontEvent()
 	}
 	catch(ASObject*& e)
 	{
+		ASWorker* wrk = e->getInstanceWorker();
+		call_context* saved_cc = wrk->callStack.back();
+		wrk->callStack.pop_back();
+		wrk->decStack(saved_cc);
 		if(e->getClass())
 			LOG(LOG_ERROR,"Unhandled ActionScript exception in VM " << e->toString());
 		else

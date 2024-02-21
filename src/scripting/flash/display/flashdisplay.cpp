@@ -6732,7 +6732,20 @@ void MovieClip::executeFrameScript()
 			closure_this->incRef();
 			asAtom obj = asAtomHandler::fromObjectNoPrimitive(closure_this);
 			ASATOM_INCREF(frameScripts[f]);
-			asAtomHandler::callFunction(frameScripts[f],getInstanceWorker(),v,obj,nullptr,0,false);
+			try
+			{
+				asAtomHandler::callFunction(frameScripts[f],getInstanceWorker(),v,obj,nullptr,0,false);
+			}
+			catch(ASObject*& e)
+			{
+				setStopped();
+				ASATOM_DECREF(frameScripts[f]);
+				ASATOM_DECREF(v);
+				closure_this->decRef();
+				this->getInstanceWorker()->rootClip->executingFrameScriptCount--;
+				inExecuteFramescript = false;
+				throw;
+			}
 			ASATOM_DECREF(frameScripts[f]);
 			ASATOM_DECREF(v);
 			closure_this->decRef();

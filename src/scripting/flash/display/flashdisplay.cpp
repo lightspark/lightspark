@@ -295,7 +295,7 @@ void LoaderInfo::sendInit()
 {
 	this->incRef();
 	auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"init");
-	if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
+	if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
 		this->addLoaderEvent(ev);
 	assert(loadStatus==STARTED);
 	loadStatus=INIT_SENT;

@@ -350,6 +350,7 @@ public:
 	Prototype* getClassPrototype(const Class_base* cls);
 	static void sinit(Class_base*);
 
+	bool explicitConstruction;
 	//  TODO merge stacktrace handling with ABCVm
 	abc_limits limits;
 	std::vector<call_context*> callStack;

@@ -6926,7 +6926,7 @@ void MovieClip::constructionComplete()
 }
 void MovieClip::afterConstruction()
 {
-	if(this->isOnStage() && getSystemState()->getSwfVersion()>= 10 && frameScripts.count(0) && state.FP == 0)
+	if(this->isOnStage() && frameScripts.count(0) && state.FP == 0)
 	{
 		// execute framescript of frame 0 after construction is completed
 		// only if state.FP was not changed during construction and script was not already executed after declaration

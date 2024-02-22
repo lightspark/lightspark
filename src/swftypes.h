@@ -1575,6 +1575,7 @@ public:
 	unsigned int next_FP;
 	bool stop_FP;
 	bool explicit_FP;
+	bool inEnterFrame;
 	bool gotoQueued;
 	bool creatingframe;
 	bool frameadvanced;
@@ -1586,6 +1587,7 @@ public:
 		next_FP = 0;
 		stop_FP = false;
 		explicit_FP = false;
+		inEnterFrame = false;
 		gotoQueued = false;
 		creatingframe = false;
 		frameadvanced = false;

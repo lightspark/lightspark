@@ -1139,11 +1139,12 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			{
 				Locker l(m_sys->getRenderThread()->mutexRendering);
 				AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
+				DisplayObject* clip = !ev->clip.isNull() ? ev->clip.getPtr() : m_sys->stage;
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
-				if (ev->clip)
-					ev->clip->advanceFrame(true);
+				if (clip->needsActionScript3())
+					clip->enterFrame();
 				else
-					m_sys->stage->advanceFrame(true);
+					clip->advanceFrame(true);
 				break;
 			}
 			case ROOTCONSTRUCTEDEVENT:

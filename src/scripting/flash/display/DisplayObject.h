@@ -277,6 +277,10 @@ public:
 	virtual _NR<Stage> getStage();
 	void setLegacyMatrix(const MATRIX& m);
 	void setFilters(const FILTERLIST& filterlist);
+
+	// If set, skip the next call to enterFrame().
+	bool skipFrame;
+	virtual void enterFrame() {}
 	virtual void advanceFrame(bool implicit) {}
 	virtual void declareFrame(bool implicit) {}
 	virtual void initFrame();

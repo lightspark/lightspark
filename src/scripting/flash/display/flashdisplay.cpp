@@ -605,6 +605,7 @@ void LoaderThread::execute()
 				local_pt.getRootMovie()->setIsInitialized(false);
 			local_pt.getRootMovie()->incRef();
 			loader->setContent(local_pt.getRootMovie());
+			local_pt.getRootMovie()->skipFrame = true;
 		}
 	}
 }
@@ -2131,6 +2132,7 @@ void MovieClip::currentFrameChanged(bool newframe)
 		advanceFrame(false);
 		return;
 	}
+	skipFrame = false;
 	bool isSysRoot = this->getInstanceWorker()->rootClip == this->getSystemState()->mainClip;
 	if (this->getInstanceWorker()->rootClip->executingFrameScriptCount && isSysRoot)
 		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
@@ -4847,6 +4849,14 @@ void Stage::AVM1AddScriptToExecute(AVM1scriptToExecute& script)
 	avm1scriptstoexecute.push_back(script);
 }
 
+void Stage::enterFrame()
+{
+	DisplayObjectContainer::enterFrame();
+	unordered_set<MovieClip*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
+	for (auto it : tmp)
+		it->enterFrame();
+}
+
 void Stage::advanceFrame(bool implicit)
 {
 	if (getSystemState()->mainClip->usesActionScript3)
@@ -6099,6 +6109,21 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DisplayObject *dS, Disp
 	tabEnabled = true;
 }
 
+void SimpleButton::enterFrame()
+{
+	if (needsActionScript3())
+	{
+		if (!hitTestState.isNull())
+			hitTestState->enterFrame();
+		if (!upState.isNull())
+			upState->enterFrame();
+		if (!downState.isNull())
+			downState->enterFrame();
+		if (!overState.isNull())
+			overState->enterFrame();
+	}
+}
+
 void SimpleButton::constructionComplete()
 {
 	reflectState(STATE_OUT);
@@ -6770,6 +6795,18 @@ void MovieClip::checkRatio(uint32_t ratio, bool inskipping)
 	lastratio=ratio;
 }
 
+void DisplayObjectContainer::enterFrame()
+{
+	std::vector<_R<DisplayObject>> list;
+	cloneDisplayList(list);
+	for (auto it = list.rbegin(); it != list.rend(); ++it)
+	{
+		auto child = *it;
+		child->skipFrame = skipFrame ? true : child->skipFrame;
+		child->enterFrame();
+	}
+}
+
 /* This is run in vm's thread context */
 void DisplayObjectContainer::advanceFrame(bool implicit)
 {
@@ -6786,6 +6823,22 @@ void DisplayObjectContainer::advanceFrame(bool implicit)
 	else
 		InteractiveObject::advanceFrame(implicit);
 }		
+
+void MovieClip::enterFrame()
+{
+	DisplayObjectContainer::enterFrame();
+	if (skipFrame)
+	{
+		skipFrame = false;
+		return;
+	}
+	if (needsActionScript3() && !state.stop_FP)
+	{
+		state.inEnterFrame = true;
+		advanceFrame(true);
+		state.inEnterFrame = false;
+	}
+}
 
 /* Update state.last_FP. If enough frames
  * are available, set state.FP to state.next_FP.
@@ -6812,7 +6865,7 @@ void MovieClip::advanceFrame(bool implicit)
 	   || (!getClass()->isSubClass(Class<MovieClip>::getClass(getSystemState()))
 		   && (needsActionScript3() || !getClass()->isSubClass(Class<AVM1MovieClip>::getClass(getSystemState()))))))
 	{
-		if (int(state.FP) >= state.last_FP) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
+		if (int(state.FP) >= state.last_FP && !state.inEnterFrame) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
 			DisplayObjectContainer::advanceFrame(true);
 		declareFrame(implicit);
 		return;
@@ -6847,7 +6900,7 @@ void MovieClip::advanceFrame(bool implicit)
 			state.next_FP = 0;
 	}
 	// ensure the legacy objects of the current frame are created
-	if (int(state.FP) >= state.last_FP) // no need to advance frame if we are moving backwards in the timeline, as the timeline will be rebuild anyway
+	if (int(state.FP) >= state.last_FP && !state.inEnterFrame) // no need to advance frame if we are moving backwards in the timeline, as the timeline will be rebuild anyway
 		DisplayObjectContainer::advanceFrame(true);
 	
 	declareFrame(implicit);

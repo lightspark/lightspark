@@ -6932,6 +6932,8 @@ void MovieClip::afterConstruction()
 		// only if state.FP was not changed during construction and script was not already executed after declaration
 		this->executeFrameScript();
 	}
+	else if (getParent() == nullptr || !isOnStage())
+		getSystemState()->stage->addHiddenObject(this);
 }
 
 Frame *MovieClip::getCurrentFrame()

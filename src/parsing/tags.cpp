@@ -3273,16 +3273,13 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 				getVm(root->getSystemState())->addEvent(_MR(worker),_MR(Class<Event>::getInstanceS(root->getInstanceWorker(),"workerState")));
 			}
 			else
-			{
-				if (root == root->getSystemState()->mainClip)
-					getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
-				else
-					getVm(root->getSystemState())->buildClassAndInjectBase(className.raw_buf(),_MR(root));
-			}
+				getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
 		}
 		else
 		{
-			root->addBinding(className, root->dictionaryLookup(Tags[i]));
+			DictionaryTag* tag = root->dictionaryLookup(Tags[i]);
+			root->addBinding(className, tag);
+			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(tag,className)));
 		}
 	}
 }

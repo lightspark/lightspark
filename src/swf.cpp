@@ -2158,13 +2158,19 @@ void RootMovieClip::constructionComplete()
 	if (!isVmThread() && !getInstanceWorker()->isPrimordial)
 	{
 		this->incRef();
-		getVm(getSystemState())->prependEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this))));
+		getVm(getSystemState())->addEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this))));
 		return;
 	}
 	getSystemState()->stage->AVM1AddDisplayObject(this);
 	if (this!=getSystemState()->mainClip)
 	{
-		MovieClip::constructionComplete();
+		if (!isVmThread())
+		{
+			this->incRef();
+			getVm(getSystemState())->addEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this))));
+		}
+		else
+			MovieClip::constructionComplete();
 		return;
 	}
 	MovieClip::constructionComplete();

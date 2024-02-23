@@ -230,7 +230,7 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	needsTextureRecalculation(true),needsCachedBitmapRecalculation(true),textureRecalculationSkippable(false),
 	avm1mouselistenercount(0),avm1framelistenercount(0),
 	onStage(false),visible(true),
-	mask(),invalidateQueueNext(),loaderInfo(),cachedAsBitmapOf(nullptr),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),skipFrame(false),
+	mask(),invalidateQueueNext(),loaderInfo(),cachedAsBitmapOf(nullptr),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
 	name(BUILTIN_STRINGS::EMPTY)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -2137,6 +2137,7 @@ bool DisplayObject::needsActionScript3() const
 void DisplayObject::constructionComplete()
 {
 	skipFrame |= needsActionScript3() && getInstanceWorker()->explicitConstruction;
+	placedByActionScript |= needsActionScript3() && getInstanceWorker()->explicitConstruction;
 	RELEASE_WRITE(constructed,true);
 }
 void DisplayObject::afterConstruction()

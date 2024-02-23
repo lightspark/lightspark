@@ -606,6 +606,7 @@ void LoaderThread::execute()
 			local_pt.getRootMovie()->incRef();
 			loader->setContent(local_pt.getRootMovie());
 			local_pt.getRootMovie()->skipFrame = true;
+			local_pt.getRootMovie()->placedByActionScript = true;
 		}
 	}
 }

@@ -278,6 +278,7 @@ public:
 	void setLegacyMatrix(const MATRIX& m);
 	void setFilters(const FILTERLIST& filterlist);
 
+	bool placedByActionScript;
 	// If set, skip the next call to enterFrame().
 	bool skipFrame;
 	virtual void enterFrame() {}

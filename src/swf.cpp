@@ -2741,7 +2741,7 @@ void RootMovieClip::initFrame()
 void RootMovieClip::advanceFrame(bool implicit)
 {
 	/* We have to wait until enough frames are available */
-	if(getFramesLoaded() == 0 || (state.next_FP>=(uint32_t)getFramesLoaded() && !hasFinishedLoading()))
+	if(this == getSystemState()->mainClip && (getFramesLoaded() == 0 || (state.next_FP>=(uint32_t)getFramesLoaded() && !hasFinishedLoading())))
 	{
 		waitingforparser=true;
 		return;

@@ -2136,7 +2136,7 @@ bool DisplayObject::needsActionScript3() const
 
 void DisplayObject::constructionComplete()
 {
-	skipFrame = needsActionScript3() && getInstanceWorker()->explicitConstruction;
+	skipFrame |= needsActionScript3() && getInstanceWorker()->explicitConstruction;
 	RELEASE_WRITE(constructed,true);
 }
 void DisplayObject::afterConstruction()

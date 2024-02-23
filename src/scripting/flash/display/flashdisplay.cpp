@@ -4799,6 +4799,21 @@ void Stage::removeHiddenObject(MovieClip* o)
 	}
 }
 
+void Stage::cleanupDeadHiddenObjects()
+{
+	auto it = hiddenobjects.begin();
+	while (it != hiddenobjects.end())
+	{
+		MovieClip* clip = *it;
+		// NOTE: Objects that are removed by ActionScript are never
+		//       removed from the hidden object list.
+		if (!clip->getStage().isNull() && !clip->placedByActionScript)
+			it = hiddenobjects.erase(it);
+		else
+			++it;
+	}
+}
+
 void Stage::AVM1AddDisplayObject(DisplayObject* dobj)
 {
 	if (!hasAVM1Clips)

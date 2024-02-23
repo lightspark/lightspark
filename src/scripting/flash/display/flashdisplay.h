@@ -854,6 +854,7 @@ public:
 	void checkResetFocusTarget(InteractiveObject* removedtarget);
 	void addHiddenObject(MovieClip* o);
 	void removeHiddenObject(MovieClip* o);
+	void cleanupDeadHiddenObjects();
 	void enterFrame() override;
 	void advanceFrame(bool implicit) override;
 	void initFrame() override;

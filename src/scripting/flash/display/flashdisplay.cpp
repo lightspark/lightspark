@@ -6140,10 +6140,10 @@ void SimpleButton::enterFrame()
 	}
 }
 
-void SimpleButton::constructionComplete()
+void SimpleButton::constructionComplete(bool _explicit)
 {
 	reflectState(STATE_OUT);
-	DisplayObjectContainer::constructionComplete();
+	DisplayObjectContainer::constructionComplete(_explicit);
 }
 void SimpleButton::finalize()
 {
@@ -6926,9 +6926,9 @@ void MovieClip::advanceFrame(bool implicit)
 	markedForLegacyDeletion=false;
 }
 
-void MovieClip::constructionComplete()
+void MovieClip::constructionComplete(bool _explicit)
 {
-	Sprite::constructionComplete();
+	Sprite::constructionComplete(_explicit);
 
 	AVM1HandleConstruction();
 	/* If this object was 'new'ed from AS code, the first
@@ -6940,8 +6940,9 @@ void MovieClip::constructionComplete()
 		initFrame();
 	}
 }
-void MovieClip::afterConstruction()
+void MovieClip::afterConstruction(bool _explicit)
 {
+	DisplayObject::afterConstruction(_explicit);
 	if(this->isOnStage() && frameScripts.count(0) && state.FP == 0)
 	{
 		// execute framescript of frame 0 after construction is completed

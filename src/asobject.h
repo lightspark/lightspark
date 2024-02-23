@@ -1280,11 +1280,11 @@ public:
 	virtual void nextValue(asAtom &ret, uint32_t index);
 
 	//Called when the object construction is completed. Used by MovieClip implementation
-	inline virtual void constructionComplete()
+	inline virtual void constructionComplete(bool _explicit = false)
 	{
 	}
 	//Called after the object Actionscript constructor was executed. Used by MovieClip implementation
-	inline virtual void afterConstruction()
+	inline virtual void afterConstruction(bool _explicit = false)
 	{
 	}
 

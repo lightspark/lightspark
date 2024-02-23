@@ -254,7 +254,7 @@ public:
 	SimpleButton(ASWorker* wrk,Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
 	void enterFrame() override;
-	void constructionComplete() override;
+	void constructionComplete(bool _explicit = false) override;
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
@@ -701,8 +701,8 @@ protected:
 	ASPROPERTY_GETTER_SETTER(bool, enabled);
 public:
 	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
-	void constructionComplete() override;
-	void afterConstruction() override;
+	void constructionComplete(bool _explicit = false) override;
+	void afterConstruction(bool _explicit = false) override;
 	RunState state;
 	_NR<AVM1MovieClipLoader> avm1loader;
 	Frame* getCurrentFrame();

@@ -47,7 +47,7 @@ public:
 		subtype = SUBTYPE_AVM1MOVIECLIP;
 		name=nameID;
 	}
-	void afterConstruction() override;
+	void afterConstruction(bool _explicit = false) override;
 	bool destruct() override;
 	void prepareShutdown() override;
 	static void sinit(Class_base* c);

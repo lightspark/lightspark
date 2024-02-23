@@ -524,8 +524,9 @@ class RootConstructedEvent: public Event
 friend class ABCVm;
 private:
 	_NR<DisplayObject> clip;
+	bool _explicit;
 public:
-	RootConstructedEvent(_NR<DisplayObject> m): Event(nullptr,nullptr,"RootConstructedEvent"),clip(m) {}
+	RootConstructedEvent(_NR<DisplayObject> m, bool explicit_ = false): Event(nullptr,nullptr,"RootConstructedEvent"),clip(m),_explicit(explicit_) {}
 	EVENT_TYPE getEventType() const override { return ROOTCONSTRUCTEDEVENT; }
 };
 class LocalConnectionEvent: public Event

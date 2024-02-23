@@ -105,8 +105,8 @@ public:
 	void prepareShutdown() override;
 	bool hasFinishedLoading() override { return ACQUIRE_READ(finishedLoading); }
 	bool isWaitingForParser() { return waitingforparser; }
-	void constructionComplete() override;
-	void afterConstruction() override;
+	void constructionComplete(bool _explicit = false) override;
+	void afterConstruction(bool _explicit = false) override;
 	bool needsActionScript3() const override { return this->usesActionScript3;}
 	ParseThread* parsethread;
 	uint32_t version;

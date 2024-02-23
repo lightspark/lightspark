@@ -2134,13 +2134,13 @@ bool DisplayObject::needsActionScript3() const
 	return this->loadedFrom && this->loadedFrom->usesActionScript3;
 }
 
-void DisplayObject::constructionComplete()
+void DisplayObject::constructionComplete(bool _explicit)
 {
-	skipFrame |= needsActionScript3() && getInstanceWorker()->explicitConstruction;
-	placedByActionScript |= needsActionScript3() && getInstanceWorker()->explicitConstruction;
+	skipFrame |= needsActionScript3() && _explicit;
+	placedByActionScript |= needsActionScript3() && _explicit;
 	RELEASE_WRITE(constructed,true);
 }
-void DisplayObject::afterConstruction()
+void DisplayObject::afterConstruction(bool _explicit)
 {
 //	hasChanged=true;
 //	needsTextureRecalculation=true;

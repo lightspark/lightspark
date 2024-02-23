@@ -155,8 +155,8 @@ public:
 	void setBlendMode(UI8 blendmode);
 	AS_BLENDMODE getBlendMode() const { return blendMode; }
 	static bool isShaderBlendMode(AS_BLENDMODE bl);
-	void constructionComplete() override;
-	void afterConstruction() override;
+	void constructionComplete(bool _explicit = false) override;
+	void afterConstruction(bool _explicit = false) override;
 	void prepareDestruction()
 	{
 		destroyContents();

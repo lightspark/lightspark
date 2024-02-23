@@ -2151,14 +2151,14 @@ void RootMovieClip::commitFrame(bool another)
 	}
 }
 
-void RootMovieClip::constructionComplete()
+void RootMovieClip::constructionComplete(bool _explicit)
 {
 	if(isConstructed())
 		return;
 	if (!isVmThread() && !getInstanceWorker()->isPrimordial)
 	{
 		this->incRef();
-		getVm(getSystemState())->addEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this))));
+		getVm(getSystemState())->prependEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this), _explicit)));
 		return;
 	}
 	getSystemState()->stage->AVM1AddDisplayObject(this);
@@ -2187,9 +2187,9 @@ void RootMovieClip::constructionComplete()
 		loaderInfo->setComplete();
 	getSystemState()->addTick(1000/frameRate,getSystemState());
 }
-void RootMovieClip::afterConstruction()
+void RootMovieClip::afterConstruction(bool _explicit)
 {
-	DisplayObject::afterConstruction();
+	DisplayObject::afterConstruction(_explicit);
 }
 void RootMovieClip::revertFrame()
 {

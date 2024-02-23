@@ -28,9 +28,9 @@
 using namespace std;
 using namespace lightspark;
 
-void AVM1MovieClip::afterConstruction()
+void AVM1MovieClip::afterConstruction(bool _explicit)
 {
-	MovieClip::afterConstruction();
+	MovieClip::afterConstruction(_explicit);
 	getSystemState()->stage->AVM1AddEventListener(this);
 }
 

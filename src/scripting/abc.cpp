@@ -1151,7 +1151,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			{
 				RootConstructedEvent* ev=static_cast<RootConstructedEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"RootConstructedEvent");
-				ev->clip->constructionComplete();
+				ev->clip->constructionComplete(ev->_explicit);
 				break;
 			}
 			case LOCALCONNECTIONEVENT:

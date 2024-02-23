@@ -1502,7 +1502,7 @@ void Class_base::setConstructor(IFunction* c)
 	constructor=c;
 }
 
-void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int argslen, bool buildAndLink)
+void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int argslen, bool buildAndLink, bool _explicit)
 {
 	if (!asAtomHandler::isObject(target))
 		return;
@@ -1533,9 +1533,9 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 	{
 		// Tell the object that the constructor of the builtin object has been called
 		if (this->isBuiltin())
-			asAtomHandler::getObjectNoCheck(target)->constructionComplete();
+			asAtomHandler::getObjectNoCheck(target)->constructionComplete(_explicit);
 		if(buildAndLink)
-			asAtomHandler::getObjectNoCheck(target)->afterConstruction();
+			asAtomHandler::getObjectNoCheck(target)->afterConstruction(_explicit);
 	}
 	else
 		t->decRef();

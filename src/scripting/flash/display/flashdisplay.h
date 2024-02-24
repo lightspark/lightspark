@@ -818,7 +818,7 @@ private:
 	// list of objects that are not added to stage, but need to be handled when first frame is executed
 	// currently used when Loader contents are added and the Loader is not on stage
 	// or a MovieClip is not on stage but set to "play" from AS3 code
-	unordered_set<MovieClip*> hiddenobjects;
+	unordered_set<DisplayObject*> hiddenobjects;
 	vector<ASObject*> avm1KeyboardListeners;
 	vector<ASObject*> avm1MouseListeners;
 	vector<ASObject*> avm1EventListeners;
@@ -853,8 +853,8 @@ public:
 	_NR<InteractiveObject> getFocusTarget();
 	void setFocusTarget(_NR<InteractiveObject> focus);
 	void checkResetFocusTarget(InteractiveObject* removedtarget);
-	void addHiddenObject(MovieClip* o);
-	void removeHiddenObject(MovieClip* o);
+	void addHiddenObject(DisplayObject* o);
+	void removeHiddenObject(DisplayObject* o);
 	void cleanupDeadHiddenObjects();
 	void enterFrame() override;
 	void advanceFrame(bool implicit) override;

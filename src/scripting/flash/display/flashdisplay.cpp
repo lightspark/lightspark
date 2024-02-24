@@ -4778,7 +4778,7 @@ void Stage::checkResetFocusTarget(InteractiveObject* removedtarget)
 		focus=NullRef;
 }
 
-void Stage::addHiddenObject(MovieClip* o)
+void Stage::addHiddenObject(DisplayObject* o)
 {
 	if (!o->getInstanceWorker()->isPrimordial)
 		return;
@@ -4789,20 +4789,17 @@ void Stage::addHiddenObject(MovieClip* o)
 	DisplayObject* p=o->getParent();
 	while (p)
 	{
-		if (o->is<MovieClip>())
-		{
-			auto itp = hiddenobjects.find(p->as<MovieClip>());
-			if (itp != hiddenobjects.end())
-				return;
-			p=p->getParent();
-		}
+		auto itp = hiddenobjects.find(p);
+		if (itp != hiddenobjects.end())
+			return;
+		p=p->getParent();
 	}
 	o->incRef();
 	o->addStoredMember();
 	hiddenobjects.insert(o);
 }
 
-void Stage::removeHiddenObject(MovieClip* o)
+void Stage::removeHiddenObject(DisplayObject* o)
 {
 	auto it = hiddenobjects.find(o);
 	if (it != hiddenobjects.end())
@@ -4817,10 +4814,10 @@ void Stage::cleanupDeadHiddenObjects()
 	auto it = hiddenobjects.begin();
 	while (it != hiddenobjects.end())
 	{
-		MovieClip* clip = *it;
+		DisplayObject* clip = *it;
 		// NOTE: Objects that are removed by ActionScript are never
 		//       removed from the hidden object list.
-		if (!clip->getStage().isNull() && !clip->placedByActionScript)
+		if (clip->getParent() != nullptr && !clip->placedByActionScript)
 			it = hiddenobjects.erase(it);
 		else
 			++it;
@@ -4881,7 +4878,7 @@ void Stage::AVM1AddScriptToExecute(AVM1scriptToExecute& script)
 void Stage::enterFrame()
 {
 	DisplayObjectContainer::enterFrame();
-	unordered_set<MovieClip*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
+	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
 	for (auto it : tmp)
 		it->enterFrame();
 }
@@ -4891,7 +4888,7 @@ void Stage::advanceFrame(bool implicit)
 	if (getSystemState()->mainClip->usesActionScript3)
 	{
 		DisplayObjectContainer::advanceFrame(implicit);
-		unordered_set<MovieClip*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
+		unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
 		auto it = tmp.begin();
 		while (it != tmp.end())
 		{
@@ -4956,7 +4953,7 @@ void Stage::advanceFrame(bool implicit)
 void Stage::initFrame()
 {
 	DisplayObjectContainer::initFrame();
-	unordered_set<MovieClip*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
+	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
 	auto it = tmp.begin();
 	while (it != tmp.end())
 	{
@@ -4968,7 +4965,7 @@ void Stage::initFrame()
 void Stage::executeFrameScript()
 {
 	DisplayObjectContainer::executeFrameScript();
-	unordered_set<MovieClip*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
+	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
 	auto it = tmp.begin();
 	while (it != tmp.end())
 	{
@@ -6956,8 +6953,6 @@ void MovieClip::constructionComplete(bool _explicit)
 void MovieClip::beforeConstruction(bool _explicit)
 {
 	DisplayObject::beforeConstruction(_explicit);
-	if (getParent() == nullptr || !isOnStage())
-		getSystemState()->stage->addHiddenObject(this);
 }
 void MovieClip::afterConstruction(bool _explicit)
 {

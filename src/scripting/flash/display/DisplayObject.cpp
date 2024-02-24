@@ -2135,6 +2135,8 @@ void DisplayObject::beforeConstruction(bool _explicit)
 {
 	skipFrame |= needsActionScript3() && _explicit;
 	placedByActionScript |= needsActionScript3() && _explicit;
+	if (needsActionScript3() && getParent() == nullptr)
+		getSystemState()->stage->addHiddenObject(this);
 }
 void DisplayObject::afterConstruction(bool _explicit)
 {

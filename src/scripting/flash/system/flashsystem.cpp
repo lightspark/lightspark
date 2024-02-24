@@ -893,7 +893,7 @@ extern uint32_t asClassCount;
 ASWorker::ASWorker(SystemState* s):
 	EventDispatcher(this,nullptr),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
-	freelist(new asfreelist[asClassCount]),explicitConstruction(false),currentCallContext(nullptr),cur_recursion(0),isPrimordial(true),state("running")
+	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(true),state("running")
 {
 	subtype = SUBTYPE_WORKER;
 	setSystemState(s);
@@ -909,7 +909,7 @@ ASWorker::ASWorker(SystemState* s):
 ASWorker::ASWorker(Class_base* c):
 	EventDispatcher(c->getSystemState()->worker,c),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
-	freelist(new asfreelist[asClassCount]),explicitConstruction(false),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
+	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
 {
 	subtype = SUBTYPE_WORKER;
 	// TODO: it seems that AIR applications have a higher default value for max_recursion
@@ -923,7 +923,7 @@ ASWorker::ASWorker(Class_base* c):
 ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 	EventDispatcher(wrk,c),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
-	freelist(new asfreelist[asClassCount]),explicitConstruction(false),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
+	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new")
 {
 	subtype = SUBTYPE_WORKER;
 	// TODO: it seems that AIR applications have a higher default value for max_recursion

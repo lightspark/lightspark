@@ -1086,6 +1086,7 @@ void ABCVm::abc_sf64_local_local(call_context* context)
 }
 void ABCVm::construct_noargs_intern(call_context* context,asAtom& ret,asAtom& obj)
 {
+	context->explicitConstruction = true;
 	LOG_CALL("Constructing");
 
 	switch(asAtomHandler::getObjectType(obj))
@@ -1104,12 +1105,14 @@ void ABCVm::construct_noargs_intern(call_context* context,asAtom& ret,asAtom& ob
 
 		default:
 		{
+			context->explicitConstruction = false;
 			createError<TypeError>(context->worker,kConstructOfNonFunctionError);
 		}
 	}
 	if (asAtomHandler::isObject(ret))
 		asAtomHandler::getObject(ret)->setConstructorCallComplete();
 	LOG_CALL("End of construct_noargs " << asAtomHandler::toDebugString(ret));
+	context->explicitConstruction = false;
 }
 void ABCVm::abc_construct_constant(call_context* context)
 {
@@ -1820,7 +1823,7 @@ void ABCVm::abc_constructsuper_constant(call_context* context)
 {
 	LOG_CALL( "constructSuper_c ");
 	asAtom obj=*context->exec_pos->arg1_constant;
-	context->function->inClass->super->handleConstruction(obj,nullptr, 0, false);
+	context->function->inClass->super->handleConstruction(obj,nullptr, 0, false, context->explicitConstruction);
 	LOG_CALL("End super construct "<<asAtomHandler::toDebugString(obj));
 	++(context->exec_pos);
 }
@@ -1828,12 +1831,13 @@ void ABCVm::abc_constructsuper_local(call_context* context)
 {
 	LOG_CALL( "constructSuper_l ");
 	asAtom obj= CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	context->function->inClass->super->handleConstruction(obj,nullptr, 0, false);
+	context->function->inClass->super->handleConstruction(obj,nullptr, 0, false, context->explicitConstruction);
 	LOG_CALL("End super construct "<<asAtomHandler::toDebugString(obj));
 	++(context->exec_pos);
 }
 void ABCVm::constructpropnoargs_intern(call_context* context,asAtom& ret,asAtom& obj,multiname* name, ASObject* constructor)
 {
+	context->explicitConstruction = true;
 	asAtom o=asAtomHandler::invalidAtom;
 	if (constructor)
 		o = asAtomHandler::fromObjectNoPrimitive(constructor);
@@ -1842,6 +1846,7 @@ void ABCVm::constructpropnoargs_intern(call_context* context,asAtom& ret,asAtom&
 
 	if(asAtomHandler::isInvalid(o))
 	{
+		context->explicitConstruction = false;
 		if (asAtomHandler::is<Undefined>(obj))
 			createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		else if (asAtomHandler::isPrimitive(obj))
@@ -1864,22 +1869,26 @@ void ABCVm::constructpropnoargs_intern(call_context* context,asAtom& ret,asAtom&
 		}
 		else if (asAtomHandler::isTemplate(o))
 		{
+			context->explicitConstruction = false;
 			createError<TypeError>(context->worker,kConstructOfNonFunctionError);
 			return;
 		}
 		else
 		{
+			context->explicitConstruction = false;
 			createError<TypeError>(context->worker,kNotConstructorError);
 			return;
 		}
 	}
 	catch(ASObject* exc)
 	{
+		context->explicitConstruction = false;
 		LOG_CALL("Exception during object construction. Returning Undefined");
 		//Handle eventual exceptions from the constructor, to fix the stack
 		RUNTIME_STACK_PUSH(context,obj);
 		throw;
 	}
+	context->explicitConstruction = false;
 	ASATOM_DECREF(o);
 	if (asAtomHandler::isObject(ret))
 		asAtomHandler::getObjectNoCheck(ret)->setConstructorCallComplete();

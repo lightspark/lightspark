@@ -560,11 +560,11 @@ void ABCVm::abc_call(call_context* context)
 }
 void ABCVm::abc_construct(call_context* context)
 {
-	context->worker->explicitConstruction = true;
+	context->explicitConstruction = true;
 	uint32_t t = context->exec_pos->arg3_uint;
 	construct(context,t);
 	++(context->exec_pos);
-	context->worker->explicitConstruction = false;
+	context->explicitConstruction = false;
 }
 void ABCVm::abc_callMethod(call_context* context)
 {
@@ -612,11 +612,6 @@ void ABCVm::abc_constructsuper(call_context* context)
 	uint32_t t = context->exec_pos->arg3_uint;
 	constructSuper(context,t);
 	++(context->exec_pos);
-	bool inExplicitConstructor = context->worker->explicitConstruction;
-	if (!inExplicitConstructor)
-		context->worker->explicitConstruction = true;
-	if (!inExplicitConstructor)
-		context->worker->explicitConstruction = false;
 }
 void ABCVm::abc_constructprop(call_context* context)
 {

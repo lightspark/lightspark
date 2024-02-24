@@ -537,6 +537,8 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	cc->defaultNamespaceUri = saved_cc ? saved_cc->defaultNamespaceUri : (uint32_t)BUILTIN_STRINGS::EMPTY;
 	cc->function = this;
 	cc->stackp = cc->stack;
+	if (wrk->currentCallContext != nullptr)
+		cc->explicitConstruction = wrk->currentCallContext->explicitConstruction;
 
 	wrk->callStack.push_back(cc);
 	/* Set the current global object, each script in each DoABCTag has its own */

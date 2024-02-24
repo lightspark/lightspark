@@ -999,11 +999,11 @@ asAtom ABCVm::constructGenericType_intern(ABCContext* context, ASObject* obj, in
 void ABCVm::constructGenericType(call_context* th, int m)
 {
 
-	th->worker->explicitConstruction = true;
+	th->explicitConstruction = true;
 	LOG_CALL( "constructGenericType " << m);
 	if (m != 1)
 	{
-		th->worker->explicitConstruction = false;
+		th->explicitConstruction = false;
 		createError<TypeError>(th->worker,kWrongTypeArgCountError, "function", "1", Integer::toString(m));
 		return;
 	}
@@ -1019,13 +1019,13 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	RUNTIME_STACK_PUSH(th,res);
 	if (asAtomHandler::isInvalid(res))
 	{
-		th->worker->explicitConstruction = false;
+		th->explicitConstruction = false;
 		createError<TypeError>(th->worker,0,"Wrong type in applytype");
 		return;
 	}
 	if (asAtomHandler::isUndefined(res))
 	{
-		th->worker->explicitConstruction = false;
+		th->explicitConstruction = false;
 		return;
 	}
 
@@ -1042,7 +1042,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 	QName qname = asAtomHandler::as<Class_base>(res)->class_name;
 	if (!global->hasPropertyByMultiname(qname, false, false,th->worker))
 		global->setVariableAtomByQName(global->getSystemState()->getStringFromUniqueId(qname.nameId),nsNameAndKind(global->getSystemState(),qname.nsStringId,NAMESPACE),res,DECLARED_TRAIT);
-	th->worker->explicitConstruction = false;
+	th->explicitConstruction = false;
 }
 
 ASObject* ABCVm::typeOf(ASObject* obj)
@@ -2404,7 +2404,7 @@ bool ABCVm::ifFalse(ASObject* obj1)
 
 void ABCVm::constructProp(call_context* th, int n, int m)
 {
-	th->worker->explicitConstruction = true;
+	th->explicitConstruction = true;
 	asAtom* args=g_newa(asAtom, m);
 	for(int i=0;i<m;i++)
 	{
@@ -2448,7 +2448,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	}
 	else if (asAtomHandler::isTemplate(o))
 	{
-		th->worker->explicitConstruction = false;
+		th->explicitConstruction = false;
 		for(int i=0;i<m;++i)
 			ASATOM_DECREF(args[i]);
 		ASATOM_DECREF(o);
@@ -2458,7 +2458,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	}
 	else
 	{
-		th->worker->explicitConstruction = false;
+		th->explicitConstruction = false;
 		for(int i=0;i<m;++i)
 			ASATOM_DECREF(args[i]);
 		ASATOM_DECREF(o);
@@ -2473,7 +2473,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	ASATOM_DECREF(o);
 	ASATOM_DECREF(obj);
 	LOG_CALL("End of constructing " << asAtomHandler::toDebugString(ret));
-	th->worker->explicitConstruction = false;
+	th->explicitConstruction = false;
 }
 
 bool ABCVm::hasNext2(call_context* th, int n, int m)
@@ -2500,7 +2500,7 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 
 void ABCVm::newObject(call_context* th, int n)
 {
-	th->worker->explicitConstruction = true;
+	th->explicitConstruction = true;
 	LOG_CALL("newObject " << n);
 	ASObject* ret=Class<ASObject>::getInstanceS(th->worker);
 	//Duplicated keys overwrite the previous value
@@ -2516,7 +2516,7 @@ void ABCVm::newObject(call_context* th, int n)
 	}
 
 	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(ret));
-	th->worker->explicitConstruction = false;
+	th->explicitConstruction = false;
 }
 
 void ABCVm::getDescendants(call_context* th, int n)
@@ -3158,7 +3158,7 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 
 void ABCVm::newArray(call_context* th, int n)
 {
-	th->worker->explicitConstruction = true;
+	th->explicitConstruction = true;
 	LOG_CALL( "newArray " << n );
 	Array* ret=Class<Array>::getInstanceSNoArgs(th->worker);
 	ret->resize(n);
@@ -3169,7 +3169,7 @@ void ABCVm::newArray(call_context* th, int n)
 	}
 
 	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(ret));
-	th->worker->explicitConstruction = false;
+	th->explicitConstruction = false;
 }
 
 ASObject* ABCVm::esc_xattr(ASObject* o)

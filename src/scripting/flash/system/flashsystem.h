@@ -350,7 +350,7 @@ public:
 	Prototype* getClassPrototype(const Class_base* cls);
 	static void sinit(Class_base*);
 
-	bool explicitConstruction;
+	bool isExplicitlyConstructed() const { return currentCallContext != nullptr && currentCallContext->explicitConstruction; }
 	//  TODO merge stacktrace handling with ABCVm
 	abc_limits limits;
 	std::vector<call_context*> callStack;

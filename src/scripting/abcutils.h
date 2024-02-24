@@ -67,6 +67,7 @@ struct call_context
 	SyntheticFunction* function;
 	SystemState* sys;
 	class ASWorker* worker;
+	bool explicitConstruction;
 	/* Current namespace set by 'default xml namespace = ...'.
 	 * Defaults to empty string according to ECMA-357 13.1.1.1
 	 */
@@ -78,7 +79,7 @@ struct call_context
 		max_stackp(nullptr),
 		parent_scope_stack(nullptr),curr_scope_stack(0),argarrayposition(-1),
 		scope_stack(nullptr),scope_stack_dynamic(nullptr),localslots(nullptr),mi(_mi),
-		function(nullptr),sys(nullptr),worker(nullptr),defaultNamespaceUri(0),exceptionthrown(nullptr)
+		function(nullptr),sys(nullptr),worker(nullptr),explicitConstruction(false),defaultNamespaceUri(0),exceptionthrown(nullptr)
 	{
 	}
 	static void handleError(int errorcode);

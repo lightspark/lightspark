@@ -700,7 +700,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==this->url.getHostname() || secDomain)
 	{
 		//Same domain
-		_NR<ApplicationDomain> parentDomain = currentRoot->applicationDomain;
+		_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getInstanceWorker()->currentCallContext);
 		//Support for LoaderContext
 		if(!context || context->applicationDomain.isNull())
 			this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getInstanceWorker(),parentDomain));

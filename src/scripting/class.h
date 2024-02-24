@@ -178,7 +178,7 @@ protected:
 		ret = asAtomHandler::fromObject(o);
 		asAtomHandler::resetCached(ret);
 		if(construct)
-			handleConstruction(ret,args,argslen,true);
+			handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed());
 	}
 public:
 	template<typename... Args>

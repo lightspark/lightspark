@@ -138,7 +138,7 @@ void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, a
 		}
 	}
 	if(construct)
-		handleConstruction(ret,args,argslen,true);
+		handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed());
 }
 void Class_inherit::recursiveBuild(ASObject* target) const
 {
@@ -344,7 +344,7 @@ void Class<ASObject>::getInstance(ASWorker* worker, asAtom& ret, bool construct,
 		realClass=this;
 	ret=asAtomHandler::fromObjectNoPrimitive(new (realClass->memoryAccount) ASObject(worker,realClass));
 	if(construct)
-		handleConstruction(ret,args,argslen,true);
+		handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed());
 }
 Class<ASObject>* Class<ASObject>::getClass(SystemState* sys)
 {

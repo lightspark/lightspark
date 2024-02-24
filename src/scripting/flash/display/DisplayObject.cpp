@@ -2136,9 +2136,12 @@ bool DisplayObject::needsActionScript3() const
 
 void DisplayObject::constructionComplete(bool _explicit)
 {
+	RELEASE_WRITE(constructed,true);
+}
+void DisplayObject::beforeConstruction(bool _explicit)
+{
 	skipFrame |= needsActionScript3() && _explicit;
 	placedByActionScript |= needsActionScript3() && _explicit;
-	RELEASE_WRITE(constructed,true);
 }
 void DisplayObject::afterConstruction(bool _explicit)
 {

@@ -1512,6 +1512,12 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 		setupDeclaredTraits(t);
 	}
 
+	if (asAtomHandler::isObject(target))
+	{
+		if (buildAndLink)
+			asAtomHandler::getObjectNoCheck(target)->beforeConstruction(_explicit);
+	}
+	
 	if(constructor)
 	{
 		LOG_CALL("handleConstruction for "<<asAtomHandler::toDebugString(target));

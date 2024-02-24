@@ -6940,6 +6940,12 @@ void MovieClip::constructionComplete(bool _explicit)
 		initFrame();
 	}
 }
+void MovieClip::beforeConstruction(bool _explicit)
+{
+	DisplayObject::beforeConstruction(_explicit);
+	if (getParent() == nullptr || !isOnStage())
+		getSystemState()->stage->addHiddenObject(this);
+}
 void MovieClip::afterConstruction(bool _explicit)
 {
 	DisplayObject::afterConstruction(_explicit);
@@ -6949,8 +6955,6 @@ void MovieClip::afterConstruction(bool _explicit)
 		// only if state.FP was not changed during construction and script was not already executed after declaration
 		this->executeFrameScript();
 	}
-	else if (getParent() == nullptr || !isOnStage())
-		getSystemState()->stage->addHiddenObject(this);
 }
 
 Frame *MovieClip::getCurrentFrame()

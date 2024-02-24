@@ -1283,6 +1283,10 @@ public:
 	inline virtual void constructionComplete(bool _explicit = false)
 	{
 	}
+	// Called before the object's ActionScript constructor is executed. Mainly used by MovieClip, and DisplayObject.
+	inline virtual void beforeConstruction(bool _explicit = false)
+	{
+	}
 	//Called after the object Actionscript constructor was executed. Used by MovieClip implementation
 	inline virtual void afterConstruction(bool _explicit = false)
 	{

@@ -702,6 +702,7 @@ protected:
 public:
 	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
 	void constructionComplete(bool _explicit = false) override;
+	void beforeConstruction(bool _explicit = false) override;
 	void afterConstruction(bool _explicit = false) override;
 	RunState state;
 	_NR<AVM1MovieClipLoader> avm1loader;

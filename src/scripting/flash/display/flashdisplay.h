@@ -690,6 +690,7 @@ private:
 	uint32_t fromDefineSpriteTag;
 	uint32_t lastFrameScriptExecuted;
 	uint32_t lastratio;
+	bool initializingFrame;
 	bool inExecuteFramescript;
 	bool inAVM1Attachment;
 	bool isAVM1Loaded;

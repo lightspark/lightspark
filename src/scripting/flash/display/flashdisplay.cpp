@@ -1839,7 +1839,7 @@ void MovieClip::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 
-MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
+MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),initializingFrame(false),inExecuteFramescript(false)
   ,inAVM1Attachment(false),isAVM1Loaded(false)
   ,actions(nullptr),totalFrames_unreliable(1),enabled(true)
 {
@@ -2353,7 +2353,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabels)
 
 ASFUNCTIONBODY_ATOM(MovieClip,_constructor)
 {
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	th->initializingFrame = true;
 	Sprite::_constructor(ret,wrk,obj,nullptr,0);
+	th->initializingFrame = false;
 /*	th->setVariableByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),swapDepths));
 	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),createEmptyMovieClip));*/
 }
@@ -3471,7 +3474,15 @@ void DisplayObjectContainer::setOnStage(bool staged, bool force,bool inskipping)
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_constructor)
 {
+	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
 	InteractiveObject::_constructor(ret,wrk,obj,nullptr,0);
+	if (th->needsActionScript3())
+	{
+		std::vector<_R<DisplayObject>> list;
+		th->cloneDisplayList(list);
+		for (auto child : list)
+			child->initFrame();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getNumChildren)
@@ -6639,30 +6650,6 @@ void MovieClip::declareFrame(bool implicit)
 	if (getClass())
 		getClass()->setupDeclaredTraits(this);
 
-	// contrary to http://www.senocular.com/flash/tutorials/orderofoperations/
-	// the constructors of the children are _not_ really called bottom-up but in a "mixed" fashion:
-	// - the constructor of the parent is called first. that leads to calling the constructors of all super classes of the parent
-	// - after the builtin super constructor of the parent was called, the constructors of the children are called
-	// - after that, the remaining code of the the parents constructor is executed
-	// this ensures that code from the constructor that is placed _before_ the super() call is executed before the children are constructed
-	// example:
-	// class testsprite : MovieClip
-	// {
-	//   public var childclip:MovieClip;
-	//   public function testsprite()
-	//   {
-	//      // code here will be executed _before_ childclip is constructed
-	//      super();
-	//      // code here will be executed _after_ childclip was constructed
-	//  }
-	if (!this->getConstructIndicator())
-	{
-		if (needsActionScript3())
-		{
-			asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
-			getClass()->handleConstruction(obj,nullptr,0,true);
-		}
-	}
 	bool newFrame = (int)state.FP != state.last_FP;
 	if (!needsActionScript3() && implicit && !state.frameadvanced)
 		AVM1AddScriptEvents();
@@ -6731,16 +6718,6 @@ void MovieClip::initFrame()
 {
 	if (!needsActionScript3())
 		return;
-	/* Now the new legacy display objects are there, so we can also init their
-	 * first frame (top-down) and call their constructors (bottom-up) */
-
-	// work on a copy because initframe may alter the displaylist
-	std::vector<_R<DisplayObject>> tmplist;
-	cloneDisplayList(tmplist);
-	auto it=tmplist.begin();
-	for(;it!=tmplist.end();it++)
-		(*it)->initFrame();
-
 	/* Set last_FP to reflect the frame that we have initialized currently.
 	 * This must be set before the constructor of this MovieClip is run,
 	 * or it will call initFrame(). */
@@ -6749,7 +6726,37 @@ void MovieClip::initFrame()
 	/* call our own constructor, if necassary */
 	if (!isConstructed())
 	{
+		// contrary to http://www.senocular.com/flash/tutorials/orderofoperations/
+		// the constructors of the children are _not_ really called bottom-up but in a "mixed" fashion:
+		// - the constructor of the parent is called first. that leads to calling the constructors of all super classes of the parent
+		// - after the builtin super constructor of the parent was called, the constructors of the children are called
+		// - after that, the remaining code of the the parents constructor is executed
+		// this ensures that code from the constructor that is placed _before_ the super() call is executed before the children are constructed
+		// example:
+		// class testsprite : MovieClip
+		// {
+		//   public var childclip:MovieClip;
+		//   public function testsprite()
+		//   {
+		//      // code here will be executed _before_ childclip is constructed
+		//      super();
+		//      // code here will be executed _after_ childclip was constructed
+		//  }
 		DisplayObject::initFrame();
+	}
+	else if (!placedByActionScript || isConstructed())
+	{
+		// work on a copy because initframe may alter the displaylist
+		std::vector<_R<DisplayObject>> tmplist;
+		cloneDisplayList(tmplist);
+		// DisplayObjectContainer's ActionScript constructor is responsible
+		// for calling `initFrame()` on the first frame.
+		for (auto child : tmplist)
+		{
+			if (initializingFrame && !child->isConstructed())
+				continue;
+			child->initFrame();
+		}
 	}
 	state.creatingframe=false;
 }

@@ -4888,7 +4888,10 @@ void Stage::AVM1AddScriptToExecute(AVM1scriptToExecute& script)
 
 void Stage::enterFrame()
 {
-	DisplayObjectContainer::enterFrame();
+	std::vector<_R<DisplayObject>> list;
+	cloneDisplayList(list);
+	for (auto child : list)
+		child->enterFrame();
 	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
 	for (auto it : tmp)
 		it->enterFrame();
@@ -6832,9 +6835,8 @@ void DisplayObjectContainer::enterFrame()
 {
 	std::vector<_R<DisplayObject>> list;
 	cloneDisplayList(list);
-	for (auto it = list.rbegin(); it != list.rend(); ++it)
+	for (auto child : list)
 	{
-		auto child = *it;
 		child->skipFrame = skipFrame ? true : child->skipFrame;
 		child->enterFrame();
 	}
@@ -6859,7 +6861,14 @@ void DisplayObjectContainer::advanceFrame(bool implicit)
 
 void MovieClip::enterFrame()
 {
-	DisplayObjectContainer::enterFrame();
+	std::vector<_R<DisplayObject>> list;
+	cloneDisplayList(list);
+	for (auto it = list.rbegin(); it != list.rend(); ++it)
+	{
+		auto child = *it;
+		child->skipFrame = skipFrame ? true : child->skipFrame;
+		child->enterFrame();
+	}
 	if (skipFrame)
 	{
 		skipFrame = false;

@@ -274,6 +274,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	float empty=0;
 	engineData->exec_glUniform1fv(filterdataUniform, 1, &empty);
 	engineData->exec_glUniform1f(maskUniform, inMaskRendering ? 1 : 0);
+	engineData->exec_glUniform1f(yuvUniform, colorMode==COLOR_MODE::YUV_MODE?1.0:0.0);
 	
 	// set mode for direct coloring:
 	// 0.0:no coloring

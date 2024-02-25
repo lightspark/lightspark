@@ -4886,15 +4886,15 @@ void Stage::AVM1AddScriptToExecute(AVM1scriptToExecute& script)
 	avm1scriptstoexecute.push_back(script);
 }
 
-void Stage::enterFrame()
+void Stage::enterFrame(bool implicit)
 {
 	std::vector<_R<DisplayObject>> list;
 	cloneDisplayList(list);
 	for (auto child : list)
-		child->enterFrame();
+		child->enterFrame(implicit);
 	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
 	for (auto it : tmp)
-		it->enterFrame();
+		it->enterFrame(implicit);
 }
 
 void Stage::advanceFrame(bool implicit)
@@ -6149,18 +6149,18 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DisplayObject *dS, Disp
 	tabEnabled = true;
 }
 
-void SimpleButton::enterFrame()
+void SimpleButton::enterFrame(bool implicit)
 {
 	if (needsActionScript3())
 	{
 		if (!hitTestState.isNull())
-			hitTestState->enterFrame();
+			hitTestState->enterFrame(implicit);
 		if (!upState.isNull())
-			upState->enterFrame();
+			upState->enterFrame(implicit);
 		if (!downState.isNull())
-			downState->enterFrame();
+			downState->enterFrame(implicit);
 		if (!overState.isNull())
-			overState->enterFrame();
+			overState->enterFrame(implicit);
 	}
 }
 
@@ -6831,14 +6831,14 @@ void MovieClip::checkRatio(uint32_t ratio, bool inskipping)
 	lastratio=ratio;
 }
 
-void DisplayObjectContainer::enterFrame()
+void DisplayObjectContainer::enterFrame(bool implicit)
 {
 	std::vector<_R<DisplayObject>> list;
 	cloneDisplayList(list);
 	for (auto child : list)
 	{
 		child->skipFrame = skipFrame ? true : child->skipFrame;
-		child->enterFrame();
+		child->enterFrame(implicit);
 	}
 }
 
@@ -6859,7 +6859,7 @@ void DisplayObjectContainer::advanceFrame(bool implicit)
 		InteractiveObject::advanceFrame(implicit);
 }		
 
-void MovieClip::enterFrame()
+void MovieClip::enterFrame(bool implicit)
 {
 	std::vector<_R<DisplayObject>> list;
 	cloneDisplayList(list);
@@ -6867,7 +6867,7 @@ void MovieClip::enterFrame()
 	{
 		auto child = *it;
 		child->skipFrame = skipFrame ? true : child->skipFrame;
-		child->enterFrame();
+		child->enterFrame(implicit);
 	}
 	if (skipFrame)
 	{
@@ -6877,7 +6877,7 @@ void MovieClip::enterFrame()
 	if (needsActionScript3() && !state.stop_FP)
 	{
 		state.inEnterFrame = true;
-		advanceFrame(true);
+		advanceFrame(implicit);
 		state.inEnterFrame = false;
 	}
 }

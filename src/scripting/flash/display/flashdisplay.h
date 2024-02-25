@@ -180,7 +180,7 @@ public:
 	uint32_t getMaxLegacyChildDepth();
 	void purgeLegacyChildren();
 	void checkClipDepth();
-	void enterFrame() override;
+	void enterFrame(bool implicit) override;
 	void advanceFrame(bool implicit) override;
 	void declareFrame(bool implicit) override;
 	void initFrame() override;
@@ -253,7 +253,7 @@ protected:
 public:
 	SimpleButton(ASWorker* wrk,Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
 				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
-	void enterFrame() override;
+	void enterFrame(bool implicit) override;
 	void constructionComplete(bool _explicit = false) override;
 	void finalize() override;
 	bool destruct() override;
@@ -741,7 +741,7 @@ public:
 	ASFUNCTION_ATOM(_getScenes);
 	ASFUNCTION_ATOM(_getCurrentScene);
 
-	void enterFrame() override;
+	void enterFrame(bool implicit) override;
 	void advanceFrame(bool implicit) override;
 	void declareFrame(bool implicit) override;
 	void initFrame() override;
@@ -857,7 +857,7 @@ public:
 	void addHiddenObject(DisplayObject* o);
 	void removeHiddenObject(DisplayObject* o);
 	void cleanupDeadHiddenObjects();
-	void enterFrame() override;
+	void enterFrame(bool implicit) override;
 	void advanceFrame(bool implicit) override;
 	void initFrame() override;
 	void executeFrameScript() override;

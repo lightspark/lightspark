@@ -282,7 +282,7 @@ public:
 	bool placedByActionScript;
 	// If set, skip the next call to enterFrame().
 	bool skipFrame;
-	virtual void enterFrame() {}
+	virtual void enterFrame(bool implicit) {}
 	virtual void advanceFrame(bool implicit) {}
 	virtual void declareFrame(bool implicit) {}
 	virtual void initFrame();

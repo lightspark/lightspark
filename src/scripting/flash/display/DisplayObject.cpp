@@ -200,19 +200,12 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 			}
 		}
 	}
-	if (ctxt.contextType == RenderContext::CAIRO && (ctxt.startobject != this) && this->getCachedBitmap())
+	if (ctxt.contextType == RenderContext::CAIRO && ctxt.startobject == this)
 	{
-		auto baseTransform = ctxt.transformStack().transform();
-		RectF bounds = boundsRectWithRenderTransform(baseTransform.matrix, false, initialMatrix);
-		Vector2f offset(bounds.min.x-baseTransform.matrix.x0,bounds.min.y-baseTransform.matrix.y0);
-		MATRIX m = baseTransform.matrix;
-		m.x0 += offset.x;
-		m.y0 += offset.y;
-		
 		ctxt.createTransformStack();
-		ctxt.transformStack().push(Transform2D(m, ColorTransformBase()));
+		ctxt.transformStack().push(Transform2D(*startmatrix, ColorTransformBase()));
 		
-		ret = this->getCachedBitmap()->renderImpl(ctxt);
+		ret = renderImpl(ctxt);
 		
 		ctxt.transformStack().pop();
 		ctxt.removeTransformStack();
@@ -2520,18 +2513,14 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		return nullptr;
 	number_t xmin,xmax,ymin,ymax;
 	MATRIX m=getMatrix();
-	if (!getBounds(xmin,xmax,ymin,ymax,m,true))
-		return nullptr;
 	number_t scalex = parent ? abs(parent->getMatrix().getScaleX()) : 1.0;
 	number_t scaley = parent ? abs(parent->getMatrix().getScaleY()) : 1.0;
-	int oX;
-	int oY;
-	float sX;
-	float sY;
-	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight,
-				   oX, oY, sX, sY);
-	scalex *= sX;
-	scaley *= sY;
+	Vector2f scale = getSystemState()->getRenderThread()->getScale();
+	scalex *= scale.x;
+	scaley *= scale.y;
+	m.scale(scalex,scaley);
+	if (!getBounds(xmin,xmax,ymin,ymax,m,true))
+		return nullptr;
 	uint32_t w=ceil(((xmax-xmin)+number_t(maxfilterborder)*2.0) * scalex);
 	uint32_t h=ceil(((ymax-ymin)+number_t(maxfilterborder)*2.0) * scaley);
 	if (w >= 8192 || h >= 8192 || (w * h) >= 16777216)

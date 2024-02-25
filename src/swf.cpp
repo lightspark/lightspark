@@ -2167,13 +2167,13 @@ void RootMovieClip::constructionComplete(bool _explicit)
 		if (!isVmThread())
 		{
 			this->incRef();
-			getVm(getSystemState())->addEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this))));
+			getVm(getSystemState())->addEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this), _explicit)));
 		}
 		else
-			MovieClip::constructionComplete();
+			MovieClip::constructionComplete(_explicit);
 		return;
 	}
-	MovieClip::constructionComplete();
+	MovieClip::constructionComplete(_explicit);
 	
 	incRef();
 	getSystemState()->stage->_addChildAt(this,0);

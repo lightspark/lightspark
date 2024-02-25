@@ -4784,6 +4784,18 @@ void Stage::addHiddenObject(MovieClip* o)
 	auto it = hiddenobjects.find(o);
 	if (it != hiddenobjects.end())
 		return;
+	// don't add hidden object if any ancestor was already added as one
+	DisplayObject* p=o->getParent();
+	while (p)
+	{
+		if (o->is<MovieClip>())
+		{
+			auto itp = hiddenobjects.find(p->as<MovieClip>());
+			if (itp != hiddenobjects.end())
+				return;
+			p=p->getParent();
+		}
+	}
 	o->incRef();
 	o->addStoredMember();
 	hiddenobjects.insert(o);

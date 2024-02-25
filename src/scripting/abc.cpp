@@ -816,6 +816,8 @@ int ABCVm::getEventQueueSize()
 
 void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 {
+	if (event->type == "exitFrame")
+		event->getSystemState()->setFramePhase(FramePhase::EXIT_FRAME);
 	if (dispatcher && dispatcher->is<DisplayObject>() && event->type == "enterFrame" && (
 				(dispatcher->is<RootMovieClip>() && dispatcher->as<RootMovieClip>()->isWaitingForParser()) || // RootMovieClip is not yet completely parsed
 				(dispatcher->as<DisplayObject>()->legacy && !dispatcher->as<DisplayObject>()->isOnStage()))) // it seems that enterFrame event is only executed for DisplayObjects that are on stage or added from ActionScript
@@ -1119,6 +1121,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case INIT_FRAME:
 			{
+				m_sys->setFramePhase(FramePhase::INIT_FRAME);
 				InitFrameEvent* ev=static_cast<InitFrameEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"INIT_FRAME");
 				assert(!ev->clip.isNull());
@@ -1127,6 +1130,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case EXECUTE_FRAMESCRIPT:
 			{
+				m_sys->setFramePhase(FramePhase::EXECUTE_FRAMESCRIPT);
 				ExecuteFrameScriptEvent* ev=static_cast<ExecuteFrameScriptEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"EXECUTE_FRAMESCRIPT");
 				assert(!ev->clip.isNull());
@@ -1137,6 +1141,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case ADVANCE_FRAME:
 			{
+				m_sys->setFramePhase(FramePhase::ADVANCE_FRAME);
 				Locker l(m_sys->getRenderThread()->mutexRendering);
 				AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				DisplayObject* clip = !ev->clip.isNull() ? ev->clip.getPtr() : m_sys->stage;
@@ -1163,6 +1168,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case IDLE_EVENT:
 			{
+				m_sys->setFramePhase(FramePhase::IDLE);
 				m_sys->worker->processGarbageCollection(false);
 				// DisplayObjects that are removed from the display list keep their Parent set until all removedFromStage events are handled
 				// see http://www.senocular.com/flash/tutorials/orderofoperations/#ObjectDestruction

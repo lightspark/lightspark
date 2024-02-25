@@ -65,6 +65,15 @@ class SoundTransform;
 class ASFile;
 class EngineData;
 
+enum class FramePhase
+{
+	ADVANCE_FRAME,
+	INIT_FRAME,
+	EXECUTE_FRAMESCRIPT,
+	EXIT_FRAME,
+	IDLE
+};
+
 class RootMovieClip: public MovieClip
 {
 friend class ParseThread;
@@ -323,6 +332,7 @@ private:
 	unordered_set<DisplayObject*> listResetParent;
 	Mutex mutexLocalConnection;
 	std::map<uint32_t, _NR<ASObject>> localconnection_client_map;
+	ACQUIRE_RELEASE_VARIABLE(FramePhase, framePhase);
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	tiny_string getDumpedSWFPath() const { return dumpedSWFPath;}
@@ -377,6 +387,8 @@ public:
 		localconnection_client_map.erase(nameID);
 	}
 	void handleLocalConnectionEvent(LocalConnectionEvent* ev);
+	FramePhase getFramePhase() const { return ACQUIRE_READ(framePhase); }
+	void setFramePhase(FramePhase phase) { RELEASE_WRITE(framePhase, phase); }
 
 	/**
 	 * Be careful, SystemState constructor does some global initialization that must be done

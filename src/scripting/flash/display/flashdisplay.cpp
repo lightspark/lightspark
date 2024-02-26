@@ -597,16 +597,17 @@ void LoaderThread::execute()
 		}
 		return;
 	}
-	if (loader.getPtr() && local_pt.getRootMovie() && local_pt.getRootMovie()->hasFinishedLoading())
+	DisplayObject* res = local_pt.getParsedObject().getPtr();
+	if (loader.getPtr() && res && (!res->is<RootMovieClip>() || res->as<RootMovieClip>()->hasFinishedLoading()))
 	{
-		if (local_pt.getRootMovie() != loader->getSystemState()->mainClip)
+		if (res != loader->getSystemState()->mainClip)
 		{
-			if (!local_pt.getRootMovie()->usesActionScript3)
-				local_pt.getRootMovie()->setIsInitialized(false);
-			local_pt.getRootMovie()->incRef();
-			loader->setContent(local_pt.getRootMovie());
-			local_pt.getRootMovie()->skipFrame = true;
-			local_pt.getRootMovie()->placedByActionScript = true;
+			if (res->is<RootMovieClip>() && !res->as<RootMovieClip>()->usesActionScript3)
+				res->setIsInitialized(false);
+			res->incRef();
+			loader->setContent(res);
+			res->skipFrame = true;
+			res->placedByActionScript = true;
 		}
 	}
 }

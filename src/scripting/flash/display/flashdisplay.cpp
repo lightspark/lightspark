@@ -4888,20 +4888,19 @@ void Stage::AVM1AddScriptToExecute(AVM1scriptToExecute& script)
 
 void Stage::enterFrame(bool implicit)
 {
+	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
+	for (auto it : tmp)
+		it->enterFrame(implicit);
 	std::vector<_R<DisplayObject>> list;
 	cloneDisplayList(list);
 	for (auto child : list)
 		child->enterFrame(implicit);
-	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
-	for (auto it : tmp)
-		it->enterFrame(implicit);
 }
 
 void Stage::advanceFrame(bool implicit)
 {
 	if (getSystemState()->mainClip->usesActionScript3)
 	{
-		DisplayObjectContainer::advanceFrame(implicit);
 		unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
 		auto it = tmp.begin();
 		while (it != tmp.end())
@@ -4909,6 +4908,7 @@ void Stage::advanceFrame(bool implicit)
 			(*it)->advanceFrame(implicit);
 			it++;
 		}
+		DisplayObjectContainer::advanceFrame(implicit);
 	}
 	if (hasAVM1Clips)
 	{
@@ -4966,7 +4966,6 @@ void Stage::advanceFrame(bool implicit)
 }
 void Stage::initFrame()
 {
-	DisplayObjectContainer::initFrame();
 	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
 	auto it = tmp.begin();
 	while (it != tmp.end())
@@ -4974,11 +4973,11 @@ void Stage::initFrame()
 		(*it)->initFrame();
 		it++;
 	}
+	DisplayObjectContainer::initFrame();
 }
 
 void Stage::executeFrameScript()
 {
-	DisplayObjectContainer::executeFrameScript();
 	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
 	auto it = tmp.begin();
 	while (it != tmp.end())
@@ -4986,6 +4985,7 @@ void Stage::executeFrameScript()
 		(*it)->executeFrameScript();
 		it++;
 	}
+	DisplayObjectContainer::executeFrameScript();
 }
 
 void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)

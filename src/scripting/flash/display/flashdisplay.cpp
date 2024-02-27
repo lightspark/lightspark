@@ -6779,7 +6779,7 @@ void MovieClip::executeFrameScript()
 	state.explicit_FP=false;
 	state.gotoQueued=false;
 	uint32_t f = frameScripts.count(state.FP) ? state.FP : UINT32_MAX;
-	if (f != UINT32_MAX && !markedForLegacyDeletion)
+	if (f != UINT32_MAX && !markedForLegacyDeletion && !inExecuteFramescript)
 	{
 		if (lastFrameScriptExecuted != f)
 		{

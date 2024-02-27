@@ -6984,7 +6984,8 @@ void MovieClip::constructionComplete(bool _explicit)
 	if(state.last_FP == -1)
 	{
 		advanceFrame(true);
-		initFrame();
+		if (getSystemState()->getFramePhase() != FramePhase::ADVANCE_FRAME)
+			initFrame();
 	}
 }
 void MovieClip::beforeConstruction(bool _explicit)

@@ -188,6 +188,17 @@ void SystemState::addBroadcastEvent(const tiny_string& event)
 	}
 }
 
+void SystemState::handleBroadcastEvent(const tiny_string& event)
+{
+	Locker l(mutexFrameListeners);
+	if(!frameListeners.empty())
+	{
+		_R<Event> e(Class<Event>::getInstanceS(worker, event));
+		for (auto it : frameListeners)
+			ABCVm::publicHandleEvent(it, e);
+	}
+}
+
 RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk,_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass(getSys());
@@ -2354,6 +2365,41 @@ void RootMovieClip::setVariableByString(const string& s, ASObject* o)
 	target->setVariableByQName(sub.c_str(),"",o);
 }*/
 
+void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<_R<DisplayObject>>& removedFrameScripts)
+{
+	if (innerClip == nullptr || !innerClip->needsActionScript3())
+		return;
+
+	if (innerClip->getInstanceWorker()->rootClip->version <= 9)
+	{
+		innerClip->initFrame();
+		innerClip->skipFrame = true;
+		return;
+	}
+
+	// according to http://www.senocular.com/flash/tutorials/orderofoperations/
+	// a subset of the normal events are added when navigation commands are executed when changing to a new frame by actionscript
+	FramePhase oldPhase = getFramePhase();
+
+	setFramePhase(FramePhase::INIT_FRAME);
+	stage->initFrame();
+	handleBroadcastEvent("frameConstructed");
+
+	setFramePhase(FramePhase::EXECUTE_FRAMESCRIPT);
+	stage->DisplayObject::executeFrameScript();
+	stage->forEachHiddenObject([&](DisplayObject* obj)
+	{
+		obj->executeFrameScript();
+	});
+	for (auto it : removedFrameScripts)
+		it->executeFrameScript();
+
+	setFramePhase(FramePhase::EXIT_FRAME);
+	handleBroadcastEvent("exitFrame");
+
+	stage->cleanupDeadHiddenObjects();
+	setFramePhase(oldPhase);
+}
 
 void SystemState::tick()
 {

@@ -1763,11 +1763,20 @@ void Frame::destroyTags()
 		delete (*it);
 }
 
-void Frame::execute(DisplayObjectContainer* displayList, bool inskipping)
+void Frame::execute(DisplayObjectContainer* displayList, bool inskipping, std::vector<_R<DisplayObject>>& removedFrameScripts)
 {
 	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
+	{
+		RemoveObject2Tag* obj = static_cast<RemoveObject2Tag*>(*it);
+		if (obj != nullptr && displayList->hasLegacyChildAt(obj->getDepth()))
+		{
+			DisplayObject* child = displayList->getLegacyChildAt(obj->getDepth());
+			child->incRef();
+			removedFrameScripts.push_back(_MR(child));
+		}
 		(*it)->execute(displayList,inskipping);
+	}
 	displayList->checkClipDepth();
 }
 void Frame::AVM1executeActions(MovieClip* clip)
@@ -2122,60 +2131,32 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
-	if (!needsActionScript3() || !inExecuteFramescript)
-		currentFrameChanged(newframe);
-	else
-		state.gotoQueued = true;
+	if (newframe)
+	{
+		if (!needsActionScript3() || !inExecuteFramescript)
+			runGoto(true);
+		else
+			state.gotoQueued = true;
+	}
+	else if (needsActionScript3())
+		getSystemState()->runInnerGotoFrame(this);
 }
-void MovieClip::currentFrameChanged(bool newframe)
+void MovieClip::runGoto(bool newFrame)
 {
 	if (!needsActionScript3())
 	{
 		advanceFrame(false);
 		return;
 	}
-	skipFrame = false;
-	bool isSysRoot = this->getInstanceWorker()->rootClip == this->getSystemState()->mainClip;
-	if (this->getInstanceWorker()->rootClip->executingFrameScriptCount && isSysRoot)
-		return; // we are currently executing a framescript, so advancing to the new frame will be done through the normal SystemState tick;
 
-	if (newframe && !state.creatingframe)
-		lastFrameScriptExecuted=UINT32_MAX;
-	if (!this->isOnStage())
+	if (newFrame)
 	{
-		if (state.stop_FP)
-		{
-			advanceFrame(false);
-			initFrame();
-			if (isSysRoot)
-			{
-				this->incRef();
-				this->getSystemState()->currentVm->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
-			}
-			else
-				executeFrameScript();
-		}
-		else
-			this->getSystemState()->stage->addHiddenObject(this);
-	}
-	else if (newframe)
-	{
-		// according to http://www.senocular.com/flash/tutorials/orderofoperations/
-		// a subset of the normal events are added when navigation commands are executed when changing to a new frame by actionscript
+		if (!state.creatingframe)
+			lastFrameScriptExecuted=UINT32_MAX;
+		skipFrame = false;
 		advanceFrame(false);
-		initFrame();
-		this->incRef();
-		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(this->getInstanceWorker(),"frameConstructed")));
-		if (isSysRoot)
-		{
-			this->incRef();
-			getVm(getSystemState())->addEvent(NullRef, _MR(new (this->getSystemState()->unaccountedMemory) ExecuteFrameScriptEvent(_MR(this))));
-		}
-		else
-			executeFrameScript();
-		this->incRef();
-		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(this->getInstanceWorker(),"exitFrame")));
 	}
+	getSystemState()->runInnerGotoFrame(this, removedFrameScripts);
 }
 void MovieClip::AVM1gotoFrameLabel(const tiny_string& label,bool stop, bool switchplaystate)
 {
@@ -2197,7 +2178,7 @@ void MovieClip::AVM1gotoFrame(int frame, bool stop, bool switchplaystate, bool a
 	if (switchplaystate)
 		state.stop_FP = stop;
 	if (advanceFrame)
-		currentFrameChanged(newframe);
+		runGoto(newframe);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,gotoAndStop)
@@ -2220,7 +2201,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 	th->state.next_FP = th->state.FP == th->getFramesLoaded()-1 ? th->state.FP : th->state.FP+1;
 	th->state.explicit_FP=true;
 	th->state.stop_FP=true;
-	th->currentFrameChanged(newframe);
+	th->runGoto(newframe);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
@@ -2231,7 +2212,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 	th->state.next_FP = th->state.FP == 0 ? th->state.FP : th->state.FP-1;
 	th->state.explicit_FP=true;
 	th->state.stop_FP=true;
-	th->currentFrameChanged(newframe);
+	th->runGoto(newframe);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)
@@ -6683,11 +6664,12 @@ void MovieClip::declareFrame(bool implicit)
 		{
 			auto iter=frames.begin();
 			uint32_t frame = state.FP;
+			removedFrameScripts.clear();
 			for(state.FP=0;state.FP<=frame;state.FP++)
 			{
 				if((int)frame < state.last_FP || (int)state.FP > state.last_FP)
 				{
-					iter->execute(this,state.FP!=frame);
+					iter->execute(this,state.FP!=frame,removedFrameScripts);
 				}
 				++iter;
 			}
@@ -6700,13 +6682,6 @@ void MovieClip::declareFrame(bool implicit)
 	LegacyChildEraseDeletionMarked();
 	if (needsActionScript3())
 		DisplayObjectContainer::declareFrame(implicit);
-	
-	if(this->isOnStage() && frameScripts.count(0) && state.FP == 0)
-	{
-		// execute framescript of frame 0 after declaration is completed
-		// only if we are already on stage and state.FP was not changed during construction
-		this->executeFrameScript();
-	}
 }
 void MovieClip::AVM1AddScriptEvents()
 {
@@ -6837,7 +6812,7 @@ void MovieClip::executeFrameScript()
 	}
 
 	if (state.gotoQueued)
-		currentFrameChanged(state.FP != state.next_FP);
+		runGoto(true);
 	Sprite::executeFrameScript();
 }
 
@@ -6995,12 +6970,6 @@ void MovieClip::beforeConstruction(bool _explicit)
 void MovieClip::afterConstruction(bool _explicit)
 {
 	DisplayObject::afterConstruction(_explicit);
-	if(this->isOnStage() && frameScripts.count(0) && state.FP == 0)
-	{
-		// execute framescript of frame 0 after construction is completed
-		// only if state.FP was not changed during construction and script was not already executed after declaration
-		this->executeFrameScript();
-	}
 }
 
 Frame *MovieClip::getCurrentFrame()

@@ -367,6 +367,7 @@ public:
 	std::map<tiny_string, _R<SharedObject> > sharedobjectmap;
 	bool localStorageAllowed() const { return localstorageallowed; }
 	void setLocalStorageAllowed(bool allowed);
+	void runInnerGotoFrame(DisplayObject* innerClip, const std::vector<_R<DisplayObject>>& removedFrameScripts = {});
 	void tick() override;
 	void tickFence() override;
 	RenderThread* getRenderThread() const { return renderThread; }
@@ -516,6 +517,7 @@ public:
 	void registerFrameListener(DisplayObject* clip);
 	void unregisterFrameListener(DisplayObject* clip);
 	void addBroadcastEvent(const tiny_string& event);
+	void handleBroadcastEvent(const tiny_string& event);
 
 	//Invalidation queue management
 	void addToInvalidateQueue(_R<DisplayObject> d) override;

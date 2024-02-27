@@ -637,7 +637,7 @@ private:
 public:
 	inline AVM1context* getAVM1Context() { return &avm1context; }
 	std::list<DisplayListTag*> blueprint;
-	void execute(DisplayObjectContainer* displayList, bool inskipping);
+	void execute(DisplayObjectContainer* displayList, bool inskipping, std::vector<_R<DisplayObject>>& removedFrameScripts);
 	void AVM1executeActions(MovieClip* clip);
 	/**
 	 * destroyTags must be called only by the tag destructor, not by
@@ -688,6 +688,7 @@ private:
 	const Scene_data *getScene(const tiny_string &sceneName) const;
 	uint32_t getFrameIdByNumber(uint32_t i, const tiny_string& sceneName) const;
 	std::map<uint32_t,asAtom > frameScripts;
+	std::vector<_R<DisplayObject>> removedFrameScripts;
 	uint32_t fromDefineSpriteTag;
 	uint32_t lastFrameScriptExecuted;
 	uint32_t lastratio;
@@ -695,7 +696,7 @@ private:
 	bool inExecuteFramescript;
 	bool inAVM1Attachment;
 	bool isAVM1Loaded;
-	void currentFrameChanged(bool newframe);
+	void runGoto(bool newFrame);
 protected:
 	const CLIPACTIONS* actions;
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */

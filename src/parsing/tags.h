@@ -354,6 +354,7 @@ private:
 public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
 	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+	UI16_SWF getDepth() const { return Depth; }
 };
 
 class PlaceObject2Tag: public DisplayListTag

@@ -149,6 +149,7 @@ public:
 	
 	void _addChildAt(DisplayObject* child, unsigned int index, bool inskipping=false);
 	void dumpDisplayList(unsigned int level=0);
+	void handleRemovedEvent(DisplayObject* child, bool keepOnStage = false, bool inskipping = false);
 	bool _removeChild(DisplayObject* child, bool direct=false, bool inskipping=false, bool keeponstage=false);
 	void _removeAllChildren();
 	void removeAVM1Listeners() override;

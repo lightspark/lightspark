@@ -3468,7 +3468,7 @@ void DisplayObjectContainer::setOnStage(bool staged, bool force,bool inskipping)
 		//but the addedToStage/removedFromStage event must always be dispatched
 		auto it=displayListCopy.begin();
 		for(;it!=displayListCopy.end();++it)
-			(*it)->setOnStage(staged,true,inskipping);
+			(*it)->setOnStage(staged,force,inskipping);
 	}
 }
 
@@ -3571,6 +3571,20 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		child->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(child->cachedAsBitmapOf);
 }
 
+void DisplayObjectContainer::handleRemovedEvent(DisplayObject* child, bool keepOnStage, bool inskipping)
+{
+	_R<Event> e=_MR(Class<Event>::getInstanceS(child->getInstanceWorker(),"removed"));
+	if (isVmThread())
+		ABCVm::publicHandleEvent(child, e);
+	else
+	{
+		child->incRef();
+		getVm(getSystemState())->addEvent(_MR(child), e);
+	}
+	if (!keepOnStage && (child->isOnStage() || !child->getStage().isNull()))
+		child->setOnStage(false, false, inskipping);
+}
+
 bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool inskipping, bool keeponstage)
 {
 	if(!child->getParent() || child->getParent()!=this)
@@ -3608,8 +3622,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 		}
 		dynamicDisplayList.erase(it);
 	}
-	if (!keeponstage)
-		child->setOnStage(false,false,inskipping);
+	handleRemovedEvent(child, keeponstage, inskipping);
 	child->setParent(nullptr);
 	child->removeStoredMember();
 	return true;

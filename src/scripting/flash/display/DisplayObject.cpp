@@ -1295,29 +1295,15 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 		  asynchronous uses of setOnStage are removed the code can be simplified
 		  by removing the !isVmThread case.
 		*/
-		if(onStage==true)
+		if(onStage==true && isConstructed())
 		{
-			if (this->is<MovieClip>())
-				getSystemState()->stage->removeHiddenObject(this->as<MovieClip>());
-			// ensure that DisplayObject constructor is called if this was added by PlaceObjectTag
-			// so that event listeners for "addedToStage" defined in constructor are added
-			if (!this->getConstructIndicator() && this->legacy && !inskipping
-					&& this->getClass()->hasConstructor() && getClass()->getConstructor()->getMethodInfo() && getClass()->getConstructor()->getMethodInfo()->numArgs()==0)
-			{
-				asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
-				getClass()->handleConstruction(obj,nullptr,0,true);
-			}
-
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
-			// the main clip is added to stage after the base class is constructed,
-			// but there may be addedToStage event handlers added in the constructor of the derived class,
-			// so we can't execute the event directly for the main clip
-			if(isVmThread() && this != getSystemState()->mainClip)
+			if(isVmThread())
 				ABCVm::publicHandleEvent(this,e);
 			else
 			{
 				this->incRef();
-				getVm(getSystemState())->prependEvent(_MR(this),e);
+				getVm(getSystemState())->addEvent(_MR(this),e);
 			}
 		}
 		else if(onStage==false)
@@ -2130,6 +2116,19 @@ bool DisplayObject::needsActionScript3() const
 void DisplayObject::constructionComplete(bool _explicit)
 {
 	RELEASE_WRITE(constructed,true);
+	if (!placedByActionScript && needsActionScript3() && getParent() != nullptr)
+	{
+		_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"added"));
+		if (isVmThread())
+			ABCVm::publicHandleEvent(this, e);
+		else
+		{
+			incRef();
+			getVm(getSystemState())->addEvent(_MR(this), e);
+		}
+		if (isOnStage() || getStage().isNull())
+			setOnStage(true, true);
+	}
 }
 void DisplayObject::beforeConstruction(bool _explicit)
 {

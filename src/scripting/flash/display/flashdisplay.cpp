@@ -2122,7 +2122,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;
-	if (!needsActionScript3() || this->getInstanceWorker()->rootClip->executingFrameScriptCount == 0)
+	if (!needsActionScript3() || !inExecuteFramescript)
 		currentFrameChanged(newframe);
 	else
 		state.gotoQueued = true;

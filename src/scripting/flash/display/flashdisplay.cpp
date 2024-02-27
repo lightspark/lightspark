@@ -4820,6 +4820,16 @@ void Stage::removeHiddenObject(DisplayObject* o)
 	}
 }
 
+void Stage::forEachHiddenObject(std::function<void(DisplayObject*)> callback)
+{
+	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
+	for (auto it : tmp)
+	{
+		if (it->getParent() == nullptr)
+			callback(it);
+	}
+}
+
 void Stage::cleanupDeadHiddenObjects()
 {
 	auto it = hiddenobjects.begin();
@@ -4888,12 +4898,10 @@ void Stage::AVM1AddScriptToExecute(AVM1scriptToExecute& script)
 
 void Stage::enterFrame(bool implicit)
 {
-	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
-	for (auto it : tmp)
+	forEachHiddenObject([&](DisplayObject* obj)
 	{
-		if (it->getParent() == nullptr)
-			it->enterFrame(implicit);
-	}
+		obj->advanceFrame(implicit);
+	});
 	std::vector<_R<DisplayObject>> list;
 	cloneDisplayList(list);
 	for (auto child : list)
@@ -4904,14 +4912,10 @@ void Stage::advanceFrame(bool implicit)
 {
 	if (getSystemState()->mainClip->usesActionScript3)
 	{
-		unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
-		auto it = tmp.begin();
-		while (it != tmp.end())
+		forEachHiddenObject([&](DisplayObject* obj)
 		{
-			if (it->getParent() == nullptr)
-				(*it)->advanceFrame(implicit);
-			it++;
-		}
+			obj->advanceFrame(implicit);
+		});
 		DisplayObjectContainer::advanceFrame(implicit);
 	}
 	if (hasAVM1Clips)
@@ -4970,27 +4974,19 @@ void Stage::advanceFrame(bool implicit)
 }
 void Stage::initFrame()
 {
-	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
-	auto it = tmp.begin();
-	while (it != tmp.end())
+	forEachHiddenObject([&](DisplayObject* obj)
 	{
-		if (it->getParent() == nullptr)
-			(*it)->initFrame();
-		it++;
-	}
+		obj->initFrame();
+	});
 	DisplayObjectContainer::initFrame();
 }
 
 void Stage::executeFrameScript()
 {
-	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
-	auto it = tmp.begin();
-	while (it != tmp.end())
+	forEachHiddenObject([&](DisplayObject* obj)
 	{
-		if (it->getParent() == nullptr)
-			(*it)->executeFrameScript();
-		it++;
-	}
+		obj->executeFrameScript();
+	});
 	DisplayObjectContainer::executeFrameScript();
 }
 

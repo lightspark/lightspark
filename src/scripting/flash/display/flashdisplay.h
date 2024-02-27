@@ -856,6 +856,7 @@ public:
 	void checkResetFocusTarget(InteractiveObject* removedtarget);
 	void addHiddenObject(DisplayObject* o);
 	void removeHiddenObject(DisplayObject* o);
+	void forEachHiddenObject(std::function<void(DisplayObject*)> callback);
 	void cleanupDeadHiddenObjects();
 	void enterFrame(bool implicit) override;
 	void advanceFrame(bool implicit) override;

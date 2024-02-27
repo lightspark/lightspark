@@ -4890,7 +4890,10 @@ void Stage::enterFrame(bool implicit)
 {
 	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
 	for (auto it : tmp)
-		it->enterFrame(implicit);
+	{
+		if (it->getParent() == nullptr)
+			it->enterFrame(implicit);
+	}
 	std::vector<_R<DisplayObject>> list;
 	cloneDisplayList(list);
 	for (auto child : list)
@@ -4905,7 +4908,8 @@ void Stage::advanceFrame(bool implicit)
 		auto it = tmp.begin();
 		while (it != tmp.end())
 		{
-			(*it)->advanceFrame(implicit);
+			if (it->getParent() == nullptr)
+				(*it)->advanceFrame(implicit);
 			it++;
 		}
 		DisplayObjectContainer::advanceFrame(implicit);
@@ -4970,7 +4974,8 @@ void Stage::initFrame()
 	auto it = tmp.begin();
 	while (it != tmp.end())
 	{
-		(*it)->initFrame();
+		if (it->getParent() == nullptr)
+			(*it)->initFrame();
 		it++;
 	}
 	DisplayObjectContainer::initFrame();
@@ -4982,7 +4987,8 @@ void Stage::executeFrameScript()
 	auto it = tmp.begin();
 	while (it != tmp.end())
 	{
-		(*it)->executeFrameScript();
+		if (it->getParent() == nullptr)
+			(*it)->executeFrameScript();
 		it++;
 	}
 	DisplayObjectContainer::executeFrameScript();

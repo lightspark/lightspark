@@ -4473,8 +4473,10 @@ bool Stage::destruct()
 	root.reset();
 	stage3Ds.reset();
 	nativeWindow.reset();
-	for (auto it = hiddenobjects.begin(); it != hiddenobjects.end(); it++)
-		(*it)->removeStoredMember();
+	forEachHiddenObject([&](DisplayObject* obj)
+	{
+		obj->removeStoredMember();
+	}, true);
 	hiddenobjects.clear();
 	fullScreenSourceRect.reset();
 	softKeyboardRect.reset();
@@ -4509,8 +4511,10 @@ void Stage::finalize()
 	root.reset();
 	stage3Ds.reset();
 	nativeWindow.reset();
-	for (auto it = hiddenobjects.begin(); it != hiddenobjects.end(); it++)
-		(*it)->removeStoredMember();
+	forEachHiddenObject([&](DisplayObject* obj)
+	{
+		obj->removeStoredMember();
+	}, true);
 	hiddenobjects.clear();
 	fullScreenSourceRect.reset();
 	softKeyboardRect.reset();
@@ -4556,8 +4560,10 @@ void Stage::prepareShutdown()
 		focus->prepareShutdown();
 	if (root)
 		root->prepareShutdown();
-	for (auto it = hiddenobjects.begin(); it != hiddenobjects.end(); it++)
-		(*it)->prepareShutdown();
+	forEachHiddenObject([&](DisplayObject* obj)
+	{
+		obj->prepareShutdown();
+	}, true);
 	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
 		(*it)->prepareShutdown();
 	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
@@ -4820,12 +4826,12 @@ void Stage::removeHiddenObject(DisplayObject* o)
 	}
 }
 
-void Stage::forEachHiddenObject(std::function<void(DisplayObject*)> callback)
+void Stage::forEachHiddenObject(std::function<void(DisplayObject*)> callback, bool allowInvalid)
 {
 	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
 	for (auto it : tmp)
 	{
-		if (it->getParent() == nullptr)
+		if (allowInvalid || it->getParent() == nullptr)
 			callback(it);
 	}
 }

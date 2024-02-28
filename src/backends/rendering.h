@@ -190,6 +190,7 @@ public:
 	void drawDebugPoint(const Vector2f& pos);
 	void drawDebugLine(const Vector2f &a, const Vector2f &b);
 	void drawDebugRect(float x, float y, float width, float height, const MATRIX &matrix, bool onlyTranslate = false);
+	void drawDebugText(const tiny_string& str, const Vector2f& pos);
 	void beginBlendTexture();
 	void endBlendTexture();
 	void setViewPort(uint32_t w, uint32_t h);

@@ -1039,6 +1039,38 @@ void RenderThread::drawDebugRect(float x, float y, float width, float height, co
 	cairo_restore(cr);
 }
 
+void RenderThread::drawDebugText(const tiny_string& str, const Vector2f& pos)
+{
+	std::list<tiny_string> lines = str.split('\n');
+	lsglLoadIdentity();
+	lsglScalef(1.0f,1.0f,1);
+	lsglTranslatef(-offsetX,-offsetY,0);
+	Vector2f realPos = Vector2f(pos.x * scaleX, pos.y * scaleY) + Vector2f(offsetX, offsetY);
+	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
+
+	cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
+	for (auto it : lines)
+	{
+		cairo_move_to(cr, realPos.x, realPos.y);
+		cairo_save(cr);
+		cairo_show_text(cr, it.raw_buf());
+		cairo_restore(cr);
+		realPos.y += 20;
+	}
+
+	engineData->exec_glUniform1f(directUniform, 0);
+	engineData->exec_glUniform1f(alphaUniform, 1);
+	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
+	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
+	mapCairoTexture(windowWidth, windowHeight);
+	cairo_restore(cr);
+	cairo_save(cr);
+	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
+	cairo_paint(cr);
+	cairo_restore(cr);
+
+}
+
 bool RenderThread::coreRendering()
 {
 	Locker l(mutexRendering);

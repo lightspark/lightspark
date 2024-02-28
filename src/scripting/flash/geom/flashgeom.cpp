@@ -913,8 +913,8 @@ ASFUNCTIONBODY_ATOM(Point,interpolate)
 	Point* pt2=asAtomHandler::as<Point>(args[1]);
 	number_t f=asAtomHandler::toNumber(args[2]);
 	Point* res=Class<Point>::getInstanceS(wrk);
-	res->x = pt1->x + pt2->x * f;
-	res->y = pt1->y + pt2->y * f;
+	res->x = pt2->x - (pt2->x - pt1->x) * f;
+	res->y = pt2->y - (pt2->y - pt1->y) * f;
 	ret = asAtomHandler::fromObject(res);
 }
 

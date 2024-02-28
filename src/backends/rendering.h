@@ -92,9 +92,6 @@ private:
 	*/
 	bool coreRendering();
 	void plotProfilingData();
-	void drawDebugPoint(const Vector2f& pos);
-	void drawDebugLine(const Vector2f &a, const Vector2f &b);
-	void drawDebugRect(float x, float y, float width, float height, const MATRIX &matrix, bool onlyTranslate = false);
 	Semaphore initialized;
 	volatile bool refreshNeeded;
 	Mutex mutexRefreshSurfaces;
@@ -190,6 +187,9 @@ public:
 	Vector2f getScale() const { return Vector2f(scaleX, scaleY); }
 	void renderErrorPage(RenderThread *rt, bool standalone);
 	void renderSettingsPage();
+	void drawDebugPoint(const Vector2f& pos);
+	void drawDebugLine(const Vector2f &a, const Vector2f &b);
+	void drawDebugRect(float x, float y, float width, float height, const MATRIX &matrix, bool onlyTranslate = false);
 	void beginBlendTexture();
 	void endBlendTexture();
 	void setViewPort(uint32_t w, uint32_t h);

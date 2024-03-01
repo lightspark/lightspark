@@ -1959,8 +1959,11 @@ void NetStream::tick()
 	{
 		videoDecoder->skipUntil(streamTime);
 		//The next line ensures that the downloader will not be destroyed before the upload jobs are fenced
-		videoDecoder->waitForFencing();
-		getSys()->getRenderThread()->addUploadJob(videoDecoder);
+		if (!videoDecoder->getQueued())
+		{
+			videoDecoder->waitForFencing();
+			getSys()->getRenderThread()->addUploadJob(videoDecoder);
+		}
 	}
 }
 
@@ -2165,6 +2168,7 @@ void NetStream::execute()
 	catch(JobTerminationException& e)
 	{
 		LOG(LOG_ERROR, "JobTerminationException in NetStream ");
+		threadAbort();
 		waitForFlush=false;
 	}
 	catch(exception& e)

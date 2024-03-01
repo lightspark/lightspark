@@ -42,7 +42,7 @@ BitmapContainer::~BitmapContainer()
 	if (bitmaptexture.isValid())
 	{
 		RenderThread* rt = getSys()->getRenderThread();
-		if (rt)
+		if (rt && rt->isStarted())
 		{
 			getSys()->getRenderThread()->releaseTexture(bitmaptexture);
 		}

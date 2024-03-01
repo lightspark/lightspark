@@ -126,7 +126,7 @@ VideoDecoder::~VideoDecoder()
 	if(videoTexture.isValid())
 	{
 		RenderThread *rt=getSys()->getRenderThread();
-		if(rt)
+		if(rt && rt->isStarted())
 			rt->releaseTexture(getTexture());
 	}
 #ifdef _WIN32

@@ -3245,6 +3245,16 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getDepth)
 	ret = asAtomHandler::fromInt(r);
 }
 
+ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_toString)
+{
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	tiny_string s = th->AVM1GetPath();
+	if (s.empty())
+		DisplayObject::_toString(ret,wrk,obj,args,argslen);
+	else
+		ret = asAtomHandler::fromString(wrk->getSystemState(),s);
+}
+
 void DisplayObject::AVM1SetupMethods(Class_base* c)
 {
 	// setup all methods and properties available for MovieClips in AVM1
@@ -3287,6 +3297,7 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("transform","",Class<IFunction>::getFunction(c->getSystemState(),_setTransform),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_rotation","",Class<IFunction>::getFunction(c->getSystemState(),_getRotation),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_rotation","",Class<IFunction>::getFunction(c->getSystemState(),_setRotation),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,scrollRect,Rectangle);
 }
 DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)

@@ -371,6 +371,7 @@ public:
 	ASFUNCTION_ATOM(AVM1_getBounds);
 	ASFUNCTION_ATOM(AVM1_swapDepths);
 	ASFUNCTION_ATOM(AVM1_getDepth);
+	ASFUNCTION_ATOM(AVM1_toString);
 	static void AVM1SetupMethods(Class_base* c);
 	DisplayObject* AVM1GetClipFromPath(tiny_string& path);
 	void AVM1SetVariable(tiny_string& name, asAtom v, bool setMember=true);

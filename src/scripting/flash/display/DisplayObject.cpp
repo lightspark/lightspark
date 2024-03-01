@@ -192,7 +192,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 				m.y0 = std::round(baseTransform.matrix.y0+offset.y);
 
 				getSystemState()->getRenderThread()->setModelView(m);
-				getSystemState()->getRenderThread()->setupRenderingState(cachedSurface.alpha,cachedSurface.colortransform,cachedSurface.smoothing,cachedSurface.blendmode);
+				getSystemState()->getRenderThread()->setupRenderingState(cachedSurface.alpha,ctxt.transformStack().transform().colorTransform,cachedSurface.smoothing,cachedSurface.blendmode);
 				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,size.x,size.y,nullptr,nullptr,false,true,false);
 				ctxt.currentShaderBlendMode = oldshaderblendmode;
 				ctxt.transformStack().pop();
@@ -1134,7 +1134,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	if (!r && getParent())
 		r = getParent()->scalingGrid.getPtr();
 	ctxt.lsglLoadIdentity();
-	ColorTransformBase ct = surface.colortransform;
+	ColorTransformBase ct = ctxt.transformStack().transform().colorTransform;
 	MATRIX m = ctxt.transformStack().transform().matrix;
 	if (ctxt.contextType == RenderContext::GL)
 	{

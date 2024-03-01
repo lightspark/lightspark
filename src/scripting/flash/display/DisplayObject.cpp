@@ -1338,11 +1338,14 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 	if (!th->loadedFrom->usesActionScript3) // AVM1 uses alpha values from 0-100
 		val /= 100.0;
 	
+	if (th->colorTransform.isNull())
+		th->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(th->getInstanceWorker()));
+
 	/* The stored value is not clipped, _getAlpha will return the
 	 * stored value even if it is outside the [0, 1] range. */
-	if(th->alpha != val)
+	if(th->colorTransform->alphaMultiplier != val)
 	{
-		th->alpha=val;
+		th->colorTransform->alphaMultiplier = val;
 		th->hasChanged=true;
 		th->setNeedsCachedBitmapRecalculation();
 		if(th->onStage)
@@ -1357,9 +1360,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getAlpha)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	if (th->loadedFrom->usesActionScript3)
-		asAtomHandler::setNumber(ret,wrk,th->alpha);
+		asAtomHandler::setNumber(ret,wrk,!th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier : 1.0);
 	else // AVM1 uses alpha values from 0-100
-		asAtomHandler::setNumber(ret,wrk,th->alpha*100.0);
+		asAtomHandler::setNumber(ret,wrk,!th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier*100.0 : 100.0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMask)
@@ -3140,7 +3143,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setQuality)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getAlpha)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->alpha*100.0);
+	asAtomHandler::setNumber(ret,wrk,!th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier*100.0 : 100.0);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 {
@@ -3148,9 +3151,13 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 	number_t val;
 	ARG_CHECK(ARG_UNPACK (val));
 	val /= 100.0;
-	if(th->alpha != val)
+
+	if (th->colorTransform.isNull())
+		th->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(th->getInstanceWorker()));
+
+	if(th->colorTransform->alphaMultiplier != val)
 	{
-		th->alpha=val;
+		th->colorTransform->alphaMultiplier = val;
 		th->hasChanged=true;
 		th->setNeedsCachedBitmapRecalculation();
 		if(th->onStage)

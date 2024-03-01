@@ -128,7 +128,13 @@ friend class TextField;
 public:
 	ColorTransform(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_COLORTRANSFORM)
 	{}
+	ColorTransform(ASWorker* wrk,Class_base* c, const ColorTransformBase& r);
 	ColorTransform(ASWorker* wrk,Class_base* c, const CXFORMWITHALPHA& cx);
+	ColorTransform& operator=(const ColorTransform& r)
+	{
+		ColorTransformBase::operator=(r);
+		return *this;
+	}
 	void setProperties(const CXFORMWITHALPHA& cx);
 	
 	static void sinit(Class_base* c);

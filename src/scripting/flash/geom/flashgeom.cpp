@@ -562,6 +562,9 @@ ASFUNCTIONBODY_ATOM(Rectangle,copyFrom)
 	}
 }
 
+ColorTransform::ColorTransform(ASWorker* wrk, Class_base* c, const ColorTransformBase& r):ASObject(wrk,c,T_OBJECT,SUBTYPE_COLORTRANSFORM),ColorTransformBase(r)
+{
+}
 ColorTransform::ColorTransform(ASWorker* wrk, Class_base* c, const CXFORMWITHALPHA& cx)
   : ASObject(wrk,c,T_OBJECT,SUBTYPE_COLORTRANSFORM)
 {
@@ -1135,7 +1138,10 @@ ASFUNCTIONBODY_ATOM(Transform,_setColorTransform)
 		return;
 	}
 
-	th->owner->colorTransform = ct;
+	if (th->owner->colorTransform.isNull())
+		th->owner->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(wrk, *ct.getPtr()));
+	else
+		*th->owner->colorTransform.getPtr() = *ct.getPtr();
 	th->owner->hasChanged=true;
 	th->owner->setNeedsCachedBitmapRecalculation();
 	if (th->owner->isOnStage())

@@ -675,8 +675,11 @@ ASFUNCTIONBODY_ATOM(Loader,load)
 }
 void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _avm1target)
 {
-	_avm1target->incRef();
-	this->avm1target=_MR(_avm1target);
+	if (_avm1target != nullptr)
+	{
+		_avm1target->incRef();
+		this->avm1target=_MR(_avm1target);
+	}
 	this->url=r->getRequestURL();
 	this->contentLoaderInfo->setURL(this->url.getParsedURL());
 	this->contentLoaderInfo->resetState();

@@ -249,6 +249,14 @@ void LoaderInfo::setComplete()
 	{
 		sendInit();
 	}
+	else if (loader && !loader->loadedFrom->needsActionScript3())
+	{
+		this->incRef();
+		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"avm1_init");
+		if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
+			this->addLoaderEvent(ev);
+		
+	}
 }
 void LoaderInfo::setContent(DisplayObject *o)
 {
@@ -665,8 +673,10 @@ ASFUNCTIONBODY_ATOM(Loader,load)
 	ARG_CHECK(ARG_UNPACK (r)(context, NullRef));
 	th->loadIntern(r.getPtr(),context.getPtr());
 }
-void Loader::loadIntern(URLRequest* r, LoaderContext* context)
+void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _avm1target)
 {
+	_avm1target->incRef();
+	this->avm1target=_MR(_avm1target);
 	this->url=r->getRequestURL();
 	this->contentLoaderInfo->setURL(this->url.getParsedURL());
 	this->contentLoaderInfo->resetState();
@@ -700,7 +710,9 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context)
 	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==this->url.getHostname() || secDomain)
 	{
 		//Same domain
-		_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(getInstanceWorker()->currentCallContext);
+		_NR<ApplicationDomain> parentDomain;
+		if (getInstanceWorker()->currentCallContext)
+			parentDomain = ABCVm::getCurrentApplicationDomain(getInstanceWorker()->currentCallContext);
 		//Support for LoaderContext
 		if(!context || context->applicationDomain.isNull())
 			this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getInstanceWorker(),parentDomain));
@@ -1006,6 +1018,14 @@ _NR<LoaderInfo> Loader::getContentLoaderInfo()
 {
 	contentLoaderInfo->incRef();
 	return _MNR(contentLoaderInfo);
+}
+
+void Loader::ensureContentLoaderInfo()
+{
+	if (contentLoaderInfo)
+		return;
+	contentLoaderInfo=Class<LoaderInfo>::getInstanceS(getInstanceWorker(),this);
+	contentLoaderInfo->addStoredMember();
 }
 
 Sprite::Sprite(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),hasMouse(false),dragged(false),buttonMode(false),useHandCursor(true)

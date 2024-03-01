@@ -495,7 +495,6 @@ private:
 	bool allowCodeImport;
 protected:
 	_NR<DisplayObject> avm1target;
-	void loadIntern(URLRequest* r, LoaderContext* context);
 public:
 	Loader(ASWorker* wrk, Class_base* c);
 	~Loader();
@@ -521,8 +520,10 @@ public:
 	void setContent(DisplayObject* o);
 	DisplayObject* getContent() const { return content; }
 	_NR<LoaderInfo> getContentLoaderInfo();
+	void ensureContentLoaderInfo();
 	bool allowLoadingSWF() { return allowCodeImport; }
 	bool hasAVM1Target() const { return !avm1target.isNull(); }
+	void loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _avm1target=nullptr);
 };
 
 class Sprite: public DisplayObjectContainer, public TokenContainer

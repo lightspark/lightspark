@@ -88,14 +88,14 @@ public:
 	ASFUNCTION_ATOM(removeResizeListener);
 };
 
-class AVM1MovieClipLoader: public Loader
+class AVM1MovieClipLoader: public ASObject
 {
 private:
-	mutable Mutex spinlock;
-	std::list<IThreadJob *> jobs;
+	Mutex loadermutex;
+	std::set<Loader*> loaderlist;
 	std::set<_R<ASObject> > listeners;
 public:
-	AVM1MovieClipLoader(ASWorker* wrk,Class_base* c):Loader(wrk,c){}
+	AVM1MovieClipLoader(ASWorker* wrk,Class_base* c):ASObject(wrk,c,SWFOBJECT_TYPE::T_OBJECT,CLASS_SUBTYPE::SUBTYPE_AVM1MOVIECLIPLOADER){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(loadClip);

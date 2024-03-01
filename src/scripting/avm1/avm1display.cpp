@@ -192,7 +192,7 @@ ASFUNCTIONBODY_ATOM(AVM1Stage,removeResizeListener)
 
 void AVM1MovieClipLoader::sinit(Class_base* c)
 {
-	CLASS_SETUP(c, Loader, _constructor, CLASS_FINAL);
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
 	c->isReusable = true;
 	c->setDeclaredMethodByQName("loadClip","",Class<IFunction>::getFunction(c->getSystemState(),loadClip),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addListener","",Class<IFunction>::getFunction(c->getSystemState(),addListener),NORMAL_METHOD,true);
@@ -208,13 +208,11 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 	asAtom target = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(strurl)(target));
 	URLRequest* r = Class<URLRequest>::getInstanceS(wrk,strurl);
-	DisplayObjectContainer* parent = th->getParent();
-	if (!parent)
-		parent = wrk->rootClip.getPtr();
 	DisplayObject* t =nullptr;
 	if (asAtomHandler::isNumeric(target))
 	{
-		t = parent->getLegacyChildAt(asAtomHandler::toInt(target));
+		LOG(LOG_NOT_IMPLEMENTED,"AVM1MovieClipLoader,loadClip with number as target");
+		return;
 	}
 	else if (asAtomHandler::is<DisplayObject>(target))
 	{
@@ -230,11 +228,12 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"target");
 		return;
 	}
-	
-	th->loaderInfo = th->getContentLoaderInfo();
-	t->incRef();
-	th->avm1target = _MR(t);
-	th->loadIntern(r,nullptr);
+	Loader* l = Class<Loader>::getInstanceSNoArgs(wrk);
+	l->ensureContentLoaderInfo();
+	th->loadermutex.lock();
+	th->loaderlist.insert(l);
+	th->loadermutex.unlock();
+	l->loadIntern(r,nullptr,t);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,addListener)
 {
@@ -249,7 +248,6 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,addListener)
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,removeListener)
 {
 	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
-
 	
 	ASObject* o = asAtomHandler::toObject(args[0],wrk);
 
@@ -257,7 +255,20 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,removeListener)
 }
 void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
-	if (dispatcher == this->getContentLoaderInfo().getPtr())
+	loadermutex.lock();
+	Loader* ldr = nullptr;
+	auto itldr = loaderlist.begin();
+	while (itldr != loaderlist.end())
+	{
+		if ((*itldr)->getContentLoaderInfo().getPtr() == dispatcher)
+		{
+			ldr = (*itldr);
+			break;
+		}
+		itldr++;
+	}
+	loadermutex.unlock();
+	if (ldr)
 	{
 		ASWorker* wrk = getInstanceWorker();
 		auto it = listeners.begin();
@@ -277,10 +288,10 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					asAtom obj = asAtomHandler::fromObject(this);
 					
 					asAtom args[1];
-					if (this->getContent())
+					if (ldr->getContent())
 					{
-						this->getContent()->incRef();
-						args[0] = asAtomHandler::fromObject(this->getContent());
+						ldr->getContent()->incRef();
+						args[0] = asAtomHandler::fromObject(ldr->getContent());
 					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
@@ -288,7 +299,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
 			}
-			else if (e->type == "init")
+			else if (e->type == "avm1_init")
 			{
 				asAtom func=asAtomHandler::invalidAtom;
 				multiname m(nullptr);
@@ -301,10 +312,10 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					asAtom ret=asAtomHandler::invalidAtom;
 					asAtom obj = asAtomHandler::fromObject(this);
 					asAtom args[1];
-					if (this->getContent())
+					if (ldr->getContent())
 					{
-						this->getContent()->incRef();
-						args[0] = asAtomHandler::fromObject(this->getContent());
+						ldr->getContent()->incRef();
+						args[0] = asAtomHandler::fromObject(ldr->getContent());
 					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
@@ -326,10 +337,10 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					asAtom ret=asAtomHandler::invalidAtom;
 					asAtom obj = asAtomHandler::fromObject(this);
 					asAtom args[3];
-					if (this->getContent())
+					if (ldr->getContent())
 					{
-						this->getContent()->incRef();
-						args[0] = asAtomHandler::fromObject(this->getContent());
+						ldr->getContent()->incRef();
+						args[0] = asAtomHandler::fromObject(ldr->getContent());
 					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
@@ -352,10 +363,10 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					asAtom ret=asAtomHandler::invalidAtom;
 					asAtom obj = asAtomHandler::fromObject(this);
 					asAtom args[1];
-					if (this->getContent())
+					if (ldr->getContent())
 					{
-						this->getContent()->incRef();
-						args[0] = asAtomHandler::fromObject(this->getContent());
+						ldr->getContent()->incRef();
+						args[0] = asAtomHandler::fromObject(ldr->getContent());
 					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
@@ -381,22 +392,38 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			}
 			it++;
 		}
+		if (e->type == "avm1_init" || e->type == "ioError")
+		{
+			// download is done, so we can remove the loader
+			loadermutex.lock();
+			loaderlist.erase(ldr);
+			ldr->decRef();
+			loadermutex.unlock();
+		}
 	}
 }
 
 bool AVM1MovieClipLoader::destruct()
 {
 	listeners.clear();
-	jobs.clear();
-	return Loader::destruct();
+	auto it = loaderlist.begin();
+	while (it != loaderlist.end())
+	{
+		(*it)->decRef();
+		loaderlist.erase(it);
+	}
+	return ASObject::destruct();
 }
 
 void AVM1MovieClipLoader::load(const tiny_string& url, const tiny_string& method, AVM1MovieClip* target)
 {
 	URLRequest* r = Class<URLRequest>::getInstanceS(getInstanceWorker(),url,method);
-	target->incRef();
-	avm1target = _MR(target);
-	loadIntern(r,nullptr);
+	Loader* l = Class<Loader>::getInstanceSNoArgs(getInstanceWorker());
+	l->ensureContentLoaderInfo();
+	loadermutex.lock();
+	loaderlist.insert(l);
+	loadermutex.unlock();
+	l->loadIntern(r,nullptr,target);
 }
 
 void AVM1Color::sinit(Class_base* c)

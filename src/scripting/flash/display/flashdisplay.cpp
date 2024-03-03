@@ -610,12 +610,8 @@ void LoaderThread::execute()
 	{
 		if (res != loader->getSystemState()->mainClip)
 		{
-			if (res->is<RootMovieClip>() && !res->as<RootMovieClip>()->usesActionScript3)
-				res->setIsInitialized(false);
 			res->incRef();
-			loader->setContent(res);
-			res->skipFrame = true;
-			res->placedByActionScript = true;
+			getVm(loader->getSystemState())->addEvent(NullRef,_MR(new (loader->getSystemState()->unaccountedMemory) SetLoaderContentEvent(_MR(res), loader)));
 		}
 	}
 }

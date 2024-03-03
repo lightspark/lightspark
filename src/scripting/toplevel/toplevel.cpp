@@ -412,6 +412,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		return;
 	}
 	assert(wrk == getWorker());
+	auto prev_cur_recursion = wrk->cur_recursion;
 	call_context* saved_cc = wrk->incStack(obj,this->functionname);
 	if (codeStatus != method_body_info::PRELOADED && codeStatus != method_body_info::USED)
 	{
@@ -436,8 +437,16 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	}
 	if (saved_cc && saved_cc->exceptionthrown)
 	{
-		wrk->decStack(saved_cc);
-		return;
+		if (prev_cur_recursion > 0)
+		{
+			wrk->decStack(saved_cc);
+			return;
+		}
+		else
+		{
+			saved_cc->exceptionthrown->decRef();
+			saved_cc->exceptionthrown = nullptr;
+		}
 	}
 
 	/* resolve argument and return types */

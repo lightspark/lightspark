@@ -435,7 +435,10 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		}
 	}
 	if (saved_cc && saved_cc->exceptionthrown)
+	{
+		wrk->decStack(saved_cc);
 		return;
+	}
 
 	/* resolve argument and return types */
 	if(!mi->returnType)
@@ -455,12 +458,14 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 						  asAtomHandler::toObject(obj,wrk)->getClassName(),
 						  Integer::toString(mi->numArgs()-mi->numOptions()),
 						  Integer::toString(numArgs));
+			wrk->decStack(saved_cc);
 			return;
 		}
 	}
 	if ((isMethod() || mi->hasExplicitTypes) && numArgs > mi->numArgs() && !mi->needsArgs() && !mi->needsRest() && !mi->hasOptional())
 	{
 		createError<ArgumentError>(wrk,kWrongArgumentCountError,getSystemState()->getStringFromUniqueId(functionname),Integer::toString(mi->numArgs()),Integer::toString(numArgs));
+		wrk->decStack(saved_cc);
 		return;
 	}
 

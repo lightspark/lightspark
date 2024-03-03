@@ -2178,7 +2178,7 @@ void RootMovieClip::constructionComplete(bool _explicit)
 		if (!isVmThread())
 		{
 			this->incRef();
-			getVm(getSystemState())->addEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this), _explicit)));
+			getVm(getSystemState())->addBufferEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this), _explicit)));
 		}
 		else
 			MovieClip::constructionComplete(_explicit);

@@ -32,7 +32,7 @@ namespace lightspark
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	FUNCTION,FUNCTION_ASYNC, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
-	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,AVM1INITACTION_EVENT,SET_LOADER_CONTENT_EVENT,ROOTCONSTRUCTEDEVENT, LOCALCONNECTIONEVENT };
+	FLUSH_INVALIDATION_QUEUE, FLUSH_EVENT_BUFFER, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,AVM1INITACTION_EVENT,SET_LOADER_CONTENT_EVENT,ROOTCONSTRUCTEDEVENT, LOCALCONNECTIONEVENT };
 
 class ABCContext;
 class DictionaryTag;
@@ -559,6 +559,17 @@ class IdleEvent: public WaitableEvent
 public:
 	IdleEvent(): WaitableEvent("IdleEvent") {}
 	EVENT_TYPE getEventType() const override { return IDLE_EVENT; }
+};
+
+class FlushEventBufferEvent: public Event
+{
+friend class ABCVm;
+private:
+	bool append;
+	bool reverse;
+public:
+	FlushEventBufferEvent(bool _append = true, bool _reverse = false): Event(nullptr,nullptr, "FlushEventBufferEvent"),append(_append),reverse(_reverse) {}
+	EVENT_TYPE getEventType() const override { return FLUSH_EVENT_BUFFER; }
 };
 
 //Event to flush the invalidation queue

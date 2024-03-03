@@ -3256,6 +3256,7 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 {
 	LOG(LOG_TRACE,"SymbolClassTag Exec");
 
+	bool isSysRoot = root == root->getSystemState()->mainClip;
 	for(int i=0;i<NumSymbols;i++)
 	{
 		LOG(LOG_CALLS,"Binding " << Tags[i] << ' ' << Names[i]);
@@ -3265,13 +3266,15 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 			root->hasMainClass=true;
 			root->incRef();
 			ASWorker* worker = root->getInstanceWorker();
-			if (!worker->isPrimordial && root != root->getSystemState()->mainClip)
+			if (!worker->isPrimordial && !isSysRoot)
 			{
 				getVm(root->getSystemState())->buildClassAndInjectBase(className.raw_buf(),_MR(root));
 				worker->state ="running";
 				worker->incRef();
 				getVm(root->getSystemState())->addEvent(_MR(worker),_MR(Class<Event>::getInstanceS(root->getInstanceWorker(),"workerState")));
 			}
+			else if (!isSysRoot)
+				getVm(root->getSystemState())->addBufferEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
 			else
 				getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
 		}
@@ -3279,7 +3282,10 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 		{
 			DictionaryTag* tag = root->dictionaryLookup(Tags[i]);
 			root->addBinding(className, tag);
-			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(tag,className)));
+			if (!isSysRoot)
+				getVm(root->getSystemState())->addBufferEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(tag,className)));
+			else
+				getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(tag,className)));
 		}
 	}
 }

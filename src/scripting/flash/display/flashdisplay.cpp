@@ -611,7 +611,8 @@ void LoaderThread::execute()
 		if (res != loader->getSystemState()->mainClip)
 		{
 			res->incRef();
-			getVm(loader->getSystemState())->addEvent(NullRef,_MR(new (loader->getSystemState()->unaccountedMemory) SetLoaderContentEvent(_MR(res), loader)));
+			getVm(loader->getSystemState())->addBufferEvent(NullRef,_MR(new (loader->getSystemState()->unaccountedMemory) SetLoaderContentEvent(_MR(res), loader)));
+			getVm(loader->getSystemState())->addEvent(NullRef, _MR(new (loader->getSystemState()->unaccountedMemory) FlushEventBufferEvent(false,true)));
 		}
 	}
 }

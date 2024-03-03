@@ -465,13 +465,8 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
 		asAtomHandler::setBool(ret,false);
 	else
 	{
-		if(!asAtomHandler::isClass(o))
-			asAtomHandler::setBool(ret,false);
-		else
-		{
-			LOG(LOG_CALLS,"Found definition for " << name<<"|"<<asAtomHandler::toDebugString(o)<<"|"<<asAtomHandler::toDebugString(obj));
-			asAtomHandler::setBool(ret,true);
-		}
+		LOG(LOG_CALLS,"Found definition for " << name<<"|"<<asAtomHandler::toDebugString(o)<<"|"<<asAtomHandler::toDebugString(obj));
+		asAtomHandler::setBool(ret,true);
 	}
 }
 

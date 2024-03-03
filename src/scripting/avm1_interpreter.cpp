@@ -1863,6 +1863,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					proto = _MNR(asAtomHandler::as<IFunction>(func)->getprop_prototype());
 					if (proto.isNull())
 						proto = asAtomHandler::as<IFunction>(func)->prototype;
+					else
+						proto->incRef();
 					if (!proto.isNull())
 					{
 						multiname mconstr(nullptr);

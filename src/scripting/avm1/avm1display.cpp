@@ -190,6 +190,16 @@ ASFUNCTIONBODY_ATOM(AVM1Stage,removeResizeListener)
 }
 
 
+void AVM1MovieClipLoader::addLoader(URLRequest* r, DisplayObject* target)
+{
+	Loader* ldr = Class<Loader>::getInstanceSNoArgs(getInstanceWorker());
+	ldr->addStoredMember();
+	loadermutex.lock();
+	loaderlist.insert(ldr);
+	loadermutex.unlock();
+	ldr->loadIntern(r,nullptr,target);
+}
+
 void AVM1MovieClipLoader::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
@@ -228,12 +238,7 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"target");
 		return;
 	}
-	Loader* l = Class<Loader>::getInstanceSNoArgs(wrk);
-	l->ensureContentLoaderInfo();
-	th->loadermutex.lock();
-	th->loaderlist.insert(l);
-	th->loadermutex.unlock();
-	l->loadIntern(r,nullptr,t);
+	th->addLoader(r,t);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,addListener)
 {
@@ -243,7 +248,8 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,addListener)
 	ASObject* o = asAtomHandler::toObject(args[0],wrk);
 
 	o->incRef();
-	th->listeners.insert(_MR(o));
+	o->addStoredMember();
+	th->listeners.insert(o);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,removeListener)
 {
@@ -251,7 +257,8 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,removeListener)
 	
 	ASObject* o = asAtomHandler::toObject(args[0],wrk);
 
-	th->listeners.erase(_MR(o));
+	th->listeners.erase(o);
+	o->removeStoredMember();
 }
 void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
@@ -397,7 +404,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			// download is done, so we can remove the loader
 			loadermutex.lock();
 			loaderlist.erase(ldr);
-			ldr->decRef();
+			ldr->removeStoredMember();
 			loadermutex.unlock();
 		}
 	}
@@ -405,25 +412,64 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 
 bool AVM1MovieClipLoader::destruct()
 {
-	listeners.clear();
-	auto it = loaderlist.begin();
-	while (it != loaderlist.end())
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
 	{
-		(*it)->decRef();
-		loaderlist.erase(it);
+		(*itlst)->removeStoredMember();
+		listeners.erase(itlst);
+	}
+	auto itldr = loaderlist.begin();
+	while (itldr != loaderlist.end())
+	{
+		(*itldr)->removeStoredMember();
+		loaderlist.erase(itldr);
 	}
 	return ASObject::destruct();
 }
 
+void AVM1MovieClipLoader::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
+	{
+		(*itlst)->prepareShutdown();
+		itlst++;
+	}
+	auto itldr = loaderlist.begin();
+	while (itldr != loaderlist.end())
+	{
+		(*itldr)->prepareShutdown();
+		itldr++;
+	}
+}
+bool AVM1MovieClipLoader::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
+	{
+		ret = (*itlst)->countAllCylicMemberReferences(gcstate) || ret;
+		itlst++;
+	}
+	auto itldr = loaderlist.begin();
+	while (itldr != loaderlist.end())
+	{
+		ret = (*itldr)->countAllCylicMemberReferences(gcstate) || ret;
+		itldr++;
+	}
+	return ret;
+}
+
+
 void AVM1MovieClipLoader::load(const tiny_string& url, const tiny_string& method, AVM1MovieClip* target)
 {
 	URLRequest* r = Class<URLRequest>::getInstanceS(getInstanceWorker(),url,method);
-	Loader* l = Class<Loader>::getInstanceSNoArgs(getInstanceWorker());
-	l->ensureContentLoaderInfo();
-	loadermutex.lock();
-	loaderlist.insert(l);
-	loadermutex.unlock();
-	l->loadIntern(r,nullptr,target);
+	addLoader(r, target);
 }
 
 void AVM1Color::sinit(Class_base* c)

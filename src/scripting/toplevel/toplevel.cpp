@@ -3808,7 +3808,7 @@ AVM1Function::~AVM1Function()
 		clip->removeStoredMember();
 	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
 	{
-		ASATOM_DECREF(it->second);
+		ASATOM_REMOVESTOREDMEMBER(it->second);
 	}
 	scopevariables.clear();
 }
@@ -3845,9 +3845,10 @@ void AVM1Function::finalize()
 	clip=nullptr;
 	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
 	{
-		ASATOM_DECREF(it->second);
+		ASATOM_REMOVESTOREDMEMBER(it->second);
 	}
 	scopevariables.clear();
+	ASATOM_REMOVESTOREDMEMBER(superobj);
 	IFunction::finalize();
 }
 
@@ -3861,9 +3862,10 @@ bool AVM1Function::destruct()
 	clip=nullptr;
 	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
 	{
-		ASATOM_DECREF(it->second);
+		ASATOM_REMOVESTOREDMEMBER(it->second);
 	}
 	scopevariables.clear();
+	ASATOM_REMOVESTOREDMEMBER(superobj);
 	return IFunction::destruct();
 }
 
@@ -3876,6 +3878,15 @@ void AVM1Function::prepareShutdown()
 		activationobject->prepareShutdown();
 	if (clip)
 		clip->prepareShutdown();
+	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
+	{
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			o->prepareShutdown();
+	}
+	ASObject* su = asAtomHandler::getObject(superobj);
+	if (su)
+		su->prepareShutdown();
 }
 
 bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -3887,6 +3898,15 @@ bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		ret = activationobject->countAllCylicMemberReferences(gcstate) || ret;
 	if (clip)
 		ret = clip->countAllCylicMemberReferences(gcstate) || ret;
+	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
+	{
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	}
+	ASObject* su = asAtomHandler::getObject(superobj);
+	if (su)
+		ret = su->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 
@@ -3903,8 +3923,8 @@ void AVM1Function::setscopevariables(std::map<uint32_t, asAtom>& locals)
 {
 	for (auto it = locals.begin(); it != locals.end(); it++)
 	{
-		ASATOM_DECREF(scopevariables [it->first]);
-		ASATOM_INCREF(it->second);
+		ASATOM_REMOVESTOREDMEMBER(scopevariables [it->first]);
+		ASATOM_ADDSTOREDMEMBER(it->second);
 		scopevariables [it->first]=it->second;
 	}
 }

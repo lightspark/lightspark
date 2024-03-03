@@ -1849,7 +1849,6 @@ void ParseThread::parseSWF(UI8 ver)
 				// fall through
 				case ABC_TAG:
 				case ACTION_TAG:
-				case AVM1INITACTION_TAG:
 				case DEFINESCALINGGRID_TAG:
 				{
 					// Add symbol class tags or action to the queue, to be executed when the rest of the 
@@ -1858,6 +1857,12 @@ void ParseThread::parseSWF(UI8 ver)
 					// in "undefined dictionary ID" errors.
 					const ControlTag* stag = static_cast<const ControlTag*>(tag);
 					queuedTags.push(stag);
+					break;
+				}
+				case AVM1INITACTION_TAG:
+				{
+					const ControlTag* ctag = static_cast<const ControlTag*>(tag);
+					ctag->execute(root);
 					break;
 				}
 				case BACKGROUNDCOLOR_TAG:
@@ -3015,5 +3020,6 @@ void RootMovieClip::AVM1checkInitActions(MovieClip* sprite)
 		// a new instance of the sprite may be constructed during code execution, so we remove it from the initactionlist before executing the code to ensure it's only executed once
 		avm1InitActionTags.erase(it);
 		t->executeDirect(sprite);
+		delete t;
 	}
 }

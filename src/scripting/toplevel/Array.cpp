@@ -784,7 +784,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 		{
 			asAtom a = th->at((uint32_t)startIndex+i);
 			if (asAtomHandler::isValid(a))
-				res->set(i,a,false,true,false);
+				res->set(i,a,false,false,false);
 		}
 		// delete items from current array (no need to decref/removemember, as they are added to the result)
 		for (int i = 0; i < deleteCount; i++)

@@ -147,7 +147,7 @@ bool LoaderInfo::destruct()
 	frameRate =0;
 	parameters.reset();
 	uncaughtErrorEvents.reset();
-	progressEvent.reset();
+	progressEvent=nullptr;
 	loaderevents.clear();
 	return EventDispatcher::destruct();
 }
@@ -166,7 +166,7 @@ void LoaderInfo::finalize()
 	uncaughtErrorEvents.reset();
 	parameters.reset();
 	uncaughtErrorEvents.reset();
-	progressEvent.reset();
+	progressEvent=nullptr;
 	loaderevents.clear();
 	EventDispatcher::finalize();
 }
@@ -192,8 +192,6 @@ void LoaderInfo::prepareShutdown()
 		parameters->prepareShutdown();
 	if (uncaughtErrorEvents)
 		uncaughtErrorEvents->prepareShutdown();
-	if (progressEvent)
-		progressEvent->prepareShutdown();
 }
 
 bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -209,6 +207,8 @@ bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
 void LoaderInfo::afterHandleEvent(Event* ev)
 {
 	Locker l(spinlock);
+	if (ev == progressEvent)
+		progressEvent=nullptr;
 	auto it = loaderevents.find(ev);
 	if (it != loaderevents.end())
 	{
@@ -274,12 +274,12 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 		if(getVm(getSystemState()))
 		{
 			// make sure that the event queue is not flooded with progressEvents
-			if (progressEvent.isNull())
+			if (!progressEvent)
 			{
+				progressEvent = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal);
+				this->addLoaderEvent(progressEvent);
 				this->incRef();
-				progressEvent = _MR(Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal));
-				this->addLoaderEvent(progressEvent.getPtr());
-				getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
+				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(progressEvent));
 			}
 			else
 			{
@@ -290,9 +290,10 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 				// if event is already in event queue, we don't need to add it again
 				if (!progressEvent->queued)
 				{
+					this->addLoaderEvent(progressEvent);
 					this->incRef();
-					this->addLoaderEvent(progressEvent.getPtr());
-					getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
+					progressEvent->incRef();
+					getVm(getSystemState())->addIdleEvent(_MR(this),_MR(progressEvent));
 				}
 			}
 		}
@@ -1021,14 +1022,6 @@ _NR<LoaderInfo> Loader::getContentLoaderInfo()
 {
 	contentLoaderInfo->incRef();
 	return _MNR(contentLoaderInfo);
-}
-
-void Loader::ensureContentLoaderInfo()
-{
-	if (contentLoaderInfo)
-		return;
-	contentLoaderInfo=Class<LoaderInfo>::getInstanceS(getInstanceWorker(),this);
-	contentLoaderInfo->addStoredMember();
 }
 
 Sprite::Sprite(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),hasMouse(false),dragged(false),buttonMode(false),useHandCursor(true)

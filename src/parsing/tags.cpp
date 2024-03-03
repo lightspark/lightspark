@@ -602,7 +602,8 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 	if (soundstartframe != UINT32_MAX)
 		spr->setSoundStartFrame(this->soundstartframe);
 	spr->loadedFrom=this->loadedFrom;
-	spr->loadedFrom->AVM1checkInitActions(spr);
+	// initactions are always executed in Vm thread, no need to check here
+	// spr->loadedFrom->AVM1checkInitActions(spr);
 	spr->setScalingGrid();
 	return spr;
 }

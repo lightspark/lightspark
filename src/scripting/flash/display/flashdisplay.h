@@ -406,7 +406,7 @@ private:
 	 * completion
 	 */
 	DisplayObject* waitedObject;
-	_NR<ProgressEvent> progressEvent;
+	ProgressEvent* progressEvent;
 	Mutex spinlock;
 	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
 	LOAD_STATUS loadStatus;
@@ -474,7 +474,7 @@ private:
 	_R<Loader> loader;
 	_NR<LoaderInfo> loaderInfo;
 	SOURCE source;
-	void execute();
+	void execute() override;
 public:
 	LoaderThread(_R<URLRequest> request, _R<Loader> loader);
 	LoaderThread(_R<ByteArray> bytes, _R<Loader> loader);
@@ -520,7 +520,6 @@ public:
 	void setContent(DisplayObject* o);
 	DisplayObject* getContent() const { return content; }
 	_NR<LoaderInfo> getContentLoaderInfo();
-	void ensureContentLoaderInfo();
 	bool allowLoadingSWF() { return allowCodeImport; }
 	bool hasAVM1Target() const { return !avm1target.isNull(); }
 	void loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _avm1target=nullptr);

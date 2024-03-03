@@ -791,6 +791,7 @@ public:
 	}
 	FORCE_INLINE void setSuper(asAtom s)
 	{
+		ASATOM_ADDSTOREDMEMBER(s);
 		superobj.uintval = s.uintval;
 	}
 	FORCE_INLINE DisplayObject* getClip() const

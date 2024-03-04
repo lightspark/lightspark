@@ -6925,7 +6925,7 @@ void MovieClip::advanceFrame(bool implicit)
 	   || (!getClass()->isSubClass(Class<MovieClip>::getClass(getSystemState()))
 		   && (needsActionScript3() || !getClass()->isSubClass(Class<AVM1MovieClip>::getClass(getSystemState()))))))
 	{
-		if (int(state.FP) >= state.last_FP && !state.inEnterFrame) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
+		if (int(state.FP) >= state.last_FP && !state.inEnterFrame && implicit) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
 			DisplayObjectContainer::advanceFrame(true);
 		declareFrame(implicit);
 		return;
@@ -6960,7 +6960,7 @@ void MovieClip::advanceFrame(bool implicit)
 			state.next_FP = 0;
 	}
 	// ensure the legacy objects of the current frame are created
-	if (int(state.FP) >= state.last_FP && !state.inEnterFrame) // no need to advance frame if we are moving backwards in the timeline, as the timeline will be rebuild anyway
+	if (int(state.FP) >= state.last_FP && !state.inEnterFrame && implicit) // no need to advance frame if we are moving backwards in the timeline, as the timeline will be rebuild anyway
 		DisplayObjectContainer::advanceFrame(true);
 	
 	declareFrame(implicit);

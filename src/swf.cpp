@@ -2370,7 +2370,7 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 	if (innerClip == nullptr || !innerClip->needsActionScript3())
 		return;
 
-	if (innerClip->getInstanceWorker()->rootClip->version <= 9)
+	if (innerClip->loadedFrom->version <= 9)
 	{
 		innerClip->initFrame();
 		innerClip->skipFrame = true;

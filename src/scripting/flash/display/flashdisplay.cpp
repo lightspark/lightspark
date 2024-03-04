@@ -6856,6 +6856,8 @@ void DisplayObjectContainer::enterFrame(bool implicit)
 		child->skipFrame = skipFrame ? true : child->skipFrame;
 		child->enterFrame(implicit);
 	}
+	if (is<Loader>())
+		skipFrame = false;
 }
 
 /* This is run in vm's thread context */

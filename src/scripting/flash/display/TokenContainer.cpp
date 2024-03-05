@@ -676,7 +676,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			}
 			else
 			{
-				ry=0;
+				rx=0;
 				ry=0;
 			}
 			if (fromgraphics)

@@ -102,6 +102,15 @@ private:
 	};
 	std::list<refreshableSurface> surfacesToRefresh;
 	std::list<uint32_t> texturesToDelete;
+	struct DebugRect
+	{
+		DisplayObject* obj;
+		MATRIX matrix;
+		Vector2f pos;
+		Vector2f size;
+		bool onlyTranslate;
+	};
+	std::list<DebugRect> debugRects;
 public:
 	Mutex mutexRendering;
 	volatile bool screenshotneeded;
@@ -191,6 +200,8 @@ public:
 	void drawDebugLine(const Vector2f &a, const Vector2f &b);
 	void drawDebugRect(float x, float y, float width, float height, const MATRIX &matrix, bool onlyTranslate = false);
 	void drawDebugText(const tiny_string& str, const Vector2f& pos);
+	void addDebugRect(DisplayObject* obj, const MATRIX& matrix, bool scaleDown = false, const Vector2f& pos = Vector2f(), const Vector2f& size = Vector2f(), bool onlyTranslate = false);
+	void removeDebugRect();
 	void beginBlendTexture();
 	void endBlendTexture();
 	void setViewPort(uint32_t w, uint32_t h);

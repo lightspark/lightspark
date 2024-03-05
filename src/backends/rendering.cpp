@@ -1071,6 +1071,34 @@ void RenderThread::drawDebugText(const tiny_string& str, const Vector2f& pos)
 
 }
 
+void RenderThread::addDebugRect(DisplayObject* obj, const MATRIX& matrix, bool scaleDown, const Vector2f& pos, const Vector2f& size, bool onlyTranslate)
+{
+	MATRIX _matrix = matrix;
+	Vector2f _size = size;
+	if (obj != nullptr)
+	{
+		number_t bxmin, bxmax, bymin, bymax;
+		obj->getBounds(bxmin, bxmax, bymin, bymax, MATRIX(), false);
+		if (_size == Vector2f())
+		{
+;			float width = bxmin < 0 ? -bxmin+bxmax : bxmax-bxmin;
+			float height = bymin < 0 ? -bymin+bymax : bymax-bymin;
+			_size = Vector2f(width, height);
+		}
+		_matrix.translate(bxmin,bymin);
+	}
+	if (scaleDown)
+		_matrix.scale(1/scaleX, 1/scaleY);
+	if (_size != Vector2f())
+		debugRects.push_back(DebugRect { obj, _matrix, pos, _size, onlyTranslate });
+}
+
+void RenderThread::removeDebugRect()
+{
+	if (!debugRects.empty())
+		debugRects.pop_back();
+}
+
 bool RenderThread::coreRendering()
 {
 	Locker l(mutexRendering);
@@ -1089,6 +1117,10 @@ bool RenderThread::coreRendering()
 	setMatrixUniform(LSGL_MODELVIEW);
 
 	bool ret = m_sys->stage->Render(*this);
+
+	for (auto it : debugRects)
+		drawDebugRect(it.pos.x, it.pos.y, it.size.x, it.size.y, it.matrix, it.onlyTranslate);
+	debugRects.clear();
 
 	if(m_sys->showProfilingData)
 		plotProfilingData();

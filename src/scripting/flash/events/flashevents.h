@@ -32,7 +32,7 @@ namespace lightspark
 
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	FUNCTION,FUNCTION_ASYNC, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
-	FLUSH_INVALIDATION_QUEUE, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,AVM1INITACTION_EVENT,ROOTCONSTRUCTEDEVENT, LOCALCONNECTIONEVENT };
+	FLUSH_INVALIDATION_QUEUE, FLUSH_EVENT_BUFFER, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,AVM1INITACTION_EVENT,SET_LOADER_CONTENT_EVENT,ROOTCONSTRUCTEDEVENT, LOCALCONNECTIONEVENT };
 
 class ABCContext;
 class DictionaryTag;
@@ -519,6 +519,17 @@ public:
 	AdvanceFrameEvent(_NR<DisplayObject> m=NullRef): Event(nullptr,nullptr,"AdvanceFrameEvent"),clip(m) {}
 	EVENT_TYPE getEventType() const override { return ADVANCE_FRAME; }
 };
+class SetLoaderContentEvent: public Event
+{
+friend class ABCVm;
+private:
+	_NR<DisplayObject> content;
+	_NR<Loader> loader;
+public:
+	SetLoaderContentEvent(_NR<DisplayObject> m, _NR<Loader> _loader): Event(nullptr,nullptr,"SetLoaderContentEvent"),content(m),loader(_loader) {}
+	//SetLoaderContentEvent(_NR<MovieClip> m, _NR<Loader> _loader);
+	EVENT_TYPE getEventType() const override { return SET_LOADER_CONTENT_EVENT; }
+};
 class RootConstructedEvent: public Event
 {
 friend class ABCVm;
@@ -548,6 +559,17 @@ class IdleEvent: public WaitableEvent
 public:
 	IdleEvent(): WaitableEvent("IdleEvent") {}
 	EVENT_TYPE getEventType() const override { return IDLE_EVENT; }
+};
+
+class FlushEventBufferEvent: public Event
+{
+friend class ABCVm;
+private:
+	bool append;
+	bool reverse;
+public:
+	FlushEventBufferEvent(bool _append = true, bool _reverse = false): Event(nullptr,nullptr, "FlushEventBufferEvent"),append(_append),reverse(_reverse) {}
+	EVENT_TYPE getEventType() const override { return FLUSH_EVENT_BUFFER; }
 };
 
 //Event to flush the invalidation queue

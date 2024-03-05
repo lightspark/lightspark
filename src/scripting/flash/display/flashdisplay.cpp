@@ -611,12 +611,9 @@ void LoaderThread::execute()
 	{
 		if (res != loader->getSystemState()->mainClip)
 		{
-			if (res->is<RootMovieClip>() && !res->as<RootMovieClip>()->usesActionScript3)
-				res->setIsInitialized(false);
 			res->incRef();
-			loader->setContent(res);
-			res->skipFrame = true;
-			res->placedByActionScript = true;
+			getVm(loader->getSystemState())->addBufferEvent(NullRef,_MR(new (loader->getSystemState()->unaccountedMemory) SetLoaderContentEvent(_MR(res), loader)));
+			getVm(loader->getSystemState())->addEvent(NullRef, _MR(new (loader->getSystemState()->unaccountedMemory) FlushEventBufferEvent(false,true)));
 		}
 	}
 }
@@ -6852,6 +6849,8 @@ void DisplayObjectContainer::enterFrame(bool implicit)
 		child->skipFrame = skipFrame ? true : child->skipFrame;
 		child->enterFrame(implicit);
 	}
+	if (is<Loader>())
+		skipFrame = false;
 }
 
 /* This is run in vm's thread context */
@@ -6919,7 +6918,7 @@ void MovieClip::advanceFrame(bool implicit)
 	   || (!getClass()->isSubClass(Class<MovieClip>::getClass(getSystemState()))
 		   && (needsActionScript3() || !getClass()->isSubClass(Class<AVM1MovieClip>::getClass(getSystemState()))))))
 	{
-		if (int(state.FP) >= state.last_FP && !state.inEnterFrame) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
+		if (int(state.FP) >= state.last_FP && !state.inEnterFrame && implicit) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
 			DisplayObjectContainer::advanceFrame(true);
 		declareFrame(implicit);
 		return;
@@ -6954,7 +6953,7 @@ void MovieClip::advanceFrame(bool implicit)
 			state.next_FP = 0;
 	}
 	// ensure the legacy objects of the current frame are created
-	if (int(state.FP) >= state.last_FP && !state.inEnterFrame) // no need to advance frame if we are moving backwards in the timeline, as the timeline will be rebuild anyway
+	if (int(state.FP) >= state.last_FP && !state.inEnterFrame && implicit) // no need to advance frame if we are moving backwards in the timeline, as the timeline will be rebuild anyway
 		DisplayObjectContainer::advanceFrame(true);
 	
 	declareFrame(implicit);

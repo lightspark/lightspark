@@ -2183,7 +2183,7 @@ void RootMovieClip::constructionComplete(bool _explicit)
 		if (!isVmThread())
 		{
 			this->incRef();
-			getVm(getSystemState())->addEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this), _explicit)));
+			getVm(getSystemState())->addBufferEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this), _explicit)));
 		}
 		else
 			MovieClip::constructionComplete(_explicit);
@@ -2375,7 +2375,7 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 	if (innerClip == nullptr || !innerClip->needsActionScript3())
 		return;
 
-	if (innerClip->getInstanceWorker()->rootClip->version <= 9)
+	if (innerClip->loadedFrom->version <= 9)
 	{
 		innerClip->initFrame();
 		innerClip->skipFrame = true;

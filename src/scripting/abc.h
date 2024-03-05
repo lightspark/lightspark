@@ -549,6 +549,7 @@ private:
 	typedef std::pair<_NR<EventDispatcher>,_R<Event>> eventType;
 	std::deque<eventType, reporter_allocator<eventType>> events_queue;
 	std::list<eventType, reporter_allocator<eventType>> idleevents_queue;
+	std::list<eventType, reporter_allocator<eventType>> event_buffer;
 	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
 	void handleFrontEvent();
 	void signalEventWaiters();
@@ -1406,6 +1407,8 @@ public:
 	bool addEvent(_NR<EventDispatcher>,_R<Event>, bool isGlobalMessage=false) DLL_PUBLIC;
 	bool prependEvent(_NR<EventDispatcher>, _R<Event> , bool force=false) DLL_PUBLIC;
 	bool addIdleEvent(_NR<EventDispatcher>, _R<Event> , bool removeprevious=false) DLL_PUBLIC;
+	bool addBufferEvent(_NR<EventDispatcher>, _R<Event>) DLL_PUBLIC;
+	bool prependBufferEvent(_NR<EventDispatcher>, _R<Event>) DLL_PUBLIC;
 	int getEventQueueSize();
 	void shutdown();
 	bool hasEverStarted() const { return status!=CREATED; }

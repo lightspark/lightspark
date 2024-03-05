@@ -373,7 +373,8 @@ public:
 	FORCE_INLINE void decStack(call_context* saved_cc)
 	{
 		currentCallContext = saved_cc;
-		--cur_recursion; //decrement current recursion depth
+		if (cur_recursion > 0)
+			--cur_recursion; //decrement current recursion depth
 	}
 	void throwStackOverflow();
 	ASFUNCTION_ATOM(_getCurrent);

@@ -747,7 +747,7 @@ void ABCContext::dumpProfilingData(ostream& f) const
  * nextNamespaceBase is set to 2 since 0 is the empty namespace and 1 is the AS3 namespace
  */
 ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(true),canFlushInvalidationQueue(true),shuttingdown(false),
-	events_queue(reporter_allocator<eventType>(m)),idleevents_queue(reporter_allocator<eventType>(m)),nextNamespaceBase(2),
+	events_queue(reporter_allocator<eventType>(m)),idleevents_queue(reporter_allocator<eventType>(m)),event_buffer(reporter_allocator<eventType>(m)),nextNamespaceBase(2),
 	vmDataMemory(m)
 {
 	m_sys=s;
@@ -1152,6 +1152,18 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					clip->advanceFrame(true);
 				break;
 			}
+			case SET_LOADER_CONTENT_EVENT:
+			{
+				SetLoaderContentEvent* ev=static_cast<SetLoaderContentEvent*>(e.second.getPtr());
+				LOG(LOG_CALLS,"SetLoaderContentEvent");
+				if (ev->content->is<RootMovieClip>() && !ev->content->needsActionScript3())
+					ev->content->setIsInitialized(false);
+				ev->content->incRef();
+				ev->loader->setContent(ev->content.getPtr());
+				ev->content->skipFrame = true;
+				ev->content->placedByActionScript = true;
+				break;
+			}
 			case ROOTCONSTRUCTEDEVENT:
 			{
 				RootConstructedEvent* ev=static_cast<RootConstructedEvent*>(e.second.getPtr());
@@ -1186,6 +1198,18 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 //						ASObject::dumpObjectCounters(100);
 #endif
 				}
+				break;
+			}
+			case FLUSH_EVENT_BUFFER:
+			{
+				FlushEventBufferEvent* ev=static_cast<FlushEventBufferEvent*>(e.second.getPtr());
+				Locker l(event_queue_mutex);
+				events_queue.insert(
+					ev->append ? events_queue.end() : events_queue.begin(),
+					ev->reverse ? event_buffer.rend().base() : event_buffer.begin(),
+					ev->reverse ? event_buffer.rbegin().base() : event_buffer.end()
+				);
+				event_buffer.clear();
 				break;
 			}
 			case FLUSH_INVALIDATION_QUEUE:
@@ -1332,6 +1356,34 @@ bool ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool removeprev
 		}
 	}
 	idleevents_queue.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
+	RELEASE_WRITE(ev->queued,true);
+	return true;
+}
+
+bool ABCVm::addBufferEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
+{
+	Locker l(event_queue_mutex);
+	//If the system should terminate new events are not accepted
+	if(shuttingdown)
+	{
+		if (obj)
+			obj->afterHandleEvent(ev.getPtr());
+		return false;
+	}
+
+	event_buffer.push_back(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
+	RELEASE_WRITE(ev->queued,true);
+	return true;
+}
+
+bool ABCVm::prependBufferEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
+{
+	Locker l(event_queue_mutex);
+	//If the system should terminate new events are not accepted
+	if(shuttingdown)
+		return false;
+
+	event_buffer.push_front(pair<_NR<EventDispatcher>,_R<Event>>(obj, ev));
 	RELEASE_WRITE(ev->queued,true);
 	return true;
 }

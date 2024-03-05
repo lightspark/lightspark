@@ -200,6 +200,20 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 			}
 		}
 	}
+
+	MATRIX maskMatrix;
+	if (!mask.isNull())
+	{
+		MATRIX globalMatrix = getConcatenatedMatrix();
+		maskMatrix = globalMatrix.isInvertible() ? globalMatrix.getInverted() : MATRIX();
+		maskMatrix = maskMatrix.multiplyMatrix(mask->getConcatenatedMatrix());
+		ctxt.pushMask();
+		ctxt.transformStack().push(Transform2D(maskMatrix, ColorTransformBase()));
+		mask->renderImpl(ctxt);
+		ctxt.transformStack().pop();
+		ctxt.activateMask();
+	}
+
 	if (ctxt.contextType == RenderContext::CAIRO && ctxt.startobject == this)
 	{
 		ctxt.createTransformStack();
@@ -212,6 +226,15 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 	}
 	else
 		ret = renderImpl(ctxt);
+
+	if (!mask.isNull())
+	{
+		ctxt.deactivateMask();
+		ctxt.transformStack().push(Transform2D(maskMatrix, ColorTransformBase()));
+		mask->renderImpl(ctxt);
+		ctxt.transformStack().pop();
+		ctxt.popMask();
+	}
 	ctxt.currentShaderBlendMode = oldshaderblendmode;
 	ctxt.transformStack().pop();
 	return ret;

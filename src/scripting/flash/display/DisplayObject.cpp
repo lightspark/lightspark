@@ -1978,7 +1978,7 @@ int DisplayObject::getDepth()
 
 int DisplayObject::getClipDepth() const
 {
-	return ClipDepth + 16384;
+	return ClipDepth ? ClipDepth + 16384 : 0;
 }
 
 _NR<RootMovieClip> DisplayObject::getRoot()

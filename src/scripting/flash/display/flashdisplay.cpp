@@ -66,7 +66,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(nullptr),bytesData(NullRef),waitedObject(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(nullptr),bytesData(NullRef),waitedObject(nullptr),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
@@ -79,7 +79,7 @@ LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),appli
 LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, Loader* l):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),bytesData(NullRef),waitedObject(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(l),bytesData(NullRef),waitedObject(nullptr),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;

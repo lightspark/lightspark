@@ -758,12 +758,21 @@ void LocalDownloader::execute()
 		FileStreamCache *fileCache = dynamic_cast<FileStreamCache *>(cache.getPtr());
 		if (fileCache)
 		{
-			fileCache->useExistingFile(url);
+			try
+			{
+				fileCache->useExistingFile(url);
+				//Report that we've downloaded everything already
+				length = fileCache->getReceivedLength();
+				notifyOwnerAboutBytesLoaded();
+				notifyOwnerAboutBytesTotal();
+			}
+			catch(exception& e)
+			{
+				LOG(LOG_ERROR, "Exception when using existing file: "<<url<<" "<<e.what());
+				setFailed();
+				return;
+			}
 
-			//Report that we've downloaded everything already
-			length = fileCache->getReceivedLength();
-			notifyOwnerAboutBytesLoaded();
-			notifyOwnerAboutBytesTotal();
 		}
 		//Otherwise we follow the normal procedure
 		else {

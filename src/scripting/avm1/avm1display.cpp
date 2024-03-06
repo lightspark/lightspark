@@ -256,9 +256,13 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,removeListener)
 	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
 	
 	ASObject* o = asAtomHandler::toObject(args[0],wrk);
-
-	th->listeners.erase(o);
-	o->removeStoredMember();
+	
+	auto it = th->listeners.find(o);
+	if (it != th->listeners.end())
+	{
+		th->listeners.erase(o);
+		o->removeStoredMember();
+	}
 }
 void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
@@ -278,8 +282,10 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 	if (ldr)
 	{
 		ASWorker* wrk = getInstanceWorker();
-		auto it = listeners.begin();
-		while (it != listeners.end())
+		
+		std::set<ASObject*> tmplisteners = listeners;
+		auto it = tmplisteners.begin();
+		while (it != tmplisteners.end())
 		{
 			if (e->type == "open")
 			{
@@ -415,15 +421,19 @@ bool AVM1MovieClipLoader::destruct()
 	auto itlst = listeners.begin();
 	while (itlst != listeners.end())
 	{
-		(*itlst)->removeStoredMember();
-		listeners.erase(itlst);
+		ASObject* o = (*itlst);
+		itlst = listeners.erase(itlst);
+		o->removeStoredMember();
 	}
+	loadermutex.lock();
 	auto itldr = loaderlist.begin();
 	while (itldr != loaderlist.end())
 	{
-		(*itldr)->removeStoredMember();
-		loaderlist.erase(itldr);
+		Loader* o = (*itldr);
+		itldr = loaderlist.erase(itldr);
+		o->removeStoredMember();
 	}
+	loadermutex.unlock();
 	return ASObject::destruct();
 }
 
@@ -438,12 +448,14 @@ void AVM1MovieClipLoader::prepareShutdown()
 		(*itlst)->prepareShutdown();
 		itlst++;
 	}
+	loadermutex.lock();
 	auto itldr = loaderlist.begin();
 	while (itldr != loaderlist.end())
 	{
 		(*itldr)->prepareShutdown();
 		itldr++;
 	}
+	loadermutex.unlock();
 }
 bool AVM1MovieClipLoader::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
@@ -456,12 +468,14 @@ bool AVM1MovieClipLoader::countCylicMemberReferences(garbagecollectorstate& gcst
 		ret = (*itlst)->countAllCylicMemberReferences(gcstate) || ret;
 		itlst++;
 	}
+	loadermutex.lock();
 	auto itldr = loaderlist.begin();
 	while (itldr != loaderlist.end())
 	{
 		ret = (*itldr)->countAllCylicMemberReferences(gcstate) || ret;
 		itldr++;
 	}
+	loadermutex.unlock();
 	return ret;
 }
 

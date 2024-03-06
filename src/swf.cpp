@@ -2193,6 +2193,13 @@ void RootMovieClip::constructionComplete(bool _explicit)
 	
 	incRef();
 	getSystemState()->stage->_addChildAt(this,0);
+	getSystemState()->addTick(1000/frameRate,getSystemState());
+}
+void RootMovieClip::afterConstruction(bool _explicit)
+{
+	DisplayObject::afterConstruction(_explicit);
+	if (this!=getSystemState()->mainClip)
+		return;
 	this->setOnStage(true,true);
 	if (!needsActionScript3())
 	{
@@ -2201,11 +2208,6 @@ void RootMovieClip::constructionComplete(bool _explicit)
 	}
 	if (!loaderInfo.isNull())
 		loaderInfo->setComplete();
-	getSystemState()->addTick(1000/frameRate,getSystemState());
-}
-void RootMovieClip::afterConstruction(bool _explicit)
-{
-	DisplayObject::afterConstruction(_explicit);
 }
 void RootMovieClip::revertFrame()
 {

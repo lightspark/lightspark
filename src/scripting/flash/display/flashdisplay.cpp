@@ -2141,6 +2141,12 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		}
 	}
 	bool newframe = state.FP != next_FP;
+	if (!stop && !newframe && !needsActionScript3())
+	{
+		// for AVM1 gotoandplay if we are not switching to a new frame we just act like a normal "play"
+		setPlaying();
+		return;
+	}
 	state.next_FP = next_FP;
 	state.explicit_FP = true;
 	state.stop_FP = stop;

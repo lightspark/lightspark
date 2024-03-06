@@ -6973,7 +6973,6 @@ void MovieClip::constructionComplete(bool _explicit)
 {
 	Sprite::constructionComplete(_explicit);
 
-	AVM1HandleConstruction();
 	/* If this object was 'new'ed from AS code, the first
 	 * frame has not been initalized yet, so init the frame
 	 * now */
@@ -6983,6 +6982,7 @@ void MovieClip::constructionComplete(bool _explicit)
 		if (getSystemState()->getFramePhase() != FramePhase::ADVANCE_FRAME)
 			initFrame();
 	}
+	AVM1HandleConstruction();
 }
 void MovieClip::beforeConstruction(bool _explicit)
 {

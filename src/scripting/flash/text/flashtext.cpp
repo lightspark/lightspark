@@ -1083,6 +1083,9 @@ ASFUNCTIONBODY_ATOM(TextField,_setSelection)
 	if (th->selectionEndIndex >= (int32_t)text.numChars())
 		th->selectionEndIndex = text.numChars()-1;
 
+	if (th->selectionEndIndex < 0)
+		th->selectionEndIndex = 0;
+
 	if (th->selectionBeginIndex > th->selectionEndIndex)
 		th->selectionBeginIndex = th->selectionEndIndex;
 
@@ -1669,7 +1672,7 @@ void TextField::defaultEventBehavior(_R<Event> e)
 						textUpdated();
 					}
 					else
-						linemutex->lock();
+						linemutex->unlock();
 					break;
 				case AS3KEYCODE_LEFT:
 					if (this->caretIndex > 0)

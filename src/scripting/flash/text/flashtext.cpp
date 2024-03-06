@@ -1669,7 +1669,7 @@ void TextField::defaultEventBehavior(_R<Event> e)
 						textUpdated();
 					}
 					else
-						linemutex->lock();
+						linemutex->unlock();
 					break;
 				case AS3KEYCODE_LEFT:
 					if (this->caretIndex > 0)

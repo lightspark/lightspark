@@ -663,7 +663,9 @@ bool DisplayObject::hasFilters() const
 
 void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 {
-	if (cachedSurface.cachedFilterTextureID != UINT32_MAX)
+	if (cachedSurface.cachedFilterTextureID != UINT32_MAX
+		|| (!cachedSurface.isInitialized && this->hasFilters())
+		)
 	{
 		cachedSurface.needsFilterRefresh=true;
 		this->hasChanged=true;
@@ -673,7 +675,9 @@ void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 	DisplayObject* p = getParent();
 	while (p)
 	{
-		if (p->cachedSurface.cachedFilterTextureID != UINT32_MAX)
+		if (p->cachedSurface.cachedFilterTextureID != UINT32_MAX
+			|| (!p->cachedSurface.isInitialized && p->hasFilters())
+			)
 		{
 			p->requestInvalidationFilterParent(q);
 			break;

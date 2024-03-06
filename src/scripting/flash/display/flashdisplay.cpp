@@ -6716,6 +6716,7 @@ void MovieClip::AVM1AddScriptEvents()
 				script.startactionpos = (*it).startactionpos;
 				script.avm1context = this->getCurrentFrame()->getAVM1Context();
 				script.event_name_id = UINT32_MAX;
+				this->incRef(); // will be decreffed after script handler was executed 
 				script.clip=this;
 				getSystemState()->stage->AVM1AddScriptToExecute(script);
 			}

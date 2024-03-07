@@ -33,9 +33,10 @@ using namespace lightspark;
 void NativeApplication::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("nativeApplication", "", Class<IFunction>::getFunction(c->getSystemState(),_getNativeApplication), GETTER_METHOD, false);
+	REGISTER_GETTER_STATIC_RESULTTYPE(c,nativeApplication,NativeApplication);
 	c->setDeclaredMethodByQName("applicationDescriptor", "", Class<IFunction>::getFunction(c->getSystemState(),_getApplicationDescriptor), GETTER_METHOD, true);
 	c->setDeclaredMethodByQName("addEventListener", "", Class<IFunction>::getFunction(c->getSystemState(),addEventListener), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("exit", "", Class<IFunction>::getFunction(c->getSystemState(),_exit), NORMAL_METHOD, true);
 }
 
 ASFUNCTIONBODY_ATOM(NativeApplication,_constructor)
@@ -43,11 +44,8 @@ ASFUNCTIONBODY_ATOM(NativeApplication,_constructor)
 	EventDispatcher::_constructor(ret,wrk,obj, nullptr, 0);
 }
 
-//  Should actually be a Singleton
-ASFUNCTIONBODY_ATOM(NativeApplication, _getNativeApplication)
-{
-	ret = asAtomHandler::fromObject(Class<NativeApplication>::getInstanceS(wrk));
-}
+ASFUNCTIONBODY_GETTER_STATIC(NativeApplication, nativeApplication)
+
 ASFUNCTIONBODY_ATOM(NativeApplication, _getApplicationDescriptor)
 {
 	tiny_string xmlstr;
@@ -69,6 +67,14 @@ ASFUNCTIONBODY_ATOM(NativeApplication, addEventListener)
 		th->incRef();
 		getVm(th->getSystemState())->addEvent(_MR(th), _MR(Class<InvokeEvent>::getInstanceS(wrk)));
 	}
+}
+
+ASFUNCTIONBODY_ATOM(NativeApplication, _exit)
+{
+	int errorCode=0;
+	ARG_CHECK(ARG_UNPACK (errorCode,0));
+	wrk->getSystemState()->setExitCode(errorCode);
+	wrk->getSystemState()->setShutdownFlag();
 }
 
 void NativeDragManager::sinit(Class_base* c)

@@ -64,6 +64,7 @@ class FontTag;
 class SoundTransform;
 class ASFile;
 class EngineData;
+class NativeApplication;
 
 enum class FramePhase
 {
@@ -229,6 +230,8 @@ private:
 	bool firsttick;
 	bool localstorageallowed;
 	bool influshing;
+	bool hasExitCode;
+	int exitCode;
 	RenderThread* renderThread;
 	InputThread* inputThread;
 	EngineData* engineData;
@@ -363,6 +366,8 @@ public:
 	bool isShuttingDown() const DLL_PUBLIC;
 	bool isOnError() const DLL_PUBLIC;
 	void setShutdownFlag() DLL_PUBLIC;
+	void setExitCode(int exitcode) DLL_PUBLIC;
+	int getExitCode() DLL_PUBLIC;
 	void signalTerminated();
 	std::map<tiny_string, _R<SharedObject> > sharedobjectmap;
 	bool localStorageAllowed() const { return localstorageallowed; }
@@ -588,6 +593,7 @@ public:
 	tiny_string static_Multitouch_inputMode;
 	_NR<ASFile> static_ASFile_applicationDirectory;
 	_NR<ASFile> static_ASFile_applicationStorageDirectory;
+	_NR<NativeApplication> static_NativeApplication_nativeApplication;
 
 	ACQUIRE_RELEASE_FLAG(isinitialized);
 	Mutex initializedMutex;

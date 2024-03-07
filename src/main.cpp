@@ -187,7 +187,7 @@ public:
 	{
 		if (sys->flashMode == SystemState::FLASH_MODE::AIR)
 		{
-			tiny_string swfpath = FileFullPath(sys,sys->getDumpedSWFPath());
+			tiny_string swfpath = FileFullPath(sys,"");
 			gchar* dir = g_path_get_dirname(swfpath.raw_buf());
 			std::string p = dir;
 			p += G_DIR_SEPARATOR_S;
@@ -710,7 +710,7 @@ int main(int argc, char* argv[])
 	 * SystemState::setShutdownFlag.
 	 */
 	sys->destroy();
-	bool isonerror = sys->exitOnError==SystemState::ERROR_ANY && sys->isOnError();
+	int exitcode = sys->getExitCode();
 	SDL_Event event;
 	SDL_zero(event);
 	event.type = LS_USEREVENT_QUIT;
@@ -722,6 +722,6 @@ int main(int argc, char* argv[])
 
 	SystemState::staticDeinit();
 	
-	return isonerror ? 1 : 0;
+	return exitcode;
 }
 

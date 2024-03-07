@@ -32,9 +32,10 @@ public:
 	NativeApplication(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION_ATOM(_getNativeApplication);
+	ASPROPERTY_GETTER(_NR<NativeApplication>,nativeApplication);
 	ASFUNCTION_ATOM(_getApplicationDescriptor);
 	ASFUNCTION_ATOM(addEventListener);
+	ASFUNCTION_ATOM(_exit);
 };
 
 class NativeDragManager: public ASObject

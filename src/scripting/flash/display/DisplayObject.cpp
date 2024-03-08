@@ -144,12 +144,9 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 		return false;
 	AS_BLENDMODE oldshaderblendmode = ctxt.currentShaderBlendMode;
 	bool ret = true;
-	Vector2f scale = getSystemState()->getRenderThread()->getScale();
 	MATRIX _matrix = startmatrix ? *startmatrix : getMatrix();
-	MATRIX initialMatrix;
-	initialMatrix.scale(scale.x, scale.y);
 	ctxt.transformStack().push(Transform2D(
-		is<RootMovieClip>() && !startmatrix ? initialMatrix : _matrix,
+		 _matrix,
 		!colorTransform.isNull() ? *colorTransform.getPtr() : ColorTransformBase()
 	));
 	if (ctxt.contextType == RenderContext::GL)
@@ -165,6 +162,9 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 			}
 			bool needsFilterRefresh = cachedSurface.needsFilterRefresh && hasFilters();
 			auto baseTransform = ctxt.transformStack().transform();
+			Vector2f scale = getSystemState()->getRenderThread()->getScale();
+			MATRIX initialMatrix;
+			initialMatrix.scale(scale.x, scale.y);
 			RectF bounds = boundsRectWithRenderTransform(baseTransform.matrix, true, initialMatrix);
 			Vector2f offset(bounds.min.x-baseTransform.matrix.x0,bounds.min.y-baseTransform.matrix.y0);
 			Vector2f size = bounds.size();

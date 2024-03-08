@@ -1115,8 +1115,11 @@ bool RenderThread::coreRendering()
 	engineData->exec_glUseProgram(gpu_program);
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);
-
-	bool ret = m_sys->stage->Render(*this);
+	
+	Vector2f scale = getScale();
+	MATRIX initialMatrix;
+	initialMatrix.scale(scale.x, scale.y);
+	bool ret = m_sys->stage->Render(*this,false,&initialMatrix);
 
 	for (auto it : debugRects)
 		drawDebugRect(it.pos.x, it.pos.y, it.size.x, it.size.y, it.matrix, it.onlyTranslate);

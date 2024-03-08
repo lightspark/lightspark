@@ -1008,8 +1008,8 @@ void Loader::setContent(DisplayObject* o)
 	}
 	else
 	{
-		o->incRef();
-		_addChildAt(o, 0);
+		content->incRef();
+		_addChildAt(content, 0);
 	}
 	if (!o->loaderInfo.isNull())
 		o->loaderInfo->setComplete();
@@ -4866,7 +4866,7 @@ void Stage::cleanupDeadHiddenObjects()
 
 void Stage::AVM1AddDisplayObject(DisplayObject* dobj)
 {
-	if (!hasAVM1Clips)
+	if (!hasAVM1Clips || dobj->needsActionScript3())
 		return;
 	Locker l(avm1DisplayObjectMutex);
 	if (dobj->avm1PrevDisplayObject || dobj->avm1NextDisplayObject || this->avm1DisplayObjectFirst == dobj)
@@ -4925,6 +4925,7 @@ void Stage::enterFrame(bool implicit)
 	cloneDisplayList(list);
 	for (auto child : list)
 		child->enterFrame(implicit);
+	executeAVM1Scripts(implicit);
 }
 
 void Stage::advanceFrame(bool implicit)
@@ -4937,6 +4938,10 @@ void Stage::advanceFrame(bool implicit)
 		});
 		DisplayObjectContainer::advanceFrame(implicit);
 	}
+	executeAVM1Scripts(implicit);
+}
+void Stage::executeAVM1Scripts(bool implicit)
+{
 	if (hasAVM1Clips)
 	{
 		// scripts on AVM1 clips are executed in order of instantiation
@@ -4948,8 +4953,7 @@ void Stage::advanceFrame(bool implicit)
 		while (dobj)
 		{
 			dobj->incRef();
-			if (!dobj->needsActionScript3() &&
-				(!dobj->is<MovieClip>() || dobj->as<MovieClip>()->state.last_FP!=-1)) // MovieClips advance for the first time after construction and should not advance again here
+			if (!dobj->needsActionScript3() && dobj->isConstructed())
 				dobj->advanceFrame(implicit);
 			avm1DisplayObjectMutex.lock();
 			if (!dobj->avm1NextDisplayObject && !dobj->avm1PrevDisplayObject) // clip was removed from list during frame advance
@@ -4984,7 +4988,8 @@ void Stage::advanceFrame(bool implicit)
 		dobj = avm1DisplayObjectFirst;
 		while (dobj)
 		{
-			dobj->AVM1AfterAdvance();
+			if (dobj->isConstructed())
+				dobj->AVM1AfterAdvance();
 			dobj = dobj->avm1NextDisplayObject;
 		}
 		avm1DisplayObjectMutex.unlock();

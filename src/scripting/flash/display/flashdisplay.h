@@ -832,6 +832,7 @@ private:
 	DisplayObject* avm1DisplayObjectLast;
 	std::list<AVM1scriptToExecute> avm1scriptstoexecute;
 	bool hasAVM1Clips;
+	void executeAVM1Scripts(bool implicit);
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
 	bool renderImpl(RenderContext& ctxt) override;

@@ -2413,11 +2413,7 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 	handleBroadcastEvent("frameConstructed");
 
 	setFramePhase(FramePhase::EXECUTE_FRAMESCRIPT);
-	stage->DisplayObject::executeFrameScript();
-	stage->forEachHiddenObject([&](DisplayObject* obj)
-	{
-		obj->executeFrameScript();
-	});
+	stage->executeFrameScript();
 	for (auto it : removedFrameScripts)
 		it->executeFrameScript();
 

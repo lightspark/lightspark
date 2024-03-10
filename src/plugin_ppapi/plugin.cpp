@@ -31,6 +31,7 @@
 #include "backends/audio.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/display/NativeMenuItem.h"
+#include "scripting/flash/display/LoaderInfo.h"
 #include <string>
 #include <algorithm>
 #include <SDL2/SDL.h>

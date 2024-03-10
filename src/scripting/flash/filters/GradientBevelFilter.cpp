@@ -172,7 +172,7 @@ bool GradientBevelFilter::compareFILTER(const FILTER& filter) const
 			auto it = filter.GradientBevelFilter.GradientColors.begin();
 			while (it != filter.GradientBevelFilter.GradientColors.end())
 			{
-				asAtom a;
+				asAtom a = asAtomHandler::invalidAtom;
 				colors->at_nocheck(a,i);
 				if (RGB(it->Red,it->Green,it->Blue).toUInt() != asAtomHandler::toUInt(a))
 				{
@@ -198,7 +198,7 @@ bool GradientBevelFilter::compareFILTER(const FILTER& filter) const
 			auto it = filter.GradientBevelFilter.GradientRatio.begin();
 			while (it != filter.GradientBevelFilter.GradientRatio.end())
 			{
-				asAtom a;
+				asAtom a = asAtomHandler::invalidAtom;
 				ratios->at_nocheck(a,i);
 				if (*it != asAtomHandler::toUInt(a))
 				{

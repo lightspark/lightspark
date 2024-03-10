@@ -30,6 +30,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/display/Loader.h"
 
 using namespace std;
 using namespace lightspark;
@@ -1890,4 +1891,8 @@ LocalConnectionEvent::~LocalConnectionEvent()
 		ASATOM_DECREF(args[i]);
 	}
 	
+}
+
+SetLoaderContentEvent::SetLoaderContentEvent(_NR<DisplayObject> m, _NR<Loader> _loader): Event(nullptr,nullptr,"SetLoaderContentEvent"),content(m),loader(_loader)
+{
 }

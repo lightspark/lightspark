@@ -18,6 +18,8 @@
 **************************************************************************/
 
 #include "scripting/avm1/avm1display.h"
+#include "scripting/flash/display/LoaderInfo.h"
+#include "scripting/flash/display/Loader.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/net/flashnet.h"
@@ -806,6 +808,10 @@ ASFUNCTIONBODY_ATOM(AVM1BitmapData,loadBitmap)
 		ret = asAtomHandler::fromObjectNoPrimitive(tag->instance());
 	else
 		LOG(LOG_ERROR,"BitmapData.loadBitmap tag not found:"<<name);
+}
+
+AVM1Bitmap::AVM1Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li, istream* s, FILE_TYPE type):Bitmap(wrk,c,li,s,type)
+{
 }
 
 void AVM1Bitmap::sinit(Class_base *c)

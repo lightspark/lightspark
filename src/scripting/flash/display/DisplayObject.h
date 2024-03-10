@@ -201,7 +201,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	IDrawable* getCachedBitmapDrawable(DisplayObject* target, const MATRIX& initialMatrix, _NR<DisplayObject>* pcachedBitmap, bool smoothing);
 	IDrawable* getFilterDrawable(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q);
-	_NR<DisplayObject> getCachedBitmap() const { return cachedBitmap; }
+	_NR<DisplayObject> getCachedBitmap() const;
 	DisplayObjectContainer* getParent() const { return parent; }
 	int getParentDepth() const;
 	int findParentDepth(DisplayObject* d) const;
@@ -221,7 +221,7 @@ public:
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	MATRIX getMatrix(bool includeRotation = true) const;
-	bool isConstructed() const override { return ACQUIRE_READ(constructed); }
+	bool isConstructed() const override;
 	/**
 	 * Generate a new IDrawable instance for this object
 	 * @param target The topmost object in the hierarchy that is being drawn. Such object

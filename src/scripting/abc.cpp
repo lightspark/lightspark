@@ -84,6 +84,8 @@
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/net/Socket.h"
+#include "scripting/flash/display/Loader.h"
+#include "scripting/flash/display/LoaderInfo.h"
 
 using namespace std;
 using namespace lightspark;

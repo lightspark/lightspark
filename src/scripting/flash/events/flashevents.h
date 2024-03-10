@@ -44,6 +44,7 @@ class GameInputDevice;
 class DefineSpriteTag;
 class ByteArray;
 class Rectangle;
+class Loader;
 
 class Event: public ASObject
 {
@@ -526,7 +527,7 @@ private:
 	_NR<DisplayObject> content;
 	_NR<Loader> loader;
 public:
-	SetLoaderContentEvent(_NR<DisplayObject> m, _NR<Loader> _loader): Event(nullptr,nullptr,"SetLoaderContentEvent"),content(m),loader(_loader) {}
+	SetLoaderContentEvent(_NR<DisplayObject> m, _NR<Loader> _loader);
 	//SetLoaderContentEvent(_NR<MovieClip> m, _NR<Loader> _loader);
 	EVENT_TYPE getEventType() const override { return SET_LOADER_CONTENT_EVENT; }
 };

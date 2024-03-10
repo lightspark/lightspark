@@ -22,6 +22,7 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/system/messagechannel.h"
 #include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/display/Loader.h"
 #include "scripting/abc.h"
 #include "scripting/argconv.h"
 #include "compat.h"

@@ -23,9 +23,11 @@
 
 #include "asobject.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/Shape.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapData.h"
 
 namespace lightspark
@@ -148,7 +150,7 @@ public:
 class AVM1Bitmap: public Bitmap
 {
 public:
-	AVM1Bitmap(ASWorker* wrk,Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = nullptr, FILE_TYPE type=FT_UNKNOWN):Bitmap(wrk,c,li,s,type) {}
+	AVM1Bitmap(ASWorker* wrk,Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = nullptr, FILE_TYPE type=FT_UNKNOWN);
 	AVM1Bitmap(ASWorker* wrk,Class_base* c, _R<AVM1BitmapData> data):Bitmap(wrk,c,_R<BitmapData>(data)) {}
 	static void sinit(Class_base* c);
 };

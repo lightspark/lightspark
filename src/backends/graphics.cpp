@@ -29,6 +29,7 @@
 #include "compat.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/text/flashtext.h"
+#include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "parsing/tags.h"
 #include <pango/pangocairo.h>

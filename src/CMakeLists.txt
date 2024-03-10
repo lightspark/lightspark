@@ -105,6 +105,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/desktop/flashdesktop.cpp
   scripting/flash/display/BitmapContainer.cpp
   scripting/flash/display/BitmapData.cpp
+  scripting/flash/display/Bitmap.cpp
   scripting/flash/display/bitmapencodingcolorspace.cpp
   scripting/flash/display/colorcorrection.cpp
   scripting/flash/display/ColorCorrectionSupport.cpp
@@ -121,8 +122,12 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/GraphicsSolidFill.cpp
   scripting/flash/display/GraphicsStroke.cpp
   scripting/flash/display/GraphicsTrianglePath.cpp
+  scripting/flash/display/Loader.cpp
+  scripting/flash/display/LoaderInfo.cpp
+  scripting/flash/display/MorphShape.cpp
   scripting/flash/display/NativeMenuItem.cpp
   scripting/flash/display/NativeWindow.cpp
+  scripting/flash/display/Shape.cpp
   scripting/flash/display/jpegencoderoptions.cpp
   scripting/flash/display/jpegxrencoderoptions.cpp
   scripting/flash/display/pngencoderoptions.cpp

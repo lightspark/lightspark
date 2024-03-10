@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/display/Bitmap.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/toplevel.h"

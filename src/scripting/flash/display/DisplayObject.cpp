@@ -27,7 +27,9 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Matrix3D.h"
 #include "scripting/flash/accessibility/flashaccessibility.h"
+#include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/filters/BevelFilter.h"
@@ -86,7 +88,7 @@ bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 RectF DisplayObject::boundsRectWithRenderTransform(const MATRIX& matrix, bool includeOwnFilters, const MATRIX& initialMatrix)
 {
 	RectF bounds;
-	bool dummy = boundsRectWithoutChildren(bounds.min.x, bounds.max.x, bounds.min.y, bounds.max.y, false);
+	boundsRectWithoutChildren(bounds.min.x, bounds.max.x, bounds.min.y, bounds.max.y, false);
 	bounds *= matrix;
 	if (is<DisplayObjectContainer>())
 	{
@@ -1102,6 +1104,11 @@ MATRIX DisplayObject::getMatrix(bool includeRotation) const
 		ret.rotate(rotation*M_PI/180.0);
 	ret.translate(tx,ty);
 	return ret;
+}
+
+bool DisplayObject::isConstructed() const
+{
+	return ACQUIRE_READ(constructed);
 }
 
 void DisplayObject::extractValuesFromMatrix()
@@ -2655,6 +2662,11 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 				, isMask, mask
 				, getConcatenatedAlpha(), masks
 				, ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix,targetOffset);
+}
+
+_NR<DisplayObject> DisplayObject::getCachedBitmap() const
+{
+	return cachedBitmap;
 }
 
 bool DisplayObject::findParent(DisplayObject *d) const

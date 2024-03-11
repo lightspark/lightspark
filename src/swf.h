@@ -231,6 +231,7 @@ private:
 	bool localstorageallowed;
 	bool influshing;
 	bool hasExitCode;
+	int innerGotoCount;
 	int exitCode;
 	RenderThread* renderThread;
 	InputThread* inputThread;
@@ -372,6 +373,7 @@ public:
 	std::map<tiny_string, _R<SharedObject> > sharedobjectmap;
 	bool localStorageAllowed() const { return localstorageallowed; }
 	void setLocalStorageAllowed(bool allowed);
+	bool inInnerGoto() const { return innerGotoCount;}
 	void runInnerGotoFrame(DisplayObject* innerClip, const std::vector<_R<DisplayObject>>& removedFrameScripts = {});
 	void tick() override;
 	void tickFence() override;

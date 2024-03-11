@@ -259,7 +259,7 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 extern uint32_t asClassCount;
 
 SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
-	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),hasExitCode(false),
+	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),hasExitCode(false),innerGotoCount(0),
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -2403,17 +2403,18 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 		innerClip->skipFrame = true;
 		return;
 	}
-
+	
+	++innerGotoCount;
 	// according to http://www.senocular.com/flash/tutorials/orderofoperations/
 	// a subset of the normal events are added when navigation commands are executed when changing to a new frame by actionscript
 	FramePhase oldPhase = getFramePhase();
 
 	setFramePhase(FramePhase::INIT_FRAME);
-	stage->initFrame();
+	innerClip->initFrame();
 	handleBroadcastEvent("frameConstructed");
 
 	setFramePhase(FramePhase::EXECUTE_FRAMESCRIPT);
-	stage->executeFrameScript();
+	innerClip->executeFrameScript();
 	for (auto it : removedFrameScripts)
 		it->executeFrameScript();
 
@@ -2422,6 +2423,7 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 
 	stage->cleanupDeadHiddenObjects();
 	setFramePhase(oldPhase);
+	--innerGotoCount;
 }
 
 void SystemState::tick()

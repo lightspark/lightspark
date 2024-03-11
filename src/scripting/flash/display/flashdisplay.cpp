@@ -5470,6 +5470,15 @@ void MovieClip::constructionComplete(bool _explicit)
 		if (getSystemState()->getFramePhase() != FramePhase::ADVANCE_FRAME)
 			initFrame();
 	}
+	// another weird behaviour of framescript execution:
+	// it seems that the framescripts are also executed if
+	// - we are in an inner goto
+	// - the builtin MovieClip constructor was called
+	// and before we continue executing the constructor of this clip?!?
+	if (getSystemState()->inInnerGoto())
+	{
+		getSystemState()->stage->executeFrameScript();
+	}
 	AVM1HandleConstruction();
 }
 void MovieClip::beforeConstruction(bool _explicit)

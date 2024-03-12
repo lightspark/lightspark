@@ -143,47 +143,6 @@ public:
 		lighted=true;
 	}
 };
-class ASWorker;
-
-class IThreadJob
-{
-friend class ThreadPool;
-private:
-	ASWorker* fromWorker;
-public:
-	/*
-	 * Set to true by the ThreadPool just before threadAbort()
-	 * is called. For some implementations, it may be enough
-	 * to poll threadAborted and not implement threadAbort().
-	 */
-	volatile bool threadAborting;
-	/*
-	 * Called in a dedicated thread to do the actual
-	 * work. You may throw a JobTerminationException
-	 * to quit the job. (Or better: just return)
-	 */
-	virtual void execute()=0;
-	/*
-	 * Called asynchronously to abort a job
-	 * who is currently in execute().
-	 * 'aborting' is set to true before calling
-	 * this function.
-	 */
-	virtual void threadAbort() {}
-	/*
-	 * Called after the job has finished execute()'ing or
-	 * if the ThreadPool aborts and the job did not have
-	 * a chance to run yet.
-	 * You should use jobFence to signal blocking semaphores
-	 * and a like. There is no access to this object after
-	 * jobFence() is called, so you may safely call
-	 * 'delete this'.
-	 */
-	virtual void jobFence()=0;
-	IThreadJob() : fromWorker(nullptr),threadAborting(false) {}
-	virtual ~IThreadJob() {}
-	void setWorker(ASWorker* w) { fromWorker = w;}
-};
 
 template<class T>
 class BlockingCircularQueue

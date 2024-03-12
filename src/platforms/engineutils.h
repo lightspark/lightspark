@@ -27,6 +27,7 @@
 #include "forwards/threading.h"
 #include "forwards/swftypes.h"
 #include "forwards/backends/graphics.h"
+#include "interfaces/threading.h"
 #include "compat.h"
 #include "threading.h"
 #include "backends/graphics.h"

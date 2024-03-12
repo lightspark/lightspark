@@ -21,6 +21,7 @@
 #define FLASH_NET_SOCKET_H_
 
 #include "forwards/threading.h"
+#include "interfaces/threading.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/utils/flashutils.h"
 #include "tiny_string.h"

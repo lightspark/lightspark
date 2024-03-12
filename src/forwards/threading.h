@@ -31,10 +31,10 @@ class Locker;
 class Cond;
 class Semaphore;
 class SemaphoreLighter;
-class IThreadJob;
 template<class T>
 class BlockingCircularQueue;
 class CondTime;
+class IThreadJob;
 
 };
 #endif /* FORWARDS_THREADING_H */

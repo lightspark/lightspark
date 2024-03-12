@@ -23,6 +23,7 @@
 
 #include "timer.h"
 #include "compat.h"
+#include "interfaces/timer.h"
 
 using namespace lightspark;
 using namespace std;

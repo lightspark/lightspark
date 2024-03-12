@@ -24,6 +24,7 @@
 
 #include "forwards/threading.h"
 #include "forwards/backends/netutils.h"
+#include "interfaces/backends/netutils.h"
 #include "swftypes.h"
 #include "scripting/flash/events/flashevents.h"
 #include "backends/netutils.h"

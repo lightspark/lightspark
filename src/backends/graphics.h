@@ -27,6 +27,8 @@
 #include "forwards/scripting/flash/display/DisplayObject.h"
 #include "forwards/backends/geometry.h"
 #include "forwards/backends/graphics.h"
+#include "interfaces/backends/graphics.h"
+#include "interfaces/threading.h"
 #include "compat.h"
 #include <vector>
 #include "smartrefs.h"
@@ -252,36 +254,6 @@ public:
 	volatile bool needsFilterRefresh;
 	uint32_t cachedFilterTextureID;
 	
-};
-
-
-class ITextureUploadable
-{
-private:
-	bool queued;
-protected:
-	~ITextureUploadable(){}
-public:
-	ITextureUploadable():queued(false) {}
-	virtual void sizeNeeded(uint32_t& w, uint32_t& h) const=0;
-	virtual void contentScale(number_t& x, number_t& y) const {x = 1; y = 1;}
-	// Texture topleft from Shape origin
-	virtual void contentOffset(number_t& x, number_t& y) const {x = 0; y = 0;}
-	/*
-		Upload data to memory mapped to the graphics card (note: size is guaranteed to be enough
-	*/
-	virtual uint8_t* upload(bool refresh)=0;
-	virtual TextureChunk& getTexture()=0;
-	/*
-		Signal the completion of the upload to the texture
-		NOTE: fence may be called on shutdown even if the upload has not happen, so be ready for this event
-	*/
-	virtual void uploadFence()
-	{
-		queued=false;
-	}
-	void setQueued() {queued=true;}
-	bool getQueued() const { return queued;}
 };
 
 class IDrawable

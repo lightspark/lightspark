@@ -20,6 +20,7 @@
 #ifndef SCRIPTING_FLASH_SYSTEM_FLASHSYSTEM_H
 #define SCRIPTING_FLASH_SYSTEM_FLASHSYSTEM_H 1
 
+#include "interfaces/threading.h"
 #include "compat.h"
 #include "asobject.h"
 #include "threading.h"

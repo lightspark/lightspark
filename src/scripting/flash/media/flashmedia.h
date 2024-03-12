@@ -21,6 +21,7 @@
 #define SCRIPTING_FLASH_MEDIA_FLASHMEDIA_H 1
 
 #include "forwards/backends/netutils.h"
+#include "interfaces/backends/netutils.h"
 #include "compat.h"
 #include "asobject.h"
 #include "timer.h"

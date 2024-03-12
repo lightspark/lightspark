@@ -28,6 +28,8 @@
 #include "forwards/backends/netutils.h"
 #include "forwards/scripting/abc.h"
 #include "forwards/scripting/flash/system/flashsystem.h"
+#include "interfaces/threading.h"
+#include "interfaces/timer.h"
 #include "compat.h"
 #include <fstream>
 #include <list>

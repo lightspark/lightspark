@@ -26,15 +26,15 @@ namespace lightspark
 {
 
 /* forward declarations */
-class ILoadable;
 class DownloadManager;
 class StandaloneDownloadManager;
 class Downloader;
 class ThreadedDownloader;
 class CurlDownloader;
 class LocalDownloader;
-class IDownloaderThreadListener;
 class DownloaderThreadBase;
+class ILoadable;
+class IDownloaderThreadListener;
 
 };
 #endif /* FORWARDS_BACKENDS_NETUTILS_H */

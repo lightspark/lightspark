@@ -20,6 +20,7 @@
 #ifndef BACKENDS_RENDERING_H
 #define BACKENDS_RENDERING_H 1
 
+#include "interfaces/timer.h"
 #include "backends/rendering_context.h"
 #include "timer.h"
 #include <SDL2/SDL.h>

@@ -44,6 +44,7 @@ exclude_list="$@"
 forward_dir="forwards";
 [ -z "$exclude_list" ] && read -d '' exclude_list << EOF
 ${path}$forward_dir
+${path}interfaces
 ${path}3rdparty
 ${path}plugin
 ${path}plugin_ppapi

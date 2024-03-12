@@ -21,6 +21,7 @@
 #ifndef BACKENDS_EXTSCRIPTOBJECT_H
 #define BACKENDS_EXTSCRIPTOBJECT_H 1
 
+#include "forwards/swf.h"
 #include <string>
 #include <map>
 #include <memory>

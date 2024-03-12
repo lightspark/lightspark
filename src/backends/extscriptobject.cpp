@@ -32,6 +32,7 @@
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "parsing/tags.h"
 
 #include "backends/extscriptobject.h"
 

@@ -28,12 +28,16 @@
 #include <list>
 #include <cairo.h>
 
+#include "forwards/swftypes.h"
+#include "forwards/scripting/flash/display/DisplayObject.h"
+#include "forwards/scripting/flash/display/flashdisplay.h"
+#include "forwards/scripting/flash/system/flashsystem.h"
+#include "forwards/tiny_string.h"
 #include "logger.h"
 #include <cstdlib>
 #include <cassert>
 #include "exceptions.h"
 #include "smartrefs.h"
-#include "tiny_string.h"
 #include "memory_support.h"
 
 #ifdef BIG_ENDIAN
@@ -130,12 +134,8 @@ class ASObject;
 class ASString;
 class ABCContext;
 class URLInfo;
-class DisplayObject;
-class MovieClip;
-class Frame;
 class AVM1Function;
 class AVM1context;
-class ASWorker;
 struct namespace_info;
 
 struct multiname;

@@ -20,6 +20,7 @@
 #ifndef TIMER_H
 #define TIMER_H 1
 
+#include "forwards/timer.h"
 #include "compat.h"
 #include <list>
 #include <ctime>

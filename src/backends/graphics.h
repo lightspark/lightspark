@@ -23,10 +23,14 @@
 #define CHUNKSIZE_REAL 126 // 1 pixel on each side is used for clamping to edge
 #define CHUNKSIZE 128
 
+#include "forwards/swftypes.h"
+#include "forwards/scripting/flash/display/DisplayObject.h"
+#include "forwards/backends/geometry.h"
+#include "forwards/backends/graphics.h"
 #include "compat.h"
 #include <vector>
+#include "smartrefs.h"
 #include "swftypes.h"
-#include "threading.h"
 #include <cairo.h>
 #include <pango/pango.h>
 #include "backends/geometry.h"
@@ -36,10 +40,6 @@ namespace lightspark
 {
 
 enum SMOOTH_MODE { SMOOTH_NONE=0, SMOOTH_SUBPIXEL=1, SMOOTH_ANTIALIAS=2 };
-
-class DisplayObject;
-class InvalidateQueue;
-class ColorTransform;
 
 struct RectF
 {

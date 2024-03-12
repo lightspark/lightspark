@@ -27,6 +27,7 @@
 #include <list>
 #include <utility>
 #include "swftypes.h"
+#include "tiny_string.h"
 
 namespace lightspark
 {

@@ -20,6 +20,14 @@
 #ifndef SWF_H
 #define SWF_H 1
 
+#include "forwards/asobject.h"
+#include "forwards/swf.h"
+#include "forwards/thread_pool.h"
+#include "forwards/threading.h"
+#include "forwards/timer.h"
+#include "forwards/backends/netutils.h"
+#include "forwards/scripting/abc.h"
+#include "forwards/scripting/flash/system/flashsystem.h"
 #include "compat.h"
 #include <fstream>
 #include <list>
@@ -29,7 +37,6 @@
 #include <string>
 #include "swftypes.h"
 #include "scripting/flash/display/flashdisplay.h"
-#include "timer.h"
 #include "memory_support.h"
 
 class uncompressing_filter;
@@ -37,11 +44,9 @@ class uncompressing_filter;
 namespace lightspark
 {
 
-class ABCVm;
 class AudioManager;
 class Config;
 class ControlTag;
-class DownloadManager;
 class DisplayListTag;
 class DictionaryTag;
 class DefineScalingGridTag;
@@ -55,10 +60,6 @@ class SecurityManager;
 class LocaleManager;
 class CurrencyManager;
 class Tag;
-class ApplicationDomain;
-class ASWorker;
-class WorkerDomain;
-class SecurityDomain;
 class Class_inherit;
 class FontTag;
 class SoundTransform;

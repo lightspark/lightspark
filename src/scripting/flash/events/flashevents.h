@@ -23,6 +23,7 @@
 #include "compat.h"
 #include "asobject.h"
 #include "threading.h"
+#include "tiny_string.h"
 #include <string>
 #include <SDL2/SDL_keycode.h>
 #undef MOUSE_EVENT

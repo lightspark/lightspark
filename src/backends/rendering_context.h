@@ -20,8 +20,10 @@
 #ifndef BACKENDS_RENDERING_CONTEXT_H
 #define BACKENDS_RENDERING_CONTEXT_H 1
 
+#include "forwards/scripting/flash/display/DisplayObject.h"
+#include "forwards/scripting/flash/geom/flashgeom.h"
 #include <stack>
-#include "backends/graphics.h"
+#include "threading.h"
 #include "platforms/engineutils.h"
 #include "backends/graphics.h"
 

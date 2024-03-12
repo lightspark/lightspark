@@ -37,6 +37,7 @@
 #include "scripting/avm1/avm1display.h"
 #include "logger.h"
 #include "parsing/streams.h"
+#include "thread_pool.h"
 #include "asobject.h"
 #include "scripting/class.h"
 #include "backends/audio.h"

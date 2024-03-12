@@ -20,12 +20,14 @@
 #ifndef SCRIPTING_FLASH_MEDIA_FLASHMEDIA_H
 #define SCRIPTING_FLASH_MEDIA_FLASHMEDIA_H 1
 
+#include "forwards/backends/netutils.h"
 #include "compat.h"
 #include "asobject.h"
 #include "timer.h"
 #include "backends/graphics.h"
 #include "backends/decoder.h"
-#include "backends/netutils.h"
+#include "backends/urlutils.h"
+#include "threading.h"
 #include "scripting/flash/display/DisplayObject.h"
 
 namespace lightspark

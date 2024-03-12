@@ -22,9 +22,12 @@
 
 #include "compat.h"
 
+#include "forwards/threading.h"
+#include "forwards/backends/netutils.h"
 #include "swftypes.h"
 #include "scripting/flash/events/flashevents.h"
 #include "backends/netutils.h"
+#include "backends/graphics.h"
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/display/TokenContainer.h"
 #include "scripting/flash/display/NativeWindow.h"

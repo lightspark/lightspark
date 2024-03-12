@@ -20,6 +20,7 @@
 #ifndef SCRIPTING_ABCUTILS_H
 #define SCRIPTING_ABCUTILS_H 1
 
+#include "asobject.h"
 #include "smartrefs.h"
 #include "errorconstants.h"
 

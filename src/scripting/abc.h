@@ -20,6 +20,7 @@
 #ifndef SCRIPTING_ABC_H
 #define SCRIPTING_ABC_H 1
 
+#include "forwards/scripting/abc.h"
 #include "compat.h"
 #include <cstddef>
 #include "logger.h"
@@ -28,6 +29,7 @@
 #include <map>
 #include <set>
 #include "swf.h"
+#include "threading.h"
 #include "scripting/abcutils.h"
 #include "scripting/abctypes.h"
 

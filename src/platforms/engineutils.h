@@ -23,9 +23,12 @@
 #include <SDL2/SDL.h>
 // on ppc SDL.h includes altivec.h, so we have to undefine vector
 #undef vector
+#include "forwards/tiny_string.h"
+#include "forwards/threading.h"
+#include "forwards/swftypes.h"
+#include "forwards/backends/graphics.h"
 #include "compat.h"
 #include "threading.h"
-#include "tiny_string.h"
 #include "backends/graphics.h"
 
 #define LIGHTSPARK_AUDIO_BUFFERSIZE 512

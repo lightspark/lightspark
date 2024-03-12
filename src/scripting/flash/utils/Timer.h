@@ -20,11 +20,10 @@
 #ifndef SCRIPTING_FLASH_UTILS_TIMER_H
 #define SCRIPTING_FLASH_UTILS_TIMER_H 1
 
+#include "forwards/timer.h"
 #include "compat.h"
 #include "swftypes.h"
 #include "scripting/flash/events/flashevents.h"
-#include "thread_pool.h"
-#include "timer.h"
 
 
 namespace lightspark

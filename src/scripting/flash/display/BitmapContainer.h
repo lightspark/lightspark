@@ -20,6 +20,7 @@
 #ifndef SCRIPTING_FLASH_DISPLAY_BITMAPCONTAINER_H
 #define SCRIPTING_FLASH_DISPLAY_BITMAPCONTAINER_H 1
 
+#include "forwards/scripting/flash/geom/flashgeom.h"
 #include "compat.h"
 #include "memory_support.h"
 #include "smartrefs.h"

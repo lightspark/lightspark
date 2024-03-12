@@ -21,6 +21,7 @@
 #include "asobject.h"
 #include "scripting/class.h"
 #include "compat.h"
+#include "timer.h"
 #include "parsing/amf3_generator.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/errors/flasherrors.h"

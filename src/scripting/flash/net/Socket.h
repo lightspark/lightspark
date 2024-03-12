@@ -20,11 +20,11 @@
 #ifndef FLASH_NET_SOCKET_H_
 #define FLASH_NET_SOCKET_H_
 
+#include "forwards/threading.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/utils/flashutils.h"
 #include "tiny_string.h"
 #include "asobject.h"
-#include "threading.h"
 #include <glib.h>
 
 namespace lightspark

@@ -21,13 +21,15 @@
 #ifndef BACKENDS_NETUTILS_H
 #define BACKENDS_NETUTILS_H 1
 
+#include "forwards/threading.h"
+#include "forwards/thread_pool.h"
+#include "forwards/backends/netutils.h"
 #include "compat.h"
 #include <streambuf>
 #include <fstream>
 #include <list>
 #include <map>
 #include "swftypes.h"
-#include "thread_pool.h"
 #include "backends/urlutils.h"
 #include "backends/streamcache.h"
 #include "smartrefs.h"

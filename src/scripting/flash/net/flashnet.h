@@ -20,14 +20,15 @@
 #ifndef SCRIPTING_FLASH_NET_FLASHNET_H
 #define SCRIPTING_FLASH_NET_FLASHNET_H 1
 
+#include "forwards/threading.h"
+#include "forwards/timer.h"
+#include "forwards/backends/netutils.h"
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
-#include "thread_pool.h"
-#include "backends/netutils.h"
-#include "timer.h"
 #include "backends/decoder.h"
 #include "backends/audio.h"
+#include "backends/netutils.h"
 #include "NetStreamInfo.h"
 
 namespace lightspark

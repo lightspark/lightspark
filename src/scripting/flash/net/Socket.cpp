@@ -24,6 +24,7 @@
 #include "class.h"
 #include "argconv.h"
 #include "swf.h"
+#include "threading.h"
 #include "flash/errors/flasherrors.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/toplevel/Number.h"

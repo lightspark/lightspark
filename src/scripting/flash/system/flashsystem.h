@@ -22,6 +22,7 @@
 
 #include "compat.h"
 #include "asobject.h"
+#include "threading.h"
 #include "scripting/abcutils.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/toplevel/Error.h"

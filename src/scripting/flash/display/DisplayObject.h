@@ -20,11 +20,12 @@
 #ifndef SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H
 #define SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H 1
 
+#include "forwards/backends/graphics.h"
+#include "forwards/swftypes.h"
 #include "smartrefs.h"
 #include "scripting/flash/display/IBitmapDrawable.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
-#include "backends/graphics.h"
 
 namespace lightspark
 {

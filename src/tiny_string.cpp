@@ -19,7 +19,6 @@
 
 #include "tiny_string.h"
 #include "exceptions.h"
-#include "swf.h"
 
 using namespace lightspark;
 

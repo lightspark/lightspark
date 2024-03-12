@@ -23,8 +23,7 @@
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
-#include "thread_pool.h"
-#include "backends/netutils.h"
+#include "backends/urlutils.h"
 #include "scripting/flash/utils/flashutils.h"
 
 namespace lightspark

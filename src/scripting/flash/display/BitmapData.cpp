@@ -268,11 +268,6 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.tex->height=drawable->getHeight();
 		surface.xOffset=drawable->getXOffset();
 		surface.yOffset=drawable->getYOffset();
-		surface.xOffsetTransformed=drawable->getXOffsetTransformed();
-		surface.yOffsetTransformed=drawable->getYOffsetTransformed();
-		surface.widthTransformed=drawable->getWidthTransformed();
-		surface.heightTransformed=drawable->getHeightTransformed();
-		surface.rotation=drawable->getRotation();
 		surface.alpha = drawable->getAlpha();
 		surface.xscale = drawable->getXScale();
 		surface.yscale = drawable->getYScale();
@@ -281,11 +276,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.tex->xOffset = surface.xOffset;
 		surface.tex->yOffset = surface.yOffset;
 		surface.isMask=drawable->getIsMask();
-		surface.mask=drawable->getMask();
 		surface.matrix = drawable->getMatrix();
-		surface.filtermatrix = drawable->getFilterMatrix();
-		surface.targetMatrix = drawable->getTargetMatrix();
-		surface.targetOffset = drawable->getTargetOffset();
 		surface.needsFilterRefresh=false;
 		AS_BLENDMODE bl = blendMode;
 		DisplayObject* obj = target;

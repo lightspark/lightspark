@@ -132,12 +132,12 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 	return false;
 }
 
-CairoRenderer::CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h, float _rx, float _ry, float _rw, float _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
-		float _s, float _a, const std::vector<MaskData>& _ms,
+CairoRenderer::CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
+		float _s, float _a,
 		const ColorTransformBase& _colortransform,
-		SMOOTH_MODE _smoothing, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix, const Vector2f& _targetOffset)
-	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, _xs, _ys, _im, _mask,_a, _ms,
-				_colortransform,_smoothing,_m,_filtermatrix,_targetmatrix,_targetOffset)
+		SMOOTH_MODE _smoothing)
+	: IDrawable(_w, _h, _x, _y, _xs, _ys, _xs, _ys, _im,_a,
+				_colortransform,_smoothing,_m)
 	, scaleFactor(_s)
 {
 }
@@ -727,63 +727,8 @@ uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 	cairoClean(cr);
 	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 
-	//Apply all the masks to clip the drawn part
-	for(uint32_t i=0;i<masks.size();i++)
-	{
-		if(masks[i].maskMode != HARD_MASK)
-			continue;
-		masks[i].m->applyCairoMask(cr,xOffset,yOffset);
-	}
-
 	executeDraw(cr);
 
-	cairo_surface_t* maskSurface = nullptr;
-	uint8_t* maskRawData = nullptr;
-	cairo_t* maskCr = nullptr;
-	int32_t maskXOffset = 1;
-	int32_t maskYOffset = 1;
-	//Also apply the soft masks
-	for(uint32_t i=0;i<masks.size();i++)
-	{
-		if(masks[i].maskMode != SOFT_MASK)
-			continue;
-		//TODO: this may be optimized if needed
-		uint8_t* maskData = masks[i].m->getPixelBuffer();
-		if(maskData==nullptr)
-			continue;
-
-		cairo_surface_t* tmp = cairo_image_surface_create_for_data(maskData,CAIRO_FORMAT_ARGB32,
-				masks[i].m->getWidth(),masks[i].m->getHeight(),masks[i].m->getWidth()*4);
-		if(maskSurface==nullptr)
-		{
-			maskSurface = tmp;
-			maskRawData = maskData;
-			maskCr = cairo_create(maskSurface);
-			maskXOffset = masks[i].m->getXOffset();
-			maskYOffset = masks[i].m->getYOffset();
-		}
-		else
-		{
-			//We only care about alpha here, DEST_IN multiplies the two alphas
-			cairo_set_operator(maskCr, CAIRO_OPERATOR_DEST_IN);
-			//TODO: consider offsets
-			cairo_set_source_surface(maskCr, tmp, masks[i].m->getXOffset()-maskXOffset, masks[i].m->getYOffset()-maskYOffset);
-			//cairo_set_source_surface(maskCr, tmp, 0, 0);
-			cairo_paint(maskCr);
-			cairo_surface_destroy(tmp);
-			delete[] maskData;
-		}
-	}
-	if(maskCr)
-	{
-		cairo_destroy(maskCr);
-		//Do a last paint with DEST_IN to apply mask
-		cairo_set_operator(cr, CAIRO_OPERATOR_DEST_IN);
-		cairo_set_source_surface(cr, maskSurface, maskXOffset-getXOffset(), maskYOffset-getYOffset());
-		cairo_paint(cr);
-		cairo_surface_destroy(maskSurface);
-		delete[] maskRawData;
-	}
 //	cairo_surface_write_to_png(cairoSurface,"/tmp/cairo.png");
 	cairo_destroy(cr);
 	return ret;
@@ -832,26 +777,13 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 	return ret;
 }
 
-void CairoTokenRenderer::applyCairoMask(cairo_t* cr,int32_t xOffset,int32_t yOffset) const
-{
-	cairo_matrix_t mat;
-	cairo_get_matrix(cr,&mat);
-	cairo_translate(cr,xOffset,yOffset);
-	cairo_set_matrix(cr,&mat);
-	
-	cairoPathFromTokens(cr, tokens, scaleFactor, true,true,xstart,ystart,nullptr);
-	cairo_clip(cr);
-}
-
 CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h
-									   , int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r
-									   , float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a
-									   , const std::vector<IDrawable::MaskData> &_ms
+									   , float _xs, float _ys, bool _im, float _s, float _a
 									   , const ColorTransformBase& _colortransform
-									   , SMOOTH_MODE _smoothing, number_t _xstart, number_t _ystart, bool _softwarerenderer, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset)
-	: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs,_ys,_im,_mask,_s,_a,_ms
+									   , SMOOTH_MODE _smoothing, number_t _xstart, number_t _ystart, bool _softwarerenderer)
+	: CairoRenderer(_m,_x,_y,_w,_h,_xs,_ys,_im,_s,_a
 					, _colortransform
-					,_smoothing,_filtermatrix, _targetmatrix,_targetOffset),tokens(_g),xstart(_xstart),ystart(_ystart),softwarerenderer(_softwarerenderer)
+					,_smoothing),tokens(_g),xstart(_xstart),ystart(_ystart),softwarerenderer(_softwarerenderer)
 {
 }
 
@@ -1133,11 +1065,6 @@ std::vector<LineData> CairoPangoRenderer::getLineData(const TextData& _textData)
 	return data;
 }
 
-void CairoPangoRenderer::applyCairoMask(cairo_t* cr, int32_t xOffset, int32_t yOffset) const
-{
-	assert(false);
-}
-
 AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(o),surfaceBytes(nullptr),uploadNeeded(false),isBufferOwner(true)
 {
 }
@@ -1211,22 +1138,13 @@ TextureChunk& AsyncDrawJob::getTexture()
 	{
 		surface.xOffset=drawable->getXOffset();
 		surface.yOffset=drawable->getYOffset();
-		surface.xOffsetTransformed=drawable->getXOffsetTransformed();
-		surface.yOffsetTransformed=drawable->getYOffsetTransformed();
-		surface.widthTransformed=drawable->getWidthTransformed();
-		surface.heightTransformed=drawable->getHeightTransformed();
 		surface.alpha=drawable->getAlpha();
-		surface.rotation=drawable->getRotation();
 		surface.xscale = drawable->getXScale();
 		surface.yscale = drawable->getYScale();
 		surface.isMask = drawable->getIsMask();
-		surface.mask = drawable->getMask();
 		surface.smoothing = drawable->getSmoothing();
 		surface.colortransform = drawable->getColorTransform();
 		surface.matrix=drawable->getMatrix();
-		surface.filtermatrix=drawable->getFilterMatrix();
-		surface.targetMatrix=drawable->getTargetMatrix();
-		surface.targetOffset=drawable->getTargetOffset();
 		surface.needsFilterRefresh=drawable->getNeedsFilterRefresh();
 		surface.isValid=true;
 		surface.isInitialized=true;
@@ -1265,28 +1183,21 @@ void SoftwareInvalidateQueue::addToInvalidateQueue(_R<DisplayObject> d)
 
 IDrawable::~IDrawable()
 {
-	auto it = masks.begin();
-	while (it != masks.end())
-	{
-		delete it->m;
-		it->m=nullptr;
-		it++;
-	}
 }
 
-RefreshableDrawable::RefreshableDrawable(float _x, float _y, float _w, float _h, float _rx, float _ry, float _rw, float _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
-		float _a, const std::vector<MaskData>& _ms,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset)
-	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, 1, 1, _im, _mask,_a, _ms,
-				_colortransform,_smoothing,_m,_filtermatrix, _targetmatrix,_targetOffset)
+RefreshableDrawable::RefreshableDrawable(float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
+		float _a,
+		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m)
+	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _im,_a,
+				_colortransform,_smoothing,_m)
 {
 }
 
-BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, float _x, float _y, float _w, float _h, float _rx, float _ry, float _rw, float _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
-		float _a, const std::vector<MaskData>& _ms,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset)
-	: IDrawable(_w, _h, _x, _y, _rw, _rh, _rx, _ry, _r, _xs, _ys, 1, 1, _im, _mask,_a, _ms,
-				_colortransform,_smoothing,_m,_filtermatrix, _targetmatrix,_targetOffset)
+BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
+		float _a,
+		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m)
+	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _im,_a,
+				_colortransform,_smoothing,_m)
 	, data(_data)
 {
 }
@@ -1300,11 +1211,11 @@ uint8_t *BitmapRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 	return data->getData();
 }
 
-CachedBitmapRenderer::CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix, float _x, float _y, float _w, float _h, float _rx, float _ry, float _rw, float _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask,
-		float _a, const std::vector<MaskData>& _ms,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix, const Vector2f& _targetOffset)
-	: BitmapRenderer(_source->getCachedBitmap()->as<Bitmap>()->bitmapData->getBitmapContainer(), _x, _y,_w, _h, _rx, _ry, _rw, _rh, _r, _xs, _ys, _im, _mask,_a, _ms,
-				_colortransform,_smoothing,_m,_filtermatrix, _targetmatrix,_targetOffset)
+CachedBitmapRenderer::CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix, float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
+		float _a,
+		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m)
+	: BitmapRenderer(_source->getCachedBitmap()->as<Bitmap>()->bitmapData->getBitmapContainer(), _x, _y,_w, _h, _xs, _ys, _im,_a,
+				_colortransform,_smoothing,_m)
 	, source(_source),sourceCacheMatrix(_sourceCacheMatrix)
 {
 }

@@ -131,10 +131,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			}
 			nvgResetTransform(nvgctxt);
 			nvgBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
-			// xOffsetTransformed/yOffsetTransformed contain the offsets from the border of the window
-			nvgTranslate(nvgctxt,owner->cachedSurface.xOffsetTransformed,owner->cachedSurface.yOffsetTransformed);
 			MATRIX m = ctxt.transformStack().transform().matrix;
-
 			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
 			nvgTranslate(nvgctxt,owner->cachedSurface.xOffset,owner->cachedSurface.yOffset);
 			nvgScale(nvgctxt,scaling,scaling);
@@ -577,36 +574,19 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	{
 		return owner->getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing != SMOOTH_MODE::SMOOTH_NONE);
 	}
-	number_t x,y,rx,ry;
+	number_t x,y;
 	number_t width,height;
-	number_t rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(!owner->boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax,false))
 	{
 		//No contents, nothing to do
 		return nullptr;
 	}
-	//Compute the matrix and the masks that are relevant
-	MATRIX totalMatrix;
-	MATRIX filterMatrix;
-	
-	std::vector<IDrawable::MaskData> masks;
-
+	MATRIX matrix = owner->getMatrix();
 	bool isMask=false;
-	bool infilter=false;
-	number_t alpha=1.0;
-	_NR<DisplayObject> mask;
-	if (target)
-	{
-		infilter=owner->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix,initialMatrix);
-		MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
-		totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
-		totalMatrix.xx = abs(totalMatrix.xx);
-		totalMatrix.yy = abs(totalMatrix.yy);
-		totalMatrix.x0 = 0;
-		totalMatrix.y0 = 0;
-	}
-	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix,infilter);
+	MATRIX m;
+	m.scale(matrix.getScaleX(),matrix.getScaleY());
+	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 
 	if (isnan(width) || isnan(height))
 	{
@@ -615,19 +595,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		height = 1;
 	}
 
-	MATRIX totalMatrix2;
-	MATRIX filterMatrix2;
-	MATRIX targetMatrix;
-	Vector2f targetOffset;
-	std::vector<IDrawable::MaskData> masks2;
-	if (target)
-	{
-		infilter = owner->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
-		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
-		owner->computeTargetMatrix(target,targetMatrix,targetOffset,true);
-		targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
-	}
-	owner->computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,targetMatrix,infilter);
 	if(width==0 || height==0)
 		return nullptr;
 	ColorTransformBase ct;
@@ -650,7 +617,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		if (owner->getSystemState()->getEngineData()->nvgcontext
 			&& !tokens.empty() 
 			&& tokens.canRenderToGL
-			&& mask.isNull()
 			&& !isMask
 			&& !owner->ClipDepth
 			&& !owner->computeCacheAsBitmap()
@@ -658,27 +624,11 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& !r
 			&& !owner->getSystemState()->stage->renderToTextureCount
 			&& !owner->hasFilters()
+			&& !owner->inMask()
 			)
 		{
 			currentcolortransform = ct;
 			renderWithNanoVG=true;
-			if (!infilter)
-			{
-				// in the NanoVG case xOffsetTransformed/yOffsetTransformed are used for the offsets from the border of the main window
-				int offsetX;
-				int offsetY;
-				float scaleX;
-				float scaleY;
-				owner->getSystemState()->stageCoordinateMapping(owner->getSystemState()->getRenderThread()->windowWidth, owner->getSystemState()->getRenderThread()->windowHeight,
-																offsetX, offsetY, scaleX, scaleY);
-				rx=offsetX;
-				ry=offsetY;
-			}
-			else
-			{
-				rx=0;
-				ry=0;
-			}
 			if (fromgraphics)
 			{
 				x=0;
@@ -691,11 +641,10 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			}
 			owner->resetNeedsTextureRecalculation();
 			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
-										   , rx, ry, ceil(rwidth), ceil(rheight),0
-										   , totalMatrix.getScaleX(), totalMatrix.getScaleY()
-										   , isMask, mask
-										   , (!q || !q->isSoftwareQueue ? owner->getConcatenatedAlpha() : alpha), masks
-										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix,targetOffset);
+										   , matrix.getScaleX(), matrix.getScaleY()
+										   , isMask
+										   , owner->getConcatenatedAlpha()
+										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,matrix);
 		}
 		else if (renderWithNanoVG)
 		{
@@ -704,13 +653,12 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			renderWithNanoVG=false;
 		}
 	}
-	return new CairoTokenRenderer(tokens,totalMatrix2
+	return new CairoTokenRenderer(tokens,matrix
 				, x, y, ceil(width), ceil(height)
-				, rx, ry, ceil(rwidth), ceil(rheight), 0
-				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
-				, isMask, mask
-				, scaling,(!q || !q->isSoftwareQueue ? owner->getConcatenatedAlpha() : alpha), masks
-				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE, regpointx, regpointy,q && q->isSoftwareQueue,filterMatrix2,targetMatrix,targetOffset);
+				, matrix.getScaleX(), matrix.getScaleY()
+				, isMask
+				, scaling,owner->getConcatenatedAlpha()
+				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE, regpointx, regpointy,q && q->isSoftwareQueue);
 }
 
 bool TokenContainer::hitTestImpl(const Vector2f& point) const

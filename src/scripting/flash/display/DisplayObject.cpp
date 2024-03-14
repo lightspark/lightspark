@@ -140,6 +140,17 @@ number_t DisplayObject::getNominalHeight()
 	return ret?(ymax-ymin):0;
 }
 
+bool DisplayObject::inMask() const
+{
+	if (mask.getPtr())
+		return true;
+	if (hasFilters())
+		return false;
+	if (parent)
+		return parent->inMask();
+	return false;
+}
+
 bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startmatrix)
 {
 	if((!legacy && !isConstructed()) || (!force && skipRender()) || clippedAlpha()==0.0 || (isMask() && !ClipDepth))
@@ -215,7 +226,6 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 		ctxt.transformStack().pop();
 		ctxt.activateMask();
 	}
-
 	if (ctxt.contextType == RenderContext::CAIRO && ctxt.startobject == this)
 	{
 		ctxt.createTransformStack();
@@ -1178,7 +1188,7 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 			{
 				// render object without shader blendmode into texture
 				ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
-						ct, false, false,0.0,RGB(),surface.smoothing,m,r,bl);
+						ct, false,0.0,RGB(),surface.smoothing,m,r,bl);
 				// ensure the object is rendered again with shader blendmode
 				bl = BLENDMODE_NORMAL; 
 			}
@@ -1188,21 +1198,14 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	}
 
 	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
-			ct, false, false,0.0,RGB(),surface.smoothing,m,r,bl);
+			ct, false,0.0,RGB(),surface.smoothing,m,r,bl);
 	return false;
 }
 
 void DisplayObject::computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 		number_t& outXMin, number_t& outYMin, number_t& outWidth, number_t& outHeight,
-		const MATRIX& m, bool infilter) const
+		const MATRIX& m) const
 {
-	if (infilter)
-	{
-		xmin-=maxfilterborder;
-		xmax+=maxfilterborder;
-		ymin-=maxfilterborder;
-		ymax+=maxfilterborder;
-	}
 	//As the transformation is arbitrary we have to check all the four vertices
 	number_t coords[8];
 	m.multiply2D(xmin,ymin,coords[0],coords[1]);
@@ -1249,22 +1252,13 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	// this is called only from rendering thread, so no locking done here
 	cachedSurface.xOffset=d->getXOffset();
 	cachedSurface.yOffset=d->getYOffset();
-	cachedSurface.xOffsetTransformed=d->getXOffsetTransformed();
-	cachedSurface.yOffsetTransformed=d->getYOffsetTransformed();
-	cachedSurface.widthTransformed=d->getWidthTransformed();
-	cachedSurface.heightTransformed=d->getHeightTransformed();
 	cachedSurface.alpha=d->getAlpha();
-	cachedSurface.rotation=d->getRotation();
 	cachedSurface.xscale=d->getXScale();
 	cachedSurface.yscale=d->getYScale();
 	cachedSurface.isMask=d->getIsMask();
-	cachedSurface.mask=d->getMask();
 	cachedSurface.smoothing=d->getSmoothing();
 	cachedSurface.colortransform = d->getColorTransform();
 	cachedSurface.matrix=d->getMatrix();
-	cachedSurface.filtermatrix=d->getFilterMatrix();
-	cachedSurface.targetMatrix=d->getTargetMatrix();
-	cachedSurface.targetOffset=d->getTargetOffset();
 	cachedSurface.needsFilterRefresh=d->getNeedsFilterRefresh();
 	cachedSurface.isValid=true;
 	cachedSurface.isInitialized=true;
@@ -2379,159 +2373,7 @@ void DisplayObject::setNeedsTextureRecalculation(bool skippable, bool setCachedB
 	cachedSurface.isChunkOwner=true;
 }
 
-void DisplayObject::gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks)
-{
-	if(mask.isNull())
-		return;
 
-	//If the mask is hard we need the drawable for each child
-	//If the mask is soft we need the rendered final result
-	IDrawable::MASK_MODE maskMode = IDrawable::HARD_MASK;
-	//For soft masking to work, both the object and the mask must be
-	//cacheAsBitmap and the mask must be on the stage
-	if(this->computeCacheAsBitmap() && mask->computeCacheAsBitmap() && mask->isOnStage())
-		maskMode = IDrawable::SOFT_MASK;
-
-	if(maskMode == IDrawable::HARD_MASK)
-	{
-		SoftwareInvalidateQueue queue(NullRef);
-		mask->requestInvalidation(&queue);
-		for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
-		{
-			DisplayObject* target=(*it).getPtr();
-			//Get the drawable from each of the added objects
-			IDrawable* drawable=target->invalidate(nullptr, MATRIX(),false,nullptr,nullptr);
-			if(drawable==nullptr)
-				continue;
-			masks.emplace_back(drawable, maskMode);
-		}
-	}
-	else
-	{
-		IDrawable* drawable=nullptr;
-		if(mask->is<DisplayObjectContainer>())
-		{
-			//HACK: use bitmap temporarily
-			number_t xmin,xmax,ymin,ymax;
-			bool ret=mask->getBounds(xmin,xmax,ymin,ymax,mask->getConcatenatedMatrix());
-			if(ret==false)
-				return;
-			_R<BitmapData> data(Class<BitmapData>::getInstanceS(getInstanceWorker(),xmax-xmin,ymax-ymin));
-			//Forge a matrix. It must contain the right rotation and scaling while translation
-			//only compensate for the xmin/ymin offset
-			MATRIX m=mask->getConcatenatedMatrix();
-			m.x0 -= xmin;
-			m.y0 -= ymin;
-			data->drawDisplayObject(mask.getPtr(), m,false,false,mask->blendMode,mask->colorTransform.getPtr());
-			_R<Bitmap> bmp(Class<Bitmap>::getInstanceS(getInstanceWorker(),data));
-
-			//The created bitmap is already correctly scaled and rotated
-			//Just apply the needed offset
-			MATRIX m2(1,1,0,0,xmin,ymin);
-			drawable=bmp->invalidate(nullptr, m2,false,nullptr,nullptr);
-		}
-		else
-			drawable=mask->invalidate(nullptr, MATRIX(),false,nullptr,nullptr);
-
-		if(drawable==nullptr)
-			return;
-		masks.emplace_back(drawable, maskMode);
-	}
-}
-
-void DisplayObject::computeTargetMatrix(const DisplayObject* target, MATRIX& totalMatrix,Vector2f& targetOffset, bool includeRotation)
-{
-	const DisplayObject* cur=this;
-	Vector2f filterOffset;
-	bool hasFilters = false;
-
-	while(cur && cur!=target)
-	{
-		if (cur->hasFilters() && !hasFilters)
-		{
-			hasFilters = true;
-			filterOffset = Vector2f(cur->maxfilterborder,cur->maxfilterborder);
-		}
-		totalMatrix=cur->getMatrix(includeRotation).multiplyMatrix(totalMatrix);
-		if (!cur->scrollRect.isNull()) // TODO this only sets the scrollrect position, but doesn't crop to the rectangle
-			totalMatrix.translate(-cur->scrollRect->x,-cur->scrollRect->y);
-
-		cur=cur->getParent();
-	}
-	if (hasFilters)
-	{
-		number_t bxmin,bxmax,bymin,bymax;
-		getBounds(bxmin,bxmax,bymin,bymax,totalMatrix,false);
-		targetOffset.x=bxmin-filterOffset.x;
-		targetOffset.y=bymin-filterOffset.y;
-		totalMatrix.translate(-bxmin+filterOffset.x, -bymin+filterOffset.y);
-	}
-}
-
-bool DisplayObject::computeMasksAndMatrix(const DisplayObject* target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix,bool includeRotation, bool &isMask, _NR<DisplayObject>&mask, number_t& alpha, MATRIX& filterMatrix, const MATRIX& initialMatrix)
-{
-	DisplayObject* cur=this;
-	bool gatherMasks = true;
-	isMask = cur->ClipDepth || cur->ismask;
-	mask = cur->mask;
-	alpha = target->clippedAlpha();
-	bool gatherFiltermatrix=false;
-	while(cur && cur!=target)
-	{
-		// totalMatrix is computed from the start to the first parent that has a filter (if any, otherwise to the target)
-		// filterMatrix is computed from the first filter to the next parent that has a filter (if any, otherwise to the target)
-		if (cur->hasFilters())
-		{
-			if (gatherFiltermatrix)
-			{
-				totalMatrix.translate(maxfilterborder,maxfilterborder);
-				break;
-			}
-			else
-			{
-				number_t bxmin,bxmax,bymin,bymax;
-				cur->boundsRect(bxmin,bxmax,bymin,bymax,false);
-				filterMatrix.translate(bxmin-cur->maxfilterborder,bymin-cur->maxfilterborder);
-				totalMatrix.translate(-bxmin+cur->maxfilterborder,-bymin+cur->maxfilterborder);
-				gatherFiltermatrix=true;
-			}
-		}
-		if (gatherFiltermatrix)
-		{
-			filterMatrix=cur->getMatrix(includeRotation).multiplyMatrix(filterMatrix);
-		}
-		else
-		{
-			alpha *= cur->clippedAlpha();
-			totalMatrix=cur->getMatrix(includeRotation).multiplyMatrix(totalMatrix);
-			if (!cur->scrollRect.isNull()) // TODO this only sets the scrollrect position, but doesn't crop to the rectangle
-				totalMatrix.translate(-cur->scrollRect->x,-cur->scrollRect->y);
-			if(gatherMasks)
-			{
-				if (!cur->mask.isNull() && mask.isNull())
-					mask=cur->mask;
-				if (cur->ClipDepth || cur->ismask)
-					isMask=true;
-				if(cur->ismask)
-				{
-					//Stop gathering masks if any level of the hierarchy it's a mask
-					masks.clear();
-					masks.shrink_to_fit();
-					gatherMasks=false;
-				}
-			}
-		}
-		cur=cur->getParent();
-	}
-	if (mask.isNull() && !isMask)
-		mask = target->mask;
-	if (gatherFiltermatrix)
-	{
-		filterMatrix.x0*=initialMatrix.getScaleX();
-		filterMatrix.y0*=initialMatrix.getScaleY();
-	}
-	return gatherFiltermatrix;
-}
 void DisplayObject::DrawToBitmap(BitmapData* bm,const MATRIX& initialMatrix,bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode, ColorTransformBase* ct)
 {
 	bm->drawDisplayObject(this, initialMatrix,smoothing,forcachedbitmap,blendMode,ct);
@@ -2591,36 +2433,20 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 {
 	if (!hasFilters() || (q && q->isSoftwareQueue))
 		return nullptr;
-	number_t x,y,rx,ry;
+	number_t x,y;
 	number_t width,height;
-	number_t rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(!boundsRect(bxmin,bxmax,bymin,bymax,false))
 	{
 		//No contents, nothing to do
 		return nullptr;
 	}
-	//Compute the matrix and the masks that are relevant
-	MATRIX totalMatrix;
-	MATRIX filterMatrix;
+	MATRIX matrix = getMatrix();
 	
-	std::vector<IDrawable::MaskData> masks;
-
 	bool isMask=false;
-	bool infilter = false;
-	number_t alpha=1.0;
-	_NR<DisplayObject> mask;
-	if (target)
-	{
-		infilter = computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix,initialMatrix);
-		MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
-		totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
-		totalMatrix.xx = abs(totalMatrix.xx);
-		totalMatrix.yy = abs(totalMatrix.yy);
-		totalMatrix.x0 = 0;
-		totalMatrix.y0 = 0;
-	}
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix,infilter);
+	MATRIX m;
+	m.scale(matrix.getScaleX(),matrix.getScaleY());
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 
 	if (isnan(width) || isnan(height))
 	{
@@ -2631,20 +2457,6 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 	if (width >= 8192 || height >= 8192 || (width * height) >= 16777216)
 		return nullptr;
 
-	MATRIX totalMatrix2;
-	MATRIX filterMatrix2;
-	MATRIX targetMatrix;
-	Vector2f targetOffset;
-	std::vector<IDrawable::MaskData> masks2;
-	if (target)
-	{
-		infilter = computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
-		computeTargetMatrix(target,targetMatrix,targetOffset,true);
-		targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
-		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
-	}
-
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,targetMatrix,infilter);
 	if(width==0 || height==0)
 		return nullptr;
 	ColorTransformBase ct;
@@ -2657,11 +2469,10 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 	this->resetNeedsTextureRecalculation();
 	cachedSurface.isValid=true;
 	return new RefreshableDrawable(x, y, ceil(width), ceil(height)
-				, rx, ry, ceil(rwidth), ceil(rheight),0
-				, totalMatrix.getScaleX(), totalMatrix.getScaleY()
-				, isMask, mask
-				, getConcatenatedAlpha(), masks
-				, ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix,targetOffset);
+				, matrix.getScaleX(), matrix.getScaleY()
+				, isMask
+				, getConcatenatedAlpha()
+				, ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,matrix);
 }
 
 _NR<DisplayObject> DisplayObject::getCachedBitmap() const

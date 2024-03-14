@@ -713,15 +713,13 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 				number_t xmin, xmax, ymin, ymax;
 				if (!TokenContainer::boundsRectFromTokens(tmptokens,0.05,xmin,xmax,ymin,ymax))
 					return nullptr;
-				std::vector<IDrawable::MaskData> masks;
 				CairoTokenRenderer r(tmptokens,MATRIX()
 							, xmin, ymin, xmax, ymax
-							, xmin, ymin, xmax, ymax,0
 							, 1, 1
-							, false,_NR<DisplayObject>()
-							, 0.05,1.0, masks
+							, false
+							, 0.05,1.0
 							, ColorTransformBase()
-							, SMOOTH_MODE::SMOOTH_SUBPIXEL,0,0,false,MATRIX(),MATRIX(),Vector2f());
+							, SMOOTH_MODE::SMOOTH_SUBPIXEL,0,0,false);
 				uint8_t* buf = r.getPixelBuffer();
 				CharacterRenderer* renderer = new CharacterRenderer(buf,abs(xmax),abs(ymax));
 				//force creation of buffer if neccessary

@@ -1715,8 +1715,8 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
-	number_t x,y,rx,ry;
-	number_t width,height,rwidth,rheight;
+	number_t x,y;
+	number_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(boundsRect(bxmin,bxmax,bymin,bymax,false)==false)
 	{
@@ -1725,8 +1725,6 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	}
 
 	tokens.clear();
-	MATRIX totalMatrix;
-	MATRIX filterMatrix;
 	if (embeddedFont)
 	{
 		scaling = 1.0f/1024.0f/20.0f;
@@ -1820,29 +1818,11 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
-	std::vector<IDrawable::MaskData> masks;
-	bool isMask;
-	number_t alpha=1.0;
-	
-	_NR<DisplayObject> mask;
-	bool infilter = computeMasksAndMatrix(target, masks, totalMatrix,false,isMask,mask,alpha,filterMatrix,initialMatrix);
-	MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
-	totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
-	totalMatrix.xx = abs(totalMatrix.xx);
-	totalMatrix.yy = abs(totalMatrix.yy);
-	totalMatrix.x0 = 0;
-	totalMatrix.y0 = 0;
-	
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix,infilter);
-	MATRIX totalMatrix2;
-	MATRIX filterMatrix2;
-	MATRIX targetMatrix;
-	Vector2f targetOffset;
-	infilter = owner->computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
-	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
-	owner->computeTargetMatrix(target,targetMatrix,targetOffset,true);
-	targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
+	MATRIX matrix = getMatrix();
+	bool isMask=this->isMask();
+	MATRIX m;
+	m.scale(matrix.getScaleX(),matrix.getScaleY());
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 	if (this->type != ET_EDITABLE)
 	{
 		Locker l(*linemutex);
@@ -1851,16 +1831,15 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	}
 	if(width==0 || height==0)
 		return nullptr;
-	if(totalMatrix.getScaleX() != 1 || totalMatrix.getScaleY() != 1)
-		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<totalMatrix.getScaleX()<<" "<<totalMatrix.getScaleY()<<" "<<this->getText());
-	float rotation = getConcatenatedMatrix().getRotation();
+	if(matrix.getScaleX() != 1 || matrix.getScaleY() != 1)
+		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<matrix.getScaleX()<<" "<<matrix.getScaleY()<<" "<<this->getText());
 	float xscale = getConcatenatedMatrix().getScaleX();
 	float yscale = getConcatenatedMatrix().getScaleY();
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
-	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, ceil(width), ceil(height),
-																					rx, ry, ceil(rwidth), ceil(rheight), rotation,xscale,yscale,isMask,mask, 1.0f,getConcatenatedAlpha(), masks,
+	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,matrix, x, y, ceil(width), ceil(height),
+																					xscale,yscale,isMask, 1.0f,getConcatenatedAlpha(),
 																					ColorTransformBase(),
-																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,filterMatrix2,targetMatrix,targetOffset);
+																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE);
 	if (res != nullptr)
 		return res;
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
@@ -1869,14 +1848,13 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		Currently, the TextField is stretched in case of scaling.
 	*/
 	cachedSurface.isValid=true;
-	return new CairoPangoRenderer(*this,totalMatrix2,
+	return new CairoPangoRenderer(*this,matrix,
 				x, y, ceil(width), ceil(height),
-				rx, ry, ceil(rwidth), ceil(rheight), rotation,
 				xscale,yscale,
-				isMask,mask,
-				1.0f, getConcatenatedAlpha(), masks,
+				isMask,
+				1.0f, getConcatenatedAlpha(),
 				ColorTransformBase(),
-				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,caretIndex,filterMatrix2,targetMatrix,targetOffset);
+				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,caretIndex);
 }
 
 bool TextField::renderImpl(RenderContext& ctxt)
@@ -1897,6 +1875,8 @@ bool TextField::renderImpl(RenderContext& ctxt)
 	linemutex->unlock();
 	if (!computeCacheAsBitmap() && (ctxt.contextType == RenderContext::GL) && embeddedFont)
 	{
+		MATRIX matrix = ctxt.transformStack().transform().matrix;
+		bool isMask=this->isMask();
 		// fast rendering path using pre-generated textures for every glyph
 		float xscale = abs(getConcatenatedMatrix().getScaleX());
 		float yscale = abs(getConcatenatedMatrix().getScaleY());
@@ -1925,12 +1905,10 @@ bool TextField::renderImpl(RenderContext& ctxt)
 				obj = obj->getParent();
 			}
 		}
-
 		float scalex;
 		float scaley;
 		int offx,offy;
 		getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
-		MATRIX initialMatrix(scalex,scaley);
 
 		uint32_t codetableindex;
 		// TODO: Switch over to using the new masking implementation.
@@ -1939,32 +1917,24 @@ bool TextField::renderImpl(RenderContext& ctxt)
 			number_t bxmin,bxmax,bymin,bymax;
 			boundsRect(bxmin,bxmax,bymin,bymax,false);
 			TextureChunk tex=getSystemState()->getRenderThread()->allocateTexture(1, 1, true);
-
-			bool isMask;
-			number_t alpha=1.0;
-			_NR<DisplayObject> mask;
-			MATRIX totalMatrix2;
-			MATRIX filterMatrix2;
-			std::vector<IDrawable::MaskData> masks2;
-			totalMatrix2=getConcatenatedMatrix(true);
-			computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
+			
 			if (this->border)
 			{
-				MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(bxmax-bxmin, bymax-bymin));
+				MATRIX m = matrix.multiplyMatrix(MATRIX(bxmax-bxmin, bymax-bymin));
 				m.scale(scalex, scaley);
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						ct, isMask, mask,3.0, this->borderColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
-				m = totalMatrix2.multiplyMatrix(MATRIX(bxmax-bxmin-2, bymax-bymin-2, 0, 0, 1, 1));
+						ct, isMask,3.0, this->borderColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
+				m = matrix.multiplyMatrix(MATRIX(bxmax-bxmin-2, bymax-bymin-2, 0, 0, 1, 1));
 				m.scale(scalex, scaley);
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						ct, isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
+						ct, isMask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 			}
 			else if (this->background)
 			{
-				MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(bxmax-bxmin, bymax-bymin));
+				MATRIX m = matrix.multiplyMatrix(MATRIX(bxmax-bxmin, bymax-bymin));
 				m.scale(scalex, scaley);
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						ct, isMask, mask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
+						ct, isMask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 			}
 
 			if (this->caretblinkstate)
@@ -1980,15 +1950,10 @@ bool TextField::renderImpl(RenderContext& ctxt)
 					tw += w;
 				}
 				linemutex->unlock();
-				MATRIX totalMatrix2;
-				MATRIX filterMatrix2;
-				std::vector<IDrawable::MaskData> masks2;
-				totalMatrix2=getConcatenatedMatrix(true);
-				computeMasksAndMatrix(this,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
-				MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(2, bymax-bymin-ypadding*2, 0, 0, tw, ypadding));
+				MATRIX m = matrix.multiplyMatrix(MATRIX(2, bymax-bymin-ypadding*2, 0, 0, tw, ypadding));
 				m.scale(scalex, scaley);
 				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						ct, isMask, mask,3.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
+						ct, isMask,3.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 			}
 		}
 		number_t ypos=-TEXTFIELD_PADDING/yscale;
@@ -2002,32 +1967,12 @@ bool TextField::renderImpl(RenderContext& ctxt)
 				number_t adv = embeddedFont->getRenderCharAdvance(codetableindex)*fontSize;
 				if (tex)
 				{
-					number_t x,y,rx,ry;
-					number_t width,height;
-					number_t rwidth,rheight;
 					number_t bxmin=xpos;
 					number_t bxmax=xpos+tex->width/xscale;
-					number_t bymin=ypos;
-					number_t bymax=ypos+tex->height/yscale;
-					//Compute the matrix and the masks that are relevant
-					MATRIX totalMatrix;
-					MATRIX filterMatrix;
-					std::vector<IDrawable::MaskData> masks;
-
-					bool isMask;
-					number_t alpha=1.0;
-					_NR<DisplayObject> mask;
-					bool infilter = computeMasksAndMatrix(this->getStage().getPtr(),masks,totalMatrix,false,isMask,mask,alpha,filterMatrix,initialMatrix);
-					computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix,infilter);
-					MATRIX totalMatrix2;
-					MATRIX filterMatrix2;
-					std::vector<IDrawable::MaskData> masks2;
-					infilter = computeMasksAndMatrix(this->getStage().getPtr(),masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
-					computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
-					MATRIX m = totalMatrix2.multiplyMatrix(MATRIX(1 / (xscale*scalex), 1 / (yscale*scaley), 0, 0, xpos, ypos));
+					MATRIX m = matrix.multiplyMatrix(MATRIX(1 / (xscale*scalex), 1 / (yscale*scaley), 0, 0, xpos, ypos));
 					m.scale(scalex, scaley);
 					ctxt.renderTextured(*tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-										currentcolortransform, isMask, mask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
+										currentcolortransform, isMask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 					xpos += adv ? adv : bxmax-bxmin;
 				}
 				else

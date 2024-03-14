@@ -220,7 +220,7 @@ public:
 class CachedSurface
 {
 public:
-	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),xOffsetTransformed(0),yOffsetTransformed(0),widthTransformed(0),heightTransformed(0),alpha(1.0),rotation(0.0),xscale(1.0),yscale(1.0)
+	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),alpha(1.0),xscale(1.0),yscale(1.0)
 		,blendmode(BLENDMODE_NORMAL),isMask(false),smoothing(SMOOTH_MODE::SMOOTH_ANTIALIAS),isChunkOwner(true),isValid(false),isInitialized(false),wasUpdated(false),needsFilterRefresh(true),cachedFilterTextureID(UINT32_MAX) {}
 	~CachedSurface()
 	{
@@ -230,19 +230,11 @@ public:
 	TextureChunk* tex;
 	float xOffset;
 	float yOffset;
-	float xOffsetTransformed;
-	float yOffsetTransformed;
-	float widthTransformed;
-	float heightTransformed;
 	float alpha;
-	float rotation;
 	float xscale;
 	float yscale;
 	ColorTransformBase colortransform;
 	MATRIX matrix;
-	MATRIX filtermatrix;
-	MATRIX targetMatrix;
-	Vector2f targetOffset;
 	_NR<DisplayObject> mask;
 	AS_BLENDMODE blendmode;
 	bool isMask;
@@ -258,19 +250,7 @@ public:
 
 class IDrawable
 {
-public:
-	enum MASK_MODE { HARD_MASK = 0, SOFT_MASK };
-	struct MaskData
-	{
-		IDrawable* m;
-		MASK_MODE maskMode;
-		MaskData(IDrawable* _m, MASK_MODE _mm):m(_m),maskMode(_mm){}
-	};
 protected:
-	/*
-	 * The masks to be applied
-	 */
-	std::vector<MaskData> masks;
 	int32_t width;
 	int32_t height;
 	/*
@@ -281,11 +261,6 @@ protected:
 	   The minimal y coordinate for all the points being drawn, in local coordinates
 	*/
 	float yOffset;
-	float xOffsetTransformed;
-	float yOffsetTransformed;
-	float widthTransformed;
-	float heightTransformed;
-	float rotation;
 	float alpha;
 	float xscale;
 	float yscale;
@@ -293,29 +268,20 @@ protected:
 	float yContentScale;
 	ColorTransformBase colortransform;
 	bool isMask;
-	_NR<DisplayObject> mask;
 	SMOOTH_MODE smoothing;
-	/**
-	  The whole transformation matrix that is applied to the rendered object
-	*/
 	MATRIX matrix;
-	MATRIX filtermatrix;
-	MATRIX targetmatrix;
-	Vector2f targetOffset;
 	bool needsFilterRefresh;
 public:
 	IDrawable(float w, float h, float x, float y,
-		float rw, float rh, float rx, float ry, float r,
 		float xs, float ys, float xcs, float ycs,
-		bool im, _NR<DisplayObject> _mask,
-		float a, const std::vector<MaskData>& m,
+		bool im,
+		float a,
 		const ColorTransformBase& _colortransform,
 		SMOOTH_MODE _smoothing,
-		const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset):
-		masks(m),width(w),height(h),xOffset(x),yOffset(y),xOffsetTransformed(rx),yOffsetTransformed(ry),widthTransformed(rw),heightTransformed(rh),rotation(r),
+		const MATRIX& _m):
+		width(w),height(h),xOffset(x),yOffset(y),
 		alpha(a), xscale(xs), yscale(ys), xContentScale(xcs), yContentScale(ycs),
-		colortransform(_colortransform),
-	isMask(im),mask(_mask),smoothing(_smoothing), matrix(_m),filtermatrix(_filtermatrix),targetmatrix(_targetmatrix),targetOffset(_targetOffset),needsFilterRefresh(true) {}
+		colortransform(_colortransform), isMask(im),smoothing(_smoothing), matrix(_m),needsFilterRefresh(true) {}
 	virtual ~IDrawable();
 	/*
 	 * This method returns a raster buffer of the image
@@ -323,34 +289,20 @@ public:
 	 * masks
 	 */
 	virtual uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr)=0;
-	/*
-	 * This method creates a cairo path that can be used as a mask for
-	 * another object
-	 */
-	virtual void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const = 0;
 	virtual bool isCachedSurfaceUsable(const DisplayObject*) const {return true;}
 	int32_t getWidth() const { return width; }
 	int32_t getHeight() const { return height; }
-	int32_t getWidthTransformed() const { return widthTransformed; }
-	int32_t getHeightTransformed() const { return heightTransformed; }
 	int32_t getXOffset() const { return xOffset; }
 	int32_t getYOffset() const { return yOffset; }
-	int32_t getXOffsetTransformed() const { return xOffsetTransformed; }
-	int32_t getYOffsetTransformed() const { return yOffsetTransformed; }
-	float getRotation() const { return rotation; }
 	float getAlpha() const { return alpha; }
 	float getXScale() const { return xscale; }
 	float getYScale() const { return yscale; }
 	float getXContentScale() const { return xContentScale; }
 	float getYContentScale() const { return yContentScale; }
 	bool getIsMask() const { return isMask; }
-	_NR<DisplayObject> getMask() const { return mask; }
 	SMOOTH_MODE getSmoothing() const { return smoothing; }
 	const ColorTransformBase& getColorTransform() const { return colortransform; }
 	MATRIX& getMatrix() { return matrix; }
-	MATRIX& getFilterMatrix() { return filtermatrix; }
-	MATRIX& getTargetMatrix() { return targetmatrix; }
-	Vector2f& getTargetOffset() { return targetOffset; }
 	bool getNeedsFilterRefresh() const { return needsFilterRefresh; }
 };
 
@@ -408,12 +360,11 @@ protected:
 	static void copyRGB24To24(uint32_t& dest, uint8_t* src);
 public:
 	CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h
-				  , float _rx, float _ry, float _rw, float _rh, float _r
 				  , float _xs, float _ys
-				  , bool _im, _NR<DisplayObject> mask
-				  , float _s, float _a, const std::vector<MaskData>& m
+				  , bool _im
+				  , float _s, float _a
 				  , const ColorTransformBase& _colortransform
-				  , SMOOTH_MODE _smoothing, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset);
+				  , SMOOTH_MODE _smoothing);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 	bool isCachedSurfaceUsable(const DisplayObject*) const override;
@@ -446,7 +397,6 @@ private:
 	 * This is run by CairoRenderer::execute()
 	 */
 	void executeDraw(cairo_t* cr) override;
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override;
 	number_t xstart;
 	number_t ystart;
 	bool softwarerenderer;
@@ -465,12 +415,11 @@ public:
 	*/
 	CairoTokenRenderer(const tokensVector& _g, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
-			int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r,
 			float _xs, float _ys,
-			bool _im, _NR<DisplayObject> _mask,
-			float _s, float _a, const std::vector<MaskData>& _ms,
+			bool _im,
+			float _s, float _a,
 			const ColorTransformBase& _colortransform,
-			SMOOTH_MODE _smoothing,number_t _xstart, number_t _ystart, bool _softwarerenderer, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset);
+			SMOOTH_MODE _smoothing,number_t _xstart, number_t _ystart, bool _softwarerenderer);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 
@@ -585,20 +534,18 @@ class CairoPangoRenderer : public CairoRenderer
 	TextData textData;
 	uint32_t caretIndex;
 	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData, const tiny_string& text);
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override;
 	static PangoRectangle lineExtents(PangoLayout *layout, int lineNumber);
 public:
 	CairoPangoRenderer(const TextData& _textData, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
-			int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r,
 			float _xs, float _ys,
-			bool _im, _NR<DisplayObject> _mask,
-			float _s, float _a, const std::vector<MaskData>& _ms,
+			bool _im, 
+			float _s, float _a, 
 			const ColorTransformBase& _colortransform,
-			SMOOTH_MODE _smoothing,uint32_t _ci, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset)
-		: CairoRenderer(_m,_x,_y,_w,_h,_rx,_ry,_rw,_rh,_r,_xs, _ys,_im,_mask,_s,_a,_ms,
+			SMOOTH_MODE _smoothing,uint32_t _ci)
+		: CairoRenderer(_m,_x,_y,_w,_h,_xs, _ys,_im,_s,_a,
 						_colortransform,
-						_smoothing,_filtermatrix, _targetmatrix, _targetOffset), textData(_textData),caretIndex(_ci) {}
+						_smoothing), textData(_textData),caretIndex(_ci) {}
 	/**
 		Helper. Uses Pango to find the size of the textdata
 		@param _texttData The textData being tested
@@ -612,15 +559,13 @@ class RefreshableDrawable: public IDrawable
 {
 public:
 	RefreshableDrawable(float _x, float _y, float _w, float _h
-				  , float _rx, float _ry, float _rw, float _rh, float _r
 				  , float _xs, float _ys
-				  , bool _im, NullableRef<DisplayObject> mask
-				  , float _a, const std::vector<MaskData>& m
+				  , bool _im
+				  , float _a
 				  , const ColorTransformBase& _colortransform
-				  , SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset);
+				  , SMOOTH_MODE _smoothing, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override { return nullptr; }
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}
 };
 
 class BitmapRenderer: public IDrawable
@@ -629,15 +574,13 @@ protected:
 	_NR<BitmapContainer> data;
 public:
 	BitmapRenderer(_NR<BitmapContainer> _data, float _x, float _y, float _w, float _h
-				  , float _rx, float _ry, float _rw, float _rh, float _r
 				  , float _xs, float _ys
-				  , bool _im, NullableRef<DisplayObject> mask
-				  , float _a, const std::vector<MaskData>& m
+				  , bool _im
+				  , float _a
 				  , const ColorTransformBase& _colortransform
-				  , SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset);
+				  , SMOOTH_MODE _smoothing, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}
 };
 
 class CachedBitmapRenderer: public BitmapRenderer
@@ -647,15 +590,13 @@ protected:
 	const MATRIX sourceCacheMatrix;
 public:
 	CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix, float _x, float _y, float _w, float _h
-				  , float _rx, float _ry, float _rw, float _rh, float _r
 				  , float _xs, float _ys
-				  , bool _im, NullableRef<DisplayObject> mask
-				  , float _a, const std::vector<MaskData>& m
+				  , bool _im
+				  , float _a
 				  , const ColorTransformBase& _colortransform
-				  , SMOOTH_MODE _smoothing, const MATRIX& _m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix,const Vector2f& _targetOffset);
+				  , SMOOTH_MODE _smoothing, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}
 };
 
 class InvalidateQueue

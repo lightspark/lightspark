@@ -74,11 +74,10 @@ class externalFontRenderer : public IDrawable
 	int32_t externalressource;
 	class EngineData* m_engine;
 public:
-	externalFontRenderer(const TextData &_textData, class EngineData* engine, int32_t x, int32_t y, int32_t w, int32_t h, int32_t rx, int32_t ry, int32_t rw, int32_t rh, float r, float xs, float ys, bool im, _NR<DisplayObject> _mask, float a, const std::vector<MaskData>& m,
-						 const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m, const MATRIX& _filtermatrix, const MATRIX& _targetmatrix, const Vector2f& _targetOffset);
+	externalFontRenderer(const TextData &_textData, class EngineData* engine, int32_t x, int32_t y, int32_t w, int32_t h, float xs, float ys, bool im, float a,
+						 const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m);
 	
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
-	void applyCairoMask(cairo_t* cr, int32_t offsetX, int32_t offsetY) const override {}
 };
 
 #define CONTEXTMENUWIDTH 200
@@ -355,9 +354,9 @@ public:
 	// Text rendering
 	virtual uint8_t* getFontPixelBuffer(int32_t externalressource,int width,int height) { return nullptr; }
 	virtual int32_t setupFontRenderer(const TextData &_textData,float a, SMOOTH_MODE smoothing) { return 0; }
-	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a, const std::vector<IDrawable::MaskData>& _ms,
+	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _xs, float _ys, bool _im, float _s, float _a,
 									 const ColorTransformBase& _colortransform,
-									 SMOOTH_MODE smoothing, const MATRIX& _filterMatrix, const MATRIX& _targetMatrix, const Vector2f& _targetOffset);
+									 SMOOTH_MODE smoothing);
 };
 
 }

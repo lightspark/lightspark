@@ -1245,8 +1245,8 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
-	number_t x,y,rx,ry;
-	number_t width,height,rwidth,rheight;
+	number_t x,y;
+	number_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(boundsRect(bxmin,bxmax,bymin,bymax,false)==false)
 	{
@@ -1255,8 +1255,6 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	}
 
 	tokens.clear();
-	MATRIX totalMatrix;
-	MATRIX filterMatrix;
 	if (embeddedFont)
 	{
 		scaling = 1.0f/1024.0f/20.0f;
@@ -1284,53 +1282,33 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
-	std::vector<IDrawable::MaskData> masks;
-	bool isMask;
-	number_t alpha=1.0;
-	_NR<DisplayObject> mask;
-	bool infilter = computeMasksAndMatrix(target, masks, totalMatrix,false,isMask,mask,alpha,filterMatrix,initialMatrix);
-	MATRIX initialNoRotation(initialMatrix.getScaleX(), initialMatrix.getScaleY());
-	totalMatrix=initialNoRotation.multiplyMatrix(totalMatrix);
-	totalMatrix.xx = abs(totalMatrix.xx);
-	totalMatrix.yy = abs(totalMatrix.yy);
-	totalMatrix.x0 = 0;
-	totalMatrix.y0 = 0;
-	
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,totalMatrix,infilter);
-	MATRIX totalMatrix2;
-	MATRIX filterMatrix2;
-	MATRIX targetMatrix;
-	Vector2f targetOffset;
-	infilter = computeMasksAndMatrix(target,masks,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
-	totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
-	owner->computeTargetMatrix(target,targetMatrix,targetOffset,true);
-	targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
-	
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
+	MATRIX matrix = getMatrix();
+	bool isMask=this->isMask();
+	MATRIX m;
+	m.scale(matrix.getScaleX(),matrix.getScaleY());
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 	if (getLineCount()==0)
 		return nullptr;
 	if(width==0 || height==0)
 		return nullptr;
-	if(totalMatrix.getScaleX() != 1 || totalMatrix.getScaleY() != 1)
-		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<totalMatrix.getScaleX()<<" "<<totalMatrix.getScaleY()<<" "<<this->getText());
-	float rotation = getConcatenatedMatrix().getRotation();
+	if(matrix.getScaleX() != 1 || matrix.getScaleY() != 1)
+		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<matrix.getScaleX()<<" "<<matrix.getScaleY()<<" "<<this->getText());
 	float xscale = getConcatenatedMatrix().getScaleX();
 	float yscale = getConcatenatedMatrix().getScaleY();
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
-	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,totalMatrix, x, y, ceil(width), ceil(height),
-																					rx, ry, ceil(rwidth), ceil(rheight), rotation,xscale,yscale,isMask,mask, 1.0f,getConcatenatedAlpha(), masks,
+	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,matrix, x, y, ceil(width), ceil(height),
+																					xscale,yscale,isMask, 1.0f,getConcatenatedAlpha(),
 																					ColorTransformBase(),
-																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,filterMatrix2,targetMatrix,targetOffset);
+																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE);
 	if (res != nullptr)
 		return res;
-	return new CairoPangoRenderer(*this,totalMatrix2,
+	return new CairoPangoRenderer(*this,matrix,
 				x, y, ceil(width), ceil(height),
-				rx, ry, ceil(rwidth), ceil(rheight), rotation,
 				xscale,yscale,
-				isMask,mask,
-				1.0f,getConcatenatedAlpha(),masks,
+				isMask,
+				1.0f,getConcatenatedAlpha(),
 				ColorTransformBase(),
-				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,0,filterMatrix2,targetMatrix,targetOffset);
+				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,0);
 }
 
 bool TextLine::renderImpl(RenderContext& ctxt)

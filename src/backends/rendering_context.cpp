@@ -267,7 +267,7 @@ void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase&
 }
 void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 									 const ColorTransformBase& colortransform,
-									 bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
+									 bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
 									 AS_BLENDMODE blendmode)
 {
 	setupRenderingState(alpha,colortransform,smooth,blendmode);
@@ -583,7 +583,7 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, BitmapContainer* bc, C
 
 void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			const ColorTransformBase& colortransform,
-			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
+			bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
 			AS_BLENDMODE blendmode)
 {
 	if (colorMode != RGB_MODE)
@@ -789,18 +789,15 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		cairo_get_matrix(cr, &maskmatrix);
 		masksurfaces.push_back(make_pair(chunkSurface,maskmatrix));
 	}
-	if (hasMask)
+	for (auto it=masksurfaces.begin(); it!=masksurfaces.end(); it++)
 	{
-		for (auto it=masksurfaces.begin(); it!=masksurfaces.end(); it++)
-		{
-			// apply mask
-			cairo_save(cr);
-			cairo_set_matrix(cr,&it->second);
-			cairo_mask_surface(cr,it->first,0,0);
-			cairo_restore(cr);
-		}
+		// apply mask
+		cairo_save(cr);
+		cairo_set_matrix(cr,&it->second);
+		cairo_mask_surface(cr,it->first,0,0);
+		cairo_restore(cr);
 	}
-	else if(!isMask)
+	if(!isMask)
 		cairo_paint_with_alpha(cr,alpha);
 
 	if (!isMask)

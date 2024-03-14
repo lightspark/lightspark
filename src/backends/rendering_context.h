@@ -109,7 +109,7 @@ public:
 	*/
 	virtual void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			const ColorTransformBase& colortransform,
-			bool isMask, bool hasMask, float directMode, RGB directColor,SMOOTH_MODE smooth, const MATRIX& matrix,
+			bool isMask, float directMode, RGB directColor,SMOOTH_MODE smooth, const MATRIX& matrix,
 			Rectangle* scalingGrid, AS_BLENDMODE blendmode)=0;
 	/**
 	 * Get the right CachedSurface from an object
@@ -186,7 +186,7 @@ public:
 
 	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			const ColorTransformBase& colortransform,
-			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
+			bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
 			Rectangle* scalingGrid, AS_BLENDMODE blendmode) override;
 	/**
 	 * Get the right CachedSurface from an object
@@ -225,7 +225,7 @@ public:
 	virtual ~CairoRenderContext();
 	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			const ColorTransformBase& colortransform,
-			bool isMask, bool hasMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
+			bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
 			Rectangle* scalingGrid, AS_BLENDMODE blendmode) override;
 	/**
 	 * Get the right CachedSurface from an object

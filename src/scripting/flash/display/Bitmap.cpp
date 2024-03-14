@@ -290,69 +290,34 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 
 IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, ColorTransformBase* ct, DisplayObject* matrixsource, const MATRIX& sourceMatrix,DisplayObject* originalsource, const MATRIX& sourceCacheMatrix,number_t scalex, number_t scaley)
 {
-	number_t rx,ry;
-	number_t rwidth,rheight;
 	number_t bxmin,bxmax,bymin,bymax;
 	if(!boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax,false))
 	{
 		//No contents, nothing to do
 		return nullptr;
 	}
-	//Compute the matrix and the masks that are relevant
-	MATRIX totalMatrix;
-	MATRIX filterMatrix;
-	
-	std::vector<IDrawable::MaskData> masks;
-
-	bool isMask;
-	bool infilter=false;
-	number_t alpha=1.0;
-	if (target)
-	{
-		if (matrixsource)
-			matrixsource->computeMasksAndMatrix(target,masks,totalMatrix,false,isMask,mask,alpha,filterMatrix,initialMatrix);
-	}
-	MATRIX totalMatrix2;
-	MATRIX filterMatrix2;
-	MATRIX targetMatrix;
-	Vector2f targetOffset;
-	std::vector<IDrawable::MaskData> masks2;
-	if (target)
-	{
-		if (matrixsource)
-		{
-			infilter = matrixsource->computeMasksAndMatrix(target,masks2,totalMatrix2,true,isMask,mask,alpha,filterMatrix2,initialMatrix);
-			matrixsource->computeTargetMatrix(target,targetMatrix,targetOffset,true);
-		}
-		totalMatrix2=initialMatrix.multiplyMatrix(totalMatrix2);
-		targetMatrix = initialMatrix.multiplyMatrix(targetMatrix);
-	}
-	totalMatrix2 = totalMatrix2.multiplyMatrix(sourceMatrix);
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,rx,ry,rwidth,rheight,totalMatrix2,infilter);
-	if (rwidth==0 || rheight==0)
+	MATRIX matrix = getMatrix();
+	bool isMask=this->isMask();
+	if (this->bitmapData->getWidth()==0 || this->bitmapData->getHeight()==0)
 		return nullptr;
 	cachedSurface.isValid=true;
 	if (originalsource && this->getNeedsTextureRecalculation())
 	{
 		if (!isMask)
 			isMask = originalsource->ClipDepth || originalsource->ismask;
-		if (!mask)
-			mask = originalsource->mask;
 		originalsource->incRef();
 		return new CachedBitmapRenderer(_MR(originalsource),sourceCacheMatrix
 					, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
-					, rx, ry, round(rwidth), round(rheight), 0
 					, scalex, scaley
-					, isMask, mask
-					, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
-					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix,targetOffset);
+					, isMask
+					, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha()
+					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,matrix);
 	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
-				, rx, ry, round(rwidth), round(rheight), 0
 				, 1, 1
-				, isMask, mask
-				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha(), masks
-				, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,totalMatrix2,filterMatrix2,targetMatrix,targetOffset);
+				, isMask
+				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha()
+							  , ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,matrix);
 }
 

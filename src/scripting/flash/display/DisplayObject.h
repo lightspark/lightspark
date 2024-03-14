@@ -99,7 +99,6 @@ private:
 	bool needsTextureRecalculation;
 	bool needsCachedBitmapRecalculation;
 	bool textureRecalculationSkippable;
-	void gatherMaskIDrawables(std::vector<IDrawable::MaskData>& masks);
 	std::map<uint32_t,asAtom> avm1variables;
 	uint32_t avm1mouselistenercount;
 	uint32_t avm1framelistenercount;
@@ -119,7 +118,7 @@ protected:
 	mutable Mutex spinlock;
 	void computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 			number_t& outXMin, number_t& outYMin, number_t& outWidth, number_t& outHeight,
-			const MATRIX& m, bool infilter) const;
+			const MATRIX& m) const;
 	/*
 	 * Assume the lock is held and the matrix will not change
 	 */
@@ -197,8 +196,6 @@ public:
 	void requestInvalidationFilterParent(InvalidateQueue* q=nullptr);
 	virtual void requestInvalidationIncludingChildren(InvalidateQueue* q);
 	bool requestInvalidationForCacheAsBitmap(InvalidateQueue* q);
-	void computeTargetMatrix(const DisplayObject* target, MATRIX& totalMatrix, Vector2f& targetOffset, bool includeRotation);
-	bool computeMasksAndMatrix(const DisplayObject *target, std::vector<IDrawable::MaskData>& masks, MATRIX& totalMatrix, bool includeRotation, bool &isMask, _NR<DisplayObject>& mask, number_t& alpha, MATRIX& filterMatrix, const MATRIX& initialMatrix);
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	IDrawable* getCachedBitmapDrawable(DisplayObject* target, const MATRIX& initialMatrix, _NR<DisplayObject>* pcachedBitmap, bool smoothing);
 	IDrawable* getFilterDrawable(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q);
@@ -305,6 +302,7 @@ public:
 	number_t getNominalWidth();
 	number_t getNominalHeight();
 	DisplayObject* getMask() const { return mask.getPtr(); }
+	bool inMask() const;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_getVisible);
 	ASFUNCTION_ATOM(_setVisible);

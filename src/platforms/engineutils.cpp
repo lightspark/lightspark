@@ -1812,18 +1812,18 @@ int EngineData::audio_getSampleRate()
 {
 	return 44100;
 }
-IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, int32_t _rx, int32_t _ry, int32_t _rw, int32_t _rh, float _r, float _xs, float _ys, bool _im, _NR<DisplayObject> _mask, float _s, float _a, const std::vector<IDrawable::MaskData> &_ms, const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX& _filterMatrix, const MATRIX& _targetMatrix, const Vector2f& _targetOffset)
+IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _xs, float _ys, bool _im, float _s, float _a, const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing)
 {
 	if (hasExternalFontRenderer)
-		return new externalFontRenderer(_textData,this, _x, _y, _w, _h, _rx,_ry,_rw,_rh,_r,_xs,_ys,_im, _mask, _a, _ms,
-										_colortransform, smoothing,_m,_filterMatrix,_targetMatrix,_targetOffset);
+		return new externalFontRenderer(_textData,this, _x, _y, _w, _h,_xs,_ys,_im, _a,
+										_colortransform, smoothing,_m);
 	return nullptr;
 }
 
-externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData *engine, int32_t x, int32_t y, int32_t w, int32_t h, int32_t rx, int32_t ry, int32_t rw, int32_t rh, float r, float xs, float ys, bool im, _NR<DisplayObject> _mask, float a, const std::vector<IDrawable::MaskData> &m,
-										   const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m, const MATRIX& _filtermatrix, const MATRIX& _targetMatrix, const Vector2f& _targetOffset)
-	: IDrawable(w, h, x, y,rw,rh,rx,ry,r,xs,ys, 1, 1, im, _mask, a, m,
-				_colortransform,smoothing,_m,_filtermatrix,_targetMatrix,_targetOffset),m_engine(engine)
+externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData *engine, int32_t x, int32_t y, int32_t w, int32_t h, float xs, float ys, bool im, float a,
+										   const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m)
+	: IDrawable(w, h, x, y,xs,ys, 1, 1, im, a,
+				_colortransform,smoothing,_m),m_engine(engine)
 {
 	externalressource = engine->setupFontRenderer(_textData,a,smoothing);
 }

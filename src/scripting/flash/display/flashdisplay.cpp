@@ -1261,8 +1261,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	assert_and_throw(th->state.FP<th->getFramesLoaded());
-	bool newframe = th->state.FP != th->getFramesLoaded()-1;
-	th->state.next_FP = th->state.FP == th->getFramesLoaded()-1 ? th->state.FP : th->state.FP+1;
+	bool newframe = !th->hasFinishedLoading() || th->state.FP != th->getFramesLoaded()-1;
+	th->state.next_FP = th->hasFinishedLoading() && th->state.FP == th->getFramesLoaded()-1 ? th->state.FP : th->state.FP+1;
 	th->state.explicit_FP=true;
 	th->state.stop_FP=true;
 	th->runGoto(newframe);
@@ -3785,7 +3785,7 @@ void Stage::executeAVM1Scripts(bool implicit)
 		{
 			if ((*itscr).clip->isOnStage())
 				(*itscr).execute();
-			else if ((*itscr).event_name_id != UINT32_MAX)
+			else
 				(*itscr).clip->decRef(); // was increffed in AVM1AddScriptEvents 
 			itscr = avm1scriptstoexecute.erase(itscr);
 		}
@@ -5393,6 +5393,8 @@ void MovieClip::enterFrame(bool implicit)
  */
 void MovieClip::advanceFrame(bool implicit)
 {
+	if (implicit && !getSystemState()->mainClip->needsActionScript3() && state.frameadvanced && state.last_FP==-1)
+		return; // frame was already advanced after construction
 	checkSound(state.next_FP);
 	if (state.frameadvanced && state.explicit_FP)
 	{
@@ -5662,6 +5664,6 @@ void AVM1scriptToExecute::execute()
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 			asAtomHandler::as<AVM1Function>(func)->decRef();
 		}
-		clip->decRef(); // was increffed in AVM1AddScriptEvents
 	}
+	clip->decRef(); // was increffed in AVM1AddScriptEvents
 }

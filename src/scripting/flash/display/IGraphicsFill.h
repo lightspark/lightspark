@@ -32,9 +32,9 @@ class IGraphicsFill
 protected:
 	virtual ~IGraphicsFill() {}
 public:
-	static void linkTraits(Class_base* c) {};
+	static void linkTraits(Class_base* c) {}
 	virtual FILLSTYLE toFillStyle() = 0;
 };
 
-};
+}
 #endif /* SCRIPTING_FLASH_DISPLAY_IGRAPHICSFILL_H */

@@ -30,16 +30,9 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 		return false;
 	if (!this->legacy || (fromTag==nullptr))
 	{
-		if (graphics)
-		{
-			this->graphics->startDrawJob();
-			graphics->refreshTokens();
-			bool ret = TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
-			this->graphics->endDrawJob();
-			return ret;
-		}
-		bool ret = TokenContainer::boundsRect(xmin,xmax,ymin,ymax);;
-		return ret;
+		if (graphics && graphics->hasTokens())
+			return graphics->boundsRect(xmin,xmax,ymin,ymax);
+		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);;
 	}
 	xmin=fromTag->ShapeBounds.Xmin/20.0;
 	xmax=fromTag->ShapeBounds.Xmax/20.0;
@@ -56,6 +49,18 @@ _NR<DisplayObject> Shape::hitTestImpl(const Vector2f& globalPoint, const Vector2
 	//TODO: Add a point intersect function to RECT, and use that instead.
 	if (localPoint.x<xmin || localPoint.x>xmax || localPoint.y<ymin || localPoint.y>ymax)
 		return NullRef;
+	if (!this->legacy || (fromTag==nullptr))
+	{
+		if (graphics && graphics->hasTokens())
+		{
+			if (graphics->hitTest(Vector2f(localPoint.x-xmin,localPoint.y-ymin)))
+			{
+				this->incRef();
+				return _MR(this);
+			}
+			return NullRef;
+		}
+	}
 	if (TokenContainer::hitTestImpl(Vector2f(localPoint.x-xmin,localPoint.y-ymin)))
 	{
 		this->incRef();
@@ -64,9 +69,9 @@ _NR<DisplayObject> Shape::hitTestImpl(const Vector2f& globalPoint, const Vector2
 	return NullRef;
 }
 
-void Shape::fillGraphicsData(Vector* v)
+void Shape::fillGraphicsData(Vector* v, bool recursive)
 {
-	if (this->graphics)
+	if (graphics && graphics->hasTokens())
 	{
 		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
@@ -148,7 +153,7 @@ void Shape::sinit(Class_base* c)
 
 void Shape::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	if (this->graphics)
+	if (graphics && graphics->hasTokens())
 	{
 		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
@@ -160,7 +165,7 @@ void Shape::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	IDrawable* res = nullptr;
-	if (this->graphics)
+	if (graphics && graphics->hasTokens())
 	{
 		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();

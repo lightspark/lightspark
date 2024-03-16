@@ -1079,8 +1079,8 @@ void Transform::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(c->getSystemState(),_setMatrix),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("matrix","",Class<IFunction>::getFunction(c->getSystemState(),_getMatrix,0,Class<Matrix>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("concatenatedMatrix","",Class<IFunction>::getFunction(c->getSystemState(),_getConcatenatedMatrix,0,Class<Matrix>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	REGISTER_GETTER_SETTER(c, perspectiveProjection);
-	REGISTER_GETTER_SETTER(c, matrix3D);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, perspectiveProjection, PerspectiveProjection);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, matrix3D, Matrix3D);
 }
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Transform, perspectiveProjection)
 ASFUNCTIONBODY_GETTER_SETTER_CB(Transform, matrix3D,onSetMatrix3D)

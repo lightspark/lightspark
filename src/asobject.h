@@ -1458,6 +1458,9 @@ class Global;
 class GlowFilter;
 class GradientGlowFilter;
 class GradientBevelFilter;
+class GraphicsEndFill;
+class GraphicsPath;
+class GraphicsSolidFill;
 class IFunction;
 class Integer;
 class InteractiveObject;
@@ -1597,6 +1600,9 @@ template<> inline bool ASObject::is<Global>() const { return subtype==SUBTYPE_GL
 template<> inline bool ASObject::is<GlowFilter>() const { return subtype==SUBTYPE_GLOWFILTER; }
 template<> inline bool ASObject::is<GradientGlowFilter>() const { return subtype==SUBTYPE_GRADIENTGLOWFILTER; }
 template<> inline bool ASObject::is<GradientBevelFilter>() const { return subtype==SUBTYPE_GRADIENTBEVELFILTER; }
+template<> inline bool ASObject::is<GraphicsEndFill>() const { return subtype==SUBTYPE_GRAPHICSENDFILL; }
+template<> inline bool ASObject::is<GraphicsPath>() const { return subtype==SUBTYPE_GRAPHICSPATH; }
+template<> inline bool ASObject::is<GraphicsSolidFill>() const { return subtype==SUBTYPE_GRAPHICSSOLIDFILL; }
 template<> inline bool ASObject::is<IFunction>() const { return type==T_FUNCTION; }
 template<> inline bool ASObject::is<IndexBuffer3D>() const { return subtype==SUBTYPE_INDEXBUFFER3D; }
 template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }

@@ -2,8 +2,10 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* improved support for GraphicsPath
+	* big rework of the rendering engine for better handling of masks and filters
 	* improved Stage3D support
-	* paritally implement flash.net.LocalConnection
+	* partially implement flash.net.LocalConnection
 	* improved support for Adobe AIR applications
 	* implement filters as glsl shaders
 	* implement rendering with extended Blendmodes OVERLAY and HARDLIGHT

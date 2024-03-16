@@ -38,7 +38,7 @@ protected:
 	
 	DefineShapeTag* fromTag;
 public:
-	void fillGraphicsData(Vector* v) override;
+	void fillGraphicsData(Vector* v, bool recursive) override;
 	Shape(ASWorker* wrk,Class_base* c);
 	void setupShape(lightspark::DefineShapeTag *tag, float _scaling);
 	uint32_t getTagID() const override;
@@ -53,7 +53,6 @@ public:
 	ASFUNCTION_ATOM(_getGraphics);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
-	bool hasGraphics() const override { return !graphics.isNull(); }
 };
 
 }

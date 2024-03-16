@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/display/Graphics.h"
+#include "scripting/flash/display/GraphicsPath.h"
 #include "scripting/flash/display/TokenContainer.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/flashdisplay.h"
@@ -75,7 +76,6 @@ ASFUNCTIONBODY_ATOM(Graphics,clear)
 	th->currentrenderindex=1-th->currentrenderindex;
 	th->tokens[th->currentrenderindex].clear();
 	th->tokens[th->currentrenderindex].canRenderToGL=true;
-	th->tokens[th->currentrenderindex].boundsRect = RECT();
 	th->fillStyles[th->currentrenderindex].clear();
 	th->lineStyles[th->currentrenderindex].clear();
 	th->needsRefresh=false;
@@ -586,8 +586,8 @@ ASFUNCTIONBODY_ATOM(Graphics,drawPath)
 	}
 
 	if (th->inFilling)
-		pathToTokens(commands, data, winding, th->tokens[th->currentrenderindex].filltokens);
-	pathToTokens(commands, data, winding, th->tokens[th->currentrenderindex].stroketokens);
+		th->pathToTokens(commands, data, winding, th->tokens[th->currentrenderindex].filltokens);
+	th->pathToTokens(commands, data, winding, th->tokens[th->currentrenderindex].stroketokens);
 	th->tokensHaveChanged=true;
 	th->hasChanged = true;
 	th->dorender(true);
@@ -610,34 +610,36 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 		asAtom c = commands->at(i);
 		switch (asAtomHandler::toInt(c))
 		{
-			case GraphicsPathCommand::MOVE_TO:
+			case GRAPHICSPATH_COMMANDTYPE::MOVE_TO:
 			{
 				asAtom ax = data->at(k++, zero);
 				asAtom ay = data->at(k++, zero);
-				number_t x = asAtomHandler::toNumber(ax)*TWIPS_FACTOR;
-				number_t y = asAtomHandler::toNumber(ay)*TWIPS_FACTOR;
+				number_t x = asAtomHandler::toNumber(ax);
+				number_t y = asAtomHandler::toNumber(ay);
 				tokens.emplace_back(GeomToken(MOVE).uval);
 				tokens.emplace_back(GeomToken(Vector2(x, y)).uval);
+				this->updateTokenBounds(x,y);
 				break;
 			}
 
-			case GraphicsPathCommand::LINE_TO:
+			case GRAPHICSPATH_COMMANDTYPE::LINE_TO:
 			{
 				asAtom ax = data->at(k++, zero);
 				asAtom ay = data->at(k++, zero);
-				number_t x = asAtomHandler::toNumber(ax)*TWIPS_FACTOR;
+				number_t x = asAtomHandler::toNumber(ax);
 				number_t y = asAtomHandler::toNumber(ay)*TWIPS_FACTOR;
 				tokens.emplace_back(GeomToken(STRAIGHT).uval);
 				tokens.emplace_back(GeomToken(Vector2(x, y)).uval);
+				this->updateTokenBounds(x,y);
 				break;
 			}
 
-			case GraphicsPathCommand::CURVE_TO:
+			case GRAPHICSPATH_COMMANDTYPE::CURVE_TO:
 			{
 				asAtom acx = data->at(k++, zero);
 				asAtom acy = data->at(k++, zero);
-				number_t cx = asAtomHandler::toNumber(acx)*TWIPS_FACTOR;
-				number_t cy = asAtomHandler::toNumber(acy)*TWIPS_FACTOR;
+				number_t cx = asAtomHandler::toNumber(acx);
+				number_t cy = asAtomHandler::toNumber(acy);
 				asAtom ax = data->at(k++, zero);
 				asAtom ay = data->at(k++, zero);
 				number_t x = asAtomHandler::toNumber(ax)*TWIPS_FACTOR;
@@ -645,55 +647,62 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 				tokens.emplace_back(GeomToken(CURVE_QUADRATIC).uval);
 				tokens.emplace_back(GeomToken(Vector2(cx, cy)).uval);
 				tokens.emplace_back(GeomToken(Vector2(x, y)).uval);
+				this->updateTokenBounds(cx,cy);
+				this->updateTokenBounds(x,y);
 				break;
 			}
 
-			case GraphicsPathCommand::WIDE_MOVE_TO:
+			case GRAPHICSPATH_COMMANDTYPE::WIDE_MOVE_TO:
 			{
 				k+=2;
 				asAtom ax = data->at(k++, zero);
 				asAtom ay = data->at(k++, zero);
-				number_t x = asAtomHandler::toNumber(ax)*TWIPS_FACTOR;
-				number_t y = asAtomHandler::toNumber(ay)*TWIPS_FACTOR;
+				number_t x = asAtomHandler::toNumber(ax);
+				number_t y = asAtomHandler::toNumber(ay);
 				tokens.emplace_back(GeomToken(MOVE).uval);
 				tokens.emplace_back(GeomToken(Vector2(x, y)).uval);
+				this->updateTokenBounds(x,y);
 				break;
 			}
 
-			case GraphicsPathCommand::WIDE_LINE_TO:
+			case GRAPHICSPATH_COMMANDTYPE::WIDE_LINE_TO:
 			{
 				k+=2;
 				asAtom ax = data->at(k++, zero);
 				asAtom ay = data->at(k++, zero);
-				number_t x = asAtomHandler::toNumber(ax)*TWIPS_FACTOR;
-				number_t y = asAtomHandler::toNumber(ay)*TWIPS_FACTOR;
+				number_t x = asAtomHandler::toNumber(ax);
+				number_t y = asAtomHandler::toNumber(ay);
 				tokens.emplace_back(GeomToken(STRAIGHT).uval);
 				tokens.emplace_back(GeomToken(Vector2(x, y)).uval);
+				this->updateTokenBounds(x,y);
 				break;
 			}
 
-			case GraphicsPathCommand::CUBIC_CURVE_TO:
+			case GRAPHICSPATH_COMMANDTYPE::CUBIC_CURVE_TO:
 			{
 				asAtom ac1x = data->at(k++, zero);
 				asAtom ac1y = data->at(k++, zero);
 				asAtom ac2x = data->at(k++, zero);
 				asAtom ac2y = data->at(k++, zero);
-				number_t c1x = asAtomHandler::toNumber(ac1x)*TWIPS_FACTOR;
-				number_t c1y = asAtomHandler::toNumber(ac1y)*TWIPS_FACTOR;
-				number_t c2x = asAtomHandler::toNumber(ac2x)*TWIPS_FACTOR;
-				number_t c2y = asAtomHandler::toNumber(ac2y)*TWIPS_FACTOR;
+				number_t c1x = asAtomHandler::toNumber(ac1x);
+				number_t c1y = asAtomHandler::toNumber(ac1y);
+				number_t c2x = asAtomHandler::toNumber(ac2x);
+				number_t c2y = asAtomHandler::toNumber(ac2y);
 				asAtom ax = data->at(k++, zero);
 				asAtom ay = data->at(k++, zero);
-				number_t x = asAtomHandler::toNumber(ax)*TWIPS_FACTOR;
-				number_t y = asAtomHandler::toNumber(ay)*TWIPS_FACTOR;
+				number_t x = asAtomHandler::toNumber(ax);
+				number_t y = asAtomHandler::toNumber(ay);
 				tokens.emplace_back(GeomToken(CURVE_CUBIC).uval);
 				tokens.emplace_back(GeomToken(Vector2(c1x, c1y)).uval);
 				tokens.emplace_back(GeomToken(Vector2(c2x, c2y)).uval);
 				tokens.emplace_back(GeomToken(Vector2(x, y)).uval);
+				this->updateTokenBounds(c1x,c1y);
+				this->updateTokenBounds(c2x,c2y);
+				this->updateTokenBounds(x,y);
 				break;
 			}
 
-			case GraphicsPathCommand::NO_OP:
+			case GRAPHICSPATH_COMMANDTYPE::NO_OP:
 			default:
 				break;
 		}
@@ -773,6 +782,23 @@ void Graphics::endDrawJob()
 	drawMutex.unlock();
 }
 
+bool Graphics::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+{
+	Locker l(drawMutex);
+	if (this->tokens[this->currentrenderindex].empty())
+		return false;
+	xmin = float(this->tokens[this->currentrenderindex].boundsRect.Xmin)/TWIPS_FACTOR;
+	xmax = float(this->tokens[this->currentrenderindex].boundsRect.Xmax)/TWIPS_FACTOR;
+	ymin = float(this->tokens[this->currentrenderindex].boundsRect.Ymin)/TWIPS_FACTOR;
+	ymax = float(this->tokens[this->currentrenderindex].boundsRect.Ymax)/TWIPS_FACTOR;
+	return true;
+}
+bool Graphics::hitTest(const Vector2f& point)
+{
+	Locker l(drawMutex);
+	return CairoTokenRenderer::hitTest(this->tokens[this->currentrenderindex], 1.0/TWIPS_FACTOR, point);
+}
+
 bool Graphics::destruct()
 {
 	Locker l(drawMutex);
@@ -810,6 +836,11 @@ void Graphics::refreshTokens()
 bool Graphics::shouldRenderToGL()
 {
 	return tokens[currentrenderindex].canRenderToGL;
+}
+
+bool Graphics::hasTokens() const
+{
+	return !tokens[currentrenderindex].empty();
 }
 
 void Graphics::updateTokenBounds(int x, int y)
@@ -1400,6 +1431,6 @@ ASFUNCTIONBODY_ATOM(Graphics,readGraphicsData)
 	RootMovieClip* root = wrk->rootClip.getPtr();
 	Template<Vector>::getInstanceS(wrk,ret,root,InterfaceClass<IGraphicsData>::getClass(wrk->getSystemState()),NullRef);
 	Vector *graphicsData = asAtomHandler::as<Vector>(ret);
-	th->owner->owner->fillGraphicsData(graphicsData);
+	th->owner->owner->fillGraphicsData(graphicsData,recurse);
 }
 

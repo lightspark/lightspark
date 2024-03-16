@@ -30,6 +30,7 @@
 #include "backends/netutils.h"
 #include "backends/graphics.h"
 #include "scripting/flash/display/DisplayObject.h"
+#include "scripting/flash/display/Graphics.h"
 #include "scripting/flash/display/TokenContainer.h"
 #include "scripting/flash/display/NativeWindow.h"
 #include "abcutils.h"
@@ -144,7 +145,7 @@ protected:
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
 	void LegacyChildEraseDeletionMarked();
 public:
-	void fillGraphicsData(Vector* v) override;
+	void fillGraphicsData(Vector* v, bool recursive) override;
 	DisplayObject* findRemovedLegacyChild(uint32_t name);
 	void eraseRemovedLegacyChild(uint32_t name);
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
@@ -362,7 +363,7 @@ protected:
 	void stopSound();
 	void markSoundFinished();
 public:
-	void fillGraphicsData(Vector* v) override;
+	void fillGraphicsData(Vector* v, bool recursive) override;
 	bool dragged;
 	Sprite(ASWorker* wrk,Class_base* c);
 	void setSound(SoundChannel* s, bool forstreaming);
@@ -390,9 +391,8 @@ public:
 	}
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
-	_NR<Graphics> getGraphics();
+	Graphics* getGraphics();
 	void handleMouseCursor(bool rollover) override;
-	bool hasGraphics() const override { return !graphics.isNull(); }
 	bool allowAsMask() const override { return !isEmpty() || !graphics.isNull(); }
 };
 
@@ -809,7 +809,6 @@ public:
 class GraphicsPathCommand: public ASObject
 {
 public:
-	enum {NO_OP=0, MOVE_TO, LINE_TO, CURVE_TO, WIDE_MOVE_TO, WIDE_LINE_TO, CUBIC_CURVE_TO};
 	GraphicsPathCommand(ASWorker* wrk, Class_base* c):ASObject(wrk,c){}
 	static void sinit(Class_base* c);
 };

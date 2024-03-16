@@ -20,6 +20,8 @@
 #include <cairo.h>
 #include "scripting/flash/display/TokenContainer.h"
 #include "scripting/flash/display/GraphicsSolidFill.h"
+#include "scripting/flash/display/GraphicsEndFill.h"
+#include "scripting/flash/display/GraphicsPath.h"
 #include "scripting/toplevel/Vector.h"
 #include "swf.h"
 #include "scripting/flash/display/BitmapData.h"
@@ -864,31 +866,134 @@ uint16_t TokenContainer::getCurrentLineWidth() const
 	return tokens.currentLineWidth;
 }
 
+std::vector<uint64_t>::const_iterator beginGraphicsFill(std::vector<uint64_t>::const_iterator it, ASWorker* wrk,Vector* v, bool& infill)
+{
+	it++;
+	infill=true;
+	const FILLSTYLE* style=GeomToken(*it,false).fillStyle;
+	const FILL_STYLE_TYPE& fstype=style->FillStyleType;
+	if (fstype == SOLID_FILL)
+	{
+		GraphicsSolidFill* f = Class<GraphicsSolidFill>::getInstanceSNoArgs(wrk);
+		f->color =style->Color.Red<<16|style->Color.Green<<8|style->Color.Blue;
+		f->alpha = style->Color.af();
+		asAtom a=asAtomHandler::fromObjectNoPrimitive(f);
+		v->append(a);
+	}
+	else
+		LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for FillStyle Token type:"<<fstype);
+	return it;
+}
+void endGraphicsFill(GraphicsPath** currentpath, bool& infill, Vector* v, ASWorker* wrk)
+{
+	if (*currentpath)
+	{
+		asAtom a=asAtomHandler::fromObjectNoPrimitive(*currentpath);
+		v->append(a);
+		*currentpath=nullptr;
+	}
+	if (infill)
+	{
+		GraphicsEndFill* f = Class<GraphicsEndFill>::getInstanceSNoArgs(wrk);
+		asAtom a=asAtomHandler::fromObjectNoPrimitive(f);
+		v->append(a);
+		infill=false;
+	}
+}
+std::vector<uint64_t>::const_iterator addDrawCommand(GRAPHICSPATH_COMMANDTYPE cmd, int argcount, std::vector<uint64_t>::const_iterator it, GraphicsPath** currentpath, ASWorker* wrk, const MATRIX& matrix, number_t scale)
+{
+	if (*currentpath==nullptr)
+	{
+		*currentpath = Class<GraphicsPath>::getInstanceSNoArgs(wrk);
+		(*currentpath)->ensureValid();
+	}
+	asAtom c = asAtomHandler::fromInt(cmd);
+	(*currentpath)->commands->append(c);
+	for (int i = 0; i < argcount; i++)
+	{
+		GeomToken p(*(++it),false);
+		Vector2f v(p.vec.x*scale,p.vec.y*scale);
+		v = matrix.multiply2D(v);
+		asAtom d1 = asAtomHandler::fromNumber(wrk,v.x,false);
+		(*currentpath)->data->append(d1);
+		asAtom d2 = asAtomHandler::fromNumber(wrk,v.y,false);
+		(*currentpath)->data->append(d2);
+	}
+	return it;
+}
 void TokenContainer::fillGraphicsData(Vector* v)
 {
-	for (auto it = tokens.filltokens.begin(); it != tokens.filltokens.end(); it++)
+	ASWorker* wrk = owner->getInstanceWorker();
+	MATRIX m = owner->getConcatenatedMatrix(true);
+	m.translate(tokens.boundsRect.Xmin*scaling,tokens.boundsRect.Ymin*scaling);
+	GraphicsPath* currentpath=nullptr;
+	bool infill=false;
+	for (auto it = tokens.filltokens.cbegin(); it != tokens.filltokens.cend(); it++)
 	{
 		GeomToken t(*it,false); 
 		switch (t.type)
 		{
 			case SET_STROKE:
-			case STRAIGHT:
-			case MOVE:
 				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
 				it++;
 				break;
+			case STRAIGHT:
+				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::LINE_TO,1,it,&currentpath,wrk,m,this->scaling);
+				break;
+			case MOVE:
+				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::MOVE_TO,1,it,&currentpath,wrk,m,this->scaling);
+				break;
 			case CURVE_QUADRATIC:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				it+=2;
+				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CURVE_TO,2,it,&currentpath,wrk,m,this->scaling);
 				break;
 			case CLEAR_FILL:
+				endGraphicsFill(&currentpath,infill,v,wrk);
+				break;
 			case CLEAR_STROKE:
 			case FILL_KEEP_SOURCE:
 				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
 				break;
 			case CURVE_CUBIC:
+				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CUBIC_CURVE_TO,3,it,&currentpath,wrk,m,this->scaling);
+				break;
+			case FILL_TRANSFORM_TEXTURE:
 				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				it+=3;
+				it+=6;
+				break;
+			case SET_FILL:
+				endGraphicsFill(&currentpath,infill,v,wrk);
+				it = beginGraphicsFill(it,wrk,v,infill);
+				break;
+		}
+	}
+	endGraphicsFill(&currentpath,infill,v,wrk);
+	for (auto it = tokens.stroketokens.cbegin(); it != tokens.stroketokens.cend(); it++)
+	{
+		GeomToken t(*it,false); 
+		switch (t.type)
+		{
+			case SET_STROKE:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				it++;
+				break;
+			case STRAIGHT:
+				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::LINE_TO,1,it,&currentpath,wrk,m,this->scaling);
+				break;
+			case MOVE:
+				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::MOVE_TO,1,it,&currentpath,wrk,m,this->scaling);
+				break;
+			case CURVE_QUADRATIC:
+				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CURVE_TO,2,it,&currentpath,wrk,m,this->scaling);
+				break;
+			case CLEAR_FILL:
+				endGraphicsFill(&currentpath,infill,v,wrk);
+				break;
+			case CLEAR_STROKE:
+			case FILL_KEEP_SOURCE:
+				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+				break;
+			case CURVE_CUBIC:
+				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CUBIC_CURVE_TO,3,it,&currentpath,wrk,m,this->scaling);
 				break;
 			case FILL_TRANSFORM_TEXTURE:
 				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
@@ -896,69 +1001,11 @@ void TokenContainer::fillGraphicsData(Vector* v)
 				break;
 			case SET_FILL:
 			{
-				it++;
-				const FILLSTYLE* style=GeomToken(*it,false).fillStyle;
-				const FILL_STYLE_TYPE& fstype=style->FillStyleType;
-				if (fstype == SOLID_FILL)
-				{
-					GraphicsSolidFill* f = Class<GraphicsSolidFill>::getInstanceSNoArgs(this->owner->getInstanceWorker());
-					f->color =style->Color.Red<<16|style->Color.Green<<8|style->Color.Blue;
-					f->alpha = style->Color.af();
-					asAtom a=asAtomHandler::fromObjectNoPrimitive(f);
-					v->append(a);
-				}
-				else
-					LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for FillStyle Token type:"<<fstype);
+				endGraphicsFill(&currentpath,infill,v,wrk);
+				it = beginGraphicsFill(it,wrk,v,infill);
 				break;
 			}
 		}
 	}
-	for (auto it = tokens.stroketokens.begin(); it != tokens.stroketokens.end(); it++)
-	{
-		GeomToken t(*it,false); 
-		switch (t.type)
-		{
-			case SET_STROKE:
-			case STRAIGHT:
-			case MOVE:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				it++;
-				break;
-			case CURVE_QUADRATIC:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				it+=2;
-				break;
-			case CLEAR_FILL:
-			case CLEAR_STROKE:
-			case FILL_KEEP_SOURCE:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				break;
-			case CURVE_CUBIC:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				it+=3;
-				break;
-			case FILL_TRANSFORM_TEXTURE:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				it+=6;
-				break;
-			case SET_FILL:
-			{
-				it++;
-				const FILLSTYLE* style=GeomToken(*it,false).fillStyle;
-				const FILL_STYLE_TYPE& fstype=style->FillStyleType;
-				if (fstype == SOLID_FILL)
-				{
-					GraphicsSolidFill* f = Class<GraphicsSolidFill>::getInstanceSNoArgs(this->owner->getInstanceWorker());
-					f->color =style->Color.Red<<16|style->Color.Green<<8|style->Color.Blue;
-					f->alpha = style->Color.af();
-					asAtom a=asAtomHandler::fromObjectNoPrimitive(f);
-					v->append(a);
-				}
-				else
-					LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for FillStyle Token type:"<<fstype);
-				break;
-			}
-		}
-		
-	}
+	endGraphicsFill(&currentpath,infill,v,wrk);
 }

@@ -72,9 +72,12 @@ public:
 		: ASObject(wrk,c),owner(_o),movex(0),movey(0),currentrenderindex(0),inFilling(false),hasChanged(false),needsRefresh(true),tokensHaveChanged(false) {}
 	void startDrawJob();
 	void endDrawJob();
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
+	bool hitTest(const Vector2f& point);
 	bool destruct() override;
 	void refreshTokens();
 	bool shouldRenderToGL();
+	bool hasTokens() const;
 	static void sinit(Class_base* c);
 	FILLSTYLE& addFillStyle(FILLSTYLE& fs) { fillStyles[currentrenderindex].push_back(fs); return fillStyles[currentrenderindex].back();}
 	LINESTYLE2& addLineStyle(LINESTYLE2& ls) { lineStyles[currentrenderindex].push_back(ls); return lineStyles[currentrenderindex].back();}
@@ -91,7 +94,7 @@ public:
 					  bool repeat,
 					  bool smooth);
 	static FILLSTYLE createSolidFill(uint32_t color, uint8_t alpha);
-	static void pathToTokens(_NR<Vector> commands,
+	void pathToTokens(_NR<Vector> commands,
 				 _NR<Vector> data,
 				 tiny_string windings,
 				 std::vector<uint64_t> &tokens);

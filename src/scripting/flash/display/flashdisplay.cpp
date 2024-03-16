@@ -161,7 +161,7 @@ IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix
 	if (res)
 		return res;
 
-	if (this->graphics)
+	if (graphics && graphics->hasTokens())
 	{
 		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
@@ -338,29 +338,17 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	if (visibleOnly && !this->isVisible())
 		return false;
 	bool ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax,visibleOnly);
-	if (graphics)
+	if (graphics && graphics->hasTokens())
 	{
-		this->graphics->startDrawJob();
-		graphics->refreshTokens();
-		if(!tokens.empty())
+		number_t gxmin,gxmax,gymin,gymax;
+		if (this->graphics->boundsRect(gxmin,gxmax,gymin,gymax))
 		{
-			if(ret==true)
-			{
-				xmin = min(xmin,number_t(tokens.boundsRect.Xmin)/20.0);
-				xmax = max(xmax,number_t(tokens.boundsRect.Xmax)/20.0);
-				ymin = min(ymin,number_t(tokens.boundsRect.Ymin)/20.0);
-				ymax = max(ymax,number_t(tokens.boundsRect.Ymax)/20.0);
-			}
-			else
-			{
-				xmin=number_t(tokens.boundsRect.Xmin)/20.0;
-				xmax=number_t(tokens.boundsRect.Xmax)/20.0;
-				ymin=number_t(tokens.boundsRect.Ymin)/20.0;
-				ymax=number_t(tokens.boundsRect.Ymax)/20.0;
-			}
+			xmin = min(xmin,gxmin);
+			xmax = max(xmax,gxmax);
+			ymin = min(ymin,gymin);
+			ymax = max(ymax,gymax);
 			ret=true;
 		}
-		this->graphics->endDrawJob();
 	}
 	return ret;
 }
@@ -466,13 +454,15 @@ void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
 	namedRemovedLegacyChildren.clear();
 }
 
-void DisplayObjectContainer::fillGraphicsData(Vector* v)
+void DisplayObjectContainer::fillGraphicsData(Vector* v, bool recursive)
 {
+	if (recursive)
+		return;
 	std::vector<_R<DisplayObject>> tmplist;
 	cloneDisplayList(tmplist);
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
-		(*it)->fillGraphicsData(v);
+		(*it)->fillGraphicsData(v,recursive);
 }
 
 bool DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
@@ -500,7 +490,7 @@ void DisplayObjectContainer::eraseRemovedLegacyChild(uint32_t name)
 bool Sprite::renderImpl(RenderContext& ctxt)
 {
 	bool ret = true;
-	if (this->graphics)
+	if (graphics && graphics->hasTokens())
 	{
 		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
@@ -606,7 +596,18 @@ _NR<DisplayObject> Sprite::hitTestImpl(const Vector2f& globalPoint, const Vector
 	if (ret.isNull() && hitArea.isNull())
 	{
 		//The coordinates are locals
-		if (TokenContainer::hitTestImpl(localPoint))
+		if (graphics && graphics->hasTokens())
+		{
+			Vector2f hitPoint;
+			// TODO: Add an overload for Vector2f.
+			hitArea->globalToLocal(globalPoint.x, globalPoint.y, hitPoint.x, hitPoint.y);
+			if (graphics->hitTest(Vector2f(localPoint.x,localPoint.y)))
+			{
+				this->incRef();
+				ret = _MR(this);
+			}
+		}
+		else if (TokenContainer::hitTestImpl(localPoint))
 		{
 			this->incRef();
 			ret = _MR(this);
@@ -670,16 +671,16 @@ void Sprite::markSoundFinished()
 		sound->markFinished();
 }
 
-void Sprite::fillGraphicsData(Vector* v)
+void Sprite::fillGraphicsData(Vector* v, bool recursive)
 {
-	if (this->graphics)
+	if (graphics && graphics->hasTokens())
 	{
 		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
 		TokenContainer::fillGraphicsData(v);
 		this->graphics->endDrawJob();
 	}
-	DisplayObjectContainer::fillGraphicsData(v);
+	DisplayObjectContainer::fillGraphicsData(v,recursive);
 }
 
 ASFUNCTIONBODY_ATOM(Sprite,_constructor)
@@ -688,12 +689,12 @@ ASFUNCTIONBODY_ATOM(Sprite,_constructor)
 	DisplayObjectContainer::_constructor(ret,wrk,obj,nullptr,0);
 }
 
-_NR<Graphics> Sprite::getGraphics()
+Graphics* Sprite::getGraphics()
 {
 	//Probably graphics is not used often, so create it here
 	if(graphics.isNull())
 		graphics=_MR(Class<Graphics>::getInstanceS(getInstanceWorker(),this));
-	return graphics;
+	return graphics.getPtr();
 }
 
 void Sprite::handleMouseCursor(bool rollover)
@@ -714,10 +715,10 @@ void Sprite::handleMouseCursor(bool rollover)
 ASFUNCTIONBODY_ATOM(Sprite,_getGraphics)
 {
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
-	_NR<Graphics> g = th->getGraphics();
+	Graphics* g = th->getGraphics();
 
 	g->incRef();
-	ret = asAtomHandler::fromObject(g.getPtr());
+	ret = asAtomHandler::fromObject(g);
 }
 
 FrameLabel::FrameLabel(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
@@ -1776,35 +1777,35 @@ string MovieClip::toDebugString() const
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1Clear)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	Graphics* g = th->getGraphics().getPtr();
+	Graphics* g = th->getGraphics();
 	asAtom o = asAtomHandler::fromObject(g);
 	Graphics::clear(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1MoveTo)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	Graphics* g = th->getGraphics().getPtr();
+	Graphics* g = th->getGraphics();
 	asAtom o = asAtomHandler::fromObject(g);
 	Graphics::moveTo(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1LineTo)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	Graphics* g = th->getGraphics().getPtr();
+	Graphics* g = th->getGraphics();
 	asAtom o = asAtomHandler::fromObject(g);
 	Graphics::lineTo(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1LineStyle)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	Graphics* g = th->getGraphics().getPtr();
+	Graphics* g = th->getGraphics();
 	asAtom o = asAtomHandler::fromObject(g);
 	Graphics::lineStyle(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginFill)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	Graphics* g = th->getGraphics().getPtr();
+	Graphics* g = th->getGraphics();
 	asAtom o = asAtomHandler::fromObject(g);
 	if(argslen>=2)
 		args[1]=asAtomHandler::fromNumber(wrk,asAtomHandler::toNumber(args[1])/100.0,false);
@@ -1814,14 +1815,14 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginFill)
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginGradientFill)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	Graphics* g = th->getGraphics().getPtr();
+	Graphics* g = th->getGraphics();
 	asAtom o = asAtomHandler::fromObject(g);
 	Graphics::beginGradientFill(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1EndFill)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	Graphics* g = th->getGraphics().getPtr();
+	Graphics* g = th->getGraphics();
 	asAtom o = asAtomHandler::fromObject(g);
 	Graphics::endFill(ret,wrk,o,args,argslen);
 }
@@ -3393,9 +3394,9 @@ void Stage::prepareShutdown()
 }
 
 Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
-  ,avm1DisplayObjectFirst(nullptr),avm1DisplayObjectLast(nullptr),hasAVM1Clips(false)
-  ,align(c->getSystemState()->getUniqueStringId("TL")), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high")
-  ,stageFocusRect(false),allowsFullScreen(false),contentsScaleFactor(1.0)
+	,avm1DisplayObjectFirst(nullptr),avm1DisplayObjectLast(nullptr),hasAVM1Clips(false),invalidated(true),renderToTextureCount(0)
+	,align(c->getSystemState()->getUniqueStringId("TL")), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high")
+	,stageFocusRect(false),allowsFullScreen(false),contentsScaleFactor(1.0)
 {
 	subtype = SUBTYPE_STAGE;
 	RELEASE_WRITE(this->invalidated,false);

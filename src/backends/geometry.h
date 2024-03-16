@@ -117,10 +117,11 @@ struct tokensVector
 	RECT boundsRect;
 	uint16_t currentLineWidth;
 	bool canRenderToGL;
-	tokensVector():currentLineWidth(0),canRenderToGL(true) {}
+	tokensVector():boundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN),currentLineWidth(0),canRenderToGL(true) {}
 	tokensVector(const tokensVector& r):filltokens(r.filltokens),stroketokens(r.stroketokens),boundsRect(r.boundsRect),currentLineWidth(r.currentLineWidth),canRenderToGL(r.canRenderToGL) {}
 	void clear()
 	{
+		boundsRect = RECT(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN);
 		filltokens.clear();
 		stroketokens.clear();
 		canRenderToGL=true;

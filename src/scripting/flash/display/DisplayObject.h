@@ -149,7 +149,7 @@ protected:
 	}
 	virtual void afterSetLegacyMatrix() {}
 public:
-	virtual void fillGraphicsData(Vector* v) {}
+	virtual void fillGraphicsData(Vector* v, bool recursive) {}
 	void updatedRect(); // scrollrect was changed
 	void setMask(_NR<DisplayObject> m);
 	void setBlendMode(UI8 blendmode);
@@ -287,7 +287,6 @@ public:
 	virtual void executeFrameScript();
 	virtual bool needsActionScript3() const;
 	virtual void handleMouseCursor(bool rollover) {}
-	virtual bool hasGraphics() const { return false; }
 	virtual bool allowAsMask() const { return true; }
 	Vector2f getLocalMousePos();
 	Vector2f getXY();

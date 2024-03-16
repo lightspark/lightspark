@@ -746,7 +746,7 @@ bool CairoRenderer::isCachedSurfaceUsable(const DisplayObject* o) const
 
 bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, const Vector2f& point)
 {
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(nullptr, CAIRO_FORMAT_ARGB32, 0, 0, 0);
+	cairo_surface_t* cairoSurface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 0, 0);
 
 	int starttoken=0;
 	bool ret=false;

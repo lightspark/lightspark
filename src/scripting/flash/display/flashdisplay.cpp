@@ -600,7 +600,7 @@ _NR<DisplayObject> Sprite::hitTestImpl(const Vector2f& globalPoint, const Vector
 		{
 			Vector2f hitPoint;
 			// TODO: Add an overload for Vector2f.
-			hitArea->globalToLocal(globalPoint.x, globalPoint.y, hitPoint.x, hitPoint.y);
+			this->globalToLocal(globalPoint.x, globalPoint.y, hitPoint.x, hitPoint.y);
 			if (graphics->hitTest(Vector2f(localPoint.x,localPoint.y)))
 			{
 				this->incRef();

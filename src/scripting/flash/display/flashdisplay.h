@@ -126,6 +126,7 @@ private:
 	number_t boundsrectVisibleXmax;
 	number_t boundsrectVisibleYmax;
 	bool boundsRectVisibleDirty;
+	void umarkLegacyChild(DisplayObject* child);
 protected:
 	//This is shared between RenderThread and VM
 	std::vector < DisplayObject* > dynamicDisplayList;

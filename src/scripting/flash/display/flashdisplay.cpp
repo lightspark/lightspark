@@ -2221,8 +2221,6 @@ void DisplayObjectContainer::checkClipDepth()
 		depth = it->first;
 		if (obj->ClipDepth)
 		{
-//			if (clipobj)
-//				clipobj->hasChanged = false; // ensure clipobj is not rendered
 			clipobj = obj;
 		}
 		else if (clipobj && clipobj->ClipDepth > depth)
@@ -2233,8 +2231,6 @@ void DisplayObjectContainer::checkClipDepth()
 		else
 			obj->setMask(NullRef);
 	}
-//	if (clipobj)
-//		clipobj->hasChanged = false; // ensure clipobj is not rendered
 }
 
 bool DisplayObjectContainer::destruct()
@@ -2486,7 +2482,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
 		    ((*it)->isMask() ? "m" : "") <<((*it)->hasFilters() ? "f" : "") <<((*it)->scrollRect.getPtr() ? "s" : "") << " cd=" <<(*it)->ClipDepth<<" ca=" <<(*it)->computeCacheAsBitmap()<<"/"<<(*it)->cachedAsBitmapOf<<" "<<
-			"a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'");
+						  "a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'"<<" depth:"<<(*it)->getDepth());
 
 		if ((*it)->is<DisplayObjectContainer>())
 		{
@@ -2660,17 +2656,13 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 		child->setMask(NullRef);
 		
 		//Erase this from the legacy child map (if it is in there)
-		auto it2 = mapLegacyChildToDepth.find(child);
-		if (it2 != mapLegacyChildToDepth.end())
-		{
-			mapDepthToLegacyChild.erase(it2->second);
-			mapLegacyChildToDepth.erase(it2);
-		}
+		umarkLegacyChild(child);
 		dynamicDisplayList.erase(it);
 	}
 	handleRemovedEvent(child, keeponstage, inskipping);
 	child->setParent(nullptr);
 	child->removeStoredMember();
+	checkClipDepth();
 	return true;
 }
 
@@ -2688,12 +2680,7 @@ void DisplayObjectContainer::_removeAllChildren()
 			child->removeAVM1Listeners();
 
 		//Erase this from the legacy child map (if it is in there)
-		auto it2 = mapLegacyChildToDepth.find(child);
-		if (it2 != mapLegacyChildToDepth.end())
-		{
-			mapDepthToLegacyChild.erase(it2->second);
-			mapLegacyChildToDepth.erase(it2);
-		}
+		umarkLegacyChild(child);
 		it = dynamicDisplayList.erase(it);
 		child->removeStoredMember();
 	}
@@ -2896,13 +2883,18 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
 
 	auto it=th->dynamicDisplayList.begin();
 	int i = 0;
+	//Erase the child from the legacy child map (if it is in there)
+	th->umarkLegacyChild(child);
+	
 	for(;it != th->dynamicDisplayList.end(); ++it)
 		if(i++ == index)
 		{
 			th->dynamicDisplayList.insert(it, child);
+			th->checkClipDepth();
 			return;
 		}
 	th->dynamicDisplayList.push_back(child);
+	th->checkClipDepth();
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildren)
@@ -2937,6 +2929,11 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildren)
 
 		std::iter_swap(it1, it2);
 	}
+	//Erase both children from the legacy child map
+	th->umarkLegacyChild(child1);
+	th->umarkLegacyChild(child2);
+	
+	th->checkClipDepth();
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildrenAt)
@@ -2961,6 +2958,11 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildrenAt)
 		Locker l(th->mutexDisplayList);
 		std::iter_swap(th->dynamicDisplayList.begin() + index1, th->dynamicDisplayList.begin() + index2);
 	}
+	//Erase both children from the legacy child map
+	th->umarkLegacyChild(*(th->dynamicDisplayList.begin() + index1));
+	th->umarkLegacyChild(*(th->dynamicDisplayList.begin() + index2));
+	
+	th->checkClipDepth();
 }
 
 //Only from VM context
@@ -3074,7 +3076,16 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 				(*it)->as<DisplayObjectContainer>()->getObjectsFromPoint(point,ar);
 			it++;
 		}
+	}
+}
 
+void DisplayObjectContainer::umarkLegacyChild(DisplayObject* child)
+{
+	auto it = mapLegacyChildToDepth.find(child);
+	if (it != mapLegacyChildToDepth.end())
+	{
+		mapDepthToLegacyChild.erase(it->second);
+		mapLegacyChildToDepth.erase(it);
 	}
 }
 

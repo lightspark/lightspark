@@ -142,7 +142,7 @@ number_t DisplayObject::getNominalHeight()
 
 bool DisplayObject::inMask() const
 {
-	if (mask.getPtr())
+	if (mask.getPtr() || this->getClipDepth())
 		return true;
 	if (hasFilters())
 		return false;

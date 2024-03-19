@@ -33,8 +33,6 @@ const std::vector<InputEvent> RuffleInputParser::parse()
 	std::vector<AutomatedEvent> events;
 	std::vector<InputEvent> ret;
 	archive(events);
-	ret.reserve(events.size());
-	for (auto event : events)
-		std::visit([&](auto &ev) { ret.push_back(ev.toInputEvent()) }, event);
+	ret.insert(ret.begin(), events.begin(), events.end());
 	return ret;
 }

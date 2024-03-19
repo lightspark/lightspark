@@ -28,6 +28,7 @@
 #include <lightspark/swftypes.h>
 #include <lightspark/tiny_string.h>
 
+#include "input/events.h"
 #include "utils/macros.h"
 #include "utils/wide_char.h"
 
@@ -42,8 +43,6 @@
 	o(SetClipboardText, set_clipboard_text)
 
 using namespace lightspark;
-
-struct InputEvent;
 
 enum class EventType {
 	Wait,
@@ -76,8 +75,18 @@ enum class TextControlCode {
 	Delete,
 };
 
+static MouseButtonEvent::Button toButton(const MouseButton& button)
+{
+	switch (button)
+	{
+		MouseButton::Left: return MouseButtonEvent::Left; break;
+		MouseButton::Middle: return MouseButtonEvent::Middle; break;
+		MouseButton::Right: return MouseButtonEvent::Right; break;
+	}
+}
+
 struct Wait {
-	const InputEvent& toInputEvent() const;
+	operator InputEvent() const { return InputEvent { NextFrameEvent {} }; }
 	template<class Archive>
 	void serialize(Archive &archive) {}
 };
@@ -85,7 +94,7 @@ struct Wait {
 struct MouseMove {
 	Vector2f pos;
 
-	const InputEvent& toInputEvent() const;
+	operator InputEvent() const { return InputEvent { MouseMoveEvent { pos } }; }
 	template<class Archive>
 	void serialize(Archive &archive) {
 		archive(CEREAL_NVP(pos));
@@ -96,7 +105,7 @@ struct MouseDown {
 	Vector2f pos;
 	MouseButton btn;
 
-	const InputEvent& toInputEvent() const;
+	operator InputEvent() const { return InputEvent { MouseButtonEvent { pos, toButton(btn), MouseButtonType::Down } }; }
 	template<class Archive>
 	void serialize(Archive &archive) {
 		archive(CEREAL_NVP(pos));
@@ -108,7 +117,7 @@ struct MouseUp {
 	Vector2f pos;
 	MouseButton btn;
 
-	const InputEvent& toInputEvent() const;
+	operator InputEvent() const { return InputEvent { MouseButtonEvent { pos, toButton(btn), MouseButtonType::Up } }; }
 	template<class Archive>
 	void serialize(Archive &archive) {
 		archive(CEREAL_NVP(pos));
@@ -119,7 +128,7 @@ struct MouseUp {
 struct KeyDown {
 	uint8_t key_code;
 
-	const InputEvent& toInputEvent() const;
+	operator InputEvent() const { return InputEvent { KeyEvent { KeyCode(key_code), Modifiers::None, KeyType::Down } }; }
 	template<class Archive>
 	void serialize(Archive &archive) {
 		archive(CEREAL_NVP(key_code));
@@ -129,7 +138,7 @@ struct KeyDown {
 struct TextInput {
 	WChar<char32_t> codepoint;
 
-	const InputEvent& toInputEvent() const;
+	operator InputEvent() const { return InputEvent { TextEvent { codepoint, TextType::Input } }; }
 	template<class Archive>
 	void serialize(Archive &archive) {
 		archive(CEREAL_NVP(codepoint));
@@ -139,9 +148,41 @@ struct TextInput {
 struct TextControl {
 	TextControlCode code;
 
-	const InputEvent& toInputEvent() const;
-	const KeyCode& toKeyCode() const;
-	const Modifier& toModifiers() const;
+	operator InputEvent() const { return InputEvent { KeyEvent { toKeyCode(), toModifiers(), KeyType::Control } }; }
+	const KeyCode& toKeyCode() const
+	{
+		switch (code)
+		{
+			case TextControlCode::MoveLeft:
+			case TextControlCode::MoveRight
+			case TextControlCode::Backspace:
+			case TextControlCode::Enter:
+			case TextControlCode::Delete: return Modifier::None; break;
+			case TextControlCode::SelectLeft:
+			case TextControlCode::SelectRight: return Modifier::Shift; break;
+			case TextControlCode::SelectAll:
+			case TextControlCode::Copy:
+			case TextControlCode::Paste:
+			case TextControlCode::Cut: return Modifier::Ctrl; break;
+		}
+	}
+	const Modifier& toModifiers() const
+	{
+		switch (code)
+		{
+			case TextControlCode::MoveLeft:
+			case TextControlCode::MoveRight
+			case TextControlCode::Backspace:
+			case TextControlCode::Enter:
+			case TextControlCode::Delete: return Modifier::None; break;
+			case TextControlCode::SelectLeft:
+			case TextControlCode::SelectRight: return Modifier::Shift; break;
+			case TextControlCode::SelectAll:
+			case TextControlCode::Copy:
+			case TextControlCode::Paste:
+			case TextControlCode::Cut: return Modifier::Ctrl; break;
+		}
+	}
 	template<class Archive>
 	void serialize(Archive &archive) {
 		archive(CEREAL_NVP(code));
@@ -153,7 +194,7 @@ struct SetClipboardText {
 
 	SetClipboardText(const SetClipboardText &other) : text(other.text) {}
 
-	const InputEvent& toInputEvent() const;
+	operator InputEvent() const { return InputEvent { TextEvent { text, TextType::Clipboard } }; }
 	template<class Archive>
 	void serialize(Archive &archive) {
 		archive(CEREAL_NVP(text));

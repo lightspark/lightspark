@@ -46,8 +46,8 @@ const InputEvent& MouseDown::toInputEvent() const
 }
 
 const InputEvent& MouseUp::toInputEvent() const
-	return InputEvent { MouseButtonEvent { pos, toButton(btn), MouseButtonType::Up } };
 {
+	return InputEvent { MouseButtonEvent { pos, toButton(btn), MouseButtonType::Up } };
 }
 
 const InputEvent& KeyDown::toInputEvent() const

@@ -21,6 +21,7 @@
 #define TIMER_H 1
 
 #include "forwards/timer.h"
+#include "interfaces/timer.h"
 #include "compat.h"
 #include <list>
 #include <ctime>
@@ -34,26 +35,30 @@ class SystemState;
 class TimerThread
 {
 private:
-	class TimingEvent
+	class TimingEvent : public ITimingEvent
 	{
 	public:
 		TimingEvent(ITickJob* _job, bool _isTick, uint32_t _tickTime, uint32_t _waitTime) 
-			: job(_job),wakeUpTime(_isTick ? _tickTime : _waitTime),tickTime(_tickTime),isTick(_isTick) {}
-		ITickJob* job;
+			: ITimingEvent(_job, _isTick, _tickTime),wakeUpTime(_isTick ? _tickTime : _waitTime) {}
+
+		bool operator<(const ITimingEvent& other) const override { return wakeUpTime < static_cast<const TimingEvent&>(other).wakeUpTime; };
+		bool operator>(const ITimingEvent& other) const override { return wakeUpTime > static_cast<const TimingEvent&>(other).wakeUpTime; };
+		void addMilliseconds(int32_t ms) override { wakeUpTime.addMilliseconds(ms); };
+		bool isInTheFuture() const override { return wakeUpTime.isInTheFuture(); };
+		bool wait(Mutex& mutex, Cond& cond) override { return wakeUpTime.wait(mutex, cond); };
+
 		CondTime wakeUpTime;
-		uint32_t tickTime;
-		bool isTick;
 	};
 	Mutex mutex;
 	Cond newEvent;
 	SDL_Thread* t;
-	std::list<TimingEvent*> pendingEvents;
+	std::list<ITimingEvent*> pendingEvents;
 	SystemState* m_sys;
 	volatile bool stopped;
 	bool joined;
 	static int worker(void* d);
-	void insertNewEvent(TimingEvent* e);
-	void insertNewEvent_nolock(TimingEvent* e);
+	void insertNewEvent(ITimingEvent* e);
+	void insertNewEvent_nolock(ITimingEvent* e);
 	void dumpJobs();
 public:
 	TimerThread(SystemState* s);
@@ -65,23 +70,23 @@ public:
 	 * Like stop, but waits until the current job has finished, too.
 	 */
 	void wait();
-	~TimerThread();
-	void addTick(uint32_t tickTime, ITickJob* job);
-	void addWait(uint32_t waitTime, ITickJob* job);
+	virtual ~TimerThread();
+	virtual void addTick(uint32_t tickTime, ITickJob* job);
+	virtual void addWait(uint32_t waitTime, ITickJob* job);
 	/* Remove the job from the list of pending tasks. If it is currently executing,
 	 * wait until it is done.
 	 */
 	void removeJob(ITickJob* job);
 	void removeJob_noLock(ITickJob* job);
+	/* Gets the current system time in milliseconds */
+	virtual uint64_t getCurrentTime_ms() const { return compat_msectiming(); };
 };
 
-class Chronometer
+class Chronometer : public IChronometer
 {
-private:
-	uint64_t start;
 public:
 	Chronometer();
-	uint32_t checkpoint();
+	uint32_t checkpoint() override;
 };
 
 };

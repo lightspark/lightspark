@@ -337,7 +337,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	stage->setRoot(_MR(mainClip));
 	worker->stage=stage;
 	//Get starting time
-	startTime=compat_msectiming();
+	startTime=getCurrentTime_ms();
 	
 	renderThread=new RenderThread(this);
 	inputThread=new InputThread(this);
@@ -2124,6 +2124,11 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 
 	setFramePhase(oldPhase);
 	--innerGotoCount;
+}
+
+uint64_t SystemState::getCurrentTime_ms() const
+{
+	return timerThread->getCurrentTime_ms();
 }
 
 void SystemState::tick()

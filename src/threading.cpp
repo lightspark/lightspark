@@ -67,12 +67,12 @@ CondTime::CondTime(long milliseconds)
 	timepoint=((g_get_monotonic_time()+G_TIME_SPAN_MILLISECOND/2)/G_TIME_SPAN_MILLISECOND+milliseconds)*G_TIME_SPAN_MILLISECOND;
 }
 
-bool CondTime::operator<(CondTime& c) const
+bool CondTime::operator<(const CondTime& c) const
 {
 	return timepoint<c.timepoint;
 }
 
-bool CondTime::operator>(CondTime& c) const
+bool CondTime::operator>(const CondTime& c) const
 {
 	return timepoint>c.timepoint;
 }

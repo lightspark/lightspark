@@ -20,6 +20,9 @@
 #ifndef INTERFACES_TIMER_H
 #define INTERFACES_TIMER_H 1
 
+#include "forwards/threading.h"
+#include <cstdint>
+
 namespace lightspark
 {
 
@@ -43,5 +46,33 @@ public:
 	virtual void tickFence() = 0;
 };
 
-}
+class ITimingEvent
+{
+public:
+	ITimingEvent(ITickJob* _job, bool _isTick, uint32_t _tickTime) 
+		: job(_job),tickTime(_tickTime),isTick(_isTick) {}
+
+	virtual ~ITimingEvent() {}
+	virtual bool operator<(const ITimingEvent& other) const = 0;
+	virtual bool operator>(const ITimingEvent& other) const = 0;
+	virtual void addMilliseconds(int32_t ms) = 0;
+	virtual bool isInTheFuture() const = 0;
+	virtual bool wait(Mutex& mutex, Cond& cond) = 0;
+
+	ITickJob* job;
+	uint32_t tickTime;
+	bool isTick;
+};
+
+class IChronometer
+{
+protected:
+	uint64_t start;
+public:
+	IChronometer(uint64_t _start) : start(_start) {}
+	virtual ~IChronometer() {}
+	virtual uint32_t checkpoint() = 0;
+};
+
+};
 #endif /* INTERFACEs_TIMER_H */

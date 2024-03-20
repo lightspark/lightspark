@@ -1035,7 +1035,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			}
 			case 0x34: // ActionGetTime
 			{
-				gint64 runtime = compat_msectiming()-clip->getSystemState()->startTime;
+				uint64_t runtime = clip->getSystemState()->getCurrentTime_ms()-clip->getSystemState()->startTime;
 				asAtom ret=asAtomHandler::fromNumber(wrk,(number_t)runtime,false);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetTime "<<asAtomHandler::toDebugString(ret));
 				PushStack(stack,asAtom(ret));

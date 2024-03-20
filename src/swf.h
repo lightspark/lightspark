@@ -289,6 +289,7 @@ public:
 	void setLocalStorageAllowed(bool allowed);
 	bool inInnerGoto() const { return innerGotoCount;}
 	void runInnerGotoFrame(DisplayObject* innerClip, const std::vector<_R<DisplayObject>>& removedFrameScripts = {});
+	uint64_t getCurrentTime_ms() const;
 	void tick() override;
 	void tickFence() override;
 	RenderThread* getRenderThread() const { return renderThread; }

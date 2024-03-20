@@ -451,7 +451,6 @@ void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
 		deleteLegacyChildAt(*it,false);
 		it = legacyChildrenMarkedForDeletion.erase(it);
 	}
-	namedRemovedLegacyChildren.clear();
 }
 
 void DisplayObjectContainer::fillGraphicsData(Vector* v, bool recursive)
@@ -474,17 +473,6 @@ bool DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
 		return true;
 	}
 	return false;
-}
-
-DisplayObject *DisplayObjectContainer::findRemovedLegacyChild(uint32_t name)
-{
-	auto it = namedRemovedLegacyChildren.find(name);
-	return (it == namedRemovedLegacyChildren.end() ? nullptr : (*it).second.getPtr());
-}
-
-void DisplayObjectContainer::eraseRemovedLegacyChild(uint32_t name)
-{
-	namedRemovedLegacyChildren.erase(name);
 }
 
 bool Sprite::renderImpl(RenderContext& ctxt)
@@ -2055,12 +2043,11 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 	if(!hasLegacyChildAt(depth))
 		return;
 	DisplayObject* obj = mapDepthToLegacyChild.at(depth);
+	if (this->is<MovieClip>() && this->as<MovieClip>()->state.FP <= obj->placeFrame )
+		return;
 	if(obj->name != BUILTIN_STRINGS::EMPTY 
 	   && !obj->markedForLegacyDeletion) // member variable was already reset in purgeLegacyChildren
 	{
-		// it seems adobe keeps removed objects and reuses them if they are added through placeObjectTags again
-		obj->incRef();
-		namedRemovedLegacyChildren[obj->name] = _MR(obj);
 		//The variable is not deleted, but just set to null
 		//This is a tested behavior
 		multiname objName(nullptr);
@@ -2182,10 +2169,6 @@ void DisplayObjectContainer::purgeLegacyChildren()
 			legacyChildrenMarkedForDeletion.insert(i->first);
 			DisplayObject* obj = i->second;
 			obj->markedForLegacyDeletion=true;
-			// it seems adobe keeps removed objects and reuses them if they are added through placeObjectTags again
-			obj->incRef();
-			namedRemovedLegacyChildren[obj->name] = _MR(obj);
-
 			if(obj->name != BUILTIN_STRINGS::EMPTY)
 			{
 				multiname objName(nullptr);
@@ -2245,7 +2228,6 @@ bool DisplayObjectContainer::destruct()
 	legacyChildrenMarkedForDeletion.clear();
 	mapDepthToLegacyChild.clear();
 	mapLegacyChildToDepth.clear();
-	namedRemovedLegacyChildren.clear();
 	return InteractiveObject::destruct();
 }
 
@@ -2257,7 +2239,6 @@ void DisplayObjectContainer::finalize()
 	legacyChildrenMarkedForDeletion.clear();
 	mapDepthToLegacyChild.clear();
 	mapLegacyChildToDepth.clear();
-	namedRemovedLegacyChildren.clear();
 	InteractiveObject::finalize();
 }
 
@@ -2268,11 +2249,6 @@ void DisplayObjectContainer::prepareShutdown()
 	InteractiveObject::prepareShutdown();
 	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
 		(*it)->prepareShutdown();
-	for (auto it = namedRemovedLegacyChildren.begin(); it != namedRemovedLegacyChildren.end(); it++)
-	{
-		if ((*it).second)
-			(*it).second->prepareShutdown();
-	}
 }
 
 bool DisplayObjectContainer::countCylicMemberReferences(garbagecollectorstate& gcstate)

@@ -1857,7 +1857,8 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		}
 	}
 	bool newInstance = false;
-	if(PlaceFlagHasCharacter && (!exists || (currchar->getTagID() != CharacterId)))
+	if(PlaceFlagHasCharacter &&
+		(!exists || (currchar->getTagID() != CharacterId && (!parent->is<MovieClip>() || parent->as<MovieClip>()->state.FP >= currchar->placeFrame ))))
 	{
 		//A new character must be placed
 		LOG(LOG_TRACE,"Placing ID " << CharacterId);
@@ -1882,24 +1883,6 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		{
 			// check if an object with this name was already created and removed earlier
 			nameID = NameID;
-			toAdd = parent->findRemovedLegacyChild(nameID);
-			if (toAdd)
-			{	
-				if (toAdd->getTagID() != CharacterId)
-					toAdd=nullptr;
-				else
-				{
-					toAdd->incRef();
-					// reset properties to default values
-					toAdd->colorTransform.reset();
-					toAdd->Ratio=UI16_SWF();
-					toAdd->ClipDepth=0;
-					toAdd->setBlendMode(AS_BLENDMODE::BLENDMODE_NORMAL);
-					
-					toAdd->markedForLegacyDeletion=false;
-				}
-				parent->eraseRemovedLegacyChild(nameID);
-			}
 		}
 		if (!toAdd)
 		{

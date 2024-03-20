@@ -112,7 +112,6 @@ private:
 	bool mouseChildren;
 	map<int32_t,DisplayObject*> mapDepthToLegacyChild;
 	unordered_map<DisplayObject*,int32_t> mapLegacyChildToDepth;
-	map<int32_t,_NR<DisplayObject>> namedRemovedLegacyChildren;
 	set<int32_t> legacyChildrenMarkedForDeletion;
 	bool _contains(DisplayObject* child);
 	void getObjectsFromPoint(Point* point, Array* ar);
@@ -147,8 +146,6 @@ protected:
 	void LegacyChildEraseDeletionMarked();
 public:
 	void fillGraphicsData(Vector* v, bool recursive) override;
-	DisplayObject* findRemovedLegacyChild(uint32_t name);
-	void eraseRemovedLegacyChild(uint32_t name);
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	void requestInvalidationIncludingChildren(InvalidateQueue* q) override;

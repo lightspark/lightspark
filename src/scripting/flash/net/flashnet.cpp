@@ -1413,7 +1413,7 @@ ASFUNCTIONBODY_ATOM(NetStream,_getInfo)
 	if (th->datagenerationfile)
 	{
 		int curbps = 0;
-		uint64_t cur=compat_msectiming();
+		uint64_t cur=wrk->getSystemState()->getCurrentTime_ms();
 		th->countermutex.lock();
 		while (th->currentBytesPerSecond.size() > 0 && (cur - th->currentBytesPerSecond.front().timestamp > 1000))
 		{
@@ -1858,7 +1858,7 @@ ASFUNCTIONBODY_ATOM(NetStream,appendBytes)
 					th->datagenerationbuffer->removeFrontBytes(processedlength);
 				else
 					th->datagenerationbuffer->setLength(0);
-				uint64_t cur=compat_msectiming();
+				uint64_t cur=wrk->getSystemState()->getCurrentTime_ms();
 				struct bytespertime b;
 				b.timestamp = cur;
 				b.bytesread = processedlength;

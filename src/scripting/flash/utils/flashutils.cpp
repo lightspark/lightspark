@@ -288,7 +288,7 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 
 ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 {
-	uint64_t res=compat_msectiming() - wrk->getSystemState()->startTime;
+	uint64_t res=wrk->getSystemState()->getCurrentTime_ms() - wrk->getSystemState()->startTime;
 	asAtomHandler::setInt(ret,wrk,(int32_t)res);
 }
 

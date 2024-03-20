@@ -428,7 +428,7 @@ bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 			child->Render(ctxt);
 			ctxt.activateMask();
 		}
-		else if (child->isVisible() || ctxt.isDrawingMask())
+		else if ((child->isVisible() && !child->getClipDepth()) || ctxt.isDrawingMask())
 			child->Render(ctxt);
 
 	}

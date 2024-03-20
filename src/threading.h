@@ -227,8 +227,8 @@ private:
 	gint64 timepoint;
 public:
 	CondTime(long milliseconds);
-	bool operator<(CondTime& c) const;
-	bool operator>(CondTime& c) const;
+	bool operator<(const CondTime& c) const;
+	bool operator>(const CondTime& c) const;
 	bool isInTheFuture() const;
 	void addMilliseconds(long ms);
 	bool wait(Mutex &mutex, Cond& cond);

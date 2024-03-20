@@ -1890,6 +1890,12 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 				else
 				{
 					toAdd->incRef();
+					// reset properties to default values
+					toAdd->colorTransform.reset();
+					toAdd->Ratio=UI16_SWF();
+					toAdd->ClipDepth=0;
+					toAdd->setBlendMode(AS_BLENDMODE::BLENDMODE_NORMAL);
+					
 					toAdd->markedForLegacyDeletion=false;
 				}
 				parent->eraseRemovedLegacyChild(nameID);

@@ -84,7 +84,12 @@ public:
 
 	virtual ~ITimingEventList() {}
 	virtual void addJob(uint32_t ms, ITickJob* job, bool isTick, Mutex& mutex, Cond& newEvent) = 0;
+};
 
+class ITime
+{
+public:
+	virtual ~ITime() {}
 	virtual uint64_t getCurrentTime_ms() const = 0;
 	virtual uint64_t getCurrentTime_us() const = 0;
 	virtual void sleep_ms(uint32_t ms) = 0;

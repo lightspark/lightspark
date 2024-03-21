@@ -32,6 +32,15 @@ namespace lightspark
 
 class SystemState;
 
+class Time : public ITime
+{
+	uint64_t getCurrentTime_ms() const override { return compat_msectiming(); };
+	uint64_t getCurrentTime_us() const override { return compat_get_thread_cputime_us(); }
+	void sleep_ms(uint32_t ms) override { compat_msleep(ms); };
+	/* TODO: Add `compat_usleep()` */
+	void sleep_us(uint32_t us) override {}
+};
+
 class TimerThread
 {
 private:
@@ -55,20 +64,10 @@ private:
 	public:
 		void addJob(uint32_t ms, ITickJob* job, bool isTick, Mutex& mutex, Cond& newEvent) override;
 	};
-
-	class Time : public ITime
-	{
-		uint64_t getCurrentTime_ms() const override { return compat_msectiming(); };
-		uint64_t getCurrentTime_us() const override { return compat_get_thread_cputime_us(); }
-		void sleep_ms(uint32_t ms) override { compat_msleep(ms); };
-		/* TODO: Add `compat_usleep()` */
-		void sleep_us(uint32_t us) override {}
-	};
 	Mutex mutex;
 	Cond newEvent;
 	SDL_Thread* t;
 	ITimingEventList* eventList;
-	ITime* time;
 	SystemState* m_sys;
 	volatile bool stopped;
 	bool joined;
@@ -77,7 +76,7 @@ private:
 	void insertNewEvent_nolock(ITimingEvent* e) { eventList->insertEventNoLock(e, newEvent); }
 	void dumpJobs();
 public:
-	TimerThread(SystemState* s, ITimingEventList* _eventList = nullptr, ITime* _time = nullptr);
+	TimerThread(SystemState* s, ITimingEventList* _eventList = nullptr);
 	/* Stopps the timer thread from executing any more jobs. This may return
 	 * before the current job has finished its execution.
 	 */
@@ -94,14 +93,6 @@ public:
 	 */
 	void removeJob(ITickJob* job) { eventList->removeJob(job, mutex, newEvent); }
 	void removeJob_noLock(ITickJob* job) { eventList->removeJobNoLock(job, newEvent); }
-	/* Gets the current system time in milliseconds. */
-	uint64_t getCurrentTime_ms() const { return time->getCurrentTime_ms(); };
-	/* Gets the current system time in microseconds. */
-	uint64_t getCurrentTime_us() const { return time->getCurrentTime_us(); };
-	/* Sleep for `ms` milliseconds. */
-	void sleep_ms(uint32_t ms) { return time->sleep_ms(ms); };
-	/* Sleep for `us` microseconds. */
-	void sleep_us(uint32_t us) { return time->sleep_us(us); };
 };
 
 class Chronometer : public IChronometer

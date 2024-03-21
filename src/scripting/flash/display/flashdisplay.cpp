@@ -2043,8 +2043,11 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 	if(!hasLegacyChildAt(depth))
 		return;
 	DisplayObject* obj = mapDepthToLegacyChild.at(depth);
-	if (this->is<MovieClip>() && this->as<MovieClip>()->state.FP <= obj->placeFrame )
+	if (this->is<MovieClip>() && this->as<MovieClip>()->state.FP <= obj->placeFrame && this->as<MovieClip>()->state.next_FP >= obj->placeFrame )
+	{
+		// keep child if we are moving backwards in the clip and the child was placed on the timeline _before_ the frame we are moving to
 		return;
+	}
 	if(obj->name != BUILTIN_STRINGS::EMPTY 
 	   && !obj->markedForLegacyDeletion) // member variable was already reset in purgeLegacyChildren
 	{

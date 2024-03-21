@@ -102,4 +102,4 @@ public:
 };
 
 };
-#endif /* INTERFACEs_TIMER_H */
+#endif /* INTERFACES_TIMER_H */

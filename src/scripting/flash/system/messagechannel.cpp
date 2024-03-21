@@ -159,7 +159,7 @@ ASFUNCTIONBODY_ATOM(MessageChannel,receive)
 			while (th->messagequeue.empty() && th->state=="open")
 			{
 				l.release();
-				compat_msleep(100);
+				wrk->getSystemState()->sleep_ms(100);
 				l.acquire();
 			}
 		}

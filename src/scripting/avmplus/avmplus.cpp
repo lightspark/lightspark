@@ -222,7 +222,7 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,sleep)
 {
 	uint32_t ms;
 	ARG_CHECK(ARG_UNPACK(ms));
-	compat_msleep(ms);
+	wrk->getSystemState()->sleep_ms(ms);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,exit)
 {

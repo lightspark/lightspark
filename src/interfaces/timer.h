@@ -22,6 +22,7 @@
 
 #include "forwards/threading.h"
 #include <cstdint>
+#include <list>
 
 namespace lightspark
 {
@@ -62,6 +63,29 @@ public:
 	ITickJob* job;
 	uint32_t tickTime;
 	bool isTick;
+};
+
+class ITimingEventList
+{
+friend class TimerThread;
+private:
+	std::list<ITimingEvent*> pendingEvents;
+protected:
+	void insertEvent(ITimingEvent* e, Mutex& mutex, Cond& newEvent);
+	void insertEventNoLock(ITimingEvent* e, Cond& newEvent);
+public:
+	const std::list<ITimingEvent*>& getPendingEvents() const { return pendingEvents; }
+	ITimingEvent* getFrontEvent() const { return pendingEvents.front(); }
+	void popFrontEvent() { return pendingEvents.pop_front(); }
+	bool isEmpty() const { return pendingEvents.empty(); }
+
+	void removeJob(ITickJob* job, Mutex& mutex, Cond& newEvent);
+	void removeJobNoLock(ITickJob* job, Cond& newEvent);
+
+	virtual ~ITimingEventList() {}
+	virtual void addJob(uint32_t ms, ITickJob* job, bool isTick, Mutex& mutex, Cond& newEvent) = 0;
+	virtual uint64_t getCurrentTime_ms() const = 0;
+	virtual uint64_t getCurrentTime_us() const = 0;
 };
 
 class IChronometer

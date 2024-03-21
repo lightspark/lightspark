@@ -199,7 +199,7 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 
 extern uint32_t asClassCount;
 
-SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
+SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode, ITimingEventList* eventList):
 	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
@@ -313,8 +313,8 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	threadPool=new ThreadPool(this);
 	downloadThreadPool=new ThreadPool(this);
 
-	timerThread=new TimerThread(this);
-	frameTimerThread=new TimerThread(this);
+	timerThread=new TimerThread(this, eventList);
+	frameTimerThread=new TimerThread(this, eventList);
 	audioManager=nullptr;
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
@@ -2129,6 +2129,11 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 uint64_t SystemState::getCurrentTime_ms() const
 {
 	return timerThread->getCurrentTime_ms();
+}
+
+uint64_t SystemState::getCurrentTime_us() const
+{
+	return timerThread->getCurrentTime_us();
 }
 
 void SystemState::tick()

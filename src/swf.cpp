@@ -2136,6 +2136,16 @@ uint64_t SystemState::getCurrentTime_us() const
 	return timerThread->getCurrentTime_us();
 }
 
+void SystemState::sleep_ms(uint32_t ms)
+{
+	return timerThread->sleep_ms(ms);
+}
+
+void SystemState::sleep_us(uint32_t us)
+{
+	return timerThread->sleep_us(us);
+}
+
 void SystemState::tick()
 {
 	if (showProfilingData)

@@ -506,7 +506,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 				break;
 			}
 			else
-				compat_msleep(100);
+				getSystemState()->sleep_ms(100);
 		}
 	}
 	bool newframe = state.FP != next_FP;

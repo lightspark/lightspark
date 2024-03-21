@@ -126,7 +126,7 @@ void RootMovieClip::commitFrame(bool another)
 			if (!needsActionScript3() || !hasMainClass)
 			{
 				while (!getVm(sys)->hasEverStarted()) // ensure that all builtin classes are defined
-					compat_msleep(10);
+					sys->sleep_ms(10);
 				constructionComplete();
 				afterConstruction();
 			}

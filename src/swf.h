@@ -130,6 +130,7 @@ private:
 	ThreadPool* downloadThreadPool;
 	TimerThread* timerThread;
 	TimerThread* frameTimerThread;
+	ITime* time;
 	Semaphore terminated;
 	float renderRate;
 	bool error;
@@ -289,10 +290,10 @@ public:
 	void setLocalStorageAllowed(bool allowed);
 	bool inInnerGoto() const { return innerGotoCount;}
 	void runInnerGotoFrame(DisplayObject* innerClip, const std::vector<_R<DisplayObject>>& removedFrameScripts = {});
-	uint64_t getCurrentTime_ms() const;
-	uint64_t getCurrentTime_us() const;
-	void sleep_ms(uint32_t ms);
-	void sleep_us(uint32_t us);
+	uint64_t getCurrentTime_ms() const { return time->getCurrentTime_ms(); }
+	uint64_t getCurrentTime_us() const { return time->getCurrentTime_us(); }
+	void sleep_ms(uint32_t ms) { return time->sleep_ms(ms); }
+	void sleep_us(uint32_t us) { return time->sleep_us(us); }
 	void tick() override;
 	void tickFence() override;
 	RenderThread* getRenderThread() const { return renderThread; }
@@ -322,7 +323,7 @@ public:
 	 * \param fileSize The size of the SWF being parsed, if known
 	 * \param mode FLASH or AIR
 	 */
-	SystemState(uint32_t fileSize, FLASH_MODE mode, ITimingEventList* eventList = nullptr, ITime* time = nullptr) DLL_PUBLIC;
+	SystemState(uint32_t fileSize, FLASH_MODE mode, ITimingEventList* eventList = nullptr, ITime* _time = nullptr) DLL_PUBLIC;
 	~SystemState();
 	/* Stop engines, threads and free classes and objects.
 	 * This call will decRef this object in the end,

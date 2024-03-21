@@ -133,6 +133,11 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			}
 			nvgResetTransform(nvgctxt);
 			nvgBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
+			if (sys->getRenderThread()->filterframebufferstack.empty())
+			{
+				Vector2f offset = sys->getRenderThread()->getOffset();
+				nvgTranslate(nvgctxt,offset.x,offset.y);
+			}
 			MATRIX m = ctxt.transformStack().transform().matrix;
 			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
 			nvgTranslate(nvgctxt,owner->cachedSurface.xOffset,owner->cachedSurface.yOffset);

@@ -979,7 +979,7 @@ void SoundChannel::play(number_t starttime)
 		}
 		mutex.unlock();
 		while (!ACQUIRE_READ(terminated))
-			compat_msleep(10);
+			getSystemState()->sleep_ms(10);
 		mutex.lock();
 		restartafterabort=false;
 		startTime = starttime;
@@ -1145,7 +1145,7 @@ ASFUNCTIONBODY_ATOM(SoundChannel, stop)
 	RELEASE_WRITE(th->stopping,true);
 	th->threadAbort();
 	while (!ACQUIRE_READ(th->stopped) && !ACQUIRE_READ(th->terminated))
-		compat_msleep(10);
+		wrk->getSystemState()->sleep_ms(10);
 }
 ASFUNCTIONBODY_ATOM(SoundChannel,getPosition)
 {

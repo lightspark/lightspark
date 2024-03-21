@@ -56,6 +56,9 @@ private:
 		void addJob(uint32_t ms, ITickJob* job, bool isTick, Mutex& mutex, Cond& newEvent) override;
 		uint64_t getCurrentTime_ms() const override { return compat_msectiming(); };
 		uint64_t getCurrentTime_us() const override { return compat_get_thread_cputime_us(); }
+		void sleep_ms(uint32_t ms) override { compat_msleep(ms); };
+		/* TODO: Add `compat_usleep()` */
+		void sleep_us(uint32_t us) override {}
 	};
 	Mutex mutex;
 	Cond newEvent;
@@ -90,6 +93,10 @@ public:
 	uint64_t getCurrentTime_ms() const { return eventList->getCurrentTime_ms(); };
 	/* Gets the current system time in microseconds. */
 	uint64_t getCurrentTime_us() const { return eventList->getCurrentTime_us(); };
+	/* Sleep for `ms` milliseconds. */
+	void sleep_ms(uint32_t ms) { return eventList->sleep_ms(ms); };
+	/* Sleep for `us` microseconds. */
+	void sleep_us(uint32_t us) { return eventList->sleep_us(us); };
 };
 
 class Chronometer : public IChronometer

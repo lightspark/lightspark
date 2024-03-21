@@ -28,7 +28,7 @@
 using namespace lightspark;
 using namespace std;
 
-TimerThread::TimerThread(SystemState* s, ITimingEventList* _eventList):eventList(_eventList != nullptr ? _eventList : new TimingEventList()),m_sys(s),stopped(false),joined(false)
+TimerThread::TimerThread(SystemState* s, ITimingEventList* _eventList, ITime* _time):eventList(_eventList != nullptr ? _eventList : new TimingEventList()),time(_time != nullptr ? _time : new Time()),m_sys(s),stopped(false),joined(false)
 {
 	t = SDL_CreateThread(&TimerThread::worker,"TimerThread",this);
 }

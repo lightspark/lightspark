@@ -5334,7 +5334,7 @@ void DisplayObjectContainer::enterFrame(bool implicit)
 		child->skipFrame = skipFrame ? true : child->skipFrame;
 		child->enterFrame(implicit);
 	}
-	if (is<Loader>())
+	if (!is<MovieClip>()) // reset skipFrame for everything that is not a MovieClip (Loader/Sprite/SimpleButton)
 		skipFrame = false;
 }
 

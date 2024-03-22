@@ -1857,8 +1857,9 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		}
 	}
 	bool newInstance = false;
+	bool ignore = exists && (PlaceFlagHasCharacter && currchar->getTagID() != CharacterId && parent->is<MovieClip>() && parent->as<MovieClip>()->state.FP >= currchar->placeFrame );
 	if(PlaceFlagHasCharacter &&
-		(!exists || (currchar->getTagID() != CharacterId && (!parent->is<MovieClip>() || parent->as<MovieClip>()->state.FP >= currchar->placeFrame ))))
+		(!exists || ignore || (currchar->getTagID() != CharacterId)))
 	{
 		//A new character must be placed
 		LOG(LOG_TRACE,"Placing ID " << CharacterId);
@@ -1947,7 +1948,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			currchar=toAdd;
 		}
 	}
-	else 
+	else if (!ignore)
 	{
 		if (currchar)
 			setProperties(currchar, parent);
@@ -1963,52 +1964,55 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
 		}
 	}
-	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
+	if (!ignore)
 	{
-		currchar->name = nameID;
-		currchar->incRef();
-		multiname objName(nullptr);
-		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=currchar->name;
-		objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		asAtom v = asAtomHandler::fromObject(currchar);
-		parent->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
-	}
-	if (exists && PlaceFlagHasClipAction)
-	{
-		parent->setupClipActionsAt(LEGACY_DEPTH_START+Depth,ClipActions);
-	}
-
-	if (PlaceFlagHasRatio)
-		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, Ratio, inskipping);
-	else if (PlaceFlagHasCharacter)
-		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, 0, inskipping);
-
-	if(PlaceFlagHasColorTransform)
-		parent->checkColorTransformForLegacyChildAt(LEGACY_DEPTH_START+Depth,ColorTransformWithAlpha);
-	if (newInstance && PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventConstruct && currchar)
-	{
-		// TODO not sure if this is the right place to handle Construct events
-		std::map<uint32_t,asAtom> m;
-		for (auto it = this->ClipActions.ClipActionRecords.begin();it != this->ClipActions.ClipActionRecords.end(); it++)
+		if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
 		{
-			if (it->EventFlags.ClipEventConstruct)
+			currchar->name = nameID;
+			currchar->incRef();
+			multiname objName(nullptr);
+			objName.name_type=multiname::NAME_STRING;
+			objName.name_s_id=currchar->name;
+			objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+			asAtom v = asAtomHandler::fromObject(currchar);
+			parent->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
+		}
+		if (exists && PlaceFlagHasClipAction)
+		{
+			parent->setupClipActionsAt(LEGACY_DEPTH_START+Depth,ClipActions);
+		}
+		
+		if (PlaceFlagHasRatio)
+			parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, Ratio, inskipping);
+		else if (PlaceFlagHasCharacter)
+			parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, 0, inskipping);
+		
+		if(PlaceFlagHasColorTransform)
+			parent->checkColorTransformForLegacyChildAt(LEGACY_DEPTH_START+Depth,ColorTransformWithAlpha);
+		if (newInstance && PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventConstruct && currchar)
+		{
+			// TODO not sure if this is the right place to handle Construct events
+			std::map<uint32_t,asAtom> m;
+			for (auto it = this->ClipActions.ClipActionRecords.begin();it != this->ClipActions.ClipActionRecords.end(); it++)
 			{
-				AVM1context context;
-				ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
+				if (it->EventFlags.ClipEventConstruct)
+				{
+					AVM1context context;
+					ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
+				}
 			}
 		}
-	}
-	if (PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventInitialize && currchar)
-	{
-		// TODO not sure if this is the right place to handle Initialize events
-		std::map<uint32_t,asAtom> m;
-		for (auto it = this->ClipActions.ClipActionRecords.begin();it != this->ClipActions.ClipActionRecords.end(); it++)
+		if (PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventInitialize && currchar)
 		{
-			if (it->EventFlags.ClipEventInitialize)
+			// TODO not sure if this is the right place to handle Initialize events
+			std::map<uint32_t,asAtom> m;
+			for (auto it = this->ClipActions.ClipActionRecords.begin();it != this->ClipActions.ClipActionRecords.end(); it++)
 			{
-				AVM1context context;
-				ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
+				if (it->EventFlags.ClipEventInitialize)
+				{
+					AVM1context context;
+					ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
+				}
 			}
 		}
 	}

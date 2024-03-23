@@ -2214,6 +2214,7 @@ void RootMovieClip::constructionComplete(bool _explicit)
 	
 	incRef();
 	getSystemState()->stage->_addChildAt(this,0);
+	this->setOnStage(true,true);
 	getSystemState()->addTick(1000/frameRate,getSystemState());
 }
 void RootMovieClip::afterConstruction(bool _explicit)
@@ -2221,7 +2222,6 @@ void RootMovieClip::afterConstruction(bool _explicit)
 	DisplayObject::afterConstruction(_explicit);
 	if (this!=getSystemState()->mainClip)
 		return;
-	this->setOnStage(true,true);
 	if (!needsActionScript3())
 	{
 		getSystemState()->stage->advanceFrame(true);

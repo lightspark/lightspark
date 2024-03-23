@@ -38,3 +38,7 @@ cscope*
 
 #Testsuite
 tests/tamarin
+
+# QtCreator
+*.autosave
+CMakeLists.txt.user*

@@ -1472,6 +1472,8 @@ void ABCVm::handleFrontEvent()
 	event_queue_mutex.unlock();
 	try
 	{
+		if (e.first)
+			e.first->addStoredMember();// member will be removed after event is handled
 		//handle event without lock
 		handleEvent(e);
 		if (e.second->getEventType() == INIT_FRAME) // don't flush between initFrame and executeFrameScript
@@ -1484,7 +1486,13 @@ void ABCVm::handleFrontEvent()
 				))
 			m_sys->flushInvalidationQueue();
 		if (!e.first.isNull())
+		{
 			e.first->afterHandleEvent(e.second.getPtr());
+			// ensure that test for garbage collection is done for event dispatcher
+			ASObject* o = e.first.getPtr();
+			e.first.fakeRelease();
+			o->removeStoredMember();
+		}
 	}
 	catch(LightsparkException& e)
 	{

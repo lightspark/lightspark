@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#getting vcpkg
-git clone https://github.com/microsoft/vcpkg
 # Stop on first error
 
 set -e

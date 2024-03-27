@@ -1,6 +1,9 @@
 #!/bin/bash
 
+#getting vcpkg
+git clone https://github.com/microsoft/vcpkg
 # Stop on first error
+
 set -e
 
 if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then

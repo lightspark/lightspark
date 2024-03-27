@@ -1846,20 +1846,21 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	bool exists = parent->hasLegacyChildAt(LEGACY_DEPTH_START+Depth);
 	uint32_t nameID = 0;
 	DisplayObject* currchar=nullptr;
+	bool ignore = false;
 	if (exists)
 	{
 		currchar = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth);
 		nameID = currchar->name;
-		if (parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth) && currchar->getTagID() != CharacterId)
+		ignore = currchar->getTagID() == CharacterId;
+		if (!ignore)
 		{
-			parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
-			exists = false;
+			parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
+			exists = ignore = parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
 		}
 	}
 	bool newInstance = false;
-	bool ignore = exists && (PlaceFlagHasCharacter && currchar->getTagID() != CharacterId && parent->is<MovieClip>() && parent->as<MovieClip>()->state.FP >= currchar->placeFrame );
 	if(PlaceFlagHasCharacter &&
-		(!exists || ignore || (currchar->getTagID() != CharacterId)))
+		(!exists || !ignore))
 	{
 		//A new character must be placed
 		LOG(LOG_TRACE,"Placing ID " << CharacterId);
@@ -1982,9 +1983,9 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			parent->setupClipActionsAt(LEGACY_DEPTH_START+Depth,ClipActions);
 		}
 		
-		if (PlaceFlagHasRatio)
+		if (exists && PlaceFlagHasRatio)
 			parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, Ratio, inskipping);
-		else if (PlaceFlagHasCharacter)
+		else if (exists && PlaceFlagHasCharacter)
 			parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, 0, inskipping);
 		
 		if(PlaceFlagHasColorTransform)

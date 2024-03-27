@@ -176,7 +176,7 @@ public:
 	void setupClipActionsAt(int32_t depth, const CLIPACTIONS& actions);
 	void checkRatioForLegacyChildAt(int32_t depth, uint32_t ratio, bool inskipping);
 	void checkColorTransformForLegacyChildAt(int32_t depth, const CXFORMWITHALPHA& colortransform);
-	void deleteLegacyChildAt(int32_t depth, bool inskipping);
+	bool deleteLegacyChildAt(int32_t depth, bool inskipping);
 	void insertLegacyChildAt(int32_t depth, DisplayObject* obj, bool inskipping=false, bool fromtag=true);
 	DisplayObject* findLegacyChildByTagID(uint32_t tagid);
 	int findLegacyChildDepth(DisplayObject* obj);
@@ -617,6 +617,7 @@ public:
 private:
 	Mutex avm1listenerMutex;
 	Mutex avm1DisplayObjectMutex;
+	Mutex avm1ScriptMutex;
 	void onColorCorrection(const tiny_string&);
 	void onFullScreenSourceRect(_NR<Rectangle>);
 	// Keyboard focus object is accessed from the VM thread (AS

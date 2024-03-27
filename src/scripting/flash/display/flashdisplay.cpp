@@ -2038,15 +2038,18 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,c
 	markAsChanged();
 }
 
-void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
+bool DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 {
 	if(!hasLegacyChildAt(depth))
-		return;
+		return false;
 	DisplayObject* obj = mapDepthToLegacyChild.at(depth);
-	if (this->is<MovieClip>() && this->as<MovieClip>()->state.FP <= obj->placeFrame && this->as<MovieClip>()->state.next_FP >= obj->placeFrame )
+	if (this->is<MovieClip>()
+		&& this->as<MovieClip>()->state.last_FP > (int)this->as<MovieClip>()->state.next_FP
+		&& this->as<MovieClip>()->state.FP <= obj->placeFrame
+		&& this->as<MovieClip>()->state.next_FP >= obj->placeFrame )
 	{
 		// keep child if we are moving backwards in the clip and the child was placed on the timeline _before_ the frame we are moving to
-		return;
+		return true;
 	}
 	if(obj->name != BUILTIN_STRINGS::EMPTY 
 	   && !obj->markedForLegacyDeletion) // member variable was already reset in purgeLegacyChildren
@@ -2060,10 +2063,11 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 		setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 		
 	}
-
+	obj->placeFrame=UINT32_MAX;
 	obj->afterLegacyDelete(inskipping);
 	//this also removes it from depthToLegacyChild
 	_removeChild(obj,false,inskipping);
+	return false;
 }
 
 void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* obj, bool inskipping, bool fromtag)
@@ -3709,6 +3713,7 @@ void Stage::AVM1RemoveDisplayObject(DisplayObject* dobj)
 void Stage::AVM1AddScriptToExecute(AVM1scriptToExecute& script)
 {
 	assert(!script.clip->needsActionScript3());
+	Locker l(avm1ScriptMutex);
 	avm1scriptstoexecute.push_back(script);
 }
 
@@ -3771,6 +3776,7 @@ void Stage::executeAVM1Scripts(bool implicit)
 			dobj->decRef();
 			dobj = nextdobj;
 		}
+		avm1ScriptMutex.lock();
 		auto itscr = avm1scriptstoexecute.begin();
 		while (itscr != avm1scriptstoexecute.end())
 		{
@@ -3780,6 +3786,7 @@ void Stage::executeAVM1Scripts(bool implicit)
 				(*itscr).clip->decRef(); // was increffed in AVM1AddScriptEvents 
 			itscr = avm1scriptstoexecute.erase(itscr);
 		}
+		avm1ScriptMutex.unlock();
 		
 		avm1DisplayObjectMutex.lock();
 		dobj = avm1DisplayObjectFirst;

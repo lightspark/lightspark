@@ -382,6 +382,7 @@ bool DisplayObject::destruct()
 		getSystemState()->getRenderThread()->addDeletedTexture(cachedSurface.cachedFilterTextureID);
 	cachedSurface.cachedFilterTextureID=UINT32_MAX;
 	cachedSurface.needsFilterRefresh=true;
+	placeFrame=UINT32_MAX;
 	return EventDispatcher::destruct();
 }
 

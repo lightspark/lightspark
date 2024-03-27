@@ -1632,7 +1632,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (o->is<DisplayObject>())
 					{
 						o->as<DisplayObject>()->AVM1UpdateVariableBindings(m.name_s_id,value);
-						o->as<DisplayObject>()->AVM1SetVariableDirect(m.name_s_id,value);
+						uint32_t nameIDlower = clip->getSystemState()->getUniqueStringId(asAtomHandler::toString(name,wrk).lowercase());
+						o->as<DisplayObject>()->AVM1SetVariableDirect(nameIDlower,value);
 					}
 				}
 				else

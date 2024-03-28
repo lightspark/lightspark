@@ -2988,9 +2988,7 @@ SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in, RootMov
 
 SoundStreamHeadTag::~SoundStreamHeadTag()
 {
-	MemoryStreamCache* c = SoundData.getPtr();
 	SoundData.reset();
-	delete c;
 }
 
 void SoundStreamHeadTag::setSoundChannel(Sprite *spr)

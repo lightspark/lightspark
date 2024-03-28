@@ -400,7 +400,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom str = PopStack(stack);
 				tiny_string a = asAtomHandler::toString(str,wrk);
 				// start parameter seems to be 1-based
-				tiny_string b = a.substr(asAtomHandler::toInt(index)-1,asAtomHandler::toInt(count));
+				int startindex = asAtomHandler::toInt(index)-1;
+				tiny_string b;
+				if (uint32_t(startindex) <= a.numChars())
+					b = a.substr(startindex,asAtomHandler::toInt(count));
 				ASATOM_DECREF(count);
 				ASATOM_DECREF(index);
 				ASATOM_DECREF(str);

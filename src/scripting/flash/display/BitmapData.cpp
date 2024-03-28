@@ -264,20 +264,14 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		uint8_t* buf=drawable->getPixelBuffer(&isBufferOwner,&bufsize);
 		//Construct a CachedSurface using the data
 		CachedSurface& surface=ctxt.allocateCustomSurface(target != d && target->getCachedBitmap() ? target->getCachedBitmap().getPtr() : target,buf,isBufferOwner);
+		surface.SetState(drawable->getState());
 		surface.tex->width=drawable->getWidth();
 		surface.tex->height=drawable->getHeight();
-		surface.xOffset=drawable->getXOffset();
-		surface.yOffset=drawable->getYOffset();
-		surface.alpha = drawable->getAlpha();
-		surface.xscale = drawable->getXScale();
-		surface.yscale = drawable->getYScale();
 		surface.tex->xContentScale = drawable->getXContentScale();
 		surface.tex->yContentScale = drawable->getYContentScale();
-		surface.tex->xOffset = surface.xOffset;
-		surface.tex->yOffset = surface.yOffset;
-		surface.isMask=drawable->getIsMask();
-		surface.matrix = drawable->getMatrix();
-		surface.needsFilterRefresh=false;
+		surface.tex->xOffset = surface.getState()->xOffset;
+		surface.tex->yOffset = surface.getState()->yOffset;
+		surface.getState()->needsFilterRefresh=false;
 		AS_BLENDMODE bl = blendMode;
 		DisplayObject* obj = target;
 		while (obj && bl == BLENDMODE_NORMAL)
@@ -286,10 +280,9 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 			obj = obj->getParent();
 		}
 		surface.blendmode=bl;
-		surface.colortransform=drawable->getColorTransform();
 		surface.isValid=true;
 		surface.isInitialized=true;
-		surface.smoothing=smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE;
+		surface.getState()->smoothing=smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE;
 		delete drawable;
 	}
 	if (d->getMask())

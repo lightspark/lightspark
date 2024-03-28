@@ -40,7 +40,6 @@ class TokenContainer
 	friend class TextField;
 public:
 	DisplayObject* owner;
-	ColorTransformBase currentcolortransform;
 	/* multiply shapes' coordinates by this
 	 * value to get pixel.
 	 * DefineShapeTags set a scaling of 1/20,

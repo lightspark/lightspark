@@ -1723,7 +1723,14 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		//No contents, nothing to do
 		return nullptr;
 	}
-
+	
+	ColorTransformBase ct;
+	ct.fillConcatenated(this);
+	MATRIX matrix = getMatrix();
+	bool isMask=this->isMask();
+	MATRIX m;
+	m.scale(matrix.getScaleX(),matrix.getScaleY());
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 	tokens.clear();
 	if (embeddedFont)
 	{
@@ -1810,7 +1817,14 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		}
 		linemutex->unlock();
 		if (tokens.empty())
-			return nullptr;
+		{
+			this->resetNeedsTextureRecalculation();
+			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
+										   , matrix.getScaleX(), matrix.getScaleY()
+										   , isMask
+										   , getConcatenatedAlpha()
+										   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,matrix);
+		}
 		// it seems that textfields are always rendered with subpixel smoothing when rendering to bitmap
 		return TokenContainer::invalidate(target, initialMatrix,smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 	}
@@ -1818,19 +1832,28 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
-	MATRIX matrix = getMatrix();
-	bool isMask=this->isMask();
-	MATRIX m;
-	m.scale(matrix.getScaleX(),matrix.getScaleY());
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 	if (this->type != ET_EDITABLE)
 	{
 		Locker l(*linemutex);
 		if (getLineCount()==0)
-			return nullptr;
+		{
+			this->resetNeedsTextureRecalculation();
+			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
+										   , matrix.getScaleX(), matrix.getScaleY()
+										   , isMask
+										   , getConcatenatedAlpha()
+										   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,matrix);
+		}
 	}
 	if(width==0 || height==0)
-		return nullptr;
+	{
+		this->resetNeedsTextureRecalculation();
+		return new RefreshableDrawable(x, y, ceil(width), ceil(height)
+									   , matrix.getScaleX(), matrix.getScaleY()
+									   , isMask
+									   , getConcatenatedAlpha()
+									   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,matrix);
+	}		
 	if(matrix.getScaleX() != 1 || matrix.getScaleY() != 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<matrix.getScaleX()<<" "<<matrix.getScaleY()<<" "<<this->getText());
 	float xscale = getConcatenatedMatrix().getScaleX();
@@ -1883,8 +1906,7 @@ bool TextField::renderImpl(RenderContext& ctxt)
 		if (std::isnan(xscale) || std::isnan(yscale))
 			return false;
 		RGB tcolor = this->textColor;
-		ColorTransformBase ct;
-		ct.fillConcatenated(this);
+		ColorTransformBase ct = ctxt.transformStack().transform().colorTransform;
 		if (!ct.isIdentity())
 		{
 			float r,g,b,a;
@@ -1972,7 +1994,7 @@ bool TextField::renderImpl(RenderContext& ctxt)
 					MATRIX m = matrix.multiplyMatrix(MATRIX(1 / (xscale*scalex), 1 / (yscale*scaley), 0, 0, xpos, ypos));
 					m.scale(scalex, scaley);
 					ctxt.renderTextured(*tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-										currentcolortransform, isMask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
+										ct, isMask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
 					xpos += adv ? adv : bxmax-bxmin;
 				}
 				else

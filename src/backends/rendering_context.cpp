@@ -818,9 +818,7 @@ const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d
 
 CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf, bool isBufferOwner)
 {
-	assert(texBuf);
 	auto ret=customSurfaces.insert(make_pair(d, CachedSurface()));
-//	assert(ret.second);
 	CachedSurface& surface=ret.first->second;
 	if (surface.tex==nullptr)
 		surface.tex=new TextureChunk();

@@ -167,7 +167,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			const RGBA& color = style.Color;
 			float r,g,b,a;
 			if (th && th->softwarerenderer)
-				th->colortransform.applyTransformation(color,r,g,b,a);
+				th->getState()->colortransform.applyTransformation(color,r,g,b,a);
 			else
 			{
 				r = color.rf();
@@ -226,7 +226,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 				float r,g,b,a;
 				if (th && th->softwarerenderer)
 				{
-					th->colortransform.applyTransformation(color,r,g,b,a);
+					th->getState()->colortransform.applyTransformation(color,r,g,b,a);
 				}
 				else
 				{
@@ -257,8 +257,8 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 				if (th && th->softwarerenderer)
 				{
 					//Do an explicit cast, the data will not be modified
-					buf = (uint8_t*)bm->applyColorTransform(th->colortransform.redMultiplier,th->colortransform.greenMultiplier,th->colortransform.blueMultiplier,th->colortransform.alphaMultiplier,
-												  th->colortransform.redOffset,th->colortransform.greenOffset,th->colortransform.blueOffset,th->colortransform.alphaOffset);
+					buf = (uint8_t*)bm->applyColorTransform(th->getState()->colortransform.redMultiplier,th->getState()->colortransform.greenMultiplier,th->getState()->colortransform.blueMultiplier,th->getState()->colortransform.alphaMultiplier,
+												  th->getState()->colortransform.redOffset,th->getState()->colortransform.greenOffset,th->getState()->colortransform.blueOffset,th->getState()->colortransform.alphaOffset);
 				}
 				else
 				{
@@ -369,7 +369,7 @@ void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cai
 		const RGBA& color = style->Color;
 		float r,g,b,a;
 		if (th && th->softwarerenderer)
-			th->colortransform.applyTransformation(color,r,g,b,a);
+			th->getState()->colortransform.applyTransformation(color,r,g,b,a);
 		else
 		{
 			r = color.rf();
@@ -407,7 +407,7 @@ void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cai
 	else if (int(style->Width * scaleCorrection) == 1)
 	{
 		// ensure linewidth is properly scaled if Width equals to 1
-		double linewidth = th ? th->xscale : 1.0;
+		double linewidth = th ? th->getState()->xscale : 1.0;
 		cairo_device_to_user_distance(cr,&linewidth,&linewidth);
 		cairo_set_line_width(cr, linewidth);
 	}
@@ -415,7 +415,7 @@ void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cai
 	{
 		double linewidth = (double)(style->Width) * scaleCorrection;
 		if (th)
-			linewidth *= th->xscale;
+			linewidth *= th->getState()->xscale;
 		cairo_device_to_user_distance(cr,&linewidth,&linewidth);
 		cairo_set_line_width(cr, linewidth);
 	}
@@ -702,10 +702,10 @@ cairo_surface_t* CairoRenderer::allocateSurface(uint8_t*& buf)
 
 void CairoTokenRenderer::executeDraw(cairo_t* cr)
 {
-	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
+	cairo_set_antialias(cr,getState()->smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-	cairoPathFromTokens(cr, tokens, scaleFactor, false,isMask,xstart,ystart,this);
+	cairoPathFromTokens(cr, tokens, scaleFactor, false,getState()->isMask,xstart,ystart,this);
 }
 
 uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
@@ -721,11 +721,11 @@ uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 	cairo_surface_t* cairoSurface=allocateSurface(ret);
 	cairo_t* cr=cairo_create(cairoSurface);
 
-	cairo_scale(cr, xscale, yscale);
+	cairo_scale(cr, getState()->xscale, getState()->yscale);
 
 	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
 	cairoClean(cr);
-	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
+	cairo_set_antialias(cr,getState()->smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 
 	executeDraw(cr);
 
@@ -740,8 +740,8 @@ bool CairoRenderer::isCachedSurfaceUsable(const DisplayObject* o) const
 
 	// arbitrary regen threshold
 	return !tex || !tex->isValid() ||
-		(abs(xscale / tex->xContentScale) < 2
-		&& abs(yscale / tex->yContentScale) < 2);
+		(abs(getState()->xscale / tex->xContentScale) < 2
+		&& abs(getState()->yscale / tex->yContentScale) < 2);
 }
 
 bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, const Vector2f& point)
@@ -1136,16 +1136,7 @@ TextureChunk& AsyncDrawJob::getTexture()
 		*surface.tex=owner->getSystemState()->getRenderThread()->allocateTexture(width, height,false);
 	if (!surface.wasUpdated) // surface may have already been changed by DisplayObject::updateCachedSurface() before it was uploaded
 	{
-		surface.xOffset=drawable->getXOffset();
-		surface.yOffset=drawable->getYOffset();
-		surface.alpha=drawable->getAlpha();
-		surface.xscale = drawable->getXScale();
-		surface.yscale = drawable->getYScale();
-		surface.isMask = drawable->getIsMask();
-		surface.smoothing = drawable->getSmoothing();
-		surface.colortransform = drawable->getColorTransform();
-		surface.matrix=drawable->getMatrix();
-		surface.needsFilterRefresh=drawable->getNeedsFilterRefresh();
+		surface.SetState(drawable->getState());
 		surface.isValid=true;
 		surface.isInitialized=true;
 	}
@@ -1172,8 +1163,8 @@ void AsyncDrawJob::contentScale(number_t& x, number_t& y) const
 
 void AsyncDrawJob::contentOffset(number_t& x, number_t& y) const
 {
-	x = drawable->getXOffset();
-	y = drawable->getYOffset();
+	x = drawable->getState()->xOffset;
+	y = drawable->getState()->yOffset;
 }
 
 void SoftwareInvalidateQueue::addToInvalidateQueue(_R<DisplayObject> d)
@@ -1222,8 +1213,8 @@ CachedBitmapRenderer::CachedBitmapRenderer(_NR<DisplayObject> _source, const MAT
 
 uint8_t* CachedBitmapRenderer::getPixelBuffer(bool* isBufferOwner, uint32_t* bufsize)
 {
-	source->DrawToBitmap(source->getCachedBitmap()->as<Bitmap>()->bitmapData.getPtr(),sourceCacheMatrix,smoothing,true,source->getBlendMode(),nullptr);
-	source->applyFilters(data.getPtr(),nullptr,RECT(0,data->getWidth(),0,data->getHeight()),0,0,xscale,yscale);
+	source->DrawToBitmap(source->getCachedBitmap()->as<Bitmap>()->bitmapData.getPtr(),sourceCacheMatrix,getState()->smoothing,true,source->getBlendMode(),nullptr);
+	source->applyFilters(data.getPtr(),nullptr,RECT(0,data->getWidth(),0,data->getHeight()),0,0,getState()->xscale,getState()->yscale);
 	return BitmapRenderer::getPixelBuffer(isBufferOwner,bufsize);
 }
 
@@ -1422,4 +1413,30 @@ uint8_t *ColorTransformBase::applyTransformation(BitmapContainer* bm)
 		dst[i  ] = max(0,min(255,int(((number_t(src[i  ]) *   redMultiplier) +   redOffset)*(number_t(dst[i+3])/255.0))));
 	}
 	return (uint8_t*)bm->getDataColorTransformed();
+}
+
+SurfaceState::~SurfaceState()
+{
+	reset();
+}
+void SurfaceState::reset()
+{
+	xOffset=0.0;
+	yOffset=0.0;
+	alpha=1.0;
+	xscale=1.0;
+	yscale=1.0;
+	colortransform=ColorTransformBase();
+	matrix=MATRIX();
+	isMask=false;
+	smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS;
+	needsFilterRefresh=true;
+	childrenlist.clear();
+}
+
+void SurfaceState::setupChildrenList(std::vector<DisplayObject*>& dynamicDisplayList)
+{
+	childrenlist.clear();
+	childrenlist.reserve(dynamicDisplayList.size());
+	childrenlist.assign(dynamicDisplayList.cbegin(),dynamicDisplayList.cend());
 }

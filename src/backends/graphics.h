@@ -217,17 +217,18 @@ public:
 	}
 };
 
-class CachedSurface
+class SurfaceState
 {
 public:
-	CachedSurface():tex(nullptr),xOffset(0),yOffset(0),alpha(1.0),xscale(1.0),yscale(1.0)
-		,blendmode(BLENDMODE_NORMAL),isMask(false),smoothing(SMOOTH_MODE::SMOOTH_ANTIALIAS),isChunkOwner(true),isValid(false),isInitialized(false),wasUpdated(false),needsFilterRefresh(true),cachedFilterTextureID(UINT32_MAX) {}
-	~CachedSurface()
+	SurfaceState(float _xoffset=0.0,float _yoffset=0.0, float _alpha=1.0, float _xscale=1.0, float _yscale=1.0, const ColorTransformBase& _colortransform=ColorTransformBase(), const MATRIX& _matrix=MATRIX(), bool _ismask=false, SMOOTH_MODE _smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS, bool _needsfilterrefresh=true)
+		:xOffset(_xoffset),yOffset(_yoffset),alpha(_alpha),xscale(_xscale),yscale(_yscale)
+		,colortransform(_colortransform),matrix(_matrix)
+		,smoothing(_smoothing),isMask(_ismask),needsFilterRefresh(_needsfilterrefresh)
 	{
-		if (isChunkOwner && tex)
-			delete tex;
 	}
-	TextureChunk* tex;
+	virtual ~SurfaceState();
+	void reset();
+	void setupChildrenList(std::vector < DisplayObject* >& dynamicDisplayList);
 	float xOffset;
 	float yOffset;
 	float alpha;
@@ -235,17 +236,48 @@ public:
 	float yscale;
 	ColorTransformBase colortransform;
 	MATRIX matrix;
-	_NR<DisplayObject> mask;
-	AS_BLENDMODE blendmode;
-	bool isMask;
+	std::vector<DisplayObject*> childrenlist;
 	SMOOTH_MODE smoothing;
+	bool isMask;
+	bool needsFilterRefresh;
+};
+
+class CachedSurface
+{
+private:
+	SurfaceState* state;
+public:
+	CachedSurface():state(nullptr),tex(nullptr),blendmode(BLENDMODE_NORMAL),isChunkOwner(true),isValid(false),isInitialized(false),wasUpdated(false),cachedFilterTextureID(UINT32_MAX)
+	{
+	}
+	~CachedSurface()
+	{
+		if (isChunkOwner)
+		{
+			if (tex)
+				delete tex;
+			if (state)
+				delete state;
+		}
+	}
+	void SetState(SurfaceState* newstate)
+	{
+		if (state && state != newstate)
+			delete state;
+		state = newstate;
+	}
+	SurfaceState* getState() const
+	{
+		return state;
+	}
+	TextureChunk* tex;
+	AS_BLENDMODE blendmode;
+	_NR<DisplayObject> mask;
 	bool isChunkOwner;
 	bool isValid;
 	bool isInitialized;
 	bool wasUpdated;
-	volatile bool needsFilterRefresh;
 	uint32_t cachedFilterTextureID;
-	
 };
 
 class IDrawable
@@ -253,24 +285,9 @@ class IDrawable
 protected:
 	int32_t width;
 	int32_t height;
-	/*
-	   The minimal x coordinate for all the points being drawn, in local coordinates
-	*/
-	float xOffset;
-	/*
-	   The minimal y coordinate for all the points being drawn, in local coordinates
-	*/
-	float yOffset;
-	float alpha;
-	float xscale;
-	float yscale;
 	float xContentScale;
 	float yContentScale;
-	ColorTransformBase colortransform;
-	bool isMask;
-	SMOOTH_MODE smoothing;
-	MATRIX matrix;
-	bool needsFilterRefresh;
+	SurfaceState* state;
 public:
 	IDrawable(float w, float h, float x, float y,
 		float xs, float ys, float xcs, float ycs,
@@ -278,10 +295,12 @@ public:
 		float a,
 		const ColorTransformBase& _colortransform,
 		SMOOTH_MODE _smoothing,
-		const MATRIX& _m):
-		width(w),height(h),xOffset(x),yOffset(y),
-		alpha(a), xscale(xs), yscale(ys), xContentScale(xcs), yContentScale(ycs),
-		colortransform(_colortransform), isMask(im),smoothing(_smoothing), matrix(_m),needsFilterRefresh(true) {}
+		const MATRIX& _m)
+		:width(w),height(h), xContentScale(xcs), yContentScale(ycs)
+	{
+		// will be deleted in cachedSurface
+		state = new SurfaceState(x,y,a,xs,ys,_colortransform,_m,im,_smoothing);
+	}
 	virtual ~IDrawable();
 	/*
 	 * This method returns a raster buffer of the image
@@ -292,18 +311,9 @@ public:
 	virtual bool isCachedSurfaceUsable(const DisplayObject*) const {return true;}
 	int32_t getWidth() const { return width; }
 	int32_t getHeight() const { return height; }
-	int32_t getXOffset() const { return xOffset; }
-	int32_t getYOffset() const { return yOffset; }
-	float getAlpha() const { return alpha; }
-	float getXScale() const { return xscale; }
-	float getYScale() const { return yscale; }
 	float getXContentScale() const { return xContentScale; }
 	float getYContentScale() const { return yContentScale; }
-	bool getIsMask() const { return isMask; }
-	SMOOTH_MODE getSmoothing() const { return smoothing; }
-	const ColorTransformBase& getColorTransform() const { return colortransform; }
-	MATRIX& getMatrix() { return matrix; }
-	bool getNeedsFilterRefresh() const { return needsFilterRefresh; }
+	SurfaceState* getState() const { return state; }
 };
 
 class AsyncDrawJob: public IThreadJob, public ITextureUploadable

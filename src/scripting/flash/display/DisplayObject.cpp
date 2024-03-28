@@ -157,23 +157,27 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 		return false;
 	AS_BLENDMODE oldshaderblendmode = ctxt.currentShaderBlendMode;
 	bool ret = true;
-	MATRIX _matrix = startmatrix ? *startmatrix : getMatrix();
+	const CachedSurface& surface = ctxt.getCachedSurface(this);
+	if (!surface.getState())
+		return false;
+
+	MATRIX _matrix = startmatrix ? *startmatrix : surface.getState()->matrix;
 	ctxt.transformStack().push(Transform2D(
 		 _matrix,
-		!colorTransform.isNull() ? *colorTransform.getPtr() : ColorTransformBase()
+		surface.getState()->colortransform
 	));
 	if (ctxt.contextType == RenderContext::GL)
 	{
 		if (isShaderBlendMode(this->getBlendMode()) && getSystemState()->stage->renderToTextureCount)
 			ctxt.currentShaderBlendMode=this->getBlendMode();
-		if (hasFilters() && (cachedSurface.needsFilterRefresh || cachedSurface.cachedFilterTextureID != UINT32_MAX))
+		if (hasFilters() && (surface.getState()->needsFilterRefresh || surface.cachedFilterTextureID != UINT32_MAX))
 		{
-			if (!cachedSurface.isInitialized)
+			if (!surface.isInitialized)
 			{
 				ctxt.transformStack().pop();
 				return true;
 			}
-			bool needsFilterRefresh = cachedSurface.needsFilterRefresh && hasFilters();
+			bool needsFilterRefresh = surface.getState()->needsFilterRefresh && hasFilters();
 			auto baseTransform = ctxt.transformStack().transform();
 			Vector2f scale = getSystemState()->getRenderThread()->getScale();
 			MATRIX initialMatrix;
@@ -196,17 +200,17 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 
 				ctxt.transformStack().pop();
 				ctxt.removeTransformStack();
-				cachedSurface.needsFilterRefresh=false;
+				surface.getState()->needsFilterRefresh=false;
 			}
-			if (cachedSurface.cachedFilterTextureID != UINT32_MAX)
+			if (surface.cachedFilterTextureID != UINT32_MAX)
 			{
 				MATRIX m;
 				m.x0 = std::round(baseTransform.matrix.x0+offset.x);
 				m.y0 = std::round(baseTransform.matrix.y0+offset.y);
 
 				getSystemState()->getRenderThread()->setModelView(m);
-				getSystemState()->getRenderThread()->setupRenderingState(cachedSurface.alpha,ctxt.transformStack().transform().colorTransform,cachedSurface.smoothing,cachedSurface.blendmode);
-				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(cachedSurface.cachedFilterTextureID,size.x,size.y,nullptr,nullptr,false,true,false);
+				getSystemState()->getRenderThread()->setupRenderingState(surface.getState()->alpha,ctxt.transformStack().transform().colorTransform,surface.getState()->smoothing,surface.blendmode);
+				getSystemState()->getRenderThread()->renderTextureToFrameBuffer(surface.cachedFilterTextureID,size.x,size.y,nullptr,nullptr,false,true,false);
 				ctxt.currentShaderBlendMode = oldshaderblendmode;
 				ctxt.transformStack().pop();
 				return ret;
@@ -374,6 +378,8 @@ bool DisplayObject::destruct()
 		cachedSurface.tex=nullptr;
 	if (cachedSurface.tex)
 		cachedSurface.tex->makeEmpty();
+	if (cachedSurface.getState())
+		cachedSurface.getState()->reset();
 	cachedSurface.isChunkOwner=true;
 	cachedSurface.isValid=false;
 	cachedSurface.isInitialized=false;
@@ -381,7 +387,6 @@ bool DisplayObject::destruct()
 	if (cachedSurface.cachedFilterTextureID != UINT32_MAX && getSystemState() && getSystemState()->getRenderThread())
 		getSystemState()->getRenderThread()->addDeletedTexture(cachedSurface.cachedFilterTextureID);
 	cachedSurface.cachedFilterTextureID=UINT32_MAX;
-	cachedSurface.needsFilterRefresh=true;
 	placeFrame=UINT32_MAX;
 	return EventDispatcher::destruct();
 }
@@ -680,7 +685,8 @@ void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 		|| (!cachedSurface.isInitialized && this->hasFilters())
 		)
 	{
-		cachedSurface.needsFilterRefresh=true;
+		if (cachedSurface.getState())
+			cachedSurface.getState()->needsFilterRefresh=true;
 		this->hasChanged=true;
 		if (q && !q->isSoftwareQueue)
 			requestInvalidationIncludingChildren(q);
@@ -1188,8 +1194,8 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 			if (bl != BLENDMODE_NORMAL && !isShaderBlendMode(bl))
 			{
 				// render object without shader blendmode into texture
-				ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
-						ct, false,0.0,RGB(),surface.smoothing,m,r,bl);
+				ctxt.renderTextured(*surface.tex, surface.getState()->alpha, RenderContext::RGB_MODE,
+						ct, false,0.0,RGB(),surface.getState()->smoothing,m,r,bl);
 				// ensure the object is rendered again with shader blendmode
 				bl = BLENDMODE_NORMAL; 
 			}
@@ -1198,8 +1204,8 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 		}
 	}
 
-	ctxt.renderTextured(*surface.tex, surface.alpha, RenderContext::RGB_MODE,
-			ct, false,0.0,RGB(),surface.smoothing,m,r,bl);
+	ctxt.renderTextured(*surface.tex, surface.getState()->alpha, RenderContext::RGB_MODE,
+			ct, false,0.0,RGB(),surface.getState()->smoothing,m,r,bl);
 	return false;
 }
 
@@ -1251,16 +1257,7 @@ void DisplayObject::requestInvalidation(InvalidateQueue* q, bool forceTextureRef
 void DisplayObject::updateCachedSurface(IDrawable *d)
 {
 	// this is called only from rendering thread, so no locking done here
-	cachedSurface.xOffset=d->getXOffset();
-	cachedSurface.yOffset=d->getYOffset();
-	cachedSurface.alpha=d->getAlpha();
-	cachedSurface.xscale=d->getXScale();
-	cachedSurface.yscale=d->getYScale();
-	cachedSurface.isMask=d->getIsMask();
-	cachedSurface.smoothing=d->getSmoothing();
-	cachedSurface.colortransform = d->getColorTransform();
-	cachedSurface.matrix=d->getMatrix();
-	cachedSurface.needsFilterRefresh=d->getNeedsFilterRefresh();
+	cachedSurface.SetState(d->getState());
 	cachedSurface.isValid=true;
 	cachedSurface.isInitialized=true;
 	cachedSurface.wasUpdated=true;
@@ -1327,7 +1324,9 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 		if(onStage==true && isConstructed())
 		{
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
-			if(isVmThread())
+			// the main clip is added to stage after the builtin MovieClip is constructed, but before the constructor call is completed.
+			// So the EventListeners for "addedToStage" may not be registered yet and we can't execute the event directly
+			if(isVmThread()	&& this != getSystemState()->mainClip) 
 				ABCVm::publicHandleEvent(this,e);
 			else
 			{
@@ -2426,7 +2425,8 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	MATRIX m1(1,1,0,0,(xmin-maxfilterborder)*scalex,(ymin-maxfilterborder)*scaley);
 	m1.scale(1.0 / scalex, 1.0 / scaley);
 	ColorTransformBase ct;
-	ct.fillConcatenated(this);
+	if (this->colorTransform)
+		ct = *this->colorTransform.getPtr();
 	return cachedBitmap->invalidateFromSource(target, initialMatrix,smoothing,&ct,this->getParent(),m1,this,m0,scalex,scaley);
 }
 
@@ -2461,14 +2461,14 @@ IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX&
 	if(width==0 || height==0)
 		return nullptr;
 	ColorTransformBase ct;
-	ct.fillConcatenated(this);
+	if (this->colorTransform)
+		ct = *this->colorTransform.getPtr();
 	
 	Rectangle* r = scalingGrid.getPtr();
 	if (!r && getParent())
 		r = getParent()->scalingGrid.getPtr();
 	
 	this->resetNeedsTextureRecalculation();
-	cachedSurface.isValid=true;
 	return new RefreshableDrawable(x, y, ceil(width), ceil(height)
 				, matrix.getScaleX(), matrix.getScaleY()
 				, isMask

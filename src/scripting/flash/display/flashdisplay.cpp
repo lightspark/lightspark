@@ -86,7 +86,6 @@ bool Sprite::destruct()
 	tokens.clear();
 	sound.reset();
 	soundtransform.reset();
-	currentcolortransform.resetTransformation();
 	return DisplayObjectContainer::destruct();
 }
 
@@ -159,7 +158,11 @@ IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix
 {
 	IDrawable* res = getFilterDrawable(target,initialMatrix,smoothing,q);
 	if (res)
+	{
+		Locker l(mutexDisplayList);
+		res->getState()->setupChildrenList(dynamicDisplayList);
 		return res;
+	}
 
 	if (graphics && graphics->hasTokens())
 	{
@@ -167,9 +170,13 @@ IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix
 		this->graphics->refreshTokens();
 		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,true);
 		this->graphics->endDrawJob();
+		{
+			Locker l(mutexDisplayList);
+			res->getState()->setupChildrenList(dynamicDisplayList);
+		}
 	}
 	else
-		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,true);
+		res = DisplayObjectContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
 	return res;
 }
 
@@ -355,26 +362,7 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 
 void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	if (requestInvalidationForCacheAsBitmap(q))
-		return;
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
-	if (graphics || (!this->cachedAsBitmapOf && this->computeCacheAsBitmap()))
-	{
-		if(skipRender())
-			return;
-		if (forceTextureRefresh)
-			setNeedsTextureRecalculation();
-		incRef();
-		q->addToInvalidateQueue(_MR(this));
-		requestInvalidationFilterParent(q);
-	}
-	if (this->hasFilters())
-	{
-		if (forceTextureRefresh)
-			setNeedsTextureRecalculation();
-		incRef();
-		q->addToInvalidateQueue(_MR(this));
-	}
 }
 
 bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
@@ -397,14 +385,15 @@ bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 			}
 		}
 	}
-	Locker l(mutexDisplayList);
+	SurfaceState* surfacestate = ctxt.getCachedSurface(this).getState();
+	assert(surfacestate);
 	int clipDepth = 0;
 	vector<pair<int, DisplayObject*>> clipDepthStack;
 	//Now draw also the display list
-	auto it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();++it)
+	auto it= surfacestate->childrenlist.begin();
+	for(;it!=surfacestate->childrenlist.end();++it)
 	{
-		DisplayObject* child = *it;
+		DisplayObject* child = (*it);
 		int depth = child->getDepth();
 		// Pop off masks (if any).
 		while (!clipDepthStack.empty() && clipDepth > 0 && depth > clipDepth)
@@ -2556,26 +2545,70 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceT
 	DisplayObject::requestInvalidation(q);
 	if (requestInvalidationForCacheAsBitmap(q))
 		return;
-	std::vector<_R<DisplayObject>> tmplist;
-	cloneDisplayList(tmplist); // use copy of displaylist to avoid deadlock when computing boundsrect for cached bitmaps
-	auto it=tmplist.begin();
-	for(;it!=tmplist.end();++it)
+	if (forceTextureRefresh || (q && q->isSoftwareQueue))
 	{
-		(*it)->hasChanged = true;
-		(*it)->requestInvalidation(q,forceTextureRefresh);
+		std::vector<_R<DisplayObject>> tmplist;
+		cloneDisplayList(tmplist); // use copy of displaylist to avoid deadlock when computing boundsrect for cached bitmaps
+		auto it=tmplist.begin();
+		for(;it!=tmplist.end();++it)
+		{
+			(*it)->hasChanged = true;
+			(*it)->requestInvalidation(q,forceTextureRefresh);
+		}
 	}
+	if (forceTextureRefresh)
+		this->setNeedsTextureRecalculation();
+	if (!q || !q->isSoftwareQueue)
+		hasChanged=true;
+	incRef();
+	q->addToInvalidateQueue(_MR(this));
 }
 void DisplayObjectContainer::requestInvalidationIncludingChildren(InvalidateQueue* q)
 {
 	DisplayObject::requestInvalidationIncludingChildren(q);
-	std::vector<_R<DisplayObject>> tmplist;
 	auto it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
 		(*it)->requestInvalidationIncludingChildren(q);
 	}
 }
-
+IDrawable* DisplayObjectContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
+{
+	IDrawable* res = getFilterDrawable(target,initialMatrix,smoothing,q);
+	if (res)
+	{
+		Locker l(mutexDisplayList);
+		res->getState()->setupChildrenList(dynamicDisplayList);
+		return res;
+	}
+	number_t x,y;
+	number_t width,height;
+	number_t bxmin=0,bxmax=0,bymin=0,bymax=0;
+	boundsRect(bxmin,bxmax,bymin,bymax,false);
+	MATRIX matrix = getMatrix();
+	
+	bool isMask=false;
+	MATRIX m;
+	m.scale(matrix.getScaleX(),matrix.getScaleY());
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
+	
+	ColorTransformBase ct;
+	if (this->colorTransform)
+		ct=*this->colorTransform.getPtr();
+	
+	this->resetNeedsTextureRecalculation();
+	
+	res = new RefreshableDrawable(x, y, ceil(width), ceil(height)
+								   , matrix.getScaleX(), matrix.getScaleY()
+								   , isMask
+								   , getConcatenatedAlpha()
+								   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,matrix);
+	{
+		Locker l(mutexDisplayList);
+		res->getState()->setupChildrenList(dynamicDisplayList);
+	}
+	return res;
+}
 void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int index, bool inskipping)
 {
 	//If the child has no parent, set this container to parent
@@ -2616,6 +2649,8 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		child->cachedAsBitmapOf=cachedAsBitmapOf;
 	if (child->is<DisplayObjectContainer>())
 		child->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(child->cachedAsBitmapOf);
+	
+	this->requestInvalidation(getSystemState());
 }
 
 void DisplayObjectContainer::handleRemovedEvent(DisplayObject* child, bool keepOnStage, bool inskipping)
@@ -2665,8 +2700,10 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 		dynamicDisplayList.erase(it);
 	}
 	handleRemovedEvent(child, keeponstage, inskipping);
+	this->hasChanged=true;
+	this->requestInvalidation(getSystemState());
 	child->setParent(nullptr);
-	child->removeStoredMember();
+	getSystemState()->stage->prepareForRemoval(child);
 	checkClipDepth();
 	return true;
 }
@@ -2687,8 +2724,9 @@ void DisplayObjectContainer::_removeAllChildren()
 		//Erase this from the legacy child map (if it is in there)
 		umarkLegacyChild(child);
 		it = dynamicDisplayList.erase(it);
-		child->removeStoredMember();
+		getSystemState()->stage->prepareForRemoval(child);
 	}
+	this->requestInvalidation(getSystemState());
 }
 
 void DisplayObjectContainer::removeAVM1Listeners()
@@ -2861,6 +2899,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildren)
 		}
 		th->dynamicDisplayList.erase(th->dynamicDisplayList.begin()+beginindex,th->dynamicDisplayList.begin()+endindex);
 	}
+	th->requestInvalidation(th->getSystemState());
 }
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
 {
@@ -2896,10 +2935,12 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
 		{
 			th->dynamicDisplayList.insert(it, child);
 			th->checkClipDepth();
+			th->requestInvalidation(th->getSystemState());
 			return;
 		}
 	th->dynamicDisplayList.push_back(child);
 	th->checkClipDepth();
+	th->requestInvalidation(th->getSystemState());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildren)
@@ -2939,6 +2980,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildren)
 	th->umarkLegacyChild(child2);
 	
 	th->checkClipDepth();
+	th->requestInvalidation(th->getSystemState());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildrenAt)
@@ -2968,6 +3010,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildrenAt)
 	th->umarkLegacyChild(*(th->dynamicDisplayList.begin() + index2));
 	
 	th->checkClipDepth();
+	th->requestInvalidation(th->getSystemState());
 }
 
 //Only from VM context
@@ -3684,6 +3727,25 @@ void Stage::cleanupDeadHiddenObjects()
 			it = hiddenobjects.erase(it);
 		else
 			++it;
+	}
+}
+
+void Stage::prepareForRemoval(DisplayObject* d)
+{
+	Locker l(DisplayObjectRemovedMutex);
+	d->incRef();
+	d->addStoredMember();
+	removedDisplayObjects.insert(d);
+}
+
+void Stage::cleanupRemovedDisplayObjects()
+{
+	Locker l(DisplayObjectRemovedMutex);
+	auto it = removedDisplayObjects.begin();
+	while (it != removedDisplayObjects.end())
+	{
+		(*it)->removeStoredMember();
+		it = removedDisplayObjects.erase(it);
 	}
 }
 
@@ -4749,10 +4811,14 @@ IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initial
 {
 	IDrawable* res = getFilterDrawable(target,initialMatrix,smoothing,q);
 	if (res)
+	{
+		Locker l(mutexDisplayList);
+		res->getState()->setupChildrenList(dynamicDisplayList);
 		return res;
+	}
 	if (computeCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
-	return nullptr;
+	return DisplayObjectContainer::invalidate(target,initialMatrix,smoothing,q,cachedBitmap);
 }
 void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
@@ -4761,13 +4827,12 @@ void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefr
 		if (!q->isSoftwareQueue)
 			return;
 	}
-	else if (computeCacheAsBitmap())
-	{
-		incRef();
-		q->addToInvalidateQueue(_MR(this));
-	}
 	requestInvalidationFilterParent(q);
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
+	hasChanged=true;
+	incRef();
+	q->addToInvalidateQueue(_MR(this));
+	
 }
 
 uint32_t SimpleButton::getTagID() const

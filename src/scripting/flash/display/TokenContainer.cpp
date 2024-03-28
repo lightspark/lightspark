@@ -113,6 +113,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 		{
 			if (owner->getConcatenatedAlpha() == 0)
 				return false;
+			ColorTransformBase ct = ctxt.transformStack().transform().colorTransform;
 			switch (owner->getBlendMode())
 			{
 				case BLENDMODE_NORMAL:
@@ -140,7 +141,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			}
 			MATRIX m = ctxt.transformStack().transform().matrix;
 			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
-			nvgTranslate(nvgctxt,owner->cachedSurface.xOffset,owner->cachedSurface.yOffset);
+			nvgTranslate(nvgctxt,owner->cachedSurface.getState()->xOffset,owner->cachedSurface.getState()->yOffset);
 			nvgScale(nvgctxt,scaling,scaling);
 			NVGcolor startcolor = nvgRGBA(0,0,0,0);
 			nvgBeginPath(nvgctxt);
@@ -231,7 +232,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 								{
 									RGBA color = style->Color;
 									float r,g,b,a;
-									currentcolortransform.applyTransformation(color,r,g,b,a);
+									ct.applyTransformation(color,r,g,b,a);
 									NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*owner->getConcatenatedAlpha()*255.0);
 									nvgFillColor(nvgctxt,c);
 									break;
@@ -261,7 +262,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 										pattern.xform[5] = m.y0/scaling - style->ShapeBounds.Ymin;
 										float r,g,b,a;
 										RGBA color(255,255,255,255);
-										currentcolortransform.applyTransformation(color,r,g,b,a);
+										ct.applyTransformation(color,r,g,b,a);
 										NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
 										pattern.innerColor = pattern.outerColor = c;
 										nvgFillPaint(nvgctxt, pattern);
@@ -297,7 +298,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 							{
 								RGBA color = style->Color;
 								float r,g,b,a;
-								currentcolortransform.applyTransformation(color,r,g,b,a);
+								ct.applyTransformation(color,r,g,b,a);
 								NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*owner->getConcatenatedAlpha()*255.0);
 								nvgStrokeColor(nvgctxt,c);
 							}
@@ -605,7 +606,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	if(width==0 || height==0)
 		return nullptr;
 	ColorTransformBase ct;
-	ct.fillConcatenated(owner);
+	if (owner->colorTransform)
+		ct = *owner->colorTransform.getPtr();
 	
 	Rectangle* r = owner->scalingGrid.getPtr();
 	if (!r && owner->getParent())
@@ -624,8 +626,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		if (owner->getSystemState()->getEngineData()->nvgcontext
 			&& !tokens.empty() 
 			&& tokens.canRenderToGL
-			&& !isMask
-			&& !owner->ClipDepth
 			&& !owner->computeCacheAsBitmap()
 			&& isSupportedGLBlendMode(owner->getBlendMode())
 			&& !r
@@ -634,7 +634,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& !owner->inMask()
 			)
 		{
-			currentcolortransform = ct;
 			renderWithNanoVG=true;
 			if (fromgraphics)
 			{

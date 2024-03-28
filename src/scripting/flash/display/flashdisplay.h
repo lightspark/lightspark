@@ -128,7 +128,6 @@ private:
 	bool boundsRectVisibleDirty;
 	void umarkLegacyChild(DisplayObject* child);
 protected:
-	//This is shared between RenderThread and VM
 	std::vector < DisplayObject* > dynamicDisplayList;
 	void clearDisplayList();
 	//The lock should only be taken when doing write operations
@@ -153,6 +152,7 @@ public:
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	void requestInvalidationIncludingChildren(InvalidateQueue* q) override;
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap);
 	
 	void _addChildAt(DisplayObject* child, unsigned int index, bool inskipping=false);
 	void dumpDisplayList(unsigned int level=0);
@@ -644,6 +644,8 @@ private:
 	std::list<AVM1scriptToExecute> avm1scriptstoexecute;
 	bool hasAVM1Clips;
 	void executeAVM1Scripts(bool implicit);
+	Mutex DisplayObjectRemovedMutex;
+	unordered_set<DisplayObject*> removedDisplayObjects;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
 	bool renderImpl(RenderContext& ctxt) override;
@@ -672,6 +674,8 @@ public:
 	void removeHiddenObject(DisplayObject* o);
 	void forEachHiddenObject(std::function<void(DisplayObject*)> callback, bool allowInvalid = false);
 	void cleanupDeadHiddenObjects();
+	void prepareForRemoval(DisplayObject* d);
+	void cleanupRemovedDisplayObjects();
 	void enterFrame(bool implicit) override;
 	void advanceFrame(bool implicit) override;
 	void initFrame() override;

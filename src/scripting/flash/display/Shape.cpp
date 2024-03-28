@@ -112,7 +112,6 @@ bool Shape::destruct()
 	graphics.reset();
 	fromTag=nullptr;
 	tokens.clear();
-	currentcolortransform.resetTransformation();
 	return DisplayObject::destruct();
 }
 

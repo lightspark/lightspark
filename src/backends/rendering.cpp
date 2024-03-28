@@ -1243,6 +1243,7 @@ void RenderThread::draw(bool force)
 		LOG(LOG_INFO,"FPS: " << dec << frameCount<<" "<<(getVm(m_sys) ? getVm(m_sys)->getEventQueueSize() : 0));
 		frameCount=0;
 		secsCount++;
+		m_sys->stage->cleanupRemovedDisplayObjects();
 	}
 	else
 		frameCount++;

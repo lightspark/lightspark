@@ -3214,7 +3214,7 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 	objName.name_s_id=getSystemState()->getUniqueStringId(subpath);
 	objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	asAtom ret=asAtomHandler::invalidAtom;
-	getVariableByMultiname(ret,objName,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
+	getVariableByMultiname(ret,objName,GET_VARIABLE_OPTION::NO_INCREF,getInstanceWorker());
 	if (asAtomHandler::is<DisplayObject>(ret))
 	{
 		if (pos == tiny_string::npos)

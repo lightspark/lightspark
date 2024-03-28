@@ -455,8 +455,11 @@ void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
 
 void DisplayObjectContainer::rememberLastFrameChildren()
 {
+	assert(this->is<MovieClip>());
 	for (auto it=mapDepthToLegacyChild.begin(); it != mapDepthToLegacyChild.end(); it++)
 	{
+		if (this->as<MovieClip>()->state.next_FP < it->second->placeFrame)
+			continue;
 		it->second->incRef();
 		it->second->addStoredMember();
 		mapFrameDepthToLegacyChildRemembered.insert(make_pair(it->first,it->second));

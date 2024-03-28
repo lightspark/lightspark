@@ -453,6 +453,34 @@ void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
 	}
 }
 
+void DisplayObjectContainer::rememberLastFrameChildren()
+{
+	for (auto it=mapDepthToLegacyChild.begin(); it != mapDepthToLegacyChild.end(); it++)
+	{
+		it->second->incRef();
+		it->second->addStoredMember();
+		mapFrameDepthToLegacyChildRemembered.insert(make_pair(it->first,it->second));
+	}
+}
+
+void DisplayObjectContainer::clearLastFrameChildren()
+{
+	auto it=mapFrameDepthToLegacyChildRemembered.begin();
+	while (it != mapFrameDepthToLegacyChildRemembered.end())
+	{
+		it->second->removeStoredMember();
+		it = mapFrameDepthToLegacyChildRemembered.erase(it);
+	}
+}
+
+DisplayObject* DisplayObjectContainer::getLastFrameChildAtDepth(int depth)
+{
+	auto it=mapFrameDepthToLegacyChildRemembered.find(depth);
+	if (it != mapFrameDepthToLegacyChildRemembered.end())
+		return it->second;
+	return nullptr;
+}
+
 void DisplayObjectContainer::fillGraphicsData(Vector* v, bool recursive)
 {
 	if (recursive)
@@ -2038,19 +2066,11 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,c
 	markAsChanged();
 }
 
-bool DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
+void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 {
 	if(!hasLegacyChildAt(depth))
-		return false;
+		return;
 	DisplayObject* obj = mapDepthToLegacyChild.at(depth);
-	if (this->is<MovieClip>()
-		&& this->as<MovieClip>()->state.last_FP > (int)this->as<MovieClip>()->state.next_FP
-		&& this->as<MovieClip>()->state.FP <= obj->placeFrame
-		&& this->as<MovieClip>()->state.next_FP >= obj->placeFrame )
-	{
-		// keep child if we are moving backwards in the clip and the child was placed on the timeline _before_ the frame we are moving to
-		return true;
-	}
 	if(obj->name != BUILTIN_STRINGS::EMPTY 
 	   && !obj->markedForLegacyDeletion) // member variable was already reset in purgeLegacyChildren
 	{
@@ -2067,7 +2087,6 @@ bool DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 	obj->afterLegacyDelete(inskipping);
 	//this also removes it from depthToLegacyChild
 	_removeChild(obj,false,inskipping);
-	return false;
 }
 
 void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* obj, bool inskipping, bool fromtag)
@@ -5166,6 +5185,11 @@ void MovieClip::declareFrame(bool implicit)
 	{
 		if(getFramesLoaded())
 		{
+			if (this->as<MovieClip>()->state.last_FP > (int)this->as<MovieClip>()->state.next_FP)
+			{
+				// we are moving backwards in the timeline, so we keep the current list of legacy children available for reusing
+				this->rememberLastFrameChildren();
+			}
 			auto iter=frames.begin();
 			uint32_t frame = state.FP;
 			removedFrameScripts.clear();
@@ -5178,6 +5202,7 @@ void MovieClip::declareFrame(bool implicit)
 				++iter;
 			}
 			state.FP = frame;
+			this->clearLastFrameChildren();
 		}
 		if (newFrame)
 			state.frameadvanced=true;

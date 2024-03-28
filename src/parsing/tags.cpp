@@ -1846,21 +1846,18 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	bool exists = parent->hasLegacyChildAt(LEGACY_DEPTH_START+Depth);
 	uint32_t nameID = 0;
 	DisplayObject* currchar=nullptr;
-	bool ignore = false;
 	if (exists)
 	{
 		currchar = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth);
 		nameID = currchar->name;
-		ignore = currchar->getTagID() == CharacterId;
-		if (!ignore)
+		if (parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth) && currchar->getTagID() != CharacterId)
 		{
-			parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
-			exists = ignore = parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
+			parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
+			exists = false;
 		}
 	}
 	bool newInstance = false;
-	if(PlaceFlagHasCharacter &&
-		(!exists || !ignore))
+	if(PlaceFlagHasCharacter && (!exists || (currchar->getTagID() != CharacterId)))
 	{
 		//A new character must be placed
 		LOG(LOG_TRACE,"Placing ID " << CharacterId);
@@ -1883,8 +1880,14 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		DisplayObject *toAdd = nullptr;
 		if(PlaceFlagHasName)
 		{
-			// check if an object with this name was already created and removed earlier
 			nameID = NameID;
+		}
+		if (!exists)
+		{
+			// check if we can reuse the DisplayObject from the last declared frame (only relevant if we are moving backwards in the timeline)
+			toAdd = parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth);
+			if (toAdd)
+				toAdd->incRef();
 		}
 		if (!toAdd)
 		{
@@ -1949,7 +1952,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			currchar=toAdd;
 		}
 	}
-	else if (!ignore)
+	else
 	{
 		if (currchar)
 			setProperties(currchar, parent);
@@ -1965,55 +1968,52 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
 		}
 	}
-	if (!ignore)
+	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
 	{
-		if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
+		currchar->name = nameID;
+		currchar->incRef();
+		multiname objName(nullptr);
+		objName.name_type=multiname::NAME_STRING;
+		objName.name_s_id=currchar->name;
+		objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+		asAtom v = asAtomHandler::fromObject(currchar);
+		parent->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
+	}
+	if (exists && PlaceFlagHasClipAction)
+	{
+		parent->setupClipActionsAt(LEGACY_DEPTH_START+Depth,ClipActions);
+	}
+	
+	if (exists && PlaceFlagHasRatio)
+		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, Ratio, inskipping);
+	else if (exists && PlaceFlagHasCharacter)
+		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, 0, inskipping);
+	
+	if(PlaceFlagHasColorTransform)
+		parent->checkColorTransformForLegacyChildAt(LEGACY_DEPTH_START+Depth,ColorTransformWithAlpha);
+	if (newInstance && PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventConstruct && currchar)
+	{
+		// TODO not sure if this is the right place to handle Construct events
+		std::map<uint32_t,asAtom> m;
+		for (auto it = this->ClipActions.ClipActionRecords.begin();it != this->ClipActions.ClipActionRecords.end(); it++)
 		{
-			currchar->name = nameID;
-			currchar->incRef();
-			multiname objName(nullptr);
-			objName.name_type=multiname::NAME_STRING;
-			objName.name_s_id=currchar->name;
-			objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-			asAtom v = asAtomHandler::fromObject(currchar);
-			parent->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
-		}
-		if (exists && PlaceFlagHasClipAction)
-		{
-			parent->setupClipActionsAt(LEGACY_DEPTH_START+Depth,ClipActions);
-		}
-		
-		if (exists && PlaceFlagHasRatio)
-			parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, Ratio, inskipping);
-		else if (exists && PlaceFlagHasCharacter)
-			parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, 0, inskipping);
-		
-		if(PlaceFlagHasColorTransform)
-			parent->checkColorTransformForLegacyChildAt(LEGACY_DEPTH_START+Depth,ColorTransformWithAlpha);
-		if (newInstance && PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventConstruct && currchar)
-		{
-			// TODO not sure if this is the right place to handle Construct events
-			std::map<uint32_t,asAtom> m;
-			for (auto it = this->ClipActions.ClipActionRecords.begin();it != this->ClipActions.ClipActionRecords.end(); it++)
+			if (it->EventFlags.ClipEventConstruct)
 			{
-				if (it->EventFlags.ClipEventConstruct)
-				{
-					AVM1context context;
-					ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
-				}
+				AVM1context context;
+				ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
 			}
 		}
-		if (PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventInitialize && currchar)
+	}
+	if (PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventInitialize && currchar)
+	{
+		// TODO not sure if this is the right place to handle Initialize events
+		std::map<uint32_t,asAtom> m;
+		for (auto it = this->ClipActions.ClipActionRecords.begin();it != this->ClipActions.ClipActionRecords.end(); it++)
 		{
-			// TODO not sure if this is the right place to handle Initialize events
-			std::map<uint32_t,asAtom> m;
-			for (auto it = this->ClipActions.ClipActionRecords.begin();it != this->ClipActions.ClipActionRecords.end(); it++)
+			if (it->EventFlags.ClipEventInitialize)
 			{
-				if (it->EventFlags.ClipEventInitialize)
-				{
-					AVM1context context;
-					ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
-				}
+				AVM1context context;
+				ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
 			}
 		}
 	}

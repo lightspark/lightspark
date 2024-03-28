@@ -113,6 +113,7 @@ private:
 	map<int32_t,DisplayObject*> mapDepthToLegacyChild;
 	unordered_map<DisplayObject*,int32_t> mapLegacyChildToDepth;
 	set<int32_t> legacyChildrenMarkedForDeletion;
+	map<int32_t,DisplayObject*> mapFrameDepthToLegacyChildRemembered;
 	bool _contains(DisplayObject* child);
 	void getObjectsFromPoint(Point* point, Array* ar);
 	number_t boundsrectXmin;
@@ -144,7 +145,10 @@ protected:
 	virtual void resetToStart() {}
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
 	void LegacyChildEraseDeletionMarked();
+	void rememberLastFrameChildren();
+	void clearLastFrameChildren();
 public:
+	DisplayObject* getLastFrameChildAtDepth(int depth);
 	void fillGraphicsData(Vector* v, bool recursive) override;
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
@@ -176,7 +180,7 @@ public:
 	void setupClipActionsAt(int32_t depth, const CLIPACTIONS& actions);
 	void checkRatioForLegacyChildAt(int32_t depth, uint32_t ratio, bool inskipping);
 	void checkColorTransformForLegacyChildAt(int32_t depth, const CXFORMWITHALPHA& colortransform);
-	bool deleteLegacyChildAt(int32_t depth, bool inskipping);
+	void deleteLegacyChildAt(int32_t depth, bool inskipping);
 	void insertLegacyChildAt(int32_t depth, DisplayObject* obj, bool inskipping=false, bool fromtag=true);
 	DisplayObject* findLegacyChildByTagID(uint32_t tagid);
 	int findLegacyChildDepth(DisplayObject* obj);

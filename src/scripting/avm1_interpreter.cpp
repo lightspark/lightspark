@@ -725,8 +725,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							break;
 					}
 				}
-				if (o && !asAtomHandler::is<MovieClip>(target))
-					o->decRef();
 				ASATOM_DECREF(index);
 				ASATOM_DECREF(target);
 				PushStack(stack,ret);
@@ -748,10 +746,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					tiny_string s = asAtomHandler::toString(target,wrk);
 					o = clip->AVM1GetClipFromPath(s);
 					if (!o) // it seems that Adobe falls back to the current clip if the path is invalid
-					{
 						o = clip;
-						o->incRef();
-					}
 				}
 				if (o)
 				{
@@ -812,8 +807,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				else
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetProperty target clip not found:"<<asAtomHandler::toDebugString(target)<<" "<<asAtomHandler::toDebugString(index)<<" "<<asAtomHandler::toDebugString(value));
-				if (o && !asAtomHandler::is<MovieClip>(target))
-					o->decRef();
 				ASATOM_DECREF(index);
 				ASATOM_DECREF(target);
 				break;

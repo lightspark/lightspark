@@ -1086,22 +1086,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					args[i] = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				uint32_t nameID = asAtomHandler::toStringId(name,wrk);
+				tiny_string s = clip->getSystemState()->getStringFromUniqueId(nameID);
+				asAtom ret=asAtomHandler::invalidAtom;
 				AVM1Function* f =nullptr;
 				if (asAtomHandler::isUndefined(name)|| asAtomHandler::toStringId(name,wrk) == BUILTIN_STRINGS::EMPTY)
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction without name "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				else
 				{
-					uint32_t nameIDlower = clip->getSystemState()->getUniqueStringId(asAtomHandler::toString(name,wrk).lowercase());
-					f =clip->AVM1GetFunction(nameIDlower);
-				}
-				asAtom ret=asAtomHandler::invalidAtom;
-				if (f)
-				{
-					f->call(&ret,nullptr, args,numargs,caller,&locals);
-				}
-				else
-				{
-					tiny_string s = clip->getSystemState()->getStringFromUniqueId(nameID);
+					tiny_string s = asAtomHandler::toString(name,wrk).lowercase();
 					asAtom func = clip->AVM1GetVariable(s);
 					if (asAtomHandler::isInvalid(func) && clip != originalclip)
 						func = originalclip->AVM1GetVariable(s);
@@ -1136,7 +1128,19 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							if (asAtomHandler::isInvalid(func))// get Variable from global object
 								clip->getSystemState()->avm1global->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 						}
-						if (asAtomHandler::is<AVM1Function>(func))
+						if (asAtomHandler::isInvalid(func))
+						{
+							uint32_t nameIDlower = clip->getSystemState()->getUniqueStringId(asAtomHandler::toString(name,wrk).lowercase());
+							f =clip->AVM1GetFunction(nameIDlower);
+							if (f)
+								f->call(&ret,nullptr, args,numargs,caller,&locals);
+							else
+							{
+								LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction function not found "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func)<<" "<<numargs);
+								ret = asAtomHandler::undefinedAtom;
+							}
+						}
+						else if (asAtomHandler::is<AVM1Function>(func))
 						{
 							asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
 							asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,numargs,caller,&locals);

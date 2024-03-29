@@ -17,6 +17,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#ifndef UTILS_ARGS_PARSER_H
+#define UTILS_ARGS_PARSER_H 1
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -207,3 +210,5 @@ public:
 	void addPositionalArgument(std::vector<tiny_string>& values, const char* help, const char* name, bool required = true);
 
 };
+
+#endif /* UTILS_ARGS_PARSER_H */

@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include <algorithm>
+#include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <list>
@@ -78,7 +79,7 @@ bool ArgsParser::parse(const tcb::span<tiny_string>& args, FailureMode failureMo
 				.name = option.longName,
 				.requirement = Option::toArgumentRequirement(option.argMode),
 				.flag = &longOptionFoundIndex,
-				static_cast<int>(i),
+				.val = static_cast<int>(i),
 			};
 			longOptions.push_back(longOption);
 		}

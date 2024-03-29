@@ -826,7 +826,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 			}
 		}
 	}
-	th->resize(startIndex);
+	th->resize(startIndex,false);
 
 	
 	//Insert requested values starting at startIndex
@@ -840,7 +840,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 	for(uint32_t i=0;i<totalSize- (startIndex+deleteCount);i++)
 	{
 		if (asAtomHandler::isValid(tmp[i]))
-			th->set(startIndex+i+(argslen > 2 ? argslen-2 : 0),tmp[i],false);
+			th->set(startIndex+i+(argslen > 2 ? argslen-2 : 0),tmp[i],false,false,false);
 	}
 	ret =asAtomHandler::fromObject(res);
 }
@@ -2298,7 +2298,7 @@ bool Array::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	return ret;
 }
 
-void Array::resize(uint64_t n)
+void Array::resize(uint64_t n,bool removemember)
 {
 	if (n < currentsize)
 	{
@@ -2309,7 +2309,7 @@ void Array::resize(uint64_t n)
 			{
 				ASObject* o = asAtomHandler::getObject(*it1);
 				it1 = data_first.erase(it1);
-				if (o)
+				if (removemember && o)
 					o->removeStoredMember();
 			}
 		}
@@ -2322,7 +2322,7 @@ void Array::resize(uint64_t n)
 				++it2;
 				ASObject* o = asAtomHandler::getObject(it2a->second);
 				data_second.erase(it2a);
-				if (o)
+				if (removemember && o)
 					o->removeStoredMember();
 			}
 			else

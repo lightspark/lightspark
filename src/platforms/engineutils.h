@@ -75,7 +75,7 @@ class externalFontRenderer : public IDrawable
 	class EngineData* m_engine;
 public:
 	externalFontRenderer(const TextData &_textData, class EngineData* engine, int32_t x, int32_t y, int32_t w, int32_t h, float xs, float ys, bool im, float a,
-						 const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m);
+						 const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing,AS_BLENDMODE _blendmode, const MATRIX &_m);
 	
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 };
@@ -356,7 +356,8 @@ public:
 	virtual int32_t setupFontRenderer(const TextData &_textData,float a, SMOOTH_MODE smoothing) { return 0; }
 	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _xs, float _ys, bool _im, float _s, float _a,
 									 const ColorTransformBase& _colortransform,
-									 SMOOTH_MODE smoothing);
+									 SMOOTH_MODE smoothing,
+									 AS_BLENDMODE _blendmode);
 };
 
 }

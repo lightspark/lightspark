@@ -654,7 +654,6 @@ public:
 	void prepareShutdown() override;
 	void defaultEventBehavior(_R<Event> e) override;
 	ACQUIRE_RELEASE_FLAG(invalidated);
-	ATOMIC_INT32(renderToTextureCount);
 	void onAlign(uint32_t);
 	void forceInvalidation();
 	bool renderStage3D();

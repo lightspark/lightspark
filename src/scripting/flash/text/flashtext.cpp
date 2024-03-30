@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "platforms/engineutils.h"
 #include "scripting/abc.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/geom/flashgeom.h"
@@ -1823,7 +1824,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 										   , matrix.getScaleX(), matrix.getScaleY()
 										   , isMask
 										   , getConcatenatedAlpha()
-										   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,matrix);
+										   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 		}
 		// it seems that textfields are always rendered with subpixel smoothing when rendering to bitmap
 		return TokenContainer::invalidate(target, initialMatrix,smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
@@ -1842,7 +1843,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 										   , matrix.getScaleX(), matrix.getScaleY()
 										   , isMask
 										   , getConcatenatedAlpha()
-										   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,matrix);
+										   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 		}
 	}
 	if(width==0 || height==0)
@@ -1852,7 +1853,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 									   , matrix.getScaleX(), matrix.getScaleY()
 									   , isMask
 									   , getConcatenatedAlpha()
-									   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,matrix);
+									   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 	}		
 	if(matrix.getScaleX() != 1 || matrix.getScaleY() != 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<matrix.getScaleX()<<" "<<matrix.getScaleY()<<" "<<this->getText());
@@ -1862,7 +1863,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,matrix, x, y, ceil(width), ceil(height),
 																					xscale,yscale,isMask, 1.0f,getConcatenatedAlpha(),
 																					ColorTransformBase(),
-																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE);
+																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode());
 	if (res != nullptr)
 		return res;
 	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
@@ -1877,7 +1878,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 				isMask,
 				1.0f, getConcatenatedAlpha(),
 				ColorTransformBase(),
-				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,caretIndex);
+				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),caretIndex);
 }
 
 bool TextField::renderImpl(RenderContext& ctxt)

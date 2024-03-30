@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include <cairo.h>
+#include "platforms/engineutils.h"
 #include "scripting/flash/display/TokenContainer.h"
 #include "scripting/flash/display/GraphicsSolidFill.h"
 #include "scripting/flash/display/GraphicsEndFill.h"
@@ -629,7 +630,6 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& !owner->computeCacheAsBitmap()
 			&& isSupportedGLBlendMode(owner->getBlendMode())
 			&& !r
-			&& !owner->getSystemState()->stage->renderToTextureCount
 			&& !owner->hasFilters()
 			&& !owner->inMask()
 			)
@@ -650,7 +650,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 										   , matrix.getScaleX(), matrix.getScaleY()
 										   , isMask
 										   , owner->getConcatenatedAlpha()
-										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,matrix);
+										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,owner->getBlendMode(),matrix);
 		}
 		else if (renderWithNanoVG)
 		{
@@ -664,7 +664,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 				, matrix.getScaleX(), matrix.getScaleY()
 				, isMask
 				, scaling,owner->getConcatenatedAlpha()
-				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE, regpointx, regpointy,q && q->isSoftwareQueue);
+				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE,owner->getBlendMode(), regpointx, regpointy,q && q->isSoftwareQueue);
 }
 
 bool TokenContainer::hitTestImpl(const Vector2f& point) const

@@ -311,13 +311,13 @@ IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &ini
 					, scalex, scaley
 					, isMask
 					, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha()
-					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,matrix);
+					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
 				, 1, 1
 				, isMask
 				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha()
-							  , ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,matrix);
+							  , ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 }
 

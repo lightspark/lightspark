@@ -220,10 +220,12 @@ public:
 class SurfaceState
 {
 public:
-	SurfaceState(float _xoffset=0.0,float _yoffset=0.0, float _alpha=1.0, float _xscale=1.0, float _yscale=1.0, const ColorTransformBase& _colortransform=ColorTransformBase(), const MATRIX& _matrix=MATRIX(), bool _ismask=false, SMOOTH_MODE _smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS, bool _needsfilterrefresh=true)
+	SurfaceState(float _xoffset=0.0,float _yoffset=0.0, float _alpha=1.0, float _xscale=1.0, float _yscale=1.0,
+			 const ColorTransformBase& _colortransform=ColorTransformBase(), const MATRIX& _matrix=MATRIX(), bool _ismask=false,
+			 AS_BLENDMODE _blendmode=BLENDMODE_NORMAL, SMOOTH_MODE _smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS, bool _needsfilterrefresh=true, bool _needslayer=false)
 		:xOffset(_xoffset),yOffset(_yoffset),alpha(_alpha),xscale(_xscale),yscale(_yscale)
 		,colortransform(_colortransform),matrix(_matrix)
-		,smoothing(_smoothing),isMask(_ismask),needsFilterRefresh(_needsfilterrefresh)
+	,blendmode(_blendmode),smoothing(_smoothing),isMask(_ismask),needsFilterRefresh(_needsfilterrefresh),needsLayer(_needslayer)
 	{
 	}
 	virtual ~SurfaceState();
@@ -237,9 +239,11 @@ public:
 	ColorTransformBase colortransform;
 	MATRIX matrix;
 	std::vector<DisplayObject*> childrenlist;
+	AS_BLENDMODE blendmode;
 	SMOOTH_MODE smoothing;
 	bool isMask;
 	bool needsFilterRefresh;
+	bool needsLayer;
 };
 
 class CachedSurface
@@ -247,7 +251,7 @@ class CachedSurface
 private:
 	SurfaceState* state;
 public:
-	CachedSurface():state(nullptr),tex(nullptr),blendmode(BLENDMODE_NORMAL),isChunkOwner(true),isValid(false),isInitialized(false),wasUpdated(false),cachedFilterTextureID(UINT32_MAX)
+	CachedSurface():state(nullptr),tex(nullptr),isChunkOwner(true),isValid(false),isInitialized(false),wasUpdated(false),cachedFilterTextureID(UINT32_MAX)
 	{
 	}
 	~CachedSurface()
@@ -271,7 +275,6 @@ public:
 		return state;
 	}
 	TextureChunk* tex;
-	AS_BLENDMODE blendmode;
 	_NR<DisplayObject> mask;
 	bool isChunkOwner;
 	bool isValid;
@@ -295,11 +298,12 @@ public:
 		float a,
 		const ColorTransformBase& _colortransform,
 		SMOOTH_MODE _smoothing,
+		AS_BLENDMODE _blendmode,
 		const MATRIX& _m)
 		:width(w),height(h), xContentScale(xcs), yContentScale(ycs)
 	{
 		// will be deleted in cachedSurface
-		state = new SurfaceState(x,y,a,xs,ys,_colortransform,_m,im,_smoothing);
+		state = new SurfaceState(x,y,a,xs,ys,_colortransform,_m,im,_blendmode,_smoothing);
 	}
 	virtual ~IDrawable();
 	/*
@@ -374,7 +378,8 @@ public:
 				  , bool _im
 				  , float _s, float _a
 				  , const ColorTransformBase& _colortransform
-				  , SMOOTH_MODE _smoothing);
+				  , SMOOTH_MODE _smoothing
+				  , AS_BLENDMODE _blendmode);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 	bool isCachedSurfaceUsable(const DisplayObject*) const override;
@@ -429,7 +434,8 @@ public:
 			bool _im,
 			float _s, float _a,
 			const ColorTransformBase& _colortransform,
-			SMOOTH_MODE _smoothing,number_t _xstart, number_t _ystart, bool _softwarerenderer);
+			SMOOTH_MODE _smoothing, AS_BLENDMODE _blendmode,
+			number_t _xstart, number_t _ystart, bool _softwarerenderer);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 
@@ -552,10 +558,12 @@ public:
 			bool _im, 
 			float _s, float _a, 
 			const ColorTransformBase& _colortransform,
-			SMOOTH_MODE _smoothing,uint32_t _ci)
+			SMOOTH_MODE _smoothing,
+			AS_BLENDMODE _blendmode,
+			uint32_t _ci)
 		: CairoRenderer(_m,_x,_y,_w,_h,_xs, _ys,_im,_s,_a,
 						_colortransform,
-						_smoothing), textData(_textData),caretIndex(_ci) {}
+						_smoothing, _blendmode), textData(_textData),caretIndex(_ci) {}
 	/**
 		Helper. Uses Pango to find the size of the textdata
 		@param _texttData The textData being tested
@@ -573,7 +581,7 @@ public:
 				  , bool _im
 				  , float _a
 				  , const ColorTransformBase& _colortransform
-				  , SMOOTH_MODE _smoothing, const MATRIX& _m);
+				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override { return nullptr; }
 };
@@ -588,7 +596,7 @@ public:
 				  , bool _im
 				  , float _a
 				  , const ColorTransformBase& _colortransform
-				  , SMOOTH_MODE _smoothing, const MATRIX& _m);
+				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 };
@@ -604,7 +612,7 @@ public:
 				  , bool _im
 				  , float _a
 				  , const ColorTransformBase& _colortransform
-				  , SMOOTH_MODE _smoothing, const MATRIX& _m);
+				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 };

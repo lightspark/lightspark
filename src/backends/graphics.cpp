@@ -135,9 +135,10 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 CairoRenderer::CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
 		float _s, float _a,
 		const ColorTransformBase& _colortransform,
-		SMOOTH_MODE _smoothing)
+		SMOOTH_MODE _smoothing,
+		AS_BLENDMODE _blendmode)
 	: IDrawable(_w, _h, _x, _y, _xs, _ys, _xs, _ys, _im,_a,
-				_colortransform,_smoothing,_m)
+				_colortransform,_smoothing,_blendmode,_m)
 	, scaleFactor(_s)
 {
 }
@@ -780,10 +781,11 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h
 									   , float _xs, float _ys, bool _im, float _s, float _a
 									   , const ColorTransformBase& _colortransform
-									   , SMOOTH_MODE _smoothing, number_t _xstart, number_t _ystart, bool _softwarerenderer)
+									   , SMOOTH_MODE _smoothing, AS_BLENDMODE _blendmode
+									   , number_t _xstart, number_t _ystart, bool _softwarerenderer)
 	: CairoRenderer(_m,_x,_y,_w,_h,_xs,_ys,_im,_s,_a
 					, _colortransform
-					,_smoothing),tokens(_g),xstart(_xstart),ystart(_ystart),softwarerenderer(_softwarerenderer)
+					,_smoothing,_blendmode),tokens(_g),xstart(_xstart),ystart(_ystart),softwarerenderer(_softwarerenderer)
 {
 }
 
@@ -1178,17 +1180,17 @@ IDrawable::~IDrawable()
 
 RefreshableDrawable::RefreshableDrawable(float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
 		float _a,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m)
+		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m)
 	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _im,_a,
-				_colortransform,_smoothing,_m)
+				_colortransform,_smoothing,_blendmode,_m)
 {
 }
 
 BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
 		float _a,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m)
+		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m)
 	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _im,_a,
-				_colortransform,_smoothing,_m)
+				_colortransform,_smoothing,_blendmode,_m)
 	, data(_data)
 {
 }
@@ -1204,9 +1206,9 @@ uint8_t *BitmapRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 
 CachedBitmapRenderer::CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix, float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
 		float _a,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, const MATRIX& _m)
+		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m)
 	: BitmapRenderer(_source->getCachedBitmap()->as<Bitmap>()->bitmapData->getBitmapContainer(), _x, _y,_w, _h, _xs, _ys, _im,_a,
-				_colortransform,_smoothing,_m)
+				_colortransform,_smoothing,_blendmode,_m)
 	, source(_source),sourceCacheMatrix(_sourceCacheMatrix)
 {
 }
@@ -1430,7 +1432,9 @@ void SurfaceState::reset()
 	matrix=MATRIX();
 	isMask=false;
 	smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS;
+	blendmode= AS_BLENDMODE::BLENDMODE_NORMAL;
 	needsFilterRefresh=true;
+	needsLayer=false;
 	childrenlist.clear();
 }
 
@@ -1438,5 +1442,11 @@ void SurfaceState::setupChildrenList(std::vector<DisplayObject*>& dynamicDisplay
 {
 	childrenlist.clear();
 	childrenlist.reserve(dynamicDisplayList.size());
-	childrenlist.assign(dynamicDisplayList.cbegin(),dynamicDisplayList.cend());
+	needsLayer=false;
+	for (auto it=dynamicDisplayList.cbegin(); it != dynamicDisplayList.cend(); it++)
+	{
+		childrenlist.push_back(*it);
+		if (DisplayObject::isShaderBlendMode((*it)->getBlendMode()))
+			needsLayer=true;
+	}
 }

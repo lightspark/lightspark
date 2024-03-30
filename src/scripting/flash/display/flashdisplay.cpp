@@ -2602,7 +2602,7 @@ IDrawable* DisplayObjectContainer::invalidate(DisplayObject* target, const MATRI
 								   , matrix.getScaleX(), matrix.getScaleY()
 								   , isMask
 								   , getConcatenatedAlpha()
-								   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,matrix);
+								   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 	{
 		Locker l(mutexDisplayList);
 		res->getState()->setupChildrenList(dynamicDisplayList);
@@ -3335,16 +3335,7 @@ bool Stage::renderImpl(RenderContext &ctxt)
 		((GLRenderContext&)ctxt).lsglLoadIdentity();
 		((GLRenderContext&)ctxt).setMatrixUniform(GLRenderContext::LSGL_MODELVIEW);
 	}
-	if (renderToTextureCount)
-	{
-		// scene has at least one DisplayObject with an extended blend mode, so we need to render everything to a texture to be able to apply the blend mode
-		getSystemState()->getRenderThread()->beginBlendTexture();
-		bool ret = DisplayObjectContainer::renderImpl(ctxt);
-		getSystemState()->getRenderThread()->endBlendTexture();
-		return ret;
-	}
-	else
-		return DisplayObjectContainer::renderImpl(ctxt);
+	return DisplayObjectContainer::renderImpl(ctxt);
 }
 bool Stage::destruct()
 {
@@ -3453,7 +3444,7 @@ void Stage::prepareShutdown()
 }
 
 Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
-	,avm1DisplayObjectFirst(nullptr),avm1DisplayObjectLast(nullptr),hasAVM1Clips(false),invalidated(true),renderToTextureCount(0)
+	,avm1DisplayObjectFirst(nullptr),avm1DisplayObjectLast(nullptr),hasAVM1Clips(false),invalidated(true)
 	,align(c->getSystemState()->getUniqueStringId("TL")), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high")
 	,stageFocusRect(false),allowsFullScreen(false),contentsScaleFactor(1.0)
 {

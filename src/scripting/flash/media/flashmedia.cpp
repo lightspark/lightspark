@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "platforms/engineutils.h"
 #include "scripting/abc.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/class.h"

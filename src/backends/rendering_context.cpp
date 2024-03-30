@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <stack>
+#include "platforms/engineutils.h"
 #include "backends/rendering_context.h"
 #include "logger.h"
 #include "scripting/flash/display/flashdisplay.h"
@@ -57,7 +58,10 @@ void TransformStack::push(const Transform2D& _transform)
 	{
 		auto matrix = transform().matrix.multiplyMatrix(_transform.matrix);
 		auto colorTransform = transform().colorTransform.multiplyTransform(_transform.colorTransform);
-		transforms.push_back(Transform2D(matrix, colorTransform));
+		AS_BLENDMODE blendmode = _transform.blendmode;
+		if (blendmode == AS_BLENDMODE::BLENDMODE_NORMAL)
+			blendmode = transform().blendmode;
+		transforms.push_back(Transform2D(matrix, colorTransform,blendmode));
 	}
 	else
 		transforms.push_back(_transform);
@@ -230,7 +234,7 @@ void GLRenderContext::resetCurrentFrameBuffer()
 }
 void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase& colortransform,SMOOTH_MODE smooth,AS_BLENDMODE blendmode)
 {
-	engineData->exec_glUniform1f(blendModeUniform, blendmode == BLENDMODE_NORMAL ? this->currentShaderBlendMode : BLENDMODE_NORMAL);
+	engineData->exec_glUniform1f(blendModeUniform, blendmode);
 	switch (blendmode)
 	{
 		case BLENDMODE_NORMAL:
@@ -245,6 +249,9 @@ void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase&
 			break;
 		case BLENDMODE_SCREEN:
 			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_COLOR);
+			break;
+		case BLENDMODE_ERASE:
+			engineData->exec_glBlendFunc(BLEND_ZERO,BLEND_ONE_MINUS_SRC_ALPHA);
 			break;
 		case BLENDMODE_OVERLAY: // handled through blendMode uniform
 		case BLENDMODE_HARDLIGHT: // handled through blendMode uniform

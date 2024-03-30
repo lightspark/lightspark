@@ -1299,7 +1299,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,matrix, x, y, ceil(width), ceil(height),
 																					xscale,yscale,isMask, 1.0f,getConcatenatedAlpha(),
 																					ColorTransformBase(),
-																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE);
+																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode());
 	if (res != nullptr)
 		return res;
 	return new CairoPangoRenderer(*this,matrix,
@@ -1308,7 +1308,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 				isMask,
 				1.0f,getConcatenatedAlpha(),
 				ColorTransformBase(),
-				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,0);
+				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),0);
 }
 
 bool TextLine::renderImpl(RenderContext& ctxt)

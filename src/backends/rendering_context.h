@@ -24,7 +24,6 @@
 #include "forwards/scripting/flash/geom/flashgeom.h"
 #include <stack>
 #include "threading.h"
-#include "platforms/engineutils.h"
 #include "backends/graphics.h"
 
 namespace lightspark
@@ -33,14 +32,20 @@ namespace lightspark
 enum VertexAttrib { VERTEX_ATTRIB=0, COLOR_ATTRIB, TEXCOORD_ATTRIB};
 
 class Rectangle;
+class EngineData;
 
 struct Transform2D
 {
 	MATRIX matrix;
 	ColorTransformBase colorTransform;
-
-	Transform2D(const MATRIX& _matrix, const ColorTransformBase& _colorTransform) : matrix(_matrix), colorTransform(_colorTransform) {}
-	Transform2D() {}
+	AS_BLENDMODE blendmode;
+	
+	Transform2D(const MATRIX& _matrix, const ColorTransformBase& _colorTransform,AS_BLENDMODE _blendmode) : matrix(_matrix), colorTransform(_colorTransform),blendmode(_blendmode)
+	{
+	}
+	Transform2D():blendmode(AS_BLENDMODE::BLENDMODE_NORMAL)
+	{
+	}
 	~Transform2D() {}
 };
 
@@ -125,6 +130,7 @@ struct filterstackentry
 {
 	uint32_t filterframebuffer;
 	uint32_t filterrenderbuffer;
+	uint32_t filtertextureID;
 	number_t filterborderx;
 	number_t filterbordery;
 };

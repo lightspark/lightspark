@@ -22,6 +22,7 @@
 
 #include "backends/decoder.h"
 #include "platforms/fastpaths.h"
+#include "platforms/engineutils.h"
 #include "swf.h"
 #include "backends/rendering.h"
 #include "scripting/class.h"

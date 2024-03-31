@@ -1812,18 +1812,18 @@ int EngineData::audio_getSampleRate()
 {
 	return 44100;
 }
-IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _xs, float _ys, bool _im, float _s, float _a, const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing)
+IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _xs, float _ys, bool _im, float _s, float _a, const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing,AS_BLENDMODE _blendmode)
 {
 	if (hasExternalFontRenderer)
 		return new externalFontRenderer(_textData,this, _x, _y, _w, _h,_xs,_ys,_im, _a,
-										_colortransform, smoothing,_m);
+										_colortransform, smoothing,_blendmode,_m);
 	return nullptr;
 }
 
 externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData *engine, int32_t x, int32_t y, int32_t w, int32_t h, float xs, float ys, bool im, float a,
-										   const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, const MATRIX &_m)
+										   const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing,AS_BLENDMODE _blendmode, const MATRIX &_m)
 	: IDrawable(w, h, x, y,xs,ys, 1, 1, im, a,
-				_colortransform,smoothing,_m),m_engine(engine)
+				_colortransform,smoothing,_blendmode,_m),m_engine(engine)
 {
 	externalressource = engine->setupFontRenderer(_textData,a,smoothing);
 }

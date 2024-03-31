@@ -124,7 +124,10 @@ public:
 	virtual void popMask()=0;
 	virtual void deactivateMask()=0;
 	virtual void activateMask()=0;
+	virtual void suspendActiveMask()=0;
+	virtual void resumeActiveMask()=0;
 	virtual bool isDrawingMask() const=0;
+	virtual bool isMaskActive() const=0;
 };
 struct filterstackentry
 {
@@ -141,6 +144,7 @@ private:
 	static int errorCount;
 	int maskCount;
 	bool inMaskRendering;
+	bool maskActive;
 protected:
 	EngineData* engineData;
 	int projectionMatrixUniform;
@@ -157,11 +161,6 @@ protected:
 	int blendModeUniform;
 	int filterdataUniform;
 	int gradientcolorsUniform;
-	uint32_t blendframebuffer;
-	uint32_t blendrenderbuffer;
-	uint32_t blendTextureID;
-	uint32_t currentFrameBufferID;
-	uint32_t currentRenderBufferID;
 
 	/* Textures */
 	Mutex mutexLargeTexture;
@@ -184,7 +183,7 @@ public:
 	 * Uploads the current matrix as the specified type.
 	 */
 	void setMatrixUniform(LSGL_MATRIX m) const;
-	GLRenderContext() : RenderContext(GL),maskCount(0),inMaskRendering(false),engineData(nullptr), largeTextureSize(0)
+	GLRenderContext() : RenderContext(GL),maskCount(0),inMaskRendering(false),maskActive(false),engineData(nullptr), largeTextureSize(0)
 	{
 	}
 	void SetEngineData(EngineData* data) { engineData = data;}
@@ -204,7 +203,10 @@ public:
 	void popMask() override;
 	void deactivateMask() override;
 	void activateMask() override;
-	bool isDrawingMask() const override { return maskCount > 0; }
+	void suspendActiveMask() override;
+	void resumeActiveMask() override;
+	bool isDrawingMask() const override { return inMaskRendering; }
+	bool isMaskActive() const override { return maskActive; }
 
 	void resetCurrentFrameBuffer();
 	void setupRenderingState(float alpha, const ColorTransformBase& colortransform, SMOOTH_MODE smooth, AS_BLENDMODE blendmode);
@@ -243,7 +245,10 @@ public:
 	void popMask() override {}
 	void deactivateMask() override {}
 	void activateMask() override {}
+	void suspendActiveMask() override {}
+	void resumeActiveMask() override {}
 	bool isDrawingMask() const override { return false; }
+	bool isMaskActive() const override { return false; }
 
 	/**
 	 * The CairoRenderContext acquires the ownership of the buffer

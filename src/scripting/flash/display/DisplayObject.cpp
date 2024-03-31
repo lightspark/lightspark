@@ -144,13 +144,18 @@ bool DisplayObject::inMask() const
 {
 	if (mask.getPtr() || this->getClipDepth())
 		return true;
-	if (hasFilters())
-		return false;
 	if (parent)
 		return parent->inMask();
 	return false;
 }
-
+bool DisplayObject::belongsToMask() const
+{
+	if (ismask)
+		return true;
+	if (parent)
+		return parent->belongsToMask();
+	return false;
+}
 bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startmatrix)
 {
 	if((!legacy && !isConstructed()) || (!force && skipRender()) || clippedAlpha()==0.0 || (isMask() && !ClipDepth))
@@ -159,6 +164,12 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 	const CachedSurface& surface = ctxt.getCachedSurface(this);
 	if (!surface.getState())
 		return false;
+	if (!mask.isNull() && !mask->getClipDepth())
+	{
+		const CachedSurface& masksurface = ctxt.getCachedSurface(mask.getPtr());
+		if (!masksurface.getState())
+			return false;
+	}
 
 	MATRIX _matrix = startmatrix ? *startmatrix : surface.getState()->matrix;
 	ctxt.transformStack().push(Transform2D(
@@ -178,15 +189,19 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 			engineData->exec_glBindTexture_GL_TEXTURE_2D(feparent.filtertextureID);
 			engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 		}
-		if ((surface.getState()->needsFilterRefresh || surface.cachedFilterTextureID != UINT32_MAX) &&
-			(hasFilters() || (surface.getState()->needsLayer && getSystemState()->getRenderThread()->filterframebufferstack.empty())))
+		bool needscachedtexture = cacheAsBitmap
+								  || blendMode == BLENDMODE_LAYER
+								  || ctxt.isMaskActive()
+								  || hasFilters()
+								  || (surface.getState()->needsLayer && getSystemState()->getRenderThread()->filterframebufferstack.empty());
+		if (needscachedtexture && (surface.getState()->needsFilterRefresh || surface.cachedFilterTextureID != UINT32_MAX))
 		{
 			if (!surface.isInitialized)
 			{
 				ctxt.transformStack().pop();
 				return true;
 			}
-			bool needsFilterRefresh = surface.getState()->needsFilterRefresh && (hasFilters()||surface.getState()->needsLayer);
+			bool needsFilterRefresh = surface.getState()->needsFilterRefresh && needscachedtexture;
 			auto baseTransform = ctxt.transformStack().transform();
 			Vector2f scale = getSystemState()->getRenderThread()->getScale();
 			MATRIX initialMatrix;
@@ -204,7 +219,6 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 				// TODO: Create a new GLRenderContext here
 				ctxt.createTransformStack();
 				ctxt.transformStack().push(Transform2D(m, ColorTransformBase(),AS_BLENDMODE::BLENDMODE_NORMAL));
-
 				this->renderFilters(ctxt,size.x,size.y);
 
 				ctxt.transformStack().pop();
@@ -227,7 +241,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 	}
 
 	MATRIX maskMatrix;
-	if (!mask.isNull())
+	if (!mask.isNull() && !mask->getClipDepth())
 	{
 		MATRIX globalMatrix = getConcatenatedMatrix();
 		maskMatrix = globalMatrix.isInvertible() ? globalMatrix.getInverted() : MATRIX();
@@ -250,13 +264,9 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 	}
 	else
 		ret = renderImpl(ctxt);
-
-	if (!mask.isNull())
+	if (!mask.isNull() && !mask->getClipDepth())
 	{
 		ctxt.deactivateMask();
-		ctxt.transformStack().push(Transform2D(maskMatrix, ColorTransformBase(),AS_BLENDMODE::BLENDMODE_NORMAL));
-		mask->renderImpl(ctxt);
-		ctxt.transformStack().pop();
 		ctxt.popMask();
 	}
 	ctxt.transformStack().pop();
@@ -679,13 +689,15 @@ bool DisplayObject::computeCacheAsBitmap(bool checksize)
 
 bool DisplayObject::hasFilters() const
 {
-	return cacheAsBitmap || blendMode == BLENDMODE_LAYER || (filters && filters->size());
+	return filters && filters->size();
 }
 
 void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 {
+	if (q && q->isSoftwareQueue)
+		return;
 	if (cachedSurface.cachedFilterTextureID != UINT32_MAX
-		|| (!cachedSurface.isInitialized && (this->hasFilters() || (cachedSurface.getState() && cachedSurface.getState()->needsLayer))
+		|| (!cachedSurface.isInitialized && (this->hasFilters() || this->inMask() || (cachedSurface.getState() && cachedSurface.getState()->needsLayer))
 		))
 	{
 		if (cachedSurface.getState())
@@ -698,7 +710,7 @@ void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 	while (p)
 	{
 		if (p->cachedSurface.cachedFilterTextureID != UINT32_MAX
-			|| (!p->cachedSurface.isInitialized && p->hasFilters())
+			|| (!p->cachedSurface.isInitialized && (p->hasFilters() || p->inMask() || (p->cachedSurface.getState() && p->cachedSurface.getState()->needsLayer)))
 			)
 		{
 			p->requestInvalidationFilterParent(q);
@@ -996,7 +1008,7 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 
 void DisplayObject::setMask(_NR<DisplayObject> m)
 {
-	bool mustInvalidate=(mask!=m || (m && m->hasChanged)) && onStage;
+	bool mustInvalidate=(mask!=m || (m && m->hasChanged));
 
 	if(!mask.isNull())
 	{
@@ -2109,7 +2121,7 @@ void DisplayObject::constructionComplete(bool _explicit)
 			incRef();
 			getVm(getSystemState())->addEvent(_MR(this), e);
 		}
-		if (isOnStage() || getStage().isNull())
+		if (isOnStage())
 			setOnStage(true, true);
 	}
 }
@@ -2197,6 +2209,9 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	fe.filterborderx=(-bxmin+this->maxfilterborder)*scale.x;
 	fe.filterbordery=(-bymin+this->maxfilterborder)*scale.y;
 	getSystemState()->getRenderThread()->filterframebufferstack.push_back(fe);
+	bool maskactive = ctxt.isMaskActive();
+	if (maskactive)
+		ctxt.suspendActiveMask();
 	renderImpl(ctxt);
 	// bind rendered filter source to g_tex_filter1
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
@@ -2266,9 +2281,6 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 	{
 		getSystemState()->getRenderThread()->resetCurrentFrameBuffer();
 		getSystemState()->getRenderThread()->resetViewPort();
-		// reset blend texture to main blend texture
-		engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_BLEND);
-		engineData->exec_glBindTexture_GL_TEXTURE_2D(getSystemState()->getRenderThread()->blendTextureID);
 		engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 	}
 	else
@@ -2278,6 +2290,8 @@ void DisplayObject::renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h)
 		engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(feparent.filterrenderbuffer);
 		getSystemState()->getRenderThread()->setViewPort(parentframebufferWidth,parentframebufferHeight);
 	}
+	if (maskactive)
+		ctxt.resumeActiveMask();
 	engineData->exec_glDeleteFramebuffers(1,&filterframebuffer);
 	engineData->exec_glDeleteRenderbuffers(1,&filterrenderbuffer);
 	cachedSurface.cachedFilterTextureID=texture1;

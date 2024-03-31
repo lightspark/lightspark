@@ -272,14 +272,6 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.tex->xOffset = surface.getState()->xOffset;
 		surface.tex->yOffset = surface.getState()->yOffset;
 		surface.getState()->needsFilterRefresh=false;
-		AS_BLENDMODE bl = blendMode;
-		DisplayObject* obj = target;
-		while (obj && bl == BLENDMODE_NORMAL)
-		{
-			bl = obj->getBlendMode();
-			obj = obj->getParent();
-		}
-		surface.blendmode=bl;
 		surface.isValid=true;
 		surface.isInitialized=true;
 		surface.getState()->smoothing=smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE;

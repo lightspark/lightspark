@@ -233,6 +233,12 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		{
 			it->displayobject->updateCachedSurface(it->drawable);
 			delete it->drawable;
+			// ensure that the DisplayObject is moved to freelist in vm thread
+			if (getVm(m_sys))
+			{
+				it->displayobject->incRef();
+				getVm(m_sys)->addDeletableObject(it->displayobject.getPtr());
+			}
 			it = surfacesToRefresh.erase(it);
 		}
 		refreshNeeded=false;
@@ -392,29 +398,6 @@ void RenderThread::renderSettingsPage()
 	engineData->exec_glFlush();
 }
 
-void RenderThread::beginBlendTexture()
-{
-	currentFrameBufferID=blendframebuffer;
-	currentRenderBufferID=blendrenderbuffer;
-
-	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(blendframebuffer);
-	RGB bg=m_sys->mainClip->getBackground();
-	engineData->exec_glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
-	engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
-	
-}
-void RenderThread::endBlendTexture()
-{
-	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
-	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(0);
-
-	// render blended texture to framebuffer
-	resetViewPort();
-	renderTextureToFrameBuffer(blendTextureID,windowWidth,windowHeight,nullptr,nullptr,false,false);
-
-	currentFrameBufferID=0;
-	currentRenderBufferID=0;
-}
 void RenderThread::resetViewPort()
 {
 	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
@@ -626,7 +609,6 @@ void RenderThread::commonGLDeinit()
 	}
 	engineData->exec_glDeleteTextures(1, &cairoTextureID);
 	engineData->exec_glDeleteTextures(1, &cairoTextureIDSettings);
-	engineData->exec_glDeleteTextures(1, &blendTextureID);
 }
 
 void RenderThread::commonGLInit()
@@ -696,15 +678,6 @@ void RenderThread::commonGLInit()
 	engineData->exec_glGenTextures(1, &cairoTextureID);
 	engineData->exec_glGenTextures(1, &cairoTextureIDSettings);
 
-
-	// create framebuffer for blending
-	blendframebuffer = engineData->exec_glGenFramebuffer();
-	blendrenderbuffer = engineData->exec_glGenRenderbuffer();
-	engineData->exec_glGenTextures(1, &blendTextureID);
-
-	currentFrameBufferID=0;
-	currentRenderBufferID=0;
-
 	if(handleGLErrors())
 	{
 		LOG(LOG_ERROR,"GL errors during initialization");
@@ -733,25 +706,8 @@ void RenderThread::commonGLResize()
 	lsglScalef(1.0,-1.0,1);
 	setMatrixUniform(LSGL_PROJECTION);
 
-	// recreate framebuffer for blending
-	engineData->exec_glDeleteFramebuffers(1,&blendframebuffer);
-	engineData->exec_glDeleteRenderbuffers(1,&blendrenderbuffer);
-	engineData->exec_glDeleteTextures(1,&blendTextureID);
-	blendframebuffer = engineData->exec_glGenFramebuffer();
-	blendrenderbuffer = engineData->exec_glGenRenderbuffer();
-	engineData->exec_glGenTextures(1, &blendTextureID);
-
-	// setup blend framebuffer
-	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_BLEND);
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(blendTextureID);
-	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(blendframebuffer);
-	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(blendrenderbuffer);
-	engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(windowWidth, windowHeight);
-	engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(blendrenderbuffer);
-	
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
-	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(blendTextureID);
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
 	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
 	engineData->exec_glDisable_GL_DEPTH_TEST();

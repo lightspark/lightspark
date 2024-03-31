@@ -20,6 +20,7 @@
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
 #include <map>
+#include "platforms/engineutils.h"
 #include "backends/security.h"
 #include "scripting/abc.h"
 #include "scripting/flash/net/flashnet.h"

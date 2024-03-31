@@ -302,6 +302,8 @@ public:
 	number_t getNominalHeight();
 	DisplayObject* getMask() const { return mask.getPtr(); }
 	bool inMask() const;
+	bool belongsToMask() const;
+	
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_getVisible);
 	ASFUNCTION_ATOM(_setVisible);

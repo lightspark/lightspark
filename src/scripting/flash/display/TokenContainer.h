@@ -23,13 +23,13 @@
 #include <vector>
 #include "backends/geometry.h"
 #include "backends/graphics.h"
-#include "backends/rendering_context.h"
 #include "forwards/scripting/toplevel/Vector.h"
 #include "forwards/scripting/flash/display/DisplayObject.h"
 #include "forwards/scripting/flash/display/Graphics.h"
 
 namespace lightspark
 {
+class RenderContext;
 class InteractiveObject;
 class DefineMorphShapeTag;
 

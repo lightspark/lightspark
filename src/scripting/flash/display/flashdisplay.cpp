@@ -417,7 +417,7 @@ bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 			child->Render(ctxt);
 			ctxt.activateMask();
 		}
-		else if ((child->isVisible() && !child->getClipDepth()) || ctxt.isDrawingMask())
+		else if ((child->isVisible() && !child->getClipDepth() && !child->isMask()) || ctxt.isDrawingMask())
 			child->Render(ctxt);
 
 	}
@@ -2650,7 +2650,8 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 	if (child->is<DisplayObjectContainer>())
 		child->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(child->cachedAsBitmapOf);
 	
-	this->requestInvalidation(getSystemState());
+	if (isOnStage())
+		this->requestInvalidation(getSystemState());
 }
 
 void DisplayObjectContainer::handleRemovedEvent(DisplayObject* child, bool keepOnStage, bool inskipping)
@@ -3724,8 +3725,6 @@ void Stage::cleanupDeadHiddenObjects()
 void Stage::prepareForRemoval(DisplayObject* d)
 {
 	Locker l(DisplayObjectRemovedMutex);
-	d->incRef();
-	d->addStoredMember();
 	removedDisplayObjects.insert(d);
 }
 

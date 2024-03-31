@@ -218,19 +218,39 @@ void GLRenderContext::popMask()
 
 void GLRenderContext::deactivateMask()
 {
+	maskActive=false;
 	(void)clearMaskStencil(engineData);
 }
 
 void GLRenderContext::activateMask()
 {
 	inMaskRendering=false;
+	maskActive=true;
 	(void)drawMaskedContent(engineData);
+}
+
+void GLRenderContext::suspendActiveMask()
+{
+	maskActive=false;
+	engineData->exec_glDisable_GL_STENCIL_TEST();
+	engineData->exec_glStencilFunc_GL_ALWAYS();
+	engineData->exec_glStencilOp_GL_KEEP();
+	engineData->exec_glColorMask(true, true, true, true);
+}
+
+void GLRenderContext::resumeActiveMask()
+{
+	maskActive=true;
+	engineData->exec_glEnable_GL_STENCIL_TEST();
+	engineData->exec_glStencilFunc_GL_EQUAL(1, UINT32_MAX);
+	engineData->exec_glStencilOp_GL_KEEP();
+	engineData->exec_glColorMask(true, true, true, true);
 }
 
 void GLRenderContext::resetCurrentFrameBuffer()
 {
-	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(currentFrameBufferID);
-	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(currentRenderBufferID);
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(0);
 }
 void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase& colortransform,SMOOTH_MODE smooth,AS_BLENDMODE blendmode)
 {

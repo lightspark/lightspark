@@ -203,8 +203,6 @@ public:
 	void drawDebugText(const tiny_string& str, const Vector2f& pos);
 	void addDebugRect(DisplayObject* obj, const MATRIX& matrix, bool scaleDown = false, const Vector2f& pos = Vector2f(), const Vector2f& size = Vector2f(), bool onlyTranslate = false);
 	void removeDebugRect();
-	void beginBlendTexture();
-	void endBlendTexture();
 	void setViewPort(uint32_t w, uint32_t h);
 	void resetViewPort();
 	void setModelView(const MATRIX& matrix);

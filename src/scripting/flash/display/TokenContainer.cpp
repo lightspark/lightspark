@@ -631,7 +631,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& isSupportedGLBlendMode(owner->getBlendMode())
 			&& !r
 			&& !owner->hasFilters()
-			&& !owner->inMask()
+			&& !owner->belongsToMask()
 			)
 		{
 			renderWithNanoVG=true;

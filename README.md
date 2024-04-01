@@ -61,10 +61,12 @@ If compiling the PPAPI (Chromium) plugin is enabled (on by default), keep in min
 There are two ways of building Lightspark. You can use the included script, by running `./build.sh`. or for a debug build, run `./build.sh -d`. You can also do it manually, with the following commands:
 
 ```bash
+git clone https://github.com/microsoft/vcpkg
+./vcpkg/vcpkg integrate install
 cd lightspark
 mkdir build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=[PATH TO TOOLCHAIN GIVIN FROM INTEGRATION COMMAND] ..
 make
 sudo make install
 ```

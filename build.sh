@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Stop on first error
+
 set -e
 
 if [[ $1 == "-h" ]] || [[ $1 == "--help" ]]; then

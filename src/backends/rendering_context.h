@@ -23,6 +23,7 @@
 #include "forwards/scripting/flash/display/DisplayObject.h"
 #include "forwards/scripting/flash/geom/flashgeom.h"
 #include <stack>
+#include <unordered_map>
 #include "threading.h"
 #include "backends/graphics.h"
 
@@ -77,6 +78,9 @@ protected:
 	~RenderContext(){}
 	void lsglMultMatrixf(const float *m);
 	std::vector<TransformStack> transformStacks;
+private:
+	bool inMaskRendering;
+	bool maskActive;
 public:
 	enum CONTEXT_TYPE { CAIRO=0, GL };
 	RenderContext(CONTEXT_TYPE t,DisplayObject* startobj=nullptr);
@@ -120,14 +124,18 @@ public:
 	 * Get the right CachedSurface from an object
 	 */
 	virtual const CachedSurface& getCachedSurface(const DisplayObject* obj) const=0;
-	virtual void pushMask()=0;
-	virtual void popMask()=0;
-	virtual void deactivateMask()=0;
-	virtual void activateMask()=0;
-	virtual void suspendActiveMask()=0;
-	virtual void resumeActiveMask()=0;
-	virtual bool isDrawingMask() const=0;
-	virtual bool isMaskActive() const=0;
+	virtual void pushMask() { inMaskRendering=true; }
+	virtual void popMask() {}
+	virtual void deactivateMask() {	maskActive=false; }
+	virtual void activateMask()
+	{
+		inMaskRendering=false;
+		maskActive=true;
+	}
+	virtual void suspendActiveMask() { maskActive=false; }
+	virtual void resumeActiveMask() { maskActive=true; }
+	bool isDrawingMask() const { return inMaskRendering; }
+	bool isMaskActive() const { return maskActive; }
 };
 struct filterstackentry
 {
@@ -143,8 +151,6 @@ class GLRenderContext: public RenderContext
 private:
 	static int errorCount;
 	int maskCount;
-	bool inMaskRendering;
-	bool maskActive;
 protected:
 	EngineData* engineData;
 	int projectionMatrixUniform;
@@ -183,7 +189,7 @@ public:
 	 * Uploads the current matrix as the specified type.
 	 */
 	void setMatrixUniform(LSGL_MATRIX m) const;
-	GLRenderContext() : RenderContext(GL),maskCount(0),inMaskRendering(false),maskActive(false),engineData(nullptr), largeTextureSize(0)
+	GLRenderContext() : RenderContext(GL),maskCount(0),engineData(nullptr), largeTextureSize(0)
 	{
 	}
 	void SetEngineData(EngineData* data) { engineData = data;}
@@ -205,8 +211,6 @@ public:
 	void activateMask() override;
 	void suspendActiveMask() override;
 	void resumeActiveMask() override;
-	bool isDrawingMask() const override { return inMaskRendering; }
-	bool isMaskActive() const override { return maskActive; }
 
 	void resetCurrentFrameBuffer();
 	void setupRenderingState(float alpha, const ColorTransformBase& colortransform, SMOOTH_MODE smooth, AS_BLENDMODE blendmode);
@@ -220,7 +224,7 @@ public:
 class CairoRenderContext: public RenderContext
 {
 private:
-	std::map<const DisplayObject*, CachedSurface> customSurfaces;
+	std::unordered_map<const DisplayObject*, CachedSurface> customSurfaces;
 	cairo_t* cr;
 	std::list<std::pair<cairo_surface_t*,MATRIX>> masksurfaces;
 	static cairo_surface_t* getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height, uint32_t stride);
@@ -240,15 +244,6 @@ public:
 	 * In the Cairo case we get the right CachedSurface out of the map
 	 */
 	const CachedSurface& getCachedSurface(const DisplayObject* obj) const override;
-
-	void pushMask() override {}
-	void popMask() override {}
-	void deactivateMask() override {}
-	void activateMask() override {}
-	void suspendActiveMask() override {}
-	void resumeActiveMask() override {}
-	bool isDrawingMask() const override { return false; }
-	bool isMaskActive() const override { return false; }
 
 	/**
 	 * The CairoRenderContext acquires the ownership of the buffer

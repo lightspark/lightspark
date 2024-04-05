@@ -1712,7 +1712,7 @@ void TextField::defaultEventBehavior(_R<Event> e)
 IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
 	Locker l(invalidatemutex);
-	if (cachedBitmap && computeCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	if (cachedBitmap && this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
@@ -1829,7 +1829,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		// it seems that textfields are always rendered with subpixel smoothing when rendering to bitmap
 		return TokenContainer::invalidate(target, initialMatrix,smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 	}
-	if (computeCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	if (this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}

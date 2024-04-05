@@ -1241,7 +1241,7 @@ void TextLine::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 
 IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
-	if (cachedBitmap && computeCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	if (cachedBitmap && this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}
@@ -1278,7 +1278,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 			return nullptr;
 		return TokenContainer::invalidate(target, initialMatrix,smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 	}
-	if (computeCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	if (this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	}

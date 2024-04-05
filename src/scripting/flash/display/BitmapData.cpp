@@ -253,17 +253,28 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		if (!target->isVisible())
 			continue;
 		//Get the drawable from each of the added objects
-		IDrawable* drawable=target->invalidate(d, initialMatrix,smoothing,&queue, nullptr);
+		IDrawable* drawable=target->invalidate(d, MATRIX(),smoothing,&queue, nullptr);
 		if(drawable==nullptr)
 			continue;
 		if (forCachedBitmap && !target->isMask())
 			target->hasChanged=false;
-		//Compute the matrix for this object
+		SurfaceState* state = drawable->getState();
+		if (d == target)
+			state->blendmode = blendMode;
+		DisplayObject* t = target->getParent();
+		while (t && t!= d && !t->needsCacheAsBitmap())
+		{
+			if (t->colorTransform.getPtr() && !t->colorTransform.getPtr()->isIdentity())
+				state->colortransform = state->colortransform.multiplyTransform(*t->colorTransform.getPtr());
+			t = t->getParent();
+		}
 		bool isBufferOwner=true;
 		uint32_t bufsize=0;
 		uint8_t* buf=drawable->getPixelBuffer(&isBufferOwner,&bufsize);
 		//Construct a CachedSurface using the data
-		CachedSurface& surface=ctxt.allocateCustomSurface(target != d && target->getCachedBitmap() ? target->getCachedBitmap().getPtr() : target,buf,isBufferOwner);
+		CachedSurface& surface=ctxt.allocateCustomSurface(target->is<Bitmap>() && target->as<Bitmap>()->getCachedBitmapOwner() ?
+															target->as<Bitmap>()->getCachedBitmapOwner() : target,
+															buf,isBufferOwner);
 		surface.SetState(drawable->getState());
 		surface.tex->width=drawable->getWidth();
 		surface.tex->height=drawable->getHeight();
@@ -275,13 +286,12 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.isValid=true;
 		surface.isInitialized=true;
 		surface.getState()->smoothing=smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE;
+		surface.getState()->blendmode = target->getBlendMode();
 		delete drawable;
 	}
-	if (d->getMask())
-		d->getMask()->Render(ctxt,true,&initialMatrix);
 	d->Render(ctxt,true,&initialMatrix);
 	if (ct && !ct->isIdentity())
-		ct->applyTransformation(pixels.getPtr());
+		ct->applyTransformation(pixels.getPtr()->getData(),this->getWidth()*this->getHeight()*4);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)

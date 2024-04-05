@@ -579,7 +579,7 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 
 IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix, SMOOTH_MODE smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap, bool fromgraphics)
 {
-	if (owner->hasFilters() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=owner))
+	if (owner->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=owner))
 	{
 		return owner->getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing != SMOOTH_MODE::SMOOTH_NONE);
 	}

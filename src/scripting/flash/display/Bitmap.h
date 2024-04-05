@@ -64,7 +64,6 @@ public:
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
-	IDrawable* invalidateFromSource(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, ColorTransformBase* ct, DisplayObject* matrixsource, const MATRIX& sourceMatrix=MATRIX(), DisplayObject* originalsource=nullptr, const MATRIX& sourceCacheMatrix=MATRIX(), number_t scalex=1.0, number_t scaley=1.0);
 	DisplayObject* getCachedBitmapOwner() const { return cachedBitmapOwner; }
 };
 

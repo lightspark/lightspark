@@ -1215,7 +1215,7 @@ CachedBitmapRenderer::CachedBitmapRenderer(_NR<DisplayObject> _source, const MAT
 
 uint8_t* CachedBitmapRenderer::getPixelBuffer(bool* isBufferOwner, uint32_t* bufsize)
 {
-	source->DrawToBitmap(source->getCachedBitmap()->as<Bitmap>()->bitmapData.getPtr(),sourceCacheMatrix,getState()->smoothing,true,source->getBlendMode(),nullptr);
+	source->DrawToBitmap(source->getCachedBitmap()->as<Bitmap>()->bitmapData.getPtr(),sourceCacheMatrix,getState()->smoothing,true,getState()->blendmode,&getState()->colortransform);
 	source->applyFilters(data.getPtr(),nullptr,RECT(0,data->getWidth(),0,data->getHeight()),0,0,getState()->xscale,getState()->yscale);
 	return BitmapRenderer::getPixelBuffer(isBufferOwner,bufsize);
 }
@@ -1379,7 +1379,7 @@ void ColorTransformBase::fillConcatenated(DisplayObject* src, bool ignoreBlendMo
 		p = p->getParent();
 	}
 }
-void ColorTransformBase::applyTransformation(uint8_t* bm, uint32_t size)
+void ColorTransformBase::applyTransformation(uint8_t* bm, uint32_t size) const
 {
 	if (isIdentity())
 		return;

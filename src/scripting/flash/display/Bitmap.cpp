@@ -281,43 +281,26 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 
 IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
 {
-	if (cachedBitmap && computeCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	if (cachedBitmap && this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 	{
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, this->smoothing);
 	}
-	return invalidateFromSource(target, initialMatrix, this->smoothing, this->colorTransform.getPtr(), this);
-}
-
-IDrawable *Bitmap::invalidateFromSource(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, ColorTransformBase* ct, DisplayObject* matrixsource, const MATRIX& sourceMatrix,DisplayObject* originalsource, const MATRIX& sourceCacheMatrix,number_t scalex, number_t scaley)
-{
 	number_t bxmin,bxmax,bymin,bymax;
 	if(!boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax,false))
 	{
 		//No contents, nothing to do
 		return nullptr;
 	}
-	MATRIX matrix = getMatrix();
-	bool isMask=this->isMask();
 	if (this->bitmapData->getWidth()==0 || this->bitmapData->getHeight()==0)
 		return nullptr;
 	cachedSurface.isValid=true;
-	if (originalsource && this->getNeedsTextureRecalculation())
-	{
-		if (!isMask)
-			isMask = originalsource->ClipDepth || originalsource->ismask;
-		originalsource->incRef();
-		return new CachedBitmapRenderer(_MR(originalsource),sourceCacheMatrix
-					, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
-					, scalex, scaley
-					, isMask
-					, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha()
-					, ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
-	}
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
 				, 1, 1
-				, isMask
-				, originalsource ? originalsource->getConcatenatedAlpha() : getConcatenatedAlpha()
-							  , ct ? *ct :ColorTransformBase(),smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+				, this->isMask()
+				, this->getConcatenatedAlpha()
+				, this->colorTransform.getPtr() ? *this->colorTransform.getPtr() :ColorTransformBase()
+				, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE
+				, this->getBlendMode(),getMatrix());
 }
 

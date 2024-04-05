@@ -59,15 +59,15 @@ void TransformStack::push(const Transform2D& _transform)
 		auto matrix = transform().matrix.multiplyMatrix(_transform.matrix);
 		auto colorTransform = transform().colorTransform.multiplyTransform(_transform.colorTransform);
 		AS_BLENDMODE blendmode = _transform.blendmode;
-		if (blendmode == AS_BLENDMODE::BLENDMODE_NORMAL)
-			blendmode = transform().blendmode;
 		transforms.push_back(Transform2D(matrix, colorTransform,blendmode));
 	}
 	else
 		transforms.push_back(_transform);
 }
 
-RenderContext::RenderContext(CONTEXT_TYPE t,DisplayObject* startobj):contextType(t),currentMask(nullptr),currentShaderBlendMode(AS_BLENDMODE::BLENDMODE_NORMAL),startobject(startobj)
+RenderContext::RenderContext(CONTEXT_TYPE t,DisplayObject* startobj):
+	inMaskRendering(false),maskActive(false),
+	contextType(t),currentMask(nullptr),currentShaderBlendMode(AS_BLENDMODE::BLENDMODE_NORMAL),startobject(startobj)
 {
 	lsglLoadIdentity();
 }
@@ -196,7 +196,7 @@ static bool clearMaskStencil(EngineData* engineData)
 
 void GLRenderContext::pushMask()
 {
-	inMaskRendering=true;
+	RenderContext::pushMask();
 	(void)drawMaskStencil(engineData);
 	if (!(maskCount++))
 	{
@@ -218,20 +218,19 @@ void GLRenderContext::popMask()
 
 void GLRenderContext::deactivateMask()
 {
-	maskActive=false;
+	RenderContext::deactivateMask();
 	(void)clearMaskStencil(engineData);
 }
 
 void GLRenderContext::activateMask()
 {
-	inMaskRendering=false;
-	maskActive=true;
+	RenderContext::activateMask();
 	(void)drawMaskedContent(engineData);
 }
 
 void GLRenderContext::suspendActiveMask()
 {
-	maskActive=false;
+	RenderContext::suspendActiveMask();
 	engineData->exec_glDisable_GL_STENCIL_TEST();
 	engineData->exec_glStencilFunc_GL_ALWAYS();
 	engineData->exec_glStencilOp_GL_KEEP();
@@ -240,7 +239,7 @@ void GLRenderContext::suspendActiveMask()
 
 void GLRenderContext::resumeActiveMask()
 {
-	maskActive=true;
+	RenderContext::resumeActiveMask();
 	engineData->exec_glEnable_GL_STENCIL_TEST();
 	engineData->exec_glStencilFunc_GL_EQUAL(1, UINT32_MAX);
 	engineData->exec_glStencilOp_GL_KEEP();
@@ -300,7 +299,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	setupRenderingState(alpha,colortransform,smooth,blendmode);
 	float empty=0;
 	engineData->exec_glUniform1fv(filterdataUniform, 1, &empty);
-	engineData->exec_glUniform1f(maskUniform, inMaskRendering ? 1 : 0);
+	engineData->exec_glUniform1f(maskUniform, isDrawingMask() ? 1 : 0);
 	engineData->exec_glUniform1f(yuvUniform, colorMode==COLOR_MODE::YUV_MODE?1.0:0.0);
 	
 	// set mode for direct coloring:
@@ -809,25 +808,27 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 		cairo_scale(cr, 1 / chunk.xContentScale, 1 / chunk.yContentScale);
 		cairo_set_source_surface(cr, chunkSurface, 0,0);
 	}
-
-	if(isMask)
+	if(isDrawingMask())
 	{
 		MATRIX maskmatrix;
 		cairo_get_matrix(cr, &maskmatrix);
 		masksurfaces.push_back(make_pair(chunkSurface,maskmatrix));
 	}
-	for (auto it=masksurfaces.begin(); it!=masksurfaces.end(); it++)
+	if(isMaskActive())
 	{
-		// apply mask
-		cairo_save(cr);
-		cairo_set_matrix(cr,&it->second);
-		cairo_mask_surface(cr,it->first,0,0);
-		cairo_restore(cr);
+		for (auto it=masksurfaces.begin(); it!=masksurfaces.end(); it++)
+		{
+			// apply mask
+			cairo_save(cr);
+			cairo_set_matrix(cr,&it->second);
+			cairo_mask_surface(cr,it->first,0,0);
+			cairo_restore(cr);
+		}
 	}
-	if(!isMask)
+	else
 		cairo_paint_with_alpha(cr,alpha);
-
-	if (!isMask)
+	
+	if (!isDrawingMask())
 		cairo_surface_destroy(chunkSurface);
 	cairo_restore(cr);
 }

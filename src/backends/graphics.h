@@ -168,7 +168,7 @@ public:
 				alphaOffset==r.alphaOffset;
 	}
 	void fillConcatenated(DisplayObject* src, bool ignoreBlendMode=false);
-	void applyTransformation(uint8_t* bm, uint32_t size);
+	void applyTransformation(uint8_t* bm, uint32_t size) const;
 	uint8_t* applyTransformation(BitmapContainer* bm);
 	bool isIdentity() const
 	{

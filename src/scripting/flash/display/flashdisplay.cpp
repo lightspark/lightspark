@@ -163,6 +163,10 @@ IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix
 		res->getState()->setupChildrenList(dynamicDisplayList);
 		return res;
 	}
+	if (this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	{
+	 	return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
+	}
 
 	if (graphics && graphics->hasTokens())
 	{
@@ -368,22 +372,12 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 {
 	bool renderingfailed = false;
-	if (computeCacheAsBitmap(false))
+	if (ctxt.contextType == RenderContext::CAIRO && needsCacheAsBitmap() && ctxt.startobject != this)
 	{
-		if (ctxt.contextType == RenderContext::GL)
-		{
-			_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
-			if (d)
-				d->Render(ctxt);
-			return renderingfailed;
-		}
-		else
-		{
-			if (ctxt.startobject != this && ctxt.startobject != this->cachedAsBitmapOf)
-			{
-				defaultRender(ctxt);
-			}
-		}
+		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
+		if (d)
+			d->Render(ctxt);
+		return renderingfailed;
 	}
 	SurfaceState* surfacestate = ctxt.getCachedSurface(this).getState();
 	assert(surfacestate);
@@ -4806,7 +4800,7 @@ IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initial
 		res->getState()->setupChildrenList(dynamicDisplayList);
 		return res;
 	}
-	if (computeCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
+	if (cachedBitmap && needsCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
 		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
 	return DisplayObjectContainer::invalidate(target,initialMatrix,smoothing,q,cachedBitmap);
 }

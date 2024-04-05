@@ -168,11 +168,11 @@ IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix,
 	{
 		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
-		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,!graphics.isNull());
+		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,true);
 		this->graphics->endDrawJob();
 	}
 	else
-		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,!graphics.isNull());
+		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
 	return res;
 }
 

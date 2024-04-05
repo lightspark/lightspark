@@ -161,7 +161,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 	if((!legacy && !isConstructed()) || (!force && skipRender()) || clippedAlpha()==0.0 || (isMask() && !ClipDepth))
 		return false;
 	bool ret = true;
-	const CachedSurface& surface = ctxt.getCachedSurface(this);
+	const CachedSurface& surface = ctxt.getCachedSurface(ctxt.contextType == RenderContext::CAIRO && this->is<Bitmap>() && this->as<Bitmap>()->getCachedBitmapOwner() ? this->as<Bitmap>()->getCachedBitmapOwner() : this);
 	if (!surface.getState())
 		return false;
 	if (!mask.isNull() && !mask->getClipDepth())
@@ -255,7 +255,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 	if (ctxt.contextType == RenderContext::CAIRO && ctxt.startobject == this)
 	{
 		ctxt.createTransformStack();
-		ctxt.transformStack().push(Transform2D(*startmatrix, ColorTransformBase(),AS_BLENDMODE::BLENDMODE_NORMAL));
+		ctxt.transformStack().push(Transform2D(*startmatrix, ColorTransformBase(),this->getBlendMode()));
 		
 		ret = renderImpl(ctxt);
 		
@@ -687,6 +687,20 @@ bool DisplayObject::computeCacheAsBitmap(bool checksize)
 	return false;
 }
 
+bool DisplayObject::needsCacheAsBitmap() const
+{
+	return cacheAsBitmap
+		   || blendMode == BLENDMODE_MULTIPLY
+		   || blendMode == BLENDMODE_ADD
+		   || blendMode == BLENDMODE_SCREEN
+		   || blendMode == BLENDMODE_DARKEN
+		   || blendMode == BLENDMODE_DIFFERENCE
+		   || blendMode == BLENDMODE_HARDLIGHT
+		   || blendMode == BLENDMODE_LIGHTEN
+		   || blendMode == BLENDMODE_OVERLAY
+		   || blendMode == BLENDMODE_ERASE
+		   || hasFilters();
+}
 bool DisplayObject::hasFilters() const
 {
 	return filters && filters->size();
@@ -754,7 +768,7 @@ bool DisplayObject::requestInvalidationForCacheAsBitmap(InvalidateQueue* q)
 			return true;
 		}
 	}
-	if (hasFilters() && (q && !q->isSoftwareQueue && this->needsTextureRecalculation))
+	if ((q && !q->isSoftwareQueue && this->needsTextureRecalculation) && this->needsCacheAsBitmap())
 	{
 		this->incRef();
 		q->addToInvalidateQueue(_MR(this));
@@ -1166,8 +1180,9 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 {
 	if (ctxt.contextType == RenderContext::GL && this->cachedAsBitmapOf)
 		return true;
+	const Transform2D& t = ctxt.transformStack().transform();
 	// TODO: use scrollRect
-	const CachedSurface& surface=ctxt.getCachedSurface(ctxt.contextType == RenderContext::CAIRO && (ctxt.startobject != this) && this->getCachedBitmap() ? this->getCachedBitmap().getPtr() : this);
+	const CachedSurface& surface=ctxt.getCachedSurface(ctxt.contextType == RenderContext::CAIRO && this->is<Bitmap>() && this->as<Bitmap>()->getCachedBitmapOwner() ? this->as<Bitmap>()->getCachedBitmapOwner() : this);
 	/* surface is only modified from within the render thread
 	 * so we need no locking here */
 	if(!surface.isValid || !surface.isInitialized || !surface.tex || !surface.tex->isValid())
@@ -1179,11 +1194,10 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	if (!r && getParent())
 		r = getParent()->scalingGrid.getPtr();
 	ctxt.lsglLoadIdentity();
-	ColorTransformBase ct = ctxt.transformStack().transform().colorTransform;
-	MATRIX m = ctxt.transformStack().transform().matrix;
-
+	ColorTransformBase ct = t.colorTransform;
+	MATRIX m = t.matrix;
 	ctxt.renderTextured(*surface.tex, surface.getState()->alpha, RenderContext::RGB_MODE,
-			ct, false,0.0,RGB(),surface.getState()->smoothing,m,r,ctxt.transformStack().transform().blendmode);
+			ct, false,0.0,RGB(),surface.getState()->smoothing,m,r,t.blendmode);
 	return false;
 }
 
@@ -2348,8 +2362,8 @@ string DisplayObject::toDebugString() const
 }
 IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MATRIX& initialMatrix,_NR<DisplayObject>* pcachedBitmap,bool smoothing)
 {
-	if (!hasFilters())
-		return nullptr;
+	//int border = maxfilterborder; // TODO properly handle the filter border
+	int border = 0;
 	number_t xmin,xmax,ymin,ymax;
 	MATRIX m=getMatrix();
 	number_t scalex = parent ? abs(parent->getMatrix().getScaleX()) : 1.0;
@@ -2360,12 +2374,12 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 	m.scale(scalex,scaley);
 	if (!getBounds(xmin,xmax,ymin,ymax,m,true))
 		return nullptr;
-	uint32_t w=ceil(((xmax-xmin)+number_t(maxfilterborder)*2.0) * scalex);
-	uint32_t h=ceil(((ymax-ymin)+number_t(maxfilterborder)*2.0) * scaley);
+	uint32_t w=ceil(((xmax-xmin)+number_t(border)*2.0) * scalex);
+	uint32_t h=ceil(((ymax-ymin)+number_t(border)*2.0) * scaley);
 	if (w >= 8192 || h >= 8192 || (w * h) >= 16777216)
 		return nullptr;
 	MATRIX m0=m;
-	m0.translate(-(xmin-maxfilterborder) ,-(ymin-maxfilterborder));
+	m0.translate(-(xmin-border) ,-(ymin-border));
 	m0.scale(scalex, scaley);
 	bool sizeOk = cachedBitmap && cachedBitmap->getBitmapSize().width == w && cachedBitmap->getBitmapSize().height == h;
 	
@@ -2381,12 +2395,20 @@ IDrawable* DisplayObject::getCachedBitmapDrawable(DisplayObject* target,const MA
 		*pcachedBitmap = cachedBitmap;
 	this->resetNeedsCachedBitmapRecalculation();
 	this->hasChanged=false;
-	MATRIX m1(1,1,0,0,(xmin-maxfilterborder)*scalex,(ymin-maxfilterborder)*scaley);
+	MATRIX m1=initialMatrix;
+//	m1.translate(-border*scalex,-border*scaley);
 	m1.scale(1.0 / scalex, 1.0 / scaley);
+	
 	ColorTransformBase ct;
 	if (this->colorTransform)
 		ct = *this->colorTransform.getPtr();
-	return cachedBitmap->invalidateFromSource(target, initialMatrix,smoothing,&ct,this->getParent(),m1,this,m0,scalex,scaley);
+	this->incRef();
+	return new CachedBitmapRenderer(_MR(this),m0
+									, xmin, ymin, w, h
+									, scalex, scaley
+									, ismask || getClipDepth()
+									, alpha
+									, ct,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),m1);
 }
 
 IDrawable* DisplayObject::getFilterDrawable(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q)

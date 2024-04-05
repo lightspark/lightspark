@@ -192,6 +192,7 @@ public:
 	unsigned int placeFrame;
 	bool markedForLegacyDeletion;
 	bool computeCacheAsBitmap(bool checksize=true);
+	bool needsCacheAsBitmap() const;
 	bool hasFilters() const;
 	void requestInvalidationFilterParent(InvalidateQueue* q=nullptr);
 	virtual void requestInvalidationIncludingChildren(InvalidateQueue* q);

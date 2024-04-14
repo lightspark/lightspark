@@ -1836,3 +1836,18 @@ uint8_t *externalFontRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* buf
 		*bufsize=width*height*4;
 	return m_engine->getFontPixelBuffer(externalressource,this->width,this->height);
 }
+
+void externalFontRenderer::renderToCairo(cairo_t* cr, CachedSurface& surface)
+{
+	bool isBufferOwner=true;
+	uint32_t bufsize=0;
+	uint8_t* buf=getPixelBuffer(&isBufferOwner,&bufsize);
+	surface.tex->setChunks(buf);
+	surface.isChunkOwner=isBufferOwner;
+	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, surface.tex->width);
+	cairo_surface_t* chunkSurface = cairo_image_surface_create_for_data(buf,CAIRO_FORMAT_ARGB32, surface.tex->width, surface.tex->height, cairoWidthStride);
+	cairo_scale(cr, 1 / surface.tex->xContentScale, 1 / surface.tex->yContentScale);
+	cairo_set_source_surface(cr, chunkSurface, 0,0);
+	cairo_paint_with_alpha(cr,surface.getState()->alpha);
+	cairo_surface_destroy(chunkSurface);
+}

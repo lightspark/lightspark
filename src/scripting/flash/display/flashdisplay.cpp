@@ -1427,7 +1427,7 @@ void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_strin
 
 void MovieClip::afterLegacyInsert()
 {
-	if(!getConstructIndicator())
+	if(!getConstructIndicator() && !needsActionScript3())
 	{
 		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 		getClass()->handleConstruction(obj,nullptr,0,true);

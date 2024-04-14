@@ -152,7 +152,7 @@ public:
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	void requestInvalidationIncludingChildren(InvalidateQueue* q) override;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap);
+	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
 	
 	void _addChildAt(DisplayObject* child, unsigned int index, bool inskipping=false);
 	void dumpDisplayList(unsigned int level=0);

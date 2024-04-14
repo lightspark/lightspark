@@ -78,6 +78,7 @@ public:
 						 const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing,AS_BLENDMODE _blendmode, const MATRIX &_m);
 	
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
+	void renderToCairo(cairo_t* cr, CachedSurface& surface) override;
 };
 
 #define CONTEXTMENUWIDTH 200

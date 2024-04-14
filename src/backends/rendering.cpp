@@ -616,6 +616,7 @@ void RenderThread::commonGLInit()
 	//Load shaders
 	loadShaderPrograms();
 	engineData->driverInfoString = engineData->getGLDriverInfo();
+	LOG(LOG_INFO,"graphics driver:"<<engineData->driverInfoString);
 	// TODO set context3dPRofile based on available openGL driver / hardware capabilities?
 	engineData->context3dProfile = m_sys->getUniqueStringId("baseline");
 	engineData->getGlCompressedTextureFormats();

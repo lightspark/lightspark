@@ -224,17 +224,22 @@ public:
 class CairoRenderContext: public RenderContext
 {
 private:
-	std::unordered_map<const DisplayObject*, CachedSurface> customSurfaces;
-	cairo_t* cr;
+	std::unordered_map<const DisplayObject*, std::pair<CachedSurface,IDrawable*>> customSurfaces;
+	std::list<cairo_t*> cr_list;
+	cairo_surface_t* cairoSurface;
+	uint32_t width;
+	uint32_t height;
 	std::list<std::pair<cairo_surface_t*,MATRIX>> masksurfaces;
 	static cairo_surface_t* getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height, uint32_t stride);
 	/*
 	 * An invalid surface to be returned for objects with no content
 	 */
 	static const CachedSurface invalidSurface;
+	void setupRenderState(cairo_t* cr, AS_BLENDMODE blendmode, bool isMask, SMOOTH_MODE smooth);
 public:
-	CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height,bool smoothing,DisplayObject* startobj=nullptr);
+	CairoRenderContext(uint8_t* buf, uint32_t _width, uint32_t _height,bool smoothing,DisplayObject* startobj=nullptr);
 	virtual ~CairoRenderContext();
+	void render(DisplayObject* d);
 	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			const ColorTransformBase& colortransform,
 			bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
@@ -249,7 +254,7 @@ public:
 	 * The CairoRenderContext acquires the ownership of the buffer
 	 * it will be freed on destruction
 	 */
-	CachedSurface& allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf, bool isBufferOwner);
+	CachedSurface& allocateCustomSurface(const DisplayObject* d, IDrawable* drawable);
 	/**
 	 * Do a fast non filtered, non scaled blit of ARGB data
 	 */
@@ -261,6 +266,12 @@ public:
 	enum FILTER_MODE { FILTER_NONE = 0, FILTER_SMOOTH };
 	void transformedBlit(const MATRIX& m, BitmapContainer* bc, ColorTransform* ct,
 			FILTER_MODE filterMode, number_t x, number_t y, number_t w, number_t h);
+	void pushMask() override;
+	void popMask() override;
+	void deactivateMask() override;
+	void activateMask() override;
+	void suspendActiveMask() override;
+	void resumeActiveMask() override;
 };
 
 }

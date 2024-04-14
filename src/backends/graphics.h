@@ -110,6 +110,7 @@ public:
 	uint32_t getNumberOfChunks() const { return ((width+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL)*((height+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL); }
 	bool isValid() const { return chunks; }
 	void makeEmpty();
+	void setChunks(uint8_t* buf);
 	uint32_t width = 0;
 	uint32_t height = 0;
 	number_t xContentScale = 1; // scale the bitmap content was generated for
@@ -312,6 +313,7 @@ public:
 	 * masks
 	 */
 	virtual uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr)=0;
+	virtual void renderToCairo(cairo_t* cr,CachedSurface& surface)=0;
 	virtual bool isCachedSurfaceUsable(const DisplayObject*) const {return true;}
 	int32_t getWidth() const { return width; }
 	int32_t getHeight() const { return height; }
@@ -382,6 +384,7 @@ public:
 				  , AS_BLENDMODE _blendmode);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
+	void renderToCairo(cairo_t* cr, CachedSurface& surface) override;
 	bool isCachedSurfaceUsable(const DisplayObject*) const override;
 	/*
 	 * Converts data (which is in RGB format) to the format internally used by cairo.
@@ -398,7 +401,7 @@ public:
 class CairoTokenRenderer : public CairoRenderer
 {
 private:
-	static void adjustFillStyle(cairo_t* cr, const FILLSTYLE* style, const cairo_matrix_t* origmat, double scaleCorrection);
+	static void adjustFillStyle(cairo_t* cr, const FILLSTYLE* style, const MATRIX& origmat, double scaleCorrection);
 	static void executefill(cairo_t* cr, const FILLSTYLE* style, cairo_pattern_t* pattern, double scaleCorrection);
 	static void executestroke(cairo_t* stroke_cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask, CairoTokenRenderer* th);
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask, CairoTokenRenderer* th);
@@ -584,6 +587,7 @@ public:
 				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override { return nullptr; }
+	void renderToCairo(cairo_t* cr, CachedSurface& surface) override {}
 };
 
 class BitmapRenderer: public IDrawable
@@ -599,6 +603,7 @@ public:
 				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
+	void renderToCairo(cairo_t* cr, CachedSurface& surface) override;
 };
 
 class CachedBitmapRenderer: public BitmapRenderer

@@ -36,6 +36,7 @@
 #include "logger.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/BitmapContainer.h"
+#include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/geom/flashgeom.h"
 
 using namespace std;
@@ -549,21 +550,58 @@ void GLRenderContext::setMatrixUniform(LSGL_MATRIX m) const
 	engineData->exec_glUniformMatrix4fv(uni, 1, false, lsMVPMatrix);
 }
 
-CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t width, uint32_t height, bool smoothing, DisplayObject* startobj):RenderContext(CAIRO,startobj)
+CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t _width, uint32_t _height, bool smoothing, DisplayObject* startobj):RenderContext(CAIRO,startobj)
 {
-	cairo_surface_t* cairoSurface=getCairoSurfaceForData(buf, width, height,width);
-	cr=cairo_create(cairoSurface);
-	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
-	cairo_set_antialias(cr,smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
+	cairoSurface=getCairoSurfaceForData(buf, _width, _height,_width);
+	width=_width;
+	height=_height;
+	cr_list.push_back(cairo_create(cairoSurface));
+	cairo_set_antialias(cr_list.back(),smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 }
 
 CairoRenderContext::~CairoRenderContext()
 {
-	cairo_destroy(cr);
+	cairo_surface_destroy(cairoSurface);
+	while (!cr_list.empty())
+	{
+		cairo_destroy(cr_list.back());
+		cr_list.pop_back();
+	}
+	
 	while (!masksurfaces.empty())
 	{
 		cairo_surface_destroy(masksurfaces.back().first);
 		masksurfaces.pop_back();
+	}
+	while (!customSurfaces.empty())
+	{
+		delete customSurfaces.begin()->second.second; // destruct IDrawable
+		customSurfaces.erase(customSurfaces.begin());
+	}
+}
+
+void CairoRenderContext::render(DisplayObject* d)
+{
+	auto it=customSurfaces.find(d->is<Bitmap>() && d->as<Bitmap>()->getCachedBitmapOwner() ? d->as<Bitmap>()->getCachedBitmapOwner() : d);
+	if(it==customSurfaces.end())
+		return;
+	IDrawable* drawable = it->second.second;
+	cairo_t* cr = cr_list.back();
+	cairo_save(cr);
+	const Transform2D& t = transformStack().transform();
+	setupRenderState(cr,t.blendmode,d->isMask(),drawable->getState()->smoothing);
+	cairo_set_matrix(cr,&t.matrix);
+	drawable->renderToCairo(cr,it->second.first);
+	if(isMaskActive())
+	{
+		for (auto it=masksurfaces.begin(); it!=masksurfaces.end(); it++)
+		{
+			// apply mask
+			cairo_save(cr);
+			cairo_set_matrix(cr,&it->second);
+			cairo_mask_surface(cr,it->first,0,0);
+			cairo_restore(cr);
+		}
 	}
 }
 
@@ -576,6 +614,7 @@ cairo_surface_t* CairoRenderContext::getCairoSurfaceForData(uint8_t* buf, uint32
 void CairoRenderContext::simpleBlit(int32_t destX, int32_t destY, uint8_t* sourceBuf, uint32_t sourceTotalWidth, uint32_t sourceTotalHeight,
 		int32_t sourceX, int32_t sourceY, uint32_t sourceWidth, uint32_t sourceHeight)
 {
+	cairo_t* cr = cr_list.back();
 	cairo_surface_t* sourceSurface = getCairoSurfaceForData(sourceBuf, sourceTotalWidth, sourceTotalHeight, sourceTotalWidth);
 	cairo_pattern_t* sourcePattern = cairo_pattern_create_for_surface(sourceSurface);
 	cairo_surface_destroy(sourceSurface);
@@ -593,6 +632,7 @@ void CairoRenderContext::simpleBlit(int32_t destX, int32_t destY, uint8_t* sourc
 void CairoRenderContext::transformedBlit(const MATRIX& m, BitmapContainer* bc, ColorTransform* ct,
 		FILTER_MODE filterMode, number_t x, number_t y, number_t w, number_t h)
 {
+	cairo_t* cr = cr_list.back();
 	uint8_t* bmp = ct ? bc->applyColorTransform(ct) : bc->getData();
 	cairo_surface_t* sourceSurface = getCairoSurfaceForData(bmp, bc->getWidth(), bc->getHeight(), bc->getWidth());
 	cairo_pattern_t* sourcePattern = cairo_pattern_create_for_surface(sourceSurface);
@@ -607,14 +647,47 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, BitmapContainer* bc, C
 	cairo_fill(cr);
 }
 
-void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
-			const ColorTransformBase& colortransform,
-			bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
-			AS_BLENDMODE blendmode)
+void CairoRenderContext::pushMask()
 {
-	if (colorMode != RGB_MODE)
-		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured colorMode not implemented:"<<(int)colorMode);
-	cairo_save(cr);
+	RenderContext::pushMask();
+	const Transform2D& t = transformStack().transform();
+	cairo_surface_t* maskSurface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,width,height);
+	cairo_t* cr = cairo_create(maskSurface);
+	cr_list.push_back(cr);
+	masksurfaces.push_back(make_pair(maskSurface,t.matrix));
+}
+
+void CairoRenderContext::popMask()
+{
+	RenderContext::popMask();
+	cairo_surface_destroy(masksurfaces.back().first);
+	masksurfaces.pop_back();
+	cairo_destroy(cr_list.back());
+	cr_list.pop_back();
+}
+
+void CairoRenderContext::deactivateMask()
+{
+	RenderContext::deactivateMask();
+}
+
+void CairoRenderContext::activateMask()
+{
+	RenderContext::activateMask();
+}
+
+void CairoRenderContext::suspendActiveMask()
+{
+	RenderContext::suspendActiveMask();
+}
+
+void CairoRenderContext::resumeActiveMask()
+{
+	RenderContext::resumeActiveMask();
+}
+
+void CairoRenderContext::setupRenderState(cairo_t* cr,AS_BLENDMODE blendmode,bool isMask,SMOOTH_MODE smooth)
+{
 	switch (blendmode)
 	{
 		case BLENDMODE_NORMAL:
@@ -671,7 +744,18 @@ void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, 
 				break;
 		}
 	}
-
+	
+}
+void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
+			const ColorTransformBase& colortransform,
+			bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
+			AS_BLENDMODE blendmode)
+{
+	if (colorMode != RGB_MODE)
+		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured colorMode not implemented:"<<(int)colorMode);
+	cairo_t* cr = cr_list.back();
+	cairo_save(cr);
+	setupRenderState(cr,blendmode,isMask,smooth);
 	MATRIX m = matrix.multiplyMatrix(MATRIX(1, 1, 0, 0, chunk.xOffset / chunk.xContentScale, chunk.yOffset / chunk.yContentScale));
 	if (smooth == SMOOTH_MODE::SMOOTH_NONE)
 	{
@@ -841,16 +925,16 @@ const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d
 		//No surface is stored, return an invalid one
 		return invalidSurface;
 	}
-	return ret->second;
+	return ret->second.first;
 }
 
-CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d, uint8_t* texBuf, bool isBufferOwner)
+CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d, IDrawable* drawable)
 {
-	auto ret=customSurfaces.insert(make_pair(d, CachedSurface()));
-	CachedSurface& surface=ret.first->second;
+	auto ret=customSurfaces.insert(make_pair(d, make_pair(CachedSurface(),drawable)));
+	CachedSurface& surface=ret.first->second.first;
 	if (surface.tex==nullptr)
 		surface.tex=new TextureChunk();
-	surface.tex->chunks=(uint32_t*)texBuf;
-	surface.isChunkOwner=isBufferOwner;
+	surface.tex->chunks=nullptr;
+	surface.isChunkOwner=false;
 	return surface;
 }

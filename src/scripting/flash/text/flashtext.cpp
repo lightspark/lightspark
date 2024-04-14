@@ -1883,11 +1883,14 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 
 bool TextField::renderImpl(RenderContext& ctxt)
 {
-	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
+	if (ctxt.contextType == RenderContext::CAIRO && needsCacheAsBitmap() && ctxt.startobject != this)
 	{
 		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
 		if (d)
-			d->Render(ctxt);
+		{
+			MATRIX m;
+			d->Render(ctxt,false,&m);
+		}
 		return false;
 	}
 	linemutex->lock();
@@ -2525,11 +2528,14 @@ bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numb
 
 bool StaticText::renderImpl(RenderContext& ctxt)
 {
-	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
+	if (ctxt.contextType == RenderContext::CAIRO && needsCacheAsBitmap() && ctxt.startobject != this)
 	{
 		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
 		if (d)
-			d->Render(ctxt);
+		{
+			MATRIX m;
+			d->Render(ctxt,false,&m);
+		}
 		return false;
 	}
 	return TokenContainer::renderImpl(ctxt);

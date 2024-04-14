@@ -195,13 +195,18 @@ void SystemState::addBroadcastEvent(const tiny_string& event)
 
 void SystemState::handleBroadcastEvent(const tiny_string& event)
 {
-	Locker l(mutexFrameListeners);
-	if(!frameListeners.empty())
+	std::set<DisplayObject*> tmplisteners; // work on copy of framelistners, as the list may change during event handling
 	{
-		_R<Event> e(Class<Event>::getInstanceS(worker, event));
+		Locker l(mutexFrameListeners);
 		for (auto it : frameListeners)
-			ABCVm::publicHandleEvent(it, e);
+		{
+			it->incRef();
+			tmplisteners.insert(it);
+		}
 	}
+	_R<Event> e(Class<Event>::getInstanceS(worker, event));
+	for (auto it : tmplisteners)
+		ABCVm::publicHandleEvent(it, e);
 }
 
 RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk,_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)

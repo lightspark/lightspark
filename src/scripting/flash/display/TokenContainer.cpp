@@ -659,6 +659,12 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			renderWithNanoVG=false;
 		}
 	}
+	if (q && q->isSoftwareQueue && !fromgraphics)
+	{
+		// re-add the upper left corner of the bounds rect to the starting point when rendering to bitmap (was removed in FromShaperecordListToShapeVector)
+		regpointx -= bxmin;
+		regpointy -= bymin;
+	}
 	return new CairoTokenRenderer(tokens,matrix
 				, x, y, ceil(width), ceil(height)
 				, matrix.getScaleX(), matrix.getScaleY()

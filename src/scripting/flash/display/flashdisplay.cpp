@@ -174,6 +174,7 @@ IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix
 		this->graphics->refreshTokens();
 		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,true);
 		this->graphics->endDrawJob();
+		if (res)
 		{
 			Locker l(mutexDisplayList);
 			res->getState()->setupChildrenList(dynamicDisplayList);
@@ -413,7 +414,6 @@ bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 		}
 		else if ((child->isVisible() && !child->getClipDepth() && !child->isMask()) || ctxt.isDrawingMask())
 			child->Render(ctxt);
-
 	}
 
 	// Pop remaining masks (if any).
@@ -1427,7 +1427,7 @@ void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_strin
 
 void MovieClip::afterLegacyInsert()
 {
-	if(!needsActionScript3() && !getConstructIndicator())
+	if(!getConstructIndicator())
 	{
 		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 		getClass()->handleConstruction(obj,nullptr,0,true);

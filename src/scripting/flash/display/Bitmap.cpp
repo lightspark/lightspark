@@ -177,11 +177,14 @@ void Bitmap::onPixelSnappingChanged(tiny_string snapping)
 
 bool Bitmap::renderImpl(RenderContext& ctxt)
 {
-	if (computeCacheAsBitmap() && ctxt.contextType == RenderContext::GL)
+	if (ctxt.contextType == RenderContext::CAIRO && needsCacheAsBitmap() && ctxt.startobject != this)
 	{
 		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
 		if (d)
-			d->Render(ctxt);
+		{
+			MATRIX m;
+			d->Render(ctxt,false,&m);
+		}
 		return false;
 	}
 	return defaultRender(ctxt);
@@ -273,7 +276,7 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 	if (requestInvalidationForCacheAsBitmap(q))
 		return;
 	incRef();
-	// texture recalculation is never needed for bitmaps
+	// texture recalculation is never needed for legacy bitmaps
 	resetNeedsTextureRecalculation();
 	requestInvalidationFilterParent(q);
 	q->addToInvalidateQueue(_MR(this));
@@ -293,6 +296,7 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 	}
 	if (this->bitmapData->getWidth()==0 || this->bitmapData->getHeight()==0)
 		return nullptr;
+	cachedSurface.isChunkOwner=false;
 	cachedSurface.isValid=true;
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()

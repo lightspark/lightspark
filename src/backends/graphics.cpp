@@ -109,6 +109,12 @@ void TextureChunk::makeEmpty()
 	chunks=nullptr;
 }
 
+void TextureChunk::setChunks(uint8_t* buf)
+{
+	assert(chunks == nullptr);
+	chunks=(uint32_t*)buf;
+}
+
 bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 {
 	if(w==0 || h==0)
@@ -308,7 +314,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 
 	return pattern;
 }
-void CairoTokenRenderer::adjustFillStyle(cairo_t* cr, const FILLSTYLE* style, const cairo_matrix_t* origmat, double scaleCorrection)
+void CairoTokenRenderer::adjustFillStyle(cairo_t* cr, const FILLSTYLE* style, const MATRIX& origmat, double scaleCorrection)
 {
 	switch (style->FillStyleType)
 	{
@@ -321,10 +327,13 @@ void CairoTokenRenderer::adjustFillStyle(cairo_t* cr, const FILLSTYLE* style, co
 			tmp.x0/=scaleCorrection;
 			tmp.y0/=scaleCorrection;
 			// adjust gradient translation to current scaling
-			tmp.x0*=origmat->xx;
-			tmp.y0*=origmat->yy;
+			tmp.x0*=origmat.xx;
+			tmp.y0*=origmat.yy;
 			MATRIX m;
-			cairo_matrix_multiply(&m,origmat,&tmp);
+			MATRIX m2 = origmat;
+			m2.x0/=scaleCorrection;
+			m2.y0/=scaleCorrection;
+			cairo_matrix_multiply(&m,&m2,&tmp);
 			// TODO there seems to be a bug in cairo (https://gitlab.freedesktop.org/cairo/cairo/-/issues/238) 
 			// that leads to CAIRO_STATUS_NO_MEMORY if the matrix scale is too small, so we ignore those cases for now
 			if (abs(m.getScaleX()) > 1.0/32768.0
@@ -345,10 +354,10 @@ void CairoTokenRenderer::executefill(cairo_t* cr, const FILLSTYLE* style, cairo_
 {
 	if (!style || !pattern)
 		return;
-	cairo_matrix_t origmat;
+	MATRIX origmat;
 	cairo_get_matrix(cr,&origmat);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-	adjustFillStyle(cr, style, &origmat, scaleCorrection);
+	adjustFillStyle(cr, style, origmat, scaleCorrection);
 	cairo_set_source(cr, pattern);
 	cairo_fill(cr);
 	cairo_set_matrix(cr,&origmat);
@@ -358,13 +367,13 @@ void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cai
 {
 	if (!style)
 		return;
-	cairo_matrix_t origmat;
+	MATRIX origmat;
 	cairo_get_matrix(cr,&origmat);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	if (style->HasFillFlag)
 	{
 		assert(pattern);
-		adjustFillStyle(cr, &style->FillType, &origmat, scaleCorrection);
+		adjustFillStyle(cr, &style->FillType, origmat, scaleCorrection);
 		cairo_set_source(cr, pattern);
 	} else {
 		const RGBA& color = style->Color;
@@ -733,6 +742,15 @@ uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 //	cairo_surface_write_to_png(cairoSurface,"/tmp/cairo.png");
 	cairo_destroy(cr);
 	return ret;
+}
+
+void CairoRenderer::renderToCairo(cairo_t* cr,CachedSurface& surface)
+{
+	cairo_save(cr);
+	cairo_scale(cr, getState()->xscale, getState()->yscale);
+	cairo_set_antialias(cr,getState()->smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
+	executeDraw(cr);
+	cairo_restore(cr);
 }
 
 bool CairoRenderer::isCachedSurfaceUsable(const DisplayObject* o) const
@@ -1202,6 +1220,21 @@ uint8_t *BitmapRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 	if (bufsize)
 		*bufsize=data->getWidth()*data->getHeight()*4;
 	return data->getData();
+}
+
+void BitmapRenderer::renderToCairo(cairo_t* cr,CachedSurface& surface)
+{
+	surface.tex->setChunks(this->data->getData());
+	surface.isChunkOwner=false;
+	uint32_t bufsize=0;
+	bool isBufferOwner=true;
+	getPixelBuffer(&isBufferOwner,&bufsize);
+	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, surface.tex->width);
+	cairo_surface_t* chunkSurface = cairo_image_surface_create_for_data(this->data->getData(),CAIRO_FORMAT_ARGB32, surface.tex->width, surface.tex->height, cairoWidthStride);
+	cairo_scale(cr, 1 / surface.tex->xContentScale, 1 / surface.tex->yContentScale);
+	cairo_set_source_surface(cr, chunkSurface, 0,0);
+	cairo_paint_with_alpha(cr,surface.getState()->alpha);
+	cairo_surface_destroy(chunkSurface);
 }
 
 CachedBitmapRenderer::CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix, float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,

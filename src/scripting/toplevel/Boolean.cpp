@@ -51,10 +51,14 @@ bool lightspark::Boolean_concrete(const ASObject* o)
 			return false;
 		return !o->as<ASString>()->isEmpty();
 	case T_FUNCTION:
+		// not constructed functions return false
+		if (!o->isConstructed())
+			return false;
+		return true;
 	case T_ARRAY:
 	case T_OBJECT:
-		// not constructed objects return false
-		if (!o->isConstructed())
+		// not initialized objects return false
+		if (!o->isInitialized())
 			return false;
 		return true;
 	default:

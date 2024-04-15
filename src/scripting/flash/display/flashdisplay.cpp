@@ -2470,7 +2470,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
 		    ((*it)->isMask() ? "m" : "") <<((*it)->hasFilters() ? "f" : "") <<((*it)->scrollRect.getPtr() ? "s" : "") << " cd=" <<(*it)->ClipDepth<<" ca=" <<(*it)->computeCacheAsBitmap()<<"/"<<(*it)->cachedAsBitmapOf<<" "<<
-						  "a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'"<<" depth:"<<(*it)->getDepth());
+						  "a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'"<<" depth:"<<(*it)->getDepth()<<" blendmode:"<<(*it)->getBlendMode());
 
 		if ((*it)->is<DisplayObjectContainer>())
 		{
@@ -2556,6 +2556,7 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceT
 		hasChanged=true;
 	incRef();
 	q->addToInvalidateQueue(_MR(this));
+	requestInvalidationFilterParent(q);
 }
 void DisplayObjectContainer::requestInvalidationIncludingChildren(InvalidateQueue* q)
 {

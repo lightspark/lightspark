@@ -259,7 +259,7 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 	if (ctxt.contextType == RenderContext::CAIRO && ctxt.startobject == this)
 	{
 		ctxt.createTransformStack();
-		ctxt.transformStack().push(Transform2D(*startmatrix, ColorTransformBase(),this->getBlendMode()));
+		ctxt.transformStack().push(Transform2D(*startmatrix, surface.getState()->colortransform,surface.getState()->blendmode));
 		
 		ret = renderImpl(ctxt);
 		
@@ -715,7 +715,9 @@ void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 	if (q && q->isSoftwareQueue)
 		return;
 	if (cachedSurface.cachedFilterTextureID != UINT32_MAX
-		|| (!cachedSurface.isInitialized && (this->hasFilters() || this->inMask() || (cachedSurface.getState() && cachedSurface.getState()->needsLayer))
+		|| (!cachedSurface.isInitialized && (this->hasFilters()
+											 || this->inMask()
+											 || isShaderBlendMode(getBlendMode()))
 		))
 	{
 		if (cachedSurface.getState())
@@ -728,8 +730,10 @@ void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 	while (p)
 	{
 		if (p->cachedSurface.cachedFilterTextureID != UINT32_MAX
-			|| (!p->cachedSurface.isInitialized && (p->hasFilters() || p->inMask() || (p->cachedSurface.getState() && p->cachedSurface.getState()->needsLayer)))
-			)
+			|| (!p->cachedSurface.isInitialized && (p->hasFilters()
+													|| p->inMask()
+													|| isShaderBlendMode(p->getBlendMode()))
+			))
 		{
 			p->requestInvalidationFilterParent(q);
 			break;
@@ -1206,6 +1210,8 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	ctxt.lsglLoadIdentity();
 	ColorTransformBase ct = t.colorTransform;
 	MATRIX m = t.matrix;
+	if (t.blendmode== AS_BLENDMODE::BLENDMODE_ERASE)
+		LOG(LOG_ERROR,"erase:"<<this->toDebugString());
 	ctxt.renderTextured(*surface.tex, surface.getState()->alpha, RenderContext::RGB_MODE,
 			ct, false,0.0,RGB(),surface.getState()->smoothing,m,r,t.blendmode);
 	return false;

@@ -208,6 +208,8 @@ void Bitmap::updatedData(bool startupload)
 		bitmapData->checkForUpload();
 	cachedSurface.tex = &bitmapData->getBitmapContainer()->bitmaptexture;
 	cachedSurface.isChunkOwner=false;
+	if (cachedSurface.getState())
+		cachedSurface.getState()->needsFilterRefresh=true;
 	hasChanged=true;
 	DisplayObject* d = this->cachedBitmapOwner;
 	if (d)

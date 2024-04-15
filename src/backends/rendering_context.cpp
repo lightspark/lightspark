@@ -59,7 +59,7 @@ void TransformStack::push(const Transform2D& _transform)
 	{
 		auto matrix = transform().matrix.multiplyMatrix(_transform.matrix);
 		auto colorTransform = transform().colorTransform.multiplyTransform(_transform.colorTransform);
-		AS_BLENDMODE blendmode = _transform.blendmode;
+		AS_BLENDMODE blendmode = _transform.blendmode == BLENDMODE_NORMAL ? transform().blendmode : _transform.blendmode ;
 		transforms.push_back(Transform2D(matrix, colorTransform,blendmode));
 	}
 	else

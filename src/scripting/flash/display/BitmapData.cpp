@@ -258,9 +258,6 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 			continue;
 		if (forCachedBitmap && !target->isMask())
 			target->hasChanged=false;
-		SurfaceState* state = drawable->getState();
-		if (d == target)
-			state->blendmode = blendMode;
 		CachedSurface& surface=ctxt.allocateCustomSurface(target,drawable);
 		surface.SetState(drawable->getState());
 		surface.tex->width=drawable->getWidth();
@@ -273,7 +270,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		surface.isValid=true;
 		surface.isInitialized=true;
 		surface.getState()->smoothing=smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE;
-		surface.getState()->blendmode = target->getBlendMode();
+		surface.getState()->blendmode = blendMode;
 	}
 	d->Render(ctxt,true,&initialMatrix);
 	if (ct && !ct->isIdentity())

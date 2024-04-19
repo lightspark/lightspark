@@ -1489,6 +1489,11 @@ void EngineData::exec_glReadPixels(int32_t width, int32_t height, void *buf)
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	glReadPixels(0,0,width, height, GL_RGB, GL_UNSIGNED_BYTE, buf);
 }
+void EngineData::exec_glReadPixels_GL_BGRA(int32_t width, int32_t height,void *buf)
+{
+	glPixelStorei(GL_PACK_ALIGNMENT, 1);
+	glReadPixels(0,0,width, height, GL_BGRA, GL_UNSIGNED_BYTE, buf);
+}
 void EngineData::exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id)
 {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, id);
@@ -1812,17 +1817,17 @@ int EngineData::audio_getSampleRate()
 {
 	return 44100;
 }
-IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _xs, float _ys, bool _im, float _s, float _a, const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing,AS_BLENDMODE _blendmode)
+IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _xs, float _ys, bool _isMask, bool _cacheAsBitmap, float _s, float _a, const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing,AS_BLENDMODE _blendmode)
 {
 	if (hasExternalFontRenderer)
-		return new externalFontRenderer(_textData,this, _x, _y, _w, _h,_xs,_ys,_im, _a,
+		return new externalFontRenderer(_textData,this, _x, _y, _w, _h,_xs,_ys,_isMask, _cacheAsBitmap, _a,
 										_colortransform, smoothing,_blendmode,_m);
 	return nullptr;
 }
 
-externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData *engine, int32_t x, int32_t y, int32_t w, int32_t h, float xs, float ys, bool im, float a,
+externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData *engine, int32_t x, int32_t y, int32_t w, int32_t h, float xs, float ys, bool _isMask, bool _cacheAsBitmap, float a,
 										   const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing,AS_BLENDMODE _blendmode, const MATRIX &_m)
-	: IDrawable(w, h, x, y,xs,ys, 1, 1, im, a,
+	: IDrawable(w, h, x, y,xs,ys, 1, 1, _isMask, _cacheAsBitmap, a,
 				_colortransform,smoothing,_blendmode,_m),m_engine(engine)
 {
 	externalressource = engine->setupFontRenderer(_textData,a,smoothing);

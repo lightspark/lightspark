@@ -1297,7 +1297,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	float yscale = getConcatenatedMatrix().getScaleY();
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,matrix, x, y, ceil(width), ceil(height),
-																					xscale,yscale,isMask, 1.0f,getConcatenatedAlpha(),
+																					xscale,yscale,isMask,cacheAsBitmap, 1.0f,getConcatenatedAlpha(),
 																					ColorTransformBase(),
 																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode());
 	if (res != nullptr)
@@ -1305,7 +1305,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 	return new CairoPangoRenderer(*this,matrix,
 				x, y, ceil(width), ceil(height),
 				xscale,yscale,
-				isMask,
+				isMask, cacheAsBitmap,
 				1.0f,getConcatenatedAlpha(),
 				ColorTransformBase(),
 				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),0);

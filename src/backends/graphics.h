@@ -222,11 +222,12 @@ class SurfaceState
 {
 public:
 	SurfaceState(float _xoffset=0.0,float _yoffset=0.0, float _alpha=1.0, float _xscale=1.0, float _yscale=1.0,
-			 const ColorTransformBase& _colortransform=ColorTransformBase(), const MATRIX& _matrix=MATRIX(), bool _ismask=false,
+			 const ColorTransformBase& _colortransform=ColorTransformBase(), const MATRIX& _matrix=MATRIX(), bool _ismask=false, bool _cacheAsBitmap=false,
 			 AS_BLENDMODE _blendmode=BLENDMODE_NORMAL, SMOOTH_MODE _smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS, bool _needsfilterrefresh=true, bool _needslayer=false)
 		:xOffset(_xoffset),yOffset(_yoffset),alpha(_alpha),xscale(_xscale),yscale(_yscale)
 		,colortransform(_colortransform),matrix(_matrix)
-	,blendmode(_blendmode),smoothing(_smoothing),isMask(_ismask),needsFilterRefresh(_needsfilterrefresh),needsLayer(_needslayer)
+		,blendmode(_blendmode),smoothing(_smoothing),isMask(_ismask),cacheAsBitmap(_cacheAsBitmap)
+		,needsFilterRefresh(_needsfilterrefresh),needsLayer(_needslayer)
 	{
 	}
 	virtual ~SurfaceState();
@@ -243,8 +244,25 @@ public:
 	AS_BLENDMODE blendmode;
 	SMOOTH_MODE smoothing;
 	bool isMask;
+	bool cacheAsBitmap;
 	bool needsFilterRefresh;
 	bool needsLayer;
+};
+struct RefreshableSurface
+{
+	IDrawable* drawable;
+	_NR<DisplayObject> displayobject;
+};
+struct RenderDisplayObjectToBitmapContainer
+{
+	MATRIX initialMatrix;
+	_NR<DisplayObject> displayobject;
+	_NR<BitmapContainer> bitmapcontainer;
+	bool smoothing;
+	AS_BLENDMODE blendMode;
+	ColorTransformBase* ct;
+	std::list<ITextureUploadable*> uploads;
+	std::list<RefreshableSurface> surfacesToRefresh;
 };
 
 class CachedSurface
@@ -295,7 +313,7 @@ protected:
 public:
 	IDrawable(float w, float h, float x, float y,
 		float xs, float ys, float xcs, float ycs,
-		bool im,
+		bool _ismask, bool _cacheAsBitmap,
 		float a,
 		const ColorTransformBase& _colortransform,
 		SMOOTH_MODE _smoothing,
@@ -304,7 +322,12 @@ public:
 		:width(w),height(h), xContentScale(xcs), yContentScale(ycs)
 	{
 		// will be deleted in cachedSurface
-		state = new SurfaceState(x,y,a,xs,ys,_colortransform,_m,im,_blendmode,_smoothing);
+		state = new SurfaceState(x,y,a,xs,ys,_colortransform,_m,_ismask,_cacheAsBitmap,_blendmode,_smoothing);
+	}
+	IDrawable(float _width, float _height, float _xContentScale, float _yContentScale,SurfaceState* _state)
+		:width(_width),height(_height), xContentScale(_xContentScale), yContentScale(_yContentScale),state(_state)
+	{
+		// state will be deleted in cachedSurface
 	}
 	virtual ~IDrawable();
 	/*
@@ -377,7 +400,7 @@ protected:
 public:
 	CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h
 				  , float _xs, float _ys
-				  , bool _im
+				  , bool _ismask, bool _cacheAsBitmap
 				  , float _s, float _a
 				  , const ColorTransformBase& _colortransform
 				  , SMOOTH_MODE _smoothing
@@ -434,7 +457,7 @@ public:
 	CairoTokenRenderer(const tokensVector& _g, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
 			float _xs, float _ys,
-			bool _im,
+			bool _ismask, bool _cacheAsBitmap,
 			float _s, float _a,
 			const ColorTransformBase& _colortransform,
 			SMOOTH_MODE _smoothing, AS_BLENDMODE _blendmode,
@@ -558,13 +581,13 @@ public:
 	CairoPangoRenderer(const TextData& _textData, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
 			float _xs, float _ys,
-			bool _im, 
+			bool _ismask, bool _cacheAsBitmap,
 			float _s, float _a, 
 			const ColorTransformBase& _colortransform,
 			SMOOTH_MODE _smoothing,
 			AS_BLENDMODE _blendmode,
 			uint32_t _ci)
-		: CairoRenderer(_m,_x,_y,_w,_h,_xs, _ys,_im,_s,_a,
+		: CairoRenderer(_m,_x,_y,_w,_h,_xs, _ys,_ismask,_cacheAsBitmap,_s,_a,
 						_colortransform,
 						_smoothing, _blendmode), textData(_textData),caretIndex(_ci) {}
 	/**
@@ -581,7 +604,7 @@ class RefreshableDrawable: public IDrawable
 public:
 	RefreshableDrawable(float _x, float _y, float _w, float _h
 				  , float _xs, float _ys
-				  , bool _im
+				  , bool _ismask, bool _cacheAsBitmap
 				  , float _a
 				  , const ColorTransformBase& _colortransform
 				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
@@ -597,7 +620,7 @@ protected:
 public:
 	BitmapRenderer(_NR<BitmapContainer> _data, float _x, float _y, float _w, float _h
 				  , float _xs, float _ys
-				  , bool _im
+				  , bool _ismask, bool _cacheAsBitmap
 				  , float _a
 				  , const ColorTransformBase& _colortransform
 				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
@@ -614,7 +637,7 @@ protected:
 public:
 	CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix, float _x, float _y, float _w, float _h
 				  , float _xs, float _ys
-				  , bool _im
+				  , bool _ismask, bool _cacheAsBitmap
 				  , float _a
 				  , const ColorTransformBase& _colortransform
 				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
@@ -633,14 +656,6 @@ public:
 	virtual void addToInvalidateQueue(_R<DisplayObject> d) = 0;
 	_NR<DisplayObject> getCacheAsBitmapObject() const { return cacheAsBitmapObject; }
 	bool isSoftwareQueue;
-};
-
-class SoftwareInvalidateQueue: public InvalidateQueue
-{
-public:
-	SoftwareInvalidateQueue(_NR<DisplayObject> _cacheAsBitmapObject):InvalidateQueue(_cacheAsBitmapObject,true) {}
-	std::list<_R<DisplayObject>> queue;
-	void addToInvalidateQueue(_R<DisplayObject> d) override;
 };
 
 class CharacterRenderer : public ITextureUploadable

@@ -32,7 +32,7 @@ using namespace lightspark;
 
 extern void nanoVGDeleteImage(int image);
 BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
-	data(reporter_allocator<uint8_t>(m)),
+	data(reporter_allocator<uint8_t>(m)),renderevent(0),
 	nanoVGImageHandle(-1),cachedCairoPattern(nullptr)
 {
 }

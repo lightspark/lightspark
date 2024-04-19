@@ -2595,7 +2595,7 @@ IDrawable* DisplayObjectContainer::invalidate(DisplayObject* target, const MATRI
 	
 	res = new RefreshableDrawable(x, y, ceil(width), ceil(height)
 								   , matrix.getScaleX(), matrix.getScaleY()
-								   , isMask
+								   , isMask, cacheAsBitmap
 								   , getConcatenatedAlpha()
 								   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 	{
@@ -2603,6 +2603,15 @@ IDrawable* DisplayObjectContainer::invalidate(DisplayObject* target, const MATRI
 		res->getState()->setupChildrenList(dynamicDisplayList);
 	}
 	return res;
+}
+void DisplayObjectContainer::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container)
+{
+	DisplayObject::invalidateForRenderToBitmap(container);
+	auto it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();++it)
+	{
+		(*it)->invalidateForRenderToBitmap(container);
+	}
 }
 void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int index, bool inskipping)
 {

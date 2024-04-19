@@ -167,6 +167,9 @@ protected:
 	int blendModeUniform;
 	int filterdataUniform;
 	int gradientcolorsUniform;
+	uint32_t baseFramebuffer;
+	uint32_t baseRenderbuffer;
+	bool flipvertical;
 
 	/* Textures */
 	Mutex mutexLargeTexture;
@@ -211,7 +214,8 @@ public:
 	void activateMask() override;
 	void suspendActiveMask() override;
 	void resumeActiveMask() override;
-
+	
+	bool getFlipVertical() const { return flipvertical; }
 	void resetCurrentFrameBuffer();
 	void setupRenderingState(float alpha, const ColorTransformBase& colortransform, SMOOTH_MODE smooth, AS_BLENDMODE blendmode);
 	// this is used to keep track of the fbos when rendering filters and some of the ancestors of the filtered object also have filters

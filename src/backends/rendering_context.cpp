@@ -59,8 +59,7 @@ void TransformStack::push(const Transform2D& _transform)
 	{
 		auto matrix = transform().matrix.multiplyMatrix(_transform.matrix);
 		auto colorTransform = transform().colorTransform.multiplyTransform(_transform.colorTransform);
-		AS_BLENDMODE blendmode = _transform.blendmode == BLENDMODE_NORMAL ? transform().blendmode : _transform.blendmode ;
-		transforms.push_back(Transform2D(matrix, colorTransform,blendmode));
+		transforms.push_back(Transform2D(matrix, colorTransform,_transform.blendmode));
 	}
 	else
 		transforms.push_back(_transform);
@@ -249,8 +248,8 @@ void GLRenderContext::resumeActiveMask()
 
 void GLRenderContext::resetCurrentFrameBuffer()
 {
-	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
-	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(0);
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(baseFramebuffer);
+	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(baseRenderbuffer);
 }
 void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase& colortransform,SMOOTH_MODE smooth,AS_BLENDMODE blendmode)
 {

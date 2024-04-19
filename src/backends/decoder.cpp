@@ -54,7 +54,6 @@ bool VideoDecoder::setSize(uint32_t w, uint32_t h)
 		frameHeight=h;
 		LOG(LOG_INFO,"VIDEO DEC: Video frame size " << frameWidth << 'x' << frameHeight);
 		resizeGLBuffers=true;
-		videoTexture=getSys()->getRenderThread()->allocateTexture(frameWidth, frameHeight, true);
 #ifdef _WIN32
 		if (decodedframebuffer)
 			_aligned_free(decodedframebuffer);
@@ -96,6 +95,9 @@ void VideoDecoder::sizeNeeded(uint32_t& w, uint32_t& h) const
 
 TextureChunk& VideoDecoder::getTexture()
 {
+	if (!videoTexture.isValid())
+		videoTexture=getSys()->getRenderThread()->allocateTexture(frameWidth, frameHeight, true);
+	
 	return videoTexture;
 }
 

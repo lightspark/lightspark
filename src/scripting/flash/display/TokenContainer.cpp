@@ -47,25 +47,6 @@ FORCE_INLINE bool isSmoothed(FILL_STYLE_TYPE type)
 	return type == FILL_STYLE_TYPE::REPEATING_BITMAP || type == FILL_STYLE_TYPE::CLIPPED_BITMAP;
 }
 
-FORCE_INLINE bool isSupportedGLBlendMode(AS_BLENDMODE mode)
-{
-	switch (mode)
-	{
-		case BLENDMODE_NORMAL:
-		case BLENDMODE_LAYER:
-		case BLENDMODE_MULTIPLY:
-		case BLENDMODE_ADD:
-		case BLENDMODE_SCREEN:
-		case BLENDMODE_OVERLAY:
-		case BLENDMODE_HARDLIGHT:
-			return true;
-			break;
-		default:
-			return false;
-			break;
-	}
-}
-
 void nanoVGDeleteImage(int image)
 {
 	NVGcontext* nvgctxt = getSys()->getEngineData() ? getSys()->getEngineData()->nvgcontext : nullptr;
@@ -115,9 +96,12 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 			if (owner->getConcatenatedAlpha() == 0)
 				return false;
 			ColorTransformBase ct = ctxt.transformStack().transform().colorTransform;
-			switch (owner->getBlendMode())
+			nvgResetTransform(nvgctxt);
+			nvgBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
+			switch (ctxt.transformStack().transform().blendmode)
 			{
 				case BLENDMODE_NORMAL:
+				case BLENDMODE_LAYER:
 					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ONE_MINUS_SRC_ALPHA);
 					break;
 				case BLENDMODE_MULTIPLY:
@@ -129,14 +113,20 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 				case BLENDMODE_SCREEN:
 					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ONE_MINUS_SRC_COLOR);
 					break;
+				case BLENDMODE_ERASE:
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ZERO,NVG_ONE_MINUS_SRC_ALPHA);
+					break;
 				default:
-					LOG(LOG_NOT_IMPLEMENTED,"renderTextured of nanoVG blend mode "<<(int)owner->getBlendMode());
+					LOG(LOG_NOT_IMPLEMENTED,"renderTextured of nanoVG blend mode "<<(int)ctxt.transformStack().transform().blendmode);
 					break;
 			}
-			nvgResetTransform(nvgctxt);
-			nvgBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
 			if (sys->getRenderThread()->filterframebufferstack.empty())
 			{
+				if (!sys->getRenderThread()->getFlipVertical())
+				{
+					nvgTranslate(nvgctxt,0,sys->getRenderThread()->currentframebufferHeight);
+					nvgScale(nvgctxt,1.0,-1.0);
+				}
 				Vector2f offset = sys->getRenderThread()->getOffset();
 				nvgTranslate(nvgctxt,offset.x,offset.y);
 			}
@@ -234,7 +224,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 									RGBA color = style->Color;
 									float r,g,b,a;
 									ct.applyTransformation(color,r,g,b,a);
-									NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*owner->getConcatenatedAlpha()*255.0);
+									NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
 									nvgFillColor(nvgctxt,c);
 									break;
 								}
@@ -293,14 +283,60 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 							const LINESTYLE2* style = p1.lineStyle;
 							if (style->HasFillFlag)
 							{
-								LOG(LOG_NOT_IMPLEMENTED,"nanovg linestyle with fill flag");
+								switch (style->FillType.FillStyleType)
+								{
+									case SOLID_FILL:
+									{
+										RGBA color = style->FillType.Color;
+										float r,g,b,a;
+										ct.applyTransformation(color,r,g,b,a);
+										NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
+										nvgStrokeColor(nvgctxt,c);
+										break;
+									}
+									case REPEATING_BITMAP:
+									case CLIPPED_BITMAP:
+									case NON_SMOOTHED_REPEATING_BITMAP:
+									case NON_SMOOTHED_CLIPPED_BITMAP:
+									{
+										int img =setNanoVGImage(nvgctxt,&style->FillType);
+										if (img != -1)
+										{
+											MATRIX m = style->FillType.Matrix;
+											NVGpaint pattern = nvgImagePattern(nvgctxt,
+																			   0,
+																			   0,
+																			   style->FillType.bitmap->getWidth(),
+																			   style->FillType.bitmap->getHeight(),
+																			   0,
+																			   img,
+																			   1.0);
+											pattern.xform[0] = m.xx;
+											pattern.xform[1] = m.yx;
+											pattern.xform[2] = m.xy;
+											pattern.xform[3] = m.yy;
+											pattern.xform[4] = m.x0/scaling - style->FillType.ShapeBounds.Xmin;
+											pattern.xform[5] = m.y0/scaling - style->FillType.ShapeBounds.Ymin;
+											float r,g,b,a;
+											RGBA color(255,255,255,255);
+											ct.applyTransformation(color,r,g,b,a);
+											NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
+											pattern.innerColor = pattern.outerColor = c;
+											nvgStrokePaint(nvgctxt, pattern);
+										}
+										break;
+									}
+									default:
+										LOG(LOG_NOT_IMPLEMENTED,"nanovg linestyle fillType:"<<hex<<(int)style->FillType.FillStyleType);
+										break;
+								}
 							}
 							else
 							{
 								RGBA color = style->Color;
 								float r,g,b,a;
 								ct.applyTransformation(color,r,g,b,a);
-								NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*owner->getConcatenatedAlpha()*255.0);
+								NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
 								nvgStrokeColor(nvgctxt,c);
 							}
 							// TODO: EndCapStyle
@@ -318,7 +354,7 @@ bool TokenContainer::renderImpl(RenderContext& ctxt)
 								nvgLineJoin(nvgctxt, NVG_MITER);
 								nvgMiterLimit(nvgctxt,style->MiterLimitFactor);
 							}
-							nvgStrokeWidth(nvgctxt,style->Width==0 ? 1.0f :(float)style->Width);
+							nvgStrokeWidth(nvgctxt,style->Width==0 ? 1.0/scaling :(float)style->Width);
 							break;
 						}
 						case CLEAR_FILL:
@@ -628,8 +664,8 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			&& !tokens.empty() 
 			&& tokens.canRenderToGL
 			&& !owner->computeCacheAsBitmap()
-			&& isSupportedGLBlendMode(owner->getBlendMode())
 			&& !r
+			&& !DisplayObject::isShaderBlendMode(owner->getBlendMode())
 			&& !owner->hasFilters()
 			&& !owner->belongsToMask()
 			)
@@ -648,7 +684,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 			owner->resetNeedsTextureRecalculation();
 			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
 										   , matrix.getScaleX(), matrix.getScaleY()
-										   , isMask
+										   , isMask, owner->cacheAsBitmap
 										   , owner->getConcatenatedAlpha()
 										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,owner->getBlendMode(),matrix);
 		}
@@ -668,7 +704,7 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 	return new CairoTokenRenderer(tokens,matrix
 				, x, y, ceil(width), ceil(height)
 				, matrix.getScaleX(), matrix.getScaleY()
-				, isMask
+				, isMask, owner->cacheAsBitmap
 				, scaling,owner->getConcatenatedAlpha()
 				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE,owner->getBlendMode(), regpointx, regpointy,q && q->isSoftwareQueue);
 }

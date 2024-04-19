@@ -1146,6 +1146,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
 	style.Width = th->owner->getCurrentLineWidth();
 	style.HasFillFlag = true;
 	style.FillType = createBitmapFill(bitmap, matrix, repeat, smooth);
+	
 
 	th->AddStrokeToken(GeomToken(SET_STROKE));
 	th->AddLineStyleToken(GeomToken(th->addLineStyle(style)));

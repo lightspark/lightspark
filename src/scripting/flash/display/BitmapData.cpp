@@ -240,41 +240,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap, AS_BLENDMODE blendMode, ColorTransformBase* ct)
 {
 	d->incRef();
-	//Create an InvalidateQueue to store all the hierarchy of objects that must be drawn
-	SoftwareInvalidateQueue queue(_MNR(d));
-	d->hasChanged=true;
-	d->requestInvalidation(&queue);
-	if (forCachedBitmap)
-		memset(pixels->getData(),0,pixels->getWidth()*pixels->getHeight()*4);
-	CairoRenderContext ctxt(pixels->getData(), pixels->getWidth(), pixels->getHeight(),smoothing,d);
-	for(auto it=queue.queue.begin();it!=queue.queue.end();it++)
-	{
-		DisplayObject* target=(*it).getPtr();
-		if (!target->isVisible())
-			continue;
-		//Get the drawable from each of the added objects
-		IDrawable* drawable=target->invalidate(d, initialMatrix,smoothing,&queue, nullptr); // will be destroyed in destructor of ctxt
-		if(drawable==nullptr)
-			continue;
-		if (forCachedBitmap && !target->isMask())
-			target->hasChanged=false;
-		CachedSurface& surface=ctxt.allocateCustomSurface(target,drawable);
-		surface.SetState(drawable->getState());
-		surface.tex->width=drawable->getWidth();
-		surface.tex->height=drawable->getHeight();
-		surface.tex->xContentScale = drawable->getXContentScale();
-		surface.tex->yContentScale = drawable->getYContentScale();
-		surface.tex->xOffset = surface.getState()->xOffset;
-		surface.tex->yOffset = surface.getState()->yOffset;
-		surface.getState()->needsFilterRefresh=false;
-		surface.isValid=true;
-		surface.isInitialized=true;
-		surface.getState()->smoothing=smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE;
-		surface.getState()->blendmode = blendMode;
-	}
-	d->Render(ctxt,true,&initialMatrix);
-	if (ct && !ct->isIdentity())
-		ct->applyTransformation(pixels.getPtr()->getData(),this->getWidth()*this->getHeight()*4);
+	getSystemState()->getRenderThread()->renderDisplayObjectToBimapContainer(_MNR(d),initialMatrix,smoothing,blendMode,ct,this->pixels);
 	this->notifyUsers();
 }
 

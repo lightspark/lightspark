@@ -27,6 +27,7 @@
 #include "swftypes.h"
 #include <vector>
 #include "backends/graphics.h"
+#include "threading.h"
 
 namespace lightspark
 {
@@ -50,6 +51,7 @@ protected:
 	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y) const;
 	void resetColorTransform();
 public:
+	Semaphore renderevent;
 	TextureChunk bitmaptexture;
 	int nanoVGImageHandle;
 	cairo_pattern_t* cachedCairoPattern;

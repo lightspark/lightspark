@@ -20,6 +20,7 @@
 #include "scripting/abc.h"
 #include "scripting/class.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/display/BitmapContainer.h"
 #include "parsing/textfile.h"
 #include "backends/rendering.h"
 #include "backends/input.h"
@@ -61,7 +62,8 @@ RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 	m_sys(s),status(CREATED),
 	prevUploadJob(nullptr),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
-	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),refreshNeeded(false),screenshotneeded(false),inSettings(false),canrender(false),
+	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),refreshNeeded(false),renderToBitmapContainerNeeded(false),
+	screenshotneeded(false),inSettings(false),canrender(false),
 	cairoTextureContextSettings(nullptr),cairoTextureContext(nullptr)
 {
 	LOG(LOG_INFO,"RenderThread this=" << this);
@@ -253,6 +255,92 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		return true;
 	}
 
+	if (renderToBitmapContainerNeeded)
+	{
+		Locker l(mutexRenderToBitmapContainer);
+		auto it = displayobjectsToRender.begin();
+		while (it != displayobjectsToRender.end())
+		{
+			// upload all needed bitmaps to gpu
+			auto itup = it->uploads.begin();
+			while (itup != it->uploads.end())
+			{
+				ITextureUploadable* u = *itup;
+				u->upload(true);
+				TextureChunk& tex=u->getTexture();
+				uint32_t w,h;
+				u->sizeNeeded(w,h);
+				u->contentScale(tex.xContentScale, tex.yContentScale);
+				u->contentOffset(tex.xOffset, tex.yOffset);
+				loadChunkBGRA(tex, w, h, u->upload(false));
+				u->uploadFence();
+				itup = it->uploads.erase(itup);
+			}
+			// refresh all surfaces
+			auto itsur = it->surfacesToRefresh.begin();
+			while (itsur != it->surfacesToRefresh.end())
+			{
+				itsur->displayobject->updateCachedSurface(itsur->drawable);
+				delete itsur->drawable;
+				itsur = it->surfacesToRefresh.erase(itsur);
+			}
+			int w = it->bitmapcontainer->getWidth();
+			int h = it->bitmapcontainer->getHeight();
+			// setup new texture to render to
+			uint32_t bmTextureID;
+			engineData->exec_glFrontFace(false);
+			engineData->exec_glDrawBuffer_GL_BACK();
+			engineData->exec_glUseProgram(gpu_program);
+			engineData->exec_glGenTextures(1, &bmTextureID);
+			uint32_t bmframebuffer = engineData->exec_glGenFramebuffer();
+			engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+			engineData->exec_glBindTexture_GL_TEXTURE_2D(bmTextureID);
+			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(bmframebuffer);
+			uint32_t bmrenderbuffer = engineData->exec_glGenRenderbuffer();
+			engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(bmrenderbuffer);
+			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(w, h);
+			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(bmrenderbuffer);
+			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(bmTextureID);
+			
+			// upload current content of bitmap container (no need for locking the bitmapcontainer as the worker thread is waiting until rendering is done)
+			// TODO should only be done if the content was already set to something
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, it->bitmapcontainer->getData(),true);
+			engineData->exec_glClear(CLEARMASK(CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+			baseFramebuffer=bmframebuffer;
+			baseRenderbuffer=bmrenderbuffer;
+			flipvertical=false; // avoid flipping resulting image vertically (as is done for normal rendering)
+			setViewPort(w,h,false);
+			
+			// render DisplayObject to texture
+			it->displayobject->Render(*this,false,&it->initialMatrix,&(*it));
+			
+			// read rendered texture back into bitmapcontainer (no need for locking the bitmapcontainer as the worker thread is waiting until rendering is done)
+			// TODO should only be done "on demand" if pixels in bitmapcontainer are accessed later
+			engineData->exec_glReadPixels_GL_BGRA(w, h,it->bitmapcontainer->getData());
+			
+			// reset everything for normal rendering
+			baseFramebuffer=0;
+			baseRenderbuffer=0;
+			flipvertical=true;
+			resetCurrentFrameBuffer();
+			resetViewPort();
+			engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+			
+			// cleanup
+			engineData->exec_glDeleteFramebuffers(1,&bmframebuffer);
+			engineData->exec_glDeleteRenderbuffers(1,&bmrenderbuffer);
+			engineData->exec_glDeleteTextures(1,&bmTextureID);
+			
+			// signal to waiting worker thread that rendering is complete
+			it->bitmapcontainer->renderevent.signal();
+			it = displayobjectsToRender.erase(it);
+		}
+		renderToBitmapContainerNeeded=false;
+		return true;
+	}
+
 	if(USUALLY_FALSE(m_sys->isOnError()))
 	{
 		renderErrorPage(this, m_sys->standalone);
@@ -415,22 +503,37 @@ void RenderThread::resetViewPort()
 	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
 	setMatrixUniform(LSGL_MODELVIEW);
 }
-void RenderThread::setViewPort(uint32_t w, uint32_t h)
+void RenderThread::setViewPort(uint32_t w, uint32_t h, bool flip)
 {
 	engineData->exec_glViewport(0,0,w,h);
 	currentframebufferWidth=w;
 	currentframebufferHeight=h;
-	lsglLoadIdentity();
-	lsglOrtho(0,w,0,h,-100,0);
-	//scaleY is negated to adapt the flash and gl coordinates system
-	//An additional translation is added for the same reason
-	lsglTranslatef(0,h,0);
-	lsglScalef(1.0,-1.0,1);
-	setMatrixUniform(LSGL_PROJECTION);
-	lsglLoadIdentity();
-	lsglScalef(1.0,-1.0,1);
-	lsglTranslatef(0,h*(-1.0f),0);
-	setMatrixUniform(LSGL_MODELVIEW);
+	if (flip)
+	{
+		lsglLoadIdentity();
+		lsglOrtho(0,w,0,h,-100,0);
+		//scaleY is negated to adapt the flash and gl coordinates system
+		//An additional translation is added for the same reason
+		lsglTranslatef(0,h,0);
+		lsglScalef(1.0,-1.0,1);
+		setMatrixUniform(LSGL_PROJECTION);
+		lsglLoadIdentity();
+		lsglScalef(1.0,-1.0,1);
+		lsglTranslatef(0,h*(-1.0f),0);
+		setMatrixUniform(LSGL_MODELVIEW);
+	}
+	else
+	{
+		lsglLoadIdentity();
+		lsglOrtho(0,w,0,h,-100,0);
+		lsglTranslatef(0,0,0);
+		lsglScalef(1.0,1.0,1);
+		setMatrixUniform(LSGL_PROJECTION);
+		lsglLoadIdentity();
+		lsglScalef(1.0,1.0,1);
+		lsglTranslatef(0,h*(1.0f),0);
+		setMatrixUniform(LSGL_MODELVIEW);
+	}
 }
 void RenderThread::setModelView(const MATRIX& matrix)
 {
@@ -478,7 +581,6 @@ void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t
 	engineData->exec_glDrawArrays_GL_TRIANGLE_STRIP(0, 4);
 	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glDisableVertexAttribArray(TEXCOORD_ATTRIB);
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 }
 void RenderThread::generateScreenshot()
 {
@@ -1059,6 +1161,9 @@ void RenderThread::removeDebugRect()
 bool RenderThread::coreRendering()
 {
 	Locker l(mutexRendering);
+	baseFramebuffer=0;
+	baseRenderbuffer=0;
+	flipvertical=true;
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 	engineData->exec_glFrontFace(false);
 	engineData->exec_glDrawBuffer_GL_BACK();
@@ -1405,6 +1510,7 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 	//Fast bailout if the TextureChunk is not valid
 	if(chunk.chunks==nullptr || data == nullptr)
 		return;
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
 	//TODO: Detect continuos
 	//The size is ok if doesn't grow over the allocated size
@@ -1449,3 +1555,23 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 		engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(0, blockX, blockY, sizeX, sizeY, data_clamp);
 	}
 }
+void RenderThread::renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, const MATRIX &initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase *ct, _NR<BitmapContainer> bm)
+{
+	if(m_sys->isShuttingDown())
+		return;
+	mutexRenderToBitmapContainer.lock();
+	RenderDisplayObjectToBitmapContainer r;
+	r.displayobject = o;
+	r.initialMatrix = initialMatrix;
+	r.bitmapcontainer = bm;
+	r.smoothing = smoothing;
+	r.blendMode = blendMode;
+	r.ct = ct;
+	o->invalidateForRenderToBitmap(&r);
+	displayobjectsToRender.push_back(r);
+	renderToBitmapContainerNeeded=true;
+	mutexRenderToBitmapContainer.unlock();
+	event.signal();
+	bm->renderevent.wait(); // wait until render thread has completed rendering to BitmapContainer
+}
+

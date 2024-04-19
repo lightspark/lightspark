@@ -1822,7 +1822,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 			this->resetNeedsTextureRecalculation();
 			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
 										   , matrix.getScaleX(), matrix.getScaleY()
-										   , isMask
+										   , isMask, cacheAsBitmap
 										   , getConcatenatedAlpha()
 										   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 		}
@@ -1841,7 +1841,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 			this->resetNeedsTextureRecalculation();
 			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
 										   , matrix.getScaleX(), matrix.getScaleY()
-										   , isMask
+										   , isMask, cacheAsBitmap
 										   , getConcatenatedAlpha()
 										   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 		}
@@ -1851,7 +1851,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 		this->resetNeedsTextureRecalculation();
 		return new RefreshableDrawable(x, y, ceil(width), ceil(height)
 									   , matrix.getScaleX(), matrix.getScaleY()
-									   , isMask
+									   , isMask, cacheAsBitmap
 									   , getConcatenatedAlpha()
 									   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 	}		
@@ -1861,7 +1861,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	float yscale = getConcatenatedMatrix().getScaleY();
 	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,matrix, x, y, ceil(width), ceil(height),
-																					xscale,yscale,isMask, 1.0f,getConcatenatedAlpha(),
+																					xscale,yscale,isMask,cacheAsBitmap, 1.0f,getConcatenatedAlpha(),
 																					ColorTransformBase(),
 																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode());
 	if (res != nullptr)
@@ -1875,7 +1875,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 	return new CairoPangoRenderer(*this,matrix,
 				x, y, ceil(width), ceil(height),
 				xscale,yscale,
-				isMask,
+				isMask, cacheAsBitmap,
 				1.0f, getConcatenatedAlpha(),
 				ColorTransformBase(),
 				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),caretIndex);

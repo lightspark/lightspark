@@ -74,8 +74,8 @@ class externalFontRenderer : public IDrawable
 	int32_t externalressource;
 	class EngineData* m_engine;
 public:
-	externalFontRenderer(const TextData &_textData, class EngineData* engine, int32_t x, int32_t y, int32_t w, int32_t h, float xs, float ys, bool im, float a,
-						 const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing,AS_BLENDMODE _blendmode, const MATRIX &_m);
+	externalFontRenderer(const TextData &_textData, class EngineData* engine, int32_t x, int32_t y, int32_t w, int32_t h, float xs, float ys, bool _isMask, bool _cacheAsBitmap, float a,
+						 const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing, AS_BLENDMODE _blendmode, const MATRIX &_m);
 	
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 	void renderToCairo(cairo_t* cr, CachedSurface& surface) override;
@@ -324,6 +324,7 @@ public:
 	virtual void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data);
 	virtual void exec_glGenerateMipmap_GL_TEXTURE_2D();
 	virtual void exec_glReadPixels(int32_t width, int32_t height,void* buf);
+	virtual void exec_glReadPixels_GL_BGRA(int32_t width, int32_t height, void *buf);
 	virtual void exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id);
 	virtual void exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	virtual void exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
@@ -355,7 +356,9 @@ public:
 	// Text rendering
 	virtual uint8_t* getFontPixelBuffer(int32_t externalressource,int width,int height) { return nullptr; }
 	virtual int32_t setupFontRenderer(const TextData &_textData,float a, SMOOTH_MODE smoothing) { return 0; }
-	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _xs, float _ys, bool _im, float _s, float _a,
+	IDrawable* getTextRenderDrawable(const TextData& _textData, const MATRIX& _m, int32_t _x, int32_t _y, int32_t _w, int32_t _h, float _xs, float _ys,
+									 bool _isMask, bool _cacheAsBitmap,
+									 float _s, float _a,
 									 const ColorTransformBase& _colortransform,
 									 SMOOTH_MODE smoothing,
 									 AS_BLENDMODE _blendmode);

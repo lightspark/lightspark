@@ -96,12 +96,12 @@ private:
 	Semaphore initialized;
 	volatile bool refreshNeeded;
 	Mutex mutexRefreshSurfaces;
-	struct refreshableSurface
-	{
-		IDrawable* drawable;
-		_NR<DisplayObject> displayobject;
-	};
-	std::list<refreshableSurface> surfacesToRefresh;
+	std::list<RefreshableSurface> surfacesToRefresh;
+
+	volatile bool renderToBitmapContainerNeeded;
+	Mutex mutexRenderToBitmapContainer;
+	std::list<RenderDisplayObjectToBitmapContainer> displayobjectsToRender;
+
 	std::list<uint32_t> texturesToDelete;
 	struct DebugRect
 	{
@@ -144,7 +144,7 @@ public:
 	void addRefreshableSurface(IDrawable* d,_NR<DisplayObject> o)
 	{
 		Locker l(mutexRefreshSurfaces);
-		refreshableSurface s;
+		RefreshableSurface s;
 		s.displayobject = o;
 		s.drawable = d;
 		surfacesToRefresh.push_back(s);
@@ -158,6 +158,8 @@ public:
 			event.signal();
 		}
 	}
+
+	void renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, const MATRIX& initialMatrix,bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct,_NR<BitmapContainer> bm);
 	/**
 		Allocates a chunk from the shared texture
 		if direct is true, the openGL texture is generated directly. this can only be used inside the render thread
@@ -203,7 +205,7 @@ public:
 	void drawDebugText(const tiny_string& str, const Vector2f& pos);
 	void addDebugRect(DisplayObject* obj, const MATRIX& matrix, bool scaleDown = false, const Vector2f& pos = Vector2f(), const Vector2f& size = Vector2f(), bool onlyTranslate = false);
 	void removeDebugRect();
-	void setViewPort(uint32_t w, uint32_t h);
+	void setViewPort(uint32_t w, uint32_t h, bool flip);
 	void resetViewPort();
 	void setModelView(const MATRIX& matrix);
 	void renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter, bool flippedvertical,bool clearstate=true);

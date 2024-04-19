@@ -38,6 +38,7 @@ class Stage;
 class Transform;
 class Rectangle;
 class KeyboardEvent;
+struct RenderDisplayObjectToBitmapContainer;
 
 class DisplayObject: public EventDispatcher, public IBitmapDrawable
 {
@@ -166,7 +167,6 @@ public:
 	}
 	void applyFilters(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley);
 	void renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h);
-	
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
@@ -228,6 +228,7 @@ public:
 	 * @param initialMatrix A matrix that will be prepended to all transformations
 	 */
 	virtual IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap);
+	virtual void invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container);
 	virtual void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false);
 	void updateCachedSurface(IDrawable* d);
 	MATRIX getConcatenatedMatrix(bool includeRoot=false) const;
@@ -259,7 +260,7 @@ public:
 	virtual void startDrawJob(bool forcachedbitmap) {}
 	virtual void endDrawJob(bool forcachedbitmap) {}
 	
-	bool Render(RenderContext& ctxt, bool force=false, const MATRIX* startmatrix=nullptr);
+	bool Render(RenderContext& ctxt, bool force=false, const MATRIX* startmatrix=nullptr, RenderDisplayObjectToBitmapContainer* container=nullptr);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m, bool visibleOnly=false);
 	_NR<DisplayObject> hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly);
 	virtual void setOnStage(bool staged, bool force, bool inskipping=false);

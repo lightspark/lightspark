@@ -303,7 +303,7 @@ IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
 				, 1, 1
-				, this->isMask()
+				, this->isMask(),false
 				, this->getConcatenatedAlpha()
 				, this->colorTransform.getPtr() ? *this->colorTransform.getPtr() :ColorTransformBase()
 				, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE

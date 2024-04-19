@@ -716,7 +716,7 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 				CairoTokenRenderer r(tmptokens,MATRIX()
 							, xmin, ymin, xmax, ymax
 							, 1, 1
-							, false
+							, false, false
 							, 0.05,1.0
 							, ColorTransformBase()
 							, SMOOTH_MODE::SMOOTH_SUBPIXEL,AS_BLENDMODE::BLENDMODE_NORMAL,0,0,false);

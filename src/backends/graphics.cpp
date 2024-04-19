@@ -138,12 +138,13 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 	return false;
 }
 
-CairoRenderer::CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
+CairoRenderer::CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h, float _xs, float _ys,
+		bool _ismask, bool _cacheAsBitmap,
 		float _s, float _a,
 		const ColorTransformBase& _colortransform,
 		SMOOTH_MODE _smoothing,
 		AS_BLENDMODE _blendmode)
-	: IDrawable(_w, _h, _x, _y, _xs, _ys, _xs, _ys, _im,_a,
+	: IDrawable(_w, _h, _x, _y, _xs, _ys, _xs, _ys, _ismask,_cacheAsBitmap,_a,
 				_colortransform,_smoothing,_blendmode,_m)
 	, scaleFactor(_s)
 {
@@ -797,11 +798,13 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 }
 
 CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h
-									   , float _xs, float _ys, bool _im, float _s, float _a
+									   , float _xs, float _ys
+									   , bool _ismask, bool _cacheAsBitmap
+									   , float _s, float _a
 									   , const ColorTransformBase& _colortransform
 									   , SMOOTH_MODE _smoothing, AS_BLENDMODE _blendmode
 									   , number_t _xstart, number_t _ystart, bool _softwarerenderer)
-	: CairoRenderer(_m,_x,_y,_w,_h,_xs,_ys,_im,_s,_a
+	: CairoRenderer(_m,_x,_y,_w,_h,_xs,_ys,_ismask,_cacheAsBitmap,_s,_a
 					, _colortransform
 					,_smoothing,_blendmode),tokens(_g),xstart(_xstart),ystart(_ystart),softwarerenderer(_softwarerenderer)
 {
@@ -1187,27 +1190,25 @@ void AsyncDrawJob::contentOffset(number_t& x, number_t& y) const
 	y = drawable->getState()->yOffset;
 }
 
-void SoftwareInvalidateQueue::addToInvalidateQueue(_R<DisplayObject> d)
-{
-	queue.emplace_back(d);
-}
-
 IDrawable::~IDrawable()
 {
 }
 
-RefreshableDrawable::RefreshableDrawable(float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
+RefreshableDrawable::RefreshableDrawable(float _x, float _y, float _w, float _h, float _xs, float _ys,
+		bool _ismask, bool _cacheAsBitmap,
 		float _a,
 		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m)
-	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _im,_a,
+	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _ismask, _cacheAsBitmap,_a,
 				_colortransform,_smoothing,_blendmode,_m)
 {
 }
 
-BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data, float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
+BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data,
+		float _x, float _y, float _w, float _h, float _xs, float _ys,
+		bool _ismask, bool _cacheAsBitmap,
 		float _a,
 		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m)
-	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _im,_a,
+	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _ismask,_cacheAsBitmap,_a,
 				_colortransform,_smoothing,_blendmode,_m)
 	, data(_data)
 {
@@ -1237,10 +1238,12 @@ void BitmapRenderer::renderToCairo(cairo_t* cr,CachedSurface& surface)
 	cairo_surface_destroy(chunkSurface);
 }
 
-CachedBitmapRenderer::CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix, float _x, float _y, float _w, float _h, float _xs, float _ys, bool _im,
+CachedBitmapRenderer::CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix,
+		float _x, float _y, float _w, float _h, float _xs, float _ys,
+		bool _ismask, bool _cacheAsBitmap,
 		float _a,
 		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m)
-	: BitmapRenderer(_source->getCachedBitmap()->as<Bitmap>()->bitmapData->getBitmapContainer(), _x, _y,_w, _h, _xs, _ys, _im,_a,
+	: BitmapRenderer(_source->getCachedBitmap()->as<Bitmap>()->bitmapData->getBitmapContainer(), _x, _y,_w, _h, _xs, _ys, _ismask,_cacheAsBitmap,_a,
 				_colortransform,_smoothing,_blendmode,_m)
 	, source(_source),sourceCacheMatrix(_sourceCacheMatrix)
 {
@@ -1468,6 +1471,10 @@ void SurfaceState::reset()
 	blendmode= AS_BLENDMODE::BLENDMODE_NORMAL;
 	needsFilterRefresh=true;
 	needsLayer=false;
+	for (auto it=childrenlist.cbegin(); it != childrenlist.cend(); it++)
+	{
+		(*it)->removeStoredMember();
+	}
 	childrenlist.clear();
 }
 
@@ -1478,6 +1485,8 @@ void SurfaceState::setupChildrenList(std::vector<DisplayObject*>& dynamicDisplay
 	needsLayer=false;
 	for (auto it=dynamicDisplayList.cbegin(); it != dynamicDisplayList.cend(); it++)
 	{
+		(*it)->incRef();
+		(*it)->addStoredMember();
 		childrenlist.push_back(*it);
 		if (DisplayObject::isShaderBlendMode((*it)->getBlendMode()))
 			needsLayer=true;

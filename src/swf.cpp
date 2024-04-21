@@ -1299,19 +1299,6 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 	//Check if the object is already in the queue
 	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail || !EngineData::enablerendering)
 		return;
-	if (d->getNeedsTextureRecalculation())
-	{
-		DisplayObject* o = d->cachedAsBitmapOf;
-		if (o)
-		{
-			// ancestor is cached as bitmap, needs to be redrawn
-			o->incRef();
-			o->hasChanged=true;
-			o->setNeedsTextureRecalculation();
-			addToInvalidateQueue(_MR(o));
-			return;
-		}
-	}
 	if(!invalidateQueueHead)
 		invalidateQueueHead=invalidateQueueTail=d;
 	else if (influshing)
@@ -1354,17 +1341,14 @@ void SystemState::flushInvalidationQueue()
 	}
 	while(!cur.isNull())
 	{
-		if((cur->isOnStage() || cur->isMask()) && cur->hasChanged && !cur->cachedAsBitmapOf)
+		if((cur->isOnStage() || cur->isMask()) && cur->hasChanged)
 		{
 			_NR<DisplayObject> drawobj=cur;
-			_NR<DisplayObject> cachedBitmap;
-			IDrawable* d=cur->invalidate(stage, initialMatrix, true, nullptr, &cachedBitmap);
+			IDrawable* d=cur->invalidate(true);
 			//Check if the drawable is valid and forge a new job to
 			//render it and upload it to GPU
 			if(d)
 			{
-				if (cachedBitmap)
-					drawobj = cachedBitmap;
 				if (drawobj->getNeedsTextureRecalculation() || !d->isCachedSurfaceUsable(drawobj.getPtr()))
 				{
 					drawjobLock.lock();

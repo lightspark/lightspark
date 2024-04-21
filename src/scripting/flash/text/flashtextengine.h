@@ -257,7 +257,7 @@ private:
 	// similar to TextField and should be shared
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
+	IDrawable* invalidate(bool smoothing) override;
 	bool renderImpl(RenderContext& ctxt) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:

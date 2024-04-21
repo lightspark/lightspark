@@ -719,7 +719,7 @@ const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontp
 							, false, false
 							, 0.05,1.0
 							, ColorTransformBase()
-							, SMOOTH_MODE::SMOOTH_SUBPIXEL,AS_BLENDMODE::BLENDMODE_NORMAL,0,0,false);
+							, SMOOTH_MODE::SMOOTH_SUBPIXEL,AS_BLENDMODE::BLENDMODE_NORMAL,0,0);
 				uint8_t* buf = r.getPixelBuffer();
 				CharacterRenderer* renderer = new CharacterRenderer(buf,abs(xmax),abs(ymax));
 				//force creation of buffer if neccessary
@@ -1828,12 +1828,6 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 		//Remove the automatic name set by the DisplayObject constructor
 		obj->name = BUILTIN_STRINGS::EMPTY;
 	}
-	if (parent && parent->computeCacheAsBitmap())
-	{
-		obj->cachedAsBitmapOf=parent;
-	}
-	else
-		obj->cachedAsBitmapOf=parent->cachedAsBitmapOf;
 }
 
 void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
@@ -2016,10 +2010,6 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 				ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
 			}
 		}
-	}
-	if (currchar)
-	{
-		currchar->invalidateCachedAsBitmapOf();
 	}
 }
 

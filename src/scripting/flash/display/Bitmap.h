@@ -38,7 +38,6 @@ class Bitmap: public DisplayObject
 {
 friend class CairoTokenRenderer;
 private:
-	DisplayObject* cachedBitmapOwner;
 	void onBitmapData(_NR<BitmapData>);
 	void onSmoothingChanged(bool);
 	void onPixelSnappingChanged(tiny_string snapping);
@@ -51,7 +50,7 @@ public:
 	/* Call this after updating any member of 'data' */
 	void updatedData(bool startupload=true);
 	Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
-	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload=true, DisplayObject* owner=nullptr);
+	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload=true);
 	~Bitmap();
 	bool destruct() override;
 	void finalize() override;
@@ -63,8 +62,7 @@ public:
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
-	DisplayObject* getCachedBitmapOwner() const { return cachedBitmapOwner; }
+	IDrawable* invalidate(bool smoothing) override;
 };
 
 }

@@ -45,14 +45,14 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
-	void startDrawJob(bool forcachedbitmap) override;
-	void endDrawJob(bool forcachedbitmap) override;
+	void startDrawJob() override;
+	void endDrawJob() override;
 
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
+	IDrawable* invalidate(bool smoothing) override;
 };
 
 }

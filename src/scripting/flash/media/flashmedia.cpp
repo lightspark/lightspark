@@ -222,14 +222,6 @@ bool Video::renderImpl(RenderContext& ctxt)
 	if(skipRender())
 		return false;
 
-	//Video is especially optimized for GL rendering
-	//It needs special treatment for SOFTWARE contextes
-	if(ctxt.contextType != RenderContext::GL)
-	{
-		LOG(LOG_NOT_IMPLEMENTED, "Video::renderImpl on SOFTWARE context is not yet supported");
-		return false;
-	}
-
 	bool valid=false;
 	if(!netStream.isNull() && netStream->lockIfReady())
 	{

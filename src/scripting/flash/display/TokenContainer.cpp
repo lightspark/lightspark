@@ -88,7 +88,7 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 bool TokenContainer::renderImpl(RenderContext& ctxt)
 {
 	SystemState* sys = owner->getSystemState();
-	if (ctxt.contextType== RenderContext::GL && renderWithNanoVG)
+	if (renderWithNanoVG)
 	{
 		NVGcontext* nvgctxt = sys->getEngineData()->nvgcontext;
 		if (nvgctxt)
@@ -596,29 +596,18 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 
 void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	if (owner->cachedAsBitmapOf && !q->isSoftwareQueue)
+	if(tokens.empty() || owner->skipRender())
 		return;
-	if (!owner->computeCacheAsBitmap())
-	{
-		if(tokens.empty() || owner->skipRender())
-			return;
-	}
 	owner->requestInvalidationFilterParent(q);
 	
-	if (owner->requestInvalidationForCacheAsBitmap(q))
-		return;
 	owner->incRef();
 	if (forceTextureRefresh)
 		owner->setNeedsTextureRecalculation();
 	q->addToInvalidateQueue(_MR(owner));
 }
 
-IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix, SMOOTH_MODE smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap, bool fromgraphics)
+IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 {
-	if (owner->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=owner))
-	{
-		return owner->getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing != SMOOTH_MODE::SMOOTH_NONE);
-	}
 	number_t x,y;
 	number_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;
@@ -658,68 +647,58 @@ IDrawable* TokenContainer::invalidate(DisplayObject* target, const MATRIX& initi
 		regpointx=bxmin;
 		regpointy=bymin;
 	}
-	if (!q || !q->isSoftwareQueue)
+	if (owner->getSystemState()->getEngineData()->nvgcontext
+		&& !tokens.empty() 
+		&& tokens.canRenderToGL
+		&& !r
+		&& !DisplayObject::isShaderBlendMode(owner->getBlendMode())
+		&& !owner->hasFilters()
+		&& !owner->belongsToMask()
+		)
 	{
-		if (owner->getSystemState()->getEngineData()->nvgcontext
-			&& !tokens.empty() 
-			&& tokens.canRenderToGL
-			&& !owner->computeCacheAsBitmap()
-			&& !r
-			&& !DisplayObject::isShaderBlendMode(owner->getBlendMode())
-			&& !owner->hasFilters()
-			&& !owner->belongsToMask()
-			)
+		renderWithNanoVG=true;
+		if (fromgraphics)
 		{
-			renderWithNanoVG=true;
-			if (fromgraphics)
-			{
-				x=0;
-				y=0;
-			}
-			else
-			{
-				x=bxmin;
-				y=bymin;
-			}
-			owner->resetNeedsTextureRecalculation();
-			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
-										   , matrix.getScaleX(), matrix.getScaleY()
-										   , isMask, owner->cacheAsBitmap
-										   , owner->getConcatenatedAlpha()
-										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,owner->getBlendMode(),matrix);
+			x=0;
+			y=0;
 		}
-		else if (renderWithNanoVG)
+		else
 		{
-			// this was previously rendered with nanoVG but some condition has changed, so we need to recalculate the owners texture
-			owner->setNeedsTextureRecalculation();
-			renderWithNanoVG=false;
+			x=bxmin;
+			y=bymin;
 		}
+		owner->resetNeedsTextureRecalculation();
+		return new RefreshableDrawable(x, y, ceil(width), ceil(height)
+									   , matrix.getScaleX(), matrix.getScaleY()
+									   , isMask, owner->cacheAsBitmap
+									   , owner->getConcatenatedAlpha()
+									   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,owner->getBlendMode(),matrix);
 	}
-	if (q && q->isSoftwareQueue && !fromgraphics)
+	else if (renderWithNanoVG)
 	{
-		// re-add the upper left corner of the bounds rect to the starting point when rendering to bitmap (was removed in FromShaperecordListToShapeVector)
-		regpointx -= bxmin;
-		regpointy -= bymin;
+		// this was previously rendered with nanoVG but some condition has changed, so we need to recalculate the owners texture
+		owner->setNeedsTextureRecalculation();
+		renderWithNanoVG=false;
 	}
 	return new CairoTokenRenderer(tokens,matrix
 				, x, y, ceil(width), ceil(height)
 				, matrix.getScaleX(), matrix.getScaleY()
 				, isMask, owner->cacheAsBitmap
 				, scaling,owner->getConcatenatedAlpha()
-				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE,owner->getBlendMode(), regpointx, regpointy,q && q->isSoftwareQueue);
+				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE,owner->getBlendMode(), regpointx, regpointy);
 }
 
 bool TokenContainer::hitTestImpl(const Vector2f& point) const
 {
 	//Masks have been already checked along the way
 
-	owner->startDrawJob(false); // ensure that tokens are not changed during hitTest
+	owner->startDrawJob(); // ensure that tokens are not changed during hitTest
 	if(CairoTokenRenderer::hitTest(tokens, scaling, point))
 	{
-		owner->endDrawJob(false);
+		owner->endDrawJob();
 		return true;
 	}
-	owner->endDrawJob(false);
+	owner->endDrawJob();
 	return false;
 }
 

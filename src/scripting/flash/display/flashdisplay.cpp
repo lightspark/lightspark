@@ -118,16 +118,14 @@ void Sprite::prepareShutdown()
 		soundtransform->prepareShutdown();
 }
 
-void Sprite::startDrawJob(bool forcachedbitmap)
+void Sprite::startDrawJob()
 {
-	DisplayObjectContainer::startDrawJob(forcachedbitmap);
 	if (graphics)
 		graphics->startDrawJob();
 }
 
-void Sprite::endDrawJob(bool forcachedbitmap)
+void Sprite::endDrawJob()
 {
-	DisplayObjectContainer::endDrawJob(forcachedbitmap);
 	if (graphics)
 		graphics->endDrawJob();
 }
@@ -154,25 +152,21 @@ void Sprite::afterSetUseHandCursor(bool /*oldValue*/)
 	handleMouseCursor(hasMouse);
 }
 
-IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
+IDrawable* Sprite::invalidate(bool smoothing)
 {
-	IDrawable* res = getFilterDrawable(target,initialMatrix,smoothing,q);
+	IDrawable* res = getFilterDrawable(smoothing);
 	if (res)
 	{
 		Locker l(mutexDisplayList);
 		res->getState()->setupChildrenList(dynamicDisplayList);
 		return res;
 	}
-	if (this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
-	{
-	 	return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
-	}
 
 	if (graphics && graphics->hasTokens())
 	{
 		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
-		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,true);
+		res = TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,true);
 		this->graphics->endDrawJob();
 		if (res)
 		{
@@ -181,7 +175,7 @@ IDrawable* Sprite::invalidate(DisplayObject* target, const MATRIX& initialMatrix
 		}
 	}
 	else
-		res = DisplayObjectContainer::invalidate(target, initialMatrix,smoothing,q,cachedBitmap);
+		res = DisplayObjectContainer::invalidate(smoothing);
 	return res;
 }
 
@@ -373,13 +367,6 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
 {
 	bool renderingfailed = false;
-	if (ctxt.contextType == RenderContext::CAIRO && needsCacheAsBitmap() && ctxt.startobject != this)
-	{
-		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
-		if (d)
-			d->Render(ctxt);
-		return renderingfailed;
-	}
 	SurfaceState* surfacestate = ctxt.getCachedSurface(this).getState();
 	assert(surfacestate);
 	int clipDepth = 0;
@@ -1983,30 +1970,6 @@ void DisplayObjectContainer::markBoundsRectDirtyChildren()
 	}
 }
 
-void DisplayObjectContainer::setChildrenCachedAsBitmapOf(DisplayObject* cachedBitmapObject)
-{
-	if (cachedBitmapObject==nullptr && this->computeCacheAsBitmap())
-	{
-		this->cachedAsBitmapOf=nullptr;
-		cachedBitmapObject=this;
-	}
-	else if (this != cachedBitmapObject)
-	{
-		this->cachedAsBitmapOf=cachedBitmapObject;
-		this->setNeedsCachedBitmapRecalculation();
-	}
-	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
-	{
-		if ((*it)->is<DisplayObjectContainer>())
-			(*it)->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(cachedBitmapObject);
-		else
-		{
-			(*it)->cachedAsBitmapOf=cachedBitmapObject;
-			(*it)->setNeedsCachedBitmapRecalculation();
-		}
-	}
-}
-
 bool DisplayObjectContainer::hasLegacyChildAt(int32_t depth)
 {
 	auto i = mapDepthToLegacyChild.find(depth);
@@ -2276,32 +2239,6 @@ bool DisplayObjectContainer::countCylicMemberReferences(garbagecollectorstate& g
 	return ret;
 }
 
-void DisplayObjectContainer::startDrawJob(bool forcachedbitmap)
-{
-	if (forcachedbitmap)
-	{
-		std::vector<_R<DisplayObject>> tmplist;
-		cloneDisplayList(tmplist);
-		for (auto it = tmplist.begin(); it != tmplist.end(); it++)
-		{
-			(*it)->startDrawJob(forcachedbitmap);
-		}
-	}
-}
-
-void DisplayObjectContainer::endDrawJob(bool forcachedbitmap)
-{
-	if (forcachedbitmap)
-	{
-		std::vector<_R<DisplayObject>> tmplist;
-		cloneDisplayList(tmplist);
-		for (auto it = tmplist.begin(); it != tmplist.end(); it++)
-		{
-			(*it)->endDrawJob(forcachedbitmap);
-		}
-	}
-}
-
 void DisplayObjectContainer::cloneDisplayList(std::vector<Ref<DisplayObject> >& displayListCopy)
 {
 	Locker l(mutexDisplayList);
@@ -2469,8 +2406,9 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    " (" << pos.x << "," << pos.y << ") " <<
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
-		    ((*it)->isMask() ? "m" : "") <<((*it)->hasFilters() ? "f" : "") <<((*it)->scrollRect.getPtr() ? "s" : "") << " cd=" <<(*it)->ClipDepth<<" ca=" <<(*it)->computeCacheAsBitmap()<<"/"<<(*it)->cachedAsBitmapOf<<" "<<
-						  "a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'"<<" depth:"<<(*it)->getDepth()<<" blendmode:"<<(*it)->getBlendMode());
+		    ((*it)->isMask() ? "m" : "") <<((*it)->hasFilters() ? "f" : "") <<((*it)->scrollRect.getPtr() ? "s" : "") << " cd=" <<(*it)->ClipDepth<<" "<<
+		    "a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'"<<" depth:"<<(*it)->getDepth()<<" blendmode:"<<(*it)->getBlendMode()<<
+		    ((*it)->cacheAsBitmap ? " cached" : ""));
 
 		if ((*it)->is<DisplayObjectContainer>())
 		{
@@ -2537,9 +2475,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setMouseChildren)
 void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	DisplayObject::requestInvalidation(q);
-	if (requestInvalidationForCacheAsBitmap(q))
-		return;
-	if (forceTextureRefresh || (q && q->isSoftwareQueue))
+	if (forceTextureRefresh)
 	{
 		std::vector<_R<DisplayObject>> tmplist;
 		cloneDisplayList(tmplist); // use copy of displaylist to avoid deadlock when computing boundsrect for cached bitmaps
@@ -2552,8 +2488,7 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceT
 	}
 	if (forceTextureRefresh)
 		this->setNeedsTextureRecalculation();
-	if (!q || !q->isSoftwareQueue)
-		hasChanged=true;
+	hasChanged=true;
 	incRef();
 	q->addToInvalidateQueue(_MR(this));
 	requestInvalidationFilterParent(q);
@@ -2567,9 +2502,9 @@ void DisplayObjectContainer::requestInvalidationIncludingChildren(InvalidateQueu
 		(*it)->requestInvalidationIncludingChildren(q);
 	}
 }
-IDrawable* DisplayObjectContainer::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
+IDrawable* DisplayObjectContainer::invalidate(bool smoothing)
 {
-	IDrawable* res = getFilterDrawable(target,initialMatrix,smoothing,q);
+	IDrawable* res = getFilterDrawable(smoothing);
 	if (res)
 	{
 		Locker l(mutexDisplayList);
@@ -2647,12 +2582,6 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 	}
 	if (!onStage || child != getSystemState()->mainClip)
 		child->setOnStage(onStage,false,inskipping);
-	if (computeCacheAsBitmap())
-		child->cachedAsBitmapOf=this;
-	else
-		child->cachedAsBitmapOf=cachedAsBitmapOf;
-	if (child->is<DisplayObjectContainer>())
-		child->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(child->cachedAsBitmapOf);
 	
 	if (isOnStage())
 		this->requestInvalidation(getSystemState());
@@ -2685,10 +2614,6 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
 	}
-	child->cachedAsBitmapOf=nullptr;
-	child->setNeedsCachedBitmapRecalculation();
-	if (child->is<DisplayObjectContainer>())
-		child->as<DisplayObjectContainer>()->setChildrenCachedAsBitmapOf(nullptr);
 
 	{
 		Locker l(mutexDisplayList);
@@ -4801,26 +4726,19 @@ void SimpleButton::prepareShutdown()
 	if(soundchannel_OverDownToOverUp)
 		soundchannel_OverDownToOverUp->prepareShutdown();
 }
-IDrawable *SimpleButton::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
+IDrawable *SimpleButton::invalidate(bool smoothing)
 {
-	IDrawable* res = getFilterDrawable(target,initialMatrix,smoothing,q);
+	IDrawable* res = getFilterDrawable(smoothing);
 	if (res)
 	{
 		Locker l(mutexDisplayList);
 		res->getState()->setupChildrenList(dynamicDisplayList);
 		return res;
 	}
-	if (cachedBitmap && needsCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
-		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
-	return DisplayObjectContainer::invalidate(target,initialMatrix,smoothing,q,cachedBitmap);
+	return DisplayObjectContainer::invalidate(smoothing);
 }
 void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	if (requestInvalidationForCacheAsBitmap(q))
-	{
-		if (!q->isSoftwareQueue)
-			return;
-	}
 	requestInvalidationFilterParent(q);
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 	hasChanged=true;

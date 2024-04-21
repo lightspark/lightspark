@@ -42,7 +42,7 @@ public:
 	MorphShape(ASWorker* wrk, Class_base* c, DefineMorphShapeTag* _morphshapetag);
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
+	IDrawable* invalidate(bool smoothing) override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 	uint32_t getTagID() const override;
 };

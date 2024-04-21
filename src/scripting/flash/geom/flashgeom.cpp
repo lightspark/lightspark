@@ -1143,7 +1143,6 @@ ASFUNCTIONBODY_ATOM(Transform,_setColorTransform)
 	else
 		*th->owner->colorTransform.getPtr() = *ct.getPtr();
 	th->owner->hasChanged=true;
-	th->owner->setNeedsCachedBitmapRecalculation();
 	if (th->owner->isOnStage())
 		th->owner->requestInvalidation(wrk->getSystemState());
 	else

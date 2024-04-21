@@ -41,11 +41,9 @@ class LineData;
 class CairoPangoRenderer;
 class RefreshableDrawable;
 class BitmapRenderer;
-class CachedBitmapRenderer;
-class InvalidateQueue;
 class SoftwareInvalidateQueue;
 class CharacterRenderer;
 class ITextureUploadable;
 
-};
+}
 #endif /* FORWARDS_BACKENDS_GRAPHICS_H */

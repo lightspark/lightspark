@@ -51,23 +51,25 @@ const float RenderContext::lsIdentityMatrix[16] = {
 								0, 0, 0, 1
 								};
 
-const CachedSurface CairoRenderContext::invalidSurface;
-
 void TransformStack::push(const Transform2D& _transform)
 {
 	if (!transforms.empty())
 	{
 		auto matrix = transform().matrix.multiplyMatrix(_transform.matrix);
 		auto colorTransform = transform().colorTransform.multiplyTransform(_transform.colorTransform);
-		transforms.push_back(Transform2D(matrix, colorTransform,_transform.blendmode));
+		AS_BLENDMODE blendmode = transform().blendmode;
+		if (DisplayObject::isShaderBlendMode(blendmode)
+			|| blendmode == AS_BLENDMODE::BLENDMODE_LAYER
+			|| _transform.blendmode != AS_BLENDMODE::BLENDMODE_NORMAL)
+			blendmode = _transform.blendmode;
+		transforms.push_back(Transform2D(matrix, colorTransform,blendmode));
 	}
 	else
 		transforms.push_back(_transform);
 }
 
-RenderContext::RenderContext(CONTEXT_TYPE t,DisplayObject* startobj):
-	inMaskRendering(false),maskActive(false),
-	contextType(t),currentMask(nullptr),currentShaderBlendMode(AS_BLENDMODE::BLENDMODE_NORMAL),startobject(startobj)
+RenderContext::RenderContext():
+	inMaskRendering(false),maskActive(false)
 {
 	lsglLoadIdentity();
 }
@@ -549,7 +551,7 @@ void GLRenderContext::setMatrixUniform(LSGL_MATRIX m) const
 	engineData->exec_glUniformMatrix4fv(uni, 1, false, lsMVPMatrix);
 }
 
-CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t _width, uint32_t _height, bool smoothing, DisplayObject* startobj):RenderContext(CAIRO,startobj)
+CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t _width, uint32_t _height, bool smoothing)
 {
 	cairoSurface=getCairoSurfaceForData(buf, _width, _height,_width);
 	width=_width;
@@ -567,41 +569,6 @@ CairoRenderContext::~CairoRenderContext()
 		cr_list.pop_back();
 	}
 	
-	while (!masksurfaces.empty())
-	{
-		cairo_surface_destroy(masksurfaces.back().first);
-		masksurfaces.pop_back();
-	}
-	while (!customSurfaces.empty())
-	{
-		delete customSurfaces.begin()->second.second; // destruct IDrawable
-		customSurfaces.erase(customSurfaces.begin());
-	}
-}
-
-void CairoRenderContext::render(DisplayObject* d)
-{
-	auto it=customSurfaces.find(d->is<Bitmap>() && d->as<Bitmap>()->getCachedBitmapOwner() ? d->as<Bitmap>()->getCachedBitmapOwner() : d);
-	if(it==customSurfaces.end())
-		return;
-	IDrawable* drawable = it->second.second;
-	cairo_t* cr = cr_list.back();
-	cairo_save(cr);
-	const Transform2D& t = transformStack().transform();
-	setupRenderState(cr,t.blendmode,d->isMask(),drawable->getState()->smoothing);
-	cairo_set_matrix(cr,&t.matrix);
-	drawable->renderToCairo(cr,it->second.first);
-	if(isMaskActive())
-	{
-		for (auto it=masksurfaces.begin(); it!=masksurfaces.end(); it++)
-		{
-			// apply mask
-			cairo_save(cr);
-			cairo_set_matrix(cr,&it->second);
-			cairo_mask_surface(cr,it->first,0,0);
-			cairo_restore(cr);
-		}
-	}
 }
 
 cairo_surface_t* CairoRenderContext::getCairoSurfaceForData(uint8_t* buf, uint32_t width, uint32_t height, uint32_t stride)
@@ -644,45 +611,6 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, BitmapContainer* bc, C
 	cairo_pattern_destroy(sourcePattern);
 	cairo_rectangle(cr, x, y, w, h);
 	cairo_fill(cr);
-}
-
-void CairoRenderContext::pushMask()
-{
-	RenderContext::pushMask();
-	const Transform2D& t = transformStack().transform();
-	cairo_surface_t* maskSurface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32,width,height);
-	cairo_t* cr = cairo_create(maskSurface);
-	cr_list.push_back(cr);
-	masksurfaces.push_back(make_pair(maskSurface,t.matrix));
-}
-
-void CairoRenderContext::popMask()
-{
-	RenderContext::popMask();
-	cairo_surface_destroy(masksurfaces.back().first);
-	masksurfaces.pop_back();
-	cairo_destroy(cr_list.back());
-	cr_list.pop_back();
-}
-
-void CairoRenderContext::deactivateMask()
-{
-	RenderContext::deactivateMask();
-}
-
-void CairoRenderContext::activateMask()
-{
-	RenderContext::activateMask();
-}
-
-void CairoRenderContext::suspendActiveMask()
-{
-	RenderContext::suspendActiveMask();
-}
-
-void CairoRenderContext::resumeActiveMask()
-{
-	RenderContext::resumeActiveMask();
 }
 
 void CairoRenderContext::setupRenderState(cairo_t* cr,AS_BLENDMODE blendmode,bool isMask,SMOOTH_MODE smooth)
@@ -744,196 +672,4 @@ void CairoRenderContext::setupRenderState(cairo_t* cr,AS_BLENDMODE blendmode,boo
 		}
 	}
 	
-}
-void CairoRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
-			const ColorTransformBase& colortransform,
-			bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
-			AS_BLENDMODE blendmode)
-{
-	if (colorMode != RGB_MODE)
-		LOG(LOG_NOT_IMPLEMENTED,"CairoRenderContext.renderTextured colorMode not implemented:"<<(int)colorMode);
-	cairo_t* cr = cr_list.back();
-	cairo_save(cr);
-	setupRenderState(cr,blendmode,isMask,smooth);
-	MATRIX m = matrix.multiplyMatrix(MATRIX(1, 1, 0, 0, chunk.xOffset / chunk.xContentScale, chunk.yOffset / chunk.yContentScale));
-	if (smooth == SMOOTH_MODE::SMOOTH_NONE)
-	{
-		m.x0 = round(m.x0);
-		m.y0 = round(m.y0);
-	}
-	cairo_set_matrix(cr, &m);
-
-	uint8_t* buf=(uint8_t*)chunk.chunks;
-	cairo_surface_t* chunkSurface;
-	if (scalingGrid && scalingGrid->width+abs(scalingGrid->x) < chunk.width/chunk.xContentScale && scalingGrid->height+abs(scalingGrid->y) < chunk.height/chunk.yContentScale && matrix.getRotation()==0)
-	{
-		// rendering with scalingGrid
-
-		int bytestartpos = 0;
-		number_t scalex = chunk.xContentScale;
-		number_t scaley = chunk.yContentScale;
-		number_t xoffset=0;
-		number_t yoffset=0;
-		number_t scaledleftborder = scalingGrid->x*scalex;
-		number_t scaledtopborder = scalingGrid->y*scaley;
-		number_t scaledrightborder = number_t(chunk.width)-((scalingGrid->x+scalingGrid->width)*scalex);
-		number_t scaledbottomborder = number_t(chunk.height)-((scalingGrid->y+scalingGrid->height)*scaley);
-		number_t innerwidth = number_t(chunk.width) - (scaledrightborder+scaledleftborder);
-		number_t innerheight = number_t(chunk.height) - (scaledbottomborder+scaledtopborder);
-		number_t innerscalex = innerwidth/(number_t(chunk.width) - (scaledrightborder+scaledleftborder)/scalex);
-		number_t innerscaley = innerheight/(number_t(chunk.height) - (scaledbottomborder+scaledtopborder)/scaley);
-
-		// 1) render unscaled upper left corner
-		chunkSurface = getCairoSurfaceForData(buf, ceil(scaledleftborder), ceil(scaledtopborder), chunk.width);
-		cairo_save(cr);
-		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
-		cairo_set_source_surface(cr, chunkSurface, 0,0);
-		cairo_paint_with_alpha(cr,alpha);
-		cairo_surface_destroy(chunkSurface);
-		cairo_restore(cr);
-
-		// 2) render unscaled upper right corner
-		bytestartpos = int(int(scalingGrid->x+scalingGrid->width)*scalex)*4;
-		xoffset = chunk.width*scalex-scaledrightborder;
-		yoffset = 0;
-		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(scaledrightborder), ceil(scaledtopborder), chunk.width);
-		cairo_save(cr);
-		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
-		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint_with_alpha(cr,alpha);
-		cairo_surface_destroy(chunkSurface);
-		cairo_restore(cr);
-
-		// 3) render unscaled lower right corner
-		bytestartpos = int(int((scalingGrid->y+scalingGrid->height)*scaley)*chunk.width+int(scalingGrid->x+scalingGrid->width)*scalex)*4;
-		xoffset = chunk.width*scalex-scaledrightborder;
-		yoffset = chunk.height*scaley-scaledbottomborder;
-		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(scaledrightborder), ceil(scaledbottomborder), chunk.width);
-		cairo_save(cr);
-		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
-		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint_with_alpha(cr,alpha);
-		cairo_surface_destroy(chunkSurface);
-		cairo_restore(cr);
-
-		// 4) render unscaled lower left corner
-		bytestartpos = int(int((scalingGrid->y+scalingGrid->height)*scaley)*chunk.width)*4;
-		xoffset = 0;
-		yoffset = chunk.height*scaley-scaledbottomborder;
-		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(scaledleftborder), ceil(scaledbottomborder), chunk.width);
-		cairo_save(cr);
-		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*scaley) );
-		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint_with_alpha(cr,alpha);
-		cairo_surface_destroy(chunkSurface);
-		cairo_restore(cr);
-
-		// 5) render x-scaled upper border
-		bytestartpos = int(int(scalingGrid->x)*scalex)*4;
-		xoffset = scalingGrid->x*innerscalex;
-		yoffset = 0;
-		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(innerwidth), ceil(scaledtopborder), chunk.width);
-		cairo_save(cr);
-		cairo_scale(cr, 1.0 / (scalex*innerscalex), 1.0 / (scaley*scaley) );
-		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint_with_alpha(cr,alpha);
-		cairo_surface_destroy(chunkSurface);
-		cairo_restore(cr);
-
-
-		// 6) render y-scaled right border
-		bytestartpos = int(int((scalingGrid->y)*scaley)*chunk.width+int(scalingGrid->x+scalingGrid->width)*scalex)*4;
-		xoffset = chunk.width*scalex-scaledrightborder;
-		yoffset = scalingGrid->y*innerscaley;
-		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(scaledrightborder), ceil(innerheight), chunk.width);
-		cairo_save(cr);
-		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*innerscaley) );
-		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint_with_alpha(cr,alpha);
-		cairo_surface_destroy(chunkSurface);
-		cairo_restore(cr);
-
-		// 7) render x-scaled bottom border
-		bytestartpos = int(int((scalingGrid->y+scalingGrid->height)*scaley)*chunk.width+int(scalingGrid->x)*scalex)*4;
-		xoffset = scalingGrid->x*innerscalex;
-		yoffset = chunk.height*scaley-scaledbottomborder;
-		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(innerwidth), ceil(scaledbottomborder), chunk.width);
-		cairo_save(cr);
-		cairo_scale(cr, 1.0 / (scalex*innerscalex), 1.0 / (scaley*scaley) );
-		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint_with_alpha(cr,alpha);
-		cairo_surface_destroy(chunkSurface);
-		cairo_restore(cr);
-
-		// 8) render y-scaled left border
-		bytestartpos = int(int((scalingGrid->y)*scaley)*chunk.width)*4;
-		xoffset = 0;
-		yoffset = scalingGrid->y*innerscaley;
-		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(scaledrightborder), ceil(innerheight), chunk.width);
-		cairo_save(cr);
-		cairo_scale(cr, 1.0 / (scalex*scalex), 1.0 / (scaley*innerscaley) );
-		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-		cairo_paint_with_alpha(cr,alpha);
-		cairo_surface_destroy(chunkSurface);
-		cairo_restore(cr);
-
-		// 9) render scaled center
-		bytestartpos = int(int(scalingGrid->y*scaley)*chunk.width+int(scalingGrid->x*scalex))*4;
-		chunkSurface = getCairoSurfaceForData(buf+bytestartpos, ceil(innerwidth), ceil(innerheight), chunk.width);
-		xoffset = scalingGrid->x*innerscalex;
-		yoffset = scalingGrid->y*innerscaley;
-		cairo_scale(cr, 1 / (scalex*innerscalex), 1 / (scaley*innerscaley));
-		cairo_set_source_surface(cr, chunkSurface, xoffset,yoffset);
-	}
-	else
-	{
-		chunkSurface = getCairoSurfaceForData(buf, chunk.width, chunk.height, chunk.width);
-		cairo_scale(cr, 1 / chunk.xContentScale, 1 / chunk.yContentScale);
-		cairo_set_source_surface(cr, chunkSurface, 0,0);
-	}
-	if(isDrawingMask())
-	{
-		MATRIX maskmatrix;
-		cairo_get_matrix(cr, &maskmatrix);
-		masksurfaces.push_back(make_pair(chunkSurface,maskmatrix));
-	}
-	if(isMaskActive())
-	{
-		for (auto it=masksurfaces.begin(); it!=masksurfaces.end(); it++)
-		{
-			// apply mask
-			cairo_save(cr);
-			cairo_set_matrix(cr,&it->second);
-			cairo_mask_surface(cr,it->first,0,0);
-			cairo_restore(cr);
-		}
-	}
-	else
-		cairo_paint_with_alpha(cr,alpha);
-	
-	if (!isDrawingMask())
-		cairo_surface_destroy(chunkSurface);
-	cairo_restore(cr);
-}
-
-const CachedSurface& CairoRenderContext::getCachedSurface(const DisplayObject* d) const
-{
-	auto ret=customSurfaces.find(d);
-	if(ret==customSurfaces.end())
-	{
-		//No surface is stored, return an invalid one
-		return invalidSurface;
-	}
-	return ret->second.first;
-}
-
-CachedSurface& CairoRenderContext::allocateCustomSurface(const DisplayObject* d, IDrawable* drawable)
-{
-	auto ret=customSurfaces.insert(make_pair(d, make_pair(CachedSurface(),drawable)));
-	CachedSurface& surface=ret.first->second.first;
-	if (surface.tex==nullptr)
-		surface.tex=new TextureChunk();
-	surface.tex->chunks=nullptr;
-	surface.isChunkOwner=false;
-	return surface;
 }

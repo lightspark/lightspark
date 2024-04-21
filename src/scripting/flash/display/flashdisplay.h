@@ -152,7 +152,7 @@ public:
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	void requestInvalidationIncludingChildren(InvalidateQueue* q) override;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
+	IDrawable* invalidate(bool smoothing) override;
 	void invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container) override;
 	
 	void _addChildAt(DisplayObject* child, unsigned int index, bool inskipping=false);
@@ -166,13 +166,10 @@ public:
 	void markAsChanged() override;
 	inline void markBoundsRectDirty() { boundsRectDirty=true; boundsRectVisibleDirty=true; }
 	void markBoundsRectDirtyChildren();
-	void setChildrenCachedAsBitmapOf(DisplayObject* cachedBitmapObject);
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
-	void startDrawJob(bool forcachedbitmap) override;
-	void endDrawJob(bool forcachedbitmap) override;
 	void cloneDisplayList(std::vector<_R<DisplayObject>>& displayListCopy);
 	bool isEmpty() const { return dynamicDisplayList.empty(); }
 	bool hasLegacyChildAt(int32_t depth);
@@ -267,7 +264,7 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
+	IDrawable* invalidate(bool smoothing) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	uint32_t getTagID() const override;
 
@@ -376,8 +373,8 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
-	void startDrawJob(bool forcachedbitmap) override;
-	void endDrawJob(bool forcachedbitmap) override;
+	void startDrawJob() override;
+	void endDrawJob() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
@@ -392,7 +389,7 @@ public:
 	{
 		return 0;
 	}
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
+	IDrawable* invalidate(bool smoothing) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	Graphics* getGraphics();
 	void handleMouseCursor(bool rollover) override;

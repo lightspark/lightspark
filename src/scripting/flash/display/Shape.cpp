@@ -131,13 +131,13 @@ void Shape::prepareShutdown()
 		graphics->prepareShutdown();
 }
 
-void Shape::startDrawJob(bool forcachedbitmap)
+void Shape::startDrawJob()
 {
 	if (graphics)
 		graphics->startDrawJob();
 }
 
-void Shape::endDrawJob(bool forcachedbitmap)
+void Shape::endDrawJob()
 {
 	if (graphics)
 		graphics->endDrawJob();
@@ -161,18 +161,18 @@ void Shape::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 	TokenContainer::requestInvalidation(q,forceTextureRefresh);
 }
 
-IDrawable *Shape::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
+IDrawable *Shape::invalidate(bool smoothing)
 {
 	IDrawable* res = nullptr;
 	if (graphics && graphics->hasTokens())
 	{
 		this->graphics->startDrawJob();
 		this->graphics->refreshTokens();
-		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,true);
+		res = TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,true);
 		this->graphics->endDrawJob();
 	}
 	else
-		res = TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
+		res = TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false);
 	return res;
 }
 

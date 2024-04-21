@@ -98,12 +98,10 @@ private:
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool useLegacyMatrix;
 	bool needsTextureRecalculation;
-	bool needsCachedBitmapRecalculation;
 	bool textureRecalculationSkippable;
 	std::map<uint32_t,asAtom> avm1variables;
 	uint32_t avm1mouselistenercount;
 	uint32_t avm1framelistenercount;
-	void updateCachedAsBitmap();
 	void onSetScrollRect(_NR<Rectangle> oldValue);
 protected:
 	_NR<Bitmap> cachedBitmap;
@@ -172,15 +170,9 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
 	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,scrollRect);
 	_NR<ColorTransform> colorTransform;
-	// pointer to the ancestor of this DisplayObject that is cached as Bitmap
-	DisplayObject* cachedAsBitmapOf;
-	void invalidateCachedAsBitmapOf();
-	void setNeedsTextureRecalculation(bool skippable=false, bool setCachedBitmapRecalculation = true);
+	void setNeedsTextureRecalculation(bool skippable=false);
 	void resetNeedsTextureRecalculation() { needsTextureRecalculation=false; }
 	bool getNeedsTextureRecalculation() const { return needsTextureRecalculation; }
-	void setNeedsCachedBitmapRecalculation()  { needsCachedBitmapRecalculation=true; }
-	void resetNeedsCachedBitmapRecalculation() { needsCachedBitmapRecalculation=false; }
-	bool getNeedsCachedBitmapRecalculation() const { return needsCachedBitmapRecalculation; }
 	bool getTextureRecalculationSkippable() const { return textureRecalculationSkippable; }
 	// this may differ from the main clip if this instance was generated from a loaded swf, not from the main clip
 	RootMovieClip* loadedFrom;
@@ -196,10 +188,8 @@ public:
 	bool hasFilters() const;
 	void requestInvalidationFilterParent(InvalidateQueue* q=nullptr);
 	virtual void requestInvalidationIncludingChildren(InvalidateQueue* q);
-	bool requestInvalidationForCacheAsBitmap(InvalidateQueue* q);
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
-	IDrawable* getCachedBitmapDrawable(DisplayObject* target, const MATRIX& initialMatrix, _NR<DisplayObject>* pcachedBitmap, bool smoothing);
-	IDrawable* getFilterDrawable(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q);
+	IDrawable* getFilterDrawable(bool smoothing);
 	_NR<DisplayObject> getCachedBitmap() const;
 	DisplayObjectContainer* getParent() const { return parent; }
 	int getParentDepth() const;
@@ -227,7 +217,7 @@ public:
 	 * _must_ be on the parent chain of this
 	 * @param initialMatrix A matrix that will be prepended to all transformations
 	 */
-	virtual IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap);
+	virtual IDrawable* invalidate(bool smoothing);
 	virtual void invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container);
 	virtual void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false);
 	void updateCachedSurface(IDrawable* d);
@@ -257,8 +247,8 @@ public:
 	virtual void afterLegacyInsert();
 	virtual void afterLegacyDelete(bool inskipping) {}
 	virtual uint32_t getTagID() const { return UINT32_MAX;}
-	virtual void startDrawJob(bool forcachedbitmap) {}
-	virtual void endDrawJob(bool forcachedbitmap) {}
+	virtual void startDrawJob() {}
+	virtual void endDrawJob() {}
 	
 	bool Render(RenderContext& ctxt, bool force=false, const MATRIX* startmatrix=nullptr, RenderDisplayObjectToBitmapContainer* container=nullptr);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m, bool visibleOnly=false);
@@ -385,7 +375,6 @@ public:
 	void AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> obj);
 	AVM1Function *AVM1GetFunction(uint32_t nameID);
 	virtual void AVM1AfterAdvance() {}
-	void DrawToBitmap(BitmapData* bm, const MATRIX& initialMatrix, bool smoothing, bool forcachedbitmap, AS_BLENDMODE blendMode, ColorTransformBase* ct);
 	std::string toDebugString() const override;
 };
 }

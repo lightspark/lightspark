@@ -664,7 +664,6 @@ ASFUNCTIONBODY_ATOM(AVM1Color,setTransform)
 			th->target->colorTransform->alphaOffset = asAtomHandler::toNumber(a);
 		ASATOM_DECREF(a);
 		th->target->hasChanged=true;
-		th->target->setNeedsCachedBitmapRecalculation();
 		th->target->requestInvalidation(wrk->getSystemState());
 	}
 }

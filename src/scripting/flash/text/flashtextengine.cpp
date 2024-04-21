@@ -1226,8 +1226,6 @@ bool TextLine::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number
 
 void TextLine::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	if (requestInvalidationForCacheAsBitmap(q))
-		return;
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 	if (!tokensEmpty())
 		TokenContainer::requestInvalidation(q,forceTextureRefresh);
@@ -1239,12 +1237,8 @@ void TextLine::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 	}
 }
 
-IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
+IDrawable* TextLine::invalidate(bool smoothing)
 {
-	if (cachedBitmap && this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
-	{
-		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
-	}
 	number_t x,y;
 	number_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;
@@ -1276,11 +1270,7 @@ IDrawable* TextLine::invalidate(DisplayObject* target, const MATRIX& initialMatr
 		}
 		if (tokens.empty())
 			return nullptr;
-		return TokenContainer::invalidate(target, initialMatrix,smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
-	}
-	if (this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
-	{
-		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
+		return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,false);
 	}
 	MATRIX matrix = getMatrix();
 	bool isMask=this->isMask();

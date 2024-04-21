@@ -237,7 +237,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	th->notifyUsers();
 }
 
-void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, bool forCachedBitmap, AS_BLENDMODE blendMode, ColorTransformBase* ct)
+void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct)
 {
 	d->incRef();
 	getSystemState()->getRenderThread()->renderDisplayObjectToBimapContainer(_MNR(d),initialMatrix,smoothing,blendMode,ct,this->pixels);
@@ -327,7 +327,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 			case BUILTIN_STRINGS::STRING_SCREEN: bl = BLENDMODE_SCREEN; break;
 			case BUILTIN_STRINGS::STRING_SUBTRACT: bl = BLENDMODE_SUBTRACT; break;
 		}
-		d->DrawToBitmap(th,initialMatrix,smoothing,false,bl,ctransform.getPtr());
+		th->drawDisplayObject(d, initialMatrix,smoothing,bl,ctransform.getPtr());
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());

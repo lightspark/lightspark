@@ -1544,7 +1544,6 @@ void TextField::lostFocus()
 	setNeedsTextureRecalculation();
 	if(onStage && isVisible())
 		requestInvalidation(this->getSystemState());
-	invalidateCachedAsBitmapOf();
 }
 
 void TextField::gotFocus()
@@ -1592,7 +1591,6 @@ void TextField::tick()
 	
 	if(onStage && isVisible())
 		requestInvalidation(this->getSystemState());
-	invalidateCachedAsBitmapOf();
 }
 
 void TextField::tickFence()
@@ -1619,7 +1617,7 @@ void TextField::textUpdated()
 	updateSizes();
 	setSizeAndPositionFromAutoSize();
 	// TODO implement fast rendering path for not embedded fonts
-	if (computeCacheAsBitmap() || !embeddedFont)
+	if (!embeddedFont)
 	{
 		hasChanged=true;
 		setNeedsTextureRecalculation();
@@ -1628,13 +1626,10 @@ void TextField::textUpdated()
 			requestInvalidation(this->getSystemState());
 	}
 	requestInvalidationFilterParent(this->getSystemState());
-	invalidateCachedAsBitmapOf();
 }
 
 void TextField::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	if (requestInvalidationForCacheAsBitmap(q))
-		return;
 	if (!tokensEmpty())
 		TokenContainer::requestInvalidation(q,forceTextureRefresh);
 	else
@@ -1709,13 +1704,9 @@ void TextField::defaultEventBehavior(_R<Event> e)
 		}
 	}
 }
-IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMatrix,bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
+IDrawable* TextField::invalidate(bool smoothing)
 {
 	Locker l(invalidatemutex);
-	if (cachedBitmap && this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
-	{
-		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
-	}
 	number_t x,y;
 	number_t width,height;
 	number_t bxmin,bxmax,bymin,bymax;
@@ -1824,14 +1815,10 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 										   , matrix.getScaleX(), matrix.getScaleY()
 										   , isMask, cacheAsBitmap
 										   , getConcatenatedAlpha()
-										   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 		}
 		// it seems that textfields are always rendered with subpixel smoothing when rendering to bitmap
-		return TokenContainer::invalidate(target, initialMatrix,smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
-	}
-	if (this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
-	{
-		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, smoothing);
+		return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,false);
 	}
 	if (this->type != ET_EDITABLE)
 	{
@@ -1843,7 +1830,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 										   , matrix.getScaleX(), matrix.getScaleY()
 										   , isMask, cacheAsBitmap
 										   , getConcatenatedAlpha()
-										   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 		}
 	}
 	if(width==0 || height==0)
@@ -1853,7 +1840,7 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 									   , matrix.getScaleX(), matrix.getScaleY()
 									   , isMask, cacheAsBitmap
 									   , getConcatenatedAlpha()
-									   , ct, smoothing || (q && q->isSoftwareQueue) ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+									   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 	}		
 	if(matrix.getScaleX() != 1 || matrix.getScaleY() != 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<matrix.getScaleX()<<" "<<matrix.getScaleY()<<" "<<this->getText());
@@ -1883,16 +1870,6 @@ IDrawable* TextField::invalidate(DisplayObject* target, const MATRIX& initialMat
 
 bool TextField::renderImpl(RenderContext& ctxt)
 {
-	if (ctxt.contextType == RenderContext::CAIRO && needsCacheAsBitmap() && ctxt.startobject != this)
-	{
-		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
-		if (d)
-		{
-			MATRIX m;
-			d->Render(ctxt,false,&m);
-		}
-		return false;
-	}
 	linemutex->lock();
 	if (getText().empty() && !this->border && !this->background && !this->caretblinkstate)
 	{
@@ -1900,7 +1877,7 @@ bool TextField::renderImpl(RenderContext& ctxt)
 		return false;
 	}
 	linemutex->unlock();
-	if (!computeCacheAsBitmap() && (ctxt.contextType == RenderContext::GL) && embeddedFont)
+	if (embeddedFont)
 	{
 		MATRIX matrix = ctxt.transformStack().transform().matrix;
 		bool isMask=this->isMask();
@@ -2511,9 +2488,9 @@ void StaticText::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),_getText),GETTER_METHOD,true);
 }
 
-IDrawable* StaticText::invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
+IDrawable* StaticText::invalidate(bool smoothing)
 {
-	return TokenContainer::invalidate(target, initialMatrix,smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,q,cachedBitmap,false);
+	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,false);
 }
 bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
@@ -2528,16 +2505,6 @@ bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numb
 
 bool StaticText::renderImpl(RenderContext& ctxt)
 {
-	if (ctxt.contextType == RenderContext::CAIRO && needsCacheAsBitmap() && ctxt.startobject != this)
-	{
-		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
-		if (d)
-		{
-			MATRIX m;
-			d->Render(ctxt,false,&m);
-		}
-		return false;
-	}
 	return TokenContainer::renderImpl(ctxt);
 }
 

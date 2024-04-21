@@ -164,7 +164,7 @@ void CairoTokenRenderer::quadraticBezier(cairo_t* cr, double control_x, double c
 	               end_x, end_y);
 }
 
-cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask, CairoTokenRenderer* th)
+cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask)
 {
 	cairo_pattern_t* pattern = nullptr;
 
@@ -174,15 +174,10 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 		{
 			const RGBA& color = style.Color;
 			float r,g,b,a;
-			if (th && th->softwarerenderer)
-				th->getState()->colortransform.applyTransformation(color,r,g,b,a);
-			else
-			{
-				r = color.rf();
-				g = color.gf();
-				b = color.bf();
-				a = isMask ? 1.0 : color.af();
-			}
+			r = color.rf();
+			g = color.gf();
+			b = color.bf();
+			a = isMask ? 1.0 : color.af();
 			pattern = cairo_pattern_create_rgba(r,g,b,a);
 			break;
 		}
@@ -232,17 +227,10 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 				double ratio = number_t(gradrecords[i].Ratio) / 255.0;
 				const RGBA& color=gradrecords[i].Color;
 				float r,g,b,a;
-				if (th && th->softwarerenderer)
-				{
-					th->getState()->colortransform.applyTransformation(color,r,g,b,a);
-				}
-				else
-				{
-					r = color.rf();
-					g = color.gf();
-					b = color.bf();
-					a = color.af();
-				}
+				r = color.rf();
+				g = color.gf();
+				b = color.bf();
+				a = color.af();
 				cairo_pattern_add_color_stop_rgba(pattern, ratio,r,g,b,a);
 			}
 			break;
@@ -262,17 +250,8 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			{
 				cairo_surface_t* surface = nullptr;
 				uint8_t* buf = nullptr;
-				if (th && th->softwarerenderer)
-				{
-					//Do an explicit cast, the data will not be modified
-					buf = (uint8_t*)bm->applyColorTransform(th->getState()->colortransform.redMultiplier,th->getState()->colortransform.greenMultiplier,th->getState()->colortransform.blueMultiplier,th->getState()->colortransform.alphaMultiplier,
-												  th->getState()->colortransform.redOffset,th->getState()->colortransform.greenOffset,th->getState()->colortransform.blueOffset,th->getState()->colortransform.alphaOffset);
-				}
-				else
-				{
-					//Do an explicit cast, the data will not be modified
-					buf = (uint8_t*)bm->getData();
-				}
+				//Do an explicit cast, the data will not be modified
+				buf = (uint8_t*)bm->getData();
 				surface = cairo_image_surface_create_for_data (buf,
 									CAIRO_FORMAT_ARGB32,
 									bm->getWidth(),
@@ -379,15 +358,10 @@ void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cai
 	} else {
 		const RGBA& color = style->Color;
 		float r,g,b,a;
-		if (th && th->softwarerenderer)
-			th->getState()->colortransform.applyTransformation(color,r,g,b,a);
-		else
-		{
-			r = color.rf();
-			g = color.gf();
-			b = color.bf();
-			a = isMask ? 1.0 : color.af();
-		}
+		r = color.rf();
+		g = color.gf();
+		b = color.bf();
+		a = isMask ? 1.0 : color.af();
 		cairo_set_source_rgba(cr, r, g, b, a);
 	}
 	// TODO: EndCapStyle
@@ -574,7 +548,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					currentfillstyle=p1.fillStyle;
 					if (currentfillpattern)
 						cairo_pattern_destroy(currentfillpattern);
-					currentfillpattern = FILLSTYLEToCairo(*currentfillstyle, scaleCorrection,isMask,th);
+					currentfillpattern = FILLSTYLEToCairo(*currentfillstyle, scaleCorrection,isMask);
 					break;
 				}
 				case SET_STROKE:
@@ -599,7 +573,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					if (currentstrokepattern)
 						cairo_pattern_destroy(currentstrokepattern);
 					if (currentstrokestyle->HasFillFlag)
-						currentstrokepattern = FILLSTYLEToCairo(currentstrokestyle->FillType, scaleCorrection,isMask,th);
+						currentstrokepattern = FILLSTYLEToCairo(currentstrokestyle->FillType, scaleCorrection,isMask);
 					else
 						currentstrokepattern = nullptr;
 					break;
@@ -745,15 +719,6 @@ uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 	return ret;
 }
 
-void CairoRenderer::renderToCairo(cairo_t* cr,CachedSurface& surface)
-{
-	cairo_save(cr);
-	cairo_scale(cr, getState()->xscale, getState()->yscale);
-	cairo_set_antialias(cr,getState()->smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
-	executeDraw(cr);
-	cairo_restore(cr);
-}
-
 bool CairoRenderer::isCachedSurfaceUsable(const DisplayObject* o) const
 {
 	const TextureChunk* tex = o->cachedSurface.tex;
@@ -803,10 +768,10 @@ CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m,
 									   , float _s, float _a
 									   , const ColorTransformBase& _colortransform
 									   , SMOOTH_MODE _smoothing, AS_BLENDMODE _blendmode
-									   , number_t _xstart, number_t _ystart, bool _softwarerenderer)
+									   , number_t _xstart, number_t _ystart)
 	: CairoRenderer(_m,_x,_y,_w,_h,_xs,_ys,_ismask,_cacheAsBitmap,_s,_a
 					, _colortransform
-					,_smoothing,_blendmode),tokens(_g),xstart(_xstart),ystart(_ystart),softwarerenderer(_softwarerenderer)
+					,_smoothing,_blendmode),tokens(_g),xstart(_xstart),ystart(_ystart)
 {
 }
 
@@ -1103,13 +1068,12 @@ AsyncDrawJob::~AsyncDrawJob()
 
 void AsyncDrawJob::execute()
 {
-	bool forCachedBitmap = owner->computeCacheAsBitmap();
-	owner->startDrawJob(forCachedBitmap);
+	owner->startDrawJob();
 	if(!threadAborting)
 		surfaceBytes=drawable->getPixelBuffer(&isBufferOwner);
 	if(!threadAborting && surfaceBytes)
 		uploadNeeded=true;
-	owner->endDrawJob(forCachedBitmap);
+	owner->endDrawJob();
 }
 
 void AsyncDrawJob::threadAbort()
@@ -1221,39 +1185,6 @@ uint8_t *BitmapRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 	if (bufsize)
 		*bufsize=data->getWidth()*data->getHeight()*4;
 	return data->getData();
-}
-
-void BitmapRenderer::renderToCairo(cairo_t* cr,CachedSurface& surface)
-{
-	surface.tex->setChunks(this->data->getData());
-	surface.isChunkOwner=false;
-	uint32_t bufsize=0;
-	bool isBufferOwner=true;
-	getPixelBuffer(&isBufferOwner,&bufsize);
-	uint32_t cairoWidthStride=cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, surface.tex->width);
-	cairo_surface_t* chunkSurface = cairo_image_surface_create_for_data(this->data->getData(),CAIRO_FORMAT_ARGB32, surface.tex->width, surface.tex->height, cairoWidthStride);
-	cairo_scale(cr, 1 / surface.tex->xContentScale, 1 / surface.tex->yContentScale);
-	cairo_set_source_surface(cr, chunkSurface, 0,0);
-	cairo_paint_with_alpha(cr,surface.getState()->alpha);
-	cairo_surface_destroy(chunkSurface);
-}
-
-CachedBitmapRenderer::CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix,
-		float _x, float _y, float _w, float _h, float _xs, float _ys,
-		bool _ismask, bool _cacheAsBitmap,
-		float _a,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m)
-	: BitmapRenderer(_source->getCachedBitmap()->as<Bitmap>()->bitmapData->getBitmapContainer(), _x, _y,_w, _h, _xs, _ys, _ismask,_cacheAsBitmap,_a,
-				_colortransform,_smoothing,_blendmode,_m)
-	, source(_source),sourceCacheMatrix(_sourceCacheMatrix)
-{
-}
-
-uint8_t* CachedBitmapRenderer::getPixelBuffer(bool* isBufferOwner, uint32_t* bufsize)
-{
-	source->DrawToBitmap(source->getCachedBitmap()->as<Bitmap>()->bitmapData.getPtr(),sourceCacheMatrix,getState()->smoothing,true,getState()->blendmode,&getState()->colortransform);
-	source->applyFilters(data.getPtr(),nullptr,RECT(0,data->getWidth(),0,data->getHeight()),0,0,getState()->xscale,getState()->yscale);
-	return BitmapRenderer::getPixelBuffer(isBufferOwner,bufsize);
 }
 
 uint8_t* CharacterRenderer::upload(bool refresh)
@@ -1379,8 +1310,6 @@ FontTag* TextData::checkEmbeddedFont(DisplayObject* d)
 
 void ColorTransformBase::fillConcatenated(DisplayObject* src, bool ignoreBlendMode)
 {
-	if (src->is<Bitmap>() && src->as<Bitmap>()->getCachedBitmapOwner())
-		src = src->as<Bitmap>()->getCachedBitmapOwner();
 	ColorTransform* ct = src->colorTransform.getPtr();
 	DisplayObjectContainer* p = src->getParent();
 	if (ct)

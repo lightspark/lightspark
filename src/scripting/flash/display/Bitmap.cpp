@@ -33,7 +33,7 @@ using namespace std;
 using namespace lightspark;
 
 Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
-	DisplayObject(wrk,c),cachedBitmapOwner(nullptr),smoothing(false)
+	DisplayObject(wrk,c),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	if(li)
@@ -78,7 +78,7 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li, std::istream *s
 	afterConstruction();
 }
 
-Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload, DisplayObject* owner) : DisplayObject(wrk,c),cachedBitmapOwner(owner),smoothing(false)
+Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload) : DisplayObject(wrk,c),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	bitmapData = data;
@@ -95,7 +95,6 @@ bool Bitmap::destruct()
 	if(!bitmapData.isNull())
 		bitmapData->removeUser(this);
 	bitmapData.reset();
-	cachedBitmapOwner=nullptr;
 	smoothing = false;
 	return DisplayObject::destruct();
 }
@@ -103,7 +102,6 @@ bool Bitmap::destruct()
 void Bitmap::finalize()
 {
 	bitmapData.reset();
-	cachedBitmapOwner=nullptr;
 	DisplayObject::finalize();
 }
 
@@ -177,16 +175,6 @@ void Bitmap::onPixelSnappingChanged(tiny_string snapping)
 
 bool Bitmap::renderImpl(RenderContext& ctxt)
 {
-	if (ctxt.contextType == RenderContext::CAIRO && needsCacheAsBitmap() && ctxt.startobject != this)
-	{
-		_NR<DisplayObject> d=getCachedBitmap(); // this ensures bitmap is not destructed during rendering
-		if (d)
-		{
-			MATRIX m;
-			d->Render(ctxt,false,&m);
-		}
-		return false;
-	}
 	return defaultRender(ctxt);
 }
 
@@ -211,28 +199,10 @@ void Bitmap::updatedData(bool startupload)
 	if (cachedSurface.getState())
 		cachedSurface.getState()->needsFilterRefresh=true;
 	hasChanged=true;
-	DisplayObject* d = this->cachedBitmapOwner;
-	if (d)
-	{
-		d->hasChanged=true;
-		d->setNeedsTextureRecalculation(false,false);
-		if(d->isOnStage() && startupload)
-		{
-			bitmapData->checkForUpload();
-			cachedSurface.isValid=true;
-			d->requestInvalidation(getSystemState());
-		}
-	}
 	if(onStage)
 	{
 		cachedSurface.isValid=true;
 		requestInvalidation(getSystemState());
-	}
-	setNeedsCachedBitmapRecalculation();
-	if (cachedAsBitmapOf)
-	{
-		cachedAsBitmapOf->setNeedsCachedBitmapRecalculation();
-		cachedAsBitmapOf->requestInvalidation(getSystemState());
 	}
 }
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
@@ -275,8 +245,6 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 {
 	if(skipRender())
 		return;
-	if (requestInvalidationForCacheAsBitmap(q))
-		return;
 	incRef();
 	// texture recalculation is never needed for legacy bitmaps
 	resetNeedsTextureRecalculation();
@@ -284,12 +252,8 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 	q->addToInvalidateQueue(_MR(this));
 }
 
-IDrawable *Bitmap::invalidate(DisplayObject *target, const MATRIX &initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap)
+IDrawable *Bitmap::invalidate(bool smoothing)
 {
-	if (cachedBitmap && this->needsCacheAsBitmap() && q && q->isSoftwareQueue && (!q->getCacheAsBitmapObject() || q->getCacheAsBitmapObject().getPtr()!=this))
-	{
-		return getCachedBitmapDrawable(target, initialMatrix, cachedBitmap, this->smoothing);
-	}
 	number_t bxmin,bxmax,bymin,bymax;
 	if(!boundsRectWithoutChildren(bxmin,bxmax,bymin,bymax,false))
 	{

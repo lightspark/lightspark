@@ -101,7 +101,7 @@ private:
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 	bool renderImpl(RenderContext& ctxt) override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
+	IDrawable* invalidate(bool smoothing) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	void defaultEventBehavior(_R<Event> e) override;
 	void updateText(const tiny_string& new_text);
@@ -304,7 +304,7 @@ public:
 		DisplayObject(wrk,c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f),bounds(b),tagID(_tagID) {}
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
-	IDrawable* invalidate(DisplayObject* target, const MATRIX& initialMatrix, bool smoothing, InvalidateQueue* q, _NR<DisplayObject>* cachedBitmap) override;
+	IDrawable* invalidate(bool smoothing) override;
 	uint32_t getTagID() const override { return tagID; }
 	bool allowAsMask() const override { return false; }
 };

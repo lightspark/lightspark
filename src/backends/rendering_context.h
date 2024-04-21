@@ -82,12 +82,7 @@ private:
 	bool inMaskRendering;
 	bool maskActive;
 public:
-	enum CONTEXT_TYPE { CAIRO=0, GL };
-	RenderContext(CONTEXT_TYPE t,DisplayObject* startobj=nullptr);
-	CONTEXT_TYPE contextType;
-	const DisplayObject* currentMask;
-	AS_BLENDMODE currentShaderBlendMode;
-	DisplayObject* startobject;
+	RenderContext();
 	TransformStack& transformStack()
 	{
 		if (transformStacks.empty())
@@ -192,7 +187,7 @@ public:
 	 * Uploads the current matrix as the specified type.
 	 */
 	void setMatrixUniform(LSGL_MATRIX m) const;
-	GLRenderContext() : RenderContext(GL),maskCount(0),engineData(nullptr), largeTextureSize(0)
+	GLRenderContext() : RenderContext(),maskCount(0),engineData(nullptr), largeTextureSize(0)
 	{
 	}
 	void SetEngineData(EngineData* data) { engineData = data;}
@@ -225,10 +220,9 @@ public:
 	bool handleGLErrors() const;
 };
 
-class CairoRenderContext: public RenderContext
+class CairoRenderContext
 {
 private:
-	std::unordered_map<const DisplayObject*, std::pair<CachedSurface,IDrawable*>> customSurfaces;
 	std::list<cairo_t*> cr_list;
 	cairo_surface_t* cairoSurface;
 	uint32_t width;
@@ -238,27 +232,11 @@ private:
 	/*
 	 * An invalid surface to be returned for objects with no content
 	 */
-	static const CachedSurface invalidSurface;
 	void setupRenderState(cairo_t* cr, AS_BLENDMODE blendmode, bool isMask, SMOOTH_MODE smooth);
 public:
-	CairoRenderContext(uint8_t* buf, uint32_t _width, uint32_t _height,bool smoothing,DisplayObject* startobj=nullptr);
+	CairoRenderContext(uint8_t* buf, uint32_t _width, uint32_t _height, bool smoothing);
 	virtual ~CairoRenderContext();
-	void render(DisplayObject* d);
-	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
-			const ColorTransformBase& colortransform,
-			bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
-			Rectangle* scalingGrid, AS_BLENDMODE blendmode) override;
-	/**
-	 * Get the right CachedSurface from an object
-	 * In the Cairo case we get the right CachedSurface out of the map
-	 */
-	const CachedSurface& getCachedSurface(const DisplayObject* obj) const override;
 
-	/**
-	 * The CairoRenderContext acquires the ownership of the buffer
-	 * it will be freed on destruction
-	 */
-	CachedSurface& allocateCustomSurface(const DisplayObject* d, IDrawable* drawable);
 	/**
 	 * Do a fast non filtered, non scaled blit of ARGB data
 	 */
@@ -270,12 +248,6 @@ public:
 	enum FILTER_MODE { FILTER_NONE = 0, FILTER_SMOOTH };
 	void transformedBlit(const MATRIX& m, BitmapContainer* bc, ColorTransform* ct,
 			FILTER_MODE filterMode, number_t x, number_t y, number_t w, number_t h);
-	void pushMask() override;
-	void popMask() override;
-	void deactivateMask() override;
-	void activateMask() override;
-	void suspendActiveMask() override;
-	void resumeActiveMask() override;
 };
 
 }

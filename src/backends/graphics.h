@@ -336,7 +336,6 @@ public:
 	 * masks
 	 */
 	virtual uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr)=0;
-	virtual void renderToCairo(cairo_t* cr,CachedSurface& surface)=0;
 	virtual bool isCachedSurfaceUsable(const DisplayObject*) const {return true;}
 	int32_t getWidth() const { return width; }
 	int32_t getHeight() const { return height; }
@@ -407,7 +406,6 @@ public:
 				  , AS_BLENDMODE _blendmode);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
-	void renderToCairo(cairo_t* cr, CachedSurface& surface) override;
 	bool isCachedSurfaceUsable(const DisplayObject*) const override;
 	/*
 	 * Converts data (which is in RGB format) to the format internally used by cairo.
@@ -427,7 +425,7 @@ private:
 	static void adjustFillStyle(cairo_t* cr, const FILLSTYLE* style, const MATRIX& origmat, double scaleCorrection);
 	static void executefill(cairo_t* cr, const FILLSTYLE* style, cairo_pattern_t* pattern, double scaleCorrection);
 	static void executestroke(cairo_t* stroke_cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask, CairoTokenRenderer* th);
-	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask, CairoTokenRenderer* th);
+	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask);
 	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, bool isMask, number_t xstart, number_t ystart, CairoTokenRenderer* th=nullptr, int* starttoken=nullptr);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
 	/*
@@ -440,7 +438,6 @@ private:
 	void executeDraw(cairo_t* cr) override;
 	number_t xstart;
 	number_t ystart;
-	bool softwarerenderer;
 public:
 	/*
 	   CairoTokenRenderer constructor
@@ -461,7 +458,7 @@ public:
 			float _s, float _a,
 			const ColorTransformBase& _colortransform,
 			SMOOTH_MODE _smoothing, AS_BLENDMODE _blendmode,
-			number_t _xstart, number_t _ystart, bool _softwarerenderer);
+			number_t _xstart, number_t _ystart);
 	/*
 	   Hit testing helper. Uses cairo to find if a point in inside the shape
 
@@ -610,7 +607,6 @@ public:
 				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override { return nullptr; }
-	void renderToCairo(cairo_t* cr, CachedSurface& surface) override {}
 };
 
 class BitmapRenderer: public IDrawable
@@ -626,23 +622,6 @@ public:
 				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
 	//IDrawable interface
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
-	void renderToCairo(cairo_t* cr, CachedSurface& surface) override;
-};
-
-class CachedBitmapRenderer: public BitmapRenderer
-{
-protected:
-	_NR<DisplayObject> source;
-	const MATRIX sourceCacheMatrix;
-public:
-	CachedBitmapRenderer(_NR<DisplayObject> _source, const MATRIX& _sourceCacheMatrix, float _x, float _y, float _w, float _h
-				  , float _xs, float _ys
-				  , bool _ismask, bool _cacheAsBitmap
-				  , float _a
-				  , const ColorTransformBase& _colortransform
-				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
-	//IDrawable interface
-	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
 };
 
 class InvalidateQueue
@@ -650,12 +629,11 @@ class InvalidateQueue
 protected:
 	_NR<DisplayObject> cacheAsBitmapObject;
 public:
-	InvalidateQueue(_NR<DisplayObject> _cacheAsBitmapObject=NullRef, bool issoftwarequeue=false):cacheAsBitmapObject(_cacheAsBitmapObject),isSoftwareQueue(issoftwarequeue) {}
+	InvalidateQueue(_NR<DisplayObject> _cacheAsBitmapObject=NullRef):cacheAsBitmapObject(_cacheAsBitmapObject) {}
 	virtual ~InvalidateQueue(){}
 	//Invalidation queue management
 	virtual void addToInvalidateQueue(_R<DisplayObject> d) = 0;
 	_NR<DisplayObject> getCacheAsBitmapObject() const { return cacheAsBitmapObject; }
-	bool isSoftwareQueue;
 };
 
 class CharacterRenderer : public ITextureUploadable

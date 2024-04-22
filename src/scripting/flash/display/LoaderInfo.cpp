@@ -264,6 +264,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 					getVm(getSystemState())->addIdleEvent(_MR(this),_MR(progressEvent));
 				}
 			}
+			checkSendComplete();
 		}
 	}
 }
@@ -276,7 +277,11 @@ void LoaderInfo::sendInit()
 		this->addLoaderEvent(ev);
 	assert(loadStatus==STARTED);
 	loadStatus=INIT_SENT;
-	if(bytesTotal && bytesLoaded==bytesTotal)
+	checkSendComplete();
+}
+void LoaderInfo::checkSendComplete()
+{
+	if(loadStatus==INIT_SENT && bytesTotal && bytesLoaded==bytesTotal)
 	{
 		//The clip is also complete now
 		this->incRef();

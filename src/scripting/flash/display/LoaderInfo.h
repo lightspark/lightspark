@@ -61,6 +61,7 @@ private:
 	 * sendInit should be called with the spinlock held
 	 */
 	void sendInit();
+	void checkSendComplete();
 	// set of events that need refcounting of loader
 	std::unordered_set<Event*> loaderevents;
 public:

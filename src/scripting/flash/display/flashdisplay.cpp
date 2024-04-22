@@ -3451,7 +3451,9 @@ void Stage::setRoot(_NR<RootMovieClip> _root)
 uint32_t Stage::internalGetWidth() const
 {
 	uint32_t width;
-	if(getSystemState()->scaleMode==SystemState::NO_SCALE)
+	if (this->fullScreenSourceRect)
+		width=this->fullScreenSourceRect->width;
+	else if(getSystemState()->scaleMode==SystemState::NO_SCALE)
 		width=getSystemState()->getRenderThread()->windowWidth;
 	else
 	{
@@ -3464,7 +3466,9 @@ uint32_t Stage::internalGetWidth() const
 uint32_t Stage::internalGetHeight() const
 {
 	uint32_t height;
-	if(getSystemState()->scaleMode==SystemState::NO_SCALE)
+	if (this->fullScreenSourceRect)
+		height=this->fullScreenSourceRect->height;
+	else if(getSystemState()->scaleMode==SystemState::NO_SCALE)
 		height=getSystemState()->getRenderThread()->windowHeight;
 	else
 	{
@@ -3526,7 +3530,7 @@ ASFUNCTIONBODY_ATOM(Stage,_getScaleMode)
 
 ASFUNCTIONBODY_ATOM(Stage,_setScaleMode)
 {
-	//Stage* th=asAtomHandler::as<Stage>(obj);
+	Stage* th=asAtomHandler::as<Stage>(obj);
 	const tiny_string& arg0=asAtomHandler::toString(args[0],wrk);
 	SystemState::SCALE_MODE oldScaleMode = wrk->getSystemState()->scaleMode;
 	if(arg0=="exactFit")
@@ -3537,8 +3541,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setScaleMode)
 		wrk->getSystemState()->scaleMode=SystemState::NO_BORDER;
 	else if(arg0=="noScale")
 		wrk->getSystemState()->scaleMode=SystemState::NO_SCALE;
-
-	if (oldScaleMode != wrk->getSystemState()->scaleMode)
+	if (oldScaleMode != wrk->getSystemState()->scaleMode && th->fullScreenSourceRect.isNull())
 	{
 		RenderThread* rt=wrk->getSystemState()->getRenderThread();
 		rt->requestResize(UINT32_MAX, UINT32_MAX, true);

@@ -175,6 +175,9 @@ bool DisplayObject::Render(RenderContext& ctxt, bool force,const MATRIX* startma
 		_matrix = *startmatrix;
 	else
 		_matrix = surface.getState()->matrix;
+	if (this->scrollRect)
+		_matrix.translate(-this->scrollRect->x,-this->scrollRect->y);
+	
 	if (container)
 	{
 		ctxt.transformStack().push(Transform2D(
@@ -1124,7 +1127,6 @@ bool DisplayObject::skipRender() const
 bool DisplayObject::defaultRender(RenderContext& ctxt)
 {
 	const Transform2D& t = ctxt.transformStack().transform();
-	// TODO: use scrollRect
 	const CachedSurface& surface=ctxt.getCachedSurface(this);
 	/* surface is only modified from within the render thread
 	 * so we need no locking here */

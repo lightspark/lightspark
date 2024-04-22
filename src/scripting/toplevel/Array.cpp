@@ -1311,7 +1311,7 @@ bool Array::sortOnComparator::operator()(const sorton_value& d1, const sorton_va
 			if((!asAtomHandler::isNumeric(obj1) && std::isnan(a)) || (!asAtomHandler::isNumeric(obj2) && std::isnan(b)))
 				throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
 			if(it->isDescending)
-				return b>a;
+				return a>b;
 			else
 				return a<b;
 		}

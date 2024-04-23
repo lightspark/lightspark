@@ -504,6 +504,7 @@ private:
 	bool inExecuteFramescript;
 	bool inAVM1Attachment;
 	bool isAVM1Loaded;
+	bool AVM1EventScriptsAdded;
 	void runGoto(bool newFrame);
 protected:
 	const CLIPACTIONS* actions;
@@ -523,6 +524,7 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	void setPlaying();
 	void setStopped();
 	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
@@ -609,6 +611,7 @@ struct AVM1scriptToExecute
 	AVM1context* avm1context;
 	uint32_t event_name_id;
 	MovieClip* clip;
+	bool isEventScript;
 	void execute();
 };
 class Stage: public DisplayObjectContainer

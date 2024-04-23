@@ -897,14 +897,14 @@ void MovieClip::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),initializingFrame(false),inExecuteFramescript(false)
-  ,inAVM1Attachment(false),isAVM1Loaded(false)
+  ,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
   ,actions(nullptr),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
 
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(wrk,c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
-  ,inAVM1Attachment(false),isAVM1Loaded(false)
+  ,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
   ,actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
@@ -922,7 +922,7 @@ bool MovieClip::destruct()
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())
 	{
-		ASATOM_DECREF(it->second);
+		ASATOM_REMOVESTOREDMEMBER(it->second);
 		it++;
 	}
 	frameScripts.clear();
@@ -952,7 +952,7 @@ void MovieClip::finalize()
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())
 	{
-		ASATOM_DECREF(it->second);
+		ASATOM_REMOVESTOREDMEMBER(it->second);
 		it++;
 	}
 	frameScripts.clear();
@@ -979,6 +979,19 @@ void MovieClip::prepareShutdown()
 		avm1loader->prepareShutdown();
 }
 
+bool MovieClip::countCylicMemberReferences(garbagecollectorstate &gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
+	for (auto it = frameScripts.begin(); it != frameScripts.end(); it++)
+	{
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	}
+	return ret;
+}
 /* Returns a Scene_data pointer for a scene called sceneName, or for
  * the current scene if sceneName is empty. Returns nullptr, if not found.
  */
@@ -1059,7 +1072,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 			auto it = th->frameScripts.find(frame);
 			if (it != th->frameScripts.end())
 			{
-				ASATOM_DECREF(it->second);
+				ASATOM_REMOVESTOREDMEMBER(it->second);
 				th->frameScripts.erase(it);
 			}
 			continue;
@@ -1071,6 +1084,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 		}
 		IFunction* func = asAtomHandler::as<IFunction>(args[i+1]);
 		func->incRef();
+		func->addStoredMember();
 		th->frameScripts[frame]=args[i+1];
 	}
 }
@@ -3480,8 +3494,7 @@ uint32_t Stage::internalGetHeight() const
 
 ASFUNCTIONBODY_ATOM(Stage,_getStageWidth)
 {
-	Stage* th=asAtomHandler::as<Stage>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->internalGetWidth());
+	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->stage->internalGetWidth());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setStageWidth)
@@ -3492,8 +3505,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setStageWidth)
 
 ASFUNCTIONBODY_ATOM(Stage,_getStageHeight)
 {
-	Stage* th=asAtomHandler::as<Stage>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->internalGetHeight());
+	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->stage->internalGetHeight());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setStageHeight)
@@ -3786,6 +3798,8 @@ void Stage::executeAVM1Scripts(bool implicit)
 		auto itscr = avm1scriptstoexecute.begin();
 		while (itscr != avm1scriptstoexecute.end())
 		{
+			if ((*itscr).isEventScript)
+				(*itscr).clip->AVM1EventScriptsAdded=false;
 			if ((*itscr).clip->isOnStage())
 				(*itscr).execute();
 			else
@@ -5197,6 +5211,9 @@ void MovieClip::declareFrame(bool implicit)
 }
 void MovieClip::AVM1AddScriptEvents()
 {
+	if (this->AVM1EventScriptsAdded) // ensure that event scripts are only executed once per frame
+		return;
+	this->AVM1EventScriptsAdded=true;
 	if (actions)
 	{
 		for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
@@ -5209,6 +5226,7 @@ void MovieClip::AVM1AddScriptEvents()
 				script.startactionpos = (*it).startactionpos;
 				script.avm1context = this->getCurrentFrame()->getAVM1Context();
 				script.event_name_id = UINT32_MAX;
+				script.isEventScript = true;
 				this->incRef(); // will be decreffed after script handler was executed 
 				script.clip=this;
 				getSystemState()->stage->AVM1AddScriptToExecute(script);
@@ -5222,6 +5240,7 @@ void MovieClip::AVM1AddScriptEvents()
 	this->incRef(); // will be decreffed after script handler was executed 
 	script.clip=this;
 	script.event_name_id = isAVM1Loaded ? BUILTIN_STRINGS::STRING_ONENTERFRAME : BUILTIN_STRINGS::STRING_ONLOAD;
+	script.isEventScript = true;
 	getSystemState()->stage->AVM1AddScriptToExecute(script);
 	
 	isAVM1Loaded=true;

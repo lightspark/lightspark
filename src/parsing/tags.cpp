@@ -3056,6 +3056,7 @@ void AVM1ActionTag::execute(DisplayObjectContainer* parent, bool inskipping)
 		setActions(script);
 		script.avm1context = parent->as<MovieClip>()->getCurrentFrame()->getAVM1Context();
 		script.event_name_id = UINT32_MAX;
+		script.isEventScript = false;
 		parent->incRef(); // will be decreffed after script handler was executed 
 		script.clip=parent->as<MovieClip>();
 		parent->getSystemState()->stage->AVM1AddScriptToExecute(script);

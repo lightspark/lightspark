@@ -207,6 +207,11 @@ void SystemState::handleBroadcastEvent(const tiny_string& event)
 	_R<Event> e(Class<Event>::getInstanceS(worker, event));
 	for (auto it : tmplisteners)
 		ABCVm::publicHandleEvent(it, e);
+
+	for (auto it : tmplisteners)
+	{
+		it->decRef();
+	}
 }
 
 RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk,_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)

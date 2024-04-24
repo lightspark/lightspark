@@ -248,11 +248,24 @@ uint8_t* ImageDecoder::decodeJPEGImpl(jpeg_source_mgr *src, jpeg_source_mgr *hea
 		jpeg_destroy_decompress(&cinfo);
 		return nullptr;
 	}
-	assert(cinfo.output_components == 3 || cinfo.output_components == 4);
+	if (cinfo.output_components != 3 && cinfo.output_components != 4)
+	{
+		LOG(LOG_ERROR,"invalid number of output components for jpeg:"<<cinfo.output_components);
+		jpeg_abort_decompress(&cinfo);
+		jpeg_destroy_decompress(&cinfo);
+		return nullptr;
+	}
 
 	*hasAlpha = (cinfo.output_components == 4);
-
-	int rowstride = cinfo.output_width * cinfo.output_components;
+	
+	uint64_t rowstride = cinfo.output_width * cinfo.output_components;
+	if(uint64_t(cinfo.output_height) * rowstride == 0 || uint64_t(cinfo.output_height) * rowstride >= UINT32_MAX)
+	{
+		LOG(LOG_ERROR,"invalid width/height for jpeg:"<<cinfo.output_width<<"/"<<cinfo.output_height);
+		jpeg_abort_decompress(&cinfo);
+		jpeg_destroy_decompress(&cinfo);
+		return nullptr;
+	}
 	JSAMPARRAY buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, rowstride, 1);
 
 	uint8_t* outData = new uint8_t[cinfo.output_height * rowstride];

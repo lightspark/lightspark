@@ -139,9 +139,9 @@ void GLRenderContext::lsglOrtho(float l, float r, float b, float t, float n, flo
 	lsglMultMatrixf(ortho);
 }
 
-const CachedSurface& GLRenderContext::getCachedSurface(const DisplayObject* d) const
+CachedSurface* GLRenderContext::getCachedSurface(const DisplayObject* d) const
 {
-	return d->cachedSurface;
+	return d->cachedSurface.getPtr();
 }
 
 static bool noMask(EngineData* engineData)
@@ -295,7 +295,7 @@ void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase&
 }
 void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 									 const ColorTransformBase& colortransform,
-									 bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, Rectangle* scalingGrid,
+									 bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, const RECT& scalingGrid,
 									 AS_BLENDMODE blendmode)
 {
 	setupRenderingState(alpha,colortransform,smooth,blendmode);
@@ -314,22 +314,23 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
 	assert(chunk.getNumberOfChunks()==((chunk.width+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL)*((chunk.height+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL));
-
-	if (scalingGrid && scalingGrid->width+abs(scalingGrid->x) < chunk.width/chunk.xContentScale && scalingGrid->height+abs(scalingGrid->y) < chunk.height/chunk.yContentScale && matrix.getRotation()==0)
+	
+	if ((scalingGrid.Xmin!= 0 || scalingGrid.Xmax != 0 || scalingGrid.Ymin !=0 || scalingGrid.Ymax != 0)
+		&& (scalingGrid.Xmax-scalingGrid.Xmin)+abs(scalingGrid.Xmin) < chunk.width/chunk.xContentScale && (scalingGrid.Ymax-scalingGrid.Ymin)+abs(scalingGrid.Ymin) < chunk.height/chunk.yContentScale && matrix.getRotation()==0)
 	{
 		// rendering with scalingGrid
 
 		MATRIX m;
 		number_t scalex = chunk.xContentScale;
 		number_t scaley = chunk.yContentScale;
-		number_t leftborder = abs(scalingGrid->x);
-		number_t topborder = abs(scalingGrid->y);
-		number_t rightborder = number_t(chunk.width)/scalex-(leftborder+scalingGrid->width);
-		number_t bottomborder = number_t(chunk.height)/scaley-(topborder+scalingGrid->height);
+		number_t leftborder = abs(scalingGrid.Xmin);
+		number_t topborder = abs(scalingGrid.Ymin);
+		number_t rightborder = number_t(chunk.width)/scalex-(leftborder+(scalingGrid.Xmax-scalingGrid.Xmin));
+		number_t bottomborder = number_t(chunk.height)/scaley-(topborder+(scalingGrid.Ymax-scalingGrid.Ymin));
 		number_t scaledleftborder = leftborder*scalex;
 		number_t scaledtopborder = topborder*scaley;
-		number_t scaledrightborder = number_t(chunk.width)-((leftborder+scalingGrid->width)*scalex);
-		number_t scaledbottomborder = number_t(chunk.height)-((topborder+scalingGrid->height)*scaley);
+		number_t scaledrightborder = number_t(chunk.width)-((leftborder+(scalingGrid.Xmax-scalingGrid.Xmin))*scalex);
+		number_t scaledbottomborder = number_t(chunk.height)-((topborder+(scalingGrid.Ymax-scalingGrid.Ymin))*scaley);
 		number_t scaledinnerwidth = number_t(chunk.width) - (scaledrightborder+scaledleftborder);
 		number_t scaledinnerheight = number_t(chunk.height) - (scaledbottomborder+scaledtopborder);
 		number_t innerwidth = number_t(chunk.width) - (scaledrightborder+scaledleftborder);

@@ -43,6 +43,7 @@
 #include "backends/audio.h"
 #include "backends/config.h"
 #include "backends/rendering.h"
+#include "backends/cachedsurface.h"
 #include "backends/image.h"
 #include "backends/extscriptobject.h"
 #include "backends/input.h"

@@ -396,7 +396,7 @@ public:
 		@pre lock on the object should be acquired and object should be ready
 		@return a TextureChunk ready to be blitted
 	*/
-	const TextureChunk& getTexture() const;
+	TextureChunk& getTexture() const;
 	/**
 	  	Get the stream time
 

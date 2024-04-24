@@ -24,6 +24,7 @@
 #include "backends/graphics.h"
 #include "logger.h"
 #include "exceptions.h"
+#include "backends/cachedsurface.h"
 #include "backends/rendering.h"
 #include "backends/config.h"
 #include "compat.h"
@@ -140,13 +141,12 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 
 CairoRenderer::CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h, float _xs, float _ys,
 		bool _ismask, bool _cacheAsBitmap,
-		float _s, float _a,
+		float _scaling, float _a,
 		const ColorTransformBase& _colortransform,
 		SMOOTH_MODE _smoothing,
 		AS_BLENDMODE _blendmode)
-	: IDrawable(_w, _h, _x, _y, _xs, _ys, _xs, _ys, _ismask,_cacheAsBitmap,_a,
+	: IDrawable(_w, _h, _x, _y, _xs, _ys, _xs, _ys, _ismask,_cacheAsBitmap,_scaling,_a,
 				_colortransform,_smoothing,_blendmode,_m)
-	, scaleFactor(_s)
 {
 }
 
@@ -690,7 +690,7 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr)
 	cairo_set_antialias(cr,getState()->smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-	cairoPathFromTokens(cr, tokens, scaleFactor, false,getState()->isMask,xstart,ystart,this);
+	cairoPathFromTokens(cr, tokens, state->scaling, false,getState()->isMask,xstart,ystart,this);
 }
 
 uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
@@ -721,7 +721,7 @@ uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
 
 bool CairoRenderer::isCachedSurfaceUsable(const DisplayObject* o) const
 {
-	const TextureChunk* tex = o->cachedSurface.tex;
+	const TextureChunk* tex = o->cachedSurface->tex;
 
 	// arbitrary regen threshold
 	return !tex || !tex->isValid() ||
@@ -765,11 +765,11 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h
 									   , float _xs, float _ys
 									   , bool _ismask, bool _cacheAsBitmap
-									   , float _s, float _a
+									   , float _scaling, float _a
 									   , const ColorTransformBase& _colortransform
 									   , SMOOTH_MODE _smoothing, AS_BLENDMODE _blendmode
 									   , number_t _xstart, number_t _ystart)
-	: CairoRenderer(_m,_x,_y,_w,_h,_xs,_ys,_ismask,_cacheAsBitmap,_s,_a
+	: CairoRenderer(_m,_x,_y,_w,_h,_xs,_ys,_ismask,_cacheAsBitmap,_scaling,_a
 					, _colortransform
 					,_smoothing,_blendmode),tokens(_g),xstart(_xstart),ystart(_ystart)
 {
@@ -1059,7 +1059,7 @@ AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(
 
 AsyncDrawJob::~AsyncDrawJob()
 {
-	owner->cachedSurface.wasUpdated=false;
+	owner->cachedSurface->wasUpdated=false;
 	owner->getSystemState()->AsyncDrawJobCompleted(this);
 	delete drawable;
 	if (surfaceBytes && isBufferOwner)
@@ -1110,24 +1110,25 @@ TextureChunk& AsyncDrawJob::getTexture()
 {
 	/* This is called in the render thread,
 	 * so we need no locking for surface */
-	CachedSurface& surface=owner->cachedSurface;
+	CachedSurface* surface=owner->cachedSurface.getPtr();
 	uint32_t width=drawable->getWidth();
 	uint32_t height=drawable->getHeight();
 	//Verify that the texture is large enough
-	if (!surface.tex)
+	if (!surface->tex)
 	{
-		surface.tex=new TextureChunk();
-		surface.isChunkOwner=true;
+		surface->tex=new TextureChunk();
+		surface->isChunkOwner=true;
 	}
-	if(!surface.tex->resizeIfLargeEnough(width, height))
-		*surface.tex=owner->getSystemState()->getRenderThread()->allocateTexture(width, height,false);
-	if (!surface.wasUpdated) // surface may have already been changed by DisplayObject::updateCachedSurface() before it was uploaded
+	if(!surface->tex->resizeIfLargeEnough(width, height))
+		*surface->tex=owner->getSystemState()->getRenderThread()->allocateTexture(width, height,false);
+	if (!surface->wasUpdated) // surface may have already been changed by DisplayObject::updateCachedSurface() before it was uploaded
 	{
-		surface.SetState(drawable->getState());
-		surface.isValid=true;
-		surface.isInitialized=true;
+		surface->SetState(drawable->getState());
+		owner->refreshSurfaceState();
+		surface->isValid=true;
+		surface->isInitialized=true;
 	}
-	return *surface.tex;
+	return *surface->tex;
 }
 
 void AsyncDrawJob::uploadFence()
@@ -1154,15 +1155,22 @@ void AsyncDrawJob::contentOffset(number_t& x, number_t& y) const
 	y = drawable->getState()->yOffset;
 }
 
+IDrawable::IDrawable(float w, float h, float x, float y, float xs, float ys, float xcs, float ycs, bool _ismask, bool _cacheAsBitmap, float _scaling, float a, const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, AS_BLENDMODE _blendmode, const MATRIX& _m)
+	:width(w),height(h), xContentScale(xcs), yContentScale(ycs)
+{
+	// will be deleted in cachedSurface
+	state = new SurfaceState(x,y,a,xs,ys,_colortransform,_m,_ismask,_cacheAsBitmap,_blendmode,_smoothing,_scaling);
+}
+
 IDrawable::~IDrawable()
 {
 }
 
 RefreshableDrawable::RefreshableDrawable(float _x, float _y, float _w, float _h, float _xs, float _ys,
-		bool _ismask, bool _cacheAsBitmap,
-		float _a,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m)
-	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _ismask, _cacheAsBitmap,_a,
+										 bool _ismask, bool _cacheAsBitmap, float _scaling,
+										 float _a,
+										 const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, AS_BLENDMODE _blendmode, const MATRIX& _m)
+	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _ismask, _cacheAsBitmap,_scaling,_a,
 				_colortransform,_smoothing,_blendmode,_m)
 {
 }
@@ -1172,7 +1180,7 @@ BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data,
 		bool _ismask, bool _cacheAsBitmap,
 		float _a,
 		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m)
-	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _ismask,_cacheAsBitmap,_a,
+	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _ismask,_cacheAsBitmap,1.0,_a,
 				_colortransform,_smoothing,_blendmode,_m)
 	, data(_data)
 {
@@ -1380,44 +1388,4 @@ uint8_t *ColorTransformBase::applyTransformation(BitmapContainer* bm)
 		dst[i  ] = max(0,min(255,int(((number_t(src[i  ]) *   redMultiplier) +   redOffset)*(number_t(dst[i+3])/255.0))));
 	}
 	return (uint8_t*)bm->getDataColorTransformed();
-}
-
-SurfaceState::~SurfaceState()
-{
-	reset();
-}
-void SurfaceState::reset()
-{
-	xOffset=0.0;
-	yOffset=0.0;
-	alpha=1.0;
-	xscale=1.0;
-	yscale=1.0;
-	colortransform=ColorTransformBase();
-	matrix=MATRIX();
-	isMask=false;
-	smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS;
-	blendmode= AS_BLENDMODE::BLENDMODE_NORMAL;
-	needsFilterRefresh=true;
-	needsLayer=false;
-	for (auto it=childrenlist.cbegin(); it != childrenlist.cend(); it++)
-	{
-		(*it)->removeStoredMember();
-	}
-	childrenlist.clear();
-}
-
-void SurfaceState::setupChildrenList(std::vector<DisplayObject*>& dynamicDisplayList)
-{
-	childrenlist.clear();
-	childrenlist.reserve(dynamicDisplayList.size());
-	needsLayer=false;
-	for (auto it=dynamicDisplayList.cbegin(); it != dynamicDisplayList.cend(); it++)
-	{
-		(*it)->incRef();
-		(*it)->addStoredMember();
-		childrenlist.push_back(*it);
-		if (DisplayObject::isShaderBlendMode((*it)->getBlendMode()))
-			needsLayer=true;
-	}
 }

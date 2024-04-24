@@ -28,6 +28,7 @@
 #include "backends/graphics.h"
 #include "backends/rendering.h"
 #include "backends/rendering_context.h"
+#include "backends/cachedsurface.h"
 #include "scripting/argconv.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 #include "parsing/tags.h"
@@ -1616,16 +1617,13 @@ void TextField::textUpdated()
 	linemutex->unlock();
 	updateSizes();
 	setSizeAndPositionFromAutoSize();
-	// TODO implement fast rendering path for not embedded fonts
-	if (!embeddedFont)
-	{
-		hasChanged=true;
-		setNeedsTextureRecalculation();
+	setNeedsTextureRecalculation();
+	hasChanged=true;
 
-		if(onStage && isVisible())
-			requestInvalidation(this->getSystemState());
-	}
-	requestInvalidationFilterParent(this->getSystemState());
+	if(onStage && isVisible())
+		requestInvalidation(this->getSystemState());
+	else
+		requestInvalidationFilterParent(this->getSystemState());
 }
 
 void TextField::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
@@ -1814,7 +1812,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
 										   , matrix.getScaleX(), matrix.getScaleY()
 										   , isMask, cacheAsBitmap
-										   , getConcatenatedAlpha()
+										   , getScaleFactor(), getConcatenatedAlpha()
 										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 		}
 		// it seems that textfields are always rendered with subpixel smoothing when rendering to bitmap
@@ -1829,7 +1827,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
 										   , matrix.getScaleX(), matrix.getScaleY()
 										   , isMask, cacheAsBitmap
-										   , getConcatenatedAlpha()
+										   , getScaleFactor(), getConcatenatedAlpha()
 										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 		}
 	}
@@ -1839,7 +1837,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 		return new RefreshableDrawable(x, y, ceil(width), ceil(height)
 									   , matrix.getScaleX(), matrix.getScaleY()
 									   , isMask, cacheAsBitmap
-									   , getConcatenatedAlpha()
+									   , getScaleFactor(), getConcatenatedAlpha()
 									   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 	}		
 	if(matrix.getScaleX() != 1 || matrix.getScaleY() != 1)
@@ -1858,7 +1856,6 @@ IDrawable* TextField::invalidate(bool smoothing)
 		Width changes do not change the font size, and do nothing when autosize is on and wordwrap off.
 		Currently, the TextField is stretched in case of scaling.
 	*/
-	cachedSurface.isValid=true;
 	return new CairoPangoRenderer(*this,matrix,
 				x, y, ceil(width), ceil(height),
 				xscale,yscale,
@@ -1866,128 +1863,6 @@ IDrawable* TextField::invalidate(bool smoothing)
 				1.0f, getConcatenatedAlpha(),
 				ColorTransformBase(),
 				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),caretIndex);
-}
-
-bool TextField::renderImpl(RenderContext& ctxt)
-{
-	linemutex->lock();
-	if (getText().empty() && !this->border && !this->background && !this->caretblinkstate)
-	{
-		linemutex->unlock();
-		return false;
-	}
-	linemutex->unlock();
-	if (embeddedFont)
-	{
-		MATRIX matrix = ctxt.transformStack().transform().matrix;
-		bool isMask=this->isMask();
-		// fast rendering path using pre-generated textures for every glyph
-		float xscale = abs(getConcatenatedMatrix().getScaleX());
-		float yscale = abs(getConcatenatedMatrix().getScaleY());
-		if (std::isnan(xscale) || std::isnan(yscale))
-			return false;
-		RGB tcolor = this->textColor;
-		ColorTransformBase ct = ctxt.transformStack().transform().colorTransform;
-		if (!ct.isIdentity())
-		{
-			float r,g,b,a;
-			RGBA tmp;
-			tmp = tcolor;
-			ct.applyTransformation(tmp,r,g,b,a);
-			tcolor.Red=r*255.0;
-			tcolor.Green=g*255.0;
-			tcolor.Blue=b*255.0;
-		}
-		AS_BLENDMODE bl = this->blendMode;
-		if (bl == BLENDMODE_NORMAL)
-		{
-			DisplayObject* obj = this->getParent();
-			while (obj && bl == BLENDMODE_NORMAL)
-			{
-				bl = obj->getBlendMode();
-				obj = obj->getParent();
-			}
-		}
-		float scalex;
-		float scaley;
-		int offx,offy;
-		getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
-
-		uint32_t codetableindex;
-		// TODO: Switch over to using the new masking implementation.
-		if (this->border || this->background || this->caretblinkstate)
-		{
-			number_t bxmin,bxmax,bymin,bymax;
-			boundsRect(bxmin,bxmax,bymin,bymax,false);
-			TextureChunk tex=getSystemState()->getRenderThread()->allocateTexture(1, 1, true);
-			
-			if (this->border)
-			{
-				MATRIX m = matrix.multiplyMatrix(MATRIX(bxmax-bxmin, bymax-bymin));
-				m.scale(scalex, scaley);
-				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						ct, isMask,3.0, this->borderColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
-				m = matrix.multiplyMatrix(MATRIX(bxmax-bxmin-2, bymax-bymin-2, 0, 0, 1, 1));
-				m.scale(scalex, scaley);
-				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						ct, isMask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
-			}
-			else if (this->background)
-			{
-				MATRIX m = matrix.multiplyMatrix(MATRIX(bxmax-bxmin, bymax-bymin));
-				m.scale(scalex, scaley);
-				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						ct, isMask,3.0, this->backgroundColor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
-			}
-
-			if (this->caretblinkstate)
-			{
-				int ypadding = (bymax-bymin-4);
-				uint32_t tw=autosizeposition;
-				linemutex->lock();
-				if (!getText().empty())
-				{
-					tiny_string tmptxt = getText().substr(0,caretIndex);
-					number_t w,h;
-					getTextSizes(tmptxt,w,h);
-					tw += w;
-				}
-				linemutex->unlock();
-				MATRIX m = matrix.multiplyMatrix(MATRIX(2, bymax-bymin-ypadding*2, 0, 0, tw, ypadding));
-				m.scale(scalex, scaley);
-				ctxt.renderTextured(tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-						ct, isMask,3.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
-			}
-		}
-		number_t ypos=-TEXTFIELD_PADDING/yscale;
-		linemutex->lock();
-		for (auto itl = textlines.begin(); itl != textlines.end(); itl++)
-		{
-			number_t xpos = (tag ? tag->Bounds.Xmin/20.0f : 0.0f)+autosizeposition+(*itl).autosizeposition;
-			for (auto it = (*itl).text.begin(); it!= (*itl).text.end(); it++)
-			{
-				const TextureChunk* tex = embeddedFont->getCharTexture(it,this->fontSize*yscale*scaley,codetableindex);
-				number_t adv = embeddedFont->getRenderCharAdvance(codetableindex)*fontSize;
-				if (tex)
-				{
-					number_t bxmin=xpos;
-					number_t bxmax=xpos+tex->width/xscale;
-					MATRIX m = matrix.multiplyMatrix(MATRIX(1 / (xscale*scalex), 1 / (yscale*scaley), 0, 0, xpos, ypos));
-					m.scale(scalex, scaley);
-					ctxt.renderTextured(*tex, getConcatenatedAlpha(), RenderContext::RGB_MODE,
-										ct, isMask,2.0, tcolor,SMOOTH_MODE::SMOOTH_NONE, m,nullptr,bl);
-					xpos += adv ? adv : bxmax-bxmin;
-				}
-				else
-					xpos += adv ? adv : fontSize/2;
-			}
-			ypos += this->leading+(embeddedFont->getAscent()+embeddedFont->getDescent()+embeddedFont->getLeading())*fontSize/1024;
-		}
-		linemutex->unlock();
-		return false;
-	}
-	else
-		return defaultRender(ctxt);
 }
 
 void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
@@ -2501,11 +2376,6 @@ bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numb
 	ymin=bounds.Ymin/20.0;
 	ymax=bounds.Ymax/20.0;
 	return true;
-}
-
-bool StaticText::renderImpl(RenderContext& ctxt)
-{
-	return TokenContainer::renderImpl(ctxt);
 }
 
 _NR<DisplayObject> StaticText::hitTestImpl(const Vector2f&, const Vector2f& localPoint, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)

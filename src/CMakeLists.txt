@@ -34,6 +34,7 @@ SET(LIBSPARK_SOURCES
   errorconstants.cpp
   backends/audio.cpp
   backends/builtindecoder.cpp
+  backends/cachedsurface.cpp
   backends/config.cpp
   backends/currency.cpp
   backends/decoder.cpp

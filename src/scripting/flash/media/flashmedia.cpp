@@ -25,6 +25,7 @@
 #include <iostream>
 #include "backends/audio.h"
 #include "backends/rendering.h"
+#include "backends/cachedsurface.h"
 #include "backends/streamcache.h"
 #include "scripting/argconv.h"
 #include "parsing/tags.h"
@@ -33,6 +34,7 @@
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/geom/flashgeom.h"
 #include <unistd.h>
 
 using namespace lightspark;
@@ -112,9 +114,85 @@ void Video::finalize()
 	DisplayObject::finalize();
 }
 
+void Video::advanceFrame(bool implicit)
+{
+	if (!isRendering)
+		this->requestInvalidation(getSystemState());
+}
+
+void Video::refreshSurfaceState()
+{
+	DisplayObject::refreshSurfaceState();
+	if (!isRendering)
+	{
+		Locker l(mutex);
+		if (netStream && netStream->lockIfReady())
+		{
+			this->getCachedSurface()->tex = &netStream->getTexture();
+			//Get size
+			videoWidth=netStream->getVideoWidth();
+			videoHeight=netStream->getVideoHeight();
+			isRendering=true;
+			netStream->unlock();
+		}
+		if (embeddedVideoDecoder)
+		{
+			this->getCachedSurface()->tex = &embeddedVideoDecoder->getTexture();
+			videoWidth=videotag->Width;
+			videoHeight=videotag->Height;
+			isRendering=true;
+		}
+		this->getCachedSurface()->isChunkOwner=false;
+	}
+	else
+	{
+		Locker l(mutex);
+		if (!netStream && !embeddedVideoDecoder)
+		{
+			this->getCachedSurface()->tex = nullptr;
+			this->getCachedSurface()->isChunkOwner=false;
+			isRendering=false;
+		}
+	}
+	this->getCachedSurface()->getState()->matrix = MATRIX();
+}
+void Video::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
+{
+	hasChanged=true;
+	incRef();
+	q->addToInvalidateQueue(_MR(this));
+}
+IDrawable *Video::invalidate(bool smoothing)
+{
+	number_t x,y;
+	number_t width,height;
+	number_t bxmin=0,bxmax=0,bymin=0,bymax=0;
+	boundsRect(bxmin,bxmax,bymin,bymax,false);
+	MATRIX matrix = getMatrix();
+	
+	bool isMask=false;
+	MATRIX m;
+	m.scale(matrix.getScaleX(),matrix.getScaleY());
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
+	
+	ColorTransformBase ct;
+	if (this->colorTransform)
+		ct=*this->colorTransform.getPtr();
+	
+	this->resetNeedsTextureRecalculation();
+	IDrawable* res = new RefreshableDrawable(x, y, ceil(width), ceil(height)
+											 , matrix.getScaleX(), matrix.getScaleY()
+											 , isMask, cacheAsBitmap
+											 , getScaleFactor(),getConcatenatedAlpha()
+											 , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+	res->getState()->isYUV=true;
+	return res;
+}
+
 void Video::resetDecoder()
 {
 	Locker l(mutex);
+	isRendering=false;
 	lastuploadedframe=UINT32_MAX;
 	if (embeddedVideoDecoder)
 	{
@@ -128,13 +206,14 @@ void Video::resetDecoder()
 
 Video::Video(ASWorker* wk, Class_base* c, uint32_t w, uint32_t h, DefineVideoStreamTag *v)
 	: DisplayObject(wk,c),width(w),height(h),videoWidth(0),videoHeight(0),
-	  netStream(NullRef),videotag(v),embeddedVideoDecoder(nullptr),lastuploadedframe(UINT32_MAX),deblocking(v ? v->VideoFlagsDeblocking:0),smoothing(v ? v->VideoFlagsSmoothing : false)
+	netStream(NullRef),videotag(v),embeddedVideoDecoder(nullptr),lastuploadedframe(UINT32_MAX),isRendering(false),
+	deblocking(v ? v->VideoFlagsDeblocking:0),smoothing(v ? v->VideoFlagsSmoothing : false)
 {
 	subtype=SUBTYPE_VIDEO;
 	if (videotag)
 	{
-		videoWidth=videotag->Width;
-		videoHeight=videotag->Height;
+		videoWidth=width=videotag->Width;
+		videoHeight=height=videotag->Height;
 	}
 }
 
@@ -188,6 +267,16 @@ void Video::checkRatio(uint32_t ratio, bool inskipping)
 	}
 }
 
+void Video::afterLegacyInsert()
+{
+	if(!getConstructIndicator() && !needsActionScript3())
+	{
+		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
+		getClass()->handleConstruction(obj,nullptr,0,true);
+	}
+	DisplayObject::afterLegacyInsert();
+}
+
 void Video::afterLegacyDelete(bool inskipping)
 {
 	Locker l(mutex);
@@ -214,49 +303,6 @@ uint32_t Video::getTagID() const
 
 Video::~Video()
 {
-}
-
-bool Video::renderImpl(RenderContext& ctxt)
-{
-	Locker l(mutex);
-	if(skipRender())
-		return false;
-
-	bool valid=false;
-	if(!netStream.isNull() && netStream->lockIfReady())
-	{
-		//Get size
-		videoWidth=netStream->getVideoWidth();
-		videoHeight=netStream->getVideoHeight();
-		valid=true;
-	}
-	if (videotag)
-	{
-		videoWidth=videotag->Width;
-		videoHeight=videotag->Height;
-		valid=embeddedVideoDecoder!= nullptr && embeddedVideoDecoder->getTexture().isValid();
-	}
-	if (valid)
-	{
-		//All operations here should be non blocking
-		MATRIX totalMatrix = getParent()->getConcatenatedMatrix();
-
-		float scalex;
-		float scaley;
-		int offx,offy;
-		getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth,getSystemState()->getRenderThread()->windowHeight,offx,offy, scalex,scaley);
-		totalMatrix.scale(scalex, scaley);
-		//Enable YUV to RGB conversion
-		//width and height will not change now (the Video mutex is acquired)
-		ctxt.renderTextured(embeddedVideoDecoder ? embeddedVideoDecoder->getTexture() : netStream->getTexture(),
-			clippedAlpha(), RenderContext::YUV_MODE,
-			ColorTransformBase(),
-			false,0.0,RGB(),SMOOTH_MODE::SMOOTH_NONE,totalMatrix,nullptr,this->getBlendMode());
-		if (!videotag)
-			netStream->unlock();
-		return false;
-	}
-	return true;
 }
 
 bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
@@ -338,10 +384,12 @@ ASFUNCTIONBODY_ATOM(Video,attachNetStream)
 {
 	Video* th=asAtomHandler::as<Video>(obj);
 	assert_and_throw(argslen==1);
+	th->resetDecoder();
 	if(asAtomHandler::isNull(args[0]) || asAtomHandler::isUndefined(args[0])) //Drop the connection
 	{
 		Locker l(th->mutex);
 		th->netStream=NullRef;
+		th->requestInvalidation(wrk->getSystemState());
 		return;
 	}
 
@@ -354,6 +402,7 @@ ASFUNCTIONBODY_ATOM(Video,attachNetStream)
 
 	Locker l(th->mutex);
 	th->netStream=_MR(asAtomHandler::as<NetStream>(args[0]));
+	th->requestInvalidation(wrk->getSystemState());
 }
 ASFUNCTIONBODY_ATOM(Video,clear)
 {

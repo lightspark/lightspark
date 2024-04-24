@@ -1827,7 +1827,7 @@ IDrawable *EngineData::getTextRenderDrawable(const TextData &_textData, const MA
 
 externalFontRenderer::externalFontRenderer(const TextData &_textData, EngineData *engine, int32_t x, int32_t y, int32_t w, int32_t h, float xs, float ys, bool _isMask, bool _cacheAsBitmap, float a,
 										   const ColorTransformBase& _colortransform, SMOOTH_MODE smoothing,AS_BLENDMODE _blendmode, const MATRIX &_m)
-	: IDrawable(w, h, x, y,xs,ys, 1, 1, _isMask, _cacheAsBitmap, a,
+	: IDrawable(w, h, x, y,xs,ys, 1, 1, _isMask, _cacheAsBitmap, 1.0, a,
 				_colortransform,smoothing,_blendmode,_m),m_engine(engine)
 {
 	externalressource = engine->setupFontRenderer(_textData,a,smoothing);

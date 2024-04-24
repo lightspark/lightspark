@@ -136,17 +136,16 @@ protected:
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
-	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override
-	{
-		return false;
-	}
-	bool renderImpl(RenderContext& ctxt) override;
 	virtual void resetToStart() {}
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
 	void LegacyChildEraseDeletionMarked();
 	void rememberLastFrameChildren();
 	void clearLastFrameChildren();
 public:
+	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override
+	{
+		return false;
+	}
 	DisplayObject* getLastFrameChildAtDepth(int depth);
 	void fillGraphicsData(Vector* v, bool recursive) override;
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
@@ -350,19 +349,18 @@ private:
 	void afterSetUseHandCursor(bool oldValue);
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
-	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override
-	{
-		if (visibleOnly && !this->isVisible())
-			return false;
-		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
-	}
-	bool renderImpl(RenderContext& ctxt) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void resetToStart() override;
 	void checkSound(uint32_t frame);// start sound streaming if it is not already playing
 	void stopSound();
 	void markSoundFinished();
 public:
+	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override
+	{
+		if (visibleOnly && !this->isVisible())
+			return false;
+		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
+	}
 	void fillGraphicsData(Vector* v, bool recursive) override;
 	bool dragged;
 	Sprite(ASWorker* wrk,Class_base* c);
@@ -394,6 +392,7 @@ public:
 	Graphics* getGraphics();
 	void handleMouseCursor(bool rollover) override;
 	bool allowAsMask() const override { return !isEmpty() || !graphics.isNull(); }
+	float getScaleFactor() const override { return this->scaling; }
 };
 
 struct FrameLabel_data
@@ -649,8 +648,8 @@ private:
 	unordered_set<DisplayObject*> removedDisplayObjects;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
-	bool renderImpl(RenderContext& ctxt) override;
 public:
+	void render(RenderContext& ctxt, const MATRIX* startmatrix);
 	bool destruct() override;
 	void prepareShutdown() override;
 	void defaultEventBehavior(_R<Event> e) override;

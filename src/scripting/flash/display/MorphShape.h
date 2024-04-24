@@ -34,8 +34,6 @@ private:
 	uint16_t currentratio;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
-	bool renderImpl(RenderContext& ctxt) override
-		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
 	MorphShape(ASWorker* wrk,Class_base* c);
@@ -45,6 +43,7 @@ public:
 	IDrawable* invalidate(bool smoothing) override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 	uint32_t getTagID() const override;
+	float getScaleFactor() const override { return this->scaling; }
 };
 
 }

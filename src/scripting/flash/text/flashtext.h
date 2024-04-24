@@ -99,7 +99,6 @@ public:
 	enum TEXT_INTERACTION_MODE { TI_NORMAL, TI_SELECTION };
 private:
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
-	bool renderImpl(RenderContext& ctxt) override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	IDrawable* invalidate(bool smoothing) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
@@ -160,6 +159,7 @@ public:
 	void tick() override;
 	void tickFence() override;
 	uint32_t getTagID() const override;
+	float getScaleFactor() const override { return this->scaling; }
 	bool allowAsMask() const override { return false; }
 	bool isInUpdateVarBinding() const { return inUpdateVarBinding; }
 	
@@ -296,7 +296,6 @@ private:
 	uint32_t tagID;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
-	bool renderImpl(RenderContext& ctxt) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
 	StaticText(ASWorker* wrk,Class_base* c):DisplayObject(wrk,c),TokenContainer(this),tagID(UINT32_MAX) {}
@@ -306,6 +305,7 @@ public:
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(bool smoothing) override;
 	uint32_t getTagID() const override { return tagID; }
+	float getScaleFactor() const override { return this->scaling; }
 	bool allowAsMask() const override { return false; }
 };
 

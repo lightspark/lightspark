@@ -33,6 +33,7 @@
 #include "compat.h"
 #include "scripting/class.h"
 #include "backends/rendering.h"
+#include "backends/cachedsurface.h"
 #include "backends/geometry.h"
 #include "backends/input.h"
 #include "scripting/flash/accessibility/flashaccessibility.h"
@@ -364,55 +365,6 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 }
 
-bool DisplayObjectContainer::renderImpl(RenderContext& ctxt)
-{
-	bool renderingfailed = false;
-	SurfaceState* surfacestate = ctxt.getCachedSurface(this).getState();
-	assert(surfacestate);
-	int clipDepth = 0;
-	vector<pair<int, DisplayObject*>> clipDepthStack;
-	//Now draw also the display list
-	auto it= surfacestate->childrenlist.begin();
-	for(;it!=surfacestate->childrenlist.end();++it)
-	{
-		DisplayObject* child = (*it);
-		int depth = child->getDepth();
-		// Pop off masks (if any).
-		while (!clipDepthStack.empty() && clipDepth > 0 && depth > clipDepth)
-		{
-			DisplayObject* clipChild = clipDepthStack.back().second;
-			clipDepth = clipDepthStack.back().first;
-			clipDepthStack.pop_back();
-
-			ctxt.deactivateMask();
-			clipChild->Render(ctxt);
-			ctxt.popMask();
-		}
-
-		if (child->getClipDepth() > 0 && child->isMask() && child->allowAsMask())
-		{
-			// Push, and render this mask.
-			clipDepthStack.push_back(make_pair(clipDepth, child));
-			clipDepth = child->getClipDepth();
-
-			ctxt.pushMask();
-			child->Render(ctxt);
-			ctxt.activateMask();
-		}
-		else if ((child->isVisible() && !child->getClipDepth() && !child->isMask()) || ctxt.isDrawingMask())
-			child->Render(ctxt);
-	}
-
-	// Pop remaining masks (if any).
-	for_each(clipDepthStack.rbegin(), clipDepthStack.rend(), [&](pair<int, DisplayObject*>& it)
-	{
-		ctxt.deactivateMask();
-		it.second->Render(ctxt);
-		ctxt.popMask();
-	});
-	return renderingfailed;
-}
-
 void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
 {
 	auto it = legacyChildrenMarkedForDeletion.begin();
@@ -474,22 +426,6 @@ bool DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
 		return true;
 	}
 	return false;
-}
-
-bool Sprite::renderImpl(RenderContext& ctxt)
-{
-	bool ret = true;
-	if (graphics && graphics->hasTokens())
-	{
-		this->graphics->startDrawJob();
-		this->graphics->refreshTokens();
-		//Draw the dynamically added graphics, if any
-		ret = TokenContainer::renderImpl(ctxt);
-		this->graphics->endDrawJob();
-	}
-
-	bool ret2 =DisplayObjectContainer::renderImpl(ctxt);
-	return ret && ret2;
 }
 
 _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
@@ -2545,7 +2481,7 @@ IDrawable* DisplayObjectContainer::invalidate(bool smoothing)
 	res = new RefreshableDrawable(x, y, ceil(width), ceil(height)
 								   , matrix.getScaleX(), matrix.getScaleY()
 								   , isMask, cacheAsBitmap
-								   , getConcatenatedAlpha()
+								   , getScaleFactor(),getConcatenatedAlpha()
 								   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 	{
 		Locker l(mutexDisplayList);
@@ -3259,7 +3195,7 @@ bool Stage::renderStage3D()
 	}
 	return false;
 }
-bool Stage::renderImpl(RenderContext &ctxt)
+void Stage::render(RenderContext &ctxt,const MATRIX* startmatrix)
 {
 	bool has3d = false;
 	for (uint32_t i = 0; i < stage3Ds->size(); i++)
@@ -3279,7 +3215,7 @@ bool Stage::renderImpl(RenderContext &ctxt)
 		((GLRenderContext&)ctxt).lsglLoadIdentity();
 		((GLRenderContext&)ctxt).setMatrixUniform(GLRenderContext::LSGL_MODELVIEW);
 	}
-	return DisplayObjectContainer::renderImpl(ctxt);
+	return this->getCachedSurface()->Render(getSystemState(),ctxt,startmatrix);
 }
 bool Stage::destruct()
 {

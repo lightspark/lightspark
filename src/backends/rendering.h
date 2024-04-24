@@ -91,7 +91,7 @@ private:
 		Common code to handle the core of the rendering
 		returns true if at least one of the displayobjects on the stage couldn't be rendered becaus of an AsyncDrawJob not done yet
 	*/
-	bool coreRendering();
+	void coreRendering();
 	void plotProfilingData();
 	Semaphore initialized;
 	volatile bool refreshNeeded;

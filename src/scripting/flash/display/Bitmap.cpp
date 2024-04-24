@@ -27,6 +27,7 @@
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/argconv.h"
 #include "backends/rendering.h"
+#include "backends/cachedsurface.h"
 #include "swf.h"
 
 using namespace std;
@@ -83,7 +84,7 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startuplo
 	subtype=SUBTYPE_BITMAP;
 	bitmapData = data;
 	bitmapData->addUser(this,startupload);
-	Bitmap::updatedData(startupload);
+	Bitmap::updatedData();
 }
 
 Bitmap::~Bitmap()
@@ -173,37 +174,33 @@ void Bitmap::onPixelSnappingChanged(tiny_string snapping)
 	pixelSnapping = snapping;
 }
 
-bool Bitmap::renderImpl(RenderContext& ctxt)
-{
-	return defaultRender(ctxt);
-}
-
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,bitmapData,onBitmapData)
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,smoothing,onSmoothingChanged)
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged)
 
-void Bitmap::updatedData(bool startupload)
+void Bitmap::updatedData()
+{
+	if (this->isOnStage())
+		bitmapData->checkForUpload();
+	hasChanged=true;
+	requestInvalidation(getSystemState());
+}
+void Bitmap::refreshSurfaceState()
 {
 	if(bitmapData.isNull() || bitmapData->getBitmapContainer().isNull())
 	{
-		if (cachedSurface.isChunkOwner && cachedSurface.tex)
-			cachedSurface.tex->makeEmpty();
+		if (cachedSurface->isChunkOwner && cachedSurface->tex)
+			cachedSurface->tex->makeEmpty();
 		else
-			cachedSurface.tex=nullptr;
+			cachedSurface->tex=nullptr;
 		return;
 	}
-	if (this->isOnStage())
-		bitmapData->checkForUpload();
-	cachedSurface.tex = &bitmapData->getBitmapContainer()->bitmaptexture;
-	cachedSurface.isChunkOwner=false;
-	if (cachedSurface.getState())
-		cachedSurface.getState()->needsFilterRefresh=true;
-	hasChanged=true;
-	if(onStage)
-	{
-		cachedSurface.isValid=true;
-		requestInvalidation(getSystemState());
-	}
+	bitmapData->checkForUpload();
+	cachedSurface->tex = &bitmapData->getBitmapContainer()->bitmaptexture;
+	cachedSurface->isChunkOwner=false;
+	cachedSurface->isValid=true;
+	if (cachedSurface->getState())
+		cachedSurface->getState()->needsFilterRefresh=true;
 }
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
@@ -262,8 +259,6 @@ IDrawable *Bitmap::invalidate(bool smoothing)
 	}
 	if (this->bitmapData->getWidth()==0 || this->bitmapData->getHeight()==0)
 		return nullptr;
-	cachedSurface.isChunkOwner=false;
-	cachedSurface.isValid=true;
 	return new BitmapRenderer(this->bitmapData->getBitmapContainer()
 				, bxmin, bymin, this->bitmapData->getWidth(), this->bitmapData->getHeight()
 				, 1, 1

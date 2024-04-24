@@ -22,6 +22,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/display/BitmapContainer.h"
 #include "parsing/textfile.h"
+#include "backends/cachedsurface.h"
 #include "backends/rendering.h"
 #include "backends/input.h"
 #include "compat.h"
@@ -314,7 +315,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			setViewPort(w,h,false);
 			
 			// render DisplayObject to texture
-			it->displayobject->Render(*this,false,&it->initialMatrix,&(*it));
+			it->cachedsurface->Render(m_sys,*this,&it->initialMatrix,&(*it));
 			
 			// read rendered texture back into bitmapcontainer (no need for locking the bitmapcontainer as the worker thread is waiting until rendering is done)
 			// TODO should only be done "on demand" if pixels in bitmapcontainer are accessed later
@@ -809,10 +810,6 @@ void RenderThread::commonGLResize()
 	lsglScalef(1.0,-1.0,1);
 	setMatrixUniform(LSGL_PROJECTION);
 
-	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
-	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
-	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, windowWidth,windowHeight, 0, nullptr,true);
-	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
 	engineData->exec_glDisable_GL_DEPTH_TEST();
 	engineData->exec_glDisable_GL_STENCIL_TEST();
 
@@ -1158,7 +1155,7 @@ void RenderThread::removeDebugRect()
 		debugRects.pop_back();
 }
 
-bool RenderThread::coreRendering()
+void RenderThread::coreRendering()
 {
 	Locker l(mutexRendering);
 	baseFramebuffer=0;
@@ -1181,7 +1178,7 @@ bool RenderThread::coreRendering()
 	Vector2f scale = getScale();
 	MATRIX initialMatrix;
 	initialMatrix.scale(scale.x, scale.y);
-	bool ret = m_sys->stage->Render(*this,false,&initialMatrix);
+	m_sys->stage->render(*this,&initialMatrix);
 
 	for (auto it : debugRects)
 		drawDebugRect(it.pos.x, it.pos.y, it.size.x, it.size.y, it.matrix, it.onlyTranslate);
@@ -1197,7 +1194,6 @@ bool RenderThread::coreRendering()
 		texturesToDelete.pop_front();
 	}
 	handleGLErrors();
-	return ret;
 }
 
 //Renders the error message which caused the VM to stop.
@@ -1561,7 +1557,7 @@ void RenderThread::renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, con
 		return;
 	mutexRenderToBitmapContainer.lock();
 	RenderDisplayObjectToBitmapContainer r;
-	r.displayobject = o;
+	r.cachedsurface = o->getCachedSurface();
 	r.initialMatrix = initialMatrix;
 	r.bitmapcontainer = bm;
 	r.smoothing = smoothing;

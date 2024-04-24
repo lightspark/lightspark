@@ -32,8 +32,6 @@ class Shape: public DisplayObject, public TokenContainer
 protected:
 	_NR<Graphics> graphics;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
-	bool renderImpl(RenderContext& ctxt) override
-		{ return TokenContainer::renderImpl(ctxt); }
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	
 	DefineShapeTag* fromTag;
@@ -42,6 +40,7 @@ public:
 	Shape(ASWorker* wrk,Class_base* c);
 	void setupShape(lightspark::DefineShapeTag *tag, float _scaling);
 	uint32_t getTagID() const override;
+	float getScaleFactor() const override { return this->scaling; }
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;

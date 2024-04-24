@@ -198,6 +198,11 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 		_avm1target->incRef();
 		this->avm1target=_MR(_avm1target);
 	}
+	if (!contentLoaderInfo)
+	{
+		contentLoaderInfo=Class<LoaderInfo>::getInstanceS(getInstanceWorker(),this);
+		contentLoaderInfo->addStoredMember();
+	}
 	this->url=r->getRequestURL();
 	this->contentLoaderInfo->setURL(this->url.getParsedURL());
 	this->contentLoaderInfo->resetState();

@@ -2334,7 +2334,7 @@ double NetStream::getFrameRate()
 	return frameRate;
 }
 
-const TextureChunk& NetStream::getTexture() const
+TextureChunk& NetStream::getTexture() const
 {
 	assert(isReady());
 	return videoDecoder->getTexture();

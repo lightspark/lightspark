@@ -22,6 +22,7 @@
 
 #define CHUNKSIZE_REAL 126 // 1 pixel on each side is used for clamping to edge
 #define CHUNKSIZE 128
+#define TWIPS_SCALING_FACTOR 1.0/20.0
 
 #include "forwards/swftypes.h"
 #include "forwards/scripting/flash/display/DisplayObject.h"
@@ -40,7 +41,9 @@
 
 namespace lightspark
 {
-
+class RenderThread;
+class SurfaceState;
+	
 enum SMOOTH_MODE { SMOOTH_NONE=0, SMOOTH_SUBPIXEL=1, SMOOTH_ANTIALIAS=2 };
 
 struct RectF
@@ -89,7 +92,6 @@ struct RectF
 class TextureChunk
 {
 friend class GLRenderContext;
-friend class CairoRenderContext;
 friend class RenderThread;
 private:
 	/*
@@ -218,36 +220,6 @@ public:
 	}
 };
 
-class SurfaceState
-{
-public:
-	SurfaceState(float _xoffset=0.0,float _yoffset=0.0, float _alpha=1.0, float _xscale=1.0, float _yscale=1.0,
-			 const ColorTransformBase& _colortransform=ColorTransformBase(), const MATRIX& _matrix=MATRIX(), bool _ismask=false, bool _cacheAsBitmap=false,
-			 AS_BLENDMODE _blendmode=BLENDMODE_NORMAL, SMOOTH_MODE _smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS, bool _needsfilterrefresh=true, bool _needslayer=false)
-		:xOffset(_xoffset),yOffset(_yoffset),alpha(_alpha),xscale(_xscale),yscale(_yscale)
-		,colortransform(_colortransform),matrix(_matrix)
-		,blendmode(_blendmode),smoothing(_smoothing),isMask(_ismask),cacheAsBitmap(_cacheAsBitmap)
-		,needsFilterRefresh(_needsfilterrefresh),needsLayer(_needslayer)
-	{
-	}
-	virtual ~SurfaceState();
-	void reset();
-	void setupChildrenList(std::vector < DisplayObject* >& dynamicDisplayList);
-	float xOffset;
-	float yOffset;
-	float alpha;
-	float xscale;
-	float yscale;
-	ColorTransformBase colortransform;
-	MATRIX matrix;
-	std::vector<DisplayObject*> childrenlist;
-	AS_BLENDMODE blendmode;
-	SMOOTH_MODE smoothing;
-	bool isMask;
-	bool cacheAsBitmap;
-	bool needsFilterRefresh;
-	bool needsLayer;
-};
 struct RefreshableSurface
 {
 	IDrawable* drawable;
@@ -256,50 +228,13 @@ struct RefreshableSurface
 struct RenderDisplayObjectToBitmapContainer
 {
 	MATRIX initialMatrix;
-	_NR<DisplayObject> displayobject;
+	_NR<CachedSurface> cachedsurface;
 	_NR<BitmapContainer> bitmapcontainer;
 	bool smoothing;
 	AS_BLENDMODE blendMode;
 	ColorTransformBase* ct;
 	std::list<ITextureUploadable*> uploads;
 	std::list<RefreshableSurface> surfacesToRefresh;
-};
-
-class CachedSurface
-{
-private:
-	SurfaceState* state;
-public:
-	CachedSurface():state(nullptr),tex(nullptr),isChunkOwner(true),isValid(false),isInitialized(false),wasUpdated(false),cachedFilterTextureID(UINT32_MAX)
-	{
-	}
-	~CachedSurface()
-	{
-		if (isChunkOwner)
-		{
-			if (tex)
-				delete tex;
-			if (state)
-				delete state;
-		}
-	}
-	void SetState(SurfaceState* newstate)
-	{
-		if (state && state != newstate)
-			delete state;
-		state = newstate;
-	}
-	SurfaceState* getState() const
-	{
-		return state;
-	}
-	TextureChunk* tex;
-	_NR<DisplayObject> mask;
-	bool isChunkOwner;
-	bool isValid;
-	bool isInitialized;
-	bool wasUpdated;
-	uint32_t cachedFilterTextureID;
 };
 
 class IDrawable
@@ -312,18 +247,13 @@ protected:
 	SurfaceState* state;
 public:
 	IDrawable(float w, float h, float x, float y,
-		float xs, float ys, float xcs, float ycs,
-		bool _ismask, bool _cacheAsBitmap,
-		float a,
-		const ColorTransformBase& _colortransform,
-		SMOOTH_MODE _smoothing,
-		AS_BLENDMODE _blendmode,
-		const MATRIX& _m)
-		:width(w),height(h), xContentScale(xcs), yContentScale(ycs)
-	{
-		// will be deleted in cachedSurface
-		state = new SurfaceState(x,y,a,xs,ys,_colortransform,_m,_ismask,_cacheAsBitmap,_blendmode,_smoothing);
-	}
+			  float xs, float ys, float xcs, float ycs,
+			  bool _ismask, bool _cacheAsBitmap,
+			  float _scaling, float a,
+			  const ColorTransformBase& _colortransform,
+			  SMOOTH_MODE _smoothing,
+			  AS_BLENDMODE _blendmode,
+			  const MATRIX& _m);
 	IDrawable(float _width, float _height, float _xContentScale, float _yContentScale,SurfaceState* _state)
 		:width(_width),height(_height), xContentScale(_xContentScale), yContentScale(_yContentScale),state(_state)
 	{
@@ -386,11 +316,6 @@ public:
 class CairoRenderer: public IDrawable
 {
 protected:
-	/*
-	   The scale to be applied in both the x and y axis.
-	   Useful to adapt points defined in pixels and twips (1/20 of pixel)
-	*/
-	const float scaleFactor;
 	static void cairoClean(cairo_t* cr);
 	cairo_surface_t* allocateSurface(uint8_t*& buf);
 	virtual void executeDraw(cairo_t* cr)=0;
@@ -400,7 +325,7 @@ public:
 	CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h
 				  , float _xs, float _ys
 				  , bool _ismask, bool _cacheAsBitmap
-				  , float _s, float _a
+				  , float _scaling, float _a
 				  , const ColorTransformBase& _colortransform
 				  , SMOOTH_MODE _smoothing
 				  , AS_BLENDMODE _blendmode);
@@ -455,7 +380,7 @@ public:
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
 			float _xs, float _ys,
 			bool _ismask, bool _cacheAsBitmap,
-			float _s, float _a,
+			float _scaling, float _a,
 			const ColorTransformBase& _colortransform,
 			SMOOTH_MODE _smoothing, AS_BLENDMODE _blendmode,
 			number_t _xstart, number_t _ystart);
@@ -602,7 +527,7 @@ public:
 	RefreshableDrawable(float _x, float _y, float _w, float _h
 				  , float _xs, float _ys
 				  , bool _ismask, bool _cacheAsBitmap
-				  , float _a
+				  , float _scaling, float _a
 				  , const ColorTransformBase& _colortransform
 				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
 	//IDrawable interface

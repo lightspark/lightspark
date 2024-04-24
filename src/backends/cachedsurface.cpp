@@ -1,0 +1,824 @@
+/**************************************************************************
+    Lightspark, a free flash player implementation
+
+    Copyright (C) 2010-2013  Alessandro Pignotti (a.pignotti@sssup.it)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+**************************************************************************/
+
+#include <cassert>
+
+#include "swf.h"
+#include "abc.h"
+#include "backends/cachedsurface.h"
+#include "platforms/engineutils.h"
+#include "logger.h"
+#include "exceptions.h"
+#include "backends/rendering.h"
+#include "backends/config.h"
+#include "compat.h"
+#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/text/flashtext.h"
+#include "scripting/flash/display/Bitmap.h"
+#include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/filters/flashfilters.h"
+#include "scripting/toplevel/Array.h"
+#include "parsing/tags.h"
+#include "backends/lsopengl.h"
+#include "3rdparty/nanovg/src/nanovg.h"
+#include "3rdparty/nanovg/src/nanovg_gl.h"
+
+using namespace lightspark;
+
+SurfaceState::SurfaceState(float _xoffset, float _yoffset, float _alpha, float _xscale, float _yscale, const ColorTransformBase& _colortransform, const MATRIX& _matrix, bool _ismask, bool _cacheAsBitmap, AS_BLENDMODE _blendmode, SMOOTH_MODE _smoothing, float _scaling, bool _needsfilterrefresh, bool _needslayer)
+	:xOffset(_xoffset),yOffset(_yoffset),alpha(_alpha),xscale(_xscale),yscale(_yscale)
+	,colortransform(_colortransform),matrix(_matrix)
+	,depth(0),clipdepth(0),maxfilterborder(0)
+	,blendmode(_blendmode),smoothing(_smoothing),scaling(_scaling)
+	,visible(true),allowAsMask(true),isMask(_ismask),cacheAsBitmap(_cacheAsBitmap)
+	,needsFilterRefresh(_needsfilterrefresh),needsLayer(_needslayer),isYUV(false)
+{
+#ifndef _NDEBUG
+	src=nullptr;
+#endif
+}
+
+SurfaceState::~SurfaceState()
+{
+	reset();
+}
+void SurfaceState::reset()
+{
+#ifndef _NDEBUG
+	src=nullptr;
+#endif
+	xOffset=0.0;
+	yOffset=0.0;
+	alpha=1.0;
+	xscale=1.0;
+	yscale=1.0;
+	colortransform=ColorTransformBase();
+	matrix=MATRIX();
+	tokens.clear();
+	childrenlist.clear();
+	mask.reset();
+	filters.reset();
+	bounds = RectF();
+	depth=0;
+	clipdepth=0;
+	maxfilterborder=0;
+	smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS;
+	blendmode= AS_BLENDMODE::BLENDMODE_NORMAL;
+	scaling=TWIPS_SCALING_FACTOR;
+	scrollRect=RECT();
+	scalingGrid=RECT();
+	visible=true;
+	allowAsMask=true;
+	isMask=false;
+	cacheAsBitmap=false;
+	needsFilterRefresh=true;
+	needsLayer=false;
+}
+
+void SurfaceState::setupChildrenList(std::vector<DisplayObject*>& dynamicDisplayList)
+{
+	childrenlist.clear();
+	childrenlist.reserve(dynamicDisplayList.size());
+	needsLayer=false;
+	for (auto it=dynamicDisplayList.cbegin(); it != dynamicDisplayList.cend(); it++)
+	{
+		childrenlist.push_back((*it)->getCachedSurface());
+		if (DisplayObject::isShaderBlendMode((*it)->getBlendMode()))
+			needsLayer=true;
+	}
+}
+
+FORCE_INLINE bool isRepeating(FILL_STYLE_TYPE type)
+{
+	return type == FILL_STYLE_TYPE::NON_SMOOTHED_REPEATING_BITMAP || type == FILL_STYLE_TYPE::REPEATING_BITMAP;
+}
+
+FORCE_INLINE bool isSmoothed(FILL_STYLE_TYPE type)
+{
+	return type == FILL_STYLE_TYPE::REPEATING_BITMAP || type == FILL_STYLE_TYPE::CLIPPED_BITMAP;
+}
+
+void nanoVGDeleteImage(int image)
+{
+	NVGcontext* nvgctxt = getSys()->getEngineData() ? getSys()->getEngineData()->nvgcontext : nullptr;
+	if (nvgctxt)
+		nvgDeleteImage(nvgctxt,image);
+}
+
+int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style)
+{
+	if (!style->bitmap)
+		return -1;
+	if (style->bitmap->nanoVGImageHandle == -1)
+	{
+		int imageFlags = NVG_IMAGE_GENERATE_MIPMAPS;
+		if (!isSmoothed(style->FillStyleType))
+			imageFlags |= NVG_IMAGE_NEAREST;
+		if (isRepeating(style->FillStyleType))
+			imageFlags |= NVG_IMAGE_REPEATX|NVG_IMAGE_REPEATY;
+		style->bitmap->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,style->bitmap->getWidth(),style->bitmap->getHeight(),imageFlags,style->bitmap->getData());
+	}
+	return style->bitmap->nanoVGImageHandle;
+}
+
+void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* startmatrix, RenderDisplayObjectToBitmapContainer* container)
+{
+	if (!state)
+		return;
+	if (!state->mask.isNull() && !state->mask->state)
+		return;
+	if((!state->isMask && !state->clipdepth && !state->visible) || state->alpha==0.0 || (state->isMask && !state->clipdepth))
+		return;
+	MATRIX _matrix;
+	if (startmatrix)
+		_matrix = *startmatrix;
+	else
+		_matrix = state->matrix;
+	_matrix.translate(-state->scrollRect.Xmin,-state->scrollRect.Ymin);
+	if (container)
+	{
+		ctxt.transformStack().push(Transform2D(
+			_matrix,
+			container->ct ? *container->ct : state->colortransform,
+			container->blendMode
+			));
+		
+	}
+	else
+	{
+		ctxt.transformStack().push(Transform2D(
+			_matrix,
+			state->colortransform,
+			state->blendmode
+			));
+		
+	}
+	EngineData* engineData = sys->getEngineData();
+	bool needscachedtexture = (!container && state->cacheAsBitmap)
+							  || ctxt.transformStack().transform().blendmode == BLENDMODE_LAYER
+							  || ctxt.isMaskActive()
+							  || !state->filters.isNull()
+							  || (state->needsLayer && sys->getRenderThread()->filterframebufferstack.empty());
+	if (needscachedtexture && (state->needsFilterRefresh || cachedFilterTextureID != UINT32_MAX))
+	{
+		if (!isInitialized)
+		{
+			ctxt.transformStack().pop();
+			return;
+		}
+		bool needsFilterRefresh = state->needsFilterRefresh && needscachedtexture;
+		auto baseTransform = ctxt.transformStack().transform();
+		Vector2f scale = sys->getRenderThread()->getScale();
+		MATRIX initialMatrix;
+		initialMatrix.scale(scale.x, scale.y);
+		RectF bounds = boundsRectWithRenderTransform(baseTransform.matrix, initialMatrix);
+		Vector2f offset(bounds.min.x-baseTransform.matrix.x0,bounds.min.y-baseTransform.matrix.y0);
+		Vector2f size = bounds.size();
+		
+		if (needsFilterRefresh)
+		{
+			MATRIX m = baseTransform.matrix;
+			m.x0 = -offset.x;
+			m.y0 = -offset.y;
+			
+			// TODO: Create a new GLRenderContext here
+			ctxt.createTransformStack();
+			ctxt.transformStack().push(Transform2D(m,ColorTransformBase(),AS_BLENDMODE::BLENDMODE_NORMAL));
+			this->renderFilters(sys,ctxt,size.x,size.y);
+			
+			ctxt.transformStack().pop();
+			ctxt.removeTransformStack();
+			state->needsFilterRefresh=false;
+		}
+		if (cachedFilterTextureID != UINT32_MAX)
+		{
+			MATRIX m;
+			m.x0 = std::round(baseTransform.matrix.x0+offset.x);
+			m.y0 = std::round(baseTransform.matrix.y0+offset.y);
+			
+			if (DisplayObject::isShaderBlendMode(state->blendmode))
+			{
+				assert (!sys->getRenderThread()->filterframebufferstack.empty());
+				filterstackentry feparent = sys->getRenderThread()->filterframebufferstack.back();
+				// set original texture as blend texture
+				engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_BLEND);
+				engineData->exec_glBindTexture_GL_TEXTURE_2D(feparent.filtertextureID);
+			}
+			sys->getRenderThread()->setModelView(m);
+			sys->getRenderThread()->setupRenderingState(state->alpha,ctxt.transformStack().transform().colorTransform,state->smoothing,state->blendmode);
+			sys->getRenderThread()->renderTextureToFrameBuffer(cachedFilterTextureID,size.x,size.y,nullptr,nullptr,false,true,false);
+			ctxt.transformStack().pop();
+			return;
+		}
+	}
+	
+	SurfaceState* maskstate = state->mask.isNull() ? nullptr : state->mask->getState();
+	if (maskstate && maskstate->clipdepth)
+	{
+		ctxt.transformStack().push(Transform2D(maskstate->matrix, ColorTransformBase(),AS_BLENDMODE::BLENDMODE_NORMAL));
+		ctxt.pushMask();
+		state->mask->renderImpl(sys,ctxt);
+		ctxt.transformStack().pop();
+		ctxt.activateMask();
+	}
+	renderImpl(sys,ctxt);
+	if (maskstate && maskstate->clipdepth)
+	{
+		ctxt.deactivateMask();
+		ctxt.popMask();
+	}
+	ctxt.transformStack().pop();
+}
+void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
+{
+	// first look if we have tokens or bitmaps to render
+	if (state->tokens.canRenderToGL && !state->tokens.empty())
+	{
+		NVGcontext* nvgctxt = sys->getEngineData()->nvgcontext;
+		if (nvgctxt)
+		{
+			if (state->alpha == 0)
+				return;
+			ColorTransformBase ct = ctxt.transformStack().transform().colorTransform;
+			nvgResetTransform(nvgctxt);
+			nvgBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
+			switch (ctxt.transformStack().transform().blendmode)
+			{
+				case BLENDMODE_NORMAL:
+				case BLENDMODE_LAYER:
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ONE_MINUS_SRC_ALPHA);
+					break;
+				case BLENDMODE_MULTIPLY:
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_DST_COLOR,NVG_ONE_MINUS_SRC_ALPHA);
+					break;
+				case BLENDMODE_ADD:
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ONE);
+					break;
+				case BLENDMODE_SCREEN:
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ONE_MINUS_SRC_COLOR);
+					break;
+				case BLENDMODE_ERASE:
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ZERO,NVG_ONE_MINUS_SRC_ALPHA);
+					break;
+				default:
+					LOG(LOG_NOT_IMPLEMENTED,"renderTextured of nanoVG blend mode "<<(int)ctxt.transformStack().transform().blendmode);
+					break;
+			}
+			if (sys->getRenderThread()->filterframebufferstack.empty())
+			{
+				if (!sys->getRenderThread()->getFlipVertical())
+				{
+					nvgTranslate(nvgctxt,0,sys->getRenderThread()->currentframebufferHeight);
+					nvgScale(nvgctxt,1.0,-1.0);
+				}
+				Vector2f offset = sys->getRenderThread()->getOffset();
+				nvgTranslate(nvgctxt,offset.x,offset.y);
+			}
+			MATRIX m = ctxt.transformStack().transform().matrix;
+			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
+			nvgTranslate(nvgctxt,state->xOffset,state->yOffset);
+			nvgScale(nvgctxt,state->scaling,state->scaling);
+			NVGcolor startcolor = nvgRGBA(0,0,0,0);
+			nvgBeginPath(nvgctxt);
+			nvgFillColor(nvgctxt,startcolor);
+			nvgStrokeColor(nvgctxt,startcolor);
+			bool instroke = false;
+			bool infill = false;
+			bool renderneeded=false;
+			int tokentype = 1;
+			while (tokentype)
+			{
+				std::vector<uint64_t>::const_iterator it;
+				std::vector<uint64_t>::const_iterator itbegin;
+				std::vector<uint64_t>::const_iterator itend;
+				switch(tokentype)
+				{
+					case 1:
+						itbegin = state->tokens.filltokens.begin();
+						itend = state->tokens.filltokens.end();
+						it = state->tokens.filltokens.begin();
+						tokentype++;
+						break;
+					case 2:
+						it = state->tokens.stroketokens.begin();
+						itbegin = state->tokens.stroketokens.begin();
+						itend = state->tokens.stroketokens.end();
+						tokentype++;
+						break;
+					default:
+						tokentype = 0;
+						break;
+				}
+				if (tokentype == 0)
+					break;
+				while (it != itend && tokentype)
+				{
+					GeomToken p(*it,false);
+					switch(p.type)
+					{
+						case MOVE:
+						{
+							GeomToken p1(*(++it),false);
+							nvgMoveTo(nvgctxt, (p1.vec.x), (p1.vec.y));
+							break;
+						}
+						case STRAIGHT:
+						{
+							renderneeded=true;
+							GeomToken p1(*(++it),false);
+							nvgLineTo(nvgctxt, (p1.vec.x), (p1.vec.y));
+							break;
+						}
+						case CURVE_QUADRATIC:
+						{
+							renderneeded=true;
+							GeomToken p1(*(++it),false);
+							GeomToken p2(*(++it),false);
+							nvgQuadTo(nvgctxt, (p1.vec.x), (p1.vec.y), (p2.vec.x), (p2.vec.y));
+							break;
+						}
+						case CURVE_CUBIC:
+						{
+							renderneeded=true;
+							GeomToken p1(*(++it),false);
+							GeomToken p2(*(++it),false);
+							GeomToken p3(*(++it),false);
+							nvgBezierTo(nvgctxt, (p1.vec.x), (p1.vec.y), (p2.vec.x), (p2.vec.y), (p3.vec.x), (p3.vec.y));
+							break;
+						}
+						case SET_FILL:
+						{
+							GeomToken p1(*(++it),false);
+							if (renderneeded)
+							{
+								if (instroke)
+									nvgStroke(nvgctxt);
+								if (infill)
+									nvgFill(nvgctxt);
+								renderneeded=false;
+								nvgClosePath(nvgctxt);
+								nvgBeginPath(nvgctxt);
+							}
+							infill=true;
+							const FILLSTYLE* style = p1.fillStyle;
+							switch (style->FillStyleType)
+							{
+								case SOLID_FILL:
+								{
+									RGBA color = style->Color;
+									float r,g,b,a;
+									ct.applyTransformation(color,r,g,b,a);
+									NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
+									nvgFillColor(nvgctxt,c);
+									break;
+								}
+								case REPEATING_BITMAP:
+								case CLIPPED_BITMAP:
+								case NON_SMOOTHED_REPEATING_BITMAP:
+								case NON_SMOOTHED_CLIPPED_BITMAP:
+								{
+									int img =setNanoVGImage(nvgctxt,style);
+									if (img != -1)
+									{
+										MATRIX m = style->Matrix;
+										NVGpaint pattern = nvgImagePattern(nvgctxt,
+																		   0,
+																		   0,
+																		   style->bitmap->getWidth(),
+																		   style->bitmap->getHeight(),
+																		   0,
+																		   img,
+																		   1.0);
+										pattern.xform[0] = m.xx;
+										pattern.xform[1] = m.yx;
+										pattern.xform[2] = m.xy;
+										pattern.xform[3] = m.yy;
+										pattern.xform[4] = m.x0/state->scaling - style->ShapeBounds.Xmin;
+										pattern.xform[5] = m.y0/state->scaling - style->ShapeBounds.Ymin;
+										float r,g,b,a;
+										RGBA color(255,255,255,255);
+										ct.applyTransformation(color,r,g,b,a);
+										NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
+										pattern.innerColor = pattern.outerColor = c;
+										nvgFillPaint(nvgctxt, pattern);
+									}
+									break;
+								}
+								default:
+									LOG(LOG_NOT_IMPLEMENTED,"nanovg fillstyle:"<<hex<<(int)style->FillStyleType);
+									break;
+							}
+							break;
+						}
+						case SET_STROKE:
+						{
+							GeomToken p1(*(++it),false);
+							if (renderneeded)
+							{
+								if (instroke)
+									nvgStroke(nvgctxt);
+								if (infill)
+									nvgFill(nvgctxt);
+								renderneeded=false;
+								nvgClosePath(nvgctxt);
+								nvgBeginPath(nvgctxt);
+							}
+							instroke = true;
+							const LINESTYLE2* style = p1.lineStyle;
+							if (style->HasFillFlag)
+							{
+								switch (style->FillType.FillStyleType)
+								{
+									case SOLID_FILL:
+									{
+										RGBA color = style->FillType.Color;
+										float r,g,b,a;
+										ct.applyTransformation(color,r,g,b,a);
+										NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
+										nvgStrokeColor(nvgctxt,c);
+										break;
+									}
+									case REPEATING_BITMAP:
+									case CLIPPED_BITMAP:
+									case NON_SMOOTHED_REPEATING_BITMAP:
+									case NON_SMOOTHED_CLIPPED_BITMAP:
+									{
+										int img =setNanoVGImage(nvgctxt,&style->FillType);
+										if (img != -1)
+										{
+											MATRIX m = style->FillType.Matrix;
+											NVGpaint pattern = nvgImagePattern(nvgctxt,
+																			   0,
+																			   0,
+																			   style->FillType.bitmap->getWidth(),
+																			   style->FillType.bitmap->getHeight(),
+																			   0,
+																			   img,
+																			   1.0);
+											pattern.xform[0] = m.xx;
+											pattern.xform[1] = m.yx;
+											pattern.xform[2] = m.xy;
+											pattern.xform[3] = m.yy;
+											pattern.xform[4] = m.x0/state->scaling - style->FillType.ShapeBounds.Xmin;
+											pattern.xform[5] = m.y0/state->scaling - style->FillType.ShapeBounds.Ymin;
+											float r,g,b,a;
+											RGBA color(255,255,255,255);
+											ct.applyTransformation(color,r,g,b,a);
+											NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
+											pattern.innerColor = pattern.outerColor = c;
+											nvgStrokePaint(nvgctxt, pattern);
+										}
+										break;
+									}
+									default:
+										LOG(LOG_NOT_IMPLEMENTED,"nanovg linestyle fillType:"<<hex<<(int)style->FillType.FillStyleType);
+										break;
+								}
+							}
+							else
+							{
+								RGBA color = style->Color;
+								float r,g,b,a;
+								ct.applyTransformation(color,r,g,b,a);
+								NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
+								nvgStrokeColor(nvgctxt,c);
+							}
+							// TODO: EndCapStyle
+							if (style->StartCapStyle == 0)
+								nvgLineCap(nvgctxt,NVG_ROUND);
+							else if (style->StartCapStyle == 1)
+								nvgLineCap(nvgctxt,NVG_BUTT);
+							else if (style->StartCapStyle == 2)
+								nvgLineCap(nvgctxt,NVG_SQUARE);
+							if (style->JointStyle == 0)
+								nvgLineJoin(nvgctxt, NVG_ROUND);
+							else if (style->JointStyle == 1)
+								nvgLineJoin(nvgctxt, NVG_BEVEL);
+							else if (style->JointStyle == 2) {
+								nvgLineJoin(nvgctxt, NVG_MITER);
+								nvgMiterLimit(nvgctxt,style->MiterLimitFactor);
+							}
+							nvgStrokeWidth(nvgctxt,style->Width==0 ? 1.0/state->scaling :(float)style->Width);
+							break;
+						}
+						case CLEAR_FILL:
+						case FILL_KEEP_SOURCE:
+						{
+							if (renderneeded)
+							{
+								if (instroke)
+									nvgStroke(nvgctxt);
+								if (infill)
+									nvgFill(nvgctxt);
+								renderneeded=false;
+								nvgClosePath(nvgctxt);
+								nvgBeginPath(nvgctxt);
+							}
+							infill=false;
+							if(p.type==CLEAR_FILL)
+								nvgFillColor(nvgctxt,startcolor);
+							break;
+						}
+						case CLEAR_STROKE:
+							if (renderneeded)
+							{
+								if (instroke)
+									nvgStroke(nvgctxt);
+								if (infill)
+									nvgFill(nvgctxt);
+								renderneeded=false;
+								nvgClosePath(nvgctxt);
+								nvgBeginPath(nvgctxt);
+							}
+							instroke = false;
+							nvgStrokeColor(nvgctxt,startcolor);
+							break;
+						default:
+							assert(false);
+					}
+					it++;
+				}
+			}
+			if (renderneeded)
+			{
+				if (instroke)
+					nvgStroke(nvgctxt);
+				if (infill)
+					nvgFill(nvgctxt);
+			}
+			nvgClosePath(nvgctxt);
+			nvgEndFrame(nvgctxt);
+			sys->getEngineData()->exec_glStencilFunc_GL_ALWAYS();
+			sys->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+			sys->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
+			sys->getEngineData()->exec_glUseProgram(((RenderThread&)ctxt).gpu_program);
+			((GLRenderContext&)ctxt).lsglLoadIdentity();
+			((GLRenderContext&)ctxt).setMatrixUniform(GLRenderContext::LSGL_MODELVIEW);
+		}
+	}
+	else
+		defaultRender(ctxt);
+	
+	int clipDepth = 0;
+	vector<pair<int, CachedSurface*>> clipDepthStack;
+	//Now draw also the display list
+	auto it= state->childrenlist.begin();
+	for(;it!=state->childrenlist.end();++it)
+	{
+		CachedSurface* child = (*it).getPtr();
+		SurfaceState* childstate = child->getState();
+		if (!childstate)
+			continue;
+		int depth = childstate->depth;
+		// Pop off masks (if any).
+		while (!clipDepthStack.empty() && clipDepth > 0 && depth > clipDepth)
+		{
+			CachedSurface* clipChild = clipDepthStack.back().second;
+			clipDepth = clipDepthStack.back().first;
+			clipDepthStack.pop_back();
+			
+			ctxt.deactivateMask();
+			clipChild->Render(sys,ctxt);
+			ctxt.popMask();
+		}
+		
+		if (childstate->clipdepth > 0 && childstate->isMask && childstate->allowAsMask)
+		{
+			// Push, and render this mask.
+			clipDepthStack.push_back(make_pair(clipDepth, child));
+			clipDepth = childstate->clipdepth;
+			
+			ctxt.pushMask();
+			child->Render(sys,ctxt);
+			ctxt.activateMask();
+		}
+		else if ((childstate->visible && !childstate->clipdepth && !childstate->isMask) || ctxt.isDrawingMask())
+			child->Render(sys,ctxt);
+	}
+	
+	// Pop remaining masks (if any).
+	for_each(clipDepthStack.rbegin(), clipDepthStack.rend(), [&](pair<int, CachedSurface*>& it)
+	{
+		ctxt.deactivateMask();
+		it.second->Render(sys,ctxt);
+		ctxt.popMask();
+	});
+}
+void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t w, uint32_t h)
+{
+	// rendering of filters currently works as follows:
+	// - generate fbo
+	// - generate texture with computed width/height of this DisplayObject as window size and set it as color attachment for fbo
+	// - render DisplayObject to texture
+	// - set texture as "g_tex_filter1" in fragment shader
+	// - generate two more textures with computed width/height of this DisplayObject as window size
+	// - for every filter
+	//   - for every step (blur, dropshadow...)
+	//     - set uniforms for step
+	//     - set one of the two textures as color attachment for fbo (use first generated texture in first step)
+	//     - render to texture 
+	//     - swap textures
+	//   - render resulting texture to "g_tex_filter2"
+	// - remember resulting texture in cachedSurface.cachedFilterTextureID
+	
+	if (w == 0 || h == 0)
+		return;
+	SurfaceState* state = this->getState();
+	EngineData* engineData = sys->getEngineData();
+	if (cachedFilterTextureID != UINT32_MAX) // remove previously used texture
+		sys->getRenderThread()->addDeletedTexture(cachedFilterTextureID);
+	cachedFilterTextureID = UINT32_MAX;
+	
+	// render filter source to texture
+	uint32_t filterTextureIDoriginal;
+	engineData->exec_glGenTextures(1, &filterTextureIDoriginal);
+	uint32_t filterframebuffer = engineData->exec_glGenFramebuffer();
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureIDoriginal);
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
+	uint32_t filterrenderbuffer = engineData->exec_glGenRenderbuffer();
+	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(filterrenderbuffer);
+	engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(w, h);
+	engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(filterrenderbuffer);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterTextureIDoriginal);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
+	uint32_t parentframebufferWidth = sys->getRenderThread()->currentframebufferWidth;
+	uint32_t parentframebufferHeight = sys->getRenderThread()->currentframebufferHeight;
+	
+	sys->getRenderThread()->setViewPort(w,h,true);
+	engineData->exec_glClearColor(0,0,0,0);
+	engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+	filterstackentry fe;
+	fe.filterframebuffer=filterframebuffer;
+	fe.filterrenderbuffer=filterrenderbuffer;
+	fe.filtertextureID=filterTextureIDoriginal;
+	
+	Vector2f scale = sys->getRenderThread()->getScale();
+	fe.filterborderx=(-state->bounds.min.x+state->maxfilterborder)*scale.x;
+	fe.filterbordery=(-state->bounds.min.y+state->maxfilterborder)*scale.y;
+	sys->getRenderThread()->filterframebufferstack.push_back(fe);
+	bool maskactive = ctxt.isMaskActive();
+	if (maskactive)
+		ctxt.suspendActiveMask();
+	renderImpl(sys,ctxt);
+	// bind rendered filter source to g_tex_filter1
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
+	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(filterrenderbuffer);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_FILTER);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureIDoriginal);
+	
+	// create filter output texture, and bind it to g_tex_filter2
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_FILTER_DST);
+	uint32_t filterDstTexture;
+	engineData->exec_glGenTextures(1, &filterDstTexture);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterDstTexture);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
+	
+	// apply all filter steps
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+	uint32_t filterTextureID1;
+	uint32_t filterTextureID2;
+	engineData->exec_glGenTextures(1, &filterTextureID1);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID1);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
+	engineData->exec_glGenTextures(1, &filterTextureID2);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID2);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
+	sys->getRenderThread()->setViewPort(w,h,true);
+	uint32_t texture1 = filterTextureIDoriginal;
+	uint32_t texture2 = filterTextureID2;
+	if (!state->filters.isNull())
+	{
+		for (uint32_t i = 0; i < state->filters->size(); i++)
+		{
+			asAtom f = asAtomHandler::invalidAtom;
+			state->filters->at_nocheck(f,i);
+			if (asAtomHandler::is<BitmapFilter>(f))
+			{
+				float gradientcolors[256*4];
+				asAtomHandler::as<BitmapFilter>(f)->getRenderFilterGradientColors(gradientcolors);
+				float filterdata[FILTERDATA_MAXSIZE];
+				uint32_t step = 0;
+				while (true)
+				{
+					asAtomHandler::as<BitmapFilter>(f)->getRenderFilterArgs(step,filterdata,w,h);
+					if (filterdata[0] == 0)
+						break;
+					step++;
+					engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(texture2);
+					engineData->exec_glClearColor(0,0,0,0);
+					engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+					sys->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,filterdata,gradientcolors,!i,false);
+					if (texture1 == filterTextureIDoriginal)
+						texture1 = filterTextureID1;
+					std::swap(texture1,texture2);
+				}
+				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
+				engineData->exec_glClearColor(0,0,0,0);
+				engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+				sys->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,nullptr,nullptr,false, false);
+			}
+		}
+	}
+	sys->getRenderThread()->filterframebufferstack.pop_back();
+	if (sys->getRenderThread()->filterframebufferstack.empty())
+	{
+		sys->getRenderThread()->resetCurrentFrameBuffer();
+		if (!sys->getRenderThread()->getFlipVertical())
+			sys->getRenderThread()->setViewPort(parentframebufferWidth,parentframebufferHeight,false);
+		else
+			sys->getRenderThread()->resetViewPort();
+		engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+	}
+	else
+	{
+		filterstackentry feparent = sys->getRenderThread()->filterframebufferstack.back();
+		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(feparent.filterframebuffer);
+		engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(feparent.filterrenderbuffer);
+		sys->getRenderThread()->setViewPort(parentframebufferWidth,parentframebufferHeight,true);
+	}
+	if (maskactive)
+		ctxt.resumeActiveMask();
+	engineData->exec_glDeleteFramebuffers(1,&filterframebuffer);
+	engineData->exec_glDeleteRenderbuffers(1,&filterrenderbuffer);
+	cachedFilterTextureID=texture1;
+	engineData->exec_glDeleteTextures(1,&texture2);
+	engineData->exec_glDeleteTextures(1,&filterDstTexture);
+	if (state->filters.isNull() || state->filters->size()==0)
+		engineData->exec_glDeleteTextures(1,&filterTextureID1);
+	else
+		engineData->exec_glDeleteTextures(1,&filterTextureIDoriginal);
+}
+void CachedSurface::defaultRender(RenderContext& ctxt)
+{
+	const Transform2D& t = ctxt.transformStack().transform();
+	if(!isValid || !isInitialized || !tex || !tex->isValid())
+		return;
+	if (tex->width == 0 || tex->height == 0)
+		return ;
+	
+	ctxt.lsglLoadIdentity();
+	ColorTransformBase ct = t.colorTransform;
+	MATRIX m = t.matrix;
+	ctxt.renderTextured(*tex, state->alpha, state->isYUV ? RenderContext::YUV_MODE : RenderContext::RGB_MODE,
+						ct, false,0.0,RGB(),state->smoothing,m,state->scalingGrid,t.blendmode);
+}
+RectF CachedSurface::boundsRectWithRenderTransform(const MATRIX& matrix, const MATRIX& initialMatrix)
+{
+	RectF bounds = state->bounds;
+	bounds *= matrix;
+	for (auto child : state->childrenlist)
+	{
+		if (!child->state)
+			continue;
+		MATRIX m = matrix.multiplyMatrix(child->state->matrix);
+		bounds = bounds._union(child->boundsRectWithRenderTransform(m, initialMatrix));
+	}
+	if (!state->filters.isNull())
+	{
+		number_t filterborder = state->maxfilterborder;
+		bounds.min.x -= filterborder*initialMatrix.getScaleX();
+		bounds.max.x += filterborder*initialMatrix.getScaleX();
+		bounds.min.y -= filterborder*initialMatrix.getScaleY();
+		bounds.max.y += filterborder*initialMatrix.getScaleY();
+	}
+	return bounds;
+}
+
+CachedSurface::~CachedSurface()
+{
+	if (isChunkOwner)
+	{
+		if (tex)
+			delete tex;
+		if (state)
+			delete state;
+	}
+	if (cachedFilterTextureID != UINT32_MAX)
+ {
+		SystemState* sys = getSys();
+		if (sys && sys->getRenderThread())
+			sys->getRenderThread()->addDeletedTexture(cachedFilterTextureID);
+	}
+}

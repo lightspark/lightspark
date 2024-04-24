@@ -41,14 +41,12 @@ private:
 	void onBitmapData(_NR<BitmapData>);
 	void onSmoothingChanged(bool);
 	void onPixelSnappingChanged(tiny_string snapping);
-protected:
-	bool renderImpl(RenderContext& ctxt) override;
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
 	ASPROPERTY_GETTER_SETTER(tiny_string,pixelSnapping);
 	/* Call this after updating any member of 'data' */
-	void updatedData(bool startupload=true);
+	void updatedData();
 	Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
 	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload=true);
 	~Bitmap();
@@ -58,6 +56,7 @@ public:
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
+	void refreshSurfaceState() override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	virtual IntSize getBitmapSize() const;

@@ -88,7 +88,7 @@ private:
 	/* cachedSurface may only be read/written from within the render thread
 	 * It is the cached version of the object for fast draw on the Stage
 	 */
-	CachedSurface cachedSurface;
+	_R<CachedSurface> cachedSurface;
 	/*
 	 * Utility function to set internal MATRIX
 	 * Also used by Transform
@@ -104,7 +104,6 @@ private:
 	uint32_t avm1framelistenercount;
 	void onSetScrollRect(_NR<Rectangle> oldValue);
 protected:
-	_NR<Bitmap> cachedBitmap;
 	_NR<Rectangle> scalingGrid;
 	std::multimap<uint32_t,_NR<DisplayObject>> variablebindings;
 	bool onStage;
@@ -133,21 +132,17 @@ protected:
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
 	}
-	virtual bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
-	{
-		return boundsRect(xmin, xmax, ymin, ymax, visibleOnly);
-	}
 	bool boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
-	virtual bool renderImpl(RenderContext& ctxt)
-	{
-		throw RunTimeException("DisplayObject::renderImpl: Derived class must implement this!");
-	}
 	virtual _NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 	{
 		throw RunTimeException("DisplayObject::hitTestImpl: Derived class must implement this!");
 	}
 	virtual void afterSetLegacyMatrix() {}
 public:
+	virtual bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
+	{
+		return boundsRect(xmin, xmax, ymin, ymax, visibleOnly);
+	}
 	virtual void fillGraphicsData(Vector* v, bool recursive) {}
 	void updatedRect(); // scrollrect was changed
 	void setMask(_NR<DisplayObject> m);
@@ -164,7 +159,6 @@ public:
 		removeAVM1Listeners();
 	}
 	void applyFilters(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley);
-	void renderFilters(RenderContext& ctxt, uint32_t w, uint32_t h);
 	_NR<DisplayObject> invalidateQueueNext;
 	_NR<LoaderInfo> loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
@@ -183,14 +177,13 @@ public:
 	// The frame that this clip was placed on.
 	unsigned int placeFrame;
 	bool markedForLegacyDeletion;
-	bool computeCacheAsBitmap(bool checksize=true);
+	_R<CachedSurface>& getCachedSurface() { return cachedSurface; }
 	bool needsCacheAsBitmap() const;
 	bool hasFilters() const;
 	void requestInvalidationFilterParent(InvalidateQueue* q=nullptr);
 	virtual void requestInvalidationIncludingChildren(InvalidateQueue* q);
 	ASPROPERTY_GETTER_SETTER(bool,cacheAsBitmap);
 	IDrawable* getFilterDrawable(bool smoothing);
-	_NR<DisplayObject> getCachedBitmap() const;
 	DisplayObjectContainer* getParent() const { return parent; }
 	int getParentDepth() const;
 	int findParentDepth(DisplayObject* d) const;
@@ -225,10 +218,7 @@ public:
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
 	float getConcatenatedAlpha() const;
-	virtual float getScaleFactor() const
-	{
-		throw RunTimeException("DisplayObject::getScaleFactor");
-	}
+	virtual float getScaleFactor() const;
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	virtual void removeAVM1Listeners();
@@ -250,7 +240,6 @@ public:
 	virtual void startDrawJob() {}
 	virtual void endDrawJob() {}
 	
-	bool Render(RenderContext& ctxt, bool force=false, const MATRIX* startmatrix=nullptr, RenderDisplayObjectToBitmapContainer* container=nullptr);
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m, bool visibleOnly=false);
 	_NR<DisplayObject> hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly);
 	virtual void setOnStage(bool staged, bool force, bool inskipping=false);
@@ -264,10 +253,12 @@ public:
 	int getRawDepth();
 	int getDepth();
 	int getClipDepth() const;
+	number_t getMaxFilterBorder() const { return maxfilterborder; }
 	virtual _NR<RootMovieClip> getRoot();
 	virtual _NR<Stage> getStage();
 	void setLegacyMatrix(const MATRIX& m);
 	void setFilters(const FILTERLIST& filterlist);
+	virtual void refreshSurfaceState();
 
 	bool placedByActionScript;
 	// If set, skip the next call to enterFrame().
@@ -288,7 +279,7 @@ public:
 	void setScaleX(number_t val);
 	void setScaleY(number_t val);
 	void setScaleZ(number_t val);
-	inline void setVisible(bool v) { this->visible = v; }
+	void setVisible(bool v);
 	// Nominal width and heigt are the size before scaling and rotation
 	number_t getNominalWidth();
 	number_t getNominalHeight();

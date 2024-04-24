@@ -106,7 +106,6 @@ public:
 	void lsglRotatef(float angle);
 
 	enum COLOR_MODE { RGB_MODE=0, YUV_MODE };
-	enum MASK_MODE { NO_MASK = 0, ENABLE_MASK };
 	/* Textures */
 	/**
 		Render a quad of given size using the given chunk
@@ -114,11 +113,11 @@ public:
 	virtual void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			const ColorTransformBase& colortransform,
 			bool isMask, float directMode, RGB directColor,SMOOTH_MODE smooth, const MATRIX& matrix,
-			Rectangle* scalingGrid, AS_BLENDMODE blendmode)=0;
+			const RECT& scalingGrid, AS_BLENDMODE blendmode)=0;
 	/**
 	 * Get the right CachedSurface from an object
 	 */
-	virtual const CachedSurface& getCachedSurface(const DisplayObject* obj) const=0;
+	virtual const CachedSurface* getCachedSurface(const DisplayObject* obj) const=0;
 	virtual void pushMask() { inMaskRendering=true; }
 	virtual void popMask() {}
 	virtual void deactivateMask() {	maskActive=false; }
@@ -196,12 +195,12 @@ public:
 	void renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 			const ColorTransformBase& colortransform,
 			bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix,
-			Rectangle* scalingGrid, AS_BLENDMODE blendmode) override;
+			const RECT& scalingGrid, AS_BLENDMODE blendmode) override;
 	/**
 	 * Get the right CachedSurface from an object
 	 * In the OpenGL case we just get the CachedSurface inside the object itself
 	 */
-	const CachedSurface& getCachedSurface(const DisplayObject* obj) const override;
+	CachedSurface* getCachedSurface(const DisplayObject* obj) const override;
 
 	void pushMask() override;
 	void popMask() override;

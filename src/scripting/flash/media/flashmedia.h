@@ -177,12 +177,18 @@ private:
 	DefineVideoStreamTag* videotag;
 	VideoDecoder* embeddedVideoDecoder;
 	uint32_t lastuploadedframe;
+	bool isRendering;
 	void resetDecoder();
 public:
 	Video(ASWorker* wk,Class_base* c, uint32_t w=320, uint32_t h=240, DefineVideoStreamTag* v=nullptr);
 	bool destruct() override;
 	void finalize() override;
+	void advanceFrame(bool implicit) override;
+	void refreshSurfaceState() override;
+	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
+	IDrawable* invalidate(bool smoothing) override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
+	void afterLegacyInsert() override;
 	void afterLegacyDelete(bool inskipping) override;
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	uint32_t getTagID() const override;
@@ -199,7 +205,6 @@ public:
 	ASFUNCTION_ATOM(_setHeight);
 	ASFUNCTION_ATOM(attachNetStream);
 	ASFUNCTION_ATOM(clear);
-	bool renderImpl(RenderContext& ctxt) override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 };

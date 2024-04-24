@@ -231,7 +231,11 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 					tokens.filltokens.push_back(GeomToken(*linestylesIt).uval);
 					if (tokens.currentLineWidth < (*linestylesIt).Width)
 						tokens.currentLineWidth = (*linestylesIt).Width;
-					if ((*linestylesIt).HasFillFlag) // TODO linestyles with fill flag not yet implemented for nanoGL
+					if ((*linestylesIt).HasFillFlag &&
+						((*linestylesIt).FillType.FillStyleType == LINEAR_GRADIENT ||
+						(*linestylesIt).FillType.FillStyleType == RADIAL_GRADIENT ||
+						(*linestylesIt).FillType.FillStyleType == FOCAL_RADIAL_GRADIENT
+						)) // TODO linestyles with gradient fill flag not yet implemented for nanoGL
 						tokens.canRenderToGL=false;
 					for (size_t k = j; k < segments.size(); ++k)
 					{
@@ -284,7 +288,11 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 			tokens.stroketokens.push_back(GeomToken(*stylesIt).uval);
 			if (tokens.currentLineWidth < (*stylesIt).Width)
 				tokens.currentLineWidth = (*stylesIt).Width;
-			if ((*stylesIt).HasFillFlag) // TODO linestyles with fill flag not yet implemented for nanoGL
+			if ((*stylesIt).HasFillFlag &&
+				((*stylesIt).FillType.FillStyleType == LINEAR_GRADIENT ||
+				 (*stylesIt).FillType.FillStyleType == RADIAL_GRADIENT ||
+				 (*stylesIt).FillType.FillStyleType == FOCAL_RADIAL_GRADIENT
+				 )) // TODO linestyles with gradient fill flag not yet implemented for nanoGL
 				tokens.canRenderToGL=false;
 			for (size_t j = 0; j < segments.size(); ++j)
 			{
@@ -428,7 +436,7 @@ std::map<uint16_t,LINESTYLE2>::iterator ShapesBuilder::getStrokeLineStyle(const 
 }
 void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::list<MORPHLINESTYLE2> &linestyles, tokensVector &tokens, uint16_t ratio, const RECT& boundsrc)
 {
-	assert(currentSubpath.empty());
+//	assert(currentSubpath.empty());
 	auto it=filledShapesMap.begin();
 	//For each color
 	for(;it!=filledShapesMap.end();++it)
@@ -565,7 +573,11 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 						++linestylesIt;
 						assert(linestylesIt!=linestyles.end());
 					}
-					if ((*linestylesIt).HasFillFlag) // TODO linestyles with fill flag not yet implemented for nanoGL
+					if ((*linestylesIt).HasFillFlag &&
+						((*linestylesIt).FillType.FillStyleType == LINEAR_GRADIENT ||
+						 (*linestylesIt).FillType.FillStyleType == RADIAL_GRADIENT ||
+						 (*linestylesIt).FillType.FillStyleType == FOCAL_RADIAL_GRADIENT
+						 )) // TODO linestyles with gradient fill flag not yet implemented for nanoGL
 						tokens.canRenderToGL=false;
 					auto itls = getStrokeLineStyle(linestylesIt,ratio,&linestylesIt->linestylecache,boundsrc);
 					//Set the line style for strokes inside filltokens
@@ -573,7 +585,11 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 					tokens.filltokens.push_back(GeomToken((*itls).second).uval);
 					if (tokens.currentLineWidth < (*itls).second.Width)
 						tokens.currentLineWidth = (*itls).second.Width;
-					if ((*linestylesIt).HasFillFlag) // TODO linestyles with fill flag not yet implemented for nanoGL
+					if ((*linestylesIt).HasFillFlag &&
+						((*linestylesIt).FillType.FillStyleType == LINEAR_GRADIENT ||
+						 (*linestylesIt).FillType.FillStyleType == RADIAL_GRADIENT ||
+						 (*linestylesIt).FillType.FillStyleType == FOCAL_RADIAL_GRADIENT
+						 )) // TODO linestyles with gradient fill flag not yet implemented for nanoGL
 						tokens.canRenderToGL=false;
 					for (size_t k = j; k < segments.size(); ++k)
 					{
@@ -619,7 +635,11 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 				++stylesIt;
 				assert(stylesIt!=linestyles.end());
 			}
-			if ((*stylesIt).HasFillFlag) // TODO linestyles with fill flag not yet implemented for nanoGL
+			if ((*stylesIt).HasFillFlag &&
+				((*stylesIt).FillType.FillStyleType == LINEAR_GRADIENT ||
+				 (*stylesIt).FillType.FillStyleType == RADIAL_GRADIENT ||
+				 (*stylesIt).FillType.FillStyleType == FOCAL_RADIAL_GRADIENT
+				 )) // TODO linestyles with gradient fill flag not yet implemented for nanoGL
 				tokens.canRenderToGL=false;
 			//Set the line style
 			auto itls = getStrokeLineStyle(stylesIt,ratio,&stylesIt->linestylecache,boundsrc);

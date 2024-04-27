@@ -818,6 +818,8 @@ int ABCVm::getEventQueueSize()
 
 void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 {
+	event->getSystemState()->setInMouseEvent(event->is<MouseEvent>());
+	
 	if (event->type == "exitFrame")
 		event->getSystemState()->setFramePhase(FramePhase::EXIT_FRAME);
 	if (dispatcher && dispatcher->is<DisplayObject>() && event->type == "enterFrame" && (

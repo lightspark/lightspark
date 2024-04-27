@@ -93,6 +93,8 @@ private:
 	SDL_Renderer* contextmenurenderer;
 	SDL_Texture* contextmenutexture;
 	static SDL_Cursor* handCursor;
+	static SDL_Cursor* arrowCursor;
+	static SDL_Cursor* ibeamCursor;
 	uint8_t* contextmenupixels;
 	int32_t contextmenuheight;
 	void openContextMenuIntern(InteractiveObject *dispatcher);
@@ -218,10 +220,13 @@ public:
 	static void hideMouseCursor(SystemState *sys);
 	static void setMouseHandCursor(SystemState *sys);
 	static void resetMouseHandCursor(SystemState *sys);
+	static void setMouseCursor(SystemState *sys, const tiny_string& name);
+	static tiny_string getMouseCursor(SystemState *sys);
 	virtual void setClipboardText(const std::string txt);
 	virtual bool getScreenData(SDL_DisplayMode* screen) = 0;
 	virtual double getScreenDPI() = 0;
 	virtual void setWindowPosition(int x, int y, uint32_t width, uint32_t height) {}
+	virtual void getWindowPosition(int* x, int* y) { *x=0; *y=0;}
 	virtual bool getAIRApplicationDescriptor(SystemState* sys,tiny_string& xmlstring) { return false;}
 	virtual StreamCache* createFileStreamCache(SystemState *sys);
 	

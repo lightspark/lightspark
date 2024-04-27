@@ -37,6 +37,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, x);
 	ASPROPERTY_GETTER_SETTER(number_t, y);
 	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>, bounds);
+	ASFUNCTION_ATOM(startMove);
 };
 }
 

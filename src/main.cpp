@@ -132,6 +132,18 @@ public:
 		/* Nothing to do because the standalone main window is
 		 * always focused */
 	}
+	void getWindowPosition(int* x, int* y) override
+	{
+		if (widget)
+		{
+			SDL_GetWindowPosition(widget,x,y);
+		}
+		else
+		{
+			x=0;
+			y=0;
+		}
+	}
 	void setWindowPosition(int x, int y, uint32_t width, uint32_t height) override
 	{
 		if (widget)

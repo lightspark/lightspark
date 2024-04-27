@@ -191,6 +191,8 @@ int InputThread::handleEvent(SDL_Event* event)
 				Locker locker(mutexListeners);
 				button1pressed=false;
 			}
+			mousePosStart.x = event->button.x;
+			mousePosStart.y = event->button.y;
 			if(event->button.button == SDL_BUTTON_LEFT)
 			{
 				//Grab focus, to receive keypresses
@@ -216,6 +218,7 @@ int InputThread::handleEvent(SDL_Event* event)
 		case SDL_MOUSEBUTTONUP:
 		{
 			int stageX, stageY;
+			m_sys->setWindowMoveMode(false);
 			m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
 			handleMouseUp(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED,event->button.button);
 			ret=true;
@@ -228,20 +231,31 @@ int InputThread::handleEvent(SDL_Event* event)
 		}
 		case SDL_MOUSEMOTION:
 		{
+			ret=true;
 			int stageX, stageY;
 			if (m_sys->getRenderThread()->inSettings)
 			{
 				stageX=event->motion.x;
 				stageY=event->motion.y;
 			}
-			else
+			else if (m_sys->getInWindowMoveMode())
+			{
+				int globalX;
+				int globalY;
+				m_sys->getEngineData()->getWindowPosition(&globalX,&globalY);
+				m_sys->getEngineData()->setWindowPosition(globalX+event->motion.x-mousePosStart.x
+														  ,globalY+event->motion.y-mousePosStart.y
+														  ,m_sys->getEngineData()->width
+														  ,m_sys->getEngineData()->height);
+				break;
+			}
+			else	
 				m_sys->windowToStageCoordinates(event->motion.x,event->motion.y,stageX,stageY);
 			handleMouseMove(stageX,stageY,SDL_GetModState(),event->motion.state == SDL_PRESSED);
 			{
 				Locker locker(mutexListeners);
 				button1pressed=false;
 			}
-			ret=true;
 			break;
 		}
 		case SDL_MOUSEWHEEL:

@@ -64,6 +64,8 @@ bool EngineData::mainthread_running = false;
 bool EngineData::sdl_needinit = true;
 bool EngineData::enablerendering = true;
 SDL_Cursor* EngineData::handCursor = nullptr;
+SDL_Cursor* EngineData::arrowCursor = nullptr;
+SDL_Cursor* EngineData::ibeamCursor = nullptr;
 Semaphore EngineData::mainthread_initialized(0);
 EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr),
 	nvgcontext(nullptr),
@@ -810,7 +812,45 @@ void EngineData::resetMouseHandCursor(SystemState* /*sys*/)
 {
 	SDL_SetCursor(SDL_GetDefaultCursor());
 }
-
+void EngineData::setMouseCursor(SystemState* /*sys*/, const tiny_string& name)
+{
+	if (name=="hand")
+	{
+		if (!handCursor)
+			handCursor = SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_HAND);
+		SDL_SetCursor(handCursor);
+	}
+	else if (name=="arrow")
+	{
+		if (!arrowCursor)
+			arrowCursor = SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_ARROW);
+		SDL_SetCursor(arrowCursor);
+	}
+	else if (name=="ibeam")
+	{
+		if (!ibeamCursor)
+			ibeamCursor = SDL_CreateSystemCursor(SDL_SystemCursor::SDL_SYSTEM_CURSOR_IBEAM);
+		SDL_SetCursor(ibeamCursor);
+	}
+	else if (name=="auto")
+		SDL_SetCursor(SDL_GetDefaultCursor());
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"showCursor for name:"<<name);
+		SDL_SetCursor(SDL_GetDefaultCursor());
+	}		
+}
+tiny_string EngineData::getMouseCursor(SystemState *sys)
+{
+	SDL_Cursor* cursor = SDL_GetCursor();
+	if (cursor == handCursor)
+		return "hand";
+	if (cursor == arrowCursor)
+		return "arrow";
+	if (cursor == ibeamCursor)
+		return "ibeam";
+	return "auto";
+}
 void EngineData::setClipboardText(const std::string txt)
 {
 	int ret = SDL_SetClipboardText(txt.c_str());

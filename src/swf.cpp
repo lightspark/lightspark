@@ -271,7 +271,7 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 extern uint32_t asClassCount;
 
 SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
-	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),hasExitCode(false),innerGotoCount(0),
+	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -871,6 +871,25 @@ int SystemState::getExitCode()
 	if (hasExitCode)
 		return exitCode;
 	return exitOnError==SystemState::ERROR_ANY && isOnError() ? 1 : 0;
+}
+
+void SystemState::setInMouseEvent(bool inmouseevent)
+{
+	inMouseEvent=inmouseevent;
+}
+bool SystemState::getInMouseEvent() const
+{
+	return inMouseEvent;
+}
+
+void SystemState::setWindowMoveMode(bool startmove)
+{
+	Locker l(rootMutex);
+	inWindowMove=startmove;
+}
+bool SystemState::getInWindowMoveMode() const
+{
+	return inWindowMove;
 }
 
 void SystemState::signalTerminated()

@@ -95,6 +95,7 @@ private:
 	bool handleContextMenuEvent(SDL_Event* event);
 	Mutex inputDataSpinlock;
 	Vector2 mousePos;
+	Vector2 mousePosStart;
 	bool button1pressed;
 public:
 	InputThread(SystemState* s);

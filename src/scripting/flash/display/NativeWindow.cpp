@@ -23,6 +23,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "platforms/engineutils.h"
+#include "abc.h"
 
 using namespace lightspark;
 
@@ -39,6 +40,7 @@ void NativeWindow::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,x,Number);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,y,Number);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,bounds,Rectangle);
+	c->setDeclaredMethodByQName("startMove","",Class<IFunction>::getFunction(c->getSystemState(),startMove,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(NativeWindow,x)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(NativeWindow,y)
@@ -160,5 +162,28 @@ ASFUNCTIONBODY_ATOM(NativeWindow,_setter_height)
 	else
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"nativeWindow.width setter for non-main window");
+	}
+}
+ASFUNCTIONBODY_ATOM(NativeWindow,startMove)
+{
+	NativeWindow* th=asAtomHandler::as<NativeWindow>(obj);
+	if (th != wrk->getSystemState()->stage->nativeWindow.getPtr())
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"NativeWindow.startMove for non-main window");
+		ret = asAtomHandler::falseAtom;
+	}
+	else if (wrk->getSystemState()->getEngineData()->inFullScreenMode())
+	{
+		ret = asAtomHandler::falseAtom;
+	}
+	else if (wrk->getSystemState()->getInMouseEvent())
+	{
+		wrk->getSystemState()->setWindowMoveMode(true);
+		ret = asAtomHandler::trueAtom;
+	}
+	else
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"NativeWindow.startMove from outside MouseEvent");
+		ret = asAtomHandler::falseAtom;
 	}
 }

@@ -24,6 +24,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "platforms/engineutils.h"
 #include "swf.h"
 
 using namespace std;
@@ -54,15 +55,15 @@ ASFUNCTIONBODY_ATOM(Mouse, show)
 
 ASFUNCTIONBODY_ATOM(Mouse, getCursor)
 {
-	ret = asAtomHandler::fromString(wrk->getSystemState(),"auto");
+	ret = asAtomHandler::fromString(wrk->getSystemState()
+									,wrk->getSystemState()->getEngineData()->getMouseCursor(wrk->getSystemState()));
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, setCursor)
 {
 	tiny_string cursorName;
 	ARG_CHECK(ARG_UNPACK(cursorName));
-	if (cursorName != "auto")
-		LOG(LOG_NOT_IMPLEMENTED,"setting mouse cursor is not implemented");
+	wrk->getSystemState()->getEngineData()->setMouseCursor(wrk->getSystemState(),cursorName);
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, getSupportsCursor)

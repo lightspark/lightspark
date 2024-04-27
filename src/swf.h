@@ -233,6 +233,8 @@ private:
 	bool firsttick;
 	bool localstorageallowed;
 	bool influshing;
+	bool inMouseEvent;
+	bool inWindowMove;
 	bool hasExitCode;
 	int innerGotoCount;
 	int exitCode;
@@ -372,6 +374,10 @@ public:
 	void setShutdownFlag() DLL_PUBLIC;
 	void setExitCode(int exitcode) DLL_PUBLIC;
 	int getExitCode() DLL_PUBLIC;
+	void setInMouseEvent(bool inmouseevent);
+	bool getInMouseEvent() const;
+	void setWindowMoveMode(bool startmove);
+	bool getInWindowMoveMode() const;
 	void signalTerminated();
 	std::map<tiny_string, _R<SharedObject> > sharedobjectmap;
 	bool localStorageAllowed() const { return localstorageallowed; }

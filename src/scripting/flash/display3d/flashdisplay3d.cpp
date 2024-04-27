@@ -220,7 +220,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				if (textureframebufferID != UINT32_MAX)
 				{
 					engineData->exec_glBindTexture_GL_TEXTURE_2D(textureframebufferID);
-					engineData->exec_glGenerateMipmap_GL_TEXTURE_2D();
 					engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 					textureframebufferID = UINT32_MAX;
 				}
@@ -687,9 +686,10 @@ void Context3D::setSamplers(EngineData *engineData)
 		{
 			currentprogram->samplerState[i].program_sampler_id = sampid;
 			engineData->exec_glActiveTexture_GL_TEXTURE0(currentprogram->samplerState[i].n);
-			engineData->exec_glBindTexture_GL_TEXTURE_2D(samplers[currentprogram->samplerState[i].n]);
-			if (currentprogram->samplerState[i].m) // mipmaps
-				engineData->exec_glGenerateMipmap_GL_TEXTURE_2D();
+			if (currentprogram->samplerState[i].d)
+				engineData->exec_glBindTexture_GL_TEXTURE_CUBE_MAP(samplers[currentprogram->samplerState[i].n]);
+			else
+				engineData->exec_glBindTexture_GL_TEXTURE_2D(samplers[currentprogram->samplerState[i].n]);
 			engineData->exec_glSetTexParameters(currentprogram->samplerState[i].b,currentprogram->samplerState[i].d,currentprogram->samplerState[i].f,currentprogram->samplerState[i].m,currentprogram->samplerState[i].w);
 			engineData->exec_glUniform1i(sampid, currentprogram->samplerState[i].n);
 		}
@@ -743,7 +743,10 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	while (it != texturestoupload.end())
 	{
 		TextureBase* tex = (*it++).getPtr();
-		loadTexture(tex,UINT32_MAX);
+		if (tex->is<CubeTexture>())
+			loadCubeTexture(tex->as<CubeTexture>());
+		else
+			loadTexture(tex,UINT32_MAX);
 		tex->incRef();
 		getVm(tex->getSystemState())->addEvent(_MR(tex), _MR(Class<Event>::getInstanceS(tex->getInstanceWorker(),"textureReady")));
 	}
@@ -791,7 +794,6 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	if (renderingToTexture)
 	{
 		engineData->exec_glBindTexture_GL_TEXTURE_2D(textureframebufferID);
-		engineData->exec_glGenerateMipmap_GL_TEXTURE_2D();
 		engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 		textureframebufferID = UINT32_MAX;
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
@@ -846,7 +848,6 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 			tex->bitmaparray[level].clear();
 		}
 	}
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 }
 void Context3D::loadCubeTexture(CubeTexture *tex)
 {
@@ -858,24 +859,24 @@ void Context3D::loadCubeTexture(CubeTexture *tex)
 	engineData->exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 	if (tex->bitmaparray.size() == 0)
 	{
-		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(0,0, tex->width, tex->height, 0, nullptr);
-		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(1,0, tex->width, tex->height, 0, nullptr);
-		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(2,0, tex->width, tex->height, 0, nullptr);
-		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(3,0, tex->width, tex->height, 0, nullptr);
-		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(4,0, tex->width, tex->height, 0, nullptr);
-		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(5,0, tex->width, tex->height, 0, nullptr);
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(0,0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0);
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(1,0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0);
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(2,0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0);
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(3,0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0);
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(4,0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0);
+		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(5,0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0);
 	}
 	else
 	{
 		uint32_t side = 0;
 		for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
 		{
-			if (i % tex->max_miplevel == 1) // next side
-				side++;
+			side=(i/tex->max_miplevel)%6;
+			uint32_t level = i%tex->max_miplevel;
 			if (tex->bitmaparray[i].size() > 0)
-				engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data());
+				engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size());
 			else
-				engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,i, tex->width>>i, tex->height>>i, 0, nullptr);
+				engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,level, tex->width>>level, tex->height>>level, 0, nullptr,tex->format,tex->compressedformat,0);
 		}
 	}
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);

@@ -1398,16 +1398,12 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(in
 {
 	glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
 }
-void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize, bool isRectangleTexture)
+void EngineData::glTexImage2Dintern(uint32_t type,int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize)
 {
 	switch (format)
 	{
 		case TEXTUREFORMAT::BGRA:
-#if ENABLE_GLES2
-			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
-#else
-			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
-#endif
+			glTexImage2D(type, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
 			break;
 		case TEXTUREFORMAT::BGR:
 #if ENABLE_GLES2
@@ -1416,25 +1412,18 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, in
 				((uint8_t*)pixels)[i] = ((uint8_t*)pixels)[i+2];
 				((uint8_t*)pixels)[i+2] = t;
 			}
-			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 #else
-			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_BYTE, pixels);
+			glTexImage2D(type, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_BYTE, pixels);
 #endif
 			break;
 		case TEXTUREFORMAT::BGRA_PACKED:
-#if ENABLE_GLES2
-			glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
-#else
-			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
-#endif
+			glTexImage2D(type, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
 			break;
 		case TEXTUREFORMAT::BGR_PACKED:
 #if ENABLE_GLES2
 			LOG(LOG_NOT_IMPLEMENTED,"textureformat BGR_PACKED for opengl es");
-			glTexImage2D(GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
-#else
-			glTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_SHORT_5_6_5, pixels);
 #endif
+			glTexImage2D(type, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_SHORT_5_6_5, pixels);
 			break;
 		case TEXTUREFORMAT::COMPRESSED:
 		case TEXTUREFORMAT::COMPRESSED_ALPHA:
@@ -1442,18 +1431,10 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, in
 			switch (compressedformat)
 			{
 				case TEXTUREFORMAT_COMPRESSED::DXT5:
-#if ENABLE_GLES2
-					glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, border, compressedImageSize, pixels);
-#else
-					glCompressedTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, border, compressedImageSize, pixels);
-#endif
+					glCompressedTexImage2D(type, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, border, compressedImageSize, pixels);
 					break;
 				case TEXTUREFORMAT_COMPRESSED::DXT1:
-#if ENABLE_GLES2
-					glCompressedTexImage2D(GL_TEXTURE_2D, level, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, border, compressedImageSize, pixels);
-#else
-					glCompressedTexImage2D(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D, level, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, border, compressedImageSize, pixels);
-#endif
+					glCompressedTexImage2D(type, level, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, border, compressedImageSize, pixels);
 					break;
 				default:
 					LOG(LOG_NOT_IMPLEMENTED,"upload texture in compressed format "<<compressedformat);
@@ -1469,7 +1450,14 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, in
 			break;
 	}
 }
-
+void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize, bool isRectangleTexture)
+{
+#if ENABLE_GLES2
+	glTexImage2Dintern(GL_TEXTURE_2D ,level, width, height, border, pixels, format, compressedformat,compressedImageSize);
+#else
+	glTexImage2Dintern(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D,level, width, height, border, pixels, format, compressedformat,compressedImageSize);
+#endif
+}
 void EngineData::exec_glDrawBuffer_GL_BACK()
 {
 	glDrawBuffer(GL_BACK);
@@ -1523,6 +1511,10 @@ void EngineData::exec_glGenerateMipmap_GL_TEXTURE_2D()
 {
 	glGenerateMipmap(GL_TEXTURE_2D);
 }
+void EngineData::exec_glGenerateMipmap_GL_TEXTURE_CUBE_MAP()
+{
+	glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+}
 
 void EngineData::exec_glReadPixels(int32_t width, int32_t height, void *buf)
 {
@@ -1546,9 +1538,9 @@ void EngineData::exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_
 {
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
-void EngineData::exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
+void EngineData::exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level, int32_t width, int32_t height, int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize)
 {
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X+side, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+	glTexImage2Dintern(GL_TEXTURE_CUBE_MAP_POSITIVE_X+side, level, width, height, border, pixels, format, compressedformat,compressedImageSize);
 }
 
 void EngineData::exec_glScissor(int32_t x, int32_t y, int32_t width, int32_t height)

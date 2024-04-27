@@ -100,6 +100,7 @@ private:
 	void openContextMenuIntern(InteractiveObject *dispatcher);
 	ITickJob* sdleventtickjob;
 	std::string getsharedobjectfilename(const tiny_string &name);
+	virtual void glTexImage2Dintern(uint32_t type,int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize);
 protected:
 	tiny_string sharedObjectDatapath;
 	int32_t contextmenucurrentitem;
@@ -327,12 +328,13 @@ public:
 	virtual void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffset, int32_t yoffset, int32_t width, int32_t height, const void* pixels);
 	virtual void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data);
 	virtual void exec_glGenerateMipmap_GL_TEXTURE_2D();
+	virtual void exec_glGenerateMipmap_GL_TEXTURE_CUBE_MAP();
 	virtual void exec_glReadPixels(int32_t width, int32_t height,void* buf);
 	virtual void exec_glReadPixels_GL_BGRA(int32_t width, int32_t height, void *buf);
 	virtual void exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id);
 	virtual void exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	virtual void exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-	virtual void exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels);
+	virtual void exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level, int32_t width, int32_t height, int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize);
 	virtual void exec_glScissor(int32_t x, int32_t y, int32_t width, int32_t height);
 	virtual void exec_glDisable_GL_SCISSOR_TEST();
 	virtual void exec_glColorMask(bool red, bool green, bool blue, bool alpha);

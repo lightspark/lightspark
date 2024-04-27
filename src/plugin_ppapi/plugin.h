@@ -180,6 +180,7 @@ private:
 	PP_Resource ppcontextmenuid;
 	PP_CompletionCallback contextmenucallback;
 	bool buffersswapped;
+	void glTexImage2Dintern(uint32_t type,int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize) override;
 public:
 	SystemState* sys;
 	PP_Resource audioconfig;
@@ -324,12 +325,13 @@ public:
 	void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels) override;
 	void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data) override;
 	void exec_glGenerateMipmap_GL_TEXTURE_2D() override;
+	void exec_glGenerateMipmap_GL_TEXTURE_CUBE_MAP();
 	void exec_glReadPixels(int32_t width, int32_t height,void* buf) override;
 	void exec_glReadPixels_GL_BGRA(int32_t width, int32_t height,void *buf) override;
 	void exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id) override;
 	void exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MIN_FILTER_GL_LINEAR() override;
 	void exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR() override;
-	void exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels) override;
+	void exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize) override;
 	void exec_glScissor(int32_t x, int32_t y, int32_t width, int32_t height) override;
 	void exec_glDisable_GL_SCISSOR_TEST() override;
 	void exec_glColorMask(bool red, bool green, bool blue, bool alpha) override;

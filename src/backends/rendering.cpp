@@ -269,6 +269,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				ITextureUploadable* u = *itup;
 				u->upload(true);
 				TextureChunk& tex=u->getTexture();
+				if(newTextureNeeded)
+					handleNewTexture();
 				uint32_t w,h;
 				u->sizeNeeded(w,h);
 				u->contentScale(tex.xContentScale, tex.yContentScale);

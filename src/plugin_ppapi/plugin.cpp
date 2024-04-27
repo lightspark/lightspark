@@ -2492,12 +2492,12 @@ void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8
 {
 	g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
 }
-void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize, bool isRectangleTexture)
+void ppPluginEngineData::glTexImage2Dintern(uint32_t type,int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize)
 {
 	switch (format)
 	{
 		case TEXTUREFORMAT::BGRA:
-			g_gles2_interface->TexImage2D(instance->m_graphics,isRectangleTexture ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+			g_gles2_interface->TexImage2D(instance->m_graphics, type, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 			break;
 		case TEXTUREFORMAT::BGR:
 			for (int i = 0; i < width*height*3; i += 3) {
@@ -2505,14 +2505,14 @@ void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t 
 				((uint8_t*)pixels)[i] = ((uint8_t*)pixels)[i+2];
 				((uint8_t*)pixels)[i+2] = t;
 			}
-			g_gles2_interface->TexImage2D(instance->m_graphics,isRectangleTexture ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+			g_gles2_interface->TexImage2D(instance->m_graphics, type, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 			break;
 		case TEXTUREFORMAT::BGRA_PACKED:
-			g_gles2_interface->TexImage2D(instance->m_graphics,isRectangleTexture ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
+			g_gles2_interface->TexImage2D(instance->m_graphics, type, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
 			break;
 		case TEXTUREFORMAT::BGR_PACKED:
 			LOG(LOG_NOT_IMPLEMENTED,"textureformat BGR_PACKED for opengl es");
-			g_gles2_interface->TexImage2D(instance->m_graphics,isRectangleTexture ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
+			g_gles2_interface->TexImage2D(instance->m_graphics, type, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
 			break;
 		case TEXTUREFORMAT::COMPRESSED:
 		case TEXTUREFORMAT::COMPRESSED_ALPHA:
@@ -2520,10 +2520,10 @@ void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t 
 			switch (compressedformat)
 			{
 				case TEXTUREFORMAT_COMPRESSED::DXT5:
-					g_gles2_interface->CompressedTexImage2D(instance->m_graphics,isRectangleTexture ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, border, compressedImageSize, pixels);
+					g_gles2_interface->CompressedTexImage2D(instance->m_graphics, type, level, GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, width, height, border, compressedImageSize, pixels);
 					break;
 				case TEXTUREFORMAT_COMPRESSED::DXT1:
-					g_gles2_interface->CompressedTexImage2D(instance->m_graphics,isRectangleTexture ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D, level, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, border, compressedImageSize, pixels);
+					g_gles2_interface->CompressedTexImage2D(instance->m_graphics, type, level, GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, border, compressedImageSize, pixels);
 					break;
 				default:
 					LOG(LOG_NOT_IMPLEMENTED,"upload texture in compressed format "<<compressedformat);
@@ -2539,7 +2539,10 @@ void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t 
 			break;
 	}
 }
-
+void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level, int32_t width, int32_t height, int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize, bool isRectangleTexture)
+{
+	glTexImage2Dintern(isRectangleTexture ? GL_TEXTURE_RECTANGLE_ARB : GL_TEXTURE_2D,level, width, height, border, pixels, format, compressedformat,compressedImageSize);
+}
 void ppPluginEngineData::exec_glDrawBuffer_GL_BACK()
 {
 	// PPAPI has no DrawBuffer
@@ -2594,6 +2597,10 @@ void ppPluginEngineData::exec_glGenerateMipmap_GL_TEXTURE_2D()
 {
 	g_gles2_interface->GenerateMipmap(instance->m_graphics,GL_TEXTURE_2D);
 }
+void ppPluginEngineData::exec_glGenerateMipmap_GL_TEXTURE_CUBE_MAP()
+{
+	g_gles2_interface->GenerateMipmap(instance->m_graphics,GL_TEXTURE_CUBE_MAP);
+}
 
 void ppPluginEngineData::exec_glReadPixels(int32_t width, int32_t height, void *buf)
 {
@@ -2618,9 +2625,9 @@ void ppPluginEngineData::exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG
 {
 	g_gles2_interface->TexParameteri(instance->m_graphics,GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
-void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
+void ppPluginEngineData::exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(uint32_t side, int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat, uint32_t compressedImageSize)
 {
-	g_gles2_interface->TexImage2D(instance->m_graphics,GL_TEXTURE_CUBE_MAP_POSITIVE_X+side, level, GL_RGBA, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glTexImage2Dintern(GL_TEXTURE_CUBE_MAP_POSITIVE_X+side, level, width, height, border, pixels, format, compressedformat,compressedImageSize);
 }
 
 void ppPluginEngineData::exec_glScissor(int32_t x, int32_t y, int32_t width, int32_t height)

@@ -38,6 +38,7 @@
 #include "backends/lsopengl.h"
 #include "3rdparty/nanovg/src/nanovg.h"
 #include "3rdparty/nanovg/src/nanovg_gl.h"
+#include <algorithm>
 
 using namespace lightspark;
 

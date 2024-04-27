@@ -414,6 +414,57 @@ void ApplicationDomain::prepareShutdown()
 	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
 		it->second->prepareShutdown();
 }
+
+void ApplicationDomain::addSuperClassNotFilled(Class_base *cls)
+{
+	auto i = classesBeingDefined.cbegin();
+	while (i != classesBeingDefined.cend())
+	{
+		if(i->second == cls->super.getPtr())
+		{
+			classesSuperNotFilled.insert(make_pair(cls,cls->super.getPtr()));
+			break;
+		}
+		i++;
+	}
+}
+
+void ApplicationDomain::copyBorrowedTraitsFromSuper(Class_base *cls)
+{
+	if (!cls)
+		return;
+	bool super_initialized=true;
+	if (cls->super)
+	{
+		for (auto itsup = classesSuperNotFilled.begin();itsup != classesSuperNotFilled.end(); itsup++)
+		{
+			if(itsup->second == cls->super.getPtr())
+			{
+				super_initialized=false;
+				break;
+			}
+		}
+	}
+	auto it = classesSuperNotFilled.begin();
+	while (it != classesSuperNotFilled.end())
+	{
+		if(it->second == cls)
+		{
+			it->first->copyBorrowedTraits(cls);
+			if (super_initialized)
+				it = classesSuperNotFilled.erase(it);
+			else
+			{
+				// cls->super was not yet initialized, make sure all classes that have cls as super get borrowed traits from cls->super
+				it->second = cls->super.getPtr();
+				it++;
+			}
+		}
+		else
+			it++;
+	}
+}
+
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 {
 	ApplicationDomain* th = asAtomHandler::as<ApplicationDomain>(obj);

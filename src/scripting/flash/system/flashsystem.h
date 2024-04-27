@@ -87,6 +87,8 @@ private:
 	std::vector<Global*> globalScopes;
 	_NR<ByteArray> defaultDomainMemory;
 	void cbDomainMemory(_NR<ByteArray> oldvalue);
+	// list of classes where super class is not defined yet
+	std::unordered_map<Class_base*,Class_base*> classesSuperNotFilled;
 public:
 	ByteArray* currentDomainMemory;
 	ApplicationDomain(ASWorker* wrk, Class_base* c, _NR<ApplicationDomain> p=NullRef);
@@ -94,9 +96,9 @@ public:
 	void prepareShutdown() override;
 	std::map<const multiname*, Class_base*> classesBeingDefined;
 	std::map<QName, Class_base*> instantiatedTemplates;
-
-	// list of classes where super class is not defined yet 
-	std::list<Class_base*> classesSuperNotFilled;
+	
+	void addSuperClassNotFilled(Class_base* cls);
+	void copyBorrowedTraitsFromSuper(Class_base* cls);
 
 	static void sinit(Class_base* c);
 	void registerGlobalScope(Global* scope);

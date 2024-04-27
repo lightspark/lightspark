@@ -176,10 +176,10 @@ private:
 protected:
 	Global* global;
 	void describeMetadata(pugi::xml_node &node, const traits_info& trait) const;
-	void copyBorrowedTraitsFromSuper();
 	ASFUNCTION_ATOM(_toString);
 	void initStandardProps();
 public:
+	void copyBorrowedTraits(Class_base* src);
 	virtual asfreelist* getFreeList(ASWorker* w)
 	{
 		return isReusable && w ? &w->freelist[classID] : nullptr ;

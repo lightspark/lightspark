@@ -2781,17 +2781,7 @@ void ABCVm::newClass(call_context* th, int n)
 			LOG(LOG_ERROR,"resetting super class from "<<ret->super->toDebugString() <<" to "<< base->toDebugString());
 			ret->setSuper(_MR(base));
 		}
-		i = th->mi->context->root->applicationDomain->classesBeingDefined.cbegin();
-		while (i != th->mi->context->root->applicationDomain->classesBeingDefined.cend())
-		{
-			if(i->second == base)
-			{
-				th->mi->context->root->applicationDomain->classesSuperNotFilled.push_back(ret);
-				break;
-			}
-			i++;
-		}
-		
+		th->mi->context->root->applicationDomain->addSuperClassNotFilled(ret);
 	}
 
 	//Add protected namespace if needed
@@ -2938,18 +2928,8 @@ void ABCVm::newClass(call_context* th, int n)
 	if (ret->getGlobalScope()) // the variable on the Definition Object was set to null in class definition, but can be set to the real object now that the class init function was called
 		ret->getGlobalScope()->setVariableByQName(mname->name_s_id,mname->ns[0], ret,DECLARED_TRAIT);
 	th->mi->context->root->bindClass(className,ret);
-
-	auto j = th->mi->context->root->applicationDomain->classesSuperNotFilled.begin();
-	while (j != th->mi->context->root->applicationDomain->classesSuperNotFilled.end())
-	{
-		if((*j)->super == ret)
-		{
-			(*j)->copyBorrowedTraitsFromSuper();
-			j = th->mi->context->root->applicationDomain->classesSuperNotFilled.erase(j);
-		}
-		else
-			j++;
-	}
+	
+	th->mi->context->root->applicationDomain->copyBorrowedTraitsFromSuper(ret);
 	ret->setConstructIndicator();
 	//Remove the class to the ones being currently defined in this context
 	th->mi->context->root->applicationDomain->classesBeingDefined.erase(mname);

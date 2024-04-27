@@ -1296,16 +1296,30 @@ Class_base::Class_base(const Class_object* c):ASObject((MemoryAccount*)nullptr),
  *
  * use_protns and protectedns must be set before this function is called
  */
-void Class_base::copyBorrowedTraitsFromSuper()
+void Class_base::copyBorrowedTraits(Class_base* src)
 {
 	//assert(borrowedVariables.Variables.empty());
-	variables_map::var_iterator i = super->borrowedVariables.Variables.begin();
-	for(;i != super->borrowedVariables.Variables.end(); ++i)
+	variables_map::var_iterator i = src->borrowedVariables.Variables.begin();
+	for(;i != src->borrowedVariables.Variables.end(); ++i)
 	{
 		variable& v = i->second;
-		if (borrowedVariables.findObjVar(i->first,v.ns,TRAIT_KIND::NO_CREATE_TRAIT,TRAIT_KIND::DECLARED_TRAIT))
-			continue; // variable is already overwritten in this class
-		v.issealed = super->isSealed;
+		variable* exitingvar = borrowedVariables.findObjVar(i->first,v.ns,TRAIT_KIND::NO_CREATE_TRAIT,TRAIT_KIND::DECLARED_TRAIT);
+		if (exitingvar)
+		{
+			// variable is already overwritten in this class, but it may be that only getter or setter was overridden, so we check them
+			if (asAtomHandler::isInvalid(exitingvar->getter))
+			{
+				exitingvar->getter = v.getter;
+				ASATOM_INCREF(v.getter);
+			}
+			if (asAtomHandler::isInvalid(exitingvar->setter))
+			{
+				exitingvar->setter = v.setter;
+				ASATOM_INCREF(v.setter);
+			}
+			continue;
+		}
+		v.issealed = src->isSealed;
 		ASATOM_INCREF(v.var);
 		ASATOM_INCREF(v.getter);
 		ASATOM_INCREF(v.setter);
@@ -1408,7 +1422,7 @@ void Class_base::setSuper(Ref<Class_base> super_)
 {
 	assert(!super);
 	super = super_;
-	copyBorrowedTraitsFromSuper();
+	copyBorrowedTraits(super.getPtr());
 }
 
 ASFUNCTIONBODY_ATOM(Class_base,_toString)

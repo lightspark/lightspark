@@ -84,7 +84,7 @@ class StandaloneEngineData: public EngineData
 		return st.st_size;
 	}
 public:
-	StandaloneEngineData(const tiny_string& filedatapath)
+	StandaloneEngineData(const tiny_string& filedatapath,const tiny_string& absolutepath)
 	{
 		sharedObjectDatapath = Config::getConfig()->getCacheDirectory();
 		sharedObjectDatapath += G_DIR_SEPARATOR_S;
@@ -95,7 +95,7 @@ public:
 		mApplicationStoragePath += filedatapath;
 		mApplicationStoragePath += G_DIR_SEPARATOR_S;
 		mApplicationStoragePath += "appstorage";
-		mBaseDir = g_get_current_dir();
+		mBaseDir = g_path_get_dirname(absolutepath.raw_buf());
 	}
 	~StandaloneEngineData()
 	{
@@ -697,7 +697,7 @@ int main(int argc, char* argv[])
 	if (filedatapath.find(homedir) == 0) // remove home dir, if file is located below home dir
 		filedatapath = filedatapath.substr_bytes(homedir.numBytes(),UINT32_MAX);
 
-	sys->setParamsAndEngine(new StandaloneEngineData(filedatapath), true);
+	sys->setParamsAndEngine(new StandaloneEngineData(filedatapath,absolutepath), true);
 	// on standalone local storage is always allowed
 	sys->getEngineData()->setLocalStorageAllowedMarker(true);
 	sys->getEngineData()->startInFullScreenMode=startInFullScreenMode;

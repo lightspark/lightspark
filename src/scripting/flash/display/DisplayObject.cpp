@@ -296,6 +296,7 @@ void DisplayObject::prepareShutdown()
 		if (o)
 			o->prepareShutdown();
 	}
+	setParent(nullptr);
 }
 
 bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)

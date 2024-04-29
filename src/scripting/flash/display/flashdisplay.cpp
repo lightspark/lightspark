@@ -2172,8 +2172,12 @@ void DisplayObjectContainer::prepareShutdown()
 	if (this->preparedforshutdown)
 		return;
 	InteractiveObject::prepareShutdown();
-	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
+	auto it = dynamicDisplayList.begin();
+	while (it != dynamicDisplayList.end())
+	{
 		(*it)->prepareShutdown();
+		 dynamicDisplayList.erase(it);
+	}
 }
 
 bool DisplayObjectContainer::countCylicMemberReferences(garbagecollectorstate& gcstate)

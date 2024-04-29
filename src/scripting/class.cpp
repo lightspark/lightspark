@@ -237,6 +237,11 @@ variable* Class_inherit::findVariableByMultiname(const multiname& name, Class_ba
 	checkScriptInit();
 	return Class_base::findVariableByMultiname(name, cls, nsRealID, isborrowed, considerdynamic, wrk);
 }
+multiname* Class_inherit::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
+{
+	checkScriptInit();
+	return Class_base::setVariableByMultiname(name, o, allowConst, alreadyset, wrk);
+}
 string Class_inherit::toDebugString() const
 {
 	std::string res = Class_base::toDebugString();

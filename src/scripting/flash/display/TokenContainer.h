@@ -66,10 +66,7 @@ protected:
 	TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling);
 	IDrawable* invalidate(SMOOTH_MODE smoothing, bool fromgraphics);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false);
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
-	{
-		return boundsRectFromTokens(tokens,scaling,xmin,xmax,ymin,ymax);
-	}
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
 	bool hitTestImpl(const Vector2f& point) const;
 	bool tokensEmpty() const { return tokens.empty(); }
 };

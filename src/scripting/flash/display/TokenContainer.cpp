@@ -241,6 +241,17 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 	q->addToInvalidateQueue(_MR(owner));
 }
 
+bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+{
+	if (this->tokensEmpty())
+		return false;
+	xmin = this->tokens.boundsRect.Xmin;
+	xmax = this->tokens.boundsRect.Xmax;
+	ymin = this->tokens.boundsRect.Ymin;
+	ymax = this->tokens.boundsRect.Ymax;
+	return true;
+}
+
 IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 {
 	number_t x,y;

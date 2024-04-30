@@ -4071,9 +4071,8 @@ ASFUNCTIONBODY_ATOM(Stage,_invalidate)
 void Stage::forceInvalidation()
 {
 	RELEASE_WRITE(this->invalidated,true);
-	this->incRef();
 	_R<FlushInvalidationQueueEvent> event=_MR(new (getSystemState()->unaccountedMemory) FlushInvalidationQueueEvent());
-	getVm(getSystemState())->addEvent(_MR(this),event);
+	getVm(getSystemState())->addEvent(NullRef,event);
 }
 ASFUNCTIONBODY_ATOM(Stage,_getColor)
 {

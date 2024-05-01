@@ -807,7 +807,10 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 
 void DisplayObject::refreshSurfaceState()
 {
-	SurfaceState* state = this->cachedSurface->getState();
+}
+void DisplayObject::setupSurfaceState(IDrawable* d)
+{
+	SurfaceState* state = d->getState();
 	assert(state);
 #ifndef _NDEBUG
 	state->src=this; // keep track of the DisplayObject when debugging
@@ -1056,6 +1059,7 @@ void DisplayObject::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapConta
 	IDrawable* d = this->invalidate(container->smoothing);
 	if (d)
 	{
+		setupSurfaceState(d);
 		if (getNeedsTextureRecalculation() || !d->isCachedSurfaceUsable(this))
 		{
 			this->incRef();

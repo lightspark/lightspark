@@ -259,6 +259,7 @@ public:
 	void setLegacyMatrix(const MATRIX& m);
 	void setFilters(const FILTERLIST& filterlist);
 	virtual void refreshSurfaceState();
+	void setupSurfaceState(IDrawable* d);
 
 	bool placedByActionScript;
 	// If set, skip the next call to enterFrame().

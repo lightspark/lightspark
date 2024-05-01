@@ -71,6 +71,7 @@ public:
 	bool needsFilterRefresh;
 	bool needsLayer;
 	bool isYUV;
+	bool renderWithNanoVG;
 #ifndef _NDEBUG
 	DisplayObject* src; // this points to the DisplayObject this surface belongs to
 #endif

@@ -62,6 +62,7 @@ public:
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(bool smoothing) override;
+	void invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container) override;
 };
 
 }

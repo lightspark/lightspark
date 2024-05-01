@@ -1055,11 +1055,11 @@ std::vector<LineData> CairoPangoRenderer::getLineData(const TextData& _textData)
 
 AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(o),surfaceBytes(nullptr),uploadNeeded(false),isBufferOwner(true)
 {
+	owner->cachedSurface->wasUpdated=false;
 }
 
 AsyncDrawJob::~AsyncDrawJob()
 {
-	owner->cachedSurface->wasUpdated=false;
 	owner->getSystemState()->AsyncDrawJobCompleted(this);
 	delete drawable;
 	if (surfaceBytes && isBufferOwner)

@@ -48,7 +48,7 @@ SurfaceState::SurfaceState(float _xoffset, float _yoffset, float _alpha, float _
 	,depth(0),clipdepth(0),maxfilterborder(0)
 	,blendmode(_blendmode),smoothing(_smoothing),scaling(_scaling)
 	,visible(true),allowAsMask(true),isMask(_ismask),cacheAsBitmap(_cacheAsBitmap)
-	,needsFilterRefresh(_needsfilterrefresh),needsLayer(_needslayer),isYUV(false)
+	,needsFilterRefresh(_needsfilterrefresh),needsLayer(_needslayer),isYUV(false),renderWithNanoVG(false)
 {
 #ifndef _NDEBUG
 	src=nullptr;
@@ -59,6 +59,7 @@ SurfaceState::~SurfaceState()
 {
 	reset();
 }
+
 void SurfaceState::reset()
 {
 #ifndef _NDEBUG
@@ -87,6 +88,7 @@ void SurfaceState::reset()
 	visible=true;
 	allowAsMask=true;
 	isMask=false;
+	renderWithNanoVG=false;
 	cacheAsBitmap=false;
 	needsFilterRefresh=true;
 	needsLayer=false;
@@ -249,7 +251,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 {
 	// first look if we have tokens or bitmaps to render
-	if (state->tokens.canRenderToGL && !state->tokens.empty())
+	if (state->renderWithNanoVG)
 	{
 		NVGcontext* nvgctxt = sys->getEngineData()->nvgcontext;
 		if (nvgctxt)

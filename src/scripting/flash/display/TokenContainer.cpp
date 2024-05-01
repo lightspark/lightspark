@@ -245,10 +245,10 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 {
 	if (this->tokensEmpty())
 		return false;
-	xmin = this->tokens.boundsRect.Xmin;
-	xmax = this->tokens.boundsRect.Xmax;
-	ymin = this->tokens.boundsRect.Ymin;
-	ymax = this->tokens.boundsRect.Ymax;
+	xmin = this->tokens.boundsRect.Xmin*scaling;
+	xmax = this->tokens.boundsRect.Xmax*scaling;
+	ymin = this->tokens.boundsRect.Ymin*scaling;
+	ymax = this->tokens.boundsRect.Ymax*scaling;
 	return true;
 }
 
@@ -294,7 +294,7 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 		regpointy=bymin;
 	}
 	if (owner->getSystemState()->getEngineData()->nvgcontext
-		&& !tokens.empty() 
+		&& !tokens.empty()
 		&& tokens.canRenderToGL
 		&& !r
 		&& !DisplayObject::isShaderBlendMode(owner->getBlendMode())
@@ -320,6 +320,7 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 									   , this->scaling, owner->getConcatenatedAlpha()
 									   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,owner->getBlendMode(),matrix);
 		ret->getState()->tokens = this->tokens;
+		ret->getState()->renderWithNanoVG = renderWithNanoVG;
 		return ret;
 	}
 	else if (renderWithNanoVG)
@@ -328,12 +329,14 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 		owner->setNeedsTextureRecalculation();
 		renderWithNanoVG=false;
 	}
-	return new CairoTokenRenderer(tokens,matrix
+	IDrawable* ret = new CairoTokenRenderer(tokens,matrix
 				, x, y, ceil(width), ceil(height)
 				, matrix.getScaleX(), matrix.getScaleY()
 				, isMask, owner->cacheAsBitmap
 				, scaling,owner->getConcatenatedAlpha()
 				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE,owner->getBlendMode(), regpointx, regpointy);
+	ret->getState()->renderWithNanoVG = renderWithNanoVG;
+	return ret;
 }
 
 bool TokenContainer::hitTestImpl(const Vector2f& point) const

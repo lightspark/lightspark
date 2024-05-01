@@ -268,4 +268,9 @@ IDrawable *Bitmap::invalidate(bool smoothing)
 				, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE
 				, this->getBlendMode(),getMatrix());
 }
-
+void Bitmap::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container)
+{
+	if (bitmapData)
+		bitmapData->checkForUpload();
+	DisplayObject::invalidateForRenderToBitmap(container);
+}

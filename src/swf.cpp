@@ -1374,6 +1374,7 @@ void SystemState::flushInvalidationQueue()
 			//render it and upload it to GPU
 			if(d)
 			{
+				cur->setupSurfaceState(d);
 				if (drawobj->getNeedsTextureRecalculation() || !d->isCachedSurfaceUsable(drawobj.getPtr()))
 				{
 					drawjobLock.lock();

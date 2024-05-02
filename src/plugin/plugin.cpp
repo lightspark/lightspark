@@ -33,8 +33,8 @@
 #include "scripting/flash/display/LoaderInfo.h"
 
 #include "plugin/npscriptobject.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_syswm.h>
+#include <SDL.h>
+#include <SDL_syswm.h>
 #ifdef MOZ_X11
 #include <X11/keysym.h>
 #endif

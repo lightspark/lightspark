@@ -23,7 +23,7 @@
 #include "interfaces/timer.h"
 #include "backends/rendering_context.h"
 #include "timer.h"
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <sys/time.h>
 #ifdef _WIN32
 #	include <windef.h>

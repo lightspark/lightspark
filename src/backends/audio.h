@@ -25,7 +25,7 @@
 #include "backends/decoder.h"
 #include <iostream>
 #include <unordered_set>
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 namespace lightspark
 {

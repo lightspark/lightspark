@@ -34,7 +34,7 @@
 #include "scripting/flash/display/LoaderInfo.h"
 #include <string>
 #include <algorithm>
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include "threading.h"
 #include "plugin_ppapi/plugin.h"
 #include "plugin_ppapi/ppextscriptobject.h"

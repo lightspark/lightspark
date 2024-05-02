@@ -20,8 +20,6 @@
 
 #include "platforms/engineutils.h"
 #include "swf.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_mouse.h>
 #include "backends/input.h"
 #include "backends/rendering.h"
 #include "backends/lsopengl.h"

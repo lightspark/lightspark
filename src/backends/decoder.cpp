@@ -186,9 +186,13 @@ void FFMpegVideoDecoder::switchCodec(LS_VIDEO_CODEC codecId, uint8_t *initdata, 
 {
 	if (codecContext)
 	{
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55,63,100)
+		avcodec_free_context(&codecContext);
+#else
 		avcodec_close(codecContext);
 		if(ownedContext)
 			av_free(codecContext);
+#endif
 	}
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53,8,0)
 	codecContext=avcodec_alloc_context3(nullptr);
@@ -345,9 +349,13 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint)
 FFMpegVideoDecoder::~FFMpegVideoDecoder()
 {
 	while(fenceCount);
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55,63,100)
+	avcodec_free_context(&codecContext);
+#else
 	avcodec_close(codecContext);
 	if(ownedContext)
 		av_free(codecContext);
+#endif
 #if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 0, 0)
 	av_frame_free(&frameIn);
 #else

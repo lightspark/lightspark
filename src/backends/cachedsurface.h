@@ -83,8 +83,6 @@ private:
 	SurfaceState* state;
 	void renderImpl(SystemState* sys,RenderContext& ctxt);
 	void defaultRender(RenderContext& ctxt);
-	void renderFilters(lightspark::SystemState* sys, RenderContext& ctxt, uint32_t w, uint32_t h);
-	RectF boundsRectWithRenderTransform(const MATRIX& matrix, const MATRIX& initialMatrix);
 public:
 	CachedSurface():state(nullptr),tex(nullptr),isChunkOwner(true),isValid(false),isInitialized(false),wasUpdated(false),cachedFilterTextureID(UINT32_MAX)
 	{
@@ -100,7 +98,9 @@ public:
 	{
 		return state;
 	}
-	void Render(lightspark::SystemState* sys, RenderContext& ctxt, const MATRIX* startmatrix=nullptr, RenderDisplayObjectToBitmapContainer* container=nullptr);
+	void Render(SystemState* sys, RenderContext& ctxt, const MATRIX* startmatrix=nullptr, RenderDisplayObjectToBitmapContainer* container=nullptr);
+	RectF boundsRectWithRenderTransform(const MATRIX& matrix, const MATRIX& initialMatrix);
+	void renderFilters(SystemState* sys, RenderContext& ctxt, uint32_t w, uint32_t h, const MATRIX& m);
 	TextureChunk* tex;
 	bool isChunkOwner;
 	bool isValid;

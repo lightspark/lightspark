@@ -560,6 +560,8 @@ void DisplayObject::requestInvalidationIncludingChildren(InvalidateQueue* q)
 	{
 		this->incRef();
 		q->addToInvalidateQueue(_MR(this));
+		if(!mask.isNull())
+			mask->requestInvalidationIncludingChildren(q);
 	}
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_cacheAsBitmap)
@@ -816,7 +818,7 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 	state->src=this; // keep track of the DisplayObject when debugging
 #endif
 	if (this->mask)
-		state->mask =  this->mask->getCachedSurface();
+		state->mask = this->mask->getCachedSurface();
 	else
 		state->mask.reset();
 	state->clipdepth = this->getClipDepth();
@@ -1056,6 +1058,8 @@ IDrawable* DisplayObject::invalidate(bool smoothing)
 }
 void DisplayObject::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container)
 {
+	if (this->mask)
+		this->mask->invalidateForRenderToBitmap(container);
 	IDrawable* d = this->invalidate(container->smoothing);
 	if (d)
 	{
@@ -1082,8 +1086,8 @@ void DisplayObject::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapConta
 void DisplayObject::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	//Let's invalidate also the mask
-	if(!mask.isNull())
-		mask->requestInvalidation(q);
+	if(!mask.isNull() && (mask->hasChanged || forceTextureRefresh))
+		mask->requestInvalidation(q,forceTextureRefresh);
 }
 
 void DisplayObject::updateCachedSurface(IDrawable *d)
@@ -2066,11 +2070,6 @@ IDrawable* DisplayObject::getFilterDrawable(bool smoothing)
 	ColorTransformBase ct;
 	if (this->colorTransform)
 		ct = *this->colorTransform.getPtr();
-	
-	Rectangle* r = scalingGrid.getPtr();
-	if (!r && getParent())
-		r = getParent()->scalingGrid.getPtr();
-	
 	this->resetNeedsTextureRecalculation();
 	return new RefreshableDrawable(x, y, ceil(width), ceil(height)
 				, matrix.getScaleX(), matrix.getScaleY()

@@ -25,6 +25,7 @@
 #include "timer.h"
 #include <SDL.h>
 #include <sys/time.h>
+#include <unordered_map>
 #ifdef _WIN32
 #	include <windef.h>
 #endif
@@ -64,6 +65,7 @@ private:
 	void handleNewTexture();
 	void finalizeUpload();
 	void handleUpload();
+	void checkMaskSurfaces();
 	Semaphore event;
 	std::string fontPath;
 	volatile uint32_t newWidth;
@@ -97,6 +99,8 @@ private:
 	volatile bool refreshNeeded;
 	Mutex mutexRefreshSurfaces;
 	std::list<RefreshableSurface> surfacesToRefresh;
+	Mutex mutexMaskSurfaces;
+	std::unordered_map<CachedSurface*,MATRIX> surfacesForMasks;
 
 	volatile bool renderToBitmapContainerNeeded;
 	Mutex mutexRenderToBitmapContainer;
@@ -158,6 +162,7 @@ public:
 			event.signal();
 		}
 	}
+	void addMaskSurfaceToRender(DisplayObject* o);
 
 	void renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, const MATRIX& initialMatrix,bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct,_NR<BitmapContainer> bm);
 	/**

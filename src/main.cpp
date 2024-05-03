@@ -25,7 +25,7 @@
 #include "logger.h"
 #include "platforms/engineutils.h"
 #include "compat.h"
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include "flash/utils/ByteArray.h"
 #include <sys/stat.h>
 #include "parsing/streams.h"

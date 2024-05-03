@@ -292,6 +292,8 @@ void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase&
 	//Set colotransform
 	engineData->exec_glUniform4f(colortransMultiplyUniform, colortransform.redMultiplier,colortransform.greenMultiplier,colortransform.blueMultiplier,colortransform.alphaMultiplier);
 	engineData->exec_glUniform4f(colortransAddUniform, colortransform.redOffset/255.0,colortransform.greenOffset/255.0,colortransform.blueOffset/255.0,colortransform.alphaOffset/255.0);
+	// set mask drawing indicator
+	engineData->exec_glUniform1f(maskUniform, isDrawingMask() ? 1 : 0);
 }
 void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COLOR_MODE colorMode,
 									 const ColorTransformBase& colortransform,
@@ -301,7 +303,6 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	setupRenderingState(alpha,colortransform,smooth,blendmode);
 	float empty=0;
 	engineData->exec_glUniform1fv(filterdataUniform, 1, &empty);
-	engineData->exec_glUniform1f(maskUniform, isDrawingMask() ? 1 : 0);
 	engineData->exec_glUniform1f(yuvUniform, colorMode==COLOR_MODE::YUV_MODE?1.0:0.0);
 	
 	// set mode for direct coloring:

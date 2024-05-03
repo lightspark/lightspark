@@ -176,6 +176,8 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 	bool needscachedtexture = (!container && state->cacheAsBitmap)
 							  || ctxt.transformStack().transform().blendmode == BLENDMODE_LAYER
 							  || ctxt.isMaskActive()
+							  || state->isMask
+							  || state->clipdepth
 							  || !state->filters.isNull()
 							  || (state->needsLayer && sys->getRenderThread()->filterframebufferstack.empty());
 	if (needscachedtexture && (state->needsFilterRefresh || cachedFilterTextureID != UINT32_MAX))
@@ -199,15 +201,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 			MATRIX m = baseTransform.matrix;
 			m.x0 = -offset.x;
 			m.y0 = -offset.y;
-			
-			// TODO: Create a new GLRenderContext here
-			ctxt.createTransformStack();
-			ctxt.transformStack().push(Transform2D(m,ColorTransformBase(),AS_BLENDMODE::BLENDMODE_NORMAL));
-			this->renderFilters(sys,ctxt,size.x,size.y);
-			
-			ctxt.transformStack().pop();
-			ctxt.removeTransformStack();
-			state->needsFilterRefresh=false;
+			this->renderFilters(sys,ctxt,size.x,size.y,m);
 		}
 		if (cachedFilterTextureID != UINT32_MAX)
 		{
@@ -279,6 +273,9 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 				case BLENDMODE_ERASE:
 					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ZERO,NVG_ONE_MINUS_SRC_ALPHA);
 					break;
+				case BLENDMODE_INVERT:
+				 	nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE_MINUS_DST_COLOR,NVG_ZERO);
+				 	break;
 				default:
 					LOG(LOG_NOT_IMPLEMENTED,"renderTextured of nanoVG blend mode "<<(int)ctxt.transformStack().transform().blendmode);
 					break;
@@ -423,6 +420,21 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 									}
 									break;
 								}
+								case LINEAR_GRADIENT:
+								{
+									if (ctxt.isDrawingMask())
+									{
+										// linear gradient without alpha can be rendered as solid white when rendering mask
+										RGBA color(255,255,255,255);
+										float r,g,b,a;
+										ct.applyTransformation(color,r,g,b,a);
+										NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
+										nvgFillColor(nvgctxt,c);
+										break;
+									}
+									LOG(LOG_NOT_IMPLEMENTED,"nanovg fillstyle:"<<hex<<(int)style->FillStyleType);
+									break;
+								}
 								default:
 									LOG(LOG_NOT_IMPLEMENTED,"nanovg fillstyle:"<<hex<<(int)style->FillStyleType);
 									break;
@@ -487,6 +499,21 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 											pattern.innerColor = pattern.outerColor = c;
 											nvgStrokePaint(nvgctxt, pattern);
 										}
+										break;
+									}
+									case LINEAR_GRADIENT:
+									{
+										if (ctxt.isDrawingMask())
+										{
+											// linear gradient without alpha can be rendered as solid white when rendering mask
+											RGBA color(255,255,255,255);
+											float r,g,b,a;
+											ct.applyTransformation(color,r,g,b,a);
+											NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
+											nvgFillColor(nvgctxt,c);
+											break;
+										}
+										LOG(LOG_NOT_IMPLEMENTED,"nanovg linestyle fillType:"<<hex<<(int)style->FillType.FillStyleType);
 										break;
 									}
 									default:
@@ -623,7 +650,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 		ctxt.popMask();
 	});
 }
-void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t w, uint32_t h)
+void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t w, uint32_t h, const MATRIX& m)
 {
 	// rendering of filters currently works as follows:
 	// - generate fbo
@@ -642,7 +669,10 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	
 	if (w == 0 || h == 0)
 		return;
-	SurfaceState* state = this->getState();
+
+	ctxt.createTransformStack();
+	ctxt.transformStack().push(Transform2D(m,ColorTransformBase(),AS_BLENDMODE::BLENDMODE_NORMAL));
+
 	EngineData* engineData = sys->getEngineData();
 	if (cachedFilterTextureID != UINT32_MAX) // remove previously used texture
 		sys->getRenderThread()->addDeletedTexture(cachedFilterTextureID);
@@ -772,6 +802,9 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 		engineData->exec_glDeleteTextures(1,&filterTextureID1);
 	else
 		engineData->exec_glDeleteTextures(1,&filterTextureIDoriginal);
+	ctxt.transformStack().pop();
+	ctxt.removeTransformStack();
+	state->needsFilterRefresh=false;
 }
 void CachedSurface::defaultRender(RenderContext& ctxt)
 {

@@ -49,6 +49,7 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 	tokens.filltokens.assign(_tokens.filltokens.begin(),_tokens.filltokens.end());
 	tokens.stroketokens.assign(_tokens.stroketokens.begin(),_tokens.stroketokens.end());
 	tokens.canRenderToGL = _tokens.canRenderToGL;
+	tokens.canRenderToMaskGL = _tokens.canRenderToMaskGL;
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
@@ -231,7 +232,7 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 
 void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	if(tokens.empty() || owner->skipRender())
+	if(tokens.empty())
 		return;
 	owner->requestInvalidationFilterParent(q);
 	
@@ -295,11 +296,10 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 	}
 	if (owner->getSystemState()->getEngineData()->nvgcontext
 		&& !tokens.empty()
-		&& tokens.canRenderToGL
+		&& (tokens.canRenderToGL || (owner->belongsToMask() && tokens.canRenderToMaskGL))
 		&& !r
 		&& !DisplayObject::isShaderBlendMode(owner->getBlendMode())
 		&& !owner->hasFilters()
-		&& !owner->belongsToMask()
 		)
 	{
 		renderWithNanoVG=true;
@@ -321,6 +321,7 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 									   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,owner->getBlendMode(),matrix);
 		ret->getState()->tokens = this->tokens;
 		ret->getState()->renderWithNanoVG = renderWithNanoVG;
+		owner->resetNeedsTextureRecalculation();
 		return ret;
 	}
 	else if (renderWithNanoVG)

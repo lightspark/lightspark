@@ -2176,7 +2176,8 @@ void DisplayObjectContainer::prepareShutdown()
 	while (it != dynamicDisplayList.end())
 	{
 		(*it)->prepareShutdown();
-		 dynamicDisplayList.erase(it);
+		(*it)->removeStoredMember();
+		dynamicDisplayList.erase(it);
 	}
 }
 

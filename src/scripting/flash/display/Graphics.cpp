@@ -896,6 +896,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawTriangles)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	th->tokens[th->currentrenderindex].canRenderToGL=false; // TODO implement nanoVG rendering
+	th->tokens[th->currentrenderindex].canRenderToMaskGL=false; // TODO implement nanoVG rendering
 
 	_NR<Vector> vertices;
 	_NR<Vector> indices;
@@ -1045,6 +1046,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawGraphicsData)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	th->tokens[th->currentrenderindex].canRenderToGL=false; // TODO implement nanoVG rendering
+	th->tokens[th->currentrenderindex].canRenderToMaskGL=false; // TODO implement nanoVG rendering
 
 	_NR<Vector> graphicsData;
 	ARG_CHECK(ARG_UNPACK(graphicsData));
@@ -1156,6 +1158,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineGradientStyle)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	th->tokens[th->currentrenderindex].canRenderToGL=false; // TODO implement nanoVG rendering
+	th->tokens[th->currentrenderindex].canRenderToMaskGL=false; // TODO implement nanoVG rendering
 
 	tiny_string type;
 	_NR<Array> colors;
@@ -1183,6 +1186,7 @@ ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	th->tokens[th->currentrenderindex].canRenderToGL=false; // TODO implement nanoVG rendering
+	th->tokens[th->currentrenderindex].canRenderToMaskGL=false; // TODO implement nanoVG rendering
 
 	tiny_string type;
 	_NR<Array> colors;
@@ -1418,6 +1422,7 @@ ASFUNCTIONBODY_ATOM(Graphics,copyFrom)
 	th->tokens[th->currentrenderindex].stroketokens.assign(source->tokens[source->currentrenderindex].stroketokens.begin(),
 				 source->tokens[source->currentrenderindex].stroketokens.end());
 	th->tokens[th->currentrenderindex].canRenderToGL=source->tokens[source->currentrenderindex].canRenderToGL;
+	th->tokens[th->currentrenderindex].canRenderToMaskGL=source->tokens[source->currentrenderindex].canRenderToMaskGL;
 	th->tokensHaveChanged=true; // TODO check if tokens really have changed
 	th->hasChanged = true;
 }

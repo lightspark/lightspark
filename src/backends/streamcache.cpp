@@ -26,7 +26,7 @@
 #include "logger.h"
 #include "netutils.h"
 #include "swf.h"
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 using namespace std;
 using namespace lightspark;

@@ -132,6 +132,31 @@ void RenderThread::handleUpload()
 	u->getTexture();
 	prevUploadJob=u;
 }
+void RenderThread::checkMaskSurfaces()
+{
+	Locker l(mutexMaskSurfaces);
+	if (surfacesForMasks.empty())
+		return;
+	Vector2f scale = getScale();
+	MATRIX initialMatrix;
+	initialMatrix.scale(scale.x, scale.y);
+	
+	auto it = surfacesForMasks.begin();
+	while (it != surfacesForMasks.end())
+	{
+		MATRIX m=it->second;
+		RectF bounds = it->first->boundsRectWithRenderTransform(m, initialMatrix);
+		Vector2f offset(bounds.min.x-m.x0,bounds.min.y-m.y0);
+		Vector2f size = bounds.size();
+		m.x0 = -offset.x;
+		m.y0 = -offset.y;
+		startRenderingMask();
+		it->first->renderFilters(m_sys,*this,size.x,size.y,m);
+		stopRenderingMask();
+		it->first->decRef();
+		it = surfacesForMasks.erase(it);
+	}
+}
 
 /*
  * Create an OpenGL context, load shaders and setup FBO
@@ -235,6 +260,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		while (it != surfacesToRefresh.end())
 		{
 			it->displayobject->updateCachedSurface(it->drawable);
+			addMaskSurfaceToRender(it->displayobject.getPtr());
 			delete it->drawable;
 			// ensure that the DisplayObject is moved to freelist in vm thread
 			if (getVm(m_sys))
@@ -284,9 +310,11 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			while (itsur != it->surfacesToRefresh.end())
 			{
 				itsur->displayobject->updateCachedSurface(itsur->drawable);
+				addMaskSurfaceToRender(itsur->displayobject.getPtr());
 				delete itsur->drawable;
 				itsur = it->surfacesToRefresh.erase(itsur);
 			}
+			checkMaskSurfaces();
 			int w = it->bitmapcontainer->getWidth();
 			int h = it->bitmapcontainer->getHeight();
 			// setup new texture to render to
@@ -633,6 +661,16 @@ void RenderThread::generateScreenshot()
 	LOG(LOG_INFO,"screenshot generated:"<<name_used);
 	g_free(name_used);
 	screenshotneeded=false;
+}
+
+void RenderThread::addMaskSurfaceToRender(DisplayObject* o)
+{
+	CachedSurface* s = o->getCachedSurface().getPtr();
+	if (!s->getState()->isMask && !s->getState()->clipdepth)
+		return;
+	Locker l(mutexMaskSurfaces);
+	s->incRef();
+	surfacesForMasks.insert(make_pair(s,o->getConcatenatedMatrix()));
 }
 
 void RenderThread::deinit()
@@ -1176,7 +1214,7 @@ void RenderThread::coreRendering()
 	engineData->exec_glUseProgram(gpu_program);
 	lsglLoadIdentity();
 	setMatrixUniform(LSGL_MODELVIEW);
-	
+	checkMaskSurfaces();
 	Vector2f scale = getScale();
 	MATRIX initialMatrix;
 	initialMatrix.scale(scale.x, scale.y);

@@ -1134,6 +1134,7 @@ TextureChunk& AsyncDrawJob::getTexture()
 void AsyncDrawJob::uploadFence()
 {
 	ITextureUploadable::uploadFence();
+	owner->getSystemState()->getRenderThread()->addMaskSurfaceToRender(owner.getPtr());
 	// ensure that the owner is moved to freelist in vm thread
 	if (getVm(owner->getSystemState()))
 	{

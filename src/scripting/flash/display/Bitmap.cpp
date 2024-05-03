@@ -240,8 +240,6 @@ IntSize Bitmap::getBitmapSize() const
 
 void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 {
-	if(skipRender())
-		return;
 	incRef();
 	// texture recalculation is never needed for legacy bitmaps
 	resetNeedsTextureRecalculation();

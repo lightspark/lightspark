@@ -39,6 +39,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/MorphShape.h"
+#include "scripting/flash/display/SimpleButton.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/geom/flashgeom.h"

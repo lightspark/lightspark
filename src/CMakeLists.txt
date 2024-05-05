@@ -129,6 +129,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/NativeMenuItem.cpp
   scripting/flash/display/NativeWindow.cpp
   scripting/flash/display/Shape.cpp
+  scripting/flash/display/SimpleButton.cpp
   scripting/flash/display/jpegencoderoptions.cpp
   scripting/flash/display/jpegxrencoderoptions.cpp
   scripting/flash/display/pngencoderoptions.cpp

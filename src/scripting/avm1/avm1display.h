@@ -29,6 +29,7 @@
 #include "scripting/toplevel/Vector.h"
 #include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/display/SimpleButton.h"
 
 namespace lightspark
 {

@@ -48,6 +48,7 @@
 #include "scripting/flash/display/MorphShape.h"
 #include "scripting/flash/display/NativeWindow.h"
 #include "scripting/flash/display/Shape.h"
+#include "scripting/flash/display/SimpleButton.h"
 
 #include "scripting/class.h"
 #include "scripting/abc.h"

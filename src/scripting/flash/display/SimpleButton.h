@@ -36,10 +36,10 @@ namespace lightspark
 class SimpleButton: public DisplayObjectContainer
 {
 private:
-	_NR<DisplayObject> downState;
-	_NR<DisplayObject> hitTestState;
-	_NR<DisplayObject> overState;
-	_NR<DisplayObject> upState;
+	DisplayObject* downState;
+	DisplayObject* hitTestState;
+	DisplayObject* overState;
+	DisplayObject* upState;
 	_NR<SoundChannel> soundchannel_OverUpToIdle;
 	_NR<SoundChannel> soundchannel_IdleToOverUp;
 	_NR<SoundChannel> soundchannel_OverUpToOverDown;
@@ -70,6 +70,7 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	IDrawable* invalidate(bool smoothing) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	uint32_t getTagID() const override;
@@ -98,8 +99,8 @@ public:
 	{
 		if (needsActionScript3())
 		{
-			_NR<DisplayObject> stateChild = const_cast<SimpleButton*>(this)->getStateChild();
-			if (!stateChild.isNull() && stateChild->is<DisplayObjectContainer>())
+			DisplayObject* stateChild = this->getStateChild();
+			if (stateChild && stateChild->is<DisplayObjectContainer>())
 				return stateChild->as<DisplayObjectContainer>()->isEmpty();
 			return false;
 		}
@@ -107,32 +108,23 @@ public:
 			return !isEmpty();
 	}
 
-	_NR<DisplayObject> getStateChild()
+	DisplayObject* getStateChild() const
 	{
-		_NR<DisplayObject> ret = NullRef;
+		DisplayObject* ret = nullptr;
 		switch (currentState)
 		{
 			case STATE_OUT:
 			case UP:
-				if (!upState.isNull())
-				{
-					upState->incRef();
-					ret = _MR(upState);
-				}
+				if (upState)
+					ret = upState;
 			break;
 			case OVER:
-				if (!overState.isNull())
-				{
-					overState->incRef();
-					ret = _MR(overState);
-				}
+				if (overState)
+					ret = overState;
 			break;
 			case DOWN:
-				if (!downState.isNull())
-				{
-					downState->incRef();
-					ret = _MR(downState);
-				}
+				if (downState)
+					ret = downState;
 			break;
 			default: break;
 		}

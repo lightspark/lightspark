@@ -1408,7 +1408,7 @@ void SystemState::flushInvalidationQueue()
 				}
 				else
 					renderThread->addRefreshableSurface(d,drawobj);
-				if (getRenderThread()->isStarted())
+				if (renderThread->isStarted())
 					drawobj->resetNeedsTextureRecalculation();
 			}
 			drawobj->hasChanged=false;
@@ -2452,6 +2452,8 @@ void SystemState::tick()
 			(*it)->tick();
 	}
 	if(currentVm==nullptr)
+		return;
+	if (this->isShuttingDown())
 		return;
 	/* See http://www.senocular.com/flash/tutorials/orderofoperations/
 	 * for the description of steps.

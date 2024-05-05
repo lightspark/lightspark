@@ -3223,6 +3223,7 @@ void Stage::render(RenderContext &ctxt,const MATRIX* startmatrix)
 }
 bool Stage::destruct()
 {
+	cleanupRemovedDisplayObjects();
 	focus.reset();
 	root.reset();
 	stage3Ds.reset();

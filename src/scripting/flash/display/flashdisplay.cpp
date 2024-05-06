@@ -2171,12 +2171,14 @@ void DisplayObjectContainer::prepareShutdown()
 	if (this->preparedforshutdown)
 		return;
 	InteractiveObject::prepareShutdown();
-	auto it = dynamicDisplayList.begin();
-	while (it != dynamicDisplayList.end())
+	for (int i = dynamicDisplayList.size()-1; i >= 0; i--)
 	{
-		(*it)->prepareShutdown();
-		(*it)->removeStoredMember();
-		dynamicDisplayList.erase(it);
+		DisplayObject* d = dynamicDisplayList[i];
+		dynamicDisplayList.pop_back();
+		d->setParent(nullptr);
+		getSystemState()->removeFromResetParentList(d);
+		d->prepareShutdown();
+		d->removeStoredMember();
 	}
 }
 

@@ -685,8 +685,11 @@ void EventDispatcher::prepareShutdown()
 		{
 			ASObject* f = asAtomHandler::getObject((*it2).f);
 			if (f)
+			{
 				f->prepareShutdown();
-			it2++;
+				f->removeStoredMember();
+			}
+			it2 = it->second.erase(it2);
 		}
 		it++;
 	}

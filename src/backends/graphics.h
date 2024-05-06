@@ -25,9 +25,7 @@
 #define TWIPS_SCALING_FACTOR 1.0/20.0
 
 #include "forwards/swftypes.h"
-#include "forwards/scripting/flash/display/DisplayObject.h"
 #include "forwards/backends/geometry.h"
-#include "forwards/backends/graphics.h"
 #include "interfaces/backends/graphics.h"
 #include "interfaces/threading.h"
 #include "compat.h"
@@ -43,6 +41,7 @@ namespace lightspark
 {
 class RenderThread;
 class SurfaceState;
+class DisplayObject;
 	
 enum SMOOTH_MODE { SMOOTH_NONE=0, SMOOTH_SUBPIXEL=1, SMOOTH_ANTIALIAS=2 };
 
@@ -554,11 +553,11 @@ class InvalidateQueue
 protected:
 	_NR<DisplayObject> cacheAsBitmapObject;
 public:
-	InvalidateQueue(_NR<DisplayObject> _cacheAsBitmapObject=NullRef):cacheAsBitmapObject(_cacheAsBitmapObject) {}
-	virtual ~InvalidateQueue(){}
+	InvalidateQueue(_NR<DisplayObject> _cacheAsBitmapObject=NullRef);
+	virtual ~InvalidateQueue();
 	//Invalidation queue management
 	virtual void addToInvalidateQueue(_R<DisplayObject> d) = 0;
-	_NR<DisplayObject> getCacheAsBitmapObject() const { return cacheAsBitmapObject; }
+	_NR<DisplayObject> getCacheAsBitmapObject() const;
 };
 
 class CharacterRenderer : public ITextureUploadable

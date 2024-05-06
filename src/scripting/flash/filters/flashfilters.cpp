@@ -27,6 +27,7 @@
 #include "scripting/flash/filters/GlowFilter.h"
 #include "scripting/flash/filters/GradientBevelFilter.h"
 #include "scripting/flash/filters/GradientGlowFilter.h"
+#include "scripting/flash/display/flashdisplay.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"

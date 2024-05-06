@@ -23,6 +23,7 @@
 #include "scripting/abc.h"
 #include "scripting/class.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "swf.h"
 #include "backends/config.h"
 #include "backends/netutils.h"

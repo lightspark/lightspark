@@ -19,6 +19,8 @@
 #include "ContextMenu.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/RootMovieClip.h"
 
 using namespace std;
 using namespace lightspark;

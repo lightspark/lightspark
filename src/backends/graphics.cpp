@@ -32,6 +32,7 @@
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "parsing/tags.h"
 #include <pango/pangocairo.h>
 
@@ -1389,4 +1390,17 @@ uint8_t *ColorTransformBase::applyTransformation(BitmapContainer* bm)
 		dst[i  ] = max(0,min(255,int(((number_t(src[i  ]) *   redMultiplier) +   redOffset)*(number_t(dst[i+3])/255.0))));
 	}
 	return (uint8_t*)bm->getDataColorTransformed();
+}
+
+InvalidateQueue::InvalidateQueue(_NR<DisplayObject> _cacheAsBitmapObject):cacheAsBitmapObject(_cacheAsBitmapObject)
+{
+}
+
+InvalidateQueue::~InvalidateQueue()
+{
+}
+
+_NR<DisplayObject> InvalidateQueue::getCacheAsBitmapObject() const
+{
+	return cacheAsBitmapObject;
 }

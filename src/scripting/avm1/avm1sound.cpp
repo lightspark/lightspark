@@ -20,6 +20,7 @@
 #include "scripting/abc.h"
 #include "scripting/avm1/avm1sound.h"
 #include "scripting/toplevel/Integer.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "parsing/tags.h"

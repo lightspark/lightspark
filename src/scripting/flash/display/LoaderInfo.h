@@ -21,6 +21,7 @@
 #define SCRIPTING_FLASH_DISPLAY_LOADERINFO_H 1
 
 #include "scripting/flash/events/flashevents.h"
+#include "interfaces/backends/netutils.h"
 #include "backends/netutils.h"
 
 namespace lightspark

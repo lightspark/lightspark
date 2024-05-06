@@ -3,6 +3,8 @@
 
 #include "swf.h"
 #include "backends/extscriptobject.h"
+#include "backends/streamcache.h"
+#include "backends/netutils.h"
 #include "platforms/engineutils.h"
 #include "ppapi/c/ppp_instance.h"
 #include "ppapi/c/pp_var.h"

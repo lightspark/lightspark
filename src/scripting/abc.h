@@ -74,6 +74,8 @@ inline stack_entry make_stack_entry(llvm::Value* v, STACK_TYPE t)
 
 bool isVmThread();
 
+class Responder;
+
 class method_info
 {
 friend std::istream& operator>>(std::istream& in, method_info& v);

@@ -19,6 +19,7 @@
 
 #include <limits>
 #include "scripting/flash/display/GraphicsStroke.h"
+#include "scripting/flash/display/Graphics.h"
 #include "scripting/flash/display/IGraphicsFill.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"

@@ -21,6 +21,8 @@
 #include "scripting/class.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/display/BitmapContainer.h"
+#include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "parsing/textfile.h"
 #include "backends/cachedsurface.h"
 #include "backends/rendering.h"
@@ -661,6 +663,25 @@ void RenderThread::generateScreenshot()
 	LOG(LOG_INFO,"screenshot generated:"<<name_used);
 	g_free(name_used);
 	screenshotneeded=false;
+}
+
+void RenderThread::addRefreshableSurface(IDrawable* d, _NR<DisplayObject> o)
+{
+	Locker l(mutexRefreshSurfaces);
+	RefreshableSurface s;
+	s.displayobject = o;
+	s.drawable = d;
+	surfacesToRefresh.push_back(s);
+}
+
+void RenderThread::signalSurfaceRefresh()
+{
+	Locker l(mutexRefreshSurfaces);
+	if (!surfacesToRefresh.empty())
+	{
+		refreshNeeded=true;
+		event.signal();
+	}
 }
 
 void RenderThread::addMaskSurfaceToRender(DisplayObject* o)

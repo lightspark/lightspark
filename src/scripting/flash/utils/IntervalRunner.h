@@ -22,6 +22,8 @@
 
 #include "compat.h"
 #include "swftypes.h"
+#include "interfaces/timer.h"
+#include "scripting/flash/events/flashevents.h"
 
 
 namespace lightspark

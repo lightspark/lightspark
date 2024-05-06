@@ -29,6 +29,7 @@
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "compat.h"
 #include "backends/audio.h"
 #include "backends/builtindecoder.h"

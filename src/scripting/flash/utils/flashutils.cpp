@@ -30,6 +30,7 @@
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/utils/IntervalManager.h"
+#include "scripting/flash/display/DisplayObject.h"
 #include <sstream>
 #include <zlib.h>
 #include <glib.h>

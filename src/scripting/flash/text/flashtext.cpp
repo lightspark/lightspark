@@ -21,6 +21,7 @@
 #include "scripting/abc.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/ui/keycodes.h"
 #include "scripting/class.h"
 #include "compat.h"

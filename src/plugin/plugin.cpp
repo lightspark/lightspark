@@ -31,6 +31,7 @@
 #include "backends/urlutils.h"
 #include "abc.h"
 #include "scripting/flash/display/LoaderInfo.h"
+#include "scripting/flash/display/RootMovieClip.h"
 
 #include "plugin/npscriptobject.h"
 #include <SDL.h>

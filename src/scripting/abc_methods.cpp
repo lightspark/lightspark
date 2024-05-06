@@ -25,6 +25,7 @@
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/RegExp.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "parsing/streams.h"
 #include <string>
 #include <sstream>

@@ -38,6 +38,7 @@ class Stage;
 class Transform;
 class Rectangle;
 class KeyboardEvent;
+class InvalidateQueue;
 struct RenderDisplayObjectToBitmapContainer;
 
 class DisplayObject: public EventDispatcher, public IBitmapDrawable

@@ -497,7 +497,7 @@ friend class ABCVm;
 private:
 	_NR<DisplayObject> clip;
 public:
-	InitFrameEvent(_NR<DisplayObject> m) : Event(nullptr,nullptr, "InitFrameEvent"),clip(m) {}
+	InitFrameEvent(_NR<DisplayObject> m);
 	EVENT_TYPE getEventType() const override { return INIT_FRAME; }
 };
 
@@ -507,7 +507,7 @@ friend class ABCVm;
 private:
 	_NR<DisplayObject> clip;
 public:
-	ExecuteFrameScriptEvent(_NR<DisplayObject> m):Event(nullptr,nullptr, "ExecuteFrameScriptEvent"),clip(m) {}
+	ExecuteFrameScriptEvent(_NR<DisplayObject> m);
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const override { return EXECUTE_FRAMESCRIPT; }
 };
@@ -518,7 +518,7 @@ friend class ABCVm;
 private:
 	_NR<DisplayObject> clip;
 public:
-	AdvanceFrameEvent(_NR<DisplayObject> m=NullRef): Event(nullptr,nullptr,"AdvanceFrameEvent"),clip(m) {}
+	AdvanceFrameEvent(_NR<DisplayObject> m=NullRef);
 	EVENT_TYPE getEventType() const override { return ADVANCE_FRAME; }
 };
 class SetLoaderContentEvent: public Event
@@ -539,7 +539,7 @@ private:
 	_NR<DisplayObject> clip;
 	bool _explicit;
 public:
-	RootConstructedEvent(_NR<DisplayObject> m, bool explicit_ = false): Event(nullptr,nullptr,"RootConstructedEvent"),clip(m),_explicit(explicit_) {}
+	RootConstructedEvent(_NR<DisplayObject> m, bool explicit_ = false);
 	EVENT_TYPE getEventType() const override { return ROOTCONSTRUCTEDEVENT; }
 };
 class LocalConnectionEvent: public Event
@@ -599,7 +599,7 @@ private:
 	_NR<InteractiveObject> target;
 	tiny_string text;
 public:
-	TextInputEvent(_NR<InteractiveObject> m, const tiny_string& s) : Event(nullptr,nullptr, "TextInputEvent"),target(m),text(s) {}
+	TextInputEvent(_NR<InteractiveObject> m, const tiny_string& s);
 	EVENT_TYPE getEventType() const override { return TEXTINPUT_EVENT; }
 };
 
@@ -658,8 +658,8 @@ class ContextMenuEvent: public Event
 private:
 	Event* cloneImpl() const override;
 public:
-	ContextMenuEvent(ASWorker* wrk, Class_base* c) : Event(wrk,c, "ContextMenuEvent") {}
-	ContextMenuEvent(ASWorker* wrk, Class_base* c, tiny_string t, _NR<InteractiveObject> target, _NR<InteractiveObject> owner) : Event(wrk,c, t,false,false,SUBTYPE_CONTEXTMENUEVENT),mouseTarget(target),contextMenuOwner(owner) {}
+	ContextMenuEvent(ASWorker* wrk, Class_base* c);
+	ContextMenuEvent(ASWorker* wrk, Class_base* c, tiny_string t, _NR<InteractiveObject> target, _NR<InteractiveObject> owner);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(_NR<InteractiveObject>,mouseTarget);

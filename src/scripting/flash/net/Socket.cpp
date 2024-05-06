@@ -27,6 +27,7 @@
 #include "threading.h"
 #include "flash/errors/flasherrors.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"

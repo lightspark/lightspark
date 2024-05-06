@@ -24,6 +24,7 @@
 #include "scripting/flash/ui/ContextMenuItem.h"
 #include "scripting/flash/ui/ContextMenuBuiltInItems.h"
 #include "scripting/flash/ui/gameinput.h"
+#include "scripting/flash/display/RootMovieClip.h"
 
 #include "scripting/class.h"
 #include "scripting/abc.h"

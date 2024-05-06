@@ -21,12 +21,14 @@
 #include "version.h"
 #include "backends/security.h"
 #include "backends/config.h"
+#include "backends/streamcache.h"
 #include "swf.h"
 #include "logger.h"
 #include "platforms/engineutils.h"
 #include "compat.h"
 #include <SDL.h>
 #include "flash/utils/ByteArray.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include <sys/stat.h>
 #include "parsing/streams.h"
 

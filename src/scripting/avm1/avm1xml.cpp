@@ -20,6 +20,7 @@
 #include "avm1xml.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/flash/display/flashdisplay.h"
 
 using namespace std;
 using namespace lightspark;

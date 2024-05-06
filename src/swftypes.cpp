@@ -34,6 +34,7 @@
 #include "compat.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/Number.h"

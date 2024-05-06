@@ -145,23 +145,8 @@ public:
 	 * this will be deleted in this method
 	 * @param o target containing the cachedSurface to be updated
 	 */
-	void addRefreshableSurface(IDrawable* d,_NR<DisplayObject> o)
-	{
-		Locker l(mutexRefreshSurfaces);
-		RefreshableSurface s;
-		s.displayobject = o;
-		s.drawable = d;
-		surfacesToRefresh.push_back(s);
-	}
-	void signalSurfaceRefresh()
-	{
-		Locker l(mutexRefreshSurfaces);
-		if (!surfacesToRefresh.empty())
-		{
-			refreshNeeded=true;
-			event.signal();
-		}
-	}
+	void addRefreshableSurface(IDrawable* d,_NR<DisplayObject> o);
+	void signalSurfaceRefresh();
 	void addMaskSurfaceToRender(DisplayObject* o);
 
 	void renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, const MATRIX& initialMatrix,bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct,_NR<BitmapContainer> bm);

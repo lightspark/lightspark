@@ -31,6 +31,8 @@
 #include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/LoaderInfo.h"
+#include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/filters/BevelFilter.h"

@@ -21,6 +21,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/geom/flashgeom.h"
 
 using namespace std;

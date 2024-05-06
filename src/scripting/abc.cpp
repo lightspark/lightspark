@@ -22,6 +22,7 @@
 #endif
 
 #include "compat.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include <algorithm>
 
 #ifdef LLVM_ENABLED

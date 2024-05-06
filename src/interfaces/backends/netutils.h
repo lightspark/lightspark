@@ -43,5 +43,5 @@ public:
 	virtual void threadFinished(IThreadJob*)=0;
 };
 
-};
+}
 #endif /* INTERFACES_BACKENDS_NETUTILS_H */

@@ -29,6 +29,7 @@
 #include "abc.h"
 #include "class.h"
 #include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/display/flashdisplay.h"
 #include "flash/display/NativeMenuItem.h"
 #include "flash/utils/ByteArray.h"
 #include "flash/geom/flashgeom.h"

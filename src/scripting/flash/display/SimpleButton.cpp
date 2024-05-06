@@ -20,6 +20,7 @@
 #include <list>
 
 #include "scripting/flash/display/SimpleButton.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "parsing/tags.h"
 #include "scripting/class.h"
 #include "scripting/flash/media/flashmedia.h"

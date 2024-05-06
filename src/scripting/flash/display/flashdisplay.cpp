@@ -569,6 +569,11 @@ void Sprite::setSound(SoundChannel *s,bool forstreaming)
 		sound->soundTransform = this->soundtransform;
 }
 
+SoundChannel* Sprite::getSoundChannel() const
+{
+	return sound.getPtr();
+}
+
 void Sprite::appendSound(unsigned char *buf, int len, uint32_t frame)
 {
 	if (sound)
@@ -4813,7 +4818,9 @@ Stage3D::Stage3D(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),x(0),y(0),
 
 bool Stage3D::destruct()
 {
-	context3D.reset();
+	if (context3D)
+		context3D->removeStoredMember();
+	context3D.fakeRelease();
 	return EventDispatcher::destruct();
 }
 
@@ -4824,6 +4831,16 @@ void Stage3D::prepareShutdown()
 	EventDispatcher::prepareShutdown();
 	if (context3D)
 		context3D->prepareShutdown();
+}
+
+bool Stage3D::countCylicMemberReferences(garbagecollectorstate &gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	if (context3D)
+		ret = context3D->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void Stage3D::sinit(Class_base *c)
@@ -4855,6 +4872,7 @@ ASFUNCTIONBODY_ATOM(Stage3D,requestContext3D)
 	
 	th->context3D = _MR(Class<Context3D>::getInstanceS(wrk));
 	th->context3D->driverInfo = wrk->getSystemState()->getEngineData()->driverInfoString;
+	th->context3D->addStoredMember();
 	th->incRef();
 	getVm(wrk->getSystemState())->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(wrk,"context3DCreate")));
 }

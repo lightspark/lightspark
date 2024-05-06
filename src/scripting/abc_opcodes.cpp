@@ -33,6 +33,7 @@
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/flash/utils/Proxy.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "parsing/streams.h"
 
 using namespace std;
@@ -2873,19 +2874,6 @@ void ABCVm::newClass(call_context* th, int n)
 			continue;
 
 	}
-	//If the class is not an interface itself, link the traits
-	if(!th->mi->context->instances[n].isInterface())
-	{
-		//Link all the interfaces for this class and all the bases
-		if (!newClassRecursiveLink(ret, ret))
-		{
-			// remember classes where not all interfaces are defined yet
-			ABCVm::AddClassLinks(ret);
-		}
-	}
-	// ensure that this interface is linked to all previously defined classes implementing this interface
-	if (th->mi->context->instances[n].isInterface())
-		ABCVm::SetAllClassLinks();
 	
 	LOG_CALL("Calling Class init " << ret);
 	//Class init functions are called with global as this
@@ -2930,6 +2918,20 @@ void ABCVm::newClass(call_context* th, int n)
 	th->mi->context->root->bindClass(className,ret);
 	
 	th->mi->context->root->applicationDomain->copyBorrowedTraitsFromSuper(ret);
+	
+	//If the class is not an interface itself, link the traits
+	if(!th->mi->context->instances[n].isInterface())
+	{
+		//Link all the interfaces for this class and all the bases
+		if (!newClassRecursiveLink(ret, ret))
+		{
+			// remember classes where not all interfaces are defined yet
+			ABCVm::AddClassLinks(ret);
+		}
+	}
+	// ensure that this interface is linked to all previously defined classes implementing this interface
+	if (th->mi->context->instances[n].isInterface())
+		ABCVm::SetAllClassLinks();
 	ret->setConstructIndicator();
 	//Remove the class to the ones being currently defined in this context
 	th->mi->context->root->applicationDomain->classesBeingDefined.erase(mname);

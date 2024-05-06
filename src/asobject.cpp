@@ -35,6 +35,8 @@
 #include "scripting/toplevel/Error.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/display/DisplayObject.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 
 using namespace lightspark;

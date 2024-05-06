@@ -31,6 +31,7 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/display/Loader.h"
+#include "scripting/flash/display/RootMovieClip.h"
 
 using namespace std;
 using namespace lightspark;
@@ -1645,6 +1646,15 @@ Event* ContextMenuEvent::cloneImpl() const
 	return clone;
 }
 
+ContextMenuEvent::ContextMenuEvent(ASWorker* wrk, Class_base* c) : Event(wrk,c, "ContextMenuEvent")
+{
+}
+
+ContextMenuEvent::ContextMenuEvent(ASWorker* wrk, Class_base* c, tiny_string t, _NR<InteractiveObject> target, _NR<InteractiveObject> owner)
+	: Event(wrk,c, t,false,false,SUBTYPE_CONTEXTMENUEVENT),mouseTarget(target),contextMenuOwner(owner)
+{
+}
+
 void TouchEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
@@ -1897,5 +1907,25 @@ LocalConnectionEvent::~LocalConnectionEvent()
 }
 
 SetLoaderContentEvent::SetLoaderContentEvent(_NR<DisplayObject> m, _NR<Loader> _loader): Event(nullptr,nullptr,"SetLoaderContentEvent"),content(m),loader(_loader)
+{
+}
+
+InitFrameEvent::InitFrameEvent(_NR<DisplayObject> m) : Event(nullptr,nullptr, "InitFrameEvent"),clip(m)
+{
+}
+
+ExecuteFrameScriptEvent::ExecuteFrameScriptEvent(_NR<DisplayObject> m):Event(nullptr,nullptr, "ExecuteFrameScriptEvent"),clip(m)
+{
+}
+
+AdvanceFrameEvent::AdvanceFrameEvent(_NR<DisplayObject> m): Event(nullptr,nullptr,"AdvanceFrameEvent"),clip(m)
+{
+}
+
+RootConstructedEvent::RootConstructedEvent(_NR<DisplayObject> m, bool explicit_): Event(nullptr,nullptr,"RootConstructedEvent"),clip(m),_explicit(explicit_)
+{
+}
+
+TextInputEvent::TextInputEvent(_NR<InteractiveObject> m, const tiny_string& s) : Event(nullptr,nullptr, "TextInputEvent"),target(m),text(s)
 {
 }

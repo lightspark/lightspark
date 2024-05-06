@@ -20,6 +20,7 @@
 #include "scripting/avm1/avm1key.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/flash/display/flashdisplay.h"
 #include "backends/input.h"
 
 using namespace std;

@@ -26,6 +26,7 @@
 #include "scripting/class.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/display/RootMovieClip.h"
 
 using namespace std;
 using namespace lightspark;

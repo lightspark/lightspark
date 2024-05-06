@@ -43,5 +43,5 @@ public:
 	virtual void tickFence() = 0;
 };
 
-};
+}
 #endif /* INTERFACEs_TIMER_H */

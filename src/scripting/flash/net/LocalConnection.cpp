@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/flash/net/LocalConnection.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/argconv.h"
 
 using namespace std;

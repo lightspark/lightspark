@@ -25,6 +25,7 @@
 #include "scripting/class.h"
 #include "scripting/toplevel/Error.h"
 #include "scripting/flash/net/XMLSocket.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include <sstream>
 #include <string>
 #include <algorithm>

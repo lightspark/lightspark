@@ -25,6 +25,7 @@
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
 #include "backends/urlutils.h"
+#include "backends/netutils.h"
 #include "scripting/flash/utils/flashutils.h"
 
 namespace lightspark

@@ -20,26 +20,24 @@
 #ifndef SWF_H
 #define SWF_H 1
 
-#include "forwards/asobject.h"
-#include "forwards/swf.h"
-#include "forwards/thread_pool.h"
-#include "forwards/threading.h"
-#include "forwards/timer.h"
-#include "forwards/backends/netutils.h"
-#include "forwards/scripting/abc.h"
-#include "forwards/scripting/flash/system/flashsystem.h"
+#include "asobject.h"
 #include "interfaces/threading.h"
 #include "interfaces/timer.h"
+#include "backends/graphics.h"
+#include "backends/urlutils.h"
+#include "threading.h"
 #include "compat.h"
 #include <fstream>
 #include <list>
 #include <queue>
 #include <map>
 #include <unordered_set>
+#include <unordered_map>
 #include <string>
 #include "swftypes.h"
-#include "scripting/flash/display/flashdisplay.h"
 #include "memory_support.h"
+
+using namespace std;
 
 class uncompressing_filter;
 
@@ -61,6 +59,7 @@ class RenderThread;
 class SecurityManager;
 class LocaleManager;
 class CurrencyManager;
+class DownloadManager;
 class Tag;
 class Class_inherit;
 class FontTag;
@@ -68,6 +67,15 @@ class SoundTransform;
 class ASFile;
 class EngineData;
 class NativeApplication;
+class RootMovieClip;
+class Null;
+class Undefined;
+class Boolean;
+class Class_base;
+class ThreadPool;
+class TimerThread;
+class LocalConnectionEvent;
+class ABCVm;
 
 enum class FramePhase
 {
@@ -76,112 +84,6 @@ enum class FramePhase
 	EXECUTE_FRAMESCRIPT,
 	EXIT_FRAME,
 	IDLE
-};
-
-class RootMovieClip: public MovieClip
-{
-friend class ParseThread;
-protected:
-	URLInfo origin;
-private:
-	bool parsingIsFailed;
-	bool waitingforparser;
-	RGB Background;
-	Mutex dictSpinlock;
-	std::unordered_map < uint32_t, DictionaryTag* > dictionary;
-	Mutex scalinggridsmutex;
-	std::unordered_map < uint32_t, RECT > scalinggrids;
-	std::map < QName, DictionaryTag* > classesToBeBound;
-	std::map < tiny_string,FontTag* > embeddedfonts;
-	std::map < uint32_t,FontTag* > embeddedfontsByID;
-
-	//frameSize and frameRate are valid only after the header has been parsed
-	RECT frameSize;
-	float frameRate;
-	URLInfo baseURL;
-	/* those are private because you shouldn't call mainClip->*,
-	 * but mainClip->getStage()->* instead.
-	 */
-	void initFrame() override;
-	void advanceFrame(bool implicit) override;
-	void executeFrameScript() override;
-	ACQUIRE_RELEASE_FLAG(finishedLoading);
-	
-	unordered_map<uint32_t,_NR<IFunction>> avm1ClassConstructors;
-	unordered_map<uint32_t,AVM1InitActionTag*> avm1InitActionTags;
-public:
-	RootMovieClip(ASWorker* wrk,_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
-	~RootMovieClip();
-	void destroyTags();
-	bool destruct() override;
-	void finalize() override;
-	void prepareShutdown() override;
-	bool hasFinishedLoading() override { return ACQUIRE_READ(finishedLoading); }
-	bool isWaitingForParser() { return waitingforparser; }
-	void constructionComplete(bool _explicit = false) override;
-	void afterConstruction(bool _explicit = false) override;
-	bool needsActionScript3() const override { return this->usesActionScript3;}
-	ParseThread* parsethread;
-	uint32_t version;
-	uint32_t fileLength;
-	uint32_t executingFrameScriptCount;
-	bool hasSymbolClass;
-	bool hasMainClass;
-	bool usesActionScript3;
-	RGB getBackground();
-	void setBackground(const RGB& bg);
-	void setFrameSize(const RECT& f);
-	RECT getFrameSize() const;
-	float getFrameRate() const;
-	void setFrameRate(float f);
-	void addToDictionary(DictionaryTag* r);
-	DictionaryTag* dictionaryLookup(int id);
-	DictionaryTag* dictionaryLookupByName(uint32_t nameID);
-	void addToScalingGrids(const DefineScalingGridTag* r);
-	RECT* ScalingGridsLookup(int id);
-	void resizeCompleted();
-	void labelCurrentFrame(const STRING& name);
-	void commitFrame(bool another);
-	void revertFrame();
-	void parsingFailed();
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
-	void DLL_PUBLIC setOrigin(const tiny_string& u, const tiny_string& filename="");
-	URLInfo& getOrigin() { return origin; }
-	void DLL_PUBLIC setBaseURL(const tiny_string& url);
-	const URLInfo& getBaseURL();
-	static RootMovieClip* getInstance(ASWorker* wrk, _NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain);
-	/*
-	 * The application domain for this clip
-	 */
-	_NR<ApplicationDomain> applicationDomain;
-	/*
-	 * The security domain for this clip
-	 */
-	_NR<SecurityDomain> securityDomain;
-	//map of all classed defined in the swf. They own one reference to each class/template
-	//key is the stringID of the class name (without namespace)
-	std::multimap<uint32_t, Class_base*> customClasses;
-	/*
-	 * Support for class aliases in AMF3 serialization
-	 */
-	std::map<tiny_string, _R<Class_base> > aliasMap;
-	std::map<QName,std::unordered_set<uint32_t>*> customclassoverriddenmethods;
-	std::map<QName, Template_base*> templates;
-	//DisplayObject interface
-	_NR<RootMovieClip> getRoot() override;
-	_NR<Stage> getStage() override;
-	void addBinding(const tiny_string& name, DictionaryTag *tag);
-	void bindClass(const QName &classname, Class_inherit* cls);
-	void checkBinding(DictionaryTag* tag);
-	void registerEmbeddedFont(const tiny_string fontname, FontTag *tag);
-	FontTag* getEmbeddedFont(const tiny_string fontname) const;
-	FontTag* getEmbeddedFontByID(uint32_t fontID) const;
-	void setupAVM1RootMovie();
-	// map AVM1 class constructors to named tags
-	bool AVM1registerTagClass(const tiny_string& name, _NR<IFunction> theClassConstructor);
-	AVM1Function* AVM1getClassConstructor(uint32_t spriteID);
-	void AVM1registerInitActionTag(uint32_t spriteID, AVM1InitActionTag* tag);
-	void AVM1checkInitActions(MovieClip *sprite);
 };
 
 class ThreadProfile
@@ -612,51 +514,10 @@ public:
 	void waitInitialized();
 	void getClassInstanceByName(ASWorker* wrk, asAtom &ret, const tiny_string& clsname);
 	Mutex resetParentMutex;
-	void addDisplayObjectToResetParentList(DisplayObject* child)
-	{
-		Locker l(resetParentMutex);
-		child->incRef();
-		child->addStoredMember();
-		listResetParent.insert(child);
-	}
-	void resetParentList()
-	{
-		Locker l(resetParentMutex);
-		auto it = listResetParent.begin();
-		while (it != listResetParent.end())
-		{
-			(*it)->setParent(nullptr);
-			(*it)->removeStoredMember();
-			it = listResetParent.erase(it);
-		}
-	}
-	bool isInResetParentList(DisplayObject* d)
-	{
-		Locker l(resetParentMutex);
-		auto it = listResetParent.begin();
-		while (it != listResetParent.end())
-		{
-			if ((*it)==d)
-				return true;
-			it++;
-		}
-		return false;
-	}
-	void removeFromResetParentList(DisplayObject* d)
-	{
-		Locker l(resetParentMutex);
-		auto it = listResetParent.begin();
-		while (it != listResetParent.end())
-		{
-			if ((*it)==d)
-			{
-				d->removeStoredMember();
-				listResetParent.erase(it);
-				break;
-			}
-			it++;
-		}
-	}
+	void addDisplayObjectToResetParentList(DisplayObject* child);
+	void resetParentList();
+	bool isInResetParentList(DisplayObject* d);
+	void removeFromResetParentList(DisplayObject* d);
 };
 
 class ParseThread: public IThreadJob

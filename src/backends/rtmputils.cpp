@@ -21,6 +21,7 @@
 #include "logger.h"
 #include "swf.h"
 #include "backends/streamcache.h"
+#include "scripting/flash/display/RootMovieClip.h"
 
 #ifdef ENABLE_RTMP
 #include <librtmp/rtmp.h>

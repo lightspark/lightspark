@@ -35,6 +35,7 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include <unistd.h>
 
 using namespace lightspark;

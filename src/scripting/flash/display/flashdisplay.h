@@ -48,7 +48,8 @@ class DefineButtonTag;
 class InteractiveObject;
 class Downloader;
 class RenderContext;
-class RenderContext;
+class SoundChannel;
+class SoundTransform;
 class ApplicationDomain;
 class SecurityDomain;
 class BitmapData;
@@ -251,7 +252,7 @@ public:
 	bool dragged;
 	Sprite(ASWorker* wrk,Class_base* c);
 	void setSound(SoundChannel* s, bool forstreaming);
-	SoundChannel* getSoundChannel() const { return sound.getPtr(); }
+	SoundChannel* getSoundChannel() const;
 	void appendSound(unsigned char* buf, int len, uint32_t frame);
 	void setSoundStartFrame(uint32_t frame) { soundstartframe=frame; }
 	bool destruct() override;
@@ -651,6 +652,7 @@ protected:
 public:
 	bool destruct() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	Stage3D(ASWorker* wrk, Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);

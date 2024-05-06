@@ -27,6 +27,7 @@
 #include "swftypes.h"
 #include "smartrefs.h"
 #include "scripting/flash/ui/keycodes.h"
+#include "scripting/flash/display/DisplayObject.h"
 #include <vector>
 #include <deque>
 
@@ -36,7 +37,6 @@ namespace lightspark
 {
 
 class SystemState;
-class DisplayObject;
 class InteractiveObject;
 class Sprite;
 class MouseEvent;

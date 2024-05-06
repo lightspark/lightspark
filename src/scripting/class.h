@@ -22,6 +22,7 @@
 #include "swf.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "backends/streamcache.h"
 
 #ifndef SCRIPTING_CLASS_H
 #define SCRIPTING_CLASS_H 1

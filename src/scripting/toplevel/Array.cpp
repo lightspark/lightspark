@@ -83,17 +83,25 @@ void Array::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	ASObject::prepareShutdown();
-	for (auto it=data_first.begin() ; it != data_first.end(); ++it)
+	for (auto it=data_first.begin() ; it != data_first.end();)
 	{
 		ASObject* o = asAtomHandler::getObject(*it);
+		it = data_first.erase(it);
 		if (o)
+		{
 			o->prepareShutdown();
+			o->removeStoredMember();
+		}
 	}
-	for (auto it=data_second.begin() ; it != data_second.end(); ++it)
+	for (auto it=data_second.begin() ; it != data_second.end();)
 	{
 		ASObject* o = asAtomHandler::getObject(it->second);
+		it = data_second.erase(it);
 		if (o)
+		{
 			o->prepareShutdown();
+			o->removeStoredMember();
+		}
 	}
 }
 

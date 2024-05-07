@@ -143,11 +143,15 @@ void Vector::prepareShutdown()
 	if (this->preparedforshutdown)
 		return;
 	ASObject::prepareShutdown();
-	for(unsigned int i=0;i<size();i++)
+	while(vec.size())
 	{
-		ASObject* v = asAtomHandler::getObject(vec[i]);
+		ASObject* v = asAtomHandler::getObject(vec.back());
+		vec.pop_back();
 		if (v)
+		{
 			v->prepareShutdown();
+			v->removeStoredMember();
+		}
 	}
 }
 bool Vector::countCylicMemberReferences(garbagecollectorstate& gcstate)

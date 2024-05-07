@@ -585,13 +585,13 @@ ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 	th->parseAdobeTextureFormat(data.getPtr(),byteArrayOffset,false);
 	renderaction action;
 	action.action = RENDER_LOADTEXTURE;
-	th->incRef();
 	if (th->async)
 	{
 		th->context->addTextureToUpload(th);
 	}
 	else
 	{
+		th->incRef();
 		action.dataobject = _MR(th);
 		action.udata1=UINT32_MAX;
 		th->context->addAction(action);
@@ -723,13 +723,13 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadCompressedTextureFromByteArray)
 	th->parseAdobeTextureFormat(data.getPtr(),byteArrayOffset,true);
 	renderaction action;
 	action.action = RENDER_LOADCUBETEXTURE;
-	th->incRef();
 	if (th->async)
 	{
 		th->context->addTextureToUpload(th);
 	}
 	else
 	{
+		th->incRef();
 		action.dataobject = _MR(th);
 		action.udata1=UINT32_MAX;
 		th->context->addAction(action);

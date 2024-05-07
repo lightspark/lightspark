@@ -54,8 +54,6 @@ lightspark::tiny_string SamplerRegister::toGLSL ()
 	return str;
 }
 
-namespace lightspark
-{
 void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 {
 	switch (action.action)
@@ -439,7 +437,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		}
 		case RENDER_SETTEXTUREAT:
 		{
-			//action.dataobject = TextureBase
 			//action.udata1 = sampler
 			//action.udata2 = textureID
 			//action.udata3 = removetexture
@@ -993,14 +990,34 @@ void Context3D::prepareShutdown()
 	if (this->preparedforshutdown)
 		return;
 	EventDispatcher::prepareShutdown();
-	for (auto it = programlist.begin(); it != programlist.end(); it++)
-		(*it)->prepareShutdown();
-	for (auto it = texturelist.begin(); it != texturelist.end(); it++)
-		(*it)->prepareShutdown();
-	for (auto it = indexbufferlist.begin(); it != indexbufferlist.end(); it++)
-		(*it)->prepareShutdown();
-	for (auto it = vectorbufferlist.begin(); it != vectorbufferlist.end(); it++)
-		(*it)->prepareShutdown();
+	for (auto it = programlist.begin(); it != programlist.end();)
+	{
+		ASObject* o = (*it);
+		it = programlist.erase(it);
+		o->prepareShutdown();
+		o->removeStoredMember();
+	}
+	for (auto it = texturelist.begin(); it != texturelist.end();)
+	{
+		ASObject* o = (*it);
+		it = texturelist.erase(it);
+		o->prepareShutdown();
+		o->removeStoredMember();
+	}
+	for (auto it = indexbufferlist.begin(); it != indexbufferlist.end();)
+	{
+		ASObject* o = (*it);
+		it = indexbufferlist.erase(it);
+		o->prepareShutdown();
+		o->removeStoredMember();
+	}
+	for (auto it = vectorbufferlist.begin(); it != vectorbufferlist.end();)
+	{
+		ASObject* o = (*it);
+		it = vectorbufferlist.erase(it);
+		o->prepareShutdown();
+		o->removeStoredMember();
+	}
 }
 
 
@@ -1718,8 +1735,6 @@ ASFUNCTIONBODY_ATOM(Context3D,setTextureAt)
 		return;
 	}
 	th->rendermutex.lock();
-	if (!texture.isNull())
-		texture->incRef();
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_SETTEXTUREAT;
 	action.udata1 = sampler;
@@ -2153,6 +2168,4 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
 	}
 	th->context->addAction(RENDER_ACTION::RENDER_UPLOADVERTEXBUFFER,th);
 	th->context->rendermutex.unlock();
-}
-
 }

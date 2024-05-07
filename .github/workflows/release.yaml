@@ -15,7 +15,7 @@ jobs:
       tag_name: ${{ steps.tag_name.outputs.tag_name }}
       version: ${{ steps.changelog.outputs.version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Generate body from ChangeLog
         id: changelog
@@ -46,7 +46,7 @@ jobs:
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Add MXE Repository to Apt
         uses: myci-actions/add-deb-repo@4
@@ -112,7 +112,7 @@ jobs:
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Add MXE Repository to Apt
         uses: myci-actions/add-deb-repo@4

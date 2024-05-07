@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Delete Development Release
         uses: dev-drprasad/delete-tag-and-release@v0.2.1
         env:
@@ -30,7 +30,7 @@ jobs:
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Create Release
         id: create_release
         uses: ncipollo/release-action@v1
@@ -69,7 +69,7 @@ jobs:
             cxx: g++-10
             cxxpackage: g++-10
     steps:
-      - uses: actions/checkout@v3.3.0
+      - uses: actions/checkout@v4
 
       - name: Install Dependencies
         run: |
@@ -115,7 +115,7 @@ jobs:
           - ubuntu-22.04
           - ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3.3.0
+      - uses: actions/checkout@v4
       - name: Install Dependencies
         run: |
           sudo `which apt || which apt-get` update
@@ -155,7 +155,7 @@ jobs:
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
     steps:
-      - uses: actions/checkout@v3.3.0
+      - uses: actions/checkout@v4
 
       - name: Add MXE Repository to Apt
         uses: myci-actions/add-deb-repo@10
@@ -221,7 +221,7 @@ jobs:
       CFLAGS: -std=c11
       CXXFLAGS: -std=c++11
     steps:
-      - uses: actions/checkout@v3.3.0
+      - uses: actions/checkout@v4
 
       - name: Add MXE Repository to Apt
         uses: myci-actions/add-deb-repo@10

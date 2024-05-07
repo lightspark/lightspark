@@ -75,9 +75,9 @@ protected:
 public:
 	bool isHittable(DisplayObject::HIT_TYPE type)
 	{
-		if(type == DisplayObject::MOUSE_CLICK)
+		if(type == DisplayObject::MOUSE_CLICK_HIT)
 			return mouseEnabled;
-		else if(type == DisplayObject::DOUBLE_CLICK)
+		else if(type == DisplayObject::DOUBLE_CLICK_HIT)
 			return doubleClickEnabled && mouseEnabled;
 		else
 			return true;

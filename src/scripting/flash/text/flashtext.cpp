@@ -327,7 +327,7 @@ _NR<DisplayObject> TextField::hitTestImpl(const Vector2f&, const Vector2f& local
 	//TODO: Add a point intersect function to RECT, and use that instead.
 	if( xmin <= localPoint.x && localPoint.x <= xmax && ymin <= localPoint.y && localPoint.y <= ymax)
 	{
-		if (interactiveObjectsOnly && this->tag && this->tag->WasStatic && this->type == ET_READ_ONLY && (type == MOUSE_CLICK || type == DOUBLE_CLICK))
+		if (interactiveObjectsOnly && this->tag && this->tag->WasStatic && this->type == ET_READ_ONLY && (type == MOUSE_CLICK_HIT || type == DOUBLE_CLICK_HIT))
 		{
 			// it seems that TextFields are not set as target to MouseEvents if constructed from a DefineEditTextTag that has the flag WasStatic 
 			if (this->getParent())

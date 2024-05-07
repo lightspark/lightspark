@@ -380,7 +380,7 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState
 {
 	if(m_sys->currentVm == nullptr)
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
 	number_t localX, localY;
@@ -395,10 +395,10 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod butt
 {
 	if(m_sys->currentVm == nullptr)
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::DOUBLE_CLICK);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::DOUBLE_CLICK_HIT);
 	if (selected.isNull())
 		return;
-	if (!selected->isHittable(DisplayObject::DOUBLE_CLICK))
+	if (!selected->isHittable(DisplayObject::DOUBLE_CLICK_HIT))
 	{
 		// no double click hit found, add additional down-up-click sequence
 		if (lastMouseUpTarget)
@@ -424,7 +424,7 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 {
 	if(m_sys->currentVm == nullptr)
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
 	number_t localX, localY;
@@ -470,7 +470,7 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 	mousePos.y=y;
 	if (m_sys->getRenderThread()->inSettings)
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK_HIT);
 	mutexDragged.lock();
 	if(curDragged)
 	{
@@ -542,7 +542,7 @@ void InputThread::handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, 
 		return;
 #endif
 
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
 	number_t localX, localY;
@@ -569,7 +569,7 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 		int x, y;
 		SDL_GetMouseState(&x,&y);
 		m_sys->windowToStageCoordinates(x,y,stageX,stageY);
-		_NR<InteractiveObject> selected = getMouseTarget(stageX,stageY, DisplayObject::MOUSE_CLICK);
+		_NR<InteractiveObject> selected = getMouseTarget(stageX,stageY, DisplayObject::MOUSE_CLICK_HIT);
 		if (!selected.isNull())
 		{
 			number_t localX, localY;

@@ -86,7 +86,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 			number_t x1,y1;
 			// TODO: Add an overload for Vector2f.
 			this->globalToLocal(x,y,x1,y1);
-			_NR<DisplayObject> d = hitTest(Vector2f(x,y), Vector2f(x1,y1), DisplayObject::MOUSE_CLICK,true);
+			_NR<DisplayObject> d = hitTest(Vector2f(x,y), Vector2f(x1,y1), DisplayObject::MOUSE_CLICK_HIT,true);
 			dispobj=d.getPtr();
 		}
 		if (dispobj!= this)

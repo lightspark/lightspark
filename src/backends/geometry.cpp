@@ -179,20 +179,6 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 		//Set the fill style
 		tokens.filltokens.push_back(GeomToken(SET_FILL).uval);
 		tokens.filltokens.push_back(GeomToken(*stylesIt).uval);
-		switch ((*stylesIt).FillStyleType)
-		{
-			case LINEAR_GRADIENT:
-			case RADIAL_GRADIENT:
-			case FOCAL_RADIAL_GRADIENT:
-				// TODO gradient fillstyles not yet implemented for nanoGL
-				tokens.canRenderToGL=false;
-				// TODO gradient fillstyles with alpha colors not yet implemented for nanoGL masking
-				if ((*stylesIt).FillStyleType != LINEAR_GRADIENT || (*stylesIt).Gradient.version>2)
-					tokens.canRenderToMaskGL= false;
-				break;
-			default:
-				break;
-		}
 		vector<ShapePathSegment>& segments = it->second;
 		for (size_t j = 0; j < segments.size(); ++j)
 		{
@@ -234,17 +220,6 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 					tokens.filltokens.push_back(GeomToken(*linestylesIt).uval);
 					if (tokens.currentLineWidth < (*linestylesIt).Width)
 						tokens.currentLineWidth = (*linestylesIt).Width;
-					if ((*linestylesIt).HasFillFlag &&
-						((*linestylesIt).FillType.FillStyleType == LINEAR_GRADIENT ||
-						(*linestylesIt).FillType.FillStyleType == RADIAL_GRADIENT ||
-						(*linestylesIt).FillType.FillStyleType == FOCAL_RADIAL_GRADIENT
-						)) // TODO linestyles with gradient fill flag not yet implemented for nanoGL
-					{
-						tokens.canRenderToGL=false;
-						// TODO gradient fillstyles with alpha colors not yet implemented for nanoGL masking
-						if ((*linestylesIt).FillType.FillStyleType != LINEAR_GRADIENT || (*linestylesIt).FillType.Gradient.version>2)
-							tokens.canRenderToMaskGL= false;
-					}
 					for (size_t k = j; k < segments.size(); ++k)
 					{
 						ShapePathSegment strokesegment = segments[k];
@@ -296,17 +271,6 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 			tokens.stroketokens.push_back(GeomToken(*stylesIt).uval);
 			if (tokens.currentLineWidth < (*stylesIt).Width)
 				tokens.currentLineWidth = (*stylesIt).Width;
-			if ((*stylesIt).HasFillFlag &&
-				((*stylesIt).FillType.FillStyleType == LINEAR_GRADIENT ||
-				 (*stylesIt).FillType.FillStyleType == RADIAL_GRADIENT ||
-				 (*stylesIt).FillType.FillStyleType == FOCAL_RADIAL_GRADIENT
-				 )) // TODO linestyles with gradient fill flag not yet implemented for nanoGL
-			{
-				tokens.canRenderToGL=false;
-				// TODO gradient fillstyles with alpha colors not yet implemented for nanoGL masking
-				if ((*stylesIt).FillType.FillStyleType != LINEAR_GRADIENT || (*stylesIt).FillType.Gradient.version>2)
-					tokens.canRenderToMaskGL= false;
-			}
 			for (size_t j = 0; j < segments.size(); ++j)
 			{
 				ShapePathSegment segment = segments[j];
@@ -475,10 +439,6 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 				case RADIAL_GRADIENT:
 				case FOCAL_RADIAL_GRADIENT:
 				{
-					tokens.canRenderToGL=false;//  TODO fillstyles other than solid fill not yet implemented for nanoGL
-					// TODO gradient fillstyles with alpha colors not yet implemented for nanoGL masking
-					if ((*stylesIt).FillStyleType != LINEAR_GRADIENT || (*stylesIt).Gradient.version>2)
-						tokens.canRenderToMaskGL= false;
 					number_t gradratio = float(ratio)/65535.0;
 					MATRIX ratiomatrix;
 
@@ -589,34 +549,12 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 						++linestylesIt;
 						assert(linestylesIt!=linestyles.end());
 					}
-					if ((*linestylesIt).HasFillFlag &&
-						((*linestylesIt).FillType.FillStyleType == LINEAR_GRADIENT ||
-						 (*linestylesIt).FillType.FillStyleType == RADIAL_GRADIENT ||
-						 (*linestylesIt).FillType.FillStyleType == FOCAL_RADIAL_GRADIENT
-						 )) // TODO linestyles with gradient fill flag not yet implemented for nanoGL
-					{
-						tokens.canRenderToGL=false;
-						// TODO gradient fillstyles with alpha colors not yet implemented for nanoGL masking
-						if ((*linestylesIt).FillType.FillStyleType != LINEAR_GRADIENT || (*linestylesIt).FillType.Gradient.version>2)
-							tokens.canRenderToMaskGL= false;
-					}
 					auto itls = getStrokeLineStyle(linestylesIt,ratio,&linestylesIt->linestylecache,boundsrc);
 					//Set the line style for strokes inside filltokens
 					tokens.filltokens.push_back(GeomToken(SET_STROKE).uval);
 					tokens.filltokens.push_back(GeomToken((*itls).second).uval);
 					if (tokens.currentLineWidth < (*itls).second.Width)
 						tokens.currentLineWidth = (*itls).second.Width;
-					if ((*linestylesIt).HasFillFlag &&
-						((*linestylesIt).FillType.FillStyleType == LINEAR_GRADIENT ||
-						 (*linestylesIt).FillType.FillStyleType == RADIAL_GRADIENT ||
-						 (*linestylesIt).FillType.FillStyleType == FOCAL_RADIAL_GRADIENT
-						 )) // TODO linestyles with gradient fill flag not yet implemented for nanoGL
-					{
-						tokens.canRenderToGL=false;
-						// TODO gradient fillstyles with alpha colors not yet implemented for nanoGL masking
-						if ((*linestylesIt).FillType.FillStyleType != LINEAR_GRADIENT || (*linestylesIt).FillType.Gradient.version>2)
-							tokens.canRenderToMaskGL= false;
-					}
 					for (size_t k = j; k < segments.size(); ++k)
 					{
 						ShapePathSegment strokesegment = segments[k];
@@ -660,17 +598,6 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 			{
 				++stylesIt;
 				assert(stylesIt!=linestyles.end());
-			}
-			if ((*stylesIt).HasFillFlag &&
-				((*stylesIt).FillType.FillStyleType == LINEAR_GRADIENT ||
-				 (*stylesIt).FillType.FillStyleType == RADIAL_GRADIENT ||
-				 (*stylesIt).FillType.FillStyleType == FOCAL_RADIAL_GRADIENT
-				 )) // TODO linestyles with gradient fill flag not yet implemented for nanoGL
-			{
-				tokens.canRenderToGL=false;
-				// TODO gradient fillstyles with alpha colors not yet implemented for nanoGL masking
-				if ((*stylesIt).FillType.FillStyleType != LINEAR_GRADIENT || (*stylesIt).FillType.Gradient.version>2)
-					tokens.canRenderToMaskGL= false;
 			}
 			//Set the line style
 			auto itls = getStrokeLineStyle(stylesIt,ratio,&stylesIt->linestylecache,boundsrc);

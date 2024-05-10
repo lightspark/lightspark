@@ -49,6 +49,7 @@ struct NVGpaint {
 	float feather;
 	NVGcolor innerColor;
 	NVGcolor outerColor;
+	int isGradient;
 	int image;
 };
 typedef struct NVGpaint NVGpaint;
@@ -388,6 +389,13 @@ void nvgImageSize(NVGcontext* ctx, int image, int* w, int* h);
 // Deletes created image.
 void nvgDeleteImage(NVGcontext* ctx, int image);
 
+struct NVGgradientStop {
+	NVGcolor color;
+	float stop;
+};
+
+typedef struct NVGgradientStop NVGgradientStop;
+
 //
 // Paints
 //
@@ -399,6 +407,15 @@ void nvgDeleteImage(NVGcontext* ctx, int image);
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgLinearGradient(NVGcontext* ctx, float sx, float sy, float ex, float ey,
 						   NVGcolor icol, NVGcolor ocol);
+
+NVGpaint nvgLinearGradientStopsFlags(NVGcontext* ctx,
+									 float sx, float sy, float ex, float ey,
+									 NVGgradientStop* stops, int count,
+									 int imageFlags);
+
+NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
+									 float sx, float sy, float ex, float ey,
+									 NVGgradientStop* stops, int count);
 
 // Creates and returns a box gradient. Box gradient is a feathered rounded rectangle, it is useful for rendering
 // drop shadows or highlights for boxes. Parameters (x,y) define the top-left corner of the rectangle,
@@ -413,6 +430,15 @@ NVGpaint nvgBoxGradient(NVGcontext* ctx, float x, float y, float w, float h,
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgRadialGradient(NVGcontext* ctx, float cx, float cy, float inr, float outr,
 						   NVGcolor icol, NVGcolor ocol);
+
+NVGpaint nvgRadialGradientStopsFlags(NVGcontext* ctx,
+									 float cx, float cy, float inr, float outr,
+									 NVGgradientStop* stops, int count,
+									 int imageFlags);
+
+NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
+									 float cx, float cy, float inr, float outr,
+									 NVGgradientStop* stops, int count);
 
 // Creates and returns an image pattern. Parameters (ox,oy) specify the left-top location of the image pattern,
 // (ex,ey) the size of one image, angle rotation around the top-left corner, image is handle to the image to render.

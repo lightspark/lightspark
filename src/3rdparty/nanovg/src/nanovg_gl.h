@@ -124,7 +124,8 @@ enum GLNVGshaderType {
 	NSVG_SHADER_FILLGRAD,
 	NSVG_SHADER_FILLIMG,
 	NSVG_SHADER_SIMPLE,
-	NSVG_SHADER_IMG
+	NSVG_SHADER_IMG,
+	NSVG_SHADER_FILLGRADIMG
 };
 
 #if NANOVG_GL_USE_UNIFORMBUFFER
@@ -669,6 +670,19 @@ static int glnvg__renderCreate(void* uptr)
 		"		if (texType == 2) color = vec4(color.x);"
 		"		color *= scissor;\n"
 		"		result = color * innerCol;\n"
+		"	} else if (type == 4) {		// Image based gradient; Sample a texture using the gradient position.\n"
+		"		// Calculate gradient color using box gradient\n"
+		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
+		"		float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
+		"#ifdef NANOVG_GL3\n"
+		"		vec4 color = texture(tex, vec2(d, 0.0));\n"
+		"#else\n"
+		"		vec4 color = texture2D(tex, vec2(d, 0.0));\n"
+		"#endif\n"
+
+		"		// Combine alpha\n"
+		"		color *= strokeAlpha * scissor;\n"
+		"		result = color;\n"
 		"	}\n"
 		"#ifdef NANOVG_GL3\n"
 		"	outColor = result;\n"
@@ -952,19 +966,25 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 		} else {
 			nvgTransformInverse(invxform, paint->xform);
 		}
-		frag->type = NSVG_SHADER_FILLIMG;
+		if (paint->isGradient == 0) {
+			frag->type = NSVG_SHADER_FILLIMG;
 
-		#if NANOVG_GL_USE_UNIFORMBUFFER
-		if (tex->type == NVG_TEXTURE_RGBA)
-			frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0 : 1;
-		else
-			frag->texType = 2;
-		#else
-		if (tex->type == NVG_TEXTURE_RGBA)
-			frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0.0f : 1.0f;
-		else
-			frag->texType = 2.0f;
-		#endif
+			#if NANOVG_GL_USE_UNIFORMBUFFER
+			if (tex->type == NVG_TEXTURE_RGBA)
+				frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0 : 1;
+			else
+				frag->texType = 2;
+			#else
+			if (tex->type == NVG_TEXTURE_RGBA)
+				frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0.0f : 1.0f;
+			else
+				frag->texType = 2.0f;
+			#endif
+		} else {
+			frag->type = NSVG_SHADER_FILLGRADIMG;
+			frag->radius = paint->radius;
+			frag->feather = paint->feather;
+		}
 //		printf("frag->texType = %d\n", frag->texType);
 	} else {
 		frag->type = NSVG_SHADER_FILLGRAD;
@@ -1239,6 +1259,7 @@ static void glnvg__renderFlush(void* uptr)
 		for (i = 0; i < gl->ncalls; i++) {
 			GLNVGcall* call = &gl->calls[i];
 			glnvg__blendFuncSeparate(gl,&call->blendFunc);
+			GLNVGfragUniforms* frag = nvg__fragUniformPtr(gl, call->uniformOffset);
 			if (call->type == GLNVG_FILL)
 				glnvg__fill(gl, call);
 			else if (call->type == GLNVG_CONVEXFILL)
@@ -1247,6 +1268,8 @@ static void glnvg__renderFlush(void* uptr)
 				glnvg__stroke(gl, call);
 			else if (call->type == GLNVG_TRIANGLES)
 				glnvg__triangles(gl, call);
+			if (frag->type == NSVG_SHADER_FILLGRADIMG)
+				glnvg__deleteTexture(gl, call->image);
 		}
 
 		glDisableVertexAttribArray(0);

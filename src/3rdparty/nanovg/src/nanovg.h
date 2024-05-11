@@ -49,6 +49,7 @@ struct NVGpaint {
 	float feather;
 	NVGcolor innerColor;
 	NVGcolor outerColor;
+	int spreadMode;
 	int isGradient;
 	int image;
 };
@@ -391,6 +392,12 @@ void nvgImageSize(NVGcontext* ctx, int image, int* w, int* h);
 // Deletes created image.
 void nvgDeleteImage(NVGcontext* ctx, int image);
 
+enum NVGgradientSpreadMode {
+	NVG_SPREAD_PAD,
+	NVG_SPREAD_REPEAT,
+	NVG_SPREAD_REFLECT,
+};
+
 struct NVGgradientStop {
 	NVGcolor color;
 	float stop;
@@ -405,42 +412,40 @@ typedef struct NVGgradientStop NVGgradientStop;
 // These can be used as paints for strokes and fills.
 
 // Creates and returns a linear gradient. Parameters (sx,sy)-(ex,ey) specify the start and end coordinates
-// of the linear gradient, icol specifies the start color and ocol the end color.
+// of the linear gradient, icol specifies the start color and ocol the end color, spreadMode specifies the
+// spread of the gradient.
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgLinearGradient(NVGcontext* ctx, float sx, float sy, float ex, float ey,
-						   NVGcolor icol, NVGcolor ocol);
-
-NVGpaint nvgLinearGradientStopsFlags(NVGcontext* ctx,
-									 float sx, float sy, float ex, float ey,
-									 NVGgradientStop* stops, int count,
-									 int imageFlags);
+						   NVGcolor icol, NVGcolor ocol,
+						   int spreadMode);
 
 NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
-									 float sx, float sy, float ex, float ey,
-									 NVGgradientStop* stops, int count);
+								float sx, float sy, float ex, float ey,
+								NVGgradientStop* stops, int count,
+								int spreadMode);
 
 // Creates and returns a box gradient. Box gradient is a feathered rounded rectangle, it is useful for rendering
 // drop shadows or highlights for boxes. Parameters (x,y) define the top-left corner of the rectangle,
 // (w,h) define the size of the rectangle, r defines the corner radius, and f feather. Feather defines how blurry
-// the border of the rectangle is. Parameter icol specifies the inner color and ocol the outer color of the gradient.
+// the border of the rectangle is. Parameter icol specifies the inner color and ocol the outer color of the gradient,
+// spreadMode specifies the spread of the gradient.
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgBoxGradient(NVGcontext* ctx, float x, float y, float w, float h,
-						float r, float f, NVGcolor icol, NVGcolor ocol);
+						float r, float f, NVGcolor icol, NVGcolor ocol,
+						int spreadMode);
 
 // Creates and returns a radial gradient. Parameters (cx,cy) specify the center, inr and outr specify
-// the inner and outer radius of the gradient, icol specifies the start color and ocol the end color.
+// the inner and outer radius of the gradient, icol specifies the start color and ocol the end color,
+// spreadMode specifies the spread of the gradient.
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgRadialGradient(NVGcontext* ctx, float cx, float cy, float inr, float outr,
-						   NVGcolor icol, NVGcolor ocol);
-
-NVGpaint nvgRadialGradientStopsFlags(NVGcontext* ctx,
-									 float cx, float cy, float inr, float outr,
-									 NVGgradientStop* stops, int count,
-									 int imageFlags);
+						   NVGcolor icol, NVGcolor ocol,
+						   int spreadMode);
 
 NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
-									 float cx, float cy, float inr, float outr,
-									 NVGgradientStop* stops, int count);
+								float cx, float cy, float inr, float outr,
+								NVGgradientStop* stops, int count,
+								int spreadMode);
 
 // Creates and returns an image pattern. Parameters (ox,oy) specify the left-top location of the image pattern,
 // (ex,ey) the size of one image, angle rotation around the top-left corner, image is handle to the image to render.

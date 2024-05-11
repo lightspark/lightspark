@@ -203,10 +203,11 @@ struct GLNVGfragUniforms {
 		float strokeThr;
 		int texType;
 		int type;
+		int spreadMode;
 	#else
 		// note: after modifying layout or size of uniform array,
 		// don't forget to also update the fragment shader source!
-		#define NANOVG_GL_UNIFORMARRAY_SIZE 11
+		#define NANOVG_GL_UNIFORMARRAY_SIZE 12
 		union {
 			struct {
 				float scissorMat[12]; // matrices are actually 3 vec4s
@@ -222,6 +223,7 @@ struct GLNVGfragUniforms {
 				float strokeThr;
 				float texType;
 				float type;
+				float spreadMode;
 			};
 			float uniformArray[NANOVG_GL_UNIFORMARRAY_SIZE][4];
 		};
@@ -529,7 +531,7 @@ static int glnvg__renderCreate(void* uptr)
 #if NANOVG_GL_USE_UNIFORMBUFFER
 	"#define USE_UNIFORMBUFFER 1\n"
 #else
-	"#define UNIFORMARRAY_SIZE 11\n"
+	"#define UNIFORMARRAY_SIZE 12\n"
 #endif
 	"\n";
 
@@ -577,6 +579,7 @@ static int glnvg__renderCreate(void* uptr)
 		"		float strokeThr;\n"
 		"		int texType;\n"
 		"		int type;\n"
+		"		int spreadMode;\n"
 		"	};\n"
 		"#else\n" // NANOVG_GL3 && !USE_UNIFORMBUFFER
 		"	uniform vec4 frag[UNIFORMARRAY_SIZE];\n"
@@ -605,7 +608,25 @@ static int glnvg__renderCreate(void* uptr)
 		"	#define strokeThr frag[10].y\n"
 		"	#define texType int(frag[10].z)\n"
 		"	#define type int(frag[10].w)\n"
+		"	#define spreadMode int(frag[11].x)\n"
 		"#endif\n"
+		"\n"
+		"float applySpread(float d) {\n"
+		"	if (spreadMode == 0) // Pad\n"
+		"		return clamp(d, 0.0, 1.0);\n"
+		"	else if (spreadMode == 1) // Repeat\n"
+		"		return fract(d);\n"
+		"	else if (spreadMode == 2) { // Reflect\n"
+		"		#ifdef NANOVG_GL3\n"
+		"		bool even = !bool(int(d) & 1);\n"
+		"		#else\n" // !NANOVG_GL3
+		"		bool even = !bool(mod(d, 2.0));\n"
+		"		#endif\n"
+		"		d = abs(d);\n"
+		"		return (even) ? fract(d) : 1.0 - fract(d);\n"
+		"	}\n"
+		"	return d;\n"
+		"}\n"
 		"\n"
 		"float sdroundrect(vec2 pt, vec2 ext, float rad) {\n"
 		"	vec2 ext2 = ext - vec2(rad,rad);\n"
@@ -638,7 +659,7 @@ static int glnvg__renderCreate(void* uptr)
 		"	if (type == 0) {			// Gradient\n"
 		"		// Calculate gradient color using box gradient\n"
 		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
-		"		float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
+		"		float d = applySpread((sdroundrect(pt, extent, radius) + feather*0.5) / feather);\n"
 		"		vec4 color = mix(innerCol,outerCol,d);\n"
 		"		// Combine alpha\n"
 		"		color *= strokeAlpha * scissor;\n"
@@ -673,7 +694,7 @@ static int glnvg__renderCreate(void* uptr)
 		"	} else if (type == 4) {		// Image based gradient; Sample a texture using the gradient position.\n"
 		"		// Calculate gradient color using box gradient\n"
 		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
-		"		float d = clamp((sdroundrect(pt, extent, radius) + feather*0.5) / feather, 0.0, 1.0);\n"
+		"		float d = (sdroundrect(pt, extent, radius) + feather*0.5) / feather;\n"
 		"#ifdef NANOVG_GL3\n"
 		"		vec4 color = texture(tex, vec2(d, 0.0));\n"
 		"#else\n"
@@ -993,12 +1014,14 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 			frag->type = NSVG_SHADER_FILLGRADIMG;
 			frag->radius = paint->radius;
 			frag->feather = paint->feather;
+			frag->spreadMode = paint->spreadMode;
 		}
 //		printf("frag->texType = %d\n", frag->texType);
 	} else {
 		frag->type = NSVG_SHADER_FILLGRAD;
 		frag->radius = paint->radius;
 		frag->feather = paint->feather;
+		frag->spreadMode = paint->spreadMode;
 		nvgTransformInverse(invxform, paint->xform);
 	}
 

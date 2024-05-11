@@ -53,6 +53,7 @@ public:
 	  ,textureID(UINT32_MAX),width(0),height(0),format(BGRA),compressedformat(UNCOMPRESSED),context(_context)
 	{ subtype = SUBTYPE_TEXTUREBASE;}
 	static void sinit(Class_base* c);
+	bool destruct() override;
 	ASFUNCTION_ATOM(dispose);
 };
 

@@ -156,6 +156,7 @@ protected:
 	int alphaUniform;
 	int maskUniform;
 	int isFirstFilterUniform;
+	int renderStage3DUniform;
 	int colortransMultiplyUniform;
 	int colortransAddUniform;
 	int directUniform;

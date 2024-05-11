@@ -9,8 +9,8 @@
 #include <lzma.h>
 #include "3rdparty/jpegxr/jpegxr.h" // jpeg-xr decoding library taken from https://github.com/adobe/dds2atf/
 
-namespace lightspark
-{
+using namespace lightspark;
+
 enum LSJXRDATAFORMAT { RGB888,RGB8888,DXT5AlphaImageData,DXT5ImageData,DXT1ImageData};
 struct lsjxrdata
 {
@@ -553,6 +553,22 @@ void TextureBase::sinit(Class_base *c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
 	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
 }
+
+bool TextureBase::destruct()
+{
+	renderaction action;
+	action.action =RENDER_ACTION::RENDER_DELETETEXTURE;
+	action.udata1 = textureID;
+	context->addAction(action);
+	textureID=UINT32_MAX;
+	width=0;
+	height=0;
+	async=false;
+	format=BGRA;
+	compressedformat=UNCOMPRESSED;
+	context=nullptr;
+	return EventDispatcher::destruct();
+}
 ASFUNCTIONBODY_ATOM(TextureBase,dispose)
 {
 	TextureBase* th = asAtomHandler::as<TextureBase>(obj);
@@ -916,6 +932,4 @@ ASFUNCTIONBODY_ATOM(VideoTexture,attachNetStream)
 	LOG(LOG_NOT_IMPLEMENTED,"VideoTexture.attachNetStream does nothing");
 	_NR<NetStream> netStream;
 	ARG_CHECK(ARG_UNPACK(netStream));
-}
-
 }

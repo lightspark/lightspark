@@ -576,7 +576,7 @@ void RenderThread::setModelView(const MATRIX& matrix)
 	setMatrixUniform(LSGL_MODELVIEW);
 }
 
-void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter, bool flippedvertical, bool clearstate)
+void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter, bool flippedvertical, bool clearstate, bool renderstage3d)
 {
 	if (filterdata)
 		engineData->exec_glUniform1fv(filterdataUniform, FILTERDATA_MAXSIZE, filterdata);
@@ -596,6 +596,7 @@ void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t
 		engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
 	}
 	engineData->exec_glUniform1f(yuvUniform, 0);
+	engineData->exec_glUniform1f(renderStage3DUniform,renderstage3d ? 1.0 : 0.0);
 	engineData->exec_glUniform1f(directUniform, 0.0);
 	engineData->exec_glUniform1f(isFirstFilterUniform, (float)isFirstFilter);
 
@@ -792,10 +793,9 @@ void RenderThread::commonGLInit()
 	//Viewport setup is left for GLResize
 
 	//Get the maximum allowed texture size, up to 8192
-	int maxTexSize;
-	engineData->exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(&maxTexSize);
-	assert(maxTexSize>0);
-	largeTextureSize=min(maxTexSize,8192);
+	engineData->exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(&engineData->maxTextureSize);
+	assert(engineData->maxTextureSize>0);
+	largeTextureSize=min(engineData->maxTextureSize,8192);
 
 	//Set uniforms
 	engineData->exec_glUseProgram(gpu_program);
@@ -826,6 +826,8 @@ void RenderThread::commonGLInit()
 	maskUniform =engineData->exec_glGetUniformLocation(gpu_program,"mask");
 	//The uniform that indicates if this is the first filter (1), or not (0)
 	isFirstFilterUniform =engineData->exec_glGetUniformLocation(gpu_program,"isFirstFilter");
+	//The uniform that indicates if we are rendering the result of stage3D (1) or not (0)
+	renderStage3DUniform =engineData->exec_glGetUniformLocation(gpu_program,"renderStage3D");
 	//The uniform that contains the coordinate matrix
 	projectionMatrixUniform =engineData->exec_glGetUniformLocation(gpu_program,"ls_ProjectionMatrix");
 	modelviewMatrixUniform =engineData->exec_glGetUniformLocation(gpu_program,"ls_ModelViewMatrix");
@@ -853,6 +855,11 @@ void RenderThread::commonGLResize()
 {
 	m_sys->stageCoordinateMapping(windowWidth, windowHeight, offsetX, offsetY, scaleX, scaleY);
 	engineData->exec_glViewport(0,0,windowWidth,windowHeight);
+	//Clear the back buffer
+	RGB bg=m_sys->mainClip->getBackground();
+	engineData->exec_glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
+	engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+	
 	if (cairoTextureContext)
 	{
 		cairo_destroy(cairoTextureContext);

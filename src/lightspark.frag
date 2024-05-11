@@ -12,6 +12,7 @@ uniform float direct;
 uniform float mask;
 uniform float isFirstFilter;
 uniform float blendMode;
+uniform float renderStage3D;
 varying vec4 ls_TexCoords[2];
 varying vec4 ls_FrontColor;
 uniform vec4 colorTransformMultiply;
@@ -249,6 +250,7 @@ void main()
 #ifdef GL_ES
 	vbase.rgb = vbase.bgr;
 #endif
+	vbase.a = clamp(vbase.a+renderStage3D,0.0,1.0); // ensure that alpha component of stage3D content is ignored
 	// apply filter
 	if (filterdata[0] > 0.0) {
 		if (filterdata[0]==1.0) { //FILTERSTEP_BLUR_HORIZONTAL

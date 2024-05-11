@@ -322,7 +322,7 @@ template<>
 class Class<ASObject>: public Class_base
 {
 private:
-	Class<ASObject>(const QName& name,uint32_t classID, MemoryAccount* m):Class_base(name, classID,m){}
+	Class(const QName& name,uint32_t classID, MemoryAccount* m):Class_base(name, classID,m){}
 	//This function is instantiated always because of inheritance
 	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr);
 public:

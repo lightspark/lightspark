@@ -23,6 +23,7 @@
 #include "scripting/abc.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/NativeWindow.h"
+#include "scripting/flash/display/Stage3D.h"
 #include "scripting/avm1/avm1display.h"
 #include "scripting/flash/display/Graphics.h"
 #include "swf.h"
@@ -4802,86 +4803,6 @@ void LineScaleMode::sinit(Class_base* c)
 	c->setVariableAtomByQName("NONE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"none"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("NORMAL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"normal"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("VERTICAL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"vertical"),CONSTANT_TRAIT);
-}
-
-bool Stage3D::renderImpl(RenderContext &ctxt) const
-{
-	if (!visible || context3D.isNull())
-		return false;
-	return context3D->renderImpl(ctxt);
-}
-
-Stage3D::Stage3D(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),x(0),y(0),visible(true)
-{
-	subtype = SUBTYPE_STAGE3D;
-}
-
-bool Stage3D::destruct()
-{
-	if (context3D)
-		context3D->removeStoredMember();
-	context3D.fakeRelease();
-	return EventDispatcher::destruct();
-}
-
-void Stage3D::prepareShutdown()
-{
-	if (this->preparedforshutdown)
-		return;
-	EventDispatcher::prepareShutdown();
-	if (context3D)
-		context3D->prepareShutdown();
-}
-
-bool Stage3D::countCylicMemberReferences(garbagecollectorstate &gcstate)
-{
-	if (gcstate.checkAncestors(this))
-		return false;
-	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
-	if (context3D)
-		ret = context3D->countAllCylicMemberReferences(gcstate) || ret;
-	return ret;
-}
-
-void Stage3D::sinit(Class_base *c)
-{
-	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("requestContext3D","",Class<IFunction>::getFunction(c->getSystemState(),requestContext3D),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("requestContext3DMatchingProfiles","",Class<IFunction>::getFunction(c->getSystemState(),requestContext3DMatchingProfiles),NORMAL_METHOD,true);
-	REGISTER_GETTER_SETTER_RESULTTYPE(c,x,Number);
-	REGISTER_GETTER_SETTER_RESULTTYPE(c,y,Number);
-	REGISTER_GETTER_SETTER_RESULTTYPE(c,visible,Boolean);
-	REGISTER_GETTER_RESULTTYPE(c,context3D,Context3D);
-}
-ASFUNCTIONBODY_GETTER_SETTER(Stage3D,x)
-ASFUNCTIONBODY_GETTER_SETTER(Stage3D,y)
-ASFUNCTIONBODY_GETTER_SETTER(Stage3D,visible)
-ASFUNCTIONBODY_GETTER(Stage3D,context3D)
-
-ASFUNCTIONBODY_ATOM(Stage3D,_constructor)
-{
-	//Stage3D* th=asAtomHandler::as<Stage3D>(obj);
-	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
-}
-ASFUNCTIONBODY_ATOM(Stage3D,requestContext3D)
-{
-	Stage3D* th=asAtomHandler::as<Stage3D>(obj);
-	tiny_string context3DRenderMode;
-	tiny_string profile;
-	ARG_CHECK(ARG_UNPACK(context3DRenderMode,"auto")(profile,"baseline"));
-	
-	th->context3D = _MR(Class<Context3D>::getInstanceS(wrk));
-	th->context3D->driverInfo = wrk->getSystemState()->getEngineData()->driverInfoString;
-	th->context3D->addStoredMember();
-	th->incRef();
-	getVm(wrk->getSystemState())->addEvent(_MR(th),_MR(Class<Event>::getInstanceS(wrk,"context3DCreate")));
-}
-ASFUNCTIONBODY_ATOM(Stage3D,requestContext3DMatchingProfiles)
-{
-	//Stage3D* th=asAtomHandler::as<Stage3D>(obj);
-	_NR<Vector> profiles;
-	ARG_CHECK(ARG_UNPACK(profiles));
-	LOG(LOG_NOT_IMPLEMENTED,"Stage3D.requestContext3DMatchingProfiles does nothing");
 }
 
 void ActionScriptVersion::sinit(Class_base* c)

@@ -131,6 +131,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/RootMovieClip.cpp
   scripting/flash/display/Shape.cpp
   scripting/flash/display/SimpleButton.cpp
+  scripting/flash/display/Stage3D.cpp
   scripting/flash/display/jpegencoderoptions.cpp
   scripting/flash/display/jpegxrencoderoptions.cpp
   scripting/flash/display/pngencoderoptions.cpp

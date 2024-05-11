@@ -100,6 +100,7 @@ namespace lightspark
 class RenderContext;
 class VertexBuffer3D;
 class Program3D;
+class Stage3D;
 
 enum RENDER_ACTION { RENDER_CLEAR,RENDER_CONFIGUREBACKBUFFER,RENDER_RENDERTOBACKBUFFER,RENDER_TOTEXTURE,
 					 RENDER_SETPROGRAM,RENDER_UPLOADPROGRAM,RENDER_DELETEPROGRAM,
@@ -145,10 +146,18 @@ private:
 	uint32_t samplers[CONTEXT3D_SAMPLER_COUNT];
 	float vcposdata[4] = { 1.0,1.0,1.0,1.0 };
 	int currentactionvector;
+
+	uint32_t backframebufferIDcurrent;
+	uint32_t backframebuffer[2];
+	uint32_t backframebufferID[2];
+	uint32_t backDepthRenderBuffer[2];
+	uint32_t backStencilRenderBuffer[2];
+
 	uint32_t textureframebuffer;
 	uint32_t textureframebufferID;
 	uint32_t depthRenderBuffer;
 	uint32_t stencilRenderBuffer;
+
 	Program3D* currentprogram;
 	uint32_t currenttextureid;
 	bool renderingToTexture;
@@ -170,12 +179,15 @@ private:
 	unordered_set<TextureBase*> texturelist;
 	unordered_set<IndexBuffer3D*> indexbufferlist;
 	unordered_set<VertexBuffer3D*> vectorbufferlist;
+	Stage3D* stage3D;
 	void disposeintern();
+	void configureBackBufferIntern(bool enableDepthAndStencil,uint32_t width,uint32_t height);
 protected:
 	bool renderImpl(RenderContext &ctxt);
 	void loadTexture(TextureBase* tex, uint32_t level);
 	void loadCubeTexture(CubeTexture* tex);
-public:
+	void init(Stage3D* s);
+	public:
 	Mutex rendermutex;
 	Context3D(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);

@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/display3d/flashdisplay3d.h"
+#include "scripting/flash/display/Stage3D.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/flash/geom/flashgeom.h"
@@ -69,8 +70,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			
 			if ((action.udata2 & CLEARMASK::COLOR) != 0)
 				engineData->exec_glClearColor(action.fdata[0],action.fdata[1],action.fdata[2],action.fdata[3]);
-			if ((renderingToTexture && enableDepthAndStencilTextureBuffer)
-					|| (!renderingToTexture && enableDepthAndStencilBackbuffer))
+			if (enableDepthAndStencilTextureBuffer)
 			{
 				if ((action.udata2 & CLEARMASK::DEPTH) != 0)
 					engineData->exec_glClearDepthf(action.fdata[4]);
@@ -85,23 +85,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata1 = enableDepthAndStencil
 			//action.udata2 = backBufferWidth
 			//action.udata3 = backBufferHeight
-			enableDepthAndStencilBackbuffer = action.udata1;
-			backBufferWidth= action.udata2;
-			backBufferHeight=action.udata3;
-			if (!renderingToTexture)
-			{
-				engineData->exec_glViewport(0,0,action.udata2,action.udata3);
-				if (action.udata1)
-				{
-					engineData->exec_glEnable_GL_STENCIL_TEST();
-					engineData->exec_glEnable_GL_DEPTH_TEST();
-				}
-				else
-				{
-					engineData->exec_glDisable_GL_STENCIL_TEST();
-					engineData->exec_glDisable_GL_DEPTH_TEST();
-				}
-			}
+			configureBackBufferIntern(action.udata1,action.udata2,action.udata3);
 			break;
 		case RENDER_SETPROGRAM:
 		{
@@ -200,10 +184,8 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		case RENDER_RENDERTOBACKBUFFER:
 			if (renderingToTexture)
 			{
-				engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
-				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
-				engineData->exec_glFrontFace(false);
-				engineData->exec_glDrawBuffer_GL_BACK();
+				engineData->exec_glBindTexture_GL_TEXTURE_2D(backframebufferIDcurrent);
+				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(backframebuffer[currentactionvector]);
 				engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
 				if (enableDepthAndStencilBackbuffer)
 				{
@@ -707,6 +689,17 @@ void Context3D::setPositionScale(EngineData *engineData)
 
 void Context3D::disposeintern()
 {
+	Locker l(rendermutex);
+	if (this->backframebufferID[0] != UINT32_MAX)
+		getSystemState()->getRenderThread()->addDeletedTexture(this->backframebufferID[0]);
+	this->backframebufferID[0] = UINT32_MAX;
+	if (this->backframebufferID[1] != UINT32_MAX)
+		getSystemState()->getRenderThread()->addDeletedTexture(this->backframebufferID[1]);
+	this->backframebufferID[1] = UINT32_MAX;
+	if (this->textureframebufferID != UINT32_MAX)
+		getSystemState()->getRenderThread()->addDeletedTexture(this->textureframebufferID);
+	this->textureframebufferID = UINT32_MAX;
+	
 	while (!programlist.empty())
 	{
 		auto it = programlist.begin();
@@ -756,6 +749,12 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	EngineData* engineData = getSystemState()->getEngineData();
 
 	// set state to default values
+	if (this->backBufferWidth && this->backBufferHeight)
+	{
+		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(backframebuffer[currentactionvector]);
+		engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(backframebufferID[currentactionvector]);
+	 	engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
+	}
 	if (currentprogram)
 		engineData->exec_glUseProgram(currentprogram->gpu_program);
 	if (enableDepthAndStencilBackbuffer)
@@ -783,6 +782,7 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	}
 
 	// cleanup for stage rendering
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 	engineData->exec_glDisable_GL_DEPTH_TEST();
 	engineData->exec_glCullFace(FACE_NONE);
 	engineData->exec_glBindBuffer_GL_ELEMENT_ARRAY_BUFFER(0);
@@ -796,7 +796,6 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 		engineData->exec_glFrontFace(false);
 		engineData->exec_glDrawBuffer_GL_BACK();
-		engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
 		if (enableDepthAndStencilBackbuffer)
 		{
 			engineData->exec_glEnable_GL_DEPTH_TEST();
@@ -811,6 +810,7 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	}
 	((GLRenderContext&)ctxt).handleGLErrors();
 	actions[1-currentactionvector].clear();
+	backframebufferIDcurrent=backframebufferID[currentactionvector];
 	swapbuffers = false;
 	return true;
 }
@@ -832,7 +832,7 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 		{
 			if (tex->bitmaparray[i].size() > 0)
 			{
-				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size(),tex->is<RectangleTexture>());
+				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size(),false);
 				tex->bitmaparray[i].clear();
 			}
 		}
@@ -841,7 +841,7 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 	{
 		if (tex->bitmaparray.size() > level && tex->bitmaparray[level].size() > 0)
 		{
-			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[level].data(),tex->format,tex->compressedformat,tex->bitmaparray[level].size(),tex->is<RectangleTexture>());
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[level].data(),tex->format,tex->compressedformat,tex->bitmaparray[level].size(),false);
 			tex->bitmaparray[level].clear();
 		}
 	}
@@ -879,18 +879,114 @@ void Context3D::loadCubeTexture(CubeTexture *tex)
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 }
 
+void Context3D::init(Stage3D* s)
+{
+	stage3D = s;
+	EngineData* engineData = getSystemState()->getEngineData();
+	driverInfo = engineData->driverInfoString;
+	maxBackBufferWidth = engineData->maxTextureSize;;
+	maxBackBufferHeight = engineData->maxTextureSize;;
+	
+	stage3D->incRef();
+	getVm(getSystemState())->addEvent(_MR(stage3D),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"context3DCreate")));
+}
+
+void Context3D::configureBackBufferIntern(bool enableDepthAndStencil, uint32_t width, uint32_t height)
+{
+	backBufferWidth=width;
+	backBufferHeight=height;
+	EngineData* engineData = getSystemState()->getEngineData();
+	if (backframebuffer[0] == UINT32_MAX)
+		backframebuffer[0] = engineData->exec_glGenFramebuffer();
+	if (backframebuffer[1] == UINT32_MAX)
+		backframebuffer[1] = engineData->exec_glGenFramebuffer();
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(backframebuffer[currentactionvector]);
+	if (backframebufferID[0] == UINT32_MAX)
+		engineData->exec_glGenTextures(1,&backframebufferID[0]);
+	if (backframebufferID[1] == UINT32_MAX)
+		engineData->exec_glGenTextures(1,&backframebufferID[1]);
+
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(backframebufferID[0]);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(backframebufferID[0]);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, width, height, 0, nullptr,true);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(backframebufferID[1]);
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(backframebufferID[1]);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, width, height, 0, nullptr,true);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
+	if (enableDepthAndStencil)
+	{
+		if (backDepthRenderBuffer[0] == UINT32_MAX)
+			backDepthRenderBuffer[0] = engineData->exec_glGenRenderbuffer();
+		if (backDepthRenderBuffer[1] == UINT32_MAX)
+			backDepthRenderBuffer[1] = engineData->exec_glGenRenderbuffer();
+		getSystemState()->getRenderThread()->handleGLErrors();
+		
+		if (engineData->supportPackedDepthStencil)
+		{
+			engineData->exec_glBindRenderbuffer(backDepthRenderBuffer[0]);
+			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(width,height);
+			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(backDepthRenderBuffer[0]);
+			engineData->exec_glBindRenderbuffer(backDepthRenderBuffer[1]);
+			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(width,height);
+			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(backDepthRenderBuffer[1]);
+		}
+		else
+		{
+			if (backStencilRenderBuffer[0] == UINT32_MAX)
+				backStencilRenderBuffer[0] = engineData->exec_glGenRenderbuffer();
+			if (backStencilRenderBuffer[1] == UINT32_MAX)
+				backStencilRenderBuffer[1] = engineData->exec_glGenRenderbuffer();
+			engineData->exec_glBindRenderbuffer(backDepthRenderBuffer[0]);
+			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_COMPONENT16(width,height);
+			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_ATTACHMENT(backDepthRenderBuffer[0]);
+			engineData->exec_glBindRenderbuffer(backDepthRenderBuffer[1]);
+			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_COMPONENT16(width,height);
+			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_ATTACHMENT(backDepthRenderBuffer[1]);
+			
+			engineData->exec_glBindRenderbuffer(backStencilRenderBuffer[0]);
+			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(width,height);
+			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(backStencilRenderBuffer[0]);
+			engineData->exec_glBindRenderbuffer(backStencilRenderBuffer[1]);
+			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(width,height);
+			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(backStencilRenderBuffer[1]);
+			engineData->exec_glBindRenderbuffer(0);
+		}
+		engineData->exec_glEnable_GL_DEPTH_TEST();
+		engineData->exec_glEnable_GL_STENCIL_TEST();
+	}
+	else
+	{
+		engineData->exec_glDisable_GL_DEPTH_TEST();
+		engineData->exec_glDisable_GL_STENCIL_TEST();
+	}
+	engineData->exec_glViewport(0,0,width,height);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
+}
+
 Context3D::Context3D(ASWorker* wrk, Class_base *c):EventDispatcher(wrk,c),samplers{UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX},currentactionvector(0)
   ,textureframebuffer(UINT32_MAX),textureframebufferID(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX),currentprogram(nullptr),currenttextureid(UINT32_MAX)
   ,renderingToTexture(false),enableDepthAndStencilBackbuffer(true),enableDepthAndStencilTextureBuffer(true),swapbuffers(false)
   ,currentcullface(TRIANGLE_FACE::FACE_NONE),currentdepthfunction(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_LESS)
   ,currentstencilfunction(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_ALWAYS), currentstencilref(0xff), currentstencilmask(0xff)
-  ,backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
+  ,stage3D(nullptr),backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
   ,maxBackBufferHeight(16384),maxBackBufferWidth(16384)
 {
 	subtype = SUBTYPE_CONTEXT3D;
 	memset(vertexConstants,0,4 * CONTEXT3D_PROGRAM_REGISTERS * sizeof(float));
 	memset(fragmentConstants,0,4 * CONTEXT3D_PROGRAM_REGISTERS * sizeof(float));
 	driverInfo = "Disposed";
+	backframebufferID[0]=UINT32_MAX;
+	backframebufferID[1]=UINT32_MAX;
+	backframebuffer[0]=UINT32_MAX;
+	backframebuffer[1]=UINT32_MAX;
+	backDepthRenderBuffer[0]=UINT32_MAX;
+	backDepthRenderBuffer[1]=UINT32_MAX;
+	backStencilRenderBuffer[0]=UINT32_MAX;
+	backStencilRenderBuffer[1]=UINT32_MAX;
 }
 
 void Context3D::addAction(RENDER_ACTION type, ASObject *dataobject)
@@ -1579,7 +1675,7 @@ ASFUNCTIONBODY_ATOM(Context3D,present)
 		th->swapbuffers = true;
 		th->currentactionvector=1-th->currentactionvector;
 		if (wrk->getSystemState()->getRenderThread()->isStarted())
-			wrk->getSystemState()->getRenderThread()->draw(true);
+			wrk->getSystemState()->getRenderThread()->draw(false);
 	}
 }
 ASFUNCTIONBODY_ATOM(Context3D,setStencilActions)

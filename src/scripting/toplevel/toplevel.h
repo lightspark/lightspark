@@ -817,7 +817,7 @@ template<>
 class Class<IFunction>: public Class_base
 {
 private:
-	Class<IFunction>(MemoryAccount* m, uint32_t classID):Class_base(QName(BUILTIN_STRINGS::STRING_FUNCTION,BUILTIN_STRINGS::EMPTY),classID ,m){}
+	Class(MemoryAccount* m, uint32_t classID):Class_base(QName(BUILTIN_STRINGS::STRING_FUNCTION,BUILTIN_STRINGS::EMPTY),classID ,m){}
 	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass) override;
 	IFunction* getNopFunction();
 public:

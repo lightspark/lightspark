@@ -311,6 +311,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	// 2.0:set color for every non transparent pixel (used for text rendering)
 	// 3.0 set color for every pixel (renders a filled rectangle)
 	engineData->exec_glUniform1f(directUniform, directMode);
+	engineData->exec_glUniform1f(renderStage3DUniform, 0.0);
 	engineData->exec_glUniform4f(directColorUniform,float(directColor.Red)/255.0,float(directColor.Green)/255.0,float(directColor.Blue)/255.0,1.0);
 
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);

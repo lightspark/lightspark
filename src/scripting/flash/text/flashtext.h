@@ -146,7 +146,7 @@ public:
 	~TextField();
 	void finalize() override;
 	void prepareShutdown() override;
-	bool countCylicMemberReferences(garbagecollectorstate& gcstate);
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	static void sinit(Class_base* c);
 	void setHtmlText(const tiny_string& html);
 	void avm1SyncTagVar();

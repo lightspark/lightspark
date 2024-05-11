@@ -644,26 +644,6 @@ public:
 	static void sinit(Class_base* c);
 };
 
-class Stage3D: public EventDispatcher
-{
-friend class Stage;
-protected:
-	bool renderImpl(RenderContext &ctxt) const;
-public:
-	bool destruct() override;
-	void prepareShutdown() override;
-	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
-	Stage3D(ASWorker* wrk, Class_base* c);
-	static void sinit(Class_base* c);
-	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION_ATOM(requestContext3D);
-	ASFUNCTION_ATOM(requestContext3DMatchingProfiles);
-	ASPROPERTY_GETTER_SETTER(number_t,x);
-	ASPROPERTY_GETTER_SETTER(number_t,y);
-	ASPROPERTY_GETTER_SETTER(bool,visible);
-	ASPROPERTY_GETTER(_NR<Context3D>,context3D);
-};
-
 
 class LineScaleMode: public ASObject
 {

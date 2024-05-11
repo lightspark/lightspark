@@ -132,6 +132,7 @@ public:
 	bool startInFullScreenMode;
 	double startscalefactor;
 	tiny_string driverInfoString;
+	int maxTextureSize;
 	uint32_t context3dProfile;
 	std::vector<TEXTUREFORMAT_COMPRESSED> compressed_texture_formats;
 	EngineData();

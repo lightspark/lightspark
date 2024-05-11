@@ -567,7 +567,7 @@ void BitmapFilter::applyGradientFilter(uint8_t* data, uint32_t datawidth, uint32
 			continue;
 		if (targetpos+3 >= targetsize)
 			break;
-		uint32_t glowalpha = max(0U,min(uint32_t(0xff),uint32_t(number_t(inner ? 0xff - tmpdata[i*4+3] : tmpdata[i*4+3])*strength)));
+		uint32_t glowalpha = min(uint32_t(0xff),uint32_t(number_t(inner ? 0xff - tmpdata[i*4+3] : tmpdata[i*4+3])*strength));
 		number_t alpha = alphas[glowalpha];
 		number_t srcalpha = max(0.0,min(1.0,alpha));
 		number_t dstalpha = number_t(data[targetpos+3])/255.0;

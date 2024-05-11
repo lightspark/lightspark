@@ -1454,7 +1454,7 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 		tmp.push_back(v);
 	}
 	
-	sort(tmp.begin(),tmp.end(),sortOnComparator(sortfields,wrk->getSystemState()));
+	sort(tmp.begin(),tmp.end(),sortOnComparator(sortfields));
 
 	th->data_first.clear();
 	th->data_second.clear();

@@ -388,7 +388,7 @@ public:
 		}
 		return g_mkdir_with_parents(p.raw_buf(),0755) == 0;
 	}
-	bool FilGetDirectoryListing(SystemState* sys, const tiny_string &filename, bool isfullpath, std::vector<tiny_string>& filelist)
+	bool FilGetDirectoryListing(SystemState* sys, const tiny_string &filename, bool isfullpath, std::vector<tiny_string>& filelist) override
 	{
 		if (!isvalidfilename(filename))
 			return false;

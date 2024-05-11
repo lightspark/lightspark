@@ -182,7 +182,7 @@ ASFUNCTIONBODY_ATOM(FileStream,readUTF)
 	th->stream.read((char*)&len,2);
 	len = th->endianOut(len);
 	th->position+=2;
-	if (th->bytesAvailable < (int32_t)len)
+	if (th->bytesAvailable < (uint32_t)len)
 	{
 		createError<EOFError>(wrk,kEOFError);
 		return;

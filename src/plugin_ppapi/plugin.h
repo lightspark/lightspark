@@ -327,7 +327,7 @@ public:
 	void exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level,int32_t xoffset,int32_t yoffset,int32_t width,int32_t height,const void* pixels) override;
 	void exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data) override;
 	void exec_glGenerateMipmap_GL_TEXTURE_2D() override;
-	void exec_glGenerateMipmap_GL_TEXTURE_CUBE_MAP();
+	void exec_glGenerateMipmap_GL_TEXTURE_CUBE_MAP() override;
 	void exec_glReadPixels(int32_t width, int32_t height,void* buf) override;
 	void exec_glReadPixels_GL_BGRA(int32_t width, int32_t height,void *buf) override;
 	void exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id) override;

@@ -388,10 +388,6 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 	}
 	uint32_t version;
 	agal->readUnsignedInt(version);
-	if (version != 1) {
-		LOG(LOG_ERROR,"invalid version for AGAL:"<<version);
-//		return "";
-	}
 	agal->readByte(by);
 	if (by != 0xA1) {
 		LOG(LOG_ERROR,"invalid shaderTypeID for AGAL:"<<hex<<(uint32_t)by);
@@ -653,6 +649,32 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 				}
 				break;
 			}
+			case 0x1c: //AGAL2 ife
+				sb += tiny_string("if (") + sr1.toGLSL () + " == " + sr2.toGLSL () + "){ // ife";
+				map.addSR (sr1, RegisterUsage::VECTOR_4);
+				map.addSR (sr2, RegisterUsage::VECTOR_4);
+				break;
+			case 0x1d: //AGAL2 ine
+				sb += tiny_string("if (") + sr1.toGLSL () + " != " + sr2.toGLSL () + "){ // ine";
+				map.addSR (sr1, RegisterUsage::VECTOR_4);
+				map.addSR (sr2, RegisterUsage::VECTOR_4);
+				break;
+			case 0x1e: //AGAL2 ifg
+				sb += tiny_string("if (") + sr1.toGLSL () + " > " + sr2.toGLSL () + "){ // ifg";
+				map.addSR (sr1, RegisterUsage::VECTOR_4);
+				map.addSR (sr2, RegisterUsage::VECTOR_4);
+				break;
+			case 0x1f: //AGAL2 ifl
+				sb += tiny_string("if (") + sr1.toGLSL () + " < " + sr2.toGLSL () + "){ // ifl";
+				map.addSR (sr1, RegisterUsage::VECTOR_4);
+				map.addSR (sr2, RegisterUsage::VECTOR_4);
+				break;
+			case 0x20: //AGAL2 els
+				sb += "} else { // els";
+				break;
+			case 0x21: //AGAL2 eif
+				sb += "}; // eif";
+				break;
 			case 0x27: // kill /  discard
 				if (true) { //(openfl.display.Stage3D.allowDiscard) {
 					// ensure we have a full source mask since there is no destination register

@@ -140,6 +140,17 @@ int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style)
 	return style->bitmap->nanoVGImageHandle;
 }
 
+int toNanoVGSpreadMode(int spreadMode)
+{
+	switch (spreadMode)
+	{
+		case 0: return NVG_SPREAD_PAD; break; // PAD
+		case 1: return NVG_SPREAD_REFLECT; break; // REFLECT
+		case 2: return NVG_SPREAD_REPEAT; break; // REPEAT
+		default: return -1; break;
+	}
+}
+
 void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* startmatrix, RenderDisplayObjectToBitmapContainer* container)
 {
 	if (!state)
@@ -436,19 +447,15 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 										return NVGgradientStop { nvgRGBAf(r, g, b, a), float(record.Ratio) / 255.0f };
 									});
 
-									// TODO: Implement support for REFLECT.
-									int spreadMode = isFocal ? style->FocalGradient.SpreadMode : style->Gradient.SpreadMode;
-									int flags = 0;
-									if (spreadMode == 2) // REPEAT
-										flags |= NVG_IMAGE_REPEATX;
+									int spreadMode = toNanoVGSpreadMode(isFocal ? style->FocalGradient.SpreadMode : style->Gradient.SpreadMode);
 
 									NVGpaint pattern;
 									if (isLinear)
-										pattern = nvgLinearGradientStopsFlags(nvgctxt, -16384.0, 0, 16384.0, 0, stops.data(), stops.size(), flags);
+										pattern = nvgLinearGradientStops(nvgctxt, -16384.0, 0, 16384.0, 0, stops.data(), stops.size(), spreadMode);
 									else
 									{
 										number_t x0 = isFocal ? style->FocalGradient.FocalPoint*16384.0 : 0.0;
-										pattern = nvgRadialGradientStopsFlags(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), flags);
+										pattern = nvgRadialGradientStops(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), spreadMode);
 									}
 									float xform[6] =
 									{
@@ -546,19 +553,15 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 											return NVGgradientStop { nvgRGBAf(r, g, b, a), float(record.Ratio) / 255.0f };
 										});
 
-										// TODO: Implement support for REFLECT.
-										int spreadMode = isFocal ? fill.FocalGradient.SpreadMode : fill.Gradient.SpreadMode;
-										int flags = 0;
-										if (spreadMode == 2) // REPEAT
-											flags |= NVG_IMAGE_REPEATX;
+										int spreadMode = toNanoVGSpreadMode(isFocal ? fill.FocalGradient.SpreadMode : fill.Gradient.SpreadMode);
 
 										NVGpaint pattern;
 										if (isLinear)
-											pattern = nvgLinearGradientStopsFlags(nvgctxt, -16384.0, 0, 16384.0, 0, stops.data(), stops.size(), flags);
+											pattern = nvgLinearGradientStops(nvgctxt, -16384.0, 0, 16384.0, 0, stops.data(), stops.size(), spreadMode);
 										else
 										{
 											number_t x0 = isFocal ? fill.FocalGradient.FocalPoint*16384.0 : 0.0;
-											pattern = nvgRadialGradientStopsFlags(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), flags);
+											pattern = nvgRadialGradientStops(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), spreadMode);
 										}
 										float xform[6] =
 										{

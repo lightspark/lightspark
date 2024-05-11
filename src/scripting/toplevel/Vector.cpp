@@ -938,7 +938,7 @@ bool Vector::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d
 		if(std::isnan(a) || std::isnan(b))
 			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
 		if(isDescending)
-			return b>a;
+			return a>b;
 		else
 			return a<b;
 	}
@@ -1259,10 +1259,7 @@ ASFUNCTIONBODY_ATOM(Vector,_map)
 		assert_and_throw(asAtomHandler::isValid(funcRet));
 		ASObject* obj = asAtomHandler::getObject(funcRet);
 		if (obj)
-		{
-			obj->incRef();
 			obj->addStoredMember();
-		}
 		res->vec.push_back(funcRet);
 	}
 

@@ -945,6 +945,7 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 		asAtom o=asAtomHandler::invalidAtom;
 		asAtomHandler::getObject(obj)->getVariableByMultiname(o,lengthName,SKIP_IMPL,wrk);
 		uint32_t res = asAtomHandler::toUInt(o);
+		ASATOM_DECREF(o);
 		asAtom v = asAtomHandler::fromUInt(res-1);
 		if (res > 0)
 			asAtomHandler::getObject(obj)->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED,nullptr,wrk);
@@ -1018,7 +1019,7 @@ bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2
 		if((!asAtomHandler::isNumeric(o1) && std::isnan(a)) || (!asAtomHandler::isNumeric(o2) && std::isnan(b)))
 			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
 		if(isDescending)
-			return b>a;
+			return a>b;
 		else
 			return a<b;
 	}
@@ -1568,6 +1569,7 @@ ASFUNCTIONBODY_ATOM(Array,_push)
 		asAtom o=asAtomHandler::invalidAtom;
 		asAtomHandler::getObject(obj)->getVariableByMultiname(o,lengthName,SKIP_IMPL,wrk);
 		uint32_t res = asAtomHandler::toUInt(o);
+		ASATOM_DECREF(o);
 		asAtom v = asAtomHandler::fromUInt(res+argslen);
 		asAtomHandler::getObject(obj)->setVariableByMultiname(lengthName,v,CONST_NOT_ALLOWED,nullptr,wrk);
 		asAtomHandler::setUndefined(ret);
@@ -1685,7 +1687,6 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 			RegExp::exec(funcRet,wrk,args[0],args,1);
 		}
 		assert_and_throw(asAtomHandler::isValid(funcRet));
-		ASATOM_INCREF(funcRet);
 		arrayRet->push(funcRet);
 	}
 

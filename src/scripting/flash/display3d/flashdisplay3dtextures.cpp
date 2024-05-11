@@ -547,6 +547,80 @@ uint32_t TextureBase::getBytesNeeded(uint32_t miplevel)
 	}
 	return (width>>miplevel)*(height>>miplevel)*4;
 }
+
+void TextureBase::uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplevel)
+{
+	context->rendermutex.lock();
+	format = TEXTUREFORMAT::BGRA;
+	if (bitmaparray.size() <= miplevel)
+		bitmaparray.resize(miplevel+1);
+	uint32_t mipsize = (width>>miplevel)*(height>>miplevel)*4;
+	bitmaparray[miplevel].resize(mipsize);
+	uint32_t sourcewidth = source->getBitmapContainer()->getWidth();
+	uint32_t sourceheight = source->getBitmapContainer()->getHeight();
+	memset(bitmaparray[miplevel].data(),0,mipsize);
+	for (uint32_t i = 0; i < (height>>miplevel) && i < sourceheight; i++)
+	{
+		for (uint32_t j = 0; j < (width>>miplevel) && j < sourcewidth; j++)
+		{
+			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
+			uint32_t* data = (uint32_t*)(&source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4+j*4]);
+			uint8_t alpha = ((*data) >>24) & 0xff;
+			bitmaparray[miplevel][i*(width>>miplevel)*4 + j*4  ] = (uint8_t)((((*data)     ) & 0xff)*alpha /255);
+			bitmaparray[miplevel][i*(width>>miplevel)*4 + j*4+1] = (uint8_t)((((*data) >> 8) & 0xff)*alpha /255);
+			bitmaparray[miplevel][i*(width>>miplevel)*4 + j*4+2] = (uint8_t)((((*data) >>16) & 0xff)*alpha /255);
+			bitmaparray[miplevel][i*(width>>miplevel)*4 + j*4+3] = (uint8_t)((((*data) >>24) & 0xff)           );
+		}
+	}
+	renderaction action;
+	action.action = RENDER_LOADTEXTURE;
+	incRef();
+	action.dataobject = _MR(this);
+	action.udata1=miplevel;
+	context->addAction(action);
+	context->rendermutex.unlock();
+}
+
+void TextureBase::uploadFromByteArrayIntern(ByteArray* source, uint32_t offset, uint32_t miplevel)
+{
+	context->rendermutex.lock();
+	if (bitmaparray.size() <= miplevel)
+		bitmaparray.resize(miplevel+1);
+	uint32_t mipsize = getBytesNeeded(miplevel);
+	bitmaparray[miplevel].resize(mipsize);
+	uint32_t bytesneeded = getBytesNeeded(miplevel);
+	if (offset + bytesneeded > source->getLength())
+	{
+		LOG(LOG_ERROR,"TextureBase uploadFromByteArrayIntern: not enough bytes to read");
+		createError<RangeError>(getInstanceWorker(),kParamRangeError);
+		return;
+	}
+	source->readBytes(offset,bytesneeded,bitmaparray[miplevel].data());
+#ifdef ENABLE_GLES
+	switch (format)
+	{
+		case TEXTUREFORMAT::BGRA:
+		{
+			for (uint32_t i = 0; i < bitmaparray[miplevel].size(); i+=4)
+				std::swap(bitmaparray[miplevel][i],bitmaparray[miplevel][i+2]);
+		}
+		case TEXTUREFORMAT::BGRA_PACKED:
+			LOG(LOG_NOT_IMPLEMENTED,"texture conversion from BGRA_PACKED to RGBA for opengles")
+			break;
+		case TEXTUREFORMAT::BGR_PACKED:
+			LOG(LOG_NOT_IMPLEMENTED,"texture conversion from BGR_PACKED to RGB for opengles")
+			break;
+	}
+#endif
+	source->setPosition(offset+bytesneeded);
+	renderaction action;
+	action.action = RENDER_LOADTEXTURE;
+	incRef();
+	action.dataobject = _MR(this);
+	action.udata1=miplevel;
+	context->addAction(action);
+	context->rendermutex.unlock();
+}
  
 void TextureBase::sinit(Class_base *c)
 {
@@ -631,32 +705,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromBitmapData)
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"miplevel");
 		return;
 	}
-	th->context->rendermutex.lock();
-	if (th->bitmaparray.size() <= miplevel)
-		th->bitmaparray.resize(miplevel+1);
-	uint32_t mipsize = (th->width>>miplevel)*(th->height>>miplevel)*4;
-	th->bitmaparray[miplevel].resize(mipsize);
-
-	for (uint32_t i = 0; i < (th->height>>miplevel); i++)
-	{
-		for (uint32_t j = 0; j < (th->width>>miplevel); j++)
-		{
-			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
-			uint32_t* data = (uint32_t*)(&source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4+j*4]);
-			uint8_t alpha = ((*data) >>24) & 0xff;
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4  ] = (uint8_t)((((*data)     ) & 0xff)*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+1] = (uint8_t)((((*data) >> 8) & 0xff)*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+2] = (uint8_t)((((*data) >>16) & 0xff)*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+3] = (uint8_t)((((*data) >>24) & 0xff)           );
-		}
-	}
-	renderaction action;
-	action.action = RENDER_LOADTEXTURE;
-	th->incRef();
-	action.dataobject = _MR(th);
-	action.udata1=miplevel;
-	th->context->addAction(action);
-	th->context->rendermutex.unlock();
+	th->uploadFromBitmapDataIntern(source.getPtr(),miplevel);
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 {
@@ -676,43 +725,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"miplevel");
 		return;
 	}
-	th->context->rendermutex.lock();
-	if (th->bitmaparray.size() <= miplevel)
-		th->bitmaparray.resize(miplevel+1);
-	uint32_t mipsize = th->getBytesNeeded(miplevel);
-	th->bitmaparray[miplevel].resize(mipsize);
-	uint32_t bytesneeded = th->getBytesNeeded(miplevel);
-	if (byteArrayOffset + bytesneeded > data->getLength())
-	{
-		LOG(LOG_ERROR,"not enough bytes to read");
-		createError<RangeError>(wrk,kParamRangeError);
-		return;
-	}
-	data->readBytes(byteArrayOffset,bytesneeded,th->bitmaparray[miplevel].data());
-#ifdef ENABLE_GLES
-	switch (th->format)
-	{
-		case TEXTUREFORMAT::BGRA:
-		{
-			for (uint32_t i = 0; i < th->bitmaparray[miplevel].size(); i+=4)
-				std::swap(th->bitmaparray[miplevel][i],th->bitmaparray[miplevel][i+2]);
-		}
-		case TEXTUREFORMAT::BGRA_PACKED:
-			LOG(LOG_NOT_IMPLEMENTED,"texture conversion from BGRA_PACKED to RGBA for opengles")
-			break;
-		case TEXTUREFORMAT::BGR_PACKED:
-			LOG(LOG_NOT_IMPLEMENTED,"texture conversion from BGR_PACKED to RGB for opengles")
-			break;
-	}
-#endif
-	data->setPosition(byteArrayOffset+bytesneeded);
-	renderaction action;
-	action.action = RENDER_LOADTEXTURE;
-	th->incRef();
-	action.dataobject = _MR(th);
-	action.udata1=miplevel;
-	th->context->addAction(action);
-	th->context->rendermutex.unlock();
+	th->uploadFromByteArrayIntern(data.getPtr(),byteArrayOffset,miplevel);
 }
 
 
@@ -831,35 +844,9 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 		createError<TypeError>(wrk,kNullArgumentError);
 		return;
 	}
-	th->context->rendermutex.lock();
 	if (th->format != TEXTUREFORMAT::BGRA)
 		LOG(LOG_NOT_IMPLEMENTED,"RectangleTexture.uploadFromBitmapData always uses format BGRA:"<<th->format);
-	th->format = TEXTUREFORMAT::BGRA;
-	if (th->bitmaparray.size() == 0)
-		th->bitmaparray.resize(1);
-	uint32_t bytesneeded = th->getBytesNeeded(0);
-	th->bitmaparray[0].resize(bytesneeded);
-
-	for (uint32_t i = 0; i < th->height && i < uint32_t(source->getHeight()); i++)
-	{
-		for (uint32_t j = 0; j < th->width && j < uint32_t(source->getWidth()); j++)
-		{
-			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
-			uint32_t* data = (uint32_t*)(&source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4+j*4]);
-			uint8_t alpha = ((*data) >>24) & 0xff;
-			th->bitmaparray[0][i*th->width*4 + j*4  ] = (uint8_t)((((*data)     ) & 0xff)*alpha /255);
-			th->bitmaparray[0][i*th->width*4 + j*4+1] = (uint8_t)((((*data) >> 8) & 0xff)*alpha /255);
-			th->bitmaparray[0][i*th->width*4 + j*4+2] = (uint8_t)((((*data) >>16) & 0xff)*alpha /255);
-			th->bitmaparray[0][i*th->width*4 + j*4+3] = (uint8_t)((((*data) >>24) & 0xff)           );
-		}
-	}
-	renderaction action;
-	action.action = RENDER_LOADTEXTURE;
-	th->incRef();
-	action.dataobject = _MR(th);
-	action.udata1=0;
-	th->context->addAction(action);
-	th->context->rendermutex.unlock();
+	th->uploadFromBitmapDataIntern(source.getPtr(),0);
 }
 ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 {
@@ -872,42 +859,7 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 		createError<TypeError>(wrk,kNullArgumentError);
 		return;
 	}
-	th->context->rendermutex.lock();
-	if (th->bitmaparray.size() == 0)
-		th->bitmaparray.resize(1);
-	uint32_t bytesneeded = th->getBytesNeeded(0);
-	if (byteArrayOffset + bytesneeded > data->getLength())
-	{
-		LOG(LOG_ERROR,"not enough bytes to read");
-		createError<RangeError>(wrk,kParamRangeError);
-		return;
-	}
-	th->bitmaparray[0].resize(th->width*th->height*4);
-	data->readBytes(byteArrayOffset,bytesneeded,th->bitmaparray[0].data());
-#ifdef ENABLE_GLES
-	switch (th->format)
-	{
-		case TEXTUREFORMAT::BGRA:
-		{
-			for (uint32_t i = 0; i < th->bitmaparray[0].size(); i+=4)
-				std::swap(th->bitmaparray[0][i],th->bitmaparray[miplevel][i+2]);
-		}
-		case TEXTUREFORMAT::BGRA_PACKED:
-			LOG(LOG_NOT_IMPLEMENTED,"texture conversion from BGRA_PACKED to RGBA for opengles")
-			break;
-		case TEXTUREFORMAT::BGR_PACKED:
-			LOG(LOG_NOT_IMPLEMENTED,"texture conversion from BGR_PACKED to RGB for opengles")
-			break;
-	}
-#endif
-	data->setPosition(byteArrayOffset+bytesneeded);
-	renderaction action;
-	action.action = RENDER_LOADTEXTURE;
-	th->incRef();
-	action.dataobject = _MR(th);
-	action.udata1=0;
-	th->context->addAction(action);
-	th->context->rendermutex.unlock();
+	th->uploadFromByteArrayIntern(data.getPtr(),byteArrayOffset,0);
 }
 
 void VideoTexture::sinit(Class_base *c)

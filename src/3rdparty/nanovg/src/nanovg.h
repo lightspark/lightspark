@@ -143,6 +143,8 @@ enum NVGimageFlags {
 	NVG_IMAGE_FLIPY				= 1<<3,		// Flips (inverses) image in Y direction when rendered.
 	NVG_IMAGE_PREMULTIPLIED		= 1<<4,		// Image data has premultiplied alpha.
 	NVG_IMAGE_NEAREST			= 1<<5,		// Image interpolation is Nearest instead Linear
+	NVG_IMAGE_MIRRORX			= 1<<6,		// Mirror image in X direction.
+	NVG_IMAGE_MIRRORY			= 1<<7,		// Mirror image in Y direction.
 };
 
 // Begin drawing a new frame

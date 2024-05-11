@@ -744,6 +744,11 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 			printf("Repeat X/Y is not supported for non power-of-two textures (%d x %d)\n", w, h);
 			imageFlags &= ~(NVG_IMAGE_REPEATX | NVG_IMAGE_REPEATY);
 		}
+		// No mirror
+		if ((imageFlags & NVG_IMAGE_MIRRORX) != 0 || (imageFlags & NVG_IMAGE_MIRRORY) != 0) {
+			printf("Mirror X/Y is not supported for non power-of-two textures (%d x %d)\n", w, h);
+			imageFlags &= ~(NVG_IMAGE_MIRRORX | NVG_IMAGE_MIRRORY);
+		}
 		// No mips.
 		if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
 			printf("Mip-maps is not support for non power-of-two textures (%d x %d)\n", w, h);
@@ -807,11 +812,15 @@ static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int im
 
 	if (imageFlags & NVG_IMAGE_REPEATX)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	else if (imageFlags & NVG_IMAGE_MIRRORX)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
 	else
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 
 	if (imageFlags & NVG_IMAGE_REPEATY)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	else if (imageFlags & NVG_IMAGE_MIRRORY)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
 	else
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 

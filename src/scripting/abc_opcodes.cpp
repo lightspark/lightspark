@@ -2108,7 +2108,7 @@ void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, 
 	{
 		method_info* mi = th->mi->context->get_method(n);
 		assert_and_throw(mi);
-		SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->worker,mi,mi->numArgs());
+		SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->worker,mi,mi->numArgs()-mi->numOptions());
 		if(f)
 		{
 			asAtom v = asAtomHandler::fromObject(f);
@@ -2834,7 +2834,7 @@ void ABCVm::newClass(call_context* th, int n)
 			constructor->validProfName=true;
 		}
 #endif
-		SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(th->worker,constructor,constructor->numArgs());
+		SyntheticFunction* constructorFunc=Class<IFunction>::getSyntheticFunction(th->worker,constructor,constructor->numArgs()-constructor->numOptions());
 		constructorFunc->setRefConstant();
 		constructorFunc->acquireScope(ret->class_scope);
 		constructorFunc->addToScope(scope_entry(asAtomHandler::fromObject(ret),false));
@@ -2878,7 +2878,7 @@ void ABCVm::newClass(call_context* th, int n)
 	LOG_CALL("Calling Class init " << ret);
 	//Class init functions are called with global as this
 	method_info* m=&th->mi->context->methods[th->mi->context->classes[n].cinit];
-	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(th->worker,m,m->numArgs());
+	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(th->worker,m,m->numArgs()-m->numOptions());
 	cinit->fromNewFunction=true;
 	cinit->inClass = ret;
 	cinit->setRefConstant();
@@ -3080,7 +3080,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	LOG_CALL("newFunction " << n);
 
 	method_info* m=&th->mi->context->methods[n];
-	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->worker,m,m->numArgs());
+	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->worker,m,m->numArgs()-m->numOptions());
 	f->func_scope = _R<scope_entry_list>(new scope_entry_list());
 	f->fromNewFunction=true;
 	if (th->parent_scope_stack)

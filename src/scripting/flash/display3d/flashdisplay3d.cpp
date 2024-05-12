@@ -693,14 +693,18 @@ void Context3D::setPositionScale(EngineData *engineData)
 void Context3D::disposeintern()
 {
 	Locker l(rendermutex);
-	if (this->backframebufferID[0] != UINT32_MAX)
-		getSystemState()->getRenderThread()->addDeletedTexture(this->backframebufferID[0]);
+	RenderThread* r = getSystemState()->getRenderThread();
+	if (r)
+	{
+		if (this->backframebufferID[0] != UINT32_MAX)
+			r->addDeletedTexture(this->backframebufferID[0]);
+		if (this->backframebufferID[1] != UINT32_MAX)
+			r->addDeletedTexture(this->backframebufferID[1]);
+		if (this->textureframebufferID != UINT32_MAX)
+			r->addDeletedTexture(this->textureframebufferID);
+	}
 	this->backframebufferID[0] = UINT32_MAX;
-	if (this->backframebufferID[1] != UINT32_MAX)
-		getSystemState()->getRenderThread()->addDeletedTexture(this->backframebufferID[1]);
 	this->backframebufferID[1] = UINT32_MAX;
-	if (this->textureframebufferID != UINT32_MAX)
-		getSystemState()->getRenderThread()->addDeletedTexture(this->textureframebufferID);
 	this->textureframebufferID = UINT32_MAX;
 	
 	while (!programlist.empty())
@@ -828,7 +832,7 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 	if (newtex && tex->bitmaparray.size() == 0)
-		engineData->exec_glTexImage2D_GL_TEXTURE_2D(0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0,tex->is<RectangleTexture>());
+		engineData->exec_glTexImage2D_GL_TEXTURE_2D(0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0,false);
 	else if (level == UINT32_MAX)
 	{
 		for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)

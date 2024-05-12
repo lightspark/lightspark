@@ -42,6 +42,7 @@ protected:
 	vector<vector<uint8_t>> bitmaparray;
 	Context3D* context;
 	void fillFromDXT1(bool hasrgbdata, uint32_t level, uint32_t w, uint32_t h, std::vector<uint8_t>& rgbdata, std::vector<uint8_t>& rgbimagedata);
+	void fillFromDXT5(bool hasalphadata, bool hasrgbdata, uint32_t level, uint32_t w, uint32_t h, std::vector<uint8_t>& alphadata, std::vector<uint8_t>& alphaimagedata, std::vector<uint8_t>& rgbdata, std::vector<uint8_t>& rgbimagedata);
 	void parseAdobeTextureFormat(ByteArray* data, int32_t byteArrayOffset, bool forCubeTexture);
 	void setFormat(const tiny_string& f);
 	uint32_t getBytesNeeded(uint32_t miplevel);

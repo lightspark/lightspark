@@ -690,21 +690,22 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 				switch (sampler.d)
 				{
 					case 0: // 2d texture
-						if (sampler.t == 2)
-						{ // dxt5, sampler alpha
-							sr1.sourceMask = 0x3;
-							map.addSaR(sampler, RegisterUsage::SAMPLER_2D_ALPHA);
-							sb += "if (";
-							sb += sampler.toGLSL() + "_alphaEnabled) {\n";
-							sb += "\t\t";
-							sb += dr.toGLSL() + " = vec4(texture2D(" + sampler.toGLSL() + ", " + sr1.toGLSL() + ").xyz, texture2D("
-								+ sampler.toGLSL() + "_alpha, " + sr1.toGLSL() + ").x); // tex + alpha\n";
-							sb += "\t} else {\n";
-							sb += "\t\t";
-							sb += dr.toGLSL() + " = texture2D(" + sampler.toGLSL() + ", " + sr1.toGLSL() + "); // tex\n";
-							sb += "\t}";
-						}
-						else
+						// we don't need extra handling for dxt5 textures, as they are uploaded as normal textures
+						// if (sampler.t == 2)
+						// { // dxt5, sampler alpha
+						// 	sr1.sourceMask = 0x3;
+						// 	map.addSaR(sampler, RegisterUsage::SAMPLER_2D_ALPHA);
+						// 	sb += "if (";
+						// 	sb += sampler.toGLSL() + "_alphaEnabled) {\n";
+						// 	sb += "\t\t";
+						// 	sb += dr.toGLSL() + " = vec4(texture2D(" + sampler.toGLSL() + ", " + sr1.toGLSL() + ").xyz, texture2D("
+						// 		+ sampler.toGLSL() + "_alpha, " + sr1.toGLSL() + ").x); // tex + alpha\n";
+						// 	sb += "\t} else {\n";
+						// 	sb += "\t\t";
+						// 	sb += dr.toGLSL() + " = texture2D(" + sampler.toGLSL() + ", " + sr1.toGLSL() + "); // tex\n";
+						// 	sb += "\t}";
+						// }
+						// else
 						{
 							sr1.sourceMask = 0x3;
 							map.addSaR (sampler, RegisterUsage::SAMPLER_2D);
@@ -712,22 +713,23 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 						}
 						break;
 					case 1: // cube texture
-						if (sampler.t == 2)
-						{ // dxt5, sampler alpha
+						// we don't need extra handling for dxt5 textures, as they are uploaded as normal textures
+						// if (sampler.t == 2)
+						// { // dxt5, sampler alpha
 
-							sr1.sourceMask = 0x7;
-							map.addSaR(sampler, RegisterUsage::SAMPLER_CUBE_ALPHA);
-							sb += "if (";
-							sb += sampler.toGLSL() + "_alphaEnabled) {\n";
-							sb += "\t\t";
-							sb += dr.toGLSL() + " = vec4(textureCube(" + sampler.toGLSL() + ", " + sr1.toGLSL() + ").xyz, textureCube("
-								+ sampler.toGLSL() + "_alpha, " + sr1.toGLSL() + ").x); // tex + alpha\n";
-							sb += "\t} else {\n";
-							sb += "\t\t";
-							sb += dr.toGLSL() + " = textureCube(" + sampler.toGLSL() + ", " + sr1.toGLSL() + "); // tex";
-							sb += "\t}";
-						}
-						else
+						// 	sr1.sourceMask = 0x7;
+						// 	map.addSaR(sampler, RegisterUsage::SAMPLER_CUBE_ALPHA);
+						// 	sb += "if (";
+						// 	sb += sampler.toGLSL() + "_alphaEnabled) {\n";
+						// 	sb += "\t\t";
+						// 	sb += dr.toGLSL() + " = vec4(textureCube(" + sampler.toGLSL() + ", " + sr1.toGLSL() + ").xyz, textureCube("
+						// 		+ sampler.toGLSL() + "_alpha, " + sr1.toGLSL() + ").x); // tex + alpha\n";
+						// 	sb += "\t} else {\n";
+						// 	sb += "\t\t";
+						// 	sb += dr.toGLSL() + " = textureCube(" + sampler.toGLSL() + ", " + sr1.toGLSL() + "); // tex";
+						// 	sb += "\t}";
+						// }
+						// else
 						{
 							sr1.sourceMask = 0x7;
 							sb += dr.toGLSL () + " = textureCube(" + sampler.toGLSL () + ", " + sr1.toGLSL () + "); // tex";

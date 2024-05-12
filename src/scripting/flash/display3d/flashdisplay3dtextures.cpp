@@ -36,7 +36,6 @@ void jpegxrcallback(jxr_image_t image, int mx, int my, int* data)
 			break;
 		}
 		case DXT1ImageData:
-		case DXT5ImageData:
 		{
 			uint32_t n=3;
 			uint32_t pos=my*16*2*w+mx*16*2;
@@ -45,6 +44,25 @@ void jpegxrcallback(jxr_image_t image, int mx, int my, int* data)
 				int r = data[i];
 				int g = data[i+1];
 				int b = data[i+2];
+				// the r,g,b values are already computed to 5-6-5 format
+				// convert to 2 byte rgb565 with the lower byte first
+				(*imgdata->result)[pos++] = ((g<<5)&0xe0) | b;
+				(*imgdata->result)[pos++] = ((r<<3)&0xf8) | ((g>>3)&0x07);
+				if ((i+n)%(16*n)==0)
+					pos += (w-16)*2;
+			}
+			break;
+		}
+		case DXT5ImageData:
+		{
+			uint32_t n=3;
+			uint32_t pos=my*16*2*w+mx*16*2;
+			for (uint32_t i=0; i < 16*16*n && pos < imgdata->result->size(); i+=n)
+			{
+				// for some strange reason in the DXT5 case the rgb/bgr data is swapped ?
+				int r = data[i+2];
+				int g = data[i+1];
+				int b = data[i];
 				// the r,g,b values are already computed to 5-6-5 format
 				// convert to 2 byte rgb565 with the lower byte first
 				(*imgdata->result)[pos++] = ((g<<5)&0xe0) | b;
@@ -219,12 +237,15 @@ void TextureBase::fillFromDXT1(bool hasrgbdata, uint32_t level, uint32_t w, uint
 	{
 		bitmaparray[level].resize(w*h/2);
 		uint32_t pos = 0;
+		// adobe stores the dxt image data in a very weird way:
+		// the first entry is in the upper half of the jpeg-xr image, the second entry is at the corresponding position in the lower half
+		uint32_t lowerhalf = (w*h/16/2);
 		for (uint32_t j=0; j < w*h/16; j++)
 		{
-			bitmaparray[level][pos++]=rgbimagedata[j*4  ];
-			bitmaparray[level][pos++]=rgbimagedata[j*4+1];
-			bitmaparray[level][pos++]=rgbimagedata[j*4+2];
-			bitmaparray[level][pos++]=rgbimagedata[j*4+3];
+			bitmaparray[level][pos++]=rgbimagedata[j*2  ];
+			bitmaparray[level][pos++]=rgbimagedata[j*2+1];
+			bitmaparray[level][pos++]=rgbimagedata[j*2+lowerhalf*4];
+			bitmaparray[level][pos++]=rgbimagedata[j*2+1+lowerhalf*4];
 			bitmaparray[level][pos++]=rgbdata[j*4  ];
 			bitmaparray[level][pos++]=rgbdata[j*4+1];
 			bitmaparray[level][pos++]=rgbdata[j*4+2];
@@ -234,7 +255,38 @@ void TextureBase::fillFromDXT1(bool hasrgbdata, uint32_t level, uint32_t w, uint
 	else
 		bitmaparray[level].clear();
 }
-
+void TextureBase::fillFromDXT5(bool hasalphadata, bool hasrgbdata, uint32_t level, uint32_t w, uint32_t h, std::vector<uint8_t>& alphadata, std::vector<uint8_t>& alphaimagedata, std::vector<uint8_t>& rgbdata, std::vector<uint8_t>& rgbimagedata)
+{
+	if (hasalphadata && hasrgbdata  && w*h>=16)
+	{
+		bitmaparray[level].resize(w*h);
+		uint32_t pos = 0;
+		// adobe stores the dxt image data in a very weird way:
+		// the first entry is in the upper half of the jpeg-xr image, the second entry is at the corresponding position in the lower half
+		uint32_t lowerhalf = (w*h/16/2);
+		for (uint32_t j=0; j < w*h/16; j++)
+		{
+			bitmaparray[level][pos++]=alphaimagedata[j];
+			bitmaparray[level][pos++]=alphaimagedata[j+lowerhalf];
+			bitmaparray[level][pos++]=alphadata[j*6  ];
+			bitmaparray[level][pos++]=alphadata[j*6+1];
+			bitmaparray[level][pos++]=alphadata[j*6+2];
+			bitmaparray[level][pos++]=alphadata[j*6+3];
+			bitmaparray[level][pos++]=alphadata[j*6+4];
+			bitmaparray[level][pos++]=alphadata[j*6+5];
+			bitmaparray[level][pos++]=rgbimagedata[j*2  ];
+			bitmaparray[level][pos++]=rgbimagedata[j*2+1];
+			bitmaparray[level][pos++]=rgbimagedata[j*2+lowerhalf*4];
+			bitmaparray[level][pos++]=rgbimagedata[j*2+1+lowerhalf*4];
+			bitmaparray[level][pos++]=rgbdata[j*4  ];
+			bitmaparray[level][pos++]=rgbdata[j*4+1];
+			bitmaparray[level][pos++]=rgbdata[j*4+2];
+			bitmaparray[level][pos++]=rgbdata[j*4+3];
+		}
+	}
+	else
+		bitmaparray[level].clear();
+}
 void TextureBase::parseAdobeTextureFormat(ByteArray *data, int32_t byteArrayOffset, bool forCubeTexture)
 {
 	// https://www.adobe.com/devnet/archive/flashruntimes/articles/atf-file-format.html
@@ -396,6 +448,74 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data, int32_t byteArrayOffs
 				}
 				break;
 			}
+			case 0x4://compressedalpha
+			{
+				if (this->format != TEXTUREFORMAT::COMPRESSED_ALPHA)
+				{
+					createError<ArgumentError>(getInstanceWorker(),kInvalidArgumentError,"Texture format mismatch");
+					return;
+				}
+				this->compressedformat = TEXTUREFORMAT_COMPRESSED::DXT5;
+				uint32_t blocks = max(uint32_t(1),tmpwidth/4)*max(uint32_t(1),tmpheight/4);
+				uint32_t tmp;
+				
+				// read LZMA DXT5AlphaData
+				std::vector<uint8_t> alphadata;
+				alphadata.resize(blocks*6); // 6 byte per 4x4 block
+				bool hasalphadata=decodelzma(data,atfversion,alphadata);
+				
+				// read JPEG-XR DXT5AlphaImageData
+				std::vector<uint8_t> alphaimagedata;
+				data->readUnsignedInt(tmp);
+				if (hasalphadata)
+					decodejxr(data->getBufferNoCheck()+data->getPosition(),tmp,alphaimagedata,max(uint32_t(1),tmpwidth/4),max(uint32_t(2),tmpheight/2),DXT5AlphaImageData,1);
+				data->setPosition(data->getPosition()+tmp);
+				
+				// read LZMA DXT5Data
+				std::vector<uint8_t> rgbdata;
+				rgbdata.resize(blocks*4);// 4 byte per 4x4 block
+				bool hasrgbdata=decodelzma(data,atfversion,rgbdata);
+				
+				// read JPEG-XR DXT5ImageData
+				std::vector<uint8_t> rgbimagedata;
+				data->readUnsignedInt(tmp);
+				if (hasrgbdata)
+					decodejxr(data->getBufferNoCheck()+data->getPosition(),tmp,rgbimagedata,max(uint32_t(1),tmpwidth/4),max(uint32_t(2),tmpheight/2),DXT5ImageData,2);
+				data->setPosition(data->getPosition()+tmp);
+				
+				fillFromDXT5(hasalphadata,hasrgbdata,level,tmpwidth,tmpheight,alphadata,alphaimagedata,rgbdata,rgbimagedata);
+				
+				//skip all other formats
+				for (uint32_t j = 0; j < (atfversion>=3 ? 12 : 6); j++)
+				{
+					tmp = readTexLen(data,atfversion);
+					data->setPosition(data->getPosition()+tmp);
+				}
+				break;
+			}
+			case 0x5://raw compressed alpha
+			{
+				if (this->format != TEXTUREFORMAT::COMPRESSED_ALPHA)
+				{
+					createError<ArgumentError>(getInstanceWorker(),kInvalidArgumentError,"Texture format mismatch");
+					return;
+				}
+				this->compressedformat = TEXTUREFORMAT_COMPRESSED::DXT5;
+				
+				// read raw DXT1ImageData
+				uint32_t texlen = readTexLen(data,atfversion);
+				bitmaparray[level].resize(texlen);
+				data->readBytes(data->getPosition(),texlen,bitmaparray[level].data());
+				data->setPosition(data->getPosition()+texlen);
+				
+				//skip all other formats
+				for (uint32_t j = 0; j < (atfversion>=3 ? 3 : 2); j++)
+				{
+					texlen = readTexLen(data,atfversion);
+					data->setPosition(data->getPosition()+texlen);
+				}
+				break;
+			}
 			case 0xc://compressed lossy
 			{
 				if (this->format != TEXTUREFORMAT::COMPRESSED)
@@ -463,35 +583,10 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data, int32_t byteArrayOffs
 					decodejxr(data->getBufferNoCheck()+data->getPosition(),tmp,rgbimagedata,max(uint32_t(1),tmpwidth/4),max(uint32_t(2),tmpheight/2),DXT5ImageData,2);
 				data->setPosition(data->getPosition()+tmp);
 
-				if (hasalphadata && hasrgbdata)
-				{
-					bitmaparray[level].resize(tmpwidth*tmpheight);
-					uint32_t pos = 0;
-					for (uint32_t j=0; j < tmpwidth*tmpheight/16; j++)
-					{
-						bitmaparray[level][pos++]=alphaimagedata[j*2  ];
-						bitmaparray[level][pos++]=alphaimagedata[j*2+1];
-						bitmaparray[level][pos++]=alphadata[j*6  ];
-						bitmaparray[level][pos++]=alphadata[j*6+1];
-						bitmaparray[level][pos++]=alphadata[j*6+2];
-						bitmaparray[level][pos++]=alphadata[j*6+3];
-						bitmaparray[level][pos++]=alphadata[j*6+4];
-						bitmaparray[level][pos++]=alphadata[j*6+5];
-						bitmaparray[level][pos++]=rgbimagedata[j*4  ];
-						bitmaparray[level][pos++]=rgbimagedata[j*4+1];
-						bitmaparray[level][pos++]=rgbimagedata[j*4+2];
-						bitmaparray[level][pos++]=rgbimagedata[j*4+3];
-						bitmaparray[level][pos++]=rgbdata[j*4  ];
-						bitmaparray[level][pos++]=rgbdata[j*4+1];
-						bitmaparray[level][pos++]=rgbdata[j*4+2];
-						bitmaparray[level][pos++]=rgbdata[j*4+3];
-					}
-				}
-				else
-					bitmaparray[level].clear();
-					
+				fillFromDXT5(hasalphadata,hasrgbdata,level,tmpwidth,tmpheight,alphadata,alphaimagedata,rgbdata,rgbimagedata);
+
 				//skip all other formats
-				for (uint32_t j = 0; j < (atfversion>=3 ? 14 : 7); j++)
+				for (uint32_t j = 0; j < (atfversion>=3 ? 13 : 6); j++)
 				{
 					tmp = readTexLen(data,atfversion);
 					data->setPosition(data->getPosition()+tmp);

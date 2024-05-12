@@ -548,17 +548,18 @@ uint32_t TextureBase::getBytesNeeded(uint32_t miplevel)
 	return (width>>miplevel)*(height>>miplevel)*4;
 }
 
-void TextureBase::uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplevel)
+void TextureBase::uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplevel, uint32_t side, uint32_t max_miplevel)
 {
 	context->rendermutex.lock();
 	format = TEXTUREFORMAT::BGRA;
 	if (bitmaparray.size() <= miplevel)
 		bitmaparray.resize(miplevel+1);
 	uint32_t mipsize = (width>>miplevel)*(height>>miplevel)*4;
-	bitmaparray[miplevel].resize(mipsize);
+	uint32_t bitmappos = max_miplevel*side + miplevel;
+	bitmaparray[bitmappos].resize(mipsize);
 	uint32_t sourcewidth = source->getBitmapContainer()->getWidth();
 	uint32_t sourceheight = source->getBitmapContainer()->getHeight();
-	memset(bitmaparray[miplevel].data(),0,mipsize);
+	memset(bitmaparray[bitmappos].data(),0,mipsize);
 	for (uint32_t i = 0; i < (height>>miplevel) && i < sourceheight; i++)
 	{
 		for (uint32_t j = 0; j < (width>>miplevel) && j < sourcewidth; j++)
@@ -566,17 +567,18 @@ void TextureBase::uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplev
 			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
 			uint32_t* data = (uint32_t*)(&source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4+j*4]);
 			uint8_t alpha = ((*data) >>24) & 0xff;
-			bitmaparray[miplevel][i*(width>>miplevel)*4 + j*4  ] = (uint8_t)((((*data)     ) & 0xff)*alpha /255);
-			bitmaparray[miplevel][i*(width>>miplevel)*4 + j*4+1] = (uint8_t)((((*data) >> 8) & 0xff)*alpha /255);
-			bitmaparray[miplevel][i*(width>>miplevel)*4 + j*4+2] = (uint8_t)((((*data) >>16) & 0xff)*alpha /255);
-			bitmaparray[miplevel][i*(width>>miplevel)*4 + j*4+3] = (uint8_t)((((*data) >>24) & 0xff)           );
+			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4  ] = (uint8_t)((((*data)     ) & 0xff)*alpha /255);
+			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4+1] = (uint8_t)((((*data) >> 8) & 0xff)*alpha /255);
+			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4+2] = (uint8_t)((((*data) >>16) & 0xff)*alpha /255);
+			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4+3] = (uint8_t)((((*data) >>24) & 0xff)           );
 		}
 	}
 	renderaction action;
-	action.action = RENDER_LOADTEXTURE;
+	action.action = this->is<CubeTexture>() ? RENDER_LOADCUBETEXTURE : RENDER_LOADTEXTURE;
 	incRef();
 	action.dataobject = _MR(this);
 	action.udata1=miplevel;
+	action.udata2=side;
 	context->addAction(action);
 	context->rendermutex.unlock();
 }
@@ -761,6 +763,7 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadCompressedTextureFromByteArray)
 		th->incRef();
 		action.dataobject = _MR(th);
 		action.udata1=UINT32_MAX;
+		action.udata2=UINT32_MAX;
 		th->context->addAction(action);
 	}
 	th->context->rendermutex.unlock();
@@ -797,25 +800,7 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromBitmapData)
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"source");
 		return;
 	}
-
-	th->context->rendermutex.lock();
-	uint32_t mipsize = (th->width>>miplevel)*(th->width>>miplevel)*4;
-	th->bitmaparray[th->max_miplevel*side + miplevel].resize(mipsize);
-	for (uint32_t i = 0; i < bitmap_size; i++)
-	{
-		for (uint32_t j = 0; j < bitmap_size; j++)
-		{
-			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
-			uint32_t* data = (uint32_t*)(&source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4+j*4]);
-			uint8_t alpha = ((*data) >>24) & 0xff;
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4  ] = (uint8_t)((((*data) >>16) & 0xff)*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+1] = (uint8_t)((((*data) >> 8) & 0xff)*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+2] = (uint8_t)((((*data)     ) & 0xff)*alpha /255);
-			th->bitmaparray[miplevel][i*(th->width>>miplevel)*4 + j*4+3] = alpha;
-		}
-	}
-	th->context->addAction(RENDER_LOADCUBETEXTURE,th);
-	th->context->rendermutex.unlock();
+	th->uploadFromBitmapDataIntern(source.getPtr(),miplevel,side,th->max_miplevel);
 }
 ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromByteArray)
 {

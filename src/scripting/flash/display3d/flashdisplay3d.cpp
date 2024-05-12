@@ -468,7 +468,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				if (tex->textureID == UINT32_MAX)
 				{
 					if (tex->is<CubeTexture>())
-						loadCubeTexture(tex->as<CubeTexture>());
+						loadCubeTexture(tex->as<CubeTexture>(),UINT32_MAX,UINT32_MAX);
 					else
 						loadTexture(tex,UINT32_MAX);
 				}
@@ -481,7 +481,10 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			loadTexture(action.dataobject->as<TextureBase>(),action.udata1);
 			break;
 		case RENDER_LOADCUBETEXTURE:
-			loadCubeTexture(action.dataobject->as<CubeTexture>());
+			//action.dataobject = CubeTexture
+			//action.udata1 = miplevel
+			//action.udata2 = side
+			loadCubeTexture(action.dataobject->as<CubeTexture>(),action.udata1,action.udata2);
 			break;
 		case RENDER_SETSCISSORRECTANGLE:
 			// action.udata1 = 0 => scissoring is disabled
@@ -734,7 +737,7 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	{
 		TextureBase* tex = (*it++).getPtr();
 		if (tex->is<CubeTexture>())
-			loadCubeTexture(tex->as<CubeTexture>());
+			loadCubeTexture(tex->as<CubeTexture>(),UINT32_MAX,UINT32_MAX);
 		else
 			loadTexture(tex,UINT32_MAX);
 		tex->incRef();
@@ -846,7 +849,7 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 		}
 	}
 }
-void Context3D::loadCubeTexture(CubeTexture *tex)
+void Context3D::loadCubeTexture(CubeTexture *tex, uint32_t miplevel, uint32_t side)
 {
 	EngineData* engineData = getSystemState()->getEngineData();
 	if (tex->textureID == UINT32_MAX)
@@ -865,17 +868,33 @@ void Context3D::loadCubeTexture(CubeTexture *tex)
 	}
 	else
 	{
-		uint32_t side = 0;
-		for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
+		if (side == UINT32_MAX)
 		{
-			side=(i/tex->max_miplevel)%6;
-			uint32_t level = i%tex->max_miplevel;
+			assert(miplevel==UINT32_MAX);
+			// fill all sides and miplevels
+			uint32_t side = 0;
+			for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
+			{
+				side=(i/tex->max_miplevel)%6;
+				uint32_t level = i%tex->max_miplevel;
+				if (tex->bitmaparray[i].size() > 0)
+					engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size());
+				else
+					engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,level, tex->width>>level, tex->height>>level, 0, nullptr,tex->format,tex->compressedformat,0);
+				getSystemState()->getRenderThread()->handleGLErrors();
+			}
+		}
+		else
+		{
+			uint32_t level = miplevel;
+			uint32_t i = tex->max_miplevel*side+miplevel;
 			if (tex->bitmaparray[i].size() > 0)
 				engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size());
 			else
 				engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,level, tex->width>>level, tex->height>>level, 0, nullptr,tex->format,tex->compressedformat,0);
 		}
 	}
+	getSystemState()->getRenderThread()->handleGLErrors();
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 }
 
@@ -1117,12 +1136,12 @@ void Context3D::prepareShutdown()
 }
 
 
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Context3D,backBufferHeight)
-ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Context3D,backBufferWidth)
+ASFUNCTIONBODY_GETTER(Context3D,backBufferHeight)
+ASFUNCTIONBODY_GETTER(Context3D,backBufferWidth)
 ASFUNCTIONBODY_GETTER(Context3D,driverInfo)
 ASFUNCTIONBODY_GETTER_SETTER(Context3D,enableErrorChecking)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Context3D,maxBackBufferHeight)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(Context3D,maxBackBufferWidth)
+ASFUNCTIONBODY_GETTER_SETTER(Context3D,maxBackBufferHeight)
+ASFUNCTIONBODY_GETTER_SETTER(Context3D,maxBackBufferWidth)
 
 ASFUNCTIONBODY_ATOM(Context3D,getProfile)
 {

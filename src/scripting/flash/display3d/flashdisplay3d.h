@@ -185,7 +185,7 @@ private:
 protected:
 	bool renderImpl(RenderContext &ctxt);
 	void loadTexture(TextureBase* tex, uint32_t level);
-	void loadCubeTexture(CubeTexture* tex);
+	void loadCubeTexture(CubeTexture* tex, uint32_t miplevel, uint32_t side);
 	void init(Stage3D* s);
 	public:
 	Mutex rendermutex;

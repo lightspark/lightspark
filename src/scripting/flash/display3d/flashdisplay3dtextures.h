@@ -45,7 +45,7 @@ protected:
 	void parseAdobeTextureFormat(ByteArray* data, int32_t byteArrayOffset, bool forCubeTexture);
 	void setFormat(const tiny_string& f);
 	uint32_t getBytesNeeded(uint32_t miplevel);
-	void uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplevel);
+	void uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplevel, uint32_t side=0, uint32_t max_miplevel=0);
 	void uploadFromByteArrayIntern(ByteArray* source, uint32_t offset, uint32_t miplevel);
 public:
 	TextureBase(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c)

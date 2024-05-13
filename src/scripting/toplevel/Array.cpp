@@ -83,16 +83,17 @@ void Array::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	ASObject::prepareShutdown();
-	for (auto it=data_first.begin() ; it != data_first.end();)
+	for (auto it=data_first.begin() ; it != data_first.end();it++)
 	{
 		ASObject* o = asAtomHandler::getObject(*it);
-		it = data_first.erase(it);
+		*it = asAtomHandler::invalidAtom;
 		if (o)
 		{
 			o->prepareShutdown();
 			o->removeStoredMember();
 		}
 	}
+	data_first.clear();
 	for (auto it=data_second.begin() ; it != data_second.end();)
 	{
 		ASObject* o = asAtomHandler::getObject(it->second);
@@ -2313,14 +2314,18 @@ void Array::resize(uint64_t n,bool removemember)
 	{
 		if (n < data_first.size())
 		{
-			auto it1 = data_first.begin()+n;
-			while (it1 != data_first.end())
+			if (removemember)
 			{
-				ASObject* o = asAtomHandler::getObject(*it1);
-				it1 = data_first.erase(it1);
-				if (removemember && o)
-					o->removeStoredMember();
+				auto it1 = data_first.begin()+n;
+				while (it1 != data_first.end())
+				{
+					ASObject* o = asAtomHandler::getObject(*it1);
+					it1++;
+					if (o)
+						o->removeStoredMember();
+				}
 			}
+			data_first.resize(n);
 		}
 		auto it2=data_second.begin();
 		while (it2 != data_second.end())

@@ -371,8 +371,11 @@ void TextureBase::parseAdobeTextureFormat(ByteArray *data, int32_t byteArrayOffs
 		bitmaparray.resize(texcount);
 	uint32_t tmpwidth = width;
 	uint32_t tmpheight = height;
-	for (uint32_t level = 0; level < texcount; level++)
+	for (uint32_t i = 0; i < texcount; i++)
 	{
+		uint32_t level = i;
+		if (forCubeTexture) // cube texture negative/positive sides are swapped in atf 
+			level = (i/b3)%2 ? i-b3 : i+b3;
 		switch (format)
 		{
 			case 0x0://RGB888

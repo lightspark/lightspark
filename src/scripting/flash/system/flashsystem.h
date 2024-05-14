@@ -89,6 +89,8 @@ private:
 	void cbDomainMemory(_NR<ByteArray> oldvalue);
 	// list of classes where super class is not defined yet
 	std::unordered_map<Class_base*,Class_base*> classesSuperNotFilled;
+	// list of classes where interfaces are not yet linked
+	std::vector<Class_base*> classesToLinkInterfaces;
 public:
 	ByteArray* currentDomainMemory;
 	ApplicationDomain(ASWorker* wrk, Class_base* c, _NR<ApplicationDomain> p=NullRef);
@@ -97,6 +99,9 @@ public:
 	std::map<const multiname*, Class_base*> classesBeingDefined;
 	std::map<QName, Class_base*> instantiatedTemplates;
 	
+	void SetAllClassLinks();
+	void AddClassLinks(Class_base* target);
+	bool newClassRecursiveLink(Class_base* target, Class_base* c);
 	void addSuperClassNotFilled(Class_base* cls);
 	void copyBorrowedTraitsFromSuper(Class_base* cls);
 

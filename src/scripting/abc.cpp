@@ -2025,7 +2025,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,"Method not linkable" << ": " << mname);
+				LOG(LOG_NOT_IMPLEMENTED,"Method not linkable" << ": " << mname << c->toDebugString());
 			}
 
 			LOG(LOG_TRACE,"End Method trait: " << mname);
@@ -2047,7 +2047,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,"Getter not linkable" << ": " << mname);
+				LOG(LOG_NOT_IMPLEMENTED,"Getter not linkable" << ": " << mname << c->toDebugString());
 			}
 
 			LOG(LOG_TRACE,"End Getter trait: " << mname);
@@ -2069,7 +2069,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			}
 			else
 			{
-				LOG(LOG_NOT_IMPLEMENTED,"Setter not linkable" << ": " << mname);
+				LOG(LOG_NOT_IMPLEMENTED,"Setter not linkable" << ": " << mname << c->toDebugString());
 			}
 			
 			LOG(LOG_TRACE,"End Setter trait: " << mname);
@@ -2304,7 +2304,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				if(classes[t->classi].cinit != 0)
 				{
 					method_info* m=&methods[classes[t->classi].cinit];
-					if (m->body)
+					if (m->body && m->body->code.size()>1) // most interfaces (if not all?) have a cinit method with 1 entry "returnvoid", so we ignore them
 						LOG(LOG_NOT_IMPLEMENTED,"Interface cinit (static):"<<className);
 				}
 				if(instances[t->classi].init != 0)
@@ -2364,7 +2364,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			else if(kind == traits_info::Method)
 				LOG(LOG_CALLS,"Method trait: " << *mname << " #" << t->method);
 			method_info* m=&methods[t->method];
-			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(obj->getInstanceWorker(),m,m->numArgs());
+			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(obj->getInstanceWorker(),m,m->numArgs()-m->numOptions());
 
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)

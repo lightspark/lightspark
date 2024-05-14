@@ -521,9 +521,6 @@ private:
 	//Internal utilities
 	static void method_reset(method_info* th);
 
-	static void SetAllClassLinks();
-	static void AddClassLinks(Class_base* target);
-	static bool newClassRecursiveLink(Class_base* target, Class_base* c);
 	static void constructFunction(asAtom & ret, call_context* th, asAtom& f, asAtom* args, int argslen);
 	void parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Responder> responder);
 	

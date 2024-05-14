@@ -2653,44 +2653,6 @@ ASObject* ABCVm::hasNext(ASObject* obj,ASObject* cur_index)
 	return abstract_i(obj->getInstanceWorker(),newIndex);
 }
 
-std::vector<Class_base*> classesToLinkInterfaces;
-void ABCVm::SetAllClassLinks()
-{
-	for (unsigned int i = 0; i < classesToLinkInterfaces.size(); i++)
-	{
-		Class_base* cls = classesToLinkInterfaces[i];
-		if (!cls)
-			continue;
-		if (ABCVm::newClassRecursiveLink(cls, cls))
-			classesToLinkInterfaces[i] = nullptr;
-	}
-}
-void ABCVm::AddClassLinks(Class_base* target)
-{
-	classesToLinkInterfaces.push_back(target);
-}
-
-bool ABCVm::newClassRecursiveLink(Class_base* target, Class_base* c)
-{
-	if(c->super)
-	{
-		if (!newClassRecursiveLink(target, c->super.getPtr()))
-			return false;
-	}
-	bool bAllDefined = false;
-	const vector<Class_base*>& interfaces=c->getInterfaces(&bAllDefined);
-	if (!bAllDefined)
-	{
-		return false;
-	}
-	for(unsigned int i=0;i<interfaces.size();i++)
-	{
-		LOG_CALL("Linking with interface " << interfaces[i]->class_name);
-		interfaces[i]->linkInterface(target);
-	}
-	return true;
-}
-
 void ABCVm::newClass(call_context* th, int n)
 {
 	int name_index=th->mi->context->instances[n].name;
@@ -2731,7 +2693,7 @@ void ABCVm::newClass(call_context* th, int n)
 			RUNTIME_STACK_PUSH(th,oldDefinition);
 			// ensure that this interface is linked to all previously defined classes implementing this interface
 			if (th->mi->context->instances[n].isInterface())
-				ABCVm::SetAllClassLinks();
+				th->mi->context->root->applicationDomain->SetAllClassLinks();
 			return;
 		}
 		MemoryAccount* m = th->sys->allocateMemoryAccount(className.getQualifiedName(th->sys));
@@ -2919,19 +2881,19 @@ void ABCVm::newClass(call_context* th, int n)
 	
 	th->mi->context->root->applicationDomain->copyBorrowedTraitsFromSuper(ret);
 	
-	//If the class is not an interface itself, link the traits
-	if(!th->mi->context->instances[n].isInterface())
+	//If the class is not an interface itself and has no super class, link the traits here (if it has a super class, the traits are linked in copyBorrowedTraitsFromSuper
+	if(ret->super.isNull() && !th->mi->context->instances[n].isInterface())
 	{
 		//Link all the interfaces for this class and all the bases
-		if (!newClassRecursiveLink(ret, ret))
+		if (!th->mi->context->root->applicationDomain->newClassRecursiveLink(ret, ret))
 		{
 			// remember classes where not all interfaces are defined yet
-			ABCVm::AddClassLinks(ret);
+			th->mi->context->root->applicationDomain->AddClassLinks(ret);
 		}
 	}
 	// ensure that this interface is linked to all previously defined classes implementing this interface
 	if (th->mi->context->instances[n].isInterface())
-		ABCVm::SetAllClassLinks();
+		th->mi->context->root->applicationDomain->SetAllClassLinks();
 	ret->setConstructIndicator();
 	//Remove the class to the ones being currently defined in this context
 	th->mi->context->root->applicationDomain->classesBeingDefined.erase(mname);

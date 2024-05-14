@@ -429,11 +429,49 @@ void ApplicationDomain::addSuperClassNotFilled(Class_base *cls)
 	}
 }
 
+void ApplicationDomain::SetAllClassLinks()
+{
+	for (unsigned int i = 0; i < classesToLinkInterfaces.size(); i++)
+	{
+		Class_base* cls = classesToLinkInterfaces[i];
+		if (!cls)
+			continue;
+		if (newClassRecursiveLink(cls, cls))
+			classesToLinkInterfaces[i] = nullptr;
+	}
+}
+void ApplicationDomain::AddClassLinks(Class_base* target)
+{
+	classesToLinkInterfaces.push_back(target);
+}
+
+bool ApplicationDomain::newClassRecursiveLink(Class_base* target, Class_base* c)
+{
+	if(c->super)
+	{
+		if (!newClassRecursiveLink(target, c->super.getPtr()))
+			return false;
+	}
+	bool bAllDefined = false;
+	const vector<Class_base*>& interfaces=c->getInterfaces(&bAllDefined);
+	if (!bAllDefined)
+	{
+		return false;
+	}
+	for(unsigned int i=0;i<interfaces.size();i++)
+	{
+		LOG_CALL("Linking with interface " << interfaces[i]->class_name);
+		interfaces[i]->linkInterface(target);
+	}
+	return true;
+}
+
 void ApplicationDomain::copyBorrowedTraitsFromSuper(Class_base *cls)
 {
 	if (!cls)
 		return;
 	bool super_initialized=true;
+	bool cls_initialized=cls->super.isNull() || classesSuperNotFilled.empty();
 	if (cls->super)
 	{
 		for (auto itsup = classesSuperNotFilled.begin();itsup != classesSuperNotFilled.end(); itsup++)
@@ -452,7 +490,10 @@ void ApplicationDomain::copyBorrowedTraitsFromSuper(Class_base *cls)
 		{
 			it->first->copyBorrowedTraits(cls);
 			if (super_initialized)
+			{
 				it = classesSuperNotFilled.erase(it);
+				cls_initialized=true;
+			}
 			else
 			{
 				// cls->super was not yet initialized, make sure all classes that have cls as super get borrowed traits from cls->super
@@ -462,6 +503,19 @@ void ApplicationDomain::copyBorrowedTraitsFromSuper(Class_base *cls)
 		}
 		else
 			it++;
+	}
+	if (cls_initialized)
+	{
+		// borrowed traits are all available for this class, so we can link the interfaces
+		if(!cls->isInterface)
+		{
+			//Link all the interfaces for this class and all the bases
+			if (!newClassRecursiveLink(cls, cls))
+			{
+				// remember classes where not all interfaces are defined yet
+				AddClassLinks(cls);
+			}
+		}
 	}
 }
 

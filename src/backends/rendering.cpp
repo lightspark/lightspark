@@ -909,8 +909,6 @@ void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 	else if (newHeight == 0)
 		newHeight=windowHeight;
 	resizeNeeded=true;
-	m_sys->stage->incRef();
-	getVm(m_sys)->addEvent(_MR(m_sys->stage),_MR(Class<Event>::getInstanceS(m_sys->worker,"resize")));
 	if (m_sys->stage->nativeWindow && (newWidth != m_sys->getEngineData()->old_width || newHeight != m_sys->getEngineData()->old_height))
 	{
 		Rectangle *rectBefore=Class<Rectangle>::getInstanceS(m_sys->worker);

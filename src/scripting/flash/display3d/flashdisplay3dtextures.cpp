@@ -36,30 +36,12 @@ void jpegxrcallback(jxr_image_t image, int mx, int my, int* data)
 			break;
 		}
 		case DXT1ImageData:
-		{
-			uint32_t n=3;
-			uint32_t pos=my*16*2*w+mx*16*2;
-			for (uint32_t i=0; i < 16*16*n && pos < imgdata->result->size(); i+=n)
-			{
-				int r = data[i];
-				int g = data[i+1];
-				int b = data[i+2];
-				// the r,g,b values are already computed to 5-6-5 format
-				// convert to 2 byte rgb565 with the lower byte first
-				(*imgdata->result)[pos++] = ((g<<5)&0xe0) | b;
-				(*imgdata->result)[pos++] = ((r<<3)&0xf8) | ((g>>3)&0x07);
-				if ((i+n)%(16*n)==0)
-					pos += (w-16)*2;
-			}
-			break;
-		}
 		case DXT5ImageData:
 		{
 			uint32_t n=3;
 			uint32_t pos=my*16*2*w+mx*16*2;
 			for (uint32_t i=0; i < 16*16*n && pos < imgdata->result->size(); i+=n)
 			{
-				// for some strange reason in the DXT5 case the rgb/bgr data is swapped ?
 				int r = data[i+2];
 				int g = data[i+1];
 				int b = data[i];

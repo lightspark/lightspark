@@ -38,6 +38,7 @@
 #include "scripting/flash/display/BitmapContainer.h"
 #include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "3rdparty/nanovg/src/nanovg.h"
 
 using namespace std;
 using namespace lightspark;
@@ -144,62 +145,11 @@ CachedSurface* GLRenderContext::getCachedSurface(const DisplayObject* d) const
 	return d->cachedSurface.getPtr();
 }
 
-static bool noMask(EngineData* engineData)
-{
-	if (engineData != nullptr)
-	{
-		//engineData->exec_glEnable_GL_STENCIL_TEST();
-		engineData->exec_glStencilFunc_GL_ALWAYS();
-		engineData->exec_glStencilOp_GL_KEEP();
-		engineData->exec_glColorMask(true, true, true, true);
-		return true;
-	}
-	return false;
-}
-
-static bool drawMaskStencil(EngineData* engineData)
-{
-	if (engineData != nullptr)
-	{
-		engineData->exec_glEnable_GL_STENCIL_TEST();
-		engineData->exec_glStencilFunc_GL_EQUAL(0, UINT32_MAX);
-		engineData->exec_glStencilOp_GL_INCR();
-		engineData->exec_glColorMask(false, false, false, false);
-		return true;
-	}
-	return false;
-}
-
-static bool drawMaskedContent(EngineData* engineData)
-{
-	if (engineData != nullptr)
-	{
-		engineData->exec_glEnable_GL_STENCIL_TEST();
-		engineData->exec_glStencilFunc_GL_EQUAL(1, UINT32_MAX);
-		engineData->exec_glStencilOp_GL_KEEP();
-		engineData->exec_glColorMask(true, true, true, true);
-		return true;
-	}
-	return false;
-}
-
-static bool clearMaskStencil(EngineData* engineData)
-{
-	if (engineData != nullptr)
-	{
-		engineData->exec_glEnable_GL_STENCIL_TEST();
-		engineData->exec_glStencilFunc_GL_EQUAL(1, UINT32_MAX);
-		engineData->exec_glStencilOp_GL_DECR();
-		engineData->exec_glColorMask(false, false, false, false);
-		return true;
-	}
-	return false;
-}
-
 void GLRenderContext::pushMask()
 {
 	RenderContext::pushMask();
-	(void)drawMaskStencil(engineData);
+	if (engineData->nvgcontext != nullptr)
+		nvgPushClip(engineData->nvgcontext);
 	if (!(maskCount++))
 	{
 		engineData->exec_glClearStencil(0);
@@ -209,43 +159,24 @@ void GLRenderContext::pushMask()
 
 void GLRenderContext::popMask()
 {
+	RenderContext::popMask();
+	if (engineData->nvgcontext != nullptr)
+		nvgPopClip(engineData->nvgcontext);
 	if (!(--maskCount))
 	{
-		engineData->exec_glDisable_GL_STENCIL_TEST();
-		(void)noMask(engineData);
+		engineData->exec_glClearStencil(0);
+		engineData->exec_glClear(CLEARMASK::STENCIL);
 	}
-	else
-		(void)drawMaskedContent(engineData);
 }
 
 void GLRenderContext::deactivateMask()
 {
 	RenderContext::deactivateMask();
-	(void)clearMaskStencil(engineData);
 }
 
 void GLRenderContext::activateMask()
 {
 	RenderContext::activateMask();
-	(void)drawMaskedContent(engineData);
-}
-
-void GLRenderContext::suspendActiveMask()
-{
-	RenderContext::suspendActiveMask();
-	engineData->exec_glDisable_GL_STENCIL_TEST();
-	engineData->exec_glStencilFunc_GL_ALWAYS();
-	engineData->exec_glStencilOp_GL_KEEP();
-	engineData->exec_glColorMask(true, true, true, true);
-}
-
-void GLRenderContext::resumeActiveMask()
-{
-	RenderContext::resumeActiveMask();
-	engineData->exec_glEnable_GL_STENCIL_TEST();
-	engineData->exec_glStencilFunc_GL_EQUAL(1, UINT32_MAX);
-	engineData->exec_glStencilOp_GL_KEEP();
-	engineData->exec_glColorMask(true, true, true, true);
 }
 
 void GLRenderContext::resetCurrentFrameBuffer()

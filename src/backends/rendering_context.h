@@ -118,18 +118,14 @@ public:
 	 * Get the right CachedSurface from an object
 	 */
 	virtual const CachedSurface* getCachedSurface(const DisplayObject* obj) const=0;
-	void startRenderingMask() { inMaskRendering=true; }
-	void stopRenderingMask() { inMaskRendering=false; }
 	virtual void pushMask() { inMaskRendering=true; }
 	virtual void popMask() {}
-	virtual void deactivateMask() {	maskActive=false; }
+	virtual void deactivateMask() { maskActive=false; }
 	virtual void activateMask()
 	{
 		inMaskRendering=false;
 		maskActive=true;
 	}
-	virtual void suspendActiveMask() { maskActive=false; }
-	virtual void resumeActiveMask() { maskActive=true; }
 	bool isDrawingMask() const { return inMaskRendering; }
 	bool isMaskActive() const { return maskActive; }
 };
@@ -209,8 +205,6 @@ public:
 	void popMask() override;
 	void deactivateMask() override;
 	void activateMask() override;
-	void suspendActiveMask() override;
-	void resumeActiveMask() override;
 	
 	bool getFlipVertical() const { return flipvertical; }
 	void resetCurrentFrameBuffer();

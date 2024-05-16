@@ -54,6 +54,7 @@ public:
 	tokensVector tokens;
 	std::vector<_R<CachedSurface>> childrenlist;
 	_NR<CachedSurface> mask;
+	_NR<CachedSurface> maskee;
 	_NR<Array> filters; // TODO move to non-ASObject-derived type
 	RectF bounds;
 	int depth;

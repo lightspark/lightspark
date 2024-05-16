@@ -823,6 +823,10 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		state->mask = this->mask->getCachedSurface();
 	else
 		state->mask.reset();
+	if (!maskee.isNull())
+		state->maskee = maskee->getCachedSurface();
+	else
+		state->maskee.reset();
 	state->clipdepth = this->getClipDepth();
 	state->depth = this->getDepth();
 	state->isMask = this->ismask;
@@ -846,6 +850,7 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 	{
 		//Remove previous mask
 		mask->ismask=false;
+		mask->maskee.reset();
 	}
 
 	mask=m;
@@ -1246,6 +1251,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setMask)
 		DisplayObject* newMask=asAtomHandler::as<DisplayObject>(args[0]);
 		newMask->incRef();
 		th->setMask(_MR(newMask));
+		th->incRef();
+		newMask->maskee = _MR(th);
 	}
 	else
 		th->setMask(NullRef);
@@ -1916,9 +1923,10 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 
 _NR<DisplayObject> DisplayObject::hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
-	if((!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && !isMask())
+	if((!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && (!isMask() || !getClipDepth()))
 		return NullRef;
 
+	const auto& mask = !this->mask.isNull() ? this->mask : this->clipMask;
 	//First check if there is any mask on this object, if so the point must be inside the mask to go on
 	if(!mask.isNull())
 	{

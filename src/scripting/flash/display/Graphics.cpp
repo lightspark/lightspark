@@ -1157,8 +1157,6 @@ ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
 ASFUNCTIONBODY_ATOM(Graphics,lineGradientStyle)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	th->tokens[th->currentrenderindex].canRenderToGL=false; // TODO implement nanoVG rendering
-	th->tokens[th->currentrenderindex].canRenderToMaskGL=false; // TODO implement nanoVG rendering
 
 	tiny_string type;
 	_NR<Array> colors;
@@ -1185,8 +1183,6 @@ ASFUNCTIONBODY_ATOM(Graphics,lineGradientStyle)
 ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	th->tokens[th->currentrenderindex].canRenderToGL=false; // TODO implement nanoVG rendering
-	th->tokens[th->currentrenderindex].canRenderToMaskGL=false; // TODO implement nanoVG rendering
 
 	tiny_string type;
 	_NR<Array> colors;

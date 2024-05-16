@@ -438,7 +438,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(const Vector2f& globalPoi
 	for(;j!=dynamicDisplayList.rend();++j)
 	{
 		//Don't check masks
-		if((*j)->isMask())
+		if((*j)->isMask() || (*j)->getClipDepth() > 0)
 			continue;
 
 		if(!(*j)->getMatrix().isInvertible())
@@ -2139,10 +2139,10 @@ void DisplayObjectContainer::checkClipDepth()
 		else if (clipobj && clipobj->ClipDepth > depth)
 		{
 			clipobj->incRef();
-			obj->setMask(_NR<DisplayObject>(clipobj));
+			obj->setClipMask(_NR<DisplayObject>(clipobj));
 		}
 		else
-			obj->setMask(NullRef);
+			obj->setClipMask(NullRef);
 	}
 }
 

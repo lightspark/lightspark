@@ -157,6 +157,8 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 		return;
 	if (!state->mask.isNull() && !state->mask->state)
 		return;
+	if (!state->maskee.isNull())
+		return;
 	if((!state->isMask && !state->clipdepth && !state->visible) || state->alpha==0.0 || (state->isMask && !state->clipdepth))
 		return;
 	MATRIX _matrix;
@@ -186,9 +188,6 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 	EngineData* engineData = sys->getEngineData();
 	bool needscachedtexture = (!container && state->cacheAsBitmap)
 							  || ctxt.transformStack().transform().blendmode == BLENDMODE_LAYER
-							  || ctxt.isMaskActive()
-							  || state->isMask
-							  || state->clipdepth
 							  || !state->filters.isNull()
 							  || (state->needsLayer && sys->getRenderThread()->filterframebufferstack.empty());
 	if (needscachedtexture && (state->needsFilterRefresh || cachedFilterTextureID != UINT32_MAX))
@@ -307,6 +306,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 			nvgScale(nvgctxt,state->scaling,state->scaling);
 			NVGcolor startcolor = nvgRGBA(0,0,0,0);
 			nvgBeginPath(nvgctxt);
+			if (ctxt.isDrawingMask())
+				nvgBeginClip(nvgctxt);
 			nvgFillColor(nvgctxt,startcolor);
 			nvgStrokeColor(nvgctxt,startcolor);
 			bool instroke = false;
@@ -378,6 +379,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 							GeomToken p1(*(++it),false);
 							if (renderneeded)
 							{
+								if (ctxt.isDrawingMask())
+									nvgEndClip(nvgctxt);
 								if (instroke)
 									nvgStroke(nvgctxt);
 								if (infill)
@@ -385,6 +388,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 								renderneeded=false;
 								nvgClosePath(nvgctxt);
 								nvgBeginPath(nvgctxt);
+								if (ctxt.isDrawingMask())
+									nvgBeginClip(nvgctxt);
 							}
 							infill=true;
 							const FILLSTYLE* style = p1.fillStyle;
@@ -488,6 +493,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 							GeomToken p1(*(++it),false);
 							if (renderneeded)
 							{
+								if (ctxt.isDrawingMask())
+									nvgEndClip(nvgctxt);
 								if (instroke)
 									nvgStroke(nvgctxt);
 								if (infill)
@@ -495,6 +502,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 								renderneeded=false;
 								nvgClosePath(nvgctxt);
 								nvgBeginPath(nvgctxt);
+								if (ctxt.isDrawingMask())
+									nvgBeginClip(nvgctxt);
 							}
 							instroke = true;
 							const LINESTYLE2* style = p1.lineStyle;
@@ -619,6 +628,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 						{
 							if (renderneeded)
 							{
+								if (ctxt.isDrawingMask())
+									nvgEndClip(nvgctxt);
 								if (instroke)
 									nvgStroke(nvgctxt);
 								if (infill)
@@ -626,6 +637,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 								renderneeded=false;
 								nvgClosePath(nvgctxt);
 								nvgBeginPath(nvgctxt);
+								if (ctxt.isDrawingMask())
+									nvgBeginClip(nvgctxt);
 							}
 							infill=false;
 							if(p.type==CLEAR_FILL)
@@ -635,6 +648,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 						case CLEAR_STROKE:
 							if (renderneeded)
 							{
+								if (ctxt.isDrawingMask())
+									nvgEndClip(nvgctxt);
 								if (instroke)
 									nvgStroke(nvgctxt);
 								if (infill)
@@ -642,6 +657,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 								renderneeded=false;
 								nvgClosePath(nvgctxt);
 								nvgBeginPath(nvgctxt);
+								if (ctxt.isDrawingMask())
+									nvgBeginClip(nvgctxt);
 							}
 							instroke = false;
 							nvgStrokeColor(nvgctxt,startcolor);
@@ -652,6 +669,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 					it++;
 				}
 			}
+			if (ctxt.isDrawingMask())
+				nvgEndClip(nvgctxt);
 			if (renderneeded)
 			{
 				if (instroke)
@@ -660,7 +679,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 					nvgFill(nvgctxt);
 			}
 			nvgClosePath(nvgctxt);
-			nvgEndFrame(nvgctxt);
+			if (!ctxt.isDrawingMask())
+				nvgEndFrame(nvgctxt);
 			sys->getEngineData()->exec_glStencilFunc_GL_ALWAYS();
 			sys->getEngineData()->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 			sys->getEngineData()->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
@@ -691,11 +711,10 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 			clipDepthStack.pop_back();
 			
 			ctxt.deactivateMask();
-			clipChild->Render(sys,ctxt);
 			ctxt.popMask();
 		}
 		
-		if (childstate->clipdepth > 0 && childstate->isMask && childstate->allowAsMask)
+		if (childstate->clipdepth > 0 && childstate->allowAsMask)
 		{
 			// Push, and render this mask.
 			clipDepthStack.push_back(make_pair(clipDepth, child));
@@ -713,7 +732,6 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 	for_each(clipDepthStack.rbegin(), clipDepthStack.rend(), [&](pair<int, CachedSurface*>& it)
 	{
 		ctxt.deactivateMask();
-		it.second->Render(sys,ctxt);
 		ctxt.popMask();
 	});
 }
@@ -775,9 +793,6 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	fe.filterborderx=(-state->bounds.min.x+state->maxfilterborder)*scale.x;
 	fe.filterbordery=(-state->bounds.min.y+state->maxfilterborder)*scale.y;
 	sys->getRenderThread()->filterframebufferstack.push_back(fe);
-	bool maskactive = ctxt.isMaskActive();
-	if (maskactive)
-		ctxt.suspendActiveMask();
 	renderImpl(sys,ctxt);
 	// bind rendered filter source to g_tex_filter1
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
@@ -858,8 +873,6 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 		engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(feparent.filterrenderbuffer);
 		sys->getRenderThread()->setViewPort(parentframebufferWidth,parentframebufferHeight,true);
 	}
-	if (maskactive)
-		ctxt.resumeActiveMask();
 	engineData->exec_glDeleteFramebuffers(1,&filterframebuffer);
 	engineData->exec_glDeleteRenderbuffers(1,&filterrenderbuffer);
 	cachedFilterTextureID=texture1;

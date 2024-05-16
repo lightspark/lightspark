@@ -114,6 +114,9 @@ protected:
 	  	The object that masks us, if any
 	*/
 	_NR<DisplayObject> mask;
+	// The object that we're masking, if any.
+	_NR<DisplayObject> maskee;
+	_NR<DisplayObject> clipMask;
 	mutable Mutex spinlock;
 	void computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
 			number_t& outXMin, number_t& outYMin, number_t& outWidth, number_t& outHeight,
@@ -147,6 +150,7 @@ public:
 	virtual void fillGraphicsData(Vector* v, bool recursive) {}
 	void updatedRect(); // scrollrect was changed
 	void setMask(_NR<DisplayObject> m);
+	void setClipMask(_NR<DisplayObject> m) { clipMask = m; }
 	void setBlendMode(UI8 blendmode);
 	AS_BLENDMODE getBlendMode() const { return blendMode; }
 	static bool isShaderBlendMode(AS_BLENDMODE bl);
@@ -286,6 +290,8 @@ public:
 	number_t getNominalWidth();
 	number_t getNominalHeight();
 	DisplayObject* getMask() const { return mask.getPtr(); }
+	DisplayObject* getMaskee() const { return maskee.getPtr(); }
+	DisplayObject* getClipMask() const { return clipMask.getPtr(); }
 	bool inMask() const;
 	bool belongsToMask() const;
 	

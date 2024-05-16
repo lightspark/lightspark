@@ -58,6 +58,8 @@ enum NVGcommands {
 	NVG_BEZIERTO = 2,
 	NVG_CLOSE = 3,
 	NVG_WINDING = 4,
+	NVG_BEGINCLIP = 5,
+	NVG_ENDCLIP = 6,
 };
 
 enum NVGpointFlags
@@ -121,6 +123,8 @@ struct NVGcontext {
 	NVGstate states[NVG_MAX_STATES];
 	int nstates;
 	NVGpathCache* cache;
+	NVGclipPath* clipPaths;
+	NVGclipPath* lastClip;
 	float tessTol;
 	float distTol;
 	float fringeWidth;
@@ -163,6 +167,16 @@ static float nvg__normalize(float *x, float* y)
 	return d;
 }
 
+static void nvg__deleteClipPaths(NVGclipPath* c)
+{
+	while (c != NULL) {
+		NVGclipPath* clip = c;
+		c = c->next;
+		if (clip->verts != NULL) free(clip->verts);
+		if (clip->paths != NULL) free(clip->paths);
+		free(clip);
+	}
+}
 
 static void nvg__deletePathCache(NVGpathCache* c)
 {
@@ -349,6 +363,7 @@ void nvgDeleteInternal(NVGcontext* ctx)
 	if (ctx == NULL) return;
 	if (ctx->commands != NULL) free(ctx->commands);
 	if (ctx->cache != NULL) nvg__deletePathCache(ctx->cache);
+	if (ctx->clipPaths != NULL) nvg__deleteClipPaths(ctx->clipPaths);
 
 	if (ctx->fs)
 		fonsDeleteInternal(ctx->fs);
@@ -1150,6 +1165,101 @@ NVGpaint nvgImagePattern(NVGcontext* ctx,
 	return p;
 }
 
+static NVGclipPath* nvg__findLastClip(NVGclipPath* clips)
+{
+	NVGclipPath* last;
+	for (last = clips; last != NULL && last->next != NULL; last = last->next);
+	return last;
+}
+
+static int nvg__pushClip(NVGclipPath** clips, NVGclipPath** last)
+{
+	NVGclipPath* dummy = NULL;
+	NVGclipPath* dummy2 = NULL;
+	clips = (clips == NULL) ? &dummy : clips;
+	last = (last == NULL) ? &dummy2 : last;
+	if (*clips == NULL) {
+		*clips = (NVGclipPath*)malloc(sizeof(NVGclipPath));
+		memset(*clips, 0, sizeof(NVGclipPath));
+		*last = *clips;
+		return 0;
+	}
+
+	*last = (*last == NULL) ? nvg__findLastClip(*clips) : *last;
+	if (*last == NULL) return -1;
+
+	(*last)->next = (NVGclipPath*)malloc(sizeof(NVGclipPath));
+	memset((*last)->next, 0, sizeof(NVGclipPath));
+	(*last)->next->prev = *last;
+
+	*last = (*last)->next;
+	return 1;
+}
+
+static int nvg__popClip(NVGclipPath** clips, NVGclipPath** last)
+{
+	NVGclipPath* dummy = NULL;
+	NVGclipPath* dummy2 = NULL;
+	clips = (clips == NULL) ? &dummy : clips;
+	last = (last == NULL) ? &dummy2 : last;
+	if (*clips == NULL) {
+		*last = NULL;
+		return 0;
+	}
+
+	*last = (*last == NULL) ? nvg__findLastClip(*clips) : *last;
+	if (*last == NULL) return -1;
+
+	if ((*last)->verts != NULL) free((*last)->verts);
+	if ((*last)->paths != NULL) free((*last)->paths);
+	if ((*last)->prev == NULL) {
+		*clips = (*last == *clips) ? NULL : *clips;
+		free(*last);
+		*last = NULL;
+		return (*clips != NULL);
+	}
+	*last = (*last)->prev;
+
+	free((*last)->next);
+	(*last)->next = NULL;
+	return 1;
+}
+
+static void nvg__appendCommands(NVGcontext* ctx, float* vals, int nvals);
+
+// Clipping
+void nvgPushClip(NVGcontext* ctx)
+{
+	int hasClips = nvg__pushClip(&ctx->clipPaths, &ctx->lastClip);
+
+	if (hasClips == 0)
+		ctx->params.setClip(ctx->params.userPtr, ctx->clipPaths);
+	if (hasClips >= 0)
+		ctx->params.setLastClip(ctx->params.userPtr, ctx->lastClip);
+}
+
+void nvgPopClip(NVGcontext* ctx)
+{
+	int hasClips = nvg__popClip(&ctx->clipPaths, &ctx->lastClip);
+
+	if (hasClips == 0)
+		ctx->params.setClip(ctx->params.userPtr, ctx->clipPaths);
+	if (hasClips >= 0)
+		ctx->params.setLastClip(ctx->params.userPtr, ctx->lastClip);
+}
+
+void nvgBeginClip(NVGcontext* ctx)
+{
+	float vals[] = { NVG_BEGINCLIP };
+	nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
+}
+
+void nvgEndClip(NVGcontext* ctx)
+{
+	float vals[] = { NVG_ENDCLIP };
+	nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
+}
+
 // Scissoring
 void nvgScissor(NVGcontext* ctx, float x, float y, float w, float h)
 {
@@ -1280,7 +1390,7 @@ static void nvg__appendCommands(NVGcontext* ctx, float* vals, int nvals)
 		ctx->ccommands = ccommands;
 	}
 
-	if ((int)vals[0] != NVG_CLOSE && (int)vals[0] != NVG_WINDING) {
+	if ((int)vals[0] != NVG_CLOSE && (int)vals[0] != NVG_WINDING && (int)vals[0] != NVG_BEGINCLIP && (int)vals[0] != NVG_ENDCLIP) {
 		ctx->commandx = vals[nvals-2];
 		ctx->commandy = vals[nvals-1];
 	}
@@ -1304,6 +1414,8 @@ static void nvg__appendCommands(NVGcontext* ctx, float* vals, int nvals)
 			nvgTransformPoint(&vals[i+5],&vals[i+6], state->xform, vals[i+5],vals[i+6]);
 			i += 7;
 			break;
+		case NVG_BEGINCLIP:
+		case NVG_ENDCLIP:
 		case NVG_CLOSE:
 			i++;
 			break;
@@ -1524,6 +1636,8 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 	NVGpoint* p1;
 	NVGpoint* pts;
 	NVGpath* path;
+	NVGpath* clipPath;
+	int inClipPath;
 	int i, j;
 	float* cp1;
 	float* cp2;
@@ -1535,11 +1649,15 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 
 	// Flatten
 	i = 0;
+	inClipPath = 0;
+	clipPath = NULL;
 	while (i < ctx->ncommands) {
 		int cmd = (int)ctx->commands[i];
 		switch (cmd) {
 		case NVG_MOVETO:
 			nvg__addPath(ctx);
+			if (inClipPath != 0)
+				nvg__lastPath(ctx)->clip = 1;
 			p = &ctx->commands[i+1];
 			nvg__addPoint(ctx, p[0], p[1], NVG_PT_CORNER);
 			i += 3;
@@ -1566,6 +1684,18 @@ static void nvg__flattenPaths(NVGcontext* ctx)
 		case NVG_WINDING:
 			nvg__pathWinding(ctx, (int)ctx->commands[i+1]);
 			i += 2;
+			break;
+		case NVG_BEGINCLIP:
+			inClipPath = 1;
+			clipPath = nvg__lastPath(ctx);
+			if (clipPath != NULL)
+				clipPath->clip = 1;
+			i++;
+			break;
+		case NVG_ENDCLIP:
+			inClipPath = 0;
+			clipPath = NULL;
+			i++;
 			break;
 		default:
 			i++;
@@ -2414,6 +2544,16 @@ void nvgDebugDumpPathCache(NVGcontext* ctx)
 	}
 }
 
+static const NVGpath* nvg__findClipPath(const NVGpath* paths, int npaths)
+{
+	const NVGpath* clipPath;
+	int i;
+	if (paths == NULL)
+		return NULL;
+	for (i = 0, clipPath = paths; i < npaths && clipPath->clip == 0; i++, clipPath++);
+	return (i < npaths) ? clipPath : NULL;
+}
+
 void nvgFill(NVGcontext* ctx)
 {
 	NVGstate* state = nvg__getState(ctx);
@@ -2431,8 +2571,16 @@ void nvgFill(NVGcontext* ctx)
 	fillPaint.innerColor.a *= state->alpha;
 	fillPaint.outerColor.a *= state->alpha;
 
+	const NVGpath* clipPath = nvg__findClipPath(ctx->cache->paths, ctx->cache->npaths);
+	if (clipPath != NULL) {
+		const NVGpath* clip;
+		NVGpath* lastPath = nvg__lastPath(ctx);
+		for (clip = clipPath, i = 1; clip != lastPath && clip->clip != 0; clip++, i++);
+	} else {
+		i = 0;
+	}
 	ctx->params.renderFill(ctx->params.userPtr, &fillPaint, state->compositeOperation, &state->scissor, ctx->fringeWidth,
-						   ctx->cache->bounds, ctx->cache->paths, ctx->cache->npaths);
+						   ctx->cache->bounds, clipPath, i, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
 	for (i = 0; i < ctx->cache->npaths; i++) {
@@ -2473,8 +2621,16 @@ void nvgStroke(NVGcontext* ctx)
 	else
 		nvg__expandStroke(ctx, strokeWidth*0.5f, 0.0f, state->lineCap, state->lineJoin, state->miterLimit);
 
+	const NVGpath* clipPath = nvg__findClipPath(ctx->cache->paths, ctx->cache->npaths);
+	if (clipPath != NULL) {
+		const NVGpath* clip;
+		NVGpath* lastPath = nvg__lastPath(ctx);
+		for (clip = clipPath, i = 1; clip != lastPath && clip->clip != 0; clip++, i++);
+	} else {
+		i = 0;
+	}
 	ctx->params.renderStroke(ctx->params.userPtr, &strokePaint, state->compositeOperation, &state->scissor, ctx->fringeWidth,
-							 strokeWidth, ctx->cache->paths, ctx->cache->npaths);
+							 strokeWidth, ctx->cache->bounds, clipPath, i, ctx->cache->paths, ctx->cache->npaths);
 
 	// Count triangles
 	for (i = 0; i < ctx->cache->npaths; i++) {

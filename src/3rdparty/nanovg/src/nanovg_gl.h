@@ -171,6 +171,8 @@ enum GLNVGcallType {
 struct GLNVGcall {
 	int type;
 	int image;
+	int clipOffset;
+	int clipCount;
 	int pathOffset;
 	int pathCount;
 	int triangleOffset;
@@ -239,8 +241,10 @@ struct GLNVGcontext {
 	int ctextures;
 	int textureId;
 	GLuint vertBuf;
+	GLuint clipVertBuf;
 #if defined NANOVG_GL3
 	GLuint vertArr;
+	GLuint clipVertArr;
 #endif
 #if NANOVG_GL_USE_UNIFORMBUFFER
 	GLuint fragBuf;
@@ -255,6 +259,8 @@ struct GLNVGcontext {
 	GLNVGpath* paths;
 	int cpaths;
 	int npaths;
+	struct NVGclipPath* clips;
+	struct NVGclipPath* lastClip;
 	struct NVGvertex* verts;
 	int cverts;
 	int nverts;
@@ -728,8 +734,10 @@ static int glnvg__renderCreate(void* uptr)
 	// Create dynamic vertex array
 #if defined NANOVG_GL3
 	glGenVertexArrays(1, &gl->vertArr);
+	glGenVertexArrays(1, &gl->clipVertArr);
 #endif
 	glGenBuffers(1, &gl->vertBuf);
+	glGenBuffers(1, &gl->clipVertBuf);
 
 #if NANOVG_GL_USE_UNIFORMBUFFER
 	// Create UBOs
@@ -1061,16 +1069,104 @@ static void glnvg__renderViewport(void* uptr, float width, float height, float d
 	gl->view[1] = height;
 }
 
+static void glnvg__setClipVertexBuffer(GLNVGcontext* gl, NVGclipPath* clip)
+{
+	glBufferData(GL_ARRAY_BUFFER, clip->nverts * sizeof(NVGvertex), clip->verts, GL_STREAM_DRAW);
+	glnvg__checkError(gl, "setting clip vertex buffer");
+}
+
+static void glnvg__bindClipVertexBuffer(GLNVGcontext* gl)
+{
+	// Upload vertex data
+	#if defined NANOVG_GL3
+	glBindVertexArray(gl->clipVertArr);
+	#endif
+	glBindBuffer(GL_ARRAY_BUFFER, gl->clipVertBuf);
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(NVGvertex), (const GLvoid*)(size_t)0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(NVGvertex), (const GLvoid*)(0 + 2*sizeof(float)));
+	glnvg__checkError(gl, "binding clip vertex buffer");
+}
+
+static void glnvg__resetVertexBuffer(GLNVGcontext* gl)
+{
+	#if defined NANOVG_GL3
+	glBindVertexArray(gl->vertArr);
+	#endif
+	glBindBuffer(GL_ARRAY_BUFFER, gl->vertBuf);
+	glnvg__checkError(gl, "resetting vertex buffer");
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(NVGvertex), (const GLvoid*)(size_t)0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(NVGvertex), (const GLvoid*)(0 + 2*sizeof(float)));
+}
+
+
+static void glnvg__stencilClipPaths(GLNVGcontext* gl, GLNVGcall* call)
+{
+	int i, j;
+	int hasClipStack = (gl->clips != NULL && gl->lastClip != NULL);
+	glnvg__stencilMask(gl, 0x7f);
+	glnvg__stencilFunc(gl, GL_ALWAYS, 0x00, 0xff);
+	glnvg__setUniforms(gl, call->uniformOffset, 0);
+
+	glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_KEEP, GL_INCR_WRAP);
+	glStencilOpSeparate(GL_BACK, GL_KEEP, GL_KEEP, GL_DECR_WRAP);
+	glDisable(GL_CULL_FACE);
+	if (hasClipStack) {
+		NVGclipPath* clip;
+		glnvg__bindClipVertexBuffer(gl);
+		for (clip = gl->clips, i = 0; clip != NULL; clip = clip->next, i++) {
+			GLNVGpath* paths = (GLNVGpath*)clip->paths;
+			glnvg__setClipVertexBuffer(gl, clip);
+			for (j = 0; j < clip->npaths; j++) {
+				if (paths[j].fillCount > 0)
+					glDrawArrays(GL_TRIANGLE_FAN, paths[j].fillOffset, paths[j].fillCount);
+				else if (paths[j].strokeCount > 0)
+					glDrawArrays(GL_TRIANGLE_FAN, paths[j].strokeOffset, paths[j].strokeCount);
+			}
+			glnvg__checkError(gl, "drawing clip path stencil");
+		}
+		glnvg__resetVertexBuffer(gl);
+	} else {
+		GLNVGpath* paths = &gl->paths[call->clipOffset];
+		for (i = 0; i < call->clipCount; i++) {
+			if (paths[i].fillCount > 0)
+				glDrawArrays(GL_TRIANGLE_FAN, paths[i].fillOffset, paths[i].fillCount);
+			else if (paths[i].strokeCount > 0)
+				glDrawArrays(GL_TRIANGLE_FAN, paths[i].strokeOffset, paths[i].strokeCount);
+		}
+
+	}
+	glEnable(GL_CULL_FACE);
+	glnvg__stencilFunc(gl, GL_NOTEQUAL, 0x80, 0x7f);
+	glnvg__stencilMask(gl, 0xff);
+	glStencilOp(GL_ZERO, GL_ZERO, GL_REPLACE);
+	glDrawArrays(GL_TRIANGLE_STRIP, call->triangleOffset, call->triangleCount);
+}
+
 static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 {
 	GLNVGpath* paths = &gl->paths[call->pathOffset];
 	int i, npaths = call->pathCount;
 
+	int hasClipStack = (gl->clips != NULL && gl->lastClip != NULL);
+	int hasClipPaths = (call->clipCount > 0 || hasClipStack);
+
+	if (npaths <= 0) return;
+
 	// Draw shapes
 	glEnable(GL_STENCIL_TEST);
-	glnvg__stencilMask(gl, 0xff);
-	glnvg__stencilFunc(gl, GL_ALWAYS, 0, 0xff);
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	if (hasClipPaths != 0) {
+		glnvg__stencilClipPaths(gl, call);
+		glnvg__stencilFunc(gl, GL_EQUAL, 0x80, 0x80);
+		glnvg__stencilMask(gl, 0x7f);
+	} else {
+		glnvg__stencilFunc(gl, GL_ALWAYS, 0, 0xff);
+	}
 
 	// set bindpoint for solid loc
 	glnvg__setUniforms(gl, call->uniformOffset, 0);
@@ -1098,7 +1194,8 @@ static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 	}
 
 	// Draw fill
-	glnvg__stencilFunc(gl, GL_NOTEQUAL, 0x0, 0xff);
+	glnvg__stencilFunc(gl, GL_NOTEQUAL, 0x0, 0x7f);
+	glnvg__stencilMask(gl, 0xff);
 	glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 	glDrawArrays(GL_TRIANGLE_STRIP, call->triangleOffset, call->triangleCount);
 
@@ -1110,6 +1207,22 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 	GLNVGpath* paths = &gl->paths[call->pathOffset];
 	int i, npaths = call->pathCount;
 
+	int hasClipStack = (gl->clips != NULL && gl->lastClip != NULL);
+	int hasClipPaths = (call->clipCount > 0 || hasClipStack);
+
+	if (npaths <= 0) return;
+
+	if (hasClipPaths != 0) {
+		glEnable(GL_STENCIL_TEST);
+		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+		glnvg__stencilClipPaths(gl, call);
+		glnvg__stencilFunc(gl, GL_EQUAL, 0x80, 0xff);
+		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
+
+		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+	}
+
 	glnvg__setUniforms(gl, call->uniformOffset, call->image);
 	glnvg__checkError(gl, "convex fill");
 
@@ -1120,6 +1233,8 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 		}
 	}
+	if (hasClipPaths != 0)
+		glDisable(GL_STENCIL_TEST);
 }
 
 static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
@@ -1127,46 +1242,30 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 	GLNVGpath* paths = &gl->paths[call->pathOffset];
 	int npaths = call->pathCount, i;
 
-	if (gl->flags & NVG_STENCIL_STROKES) {
+	int hasClipStack = (gl->clips != NULL && gl->lastClip != NULL);
+	int hasClipPaths = (call->clipCount > 0 || hasClipStack);
 
+	if (npaths <= 0) return;
+
+	if (hasClipPaths != 0) {
 		glEnable(GL_STENCIL_TEST);
-		glnvg__stencilMask(gl, 0xff);
-
-		// Fill the stroke base without overlap
-		glnvg__stencilFunc(gl, GL_EQUAL, 0x0, 0xff);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-		glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image);
-		glnvg__checkError(gl, "stroke fill 0");
-		for (i = 0; i < npaths; i++)
-			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
-
-		// Draw anti-aliased pixels.
-		glnvg__setUniforms(gl, call->uniformOffset, call->image);
-		glnvg__stencilFunc(gl, GL_EQUAL, 0x00, 0xff);
-		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-		for (i = 0; i < npaths; i++)
-			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
-
-		// Clear stencil buffer.
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-		glnvg__stencilFunc(gl, GL_ALWAYS, 0x0, 0xff);
+
+		glnvg__stencilClipPaths(gl, call);
+		glnvg__stencilFunc(gl, GL_EQUAL, 0x80, 0xff);
 		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
-		glnvg__checkError(gl, "stroke fill 1");
-		for (i = 0; i < npaths; i++)
-			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
+
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-		glDisable(GL_STENCIL_TEST);
-
-//		glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset + gl->fragSize), paint, scissor, strokeWidth, fringe, 1.0f - 0.5f/255.0f);
-
-	} else {
-		glnvg__setUniforms(gl, call->uniformOffset, call->image);
-		glnvg__checkError(gl, "stroke fill");
-		// Draw Strokes
-		for (i = 0; i < npaths; i++)
-			glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 	}
+
+	glnvg__setUniforms(gl, call->uniformOffset, call->image);
+	glnvg__checkError(gl, "stroke fill");
+	// Draw Strokes
+	for (i = 0; i < npaths; i++)
+		glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
+
+	if (hasClipPaths != 0)
+		glDisable(GL_STENCIL_TEST);
 }
 
 static void glnvg__triangles(GLNVGcontext* gl, GLNVGcall* call)
@@ -1326,8 +1425,22 @@ static int glnvg__maxVertCount(const NVGpath* paths, int npaths)
 {
 	int i, count = 0;
 	for (i = 0; i < npaths; i++) {
-		count += paths[i].nfill;
-		count += paths[i].nstroke;
+		if (paths[i].clip == 0) {
+			count += paths[i].nfill;
+			count += paths[i].nstroke;
+		}
+	}
+	return count;
+}
+
+static int glnvg__maxClipVertCount(const NVGpath* paths, int npaths)
+{
+	int i, count = 0;
+	for (i = 0; i < npaths; i++) {
+		if (paths[i].clip != 0) {
+			count += paths[i].nfill;
+			count += paths[i].nstroke;
+		}
 	}
 	return count;
 }
@@ -1380,6 +1493,38 @@ static int glnvg__allocVerts(GLNVGcontext* gl, int n)
 	return ret;
 }
 
+static int glnvg__allocClipVerts(NVGclipPath* clip, int n)
+{
+	int ret = 0;
+	if (clip->nverts+n > clip->cverts) {
+		NVGvertex* verts;
+		int cverts = glnvg__maxi(clip->nverts + n, 4096) + clip->cverts/2; // 1.5x Overallocate
+		verts = (NVGvertex*)realloc(clip->verts, sizeof(NVGvertex) * cverts);
+		if (verts == NULL) return -1;
+		clip->verts = verts;
+		clip->cverts = cverts;
+	}
+	ret = clip->nverts;
+	clip->nverts += n;
+	return ret;
+}
+
+static int glnvg__allocClipPaths(NVGclipPath* clip, int n)
+{
+	int ret = 0;
+	if (clip->npaths+n > clip->cpaths) {
+		GLNVGpath* paths;
+		int cpaths = glnvg__maxi(clip->npaths + n, 128) + clip->cpaths/2; // 1.5x Overallocate
+		paths = (GLNVGpath*)realloc(clip->paths, sizeof(GLNVGpath) * cpaths);
+		if (paths == NULL) return -1;
+		clip->paths = paths;
+		clip->cpaths = cpaths;
+	}
+	ret = clip->npaths;
+	clip->npaths += n;
+	return ret;
+}
+
 static int glnvg__allocFragUniforms(GLNVGcontext* gl, int n)
 {
 	int ret = 0, structSize = gl->fragSize;
@@ -1409,56 +1554,119 @@ static void glnvg__vset(NVGvertex* vtx, float x, float y, float u, float v)
 	vtx->v = v;
 }
 
+static void glnvg__setClip(void* uptr, NVGclipPath* clip)
+{
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	gl->clips = clip;
+}
+
+static void glnvg__setLastClip(void* uptr, NVGclipPath* last)
+{
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	gl->lastClip = last;
+}
+
 static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe,
-							  const float* bounds, const NVGpath* paths, int npaths)
+							  const float* bounds, const NVGpath* clipPaths, int nclipPaths, const NVGpath* paths, int npaths)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	GLNVGcall* call = glnvg__allocCall(gl);
 	NVGvertex* quad;
 	GLNVGfragUniforms* frag;
-	int i, maxverts, offset;
+	int i, j, maxverts, maxclipverts, offset, clipOffset, clipPathOffset;
+	int hasClipPaths = (clipPaths != NULL && nclipPaths > 0);
+	int hasClipStack = (gl->clips != NULL && gl->lastClip != NULL);
 
 	if (call == NULL) return;
 
 	call->type = GLNVG_FILL;
-	call->triangleCount = 4;
 	call->pathOffset = glnvg__allocPaths(gl, npaths);
 	if (call->pathOffset == -1) goto error;
 	call->pathCount = npaths;
 	call->image = paint->image;
 	call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
 
-	if (npaths == 1 && paths[0].convex)
-	{
-		call->type = GLNVG_CONVEXFILL;
-		call->triangleCount = 0;	// Bounding box fill quad not needed for convex fill
-	}
+	if (npaths == 1 && paths[0].convex) call->type = GLNVG_CONVEXFILL;
+	call->triangleCount = (call->type == GLNVG_FILL || hasClipPaths) ? 4 : 0;	// Bounding box fill quad not needed for non-clipped convex fill
 
 	// Allocate vertices for all the paths.
 	maxverts = glnvg__maxVertCount(paths, npaths) + call->triangleCount;
+	maxclipverts = glnvg__maxClipVertCount(paths, npaths) + call->triangleCount;
 	offset = glnvg__allocVerts(gl, maxverts);
+
+	if (hasClipStack != 0 && hasClipPaths != 0) {
+		clipOffset = glnvg__allocClipVerts(gl->lastClip, maxclipverts);
+		clipPathOffset = glnvg__allocClipPaths(gl->lastClip, nclipPaths);
+
+		if (clipOffset == -1) goto error;
+		if (clipPathOffset == -1) goto error;
+
+		memset(&gl->lastClip->verts[clipOffset], 0, maxclipverts*sizeof(NVGvertex));
+		memset(&((GLNVGpath*)gl->lastClip->paths)[clipPathOffset], 0, nclipPaths*sizeof(GLNVGpath));
+	} else {
+		clipOffset = 0;
+		clipPathOffset = 0;
+	}
+
 	if (offset == -1) goto error;
 
-	for (i = 0; i < npaths; i++) {
+	for (i = 0, j = 0; i < npaths; i++) {
 		GLNVGpath* copy = &gl->paths[call->pathOffset + i];
 		const NVGpath* path = &paths[i];
 		memset(copy, 0, sizeof(GLNVGpath));
 		if (path->nfill > 0) {
-			copy->fillOffset = offset;
-			copy->fillCount = path->nfill;
-			memcpy(&gl->verts[offset], path->fill, sizeof(NVGvertex) * path->nfill);
-			offset += path->nfill;
+			if (path->clip == 0 || hasClipStack == 0) {
+				if (hasClipStack == 0 && path == clipPaths) {
+					call->clipOffset = offset;
+					call->clipCount = nclipPaths;
+				}
+				copy->fillOffset = offset;
+				copy->fillCount = path->nfill;
+				memcpy(&gl->verts[offset], path->fill, sizeof(NVGvertex) * path->nfill);
+				offset += path->nfill;
+			} else {
+				if (gl->lastClip->verts != NULL) {
+					NVGvertex* clipVerts = gl->lastClip->verts;
+					GLNVGpath* copyClip = &((GLNVGpath*)gl->lastClip->paths)[clipPathOffset + j];
+
+					copyClip->fillOffset = clipOffset;
+					copyClip->fillCount = path->nfill;
+
+					memcpy(&clipVerts[clipOffset], path->fill, sizeof(NVGvertex) * path->nfill);
+					clipOffset += path->nfill;
+					j++;
+				}
+			}
 		}
 		if (path->nstroke > 0) {
-			copy->strokeOffset = offset;
-			copy->strokeCount = path->nstroke;
-			memcpy(&gl->verts[offset], path->stroke, sizeof(NVGvertex) * path->nstroke);
-			offset += path->nstroke;
+			if (path->clip == 0 || hasClipStack == 0) {
+				if (hasClipStack == 0 && path == clipPaths) {
+					call->clipOffset = offset;
+					call->clipCount = nclipPaths;
+				}
+				copy->strokeOffset = offset;
+				copy->strokeCount = path->nstroke;
+				memcpy(&gl->verts[offset], path->stroke, sizeof(NVGvertex) * path->nstroke);
+				offset += path->nstroke;
+			} else {
+				if (gl->lastClip->verts != NULL) {
+					NVGvertex* clipVerts = gl->lastClip->verts;
+					GLNVGpath* copyClip = &((GLNVGpath*)gl->lastClip->paths)[clipPathOffset + j];
+
+					copyClip->strokeOffset = clipOffset;
+					copyClip->strokeCount = path->nstroke;
+
+					memcpy(&clipVerts[clipOffset], path->stroke, sizeof(NVGvertex) * path->nstroke);
+					clipOffset += path->nstroke;
+					j++;
+				}
+			}
 		}
 	}
 
+
 	// Setup uniforms for draw calls
-	if (call->type == GLNVG_FILL) {
+	if (call->triangleCount > 0) {
 		// Quad
 		call->triangleOffset = offset;
 		quad = &gl->verts[call->triangleOffset];
@@ -1492,11 +1700,14 @@ error:
 }
 
 static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGcompositeOperationState compositeOperation, NVGscissor* scissor, float fringe,
-								float strokeWidth, const NVGpath* paths, int npaths)
+								float strokeWidth, const float* bounds, const NVGpath* clipPaths, int nclipPaths, const NVGpath* paths, int npaths)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
 	GLNVGcall* call = glnvg__allocCall(gl);
-	int i, maxverts, offset;
+	NVGvertex* quad;
+	int i, j, maxverts, maxclipverts, offset, clipOffset, clipPathOffset;
+	int hasClipPaths = (clipPaths != NULL && nclipPaths > 0);
+	int hasClipStack = (gl->clips != NULL && gl->lastClip != NULL) && hasClipPaths != 0;
 
 	if (call == NULL) return;
 
@@ -1506,37 +1717,83 @@ static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGcompositeOperati
 	call->pathCount = npaths;
 	call->image = paint->image;
 	call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
+	call->triangleCount = (hasClipStack != 0) ? 4 : 0;	// Bounding box fill quad needed for clipped strokes
 
 	// Allocate vertices for all the paths.
 	maxverts = glnvg__maxVertCount(paths, npaths);
+	maxclipverts = glnvg__maxClipVertCount(paths, npaths) + call->triangleCount;
 	offset = glnvg__allocVerts(gl, maxverts);
+
+	if (hasClipStack != 0 && hasClipPaths != 0) {
+		clipOffset = glnvg__allocClipVerts(gl->lastClip, maxclipverts);
+		clipPathOffset = glnvg__allocClipPaths(gl->lastClip, nclipPaths);
+
+		if (clipOffset == -1) goto error;
+		if (clipPathOffset == -1) goto error;
+
+		memset(&gl->lastClip->verts[clipOffset], 0, maxclipverts*sizeof(NVGvertex));
+		memset(&((GLNVGpath*)gl->lastClip->paths)[clipPathOffset], 0, nclipPaths*sizeof(GLNVGpath));
+	} else {
+		clipOffset = 0;
+		clipPathOffset = 0;
+	}
+
 	if (offset == -1) goto error;
 
-	for (i = 0; i < npaths; i++) {
+	for (i = 0, j = 0; i < npaths; i++) {
 		GLNVGpath* copy = &gl->paths[call->pathOffset + i];
 		const NVGpath* path = &paths[i];
 		memset(copy, 0, sizeof(GLNVGpath));
 		if (path->nstroke) {
-			copy->strokeOffset = offset;
-			copy->strokeCount = path->nstroke;
-			memcpy(&gl->verts[offset], path->stroke, sizeof(NVGvertex) * path->nstroke);
-			offset += path->nstroke;
+			if (path->clip == 0 || hasClipStack == 0) {
+				if (hasClipStack == 0 && path == clipPaths) {
+					call->clipOffset = offset;
+					call->clipCount = nclipPaths;
+				}
+				copy->strokeOffset = offset;
+				copy->strokeCount = path->nstroke;
+				memcpy(&gl->verts[offset], path->stroke, sizeof(NVGvertex) * path->nstroke);
+				offset += path->nstroke;
+			} else {
+				if (gl->lastClip->verts != NULL) {
+					NVGvertex* clipVerts = gl->lastClip->verts;
+					GLNVGpath* copyClip = &((GLNVGpath*)gl->lastClip->paths)[clipPathOffset + j];
+
+					copyClip->strokeOffset = clipOffset;
+					copyClip->strokeCount = path->nstroke;
+
+					memcpy(&clipVerts[clipOffset], path->stroke, sizeof(NVGvertex) * path->nstroke);
+					clipOffset += path->nstroke;
+					j++;
+				}
+			}
 		}
 	}
 
-	if (gl->flags & NVG_STENCIL_STROKES) {
-		// Fill shader
+	// Setup uniforms for draw calls
+	if (call->triangleCount > 0) {
+		// Quad
+		call->triangleOffset = offset;
+		quad = &gl->verts[call->triangleOffset];
+		glnvg__vset(&quad[0], bounds[2], bounds[3], 0.5f, 1.0f);
+		glnvg__vset(&quad[1], bounds[2], bounds[1], 0.5f, 1.0f);
+		glnvg__vset(&quad[2], bounds[0], bounds[3], 0.5f, 1.0f);
+		glnvg__vset(&quad[3], bounds[0], bounds[1], 0.5f, 1.0f);
+
 		call->uniformOffset = glnvg__allocFragUniforms(gl, 2);
 		if (call->uniformOffset == -1) goto error;
-
-		glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor, strokeWidth, fringe, -1.0f);
-		glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset + gl->fragSize), paint, scissor, strokeWidth, fringe, 1.0f - 0.5f/255.0f);
-
-	} else {
+		// Simple shader for stencil
+		GLNVGfragUniforms* frag = nvg__fragUniformPtr(gl, call->uniformOffset);
+		memset(frag, 0, sizeof(*frag));
+		frag->strokeThr = -1.0f;
+		frag->type = NSVG_SHADER_SIMPLE;
 		// Fill shader
+		glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset + gl->fragSize), paint, scissor, fringe, fringe, -1.0f);
+	} else {
 		call->uniformOffset = glnvg__allocFragUniforms(gl, 1);
 		if (call->uniformOffset == -1) goto error;
-		glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor, strokeWidth, fringe, -1.0f);
+		// Fill shader
+		glnvg__convertPaint(gl, nvg__fragUniformPtr(gl, call->uniformOffset), paint, scissor, fringe, fringe, -1.0f);
 	}
 
 	return;
@@ -1645,10 +1902,14 @@ NVGcontext* nvgCreateGLES3(int flags)
 	params.renderStroke = glnvg__renderStroke;
 	params.renderTriangles = glnvg__renderTriangles;
 	params.renderDelete = glnvg__renderDelete;
+	params.setClip = glnvg__setClip;
+	params.setLastClip = glnvg__setLastClip;
 	params.userPtr = gl;
 	params.edgeAntiAlias = flags & NVG_ANTIALIAS ? 1 : 0;
 
 	gl->flags = flags;
+	gl->clips = NULL;
+	gl->lastClip = NULL;
 
 	ctx = nvgCreateInternal(&params);
 	if (ctx == NULL) goto error;

@@ -838,11 +838,15 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 		for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
 		{
 			if (tex->bitmaparray[i].size() > 0)
-			{
 				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size(),false);
-				tex->bitmaparray[i].clear();
+			else if (tex->max_filled_miplevel_compressed && i >= tex->max_filled_miplevel_compressed)
+			{
+				// this ensures that the miplevels below the minimum size for dxt textures are filled with something
+				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, max(tex->width>>i,1U), max(tex->height>>i,1U), 0, tex->bitmaparray[tex->max_filled_miplevel_compressed-1].data(),tex->format,tex->compressedformat,8,false);
 			}
 		}
+		for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
+			tex->bitmaparray[i].clear();
 	}
 	else 
 	{

@@ -233,6 +233,8 @@ void TextureBase::fillFromDXT1(bool hasrgbdata, uint32_t level, uint32_t w, uint
 			bitmaparray[level][pos++]=rgbdata[j*4+2];
 			bitmaparray[level][pos++]=rgbdata[j*4+3];
 		}
+		if (!this->is<CubeTexture>())
+			max_filled_miplevel_compressed++;
 	}
 	else
 		bitmaparray[level].clear();
@@ -265,6 +267,8 @@ void TextureBase::fillFromDXT5(bool hasalphadata, bool hasrgbdata, uint32_t leve
 			bitmaparray[level][pos++]=rgbdata[j*4+2];
 			bitmaparray[level][pos++]=rgbdata[j*4+3];
 		}
+		if (!this->is<CubeTexture>())
+			max_filled_miplevel_compressed++;
 	}
 	else
 		bitmaparray[level].clear();
@@ -653,6 +657,8 @@ void TextureBase::uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplev
 			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4+3] = (uint8_t)((((*data) >>24) & 0xff)           );
 		}
 	}
+	if (max_filled_miplevel_compressed < miplevel)
+		max_filled_miplevel_compressed = miplevel;
 	renderaction action;
 	action.action = this->is<CubeTexture>() ? RENDER_LOADCUBETEXTURE : RENDER_LOADTEXTURE;
 	incRef();
@@ -677,6 +683,8 @@ void TextureBase::uploadFromByteArrayIntern(ByteArray* source, uint32_t offset, 
 		createError<RangeError>(getInstanceWorker(),kParamRangeError);
 		return;
 	}
+	if (max_filled_miplevel_compressed < miplevel)
+		max_filled_miplevel_compressed = miplevel;
 	source->readBytes(offset,bytesneeded,bitmaparray[miplevel].data());
 #ifdef ENABLE_GLES
 	switch (format)

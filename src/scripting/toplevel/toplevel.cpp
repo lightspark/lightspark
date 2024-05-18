@@ -1303,18 +1303,18 @@ void Class_base::copyBorrowedTraits(Class_base* src)
 	for(;i != src->borrowedVariables.Variables.end(); ++i)
 	{
 		variable& v = i->second;
-		variable* exitingvar = borrowedVariables.findObjVar(i->first,v.ns,TRAIT_KIND::NO_CREATE_TRAIT,TRAIT_KIND::DECLARED_TRAIT);
-		if (exitingvar)
+		variable* existingvar = borrowedVariables.findObjVar(i->first,v.ns,TRAIT_KIND::NO_CREATE_TRAIT,TRAIT_KIND::DECLARED_TRAIT);
+		if (existingvar)
 		{
 			// variable is already overwritten in this class, but it may be that only getter or setter was overridden, so we check them
-			if (asAtomHandler::isInvalid(exitingvar->getter))
+			if (asAtomHandler::isInvalid(existingvar->getter))
 			{
-				exitingvar->getter = v.getter;
+				existingvar->getter = v.getter;
 				ASATOM_INCREF(v.getter);
 			}
-			if (asAtomHandler::isInvalid(exitingvar->setter))
+			if (asAtomHandler::isInvalid(existingvar->setter))
 			{
-				exitingvar->setter = v.setter;
+				existingvar->setter = v.setter;
 				ASATOM_INCREF(v.setter);
 			}
 			continue;
@@ -1418,7 +1418,7 @@ void Class_base::coerceForTemplate(ASWorker* wrk, asAtom &o)
 		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(o,wrk)->getClassName(), getQualifiedClassName());
 }
 
-void Class_base::setSuper(Ref<Class_base> super_)
+void Class_base::setSuper(_R<Class_base> super_)
 {
 	assert(!super);
 	super = super_;
@@ -2204,6 +2204,20 @@ bool Class_base::checkExistingFunction(const multiname &name)
 		v = borrowedVariables.findObjVar(getSystemState(),name, DECLARED_TRAIT);
 	if (v && asAtomHandler::isValid(v->var))
 		return this->isSealed;
+	else if (!this->isBuiltin())
+	{
+		// TODO check traits directly instead of constructing a new object
+		asAtom otmp = asAtomHandler::invalidAtom;
+		getInstance(this->getInstanceWorker(),otmp,false,nullptr,0);
+		setupDeclaredTraits(asAtomHandler::getObject(otmp),false);
+		v = asAtomHandler::getObject(otmp)->findVariableByMultiname(name,nullptr,nullptr,nullptr,false,this->getInstanceWorker());
+		if (v && asAtomHandler::isValid(v->var))
+		{
+			ASATOM_DECREF(otmp);
+			return this->isSealed;
+		}
+		ASATOM_DECREF(otmp);
+	}
 	if (!super.isNull())
 		return super->checkExistingFunction(name);
 	return false;

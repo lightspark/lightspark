@@ -2780,8 +2780,9 @@ void ABCVm::newClass(call_context* th, int n)
 	instance_info* cur=&th->mi->context->instances[n];
 	for(unsigned int i=0;i<cur->trait_count;i++)
 	{
-		//int kind=cur->traits[i].kind&0xf;
-		//if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
+		// don't build slot traits as they mess up protected namespaces
+		int kind=cur->traits[i].kind&0xf;
+		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
 			th->mi->context->buildTrait(ret,additionalslots,&cur->traits[i],true);
 	}
 	ret->initAdditionalSlots(additionalslots);

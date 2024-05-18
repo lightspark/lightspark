@@ -4465,22 +4465,33 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				bool isborrowed = false;
 				variable* v = nullptr;
 				Class_base* cls = function->inClass;
+				asAtom otmp = asAtomHandler::invalidAtom;
 				if (name && name->isStatic)
 				{
 					if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 					{
 						if (!cls->hasoverriddenmethod(name))
 						{
+							Class_base* c = cls;
 							do
 							{
-								v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed,false,wrk);
+								v = c->findVariableByMultiname(*name,c,nullptr,&isborrowed,false,wrk);
 								if (v)
 									break;
-								if (!cls->isSealed)
+								if (!c->isSealed)
 									break;
-								cls = cls->super.getPtr();
+								c = c->super.getPtr();
 							}
-							while (cls);
+							while (c);
+							if (v)
+								cls=c;
+							else
+							{
+								// property may be a slot variable, so check the class instance
+								cls->getInstance(wrk,otmp,false,nullptr,0);
+								cls->setupDeclaredTraits(asAtomHandler::getObject(otmp),false);
+								v = asAtomHandler::getObject(otmp)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+							}
 						}
 						if (v)
 						{
@@ -4491,6 +4502,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 								state.operandlist.push_back(operands(OP_LOCAL,function->inClass, 0,1,state.preloadedcode.size()-1));
 								typestack.push_back(typestackentry(function->inClass,isborrowed));
+								ASATOM_DECREF(otmp);
 								break;
 							}
 							if (function->isStatic && !isborrowed && (v->kind & DECLARED_TRAIT))
@@ -4597,6 +4609,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								o=asAtomHandler::fromObjectNoPrimitive(target);
 								addCachedConstant(state,mi, o,code);
 								typestack.push_back(typestackentry(target,false));
+								ASATOM_DECREF(otmp);
 								break;
 							}
 						}
@@ -4627,9 +4640,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						asAtom value = asAtomHandler::fromObjectNoPrimitive(cls);
 						addCachedConstant(state,mi, value,code);
 						typestack.push_back(typestackentry(cls,isborrowed));
+						ASATOM_DECREF(otmp);
 						break;
 					}
 				}
+				ASATOM_DECREF(otmp);
 				if(!done)
 #endif
 				{
@@ -6812,7 +6827,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						v = typestack[typestack.size()-operationcount].obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 						if (v)
 						{
-							if ((v->kind & TRAIT_KIND::DECLARED_TRAIT) == 0)
+							if ((v->kind & TRAIT_KIND::DECLARED_TRAIT) == 0 || asAtomHandler::is<Class_base>(v->var))
 								v=nullptr;
 						}
 						fromglobal= v != nullptr;
@@ -7901,12 +7916,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				removetypestack(typestack,1);
 				break;
 			case 0x2b://swap
-				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.preloadedcode.push_back((uint32_t)opcode);
 				clearOperands(state,true,&lastlocalresulttype);
-				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(nullptr,false));
-				typestack.push_back(typestackentry(nullptr,false));
+				std::swap(typestack[typestack.size()-2],typestack[typestack.size()-1]);
 				break;
 			case 0x57://newactivation
 			{

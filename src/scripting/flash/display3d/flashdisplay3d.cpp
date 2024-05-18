@@ -839,12 +839,7 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 		for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
 		{
 			if (tex->bitmaparray[i].size() > 0)
-				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, tex->width>>i, tex->height>>i, 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size(),false);
-			else if (tex->max_filled_miplevel_compressed && i >= tex->max_filled_miplevel_compressed)
-			{
-				// this ensures that the miplevels below the minimum size for dxt textures are filled with something
-				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, max(tex->width>>i,1U), max(tex->height>>i,1U), 0, tex->bitmaparray[tex->max_filled_miplevel_compressed-1].data(),tex->format,tex->compressedformat,8,false);
-			}
+				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, max(tex->width>>i,1U), max(tex->height>>i,1U), 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size(),false);
 		}
 		for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
 			tex->bitmaparray[i].clear();
@@ -926,7 +921,7 @@ void Context3D::configureBackBufferIntern(bool enableDepthAndStencil, uint32_t w
 	EngineData* engineData = getSystemState()->getEngineData();
 	if (backframebuffer[index] == UINT32_MAX)
 		backframebuffer[index] = engineData->exec_glGenFramebuffer();
-	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(backframebuffer[currentactionvector]);
+	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(backframebuffer[index]);
 	if (backframebufferID[index] == UINT32_MAX)
 		engineData->exec_glGenTextures(1,&backframebufferID[index]);
 
@@ -945,8 +940,8 @@ void Context3D::configureBackBufferIntern(bool enableDepthAndStencil, uint32_t w
 		{
 			engineData->exec_glBindRenderbuffer(backDepthRenderBuffer[index]);
 			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(width,height);
-			engineData->exec_glBindRenderbuffer(0);
 			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(backDepthRenderBuffer[index]);
+			engineData->exec_glBindRenderbuffer(0);
 		}
 		else
 		{
@@ -2159,12 +2154,12 @@ ASFUNCTIONBODY_ATOM(Program3D,upload)
 	if (!vertexProgram.isNull())
 	{
 		th->vertexprogram = AGALtoGLSL(vertexProgram.getPtr(),true,th->samplerState,th->vertexregistermap,th->vertexattributes,vertexregistermap);
-		LOG(LOG_INFO,"vertex shader:"<<th<<"\n"<<th->vertexprogram);
+		// LOG(LOG_INFO,"vertex shader:"<<th<<"\n"<<th->vertexprogram);
 	}
 	if (!fragmentProgram.isNull())
 	{
 		th->fragmentprogram = AGALtoGLSL(fragmentProgram.getPtr(),false,th->samplerState,th->fragmentregistermap,th->fragmentattributes,vertexregistermap);
-		LOG(LOG_INFO,"fragment shader:"<<th<<"\n"<<th->fragmentprogram);
+		// LOG(LOG_INFO,"fragment shader:"<<th<<"\n"<<th->fragmentprogram);
 	}
 	th->context->addAction(RENDER_ACTION::RENDER_UPLOADPROGRAM,th);
 	th->context->rendermutex.unlock();

@@ -181,7 +181,7 @@ private:
 	unordered_set<VertexBuffer3D*> vectorbufferlist;
 	Stage3D* stage3D;
 	void disposeintern();
-	void configureBackBufferIntern(bool enableDepthAndStencil,uint32_t width,uint32_t height);
+	void configureBackBufferIntern(bool enableDepthAndStencil, uint32_t width, uint32_t height, int index);
 protected:
 	bool renderImpl(RenderContext &ctxt);
 	void loadTexture(TextureBase* tex, uint32_t level);

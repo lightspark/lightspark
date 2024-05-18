@@ -229,6 +229,7 @@ bool initSDL()
 			else
 				sdl_available = !SDL_Init ( SDL_INIT_VIDEO );
 			SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8); // needed for nanovg
+			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24 );
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);// needed for nanovg
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);// needed for nanovg
 #ifdef ENABLE_GLES2
@@ -406,7 +407,11 @@ tiny_string EngineData::FileGetApplicationStorageDir()
 void EngineData::initGLEW()
 {
 //For now GLEW does not work with GLES2
-#ifndef ENABLE_GLES2
+#ifdef ENABLE_GLES2
+#ifdef GL_DEPTH24_STENCIL8_OES
+	supportPackedDepthStencil=true;
+#endif
+#else
 	//Now we can initialize GLEW
 	GLenum err = glewInit();
 	if (GLEW_OK != err)
@@ -1169,17 +1174,22 @@ void EngineData::exec_glBindRenderbuffer(uint32_t renderBuffer)
 	glBindRenderbuffer(GL_RENDERBUFFER,renderBuffer);
 }
 
-void EngineData::exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(uint32_t width, uint32_t height)
+void EngineData::
+	exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(uint32_t width, uint32_t height)
 {
-#ifndef ENABLE_GLES2
-	glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH_STENCIL,width,height);
+#ifdef ENABLE_GLES2
+#ifdef GL_DEPTH24_STENCIL8_OES
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH24_STENCIL8_OES,width,height);
+#endif
+#else
+	glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH24_STENCIL8,width,height);
 #endif
 }
 
 void EngineData::exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(uint32_t depthStencilRenderBuffer)
 {
 #ifndef ENABLE_GLES2
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);	
 #endif
 }
 
@@ -1411,6 +1421,7 @@ void EngineData::glTexImage2Dintern(uint32_t type,int32_t level,int32_t width, i
 				((uint8_t*)pixels)[i] = ((uint8_t*)pixels)[i+2];
 				((uint8_t*)pixels)[i+2] = t;
 			}
+			glTexImage2D(type, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 #else
 			glTexImage2D(type, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_BYTE, pixels);
 #endif
@@ -1421,8 +1432,9 @@ void EngineData::glTexImage2Dintern(uint32_t type,int32_t level,int32_t width, i
 		case TEXTUREFORMAT::BGR_PACKED:
 #if ENABLE_GLES2
 			LOG(LOG_NOT_IMPLEMENTED,"textureformat BGR_PACKED for opengl es");
-#endif
+#else
 			glTexImage2D(type, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_SHORT_5_6_5, pixels);
+#endif
 			break;
 		case TEXTUREFORMAT::COMPRESSED:
 		case TEXTUREFORMAT::COMPRESSED_ALPHA:

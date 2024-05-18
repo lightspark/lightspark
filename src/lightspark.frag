@@ -248,7 +248,7 @@ void main()
 {
 	vec4 vbase = texture2D(g_tex_standard,ls_TexCoords[0].xy);
 #ifdef GL_ES
-	vbase.rgb = vbase.bgr;
+//	vbase.rgb = vbase.bgr;
 #endif
 	vbase.a = clamp(vbase.a+renderStage3D,0.0,1.0); // ensure that alpha component of stage3D content is ignored
 	// apply filter

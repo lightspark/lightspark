@@ -1713,7 +1713,7 @@ static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGcompositeOperati
 	NVGvertex* quad;
 	int i, j, maxverts, maxclipverts, offset, clipOffset, clipPathOffset;
 	int hasClipPaths = (clipPaths != NULL && nclipPaths > 0);
-	int hasClipStack = (gl->clips != NULL && gl->lastClip != NULL) && hasClipPaths != 0;
+	int hasClipStack = (gl->clips != NULL && gl->lastClip != NULL);
 
 	if (call == NULL) return;
 

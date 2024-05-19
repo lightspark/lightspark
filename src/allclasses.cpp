@@ -17,10 +17,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/toplevel/ASQName.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Date.h"
+#include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/JSON.h"
 #include "scripting/toplevel/Math.h"
+#include "scripting/toplevel/Namespace.h"
 #include "scripting/toplevel/RegExp.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/toplevel/XML.h"

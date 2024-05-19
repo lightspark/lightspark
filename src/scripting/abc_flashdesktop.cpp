@@ -21,6 +21,7 @@
 #include "scripting/flash/desktop/clipboardformats.h"
 #include "scripting/flash/desktop/clipboardtransfermode.h"
 
+#include "scripting/toplevel/Global.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"
 using namespace lightspark;

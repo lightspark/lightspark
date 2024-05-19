@@ -28,6 +28,7 @@
 #include "scripting/flash/filters/GradientBevelFilter.h"
 #include "scripting/flash/filters/GradientGlowFilter.h"
 
+#include "scripting/toplevel/Global.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"
 using namespace lightspark;

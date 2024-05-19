@@ -27,6 +27,7 @@
 #include "scripting/argconv.h"
 #include "compat.h"
 #include "backends/security.h"
+#include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/XML.h"

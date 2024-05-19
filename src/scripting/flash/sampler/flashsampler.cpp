@@ -1,4 +1,5 @@
 #include "scripting/flash/sampler/flashsampler.h"
+#include "scripting/toplevel/ASQName.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/argconv.h"
 

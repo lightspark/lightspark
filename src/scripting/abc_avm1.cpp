@@ -25,6 +25,7 @@
 #include "scripting/avm1/avm1text.h"
 #include "scripting/avm1/avm1ui.h"
 #include "scripting/avm1/avm1xml.h"
+#include "scripting/toplevel/Global.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/filters/BevelFilter.h"
 #include "scripting/flash/filters/BlurFilter.h"

@@ -22,6 +22,7 @@
 #include "scripting/flash/geom/orientation3d.h"
 #include "scripting/flash/geom/Vector3D.h"
 
+#include "scripting/toplevel/Global.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"
 using namespace lightspark;

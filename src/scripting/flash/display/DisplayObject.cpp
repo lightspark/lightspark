@@ -44,6 +44,7 @@
 #include "scripting/flash/filters/GlowFilter.h"
 #include "scripting/flash/filters/GradientBevelFilter.h"
 #include "scripting/flash/filters/GradientGlowFilter.h"
+#include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Number.h"
 #include <algorithm>
 

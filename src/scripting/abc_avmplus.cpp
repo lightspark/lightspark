@@ -19,6 +19,7 @@
 
 #include "scripting/avmplus/avmplus.h"
 
+#include "scripting/toplevel/Global.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"
 #include "scripting/toplevel/Integer.h"

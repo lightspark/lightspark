@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/class.h"
 #include "parsing/tags.h"
@@ -69,6 +70,19 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_i
 	this->incRef(); //create on reference for the classes map
 	isReusable = true;
 	subtype = SUBTYPE_INHERIT;
+}
+
+bool Class_inherit::checkScriptInit()
+{
+	if (global)
+	{
+		if (inScriptInit)
+			return false;
+		inScriptInit=true;
+		global->checkScriptInit();
+		inScriptInit=false;
+	}
+	return true;
 }
 
 void Class_inherit::finalize()

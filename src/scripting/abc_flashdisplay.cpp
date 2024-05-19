@@ -51,6 +51,7 @@
 #include "scripting/flash/display/SimpleButton.h"
 #include "scripting/flash/display/Stage3D.h"
 
+#include "scripting/toplevel/Global.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"
 

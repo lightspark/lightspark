@@ -33,6 +33,7 @@
 #include "scripting/flash/globalization/numberparseresult.h"
 #include "scripting/flash/globalization/stringtools.h"
 
+#include "scripting/toplevel/Global.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"
 using namespace lightspark;

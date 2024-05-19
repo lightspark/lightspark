@@ -24,6 +24,8 @@
 #include <string>
 #include <sstream>
 #include "scripting/class.h"
+#include "scripting/toplevel/Global.h"
+#include "scripting/toplevel/Namespace.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/display/RootMovieClip.h"

@@ -20,6 +20,7 @@
 #include "scripting/flash/concurrent/Mutex.h"
 #include "scripting/flash/concurrent/Condition.h"
 
+#include "scripting/toplevel/Global.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"
 using namespace lightspark;

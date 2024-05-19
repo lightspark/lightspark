@@ -17,14 +17,42 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "scripting/flash/sensors/flashsensors.h"
+#ifndef SCRIPTING_TOPLEVEL_ASQNAME_H
+#define SCRIPTING_TOPLEVEL_ASQNAME_H 1
 
-#include "scripting/toplevel/Global.h"
-#include "scripting/class.h"
-#include "scripting/abc.h"
-using namespace lightspark;
+#include "asobject.h"
+#include "scripting/flash/system/flashsystem.h"
 
-void ABCVm::registerClassesFlashSensors(Global* builtin)
+namespace lightspark
 {
-	builtin->registerBuiltin("Accelerometer", "flash.sensors",Class<Accelerometer>::getRef(m_sys));
+
+class ASQName: public ASObject
+{
+friend struct multiname;
+friend class Namespace;
+private:
+	bool uri_is_null;
+	uint32_t uri;
+	uint32_t local_name;
+public:
+	ASQName(ASWorker* wrk,Class_base* c);
+	void setByXML(XML* node);
+	static void sinit(Class_base*);
+	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(generator);
+	ASFUNCTION_ATOM(_getURI);
+	ASFUNCTION_ATOM(_getLocalName);
+	ASFUNCTION_ATOM(_toString);
+	uint32_t getURI() const { return uri; }
+	uint32_t getLocalName() const { return local_name; }
+	bool isEqual(ASObject* o) override;
+
+	tiny_string toString();
+
+	uint32_t nextNameIndex(uint32_t cur_index) override;
+	void nextName(asAtom &ret, uint32_t index) override;
+	void nextValue(asAtom &ret, uint32_t index) override;
+};
+
 }
+#endif /* SCRIPTING_TOPLEVEL_ASQNAME_H */

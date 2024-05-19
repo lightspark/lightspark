@@ -56,18 +56,7 @@ private:
 	asfreelist freelist;
 public:
 	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait, Global* _global);
-	bool checkScriptInit()
-	{
-		if (global)
-		{
-			if (inScriptInit)
-				return false;
-			inScriptInit=true;
-			global->checkScriptInit();
-			inScriptInit=false;
-		}
-		return true;
-	}
+	bool checkScriptInit();
 	bool destruct() override
 	{
 		instancefactory.reset();

@@ -17,6 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/toplevel/ASQName.h"
+#include "scripting/toplevel/Namespace.h"
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Integer.h"

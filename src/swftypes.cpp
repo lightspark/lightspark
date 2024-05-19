@@ -37,6 +37,7 @@
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/ASQName.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Integer.h"

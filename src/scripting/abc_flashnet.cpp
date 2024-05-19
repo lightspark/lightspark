@@ -31,6 +31,7 @@
 #include "scripting/flash/net/DatagramSocket.h"
 #include "scripting/flash/net/LocalConnection.h"
 
+#include "scripting/toplevel/Global.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"
 using namespace lightspark;

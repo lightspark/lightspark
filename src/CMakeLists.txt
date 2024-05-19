@@ -234,13 +234,16 @@ SET(LIBSPARK_SOURCES
   scripting/flash/ui/gameinput.cpp
   scripting/flash/xml/flashxml.cpp
   scripting/toplevel/Array.cpp
+  scripting/toplevel/ASQName.cpp
   scripting/toplevel/ASString.cpp
   scripting/toplevel/Boolean.cpp
   scripting/toplevel/Date.cpp
   scripting/toplevel/Error.cpp
+  scripting/toplevel/Global.cpp
   scripting/toplevel/Integer.cpp
   scripting/toplevel/JSON.cpp
   scripting/toplevel/Math.cpp
+  scripting/toplevel/Namespace.cpp
   scripting/toplevel/Number.cpp
   scripting/toplevel/RegExp.cpp
   scripting/toplevel/UInteger.cpp

@@ -23,6 +23,8 @@
 #include "scripting/abcutils.h"
 #include "scripting/class.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Global.h"
+#include "scripting/toplevel/Namespace.h"
 #include "scripting/toplevel/RegExp.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/display/RootMovieClip.h"

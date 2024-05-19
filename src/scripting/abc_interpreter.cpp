@@ -23,6 +23,8 @@
 #include "scripting/abcutils.h"
 #include "scripting/class.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Global.h"
+#include "scripting/toplevel/Namespace.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Integer.h"

@@ -266,8 +266,11 @@ void XMLList::buildFromString(ASWorker* wrk, const tiny_string &str)
 			createError<TypeError>(wrk,kXMLMalformedElement);
 			return;
 		case pugi::status_bad_pi:
-			createError<TypeError>(wrk,kXMLUnterminatedXMLDecl);
-			return;
+			createError<TypeError>(getWorker(),kXMLUnterminatedProcessingInstruction);
+			break;
+		case pugi::status_bad_declaration:
+			createError<TypeError>(getWorker(),kXMLUnterminatedXMLDecl);
+			break;
 		case pugi::status_bad_attribute:
 			createError<TypeError>(wrk,kXMLUnterminatedAttribute);
 			return;
@@ -291,6 +294,8 @@ void XMLList::buildFromString(ASWorker* wrk, const tiny_string &str)
 		XML* tmp = XML::createFromNode(wrk,*it,(XML*)nullptr,true);
 		if (tmp->constructed)
 			nodes.push_back(_MNR(tmp));
+		else
+			tmp->decRef();
 	}
 }
 
@@ -338,7 +343,7 @@ _NR<XML> XMLList::reduceToXML() const
 		return nodes[0];
 	else
 	{
-		createError<TypeError>(getInstanceWorker(),kIllegalNamespaceError);
+		createError<TypeError>(getInstanceWorker(),kXMLMarkupMustBeWellFormed);
 		return NullRef;
 	}
 }
@@ -469,13 +474,24 @@ ASFUNCTIONBODY_ATOM(XMLList,valueOf)
 ASFUNCTIONBODY_ATOM(XMLList,child)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
-	assert_and_throw(argslen==1);
-	XML::XMLVector res;
-	if(asAtomHandler::is<Number>(args[0]) ||
-		asAtomHandler::is<Integer>(args[0]) ||
-		asAtomHandler::is<UInteger>(args[0]))
+	asAtom propertyName = asAtomHandler::invalidAtom;
+	ARG_CHECK(ARG_UNPACK (propertyName));
+	if (asAtomHandler::isNull(propertyName))
 	{
-		uint32_t index =asAtomHandler::toUInt(args[0]);
+		createError<TypeError>(wrk,kConvertNullToObjectError);
+		return;
+	}
+	if (asAtomHandler::isUndefined(propertyName))
+	{
+		createError<TypeError>(wrk,kConvertUndefinedToObjectError);
+		return;
+	}
+	XML::XMLVector res;
+	if(asAtomHandler::is<Number>(propertyName) ||
+		asAtomHandler::is<Integer>(propertyName) ||
+		asAtomHandler::is<UInteger>(propertyName))
+	{
+		uint32_t index =asAtomHandler::toUInt(propertyName);
 		auto it=th->nodes.begin();
 		for(; it!=th->nodes.end(); ++it)
 		{
@@ -484,7 +500,7 @@ ASFUNCTIONBODY_ATOM(XMLList,child)
 	}
 	else
 	{
-		uint32_t arg0=asAtomHandler::toStringId(args[0],wrk);
+		uint32_t arg0=asAtomHandler::toStringId(propertyName,wrk);
 		auto it=th->nodes.begin();
 		for(; it!=th->nodes.end(); ++it)
 		{
@@ -578,15 +594,23 @@ ASFUNCTIONBODY_ATOM(XMLList,attribute)
 
 	tiny_string attrname;
 	ARG_CHECK(ARG_UNPACK (attrname));
+	if (asAtomHandler::isNull(args[0]))
+	{
+		createError<TypeError>(wrk,kConvertNullToObjectError);
+		return;
+	}
+	if (asAtomHandler::isUndefined(args[0]))
+	{
+		createError<TypeError>(wrk,kConvertUndefinedToObjectError);
+		return;
+	}
 	multiname mname(NULL);
 	mname.name_type=multiname::NAME_STRING;
 	mname.name_s_id=wrk->getSystemState()->getUniqueStringId(attrname);
 	mname.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	mname.isAttribute = true;
-
 	th->getVariableByMultiname(ret,mname, NONE,wrk);
 	assert(asAtomHandler::isValid(ret));
-	ASATOM_INCREF(ret);
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,attributes)
@@ -596,8 +620,8 @@ ASFUNCTIONBODY_ATOM(XMLList,attributes)
 	auto it=th->nodes.begin();
 	for(; it!=th->nodes.end(); ++it)
 	{
-		XML::XMLVector nodeAttributes = (*it)->getAttributes();
-		res->nodes.insert(res->nodes.end(), nodeAttributes.begin(), nodeAttributes.end());
+		XMLList* attrlist = (*it)->getAllAttributes();
+		res->nodes.insert(res->nodes.end(), attrlist->nodes.begin(), attrlist->nodes.end());
 	}
 	ret = asAtomHandler::fromObject(res);
 }
@@ -637,13 +661,24 @@ ASFUNCTIONBODY_ATOM(XMLList,processingInstructions)
 ASFUNCTIONBODY_ATOM(XMLList,_propertyIsEnumerable)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
+	asAtomHandler::setBool(ret,false);
 	if (argslen == 1)
 	{
-		int32_t n = asAtomHandler::toInt(args[0]);
-		asAtomHandler::setBool(ret,n < (int32_t)th->nodes.size());
+		if (asAtomHandler::isInteger(args[0]))
+		{
+			int32_t n = asAtomHandler::toInt(args[0]);
+			asAtomHandler::setBool(ret,n < (int32_t)th->nodes.size());
+		}
+		else
+		{
+			tiny_string s = asAtomHandler::toString(args[0],wrk);
+			if (Array::isIntegerWithoutLeadingZeros(s))
+			{
+				int32_t n = asAtomHandler::toInt(args[0]);
+				asAtomHandler::setBool(ret,n < (int32_t)th->nodes.size());
+			}
+		}
 	}
-	else
-		asAtomHandler::setBool(ret,false);
 }
 ASFUNCTIONBODY_ATOM(XMLList,_hasOwnProperty)
 {
@@ -1467,4 +1502,12 @@ void XMLList::prependNodesTo(XML *dest) const
 		XML::_prependChild(ret,getInstanceWorker(),obj, &arg0, 1);
 		ASATOM_DECREF(ret);
 	}
+}
+string XMLList::toDebugString() const
+{
+	std::string res = ASObject::toDebugString();
+	char buf[100];
+	sprintf(buf," ch=%lu",this->nodes.size());
+	res += buf;
+	return res;
 }

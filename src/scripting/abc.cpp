@@ -592,7 +592,7 @@ ABCContext::ABCContext(RootMovieClip* r, istream& in, ABCVm* vm):scriptsdeclared
 	constantAtoms_namespaces.resize(constant_pool.namespaces.size());
 	for (uint32_t i = 0; i < constant_pool.namespaces.size(); i++)
 	{
-		Namespace* res = Class<Namespace>::getInstanceS(root->getInstanceWorker(),getString(constant_pool.namespaces[i].name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)constant_pool.namespaces[i].kind);
+		Namespace* res = Class<Namespace>::getInstanceS(root->getInstanceWorker(),getString(constant_pool.namespaces[i].name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)constant_pool.namespaces[i].kind,true);
 		if (constant_pool.namespaces[i].kind != 0)
 			res->nskind =(NS_KIND)(int)(constant_pool.namespaces[i].kind);
 		res->setRefConstant();

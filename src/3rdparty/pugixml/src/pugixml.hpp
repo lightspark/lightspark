@@ -991,8 +991,11 @@ namespace pugi
 		status_internal_error,		// Internal error occurred
 
 		status_unrecognized_tag,	// Parser could not determine tag type
-
+		
 		status_bad_pi,				// Parsing error occurred while parsing document declaration/processing instruction
+#ifdef PUGIXML_LIGHTSPARK_MODE // flash xml needs distinction between declaration/processing instruction errors
+		status_bad_declaration,		// Parsing error occurred while parsing document declaration
+#endif
 		status_bad_comment,			// Parsing error occurred while parsing comment
 		status_bad_cdata,			// Parsing error occurred while parsing CDATA section
 		status_bad_doctype,			// Parsing error occurred while parsing document type declaration

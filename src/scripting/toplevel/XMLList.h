@@ -130,6 +130,7 @@ public:
 	void clear();
 	void removeNode(XML* node);
 	XMLList* getTargetObject() { return targetobject; }
+	string toDebugString() const override;
 };
 }
 #endif /* SCRIPTING_TOPLEVEL_XMLLIST_H */

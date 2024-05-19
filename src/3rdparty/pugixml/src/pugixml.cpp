@@ -3182,7 +3182,6 @@ PUGI__NS_BEGIN
 
 			// determine node type; stricmp / strcasecmp is not portable
 			bool declaration = (target[0] | ' ') == 'x' && (target[1] | ' ') == 'm' && (target[2] | ' ') == 'l' && target + 3 == s;
-
 			if (declaration ? PUGI__OPTSET(parse_declaration) : PUGI__OPTSET(parse_pi))
 			{
 				if (declaration)
@@ -3208,7 +3207,11 @@ PUGI__NS_BEGIN
 				if (ch == '?')
 				{
 					// empty node
+#ifdef PUGIXML_LIGHTSPARK_MODE // flash xml needs distinction between declaration/processing instruction errors
+					if (!PUGI__ENDSWITH(*s, '>')) PUGI__THROW_ERROR(declaration ? status_bad_declaration : status_bad_pi, s);
+#else
 					if (!PUGI__ENDSWITH(*s, '>')) PUGI__THROW_ERROR(status_bad_pi, s);
+#endif
 					s += (*s == '>');
 
 					PUGI__POPNODE();
@@ -3221,8 +3224,11 @@ PUGI__NS_BEGIN
 					char_t* value = s;
 
 					PUGI__SCANFOR(s[0] == '?' && PUGI__ENDSWITH(s[1], '>'));
+#ifdef PUGIXML_LIGHTSPARK_MODE // flash xml needs distinction between declaration/processing instruction errors
+					PUGI__CHECK_ERROR(declaration ? status_bad_declaration : status_bad_pi, s);
+#else
 					PUGI__CHECK_ERROR(status_bad_pi, s);
-
+#endif
 					if (declaration)
 					{
 						// replace ending ? with / so that 'element' terminates properly
@@ -3243,7 +3249,11 @@ PUGI__NS_BEGIN
 						s += (*s == '>');
 					}
 				}
+#ifdef PUGIXML_LIGHTSPARK_MODE // flash xml needs distinction between declaration/processing instruction errors
+				else PUGI__THROW_ERROR(declaration ? status_bad_declaration : status_bad_pi, s);
+#else
 				else PUGI__THROW_ERROR(status_bad_pi, s);
+#endif
 			}
 			else
 			{
@@ -3278,6 +3288,10 @@ PUGI__NS_BEGIN
 				LOC_TAG:
 					if (PUGI__IS_CHARTYPE(*s, ct_start_symbol)) // '<#...'
 					{
+
+#ifdef PUGIXML_LIGHTSPARK_MODE // check for invalid QName
+						if (*s==':') PUGI__THROW_ERROR(status_bad_start_element, s);
+#endif
 						PUGI__PUSHNODE(node_element); // Append a new node to the tree.
 
 						cursor->name = s;
@@ -3298,6 +3312,9 @@ PUGI__NS_BEGIN
 
 								if (PUGI__IS_CHARTYPE(*s, ct_start_symbol)) // <... #...
 								{
+#ifdef PUGIXML_LIGHTSPARK_MODE // check for invalid QName
+									if (*s==':') PUGI__THROW_ERROR(status_bad_start_element, s);
+#endif
 									xml_attribute_struct* a = append_new_attribute(cursor, *alloc); // Make space for this attribute.
 									if (!a) PUGI__THROW_ERROR(status_out_of_memory, s);
 
@@ -3331,14 +3348,20 @@ PUGI__NS_BEGIN
 											// After this line the loop continues from the start;
 											// Whitespaces, / and > are ok, symbols and EOF are wrong,
 											// everything else will be detected
-// flash xml allows next attribute without whitespace
+// flash xml allows next attribute without whitespace and needs status_unrecognized_tag if attribute doesn't start with quotes or '=' is missing
 #ifndef PUGIXML_LIGHTSPARK_MODE
 											if (PUGI__IS_CHARTYPE(*s, ct_start_symbol)) PUGI__THROW_ERROR(status_bad_attribute, s);
-#endif
 										}
 										else PUGI__THROW_ERROR(status_bad_attribute, s);
 									}
 									else PUGI__THROW_ERROR(status_bad_attribute, s);
+#else
+										}
+										else 
+											PUGI__THROW_ERROR(status_unrecognized_tag, s);
+									}
+									else PUGI__THROW_ERROR(status_unrecognized_tag, s);
+#endif
 								}
 								else if (*s == '/')
 								{

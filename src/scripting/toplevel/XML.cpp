@@ -1727,6 +1727,11 @@ void XML::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLA
 		setVariableByInteger_intern(index,o,allowConst,alreadyset,wrk);
 		return;
 	}
+	if (!this->parentNode)
+	{
+		createError<TypeError>(getWorker(),kXMLAssignmentToIndexedXMLNotAllowed);
+		return;
+	}
 	childrenlist->setVariableByInteger(index,o,allowConst,alreadyset,wrk);
 }
 multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool replacetext, bool* alreadyset,ASWorker* wrk)
@@ -1812,6 +1817,11 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 	}
 	else if(XML::isValidMultiname(getSystemState(),name,index))
 	{
+		if (!this->parentNode)
+		{
+			createError<TypeError>(getWorker(),kXMLAssignmentToIndexedXMLNotAllowed);
+			return nullptr;
+		}
 		childrenlist->setVariableByMultinameIntern(name,o,allowConst,replacetext,alreadyset,wrk);
 	}
 	else
@@ -2730,7 +2740,7 @@ bool XML::getIgnoreComments()
 
 unsigned int XML::getParseMode()
 {
-	unsigned int parsemode = pugi::parse_cdata | pugi::parse_escapes|pugi::parse_fragment | pugi::parse_doctype |pugi::parse_pi|pugi::parse_declaration;
+	unsigned int parsemode = pugi::parse_cdata | pugi::parse_escapes|pugi::parse_fragment | pugi::parse_doctype |pugi::parse_pi|pugi::parse_declaration|pugi::parse_validate_closing_tags;
 	if (!ignoreWhitespace) parsemode |= pugi::parse_ws_pcdata;
 	//if (!ignoreProcessingInstructions) parsemode |= pugi::parse_pi|pugi::parse_declaration;
 	if (!ignoreComments) parsemode |= pugi::parse_comments;
@@ -2922,6 +2932,8 @@ void XML::dumpTreeObjects(int indent)
 
 void XML::createTree(const pugi::xml_node& rootnode,bool fromXMLList)
 {
+	if (this->getInstanceWorker()->currentCallContext && this->getInstanceWorker()->currentCallContext->exceptionthrown)
+		return;
 	pugi::xml_node node = rootnode;
 	bool done = false;
 	if (this->childrenlist.isNull() || this->childrenlist->nodes.size() > 0)
@@ -2932,6 +2944,8 @@ void XML::createTree(const pugi::xml_node& rootnode,bool fromXMLList)
 	{
 		while (true)
 		{
+			if (this->getInstanceWorker()->currentCallContext && this->getInstanceWorker()->currentCallContext->exceptionthrown)
+				return;
 			//LOG(LOG_INFO,"rootfill:"<<node.name()<<" "<<node.value()<<" "<<node.type()<<" "<<parentNode.isNull());
 			switch (node.type())
 			{
@@ -2987,6 +3001,12 @@ void XML::createTree(const pugi::xml_node& rootnode,bool fromXMLList)
 			node = node.next_sibling();
 			if (node.type() == pugi::node_null)
 				break;
+		}
+		// only one elemnt node in root allowed
+		if (node.next_sibling().type() != pugi::node_null)
+		{
+			createError<TypeError>(getWorker(),kXMLMarkupMustBeWellFormed);
+			return;
 		}
 		//LOG(LOG_INFO,"constructed:"<<this->toXMLString_internal());
 	}
@@ -3059,10 +3079,17 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 			node->namespacedefs.push_back(_MR(ns));
 		}
 	}
+	bool namespacefound = true;
 	uint32_t pos = nodename.find(":");
 	if (pos != tiny_string::npos)
 	{
 		// nodename has namespace
+		if (pos==0)
+		{
+			createError<TypeError>(getWorker(),kXMLBadQName);
+			return;
+		}
+		namespacefound=false;
 		node->nodenamespace_prefix = node->getSystemState()->getUniqueStringId(nodename.substr(0,pos));
 		node->nodenameID = node->getSystemState()->getUniqueStringId(nodename.substr(pos+1,nodename.end()));
 		if (node->nodenamespace_prefix == BUILTIN_STRINGS::STRING_XML)
@@ -3070,7 +3097,6 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 		else
 		{
 			XML* tmpnode = node;
-			bool found = false;
 			while (tmpnode)
 			{
 				for (auto itns = tmpnode->namespacedefs.begin(); itns != tmpnode->namespacedefs.end();itns++)
@@ -3079,17 +3105,22 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 					if ((*itns)->getPrefix(undefined) == node->nodenamespace_prefix)
 					{
 						node->nodenamespace_uri = (*itns)->getURI();
-						found = true;
+						namespacefound = true;
 						break;
 					}
 				}
-				if (found)
+				if (namespacefound)
 					break;
 				if (!tmpnode->parentNode)
 					break;
 				tmpnode = tmpnode->parentNode;
 			}
 		}
+	}
+	if (!namespacefound)
+	{
+		createError<TypeError>(getWorker(),kXMLPrefixNotBound);
+		return;
 	}
 	for(itattr = srcnode.attributes_begin();itattr!=srcnode.attributes_end();++itattr)
 	{
@@ -3135,7 +3166,20 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 		}
 		tmp->nodevalue = itattr->value();
 		tmp->constructed = true;
+		// check for duplicates
+		for (auto it = node->attributelist->nodes.begin(); it != node->attributelist->nodes.end(); it++)
+		{
+			if ((*it)->nodenameID == tmp->nodenameID &&
+				(*it)->nodenamespace_prefix == tmp->nodenamespace_prefix &&
+				(*it)->nodenamespace_uri == tmp->nodenamespace_uri
+				)
+			{
+				createError<TypeError>(getWorker(),kXMLDuplicateAttribute);
+				break;
+			}
+		}
 		node->attributelist->nodes.push_back(tmp);
+		
 	}
 	node->constructed=true;
 }

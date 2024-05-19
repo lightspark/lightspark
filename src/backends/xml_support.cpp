@@ -44,6 +44,9 @@ const pugi::xml_node XMLBase::buildFromString(const tiny_string& str,
 		{
 			case pugi::status_ok:
 				break;
+			case pugi::status_bad_start_element:
+				createError<TypeError>(getWorker(),kXMLBadQName);
+				break;
 			case pugi::status_end_element_mismatch:
 				createError<TypeError>(getWorker(),kXMLUnterminatedElementTag);
 				break;
@@ -51,6 +54,9 @@ const pugi::xml_node XMLBase::buildFromString(const tiny_string& str,
 				createError<TypeError>(getWorker(),kXMLMalformedElement);
 				break;
 			case pugi::status_bad_pi:
+				createError<TypeError>(getWorker(),kXMLUnterminatedProcessingInstruction);
+				break;
+			case pugi::status_bad_declaration:
 				createError<TypeError>(getWorker(),kXMLUnterminatedXMLDecl);
 				break;
 			case pugi::status_bad_attribute:
@@ -64,6 +70,9 @@ const pugi::xml_node XMLBase::buildFromString(const tiny_string& str,
 				break;
 			case pugi::status_bad_comment:
 				createError<TypeError>(getWorker(),kXMLUnterminatedComment);
+				break;
+			case pugi::status_bad_end_element:
+				createError<TypeError>(getWorker(),kXMLMalformedElement);
 				break;
 			default:
 				LOG(LOG_ERROR,"xml parser error:"<<buf<<" "<<res.status<<" "<<res.description());

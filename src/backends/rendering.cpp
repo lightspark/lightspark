@@ -311,7 +311,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			
 			// upload current content of bitmap container (no need for locking the bitmapcontainer as the worker thread is waiting until rendering is done)
 			// TODO should only be done if the content was already set to something
-			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, it->bitmapcontainer->getData(),true);
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0,w,h,0,it->bitmapcontainer->getData());
 			engineData->exec_glClear(CLEARMASK(CLEARMASK::DEPTH|CLEARMASK::STENCIL));
 			baseFramebuffer=bmframebuffer;
 			baseRenderbuffer=bmrenderbuffer;

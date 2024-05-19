@@ -1155,6 +1155,8 @@ static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 	int hasClipPaths = (call->clipCount > 0 || hasClipStack);
 
 	if (npaths <= 0) return;
+	for (i = 0; i < npaths && paths[i].fillCount > 0; i++);
+	if (i <= 0) return;
 
 	// Draw shapes
 	glEnable(GL_STENCIL_TEST);
@@ -1211,6 +1213,8 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 	int hasClipPaths = (call->clipCount > 0 || hasClipStack);
 
 	if (npaths <= 0) return;
+	for (i = 0; i < npaths && paths[i].fillCount > 0; i++);
+	if (i <= 0) return;
 
 	if (hasClipPaths != 0) {
 		glEnable(GL_STENCIL_TEST);
@@ -1246,6 +1250,8 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 	int hasClipPaths = (call->clipCount > 0 || hasClipStack);
 
 	if (npaths <= 0) return;
+	for (i = 0; i < npaths && paths[i].strokeCount > 0; i++);
+	if (i <= 0) return;
 
 	if (hasClipPaths != 0) {
 		glEnable(GL_STENCIL_TEST);

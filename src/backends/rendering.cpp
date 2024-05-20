@@ -303,8 +303,16 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(bmframebuffer);
 			uint32_t bmrenderbuffer = engineData->exec_glGenRenderbuffer();
 			engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(bmrenderbuffer);
-			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(w, h);
-			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(bmrenderbuffer);
+			if (engineData->supportPackedDepthStencil)
+			{
+				engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(w,h);
+				engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(bmrenderbuffer);
+			}
+			else
+			{
+				engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(w, h);
+				engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(bmrenderbuffer);
+			}
 			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
 			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(bmTextureID);
@@ -312,7 +320,6 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			// upload current content of bitmap container (no need for locking the bitmapcontainer as the worker thread is waiting until rendering is done)
 			// TODO should only be done if the content was already set to something
 			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0,w,h,0,it->bitmapcontainer->getData());
-			engineData->exec_glClear(CLEARMASK(CLEARMASK::DEPTH|CLEARMASK::STENCIL));
 			baseFramebuffer=bmframebuffer;
 			baseRenderbuffer=bmrenderbuffer;
 			flipvertical=false; // avoid flipping resulting image vertically (as is done for normal rendering)

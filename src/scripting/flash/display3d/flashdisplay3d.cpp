@@ -211,23 +211,29 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			break;
 		case RENDER_TOTEXTURE:
 		{
-			//action.udata1 = textureID
+			//action.dataobject = Texture
+			//action.udata1 = enableDepthAndStencil
 			//action.udata2 = width
 			//action.udata3 = height
-			//action.fdata[0] = enableDepthAndStencil
-			if (action.udata1 == UINT32_MAX)
-				action.udata1 = currenttextureid;
+			TextureBase* tex = action.dataobject->as<TextureBase>();
+			if (tex->textureID == UINT32_MAX)
+			{
+				if (tex->is<CubeTexture>())
+					loadCubeTexture(tex->as<CubeTexture>(),UINT32_MAX,UINT32_MAX);
+				else
+					loadTexture(tex,UINT32_MAX);
+			}
 			if (textureframebuffer == UINT32_MAX)
 				textureframebuffer = engineData->exec_glGenFramebuffer();
 			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(textureframebuffer);
-			textureframebufferID = action.udata1;
+			textureframebufferID = tex->textureID;
 			engineData->exec_glBindTexture_GL_TEXTURE_2D(textureframebufferID);
 			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
 			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(textureframebufferID);
 			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, action.udata2, action.udata3, 0, nullptr,true);
 			engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
-			enableDepthAndStencilTextureBuffer = action.fdata[0];
+			enableDepthAndStencilTextureBuffer = action.udata1;
 			if (enableDepthAndStencilTextureBuffer)
 			{
 				if (depthRenderBuffer == UINT32_MAX)
@@ -301,6 +307,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		}
 		case RENDER_DRAWTRIANGLES:
 		{
+			//action.dataobject = IndexBuffer3D
 			//action.udata1 = firstIndex
 			//action.udata2 = numTriangles
 			//action.udata3 = bufferID
@@ -463,6 +470,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		}
 		case RENDER_GENERATETEXTURE:
 			//action.dataobject = TextureBase
+			//action.udata1 = set as current texture for rendering
 			if (!action.dataobject.isNull())
 			{
 				TextureBase* tex = action.dataobject->as<TextureBase>();
@@ -1589,16 +1597,12 @@ ASFUNCTIONBODY_ATOM(Context3D,setRenderToTexture)
 	if (antiAlias!=0 || surfaceSelector!=0 || colorOutputIndex!=0)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D.setRenderToTexture ignores parameters antiAlias, surfaceSelector, colorOutput");
 	th->rendermutex.lock();
-	if (tex->textureID == UINT32_MAX)
-	{
-		th->addAction(RENDER_ACTION::RENDER_GENERATETEXTURE,tex.getPtr());
-	}
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_TOTEXTURE;
-	action.udata1 = tex->textureID;
+	action.dataobject = tex;
+	action.udata1 = enableDepthAndStencil ? 1 : 0;
 	action.udata2 = tex->width;
 	action.udata3 = tex->height;
-	action.fdata[0] = enableDepthAndStencil ? 1 : 0;
 	th->addAction(action);
 	th->rendermutex.unlock();
 }

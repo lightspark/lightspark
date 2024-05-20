@@ -1593,7 +1593,7 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperation
 	call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
 
 	if (npaths == 1 && paths[0].convex) call->type = GLNVG_CONVEXFILL;
-	call->triangleCount = (call->type == GLNVG_FILL || hasClipPaths) ? 4 : 0;	// Bounding box fill quad not needed for non-clipped convex fill
+	call->triangleCount = (call->type == GLNVG_FILL || hasClipPaths != 0 || hasClipStack != 0) ? 4 : 0;	// Bounding box fill quad not needed for non-clipped convex fill
 
 	// Allocate vertices for all the paths.
 	maxverts = glnvg__maxVertCount(paths, npaths) + call->triangleCount;
@@ -1723,7 +1723,7 @@ static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGcompositeOperati
 	call->pathCount = npaths;
 	call->image = paint->image;
 	call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
-	call->triangleCount = (hasClipStack != 0) ? 4 : 0;	// Bounding box fill quad needed for clipped strokes
+	call->triangleCount = (hasClipStack != 0 || hasClipPaths != 0) ? 4 : 0;	// Bounding box fill quad needed for clipped strokes
 
 	// Allocate vertices for all the paths.
 	maxverts = glnvg__maxVertCount(paths, npaths);

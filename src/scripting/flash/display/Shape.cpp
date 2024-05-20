@@ -91,8 +91,6 @@ void Shape::setupShape(DefineShapeTag* tag, float _scaling)
 {
 	tokens.filltokens.assign(tag->tokens->filltokens.begin(),tag->tokens->filltokens.end());
 	tokens.stroketokens.assign(tag->tokens->stroketokens.begin(),tag->tokens->stroketokens.end());
-	tokens.canRenderToGL = tag->tokens->canRenderToGL;
-	tokens.canRenderToMaskGL = tag->tokens->canRenderToMaskGL;
 	tokens.boundsRect = tag->tokens->boundsRect;
 	fromTag = tag;
 	// TODO caching of texture currently doesn't work if the DefineShapeTag is used by multiple shape objects with different scaling

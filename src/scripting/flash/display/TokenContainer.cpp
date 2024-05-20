@@ -48,8 +48,6 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 {
 	tokens.filltokens.assign(_tokens.filltokens.begin(),_tokens.filltokens.end());
 	tokens.stroketokens.assign(_tokens.stroketokens.begin(),_tokens.stroketokens.end());
-	tokens.canRenderToGL = _tokens.canRenderToGL;
-	tokens.canRenderToMaskGL = _tokens.canRenderToMaskGL;
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
@@ -296,7 +294,6 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 	}
 	if (owner->getSystemState()->getEngineData()->nvgcontext
 		&& !tokens.empty()
-		&& (tokens.canRenderToGL || (owner->belongsToMask() && tokens.canRenderToMaskGL))
 		&& !r
 		&& !DisplayObject::isShaderBlendMode(owner->getBlendMode())
 		&& !owner->hasFilters()

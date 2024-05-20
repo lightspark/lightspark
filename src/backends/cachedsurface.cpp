@@ -20,7 +20,6 @@
 #include <cassert>
 
 #include "swf.h"
-#include "abc.h"
 #include "backends/cachedsurface.h"
 #include "platforms/engineutils.h"
 #include "logger.h"
@@ -706,7 +705,6 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 		// Pop off masks (if any).
 		while (!clipDepthStack.empty() && clipDepth > 0 && depth > clipDepth)
 		{
-			CachedSurface* clipChild = clipDepthStack.back().second;
 			clipDepth = clipDepthStack.back().first;
 			clipDepthStack.pop_back();
 			

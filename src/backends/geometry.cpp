@@ -636,8 +636,6 @@ tokensVector& tokensVector::operator=(const tokensVector& r)
 {
 	boundsRect = r.boundsRect;
 	currentLineWidth = r.currentLineWidth;
-	canRenderToGL = r.canRenderToGL;
-	canRenderToMaskGL = r.canRenderToMaskGL;
 	filltokens = r.filltokens;
 	stroketokens = r.stroketokens;
 	return *this;

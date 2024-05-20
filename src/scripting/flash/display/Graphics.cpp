@@ -75,7 +75,6 @@ ASFUNCTIONBODY_ATOM(Graphics,clear)
 	th->hasChanged = false;
 	th->currentrenderindex=1-th->currentrenderindex;
 	th->tokens[th->currentrenderindex].clear();
-	th->tokens[th->currentrenderindex].canRenderToGL=true;
 	th->fillStyles[th->currentrenderindex].clear();
 	th->lineStyles[th->currentrenderindex].clear();
 	th->needsRefresh=false;
@@ -572,7 +571,6 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 ASFUNCTIONBODY_ATOM(Graphics,drawPath)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	th->tokens[th->currentrenderindex].canRenderToGL=false; // TODO implement nanoVG rendering
 
 	_NR<Vector> commands;
 	_NR<Vector> data;
@@ -825,17 +823,11 @@ void Graphics::refreshTokens()
 	{
 		owner->tokens.filltokens = tokens[currentrenderindex].filltokens;
 		owner->tokens.stroketokens = tokens[currentrenderindex].stroketokens;
-		owner->tokens.canRenderToGL = tokens[currentrenderindex].canRenderToGL;
 		owner->tokens.boundsRect = tokens[currentrenderindex].boundsRect;
 		owner->owner->setNeedsTextureRecalculation(true);
 		tokensHaveChanged=false;
 		needsRefresh = false;
 	}
-}
-
-bool Graphics::shouldRenderToGL()
-{
-	return tokens[currentrenderindex].canRenderToGL;
 }
 
 bool Graphics::hasTokens() const
@@ -895,8 +887,6 @@ void Graphics::AddLineStyleToken(const GeomToken& token)
 ASFUNCTIONBODY_ATOM(Graphics,drawTriangles)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	th->tokens[th->currentrenderindex].canRenderToGL=false; // TODO implement nanoVG rendering
-	th->tokens[th->currentrenderindex].canRenderToMaskGL=false; // TODO implement nanoVG rendering
 
 	_NR<Vector> vertices;
 	_NR<Vector> indices;
@@ -1045,8 +1035,6 @@ void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, 
 ASFUNCTIONBODY_ATOM(Graphics,drawGraphicsData)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
-	th->tokens[th->currentrenderindex].canRenderToGL=false; // TODO implement nanoVG rendering
-	th->tokens[th->currentrenderindex].canRenderToMaskGL=false; // TODO implement nanoVG rendering
 
 	_NR<Vector> graphicsData;
 	ARG_CHECK(ARG_UNPACK(graphicsData));
@@ -1417,8 +1405,6 @@ ASFUNCTIONBODY_ATOM(Graphics,copyFrom)
 				 source->tokens[source->currentrenderindex].filltokens.end());
 	th->tokens[th->currentrenderindex].stroketokens.assign(source->tokens[source->currentrenderindex].stroketokens.begin(),
 				 source->tokens[source->currentrenderindex].stroketokens.end());
-	th->tokens[th->currentrenderindex].canRenderToGL=source->tokens[source->currentrenderindex].canRenderToGL;
-	th->tokens[th->currentrenderindex].canRenderToMaskGL=source->tokens[source->currentrenderindex].canRenderToMaskGL;
 	th->tokensHaveChanged=true; // TODO check if tokens really have changed
 	th->hasChanged = true;
 }

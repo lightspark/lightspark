@@ -76,7 +76,6 @@ public:
 	bool hitTest(const Vector2f& point);
 	bool destruct() override;
 	void refreshTokens();
-	bool shouldRenderToGL();
 	bool hasTokens() const;
 	static void sinit(Class_base* c);
 	FILLSTYLE& addFillStyle(FILLSTYLE& fs) { fillStyles[currentrenderindex].push_back(fs); return fillStyles[currentrenderindex].back();}

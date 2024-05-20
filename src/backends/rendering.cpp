@@ -1520,7 +1520,7 @@ TextureChunk RenderThread::allocateTexture(uint32_t w, uint32_t h, bool compact,
 	if(!done)
 	{
 		//We were not able to allocate the whole surface on a single page
-		LOG(LOG_NOT_IMPLEMENTED,"Support multi page surface allocation");
+		LOG(LOG_NOT_IMPLEMENTED,"Support multi page surface allocation:"<<w<<"x"<<h);
 		ret.makeEmpty();
 	}
 	else

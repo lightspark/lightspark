@@ -1597,7 +1597,7 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperation
 
 	// Allocate vertices for all the paths.
 	maxverts = glnvg__maxVertCount(paths, npaths) + call->triangleCount;
-	maxclipverts = glnvg__maxClipVertCount(paths, npaths) + call->triangleCount;
+	maxclipverts = glnvg__maxClipVertCount(paths, npaths);
 	offset = glnvg__allocVerts(gl, maxverts);
 
 	if (hasClipStack != 0 && hasClipPaths != 0) {
@@ -1726,8 +1726,8 @@ static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGcompositeOperati
 	call->triangleCount = (hasClipStack != 0 || hasClipPaths != 0) ? 4 : 0;	// Bounding box fill quad needed for clipped strokes
 
 	// Allocate vertices for all the paths.
-	maxverts = glnvg__maxVertCount(paths, npaths);
-	maxclipverts = glnvg__maxClipVertCount(paths, npaths) + call->triangleCount;
+	maxverts = glnvg__maxVertCount(paths, npaths) + call->triangleCount;
+	maxclipverts = glnvg__maxClipVertCount(paths, npaths);
 	offset = glnvg__allocVerts(gl, maxverts);
 
 	if (hasClipStack != 0 && hasClipPaths != 0) {

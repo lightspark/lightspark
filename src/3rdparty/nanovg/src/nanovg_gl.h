@@ -1225,9 +1225,11 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image);
+	} else {
+		glnvg__setUniforms(gl, call->uniformOffset, call->image);
 	}
 
-	glnvg__setUniforms(gl, call->uniformOffset, call->image);
 	glnvg__checkError(gl, "convex fill");
 
 	for (i = 0; i < npaths; i++) {
@@ -1262,9 +1264,11 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+		glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image);
+	} else {
+		glnvg__setUniforms(gl, call->uniformOffset, call->image);
 	}
 
-	glnvg__setUniforms(gl, call->uniformOffset, call->image);
 	glnvg__checkError(gl, "stroke fill");
 	// Draw Strokes
 	for (i = 0; i < npaths; i++)

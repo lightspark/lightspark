@@ -742,15 +742,15 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		//throw RunTimeException("Type mismatch in EventDispatcher::addEventListener");
 		return;
 
+	bool useWeakReference=false;
 	bool useCapture=false;
 	int32_t priority=0;
-
 	if(argslen>=3)
 		useCapture=asAtomHandler::Boolean_concrete(args[2]);
 	if(argslen>=4)
 		priority=asAtomHandler::toInt(args[3]);
-	if(argslen>=5 &&asAtomHandler::toInt(args[4]))
-		LOG(LOG_NOT_IMPLEMENTED,"EventDispatcher::addEventListener parameter useWeakReference is ignored");
+	if(argslen>=5)
+		useWeakReference = asAtomHandler::Boolean_concrete(args[4]);
 
 	const tiny_string& eventName=asAtomHandler::toString(args[0],wrk);
 	if(wrk->isPrimordial // don't register frame listeners for background workers
@@ -770,6 +770,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		//Ordered insertion
 		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
 		IFunction* newfunc = asAtomHandler::as<IFunction>(args[1]);
+		if (useWeakReference && !newfunc->inClass)
+			LOG(LOG_NOT_IMPLEMENTED,"EventDispatcher::addEventListener parameter useWeakReference is ignored");
 		// check if a listener that matches type, use_capture and function is already registered
 		if (insertionPoint != listeners.end() && (*insertionPoint).use_capture == newListener.use_capture)
 		{

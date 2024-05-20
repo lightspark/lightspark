@@ -4474,25 +4474,28 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					{
 						if (!cls->hasoverriddenmethod(name))
 						{
-							Class_base* c = cls;
-							do
-							{
-								v = c->findVariableByMultiname(*name,c,nullptr,&isborrowed,false,wrk);
-								if (v)
-									break;
-								if (!c->isSealed)
-									break;
-								c = c->super.getPtr();
-							}
-							while (c);
+							// property may be a slot variable, so check the class instance first
+							cls->getInstance(wrk,otmp,false,nullptr,0);
+							cls->setupDeclaredTraits(asAtomHandler::getObject(otmp),false);
+							v = asAtomHandler::getObject(otmp)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 							if (v)
-								cls=c;
+								isborrowed=true;
 							else
 							{
-								// property may be a slot variable, so check the class instance
-								cls->getInstance(wrk,otmp,false,nullptr,0);
-								cls->setupDeclaredTraits(asAtomHandler::getObject(otmp),false);
-								v = asAtomHandler::getObject(otmp)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+								// property not a slot variable, so check the class the function belongs to
+								Class_base* c = cls;
+								do
+								{
+									v = c->findVariableByMultiname(*name,c,nullptr,&isborrowed,false,wrk);
+									if (v)
+										break;
+									if (!c->isSealed)
+										break;
+									c = c->super.getPtr();
+								}
+								while (c);
+								if (v)
+									cls=c;
 							}
 						}
 						if (v)

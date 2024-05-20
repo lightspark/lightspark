@@ -627,7 +627,7 @@ static int glnvg__renderCreate(void* uptr)
 		"		#ifdef NANOVG_GL3\n"
 		"		bool even = !bool(int(d) & 1);\n"
 		"		#else\n" // !NANOVG_GL3
-		"		bool even = !bool(int(mod(d, 2)));\n"
+		"		bool even = !bool(int(d) - 2*int(floor(d/2.0)));\n"
 		"		#endif\n"
 		"		return (even) ? fract(d) : 1.0 - fract(d);\n"
 		"	}\n"

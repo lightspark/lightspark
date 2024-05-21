@@ -505,7 +505,8 @@ _NR<DisplayObject> Sprite::hitTestImpl(const Vector2f& globalPoint, const Vector
 	if (dragged) // no hitting when in drag/drop mode
 		return ret;
 	ret = DisplayObjectContainer::hitTestImpl(globalPoint, localPoint, type,interactiveObjectsOnly);
-	if (ret.isNull() && !hitArea.isNull() && interactiveObjectsOnly)
+	if (interactiveObjectsOnly && !hitArea.isNull() &&
+		(ret.isNull() || !ret->is<Sprite>() || ret->as<Sprite>()->hitTarget.isNull())) // don't check our hitTarget if we already have a hit on another DisplayObject with a hitTarget
 	{
 		Vector2f hitPoint;
 		// TODO: Add an overload for Vector2f.

@@ -3228,7 +3228,7 @@ void Stage::render(RenderContext &ctxt,const MATRIX* startmatrix)
 		((GLRenderContext&)ctxt).lsglLoadIdentity();
 		((GLRenderContext&)ctxt).setMatrixUniform(GLRenderContext::LSGL_MODELVIEW);
 	}
-	return this->getCachedSurface()->Render(getSystemState(),ctxt,startmatrix);
+	this->getCachedSurface()->Render(getSystemState(),ctxt,startmatrix);
 }
 bool Stage::destruct()
 {

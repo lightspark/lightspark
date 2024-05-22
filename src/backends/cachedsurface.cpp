@@ -450,6 +450,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 										ct.applyTransformation(record.Color, r, g, b, a);
 										return NVGgradientStop { nvgRGBAf(r, g, b, a), float(record.Ratio) / 255.0f };
 									});
+									if (stops.back().stop != 1.0) // ensure we end gradient with ratio 1.0
+										stops.push_back(NVGgradientStop {stops.back().color,1.0});
 
 									int spreadMode = toNanoVGSpreadMode(isFocal ? style->FocalGradient.SpreadMode : style->Gradient.SpreadMode);
 

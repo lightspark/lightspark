@@ -598,8 +598,10 @@ std::vector<uint64_t>::const_iterator addDrawCommand(GRAPHICSPATH_COMMANDTYPE cm
 void TokenContainer::fillGraphicsData(Vector* v)
 {
 	ASWorker* wrk = owner->getInstanceWorker();
-	MATRIX m = owner->getConcatenatedMatrix(true);
-	m.translate(tokens.boundsRect.Xmin*scaling,tokens.boundsRect.Ymin*scaling);
+	MATRIX m;
+	// TODO it seems that contrary to specs the coordinates are _not_ in relation to stage
+	m.translate(owner->tx+tokens.boundsRect.Xmin*this->scaling,owner->ty+tokens.boundsRect.Ymin*this->scaling);	
+
 	GraphicsPath* currentpath=nullptr;
 	bool infill=false;
 	for (auto it = tokens.filltokens.cbegin(); it != tokens.filltokens.cend(); it++)

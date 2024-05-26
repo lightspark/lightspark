@@ -40,7 +40,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<Matrix>, matrix);
 	ASPROPERTY_GETTER_SETTER(_NR<Shader>, shader);
 	FILLSTYLE toFillStyle() override;
-	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics) override;
+	void appendToTokens(tokensVector& tokens, Graphics* graphics) override;
 };
 
 }

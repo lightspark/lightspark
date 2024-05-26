@@ -66,7 +66,7 @@ ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, indices)
 ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, uvtData)
 ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, vertices)
 
-void GraphicsTrianglePath::appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics)
+void GraphicsTrianglePath::appendToTokens(tokensVector& tokens,Graphics* graphics)
 {
 	Graphics::drawTrianglesToTokens(vertices, indices, uvtData, culling, tokens);
 }

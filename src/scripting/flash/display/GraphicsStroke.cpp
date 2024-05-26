@@ -99,7 +99,7 @@ void GraphicsStroke::validateFill(_NR<ASObject> oldValue)
 	}
 }
 
-void GraphicsStroke::appendToTokens(std::vector<uint64_t>& tokens, Graphics* graphics)
+void GraphicsStroke::appendToTokens(tokensVector& tokens, Graphics* graphics)
 {
 	LINESTYLE2 style(0xff);
 	style.Width = thickness;
@@ -114,6 +114,6 @@ void GraphicsStroke::appendToTokens(std::vector<uint64_t>& tokens, Graphics* gra
 		style.FillType = gfill->toFillStyle();
 	}
 
-	tokens.emplace_back(GeomToken(SET_STROKE).uval);
-	tokens.emplace_back(GeomToken(graphics->addLineStyle(style)).uval);
+	tokens.filltokens.emplace_back(GeomToken(SET_STROKE).uval);
+	tokens.filltokens.emplace_back(GeomToken(graphics->addLineStyle(style)).uval);
 }

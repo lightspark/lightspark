@@ -88,10 +88,10 @@ FILLSTYLE GraphicsGradientFill::toFillStyle()
 		matrix, spreadMethod, interpolationMethod, focalPointRatio);
 }
 
-void GraphicsGradientFill::appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics)
+void GraphicsGradientFill::appendToTokens(tokensVector& tokens,Graphics* graphics)
 {
 	FILLSTYLE style = toFillStyle();
 	FILLSTYLE& styleref = graphics->addFillStyle(style);
-	tokens.emplace_back(GeomToken(SET_FILL).uval);
-	tokens.emplace_back(GeomToken(styleref).uval);
+	tokens.filltokens.emplace_back(GeomToken(SET_FILL).uval);
+	tokens.filltokens.emplace_back(GeomToken(styleref).uval);
 }

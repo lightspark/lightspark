@@ -627,6 +627,18 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 	}
 }
 
+void tokensVector::updateTokenBounds(int x, int y)
+{
+	if (x < boundsRect.Xmin)
+		boundsRect.Xmin=x;
+	if (x > boundsRect.Xmax)
+		boundsRect.Xmax=x;
+	if (y < boundsRect.Ymin)
+		boundsRect.Ymin=y;
+	if (y > boundsRect.Ymax)
+		boundsRect.Ymax=y;
+}
+
 bool tokensVector::operator==(const tokensVector& r)
 {
 	return currentLineWidth == r.currentLineWidth && boundsRect == r.boundsRect && filltokens == r.filltokens && stroketokens == r.stroketokens;

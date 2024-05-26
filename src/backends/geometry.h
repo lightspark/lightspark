@@ -137,6 +137,7 @@ struct tokensVector
 	{
 		return filltokens.empty() && stroketokens.empty();
 	}
+	void updateTokenBounds(int x, int y);
 	bool operator==(const tokensVector& r);
 	tokensVector& operator=(const tokensVector& r);
 };

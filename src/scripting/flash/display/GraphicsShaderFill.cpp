@@ -64,7 +64,7 @@ FILLSTYLE GraphicsShaderFill::toFillStyle()
 	return FILLSTYLE(0xff);
 }
 
-void GraphicsShaderFill::appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics)
+void GraphicsShaderFill::appendToTokens(tokensVector& tokens,Graphics* graphics)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "GraphicsShaderFill::appendToTokens()");
 	return;

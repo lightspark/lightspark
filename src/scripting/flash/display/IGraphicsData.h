@@ -36,7 +36,7 @@ protected:
 public:
 	static void linkTraits(Class_base* c) {}
 	// Appends GeomTokens for drawing this object into tokens
-	virtual void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics) = 0;
+	virtual void appendToTokens(tokensVector& tokens,Graphics* graphics) = 0;
 };
 
 }

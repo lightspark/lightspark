@@ -544,7 +544,10 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 					if (instroke)
 						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
 					if (infill)
+					{
+						cairo_close_path(cr);
 						executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
+					}
 					infill=true;
 					currentfillstyle=p1.fillStyle;
 					if (currentfillpattern)
@@ -598,6 +601,7 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 							cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
 						break;
 					}
+					cairo_close_path(cr);
 					executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
 					if (currentfillpattern)
 						cairo_pattern_destroy(currentfillpattern);
@@ -743,7 +747,7 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 		cairo_t *cr=cairo_create(cairoSurface);
 		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 		cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-		empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,true,0,0,nullptr,&starttoken);
+		empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,true,tokens.boundsRect.Xmin*scaleFactor,tokens.boundsRect.Ymin*scaleFactor,nullptr,&starttoken);
 		if(!empty)
 		{
 			/* reset the matrix so x and y are not scaled

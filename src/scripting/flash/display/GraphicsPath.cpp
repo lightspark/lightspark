@@ -188,7 +188,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideMoveTo)
 	th->data->append(y);
 }
 
-void GraphicsPath::appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics)
+void GraphicsPath::appendToTokens(tokensVector& tokens,Graphics* graphics)
 {
 	graphics->pathToTokens(commands, data, winding, tokens);
 }

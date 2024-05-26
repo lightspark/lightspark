@@ -42,7 +42,7 @@ FILLSTYLE GraphicsEndFill::toFillStyle()
 	return FILLSTYLE(0xff);
 }
 
-void GraphicsEndFill::appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics)
+void GraphicsEndFill::appendToTokens(tokensVector& tokens,Graphics* graphics)
 {
-	tokens.emplace_back(GeomToken(CLEAR_FILL).uval);
+	tokens.filltokens.emplace_back(GeomToken(CLEAR_FILL).uval);
 }

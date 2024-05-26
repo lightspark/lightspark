@@ -408,7 +408,7 @@ DisplayObject* DisplayObjectContainer::getLastFrameChildAtDepth(int depth)
 
 void DisplayObjectContainer::fillGraphicsData(Vector* v, bool recursive)
 {
-	if (recursive)
+	if (!recursive)
 		return;
 	std::vector<_R<DisplayObject>> tmplist;
 	cloneDisplayList(tmplist);
@@ -2561,7 +2561,7 @@ void DisplayObjectContainer::handleRemovedEvent(DisplayObject* child, bool keepO
 		getVm(getSystemState())->addEvent(_MR(child), e);
 	}
 	if (!keepOnStage && (child->isOnStage() || !child->getStage().isNull()))
-		child->setOnStage(false, false, inskipping);
+		child->setOnStage(false, true, inskipping);
 }
 
 bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool inskipping, bool keeponstage)

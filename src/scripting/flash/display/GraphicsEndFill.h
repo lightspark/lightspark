@@ -33,7 +33,7 @@ public:
 	GraphicsEndFill(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	FILLSTYLE toFillStyle();
-	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics);
+	void appendToTokens(tokensVector& tokens, Graphics* graphics);
 };
 
 }

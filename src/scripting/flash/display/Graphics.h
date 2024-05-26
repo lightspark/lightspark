@@ -58,7 +58,6 @@ private:
 	// we use two tokensVector items to avoid redrawing if nothing has changed since last draw
 	tokensVector tokens[2];
 	void dorender(bool closepath);
-	void updateTokenBounds(int x, int y);
 	void AddFillToken(const GeomToken& token);
 	void AddFillStyleToken(const GeomToken& token);
 	void AddStrokeToken(const GeomToken& token);
@@ -94,14 +93,14 @@ public:
 					  bool smooth);
 	static FILLSTYLE createSolidFill(uint32_t color, uint8_t alpha);
 	void pathToTokens(_NR<Vector> commands,
-				 _NR<Vector> data,
-				 tiny_string windings,
-				 std::vector<uint64_t> &tokens);
+					  _NR<Vector> data,
+					  tiny_string windings,
+					  tokensVector& tokensvector);
 	static void drawTrianglesToTokens(_NR<Vector> vertices,
-					  _NR<Vector> indices,
-					  _NR<Vector> uvtData,
-					  tiny_string culling,
-					  std::vector<uint64_t> &tokens);
+									  _NR<Vector> indices,
+									  _NR<Vector> uvtData,
+									  tiny_string culling,
+									  tokensVector& tokens);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(lineBitmapStyle);
 	ASFUNCTION_ATOM(lineGradientStyle);

@@ -1549,7 +1549,7 @@ void DefineTextTag::computeCached()
 			//Apply glyphMatrix first, then scaledTextMatrix
 			glyphMatrix = scaledTextMatrix.multiplyMatrix(glyphMatrix);
 
-			TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix);
+			TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix,list<LINESTYLE2>(),this->TextBounds);
 			curPos.x += ge.GlyphAdvance;
 		}
 	}

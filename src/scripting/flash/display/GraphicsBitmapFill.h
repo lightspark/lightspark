@@ -41,7 +41,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, repeat);
 	ASPROPERTY_GETTER_SETTER(bool, smooth);
 	FILLSTYLE toFillStyle();
-	void appendToTokens(std::vector<uint64_t>& tokens,Graphics* graphics);
+	void appendToTokens(tokensVector& tokens, Graphics* graphics);
 };
 
 }

@@ -793,7 +793,7 @@ bool Graphics::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number
 bool Graphics::hitTest(const Vector2f& point)
 {
 	Locker l(drawMutex);
-	return CairoTokenRenderer::hitTest(this->tokens[this->currentrenderindex], 1.0/TWIPS_FACTOR, point);
+	return CairoTokenRenderer::hitTest(this->tokens[this->currentrenderindex], 1.0/TWIPS_FACTOR, point,true);
 }
 
 bool Graphics::destruct()

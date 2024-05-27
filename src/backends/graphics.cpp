@@ -734,7 +734,7 @@ bool CairoRenderer::isCachedSurfaceUsable(const DisplayObject* o) const
 		&& abs(getState()->yscale / tex->yContentScale) < 2);
 }
 
-bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, const Vector2f& point)
+bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, const Vector2f& point, bool includeBoundsRect)
 {
 	cairo_surface_t* cairoSurface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 0, 0);
 
@@ -747,7 +747,7 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 		cairo_t *cr=cairo_create(cairoSurface);
 		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 		cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-		empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,true,tokens.boundsRect.Xmin*scaleFactor,tokens.boundsRect.Ymin*scaleFactor,nullptr,&starttoken);
+		empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,true,includeBoundsRect ? tokens.boundsRect.Xmin*scaleFactor : 0,includeBoundsRect ? tokens.boundsRect.Ymin*scaleFactor : 0,nullptr,&starttoken);
 		if(!empty)
 		{
 			/* reset the matrix so x and y are not scaled

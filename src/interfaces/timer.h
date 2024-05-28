@@ -94,10 +94,14 @@ public:
 	virtual uint64_t getCurrentTime_ms() const = 0;
 	/* Gets the current system time in microseconds. */
 	virtual uint64_t getCurrentTime_us() const = 0;
+	/* Gets the current system time in nanoseconds. */
+	virtual uint64_t getCurrentTime_ns() const = 0;
 	/* Sleep for `ms` milliseconds. */
 	virtual void sleep_ms(uint32_t ms) = 0;
 	/* Sleep for `us` microseconds. */
 	virtual void sleep_us(uint32_t us) = 0;
+	/* Sleep for `ns` nanoseconds. */
+	virtual void sleep_ns(uint64_t ns) = 0;
 };
 
 class IChronometer

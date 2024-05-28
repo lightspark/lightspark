@@ -26,9 +26,15 @@ namespace lightspark
 {
 
 /* forward declarations */
+class TimeSpec;
+class Time;
 class TimerThread;
 class Chronometer;
 class ITickJob;
+class ITimingEvent;
+class ITimingEventList;
+class ITime;
+class IChronometer;
 
 };
 #endif /* FORWARDS_TIMER_H */

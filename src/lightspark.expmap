@@ -19,10 +19,12 @@ global:
 		*lightspark::ExtBuiltinCallback*;
 		*lightspark::ExtScriptObject*;
 		*lightspark::EngineData*;
+		*lightspark::SDLEventLoop*;
 		rt;
 		sys;
 		pt;
 		NP_*;
+		compat_*;
 		*tiny_string*;
 	};
 local:

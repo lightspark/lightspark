@@ -36,8 +36,10 @@ class Time : public ITime
 {
 	uint64_t getCurrentTime_ms() const override { return compat_msectiming(); }
 	uint64_t getCurrentTime_us() const override { return compat_usectiming(); }
+	uint64_t getCurrentTime_ns() const override { return compat_nsectiming(); }
 	void sleep_ms(uint32_t ms) override { compat_msleep(ms); }
 	void sleep_us(uint32_t us) override { compat_usleep(us); }
+	void sleep_ns(uint64_t ns) override { compat_nsleep(ns); }
 };
 
 class TimerThread

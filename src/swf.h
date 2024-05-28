@@ -292,8 +292,10 @@ public:
 	void runInnerGotoFrame(DisplayObject* innerClip, const std::vector<_R<DisplayObject>>& removedFrameScripts = {});
 	uint64_t getCurrentTime_ms() const { return time->getCurrentTime_ms(); }
 	uint64_t getCurrentTime_us() const { return time->getCurrentTime_us(); }
+	uint64_t getCurrentTime_ns() const { return time->getCurrentTime_ns(); }
 	void sleep_ms(uint32_t ms) { return time->sleep_ms(ms); }
 	void sleep_us(uint32_t us) { return time->sleep_us(us); }
+	void sleep_ns(uint64_t ns) { return time->sleep_ns(ns); }
 	void tick() override;
 	void tickFence() override;
 	RenderThread* getRenderThread() const { return renderThread; }

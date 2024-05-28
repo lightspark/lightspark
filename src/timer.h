@@ -32,6 +32,64 @@ namespace lightspark
 
 class SystemState;
 
+class TimeSpec
+{
+private:
+	uint64_t sec;
+	uint64_t nsec;
+public:
+
+	static constexpr uint64_t usPerSec = 1000000;
+	static constexpr uint64_t nsPerSec = 1000000000;
+	static constexpr uint64_t nsPerMs = 1000000;
+	static constexpr uint64_t nsPerUs = 1000;
+
+	constexpr TimeSpec(uint64_t secs = 0, uint64_t nsecs = 0) : sec(secs), nsec(nsecs) {}
+
+	static constexpr TimeSpec fromFloat(float secs) { return fromNs(secs * nsPerSec); }
+	static constexpr TimeSpec fromFloatUs(float secs) { return fromUs(secs * usPerSec); }
+	static constexpr TimeSpec fromSec(uint64_t sec) { return TimeSpec(sec, 0); }
+	static constexpr TimeSpec fromMs(uint64_t ms) { return fromNs(ms * nsPerMs); }
+	static constexpr TimeSpec fromUs(uint64_t us) { return fromNs(us * nsPerUs); }
+	static constexpr TimeSpec fromNs(uint64_t ns) { return TimeSpec(ns / nsPerSec, ns % nsPerSec); }
+
+	constexpr bool operator==(const TimeSpec &other) const { return sec == other.sec && nsec == other.nsec; }
+	constexpr bool operator!=(const TimeSpec &other) const { return sec != other.sec || nsec != other.nsec; }
+	constexpr bool operator>(const TimeSpec &other) const { return sec > other.sec || (sec == other.sec && nsec > other.nsec); }
+	constexpr bool operator<(const TimeSpec &other) const { return sec < other.sec || (sec == other.sec && nsec < other.nsec); }
+	constexpr bool operator>=(const TimeSpec &other) const { return sec > other.sec || (sec == other.sec && nsec >= other.nsec); }
+	constexpr bool operator<=(const TimeSpec &other) const { return sec < other.sec || (sec == other.sec && nsec <= other.nsec); }
+
+	TimeSpec operator-(const TimeSpec &other) const { return TimeSpec(sec - other.sec, nsec - other.nsec).normalize(); }
+	TimeSpec operator+(const TimeSpec &other) const { return TimeSpec(sec + other.sec, nsec + other.nsec).normalize(); }
+
+	TimeSpec &operator+=(const TimeSpec &other) { return *this = *this + other; }
+	TimeSpec &operator-=(const TimeSpec &other) { return *this = *this - other; }
+
+	TimeSpec &normalize()
+	{
+		auto normal_secs = ((int64_t)nsec >= 0 ? nsec : nsec - (nsPerSec-1)) / nsPerSec;
+		sec += normal_secs;
+		nsec -= normal_secs * nsPerSec;
+		return *this;
+	}
+
+	operator struct timespec() const
+	{
+		struct timespec ret;
+		ret.tv_sec = sec;
+		ret.tv_nsec = nsec;
+		return ret;
+	}
+
+	constexpr uint64_t toMs() const { return toNs() / nsPerMs; }
+	constexpr uint64_t toUs() const { return toNs() / nsPerUs; }
+	constexpr uint64_t toNs() const { return (sec * nsPerSec) + nsec; }
+
+	constexpr uint64_t getSecs() const { return sec; }
+	constexpr uint64_t getNsecs() const { return nsec; }
+};
+
 class Time : public ITime
 {
 	uint64_t getCurrentTime_ms() const override { return compat_msectiming(); }

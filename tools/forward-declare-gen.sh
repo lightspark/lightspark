@@ -161,7 +161,7 @@ make_file() {
 	echo -e "{\n" >> $output_file;
 	echo -e "/* forward declarations */" >> $output_file;
 	echo -e "${types}" >> $output_file;
-	echo -e "\n}" >> $output_file;
+	echo -e "\n};" >> $output_file;
 	echo -e "#endif /* $def_name */" >> $output_file;
 }
 

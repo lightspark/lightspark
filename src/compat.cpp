@@ -100,6 +100,23 @@ uint64_t compat_usectiming()
 #endif
 }
 
+uint64_t compat_nsectiming()
+{
+#ifdef _WIN32
+	// Based on Windows version of SDL_GetTicksNS().
+	uint64_t counter = compat_perfcount();
+	uint64_t frequency = compat_perffreq();
+	const uint64_t gcd = gcdTmpl(counter, frequency);
+	const uint64_t numerator = 1000000000 / gcd;
+	const uint64_t denominator = frequency / gcd;
+	return (counter * numerator) / denominator;
+#else
+	timespec t;
+	clock_gettime(CLOCK_MONOTONIC,&t);
+	return (t.tv_sec*1000000000 + t.tv_nsec);
+#endif
+}
+
 int kill_child(GPid childPid)
 {
 #ifdef _WIN32
@@ -196,6 +213,36 @@ void compat_usleep(uint64_t us)
 	} while (rc && errno == EINTR);
 #else
 	usleep(us);
+#endif
+}
+
+void compat_nsleep(uint64_t ns)
+{
+#ifdef WIN32
+	LARGE_INTEGER period;
+	initTimerRes();
+	period.QuadPart = -ns/100;
+	HANDLE timer;
+	if (IsWindowsVistaOrGreater())
+		timer = CreateWaitableTimerEx(NULL, NULL, 2, TIMER_ALL_ACCESS);
+	else
+		timer = CreateWaitableTimer(NULL, false, NULL);
+	SetWaitableTimer(timer, &period, 0, NULL, NULL, false);
+	WaitForSingleObject(timer, INFINITE);
+	CloseHandle(timer);
+#elif _POSIX_C_SOURCE >= 199309L
+	struct timespec ts;
+	struct timespec rem;
+	ts.tv_sec = ns / 1000000000;
+	ts.tv_nsec = (ns % 1000000000);
+	int rc;
+	do
+	{
+		rc = nanosleep(&ts, &rem);
+		ts = rem;
+	} while (rc && errno == EINTR);
+#else
+	usleep(ns/1000);
 #endif
 }
 

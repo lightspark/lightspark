@@ -199,8 +199,8 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 
 extern uint32_t asClassCount;
 
-SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode, ITimingEventList* eventList, ITime* _time):
-	time(_time != nullptr ? _time : new Time()),terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
+SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode, IEventLoop* _eventLoop, ITime* _time):
+	eventLoop(_eventLoop),time(_time != nullptr ? _time : eventLoop != nullptr ? eventLoop->getTime() : new Time()),terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -313,8 +313,16 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode, ITimingEventList* e
 	threadPool=new ThreadPool(this);
 	downloadThreadPool=new ThreadPool(this);
 
-	timerThread=new TimerThread(this, eventList);
-	frameTimerThread=new TimerThread(this, eventList);
+	if (eventLoop == nullptr || !eventLoop->timersInEventLoop())
+	{
+		timerThread=new TimerThread(this);
+		frameTimerThread=new TimerThread(this);
+	}
+	else
+	{
+		timerThread = nullptr;
+		frameTimerThread = nullptr;
+	}
 	audioManager=nullptr;
 	intervalManager=new IntervalManager();
 	securityManager=new SecurityManager();
@@ -521,8 +529,10 @@ void SystemState::stopEngines()
 		downloadThreadPool->forceStop();
 	if(threadPool)
 		threadPool->forceStop();
-	timerThread->wait();
-	frameTimerThread->wait();
+	if (timerThread != nullptr)
+		timerThread->wait();
+	if (frameTimerThread != nullptr)
+		frameTimerThread->wait();
 	/* first shutdown the vm, because it can use all the others */
 	if(currentVm)
 		currentVm->shutdown();
@@ -736,10 +746,16 @@ void SystemState::destroy()
 	currentVm = nullptr;
 
 	//Some objects needs to remove the jobs when destroyed so keep the timerThread until now
-	delete timerThread;
-	timerThread=nullptr;
-	delete frameTimerThread;
-	frameTimerThread= nullptr;
+	if (timerThread != nullptr)
+	{
+		delete timerThread;
+		timerThread=nullptr;
+	}
+	if (frameTimerThread != nullptr)
+	{
+		delete frameTimerThread;
+		frameTimerThread= nullptr;
+	}
 	
 	delete renderThread;
 	renderThread=nullptr;
@@ -747,6 +763,7 @@ void SystemState::destroy()
 	inputThread=nullptr;
 	delete engineData;
 	engineData=nullptr;
+	eventLoop = nullptr;
 
 	for(auto it=profilingData.begin();it!=profilingData.end();it++)
 		delete *it;
@@ -782,8 +799,10 @@ void SystemState::setError(const string& c, ERROR_TYPE type)
 	{
 		error=true;
 		errorCause=c;
-		timerThread->stop();
-		frameTimerThread->stop();
+		if (timerThread != nullptr)
+			timerThread->stop();
+		if (frameTimerThread != nullptr)
+			frameTimerThread->stop();
 		//Disable timed rendering
 		removeJob(renderThread);
 		renderThread->draw(true);
@@ -1235,7 +1254,10 @@ void SystemState::addDownloadJob(IThreadJob* j)
 
 void SystemState::addTick(uint32_t tickTime, ITickJob* job)
 {
-	timerThread->addTick(tickTime,job);
+	if (timerThread != nullptr)
+		timerThread->addTick(tickTime,job);
+	else
+		eventLoop->addTick(tickTime, job);
 }
 
 void SystemState::addFrameTick(uint32_t tickTime, ITickJob* job)
@@ -1245,15 +1267,28 @@ void SystemState::addFrameTick(uint32_t tickTime, ITickJob* job)
 
 void SystemState::addWait(uint32_t waitTime, ITickJob* job)
 {
-	timerThread->addWait(waitTime,job);
+	if (timerThread != nullptr)
+		timerThread->addWait(waitTime,job);
+	else
+		eventLoop->addWait(waitTime, job);
 }
 
 void SystemState::removeJob(ITickJob* job)
 {
-	if (job == this)
-		timerThread->removeJob_noLock(job);
+	if (timerThread != nullptr)
+	{
+		if (job == this)
+			timerThread->removeJob_noLock(job);
+		else
+			timerThread->removeJob(job);
+	}
 	else
-		timerThread->removeJob(job);
+	{
+		if (job == this)
+			eventLoop->removeJobNoLock(job);
+		else
+			eventLoop->removeJob(job);
+	}
 }
 
 ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)

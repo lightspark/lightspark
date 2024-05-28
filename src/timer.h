@@ -34,11 +34,10 @@ class SystemState;
 
 class Time : public ITime
 {
-	uint64_t getCurrentTime_ms() const override { return compat_msectiming(); };
-	uint64_t getCurrentTime_us() const override { return compat_get_thread_cputime_us(); }
-	void sleep_ms(uint32_t ms) override { compat_msleep(ms); };
-	/* TODO: Add `compat_usleep()` */
-	void sleep_us(uint32_t us) override {}
+	uint64_t getCurrentTime_ms() const override { return compat_msectiming(); }
+	uint64_t getCurrentTime_us() const override { return compat_usectiming(); }
+	void sleep_ms(uint32_t ms) override { compat_msleep(ms); }
+	void sleep_us(uint32_t us) override { compat_usleep(us); }
 };
 
 class TimerThread

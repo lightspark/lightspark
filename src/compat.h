@@ -156,10 +156,23 @@ inline T maxTmpl(T a, T b)
 #define dmin minTmpl<double>
 #define dmax maxTmpl<double>
 
+/* gcd */
+template<class T>
+inline T gcdTmpl(T a, T b)
+{
+	return !b ? a : gcdTmpl(b, a % b);
+}
+#define igcd gcdTmpl<int>
+#define dgcd gcdTmpl<double>
+
 /* timing */
 
+uint64_t compat_perfcount();
+uint64_t compat_perffreq();
 uint64_t compat_msectiming();
+uint64_t compat_usectiming();
 void compat_msleep(unsigned int time);
+void compat_usleep(uint64_t us);
 uint64_t compat_get_thread_cputime_us();
 
 /* byte order */

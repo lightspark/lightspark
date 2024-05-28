@@ -20,6 +20,7 @@
 
 #include "platforms/engineutils.h"
 #include "swf.h"
+#include "backends/event_loop.h"
 #include "backends/input.h"
 #include "backends/rendering.h"
 #include "backends/lsopengl.h"
@@ -258,8 +259,9 @@ bool initSDL()
 	return sdl_available;
 }
 /* main loop handling */
-static int mainloop_runner(void*)
+static int mainloop_runner(void* d)
 {
+	SDLEventLoop* th = (SDLEventLoop*)d;
 	if (!initSDL())
 	{
 		LOG(LOG_ERROR,"Unable to initialize SDL:"<<SDL_GetError());
@@ -270,15 +272,20 @@ static int mainloop_runner(void*)
 	{
 		EngineData::mainthread_running = true;
 		EngineData::mainthread_initialized.signal();
-		SDL_Event event;
-		while (SDL_WaitEvent(&event))
+		SDLEvent ev;
+		for (;;)
 		{
-			SystemState* sys = getSys();
-			
-			if (EngineData::mainloop_handleevent(&event,sys))
+			while (th->waitEvent(ev))
 			{
-				EngineData::mainthread_running = false;
-				return 0;
+				SystemState* sys = getSys();
+				SDL_Event* event = (SDL_Event*)ev.getEvent();
+
+				if (EngineData::mainloop_handleevent(event,sys))
+				{
+					delete th;
+					EngineData::mainthread_running = false;
+					return 0;
+				}
 			}
 		}
 	}
@@ -328,10 +335,10 @@ void EngineData::startSDLEventTicker(SystemState* sys)
 /* This is not run in the linux plugin, as firefox
  * runs its own gtk_main, which we must not interfere with.
  */
-bool EngineData::startSDLMain()
+bool EngineData::startSDLMain(SDLEventLoop* eventLoop)
 {
 	assert(!mainLoopThread);
-	mainLoopThread = SDL_CreateThread(mainloop_runner,"mainloop",nullptr);
+	mainLoopThread = SDL_CreateThread(mainloop_runner,"mainloop",eventLoop);
 	mainthread_initialized.wait();
 	return mainthread_running;
 }

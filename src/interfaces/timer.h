@@ -20,9 +20,7 @@
 #ifndef INTERFACES_TIMER_H
 #define INTERFACES_TIMER_H 1
 
-#include "forwards/threading.h"
 #include <cstdint>
-#include <list>
 
 namespace lightspark
 {
@@ -32,6 +30,7 @@ namespace lightspark
 class ITickJob
 {
 friend class TimerThread;
+friend class SDLEventLoop;
 protected:
 	/*
 	   Helper flag to remove a job
@@ -45,45 +44,6 @@ public:
 	virtual ~ITickJob(){}
 	// This is called after tick() for single-shot jobs (i.e. enqueued with isTick==false)
 	virtual void tickFence() = 0;
-};
-
-class ITimingEvent
-{
-public:
-	ITimingEvent(ITickJob* _job, bool _isTick, uint32_t _tickTime) 
-		: job(_job),tickTime(_tickTime),isTick(_isTick) {}
-
-	virtual ~ITimingEvent() {}
-	virtual bool operator<(const ITimingEvent& other) const = 0;
-	virtual bool operator>(const ITimingEvent& other) const = 0;
-	virtual void addMilliseconds(int32_t ms) = 0;
-	virtual bool isInTheFuture() const = 0;
-	virtual bool wait(Mutex& mutex, Cond& cond) = 0;
-
-	ITickJob* job;
-	uint32_t tickTime;
-	bool isTick;
-};
-
-class ITimingEventList
-{
-friend class TimerThread;
-private:
-	std::list<ITimingEvent*> pendingEvents;
-protected:
-	void insertEvent(ITimingEvent* e, Mutex& mutex, Cond& newEvent);
-	void insertEventNoLock(ITimingEvent* e, Cond& newEvent);
-public:
-	const std::list<ITimingEvent*>& getPendingEvents() const { return pendingEvents; }
-	ITimingEvent* getFrontEvent() const { return pendingEvents.front(); }
-	void popFrontEvent() { return pendingEvents.pop_front(); }
-	bool isEmpty() const { return pendingEvents.empty(); }
-
-	void removeJob(ITickJob* job, Mutex& mutex, Cond& newEvent);
-	void removeJobNoLock(ITickJob* job, Cond& newEvent);
-
-	virtual ~ITimingEventList() {}
-	virtual void addJob(uint32_t ms, ITickJob* job, bool isTick, Mutex& mutex, Cond& newEvent) = 0;
 };
 
 class ITime
@@ -102,16 +62,6 @@ public:
 	virtual void sleep_us(uint32_t us) = 0;
 	/* Sleep for `ns` nanoseconds. */
 	virtual void sleep_ns(uint64_t ns) = 0;
-};
-
-class IChronometer
-{
-protected:
-	uint64_t start;
-public:
-	IChronometer(uint64_t _start) : start(_start) {}
-	virtual ~IChronometer() {}
-	virtual uint32_t checkpoint() = 0;
 };
 
 };

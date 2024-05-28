@@ -28,7 +28,7 @@
 using namespace lightspark;
 using namespace std;
 
-TimerThread::TimerThread(SystemState* s, ITimingEventList* _eventList):eventList(_eventList != nullptr ? _eventList : new TimingEventList()),m_sys(s),stopped(false),joined(false)
+TimerThread::TimerThread(SystemState* s):m_sys(s),stopped(false),joined(false)
 {
 	t = SDL_CreateThread(&TimerThread::worker,"TimerThread",this);
 }
@@ -53,8 +53,7 @@ void TimerThread::wait()
 TimerThread::~TimerThread()
 {
 	stop();
-	auto pendingEvents = eventList->getPendingEvents();
-	list<ITimingEvent*>::iterator it=pendingEvents.begin();
+	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	for(;it!=pendingEvents.end();++it)
 	{
 		if ((*it)->job)
@@ -63,11 +62,11 @@ TimerThread::~TimerThread()
 	}
 }
 
-void ITimingEventList::insertEventNoLock(ITimingEvent* e, Cond& newEvent)
+void TimerThread::insertNewEvent_nolock(TimingEvent* e)
 {
-	list<ITimingEvent*>::iterator it=pendingEvents.begin();
+	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	//If there are no events pending, or this is earlier than the first, signal newEvent
-	if(pendingEvents.empty() || **it > *e)
+	if(pendingEvents.empty() || (*it)->wakeUpTime > e->wakeUpTime)
 	{
 		pendingEvents.insert(it, e);
 		newEvent.signal();
@@ -77,7 +76,7 @@ void ITimingEventList::insertEventNoLock(ITimingEvent* e, Cond& newEvent)
 
 	for(;it!=pendingEvents.end();++it)
 	{
-		if(**it > *e)
+		if((*it)->wakeUpTime > e->wakeUpTime)
 		{
 			pendingEvents.insert(it, e);
 			return;
@@ -87,17 +86,16 @@ void ITimingEventList::insertEventNoLock(ITimingEvent* e, Cond& newEvent)
 	pendingEvents.insert(pendingEvents.end(), e);
 }
 
-void ITimingEventList::insertEvent(ITimingEvent* e, Mutex& mutex, Cond& newEvent)
+void TimerThread::insertNewEvent(TimingEvent* e)
 {
 	Locker l(mutex);
-	insertEventNoLock(e, newEvent);
+	insertNewEvent_nolock(e);
 }
 
 //Unsafe debugging routine
 void TimerThread::dumpJobs()
 {
-	auto pendingEvents = eventList->getPendingEvents();
-	list<ITimingEvent*>::iterator it=pendingEvents.begin();
+	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	//Find if the job is in the list
 	for(;it!=pendingEvents.end();++it)
 		LOG(LOG_INFO, (*it)->job );
@@ -121,7 +119,7 @@ int TimerThread::worker(void *d)
 	while(1)
 	{
 		/* Wait until the first event appears */
-		while(th->eventList->isEmpty())
+		while(th->pendingEvents.empty())
 		{
 			th->newEvent.wait(th->mutex);
 			if(th->stopped)
@@ -129,24 +127,26 @@ int TimerThread::worker(void *d)
 		}
 
 		/* Get expiration of first event */
-		ITimingEvent* e=th->eventList->getFrontEvent();
+		CondTime timing=th->pendingEvents.front()->wakeUpTime;
 		/* Wait for the absolute time or a newEvent signal
 		 * this unlocks the mutex and relocks it before returing
 		 */
-		e->wait(th->mutex,th->newEvent);
+		timing.wait(th->mutex,th->newEvent);
 
 		if(th->stopped)
 			return 0;
 
-		if(th->eventList->isEmpty())
+		if(th->pendingEvents.empty())
 			continue;
+
+		TimingEvent* e=th->pendingEvents.front();
 
 		/* check if the top event is due now. It could be have been removed/inserted
 		 * while we slept */
-		if(e->isInTheFuture())
+		if(e->wakeUpTime.isInTheFuture())
 			continue;
 
-		th->eventList->popFrontEvent();
+		th->pendingEvents.pop_front();
 
 		if(e->job->stopMe)
 		{
@@ -158,7 +158,7 @@ int TimerThread::worker(void *d)
 		if(e->isTick)
 		{
 			/* re-enqueue*/
-			e->addMilliseconds(e->tickTime);
+			e->wakeUpTime.addMilliseconds(e->tickTime);
 			th->insertNewEvent_nolock(e);
 		}
 
@@ -185,12 +185,16 @@ int TimerThread::worker(void *d)
 	return 0;
 }
 
-void TimerThread::TimingEventList::addJob(uint32_t ms, ITickJob* job, bool isTick, Mutex& mutex, Cond& newEvent)
+void TimerThread::addTick(uint32_t tickTime, ITickJob* job)
 {
-	uint32_t tickTime = isTick ? ms : 0;
-	uint32_t waitTime = isTick ? 0 : ms;
-	TimingEvent* e=new TimingEvent(job, isTick, tickTime, waitTime);
-	insertEvent(e, mutex, newEvent);
+	TimingEvent* e=new TimingEvent(job, true, tickTime, 0);
+	insertNewEvent(e);
+}
+
+void TimerThread::addWait(uint32_t waitTime, ITickJob* job)
+{
+	TimingEvent* e=new TimingEvent(job, false, 0, waitTime);
+	insertNewEvent(e);
 }
 
 /*
@@ -198,16 +202,16 @@ void TimerThread::TimingEventList::addJob(uint32_t ms, ITickJob* job, bool isTic
  *
  * Removes the given job from the pendingEvents queue
  */
-void ITimingEventList::removeJob(ITickJob* job, Mutex& mutex, Cond& newEvent)
+void TimerThread::removeJob(ITickJob* job)
 {
 	Locker l(mutex);
-	removeJobNoLock(job, newEvent);
+	removeJob_noLock(job);
 }
-
-void ITimingEventList::removeJobNoLock(ITickJob* job, Cond& newEvent)
+void TimerThread::removeJob_noLock(ITickJob* job)
 {
+
 	/* See if that job is currently pending */
-	list<ITimingEvent*>::iterator it=pendingEvents.begin();
+	list<TimingEvent*>::iterator it=pendingEvents.begin();
 	bool first=true;
 	//Find if the job is in the list
 	for(;it!=pendingEvents.end();++it)
@@ -220,7 +224,7 @@ void ITimingEventList::removeJobNoLock(ITickJob* job, Cond& newEvent)
 	if(it==pendingEvents.end())
 		return;
 
-	ITimingEvent* e=*it;
+	TimingEvent* e=*it;
 	pendingEvents.erase(it);
 	delete e;
 
@@ -229,8 +233,9 @@ void ITimingEventList::removeJobNoLock(ITickJob* job, Cond& newEvent)
 		newEvent.signal();
 }
 
-Chronometer::Chronometer() : IChronometer(compat_get_thread_cputime_us())
+Chronometer::Chronometer()
 {
+	start = compat_get_thread_cputime_us();
 }
 
 uint32_t lightspark::Chronometer::checkpoint()

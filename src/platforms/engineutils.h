@@ -25,7 +25,9 @@
 #undef vector
 #include "forwards/tiny_string.h"
 #include "forwards/threading.h"
+#include "forwards/timer.h"
 #include "forwards/swftypes.h"
+#include "forwards/backends/event_loop.h"
 #include "forwards/backends/graphics.h"
 #include "interfaces/threading.h"
 #include "compat.h"
@@ -48,6 +50,7 @@ namespace lightspark
 #define LS_USEREVENT_UPDATE_CONTEXTMENU EngineData::userevent+4
 #define LS_USEREVENT_SELECTITEM_CONTEXTMENU EngineData::userevent+5
 #define LS_USEREVENT_INTERACTIVEOBJECT_REMOVED_FOM_STAGE EngineData::userevent+6
+#define LS_USEREVENT_NEW_TIMER EngineData::userevent+7
 
 class SystemState;
 class StreamCache;
@@ -186,7 +189,7 @@ public:
 	static bool enablerendering;
 	static bool mainthread_running;
 	static Semaphore mainthread_initialized;
-	static bool startSDLMain();
+	static bool startSDLMain(SDLEventLoop* eventLoop);
 
 	virtual bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath);
 	virtual bool FileIsHidden(SystemState* sys,const tiny_string& filename, bool isfullpath);

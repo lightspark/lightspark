@@ -169,12 +169,12 @@ inline T gcdTmpl(T a, T b)
 
 uint64_t compat_perfcount();
 uint64_t compat_perffreq();
-uint64_t compat_msectiming();
-uint64_t compat_usectiming();
-uint64_t compat_nsectiming();
-void compat_msleep(unsigned int time);
-void compat_usleep(uint64_t us);
-void compat_nsleep(uint64_t ns);
+DLL_PUBLIC uint64_t compat_msectiming();
+DLL_PUBLIC uint64_t compat_usectiming();
+DLL_PUBLIC uint64_t compat_nsectiming();
+DLL_PUBLIC void compat_msleep(unsigned int time);
+DLL_PUBLIC void compat_usleep(uint64_t us);
+DLL_PUBLIC void compat_nsleep(uint64_t ns);
 uint64_t compat_get_thread_cputime_us();
 
 /* byte order */

@@ -23,6 +23,7 @@
 #include "asobject.h"
 #include "interfaces/threading.h"
 #include "interfaces/timer.h"
+#include "interfaces/backends/event_loop.h"
 #include "backends/graphics.h"
 #include "backends/urlutils.h"
 #include "threading.h"
@@ -130,6 +131,7 @@ private:
 	ThreadPool* downloadThreadPool;
 	TimerThread* timerThread;
 	TimerThread* frameTimerThread;
+	IEventLoop* eventLoop;
 	ITime* time;
 	Semaphore terminated;
 	float renderRate;
@@ -325,7 +327,7 @@ public:
 	 * \param fileSize The size of the SWF being parsed, if known
 	 * \param mode FLASH or AIR
 	 */
-	SystemState(uint32_t fileSize, FLASH_MODE mode, ITimingEventList* eventList = nullptr, ITime* _time = nullptr) DLL_PUBLIC;
+	SystemState(uint32_t fileSize, FLASH_MODE mode, IEventLoop* _eventLoop = nullptr, ITime* _time = nullptr) DLL_PUBLIC;
 	~SystemState();
 	/* Stop engines, threads and free classes and objects.
 	 * This call will decRef this object in the end,

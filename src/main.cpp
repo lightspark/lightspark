@@ -22,6 +22,7 @@
 #include "backends/security.h"
 #include "backends/config.h"
 #include "backends/streamcache.h"
+#include "backends/event_loop.h"
 #include "swf.h"
 #include "logger.h"
 #include "platforms/engineutils.h"
@@ -31,6 +32,7 @@
 #include <sys/stat.h>
 #include "parsing/streams.h"
 #include "launcher.h"
+#include "timer.h"
 
 #ifdef __MINGW32__
     #ifndef PATH_MAX
@@ -588,7 +590,9 @@ int main(int argc, char* argv[])
 	cout.exceptions( ios::failbit | ios::badbit);
 	cerr.exceptions( ios::failbit | ios::badbit);
 	SystemState::staticInit();
-	if (!EngineData::startSDLMain())
+
+	SDLEventLoop* eventLoop = new SDLEventLoop(new Time());
+	if (!EngineData::startSDLMain(eventLoop))
 	{
 		LOG(LOG_ERROR,"SDL initialization failed, aborting");
 		SystemState::staticDeinit();
@@ -603,7 +607,7 @@ int main(int argc, char* argv[])
 	if (flashMode==SystemState::AIR)
 		EngineData::checkForNativeAIRExtensions(extensions,absolutepath);
 	//NOTE: see SystemState declaration
-	SystemState* sys = new SystemState(fileSize, flashMode);
+	SystemState* sys = new SystemState(fileSize, flashMode, eventLoop);
 	ParseThread* pt = new ParseThread(f, sys->mainClip);
 	pt->addExtensions(extensions);
 	setTLSSys(sys);

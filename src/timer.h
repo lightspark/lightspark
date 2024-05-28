@@ -103,39 +103,29 @@ class Time : public ITime
 class TimerThread
 {
 private:
-	class TimingEventList : public ITimingEventList
+	class TimingEvent
 	{
-	private:
-		class TimingEvent : public ITimingEvent
-		{
-		public:
-			TimingEvent(ITickJob* _job, bool _isTick, uint32_t _tickTime, uint32_t _waitTime)
-				: ITimingEvent(_job, _isTick, _tickTime),wakeUpTime(_isTick ? _tickTime : _waitTime) {}
-
-			bool operator<(const ITimingEvent& other) const override { return wakeUpTime < static_cast<const TimingEvent&>(other).wakeUpTime; };
-			bool operator>(const ITimingEvent& other) const override { return wakeUpTime > static_cast<const TimingEvent&>(other).wakeUpTime; };
-			void addMilliseconds(int32_t ms) override { wakeUpTime.addMilliseconds(ms); };
-			bool isInTheFuture() const override { return wakeUpTime.isInTheFuture(); };
-			bool wait(Mutex& mutex, Cond& cond) override { return wakeUpTime.wait(mutex, cond); };
-
-			CondTime wakeUpTime;
-		};
 	public:
-		void addJob(uint32_t ms, ITickJob* job, bool isTick, Mutex& mutex, Cond& newEvent) override;
+		TimingEvent(ITickJob* _job, bool _isTick, uint32_t _tickTime, uint32_t _waitTime) 
+			: job(_job),wakeUpTime(_isTick ? _tickTime : _waitTime),tickTime(_tickTime),isTick(_isTick) {}
+		ITickJob* job;
+		CondTime wakeUpTime;
+		uint32_t tickTime;
+		bool isTick;
 	};
 	Mutex mutex;
 	Cond newEvent;
 	SDL_Thread* t;
-	ITimingEventList* eventList;
+	std::list<TimingEvent*> pendingEvents;
 	SystemState* m_sys;
 	volatile bool stopped;
 	bool joined;
 	static int worker(void* d);
-	void insertNewEvent(ITimingEvent* e) { eventList->insertEvent(e, mutex, newEvent); }
-	void insertNewEvent_nolock(ITimingEvent* e) { eventList->insertEventNoLock(e, newEvent); }
+	void insertNewEvent(TimingEvent* e);
+	void insertNewEvent_nolock(TimingEvent* e);
 	void dumpJobs();
 public:
-	TimerThread(SystemState* s, ITimingEventList* _eventList = nullptr);
+	TimerThread(SystemState* s);
 	/* Stopps the timer thread from executing any more jobs. This may return
 	 * before the current job has finished its execution.
 	 */
@@ -145,20 +135,22 @@ public:
 	 */
 	void wait();
 	~TimerThread();
-	void addTick(uint32_t tickTime, ITickJob* job) { eventList->addJob(tickTime, job, true, mutex, newEvent); };
-	void addWait(uint32_t waitTime, ITickJob* job) { eventList->addJob(waitTime, job, false, mutex, newEvent); };
+	void addTick(uint32_t tickTime, ITickJob* job);
+	void addWait(uint32_t waitTime, ITickJob* job);
 	/* Remove the job from the list of pending tasks. If it is currently executing,
 	 * wait until it is done.
 	 */
-	void removeJob(ITickJob* job) { eventList->removeJob(job, mutex, newEvent); }
-	void removeJob_noLock(ITickJob* job) { eventList->removeJobNoLock(job, newEvent); }
+	void removeJob(ITickJob* job);
+	void removeJob_noLock(ITickJob* job);
 };
 
-class Chronometer : public IChronometer
+class Chronometer
 {
+private:
+	uint64_t start;
 public:
 	Chronometer();
-	uint32_t checkpoint() override;
+	uint32_t checkpoint();
 };
 
 };

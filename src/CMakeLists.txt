@@ -39,6 +39,7 @@ SET(LIBSPARK_SOURCES
   backends/config.cpp
   backends/currency.cpp
   backends/decoder.cpp
+  backends/event_loop.cpp
   backends/extscriptobject.cpp
   backends/geometry.cpp
   backends/graphics.cpp

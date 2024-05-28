@@ -46,9 +46,6 @@ class SyntheticFunction;
 class AVM1Function;
 class Undefined;
 class Null;
-class ASQName;
-class Namespace;
-class Global;
 
 };
 #endif /* FORWARDS_SCRIPTING_TOPLEVEL_TOPLEVEL_H */

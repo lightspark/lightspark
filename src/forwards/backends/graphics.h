@@ -29,7 +29,8 @@ namespace lightspark
 struct RectF;
 class TextureChunk;
 class ColorTransformBase;
-class CachedSurface;
+struct RefreshableSurface;
+struct RenderDisplayObjectToBitmapContainer;
 class IDrawable;
 class AsyncDrawJob;
 class CairoRenderer;
@@ -41,9 +42,9 @@ class LineData;
 class CairoPangoRenderer;
 class RefreshableDrawable;
 class BitmapRenderer;
-class SoftwareInvalidateQueue;
+class InvalidateQueue;
 class CharacterRenderer;
 class ITextureUploadable;
 
-}
+};
 #endif /* FORWARDS_BACKENDS_GRAPHICS_H */

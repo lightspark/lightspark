@@ -25,6 +25,7 @@
 #define TWIPS_SCALING_FACTOR 1.0/20.0
 
 #include "forwards/swftypes.h"
+#include "forwards/backends/cachedsurface.h"
 #include "forwards/backends/geometry.h"
 #include "interfaces/backends/graphics.h"
 #include "interfaces/threading.h"

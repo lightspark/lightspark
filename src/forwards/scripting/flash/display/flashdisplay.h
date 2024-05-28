@@ -28,7 +28,6 @@ namespace lightspark
 /* forward declarations */
 class InteractiveObject;
 class DisplayObjectContainer;
-class SimpleButton;
 class Sprite;
 struct FrameLabel_data;
 class FrameLabel;
@@ -43,7 +42,6 @@ class StageScaleMode;
 class StageAlign;
 class StageQuality;
 class StageDisplayState;
-class Stage3D;
 class LineScaleMode;
 class BlendMode;
 class GradientType;

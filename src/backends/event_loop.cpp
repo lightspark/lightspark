@@ -44,16 +44,20 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 
 bool SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 {
-	static constexpr auto poll_interval = TimeSpec::fromUs(100);
-	auto delay = poll_interval;
 	SDLEvent& ev = static_cast<SDLEvent&>(event);
 	Locker l(listMutex);
 	for (;;)
 	{
-		bool noTimers = timers.empty();
+		int64_t delay = -1;
+		if (!timers.empty())
+		{
+			auto now = TimeSpec::fromNs(time->getCurrentTime_ns());
+			auto deadline = timers.front().deadline();
+			delay = now < deadline ? (deadline - now).toMsRound() : 0;
+		}
 
 		l.release();
-		int gotEvent = noTimers ? SDL_WaitEvent(&ev.event) : SDL_PollEvent(&ev.event);
+		int gotEvent = SDL_WaitEventTimeout(&ev.event, delay);
 		l.acquire();
 		if (gotEvent && ev.event.type != LS_USEREVENT_NEW_TIMER)
 			return true;
@@ -87,13 +91,6 @@ bool SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 
 			if (!timer.isTick)
 				timer.job->tickFence();
-		}
-		else
-		{
-			delay = minTmpl(deadline - now, delay);
-			l.release();
-			time->sleep_ns(delay.toNs());
-			l.acquire();
 		}
 	}
 }

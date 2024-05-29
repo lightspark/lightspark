@@ -21,6 +21,7 @@
 #define INTERFACES_BACKENDS_EVENT_LOOP_H 1
 
 #include "forwards/backends/event_loop.h"
+#include "forwards/swf.h"
 #include "forwards/threading.h"
 #include "forwards/timer.h"
 #include "interfaces/timer.h"
@@ -54,7 +55,7 @@ public:
 	// Wait for an event.
 	// Returns true if we got an event, or false if either an error
 	// occured, or (if supported) a timer's deadline was passed.
-	virtual bool waitEvent(IEvent& event) = 0;
+	virtual bool waitEvent(IEvent& event, SystemState* sys) = 0;
 	// Adds a repating tick job to the timer list.
 	virtual void addTick(uint32_t tickTime, ITickJob* job) = 0;
 	// Adds a single-shot tick job to the timer list.

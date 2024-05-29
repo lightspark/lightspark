@@ -72,9 +72,8 @@ private:
 	void addJob(uint32_t ms, bool isTick, ITickJob* job);
 public:
 	SDLEventLoop(ITime* time) : IEventLoop(time) {}
-	// Wait for an event.
-	// Returns true if we got an event, or false if either an error
-	// occured, or (if supported) a timer's deadline was passed.
+	// Wait indefinitely for an event.
+	// Returns true if we got an event, or false if an error occured.
 	bool waitEvent(IEvent& event, SystemState* sys) override;
 	// Adds a repating tick job to the timer list.
 	void addTick(uint32_t tickTime, ITickJob* job) override;

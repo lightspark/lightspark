@@ -52,9 +52,8 @@ protected:
 public:
 	IEventLoop(ITime* _time) : time(_time) {}
 	virtual ~IEventLoop() {}
-	// Wait for an event.
-	// Returns true if we got an event, or false if either an error
-	// occured, or (if supported) a timer's deadline was passed.
+	// Wait indefinitely for an event.
+	// Returns true if we got an event, or false if an error occured.
 	virtual bool waitEvent(IEvent& event, SystemState* sys) = 0;
 	// Adds a repating tick job to the timer list.
 	virtual void addTick(uint32_t tickTime, ITickJob* job) = 0;

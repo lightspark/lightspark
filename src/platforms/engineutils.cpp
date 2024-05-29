@@ -273,19 +273,16 @@ static int mainloop_runner(void* d)
 		EngineData::mainthread_running = true;
 		EngineData::mainthread_initialized.signal();
 		SDLEvent ev;
-		for (;;)
+		while (th->waitEvent(ev, getSys()))
 		{
-			while (th->waitEvent(ev, getSys()))
-			{
-				SystemState* sys = getSys();
-				SDL_Event* event = (SDL_Event*)ev.getEvent();
+			SystemState* sys = getSys();
+			SDL_Event* event = (SDL_Event*)ev.getEvent();
 
-				if (EngineData::mainloop_handleevent(event,sys))
-				{
-					delete th;
-					EngineData::mainthread_running = false;
-					return 0;
-				}
+			if (EngineData::mainloop_handleevent(event,sys))
+			{
+				delete th;
+				EngineData::mainthread_running = false;
+				return 0;
 			}
 		}
 	}

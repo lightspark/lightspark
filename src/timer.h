@@ -85,6 +85,8 @@ public:
 	constexpr uint64_t toMs() const { return toNs() / nsPerMs; }
 	constexpr uint64_t toUs() const { return toNs() / nsPerUs; }
 	constexpr uint64_t toNs() const { return (sec * nsPerSec) + nsec; }
+	constexpr uint64_t toMsRound() const { return (toNs() + (nsPerMs / 2)) / nsPerMs; }
+	constexpr uint64_t toUsRound() const { return (toNs() + (nsPerUs / 2)) / nsPerUs; }
 
 	constexpr uint64_t getSecs() const { return sec; }
 	constexpr uint64_t getNsecs() const { return nsec; }

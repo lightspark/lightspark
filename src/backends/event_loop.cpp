@@ -61,7 +61,7 @@ bool SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 		if (sys != nullptr && sys->isShuttingDown())
 			return false;
 		if (timers.empty())
-			return false;
+			continue;
 
 		TimeEvent timer = timers.front();
 		auto deadline = timer.deadline();
@@ -73,7 +73,7 @@ bool SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 			if (timer.job->stopMe)
 			{
 				timer.job->tickFence();
-				return false;
+				continue;
 			}
 			if (timer.isTick)
 			{
@@ -87,7 +87,6 @@ bool SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 
 			if (!timer.isTick)
 				timer.job->tickFence();
-			return false;
 		}
 		else
 		{

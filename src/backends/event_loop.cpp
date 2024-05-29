@@ -42,7 +42,7 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 	return *this;
 }
 
-bool SDLEventLoop::waitEvent(IEvent& event)
+bool SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 {
 	static constexpr auto poll_interval = TimeSpec::fromUs(100);
 	auto delay = poll_interval;
@@ -54,10 +54,12 @@ bool SDLEventLoop::waitEvent(IEvent& event)
 
 		l.release();
 		int gotEvent = noTimers ? SDL_WaitEvent(&ev.event) : SDL_PollEvent(&ev.event);
+		l.acquire();
 		if (gotEvent && ev.event.type != LS_USEREVENT_NEW_TIMER)
 			return true;
-		l.acquire();
 
+		if (sys != nullptr && sys->isShuttingDown())
+			return false;
 		if (timers.empty())
 			return false;
 

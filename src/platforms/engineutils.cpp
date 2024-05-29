@@ -275,7 +275,7 @@ static int mainloop_runner(void* d)
 		SDLEvent ev;
 		for (;;)
 		{
-			while (th->waitEvent(ev))
+			while (th->waitEvent(ev, getSys()))
 			{
 				SystemState* sys = getSys();
 				SDL_Event* event = (SDL_Event*)ev.getEvent();

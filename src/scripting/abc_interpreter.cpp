@@ -2854,6 +2854,24 @@ bool checkmatchingLastObjtype(preloadstate& state, Type* resulttype, Class_base*
 	}
 	return false;
 }
+void addOperand(preloadstate& state,operands& op,memorystream& code)
+{
+	if (op.type == OP_CACHED_SLOT)
+	{
+		state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDSLOT);
+		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		state.preloadedcode.back().pcode.arg3_uint = op.index;
+		state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));
+	}
+	else
+	{
+		state.preloadedcode.push_back(0x62); //getlocal
+		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		state.preloadedcode.back().pcode.arg3_uint = op.index;
+		state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));
+	}
+	
+}
 void addCachedConstant(preloadstate& state,method_info* mi, asAtom& val,memorystream& code)
 {
 	if (asAtomHandler::isObject(val))
@@ -5812,23 +5830,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						// this ensures that the "old" value is stored in a localresult and can be used later, as the duplicated value may be changed by an increment etc.
 						setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DUP,opcode,code,false,true,restype,code.tellg(),opcode_optimized==0,false,true,true,ABC_OP_OPTIMZED_DUP_SETSLOT);
 						if (!dupoperand)
-						{
-							if (op.type == OP_CACHED_SLOT)
-							{
-								state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDSLOT);
-								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-								state.preloadedcode.back().pcode.arg3_uint = op.index;
-								state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));
-							}
-							else
-							{
-								state.preloadedcode.push_back(0);
-								state.preloadedcode.back().pcode.func = abc_getlocal;
-								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-								state.preloadedcode.back().pcode.arg3_uint = op.index;
-								state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));
-							}
-						}
+							addOperand(state,op,code);
 					}
 					else
 					{
@@ -7114,6 +7116,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											|| prevopcode == 0xd1//getlocal_1
 											|| prevopcode == 0xd2//getlocal_2
 											|| prevopcode == 0xd3//getlocal_3
+											|| prevopcode == 0x66//getproperty
 											;
 									uint32_t opsize=state.operandlist.size();
 									if ((opcode == 0x4f && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code)) ||
@@ -7134,9 +7137,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											state.preloadedcode.pop_back();
 											// re-add last operand if it is not the result of the previous operation
 											if (reuseoperand || generatorneedsconversion)
-											{
-												state.operandlist.push_back(operands(op.type, op.objtype,op.index,0, 0));
-											}
+												addOperand(state,op,code);
 											state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 											if (generatorneedsconversion)
 											{

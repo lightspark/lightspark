@@ -312,6 +312,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 			bool instroke = false;
 			bool infill = false;
 			bool renderneeded=false;
+			number_t strokescalex=1.0;
+			number_t strokescaley=1.0;
 			int tokentype = 1;
 			while (tokentype)
 			{
@@ -346,14 +348,14 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 						case MOVE:
 						{
 							GeomToken p1(*(++it),false);
-							nvgMoveTo(nvgctxt, (p1.vec.x), (p1.vec.y));
+							nvgMoveTo(nvgctxt, (p1.vec.x)*strokescalex, (p1.vec.y)*strokescaley);
 							break;
 						}
 						case STRAIGHT:
 						{
 							renderneeded=true;
 							GeomToken p1(*(++it),false);
-							nvgLineTo(nvgctxt, (p1.vec.x), (p1.vec.y));
+							nvgLineTo(nvgctxt, (p1.vec.x)*strokescalex, (p1.vec.y)*strokescaley);
 							break;
 						}
 						case CURVE_QUADRATIC:
@@ -361,7 +363,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 							renderneeded=true;
 							GeomToken p1(*(++it),false);
 							GeomToken p2(*(++it),false);
-							nvgQuadTo(nvgctxt, (p1.vec.x), (p1.vec.y), (p2.vec.x), (p2.vec.y));
+							nvgQuadTo(nvgctxt, (p1.vec.x)*strokescalex, (p1.vec.y)*strokescaley, (p2.vec.x)*strokescalex, (p2.vec.y)*strokescaley);
 							break;
 						}
 						case CURVE_CUBIC:
@@ -370,7 +372,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 							GeomToken p1(*(++it),false);
 							GeomToken p2(*(++it),false);
 							GeomToken p3(*(++it),false);
-							nvgBezierTo(nvgctxt, (p1.vec.x), (p1.vec.y), (p2.vec.x), (p2.vec.y), (p3.vec.x), (p3.vec.y));
+							nvgBezierTo(nvgctxt, (p1.vec.x)*strokescalex, (p1.vec.y)*strokescaley, (p2.vec.x)*strokescalex, (p2.vec.y)*strokescaley, (p3.vec.x)*strokescalex, (p3.vec.y)*strokescaley);
 							break;
 						}
 						case SET_FILL:
@@ -389,6 +391,16 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 								nvgBeginPath(nvgctxt);
 								if (ctxt.isDrawingMask())
 									nvgBeginClip(nvgctxt);
+							}
+							if (strokescalex != 1.0)
+							{
+								nvgScale(nvgctxt,strokescalex,1.0);
+								strokescalex = 1.0;
+							}
+							if (strokescaley != 1.0)
+							{
+								nvgScale(nvgctxt,2.0,strokescaley);
+								strokescaley = 1.0;
 							}
 							infill=true;
 							const FILLSTYLE* style = p1.fillStyle;
@@ -622,6 +634,16 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 								nvgMiterLimit(nvgctxt,style->MiterLimitFactor);
 							}
 							nvgStrokeWidth(nvgctxt,style->Width==0 ? 1.0/state->scaling :(float)style->Width);
+							if (style->NoHScaleFlag)
+							{
+								strokescalex=m.getScaleX();
+								nvgScale(nvgctxt,1.0/strokescalex,1.0);
+							}
+							if (style->NoVScaleFlag)
+							{
+								strokescaley=m.getScaleY();
+								nvgScale(nvgctxt,1.0,1.0/strokescaley);
+							}
 							break;
 						}
 						case CLEAR_FILL:
@@ -640,6 +662,16 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 								nvgBeginPath(nvgctxt);
 								if (ctxt.isDrawingMask())
 									nvgBeginClip(nvgctxt);
+							}
+							if (strokescalex != 1.0)
+							{
+								nvgScale(nvgctxt,strokescalex,1.0);
+								strokescalex = 1.0;
+							}
+							if (strokescaley != 1.0)
+							{
+								nvgScale(nvgctxt,1.0,strokescaley);
+								strokescaley = 1.0;
 							}
 							infill=false;
 							if(p.type==CLEAR_FILL)
@@ -660,6 +692,16 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 								nvgBeginPath(nvgctxt);
 								if (ctxt.isDrawingMask())
 									nvgBeginClip(nvgctxt);
+							}
+							if (strokescalex != 1.0)
+							{
+								nvgScale(nvgctxt,strokescalex,1.0);
+								strokescalex = 1.0;
+							}
+							if (strokescaley != 1.0)
+							{
+								nvgScale(nvgctxt,2.0,strokescaley);
+								strokescaley = 1.0;
 							}
 							instroke = false;
 							nvgStrokeColor(nvgctxt,startcolor);

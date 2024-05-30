@@ -19,7 +19,7 @@
 #include "swftypes.h"
 #include "scripting/abc.h"
 #include "scripting/class.h"
-#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/Global.h"

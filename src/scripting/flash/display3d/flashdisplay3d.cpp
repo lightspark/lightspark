@@ -21,7 +21,7 @@
 #include "scripting/flash/display/Stage3D.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/toplevel/Integer.h"
-#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/geom/Matrix3D.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/class.h"

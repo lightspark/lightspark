@@ -20,6 +20,7 @@
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/LoaderInfo.h"
+#include "scripting/flash/geom/Rectangle.h"
 #include "scripting/avm1/avm1display.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"

@@ -27,7 +27,7 @@
 #include "scripting/flash/ui/gameinput.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
-#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/display/Loader.h"

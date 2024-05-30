@@ -43,6 +43,8 @@
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/Rectangle.h"
+#include "scripting/flash/geom/Point.h"
 #include "scripting/avm1/avm1sound.h"
 #include "scripting/avm1/avm1display.h"
 #include "scripting/avm1/avm1media.h"

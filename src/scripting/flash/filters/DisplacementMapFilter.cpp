@@ -22,7 +22,7 @@
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/flashdisplay.h"
-#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/Point.h"
 
 using namespace std;
 using namespace lightspark;

@@ -21,7 +21,7 @@
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Error.h"
 #include "scripting/toplevel/Vector.h"
-#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/Point.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "platforms/engineutils.h"

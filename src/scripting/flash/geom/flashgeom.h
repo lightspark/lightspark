@@ -27,94 +27,7 @@
 namespace lightspark
 {
 class BitmapContainer;
-
-class Rectangle: public ASObject
-{
-private:
-	std::set<DisplayObject*> users;
-	void notifyUsers();
-public:
-	Rectangle(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_RECTANGLE),x(0),y(0),width(0),height(0){}
-	number_t x,y,width,height;
-	static void sinit(Class_base* c);
-	const RECT getRect() const;
-	bool destruct() override;
-	void addUser(DisplayObject* u);
-	void removeUser(DisplayObject* u);
-	
-	// properties
-	ASFUNCTION_ATOM(_getBottom);
-	ASFUNCTION_ATOM(_setBottom);
-	ASFUNCTION_ATOM(_getBottomRight);
-	ASFUNCTION_ATOM(_setBottomRight);
-	ASFUNCTION_ATOM(_getHeight);
-	ASFUNCTION_ATOM(_setHeight);
-	ASFUNCTION_ATOM(_getLeft);
-	ASFUNCTION_ATOM(_setLeft);
-	ASFUNCTION_ATOM(_getRight);
-	ASFUNCTION_ATOM(_setRight);
-	ASFUNCTION_ATOM(_getSize);
-	ASFUNCTION_ATOM(_setSize);
-	ASFUNCTION_ATOM(_getTop);
-	ASFUNCTION_ATOM(_setTop);
-	ASFUNCTION_ATOM(_getTopLeft);
-	ASFUNCTION_ATOM(_setTopLeft);
-	ASFUNCTION_ATOM(_getWidth);
-	ASFUNCTION_ATOM(_setWidth);
-
-	// methods
-	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION_ATOM(clone);
-	ASFUNCTION_ATOM(contains);
-	ASFUNCTION_ATOM(containsPoint);
-	ASFUNCTION_ATOM(containsRect);
-	ASFUNCTION_ATOM(equals);
-	ASFUNCTION_ATOM(inflate);
-	ASFUNCTION_ATOM(inflatePoint);
-	ASFUNCTION_ATOM(intersection);
-	ASFUNCTION_ATOM(intersects);
-	ASFUNCTION_ATOM(isEmpty);
-	ASFUNCTION_ATOM(offset);
-	ASFUNCTION_ATOM(offsetPoint);
-	ASFUNCTION_ATOM(setEmpty);
-	ASFUNCTION_ATOM(setTo);
-	ASFUNCTION_ATOM(_toString);
-	ASFUNCTION_ATOM(_union);
-	ASFUNCTION_ATOM(copyFrom);
-};
-
-class Point: public ASObject
-{
-private:
-	number_t x,y;
-	static number_t lenImpl(number_t x, number_t y);
-public:
-	Point(ASWorker* wrk,Class_base* c,number_t _x = 0, number_t _y = 0):ASObject(wrk,c,T_OBJECT,SUBTYPE_POINT),x(_x),y(_y){}
-	bool destruct() override;
-	static void sinit(Class_base* c);
-	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION_ATOM(_getX);
-	ASFUNCTION_ATOM(_getY);
-	ASFUNCTION_ATOM(_setX);
-	ASFUNCTION_ATOM(_setY);
-	ASFUNCTION_ATOM(_getlength);
-	ASFUNCTION_ATOM(interpolate);
-	ASFUNCTION_ATOM(distance);
-	ASFUNCTION_ATOM(add);
-	ASFUNCTION_ATOM(subtract);
-	ASFUNCTION_ATOM(clone);
-	ASFUNCTION_ATOM(equals);
-	ASFUNCTION_ATOM(normalize);
-	ASFUNCTION_ATOM(offset);
-	ASFUNCTION_ATOM(polar);
-	ASFUNCTION_ATOM(_toString);
-	ASFUNCTION_ATOM(setTo);
-	ASFUNCTION_ATOM(copyFrom);
-
-	number_t len() const;
-	number_t getX() const { return x; }
-	number_t getY() const { return y; }
-};
+class Point;
 
 class ColorTransform: public ASObject, public ColorTransformBase
 {
@@ -241,7 +154,7 @@ public:
 class PerspectiveProjection: public ASObject
 {
 public:
-	PerspectiveProjection(ASWorker* wrk,Class_base* c):ASObject(wrk,c),fieldOfView(0),focalLength(0) {}
+	PerspectiveProjection(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	bool destruct() override;
 	void finalize() override;

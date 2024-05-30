@@ -22,6 +22,8 @@
 #include "scripting/flash/display/Loader.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/net/flashnet.h"
 #include "parsing/tags.h"
 #include "scripting/abc.h"

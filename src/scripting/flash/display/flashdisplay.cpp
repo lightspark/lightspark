@@ -28,6 +28,8 @@
 #include "scripting/flash/display/Graphics.h"
 #include "swf.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/Point.h"
+#include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "parsing/streams.h"
 #include "parsing/tags.h"

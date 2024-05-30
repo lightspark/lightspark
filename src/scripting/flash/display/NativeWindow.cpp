@@ -19,7 +19,7 @@
 
 #include "NativeWindow.h"
 #include "scripting/toplevel/Number.h"
-#include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"

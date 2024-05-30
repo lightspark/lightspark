@@ -120,6 +120,8 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Matrix3D.h"
 #include "scripting/flash/geom/orientation3d.h"
+#include "scripting/flash/geom/Point.h"
+#include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/geom/Vector3D.h"
 #include "scripting/flash/globalization/datetimeformatter.h"
 #include "scripting/flash/globalization/datetimestyle.h"

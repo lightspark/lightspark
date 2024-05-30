@@ -30,6 +30,8 @@
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/filters/flashfilters.h"
+#include "scripting/flash/geom/Rectangle.h"
+#include "scripting/flash/geom/Point.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "backends/rendering.h"
 #include "3rdparty/perlinnoise/PerlinNoise.hpp"

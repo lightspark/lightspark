@@ -989,8 +989,8 @@ ASFUNCTIONBODY_ATOM(System,totalMemory)
 		memsize += s.attribute("size").as_uint(0);
 		n = n.next_sibling("heap");
 	}
-#endif
 	asAtomHandler::setUInt(ret,wrk,memsize);
+#endif
 }
 ASFUNCTIONBODY_ATOM(System,disposeXML)
 {

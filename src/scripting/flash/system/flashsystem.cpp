@@ -953,6 +953,11 @@ void System::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(System,totalMemory)
 {
+#ifdef _WIN32
+	LOG(LOG_NOT_IMPLEMENTED,"System.totalMemory not implemented for Windows");
+	asAtomHandler::setUInt(ret,wrk,1024);
+	return;
+#else
 	char* buf=nullptr;
 	size_t size=0;
 	FILE* f = open_memstream(&buf, &size);
@@ -984,6 +989,7 @@ ASFUNCTIONBODY_ATOM(System,totalMemory)
 		memsize += s.attribute("size").as_uint(0);
 		n = n.next_sibling("heap");
 	}
+#endif
 	asAtomHandler::setUInt(ret,wrk,memsize);
 }
 ASFUNCTIONBODY_ATOM(System,disposeXML)

@@ -35,6 +35,8 @@
 #include "scripting/toplevel/Vector.h"
 #include "parsing/streams.h"
 #include "platforms/engineutils.h"
+#include <malloc.h>
+#include "3rdparty/pugixml/src/pugixml.hpp"
 
 #include <istream>
 
@@ -951,8 +953,38 @@ void System::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(System,totalMemory)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "System.totalMemory not implemented");
-	asAtomHandler::setUInt(ret,wrk,1024);
+	char* buf=nullptr;
+	size_t size=0;
+	FILE* f = open_memstream(&buf, &size);
+	if (!f || malloc_info(0,f)!=0)
+	{
+		LOG(LOG_ERROR,"System.totalMemory failed");
+		asAtomHandler::setUInt(ret,wrk,1024);
+		return;
+	}
+	fclose(f);
+	
+	uint32_t memsize = 0;
+	pugi::xml_document xmldoc;
+	xmldoc.load_buffer((void*)buf,size);
+	free(buf);
+	pugi::xml_node m = xmldoc.root().child("malloc");
+	pugi::xml_node n = m.child("heap");
+	while (n.type() != pugi::node_null)
+	{
+		pugi::xml_node s = n.child("system");
+		pugi::xml_attribute a = s.attribute("type");
+		while (strcmp(a.value(),"current")!= 0)
+		{
+			s = s.next_sibling("system");
+			if (s.type() == pugi::node_null)
+				break;
+			a = s.attribute("type");
+		}
+		memsize += s.attribute("size").as_uint(0);
+		n = n.next_sibling("heap");
+	}
+	asAtomHandler::setUInt(ret,wrk,memsize);
 }
 ASFUNCTIONBODY_ATOM(System,disposeXML)
 {

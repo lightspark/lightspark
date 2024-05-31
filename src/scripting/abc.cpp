@@ -1163,10 +1163,9 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case SET_LOADER_CONTENT_EVENT:
 			{
 				SetLoaderContentEvent* ev=static_cast<SetLoaderContentEvent*>(e.second.getPtr());
-				LOG(LOG_CALLS,"SetLoaderContentEvent");
+				LOG(LOG_CALLS,"SetLoaderContentEvent:"<<ev->content->toDebugString()<<" "<<ev->loader->toDebugString());
 				if (ev->content->is<RootMovieClip>() && !ev->content->needsActionScript3())
 					ev->content->setIsInitialized(false);
-				ev->content->incRef();
 				ev->loader->setContent(ev->content.getPtr());
 				ev->content->skipFrame = true;
 				ev->content->placedByActionScript = true;

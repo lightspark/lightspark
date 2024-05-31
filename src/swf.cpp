@@ -1657,17 +1657,16 @@ void ParseThread::parseSWF(UI8 ver)
 		root=RootMovieClip::getInstance(applicationDomain->getInstanceWorker(),li, applicationDomain, securityDomain);
 		if (!applicationDomain->getInstanceWorker()->isPrimordial)
 		{
+			root->incRef();
 			applicationDomain->getInstanceWorker()->rootClip = _MR(root);
 		}
 		parsedObject=_MNR(root);
-		li->setWaitedObject(parsedObject);
 		if(!url.empty())
 			root->setOrigin(url, "");
 	}
 	else
 	{
 		root=getRootMovie();
-		parsedObject->loaderInfo->setWaitedObject(parsedObject);
 	}
 	objectSpinlock.unlock();
 

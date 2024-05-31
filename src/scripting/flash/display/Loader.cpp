@@ -127,7 +127,7 @@ void LoaderThread::execute()
 		}
 		return;
 	}
-	DisplayObject* res = local_pt.getParsedObject().getPtr();
+	DisplayObject* res = obj.getPtr();
 	if (loader.getPtr() && res && (!res->is<RootMovieClip>() || res->as<RootMovieClip>()->hasFinishedLoading()))
 	{
 		if (res != loader->getSystemState()->mainClip)
@@ -476,11 +476,6 @@ void Loader::threadFinished(IThreadJob* finishedJob)
 
 void Loader::setContent(DisplayObject* o)
 {
-	// content may have already been set.
-	// this can happen if setContent was already called from ObjectHasLoaded
-	// and is called again at the end of LoaderThread::execute
-	if (o->getParent() == this || (!avm1target.isNull() && o->getParent()))
-		return;
 	{
 		Locker l(mutexDisplayList);
 		clearDisplayList();
@@ -491,6 +486,7 @@ void Loader::setContent(DisplayObject* o)
 		if (o->is<RootMovieClip>() && o != getSystemState()->mainClip && !o->as<RootMovieClip>()->usesActionScript3)
 		{
 			AVM1Movie* m = Class<AVM1Movie>::getInstanceS(getInstanceWorker());
+			o->incRef();
 			m->_addChildAt(o,0);
 			m->addStoredMember();
 			content = m;

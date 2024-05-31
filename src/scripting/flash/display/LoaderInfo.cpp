@@ -35,7 +35,7 @@ using namespace lightspark;
 LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(nullptr),bytesData(NullRef),waitedObject(nullptr),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(nullptr),bytesData(NullRef),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
@@ -48,7 +48,7 @@ LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),appli
 LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, Loader* l):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),bytesData(NullRef),waitedObject(nullptr),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(l),bytesData(NullRef),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
@@ -99,9 +99,6 @@ bool LoaderInfo::destruct()
 	loader=nullptr;
 	applicationDomain.reset();
 	securityDomain.reset();
-	if (waitedObject)
-		waitedObject->removeStoredMember();
-	waitedObject=nullptr;
 	bytesData.reset();
 	contentType = "application/x-shockwave-flash";
 	bytesLoaded = 0;
@@ -128,9 +125,6 @@ void LoaderInfo::finalize()
 	loader=nullptr;
 	applicationDomain.reset();
 	securityDomain.reset();
-	if (waitedObject)
-		waitedObject->removeStoredMember();
-	waitedObject=nullptr;
 	bytesData.reset();
 	uncaughtErrorEvents.reset();
 	parameters.reset();
@@ -151,8 +145,6 @@ void LoaderInfo::prepareShutdown()
 		applicationDomain->prepareShutdown();
 	if (securityDomain)
 		securityDomain->prepareShutdown();
-	if (waitedObject)
-		waitedObject->prepareShutdown();
 	if (bytesData)
 		bytesData->prepareShutdown();
 	if (uncaughtErrorEvents)
@@ -168,8 +160,6 @@ bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	if (gcstate.checkAncestors(this))
 		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
-	if (waitedObject)
-		ret = waitedObject->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 
@@ -225,13 +215,6 @@ void LoaderInfo::setComplete()
 		if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
 			this->addLoaderEvent(ev);
 		
-	}
-}
-void LoaderInfo::setContent(DisplayObject *o)
-{
-	if (loader)
-	{
-		loader->setContent(o);
 	}
 }
 void LoaderInfo::setBytesLoaded(uint32_t b)
@@ -291,34 +274,6 @@ void LoaderInfo::checkSendComplete()
 			this->addLoaderEvent(ev);
 		loadStatus=COMPLETE;
 	}
-}
-
-void LoaderInfo::setWaitedObject(_NR<DisplayObject> w)
-{
-	Locker l(spinlock);
-	if (waitedObject)
-		waitedObject->removeStoredMember();
-	waitedObject = w.getPtr();
-	if (waitedObject)
-	{
-		waitedObject->incRef();
-		waitedObject->addStoredMember();
-	}
-}
-
-void LoaderInfo::objectHasLoaded(DisplayObject* obj)
-{
-	Locker l(spinlock);
-	if(waitedObject != obj)
-		return;
-	if(loader && obj==waitedObject)
-		loader->setContent(obj);
-
-	if (loader && !loader->getParent() && !loader->hasAVM1Target() && waitedObject->is<MovieClip>()) // loader has no parent, ensure init/complete events are sended anyway
-		loader->getSystemState()->stage->addHiddenObject(waitedObject->as<MovieClip>());
-	if (waitedObject)
-		waitedObject->removeStoredMember();
-	waitedObject=nullptr;;
 }
 
 void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)

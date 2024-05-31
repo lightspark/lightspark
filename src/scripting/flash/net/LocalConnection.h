@@ -30,10 +30,13 @@ class LocalConnection: public EventDispatcher
 {
 private:
 	uint32_t connectionNameID;
-	void setclient_cb(_NR<ASObject> oldValue);
 public:
 	LocalConnection(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base*);
+	void finalize() override;
+	bool destruct() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+	void prepareShutdown() override;
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER(bool,isSupported);
 	ASFUNCTION_ATOM(allowDomain);

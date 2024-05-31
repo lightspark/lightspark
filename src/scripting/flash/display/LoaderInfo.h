@@ -45,15 +45,6 @@ private:
 	_NR<EventDispatcher> sharedEvents;
 	Loader* loader;
 	_NR<ByteArray> bytesData;
-	/*
-	 * waitedObject is the object we are supposed to wait,
-	 * it's necessary when multiple loads are invoked on
-	 * the same Loader. Since the construction may complete
-	 * after the second load is used we need to know what is
-	 * the last object that will notify this LoaderInfo about
-	 * completion
-	 */
-	DisplayObject* waitedObject;
 	ProgressEvent* progressEvent;
 	Mutex spinlock;
 	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
@@ -93,8 +84,6 @@ public:
 	ASFUNCTION_ATOM(_getSharedEvents);
 	ASFUNCTION_ATOM(_getWidth);
 	ASFUNCTION_ATOM(_getHeight);
-	void objectHasLoaded(DisplayObject* obj);
-	void setWaitedObject(_NR<DisplayObject> w);
 	//ILoadable interface
 	void setBytesTotal(uint32_t b) override
 	{
@@ -110,7 +99,6 @@ public:
 	void resetState();
 	void setFrameRate(number_t f) { frameRate=f; }
 	void setComplete();
-	void setContent(DisplayObject *o);
 };
 
 }

@@ -34,6 +34,7 @@ LocalConnection::LocalConnection(ASWorker* wrk, Class_base* c):
 void LocalConnection::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("allowDomain","",Class<IFunction>::getFunction(c->getSystemState(),allowDomain),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(c->getSystemState(),allowInsecureDomain),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("send","",Class<IFunction>::getFunction(c->getSystemState(),send),NORMAL_METHOD,true);
@@ -43,20 +44,116 @@ void LocalConnection::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,isSupported,Boolean);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,client,ASObject);
 }
-ASFUNCTIONBODY_GETTER(LocalConnection, isSupported)
-ASFUNCTIONBODY_GETTER_SETTER_CB(LocalConnection, client,setclient_cb)
 
-void LocalConnection::setclient_cb(_NR<ASObject> /*oldValue*/)
+ASFUNCTIONBODY_GETTER(LocalConnection, isSupported)
+
+void LocalConnection::_getter_client(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen)
 {
-	getSystemState()->setLocalConnectionClient(this->connectionNameID,this->client);
+	if(!asAtomHandler::is<LocalConnection>(obj))
+	{
+		createError<ArgumentError>(wrk,0,"Function applied to wrong object");
+		return;
+	}
+	LocalConnection* th = asAtomHandler::as<LocalConnection>(obj);
+	// empty client means th is the client
+	if (th->client.isNull())
+		ret = asAtomHandler::fromObjectNoPrimitive(th);
+	else
+		ret = asAtomHandler::fromObjectNoPrimitive(th->client.getPtr());
+	ASATOM_INCREF(ret);
+}
+void LocalConnection::_setter_client(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen)
+{
+	if(!asAtomHandler::is<LocalConnection>(obj))
+	{
+		createError<ArgumentError>(wrk,0,"Function applied to wrong object");
+		return;
+	}
+	if(argslen != 1)
+	{
+		createError<ArgumentError>(wrk,0,"Arguments provided in setter");
+		return;
+	}
+	if (asAtomHandler::isNull(args[0]))
+	{
+		createError<TypeError>(wrk,kConvertNullToObjectError);
+		return;
+	}
+	if (asAtomHandler::isUndefined(args[0]))
+	{
+		createError<TypeError>(wrk,kConvertUndefinedToObjectError);
+		return;
+	}
+	LocalConnection* th = asAtomHandler::as<LocalConnection>(obj);
+	ASObject* o = asAtomHandler::toObject(args[0],wrk);
+	if (o == th->client.getPtr() || (o==th && th->client.isNull()))
+		return;
+	if (th->client)
+	{
+		th->client->removeStoredMember();
+		th->client.fakeRelease();
+	}
+	_NR<ASObject> cl;
+	if (o != th)
+	{
+		o->incRef();
+		o->addStoredMember();
+		th->client = _MR(o);
+		cl = th->client;
+	}
+	else
+	{
+		th->incRef();
+		cl = _MR(th);
+	}
+	wrk->getSystemState()->setLocalConnectionClient(th->connectionNameID,cl);
+}
+
+
+void LocalConnection::finalize()
+{
+	EventDispatcher::finalize();
+	if (client)
+	{
+		client->removeStoredMember();
+		client.fakeRelease();
+	}
+}
+
+bool LocalConnection::destruct()
+{
+	connectionNameID=UINT32_MAX;
+	isSupported=true;
+	if (client)
+	{
+		client->removeStoredMember();
+		client.fakeRelease();
+	}
+	return EventDispatcher::destruct();
+}
+
+bool LocalConnection::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	if (client)
+		ret = client->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+}
+
+void LocalConnection::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	if (client)
+		client->prepareShutdown();
 }
 
 ASFUNCTIONBODY_ATOM(LocalConnection,_constructor)
 {
 	EventDispatcher::_constructor(ret,wrk,obj, nullptr, 0);
-	LocalConnection* th=Class<LocalConnection>::cast(asAtomHandler::getObject(obj));
-	th->incRef();
-	th->client = _NR<LocalConnection>(th);
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, domain)
 {
@@ -101,7 +198,14 @@ ASFUNCTIONBODY_ATOM(LocalConnection, connect)
 	asAtom connectionName = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(connectionName));
 	th->connectionNameID = asAtomHandler::toStringId(connectionName,wrk);
-	wrk->getSystemState()->setLocalConnectionClient(th->connectionNameID,th->client);
+	
+	_NR<ASObject> cl = th->client;
+	if (cl.isNull()) // th is the client
+	{
+		th->incRef();
+		cl = _MR(th);
+	}
+	wrk->getSystemState()->setLocalConnectionClient(th->connectionNameID,cl);
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, close)
 {

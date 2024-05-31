@@ -2359,6 +2359,8 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 				if(!isSprite[j])
 				{
 					Sprite* spr = Class<Sprite>::getInstanceS(loadedFrom->getInstanceWorker());
+					spr->constructionComplete();
+					spr->afterConstruction();
 					spr->insertLegacyChildAt(LEGACY_DEPTH_START+curDepth[j],states[j]);
 					states[j] = spr;
 					spr->name = BUILTIN_STRINGS::EMPTY;

@@ -38,11 +38,7 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li, std::istream *s
 {
 	subtype=SUBTYPE_BITMAP;
 	if(li)
-	{
 		loaderInfo = li;
-		this->incRef();
-		loaderInfo->setWaitedObject(_MR(this));
-	}
 
 	bitmapData = _MR(Class<BitmapData>::getInstanceS(wrk));
 	bitmapData->addUser(this);

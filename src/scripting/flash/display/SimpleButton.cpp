@@ -687,16 +687,19 @@ void SimpleButton::reflectState(BUTTONSTATE oldstate)
 
 	if((currentState == UP || currentState == STATE_OUT) && upState)
 	{
+		resetStateToStart(upState);
 		upState->incRef();
 		_addChildAt(upState,0);
 	}
 	else if(currentState == DOWN && downState)
 	{
+		resetStateToStart(downState);
 		downState->incRef();
 		_addChildAt(downState,0);
 	}
 	else if(currentState == OVER && overState)
 	{
+		resetStateToStart(overState);
 		overState->incRef();
 		_addChildAt(overState,0);
 	}
@@ -708,6 +711,23 @@ void SimpleButton::reflectState(BUTTONSTATE oldstate)
 		soundchannel_OverUpToOverDown->play();
 	if (oldstate == DOWN && currentState == UP && soundchannel_OverDownToOverUp)
 		soundchannel_OverDownToOverUp->play();
+}
+void SimpleButton::resetStateToStart(DisplayObject* obj)
+{
+	// reset the MovieClips belonging to the current State to frame 0, so animations will start from the beginning when state has changed
+	asAtom arg = asAtomHandler::fromInt(0);
+	if (obj->getSubtype()== SUBTYPE_SPRITE) // really a sprite, this means it contains the "real" DisplayObjects for the current state
+	{
+		std::vector<_R<DisplayObject>> tmplist;
+		obj->as<Sprite>()->cloneDisplayList(tmplist);
+		for (auto it = tmplist.begin(); it != tmplist.end(); it++)
+		{
+			if ((*it)->is<MovieClip>())
+				(*it)->as<MovieClip>()->gotoAnd(&arg,1,false);
+		}
+	}
+	else if (obj->is<MovieClip>())
+		obj->as<MovieClip>()->gotoAnd(&arg,1,false);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_getUpState)

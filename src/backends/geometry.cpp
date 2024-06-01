@@ -380,6 +380,7 @@ std::map<uint16_t,LINESTYLE2>::iterator ShapesBuilder::getStrokeLineStyle(const 
 									break;
 								}
 						}
+						ls.FillType.ShapeBounds = boundsrc;
 						break;
 					}
 				default:
@@ -504,6 +505,7 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 							break;
 						}
 					}
+					f.ShapeBounds = boundsrc;
 					break;
 				}
 				default:

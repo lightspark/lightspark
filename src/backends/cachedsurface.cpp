@@ -188,6 +188,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 	bool needscachedtexture = (!container && state->cacheAsBitmap)
 							  || ctxt.transformStack().transform().blendmode == BLENDMODE_LAYER
 							  || !state->filters.isNull()
+							  || DisplayObject::isShaderBlendMode(ctxt.transformStack().transform().blendmode)
 							  || (state->needsLayer && sys->getRenderThread()->filterframebufferstack.empty());
 	if (needscachedtexture && (state->needsFilterRefresh || cachedFilterTextureID != UINT32_MAX))
 	{

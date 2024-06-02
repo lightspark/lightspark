@@ -1278,9 +1278,7 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 		glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
 		glnvg__stencilClipPaths(gl, call);
-		glnvg__stencilFunc(gl, GL_EQUAL, 0x80, 0xff);
-		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
-
+		
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image);
 	} else {
@@ -1293,7 +1291,11 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 		glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 
 	if (hasClipPaths != 0)
+	{
+		glnvg__stencilFunc(gl, GL_EQUAL, 0x80, 0xff);
+		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 		glDisable(GL_STENCIL_TEST);
+	}
 }
 
 static void glnvg__triangles(GLNVGcontext* gl, GLNVGcall* call)

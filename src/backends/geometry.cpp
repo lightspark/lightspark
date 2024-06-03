@@ -407,6 +407,7 @@ std::map<uint16_t,LINESTYLE2>::iterator ShapesBuilder::getStrokeLineStyle(const 
 						break;
 					}
 			}
+			ls.Color = ls.FillType.Color;
 		}
 		itls = stylesIt->linestylecache.insert(make_pair(ratio,ls)).first;
 	}

@@ -853,8 +853,7 @@ std::istream& lightspark::operator>>(std::istream& s, FOCALGRADIENT& v)
 		v.GradientRecords.push_back(gr);
 	}
 	sort(v.GradientRecords.begin(),v.GradientRecords.end());
-	//TODO: support FocalPoint
-	s.read((char*)&v.FocalPoint,2);
+	s >> v.FocalPoint;
 	return s;
 }
 

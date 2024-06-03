@@ -1054,7 +1054,7 @@ public:
 	int InterpolationMode;
 	int NumGradient;
 	std::vector<GRADRECORD> GradientRecords;
-	float FocalPoint;
+	FIXED8 FocalPoint;
 	bool operator==(const FOCALGRADIENT& g) const
 	{
 		return version == g.version 

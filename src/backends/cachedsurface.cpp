@@ -587,22 +587,29 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 
 										NVGpaint pattern;
 										if (isLinear)
-											pattern = nvgLinearGradientStops(nvgctxt, -16384.0, 0, 16384.0, 0, stops.data(), stops.size(), spreadMode);
+										{
+											MATRIX tmp = m;
+											tmp.x0 = m.x0/state->scaling - fill.ShapeBounds.Xmin;
+											tmp.y0 = m.y0/state->scaling - fill.ShapeBounds.Ymin;
+											Vector2f start = tmp.multiply2D(Vector2f(-16384.0, 0));
+											Vector2f end = tmp.multiply2D(Vector2f(16384.0, 0));
+											pattern = nvgLinearGradientStops(nvgctxt, start.x, start.y, end.x, end.y, stops.data(), stops.size(), spreadMode);
+										}
 										else
 										{
 											number_t x0 = isFocal ? fill.FocalGradient.FocalPoint*16384.0 : 0.0;
 											pattern = nvgRadialGradientStops(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), spreadMode);
+											float xform[6] =
+											{
+												(float)m.xx,
+												(float)m.yx,
+												(float)m.xy,
+												(float)m.yy,
+												(float)m.x0/state->scaling - fill.ShapeBounds.Xmin,
+												(float)m.y0/state->scaling - fill.ShapeBounds.Ymin,
+											};
+											nvgTransformMultiply(pattern.xform, xform);
 										}
-										float xform[6] =
-										{
-											(float)m.xx,
-											(float)m.yx,
-											(float)m.xy,
-											(float)m.yy,
-											(float)m.x0/state->scaling - fill.ShapeBounds.Xmin,
-											(float)m.y0/state->scaling - fill.ShapeBounds.Ymin,
-										};
-										nvgTransformMultiply(pattern.xform, xform);
 										nvgStrokePaint(nvgctxt, pattern);
 										break;
 									}

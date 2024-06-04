@@ -320,11 +320,12 @@ std::map<uint16_t,LINESTYLE2>::iterator ShapesBuilder::getStrokeLineStyle(const 
 						number_t gradratio = float(ratio)/65535.0;
 						MATRIX ratiomatrix;
 						
-						ratiomatrix.scale(stylesIt->FillType.StartGradientMatrix.getScaleX()+(stylesIt->FillType.EndGradientMatrix.getScaleX()-stylesIt->FillType.StartGradientMatrix.getScaleX())*gradratio,
-										  stylesIt->FillType.StartGradientMatrix.getScaleY()+(stylesIt->FillType.EndGradientMatrix.getScaleY()-stylesIt->FillType.StartGradientMatrix.getScaleY())*gradratio);
-						ratiomatrix.rotate((stylesIt->FillType.StartGradientMatrix.getRotation()+(stylesIt->FillType.EndGradientMatrix.getRotation()-stylesIt->FillType.StartGradientMatrix.getRotation())*gradratio)*180.0/M_PI);
-						ratiomatrix.translate(stylesIt->FillType.StartGradientMatrix.getTranslateX() +(stylesIt->FillType.EndGradientMatrix.getTranslateX()-stylesIt->FillType.StartGradientMatrix.getTranslateX())*gradratio,
-											  stylesIt->FillType.StartGradientMatrix.getTranslateY() +(stylesIt->FillType.EndGradientMatrix.getTranslateY()-stylesIt->FillType.StartGradientMatrix.getTranslateY())*gradratio);
+						ratiomatrix.x0=stylesIt->FillType.StartGradientMatrix.x0*(1.0-gradratio)+stylesIt->FillType.EndGradientMatrix.x0*gradratio;
+						ratiomatrix.y0=stylesIt->FillType.StartGradientMatrix.y0*(1.0-gradratio)+stylesIt->FillType.EndGradientMatrix.y0*gradratio;
+						ratiomatrix.xx=stylesIt->FillType.StartGradientMatrix.xx*(1.0-gradratio)+stylesIt->FillType.EndGradientMatrix.xx*gradratio;
+						ratiomatrix.yx=stylesIt->FillType.StartGradientMatrix.yx*(1.0-gradratio)+stylesIt->FillType.EndGradientMatrix.yx*gradratio;
+						ratiomatrix.xy=stylesIt->FillType.StartGradientMatrix.xy*(1.0-gradratio)+stylesIt->FillType.EndGradientMatrix.xy*gradratio;
+						ratiomatrix.yy=stylesIt->FillType.StartGradientMatrix.yy*(1.0-gradratio)+stylesIt->FillType.EndGradientMatrix.yy*gradratio;
 						
 						ls.FillType.Matrix = ratiomatrix;
 						std::vector<GRADRECORD>& gradrecords = stylesIt->FillType.FillStyleType==FOCAL_RADIAL_GRADIENT ? ls.FillType.FocalGradient.GradientRecords : ls.FillType.Gradient.GradientRecords;
@@ -443,12 +444,13 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 				{
 					number_t gradratio = float(ratio)/65535.0;
 					MATRIX ratiomatrix;
-
-					ratiomatrix.scale(stylesIt->StartGradientMatrix.getScaleX()+(stylesIt->EndGradientMatrix.getScaleX()-stylesIt->StartGradientMatrix.getScaleX())*gradratio,
-									  stylesIt->StartGradientMatrix.getScaleY()+(stylesIt->EndGradientMatrix.getScaleY()-stylesIt->StartGradientMatrix.getScaleY())*gradratio);
-					ratiomatrix.rotate((stylesIt->StartGradientMatrix.getRotation()+(stylesIt->EndGradientMatrix.getRotation()-stylesIt->StartGradientMatrix.getRotation())*gradratio)*180.0/M_PI);
-					ratiomatrix.translate(stylesIt->StartGradientMatrix.getTranslateX() +(stylesIt->EndGradientMatrix.getTranslateX()-stylesIt->StartGradientMatrix.getTranslateX())*gradratio,
-										  stylesIt->StartGradientMatrix.getTranslateY() +(stylesIt->EndGradientMatrix.getTranslateY()-stylesIt->StartGradientMatrix.getTranslateY())*gradratio);
+					
+					ratiomatrix.x0=stylesIt->StartGradientMatrix.x0*(1.0-gradratio)+stylesIt->EndGradientMatrix.x0*gradratio;
+					ratiomatrix.y0=stylesIt->StartGradientMatrix.y0*(1.0-gradratio)+stylesIt->EndGradientMatrix.y0*gradratio;
+					ratiomatrix.xx=stylesIt->StartGradientMatrix.xx*(1.0-gradratio)+stylesIt->EndGradientMatrix.xx*gradratio;
+					ratiomatrix.yx=stylesIt->StartGradientMatrix.yx*(1.0-gradratio)+stylesIt->EndGradientMatrix.yx*gradratio;
+					ratiomatrix.xy=stylesIt->StartGradientMatrix.xy*(1.0-gradratio)+stylesIt->EndGradientMatrix.xy*gradratio;
+					ratiomatrix.yy=stylesIt->StartGradientMatrix.yy*(1.0-gradratio)+stylesIt->EndGradientMatrix.yy*gradratio;
 
 					f.Matrix = ratiomatrix;
 					std::vector<GRADRECORD>& gradrecords = stylesIt->FillStyleType==FOCAL_RADIAL_GRADIENT ? f.FocalGradient.GradientRecords : f.Gradient.GradientRecords;

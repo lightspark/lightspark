@@ -166,15 +166,12 @@ vec4 filter_gradientglow()
 	return filter_dropshadow(inner, knockout,color , strength, startpos);
 }
 
-vec4 filter_colormatrix()
+vec4 filter_colormatrix(vec4 src)
 {
-	vec4 src = texture2D(g_tex_standard,ls_TexCoords[0].xy);
-	src.rgb *= src.a;
-	float alpha = filterdata[16]*src.r + (filterdata[17]*src.g) + (filterdata[18]*src.b) + (filterdata[19]*src.a) + filterdata[20];
-	return vec4(clamp ((filterdata[ 1]*src.r + (filterdata[ 2]*src.g) + (filterdata[ 3]*src.b) + (filterdata[ 4]*src.a) + filterdata[ 5]/255.0)*alpha, 0.0, 1.0),
-				clamp ((filterdata[ 6]*src.r + (filterdata[ 7]*src.g) + (filterdata[ 8]*src.b) + (filterdata[ 9]*src.a) + filterdata[10]/255.0)*alpha, 0.0, 1.0),
-				clamp ((filterdata[11]*src.r + (filterdata[12]*src.g) + (filterdata[13]*src.b) + (filterdata[14]*src.a) + filterdata[15]/255.0)*alpha, 0.0, 1.0),
-				clamp (alpha, 0.0, 1.0));
+	return vec4(clamp (filterdata[ 1]*src.r + (filterdata[ 2]*src.g) + (filterdata[ 3]*src.b) + (filterdata[ 4]*src.a) + filterdata[ 5]/255.0, 0.0, 1.0),
+				clamp (filterdata[ 6]*src.r + (filterdata[ 7]*src.g) + (filterdata[ 8]*src.b) + (filterdata[ 9]*src.a) + filterdata[10]/255.0, 0.0, 1.0),
+				clamp (filterdata[11]*src.r + (filterdata[12]*src.g) + (filterdata[13]*src.b) + (filterdata[14]*src.a) + filterdata[15]/255.0, 0.0, 1.0),
+				clamp (filterdata[16]*src.r + (filterdata[17]*src.g) + (filterdata[18]*src.b) + (filterdata[19]*src.a) + filterdata[20]/255.0, 0.0, 1.0));
 }
 
 vec4 filter_convolution()
@@ -264,7 +261,7 @@ void main()
 		} else if (filterdata[0]==5.0) {// FILTERSTEP_BEVEL
 			vbase = filter_bevel();
 		} else if (filterdata[0]==6.0) {// FILTERSTEP_COLORMATRIX
-			vbase = filter_colormatrix();
+			vbase = filter_colormatrix(vbase);
 		} else if (filterdata[0]==7.0) {// FILTERSTEP_CONVOLUTION
 			vbase = filter_convolution();
 		}

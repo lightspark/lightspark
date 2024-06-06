@@ -650,7 +650,7 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 	return handled;
 }
 
-AS3KeyCode getAS3KeyCode(SDL_Keycode sdlkey)
+AS3KeyCode lightspark::getAS3KeyCode(SDL_Keycode sdlkey)
 {
 	switch (sdlkey)
 	{

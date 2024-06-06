@@ -38,9 +38,8 @@ friend class SDLEventLoop;
 protected:
 	SDL_Event event;
 public:
-	// TODO: Implement these virtuals.
 	// Converts a platform/application specific event into an LSEvent.
-	LSEvent toLSEvent() const override;
+	LSEvent toLSEvent(SystemState* sys) const override;
 	// Converts an LSEvent into a platform/application specific event.
 	IEvent& fromLSEvent(const LSEvent& event) override;
 	// Returns the underlying platform/application specific event.

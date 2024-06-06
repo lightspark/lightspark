@@ -21,24 +21,351 @@
 #include <cassert>
 
 #include "backends/event_loop.h"
+#include "backends/input.h"
 #include "interfaces/backends/event_loop.h"
 #include "platforms/engineutils.h"
 #include "compat.h"
+#include "events.h"
 #include "swf.h"
 #include "timer.h"
 
 using namespace lightspark;
 using namespace std;
 
-// TODO: Implement
-LSEvent SDLEvent::toLSEvent() const
+static LSModifier toLSModifier(const SDL_Keymod& mod)
 {
+	LSModifier ret = LSModifier::None;
+	if (mod & KMOD_CTRL)
+		ret |= LSModifier::Ctrl;
+	if (mod & KMOD_SHIFT)
+		ret |= LSModifier::Shift;
+	if (mod & KMOD_ALT)
+		ret |= LSModifier::Alt;
+	if (mod & KMOD_GUI)
+		ret |= LSModifier::Super;
+	return ret;
+}
+
+static LSMouseButtonEvent::Button toButton(uint8_t button)
+{
+	using Button = LSMouseButtonEvent::Button;
+	switch (button)
+	{
+		case SDL_BUTTON_LEFT: return Button::Left; break;
+		case SDL_BUTTON_MIDDLE: return Button::Middle; break;
+		case SDL_BUTTON_RIGHT: return Button::Right; break;
+		default: break;
+	}
+	return Button::Invalid;
+}
+
+static SDL_Keymod toSDLKeymod(const LSModifier& mod)
+{
+	SDL_Keymod ret = KMOD_NONE;
+	if (mod & LSModifier::Ctrl)
+		ret |= KMOD_CTRL;
+	if (mod & LSModifier::Shift)
+		ret |= KMOD_SHIFT;
+	if (mod & LSModifier::Alt)
+		ret |= KMOD_ALT;
+	if (mod & LSModifier::Super)
+		ret |= KMOD_GUI;
+	return ret;
+}
+
+static uint8_t toSDLMouseButton(const LSMouseButtonEvent::Button& button)
+{
+	using Button = LSMouseButtonEvent::Button;
+	switch (button)
+	{
+		case Button::Left: return SDL_BUTTON_LEFT; break;
+		case Button::Middle: return SDL_BUTTON_MIDDLE; break;
+		case Button::Right: return SDL_BUTTON_RIGHT; break;
+		default: break;
+	}
+	return 0;
+}
+
+static SDL_Keycode toSDLKeycode(const AS3KeyCode& keyCode)
+{
+	switch (keyCode)
+	{
+		case AS3KEYCODE_ENTER: return SDLK_RETURN;
+		case AS3KEYCODE_ESCAPE: return SDLK_ESCAPE;
+		case AS3KEYCODE_BACKSPACE: return SDLK_BACKSPACE;
+		case AS3KEYCODE_TAB: return SDLK_TAB;
+		case AS3KEYCODE_SPACE: return SDLK_SPACE;
+		case AS3KEYCODE_QUOTE: return SDLK_QUOTE;
+		case AS3KEYCODE_COMMA: return SDLK_COMMA;
+		case AS3KEYCODE_MINUS: return SDLK_MINUS;
+		case AS3KEYCODE_PERIOD: return SDLK_PERIOD;
+		case AS3KEYCODE_SLASH: return SDLK_SLASH;
+		case AS3KEYCODE_NUMBER_0: return SDLK_0;
+		case AS3KEYCODE_NUMBER_1: return SDLK_1;
+		case AS3KEYCODE_NUMBER_2: return SDLK_2;
+		case AS3KEYCODE_NUMBER_3: return SDLK_3;
+		case AS3KEYCODE_NUMBER_4: return SDLK_4;
+		case AS3KEYCODE_NUMBER_5: return SDLK_5;
+		case AS3KEYCODE_NUMBER_6: return SDLK_6;
+		case AS3KEYCODE_NUMBER_7: return SDLK_7;
+		case AS3KEYCODE_NUMBER_8: return SDLK_8;
+		case AS3KEYCODE_NUMBER_9: return SDLK_9;
+		case AS3KEYCODE_SEMICOLON: return SDLK_SEMICOLON;
+		case AS3KEYCODE_EQUAL: return SDLK_EQUALS;
+		case AS3KEYCODE_LEFTBRACKET: return SDLK_LEFTBRACKET;
+		case AS3KEYCODE_BACKSLASH: return SDLK_BACKSLASH;
+		case AS3KEYCODE_RIGHTBRACKET: return SDLK_RIGHTBRACKET;
+		case AS3KEYCODE_BACKQUOTE: return SDLK_BACKQUOTE;
+		case AS3KEYCODE_A: return SDLK_a;
+		case AS3KEYCODE_B: return SDLK_b;
+		case AS3KEYCODE_C: return SDLK_c;
+		case AS3KEYCODE_D: return SDLK_d;
+		case AS3KEYCODE_E: return SDLK_e;
+		case AS3KEYCODE_F: return SDLK_f;
+		case AS3KEYCODE_G: return SDLK_g;
+		case AS3KEYCODE_H: return SDLK_h;
+		case AS3KEYCODE_I: return SDLK_i;
+		case AS3KEYCODE_J: return SDLK_j;
+		case AS3KEYCODE_K: return SDLK_k;
+		case AS3KEYCODE_L: return SDLK_l;
+		case AS3KEYCODE_M: return SDLK_m;
+		case AS3KEYCODE_N: return SDLK_n;
+		case AS3KEYCODE_O: return SDLK_o;
+		case AS3KEYCODE_P: return SDLK_p;
+		case AS3KEYCODE_Q: return SDLK_q;
+		case AS3KEYCODE_R: return SDLK_r;
+		case AS3KEYCODE_S: return SDLK_s;
+		case AS3KEYCODE_T: return SDLK_t;
+		case AS3KEYCODE_U: return SDLK_u;
+		case AS3KEYCODE_V: return SDLK_v;
+		case AS3KEYCODE_W: return SDLK_w;
+		case AS3KEYCODE_X: return SDLK_x;
+		case AS3KEYCODE_Y: return SDLK_y;
+		case AS3KEYCODE_Z: return SDLK_z;
+		case AS3KEYCODE_CAPS_LOCK:return SDLK_CAPSLOCK;
+		case AS3KEYCODE_F1: return SDLK_F1;
+		case AS3KEYCODE_F2: return SDLK_F2;
+		case AS3KEYCODE_F3: return SDLK_F3;
+		case AS3KEYCODE_F4: return SDLK_F4;
+		case AS3KEYCODE_F5: return SDLK_F5;
+		case AS3KEYCODE_F6: return SDLK_F6;
+		case AS3KEYCODE_F7: return SDLK_F7;
+		case AS3KEYCODE_F8: return SDLK_F8;
+		case AS3KEYCODE_F9: return SDLK_F9;
+		case AS3KEYCODE_F10: return SDLK_F10;
+		case AS3KEYCODE_F11: return SDLK_F11;
+		case AS3KEYCODE_F12: return SDLK_F12;
+		case AS3KEYCODE_PAUSE: return SDLK_PAUSE;
+		case AS3KEYCODE_INSERT: return SDLK_INSERT;
+		case AS3KEYCODE_HOME: return SDLK_HOME;
+		case AS3KEYCODE_PAGE_UP: return SDLK_PAGEUP;
+		case AS3KEYCODE_DELETE: return SDLK_DELETE;
+		case AS3KEYCODE_END: return SDLK_END;
+		case AS3KEYCODE_PAGE_DOWN: return SDLK_PAGEDOWN;
+		case AS3KEYCODE_RIGHT: return SDLK_RIGHT;
+		case AS3KEYCODE_LEFT: return SDLK_LEFT;
+		case AS3KEYCODE_DOWN: return SDLK_DOWN;
+		case AS3KEYCODE_UP: return SDLK_UP;
+		case AS3KEYCODE_NUMPAD: return SDLK_NUMLOCKCLEAR;
+		case AS3KEYCODE_NUMPAD_DIVIDE: return SDLK_KP_DIVIDE;
+		case AS3KEYCODE_NUMPAD_MULTIPLY: return SDLK_KP_MULTIPLY;
+		case AS3KEYCODE_NUMPAD_SUBTRACT:return SDLK_KP_MINUS;
+		case AS3KEYCODE_NUMPAD_ADD: return SDLK_KP_PLUS;
+		case AS3KEYCODE_NUMPAD_ENTER: return SDLK_KP_ENTER;
+		case AS3KEYCODE_NUMPAD_1: return SDLK_KP_1;
+		case AS3KEYCODE_NUMPAD_2: return SDLK_KP_2;
+		case AS3KEYCODE_NUMPAD_3: return SDLK_KP_3;
+		case AS3KEYCODE_NUMPAD_4: return SDLK_KP_4;
+		case AS3KEYCODE_NUMPAD_5: return SDLK_KP_5;
+		case AS3KEYCODE_NUMPAD_6: return SDLK_KP_6;
+		case AS3KEYCODE_NUMPAD_7: return SDLK_KP_7;
+		case AS3KEYCODE_NUMPAD_8: return SDLK_KP_8;
+		case AS3KEYCODE_NUMPAD_9: return SDLK_KP_9;
+		case AS3KEYCODE_NUMPAD_0: return SDLK_KP_0;
+		case AS3KEYCODE_NUMPAD_DECIMAL: return SDLK_KP_PERIOD;
+		case AS3KEYCODE_F13: return SDLK_F13;
+		case AS3KEYCODE_F14: return SDLK_F14;
+		case AS3KEYCODE_F15: return SDLK_F15;
+		case AS3KEYCODE_HELP: return SDLK_HELP;
+		case AS3KEYCODE_MENU: return SDLK_MENU;
+		case AS3KEYCODE_CONTROL: return SDLK_LCTRL;
+		case AS3KEYCODE_SHIFT: return SDLK_LSHIFT;
+		case AS3KEYCODE_ALTERNATE: return SDLK_LALT;
+		case AS3KEYCODE_SEARCH: return SDLK_AC_SEARCH;
+		case AS3KEYCODE_BACK : return SDLK_AC_BACK;
+		case AS3KEYCODE_STOP:return SDLK_AC_STOP;
+		default: break;
+	}
+	//AS3KEYCODE_AUDIO
+	//AS3KEYCODE_BLUE
+	//AS3KEYCODE_YELLOW
+	//AS3KEYCODE_CHANNEL_DOWN
+	//AS3KEYCODE_CHANNEL_UP
+	//AS3KEYCODE_COMMAND
+	//AS3KEYCODE_DVR
+	//AS3KEYCODE_EXIT
+	//AS3KEYCODE_FAST_FORWARD
+	//AS3KEYCODE_GREEN
+	//AS3KEYCODE_GUIDE
+	//AS3KEYCODE_INFO
+	//AS3KEYCODE_INPUT
+	//AS3KEYCODE_LAST
+	//AS3KEYCODE_LIVE
+	//AS3KEYCODE_MASTER_SHELL
+	//AS3KEYCODE_NEXT
+	//AS3KEYCODE_PLAY
+	//AS3KEYCODE_PREVIOUS
+	//AS3KEYCODE_RECORD
+	//AS3KEYCODE_RED
+	//AS3KEYCODE_REWIND
+	//AS3KEYCODE_SETUP
+	//AS3KEYCODE_SKIP_BACKWARD
+	//AS3KEYCODE_SKIP_FORWARD
+	//AS3KEYCODE_SUBTITLE
+	//AS3KEYCODE_VOD
+	return SDLK_UNKNOWN;
+}
+
+LSEvent SDLEvent::toLSEvent(SystemState* sys) const
+{
+	using KeyType = LSKeyEvent::KeyType;
+	using ButtonType = LSMouseButtonEvent::ButtonType;
+	using TextType = LSTextEvent::TextType;
+
+	switch (event.type)
+	{
+		case SDL_KEYDOWN:
+		case SDL_KEYUP:
+		{
+			auto& key = event.key;
+			return LSKeyEvent
+			(
+				getAS3KeyCode(key.keysym.sym),
+				toLSModifier((SDL_Keymod)key.keysym.mod),
+				event.type == SDL_KEYDOWN ? KeyType::Down : KeyType::Up
+			);
+			break;
+		}
+		case SDL_MOUSEBUTTONDOWN:
+		case SDL_MOUSEBUTTONUP:
+		{
+			auto& button = event.button;
+			return LSMouseButtonEvent
+			(
+				Vector2f(button.x, button.y),
+				sys->windowToStagePoint(Vector2f(button.x, button.y)),
+				toLSModifier(SDL_GetModState()),
+				toButton(button.button),
+				button.clicks,
+				event.type == SDL_MOUSEBUTTONDOWN ? button.clicks == 2 ? ButtonType::DoubleClick : ButtonType::Down : ButtonType::Up
+			);
+			break;
+		}
+		case SDL_MOUSEMOTION:
+		{
+			auto& motion = event.motion;
+			return LSMouseMoveEvent
+			(
+				Vector2f(motion.x, motion.y),
+				sys->windowToStagePoint(Vector2f(motion.x, motion.y)),
+				toLSModifier(SDL_GetModState())
+			);
+			break;
+		}
+		case SDL_MOUSEWHEEL:
+		{
+			auto& wheel = event.wheel;
+			#if SDL_VERSION_ATLEAST(2, 26, 0)
+			Vector2f mousePos(wheel.mouseX, wheel.mouseY);
+			#else
+			Vector2f mousePos = sys->getInputThread()->getMousePos();
+			#endif
+			return LSMouseWheelEvent
+			(
+				mousePos,
+				sys->windowToStagePoint(mousePos),
+				toLSModifier(SDL_GetModState()),
+				#if SDL_VERSION_ATLEAST(2, 0, 18)
+				wheel.preciseY
+				#else
+				wheel.y
+				#endif
+			);
+			break;
+		}
+		case SDL_TEXTINPUT:
+		{
+			auto& text = event.text;
+			return LSTextEvent
+			(
+				text.text,
+				TextType::Input
+			);
+			break;
+		}
+	}
 	return LSEvent{};
 }
 
-// TODO: Implement
 IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 {
+	using KeyType = LSKeyEvent::KeyType;
+	using ButtonType = LSMouseButtonEvent::ButtonType;
+	using TextType = LSTextEvent::TextType;
+
+	switch (event.getType())
+	{
+		case LSEvent::Type::Key:
+		{
+			auto& key = static_cast<const LSKeyEvent&>(event);
+			this->event.type = key.type == KeyType::Up ? SDL_KEYUP : SDL_KEYDOWN;
+			this->event.key.keysym.sym = toSDLKeycode(key.keyCode);
+			this->event.key.keysym.mod = toSDLKeymod(key.modifiers);
+			break;
+		}
+		case LSEvent::Type::MouseButton:
+		{
+			auto& button = static_cast<const LSMouseButtonEvent&>(event);
+			this->event.type = button.type == ButtonType::Up ? SDL_MOUSEBUTTONUP : SDL_MOUSEBUTTONDOWN;
+			this->event.button.x = button.windowPos.x;
+			this->event.button.y = button.windowPos.y;
+			this->event.button.button = toSDLMouseButton(button.button);
+			this->event.button.clicks = button.clicks;
+			break;
+		}
+		case LSEvent::Type::MouseMove:
+		{
+			auto& move = static_cast<const LSMouseMoveEvent&>(event);
+			this->event.type = SDL_MOUSEMOTION;
+			this->event.motion.x = move.windowPos.x;
+			this->event.motion.y = move.windowPos.y;
+			break;
+		}
+		case LSEvent::Type::MouseWheel:
+		{
+			auto& wheel = static_cast<const LSMouseWheelEvent&>(event);
+			this->event.type = SDL_MOUSEWHEEL;
+			#if SDL_VERSION_ATLEAST(2, 0, 18)
+			this->event.wheel.preciseY = wheel.delta;
+			#endif
+			this->event.wheel.y = wheel.delta;
+			#if SDL_VERSION_ATLEAST(2, 26, 0)
+			this->event.wheel.mouseX = wheel.windowPos.x;
+			this->event.wheel.mouseY = wheel.windowPos.y;
+			#endif
+			break;
+		}
+		case LSEvent::Type::Text:
+		{
+			auto& text = static_cast<const LSTextEvent&>(event);
+			if (text.type != TextType::Input)
+				break;
+			this->event.type = SDL_TEXTINPUT;
+			memcpy(this->event.text.text, text.text.raw_buf(), text.text.numBytes());
+			break;
+		}
+		default: break;
+	}
 	return *this;
 }
 

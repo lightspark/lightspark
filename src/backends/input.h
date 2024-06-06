@@ -136,6 +136,7 @@ public:
 };
 
 InputThread* getInputThread();
+AS3KeyCode getAS3KeyCode(SDL_Keycode sdlkey);
 
 }
 #endif /* BACKENDS_INPUT_H */

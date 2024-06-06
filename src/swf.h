@@ -306,6 +306,7 @@ public:
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
 	void needsAVM2(bool n);
 	void stageCoordinateMapping(uint32_t windowWidth, uint32_t windowHeight, int& offsetX, int& offsetY, float& scaleX, float& scaleY);
+	void stageCoordinateMapping(const Vector2& windowSize, Vector2& offset, Vector2f& scale);
 	void windowToStageCoordinates(int windowX, int windowY, int& stageX, int& stageY);
 	void setLocalConnectionClient(uint32_t nameID,_NR<ASObject> client)
 	{

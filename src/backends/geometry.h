@@ -37,6 +37,8 @@ public:
 	Vector2Tmpl(T a=0, T b=0):x(a),y(b){}
 	/* conversion Vector2 -> Vector2f is implicit */
 	Vector2Tmpl(const Vector2Tmpl<int32_t>& o) : x(o.x),y(o.y) {}
+	template<typename U>
+	Vector2Tmpl(const Vector2Tmpl<U>& o) : x(o.x),y(o.y) {}
 	/* conversion Vector2f -> Vector2 is explicit */
 	Vector2Tmpl<int32_t> round() const { return Vector2Tmpl<int32_t>(x,y); }
 	bool operator==(const Vector2Tmpl<T>& v)const{return v.x==x && v.y==y;}

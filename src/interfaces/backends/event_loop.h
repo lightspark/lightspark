@@ -25,6 +25,7 @@
 #include "forwards/threading.h"
 #include "forwards/timer.h"
 #include "interfaces/timer.h"
+#include "events.h"
 #include <cstdint>
 #include <list>
 

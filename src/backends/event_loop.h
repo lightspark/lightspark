@@ -21,6 +21,7 @@
 #define BACKENDS_EVENT_LOOP_H 1
 
 #include "interfaces/backends/event_loop.h"
+#include "events.h"
 #include "threading.h"
 #include "timer.h"
 #include <list>
@@ -29,11 +30,6 @@
 
 namespace lightspark
 {
-
-// TODO: Implement.
-class LSEvent
-{
-};
 
 // SDL event.
 class SDLEvent : public IEvent

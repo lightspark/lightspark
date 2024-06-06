@@ -2407,6 +2407,14 @@ void SystemState::stageCoordinateMapping(uint32_t windowWidth, uint32_t windowHe
 	}
 }
 
+void SystemState::stageCoordinateMapping(const Vector2& windowSize, Vector2& offset, Vector2f& scale)
+{
+	Vector2Tmpl<float> _scale;
+	stageCoordinateMapping(windowSize.x, windowSize.y,
+			       offset.x, offset.y, _scale.x, _scale.y);
+	scale = _scale;
+}
+
 void SystemState::windowToStageCoordinates(int windowX, int windowY, int& stageX, int& stageY)
 {
 	int offsetX;

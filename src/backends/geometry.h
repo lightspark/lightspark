@@ -47,6 +47,8 @@ public:
 	Vector2Tmpl<T> operator-() const { return Vector2Tmpl<T>(-x,-y); }
 	Vector2Tmpl<T> operator-(const Vector2Tmpl<T>& v)const { return Vector2Tmpl<T>(x-v.x,y-v.y);}
 	Vector2Tmpl<T> operator+(const Vector2Tmpl<T>& v)const { return Vector2Tmpl<T>(x+v.x,y+v.y);}
+	Vector2Tmpl<T> operator*(const Vector2Tmpl<T>& v)const { return Vector2Tmpl<T>(x*v.x,y*v.y);}
+	Vector2Tmpl<T> operator/(const Vector2Tmpl<T>& v)const { return Vector2Tmpl<T>(x/v.x,y/v.y);}
 	Vector2Tmpl<T>& operator+=(const Vector2Tmpl<T>& v){ x+=v.x; y+=v.y; return *this;}
 	Vector2Tmpl<T> operator*(int p)const { return Vector2Tmpl<T>(x*p,y*p);}
 	Vector2Tmpl<T>& operator/=(T v) { x/=v; y/=v; return *this;}

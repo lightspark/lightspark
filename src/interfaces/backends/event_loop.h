@@ -38,7 +38,7 @@ class IEvent
 public:
 	virtual ~IEvent() {}
 	// Converts a platform/application specific event into an LSEvent.
-	virtual LSEvent toLSEvent() const = 0;
+	virtual LSEvent toLSEvent(SystemState* sys) const = 0;
 	// Converts an LSEvent into a platform/application specific event.
 	virtual IEvent& fromLSEvent(const LSEvent& event) = 0;
 	// Returns the underlying platform/application specific event.

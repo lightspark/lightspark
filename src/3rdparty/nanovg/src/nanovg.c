@@ -2629,6 +2629,16 @@ void nvgStroke(NVGcontext* ctx)
 	} else {
 		i = 0;
 	}
+	// ensure we render anything if stroke is only a singular horizontal or vertical line
+	if (ctx->cache->bounds[0] == ctx->cache->bounds[2] ||
+		ctx->cache->bounds[1] == ctx->cache->bounds[3])
+	{
+		ctx->cache->bounds[0]-=strokeWidth/2.0;
+		ctx->cache->bounds[1]-=strokeWidth/2.0;
+		ctx->cache->bounds[2]+=strokeWidth/2.0;
+		ctx->cache->bounds[3]+=strokeWidth/2.0;
+	}
+
 	ctx->params.renderStroke(ctx->params.userPtr, &strokePaint, state->compositeOperation, &state->scissor, ctx->fringeWidth,
 							 strokeWidth, ctx->cache->bounds, clipPath, i, ctx->cache->paths, ctx->cache->npaths);
 

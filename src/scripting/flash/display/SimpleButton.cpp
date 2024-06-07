@@ -680,6 +680,8 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 void SimpleButton::reflectState(BUTTONSTATE oldstate)
 {
 	assert(dynamicDisplayList.empty() || dynamicDisplayList.size() == 1);
+	if (isConstructed() && oldstate==currentState)
+		return;
 	if(!dynamicDisplayList.empty())
 	{
 		_removeChild(dynamicDisplayList.front(),true);

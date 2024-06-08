@@ -53,6 +53,7 @@
 #include "backends/currency.h"
 #include "memory_support.h"
 #include "parsing/tags.h"
+#include "scripting/flash/external/ExtensionContext.h"
 
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
@@ -1902,6 +1903,7 @@ void ParseThread::parseExtensions(RootMovieClip* root)
 	for (auto it = extensions.begin(); it != extensions.end(); it++)
 	{
 		LOG(LOG_INFO,"loading extension:"<<(*it));
+		ExtensionContext::registerExtension(*it);
 		lsfilereader r((*it).raw_buf());
 		istream fext(&r);
 		UI8 Signature[4];

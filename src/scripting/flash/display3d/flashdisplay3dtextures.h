@@ -24,7 +24,6 @@
 #include "swftypes.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/display/BitmapContainer.h"
-#include "platforms/engineutils.h"
 
 namespace lightspark
 {
@@ -36,6 +35,7 @@ protected:
 	uint32_t textureID;
 	uint32_t width;
 	uint32_t height;
+	uint32_t maxmiplevel;
 	bool async;
 	TEXTUREFORMAT format;
 	TEXTUREFORMAT_COMPRESSED compressedformat;
@@ -50,10 +50,10 @@ protected:
 	void uploadFromByteArrayIntern(ByteArray* source, uint32_t offset, uint32_t miplevel);
 public:
 	TextureBase(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c)
-	  ,textureID(UINT32_MAX),width(0),height(0),async(false),format(BGRA),compressedformat(UNCOMPRESSED),context(nullptr)
+	  ,textureID(UINT32_MAX),width(0),height(0),maxmiplevel(0),async(false),format(BGRA),compressedformat(UNCOMPRESSED),context(nullptr)
 	{ subtype = SUBTYPE_TEXTUREBASE;}
 	TextureBase(ASWorker* wrk,Class_base* c,Context3D* _context):EventDispatcher(wrk,c)
-	  ,textureID(UINT32_MAX),width(0),height(0),async(false),format(BGRA),compressedformat(UNCOMPRESSED),context(_context)
+	  ,textureID(UINT32_MAX),width(0),height(0),maxmiplevel(0),async(false),format(BGRA),compressedformat(UNCOMPRESSED),context(_context)
 	{ subtype = SUBTYPE_TEXTUREBASE;}
 	static void sinit(Class_base* c);
 	bool destruct() override;

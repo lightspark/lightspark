@@ -28,6 +28,7 @@
 #include "scripting/argconv.h"
 #include "backends/rendering.h"
 #include "backends/rendering_context.h"
+#include "platforms/engineutils.h"
 #include "scripting/flash/display3d/agalconverter.h"
 #include "scripting/abc.h"
 
@@ -863,7 +864,7 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 		engineData->exec_glTexImage2D_GL_TEXTURE_2D(0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0,false);
 	else if (level == UINT32_MAX)
 	{
-		for (uint32_t i = 0; i < tex->bitmaparray.size(); i++)
+		for (uint32_t i = 0; i <= tex->maxmiplevel && i < tex->bitmaparray.size(); i++)
 		{
 			if (tex->bitmaparray[i].size() > 0)
 				engineData->exec_glTexImage2D_GL_TEXTURE_2D(i, max(tex->width>>i,1U), max(tex->height>>i,1U), 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size(),false);
@@ -873,7 +874,7 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 	}
 	else 
 	{
-		if (tex->bitmaparray.size() > level && tex->bitmaparray[level].size() > 0)
+		if (tex->maxmiplevel >= level && tex->bitmaparray.size() > level && tex->bitmaparray[level].size() > 0)
 		{
 			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[level].data(),tex->format,tex->compressedformat,tex->bitmaparray[level].size(),false);
 			tex->bitmaparray[level].clear();
@@ -1685,7 +1686,7 @@ ASFUNCTIONBODY_ATOM(Context3D,present)
 	Locker l(th->rendermutex);
 	if (th->swapbuffers)
 	{
-		if (wrk->getSystemState()->getRenderThread()->isStarted())
+		if (wrk->getSystemState()->getRenderThread()->isStarted() && !th->actions[th->currentactionvector].empty())
 			LOG(LOG_ERROR,"last frame has not been rendered yet, skipping frame:"<<th->actions[1-th->currentactionvector].size());
 		th->actions[th->currentactionvector].clear();
 	}

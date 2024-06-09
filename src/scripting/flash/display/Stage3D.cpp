@@ -25,6 +25,8 @@
 #include "scripting/argconv.h"
 #include "scripting/abc.h"
 #include "backends/rendering.h"
+#include "platforms/engineutils.h"
+
 
 using namespace std;
 using namespace lightspark;

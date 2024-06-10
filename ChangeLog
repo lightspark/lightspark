@@ -2,7 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
-	* improved support for native AIR extensions
+	* improved support for AIR native extensions
 	* improved support of system mouse cursors
 	* improved support for GraphicsPath
 	* big rework of the rendering engine for better handling of masks and filters

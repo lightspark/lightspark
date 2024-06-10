@@ -2130,10 +2130,7 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 	if(PlaceFlagHasVisible)
 		in >> Visible;
 	if(PlaceFlagOpaqueBackground)
-	{
 		in >> BackgroundColor;
-		LOG(LOG_NOT_IMPLEMENTED,"BackgroundColor in PlaceObject3 not yet supported:"<<BackgroundColor);
-	}
 
 	if(PlaceFlagHasClipAction)
 		in >> ClipActions;
@@ -2149,6 +2146,8 @@ void PlaceObject3Tag::setProperties(DisplayObject *obj, DisplayObjectContainer *
 		obj->setBlendMode(BlendMode);
 	if (PlaceFlagHasVisible)
 		obj->setVisible(Visible);
+	if (PlaceFlagOpaqueBackground) // it seems that adobe ignores the alpha value
+		obj->opaqueBackground=asAtomHandler::fromUInt((BackgroundColor.Red<<16)|(BackgroundColor.Green<<8)|(BackgroundColor.Blue));
 	obj->cacheAsBitmap=this->BitmapCache;
 	obj->setFilters(this->SurfaceFilterList);
 }

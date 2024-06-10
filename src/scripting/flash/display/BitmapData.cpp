@@ -273,7 +273,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 								   "IBitmapDrawable");
 		return;
 	}
-	if (!asAtomHandler::isNull(quality))
+	if (!asAtomHandler::isNull(quality) && asAtomHandler::toString(quality,wrk)!="high")
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.drawWithQuality parameter quality is ignored:"<<asAtomHandler::toDebugString(quality));
 
 	uint32_t blendModeID = BUILTIN_STRINGS::EMPTY;

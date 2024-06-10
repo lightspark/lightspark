@@ -47,7 +47,7 @@ SurfaceState::SurfaceState(float _xoffset, float _yoffset, float _alpha, float _
 	,depth(0),clipdepth(0),maxfilterborder(0)
 	,blendmode(_blendmode),smoothing(_smoothing),scaling(_scaling)
 	,visible(true),allowAsMask(true),isMask(_ismask),cacheAsBitmap(_cacheAsBitmap)
-	,needsFilterRefresh(_needsfilterrefresh),needsLayer(_needslayer),isYUV(false),renderWithNanoVG(false)
+	,needsFilterRefresh(_needsfilterrefresh),needsLayer(_needslayer),isYUV(false),renderWithNanoVG(false),hasOpaqueBackground(false)
 {
 #ifndef _NDEBUG
 	src=nullptr;
@@ -91,6 +91,7 @@ void SurfaceState::reset()
 	cacheAsBitmap=false;
 	needsFilterRefresh=true;
 	needsLayer=false;
+	hasOpaqueBackground=false;
 }
 
 void SurfaceState::setupChildrenList(std::vector<DisplayObject*>& dynamicDisplayList)
@@ -832,7 +833,11 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	uint32_t parentframebufferHeight = sys->getRenderThread()->currentframebufferHeight;
 	
 	sys->getRenderThread()->setViewPort(w,h,true);
-	engineData->exec_glClearColor(0,0,0,0);
+	if (state->hasOpaqueBackground)
+		engineData->exec_glClearColor(float(state->opaqueBackground.Red)/255.0,float(state->opaqueBackground.Green)/255.0,float(state->opaqueBackground.Blue)/255.0,1.0);
+	else
+		engineData->exec_glClearColor(0,0,0,0);
+
 	engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
 	filterstackentry fe;
 	fe.filterframebuffer=filterframebuffer;

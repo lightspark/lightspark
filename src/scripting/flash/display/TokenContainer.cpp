@@ -315,7 +315,7 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 									   , matrix.getScaleX(), matrix.getScaleY()
 									   , isMask, owner->cacheAsBitmap
 									   , this->scaling, owner->getConcatenatedAlpha()
-									   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,owner->getBlendMode(),matrix);
+									   , ct, smoothing,owner->getBlendMode(),matrix);
 		ret->getState()->tokens = this->tokens;
 		ret->getState()->renderWithNanoVG = renderWithNanoVG;
 		owner->resetNeedsTextureRecalculation();

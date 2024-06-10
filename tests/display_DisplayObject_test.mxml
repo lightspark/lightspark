@@ -40,6 +40,18 @@ private function appComplete():void
 	sprite4.graphics.drawRect(0, 0, 100, 100);
 	sprite4.x=150;
 
+	Tests.assertEquals(null, sprite1.opaqueBackground, "opaqueBackground");
+	sprite1.opaqueBackground=0xff0000;
+	Tests.assertEquals(0x00ff0000, sprite1.opaqueBackground, "opaqueBackground set to uint");
+	sprite1.opaqueBackground=0x80ff0000;
+	Tests.assertEquals(0xff0000, sprite1.opaqueBackground, "opaqueBackground ignores alpha");
+	sprite1.opaqueBackground="0xff0000";
+	Tests.assertEquals(0x00ff0000, sprite1.opaqueBackground, "opaqueBackground set by string");
+	sprite1.opaqueBackground=undefined;
+	Tests.assertEquals(null, sprite1.opaqueBackground, "opaqueBackground set undefined");
+	sprite1.opaqueBackground=null;
+	Tests.assertEquals(null, sprite1.opaqueBackground, "opaqueBackground set null");
+
 	Tests.assertEquals(0, sprite3.getBounds(sprite3).x, "getBounds against itself");
 	Tests.assertEquals(100, sprite3.getBounds(sprite2).x, "getBounds against parent");
 	Tests.assertEquals(200, sprite3.getBounds(sprite1).x, "getBounds against parent of parent");

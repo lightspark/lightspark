@@ -163,7 +163,7 @@ bool DisplayObject::belongsToMask() const
 	return false;
 }
 
-DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),tx(0),ty(0),rotation(0),matrix(Class<Matrix>::getInstanceS(wrk)),
+DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),maxfilterborder(0),ClipDepth(0),
 	avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),cachedSurface(new CachedSurface()),
 	constructed(false),useLegacyMatrix(true),
@@ -171,7 +171,8 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	avm1mouselistenercount(0),avm1framelistenercount(0),
 	onStage(false),visible(true),
 	mask(),invalidateQueueNext(),loaderInfo(),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
-	name(BUILTIN_STRINGS::EMPTY)
+	name(BUILTIN_STRINGS::EMPTY),
+	opaqueBackground(asAtomHandler::nullAtom)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
 }
@@ -382,7 +383,6 @@ ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties)
 ASFUNCTIONBODY_GETTER_SETTER_CB(DisplayObject,scrollRect,onSetScrollRect)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, opaqueBackground)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, metaData)
 
 void DisplayObject::onSetName(uint32_t oldName)
@@ -466,6 +466,44 @@ void DisplayObject::updatedRect()
 	else
 		requestInvalidationFilterParent();
 	
+}
+
+ASFUNCTIONBODY_ATOM(DisplayObject,_getter_opaqueBackground)
+{
+	if(!asAtomHandler::is<DisplayObject>(obj))
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Function applied to wrong object");
+		return;
+	}
+	if(argslen != 0)
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Arguments provided in getter");
+		return;
+	}
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	ret = th->opaqueBackground;
+}
+ASFUNCTIONBODY_ATOM(DisplayObject,_setter_opaqueBackground)
+{
+	if(!asAtomHandler::is<DisplayObject>(obj))
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Function applied to wrong object");
+		return;
+	}
+	if(argslen != 1)
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Arguments provided in getter");
+		return;
+	}
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	if (asAtomHandler::isNull(args[0]) || asAtomHandler::isUndefined(args[0]))
+		th->opaqueBackground = asAtomHandler::nullAtom;
+	else
+	{
+		// convert argument to uint and ignore alpha component
+		th->opaqueBackground =asAtomHandler::fromUInt(asAtomHandler::toUInt(args[0])&0xffffff) ;
+	}
+	th->requestInvalidation(wrk->getSystemState());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_filters)
@@ -843,6 +881,20 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		state->scrollRect=this->scrollRect->getRect();
 	else
 		state->scrollRect= RECT();
+	if (this->is<RootMovieClip>() && this->getParent() && this->getParent()->is<AVM1Movie>())
+	{
+		state->hasOpaqueBackground = true;
+		state->renderWithNanoVG = true;
+		state->opaqueBackground=this->as<RootMovieClip>()->getBackground();
+		this->boundsRect(state->bounds.min.x, state->bounds.max.x, state->bounds.min.y, state->bounds.max.y, false);
+	}
+	else
+	{
+		state->hasOpaqueBackground = !asAtomHandler::isNull(this->opaqueBackground);
+		if (state->hasOpaqueBackground)
+			state->opaqueBackground=RGB(asAtomHandler::toUInt(this->opaqueBackground));
+	}
+		
 }
 
 void DisplayObject::setMask(_NR<DisplayObject> m)

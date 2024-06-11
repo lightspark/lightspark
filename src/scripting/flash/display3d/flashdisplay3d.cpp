@@ -810,6 +810,8 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	}
 
 	// cleanup for stage rendering
+	engineData->exec_glClearDepthf(1.0);
+	engineData->exec_glClearStencil(0);
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 	engineData->exec_glDisable_GL_DEPTH_TEST();
 	engineData->exec_glCullFace(FACE_NONE);

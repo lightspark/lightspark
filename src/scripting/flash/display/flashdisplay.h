@@ -720,7 +720,7 @@ public:
 class AVM1Movie: public DisplayObjectContainer
 {
 public:
-	AVM1Movie(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c){}
+	AVM1Movie(ASWorker* wrk, Class_base* c);
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 };

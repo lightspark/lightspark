@@ -4747,6 +4747,11 @@ Frame *MovieClip::getCurrentFrame()
 	return &(*it);
 }
 
+AVM1Movie::AVM1Movie(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
+{
+	subtype=SUBTYPE_AVM1MOVIE;
+}
+
 void AVM1Movie::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);

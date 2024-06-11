@@ -78,6 +78,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_flashmedia.cpp
   scripting/abc_flashnet.cpp
   scripting/abc_flashprinting.cpp
+  scripting/abc_flashprofiler.cpp
   scripting/abc_flashsampler.cpp
   scripting/abc_flashsecurity.cpp
   scripting/abc_flashsensors.cpp
@@ -202,6 +203,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/net/NetStreamPlayTransitions.cpp
   scripting/flash/net/DatagramSocket.cpp
   scripting/flash/printing/flashprinting.cpp
+  scripting/flash/profiler/flashprofiler.cpp
   scripting/flash/errors/flasherrors.cpp
   scripting/flash/sampler/flashsampler.cpp
   scripting/flash/security/certificatestatus.cpp

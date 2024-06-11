@@ -135,6 +135,7 @@ void ABCVm::registerClasses()
 	registerClassesFlashSensors(builtin);
 	registerClassesFlashErrors(builtin);
 	registerClassesFlashPrinting(builtin);
+	registerClassesFlashProfiler(builtin);
 	registerClassesFlashGlobalization(builtin);
 	registerClassesFlashDesktop(builtin);
 	registerClassesFlashFilesystem(builtin);

@@ -346,6 +346,7 @@ private:
 	void registerClassesFlashGlobalization(Global* builtin);
 	void registerClassesFlashNet(Global* builtin);
 	void registerClassesFlashPrinting(Global* builtin);
+	void registerClassesFlashProfiler(Global* builtin);
 	void registerClassesFlashSampler(Global* builtin);
 	void registerClassesFlashSecurity(Global* builtin);
 	void registerClassesFlashSensors(Global* builtin);

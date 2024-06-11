@@ -173,6 +173,7 @@
 #include "scripting/avm1/avm1text.h"
 #include "scripting/avm1/avm1ui.h"
 #include "scripting/avm1/avm1xml.h"
+#include "scripting/avm1/avm1array.h"
 
 using namespace lightspark;
 

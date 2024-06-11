@@ -265,6 +265,7 @@ SET(LIBSPARK_SOURCES
   scripting/avm1/avm1ui.cpp
   scripting/avm1/avm1xml.cpp
   scripting/avm1/avm1media.cpp
+  scripting/avm1/avm1array.cpp
   scripting/avm1_interpreter.cpp
   platforms/engineutils.cpp
   3rdparty/nanovg/src/nanovg.c

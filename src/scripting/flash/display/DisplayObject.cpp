@@ -148,7 +148,7 @@ number_t DisplayObject::getNominalHeight()
 
 bool DisplayObject::inMask() const
 {
-	if (mask.getPtr() || this->getClipDepth())
+	if (mask || this->getClipDepth())
 		return true;
 	if (parent)
 		return parent->inMask();
@@ -170,7 +170,8 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),
 	avm1mouselistenercount(0),avm1framelistenercount(0),
 	onStage(false),visible(true),
-	mask(),invalidateQueueNext(),loaderInfo(),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
+	mask(nullptr),maskee(nullptr),clipMask(nullptr),
+	invalidateQueueNext(),loaderInfo(),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
 	name(BUILTIN_STRINGS::EMPTY),
 	opaqueBackground(asAtomHandler::nullAtom)
 {
@@ -197,7 +198,15 @@ void DisplayObject::finalize()
 	EventDispatcher::finalize();
 	parent=nullptr;
 	eventparentmap.clear();
-	mask.reset();
+	if (mask)
+		mask->removeStoredMember();
+	mask=nullptr;
+	if (maskee)
+		maskee->removeStoredMember();
+	maskee=nullptr;
+	if (clipMask)
+		clipMask->removeStoredMember();
+	clipMask=nullptr;
 	matrix.reset();
 	loaderInfo.reset();
 	colorTransform.reset();
@@ -229,7 +238,15 @@ bool DisplayObject::destruct()
 	maxfilterborder=0;
 	parent=nullptr;
 	eventparentmap.clear();
-	mask.reset();
+	if (mask)
+		mask->removeStoredMember();
+	mask=nullptr;
+	if (maskee)
+		maskee->removeStoredMember();
+	maskee=nullptr;
+	if (clipMask)
+		clipMask->removeStoredMember();
+	clipMask=nullptr;
 	matrix.reset();
 	loaderInfo.reset();
 	invalidateQueueNext.reset();
@@ -316,6 +333,12 @@ bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		if (o)
 			ret = o->countAllCylicMemberReferences(gcstate) || ret;
 	}
+	if (mask)
+		ret = mask->countAllCylicMemberReferences(gcstate) || ret;
+	if (maskee)
+		ret = maskee->countAllCylicMemberReferences(gcstate) || ret;
+	if (clipMask)
+		ret = clipMask->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 
@@ -603,7 +626,7 @@ void DisplayObject::requestInvalidationIncludingChildren(InvalidateQueue* q)
 	{
 		this->incRef();
 		q->addToInvalidateQueue(_MR(this));
-		if(!mask.isNull())
+		if(mask)
 			mask->requestInvalidationIncludingChildren(q);
 	}
 }
@@ -864,7 +887,7 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		state->mask = this->mask->getCachedSurface();
 	else
 		state->mask.reset();
-	if (!maskee.isNull())
+	if (maskee)
 		state->maskee = maskee->getCachedSurface();
 	else
 		state->maskee.reset();
@@ -899,20 +922,23 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 
 void DisplayObject::setMask(_NR<DisplayObject> m)
 {
-	bool mustInvalidate=(mask!=m || (m && m->hasChanged));
+	bool mustInvalidate=(mask!=m.getPtr() || (m && m->hasChanged));
 
-	if(!mask.isNull())
+	if(mask)
 	{
 		//Remove previous mask
 		mask->ismask=false;
-		mask->maskee.reset();
+		mask->maskee->removeStoredMember();
+		mask->maskee=nullptr;
 	}
 
-	mask=m;
-	if(!mask.isNull())
+	mask=m.getPtr();
+	if(mask)
 	{
 		//Use new mask
 		mask->ismask=true;
+		mask->incRef();
+		mask->addStoredMember();
 	}
 
 	if(mustInvalidate)
@@ -922,6 +948,18 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 			requestInvalidation(getSystemState());
 		else
 			requestInvalidationFilterParent();
+	}
+}
+
+void DisplayObject::setClipMask(_NR<DisplayObject> m)
+{
+	if (clipMask)
+		clipMask->removeStoredMember();
+	clipMask = m.getPtr();
+	if (clipMask)
+	{
+		clipMask->incRef();
+		clipMask->addStoredMember();
 	}
 }
 void DisplayObject::setBlendMode(UI8 blendmode)
@@ -1148,7 +1186,7 @@ void DisplayObject::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapConta
 void DisplayObject::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	//Let's invalidate also the mask
-	if(!mask.isNull() && (mask->hasChanged || forceTextureRefresh))
+	if(mask && (mask->hasChanged || forceTextureRefresh))
 		mask->requestInvalidation(q,forceTextureRefresh);
 }
 
@@ -1286,14 +1324,14 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getAlpha)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMask)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	if(th->mask.isNull())
+	if(!th->mask)
 	{
 		asAtomHandler::setNull(ret);
 		return;
 	}
 
 	th->mask->incRef();
-	ret = asAtomHandler::fromObject(th->mask.getPtr());
+	ret = asAtomHandler::fromObject(th->mask);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setMask)
@@ -1307,7 +1345,11 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setMask)
 		newMask->incRef();
 		th->setMask(_MR(newMask));
 		th->incRef();
-		newMask->maskee = _MR(th);
+		if (newMask->maskee)
+			newMask->maskee->removeStoredMember();
+		newMask->maskee = th;
+		newMask->maskee->incRef();
+		newMask->maskee->addStoredMember();
 	}
 	else
 		th->setMask(NullRef);
@@ -1981,9 +2023,9 @@ _NR<DisplayObject> DisplayObject::hitTest(const Vector2f& globalPoint, const Vec
 	if((!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && (!isMask() || !getClipDepth()))
 		return NullRef;
 
-	const auto& mask = !this->mask.isNull() ? this->mask : this->clipMask;
+	const auto& mask = this->mask ? this->mask : this->clipMask;
 	//First check if there is any mask on this object, if so the point must be inside the mask to go on
-	if(!mask.isNull())
+	if(mask)
 	{
 		//Compute the coordinates local to the mask
 		const MATRIX& maskMatrix = mask->getConcatenatedMatrix();

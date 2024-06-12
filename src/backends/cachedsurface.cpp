@@ -255,6 +255,14 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 }
 void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 {
+	if (state->scrollRect.Xmin || state->scrollRect.Xmax || state->scrollRect.Ymin || state->scrollRect.Ymax)
+	{
+		MATRIX m = ctxt.transformStack().transform().matrix;
+		sys->getEngineData()->exec_glScissor(m.getTranslateX()+state->scrollRect.Xmin*m.getScaleX()
+											 ,sys->getRenderThread()->windowHeight-m.getTranslateY()-state->scrollRect.Ymax*m.getScaleY()
+											 ,(state->scrollRect.Xmax-state->scrollRect.Xmin)*m.getScaleX()
+											 ,(state->scrollRect.Ymax-state->scrollRect.Ymin)*m.getScaleY());
+	}
 	// first look if we have tokens or bitmaps to render
 	if (state->renderWithNanoVG)
 	{
@@ -785,6 +793,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 		ctxt.deactivateMask();
 		ctxt.popMask();
 	});
+	sys->getEngineData()->exec_glDisable_GL_SCISSOR_TEST();
 }
 void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t w, uint32_t h, const MATRIX& m)
 {

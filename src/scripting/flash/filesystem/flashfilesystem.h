@@ -122,6 +122,8 @@ public:
 	ASFUNCTION_ATOM(getDirectoryListing);
 	ASFUNCTION_ATOM(_getURL);
 	ASFUNCTION_ATOM(_setURL);
+	ASFUNCTION_ATOM(_getNativePath);
+	ASFUNCTION_ATOM(_setNativePath);
 	const tiny_string& getFullPath() const { return path; }
 };
 class FileMode: public ASObject

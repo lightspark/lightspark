@@ -400,6 +400,8 @@ void ASFile::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("getDirectoryListing", "", Class<IFunction>::getFunction(c->getSystemState(),getDirectoryListing,0,Class<Array>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_getURL,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_setURL),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nativePath","",Class<IFunction>::getFunction(c->getSystemState(),_getNativePath,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nativePath","",Class<IFunction>::getFunction(c->getSystemState(),_setNativePath),SETTER_METHOD,true);
 }
 ASFUNCTIONBODY_GETTER(ASFile, exists)
 ASFUNCTIONBODY_GETTER(ASFile, isHidden)
@@ -453,6 +455,18 @@ ASFUNCTIONBODY_ATOM(ASFile,_setURL)
 	}
 	else
 		createError<ArgumentError>(wrk,kInvalidParamError, "url");
+}
+ASFUNCTIONBODY_ATOM(ASFile,_getNativePath)
+{
+	ASFile* th=asAtomHandler::as<ASFile>(obj);
+	ret = asAtomHandler::fromString(wrk->getSystemState(),th->path);
+}
+ASFUNCTIONBODY_ATOM(ASFile,_setNativePath)
+{
+	ASFile* th=asAtomHandler::as<ASFile>(obj);
+	tiny_string newpath;
+	ARG_CHECK(ARG_UNPACK(newpath));
+	th->setupFile(newpath,wrk);
 }
 
 ASFUNCTIONBODY_ATOM(ASFile,resolvePath)

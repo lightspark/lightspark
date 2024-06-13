@@ -235,6 +235,7 @@ private:
 	bool hasMouse;
 	void afterSetUseHandCursor(bool oldValue);
 protected:
+	bool initializingFrame;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void resetToStart() override;
@@ -386,7 +387,6 @@ private:
 	uint32_t fromDefineSpriteTag;
 	uint32_t lastFrameScriptExecuted;
 	uint32_t lastratio;
-	bool initializingFrame;
 	bool inExecuteFramescript;
 	bool inAVM1Attachment;
 	bool isAVM1Loaded;

@@ -69,7 +69,8 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 
 
 
-Sprite::Sprite(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),hasMouse(false),dragged(false),buttonMode(false),useHandCursor(true)
+Sprite::Sprite(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),hasMouse(false),initializingFrame(false)
+	,dragged(false),buttonMode(false),useHandCursor(true)
 {
 	subtype=SUBTYPE_SPRITE;
 }
@@ -618,8 +619,12 @@ void Sprite::fillGraphicsData(Vector* v, bool recursive)
 
 ASFUNCTIONBODY_ATOM(Sprite,_constructor)
 {
-	//Sprite* th=Class<Sprite>::cast(obj);
+	Sprite* th=asAtomHandler::as<Sprite>(obj);
+	// it's possible that legacy MovieClips are defined as inherited directly from Sprite
+	// so we have to set initializingFrame here
+	th->initializingFrame = true; 
 	DisplayObjectContainer::_constructor(ret,wrk,obj,nullptr,0);
+	th->initializingFrame = false;
 }
 
 Graphics* Sprite::getGraphics()
@@ -840,7 +845,7 @@ void MovieClip::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 
-MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),initializingFrame(false),inExecuteFramescript(false)
+MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
   ,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
   ,actions(nullptr),totalFrames_unreliable(1),enabled(true)
 {
@@ -1346,12 +1351,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabels)
 
 ASFUNCTIONBODY_ATOM(MovieClip,_constructor)
 {
-	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	th->initializingFrame = true;
 	Sprite::_constructor(ret,wrk,obj,nullptr,0);
-	th->initializingFrame = false;
-/*	th->setVariableByQName("swapDepths","",Class<IFunction>::getFunction(c->getSystemState(),swapDepths));
-	th->setVariableByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),createEmptyMovieClip));*/
 }
 
 void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name)

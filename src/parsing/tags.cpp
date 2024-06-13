@@ -1906,6 +1906,8 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 				return;
 			}
 			newInstance = true;
+			if(!PlaceFlagHasName)
+				nameID = BUILTIN_STRINGS::EMPTY;
 		}
 		assert_and_throw(toAdd);
 
@@ -1964,7 +1966,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
 		}
 	}
-	if (!inskipping && exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
+	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
 	{
 		currchar->name = nameID;
 		currchar->incRef();

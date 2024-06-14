@@ -2119,7 +2119,10 @@ void Class_base::describeTraits(pugi::xml_node &root, std::vector<traits_info>& 
 				node.append_attribute("type").set_value(type.raw_buf());
 			}
 			if (mname->ns.size() > 0 && !mname->ns[0].hasEmptyName())
+			{
+				node.remove_attribute("uri");
 				node.append_attribute("uri").set_value(getSystemState()->getStringFromUniqueId(mname->ns[0].nsNameId).raw_buf());
+			}
 
 			node.remove_attribute("declaredBy");
 			node.append_attribute("declaredBy").set_value(getQualifiedClassName().raw_buf());

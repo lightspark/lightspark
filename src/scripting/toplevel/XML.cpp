@@ -3176,7 +3176,7 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 				(*it)->nodenamespace_uri == tmp->nodenamespace_uri
 				)
 			{
-				createError<TypeError>(getWorker(),kXMLDuplicateAttribute);
+				createError<TypeError>(getWorker(),kXMLDuplicateAttribute,node->getSystemState()->getStringFromUniqueId(tmp->nodenameID),node->toString());
 				break;
 			}
 		}

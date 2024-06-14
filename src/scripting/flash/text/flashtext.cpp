@@ -1032,14 +1032,14 @@ ASFUNCTIONBODY_ATOM(TextField,_getBottomScrollV)
 	
 	Locker l(*th->linemutex);
 	int32_t Ymin = 0;
-	for (unsigned int k=0; k<th->getLineCount()-1; k++)
+	for (unsigned int k=1; k<th->getLineCount(); k++)
 	{
 		if (Ymin >= (int)th->height)
 		{
-			asAtomHandler::setInt(ret,wrk,(int32_t)k + 1);
+			asAtomHandler::setInt(ret,wrk,(int32_t)k);
 			return;
 		}
-		Ymin+=th->textlines[k].height;
+		Ymin+=th->textlines[k-1].height;
 	}
 	asAtomHandler::setInt(ret,wrk,(int32_t)th->getLineCount() + 1);
 }

@@ -592,8 +592,8 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId(tmpName);
-	if (nsName != "")
-		name.ns.push_back(nsNameAndKind(wrk->getSystemState(),nsName,NAMESPACE));
+	name.hasEmptyNS=nsName == "";
+	name.ns.push_back(nsNameAndKind(wrk->getSystemState(),nsName,NAMESPACE));
 
 	LOG(LOG_CALLS,"Looking for definition of " << name);
 	ret = asAtomHandler::invalidAtom;
@@ -609,7 +609,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 	//TODO: specs says that also namespaces and function may be returned
 	//assert_and_throw(o->getObjectType()==T_CLASS);
 
-	LOG(LOG_CALLS,"Getting definition for " << name);
+	LOG(LOG_CALLS,"Getting definition for " << name<<" "<<asAtomHandler::toDebugString(ret));
 	ASATOM_INCREF(ret);
 }
 

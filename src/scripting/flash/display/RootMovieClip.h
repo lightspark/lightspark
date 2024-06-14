@@ -21,7 +21,7 @@
 #define SCRIPTING_FLASH_DISPLAY_ROOTMOVIECLIP_H 1
 
 #include "parsing/tags.h"
-#include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/MovieClip.h"
 
 
 namespace lightspark

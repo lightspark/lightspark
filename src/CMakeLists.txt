@@ -127,6 +127,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/Loader.cpp
   scripting/flash/display/LoaderInfo.cpp
   scripting/flash/display/MorphShape.cpp
+  scripting/flash/display/MovieClip.cpp
   scripting/flash/display/NativeMenuItem.cpp
   scripting/flash/display/NativeWindow.cpp
   scripting/flash/display/RootMovieClip.cpp

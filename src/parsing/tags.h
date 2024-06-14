@@ -27,6 +27,7 @@
 #include "backends/geometry.h"
 #include "backends/decoder.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/MovieClip.h"
 
 namespace lightspark
 {

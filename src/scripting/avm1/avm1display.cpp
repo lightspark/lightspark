@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "backends/cachedsurface.h"
 #include "scripting/avm1/avm1display.h"
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/Loader.h"

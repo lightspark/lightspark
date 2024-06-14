@@ -21,7 +21,6 @@
 #include "scripting/class.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/display/BitmapContainer.h"
-#include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "parsing/textfile.h"
 #include "backends/cachedsurface.h"

@@ -22,13 +22,14 @@
 
 
 #include "asobject.h"
-#include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/Shape.h"
+#include "scripting/flash/display/MovieClip.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/SimpleButton.h"
+#include "scripting/flash/display/LoaderInfo.h"
 
 namespace lightspark
 {

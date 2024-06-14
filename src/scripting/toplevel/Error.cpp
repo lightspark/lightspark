@@ -23,6 +23,7 @@
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/abc.h"

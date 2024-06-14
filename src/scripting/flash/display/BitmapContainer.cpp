@@ -19,12 +19,12 @@
 
 #include <stack>
 #include "scripting/flash/display/BitmapContainer.h"
-#include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "backends/rendering.h"
 #include "backends/image.h"
 #include "backends/decoder.h"
+#include "backends/streamcache.h"
 #include "swf.h"
 
 using namespace std;

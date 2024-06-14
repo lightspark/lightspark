@@ -34,7 +34,6 @@
 #include "platforms/engineutils.h"
 #include "backends/rendering_context.h"
 #include "logger.h"
-#include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/BitmapContainer.h"
 #include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/geom/flashgeom.h"

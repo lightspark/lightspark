@@ -21,7 +21,6 @@
 #include "backends/audio.h"
 #include "backends/input.h"
 #include "backends/rendering.h"
-#include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "compat.h"
 #include "scripting/class.h"

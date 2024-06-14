@@ -24,7 +24,6 @@
 #include "logger.h"
 #include "backends/geometry.h"
 #include "compat.h"
-#include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/BitmapData.h"
 
 using namespace std;

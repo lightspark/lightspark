@@ -152,7 +152,7 @@ URLInfo::URLInfo(const tiny_string& u)
 		size_t lastSlash = pathStr.rfind("/");
 		if(lastSlash != std::string::npos)
 		{
-			pathDirectory = pathStr.substr(0, lastSlash+1);
+			pathDirectory = decode(pathStr.substr(0, lastSlash+1),URLInfo::ENCODE_URI);
 			pathFile = pathStr.substr(lastSlash+1);
 		}
 		//We only get here when parsing a file://abc URL

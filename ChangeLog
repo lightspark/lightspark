@@ -4,6 +4,7 @@ Version NEXT:
 
 	* add stub for flash.profiler.showRedrawRegions
 	* improved support for AIR native extensions
+	  lightspark automatically loads available native extensions if the --air option is set,
 	* improved support of system mouse cursors
 	* improved support for GraphicsPath
 	* big rework of the rendering engine for better handling of masks and filters

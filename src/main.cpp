@@ -421,6 +421,38 @@ public:
 		return mApplicationStoragePath;
 	}
 };
+void checkForNativeAIRExtensions(std::vector<tiny_string>& extensions,char* fileName)
+{
+	tiny_string p = g_path_get_dirname(fileName);
+	p += G_DIR_SEPARATOR_S;
+	p += "META-INF";
+	p += G_DIR_SEPARATOR_S;
+	p += "AIR";
+	p += G_DIR_SEPARATOR_S;
+	p += "extensions";
+	GDir* dir = g_dir_open(p.raw_buf(),0,nullptr);
+	if (dir)
+	{
+		while (true)
+		{
+			const char* subpath = g_dir_read_name(dir);
+			if (!subpath)
+				break;
+			tiny_string extensionpath=p;
+			extensionpath += G_DIR_SEPARATOR_S;
+			extensionpath += subpath;
+			extensionpath += G_DIR_SEPARATOR_S;
+			extensionpath += "library.swf";
+			if (g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS))
+			{
+				LOG(LOG_INFO,"native extension found:"<<extensionpath);
+				extensions.push_back(extensionpath);
+			}
+		}
+		g_dir_close(dir);
+	}
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -626,6 +658,14 @@ int main(int argc, char* argv[])
 		SystemState::staticDeinit();
 		exit(3);
 	}
+	char absolutepath[PATH_MAX];
+	if (realpath(fileName,absolutepath) == nullptr)
+	{
+		LOG(LOG_ERROR, "Unable to resolve file");
+		exit(1);
+	}
+	if (flashMode==SystemState::AIR)
+		checkForNativeAIRExtensions(extensions,absolutepath);
 	//NOTE: see SystemState declaration
 	SystemState* sys = new SystemState(fileSize, flashMode);
 	ParseThread* pt = new ParseThread(f, sys->mainClip);
@@ -688,12 +728,6 @@ int main(int argc, char* argv[])
 		sys->setCookies(HTTPcookie);
 
 	// create path for shared object local storage
-	char absolutepath[PATH_MAX];
-	if (realpath(fileName,absolutepath) == nullptr)
-	{
-		LOG(LOG_ERROR, "Unable to resolve file");
-		exit(1);
-	}
 	tiny_string homedir(g_get_home_dir());
 	tiny_string filedatapath = absolutepath;
 	if (filedatapath.find(homedir) == 0) // remove home dir, if file is located below home dir

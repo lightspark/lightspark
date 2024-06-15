@@ -31,6 +31,7 @@
 #include "scripting/flash/display/RootMovieClip.h"
 #include <sys/stat.h>
 #include "parsing/streams.h"
+#include "launcher.h"
 
 #ifdef __MINGW32__
     #ifndef PATH_MAX
@@ -604,6 +605,28 @@ int main(int argc, char* argv[])
 			}
 			HTTPcookie=argv[i];
 		}
+		else if(strcmp(argv[i],"-h")==0 || 
+				 strcmp(argv[i],"--help")==0)
+		{
+			LOG(LOG_ERROR, "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
+							   " [--disable-interpreter|-ni] [--enable-fast-interpreter|-fi]" <<
+#ifdef LLVM_ENABLED
+							   " [--enable-jit|-j]" <<
+#endif
+							   " [--log-level|-l 0-4] [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
+							   " [--exit-on-error] [--HTTP-cookies cookie] [--air] [--avmplus] [--disable-rendering]" <<
+#ifdef PROFILING_SUPPORT
+							   " [--profiling-output|-o profiling-file]" <<
+#endif
+							   " [--ignore-unhandled-exceptions|-ne]"
+							   " [--fullscreen|-fs]"
+							   " [--scale|-sc]"
+							   " [--load-extension|-le extension-file"
+							   " [--help|-h]" <<
+							   " [--version|-v]" <<
+							   " [<file.swf>]");
+			exit(0);
+		}
 		else
 		{
 			//No options flag, so set the swf file name
@@ -615,26 +638,34 @@ int main(int argc, char* argv[])
 			fileName=argv[i];
 		}
 	}
-
+	
+	// no filename give, we start the launcher
+	Launcher l; // define launcher here, so that the char pointers into the tiny_strings stay valid until the end
 	if(fileName==nullptr)
 	{
-		LOG(LOG_ERROR, "Usage: " << argv[0] << " [--url|-u http://loader.url/file.swf]" <<
-			" [--disable-interpreter|-ni] [--enable-fast-interpreter|-fi]" <<
-#ifdef LLVM_ENABLED
-			" [--enable-jit|-j]" <<
-#endif
-			" [--log-level|-l 0-4] [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
-			" [--exit-on-error] [--HTTP-cookies cookie] [--air] [--avmplus] [--disable-rendering]" <<
-#ifdef PROFILING_SUPPORT
-			" [--profiling-output|-o profiling-file]" <<
-#endif
-			" [--ignore-unhandled-exceptions|-ne]"
-			" [--fullscreen|-fs]"
-			" [--scale|-sc]"
-			" [--load-extension|-le extension-file"
-			" [--version|-v]" <<
-			" <file.swf>");
-		exit(1);
+		bool fileselected = l.start();
+		if (fileselected)
+		{
+			if (l.selectedfile.empty())
+				exit(0);
+			ignoreUnhandledExceptions=true; // always ignore exception when running from launcher
+			fileName= (char*)l.selectedfile.raw_buf();
+			if (l.needsAIR)
+				flashMode=SystemState::AIR;
+			else if (l.needsAVMplus)
+				flashMode=SystemState::AVMPLUS;
+			
+			if (l.needsfilesystem && l.needsnetwork)
+				sandboxType = SecurityManager::LOCAL_TRUSTED;
+			else if (l.needsfilesystem)
+				sandboxType = SecurityManager::LOCAL_WITH_FILE;
+			else if (l.needsnetwork)
+				sandboxType = SecurityManager::LOCAL_WITH_NETWORK;
+			
+			url=(char*)l.baseurl.raw_buf();
+		}
+		else
+			exit(0);
 	}
 
 	Log::setLogLevel(log_level);

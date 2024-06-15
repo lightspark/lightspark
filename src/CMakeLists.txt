@@ -32,6 +32,7 @@ SET(LIBSPARK_SOURCES
   timer.cpp
   tiny_string.cpp
   errorconstants.cpp
+  launcher.cpp
   backends/audio.cpp
   backends/builtindecoder.cpp
   backends/cachedsurface.cpp
@@ -317,6 +318,13 @@ SET(LIBSPARK_SOURCES
   3rdparty/avmplus/pcre/pcre_internal.h
   3rdparty/avmplus/pcre/pcreposix.h
   3rdparty/avmplus/pcre/pcre_scanner.h
+  3rdparty/imgui/imgui.cpp
+  3rdparty/imgui/imgui_draw.cpp
+  3rdparty/imgui/imgui_tables.cpp
+  3rdparty/imgui/imgui_widgets.cpp
+  3rdparty/imgui/backends/imgui_impl_sdl2.cpp
+  3rdparty/imgui/backends/imgui_impl_sdlrenderer2.cpp
+  3rdparty/tinyfiledialogs/tinyfiledialogs.c
   )
 IF(MINGW)
   SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)
@@ -342,6 +350,8 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/scripting)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/jxrgluelib)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/3rdparty/avmplus/pcre)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/3rdparty/imgui)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/src/3rdparty/imgui/backends)
 # needed for jxr image decoder
 SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/scripting/flash/display3d/flashdisplay3dtextures.cpp PROPERTIES COMPILE_FLAGS "-D__ANSI__ -DDISABLE_PERF_MEASUREMENT -Wno-endif-labels -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/common/include/ -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/image/sys/")
 SET(CMAKE_C_FLAGS "-D__ANSI__ -DDISABLE_PERF_MEASUREMENT -Wno-endif-labels -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/common/include -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/image/sys -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/common/include")

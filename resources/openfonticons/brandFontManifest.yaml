@@ -1,0 +1,3 @@
+font: {fixedwidth: true, name: BrandFontIcon, ttf: BrandFontIcons.ttf}
+glyphs:
+- {char: "\U000F0000", code: '0xf0000', glyph: brands/0000000-github.svg, name: github}

@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* add simple launch dialog that is displayed on startup if no swf file is specified
 	* add stub for flash.profiler.showRedrawRegions
 	* improved support for AIR native extensions
 	  lightspark automatically loads available native extensions if the --air option is set,

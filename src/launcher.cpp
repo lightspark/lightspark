@@ -21,11 +21,12 @@
 #include <SDL.h>
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
-#include <imgui_impl_sdlrenderer2.h>
+#include <imgui_impl_opengl2.h>
 #include "3rdparty/tinyfiledialogs/tinyfiledialogs.h"
 #include "3rdparty/pugixml/src/pugixml.hpp"
 #include <fstream>
 #include "icon.h"
+#include "backends/lsopengl.h"
 
 #ifdef __MINGW32__
 #ifndef PATH_MAX
@@ -1243,8 +1244,13 @@ bool Launcher::start()
 		return false;
 	}
 
-	// Create window with SDL_Renderer graphics context
-	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+	// Create window with SDL_OpenGL2 graphics context
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 	SDL_Window* window = SDL_CreateWindow("Lightspark launcher", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 400, 400, window_flags);
 	if (window == nullptr)
 	{
@@ -1252,13 +1258,10 @@ bool Launcher::start()
 		SDL_Quit();
 		return false;
 	}
-	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
-	if (renderer == nullptr)
-	{
-		SDL_Log("Error creating SDL_Renderer!");
-		SDL_Quit();
-		return false;
-	}
+	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+	SDL_GL_MakeCurrent(window, gl_context);
+	SDL_GL_SetSwapInterval(1); // Enable vsync
+	
 	setWindowIcon(window);
 	std::string settingsfile = g_get_user_config_dir();
 	settingsfile += G_DIR_SEPARATOR_S;
@@ -1300,8 +1303,8 @@ bool Launcher::start()
 	ImGui::StyleColorsDark();
 	
 	// Setup Platform/Renderer backends
-	ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
-	ImGui_ImplSDLRenderer2_Init(renderer);
+	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+	ImGui_ImplOpenGL2_Init();
 	
 	bool start=false;
 	bool inentryediting=false;
@@ -1329,7 +1332,7 @@ bool Launcher::start()
 		}
 		
 		// Start the Dear ImGui frame
-		ImGui_ImplSDLRenderer2_NewFrame();
+		ImGui_ImplOpenGL2_NewFrame();
 		ImGui_ImplSDL2_NewFrame();
 		ImGui::NewFrame();
 		ImGui::SetNextWindowSize(io.DisplaySize);
@@ -1478,19 +1481,19 @@ bool Launcher::start()
 	
 		// Rendering
 		ImGui::Render();
-		SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
-		SDL_SetRenderDrawColor(renderer, 0xff,0xff,0xff,0xff);
-		SDL_RenderClear(renderer);
-		ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
-		SDL_RenderPresent(renderer);
+		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+		glClearColor(1.0,1.0,1.0,1.0);
+		glClear(GL_COLOR_BUFFER_BIT);
+		ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+		SDL_GL_SwapWindow(window);
 	}
 	
 	// Cleanup
-	ImGui_ImplSDLRenderer2_Shutdown();
+	ImGui_ImplOpenGL2_Shutdown();
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
 	
-	SDL_DestroyRenderer(renderer);
+	SDL_GL_DeleteContext(gl_context);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	return start;

@@ -323,7 +323,7 @@ SET(LIBSPARK_SOURCES
   3rdparty/imgui/imgui_tables.cpp
   3rdparty/imgui/imgui_widgets.cpp
   3rdparty/imgui/backends/imgui_impl_sdl2.cpp
-  3rdparty/imgui/backends/imgui_impl_sdlrenderer2.cpp
+  3rdparty/imgui/backends/imgui_impl_opengl2.cpp
   3rdparty/tinyfiledialogs/tinyfiledialogs.c
   )
 IF(MINGW)

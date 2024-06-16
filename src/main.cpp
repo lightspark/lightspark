@@ -116,6 +116,7 @@ public:
 			if (window == 0)
 				LOG(LOG_ERROR,"createWidget failed:"<<SDL_GetError());
 		}
+		Launcher::setWindowIcon(window);
 		return window;
 	}
 

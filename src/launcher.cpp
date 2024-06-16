@@ -25,7 +25,7 @@
 #include "3rdparty/tinyfiledialogs/tinyfiledialogs.h"
 #include "3rdparty/pugixml/src/pugixml.hpp"
 #include <fstream>
-
+#include "icon.h"
 
 #ifdef __MINGW32__
 #ifndef PATH_MAX
@@ -1229,8 +1229,6 @@ static const char font_openfonticons_compressed_data_base85[20900+1] =
 	"1kM<%?AZ1F0A?`%EgRaFc-'##(PUV$f%Dg14####";
 
 
-
-
 Launcher::Launcher():needsAIR(false),needsAVMplus(false),needsnetwork(false),needsfilesystem(false)
 {
 	
@@ -1261,6 +1259,7 @@ bool Launcher::start()
 		SDL_Quit();
 		return false;
 	}
+	setWindowIcon(window);
 	std::string settingsfile = g_get_user_config_dir();
 	settingsfile += G_DIR_SEPARATOR_S;
 	settingsfile += "lightspark";
@@ -1495,6 +1494,15 @@ bool Launcher::start()
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 	return start;
+}
+
+void Launcher::setWindowIcon(SDL_Window* window)
+{
+	if (window)
+	{
+		SDL_Surface* iconsurface = SDL_CreateRGBSurfaceFrom(lightspark_icon_rgba,128,128,32,128*4,0x000000ff,0x0000ff00,0x00ff0000,0xff000000);
+		SDL_SetWindowIcon(window,iconsurface);
+	}
 }
 
 

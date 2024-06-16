@@ -23,6 +23,7 @@
 
 #include "tiny_string.h"
 
+class SDL_Window;
 namespace lightspark
 {
 
@@ -37,6 +38,7 @@ public:
 	bool needsnetwork;
 	bool needsfilesystem;
 	bool start();
+	static void setWindowIcon(SDL_Window* window);
 };
 
 }

@@ -41,6 +41,7 @@ RootMovieClip::RootMovieClip(ASWorker* wrk, _NR<LoaderInfo> li, _NR<ApplicationD
 	hasSymbolClass=false;
 	hasMainClass=false;
 	usesActionScript3=false;
+	completionHandled=false;
 	executingFrameScriptCount=0;
 }
 
@@ -211,8 +212,6 @@ void RootMovieClip::afterConstruction(bool _explicit)
 		getSystemState()->stage->advanceFrame(true);
 		initFrame();
 	}
-	if (!loaderInfo.isNull())
-		loaderInfo->setComplete();
 }
 void RootMovieClip::revertFrame()
 {
@@ -405,6 +404,13 @@ void RootMovieClip::advanceFrame(bool implicit)
 
 	if (!implicit || !usesActionScript3 || !state.explicit_FP)
 		MovieClip::advanceFrame(implicit);
+	// ensure "complete" events are added _after_ the whole SystemState::tick() events are handled at least once
+	if (!completionHandled && getSystemState()->getFramePhase() == FramePhase::ADVANCE_FRAME)
+	{
+		if (!loaderInfo.isNull())
+			loaderInfo->setComplete();
+		completionHandled=true;
+	}
 }
 
 void RootMovieClip::executeFrameScript()

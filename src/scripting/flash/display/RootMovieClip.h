@@ -79,6 +79,7 @@ public:
 	bool hasSymbolClass;
 	bool hasMainClass;
 	bool usesActionScript3;
+	bool completionHandled;
 	RGB getBackground();
 	void setBackground(const RGB& bg);
 	void setFrameSize(const RECT& f);

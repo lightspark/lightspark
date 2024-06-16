@@ -197,7 +197,10 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 ASFUNCTIONBODY_ATOM(lightspark,describeType)
 {
 	assert_and_throw(argslen>=1);
-	ret = asAtomHandler::fromObject(asAtomHandler::toObject(args[0],wrk)->describeType(wrk));
+	ASObject* o = asAtomHandler::toObject(args[0],wrk);
+	if (o->is<Class_inherit>())
+		o->as<Class_inherit>()->checkScriptInit();
+	ret = asAtomHandler::fromObject(o->describeType(wrk));
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)

@@ -663,7 +663,7 @@ int main(int argc, char* argv[])
 			else if (l.needsnetwork)
 				sandboxType = SecurityManager::LOCAL_WITH_NETWORK;
 			
-			url=(char*)l.baseurl.raw_buf();
+			url = !l.baseurl.empty() ? (char*)l.baseurl.raw_buf() : nullptr;
 		}
 		else
 			exit(0);

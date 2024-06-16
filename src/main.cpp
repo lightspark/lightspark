@@ -453,6 +453,40 @@ void checkForNativeAIRExtensions(std::vector<tiny_string>& extensions,char* file
 		}
 		g_dir_close(dir);
 	}
+	if (!extensions.empty())
+	{
+		// try to load additional libraries that may be needed for the extensions
+		tiny_string basedir = g_path_get_dirname(fileName);
+		GDir* dir = g_dir_open(basedir.raw_buf(),0,nullptr);
+		if (dir)
+		{
+			while (true)
+			{
+				const char* file = g_dir_read_name(dir);
+				if (!file)
+					break;
+				if (g_file_test(file,G_FILE_TEST_IS_DIR))
+					continue;
+				tiny_string s=file;
+#ifdef _WIN32
+				const char* suffix = ".dll";
+#else
+				const char* suffix = ".so";
+#endif
+				if (!s.endsWith(suffix))
+					continue;
+				tiny_string libpath=basedir;
+				libpath += G_DIR_SEPARATOR_S;
+				libpath += s;
+				void* lib = SDL_LoadObject(libpath.raw_buf());
+				if (lib==nullptr)
+					LOG(LOG_ERROR,"loading additional lib failed:"<<SDL_GetError()<<" "<<libpath);
+				else
+					LOG(LOG_INFO,"additional lib loaded:"<<lib<<" "<<libpath);
+			}
+			g_dir_close(dir);
+		}
+	}
 }
 
 

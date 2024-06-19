@@ -21,10 +21,10 @@
 #define SCRIPTING_TOPLEVEL_ASQNAME_H 1
 
 #include "asobject.h"
-#include "scripting/flash/system/flashsystem.h"
 
 namespace lightspark
 {
+class ASWorker;
 
 class ASQName: public ASObject
 {

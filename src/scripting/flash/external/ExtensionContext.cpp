@@ -32,12 +32,129 @@ struct FlashRuntimeExtension
 	tiny_string finalizername;
 	FREContextInitializer contextinitializer;
 	FREContextFinalizer contextfinalizer;
+	uint32_t numFunctionsToSet;
+	const FRENamedFunction* functionsToSet;
+	void* nativeExtData;
 	void* library;
 };
 unordered_map<uint32_t, FlashRuntimeExtension> extensions;
 
+// class to handle conversion of asAtoms from/to FREObjects
+class asAtomFREObjectInterface : public FREObjectInterface
+{
+public:
+	asAtomFREObjectInterface()
+	{
+	}
+	FREResult toUTF8(FREObject object, uint32_t* length, const uint8_t** value) override
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		tiny_string s = asAtomHandler::toString(*(asAtom*)object,wrk);
+		*length = s.numBytes()+1;
+		uint8_t* buf = new uint8_t[*length];
+		memcpy(buf,s.raw_buf(),(*length)-1);
+		buf[(*length)-1]=0;
+		*value=buf;
+		LOG_CALL("nativeExtension:toUTF8:"<<asAtomHandler::toDebugString(*(asAtom*)object));
+		wrk->nativeExtensionStringlist.push_back(buf);
+		return FRE_OK;
+	}
+	FREResult fromBool(uint32_t value, FREObject* object) override
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk)
+			return FRE_WRONG_THREAD;
+		*object = value ? &asAtomHandler::trueAtom : &asAtomHandler::falseAtom;
+		LOG_CALL("nativeExtension:fromBool:"<<value);
+		return FRE_OK;
+	}
+	FREResult fromInt32(int32_t value, FREObject* object) override
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromInt(value));
+		*object = &wrk->nativeExtensionAtomlist.back();
+		LOG_CALL("nativeExtension:fromInt32:"<<value);
+		return FRE_OK;
+	}
+	FREResult fromUint32(uint32_t value, FREObject* object) override
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromUInt(value));
+		*object = &wrk->nativeExtensionAtomlist.back();
+		LOG_CALL("nativeExtension:fromUint32:"<<value);
+		return FRE_OK;
+	}
+	FREResult SetObjectProperty(FREObject object, const uint8_t* propertyName, FREObject propertyValue, FREObject* thrownException) override
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		if (propertyName==nullptr)
+			return FRE_INVALID_ARGUMENT;
+		asAtom o = *(asAtom*)object;
+		ASObject* obj = asAtomHandler::toObject(o,wrk);
+		multiname m(nullptr);
+		// TODO what about property names with namespaces?
+		m.name_type= multiname::NAME_STRING;
+		tiny_string s((const char*)propertyName);
+		m.name_s_id= getSys()->getUniqueStringId(s);
+		obj->setVariableByMultiname(m,*(asAtom*)propertyValue,ASObject::CONST_NOT_ALLOWED,nullptr,obj->getInstanceWorker());
+		LOG_CALL("nativeExtension:setObjectProperty:"<<m<<" "<<obj->toDebugString()<<" "<<asAtomHandler::toDebugString(*(asAtom*)propertyValue));
+		
+		if (obj->getInstanceWorker()->currentCallContext && obj->getInstanceWorker()->currentCallContext->exceptionthrown)
+		{
+			if (thrownException)
+			{
+				obj->getInstanceWorker()->currentCallContext->exceptionthrown->incRef();
+				asAtom exc = asAtomHandler::fromObjectNoPrimitive(obj->getInstanceWorker()->currentCallContext->exceptionthrown);
+				wrk->nativeExtensionAtomlist.push_back(exc);
+				*thrownException=&wrk->nativeExtensionAtomlist.back();
+			}
+			return FRE_ACTIONSCRIPT_ERROR;
+		}
+		return FRE_OK;
+	}
+	FREResult AcquireByteArray(FREObject object, FREByteArray* byteArrayToSet)
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		if (byteArrayToSet==nullptr)
+			return FRE_INVALID_ARGUMENT;
+		ASObject* obj = asAtomHandler::toObject(*(asAtom*)object,wrk);
+		if (!obj->is<ByteArray>())
+			return FRE_TYPE_MISMATCH;
+		obj->as<ByteArray>()->lock();
+		obj->incRef();
+		byteArrayToSet->bytes = obj->as<ByteArray>()->getBufferNoCheck();
+		byteArrayToSet->length = obj->as<ByteArray>()->getLength();
+		LOG_CALL("nativeExtension:AcquireByteArray:"<<obj->toDebugString()<<" "<<byteArrayToSet->length);
+		return FRE_OK;
+	}
+	FREResult ReleaseByteArray (FREObject object)
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		if (!asAtomHandler::is<ByteArray>(*(asAtom*)object))
+			return FRE_TYPE_MISMATCH;
+		ASObject* obj = asAtomHandler::toObject(*(asAtom*)object,wrk);
+		obj->as<ByteArray>()->unlock();
+		obj->decRef();
+		LOG_CALL("nativeExtension:ReleaseByteArray:"<<obj->toDebugString());
+		return FRE_OK;
+	}
+};
+asAtomFREObjectInterface freobjectinterface;
+
 ExtensionContext::ExtensionContext(ASWorker* wrk, Class_base* c) : EventDispatcher(wrk,c),
-	nativelibrary(nullptr),nativeExtData(nullptr)
+	nativelibrary(nullptr)
 {
 	subtype = SUBTYPE_EXTENSIONCONTEXT;
 }
@@ -58,15 +175,13 @@ bool ExtensionContext::destruct()
 	finalizeExtensionContext();
 	return EventDispatcher::destruct();
 }
+void ExtensionContext::prepareShutdown()
+{
+}
 void ExtensionContext::finalizeExtensionContext()
 {
-	auto it = extensions.find(getSystemState()->getUniqueStringId(extensionID));
-	if (it != extensions.end())
-	{
-		(*it).second.contextfinalizer(this);
-		nativelibrary=nullptr;
-		nativeExtData=nullptr;
-	}	
+	this->contextfinalizer(this);
+	this->nativelibrary=nullptr;
 }
 
 ASFUNCTIONBODY_ATOM(ExtensionContext,createExtensionContext)
@@ -77,66 +192,77 @@ ASFUNCTIONBODY_ATOM(ExtensionContext,createExtensionContext)
 	if (it != extensions.end())
 	{
 		if (!(*it).second.library)
-			(*it).second.library = SDL_LoadObject((*it).second.librarypath.raw_buf());
-		if (!(*it).second.library)
 		{
-			LOG(LOG_ERROR,"loading native library failed:"<<SDL_GetError()<<" "<<(*it).second.librarypath);
-			ret = asAtomHandler::undefinedAtom;
-			return;
+			(*it).second.library = SDL_LoadObject((*it).second.librarypath.raw_buf());
+			if (!(*it).second.library)
+			{
+				LOG(LOG_ERROR,"loading native library failed:"<<SDL_GetError()<<" "<<(*it).second.librarypath);
+				ret = asAtomHandler::undefinedAtom;
+				return;
+			}
+			FREObjectInterface::registerFREObjectInterface(&freobjectinterface);
+			FREInitializer func = (FREInitializer)SDL_LoadFunction((*it).second.library,(*it).second.initializername.raw_buf());
+			func(&((*it).second.nativeExtData),&((*it).second.contextinitializer),&((*it).second.contextfinalizer));
 		}
-		
 		ctxt->nativelibrary=(*it).second.library;
-		FREInitializer func = (FREInitializer)SDL_LoadFunction(ctxt->nativelibrary,(*it).second.initializername.raw_buf());
-		func(&ctxt->nativeExtData,&(*it).second.contextinitializer,&(*it).second.contextfinalizer);
-		
-		(*it).second.contextinitializer(&ctxt->nativeExtData,(const uint8_t*)ctxt->contextType.raw_buf(),ctxt,&ctxt->numFunctionsToSet,&ctxt->functionsToSet);
-	}	
+		ctxt->contextinitializer=(*it).second.contextinitializer;
+		ctxt->contextfinalizer=(*it).second.contextfinalizer;
+		ctxt->nativeExtData=(*it).second.nativeExtData;
+		ctxt->contextinitializer(&((*it).second.nativeExtData),(const uint8_t*)ctxt->contextType.raw_buf(),ctxt,&ctxt->numFunctionsToSet,&ctxt->functionsToSet);
+	}
 	ret = asAtomHandler::fromObjectNoPrimitive(ctxt);
 }
+
 ASFUNCTIONBODY_ATOM(ExtensionContext,_call)
 {
 	ExtensionContext* th = asAtomHandler::as<ExtensionContext>(obj);
 	tiny_string methodname;
 	ARG_CHECK(ARG_UNPACK_MORE_ALLOWED(methodname));
-	for (uint32_t i =0; i < th->numFunctionsToSet; i++)
+	FREObject* freargs;
+	if (argslen == 1)
+		freargs=nullptr;
+	else
 	{
-		if (methodname == th->functionsToSet[i].name)
+		freargs = (FREObject*)malloc(sizeof(FREObject)*(argslen-1));
+		for (uint32_t i = 1; i < argslen; i++)
 		{
-			FREFunction func = th->functionsToSet[i].function;
-			FREObject freres = nullptr;
-			if (argslen == 1) // no arguments for method
-			{
-				freres = func(th,th->functionsToSet[i].functionData,0,nullptr);
-			}
-			else
-			{
-				LOG(LOG_NOT_IMPLEMENTED,"ExtensionContext.call with arguments:"<<methodname<<" "<<argslen);
-				ret = asAtomHandler::undefinedAtom;
-				return;
-			}
+			ASATOM_INCREF(args[i]);
+			wrk->nativeExtensionAtomlist.push_back(args[i]);
+			freargs[i-1]=&wrk->nativeExtensionAtomlist.back();
 			
-#ifdef LIGHTSPARK_64
-			uint64_t result=(uint64_t)freres;
-#else
-			uint32_t result=(uint32_t)freres;
-#endif
-			// it seems that adobe uses the avmplus atom definition (see https://github.com/adobe/avmplus/blob/master/core/atom.h)
-			// as format for arguments/results of native function calls
-			switch (result&0x7)
-			{
-				case 5: // bool
-					ret = result == 5 ? asAtomHandler::falseAtom : asAtomHandler::trueAtom;
-					break;
-				case 6: // uint
-					ret = asAtomHandler::fromUInt(result>>3);
-					break;
-				default:
-					LOG(LOG_NOT_IMPLEMENTED,"result type for native extension return value:"<<result);
-					break;
-			}
-			break;
+			LOG_CALL("nativeExtension call arg:"<<i<<" "<<asAtomHandler::toDebugString(args[i])<<" "<<hex<<((asAtom*)freargs[i-1])->uintval);
 		}
 	}
+	
+	wrk->nativeExtensionCallCount++;
+	ret = asAtomHandler::undefinedAtom;
+	for (uint32_t i =0; i < th->numFunctionsToSet; i++)
+	{
+		if (methodname == std::string((const char*)th->functionsToSet[i].name))
+		{
+			FREFunction func = th->functionsToSet[i].function;
+			ret = *(asAtom*)func(th,th->functionsToSet[i].functionData,argslen-1,freargs);
+		}
+	}
+	wrk->nativeExtensionCallCount--;
+	if (freargs)
+		free(freargs);
+	if (wrk->nativeExtensionCallCount==0)
+	{
+		// this was the main call to a native extension function, so we clean up all created values
+		for (auto it = wrk->nativeExtensionAtomlist.begin(); it != wrk->nativeExtensionAtomlist.end(); it++)
+		{
+			ASATOM_DECREF(*it);
+		}
+		wrk->nativeExtensionAtomlist.clear();
+		for (auto it = wrk->nativeExtensionStringlist.begin(); it != wrk->nativeExtensionStringlist.end(); it++)
+		{
+			delete[] (*it);
+		}
+		wrk->nativeExtensionStringlist.clear();
+	}
+	
+	LOG_CALL("nativeExtension call done:"<<methodname<<" "<<asAtomHandler::toDebugString(args[0])<<" "<<asAtomHandler::toDebugString(ret));
 }
 
 ASFUNCTIONBODY_ATOM(ExtensionContext,dispose)
@@ -180,8 +306,6 @@ void ExtensionContext::registerExtension(const tiny_string& filepath)
 			{
 				FlashRuntimeExtension fre;
 				fre.library=nullptr;
-				fre.contextinitializer=nullptr;
-				fre.contextfinalizer=nullptr;
 				tiny_string nativelibraryname = (*it).child("applicationDeployment").child("nativeLibrary").first_child().value();
 				fre.initializername = (*it).child("applicationDeployment").child("initializer").first_child().value();
 				fre.finalizername = (*it).child("applicationDeployment").child("finalizer").first_child().value();

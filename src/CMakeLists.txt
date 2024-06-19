@@ -326,8 +326,12 @@ SET(LIBSPARK_SOURCES
   3rdparty/imgui/backends/imgui_impl_opengl2.cpp
   3rdparty/tinyfiledialogs/tinyfiledialogs.c
   )
+SET(LIBNATIVEEXTENSION_SOURCES
+  nativeextension/FREimpl.cpp
+  )
+
 IF(MINGW)
-  SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)
+    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} ${LIBNATIVEEXTENSION_SOURCES} platforms/slowpaths_generic.cpp)
 ELSEIF(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)
 ELSE()
@@ -364,6 +368,10 @@ IF(EMSCRIPTEN)
 ELSE()
 IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   ADD_LIBRARY(spark SHARED ${LIBSPARK_SOURCES})
+  #library for handling communication with native extensions, has to be named "libCore.so"
+  ADD_LIBRARY(nativeextension SHARED  ${LIBNATIVEEXTENSION_SOURCES})
+  SET_TARGET_PROPERTIES(nativeextension PROPERTIES OUTPUT_NAME Core)
+  TARGET_LINK_LIBRARIES(spark nativeextension)
   IF(NOT WIN32)
     #win32's cmake doesn't like liblightspark and lightspark.exe having the same name
     SET_TARGET_PROPERTIES(spark PROPERTIES OUTPUT_NAME lightspark)
@@ -411,8 +419,10 @@ ELSE()
 ENDIF(ENABLE_GLES2)
 
 PACK_LIBRARY(spark $<TARGET_FILE:spark>)
+PACK_LIBRARY(nativeextension $<TARGET_FILE:nativeextension>)
 #We have to use LIBRARY on linux and RUNTIME on win32
 INSTALL(TARGETS spark RUNTIME DESTINATION ${PRIVATELIBDIR} LIBRARY DESTINATION ${PRIVATELIBDIR} ARCHIVE DESTINATION ${PRIVATELIBDIR})
+INSTALL(TARGETS nativeextension RUNTIME DESTINATION ${PRIVATELIBDIR} LIBRARY DESTINATION ${PRIVATELIBDIR} ARCHIVE DESTINATION ${PRIVATELIBDIR})
 
 # lightspark executable target
 IF(COMPILE_LIGHTSPARK)
@@ -420,7 +430,7 @@ IF(COMPILE_LIGHTSPARK)
   IF(MINGW)
     SET_TARGET_PROPERTIES(lightspark PROPERTIES LINK_FLAGS "-Wl,--whole-archive -lSDL2main -Wl,--no-whole-archive")
   ENDIF()
-  TARGET_LINK_LIBRARIES(lightspark spark)
+  TARGET_LINK_LIBRARIES(lightspark spark nativeextension)
   #With STATICDEPS, all deps are compiled into spark
   IF(NOT STATICDEPS)
   TARGET_LINK_LIBRARIES(lightspark ${SDL2_LIBRARIES})
@@ -436,7 +446,7 @@ ENDIF(COMPILE_LIGHTSPARK)
 # tightspark executable target
 IF(COMPILE_TIGHTSPARK)
   ADD_EXECUTABLE(tightspark tightspark.cpp)
-  TARGET_LINK_LIBRARIES(tightspark spark)
+  TARGET_LINK_LIBRARIES(tightspark spark nativeextension)
   IF(MINGW)
     SET_TARGET_PROPERTIES(tightspark PROPERTIES LINK_FLAGS "-Wl,--whole-archive -lSDL2main -Wl,--no-whole-archive")
   ENDIF()

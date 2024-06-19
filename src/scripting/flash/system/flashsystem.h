@@ -427,6 +427,11 @@ public:
 	}
 	inline bool inFinalization() const { return inFinalize; }
 	void registerConstantRef(ASObject* obj);
+	
+	// these are needed keep track of native extension calls
+	std::list<asAtom> nativeExtensionAtomlist;
+	std::list<uint8_t*> nativeExtensionStringlist;
+	uint32_t nativeExtensionCallCount;
 };
 class WorkerDomain: public ASObject
 {

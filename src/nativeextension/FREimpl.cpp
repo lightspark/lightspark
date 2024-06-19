@@ -73,8 +73,9 @@ FREResult FREGetContextNativeData( FREContext ctx, void** nativeData )
 }
 FREResult FREGetObjectAsBool ( FREObject object, uint32_t *value )
 {
-	std::cerr << "FRE NOT_IMPLEMENTED:FREGetObjectAsBool"<<std::endl;
-	return FRE_ILLEGAL_STATE;
+	if (!object)
+		return FRE_INVALID_OBJECT;
+	return FREObjectConverter->toBool(object,value);
 }
 FREResult FREGetObjectAsDouble ( FREObject object, double *value )
 {
@@ -142,8 +143,9 @@ FREResult FRENewObjectFromUint32 ( uint32_t value, FREObject* object)
 }
 FREResult FRENewObjectFromUTF8(uint32_t length, const uint8_t* value, FREObject* object)
 {
-	std::cerr << "FRE NOT_IMPLEMENTED:FRENewObjectFromUTF8"<<std::endl;
-	return FRE_ILLEGAL_STATE;
+	if (!object)
+		return FRE_INVALID_ARGUMENT;
+	return FREObjectConverter->fromUTF8(length,value,object);
 }
 FREResult FREReleaseBitmapData (FREObject object)
 {

@@ -154,10 +154,12 @@ public:
 	virtual ~FREObjectInterface()
 	{
 	}
+	virtual FREResult toBool(FREObject object, uint32_t *value)=0;
 	virtual FREResult toUTF8(FREObject object, uint32_t* length, const uint8_t** value)=0;
 	virtual FREResult fromBool(uint32_t value, FREObject* object)=0;
 	virtual FREResult fromInt32(int32_t value, FREObject* object)=0;
 	virtual FREResult fromUint32(uint32_t value, FREObject* object)=0;
+	virtual FREResult fromUTF8(uint32_t length, const uint8_t* value, FREObject* object)=0;
 	virtual FREResult SetObjectProperty(FREObject object, const uint8_t* propertyName, FREObject propertyValue, FREObject* thrownException)=0;
 	virtual FREResult AcquireByteArray(FREObject object, FREByteArray* byteArrayToSet)=0;
 	virtual FREResult ReleaseByteArray (FREObject object)=0;

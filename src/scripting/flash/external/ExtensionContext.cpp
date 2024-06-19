@@ -46,6 +46,16 @@ public:
 	asAtomFREObjectInterface()
 	{
 	}
+	FREResult toBool(FREObject object, uint32_t *value)
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		*value = asAtomHandler::Boolean_concrete(*(asAtom*)object);
+		LOG_CALL("nativeExtension:toBool:"<<asAtomHandler::toDebugString(*(asAtom*)object));
+		LOG(LOG_ERROR,"nativeExtension:toBool:"<<asAtomHandler::toDebugString(*(asAtom*)object));
+		return FRE_OK;
+	}
 	FREResult toUTF8(FREObject object, uint32_t* length, const uint8_t** value) override
 	{
 		ASWorker* wrk = getWorker();
@@ -90,6 +100,19 @@ public:
 		LOG_CALL("nativeExtension:fromUint32:"<<value);
 		return FRE_OK;
 	}
+	FREResult fromUTF8(uint32_t length, const uint8_t* value, FREObject* object) override
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		ASObject* res = abstract_s(wrk, (const char*)value, length-1);
+		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromObjectNoPrimitive(res));
+		*object = &wrk->nativeExtensionAtomlist.back();
+		LOG_CALL("nativeExtension:fromUTF8:"<<res->toDebugString());
+		LOG(LOG_ERROR,"nativeExtension:fromUTF8:"<<res->toDebugString());
+		return FRE_OK;
+	}
+	
 	FREResult SetObjectProperty(FREObject object, const uint8_t* propertyName, FREObject propertyValue, FREObject* thrownException) override
 	{
 		ASWorker* wrk = getWorker();

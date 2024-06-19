@@ -159,8 +159,7 @@ jobs:
         with:
           repo: deb http://pkg.mxe.cc/repos/apt focal main
           repo-name: mxe
-          keys: ${{ secrets.MXE_REPO_KEY }}
-          keys-asc: https://pkg.mxe.cc/repos/apt/dists/focal/Release.gpg
+          keys-asc: https://pkg.mxe.cc/repos/apt/client-conf/mxeapt.gpg
           install: \
             nasm \
             libtool \
@@ -224,8 +223,7 @@ jobs:
         with:
           repo: deb http://pkg.mxe.cc/repos/apt focal main
           repo-name: mxe
-          keys: ${{ secrets.MXE_REPO_KEY }}
-          keys-asc: https://pkg.mxe.cc/repos/apt/dists/focal/Release.gpg
+          keys-asc: https://pkg.mxe.cc/repos/apt/client-conf/mxeapt.gpg
           install: \
             nasm \
             libtool \

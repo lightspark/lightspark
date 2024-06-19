@@ -158,7 +158,7 @@ jobs:
         with:
           repo: deb http://pkg.mxe.cc/repos/apt focal main
           repo-name: mxe
-		  keys-asc: https://pkg.mxe.cc/repos/apt/dists/focal/Release.gpg
+          keys-asc: https://pkg.mxe.cc/repos/apt/dists/focal/Release.gpg
 
       - name: Install MXE Build Environment
         run: |
@@ -223,7 +223,7 @@ jobs:
         with:
           repo: deb http://pkg.mxe.cc/repos/apt focal main
           repo-name: mxe
-		  keys-asc: https://pkg.mxe.cc/repos/apt/dists/focal/Release.gpg
+          keys-asc: https://pkg.mxe.cc/repos/apt/dists/focal/Release.gpg
 
       - name: Install MXE Build Environment
         run: |

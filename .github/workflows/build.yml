@@ -155,7 +155,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Add MXE Repository to Apt
-        uses: myci-actions/add-deb-repo@10
+        uses: myci-actions/add-deb-repo@11
         with:
           repo: deb http://pkg.mxe.cc/repos/apt focal main
           repo-name: mxe
@@ -220,7 +220,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Add MXE Repository to Apt
-        uses: myci-actions/add-deb-repo@10
+        uses: myci-actions/add-deb-repo@11
         with:
           repo: deb http://pkg.mxe.cc/repos/apt focal main
           repo-name: mxe

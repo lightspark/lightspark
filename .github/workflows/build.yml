@@ -159,12 +159,9 @@ jobs:
         with:
           repo: deb http://pkg.mxe.cc/repos/apt focal main
           repo-name: mxe
+          keys: ${{ secrets.MXE_REPO_KEY }}
           keys-asc: https://pkg.mxe.cc/repos/apt/dists/focal/Release.gpg
-
-      - name: Install MXE Build Environment
-        run: |
-          sudo apt update
-          sudo apt install \
+          install: \
             nasm \
             libtool \
             libtool-bin \
@@ -182,6 +179,9 @@ jobs:
             mxe-x86-64-w64-mingw32.static-librtmp \
             mxe-x86-64-w64-mingw32.static-ffmpeg \
             mxe-x86-64-w64-mingw32.static-sdl2
+
+      - name: Install MXE Build Environment
+        run: |
           echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
 
       - name: Configure MXE for NSIS Installer Builds
@@ -224,12 +224,9 @@ jobs:
         with:
           repo: deb http://pkg.mxe.cc/repos/apt focal main
           repo-name: mxe
+          keys: ${{ secrets.MXE_REPO_KEY }}
           keys-asc: https://pkg.mxe.cc/repos/apt/dists/focal/Release.gpg
-
-      - name: Install MXE Build Environment
-        run: |
-          sudo apt update
-          sudo apt install \
+          install: \
             nasm \
             libtool \
             libtool-bin \
@@ -247,6 +244,9 @@ jobs:
             mxe-i686-w64-mingw32.static-librtmp \
             mxe-i686-w64-mingw32.static-ffmpeg \
             mxe-i686-w64-mingw32.static-sdl2
+
+      - name: Install MXE Build Environment
+        run: |
           echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
 
       - name: Configure MXE for NSIS Installer Builds

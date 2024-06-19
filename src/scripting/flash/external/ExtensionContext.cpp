@@ -53,7 +53,6 @@ public:
 			return FRE_WRONG_THREAD;
 		*value = asAtomHandler::Boolean_concrete(*(asAtom*)object);
 		LOG_CALL("nativeExtension:toBool:"<<asAtomHandler::toDebugString(*(asAtom*)object));
-		LOG(LOG_ERROR,"nativeExtension:toBool:"<<asAtomHandler::toDebugString(*(asAtom*)object));
 		return FRE_OK;
 	}
 	FREResult toUTF8(FREObject object, uint32_t* length, const uint8_t** value) override
@@ -109,7 +108,6 @@ public:
 		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromObjectNoPrimitive(res));
 		*object = &wrk->nativeExtensionAtomlist.back();
 		LOG_CALL("nativeExtension:fromUTF8:"<<res->toDebugString());
-		LOG(LOG_ERROR,"nativeExtension:fromUTF8:"<<res->toDebugString());
 		return FRE_OK;
 	}
 	

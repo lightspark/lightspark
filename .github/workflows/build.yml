@@ -14,13 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - name: Delete Development Release
-        uses: dev-drprasad/delete-tag-and-release@v0.2.1
+      - run: gh release delete latest --cleanup-tag -y 
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: latest
 
   draft_release:
     name: Create Release
@@ -162,8 +158,7 @@ jobs:
         with:
           repo: deb http://pkg.mxe.cc/repos/apt focal main
           repo-name: mxe
-          keys: ${{ secrets.MXE_REPO_KEY }}
-          key-server: keyserver.ubuntu.com
+		  keys-asc: https://pkg.mxe.cc/repos/apt/dists/focal/Release.gpg
 
       - name: Install MXE Build Environment
         run: |
@@ -205,7 +200,7 @@ jobs:
           mv -v Lightspark*exe Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win64.exe
 
       - name: Upload Installer Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -228,8 +223,7 @@ jobs:
         with:
           repo: deb http://pkg.mxe.cc/repos/apt focal main
           repo-name: mxe
-          keys: ${{ secrets.MXE_REPO_KEY }}
-          key-server: keyserver.ubuntu.com
+		  keys-asc: https://pkg.mxe.cc/repos/apt/dists/focal/Release.gpg
 
       - name: Install MXE Build Environment
         run: |
@@ -271,7 +265,7 @@ jobs:
           mv -v Lightspark*exe Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win32.exe
 
       - name: Upload Installer Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

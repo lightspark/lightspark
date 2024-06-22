@@ -393,6 +393,7 @@ void nvgBeginFrame(NVGcontext* ctx, float windowWidth, float windowHeight, float
 
 	nvg__setDevicePixelRatio(ctx, devicePixelRatio);
 
+	ctx->params.setClipActive(ctx->params.userPtr,1);
 	ctx->params.renderViewport(ctx->params.userPtr, windowWidth, windowHeight, devicePixelRatio);
 
 	ctx->drawCallCount = 0;
@@ -1236,6 +1237,7 @@ void nvgPushClip(NVGcontext* ctx)
 		ctx->params.setClip(ctx->params.userPtr, ctx->clipPaths);
 	if (hasClips >= 0)
 		ctx->params.setLastClip(ctx->params.userPtr, ctx->lastClip);
+	ctx->params.setClipActive(ctx->params.userPtr,1);
 }
 
 void nvgPopClip(NVGcontext* ctx)
@@ -1258,6 +1260,10 @@ void nvgEndClip(NVGcontext* ctx)
 {
 	float vals[] = { NVG_ENDCLIP };
 	nvg__appendCommands(ctx, vals, NVG_COUNTOF(vals));
+}
+void nvgDeactivateClipping(NVGcontext* ctx)
+{
+	ctx->params.setClipActive(ctx->params.userPtr,0);
 }
 
 // Scissoring

@@ -472,6 +472,11 @@ void nvgBeginClip(NVGcontext* ctx);
 // Ends the current clip path.
 void nvgEndClip(NVGcontext* ctx);
 
+// deactivates clipping 
+// after calling this the current clip path will be ignored
+// this is reset on every nvgBeginFrame()
+void nvgDeactivateClipping(NVGcontext* ctx);
+
 //
 // Scissoring
 //
@@ -739,6 +744,7 @@ struct NVGparams {
 	void (*renderDelete)(void* uptr);
 	void (*setClip)(void* uptr, NVGclipPath* clip);
 	void (*setLastClip)(void* uptr, NVGclipPath* last);
+	void (*setClipActive)(void* uptr, int active);
 };
 typedef struct NVGparams NVGparams;
 

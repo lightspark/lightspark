@@ -295,8 +295,6 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 	if (owner->getSystemState()->getEngineData()->nvgcontext
 		&& !tokens.empty()
 		&& !r
-		&& !DisplayObject::isShaderBlendMode(owner->getBlendMode())
-		&& !owner->hasFilters()
 		)
 	{
 		renderWithNanoVG=true;

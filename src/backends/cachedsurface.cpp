@@ -212,7 +212,12 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 			MATRIX m = baseTransform.matrix;
 			m.x0 = -offset.x;
 			m.y0 = -offset.y;
+			bool maskactive = ctxt.isMaskActive();
+			if (maskactive)
+				ctxt.deactivateMask();
 			this->renderFilters(sys,ctxt,size.x,size.y,m);
+			if (maskactive)
+				ctxt.activateMask();
 		}
 		if (cachedFilterTextureID != UINT32_MAX)
 		{
@@ -230,7 +235,17 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 			}
 			sys->getRenderThread()->setModelView(m);
 			sys->getRenderThread()->setupRenderingState(state->alpha,ctxt.transformStack().transform().colorTransform,state->smoothing,state->blendmode);
+			bool maskactive = ctxt.isMaskActive();
+			if (maskactive)
+			{
+				// we have an active mask, so make sure it is applied to the texture being rendered
+				engineData->exec_glEnable_GL_STENCIL_TEST();
+				engineData->exec_glStencilMask(0x7f);
+				engineData->exec_glStencilFunc(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_EQUAL,0x80,0x80);
+			}
 			sys->getRenderThread()->renderTextureToFrameBuffer(cachedFilterTextureID,size.x,size.y,nullptr,nullptr,false,true,false);
+			if (maskactive)
+				engineData->exec_glDisable_GL_STENCIL_TEST();
 			ctxt.transformStack().pop();
 			return;
 		}
@@ -274,6 +289,8 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 			ColorTransformBase ct = ctxt.transformStack().transform().colorTransform;
 			nvgResetTransform(nvgctxt);
 			nvgBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
+			if (!ctxt.isMaskActive() && !ctxt.isDrawingMask())
+				nvgDeactivateClipping(nvgctxt);
 			switch (ctxt.transformStack().transform().blendmode)
 			{
 				case BLENDMODE_NORMAL:

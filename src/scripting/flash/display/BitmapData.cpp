@@ -23,6 +23,7 @@
 #include "scripting/argconv.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
@@ -86,9 +87,9 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("copyPixels","",Class<IFunction>::getFunction(c->getSystemState(),copyPixels),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("fillRect","",Class<IFunction>::getFunction(c->getSystemState(),fillRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("generateFilterRect","",Class<IFunction>::getFunction(c->getSystemState(),generateFilterRect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(c->getSystemState(),hitTest),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hitTest","",Class<IFunction>::getFunction(c->getSystemState(),hitTest,2,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("scroll","",Class<IFunction>::getFunction(c->getSystemState(),scroll),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone,0,Class<BitmapData>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyChannel","",Class<IFunction>::getFunction(c->getSystemState(),copyChannel),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("lock","",Class<IFunction>::getFunction(c->getSystemState(),lock),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unlock","",Class<IFunction>::getFunction(c->getSystemState(),unlock),NORMAL_METHOD,true);
@@ -156,12 +157,12 @@ void BitmapData::removeUser(Bitmap* b)
 	users.erase(b);
 }
 
+// needs to be called in renderThread
 void BitmapData::checkForUpload()
 {
 	if (!pixels.isNull() && needsupload)
 	{
-		if (pixels->checkTexture())
-			getSystemState()->getRenderThread()->addUploadJob(this->pixels.getPtr());
+		pixels->checkTextureForUpload(getSystemState());
 		needsupload=false;
 	}
 }
@@ -652,8 +653,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,clone)
 		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
 		return;
 	}
-
 	BitmapData* clone = Class<BitmapData>::getInstanceS(wrk,th->getWidth(),th->getHeight());
+	clone->transparent = th->transparent;
 	if (th->getBitmapContainer())
 		memcpy (clone->getBitmapContainer()->getData(),th->getBitmapContainer()->getData(),th->getWidth()*th->getHeight()*4);
 	ret = asAtomHandler::fromObject(clone);
@@ -1054,7 +1055,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 	{
 		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
 		{
-			uint32_t pixel = th->pixels->getPixel(x, y);;
+			uint32_t pixel = th->pixels->getPixel(x, y);
 
 			int a, r, g, b;
 			a = ((pixel >> 24 )&0xff) * inputColorTransform->alphaMultiplier + inputColorTransform->alphaOffset;
@@ -1072,10 +1073,11 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 			
 			pixel = (a<<24) | (r<<16) | (g<<8) | b;
 			
-			th->pixels->setPixel(x, y, pixel, th->transparent);
+			th->pixels->setPixel(x, y, pixel, th->transparent,false);
 			i++;
 		}
 	}
+	th->notifyUsers();
 }
 ASFUNCTIONBODY_ATOM(BitmapData,compare)
 {

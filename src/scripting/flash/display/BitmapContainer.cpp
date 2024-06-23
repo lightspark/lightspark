@@ -252,32 +252,17 @@ void BitmapContainer::clear()
 	height=0;
 	bitmaptexture.makeEmpty();
 }
-uint8_t* BitmapContainer::upload(bool refresh)
-{
-	return getData();
-}
 
-TextureChunk& BitmapContainer::getTexture()
-{
-	return bitmaptexture;
-}
-
-void BitmapContainer::uploadFence()
-{
-	ITextureUploadable::uploadFence();
-	decRef();// is increffed in checkTexture
-}
-bool BitmapContainer::checkTexture()
+// needs to be called in renderThread
+bool BitmapContainer::checkTextureForUpload(SystemState* sys)
 {
 	if (isEmpty()) {
 		return false;
 	}
 
 	if (!bitmaptexture.isValid())
-	{
-		bitmaptexture=getSys()->getRenderThread()->allocateTexture(width, height, true);
-	}
-	incRef();// is decreffed in uploadFence
+		bitmaptexture=sys->getRenderThread()->allocateTexture(width, height, true,true);
+	sys->getRenderThread()->loadChunkBGRA(bitmaptexture,width, height,currentcolortransform.isIdentity() ? getData() : getDataColorTransformed());
 	return true;
 }
 
@@ -295,11 +280,10 @@ void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlp
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return;
 
-	resetColorTransform();
-	uint32_t *p=reinterpret_cast<uint32_t *>(&data[y*stride + 4*x]);
+	uint32_t *p=reinterpret_cast<uint32_t *>(currentcolortransform.isIdentity() ? &data[y*stride + 4*x] : &data_colortransformed[y*stride + 4*x]);
 	if(setAlpha)
 	{
-		if (ispremultiplied || (((*p)&0xff000000) == 0xff000000))
+		if (ispremultiplied || ((color&0xff000000) == 0xff000000))
 			*p=color;
 		else
 		{

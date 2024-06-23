@@ -114,8 +114,6 @@ void Bitmap::prepareShutdown()
 void Bitmap::setOnStage(bool staged, bool force, bool inskipping)
 {
 	DisplayObject::setOnStage(staged,force,inskipping);
-	if (bitmapData && isOnStage())
-		bitmapData->checkForUpload();
 }
 
 void Bitmap::sinit(Class_base* c)
@@ -176,8 +174,6 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged)
 
 void Bitmap::updatedData()
 {
-	if (this->isOnStage())
-		bitmapData->checkForUpload();
 	hasChanged=true;
 	requestInvalidation(getSystemState());
 }
@@ -264,7 +260,5 @@ IDrawable *Bitmap::invalidate(bool smoothing)
 }
 void Bitmap::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container)
 {
-	if (bitmapData)
-		bitmapData->checkForUpload();
 	DisplayObject::invalidateForRenderToBitmap(container);
 }

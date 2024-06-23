@@ -49,7 +49,7 @@ protected:
 	// color transformation values currently applied to data_colortransformed
 	ColorTransformBase currentcolortransform;
 	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y) const;
-	void resetColorTransform();
+	uint8_t* getCurrentData() const;
 public:
 	Semaphore renderevent;
 	TextureChunk bitmaptexture;
@@ -58,8 +58,9 @@ public:
 	BitmapContainer(MemoryAccount* m);
 	~BitmapContainer();
 	uint32_t getDataSize() const { return data.size(); }
-	uint8_t* getData() { return &data[0]; }
-	const uint8_t* getData() const { return &data[0]; }
+	uint8_t* getData() { return getCurrentData(); }
+	const uint8_t* getData() const { return getCurrentData(); }
+	uint8_t* getOriginalData() { return &data[0]; }
 	uint8_t* getDataColorTransformed() 
 	{
 		data_colortransformed.reserve(data.size());
@@ -108,6 +109,7 @@ public:
 	void clear();
 
 	bool checkTextureForUpload(SystemState* sys);
+	void clone(BitmapContainer* c);
 };
 
 }

@@ -56,8 +56,8 @@ BitmapContainer::~BitmapContainer()
 
 uint8_t* BitmapContainer::applyColorTransform(ColorTransform *ctransform)
 {
-	if (ctransform->isIdentity())
-		return getData();
+	if (ctransform->isIdentity() && currentcolortransform.isIdentity())
+		return getOriginalData();
 	if (*ctransform==currentcolortransform)
 		return getDataColorTransformed();
 	currentcolortransform=*ctransform;
@@ -266,12 +266,22 @@ bool BitmapContainer::checkTextureForUpload(SystemState* sys)
 	return true;
 }
 
+void BitmapContainer::clone(BitmapContainer* c)
+{
+	memcpy (c->getOriginalData(),getOriginalData(),getWidth()*getHeight()*4);
+	if (!currentcolortransform.isIdentity())
+	{
+		c->currentcolortransform = currentcolortransform;
+		memcpy (c->getDataColorTransformed(),getDataColorTransformed(),getWidth()*getHeight()*4);
+	}
+}
+
 void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)
 {
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return;
-	resetColorTransform();
-	uint32_t *p=reinterpret_cast<uint32_t *>(&data[y*stride + 4*x]);
+	uint8_t* d = getCurrentData();
+	uint32_t *p=reinterpret_cast<uint32_t *>(&d[y*stride + 4*x]);
 	*p = ((uint32_t)alpha << 24) + (*p & 0xFFFFFF);
 }
 
@@ -279,8 +289,8 @@ void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlp
 {
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return;
-
-	uint32_t *p=reinterpret_cast<uint32_t *>(currentcolortransform.isIdentity() ? &data[y*stride + 4*x] : &data_colortransformed[y*stride + 4*x]);
+	uint8_t* d = getCurrentData();
+	uint32_t *p=reinterpret_cast<uint32_t *>(&d[y*stride + 4*x]);
 	if(setAlpha)
 	{
 		if (ispremultiplied || ((color&0xff000000) == 0xff000000))
@@ -304,8 +314,9 @@ uint32_t BitmapContainer::getPixel(int32_t x, int32_t y,bool premultiplied) cons
 {
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return 0;
-
-	const uint32_t *p=reinterpret_cast<const uint32_t *>(&data[y*stride + 4*x]);
+	
+	uint8_t* d = getCurrentData();
+	const uint32_t *p=reinterpret_cast<const uint32_t *>(&d[y*stride + 4*x]);
 	if (!premultiplied)
 	{
 		uint32_t res = 0;
@@ -342,35 +353,47 @@ void BitmapContainer::copyRectangle(_R<BitmapContainer> source,
 
 	if (copyWidth <= 0 || copyHeight <= 0)
 		return;
-	resetColorTransform();
 	int sx = clippedSourceRect.Xmin;
 	int sy = clippedSourceRect.Ymin;
+	uint8_t *p = getCurrentData();
 	if (mergeAlpha==false)
 	{
 		//Fast path using memmove
 		for (int i=0; i<copyHeight; i++)
 		{
-			memmove(&data[(clippedY+i)*stride + 4*clippedX],
+			memmove(&p[(clippedY+i)*stride + 4*clippedX],
 				&source->data[(sy+i)*source->stride + 4*sx],
 				4*copyWidth);
 		}
 	}
 	else
 	{
-		uint8_t* sourcedata = &source->data[0];
+		uint8_t* sourcedata = source->getCurrentData();
 		bool needsdeletion = false;
-		if (sourcedata == &data[0])
+		if (sourcedata == p)
 		{
-			// cairo doesn't work if source and destination buffers are the same 
+			// source and destination are the same BitmapContainer, so we operate on a copy
+			// TODO check if it is really necessary (source/destination rectangles overlap)
 			sourcedata = new uint8_t[data.size()];
-			memcpy (sourcedata,&data[0],data.size());
+			memcpy (sourcedata,p,data.size());
 			needsdeletion = true;
 		}
-		//Slow path using Cairo
-		CairoRenderContext ctxt(&data[0], width, height,false);
-		ctxt.simpleBlit(clippedX, clippedY, sourcedata,
-				source->getWidth(), source->getHeight(),
-				sx, sy, copyWidth, copyHeight);
+		// TODO check if there is a faster algorithm for this
+		for (int i=0; i<copyHeight; i++)
+		{
+			for (int j=0; j<copyWidth; j++)
+			{
+				uint32_t* pdst = reinterpret_cast<uint32_t *>(&p[(clippedY+i)*stride+4*(j+clippedX)]);
+				uint32_t* psrc = reinterpret_cast<uint32_t *>(&sourcedata[(sy+i)*source->stride+4*(j+sx)]);
+				uint32_t srcalpha = ((*psrc >> 24)&0xff);
+				uint32_t dstalpha = 0xff-srcalpha;
+				uint32_t b = ((((*psrc)     ) &0xff) * srcalpha + (((*pdst)     ) &0xff) * dstalpha) / 0xff;
+				uint32_t g = ((((*psrc) >> 8) &0xff) * srcalpha + (((*pdst) >> 8) &0xff) * dstalpha) / 0xff;
+				uint32_t r = ((((*psrc) >>16) &0xff) * srcalpha + (((*pdst) >>16) &0xff) * dstalpha) / 0xff;
+				uint32_t a = min (srcalpha + (((*pdst) >>24) &0xff) * dstalpha, 0xffU);
+				*pdst = (b & 0xff) | ((g&0xff)<<8) | ((r&0xff)<<16) | (a<<24);
+			}
+		}
 		if (needsdeletion)
 			delete[] sourcedata;
 	}
@@ -395,20 +418,19 @@ void BitmapContainer::fillRectangle(const RECT& inputRect, uint32_t color, bool 
 	if (clippedRect.Ymin>=clippedRect.Ymax || clippedRect.Xmin>=clippedRect.Xmax)
 		return;
 	
-	resetColorTransform();
 	uint32_t realcolor = useAlpha ? color : (0xFF000000 | (color & 0xFFFFFF));
 	// fill first line
 	for(int32_t x=clippedRect.Xmin;x<clippedRect.Xmax;x++)
 	{
 		uint32_t offset=clippedRect.Ymin*stride + x*4;
-		uint32_t* ptr=(uint32_t*)(getData()+offset);
+		uint32_t* ptr=(uint32_t*)(getCurrentData()+offset);
 		*ptr = realcolor;
 	}
 	// use memcpy to fill all other lines
 	for(int32_t y=clippedRect.Ymin+1;y<clippedRect.Ymax;y++)
 	{
 		uint32_t offset=y*stride + clippedRect.Xmin*4;
-		memcpy(getData()+offset,getData()+clippedRect.Ymin*stride+clippedRect.Xmin*4,(clippedRect.Xmax-clippedRect.Xmin)*4);
+		memcpy(getCurrentData()+offset,getData()+clippedRect.Ymin*stride+clippedRect.Xmin*4,(clippedRect.Xmax-clippedRect.Xmin)*4);
 	}
 }
 
@@ -447,11 +469,13 @@ bool BitmapContainer::scroll(int32_t x, int32_t y)
 
 inline uint32_t *BitmapContainer::getDataNoBoundsChecking(int32_t x, int32_t y) const
 {
-	return (uint32_t*)&data[y*stride + 4*x];
+	uint8_t* d = getCurrentData();
+	return (uint32_t*)&d[y*stride + 4*x];
 }
-void BitmapContainer::resetColorTransform()
+
+uint8_t* BitmapContainer::getCurrentData() const
 {
-	currentcolortransform.resetTransformation();
+	return currentcolortransform.isIdentity() ? (uint8_t*)data.data() : (uint8_t*)data_colortransformed.data();
 }
 
 /*
@@ -476,7 +500,6 @@ void BitmapContainer::floodFill(int32_t startX, int32_t startY, uint32_t color)
 	if (startX < 0 || startX >= width || startY < 0 || startY >= height)
 		return;
 
-	resetColorTransform();
 	uint32_t seedColor = getPixel(startX, startY);
 
 	// Comment on the codeproject.com: "needed in some cases" ???

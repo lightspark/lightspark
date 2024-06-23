@@ -1382,7 +1382,7 @@ uint8_t *ColorTransformBase::applyTransformation(BitmapContainer* bm)
 		alphaOffset==0.0)
 		return (uint8_t*)bm->getData();
 
-	uint8_t* src = bm->getData();
+	const uint8_t* src = bm->getOriginalData();
 	uint8_t* dst = bm->getDataColorTransformed();
 	uint32_t size = bm->getWidth()*bm->getHeight()*4;
 	for (uint32_t i = 0; i < size; i+=4)

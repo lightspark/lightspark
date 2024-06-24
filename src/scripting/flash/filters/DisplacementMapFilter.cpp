@@ -126,7 +126,7 @@ void DisplacementMapFilter::applyFilter(BitmapContainer* target, BitmapContainer
 	delete[] tmpdata;
 }
 
-void DisplacementMapFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
+void DisplacementMapFilter::getRenderFilterArgs(uint32_t step,float* args) const
 {
 	LOG(LOG_NOT_IMPLEMENTED,"getRenderFilterArgs not yet implemented for "<<this->toDebugString());
 	args[0]=0;

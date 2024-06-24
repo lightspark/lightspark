@@ -64,7 +64,7 @@ vec4 filter_blur_horizontal()
 		return texture2D(g_tex_standard,ls_TexCoords[0].xy);
 	vec4 sum = vec4(0.0);
 	float blurx = filterdata[1]+0.5;
-	float width = filterdata[2];
+	float width = filterdata[254]; // last values of filterdata are always width and height
 	float factor = 0.0;
 	for (float i = -blurx/2.0; i < blurx/2.0; ++i)
 	{
@@ -79,7 +79,7 @@ vec4 filter_blur_vertical()
 		return texture2D(g_tex_standard,ls_TexCoords[0].xy);
 	vec4 sum = vec4(0.0);
 	float blury = filterdata[1]/2.0;
-	float height = filterdata[2];
+	float height = filterdata[255];// last values of filterdata are always width and height
 	float factor = 0.0;
 	for (float i = -blury/2.0; i < blury/2.0; ++i)
 	{
@@ -118,8 +118,8 @@ vec4 filter_bevel()
 	float inner = filterdata[1];
 	float knockout = filterdata[2];
 	float strength = filterdata[3];
-	vec2 highlightOffset = vec2(-filterdata[4],filterdata[5]);
-	vec2 shadowOffset = vec2(-filterdata[6],filterdata[7]);
+	vec2 highlightOffset = vec2(-filterdata[4]/filterdata[254],filterdata[5]/filterdata[255]);// last values of filterdata are always width and height
+	vec2 shadowOffset = vec2(-filterdata[6]/filterdata[254],filterdata[7]/filterdata[255]);// last values of filterdata are always width and height
 	float alphahigh = filter_dropshadow(inner,1.0,vec4(1.0,1.0,1.0,1.0),1.0,highlightOffset).a * strength * 256.0;
 	float alphashadow = filter_dropshadow(inner,1.0,vec4(1.0,1.0,1.0,1.0),1.0,shadowOffset).a * strength * 256.0;
 	int gradientindex = 128+clamp(int(alphahigh - alphashadow)/2,-128,127);
@@ -187,10 +187,10 @@ vec4 filter_convolution()
 	float divisor = filterdata[3];
 	float preserveAlpha = filterdata[4];
 	vec4 color = vec4(filterdata[5],filterdata[6],filterdata[7],filterdata[8]);
-	float width=filterdata[9];
-	float height=filterdata[10];
-	float mX=filterdata[11];
-	float mY=filterdata[12];
+	float width=filterdata[254];// last values of filterdata are always width and height
+	float height=filterdata[255];// last values of filterdata are always width and height
+	float mX=filterdata[9];
+	float mY=filterdata[10];
 
 	vec2 start = ls_TexCoords[0].xy;
 	vec4 src = texture2D(g_tex_standard,ls_TexCoords[0].xy);
@@ -203,7 +203,7 @@ vec4 filter_convolution()
 	{
 		for (float x=0.0; x <mX; x++)
 		{
-			float data = filterdata[13+int(y*mX+x)];
+			float data = filterdata[11+int(y*mX+x)];
 			if (
 					(start.x <= mX/2.0
 					|| start.x >= (width-mX/2.0)
@@ -255,7 +255,10 @@ void main()
 		} else if (filterdata[0]==2.0) {// FILTERSTEP_BLUR_VERTICAL
 			vbase = filter_blur_vertical();
 		} else if (filterdata[0]==3.0) {// FILTERSTEP_DROPSHADOW
-			vbase = filter_dropshadow(filterdata[1],filterdata[2],vec4(filterdata[4],filterdata[5],filterdata[6],filterdata[7]),filterdata[3],vec2(filterdata[8],filterdata[9]));
+			vbase = filter_dropshadow(filterdata[1],filterdata[2],
+				vec4(filterdata[4],filterdata[5],filterdata[6],filterdata[7]),
+				filterdata[3],
+				vec2(filterdata[8]/filterdata[254],filterdata[9]/filterdata[255]));// last values of filterdata are always width and height
 		} else if (filterdata[0]==4.0) {// FILTERSTEP_GRADIENT_GLOW
 			vbase = filter_gradientglow();
 		} else if (filterdata[0]==5.0) {// FILTERSTEP_BEVEL

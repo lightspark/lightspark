@@ -74,7 +74,7 @@ void SurfaceState::reset()
 	tokens.clear();
 	childrenlist.clear();
 	mask.reset();
-	filters.reset();
+	filters.clear();
 	bounds = RectF();
 	depth=0;
 	clipdepth=0;
@@ -188,7 +188,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 	EngineData* engineData = sys->getEngineData();
 	bool needscachedtexture = (!container && state->cacheAsBitmap)
 							  || ctxt.transformStack().transform().blendmode == BLENDMODE_LAYER
-							  || !state->filters.isNull()
+							  || !state->filters.empty()
 							  || DisplayObject::isShaderBlendMode(ctxt.transformStack().transform().blendmode)
 							  || (state->needsLayer && sys->getRenderThread()->filterframebufferstack.empty());
 	if (needscachedtexture && (state->needsFilterRefresh || cachedFilterTextureID != UINT32_MAX))
@@ -904,37 +904,26 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	sys->getRenderThread()->setViewPort(w,h,true);
 	uint32_t texture1 = filterTextureIDoriginal;
 	uint32_t texture2 = filterTextureID2;
-	if (!state->filters.isNull())
+	bool firstfilter = true;
+	for (auto it = state->filters.begin(); it != state->filters.end(); it++)
 	{
-		for (uint32_t i = 0; i < state->filters->size(); i++)
+		if ((*it).filterdata[0] == 0) // end of filter
 		{
-			asAtom f = asAtomHandler::invalidAtom;
-			state->filters->at_nocheck(f,i);
-			if (asAtomHandler::is<BitmapFilter>(f))
-			{
-				float gradientcolors[256*4];
-				asAtomHandler::as<BitmapFilter>(f)->getRenderFilterGradientColors(gradientcolors);
-				float filterdata[FILTERDATA_MAXSIZE];
-				uint32_t step = 0;
-				while (true)
-				{
-					asAtomHandler::as<BitmapFilter>(f)->getRenderFilterArgs(step,filterdata,w,h);
-					if (filterdata[0] == 0)
-						break;
-					step++;
-					engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(texture2);
-					engineData->exec_glClearColor(0,0,0,0);
-					engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
-					sys->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,filterdata,gradientcolors,!i,false);
-					if (texture1 == filterTextureIDoriginal)
-						texture1 = filterTextureID1;
-					std::swap(texture1,texture2);
-				}
-				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
-				engineData->exec_glClearColor(0,0,0,0);
-				engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
-				sys->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,nullptr,nullptr,false, false);
-			}
+			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
+			engineData->exec_glClearColor(0,0,0,0);
+			engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+			sys->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,nullptr,nullptr,false, false);
+			firstfilter=false;
+		}
+		else
+		{
+			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(texture2);
+			engineData->exec_glClearColor(0,0,0,0);
+			engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
+			sys->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,((*it).filterdata),((*it).gradientcolors),firstfilter,false);
+			if (texture1 == filterTextureIDoriginal)
+				texture1 = filterTextureID1;
+			std::swap(texture1,texture2);
 		}
 	}
 	sys->getRenderThread()->filterframebufferstack.pop_back();
@@ -959,7 +948,7 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	cachedFilterTextureID=texture1;
 	engineData->exec_glDeleteTextures(1,&texture2);
 	engineData->exec_glDeleteTextures(1,&filterDstTexture);
-	if (state->filters.isNull() || state->filters->size()==0)
+	if (state->filters.empty())
 		engineData->exec_glDeleteTextures(1,&filterTextureID1);
 	else
 		engineData->exec_glDeleteTextures(1,&filterTextureIDoriginal);
@@ -992,7 +981,7 @@ RectF CachedSurface::boundsRectWithRenderTransform(const MATRIX& matrix, const M
 		MATRIX m = matrix.multiplyMatrix(child->state->matrix);
 		bounds = bounds._union(child->boundsRectWithRenderTransform(m, initialMatrix));
 	}
-	if (!state->filters.isNull())
+	if (!state->filters.empty())
 	{
 		number_t filterborder = state->maxfilterborder;
 		bounds.min.x -= filterborder*initialMatrix.getScaleX();

@@ -22,6 +22,7 @@
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "backends/rendering.h"
+#include "backends/cachedsurface.h"
 
 
 using namespace std;
@@ -199,7 +200,7 @@ bool ConvolutionFilter::compareFILTER(const FILTER& filter) const
 	LOG(LOG_NOT_IMPLEMENTED, "comparing ConvolutionFilter");
 	return false;
 }
-void ConvolutionFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
+void ConvolutionFilter::getRenderFilterArgs(uint32_t step,float* args) const
 {
 	if (step == 0)
 	{
@@ -213,8 +214,6 @@ void ConvolutionFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t 
 		args[6]=c.gf();
 		args[7]=c.bf();
 		args[8]=alpha;
-		args[9]=float(w);
-		args[10]=float(h);
 		float realMatrixX=abs(floor(matrixX));
 		float realMatrixY=abs(floor(matrixY));
 		if (matrix.isNull() || matrix->size() < realMatrixX*realMatrixY)
@@ -229,12 +228,12 @@ void ConvolutionFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t 
 			realMatrixX=0;
 			realMatrixY=0;
 		}
-		args[11]=realMatrixX;
-		args[12]=realMatrixY;
+		args[9]=realMatrixX;
+		args[10]=realMatrixY;
 		int n = realMatrixX*realMatrixY;
 		for (int i=0; i < n; i++)
 		{
-			args[i+13] = asAtomHandler::toNumber(matrix->at(i));
+			args[i+11] = asAtomHandler::toNumber(matrix->at(i));
 		}
 	}
 	else

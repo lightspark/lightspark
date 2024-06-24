@@ -36,11 +36,11 @@ protected:
 	static void fillGradientColors(number_t* gradientalphas, uint32_t* gradientcolors, Array* ratios, Array* alphas, Array* colors);
 	static void applyGradientFilter(uint8_t* data, uint32_t datawidth, uint32_t dataheight, uint8_t* tmpdata, const RECT& sourceRect, number_t xpos, number_t ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout, number_t scalex, number_t scaley);
 	static void applyBevelFilter(BitmapContainer* target, const RECT& sourceRect, uint8_t* tmpdata, DisplayObject* owner, number_t distance, number_t strength, bool inner, bool knockout, uint32_t* gradientcolors, number_t* gradientalphas, number_t angle, number_t xpos, number_t ypos, number_t scalex, number_t scaley);
-	bool getRenderFilterArgsBlur(float* args, float blurX, float blurY, uint32_t w, uint32_t h, uint32_t step, uint32_t quality, uint32_t& nextstep) const;
-	void getRenderFilterArgsBlurHorizontal(float* args, float blurX, uint32_t w) const;
-	void getRenderFilterArgsBlurVertical(float* args, float blurY, uint32_t h) const;
-	void getRenderFilterArgsDropShadow(float* args, bool inner, bool knockout, float strength, uint32_t color, float alpha, float xpos, float ypos, uint32_t w, uint32_t h) const;
-	void getRenderFilterArgsBevel(float* args, bool inner, bool knockout, float strength, float distance, float angle, uint32_t w, uint32_t h) const;
+	bool getRenderFilterArgsBlur(float* args, float blurX, float blurY, uint32_t step, uint32_t quality, uint32_t& nextstep) const;
+	void getRenderFilterArgsBlurHorizontal(float* args, float blurX) const;
+	void getRenderFilterArgsBlurVertical(float* args, float blurY) const;
+	void getRenderFilterArgsDropShadow(float* args, bool inner, bool knockout, float strength, uint32_t color, float alpha, float xpos, float ypos) const;
+	void getRenderFilterArgsBevel(float* args, bool inner, bool knockout, float strength, float distance, float angle) const;
 public:
 	BitmapFilter(ASWorker* wrk,Class_base* c, CLASS_SUBTYPE st=SUBTYPE_BITMAPFILTER):ASObject(wrk,c,T_OBJECT,st){}
 	static void sinit(Class_base* c);
@@ -49,7 +49,7 @@ public:
 	virtual number_t getMaxFilterBorder() const { return 0; }
 	virtual bool compareFILTER(const FILTER& filter) const { return false; }
 	// last step is signaled by returning 0 in args[0]
-	virtual void getRenderFilterArgs(uint32_t step, float* args, uint32_t w, uint32_t h) const;
+	virtual void getRenderFilterArgs(uint32_t step, float* args) const;
 	// gradientcolors is array of 256*4 floats (RGBA values)
 	virtual void getRenderFilterGradientColors(float* gradientcolors) const;
 };
@@ -64,7 +64,7 @@ public:
 	ASFUNCTION_ATOM(_constructor);
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	bool compareFILTER(const FILTER& filter) const override { return false; }
-	void getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const override;
+	void getRenderFilterArgs(uint32_t step, float* args) const override;
 };
 
 class BitmapFilterQuality: public ASObject

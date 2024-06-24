@@ -116,7 +116,7 @@ bool ColorMatrixFilter::compareFILTER(const FILTER& filter) const
 	}
 	return false;
 }
-void ColorMatrixFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
+void ColorMatrixFilter::getRenderFilterArgs(uint32_t step,float* args) const
 {
 	if (step == 0)
 	{

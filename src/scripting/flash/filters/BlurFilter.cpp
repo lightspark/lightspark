@@ -79,10 +79,10 @@ bool BlurFilter::compareFILTER(const FILTER& filter) const
 			&& filter.BlurFilter.BlurY == this->blurY
 			&& filter.BlurFilter.Passes == this->quality;
 }
-void BlurFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
+void BlurFilter::getRenderFilterArgs(uint32_t step,float* args) const
 {
 	uint32_t nextstep;
-	if (getRenderFilterArgsBlur(args,blurX,blurY,w,h,step,quality,nextstep))
+	if (getRenderFilterArgsBlur(args,blurX,blurY,step,quality,nextstep))
 		return;
 	else
 		args[0]=0.0;

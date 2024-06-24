@@ -20,7 +20,6 @@
 #ifndef BACKENDS_CACHEDSURFACE_H
 #define BACKENDS_CACHEDSURFACE_H 1
 
-#include "forwards/swftypes.h"
 #include "forwards/scripting/flash/display/DisplayObject.h"
 #include "compat.h"
 #include <vector>
@@ -30,10 +29,18 @@
 #include "backends/graphics.h"
 #include "memory_support.h"
 
+#define FILTERDATA_MAXSIZE 256
+
 namespace lightspark
 {
 class RenderContext;
 class Array;
+
+struct FilterData
+{
+	float gradientcolors[256*4];
+	float filterdata[FILTERDATA_MAXSIZE];
+};
 
 class SurfaceState
 {
@@ -55,7 +62,7 @@ public:
 	std::vector<_R<CachedSurface>> childrenlist;
 	_NR<CachedSurface> mask;
 	_NR<CachedSurface> maskee;
-	_NR<Array> filters; // TODO move to non-ASObject-derived type
+	std::vector<FilterData> filters;
 	RectF bounds;
 	int depth;
 	int clipdepth;

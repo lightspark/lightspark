@@ -164,7 +164,7 @@ bool DisplayObject::belongsToMask() const
 }
 
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),maxfilterborder(0),ClipDepth(0),
+	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),filterlistHasChanged(false),maxfilterborder(0),ClipDepth(0),
 	avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),cachedSurface(new CachedSurface()),
 	constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),
@@ -235,6 +235,7 @@ bool DisplayObject::destruct()
 	getSystemState()->stage->AVM1RemoveDisplayObject(this);
 	removeAVM1Listeners();
 	ismask=false;
+	filterlistHasChanged=false;
 	maxfilterborder=0;
 	parent=nullptr;
 	eventparentmap.clear();
@@ -563,6 +564,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 
 	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(wrk,args[0],th->filters);
 	th->maxfilterborder=0;
+	th->filterlistHasChanged=true;
 	for (uint32_t i = 0; i < th->filters->size(); i++)
 	{
 		asAtom f = asAtomHandler::invalidAtom;
@@ -792,9 +794,8 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 		else
 		{
 			// check if filterlist has really changed
-			if (filters->size() == filterlist.Filters.size())
+			if (!filterlistHasChanged && filters->size() == filterlist.Filters.size())
 			{
-				bool filterlistHasChanged=false;
 				for (uint32_t i =0; i < filters->size(); i++)
 				{
 					asAtom f=filters->at(i);
@@ -813,6 +814,7 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 					return;
 			}
 		}
+		filterlistHasChanged=true;
 		maxfilterborder=0;
 		filters->resize(0);
 		auto it = filterlist.Filters.cbegin();
@@ -898,7 +900,30 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 	state->alpha = this->alpha;
 	state->allowAsMask = this->allowAsMask();
 	state->maxfilterborder = this->getMaxFilterBorder();
-	state->filters = this->filters;
+	if (this->filterlistHasChanged)
+	{
+		state->filters.clear();
+		state->filters.reserve(this->filters->size()*2);
+		for (uint32_t i = 0; i < this->filters->size(); i++)
+		{
+			asAtom f = asAtomHandler::invalidAtom;
+			this->filters->at_nocheck(f,i);
+			if (asAtomHandler::is<BitmapFilter>(f))
+			{
+				FilterData fdata;
+				asAtomHandler::as<BitmapFilter>(f)->getRenderFilterGradientColors(fdata.gradientcolors);
+				uint32_t step = 0;
+				while (true)
+				{
+					asAtomHandler::as<BitmapFilter>(f)->getRenderFilterArgs(step,fdata.filterdata);
+					state->filters.push_back(fdata);
+					if (fdata.filterdata[0] == 0)
+						break;
+					step++;
+				}
+			}
+		}
+	}
 	this->boundsRectWithoutChildren(state->bounds.min.x, state->bounds.max.x, state->bounds.min.y, state->bounds.max.y, false);
 	if (this->scrollRect)
 		state->scrollRect=this->scrollRect->getRect();

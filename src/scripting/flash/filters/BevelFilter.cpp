@@ -134,15 +134,15 @@ void BevelFilter::getRenderFilterGradientColors(float* gradientcolors) const
 	}
 }
 
-void BevelFilter::getRenderFilterArgs(uint32_t step,float* args, uint32_t w, uint32_t h) const
+void BevelFilter::getRenderFilterArgs(uint32_t step,float* args) const
 {
 	if (type=="full")
 		LOG(LOG_NOT_IMPLEMENTED,"BevelFilter type 'full'");
 	uint32_t nextstep;
-	if (getRenderFilterArgsBlur(args,blurX,blurY,w,h,step,quality,nextstep))
+	if (getRenderFilterArgsBlur(args,blurX,blurY,step,quality,nextstep))
 		return;
 	else if (step == nextstep)
-		getRenderFilterArgsBevel(args,type=="inner",knockout,strength,distance,angle,w,h);
+		getRenderFilterArgsBevel(args,type=="inner",knockout,strength,distance,angle);
 	else
 		args[0]=0.0;
 }

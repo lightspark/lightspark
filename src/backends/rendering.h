@@ -30,8 +30,6 @@
 #	include <windef.h>
 #endif
 
-#define FILTERDATA_MAXSIZE 256
-
 namespace lightspark
 {
 class ThreadProfile;

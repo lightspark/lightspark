@@ -557,7 +557,12 @@ void RenderThread::setModelView(const MATRIX& matrix)
 void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter, bool flippedvertical, bool clearstate, bool renderstage3d)
 {
 	if (filterdata)
+	{
+		// last values of filterdata are always width and height
+		filterdata[FILTERDATA_MAXSIZE-2]=w;
+		filterdata[FILTERDATA_MAXSIZE-1]=h;
 		engineData->exec_glUniform1fv(filterdataUniform, FILTERDATA_MAXSIZE, filterdata);
+	}
 	else
 	{
 		float empty=0;

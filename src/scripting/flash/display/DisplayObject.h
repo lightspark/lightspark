@@ -73,6 +73,7 @@ private:
 	// if true, this displayobject is the root object of a loaded file (swf or image)
 	bool isLoadedRoot;
 	bool ismask;
+	bool filterlistHasChanged;
 	number_t maxfilterborder;
 public:
 	UI16_SWF Ratio;

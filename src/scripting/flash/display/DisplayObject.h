@@ -80,6 +80,7 @@ public:
 	int ClipDepth;
 	DisplayObject* avm1PrevDisplayObject;
 	DisplayObject* avm1NextDisplayObject;
+	std::map<uint32_t,asAtom > avm1locals;
 private:
 	// the parent is not handled as a _NR<DisplayObjectContainer> because that will lead to circular dependencies in refcounting
 	// and the parent can never be destructed

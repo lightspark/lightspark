@@ -471,11 +471,21 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				else if (context->keepLocals && s.find(".") == tiny_string::npos)
 				{
-					auto it = locals.find(clip->getSystemState()->getUniqueStringId(s.lowercase()));
+					uint32_t nameidlower=clip->getSystemState()->getUniqueStringId(s.lowercase());
+					auto it = locals.find(nameidlower);
 					if (it != locals.end()) // local variable
 					{
 						res = it->second;
 						ASATOM_INCREF(res);
+					}
+					else if (!caller)
+					{
+						auto it = clip->avm1locals.find(nameidlower);
+						if (it != clip->avm1locals.end())
+						{
+							res = it->second;
+							ASATOM_INCREF(res);
+						}
 					}
 				}
 				if (asAtomHandler::isInvalid(res) && !clip_isTarget)
@@ -586,12 +596,23 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (context->keepLocals && s.find(".") == tiny_string::npos)
 				{
 					// variable names are case insensitive
-					auto it = locals.find(clip->getSystemState()->getUniqueStringId(s.lowercase()));
+					uint32_t nameidlower = clip->getSystemState()->getUniqueStringId(s.lowercase());
+					auto it = locals.find(nameidlower);
 					if (it != locals.end()) // local variable
 					{
 						ASATOM_INCREF(value);
 						ASATOM_DECREF(it->second);
 						it->second = value;
+					}
+					else if (!caller)
+					{
+						auto it = clip->avm1locals.find(nameidlower);
+						if (it != clip->avm1locals.end())
+						{
+							ASATOM_ADDSTOREDMEMBER(value);
+							ASATOM_REMOVESTOREDMEMBER(it->second);
+							it->second = value;
+						}
 					}
 				}
 				if (!curdepth && !s.startsWith("/") && !s.startsWith(":") && !clip_isTarget)
@@ -1076,8 +1097,23 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					clip->AVM1SetVariable(s,value,false);
 				}
 				uint32_t nameID = clip->getSystemState()->getUniqueStringId(asAtomHandler::toString(name,wrk).lowercase());
-				ASATOM_DECREF(locals[nameID]);
-				locals[nameID] = value;
+				if (caller)
+				{
+					ASATOM_DECREF(locals[nameID]);
+					locals[nameID] = value;
+				}
+				else
+				{
+					ASATOM_ADDSTOREDMEMBER(value);
+					auto it = clip->avm1locals.find(nameID);
+					if (it == clip->avm1locals.end())
+						clip->avm1locals.insert(make_pair(nameID,value));
+					else
+					{
+						ASATOM_REMOVESTOREDMEMBER(it->second);
+						it->second = value;
+					}
+				}
 				ASATOM_DECREF(name);
 				break;
 			}
@@ -1273,8 +1309,16 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineLocal2 "<<asAtomHandler::toDebugString(name));
 				tiny_string namelower = asAtomHandler::toString(name,wrk).lowercase();
 				uint32_t nameID = clip->getSystemState()->getUniqueStringId(namelower);
-				if (locals.find(nameID) == locals.end())
-					locals[nameID] = asAtomHandler::undefinedAtom;
+				if (caller)
+				{
+					if (locals.find(nameID) == locals.end())
+						locals[nameID] = asAtomHandler::undefinedAtom;
+				}
+				else
+				{
+					if (clip->avm1locals.find(nameID) == clip->avm1locals.end())
+						clip->avm1locals[nameID] = asAtomHandler::undefinedAtom;
+				}
 				ASATOM_DECREF(name);
 				break;
 			}

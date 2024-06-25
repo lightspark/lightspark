@@ -1145,7 +1145,11 @@ public:
 	 */
 	void initializeVariableByMultiname(multiname &name, asAtom& o, multiname* typemname,
 			ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id, bool isenumerable);
-	virtual bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk);
+	virtual bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
+	{
+		return deleteVariableByMultiname_intern(name, wrk);
+	}
+	bool deleteVariableByMultiname_intern(const multiname& name, ASWorker* wrk);
 	void setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	void setVariableByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	variable *setVariableByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, TRAIT_KIND traitKind, bool isEnumerable = true);

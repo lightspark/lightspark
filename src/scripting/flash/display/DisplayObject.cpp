@@ -220,6 +220,11 @@ void DisplayObject::finalize()
 			o->removeStoredMember();
 	}
 	avm1variables.clear();
+	for (auto it = avm1locals.begin(); it != avm1locals.end(); it++)
+	{
+		ASATOM_REMOVESTOREDMEMBER(it->second);
+	}
+	avm1locals.clear();
 	variablebindings.clear();
 	loadedFrom=getSystemState()->mainClip;
 	hasChanged = true;
@@ -285,6 +290,11 @@ bool DisplayObject::destruct()
 			o->removeStoredMember();
 	}
 	avm1variables.clear();
+	for (auto it = avm1locals.begin(); it != avm1locals.end(); it++)
+	{
+		ASATOM_REMOVESTOREDMEMBER(it->second);
+	}
+	avm1locals.clear();
 	variablebindings.clear();
 	placeFrame=UINT32_MAX;
 	return EventDispatcher::destruct();
@@ -320,6 +330,13 @@ void DisplayObject::prepareShutdown()
 		if (o)
 			o->prepareShutdown();
 	}
+	for (auto it = avm1locals.begin(); it != avm1locals.end(); it++)
+	{
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			o->prepareShutdown();
+	}
+	avm1locals.clear();
 	setParent(nullptr);
 }
 
@@ -329,6 +346,12 @@ bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
+	{
+		ASObject* o = asAtomHandler::getObject(it->second);
+		if (o)
+			ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	}
+	for (auto it = avm1locals.begin(); it != avm1locals.end(); it++)
 	{
 		ASObject* o = asAtomHandler::getObject(it->second);
 		if (o)
@@ -416,33 +439,22 @@ void DisplayObject::onSetName(uint32_t oldName)
 		auto parent = getParent();
 		if (parent != nullptr)
 		{
-			bool set = false;
 			multiname m(nullptr);
 			m.name_type = multiname::NAME_STRING;
 			m.isAttribute = false;
 			m.name_s_id = name;
 
 			ASWorker* wrk = parent->getInstanceWorker();
-			variable* v = parent->findVariableByMultiname(m,parent->getClass(),nullptr,nullptr,true,wrk);
-			if (v != nullptr && asAtomHandler::is<DisplayObject>(v->var))
-			{
-				auto obj = asAtomHandler::as<DisplayObject>(v->var);
-				if (parent->findLegacyChildDepth(this) < parent->findLegacyChildDepth(obj))
-					set = true;
-			}
-
-			if (set || v == nullptr)
-			{
-				incRef();
-				asAtom val = asAtomHandler::fromObject(this);
-				parent->setVariableByMultiname(m, val, ASObject::CONST_NOT_ALLOWED, nullptr, wrk);
-			}
-
-			if (oldName != BUILTIN_STRINGS::EMPTY && v != nullptr)
+			incRef();
+			asAtom val = asAtomHandler::fromObject(this);
+			// use internal version to avoid any unwanted sideeffects (events/addChild/removeChild)
+			parent->setVariableByMultiname_intern(m, val, ASObject::CONST_NOT_ALLOWED, nullptr,nullptr, wrk);
+			
+			if (oldName != BUILTIN_STRINGS::EMPTY)
 			{
 				m.name_s_id = oldName;
-				v->setVar(wrk, asAtomHandler::undefinedAtom, false);
-				parent->deleteVariableByMultiname(m, wrk);
+				m.ns.push_back(nsNameAndKind());
+				parent->deleteVariableByMultiname_intern(m, wrk);
 			}
 		}
 	}

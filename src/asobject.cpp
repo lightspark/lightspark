@@ -780,7 +780,7 @@ void ASObject::setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind
 	o->functionname = nameId;
 }
 
-bool ASObject::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
+bool ASObject::deleteVariableByMultiname_intern(const multiname& name, ASWorker* wrk)
 {
 	variable* obj=Variables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
 	

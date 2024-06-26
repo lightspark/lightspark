@@ -889,7 +889,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				if (o && o->getParent() && !o->is<RootMovieClip>() && !o->legacy)
 				{
-					o->getParent()->_removeChild(o);
+					asAtom obj = asAtomHandler::fromObjectNoPrimitive(o);
+					asAtom r = asAtomHandler::invalidAtom;
+					MovieClip::AVM1RemoveMovieClip(r,wrk,obj,nullptr,0);
 				}
 				ASATOM_DECREF(target);
 				break;

@@ -3247,6 +3247,7 @@ bool AVM1Function::destruct()
 	}
 	scopevariables.clear();
 	ASATOM_REMOVESTOREDMEMBER(superobj);
+	superobj=asAtomHandler::invalidAtom;
 	return IFunction::destruct();
 }
 

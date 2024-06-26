@@ -258,6 +258,7 @@ public:
 	const FLASH_MODE flashMode;
 	uint32_t swffilesize;
 	asAtom nanAtom;
+	ATOMIC_INT32(instanceCounter); // used to create unique instanceX names for AVM1
 	// the global object for AVM1
 	Global* avm1global;
 	void setupAVM1();

@@ -811,7 +811,19 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 			}
 		}
 	}
-	
+	if (!this->loadedFrom->usesActionScript3 && obj->legacy && obj->name == BUILTIN_STRINGS::EMPTY && obj->is<InteractiveObject>())
+	{
+		// AVM1 seems to assign a unique name "instance{x}" to all children that
+		// - are InteractiveObjects (?) and
+		// - don't have a name and
+		// - are added by tags
+		
+		int32_t instancenum = ATOMIC_INCREMENT(getSystemState()->instanceCounter);
+		char buf[100];
+		sprintf(buf,"instance%i",instancenum);
+		tiny_string s(buf);
+		obj->name = getSystemState()->getUniqueStringId(s);
+	}
 	if(obj->name != BUILTIN_STRINGS::EMPTY)
 	{
 		multiname objName(nullptr);

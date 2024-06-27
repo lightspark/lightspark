@@ -2343,6 +2343,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			state->legacy=true;
 			state->name = BUILTIN_STRINGS::EMPTY;
 			state->setScalingGrid();
+			state->loadedFrom=this->loadedFrom;
 			if (i->ButtonHasBlendMode && i->buttonVersion == 2)
 				state->setBlendMode(i->BlendMode);
 			if (i->ButtonHasFilterList)
@@ -2360,6 +2361,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 				if(!isSprite[j])
 				{
 					Sprite* spr = Class<Sprite>::getInstanceSNoArgs(loadedFrom->getInstanceWorker());
+					spr->loadedFrom=this->loadedFrom;
 					spr->constructionComplete();
 					spr->afterConstruction();
 					spr->insertLegacyChildAt(LEGACY_DEPTH_START+curDepth[j],states[j]);

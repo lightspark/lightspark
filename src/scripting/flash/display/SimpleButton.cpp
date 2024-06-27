@@ -466,6 +466,8 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DisplayObject *dS, Disp
 		uS->advanceFrame(false);
 		uS->initFrame();
 	}
+	if (tag)
+		this->loadedFrom = tag->loadedFrom;
 	if (!needsActionScript3())
 	{
 		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);

@@ -812,6 +812,7 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	// cleanup for stage rendering
 	engineData->exec_glClearDepthf(1.0);
 	engineData->exec_glClearStencil(0);
+	engineData->exec_glStencilMask(0xff);
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 	engineData->exec_glDisable_GL_DEPTH_TEST();
 	engineData->exec_glCullFace(FACE_NONE);
@@ -834,19 +835,10 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 		engineData->exec_glFrontFace(false);
 		engineData->exec_glDrawBuffer_GL_BACK();
-		if (enableDepthAndStencilBackbuffer)
-		{
-			engineData->exec_glEnable_GL_DEPTH_TEST();
-			engineData->exec_glEnable_GL_STENCIL_TEST();
-		}
-		else
-		{
-			engineData->exec_glDisable_GL_DEPTH_TEST();
-			engineData->exec_glDisable_GL_STENCIL_TEST();
-		}
+		engineData->exec_glDisable_GL_DEPTH_TEST();
+		engineData->exec_glDisable_GL_STENCIL_TEST();
 		renderingToTexture = false;
 	}
-	((GLRenderContext&)ctxt).handleGLErrors();
 	actions[1-currentactionvector].clear();
 	backframebufferIDcurrent=backframebufferID[currentactionvector];
 	swapbuffers = false;
@@ -915,7 +907,6 @@ void Context3D::loadCubeTexture(CubeTexture *tex, uint32_t miplevel, uint32_t si
 					engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[i].data(),tex->format,tex->compressedformat,tex->bitmaparray[i].size());
 				else
 					engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(side,level, tex->width>>level, tex->height>>level, 0, nullptr,tex->format,tex->compressedformat,0);
-				getSystemState()->getRenderThread()->handleGLErrors();
 			}
 		}
 		else

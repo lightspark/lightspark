@@ -1151,7 +1151,6 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case ADVANCE_FRAME:
 			{
 				m_sys->setFramePhase(FramePhase::ADVANCE_FRAME);
-				Locker l(m_sys->getRenderThread()->mutexRendering);
 				AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				DisplayObject* clip = !ev->clip.isNull() ? ev->clip.getPtr() : m_sys->stage;
 				LOG(LOG_CALLS,"ADVANCE_FRAME");

@@ -50,8 +50,9 @@ private:
 	void validateHeaderName(const tiny_string& headerName) const;
 	ASPROPERTY_GETTER_SETTER(tiny_string,contentType);
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,requestHeaders);
+	RootMovieClip* root;
 public:
-	URLRequest(ASWorker* wrk,Class_base* c, const tiny_string u="", const tiny_string m="GET", _NR<ASObject> d = NullRef);
+	URLRequest(ASWorker* wrk,Class_base* c, const tiny_string u="", const tiny_string m="GET", _NR<ASObject> d = NullRef,RootMovieClip* _root=nullptr);
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;

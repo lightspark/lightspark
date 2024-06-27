@@ -232,7 +232,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
 	//the passed applicationDomain is ignored
-	RootMovieClip* currentRoot=getInstanceWorker()->rootClip.getPtr();
+	RootMovieClip* currentRoot=this->loadedFrom ? this->loadedFrom : getInstanceWorker()->rootClip.getPtr();
 	// empty origin is possible if swf is loaded by loadBytes()
 	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==this->url.getHostname() || secDomain)
 	{

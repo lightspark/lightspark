@@ -2415,7 +2415,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				{
 					asAtom ret = asAtomHandler::invalidAtom;
 					if (url != "")
-						LOG(LOG_NOT_IMPLEMENTED,"AVM1: ActionGetURL2 on MovieClip with url:"<<url);
+						MovieClip::AVM1LoadMovie(ret,wrk,at,&au,1);
 					else
 					{
 						// it seems that calling ActionGetURL2 with a clip as target and no url unloads the clip

@@ -42,9 +42,13 @@
 using namespace std;
 using namespace lightspark;
 
-URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const tiny_string m, _NR<ASObject> d):ASObject(wrk,c,T_OBJECT,SUBTYPE_URLREQUEST),method(m=="POST" ? POST : GET),url(u),data(d),contentType("application/x-www-form-urlencoded"),
-	requestHeaders(Class<Array>::getInstanceSNoArgs(wrk))
+URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const tiny_string m, _NR<ASObject> d,RootMovieClip* _root):ASObject(wrk,c,T_OBJECT,SUBTYPE_URLREQUEST),
+	method(m=="POST" ? POST : GET),url(u),data(d),contentType("application/x-www-form-urlencoded"),
+	requestHeaders(Class<Array>::getInstanceSNoArgs(wrk)),
+	root(_root)
 {
+	if (_root==nullptr)
+		root = c->getSystemState()->mainClip;
 }
 
 void URLRequest::sinit(Class_base* c)
@@ -66,7 +70,7 @@ void URLRequest::sinit(Class_base* c)
 URLInfo URLRequest::getRequestURL() const
 {
 	tiny_string urlencoded = URLInfo::encode(url, URLInfo::ENCODE_SPACES);
-	URLInfo ret=getSys()->mainClip->getBaseURL().goToURL(urlencoded);
+	URLInfo ret=root->getBaseURL().goToURL(urlencoded);
 	if(method!=GET)
 		return ret;
 

@@ -199,6 +199,7 @@ void AVM1MovieClipLoader::addLoader(URLRequest* r, DisplayObject* target)
 {
 	Loader* ldr = Class<Loader>::getInstanceSNoArgs(getInstanceWorker());
 	ldr->addStoredMember();
+	ldr->loadedFrom=target->loadedFrom;
 	loadermutex.lock();
 	loaderlist.insert(ldr);
 	loadermutex.unlock();
@@ -222,7 +223,6 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 	tiny_string strurl;
 	asAtom target = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(strurl)(target));
-	URLRequest* r = Class<URLRequest>::getInstanceS(wrk,strurl);
 	DisplayObject* t =nullptr;
 	if (asAtomHandler::isNumeric(target))
 	{
@@ -243,6 +243,7 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"target");
 		return;
 	}
+	URLRequest* r = Class<URLRequest>::getInstanceS(wrk,strurl,"GET",NullRef,t->loadedFrom);
 	th->addLoader(r,t);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,addListener)
@@ -487,7 +488,7 @@ bool AVM1MovieClipLoader::countCylicMemberReferences(garbagecollectorstate& gcst
 
 void AVM1MovieClipLoader::load(const tiny_string& url, const tiny_string& method, AVM1MovieClip* target)
 {
-	URLRequest* r = Class<URLRequest>::getInstanceS(getInstanceWorker(),url,method);
+	URLRequest* r = Class<URLRequest>::getInstanceS(getInstanceWorker(),url,method,NullRef,target->loadedFrom);
 	addLoader(r, target);
 }
 

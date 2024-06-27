@@ -163,6 +163,7 @@ public:
 	virtual FREResult SetObjectProperty(FREObject object, const uint8_t* propertyName, FREObject propertyValue, FREObject* thrownException)=0;
 	virtual FREResult AcquireByteArray(FREObject object, FREByteArray* byteArrayToSet)=0;
 	virtual FREResult ReleaseByteArray (FREObject object)=0;
+	virtual FREResult DispatchStatusEventAsync(FREContext ctx, const uint8_t* code, const uint8_t* level )=0;
 	static void registerFREObjectInterface(FREObjectInterface* freObjectConverter);
 };
 

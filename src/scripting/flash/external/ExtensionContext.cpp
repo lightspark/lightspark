@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "ExtensionContext.h"
+#include "abc.h"
 #include "class.h"
 #include "argconv.h"
 #include "SDL.h"
@@ -105,7 +106,7 @@ public:
 		if (!wrk || wrk->nativeExtensionCallCount==0)
 			return FRE_WRONG_THREAD;
 		ASObject* res = abstract_s(wrk, (const char*)value, length-1);
-		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromObjectNoPrimitive(res));
+		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromObject(res));
 		*object = &wrk->nativeExtensionAtomlist.back();
 		LOG_CALL("nativeExtension:fromUTF8:"<<res->toDebugString());
 		return FRE_OK;
@@ -169,6 +170,22 @@ public:
 		obj->as<ByteArray>()->unlock();
 		obj->decRef();
 		LOG_CALL("nativeExtension:ReleaseByteArray:"<<obj->toDebugString());
+		return FRE_OK;
+	}
+	FREResult DispatchStatusEventAsync(FREContext ctx, const uint8_t* code, const uint8_t* level )
+	{
+		if (code==nullptr)
+			return FRE_INVALID_ARGUMENT;
+		if (level==nullptr)
+			return FRE_INVALID_ARGUMENT;
+		ExtensionContext* ctxt =(ExtensionContext*)ctx;
+		if (ctxt==nullptr)
+			return FRE_INVALID_ARGUMENT;
+		ctxt->incRef();
+		tiny_string c((const char*)code,true);
+		tiny_string l((const char*)level,true);
+		getVm(ctxt->getSystemState())->addEvent(_MR(ctxt), _MR(Class<StatusEvent>::getInstanceS(ctxt->getInstanceWorker(),c,l)));
+		LOG_CALL("nativeExtension:DispatchStatusEventAsync:"<<ctxt->toDebugString()<<" "<<c<<" "<<l);
 		return FRE_OK;
 	}
 };
@@ -263,6 +280,7 @@ ASFUNCTIONBODY_ATOM(ExtensionContext,_call)
 		{
 			FREFunction func = th->functionsToSet[i].function;
 			ret = *(asAtom*)func(th,th->functionsToSet[i].functionData,argslen-1,freargs);
+			ASATOM_INCREF(ret);
 		}
 	}
 	wrk->nativeExtensionCallCount--;

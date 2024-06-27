@@ -48,8 +48,7 @@ FREResult FRECallObjectMethod( FREObject object, const uint8_t* methodName, uint
 }
 FREResult FREDispatchStatusEventAsync( FREContext ctx, const uint8_t* code, const uint8_t* level )
 {
-	std::cerr << "FRE NOT_IMPLEMENTED:FREDispatchStatusEventAsync"<<std::endl;
-	return FRE_ILLEGAL_STATE;
+	return FREObjectConverter->DispatchStatusEventAsync(ctx,code,level);
 }
 FREResult FREGetArrayElementAt( FREObject arrayOrVector, uint32_t index, FREObject* value )
 {

@@ -373,9 +373,16 @@ public:
 
 class StatusEvent: public Event
 {
+private:
+	Event* cloneImpl() const override;
 public:
-	StatusEvent(ASWorker* wrk, Class_base* c) : Event(wrk,c, "StatusEvent") {}
+	StatusEvent(ASWorker* wrk, Class_base* c, const tiny_string& _code="", const tiny_string& _level=""):Event(wrk,c, "status"),
+		code(_code),level(_level)
+	{
+	}
 	static void sinit(Class_base*);
+	ASPROPERTY_GETTER_SETTER(tiny_string, code);
+	ASPROPERTY_GETTER_SETTER(tiny_string, level);
 };
 
 class DataEvent: public TextEvent

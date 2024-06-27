@@ -1387,12 +1387,29 @@ void ParseRPCMessageEvent::finalize()
 	responder.reset();
 }
 
+Event* StatusEvent::cloneImpl() const
+{
+	StatusEvent *clone = Class<StatusEvent>::getInstanceS(getInstanceWorker());
+	clone->code = code;
+	clone->level = level;
+	// Event
+	clone->type = type;
+	clone->bubbles = bubbles;
+	clone->cancelable = cancelable;
+	return clone;
+}
+
 void StatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	/* TODO: dispatch this event */
 	c->setVariableAtomByQName("STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"status"),DECLARED_TRAIT);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, code, ASString);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, level, ASString);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(StatusEvent, code)
+ASFUNCTIONBODY_GETTER_SETTER(StatusEvent, level)
 
 void DataEvent::sinit(Class_base* c)
 {

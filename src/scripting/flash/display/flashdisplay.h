@@ -128,6 +128,7 @@ private:
 	number_t boundsrectVisibleYmax;
 	bool boundsRectVisibleDirty;
 	void umarkLegacyChild(DisplayObject* child);
+	void setChildIndexIntern(DisplayObject* child, int index);
 protected:
 	std::vector < DisplayObject* > dynamicDisplayList;
 	void clearDisplayList();

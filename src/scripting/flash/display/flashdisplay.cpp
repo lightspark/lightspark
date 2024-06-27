@@ -1312,9 +1312,12 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 	//If there is a previous parent, purge the child from his list
 	if(child->getParent() && !getSystemState()->isInResetParentList(child))
 	{
-		//Child already in this container
+		//Child already in this container, set to new position
 		if(child->getParent()==this)
+		{
+			setChildIndexIntern(child,index);
 			return;
+		}
 		else
 		{
 			child->getParent()->_removeChild(child,inskipping,this->isOnStage());
@@ -1600,35 +1603,39 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
 		createError<ArgumentError>(wrk,kInvalidArgumentError);
 		return;
 	}
-	DisplayObject* child = ch.getPtr();
-	int curIndex = th->getChildIndex(child);
-	if(curIndex == index || curIndex < 0)
-		return;
 	Locker l(th->mutexDisplayList);
 	if (index < 0 || index > (int)th->dynamicDisplayList.size())
 	{
 		createError<RangeError>(wrk,kParamRangeError);
 		return;
 	}
-	auto itrem = th->dynamicDisplayList.begin()+curIndex;
-	th->dynamicDisplayList.erase(itrem); //remove from old position
+	DisplayObject* child = ch.getPtr();
+	th->setChildIndexIntern(child, index);
+}
+void DisplayObjectContainer::setChildIndexIntern(DisplayObject *child, int index)
+{
+	int curIndex = this->getChildIndex(child);
+	if(curIndex == index || curIndex < 0)
+		return;
+	auto itrem = this->dynamicDisplayList.begin()+curIndex;
+	this->dynamicDisplayList.erase(itrem); //remove from old position
 
-	auto it=th->dynamicDisplayList.begin();
+	auto it=this->dynamicDisplayList.begin();
 	int i = 0;
 	//Erase the child from the legacy child map (if it is in there)
-	th->umarkLegacyChild(child);
+	this->umarkLegacyChild(child);
 	
-	for(;it != th->dynamicDisplayList.end(); ++it)
+	for(;it != this->dynamicDisplayList.end(); ++it)
 		if(i++ == index)
 		{
-			th->dynamicDisplayList.insert(it, child);
-			th->checkClipDepth();
-			th->requestInvalidation(th->getSystemState());
+			this->dynamicDisplayList.insert(it, child);
+			this->checkClipDepth();
+			this->requestInvalidation(this->getSystemState());
 			return;
 		}
-	th->dynamicDisplayList.push_back(child);
-	th->checkClipDepth();
-	th->requestInvalidation(th->getSystemState());
+	this->dynamicDisplayList.push_back(child);
+	this->checkClipDepth();
+	this->requestInvalidation(this->getSystemState());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,swapChildren)

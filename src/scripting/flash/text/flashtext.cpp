@@ -1791,7 +1791,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 		}
 		fillstyleTextColor.front().FillStyleType=SOLID_FILL;
 		fillstyleTextColor.front().Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
-		int32_t startposy = TEXTFIELD_PADDING;
+		int32_t startposy = TEXTFIELD_PADDING+bymin;
 		linemutex->lock();
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{

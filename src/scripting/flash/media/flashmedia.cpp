@@ -250,7 +250,10 @@ void Video::checkRatio(uint32_t ratio, bool inskipping)
 					break;
 			}
 			if (ok)
+			{
 				embeddedVideoDecoder = new FFMpegVideoDecoder(lscodec,nullptr,0,videotag->loadedFrom->getFrameRate(),videotag);
+				this->requestInvalidation(getSystemState());
+			}
 			lastuploadedframe=UINT32_MAX;
 		}
 #endif

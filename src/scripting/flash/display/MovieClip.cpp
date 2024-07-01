@@ -239,7 +239,6 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c, const FrameContainer& f, uint
 
 bool MovieClip::destruct()
 {
-	getSystemState()->stage->removeHiddenObject(this);
 	frames.clear();
 	inAVM1Attachment=false;
 	isAVM1Loaded=false;
@@ -272,7 +271,6 @@ bool MovieClip::destruct()
 
 void MovieClip::finalize()
 {
-	getSystemState()->stage->removeHiddenObject(this);
 	frames.clear();
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())

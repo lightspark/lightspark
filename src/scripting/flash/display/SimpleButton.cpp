@@ -447,24 +447,28 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DisplayObject *dS, Disp
 		dS->addStoredMember();
 		dS->advanceFrame(false);
 		dS->initFrame();
+		getSystemState()->stage->removeHiddenObject(dS); // avoid any changes when not visible
 	}
 	if(hTS)
 	{
 		hTS->addStoredMember();
 		hTS->advanceFrame(false);
 		hTS->initFrame();
+		getSystemState()->stage->removeHiddenObject(hTS); // avoid any changes when not visible
 	}
 	if(oS)
 	{
 		oS->addStoredMember();
 		oS->advanceFrame(false);
 		oS->initFrame();
+		getSystemState()->stage->removeHiddenObject(oS); // avoid any changes when not visible
 	}
 	if(uS)
 	{
 		uS->addStoredMember();
 		uS->advanceFrame(false);
 		uS->initFrame();
+		getSystemState()->stage->removeHiddenObject(uS); // avoid any changes when not visible
 	}
 	if (tag)
 		this->loadedFrom = tag->loadedFrom;
@@ -616,13 +620,6 @@ bool SimpleButton::countCylicMemberReferences(garbagecollectorstate& gcstate)
 }
 IDrawable *SimpleButton::invalidate(bool smoothing)
 {
-	IDrawable* res = getFilterDrawable(smoothing);
-	if (res)
-	{
-		Locker l(mutexDisplayList);
-		res->getState()->setupChildrenList(dynamicDisplayList);
-		return res;
-	}
 	return DisplayObjectContainer::invalidate(smoothing);
 }
 void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)

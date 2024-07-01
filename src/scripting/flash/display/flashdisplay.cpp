@@ -2412,7 +2412,10 @@ void Stage::cleanupDeadHiddenObjects()
 		// NOTE: Objects that are removed by ActionScript are never
 		//       removed from the hidden object list.
 		if (clip->getParent() != nullptr && !clip->placedByActionScript)
+		{
+			(*it)->removeStoredMember();
 			it = hiddenobjects.erase(it);
+		}
 		else
 			++it;
 	}

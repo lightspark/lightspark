@@ -398,7 +398,43 @@ IFunction* SyntheticFunction::clone(ASWorker* wrk)
 	ret->storedmembercount=0;
 	return ret;
 }
+struct funccallcount
+{
+	uint32_t callcount;
+	uint64_t callduration;
+	bool builtin;
+	funccallcount(bool _builtin):callcount(0),callduration(0),builtin(_builtin){}
+};
 
+
+#ifdef PROFILING_SUPPORT
+std::unordered_map<Class_base*,std::unordered_map<uint32_t,struct funccallcount*>> mapFunctionCallCount;
+void lightspark::addFunctionCall(Class_base* cls, uint32_t functionname, uint64_t duration, bool builtin)
+{
+	auto it = mapFunctionCallCount.find(cls);
+	if (it == mapFunctionCallCount.end())
+		it = mapFunctionCallCount.insert(make_pair(cls,std::unordered_map<uint32_t,struct funccallcount*>())).first;
+	auto it2 = (*it).second.find(functionname);
+	if (it2 == (*it).second.end())
+		it2 = (*it).second.insert(make_pair(functionname,new funccallcount(builtin))).first;
+	it2->second->callcount++;
+	it2->second->callduration+=duration;
+}
+void dumpFunctionCallCount(bool builtinonly = false,uint32_t mincallcount=0, uint32_t mincallduration=0, uint64_t minaverageduration=0)
+{
+	LOG(LOG_INFO,"function call count:");
+	for (auto it = mapFunctionCallCount.begin();it != mapFunctionCallCount.end(); it++)
+	{
+		for (auto it2 = (*it).second.begin();it2 != (*it).second.end(); it2++)
+		{
+			if (builtinonly && !(*it2).second->builtin)
+				continue;
+			if ((*it2).second->callduration>mincallduration && (*it2).second->callcount>mincallcount && ((*it2).second->callduration/(*it2).second->callcount)>minaverageduration)
+				LOG(LOG_INFO,(*it).first->toDebugString()<<" "<<getSys()->getStringFromUniqueId((*it2).first)<<":"<<(*it2).second->callduration<<"/"<<(*it2).second->callcount<<"="<<(float((*it2).second->callduration)/float((*it2).second->callcount)));
+		}
+	}
+}
+#endif
 /**
  * This prepares a new call_context and then executes the ABC bytecode function
  * by ABCVm::executeFunction() or through JIT.
@@ -406,6 +442,9 @@ IFunction* SyntheticFunction::clone(ASWorker* wrk)
  */
 void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs, bool coerceresult, bool coercearguments)
 {
+#ifdef PROFILING_SUPPORT
+	uint64_t t1 = compat_get_thread_cputime_us();
+#endif
 	const method_body_info::CODE_STATUS& codeStatus = mi->body->codeStatus;
 	if (codeStatus == method_body_info::PRELOADING)
 	{
@@ -813,6 +852,11 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	}
 	if (recursive_call)
 		delete cc;
+#ifdef PROFILING_SUPPORT
+	uint64_t t2 = compat_get_thread_cputime_us();
+	if (inClass)
+		addFunctionCall(inClass,functionname,t2-t1,false);
+#endif
 }
 
 bool SyntheticFunction::destruct()

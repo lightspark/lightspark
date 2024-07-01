@@ -569,7 +569,9 @@ public:
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk) override;
 };
-
+#ifdef PROFILING_SUPPORT
+extern void addFunctionCall(Class_base* cls, uint32_t functionname, uint64_t duration, bool builtin);
+#endif
 /*
  * Implements the IFunction interface for functions implemented
  * in c-code.
@@ -613,6 +615,9 @@ public:
 	 */
 	FORCE_INLINE void call(asAtom& ret, ASWorker* wrk,asAtom& obj, asAtom* args, uint32_t num_args)
 	{
+#ifdef PROFILING_SUPPORT
+		uint64_t t1 = compat_get_thread_cputime_us();
+#endif
 		/*
 		 * We do not enforce ABCVm::limits.max_recursion here.
 		 * This should be okey, because there is no infinite recursion
@@ -621,6 +626,11 @@ public:
 		 * ABCVm::limits.max_recursion is reached in SyntheticFunction::call.
 		 */
 		val_atom(ret,wrk,obj,args,num_args);
+#ifdef PROFILING_SUPPORT
+		uint64_t t2 = compat_get_thread_cputime_us();
+		if (this->inClass)
+			addFunctionCall(this->inClass,functionname,t2-t1,true);
+#endif
 	}
 	bool isEqual(ASObject* r) override;
 	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target,ASWorker* wrk) override

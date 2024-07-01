@@ -615,8 +615,14 @@ void SystemState::systemFinalize()
 #ifndef NDEBUG
 extern std::set<ASObject*> memcheckset;
 #endif
+#ifdef PROFILING_SUPPORT
+extern void dumpFunctionCallCount(bool builtinonly = false,uint32_t mincallcount=0, uint32_t mincallduration=0, uint64_t minaverageduration=0);
+#endif
 SystemState::~SystemState()
 {
+#ifdef PROFILING_SUPPORT
+	dumpFunctionCallCount();
+#endif
 	// finalize main worker
 	worker->finalize();
 	workerDomain->finalize();

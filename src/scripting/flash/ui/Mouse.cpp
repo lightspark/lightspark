@@ -33,14 +33,14 @@ using namespace lightspark;
 void Mouse::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("hide","",Class<IFunction>::getFunction(c->getSystemState(),hide),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("show","",Class<IFunction>::getFunction(c->getSystemState(),show),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("cursor","",Class<IFunction>::getFunction(c->getSystemState(),getCursor,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("cursor","",Class<IFunction>::getFunction(c->getSystemState(),setCursor),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsCursor","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsCursor,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsNativeCursor","",Class<IFunction>::getFunction(c->getSystemState(),getSupportsNativeCursor,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("registerCursor","",Class<IFunction>::getFunction(c->getSystemState(),registerCursor),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("unregisterCursor","",Class<IFunction>::getFunction(c->getSystemState(),unregisterCursor),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("hide","",c->getSystemState()->getBuiltinFunction(hide),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("show","",c->getSystemState()->getBuiltinFunction(show),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("cursor","",c->getSystemState()->getBuiltinFunction(getCursor,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("cursor","",c->getSystemState()->getBuiltinFunction(setCursor),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsCursor","",c->getSystemState()->getBuiltinFunction(getSupportsCursor,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsNativeCursor","",c->getSystemState()->getBuiltinFunction(getSupportsNativeCursor,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("registerCursor","",c->getSystemState()->getBuiltinFunction(registerCursor),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("unregisterCursor","",c->getSystemState()->getBuiltinFunction(unregisterCursor),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(Mouse, hide)

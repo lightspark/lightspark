@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/abc.h"
+#include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Vector.h"

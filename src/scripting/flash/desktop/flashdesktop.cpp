@@ -34,9 +34,9 @@ void NativeApplication::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_FINAL | CLASS_SEALED);
 	REGISTER_GETTER_STATIC_RESULTTYPE(c,nativeApplication,NativeApplication);
-	c->setDeclaredMethodByQName("applicationDescriptor", "", Class<IFunction>::getFunction(c->getSystemState(),_getApplicationDescriptor), GETTER_METHOD, true);
-	c->setDeclaredMethodByQName("addEventListener", "", Class<IFunction>::getFunction(c->getSystemState(),addEventListener), NORMAL_METHOD, true);
-	c->setDeclaredMethodByQName("exit", "", Class<IFunction>::getFunction(c->getSystemState(),_exit), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("applicationDescriptor", "", c->getSystemState()->getBuiltinFunction(_getApplicationDescriptor), GETTER_METHOD, true);
+	c->setDeclaredMethodByQName("addEventListener", "", c->getSystemState()->getBuiltinFunction(addEventListener), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("exit", "", c->getSystemState()->getBuiltinFunction(_exit), NORMAL_METHOD, true);
 }
 
 ASFUNCTIONBODY_ATOM(NativeApplication,_constructor)
@@ -88,7 +88,7 @@ ASFUNCTIONBODY_GETTER(NativeDragManager,isSupported)
 void NativeProcess::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("start", "", Class<IFunction>::getFunction(c->getSystemState(),start), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("start", "", c->getSystemState()->getBuiltinFunction(start), NORMAL_METHOD, true);
 	REGISTER_GETTER_RESULTTYPE(c,isSupported,Boolean);
 }
 ASFUNCTIONBODY_GETTER(NativeProcess,isSupported)

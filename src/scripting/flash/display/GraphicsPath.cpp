@@ -39,11 +39,11 @@ void GraphicsPath::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, commands, Vector);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, data, Vector);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, winding, ASString);
-	c->setDeclaredMethodByQName("curveTo","",Class<IFunction>::getFunction(c->getSystemState(),curveTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(c->getSystemState(),lineTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(c->getSystemState(),moveTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("wideLineTo","",Class<IFunction>::getFunction(c->getSystemState(),wideLineTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("wideMoveTo","",Class<IFunction>::getFunction(c->getSystemState(),wideMoveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("curveTo","",c->getSystemState()->getBuiltinFunction(curveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineTo","",c->getSystemState()->getBuiltinFunction(lineTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("moveTo","",c->getSystemState()->getBuiltinFunction(moveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("wideLineTo","",c->getSystemState()->getBuiltinFunction(wideLineTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("wideMoveTo","",c->getSystemState()->getBuiltinFunction(wideMoveTo),NORMAL_METHOD,true);
 
 	c->addImplementedInterface(InterfaceClass<IGraphicsPath>::getClass(c->getSystemState()));
 	IGraphicsPath::linkTraits(c);

@@ -28,8 +28,8 @@ using namespace lightspark;
 void AVM1Array::sinit(Class_base* c)
 {
 	Array::sinit(c);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_getLength,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),AVM1_setLength),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(AVM1_getLength,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(AVM1_setLength),SETTER_METHOD,true);
 }
 
 bool AVM1Array::destruct()

@@ -19,6 +19,7 @@
 
 #include "scripting/argconv.h"
 #include "scripting/toplevel/JSON.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Integer.h"
 
 using namespace std;
@@ -32,8 +33,8 @@ JSON::JSON(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
 void JSON::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("parse","",Class<IFunction>::getFunction(c->getSystemState(),_parse,2),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("stringify","",Class<IFunction>::getFunction(c->getSystemState(),_stringify,3),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("parse","",c->getSystemState()->getBuiltinFunction(_parse,2),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("stringify","",c->getSystemState()->getBuiltinFunction(_stringify,3),NORMAL_METHOD,false);
 }
 void JSON::buildTraits(ASObject* o)
 {

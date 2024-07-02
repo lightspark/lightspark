@@ -21,6 +21,7 @@
 #include "backends/locale.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/Array.h"
 
 #include <iostream>
 #include <algorithm>
@@ -40,9 +41,9 @@ void StringTools::sinit(Class_base* c)
 	REGISTER_GETTER(c, lastOperationStatus);
 	REGISTER_GETTER(c, requestedLocaleIDName);
 
-	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",Class<IFunction>::getFunction(c->getSystemState(),getAvailableLocaleIDNames),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toLowerCase","",Class<IFunction>::getFunction(c->getSystemState(),toLowerCase),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toUpperCase","",Class<IFunction>::getFunction(c->getSystemState(),toUpperCase),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",c->getSystemState()->getBuiltinFunction(getAvailableLocaleIDNames),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLowerCase","",c->getSystemState()->getBuiltinFunction(toLowerCase),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toUpperCase","",c->getSystemState()->getBuiltinFunction(toUpperCase),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(StringTools,_constructor)

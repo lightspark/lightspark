@@ -21,7 +21,6 @@
 #define FLASHSAMPLER_H
 
 #include "asobject.h"
-#include "scripting/toplevel/Array.h"
 
 namespace lightspark
 {

@@ -30,13 +30,13 @@ void LocaleID::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED|CLASS_FINAL);
 	c->setVariableAtomByQName("DEFAULT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"i-default"),CONSTANT_TRAIT);
 
-	c->setDeclaredMethodByQName("determinePreferredLocales","",Class<IFunction>::getFunction(c->getSystemState(),determinePreferredLocales),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getKeysAndValues","",Class<IFunction>::getFunction(c->getSystemState(),getKeysAndValues),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLanguage","",Class<IFunction>::getFunction(c->getSystemState(),getLanguage),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getRegion","",Class<IFunction>::getFunction(c->getSystemState(),getRegion),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getScript","",Class<IFunction>::getFunction(c->getSystemState(),getScript),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getVariant","",Class<IFunction>::getFunction(c->getSystemState(),getVariant),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("isRightToLeft","",Class<IFunction>::getFunction(c->getSystemState(),isRightToLeft),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("determinePreferredLocales","",c->getSystemState()->getBuiltinFunction(determinePreferredLocales),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getKeysAndValues","",c->getSystemState()->getBuiltinFunction(getKeysAndValues),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLanguage","",c->getSystemState()->getBuiltinFunction(getLanguage),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getRegion","",c->getSystemState()->getBuiltinFunction(getRegion),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getScript","",c->getSystemState()->getBuiltinFunction(getScript),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getVariant","",c->getSystemState()->getBuiltinFunction(getVariant),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isRightToLeft","",c->getSystemState()->getBuiltinFunction(isRightToLeft),NORMAL_METHOD,true);
 
 	REGISTER_GETTER(c, name);
 	REGISTER_GETTER(c, actualLocaleIDName);

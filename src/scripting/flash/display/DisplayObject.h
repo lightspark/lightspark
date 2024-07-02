@@ -39,6 +39,7 @@ class Transform;
 class Rectangle;
 class KeyboardEvent;
 class InvalidateQueue;
+class CachedSurface;
 struct RenderDisplayObjectToBitmapContainer;
 
 class DisplayObject: public EventDispatcher, public IBitmapDrawable

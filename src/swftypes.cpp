@@ -36,12 +36,14 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/geom/flashgeom.h"
-#include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/ASQName.h"
 #include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Null.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/toplevel/Undefined.h"
 #include "parsing/tags.h"
 
 

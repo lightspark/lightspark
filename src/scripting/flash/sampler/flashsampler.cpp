@@ -1,6 +1,7 @@
 #include "scripting/flash/sampler/flashsampler.h"
 #include "scripting/toplevel/ASQName.h"
 #include "scripting/toplevel/Array.h"
+#include "scripting/class.h"
 #include "scripting/argconv.h"
 
 using namespace lightspark;
@@ -49,7 +50,7 @@ StackFrame::StackFrame(ASWorker* wrk, Class_base* c):
 void StackFrame::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED|CLASS_FINAL);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(StackFrame,_toString)
 {
@@ -88,7 +89,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getSetterInvocationCount)
 }
 ASFUNCTIONBODY_ATOM(lightspark,getLexicalScopes)
 {
-	_NR<IFunction> func;
+	_NR<ASObject> func;
 	ARG_CHECK(ARG_UNPACK (func));
 	LOG(LOG_NOT_IMPLEMENTED,"flash.sampler.getLexicalScopes not implemented");
 	Array* res=Class<Array>::getInstanceSNoArgs(wrk);

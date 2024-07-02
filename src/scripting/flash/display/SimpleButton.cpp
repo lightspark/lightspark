@@ -35,18 +35,18 @@ void SimpleButton::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, InteractiveObject, _constructor, CLASS_SEALED);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(c->getSystemState(),_getUpState),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("upState","",Class<IFunction>::getFunction(c->getSystemState(),_setUpState),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("downState","",Class<IFunction>::getFunction(c->getSystemState(),_getDownState),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("downState","",Class<IFunction>::getFunction(c->getSystemState(),_setDownState),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("overState","",Class<IFunction>::getFunction(c->getSystemState(),_getOverState),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("overState","",Class<IFunction>::getFunction(c->getSystemState(),_setOverState),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("hitTestState","",Class<IFunction>::getFunction(c->getSystemState(),_getHitTestState),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("hitTestState","",Class<IFunction>::getFunction(c->getSystemState(),_setHitTestState),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),_getEnabled),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),_setEnabled),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),_getUseHandCursor),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),_setUseHandCursor),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("upState","",c->getSystemState()->getBuiltinFunction(_getUpState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("upState","",c->getSystemState()->getBuiltinFunction(_setUpState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("downState","",c->getSystemState()->getBuiltinFunction(_getDownState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("downState","",c->getSystemState()->getBuiltinFunction(_setDownState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("overState","",c->getSystemState()->getBuiltinFunction(_getOverState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("overState","",c->getSystemState()->getBuiltinFunction(_setOverState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hitTestState","",c->getSystemState()->getBuiltinFunction(_getHitTestState),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hitTestState","",c->getSystemState()->getBuiltinFunction(_setHitTestState),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_getEnabled),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_setEnabled),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("useHandCursor","",c->getSystemState()->getBuiltinFunction(_getUseHandCursor),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("useHandCursor","",c->getSystemState()->getBuiltinFunction(_setUseHandCursor),SETTER_METHOD,true);
 }
 
 void SimpleButton::afterLegacyInsert()

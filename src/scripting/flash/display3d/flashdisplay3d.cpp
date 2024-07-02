@@ -1037,37 +1037,37 @@ void Context3D::sinit(lightspark::Class_base *c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,enableErrorChecking,Boolean);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,maxBackBufferHeight,Integer);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,maxBackBufferWidth,Integer);
-	c->setDeclaredMethodByQName("profile","",Class<IFunction>::getFunction(c->getSystemState(),getProfile,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("supportsVideoTexture","",Class<IFunction>::getFunction(c->getSystemState(),supportsVideoTexture,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("configureBackBuffer","",Class<IFunction>::getFunction(c->getSystemState(),configureBackBuffer),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createIndexBuffer","",Class<IFunction>::getFunction(c->getSystemState(),createIndexBuffer,1,Class<IndexBuffer3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createProgram","",Class<IFunction>::getFunction(c->getSystemState(),createProgram,0,Class<Program3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createCubeTexture","",Class<IFunction>::getFunction(c->getSystemState(),createCubeTexture,3,Class<CubeTexture>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createTexture","",Class<IFunction>::getFunction(c->getSystemState(),createTexture,4,Class<Texture>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createRectangleTexture","",Class<IFunction>::getFunction(c->getSystemState(),createRectangleTexture,4,Class<RectangleTexture>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createVertexBuffer","",Class<IFunction>::getFunction(c->getSystemState(),createVertexBuffer,2,Class<VertexBuffer3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createVideoTexture","",Class<IFunction>::getFunction(c->getSystemState(),createVideoTexture,0,Class<VideoTexture>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawToBitmapData","",Class<IFunction>::getFunction(c->getSystemState(),drawToBitmapData),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawTriangles","",Class<IFunction>::getFunction(c->getSystemState(),drawTriangles),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setBlendFactors","",Class<IFunction>::getFunction(c->getSystemState(),setBlendFactors),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setColorMask","",Class<IFunction>::getFunction(c->getSystemState(),setColorMask),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setCulling","",Class<IFunction>::getFunction(c->getSystemState(),setCulling),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setDepthTest","",Class<IFunction>::getFunction(c->getSystemState(),setDepthTest),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setProgram","",Class<IFunction>::getFunction(c->getSystemState(),setProgram),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setProgramConstantsFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),setProgramConstantsFromByteArray),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setProgramConstantsFromMatrix","",Class<IFunction>::getFunction(c->getSystemState(),setProgramConstantsFromMatrix),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setProgramConstantsFromVector","",Class<IFunction>::getFunction(c->getSystemState(),setProgramConstantsFromVector),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setRenderToBackBuffer","",Class<IFunction>::getFunction(c->getSystemState(),setRenderToBackBuffer),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setRenderToTexture","",Class<IFunction>::getFunction(c->getSystemState(),setRenderToTexture),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setSamplerStateAt","",Class<IFunction>::getFunction(c->getSystemState(),setSamplerStateAt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setScissorRectangle","",Class<IFunction>::getFunction(c->getSystemState(),setScissorRectangle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("present","",Class<IFunction>::getFunction(c->getSystemState(),present),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setStencilActions","",Class<IFunction>::getFunction(c->getSystemState(),setStencilActions),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setStencilReferenceValue","",Class<IFunction>::getFunction(c->getSystemState(),setStencilReferenceValue),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setTextureAt","",Class<IFunction>::getFunction(c->getSystemState(),setTextureAt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setVertexBufferAt","",Class<IFunction>::getFunction(c->getSystemState(),setVertexBufferAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("profile","",c->getSystemState()->getBuiltinFunction(getProfile,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("supportsVideoTexture","",c->getSystemState()->getBuiltinFunction(supportsVideoTexture,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("configureBackBuffer","",c->getSystemState()->getBuiltinFunction(configureBackBuffer),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createIndexBuffer","",c->getSystemState()->getBuiltinFunction(createIndexBuffer,1,Class<IndexBuffer3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createProgram","",c->getSystemState()->getBuiltinFunction(createProgram,0,Class<Program3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createCubeTexture","",c->getSystemState()->getBuiltinFunction(createCubeTexture,3,Class<CubeTexture>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createTexture","",c->getSystemState()->getBuiltinFunction(createTexture,4,Class<Texture>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createRectangleTexture","",c->getSystemState()->getBuiltinFunction(createRectangleTexture,4,Class<RectangleTexture>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createVertexBuffer","",c->getSystemState()->getBuiltinFunction(createVertexBuffer,2,Class<VertexBuffer3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createVideoTexture","",c->getSystemState()->getBuiltinFunction(createVideoTexture,0,Class<VideoTexture>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",c->getSystemState()->getBuiltinFunction(clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawToBitmapData","",c->getSystemState()->getBuiltinFunction(drawToBitmapData),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawTriangles","",c->getSystemState()->getBuiltinFunction(drawTriangles),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setBlendFactors","",c->getSystemState()->getBuiltinFunction(setBlendFactors),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setColorMask","",c->getSystemState()->getBuiltinFunction(setColorMask),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setCulling","",c->getSystemState()->getBuiltinFunction(setCulling),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setDepthTest","",c->getSystemState()->getBuiltinFunction(setDepthTest),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setProgram","",c->getSystemState()->getBuiltinFunction(setProgram),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setProgramConstantsFromByteArray","",c->getSystemState()->getBuiltinFunction(setProgramConstantsFromByteArray),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setProgramConstantsFromMatrix","",c->getSystemState()->getBuiltinFunction(setProgramConstantsFromMatrix),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setProgramConstantsFromVector","",c->getSystemState()->getBuiltinFunction(setProgramConstantsFromVector),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setRenderToBackBuffer","",c->getSystemState()->getBuiltinFunction(setRenderToBackBuffer),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setRenderToTexture","",c->getSystemState()->getBuiltinFunction(setRenderToTexture),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setSamplerStateAt","",c->getSystemState()->getBuiltinFunction(setSamplerStateAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setScissorRectangle","",c->getSystemState()->getBuiltinFunction(setScissorRectangle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("present","",c->getSystemState()->getBuiltinFunction(present),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setStencilActions","",c->getSystemState()->getBuiltinFunction(setStencilActions),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setStencilReferenceValue","",c->getSystemState()->getBuiltinFunction(setStencilReferenceValue),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setTextureAt","",c->getSystemState()->getBuiltinFunction(setTextureAt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setVertexBufferAt","",c->getSystemState()->getBuiltinFunction(setVertexBufferAt),NORMAL_METHOD,true);
 }
 
 bool Context3D::destruct()
@@ -2067,9 +2067,9 @@ bool IndexBuffer3D::destruct()
 void IndexBuffer3D::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
-	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("uploadFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),uploadFromByteArray),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("uploadFromVector","",Class<IFunction>::getFunction(c->getSystemState(),uploadFromVector),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadFromByteArray),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadFromVector","",c->getSystemState()->getBuiltinFunction(uploadFromVector),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(IndexBuffer3D,dispose)
 {
@@ -2143,8 +2143,8 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
 void Program3D::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("upload","",Class<IFunction>::getFunction(c->getSystemState(),upload),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("upload","",c->getSystemState()->getBuiltinFunction(upload),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(Program3D,dispose)
@@ -2202,9 +2202,9 @@ bool VertexBuffer3D::destruct()
 void VertexBuffer3D::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
-	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("uploadFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),uploadFromByteArray),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("uploadFromVector","",Class<IFunction>::getFunction(c->getSystemState(),uploadFromVector),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadFromByteArray),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadFromVector","",c->getSystemState()->getBuiltinFunction(uploadFromVector),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,dispose)
 {

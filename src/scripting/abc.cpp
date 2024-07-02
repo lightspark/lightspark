@@ -23,6 +23,7 @@
 
 #include "compat.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/toplevel/toplevel.h"
 #include <algorithm>
 
 #ifdef LLVM_ENABLED
@@ -79,6 +80,7 @@
 #include "scripting/abc.h"
 #include "backends/rendering.h"
 #include "parsing/tags.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/ASQName.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Namespace.h"

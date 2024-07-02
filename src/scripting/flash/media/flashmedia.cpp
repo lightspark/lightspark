@@ -85,14 +85,14 @@ void Video::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("videoWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getVideoWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("videoHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getVideoHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),Video::_getWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),Video::_setWidth),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),Video::_getHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),Video::_setHeight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(c->getSystemState(),attachNetStream),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("videoWidth","",c->getSystemState()->getBuiltinFunction(_getVideoWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("videoHeight","",c->getSystemState()->getBuiltinFunction(_getVideoHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(Video::_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(Video::_setWidth),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(Video::_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(Video::_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attachNetStream","",c->getSystemState()->getBuiltinFunction(attachNetStream),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",c->getSystemState()->getBuiltinFunction(clear),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, deblocking);
 	REGISTER_GETTER_SETTER(c, smoothing);
 }
@@ -453,11 +453,11 @@ Sound::~Sound()
 void Sound::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play,0,Class<SoundChannel>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("extract","",Class<IFunction>::getFunction(c->getSystemState(),extract,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("loadCompressedDataFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),loadCompressedDataFromByteArray),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play","",c->getSystemState()->getBuiltinFunction(play,0,Class<SoundChannel>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("extract","",c->getSystemState()->getBuiltinFunction(extract,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("loadCompressedDataFromByteArray","",c->getSystemState()->getBuiltinFunction(loadCompressedDataFromByteArray),NORMAL_METHOD,true);
 	REGISTER_GETTER_RESULTTYPE(c,bytesLoaded,UInteger);
 	REGISTER_GETTER_RESULTTYPE(c,bytesTotal,UInteger);
 	REGISTER_GETTER_RESULTTYPE(c,length,Number);
@@ -852,8 +852,8 @@ ASFUNCTIONBODY_GETTER(Sound,length)
 void SoundMixer::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("stopAll","",Class<IFunction>::getFunction(c->getSystemState(),stopAll),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("computeSpectrum","",Class<IFunction>::getFunction(c->getSystemState(),computeSpectrum),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("stopAll","",c->getSystemState()->getBuiltinFunction(stopAll),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("computeSpectrum","",c->getSystemState()->getBuiltinFunction(computeSpectrum),NORMAL_METHOD,false);
 	REGISTER_GETTER_SETTER_STATIC(c,bufferTime);
 	REGISTER_GETTER_SETTER_STATIC(c,soundTransform);
 }
@@ -1018,8 +1018,8 @@ void SoundChannel::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("position","",Class<IFunction>::getFunction(c->getSystemState(),getPosition),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stop","",c->getSystemState()->getBuiltinFunction(stop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(getPosition),GETTER_METHOD,true);
 
 	REGISTER_GETTER_RESULTTYPE(c,leftPeak,Number);
 	REGISTER_GETTER_RESULTTYPE(c,rightPeak,Number);
@@ -1499,9 +1499,9 @@ void SoundChannel::checkEnvelope()
 void StageVideo::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED);
-	c->setDeclaredMethodByQName("videoWidth","",Class<IFunction>::getFunction(c->getSystemState(),_getVideoWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("videoHeight","",Class<IFunction>::getFunction(c->getSystemState(),_getVideoHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(c->getSystemState(),attachNetStream),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("videoWidth","",c->getSystemState()->getBuiltinFunction(_getVideoWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("videoHeight","",c->getSystemState()->getBuiltinFunction(_getVideoHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attachNetStream","",c->getSystemState()->getBuiltinFunction(attachNetStream),NORMAL_METHOD,true);
 }
 
 
@@ -1566,7 +1566,7 @@ void Microphone::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER(c,isSupported);
-	c->setDeclaredMethodByQName("getMicrophone","",Class<IFunction>::getFunction(c->getSystemState(),getMicrophone),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("getMicrophone","",c->getSystemState()->getBuiltinFunction(getMicrophone),NORMAL_METHOD,false);
 
 }
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Microphone,isSupported)
@@ -1588,8 +1588,8 @@ ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Camera,isSupported)
 void VideoStreamSettings::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("setKeyFrameInterval","",Class<IFunction>::getFunction(c->getSystemState(),setKeyFrameInterval),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setMode","",Class<IFunction>::getFunction(c->getSystemState(),setMode),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setKeyFrameInterval","",c->getSystemState()->getBuiltinFunction(setKeyFrameInterval),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setMode","",c->getSystemState()->getBuiltinFunction(setMode),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(VideoStreamSettings,_constructor)
 {
@@ -1607,7 +1607,7 @@ ASFUNCTIONBODY_ATOM(VideoStreamSettings,setMode)
 void H264VideoStreamSettings::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, VideoStreamSettings, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("setProfileLevel","",Class<IFunction>::getFunction(c->getSystemState(),setProfileLevel),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setProfileLevel","",c->getSystemState()->getBuiltinFunction(setProfileLevel),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c, codec);
 	REGISTER_GETTER(c, level);
 	REGISTER_GETTER(c, profile);

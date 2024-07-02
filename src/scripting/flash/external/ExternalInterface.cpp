@@ -27,12 +27,12 @@ using namespace lightspark;
 void ExternalInterface::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("available","",Class<IFunction>::getFunction(c->getSystemState(),_getAvailable),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("objectID","",Class<IFunction>::getFunction(c->getSystemState(),_getObjectID),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("marshallExceptions","",Class<IFunction>::getFunction(c->getSystemState(),_getMarshallExceptions),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("marshallExceptions","",Class<IFunction>::getFunction(c->getSystemState(),_setMarshallExceptions),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("addCallback","",Class<IFunction>::getFunction(c->getSystemState(),addCallback),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(c->getSystemState(),call),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("available","",c->getSystemState()->getBuiltinFunction(_getAvailable),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("objectID","",c->getSystemState()->getBuiltinFunction(_getObjectID),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("marshallExceptions","",c->getSystemState()->getBuiltinFunction(_getMarshallExceptions),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("marshallExceptions","",c->getSystemState()->getBuiltinFunction(_setMarshallExceptions),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("addCallback","",c->getSystemState()->getBuiltinFunction(addCallback),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("call","",c->getSystemState()->getBuiltinFunction(call),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(ExternalInterface,_getAvailable)

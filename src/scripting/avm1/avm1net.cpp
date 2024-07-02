@@ -19,6 +19,7 @@
 
 #include "scripting/avm1/avm1net.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/toplevel/AVM1Function.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 
@@ -28,28 +29,28 @@ using namespace lightspark;
 void AVM1SharedObject::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
-	c->setDeclaredMethodByQName("getLocal","",Class<IFunction>::getFunction(c->getSystemState(),getLocal),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(c->getSystemState(),_getSize),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("flush","",Class<IFunction>::getFunction(c->getSystemState(),flush),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLocal","",c->getSystemState()->getBuiltinFunction(getLocal),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("size","",c->getSystemState()->getBuiltinFunction(_getSize),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("flush","",c->getSystemState()->getBuiltinFunction(flush),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",c->getSystemState()->getBuiltinFunction(clear),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,data);
 }
 
 void AVM1LocalConnection::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("allowDomain","",Class<IFunction>::getFunction(c->getSystemState(),allowDomain),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("allowInsecureDomain","",Class<IFunction>::getFunction(c->getSystemState(),allowInsecureDomain),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("send","",Class<IFunction>::getFunction(c->getSystemState(),send),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),connect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("domain","",Class<IFunction>::getFunction(c->getSystemState(),domain),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("allowDomain","",c->getSystemState()->getBuiltinFunction(allowDomain),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("allowInsecureDomain","",c->getSystemState()->getBuiltinFunction(allowInsecureDomain),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("send","",c->getSystemState()->getBuiltinFunction(send),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("domain","",c->getSystemState()->getBuiltinFunction(domain),GETTER_METHOD,true);
 }
 void AVM1LoadVars::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, URLVariables, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("sendAndLoad","",Class<IFunction>::getFunction(c->getSystemState(),sendAndLoad),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("sendAndLoad","",c->getSystemState()->getBuiltinFunction(sendAndLoad),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1LoadVars,_constructor)
 {
@@ -173,7 +174,7 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 void AVM1NetConnection::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),connect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,true);
 }
 
 void AVM1XMLSocket::sinit(Class_base* c)
@@ -185,17 +186,17 @@ void AVM1XMLSocket::sinit(Class_base* c)
 void AVM1NetStream::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("pause","",Class<IFunction>::getFunction(c->getSystemState(),avm1pause),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("seek","",Class<IFunction>::getFunction(c->getSystemState(),seek),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesLoaded),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesTotal),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("time","",Class<IFunction>::getFunction(c->getSystemState(),_getTime),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentFPS","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentFPS),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("play","",c->getSystemState()->getBuiltinFunction(play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("pause","",c->getSystemState()->getBuiltinFunction(avm1pause),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("seek","",c->getSystemState()->getBuiltinFunction(seek),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("bytesLoaded","",c->getSystemState()->getBuiltinFunction(_getBytesLoaded),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesTotal","",c->getSystemState()->getBuiltinFunction(_getBytesTotal),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("time","",c->getSystemState()->getBuiltinFunction(_getTime),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentFPS","",c->getSystemState()->getBuiltinFunction(_getCurrentFPS),GETTER_METHOD,true);
 	REGISTER_GETTER(c, bufferLength);
 	REGISTER_GETTER(c, bufferTime);
-	c->setDeclaredMethodByQName("setBufferTime","",Class<IFunction>::getFunction(c->getSystemState(),_setter_bufferTime),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setBufferTime","",c->getSystemState()->getBuiltinFunction(_setter_bufferTime),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1NetStream,avm1pause)
 {

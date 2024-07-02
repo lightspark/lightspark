@@ -52,28 +52,28 @@ void Vector3D::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, y, Number);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, z, Number);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, w, Number);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),_get_length,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("lengthSquared","",Class<IFunction>::getFunction(c->getSystemState(),_get_lengthSquared,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_get_length,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("lengthSquared","",c->getSystemState()->getBuiltinFunction(_get_lengthSquared,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	
 	// methods 
-	c->setDeclaredMethodByQName("add","",Class<IFunction>::getFunction(c->getSystemState(),add,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("angleBetween","",Class<IFunction>::getFunction(c->getSystemState(),angleBetween,2,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone,0,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("crossProduct","",Class<IFunction>::getFunction(c->getSystemState(),crossProduct,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("decrementBy","",Class<IFunction>::getFunction(c->getSystemState(),decrementBy),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("distance","",Class<IFunction>::getFunction(c->getSystemState(),distance,2,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("dotProduct","",Class<IFunction>::getFunction(c->getSystemState(),dotProduct,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("equals","",Class<IFunction>::getFunction(c->getSystemState(),equals,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("incrementBy","",Class<IFunction>::getFunction(c->getSystemState(),incrementBy),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("nearEquals","",Class<IFunction>::getFunction(c->getSystemState(),nearEquals,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("negate","",Class<IFunction>::getFunction(c->getSystemState(),negate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("normalize","",Class<IFunction>::getFunction(c->getSystemState(),normalize),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("project","",Class<IFunction>::getFunction(c->getSystemState(),project),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("scaleBy","",Class<IFunction>::getFunction(c->getSystemState(),scaleBy),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("subtract","",Class<IFunction>::getFunction(c->getSystemState(),subtract,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setTo","",Class<IFunction>::getFunction(c->getSystemState(),setTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyFrom),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("add","",c->getSystemState()->getBuiltinFunction(add,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("angleBetween","",c->getSystemState()->getBuiltinFunction(angleBetween,2,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("crossProduct","",c->getSystemState()->getBuiltinFunction(crossProduct,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("decrementBy","",c->getSystemState()->getBuiltinFunction(decrementBy),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("distance","",c->getSystemState()->getBuiltinFunction(distance,2,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("dotProduct","",c->getSystemState()->getBuiltinFunction(dotProduct,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("equals","",c->getSystemState()->getBuiltinFunction(equals,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("incrementBy","",c->getSystemState()->getBuiltinFunction(incrementBy),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("nearEquals","",c->getSystemState()->getBuiltinFunction(nearEquals,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("negate","",c->getSystemState()->getBuiltinFunction(negate),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("normalize","",c->getSystemState()->getBuiltinFunction(normalize),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("project","",c->getSystemState()->getBuiltinFunction(project),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("scaleBy","",c->getSystemState()->getBuiltinFunction(scaleBy),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("subtract","",c->getSystemState()->getBuiltinFunction(subtract,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setTo","",c->getSystemState()->getBuiltinFunction(setTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyFrom","",c->getSystemState()->getBuiltinFunction(copyFrom),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_constructor)

@@ -29,11 +29,11 @@ using namespace lightspark;
 void Keyboard::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("capsLock","",Class<IFunction>::getFunction(c->getSystemState(),capsLock),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("hasVirtualKeyboard","",Class<IFunction>::getFunction(c->getSystemState(),hasVirtualKeyboard),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("numLock","",Class<IFunction>::getFunction(c->getSystemState(),numLock),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("physicalKeyboardType","",Class<IFunction>::getFunction(c->getSystemState(),physicalKeyboardType),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("isAccessible","",Class<IFunction>::getFunction(c->getSystemState(),isAccessible),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("capsLock","",c->getSystemState()->getBuiltinFunction(capsLock),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("hasVirtualKeyboard","",c->getSystemState()->getBuiltinFunction(hasVirtualKeyboard),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("numLock","",c->getSystemState()->getBuiltinFunction(numLock),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("physicalKeyboardType","",c->getSystemState()->getBuiltinFunction(physicalKeyboardType),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("isAccessible","",c->getSystemState()->getBuiltinFunction(isAccessible),NORMAL_METHOD,true);
 
 	c->setVariableAtomByQName("A",nsNameAndKind(),asAtomHandler::fromUInt(AS3KEYCODE_A ),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("ALTERNATE",nsNameAndKind(),asAtomHandler::fromUInt(AS3KEYCODE_ALTERNATE),CONSTANT_TRAIT);

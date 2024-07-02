@@ -20,7 +20,6 @@
 #include <sstream>
 #include "scripting/toplevel/Error.h"
 #include "asobject.h"
-#include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/display/RootMovieClip.h"
@@ -195,9 +194,9 @@ void ASError::errorGenerator(ASError* obj, asAtom* args, const unsigned int args
 void ASError::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("getStackTrace","",Class<IFunction>::getFunction(c->getSystemState(),_getStackTrace),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getStackTrace","",c->getSystemState()->getBuiltinFunction(_getStackTrace),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString),NORMAL_METHOD,true);
 	REGISTER_GETTER(c, errorID);
 	REGISTER_GETTER_SETTER(c, message);
 	REGISTER_GETTER_SETTER(c, name);

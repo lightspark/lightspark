@@ -21,6 +21,7 @@
 #include "backends/locale.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/Array.h"
 #include <iomanip>
 
 using namespace lightspark;
@@ -38,9 +39,9 @@ void Collator::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, numericComparison);
 	REGISTER_GETTER(c, requestedLocaleIDName);
 
-	c->setDeclaredMethodByQName("compare","",Class<IFunction>::getFunction(c->getSystemState(),compare),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("equals","",Class<IFunction>::getFunction(c->getSystemState(),equals),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",Class<IFunction>::getFunction(c->getSystemState(),getAvailableLocaleIDNames),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("compare","",c->getSystemState()->getBuiltinFunction(compare),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("equals","",c->getSystemState()->getBuiltinFunction(equals),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",c->getSystemState()->getBuiltinFunction(getAvailableLocaleIDNames),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(Collator,_constructor)

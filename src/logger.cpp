@@ -20,6 +20,7 @@
 #include <fstream>
 #include "logger.h"
 #include "threading.h"
+#include "swf.h"
 
 using namespace lightspark;
 
@@ -27,7 +28,7 @@ static Mutex logmutex;
 LOG_LEVEL Log::log_level=LOG_INFO;
 const char* Log::level_names[]={"ERROR", "INFO","NOT_IMPLEMENTED","CALLS","TRACE"};
 int Log::calls_indent = 0;
-
+asAtom logAtom = asAtomHandler::invalidAtom;
 Log::Log(LOG_LEVEL l)
 {
 	if(l<=log_level)
@@ -46,7 +47,11 @@ Log::~Log()
 	if(valid)
 	{
 		Locker l(logmutex);
+#ifndef NDEBUG
+		std::cerr << level_names[cur_level] << ": " << asAtomHandler::toDebugString(logAtom)<<" " << message.str();
+#else
 		std::cerr << level_names[cur_level] << ": " << message.str();
+#endif
 	}
 }
 

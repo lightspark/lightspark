@@ -120,7 +120,7 @@ void ElementFormat::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->isReusable=true;
 	c->setVariableAtomByQName("GRAPHIC_ELEMENT",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)0xFDEF),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),_clone,0,Class<ElementFormat>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(_clone,0,Class<ElementFormat>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,alignmentBaseline,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,alpha,Number);
@@ -254,29 +254,29 @@ void FontDescription::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),_clone),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("isFontCompatible","",Class<IFunction>::getFunction(c->getSystemState(),isFontCompatible),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(_clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isFontCompatible","",c->getSystemState()->getBuiltinFunction(isFontCompatible),NORMAL_METHOD,false);
 
-    c->setDeclaredMethodByQName("fontName","",Class<IFunction>::getFunction(c->getSystemState(),_getFontName),GETTER_METHOD,true);
-    c->setDeclaredMethodByQName("fontName","",Class<IFunction>::getFunction(c->getSystemState(),_setFontName),SETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontName","",c->getSystemState()->getBuiltinFunction(_getFontName),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontName","",c->getSystemState()->getBuiltinFunction(_setFontName),SETTER_METHOD,true);
 
-    c->setDeclaredMethodByQName("fontWeight","",Class<IFunction>::getFunction(c->getSystemState(),_getFontWeight),GETTER_METHOD,true);
-    c->setDeclaredMethodByQName("fontWeight","",Class<IFunction>::getFunction(c->getSystemState(),_setFontWeight),SETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontWeight","",c->getSystemState()->getBuiltinFunction(_getFontWeight),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontWeight","",c->getSystemState()->getBuiltinFunction(_setFontWeight),SETTER_METHOD,true);
 
-    c->setDeclaredMethodByQName("fontPosture","",Class<IFunction>::getFunction(c->getSystemState(),_getFontPosture),GETTER_METHOD,true);
-    c->setDeclaredMethodByQName("fontPosture","",Class<IFunction>::getFunction(c->getSystemState(),_setFontPosture),SETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontPosture","",c->getSystemState()->getBuiltinFunction(_getFontPosture),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontPosture","",c->getSystemState()->getBuiltinFunction(_setFontPosture),SETTER_METHOD,true);
 
-    c->setDeclaredMethodByQName("fontLookup","",Class<IFunction>::getFunction(c->getSystemState(),_getFontLookup),GETTER_METHOD,true);
-    c->setDeclaredMethodByQName("fontLookup","",Class<IFunction>::getFunction(c->getSystemState(),_setFontLookup),SETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontLookup","",c->getSystemState()->getBuiltinFunction(_getFontLookup),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("fontLookup","",c->getSystemState()->getBuiltinFunction(_setFontLookup),SETTER_METHOD,true);
 
-    c->setDeclaredMethodByQName("renderingMode","",Class<IFunction>::getFunction(c->getSystemState(),_getRenderingMode),GETTER_METHOD,true);
-    c->setDeclaredMethodByQName("renderingMode","",Class<IFunction>::getFunction(c->getSystemState(),_setRenderingMode),SETTER_METHOD,true);
+    c->setDeclaredMethodByQName("renderingMode","",c->getSystemState()->getBuiltinFunction(_getRenderingMode),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("renderingMode","",c->getSystemState()->getBuiltinFunction(_setRenderingMode),SETTER_METHOD,true);
 
-    c->setDeclaredMethodByQName("cffHinting","",Class<IFunction>::getFunction(c->getSystemState(),_getCffHinting),GETTER_METHOD,true);
-    c->setDeclaredMethodByQName("cffHinting","",Class<IFunction>::getFunction(c->getSystemState(),_setCffHinting),SETTER_METHOD,true);
+    c->setDeclaredMethodByQName("cffHinting","",c->getSystemState()->getBuiltinFunction(_getCffHinting),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("cffHinting","",c->getSystemState()->getBuiltinFunction(_setCffHinting),SETTER_METHOD,true);
 
-    c->setDeclaredMethodByQName("locked","",Class<IFunction>::getFunction(c->getSystemState(),_getLocked),GETTER_METHOD,true);
-    c->setDeclaredMethodByQName("locked","",Class<IFunction>::getFunction(c->getSystemState(),_setLocked),SETTER_METHOD,true);
+    c->setDeclaredMethodByQName("locked","",c->getSystemState()->getBuiltinFunction(_getLocked),GETTER_METHOD,true);
+    c->setDeclaredMethodByQName("locked","",c->getSystemState()->getBuiltinFunction(_setLocked),SETTER_METHOD,true);
 }
 
 bool FontDescription::destruct()
@@ -652,9 +652,9 @@ TextBlock::TextBlock(ASWorker* wrk, Class_base *c): ASObject(wrk,c,T_OBJECT,SUBT
 void TextBlock::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("createTextLine","",Class<IFunction>::getFunction(c->getSystemState(),createTextLine,0,Class<TextLine>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("recreateTextLine","",Class<IFunction>::getFunction(c->getSystemState(),recreateTextLine,0,Class<TextLine>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("releaseLines","",Class<IFunction>::getFunction(c->getSystemState(),releaseLines),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createTextLine","",c->getSystemState()->getBuiltinFunction(createTextLine,0,Class<TextLine>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("recreateTextLine","",c->getSystemState()->getBuiltinFunction(recreateTextLine,0,Class<TextLine>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("releaseLines","",c->getSystemState()->getBuiltinFunction(releaseLines),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, applyNonLinearFontScaling, Boolean);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, baselineFontDescription, FontDescription);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, baselineFontSize, Number);
@@ -955,7 +955,7 @@ void TextElement::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ContentElement, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("replaceText","",Class<IFunction>::getFunction(c->getSystemState(),replaceText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("replaceText","",c->getSystemState()->getBuiltinFunction(replaceText),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, text, ASString);
 }
 void TextElement::finalize()
@@ -1092,13 +1092,13 @@ void TextLine::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObjectContainer, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableAtomByQName("MAX_LINE_WIDTH",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)MAX_LINE_WIDTH),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("getBaselinePosition","",Class<IFunction>::getFunction(c->getSystemState(),getBaselinePosition,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("flushAtomData","",Class<IFunction>::getFunction(c->getSystemState(),flushAtomData),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("descent","",Class<IFunction>::getFunction(c->getSystemState(),getDescent,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("ascent","",Class<IFunction>::getFunction(c->getSystemState(),getAscent,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(c->getSystemState(),getTextWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(c->getSystemState(),getTextHeight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("unjustifiedTextWidth","",Class<IFunction>::getFunction(c->getSystemState(),getUnjustifiedTextWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getBaselinePosition","",c->getSystemState()->getBuiltinFunction(getBaselinePosition,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("flushAtomData","",c->getSystemState()->getBuiltinFunction(flushAtomData),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("descent","",c->getSystemState()->getBuiltinFunction(getDescent,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("ascent","",c->getSystemState()->getBuiltinFunction(getAscent,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textWidth","",c->getSystemState()->getBuiltinFunction(getTextWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textHeight","",c->getSystemState()->getBuiltinFunction(getTextHeight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("unjustifiedTextWidth","",c->getSystemState()->getBuiltinFunction(getUnjustifiedTextWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	REGISTER_GETTER_RESULTTYPE(c, textBlock,TextBlock);
 	REGISTER_GETTER_RESULTTYPE(c, nextLine,TextLine);
 	REGISTER_GETTER_RESULTTYPE(c, previousLine,TextLine);

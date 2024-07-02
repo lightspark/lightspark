@@ -38,7 +38,7 @@ using namespace lightspark;
 void Proxy::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject,CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("isAttribute","",Class<IFunction>::getFunction(c->getSystemState(),_isAttribute,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isAttribute","",c->getSystemState()->getBuiltinFunction(_isAttribute,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(Proxy,_isAttribute)

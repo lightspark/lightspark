@@ -23,6 +23,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "currencyparseresult.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Number.h"
 #include <string>
 
@@ -54,11 +55,11 @@ void CurrencyFormatter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, trailingZeros);
 	REGISTER_GETTER_SETTER(c, useGrouping);
 
-	c->setDeclaredMethodByQName("format","",Class<IFunction>::getFunction(c->getSystemState(),format),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("formattingWithCurrencySymbolIsSafe","",Class<IFunction>::getFunction(c->getSystemState(),formattingWithCurrencySymbolIsSafe),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",Class<IFunction>::getFunction(c->getSystemState(),getAvailableLocaleIDNames),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("parse","",Class<IFunction>::getFunction(c->getSystemState(),parse),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setCurrency","",Class<IFunction>::getFunction(c->getSystemState(),setCurrency),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("format","",c->getSystemState()->getBuiltinFunction(format),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("formattingWithCurrencySymbolIsSafe","",c->getSystemState()->getBuiltinFunction(formattingWithCurrencySymbolIsSafe),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",c->getSystemState()->getBuiltinFunction(getAvailableLocaleIDNames),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("parse","",c->getSystemState()->getBuiltinFunction(parse),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setCurrency","",c->getSystemState()->getBuiltinFunction(setCurrency),NORMAL_METHOD,true);
 
 	c->setVariableAtomByQName("LocaleID.DEFAULT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"LocaleID.DEFAULT"),CONSTANT_TRAIT);
 

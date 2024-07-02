@@ -719,7 +719,7 @@ void TextureBase::uploadFromByteArrayIntern(ByteArray* source, uint32_t offset, 
 void TextureBase::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
-	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,true);
 }
 
 bool TextureBase::destruct()
@@ -750,9 +750,9 @@ ASFUNCTIONBODY_ATOM(TextureBase,dispose)
 void Texture::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, TextureBase, CLASS_SEALED);
-	c->setDeclaredMethodByQName("uploadCompressedTextureFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),uploadCompressedTextureFromByteArray),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("uploadFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),uploadFromByteArray),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("uploadFromBitmapData","",Class<IFunction>::getFunction(c->getSystemState(),uploadFromBitmapData),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadCompressedTextureFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadCompressedTextureFromByteArray),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadFromByteArray),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadFromBitmapData","",c->getSystemState()->getBuiltinFunction(uploadFromBitmapData),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(Texture,uploadCompressedTextureFromByteArray)
 {
@@ -826,9 +826,9 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 void CubeTexture::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, TextureBase, CLASS_SEALED);
-	c->setDeclaredMethodByQName("uploadCompressedTextureFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),uploadCompressedTextureFromByteArray),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("uploadFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),uploadFromByteArray),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("uploadFromBitmapData","",Class<IFunction>::getFunction(c->getSystemState(),uploadFromBitmapData),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadCompressedTextureFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadCompressedTextureFromByteArray),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadFromByteArray),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadFromBitmapData","",c->getSystemState()->getBuiltinFunction(uploadFromBitmapData),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(CubeTexture,uploadCompressedTextureFromByteArray)
 {
@@ -907,8 +907,8 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromByteArray)
 void RectangleTexture::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, TextureBase, CLASS_SEALED);
-	c->setDeclaredMethodByQName("uploadFromByteArray","",Class<IFunction>::getFunction(c->getSystemState(),uploadFromByteArray),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("uploadFromBitmapData","",Class<IFunction>::getFunction(c->getSystemState(),uploadFromBitmapData),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadFromByteArray),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("uploadFromBitmapData","",c->getSystemState()->getBuiltinFunction(uploadFromBitmapData),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromBitmapData)
 {
@@ -944,8 +944,8 @@ void VideoTexture::sinit(Class_base *c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, TextureBase, CLASS_SEALED);
 	REGISTER_GETTER(c,videoHeight);
 	REGISTER_GETTER(c,videoWidth);
-	c->setDeclaredMethodByQName("attachCamera","",Class<IFunction>::getFunction(c->getSystemState(),attachCamera),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("attachNetStream","",Class<IFunction>::getFunction(c->getSystemState(),attachNetStream),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("attachCamera","",c->getSystemState()->getBuiltinFunction(attachCamera),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("attachNetStream","",c->getSystemState()->getBuiltinFunction(attachNetStream),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(VideoTexture,videoHeight)
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(VideoTexture,videoWidth)

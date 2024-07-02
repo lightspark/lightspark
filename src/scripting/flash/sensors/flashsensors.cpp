@@ -35,7 +35,7 @@ void Accelerometer::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
 	// properties
-	c->setDeclaredMethodByQName("isSupported", "", Class<IFunction>::getFunction(c->getSystemState(),_isSupported),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("isSupported", "", c->getSystemState()->getBuiltinFunction(_isSupported),GETTER_METHOD,false);
 }
 
 void Accelerometer::buildTraits(ASObject *o)

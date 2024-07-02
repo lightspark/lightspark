@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/text/textrenderer.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include <iomanip>
@@ -28,13 +29,13 @@ void TextRenderer::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
 
-	c->setDeclaredMethodByQName("setAdvancedAntiAliasingTable","",Class<IFunction>::getFunction(c->getSystemState(),_setAdvancedAntiAliasingTable),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("setAdvancedAntiAliasingTable","",c->getSystemState()->getBuiltinFunction(_setAdvancedAntiAliasingTable),NORMAL_METHOD,false);
 
-    c->setDeclaredMethodByQName("displayMode","",Class<IFunction>::getFunction(c->getSystemState(),_getDisplayMode),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("displayMode","",Class<IFunction>::getFunction(c->getSystemState(),_setDisplayMode),SETTER_METHOD,false);
+    c->setDeclaredMethodByQName("displayMode","",c->getSystemState()->getBuiltinFunction(_getDisplayMode),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("displayMode","",c->getSystemState()->getBuiltinFunction(_setDisplayMode),SETTER_METHOD,false);
 
-    c->setDeclaredMethodByQName("maxLevel","",Class<IFunction>::getFunction(c->getSystemState(),_getMaxLevel),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("maxLevel","",Class<IFunction>::getFunction(c->getSystemState(),_setMaxLevel),SETTER_METHOD,false);
+    c->setDeclaredMethodByQName("maxLevel","",c->getSystemState()->getBuiltinFunction(_getMaxLevel),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("maxLevel","",c->getSystemState()->getBuiltinFunction(_setMaxLevel),SETTER_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(TextRenderer,_setAdvancedAntiAliasingTable)

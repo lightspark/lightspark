@@ -35,7 +35,7 @@ using namespace lightspark;
 
 void ABCVm::registerClassesFlashSystem(Global* builtin)
 {
-	builtin->registerBuiltin("fscommand","flash.system",_MR(Class<IFunction>::getFunction(m_sys,fscommand)));
+	builtin->registerBuiltin("fscommand","flash.system",_MR(m_sys->getBuiltinFunction(fscommand)));
 	builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef(m_sys));
 	builtin->registerBuiltin("Security","flash.system",Class<Security>::getRef(m_sys));
 	builtin->registerBuiltin("ApplicationDomain","flash.system",Class<ApplicationDomain>::getRef(m_sys));

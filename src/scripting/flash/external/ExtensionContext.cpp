@@ -199,9 +199,9 @@ ExtensionContext::ExtensionContext(ASWorker* wrk, Class_base* c) : EventDispatch
 void ExtensionContext::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED|CLASS_FINAL);
-	c->setDeclaredMethodByQName("createExtensionContext","",Class<IFunction>::getFunction(c->getSystemState(),createExtensionContext,2,Class<ExtensionContext>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(c->getSystemState(),_call,1,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("dispose","",Class<IFunction>::getFunction(c->getSystemState(),dispose,0),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createExtensionContext","",c->getSystemState()->getBuiltinFunction(createExtensionContext,2,Class<ExtensionContext>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("call","",c->getSystemState()->getBuiltinFunction(_call,1,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose,0),NORMAL_METHOD,true);
 }
 void ExtensionContext::finalize()
 {

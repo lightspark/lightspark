@@ -28,18 +28,18 @@ void IME::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
 
-	c->setDeclaredMethodByQName("conversionMode","",Class<IFunction>::getFunction(c->getSystemState(),_getConversionMode),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("conversionMode","",Class<IFunction>::getFunction(c->getSystemState(),_setConversionMode),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("conversionMode","",c->getSystemState()->getBuiltinFunction(_getConversionMode),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("conversionMode","",c->getSystemState()->getBuiltinFunction(_setConversionMode),SETTER_METHOD,false);
 
-	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),_getEnabled),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),_setEnabled),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_getEnabled),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_setEnabled),SETTER_METHOD,false);
 
-	c->setDeclaredMethodByQName("isSupported","",Class<IFunction>::getFunction(c->getSystemState(),_getIsSupported),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("isSupported","",c->getSystemState()->getBuiltinFunction(_getIsSupported),GETTER_METHOD,false);
 
-	c->setDeclaredMethodByQName("compositionAbandoned","",Class<IFunction>::getFunction(c->getSystemState(),compositionAbandoned),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("compositionSelectionChanged","",Class<IFunction>::getFunction(c->getSystemState(),compositionSelectionChanged),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("doConversion","",Class<IFunction>::getFunction(c->getSystemState(),doConversion),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setCompositionString","",Class<IFunction>::getFunction(c->getSystemState(),setCompositionString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("compositionAbandoned","",c->getSystemState()->getBuiltinFunction(compositionAbandoned),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("compositionSelectionChanged","",c->getSystemState()->getBuiltinFunction(compositionSelectionChanged),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("doConversion","",c->getSystemState()->getBuiltinFunction(doConversion),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setCompositionString","",c->getSystemState()->getBuiltinFunction(setCompositionString),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(IME,compositionAbandoned)

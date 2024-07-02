@@ -32,10 +32,13 @@
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/geom/Rectangle.h"
+#include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASString.h"
+#include "scripting/toplevel/Null.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/toplevel/Undefined.h"
 #include "scripting/avm1/avm1display.h"
 #include "logger.h"
 #include "parsing/streams.h"
@@ -2523,5 +2526,10 @@ void SystemState::removeFromResetParentList(DisplayObject* d)
 		}
 		it++;
 	}
+}
+
+ASObject* SystemState::getBuiltinFunction(as_atom_function v, int len, Class_base* returnType, Class_base* returnTypeAllArgsInt)
+{
+	return Class<IFunction>::getFunction(this,v,len,returnType, returnTypeAllArgsInt);
 }
 

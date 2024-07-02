@@ -20,12 +20,11 @@
 #include "scripting/flash/profiler/flashprofiler.h"
 
 #include "scripting/toplevel/Global.h"
-#include "scripting/class.h"
 #include "scripting/abc.h"
 using namespace lightspark;
 
 
 void ABCVm::registerClassesFlashProfiler(Global* builtin)
 {
-	builtin->registerBuiltin("showRedrawRegions","flash.profiler",_MR(Class<IFunction>::getFunction(m_sys, showRedrawRegions)));
+	builtin->registerBuiltin("showRedrawRegions","flash.profiler",_MR(m_sys->getBuiltinFunction(showRedrawRegions)));
 }

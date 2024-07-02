@@ -23,6 +23,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "backends/rendering.h"
 #include "backends/cachedsurface.h"
+#include "scripting/toplevel/Array.h"
 
 
 using namespace std;

@@ -26,6 +26,9 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/AVM1Function.h"
+#include "scripting/toplevel/Array.h"
 #include "parsing/tags.h"
 #include "scripting/abc.h"
 #include "backends/security.h"
@@ -60,14 +63,14 @@ void AVM1MovieClip::sinit(Class_base* c)
 {
 	MovieClip::sinit(c);
 	MovieClip::AVM1SetupMethods(c);
-	c->setDeclaredMethodByQName("_totalframes","",Class<IFunction>::getFunction(c->getSystemState(),_getTotalFrames),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_currentframe","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentFrame),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_framesloaded","",Class<IFunction>::getFunction(c->getSystemState(),_getFramesLoaded),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_name","",Class<IFunction>::getFunction(c->getSystemState(),_getter_name),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_name","",Class<IFunction>::getFunction(c->getSystemState(),_setter_name),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("startDrag","",Class<IFunction>::getFunction(c->getSystemState(),startDrag),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("stopDrag","",Class<IFunction>::getFunction(c->getSystemState(),stopDrag),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("attachAudio","",Class<IFunction>::getFunction(c->getSystemState(),attachAudio),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("_totalframes","",c->getSystemState()->getBuiltinFunction(_getTotalFrames),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_currentframe","",c->getSystemState()->getBuiltinFunction(_getCurrentFrame),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_framesloaded","",c->getSystemState()->getBuiltinFunction(_getFramesLoaded),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_name","",c->getSystemState()->getBuiltinFunction(_getter_name),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("_name","",c->getSystemState()->getBuiltinFunction(_setter_name),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("startDrag","",c->getSystemState()->getBuiltinFunction(startDrag),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stopDrag","",c->getSystemState()->getBuiltinFunction(stopDrag),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("attachAudio","",c->getSystemState()->getBuiltinFunction(attachAudio),NORMAL_METHOD,true);
 }
 
 void AVM1MovieClip::setColor(AVM1Color* c)
@@ -137,20 +140,20 @@ void AVM1Stage::sinit(Class_base* c)
 {
 	// in AVM1 Stage is no DisplayObject and all methods/properties are static
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_getStageWidth),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),_setStageWidth),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_getStageHeight),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),_setStageHeight),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("displayState","",Class<IFunction>::getFunction(c->getSystemState(),_getDisplayState),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("displayState","",Class<IFunction>::getFunction(c->getSystemState(),_setDisplayState),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_getScaleMode),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("scaleMode","",Class<IFunction>::getFunction(c->getSystemState(),_setScaleMode),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("showMenu","",Class<IFunction>::getFunction(c->getSystemState(),_getShowMenu),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("showMenu","",Class<IFunction>::getFunction(c->getSystemState(),_setShowMenu),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("align","",Class<IFunction>::getFunction(c->getSystemState(),getAlign),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("align","",Class<IFunction>::getFunction(c->getSystemState(),setAlign),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("addListener","",Class<IFunction>::getFunction(c->getSystemState(),addResizeListener),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("removeListener","",Class<IFunction>::getFunction(c->getSystemState(),removeResizeListener),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_getStageWidth),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_setStageWidth),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_getStageHeight),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_setStageHeight),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("displayState","",c->getSystemState()->getBuiltinFunction(_getDisplayState),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("displayState","",c->getSystemState()->getBuiltinFunction(_setDisplayState),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("scaleMode","",c->getSystemState()->getBuiltinFunction(_getScaleMode),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("scaleMode","",c->getSystemState()->getBuiltinFunction(_setScaleMode),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("showMenu","",c->getSystemState()->getBuiltinFunction(_getShowMenu),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("showMenu","",c->getSystemState()->getBuiltinFunction(_setShowMenu),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("align","",c->getSystemState()->getBuiltinFunction(getAlign),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("align","",c->getSystemState()->getBuiltinFunction(setAlign),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addResizeListener),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeResizeListener),NORMAL_METHOD,false);
 }
 ASFUNCTIONBODY_ATOM(AVM1Stage,_getDisplayState)
 {
@@ -210,9 +213,9 @@ void AVM1MovieClipLoader::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("loadClip","",Class<IFunction>::getFunction(c->getSystemState(),loadClip),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("addListener","",Class<IFunction>::getFunction(c->getSystemState(),addListener),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeListener","",Class<IFunction>::getFunction(c->getSystemState(),removeListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("loadClip","",c->getSystemState()->getBuiltinFunction(loadClip),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeListener),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,_constructor)
 {
@@ -496,10 +499,10 @@ void AVM1Color::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("getRGB","",Class<IFunction>::getFunction(c->getSystemState(),getRGB),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setRGB","",Class<IFunction>::getFunction(c->getSystemState(),setRGB),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getTransform","",Class<IFunction>::getFunction(c->getSystemState(),getTransform),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setTransform","",Class<IFunction>::getFunction(c->getSystemState(),setTransform),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getRGB","",c->getSystemState()->getBuiltinFunction(getRGB),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setRGB","",c->getSystemState()->getBuiltinFunction(setRGB),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getTransform","",c->getSystemState()->getBuiltinFunction(getTransform),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setTransform","",c->getSystemState()->getBuiltinFunction(setTransform),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1Color,_constructor)
 {
@@ -681,7 +684,7 @@ void AVM1Broadcaster::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("initialize","",Class<IFunction>::getFunction(c->getSystemState(),initialize),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("initialize","",c->getSystemState()->getBuiltinFunction(initialize),NORMAL_METHOD,false);
 }
 ASFUNCTIONBODY_ATOM(AVM1Broadcaster,initialize)
 {
@@ -690,9 +693,9 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,initialize)
 	if (!listener.isNull())
 	{
 		Array* listeners = Class<Array>::getInstanceSNoArgs(wrk);
-		listener->setVariableAtomByQName("broadcastMessage",nsNameAndKind(),asAtomHandler::fromObjectNoPrimitive(Class<IFunction>::getFunction(wrk->getSystemState(),broadcastMessage)),DYNAMIC_TRAIT);
-		listener->setVariableAtomByQName("addListener",nsNameAndKind(),asAtomHandler::fromObjectNoPrimitive(Class<IFunction>::getFunction(wrk->getSystemState(),addListener)),DYNAMIC_TRAIT);
-		listener->setVariableAtomByQName("removeListener",nsNameAndKind(),asAtomHandler::fromObjectNoPrimitive(Class<IFunction>::getFunction(wrk->getSystemState(),removeListener)),DYNAMIC_TRAIT);
+		listener->setVariableAtomByQName("broadcastMessage",nsNameAndKind(),asAtomHandler::fromObjectNoPrimitive(wrk->getSystemState()->getBuiltinFunction(broadcastMessage)),DYNAMIC_TRAIT);
+		listener->setVariableAtomByQName("addListener",nsNameAndKind(),asAtomHandler::fromObjectNoPrimitive(wrk->getSystemState()->getBuiltinFunction(addListener)),DYNAMIC_TRAIT);
+		listener->setVariableAtomByQName("removeListener",nsNameAndKind(),asAtomHandler::fromObjectNoPrimitive(wrk->getSystemState()->getBuiltinFunction(removeListener)),DYNAMIC_TRAIT);
 		listener->setVariableAtomByQName("_listeners",nsNameAndKind(),asAtomHandler::fromObjectNoPrimitive(listeners),DYNAMIC_TRAIT);
 	}
 }
@@ -799,8 +802,8 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,removeListener)
 void AVM1BitmapData::sinit(Class_base *c)
 {
 	BitmapData::sinit(c);
-	c->setDeclaredMethodByQName("loadBitmap","",Class<IFunction>::getFunction(c->getSystemState(),loadBitmap),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("rectangle","",Class<IFunction>::getFunction(c->getSystemState(),getRect,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loadBitmap","",c->getSystemState()->getBuiltinFunction(loadBitmap),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("rectangle","",c->getSystemState()->getBuiltinFunction(getRect,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(AVM1BitmapData,loadBitmap)
 {
@@ -821,6 +824,6 @@ void AVM1Bitmap::sinit(Class_base *c)
 {
 	Bitmap::sinit(c);
 	DisplayObject::AVM1SetupMethods(c);
-	c->setDeclaredMethodByQName("forceSmoothing","",Class<IFunction>::getFunction(c->getSystemState(),_getter_smoothing),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("forceSmoothing","",Class<IFunction>::getFunction(c->getSystemState(),_setter_smoothing),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("forceSmoothing","",c->getSystemState()->getBuiltinFunction(_getter_smoothing),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("forceSmoothing","",c->getSystemState()->getBuiltinFunction(_setter_smoothing),SETTER_METHOD,true);
 }

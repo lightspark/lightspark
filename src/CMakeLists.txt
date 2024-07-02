@@ -243,21 +243,26 @@ SET(LIBSPARK_SOURCES
   scripting/toplevel/ASQName.cpp
   scripting/toplevel/ASString.cpp
   scripting/toplevel/Boolean.cpp
+  scripting/toplevel/Class_base.cpp
   scripting/toplevel/Date.cpp
   scripting/toplevel/Error.cpp
   scripting/toplevel/Global.cpp
+  scripting/toplevel/IFunction.cpp
   scripting/toplevel/Integer.cpp
   scripting/toplevel/JSON.cpp
   scripting/toplevel/Math.cpp
   scripting/toplevel/Namespace.cpp
+  scripting/toplevel/Null.cpp
   scripting/toplevel/Number.cpp
   scripting/toplevel/RegExp.cpp
   scripting/toplevel/UInteger.cpp
+  scripting/toplevel/Undefined.cpp
   scripting/toplevel/Vector.cpp
   scripting/toplevel/XML.cpp
   scripting/toplevel/XMLList.cpp
-  scripting/class.cpp
+  scripting/toplevel/AVM1Function.cpp
   scripting/toplevel/toplevel.cpp
+  scripting/class.cpp
   scripting/avmplus/avmplus.cpp
   scripting/avm1/avm1key.cpp
   scripting/avm1/avm1sound.cpp

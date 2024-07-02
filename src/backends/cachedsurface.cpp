@@ -174,7 +174,6 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 			container->ct ? *container->ct : state->colortransform,
 			container->blendMode
 			));
-		
 	}
 	else
 	{
@@ -183,7 +182,6 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 			state->colortransform,
 			state->blendmode
 			));
-		
 	}
 	EngineData* engineData = sys->getEngineData();
 	bool needscachedtexture = (!container && state->cacheAsBitmap)
@@ -191,6 +189,24 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 							  || !state->filters.empty()
 							  || DisplayObject::isShaderBlendMode(ctxt.transformStack().transform().blendmode)
 							  || (state->needsLayer && sys->getRenderThread()->filterframebufferstack.empty());
+	if (state->src->getTagID()==58)
+	{
+		int x=0;
+	}
+	if (!needscachedtexture)
+	{
+		auto it= state->childrenlist.begin();
+		for(;it!=state->childrenlist.end();++it)
+		{
+			CachedSurface* child = (*it).getPtr();
+			if (child->state->needsLayer)
+			{
+				needscachedtexture=true;
+				break;
+			}
+		}
+	}
+//	LOG(LOG_ERROR,"Rendercached:"<<container<<" "<<state->src->toDebugString()<<" "<<state->blendmode<<" "<<needscachedtexture<<state->cacheAsBitmap<<state->needsLayer<<" "<<cachedFilterTextureID<<" "<<state->needsFilterRefresh);
 	if (needscachedtexture && (state->needsFilterRefresh || cachedFilterTextureID != UINT32_MAX))
 	{
 		if (!isInitialized)
@@ -224,7 +240,10 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 			MATRIX m;
 			m.x0 = std::round(baseTransform.matrix.x0+offset.x);
 			m.y0 = std::round(baseTransform.matrix.y0+offset.y);
-			
+			if (state->src->getTagID()==531)
+			{
+				int x=0;
+			}
 			if (DisplayObject::isShaderBlendMode(state->blendmode))
 			{
 				assert (!sys->getRenderThread()->filterframebufferstack.empty());

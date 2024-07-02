@@ -22,6 +22,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include <iomanip>
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/flash/globalization/numberparseresult.h"
 
@@ -48,12 +49,12 @@ void NumberFormatter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, negativeSymbol);
 	REGISTER_GETTER_SETTER(c, trailingZeros);
 	REGISTER_GETTER_SETTER(c, useGrouping);
-	c->setDeclaredMethodByQName("formatInt","",Class<IFunction>::getFunction(c->getSystemState(),formatInt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("formatUint","",Class<IFunction>::getFunction(c->getSystemState(),formatUint),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("formatNumber","",Class<IFunction>::getFunction(c->getSystemState(),formatNumber),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("parse","",Class<IFunction>::getFunction(c->getSystemState(),parse),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("parseNumber","",Class<IFunction>::getFunction(c->getSystemState(),parseNumber),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",Class<IFunction>::getFunction(c->getSystemState(),formatNumber),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("formatInt","",c->getSystemState()->getBuiltinFunction(formatInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("formatUint","",c->getSystemState()->getBuiltinFunction(formatUint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("formatNumber","",c->getSystemState()->getBuiltinFunction(formatNumber),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("parse","",c->getSystemState()->getBuiltinFunction(parse),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("parseNumber","",c->getSystemState()->getBuiltinFunction(parseNumber),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",c->getSystemState()->getBuiltinFunction(formatNumber),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_GETTER(NumberFormatter, actualLocaleIDName)

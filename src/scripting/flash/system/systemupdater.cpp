@@ -27,8 +27,8 @@ using namespace lightspark;
 void SystemUpdater::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED|CLASS_FINAL);
-	c->setDeclaredMethodByQName("cancel","",Class<IFunction>::getFunction(c->getSystemState(),cancel),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("update","",Class<IFunction>::getFunction(c->getSystemState(),update),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("cancel","",c->getSystemState()->getBuiltinFunction(cancel),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("update","",c->getSystemState()->getBuiltinFunction(update),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(SystemUpdater,_constructor)

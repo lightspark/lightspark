@@ -21,6 +21,7 @@
 #include "backends/locale.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Date.h"
 #include <iomanip>
 
@@ -37,17 +38,17 @@ void DateTimeFormatter::sinit(Class_base* c)
 	REGISTER_GETTER(c, actualLocaleIDName);
 	REGISTER_GETTER(c, lastOperationStatus);
 	REGISTER_GETTER(c, requestedLocaleIDName);
-	c->setDeclaredMethodByQName("setDateTimePattern","",Class<IFunction>::getFunction(c->getSystemState(),setDateTimePattern),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("format","",Class<IFunction>::getFunction(c->getSystemState(),format),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("formatUTC","",Class<IFunction>::getFunction(c->getSystemState(),formatUTC),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",Class<IFunction>::getFunction(c->getSystemState(),formatUTC),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getDateStyle","",Class<IFunction>::getFunction(c->getSystemState(),getDateStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getDateTimePattern","",Class<IFunction>::getFunction(c->getSystemState(),getDateTimePattern),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getFirstWeekday","",Class<IFunction>::getFunction(c->getSystemState(),getFirstWeekday),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getMonthNames","",Class<IFunction>::getFunction(c->getSystemState(),getMonthNames),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getTimeStyle","",Class<IFunction>::getFunction(c->getSystemState(),getTimeStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getWeekdayNames","",Class<IFunction>::getFunction(c->getSystemState(),getWeekdayNames),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setDateTimeStyles","",Class<IFunction>::getFunction(c->getSystemState(),setDateTimeStyles),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setDateTimePattern","",c->getSystemState()->getBuiltinFunction(setDateTimePattern),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("format","",c->getSystemState()->getBuiltinFunction(format),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("formatUTC","",c->getSystemState()->getBuiltinFunction(formatUTC),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getAvailableLocaleIDNames","",c->getSystemState()->getBuiltinFunction(formatUTC),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDateStyle","",c->getSystemState()->getBuiltinFunction(getDateStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDateTimePattern","",c->getSystemState()->getBuiltinFunction(getDateTimePattern),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getFirstWeekday","",c->getSystemState()->getBuiltinFunction(getFirstWeekday),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getMonthNames","",c->getSystemState()->getBuiltinFunction(getMonthNames),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getTimeStyle","",c->getSystemState()->getBuiltinFunction(getTimeStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getWeekdayNames","",c->getSystemState()->getBuiltinFunction(getWeekdayNames),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setDateTimeStyles","",c->getSystemState()->getBuiltinFunction(setDateTimeStyles),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(DateTimeFormatter,_constructor)

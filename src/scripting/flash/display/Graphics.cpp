@@ -39,28 +39,28 @@ void Graphics::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("copyFrom","",Class<IFunction>::getFunction(c->getSystemState(),copyFrom),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawRect","",Class<IFunction>::getFunction(c->getSystemState(),drawRect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawRoundRect","",Class<IFunction>::getFunction(c->getSystemState(),drawRoundRect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawRoundRectComplex","",Class<IFunction>::getFunction(c->getSystemState(),drawRoundRectComplex),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawCircle","",Class<IFunction>::getFunction(c->getSystemState(),drawCircle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawEllipse","",Class<IFunction>::getFunction(c->getSystemState(),drawEllipse),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawPath","",Class<IFunction>::getFunction(c->getSystemState(),drawPath),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawTriangles","",Class<IFunction>::getFunction(c->getSystemState(),drawTriangles),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("drawGraphicsData","",Class<IFunction>::getFunction(c->getSystemState(),drawGraphicsData),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(c->getSystemState(),moveTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("curveTo","",Class<IFunction>::getFunction(c->getSystemState(),curveTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("cubicCurveTo","",Class<IFunction>::getFunction(c->getSystemState(),cubicCurveTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(c->getSystemState(),lineTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineBitmapStyle","",Class<IFunction>::getFunction(c->getSystemState(),lineBitmapStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineGradientStyle","",Class<IFunction>::getFunction(c->getSystemState(),lineGradientStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineStyle","",Class<IFunction>::getFunction(c->getSystemState(),lineStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("beginFill","",Class<IFunction>::getFunction(c->getSystemState(),beginFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(c->getSystemState(),beginGradientFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("beginBitmapFill","",Class<IFunction>::getFunction(c->getSystemState(),beginBitmapFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(c->getSystemState(),endFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readGraphicsData","",Class<IFunction>::getFunction(c->getSystemState(),readGraphicsData,1,Class<Vector>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",c->getSystemState()->getBuiltinFunction(clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyFrom","",c->getSystemState()->getBuiltinFunction(copyFrom),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawRect","",c->getSystemState()->getBuiltinFunction(drawRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawRoundRect","",c->getSystemState()->getBuiltinFunction(drawRoundRect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawRoundRectComplex","",c->getSystemState()->getBuiltinFunction(drawRoundRectComplex),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawCircle","",c->getSystemState()->getBuiltinFunction(drawCircle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawEllipse","",c->getSystemState()->getBuiltinFunction(drawEllipse),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawPath","",c->getSystemState()->getBuiltinFunction(drawPath),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawTriangles","",c->getSystemState()->getBuiltinFunction(drawTriangles),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("drawGraphicsData","",c->getSystemState()->getBuiltinFunction(drawGraphicsData),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("moveTo","",c->getSystemState()->getBuiltinFunction(moveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("curveTo","",c->getSystemState()->getBuiltinFunction(curveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("cubicCurveTo","",c->getSystemState()->getBuiltinFunction(cubicCurveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineTo","",c->getSystemState()->getBuiltinFunction(lineTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineBitmapStyle","",c->getSystemState()->getBuiltinFunction(lineBitmapStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineGradientStyle","",c->getSystemState()->getBuiltinFunction(lineGradientStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineStyle","",c->getSystemState()->getBuiltinFunction(lineStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginFill","",c->getSystemState()->getBuiltinFunction(beginFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginGradientFill","",c->getSystemState()->getBuiltinFunction(beginGradientFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginBitmapFill","",c->getSystemState()->getBuiltinFunction(beginBitmapFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("endFill","",c->getSystemState()->getBuiltinFunction(endFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readGraphicsData","",c->getSystemState()->getBuiltinFunction(readGraphicsData,1,Class<Vector>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	
 }
 

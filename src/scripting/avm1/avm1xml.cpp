@@ -21,6 +21,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/toplevel/AVM1Function.h"
 
 using namespace std;
 using namespace lightspark;
@@ -50,7 +51,7 @@ void AVM1XMLDocument::sinit(Class_base* c)
 {
 	XMLDocument::sinit(c);
 	c->isSealed = false;
-	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,true);
 	REGISTER_GETTER(c, status);
 }
 

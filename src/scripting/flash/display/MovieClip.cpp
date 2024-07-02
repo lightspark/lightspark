@@ -28,6 +28,8 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Point.h"
 #include "scripting/flash/geom/Rectangle.h"
+#include "scripting/toplevel/AVM1Function.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Integer.h"
 
 #define FRAME_NOT_FOUND 0xffffffff //Used by getFrameIdBy*
@@ -46,8 +48,8 @@ FrameLabel::FrameLabel(ASWorker* wrk, Class_base* c, const FrameLabel_data& data
 void FrameLabel::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("frame","",Class<IFunction>::getFunction(c->getSystemState(),_getFrame),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(c->getSystemState(),_getName),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("frame","",c->getSystemState()->getBuiltinFunction(_getFrame),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",c->getSystemState()->getBuiltinFunction(_getName),GETTER_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(FrameLabel,_getFrame)
@@ -99,9 +101,9 @@ Scene::Scene(ASWorker* wrk, Class_base* c, const Scene_data& data, uint32_t _num
 void Scene::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("labels","",Class<IFunction>::getFunction(c->getSystemState(),_getLabels,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",Class<IFunction>::getFunction(c->getSystemState(),_getName,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("numFrames","",Class<IFunction>::getFunction(c->getSystemState(),_getNumFrames,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("labels","",c->getSystemState()->getBuiltinFunction(_getLabels,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",c->getSystemState()->getBuiltinFunction(_getName,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("numFrames","",c->getSystemState()->getBuiltinFunction(_getNumFrames,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(Scene,_getLabels)
@@ -201,21 +203,21 @@ void MovieClip::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Sprite, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("currentFrame","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentFrame,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("totalFrames","",Class<IFunction>::getFunction(c->getSystemState(),_getTotalFrames,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("framesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),_getFramesLoaded,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentFrameLabel","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentFrameLabel,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentLabel","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentLabel,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentLabels","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentLabels,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scenes","",Class<IFunction>::getFunction(c->getSystemState(),_getScenes,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentScene","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentScene,0,Class<Scene>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndStop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndPlay),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("prevFrame","",Class<IFunction>::getFunction(c->getSystemState(),prevFrame),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(c->getSystemState(),nextFrame),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("addFrameScript","",Class<IFunction>::getFunction(c->getSystemState(),addFrameScript),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("currentFrame","",c->getSystemState()->getBuiltinFunction(_getCurrentFrame,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("totalFrames","",c->getSystemState()->getBuiltinFunction(_getTotalFrames,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("framesLoaded","",c->getSystemState()->getBuiltinFunction(_getFramesLoaded,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentFrameLabel","",c->getSystemState()->getBuiltinFunction(_getCurrentFrameLabel,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentLabel","",c->getSystemState()->getBuiltinFunction(_getCurrentLabel,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentLabels","",c->getSystemState()->getBuiltinFunction(_getCurrentLabels,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scenes","",c->getSystemState()->getBuiltinFunction(_getScenes,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentScene","",c->getSystemState()->getBuiltinFunction(_getCurrentScene,0,Class<Scene>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stop","",c->getSystemState()->getBuiltinFunction(stop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play","",c->getSystemState()->getBuiltinFunction(play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoAndStop","",c->getSystemState()->getBuiltinFunction(gotoAndStop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoAndPlay","",c->getSystemState()->getBuiltinFunction(gotoAndPlay),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("prevFrame","",c->getSystemState()->getBuiltinFunction(prevFrame),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("nextFrame","",c->getSystemState()->getBuiltinFunction(nextFrame),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addFrameScript","",c->getSystemState()->getBuiltinFunction(addFrameScript),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, enabled,Boolean);
 }
 
@@ -880,71 +882,71 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 void MovieClip::AVM1SetupMethods(Class_base* c)
 {
 	DisplayObject::AVM1SetupMethods(c);
-	c->setDeclaredMethodByQName("attachMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1AttachMovie),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("loadMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LoadMovie),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("unloadMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1UnloadMovie),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1CreateEmptyMovieClip),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1RemoveMovieClip),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("duplicateMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1DuplicateMovieClip),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),AVM1Clear),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(c->getSystemState(),AVM1MoveTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LineTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lineStyle","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LineStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("beginFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1BeginFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1BeginGradientFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1EndFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),Sprite::_getter_useHandCursor),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),Sprite::_setter_useHandCursor),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("getNextHighestDepth","",Class<IFunction>::getFunction(c->getSystemState(),AVM1GetNextHighestDepth),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("attachBitmap","",Class<IFunction>::getFunction(c->getSystemState(),AVM1AttachBitmap),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndStop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndPlay),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("gotoandstop","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndStop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("gotoandplay","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndPlay),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getInstanceAtDepth","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getInstanceAtDepth),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getSWFVersion","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getSWFVersion),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_getter_contextMenu),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_setter_contextMenu),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("prevFrame","",Class<IFunction>::getFunction(c->getSystemState(),prevFrame),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(c->getSystemState(),nextFrame),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createTextField","",Class<IFunction>::getFunction(c->getSystemState(),AVM1CreateTextField),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),InteractiveObject::_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),InteractiveObject::_setMouseEnabled),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attachMovie","",c->getSystemState()->getBuiltinFunction(AVM1AttachMovie),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("loadMovie","",c->getSystemState()->getBuiltinFunction(AVM1LoadMovie),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unloadMovie","",c->getSystemState()->getBuiltinFunction(AVM1UnloadMovie),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createEmptyMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1CreateEmptyMovieClip),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1RemoveMovieClip),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("duplicateMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1DuplicateMovieClip),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",c->getSystemState()->getBuiltinFunction(AVM1Clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("moveTo","",c->getSystemState()->getBuiltinFunction(AVM1MoveTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineTo","",c->getSystemState()->getBuiltinFunction(AVM1LineTo),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lineStyle","",c->getSystemState()->getBuiltinFunction(AVM1LineStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginFill","",c->getSystemState()->getBuiltinFunction(AVM1BeginFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("beginGradientFill","",c->getSystemState()->getBuiltinFunction(AVM1BeginGradientFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("endFill","",c->getSystemState()->getBuiltinFunction(AVM1EndFill),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("useHandCursor","",c->getSystemState()->getBuiltinFunction(Sprite::_getter_useHandCursor),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("useHandCursor","",c->getSystemState()->getBuiltinFunction(Sprite::_setter_useHandCursor),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getNextHighestDepth","",c->getSystemState()->getBuiltinFunction(AVM1GetNextHighestDepth),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("attachBitmap","",c->getSystemState()->getBuiltinFunction(AVM1AttachBitmap),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoAndStop","",c->getSystemState()->getBuiltinFunction(gotoAndStop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoAndPlay","",c->getSystemState()->getBuiltinFunction(gotoAndPlay),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoandstop","",c->getSystemState()->getBuiltinFunction(gotoAndStop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("gotoandplay","",c->getSystemState()->getBuiltinFunction(gotoAndPlay),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stop","",c->getSystemState()->getBuiltinFunction(stop),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play","",c->getSystemState()->getBuiltinFunction(play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getInstanceAtDepth","",c->getSystemState()->getBuiltinFunction(AVM1getInstanceAtDepth),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getSWFVersion","",c->getSystemState()->getBuiltinFunction(AVM1getSWFVersion),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("menu","",c->getSystemState()->getBuiltinFunction(_getter_contextMenu),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("menu","",c->getSystemState()->getBuiltinFunction(_setter_contextMenu),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("prevFrame","",c->getSystemState()->getBuiltinFunction(prevFrame),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("nextFrame","",c->getSystemState()->getBuiltinFunction(nextFrame),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createTextField","",c->getSystemState()->getBuiltinFunction(AVM1CreateTextField),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(InteractiveObject::_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(InteractiveObject::_setMouseEnabled),SETTER_METHOD,true);
 
-	c->prototype->setDeclaredMethodByQName("attachMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1AttachMovie),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("loadMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LoadMovie),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("unloadMovie","",Class<IFunction>::getFunction(c->getSystemState(),AVM1UnloadMovie),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("createEmptyMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1CreateEmptyMovieClip),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("removeMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1RemoveMovieClip),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("duplicateMovieClip","",Class<IFunction>::getFunction(c->getSystemState(),AVM1DuplicateMovieClip),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),AVM1Clear),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("moveTo","",Class<IFunction>::getFunction(c->getSystemState(),AVM1MoveTo),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("lineTo","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LineTo),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("lineStyle","",Class<IFunction>::getFunction(c->getSystemState(),AVM1LineStyle),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("beginFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1BeginFill),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("beginGradientFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1BeginGradientFill),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("endFill","",Class<IFunction>::getFunction(c->getSystemState(),AVM1EndFill),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),Sprite::_getter_useHandCursor),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("useHandCursor","",Class<IFunction>::getFunction(c->getSystemState(),Sprite::_setter_useHandCursor),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("getNextHighestDepth","",Class<IFunction>::getFunction(c->getSystemState(),AVM1GetNextHighestDepth),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("attachBitmap","",Class<IFunction>::getFunction(c->getSystemState(),AVM1AttachBitmap),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("gotoAndStop","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndStop),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("gotoAndPlay","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndPlay),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("gotoandstop","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndStop),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("gotoandplay","",Class<IFunction>::getFunction(c->getSystemState(),gotoAndPlay),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("stop","",Class<IFunction>::getFunction(c->getSystemState(),stop),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("getInstanceAtDepth","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getInstanceAtDepth),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("getSWFVersion","",Class<IFunction>::getFunction(c->getSystemState(),AVM1getSWFVersion),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_getter_contextMenu),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("menu","",Class<IFunction>::getFunction(c->getSystemState(),_setter_contextMenu),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("prevFrame","",Class<IFunction>::getFunction(c->getSystemState(),prevFrame),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("nextFrame","",Class<IFunction>::getFunction(c->getSystemState(),nextFrame),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("createTextField","",Class<IFunction>::getFunction(c->getSystemState(),AVM1CreateTextField),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),InteractiveObject::_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("enabled","",Class<IFunction>::getFunction(c->getSystemState(),InteractiveObject::_setMouseEnabled),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("attachMovie","",c->getSystemState()->getBuiltinFunction(AVM1AttachMovie),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("loadMovie","",c->getSystemState()->getBuiltinFunction(AVM1LoadMovie),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("unloadMovie","",c->getSystemState()->getBuiltinFunction(AVM1UnloadMovie),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("createEmptyMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1CreateEmptyMovieClip),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("removeMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1RemoveMovieClip),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("duplicateMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1DuplicateMovieClip),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("clear","",c->getSystemState()->getBuiltinFunction(AVM1Clear),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("moveTo","",c->getSystemState()->getBuiltinFunction(AVM1MoveTo),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("lineTo","",c->getSystemState()->getBuiltinFunction(AVM1LineTo),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("lineStyle","",c->getSystemState()->getBuiltinFunction(AVM1LineStyle),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("beginFill","",c->getSystemState()->getBuiltinFunction(AVM1BeginFill),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("beginGradientFill","",c->getSystemState()->getBuiltinFunction(AVM1BeginGradientFill),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("endFill","",c->getSystemState()->getBuiltinFunction(AVM1EndFill),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("useHandCursor","",c->getSystemState()->getBuiltinFunction(Sprite::_getter_useHandCursor),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("useHandCursor","",c->getSystemState()->getBuiltinFunction(Sprite::_setter_useHandCursor),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getNextHighestDepth","",c->getSystemState()->getBuiltinFunction(AVM1GetNextHighestDepth),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("attachBitmap","",c->getSystemState()->getBuiltinFunction(AVM1AttachBitmap),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("gotoAndStop","",c->getSystemState()->getBuiltinFunction(gotoAndStop),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("gotoAndPlay","",c->getSystemState()->getBuiltinFunction(gotoAndPlay),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("gotoandstop","",c->getSystemState()->getBuiltinFunction(gotoAndStop),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("gotoandplay","",c->getSystemState()->getBuiltinFunction(gotoAndPlay),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("stop","",c->getSystemState()->getBuiltinFunction(stop),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("play","",c->getSystemState()->getBuiltinFunction(play),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getInstanceAtDepth","",c->getSystemState()->getBuiltinFunction(AVM1getInstanceAtDepth),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getSWFVersion","",c->getSystemState()->getBuiltinFunction(AVM1getSWFVersion),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("menu","",c->getSystemState()->getBuiltinFunction(_getter_contextMenu),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("menu","",c->getSystemState()->getBuiltinFunction(_setter_contextMenu),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("prevFrame","",c->getSystemState()->getBuiltinFunction(prevFrame),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("nextFrame","",c->getSystemState()->getBuiltinFunction(nextFrame),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("createTextField","",c->getSystemState()->getBuiltinFunction(AVM1CreateTextField),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(InteractiveObject::_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(InteractiveObject::_setMouseEnabled),SETTER_METHOD,false);
 }
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)

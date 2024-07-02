@@ -18,6 +18,8 @@
 **************************************************************************/
 
 #include "scripting/avmplus/avmplus.h"
+#include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/flash/utils/ByteArray.h"
@@ -39,11 +41,11 @@ avmplusFile::avmplusFile(ASWorker* wrk, Class_base* c):
 void avmplusFile::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
-	c->setDeclaredMethodByQName("exists","",Class<IFunction>::getFunction(c->getSystemState(),exists),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("read","",Class<IFunction>::getFunction(c->getSystemState(),read),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("write","",Class<IFunction>::getFunction(c->getSystemState(),write),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("readByteArray","",Class<IFunction>::getFunction(c->getSystemState(),readByteArray),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("writeByteArray","",Class<IFunction>::getFunction(c->getSystemState(),writeByteArray),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("exists","",c->getSystemState()->getBuiltinFunction(exists),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("read","",c->getSystemState()->getBuiltinFunction(read),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("write","",c->getSystemState()->getBuiltinFunction(write),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("readByteArray","",c->getSystemState()->getBuiltinFunction(readByteArray),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("writeByteArray","",c->getSystemState()->getBuiltinFunction(writeByteArray),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(avmplusFile,exists)
@@ -99,25 +101,25 @@ avmplusSystem::avmplusSystem(ASWorker* wrk, Class_base* c):
 void avmplusSystem::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
-	c->setDeclaredMethodByQName("getFeatures","",Class<IFunction>::getFunction(c->getSystemState(),getFeatures),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("queueCollection","",Class<IFunction>::getFunction(c->getSystemState(),queueCollection),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("forceFullCollection","",Class<IFunction>::getFunction(c->getSystemState(),forceFullCollection),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("getAvmplusVersion","",Class<IFunction>::getFunction(c->getSystemState(),getAvmplusVersion),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("pauseForGCIfCollectionImminent","",Class<IFunction>::getFunction(c->getSystemState(),pauseForGCIfCollectionImminent),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("getRunmode","",Class<IFunction>::getFunction(c->getSystemState(),getRunmode),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("isDebugger","",Class<IFunction>::getFunction(c->getSystemState(),isDebugger),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("isGlobal","",Class<IFunction>::getFunction(c->getSystemState(),isGlobal),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("freeMemory","",Class<IFunction>::getFunction(c->getSystemState(),_freeMemory),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("totalMemory","",Class<IFunction>::getFunction(c->getSystemState(),_totalMemory),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("privateMemory","",Class<IFunction>::getFunction(c->getSystemState(),_privateMemory),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("swfVersion","",Class<IFunction>::getFunction(c->getSystemState(),_swfVersion),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("argv","",Class<IFunction>::getFunction(c->getSystemState(),argv),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("exec","",Class<IFunction>::getFunction(c->getSystemState(),exec),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("write","",Class<IFunction>::getFunction(c->getSystemState(),write),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("sleep","",Class<IFunction>::getFunction(c->getSystemState(),sleep),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("exit","",Class<IFunction>::getFunction(c->getSystemState(),exit),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("trace","",Class<IFunction>::getFunction(c->getSystemState(),lightspark::trace),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("canonicalizeNumber","",Class<IFunction>::getFunction(c->getSystemState(),canonicalizeNumber),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("getFeatures","",c->getSystemState()->getBuiltinFunction(getFeatures),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("queueCollection","",c->getSystemState()->getBuiltinFunction(queueCollection),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("forceFullCollection","",c->getSystemState()->getBuiltinFunction(forceFullCollection),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("getAvmplusVersion","",c->getSystemState()->getBuiltinFunction(getAvmplusVersion),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("pauseForGCIfCollectionImminent","",c->getSystemState()->getBuiltinFunction(pauseForGCIfCollectionImminent),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("getRunmode","",c->getSystemState()->getBuiltinFunction(getRunmode),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("isDebugger","",c->getSystemState()->getBuiltinFunction(isDebugger),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("isGlobal","",c->getSystemState()->getBuiltinFunction(isGlobal),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("freeMemory","",c->getSystemState()->getBuiltinFunction(_freeMemory),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("totalMemory","",c->getSystemState()->getBuiltinFunction(_totalMemory),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("privateMemory","",c->getSystemState()->getBuiltinFunction(_privateMemory),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("swfVersion","",c->getSystemState()->getBuiltinFunction(_swfVersion),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("argv","",c->getSystemState()->getBuiltinFunction(argv),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("exec","",c->getSystemState()->getBuiltinFunction(exec),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("write","",c->getSystemState()->getBuiltinFunction(write),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("sleep","",c->getSystemState()->getBuiltinFunction(sleep),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("exit","",c->getSystemState()->getBuiltinFunction(exit),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("trace","",c->getSystemState()->getBuiltinFunction(lightspark::trace),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("canonicalizeNumber","",c->getSystemState()->getBuiltinFunction(canonicalizeNumber),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,getFeatures)
@@ -260,13 +262,13 @@ avmplusDomain::avmplusDomain(ASWorker* wrk, Class_base* c):
 void avmplusDomain::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject,_constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("currentDomain","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentDomain),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",Class<IFunction>::getFunction(c->getSystemState(),_getMinDomainMemoryLength),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("loadBytes","",Class<IFunction>::getFunction(c->getSystemState(),loadBytes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getClass","",Class<IFunction>::getFunction(c->getSystemState(),getClass),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("domainMemory","",Class<IFunction>::getFunction(c->getSystemState(),_getDomainMemory),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("domainMemory","",Class<IFunction>::getFunction(c->getSystemState(),_setDomainMemory),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentDomain","",c->getSystemState()->getBuiltinFunction(_getCurrentDomain),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",c->getSystemState()->getBuiltinFunction(_getMinDomainMemoryLength),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("loadBytes","",c->getSystemState()->getBuiltinFunction(loadBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getClass","",c->getSystemState()->getBuiltinFunction(getClass),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("domainMemory","",c->getSystemState()->getBuiltinFunction(_getDomainMemory),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("domainMemory","",c->getSystemState()->getBuiltinFunction(_setDomainMemory),SETTER_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,_constructor)
 {

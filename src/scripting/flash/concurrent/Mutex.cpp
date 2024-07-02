@@ -29,9 +29,9 @@ ASMutex::ASMutex(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_M
 void ASMutex::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
-	c->setDeclaredMethodByQName("lock","",Class<IFunction>::getFunction(c->getSystemState(),_lock),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("unlock","",Class<IFunction>::getFunction(c->getSystemState(),_unlock),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("tryLock","",Class<IFunction>::getFunction(c->getSystemState(),_trylock),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lock","",c->getSystemState()->getBuiltinFunction(_lock),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("unlock","",c->getSystemState()->getBuiltinFunction(_unlock),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("tryLock","",c->getSystemState()->getBuiltinFunction(_trylock),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(ASMutex,_constructor)

@@ -26,6 +26,7 @@
 #include "swf.h"
 #include "flash/errors/flasherrors.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/toplevel/AVM1Function.h"
 
 #ifdef _WIN32
 #ifndef _WIN32_WINNT
@@ -51,10 +52,10 @@ XMLSocket::~XMLSocket()
 void XMLSocket::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),_close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),_connect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("send","",Class<IFunction>::getFunction(c->getSystemState(),_send),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(c->getSystemState(),_connected),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(_close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(_connect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("send","",c->getSystemState()->getBuiltinFunction(_send),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("connected","",c->getSystemState()->getBuiltinFunction(_connected),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c,timeout);
 }
 

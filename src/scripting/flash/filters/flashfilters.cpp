@@ -31,6 +31,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/toplevel/Array.h"
 #include "backends/rendering.h"
 
 using namespace std;
@@ -39,7 +40,7 @@ using namespace lightspark;
 void BitmapFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_SEALED);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone),NORMAL_METHOD,true);
 }
 
 void BitmapFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)

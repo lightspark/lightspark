@@ -36,6 +36,7 @@
 #include <string>
 #include "swftypes.h"
 #include "memory_support.h"
+#include "scripting/abcutils.h"
 
 using namespace std;
 
@@ -76,6 +77,7 @@ class ThreadPool;
 class TimerThread;
 class LocalConnectionEvent;
 class ABCVm;
+class Function;
 
 enum class FramePhase
 {
@@ -519,6 +521,7 @@ public:
 	void resetParentList();
 	bool isInResetParentList(DisplayObject* d);
 	void removeFromResetParentList(DisplayObject* d);
+	ASObject* getBuiltinFunction(as_atom_function v, int len = 0, Class_base* returnType=nullptr, Class_base* returnTypeAllArgsInt=nullptr);
 };
 
 class ParseThread: public IThreadJob

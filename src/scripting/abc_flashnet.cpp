@@ -38,8 +38,8 @@ using namespace lightspark;
 
 void ABCVm::registerClassesFlashNet(Global* builtin)
 {
-	builtin->registerBuiltin("navigateToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,navigateToURL)));
-	builtin->registerBuiltin("sendToURL","flash.net",_MR(Class<IFunction>::getFunction(m_sys,sendToURL)));
+	builtin->registerBuiltin("navigateToURL","flash.net",_MR(m_sys->getBuiltinFunction(navigateToURL)));
+	builtin->registerBuiltin("sendToURL","flash.net",_MR(m_sys->getBuiltinFunction(sendToURL)));
 	builtin->registerBuiltin("DynamicPropertyOutput","flash.net",Class<DynamicPropertyOutput>::getRef(m_sys));
 	builtin->registerBuiltin("FileFilter","flash.net",Class<FileFilter>::getRef(m_sys));
 	builtin->registerBuiltin("FileReference","flash.net",Class<FileReference>::getRef(m_sys));
@@ -66,8 +66,8 @@ void ABCVm::registerClassesFlashNet(Global* builtin)
 	builtin->registerBuiltin("Socket","flash.net",Class<ASSocket>::getRef(m_sys));
 	builtin->registerBuiltin("Responder","flash.net",Class<Responder>::getRef(m_sys));
 	builtin->registerBuiltin("XMLSocket","flash.net",Class<XMLSocket>::getRef(m_sys));
-	builtin->registerBuiltin("registerClassAlias","flash.net",_MR(Class<IFunction>::getFunction(m_sys,registerClassAlias)));
-	builtin->registerBuiltin("getClassByAlias","flash.net",_MR(Class<IFunction>::getFunction(m_sys,getClassByAlias)));
+	builtin->registerBuiltin("registerClassAlias","flash.net",_MR(m_sys->getBuiltinFunction(registerClassAlias)));
+	builtin->registerBuiltin("getClassByAlias","flash.net",_MR(m_sys->getBuiltinFunction(getClassByAlias)));
 	builtin->registerBuiltin("NetGroupReceiveMode","flash.net",Class<NetGroupReceiveMode>::getRef(m_sys));
 	builtin->registerBuiltin("NetGroupReplicationStrategy","flash.net",Class<NetGroupReplicationStrategy>::getRef(m_sys));
 	builtin->registerBuiltin("NetGroupSendMode","flash.net",Class<NetGroupSendMode>::getRef(m_sys));

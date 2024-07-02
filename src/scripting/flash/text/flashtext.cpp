@@ -33,6 +33,7 @@
 #include "scripting/argconv.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 #include "parsing/tags.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Integer.h"
 
 using namespace std;
@@ -48,9 +49,9 @@ void AntiAliasType::sinit(Class_base* c)
 void ASFont::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
-	c->setDeclaredMethodByQName("enumerateFonts","",Class<IFunction>::getFunction(c->getSystemState(),enumerateFonts),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("registerFont","",Class<IFunction>::getFunction(c->getSystemState(),registerFont),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("hasGlyphs","",Class<IFunction>::getFunction(c->getSystemState(),hasGlyphs),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("enumerateFonts","",c->getSystemState()->getBuiltinFunction(enumerateFonts),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("registerFont","",c->getSystemState()->getBuiltinFunction(registerFont),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("hasGlyphs","",c->getSystemState()->getBuiltinFunction(hasGlyphs),NORMAL_METHOD,true);
 
 	REGISTER_GETTER(c,fontName);
 	REGISTER_GETTER(c,fontStyle);
@@ -159,56 +160,56 @@ void TextField::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, InteractiveObject, CLASS_SEALED);
 
 	// methods
-	c->setDeclaredMethodByQName("appendText","",Class<IFunction>::getFunction(c->getSystemState(),TextField:: appendText),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getTextFormat","",Class<IFunction>::getFunction(c->getSystemState(),_getTextFormat),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setTextFormat","",Class<IFunction>::getFunction(c->getSystemState(),_setTextFormat),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getCharIndexAtPoint","",Class<IFunction>::getFunction(c->getSystemState(),_getCharIndexAtPoint),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineIndexAtPoint","",Class<IFunction>::getFunction(c->getSystemState(),_getLineIndexAtPoint),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineIndexOfChar","",Class<IFunction>::getFunction(c->getSystemState(),_getLineIndexOfChar),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineLength","",Class<IFunction>::getFunction(c->getSystemState(),_getLineLength),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineMetrics","",Class<IFunction>::getFunction(c->getSystemState(),_getLineMetrics),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineOffset","",Class<IFunction>::getFunction(c->getSystemState(),_getLineOffset),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getLineText","",Class<IFunction>::getFunction(c->getSystemState(),_getLineText),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("replaceSelectedText","",Class<IFunction>::getFunction(c->getSystemState(),_replaceSelectedText),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("replaceText","",Class<IFunction>::getFunction(c->getSystemState(),_replaceText),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setSelection","",Class<IFunction>::getFunction(c->getSystemState(),_setSelection),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getCharBoundaries","",Class<IFunction>::getFunction(c->getSystemState(),_getCharBoundaries),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("appendText","",c->getSystemState()->getBuiltinFunction(TextField:: appendText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getTextFormat","",c->getSystemState()->getBuiltinFunction(_getTextFormat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setTextFormat","",c->getSystemState()->getBuiltinFunction(_setTextFormat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getCharIndexAtPoint","",c->getSystemState()->getBuiltinFunction(_getCharIndexAtPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineIndexAtPoint","",c->getSystemState()->getBuiltinFunction(_getLineIndexAtPoint),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineIndexOfChar","",c->getSystemState()->getBuiltinFunction(_getLineIndexOfChar),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineLength","",c->getSystemState()->getBuiltinFunction(_getLineLength),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineMetrics","",c->getSystemState()->getBuiltinFunction(_getLineMetrics),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineOffset","",c->getSystemState()->getBuiltinFunction(_getLineOffset),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLineText","",c->getSystemState()->getBuiltinFunction(_getLineText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("replaceSelectedText","",c->getSystemState()->getBuiltinFunction(_replaceSelectedText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("replaceText","",c->getSystemState()->getBuiltinFunction(_replaceText),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setSelection","",c->getSystemState()->getBuiltinFunction(_setSelection),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getCharBoundaries","",c->getSystemState()->getBuiltinFunction(_getCharBoundaries),NORMAL_METHOD,true);
 
 	// properties
-	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getAntiAliasType),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("antiAliasType","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setAntiAliasType),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setAutoSize),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("autoSize","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getAutoSize),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getDefaultTextFormat),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("defaultTextFormat","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setDefaultTextFormat),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("gridFitType","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getGridFitType),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("gridFitType","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setGridFitType),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setHeight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getHtmlText),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("htmlText","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setHtmlText),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getLength,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getText),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setText),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textHeight","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getTextHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textWidth","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getTextWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setWidth),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setWordWrap),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("wordWrap","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getWordWrap),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("numLines","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getNumLines,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("maxScrollH","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getMaxScrollH,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("maxScrollV","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getMaxScrollV,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bottomScrollV","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getBottomScrollV,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getRestrict),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("restrict","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setRestrict),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textInteractionMode","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getTextInteractionMode),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("displayAsPassword","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getdisplayAsPassword),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("displayAsPassword","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setdisplayAsPassword),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("antiAliasType","",c->getSystemState()->getBuiltinFunction(TextField::_getAntiAliasType),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("antiAliasType","",c->getSystemState()->getBuiltinFunction(TextField::_setAntiAliasType),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("autoSize","",c->getSystemState()->getBuiltinFunction(TextField::_setAutoSize),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("autoSize","",c->getSystemState()->getBuiltinFunction(TextField::_getAutoSize),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("defaultTextFormat","",c->getSystemState()->getBuiltinFunction(TextField::_getDefaultTextFormat),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("defaultTextFormat","",c->getSystemState()->getBuiltinFunction(TextField::_setDefaultTextFormat),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("gridFitType","",c->getSystemState()->getBuiltinFunction(TextField::_getGridFitType),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("gridFitType","",c->getSystemState()->getBuiltinFunction(TextField::_setGridFitType),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(TextField::_getHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(TextField::_setHeight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("htmlText","",c->getSystemState()->getBuiltinFunction(TextField::_getHtmlText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("htmlText","",c->getSystemState()->getBuiltinFunction(TextField::_setHtmlText),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(TextField::_getLength,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("text","",c->getSystemState()->getBuiltinFunction(TextField::_getText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("text","",c->getSystemState()->getBuiltinFunction(TextField::_setText),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textHeight","",c->getSystemState()->getBuiltinFunction(TextField::_getTextHeight),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textWidth","",c->getSystemState()->getBuiltinFunction(TextField::_getTextWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(TextField::_getWidth),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(TextField::_setWidth),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wordWrap","",c->getSystemState()->getBuiltinFunction(TextField::_setWordWrap),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wordWrap","",c->getSystemState()->getBuiltinFunction(TextField::_getWordWrap),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("numLines","",c->getSystemState()->getBuiltinFunction(TextField::_getNumLines,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("maxScrollH","",c->getSystemState()->getBuiltinFunction(TextField::_getMaxScrollH,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("maxScrollV","",c->getSystemState()->getBuiltinFunction(TextField::_getMaxScrollV,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bottomScrollV","",c->getSystemState()->getBuiltinFunction(TextField::_getBottomScrollV,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("restrict","",c->getSystemState()->getBuiltinFunction(TextField::_getRestrict),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("restrict","",c->getSystemState()->getBuiltinFunction(TextField::_setRestrict),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textInteractionMode","",c->getSystemState()->getBuiltinFunction(TextField::_getTextInteractionMode),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("displayAsPassword","",c->getSystemState()->getBuiltinFunction(TextField::_getdisplayAsPassword),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("displayAsPassword","",c->getSystemState()->getBuiltinFunction(TextField::_setdisplayAsPassword),SETTER_METHOD,true);
 
 	// special handling neccessary when getting/setting x
-	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_getTextFieldX),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("x","",Class<IFunction>::getFunction(c->getSystemState(),TextField::_setTextFieldX),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(TextField::_getTextFieldX),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(TextField::_setTextFieldX),SETTER_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c, alwaysShowSelection);
 	REGISTER_GETTER_SETTER(c, background);
@@ -2283,6 +2284,10 @@ TextFormat::TextFormat(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUB
 {
 }
 
+TextFormat::~TextFormat()
+{
+}
+
 void StyleSheet::finalize()
 {
 	EventDispatcher::finalize();
@@ -2292,10 +2297,10 @@ void StyleSheet::finalize()
 void StyleSheet::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("styleNames","",Class<IFunction>::getFunction(c->getSystemState(),_getStyleNames),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("setStyle","",Class<IFunction>::getFunction(c->getSystemState(),setStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getStyle","",Class<IFunction>::getFunction(c->getSystemState(),getStyle),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("parseCSS","",Class<IFunction>::getFunction(c->getSystemState(),parseCSS),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("styleNames","",c->getSystemState()->getBuiltinFunction(_getStyleNames),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("setStyle","",c->getSystemState()->getBuiltinFunction(setStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getStyle","",c->getSystemState()->getBuiltinFunction(getStyle),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("parseCSS","",c->getSystemState()->getBuiltinFunction(parseCSS),NORMAL_METHOD,true);
 }
 
 void StyleSheet::buildTraits(ASObject* o)
@@ -2361,7 +2366,7 @@ void StaticText::sinit(Class_base* c)
 	// _constructorNotInstantiatable but that breaks when
 	// DisplayObjectContainer::initFrame calls the constructor
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_FINAL | CLASS_SEALED);
-	c->setDeclaredMethodByQName("text","",Class<IFunction>::getFunction(c->getSystemState(),_getText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("text","",c->getSystemState()->getBuiltinFunction(_getText),GETTER_METHOD,true);
 }
 
 IDrawable* StaticText::invalidate(bool smoothing)

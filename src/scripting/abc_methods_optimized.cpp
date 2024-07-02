@@ -21,7 +21,7 @@
 #include "compat.h"
 #include "exceptions.h"
 #include "scripting/abcutils.h"
-#include "scripting/class.h"
+#include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/RegExp.h"
 #include "scripting/toplevel/Vector.h"

@@ -19,7 +19,7 @@
 
 #include "scripting/abc.h"
 #include "parsing/amf3_generator.h"
-#include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/IFunction.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Date.h"

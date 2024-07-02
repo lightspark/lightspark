@@ -21,7 +21,6 @@
 #define SCRIPTING_AVM1_AVM1MEDIA_H
 
 
-#include "asobject.h"
 #include "scripting/flash/media/flashmedia.h"
 
 namespace lightspark

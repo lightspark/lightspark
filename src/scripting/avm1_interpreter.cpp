@@ -22,6 +22,7 @@
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/avm1/avm1display.h"

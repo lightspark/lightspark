@@ -31,11 +31,11 @@ DatagramSocket::DatagramSocket(ASWorker* wrk, Class_base* c) : EventDispatcher(w
 void DatagramSocket::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),_close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),_connect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("bind","",Class<IFunction>::getFunction(c->getSystemState(),_bind),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("receive","",Class<IFunction>::getFunction(c->getSystemState(),_receive),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("send","",Class<IFunction>::getFunction(c->getSystemState(),_send),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(_close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(_connect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("bind","",c->getSystemState()->getBuiltinFunction(_bind),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("receive","",c->getSystemState()->getBuiltinFunction(_receive),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("send","",c->getSystemState()->getBuiltinFunction(_send),NORMAL_METHOD,true);
 	REGISTER_GETTER_RESULTTYPE(c,bound,Boolean);
 	REGISTER_GETTER_RESULTTYPE(c,connected,Boolean);
 	REGISTER_GETTER_STATIC_RESULTTYPE(c,isSupported,Boolean);

@@ -241,6 +241,7 @@ private:
 	void onAlign(const asAtom& old);
 public:
 	TextFormat(ASWorker* wrk,Class_base* c);
+	~TextFormat();
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;

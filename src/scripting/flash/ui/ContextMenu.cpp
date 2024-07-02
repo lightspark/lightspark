@@ -32,8 +32,8 @@ void ContextMenu::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_FINAL);
 	REGISTER_GETTER_RESULTTYPE(c,isSupported,Boolean);
-	c->setDeclaredMethodByQName("hideBuiltInItems","",Class<IFunction>::getFunction(c->getSystemState(),hideBuiltInItems),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hideBuiltInItems","",c->getSystemState()->getBuiltinFunction(hideBuiltInItems),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,customItems);
 	REGISTER_GETTER_SETTER(c,builtInItems);
 }

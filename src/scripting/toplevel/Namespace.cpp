@@ -20,6 +20,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Namespace.h"
+#include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASQName.h"
 
 using namespace std;
@@ -37,13 +38,13 @@ Namespace::Namespace(ASWorker* wrk,Class_base* c, uint32_t _uri, uint32_t _prefi
 void Namespace::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	//c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(c->getSystemState(),_setURI),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(c->getSystemState(),_getURI),GETTER_METHOD,true);
-	//c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(c->getSystemState(),_setPrefix),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("prefix","",Class<IFunction>::getFunction(c->getSystemState(),_getPrefix),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),_valueOf),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),_ECMA_valueOf),DYNAMIC_TRAIT);
+	//c->setDeclaredMethodByQName("uri","",c->getSystemState()->getBuiltinFunction(_setURI),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("uri","",c->getSystemState()->getBuiltinFunction(_getURI),GETTER_METHOD,true);
+	//c->setDeclaredMethodByQName("prefix","",c->getSystemState()->getBuiltinFunction(_setPrefix),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("prefix","",c->getSystemState()->getBuiltinFunction(_getPrefix),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(_valueOf),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(_ECMA_valueOf),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(Namespace,_constructor)

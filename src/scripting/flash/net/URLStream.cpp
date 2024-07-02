@@ -123,27 +123,27 @@ void URLStreamThread::execute()
 void URLStream::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("bytesAvailable","",Class<IFunction>::getFunction(c->getSystemState(),bytesAvailable),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(c->getSystemState(),_getEndian),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("endian","",Class<IFunction>::getFunction(c->getSystemState(),_setEndian),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getObjectEncoding),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_setObjectEncoding),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("readBoolean","",Class<IFunction>::getFunction(c->getSystemState(),readBoolean),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readByte","",Class<IFunction>::getFunction(c->getSystemState(),readByte),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readBytes","",Class<IFunction>::getFunction(c->getSystemState(),readBytes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readDouble","",Class<IFunction>::getFunction(c->getSystemState(),readDouble),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readFloat","",Class<IFunction>::getFunction(c->getSystemState(),readFloat),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readInt","",Class<IFunction>::getFunction(c->getSystemState(),readInt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readMultiByte","",Class<IFunction>::getFunction(c->getSystemState(),readMultiByte),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readObject","",Class<IFunction>::getFunction(c->getSystemState(),readObject),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readShort","",Class<IFunction>::getFunction(c->getSystemState(),readShort),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUnsignedByte","",Class<IFunction>::getFunction(c->getSystemState(),readUnsignedByte),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUnsignedInt","",Class<IFunction>::getFunction(c->getSystemState(),readUnsignedInt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUnsignedShort","",Class<IFunction>::getFunction(c->getSystemState(),readUnsignedShort),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUTF","",Class<IFunction>::getFunction(c->getSystemState(),readUTF),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUTFBytes","",Class<IFunction>::getFunction(c->getSystemState(),readUTFBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("bytesAvailable","",c->getSystemState()->getBuiltinFunction(bytesAvailable),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("endian","",c->getSystemState()->getBuiltinFunction(_getEndian),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("endian","",c->getSystemState()->getBuiltinFunction(_setEndian),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("objectEncoding","",c->getSystemState()->getBuiltinFunction(_getObjectEncoding),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("objectEncoding","",c->getSystemState()->getBuiltinFunction(_setObjectEncoding),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("readBoolean","",c->getSystemState()->getBuiltinFunction(readBoolean),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readByte","",c->getSystemState()->getBuiltinFunction(readByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readBytes","",c->getSystemState()->getBuiltinFunction(readBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readDouble","",c->getSystemState()->getBuiltinFunction(readDouble),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readFloat","",c->getSystemState()->getBuiltinFunction(readFloat),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readInt","",c->getSystemState()->getBuiltinFunction(readInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readMultiByte","",c->getSystemState()->getBuiltinFunction(readMultiByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readObject","",c->getSystemState()->getBuiltinFunction(readObject),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readShort","",c->getSystemState()->getBuiltinFunction(readShort),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUnsignedByte","",c->getSystemState()->getBuiltinFunction(readUnsignedByte),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUnsignedInt","",c->getSystemState()->getBuiltinFunction(readUnsignedInt),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUnsignedShort","",c->getSystemState()->getBuiltinFunction(readUnsignedShort),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUTF","",c->getSystemState()->getBuiltinFunction(readUTF),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUTFBytes","",c->getSystemState()->getBuiltinFunction(readUTFBytes),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,connected);
 
 	c->addImplementedInterface(InterfaceClass<IDataInput>::getClass(c->getSystemState()));

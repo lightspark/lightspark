@@ -20,8 +20,8 @@
 #include "scripting/avmplus/avmplus.h"
 
 #include "scripting/toplevel/Global.h"
-#include "scripting/class.h"
 #include "scripting/abc.h"
+#include "scripting/class.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/flash/utils/flashutils.h"
 
@@ -30,14 +30,14 @@ using namespace lightspark;
 void ABCVm::registerClassesAvmplus(Global* builtin)
 {
 	// avm intrinsics, not documented, but implemented in avmplus
-	builtin->registerBuiltin("casi32","avm2.intrinsics.memory",_MR(Class<IFunction>::getFunction(m_sys,casi32,3)));
+	builtin->registerBuiltin("casi32","avm2.intrinsics.memory",_MR(m_sys->getBuiltinFunction(casi32,3)));
 
 	// if needed add AVMPLUS definitions
 	if(m_sys->flashMode==SystemState::AVMPLUS)
 	{
-		builtin->registerBuiltin("getQualifiedClassName","avmplus",_MR(Class<IFunction>::getFunction(m_sys,getQualifiedClassName)));
-		builtin->registerBuiltin("getQualifiedSuperclassName","avmplus",_MR(Class<IFunction>::getFunction(m_sys,getQualifiedSuperclassName)));
-		builtin->registerBuiltin("getTimer","",_MR(Class<IFunction>::getFunction(m_sys,getTimer,0,Class<Integer>::getRef(m_sys).getPtr())));
+		builtin->registerBuiltin("getQualifiedClassName","avmplus",_MR(m_sys->getBuiltinFunction(getQualifiedClassName)));
+		builtin->registerBuiltin("getQualifiedSuperclassName","avmplus",_MR(m_sys->getBuiltinFunction(getQualifiedSuperclassName)));
+		builtin->registerBuiltin("getTimer","",_MR(m_sys->getBuiltinFunction(getTimer,0,Class<Integer>::getRef(m_sys).getPtr())));
 		builtin->registerBuiltin("FLASH10_FLAGS","avmplus",_MR(abstract_ui(m_sys->worker,0x7FF)));
 		builtin->registerBuiltin("HIDE_NSURI_METHODS","avmplus",_MR(abstract_ui(m_sys->worker,0x0001)));
 		builtin->registerBuiltin("INCLUDE_BASES","avmplus",_MR(abstract_ui(m_sys->worker,0x0002)));
@@ -50,8 +50,8 @@ void ABCVm::registerClassesAvmplus(Global* builtin)
 		builtin->registerBuiltin("INCLUDE_TRAITS","avmplus",_MR(abstract_ui(m_sys->worker,0x0100)));
 		builtin->registerBuiltin("USE_ITRAITS","avmplus",_MR(abstract_ui(m_sys->worker,0x0200)));
 		builtin->registerBuiltin("HIDE_OBJECT","avmplus",_MR(abstract_ui(m_sys->worker,0x0400)));
-		builtin->registerBuiltin("describeType","avmplus",_MR(Class<IFunction>::getFunction(m_sys,describeType)));
-		builtin->registerBuiltin("describeTypeJSON","avmplus",_MR(Class<IFunction>::getFunction(m_sys,describeTypeJSON)),PACKAGE_INTERNAL_NAMESPACE);
+		builtin->registerBuiltin("describeType","avmplus",_MR(m_sys->getBuiltinFunction(describeType)));
+		builtin->registerBuiltin("describeTypeJSON","avmplus",_MR(m_sys->getBuiltinFunction(describeTypeJSON)),PACKAGE_INTERNAL_NAMESPACE);
 
 		builtin->registerBuiltin("System","avmplus",Class<avmplusSystem>::getRef(m_sys));
 		builtin->registerBuiltin("Domain","avmplus",Class<avmplusDomain>::getRef(m_sys));

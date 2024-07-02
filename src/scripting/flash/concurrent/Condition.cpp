@@ -31,9 +31,9 @@ void ASCondition::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
 	c->setVariableByQName("isSupported","",abstract_b(c->getSystemState(),false),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("notify","",Class<IFunction>::getFunction(c->getSystemState(),_notify),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("notifyAll","",Class<IFunction>::getFunction(c->getSystemState(),_notifyAll),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("wait","",Class<IFunction>::getFunction(c->getSystemState(),_wait),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("notify","",c->getSystemState()->getBuiltinFunction(_notify),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("notifyAll","",c->getSystemState()->getBuiltinFunction(_notifyAll),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("wait","",c->getSystemState()->getBuiltinFunction(_wait),NORMAL_METHOD,true);
 	REGISTER_GETTER(c,mutex);
 }
 

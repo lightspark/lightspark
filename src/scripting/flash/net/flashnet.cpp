@@ -36,6 +36,7 @@
 #include "backends/rendering.h"
 #include "backends/streamcache.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Number.h"
 
@@ -55,14 +56,14 @@ void URLRequest::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_setURL),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("url","",Class<IFunction>::getFunction(c->getSystemState(),_getURL,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("method","",Class<IFunction>::getFunction(c->getSystemState(),_setMethod),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("method","",Class<IFunction>::getFunction(c->getSystemState(),_getMethod,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(c->getSystemState(),_setData),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(c->getSystemState(),_getData,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("digest","",Class<IFunction>::getFunction(c->getSystemState(),_setDigest),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("digest","",Class<IFunction>::getFunction(c->getSystemState(),_getDigest,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("url","",c->getSystemState()->getBuiltinFunction(_setURL),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("url","",c->getSystemState()->getBuiltinFunction(_getURL,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("method","",c->getSystemState()->getBuiltinFunction(_setMethod),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("method","",c->getSystemState()->getBuiltinFunction(_getMethod,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_setData),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_getData,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("digest","",c->getSystemState()->getBuiltinFunction(_setDigest),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("digest","",c->getSystemState()->getBuiltinFunction(_getDigest,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,contentType,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,requestHeaders,Array);
 }
@@ -490,12 +491,12 @@ void URLLoader::prepareShutdown()
 void URLLoader::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(c->getSystemState(),_getDataFormat,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(c->getSystemState(),_getData,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("data","",Class<IFunction>::getFunction(c->getSystemState(),_setData),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("dataFormat","",Class<IFunction>::getFunction(c->getSystemState(),_setDataFormat),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("load","",Class<IFunction>::getFunction(c->getSystemState(),load),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dataFormat","",c->getSystemState()->getBuiltinFunction(_getDataFormat,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_getData,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_setData),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("dataFormat","",c->getSystemState()->getBuiltinFunction(_setDataFormat),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,bytesLoaded,UInteger);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,bytesTotal,UInteger);
 }
@@ -693,22 +694,22 @@ void SharedObject::prepareShutdown()
 void SharedObject::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
-	c->setDeclaredMethodByQName("getLocal","",Class<IFunction>::getFunction(c->getSystemState(),getLocal,1,Class<SharedObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("getRemote","",Class<IFunction>::getFunction(c->getSystemState(),getRemote),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("flush","",Class<IFunction>::getFunction(c->getSystemState(),flush),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clear","",Class<IFunction>::getFunction(c->getSystemState(),clear),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),connect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setProperty","",Class<IFunction>::getFunction(c->getSystemState(),setProperty),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getLocal","",c->getSystemState()->getBuiltinFunction(getLocal,1,Class<SharedObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("getRemote","",c->getSystemState()->getBuiltinFunction(getRemote),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("flush","",c->getSystemState()->getBuiltinFunction(flush),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clear","",c->getSystemState()->getBuiltinFunction(clear),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setProperty","",c->getSystemState()->getBuiltinFunction(setProperty),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,client);
 	REGISTER_GETTER_RESULTTYPE(c,data,ASObject);
-	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getDefaultObjectEncoding),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_setDefaultObjectEncoding),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",c->getSystemState()->getBuiltinFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",c->getSystemState()->getBuiltinFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
 	REGISTER_SETTER(c,fps);
 	REGISTER_GETTER_SETTER(c,objectEncoding);
-	c->setDeclaredMethodByQName("preventBackup","",Class<IFunction>::getFunction(c->getSystemState(),_getPreventBackup),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("preventBackup","",Class<IFunction>::getFunction(c->getSystemState(),_setPreventBackup),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("size","",Class<IFunction>::getFunction(c->getSystemState(),_getSize),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("preventBackup","",c->getSystemState()->getBuiltinFunction(_getPreventBackup),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("preventBackup","",c->getSystemState()->getBuiltinFunction(_setPreventBackup),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("size","",c->getSystemState()->getBuiltinFunction(_getSize),GETTER_METHOD,true);
 
 	getSys()->staticSharedObjectDefaultObjectEncoding = OBJECT_ENCODING::AMF3;
 	getSys()->staticSharedObjectPreventBackup = false;
@@ -898,7 +899,7 @@ void IDynamicPropertyOutput::linkTraits(Class_base* c)
 void DynamicPropertyOutput::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL);
-	c->setDeclaredMethodByQName("writeDynamicProperty","",Class<IFunction>::getFunction(c->getSystemState(),writeDynamicProperty),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("writeDynamicProperty","",c->getSystemState()->getBuiltinFunction(writeDynamicProperty),NORMAL_METHOD,true);
 	c->addImplementedInterface(InterfaceClass<IDynamicPropertyOutput>::getClass(c->getSystemState()));
 	IDynamicPropertyOutput::linkTraits(c);
 }
@@ -941,19 +942,19 @@ NetConnection::NetConnection(ASWorker* wrk, Class_base* c):
 void NetConnection::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("connect","",Class<IFunction>::getFunction(c->getSystemState(),connect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("call","",Class<IFunction>::getFunction(c->getSystemState(),call),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("connected","",Class<IFunction>::getFunction(c->getSystemState(),_getConnected),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getDefaultObjectEncoding),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("defaultObjectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_setDefaultObjectEncoding),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("call","",c->getSystemState()->getBuiltinFunction(call),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("connected","",c->getSystemState()->getBuiltinFunction(_getConnected),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",c->getSystemState()->getBuiltinFunction(_getDefaultObjectEncoding),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",c->getSystemState()->getBuiltinFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
 	c->getSystemState()->staticNetConnectionDefaultObjectEncoding = OBJECT_ENCODING::DEFAULT;
-	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_getObjectEncoding),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("objectEncoding","",Class<IFunction>::getFunction(c->getSystemState(),_setObjectEncoding),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("protocol","",Class<IFunction>::getFunction(c->getSystemState(),_getProtocol),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("proxyType","",Class<IFunction>::getFunction(c->getSystemState(),_getProxyType),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("proxyType","",Class<IFunction>::getFunction(c->getSystemState(),_setProxyType),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("uri","",Class<IFunction>::getFunction(c->getSystemState(),_getURI),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("objectEncoding","",c->getSystemState()->getBuiltinFunction(_getObjectEncoding),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("objectEncoding","",c->getSystemState()->getBuiltinFunction(_setObjectEncoding),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("protocol","",c->getSystemState()->getBuiltinFunction(_getProtocol),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("proxyType","",c->getSystemState()->getBuiltinFunction(_getProxyType),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("proxyType","",c->getSystemState()->getBuiltinFunction(_setProxyType),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("uri","",c->getSystemState()->getBuiltinFunction(_getURI),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER(c,client);
 	REGISTER_GETTER_SETTER(c,maxPeerConnections);
 	REGISTER_GETTER(c,nearID);
@@ -1361,24 +1362,24 @@ void NetStream::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("CONNECT_TO_FMS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"connectToFMS"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("DIRECT_CONNECTIONS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"directConnections"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("play","",Class<IFunction>::getFunction(c->getSystemState(),play),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("play2","",Class<IFunction>::getFunction(c->getSystemState(),play2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("resume","",Class<IFunction>::getFunction(c->getSystemState(),resume),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("pause","",Class<IFunction>::getFunction(c->getSystemState(),pause),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("togglePause","",Class<IFunction>::getFunction(c->getSystemState(),togglePause),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("close","",Class<IFunction>::getFunction(c->getSystemState(),close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("seek","",Class<IFunction>::getFunction(c->getSystemState(),seek),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("bytesLoaded","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesLoaded),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bytesTotal","",Class<IFunction>::getFunction(c->getSystemState(),_getBytesTotal),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("time","",Class<IFunction>::getFunction(c->getSystemState(),_getTime),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentFPS","",Class<IFunction>::getFunction(c->getSystemState(),_getCurrentFPS),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("client","",Class<IFunction>::getFunction(c->getSystemState(),_getClient),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("client","",Class<IFunction>::getFunction(c->getSystemState(),_setClient),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("checkPolicyFile","",Class<IFunction>::getFunction(c->getSystemState(),_getCheckPolicyFile),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("checkPolicyFile","",Class<IFunction>::getFunction(c->getSystemState(),_setCheckPolicyFile),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("attach","",Class<IFunction>::getFunction(c->getSystemState(),attach),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("appendBytes","",Class<IFunction>::getFunction(c->getSystemState(),appendBytes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("appendBytesAction","",Class<IFunction>::getFunction(c->getSystemState(),appendBytesAction),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play","",c->getSystemState()->getBuiltinFunction(play),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play2","",c->getSystemState()->getBuiltinFunction(play2),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("resume","",c->getSystemState()->getBuiltinFunction(resume),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("pause","",c->getSystemState()->getBuiltinFunction(pause),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("togglePause","",c->getSystemState()->getBuiltinFunction(togglePause),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("seek","",c->getSystemState()->getBuiltinFunction(seek),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("bytesLoaded","",c->getSystemState()->getBuiltinFunction(_getBytesLoaded),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesTotal","",c->getSystemState()->getBuiltinFunction(_getBytesTotal),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("time","",c->getSystemState()->getBuiltinFunction(_getTime),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentFPS","",c->getSystemState()->getBuiltinFunction(_getCurrentFPS),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("client","",c->getSystemState()->getBuiltinFunction(_getClient),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("client","",c->getSystemState()->getBuiltinFunction(_setClient),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("checkPolicyFile","",c->getSystemState()->getBuiltinFunction(_getCheckPolicyFile),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("checkPolicyFile","",c->getSystemState()->getBuiltinFunction(_setCheckPolicyFile),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attach","",c->getSystemState()->getBuiltinFunction(attach),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("appendBytes","",c->getSystemState()->getBuiltinFunction(appendBytes),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("appendBytesAction","",c->getSystemState()->getBuiltinFunction(appendBytesAction),NORMAL_METHOD,true);
 	REGISTER_GETTER(c, backBufferLength);
 	REGISTER_GETTER_SETTER(c, backBufferTime);
 	REGISTER_GETTER(c, bufferLength);
@@ -1387,8 +1388,8 @@ void NetStream::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, maxPauseBufferTime);
 	REGISTER_GETTER_SETTER(c,soundTransform);
 	REGISTER_GETTER_SETTER(c,useHardwareDecoder);
-	c->setDeclaredMethodByQName("info","",Class<IFunction>::getFunction(c->getSystemState(),_getInfo),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("publish","",Class<IFunction>::getFunction(c->getSystemState(),publish),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("info","",c->getSystemState()->getBuiltinFunction(_getInfo),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("publish","",c->getSystemState()->getBuiltinFunction(publish),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_GETTER(NetStream, backBufferLength)
@@ -2460,8 +2461,8 @@ void URLVariables::decode(const tiny_string& s)
 void URLVariables::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("decode","",Class<IFunction>::getFunction(c->getSystemState(),decode),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("decode","",c->getSystemState()->getBuiltinFunction(decode),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString),DYNAMIC_TRAIT);
 }
 
 URLVariables::URLVariables(ASWorker* wrk, Class_base* c, const tiny_string& s):ASObject(wrk,c)
@@ -2629,7 +2630,7 @@ ASFUNCTIONBODY_ATOM(lightspark,navigateToURL)
 void Responder::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("onResult","",Class<IFunction>::getFunction(c->getSystemState(),onResult),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("onResult","",c->getSystemState()->getBuiltinFunction(onResult),NORMAL_METHOD,true);
 }
 
 void Responder::finalize()

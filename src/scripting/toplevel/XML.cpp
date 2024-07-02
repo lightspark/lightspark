@@ -17,11 +17,15 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASQName.h"
+#include "scripting/toplevel/IFunction.h"
 #include "scripting/toplevel/Namespace.h"
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/Undefined.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/xml/flashxml.h"
 #include "scripting/class.h"
@@ -113,78 +117,78 @@ void XML::sinit(Class_base* c)
 	setDefaultXMLSettings();
 	c->isReusable=true;
 
-	c->setDeclaredMethodByQName("ignoreComments","",Class<IFunction>::getFunction(c->getSystemState(),_getIgnoreComments),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("ignoreComments","",Class<IFunction>::getFunction(c->getSystemState(),_setIgnoreComments),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("ignoreProcessingInstructions","",Class<IFunction>::getFunction(c->getSystemState(),_getIgnoreProcessingInstructions),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("ignoreProcessingInstructions","",Class<IFunction>::getFunction(c->getSystemState(),_setIgnoreProcessingInstructions),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("ignoreWhitespace","",Class<IFunction>::getFunction(c->getSystemState(),_getIgnoreWhitespace),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("ignoreWhitespace","",Class<IFunction>::getFunction(c->getSystemState(),_setIgnoreWhitespace),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("prettyIndent","",Class<IFunction>::getFunction(c->getSystemState(),_getPrettyIndent),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("prettyIndent","",Class<IFunction>::getFunction(c->getSystemState(),_setPrettyIndent),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("prettyPrinting","",Class<IFunction>::getFunction(c->getSystemState(),_getPrettyPrinting),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("prettyPrinting","",Class<IFunction>::getFunction(c->getSystemState(),_setPrettyPrinting),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("settings",AS3,Class<IFunction>::getFunction(c->getSystemState(),_getSettings),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("setSettings",AS3,Class<IFunction>::getFunction(c->getSystemState(),_setSettings),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("defaultSettings",AS3,Class<IFunction>::getFunction(c->getSystemState(),_getDefaultSettings),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("ignoreComments","",c->getSystemState()->getBuiltinFunction(_getIgnoreComments),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("ignoreComments","",c->getSystemState()->getBuiltinFunction(_setIgnoreComments),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("ignoreProcessingInstructions","",c->getSystemState()->getBuiltinFunction(_getIgnoreProcessingInstructions),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("ignoreProcessingInstructions","",c->getSystemState()->getBuiltinFunction(_setIgnoreProcessingInstructions),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("ignoreWhitespace","",c->getSystemState()->getBuiltinFunction(_getIgnoreWhitespace),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("ignoreWhitespace","",c->getSystemState()->getBuiltinFunction(_setIgnoreWhitespace),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("prettyIndent","",c->getSystemState()->getBuiltinFunction(_getPrettyIndent),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("prettyIndent","",c->getSystemState()->getBuiltinFunction(_setPrettyIndent),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("prettyPrinting","",c->getSystemState()->getBuiltinFunction(_getPrettyPrinting),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("prettyPrinting","",c->getSystemState()->getBuiltinFunction(_setPrettyPrinting),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("settings",AS3,c->getSystemState()->getBuiltinFunction(_getSettings),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("setSettings",AS3,c->getSystemState()->getBuiltinFunction(_setSettings),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("defaultSettings",AS3,c->getSystemState()->getBuiltinFunction(_getDefaultSettings),NORMAL_METHOD,false);
 
 	// undocumented method, see http://www.docsultant.com/site2/articles/flex_internals.html#xmlNotify
-	c->setDeclaredMethodByQName("notification",AS3,Class<IFunction>::getFunction(c->getSystemState(),notification),NORMAL_METHOD,true); // undocumented
-	c->setDeclaredMethodByQName("setNotification",AS3,Class<IFunction>::getFunction(c->getSystemState(),setNotification),NORMAL_METHOD,true); // undocumented
+	c->setDeclaredMethodByQName("notification",AS3,c->getSystemState()->getBuiltinFunction(notification),NORMAL_METHOD,true); // undocumented
+	c->setDeclaredMethodByQName("setNotification",AS3,c->getSystemState()->getBuiltinFunction(setNotification),NORMAL_METHOD,true); // undocumented
 
-	c->prototype->setVariableByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),DYNAMIC_TRAIT);
-	c->setDeclaredMethodByQName("toString",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("valueOf","",Class<IFunction>::getFunction(c->getSystemState(),valueOf),DYNAMIC_TRAIT);
-	c->setDeclaredMethodByQName("valueOf",AS3,Class<IFunction>::getFunction(c->getSystemState(),valueOf),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toXMLString","",Class<IFunction>::getFunction(c->getSystemState(),toXMLString),DYNAMIC_TRAIT);
-	c->setDeclaredMethodByQName("toXMLString",AS3,Class<IFunction>::getFunction(c->getSystemState(),toXMLString),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("nodeKind","",Class<IFunction>::getFunction(c->getSystemState(),nodeKind),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("nodeKind",AS3,Class<IFunction>::getFunction(c->getSystemState(),nodeKind),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("child",AS3,Class<IFunction>::getFunction(c->getSystemState(),child),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("child","",Class<IFunction>::getFunction(c->getSystemState(),child),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("children",AS3,Class<IFunction>::getFunction(c->getSystemState(),children,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("children","",Class<IFunction>::getFunction(c->getSystemState(),children,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("childIndex",AS3,Class<IFunction>::getFunction(c->getSystemState(),childIndex),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("contains",AS3,Class<IFunction>::getFunction(c->getSystemState(),contains),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("attribute",AS3,Class<IFunction>::getFunction(c->getSystemState(),attribute,1,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("attribute","",Class<IFunction>::getFunction(c->getSystemState(),attribute,1,Class<XMLList>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("attributes",AS3,Class<IFunction>::getFunction(c->getSystemState(),attributes,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("attributes","",Class<IFunction>::getFunction(c->getSystemState(),attributes,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("length",AS3,Class<IFunction>::getFunction(c->getSystemState(),length),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("localName",AS3,Class<IFunction>::getFunction(c->getSystemState(),localName),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("localName","",Class<IFunction>::getFunction(c->getSystemState(),localName),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("name",AS3,Class<IFunction>::getFunction(c->getSystemState(),name),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("name","",Class<IFunction>::getFunction(c->getSystemState(),name),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("namespace",AS3,Class<IFunction>::getFunction(c->getSystemState(),_namespace),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("namespace","",Class<IFunction>::getFunction(c->getSystemState(),_namespace),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("normalize",AS3,Class<IFunction>::getFunction(c->getSystemState(),_normalize),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("descendants",AS3,Class<IFunction>::getFunction(c->getSystemState(),descendants,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("appendChild",AS3,Class<IFunction>::getFunction(c->getSystemState(),_appendChild),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("parent",AS3,Class<IFunction>::getFunction(c->getSystemState(),parent),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("inScopeNamespaces",AS3,Class<IFunction>::getFunction(c->getSystemState(),inScopeNamespaces),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("addNamespace",AS3,Class<IFunction>::getFunction(c->getSystemState(),addNamespace),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("hasSimpleContent","",Class<IFunction>::getFunction(c->getSystemState(),_hasSimpleContent),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("hasSimpleContent",AS3,Class<IFunction>::getFunction(c->getSystemState(),_hasSimpleContent),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("hasComplexContent",AS3,Class<IFunction>::getFunction(c->getSystemState(),_hasComplexContent),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("text",AS3,Class<IFunction>::getFunction(c->getSystemState(),text),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("elements",AS3,Class<IFunction>::getFunction(c->getSystemState(),elements,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("elements","",Class<IFunction>::getFunction(c->getSystemState(),elements,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("setLocalName",AS3,Class<IFunction>::getFunction(c->getSystemState(),_setLocalName),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setName",AS3,Class<IFunction>::getFunction(c->getSystemState(),_setName),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setNamespace",AS3,Class<IFunction>::getFunction(c->getSystemState(),_setNamespace),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("copy","",Class<IFunction>::getFunction(c->getSystemState(),_copy),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("copy",AS3,Class<IFunction>::getFunction(c->getSystemState(),_copy),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("setChildren",AS3,Class<IFunction>::getFunction(c->getSystemState(),_setChildren),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toJSON",AS3,Class<IFunction>::getFunction(c->getSystemState(),_toJSON),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("insertChildAfter",AS3,Class<IFunction>::getFunction(c->getSystemState(),insertChildAfter),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("insertChildBefore",AS3,Class<IFunction>::getFunction(c->getSystemState(),insertChildBefore),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("namespaceDeclarations",AS3,Class<IFunction>::getFunction(c->getSystemState(),namespaceDeclarations),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeNamespace",AS3,Class<IFunction>::getFunction(c->getSystemState(),removeNamespace),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("comments",AS3,Class<IFunction>::getFunction(c->getSystemState(),comments),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("processingInstructions",AS3,Class<IFunction>::getFunction(c->getSystemState(),processingInstructions,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("propertyIsEnumerable",AS3,Class<IFunction>::getFunction(c->getSystemState(),_propertyIsEnumerable),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("hasOwnProperty",AS3,Class<IFunction>::getFunction(c->getSystemState(),_hasOwnProperty),DYNAMIC_TRAIT);
-	c->setDeclaredMethodByQName("prependChild",AS3,Class<IFunction>::getFunction(c->getSystemState(),_prependChild),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("replace",AS3,Class<IFunction>::getFunction(c->getSystemState(),_replace),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(valueOf),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(valueOf),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toXMLString","",c->getSystemState()->getBuiltinFunction(toXMLString),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toXMLString",AS3,c->getSystemState()->getBuiltinFunction(toXMLString),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("nodeKind","",c->getSystemState()->getBuiltinFunction(nodeKind),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("nodeKind",AS3,c->getSystemState()->getBuiltinFunction(nodeKind),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("child",AS3,c->getSystemState()->getBuiltinFunction(child),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("child","",c->getSystemState()->getBuiltinFunction(child),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("children",AS3,c->getSystemState()->getBuiltinFunction(children,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("children","",c->getSystemState()->getBuiltinFunction(children,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("childIndex",AS3,c->getSystemState()->getBuiltinFunction(childIndex),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("contains",AS3,c->getSystemState()->getBuiltinFunction(contains),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("attribute",AS3,c->getSystemState()->getBuiltinFunction(attribute,1,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("attribute","",c->getSystemState()->getBuiltinFunction(attribute,1,Class<XMLList>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("attributes",AS3,c->getSystemState()->getBuiltinFunction(attributes,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("attributes","",c->getSystemState()->getBuiltinFunction(attributes,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("length",AS3,c->getSystemState()->getBuiltinFunction(length),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("localName",AS3,c->getSystemState()->getBuiltinFunction(localName),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("localName","",c->getSystemState()->getBuiltinFunction(localName),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("name",AS3,c->getSystemState()->getBuiltinFunction(name),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("name","",c->getSystemState()->getBuiltinFunction(name),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("namespace",AS3,c->getSystemState()->getBuiltinFunction(_namespace),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("namespace","",c->getSystemState()->getBuiltinFunction(_namespace),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("normalize",AS3,c->getSystemState()->getBuiltinFunction(_normalize),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("descendants",AS3,c->getSystemState()->getBuiltinFunction(descendants,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("appendChild",AS3,c->getSystemState()->getBuiltinFunction(_appendChild),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("parent",AS3,c->getSystemState()->getBuiltinFunction(parent),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("inScopeNamespaces",AS3,c->getSystemState()->getBuiltinFunction(inScopeNamespaces),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addNamespace",AS3,c->getSystemState()->getBuiltinFunction(addNamespace),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("hasSimpleContent","",c->getSystemState()->getBuiltinFunction(_hasSimpleContent),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("hasSimpleContent",AS3,c->getSystemState()->getBuiltinFunction(_hasSimpleContent),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("hasComplexContent",AS3,c->getSystemState()->getBuiltinFunction(_hasComplexContent),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("text",AS3,c->getSystemState()->getBuiltinFunction(text),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("elements",AS3,c->getSystemState()->getBuiltinFunction(elements,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("elements","",c->getSystemState()->getBuiltinFunction(elements,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("setLocalName",AS3,c->getSystemState()->getBuiltinFunction(_setLocalName),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setName",AS3,c->getSystemState()->getBuiltinFunction(_setName),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setNamespace",AS3,c->getSystemState()->getBuiltinFunction(_setNamespace),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("copy","",c->getSystemState()->getBuiltinFunction(_copy),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("copy",AS3,c->getSystemState()->getBuiltinFunction(_copy),CONSTANT_TRAIT);
+	c->setDeclaredMethodByQName("setChildren",AS3,c->getSystemState()->getBuiltinFunction(_setChildren),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toJSON",AS3,c->getSystemState()->getBuiltinFunction(_toJSON),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("insertChildAfter",AS3,c->getSystemState()->getBuiltinFunction(insertChildAfter),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("insertChildBefore",AS3,c->getSystemState()->getBuiltinFunction(insertChildBefore),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("namespaceDeclarations",AS3,c->getSystemState()->getBuiltinFunction(namespaceDeclarations),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeNamespace",AS3,c->getSystemState()->getBuiltinFunction(removeNamespace),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("comments",AS3,c->getSystemState()->getBuiltinFunction(comments),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("processingInstructions",AS3,c->getSystemState()->getBuiltinFunction(processingInstructions,0,Class<XMLList>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("propertyIsEnumerable",AS3,c->getSystemState()->getBuiltinFunction(_propertyIsEnumerable),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("hasOwnProperty",AS3,c->getSystemState()->getBuiltinFunction(_hasOwnProperty),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("prependChild",AS3,c->getSystemState()->getBuiltinFunction(_prependChild),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("replace",AS3,c->getSystemState()->getBuiltinFunction(_replace),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(XML,generator)

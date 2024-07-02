@@ -30,9 +30,10 @@ namespace lightspark
 class ContextMenuItem : public NativeMenuItem
 {
 protected:
-	_NR<IFunction> callbackfunction;
+	_NR<ASObject> callbackfunction;
 public:
-	ContextMenuItem(ASWorker* wrk,Class_base* c):NativeMenuItem(wrk,c){}
+	ContextMenuItem(ASWorker* wrk,Class_base* c);
+	~ContextMenuItem();
 	void defaultEventBehavior(_R<Event> e) override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);

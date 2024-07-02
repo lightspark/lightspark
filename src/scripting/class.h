@@ -17,15 +17,16 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#ifndef SCRIPTING_CLASS_H
+#define SCRIPTING_CLASS_H 1
+
 #include "compat.h"
 #include "asobject.h"
 #include "swf.h"
-#include "scripting/toplevel/toplevel.h"
+#include "scripting/toplevel/Class_base.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "backends/streamcache.h"
 
-#ifndef SCRIPTING_CLASS_H
-#define SCRIPTING_CLASS_H 1
 
 namespace lightspark
 {

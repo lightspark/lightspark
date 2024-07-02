@@ -25,8 +25,10 @@
 #include "scripting/argconv.h"
 #include <algorithm>
 #include "scripting/flash/ui/gameinput.h"
+#include "scripting/toplevel/IFunction.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/toplevel/Undefined.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/net/flashnet.h"
@@ -140,12 +142,12 @@ void Event::sinit(Class_base* c)
 	c->setVariableAtomByQName("VIDEO_FRAME",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"videoFrame"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("WORKER_STATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"workerState"),DECLARED_TRAIT);
 
-	c->setDeclaredMethodByQName("formatToString","",Class<IFunction>::getFunction(c->getSystemState(),formatToString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("isDefaultPrevented","",Class<IFunction>::getFunction(c->getSystemState(),_isDefaultPrevented),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("preventDefault","",Class<IFunction>::getFunction(c->getSystemState(),_preventDefault),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("clone","",Class<IFunction>::getFunction(c->getSystemState(),clone),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("stopPropagation","",Class<IFunction>::getFunction(c->getSystemState(),stopPropagation),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("stopImmediatePropagation","",Class<IFunction>::getFunction(c->getSystemState(),stopImmediatePropagation),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("formatToString","",c->getSystemState()->getBuiltinFunction(formatToString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isDefaultPrevented","",c->getSystemState()->getBuiltinFunction(_isDefaultPrevented),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("preventDefault","",c->getSystemState()->getBuiltinFunction(_preventDefault),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stopPropagation","",c->getSystemState()->getBuiltinFunction(stopPropagation),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("stopImmediatePropagation","",c->getSystemState()->getBuiltinFunction(stopImmediatePropagation),NORMAL_METHOD,true);
 	REGISTER_GETTER_RESULTTYPE(c,currentTarget,ASObject);
 	REGISTER_GETTER_RESULTTYPE(c,target,ASObject);
 	REGISTER_GETTER_RESULTTYPE(c,type,ASString);
@@ -339,7 +341,7 @@ void TimerEvent::sinit(Class_base* c)
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("TIMER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"timer"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("TIMER_COMPLETE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"timerComplete"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(c->getSystemState(),updateAfterEvent),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("updateAfterEvent","",c->getSystemState()->getBuiltinFunction(updateAfterEvent),NORMAL_METHOD,true);
 }
 ASFUNCTIONBODY_ATOM(TimerEvent,updateAfterEvent)
 {
@@ -367,7 +369,7 @@ void MouseEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("MIDDLE_MOUSE_UP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"middleMouseUp"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("CONTEXT_MENU",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"contextMenu"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("RELEASE_OUTSIDE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"releaseOutside"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(c->getSystemState(),updateAfterEvent),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("updateAfterEvent","",c->getSystemState()->getBuiltinFunction(updateAfterEvent),NORMAL_METHOD,true);
 
 	REGISTER_GETTER_SETTER(c,relatedObject);
 	REGISTER_GETTER(c,stageX);
@@ -576,7 +578,7 @@ void NativeWindowBoundsEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("MOVING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"moving"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("RESIZE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"resize"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("RESIZING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"resizing"),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	
 	REGISTER_GETTER_RESULTTYPE(c,afterBounds,Rectangle);
 	REGISTER_GETTER_RESULTTYPE(c,beforeBounds,Rectangle);
@@ -717,10 +719,10 @@ void EventDispatcher::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->addImplementedInterface(InterfaceClass<IEventDispatcher>::getClass(c->getSystemState()));
 
-	c->setDeclaredMethodByQName("addEventListener","",Class<IFunction>::getFunction(c->getSystemState(),addEventListener),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("hasEventListener","",Class<IFunction>::getFunction(c->getSystemState(),_hasEventListener,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeEventListener","",Class<IFunction>::getFunction(c->getSystemState(),removeEventListener),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("dispatchEvent","",Class<IFunction>::getFunction(c->getSystemState(),dispatchEvent,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addEventListener","",c->getSystemState()->getBuiltinFunction(addEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hasEventListener","",c->getSystemState()->getBuiltinFunction(_hasEventListener,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeEventListener","",c->getSystemState()->getBuiltinFunction(removeEventListener),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dispatchEvent","",c->getSystemState()->getBuiltinFunction(dispatchEvent,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 
 	IEventDispatcher::linkTraits(c);
 }
@@ -1066,7 +1068,7 @@ void KeyboardEvent::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, shiftKey,Boolean);
 	c->setVariableAtomByQName("KEY_DOWN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"keyDown"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("KEY_UP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"keyUp"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("updateAfterEvent","",Class<IFunction>::getFunction(c->getSystemState(),updateAfterEvent),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("updateAfterEvent","",c->getSystemState()->getBuiltinFunction(updateAfterEvent),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent,_constructor)
@@ -1729,7 +1731,7 @@ void SampleDataEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, Event, CLASS_SEALED);
 	c->setVariableAtomByQName("SAMPLE_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"sampleData"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, data,ByteArray);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, position,Number);
@@ -1800,7 +1802,7 @@ void ThrottleEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("THROTTLE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"Throttle"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("toString","",Class<IFunction>::getFunction(c->getSystemState(),_toString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString),NORMAL_METHOD,true);
 	
 	REGISTER_GETTER(c, state);
 	REGISTER_GETTER(c, targetFrameRate);

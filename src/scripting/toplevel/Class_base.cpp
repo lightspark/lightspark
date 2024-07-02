@@ -1262,7 +1262,16 @@ EARLY_BIND_STATUS ActivationType::resolveMultinameStatically(const multiname& na
 		assert_and_throw(mname->ns.size()==1 && mname->name_type==multiname::NAME_STRING);
 		if(mname->name_s_id!=name.normalizedNameId(mi->context->root->getSystemState()))
 			continue;
-		if(find(name.ns.begin(),name.ns.end(),mname->ns[0])==name.ns.end())
+		bool found=false;
+		for (auto it = name.ns.begin(); it != name.ns.end(); it++)
+		{
+			if ((*it)==mname->ns[0])
+			{
+				found = true;
+				break;
+			}
+		}
+		if(!found)
 			continue;
 		return BINDED;
 	}

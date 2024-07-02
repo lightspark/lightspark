@@ -189,24 +189,6 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 							  || !state->filters.empty()
 							  || DisplayObject::isShaderBlendMode(ctxt.transformStack().transform().blendmode)
 							  || (state->needsLayer && sys->getRenderThread()->filterframebufferstack.empty());
-	if (state->src->getTagID()==58)
-	{
-		int x=0;
-	}
-	if (!needscachedtexture)
-	{
-		auto it= state->childrenlist.begin();
-		for(;it!=state->childrenlist.end();++it)
-		{
-			CachedSurface* child = (*it).getPtr();
-			if (child->state->needsLayer)
-			{
-				needscachedtexture=true;
-				break;
-			}
-		}
-	}
-//	LOG(LOG_ERROR,"Rendercached:"<<container<<" "<<state->src->toDebugString()<<" "<<state->blendmode<<" "<<needscachedtexture<<state->cacheAsBitmap<<state->needsLayer<<" "<<cachedFilterTextureID<<" "<<state->needsFilterRefresh);
 	if (needscachedtexture && (state->needsFilterRefresh || cachedFilterTextureID != UINT32_MAX))
 	{
 		if (!isInitialized)

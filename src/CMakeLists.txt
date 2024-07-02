@@ -383,6 +383,7 @@ IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   ENDIF()
   IF(MINGW)
     #library for handling communication with native extensions, has to be named "Adobe AIR.dll" on Windows
+    SET_TARGET_PROPERTIES(nativeextension PROPERTIES PREFIX "")
     SET_TARGET_PROPERTIES(nativeextension PROPERTIES OUTPUT_NAME "Adobe AIR")  
     SET_TARGET_PROPERTIES(spark PROPERTIES LINK_FLAGS "-Wl,--export-all-symbols")
   ELSE()

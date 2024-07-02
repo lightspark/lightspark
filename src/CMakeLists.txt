@@ -373,7 +373,7 @@ IF(EMSCRIPTEN)
 ELSE()
 IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   ADD_LIBRARY(spark SHARED ${LIBSPARK_SOURCES})
-  #library for handling communication with native extensions, has to be named "libCore.so"
+  #library for handling communication with native extensions, has to be named "libCore.so" on Linux
   ADD_LIBRARY(nativeextension SHARED ${LIBNATIVEEXTENSION_SOURCES})
   SET_TARGET_PROPERTIES(nativeextension PROPERTIES OUTPUT_NAME Core)
   TARGET_LINK_LIBRARIES(spark nativeextension)
@@ -382,6 +382,8 @@ IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     SET_TARGET_PROPERTIES(spark PROPERTIES OUTPUT_NAME lightspark)
   ENDIF()
   IF(MINGW)
+    #library for handling communication with native extensions, has to be named "Adobe AIR.dll" on Windows
+    SET_TARGET_PROPERTIES(nativeextension PROPERTIES OUTPUT_NAME "Adobe AIR")  
     SET_TARGET_PROPERTIES(spark PROPERTIES LINK_FLAGS "-Wl,--export-all-symbols")
   ELSE()
     SET_TARGET_PROPERTIES(spark PROPERTIES LINK_FLAGS "-Wl,--version-script=${PROJECT_SOURCE_DIR}/src/lightspark.expmap")

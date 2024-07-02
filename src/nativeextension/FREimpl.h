@@ -23,6 +23,12 @@
 #include "compat.h"
 
 extern "C" {
+#if defined(_WIN32)
+#	define FRE_DLL_PUBLIC __declspec(dllexport)
+#else
+#	define FRE_DLL_PUBLIC __attribute__ ((visibility("default")))
+#endif
+
 // Definitions taken from https://help.adobe.com/en_US/air/extensions/air_extensions.pdf
 typedef void* FREContext;
 typedef void* FREObject;
@@ -114,36 +120,36 @@ typedef void (*FREInitializer)(
 	FREContextFinalizer* contextFinalizerToSet
 	);
 
-FREResult DLL_PUBLIC FREAcquireBitmapData ( FREObject object, FREBitmapData* descriptorToSet );
-FREResult DLL_PUBLIC FREAcquireBitmapData2 ( FREObject object, FREBitmapData2* descriptorToSet );
-FREResult DLL_PUBLIC FREAcquireByteArray( FREObject object, FREByteArray* byteArrayToSet );
-FREResult DLL_PUBLIC FRECallObjectMethod( FREObject object, const uint8_t* methodName, uint32_t argc, FREObject argv[], FREObject* result, FREObject* thrownException );
-FREResult DLL_PUBLIC FREDispatchStatusEventAsync( FREContext ctx, const uint8_t* code, const uint8_t* level );
-FREResult DLL_PUBLIC FREGetArrayElementAt( FREObject arrayOrVector, uint32_t index, FREObject* value );
-FREResult DLL_PUBLIC FREGetArrayLength( FREObject arrayOrVector, uint32_t* length );
-FREResult DLL_PUBLIC FREGetContextActionScriptData( FREContext ctx, FREObject *actionScriptData);
-FREResult DLL_PUBLIC FREGetContextNativeData( FREContext ctx, void** nativeData );
-FREResult DLL_PUBLIC FREGetObjectAsBool (FREObject object, uint32_t* value );
-FREResult DLL_PUBLIC FREGetObjectAsDouble ( FREObject object, double *value );
-FREResult DLL_PUBLIC FREGetObjectAsInt32 ( FREObject object, int32_t *value );
-FREResult DLL_PUBLIC FREGetObjectAsUint32 ( FREObject object, uint32_t *value );
-FREResult DLL_PUBLIC FREGetObjectAsUTF8( FREObject object, uint32_t* length, const uint8_t** value );
-FREResult DLL_PUBLIC FREGetObjectProperty( FREObject object, const uint8_t* propertyName, FREObject* propertyValue, FREObject* thrownException );
-FREResult DLL_PUBLIC FREGetObjectType( FREObject object, FREObjectType *objectType );
-FREResult DLL_PUBLIC FREInvalidateBitmapDataRect( FREObject object, uint32_t x, uint32_t y, uint32_t width, uint32_t height );
-FREResult DLL_PUBLIC FRENewObject( const uint8_t* className, uint32_t argc, FREObject argv[], FREObject* object, FREObject* thrownException );
-FREResult DLL_PUBLIC FRENewObjectFromBool ( uint32_t value, FREObject* object);
-FREResult DLL_PUBLIC FRENewObjectFromDouble ( double value, FREObject* object);
-FREResult DLL_PUBLIC FRENewObjectFromInt32 ( int32_t value, FREObject* object);
-FREResult DLL_PUBLIC FRENewObjectFromUint32 ( uint32_t value, FREObject* object);
-FREResult DLL_PUBLIC FRENewObjectFromUTF8(uint32_t length, const uint8_t* value, FREObject* object);
-FREResult DLL_PUBLIC FREReleaseBitmapData (FREObject object);
-FREResult DLL_PUBLIC FREReleaseByteArray (FREObject object);
-FREResult DLL_PUBLIC FRESetArrayElementAt ( FREObject arrayOrVector, uint32_t index, FREObject value );
-FREResult DLL_PUBLIC FRESetArrayLength ( FREObject arrayOrVector, uint32_t length );
-FREResult DLL_PUBLIC FRESetContextActionScriptData( FREContext ctx, FREObject actionScriptData);
-FREResult DLL_PUBLIC FRESetContextNativeData( FREContext ctx, void* nativeData );
-FREResult DLL_PUBLIC FRESetObjectProperty( FREObject object, const uint8_t* propertyName, FREObject propertyValue, FREObject* thrownException );
+FREResult FRE_DLL_PUBLIC FREAcquireBitmapData ( FREObject object, FREBitmapData* descriptorToSet );
+FREResult FRE_DLL_PUBLIC FREAcquireBitmapData2 ( FREObject object, FREBitmapData2* descriptorToSet );
+FREResult FRE_DLL_PUBLIC FREAcquireByteArray( FREObject object, FREByteArray* byteArrayToSet );
+FREResult FRE_DLL_PUBLIC FRECallObjectMethod( FREObject object, const uint8_t* methodName, uint32_t argc, FREObject argv[], FREObject* result, FREObject* thrownException );
+FREResult FRE_DLL_PUBLIC FREDispatchStatusEventAsync( FREContext ctx, const uint8_t* code, const uint8_t* level );
+FREResult FRE_DLL_PUBLIC FREGetArrayElementAt( FREObject arrayOrVector, uint32_t index, FREObject* value );
+FREResult FRE_DLL_PUBLIC FREGetArrayLength( FREObject arrayOrVector, uint32_t* length );
+FREResult FRE_DLL_PUBLIC FREGetContextActionScriptData( FREContext ctx, FREObject *actionScriptData);
+FREResult FRE_DLL_PUBLIC FREGetContextNativeData( FREContext ctx, void** nativeData );
+FREResult FRE_DLL_PUBLIC FREGetObjectAsBool (FREObject object, uint32_t* value );
+FREResult FRE_DLL_PUBLIC FREGetObjectAsDouble ( FREObject object, double *value );
+FREResult FRE_DLL_PUBLIC FREGetObjectAsInt32 ( FREObject object, int32_t *value );
+FREResult FRE_DLL_PUBLIC FREGetObjectAsUint32 ( FREObject object, uint32_t *value );
+FREResult FRE_DLL_PUBLIC FREGetObjectAsUTF8( FREObject object, uint32_t* length, const uint8_t** value );
+FREResult FRE_DLL_PUBLIC FREGetObjectProperty( FREObject object, const uint8_t* propertyName, FREObject* propertyValue, FREObject* thrownException );
+FREResult FRE_DLL_PUBLIC FREGetObjectType( FREObject object, FREObjectType *objectType );
+FREResult FRE_DLL_PUBLIC FREInvalidateBitmapDataRect( FREObject object, uint32_t x, uint32_t y, uint32_t width, uint32_t height );
+FREResult FRE_DLL_PUBLIC FRENewObject( const uint8_t* className, uint32_t argc, FREObject argv[], FREObject* object, FREObject* thrownException );
+FREResult FRE_DLL_PUBLIC FRENewObjectFromBool ( uint32_t value, FREObject* object);
+FREResult FRE_DLL_PUBLIC FRENewObjectFromDouble ( double value, FREObject* object);
+FREResult FRE_DLL_PUBLIC FRENewObjectFromInt32 ( int32_t value, FREObject* object);
+FREResult FRE_DLL_PUBLIC FRENewObjectFromUint32 ( uint32_t value, FREObject* object);
+FREResult FRE_DLL_PUBLIC FRENewObjectFromUTF8(uint32_t length, const uint8_t* value, FREObject* object);
+FREResult FRE_DLL_PUBLIC FREReleaseBitmapData (FREObject object);
+FREResult FRE_DLL_PUBLIC FREReleaseByteArray (FREObject object);
+FREResult FRE_DLL_PUBLIC FRESetArrayElementAt ( FREObject arrayOrVector, uint32_t index, FREObject value );
+FREResult FRE_DLL_PUBLIC FRESetArrayLength ( FREObject arrayOrVector, uint32_t length );
+FREResult FRE_DLL_PUBLIC FRESetContextActionScriptData( FREContext ctx, FREObject actionScriptData);
+FREResult FRE_DLL_PUBLIC FRESetContextNativeData( FREContext ctx, void* nativeData );
+FREResult FRE_DLL_PUBLIC FRESetObjectProperty( FREObject object, const uint8_t* propertyName, FREObject propertyValue, FREObject* thrownException );
 }
 
 namespace lightspark

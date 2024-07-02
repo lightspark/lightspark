@@ -140,11 +140,7 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getManufacturer)
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getOS)
 {
-#ifdef _WIN32
-	ret = asAtomHandler::fromString(wrk->getSystemState(),"Windows");
-#else
-	ret = asAtomHandler::fromString(wrk->getSystemState(),"Linux");
-#endif
+	ret = asAtomHandler::fromString(wrk->getSystemState(),wrk->getSystemState()->getEngineData()->platformOS);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_getVersion)
@@ -155,7 +151,10 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getVersion)
 ASFUNCTIONBODY_ATOM(Capabilities,_getServerString)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Capabilities: not all capabilities are reported in ServerString");
-	tiny_string res = "&SA=t&SV=t&OS=Linux&PT=PlugIn&L=en&TLS=t&DD=t";
+	tiny_string res = "&SA=t&SV=t";
+	res +="&OS=";
+	res += wrk->getSystemState()->getEngineData()->platformOS;
+	res +="&PT=PlugIn&L=en&TLS=t&DD=t"; // TODO
 	res +="&V=";
 	res += EMULATED_VERSION;
 	res +="&M=";

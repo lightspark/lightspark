@@ -512,7 +512,8 @@ int main(int argc, char* argv[])
 	std::vector<tiny_string> extensions;
 
 	LOG(LOG_INFO,"Lightspark version " << VERSION << " Copyright 2009-2013 Alessandro Pignotti and others");
-
+	
+	tiny_string spoof_os;
 	for(int i=1;i<argc;i++)
 	{
 		if(strcmp(argv[i],"-u")==0 || 
@@ -639,6 +640,16 @@ int main(int argc, char* argv[])
 				break;
 			}
 			HTTPcookie=argv[i];
+		}
+		else if(strcmp(argv[i],"-os")==0 || 
+				 strcmp(argv[i],"--spoof-os")==0)
+		{
+			i++;
+			if(i==argc)
+			{
+				break;
+			}
+			spoof_os = argv[i];
 		}
 		else if(strcmp(argv[i],"-h")==0 || 
 				 strcmp(argv[i],"--help")==0)
@@ -804,6 +815,8 @@ int main(int argc, char* argv[])
 	sys->getEngineData()->setLocalStorageAllowedMarker(true);
 	sys->getEngineData()->startInFullScreenMode=startInFullScreenMode;
 	sys->getEngineData()->startscalefactor=startscalefactor;
+	if (!spoof_os.empty())
+		sys->getEngineData()->platformOS=spoof_os;
 
 	sys->securityManager->setSandboxType(sandboxType);
 	if(sandboxType == SecurityManager::REMOTE)

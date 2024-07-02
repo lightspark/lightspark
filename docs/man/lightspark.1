@@ -70,6 +70,11 @@ Output profiling data to profiling-file in a callgrind/KCachegrind compatible fo
 \fB\-\-security-sandbox\fP type, \fB\-s\fP type
 .IP
 Run a Flash file in a given sandbox to control access to network and local files. The possible types are: remote (default), local-with-filesystem, local-with-networking, local-trusted.
+.HP 
+\fB\-\-spoof-os\fP operating system, \fB\-os\fP operating system
+.IP
+pretends lightspark is running on another operating system.
+This sets the string that lightspark reports in flash.system.Capabilities.os.
 .HP
 \fB\-\-exit-on-error\fP
 .IP

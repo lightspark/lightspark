@@ -72,6 +72,11 @@ EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdl
 	width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false),
 	startInFullScreenMode(false),startscalefactor(1.0)
 {
+#ifdef _WIN32
+	platformOS="Windows";
+#else
+	platformOS="Linux";
+#endif
 }
 
 EngineData::~EngineData()

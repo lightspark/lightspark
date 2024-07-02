@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* implement command line argument to spoof the OS lightspark is reporting to the swf
 	* add simple launch dialog that is displayed on startup if no swf file is specified
 	* add stub for flash.profiler.showRedrawRegions
 	* improved support for AIR native extensions
@@ -11,7 +12,6 @@ Version NEXT:
 	* big rework of the rendering engine for better handling of masks and filters
 	* improved Stage3D support
 	* partially implement flash.net.LocalConnection
-	* improved support for Adobe AIR applications
 	* implement filters as glsl shaders
 	* implement rendering with extended Blendmodes OVERLAY and HARDLIGHT
 	* improved support for flash.text.textengine package

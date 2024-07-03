@@ -231,9 +231,12 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 	using KeyType = LSKeyEvent::KeyType;
 	using ButtonType = LSMouseButtonEvent::ButtonType;
 	using TextType = LSTextEvent::TextType;
+	using FocusType = LSWindowFocusEvent::FocusType;
+	using QuitType = LSQuitEvent::QuitType;
 
 	switch (event.type)
 	{
+		// Input events.
 		case SDL_KEYDOWN:
 		case SDL_KEYUP:
 		{
@@ -303,6 +306,66 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 			);
 			break;
 		}
+		// Non-input events.
+		case SDL_WINDOWEVENT:
+		{
+			auto& window = event.window;
+			switch (window.event)
+			{
+				case SDL_WINDOWEVENT_RESIZED:
+				case SDL_WINDOWEVENT_SIZE_CHANGED: return LSWindowResizedEvent
+				(
+					Vector2f(window.data1, window.data2)
+				);
+				break;
+				case SDL_WINDOWEVENT_MOVED: return LSWindowMovedEvent
+				(
+					Vector2f(window.data1, window.data2)
+				);
+				break;
+				case SDL_WINDOWEVENT_EXPOSED: return LSWindowExposedEvent(); break;
+				case SDL_WINDOWEVENT_FOCUS_GAINED:
+				case SDL_WINDOWEVENT_FOCUS_LOST:
+				case SDL_WINDOWEVENT_ENTER:
+				case SDL_WINDOWEVENT_LEAVE: return LSWindowFocusEvent
+				(
+					// focusType
+					window.event == SDL_WINDOWEVENT_ENTER ||
+					window.event == SDL_WINDOWEVENT_LEAVE
+					? FocusType::Mouse : FocusType::Keyboard,
+					// focused
+					window.event == SDL_WINDOWEVENT_ENTER ||
+					window.event == SDL_WINDOWEVENT_FOCUS_GAINED
+				);
+				break;
+			}
+			break;
+		}
+		case SDL_QUIT: return LSQuitEvent(QuitType::System); break;
+		// Misc events.
+		default:
+		{
+			switch (event.type-EngineData::userevent)
+			{
+				// LS_USEREVENT_INIT
+				case 0: return LSInitEvent{}; break;
+				// LS_USEREVENT_EXEC
+				case 1: return LSExecEvent((LSExecEvent::Callback)event.user.data1); break;
+				// LS_USEREVENT_QUIT
+				case 2: return LSQuitEvent(QuitType::User); break;
+				// LS_USEREVENT_OPEN_CONTEXTMENU
+				case 3: return LSOpenContextMenuEvent((InteractiveObject*)event.user.data1); break;
+				// LS_USEREVENT_UPDATE_CONTEXTMENU
+				case 4: return LSUpdateContextMenuEvent(*(int*)event.user.data1); break;
+				// LS_USEREVENT_SELECTITEM_CONTEXTMENU
+				case 5: return LSSelectItemContextMenuEvent(); break;
+				// LS_USEREVENT_INTERACTIVE_OBJECT_REMOVED_FROM_STAGE
+				case 6: return LSRemovedFromStageEvent{}; break;
+				// LS_USEREVENT_NEWTIMER
+				case 7: return LSNewTimerEvent{}; break;
+			}
+			break;
+		}
 	}
 	return LSEvent{};
 }
@@ -312,6 +375,10 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 	using KeyType = LSKeyEvent::KeyType;
 	using ButtonType = LSMouseButtonEvent::ButtonType;
 	using TextType = LSTextEvent::TextType;
+	using WindowType = LSWindowEvent::WindowType;
+	using FocusType = LSWindowFocusEvent::FocusType;
+	using QuitType = LSQuitEvent::QuitType;
+	using ContextMenuType = LSContextMenuEvent::ContextMenuType;
 
 	switch (event.getType())
 	{
@@ -362,6 +429,102 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 				break;
 			this->event.type = SDL_TEXTINPUT;
 			memcpy(this->event.text.text, text.text.raw_buf(), text.text.numBytes());
+			break;
+		}
+		// Non-input events.
+		case LSEvent::Type::Window:
+		{
+			auto& window = static_cast<const LSWindowEvent&>(event);
+			this->event.type = SDL_WINDOWEVENT;
+			switch (window.type)
+			{
+				case WindowType::Resized:
+				{
+					auto& resize = static_cast<const LSWindowResizedEvent&>(event);
+					this->event.window.event = SDL_WINDOWEVENT_RESIZED;
+					this->event.window.data1 = resize.size.x;
+					this->event.window.data2 = resize.size.y;
+					break;
+				}
+				case WindowType::Moved:
+				{
+					auto& move = static_cast<const LSWindowMovedEvent&>(event);
+					this->event.window.event = SDL_WINDOWEVENT_MOVED;
+					this->event.window.data1 = move.pos.x;
+					this->event.window.data2 = move.pos.y;
+					break;
+				}
+				case WindowType::Exposed:
+				{
+					this->event.window.event = SDL_WINDOWEVENT_EXPOSED;
+					break;
+				}
+				case WindowType::Focus:
+				{
+					auto& focus = static_cast<const LSWindowFocusEvent&>(event);
+					if (focus.focusType == FocusType::Keyboard)
+						this->event.window.event = focus.focused ? SDL_WINDOWEVENT_FOCUS_GAINED : SDL_WINDOWEVENT_FOCUS_LOST;
+					else
+						this->event.window.event = focus.focused ? SDL_WINDOWEVENT_ENTER : SDL_WINDOWEVENT_LEAVE;
+					break;
+				}
+			}
+			break;
+		}
+		case LSEvent::Type::Quit:
+		{
+			auto& quit = static_cast<const LSQuitEvent&>(event);
+			this->event.type = quit.quitType == QuitType::System ? SDL_QUIT : (SDL_EventType)LS_USEREVENT_QUIT;
+			break;
+		}
+		// Misc events.
+		case LSEvent::Type::Init:
+		{
+			this->event.type = LS_USEREVENT_INIT;
+			break;
+		}
+		case LSEvent::Type::Exec:
+		{
+			auto& exec = static_cast<const LSExecEvent&>(event);
+			this->event.type = LS_USEREVENT_EXEC;
+			this->event.user.data1 = (void*)exec.callback;
+			break;
+		}
+		case LSEvent::Type::ContextMenu:
+		{
+			auto& context = static_cast<const LSContextMenuEvent&>(event);
+			switch (context.type)
+			{
+				case ContextMenuType::Open:
+				{
+					auto& open = static_cast<const LSOpenContextMenuEvent&>(event);
+					this->event.type = LS_USEREVENT_OPEN_CONTEXTMENU;
+					this->event.user.data1 = open.obj;
+					break;
+				}
+				case ContextMenuType::Update:
+				{
+					auto& update = static_cast<const LSUpdateContextMenuEvent&>(event);
+					this->event.type = LS_USEREVENT_UPDATE_CONTEXTMENU;
+					this->event.user.data1 = new int(update.selectedItem);
+					break;
+				}
+				case ContextMenuType::SelectItem:
+				{
+					this->event.type = LS_USEREVENT_SELECTITEM_CONTEXTMENU;
+					break;
+				}
+			}
+			break;
+		}
+		case LSEvent::Type::RemovedFromStage:
+		{
+			this->event.type = LS_USEREVENT_INTERACTIVEOBJECT_REMOVED_FOM_STAGE;
+			break;
+		}
+		case LSEvent::Type::NewTimer:
+		{
+			this->event.type = LS_USEREVENT_NEW_TIMER;
 			break;
 		}
 		default: break;

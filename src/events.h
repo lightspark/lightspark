@@ -23,6 +23,7 @@
 #include "swftypes.h"
 #include "tiny_string.h"
 #include "backends/geometry.h"
+#include "forwards/scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/ui/keycodes.h"
 #include <type_traits>
 
@@ -61,11 +62,21 @@ struct LSEvent
 	enum Type
 	{
 		Invalid,
+		// Input events.
 		MouseMove,
 		MouseWheel,
 		MouseButton,
 		Key,
 		Text,
+		// Non-input events.
+		Window,
+		Quit,
+		// Misc events.
+		Init,
+		Exec,
+		ContextMenu,
+		RemovedFromStage,
+		NewTimer,
 	};
 
 	virtual ~LSEvent() {}
@@ -191,6 +202,135 @@ struct LSTextEvent : public LSEvent
 	) : text(_text), type(_type) {}
 
 	LSEvent::Type getType() const override { return LSEvent::Type::Text; }
+};
+
+// Non-input events.
+struct LSWindowEvent : public LSEvent
+{
+	enum WindowType
+	{
+		Resized,
+		Moved,
+		Exposed,
+		Focus,
+	};
+
+	WindowType type;
+
+	LSWindowEvent(const WindowType& _type) : type(_type) {}
+	LSEvent::Type getType() const override { return LSEvent::Type::Window; }
+};
+
+struct LSWindowResizedEvent : public LSWindowEvent
+{
+	// TODO: Use twips instead of float.
+	Vector2f size;
+
+	LSWindowResizedEvent(const Vector2f& _size) : LSWindowEvent(WindowType::Resized), size(_size) {}
+};
+
+struct LSWindowMovedEvent : public LSWindowEvent
+{
+	// TODO: Maybe use twips instead of float.
+	Vector2f pos;
+
+	LSWindowMovedEvent(const Vector2f& _pos) : LSWindowEvent(WindowType::Moved), pos(_pos) {}
+};
+
+struct LSWindowExposedEvent : public LSWindowEvent
+{
+	LSWindowExposedEvent() : LSWindowEvent(WindowType::Exposed) {}
+};
+
+struct LSWindowFocusEvent : public LSWindowEvent
+{
+	enum FocusType
+	{
+		Keyboard,
+		Mouse,
+	};
+
+	FocusType focusType;
+	bool focused;
+
+	LSWindowFocusEvent
+	(
+		const FocusType& _focusType,
+		bool _focused
+	) : LSWindowEvent(WindowType::Focus), focusType(_focusType), focused(_focused) {}
+};
+
+struct LSQuitEvent : public LSEvent
+{
+	enum QuitType
+	{
+		System,
+		User,
+	};
+
+	QuitType quitType;
+
+	LSQuitEvent(const QuitType& _quitType) : quitType(_quitType) {}
+	LSEvent::Type getType() const override { return LSEvent::Type::Quit; }
+};
+
+// Misc events.
+struct LSInitEvent : public LSEvent
+{
+	LSEvent::Type getType() const override { return LSEvent::Type::Init; }
+};
+
+struct LSExecEvent : public LSEvent
+{
+	using Callback = void (*)(SystemState* sys);
+	Callback callback;
+
+	LSExecEvent(Callback _callback) : callback(_callback) {}
+	LSEvent::Type getType() const override { return LSEvent::Type::Exec; }
+};
+
+struct LSContextMenuEvent : public LSEvent
+{
+	enum ContextMenuType
+	{
+		Open,
+		Update,
+		SelectItem,
+	};
+
+	ContextMenuType type;
+
+	LSContextMenuEvent(const ContextMenuType& _type) : type(_type) {}
+	LSEvent::Type getType() const override { return LSEvent::Type::Quit; }
+};
+
+struct LSOpenContextMenuEvent : public LSContextMenuEvent
+{
+	InteractiveObject* obj;
+
+	LSOpenContextMenuEvent(InteractiveObject* _obj) : LSContextMenuEvent(ContextMenuType::Open), obj(_obj) {}
+};
+
+struct LSUpdateContextMenuEvent : public LSContextMenuEvent
+{
+	int selectedItem;
+
+	LSUpdateContextMenuEvent(int _selectedItem) : LSContextMenuEvent(ContextMenuType::Update), selectedItem(_selectedItem) {}
+};
+
+struct LSSelectItemContextMenuEvent : public LSContextMenuEvent
+{
+	LSSelectItemContextMenuEvent() : LSContextMenuEvent(ContextMenuType::Update) {}
+};
+
+struct LSRemovedFromStageEvent : public LSEvent
+{
+	LSEvent::Type getType() const override { return LSEvent::Type::RemovedFromStage; }
+};
+
+struct LSNewTimerEvent : public LSEvent
+{
+	LSEvent::Type getType() const override { return LSEvent::Type::NewTimer; }
 };
 
 };

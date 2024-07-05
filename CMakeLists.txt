@@ -530,7 +530,7 @@ SET(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/media/lightspark-logo.svg)
 IF(WIN32)
   SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Lightspark")
   SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
-  CreateShortCut '$SMPROGRAMS\\$STARTMENU_FOLDER\\lightspark.lnk' '$INSTDIR\\lightspark.exe'
+  CreateShortCut '$SMPROGRAMS\\\\$STARTMENU_FOLDER\\\\lightspark.lnk' '$INSTDIR\\\\lightspark.exe'
   WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Description' 'Lightspark'
   WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'ProductName' 'Lightspark'
   WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Vendor' 'Lightspark Team'
@@ -539,7 +539,7 @@ IF(WIN32)
   WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1\\\\MimeTypes\\\\application/x-shockwave-flash' '' ''
   ")
   SET(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
-  DeleteShortCut '$SMPROGRAMS\\$START_MENU\\lightspark.lnk'
+  DeleteShortCut '$SMPROGRAMS\\\\$START_MENU\\\\lightspark.lnk'
   DeleteRegKey HKLM 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1'
   ")
 ENDIF(WIN32)

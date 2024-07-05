@@ -406,7 +406,7 @@ void RootMovieClip::advanceFrame(bool implicit)
 	if (!implicit || !usesActionScript3 || !state.explicit_FP)
 		MovieClip::advanceFrame(implicit);
 	// ensure "complete" events are added _after_ the whole SystemState::tick() events are handled at least once
-	if (!completionHandled && getSystemState()->getFramePhase() == FramePhase::ADVANCE_FRAME)
+	if (!completionHandled)
 	{
 		if (!loaderInfo.isNull())
 			loaderInfo->setComplete();

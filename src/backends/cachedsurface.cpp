@@ -222,10 +222,6 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 			MATRIX m;
 			m.x0 = std::round(baseTransform.matrix.x0+offset.x);
 			m.y0 = std::round(baseTransform.matrix.y0+offset.y);
-			if (state->src->getTagID()==531)
-			{
-				int x=0;
-			}
 			if (DisplayObject::isShaderBlendMode(state->blendmode))
 			{
 				assert (!sys->getRenderThread()->filterframebufferstack.empty());

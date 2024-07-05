@@ -310,6 +310,8 @@ void DisplayObject::prepareShutdown()
 
 	if (mask)
 		mask->prepareShutdown();
+	if (maskee)
+		maskee->prepareShutdown();
 	if (matrix)
 		matrix->prepareShutdown();;
 	if (loaderInfo)
@@ -969,6 +971,8 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 		mask->ismask=false;
 		mask->maskee->removeStoredMember();
 		mask->maskee=nullptr;
+		mask->removeStoredMember();
+		mask=nullptr;
 	}
 
 	mask=m.getPtr();
@@ -1383,7 +1387,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setMask)
 		DisplayObject* newMask=asAtomHandler::as<DisplayObject>(args[0]);
 		newMask->incRef();
 		th->setMask(_MR(newMask));
-		th->incRef();
 		if (newMask->maskee)
 			newMask->maskee->removeStoredMember();
 		newMask->maskee = th;

@@ -72,7 +72,7 @@ void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 	//If this URL doesn't contain a filename, add the one passed as an argument (used in main.cpp)
 	if(origin.getPathFile() == "" && filename != "")
 	{
-		tiny_string fileurl = g_filename_to_uri(filename.raw_buf(), nullptr,nullptr);
+		tiny_string fileurl = g_path_is_absolute(filename.raw_buf()) ? g_filename_to_uri(filename.raw_buf(), nullptr,nullptr) : filename;
 		origin = origin.goToURL(fileurl);
 	}
 	if(!loaderInfo.isNull())

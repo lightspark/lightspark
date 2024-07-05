@@ -53,7 +53,7 @@ public:
 		if (!wrk || wrk->nativeExtensionCallCount==0)
 			return FRE_WRONG_THREAD;
 		*value = asAtomHandler::Boolean_concrete(*(asAtom*)object);
-		LOG_CALL("nativeExtension:toBool:"<<asAtomHandler::toDebugString(*(asAtom*)object));
+		LOG(LOG_CALLS,"nativeExtension:toBool:"<<asAtomHandler::toDebugString(*(asAtom*)object));
 		return FRE_OK;
 	}
 	FREResult toUTF8(FREObject object, uint32_t* length, const uint8_t** value) override
@@ -67,7 +67,7 @@ public:
 		memcpy(buf,s.raw_buf(),(*length)-1);
 		buf[(*length)-1]=0;
 		*value=buf;
-		LOG_CALL("nativeExtension:toUTF8:"<<asAtomHandler::toDebugString(*(asAtom*)object));
+		LOG(LOG_CALLS,"nativeExtension:toUTF8:"<<asAtomHandler::toDebugString(*(asAtom*)object));
 		wrk->nativeExtensionStringlist.push_back(buf);
 		return FRE_OK;
 	}
@@ -77,7 +77,7 @@ public:
 		if (!wrk)
 			return FRE_WRONG_THREAD;
 		*object = value ? &asAtomHandler::trueAtom : &asAtomHandler::falseAtom;
-		LOG_CALL("nativeExtension:fromBool:"<<value);
+		LOG(LOG_CALLS,"nativeExtension:fromBool:"<<value);
 		return FRE_OK;
 	}
 	FREResult fromInt32(int32_t value, FREObject* object) override
@@ -87,7 +87,7 @@ public:
 			return FRE_WRONG_THREAD;
 		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromInt(value));
 		*object = &wrk->nativeExtensionAtomlist.back();
-		LOG_CALL("nativeExtension:fromInt32:"<<value);
+		LOG(LOG_CALLS,"nativeExtension:fromInt32:"<<value);
 		return FRE_OK;
 	}
 	FREResult fromUint32(uint32_t value, FREObject* object) override
@@ -97,7 +97,7 @@ public:
 			return FRE_WRONG_THREAD;
 		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromUInt(value));
 		*object = &wrk->nativeExtensionAtomlist.back();
-		LOG_CALL("nativeExtension:fromUint32:"<<value);
+		LOG(LOG_CALLS,"nativeExtension:fromUint32:"<<value);
 		return FRE_OK;
 	}
 	FREResult fromUTF8(uint32_t length, const uint8_t* value, FREObject* object) override
@@ -108,7 +108,7 @@ public:
 		ASObject* res = abstract_s(wrk, (const char*)value, length-1);
 		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromObject(res));
 		*object = &wrk->nativeExtensionAtomlist.back();
-		LOG_CALL("nativeExtension:fromUTF8:"<<res->toDebugString());
+		LOG(LOG_CALLS,"nativeExtension:fromUTF8:"<<res->toDebugString());
 		return FRE_OK;
 	}
 	
@@ -127,7 +127,7 @@ public:
 		tiny_string s((const char*)propertyName);
 		m.name_s_id= getSys()->getUniqueStringId(s);
 		obj->setVariableByMultiname(m,*(asAtom*)propertyValue,ASObject::CONST_NOT_ALLOWED,nullptr,obj->getInstanceWorker());
-		LOG_CALL("nativeExtension:setObjectProperty:"<<m<<" "<<obj->toDebugString()<<" "<<asAtomHandler::toDebugString(*(asAtom*)propertyValue));
+		LOG(LOG_CALLS,"nativeExtension:setObjectProperty:"<<m<<" "<<obj->toDebugString()<<" "<<asAtomHandler::toDebugString(*(asAtom*)propertyValue));
 		
 		if (obj->getInstanceWorker()->currentCallContext && obj->getInstanceWorker()->currentCallContext->exceptionthrown)
 		{
@@ -156,7 +156,7 @@ public:
 		obj->incRef();
 		byteArrayToSet->bytes = obj->as<ByteArray>()->getBufferNoCheck();
 		byteArrayToSet->length = obj->as<ByteArray>()->getLength();
-		LOG_CALL("nativeExtension:AcquireByteArray:"<<obj->toDebugString()<<" "<<byteArrayToSet->length);
+		LOG(LOG_CALLS,"nativeExtension:AcquireByteArray:"<<obj->toDebugString()<<" "<<byteArrayToSet->length);
 		return FRE_OK;
 	}
 	FREResult ReleaseByteArray (FREObject object)
@@ -169,7 +169,7 @@ public:
 		ASObject* obj = asAtomHandler::toObject(*(asAtom*)object,wrk);
 		obj->as<ByteArray>()->unlock();
 		obj->decRef();
-		LOG_CALL("nativeExtension:ReleaseByteArray:"<<obj->toDebugString());
+		LOG(LOG_CALLS,"nativeExtension:ReleaseByteArray:"<<obj->toDebugString());
 		return FRE_OK;
 	}
 	FREResult DispatchStatusEventAsync(FREContext ctx, const uint8_t* code, const uint8_t* level )
@@ -185,7 +185,7 @@ public:
 		tiny_string c((const char*)code,true);
 		tiny_string l((const char*)level,true);
 		getVm(ctxt->getSystemState())->addEvent(_MR(ctxt), _MR(Class<StatusEvent>::getInstanceS(ctxt->getInstanceWorker(),c,l)));
-		LOG_CALL("nativeExtension:DispatchStatusEventAsync:"<<ctxt->toDebugString()<<" "<<c<<" "<<l);
+		LOG(LOG_CALLS,"nativeExtension:DispatchStatusEventAsync:"<<ctxt->toDebugString()<<" "<<c<<" "<<l);
 		return FRE_OK;
 	}
 };
@@ -268,10 +268,9 @@ ASFUNCTIONBODY_ATOM(ExtensionContext,_call)
 			wrk->nativeExtensionAtomlist.push_back(args[i]);
 			freargs[i-1]=&wrk->nativeExtensionAtomlist.back();
 			
-			LOG_CALL("nativeExtension call arg:"<<i<<" "<<asAtomHandler::toDebugString(args[i])<<" "<<hex<<((asAtom*)freargs[i-1])->uintval);
+			LOG(LOG_CALLS,"nativeExtension call arg:"<<i<<" "<<asAtomHandler::toDebugString(args[i])<<" "<<hex<<((asAtom*)freargs[i-1])->uintval);
 		}
 	}
-	
 	wrk->nativeExtensionCallCount++;
 	ret = asAtomHandler::undefinedAtom;
 	for (uint32_t i =0; i < th->numFunctionsToSet; i++)
@@ -300,8 +299,7 @@ ASFUNCTIONBODY_ATOM(ExtensionContext,_call)
 		}
 		wrk->nativeExtensionStringlist.clear();
 	}
-	
-	LOG_CALL("nativeExtension call done:"<<methodname<<" "<<asAtomHandler::toDebugString(args[0])<<" "<<asAtomHandler::toDebugString(ret));
+	LOG(LOG_CALLS,"nativeExtension call done:"<<methodname<<" "<<asAtomHandler::toDebugString(args[0])<<" "<<asAtomHandler::toDebugString(ret));
 }
 
 ASFUNCTIONBODY_ATOM(ExtensionContext,dispose)

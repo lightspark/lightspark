@@ -26,7 +26,6 @@
 #include "logger.h"
 #include "platforms/engineutils.h"
 #include "compat.h"
-#include <SDL.h>
 #include "flash/utils/ByteArray.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include <sys/stat.h>
@@ -44,7 +43,6 @@ using namespace lightspark;
 
 class StandaloneEngineData: public EngineData
 {
-	SDL_GLContext mSDLContext;
 	char* mBaseDir;
 	tiny_string mApplicationStoragePath;
 	void removedir(const char* dir)
@@ -106,20 +104,6 @@ public:
 		if (mBaseDir)
 			g_free(mBaseDir);
 	}
-	SDL_Window* createWidget(uint32_t w, uint32_t h) override
-	{
-		SDL_Window* window = SDL_CreateWindow("Lightspark",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,w,h,SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-		if (window == 0)
-		{
-			// try creation of window without opengl support
-			window = SDL_CreateWindow("Lightspark",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,w,h,SDL_WINDOW_RESIZABLE);
-			if (window == 0)
-				LOG(LOG_ERROR,"createWidget failed:"<<SDL_GetError());
-		}
-		Launcher::setWindowIcon(window);
-		return window;
-	}
-
 	uint32_t getWindowForGnash() override
 	{
 		/* passing and invalid window id to gnash makes
@@ -136,68 +120,9 @@ public:
 		/* Nothing to do because the standalone main window is
 		 * always focused */
 	}
-	void getWindowPosition(int* x, int* y) override
-	{
-		if (widget)
-		{
-			SDL_GetWindowPosition(widget,x,y);
-		}
-		else
-		{
-			x=0;
-			y=0;
-		}
-	}
-	void setWindowPosition(int x, int y, uint32_t width, uint32_t height) override
-	{
-		if (widget)
-		{
-			SDL_SetWindowPosition(widget,x,y);
-			SDL_SetWindowSize(widget,width,height);
-		}
-	}
 	void openPageInBrowser(const tiny_string& url, const tiny_string& window) override
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "openPageInBrowser not implemented in the standalone mode");
-	}
-	bool getScreenData(SDL_DisplayMode* screen) override
-	{
-		if (SDL_GetDesktopDisplayMode(0, screen) != 0) {
-			LOG(LOG_ERROR,"Capabilities: SDL_GetDesktopDisplayMode failed:"<<SDL_GetError());
-			return false;
-		}
-		return true;
-	}
-	double getScreenDPI() override
-	{
-#if SDL_VERSION_ATLEAST(2, 0, 4)
-		float ddpi;
-		float hdpi;
-		float vdpi;
-		SDL_GetDisplayDPI(SDL_GetWindowDisplayIndex(widget),&ddpi,&hdpi,&vdpi);
-		return ddpi;
-#else
-		LOG(LOG_NOT_IMPLEMENTED,"getScreenDPI needs SDL version >= 2.0.4");
-		return 96.0;
-#endif
-	}
-	void DoSwapBuffers() override
-	{
-		uint32_t err;
-		if (getGLError(err))
-			LOG(LOG_ERROR,"swapbuffers:"<<widget<<" "<<err);
-		SDL_GL_SwapWindow(widget);
-	}
-	void InitOpenGL() override
-	{
-		mSDLContext = SDL_GL_CreateContext(widget);
-		if (!mSDLContext)
-			LOG(LOG_ERROR,"failed to create openGL context:"<<SDL_GetError());
-		initGLEW();
-	}
-	void DeinitOpenGL() override
-	{
-		SDL_GL_DeleteContext(mSDLContext);
 	}
 	bool getAIRApplicationDescriptor(SystemState* sys,tiny_string& xmlstring) override
 	{
@@ -423,72 +348,6 @@ public:
 		return mApplicationStoragePath;
 	}
 };
-void checkForNativeAIRExtensions(std::vector<tiny_string>& extensions,char* fileName)
-{
-	tiny_string p = g_path_get_dirname(fileName);
-	p += G_DIR_SEPARATOR_S;
-	p += "META-INF";
-	p += G_DIR_SEPARATOR_S;
-	p += "AIR";
-	p += G_DIR_SEPARATOR_S;
-	p += "extensions";
-	GDir* dir = g_dir_open(p.raw_buf(),0,nullptr);
-	if (dir)
-	{
-		while (true)
-		{
-			const char* subpath = g_dir_read_name(dir);
-			if (!subpath)
-				break;
-			tiny_string extensionpath=p;
-			extensionpath += G_DIR_SEPARATOR_S;
-			extensionpath += subpath;
-			extensionpath += G_DIR_SEPARATOR_S;
-			extensionpath += "library.swf";
-			if (g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS))
-			{
-				LOG(LOG_INFO,"native extension found:"<<extensionpath);
-				extensions.push_back(extensionpath);
-			}
-		}
-		g_dir_close(dir);
-	}
-	if (!extensions.empty())
-	{
-		// try to load additional libraries that may be needed for the extensions
-		tiny_string basedir = g_path_get_dirname(fileName);
-		GDir* dir = g_dir_open(basedir.raw_buf(),0,nullptr);
-		if (dir)
-		{
-			while (true)
-			{
-				const char* file = g_dir_read_name(dir);
-				if (!file)
-					break;
-				if (g_file_test(file,G_FILE_TEST_IS_DIR))
-					continue;
-				tiny_string s=file;
-#ifdef _WIN32
-				const char* suffix = ".dll";
-#else
-				const char* suffix = ".so";
-#endif
-				if (!s.endsWith(suffix))
-					continue;
-				tiny_string libpath=basedir;
-				libpath += G_DIR_SEPARATOR_S;
-				libpath += s;
-				void* lib = SDL_LoadObject(libpath.raw_buf());
-				if (lib==nullptr)
-					LOG(LOG_ERROR,"loading additional lib failed:"<<SDL_GetError()<<" "<<libpath);
-				else
-					LOG(LOG_INFO,"additional lib loaded:"<<lib<<" "<<libpath);
-			}
-			g_dir_close(dir);
-		}
-	}
-}
-
 
 int main(int argc, char* argv[])
 {
@@ -742,7 +601,7 @@ int main(int argc, char* argv[])
 		exit(1);
 	}
 	if (flashMode==SystemState::AIR)
-		checkForNativeAIRExtensions(extensions,absolutepath);
+		EngineData::checkForNativeAIRExtensions(extensions,absolutepath);
 	//NOTE: see SystemState declaration
 	SystemState* sys = new SystemState(fileSize, flashMode);
 	ParseThread* pt = new ParseThread(f, sys->mainClip);
@@ -838,11 +697,7 @@ int main(int argc, char* argv[])
 	 */
 	sys->destroy();
 	int exitcode = sys->getExitCode();
-	SDL_Event event;
-	SDL_zero(event);
-	event.type = LS_USEREVENT_QUIT;
-	SDL_PushEvent(&event);
-	SDL_WaitThread(EngineData::mainLoopThread,nullptr);
+	sys->getEngineData()->addQuitEvent();
 
 	delete pt;
 	delete sys;

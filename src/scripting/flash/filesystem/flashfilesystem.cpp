@@ -440,8 +440,7 @@ void ASFile::setupFile(const tiny_string& filename, ASWorker* wrk)
 ASFUNCTIONBODY_ATOM(ASFile,_getURL)
 {
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
-	tiny_string url = URLInfo::encode(th->path,URLInfo::ENCODE_URI);
-	url = tiny_string("file://")+url;
+	tiny_string url(g_filename_to_uri(th->path.raw_buf(), nullptr, nullptr));
 	ret = asAtomHandler::fromString(wrk->getSystemState(),url);
 }
 ASFUNCTIONBODY_ATOM(ASFile,_setURL)

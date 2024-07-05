@@ -154,7 +154,7 @@ FREResult FRE_DLL_PUBLIC FRESetObjectProperty( FREObject object, const uint8_t* 
 
 namespace lightspark
 {
-class DLL_PUBLIC FREObjectInterface
+class FRE_DLL_PUBLIC FREObjectInterface
 {
 public:
 	virtual ~FREObjectInterface()

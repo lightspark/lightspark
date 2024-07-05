@@ -898,7 +898,7 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 {
 	SurfaceState* state = d->getState();
 	assert(state);
-#ifndef _NDEBUG
+#ifndef NDEBUG
 	state->src=this; // keep track of the DisplayObject when debugging
 #endif
 	if (this->mask)

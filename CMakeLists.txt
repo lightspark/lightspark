@@ -209,6 +209,7 @@ SET(PLUGIN_DIRECTORY "${LIBDIR}/mozilla/plugins" CACHE STRING "Directory to inst
 SET(PPAPI_PLUGIN_DIRECTORY "${LIBDIR}/PepperFlash" CACHE STRING "Directory to install PPAPI plugin to")
 SET(MANUAL_DIRECTORY "share/man" CACHE STRING "Directory to install manual to (UNIX only)")
 SET(ENABLE_SSE2 TRUE CACHE BOOL "Enable use of SSE2 asm instructions (x86/x86_64 only)")
+SET(INSTALL_SYSTEM_CONFIGURATION TRUE CACHE BOOL "Install system wide configuration file (UNIX only)")
 
 IF(ENABLE_DEBIAN_ALTERNATIVES OR WIN32)
   SET(PLUGIN_DIRECTORY ${PRIVATELIBDIR})
@@ -496,8 +497,10 @@ if(UNIX)
 endif(UNIX)
 
 if(UNIX)
-	INSTALL(FILES etc/xdg/lightspark.conf
-		      DESTINATION ${ETCDIR}/xdg/)
+  IF(INSTALL_SYSTEM_CONFIGURATION)
+    INSTALL(FILES etc/xdg/lightspark.conf
+	    DESTINATION ${ETCDIR}/xdg/)
+  ENDIF(INSTALL_SYSTEM_CONFIGURATION)
 ELSE()
   INSTALL(FILES COPYING DESTINATION "." RENAME COPYING.txt)
   INSTALL(FILES COPYING.LESSER DESTINATION "." RENAME COPYING.LESSER.txt)
@@ -527,6 +530,7 @@ SET(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/media/lightspark-logo.svg)
 IF(WIN32)
   SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Lightspark")
   SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "
+  CreateShortCut '$SMPROGRAMS\\$STARTMENU_FOLDER\\lightspark.lnk' '$INSTDIR\\lightspark.exe'
   WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Description' 'Lightspark'
   WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'ProductName' 'Lightspark'
   WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1' 'Vendor' 'Lightspark Team'
@@ -535,6 +539,7 @@ IF(WIN32)
   WriteRegStr HKCU 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1\\\\MimeTypes\\\\application/x-shockwave-flash' '' ''
   ")
   SET(CPACK_NSIS_EXTRA_UNINSTALL_COMMANDS "
+  DeleteShortCut '$SMPROGRAMS\\$START_MENU\\lightspark.lnk'
   DeleteRegKey HKLM 'Software\\\\MozillaPlugins\\\\@lightspark.github.com/Lightspark;version=1'
   ")
 ENDIF(WIN32)

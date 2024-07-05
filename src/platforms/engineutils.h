@@ -98,8 +98,9 @@ protected:
 	std::vector<_R<NativeMenuItem>> currentcontextmenuitems;
 	_NR<InteractiveObject> contextmenuDispatcher;
 	_NR<InteractiveObject> contextmenuOwner;
+	SDL_GLContext mSDLContext;
 	void selectContextMenuItemIntern();
-	virtual SDL_Window* createWidget(uint32_t w,uint32_t h)=0;
+	virtual SDL_Window* createWidget(uint32_t w,uint32_t h);
 public:
 	bool incontextmenupreparing; // needed for PPAPI plugin only
 	SDL_Window* widget;
@@ -133,26 +134,24 @@ public:
 	/* you may not call getWindowForGnash and showWindow on the same EngineData! */
 	virtual uint32_t getWindowForGnash()=0;
 	/* Runs 'func' in the mainLoopThread */
-	virtual void runInMainThread(SystemState* sys, void (*func) (SystemState*) )
-	{
-		SDL_Event event;
-		SDL_zero(event);
-		event.type = LS_USEREVENT_EXEC;
-		event.user.data1 = (void*)func;
-		SDL_PushEvent(&event);
-	}
+	virtual void runInMainThread(SystemState* sys, void (*func) (SystemState*) );
 	static bool mainloop_handleevent(SDL_Event* event,SystemState* sys);
 	static void mainloop_from_plugin(SystemState* sys);
 
 	// this is called when going to fulllscreen mode or opening a context menu from plugin, to keep handling of SDL events alive
 	void startSDLEventTicker(SystemState *sys);
 	void resetSDLEventTicker() { sdleventtickjob=nullptr; }
-	
+
+	SDL_Window* createMainSDLWidget(uint32_t w, uint32_t h);
+	SDL_GLContext createSDLGLContext(SDL_Window* widget);
+	void deleteSDLGLContext(SDL_GLContext ctx);
 	/* This function must be called from mainLoopThread
 	 * It fills this->widget and this->window.
 	 */
 	void showWindow(uint32_t w, uint32_t h);
 
+	static void checkForNativeAIRExtensions(std::vector<tiny_string>& extensions, char* fileName);
+	void addQuitEvent();
 	// local storage handling
 	virtual void setLocalStorageAllowedMarker(bool allowed);
 	virtual bool getLocalStorageAllowedMarker();
@@ -216,17 +215,17 @@ public:
 	static void setMouseCursor(SystemState *sys, const tiny_string& name);
 	static tiny_string getMouseCursor(SystemState *sys);
 	virtual void setClipboardText(const std::string txt);
-	virtual bool getScreenData(SDL_DisplayMode* screen) = 0;
-	virtual double getScreenDPI() = 0;
-	virtual void setWindowPosition(int x, int y, uint32_t width, uint32_t height) {}
-	virtual void getWindowPosition(int* x, int* y) { *x=0; *y=0;}
+	virtual bool getScreenData(SDL_DisplayMode* screen);
+	virtual double getScreenDPI();
+	virtual void setWindowPosition(int x, int y, uint32_t width, uint32_t height);
+	virtual void getWindowPosition(int* x, int* y);
 	virtual bool getAIRApplicationDescriptor(SystemState* sys,tiny_string& xmlstring) { return false;}
 	virtual StreamCache* createFileStreamCache(SystemState *sys);
 	
 	// OpenGL methods
-	virtual void DoSwapBuffers() = 0;
-	virtual void InitOpenGL() = 0;
-	virtual void DeinitOpenGL() = 0;
+	virtual void DoSwapBuffers();
+	virtual void InitOpenGL();
+	virtual void DeinitOpenGL();
 	virtual bool getGLError(uint32_t& errorCode) const;
 	virtual tiny_string getGLDriverInfo();
 	virtual void getGlCompressedTextureFormats();

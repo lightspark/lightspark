@@ -49,7 +49,7 @@ SurfaceState::SurfaceState(float _xoffset, float _yoffset, float _alpha, float _
 	,visible(true),allowAsMask(true),isMask(_ismask),cacheAsBitmap(_cacheAsBitmap)
 	,needsFilterRefresh(_needsfilterrefresh),needsLayer(_needslayer),isYUV(false),renderWithNanoVG(false),hasOpaqueBackground(false)
 {
-#ifndef _NDEBUG
+#ifndef NDEBUG
 	src=nullptr;
 #endif
 }
@@ -61,7 +61,7 @@ SurfaceState::~SurfaceState()
 
 void SurfaceState::reset()
 {
-#ifndef _NDEBUG
+#ifndef NDEBUG
 	src=nullptr;
 #endif
 	xOffset=0.0;

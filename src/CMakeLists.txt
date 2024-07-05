@@ -336,7 +336,7 @@ SET(LIBNATIVEEXTENSION_SOURCES
   )
 
 IF(MINGW)
-    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} ${LIBNATIVEEXTENSION_SOURCES} platforms/slowpaths_generic.cpp)
+    SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)
 ELSEIF(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)
 ELSE()
@@ -376,7 +376,6 @@ IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   #library for handling communication with native extensions, has to be named "libCore.so" on Linux
   ADD_LIBRARY(nativeextension SHARED ${LIBNATIVEEXTENSION_SOURCES})
   SET_TARGET_PROPERTIES(nativeextension PROPERTIES OUTPUT_NAME Core)
-  TARGET_LINK_LIBRARIES(spark nativeextension)
   IF(NOT WIN32)
     #win32's cmake doesn't like liblightspark and lightspark.exe having the same name
     SET_TARGET_PROPERTIES(spark PROPERTIES OUTPUT_NAME lightspark)
@@ -384,9 +383,11 @@ IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   IF(MINGW)
     #library for handling communication with native extensions, has to be named "Adobe AIR.dll" on Windows
     SET_TARGET_PROPERTIES(nativeextension PROPERTIES PREFIX "")
-    SET_TARGET_PROPERTIES(nativeextension PROPERTIES OUTPUT_NAME "Adobe AIR")  
-    SET_TARGET_PROPERTIES(spark PROPERTIES LINK_FLAGS "-Wl,--export-all-symbols")
+    SET_TARGET_PROPERTIES(nativeextension PROPERTIES OUTPUT_NAME "Adobe AIR")
+    # force linking of "Adobe AIR.dll" dynamically
+    TARGET_LINK_LIBRARIES(spark "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Adobe AIR.dll")
   ELSE()
+  TARGET_LINK_LIBRARIES(spark nativeextension)
     SET_TARGET_PROPERTIES(spark PROPERTIES LINK_FLAGS "-Wl,--version-script=${PROJECT_SOURCE_DIR}/src/lightspark.expmap")
   ENDIF()
 ELSE(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -441,14 +442,7 @@ INSTALL(TARGETS nativeextension RUNTIME DESTINATION ${PRIVATELIBDIR} LIBRARY DES
 # lightspark executable target
 IF(COMPILE_LIGHTSPARK)
   ADD_EXECUTABLE(lightspark main.cpp)
-  IF(MINGW)
-    SET_TARGET_PROPERTIES(lightspark PROPERTIES LINK_FLAGS "-Wl,--whole-archive -lSDL2main -Wl,--no-whole-archive")
-  ENDIF()
-  TARGET_LINK_LIBRARIES(lightspark spark nativeextension)
-  #With STATICDEPS, all deps are compiled into spark
-  IF(NOT STATICDEPS)
-  TARGET_LINK_LIBRARIES(lightspark ${SDL2_LIBRARIES})
-  ENDIF()
+  TARGET_LINK_LIBRARIES(lightspark spark)
 
   PACK_EXECUTABLE(lightspark $<TARGET_FILE:lightspark>)
   INSTALL(TARGETS lightspark RUNTIME DESTINATION ${BINDIR})
@@ -461,9 +455,6 @@ ENDIF(COMPILE_LIGHTSPARK)
 IF(COMPILE_TIGHTSPARK)
   ADD_EXECUTABLE(tightspark tightspark.cpp)
   TARGET_LINK_LIBRARIES(tightspark spark nativeextension)
-  IF(MINGW)
-    SET_TARGET_PROPERTIES(tightspark PROPERTIES LINK_FLAGS "-Wl,--whole-archive -lSDL2main -Wl,--no-whole-archive")
-  ENDIF()
   #With STATICDEPS, all deps are compiled into spark
   IF(NOT STATICDEPS)
     TARGET_LINK_LIBRARIES(tightspark ${GTHREAD_LIBRARIES})

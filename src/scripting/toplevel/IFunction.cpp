@@ -222,7 +222,7 @@ ASObject *IFunction::describeType(ASWorker* wrk) const
 std::string IFunction::toDebugString() const
 {
 	string ret = ASObject::toDebugString()+(closure_this ? "(closure:"+closure_this->toDebugString()+")":"")+(clonedFrom ?" cloned":"");
-#ifndef _NDEBUG
+#ifndef NDEBUG
 	if (functionname)
 	{
 		ret +=" n:";

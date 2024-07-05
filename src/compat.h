@@ -128,7 +128,10 @@ _CRTIMP char* __cdecl __MINGW_NOTHROW   _strdup (const char*) __MINGW_ATTRIB_MAL
  * And the liblightspark.dll is linked directly (without need for dllexport)
  */
 #ifndef DLL_PUBLIC
-#if __GNUC__ >= 4
+#ifdef _WIN32
+#	define DLL_PUBLIC __declspec(dllexport)
+#	define DLL_LOCAL
+#elif __GNUC__ >= 4
 #	define DLL_PUBLIC __attribute__ ((visibility("default")))
 #	define DLL_LOCAL  __attribute__ ((visibility("hidden")))
 #else

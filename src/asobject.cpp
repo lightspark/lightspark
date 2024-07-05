@@ -86,7 +86,7 @@ string ASObject::toDebugString() const
 	{
 		assert(false);
 	}
-#ifndef _NDEBUG
+#ifndef NDEBUG
 	assert(storedmembercount<=uint32_t(this->getRefCount()) || this->getConstant());
 	char buf[300];
 	if (this->getConstant())

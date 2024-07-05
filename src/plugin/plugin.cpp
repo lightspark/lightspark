@@ -216,7 +216,7 @@ void NPDownloader::dlStartCallback(void* t)
 			tmpData.insert(tmpData.end(), linefeed, linefeedend);
 		}
 		char buf[40];
-		snprintf(buf, 40, "Content-Length: %lu\r\n\r\n", th->data.size());
+		snprintf(buf, 40, "Content-Length: %lu\r\n\r\n", (uint64_t)th->data.size());
 		tmpData.insert(tmpData.end(), buf, buf+strlen(buf));
 		tmpData.insert(tmpData.end(), th->data.begin(), th->data.end());
 		e=NPN_PostURLNotify(th->instance, th->url.raw_buf(), NULL, tmpData.size(), (const char*)&tmpData[0], false, th);

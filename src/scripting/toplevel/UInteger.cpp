@@ -242,7 +242,7 @@ bool UInteger::isEqual(ASObject* o)
 string UInteger::toDebugString() const
 {
 	tiny_string ret = toString()+"ui";
-#ifndef _NDEBUG
+#ifndef NDEBUG
 	char buf[300];
 	sprintf(buf,"(%p/%d/%d%s) ",this,this->getRefCount(),this->storedmembercount,this->isConstructed()?"":" not constructed");
 	ret += buf;

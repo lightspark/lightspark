@@ -115,7 +115,7 @@ public:
 	void plot(uint32_t max, cairo_t *cr);
 };
 
-class SystemState: public ITickJob, public InvalidateQueue
+class DLL_PUBLIC SystemState: public ITickJob, public InvalidateQueue
 {
 private:
 	class EngineCreator: public IThreadJob
@@ -524,7 +524,7 @@ public:
 	ASObject* getBuiltinFunction(as_atom_function v, int len = 0, Class_base* returnType=nullptr, Class_base* returnTypeAllArgsInt=nullptr);
 };
 
-class ParseThread: public IThreadJob
+class DLL_PUBLIC ParseThread: public IThreadJob
 {
 public:
 	int version;

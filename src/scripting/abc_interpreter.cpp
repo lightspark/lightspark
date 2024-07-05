@@ -4491,31 +4491,28 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				{
 					if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 					{
-						if (!cls->hasoverriddenmethod(name))
+						// property may be a slot variable, so check the class instance first
+						cls->getInstance(wrk,otmp,false,nullptr,0);
+						cls->setupDeclaredTraits(asAtomHandler::getObject(otmp),false);
+						v = asAtomHandler::getObject(otmp)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+						if (v)
+							isborrowed=true;
+						else
 						{
-							// property may be a slot variable, so check the class instance first
-							cls->getInstance(wrk,otmp,false,nullptr,0);
-							cls->setupDeclaredTraits(asAtomHandler::getObject(otmp),false);
-							v = asAtomHandler::getObject(otmp)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
-							if (v)
-								isborrowed=true;
-							else
+							// property not a slot variable, so check the class the function belongs to
+							Class_base* c = cls;
+							do
 							{
-								// property not a slot variable, so check the class the function belongs to
-								Class_base* c = cls;
-								do
-								{
-									v = c->findVariableByMultiname(*name,c,nullptr,&isborrowed,false,wrk);
-									if (v)
-										break;
-									if (!c->isSealed)
-										break;
-									c = c->super.getPtr();
-								}
-								while (c);
+								v = c->findVariableByMultiname(*name,c,nullptr,&isborrowed,false,wrk);
 								if (v)
-									cls=c;
+									break;
+								if (!c->isSealed)
+									break;
+								c = c->super.getPtr();
 							}
+							while (c);
+							if (v)
+								cls=c;
 						}
 						if (v)
 						{
@@ -4738,13 +4735,26 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						bool isborrowed = false;
 						variable* v = nullptr;
 						Class_base* cls = function->inClass;
-						do
+						asAtom otmp = asAtomHandler::invalidAtom;
+						if (!cls->hasoverriddenmethod(name))
 						{
-							v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed,false,wrk);
-							if (!v)
-								cls = cls->super.getPtr();
+							// property may be a slot variable, so check the class instance first
+							cls->getInstance(wrk,otmp,false,nullptr,0);
+							cls->setupDeclaredTraits(asAtomHandler::getObject(otmp),false);
+							v = asAtomHandler::getObject(otmp)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+							if (v)
+								isborrowed=true;
 						}
-						while (!v && cls && cls->isSealed);
+						if (!v)
+						{
+							do
+							{
+								v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed,false,wrk);
+								if (!v)
+									cls = cls->super.getPtr();
+							}
+							while (!v && cls && cls->isSealed);
+						}
 						if (v)
 						{
 							if ((isborrowed || v->kind == INSTANCE_TRAIT) && asAtomHandler::isValid(v->getter))
@@ -4768,6 +4778,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = asAtomHandler::getObject(v->getter);
 								}
 								typestack.push_back(typestackentry(resulttype,false));
+								ASATOM_DECREF(otmp);
 								break;
 							}
 							else if ((isborrowed || v->kind == INSTANCE_TRAIT) && asAtomHandler::isValid(v->var))
@@ -4806,6 +4817,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
 								}
 								typestack.push_back(typestackentry(resulttype,false));
+								ASATOM_DECREF(otmp);
 								break;
 							}
 							else if (!isborrowed && v->kind==DECLARED_TRAIT)
@@ -4828,6 +4840,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
 								}
 								typestack.push_back(typestackentry(resulttype,false));
+								ASATOM_DECREF(otmp);
 								break;
 							}
 							else if (v->kind == TRAIT_KIND::CONSTANT_TRAIT && !asAtomHandler::isNull(v->var)) // class may not be constructed yet, so the result is null and we do not cache
@@ -4836,9 +4849,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								if (v->isResolved && dynamic_cast<const Class_base*>(v->type))
 									resulttype = (Class_base*)v->type;
 								typestack.push_back(typestackentry(resulttype,false));
+								ASATOM_DECREF(otmp)
 								break;
 							}
 						}
+						ASATOM_DECREF(otmp);
 					}
 					if ((simple_getter_opcode_pos != UINT32_MAX) // function is simple getter
 							&& function->inClass->isFinal // TODO also enable optimization for classes where it is guarranteed that the method is not overridden in derived classes

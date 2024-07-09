@@ -161,11 +161,14 @@ public:
 	{
 	}
 	virtual FREResult toBool(FREObject object, uint32_t *value)=0;
+	virtual FREResult toUInt32(FREObject object, uint32_t *value)=0;
 	virtual FREResult toUTF8(FREObject object, uint32_t* length, const uint8_t** value)=0;
 	virtual FREResult fromBool(uint32_t value, FREObject* object)=0;
 	virtual FREResult fromInt32(int32_t value, FREObject* object)=0;
 	virtual FREResult fromUint32(uint32_t value, FREObject* object)=0;
 	virtual FREResult fromUTF8(uint32_t length, const uint8_t* value, FREObject* object)=0;
+	virtual FREResult NewObject(const uint8_t* className, uint32_t argc, FREObject argv[], FREObject* object, FREObject* thrownException)=0;
+	virtual FREResult SetArrayLength(FREObject arrayOrVector, uint32_t length)=0;
 	virtual FREResult SetObjectProperty(FREObject object, const uint8_t* propertyName, FREObject propertyValue, FREObject* thrownException)=0;
 	virtual FREResult AcquireByteArray(FREObject object, FREByteArray* byteArrayToSet)=0;
 	virtual FREResult ReleaseByteArray (FREObject object)=0;

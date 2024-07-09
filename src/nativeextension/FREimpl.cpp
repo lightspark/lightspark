@@ -88,8 +88,9 @@ FREResult FREGetObjectAsInt32 ( FREObject object, int32_t *value )
 }
 FREResult FREGetObjectAsUint32 ( FREObject object, uint32_t *value )
 {
-	std::cerr << "FRE NOT_IMPLEMENTED:FREGetObjectAsUint32"<<std::endl;
-	return FRE_ILLEGAL_STATE;
+	if (!object)
+		return FRE_INVALID_OBJECT;
+	return FREObjectConverter->toUInt32(object,value);
 }
 FREResult FREGetObjectAsUTF8( FREObject object, uint32_t* length, const uint8_t** value )
 {
@@ -114,8 +115,9 @@ FREResult FREInvalidateBitmapDataRect( FREObject object, uint32_t x, uint32_t y,
 }
 FREResult FRENewObject( const uint8_t* className, uint32_t argc, FREObject argv[], FREObject* object, FREObject* thrownException )
 {
-	std::cerr << "FRE NOT_IMPLEMENTED:FRENewObject"<<std::endl;
-	return FRE_ILLEGAL_STATE;
+	if (!object || className==nullptr || (argc>0 && argv==nullptr))
+		return FRE_INVALID_ARGUMENT;
+	return FREObjectConverter->NewObject(className, argc, argv, object, thrownException);
 }
 FREResult FRENewObjectFromBool ( uint32_t value, FREObject* object)
 {
@@ -164,8 +166,9 @@ FREResult FRESetArrayElementAt ( FREObject arrayOrVector, uint32_t index, FREObj
 }
 FREResult FRESetArrayLength(FREObject arrayOrVector, uint32_t length)
 {
-	std::cerr << "FRE NOT_IMPLEMENTED:FRESetArrayLength"<<std::endl;
-	return FRE_ILLEGAL_STATE;
+	if (!arrayOrVector)
+		return FRE_INVALID_OBJECT;
+	return FREObjectConverter->SetArrayLength(arrayOrVector, length);
 }
 FREResult FRESetContextActionScriptData( FREContext ctx, FREObject actionScriptData)
 {

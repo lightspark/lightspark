@@ -23,6 +23,9 @@
 #include "argconv.h"
 #include "SDL.h"
 #include "3rdparty/pugixml/src/pugixml.hpp"
+#include "scripting/toplevel/Array.h"
+#include "scripting/toplevel/Vector.h"
+#include "scripting/flash/system/flashsystem.h"
 
 using namespace lightspark;
 
@@ -54,6 +57,15 @@ public:
 			return FRE_WRONG_THREAD;
 		*value = asAtomHandler::Boolean_concrete(*(asAtom*)object);
 		LOG(LOG_CALLS,"nativeExtension:toBool:"<<asAtomHandler::toDebugString(*(asAtom*)object));
+		return FRE_OK;
+	}
+	FREResult toUInt32(FREObject object, uint32_t *value)
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		*value = asAtomHandler::toUInt(*(asAtom*)object);
+		LOG(LOG_CALLS,"nativeExtension:toUInt32:"<<asAtomHandler::toDebugString(*(asAtom*)object));
 		return FRE_OK;
 	}
 	FREResult toUTF8(FREObject object, uint32_t* length, const uint8_t** value) override
@@ -111,7 +123,75 @@ public:
 		LOG(LOG_CALLS,"nativeExtension:fromUTF8:"<<res->toDebugString());
 		return FRE_OK;
 	}
-	
+	FREResult NewObject(const uint8_t* className, uint32_t argc, FREObject argv[], FREObject* object, FREObject* thrownException)
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		LOG(LOG_CALLS,"nativeExtension:NewObject:"<<className);
+		tiny_string strcls((const char*)className,true);
+		tiny_string nsName;
+		tiny_string tmpName;
+		stringToQName(strcls,tmpName,nsName);
+		multiname name(nullptr);
+		name.name_type=multiname::NAME_STRING;
+		name.name_s_id=wrk->getSystemState()->getUniqueStringId(tmpName);
+		name.hasEmptyNS=nsName == "";
+		name.ns.push_back(nsNameAndKind(wrk->getSystemState(),nsName,NAMESPACE));
+		asAtom ret= asAtomHandler::invalidAtom;
+		ASObject* target=nullptr;
+		if (nsName.empty() || nsName.startsWith("flash."))
+			wrk->getSystemState()->systemDomain->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target,wrk);
+		if(asAtomHandler::isInvalid(ret))
+			ABCVm::getCurrentApplicationDomain(wrk->currentCallContext)->getVariableAndTargetByMultinameIncludeTemplatedClasses(ret,name,target,wrk);
+
+		if(asAtomHandler::isInvalid(ret))
+		{
+			LOG(LOG_CALLS,"nativeExtension:NewObject class not found:"<<className);
+			return FRE_NO_SUCH_NAME;
+		}
+		assert(asAtomHandler::isClass(ret));
+		asAtom res= asAtomHandler::invalidAtom;
+		asAtomHandler::as<Class_base>(ret)->getInstance(wrk,res,true,(asAtom*)argv,argc);
+		if(wrk->currentCallContext->exceptionthrown)
+		{
+			LOG(LOG_CALLS,"nativeExtension:NewObject exception thrown:"<<className);
+			wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromObject(wrk->currentCallContext->exceptionthrown));
+			*thrownException = &wrk->nativeExtensionAtomlist.back();
+			return FRE_ACTIONSCRIPT_ERROR;
+		}
+		wrk->nativeExtensionAtomlist.push_back(res);
+		*object = &wrk->nativeExtensionAtomlist.back();
+		LOG(LOG_CALLS,"nativeExtension:NewObject created:"<<asAtomHandler::toDebugString(res));
+		return FRE_OK;
+	}
+	FREResult SetArrayLength(FREObject arrayOrVector, uint32_t length)
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		if (arrayOrVector==nullptr)
+			return FRE_INVALID_OBJECT;
+			
+		asAtom o = *(asAtom*)arrayOrVector;
+		if (asAtomHandler::isInvalid(o))
+			return FRE_INVALID_OBJECT;
+		
+		ASObject* obj = asAtomHandler::toObject(o,wrk);
+		LOG(LOG_CALLS,"nativeExtension:setArrayLength:"<<length<<" "<<obj->toDebugString());
+		
+		if (obj->is<Array>())
+			obj->as<Array>()->resize(length);
+		else if (obj->is<Vector>())
+		{
+			if (obj->as<Vector>()->isFixed())
+				return FRE_READ_ONLY;
+			obj->as<Vector>()->ensureLength(length);
+		}
+		else
+			return FRE_TYPE_MISMATCH;
+		return FRE_OK;
+	}
 	FREResult SetObjectProperty(FREObject object, const uint8_t* propertyName, FREObject propertyValue, FREObject* thrownException) override
 	{
 		ASWorker* wrk = getWorker();

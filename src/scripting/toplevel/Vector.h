@@ -363,6 +363,7 @@ public:
 	//Takes ownership of o.
 	void append(asAtom& o);
 	void setFixed(bool v) { fixed = v; }
+	bool isFixed() const { return fixed; }
 	
 	void remove(ASObject* o);
 

@@ -1509,7 +1509,7 @@ string XMLList::toDebugString() const
 {
 	std::string res = ASObject::toDebugString();
 	char buf[100];
-	sprintf(buf," ch=%llu",this->nodes.size());
+	sprintf(buf," ch=%lu",(uint64_t)this->nodes.size());
 	res += buf;
 	return res;
 }

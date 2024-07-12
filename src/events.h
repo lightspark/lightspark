@@ -20,33 +20,15 @@
 #ifndef EVENTS_H
 #define EVENTS_H 1
 
-#include "swftypes.h"
-#include "tiny_string.h"
 #include "backends/geometry.h"
 #include "forwards/scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/ui/keycodes.h"
-#include <type_traits>
+#include "utils/enum.h"
+#include "swftypes.h"
+#include "tiny_string.h"
 
 namespace lightspark
 {
-
-template<typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = false>
-static T& operator&=(T& a, T b)
-{
-	return a = static_cast<T>(a & b);
-}
-
-template<typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = false>
-static T& operator|=(T& a, T b)
-{
-	return a = static_cast<T>(a | b);
-}
-
-template<typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = false>
-static T& operator^=(T& a, T b)
-{
-	return a = static_cast<T>(a ^ b);
-}
 
 enum LSModifier
 {

@@ -24,6 +24,7 @@
 #include "forwards/scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/ui/keycodes.h"
 #include "utils/enum.h"
+#include "utils/visitor.h"
 #include "swftypes.h"
 #include "tiny_string.h"
 
@@ -39,6 +40,52 @@ enum LSModifier
 	Super = 1 << 3,
 };
 
+// Input events.
+struct LSKeyEvent;
+struct LSMouseButtonEvent;
+struct LSMouseMoveEvent;
+struct LSMouseWheelEvent;
+struct LSTextEvent;
+// Non-input events.
+struct LSWindowResizedEvent;
+struct LSWindowMovedEvent;
+struct LSWindowExposedEvent;
+struct LSWindowFocusEvent;
+struct LSQuitEvent;
+// Misc events.
+struct LSInitEvent;
+struct LSExecEvent;
+struct LSOpenContextMenuEvent;
+struct LSUpdateContextMenuEvent;
+struct LSSelectItemContextMenuEvent;
+struct LSRemovedFromStageEvent;
+struct LSNewTimerEvent;
+
+using EventTypes = TypeList
+<
+	// Input events.
+	LSKeyEvent,
+	LSMouseButtonEvent,
+	LSMouseMoveEvent,
+	LSMouseWheelEvent,
+	LSTextEvent,
+	// Non-input events.
+	LSWindowResizedEvent,
+	LSWindowMovedEvent,
+	LSWindowExposedEvent,
+	LSWindowFocusEvent,
+	LSQuitEvent,
+	// Misc events.
+	LSInitEvent,
+	LSExecEvent,
+	LSOpenContextMenuEvent,
+	LSUpdateContextMenuEvent,
+	LSSelectItemContextMenuEvent,
+	LSRemovedFromStageEvent,
+	LSNewTimerEvent
+>;
+
+// TODO: Write our own variant implementation, and turn this into a variant.
 struct LSEvent
 {
 	enum Type
@@ -61,6 +108,19 @@ struct LSEvent
 
 	virtual ~LSEvent() {}
 	virtual Type getType() const { return Type::Invalid; };
+
+	template<typename V>
+	constexpr VisitorReturnType<V, EventTypes> visit(V&& visitor);
+	template<typename T>
+	constexpr bool has() const
+	{
+		return visit(makeVisitor
+		(
+			[](const T&) { return true; },
+			[](const LSEvent&) { return false; }
+		));
+	}
+	constexpr bool isInvalid() const { return getType() != Type::Invalid; }
 };
 
 struct LSMouseEvent : public LSEvent
@@ -362,6 +422,66 @@ struct LSNewTimerEvent : public LSEvent
 {
 	LSEvent::Type getType() const override { return LSEvent::Type::NewTimer; }
 };
+
+template<typename V>
+constexpr VisitorReturnType<V, EventTypes> LSEvent::visit(V&& visitor)
+{
+	using ContextMenuType = LSContextMenuEvent::ContextMenuType;
+	using MouseType = LSMouseEvent::MouseType;
+	using WindowType = LSWindowEvent::WindowType;
+
+	switch (getType())
+	{
+		// Input events.
+		case LSEvent::Type::Key: return visitor(static_cast<const LSKeyEvent&>(*this)); break;
+		case LSEvent::Type::Mouse:
+		{
+			auto& mouse = static_cast<const LSMouseEvent&>(*this);
+			switch (mouse.mouseType)
+			{
+				case MouseType::Button: return visitor(static_cast<const LSMouseButtonEvent&>(*this)); break;
+				case MouseType::Move: return visitor(static_cast<const LSMouseMoveEvent&>(*this)); break;
+				case MouseType::Wheel: return visitor(static_cast<const LSMouseWheelEvent&>(*this)); break;
+			}
+			break;
+		}
+		case LSEvent::Type::Text: return visitor(static_cast<const LSTextEvent&>(*this)); break;
+		// Non-input events.
+		case LSEvent::Type::Window:
+		{
+			auto& window = static_cast<const LSWindowEvent&>(*this);
+			switch (window.type)
+			{
+				case WindowType::Resized: return visitor(static_cast<const LSWindowResizedEvent&>(*this)); break;
+				case WindowType::Moved: return visitor(static_cast<const LSWindowMovedEvent&>(*this)); break;
+				case WindowType::Exposed: return visitor(static_cast<const LSWindowExposedEvent&>(*this)); break;
+				case WindowType::Focus: return visitor(static_cast<const LSWindowFocusEvent&>(*this)); break;
+			}
+			break;
+		}
+		case LSEvent::Type::Quit: return visitor(static_cast<const LSQuitEvent&>(*this)); break;
+		// Misc events.
+		case LSEvent::Type::Init: return visitor(static_cast<const LSInitEvent&>(*this)); break;
+		case LSEvent::Type::Exec: return visitor(static_cast<const LSExecEvent&>(*this)); break;
+		case LSEvent::Type::ContextMenu:
+		{
+			auto& contextMenu = static_cast<const LSContextMenuEvent&>(*this);
+			switch (contextMenu.type)
+			{
+				case ContextMenuType::Open: return visitor(static_cast<const LSOpenContextMenuEvent&>(*this)); break;
+				case ContextMenuType::Update: return visitor(static_cast<const LSUpdateContextMenuEvent&>(*this)); break;
+				case ContextMenuType::SelectItem: return visitor(static_cast<const LSSelectItemContextMenuEvent&>(*this)); break;
+			}
+			break;
+		}
+		case LSEvent::Type::RemovedFromStage: return visitor(static_cast<const LSRemovedFromStageEvent&>(*this)); break;
+		case LSEvent::Type::NewTimer: return visitor(static_cast<const LSNewTimerEvent&>(*this)); break;
+		// Invalid event, should be unreachable.
+		// TODO: Add `compat_unreachable()`, and use it here.
+		default: assert(false); break;
+	}
+	return VisitorReturnType<V, EventTypes>();
+}
 
 };
 #endif /* EVENTS_H */

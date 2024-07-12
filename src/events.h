@@ -73,7 +73,7 @@ struct LSMouseEvent : public LSEvent
 	};
 
 	MouseType mouseType;
-	Vector2f windowPos;
+	Vector2f mousePos;
 	// TODO: Use twips instead of float.
 	Vector2f stagePos;
 	LSModifier modifiers;
@@ -81,12 +81,12 @@ struct LSMouseEvent : public LSEvent
 	LSMouseEvent
 	(
 		const MouseType& _mouseType,
-		const Vector2f& _windowPos,
+		const Vector2f& _mousePos,
 		const Vector2f& _stagePos,
 		const LSModifier& _modifiers
 	) :
 	mouseType(_mouseType),
-	windowPos(_windowPos),
+	mousePos(_mousePos),
 	stagePos(_stagePos),
 	modifiers(_modifiers) {}
 
@@ -97,13 +97,13 @@ struct LSMouseMoveEvent : public LSMouseEvent
 {
 	LSMouseMoveEvent
 	(
-		const Vector2f& windowPos,
+		const Vector2f& mousePos,
 		const Vector2f& stagePos,
 		const LSModifier& modifiers
 	) : LSMouseEvent
 	(
 		MouseType::Move,
-		windowPos,
+		mousePos,
 		stagePos,
 		modifiers
 	) {}
@@ -115,14 +115,14 @@ struct LSMouseWheelEvent : public LSMouseEvent
 
 	LSMouseWheelEvent
 	(
-		const Vector2f& windowPos,
+		const Vector2f& mousePos,
 		const Vector2f& stagePos,
 		const LSModifier& modifiers,
 		number_t _delta
 	) : LSMouseEvent
 	(
 		MouseType::Wheel,
-		windowPos,
+		mousePos,
 		stagePos,
 		modifiers
 	), delta(_delta) {}
@@ -152,7 +152,7 @@ struct LSMouseButtonEvent : public LSMouseEvent
 
 	LSMouseButtonEvent
 	(
-		const Vector2f& windowPos,
+		const Vector2f& mousePos,
 		const Vector2f& stagePos,
 		const LSModifier& modifiers,
 		Button _button,
@@ -162,7 +162,7 @@ struct LSMouseButtonEvent : public LSMouseEvent
 	LSMouseEvent
 	(
 		MouseType::Button,
-		windowPos,
+		mousePos,
 		stagePos,
 		modifiers
 	), button(_button), clicks(_clicks), buttonType(_buttonType) {}

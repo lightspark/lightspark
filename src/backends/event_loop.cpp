@@ -400,8 +400,8 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 				{
 					auto& button = static_cast<const LSMouseButtonEvent&>(event);
 					this->event.type = button.buttonType == ButtonType::Up ? SDL_MOUSEBUTTONUP : SDL_MOUSEBUTTONDOWN;
-					this->event.button.x = button.windowPos.x;
-					this->event.button.y = button.windowPos.y;
+					this->event.button.x = button.mousePos.x;
+					this->event.button.y = button.mousePos.y;
 					this->event.button.button = toSDLMouseButton(button.button);
 					this->event.button.clicks = button.clicks;
 					break;
@@ -410,8 +410,8 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 				{
 					auto& move = static_cast<const LSMouseMoveEvent&>(event);
 					this->event.type = SDL_MOUSEMOTION;
-					this->event.motion.x = move.windowPos.x;
-					this->event.motion.y = move.windowPos.y;
+					this->event.motion.x = move.mousePos.x;
+					this->event.motion.y = move.mousePos.y;
 					break;
 				}
 				case MouseType::Wheel:
@@ -423,8 +423,8 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 					#endif
 					this->event.wheel.y = wheel.delta;
 					#if SDL_VERSION_ATLEAST(2, 26, 0)
-					this->event.wheel.mouseX = wheel.windowPos.x;
-					this->event.wheel.mouseY = wheel.windowPos.y;
+					this->event.wheel.mouseX = wheel.mousePos.x;
+					this->event.wheel.mouseY = wheel.mousePos.y;
 					#endif
 					break;
 				}

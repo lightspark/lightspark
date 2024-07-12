@@ -373,6 +373,7 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 {
 	using KeyType = LSKeyEvent::KeyType;
+	using MouseType = LSMouseEvent::MouseType;
 	using ButtonType = LSMouseButtonEvent::ButtonType;
 	using TextType = LSTextEvent::TextType;
 	using WindowType = LSWindowEvent::WindowType;
@@ -390,36 +391,44 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 			this->event.key.keysym.mod = toSDLKeymod(key.modifiers);
 			break;
 		}
-		case LSEvent::Type::MouseButton:
+		case LSEvent::Type::Mouse:
 		{
-			auto& button = static_cast<const LSMouseButtonEvent&>(event);
-			this->event.type = button.type == ButtonType::Up ? SDL_MOUSEBUTTONUP : SDL_MOUSEBUTTONDOWN;
-			this->event.button.x = button.windowPos.x;
-			this->event.button.y = button.windowPos.y;
-			this->event.button.button = toSDLMouseButton(button.button);
-			this->event.button.clicks = button.clicks;
-			break;
-		}
-		case LSEvent::Type::MouseMove:
-		{
-			auto& move = static_cast<const LSMouseMoveEvent&>(event);
-			this->event.type = SDL_MOUSEMOTION;
-			this->event.motion.x = move.windowPos.x;
-			this->event.motion.y = move.windowPos.y;
-			break;
-		}
-		case LSEvent::Type::MouseWheel:
-		{
-			auto& wheel = static_cast<const LSMouseWheelEvent&>(event);
-			this->event.type = SDL_MOUSEWHEEL;
-			#if SDL_VERSION_ATLEAST(2, 0, 18)
-			this->event.wheel.preciseY = wheel.delta;
-			#endif
-			this->event.wheel.y = wheel.delta;
-			#if SDL_VERSION_ATLEAST(2, 26, 0)
-			this->event.wheel.mouseX = wheel.windowPos.x;
-			this->event.wheel.mouseY = wheel.windowPos.y;
-			#endif
+			auto& mouse = static_cast<const LSMouseEvent&>(event);
+			switch (mouse.mouseType)
+			{
+				case MouseType::Button:
+				{
+					auto& button = static_cast<const LSMouseButtonEvent&>(event);
+					this->event.type = button.buttonType == ButtonType::Up ? SDL_MOUSEBUTTONUP : SDL_MOUSEBUTTONDOWN;
+					this->event.button.x = button.windowPos.x;
+					this->event.button.y = button.windowPos.y;
+					this->event.button.button = toSDLMouseButton(button.button);
+					this->event.button.clicks = button.clicks;
+					break;
+				}
+				case MouseType::Move:
+				{
+					auto& move = static_cast<const LSMouseMoveEvent&>(event);
+					this->event.type = SDL_MOUSEMOTION;
+					this->event.motion.x = move.windowPos.x;
+					this->event.motion.y = move.windowPos.y;
+					break;
+				}
+				case MouseType::Wheel:
+				{
+					auto& wheel = static_cast<const LSMouseWheelEvent&>(event);
+					this->event.type = SDL_MOUSEWHEEL;
+					#if SDL_VERSION_ATLEAST(2, 0, 18)
+					this->event.wheel.preciseY = wheel.delta;
+					#endif
+					this->event.wheel.y = wheel.delta;
+					#if SDL_VERSION_ATLEAST(2, 26, 0)
+					this->event.wheel.mouseX = wheel.windowPos.x;
+					this->event.wheel.mouseY = wheel.windowPos.y;
+					#endif
+					break;
+				}
+			}
 			break;
 		}
 		case LSEvent::Type::Text:

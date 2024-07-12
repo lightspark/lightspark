@@ -45,9 +45,7 @@ struct LSEvent
 	{
 		Invalid,
 		// Input events.
-		MouseMove,
-		MouseWheel,
-		MouseButton,
+		Mouse,
 		Key,
 		Text,
 		// Non-input events.
@@ -67,6 +65,14 @@ struct LSEvent
 
 struct LSMouseEvent : public LSEvent
 {
+	enum MouseType
+	{
+		Move,
+		Wheel,
+		Button,
+	};
+
+	MouseType mouseType;
 	Vector2f windowPos;
 	// TODO: Use twips instead of float.
 	Vector2f stagePos;
@@ -74,10 +80,17 @@ struct LSMouseEvent : public LSEvent
 
 	LSMouseEvent
 	(
+		const MouseType& _mouseType,
 		const Vector2f& _windowPos,
 		const Vector2f& _stagePos,
 		const LSModifier& _modifiers
-	) : windowPos(_windowPos), stagePos(_stagePos), modifiers(_modifiers) {}
+	) :
+	mouseType(_mouseType),
+	windowPos(_windowPos),
+	stagePos(_stagePos),
+	modifiers(_modifiers) {}
+
+	LSEvent::Type getType() const override { return LSEvent::Type::Mouse; }
 };
 
 struct LSMouseMoveEvent : public LSMouseEvent
@@ -87,9 +100,13 @@ struct LSMouseMoveEvent : public LSMouseEvent
 		const Vector2f& windowPos,
 		const Vector2f& stagePos,
 		const LSModifier& modifiers
-	) : LSMouseEvent(windowPos, stagePos, modifiers) {}
-
-	LSEvent::Type getType() const override { return LSEvent::Type::MouseMove; }
+	) : LSMouseEvent
+	(
+		MouseType::Move,
+		windowPos,
+		stagePos,
+		modifiers
+	) {}
 };
 
 struct LSMouseWheelEvent : public LSMouseEvent
@@ -102,9 +119,13 @@ struct LSMouseWheelEvent : public LSMouseEvent
 		const Vector2f& stagePos,
 		const LSModifier& modifiers,
 		number_t _delta
-	) : LSMouseEvent(windowPos, stagePos, modifiers), delta(_delta) {}
-
-	LSEvent::Type getType() const override { return LSEvent::Type::MouseWheel; }
+	) : LSMouseEvent
+	(
+		MouseType::Wheel,
+		windowPos,
+		stagePos,
+		modifiers
+	), delta(_delta) {}
 };
 
 struct LSMouseButtonEvent : public LSMouseEvent
@@ -127,7 +148,7 @@ struct LSMouseButtonEvent : public LSMouseEvent
 
 	Button button;
 	int clicks;
-	ButtonType type;
+	ButtonType buttonType;
 
 	LSMouseButtonEvent
 	(
@@ -136,10 +157,15 @@ struct LSMouseButtonEvent : public LSMouseEvent
 		const LSModifier& modifiers,
 		Button _button,
 		int _clicks,
-		ButtonType _type
-	) : LSMouseEvent(windowPos, stagePos, modifiers), button(_button), clicks(_clicks), type(_type) {}
-
-	LSEvent::Type getType() const override { return LSEvent::Type::MouseButton; }
+		ButtonType _buttonType
+	) :
+	LSMouseEvent
+	(
+		MouseType::Button,
+		windowPos,
+		stagePos,
+		modifiers
+	), button(_button), clicks(_clicks), buttonType(_buttonType) {}
 };
 
 struct LSKeyEvent : public LSEvent

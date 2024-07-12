@@ -792,7 +792,7 @@ AS3KeyCode lightspark::getAS3KeyCode(SDL_Keycode sdlkey)
 	//AS3KEYCODE_VOD
 	return AS3KEYCODE_UNKNOWN;
 }
-AS3KeyCode getAS3KeyCodeFromScanCode(SDL_Scancode sdlscancode)
+AS3KeyCode lightspark::getAS3KeyCodeFromScanCode(SDL_Scancode sdlscancode)
 {
 	switch (sdlscancode)
 	{

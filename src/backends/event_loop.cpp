@@ -329,9 +329,6 @@ static SDL_Scancode toSDLScancode(const AS3KeyCode& charCode)
 		case AS3KEYCODE_CONTROL: return SDL_SCANCODE_LCTRL;
 		case AS3KEYCODE_SHIFT: return SDL_SCANCODE_LSHIFT;
 		case AS3KEYCODE_ALTERNATE: return SDL_SCANCODE_LALT;
-		case AS3KEYCODE_CONTROL: return SDL_SCANCODE_RCTRL;
-		case AS3KEYCODE_SHIFT: return SDL_SCANCODE_RSHIFT;
-		case AS3KEYCODE_ALTERNATE: return SDL_SCANCODE_RALT;
 		case AS3KEYCODE_SEARCH: return SDL_SCANCODE_AC_SEARCH;
 		case AS3KEYCODE_BACK : return SDL_SCANCODE_AC_BACK;
 		case AS3KEYCODE_STOP: return SDL_SCANCODE_AC_STOP;
@@ -534,10 +531,10 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 				{
 					auto& move = static_cast<const LSMouseMoveEvent&>(event);
 					this->event.type = SDL_MOUSEMOTION;
-					this->event.motion.windowID = motion.windowID;
+					this->event.motion.windowID = move.windowID;
 					this->event.motion.x = move.mousePos.x;
 					this->event.motion.y = move.mousePos.y;
-					this->event.motion.state = motion.pressed ? SDL_PRESSED : SDL_RELEASED;
+					this->event.motion.state = move.pressed ? SDL_PRESSED : SDL_RELEASED;
 					break;
 				}
 				case MouseType::Wheel:

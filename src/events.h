@@ -265,6 +265,7 @@ struct LSKeyEvent : public LSEvent
 	(
 		const AS3KeyCode& _charCode,
 		const AS3KeyCode& _keyCode,
+		const LSModifier& _modifiers,
 		const KeyType& _type
 	) : charCode(_charCode), keyCode(_keyCode), modifiers(_modifiers), type(_type) {}
 

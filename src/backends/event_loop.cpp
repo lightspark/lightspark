@@ -490,178 +490,123 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 
 IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 {
-	using KeyType = LSKeyEvent::KeyType;
-	using MouseType = LSMouseEvent::MouseType;
 	using ButtonType = LSMouseButtonEvent::ButtonType;
-	using TextType = LSTextEvent::TextType;
-	using WindowType = LSWindowEvent::WindowType;
 	using FocusType = LSWindowFocusEvent::FocusType;
+	using KeyType = LSKeyEvent::KeyType;
 	using QuitType = LSQuitEvent::QuitType;
-	using ContextMenuType = LSContextMenuEvent::ContextMenuType;
+	using TextType = LSTextEvent::TextType;
 
-	switch (event.getType())
-	{
-		case LSEvent::Type::Key:
+	if (event.isInvalid())
+		return *this;
+
+	event.visit(makeVisitor
+	(
+		[&](const LSKeyEvent& key)
 		{
-			auto& key = static_cast<const LSKeyEvent&>(event);
 			this->event.type = key.type == KeyType::Up ? SDL_KEYUP : SDL_KEYDOWN;
 			this->event.key.keysym.scancode = toSDLScancode(key.charCode);
 			this->event.key.keysym.sym = toSDLKeycode(key.keyCode);
 			this->event.key.keysym.mod = toSDLKeymod(key.modifiers);
-			break;
-		}
-		case LSEvent::Type::Mouse:
+		},
+		[&](const LSMouseButtonEvent& button)
 		{
-			auto& mouse = static_cast<const LSMouseEvent&>(event);
-			switch (mouse.mouseType)
-			{
-				case MouseType::Button:
-				{
-					auto& button = static_cast<const LSMouseButtonEvent&>(event);
-					this->event.type = button.buttonType == ButtonType::Up ? SDL_MOUSEBUTTONUP : SDL_MOUSEBUTTONDOWN;
-					this->event.button.windowID = button.windowID;
-					this->event.button.x = button.mousePos.x;
-					this->event.button.y = button.mousePos.y;
-					this->event.button.state = button.pressed ? SDL_PRESSED : SDL_RELEASED;
-					this->event.button.button = toSDLMouseButton(button.button);
-					this->event.button.clicks = button.clicks;
-					break;
-				}
-				case MouseType::Move:
-				{
-					auto& move = static_cast<const LSMouseMoveEvent&>(event);
-					this->event.type = SDL_MOUSEMOTION;
-					this->event.motion.windowID = move.windowID;
-					this->event.motion.x = move.mousePos.x;
-					this->event.motion.y = move.mousePos.y;
-					this->event.motion.state = move.pressed ? SDL_PRESSED : SDL_RELEASED;
-					break;
-				}
-				case MouseType::Wheel:
-				{
-					auto& wheel = static_cast<const LSMouseWheelEvent&>(event);
-					this->event.type = SDL_MOUSEWHEEL;
-					this->event.wheel.windowID = wheel.windowID;
-					#if SDL_VERSION_ATLEAST(2, 0, 18)
-					this->event.wheel.preciseY = wheel.delta;
-					#endif
-					this->event.wheel.y = wheel.delta;
-					#if SDL_VERSION_ATLEAST(2, 26, 0)
-					this->event.wheel.mouseX = wheel.mousePos.x;
-					this->event.wheel.mouseY = wheel.mousePos.y;
-					#endif
-					break;
-				}
-			}
-			break;
-		}
-		case LSEvent::Type::Text:
+			this->event.type = button.buttonType == ButtonType::Up ? SDL_MOUSEBUTTONUP : SDL_MOUSEBUTTONDOWN;
+			this->event.button.x = button.mousePos.x;
+			this->event.button.y = button.mousePos.y;
+			this->event.button.button = toSDLMouseButton(button.button);
+			this->event.button.clicks = button.clicks;
+		},
+		[&](const LSMouseMoveEvent& move)
 		{
-			auto& text = static_cast<const LSTextEvent&>(event);
+			this->event.type = SDL_MOUSEMOTION;
+			this->event.motion.x = move.mousePos.x;
+			this->event.motion.y = move.mousePos.y;
+		},
+		[&](const LSMouseWheelEvent& wheel)
+		{
+			this->event.type = SDL_MOUSEWHEEL;
+			#if SDL_VERSION_ATLEAST(2, 0, 18)
+			this->event.wheel.preciseY = wheel.delta;
+			#endif
+			this->event.wheel.y = wheel.delta;
+			#if SDL_VERSION_ATLEAST(2, 26, 0)
+			this->event.wheel.mouseX = wheel.mousePos.x;
+			this->event.wheel.mouseY = wheel.mousePos.y;
+			#endif
+		},
+		[&](const LSTextEvent& text)
+		{
 			if (text.type != TextType::Input)
-				break;
+				return;
 			this->event.type = SDL_TEXTINPUT;
 			memcpy(this->event.text.text, text.text.raw_buf(), text.text.numBytes());
-			break;
-		}
+		},
 		// Non-input events.
-		case LSEvent::Type::Window:
+		[&](const LSWindowResizedEvent& resize)
 		{
-			auto& window = static_cast<const LSWindowEvent&>(event);
 			this->event.type = SDL_WINDOWEVENT;
-			switch (window.type)
-			{
-				case WindowType::Resized:
-				{
-					auto& resize = static_cast<const LSWindowResizedEvent&>(event);
-					this->event.window.event = SDL_WINDOWEVENT_RESIZED;
-					this->event.window.data1 = resize.size.x;
-					this->event.window.data2 = resize.size.y;
-					break;
-				}
-				case WindowType::Moved:
-				{
-					auto& move = static_cast<const LSWindowMovedEvent&>(event);
-					this->event.window.event = SDL_WINDOWEVENT_MOVED;
-					this->event.window.data1 = move.pos.x;
-					this->event.window.data2 = move.pos.y;
-					break;
-				}
-				case WindowType::Exposed:
-				{
-					this->event.window.event = SDL_WINDOWEVENT_EXPOSED;
-					break;
-				}
-				case WindowType::Focus:
-				{
-					auto& focus = static_cast<const LSWindowFocusEvent&>(event);
-					if (focus.focusType == FocusType::Keyboard)
-						this->event.window.event = focus.focused ? SDL_WINDOWEVENT_FOCUS_GAINED : SDL_WINDOWEVENT_FOCUS_LOST;
-					else
-						this->event.window.event = focus.focused ? SDL_WINDOWEVENT_ENTER : SDL_WINDOWEVENT_LEAVE;
-					break;
-				}
-			}
-			break;
-		}
-		case LSEvent::Type::Quit:
+			this->event.window.event = SDL_WINDOWEVENT_RESIZED;
+			this->event.window.data1 = resize.size.x;
+			this->event.window.data2 = resize.size.y;
+		},
+		[&](const LSWindowMovedEvent& move)
 		{
-			auto& quit = static_cast<const LSQuitEvent&>(event);
+			this->event.type = SDL_WINDOWEVENT;
+			this->event.window.event = SDL_WINDOWEVENT_MOVED;
+			this->event.window.data1 = move.pos.x;
+			this->event.window.data2 = move.pos.y;
+		},
+		[&](const LSWindowExposedEvent& exposed)
+		{
+			this->event.type = SDL_WINDOWEVENT;
+			this->event.window.event = SDL_WINDOWEVENT_EXPOSED;
+		},
+		[&](const LSWindowFocusEvent& focus)
+		{
+			this->event.type = SDL_WINDOWEVENT;
+			if (focus.focusType == FocusType::Keyboard)
+				this->event.window.event = focus.focused ? SDL_WINDOWEVENT_FOCUS_GAINED : SDL_WINDOWEVENT_FOCUS_LOST;
+			else
+				this->event.window.event = focus.focused ? SDL_WINDOWEVENT_ENTER : SDL_WINDOWEVENT_LEAVE;
+		},
+		[&](const LSQuitEvent& quit)
+		{
 			this->event.type = quit.quitType == QuitType::System ? SDL_QUIT : (SDL_EventType)LS_USEREVENT_QUIT;
-			break;
-		}
+		},
 		// Misc events.
-		case LSEvent::Type::Init:
+		[&](const LSInitEvent& init)
 		{
 			this->event.type = LS_USEREVENT_INIT;
-			break;
-		}
-		case LSEvent::Type::Exec:
+			this->event.user.data1 = init.sys;
+		},
+		[&](const LSExecEvent& exec)
 		{
-			auto& exec = static_cast<const LSExecEvent&>(event);
 			this->event.type = LS_USEREVENT_EXEC;
 			this->event.user.data1 = (void*)exec.callback;
-			break;
-		}
-		case LSEvent::Type::ContextMenu:
+		},
+		[&](const LSOpenContextMenuEvent& open)
 		{
-			auto& context = static_cast<const LSContextMenuEvent&>(event);
-			switch (context.type)
-			{
-				case ContextMenuType::Open:
-				{
-					auto& open = static_cast<const LSOpenContextMenuEvent&>(event);
-					this->event.type = LS_USEREVENT_OPEN_CONTEXTMENU;
-					this->event.user.data1 = open.obj;
-					break;
-				}
-				case ContextMenuType::Update:
-				{
-					auto& update = static_cast<const LSUpdateContextMenuEvent&>(event);
-					this->event.type = LS_USEREVENT_UPDATE_CONTEXTMENU;
-					this->event.user.data1 = new int(update.selectedItem);
-					break;
-				}
-				case ContextMenuType::SelectItem:
-				{
-					this->event.type = LS_USEREVENT_SELECTITEM_CONTEXTMENU;
-					break;
-				}
-			}
-			break;
-		}
-		case LSEvent::Type::RemovedFromStage:
+			this->event.type = LS_USEREVENT_OPEN_CONTEXTMENU;
+			this->event.user.data1 = open.obj;
+		},
+		[&](const LSUpdateContextMenuEvent& update)
+		{
+			this->event.type = LS_USEREVENT_UPDATE_CONTEXTMENU;
+			this->event.user.data1 = new int(update.selectedItem);
+		},
+		[&](const LSSelectItemContextMenuEvent& selectItem)
+		{
+			this->event.type = LS_USEREVENT_SELECTITEM_CONTEXTMENU;
+		},
+		[&](const LSRemovedFromStageEvent& removedFromStage)
 		{
 			this->event.type = LS_USEREVENT_INTERACTIVEOBJECT_REMOVED_FOM_STAGE;
-			break;
-		}
-		case LSEvent::Type::NewTimer:
+		},
+		[&](const LSNewTimerEvent& newTimer)
 		{
 			this->event.type = LS_USEREVENT_NEW_TIMER;
-			break;
 		}
-		default: break;
-	}
+	));
 	return *this;
 }
 

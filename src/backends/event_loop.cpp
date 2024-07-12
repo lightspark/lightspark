@@ -469,7 +469,7 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 			switch (event.type-EngineData::userevent)
 			{
 				// LS_USEREVENT_INIT
-				case 0: return LSInitEvent{}; break;
+				case 0: return LSInitEvent((SystemState*)event.user.data1); break;
 				// LS_USEREVENT_EXEC
 				case 1: return LSExecEvent((LSExecEvent::Callback)event.user.data1); break;
 				// LS_USEREVENT_QUIT

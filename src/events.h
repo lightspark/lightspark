@@ -304,6 +304,9 @@ struct LSQuitEvent : public LSEvent
 // Misc events.
 struct LSInitEvent : public LSEvent
 {
+	SystemState* sys;
+
+	LSInitEvent(SystemState* _sys) : sys(_sys) {}
 	LSEvent::Type getType() const override { return LSEvent::Type::Init; }
 };
 

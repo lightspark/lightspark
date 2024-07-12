@@ -226,13 +226,127 @@ static SDL_Keycode toSDLKeycode(const AS3KeyCode& keyCode)
 	return SDLK_UNKNOWN;
 }
 
+static SDL_Scancode toSDLScancode(const AS3KeyCode& charCode)
+{
+	switch (charCode)
+	{
+		case AS3KEYCODE_ENTER: return SDL_SCANCODE_RETURN;
+		case AS3KEYCODE_ESCAPE: return SDL_SCANCODE_ESCAPE;
+		case AS3KEYCODE_BACKSPACE: return SDL_SCANCODE_BACKSPACE;
+		case AS3KEYCODE_TAB: return SDL_SCANCODE_TAB;
+		case AS3KEYCODE_SPACE: return SDL_SCANCODE_SPACE;
+		case AS3KEYCODE_COMMA: return SDL_SCANCODE_COMMA;
+		case AS3KEYCODE_MINUS: return SDL_SCANCODE_MINUS;
+		case AS3KEYCODE_PERIOD: return SDL_SCANCODE_PERIOD;
+		case AS3KEYCODE_SLASH: return SDL_SCANCODE_SLASH;
+		case AS3KEYCODE_NUMBER_0: return SDL_SCANCODE_0;
+		case AS3KEYCODE_NUMBER_1: return SDL_SCANCODE_1;
+		case AS3KEYCODE_NUMBER_2: return SDL_SCANCODE_2;
+		case AS3KEYCODE_NUMBER_3: return SDL_SCANCODE_3;
+		case AS3KEYCODE_NUMBER_4: return SDL_SCANCODE_4;
+		case AS3KEYCODE_NUMBER_5: return SDL_SCANCODE_5;
+		case AS3KEYCODE_NUMBER_6: return SDL_SCANCODE_6;
+		case AS3KEYCODE_NUMBER_7: return SDL_SCANCODE_7;
+		case AS3KEYCODE_NUMBER_8: return SDL_SCANCODE_8;
+		case AS3KEYCODE_NUMBER_9: return SDL_SCANCODE_9;
+		case AS3KEYCODE_SEMICOLON: return SDL_SCANCODE_SEMICOLON;
+		case AS3KEYCODE_EQUAL: return SDL_SCANCODE_EQUALS;
+		case AS3KEYCODE_LEFTBRACKET: return SDL_SCANCODE_LEFTBRACKET;
+		case AS3KEYCODE_BACKSLASH: return SDL_SCANCODE_BACKSLASH;
+		case AS3KEYCODE_RIGHTBRACKET: return SDL_SCANCODE_RIGHTBRACKET;
+		case AS3KEYCODE_A: return SDL_SCANCODE_A;
+		case AS3KEYCODE_B: return SDL_SCANCODE_B;
+		case AS3KEYCODE_C: return SDL_SCANCODE_C;
+		case AS3KEYCODE_D: return SDL_SCANCODE_D;
+		case AS3KEYCODE_E: return SDL_SCANCODE_E;
+		case AS3KEYCODE_F: return SDL_SCANCODE_F;
+		case AS3KEYCODE_G: return SDL_SCANCODE_G;
+		case AS3KEYCODE_H: return SDL_SCANCODE_H;
+		case AS3KEYCODE_I: return SDL_SCANCODE_I;
+		case AS3KEYCODE_J: return SDL_SCANCODE_J;
+		case AS3KEYCODE_K: return SDL_SCANCODE_K;
+		case AS3KEYCODE_L: return SDL_SCANCODE_L;
+		case AS3KEYCODE_M: return SDL_SCANCODE_M;
+		case AS3KEYCODE_N: return SDL_SCANCODE_N;
+		case AS3KEYCODE_O: return SDL_SCANCODE_O;
+		case AS3KEYCODE_P: return SDL_SCANCODE_P;
+		case AS3KEYCODE_Q: return SDL_SCANCODE_Q;
+		case AS3KEYCODE_R: return SDL_SCANCODE_R;
+		case AS3KEYCODE_S: return SDL_SCANCODE_S;
+		case AS3KEYCODE_T: return SDL_SCANCODE_T;
+		case AS3KEYCODE_U: return SDL_SCANCODE_U;
+		case AS3KEYCODE_V: return SDL_SCANCODE_V;
+		case AS3KEYCODE_W: return SDL_SCANCODE_W;
+		case AS3KEYCODE_X: return SDL_SCANCODE_X;
+		case AS3KEYCODE_Y: return SDL_SCANCODE_Y;
+		case AS3KEYCODE_Z: return SDL_SCANCODE_Z;
+		case AS3KEYCODE_CAPS_LOCK: return SDL_SCANCODE_CAPSLOCK;
+		case AS3KEYCODE_F1: return SDL_SCANCODE_F1;
+		case AS3KEYCODE_F2: return SDL_SCANCODE_F2;
+		case AS3KEYCODE_F3: return SDL_SCANCODE_F3;
+		case AS3KEYCODE_F4: return SDL_SCANCODE_F4;
+		case AS3KEYCODE_F5: return SDL_SCANCODE_F5;
+		case AS3KEYCODE_F6: return SDL_SCANCODE_F6;
+		case AS3KEYCODE_F7: return SDL_SCANCODE_F7;
+		case AS3KEYCODE_F8: return SDL_SCANCODE_F8;
+		case AS3KEYCODE_F9: return SDL_SCANCODE_F9;
+		case AS3KEYCODE_F10: return SDL_SCANCODE_F10;
+		case AS3KEYCODE_F11: return SDL_SCANCODE_F11;
+		case AS3KEYCODE_F12: return SDL_SCANCODE_F12;
+		case AS3KEYCODE_PAUSE: return SDL_SCANCODE_PAUSE;
+		case AS3KEYCODE_INSERT: return SDL_SCANCODE_INSERT;
+		case AS3KEYCODE_HOME: return SDL_SCANCODE_HOME;
+		case AS3KEYCODE_PAGE_UP: return SDL_SCANCODE_PAGEUP;
+		case AS3KEYCODE_DELETE: return SDL_SCANCODE_DELETE;
+		case AS3KEYCODE_END: return SDL_SCANCODE_END;
+		case AS3KEYCODE_PAGE_DOWN: return SDL_SCANCODE_PAGEDOWN;
+		case AS3KEYCODE_RIGHT: return SDL_SCANCODE_RIGHT;
+		case AS3KEYCODE_LEFT: return SDL_SCANCODE_LEFT;
+		case AS3KEYCODE_DOWN: return SDL_SCANCODE_DOWN;
+		case AS3KEYCODE_UP: return SDL_SCANCODE_UP;
+		case AS3KEYCODE_NUMPAD: return SDL_SCANCODE_NUMLOCKCLEAR;
+		case AS3KEYCODE_NUMPAD_DIVIDE: return SDL_SCANCODE_KP_DIVIDE;
+		case AS3KEYCODE_NUMPAD_MULTIPLY: return SDL_SCANCODE_KP_MULTIPLY;
+		case AS3KEYCODE_NUMPAD_SUBTRACT: return SDL_SCANCODE_KP_MINUS;
+		case AS3KEYCODE_NUMPAD_ADD: return SDL_SCANCODE_KP_PLUS;
+		case AS3KEYCODE_NUMPAD_ENTER: return SDL_SCANCODE_KP_ENTER;
+		case AS3KEYCODE_NUMPAD_1: return SDL_SCANCODE_KP_1;
+		case AS3KEYCODE_NUMPAD_2: return SDL_SCANCODE_KP_2;
+		case AS3KEYCODE_NUMPAD_3: return SDL_SCANCODE_KP_3;
+		case AS3KEYCODE_NUMPAD_4: return SDL_SCANCODE_KP_4;
+		case AS3KEYCODE_NUMPAD_5: return SDL_SCANCODE_KP_5;
+		case AS3KEYCODE_NUMPAD_6: return SDL_SCANCODE_KP_6;
+		case AS3KEYCODE_NUMPAD_7: return SDL_SCANCODE_KP_7;
+		case AS3KEYCODE_NUMPAD_8: return SDL_SCANCODE_KP_8;
+		case AS3KEYCODE_NUMPAD_9: return SDL_SCANCODE_KP_9;
+		case AS3KEYCODE_NUMPAD_0: return SDL_SCANCODE_KP_0;
+		case AS3KEYCODE_NUMPAD_DECIMAL: return SDL_SCANCODE_KP_PERIOD;
+		case AS3KEYCODE_F13: return SDL_SCANCODE_F13;
+		case AS3KEYCODE_F14: return SDL_SCANCODE_F14;
+		case AS3KEYCODE_F15: return SDL_SCANCODE_F15;
+		case AS3KEYCODE_HELP: return SDL_SCANCODE_HELP;
+		case AS3KEYCODE_MENU: return SDL_SCANCODE_MENU;
+		case AS3KEYCODE_CONTROL: return SDL_SCANCODE_LCTRL;
+		case AS3KEYCODE_SHIFT: return SDL_SCANCODE_LSHIFT;
+		case AS3KEYCODE_ALTERNATE: return SDL_SCANCODE_LALT;
+		case AS3KEYCODE_CONTROL: return SDL_SCANCODE_RCTRL;
+		case AS3KEYCODE_SHIFT: return SDL_SCANCODE_RSHIFT;
+		case AS3KEYCODE_ALTERNATE: return SDL_SCANCODE_RALT;
+		case AS3KEYCODE_SEARCH: return SDL_SCANCODE_AC_SEARCH;
+		case AS3KEYCODE_BACK : return SDL_SCANCODE_AC_BACK;
+		case AS3KEYCODE_STOP: return SDL_SCANCODE_AC_STOP;
+		default: break;
+	}
+	return SDL_SCANCODE_UNKNOWN;
+}
+
 LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 {
-	using KeyType = LSKeyEvent::KeyType;
 	using ButtonType = LSMouseButtonEvent::ButtonType;
-	using TextType = LSTextEvent::TextType;
 	using FocusType = LSWindowFocusEvent::FocusType;
+	using KeyType = LSKeyEvent::KeyType;
 	using QuitType = LSQuitEvent::QuitType;
+	using TextType = LSTextEvent::TextType;
 
 	switch (event.type)
 	{
@@ -243,6 +357,7 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 			auto& key = event.key;
 			return LSKeyEvent
 			(
+				getAS3KeyCodeFromScanCode(key.keysym.scancode),
 				getAS3KeyCode(key.keysym.sym),
 				toLSModifier((SDL_Keymod)key.keysym.mod),
 				event.type == SDL_KEYDOWN ? KeyType::Down : KeyType::Up
@@ -393,6 +508,7 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 		{
 			auto& key = static_cast<const LSKeyEvent&>(event);
 			this->event.type = key.type == KeyType::Up ? SDL_KEYUP : SDL_KEYDOWN;
+			this->event.key.keysym.scancode = toSDLScancode(key.charCode);
 			this->event.key.keysym.sym = toSDLKeycode(key.keyCode);
 			this->event.key.keysym.mod = toSDLKeymod(key.modifiers);
 			break;

@@ -350,7 +350,7 @@ struct LSUpdateContextMenuEvent : public LSContextMenuEvent
 
 struct LSSelectItemContextMenuEvent : public LSContextMenuEvent
 {
-	LSSelectItemContextMenuEvent() : LSContextMenuEvent(ContextMenuType::Update) {}
+	LSSelectItemContextMenuEvent() : LSContextMenuEvent(ContextMenuType::SelectItem) {}
 };
 
 struct LSRemovedFromStageEvent : public LSEvent

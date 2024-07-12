@@ -73,22 +73,28 @@ struct LSMouseEvent : public LSEvent
 	};
 
 	MouseType mouseType;
+	uint32_t windowID;
 	Vector2f mousePos;
 	// TODO: Use twips instead of float.
 	Vector2f stagePos;
 	LSModifier modifiers;
+	bool pressed;
 
 	LSMouseEvent
 	(
 		const MouseType& _mouseType,
+		uint32_t _windowID,
 		const Vector2f& _mousePos,
 		const Vector2f& _stagePos,
-		const LSModifier& _modifiers
+		const LSModifier& _modifiers,
+		bool _pressed
 	) :
 	mouseType(_mouseType),
+	windowID(_windowID),
 	mousePos(_mousePos),
 	stagePos(_stagePos),
-	modifiers(_modifiers) {}
+	modifiers(_modifiers),
+	pressed(_pressed) {}
 
 	LSEvent::Type getType() const override { return LSEvent::Type::Mouse; }
 };
@@ -97,15 +103,19 @@ struct LSMouseMoveEvent : public LSMouseEvent
 {
 	LSMouseMoveEvent
 	(
+		uint32_t windowID,
 		const Vector2f& mousePos,
 		const Vector2f& stagePos,
-		const LSModifier& modifiers
+		const LSModifier& modifiers,
+		bool pressed
 	) : LSMouseEvent
 	(
 		MouseType::Move,
+		windowID,
 		mousePos,
 		stagePos,
-		modifiers
+		modifiers,
+		pressed
 	) {}
 };
 
@@ -115,16 +125,20 @@ struct LSMouseWheelEvent : public LSMouseEvent
 
 	LSMouseWheelEvent
 	(
+		uint32_t windowID,
 		const Vector2f& mousePos,
 		const Vector2f& stagePos,
 		const LSModifier& modifiers,
+		bool pressed,
 		number_t _delta
 	) : LSMouseEvent
 	(
 		MouseType::Wheel,
+		windowID,
 		mousePos,
 		stagePos,
-		modifiers
+		modifiers,
+		pressed
 	), delta(_delta) {}
 };
 
@@ -152,9 +166,11 @@ struct LSMouseButtonEvent : public LSMouseEvent
 
 	LSMouseButtonEvent
 	(
+		uint32_t windowID,
 		const Vector2f& mousePos,
 		const Vector2f& stagePos,
 		const LSModifier& modifiers,
+		bool pressed,
 		Button _button,
 		int _clicks,
 		ButtonType _buttonType
@@ -162,9 +178,11 @@ struct LSMouseButtonEvent : public LSMouseEvent
 	LSMouseEvent
 	(
 		MouseType::Button,
+		windowID,
 		mousePos,
 		stagePos,
-		modifiers
+		modifiers,
+		pressed
 	), button(_button), clicks(_clicks), buttonType(_buttonType) {}
 };
 

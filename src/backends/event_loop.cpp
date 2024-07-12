@@ -255,9 +255,11 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 			auto& button = event.button;
 			return LSMouseButtonEvent
 			(
+				button.windowID,
 				Vector2f(button.x, button.y),
 				sys->windowToStagePoint(Vector2f(button.x, button.y)),
 				toLSModifier(SDL_GetModState()),
+				button.state == SDL_PRESSED,
 				toButton(button.button),
 				button.clicks,
 				event.type == SDL_MOUSEBUTTONDOWN ? button.clicks == 2 ? ButtonType::DoubleClick : ButtonType::Down : ButtonType::Up
@@ -269,9 +271,11 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 			auto& motion = event.motion;
 			return LSMouseMoveEvent
 			(
+				motion.windowID,
 				Vector2f(motion.x, motion.y),
 				sys->windowToStagePoint(Vector2f(motion.x, motion.y)),
-				toLSModifier(SDL_GetModState())
+				toLSModifier(SDL_GetModState()),
+				motion.state == SDL_PRESSED
 			);
 			break;
 		}
@@ -285,9 +289,11 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 			#endif
 			return LSMouseWheelEvent
 			(
+				wheel.windowID,
 				mousePos,
 				sys->windowToStagePoint(mousePos),
 				toLSModifier(SDL_GetModState()),
+				false,
 				#if SDL_VERSION_ATLEAST(2, 0, 18)
 				wheel.preciseY
 				#else
@@ -400,8 +406,10 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 				{
 					auto& button = static_cast<const LSMouseButtonEvent&>(event);
 					this->event.type = button.buttonType == ButtonType::Up ? SDL_MOUSEBUTTONUP : SDL_MOUSEBUTTONDOWN;
+					this->event.button.windowID = button.windowID;
 					this->event.button.x = button.mousePos.x;
 					this->event.button.y = button.mousePos.y;
+					this->event.button.state = button.pressed ? SDL_PRESSED : SDL_RELEASED;
 					this->event.button.button = toSDLMouseButton(button.button);
 					this->event.button.clicks = button.clicks;
 					break;
@@ -410,14 +418,17 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 				{
 					auto& move = static_cast<const LSMouseMoveEvent&>(event);
 					this->event.type = SDL_MOUSEMOTION;
+					this->event.motion.windowID = motion.windowID;
 					this->event.motion.x = move.mousePos.x;
 					this->event.motion.y = move.mousePos.y;
+					this->event.motion.state = motion.pressed ? SDL_PRESSED : SDL_RELEASED;
 					break;
 				}
 				case MouseType::Wheel:
 				{
 					auto& wheel = static_cast<const LSMouseWheelEvent&>(event);
 					this->event.type = SDL_MOUSEWHEEL;
+					this->event.wheel.windowID = wheel.windowID;
 					#if SDL_VERSION_ATLEAST(2, 0, 18)
 					this->event.wheel.preciseY = wheel.delta;
 					#endif

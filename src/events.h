@@ -256,6 +256,9 @@ struct LSKeyEvent : public LSEvent
 		Control,
 	};
 
+	Vector2f mousePos;
+	// TODO: Use twips instead of float.
+	Vector2f stagePos;
 	AS3KeyCode charCode;
 	AS3KeyCode keyCode;
 	LSModifier modifiers;
@@ -263,11 +266,19 @@ struct LSKeyEvent : public LSEvent
 
 	LSKeyEvent
 	(
+		const Vector2f& _mousePos,
+		const Vector2f& _stagePos,
 		const AS3KeyCode& _charCode,
 		const AS3KeyCode& _keyCode,
 		const LSModifier& _modifiers,
 		const KeyType& _type
-	) : charCode(_charCode), keyCode(_keyCode), modifiers(_modifiers), type(_type) {}
+	) :
+	mousePos(_mousePos),
+	stagePos(_stagePos),
+	charCode(_charCode),
+	keyCode(_keyCode),
+	modifiers(_modifiers),
+	type(_type) {}
 
 	LSEvent::Type getType() const override { return LSEvent::Type::Key; }
 };

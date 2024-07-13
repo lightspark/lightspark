@@ -39,7 +39,7 @@ protected:
 	SDL_Event event;
 public:
 	// Converts a platform/application specific event into an LSEvent.
-	LSEvent toLSEvent(SystemState* sys) const override;
+	LSEventStorage toLSEvent(SystemState* sys) const override;
 	// Converts an LSEvent into a platform/application specific event.
 	IEvent& fromLSEvent(const LSEvent& event) override;
 	// Returns the underlying platform/application specific event.

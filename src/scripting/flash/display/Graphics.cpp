@@ -120,9 +120,11 @@ ASFUNCTIONBODY_ATOM(Graphics,lineTo)
 		th->AddFillToken(GeomToken(STRAIGHT));
 		th->AddFillToken(GeomToken(Vector2(x, y)));
 	}
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(Vector2(x, y)));
-
+	if (th->hasLineStyle)
+	{
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(Vector2(x, y)));
+	}
 	th->hasChanged = true;
 	if (!th->inFilling)
 		th->dorender(false);
@@ -146,10 +148,12 @@ ASFUNCTIONBODY_ATOM(Graphics,curveTo)
 		th->AddFillToken(GeomToken(Vector2(controlX, controlY)));
 		th->AddFillToken(GeomToken(Vector2(anchorX, anchorY)));
 	}
-	th->AddStrokeToken(GeomToken(CURVE_QUADRATIC));
-	th->AddStrokeToken(GeomToken(Vector2(controlX, controlY)));
-	th->AddStrokeToken(GeomToken(Vector2(anchorX, anchorY)));
-
+	if (th->hasLineStyle)
+	{
+		th->AddStrokeToken(GeomToken(CURVE_QUADRATIC));
+		th->AddStrokeToken(GeomToken(Vector2(controlX, controlY)));
+		th->AddStrokeToken(GeomToken(Vector2(anchorX, anchorY)));
+	}
 	th->hasChanged = true;
 	if (!th->inFilling)
 		th->dorender(false);

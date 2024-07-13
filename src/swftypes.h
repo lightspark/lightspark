@@ -978,19 +978,11 @@ public:
 	}
 	number_t getScaleX() const
 	{
-		number_t ret=sqrt(xx*xx + yx*yx);
-		if(xx>=0)
-			return ret;
-		else
-			return -ret;
+		return sqrt(xx*xx + yx*yx);
 	}
 	number_t getScaleY() const
 	{
-		number_t ret=sqrt(yy*yy + xy*xy);
-		if(yy>=0)
-			return ret;
-		else
-			return -ret;
+		return sqrt(yy*yy + xy*xy);
 	}
 	number_t getRotation() const
 	{

@@ -352,8 +352,12 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 		case SDL_KEYUP:
 		{
 			auto& key = event.key;
+			Vector2 mousePos;
+			SDL_GetMouseState(&mousePos.x, &mousePos.y);
 			return LSKeyEvent
 			(
+				mousePos,
+				sys->windowToStagePoint(mousePos),
 				getAS3KeyCodeFromScanCode(key.keysym.scancode),
 				getAS3KeyCode(key.keysym.sym),
 				toLSModifier((SDL_Keymod)key.keysym.mod),

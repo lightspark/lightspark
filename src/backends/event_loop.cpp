@@ -495,7 +495,7 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 			break;
 		}
 	}
-	return LSEvent{};
+	return LSEvent();
 }
 
 IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
@@ -513,7 +513,7 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 	(
 		[&](const LSKeyEvent& key)
 		{
-			this->event.type = key.type == KeyType::Up ? SDL_KEYUP : SDL_KEYDOWN;
+			this->event.type = key.keyType == KeyType::Up ? SDL_KEYUP : SDL_KEYDOWN;
 			this->event.key.keysym.scancode = toSDLScancode(key.charCode);
 			this->event.key.keysym.sym = toSDLKeycode(key.keyCode);
 			this->event.key.keysym.mod = toSDLKeymod(key.modifiers);
@@ -546,7 +546,7 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 		},
 		[&](const LSTextEvent& text)
 		{
-			if (text.type != TextType::Input)
+			if (text.textType != TextType::Input)
 				return;
 			this->event.type = SDL_TEXTINPUT;
 			memcpy(this->event.text.text, text.text.raw_buf(), text.text.numBytes());

@@ -73,11 +73,11 @@ protected:
 	void onContextMenu(_NR<ASObject> oldValue);
 	~InteractiveObject();
 public:
-	bool isHittable(DisplayObject::HIT_TYPE type)
+	bool isHittable(HIT_TYPE type)
 	{
-		if(type == DisplayObject::MOUSE_CLICK_HIT)
+		if(type == MOUSE_CLICK_HIT)
 			return mouseEnabled;
-		else if(type == DisplayObject::DOUBLE_CLICK_HIT)
+		else if(type == DOUBLE_CLICK_HIT)
 			return doubleClickEnabled && mouseEnabled;
 		else
 			return true;
@@ -136,7 +136,7 @@ protected:
 	//As the RenderThread only reads, it's safe to read without the lock
 	mutable Mutex mutexDisplayList;
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
-	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
+	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	virtual void resetToStart() {}
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
@@ -238,7 +238,7 @@ private:
 protected:
 	bool initializingFrame;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
-	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
+	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void resetToStart() override;
 	void checkSound(uint32_t frame);// start sound streaming if it is not already playing
 	void stopSound();
@@ -340,7 +340,7 @@ public:
 	bool renderStage3D();
 	void onDisplayState(const tiny_string& old_value);
 	void AVM1RootClipAdded() { hasAVM1Clips = true; }
-	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
+	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void setOnStage(bool staged, bool force,bool inskipping=false) override { assert(false); /* we are the stage */}
 	_NR<RootMovieClip> getRoot() override;
 	void setRoot(_NR<RootMovieClip> _root);

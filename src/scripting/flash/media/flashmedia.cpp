@@ -417,7 +417,7 @@ ASFUNCTIONBODY_ATOM(Video,clear)
 		th->netStream->clearFrameBuffer();
 }
 
-_NR<DisplayObject> Video::hitTestImpl(const Vector2f&, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Video::hitTestImpl(const Vector2f&, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	//TODO: support masks
 	//TODO: Add a point intersect function to RECT, and use that instead.

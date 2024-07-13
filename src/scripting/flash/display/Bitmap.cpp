@@ -207,7 +207,7 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	return true;
 }
 
-_NR<DisplayObject> Bitmap::hitTestImpl(const Vector2f&, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Bitmap::hitTestImpl(const Vector2f&, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	//Simple check inside the area, opacity data should not be considered
 	//NOTE: on the X axis the 0th line must be ignored, while the one past the width is valid

@@ -1209,6 +1209,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				}
 				break;
 			}
+			case GETMOUSETARGET_EVENT:
+			{
+				GetMouseTargetEvent* ev=static_cast<GetMouseTargetEvent*>(e.second.getPtr());
+				Vector2f point(ev->x, ev->y);
+				ev->dispobj=m_sys->stage->hitTest(point, point, ev->type,true);
+				break;
+			}
 			case FLUSH_EVENT_BUFFER:
 			{
 				FlushEventBufferEvent* ev=static_cast<FlushEventBufferEvent*>(e.second.getPtr());

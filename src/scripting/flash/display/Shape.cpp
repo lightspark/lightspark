@@ -41,7 +41,7 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 	return true;
 }
 
-_NR<DisplayObject> Shape::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
+_NR<DisplayObject> Shape::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin, xmax, ymin, ymax;
 	// TODO: Add an overload for RECT.

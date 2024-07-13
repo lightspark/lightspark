@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/abc.h"
+#include "scripting/flash/display/RootMovieClip.h"
 
 #include <fstream>
 #ifndef _WIN32

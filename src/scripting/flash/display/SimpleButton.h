@@ -58,7 +58,7 @@ private:
 	bool hasMouse;
 	void reflectState(BUTTONSTATE oldstate);
 	void resetStateToStart(DisplayObject* obj);
-	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly) override;
+	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 	/* This is called by when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e) override;
 protected:

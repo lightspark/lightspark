@@ -1927,6 +1927,10 @@ LocalConnectionEvent::~LocalConnectionEvent()
 	
 }
 
+GetMouseTargetEvent::GetMouseTargetEvent(uint32_t _x, uint32_t _y, HIT_TYPE _type): WaitableEvent("GetMouseTargetEvent"),x(_x),y(_y),type(_type)
+{
+}
+
 SetLoaderContentEvent::SetLoaderContentEvent(_NR<DisplayObject> m, _NR<Loader> _loader): Event(nullptr,nullptr,"SetLoaderContentEvent"),content(m),loader(_loader)
 {
 }

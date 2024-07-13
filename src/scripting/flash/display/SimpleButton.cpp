@@ -86,7 +86,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 			number_t x1,y1;
 			// TODO: Add an overload for Vector2f.
 			this->globalToLocal(x,y,x1,y1);
-			_NR<DisplayObject> d = hitTest(Vector2f(x,y), Vector2f(x1,y1), DisplayObject::MOUSE_CLICK_HIT,true);
+			_NR<DisplayObject> d = hitTest(Vector2f(x,y), Vector2f(x1,y1), MOUSE_CLICK_HIT,true);
 			dispobj=d.getPtr();
 		}
 		if (dispobj!= this)
@@ -319,7 +319,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 }
 
 
-_NR<DisplayObject> SimpleButton::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> SimpleButton::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret = NullRef;
 	if(hitTestState)

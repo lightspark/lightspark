@@ -56,12 +56,6 @@ friend class Bitmap;
 friend class CairoRenderer;
 friend class Graphics;
 friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
-public:
-	enum HIT_TYPE { GENERIC_HIT, // point is over the object
-					GENERIC_HIT_INVISIBLE, // ...even if the object is invisible
-					MOUSE_CLICK_HIT, // point over the object and mouseEnabled
-					DOUBLE_CLICK_HIT // point over the object and doubleClickEnabled
-				  };
 private:
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
 	static ATOMIC_INT32(instanceCount);

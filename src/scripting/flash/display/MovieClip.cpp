@@ -793,7 +793,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 			// TODO: Add overloads for Vector2f.
 			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,xg,yg);
 			this->globalToLocal(xg,yg,x,y);
-			_NR<DisplayObject> d =hitTest(Vector2f(xg,yg), Vector2f(x,y), DisplayObject::MOUSE_CLICK_HIT,true);
+			_NR<DisplayObject> d =hitTest(Vector2f(xg,yg), Vector2f(x,y), MOUSE_CLICK_HIT,true);
 			dispobj = d.getPtr();
 		}
 		if (actions)

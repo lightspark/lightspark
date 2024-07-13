@@ -319,7 +319,7 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	return true;
 }
 
-_NR<DisplayObject> TextField::hitTestImpl(const Vector2f&, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> TextField::hitTestImpl(const Vector2f&, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	/* I suppose one does not have to actually hit a character */
 	number_t xmin,xmax,ymin,ymax;
@@ -2384,7 +2384,7 @@ bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numb
 	return true;
 }
 
-_NR<DisplayObject> StaticText::hitTestImpl(const Vector2f&, const Vector2f& localPoint, DisplayObject::HIT_TYPE type, bool interactiveObjectsOnly)
+_NR<DisplayObject> StaticText::hitTestImpl(const Vector2f&, const Vector2f& localPoint, HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin,xmax,ymin,ymax;
 	// TODO: Add an overload for RECT.

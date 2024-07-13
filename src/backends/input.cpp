@@ -349,7 +349,7 @@ bool InputThread::handleContextMenuEvent(SDL_Event *event)
 	return ret;
 }
 
-_NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, DisplayObject::HIT_TYPE type)
+_NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, HIT_TYPE type)
 {
 	_NR<InteractiveObject> selected = NullRef;
 	if (m_sys->getRenderThread()->inSettings)
@@ -357,11 +357,14 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, Displ
 	try
 	{
 		Vector2f point(x, y);
-		_NR<DisplayObject> dispobj=m_sys->stage->hitTest(point, point, type,true);
-		if(!dispobj.isNull() && dispobj->is<InteractiveObject>())
+		// get mouse target in VM thread to avoid inconsistencies in hittesting on TokenContainers
+		_R<GetMouseTargetEvent> ev  = _MR(new (m_sys->unaccountedMemory) GetMouseTargetEvent(x,y,type));
+		if (m_sys->currentVm->prependEvent(NullRef, ev))
+			ev->wait();
+		if(!ev->dispobj.isNull() && ev->dispobj->is<InteractiveObject>())
 		{
-			dispobj->incRef();
-			selected=_MNR(dispobj->as<InteractiveObject>());
+			ev->dispobj->incRef();
+			selected=_MNR(ev->dispobj->as<InteractiveObject>());
 		}
 	}
 	catch(LightsparkException& e)
@@ -379,7 +382,7 @@ void InputThread::handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState
 {
 	if(m_sys->currentVm == nullptr)
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK_HIT);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
 	number_t localX, localY;
@@ -394,10 +397,10 @@ void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod butt
 {
 	if(m_sys->currentVm == nullptr)
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::DOUBLE_CLICK_HIT);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, DOUBLE_CLICK_HIT);
 	if (selected.isNull())
 		return;
-	if (!selected->isHittable(DisplayObject::DOUBLE_CLICK_HIT))
+	if (!selected->isHittable(DOUBLE_CLICK_HIT))
 	{
 		// no double click hit found, add additional down-up-click sequence
 		if (lastMouseUpTarget)
@@ -423,7 +426,7 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 {
 	if(m_sys->currentVm == nullptr)
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK_HIT);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
 	number_t localX, localY;
@@ -462,14 +465,17 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 }
 void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
 {
-	Locker locker(inputDataSpinlock);
 	if(m_sys->currentVm == nullptr)
 		return;
-	mousePos.x=x;
-	mousePos.y=y;
+	
+	{
+		Locker locker(inputDataSpinlock);
+		mousePos.x=x;
+		mousePos.y=y;
+	}
 	if (m_sys->getRenderThread()->inSettings)
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK_HIT);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, MOUSE_CLICK_HIT);
 	mutexDragged.lock();
 	if(curDragged)
 	{
@@ -541,7 +547,7 @@ void InputThread::handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, 
 		return;
 #endif
 
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, DisplayObject::MOUSE_CLICK_HIT);
+	_NR<InteractiveObject> selected = getMouseTarget(x, y, MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
 	number_t localX, localY;
@@ -568,7 +574,7 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 		int x, y;
 		SDL_GetMouseState(&x,&y);
 		m_sys->windowToStageCoordinates(x,y,stageX,stageY);
-		_NR<InteractiveObject> selected = getMouseTarget(stageX,stageY, DisplayObject::MOUSE_CLICK_HIT);
+		_NR<InteractiveObject> selected = getMouseTarget(stageX,stageY, MOUSE_CLICK_HIT);
 		if (!selected.isNull())
 		{
 			number_t localX, localY;

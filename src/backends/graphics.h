@@ -44,8 +44,6 @@ class RenderThread;
 class SurfaceState;
 class DisplayObject;
 	
-enum SMOOTH_MODE { SMOOTH_NONE=0, SMOOTH_SUBPIXEL=1, SMOOTH_ANTIALIAS=2 };
-
 struct RectF
 {
 	Vector2f min;

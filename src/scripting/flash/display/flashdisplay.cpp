@@ -432,7 +432,7 @@ bool DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
 	return false;
 }
 
-_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> DisplayObjectContainer::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret = NullRef;
 	bool hit_this=false;
@@ -502,7 +502,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(const Vector2f& globalPoi
 	return ret;
 }
 
-_NR<DisplayObject> Sprite::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Sprite::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	//Did we hit a child?
 	_NR<DisplayObject> ret = NullRef;
@@ -2192,7 +2192,7 @@ ASFUNCTIONBODY_ATOM(Stage,_constructor)
 {
 }
 
-_NR<DisplayObject> Stage::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> Stage::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret;
 	ret = DisplayObjectContainer::hitTestImpl(globalPoint, localPoint, type, interactiveObjectsOnly);

@@ -1301,7 +1301,7 @@ IDrawable* TextLine::invalidate(bool smoothing)
 				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),0);
 }
 
-_NR<DisplayObject> TextLine::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, DisplayObject::HIT_TYPE type,bool interactiveObjectsOnly)
+_NR<DisplayObject> TextLine::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	number_t xmin,xmax,ymin,ymax;
 	// TODO: Add an overload for RECT.

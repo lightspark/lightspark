@@ -128,7 +128,7 @@ struct LSEvent
 			[](const LSEvent&) { return false; }
 		));
 	}
-	constexpr bool isInvalid() const { return type != Type::Invalid; }
+	constexpr bool isInvalid() const { return type == Type::Invalid; }
 private:
 	Type type;
 };

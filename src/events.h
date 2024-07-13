@@ -25,6 +25,7 @@
 #include "scripting/flash/ui/keycodes.h"
 #include "utils/enum.h"
 #include "utils/visitor.h"
+#include "utils/union.h"
 #include "swftypes.h"
 #include "tiny_string.h"
 
@@ -84,6 +85,12 @@ using EventTypes = TypeList
 	LSRemovedFromStageEvent,
 	LSNewTimerEvent
 >;
+
+struct SizeVisitor
+{
+	template<typename T>
+	constexpr size_t operator()(const T&) { return sizeof(T); }
+};
 
 // TODO: Write our own variant implementation, and turn this into a variant.
 struct LSEvent
@@ -429,6 +436,22 @@ struct LSRemovedFromStageEvent : public LSEvent
 struct LSNewTimerEvent : public LSEvent
 {
 	constexpr LSNewTimerEvent() : LSEvent(EventType::NewTimer) {}
+};
+
+// Wrapper/Container for returning, and storing `LSEvent`s.
+struct LSEventStorage
+{
+	LSEventStorage(const LSEvent& event) { memcpy(data, &event, event.isInvalid() ? sizeof(LSEvent) : event.visit(SizeVisitor{})); }
+
+	constexpr const LSEvent& event() const { return reinterpret_cast<const LSEvent&>(data); }
+	LSEvent& event() { return reinterpret_cast<LSEvent&>(data); }
+	constexpr operator const LSEvent&() const { return event(); }
+	operator LSEvent&() { return event(); }
+private:
+	static constexpr size_t dataSize = UnionSize<EventTypes>::value;
+	static constexpr size_t dataAlign = UnionAlign<EventTypes>::value;
+
+	alignas(dataAlign) uint8_t data[dataSize];
 };
 
 template<typename V>

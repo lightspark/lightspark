@@ -115,11 +115,10 @@ struct tokensVector
 	std::vector<uint64_t> filltokens;
 	std::vector<uint64_t> stroketokens;
 	RECT boundsRect;
-	uint16_t currentLineWidth;
-	tokensVector():boundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN),currentLineWidth(0)
+	tokensVector():boundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN)
 	{
 	}
-	tokensVector(const tokensVector& r):filltokens(r.filltokens),stroketokens(r.stroketokens),boundsRect(r.boundsRect),currentLineWidth(r.currentLineWidth)
+	tokensVector(const tokensVector& r):filltokens(r.filltokens),stroketokens(r.stroketokens),boundsRect(r.boundsRect)
 	{
 	}
 	void clear()
@@ -127,7 +126,6 @@ struct tokensVector
 		boundsRect = RECT(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN);
 		filltokens.clear();
 		stroketokens.clear();
-		currentLineWidth=0;
 	}
 	uint32_t size() const
 	{

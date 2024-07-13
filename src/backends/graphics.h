@@ -392,7 +392,7 @@ public:
 	   @param x The X in local coordinates
 	   @param y The Y in local coordinates
 	*/
-	static bool hitTest(const tokensVector& tokens, float scaleFactor, const Vector2f& point, bool includeBoundsRect=false);
+	static bool hitTest(const tokensVector& tokens, float scaleFactor, const Vector2f& point);
 };
 
 struct FormatText

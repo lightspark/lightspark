@@ -53,7 +53,7 @@ _NR<DisplayObject> Shape::hitTestImpl(const Vector2f& globalPoint, const Vector2
 	{
 		if (graphics && graphics->hasTokens())
 		{
-			if (graphics->hitTest(Vector2f(localPoint.x-xmin,localPoint.y-ymin)))
+			if (graphics->hitTest(Vector2f(localPoint.x,localPoint.y)))
 			{
 				this->incRef();
 				return _MR(this);

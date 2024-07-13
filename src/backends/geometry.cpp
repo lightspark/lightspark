@@ -217,8 +217,6 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 					//Set the line style for strokes inside filltokens
 					tokens.filltokens.push_back(GeomToken(SET_STROKE).uval);
 					tokens.filltokens.push_back(GeomToken(*linestylesIt).uval);
-					if (tokens.currentLineWidth < (*linestylesIt).Width)
-						tokens.currentLineWidth = (*linestylesIt).Width;
 					for (size_t k = j; k < segments.size(); ++k)
 					{
 						ShapePathSegment strokesegment = segments[k];
@@ -268,8 +266,6 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 			vector<ShapePathSegment>& segments = it->second;
 			tokens.stroketokens.push_back(GeomToken(SET_STROKE).uval);
 			tokens.stroketokens.push_back(GeomToken(*stylesIt).uval);
-			if (tokens.currentLineWidth < (*stylesIt).Width)
-				tokens.currentLineWidth = (*stylesIt).Width;
 			for (size_t j = 0; j < segments.size(); ++j)
 			{
 				ShapePathSegment segment = segments[j];
@@ -557,8 +553,6 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 					//Set the line style for strokes inside filltokens
 					tokens.filltokens.push_back(GeomToken(SET_STROKE).uval);
 					tokens.filltokens.push_back(GeomToken((*itls).second).uval);
-					if (tokens.currentLineWidth < (*itls).second.Width)
-						tokens.currentLineWidth = (*itls).second.Width;
 					for (size_t k = j; k < segments.size(); ++k)
 					{
 						ShapePathSegment strokesegment = segments[k];
@@ -608,8 +602,6 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 			vector<ShapePathSegment>& segments = it->second;
 			tokens.stroketokens.push_back(GeomToken(SET_STROKE).uval);
 			tokens.stroketokens.push_back(GeomToken((*itls).second).uval);
-			if (tokens.currentLineWidth < (*itls).second.Width)
-				tokens.currentLineWidth = (*itls).second.Width;
 			for (size_t j = 0; j < segments.size(); ++j)
 			{
 				ShapePathSegment segment = segments[j];
@@ -645,13 +637,12 @@ void tokensVector::updateTokenBounds(int x, int y)
 
 bool tokensVector::operator==(const tokensVector& r)
 {
-	return currentLineWidth == r.currentLineWidth && boundsRect == r.boundsRect && filltokens == r.filltokens && stroketokens == r.stroketokens;
+	return boundsRect == r.boundsRect && filltokens == r.filltokens && stroketokens == r.stroketokens;
 }
 
 tokensVector& tokensVector::operator=(const tokensVector& r)
 {
 	boundsRect = r.boundsRect;
-	currentLineWidth = r.currentLineWidth;
 	filltokens = r.filltokens;
 	stroketokens = r.stroketokens;
 	return *this;

@@ -532,12 +532,6 @@ void TokenContainer::getTextureSize(std::vector<uint64_t>& tokens, int *width, i
 	}
 }
 
-/* Return the width of the latest SET_STROKE */
-uint16_t TokenContainer::getCurrentLineWidth() const
-{
-	return tokens.currentLineWidth;
-}
-
 std::vector<uint64_t>::const_iterator beginGraphicsFill(std::vector<uint64_t>::const_iterator it, ASWorker* wrk,Vector* v, bool& infill)
 {
 	it++;

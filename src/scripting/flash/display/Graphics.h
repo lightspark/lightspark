@@ -52,9 +52,11 @@ private:
 	int movey;
 	int currentrenderindex;
 	bool inFilling;
+	bool hasLineStyle;
 	bool hasChanged;
 	bool needsRefresh;
 	bool tokensHaveChanged; // indicates if the current list of tokens contains the same tokens as the last rendered list (up to the size of the current list)
+	uint16_t currentLineWidth;
 	// we use two tokensVector items to avoid redrawing if nothing has changed since last draw
 	tokensVector tokens[2];
 	void dorender(bool closepath);
@@ -63,12 +65,14 @@ private:
 	void AddStrokeToken(const GeomToken& token);
 	void AddLineStyleToken(const GeomToken& token);
 public:
-	Graphics(ASWorker* wrk, Class_base* c):ASObject(wrk,c),owner(nullptr),movex(0),movey(0),currentrenderindex(0),inFilling(false),hasChanged(false),needsRefresh(true),tokensHaveChanged(false)
+	Graphics(ASWorker* wrk, Class_base* c):ASObject(wrk,c),owner(nullptr),movex(0),movey(0),currentrenderindex(0),
+		inFilling(false),hasLineStyle(false),hasChanged(false),needsRefresh(true),tokensHaveChanged(false),currentLineWidth(0)
 	{
-//		throw RunTimeException("Cannot instantiate a Graphics object");
 	}
-	Graphics(ASWorker* wrk, Class_base* c, TokenContainer* _o)
-		: ASObject(wrk,c),owner(_o),movex(0),movey(0),currentrenderindex(0),inFilling(false),hasChanged(false),needsRefresh(true),tokensHaveChanged(false) {}
+	Graphics(ASWorker* wrk, Class_base* c, TokenContainer* _o):ASObject(wrk,c),owner(_o),movex(0),movey(0),currentrenderindex(0),
+		inFilling(false),hasLineStyle(false),hasChanged(false),needsRefresh(true),tokensHaveChanged(false),currentLineWidth(0)
+	{
+	}
 	void startDrawJob();
 	void endDrawJob();
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);

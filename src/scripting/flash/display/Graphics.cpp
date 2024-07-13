@@ -72,6 +72,7 @@ ASFUNCTIONBODY_ATOM(Graphics,clear)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	th->inFilling = false;
+	th->hasLineStyle = false;
 	th->hasChanged = false;
 	th->currentrenderindex=1-th->currentrenderindex;
 	th->tokens[th->currentrenderindex].clear();
@@ -98,8 +99,11 @@ ASFUNCTIONBODY_ATOM(Graphics,moveTo)
 		th->AddFillToken(GeomToken(MOVE));
 		th->AddFillToken(GeomToken(Vector2(x, y)));
 	}
-	th->AddStrokeToken(GeomToken(MOVE));
-	th->AddStrokeToken(GeomToken(Vector2(x, y)));
+	if (th->hasLineStyle)
+	{
+		th->AddStrokeToken(GeomToken(MOVE));
+		th->AddStrokeToken(GeomToken(Vector2(x, y)));
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,lineTo)
@@ -175,11 +179,13 @@ ASFUNCTIONBODY_ATOM(Graphics,cubicCurveTo)
 		th->AddFillToken(GeomToken(Vector2(control2X, control2Y)));
 		th->AddFillToken(GeomToken(Vector2(anchorX, anchorY)));
 	}
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(control1X, control1Y)));
-	th->AddStrokeToken(GeomToken(Vector2(control2X, control2Y)));
-	th->AddStrokeToken(GeomToken(Vector2(anchorX, anchorY)));
-
+	if (th->hasLineStyle)
+	{
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(control1X, control1Y)));
+		th->AddStrokeToken(GeomToken(Vector2(control2X, control2Y)));
+		th->AddStrokeToken(GeomToken(Vector2(anchorX, anchorY)));
+	}
 	th->hasChanged = true;
 	if (!th->inFilling)
 		th->dorender(false);
@@ -277,50 +283,52 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRect)
 		th->AddFillToken(GeomToken(STRAIGHT));
 		th->AddFillToken(GeomToken(Vector2(x+width, y+height-ellipseHeight)));
 	}
-	// D
-	th->AddStrokeToken(GeomToken(MOVE));
-	th->AddStrokeToken(GeomToken(Vector2(x+width, y+height-ellipseHeight)));
-
-	// D -> E
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(x+width, y+height-ellipseHeight+kappaH)));
-	th->AddStrokeToken(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y+height)));
-	th->AddStrokeToken(GeomToken(Vector2(x+width-ellipseWidth, y+height)));
-
-	// E -> F
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(Vector2(x+ellipseWidth, y+height)));
-
-	// F -> G
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(x+ellipseWidth-kappaW, y+height)));
-	th->AddStrokeToken(GeomToken(Vector2(x, y+height-kappaH)));
-	th->AddStrokeToken(GeomToken(Vector2(x, y+height-ellipseHeight)));
-
-	// G -> H
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(Vector2(x, y+ellipseHeight)));
-
-	// H -> A
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(x, y+ellipseHeight-kappaH)));
-	th->AddStrokeToken(GeomToken(Vector2(x+ellipseWidth-kappaW, y)));
-	th->AddStrokeToken(GeomToken(Vector2(x+ellipseWidth, y)));
-
-	// A -> B
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(Vector2(x+width-ellipseWidth, y)));
-
-	// B -> C
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y)));
-	th->AddStrokeToken(GeomToken(Vector2(x+width, y+kappaH)));
-	th->AddStrokeToken(GeomToken(Vector2(x+width, y+ellipseHeight)));
-
-	// C -> D
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(Vector2(x+width, y+height-ellipseHeight)));
-
+	if (th->hasLineStyle)
+	{
+		// D
+		th->AddStrokeToken(GeomToken(MOVE));
+		th->AddStrokeToken(GeomToken(Vector2(x+width, y+height-ellipseHeight)));
+		
+		// D -> E
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(x+width, y+height-ellipseHeight+kappaH)));
+		th->AddStrokeToken(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y+height)));
+		th->AddStrokeToken(GeomToken(Vector2(x+width-ellipseWidth, y+height)));
+		
+		// E -> F
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(Vector2(x+ellipseWidth, y+height)));
+		
+		// F -> G
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(x+ellipseWidth-kappaW, y+height)));
+		th->AddStrokeToken(GeomToken(Vector2(x, y+height-kappaH)));
+		th->AddStrokeToken(GeomToken(Vector2(x, y+height-ellipseHeight)));
+		
+		// G -> H
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(Vector2(x, y+ellipseHeight)));
+		
+		// H -> A
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(x, y+ellipseHeight-kappaH)));
+		th->AddStrokeToken(GeomToken(Vector2(x+ellipseWidth-kappaW, y)));
+		th->AddStrokeToken(GeomToken(Vector2(x+ellipseWidth, y)));
+		
+		// A -> B
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(Vector2(x+width-ellipseWidth, y)));
+		
+		// B -> C
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(x+width-ellipseWidth+kappaW, y)));
+		th->AddStrokeToken(GeomToken(Vector2(x+width, y+kappaH)));
+		th->AddStrokeToken(GeomToken(Vector2(x+width, y+ellipseHeight)));
+		
+		// C -> D
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(Vector2(x+width, y+height-ellipseHeight)));
+	}
 	th->hasChanged = true;
 	th->dorender(true);
 }
@@ -356,17 +364,19 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 		th->AddFillToken(GeomToken(STRAIGHT));
 		th->AddFillToken(GeomToken(a));
 	}
-	th->AddStrokeToken(GeomToken(MOVE));
-	th->AddStrokeToken(GeomToken(a));
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(b));
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(c));
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(d));
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(a));
-
+	if (th->hasLineStyle)
+	{
+		th->AddStrokeToken(GeomToken(MOVE));
+		th->AddStrokeToken(GeomToken(a));
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(b));
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(c));
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(d));
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(a));
+	}
 	th->hasChanged = true;
 	th->dorender(true);
 }
@@ -414,34 +424,36 @@ ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
 		th->AddFillToken(GeomToken(Vector2(x+radius, y-kappa )));
 		th->AddFillToken(GeomToken(Vector2(x+radius, y       )));
 	}
-	// right
-	th->AddStrokeToken(GeomToken(MOVE));
-	th->AddStrokeToken(GeomToken(Vector2(x+radius, y)));
-
-	// bottom
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(x+radius, y+kappa )));
-	th->AddStrokeToken(GeomToken(Vector2(x+kappa , y+radius)));
-	th->AddStrokeToken(GeomToken(Vector2(x       , y+radius)));
-
-	// left
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(x-kappa , y+radius)));
-	th->AddStrokeToken(GeomToken(Vector2(x-radius, y+kappa )));
-	th->AddStrokeToken(GeomToken(Vector2(x-radius, y       )));
-
-	// top
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(x-radius, y-kappa )));
-	th->AddStrokeToken(GeomToken(Vector2(x-kappa , y-radius)));
-	th->AddStrokeToken(GeomToken(Vector2(x       , y-radius)));
-
-	// back to right
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(x+kappa , y-radius)));
-	th->AddStrokeToken(GeomToken(Vector2(x+radius, y-kappa )));
-	th->AddStrokeToken(GeomToken(Vector2(x+radius, y       )));
-
+	if (th->hasLineStyle)
+	{
+		// right
+		th->AddStrokeToken(GeomToken(MOVE));
+		th->AddStrokeToken(GeomToken(Vector2(x+radius, y)));
+		
+		// bottom
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(x+radius, y+kappa )));
+		th->AddStrokeToken(GeomToken(Vector2(x+kappa , y+radius)));
+		th->AddStrokeToken(GeomToken(Vector2(x       , y+radius)));
+		
+		// left
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(x-kappa , y+radius)));
+		th->AddStrokeToken(GeomToken(Vector2(x-radius, y+kappa )));
+		th->AddStrokeToken(GeomToken(Vector2(x-radius, y       )));
+		
+		// top
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(x-radius, y-kappa )));
+		th->AddStrokeToken(GeomToken(Vector2(x-kappa , y-radius)));
+		th->AddStrokeToken(GeomToken(Vector2(x       , y-radius)));
+		
+		// back to right
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(x+kappa , y-radius)));
+		th->AddStrokeToken(GeomToken(Vector2(x+radius, y-kappa )));
+		th->AddStrokeToken(GeomToken(Vector2(x+radius, y       )));
+	}
 	th->hasChanged = true;
 	th->dorender(false);
 }
@@ -491,34 +503,36 @@ ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 		th->AddFillToken(GeomToken(Vector2(left+width, top+height/2.0-ykappa)));
 		th->AddFillToken(GeomToken(Vector2(left+width, top+height/2.0)));
 	}
-	// right
-	th->AddStrokeToken(GeomToken(MOVE));
-	th->AddStrokeToken(GeomToken(Vector2(left+width, top+height/2.0)));
-
-	// bottom
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(left+width , top+height/2.0+ykappa)));
-	th->AddStrokeToken(GeomToken(Vector2(left+width/2.0+xkappa, top+height)));
-	th->AddStrokeToken(GeomToken(Vector2(left+width/2.0, top+height)));
-
-	// left
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(left+width/2.0-xkappa, top+height)));
-	th->AddStrokeToken(GeomToken(Vector2(left, top+height/2.0+ykappa)));
-	th->AddStrokeToken(GeomToken(Vector2(left, top+height/2.0)));
-
-	// top
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(left, top+height/2.0-ykappa)));
-	th->AddStrokeToken(GeomToken(Vector2(left+width/2.0-xkappa, top)));
-	th->AddStrokeToken(GeomToken(Vector2(left+width/2.0, top)));
-
-	// back to right
-	th->AddStrokeToken(GeomToken(CURVE_CUBIC));
-	th->AddStrokeToken(GeomToken(Vector2(left+width/2.0+xkappa, top)));
-	th->AddStrokeToken(GeomToken(Vector2(left+width, top+height/2.0-ykappa)));
-	th->AddStrokeToken(GeomToken(Vector2(left+width, top+height/2.0)));
-
+	if (th->hasLineStyle)
+	{
+		// right
+		th->AddStrokeToken(GeomToken(MOVE));
+		th->AddStrokeToken(GeomToken(Vector2(left+width, top+height/2.0)));
+		
+		// bottom
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(left+width , top+height/2.0+ykappa)));
+		th->AddStrokeToken(GeomToken(Vector2(left+width/2.0+xkappa, top+height)));
+		th->AddStrokeToken(GeomToken(Vector2(left+width/2.0, top+height)));
+		
+		// left
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(left+width/2.0-xkappa, top+height)));
+		th->AddStrokeToken(GeomToken(Vector2(left, top+height/2.0+ykappa)));
+		th->AddStrokeToken(GeomToken(Vector2(left, top+height/2.0)));
+		
+		// top
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(left, top+height/2.0-ykappa)));
+		th->AddStrokeToken(GeomToken(Vector2(left+width/2.0-xkappa, top)));
+		th->AddStrokeToken(GeomToken(Vector2(left+width/2.0, top)));
+		
+		// back to right
+		th->AddStrokeToken(GeomToken(CURVE_CUBIC));
+		th->AddStrokeToken(GeomToken(Vector2(left+width/2.0+xkappa, top)));
+		th->AddStrokeToken(GeomToken(Vector2(left+width, top+height/2.0-ykappa)));
+		th->AddStrokeToken(GeomToken(Vector2(left+width, top+height/2.0)));
+	}
 	th->hasChanged = true;
 	th->dorender(false);
 }
@@ -553,17 +567,19 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 		th->AddFillToken(GeomToken(STRAIGHT));
 		th->AddFillToken(GeomToken(Vector2(a)));
 	}
-	th->AddStrokeToken(GeomToken(MOVE));
-	th->AddStrokeToken(GeomToken(Vector2(a)));
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(Vector2(b)));
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(Vector2(c)));
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(Vector2(d)));
-	th->AddStrokeToken(GeomToken(STRAIGHT));
-	th->AddStrokeToken(GeomToken(Vector2(a)));
-
+	if (th->hasLineStyle)
+	{
+		th->AddStrokeToken(GeomToken(MOVE));
+		th->AddStrokeToken(GeomToken(Vector2(a)));
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(Vector2(b)));
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(Vector2(c)));
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(Vector2(d)));
+		th->AddStrokeToken(GeomToken(STRAIGHT));
+		th->AddStrokeToken(GeomToken(Vector2(a)));
+	}
 	th->hasChanged = true;
 	th->dorender(true);
 }
@@ -793,7 +809,7 @@ bool Graphics::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number
 bool Graphics::hitTest(const Vector2f& point)
 {
 	Locker l(drawMutex);
-	return CairoTokenRenderer::hitTest(this->tokens[this->currentrenderindex], 1.0/TWIPS_FACTOR, point,true);
+	return CairoTokenRenderer::hitTest(this->tokens[this->currentrenderindex], 1.0/TWIPS_FACTOR, point);
 }
 
 bool Graphics::destruct()
@@ -809,9 +825,11 @@ bool Graphics::destruct()
 	movex=0;
 	movey=0;
 	inFilling=false;
+	hasLineStyle=false;
 	hasChanged=false;
 	needsRefresh = true;
 	tokensHaveChanged=false;
+	currentLineWidth=0;
 	return ASObject::destruct();
 }
 
@@ -838,7 +856,7 @@ void Graphics::AddFillToken(const GeomToken& token)
 {
 	if (!tokensHaveChanged && (
 		tokens[1-currentrenderindex].filltokens.size()<=tokens[currentrenderindex].filltokens.size()
-		|| tokens[1-currentrenderindex].filltokens[tokens[currentrenderindex].size()] != token.uval))
+		|| tokens[1-currentrenderindex].filltokens[tokens[currentrenderindex].filltokens.size()] != token.uval))
 		tokensHaveChanged=true;
 	tokens[currentrenderindex].filltokens.push_back(token.uval);
 }
@@ -846,8 +864,8 @@ void Graphics::AddFillStyleToken(const GeomToken& token)
 {
 	if (!tokensHaveChanged && (
 		tokens[1-currentrenderindex].filltokens.size()<=tokens[currentrenderindex].filltokens.size()
-		|| GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()-1]).type != GeomToken(SET_FILL).type
-		|| !(*GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()],false).fillStyle == *(token.fillStyle))))
+		|| GeomToken(tokens[1-currentrenderindex].filltokens[tokens[currentrenderindex].filltokens.size()-1]).type != GeomToken(SET_FILL).type
+		|| !(*GeomToken(tokens[1-currentrenderindex].filltokens[tokens[currentrenderindex].filltokens.size()],false).fillStyle == *(token.fillStyle))))
 		tokensHaveChanged=true;
 	tokens[currentrenderindex].filltokens.push_back(token.uval);
 }
@@ -856,7 +874,7 @@ void Graphics::AddStrokeToken(const GeomToken& token)
 {
 	if (!tokensHaveChanged && (
 		tokens[1-currentrenderindex].stroketokens.size()<=tokens[currentrenderindex].stroketokens.size()
-		|| tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()] != token.uval))
+		|| tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].stroketokens.size()] != token.uval))
 		tokensHaveChanged=true;
 	tokens[currentrenderindex].stroketokens.push_back(token.uval);
 }
@@ -864,8 +882,8 @@ void Graphics::AddLineStyleToken(const GeomToken& token)
 {
 	if (!tokensHaveChanged && (
 		tokens[1-currentrenderindex].stroketokens.size()<=tokens[currentrenderindex].stroketokens.size()
-		|| GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()-1],false).type != GeomToken(SET_STROKE).type
-		|| !(*GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].size()],false).lineStyle == *(token.lineStyle))))
+		|| GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].stroketokens.size()-1],false).type != GeomToken(SET_STROKE).type
+		|| !(*GeomToken(tokens[1-currentrenderindex].stroketokens[tokens[currentrenderindex].stroketokens.size()],false).lineStyle == *(token.lineStyle))))
 		tokensHaveChanged=true;
 	tokens[currentrenderindex].stroketokens.push_back(token.uval);
 }
@@ -1066,7 +1084,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 	
 	LINESTYLE2 style(0xff);
 	style.Color = RGBA(color, ((int)(alpha*255.0))&0xff);
-	style.Width = _thickness*TWIPS_FACTOR;
+	style.Width = th->currentLineWidth = _thickness*TWIPS_FACTOR;
 	style.PixelHintingFlag = pixelHinting? 1: 0;
 
 	if (scaleMode == "normal")
@@ -1106,6 +1124,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 	style.MiterLimitFactor = miterLimit;
 	th->AddStrokeToken(GeomToken(SET_STROKE));
 	th->AddLineStyleToken(GeomToken(th->addLineStyle(style)));
+	th->hasLineStyle = thickness != Number::NaN;
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
@@ -1121,7 +1140,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
 		return;
 
 	LINESTYLE2 style(0xff);
-	style.Width = th->owner->getCurrentLineWidth();
+	style.Width = th->currentLineWidth;
 	style.HasFillFlag = true;
 	style.FillType = createBitmapFill(bitmap, matrix, repeat, smooth);
 	
@@ -1146,7 +1165,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineGradientStyle)
 		(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0));
 
 	LINESTYLE2 style(0xff);
-	style.Width = th->owner->getCurrentLineWidth();
+	style.Width = th->currentLineWidth;
 	style.HasFillFlag = true;
 	style.FillType = createGradientFill(type, colors, alphas, ratios, matrix,
 					    spreadMethod, interpolationMethod,

@@ -57,7 +57,6 @@ public:
 					 tokensVector& tokens, uint16_t ratio);
 	static void getTextureSize(std::vector<uint64_t>& tokens, int *width, int *height);
 	static bool boundsRectFromTokens(const tokensVector& tokens,float scaling, number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
-	uint16_t getCurrentLineWidth() const;
 	float scaling;
 	bool renderWithNanoVG;
 	void fillGraphicsData(Vector* v);

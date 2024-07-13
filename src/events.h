@@ -105,9 +105,10 @@ struct LSEvent
 		RemovedFromStage,
 		NewTimer,
 	};
+	using EventType = Type;
 
-	virtual ~LSEvent() {}
-	virtual Type getType() const { return Type::Invalid; };
+	constexpr LSEvent(const Type& _type = EventType::Invalid) : type(_type) {}
+	constexpr Type getType() const { return type; }
 
 	template<typename V>
 	constexpr VisitorReturnType<V, EventTypes> visit(V&& visitor);
@@ -120,7 +121,9 @@ struct LSEvent
 			[](const LSEvent&) { return false; }
 		));
 	}
-	constexpr bool isInvalid() const { return getType() != Type::Invalid; }
+	constexpr bool isInvalid() const { return type != Type::Invalid; }
+private:
+	Type type;
 };
 
 struct LSMouseEvent : public LSEvent
@@ -140,7 +143,7 @@ struct LSMouseEvent : public LSEvent
 	LSModifier modifiers;
 	bool pressed;
 
-	LSMouseEvent
+	constexpr LSMouseEvent
 	(
 		const MouseType& _mouseType,
 		uint32_t _windowID,
@@ -149,19 +152,18 @@ struct LSMouseEvent : public LSEvent
 		const LSModifier& _modifiers,
 		bool _pressed
 	) :
+	LSEvent(EventType::Mouse),
 	mouseType(_mouseType),
 	windowID(_windowID),
 	mousePos(_mousePos),
 	stagePos(_stagePos),
 	modifiers(_modifiers),
 	pressed(_pressed) {}
-
-	LSEvent::Type getType() const override { return LSEvent::Type::Mouse; }
 };
 
 struct LSMouseMoveEvent : public LSMouseEvent
 {
-	LSMouseMoveEvent
+	constexpr LSMouseMoveEvent
 	(
 		uint32_t windowID,
 		const Vector2f& mousePos,
@@ -224,7 +226,7 @@ struct LSMouseButtonEvent : public LSMouseEvent
 	int clicks;
 	ButtonType buttonType;
 
-	LSMouseButtonEvent
+	constexpr LSMouseButtonEvent
 	(
 		uint32_t windowID,
 		const Vector2f& mousePos,
@@ -262,25 +264,24 @@ struct LSKeyEvent : public LSEvent
 	AS3KeyCode charCode;
 	AS3KeyCode keyCode;
 	LSModifier modifiers;
-	KeyType type;
+	KeyType keyType;
 
-	LSKeyEvent
+	constexpr LSKeyEvent
 	(
 		const Vector2f& _mousePos,
 		const Vector2f& _stagePos,
 		const AS3KeyCode& _charCode,
 		const AS3KeyCode& _keyCode,
 		const LSModifier& _modifiers,
-		const KeyType& _type
+		const KeyType& _keyType
 	) :
+	LSEvent(EventType::Key),
 	mousePos(_mousePos),
 	stagePos(_stagePos),
 	charCode(_charCode),
 	keyCode(_keyCode),
 	modifiers(_modifiers),
-	type(_type) {}
-
-	LSEvent::Type getType() const override { return LSEvent::Type::Key; }
+	keyType(_keyType) {}
 };
 
 struct LSTextEvent : public LSEvent
@@ -292,15 +293,13 @@ struct LSTextEvent : public LSEvent
 	};
 
 	tiny_string text;
-	TextType type;
+	TextType textType;
 
 	LSTextEvent
 	(
 		const tiny_string& _text,
-		const TextType& _type
-	) : text(_text), type(_type) {}
-
-	LSEvent::Type getType() const override { return LSEvent::Type::Text; }
+		const TextType& _textType
+	) : LSEvent(EventType::Text), text(_text), textType(_textType) {}
 };
 
 // Non-input events.
@@ -314,10 +313,9 @@ struct LSWindowEvent : public LSEvent
 		Focus,
 	};
 
-	WindowType type;
+	WindowType windowType;
 
-	LSWindowEvent(const WindowType& _type) : type(_type) {}
-	LSEvent::Type getType() const override { return LSEvent::Type::Window; }
+	constexpr LSWindowEvent(const WindowType& _windowType) : LSEvent(EventType::Window), windowType(_windowType) {}
 };
 
 struct LSWindowResizedEvent : public LSWindowEvent
@@ -325,7 +323,7 @@ struct LSWindowResizedEvent : public LSWindowEvent
 	// TODO: Use twips instead of float.
 	Vector2f size;
 
-	LSWindowResizedEvent(const Vector2f& _size) : LSWindowEvent(WindowType::Resized), size(_size) {}
+	constexpr LSWindowResizedEvent(const Vector2f& _size) : LSWindowEvent(WindowType::Resized), size(_size) {}
 };
 
 struct LSWindowMovedEvent : public LSWindowEvent
@@ -333,12 +331,12 @@ struct LSWindowMovedEvent : public LSWindowEvent
 	// TODO: Maybe use twips instead of float.
 	Vector2f pos;
 
-	LSWindowMovedEvent(const Vector2f& _pos) : LSWindowEvent(WindowType::Moved), pos(_pos) {}
+	constexpr LSWindowMovedEvent(const Vector2f& _pos) : LSWindowEvent(WindowType::Moved), pos(_pos) {}
 };
 
 struct LSWindowExposedEvent : public LSWindowEvent
 {
-	LSWindowExposedEvent() : LSWindowEvent(WindowType::Exposed) {}
+	constexpr LSWindowExposedEvent() : LSWindowEvent(WindowType::Exposed) {}
 };
 
 struct LSWindowFocusEvent : public LSWindowEvent
@@ -352,7 +350,7 @@ struct LSWindowFocusEvent : public LSWindowEvent
 	FocusType focusType;
 	bool focused;
 
-	LSWindowFocusEvent
+	constexpr LSWindowFocusEvent
 	(
 		const FocusType& _focusType,
 		bool _focused
@@ -369,8 +367,7 @@ struct LSQuitEvent : public LSEvent
 
 	QuitType quitType;
 
-	LSQuitEvent(const QuitType& _quitType) : quitType(_quitType) {}
-	LSEvent::Type getType() const override { return LSEvent::Type::Quit; }
+	constexpr LSQuitEvent(const QuitType& _quitType) : LSEvent(EventType::Quit), quitType(_quitType) {}
 };
 
 // Misc events.
@@ -378,8 +375,7 @@ struct LSInitEvent : public LSEvent
 {
 	SystemState* sys;
 
-	LSInitEvent(SystemState* _sys) : sys(_sys) {}
-	LSEvent::Type getType() const override { return LSEvent::Type::Init; }
+	constexpr LSInitEvent(SystemState* _sys) : LSEvent(EventType::Init), sys(_sys) {}
 };
 
 struct LSExecEvent : public LSEvent
@@ -387,8 +383,7 @@ struct LSExecEvent : public LSEvent
 	using Callback = void (*)(SystemState* sys);
 	Callback callback;
 
-	LSExecEvent(Callback _callback) : callback(_callback) {}
-	LSEvent::Type getType() const override { return LSEvent::Type::Exec; }
+	constexpr LSExecEvent(Callback _callback) : LSEvent(EventType::Exec), callback(_callback) {}
 };
 
 struct LSContextMenuEvent : public LSEvent
@@ -400,39 +395,40 @@ struct LSContextMenuEvent : public LSEvent
 		SelectItem,
 	};
 
-	ContextMenuType type;
+	ContextMenuType menuType;
 
-	LSContextMenuEvent(const ContextMenuType& _type) : type(_type) {}
-	LSEvent::Type getType() const override { return LSEvent::Type::Quit; }
+	constexpr LSContextMenuEvent(const ContextMenuType& _menuType) :
+	LSEvent(EventType::ContextMenu),
+	menuType(_menuType) {}
 };
 
 struct LSOpenContextMenuEvent : public LSContextMenuEvent
 {
 	InteractiveObject* obj;
 
-	LSOpenContextMenuEvent(InteractiveObject* _obj) : LSContextMenuEvent(ContextMenuType::Open), obj(_obj) {}
+	constexpr LSOpenContextMenuEvent(InteractiveObject* _obj) : LSContextMenuEvent(ContextMenuType::Open), obj(_obj) {}
 };
 
 struct LSUpdateContextMenuEvent : public LSContextMenuEvent
 {
 	int selectedItem;
 
-	LSUpdateContextMenuEvent(int _selectedItem) : LSContextMenuEvent(ContextMenuType::Update), selectedItem(_selectedItem) {}
+	constexpr LSUpdateContextMenuEvent(int _selectedItem) : LSContextMenuEvent(ContextMenuType::Update), selectedItem(_selectedItem) {}
 };
 
 struct LSSelectItemContextMenuEvent : public LSContextMenuEvent
 {
-	LSSelectItemContextMenuEvent() : LSContextMenuEvent(ContextMenuType::SelectItem) {}
+	constexpr LSSelectItemContextMenuEvent() : LSContextMenuEvent(ContextMenuType::SelectItem) {}
 };
 
 struct LSRemovedFromStageEvent : public LSEvent
 {
-	LSEvent::Type getType() const override { return LSEvent::Type::RemovedFromStage; }
+	constexpr LSRemovedFromStageEvent() : LSEvent(EventType::RemovedFromStage) {}
 };
 
 struct LSNewTimerEvent : public LSEvent
 {
-	LSEvent::Type getType() const override { return LSEvent::Type::NewTimer; }
+	constexpr LSNewTimerEvent() : LSEvent(EventType::NewTimer) {}
 };
 
 template<typename V>
@@ -462,7 +458,7 @@ constexpr VisitorReturnType<V, EventTypes> LSEvent::visit(V&& visitor)
 		case LSEvent::Type::Window:
 		{
 			auto& window = static_cast<const LSWindowEvent&>(*this);
-			switch (window.type)
+			switch (window.windowType)
 			{
 				case WindowType::Resized: return visitor(static_cast<const LSWindowResizedEvent&>(*this)); break;
 				case WindowType::Moved: return visitor(static_cast<const LSWindowMovedEvent&>(*this)); break;
@@ -478,7 +474,7 @@ constexpr VisitorReturnType<V, EventTypes> LSEvent::visit(V&& visitor)
 		case LSEvent::Type::ContextMenu:
 		{
 			auto& contextMenu = static_cast<const LSContextMenuEvent&>(*this);
-			switch (contextMenu.type)
+			switch (contextMenu.menuType)
 			{
 				case ContextMenuType::Open: return visitor(static_cast<const LSOpenContextMenuEvent&>(*this)); break;
 				case ContextMenuType::Update: return visitor(static_cast<const LSUpdateContextMenuEvent&>(*this)); break;

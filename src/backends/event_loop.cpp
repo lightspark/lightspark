@@ -478,7 +478,13 @@ LSEvent SDLEvent::toLSEvent(SystemState* sys) const
 				// LS_USEREVENT_OPEN_CONTEXTMENU
 				case 3: return LSOpenContextMenuEvent((InteractiveObject*)event.user.data1); break;
 				// LS_USEREVENT_UPDATE_CONTEXTMENU
-				case 4: return LSUpdateContextMenuEvent(*(int*)event.user.data1); break;
+				case 4:
+				{
+					int item = *(int*)event.user.data1;
+					delete (int*)event.user.data1;
+					return LSUpdateContextMenuEvent(item);
+					break;
+				}
 				// LS_USEREVENT_SELECTITEM_CONTEXTMENU
 				case 5: return LSSelectItemContextMenuEvent(); break;
 				// LS_USEREVENT_INTERACTIVE_OBJECT_REMOVED_FROM_STAGE

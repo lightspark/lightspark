@@ -337,7 +337,7 @@ static SDL_Scancode toSDLScancode(const AS3KeyCode& charCode)
 	return SDL_SCANCODE_UNKNOWN;
 }
 
-LSEvent SDLEvent::toLSEvent(SystemState* sys) const
+LSEventStorage SDLEvent::toLSEvent(SystemState* sys) const
 {
 	using ButtonType = LSMouseButtonEvent::ButtonType;
 	using FocusType = LSWindowFocusEvent::FocusType;

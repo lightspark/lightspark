@@ -350,6 +350,12 @@ bool InputThread::handleContextMenuEvent(SDL_Event *event)
 	return ret;
 }
 
+_NR<InteractiveObject> InputThread::getMouseTarget(const Vector2f& point, HIT_TYPE type)
+{
+	return getMouseTarget(point.x, point.y, type);
+}
+
+// TODO: Get rid of this version, and use the `Vector2` version only.
 _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, HIT_TYPE type)
 {
 	_NR<InteractiveObject> selected = NullRef;

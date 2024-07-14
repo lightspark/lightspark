@@ -79,6 +79,7 @@ private:
 		MATRIX m;
 		MaskData(DisplayObject* _d, const MATRIX& _m):d(_d),m(_m){}
 	};
+	_NR<InteractiveObject> getMouseTarget(const Vector2f& point, HIT_TYPE type);
 	_NR<InteractiveObject> getMouseTarget(uint32_t x, uint32_t y, HIT_TYPE type);
 	void handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);
 	void handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod buttonState,bool pressed);

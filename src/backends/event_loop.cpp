@@ -421,11 +421,13 @@ LSEventStorage SDLEvent::toLSEvent(SystemState* sys) const
 		case SDL_TEXTINPUT:
 		{
 			auto& text = event.text;
-			return LSTextEvent
-			(
-				text.text,
-				TextType::Input
-			);
+			// SDL_TEXINPUT sometimes seems to send an empty text, we ignore those events
+			if (text.text[0] != '\0')
+				return LSTextEvent
+				(
+					text.text,
+					TextType::Input
+				);
 			break;
 		}
 		// Non-input events.
@@ -472,7 +474,12 @@ LSEventStorage SDLEvent::toLSEvent(SystemState* sys) const
 				// LS_USEREVENT_INIT
 				case 0: return LSInitEvent((SystemState*)event.user.data1); break;
 				// LS_USEREVENT_EXEC
-				case 1: return LSExecEvent((LSExecEvent::Callback)event.user.data1); break;
+				case 1:
+				{
+					LSExecEvent::Callback callback = *(LSExecEvent::Callback*)event.user.data1;
+					delete (LSExecEvent::Callback*)event.user.data1;
+					return LSExecEvent(callback);
+				}
 				// LS_USEREVENT_QUIT
 				case 2: return LSQuitEvent(QuitType::User); break;
 				// LS_USEREVENT_OPEN_CONTEXTMENU
@@ -592,7 +599,7 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 		[&](const LSExecEvent& exec)
 		{
 			this->event.type = LS_USEREVENT_EXEC;
-			this->event.user.data1 = (void*)exec.callback;
+			this->event.user.data1 = (void*)new LSExecEvent::Callback(exec.callback);
 		},
 		[&](const LSOpenContextMenuEvent& open)
 		{

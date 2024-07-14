@@ -233,6 +233,13 @@ inline RGB lightspark::ArgumentConversionAtom<RGB>::toConcrete(ASWorker* wrk,asA
 }
 template<>
 inline RGB lightspark::ArgumentConversionAtom<RGB>::failValue() { return RGB(); }
+template<>
+inline AS3KeyCode lightspark::ArgumentConversionAtom<AS3KeyCode>::toConcrete(ASWorker* wrk,asAtom obj,const AS3KeyCode& v)
+{
+	return AS3KeyCode(asAtomHandler::toUInt(obj));
+}
+template<>
+inline AS3KeyCode lightspark::ArgumentConversionAtom<AS3KeyCode>::failValue() { return AS3KEYCODE_UNKNOWN; }
 
 template<>
 inline void lightspark::ArgumentConversionAtom<int32_t>::toAbstract(asAtom& ret, ASWorker* wrk,const int32_t& val)
@@ -268,6 +275,12 @@ template<>
 inline void lightspark::ArgumentConversionAtom<RGB>::toAbstract(asAtom& ret, ASWorker* wrk,const RGB& val)
 {
 	asAtomHandler::setUInt(ret,wrk,val.toUInt());
+}
+
+template<>
+inline void lightspark::ArgumentConversionAtom<AS3KeyCode>::toAbstract(asAtom& ret, ASWorker* wrk,const AS3KeyCode& val)
+{
+	asAtomHandler::setUInt(ret,wrk,val);
 }
 #define ARG_CHECK(u) if (u.isInvalid()) return;
 #ifndef NDEBUG

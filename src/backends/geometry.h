@@ -37,6 +37,7 @@ class Vector2Tmpl
 public:
 	T x,y;
 	Vector2Tmpl(T a=0, T b=0):x(a),y(b){}
+	Vector2Tmpl& operator=(const Vector2Tmpl&) = default;
 	/* conversion Vector2 -> Vector2f is implicit */
 	Vector2Tmpl(const Vector2Tmpl<int32_t>& o) : x(o.x),y(o.y) {}
 	template<typename U>

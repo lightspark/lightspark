@@ -26,6 +26,7 @@
 #include "compat.h"
 #include "swf.h"
 #include "abc.h"
+#include "backends/event_loop.h"
 #include "backends/security.h"
 #include "backends/rendering.h"
 #include "backends/audio.h"
@@ -1130,6 +1131,7 @@ static uint16_t getppKeyModifier(PP_Resource input_event)
 	return res;
 }
 
+// TODO: Convert input events into `LSEvent`s directly.
 PP_Bool ppPluginInstance::handleInputEvent(PP_Resource input_event)
 {
 	setTLSSys(m_sys);
@@ -1241,7 +1243,7 @@ PP_Bool ppPluginInstance::handleInputEvent(PP_Resource input_event)
 			LOG(LOG_NOT_IMPLEMENTED,"ppp_inputevent:"<<(int)g_inputevent_interface->GetType(input_event));
 			return PP_FALSE;
 	}
-	EngineData::mainloop_handleevent(&ev,this->m_sys);
+	EngineData::mainloop_handleevent(SDLEvent(ev).toLSEvent(m_sys),this->m_sys);
 	return PP_TRUE;
 }
 

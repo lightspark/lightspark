@@ -3,6 +3,7 @@
 
     Copyright (C) 2010-2013  Alessandro Pignotti (a.pignotti@sssup.it)
     Copyright (C) 2010-2011  Timon Van Overveldt (timonvo@gmail.com)
+    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -19,10 +20,10 @@
 **************************************************************************/
 
 #include "logger.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "plugin/plugin.h"
 
 #include "plugin/npscriptobject.h"
-#include "scripting/flash/system/flashsystem.h"
 
 using namespace std;
 using namespace lightspark;

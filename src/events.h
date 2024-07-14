@@ -118,7 +118,7 @@ struct LSEvent
 	constexpr Type getType() const { return type; }
 
 	template<typename V>
-	constexpr VisitorReturnType<V, EventTypes> visit(V&& visitor);
+	constexpr VisitorReturnType<V, EventTypes> visit(V&& visitor) const;
 	template<typename T>
 	constexpr bool has() const
 	{
@@ -387,10 +387,10 @@ struct LSInitEvent : public LSEvent
 
 struct LSExecEvent : public LSEvent
 {
-	using Callback = void (*)(SystemState* sys);
+	using Callback = std::function<void(SystemState*)>;
 	Callback callback;
 
-	constexpr LSExecEvent(Callback _callback) : LSEvent(EventType::Exec), callback(_callback) {}
+	LSExecEvent(Callback _callback) : LSEvent(EventType::Exec), callback(_callback) {}
 };
 
 struct LSContextMenuEvent : public LSEvent
@@ -455,7 +455,7 @@ private:
 };
 
 template<typename V>
-constexpr VisitorReturnType<V, EventTypes> LSEvent::visit(V&& visitor)
+constexpr VisitorReturnType<V, EventTypes> LSEvent::visit(V&& visitor) const
 {
 	using ContextMenuType = LSContextMenuEvent::ContextMenuType;
 	using MouseType = LSMouseEvent::MouseType;

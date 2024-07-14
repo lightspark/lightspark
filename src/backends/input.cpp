@@ -21,6 +21,7 @@
 #include "backends/audio.h"
 #include "backends/input.h"
 #include "backends/rendering.h"
+#include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/Stage.h"
 #include "compat.h"
@@ -42,7 +43,7 @@ InputThread* lightspark::getInputThread()
 
 InputThread::InputThread(SystemState* s):m_sys(s),engineData(nullptr),status(CREATED),
 	curDragged(),currentMouseOver(),lastMouseDownTarget(),
-	lastKeyUp(SDLK_UNKNOWN), dragLimit(nullptr),button1pressed(false)
+	lastKeyUp(AS3KEYCODE_UNKNOWN), dragLimit(nullptr),button1pressed(false)
 {
 	LOG(LOG_INFO,"Creating input thread");
 }
@@ -64,10 +65,7 @@ void InputThread::wait()
 {
 	if(status==STARTED)
 	{
-		SDL_Event event;
-		SDL_zero(event);
-		event.type = SDL_QUIT;
-		inputEventQueue.push_back(event);
+		inputEventQueue.push_back(LSQuitEvent(LSQuitEvent::QuitType::System));
 		eventCond.signal();
 		SDL_WaitThread(t,nullptr);
 	}
@@ -83,40 +81,59 @@ int InputThread::worker(void* d)
 
 	while (true)
 	{
-		SDL_Event event;
+		const auto& event = [&]()
 		{
 			Locker l(th->mutexQueue);
 			while (th->inputEventQueue.empty())
 				th->eventCond.wait(th->mutexQueue);
-			event = th->inputEventQueue.front();
+			auto& ev = th->inputEventQueue.front();
 			th->inputEventQueue.pop_front();
-		}
-		if (th->handleEvent(&event) < 0)
+			return ev;
+		}();
+		if (th->handleEvent(event) < 0)
 			break;
 	}
 	th->status = TERMINATED;
 	return 0;
 }
 
-bool InputThread::queueEvent(SDL_Event& event)
+bool InputThread::queueEvent(const LSEvent& event)
 {
-	if ((event.type == SDL_WINDOWEVENT && event.window.event != SDL_WINDOWEVENT_LEAVE) || event.type == SDL_QUIT)
+	using FocusType = LSWindowFocusEvent::FocusType;
+	using MouseType = LSMouseEvent::MouseType;
+
+	bool queueable = event.visit(makeVisitor
+	(
+		[&](const LSWindowEvent&) { return false; },
+		[&](const LSWindowFocusEvent& focus)
+		{
+			return focus.focusType != FocusType::Mouse || focus.focused;
+		},
+		[](const LSQuitEvent&) { return false; },
+		[](const LSEvent&) { return true; }
+	));
+	if (!queueable)
 		return false;
 	else
 	{
 		Locker l(mutexQueue);
-		if (!inputEventQueue.empty() && event.type == inputEventQueue.back().type)
+		if (!inputEventQueue.empty() && event.getType() == inputEventQueue.back().event().getType())
 		{
-			switch (event.type)
-			{
-				case SDL_MOUSEMOTION:
-				case SDL_MOUSEWHEEL:
-					inputEventQueue.back() = event;
-					return false;
-					break;
-				default:
-					break;
-			}
+			bool queue = event.visit(makeVisitor
+			(
+				[&](const LSMouseEvent& mouse)
+				{
+					if (mouse.mouseType != MouseType::Button)
+					{
+						inputEventQueue.back() = event;
+						return false;
+					}
+					return true;
+				},
+				[&](const LSEvent&) { return true; }
+			));
+			if (!queue)
+				return false;
 		}
 		inputEventQueue.push_back(event);
 	}
@@ -124,230 +141,172 @@ bool InputThread::queueEvent(SDL_Event& event)
 	return true;
 }
 
-int InputThread::handleEvent(SDL_Event* event)
+int InputThread::handleEvent(const LSEvent& event)
 {
-	bool ret = false;
-	if (m_sys && m_sys->getEngineData() && m_sys->getEngineData()->inContextMenu())
-	{
-		ret = handleContextMenuEvent(event);
-		if (ret)
-			return ret;
-	}
-	if (event->type == LS_USEREVENT_INTERACTIVEOBJECT_REMOVED_FOM_STAGE)
+	using Button = LSMouseButtonEvent::Button;
+	using ButtonType = LSMouseButtonEvent::ButtonType;
+	using FocusType = LSWindowFocusEvent::FocusType;
+	using KeyType = LSKeyEvent::KeyType;
+
+	bool hasSys = m_sys != nullptr;
+	bool hasEngineData = hasSys && m_sys->getEngineData() != nullptr;
+	if (hasEngineData && m_sys->getEngineData()->inContextMenu() && handleContextMenuEvent(event))
+		return true;
+	if (event.getType() == LSEvent::Type::RemovedFromStage)
 	{
 		{
 			Locker locker(inputDataSpinlock);
-			if (currentMouseOver && !currentMouseOver->isOnStage())
+			if (!currentMouseOver.isNull() && !currentMouseOver->isOnStage())
 				currentMouseOver.reset();
 		}
 		{
 			Locker locker(mutexListeners);
-			if (lastMouseDownTarget && !lastMouseDownTarget->isOnStage())
+			if (!lastMouseDownTarget.isNull() && !lastMouseDownTarget->isOnStage())
 				lastMouseDownTarget.reset();
-			if (lastMouseUpTarget && !lastMouseUpTarget->isOnStage())
+			if (!lastMouseUpTarget.isNull() && !lastMouseUpTarget->isOnStage())
 				lastMouseUpTarget.reset();
 		}
 		{
 			Locker locker(mutexDragged);
-			if (curDragged && !curDragged->isOnStage())
+			if (!curDragged.isNull() && !curDragged->isOnStage())
 				stopDrag(curDragged.getPtr());
 		}
 	}
-	if (!m_sys || m_sys->isShuttingDown())
+	if (!hasSys || m_sys->isShuttingDown())
 		return -1;
-	switch(event->type)
-	{
-		case SDL_KEYDOWN:
+
+	EngineData* engineData = m_sys->getEngineData();
+	return event.visit(makeVisitor
+	(
+		[&](const LSKeyEvent& key)
 		{
-			bool handled = handleKeyboardShortcuts(&event->key);
-			if (!handled)
-				sendKeyEvent(&event->key);
-			ret=true;
-			break;
-		}
-		case SDL_KEYUP:
-		{
-			sendKeyEvent(&event->key);
-			ret=true;
-			break;
-		}
-		case SDL_TEXTINPUT:
+			bool handled = false;
+			if (key.keyType != KeyType::Up && (handled = handleKeyboardShortcuts(key), !handled))
+				sendKeyEvent(key, true);
+			if (key.keyType == KeyType::Up || (handled && key.keyType == KeyType::Press))
+				sendKeyEvent(key, false);
+			return true;
+		},
+		[&](const LSTextEvent& text)
 		{
 			if(m_sys->currentVm == nullptr)
-				break;
+				return false;
 			_NR<InteractiveObject> target = m_sys->stage->getFocusTarget();
 			if (target.isNull())
-				break;
-			// SDL_TEXINPUT sometimes seems to send an empty text, we ignore those events
-			tiny_string s = std::string(event->text.text);
-			if (s.numChars()> 0)
-			{
-				target->incRef();
-				m_sys->currentVm->addIdleEvent(NullRef, _MR(new (m_sys->unaccountedMemory) TextInputEvent(target,s)));
-			}
-			break;
-		}
-		case SDL_MOUSEBUTTONDOWN:
+				return false;
+			target->incRef();
+			m_sys->currentVm->addIdleEvent(NullRef, _MR(new (m_sys->unaccountedMemory) TextInputEvent(target,text.text)));
+			return false;
+		},
+		[&](const LSMouseButtonEvent& mouseButton)
 		{
+			if (mouseButton.buttonType != ButtonType::Up)
 			{
-				Locker locker(mutexListeners);
-				button1pressed=false;
-			}
-			mousePosStart.x = event->button.x;
-			mousePosStart.y = event->button.y;
-			if(event->button.button == SDL_BUTTON_LEFT)
-			{
-				//Grab focus, to receive keypresses
-				engineData->grabFocus();
+				{
+					Locker locker(mutexListeners);
+					button1pressed=false;
+				}
+				mousePosStart = mouseButton.mousePos.round();
+				if (mouseButton.button == Button::Left)
+				{
+					//Grab focus, to receive keypresses
+					engineData->grabFocus();
 
-				int stageX, stageY;
-				m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
-				if (m_sys->mainClip->needsActionScript3())
-				{
-					handleMouseDown(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
-					if (event->button.clicks == 2)
-						handleMouseDoubleClick(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
+					if (m_sys->mainClip->usesActionScript3)
+					{
+						handleMouseDown(mouseButton);
+						if (mouseButton.buttonType == ButtonType::DoubleClick)
+							handleMouseDoubleClick(mouseButton);
+					}
+					else
+					{
+						// AVM1 doesn't have double click events
+						handleMouseDown(mouseButton);
+					}
 				}
-				else
-				{
-					// AVM1  doesn't have double click events
-					handleMouseDown(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
-				}
+				if (mouseButton.buttonType != ButtonType::Click)
+					return true;
 			}
-			ret=true;
-			break;
-		}
-		case SDL_MOUSEBUTTONUP:
-		{
-			int stageX, stageY;
 			m_sys->setWindowMoveMode(false);
-			m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
-			handleMouseUp(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED,event->button.button);
-			ret=true;
-			if (event->button.button == SDL_BUTTON_LEFT)
+			handleMouseUp(mouseButton);
+			if (mouseButton.button == Button::Left)
 			{
 				Locker locker(mutexListeners);
 				button1pressed=true;
 			}
-			break;
-		}
-		case SDL_MOUSEMOTION:
+			return true;
+		},
+		[&](const LSMouseMoveEvent& mouseMove)
 		{
-			ret=true;
-			int stageX, stageY;
-			if (m_sys->getRenderThread()->inSettings)
+			if (m_sys->getInWindowMoveMode())
 			{
-				stageX=event->motion.x;
-				stageY=event->motion.y;
+				Vector2 size(engineData->width, engineData->height);
+				Vector2 windowPos = engineData->getWindowPosition();
+				Vector2 mousePos = mouseMove.mousePos;
+				Vector2 newWindowPos = windowPos + mousePos - mousePosStart;
+				engineData->setWindowPosition(newWindowPos, size);
 			}
-			else if (m_sys->getInWindowMoveMode())
+			else
 			{
-				int globalX;
-				int globalY;
-				m_sys->getEngineData()->getWindowPosition(&globalX,&globalY);
-				m_sys->getEngineData()->setWindowPosition(globalX+event->motion.x-mousePosStart.x
-														  ,globalY+event->motion.y-mousePosStart.y
-														  ,m_sys->getEngineData()->width
-														  ,m_sys->getEngineData()->height);
-				break;
-			}
-			else	
-				m_sys->windowToStageCoordinates(event->motion.x,event->motion.y,stageX,stageY);
-			handleMouseMove(stageX,stageY,SDL_GetModState(),event->motion.state == SDL_PRESSED);
-			{
+				handleMouseMove(mouseMove);
 				Locker locker(mutexListeners);
 				button1pressed=false;
 			}
-			break;
-		}
-		case SDL_MOUSEWHEEL:
+			return true;
+		},
+		[&](const LSMouseWheelEvent& mouseWheel)
 		{
-			int stageX, stageY;
-			m_sys->windowToStageCoordinates(event->wheel.x,event->wheel.y,stageX,stageY);
-#if SDL_VERSION_ATLEAST(2, 0, 4)
-			handleScrollEvent(stageX,stageY,event->wheel.direction,SDL_GetModState(),false);
-#else
-			handleScrollEvent(stageX,stageY,1,SDL_GetModState(),false);
-#endif
-			ret=true;
-			break;
-		}
-		case SDL_WINDOWEVENT:
+			handleScrollEvent(mouseWheel);
+			return true;
+		},
+		[&](const LSWindowFocusEvent& focus)
 		{
-			switch (event->window.event)
+			if (focus.focusType == FocusType::Mouse && !focus.focused)
 			{
-				case SDL_WINDOWEVENT_LEAVE:
-				{
-					handleMouseLeave();
-					ret=true;
-					break;
-				}
-				default:
-					break;
+				handleMouseLeave();
+				return true;
 			}
-			break;
-		}
-		default:
-			break;
-	}
-	return ret;
+			return false;
+		},
+		[&](const LSEvent&) { return false; }
+	));
 }
-bool InputThread::handleContextMenuEvent(SDL_Event *event)
+bool InputThread::handleContextMenuEvent(const LSEvent& event)
 {
-	bool ret = false;
-	switch(event->type)
-	{
-		case SDL_KEYDOWN:
+	using Button = LSMouseButtonEvent::Button;
+	using ButtonType = LSMouseButtonEvent::ButtonType;
+	using FocusType = LSWindowFocusEvent::FocusType;
+
+	return event.visit(makeVisitor
+	(
+		[&](const LSKeyEvent& key) { return true; },
+		[&](const LSTextEvent& text) { return true; },
+		[&](const LSMouseButtonEvent& mouseButton)
 		{
-			ret=true;
-			break;
-		}
-		case SDL_KEYUP:
-		{
-			ret=true;
-			break;
-		}
-		case SDL_TEXTINPUT:
-		{
-			ret=true;
-			break;
-		}
-		case SDL_MOUSEBUTTONDOWN:
-		{
-			ret=true;
-			break;
-		}
-		case SDL_MOUSEBUTTONUP:
-		{
-			if(event->button.button == SDL_BUTTON_LEFT)
+			if (mouseButton.buttonType == ButtonType::Up && mouseButton.button == Button::Left)
 			{
-				m_sys->getEngineData()->updateContextMenuFromMouse(event->button.windowID, event->button.y);
+				m_sys->getEngineData()->updateContextMenuFromMouse(mouseButton.windowID, mouseButton.mousePos.y);
 				m_sys->getEngineData()->selectContextMenuItem();
 			}
-			ret=true;
-			break;
-		}
-		case SDL_MOUSEMOTION:
+			return true;
+		},
+		[&](const LSMouseMoveEvent& mouseMove)
 		{
-			m_sys->getEngineData()->updateContextMenuFromMouse(event->motion.windowID,event->motion.y);
-			ret=true;
-			break;
-		}
-		case SDL_MOUSEWHEEL:
+			m_sys->getEngineData()->updateContextMenuFromMouse(mouseMove.windowID, mouseMove.mousePos.y);
+			return true;
+		},
+		[&](const LSMouseWheelEvent& mouseWheel) { return true; },
+		[&](const LSWindowFocusEvent& focus)
 		{
-			ret=true;
-			break;
-		}
-		case SDL_WINDOWEVENT_LEAVE:
-		{
-			m_sys->getEngineData()->closeContextMenu();
-			ret=true;
-			break;
-		}
-		default:
-			break;
-	}
-	return ret;
+			if (focus.focusType == FocusType::Mouse && !focus.focused)
+			{
+				m_sys->getEngineData()->closeContextMenu();
+				return true;
+			}
+			return false;
+		},
+		[&](const LSEvent&) { return false; }
+	));
 }
 
 _NR<InteractiveObject> InputThread::getMouseTarget(const Vector2f& point, HIT_TYPE type)
@@ -383,67 +342,65 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, HIT_T
 	return selected;
 }
 
-void InputThread::handleMouseDown(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
+void InputThread::handleMouseDown(const LSMouseButtonEvent& event)
 {
 	if(m_sys->currentVm == nullptr)
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, MOUSE_CLICK_HIT);
+	_NR<InteractiveObject> selected = getMouseTarget(event.stagePos, MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
-	number_t localX, localY;
-	selected->globalToLocal(x,y,localX,localY);
+	Vector2f local = selected->globalToLocal(event.stagePos);
 	m_sys->currentVm->addIdleEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseDown",localX,localY,true,buttonState,pressed)));
+		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseDown",local.x,local.y,true,event.modifiers,event.pressed)));
 	Locker locker(mutexListeners);
 	lastMouseDownTarget=selected;
 }
 
-void InputThread::handleMouseDoubleClick(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
+void InputThread::handleMouseDoubleClick(const LSMouseButtonEvent& event)
 {
 	if(m_sys->currentVm == nullptr)
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, DOUBLE_CLICK_HIT);
+	_NR<InteractiveObject> selected = getMouseTarget(event.stagePos, DOUBLE_CLICK_HIT);
 	if (selected.isNull())
 		return;
 	if (!selected->isHittable(DOUBLE_CLICK_HIT))
 	{
 		// no double click hit found, add additional down-up-click sequence
-		if (lastMouseUpTarget)
+		if (!lastMouseUpTarget.isNull())
 		{
 			// add mousedown event for last mouseUp target
-			number_t localX, localY;
-			lastMouseUpTarget->globalToLocal(x,y,localX,localY);
+			Vector2f local = lastMouseUpTarget->globalToLocal(event.stagePos);
 			m_sys->currentVm->addIdleEvent(lastMouseUpTarget,
-										   _MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseDown",localX,localY,true,buttonState,pressed)));
+										   _MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseDown",local.x,local.y,true,event.modifiers,event.pressed)));
 			// reset lastMouseDownTarget to lastMouseUpTarget to ensure a normal "click" event is sended
 			Locker locker(mutexListeners);
 			lastMouseDownTarget = lastMouseUpTarget;
 		}
 		return;
 	}
-	number_t localX, localY;
-	selected->globalToLocal(x,y,localX,localY);
+	Vector2f local = selected->globalToLocal(event.stagePos);
 	m_sys->currentVm->addIdleEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"doubleClick",localX,localY,true,buttonState,pressed)));
+		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"doubleClick",local.x,local.y,true,event.modifiers,event.pressed)));
 }
 
-void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed, uint8_t button)
+void InputThread::handleMouseUp(const LSMouseButtonEvent& event)
 {
+	using Button = LSMouseButtonEvent::Button;
+
 	if(m_sys->currentVm == nullptr)
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, MOUSE_CLICK_HIT);
+	_NR<InteractiveObject> selected = getMouseTarget(event.stagePos, MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
-	number_t localX, localY;
-	selected->globalToLocal(x,y,localX,localY);
-	if (button == SDL_BUTTON_RIGHT)
+	Vector2f local = selected->globalToLocal(event.stagePos);
+	if (event.button == Button::Right)
 	{
 		m_sys->currentVm->addIdleEvent(selected,
-			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"contextMenu",localX,localY,true,buttonState,pressed)));
+			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"contextMenu",local.x,local.y,true,event.modifiers,event.pressed)));
 		return;
 	}
 	m_sys->currentVm->addIdleEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseUp",localX,localY,true,buttonState,pressed)));
+		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseUp",local.x,local.y,true,event.modifiers,event.pressed)));
 	mutexListeners.lock();
 	lastMouseUpTarget=selected;
 	if(lastMouseDownTarget==selected)
@@ -452,7 +409,7 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 		mutexListeners.unlock();
 		//Also send the click event
 		m_sys->currentVm->addIdleEvent(selected,
-			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"click",localX,localY,true,buttonState,pressed)));
+			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"click",local.x,local.y,true,event.modifiers,event.pressed)));
 	}
 	else if (lastMouseDownTarget)
 	{
@@ -460,7 +417,7 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 		lastMouseDownTarget=NullRef;
 		mutexListeners.unlock();
 		m_sys->currentVm->addIdleEvent(tmp,
-			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"releaseOutside",localX,localY,true,buttonState,pressed)));
+			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"releaseOutside",local.x,local.y,true,event.modifiers,event.pressed)));
 	}
 	else
 	{
@@ -468,32 +425,30 @@ void InputThread::handleMouseUp(uint32_t x, uint32_t y, SDL_Keymod buttonState, 
 		mutexListeners.unlock();
 	}
 }
-void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState, bool pressed)
+void InputThread::handleMouseMove(const LSMouseMoveEvent& event)
 {
 	if(m_sys->currentVm == nullptr)
 		return;
-	
-	{
-		Locker locker(inputDataSpinlock);
-		mousePos.x=x;
-		mousePos.y=y;
-	}
 	if (m_sys->getRenderThread()->inSettings)
+	{
+		mousePos = event.mousePos;
 		return;
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, MOUSE_CLICK_HIT);
+	}
+	mousePos = event.stagePos;
+	_NR<InteractiveObject> selected = getMouseTarget(event.stagePos, MOUSE_CLICK_HIT);
 	mutexDragged.lock();
 	if(curDragged)
 	{
 		Vector2f local;
 		DisplayObjectContainer* parent = curDragged->getParent();
-		if(!parent)
+		if (parent == nullptr)
 		{
 			Sprite* s = curDragged.getPtr();
 			mutexDragged.unlock();
 			stopDrag(s);
 			return;
 		}
-		local = parent->getConcatenatedMatrix().getInverted().multiply2D(mousePos);
+		local = parent->getConcatenatedMatrix().getInverted().multiply2D(event.stagePos);
 		local += dragOffset;
 		if(dragLimit)
 			local = local.projectInto(*dragLimit);
@@ -502,63 +457,50 @@ void InputThread::handleMouseMove(uint32_t x, uint32_t y, SDL_Keymod buttonState
 		curDragged->setY(local.y);
 	}
 	mutexDragged.unlock();
-	number_t localX, localY;
 	if(!currentMouseOver.isNull() && currentMouseOver != selected)
 	{
-		number_t clocalX, clocalY;
-		currentMouseOver->globalToLocal(x,y,clocalX,clocalY);
+		Vector2f local = currentMouseOver->globalToLocal(event.stagePos);
 		m_sys->currentVm->addIdleEvent(currentMouseOver,
-			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOut",clocalX,clocalY,true,buttonState,pressed,selected)));
+			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOut",local.x,local.y,true,event.modifiers,event.pressed,selected)));
 		if (selected.isNull())
-			m_sys->currentVm->addIdleEvent(currentMouseOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",clocalX,clocalY,true,buttonState,pressed,selected)));
+			m_sys->currentVm->addIdleEvent(currentMouseOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",local.x,local.y,true,event.modifiers,event.pressed,selected)));
 		currentMouseOver.reset();
 	}
 	if (selected.isNull())
 		return;
-	selected->globalToLocal(x,y,localX,localY);
+	Vector2f local = selected->globalToLocal(event.stagePos);
 	if(currentMouseOver == selected)
 	{
 		m_sys->currentVm->addIdleEvent(selected,
-			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseMove",localX,localY,true,buttonState,pressed)),true);
+			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseMove",local.x,local.y,true,event.modifiers,event.pressed)),true);
 	}
 	else
 	{
 		m_sys->currentVm->addIdleEvent(selected,
-			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOver",localX,localY,true,buttonState,pressed,currentMouseOver)),true);
+			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOver",local.x,local.y,true,event.modifiers,event.pressed,currentMouseOver)),true);
 		currentMouseOver = selected;
 	}
 	if (selected != lastRolledOver)
 	{
 		if (lastRolledOver)
-			m_sys->currentVm->addIdleEvent(lastRolledOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",localX,localY,true,buttonState,pressed,selected)));
+			m_sys->currentVm->addIdleEvent(lastRolledOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",local.x,local.y,true,event.modifiers,event.pressed,selected)));
 		m_sys->currentVm->addIdleEvent(selected,
-			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOver",localX,localY,true,buttonState,pressed,lastRolledOver)));
+			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOver",local.x,local.y,true,event.modifiers,event.pressed,lastRolledOver)));
 		lastRolledOver = selected;
 	}
 }
 
-void InputThread::handleScrollEvent(uint32_t x, uint32_t y, uint32_t direction, SDL_Keymod buttonState,bool pressed)
+void InputThread::handleScrollEvent(const LSMouseWheelEvent& event)
 {
 	if(m_sys->currentVm == nullptr)
 		return;
 
-	int delta = 1;
-#if SDL_VERSION_ATLEAST(2, 0, 4)
-	if(direction==SDL_MOUSEWHEEL_NORMAL)
-		delta = 1;
-	else if(direction==SDL_MOUSEWHEEL_FLIPPED)
-		delta = -1;
-	else
-		return;
-#endif
-
-	_NR<InteractiveObject> selected = getMouseTarget(x, y, MOUSE_CLICK_HIT);
+	_NR<InteractiveObject> selected = getMouseTarget(event.stagePos, MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
-	number_t localX, localY;
-	selected->globalToLocal(x,y,localX,localY);
+	Vector2f local = selected->globalToLocal(event.stagePos);
 	m_sys->currentVm->addIdleEvent(selected,
-		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseWheel",localX,localY,true,buttonState,pressed,NullRef,delta)));
+		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseWheel",local.x,local.y,true,event.modifiers,event.pressed,NullRef,event.delta)));
 }
 
 void InputThread::handleMouseLeave()
@@ -575,44 +517,39 @@ void InputThread::handleMouseLeave()
 		_MR(Class<Event>::getInstanceS(m_sys->worker,"mouseLeave")));
 }
 
-bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
+bool InputThread::handleKeyboardShortcuts(const LSKeyEvent& event)
 {
-	if (keyevent->keysym.sym == SDLK_MENU)
+	if (event.keyCode == AS3KEYCODE_MENU)
 	{
-		int stageX,stageY;
-		int x, y;
-		SDL_GetMouseState(&x,&y);
-		m_sys->windowToStageCoordinates(x,y,stageX,stageY);
-		_NR<InteractiveObject> selected = getMouseTarget(stageX,stageY, MOUSE_CLICK_HIT);
+		_NR<InteractiveObject> selected = getMouseTarget(event.stagePos, MOUSE_CLICK_HIT);
 		if (!selected.isNull())
 		{
-			number_t localX, localY;
-			selected->globalToLocal(x,y,localX,localY);
+			Vector2f local = selected->globalToLocal(event.stagePos);
 			m_sys->currentVm->addIdleEvent(selected,
-				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"contextMenu",localX,localY,true,(SDL_Keymod)keyevent->keysym.mod,false)));
+				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"contextMenu",local.x,local.y,true,event.modifiers,false)));
 			return true;
 		}
 	}
 	bool handled = false;
-	if (!(keyevent->keysym.mod & KMOD_CTRL))
+	if (!(event.modifiers & LSModifier::Ctrl))
 		return handled;
 
-	switch(keyevent->keysym.sym)
+	switch(event.keyCode)
 	{
-		case SDLK_q:
+		case AS3KEYCODE_Q:
 			handled = true;
 			if(m_sys->standalone)
 				m_sys->setShutdownFlag();
 			break;
-		case SDLK_f:
+		case AS3KEYCODE_F:
 			handled = true;
 			m_sys->getEngineData()->setDisplayState(m_sys->getEngineData()->inFullScreenMode() ? "normal" : "fullScreen",m_sys);
 			break;
-		case SDLK_p:
+		case AS3KEYCODE_P:
 			handled = true;
 			m_sys->showProfilingData=!m_sys->showProfilingData;
 			break;
-		case SDLK_m:
+		case AS3KEYCODE_M:
 			handled = true;
 			m_sys->audioManager->toggleMuteAll();
 			if(m_sys->audioManager->allMuted())
@@ -620,7 +557,7 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 			else
 				LOG(LOG_INFO, "All sounds unmuted");
 			break;
-		case SDLK_c:
+		case AS3KEYCODE_C:
 			handled = true;
 			if(m_sys->hasError())
 			{
@@ -633,10 +570,10 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 			else
 				LOG(LOG_INFO, "No error to be copied to clipboard");
 			break;
-		case SDLK_d:
+		case AS3KEYCODE_D:
 			m_sys->stage->dumpDisplayList();
 			break;
-		case SDLK_s:
+		case AS3KEYCODE_S:
 			if (m_sys->getRenderThread())
 			{
 				handled = true;
@@ -644,7 +581,7 @@ bool InputThread::handleKeyboardShortcuts(const SDL_KeyboardEvent *keyevent)
 			}
 			break;
 #ifndef NDEBUG
-		case SDLK_l:
+		case AS3KEYCODE_L:
 			// switch between log levels LOG_CALLS and LOG_INFO
 			if (Log::getLevel() == LOG_CALLS)
 				Log::setLogLevel(LOG_INFO);
@@ -917,7 +854,7 @@ AS3KeyCode lightspark::getAS3KeyCodeFromScanCode(SDL_Scancode sdlscancode)
 }
 
 
-void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
+void InputThread::sendKeyEvent(const LSKeyEvent& event, bool pressed)
 {
 	if(m_sys->currentVm == nullptr)
 		return;
@@ -926,14 +863,9 @@ void InputThread::sendKeyEvent(const SDL_KeyboardEvent *keyevent)
 	if (target.isNull())
 		return;
 
-	tiny_string type;
-	if (keyevent->type == SDL_KEYDOWN)
-		type = "keyDown";
-	else
-		type = "keyUp";
-
+	tiny_string type = pressed ? "keyDown" : "keyUp";
 	m_sys->currentVm->addIdleEvent(target,
-	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys->worker,type, keyevent->keysym.scancode,getAS3KeyCodeFromScanCode(keyevent->keysym.scancode),getAS3KeyCode(keyevent->keysym.sym), (SDL_Keymod)keyevent->keysym.mod,keyevent->keysym.sym)));
+	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys->worker,type, event.charCode, event.keyCode, event.modifiers)));
 }
 
 
@@ -964,22 +896,22 @@ void InputThread::stopDrag(Sprite* s)
 AS3KeyCode InputThread::getLastKeyDown()
 {
 	Locker locker(mutexListeners);
-	return getAS3KeyCode(lastKeyDown);
+	return lastKeyDown;
 }
 
 AS3KeyCode InputThread::getLastKeyUp()
 {
 	Locker locker(mutexListeners);
-	return getAS3KeyCode(lastKeyUp);
+	return lastKeyUp;
 }
 
-SDL_Keycode InputThread::getLastKeyCode()
+AS3KeyCode InputThread::getLastKeyCode()
 {
 	Locker locker(mutexListeners);
 	return lastKeyDown;
 }
 
-SDL_Keymod InputThread::getLastKeyMod()
+LSModifier InputThread::getLastKeyMod()
 {
 	Locker locker(mutexListeners);
 	return lastKeymod;
@@ -994,17 +926,17 @@ bool InputThread::isKeyDown(AS3KeyCode key)
 void InputThread::setLastKeyDown(KeyboardEvent *e)
 {
 	Locker locker(mutexListeners);
-	lastKeymod = SDL_Keymod(e->getModifiers());
-	lastKeyDown = e->getSDLKeyCode();
-	keyDownSet.insert(getAS3KeyCode(e->getSDLKeyCode()));
-	lastKeyUp = 0;
+	lastKeymod = e->getModifiers();
+	lastKeyDown = e->getKeyCode();
+	keyDownSet.insert(e->getKeyCode());
+	lastKeyUp = AS3KEYCODE_UNKNOWN;
 }
 
 void InputThread::setLastKeyUp(KeyboardEvent *e)
 {
 	Locker locker(mutexListeners);
-	lastKeymod = SDL_Keymod(e->getModifiers());
-	lastKeyUp = e->getSDLKeyCode();
-	keyDownSet.erase(getAS3KeyCode(e->getSDLKeyCode()));
-	lastKeyDown = 0;
+	lastKeymod = e->getModifiers();
+	lastKeyUp = e->getKeyCode();
+	keyDownSet.erase(e->getKeyCode());
+	lastKeyDown = AS3KEYCODE_UNKNOWN;
 }

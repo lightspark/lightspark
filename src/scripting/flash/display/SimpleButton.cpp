@@ -173,57 +173,57 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 	for (auto it = this->buttontag->condactions.begin(); it != this->buttontag->condactions.end(); it++)
 	{
 		bool execute=false;
-		uint32_t code = e->getSDLScanCode();
-		if (e->getModifiers() & KMOD_SHIFT)
+		AS3KeyCode code = e->getKeyCode();
+		if (e->getModifiers() & LSModifier::Shift)
 		{
 			switch (it->CondKeyPress)
 			{
 				case 33:// !
-					execute = code==SDL_SCANCODE_1;break;
+					execute = code==AS3KEYCODE_NUMBER_1;break;
 				case 34:// "
-					execute = code==SDL_SCANCODE_APOSTROPHE;break;
+					execute = code==AS3KEYCODE_QUOTE;break;
 				case 35:// #
-					execute = code==SDL_SCANCODE_3;break;
+					execute = code==AS3KEYCODE_NUMBER_3;break;
 				case 36:// $
-					execute = code==SDL_SCANCODE_4;break;
+					execute = code==AS3KEYCODE_NUMBER_4;break;
 				case 37:// %
-					execute = code==SDL_SCANCODE_5;break;
+					execute = code==AS3KEYCODE_NUMBER_5;break;
 				case 38:// &
-					execute = code==SDL_SCANCODE_7;break;
+					execute = code==AS3KEYCODE_NUMBER_7;break;
 				case 40:// (
-					execute = code==SDL_SCANCODE_9;break;
+					execute = code==AS3KEYCODE_NUMBER_9;break;
 				case 41:// )
-					execute = code==SDL_SCANCODE_0;break;
+					execute = code==AS3KEYCODE_NUMBER_0;break;
 				case 42:// *
-					execute = code==SDL_SCANCODE_8;break;
+					execute = code==AS3KEYCODE_NUMBER_8;break;
 				case 43:// +
-					execute = code==SDL_SCANCODE_EQUALS;break;
+					execute = code==AS3KEYCODE_EQUAL;break;
 				case 58:// :
-					execute = code==SDL_SCANCODE_SEMICOLON;break;
+					execute = code==AS3KEYCODE_SEMICOLON;break;
 				case 60:// <
-					execute = code==SDL_SCANCODE_COMMA;break;
+					execute = code==AS3KEYCODE_COMMA;break;
 				case 62:// >
-					execute = code==SDL_SCANCODE_PERIOD;break;
+					execute = code==AS3KEYCODE_PERIOD;break;
 				case 63:// ?
-					execute = code==SDL_SCANCODE_SLASH;break;
+					execute = code==AS3KEYCODE_SLASH;break;
 				case 64:// @
-					execute = code==SDL_SCANCODE_2;break;
+					execute = code==AS3KEYCODE_NUMBER_2;break;
 				case 94:// ^
-					execute = code==SDL_SCANCODE_6;break;
+					execute = code==AS3KEYCODE_NUMBER_6;break;
 				case 95:// _
-					execute = code==SDL_SCANCODE_MINUS;break;
+					execute = code==AS3KEYCODE_MINUS;break;
 				case 123:// {
-					execute = code==SDL_SCANCODE_LEFTBRACKET;break;
+					execute = code==AS3KEYCODE_LEFTBRACKET;break;
 				case 124:// |
-					execute = code==SDL_SCANCODE_BACKSLASH;break;
+					execute = code==AS3KEYCODE_BACKSLASH;break;
 				case 125:// }
-					execute = code==SDL_SCANCODE_RIGHTBRACKET;break;
+					execute = code==AS3KEYCODE_RIGHTBRACKET;break;
 				case 126:// ~
-					execute = code==SDL_SCANCODE_GRAVE;break;
+					execute = code==AS3KEYCODE_BACKQUOTE;break;
 				default:// A-Z
 					execute = it->CondKeyPress>=65
 							&& it->CondKeyPress<=90
-							&& code-SDL_SCANCODE_A==it->CondKeyPress-65;
+							&& (uint32_t)code-(uint32_t)AS3KEYCODE_A==it->CondKeyPress-65;
 					break;
 			}
 		}
@@ -232,81 +232,81 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			switch (it->CondKeyPress)
 			{
 				case 1:
-					execute = code==SDL_SCANCODE_LEFT;break;
+					execute = code==AS3KEYCODE_LEFT;break;
 				case 2:
-					execute = code==SDL_SCANCODE_RIGHT;break;
+					execute = code==AS3KEYCODE_RIGHT;break;
 				case 3:
-					execute = code==SDL_SCANCODE_HOME;break;
+					execute = code==AS3KEYCODE_HOME;break;
 				case 4:
-					execute = code==SDL_SCANCODE_END;break;
+					execute = code==AS3KEYCODE_END;break;
 				case 5:
-					execute = code==SDL_SCANCODE_INSERT;break;
+					execute = code==AS3KEYCODE_INSERT;break;
 				case 6:
-					execute = code==SDL_SCANCODE_DELETE;break;
+					execute = code==AS3KEYCODE_DELETE;break;
 				case 8:
-					execute = code==SDL_SCANCODE_BACKSPACE;break;
+					execute = code==AS3KEYCODE_BACKSPACE;break;
 				case 13:
-					execute = code==SDL_SCANCODE_RETURN;break;
+					execute = code==AS3KEYCODE_ENTER;break;
 				case 14:
-					execute = code==SDL_SCANCODE_UP;break;
+					execute = code==AS3KEYCODE_UP;break;
 				case 15:
-					execute = code==SDL_SCANCODE_DOWN;break;
+					execute = code==AS3KEYCODE_DOWN;break;
 				case 16:
-					execute = code==SDL_SCANCODE_PAGEUP;break;
+					execute = code==AS3KEYCODE_PAGE_UP;break;
 				case 17:
-					execute = code==SDL_SCANCODE_PAGEDOWN;break;
+					execute = code==AS3KEYCODE_PAGE_DOWN;break;
 				case 18:
-					execute = code==SDL_SCANCODE_TAB;break;
+					execute = code==AS3KEYCODE_TAB;break;
 				case 19:
-					execute = code==SDL_SCANCODE_ESCAPE;break;
+					execute = code==AS3KEYCODE_ESCAPE;break;
 				case 32:
-					execute = code==SDL_SCANCODE_SPACE;break;
+					execute = code==AS3KEYCODE_SPACE;break;
 				case 39:// '
-					execute = code==SDL_SCANCODE_APOSTROPHE;break;
+					execute = code==AS3KEYCODE_QUOTE;break;
 				case 44:// ,
-					execute = code==SDL_SCANCODE_COMMA;break;
+					execute = code==AS3KEYCODE_COMMA;break;
 				case 45:// -
-					execute = code==SDL_SCANCODE_MINUS;break;
+					execute = code==AS3KEYCODE_MINUS;break;
 				case 46:// .
-					execute = code==SDL_SCANCODE_PERIOD;break;
+					execute = code==AS3KEYCODE_PERIOD;break;
 				case 47:// /
-					execute = code==SDL_SCANCODE_SLASH;break;
+					execute = code==AS3KEYCODE_SLASH;break;
 				case 48:// 0
-					execute = code==SDL_SCANCODE_0;break;
+					execute = code==AS3KEYCODE_NUMBER_0;break;
 				case 49:// 1
-					execute = code==SDL_SCANCODE_1;break;
+					execute = code==AS3KEYCODE_NUMBER_1;break;
 				case 50:// 2
-					execute = code==SDL_SCANCODE_2;break;
+					execute = code==AS3KEYCODE_NUMBER_2;break;
 				case 51:// 3
-					execute = code==SDL_SCANCODE_3;break;
+					execute = code==AS3KEYCODE_NUMBER_3;break;
 				case 52:// 4
-					execute = code==SDL_SCANCODE_4;break;
+					execute = code==AS3KEYCODE_NUMBER_4;break;
 				case 53:// 5
-					execute = code==SDL_SCANCODE_5;break;
+					execute = code==AS3KEYCODE_NUMBER_5;break;
 				case 54:// 6
-					execute = code==SDL_SCANCODE_6;break;
+					execute = code==AS3KEYCODE_NUMBER_6;break;
 				case 55:// 7
-					execute = code==SDL_SCANCODE_7;break;
+					execute = code==AS3KEYCODE_NUMBER_7;break;
 				case 56:// 8
-					execute = code==SDL_SCANCODE_8;break;
+					execute = code==AS3KEYCODE_NUMBER_8;break;
 				case 57:// 9
-					execute = code==SDL_SCANCODE_9;break;
+					execute = code==AS3KEYCODE_NUMBER_9;break;
 				case 59:// ;
-					execute = code==SDL_SCANCODE_SEMICOLON;break;
+					execute = code==AS3KEYCODE_SEMICOLON;break;
 				case 61:// =
-					execute = code==SDL_SCANCODE_EQUALS;break;
+					execute = code==AS3KEYCODE_EQUAL;break;
 				case 91:// [
-					execute = code==SDL_SCANCODE_LEFTBRACKET;break;
+					execute = code==AS3KEYCODE_LEFTBRACKET;break;
 				case 92:// 
-					execute = code==SDL_SCANCODE_BACKSLASH;break;
+					execute = code==AS3KEYCODE_BACKSLASH;break;
 				case 93:// ]
-					execute = code==SDL_SCANCODE_RIGHTBRACKET;break;
+					execute = code==AS3KEYCODE_RIGHTBRACKET;break;
 				case 96:// `
-					execute = code==SDL_SCANCODE_GRAVE;break;
+					execute = code==AS3KEYCODE_BACKQUOTE;break;
 				default:// a-z
 					execute = it->CondKeyPress>=97
 							&& it->CondKeyPress<=122
-							&& code-SDL_SCANCODE_A==it->CondKeyPress-97;
+							&& (uint32_t)code-(uint32_t)AS3KEYCODE_A==it->CondKeyPress-97;
 					break;
 			}
 		}

@@ -3,6 +3,7 @@
 
     Copyright (C) 2009-2013  Alessandro Pignotti (a.pignotti@sssup.it)
     Copyright (C) 2010-2011  Timon Van Overveldt (timonvo@gmail.com)
+    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -19,11 +20,11 @@
 **************************************************************************/
 
 #include "version.h"
+#include "backends/event_loop.h"
 #include "backends/security.h"
 #include "backends/streamcache.h"
 #include "backends/config.h"
 #include "backends/rendering.h"
-#include "plugin/plugin.h"
 #include "logger.h"
 #include "compat.h"
 #include <string>
@@ -32,6 +33,7 @@
 #include "abc.h"
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "plugin/plugin.h"
 
 #include "plugin/npscriptobject.h"
 #include <SDL.h>
@@ -874,6 +876,7 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 	downloaderFinished(dl, url, reason);
 }
 
+// TODO: Convert input events into `LSEvent`s directly.
 uint16_t nsPluginInstance::HandleEvent(void *event)
 {
 	if (m_sys && m_sys->getEngineData() && m_sys->getEngineData()->inFullScreenMode())
@@ -910,7 +913,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 				if (nsEvent->xkey.state & ShiftMask)
 					ev.key.keysym.mod |= KMOD_SHIFT;
 				ev.key.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(&ev,m_sys);
+				return EngineData::mainloop_handleevent(SDLEvent(ev).toLSEvent(m_sys),m_sys);
 			}
 			break;
 		case MotionNotify: 
@@ -923,7 +926,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 				ev.motion.x = event->x;
 				ev.motion.y = event->y;
 				ev.motion.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(&ev,m_sys);
+				return EngineData::mainloop_handleevent(SDLEvent(ev).toLSEvent(m_sys),m_sys);
 			}
 			break;
 		case ButtonPress:
@@ -961,7 +964,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 				}
 
 				ev.button.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(&ev,m_sys);
+				return EngineData::mainloop_handleevent(SDLEvent(ev).toLSEvent(m_sys),m_sys);
 			}
 			break;
 		case FocusOut:
@@ -970,7 +973,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 				SDL_Event ev;
 				ev.type = SDL_WINDOWEVENT_FOCUS_LOST;
 				ev.window.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(&ev,m_sys);
+				return EngineData::mainloop_handleevent(SDLEvent(ev).toLSEvent(m_sys),m_sys);
 			}
 			break;
 	}

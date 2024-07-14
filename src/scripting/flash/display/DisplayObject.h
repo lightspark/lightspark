@@ -220,6 +220,8 @@ public:
 	virtual void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false);
 	void updateCachedSurface(IDrawable* d);
 	MATRIX getConcatenatedMatrix(bool includeRoot=false, bool fromcurrentrendering=true) const;
+	Vector2f localToGlobal(const Vector2f& point, bool fromcurrentrendering=true) const;
+	Vector2f globalToLocal(const Vector2f& point, bool fromcurrentrendering=true) const;
 	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout, bool fromcurrentrendering=true) const;
 	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout, bool fromcurrentrendering=true) const;
 	float getConcatenatedAlpha() const;

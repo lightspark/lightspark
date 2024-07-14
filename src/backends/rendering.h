@@ -164,6 +164,7 @@ public:
 	void addUploadJob(ITextureUploadable* u);
 
 	void requestResize(uint32_t w, uint32_t h, bool force);
+	void requestResize(const Vector2f& size, bool force);
 	void waitForInitialization()
 	{
 		initialized.wait();

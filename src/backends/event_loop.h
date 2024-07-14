@@ -38,6 +38,8 @@ friend class SDLEventLoop;
 protected:
 	SDL_Event event;
 public:
+	SDLEvent() = default;
+	SDLEvent(const SDL_Event& ev) : event(ev) {}
 	// Converts a platform/application specific event into an LSEvent.
 	LSEventStorage toLSEvent(SystemState* sys) const override;
 	// Converts an LSEvent into a platform/application specific event.

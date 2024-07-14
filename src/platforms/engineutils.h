@@ -221,7 +221,9 @@ public:
 	virtual bool getScreenData(SDL_DisplayMode* screen);
 	virtual double getScreenDPI();
 	virtual void setWindowPosition(int x, int y, uint32_t width, uint32_t height);
+	virtual void setWindowPosition(const Vector2& pos, const Vector2& size);
 	virtual void getWindowPosition(int* x, int* y);
+	virtual Vector2 getWindowPosition();
 	virtual bool getAIRApplicationDescriptor(SystemState* sys,tiny_string& xmlstring) { return false;}
 	virtual StreamCache* createFileStreamCache(SystemState *sys);
 	

@@ -1030,6 +1030,11 @@ void EngineData::setWindowPosition(int x, int y, uint32_t width, uint32_t height
 	}
 }
 
+void EngineData::setWindowPosition(const Vector2& pos, const Vector2& size)
+{
+	setWindowPosition(pos.x, pos.y, size.x, size.y);
+}
+
 void EngineData::getWindowPosition(int* x, int* y)
 {
 	if (widget)
@@ -1041,6 +1046,13 @@ void EngineData::getWindowPosition(int* x, int* y)
 		*x=0;
 		*y=0;
 	}
+}
+
+Vector2 EngineData::getWindowPosition()
+{
+	Vector2 pos;
+	getWindowPosition(&pos.x, &pos.y);
+	return pos;
 }
 
 StreamCache *EngineData::createFileStreamCache(SystemState* sys)

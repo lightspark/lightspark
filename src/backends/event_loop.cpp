@@ -421,11 +421,13 @@ LSEventStorage SDLEvent::toLSEvent(SystemState* sys) const
 		case SDL_TEXTINPUT:
 		{
 			auto& text = event.text;
-			return LSTextEvent
-			(
-				text.text,
-				TextType::Input
-			);
+			// SDL_TEXINPUT sometimes seems to send an empty text, we ignore those events
+			if (text.text[0] != '\0')
+				return LSTextEvent
+				(
+					text.text,
+					TextType::Input
+				);
 			break;
 		}
 		// Non-input events.

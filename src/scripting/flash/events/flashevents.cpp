@@ -281,19 +281,19 @@ ASFUNCTIONBODY_ATOM(FocusEvent,_constructor)
 }
 
 MouseEvent::MouseEvent(ASWorker* wrk, Class_base* c)
- : Event(wrk,c, "mouseEvent",false,false,SUBTYPE_MOUSE_EVENT), modifiers(KMOD_NONE),buttonDown(false), delta(1), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
+ : Event(wrk,c, "mouseEvent",false,false,SUBTYPE_MOUSE_EVENT), modifiers(LSModifier::None),buttonDown(false), delta(1), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
 {
 }
 
 MouseEvent::MouseEvent(ASWorker* wrk, Class_base* c, const tiny_string& t, number_t lx, number_t ly,
-		       bool b, SDL_Keymod _modifiers, bool _buttonDown, _NR<InteractiveObject> relObj, int32_t _delta)
+		       bool b, const LSModifier& _modifiers, bool _buttonDown, _NR<InteractiveObject> relObj, int32_t _delta)
   : Event(wrk,c,t,b,false,SUBTYPE_MOUSE_EVENT), modifiers(_modifiers), buttonDown(_buttonDown),delta(_delta), localX(lx), localY(ly), stageX(0), stageY(0), relatedObject(relObj)
 {
 }
 
 Event* MouseEvent::cloneImpl() const
 {
-	return Class<MouseEvent>::getInstanceS(getInstanceWorker(),type,localX,localY,bubbles,(SDL_Keymod)modifiers,buttonDown,relatedObject,delta);
+	return Class<MouseEvent>::getInstanceS(getInstanceWorker(),type,localX,localY,bubbles,modifiers,buttonDown,relatedObject,delta);
 }
 
 ProgressEvent::ProgressEvent(ASWorker* wrk, Class_base* c):Event(wrk,c, "progress",false,false,SUBTYPE_PROGRESSEVENT),bytesLoaded(0),bytesTotal(0)
@@ -396,13 +396,13 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_constructor)
 		th->relatedObject=ArgumentConversionAtom< _NR<InteractiveObject> >::toConcrete(wrk,args[5],NullRef);
 	if(argslen>=7)
 		if (ArgumentConversionAtom<bool>::toConcrete(wrk,args[6],false))
-			th->modifiers |= KMOD_CTRL;
+			th->modifiers |= LSModifier::Ctrl;
 	if(argslen>=8)
 		if (ArgumentConversionAtom<bool>::toConcrete(wrk,args[7],false))
-			th->modifiers |= KMOD_ALT;
+			th->modifiers |= LSModifier::Alt;
 	if(argslen>=9)
 		if (ArgumentConversionAtom<bool>::toConcrete(wrk,args[8],false))
-			th->modifiers |= KMOD_SHIFT;
+			th->modifiers |= LSModifier::Shift;
 	if(argslen>=10)
 		if (ArgumentConversionAtom<bool>::toConcrete(wrk,args[9],false))
 			th->buttonDown = true;
@@ -410,10 +410,10 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_constructor)
 		th->delta=asAtomHandler::toInt(args[10]);
 	if(argslen>=12)
 		if (ArgumentConversionAtom<bool>::toConcrete(wrk,args[11],false))
-			th->modifiers |= KMOD_GUI;
+			th->modifiers |= LSModifier::Super;
 	if(argslen>=13)
 		if (ArgumentConversionAtom<bool>::toConcrete(wrk,args[12],false))
-			th->modifiers |= KMOD_CTRL;
+			th->modifiers |= LSModifier::Ctrl;
 	// TODO: args[13] = clickCount
 	if(argslen>=14)
 		LOG(LOG_NOT_IMPLEMENTED,"MouseEvent: clickcount");
@@ -468,49 +468,49 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localY)
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_altKey)
 {
 	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
-	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_ALT));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & LSModifier::Alt));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_altKey)
 {
 	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
-	th->modifiers |= KMOD_ALT;
+	th->modifiers |= LSModifier::Alt;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_controlKey)
 {
 	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
-	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_CTRL));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & LSModifier::Ctrl));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_controlKey)
 {
 	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
-	th->modifiers |= KMOD_CTRL;
+	th->modifiers |= LSModifier::Ctrl;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_ctrlKey)
 {
 	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
-	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_CTRL));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & LSModifier::Ctrl));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_ctrlKey)
 {
 	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
-	th->modifiers |= KMOD_CTRL;
+	th->modifiers |= LSModifier::Ctrl;
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_getter_shiftKey)
 {
 	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
-	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_SHIFT));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & LSModifier::Shift));
 }
 
 ASFUNCTIONBODY_ATOM(MouseEvent,_setter_shiftKey)
 {
 	MouseEvent* th=asAtomHandler::as<MouseEvent>(obj);
-	th->modifiers |= KMOD_SHIFT;
+	th->modifiers |= LSModifier::Shift;
 }
 ASFUNCTIONBODY_ATOM(MouseEvent,updateAfterEvent)
 {
@@ -1050,8 +1050,8 @@ ASFUNCTIONBODY_ATOM(FullScreenEvent,_constructor)
 	Event::_constructor(ret,wrk,obj,args,baseClassArgs);
 }
 
-KeyboardEvent::KeyboardEvent(ASWorker* wrk, Class_base* c, tiny_string _type, uint32_t _sdlscancode, uint32_t _charcode, uint32_t _keycode, SDL_Keymod _modifiers, SDL_Keycode _sdlkeycode)
-  : Event(wrk,c, _type,false,false,SUBTYPE_KEYBOARD_EVENT), modifiers(_modifiers), sdlScanCode(_sdlscancode), charCode(_charcode), keyCode(_keycode), keyLocation(0),sdlkeycode(_sdlkeycode)
+KeyboardEvent::KeyboardEvent(ASWorker* wrk, Class_base* c, tiny_string _type, const AS3KeyCode& _charCode, const AS3KeyCode& _keyCode, const LSModifier& _modifiers)
+  : Event(wrk,c, _type,false,false,SUBTYPE_KEYBOARD_EVENT), modifiers(_modifiers), charCode(_charCode), keyCode(_keyCode), keyLocation(0)
 {
 }
 
@@ -1079,29 +1079,29 @@ ASFUNCTIONBODY_ATOM(KeyboardEvent,_constructor)
 	Event::_constructor(ret,wrk,obj,args,baseClassArgs);
 
 	if(argslen > 3) {
-		th->charCode = asAtomHandler::toUInt(args[3]);
+		th->charCode = (AS3KeyCode)asAtomHandler::toUInt(args[3]);
 	}
 	if(argslen > 4) {
-		th->keyCode = asAtomHandler::toUInt(args[4]);
+		th->keyCode = (AS3KeyCode)asAtomHandler::toUInt(args[4]);
 	}
 	if(argslen > 5) {
 		th->keyLocation = asAtomHandler::toUInt(args[5]);
 	}
 	if(argslen > 6) {
 		if (ArgumentConversionAtom<bool>::toConcrete(wrk,args[6],false))
-			th->modifiers |= KMOD_CTRL;
+			th->modifiers |= LSModifier::Ctrl;
 	}
 	if(argslen > 7) {
 		if (ArgumentConversionAtom<bool>::toConcrete(wrk,args[7],false))
-			th->modifiers |= KMOD_ALT;
+			th->modifiers |= LSModifier::Alt;
 	}
 	if(argslen > 8) {
 		if (ArgumentConversionAtom<bool>::toConcrete(wrk,args[8],false))
-			th->modifiers |= KMOD_SHIFT;
+			th->modifiers |= LSModifier::Shift;
 	}
 	if(argslen > 9) {
 		if (ArgumentConversionAtom<bool>::toConcrete(wrk,args[9],false))
-			th->modifiers |= KMOD_CTRL;
+			th->modifiers |= LSModifier::Ctrl;
 	}
 	// args[10] (commandKeyValue) is only supported on Max OSX
 	if(argslen > 10) {
@@ -1117,13 +1117,13 @@ ASFUNCTIONBODY_GETTER_SETTER(KeyboardEvent, keyLocation)
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_altKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
-	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_ALT));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & LSModifier::Alt));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_altKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
-	th->modifiers |= KMOD_ALT;
+	th->modifiers |= LSModifier::Alt;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_commandKey)
@@ -1140,37 +1140,37 @@ ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_commandKey)
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_controlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
-	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_CTRL));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & LSModifier::Ctrl));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_controlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
-	th->modifiers |= KMOD_CTRL;
+	th->modifiers |= LSModifier::Ctrl;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_ctrlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
-	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_CTRL));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & LSModifier::Ctrl));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_ctrlKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
-	th->modifiers |= KMOD_CTRL;
+	th->modifiers |= LSModifier::Ctrl;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _getter_shiftKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
-	asAtomHandler::setBool(ret,(bool)(th->modifiers & KMOD_SHIFT));
+	asAtomHandler::setBool(ret,(bool)(th->modifiers & LSModifier::Shift));
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent, _setter_shiftKey)
 {
 	KeyboardEvent* th=static_cast<KeyboardEvent*>(asAtomHandler::getObject(obj));
-	th->modifiers |= KMOD_SHIFT;
+	th->modifiers |= LSModifier::Shift;
 }
 
 ASFUNCTIONBODY_ATOM(KeyboardEvent,updateAfterEvent)
@@ -1188,7 +1188,6 @@ Event* KeyboardEvent::cloneImpl() const
 	cloned->charCode = charCode;
 	cloned->keyCode = keyCode;
 	cloned->keyLocation = keyLocation;
-	cloned->sdlkeycode = sdlkeycode;
 	return cloned;
 }
 

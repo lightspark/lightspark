@@ -103,128 +103,146 @@ void EngineData::runInMainThread(SystemState* sys, void (*func)(SystemState*))
 	event.user.data1 = (void*) func;
 	SDL_PushEvent(&event);
 }
-bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
+
+void EngineData::handleQuit()
 {
-	if (sys && sys->getEngineData())
+	SDL_Quit();
+}
+
+bool EngineData::mainloop_handleevent(const LSEvent& event, SystemState* sys)
+{
+	using FocusType = LSWindowFocusEvent::FocusType;
+
+	if (event.getType() == LSEvent::Type::Invalid)
+		return false;
+	bool hasSys = sys != nullptr;
+	bool hasEngineData = hasSys && sys->getEngineData() != nullptr;
+	if (hasEngineData)
 		sys->getEngineData()->renderContextMenu();
-	if (event->type == LS_USEREVENT_INIT)
-	{
-		sys = (SystemState*)event->user.data1;
-		setTLSSys(sys);
-		setTLSWorker(sys->worker);
-	}
-	else if (event->type == LS_USEREVENT_EXEC)
-	{
-		if (event->user.data1)
-			((void (*)(SystemState*))event->user.data1)(sys);
-	}
-	else if (event->type == LS_USEREVENT_QUIT)
-	{
-		setTLSSys(nullptr);
-		SDL_Quit();
-		return true;
-	}
-	else if (event->type == LS_USEREVENT_OPEN_CONTEXTMENU)
-	{
-		if (sys && sys->getEngineData())
-			sys->getEngineData()->openContextMenuIntern((InteractiveObject*)event->user.data1);
-	}
-	else if (event->type == LS_USEREVENT_UPDATE_CONTEXTMENU)
-	{
-		if (sys && sys->getEngineData())
+	bool isMiscType = true;
+	bool quit = event.visit(makeVisitor
+	(
+		[&](const LSInitEvent& init)
 		{
-			int pos = *(int*)event->user.data1;
-			delete (int*)event->user.data1;
-			sys->getEngineData()->updateContextMenu(pos);
-		}
-	}
-	else if (event->type == LS_USEREVENT_SELECTITEM_CONTEXTMENU)
-	{
-		if (sys && sys->getEngineData())
-		{
-			sys->getEngineData()->selectContextMenuItemIntern();
-		}
-	}
-	else
-	{
-		if (sys && sys->getInputThread() && sys->getInputThread()->queueEvent(*event))
+			sys = init.sys;
+			setTLSSys(sys);
+			setTLSWorker(sys->worker);
 			return false;
-		switch (event->type)
+		},
+		[&](const LSExecEvent& exec)
 		{
-			case SDL_WINDOWEVENT:
+			if (exec.callback != nullptr)
+				exec.callback(sys);
+			return false;
+		},
+		[&](const LSOpenContextMenuEvent& open)
+		{
+			if (hasEngineData)
+				sys->getEngineData()->openContextMenuIntern(open.obj);
+			return false;
+		},
+		[&](const LSUpdateContextMenuEvent& update)
+		{
+			if (hasEngineData)
+				sys->getEngineData()->updateContextMenu(update.selectedItem);
+			return false;
+		},
+		[&](const LSSelectItemContextMenuEvent&)
+		{
+			if (hasEngineData)
+				sys->getEngineData()->selectContextMenuItemIntern();
+			return false;
+		},
+		[&](const LSQuitEvent& quit)
+		{
+			if (quit.quitType == LSQuitEvent::QuitType::User)
 			{
-				switch (event->window.event)
-				{
-					case SDL_WINDOWEVENT_RESIZED:
-					case SDL_WINDOWEVENT_SIZE_CHANGED:
-						if (sys && (!sys->getEngineData() || !sys->getEngineData()->inFullScreenMode()) && sys->getRenderThread())
-							sys->getRenderThread()->requestResize(event->window.data1,event->window.data2,false);
-						break;
-					case SDL_WINDOWEVENT_MOVED:
-						// TODO there doesn't seem to be a way to detect the starting of window movement in SDL, so for now we emit "moving" and "moved" events for every SDL_WINDOWEVENT_MOVED
-						sys->getEngineData()->x = event->window.data1;
-						sys->getEngineData()->y = event->window.data2;
-						if (sys && getVm(sys) && sys->stage->nativeWindow)
-						{
-							Rectangle *rectBefore=Class<Rectangle>::getInstanceS(sys->worker);
-							rectBefore->x = sys->getEngineData()->old_x;
-							rectBefore->y = sys->getEngineData()->old_y;
-							rectBefore->width = sys->getEngineData()->width;
-							rectBefore->height = sys->getEngineData()->height;
-							Rectangle *rectAfter=Class<Rectangle>::getInstanceS(sys->worker);
-							rectAfter->x = sys->getEngineData()->x;
-							rectAfter->y = sys->getEngineData()->y;
-							rectAfter->width = sys->getEngineData()->width;
-							rectAfter->height = sys->getEngineData()->height;
-							getVm(sys)->addEvent(_MR(sys->stage->nativeWindow),_MR(Class<NativeWindowBoundsEvent>::getInstanceS(sys->worker,"moving",_MR(rectBefore),_MR(rectAfter))));
-						}
-						if (sys && getVm(sys) && sys->stage->nativeWindow)
-						{
-							Rectangle *rectBefore=Class<Rectangle>::getInstanceS(sys->worker);
-							rectBefore->x = sys->getEngineData()->old_x;
-							rectBefore->y = sys->getEngineData()->old_y;
-							rectBefore->width = sys->getEngineData()->width;
-							rectBefore->height = sys->getEngineData()->height;
-							Rectangle *rectAfter=Class<Rectangle>::getInstanceS(sys->worker);
-							rectAfter->x = sys->getEngineData()->x;
-							rectAfter->y = sys->getEngineData()->y;
-							rectAfter->width = sys->getEngineData()->width;
-							rectAfter->height = sys->getEngineData()->height;
-							getVm(sys)->addEvent(_MR(sys->stage->nativeWindow),_MR(Class<NativeWindowBoundsEvent>::getInstanceS(sys->worker,"moved",_MR(rectBefore),_MR(rectAfter))));
-						}
-						sys->getEngineData()->old_x = event->window.data1;
-						sys->getEngineData()->old_y = event->window.data2;
-						break;
-					case SDL_WINDOWEVENT_EXPOSED:
-					{
-						//Signal the renderThread
-						if (sys && sys->getRenderThread())
-						{
-							sys->getRenderThread()->draw(true);
-							// it seems that sometimes the systemstate thread stops ticking when in background, this ensures it starts ticking again...
-							sys->sendMainSignal();
-						}
-						break;
-					}
-					case SDL_WINDOWEVENT_FOCUS_LOST:
-						sys->getEngineData()->closeContextMenu();
-						break;
-					case SDL_WINDOWEVENT_ENTER:
-						sys->addBroadcastEvent("activate");
-						break;
-					case SDL_WINDOWEVENT_LEAVE:
-						sys->addBroadcastEvent("deactivate");
-						break;
-					default:
-						break;
-				}
-				break;
+				assert(hasEngineData);
+				setTLSSys(nullptr);
+				sys->getEngineData()->handleQuit();
+				return true;
 			}
-			case SDL_QUIT:
-				sys->setShutdownFlag();
-				break;
-		}
-	}
+			isMiscType = false;
+			return false;
+		},
+		[&](const LSEvent&) { isMiscType = false; return false; }
+	));
+
+	if (quit || isMiscType)
+		return quit;
+	if (hasSys && sys->getInputThread() != nullptr && sys->getInputThread()->queueEvent(event))
+		return false;
+
+	event.visit(makeVisitor
+	(
+		[&](const LSWindowResizedEvent& resize)
+		{
+			if (hasSys && (!hasEngineData || !sys->getEngineData()->inFullScreenMode()) && sys->getRenderThread() != nullptr)
+				sys->getRenderThread()->requestResize(resize.size,false);
+		},
+		[&](const LSWindowMovedEvent& move)
+		{
+			// NOTE: `TODO` is specific to SDL.
+			// TODO there doesn't seem to be a way to detect the starting of window movement in SDL, so for now we emit "moving" and "moved" events for every SDL_WINDOWEVENT_MOVED
+			sys->getEngineData()->x = move.pos.x;
+			sys->getEngineData()->y = move.pos.y;
+			if (hasSys && getVm(sys) != nullptr && !sys->stage->nativeWindow.isNull())
+			{
+				Rectangle *rectBefore=Class<Rectangle>::getInstanceS(sys->worker);
+				rectBefore->x = sys->getEngineData()->old_x;
+				rectBefore->y = sys->getEngineData()->old_y;
+				rectBefore->width = sys->getEngineData()->width;
+				rectBefore->height = sys->getEngineData()->height;
+				Rectangle *rectAfter=Class<Rectangle>::getInstanceS(sys->worker);
+				rectAfter->x = sys->getEngineData()->x;
+				rectAfter->y = sys->getEngineData()->y;
+				rectAfter->width = sys->getEngineData()->width;
+				rectAfter->height = sys->getEngineData()->height;
+				getVm(sys)->addEvent(_MR(sys->stage->nativeWindow),_MR(Class<NativeWindowBoundsEvent>::getInstanceS(sys->worker,"moving",_MR(rectBefore),_MR(rectAfter))));
+			}
+			if (hasSys && getVm(sys) != nullptr && !sys->stage->nativeWindow.isNull())
+			{
+				Rectangle *rectBefore=Class<Rectangle>::getInstanceS(sys->worker);
+				rectBefore->x = sys->getEngineData()->old_x;
+				rectBefore->y = sys->getEngineData()->old_y;
+				rectBefore->width = sys->getEngineData()->width;
+				rectBefore->height = sys->getEngineData()->height;
+				Rectangle *rectAfter=Class<Rectangle>::getInstanceS(sys->worker);
+				rectAfter->x = sys->getEngineData()->x;
+				rectAfter->y = sys->getEngineData()->y;
+				rectAfter->width = sys->getEngineData()->width;
+				rectAfter->height = sys->getEngineData()->height;
+				getVm(sys)->addEvent(_MR(sys->stage->nativeWindow),_MR(Class<NativeWindowBoundsEvent>::getInstanceS(sys->worker,"move",_MR(rectBefore),_MR(rectAfter))));
+			}
+			sys->getEngineData()->old_x = move.pos.x;
+			sys->getEngineData()->old_y = move.pos.y;
+		},
+		[&](const LSWindowExposedEvent&)
+		{
+			//Signal the renderThread
+			if (hasSys && sys->getRenderThread() != nullptr)
+			{
+				sys->getRenderThread()->draw(true);
+				// it seems that sometimes the systemstate thread stops ticking when in background, this ensures it starts ticking again...
+				sys->sendMainSignal();
+			}
+		},
+		[&](const LSWindowFocusEvent& focus)
+		{
+			if (focus.focusType == FocusType::Keyboard)
+			{
+				if (focus.focused)
+					sys->addBroadcastEvent("activate");
+				else
+				{
+					sys->getEngineData()->closeContextMenu();
+					sys->addBroadcastEvent("deactivate");
+				}
+			}
+		},
+		[&](const LSQuitEvent&) { sys->setShutdownFlag(); },
+		[](const LSEvent&) {}
+	));
 	return false;
 }
 bool initSDL()
@@ -261,7 +279,7 @@ bool initSDL()
 /* main loop handling */
 static int mainloop_runner(void* d)
 {
-	SDLEventLoop* th = (SDLEventLoop*)d;
+	IEventLoop* th = (IEventLoop*)d;
 	if (!initSDL())
 	{
 		LOG(LOG_ERROR,"Unable to initialize SDL:"<<SDL_GetError());
@@ -276,9 +294,8 @@ static int mainloop_runner(void* d)
 		while (th->waitEvent(ev, getSys()))
 		{
 			SystemState* sys = getSys();
-			SDL_Event* event = (SDL_Event*)ev.getEvent();
 
-			if (EngineData::mainloop_handleevent(event,sys))
+			if (EngineData::mainloop_handleevent(ev.toLSEvent(sys),sys))
 			{
 				delete th;
 				EngineData::mainthread_running = false;
@@ -296,7 +313,7 @@ void EngineData::mainloop_from_plugin(SystemState* sys)
 	setTLSSys(sys);
 	while (SDL_PollEvent(&event))
 	{
-		mainloop_handleevent(&event,sys);
+		mainloop_handleevent(SDLEvent(event).toLSEvent(sys),sys);
 	}
 	setTLSSys(nullptr);
 }

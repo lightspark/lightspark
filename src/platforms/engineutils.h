@@ -134,11 +134,12 @@ public:
 	virtual ~EngineData();
 	virtual bool isSizable() const = 0;
 	virtual void stopMainDownload() = 0;
+	virtual void handleQuit();
 	/* you may not call getWindowForGnash and showWindow on the same EngineData! */
 	virtual uint32_t getWindowForGnash()=0;
 	/* Runs 'func' in the mainLoopThread */
 	virtual void runInMainThread(SystemState* sys, void (*func) (SystemState*) );
-	static bool mainloop_handleevent(SDL_Event* event,SystemState* sys);
+	static bool mainloop_handleevent(const LSEvent& event, SystemState* sys);
 	static void mainloop_from_plugin(SystemState* sys);
 
 	// this is called when going to fulllscreen mode or opening a context menu from plugin, to keep handling of SDL events alive

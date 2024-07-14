@@ -50,7 +50,7 @@ public:
 	asAtomFREObjectInterface()
 	{
 	}
-	FREResult toBool(FREObject object, uint32_t *value)
+	FREResult toBool(FREObject object, uint32_t *value) override
 	{
 		ASWorker* wrk = getWorker();
 		if (!wrk || wrk->nativeExtensionCallCount==0)
@@ -59,7 +59,7 @@ public:
 		LOG(LOG_CALLS,"nativeExtension:toBool:"<<asAtomHandler::toDebugString(*(asAtom*)object));
 		return FRE_OK;
 	}
-	FREResult toUInt32(FREObject object, uint32_t *value)
+	FREResult toUInt32(FREObject object, uint32_t *value) override
 	{
 		ASWorker* wrk = getWorker();
 		if (!wrk || wrk->nativeExtensionCallCount==0)
@@ -90,6 +90,16 @@ public:
 			return FRE_WRONG_THREAD;
 		*object = value ? &asAtomHandler::trueAtom : &asAtomHandler::falseAtom;
 		LOG(LOG_CALLS,"nativeExtension:fromBool:"<<value);
+		return FRE_OK;
+	}
+	FREResult fromDouble(double value, FREObject* object) override
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromNumber(wrk,value,false));
+		*object = &wrk->nativeExtensionAtomlist.back();
+		LOG(LOG_CALLS,"nativeExtension:fromDouble:"<<value);
 		return FRE_OK;
 	}
 	FREResult fromInt32(int32_t value, FREObject* object) override
@@ -123,7 +133,7 @@ public:
 		LOG(LOG_CALLS,"nativeExtension:fromUTF8:"<<res->toDebugString());
 		return FRE_OK;
 	}
-	FREResult NewObject(const uint8_t* className, uint32_t argc, FREObject argv[], FREObject* object, FREObject* thrownException)
+	FREResult NewObject(const uint8_t* className, uint32_t argc, FREObject argv[], FREObject* object, FREObject* thrownException) override
 	{
 		ASWorker* wrk = getWorker();
 		if (!wrk || wrk->nativeExtensionCallCount==0)
@@ -165,7 +175,34 @@ public:
 		LOG(LOG_CALLS,"nativeExtension:NewObject created:"<<asAtomHandler::toDebugString(res));
 		return FRE_OK;
 	}
-	FREResult SetArrayLength(FREObject arrayOrVector, uint32_t length)
+	FREResult SetArrayElementAt(FREObject arrayOrVector, uint32_t index, FREObject value) override
+	{
+		ASWorker* wrk = getWorker();
+		if (!wrk || wrk->nativeExtensionCallCount==0)
+			return FRE_WRONG_THREAD;
+		if (arrayOrVector==nullptr || value==nullptr)
+			return FRE_INVALID_OBJECT;
+		
+		asAtom o = *(asAtom*)arrayOrVector;
+		if (asAtomHandler::isInvalid(o))
+			return FRE_INVALID_OBJECT;
+		
+		ASObject* obj = asAtomHandler::toObject(o,wrk);
+		asAtom v = *(asAtom*)value;
+		LOG(LOG_CALLS,"nativeExtension:setArrayElementAt:"<<index<<" "<<obj->toDebugString()<<" "<<asAtomHandler::toDebugString(v));
+		if (obj->is<Array>())
+		{
+			obj->as<Array>()->set(index,v);
+		}
+		else if (obj->is<Vector>())
+		{
+			obj->as<Vector>()->set(index,v);
+		}
+		else
+			return FRE_TYPE_MISMATCH;
+		return FRE_OK;
+	}	
+	FREResult SetArrayLength(FREObject arrayOrVector, uint32_t length) override
 	{
 		ASWorker* wrk = getWorker();
 		if (!wrk || wrk->nativeExtensionCallCount==0)
@@ -179,7 +216,6 @@ public:
 		
 		ASObject* obj = asAtomHandler::toObject(o,wrk);
 		LOG(LOG_CALLS,"nativeExtension:setArrayLength:"<<length<<" "<<obj->toDebugString());
-		
 		if (obj->is<Array>())
 			obj->as<Array>()->resize(length);
 		else if (obj->is<Vector>())
@@ -222,7 +258,7 @@ public:
 		}
 		return FRE_OK;
 	}
-	FREResult AcquireByteArray(FREObject object, FREByteArray* byteArrayToSet)
+	FREResult AcquireByteArray(FREObject object, FREByteArray* byteArrayToSet) override
 	{
 		ASWorker* wrk = getWorker();
 		if (!wrk || wrk->nativeExtensionCallCount==0)
@@ -239,7 +275,7 @@ public:
 		LOG(LOG_CALLS,"nativeExtension:AcquireByteArray:"<<obj->toDebugString()<<" "<<byteArrayToSet->length);
 		return FRE_OK;
 	}
-	FREResult ReleaseByteArray (FREObject object)
+	FREResult ReleaseByteArray (FREObject object) override
 	{
 		ASWorker* wrk = getWorker();
 		if (!wrk || wrk->nativeExtensionCallCount==0)
@@ -252,7 +288,7 @@ public:
 		LOG(LOG_CALLS,"nativeExtension:ReleaseByteArray:"<<obj->toDebugString());
 		return FRE_OK;
 	}
-	FREResult DispatchStatusEventAsync(FREContext ctx, const uint8_t* code, const uint8_t* level )
+	FREResult DispatchStatusEventAsync(FREContext ctx, const uint8_t* code, const uint8_t* level ) override
 	{
 		if (code==nullptr)
 			return FRE_INVALID_ARGUMENT;

@@ -127,8 +127,9 @@ FREResult FRENewObjectFromBool ( uint32_t value, FREObject* object)
 }
 FREResult FRENewObjectFromDouble(double value, FREObject* object)
 {
-	std::cerr << "FRE NOT_IMPLEMENTED:FRENewObjectFromDouble"<<std::endl;
-	return FRE_OK;
+	if (!object)
+		return FRE_INVALID_ARGUMENT;
+	return FREObjectConverter->fromDouble(value,object);
 }
 FREResult FRENewObjectFromInt32 ( int32_t value, FREObject* object)
 {
@@ -161,8 +162,9 @@ FREResult FREReleaseByteArray (FREObject object)
 }
 FREResult FRESetArrayElementAt ( FREObject arrayOrVector, uint32_t index, FREObject value )
 {
-	std::cerr << "FRE NOT_IMPLEMENTED:FRESetArrayElementAt"<<std::endl;
-	return FRE_ILLEGAL_STATE;
+	if (!arrayOrVector)
+		return FRE_INVALID_OBJECT;
+	return FREObjectConverter->SetArrayElementAt(arrayOrVector, index, value);
 }
 FREResult FRESetArrayLength(FREObject arrayOrVector, uint32_t length)
 {

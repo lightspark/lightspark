@@ -878,6 +878,7 @@ void RenderThread::commonGLResize()
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 }
 
+// TODO: Make this work with floats, instead of ints.
 void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 {
 	//We can skip the resize if the current size is correct
@@ -917,6 +918,11 @@ void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 	}
 	
 	event.signal();
+}
+
+void RenderThread::requestResize(const Vector2f& size, bool force)
+{
+	requestResize(size.x, size.y, force);
 }
 
 cairo_t* RenderThread::getCairoContext(int w, int h)

@@ -20,12 +20,13 @@
 #ifndef SCRIPTING_FLASH_EVENTS_FLASHEVENTS_H
 #define SCRIPTING_FLASH_EVENTS_FLASHEVENTS_H 1
 
-#include "compat.h"
 #include "asobject.h"
+#include "compat.h"
+#include "events.h"
 #include "threading.h"
 #include "tiny_string.h"
+#include "scripting/flash/ui/keycodes.h"
 #include <string>
-#include <SDL2/SDL_keycode.h>
 #undef MOUSE_EVENT
 
 namespace lightspark
@@ -113,14 +114,13 @@ class KeyboardEvent: public Event
 private:
 	Event* cloneImpl() const override ;
 
-	uint32_t modifiers;
-	uint32_t sdlScanCode;
-	ASPROPERTY_GETTER_SETTER(uint32_t, charCode);
-	ASPROPERTY_GETTER_SETTER(uint32_t, keyCode);
+	LSModifier modifiers;
+	ASPROPERTY_GETTER_SETTER(AS3KeyCode, charCode);
+	ASPROPERTY_GETTER_SETTER(AS3KeyCode, keyCode);
 	ASPROPERTY_GETTER_SETTER(uint32_t, keyLocation);
-	SDL_Keycode sdlkeycode;
 public:
-	KeyboardEvent(ASWorker* wrk, Class_base* c, tiny_string _type="", uint32_t _sdlcharcode=0, uint32_t _charcode=0, uint32_t _keycode=0, SDL_Keymod modifiers=KMOD_NONE, SDL_Keycode _sdlkeycode=SDLK_UNKNOWN);
+
+	KeyboardEvent(ASWorker* wrk, Class_base* c, tiny_string _type="", const AS3KeyCode& _charCode = AS3KEYCODE_UNKNOWN, const AS3KeyCode& _keyCode = AS3KEYCODE_UNKNOWN, const LSModifier& _modifiers = LSModifier::None);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_GETTER_SETTER(altKey);
@@ -129,11 +129,9 @@ public:
 	ASFUNCTION_GETTER_SETTER(ctrlKey);
 	ASFUNCTION_GETTER_SETTER(shiftKey);
 	ASFUNCTION_ATOM(updateAfterEvent);
-	uint32_t getSDLScanCode() const { return sdlScanCode; }
-	uint32_t getCharCode() const { return charCode; }
-	uint32_t getKeyCode() const { return keyCode; }
-	uint32_t getModifiers() const { return modifiers; }
-	SDL_Keycode getSDLKeyCode() const { return sdlkeycode; }
+	AS3KeyCode getCharCode() const { return charCode; }
+	AS3KeyCode getKeyCode() const { return keyCode; }
+	LSModifier getModifiers() const { return modifiers; }
 };
 
 class FocusEvent: public Event
@@ -252,12 +250,12 @@ public:
 class MouseEvent: public Event
 {
 private:
-	uint32_t modifiers; 
+	LSModifier modifiers;
 	Event* cloneImpl() const override;
 public:
 	MouseEvent(ASWorker* wrk, Class_base* c);
 	MouseEvent(ASWorker* wrk, Class_base* c, const tiny_string& t, number_t lx, number_t ly,
-		   bool b=true, SDL_Keymod _modifiers=KMOD_NONE,bool _buttonDown = false,
+		   bool b=true, const LSModifier& _modifiers = LSModifier::None, bool _buttonDown = false,
 		   _NR<InteractiveObject> relObj = NullRef, int32_t delta=1);
 	static void sinit(Class_base*);
 	void setTarget(asAtom t) override;

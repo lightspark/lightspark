@@ -84,12 +84,12 @@ ASFUNCTIONBODY_ATOM(AVM1Key,getCode)
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,getAscii)
 {
-	SDL_Keycode c = wrk->getSystemState()->getInputThread()->getLastKeyCode();
+	AS3KeyCode c = wrk->getSystemState()->getInputThread()->getLastKeyCode();
 	if ((c < 0x20) || (c > 0x80))
-		c = 0;
-	SDL_Keymod m = wrk->getSystemState()->getInputThread()->getLastKeyMod();
-	if (m & KMOD_SHIFT)
-		c = toupper(c);
+		c = AS3KEYCODE_UNKNOWN;
+	LSModifier m = wrk->getSystemState()->getInputThread()->getLastKeyMod();
+	if (m & LSModifier::Shift)
+		c = (AS3KeyCode)toupper((int)c);
 	asAtomHandler::setInt(ret,wrk,c);
 }
 

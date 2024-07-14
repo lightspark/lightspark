@@ -1652,8 +1652,8 @@ void TextField::defaultEventBehavior(_R<Event> e)
 	if (e->type == "keyDown")
 	{
 		KeyboardEvent* ev = e->as<KeyboardEvent>();
-		uint32_t modifiers = ev->getModifiers() & (KMOD_LSHIFT | KMOD_RSHIFT |KMOD_LCTRL | KMOD_RCTRL | KMOD_LALT | KMOD_RALT);
-		if (modifiers == KMOD_NONE)
+		const LSModifier& modifiers = ev->getModifiers();
+		if (modifiers == LSModifier::None)
 		{
 			switch (ev->getKeyCode())
 			{
@@ -1694,7 +1694,7 @@ void TextField::defaultEventBehavior(_R<Event> e)
 			switch (ev->getKeyCode())
 			{
 				case AS3KEYCODE_V:
-					if (modifiers & KMOD_CTRL)
+					if (modifiers & LSModifier::Ctrl)
 					{
 						textInputChanged(tiny_string(SDL_GetClipboardText()));
 						handled = true;
@@ -1704,7 +1704,7 @@ void TextField::defaultEventBehavior(_R<Event> e)
 					break;
 			}
 			if (!handled)
-				LOG(LOG_NOT_IMPLEMENTED,"TextField keyDown event handling for modifier "<<modifiers<<" and char code "<<hex<<ev->getSDLScanCode());
+				LOG(LOG_NOT_IMPLEMENTED,"TextField keyDown event handling for modifier "<<modifiers<<" and char code "<<hex<<ev->getCharCode());
 		}
 	}
 }

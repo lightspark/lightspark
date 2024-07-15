@@ -26,6 +26,7 @@ namespace lightspark
 {
 
 /* forward declarations */
+struct FilterData;
 class SurfaceState;
 class CachedSurface;
 

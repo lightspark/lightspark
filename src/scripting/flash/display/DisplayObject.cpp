@@ -3104,6 +3104,17 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 
 void DisplayObject::AVM1SetVariableDirect(uint32_t nameId, asAtom v)
 {
+	// store as local, if it exists
+	auto itl = avm1locals.find(nameId);
+	if (itl != avm1locals.end())
+	{
+		ASObject* o = asAtomHandler::getObject(v);
+		if (o)
+			o->addStoredMember();
+		ASATOM_REMOVESTOREDMEMBER(itl->second);
+		itl->second = v;
+		return;
+	}
 	auto it = avm1variables.find(nameId);
 	if (it != avm1variables.end())
 	{

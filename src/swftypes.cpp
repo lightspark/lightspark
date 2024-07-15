@@ -1458,8 +1458,6 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPEVENTFLAGS& v)
 		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventDragOver not handled");
 	if (v.ClipEventData)
 		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventData not handled");
-	if (v.ClipEventKeyPress)
-		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventKeyPress not handled");
 	if (v.ClipEventDragOut)
 		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventDragOut not handled");
 	return s;

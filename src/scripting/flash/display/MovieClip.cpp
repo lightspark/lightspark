@@ -31,6 +31,7 @@
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Integer.h"
+#include "scripting/flash/ui/keycodes.h"
 
 #define FRAME_NOT_FOUND 0xffffffff //Used by getFrameIdBy*
 
@@ -767,8 +768,62 @@ bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 	{
 		for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
 		{
+			bool exec= false;
 			if( (e->type == "keyDown" && it->EventFlags.ClipEventKeyDown) ||
 				(e->type == "keyUp" && it->EventFlags.ClipEventKeyDown))
+				exec = true;
+			else if (e->type == "keyDown" && it->EventFlags.ClipEventKeyPress)
+			{
+				switch (it->KeyCode)
+				{
+					case 1:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_LEFT;
+						break;
+					case 2:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_RIGHT;
+						break;
+					case 3:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_HOME;
+						break;
+					case 4:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_END;
+						break;
+					case 5:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_INSERT;
+						break;
+					case 6:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_DELETE;
+						break;
+					case 8:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_BACKSPACE;
+						break;
+					case 13:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_ENTER;
+						break;
+					case 14:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_UP;
+						break;
+					case 15:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_DOWN;
+						break;
+					case 16:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_PAGE_UP;
+						break;
+					case 17:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_PAGE_DOWN;
+						break;
+					case 18:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_TAB;
+						break;
+					case 19:
+						exec = it->KeyCode == AS3KeyCode::AS3KEYCODE_ESCAPE;
+						break;
+					default:
+						exec = it->KeyCode == e->getCharCode();
+						break;
+				}
+			}
+			if (exec)
 			{
 				std::map<uint32_t,asAtom> m;
 				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
@@ -867,7 +922,8 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 		getSystemState()->stage->AVM1AddMouseListener(this);
 	}
 	if (clipactions.AllEventFlags.ClipEventKeyDown ||
-			clipactions.AllEventFlags.ClipEventKeyUp)
+		clipactions.AllEventFlags.ClipEventKeyUp ||
+		clipactions.AllEventFlags.ClipEventKeyPress)
 		getSystemState()->stage->AVM1AddKeyboardListener(this);
 
 	if (clipactions.AllEventFlags.ClipEventLoad)

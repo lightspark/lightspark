@@ -113,7 +113,7 @@ bool EngineData::mainloop_handleevent(const LSEvent& event, SystemState* sys)
 {
 	using FocusType = LSWindowFocusEvent::FocusType;
 
-	if (event.getType() == LSEvent::Type::Invalid)
+	if (event.isInvalid())
 		return false;
 	bool hasSys = sys != nullptr;
 	bool hasEngineData = hasSys && sys->getEngineData() != nullptr;

@@ -26,26 +26,14 @@ namespace lightspark
 {
 
 /* forward declarations */
-class Type;
-class Any;
-class Void;
-class ActivationType;
-class Class_base;
-class Template_base;
-class Class_object;
-class Prototype;
 class ObjectPrototype;
 class ObjectConstructor;
 class ArrayPrototype;
 class Activation_object;
 class Function_object;
-class IFunction;
 class Function;
 class FunctionPrototype;
 class SyntheticFunction;
-class AVM1Function;
-class Undefined;
-class Null;
 
 };
 #endif /* FORWARDS_SCRIPTING_TOPLEVEL_TOPLEVEL_H */

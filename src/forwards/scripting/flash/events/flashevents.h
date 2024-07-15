@@ -65,6 +65,7 @@ class SetLoaderContentEvent;
 class RootConstructedEvent;
 class LocalConnectionEvent;
 class IdleEvent;
+class GetMouseTargetEvent;
 class FlushEventBufferEvent;
 class FlushInvalidationQueueEvent;
 class ParseRPCMessageEvent;

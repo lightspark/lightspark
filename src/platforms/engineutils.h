@@ -28,6 +28,7 @@
 #include "forwards/timer.h"
 #include "forwards/swftypes.h"
 #include "forwards/backends/event_loop.h"
+#include "forwards/events.h"
 #include "forwards/backends/graphics.h"
 #include "interfaces/threading.h"
 #include "compat.h"
@@ -43,14 +44,8 @@ struct NVGcontext;
 namespace lightspark
 {
 
-#define LS_USEREVENT_INIT EngineData::userevent
-#define LS_USEREVENT_EXEC EngineData::userevent+1
-#define LS_USEREVENT_QUIT EngineData::userevent+2
-#define LS_USEREVENT_OPEN_CONTEXTMENU EngineData::userevent+3
-#define LS_USEREVENT_UPDATE_CONTEXTMENU EngineData::userevent+4
-#define LS_USEREVENT_SELECTITEM_CONTEXTMENU EngineData::userevent+5
-#define LS_USEREVENT_INTERACTIVEOBJECT_REMOVED_FOM_STAGE EngineData::userevent+6
-#define LS_USEREVENT_NEW_TIMER EngineData::userevent+7
+#define LS_USEREVENT_NOTIFY EngineData::userevent
+#define LS_USEREVENT_NEW_TIMER EngineData::userevent+1
 
 class SystemState;
 class StreamCache;
@@ -94,6 +89,10 @@ private:
 	ITickJob* sdleventtickjob;
 	std::string getsharedobjectfilename(const tiny_string &name);
 	virtual void glTexImage2Dintern(uint32_t type,int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize);
+
+	static Mutex eventMutex;
+	static std::list<LSEventStorage> events;
+	virtual void notifyEventLoop();
 protected:
 	tiny_string sharedObjectDatapath;
 	int32_t contextmenucurrentitem;
@@ -156,6 +155,10 @@ public:
 
 	static void checkForNativeAIRExtensions(std::vector<tiny_string>& extensions, char* fileName);
 	void addQuitEvent();
+	void pushEvent(const LSEvent& event);
+	void pushEventNoLock(const LSEvent& event);
+	static LSEventStorage popEvent();
+	static LSEventStorage popEventNoLock();
 	// local storage handling
 	virtual void setLocalStorageAllowedMarker(bool allowed);
 	virtual bool getLocalStorageAllowedMarker();
@@ -186,7 +189,7 @@ public:
 	void selectContextMenuItem();
 	void InteractiveObjectRemovedFromStage();
 
-	static bool sdl_needinit;
+	static bool needinit;
 	static bool enablerendering;
 	static bool mainthread_running;
 	static Semaphore mainthread_initialized;

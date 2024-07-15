@@ -21,6 +21,7 @@
 #define EVENTS_H 1
 
 #include "backends/geometry.h"
+#include "forwards/events.h"
 #include "forwards/scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/ui/keycodes.h"
 #include "utils/enum.h"
@@ -40,27 +41,6 @@ enum LSModifier
 	Alt = 1 << 2,
 	Super = 1 << 3,
 };
-
-// Input events.
-struct LSKeyEvent;
-struct LSMouseButtonEvent;
-struct LSMouseMoveEvent;
-struct LSMouseWheelEvent;
-struct LSTextEvent;
-// Non-input events.
-struct LSWindowResizedEvent;
-struct LSWindowMovedEvent;
-struct LSWindowExposedEvent;
-struct LSWindowFocusEvent;
-struct LSQuitEvent;
-// Misc events.
-struct LSInitEvent;
-struct LSExecEvent;
-struct LSOpenContextMenuEvent;
-struct LSUpdateContextMenuEvent;
-struct LSSelectItemContextMenuEvent;
-struct LSRemovedFromStageEvent;
-struct LSNewTimerEvent;
 
 using EventTypes = TypeList
 <
@@ -83,7 +63,8 @@ using EventTypes = TypeList
 	LSUpdateContextMenuEvent,
 	LSSelectItemContextMenuEvent,
 	LSRemovedFromStageEvent,
-	LSNewTimerEvent
+	LSNewTimerEvent,
+	LSNotifyEvent
 >;
 
 struct SizeVisitor
@@ -111,6 +92,7 @@ struct LSEvent
 		ContextMenu,
 		RemovedFromStage,
 		NewTimer,
+		Notify,
 	};
 	using EventType = Type;
 
@@ -438,6 +420,12 @@ struct LSNewTimerEvent : public LSEvent
 	constexpr LSNewTimerEvent() : LSEvent(EventType::NewTimer) {}
 };
 
+// TODO: Remove this once we can directly push all user events.
+struct LSNotifyEvent : public LSEvent
+{
+	constexpr LSNotifyEvent() : LSEvent(EventType::Notify) {}
+};
+
 // Wrapper/Container for returning, and storing `LSEvent`s.
 struct LSEventStorage
 {
@@ -507,6 +495,7 @@ constexpr VisitorReturnType<V, EventTypes> LSEvent::visit(V&& visitor)
 		}
 		case LSEvent::Type::RemovedFromStage: return visitor(static_cast<const LSRemovedFromStageEvent&>(*this)); break;
 		case LSEvent::Type::NewTimer: return visitor(static_cast<const LSNewTimerEvent&>(*this)); break;
+		case LSEvent::Type::Notify: return visitor(static_cast<const LSNotifyEvent&>(*this)); break;
 		// Invalid event, should be unreachable.
 		// TODO: Add `compat_unreachable()`, and use it here.
 		default: assert(false); break;

@@ -349,14 +349,6 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode, IEventLoop* _eventL
 	inputThread=new InputThread(this);
 
 	EngineData::userevent = SDL_RegisterEvents(3);
-	if (EngineData::sdl_needinit)
-	{
-		SDL_Event event;
-		SDL_zero(event);
-		event.type = LS_USEREVENT_INIT;
-		event.user.data1 = this;
-		SDL_PushEvent(&event);
-	}
 }
 
 void SystemState::setDownloadedPath(const tiny_string& p)
@@ -754,6 +746,8 @@ void SystemState::destroy()
 	renderThread=nullptr;
 	delete inputThread;
 	inputThread=nullptr;
+	if (getEngineData() != nullptr)
+		getEngineData()->addQuitEvent();
 	delete engineData;
 	engineData=nullptr;
 	eventLoop = nullptr;
@@ -1212,6 +1206,8 @@ void SystemState::setParamsAndEngine(EngineData* e, bool s)
 		static_NativeApplication_nativeApplication->setRefConstant();
 	}
 	
+	if (EngineData::needinit)
+		getEngineData()->pushEvent(LSInitEvent(this));
 	if(vmVersion)
 		addJob(new EngineCreator);
 }

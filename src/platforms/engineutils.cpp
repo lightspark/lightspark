@@ -63,12 +63,14 @@ using namespace lightspark;
 uint32_t EngineData::userevent = (uint32_t)-1;
 SDL_Thread* EngineData::mainLoopThread = nullptr;
 bool EngineData::mainthread_running = false;
-bool EngineData::sdl_needinit = true;
+bool EngineData::needinit = true;
 bool EngineData::enablerendering = true;
 SDL_Cursor* EngineData::handCursor = nullptr;
 SDL_Cursor* EngineData::arrowCursor = nullptr;
 SDL_Cursor* EngineData::ibeamCursor = nullptr;
 Semaphore EngineData::mainthread_initialized(0);
+Mutex EngineData::eventMutex;
+std::list<LSEventStorage> EngineData::events;
 EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr),
 	nvgcontext(nullptr),
 	width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false),
@@ -97,11 +99,7 @@ EngineData::~EngineData()
 
 void EngineData::runInMainThread(SystemState* sys, void (*func)(SystemState*))
 {
-	SDL_Event event;
-	SDL_zero(event);
-	event.type = LS_USEREVENT_EXEC;
-	event.user.data1 = (void*) func;
-	SDL_PushEvent(&event);
+	pushEvent(LSExecEvent(func));
 }
 
 void EngineData::handleQuit()
@@ -165,6 +163,7 @@ bool EngineData::mainloop_handleevent(const LSEvent& event, SystemState* sys)
 			isMiscType = false;
 			return false;
 		},
+		[&](const LSNotifyEvent& notify) { return false; },
 		[&](const LSEvent&) { isMiscType = false; return false; }
 	));
 
@@ -247,8 +246,8 @@ bool EngineData::mainloop_handleevent(const LSEvent& event, SystemState* sys)
 }
 bool initSDL()
 {
-	bool sdl_available = !EngineData::sdl_needinit;
-	if (EngineData::sdl_needinit)
+	bool sdl_available = !EngineData::needinit;
+	if (EngineData::needinit)
 	{
 		if (!EngineData::enablerendering)
 		{
@@ -294,8 +293,10 @@ static int mainloop_runner(void* d)
 		while (th->waitEvent(ev, getSys()))
 		{
 			SystemState* sys = getSys();
+			auto event = ev.toLSEvent(sys);
+			bool notified = event.event().has<LSNotifyEvent>();
 
-			if (EngineData::mainloop_handleevent(ev.toLSEvent(sys),sys))
+			if (EngineData::mainloop_handleevent(notified ? EngineData::popEvent() : event, sys))
 			{
 				delete th;
 				EngineData::mainthread_running = false;
@@ -308,7 +309,7 @@ static int mainloop_runner(void* d)
 void EngineData::mainloop_from_plugin(SystemState* sys)
 {
 	initSDL();
-	EngineData::sdl_needinit = false;
+	EngineData::needinit = false;
 	SDL_Event event;
 	setTLSSys(sys);
 	while (SDL_PollEvent(&event))
@@ -615,11 +616,41 @@ void EngineData::checkForNativeAIRExtensions(std::vector<tiny_string>& extension
 
 void EngineData::addQuitEvent()
 {
+	pushEvent(LSQuitEvent(LSQuitEvent::QuitType::User));
+	SDL_WaitThread(EngineData::mainLoopThread,nullptr);
+}
+
+void EngineData::pushEvent(const LSEvent& event)
+{
+	Locker l(EngineData::eventMutex);
+	pushEventNoLock(event);
+}
+
+void EngineData::pushEventNoLock(const LSEvent& event)
+{
+	EngineData::events.push_back(event);
+	notifyEventLoop();
+}
+
+LSEventStorage EngineData::popEvent()
+{
+	Locker l(EngineData::eventMutex);
+	return popEventNoLock();
+}
+
+LSEventStorage EngineData::popEventNoLock()
+{
+	LSEventStorage ret = EngineData::events.front();
+	EngineData::events.pop_front();
+	return ret;
+}
+
+void EngineData::notifyEventLoop()
+{
 	SDL_Event event;
 	SDL_zero(event);
-	event.type = LS_USEREVENT_QUIT;
+	event.type = LS_USEREVENT_NOTIFY;
 	SDL_PushEvent(&event);
-	SDL_WaitThread(EngineData::mainLoopThread,nullptr);
 }
 
 std::string EngineData::getsharedobjectfilename(const tiny_string& name)
@@ -780,26 +811,16 @@ void EngineData::updateContextMenuFromMouse(uint32_t windowID, int mousey)
 			}
 		}
 	}
-	SDL_Event event;
-	SDL_zero(event);
-	event.type = LS_USEREVENT_UPDATE_CONTEXTMENU;
-	event.user.data1 = (void*)new int(newselecteditem);
-	SDL_PushEvent(&event);
+	pushEvent(LSUpdateContextMenuEvent(newselecteditem));
 }
 
 void EngineData::selectContextMenuItem()
 {
-	SDL_Event event;
-	SDL_zero(event);
-	event.type = LS_USEREVENT_SELECTITEM_CONTEXTMENU;
-	SDL_PushEvent(&event);
+	pushEvent(LSSelectItemContextMenuEvent());
 }
 void EngineData::InteractiveObjectRemovedFromStage()
 {
-	SDL_Event event;
-	SDL_zero(event);
-	event.type = LS_USEREVENT_INTERACTIVEOBJECT_REMOVED_FOM_STAGE;
-	SDL_PushEvent(&event);
+	pushEvent(LSRemovedFromStageEvent());
 }
 
 void EngineData::selectContextMenuItemIntern()

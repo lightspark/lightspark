@@ -471,28 +471,11 @@ LSEventStorage SDLEvent::toLSEvent(SystemState* sys) const
 		{
 			switch (event.type-EngineData::userevent)
 			{
-				// LS_USEREVENT_INIT
-				case 0: return LSInitEvent((SystemState*)event.user.data1); break;
-				// LS_USEREVENT_EXEC
-				case 1: return LSExecEvent((LSExecEvent::Callback)event.user.data1); break;
-				// LS_USEREVENT_QUIT
-				case 2: return LSQuitEvent(QuitType::User); break;
-				// LS_USEREVENT_OPEN_CONTEXTMENU
-				case 3: return LSOpenContextMenuEvent((InteractiveObject*)event.user.data1); break;
-				// LS_USEREVENT_UPDATE_CONTEXTMENU
-				case 4:
-				{
-					int item = *(int*)event.user.data1;
-					delete (int*)event.user.data1;
-					return LSUpdateContextMenuEvent(item);
-					break;
-				}
-				// LS_USEREVENT_SELECTITEM_CONTEXTMENU
-				case 5: return LSSelectItemContextMenuEvent(); break;
-				// LS_USEREVENT_INTERACTIVE_OBJECT_REMOVED_FROM_STAGE
-				case 6: return LSRemovedFromStageEvent{}; break;
+				// LS_USEREVENT_NOTIFY
+				case 0: return LSNotifyEvent{}; break;
 				// LS_USEREVENT_NEWTIMER
-				case 7: return LSNewTimerEvent{}; break;
+				case 1: return LSNewTimerEvent{}; break;
+				default: break;
 			}
 			break;
 		}
@@ -583,41 +566,18 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 		},
 		[&](const LSQuitEvent& quit)
 		{
-			this->event.type = quit.quitType == QuitType::System ? SDL_QUIT : (SDL_EventType)LS_USEREVENT_QUIT;
-		},
-		// Misc events.
-		[&](const LSInitEvent& init)
-		{
-			this->event.type = LS_USEREVENT_INIT;
-			this->event.user.data1 = init.sys;
-		},
-		[&](const LSExecEvent& exec)
-		{
-			this->event.type = LS_USEREVENT_EXEC;
-			this->event.user.data1 = (void*)exec.callback;
-		},
-		[&](const LSOpenContextMenuEvent& open)
-		{
-			this->event.type = LS_USEREVENT_OPEN_CONTEXTMENU;
-			this->event.user.data1 = open.obj;
-		},
-		[&](const LSUpdateContextMenuEvent& update)
-		{
-			this->event.type = LS_USEREVENT_UPDATE_CONTEXTMENU;
-			this->event.user.data1 = new int(update.selectedItem);
-		},
-		[&](const LSSelectItemContextMenuEvent& selectItem)
-		{
-			this->event.type = LS_USEREVENT_SELECTITEM_CONTEXTMENU;
-		},
-		[&](const LSRemovedFromStageEvent& removedFromStage)
-		{
-			this->event.type = LS_USEREVENT_INTERACTIVEOBJECT_REMOVED_FOM_STAGE;
+			if (quit.quitType == QuitType::System)
+				this->event.type = SDL_QUIT;
 		},
 		[&](const LSNewTimerEvent& newTimer)
 		{
 			this->event.type = LS_USEREVENT_NEW_TIMER;
-		}
+		},
+		[&](const LSNotifyEvent& notify)
+		{
+			this->event.type = LS_USEREVENT_NOTIFY;
+		},
+		[&](const LSEvent&) {}
 	));
 	return *this;
 }

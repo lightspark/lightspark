@@ -29,13 +29,6 @@ namespace lightspark
 class InteractiveObject;
 class DisplayObjectContainer;
 class Sprite;
-struct FrameLabel_data;
-class FrameLabel;
-struct Scene_data;
-class Scene;
-class Frame;
-class FrameContainer;
-class MovieClip;
 struct AVM1scriptToExecute;
 class Stage;
 class StageScaleMode;

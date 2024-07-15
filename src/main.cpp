@@ -701,7 +701,6 @@ int main(int argc, char* argv[])
 	 */
 	sys->destroy();
 	int exitcode = sys->getExitCode();
-	sys->getEngineData()->addQuitEvent();
 
 	delete pt;
 	delete sys;

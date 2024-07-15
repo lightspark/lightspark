@@ -1591,7 +1591,7 @@ extern "C"
 			Log::redirect(envvar);
 		
 		Log::setLogLevel(log_level);
-		EngineData::sdl_needinit = false;
+		EngineData::needinit = false;
 		lightspark::SystemState::staticInit();
 		
 		LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2013 Alessandro Pignotti and others");

@@ -26,7 +26,6 @@ namespace lightspark
 {
 
 /* forward declarations */
-class LSEvent;
 class SDLEvent;
 class SDLEventLoop;
 class IEvent;

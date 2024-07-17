@@ -230,19 +230,37 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 				engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_BLEND);
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(feparent.filtertextureID);
 			}
-			sys->getRenderThread()->setModelView(m);
-			sys->getRenderThread()->setupRenderingState(state->alpha,ctxt.transformStack().transform().colorTransform,state->smoothing,state->blendmode);
 			bool maskactive = ctxt.isMaskActive();
 			if (maskactive)
 			{
 				// we have an active mask, so make sure it is applied to the texture being rendered
+				NVGcontext* nvgctxt = sys->getEngineData()->nvgcontext;
+				if (nvgctxt)
+				{
+					// hack: render an empty stroke to force filling the stencil buffer with the current mask
+					nvgBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
+					nvgBeginPath(nvgctxt);
+					nvgMoveTo(nvgctxt,0,0);
+					nvgStroke(nvgctxt);
+					nvgClosePath(nvgctxt);
+					nvgEndFrame(nvgctxt);
+					engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+					engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
+					engineData->exec_glUseProgram(((RenderThread&)ctxt).gpu_program);
+				}
 				engineData->exec_glEnable_GL_STENCIL_TEST();
 				engineData->exec_glStencilMask(0x7f);
 				engineData->exec_glStencilFunc(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_EQUAL,0x80,0x80);
 			}
+			sys->getRenderThread()->setModelView(m);
+			sys->getRenderThread()->setupRenderingState(state->alpha,ctxt.transformStack().transform().colorTransform,state->smoothing,state->blendmode);
 			sys->getRenderThread()->renderTextureToFrameBuffer(cachedFilterTextureID,size.x,size.y,nullptr,nullptr,false,true,false);
 			if (maskactive)
+			{
 				engineData->exec_glDisable_GL_STENCIL_TEST();
+				engineData->exec_glStencilMask(0xff);
+				engineData->exec_glStencilFunc(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_ALWAYS,0x00,0xff);
+			}
 			ctxt.transformStack().pop();
 			return;
 		}

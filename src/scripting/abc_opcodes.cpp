@@ -3076,6 +3076,7 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 	}
 	//Create the prototype object
 	f->prototype = _MR(new_asobject(th->worker));
+	f->prototype->addStoredMember();
 	f->prototype->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),asAtomHandler::fromObject(f),DECLARED_TRAIT,true,false);
 	return f;
 }

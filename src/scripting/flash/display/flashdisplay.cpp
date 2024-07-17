@@ -1057,7 +1057,11 @@ ASFUNCTIONBODY_ATOM(InteractiveObject,_getDoubleClickEnabled)
 
 bool InteractiveObject::destruct()
 {
-	contextMenu.reset();
+	if (contextMenu)
+	{
+		contextMenu->removeStoredMember();
+		contextMenu.fakeRelease();
+	}
 	mouseEnabled = true;
 	doubleClickEnabled =false;
 	accessibilityImplementation.reset();
@@ -1068,7 +1072,11 @@ bool InteractiveObject::destruct()
 }
 void InteractiveObject::finalize()
 {
-	contextMenu.reset();
+	if (contextMenu)
+	{
+		contextMenu->removeStoredMember();
+		contextMenu.fakeRelease();
+	}
 	accessibilityImplementation.reset();
 	focusRect.reset();
 	DisplayObject::finalize();
@@ -1148,10 +1156,18 @@ ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabEnabled)
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabIndex)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(InteractiveObject, focusRect) // stub
 
-void InteractiveObject::onContextMenu(_NR<ASObject> /*oldValue*/)
+void InteractiveObject::onContextMenu(_NR<ASObject> oldValue)
 {
+	if (oldValue)
+	{
+		oldValue.fakeRelease();
+		oldValue->removeStoredMember();
+	}
 	if (this->contextMenu->is<ContextMenu>())
+	{
 		this->contextMenu->as<ContextMenu>()->owner = this;
+		this->contextMenu->addStoredMember();
+	}
 }
 
 void DisplayObjectContainer::dumpDisplayList(unsigned int level)

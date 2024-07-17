@@ -44,6 +44,7 @@ public:
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 	uint32_t getTagID() const override;
 	float getScaleFactor() const override { return this->scaling; }
+	std::string toDebugString() const override;
 };
 
 }

@@ -995,6 +995,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				IFunction* c = asAtomHandler::as<IFunction>(subconstr);
 				c->setRefConstant();
 				c->prototype = _MNR(Class<ASObject>::getInstanceS(wrk));
+				c->prototype->addStoredMember();
 				c->prototype->incRef();
 				_NR<ASObject> probj = _MR(c->prototype);
 				c->setprop_prototype(probj);
@@ -1107,7 +1108,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				else
 				{
-					ASATOM_ADDSTOREDMEMBER(value);
+					ASObject* v = asAtomHandler::getObject(value);
+					if (v)
+						v->addStoredMember();
 					auto it = clip->avm1locals.find(nameID);
 					if (it == clip->avm1locals.end())
 						clip->avm1locals.insert(make_pair(nameID,value));
@@ -2231,6 +2234,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,act,context,funcparamnames,code,registernumber,flag1, flag2, flag3, flag4, flag5, flag6, flag7, flag8, flag9);
 				//Create the prototype object
 				f->prototype = _MR(new_asobject(f->getSystemState()->worker));
+				f->prototype->addStoredMember();
 				if (name == "")
 				{
 					for (uint32_t i = 0; i < paramnames.size(); i++)
@@ -2453,6 +2457,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,act,context,paramnames,code);
 				//Create the prototype object
 				f->prototype = _MR(new_asobject(f->getSystemState()->worker));
+				f->prototype->addStoredMember();
 				if (name == "")
 				{
 					for (uint32_t i = 0; i < paramnames.size(); i++)

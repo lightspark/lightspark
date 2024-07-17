@@ -741,6 +741,7 @@ IFunction* Class<IFunction>::getNopFunction()
 	IFunction* ret=new (this->memoryAccount) Function(getInstanceWorker(),this, ASNop);
 	//Similarly to newFunction, we must create a prototype object
 	ret->prototype = _MR(new_asobject(getInstanceWorker()));
+	ret->prototype->addStoredMember();
 	ret->incRef();
 	ret->prototype->setVariableByQName("constructor","",ret,DECLARED_TRAIT);
 	return ret;
@@ -1391,6 +1392,7 @@ FunctionPrototype::FunctionPrototype(ASWorker* wrk, Class_base* c, _NR<Prototype
 	prevPrototype=p;
 	//Add the prototype to the Nop function
 	this->prototype = _MR(new_asobject(wrk));
+	this->prototype->addStoredMember();
 	obj = this;
 	this->objfreelist=nullptr; // prototypes are not reusable
 	originalPrototypeVars = new_asobject(wrk);

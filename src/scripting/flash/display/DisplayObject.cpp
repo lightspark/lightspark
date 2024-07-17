@@ -340,7 +340,6 @@ void DisplayObject::prepareShutdown()
 		if (o)
 			o->prepareShutdown();
 	}
-	avm1locals.clear();
 	setParent(nullptr);
 }
 

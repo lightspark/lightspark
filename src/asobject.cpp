@@ -698,13 +698,13 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 		}
 		case GETTER_METHOD:
 		{
-			ASATOM_DECREF(obj->getter);
+			ASATOM_REMOVESTOREDMEMBER(obj->getter);
 			obj->getter=asAtomHandler::fromObject(o);
 			break;
 		}
 		case SETTER_METHOD:
 		{
-			ASATOM_DECREF(obj->setter);
+			ASATOM_REMOVESTOREDMEMBER(obj->setter);
 			obj->setter=asAtomHandler::fromObject(o);
 			break;
 		}
@@ -1383,11 +1383,15 @@ ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 	if (!getter.isNull())
 	{
 		ret = asAtomHandler::trueAtom;
+		getter->incRef();
+		getter->addStoredMember();
 		asAtomHandler::toObject(obj,wrk)->setDeclaredMethodByQName(name,"",getter.getPtr(),GETTER_METHOD,false);
 	}
 	if (!setter.isNull())
 	{
 		ret = asAtomHandler::trueAtom;
+		setter->incRef();
+		setter->addStoredMember();
 		asAtomHandler::toObject(obj,wrk)->setDeclaredMethodByQName(name,"",setter.getPtr(),SETTER_METHOD,false);
 	}
 }
@@ -1796,8 +1800,12 @@ void variables_map::destroyContents()
 			Variables.erase(it);
 			if (o)
 				o->removeStoredMember();
-			ASATOM_DECREF(setter);
-			ASATOM_DECREF(getter);
+			o = asAtomHandler::getObject(getter);
+			if (o)
+				o->removeStoredMember();
+			o = asAtomHandler::getObject(setter);
+			if (o)
+				o->removeStoredMember();
 		}
 		else
 			Variables.erase(it);
@@ -1988,7 +1996,10 @@ void ASObject::removeStoredMember()
 	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1))
 	{
 		if (getInstanceWorker()->isInGarbageCollection() || this->markedforgarbagecollection)
+		{
 			handleGarbageCollection();
+			getInstanceWorker()->setDeletedInGarbageCollection(this);
+		}
 		else
 		{
 			getInstanceWorker()->addObjectToGarbageCollector(this);

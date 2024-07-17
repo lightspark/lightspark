@@ -100,3 +100,12 @@ uint32_t MorphShape::getTagID() const
 {
 	return morphshapetag ? morphshapetag->getId():UINT32_MAX;
 }
+
+string MorphShape::toDebugString() const
+{
+	std::string res = DisplayObject::toDebugString();
+	char buf[100];
+	sprintf(buf," ratio=%u",currentratio);
+	res += buf;
+	return res;
+}

@@ -63,7 +63,9 @@ public:
 		if (closure_this)
 			closure_this->removeStoredMember();
 		closure_this=nullptr;
-		prototype.reset();
+		if (prototype)
+			prototype->removeStoredMember();
+		prototype.fakeRelease();
 		return destructIntern();
 	}
 	inline void finalize() override
@@ -73,7 +75,9 @@ public:
 		if (closure_this)
 			closure_this->removeStoredMember();
 		closure_this=nullptr;
-		prototype.reset();
+		if (prototype)
+			prototype->removeStoredMember();
+		prototype.fakeRelease();
 	}
 	
 	void prepareShutdown() override;

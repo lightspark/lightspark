@@ -73,7 +73,25 @@ bool IFunction::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	return ret;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(IFunction,prototype)
+ASFUNCTIONBODY_GETTER(IFunction,prototype)
+void IFunction::_setter_prototype(asAtom& ret,ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen)
+{
+	if(!asAtomHandler::is<IFunction>(obj))
+	{
+		createError<ArgumentError>(wrk,0,"Function applied to wrong object");
+		return;
+	}
+	IFunction* th = asAtomHandler::as<IFunction>(obj);
+	if(argslen != 1)
+	{
+		createError<ArgumentError>(wrk,0,"Arguments provided in setter");
+		return;
+	}
+	th->prototype = _MR(asAtomHandler::toObject(args[0],wrk));
+	th->prototype->incRef();
+	th->prototype->addStoredMember();
+}
+
 ASFUNCTIONBODY_ATOM(IFunction,_length)
 {
 	if (asAtomHandler::is<IFunction>(obj))

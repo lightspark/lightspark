@@ -28,6 +28,7 @@ class TimeSpec
 private:
 	uint64_t sec;
 	uint64_t nsec;
+	constexpr TimeSpec(uint64_t secs, uint64_t nsecs) : sec(secs), nsec(nsecs) {}
 public:
 
 	static constexpr uint64_t usPerSec = 1000000;
@@ -35,7 +36,7 @@ public:
 	static constexpr uint64_t nsPerMs = 1000000;
 	static constexpr uint64_t nsPerUs = 1000;
 
-	constexpr TimeSpec(uint64_t secs = 0, uint64_t nsecs = 0) : sec(secs), nsec(nsecs) {}
+	constexpr TimeSpec() : sec(0), nsec(0) {}
 
 	static constexpr TimeSpec fromFloat(float secs) { return fromNs(secs * nsPerSec); }
 	static constexpr TimeSpec fromFloatUs(float secs) { return fromUs(secs * usPerSec); }

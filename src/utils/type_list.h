@@ -28,4 +28,3 @@ struct TypeList {};
 
 };
 #endif /* UTILS_TYPE_LIST_H */
-

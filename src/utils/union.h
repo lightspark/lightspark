@@ -45,5 +45,3 @@ struct UnionAlign<TypeList<Args...>>
 
 };
 #endif /* UTILS_UNION_H */
-
-

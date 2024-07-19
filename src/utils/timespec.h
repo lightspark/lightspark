@@ -77,6 +77,9 @@ public:
 	TimeSpec& operator+=(const TimeSpec& other) { return *this = *this + other; }
 	TimeSpec& operator-=(const TimeSpec& other) { return *this = *this - other; }
 
+	TimeSpec absDiff(const TimeSpec& other) { return *this >= other ? *this - other : other - *this; }
+	TimeSpec saturatingSub(const TimeSpec& other) { return *this >= other ? *this - other : TimeSpec(); }
+
 	operator struct timespec() const
 	{
 		struct timespec ret;

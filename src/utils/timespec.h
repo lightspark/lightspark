@@ -52,19 +52,30 @@ public:
 	constexpr bool operator>=(const TimeSpec &other) const { return sec > other.sec || (sec == other.sec && nsec >= other.nsec); }
 	constexpr bool operator<=(const TimeSpec &other) const { return sec < other.sec || (sec == other.sec && nsec <= other.nsec); }
 
-	TimeSpec operator-(const TimeSpec &other) const { return TimeSpec(sec - other.sec, nsec - other.nsec).normalize(); }
-	TimeSpec operator+(const TimeSpec &other) const { return TimeSpec(sec + other.sec, nsec + other.nsec).normalize(); }
+	TimeSpec operator-(const TimeSpec &other) const
+	{
+		bool negNs = nsec < other.nsec;
+		return TimeSpec
+		(
+			sec - other.sec - negNs,
+			(negNs ? nsec + nsPerSec : nsec) - other.nsec
+
+		);
+	}
+
+	TimeSpec operator+(const TimeSpec &other) const
+	{
+		auto nsecs = nsec + other.nsec;
+		bool addSec = nsecs >= nsPerSec;
+		return TimeSpec
+		(
+			sec + other.sec + addSec,
+			nsecs - (addSec ? nsPerSec : 0)
+		);
+	}
 
 	TimeSpec &operator+=(const TimeSpec &other) { return *this = *this + other; }
 	TimeSpec &operator-=(const TimeSpec &other) { return *this = *this - other; }
-
-	TimeSpec &normalize()
-	{
-		auto normal_secs = ((int64_t)nsec >= 0 ? nsec : nsec - (nsPerSec-1)) / nsPerSec;
-		sec += normal_secs;
-		nsec -= normal_secs * nsPerSec;
-		return *this;
-	}
 
 	operator struct timespec() const
 	{

@@ -196,6 +196,7 @@ public:
 		}
 		else if (obj->is<Vector>())
 		{
+			ASATOM_INCREF(v);
 			obj->as<Vector>()->set(index,v);
 		}
 		else
@@ -242,6 +243,7 @@ public:
 		m.name_type= multiname::NAME_STRING;
 		tiny_string s((const char*)propertyName);
 		m.name_s_id= getSys()->getUniqueStringId(s);
+		ASATOM_INCREF(*(asAtom*)propertyValue);
 		obj->setVariableByMultiname(m,*(asAtom*)propertyValue,ASObject::CONST_NOT_ALLOWED,nullptr,obj->getInstanceWorker());
 		LOG(LOG_CALLS,"nativeExtension:setObjectProperty:"<<m<<" "<<obj->toDebugString()<<" "<<asAtomHandler::toDebugString(*(asAtom*)propertyValue));
 		

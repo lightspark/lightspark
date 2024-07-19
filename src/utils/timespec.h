@@ -45,14 +45,14 @@ public:
 	static constexpr TimeSpec fromUs(uint64_t us) { return fromNs(us * nsPerUs); }
 	static constexpr TimeSpec fromNs(uint64_t ns) { return TimeSpec(ns / nsPerSec, ns % nsPerSec); }
 
-	constexpr bool operator==(const TimeSpec &other) const { return sec == other.sec && nsec == other.nsec; }
-	constexpr bool operator!=(const TimeSpec &other) const { return sec != other.sec || nsec != other.nsec; }
-	constexpr bool operator>(const TimeSpec &other) const { return sec > other.sec || (sec == other.sec && nsec > other.nsec); }
-	constexpr bool operator<(const TimeSpec &other) const { return sec < other.sec || (sec == other.sec && nsec < other.nsec); }
-	constexpr bool operator>=(const TimeSpec &other) const { return sec > other.sec || (sec == other.sec && nsec >= other.nsec); }
-	constexpr bool operator<=(const TimeSpec &other) const { return sec < other.sec || (sec == other.sec && nsec <= other.nsec); }
+	constexpr bool operator==(const TimeSpec& other) const { return sec == other.sec && nsec == other.nsec; }
+	constexpr bool operator!=(const TimeSpec& other) const { return sec != other.sec || nsec != other.nsec; }
+	constexpr bool operator>(const TimeSpec& other) const { return sec > other.sec || (sec == other.sec && nsec > other.nsec); }
+	constexpr bool operator<(const TimeSpec& other) const { return sec < other.sec || (sec == other.sec && nsec < other.nsec); }
+	constexpr bool operator>=(const TimeSpec& other) const { return sec > other.sec || (sec == other.sec && nsec >= other.nsec); }
+	constexpr bool operator<=(const TimeSpec& other) const { return sec < other.sec || (sec == other.sec && nsec <= other.nsec); }
 
-	TimeSpec operator-(const TimeSpec &other) const
+	TimeSpec operator-(const TimeSpec& other) const
 	{
 		bool negNs = nsec < other.nsec;
 		return TimeSpec
@@ -63,7 +63,7 @@ public:
 		);
 	}
 
-	TimeSpec operator+(const TimeSpec &other) const
+	TimeSpec operator+(const TimeSpec& other) const
 	{
 		auto nsecs = nsec + other.nsec;
 		bool addSec = nsecs >= nsPerSec;
@@ -74,8 +74,8 @@ public:
 		);
 	}
 
-	TimeSpec &operator+=(const TimeSpec &other) { return *this = *this + other; }
-	TimeSpec &operator-=(const TimeSpec &other) { return *this = *this - other; }
+	TimeSpec& operator+=(const TimeSpec& other) { return *this = *this + other; }
+	TimeSpec& operator-=(const TimeSpec& other) { return *this = *this - other; }
 
 	operator struct timespec() const
 	{

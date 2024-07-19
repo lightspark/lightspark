@@ -23,6 +23,7 @@
 #include "asobject.h"
 #include "interfaces/threading.h"
 #include "interfaces/timer.h"
+#include "utils/timespec.h"
 #include "interfaces/backends/event_loop.h"
 #include "backends/graphics.h"
 #include "backends/urlutils.h"
@@ -295,6 +296,7 @@ public:
 	uint64_t getCurrentTime_ms() const { return time->getCurrentTime_ms(); }
 	uint64_t getCurrentTime_us() const { return time->getCurrentTime_us(); }
 	uint64_t getCurrentTime_ns() const { return time->getCurrentTime_ns(); }
+	TimeSpec now() const { return time->now(); }
 	void sleep_ms(uint32_t ms) { return time->sleep_ms(ms); }
 	void sleep_us(uint32_t us) { return time->sleep_us(us); }
 	void sleep_ns(uint64_t ns) { return time->sleep_ns(ns); }

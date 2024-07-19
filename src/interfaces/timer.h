@@ -20,6 +20,7 @@
 #ifndef INTERFACES_TIMER_H
 #define INTERFACES_TIMER_H 1
 
+#include "forwards/utils/timespec.h"
 #include <cstdint>
 
 namespace lightspark
@@ -56,6 +57,8 @@ public:
 	virtual uint64_t getCurrentTime_us() const = 0;
 	/* Gets the current system time in nanoseconds. */
 	virtual uint64_t getCurrentTime_ns() const = 0;
+	/* Gets the current system time in TimeSpec form. */
+	virtual TimeSpec now() const = 0;
 	/* Sleep for `ms` milliseconds. */
 	virtual void sleep_ms(uint32_t ms) = 0;
 	/* Sleep for `us` microseconds. */

@@ -471,8 +471,6 @@ LSEventStorage SDLEvent::toLSEvent(SystemState* sys) const
 		{
 			switch (event.type-EngineData::userevent)
 			{
-				// LS_USEREVENT_NOTIFY
-				case 0: return LSNotifyEvent{}; break;
 				// LS_USEREVENT_NEWTIMER
 				case 1: return LSNewTimerEvent{}; break;
 				default: break;
@@ -573,16 +571,12 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 		{
 			this->event.type = LS_USEREVENT_NEW_TIMER;
 		},
-		[&](const LSNotifyEvent& notify)
-		{
-			this->event.type = LS_USEREVENT_NOTIFY;
-		},
 		[&](const LSEvent&) {}
 	));
 	return *this;
 }
 
-bool SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
+std::pair<bool, bool> SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 {
 	SDLEvent& ev = static_cast<SDLEvent&>(event);
 	Locker l(listMutex);
@@ -600,10 +594,16 @@ bool SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 		int gotEvent = SDL_WaitEventTimeout(&ev.event, delay);
 		l.acquire();
 		if (gotEvent && ev.event.type != LS_USEREVENT_NEW_TIMER)
-			return true;
+			return std::make_pair
+			(
+				// gotEvent
+				true,
+				// notified
+				ev.event.type == LS_USEREVENT_NOTIFY
+			);
 
 		if (sys != nullptr && sys->isShuttingDown())
-			return false;
+			return std::make_pair(false, false);
 		if (timers.empty())
 			continue;
 

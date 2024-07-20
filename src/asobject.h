@@ -781,6 +781,7 @@ public:
 		bool noNS = mname.ns.empty(); // no Namespace in multiname means we check for the empty Namespace
 		auto nsIt=mname.ns.begin();
 		
+		variable* res = nullptr;
 		//Find the namespace
 		while(ret!=Variables.end() && ret->first==name)
 		{
@@ -790,6 +791,7 @@ public:
 			{
 				if(ret->second.kind & traitKinds)
 				{
+					res = &ret->second;
 					if (asAtomHandler::isValid(ret->second.var) || asAtomHandler::isValid(ret->second.setter))
 						return &ret->second;
 					else
@@ -808,7 +810,7 @@ public:
 					}
 				}
 				else
-					return nullptr;
+					return res;
 			}
 			else if (noNS)
 			{
@@ -824,7 +826,7 @@ public:
 				}
 			}
 		}
-		return nullptr;
+		return res;
 	}
 	
 	//Initialize a new variable specifying the type (TODO: add support for const)

@@ -30,6 +30,22 @@ template<typename... Ts>
 using CommonType = typename std::common_type<Ts...>::type;
 template<typename T>
 using ResultOf = typename std::result_of<T>::type;
+template<bool B, typename T>
+using EnableIf = typename std::enable_if<B, T>::type;
+template<typename T>
+using Decay = typename std::decay<T>::type;
+template<typename T>
+using RemoveCV = typename std::remove_cv<T>::type;
+template<typename T>
+using RemoveRef = typename std::remove_reference<T>::type;
+template<typename T>
+using RemoveCVRef = RemoveCV<RemoveRef<T>>;
+
+template<typename T, template<typename...> typename U>
+struct IsSpecializationOf : std::false_type {};
+
+template<template<typename...> typename T, typename... Args>
+struct IsSpecializationOf<T<Args...>, T> : std::true_type {};
 
 template<size_t I, size_t... Args>
 struct StaticMin;

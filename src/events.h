@@ -63,8 +63,7 @@ using EventTypes = TypeList
 	LSUpdateContextMenuEvent,
 	LSSelectItemContextMenuEvent,
 	LSRemovedFromStageEvent,
-	LSNewTimerEvent,
-	LSNotifyEvent
+	LSNewTimerEvent
 >;
 
 struct SizeVisitor
@@ -92,7 +91,6 @@ struct LSEvent
 		ContextMenu,
 		RemovedFromStage,
 		NewTimer,
-		Notify,
 	};
 	using EventType = Type;
 
@@ -420,12 +418,6 @@ struct LSNewTimerEvent : public LSEvent
 	constexpr LSNewTimerEvent() : LSEvent(EventType::NewTimer) {}
 };
 
-// TODO: Remove this once we can directly push all user events.
-struct LSNotifyEvent : public LSEvent
-{
-	constexpr LSNotifyEvent() : LSEvent(EventType::Notify) {}
-};
-
 // Wrapper/Container for returning, and storing `LSEvent`s.
 struct LSEventStorage
 {
@@ -495,7 +487,6 @@ constexpr VisitorReturnType<V, EventTypes> LSEvent::visit(V&& visitor) const
 		}
 		case LSEvent::Type::RemovedFromStage: return visitor(static_cast<const LSRemovedFromStageEvent&>(*this)); break;
 		case LSEvent::Type::NewTimer: return visitor(static_cast<const LSNewTimerEvent&>(*this)); break;
-		case LSEvent::Type::Notify: return visitor(static_cast<const LSNotifyEvent&>(*this)); break;
 		// Invalid event, should be unreachable.
 		// TODO: Add `compat_unreachable()`, and use it here.
 		default: assert(false); break;

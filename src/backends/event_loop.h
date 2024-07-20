@@ -70,8 +70,11 @@ private:
 public:
 	SDLEventLoop(ITime* time) : IEventLoop(time) {}
 	// Wait indefinitely for an event.
-	// Returns true if we got an event, or false if an error occured.
-	bool waitEvent(IEvent& event, SystemState* sys) override;
+	// First bool returns true if we got an event, or false if an
+	// error occured.
+	// Second bool returns true if we've been notified of a
+	// non-platform event (if supported), and false otherwise.
+	std::pair<bool, bool> waitEvent(IEvent& event, SystemState* sys) override;
 	// Adds a repating tick job to the timer list.
 	void addTick(uint32_t tickTime, ITickJob* job) override;
 	// Adds a single-shot tick job to the timer list.

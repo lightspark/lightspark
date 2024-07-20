@@ -55,8 +55,11 @@ public:
 	IEventLoop(ITime* _time) : time(_time) {}
 	virtual ~IEventLoop() {}
 	// Wait indefinitely for an event.
-	// Returns true if we got an event, or false if an error occured.
-	virtual bool waitEvent(IEvent& event, SystemState* sys) = 0;
+	// First bool returns true if we got an event, or false if an
+	// error occured.
+	// Second bool returns true if we've been notified of a
+	// non-platform event (if supported), and false otherwise.
+	virtual std::pair<bool, bool> waitEvent(IEvent& event, SystemState* sys) = 0;
 	// Adds a repating tick job to the timer list.
 	virtual void addTick(uint32_t tickTime, ITickJob* job) = 0;
 	// Adds a single-shot tick job to the timer list.

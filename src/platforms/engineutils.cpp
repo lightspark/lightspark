@@ -168,7 +168,6 @@ bool EngineData::mainloop_handleevent(const LSEvent& event, SystemState* sys)
 			isMiscType = false;
 			return false;
 		},
-		[&](const LSNotifyEvent& notify) { return false; },
 		[&](const LSEvent&) { isMiscType = false; return false; }
 	));
 
@@ -295,13 +294,14 @@ static int mainloop_runner(void* d)
 		EngineData::mainthread_running = true;
 		EngineData::mainthread_initialized.signal();
 		SDLEvent ev;
-		while (th->waitEvent(ev, getSys()))
+		bool gotEvent;
+		bool notified;
+		auto pair = std::tie(gotEvent, notified);
+		while (pair = th->waitEvent(ev, getSys()), gotEvent)
 		{
 			SystemState* sys = getSys();
-			auto event = ev.toLSEvent(sys);
-			bool notified = event.event().has<LSNotifyEvent>();
 
-			if (EngineData::mainloop_handleevent(notified ? EngineData::popEvent() : event, sys))
+			if (EngineData::mainloop_handleevent(notified ? EngineData::popEvent() : ev.toLSEvent(sys), sys))
 			{
 				delete th;
 				EngineData::mainthread_running = false;

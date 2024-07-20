@@ -773,6 +773,60 @@ public:
 		return nullptr;
 	}
 	
+	FORCE_INLINE variable* findVarOrSetter(SystemState* sys,const multiname& mname, uint32_t traitKinds)
+	{
+		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
+		
+		var_iterator ret=Variables.find(name);
+		bool noNS = mname.ns.empty(); // no Namespace in multiname means we check for the empty Namespace
+		auto nsIt=mname.ns.begin();
+		
+		//Find the namespace
+		while(ret!=Variables.end() && ret->first==name)
+		{
+			//breaks when the namespace is not found
+			const nsNameAndKind& ns=ret->second.ns;
+			if((noNS && ns.hasEmptyName()) || (!noNS && ns==*nsIt))
+			{
+				if(ret->second.kind & traitKinds)
+				{
+					if (asAtomHandler::isValid(ret->second.var) || asAtomHandler::isValid(ret->second.setter))
+						return &ret->second;
+					else
+					{
+						if (noNS)
+							++ret;
+						else
+						{
+							++nsIt;
+							if(nsIt==mname.ns.cend())
+							{
+								nsIt=mname.ns.cbegin();
+								++ret;
+							}
+						}
+					}
+				}
+				else
+					return nullptr;
+			}
+			else if (noNS)
+			{
+				++ret;
+			}
+			else
+			{
+				++nsIt;
+				if(nsIt==mname.ns.cend())
+				{
+					nsIt=mname.ns.cbegin();
+					++ret;
+				}
+			}
+		}
+		return nullptr;
+	}
+	
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(multiname &mname, asAtom &obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
 	void killObjVar(SystemState* sys, const multiname& mname);

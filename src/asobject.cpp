@@ -829,7 +829,7 @@ void ASObject::setVariableByMultiname_i(multiname& name, int32_t value, ASWorker
 
 variable* ASObject::findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter)
 {
-	variable* ret=map.findObjVar(sys,name,NO_CREATE_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
+	variable* ret=map.findVarOrSetter(sys,name,DECLARED_TRAIT|DYNAMIC_TRAIT);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
@@ -1128,7 +1128,7 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 			if(ret->second.kind & traitKinds)
 				return &ret->second;
 			else
-				return NULL;
+				return nullptr;
 		}
 		else if (noNS)
 		{
@@ -1147,7 +1147,7 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 
 	//Name not present, insert it, if the multiname has a single ns and if we have to insert it
 	if(createKind==NO_CREATE_TRAIT)
-		return NULL;
+		return nullptr;
 	if(createKind == DYNAMIC_TRAIT)
 	{
 		var_iterator inserted=Variables.insert(Variables.cbegin(),

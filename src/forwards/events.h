@@ -47,8 +47,6 @@ struct LSOpenContextMenuEvent;
 struct LSUpdateContextMenuEvent;
 struct LSSelectItemContextMenuEvent;
 struct LSRemovedFromStageEvent;
-struct LSNewTimerEvent;
-struct LSNotifyEvent;
 struct LSEventStorage;
 
 };

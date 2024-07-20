@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2010-2013  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -25,6 +26,7 @@
 #include "utils/timespec.h"
 #include "compat.h"
 #include <list>
+#include <set>
 #include <ctime>
 #include "threading.h"
 
@@ -86,6 +88,67 @@ public:
 	 */
 	void removeJob(ITickJob* job);
 	void removeJob_noLock(ITickJob* job);
+};
+
+struct LSTimer
+{
+	enum Type
+	{
+		Wait,
+		Tick,
+		Frame,
+	};
+	Type type;
+	TimeSpec startTime;
+	TimeSpec timeout;
+	ITickJob* job;
+
+	TimeSpec deadline() const { return startTime + timeout; }
+	bool isWait() const { return type == Type::Wait; }
+	bool isTick() const { return type == Type::Tick; }
+	bool isFrame() const { return type == Type::Frame; }
+
+	bool operator==(const LSTimer& other) const { return deadline() == other.deadline(); }
+	bool operator!=(const LSTimer& other) const { return deadline() != other.deadline(); }
+	bool operator>=(const LSTimer& other) const { return deadline() >= other.deadline(); }
+	bool operator<=(const LSTimer& other) const { return deadline() <= other.deadline(); }
+	bool operator>(const LSTimer& other) const { return deadline() > other.deadline(); }
+	bool operator<(const LSTimer& other) const { return deadline() < other.deadline(); }
+};
+
+class LSTimers
+{
+	using TimerType = LSTimer::Type;
+private:
+	Mutex timerMutex;
+	std::multiset<LSTimer> timers;
+	TimeSpec currentTime;
+	TimeSpec curFrameTime;
+	TimeSpec nextFrameTime;
+	SystemState* sys;
+
+	// Maximum timer ticks per call to `updateTimers()`.
+	static constexpr int maxTicks = 10;
+
+	void pushTimer(const LSTimer& timer);
+	void pushTimerNoLock(const LSTimer& timer);
+	LSTimer popTimer();
+	LSTimer popTimerNoLock();
+	const LSTimer& peekTimer();
+	const LSTimer& peekTimerNoLock() const;
+
+	void addJob(const TimeSpec& time, const TimerType& type, ITickJob* job);
+	TimeSpec getFrameRate() const;
+public:
+	LSTimers(SystemState* _sys) : sys(_sys) {}
+
+	void addTick(const TimeSpec& tickTime, ITickJob* job) { addJob(tickTime, TimerType::Tick, job); }
+	void addFrameTick(ITickJob* job) { addJob(getFrameRate(), TimerType::Frame, job); }
+	void addWait(const TimeSpec& waitTime, ITickJob* job) { addJob(waitTime, TimerType::Wait, job); }
+	void removeJob(ITickJob* job);
+	void removeJobNoLock(ITickJob* job);
+	TimeSpec updateTimers(const TimeSpec& delta);
+	const LSTimer& getCurrentTimer() { return peekTimer(); }
 };
 
 class Chronometer

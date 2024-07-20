@@ -466,17 +466,7 @@ LSEventStorage SDLEvent::toLSEvent(SystemState* sys) const
 			break;
 		}
 		case SDL_QUIT: return LSQuitEvent(QuitType::System); break;
-		// Misc events.
-		default:
-		{
-			switch (event.type-EngineData::userevent)
-			{
-				// LS_USEREVENT_NEWTIMER
-				case 1: return LSNewTimerEvent{}; break;
-				default: break;
-			}
-			break;
-		}
+		default: break;
 	}
 	return LSEvent();
 }
@@ -567,10 +557,6 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 			if (quit.quitType == QuitType::System)
 				this->event.type = SDL_QUIT;
 		},
-		[&](const LSNewTimerEvent& newTimer)
-		{
-			this->event.type = LS_USEREVENT_NEW_TIMER;
-		},
 		[&](const LSEvent&) {}
 	));
 	return *this;
@@ -579,21 +565,20 @@ IEvent& SDLEvent::fromLSEvent(const LSEvent& event)
 std::pair<bool, bool> SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 {
 	SDLEvent& ev = static_cast<SDLEvent&>(event);
-	Locker l(listMutex);
+	bool hasSys = sys != nullptr;
+
+	if (!deadline.hasValue() && hasSys)
+	{
+		startTime = time->now();
+		deadline = time->now() + sys->timeUntilNextTick();
+	}
+
 	for (;;)
 	{
 		int64_t delay = -1;
-		if (!timers.empty())
-		{
-			auto now = TimeSpec::fromNs(time->getCurrentTime_ns());
-			auto deadline = timers.front().deadline();
-			delay = now < deadline ? (deadline - now).toMsRound() : 0;
-		}
-
-		l.release();
-		int gotEvent = SDL_WaitEventTimeout(&ev.event, delay);
-		l.acquire();
-		if (gotEvent && ev.event.type != LS_USEREVENT_NEW_TIMER)
+		if (hasSys)
+			delay = deadline->saturatingSub(time->now()).toMsRound();
+		if (SDL_WaitEventTimeout(&ev.event, delay) && ev.event.type != LS_USEREVENT_NEW_TIMER)
 			return std::make_pair
 			(
 				// gotEvent
@@ -601,100 +586,18 @@ std::pair<bool, bool> SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 				// notified
 				ev.event.type == LS_USEREVENT_NOTIFY
 			);
-
-		if (sys != nullptr && sys->isShuttingDown())
-			return std::make_pair(false, false);
-		if (timers.empty())
-			continue;
-
-		TimeEvent timer = timers.front();
-		auto deadline = timer.deadline();
-		auto now = TimeSpec::fromNs(time->getCurrentTime_ns());
-
-		if (now >= deadline)
+		if (hasSys)
 		{
-			timers.pop_front();
-			if (timer.job->stopMe)
+			if (sys->isShuttingDown())
+				return std::make_pair(false, false);
+			TimeSpec endTime = time->now();
+			if (endTime >= *deadline)
 			{
-				timer.job->tickFence();
-				continue;
+				auto delta = endTime.absDiff(startTime);
+				startTime = time->now();
+				sys->updateTimers(delta);
+				deadline = time->now() + sys->timeUntilNextTick();
 			}
-			if (timer.isTick)
-			{
-				timer.startTime = now;
-				insertEventNoLock(timer);
-			}
-
-			l.release();
-			timer.job->tick();
-			l.acquire();
-
-			if (!timer.isTick)
-				timer.job->tickFence();
 		}
 	}
-}
-
-void SDLEventLoop::insertEvent(const SDLEventLoop::TimeEvent& e)
-{
-	Locker l(listMutex);
-	insertEventNoLock(e);
-}
-
-void SDLEventLoop::insertEventNoLock(const SDLEventLoop::TimeEvent& e)
-{
-	if (timers.empty() || timers.front().deadline() > e.deadline())
-	{
-		timers.push_front(e);
-		SDL_Event event;
-		SDL_zero(event);
-		event.type = LS_USEREVENT_NEW_TIMER;
-		SDL_PushEvent(&event);
-		return;
-	}
-
-	auto it = std::find_if(std::next(timers.begin()), timers.end(), [&](const TimeEvent& it)
-	{
-		return it.deadline() > e.deadline();
-	});
-	timers.insert(it, e);
-}
-void SDLEventLoop::addJob(uint32_t ms, bool isTick, ITickJob* job)
-{
-	insertEvent(TimeEvent { isTick, TimeSpec::fromNs(time->getCurrentTime_ns()), TimeSpec::fromMs(ms), job });
-}
-
-void SDLEventLoop::addTick(uint32_t tickTime, ITickJob* job)
-{
-	addJob(tickTime, true, job);
-}
-
-void SDLEventLoop::addWait(uint32_t waitTime, ITickJob* job)
-{
-	addJob(waitTime, false, job);
-}
-
-void SDLEventLoop::removeJobNoLock(ITickJob* job)
-{
-	auto it = std::remove_if(timers.begin(), timers.end(), [&](const TimeEvent& it)
-	{
-		return it.job == job;
-	});
-	if (it == timers.end())
-		return;
-	bool first = it == timers.begin();
-	timers.erase(it);
-	if (first)
-	{
-		SDL_Event event;
-		SDL_zero(event);
-		event.type = LS_USEREVENT_NEW_TIMER;
-		SDL_PushEvent(&event);
-	}
-}
-
-void SDLEventLoop::removeJob(ITickJob* job)
-{
-	Locker l(listMutex);
-	removeJobNoLock(job);
 }

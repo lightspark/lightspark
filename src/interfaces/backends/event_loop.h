@@ -60,14 +60,6 @@ public:
 	// Second bool returns true if we've been notified of a
 	// non-platform event (if supported), and false otherwise.
 	virtual std::pair<bool, bool> waitEvent(IEvent& event, SystemState* sys) = 0;
-	// Adds a repating tick job to the timer list.
-	virtual void addTick(uint32_t tickTime, ITickJob* job) = 0;
-	// Adds a single-shot tick job to the timer list.
-	virtual void addWait(uint32_t waitTime, ITickJob* job) = 0;
-	// Removes a tick job from the timer list, without locking.
-	virtual void removeJobNoLock(ITickJob* job) = 0;
-	// Removes a tick job from the timer list.
-	virtual void removeJob(ITickJob* job) = 0;
 	// Returns true if the platform supports handling timers in the
 	// event loop.
 	virtual bool timersInEventLoop() const = 0;

@@ -27,6 +27,7 @@
 #include "interfaces/backends/event_loop.h"
 #include "backends/graphics.h"
 #include "backends/urlutils.h"
+#include "timer.h"
 #include "threading.h"
 #include "compat.h"
 #include <fstream>
@@ -130,6 +131,8 @@ private:
 	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
 	ThreadPool* downloadThreadPool;
+	LSTimers timers;
+	TimeSpec _timeUntilNextTick;
 	TimerThread* timerThread;
 	TimerThread* frameTimerThread;
 	IEventLoop* eventLoop;
@@ -404,9 +407,13 @@ public:
 	// so we use a second threadpool for them, to avoid deadlocks
 	void addDownloadJob(IThreadJob* j) DLL_PUBLIC;
 	void addTick(uint32_t tickTime, ITickJob* job);
+	void addFrameTick(ITickJob* job);
 	void addFrameTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
 	void removeJob(ITickJob* job);
+	void updateTimers(const TimeSpec& delta);
+	const LSTimer& getCurrentTimer() { return timers.getCurrentTimer(); }
+	const TimeSpec& timeUntilNextTick() const { return _timeUntilNextTick; }
 
 	void setRenderRate(float rate);
 	float getRenderRate();

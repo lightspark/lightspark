@@ -200,7 +200,7 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 extern uint32_t asClassCount;
 
 SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode, IEventLoop* _eventLoop, ITime* _time):
-	eventLoop(_eventLoop),time(_time != nullptr ? _time : eventLoop != nullptr ? eventLoop->getTime() : new Time()),terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
+	timers(LSTimers(this)), eventLoop(_eventLoop),time(_time != nullptr ? _time : eventLoop != nullptr ? eventLoop->getTime() : new Time()),terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -350,7 +350,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode, IEventLoop* _eventL
 	renderThread=new RenderThread(this);
 	inputThread=new InputThread(this);
 
-	EngineData::userevent = SDL_RegisterEvents(3);
+	EngineData::userevent = SDL_RegisterEvents(2);
 }
 
 void SystemState::setDownloadedPath(const tiny_string& p)
@@ -906,7 +906,7 @@ void SystemState::startRenderTicks()
 	assert(renderThread);
 	assert(renderRate);
 	removeJob(renderThread);
-	addTick(1000/renderRate,renderThread);
+	addFrameTick(renderThread);
 }
 
 void SystemState::EngineCreator::execute()
@@ -1233,7 +1233,7 @@ void SystemState::setRenderRate(float rate)
 		if (this->mainClip && this->mainClip->isConstructed())
 		{
 			removeJob(this);
-			addTick(1000/renderRate,this);
+			addFrameTick(this);
 		}
 	}
 
@@ -1250,10 +1250,11 @@ void SystemState::addDownloadJob(IThreadJob* j)
 
 void SystemState::addTick(uint32_t tickTime, ITickJob* job)
 {
+	// TODO: Use LSTimers in `TimerThread`.
 	if (timerThread != nullptr)
 		timerThread->addTick(tickTime,job);
 	else
-		eventLoop->addTick(tickTime, job);
+		timers.addTick(TimeSpec::fromMs(tickTime), job);
 }
 
 void SystemState::addFrameTick(uint32_t tickTime, ITickJob* job)
@@ -1261,16 +1262,27 @@ void SystemState::addFrameTick(uint32_t tickTime, ITickJob* job)
 	frameTimerThread->addTick(tickTime,job);
 }
 
+void SystemState::addFrameTick(ITickJob* job)
+{
+	// TODO: Use LSTimers in `TimerThread`.
+	if (timerThread != nullptr)
+		timerThread->addTick(1000/mainClip->getFrameRate(),job);
+	else
+		timers.addFrameTick(job);
+}
+
 void SystemState::addWait(uint32_t waitTime, ITickJob* job)
 {
+	// TODO: Use LSTimers in `TimerThread`.
 	if (timerThread != nullptr)
 		timerThread->addWait(waitTime,job);
 	else
-		eventLoop->addWait(waitTime, job);
+		timers.addWait(TimeSpec::fromMs(waitTime), job);
 }
 
 void SystemState::removeJob(ITickJob* job)
 {
+	// TODO: Use LSTimers in `TimerThread`.
 	if (timerThread != nullptr)
 	{
 		if (job == this)
@@ -1281,10 +1293,15 @@ void SystemState::removeJob(ITickJob* job)
 	else
 	{
 		if (job == this)
-			eventLoop->removeJobNoLock(job);
+			timers.removeJobNoLock(job);
 		else
-			eventLoop->removeJob(job);
+			timers.removeJob(job);
 	}
+}
+
+void SystemState::updateTimers(const TimeSpec& delta)
+{
+	_timeUntilNextTick = timers.updateTimers(delta);
 }
 
 ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)

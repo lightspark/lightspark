@@ -28,6 +28,8 @@ namespace lightspark
 /* forward declarations */
 class Time;
 class TimerThread;
+struct LSTimer;
+class LSTimers;
 class Chronometer;
 class ITickJob;
 class ITime;

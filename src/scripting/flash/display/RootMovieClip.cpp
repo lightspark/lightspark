@@ -169,7 +169,7 @@ void RootMovieClip::constructionComplete(bool _explicit)
 	incRef();
 	getSystemState()->stage->_addChildAt(this,0);
 	this->setOnStage(true,true);
-	getSystemState()->addTick(1000/applicationDomain->getFrameRate(),getSystemState());
+	getSystemState()->addFrameTick(getSystemState());
 }
 void RootMovieClip::afterConstruction(bool _explicit)
 {

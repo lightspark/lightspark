@@ -76,6 +76,7 @@ public:
 class DLL_PUBLIC EngineData
 {
 	friend class RenderThread;
+	friend class LSTimers;
 private:
 	SDL_Window* contextmenu;
 	SDL_Renderer* contextmenurenderer;
@@ -103,6 +104,7 @@ protected:
 	SDL_GLContext mSDLContext;
 	void selectContextMenuItemIntern();
 	virtual SDL_Window* createWidget(uint32_t w,uint32_t h);
+	virtual void notifyTimer();
 public:
 	using MainThreadCallback = std::function<void(SystemState*)>;
 	bool incontextmenupreparing; // needed for PPAPI plugin only

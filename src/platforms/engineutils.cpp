@@ -658,6 +658,14 @@ void EngineData::notifyEventLoop()
 	SDL_PushEvent(&event);
 }
 
+void EngineData::notifyTimer()
+{
+	SDL_Event event;
+	SDL_zero(event);
+	event.type = LS_USEREVENT_NEW_TIMER;
+	SDL_PushEvent(&event);
+}
+
 std::string EngineData::getsharedobjectfilename(const tiny_string& name)
 {
 	tiny_string subdir = sharedObjectDatapath + G_DIR_SEPARATOR_S;

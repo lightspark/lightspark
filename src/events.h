@@ -62,8 +62,7 @@ using EventTypes = TypeList
 	LSOpenContextMenuEvent,
 	LSUpdateContextMenuEvent,
 	LSSelectItemContextMenuEvent,
-	LSRemovedFromStageEvent,
-	LSNewTimerEvent
+	LSRemovedFromStageEvent
 >;
 
 struct SizeVisitor
@@ -90,7 +89,6 @@ struct LSEvent
 		Exec,
 		ContextMenu,
 		RemovedFromStage,
-		NewTimer,
 	};
 	using EventType = Type;
 
@@ -413,11 +411,6 @@ struct LSRemovedFromStageEvent : public LSEvent
 	constexpr LSRemovedFromStageEvent() : LSEvent(EventType::RemovedFromStage) {}
 };
 
-struct LSNewTimerEvent : public LSEvent
-{
-	constexpr LSNewTimerEvent() : LSEvent(EventType::NewTimer) {}
-};
-
 // Wrapper/Container for returning, and storing `LSEvent`s.
 struct LSEventStorage
 {
@@ -486,7 +479,6 @@ constexpr VisitorReturnType<V, EventTypes> LSEvent::visit(V&& visitor) const
 			break;
 		}
 		case LSEvent::Type::RemovedFromStage: return visitor(static_cast<const LSRemovedFromStageEvent&>(*this)); break;
-		case LSEvent::Type::NewTimer: return visitor(static_cast<const LSNewTimerEvent&>(*this)); break;
 		// Invalid event, should be unreachable.
 		// TODO: Add `compat_unreachable()`, and use it here.
 		default: assert(false); break;

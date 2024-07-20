@@ -21,9 +21,11 @@
 #define BACKENDS_EVENT_LOOP_H 1
 
 #include "interfaces/backends/event_loop.h"
+#include "interfaces/timer.h"
+#include "utils/optional.h"
+#include "utils/timespec.h"
 #include "events.h"
 #include "threading.h"
-#include "timer.h"
 #include <list>
 #include <utility>
 #include <SDL.h>
@@ -52,21 +54,8 @@ public:
 class DLL_PUBLIC SDLEventLoop : public IEventLoop
 {
 private:
-	struct TimeEvent
-	{
-		bool isTick;
-		TimeSpec startTime;
-		TimeSpec timeout;
-		ITickJob* job;
-		TimeSpec deadline() const { return startTime + timeout; }
-		bool operator>(const TimeEvent& other) const { return deadline() > other.deadline(); }
-	};
-	Mutex listMutex;
-	std::list<TimeEvent> timers;
-
-	void insertEvent(const TimeEvent& e);
-	void insertEventNoLock(const TimeEvent& e);
-	void addJob(uint32_t ms, bool isTick, ITickJob* job);
+	Optional<TimeSpec> deadline;
+	TimeSpec startTime;
 public:
 	SDLEventLoop(ITime* time) : IEventLoop(time) {}
 	// Wait indefinitely for an event.
@@ -75,18 +64,10 @@ public:
 	// Second bool returns true if we've been notified of a
 	// non-platform event (if supported), and false otherwise.
 	std::pair<bool, bool> waitEvent(IEvent& event, SystemState* sys) override;
-	// Adds a repating tick job to the timer list.
-	void addTick(uint32_t tickTime, ITickJob* job) override;
-	// Adds a single-shot tick job to the timer list.
-	void addWait(uint32_t waitTime, ITickJob* job) override;
-	// Removes a tick job from the timer list, without locking.
-	void removeJobNoLock(ITickJob* job) override;
-	// Removes a tick job from the timer list.
-	void removeJob(ITickJob* job) override;
 	// Returns true if the platform supports handling timers in the
 	// event loop.
 	bool timersInEventLoop() const override { return true; }
-
 };
+
 };
 #endif /* BACKENDS_EVENT_LOOP_H */

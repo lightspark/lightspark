@@ -31,7 +31,7 @@ namespace lightspark
 class ITickJob
 {
 friend class TimerThread;
-friend class SDLEventLoop;
+friend class LSTimers;
 protected:
 	/*
 	   Helper flag to remove a job

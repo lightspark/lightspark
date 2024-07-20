@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2010-2013  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -24,6 +25,8 @@
 #include "timer.h"
 #include "compat.h"
 #include "interfaces/timer.h"
+#include "platforms/engineutils.h"
+#include "scripting/flash/display/RootMovieClip.h"
 
 using namespace lightspark;
 using namespace std;
@@ -101,6 +104,7 @@ void TimerThread::dumpJobs()
 		LOG(LOG_INFO, (*it)->job );
 }
 
+// TODO: Use `LSTimers` here, instead of doing it manually.
 /*
  * Worker executing the queued events.
  *
@@ -232,6 +236,134 @@ void TimerThread::removeJob_noLock(ITickJob* job)
 	/* the worker is waiting on this job, wake him up */
 	if(first)
 		newEvent.signal();
+}
+
+TimeSpec LSTimers::updateTimers(const TimeSpec& delta)
+{
+	Locker l(timerMutex);
+	currentTime += delta;
+
+	if (timers.empty())
+		return TimeSpec();
+
+	auto push = [&](const LSTimer& timer) { return pushTimerNoLock(timer); };
+	auto pop = [&] { return popTimerNoLock(); };
+	auto peek = [&] { return peekTimerNoLock(); };
+	int tickCount = 0;
+
+	while (!timers.empty() && peek().deadline() < currentTime)
+	{
+		if (nextFrameTime < currentTime)
+		{
+			curFrameTime = nextFrameTime;
+			nextFrameTime += getFrameRate();
+		}
+
+		if (!peek().isFrame() && ++tickCount > LSTimers::maxTicks)
+		{
+			// Reset current time to a bit before the most recent timer.
+			currentTime -= TimeSpec::fromMs(100);
+			break;
+		}
+
+		LSTimer timer = pop();
+		if (timer.job->stopMe)
+		{
+			timer.job->tickFence();
+			continue;
+		}
+		if (!timer.isWait())
+		{
+			// Reset tick/interval timer.
+			timer.startTime += timer.timeout;
+			push(timer);
+		}
+
+		// Run the timer's tick job.
+		l.release();
+		timer.job->tick();
+		l.acquire();
+
+		if (timer.isWait())
+			timer.job->tickFence();
+	}
+
+	// Return time until the next tick occurs.
+	return timers.empty() ? TimeSpec() : peek().deadline().saturatingSub(currentTime);
+}
+
+void LSTimers::pushTimer(const LSTimer& timer)
+{
+	Locker l(timerMutex);
+	pushTimerNoLock(timer);
+}
+
+void LSTimers::pushTimerNoLock(const LSTimer& timer)
+{
+	bool notify = peekTimerNoLock() > timer;
+	timers.insert(timer);
+	if (notify)
+	{
+		LOG(LOG_INFO, "notifying timer");
+		sys->getEngineData()->notifyTimer();
+	}
+}
+
+LSTimer LSTimers::popTimer()
+{
+	Locker l(timerMutex);
+	return popTimerNoLock();
+}
+
+LSTimer LSTimers::popTimerNoLock()
+{
+	LSTimer timer = peekTimerNoLock();
+	timers.erase(timers.begin());
+	return timer;
+}
+
+const LSTimer& LSTimers::peekTimer()
+{
+	Locker l(timerMutex);
+	return peekTimerNoLock();
+}
+
+const LSTimer& LSTimers::peekTimerNoLock() const
+{
+	return *timers.begin();
+}
+
+void LSTimers::addJob(const TimeSpec& time, const LSTimer::Type& type, ITickJob* job)
+{
+	bool isFrame = type == TimerType::Frame;
+	pushTimer(LSTimer { type, isFrame ? curFrameTime : currentTime, time, job });
+}
+TimeSpec LSTimers::getFrameRate() const
+{
+	return TimeSpec::fromFloat(1.0f / sys->mainClip->getFrameRate());
+}
+
+void LSTimers::removeJob(ITickJob* job)
+{
+	Locker l(timerMutex);
+	removeJobNoLock(job);
+}
+
+void LSTimers::removeJobNoLock(ITickJob* job)
+{
+	auto it = std::find_if(timers.begin(), timers.end(), [&](const LSTimer& it)
+	{
+		return it.job == job;
+	});
+
+	if (it == timers.end())
+		return;
+
+	bool first = it == timers.begin();
+	timers.erase(it);
+
+	if (first)
+		sys->getEngineData()->notifyTimer();
 }
 
 Chronometer::Chronometer()

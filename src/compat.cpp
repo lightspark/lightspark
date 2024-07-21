@@ -149,7 +149,7 @@ extern "C"
 BOOL WINAPI DllMain (HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	//RUNDLLMAIN(gio); //taken care of by patches from mxe
-	RUNDLLMAIN(glib);
+	//RUNDLLMAIN(glib); //taken care of by patches from mxe
 	//RUNDLLMAIN(cairo); //taken care of by patches from mxe
 	//RUNDLLMAIN(atk); //taken care of by patches from mxe
 	//RUNDLLMAIN(pango); //taken care of by patches from mxe

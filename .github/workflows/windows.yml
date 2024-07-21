@@ -64,7 +64,7 @@
               ninja
               sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
               ninja package
-              mv -v Lightspark*exe Lightspark-v${{ github.ref }}-Installer-win64.exe
+              mv -v Lightspark*exe Lightspark-v-Installer-win64.exe
     
           - name: Upload Installer Release Asset
             uses: softprops/action-gh-release@v2
@@ -72,7 +72,7 @@
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             with:
               tag_name: latest
-              files: Lightspark-v${{ github.ref}}-Installer-win64.exe
+              files: Lightspark-v-Installer-win64.exe
     
       mxe32:
         name: Windows 32-bit
@@ -101,7 +101,7 @@
               ninja
               sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
               ninja package
-              mv -v Lightspark*exe Lightspark-v${{github.ref }}-Installer-win32.exe
+              mv -v Lightspark*exe Lightspark-v-Installer-win32.exe
     
           - name: Upload Installer Release Asset
             uses: softprops/action-gh-release@v2
@@ -109,5 +109,5 @@
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             with:
               tag_name: latest
-              files: Lightspark-v${{ github.ref }}-Installer-win32.exe
+              files: Lightspark-v-Installer-win32.exe
     

@@ -91,9 +91,9 @@
           - name: Setup MSYS2
             uses: msys2/setup-msys2@v2
             with:
-              msystem: mingw64
+              msystem: mingw32
               update: true
-              install: mingw-w64-i686-ffmpeg mingw-w64-i686-pango mingw-w64-i686-rtmpdump mingw-w64-i686-glew mingw-w64-i686-SDL2 mingw-w64-i686-cmake mingw-w64-i686-nasm mingw-w64-i686-gcc mingw-w64-i686-upx mingw-w64-x86_64-7zip intltool mingw-w64-i686-libtool mingw-w64-i686-gperf mingw-w64-i686-nsis git 
+              install: mingw-w64-i686-ffmpeg mingw-w64-i686-pango mingw-w64-i686-rtmpdump mingw-w64-i686-glew mingw-w64-i686-SDL2 mingw-w64-i686-cmake mingw-w64-i686-nasm mingw-w64-i686-gcc mingw-w64-i686-upx p7zip intltool mingw-w64-i686-libtool mingw-w64-i686-gperf mingw-w64-i686-nsis git 
     
           - name: Run MXE Build
             run: |

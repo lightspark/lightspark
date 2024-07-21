@@ -44,7 +44,7 @@ jobs:
     needs: draft_release
     env:
       CFLAGS: -std=c11
-      CXXFLAGS: -std=c++11
+      CXXFLAGS: -std=c++14
     steps:
       - uses: actions/checkout@v4
 
@@ -108,7 +108,7 @@ jobs:
     needs: draft_release
     env:
       CFLAGS: -std=c11
-      CXXFLAGS: -std=c++11
+      CXXFLAGS: -std=c++14
     steps:
       - uses: actions/checkout@v4
 

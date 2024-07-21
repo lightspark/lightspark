@@ -31,7 +31,7 @@ In preparation for building Lightspark, you need development packages for:
 The following tools are also required:
 * cmake
 * nasm
-* gcc (version 4.6.0 or newer) or clang
+* c/c++ compiler with support for c++14 (gcc version >=5 or clang version >=3.4)
 
 To install these, run the following command(s):
 ### Ubuntu (tested on 21.10):
@@ -90,7 +90,7 @@ The command line version of Lightspark can play a local SWF file.
 
 ``lightspark file.swf``
 
-Type `lightspark` to see all command line options.
+Type `lightspark -h` to see all command line options.
 
 ### Keyboard shortcuts
 

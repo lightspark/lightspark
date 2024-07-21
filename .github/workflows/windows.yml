@@ -40,6 +40,9 @@
       mxe64:
         name: Windows 64-bit (MXE Cross Build)
         runs-on: windows-latest
+        defaults:
+          run:
+            shell: msys2 {0}
         continue-on-error: false
         needs: draft_release
         env:
@@ -61,7 +64,7 @@
               ninja
               sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
               ninja package
-              mv -v Lightspark*exe Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win64.exe
+              mv -v Lightspark*exe Lightspark-v${{ github.ref }}-Installer-win64.exe
     
           - name: Upload Installer Release Asset
             uses: softprops/action-gh-release@v2
@@ -69,11 +72,14 @@
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             with:
               tag_name: latest
-              files: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win64.exe
+              files: Lightspark-v${{ github.ref}}-Installer-win64.exe
     
       mxe32:
         name: Windows 32-bit
         runs-on: windows-latest
+        defaults:
+          run:
+            shell: msys2 {0}
         continue-on-error: false
         needs: draft_release
         env:
@@ -95,7 +101,7 @@
               ninja
               sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
               ninja package
-              mv -v Lightspark*exe Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win32.exe
+              mv -v Lightspark*exe Lightspark-v${{github.ref }}-Installer-win32.exe
     
           - name: Upload Installer Release Asset
             uses: softprops/action-gh-release@v2
@@ -103,5 +109,5 @@
               GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             with:
               tag_name: latest
-              files: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win32.exe
+              files: Lightspark-v${{ github.ref }}-Installer-win32.exe
     

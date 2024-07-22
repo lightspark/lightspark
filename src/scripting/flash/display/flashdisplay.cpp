@@ -1927,7 +1927,7 @@ ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,contentsScaleFactor)
 ASFUNCTIONBODY_GETTER(Stage,nativeWindow)
 ASFUNCTIONBODY_ATOM(Stage,setAspectRatio)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"flash.display.Stage.setAspectRatio is stubbed")
+	LOG(LOG_NOT_IMPLEMENTED,"flash.display.Stage.setAspectRatio is stubbed");
 }
 
 void Stage::onDisplayState(const tiny_string& old_value)

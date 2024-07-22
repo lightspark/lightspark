@@ -69,6 +69,7 @@
 #include "scripting/flash/display/NativeWindow.h"
 #include "scripting/flash/display/Shape.h"
 #include "scripting/flash/display/SimpleButton.h"
+#include "scripting/flash/display/StageAspectRatio.h"
 #include "scripting/flash/display3d/flashdisplay3d.h"
 #include "scripting/flash/display3d/flashdisplay3dtextures.h"
 #include "scripting/flash/events/flashevents.h"

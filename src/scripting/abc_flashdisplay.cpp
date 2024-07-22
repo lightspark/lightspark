@@ -42,6 +42,7 @@
 #include "scripting/flash/display/shaderparametertype.h"
 #include "scripting/flash/display/shaderprecision.h"
 #include "scripting/flash/display/swfversion.h"
+#include "scripting/flash/display/StageAspectRatio.h"
 #include "scripting/flash/display/triangleculling.h"
 #include "scripting/flash/display/Loader.h"
 #include "scripting/flash/display/LoaderInfo.h"
@@ -104,6 +105,7 @@ void ABCVm::registerClassesFlashDisplay(Global* builtin)
 	builtin->registerBuiltin("ColorCorrectionSupport","flash.display",Class<ColorCorrectionSupport>::getRef(m_sys));
 	builtin->registerBuiltin("ShaderParameterType","flash.display",Class<ShaderParameterType>::getRef(m_sys));
 	builtin->registerBuiltin("ShaderPrecision","flash.display",Class<ShaderPrecision>::getRef(m_sys));
+	builtin->registerBuiltin("StageAspectRatio","flash.display",Class<StageAspectRatio>::getRef(m_sys));
 	builtin->registerBuiltin("SWFVersion","flash.display",Class<SWFVersion>::getRef(m_sys));
 	builtin->registerBuiltin("TriangleCulling","flash.display",Class<TriangleCulling>::getRef(m_sys));
 	builtin->registerBuiltin("IBitmapDrawable","flash.display",InterfaceClass<IBitmapDrawable>::getRef(m_sys));

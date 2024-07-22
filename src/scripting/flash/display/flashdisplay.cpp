@@ -1909,7 +1909,7 @@ void Stage::sinit(Class_base* c)
 
 	if(c->getSystemState()->flashMode==SystemState::AIR) 
 	{
-	c->setDeclaredMethodByQName("setAspectRatio ","",c->getSystemState()->getBuiltinFunction(setAspectRatio),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("setAspectRatio","",c->getSystemState()->getBuiltinFunction(setAspectRatio),NORMAL_METHOD,true);
 	}
 }
 

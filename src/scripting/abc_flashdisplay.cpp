@@ -105,7 +105,6 @@ void ABCVm::registerClassesFlashDisplay(Global* builtin)
 	builtin->registerBuiltin("ColorCorrectionSupport","flash.display",Class<ColorCorrectionSupport>::getRef(m_sys));
 	builtin->registerBuiltin("ShaderParameterType","flash.display",Class<ShaderParameterType>::getRef(m_sys));
 	builtin->registerBuiltin("ShaderPrecision","flash.display",Class<ShaderPrecision>::getRef(m_sys));
-	builtin->registerBuiltin("StageAspectRatio","flash.display",Class<StageAspectRatio>::getRef(m_sys));
 	builtin->registerBuiltin("SWFVersion","flash.display",Class<SWFVersion>::getRef(m_sys));
 	builtin->registerBuiltin("TriangleCulling","flash.display",Class<TriangleCulling>::getRef(m_sys));
 	builtin->registerBuiltin("IBitmapDrawable","flash.display",InterfaceClass<IBitmapDrawable>::getRef(m_sys));
@@ -122,5 +121,8 @@ void ABCVm::registerClassesFlashDisplay(Global* builtin)
 	builtin->registerBuiltin("JointStyle","flash.display",Class<JointStyle>::getRef(m_sys));
 	
 	if(m_sys->flashMode==SystemState::AIR)
+	{
 		builtin->registerBuiltin("NativeWindow","flash.display",Class<NativeWindow>::getRef(m_sys));
+		builtin->registerBuiltin("StageAspectRatio","flash.display",Class<StageAspectRatio>::getRef(m_sys));
+	}
 }

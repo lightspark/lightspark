@@ -383,6 +383,7 @@ public:
 	ASFUNCTION_ATOM(_getColor);
 	ASFUNCTION_ATOM(_setColor);
 	ASFUNCTION_ATOM(_isFocusInaccessible);
+	ASFUNCTION_ATOM(setAspectRatio);
 	ASPROPERTY_GETTER_SETTER(uint32_t,align);
 	ASPROPERTY_GETTER_SETTER(tiny_string,colorCorrection);
 	ASPROPERTY_GETTER_SETTER(tiny_string,displayState);

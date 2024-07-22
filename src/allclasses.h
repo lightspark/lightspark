@@ -130,6 +130,7 @@ REGISTER_CLASS_NAME(StageQuality,"flash.display")
 REGISTER_CLASS_NAME(SWFVersion,"flash.display")
 REGISTER_CLASS_NAME(TriangleCulling,"flash.display")
 REGISTER_CLASS_NAME(NativeWindow,"flash.display")
+REGISTER_CLASS_NAME(StageAspectRatio,"flash.display")
 
 //Display3D
 REGISTER_CLASS_NAME(Context3D,"flash.display3D")

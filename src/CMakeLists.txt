@@ -142,6 +142,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/shaderprecision.cpp
   scripting/flash/display/swfversion.cpp
   scripting/flash/display/triangleculling.cpp
+  scripting/flash/display/StageAspectRatio.cpp
   scripting/flash/display3d/flashdisplay3d.cpp
   scripting/flash/display3d/flashdisplay3dtextures.cpp
   scripting/flash/events/flashevents.cpp

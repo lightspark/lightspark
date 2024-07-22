@@ -42,6 +42,7 @@
 #include "scripting/flash/display/shaderparametertype.h"
 #include "scripting/flash/display/shaderprecision.h"
 #include "scripting/flash/display/swfversion.h"
+#include "scripting/flash/display/StageAspectRatio.h"
 #include "scripting/flash/display/triangleculling.h"
 #include "scripting/flash/display/Loader.h"
 #include "scripting/flash/display/LoaderInfo.h"
@@ -120,5 +121,8 @@ void ABCVm::registerClassesFlashDisplay(Global* builtin)
 	builtin->registerBuiltin("JointStyle","flash.display",Class<JointStyle>::getRef(m_sys));
 	
 	if(m_sys->flashMode==SystemState::AIR)
+	{
 		builtin->registerBuiltin("NativeWindow","flash.display",Class<NativeWindow>::getRef(m_sys));
+		builtin->registerBuiltin("StageAspectRatio","flash.display",Class<StageAspectRatio>::getRef(m_sys));
+	}
 }

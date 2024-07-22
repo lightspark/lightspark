@@ -1885,6 +1885,7 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("focus","",c->getSystemState()->getBuiltinFunction(_setFocus),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("frameRate","",c->getSystemState()->getBuiltinFunction(_getFrameRate,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("frameRate","",c->getSystemState()->getBuiltinFunction(_setFrameRate),SETTER_METHOD,true);
+
 	// override the setter from DisplayObjectContainer
 	c->setDeclaredMethodByQName("tabChildren","",c->getSystemState()->getBuiltinFunction(_setTabChildren),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("wmodeGPU","",c->getSystemState()->getBuiltinFunction(_getWmodeGPU,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
@@ -1892,6 +1893,7 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("color","",c->getSystemState()->getBuiltinFunction(_getColor,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("color","",c->getSystemState()->getBuiltinFunction(_setColor),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("isFocusInaccessible","",c->getSystemState()->getBuiltinFunction(_isFocusInaccessible,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,align,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,colorCorrection,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,displayState,ASString);
@@ -1904,6 +1906,11 @@ void Stage::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,softKeyboardRect,Rectangle);
 	REGISTER_GETTER_RESULTTYPE(c,contentsScaleFactor,Number);
 	REGISTER_GETTER_RESULTTYPE(c,nativeWindow,NativeWindow);
+
+	if(c->getSystemState()->flashMode==SystemState::AIR) 
+	{
+	c->setDeclaredMethodByQName("setAspectRatio","",c->getSystemState()->getBuiltinFunction(setAspectRatio),NORMAL_METHOD,true);
+	}
 }
 
 ASFUNCTIONBODY_GETTER_SETTER_STRINGID_CB(Stage,align,onAlign)
@@ -1918,6 +1925,10 @@ ASFUNCTIONBODY_GETTER(Stage,stage3Ds)
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,softKeyboardRect)
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(Stage,contentsScaleFactor)
 ASFUNCTIONBODY_GETTER(Stage,nativeWindow)
+ASFUNCTIONBODY_ATOM(Stage,setAspectRatio)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"flash.display.Stage.setAspectRatio is stubbed");
+}
 
 void Stage::onDisplayState(const tiny_string& old_value)
 {

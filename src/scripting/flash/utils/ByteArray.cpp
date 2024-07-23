@@ -33,6 +33,7 @@
 #include <sstream>
 #include <zlib.h>
 #include <glib.h>
+#include <lzma.h>
 
 using namespace std;
 using namespace lightspark;
@@ -1544,26 +1545,83 @@ void ByteArray::uncompress_zlib(bool raw)
 	memcpy(bytes, &buf[0], len);
 	position=0;
 }
+void ByteArray::uncompress_lzma()
+{
+	lzma_stream strm = LZMA_STREAM_INIT;
+	lzma_ret ret = lzma_alone_decoder(&strm, UINT64_MAX);
+	if (ret != LZMA_OK)
+	{
+		LOG(LOG_ERROR,"Failed to initialize lzma decoder in ByteArray::uncompress_lzma");
+		return;
+	}
+	uint32_t inputlen = getLength();
+	uint8_t* inbuffer = new uint8_t[inputlen];
+	memcpy(inbuffer,getBufferNoCheck(),inputlen);
+	strm.next_in = inbuffer;
+	strm.avail_in = inputlen;
+	strm.avail_out = inputlen;
+	strm.next_out = this->getBufferNoCheck();
+	while (strm.avail_in!=0)
+	{
+		do
+		{
+			lzma_ret ret=lzma_code(&strm, LZMA_RUN);
+			
+			if(ret==LZMA_STREAM_END || strm.avail_in==0)
+				break;
+			else if(ret!=LZMA_OK)
+			{
+				LOG(LOG_ERROR,"lzma decoder error:"<<ret);
+				break;
+			}
+			if (strm.avail_out==0)
+			{
+				uint32_t oldlen = getLength();
+				// TODO: I don't know what's the best value for chunk size, we just use the length of the input for now
+				strm.avail_out=inputlen;
+				setLength(getLength()+inputlen);
+				strm.next_out=getBufferNoCheck()+oldlen;
+			}
+				
+		}
+		while(strm.avail_out!=0);
+	}
+	if (strm.avail_out!=0)
+	{
+		this->setLength(this->getLength()-strm.avail_out);
+	}
+	lzma_end(&strm);
+	setPosition(0);
+	delete[] inbuffer;
+}
 
 ASFUNCTIONBODY_ATOM(ByteArray,_compress)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
-	// flash throws an error if compress is called with a compression algorithm,
-	// and always uses the zlib algorithm
-	// but tamarin tests do not catch it, so we simply ignore any parameters provided
+	tiny_string algorithm;
+	ARG_CHECK(ARG_UNPACK(algorithm));
 	th->lock();
-	th->compress_zlib(false);
+	if (algorithm == "lzma")
+		LOG(LOG_NOT_IMPLEMENTED,"ByteArray.compress with lzma algorithm");
+	else if (algorithm == "deflate")
+		th->compress_zlib(true);
+	else
+		th->compress_zlib(false);
 	th->unlock();
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_uncompress)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
-	// flash throws an error if uncompress is called with a compression algorithm,
-	// and always uses the zlib algorithm
-	// but tamarin tests do not catch it, so we simply ignore any parameters provided
+	tiny_string algorithm;
+	ARG_CHECK(ARG_UNPACK(algorithm));
 	th->lock();
-	th->uncompress_zlib(false);
+	if (algorithm == "lzma")
+		th->uncompress_lzma();
+	else if (algorithm == "deflate")
+		th->compress_zlib(true);
+	else
+		th->compress_zlib(false);
 	th->unlock();
 }
 

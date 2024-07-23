@@ -91,7 +91,7 @@ private:
 		//Stores the text and formating into a TextData object
 		void parseTextAndFormating(const tiny_string& html, TextData *dest);
 	};
-
+	tokensVector tokens;
 public:
 	enum EDIT_TYPE { ET_READ_ONLY, ET_EDITABLE };
 	enum ANTI_ALIAS_TYPE { AA_NORMAL, AA_ADVANCED };
@@ -300,7 +300,7 @@ protected:
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
 	StaticText(ASWorker* wrk,Class_base* c):DisplayObject(wrk,c),TokenContainer(this),tagID(UINT32_MAX) {}
-	StaticText(ASWorker* wrk,Class_base* c, const tokensVector& tokens,const RECT& b,uint32_t _tagID):
+	StaticText(ASWorker* wrk,Class_base* c, tokensVector* tokens,const RECT& b,uint32_t _tagID):
 		DisplayObject(wrk,c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f),bounds(b),tagID(_tagID) {}
 	static void sinit(Class_base* c);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }

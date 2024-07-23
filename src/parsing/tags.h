@@ -205,9 +205,10 @@ protected:
 	DefineMorphShapeTag(RECORDHEADER h, RootMovieClip* root, int version):DictionaryTag(h,root),MorphLineStyles(version){}
 public:
 	DefineMorphShapeTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
+	~DefineMorphShapeTag();
 	int getId() const override { return CharacterId; }
 	ASObject* instance(Class_base* c=nullptr) override;
-	void getTokensForRatio(tokensVector& tokens, uint32_t ratio);
+	void getTokensForRatio(tokensVector** tokens, uint32_t ratio);
 };
 
 class DefineMorphShape2Tag: public DefineMorphShapeTag
@@ -490,7 +491,7 @@ protected:
 	bool FontFlagsItalic;
 	bool FontFlagsBold;
 	virtual number_t getRenderCharStartYPos() const =0;
-	std::list<FILLSTYLE> fillStyles;
+	std::map<int,std::vector<tokensVector>> cachedtokens;
 public:
 	/* Multiply the coordinates of the SHAPEs by this
 	 * value to get a resolution of 1024*20th pixel
@@ -498,17 +499,18 @@ public:
 	 */
 	const int scaling;
 	FontTag(RECORDHEADER h, int _scaling,RootMovieClip* root);
+	~FontTag();
 	std::vector<SHAPE>& getGlyphShapes()
 	{
 		return GlyphShapeTable;
 	}
+	void fillTokens(int glyphposition, const RGBA& color, tokensVector* tk, int scaling);
 	int getId() const override { return FontID; }
 	ASObject* instance(Class_base* c=nullptr) override;
 	const tiny_string getFontname() const { return fontname;}
-	virtual void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, int32_t leading,int32_t startposx, int32_t startposy)=0;
+	virtual tokensVector* fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,const RGBA& textColor, int32_t leading,int32_t startposx, int32_t startposy)=0;
 	virtual number_t getRenderCharAdvance(uint32_t index) const =0;
 	virtual void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height)=0;
-	const TextureChunk *getCharTexture(const CharIterator& chrIt, int fontpixelsize, uint32_t &codetableindex);
 	bool hasGlyphs(const tiny_string text) const;
 	virtual int32_t getLeading() const =0;
 	virtual int32_t getAscent() const =0;
@@ -525,7 +527,7 @@ public:
 	DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	number_t getRenderCharAdvance(uint32_t index) const override;
 	void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height) override;
-	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, int32_t leading, int32_t startposx, int32_t startposy) override;
+	tokensVector* fillTextTokens(tokensVector& tokens, const tiny_string text, int fontpixelsize,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy) override;
 	int32_t getLeading() const override { return 1024; }
 	int32_t getAscent() const override { return 1024; }
 	int32_t getDescent() const override { return 1024; }
@@ -561,7 +563,7 @@ public:
 	DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	number_t getRenderCharAdvance(uint32_t index) const override;
 	void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height) override;
-	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, int32_t leading,int32_t startposx, int32_t startposy) override;
+	tokensVector* fillTextTokens(tokensVector& tokens, const tiny_string text, int fontpixelsize,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy) override;
 	int32_t getLeading() const override { return FontLeading; }
 	int32_t getAscent() const override { return FontAscent; }
 	int32_t getDescent() const override { return FontDescent; }
@@ -590,7 +592,7 @@ public:
 	DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	number_t getRenderCharAdvance(uint32_t index) const override;
 	void getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height) override;
-	void fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, int32_t leading, int32_t startposx, int32_t startposy) override;
+	tokensVector* fillTextTokens(tokensVector& tokens, const tiny_string text, int fontpixelsize,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy) override;
 	int32_t getLeading() const override { return FontLeading/20; }
 	int32_t getAscent() const override { return FontAscent/20; }
 	int32_t getDescent() const override { return FontDescent/20; }
@@ -626,6 +628,7 @@ private:
 public:
 	int version;
 	DefineTextTag(RECORDHEADER h, std::istream& in,RootMovieClip* root,int v=1);
+	~DefineTextTag();
 	int getId() const override { return CharacterId; }
 	ASObject* instance(Class_base* c=nullptr) override;
 };

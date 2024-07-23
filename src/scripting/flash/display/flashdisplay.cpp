@@ -82,13 +82,12 @@ bool Sprite::destruct()
 	graphics.reset();
 	hitArea.reset();
 	hitTarget.reset();
-	tokens.clear();
+	tokens=nullptr;
 	dragged = false;
 	buttonMode = false;
 	useHandCursor = true;
 	streamingsound=false;
 	hasMouse=false;
-	tokens.clear();
 	sound.reset();
 	soundtransform.reset();
 	return DisplayObjectContainer::destruct();
@@ -100,7 +99,7 @@ void Sprite::finalize()
 	graphics.reset();
 	hitArea.reset();
 	hitTarget.reset();
-	tokens.clear();
+	tokens=nullptr;
 	sound.reset();
 	soundtransform.reset();
 	DisplayObjectContainer::finalize();
@@ -121,18 +120,6 @@ void Sprite::prepareShutdown()
 		sound->prepareShutdown();
 	if (soundtransform)
 		soundtransform->prepareShutdown();
-}
-
-void Sprite::startDrawJob()
-{
-	if (graphics)
-		graphics->startDrawJob();
-}
-
-void Sprite::endDrawJob()
-{
-	if (graphics)
-		graphics->endDrawJob();
 }
 
 void Sprite::sinit(Class_base* c)
@@ -157,6 +144,12 @@ void Sprite::afterSetUseHandCursor(bool /*oldValue*/)
 	handleMouseCursor(hasMouse);
 }
 
+void Sprite::refreshSurfaceState()
+{
+	if (graphics)
+		graphics->refreshSurfaceState();
+}
+
 IDrawable* Sprite::invalidate(bool smoothing)
 {
 	IDrawable* res = getFilterDrawable(smoothing);
@@ -167,12 +160,9 @@ IDrawable* Sprite::invalidate(bool smoothing)
 		return res;
 	}
 
-	if (graphics && graphics->hasTokens())
+	if (graphics && graphics->hasBounds())
 	{
-		this->graphics->startDrawJob();
-		this->graphics->refreshTokens();
-		res = TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,true);
-		this->graphics->endDrawJob();
+		res = graphics->invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE);
 		if (res)
 		{
 			Locker l(mutexDisplayList);
@@ -349,7 +339,7 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	if (visibleOnly && !this->isVisible())
 		return false;
 	bool ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax,visibleOnly);
-	if (graphics && graphics->hasTokens())
+	if (graphics && graphics->hasBounds())
 	{
 		number_t gxmin,gxmax,gymin,gymax;
 		if (this->graphics->boundsRect(gxmin,gxmax,gymin,gymax))
@@ -366,6 +356,12 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 
 void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
+	if (graphics && graphics->hasBounds())
+	{
+		requestInvalidationFilterParent(q);
+		incRef();
+		q->addToInvalidateQueue(_MR(this));
+	}
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 }
 
@@ -526,7 +522,7 @@ _NR<DisplayObject> Sprite::hitTestImpl(const Vector2f& globalPoint, const Vector
 	if (ret.isNull() && hitArea.isNull())
 	{
 		//The coordinates are locals
-		if (graphics && graphics->hasTokens())
+		if (graphics && graphics->hasBounds())
 		{
 			Vector2f hitPoint;
 			// TODO: Add an overload for Vector2f.
@@ -537,12 +533,6 @@ _NR<DisplayObject> Sprite::hitTestImpl(const Vector2f& globalPoint, const Vector
 				ret = _MR(this);
 			}
 		}
-		else if (TokenContainer::hitTestImpl(localPoint))
-		{
-			this->incRef();
-			ret = _MR(this);
-		}
-
 		if (!ret.isNull())  // we hit the sprite?
 		{
 			if (!hitTarget.isNull())
@@ -606,15 +596,19 @@ void Sprite::markSoundFinished()
 		sound->markFinished();
 }
 
+bool Sprite::boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
+{
+	if (visibleOnly && !this->isVisible())
+		return false;
+	if (graphics && graphics->hasBounds())
+		return graphics->boundsRect(xmin,xmax,ymin,ymax);
+	return false;
+}
+
 void Sprite::fillGraphicsData(Vector* v, bool recursive)
 {
-	if (graphics && graphics->hasTokens())
-	{
-		this->graphics->startDrawJob();
-		this->graphics->refreshTokens();
-		TokenContainer::fillGraphicsData(v);
-		this->graphics->endDrawJob();
-	}
+	if (graphics && graphics->hasBounds())
+		graphics->fillGraphicsData(v);
 	DisplayObjectContainer::fillGraphicsData(v,recursive);
 }
 
@@ -651,11 +645,18 @@ void Sprite::handleMouseCursor(bool rollover)
 	}
 }
 
+string Sprite::toDebugString() const
+{
+	std::string res = DisplayObjectContainer::toDebugString();
+	if (graphics && graphics->hasBounds())
+		res += " hasgraphics";
+	return res;
+}
+
 ASFUNCTIONBODY_ATOM(Sprite,_getGraphics)
 {
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
 	Graphics* g = th->getGraphics();
-	
 	g->incRef();
 	ret = asAtomHandler::fromObject(g);
 }
@@ -677,7 +678,7 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("addChildAt","",c->getSystemState()->getBuiltinFunction(addChildAt,2,Class<DisplayObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapChildren","",c->getSystemState()->getBuiltinFunction(swapChildren),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapChildrenAt","",c->getSystemState()->getBuiltinFunction(swapChildrenAt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("contains","",c->getSystemState()->getBuiltinFunction(contains),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("contains","",c->getSystemState()->getBuiltinFunction(contains,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",c->getSystemState()->getBuiltinFunction(_setMouseChildren,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",c->getSystemState()->getBuiltinFunction(_getMouseChildren),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER(c, tabChildren);

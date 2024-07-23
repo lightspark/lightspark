@@ -251,8 +251,8 @@ public:
 class TextLine: public DisplayObjectContainer, public TextData, public TokenContainer
 {
 private:
-	// these are only used when drawing to DisplayObject, so they are guarranteed not to be destroyed during rendering
-	list<FILLSTYLE> fillstyleTextColor;
+	tokensVector tokens;
+
 	// Much of the rendering/bounds checking/hit testing code is
 	// similar to TextField and should be shared
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;

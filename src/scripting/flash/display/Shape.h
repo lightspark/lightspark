@@ -44,14 +44,14 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
-	void startDrawJob() override;
-	void endDrawJob() override;
 
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
+	void refreshSurfaceState() override;
 	IDrawable* invalidate(bool smoothing) override;
+	std::string toDebugString() const override;
 };
 
 }

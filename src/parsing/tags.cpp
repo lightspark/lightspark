@@ -671,10 +671,36 @@ DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in,RootMovieC
 
 FontTag::FontTag(RECORDHEADER h, int _scaling, RootMovieClip* root):DictionaryTag(h,root), scaling(_scaling)
 {
-	FILLSTYLE fs(1);
-	fs.FillStyleType = SOLID_FILL;
-	fs.Color = RGBA(255,255,255,255);
-	fillStyles.push_back(fs);
+}
+
+FontTag::~FontTag()
+{
+	for (auto it = cachedtokens.begin(); it != cachedtokens.end(); it++)
+	{
+		for (auto it2 = it->second.begin(); it2 != it->second.end(); it2++)
+			(*it2).destruct();
+	}
+}
+
+void FontTag::fillTokens(int glyphposition, const RGBA& color, tokensVector* tk, int scaling)
+{
+	auto it = cachedtokens.find(scaling);
+	if (it == cachedtokens.end())
+	{
+		it = cachedtokens.insert(make_pair(scaling,std::vector<tokensVector>())).first;
+		it->second.resize(getGlyphShapes().size());
+	}
+	if (!it->second.at(glyphposition).isFilled)
+	{
+		MATRIX m;
+		m.scale(scaling,scaling);
+		const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(glyphposition).ShapeRecords;
+		TokenContainer::FromShaperecordListToShapeVector(sr,it->second.at(glyphposition),true,m);
+	}
+	tk->isGlyph=true;
+	tk->color=color;
+	tk->filltokens = it->second.at(glyphposition).filltokens;
+	tk->stroketokens = it->second.at(glyphposition).stroketokens;
 }
 
 ASObject* FontTag::instance(Class_base* c)
@@ -691,54 +717,6 @@ ASObject* FontTag::instance(Class_base* c)
 	LOG(LOG_NOT_IMPLEMENTED,"FontTag::instance doesn't handle all font properties");
 	ret->SetFont(fontname,FontFlagsBold,FontFlagsItalic,true,false);
 	return ret;
-}
-
-const TextureChunk* FontTag::getCharTexture(const CharIterator& chrIt, int fontpixelsize,uint32_t& codetableindex)
-{
-	assert (*chrIt != 13 && *chrIt != 10);
-	int tokenscaling = fontpixelsize * this->scaling;
-	codetableindex=UINT32_MAX;
-
-	for (unsigned int i = 0; i < CodeTable.size(); i++)
-	{
-		if (CodeTable[i] == *chrIt)
-		{
-			codetableindex=i;
-			auto it = getGlyphShapes().at(i).scaledtexturecache.find(tokenscaling);
-			if (it == getGlyphShapes().at(i).scaledtexturecache.end())
-			{
-				const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
-				number_t ystart = getRenderCharStartYPos()/1024.0f;
-				ystart *=number_t(tokenscaling);
-				MATRIX glyphMatrix(number_t(tokenscaling)/1024.0f, number_t(tokenscaling)/1024.0f, 0, 0,0,ystart);
-				tokensVector tmptokens;
-				TokenContainer::FromShaperecordListToShapeVector(sr,tmptokens,fillStyles,glyphMatrix);
-				number_t xmin, xmax, ymin, ymax;
-				if (!TokenContainer::boundsRectFromTokens(tmptokens,0.05,xmin,xmax,ymin,ymax))
-					return nullptr;
-				CairoTokenRenderer r(tmptokens,MATRIX()
-							, xmin, ymin, xmax, ymax
-							, 1, 1
-							, false, false
-							, 0.05,1.0
-							, ColorTransformBase()
-							, SMOOTH_MODE::SMOOTH_SUBPIXEL,AS_BLENDMODE::BLENDMODE_NORMAL,0,0);
-				uint8_t* buf = r.getPixelBuffer();
-				CharacterRenderer* renderer = new CharacterRenderer(buf,abs(xmax),abs(ymax));
-				//force creation of buffer if neccessary
-				renderer->upload(true);
-				//Get the texture to be sure it's allocated when the upload comes
-				renderer->getTexture();
-				uint32_t w,h;
-				renderer->sizeNeeded(w,h);
-				getSys()->getRenderThread()->loadChunkBGRA(renderer->getTexture(),w,h,buf);
-				renderer->uploadFence();
-				it = getGlyphShapes().at(i).scaledtexturecache.insert(make_pair(tokenscaling,renderer)).first;
-			}
-			return &(*it).second->getTexture();
-		}
-	}
-	return nullptr;
 }
 
 bool FontTag::hasGlyphs(const tiny_string text) const
@@ -835,13 +813,15 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* ro
 	root->registerEmbeddedFont("",this);
 }
 
-void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, int32_t leading, int32_t startposx, int32_t startposy)
+tokensVector* DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy)
 {
 	Vector2 curPos;
 
 	int tokenscaling = fontpixelsize * this->scaling;
 	curPos.y = 1024 + startposy*1024;
-
+	bool first=true;
+	bool emptytoken=false;// indicates "space" glyph
+	tokensVector* tk = &tokens;
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
 		if (*it == 13 || *it == 10)
@@ -856,12 +836,19 @@ void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text,
 			{
 				if (CodeTable[i] == *it)
 				{
-					const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
-					Vector2 glyphPos = curPos*tokenscaling;
-					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
-							   glyphPos.x+startposx*1024*20,
-							   glyphPos.y);
-					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillstyleColor,glyphMatrix);
+					if (!first && !emptytoken)
+						tk = tokens.next = new tokensVector();
+					first =false;
+					fillTokens(i,textColor,tk,tokenscaling);
+					emptytoken=tk->empty();
+					if (!emptytoken)
+					{
+						Vector2 glyphPos = curPos*tokenscaling;
+						MATRIX glyphMatrix(1, 1, 0, 0,
+										   glyphPos.x+startposx*1024*20,
+										   glyphPos.y);
+						tk->startMatrix = glyphMatrix;
+					}
 					curPos.x += tokenscaling;
 					found = true;
 					break;
@@ -871,6 +858,7 @@ void DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text,
 				LOG(LOG_INFO,"DefineFontTag:Character not found:"<<(int)*it<<" "<<text<<" "<<this->getFontname()<<" "<<CodeTable.size());
 		}
 	}
+	return tk;
 }
 number_t DefineFont2Tag::getRenderCharStartYPos() const
 {
@@ -1014,13 +1002,16 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	root->registerEmbeddedFont(getFontname(),this);
 }
 
-void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, int32_t leading, int32_t startposx, int32_t startposy)
+tokensVector* DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy)
 {
 	Vector2 curPos;
 
 	int tokenscaling = fontpixelsize * this->scaling;
 	curPos.y = (1024+this->FontLeading/2.0)+startposy*1024;
-
+	
+	bool first=true;
+	bool emptytoken=false;// indicates "space" glyph
+	tokensVector* tk = &tokens;
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
 		if (*it == 13 || *it == 10)
@@ -1035,12 +1026,19 @@ void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 			{
 				if (CodeTable[i] == *it)
 				{
-					const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
-					Vector2 glyphPos = curPos*tokenscaling;
-					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
-							   glyphPos.x+startposx*1024*20,
-							   glyphPos.y);
-					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillstyleColor,glyphMatrix);
+					if (!first && !emptytoken)
+						tk = tk->next = new tokensVector();
+					first =false;
+					fillTokens(i,textColor,tk,tokenscaling);
+					emptytoken=tk->empty();
+					if (!emptytoken)
+					{
+						Vector2 glyphPos = curPos*tokenscaling;
+						MATRIX glyphMatrix(1, 1, 0, 0,
+										   glyphPos.x+startposx*1024*20,
+										   glyphPos.y);
+						tk->startMatrix=glyphMatrix;
+					}
 					if (FontFlagsHasLayout)
 						curPos.x += FontAdvanceTable[i];
 					else
@@ -1053,6 +1051,7 @@ void DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 				LOG(LOG_INFO,"DefineFont2Tag:Character not found:"<<(int)*it<<" "<<text<<" "<<this->getFontname()<<" "<<CodeTable.size());
 		}
 	}
+	return tk;
 }
 
 number_t DefineFont3Tag::getRenderCharStartYPos() const
@@ -1073,7 +1072,6 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 	width=0;
 	height= (number_t(FontAscent+FontDescent)/1024.0/20.0)* tokenscaling;
 	number_t tmpwidth=0;
-
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
 		if (*it == 13 || *it == 10)
@@ -1093,12 +1091,8 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 						tmpwidth += number_t(FontAdvanceTable[i])/1024.0/20.0 * tokenscaling;
 					else
 					{
-						const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
-						number_t ystart = getRenderCharStartYPos()/1024.0f;
-						ystart *=number_t(tokenscaling);
-						MATRIX glyphMatrix(number_t(tokenscaling)/1024.0f, number_t(tokenscaling)/1024.0f, 0, 0,0,ystart);
 						tokensVector tmptokens;
-						TokenContainer::FromShaperecordListToShapeVector(sr,tmptokens,fillStyles,glyphMatrix);
+						fillTokens(i,RGBA(),&tmptokens,tokenscaling);
 						number_t xmin, xmax, ymin, ymax;
 						if (TokenContainer::boundsRectFromTokens(tmptokens,0.05,xmin,xmax,ymin,ymax))
 							tmpwidth += xmax-xmin;
@@ -1234,12 +1228,15 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 
 }
 
-void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize, const list<FILLSTYLE>& fillstyleColor, int32_t leading, int32_t startposx, int32_t startposy)
+tokensVector* DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy)
 {
 	Vector2 curPos;
 
 	int tokenscaling = fontpixelsize * this->scaling;
 	curPos.y = getRenderCharStartYPos()*this->scaling;
+	bool first = true;
+	bool emptytoken=false;// indicates "space" glyph
+	tokensVector* tk = &tokens;
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
 		assert (*it != 13 && *it != 10);
@@ -1254,12 +1251,19 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 			{
 				if (CodeTable[i] == *it)
 				{
-					const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(i).ShapeRecords;
-					Vector2 glyphPos = curPos*tokenscaling;
-					MATRIX glyphMatrix(tokenscaling, tokenscaling, 0, 0,
-							   glyphPos.x+startposx*1024*20,
-							   glyphPos.y+startposy*1024*20);
-					TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillstyleColor,glyphMatrix);
+					if (!first && !emptytoken)
+						tk = tk->next = new tokensVector();
+					first =false;
+					fillTokens(i,textColor,tk,tokenscaling);
+					emptytoken = tk->empty();
+					if (!emptytoken)
+					{
+						Vector2 glyphPos = curPos*tokenscaling;
+						MATRIX glyphMatrix(1, 1, 0, 0,
+										   glyphPos.x+startposx*1024*20,
+										   glyphPos.y+startposy*1024*20);
+						tk->startMatrix=glyphMatrix;
+					}
 					if (FontFlagsHasLayout)
 						curPos.x += FontAdvanceTable[i];
 					found = true;
@@ -1270,6 +1274,7 @@ void DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text
 				LOG(LOG_INFO,"DefineFont3Tag:Character not found:"<<(int)*it<<" "<<text<<" "<<this->getFontname()<<" "<<CodeTable.size());
 		}
 	}
+	return tk;
 }
 
 DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root)
@@ -1466,6 +1471,11 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, RootMovieClip* root,in
 	}
 }
 
+DefineTextTag::~DefineTextTag()
+{
+	tokens.destruct();
+}
+
 ASObject* DefineTextTag::instance(Class_base* c)
 {
 	/* we cannot call computeCached in the constructor
@@ -1477,7 +1487,7 @@ ASObject* DefineTextTag::instance(Class_base* c)
 	if(c==nullptr)
 		c=Class<StaticText>::getClass(loadedFrom->getSystemState());
 
-	StaticText* ret=new (c->memoryAccount) StaticText(loadedFrom->getInstanceWorker(),c, tokens,TextBounds,this->getId());
+	StaticText* ret=new (c->memoryAccount) StaticText(loadedFrom->getInstanceWorker(),c, &tokens,TextBounds,this->getId());
 	return ret;
 }
 
@@ -1501,7 +1511,11 @@ void DefineTextTag::computeCached()
 	// Scale the translation component of TextMatrix.
 	MATRIX scaledTextMatrix = TextMatrix;
 	scaledTextMatrix.translate((TextMatrix.getTranslateX()-TextBounds.Xmin/20) *pixelScaling,(TextMatrix.getTranslateY()-TextBounds.Ymin/20) *pixelScaling);
-
+	
+	bool first=true;
+	bool emptytoken=false;// indicates "space" glyph
+	tokensVector* tk = &tokens;
+	RGBA color;
 	for(size_t i=0; i< TextRecords.size();++i)
 	{
 		if(TextRecords[i].StyleFlagsHasFont)
@@ -1511,14 +1525,8 @@ void DefineTextTag::computeCached()
 			assert_and_throw(curFont);
 		}
 		assert_and_throw(curFont);
-		FILLSTYLE fs(1);
-		fs.FillStyleType = SOLID_FILL;
-		fs.Color = RGBA(0,0,0,255);
 		if(TextRecords[i].StyleFlagsHasColor)
-			fs.Color = TextRecords[i].TextColor;
-		else if (!fillStyles.empty())
-			fs.Color = fillStyles.back().Color;
-		fillStyles.push_back(fs);
+			color = TextRecords[i].TextColor;
 		if(TextRecords[i].StyleFlagsHasXOffset)
 		{
 			curPos.x = TextRecords[i].XOffset;
@@ -1537,21 +1545,22 @@ void DefineTextTag::computeCached()
 		for(uint32_t j=0;j<TextRecords[i].GlyphEntries.size();++j)
 		{
 			const GLYPHENTRY& ge = TextRecords[i].GlyphEntries[j];
-			// use copy of shaperecords to modify fillstyle
-			std::vector<SHAPERECORD> sr = curFont->getGlyphShapes().at(ge.GlyphIndex).ShapeRecords;
-			//set fillstyle of each glyph to fillstyle of this TextRecord
-			for (auto it = sr.begin(); it != sr.end(); it++)
-				(*it).FillStyle0 = i+1;
-			Vector2f glyphPos = curPos*twipsScaling;
-
-			MATRIX glyphMatrix(scaling, scaling, 0, 0, 
-						glyphPos.x,
-						glyphPos.y);
-
-			//Apply glyphMatrix first, then scaledTextMatrix
-			glyphMatrix = scaledTextMatrix.multiplyMatrix(glyphMatrix);
-
-			TokenContainer::FromShaperecordListToShapeVector(sr,tokens,fillStyles,glyphMatrix,list<LINESTYLE2>(),this->TextBounds);
+			if (!first && !emptytoken)
+				tk = tk->next = new tokensVector();
+			first =false;
+			curFont->fillTokens(ge.GlyphIndex,color,tk,scaling);
+			emptytoken = tk->empty();
+			if (!tk->empty())
+			{
+				Vector2f glyphPos = curPos*twipsScaling;
+				
+				MATRIX glyphMatrix(1, 1, 0, 0, 
+								   glyphPos.x,
+								   glyphPos.y);
+				
+				//Apply glyphMatrix first, then scaledTextMatrix
+				tk->startMatrix = scaledTextMatrix.multiplyMatrix(glyphMatrix);
+			}
 			curPos.x += ge.GlyphAdvance;
 		}
 	}
@@ -1581,7 +1590,10 @@ DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* r
 DefineShapeTag::~DefineShapeTag()
 {
 	if (tokens)
+	{
+		tokens->destruct();
 		delete tokens;
+	}
 }
 
 ASObject *DefineShapeTag::instance(Class_base *c)
@@ -1597,7 +1609,7 @@ ASObject *DefineShapeTag::instance(Class_base *c)
 		{
 			it->FillType.ShapeBounds = ShapeBounds;
 		}
-		TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,*tokens,Shapes.FillStyles.FillStyles,MATRIX(),Shapes.LineStyles.LineStyles2,ShapeBounds);
+		TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,*tokens,false,MATRIX(),Shapes.FillStyles.FillStyles,Shapes.LineStyles.LineStyles2,ShapeBounds);
 	}
 	Shape* ret=nullptr;
 	if(c==nullptr)
@@ -1660,7 +1672,15 @@ DefineMorphShapeTag::DefineMorphShapeTag(RECORDHEADER h, std::istream& in, RootM
 		LOG(LOG_ERROR,"Invalid data for morph shape");
 	}
 }
-
+DefineMorphShapeTag::~DefineMorphShapeTag()
+{
+	auto it = tokensmap.begin();
+	while (it != tokensmap.end())
+	{
+		it->second.destruct();
+		it = tokensmap.erase(it);
+	}
+}
 ASObject* DefineMorphShapeTag::instance(Class_base* c)
 {
 	assert_and_throw(bindedTo==nullptr);
@@ -1670,7 +1690,7 @@ ASObject* DefineMorphShapeTag::instance(Class_base* c)
 	return ret;
 }
 
-void DefineMorphShapeTag::getTokensForRatio(tokensVector& tokens, uint32_t ratio)
+void DefineMorphShapeTag::getTokensForRatio(tokensVector** tokens, uint32_t ratio)
 {
 	auto it = tokensmap.find(ratio);
 	if (it==tokensmap.end())
@@ -1678,8 +1698,7 @@ void DefineMorphShapeTag::getTokensForRatio(tokensVector& tokens, uint32_t ratio
 		it = tokensmap.insert(make_pair(ratio,tokensVector())).first;
 		TokenContainer::FromDefineMorphShapeTagToShapeVector(this,it->second,ratio);
 	}
-	tokens.filltokens.assign(it->second.filltokens.begin(),it->second.filltokens.end());
-	tokens.stroketokens.assign(it->second.stroketokens.begin(),it->second.stroketokens.end());
+	*tokens = &it->second;
 }
 
 DefineMorphShape2Tag::DefineMorphShape2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DefineMorphShapeTag(h, root, 2)

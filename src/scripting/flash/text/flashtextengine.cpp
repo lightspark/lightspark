@@ -774,7 +774,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	if (!elementFormat.isNull() &&
 		!elementFormat->fontDescription.isNull()   )
 	{
-		th->content->as<TextElement>()->elementFormat->fontDescription->fontName;
+		textLine->font = th->content->as<TextElement>()->elementFormat->fontDescription->fontName;
 	}
 
 	textLine->specifiedWidth = width;
@@ -1080,12 +1080,11 @@ ASFUNCTIONBODY_ATOM(GroupElement,_constructor)
 }
 
 TextLine::TextLine(ASWorker* wrk, Class_base* c, _NR<TextBlock> owner)
-  : DisplayObjectContainer(wrk,c), TextData(), TokenContainer(this),nextLine(nullptr),previousLine(nullptr),userData(nullptr)
+  : DisplayObjectContainer(wrk,c), TextData(), TokenContainer(this), nextLine(nullptr),previousLine(nullptr),userData(nullptr)
   ,hasGraphicElement(false),hasTabs(false),rawTextLength(0),specifiedWidth(0),textBlockBeginIndex(0)
 {
 	subtype = SUBTYPE_TEXTLINE;
 	textBlock = owner;
-	fillstyleTextColor.push_back(0xff);
 }
 
 void TextLine::sinit(Class_base* c)
@@ -1247,14 +1246,19 @@ IDrawable* TextLine::invalidate(bool smoothing)
 		//No contents, nothing to do
 		return nullptr;
 	}
-
+	ColorTransformBase ct;
+	ct.fillConcatenated(this);
+	MATRIX matrix = getMatrix();
+	bool isMask=this->isMask();
+	MATRIX m;
+	m.scale(matrix.getScaleX(),matrix.getScaleY());
+	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 	tokens.clear();
 	if (embeddedFont)
 	{
 		scaling = 1.0f/1024.0f/20.0f;
-		fillstyleTextColor.front().FillStyleType=SOLID_FILL;
-		fillstyleTextColor.front().Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
 		int32_t startposy = TEXTFIELD_PADDING;
+		RGBA color(textColor.Red,textColor.Green,textColor.Blue,0xff);
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{
 			if (isPassword)
@@ -1262,21 +1266,23 @@ IDrawable* TextLine::invalidate(bool smoothing)
 				tiny_string pwtxt;
 				for (uint32_t i = 0; i < (*it).text.numChars(); i++)
 					pwtxt+="*";
-				embeddedFont->fillTextTokens(tokens,pwtxt,fontSize,fillstyleTextColor,leading,TEXTFIELD_PADDING+(*it).autosizeposition,startposy);
+				embeddedFont->fillTextTokens(tokens,pwtxt,fontSize,color,leading,TEXTFIELD_PADDING+(*it).autosizeposition,startposy);
 			}
 			else
-				embeddedFont->fillTextTokens(tokens,(*it).text,fontSize,fillstyleTextColor,leading,TEXTFIELD_PADDING+(*it).autosizeposition,startposy);
+				embeddedFont->fillTextTokens(tokens,(*it).text,fontSize,color,leading,TEXTFIELD_PADDING+(*it).autosizeposition,startposy);
 			startposy += this->leading+(embeddedFont->getAscent()+embeddedFont->getDescent()+embeddedFont->getLeading())*fontSize/1024;
 		}
 		if (tokens.empty())
-			return nullptr;
-		return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,false);
+		{
+			this->resetNeedsTextureRecalculation();
+			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
+										   , matrix.getScaleX(), matrix.getScaleY()
+										   , isMask, cacheAsBitmap
+										   , getScaleFactor(), getConcatenatedAlpha()
+										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+		}
+		return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,false,tokens);
 	}
-	MATRIX matrix = getMatrix();
-	bool isMask=this->isMask();
-	MATRIX m;
-	m.scale(matrix.getScaleX(),matrix.getScaleY());
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 	if (getLineCount()==0)
 		return nullptr;
 	if(width==0 || height==0)

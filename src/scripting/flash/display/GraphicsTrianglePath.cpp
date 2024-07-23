@@ -68,5 +68,5 @@ ASFUNCTIONBODY_GETTER_SETTER(GraphicsTrianglePath, vertices)
 
 void GraphicsTrianglePath::appendToTokens(tokensVector& tokens,Graphics* graphics)
 {
-	Graphics::drawTrianglesToTokens(vertices, indices, uvtData, culling, tokens);
+	graphics->drawTrianglesToTokens(vertices, indices, uvtData, culling, &tokens);
 }

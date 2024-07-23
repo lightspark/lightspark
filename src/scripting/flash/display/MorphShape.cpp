@@ -37,7 +37,7 @@ MorphShape::MorphShape(ASWorker* wrk,Class_base *c, DefineMorphShapeTag* _morphs
 	subtype=SUBTYPE_MORPHSHAPE;
 	scaling = 1.0f/20.0f;
 	if (this->morphshapetag)
-		this->morphshapetag->getTokensForRatio(tokens,0);
+		this->morphshapetag->getTokensForRatio(&tokens,0);
 }
 
 void MorphShape::sinit(Class_base* c)
@@ -47,7 +47,7 @@ void MorphShape::sinit(Class_base* c)
 
 IDrawable* MorphShape::invalidate(bool smoothing)
 {
-	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false);
+	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);
 }
 
 bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t &ymax, bool visibleOnly)
@@ -55,7 +55,7 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 	if (visibleOnly && !this->isVisible())
 		return false;
 	if (!this->legacy || (morphshapetag==nullptr))
-		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
+		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax,this->tokens);
 	float curratiofactor = float(currentratio)/65535.0;
 	xmin=(morphshapetag->StartBounds.Xmin + (float(morphshapetag->EndBounds.Xmin - morphshapetag->StartBounds.Xmin)*curratiofactor))/20.0;
 	xmax=(morphshapetag->StartBounds.Xmax + (float(morphshapetag->EndBounds.Xmax - morphshapetag->StartBounds.Xmax)*curratiofactor))/20.0;
@@ -72,7 +72,7 @@ _NR<DisplayObject> MorphShape::hitTestImpl(const Vector2f& globalPoint, const Ve
 	//TODO: Add a point intersect function to RECT, and use that instead.
 	if (localPoint.x<xmin || localPoint.x>xmax || localPoint.y<ymin || localPoint.y>ymax)
 		return NullRef;
-	if (TokenContainer::hitTestImpl(Vector2f(localPoint.x-xmin,localPoint.y-ymin)))
+	if (TokenContainer::hitTestImpl(Vector2f(localPoint.x-xmin,localPoint.y-ymin),tokens))
 	{
 		this->incRef();
 		return _MR(this);
@@ -87,7 +87,7 @@ void MorphShape::checkRatio(uint32_t ratio, bool inskipping)
 	currentratio = ratio;
 	if (this->morphshapetag)
 	{
-		this->morphshapetag->getTokensForRatio(tokens,ratio);
+		this->morphshapetag->getTokensForRatio(&tokens,ratio);
 		geometryChanged();
 	}
 	this->hasChanged = true;

@@ -1019,7 +1019,7 @@ void SoundChannel::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable=true;
 	c->setDeclaredMethodByQName("stop","",c->getSystemState()->getBuiltinFunction(stop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(getPosition),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(getPosition,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 
 	REGISTER_GETTER_RESULTTYPE(c,leftPeak,Number);
 	REGISTER_GETTER_RESULTTYPE(c,rightPeak,Number);

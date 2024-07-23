@@ -37,17 +37,15 @@ using namespace std;
 
 extern int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style);
 
-TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o)
+TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o),tokens(nullptr)
   ,scaling(0.05),renderWithNanoVG(false)
 {
 }
 
-TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling) : owner(_o)
+TokenContainer::TokenContainer(DisplayObject* _o, tokensVector* _tokens, float _scaling) : owner(_o),tokens(_tokens)
 	,scaling(_scaling),renderWithNanoVG(false)
 
 {
-	tokens.filltokens.assign(_tokens.filltokens.begin(),_tokens.filltokens.end());
-	tokens.stroketokens.assign(_tokens.stroketokens.begin(),_tokens.stroketokens.end());
 }
 
 /*! \brief Generate a vector of shapes from a SHAPERECORD list
@@ -55,13 +53,14 @@ TokenContainer::TokenContainer(DisplayObject* _o, const tokensVector& _tokens, f
 * * \param shapes a vector to be populated with the shapes */
 
 void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
-								  tokensVector& tokens,
-								  const std::list<FILLSTYLE>& fillStyles,
+								  tokensVector& tokens, bool isGlyph,
 								  const MATRIX& matrix,
+								  const std::list<FILLSTYLE>& fillStyles,
 								  const std::list<LINESTYLE2>& lineStyles,
 								  const RECT& shapebounds)
 {
 	tokens.boundsRect = shapebounds;
+	tokens.isFilled=true;
 	Vector2f cursor;
 	unsigned int color0=0;
 	unsigned int color1=0;
@@ -120,10 +119,10 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 		}
 	}
 
-	shapesBuilder.outputTokens(fillStyles,lineStyles, tokens);
+	shapesBuilder.outputTokens(fillStyles,lineStyles, tokens,isGlyph);
 }
 
-void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *tag, tokensVector &tokens, uint16_t ratio)
+void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *tag, tokensVector& tokens, uint16_t ratio)
 {
 	Vector2 cursor;
 	unsigned int color0=0;
@@ -224,13 +223,12 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 				color0=curstart->FillStyle0;
 		}
 	}
-	tokens.clear();
 	shapesBuilder.outputMorphTokens(tag->MorphFillStyles.FillStyles,tag->MorphLineStyles.LineStyles2, tokens,ratio,boundsrc);
 }
 
 void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	if(tokens.empty())
+	if (this->tokensEmpty())
 		return;
 	owner->requestInvalidationFilterParent(q);
 	
@@ -240,18 +238,18 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 	q->addToInvalidateQueue(_MR(owner));
 }
 
-bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const
+bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, tokensVector* tk)
 {
-	if (this->tokensEmpty())
+	if (!tk || tk->empty())
 		return false;
-	xmin = this->tokens.boundsRect.Xmin*scaling;
-	xmax = this->tokens.boundsRect.Xmax*scaling;
-	ymin = this->tokens.boundsRect.Ymin*scaling;
-	ymax = this->tokens.boundsRect.Ymax*scaling;
+	xmin = tk->boundsRect.Xmin*scaling;
+	xmax = tk->boundsRect.Xmax*scaling;
+	ymin = tk->boundsRect.Ymin*scaling;
+	ymax = tk->boundsRect.Ymax*scaling;
 	return true;
 }
 
-IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
+IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics, const tokensVector& tokens)
 {
 	number_t x,y;
 	number_t width,height;
@@ -293,7 +291,6 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 		regpointy=bymin;
 	}
 	if (owner->getSystemState()->getEngineData()->nvgcontext
-		&& !tokens.empty()
 		&& !r
 		)
 	{
@@ -314,7 +311,12 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 									   , isMask, owner->cacheAsBitmap
 									   , this->scaling, owner->getConcatenatedAlpha()
 									   , ct, smoothing,owner->getBlendMode(),matrix);
-		ret->getState()->tokens = this->tokens;
+		ret->getState()->tokens.filltokens = tokens.filltokens;
+		ret->getState()->tokens.stroketokens = tokens.stroketokens;
+		ret->getState()->tokens.next = tokens.next;
+		ret->getState()->tokens.isGlyph = tokens.isGlyph;
+		ret->getState()->tokens.color = tokens.color;
+		ret->getState()->tokens.startMatrix = tokens.startMatrix;
 		ret->getState()->renderWithNanoVG = renderWithNanoVG;
 		owner->resetNeedsTextureRecalculation();
 		return ret;
@@ -325,7 +327,7 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 		owner->setNeedsTextureRecalculation();
 		renderWithNanoVG=false;
 	}
-	IDrawable* ret = new CairoTokenRenderer(tokens,matrix
+	IDrawable* ret = new CairoTokenRenderer(tokens.filltokens,tokens.stroketokens,matrix
 				, x, y, ceil(width), ceil(height)
 				, matrix.getScaleX(), matrix.getScaleY()
 				, isMask, owner->cacheAsBitmap
@@ -335,21 +337,28 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics)
 	return ret;
 }
 
-bool TokenContainer::hitTestImpl(const Vector2f& point) const
+bool TokenContainer::hitTestImpl(const Vector2f& point, tokensVector* tk) const
 {
+	if (!tk || tk->empty())
+		return false;
 	//Masks have been already checked along the way
-
-	owner->startDrawJob(); // ensure that tokens are not changed during hitTest
-	if(CairoTokenRenderer::hitTest(tokens, scaling, point))
+	bool ret = false;
+	tokensVector* tktmp = tk;
+	while (tktmp && !ret)
 	{
-		owner->endDrawJob();
-		return true;
+		ret = CairoTokenRenderer::hitTest(tktmp->filltokens, scaling, point);
+		tktmp = tktmp->next;
 	}
-	owner->endDrawJob();
-	return false;
+	tktmp = tk;
+	while (tktmp && !ret)
+	{
+		ret = CairoTokenRenderer::hitTest(tktmp->stroketokens, scaling, point);
+		tktmp = tktmp->next;
+	}
+	return ret;
 }
 
-bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scaling, number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
+bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens, float scaling, number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)
 {
 
 	#define VECTOR_BOUNDS(v) \
@@ -368,102 +377,107 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 
 	bool hasContent = false;
 	double strokeWidth = 0;
-
-	auto it = tokens.filltokens.begin();
-	while(it != tokens.filltokens.end())
+	if (tokens.filltokens)
 	{
-		GeomToken p(*it,false);
-		switch(p.type)
+		auto it = tokens.filltokens->tokens.begin();
+		while(it != tokens.filltokens->tokens.end())
 		{
-			case CURVE_CUBIC:
+			GeomToken p(*it,false);
+			switch(p.type)
 			{
-				GeomToken p1(*(++it),false);
-				VECTOR_BOUNDS(p1.vec);
+				case CURVE_CUBIC:
+				{
+					GeomToken p1(*(++it),false);
+					VECTOR_BOUNDS(p1.vec);
+				}
+				// falls through
+				case CURVE_QUADRATIC:
+				{
+					GeomToken p1(*(++it),false);
+					VECTOR_BOUNDS(p1.vec);
+				}
+				// falls through
+				case STRAIGHT:
+				{
+					hasContent = true;
+				}
+				// falls through
+				case MOVE:
+				{
+					GeomToken p1(*(++it),false);
+					VECTOR_BOUNDS(p1.vec);
+					break;
+				}
+				case CLEAR_FILL:
+				case CLEAR_STROKE:
+				case FILL_KEEP_SOURCE:
+					break;
+				case SET_STROKE:
+				{
+					GeomToken p1(*(++it),false);
+					strokeWidth = (double)(p1.lineStyle->Width);
+					break;
+				}
+				case SET_FILL:
+					it++;
+					break;
+				case FILL_TRANSFORM_TEXTURE:
+					it+=6;
+					break;
 			}
-			// falls through
-			case CURVE_QUADRATIC:
-			{
-				GeomToken p1(*(++it),false);
-				VECTOR_BOUNDS(p1.vec);
-			}
-			// falls through
-			case STRAIGHT:
-			{
-				hasContent = true;
-			}
-			// falls through
-			case MOVE:
-			{
-				GeomToken p1(*(++it),false);
-				VECTOR_BOUNDS(p1.vec);
-				break;
-			}
-			case CLEAR_FILL:
-			case CLEAR_STROKE:
-			case FILL_KEEP_SOURCE:
-				break;
-			case SET_STROKE:
-			{
-				GeomToken p1(*(++it),false);
-				strokeWidth = (double)(p1.lineStyle->Width);
-				break;
-			}
-			case SET_FILL:
-				it++;
-				break;
-			case FILL_TRANSFORM_TEXTURE:
-				it+=6;
-				break;
+			it++;
 		}
-		it++;
 	}
-	auto it2 = tokens.stroketokens.begin();
-	while(it2 != tokens.stroketokens.end())
+	if (tokens.stroketokens)
 	{
-		GeomToken p(*it2,false);
-		switch(p.type)
+		auto it2 = tokens.stroketokens->tokens.begin();
+		while(it2 != tokens.stroketokens->tokens.end())
 		{
-			case CURVE_CUBIC:
+			GeomToken p(*it2,false);
+			switch(p.type)
 			{
-				GeomToken p1(*(++it2),false);
-				VECTOR_BOUNDS(p1.vec);
+				case CURVE_CUBIC:
+				{
+					GeomToken p1(*(++it2),false);
+					VECTOR_BOUNDS(p1.vec);
+				}
+				// falls through
+				case CURVE_QUADRATIC:
+				{
+					GeomToken p1(*(++it2),false);
+					VECTOR_BOUNDS(p1.vec);
+				}
+				// falls through
+				case STRAIGHT:
+				{
+					hasContent = true;
+				}
+				// falls through
+				case MOVE:
+				{
+					GeomToken p1(*(++it2),false);
+					VECTOR_BOUNDS(p1.vec);
+					break;
+				}
+				case CLEAR_FILL:
+				case CLEAR_STROKE:
+				case FILL_KEEP_SOURCE:
+					break;
+				case SET_STROKE:
+				{
+					GeomToken p1(*(++it2),false);
+					strokeWidth = (double)(p1.lineStyle->Width);
+					break;
+				}
+				case SET_FILL:
+					it2++;
+					break;
+				case FILL_TRANSFORM_TEXTURE:
+					it2+=6;
+					break;
 			}
-			// falls through
-			case CURVE_QUADRATIC:
-			{
-				GeomToken p1(*(++it2),false);
-				VECTOR_BOUNDS(p1.vec);
-			}
-			// falls through
-			case STRAIGHT:
-			{
-				hasContent = true;
-			}
-			// falls through
-			case MOVE:
-			{
-				GeomToken p1(*(++it2),false);
-				VECTOR_BOUNDS(p1.vec);
-				break;
-			}
-			case CLEAR_FILL:
-			case CLEAR_STROKE:
-			case FILL_KEEP_SOURCE:
-				break;
-			case SET_STROKE:
-			{
-				GeomToken p1(*(++it2),false);
-				strokeWidth = (double)(p1.lineStyle->Width);
-				break;
-			}
-			case SET_FILL:
-				it2++;
-				break;
-			case FILL_TRANSFORM_TEXTURE:
-				it2+=6;
-				break;
+			it2++;
 		}
-		it2++;
 	}
 	if(hasContent)
 	{
@@ -478,7 +492,7 @@ bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens,float scali
 }
 
 /* Find the size of the active texture (bitmap set by the latest SET_FILL). */
-void TokenContainer::getTextureSize(std::vector<uint64_t>& tokens, int *width, int *height)
+void TokenContainer::getTextureSize(TokenList& tokens, int *width, int *height)
 {
 	*width=0;
 	*height=0;
@@ -532,7 +546,7 @@ void TokenContainer::getTextureSize(std::vector<uint64_t>& tokens, int *width, i
 	}
 }
 
-std::vector<uint64_t>::const_iterator beginGraphicsFill(std::vector<uint64_t>::const_iterator it, ASWorker* wrk,Vector* v, bool& infill)
+TokenList::const_iterator beginGraphicsFill(TokenList::const_iterator it, ASWorker* wrk,Vector* v, bool& infill)
 {
 	it++;
 	infill=true;
@@ -566,7 +580,7 @@ void endGraphicsFill(GraphicsPath** currentpath, bool& infill, Vector* v, ASWork
 		infill=false;
 	}
 }
-std::vector<uint64_t>::const_iterator addDrawCommand(GRAPHICSPATH_COMMANDTYPE cmd, int argcount, std::vector<uint64_t>::const_iterator it, GraphicsPath** currentpath, ASWorker* wrk, const MATRIX& matrix, number_t scale)
+TokenList::const_iterator addDrawCommand(GRAPHICSPATH_COMMANDTYPE cmd, int argcount, TokenList::const_iterator it, GraphicsPath** currentpath, ASWorker* wrk, const MATRIX& matrix, number_t scale)
 {
 	if (*currentpath==nullptr)
 	{
@@ -587,93 +601,99 @@ std::vector<uint64_t>::const_iterator addDrawCommand(GRAPHICSPATH_COMMANDTYPE cm
 	}
 	return it;
 }
-void TokenContainer::fillGraphicsData(Vector* v)
+void TokenContainer::fillGraphicsData(Vector* v, _NR<tokenListRef> filltokens, _NR<tokenListRef> stroketokens, int startx, int starty)
 {
 	ASWorker* wrk = owner->getInstanceWorker();
 	MATRIX m;
 	// TODO it seems that contrary to specs the coordinates are _not_ in relation to stage
-	m.translate(owner->tx+tokens.boundsRect.Xmin*this->scaling,owner->ty+tokens.boundsRect.Ymin*this->scaling);	
+	m.translate(owner->tx+startx*this->scaling,owner->ty+starty*this->scaling);	
 
 	GraphicsPath* currentpath=nullptr;
 	bool infill=false;
-	for (auto it = tokens.filltokens.cbegin(); it != tokens.filltokens.cend(); it++)
+	if (filltokens)
 	{
-		GeomToken t(*it,false); 
-		switch (t.type)
+		for (auto it = filltokens->tokens.cbegin(); it != filltokens->tokens.cend(); it++)
 		{
-			case SET_STROKE:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				it++;
-				break;
-			case STRAIGHT:
-				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::LINE_TO,1,it,&currentpath,wrk,m,this->scaling);
-				break;
-			case MOVE:
-				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::MOVE_TO,1,it,&currentpath,wrk,m,this->scaling);
-				break;
-			case CURVE_QUADRATIC:
-				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CURVE_TO,2,it,&currentpath,wrk,m,this->scaling);
-				break;
-			case CLEAR_FILL:
-				endGraphicsFill(&currentpath,infill,v,wrk);
-				break;
-			case CLEAR_STROKE:
-			case FILL_KEEP_SOURCE:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				break;
-			case CURVE_CUBIC:
-				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CUBIC_CURVE_TO,3,it,&currentpath,wrk,m,this->scaling);
-				break;
-			case FILL_TRANSFORM_TEXTURE:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				it+=6;
-				break;
-			case SET_FILL:
-				endGraphicsFill(&currentpath,infill,v,wrk);
-				it = beginGraphicsFill(it,wrk,v,infill);
-				break;
-		}
-	}
-	endGraphicsFill(&currentpath,infill,v,wrk);
-	for (auto it = tokens.stroketokens.cbegin(); it != tokens.stroketokens.cend(); it++)
-	{
-		GeomToken t(*it,false); 
-		switch (t.type)
-		{
-			case SET_STROKE:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				it++;
-				break;
-			case STRAIGHT:
-				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::LINE_TO,1,it,&currentpath,wrk,m,this->scaling);
-				break;
-			case MOVE:
-				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::MOVE_TO,1,it,&currentpath,wrk,m,this->scaling);
-				break;
-			case CURVE_QUADRATIC:
-				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CURVE_TO,2,it,&currentpath,wrk,m,this->scaling);
-				break;
-			case CLEAR_FILL:
-				endGraphicsFill(&currentpath,infill,v,wrk);
-				break;
-			case CLEAR_STROKE:
-			case FILL_KEEP_SOURCE:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				break;
-			case CURVE_CUBIC:
-				it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CUBIC_CURVE_TO,3,it,&currentpath,wrk,m,this->scaling);
-				break;
-			case FILL_TRANSFORM_TEXTURE:
-				LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
-				it+=6;
-				break;
-			case SET_FILL:
+			GeomToken t(*it,false); 
+			switch (t.type)
 			{
-				endGraphicsFill(&currentpath,infill,v,wrk);
-				it = beginGraphicsFill(it,wrk,v,infill);
-				break;
+				case SET_STROKE:
+					LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+					it++;
+					break;
+				case STRAIGHT:
+					it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::LINE_TO,1,it,&currentpath,wrk,m,this->scaling);
+					break;
+				case MOVE:
+					it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::MOVE_TO,1,it,&currentpath,wrk,m,this->scaling);
+					break;
+				case CURVE_QUADRATIC:
+					it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CURVE_TO,2,it,&currentpath,wrk,m,this->scaling);
+					break;
+				case CLEAR_FILL:
+					endGraphicsFill(&currentpath,infill,v,wrk);
+					break;
+				case CLEAR_STROKE:
+				case FILL_KEEP_SOURCE:
+					LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+					break;
+				case CURVE_CUBIC:
+					it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CUBIC_CURVE_TO,3,it,&currentpath,wrk,m,this->scaling);
+					break;
+				case FILL_TRANSFORM_TEXTURE:
+					LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+					it+=6;
+					break;
+				case SET_FILL:
+					endGraphicsFill(&currentpath,infill,v,wrk);
+					it = beginGraphicsFill(it,wrk,v,infill);
+					break;
 			}
 		}
+		endGraphicsFill(&currentpath,infill,v,wrk);
 	}
-	endGraphicsFill(&currentpath,infill,v,wrk);
+	if (stroketokens)
+	{
+		for (auto it = stroketokens->tokens.cbegin(); it != stroketokens->tokens.cend(); it++)
+		{
+			GeomToken t(*it,false); 
+			switch (t.type)
+			{
+				case SET_STROKE:
+					LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+					it++;
+					break;
+				case STRAIGHT:
+					it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::LINE_TO,1,it,&currentpath,wrk,m,this->scaling);
+					break;
+				case MOVE:
+					it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::MOVE_TO,1,it,&currentpath,wrk,m,this->scaling);
+					break;
+				case CURVE_QUADRATIC:
+					it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CURVE_TO,2,it,&currentpath,wrk,m,this->scaling);
+					break;
+				case CLEAR_FILL:
+					endGraphicsFill(&currentpath,infill,v,wrk);
+					break;
+				case CLEAR_STROKE:
+				case FILL_KEEP_SOURCE:
+					LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+					break;
+				case CURVE_CUBIC:
+					it = addDrawCommand(GRAPHICSPATH_COMMANDTYPE::CUBIC_CURVE_TO,3,it,&currentpath,wrk,m,this->scaling);
+					break;
+				case FILL_TRANSFORM_TEXTURE:
+					LOG(LOG_NOT_IMPLEMENTED,"fillGraphicsData for Token type:"<<t.type<<" "<<this->owner->toDebugString());
+					it+=6;
+					break;
+				case SET_FILL:
+				{
+					endGraphicsFill(&currentpath,infill,v,wrk);
+					it = beginGraphicsFill(it,wrk,v,infill);
+					break;
+				}
+			}
+		}
+		endGraphicsFill(&currentpath,infill,v,wrk);
+	}
 }

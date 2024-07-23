@@ -1726,42 +1726,44 @@ IDrawable* TextField::invalidate(bool smoothing)
 	tokens.clear();
 	if (embeddedFont)
 	{
+		if (!tokens.filltokens)
+			tokens.filltokens = _MR(new tokenListRef());
 		scaling = 1.0f/1024.0f/20.0f;
 		if (this->border || this->background)
 		{
 			fillstyleBackgroundColor.FillStyleType=SOLID_FILL;
 			fillstyleBackgroundColor.Color=this->backgroundColor;
-			tokens.filltokens.push_back(GeomToken(SET_FILL).uval);
-			tokens.filltokens.push_back(GeomToken(fillstyleBackgroundColor).uval);
-			tokens.filltokens.push_back(GeomToken(MOVE).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
-			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens.push_back(GeomToken(CLEAR_FILL).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(SET_FILL).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(fillstyleBackgroundColor).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(CLEAR_FILL).uval);
 		}
 		if (this->border)
 		{
 			lineStyleBorder.Color=this->borderColor;
 			lineStyleBorder.Width=20;
-			tokens.filltokens.push_back(GeomToken(SET_STROKE).uval);
-			tokens.filltokens.push_back(GeomToken(lineStyleBorder).uval);
-			tokens.filltokens.push_back(GeomToken(MOVE).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
-			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens.push_back(GeomToken(CLEAR_STROKE).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(SET_STROKE).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(lineStyleBorder).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
 		}
 		if (this->caretblinkstate)
 		{
@@ -1782,29 +1784,33 @@ IDrawable* TextField::invalidate(bool smoothing)
 			lineStyleCaret.Color=RGB(0,0,0);
 			lineStyleCaret.Width=40;
 			int ypadding = (bymax-bymin-2)/scaling;
-			tokens.filltokens.push_back(GeomToken(SET_STROKE).uval);
-			tokens.filltokens.push_back(GeomToken(lineStyleCaret).uval);
-			tokens.filltokens.push_back(GeomToken(MOVE).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2(tw, bymin/scaling+ypadding)).uval);
-			tokens.filltokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens.push_back(GeomToken(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
-			tokens.filltokens.push_back(GeomToken(CLEAR_STROKE).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(SET_STROKE).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(lineStyleCaret).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2(tw, bymin/scaling+ypadding)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
+			tokens.filltokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
 		}
-		fillstyleTextColor.front().FillStyleType=SOLID_FILL;
-		fillstyleTextColor.front().Color= RGBA(textColor.Red,textColor.Green,textColor.Blue,255);
 		int32_t startposy = TEXTFIELD_PADDING+bymin;
 		linemutex->lock();
+		RGBA color(textColor.Red,textColor.Green,textColor.Blue,0xff);
+		tokensVector* tk = &tokens;
+		bool first = tk->empty();
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{
+			if (!first)
+				tk = tk->next = new tokensVector();
+			first = false;
 			if (isPassword)
 			{
 				tiny_string pwtxt;
 				for (uint32_t i = 0; i < (*it).text.numChars(); i++)
 					pwtxt+="*";
-				embeddedFont->fillTextTokens(tokens,pwtxt,fontSize,fillstyleTextColor,leading,TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition,startposy);
+				tk = embeddedFont->fillTextTokens(*tk,pwtxt,fontSize,color,leading,TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition,startposy);
 			}
 			else
-				embeddedFont->fillTextTokens(tokens,(*it).text,fontSize,fillstyleTextColor,leading,TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition,startposy);
+				tk = embeddedFont->fillTextTokens(*tk,(*it).text,fontSize,color,leading,TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition,startposy);
 			startposy += this->leading+(embeddedFont->getAscent()+embeddedFont->getDescent()+embeddedFont->getLeading())*fontSize/1024;
 		}
 		linemutex->unlock();
@@ -1818,7 +1824,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 		}
 		// it seems that textfields are always rendered with subpixel smoothing when rendering to bitmap
-		return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,false);
+		return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,false,tokens);
 	}
 	if (this->type != ET_EDITABLE)
 	{
@@ -2371,7 +2377,7 @@ void StaticText::sinit(Class_base* c)
 
 IDrawable* StaticText::invalidate(bool smoothing)
 {
-	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,false);
+	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);
 }
 bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {

@@ -44,5 +44,5 @@ FILLSTYLE GraphicsEndFill::toFillStyle()
 
 void GraphicsEndFill::appendToTokens(tokensVector& tokens,Graphics* graphics)
 {
-	tokens.filltokens.emplace_back(GeomToken(CLEAR_FILL).uval);
+	tokens.filltokens->tokens.emplace_back(GeomToken(CLEAR_FILL).uval);
 }

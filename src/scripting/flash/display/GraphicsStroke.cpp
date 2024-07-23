@@ -113,7 +113,6 @@ void GraphicsStroke::appendToTokens(tokensVector& tokens, Graphics* graphics)
 		style.HasFillFlag = true;
 		style.FillType = gfill->toFillStyle();
 	}
-
-	tokens.filltokens.emplace_back(GeomToken(SET_STROKE).uval);
-	tokens.filltokens.emplace_back(GeomToken(graphics->addLineStyle(style)).uval);
+	tokens.filltokens->tokens.emplace_back(GeomToken(SET_STROKE).uval);
+	tokens.filltokens->tokens.emplace_back(GeomToken(graphics->addLineStyle(style)).uval);
 }

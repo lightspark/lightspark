@@ -1166,8 +1166,6 @@ MovieClip* MovieClip::AVM1CloneSprite(asAtom target, uint32_t Depth,ASObject* in
 	toAdd->name = nameId;
 	if (this->actions)
 		toAdd->setupActions(*actions);
-	toAdd->tokens.filltokens = this->tokens.filltokens;
-	toAdd->tokens.stroketokens = this->tokens.stroketokens;
 	if(getParent()->hasLegacyChildAt(Depth))
 	{
 		getParent()->deleteLegacyChildAt(Depth,false);
@@ -1311,7 +1309,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	th->setOnStage(false,false);
-	th->tokens.clear();
+	th->tokens=nullptr;
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 {

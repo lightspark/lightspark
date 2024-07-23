@@ -30,9 +30,9 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 		return false;
 	if (!this->legacy || (fromTag==nullptr))
 	{
-		if (graphics && graphics->hasTokens())
+		if (graphics && graphics->hasBounds())
 			return graphics->boundsRect(xmin,xmax,ymin,ymax);
-		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);;
+		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax,this->tokens);
 	}
 	xmin=fromTag->ShapeBounds.Xmin/20.0;
 	xmax=fromTag->ShapeBounds.Xmax/20.0;
@@ -51,7 +51,7 @@ _NR<DisplayObject> Shape::hitTestImpl(const Vector2f& globalPoint, const Vector2
 		return NullRef;
 	if (!this->legacy || (fromTag==nullptr))
 	{
-		if (graphics && graphics->hasTokens())
+		if (graphics && graphics->hasBounds())
 		{
 			if (graphics->hitTest(Vector2f(localPoint.x,localPoint.y)))
 			{
@@ -61,7 +61,7 @@ _NR<DisplayObject> Shape::hitTestImpl(const Vector2f& globalPoint, const Vector2
 			return NullRef;
 		}
 	}
-	if (TokenContainer::hitTestImpl(Vector2f(localPoint.x-xmin,localPoint.y-ymin)))
+	if (TokenContainer::hitTestImpl(Vector2f(localPoint.x-xmin,localPoint.y-ymin),tokens))
 	{
 		this->incRef();
 		return _MR(this);
@@ -71,15 +71,10 @@ _NR<DisplayObject> Shape::hitTestImpl(const Vector2f& globalPoint, const Vector2
 
 void Shape::fillGraphicsData(Vector* v, bool recursive)
 {
-	if (graphics && graphics->hasTokens())
-	{
-		this->graphics->startDrawJob();
-		this->graphics->refreshTokens();
-		TokenContainer::fillGraphicsData(v);
-		this->graphics->endDrawJob();
-	}
+	if (graphics && graphics->hasBounds())
+		graphics->fillGraphicsData(v);
 	else
-		TokenContainer::fillGraphicsData(v);
+		TokenContainer::fillGraphicsData(v,this->tokens->filltokens,this->tokens->stroketokens,this->tokens->boundsRect.Xmin,this->tokens->boundsRect.Ymin);
 }
 
 Shape::Shape(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),TokenContainer(this),graphics(NullRef),fromTag(nullptr)
@@ -89,15 +84,8 @@ Shape::Shape(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),TokenContainer(t
 
 void Shape::setupShape(DefineShapeTag* tag, float _scaling)
 {
-	tokens.filltokens.assign(tag->tokens->filltokens.begin(),tag->tokens->filltokens.end());
-	tokens.stroketokens.assign(tag->tokens->stroketokens.begin(),tag->tokens->stroketokens.end());
-	tokens.boundsRect = tag->tokens->boundsRect;
+	tokens = tag->tokens;
 	fromTag = tag;
-	// TODO caching of texture currently doesn't work if the DefineShapeTag is used by multiple shape objects with different scaling
-//	cachedSurface.isChunkOwner=false;
-//	cachedSurface.tex=&tag->chunk;
-//	if (tag->chunk.isValid()) // Shape texture was already created, so we don't have to redo it
-//		resetNeedsTextureRecalculation();
 	scaling=_scaling;
 }
 
@@ -110,14 +98,14 @@ bool Shape::destruct()
 {
 	graphics.reset();
 	fromTag=nullptr;
-	tokens.clear();
+	tokens=nullptr;
 	return DisplayObject::destruct();
 }
 
 void Shape::finalize()
 {
 	graphics.reset();
-	tokens.clear();
+	tokens=nullptr;
 	DisplayObject::finalize();
 }
 
@@ -130,18 +118,6 @@ void Shape::prepareShutdown()
 		graphics->prepareShutdown();
 }
 
-void Shape::startDrawJob()
-{
-	if (graphics)
-		graphics->startDrawJob();
-}
-
-void Shape::endDrawJob()
-{
-	if (graphics)
-		graphics->endDrawJob();
-}
-
 void Shape::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
@@ -151,27 +127,36 @@ void Shape::sinit(Class_base* c)
 
 void Shape::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
-	if (graphics && graphics->hasTokens())
+	if (graphics && graphics->hasBounds())
 	{
-		this->graphics->startDrawJob();
-		this->graphics->refreshTokens();
-		this->graphics->endDrawJob();
+		requestInvalidationFilterParent(q);
+		incRef();
+		q->addToInvalidateQueue(_MR(this));
+		
 	}
 	TokenContainer::requestInvalidation(q,forceTextureRefresh);
 }
 
+void Shape::refreshSurfaceState()
+{
+	if (graphics)
+		graphics->refreshSurfaceState();
+}
 IDrawable *Shape::invalidate(bool smoothing)
 {
 	IDrawable* res = nullptr;
-	if (graphics && graphics->hasTokens())
-	{
-		this->graphics->startDrawJob();
-		this->graphics->refreshTokens();
-		res = TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,true);
-		this->graphics->endDrawJob();
-	}
+	if (graphics && graphics->hasBounds())
+		res = graphics->invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE);
 	else
-		res = TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false);
+		res = TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);
+	return res;
+}
+
+string Shape::toDebugString() const
+{
+	std::string res = DisplayObject::toDebugString();
+	if (graphics && graphics->hasBounds())
+		res += " hasgraphics";
 	return res;
 }
 

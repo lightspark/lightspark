@@ -356,7 +356,6 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, HIT_T
 		return selected;
 	try
 	{
-		Vector2f point(x, y);
 		// get mouse target in VM thread to avoid inconsistencies in hittesting on TokenContainers
 		_R<GetMouseTargetEvent> ev  = _MR(new (m_sys->unaccountedMemory) GetMouseTargetEvent(x,y,type));
 		if (m_sys->currentVm->prependEvent(NullRef, ev))

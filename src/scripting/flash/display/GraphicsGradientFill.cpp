@@ -91,6 +91,6 @@ void GraphicsGradientFill::appendToTokens(tokensVector& tokens,Graphics* graphic
 {
 	FILLSTYLE style = toFillStyle();
 	FILLSTYLE& styleref = graphics->addFillStyle(style);
-	tokens.filltokens.emplace_back(GeomToken(SET_FILL).uval);
-	tokens.filltokens.emplace_back(GeomToken(styleref).uval);
+	tokens.filltokens->tokens.emplace_back(GeomToken(SET_FILL).uval);
+	tokens.filltokens->tokens.emplace_back(GeomToken(styleref).uval);
 }

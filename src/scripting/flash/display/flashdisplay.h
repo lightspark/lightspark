@@ -244,12 +244,7 @@ protected:
 	void stopSound();
 	void markSoundFinished();
 public:
-	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override
-	{
-		if (visibleOnly && !this->isVisible())
-			return false;
-		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax);
-	}
+	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	void fillGraphicsData(Vector* v, bool recursive) override;
 	bool dragged;
 	Sprite(ASWorker* wrk,Class_base* c);
@@ -260,8 +255,6 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
-	void startDrawJob() override;
-	void endDrawJob() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);
@@ -276,12 +269,14 @@ public:
 	{
 		return 0;
 	}
+	void refreshSurfaceState() override;
 	IDrawable* invalidate(bool smoothing) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	Graphics* getGraphics();
 	void handleMouseCursor(bool rollover) override;
 	bool allowAsMask() const override { return !isEmpty() || !graphics.isNull(); }
 	float getScaleFactor() const override { return this->scaling; }
+	std::string toDebugString() const override;
 };
 
 struct AVM1scriptToExecute

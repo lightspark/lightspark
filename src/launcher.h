@@ -23,7 +23,7 @@
 
 #include "tiny_string.h"
 
-class SDL_Window;
+struct SDL_Window;
 namespace lightspark
 {
 

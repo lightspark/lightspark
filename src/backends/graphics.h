@@ -349,12 +349,13 @@ private:
 	static void executefill(cairo_t* cr, const FILLSTYLE* style, cairo_pattern_t* pattern, double scaleCorrection);
 	static void executestroke(cairo_t* stroke_cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask, CairoTokenRenderer* th);
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask);
-	static bool cairoPathFromTokens(cairo_t* cr, const tokensVector &tokens, double scaleCorrection, bool skipFill, bool isMask, number_t xstart, number_t ystart, CairoTokenRenderer* th=nullptr, int* starttoken=nullptr);
+	static bool cairoPathFromTokens(cairo_t* cr, NullableRef<tokenListRef> tokens, double scaleCorrection, bool skipFill, bool isMask, number_t xstart, number_t ystart, CairoTokenRenderer* th=nullptr, int* starttoken=nullptr);
 	static void quadraticBezier(cairo_t* cr, double control_x, double control_y, double end_x, double end_y);
 	/*
 	   The tokens to be drawn
 	*/
-	const tokensVector tokens;
+	_NR<tokenListRef> filltokens;
+	_NR<tokenListRef> stroketokens;
 	/*
 	 * This is run by CairoRenderer::execute()
 	 */
@@ -365,16 +366,15 @@ public:
 	/*
 	   CairoTokenRenderer constructor
 
-	   @param _o Owner of the surface _t. See comments on 'owner' member.
-	   @param _t GL surface where the final drawing will be uploaded
-	   @param _g The tokens to be drawn. This is copied internally.
+	   @param _filltokens pointer to the filltokens to be drawn.
+	   @param _stroketokens pointer to the stroketokens to be drawn.
 	   @param _m The whole transformation matrix
 	   @param _s The scale factor to be applied in both the x and y axis
 	   @param _a The alpha factor to be applied
 	   @param _ms The masks that must be applied
 	   @param _smoothing indicates if the tokens should be rendered with antialiasing
 	*/
-	CairoTokenRenderer(const tokensVector& _g, const MATRIX& _m,
+CairoTokenRenderer(_NR<tokenListRef> _filltokens,_NR<tokenListRef> _stroketokens, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
 			float _xs, float _ys,
 			bool _ismask, bool _cacheAsBitmap,
@@ -390,7 +390,7 @@ public:
 	   @param x The X in local coordinates
 	   @param y The Y in local coordinates
 	*/
-	static bool hitTest(const tokensVector& tokens, float scaleFactor, const Vector2f& point);
+	static bool hitTest(NullableRef<tokenListRef> tokens, float scaleFactor, const Vector2f& point);
 };
 
 struct FormatText
@@ -426,7 +426,7 @@ protected:
 public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
 	TextData() : width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), background(false), backgroundColor(0xFFFFFF),
-		border(false), borderColor(0x000000), multiline(false),isBold(false),isItalic(false), textColor(0x000000),
+		border(false), borderColor(0x000000), multiline(false),isBold(false),isItalic(false),
 		autoSize(AS_NONE),align(AS_NONE), fontSize(12), wordWrap(false),caretblinkstate(false),isPassword(false),
 		embeddedFont(nullptr)
 	{}

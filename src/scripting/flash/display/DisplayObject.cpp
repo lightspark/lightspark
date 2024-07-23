@@ -93,39 +93,6 @@ bool DisplayObject::getBounds(number_t& xmin, number_t& xmax, number_t& ymin, nu
 	return ret;
 }
 
-RectF DisplayObject::boundsRectWithRenderTransform(const MATRIX& matrix, bool includeOwnFilters, const MATRIX& initialMatrix)
-{
-	RectF bounds;
-	boundsRectWithoutChildren(bounds.min.x, bounds.max.x, bounds.min.y, bounds.max.y, false);
-	bounds *= matrix;
-	if (is<DisplayObjectContainer>())
-	{
-		std::vector<_R<DisplayObject>> list;
-		as<DisplayObjectContainer>()->cloneDisplayList(list);
-		for (auto child : list)
-		{
-			MATRIX m = matrix.multiplyMatrix(child->getMatrix());
-			bounds = bounds._union(child->boundsRectWithRenderTransform(m, true, initialMatrix));
-		}
-	}
-	if (includeOwnFilters && !filters.isNull())
-	{
-		number_t filterborder = 0;
-		for (uint32_t i = 0; i < filters->size(); i++)
-		{
-			asAtom f = asAtomHandler::invalidAtom;
-			filters->at_nocheck(f,i);
-			if (asAtomHandler::is<BitmapFilter>(f))
-				filterborder = max(filterborder,asAtomHandler::as<BitmapFilter>(f)->getMaxFilterBorder());
-		}
-		bounds.min.x -= filterborder*initialMatrix.getScaleX();
-		bounds.max.x += filterborder*initialMatrix.getScaleX();
-		bounds.min.y -= filterborder*initialMatrix.getScaleY();
-		bounds.max.y += filterborder*initialMatrix.getScaleY();
-	}
-	return bounds;
-}
-
 number_t DisplayObject::getNominalWidth()
 {
 	number_t xmin, xmax, ymin, ymax;
@@ -957,7 +924,7 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		if (state->hasOpaqueBackground)
 			state->opaqueBackground=RGB(asAtomHandler::toUInt(this->opaqueBackground));
 	}
-		
+	currentrendermatrix=state->matrix;
 }
 
 void DisplayObject::setMask(_NR<DisplayObject> m)
@@ -1023,9 +990,9 @@ bool DisplayObject::isShaderBlendMode(AS_BLENDMODE bl)
 MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot) const
 {
 	if(!parent || (!includeRoot && parent == getSystemState()->mainClip))
-		return getMatrix();
+		return currentrendermatrix;
 	else
-		return parent->getConcatenatedMatrix(includeRoot).multiplyMatrix(getMatrix());
+		return parent->getConcatenatedMatrix(includeRoot).multiplyMatrix(currentrendermatrix);
 }
 
 /* Return alpha value between 0 and 1. (The stored alpha value is not
@@ -1255,7 +1222,7 @@ void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, nu
 	}
 	else
 	{
-		getMatrix().multiply2D(xin, yin, xout, yout);
+		currentrendermatrix.multiply2D(xin, yin, xout, yout);
 		if(parent)
 			parent->localToGlobal(xout, yout, xout, yout);
 	}

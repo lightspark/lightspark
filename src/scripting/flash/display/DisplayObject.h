@@ -103,6 +103,7 @@ private:
 	void onSetScrollRect(_NR<Rectangle> oldValue);
 protected:
 	_NR<Rectangle> scalingGrid;
+	MATRIX currentrendermatrix;
 	std::multimap<uint32_t,_NR<DisplayObject>> variablebindings;
 	bool onStage;
 	bool visible;
@@ -128,7 +129,6 @@ protected:
 	bool skipRender() const;
 
 	bool defaultRender(RenderContext& ctxt);
-	RectF boundsRectWithRenderTransform(const MATRIX& matrix, bool includeOwnFilters, const MATRIX& initialMatrix);
 	virtual bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 	{
 		throw RunTimeException("DisplayObject::boundsRect: Derived class must implement this!");
@@ -239,8 +239,6 @@ public:
 	virtual void afterLegacyInsert();
 	virtual void afterLegacyDelete(bool inskipping) {}
 	virtual uint32_t getTagID() const { return UINT32_MAX;}
-	virtual void startDrawJob() {}
-	virtual void endDrawJob() {}
 	
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m, bool visibleOnly=false);
 	_NR<DisplayObject> hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly);

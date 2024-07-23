@@ -408,9 +408,9 @@ void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cai
 	cairo_stroke(cr);
 	cairo_set_matrix(cr,&origmat);
 }
-bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& tokens, double scaleCorrection, bool skipPaint, bool isMask, number_t xstart, number_t ystart, CairoTokenRenderer* th, int* starttoken)
+bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, _NR<tokenListRef> tokens, double scaleCorrection, bool skipPaint, bool isMask, number_t xstart, number_t ystart, CairoTokenRenderer* th, int* starttoken)
 {
-	if (skipPaint && starttoken && tokens.size()==0)
+	if (skipPaint && starttoken && (!tokens || tokens->tokens.empty()))
 	{
 		*starttoken=-1;
 		return true;
@@ -433,231 +433,184 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 	cairo_pattern_t* currentstrokepattern=nullptr;
 	bool instroke = false;
 	bool infill = false;
-	int tokentype = 1;
-	while (tokentype)
+	TokenList::const_iterator itbegin = tokens->tokens.cbegin();
+	TokenList::const_iterator it = itbegin + (starttoken ? *starttoken : 0);
+	
+	bool pathdone = false;
+	while (it != tokens->tokens.cend() && !pathdone)
 	{
-		std::vector<uint64_t>::const_iterator it;
-		std::vector<uint64_t>::const_iterator itbegin;
-		std::vector<uint64_t>::const_iterator itend;
-		switch(tokentype)
+		GeomToken p(*it,false);
+		switch(p.type)
 		{
-			case 1:
-				itbegin = tokens.filltokens.begin();
-				itend = tokens.filltokens.end();
-				if (skipPaint && starttoken)
-				{
-					if (*starttoken >= int(tokens.filltokens.size()))
-					{
-						instroke=true;
-						tokentype=2;
-						itbegin = tokens.stroketokens.begin();
-						itend = tokens.stroketokens.end();
-						it = tokens.stroketokens.begin()+(*starttoken - tokens.filltokens.size());
-					}
-					else
-						it = tokens.filltokens.begin()+ (*starttoken);
-					*starttoken = -1;
-				}
-				else
-					it = tokens.filltokens.begin();
-				tokentype++;
-				break;
-			case 2:
-				if(skipPaint && !tokens.filltokens.empty())
-				{
-					tokentype = 0;
-					break;
-				}
-				it = tokens.stroketokens.begin();
-				itbegin = tokens.stroketokens.begin();
-				itend = tokens.stroketokens.end();
-				tokentype++;
-				break;
-			default:
-				tokentype = 0;
-				break;
-		}
-		if (tokentype == 0)
-			break;
-		while (it != itend && tokentype)
-		{
-			GeomToken p(*it,false);
-			switch(p.type)
+			case MOVE:
 			{
-				case MOVE:
-				{
-					GeomToken p1(*(++it),false);
-					if(skipPaint && !infill)
-						break;
-					cairo_move_to(cr,(p1.vec.x), (p1.vec.y));
+				GeomToken p1(*(++it),false);
+				if(skipPaint && !infill)
 					break;
-				}
-				case STRAIGHT:
-				{
-					GeomToken p1(*(++it),false);
-					if(skipPaint && !infill)
-						break;
-					cairo_line_to(cr, (p1.vec.x), (p1.vec.y));
-					empty = false;
+				cairo_move_to(cr,(p1.vec.x), (p1.vec.y));
+				break;
+			}
+			case STRAIGHT:
+			{
+				GeomToken p1(*(++it),false);
+				if(skipPaint && !infill)
 					break;
-				}
-				case CURVE_QUADRATIC:
-				{
-					GeomToken p1(*(++it),false);
-					GeomToken p2(*(++it),false);
-					if(skipPaint && !infill)
-						break;
-					quadraticBezier(cr,
-					   (p1.vec.x), (p1.vec.y),
-					   (p2.vec.x), (p2.vec.y));
-					empty = false;
+				cairo_line_to(cr, (p1.vec.x), (p1.vec.y));
+				empty = false;
+				break;
+			}
+			case CURVE_QUADRATIC:
+			{
+				GeomToken p1(*(++it),false);
+				GeomToken p2(*(++it),false);
+				if(skipPaint && !infill)
 					break;
-				}
-				case CURVE_CUBIC:
-				{
-					GeomToken p1(*(++it),false);
-					GeomToken p2(*(++it),false);
-					GeomToken p3(*(++it),false);
-					if(skipPaint && !infill)
-						break;
-					cairo_curve_to(cr,
-					   (p1.vec.x), (p1.vec.y),
-					   (p2.vec.x), (p2.vec.y),
-					   (p3.vec.x), (p3.vec.y));
-					empty = false;
+				quadraticBezier(cr,
+								(p1.vec.x), (p1.vec.y),
+								(p2.vec.x), (p2.vec.y));
+				empty = false;
+				break;
+			}
+			case CURVE_CUBIC:
+			{
+				GeomToken p1(*(++it),false);
+				GeomToken p2(*(++it),false);
+				GeomToken p3(*(++it),false);
+				if(skipPaint && !infill)
 					break;
-				}
-				case SET_FILL:
+				cairo_curve_to(cr,
+							   (p1.vec.x), (p1.vec.y),
+							   (p2.vec.x), (p2.vec.y),
+							   (p3.vec.x), (p3.vec.y));
+				empty = false;
+				break;
+			}
+			case SET_FILL:
+			{
+				GeomToken p1(*(++it),false);
+				if(skipPaint)
 				{
-					GeomToken p1(*(++it),false);
-					if(skipPaint)
-					{
-						if (starttoken && !empty)
-						{
-							cairo_close_path(cr);
-							*starttoken=it-itbegin + 1 +(tokentype > 2 ? tokens.filltokens.size() : 0);
-							tokentype=0;
-						}
-						infill=true;
-						break;
-					}
-					if (instroke)
-						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
-					if (infill)
+					if (starttoken && !empty)
 					{
 						cairo_close_path(cr);
-						executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
+						*starttoken=it-itbegin + 1;
+						pathdone = true;
 					}
 					infill=true;
-					currentfillstyle=p1.fillStyle;
-					if (currentfillpattern)
-						cairo_pattern_destroy(currentfillpattern);
-					currentfillpattern = FILLSTYLEToCairo(*currentfillstyle, scaleCorrection,isMask);
 					break;
 				}
-				case SET_STROKE:
+				if (instroke)
+					executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
+				if (infill)
 				{
-					GeomToken p1(*(++it),false);
-					if(skipPaint)
-					{
-						if (starttoken && !empty)
-						{
-							cairo_close_path(cr);
-							*starttoken=it-itbegin + 1 +(tokentype > 2 ? tokens.filltokens.size() : 0);
-							tokentype=0;
-						}
-						break;
-					}
-					if (instroke)
-						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
-					if (infill)
-						executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
-					instroke = true;
-					currentstrokestyle = p1.lineStyle;
-					if (currentstrokepattern)
-						cairo_pattern_destroy(currentstrokepattern);
-					if (currentstrokestyle->HasFillFlag)
-						currentstrokepattern = FILLSTYLEToCairo(currentstrokestyle->FillType, scaleCorrection,isMask);
-					else
-						currentstrokepattern = nullptr;
-					break;
-				}
-				case CLEAR_FILL:
-				case FILL_KEEP_SOURCE:
-					infill=false;
-					if(skipPaint)
-					{
-						if (starttoken)
-						{
-							cairo_close_path(cr);
-							if (tokens.filltokens.empty())
-								*starttoken=-1;
-							else
-								*starttoken=it-itbegin + 1 +(tokentype > 2 ? tokens.filltokens.size() : 0);
-							tokentype=0;
-						}
-						if(p.type==CLEAR_FILL)
-							// Clear source.
-							cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
-						break;
-					}
 					cairo_close_path(cr);
 					executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
-					if (currentfillpattern)
-						cairo_pattern_destroy(currentfillpattern);
-					if(p.type==CLEAR_FILL)
-					{
-						// Clear source.
-						cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
-						currentfillstyle=nullptr;
-						currentfillpattern=nullptr;
-					}
-					break;
-				case CLEAR_STROKE:
-					instroke = false;
-					if(skipPaint)
-					{
-						if (starttoken)
-						{
-							cairo_close_path(cr);
-							*starttoken=it-itbegin + 1 +(tokentype > 2 ? tokens.filltokens.size() : 0);
-							tokentype=0;
-						}
-						break;
-					}
-					executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
-					if (currentstrokepattern)
-						cairo_pattern_destroy(currentstrokepattern);
-					currentstrokepattern=nullptr;
-					currentstrokestyle=nullptr;
-					// Clear source.
-					cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
-					break;
-				case FILL_TRANSFORM_TEXTURE:
+				}
+				infill=true;
+				currentfillstyle=p1.fillStyle;
+				if (currentfillpattern)
+					cairo_pattern_destroy(currentfillpattern);
+				currentfillpattern = FILLSTYLEToCairo(*currentfillstyle, scaleCorrection,isMask);
+				break;
+			}
+			case SET_STROKE:
+			{
+				GeomToken p1(*(++it),false);
+				if(skipPaint)
 				{
-					GeomToken p1(*(++it),false);
-					GeomToken p2(*(++it),false);
-					GeomToken p3(*(++it),false);
-					GeomToken p4(*(++it),false);
-					GeomToken p5(*(++it),false);
-					GeomToken p6(*(++it),false);
-					if(skipPaint)
-						break;
-					cairo_matrix_t origmat;
-					cairo_pattern_t* pattern;
-					pattern=cairo_get_source(cr);
-					cairo_pattern_get_matrix(pattern, &origmat);
-					MATRIX m(p1.value,p2.value,p3.value,p4.value,p5.value,p6.value);
-					cairo_pattern_set_matrix(pattern, &m);
-					executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
-					cairo_pattern_set_matrix(pattern, &origmat);
+					if (starttoken && !empty)
+					{
+						cairo_close_path(cr);
+						*starttoken=it-itbegin + 1;
+						pathdone = true;
+					}
 					break;
 				}
-				default:
-					assert(false);
+				if (instroke)
+					executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
+				if (infill)
+					executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
+				instroke = true;
+				currentstrokestyle = p1.lineStyle;
+				if (currentstrokepattern)
+					cairo_pattern_destroy(currentstrokepattern);
+				if (currentstrokestyle->HasFillFlag)
+					currentstrokepattern = FILLSTYLEToCairo(currentstrokestyle->FillType, scaleCorrection,isMask);
+				else
+					currentstrokepattern = nullptr;
+				break;
 			}
-			it++;
+			case CLEAR_FILL:
+			case FILL_KEEP_SOURCE:
+				infill=false;
+				if(skipPaint)
+				{
+					if (starttoken)
+					{
+						cairo_close_path(cr);
+						*starttoken=it-itbegin + 1;
+						pathdone = true;
+					}
+					if(p.type==CLEAR_FILL)
+						// Clear source.
+						cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
+					break;
+				}
+				cairo_close_path(cr);
+				executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
+				if (currentfillpattern)
+					cairo_pattern_destroy(currentfillpattern);
+				if(p.type==CLEAR_FILL)
+				{
+					// Clear source.
+					cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
+					currentfillstyle=nullptr;
+					currentfillpattern=nullptr;
+				}
+				break;
+			case CLEAR_STROKE:
+				instroke = false;
+				if(skipPaint)
+				{
+					if (starttoken)
+					{
+						cairo_close_path(cr);
+						*starttoken=it-itbegin + 1;
+					}
+					break;
+				}
+				executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
+				if (currentstrokepattern)
+					cairo_pattern_destroy(currentstrokepattern);
+				currentstrokepattern=nullptr;
+				currentstrokestyle=nullptr;
+				// Clear source.
+				cairo_set_operator(cr, CAIRO_OPERATOR_DEST);
+				break;
+			case FILL_TRANSFORM_TEXTURE:
+			{
+				GeomToken p1(*(++it),false);
+				GeomToken p2(*(++it),false);
+				GeomToken p3(*(++it),false);
+				GeomToken p4(*(++it),false);
+				GeomToken p5(*(++it),false);
+				GeomToken p6(*(++it),false);
+				if(skipPaint)
+					break;
+				cairo_matrix_t origmat;
+				cairo_pattern_t* pattern;
+				pattern=cairo_get_source(cr);
+				cairo_pattern_get_matrix(pattern, &origmat);
+				MATRIX m(p1.value,p2.value,p3.value,p4.value,p5.value,p6.value);
+				cairo_pattern_set_matrix(pattern, &m);
+				executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
+				cairo_pattern_set_matrix(pattern, &origmat);
+				break;
+			}
+			default:
+				assert(false);
 		}
+		it++;
 	}
 
 	if(!skipPaint)
@@ -672,6 +625,8 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, const tokensVector& to
 		cairo_pattern_destroy(currentfillpattern);
 	if (currentstrokepattern)
 		cairo_pattern_destroy(currentstrokepattern);
+	if (starttoken && !pathdone)
+		*starttoken=-1;
 	return empty;
 }
 
@@ -695,7 +650,8 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr)
 	cairo_set_antialias(cr,getState()->smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-	cairoPathFromTokens(cr, tokens, state->scaling, false,getState()->isMask,xstart,ystart,this);
+	cairoPathFromTokens(cr, filltokens, state->scaling, false,getState()->isMask,xstart,ystart,this);
+	cairoPathFromTokens(cr, stroketokens, state->scaling, false,getState()->isMask,xstart,ystart,this);
 }
 
 uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
@@ -734,8 +690,10 @@ bool CairoRenderer::isCachedSurfaceUsable(const DisplayObject* o) const
 		&& abs(getState()->yscale / tex->yContentScale) < 2);
 }
 
-bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, const Vector2f& point)
+bool CairoTokenRenderer::hitTest(_NR<tokenListRef> tokens, float scaleFactor, const Vector2f& point)
 {
+	if (!tokens || tokens->tokens.empty())
+		return false;
 	cairo_surface_t* cairoSurface=cairo_image_surface_create(CAIRO_FORMAT_ARGB32, 0, 0);
 
 	int starttoken=0;
@@ -767,7 +725,7 @@ bool CairoTokenRenderer::hitTest(const tokensVector& tokens, float scaleFactor, 
 	return ret;
 }
 
-CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h
+CairoTokenRenderer::CairoTokenRenderer(_NR<tokenListRef> _filltokens,_NR<tokenListRef> _stroketokens, const MATRIX &_m, int32_t _x, int32_t _y, int32_t _w, int32_t _h
 									   , float _xs, float _ys
 									   , bool _ismask, bool _cacheAsBitmap
 									   , float _scaling, float _a
@@ -776,7 +734,7 @@ CairoTokenRenderer::CairoTokenRenderer(const tokensVector &_g, const MATRIX &_m,
 									   , number_t _xstart, number_t _ystart)
 	: CairoRenderer(_m,_x,_y,_w,_h,_xs,_ys,_ismask,_cacheAsBitmap,_scaling,_a
 					, _colortransform
-					,_smoothing,_blendmode),tokens(_g),xstart(_xstart),ystart(_ystart)
+					,_smoothing,_blendmode),filltokens(_filltokens),stroketokens(_stroketokens),xstart(_xstart),ystart(_ystart)
 {
 }
 
@@ -915,7 +873,7 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 
 	/* draw the text */
 	cairo_translate(cr, xpos, 0);
-	cairo_set_source_rgb (cr, textData.textColor.Red/255., textData.textColor.Green/255., textData.textColor.Blue/255.);
+	cairo_set_source_rgb (cr, textData.textColor.Red/255., textData.textColor.Green/255., textData.textColor.Blue/255);
 	cairo_translate(cr, translateX, translateY);
 	int32_t linepos=0;
 	for (auto it = textData.textlines.begin(); it != textData.textlines.end(); it++)
@@ -1073,12 +1031,10 @@ AsyncDrawJob::~AsyncDrawJob()
 
 void AsyncDrawJob::execute()
 {
-	owner->startDrawJob();
 	if(!threadAborting)
 		surfaceBytes=drawable->getPixelBuffer(&isBufferOwner);
 	if(!threadAborting && surfaceBytes)
 		uploadNeeded=true;
-	owner->endDrawJob();
 }
 
 void AsyncDrawJob::threadAbort()

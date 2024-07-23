@@ -49,25 +49,27 @@ public:
 	 * the tokens are cleared and scaling is set
 	 * to 1.0f.
 	 */
-	tokensVector tokens;
+	tokensVector* tokens;
 	static void FromShaperecordListToShapeVector(const std::vector<SHAPERECORD>& shapeRecords,
-					 tokensVector& tokens, const std::list<FILLSTYLE>& fillStyles,
-					 const MATRIX& matrix = MATRIX(), const std::list<LINESTYLE2>& lineStyles = std::list<LINESTYLE2>(), const RECT &shapebounds= RECT());
+					tokensVector& tokens,bool isGlyph,
+					const MATRIX& matrix,
+					const std::list<FILLSTYLE>& fillStyles=std::list<FILLSTYLE>(),
+					const std::list<LINESTYLE2>& lineStyles = std::list<LINESTYLE2>(), const RECT &shapebounds= RECT());
 	static void FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *tag,
-					 tokensVector& tokens, uint16_t ratio);
-	static void getTextureSize(std::vector<uint64_t>& tokens, int *width, int *height);
+					tokensVector& tokens, uint16_t ratio);
+	static void getTextureSize(TokenList& tokens, int *width, int *height);
 	static bool boundsRectFromTokens(const tokensVector& tokens,float scaling, number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);
 	float scaling;
 	bool renderWithNanoVG;
-	void fillGraphicsData(Vector* v);
+	void fillGraphicsData(Vector* v, _NR<tokenListRef> filltokens, _NR<tokenListRef> stroketokens, int startx, int starty);
 protected:
 	TokenContainer(DisplayObject* _o);
-	TokenContainer(DisplayObject* _o, const tokensVector& _tokens, float _scaling);
-	IDrawable* invalidate(SMOOTH_MODE smoothing, bool fromgraphics);
+	TokenContainer(DisplayObject* _o, tokensVector* _tokens, float _scaling);
+	IDrawable* invalidate(SMOOTH_MODE smoothing, bool fromgraphics, const tokensVector& tokens);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false);
-	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax) const;
-	bool hitTestImpl(const Vector2f& point) const;
-	bool tokensEmpty() const { return tokens.empty(); }
+	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, tokensVector* tk);
+	bool hitTestImpl(const Vector2f& point, tokensVector* tk) const;
+	bool tokensEmpty() const { return !tokens || tokens->empty(); }
 };
 
 }

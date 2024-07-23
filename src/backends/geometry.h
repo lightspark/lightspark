@@ -25,6 +25,8 @@
 #include <vector>
 #include <map>
 
+typedef std::vector<uint64_t> TokenList;
+
 namespace lightspark
 {
 
@@ -109,35 +111,70 @@ struct GeomToken
 		vec.y=_vec.y;
 	}
 };
+struct fillstylecache
+{
+	FILLSTYLE style;
+	fillstylecache* next;
+	fillstylecache(const FILLSTYLE& fs):style(fs),next(nullptr)
+	{
+	}
+	~fillstylecache()
+	{
+		if (next)
+			delete next;
+	}
+};
+struct linestylecache
+{
+	LINESTYLE2 style;
+	linestylecache* next;
+	linestylecache(const LINESTYLE2& ls):style(ls),next(nullptr)
+	{
+	}
+	~linestylecache()
+	{
+		if (next)
+			delete next;
+	}
+};
+class tokenListRef : public RefCountable
+{
+	fillstylecache* fillStyles;
+	linestylecache* lineStyles;
+public:
+	TokenList tokens;
+	tokenListRef():fillStyles(nullptr),lineStyles(nullptr)
+	{
+	}
+	~tokenListRef();
+	FILLSTYLE& addFillStyle(const FILLSTYLE& fs);
+	LINESTYLE2& addLineStyle(const LINESTYLE2& ls);
+	void clone(tokenListRef* source);
+};
 
 struct tokensVector
 {
-	std::vector<uint64_t> filltokens;
-	std::vector<uint64_t> stroketokens;
+	_NR<tokenListRef> filltokens;
+	_NR<tokenListRef> stroketokens;
+	tokensVector* next;
+	MATRIX startMatrix;
 	RECT boundsRect;
-	tokensVector():boundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN)
+	RGBA color;
+	bool isGlyph;
+	bool isFilled; // indicates if this tokensVector was filled with tokens, even if no tokens were generated (e.g. glyph for "space" character)
+	tokensVector():	next(nullptr), boundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN), isGlyph(false), isFilled(false)
 	{
 	}
-	tokensVector(const tokensVector& r):filltokens(r.filltokens),stroketokens(r.stroketokens),boundsRect(r.boundsRect)
+	void clear();
+	void destruct();
+	bool empty() const
 	{
-	}
-	void clear()
-	{
-		boundsRect = RECT(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN);
-		filltokens.clear();
-		stroketokens.clear();
+		return (!filltokens || filltokens->tokens.empty()) && (!stroketokens || stroketokens->tokens.empty()) && (!next || next->empty());
 	}
 	uint32_t size() const
 	{
-		return filltokens.size()+stroketokens.size();
+		return (filltokens ? filltokens->tokens.size() : 0) + (stroketokens ? stroketokens->tokens.size() : 0) + (next ? next->size() : 0);
 	}
-	bool empty() const
-	{
-		return filltokens.empty() && stroketokens.empty();
-	}
-	void updateTokenBounds(int x, int y);
-	bool operator==(const tokensVector& r);
-	tokensVector& operator=(const tokensVector& r);
 };
 
 class ShapePathSegment {
@@ -182,7 +219,7 @@ public:
 		@param styles This list is supposed to survive until as long as the returned tokens array
 		@param tokens A vector that will be filled with tokens
 	*/
-	void outputTokens(const std::list<FILLSTYLE>& styles, const std::list<LINESTYLE2>& linestyles, tokensVector& tokens);
+	void outputTokens(const std::list<FILLSTYLE>& styles, const std::list<LINESTYLE2>& linestyles, tokensVector& tokens, bool isGlyph);
 	void outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::list<MORPHLINESTYLE2>& linestyles, tokensVector& tokens, uint16_t ratio, const RECT& boundsrc);
 	void clear();
 };

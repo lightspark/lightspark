@@ -297,7 +297,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 	if (state->renderWithNanoVG)
 	{
 		NVGcontext* nvgctxt = sys->getEngineData()->nvgcontext;
-		if (nvgctxt)
+		if (nvgctxt && !state->tokens.empty())
 		{
 			if (state->alpha == 0)
 				return;
@@ -345,40 +345,82 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
 			nvgTranslate(nvgctxt,state->xOffset,state->yOffset);
 			nvgScale(nvgctxt,state->scaling,state->scaling);
+			float basetransform[6];
+			nvgCurrentTransform(nvgctxt,basetransform);
 			NVGcolor startcolor = nvgRGBA(0,0,0,0);
 			nvgBeginPath(nvgctxt);
 			if (ctxt.isDrawingMask())
 				nvgBeginClip(nvgctxt);
 			nvgFillColor(nvgctxt,startcolor);
 			nvgStrokeColor(nvgctxt,startcolor);
+			number_t strokescalex=1.0;
+			number_t strokescaley=1.0;
 			bool instroke = false;
 			bool infill = false;
 			bool renderneeded=false;
-			number_t strokescalex=1.0;
-			number_t strokescaley=1.0;
 			int tokentype = 1;
+			tokensVector* tk = &state->tokens;
 			while (tokentype)
 			{
-				std::vector<uint64_t>::const_iterator it;
-				std::vector<uint64_t>::const_iterator itbegin;
-				std::vector<uint64_t>::const_iterator itend;
+				TokenList::const_iterator it;
+				TokenList::const_iterator itbegin;
+				TokenList::const_iterator itend;
+				bool skip = false;
 				switch(tokentype)
 				{
 					case 1:
-						itbegin = state->tokens.filltokens.begin();
-						itend = state->tokens.filltokens.end();
-						it = state->tokens.filltokens.begin();
-						tokentype++;
+						if (!tk->filltokens)
+						{
+							tokentype++;
+							skip = true;
+							break;
+						}
+						itbegin = tk->filltokens->tokens.begin();
+						itend = tk->filltokens->tokens.end();
+						it = tk->filltokens->tokens.begin();
+						if (tk->isGlyph)
+						{
+							NVGcolor c =nvgRGBA(tk->color.Red,tk->color.Green,tk->color.Blue,tk->color.Alpha);
+							nvgFillColor(nvgctxt,c);
+							infill=true;
+							nvgResetTransform(nvgctxt);
+							nvgTransform(nvgctxt,basetransform[0],basetransform[1],basetransform[2],basetransform[3],basetransform[4],basetransform[5]);
+							nvgTransform(nvgctxt,tk->startMatrix.xx,tk->startMatrix.yx,tk->startMatrix.xy,tk->startMatrix.yy,tk->startMatrix.x0,tk->startMatrix.y0);
+						}
+						if (tk->next)
+							tk = tk->next;
+						else
+						{
+							tk = &state->tokens;
+							tokentype++;
+						}
 						break;
 					case 2:
-						it = state->tokens.stroketokens.begin();
-						itbegin = state->tokens.stroketokens.begin();
-						itend = state->tokens.stroketokens.end();
-						tokentype++;
+						if (!tk->stroketokens)
+						{
+							tokentype=0;
+							break;
+						}
+						it = tk->stroketokens->tokens.begin();
+						itbegin = tk->stroketokens->tokens.begin();
+						itend = tk->stroketokens->tokens.end();
+						if (tk->next)
+							tk = tk->next;
+						else
+						{
+							tk = &state->tokens;
+							tokentype++;
+						}
 						break;
 					default:
 						tokentype = 0;
 						break;
+				}
+				if (skip)
+				{
+					skip = false;
+					tk = &state->tokens;
+					continue;
 				}
 				if (tokentype == 0)
 					break;
@@ -1017,7 +1059,7 @@ CachedSurface::~CachedSurface()
 			delete state;
 	}
 	if (cachedFilterTextureID != UINT32_MAX)
- {
+	{
 		SystemState* sys = getSys();
 		if (sys && sys->getRenderThread())
 			sys->getRenderThread()->addDeletedTexture(cachedFilterTextureID);

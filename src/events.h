@@ -65,12 +65,6 @@ using EventTypes = TypeList
 	LSRemovedFromStageEvent
 >;
 
-struct SizeVisitor
-{
-	template<typename T>
-	constexpr size_t operator()(const T&) { return sizeof(T); }
-};
-
 // TODO: Write our own variant implementation, and turn this into a variant.
 struct LSEvent
 {
@@ -96,7 +90,7 @@ struct LSEvent
 	constexpr Type getType() const { return type; }
 
 	template<typename V>
-	constexpr VisitorReturnType<V, EventTypes> visit(V&& visitor) const;
+	constexpr auto visit(V&& visitor) const;
 	template<typename T>
 	constexpr bool has() const
 	{
@@ -411,24 +405,8 @@ struct LSRemovedFromStageEvent : public LSEvent
 	constexpr LSRemovedFromStageEvent() : LSEvent(EventType::RemovedFromStage) {}
 };
 
-// Wrapper/Container for returning, and storing `LSEvent`s.
-struct LSEventStorage
-{
-	LSEventStorage(const LSEvent& event) { memcpy(data, &event, event.isInvalid() ? sizeof(LSEvent) : event.visit(SizeVisitor{})); }
-
-	constexpr const LSEvent& event() const { return reinterpret_cast<const LSEvent&>(data); }
-	LSEvent& event() { return reinterpret_cast<LSEvent&>(data); }
-	constexpr operator const LSEvent&() const { return event(); }
-	operator LSEvent&() { return event(); }
-private:
-	static constexpr size_t dataSize = UnionSize<EventTypes>::value;
-	static constexpr size_t dataAlign = UnionAlign<EventTypes>::value;
-
-	alignas(dataAlign) uint8_t data[dataSize];
-};
-
 template<typename V>
-constexpr VisitorReturnType<V, EventTypes> LSEvent::visit(V&& visitor) const
+constexpr auto LSEvent::visit(V&& visitor) const
 {
 	using ContextMenuType = LSContextMenuEvent::ContextMenuType;
 	using MouseType = LSMouseEvent::MouseType;
@@ -483,8 +461,24 @@ constexpr VisitorReturnType<V, EventTypes> LSEvent::visit(V&& visitor) const
 		// TODO: Add `compat_unreachable()`, and use it here.
 		default: assert(false); break;
 	}
-	return VisitorReturnType<V, EventTypes>();
+	return decltype(visitor(*this))();
 }
+
+// Wrapper/Container for returning, and storing `LSEvent`s.
+struct LSEventStorage
+{
+	LSEventStorage(const LSEvent& event) { memcpy(data, &event, event.isInvalid() ? sizeof(LSEvent) : event.visit([](auto event) { return sizeof(event); })); }
+
+	constexpr const LSEvent& event() const { return reinterpret_cast<const LSEvent&>(data); }
+	LSEvent& event() { return reinterpret_cast<LSEvent&>(data); }
+	constexpr operator const LSEvent&() const { return event(); }
+	operator LSEvent&() { return event(); }
+private:
+	static constexpr size_t dataSize = UnionSize<EventTypes>::value;
+	static constexpr size_t dataAlign = UnionAlign<EventTypes>::value;
+
+	alignas(dataAlign) uint8_t data[dataSize];
+};
 
 };
 #endif /* EVENTS_H */

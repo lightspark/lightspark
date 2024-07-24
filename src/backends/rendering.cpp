@@ -1592,7 +1592,7 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 }
 void RenderThread::renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, const MATRIX &initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase *ct, _NR<BitmapContainer> bm)
 {
-	if(m_sys->isShuttingDown())
+	if(m_sys->isShuttingDown() || !EngineData::enablerendering)
 		return;
 	mutexRenderToBitmapContainer.lock();
 	RenderDisplayObjectToBitmapContainer r;

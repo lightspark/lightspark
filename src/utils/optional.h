@@ -141,12 +141,6 @@ public:
 	constexpr Optional() noexcept = default;
 	constexpr Optional(NullOpt) noexcept {}
 
-	constexpr Optional& operator=(NullOpt)
-	{
-		clear();
-		return *this;
-	}
-
 	constexpr Optional(const T& value) : Base(value) {}
 
 	constexpr Optional(T&& value) noexcept
@@ -295,13 +289,13 @@ public:
 	}
 
 	template<typename F>
-	constexpr auto andThen(const F&& func) -> decltype(func(getValue())) const
+	constexpr auto andThen(const F&& func) const
 	{
 		return hasValue() ? func(getValue()) : decltype(func(getValue())){};
 	}
 
 	template<typename F>
-	constexpr auto transform(const F&& func) -> decltype(func(getValue())) const
+	constexpr auto transform(const F&& func) const
 	{
 		return hasValue() ? func(getValue()) : decltype(func(getValue())){};
 	}

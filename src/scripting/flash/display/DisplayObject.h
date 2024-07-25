@@ -216,9 +216,9 @@ public:
 	virtual void invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container);
 	virtual void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false);
 	void updateCachedSurface(IDrawable* d);
-	MATRIX getConcatenatedMatrix(bool includeRoot=false) const;
-	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
-	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
+	MATRIX getConcatenatedMatrix(bool includeRoot=false, bool fromcurrentrendering=true) const;
+	void localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout, bool fromcurrentrendering=true) const;
+	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout, bool fromcurrentrendering=true) const;
 	float getConcatenatedAlpha() const;
 	virtual float getScaleFactor() const;
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;

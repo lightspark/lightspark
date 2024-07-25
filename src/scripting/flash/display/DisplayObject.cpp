@@ -987,12 +987,12 @@ bool DisplayObject::isShaderBlendMode(AS_BLENDMODE bl)
 	return bl == AS_BLENDMODE::BLENDMODE_OVERLAY
 			|| bl == BLENDMODE_HARDLIGHT;
 }
-MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot) const
+MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot, bool fromcurrentrendering) const
 {
 	if(!parent || (!includeRoot && parent == getSystemState()->mainClip))
-		return currentrendermatrix;
+		return fromcurrentrendering ? currentrendermatrix : getMatrix();
 	else
-		return parent->getConcatenatedMatrix(includeRoot).multiplyMatrix(currentrendermatrix);
+		return parent->getConcatenatedMatrix(includeRoot).multiplyMatrix(fromcurrentrendering ? currentrendermatrix : getMatrix());
 }
 
 /* Return alpha value between 0 and 1. (The stored alpha value is not
@@ -1210,7 +1210,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 }
 //TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
 //this way they have less pb with precision.
-void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
+void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout, bool fromcurrentrendering) const
 {
 	if (this == getSystemState()->mainClip)
 	{
@@ -1222,15 +1222,18 @@ void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, nu
 	}
 	else
 	{
-		currentrendermatrix.multiply2D(xin, yin, xout, yout);
+		if (fromcurrentrendering)
+			currentrendermatrix.multiply2D(xin, yin, xout, yout);
+		else
+			getMatrix().multiply2D(xin, yin, xout, yout);
 		if(parent)
-			parent->localToGlobal(xout, yout, xout, yout);
+			parent->localToGlobal(xout, yout, xout, yout,fromcurrentrendering);
 	}
 }
 //TODO: Fix precision issues
-void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout) const
+void DisplayObject::globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout, bool fromcurrentrendering) const
 {
-	getConcatenatedMatrix().getInverted().multiply2D(xin, yin, xout, yout);
+	getConcatenatedMatrix(fromcurrentrendering).getInverted().multiply2D(xin, yin, xout, yout);
 }
 void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 {
@@ -1610,7 +1613,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getBounds)
 		{
 			//We crawled all the parent chain without finding the target
 			//The target is unrelated, compute it's transformation matrix
-			const MATRIX& targetMatrix=target->getConcatenatedMatrix();
+			const MATRIX& targetMatrix=target->getConcatenatedMatrix(false,false);
 			//If it's not invertible just use the previous computed one
 			if(targetMatrix.isInvertible())
 				m = targetMatrix.getInverted().multiplyMatrix(m);
@@ -1752,7 +1755,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,localToGlobal)
 
 	number_t tempx, tempy;
 
-	th->localToGlobal(pt->getX(), pt->getY(), tempx, tempy);
+	th->localToGlobal(pt->getX(), pt->getY(), tempx, tempy,false);
 
 	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,tempx, tempy));
 }
@@ -1766,7 +1769,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,globalToLocal)
 
 	number_t tempx, tempy;
 
-	th->globalToLocal(pt->getX(), pt->getY(), tempx, tempy);
+	th->globalToLocal(pt->getX(), pt->getY(), tempx, tempy,false);
 
 	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,tempx, tempy));
 }
@@ -2644,7 +2647,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_localToGlobal)
 
 	number_t tempx, tempy;
 
-	th->localToGlobal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy);
+	th->localToGlobal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy,false);
 	asAtomHandler::setNumber(x,wrk,tempx);
 	asAtomHandler::setNumber(y,wrk,tempy);
 	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,nullptr,wrk);
@@ -2674,7 +2677,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_globalToLocal)
 
 	number_t tempx, tempy;
 
-	th->globalToLocal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy);
+	th->globalToLocal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy,false);
 	asAtomHandler::setNumber(x,wrk,tempx);
 	asAtomHandler::setNumber(y,wrk,tempy);
 	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,nullptr,wrk);

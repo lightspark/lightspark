@@ -18,7 +18,6 @@
 **************************************************************************/
 
 #include "backends/builtindecoder.h"
-#include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/net/flashnet.h"
 #include "swf.h"
 

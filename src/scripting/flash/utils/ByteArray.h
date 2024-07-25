@@ -45,6 +45,7 @@ protected:
 	uint32_t len;
 	void compress_zlib(bool raw);
 	void uncompress_zlib(bool raw);
+	void compress_lzma();
 	void uncompress_lzma();
 	Mutex mutex;
 	uint8_t* getBufferIntern(unsigned int size, bool enableResize);

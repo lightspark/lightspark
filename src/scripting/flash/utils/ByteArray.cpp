@@ -1507,11 +1507,14 @@ void ByteArray::uncompress_zlib(bool raw)
 	status=inflateInit2(&strm,raw ? -15 : 15);
 	if(status==Z_VERSION_ERROR)
 	{
-		createError<IOError>(getInstanceWorker(),0,"not valid compressed data");
+		createError<IOError>(getInstanceWorker(),kCompressedDataError);
 		return;
 	}
 	else if(status!=Z_OK)
-		throw RunTimeException("zlib uncompress failed");
+	{
+		createError<IOError>(getInstanceWorker(),kCompressedDataError);
+		return;
+	}
 
 	vector<uint8_t> buf(3*len);
 	do
@@ -1523,7 +1526,7 @@ void ByteArray::uncompress_zlib(bool raw)
 		if(status!=Z_OK && status!=Z_STREAM_END)
 		{
 			inflateEnd(&strm);
-			createError<IOError>(getInstanceWorker(),0,"not valid compressed data");
+			createError<IOError>(getInstanceWorker(),kCompressedDataError);
 			return;
 		}
 
@@ -1545,48 +1548,112 @@ void ByteArray::uncompress_zlib(bool raw)
 	memcpy(bytes, &buf[0], len);
 	position=0;
 }
-void ByteArray::uncompress_lzma()
+void ByteArray::compress_lzma()
 {
+	if(len==0)
+		return;
 	lzma_stream strm = LZMA_STREAM_INIT;
-	lzma_ret ret = lzma_alone_decoder(&strm, UINT64_MAX);
+	lzma_options_lzma opt;
+	lzma_lzma_preset(&opt,0);
+	lzma_ret ret = lzma_alone_encoder(&strm, &opt);
 	if (ret != LZMA_OK)
 	{
-		LOG(LOG_ERROR,"Failed to initialize lzma decoder in ByteArray::uncompress_lzma");
+		LOG(LOG_ERROR,"Failed to initialize lzma encoder in ByteArray::compress_lzma");
+		createError<IOError>(getInstanceWorker(),kCompressedDataError);
 		return;
 	}
 	uint32_t inputlen = getLength();
+	uint32_t outputlen = BA_CHUNK_SIZE;
 	uint8_t* inbuffer = new uint8_t[inputlen];
 	memcpy(inbuffer,getBufferNoCheck(),inputlen);
 	strm.next_in = inbuffer;
 	strm.avail_in = inputlen;
-	strm.avail_out = inputlen;
+	strm.avail_out = outputlen;
+	this->setLength(outputlen);
 	strm.next_out = this->getBufferNoCheck();
-	while (strm.avail_in!=0)
+	
+	bool abort=false;
+	while (strm.avail_in!=0 && !abort)
 	{
 		do
 		{
-			lzma_ret ret=lzma_code(&strm, LZMA_RUN);
+			lzma_ret ret=lzma_code(&strm, LZMA_FINISH);
 			
 			if(ret==LZMA_STREAM_END || strm.avail_in==0)
 				break;
 			else if(ret!=LZMA_OK)
 			{
 				LOG(LOG_ERROR,"lzma decoder error:"<<ret);
+				createError<IOError>(getInstanceWorker(),kCompressedDataError);
+				abort=true;
 				break;
 			}
 			if (strm.avail_out==0)
 			{
 				uint32_t oldlen = getLength();
-				// TODO: I don't know what's the best value for chunk size, we just use the length of the input for now
-				strm.avail_out=inputlen;
-				setLength(getLength()+inputlen);
+				strm.avail_out=outputlen;
+				setLength(getLength()+outputlen);
 				strm.next_out=getBufferNoCheck()+oldlen;
 			}
-				
 		}
 		while(strm.avail_out!=0);
 	}
-	if (strm.avail_out!=0)
+	this->setLength(strm.total_out);
+	lzma_end(&strm);
+	setPosition(0);
+	delete[] inbuffer;
+}
+void ByteArray::uncompress_lzma()
+{
+	if(len==0)
+		return;
+	lzma_stream strm = LZMA_STREAM_INIT;
+	lzma_ret ret = lzma_alone_decoder(&strm, UINT64_MAX);
+	if (ret != LZMA_OK)
+	{
+		LOG(LOG_ERROR,"Failed to initialize lzma decoder in ByteArray::uncompress_lzma");
+		createError<IOError>(getInstanceWorker(),kCompressedDataError);
+		return;
+	}
+	uint32_t inputlen = getLength();
+	uint32_t outputlen = getLength();// TODO: I don't know what's the best value for chunk size, we just use the length of the input for now
+	uint8_t* inbuffer = new uint8_t[inputlen];
+	memcpy(inbuffer,getBufferNoCheck(),inputlen);
+	strm.next_in = inbuffer;
+	strm.avail_in = inputlen;
+	strm.avail_out = outputlen;
+	strm.next_out = this->getBufferNoCheck();
+	bool abort=false;
+	while (strm.avail_in!=0 && !abort)
+	{
+		do
+		{
+			lzma_ret ret=lzma_code(&strm, LZMA_RUN);
+			
+			if(ret==LZMA_STREAM_END)
+				break;
+			else if(ret!=LZMA_OK)
+			{
+				LOG(LOG_ERROR,"lzma decoder error:"<<ret);
+				createError<IOError>(getInstanceWorker(),kCompressedDataError);
+				this->setLength(inputlen);
+				memcpy(getBufferNoCheck(),inbuffer,inputlen);
+				abort=true;
+				break;
+			}
+			if (strm.avail_out==0)
+			{
+				uint32_t oldlen = getLength();
+				strm.avail_out=outputlen;
+				setLength(getLength()+outputlen);
+				strm.next_out=getBufferNoCheck()+oldlen;
+			}
+			if(strm.avail_in==0)
+				break;
+		}
+		while(strm.avail_out!=0);
+	}
+	if (!abort && strm.avail_out!=0)
 	{
 		this->setLength(this->getLength()-strm.avail_out);
 	}
@@ -1599,10 +1666,10 @@ ASFUNCTIONBODY_ATOM(ByteArray,_compress)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	tiny_string algorithm;
-	ARG_CHECK(ARG_UNPACK(algorithm));
+	ARG_CHECK(ARG_UNPACK(algorithm,"zlib"));
 	th->lock();
 	if (algorithm == "lzma")
-		LOG(LOG_NOT_IMPLEMENTED,"ByteArray.compress with lzma algorithm");
+		th->compress_lzma();
 	else if (algorithm == "deflate")
 		th->compress_zlib(true);
 	else
@@ -1614,14 +1681,14 @@ ASFUNCTIONBODY_ATOM(ByteArray,_uncompress)
 {
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	tiny_string algorithm;
-	ARG_CHECK(ARG_UNPACK(algorithm));
+	ARG_CHECK(ARG_UNPACK(algorithm,"zlib"));
 	th->lock();
 	if (algorithm == "lzma")
 		th->uncompress_lzma();
 	else if (algorithm == "deflate")
-		th->compress_zlib(true);
+		th->uncompress_zlib(true);
 	else
-		th->compress_zlib(false);
+		th->uncompress_zlib(false);
 	th->unlock();
 }
 

@@ -1199,6 +1199,12 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 	{
 		LOG(LOG_ERROR,"trying to call property on null:"<<*name);
 		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		if (refcounted)
+		{
+			for(uint32_t i=0;i<argsnum;i++)
+				ASATOM_DECREF(args[i]);
+			ASATOM_DECREF(obj);
+		}
 		return;
 		
 	}
@@ -1206,6 +1212,12 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 	{
 		LOG(LOG_ERROR,"trying to call property on undefined2:"<<*name);
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		if (refcounted)
+		{
+			for(uint32_t i=0;i<argsnum;i++)
+				ASATOM_DECREF(args[i]);
+			ASATOM_DECREF(obj);
+		}
 		return;
 	}
 	ASObject* pobj = asAtomHandler::getObject(obj);

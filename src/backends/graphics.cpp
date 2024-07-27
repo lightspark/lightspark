@@ -650,8 +650,10 @@ void CairoTokenRenderer::executeDraw(cairo_t* cr)
 	cairo_set_antialias(cr,getState()->smoothing ? CAIRO_ANTIALIAS_DEFAULT : CAIRO_ANTIALIAS_NONE);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-	cairoPathFromTokens(cr, filltokens, state->scaling, false,getState()->isMask,xstart,ystart,this);
-	cairoPathFromTokens(cr, stroketokens, state->scaling, false,getState()->isMask,xstart,ystart,this);
+	if (filltokens)
+		cairoPathFromTokens(cr, filltokens, state->scaling, false,getState()->isMask,xstart,ystart,this);
+	if (stroketokens)
+		cairoPathFromTokens(cr, stroketokens, state->scaling, false,getState()->isMask,xstart,ystart,this);
 }
 
 uint8_t* CairoRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)

@@ -380,7 +380,10 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 						it = tk->filltokens->tokens.begin();
 						if (tk->isGlyph)
 						{
-							NVGcolor c =nvgRGBA(tk->color.Red,tk->color.Green,tk->color.Blue,tk->color.Alpha);
+							RGBA color = tk->color;
+							float r,g,b,a;
+							ct.applyTransformation(color,r,g,b,a);
+							NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
 							nvgFillColor(nvgctxt,c);
 							infill=true;
 							nvgResetTransform(nvgctxt);

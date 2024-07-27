@@ -1998,7 +1998,6 @@ void ASObject::removeStoredMember()
 		if (getInstanceWorker()->isInGarbageCollection() || this->markedforgarbagecollection)
 		{
 			handleGarbageCollection();
-			getInstanceWorker()->setDeletedInGarbageCollection(this);
 		}
 		else
 		{

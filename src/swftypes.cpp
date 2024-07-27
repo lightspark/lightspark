@@ -439,6 +439,44 @@ bool MATRIX::isInvertible() const
 	return (fabs(den) > 1e-6);
 }
 
+// algorithm for scale and rotation getters taken from https://math.stackexchange.com/questions/13150/extracting-rotation-scale-values-from-2d-transformation-matrix
+// this handles negative scales properly
+number_t MATRIX::getScaleX() const
+{
+	number_t ret = 0;
+	if (xx != 0 || yx != 0)
+		ret = sqrt(xx * xx + yx * yx);
+	else if (xy != 0 || yy != 0)
+		ret = (xx * yy - yx * xy) / sqrt(xy * xy + yy * yy);
+	return ret;
+}
+
+number_t MATRIX::getScaleY() const
+{
+	number_t ret = 0;
+	if (xx != 0 || yx != 0)
+		ret = (xx * yy - yx * xy) / sqrt(xx * xx + yx * yx);
+	else if (xy != 0 || yy != 0)
+		ret = sqrt(xy * xy + yy * yy);
+	return ret;
+}
+
+number_t MATRIX::getRotation() const
+{
+	number_t ret = 0;
+	if (xx != 0 || yx != 0)
+	{
+		ret = sqrt(xx * xx + yx * yx);
+		ret = yx > 0 ? acos(xx / ret) : -acos(xx / ret);
+	}
+	else if (xy != 0 || yy != 0)
+	{
+		ret = sqrt(xy * xy + yy * yy);
+		ret = M_PI / 2.0 - (yy > 0 ? acos(-xy / ret) : -acos(xy / ret));
+	}
+	return ret*180/M_PI;
+}
+
 void MATRIX::get4DMatrix(float matrix[16]) const
 {
 	memset(matrix,0,sizeof(float)*16);

@@ -982,18 +982,9 @@ public:
 	{
 		return y0;
 	}
-	number_t getScaleX() const
-	{
-		return sqrt(xx*xx + yx*yx);
-	}
-	number_t getScaleY() const
-	{
-		return sqrt(yy*yy + xy*xy);
-	}
-	number_t getRotation() const
-	{
-		return atan(yx/xx)*180/M_PI;
-	}
+	number_t getScaleX() const;
+	number_t getScaleY() const;
+	number_t getRotation() const;
 	/*
 	 * Implement flash style premultiply matrix operators
 	 */

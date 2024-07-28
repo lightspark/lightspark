@@ -153,10 +153,6 @@ private:
 	uint32_t backDepthRenderBuffer[2];
 	uint32_t backStencilRenderBuffer[2];
 
-	uint32_t textureframebuffer;
-	uint32_t depthRenderBuffer;
-	uint32_t stencilRenderBuffer;
-
 	Program3D* currentprogram;
 	uint32_t currenttextureid;
 	bool renderingToTexture;

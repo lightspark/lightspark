@@ -727,8 +727,14 @@ bool TextureBase::destruct()
 	renderaction action;
 	action.action =RENDER_ACTION::RENDER_DELETETEXTURE;
 	action.udata1 = textureID;
+	action.udata2 = textureframebuffer;
+	action.udata3 = depthRenderBuffer;
+	action.fdata[0] = stencilRenderBuffer;
 	context->addAction(action);
 	textureID=UINT32_MAX;
+	depthRenderBuffer = UINT32_MAX;
+	textureframebuffer = UINT32_MAX;
+	stencilRenderBuffer = UINT32_MAX;
 	width=0;
 	height=0;
 	async=false;
@@ -743,8 +749,14 @@ ASFUNCTIONBODY_ATOM(TextureBase,dispose)
 	renderaction action;
 	action.action =RENDER_ACTION::RENDER_DELETETEXTURE;
 	action.udata1 = th->textureID;
+	action.udata2 = th->textureframebuffer;
+	action.udata3 = th->depthRenderBuffer;
+	action.fdata[0] = th->stencilRenderBuffer;
 	th->context->addAction(action);
 	th->textureID=UINT32_MAX;
+	th->depthRenderBuffer = UINT32_MAX;
+	th->textureframebuffer = UINT32_MAX;
+	th->stencilRenderBuffer = UINT32_MAX;
 }
 
 void Texture::sinit(Class_base *c)

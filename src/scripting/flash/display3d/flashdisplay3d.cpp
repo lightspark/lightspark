@@ -186,17 +186,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		case RENDER_RENDERTOBACKBUFFER:
 			if (renderingToTexture)
 			{
-				if (textureframebuffer != UINT32_MAX)
-				{
-					engineData->exec_glDeleteFramebuffers(1,&textureframebuffer);
-					if (depthRenderBuffer != UINT32_MAX)
-						engineData->exec_glDeleteRenderbuffers(1,&depthRenderBuffer);
-					if (stencilRenderBuffer != UINT32_MAX)
-						engineData->exec_glDeleteRenderbuffers(1,&stencilRenderBuffer);
-					depthRenderBuffer = UINT32_MAX;
-					textureframebuffer = UINT32_MAX;
-					stencilRenderBuffer = UINT32_MAX;
-				}
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(backframebufferIDcurrent);
 				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(backframebuffer[currentactionvector]);
 				engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
@@ -229,47 +218,37 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				else
 					loadTexture(tex,UINT32_MAX);
 			}
-			if (textureframebuffer != UINT32_MAX)
-			{
-				engineData->exec_glDeleteFramebuffers(1,&textureframebuffer);
-				if (depthRenderBuffer != UINT32_MAX)
-					engineData->exec_glDeleteRenderbuffers(1,&depthRenderBuffer);
-				if (stencilRenderBuffer != UINT32_MAX)
-					engineData->exec_glDeleteRenderbuffers(1,&stencilRenderBuffer);
-				depthRenderBuffer = UINT32_MAX;
-				textureframebuffer = UINT32_MAX;
-				stencilRenderBuffer = UINT32_MAX;
-			}
-			else
-				textureframebuffer = engineData->exec_glGenFramebuffer();
-			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(textureframebuffer);
+			if (tex->textureframebuffer == UINT32_MAX)
+				tex->textureframebuffer = engineData->exec_glGenFramebuffer();
+			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(tex->textureframebuffer);
 			uint32_t textureframebufferID = tex->textureID;
 			engineData->exec_glBindTexture_GL_TEXTURE_2D(textureframebufferID);
 			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
 			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(textureframebufferID);
-			engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, action.udata2, action.udata3, 0, nullptr,true);
 			engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 			enableDepthAndStencilTextureBuffer = action.udata1;
 			if (enableDepthAndStencilTextureBuffer)
 			{
-				depthRenderBuffer = engineData->exec_glGenRenderbuffer();
+				if (tex->depthRenderBuffer == UINT32_MAX)
+					tex->depthRenderBuffer = engineData->exec_glGenRenderbuffer();
 				
 				if (engineData->supportPackedDepthStencil)
 				{
-					engineData->exec_glBindRenderbuffer(depthRenderBuffer);
+					engineData->exec_glBindRenderbuffer(tex->depthRenderBuffer);
 					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(action.udata2,action.udata3);
-					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(depthRenderBuffer);
+					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(tex->depthRenderBuffer);
 				}
 				else
 				{
-					stencilRenderBuffer = engineData->exec_glGenRenderbuffer();
-					engineData->exec_glBindRenderbuffer(depthRenderBuffer);
+					if (tex->stencilRenderBuffer == UINT32_MAX)
+						tex->stencilRenderBuffer = engineData->exec_glGenRenderbuffer();
+					engineData->exec_glBindRenderbuffer(tex->depthRenderBuffer);
 					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_COMPONENT16(action.udata2,action.udata3);
-					engineData->exec_glBindRenderbuffer(stencilRenderBuffer);
+					engineData->exec_glBindRenderbuffer(tex->stencilRenderBuffer);
 					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(action.udata2,action.udata3);
-					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_ATTACHMENT(depthRenderBuffer);
-					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(stencilRenderBuffer);
+					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_ATTACHMENT(tex->depthRenderBuffer);
+					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(tex->stencilRenderBuffer);
 					engineData->exec_glBindRenderbuffer(0);
 				}
 				engineData->exec_glEnable_GL_DEPTH_TEST();
@@ -533,10 +512,20 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			}
 			break;
 		case RENDER_DELETETEXTURE:
+		{
 			//action.udata1 = textureid
+			//action.udata2 = textureframebuffer
+			//action.udata3 = depthRenderBuffer
+			//action.fdata[0] = stencilRenderBuffer
 			if (action.udata1 != UINT32_MAX)
 				engineData->exec_glDeleteTextures(1, &action.udata1);
+			if (action.udata2 != UINT32_MAX)
+				engineData->exec_glDeleteFramebuffers(1,&action.udata2);
+			uint32_t stencilRenderBuffer=action.fdata[0];
+			if (stencilRenderBuffer != UINT32_MAX)
+				engineData->exec_glDeleteRenderbuffers(1,&stencilRenderBuffer);
 			break;
+		}
 		case RENDER_CREATEVERTEXBUFFER:
 		{
 			//action.dataobject = VertexBuffer3D
@@ -821,17 +810,6 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	engineData->exec_glUseProgram(0);
 	if (renderingToTexture)
 	{
-		if (textureframebuffer != UINT32_MAX)
-		{
-			engineData->exec_glDeleteFramebuffers(1,&textureframebuffer);
-			if (depthRenderBuffer != UINT32_MAX)
-				engineData->exec_glDeleteRenderbuffers(1,&depthRenderBuffer);
-			if (stencilRenderBuffer != UINT32_MAX)
-				engineData->exec_glDeleteRenderbuffers(1,&stencilRenderBuffer);
-			depthRenderBuffer = UINT32_MAX;
-			textureframebuffer = UINT32_MAX;
-			stencilRenderBuffer = UINT32_MAX;
-		}
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 		engineData->exec_glFrontFace(false);
 		engineData->exec_glDrawBuffer_GL_BACK();
@@ -985,7 +963,7 @@ void Context3D::configureBackBufferIntern(bool enableDepthAndStencil, uint32_t w
 }
 
 Context3D::Context3D(ASWorker* wrk, Class_base *c):EventDispatcher(wrk,c),samplers{UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX},currentactionvector(0)
-  ,textureframebuffer(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX),currentprogram(nullptr),currenttextureid(UINT32_MAX)
+  ,currentprogram(nullptr),currenttextureid(UINT32_MAX)
   ,renderingToTexture(false),enableDepthAndStencilBackbuffer(true),enableDepthAndStencilTextureBuffer(true),swapbuffers(false)
   ,currentcullface(TRIANGLE_FACE::FACE_NONE),currentdepthfunction(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_LESS)
   ,currentstencilfunction(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_ALWAYS), currentstencilref(0xff), currentstencilmask(0xff)

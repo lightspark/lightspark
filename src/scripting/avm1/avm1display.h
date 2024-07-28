@@ -23,6 +23,7 @@
 
 #include "asobject.h"
 #include "scripting/flash/display/Shape.h"
+#include "scripting/flash/display/Stage.h"
 #include "scripting/flash/display/MovieClip.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/toplevel/Vector.h"

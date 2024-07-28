@@ -22,6 +22,7 @@
 #include "backends/input.h"
 #include "backends/rendering.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/flash/display/Stage.h"
 #include "compat.h"
 #include "scripting/class.h"
 #include <algorithm>

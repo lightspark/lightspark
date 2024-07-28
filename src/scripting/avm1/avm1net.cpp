@@ -18,7 +18,7 @@
 **************************************************************************/
 
 #include "scripting/avm1/avm1net.h"
-#include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/Stage.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"

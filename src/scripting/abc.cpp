@@ -23,6 +23,7 @@
 
 #include "compat.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/flash/display/Stage.h"
 #include "scripting/toplevel/toplevel.h"
 #include <algorithm>
 

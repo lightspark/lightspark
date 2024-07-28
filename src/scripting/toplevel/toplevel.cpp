@@ -37,6 +37,7 @@
 #include "scripting/abc.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/display/Stage.h"
 #include "swf.h"
 #include "compat.h"
 #include "scripting/class.h"

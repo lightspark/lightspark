@@ -43,6 +43,7 @@
 #include "scripting/flash/display/shaderprecision.h"
 #include "scripting/flash/display/swfversion.h"
 #include "scripting/flash/display/StageAspectRatio.h"
+#include "scripting/flash/display/Stage.h"
 #include "scripting/flash/display/triangleculling.h"
 #include "scripting/flash/display/Loader.h"
 #include "scripting/flash/display/LoaderInfo.h"

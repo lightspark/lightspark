@@ -22,6 +22,7 @@
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/display/BitmapContainer.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/flash/display/Stage.h"
 #include "parsing/textfile.h"
 #include "backends/cachedsurface.h"
 #include "backends/rendering.h"

@@ -31,6 +31,7 @@
 #include "scripting/flash/display/Loader.h"
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/flash/display/Stage.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASString.h"

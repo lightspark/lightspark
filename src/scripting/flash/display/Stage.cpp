@@ -37,6 +37,7 @@
 #include "backends/cachedsurface.h"
 #include "backends/input.h"
 #include "platforms/engineutils.h"
+#include <algorithm>
 
 using namespace std;
 using namespace lightspark;

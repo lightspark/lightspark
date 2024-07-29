@@ -35,6 +35,7 @@ BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
 	data(reporter_allocator<uint8_t>(m)),renderevent(0),
 	nanoVGImageHandle(-1),cachedCairoPattern(nullptr)
 {
+	nanoVGGradientPattern.image=-1; // indicates no pattern has been generated
 }
 
 BitmapContainer::~BitmapContainer()
@@ -49,6 +50,8 @@ BitmapContainer::~BitmapContainer()
 	}
 	if (nanoVGImageHandle != -1)
 		nanoVGDeleteImage(nanoVGImageHandle);
+	if (nanoVGGradientPattern.image!=-1)
+		nanoVGDeleteImage(nanoVGGradientPattern.image);
 	if (cachedCairoPattern)
 		cairo_pattern_destroy(cachedCairoPattern);
 		

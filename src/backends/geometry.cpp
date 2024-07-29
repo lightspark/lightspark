@@ -329,6 +329,7 @@ std::map<uint16_t,LINESTYLE2>::iterator ShapesBuilder::getStrokeLineStyle(const 
 						ratiomatrix.yy=stylesIt->FillType.StartGradientMatrix.yy*(1.0-gradratio)+stylesIt->FillType.EndGradientMatrix.yy*gradratio;
 						
 						ls.FillType.Matrix = ratiomatrix;
+						ls.FillType.bitmap=_MNR(new BitmapContainer(nullptr));
 						std::vector<GRADRECORD>& gradrecords = stylesIt->FillType.FillStyleType==FOCAL_RADIAL_GRADIENT ? ls.FillType.FocalGradient.GradientRecords : ls.FillType.Gradient.GradientRecords;
 						gradrecords.reserve(stylesIt->FillType.StartColors.size());
 						GRADRECORD gr(0xff);
@@ -445,6 +446,7 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 				case RADIAL_GRADIENT:
 				case FOCAL_RADIAL_GRADIENT:
 				{
+					f.bitmap=_MNR(new BitmapContainer(nullptr));
 					number_t gradratio = float(ratio)/65535.0;
 					MATRIX ratiomatrix;
 					

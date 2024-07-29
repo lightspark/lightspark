@@ -1326,6 +1326,7 @@ FILLSTYLE Graphics::createGradientFill(const tiny_string& type,
 				       number_t focalPointRatio)
 {
 	FILLSTYLE style(0xff);
+	style.bitmap=_MNR(new BitmapContainer(nullptr));
 
 	if (colors.isNull() || alphas.isNull() || ratios.isNull())
 		return style;

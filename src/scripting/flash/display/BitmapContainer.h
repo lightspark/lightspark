@@ -28,6 +28,7 @@
 #include <vector>
 #include "backends/graphics.h"
 #include "threading.h"
+#include "3rdparty/nanovg/src/nanovg.h"
 
 namespace lightspark
 {
@@ -55,6 +56,7 @@ public:
 	TextureChunk bitmaptexture;
 	int nanoVGImageHandle;
 	cairo_pattern_t* cachedCairoPattern;
+	NVGpaint nanoVGGradientPattern;
 	BitmapContainer(MemoryAccount* m);
 	~BitmapContainer();
 	uint32_t getDataSize() const { return data.size(); }

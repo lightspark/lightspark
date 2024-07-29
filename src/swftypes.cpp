@@ -929,6 +929,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 			s >> v.FocalGradient;
 		else
 			s >> v.Gradient;
+		v.bitmap = _MNR(new BitmapContainer(nullptr)); // for caching the nanoVG gradient
 	}
 	else if(v.FillStyleType==REPEATING_BITMAP || v.FillStyleType==CLIPPED_BITMAP || v.FillStyleType==NON_SMOOTHED_REPEATING_BITMAP || 
 			v.FillStyleType==NON_SMOOTHED_CLIPPED_BITMAP)

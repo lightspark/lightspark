@@ -27,8 +27,10 @@
 #include "swftypes.h"
 #include "smartrefs.h"
 #include "scripting/flash/ui/keycodes.h"
+#include "forwards/scripting/flash/events/flashevents.h"
 #include <vector>
 #include <deque>
+#include <set>
 
 #include <SDL2/SDL_keyboard.h>
 
@@ -67,7 +69,7 @@ private:
 	_NR<InteractiveObject> lastMouseUpTarget;
 	_NR<InteractiveObject> lastRolledOver;
 	LSModifier lastKeymod;
-	set<AS3KeyCode> keyDownSet;
+	std::set<AS3KeyCode> keyDownSet;
 	AS3KeyCode lastKeyDown;
 	AS3KeyCode lastKeyUp;
 	const RECT* dragLimit;

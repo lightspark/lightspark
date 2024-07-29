@@ -28,8 +28,10 @@
 #include "smartrefs.h"
 #include "forwards/scripting/flash/events/flashevents.h"
 #include "scripting/flash/ui/keycodes.h"
+#include "forwards/scripting/flash/events/flashevents.h"
 #include <vector>
 #include <deque>
+#include <set>
 
 #include <SDL2/SDL_keyboard.h>
 

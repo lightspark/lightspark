@@ -538,7 +538,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 								case RADIAL_GRADIENT:
 								case FOCAL_RADIAL_GRADIENT:
 								{
-									if (style->bitmap->nanoVGGradientPattern.image!=-1) // gradient is cached in bitmapContainer of fillstyle
+									if (style->bitmap->nanoVGGradientPattern.image!=0) // gradient is cached in bitmapContainer of fillstyle
 									{
 										nvgFillPaint(nvgctxt, style->bitmap->nanoVGGradientPattern);
 										break;
@@ -663,7 +663,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 									case FOCAL_RADIAL_GRADIENT:
 									{
 										auto fill = style->FillType;
-										if (fill.bitmap->nanoVGGradientPattern.image!=-1) // gradient is cached in bitmapContainer of fillstyle
+										if (fill.bitmap->nanoVGGradientPattern.image!=0) // gradient is cached in bitmapContainer of fillstyle
 										{
 											nvgFillPaint(nvgctxt, fill.bitmap->nanoVGGradientPattern);
 											break;

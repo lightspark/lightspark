@@ -1419,7 +1419,7 @@ static void glnvg__renderFlush(void* uptr)
 		for (i = 0; i < gl->ncalls; i++) {
 			GLNVGcall* call = &gl->calls[i];
 			glnvg__blendFuncSeparate(gl,&call->blendFunc);
-			GLNVGfragUniforms* frag = nvg__fragUniformPtr(gl, call->uniformOffset);
+			//GLNVGfragUniforms* frag = nvg__fragUniformPtr(gl, call->uniformOffset);
 			if (call->type == GLNVG_FILL)
 				glnvg__fill(gl, call);
 			else if (call->type == GLNVG_CONVEXFILL)
@@ -1428,8 +1428,10 @@ static void glnvg__renderFlush(void* uptr)
 				glnvg__stroke(gl, call);
 			else if (call->type == GLNVG_TRIANGLES)
 				glnvg__triangles(gl, call);
-			if (frag->type == NSVG_SHADER_FILLGRADIMG)
-				glnvg__deleteTexture(gl, call->image);
+			// TODO we delete the texture in the gradient cache of the BitmapContainer of the corresponding fillStyle
+			// it would probably be better to avoid creating these textures and compute the gradient in the shader
+			// if (frag->type == NSVG_SHADER_FILLGRADIMG)
+			// 	glnvg__deleteTexture(gl, call->image);
 		}
 
 		glDisableVertexAttribArray(0);

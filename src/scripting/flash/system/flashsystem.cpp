@@ -1042,7 +1042,6 @@ ASWorker::ASWorker(SystemState* s):
 	// TODO: it seems that AIR applications have a higher default value for max_recursion
 	// I haven't found any documentation about that, so we just set it to a value that seems to work...
 	limits.max_recursion = s->flashMode == SystemState::AIR ? 2048 : 256;
-	limits.max_recursion = 256;
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
 	gettimeofday(&last_garbagecollection, nullptr);

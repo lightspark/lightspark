@@ -297,7 +297,7 @@ void ArgsParser::addOption(Option&& option)
 			assert(false);
 		}
 
-		if (option.shortName != nullptr && existingOption.shortName == option.shortName)
+		if (option.shortName != '\0' && existingOption.shortName == option.shortName)
 		{
 			std::cerr << "Error: Multiple options have the same short name \"-" <<option.shortName << "\"" << std::endl;
 			assert(false);
@@ -357,7 +357,7 @@ void ArgsParser::addOption(tiny_string& value, const char* help, const char* lon
 	addOption(std::move(option));
 }
 
-void ArgsParser::addOption(std:;vector<tiny_string>& values, const char* help, const char* longName, char shortName, const char* valueName)
+void ArgsParser::addOption(std::vector<tiny_string>& values, const char* help, const char* longName, char shortName, const char* valueName)
 {
 	Option option
 	{

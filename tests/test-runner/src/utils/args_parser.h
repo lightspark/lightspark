@@ -121,10 +121,10 @@ public:
 
 	void addOption(Option&& option);
 	void addIgnored(const char* longName, char shortName);
-	void addOption(bool& value, const char* help, const char* longName, char shortName);
+	void addOption(bool& value, const char* help, const char* longName, char shortName = '\0');
 
 	template<typename T, std::enable_if_t<std::is_enum<T>::value, bool> = false>
-	void addOption(T& value, T newValue, const char* help, const char* longName, char shortName)
+	void addOption(T& value, T newValue, const char* help, const char* longName, char shortName = '\0')
 	{
 		addOption
 		({

@@ -117,6 +117,7 @@ enum GLNVGuniformLoc {
 	GLNVG_LOC_VIEWSIZE,
 	GLNVG_LOC_TEX,
 	GLNVG_LOC_FRAG,
+	GLNVG_LOC_GRADIENTCOLORS,
 	GLNVG_MAX_LOCS
 };
 
@@ -179,6 +180,7 @@ struct GLNVGcall {
 	int triangleCount;
 	int uniformOffset;
 	GLNVGblend blendFunc;
+	float* gradientcolors;
 };
 typedef struct GLNVGcall GLNVGcall;
 
@@ -510,6 +512,7 @@ static void glnvg__getUniforms(GLNVGshader* shader)
 #else
 	shader->loc[GLNVG_LOC_FRAG] = glGetUniformLocation(shader->prog, "frag");
 #endif
+	shader->loc[GLNVG_LOC_GRADIENTCOLORS] = glGetUniformLocation(shader->prog, "gradientcolors");
 }
 
 static int glnvg__renderCreateTexture(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data);
@@ -617,6 +620,7 @@ static int glnvg__renderCreate(void* uptr)
 		"	#define type int(frag[10].w)\n"
 		"	#define spreadMode int(frag[11].x)\n"
 		"#endif\n"
+		"	uniform vec4 gradientcolors[256];\n"
 		"\n"
 		"float applySpread(float d) {\n"
 		"	if (spreadMode == 0) // Pad\n"
@@ -698,16 +702,11 @@ static int glnvg__renderCreate(void* uptr)
 		"		if (texType == 2) color = vec4(color.x);"
 		"		color *= scissor;\n"
 		"		result = color * innerCol;\n"
-		"	} else if (type == 4) {		// Image based gradient; Sample a texture using the gradient position.\n"
+		"	} else if (type == 4) {		// gradientcolor based gradient\n"
 		"		// Calculate gradient color using box gradient\n"
 		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
-		"		float d = (sdroundrect(pt, extent, radius) + feather*0.5) / feather;\n"
-		"#ifdef NANOVG_GL3\n"
-		"		vec4 color = texture(tex, vec2(d, 0.0));\n"
-		"#else\n"
-		"		vec4 color = texture2D(tex, vec2(d, 0.0));\n"
-		"#endif\n"
-
+		"		float d = applySpread((sdroundrect(pt, extent, radius) + feather*0.5) / feather);\n"
+		"		vec4 color = gradientcolors[int(d*255.0)];\n"
 		"		// Combine alpha\n"
 		"		color *= strokeAlpha * scissor;\n"
 		"		result = color;\n"
@@ -1005,29 +1004,22 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 		} else {
 			nvgTransformInverse(invxform, paint->xform);
 		}
-		if (paint->isGradient == 0) {
-			frag->type = NSVG_SHADER_FILLIMG;
-
-			#if NANOVG_GL_USE_UNIFORMBUFFER
-			if (tex->type == NVG_TEXTURE_RGBA)
-				frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0 : 1;
-			else
-				frag->texType = 2;
-			#else
-			if (tex->type == NVG_TEXTURE_RGBA)
-				frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0.0f : 1.0f;
-			else
-				frag->texType = 2.0f;
-			#endif
-		} else {
-			frag->type = NSVG_SHADER_FILLGRADIMG;
-			frag->radius = paint->radius;
-			frag->feather = paint->feather;
-			frag->spreadMode = paint->spreadMode;
-		}
+		frag->type = NSVG_SHADER_FILLIMG;
+		
+#if NANOVG_GL_USE_UNIFORMBUFFER
+		if (tex->type == NVG_TEXTURE_RGBA)
+			frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0 : 1;
+		else
+			frag->texType = 2;
+#else
+		if (tex->type == NVG_TEXTURE_RGBA)
+			frag->texType = (tex->flags & NVG_IMAGE_PREMULTIPLIED) ? 0.0f : 1.0f;
+		else
+			frag->texType = 2.0f;
+#endif
 //		printf("frag->texType = %d\n", frag->texType);
 	} else {
-		frag->type = NSVG_SHADER_FILLGRAD;
+		frag->type = paint->gradientcolors ? NSVG_SHADER_FILLGRADIMG : NSVG_SHADER_FILLGRAD;
 		frag->radius = paint->radius;
 		frag->feather = paint->feather;
 		frag->spreadMode = paint->spreadMode;
@@ -1041,7 +1033,7 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 
 static GLNVGfragUniforms* nvg__fragUniformPtr(GLNVGcontext* gl, int i);
 
-static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
+static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image, float* gradientcolors=nullptr)
 {
 	GLNVGtexture* tex = NULL;
 #if NANOVG_GL_USE_UNIFORMBUFFER
@@ -1050,6 +1042,8 @@ static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image)
 	GLNVGfragUniforms* frag = nvg__fragUniformPtr(gl, uniformOffset);
 	glUniform4fv(gl->shader.loc[GLNVG_LOC_FRAG], NANOVG_GL_UNIFORMARRAY_SIZE, &(frag->uniformArray[0][0]));
 #endif
+	if (gradientcolors)
+		glUniform4fv(gl->shader.loc[GLNVG_LOC_GRADIENTCOLORS], NANOVG_GRADIENTCOLOR_SIZE, gradientcolors);
 
 	if (image != 0) {
 		tex = glnvg__findTexture(gl, image);
@@ -1203,7 +1197,7 @@ static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 	// Draw anti-aliased pixels
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-	glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image);
+	glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image,call->gradientcolors);
 	glnvg__checkError(gl, "fill fill");
 
 	if (gl->flags & NVG_ANTIALIAS) {
@@ -1428,10 +1422,6 @@ static void glnvg__renderFlush(void* uptr)
 				glnvg__stroke(gl, call);
 			else if (call->type == GLNVG_TRIANGLES)
 				glnvg__triangles(gl, call);
-			// TODO we delete the texture in the gradient cache of the BitmapContainer of the corresponding fillStyle
-			// it would probably be better to avoid creating these textures and compute the gradient in the shader
-			// if (frag->type == NSVG_SHADER_FILLGRADIMG)
-			// 	glnvg__deleteTexture(gl, call->image);
 		}
 
 		glDisableVertexAttribArray(0);
@@ -1620,7 +1610,10 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperation
 	call->pathOffset = glnvg__allocPaths(gl, npaths);
 	if (call->pathOffset == -1) goto error;
 	call->pathCount = npaths;
-	call->image = paint->image;
+	if (paint->isGradient)
+		call->gradientcolors = paint->gradientcolors;
+	else
+		call->image = paint->image;
 	call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
 
 	if (npaths == 1 && paths[0].convex) call->type = GLNVG_CONVEXFILL;
@@ -1752,7 +1745,10 @@ static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGcompositeOperati
 	call->pathOffset = glnvg__allocPaths(gl, npaths);
 	if (call->pathOffset == -1) goto error;
 	call->pathCount = npaths;
-	call->image = paint->image;
+	if (paint->isGradient)
+		call->gradientcolors = paint->gradientcolors;
+	else
+		call->image = paint->image;
 	call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
 	call->triangleCount = (hasClipStack != 0 || hasClipPaths != 0) ? 4 : 0;	// Bounding box fill quad needed for clipped strokes
 
@@ -1851,7 +1847,10 @@ static void glnvg__renderTriangles(void* uptr, NVGpaint* paint, NVGcompositeOper
 	if (call == NULL) return;
 
 	call->type = GLNVG_TRIANGLES;
-	call->image = paint->image;
+	if (paint->isGradient)
+		call->gradientcolors = paint->gradientcolors;
+	else
+		call->image = paint->image;
 	call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
 
 	// Allocate vertices for all the paths.

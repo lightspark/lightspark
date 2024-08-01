@@ -56,7 +56,7 @@ public:
 	TextureChunk bitmaptexture;
 	int nanoVGImageHandle;
 	cairo_pattern_t* cachedCairoPattern;
-	NVGpaint nanoVGGradientPattern;
+	float* nanoVGGradientPattern;
 	BitmapContainer(MemoryAccount* m);
 	~BitmapContainer();
 	uint32_t getDataSize() const { return data.size(); }

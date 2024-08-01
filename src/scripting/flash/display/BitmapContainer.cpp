@@ -33,9 +33,8 @@ using namespace lightspark;
 extern void nanoVGDeleteImage(int image);
 BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
 	data(reporter_allocator<uint8_t>(m)),renderevent(0),
-	nanoVGImageHandle(-1),cachedCairoPattern(nullptr)
+	nanoVGImageHandle(-1),cachedCairoPattern(nullptr),nanoVGGradientPattern(nullptr)
 {
-	nanoVGGradientPattern.image=0; // indicates no cacheable pattern has been generated
 }
 
 BitmapContainer::~BitmapContainer()
@@ -50,8 +49,8 @@ BitmapContainer::~BitmapContainer()
 	}
 	if (nanoVGImageHandle != -1)
 		nanoVGDeleteImage(nanoVGImageHandle);
-	if (nanoVGGradientPattern.image!=0)
-		nanoVGDeleteImage(nanoVGGradientPattern.image);
+	if (nanoVGGradientPattern)
+		delete[] nanoVGGradientPattern;
 	if (cachedCairoPattern)
 		cairo_pattern_destroy(cachedCairoPattern);
 		

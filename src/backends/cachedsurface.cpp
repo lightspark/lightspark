@@ -538,11 +538,6 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 								case RADIAL_GRADIENT:
 								case FOCAL_RADIAL_GRADIENT:
 								{
-									if (style->bitmap->nanoVGGradientPattern.image!=0) // gradient is cached in bitmapContainer of fillstyle
-									{
-										nvgFillPaint(nvgctxt, style->bitmap->nanoVGGradientPattern);
-										break;
-									}
 									bool isFocal = style->FillStyleType == FOCAL_RADIAL_GRADIENT;
 									bool isLinear = style->FillStyleType == LINEAR_GRADIENT;
 									MATRIX m = style->Matrix;
@@ -567,12 +562,12 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 										tmp.y0 = m.y0/state->scaling - style->ShapeBounds.Ymin;
 										Vector2f start = tmp.multiply2D(Vector2f(-16384.0, 0));
 										Vector2f end = tmp.multiply2D(Vector2f(16384.0, 0));
-										pattern = nvgLinearGradientStops(nvgctxt, start.x, start.y, end.x, end.y, stops.data(), stops.size(), spreadMode);
+										pattern = nvgLinearGradientStops(nvgctxt, start.x, start.y, end.x, end.y, stops.data(), stops.size(), spreadMode,&style->bitmap->nanoVGGradientPattern);
 									}
 									else
 									{
 										number_t x0 = isFocal ? style->FocalGradient.FocalPoint*16384.0 : 0.0;
-										pattern = nvgRadialGradientStops(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), spreadMode);
+										pattern = nvgRadialGradientStops(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), spreadMode,&style->bitmap->nanoVGGradientPattern);
 										float xform[6] =
 										{
 											(float)m.xx,
@@ -584,7 +579,6 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 										};
 										nvgTransformMultiply(pattern.xform, xform);
 									}
-									style->bitmap->nanoVGGradientPattern = pattern;
 									nvgFillPaint(nvgctxt, pattern);
 									break;
 								}
@@ -663,11 +657,6 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 									case FOCAL_RADIAL_GRADIENT:
 									{
 										auto fill = style->FillType;
-										if (fill.bitmap->nanoVGGradientPattern.image!=0) // gradient is cached in bitmapContainer of fillstyle
-										{
-											nvgFillPaint(nvgctxt, fill.bitmap->nanoVGGradientPattern);
-											break;
-										}
 										bool isFocal = fill.FillStyleType == FOCAL_RADIAL_GRADIENT;
 										bool isLinear = fill.FillStyleType == LINEAR_GRADIENT;
 										MATRIX m = fill.Matrix;
@@ -690,12 +679,12 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 											tmp.y0 = m.y0/state->scaling - fill.ShapeBounds.Ymin;
 											Vector2f start = tmp.multiply2D(Vector2f(-16384.0, 0));
 											Vector2f end = tmp.multiply2D(Vector2f(16384.0, 0));
-											pattern = nvgLinearGradientStops(nvgctxt, start.x, start.y, end.x, end.y, stops.data(), stops.size(), spreadMode);
+											pattern = nvgLinearGradientStops(nvgctxt, start.x, start.y, end.x, end.y, stops.data(), stops.size(), spreadMode,&fill.bitmap->nanoVGGradientPattern);
 										}
 										else
 										{
 											number_t x0 = isFocal ? fill.FocalGradient.FocalPoint*16384.0 : 0.0;
-											pattern = nvgRadialGradientStops(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), spreadMode);
+											pattern = nvgRadialGradientStops(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), spreadMode,&fill.bitmap->nanoVGGradientPattern);
 											float xform[6] =
 											{
 												(float)m.xx,
@@ -707,7 +696,6 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 											};
 											nvgTransformMultiply(pattern.xform, xform);
 										}
-										fill.bitmap->nanoVGGradientPattern=pattern;
 										nvgStrokePaint(nvgctxt, pattern);
 										break;
 									}

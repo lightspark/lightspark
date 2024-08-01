@@ -869,7 +869,7 @@ static NVGcolor nvg__premulColor(NVGcolor c)
 }
 
 // Based on https://github.com/femtovg/femtovg/blob/4e40a61f824a8ea1bd361b4d227a2187e912124a/src/gradient_store.rs#L71
-static void nvg__gradientSpan(unsigned char* image,
+static void nvg__gradientSpan(float* gradientcolors,
 					   NVGcolor startColor, NVGcolor endColor,
 					   float startStop, float endStop)
 
@@ -891,36 +891,35 @@ static void nvg__gradientSpan(unsigned char* image,
 	for (i = start; i < end; i++) {
 		NVGcolor lerpColor = nvg__premulColor(nvgLerpRGBA(startColor, endColor, u));
 
-		image[(i*4)+0] = lerpColor.b * 255.0f;
-		image[(i*4)+1] = lerpColor.g * 255.0f;
-		image[(i*4)+2] = lerpColor.r * 255.0f;
-		image[(i*4)+3] = lerpColor.a * 255.0f;
+		gradientcolors[(i*4)+0] = lerpColor.r;
+		gradientcolors[(i*4)+1] = lerpColor.g;
+		gradientcolors[(i*4)+2] = lerpColor.b;
+		gradientcolors[(i*4)+3] = lerpColor.a;
 
 		u += du;
 	}
 }
 
-static void nvg__gradientSpanStop(unsigned char* image,
+static void nvg__gradientSpanStop(float* gradientcolors,
 					   NVGgradientStop start, NVGgradientStop end)
 {
-	nvg__gradientSpan(image, start.color, end.color, start.stop, end.stop);
+	nvg__gradientSpan(gradientcolors, start.color, end.color, start.stop, end.stop);
 }
 
 // Based on https://github.com/femtovg/femtovg/blob/4e40a61f824a8ea1bd361b4d227a2187e912124a/src/gradient_store.rs#L114
-static int nvg__linearGradientStops(NVGcontext* ctx,
+static void nvg__linearGradientStops(NVGcontext* ctx,
 							 NVGgradientStop* stops, int count,
-							 int spreadMode)
+							 int spreadMode, float* gradientcolors)
 {
 	if (stops == NULL || count <= 0)
-		return 0;
+		return;
 
 	int i;
-	unsigned char image[4*256];
-	memset(image, 0, sizeof(image));
+	memset(gradientcolors, 0, sizeof(*gradientcolors));
 
 	// Fill upto the first stop.
 	if (stops[0].stop > 0.0f) {
-		nvg__gradientSpan(image, stops[0].color, stops[0].color, 0.0f, stops[0].stop);
+		nvg__gradientSpan(gradientcolors, stops[0].color, stops[0].color, 0.0f, stops[0].stop);
 	}
 
 	// Iterate over each stop in overlapping pairs, filling the entire
@@ -931,25 +930,17 @@ static int nvg__linearGradientStops(NVGcontext* ctx,
 		NVGgradientStop* s0 = &stops[i];
 		NVGgradientStop* s1 = &stops[i+1];
 		// Pad the rest of the gradient, if last stop is < 1.0f.
-		if (s0->stop < 1.0f && s1->stop > 1.0f)
-			nvg__gradientSpan(image, s0->color, s0->color, s0->stop, 1.0f);
+		if ((s0->stop < 1.0f) && (s1->stop > 1.0f))
+			nvg__gradientSpan(gradientcolors, s0->color, s0->color, s0->stop, 1.0f);
 		else
-			nvg__gradientSpanStop(image, *s0, *s1);
+			nvg__gradientSpanStop(gradientcolors, *s0, *s1);
 	}
-
-	int imageFlags = 0;
-	switch (spreadMode) {
-	case NVG_SPREAD_PAD		: imageFlags |= 0; break;
-	case NVG_SPREAD_REPEAT	: imageFlags |= NVG_IMAGE_REPEATX; break;
-	case NVG_SPREAD_REFLECT	: imageFlags |= NVG_IMAGE_MIRRORX; break;
-	}
-	return nvgCreateImageRGBA(ctx, 256, 1, imageFlags, image);
 }
 
 NVGpaint nvgLinearGradient(NVGcontext* ctx,
-								  float sx, float sy, float ex, float ey,
-								  NVGcolor icol, NVGcolor ocol,
-								  int spreadMode)
+						   float sx, float sy, float ex, float ey,
+						   NVGcolor icol, NVGcolor ocol,
+						   int spreadMode, float* gradientcolors)
 {
 	NVGpaint p;
 	float dx, dy, d;
@@ -986,14 +977,15 @@ NVGpaint nvgLinearGradient(NVGcontext* ctx,
 	p.spreadMode = spreadMode;
 
 	p.isGradient = 1;
+	p.gradientcolors = gradientcolors;
 	return p;
 }
 
 // Based on code from femtovg. https://github.com/femtovg/femtovg
 NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
-									 float sx, float sy, float ex, float ey,
-									 NVGgradientStop* stops, int count,
-									 int spreadMode)
+								float sx, float sy, float ex, float ey,
+								NVGgradientStop* stops, int count,
+								int spreadMode, float** gradientcolors)
 {
 	NVGpaint p;
 
@@ -1004,7 +996,7 @@ NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 	} else if (count == 2 && stops[0].stop <= 0.0f && stops[1].stop >= 1.0f) {
 		// Two stop gradients take the normal path, if both stops are at
 		// the extents. Treat it as a multi-stop gradient otherwise.
-		return nvgLinearGradient(ctx, sx, sy, ex, ey, stops[0].color, stops[1].color, spreadMode);
+		return nvgLinearGradient(ctx, sx, sy, ex, ey, stops[0].color, stops[1].color, spreadMode, NULL);
 	}
 
 	float dx, dy, d;
@@ -1034,7 +1026,14 @@ NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 
 	p.feather = nvg__maxf(1.0f, d);
 
-	p.image = nvg__linearGradientStops(ctx, stops, count, spreadMode);
+	if (*gradientcolors)
+		p.gradientcolors = *gradientcolors;
+	else
+	{
+		*gradientcolors = (float*)malloc(NANOVG_GRADIENTCOLOR_SIZE*4*sizeof(float));
+		p.gradientcolors = *gradientcolors;
+		nvg__linearGradientStops(ctx, stops, count, spreadMode, p.gradientcolors);
+	}
 
 	p.spreadMode = spreadMode;
 
@@ -1043,9 +1042,9 @@ NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 }
 
 NVGpaint nvgRadialGradient(NVGcontext* ctx,
-								  float cx, float cy, float inr, float outr,
-								  NVGcolor icol, NVGcolor ocol,
-								  int spreadMode)
+						   float cx, float cy, float inr, float outr,
+						   NVGcolor icol, NVGcolor ocol,
+						   int spreadMode, float* gradientcolors)
 {
 	NVGpaint p;
 	float r = (inr+outr)*0.5f;
@@ -1070,14 +1069,15 @@ NVGpaint nvgRadialGradient(NVGcontext* ctx,
 	p.spreadMode = spreadMode;
 
 	p.isGradient = 1;
+	p.gradientcolors = gradientcolors;
 	return p;
 }
 
 // Based on code from femtovg. https://github.com/femtovg/femtovg
 NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
-									 float cx, float cy, float inr, float outr,
-									 NVGgradientStop* stops, int count,
-									 int spreadMode)
+								float cx, float cy, float inr, float outr,
+								NVGgradientStop* stops, int count,
+								int spreadMode, float** gradientcolors)
 {
 	NVGpaint p;
 
@@ -1088,7 +1088,7 @@ NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
 	} else if (count == 2 && stops[0].stop <= 0.0 && stops[1].stop >= 1.0) {
 		// Two stop gradients take the normal path, if both stops are at
 		// the extents. Treat it as a multi-stop gradient otherwise.
-		return nvgRadialGradient(ctx, cx, cy, inr, outr, stops[0].color, stops[1].color, spreadMode);
+		return nvgRadialGradient(ctx, cx, cy, inr, outr, stops[0].color, stops[1].color, spreadMode, NULL);
 	}
 
 	float r = (inr+outr)*0.5f;
@@ -1106,8 +1106,14 @@ NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
 
 	p.feather = nvg__maxf(1.0f, f);
 
-	p.image = nvg__linearGradientStops(ctx, stops, count, spreadMode);
-
+	if (*gradientcolors)
+		p.gradientcolors = *gradientcolors;
+	else
+	{
+		*gradientcolors = (float*)malloc(NANOVG_GRADIENTCOLOR_SIZE*4*sizeof(float));
+		p.gradientcolors = *gradientcolors;
+		nvg__linearGradientStops(ctx, stops, count, spreadMode, p.gradientcolors);
+	}
 	p.spreadMode = spreadMode;
 
 	p.isGradient = 1;

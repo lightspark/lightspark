@@ -24,6 +24,7 @@ extern "C" {
 #endif
 
 #define NVG_PI 3.14159265358979323846264338327f
+#define NANOVG_GRADIENTCOLOR_SIZE 256
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -52,6 +53,7 @@ struct NVGpaint {
 	int spreadMode;
 	int isGradient;
 	int image;
+	float* gradientcolors;
 };
 typedef struct NVGpaint NVGpaint;
 
@@ -417,12 +419,15 @@ typedef struct NVGgradientStop NVGgradientStop;
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgLinearGradient(NVGcontext* ctx, float sx, float sy, float ex, float ey,
 						   NVGcolor icol, NVGcolor ocol,
-						   int spreadMode);
+						   int spreadMode, float* gradientcolors);
 
+// if the parameter gradientcolors points to null, a new float array will be constructed and filled with the gradient colors
+// this float array can be used as gradientcolors parameter in subsequent calls of nvgLinearGradientStops
+// the caller has to make sure the resulting float array is deleted when not needed anymore
 NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 								float sx, float sy, float ex, float ey,
 								NVGgradientStop* stops, int count,
-								int spreadMode);
+								int spreadMode, float** gradientcolors);
 
 // Creates and returns a box gradient. Box gradient is a feathered rounded rectangle, it is useful for rendering
 // drop shadows or highlights for boxes. Parameters (x,y) define the top-left corner of the rectangle,
@@ -440,12 +445,15 @@ NVGpaint nvgBoxGradient(NVGcontext* ctx, float x, float y, float w, float h,
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgRadialGradient(NVGcontext* ctx, float cx, float cy, float inr, float outr,
 						   NVGcolor icol, NVGcolor ocol,
-						   int spreadMode);
+						   int spreadMode, float* gradientcolors);
 
+// if the parameter gradientcolors points to null, a new float array will be constructed and filled with the gradient colors
+// this float array can be used as gradientcolors parameter in subsequent calls of nvgRadialGradientStops
+// the caller has to make sure the resulting float array is deleted when not needed anymore
 NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
 								float cx, float cy, float inr, float outr,
 								NVGgradientStop* stops, int count,
-								int spreadMode);
+								int spreadMode, float** gradientcolors);
 
 // Creates and returns an image pattern. Parameters (ox,oy) specify the left-top location of the image pattern,
 // (ex,ey) the size of one image, angle rotation around the top-left corner, image is handle to the image to render.

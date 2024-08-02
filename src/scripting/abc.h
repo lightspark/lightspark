@@ -917,6 +917,8 @@ private:
 	static void abc_getslot_local_localresult(call_context* context);
 	static void abc_getslot_constant_setslotnocoerce(call_context* context);
 	static void abc_getslot_local_setslotnocoerce(call_context* context);
+	static void abc_getSlotFromScopeObject(call_context* context);
+	static void abc_getSlotFromScopeObject_localresult(call_context* context);
 
 	static void abc_setslot(call_context* context);
 	static void abc_setslot_constant_constant(call_context* context);

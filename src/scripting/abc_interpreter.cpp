@@ -1112,8 +1112,8 @@ abc_function ABCVm::abcfunctions[]={
 	
 	abc_hasnext2_localresult,
 	abc_hasnext2_iftrue,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_getSlotFromScopeObject, // 0x382 ABC_OP_OPTIMZED_GETSLOTFROMSCOPEOBJECT
+	abc_getSlotFromScopeObject_localresult,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1390,6 +1390,7 @@ struct operands
 #define ABC_OP_OPTIMZED_SXI8 0x00000370
 #define ABC_OP_OPTIMZED_SXI16 0x00000374
 #define ABC_OP_OPTIMZED_NEXTVALUE 0x00000378
+#define ABC_OP_OPTIMZED_GETSLOTFROMSCOPEOBJECT 0x00000382
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -4517,7 +4518,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						if (v)
 						{
 							found =true;
-							if (!function->isStatic && (isborrowed || v->kind == INSTANCE_TRAIT))
+							if ((!function->isStatic || function == function->inClass->getConstructor()) && (isborrowed || v->kind == INSTANCE_TRAIT))
 							{
 								state.preloadedcode.push_back((uint32_t)0xd0); // convert to getlocal_0
 								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
@@ -4620,12 +4621,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						if (target)
 						{
 							found = true;
-							if (target->is<Global>() && function->isFromNewFunction())
+							if (target->is<Global>() && (function->isStatic || function->isFromNewFunction()))
 							{
 								variable* vglobal = target->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 								found = (vglobal->kind & TRAIT_KIND::DECLARED_TRAIT)!=0;
 							}
-							if (found && !function->mi->needsActivation())
+							if (found && (function->isStatic || !function->mi->needsActivation()))
 							{
 								o=asAtomHandler::fromObjectNoPrimitive(target);
 								addCachedConstant(state,mi, o,code);
@@ -5434,6 +5435,28 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				Class_base* resulttype = nullptr;
 				if (asAtomHandler::is<Activation_object>(a))
 					resulttype = Class<ASObject>::getRef(function->getSystemState()).getPtr();
+				int32_t p = code.tellg();
+				if (state.jumptargets.find(p) == state.jumptargets.end() && code.peekbyteFromPosition(p) == 0x6c)//getslot
+				{
+					// common case getScopeObject followed by getSlot (accessing variables of ActivationObject)
+					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					code.readbyte();
+					int32_t tslot =code.readu30();
+					assert_and_throw(tslot);
+					if (asAtomHandler::is<Activation_object>(a))
+						resulttype = asAtomHandler::as<Activation_object>(a)->getSlotType(tslot);
+					if (checkForLocalResult(state,code,0,resulttype))
+						state.preloadedcode.at(state.preloadedcode.size()-1).opcode = (uint32_t)ABC_OP_OPTIMZED_GETSLOTFROMSCOPEOBJECT+1;
+					else
+					{
+						state.preloadedcode.at(state.preloadedcode.size()-1).opcode = (uint32_t)ABC_OP_OPTIMZED_GETSLOTFROMSCOPEOBJECT;
+						clearOperands(state,true,&lastlocalresulttype);
+					}
+					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg1_uint =t;
+					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint =tslot-1;
+					typestack.push_back(typestackentry(resulttype,false));
+					break;
+				}
 				typestack.push_back(typestackentry(resulttype,false));
 				if (checkForLocalResult(state,code,0,resulttype))
 				{

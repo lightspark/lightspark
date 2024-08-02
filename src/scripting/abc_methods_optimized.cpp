@@ -8040,3 +8040,30 @@ void ABCVm::abc_hasnext2_iftrue(call_context* context)
 		++(context->exec_pos);
 }
 
+void ABCVm::abc_getSlotFromScopeObject(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos++;
+	uint32_t t = instrptr->arg1_uint;
+	uint32_t tslot = instrptr->arg2_uint;
+	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
+	ASObject* obj = asAtomHandler::getObjectNoCheck(context->scope_stack[t]);
+	asAtom res = obj->getSlotNoCheck(tslot);
+	LOG_CALL("getSlotFromScopeObject " << t << " " << tslot<<" "<< asAtomHandler::toDebugString(res) << " "<< obj->toDebugString());
+	ASATOM_INCREF(res);
+	RUNTIME_STACK_PUSH(context,res);
+}
+void ABCVm::abc_getSlotFromScopeObject_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos++;
+	uint32_t t = instrptr->arg1_uint;
+	uint32_t tslot = instrptr->arg2_uint;
+	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
+	ASObject* obj = asAtomHandler::getObjectNoCheck(context->scope_stack[t]);
+	asAtom res = obj->getSlotNoCheck(tslot);
+	LOG_CALL("getSlotFromScopeObject_l " << t << " " << tslot<<" "<< asAtomHandler::toDebugString(res) << " "<< obj->toDebugString()<<" "<<instrptr->local3.pos);
+	if (res.uintval != CONTEXT_GETLOCAL(context,instrptr->local3.pos).uintval)
+	{
+		ASATOM_INCREF(res);
+		replacelocalresult(context,instrptr->local3.pos,res);
+	}
+}

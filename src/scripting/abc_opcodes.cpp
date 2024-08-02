@@ -1941,6 +1941,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 			instrptr->cacheobj1->incRef();
 			ret = asAtomHandler::fromObject(instrptr->cacheobj1);
 		}
+		LOG_CALL( "findPropStrictCache cached " << asAtomHandler::toDebugString(ret));
 		return;
 	}
 	multiname* name=th->mi->context->getMultiname(t,th);
@@ -2807,6 +2808,7 @@ void ABCVm::newClass(call_context* th, int n)
 		constructorFunc->acquireScope(ret->class_scope);
 		constructorFunc->addToScope(scope_entry(asAtomHandler::fromObject(ret),false));
 		constructorFunc->inClass = ret;
+		constructorFunc->isStatic = true;
 		//add Constructor the the class methods
 		ret->constructor=constructorFunc;
 	}
@@ -2912,7 +2914,6 @@ void ABCVm::swap()
 
 ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
 {
-	LOG_CALL("newActivation");
 	//TODO: Should method traits be added to the activation context?
 	ASObject* act= nullptr;
 	ASObject* caller = asAtomHandler::getObject(th->locals[0]);
@@ -2931,6 +2932,7 @@ ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
 #ifndef NDEBUG
 	act->initialized=true;
 #endif
+	LOG_CALL("newActivation:"<<act->toDebugString());
 	return act;
 }
 

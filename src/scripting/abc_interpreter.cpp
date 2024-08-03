@@ -7053,6 +7053,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										{
 											// function is a class generator, we can use it as the result type
 											resulttype = asAtomHandler::as<Class_base>(func);
+											if (resulttype == Class<Boolean>::getRef(function->getSystemState()).getPtr())
+											{
+												// Boolean generator can be skipped or turned into convert_b 
+												if (state.operandlist.size() > 1)
+												{
+													isGenerator=true;
+													generatorneedsconversion = !(code.peekbyte() == 0x11 || //iftrue
+															code.peekbyte() == 0x12 || //iffalse
+															code.peekbyte() == 0x96    //not
+															);
+												}
+											}
 											if (resulttype == Class<Integer>::getRef(function->getSystemState()).getPtr()
 													|| resulttype == Class<UInteger>::getRef(function->getSystemState()).getPtr()
 													|| resulttype == Class<Number>::getRef(function->getSystemState()).getPtr())
@@ -7189,6 +7201,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 													setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTU,
 																				0x74 //convert_u
 																				,code,true,true,resulttype,code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTU_SETSLOT);
+												else if (resulttype == Class<Boolean>::getRef(function->getSystemState()).getPtr())
+													setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTB,
+																				0x76 //convert_b
+																				,code,true,true,resulttype,code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTB_SETSLOT);
 												else 
 													setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTD,
 																				0x75 //convert_d

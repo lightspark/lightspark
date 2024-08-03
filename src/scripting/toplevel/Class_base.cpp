@@ -211,6 +211,7 @@ void Class_base::copyBorrowedTraits(Class_base* src)
 		ASATOM_INCREF(v.getter);
 		ASATOM_INCREF(v.setter);
 		borrowedVariables.Variables.insert(make_pair(i->first,v));
+		borrowedVariables.currentnameindex=UINT32_MAX;
 	}
 }
 

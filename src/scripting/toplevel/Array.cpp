@@ -2048,17 +2048,7 @@ bool Array::isIntegerWithoutLeadingZeros(const tiny_string& value)
 		return false;
 	else if (value == "0")
 		return true;
-
-	bool first = true;
-	for (CharIterator it=value.begin(); it!=value.end(); ++it)
-	{
-		if (!it.isdigit() || (first && *it == '0'))
-			return false;
-
-		first = false;
-	}
-	
-	return true;
+	return (value.isIntegerValue() && *(value.begin()) != '0');
 }
 
 multiname *Array::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)

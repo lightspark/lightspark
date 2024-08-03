@@ -423,7 +423,7 @@ ASFUNCTIONBODY_ATOM(ASString,split)
 				break;
 			ASObject* s;
 			if (data.isSinglebyte()) // fast path for ascii strings to avoid unneccessary buffer copying
-				s=abstract_s(wrk,data.raw_buf()+start,match-start,match-start,data.isSinglebyte(),data.hasNullEntries());
+				s=abstract_s(wrk,data.raw_buf()+start,match-start,match-start,data.isSinglebyte(),data.hasNullEntries(),data.isIntegerValue());
 			else
 				s=abstract_s(wrk,data.substr(start,(match-start)));
 			res->push(asAtomHandler::fromObject(s));
@@ -753,7 +753,7 @@ ASFUNCTIONBODY_ATOM(ASString,slice)
 	else
 	{
 		if (data.isSinglebyte()) // fast path for ascii strings to avoid unneccessary buffer copying
-			ret = asAtomHandler::fromObject(abstract_s(wrk,data.raw_buf()+startIndex,endIndex-startIndex,endIndex-startIndex,data.isSinglebyte(),data.hasNullEntries()));
+			ret = asAtomHandler::fromObject(abstract_s(wrk,data.raw_buf()+startIndex,endIndex-startIndex,endIndex-startIndex,data.isSinglebyte(),data.hasNullEntries(),data.isIntegerValue()));
 		else
 			ret = asAtomHandler::fromObject(abstract_s(wrk,data.substr(startIndex,endIndex-startIndex)));
 	}
@@ -971,7 +971,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 	asAtomHandler::getStringView(data,obj,wrk);
 	enum REPLACE_TYPE { STRING=0, FUNC };
 	REPLACE_TYPE type;
-	ASString* res=abstract_s(wrk,data.raw_buf(),data.numBytes(), data.numChars(), data.isSinglebyte(), data.hasNullEntries())->as<ASString>();
+	ASString* res=abstract_s(wrk,data.raw_buf(),data.numBytes(), data.numChars(), data.isSinglebyte(), data.hasNullEntries(),data.isIntegerValue())->as<ASString>();
 	tiny_string replaceWith;
 	if(argslen < 2)
 	{

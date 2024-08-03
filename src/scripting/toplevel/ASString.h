@@ -35,7 +35,7 @@ class ASString: public ASObject
 {
 	friend ASObject* abstract_s(ASWorker* w);
 	friend ASObject* abstract_s(ASWorker* wrk, const char* s, uint32_t len);
-	friend ASObject* abstract_s(ASWorker* wrk, const char* s, int numbytes, int numchars, bool issinglebyte, bool hasNull);
+	friend ASObject* abstract_s(ASWorker* wrk, const char* s, int numbytes, int numchars, bool issinglebyte, bool hasNull, bool isInteger);
 	friend ASObject* abstract_s(ASWorker* wrk, const char* s);
 	friend ASObject* abstract_s(ASWorker* wrk, const tiny_string& s);
 	friend ASObject* abstract_s(ASWorker* wrk, uint32_t stringId);

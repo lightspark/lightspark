@@ -604,9 +604,13 @@ struct variable
 	bool isenumerable:1;
 	bool issealed:1;
 	bool isrefcounted:1;
-	variable(TRAIT_KIND _k,const nsNameAndKind& _ns)
-		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k),isResolved(false),isenumerable(true),issealed(false),isrefcounted(true) {}
-	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* type, const nsNameAndKind &_ns, bool _isenumerable);
+	bool nameIsInteger;
+	variable(TRAIT_KIND _k,const nsNameAndKind& _ns,bool _nameIsInteger)
+		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k)
+		,isResolved(false),isenumerable(true),issealed(false),isrefcounted(true)
+		,nameIsInteger(_nameIsInteger)
+	{}
+	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* type, const nsNameAndKind &_ns, bool _isenumerable, bool _nameIsInteger);
 	void setVar(ASWorker* wrk, asAtom v, bool _isrefcounted = true);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
@@ -676,9 +680,15 @@ public:
 	typedef std::unordered_multimap<uint32_t,variable>::const_iterator const_var_iterator;
 	std::vector<variable*> slots_vars;
 	uint32_t slotcount;
+	
+	// these keep track of the index when wandering through the dynamic entries by nextNameIndex
+	// they will be reset whenever a new variable is added or en entry is deleted or currentnameindex is greater than the requested index (by getNameAt/getValueAt)
+	uint32_t currentnameindex;
+	const_var_iterator currentnameiterator;
+	
 	// indicates if this map was initialized with no variables with non-primitive values
 	bool cloneable;
-	variables_map():slotcount(0),cloneable(true)
+	variables_map():slotcount(0),currentnameindex(UINT32_MAX),cloneable(true)
 	{
 	}
 	/**
@@ -691,7 +701,7 @@ public:
 	variable* findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
 	variable* findObjVar(SystemState* sys,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
 	// adds a dynamic variable without checking if a variable with this name already exists
-	void setDynamicVarNoCheck(uint32_t nameID,asAtom& v);
+	void setDynamicVarNoCheck(uint32_t nameID,asAtom& v, bool nameIsInteger);
 	/**
 	 * Const version of findObjVar, useful when looking for getters
 	 */
@@ -876,9 +886,9 @@ public:
 	{
 		return Variables.size();
 	}
-	uint32_t getNameAt(unsigned int i) const;
-	variable* getValueAt(unsigned int i);
-	int getNextEnumerable(unsigned int i) const;
+	uint32_t getNameAt(unsigned int i, bool& nameIsInteger);
+	const variable* getValueAt(unsigned int i);
+	int getNextEnumerable(unsigned int i);
 	~variables_map();
 	void check() const;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -1069,7 +1079,7 @@ public:
 	bool isMarkedForGarbageCollection() const { return markedforgarbagecollection; }
 	void removefromGarbageCollection();
 	void removeStoredMember();
-	void handleGarbageCollection();
+	bool handleGarbageCollection();
 	virtual bool countCylicMemberReferences(garbagecollectorstate& gcstate);
 	FORCE_INLINE bool canHaveCyclicMemberReference()
 	{
@@ -1192,9 +1202,9 @@ public:
 	
 	// sets dynamic variable without checking for existence
 	// use it if it is guarranteed that the variable doesn't exist in this object
-	FORCE_INLINE void setDynamicVariableNoCheck(uint32_t nameID, asAtom& o)
+	FORCE_INLINE void setDynamicVariableNoCheck(uint32_t nameID, asAtom& o, bool nameIsInteger)
 	{
-		Variables.setDynamicVarNoCheck(nameID,o);
+		Variables.setDynamicVarNoCheck(nameID,o,nameIsInteger);
 	}
 	/*
 	 * Called by ABCVm::buildTraits to create DECLARED_TRAIT or CONSTANT_TRAIT and set their type
@@ -1260,9 +1270,9 @@ public:
 	
 	void initAdditionalSlots(std::vector<multiname *> &additionalslots);
 	unsigned int numVariables() const;
-	inline uint32_t getNameAt(int i) const
+	inline uint32_t getNameAt(int i, bool& nameIsInteger)
 	{
-		return Variables.getNameAt(i);
+		return Variables.getNameAt(i,nameIsInteger);
 	}
 	void getValueAt(asAtom &ret, int i);
 	inline SWFOBJECT_TYPE getObjectType() const
@@ -1434,10 +1444,11 @@ FORCE_INLINE void variables_map::setSlotNoCoerce(unsigned int n, asAtom o)
 	if (slots_vars[n]->var.uintval != o.uintval)
 		slots_vars[n]->setVarNoCoerce(o);
 }
-FORCE_INLINE void variables_map::setDynamicVarNoCheck(uint32_t nameID,asAtom& v)
+FORCE_INLINE void variables_map::setDynamicVarNoCheck(uint32_t nameID,asAtom& v, bool nameIsInteger)
 {
+	currentnameindex=UINT32_MAX;
 	var_iterator inserted=Variables.insert(Variables.cbegin(),
-			make_pair(nameID,variable(DYNAMIC_TRAIT,nsNameAndKind())));
+			make_pair(nameID,variable(DYNAMIC_TRAIT,nsNameAndKind(),nameIsInteger)));
 	ASObject* o = asAtomHandler::getObject(v);
 	if (o && !o->getConstant())
 		o->addStoredMember();

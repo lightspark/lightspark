@@ -44,7 +44,7 @@ tiny_string::tiny_string(const char* s,bool copy):_buf_static(),buf(_buf_static)
 }
 
 tiny_string::tiny_string(const tiny_string& r):
-	_buf_static(),buf(_buf_static),stringSize(r.stringSize),numchars(r.numchars),type(STATIC),isASCII(r.isASCII),hasNull(r.hasNull)
+	_buf_static(),buf(_buf_static),stringSize(r.stringSize),numchars(r.numchars),type(STATIC),isASCII(r.isASCII),hasNull(r.hasNull),isInteger(r.isInteger)
 {
 	//Fast path for static read-only strings
 	if(r.type==READONLY)
@@ -89,6 +89,7 @@ tiny_string& tiny_string::operator=(const tiny_string& s)
 	}
 	this->isASCII = s.isASCII;
 	this->hasNull = s.hasNull;
+	this->isInteger = s.isInteger;
 	this->numchars = s.numchars;
 	return *this;
 }
@@ -137,6 +138,8 @@ tiny_string& tiny_string::operator+=(const char* s)
 
 tiny_string& tiny_string::operator+=(const tiny_string& r)
 {
+	if (this->empty() || this->isInteger)
+		this->isInteger = r.isInteger;
 	if(type==READONLY)
 	{
 		char* tmp=buf;
@@ -311,19 +314,33 @@ bool tiny_string::getLine(uint32_t& byteindex, tiny_string& line)
 	if (endindex < startindex)
 		endindex = stringSize-endindex;
 	line.isASCII = true;
+	line.isInteger = true;
 	while (!res && byteindex < stringSize-1)
 	{
 		switch((uint8_t)buf[byteindex])
 		{
 			case 0x00:
 				line.hasNull=true;
+				line.isInteger=false;
 				break;
 			case '\n':
 			case '\r':
 				res=true;
 				endindex=byteindex;
 				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				break;
 			case 0xe2:
+				line.isInteger=false;
 				// utf-8 line separators:
 				// e2 80 a8 (unicode 0x2028)
 				// e2 80 a9 (unicode 0x2029)
@@ -338,6 +355,9 @@ bool tiny_string::getLine(uint32_t& byteindex, tiny_string& line)
 					}
 				}
 				break;
+			default:
+				line.isInteger=false;
+				break;				
 		}
 		if (!res)
 		{
@@ -354,6 +374,7 @@ bool tiny_string::getLine(uint32_t& byteindex, tiny_string& line)
 					utfpos = 0;
 				}
 				line.isASCII = false;
+				line.isInteger=false;
 			}
 			else
 				line.numchars++;
@@ -439,6 +460,7 @@ void tiny_string::init()
 	numchars = 0;
 	isASCII = true;
 	hasNull = false;
+	isInteger = true;
 	unsigned char utfpos=0;
 	for (unsigned int i = 0; i < stringSize-1; i++)
 	{
@@ -455,11 +477,30 @@ void tiny_string::init()
 				utfpos = 0;
 			}
 			isASCII = false;
+			isInteger= false;
 		}
 		else
 			numchars++;
-		if (buf[i] == 0)
-			hasNull = true;
+		switch (buf[i])
+		{
+			case 0:
+				hasNull = true;
+				break;
+			case '0':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+			case '5':
+			case '6':
+			case '7':
+			case '8':
+			case '9':
+				break;
+			default:
+				isInteger=false;
+				break;
+		}
 	}
 }
 
@@ -480,6 +521,7 @@ tiny_string tiny_string::fromChar(uint32_t c)
 	}
 	ret.buf[ret.stringSize-1] = '\0';
 	ret.hasNull = c == 0;
+	ret.isInteger = c >= '0' && c <= '9';
 	ret.numchars = 1;
 	return ret;
 }
@@ -517,6 +559,7 @@ tiny_string& tiny_string::replace_bytes(uint32_t bytestart, uint32_t bytenum, co
 	{
 		this->numchars = newlen-1;
 		this->hasNull |= o.hasNull;
+		this->isInteger &= o.isInteger;
 	}
 	else
 		this->init();
@@ -542,6 +585,7 @@ tiny_string tiny_string::substr_bytes(uint32_t start, uint32_t len, bool resulti
 	{
 		ret.numchars = len;
 		ret.hasNull=false;
+		ret.isInteger=this->isInteger;
 	}
 	else
 		ret.init();

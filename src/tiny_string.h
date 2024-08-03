@@ -118,10 +118,15 @@ private:
 	void init();
 	bool isASCII:1;
 	bool hasNull:1;
+	bool isInteger:1;
 public:
 	static const uint32_t npos = (uint32_t)(-1);
 
-	tiny_string():_buf_static(),buf(_buf_static),stringSize(1),numchars(0),type(STATIC),isASCII(true),hasNull(false){buf[0]=0;}
+	tiny_string():_buf_static(),buf(_buf_static),stringSize(1),numchars(0),type(STATIC)
+		,isASCII(true),hasNull(false),isInteger(false)
+	{
+		buf[0]=0;
+	}
 	/* construct from utf character */
 	static tiny_string fromChar(uint32_t c);
 	tiny_string(const char* s,bool copy=false);
@@ -162,6 +167,7 @@ public:
 		numchars = 0;
 		isASCII = true;
 		hasNull = false;
+		isInteger = false;
 	}
 	
 	/* returns the length in bytes, not counting the trailing \0 */
@@ -181,6 +187,10 @@ public:
 	inline bool hasNullEntries() const
 	{
 		return hasNull;
+	}
+	inline bool isIntegerValue() const
+	{
+		return isInteger;
 	}
 	inline void checkValidUTF()
 	{
@@ -203,7 +213,7 @@ public:
 	char* strchrr(char c) const;
 	/*explicit*/ operator std::string() const;
 
-	FORCE_INLINE void setValue(const char* s,int _numbytes, int _numchars, bool _isASCII, bool _hasNull, bool copy)
+	FORCE_INLINE void setValue(const char* s,int _numbytes, int _numchars, bool _isASCII, bool _hasNull, bool _isInteger, bool copy)
 	{
 		if(copy)
 		{
@@ -228,6 +238,7 @@ public:
 		numchars=_numchars;
 		isASCII=_isASCII;
 		hasNull=_hasNull;
+		isInteger=_isInteger;
 	}
 	FORCE_INLINE void setChar(uint32_t c)
 	{
@@ -243,6 +254,7 @@ public:
 			stringSize =  g_unichar_to_utf8(c,buf) + 1;
 		buf[stringSize-1] = '\0';
 		hasNull = c == 0;
+		isInteger = c >= '0' && c <= '9';
 		numchars = 1;
 	}
 	

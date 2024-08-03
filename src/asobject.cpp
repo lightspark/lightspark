@@ -218,27 +218,26 @@ TRISTATE ASObject::isLessAtom(asAtom& r)
 	return res;
 }
 
-int variables_map::getNextEnumerable(unsigned int start) const
+int variables_map::getNextEnumerable(unsigned int start)
 {
 	if(start>=Variables.size())
 		return -1;
-
-	const_var_iterator it=Variables.begin();
-
-	unsigned int i=0;
+	const_var_iterator it=currentnameindex<=start ? currentnameiterator : Variables.cbegin();
+	unsigned int i=currentnameindex<=start ? currentnameindex : 0;
 	while (i < start)
 	{
 		++i;
 		++it;
 	}
-
 	while(it->second.kind!=DYNAMIC_TRAIT || !it->second.isenumerable)
 	{
 		++i;
 		++it;
-		if(it==Variables.end())
+		if(it==Variables.cend())
 			return -1;
 	}
+	currentnameindex=i;
+	currentnameiterator=it;
 
 	return i;
 }
@@ -254,12 +253,15 @@ uint32_t ASObject::nextNameIndex(uint32_t cur_index)
 void ASObject::nextName(asAtom& ret, uint32_t index)
 {
 	assert_and_throw(implEnable);
-
-	uint32_t n = getNameAt(index-1);
-	const tiny_string& name = getSystemState()->getStringFromUniqueId(n);
-	// not mentioned in the specs, but Adobe seems to convert string names to Integers, if possible
-	if (Array::isIntegerWithoutLeadingZeros(name))
+	
+	bool nameIsInteger;
+	uint32_t n = getNameAt(index-1,nameIsInteger);
+	if (nameIsInteger)
+	{
+		const tiny_string& name = getSystemState()->getStringFromUniqueId(n);
+		// not mentioned in the specs, but Adobe seems to convert names to Integers, if the key multiname is of type Integer
 		asAtomHandler::setInt(ret,getInstanceWorker(),Integer::stringToASInteger(name.raw_buf(), 0));
+	}
 	else
 		ret = asAtomHandler::fromStringID(n);
 }
@@ -601,7 +603,8 @@ variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TR
 	if(createKind==NO_CREATE_TRAIT)
 		return nullptr;
 
-	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(nameId, variable(createKind,ns)) );
+	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(nameId, variable(createKind,ns,false)) );
+	currentnameindex=UINT32_MAX;
 	return &inserted->second;
 }
 
@@ -932,7 +935,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 			}
 			
 			variables_map::var_iterator inserted=Variables.Variables.insert(Variables.Variables.cbegin(),
-				make_pair(name.normalizedNameId(getSystemState()),variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind())));
+				make_pair(name.normalizedNameId(getSystemState()),variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind(),name.isInteger)));
+			Variables.currentnameindex=UINT32_MAX;
 			obj = &inserted->second;
 		}
 	}
@@ -1027,8 +1031,9 @@ void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multina
 	Variables.initializeVar(name, o, typemname, context, traitKind,this,slot_id,isenumerable);
 }
 
-variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const nsNameAndKind& _ns, bool _isenumerable)
-		: var(_v),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k),isResolved(false),isenumerable(_isenumerable),issealed(false),isrefcounted(true)
+variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const nsNameAndKind& _ns, bool _isenumerable, bool _nameIsInteger)
+		: var(_v),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k)
+		,isResolved(false),isenumerable(_isenumerable),issealed(false),isrefcounted(true),nameIsInteger(_nameIsInteger)
 {
 	if(_type)
 	{
@@ -1079,6 +1084,7 @@ void variables_map::killObjVar(SystemState* sys,const multiname& mname)
 	//The namespaces in the multiname are ordered. So it's possible to use lower_bound
 	//to find the first candidate one and move from it
 	assert(!mname.ns.empty());
+	currentnameindex=UINT32_MAX;
 	var_iterator ret=Variables.find(name);
 	auto nsIt=mname.ns.begin();
 
@@ -1151,12 +1157,14 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 	if(createKind == DYNAMIC_TRAIT)
 	{
 		var_iterator inserted=Variables.insert(Variables.cbegin(),
-			make_pair(name,variable(createKind,nsNameAndKind())));
+			make_pair(name,variable(createKind,nsNameAndKind(),mname.isInteger)));
+		currentnameindex=UINT32_MAX;
 		return &inserted->second;
 	}
 	assert(mname.ns.size() == 1);
 	var_iterator inserted=Variables.insert(Variables.cbegin(),
-		make_pair(name,variable(createKind,mname.ns[0])));
+		make_pair(name,variable(createKind,mname.ns[0],mname.isInteger)));
+	currentnameindex=UINT32_MAX;
 	return &inserted->second;
 }
 
@@ -1221,7 +1229,8 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 		cloneable = false;
 
 	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
-	auto it = Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable)));
+	auto it = Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable,mname.isInteger)));
+	currentnameindex=UINT32_MAX;
 	if (slot_id)
 		initSlot(slot_id,&(it->second));
 }
@@ -2009,10 +2018,10 @@ void ASObject::removeStoredMember()
 	decRef();
 }
 
-void ASObject::handleGarbageCollection()
+bool ASObject::handleGarbageCollection()
 {
 	if (getConstant() || getCached() || this->getInDestruction())
-		return;
+		return true;
 	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1))
 	{
 		garbagecollectorstate gcstate(this);
@@ -2042,10 +2051,11 @@ void ASObject::handleGarbageCollection()
 			getInstanceWorker()->setDeletedInGarbageCollection(this);
 			this->destruct();
 			this->finalize();
-			return;
+			return true;
 		}
 	}
 	decRef();
+	return false;
 }
 
 bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -2288,18 +2298,20 @@ uint32_t variables_map::findInstanceSlotByMultiname(multiname* name,SystemState*
 	return UINT32_MAX;
 }
 
-variable* variables_map::getValueAt(unsigned int index)
+const variable* variables_map::getValueAt(unsigned int index)
 {
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
-		var_iterator it=Variables.begin();
-		uint32_t i = 0;
+		const_var_iterator it=currentnameindex <= index ? currentnameiterator : Variables.cbegin();
+		uint32_t i = currentnameindex <= index ? currentnameindex : 0;
 		while (i < index)
 		{
 			++i;
 			++it;
 		}
+		currentnameindex=index;
+		currentnameiterator=it;
 		return &it->second;
 	}
 	else
@@ -2308,14 +2320,15 @@ variable* variables_map::getValueAt(unsigned int index)
 
 void ASObject::getValueAt(asAtom &ret,int index)
 {
-	variable* obj=Variables.getValueAt(index);
+	const variable* obj=Variables.getValueAt(index);
 	assert_and_throw(obj);
 	if(asAtomHandler::isValid(obj->getter))
 	{
 		//Call the getter
 		LOG_CALL("Calling the getter");
 		asAtom v=asAtomHandler::fromObject(this);
-		asAtomHandler::callFunction(obj->getter,getInstanceWorker(),ret, v,NULL,0,false);
+		asAtom caller = obj->getter;
+		asAtomHandler::callFunction(caller,getInstanceWorker(),ret, v,NULL,0,false);
 		LOG_CALL("End of getter at index "<<index<<":"<< asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
 	}
 	else
@@ -2325,18 +2338,21 @@ void ASObject::getValueAt(asAtom &ret,int index)
 	}
 }
 
-uint32_t variables_map::getNameAt(unsigned int index) const
+uint32_t variables_map::getNameAt(unsigned int index,bool& nameIsInteger)
 {
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
-		const_var_iterator it=Variables.begin();
-		uint32_t i = 0;
+		const_var_iterator it=currentnameindex<=index ? currentnameiterator : Variables.cbegin();
+		uint32_t i = currentnameindex <= index ? currentnameindex : 0;
 		while (i < index)
 		{
 			++i;
 			++it;
 		}
+		currentnameindex=index;
+		currentnameiterator=it;
+		nameIsInteger = it->second.nameIsInteger;
 		return it->first;
 	}
 	else
@@ -3334,7 +3350,7 @@ void asAtomHandler::getStringView(tiny_string& res, const asAtom& a, ASWorker* w
 		{
 			assert(getObject(a));
 			const tiny_string& s = getObject(a)->as<ASString>()->getData();
-			res.setValue(s.raw_buf(),s.numBytes(),s.numChars(),s.isSinglebyte(),s.hasNullEntries(),false);
+			res.setValue(s.raw_buf(),s.numBytes(),s.numChars(),s.isSinglebyte(),s.hasNullEntries(),s.isIntegerValue(),false);
 			return;
 		}
 		default:

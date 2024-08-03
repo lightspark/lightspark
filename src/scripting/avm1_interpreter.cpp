@@ -1351,14 +1351,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionInitObject "<<numargs);
 				ASObject* ret=Class<ASObject>::getInstanceS(wrk);
 				//Duplicated keys overwrite the previous value
-				multiname propertyName(nullptr);
-				propertyName.name_type=multiname::NAME_STRING;
 				for (uint32_t i = 0; i < numargs; i++)
 				{
 					asAtom value = PopStack(stack);
 					asAtom name = PopStack(stack);
 					uint32_t nameid=asAtomHandler::toStringId(name,wrk);
-					ret->setDynamicVariableNoCheck(nameid,value);
+					ret->setDynamicVariableNoCheck(nameid,value,asAtomHandler::isInteger(name));
 				}
 				ASATOM_DECREF(na);
 				PushStack(stack,asAtomHandler::fromObject(ret));

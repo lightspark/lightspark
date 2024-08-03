@@ -1588,10 +1588,10 @@ ASObject* lightspark::abstract_s(ASWorker* wrk, const char* s, uint32_t len)
 	ret->datafilled=true;
 	return ret;
 }
-ASObject* lightspark::abstract_s(ASWorker* wrk, const char* s, int numbytes, int numchars, bool issinglebyte, bool hasNull)
+ASObject* lightspark::abstract_s(ASWorker* wrk, const char* s, int numbytes, int numchars, bool issinglebyte, bool hasNull,bool isInteger)
 {
 	ASString* ret= Class<ASString>::getInstanceSNoArgs(wrk);
-	ret->data.setValue(s,numbytes,numchars,issinglebyte,hasNull,true);
+	ret->data.setValue(s,numbytes,numchars,issinglebyte,hasNull,isInteger,true);
 	ret->stringId = UINT32_MAX;
 	ret->hasId = false;
 	ret->datafilled=true;

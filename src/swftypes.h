@@ -1633,7 +1633,7 @@ ASObject* abstract_d_constant(ASWorker* wrk, number_t i);
 ASObject* abstract_di(ASWorker* wrk, int64_t i);
 ASObject* abstract_s(ASWorker* wrk);
 ASObject* abstract_s(ASWorker* wrk, const char* s, uint32_t len);
-ASObject* abstract_s(ASWorker* wrk, const char* s, int numbytes, int numchars, bool issinglebyte, bool hasNull);
+ASObject* abstract_s(ASWorker* wrk, const char* s, int numbytes, int numchars, bool issinglebyte, bool hasNull, bool isInteger);
 ASObject* abstract_s(ASWorker* wrk, const char* s);
 ASObject* abstract_s(ASWorker* wrk, const tiny_string& s);
 ASObject* abstract_s(ASWorker* wrk, uint32_t stringId);

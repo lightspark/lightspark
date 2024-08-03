@@ -2511,15 +2511,20 @@ void ABCVm::newObject(call_context* th, int n)
 	LOG_CALL("newObject " << n);
 	ASObject* ret=Class<ASObject>::getInstanceS(th->worker);
 	//Duplicated keys overwrite the previous value
-	multiname propertyName(nullptr);
-	propertyName.name_type=multiname::NAME_STRING;
 	for(int i=0;i<n;i++)
 	{
 		RUNTIME_STACK_POP_CREATE(th,value);
 		RUNTIME_STACK_POP_CREATE(th,name);
 		uint32_t nameid=asAtomHandler::toStringId(*name,th->worker);
+		bool isInt = asAtomHandler::isInteger(*name);
+		if (!isInt && asAtomHandler::isObject(*name))
+		{
+			ASObject* o = asAtomHandler::getObjectNoCheck(*name);
+			if (o->is<ASString>())
+				isInt = Array::isIntegerWithoutLeadingZeros(o->as<ASString>()->getData());
+		}
 		ASATOM_DECREF_POINTER(name);
-		ret->setDynamicVariableNoCheck(nameid,*value);
+		ret->setDynamicVariableNoCheck(nameid,*value,isInt);
 	}
 
 	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(ret));

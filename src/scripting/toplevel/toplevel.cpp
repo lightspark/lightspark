@@ -1003,7 +1003,8 @@ ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 	{
 		for (uint32_t i = 0; i < o->numVariables(); i++)
 		{
-			nameIDlist.push_back(o->getNameAt(i));
+			bool dummy;
+			nameIDlist.push_back(o->getNameAt(i,dummy));
 		}
 	}
 	else

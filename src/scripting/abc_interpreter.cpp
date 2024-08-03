@@ -1117,6 +1117,24 @@ abc_function ABCVm::abcfunctions[]={
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
+	abc_invalidinstruction,
+
+	abc_nextname_constant_constant,// 0x388 ABC_OP_OPTIMZED_NEXTNAME
+	abc_nextname_local_constant,
+	abc_nextname_constant_local,
+	abc_nextname_local_local,
+	abc_nextname_constant_constant_localresult,
+	abc_nextname_local_constant_localresult,
+	abc_nextname_constant_local_localresult,
+	abc_nextname_local_local_localresult,
+
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
 	abc_invalidinstruction
 };
 
@@ -1391,6 +1409,8 @@ struct operands
 #define ABC_OP_OPTIMZED_SXI16 0x00000374
 #define ABC_OP_OPTIMZED_NEXTVALUE 0x00000378
 #define ABC_OP_OPTIMZED_GETSLOTFROMSCOPEOBJECT 0x00000382
+
+#define ABC_OP_OPTIMZED_NEXTNAME 0x00000388
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -8075,9 +8095,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
 				break;
 			case 0x1e://nextname
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				clearOperands(state,true,&lastlocalresulttype);
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_NEXTNAME,opcode,code,false,false,true,code.tellg());
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(nullptr,false));
 				break;

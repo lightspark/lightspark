@@ -654,6 +654,14 @@ private:
 	static void abc_pushwith(call_context* context);
 	static void abc_popscope(call_context* context);
 	static void abc_nextname(call_context* context);
+	static void abc_nextname_constant_constant(call_context* context);
+	static void abc_nextname_local_constant(call_context* context);
+	static void abc_nextname_constant_local(call_context* context);
+	static void abc_nextname_local_local(call_context* context);
+	static void abc_nextname_constant_constant_localresult(call_context* context);
+	static void abc_nextname_local_constant_localresult(call_context* context);
+	static void abc_nextname_constant_local_localresult(call_context* context);
+	static void abc_nextname_local_local_localresult(call_context* context);
 	static void abc_hasnext(call_context* context);
 
 	static void abc_pushnull(call_context* context);// 0x20

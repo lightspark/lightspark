@@ -2342,7 +2342,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 
 		number_t localX;
 		number_t localY;
-		th->globalToLocal(x, y, localX, localY);
+		th->globalToLocal(x, y, localX, localY,false);
 		if (!th->isOnStage())
 		{
 			// if the DisplayObject is not on stage the local bounds have to be added for hittesting

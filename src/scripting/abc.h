@@ -851,6 +851,7 @@ private:
 	static void abc_sxi16_local_localresult(call_context* context);
 	static void abc_constructgenerictype(call_context* context);
 	static void abc_newobject(call_context* context);
+	static void abc_newobject_noargs_localresult(call_context* context);
 	static void abc_newarray(call_context* context);
 	static void abc_newactivation(call_context* context);
 	static void abc_newclass(call_context* context);

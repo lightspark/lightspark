@@ -386,7 +386,7 @@ void SystemState::parseParametersFromFlashvars(const char* v)
 
 	_NR<ASObject> params=getParameters();
 	if(params.isNull())
-		params=_MNR(Class<ASObject>::getInstanceS(this->worker));
+		params=_MNR(new_asobject(this->worker));
 	//Add arguments to SystemState
 	string vars(v);
 	uint32_t cur=0;
@@ -462,7 +462,7 @@ void SystemState::parseParametersFromFile(const char* f)
 		LOG(LOG_ERROR,"Parameters file not found");
 		return;
 	}
-	_R<ASObject> ret=_MR(Class<ASObject>::getInstanceS(this->worker));
+	_R<ASObject> ret=_MR(new_asobject(this->worker));
 	while(!i.eof())
 	{
 		string name,value;
@@ -480,7 +480,7 @@ void SystemState::parseParametersFromURL(const URLInfo& url)
 {
 	_NR<ASObject> params=getParameters();
 	if(params.isNull())
-		params=_MNR(Class<ASObject>::getInstanceS(this->worker));
+		params=_MNR(new_asobject(this->worker));
 
 	parseParametersFromURLIntoObject(url, params);
 	setParameters(params);

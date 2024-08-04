@@ -93,7 +93,7 @@ void ABCVm::registerClassesAVM1()
 
 	if (m_sys->getSwfVersion() >= 6)
 	{
-		ASObject* systempackage = Class<ASObject>::getInstanceS(m_sys->worker);
+		ASObject* systempackage = new_asobject(m_sys->worker);
 		builtinavm1->setVariableByQName("System",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),systempackage,CONSTANT_TRAIT);
 		
 		systempackage->setVariableByQName("security","System",Class<Security>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
@@ -101,15 +101,15 @@ void ABCVm::registerClassesAVM1()
 	}
 	if (m_sys->getSwfVersion() >= 8)
 	{
-		ASObject* flashpackage = Class<ASObject>::getInstanceS(m_sys->worker);
+		ASObject* flashpackage = new_asobject(m_sys->worker);
 		builtinavm1->setVariableByQName("flash",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashpackage,CONSTANT_TRAIT);
 
-		ASObject* flashdisplaypackage = Class<ASObject>::getInstanceS(m_sys->worker);
+		ASObject* flashdisplaypackage = new_asobject(m_sys->worker);
 		flashpackage->setVariableByQName("display",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashdisplaypackage,CONSTANT_TRAIT);
 
 		flashdisplaypackage->setVariableByQName("BitmapData","flash.display",Class<AVM1BitmapData>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 
-		ASObject* flashfilterspackage = Class<ASObject>::getInstanceS(m_sys->worker);
+		ASObject* flashfilterspackage = new_asobject(m_sys->worker);
 		flashpackage->setVariableByQName("filters",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashfilterspackage,CONSTANT_TRAIT);
 
 		flashfilterspackage->setVariableByQName("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
@@ -123,7 +123,7 @@ void ABCVm::registerClassesAVM1()
 		flashfilterspackage->setVariableByQName("DisplacementMapFilter","flash.filters",Class<DisplacementMapFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashfilterspackage->setVariableByQName("GradientBevelFilter","flash.filters",Class<GradientBevelFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 
-		ASObject* flashgeompackage = Class<ASObject>::getInstanceS(m_sys->worker);
+		ASObject* flashgeompackage = new_asobject(m_sys->worker);
 		flashpackage->setVariableByQName("geom",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashgeompackage,CONSTANT_TRAIT);
 
 		flashgeompackage->setVariableByQName("Matrix","flash.geom",Class<Matrix>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);

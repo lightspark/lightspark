@@ -489,7 +489,7 @@ asAtom ByteArray::readObject()
 
 ASObject* ByteArray::readSharedObject()
 {
-	ASObject* ret = Class<ASObject>::getInstanceS(getInstanceWorker());
+	ASObject* ret = new_asobject(getInstanceWorker());
 	if (getLength()<=16)
 		return ret;
 	Amf3Deserializer d(this);

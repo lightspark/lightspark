@@ -29,7 +29,19 @@ using namespace lightspark;
 
 ASObject* lightspark::new_asobject(ASWorker* wrk)
 {
-	return Class<ASObject>::getInstanceS(wrk);
+	Class_base* c=Class<ASObject>::getClass(wrk->getSystemState());
+	ASObject* ret = wrk->freelist_asobject.getObjectFromFreeList()->as<Activation_object>();
+	if (!ret)
+	{
+		ret=new (c->memoryAccount) ASObject(wrk,c);
+		ret->objfreelist = &wrk->freelist_asobject;
+		assert_and_throw(ret);
+	}
+	ret->resetCached();
+	ret->setIsInitialized();
+	ret->constructionComplete();
+	ret->setConstructIndicator();
+	return ret;
 }
 
 Prototype* lightspark::new_objectPrototype(ASWorker* wrk)

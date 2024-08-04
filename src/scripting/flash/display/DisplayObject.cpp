@@ -2735,7 +2735,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 
-	ASObject* o =  Class<ASObject>::getInstanceS(wrk);
+	ASObject* o =  new_asobject(wrk);
 	ret = asAtomHandler::fromObject(o);
 	DisplayObject* target= th;
 	if(argslen>=1) // contrary to spec adobe allows getBounds with zero parameters

@@ -2509,7 +2509,7 @@ void ABCVm::newObject(call_context* th, int n)
 {
 	th->explicitConstruction = true;
 	LOG_CALL("newObject " << n);
-	ASObject* ret=Class<ASObject>::getInstanceS(th->worker);
+	ASObject* ret=new_asobject(th->worker);
 	//Duplicated keys overwrite the previous value
 	for(int i=0;i<n;i++)
 	{
@@ -2517,12 +2517,8 @@ void ABCVm::newObject(call_context* th, int n)
 		RUNTIME_STACK_POP_CREATE(th,name);
 		uint32_t nameid=asAtomHandler::toStringId(*name,th->worker);
 		bool isInt = asAtomHandler::isInteger(*name);
-		if (!isInt && asAtomHandler::isObject(*name))
-		{
-			ASObject* o = asAtomHandler::getObjectNoCheck(*name);
-			if (o->is<ASString>())
-				isInt = Array::isIntegerWithoutLeadingZeros(o->as<ASString>()->getData());
-		}
+		if (!isInt && asAtomHandler::isString(*name))
+			isInt = Array::isIntegerWithoutLeadingZeros(asAtomHandler::toString(*name,th->worker));
 		ASATOM_DECREF_POINTER(name);
 		ret->setDynamicVariableNoCheck(nameid,*value,isInt);
 	}
@@ -3105,7 +3101,7 @@ ASObject* ABCVm::pushString(call_context* th, int n)
 
 ASObject* ABCVm::newCatch(call_context* th, int n)
 {
-	ASObject* catchScope = Class<ASObject>::getInstanceS(th->worker);
+	ASObject* catchScope = new_asobject(th->worker);
 	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exceptions.size());
 	multiname* name = th->mi->context->getMultiname(th->mi->body->exceptions[n].var_name, nullptr);
 	catchScope->setVariableByMultiname(*name, asAtomHandler::undefinedAtom,ASObject::CONST_NOT_ALLOWED,nullptr,th->worker);

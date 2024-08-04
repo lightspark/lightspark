@@ -348,7 +348,7 @@ public:
 	void generator(ASWorker* wrk,asAtom& ret, asAtom* args, const unsigned int argslen)
 	{
 		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
-			ret=asAtomHandler::fromObject(Class<ASObject>::getInstanceS(wrk));
+			ret=asAtomHandler::fromObject(new_asobject(wrk));
 		else
 		{
 			ASATOM_INCREF(args[0]);

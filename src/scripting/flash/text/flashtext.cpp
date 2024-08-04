@@ -2344,7 +2344,7 @@ ASFUNCTIONBODY_ATOM(StyleSheet,getStyle)
 	{
 		// Tested behaviour is to return an empty ASObject
 		// instead of Null as is said in the documentation
-		ret = asAtomHandler::fromObject(Class<ASObject>::getInstanceS(wrk));
+		ret = asAtomHandler::fromObject(new_asobject(wrk));
 	}
 }
 

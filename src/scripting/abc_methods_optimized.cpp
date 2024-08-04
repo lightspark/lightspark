@@ -8133,3 +8133,12 @@ void ABCVm::abc_nextname_local_local_localresult(call_context* context)
 	replacelocalresult(context,context->exec_pos->local3.pos,ret);
 	++(context->exec_pos);
 }
+void ABCVm::abc_newobject_noargs_localresult(call_context* context)
+{
+	context->explicitConstruction = true;
+	asAtom ret=asAtomHandler::fromObjectNoPrimitive(new_asobject(context->worker));
+	LOG_CALL("newObject_noargs_l " << asAtomHandler::toDebugString(ret));
+	replacelocalresult(context,context->exec_pos->local3.pos,ret);
+	context->explicitConstruction = false;
+	++(context->exec_pos);
+}

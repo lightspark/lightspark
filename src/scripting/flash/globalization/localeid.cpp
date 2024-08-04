@@ -81,7 +81,7 @@ ASFUNCTIONBODY_ATOM(LocaleID,determinePreferredLocales)
 ASFUNCTIONBODY_ATOM(LocaleID,getKeysAndValues)
 {
 	LocaleID* th =asAtomHandler::as<LocaleID>(obj);
-	ASObject* object = Class<ASObject>::getInstanceS(wrk);
+	ASObject* object = new_asobject(wrk);
 	std::string str(th->name.raw_buf());
 	size_t pos = str.find("@");
 	std::string keyValueDelim("=");

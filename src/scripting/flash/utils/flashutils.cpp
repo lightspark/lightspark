@@ -210,7 +210,7 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 	_NR<ASObject> o;
 	uint32_t flags;
 	ARG_CHECK(ARG_UNPACK(o)(flags));
-	ASObject* res = Class<ASObject>::getInstanceS(wrk);
+	ASObject* res = new_asobject(wrk);
 
 	if (o)
 	{
@@ -234,7 +234,7 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 		v = asAtomHandler::fromBool(!cls->isFinal);
 		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED,nullptr,wrk);
 	
-		ASObject* traits = Class<ASObject>::getInstanceS(wrk);
+		ASObject* traits = new_asobject(wrk);
 	
 		bool INCLUDE_BASES = flags & 0x0002;
 		bool INCLUDE_INTERFACES = flags & 0x0004;

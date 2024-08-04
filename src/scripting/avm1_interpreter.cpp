@@ -994,7 +994,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				IFunction* c = asAtomHandler::as<IFunction>(subconstr);
 				c->setRefConstant();
-				c->prototype = _MNR(Class<ASObject>::getInstanceS(wrk));
+				c->prototype = _MNR(new_asobject(wrk));
 				c->prototype->addStoredMember();
 				c->prototype->incRef();
 				_NR<ASObject> probj = _MR(c->prototype);
@@ -1349,7 +1349,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom na = PopStack(stack);
 				uint32_t numargs = asAtomHandler::toUInt(na);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionInitObject "<<numargs);
-				ASObject* ret=Class<ASObject>::getInstanceS(wrk);
+				ASObject* ret=new_asobject(wrk);
 				//Duplicated keys overwrite the previous value
 				for (uint32_t i = 0; i < numargs; i++)
 				{

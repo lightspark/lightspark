@@ -134,7 +134,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,attributes)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
 	assert_and_throw(argslen==0);
-	ASObject* res=Class<ASObject>::getInstanceS(wrk);
+	ASObject* res=new_asobject(wrk);
 	if(th->node.type()==pugi::node_null)
 	{
 		ret = asAtomHandler::fromObject(res);

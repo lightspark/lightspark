@@ -40,7 +40,7 @@ LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),appli
 {
 	subtype=SUBTYPE_LOADERINFO;
 	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(wrk));
-	parameters = _MR(Class<ASObject>::getInstanceS(wrk));
+	parameters = _MR(new_asobject(wrk));
 	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(wrk));
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
 }
@@ -53,7 +53,7 @@ LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, Loader* l):EventDispatcher(
 {
 	subtype=SUBTYPE_LOADERINFO;
 	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(wrk));
-	parameters = _MR(Class<ASObject>::getInstanceS(wrk));
+	parameters = _MR(new_asobject(wrk));
 	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(wrk));
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
 }
@@ -288,7 +288,7 @@ void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)
 	//uses AS3. See specs.
 	if (setParameters)
 	{
-		parameters = _MR(Class<ASObject>::getInstanceS(getInstanceWorker()));
+		parameters = _MR(new_asobject(getInstanceWorker()));
 		SystemState::parseParametersFromURLIntoObject(url, parameters);
 	}
 }

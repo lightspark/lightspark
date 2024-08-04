@@ -2225,7 +2225,7 @@ ASFUNCTIONBODY_ATOM(XML,_setPrettyPrinting)
 }
 ASFUNCTIONBODY_ATOM(XML,_getSettings)
 {
-	ASObject* res = Class<ASObject>::getInstanceS(wrk);
+	ASObject* res = new_asobject(wrk);
 	multiname mn(nullptr);
 	mn.name_type=multiname::NAME_STRING;
 	mn.ns.emplace_back(res->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
@@ -2311,7 +2311,7 @@ ASFUNCTIONBODY_ATOM(XML,_setSettings)
 }
 ASFUNCTIONBODY_ATOM(XML,_getDefaultSettings)
 {
-	ASObject* res = Class<ASObject>::getInstanceS(wrk);
+	ASObject* res = new_asobject(wrk);
 	multiname mn(nullptr);
 	mn.name_type=multiname::NAME_STRING;
 	mn.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);

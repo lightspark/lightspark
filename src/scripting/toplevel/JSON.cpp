@@ -533,7 +533,7 @@ bool JSON::parseNumber(const tiny_string &jsonstring, CharIterator& it, asAtom& 
 bool JSON::parseObject(const tiny_string &jsonstring, CharIterator& it, asAtom& parent, multiname &key, asAtom reviver, ASWorker* wrk)
 {
 	it++; // ignore '{' or ','
-	ASObject* subobj = Class<ASObject>::getInstanceS(wrk);
+	ASObject* subobj = new_asobject(wrk);
 	if (asAtomHandler::isInvalid(parent))
 		parent = asAtomHandler::fromObject(subobj);
 	else if (asAtomHandler::isObject(parent))

@@ -998,7 +998,7 @@ abc_function ABCVm::abcfunctions[]={
 	abc_lookupswitch,
 	
 	abc_dup_local_setslotnocoerce, // 0x31c ABC_OP_OPTIMZED_DUP_SETSLOT
-	abc_invalidinstruction,
+	abc_newobject_noargs_localresult,
 	abc_getfuncscopeobject, // 0x31e ABC_OP_OPTIMZED_GETFUNCSCOPEOBJECT
 	abc_getfuncscopeobject_localresult,
 
@@ -2092,6 +2092,22 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				lastlocalpos=-1;
 				break;
 			}
+			case 0x55://newobject
+			{
+				candup=false;
+				uint32_t argcount = code.peeku30FromPosition(pos);
+				if (state.jumptargets.find(pos) == state.jumptargets.end()
+						&& argsneeded && argcount==0)
+				{
+					pos = code.skipu30FromPosition(pos);
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+				}
+				else
+					keepchecking=false;
+				lastlocalpos=-1;
+				break;
+			}
 			case 0x4a://constructprop
 			{
 				candup=false;
@@ -2124,6 +2140,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0xc5://add_i
 			case 0xc6://subtract_i
 			case 0xc7://multiply_i
+			case 0x1e://nextname
+			case 0x23://nextvalue
 				candup=false;
 				if (argsneeded>=2)
 				{
@@ -2325,6 +2343,24 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				clearOperands(state,false,nullptr,checkchanged);
 			break;
 		}
+		case 0x55://newobject
+		{
+			uint32_t argcount = code.peeku30FromPosition(pos);
+			if (state.jumptargets.find(pos) == state.jumptargets.end()
+					&& argcount == 0
+					&& !argsneeded && (state.operandlist.size() >= 1))
+			{
+				// set optimized opcode to corresponding opcode with local result 
+				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
+				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
+				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
+				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
+				res = true;
+			}
+			else
+				clearOperands(state,false,nullptr,checkchanged);
+			break;
+		}
 		case 0x4a://constructprop
 		{
 			uint32_t t = code.peeku30FromPosition(pos);
@@ -2450,7 +2486,6 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x18://ifge
 		case 0x19://ifstricteq
 		case 0x1a://ifstrictne
-		case 0x23://nextvalue
 		case 0x6d://setslot
 		case 0x87://astypelate
 		case 0xa0://add
@@ -2472,6 +2507,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0xc5://add_i
 		case 0xc6://subtract_i
 		case 0xc7://multiply_i
+		case 0x23://nextvalue
+		case 0x1e://nextname
 			if ((argsneeded==1 || (!argsneeded && state.operandlist.size() > 0)) && (state.jumptargets.find(pos) == state.jumptargets.end()))
 			{
 				// set optimized opcode to corresponding opcode with local result 
@@ -3829,10 +3866,29 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x6f://setglobalSlot
 			case 0xb2://istype
 			case 0x08://kill
-			case 0x62://getlocal
 				codetypes.readu30();
 				currenttype=nullptr;
 				break;
+			case 0x62://getlocal
+			{
+				uint32_t t = codetypes.readu30();
+				if (state.defaultlocaltypes.size()>t)
+					currenttype=state.defaultlocaltypes[t];
+				else
+					currenttype=nullptr;
+				break;
+			}
+			case 0xd0://getlocal_0
+			case 0xd1://getlocal_1
+			case 0xd2://getlocal_2
+			case 0xd3://getlocal_3
+			{
+				if (state.defaultlocaltypes.size()>uint32_t(opcode-0xd0))
+					currenttype=state.defaultlocaltypes[opcode-0xd0];
+				else
+					currenttype=nullptr;
+				break;
+			}
 			case 0x86://astype
 			case 0x80://coerce
 			{
@@ -4038,6 +4094,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				break;
 			case 0x09://label
 			case 0x2a://dup
+			case 0x82://coerce_a
 				break;
 			case 0x47://returnvoid
 			case 0x48://returnvalue
@@ -4078,10 +4135,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 		}
 		uint8_t prevopcode=opcode;
 		opcode = code.readbyte();
-//		if (typestack.empty() || typestack.back().obj==nullptr)
-//			LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<state.preloadedcode.size()<<" "<<hex<<(int)opcode);
-//		else
-//			LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<typestack.back().obj->toDebugString()<<" "<<state.preloadedcode.size()<<" "<< hex<<(int)opcode);
+		// if (typestack.empty() || typestack.back().obj==nullptr)
+		// 	LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<state.preloadedcode.size()<<" "<<hex<<(int)opcode);
+		// else
+		// 	LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<typestack.back().obj->toDebugString()<<" "<<state.preloadedcode.size()<<" "<< hex<<(int)opcode);
 		if (opcode_skipped)
 			opcode_skipped=false;
 		else
@@ -4279,11 +4336,34 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			{
 				uint32_t t = code.readu30();
 				removetypestack(typestack,t*2);
-				typestack.push_back(typestackentry(nullptr,false));
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				state.preloadedcode.back().pcode.arg3_uint=t;
-				clearOperands(state,true,&lastlocalresulttype);
+				Class_base* resulttype = Class<ASObject>::getRef(function->getSystemState()).getPtr();
+				typestack.push_back(typestackentry(resulttype,false));
+#ifdef ENABLE_OPTIMIZATION
+				bool done = false;
+				switch (t)
+				{
+					case 0:
+						state.preloadedcode.push_back((uint32_t)opcode);
+						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.preloadedcode.back().pcode.arg3_uint=t;
+						if (checkForLocalResult(state,code,0,resulttype))
+							state.preloadedcode[state.preloadedcode.size()-1].pcode.func = abc_newobject_noargs_localresult;
+						else
+							clearOperands(state,true,&lastlocalresulttype);
+						done=true;
+						break;
+					default:
+						// TODO optimize newobject with arguments
+						break;
+				}
+				if (!done)
+#endif
+				{
+					state.preloadedcode.push_back((uint32_t)opcode);
+					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.preloadedcode.back().pcode.arg3_uint=t;
+					clearOperands(state,true,&lastlocalresulttype);
+				}
 				break;
 			}
 			case 0x56://newarray
@@ -5737,6 +5817,25 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						uint32_t num=0;
 						int32_t jump=0;
 						bool is_iftruefalse=false;
+						if (state.jumptargets.find(pos+1) == state.jumptargets.end() && b == 0x76)//convert_b
+						{
+							switch (code.peekbyteFromPosition(pos))
+							{
+								case 0x11://iftrue
+								case 0x12://iffalse
+								{
+									if (code.peeks24FromPosition(pos+1)<0)
+										break;
+									// dup is followed by convert_b and iftrue/iffalse, convert_b can be ignored
+									b=code.peekbyteFromPosition(pos);
+									pos++;
+									p++;
+									break;
+								}
+								default:
+									break;
+							}
+						}
 						switch (b)
 						{
 							case 0x91://increment

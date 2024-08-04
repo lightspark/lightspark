@@ -305,7 +305,7 @@ ASObject* ExtVariant::getASObject(ASWorker *wrk, std::map<const lightspark::ExtO
 			// We are converting an object, so lets set variables
 			else
 			{
-				asobj = Class<ASObject>::getInstanceS(wrk);
+				asobj = new_asobject(wrk);
 				objectsMap[objValue] = asobj;
 			
 				ExtIdentifier** ids;

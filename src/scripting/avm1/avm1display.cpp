@@ -557,7 +557,7 @@ ASFUNCTIONBODY_ATOM(AVM1Color,setRGB)
 ASFUNCTIONBODY_ATOM(AVM1Color,getTransform)
 {
 	AVM1Color* th=asAtomHandler::as<AVM1Color>(obj);
-	ASObject* o = Class<ASObject>::getInstanceS(wrk);
+	ASObject* o = new_asobject(wrk);
 	if (th->target && th->target->colorTransform)
 	{
 		asAtom a= asAtomHandler::undefinedAtom;

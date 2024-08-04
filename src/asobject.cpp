@@ -1247,7 +1247,7 @@ ASFUNCTIONBODY_ATOM(ASObject,generator)
 	else if (argslen > 1)
 		createError<ArgumentError>(wrk,kCoerceArgumentCountError,Integer::toString(argslen));
 	else
-		ret = asAtomHandler::fromObject(Class<ASObject>::getInstanceS(wrk));
+		ret = asAtomHandler::fromObject(new_asobject(wrk));
 }
 
 ASFUNCTIONBODY_ATOM(ASObject,_toString)

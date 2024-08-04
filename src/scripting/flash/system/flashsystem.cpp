@@ -1525,7 +1525,7 @@ WorkerDomain::WorkerDomain(ASWorker* wrk, Class_base* c):
 	RootMovieClip* root = wrk->rootClip.getPtr();
 	Template<Vector>::getInstanceS(wrk,v,root,Class<ASWorker>::getClass(getSystemState()),NullRef);
 	workerlist = _R<Vector>(asAtomHandler::as<Vector>(v));
-	workerSharedObject = _MR(Class<ASObject>::getInstanceS(wrk));
+	workerSharedObject = _MR(new_asobject(wrk));
 }
 
 void WorkerDomain::finalize()

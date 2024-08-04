@@ -486,7 +486,7 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 	if (traits.type)
 		traits.type->getInstance(input->getInstanceWorker(),ret,true, nullptr, 0);
 	else
-		ret =asAtomHandler::fromObject(Class<ASObject>::getInstanceS(input->getInstanceWorker()));
+		ret =asAtomHandler::fromObject(new_asobject(input->getInstanceWorker()));
 	//Add object to the map
 	objMap.push_back(ret);
 
@@ -729,7 +729,7 @@ asAtom Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringMap,
 {
 	asAtom ret = asAtomHandler::invalidAtom;
 	if (clsname == "")
-		ret=asAtomHandler::fromObject(Class<ASObject>::getInstanceS(input->getInstanceWorker()));
+		ret=asAtomHandler::fromObject(new_asobject(input->getInstanceWorker()));
 	else
 	{
 		input->getSystemState()->getClassInstanceByName(input->getInstanceWorker(),ret,clsname);

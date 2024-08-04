@@ -350,6 +350,8 @@ private:
 public:
 	asfreelist* freelist;
 	asfreelist freelist_syntheticfunction;
+	asfreelist freelist_activationobject;
+	
 	ASWorker(SystemState* s); // constructor for primordial worker only to be used in SystemState constructor
 	ASWorker(Class_base* c);
 	ASWorker(ASWorker* wrk,Class_base* c);

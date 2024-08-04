@@ -127,7 +127,10 @@ public:
 class Activation_object: public ASObject
 {
 public:
-	Activation_object(ASWorker* wrk, Class_base* c) : ASObject(wrk,c,T_OBJECT,SUBTYPE_ACTIVATIONOBJECT) {}
+	Activation_object(ASWorker* wrk, Class_base* c) : ASObject(wrk,c,T_OBJECT,SUBTYPE_ACTIVATIONOBJECT)
+	{
+		objfreelist = &wrk->freelist_activationobject;	
+	}
 };
 
 /* Special object returned when new func() syntax is used.

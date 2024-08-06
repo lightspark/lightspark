@@ -940,7 +940,7 @@ static void nvg__linearGradientStops(NVGcontext* ctx,
 NVGpaint nvgLinearGradient(NVGcontext* ctx,
 						   float sx, float sy, float ex, float ey,
 						   NVGcolor icol, NVGcolor ocol,
-						   int spreadMode, float* gradientcolors)
+						   int spreadMode)
 {
 	NVGpaint p;
 	float dx, dy, d;
@@ -977,7 +977,6 @@ NVGpaint nvgLinearGradient(NVGcontext* ctx,
 	p.spreadMode = spreadMode;
 
 	p.isGradient = 1;
-	p.gradientcolors = gradientcolors;
 	return p;
 }
 
@@ -996,7 +995,7 @@ NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 	} else if (count == 2 && stops[0].stop <= 0.0f && stops[1].stop >= 1.0f) {
 		// Two stop gradients take the normal path, if both stops are at
 		// the extents. Treat it as a multi-stop gradient otherwise.
-		return nvgLinearGradient(ctx, sx, sy, ex, ey, stops[0].color, stops[1].color, spreadMode, NULL);
+		return nvgLinearGradient(ctx, sx, sy, ex, ey, stops[0].color, stops[1].color, spreadMode);
 	}
 
 	float dx, dy, d;
@@ -1026,14 +1025,11 @@ NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 
 	p.feather = nvg__maxf(1.0f, d);
 
-	if (*gradientcolors)
-		p.gradientcolors = *gradientcolors;
-	else
-	{
+	if (*gradientcolors == NULL) {
 		*gradientcolors = (float*)malloc(NANOVG_GRADIENTCOLOR_SIZE*4*sizeof(float));
-		p.gradientcolors = *gradientcolors;
-		nvg__linearGradientStops(ctx, stops, count, spreadMode, p.gradientcolors);
 	}
+	p.gradientcolors = *gradientcolors;
+	nvg__linearGradientStops(ctx, stops, count, spreadMode, p.gradientcolors);
 
 	p.spreadMode = spreadMode;
 
@@ -1044,7 +1040,7 @@ NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 NVGpaint nvgRadialGradient(NVGcontext* ctx,
 						   float cx, float cy, float inr, float outr,
 						   NVGcolor icol, NVGcolor ocol,
-						   int spreadMode, float* gradientcolors)
+						   int spreadMode)
 {
 	NVGpaint p;
 	float r = (inr+outr)*0.5f;
@@ -1069,7 +1065,6 @@ NVGpaint nvgRadialGradient(NVGcontext* ctx,
 	p.spreadMode = spreadMode;
 
 	p.isGradient = 1;
-	p.gradientcolors = gradientcolors;
 	return p;
 }
 
@@ -1088,7 +1083,7 @@ NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
 	} else if (count == 2 && stops[0].stop <= 0.0 && stops[1].stop >= 1.0) {
 		// Two stop gradients take the normal path, if both stops are at
 		// the extents. Treat it as a multi-stop gradient otherwise.
-		return nvgRadialGradient(ctx, cx, cy, inr, outr, stops[0].color, stops[1].color, spreadMode, NULL);
+		return nvgRadialGradient(ctx, cx, cy, inr, outr, stops[0].color, stops[1].color, spreadMode);
 	}
 
 	float r = (inr+outr)*0.5f;
@@ -1106,14 +1101,12 @@ NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
 
 	p.feather = nvg__maxf(1.0f, f);
 
-	if (*gradientcolors)
-		p.gradientcolors = *gradientcolors;
-	else
-	{
+	if (*gradientcolors == NULL) {
 		*gradientcolors = (float*)malloc(NANOVG_GRADIENTCOLOR_SIZE*4*sizeof(float));
-		p.gradientcolors = *gradientcolors;
-		nvg__linearGradientStops(ctx, stops, count, spreadMode, p.gradientcolors);
 	}
+	p.gradientcolors = *gradientcolors;
+	nvg__linearGradientStops(ctx, stops, count, spreadMode, p.gradientcolors);
+
 	p.spreadMode = spreadMode;
 
 	p.isGradient = 1;

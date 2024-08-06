@@ -419,7 +419,7 @@ typedef struct NVGgradientStop NVGgradientStop;
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgLinearGradient(NVGcontext* ctx, float sx, float sy, float ex, float ey,
 						   NVGcolor icol, NVGcolor ocol,
-						   int spreadMode, float* gradientcolors);
+						   int spreadMode);
 
 // if the parameter gradientcolors points to null, a new float array will be constructed and filled with the gradient colors
 // this float array can be used as gradientcolors parameter in subsequent calls of nvgLinearGradientStops
@@ -445,7 +445,7 @@ NVGpaint nvgBoxGradient(NVGcontext* ctx, float x, float y, float w, float h,
 // The gradient is transformed by the current transform when it is passed to nvgFillPaint() or nvgStrokePaint().
 NVGpaint nvgRadialGradient(NVGcontext* ctx, float cx, float cy, float inr, float outr,
 						   NVGcolor icol, NVGcolor ocol,
-						   int spreadMode, float* gradientcolors);
+						   int spreadMode);
 
 // if the parameter gradientcolors points to null, a new float array will be constructed and filled with the gradient colors
 // this float array can be used as gradientcolors parameter in subsequent calls of nvgRadialGradientStops

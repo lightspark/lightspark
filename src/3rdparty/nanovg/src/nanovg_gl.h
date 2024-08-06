@@ -1042,8 +1042,9 @@ static void glnvg__setUniforms(GLNVGcontext* gl, int uniformOffset, int image, f
 	GLNVGfragUniforms* frag = nvg__fragUniformPtr(gl, uniformOffset);
 	glUniform4fv(gl->shader.loc[GLNVG_LOC_FRAG], NANOVG_GL_UNIFORMARRAY_SIZE, &(frag->uniformArray[0][0]));
 #endif
-	if (gradientcolors)
+	if (gradientcolors != NULL) {
 		glUniform4fv(gl->shader.loc[GLNVG_LOC_GRADIENTCOLORS], NANOVG_GRADIENTCOLOR_SIZE, gradientcolors);
+	}
 
 	if (image != 0) {
 		tex = glnvg__findTexture(gl, image);
@@ -1238,9 +1239,9 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image);
+		glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image, call->gradientcolors);
 	} else {
-		glnvg__setUniforms(gl, call->uniformOffset, call->image);
+		glnvg__setUniforms(gl, call->uniformOffset, call->image, call->gradientcolors);
 	}
 
 	glnvg__checkError(gl, "convex fill");
@@ -1277,9 +1278,9 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 		glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 		
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-		glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image);
+		glnvg__setUniforms(gl, call->uniformOffset + gl->fragSize, call->image, call->gradientcolors);
 	} else {
-		glnvg__setUniforms(gl, call->uniformOffset, call->image);
+		glnvg__setUniforms(gl, call->uniformOffset, call->image, call->gradientcolors);
 	}
 
 	glnvg__checkError(gl, "stroke fill");
@@ -1293,7 +1294,7 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 
 static void glnvg__triangles(GLNVGcontext* gl, GLNVGcall* call)
 {
-	glnvg__setUniforms(gl, call->uniformOffset, call->image);
+	glnvg__setUniforms(gl, call->uniformOffset, call->image, call->gradientcolors);
 	glnvg__checkError(gl, "triangles fill");
 
 	glDrawArrays(GL_TRIANGLES, call->triangleOffset, call->triangleCount);
@@ -1610,10 +1611,11 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperation
 	call->pathOffset = glnvg__allocPaths(gl, npaths);
 	if (call->pathOffset == -1) goto error;
 	call->pathCount = npaths;
-	if (paint->isGradient)
+	if (paint->isGradient) {
 		call->gradientcolors = paint->gradientcolors;
-	else
+	} else {
 		call->image = paint->image;
+	}
 	call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
 
 	if (npaths == 1 && paths[0].convex) call->type = GLNVG_CONVEXFILL;

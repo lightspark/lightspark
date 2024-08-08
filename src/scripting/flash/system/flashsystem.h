@@ -348,6 +348,7 @@ private:
 	struct timeval last_garbagecollection;
 	std::vector<ABCContext*> contexts;
 public:
+	Stage* stage; // every worker has its own stage. In case of the primordial worker this points to the stage of the SystemState.
 	asfreelist* freelist;
 	asfreelist freelist_syntheticfunction;
 	asfreelist freelist_activationobject;

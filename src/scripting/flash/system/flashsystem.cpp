@@ -1034,6 +1034,7 @@ extern uint32_t asClassCount;
 ASWorker::ASWorker(SystemState* s):
 	EventDispatcher(this,nullptr),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
+	stage(nullptr),
 	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(true),state("running"),
 	nativeExtensionCallCount(0)
 {
@@ -1050,6 +1051,7 @@ ASWorker::ASWorker(SystemState* s):
 ASWorker::ASWorker(Class_base* c):
 	EventDispatcher(c->getSystemState()->worker,c),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
+	stage(nullptr),
 	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new"),
 	nativeExtensionCallCount(0)
 {
@@ -1065,6 +1067,7 @@ ASWorker::ASWorker(Class_base* c):
 ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 	EventDispatcher(wrk,c),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
+	stage(nullptr),
 	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new"),
 	nativeExtensionCallCount(0)
 {
@@ -1120,7 +1123,10 @@ void ASWorker::finalize()
 		{
 			delete contexts[i];
 		}
+		if (stage)
+			stage->decRef();
 	}
+	stage=nullptr;
 	destroyContents();
 	loader.reset();
 	swf.reset();
@@ -1185,6 +1191,8 @@ void ASWorker::prepareShutdown()
 		loader->prepareShutdown();
 	if (swf)
 		swf->prepareShutdown();
+	if (stage)
+		stage->prepareShutdown();
 	parsemutex.unlock();
 }
 

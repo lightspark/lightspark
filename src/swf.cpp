@@ -334,6 +334,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	stage=Class<Stage>::getInstanceS(this->worker);
 	stage->setRefConstant();
 	stage->setRoot(_MR(mainClip));
+	worker->stage=stage;
 	//Get starting time
 	startTime=compat_msectiming();
 	
@@ -1674,6 +1675,9 @@ void ParseThread::parseSWF(UI8 ver)
 		{
 			root->incRef();
 			applicationDomain->getInstanceWorker()->rootClip = _MR(root);
+			applicationDomain->getInstanceWorker()->stage = Class<Stage>::getInstanceSNoArgs(applicationDomain->getInstanceWorker());
+			root->incRef();
+			applicationDomain->getInstanceWorker()->stage->setRoot(_MR(root));
 		}
 		parsedObject=_MNR(root);
 		if(!url.empty())

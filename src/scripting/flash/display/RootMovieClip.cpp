@@ -195,7 +195,15 @@ void RootMovieClip::constructionComplete(bool _explicit)
 			getVm(getSystemState())->addBufferEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this), _explicit)));
 		}
 		else
+		{
 			MovieClip::constructionComplete(_explicit);
+			if (this==getInstanceWorker()->rootClip.getPtr())
+			{
+				incRef();
+				getInstanceWorker()->stage->_addChildAt(this,0);
+				this->setOnStage(true,true);
+			}
+		}
 		return;
 	}
 	MovieClip::constructionComplete(_explicit);
@@ -311,10 +319,10 @@ _NR<RootMovieClip> RootMovieClip::getRoot()
 
 _NR<Stage> RootMovieClip::getStage()
 {
-	if (this == getSystemState()->mainClip)
+	if (this == getInstanceWorker()->rootClip.getPtr())
 	{
-		getSystemState()->stage->incRef();
-		return _MR(getSystemState()->stage);
+		getInstanceWorker()->stage->incRef();
+		return _MR(getInstanceWorker()->stage);
 	}
 	else if (getParent())
 		return getParent()->getStage();

@@ -1534,7 +1534,7 @@ variable* ASObject::findVariableByMultiname(const multiname& name, Class_base* c
 GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, Class_base* cls, GET_VARIABLE_OPTION opt,ASWorker* wrk)
 {
 	check();
-	assert(!cls || classdef->isSubClass(cls));
+	assert(!cls || classdef->isSubClass(cls) || this->is<Class_base>());
 	assert(wrk==getWorker());
 	uint32_t nsRealId;
 	GET_VARIABLE_RESULT res = GET_VARIABLE_RESULT::GETVAR_NORMAL;

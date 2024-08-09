@@ -2162,13 +2162,21 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 		createError<TypeError>(th->worker,kConvertUndefinedToObjectError);
 		return;
 	}
-
-	assert_and_throw(th->function->inClass);
-	assert_and_throw(th->function->inClass->super);
-	assert_and_throw(obj->getClass());
-	assert_and_throw(obj->getClass()->isSubClass(th->function->inClass));
+	
 	asAtom f=asAtomHandler::invalidAtom;
-	obj->getVariableByMultinameIntern(f,*name,th->function->inClass->super.getPtr(),GET_VARIABLE_OPTION::NONE, th->worker);
+	if (th->function->fromNewFunction)
+	{
+		assert_and_throw(obj->getClass());
+		obj->getVariableByMultinameIntern(f,*name,obj->getClass(),GET_VARIABLE_OPTION::NONE, th->worker);
+	}
+	else
+	{
+		assert_and_throw(th->function->inClass);
+		assert_and_throw(th->function->inClass->super);
+		assert_and_throw(obj->getClass());
+		assert_and_throw(obj->getClass()->isSubClass(th->function->inClass));
+		obj->getVariableByMultinameIntern(f,*name,th->function->inClass->super.getPtr(),GET_VARIABLE_OPTION::NONE, th->worker);
+	}
 	name->resetNameIfObject();
 	if(asAtomHandler::isValid(f))
 	{

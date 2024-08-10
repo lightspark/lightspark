@@ -2202,6 +2202,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0xd5://setlocal_1
 			case 0xd6://setlocal_2
 			case 0xd7://setlocal_3
+			case 0x29://pop
 				candup=false;
 				if (argsneeded)
 				{
@@ -2565,6 +2566,21 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x10://jump
 			// don't clear operandlist yet, because the jump may be skipped
 			break;
+		case 0x29://pop
+		{
+			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
+			{
+				// set optimized opcode to corresponding opcode with local result 
+				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
+				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
+				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
+				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
+				res = true;
+			}
+			else
+				clearOperands(state,false,nullptr,checkchanged);
+			break;
+		}
 		default:
 			clearOperands(state,false,nullptr,checkchanged);
 			break;

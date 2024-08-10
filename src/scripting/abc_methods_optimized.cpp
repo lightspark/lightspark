@@ -35,7 +35,10 @@ using namespace lightspark;
 FORCE_INLINE void replacelocalresult(call_context* context,uint16_t pos,asAtom& ret)
 {
 	if (USUALLY_FALSE(context->exceptionthrown))
+	{
+		ASATOM_DECREF(ret);
 		return;
+	}
 	asAtom oldres = CONTEXT_GETLOCAL(context,pos);
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,pos),ret);
 	ASATOM_DECREF(oldres);

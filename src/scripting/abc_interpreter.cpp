@@ -7644,22 +7644,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									}
 								}
 							}
-							if (state.operandlist.size() > 0 && (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_CONSTANT || state.operandlist.back().type == OP_CACHED_SLOT) && state.operandlist.back().objtype)
+							if (state.operandlist.size() > 0 && state.operandlist.back().type != OP_CACHED_SLOT && state.operandlist.back().objtype)
 							{
-								bool isClassOperator=false;
-								if (state.operandlist.back().type == OP_CACHED_CONSTANT)
+								if (state.operandlist.back().type != OP_LOCAL && state.operandlist.back().type != OP_CACHED_CONSTANT) 
 								{
-									asAtom* a = mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
-									isClassOperator = asAtomHandler::is<Class_base>(*a);
-								}
-								if (!isClassOperator && canCallFunctionDirect(state.operandlist.back(),name))
-								{
+									// pushed builtin constants, property can be called directly and stored as a constant
 									variable* v = state.operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
 									if (v && asAtomHandler::is<IFunction>(v->getter))
 									{
 										resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
 										if (!state.operandlist.back().objtype->is<Class_inherit>() && resulttype==nullptr)
-											LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method4:"<<*name<<" "<<state.operandlist.back().objtype->toDebugString()<<" in function "<<getSys()->getStringFromUniqueId(function->functionname));
+											LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method for constant:"<<*name<<" "<<state.operandlist.back().objtype->toDebugString()<<" in function "<<getSys()->getStringFromUniqueId(function->functionname));
 										if (!setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS,opcode,code,true, false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_SETSLOT))
 											lastlocalresulttype = resulttype;
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = asAtomHandler::getObject(v->getter);
@@ -7669,84 +7664,110 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										break;
 									}
 								}
-								if (!isClassOperator && canCallFunctionDirect(state.operandlist.back(),name,true))
+								else
 								{
-									variable* v = state.operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
-									if (v)
-									{
-										resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
-									}
-								}
-								if (state.operandlist.back().objtype && !state.operandlist.back().objtype->isInterface && state.operandlist.back().objtype->isInitialized()
-										&& (!typestack.back().obj || !typestack.back().classvar || isClassOperator))
-								{
-									// check if we can replace getProperty by getSlot
-									variable* v = nullptr;
-									asAtom o = asAtomHandler::invalidAtom;
-									if (isClassOperator)
+									bool isClassOperator=false;
+									if (state.operandlist.back().type == OP_CACHED_CONSTANT)
 									{
 										asAtom* a = mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
-										v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
-										if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
-											v=nullptr;
+										isClassOperator = asAtomHandler::is<Class_base>(*a);
 									}
-									else
+									if (!isClassOperator && canCallFunctionDirect(state.operandlist.back(),name))
 									{
-										if (state.operandlist.back().objtype->is<Class_inherit>())
-											state.operandlist.back().objtype->as<Class_inherit>()->checkScriptInit();
-										state.operandlist.back().objtype->getInstance(wrk,o,false,nullptr,0);
-										state.operandlist.back().objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
-										
-										v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
-									}
-									if (v && v->slotid)
-									{
-										resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
-										if (state.operandlist.back().type == OP_LOCAL)
+										variable* v = state.operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
+										if (v && asAtomHandler::is<IFunction>(v->getter))
 										{
-											if (state.unchangedlocals.find(state.operandlist.back().index) != state.unchangedlocals.end())
-											{
-												uint32_t index = state.operandlist.back().index;
-												state.operandlist.back().removeArg(state);
-												state.operandlist.pop_back();
-												addname = false;
-												addCachedSlot(state,index,v->slotid,code,resulttype);
-												removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
-												typestack.push_back(typestackentry(resulttype,false));
-												ASATOM_DECREF(o);
-												break;
-											}
-										}
-										
-										if (setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_GETSLOT_SETSLOT))
-										{
-											state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint =v->slotid-1;
-											if (state.operandlist.empty()) // indicates that checkforlocalresult returned false
+											resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
+											if (!state.operandlist.back().objtype->is<Class_inherit>() && resulttype==nullptr)
+												LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method4:"<<*name<<" "<<state.operandlist.back().objtype->toDebugString()<<" in function "<<getSys()->getStringFromUniqueId(function->functionname));
+											if (!setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS,opcode,code,true, false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_SETSLOT))
 												lastlocalresulttype = resulttype;
+											state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = asAtomHandler::getObject(v->getter);
 											addname = false;
-											ASATOM_DECREF(o);
 											removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
 											typestack.push_back(typestackentry(resulttype,false));
 											break;
+										}
+									}
+									if (!isClassOperator && canCallFunctionDirect(state.operandlist.back(),name,true))
+									{
+										variable* v = state.operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
+										if (v)
+										{
+											resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
+										}
+									}
+									if (state.operandlist.back().objtype && !state.operandlist.back().objtype->isInterface && state.operandlist.back().objtype->isInitialized()
+											&& (!typestack.back().obj || !typestack.back().classvar || isClassOperator))
+									{
+										// check if we can replace getProperty by getSlot
+										variable* v = nullptr;
+										asAtom o = asAtomHandler::invalidAtom;
+										if (isClassOperator)
+										{
+											asAtom* a = mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
+											v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+											if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
+												v=nullptr;
 										}
 										else
 										{
-											if (checkForLocalResult(state,code,0,resulttype))
+											if (state.operandlist.back().objtype->is<Class_inherit>())
+												state.operandlist.back().objtype->as<Class_inherit>()->checkScriptInit();
+											state.operandlist.back().objtype->getInstance(wrk,o,false,nullptr,0);
+											state.operandlist.back().objtype->setupDeclaredTraits(asAtomHandler::getObject(o));
+											
+											v = asAtomHandler::getObject(o)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+										}
+										if (v && v->slotid)
+										{
+											resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
+											if (state.operandlist.back().type == OP_LOCAL)
 											{
-												state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func = abc_getPropertyStaticName_localresult;
+												if (state.unchangedlocals.find(state.operandlist.back().index) != state.unchangedlocals.end())
+												{
+													uint32_t index = state.operandlist.back().index;
+													state.operandlist.back().removeArg(state);
+													state.operandlist.pop_back();
+													addname = false;
+													addCachedSlot(state,index,v->slotid,code,resulttype);
+													removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+													typestack.push_back(typestackentry(resulttype,false));
+													ASATOM_DECREF(o);
+													break;
+												}
+											}
+											
+											if (setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_GETSLOT_SETSLOT))
+											{
+												state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint =v->slotid-1;
+												if (state.operandlist.empty()) // indicates that checkforlocalresult returned false
+													lastlocalresulttype = resulttype;
 												addname = false;
+												ASATOM_DECREF(o);
+												removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+												typestack.push_back(typestackentry(resulttype,false));
+												break;
 											}
 											else
-												lastlocalresulttype = resulttype;
-											state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
-											ASATOM_DECREF(o);
-											removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
-											typestack.push_back(typestackentry(resulttype,false));
-											break;
+											{
+												if (checkForLocalResult(state,code,0,resulttype))
+												{
+													state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func = abc_getPropertyStaticName_localresult;
+													addname = false;
+												}
+												else
+													lastlocalresulttype = resulttype;
+												state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
+												ASATOM_DECREF(o);
+												removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+												typestack.push_back(typestackentry(resulttype,false));
+												break;
+											}
 										}
+										else
+											ASATOM_DECREF(o);
 									}
-									else
-										ASATOM_DECREF(o);
 								}
 							}
 							bool hasoperands = setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,opcode,code,true, false,resulttype,p,true);

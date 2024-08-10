@@ -8145,3 +8145,118 @@ void ABCVm::abc_newobject_noargs_localresult(call_context* context)
 	context->explicitConstruction = false;
 	++(context->exec_pos);
 }
+void ABCVm::constructpropMultiArgs_intern(call_context* context,asAtom& ret,asAtom& obj)
+{
+	context->explicitConstruction = true;
+	
+	uint32_t argcount = context->exec_pos->local2.pos;
+	asAtom* args = g_newa(asAtom,argcount);
+	for (uint32_t i = argcount; i > 0 ; i--)
+	{
+		(++(context->exec_pos));
+		if (context->exec_pos->arg2_uint == OPERANDTYPES::OP_LOCAL || context->exec_pos->arg2_uint == OPERANDTYPES::OP_CACHED_SLOT)
+		{
+			args[i-1] = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+			ASATOM_INCREF(args[i-1]);
+		}
+		else
+			args[i-1] = *context->exec_pos->arg1_constant;
+	}
+	
+	++(context->exec_pos);
+	ASObject* constructor = context->exec_pos->cacheobj1;
+	multiname* name = context->exec_pos->cachedmultiname2;
+	asAtom o=asAtomHandler::invalidAtom;
+	if (constructor)
+		o = asAtomHandler::fromObjectNoPrimitive(constructor);
+	else
+		asAtomHandler::toObject(obj,context->worker)->getVariableByMultiname(o,*name,GET_VARIABLE_OPTION::NONE, context->worker);
+
+	if(asAtomHandler::isInvalid(o))
+	{
+		context->explicitConstruction = false;
+		if (asAtomHandler::is<Undefined>(obj))
+			createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		else if (asAtomHandler::isPrimitive(obj))
+			createError<TypeError>(context->worker,kConstructOfNonFunctionError);
+		else
+			createError<ReferenceError>(context->worker,kUndefinedVarError, name->normalizedNameUnresolved(context->sys));
+		ASATOM_DECREF(obj);
+		return;
+	}
+	try
+	{
+		if(asAtomHandler::isClass(o))
+		{
+			Class_base* o_class=asAtomHandler::as<Class_base>(o);
+			o_class->getInstance(context->worker,ret,true,args,argcount);
+		}
+		else if(asAtomHandler::isFunction(o))
+		{
+			constructFunction(ret,context, o,args,argcount);
+		}
+		else if (asAtomHandler::isTemplate(o))
+		{
+			context->explicitConstruction = false;
+			createError<TypeError>(context->worker,kConstructOfNonFunctionError);
+			return;
+		}
+		else
+		{
+			context->explicitConstruction = false;
+			createError<TypeError>(context->worker,kNotConstructorError);
+			return;
+		}
+	}
+	catch(ASObject* exc)
+	{
+		context->explicitConstruction = false;
+		LOG_CALL("Exception during object construction. Returning Undefined");
+		//Handle eventual exceptions from the constructor, to fix the stack
+		RUNTIME_STACK_PUSH(context,obj);
+		throw;
+	}
+	context->explicitConstruction = false;
+	ASATOM_DECREF(o);
+	if (asAtomHandler::isObject(ret))
+		asAtomHandler::getObjectNoCheck(ret)->setConstructorCallComplete();
+	LOG_CALL("End of constructing " << *name<<" "<<asAtomHandler::toDebugString(obj)<<" result:"<<asAtomHandler::toDebugString(ret)<<(constructor ? " with constructor" : ""));
+}
+void ABCVm::abc_constructpropMultiArgs_constant(call_context* context)
+{
+	asAtom obj= *context->exec_pos->arg1_constant;
+	LOG_CALL( "constructprop_MultiArgs_c");
+	asAtom ret=asAtomHandler::invalidAtom;
+	constructpropMultiArgs_intern(context,ret,obj);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_constructpropMultiArgs_local(call_context* context)
+{
+	asAtom obj= CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	LOG_CALL( "constructprop_MultiArgs_l");
+	asAtom ret=asAtomHandler::invalidAtom;
+	constructpropMultiArgs_intern(context,ret,obj);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void ABCVm::abc_constructpropMultiArgs_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj= *context->exec_pos->arg1_constant;
+	LOG_CALL( "constructprop_MultiArgs_c_lr");
+	asAtom res=asAtomHandler::invalidAtom;
+	constructpropMultiArgs_intern(context,res,obj);
+	replacelocalresult(context,instrptr->local3.pos,res);
+	++(context->exec_pos);
+}
+void ABCVm::abc_constructpropMultiArgs_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom obj= CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+	LOG_CALL( "constructprop_MultiArgs_l_lr ");
+	asAtom res=asAtomHandler::invalidAtom;
+	constructpropMultiArgs_intern(context,res,obj);
+	replacelocalresult(context,instrptr->local3.pos,res);
+	++(context->exec_pos);
+}

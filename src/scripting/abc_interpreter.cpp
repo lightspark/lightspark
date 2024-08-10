@@ -1114,10 +1114,10 @@ abc_function ABCVm::abcfunctions[]={
 	abc_hasnext2_iftrue,
 	abc_getSlotFromScopeObject, // 0x382 ABC_OP_OPTIMZED_GETSLOTFROMSCOPEOBJECT
 	abc_getSlotFromScopeObject_localresult,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_constructpropMultiArgs_constant, // 0x384 ABC_OP_OPTIMZED_CONSTRUCTPROP_MULTIARGS
+	abc_constructpropMultiArgs_local,
+	abc_constructpropMultiArgs_constant_localresult,
+	abc_constructpropMultiArgs_local_localresult,
 
 	abc_nextname_constant_constant,// 0x388 ABC_OP_OPTIMZED_NEXTNAME
 	abc_nextname_local_constant,
@@ -1409,7 +1409,7 @@ struct operands
 #define ABC_OP_OPTIMZED_SXI16 0x00000374
 #define ABC_OP_OPTIMZED_NEXTVALUE 0x00000378
 #define ABC_OP_OPTIMZED_GETSLOTFROMSCOPEOBJECT 0x00000382
-
+#define ABC_OP_OPTIMZED_CONSTRUCTPROP_MULTIARGS 0x00000384
 #define ABC_OP_OPTIMZED_NEXTNAME 0x00000388
 
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
@@ -2070,6 +2070,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				lastlocalpos=-1;
 				break;
 			}
+			case 0x4a://constructprop
 			case 0x4f://callpropvoid
 			case 0x46://callproperty
 			{
@@ -2100,24 +2101,6 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 						&& argsneeded && argcount==0)
 				{
 					pos = code.skipu30FromPosition(pos);
-					b = code.peekbyteFromPosition(pos);
-					pos++;
-				}
-				else
-					keepchecking=false;
-				lastlocalpos=-1;
-				break;
-			}
-			case 0x4a://constructprop
-			{
-				candup=false;
-				uint32_t t = code.peeku30FromPosition(pos);
-				uint32_t pos2 = code.skipu30FromPosition(pos);
-				uint32_t argcount = code.peeku30FromPosition(pos2);
-				if (state.jumptargets.find(pos) == state.jumptargets.end()
-						&& argsneeded && argcount==0 && state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
-				{
-					pos = code.skipu30FromPosition(pos2);
 					b = code.peekbyteFromPosition(pos);
 					pos++;
 				}
@@ -2292,6 +2275,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			clearOperands(state,false,nullptr,checkchanged);
 			break;
 		}
+		case 0x4a://constructprop
 		case 0x4f://callpropvoid
 		case 0x46://callproperty
 		{
@@ -2349,27 +2333,6 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			uint32_t argcount = code.peeku30FromPosition(pos);
 			if (state.jumptargets.find(pos) == state.jumptargets.end()
 					&& argcount == 0
-					&& !argsneeded && (state.operandlist.size() >= 1))
-			{
-				// set optimized opcode to corresponding opcode with local result 
-				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
-				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
-				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
-				state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
-				res = true;
-			}
-			else
-				clearOperands(state,false,nullptr,checkchanged);
-			break;
-		}
-		case 0x4a://constructprop
-		{
-			uint32_t t = code.peeku30FromPosition(pos);
-			uint32_t pos2 = code.skipu30FromPosition(pos);
-			uint32_t argcount = code.peeku30FromPosition(pos2);
-			if (state.jumptargets.find(pos) == state.jumptargets.end()
-					&& argcount == 0
-					&& state.mi->context->constant_pool.multinames[t].runtimeargs == 0
 					&& !argsneeded && (state.operandlist.size() >= 1))
 			{
 				// set optimized opcode to corresponding opcode with local result 
@@ -6947,7 +6910,31 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									break;
 								}
 								default:
-									// TODO handle constructprop with one or more arguments
+									if (state.operandlist.size() > argcount)
+									{
+										state.preloadedcode.push_back((uint32_t)ABC_OP_OPTIMZED_CONSTRUCTPROP_MULTIARGS);
+										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local2.pos = argcount;
+										auto it = state.operandlist.rbegin();
+										for(uint32_t i= 0; i < argcount; i++)
+										{
+											it->removeArg(state);
+											state.preloadedcode.push_back(0);
+											it->fillCode(state,0,state.preloadedcode.size()-1,false);
+											state.preloadedcode.back().pcode.arg2_uint = it->type;
+											it++;
+										}
+										uint32_t oppos = state.preloadedcode.size()-1-argcount;
+										it->fillCode(state,0,oppos,true);
+										it->removeArg(state);
+										oppos = state.preloadedcode.size()-1-argcount;
+										state.preloadedcode.push_back(0);
+										state.preloadedcode.back().pcode.cachedmultiname2 = name;
+										state.preloadedcode.back().pcode.cacheobj1 = constructor;
+										removeOperands(state,true,&lastlocalresulttype,argcount+1);
+										checkForLocalResult(state,code,2,resulttype,oppos,oppos);
+										typestack.push_back(typestackentry(resulttype,false));
+										break;
+									}
 									state.preloadedcode.push_back((uint32_t)opcode);
 									clearOperands(state,true,&lastlocalresulttype);
 									state.preloadedcode.back().pcode.arg1_uint=t;

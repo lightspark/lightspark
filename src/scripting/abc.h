@@ -526,6 +526,7 @@ private:
 	void parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Responder> responder);
 	
 	static void constructpropnoargs_intern(call_context* context, asAtom& ret, asAtom& obj, multiname* name, ASObject *constructor);
+	static void constructpropMultiArgs_intern(call_context* context,asAtom& ret,asAtom& obj);
 	static void construct_noargs_intern(call_context* context, asAtom& ret, asAtom& obj);
 
 #ifdef LLVM_ENABLED
@@ -815,6 +816,10 @@ private:
 	static void abc_constructsuper_constant(call_context* context);
 	static void abc_constructsuper_local(call_context* context);
 	static void abc_constructprop(call_context* context);
+	static void abc_constructpropMultiArgs_constant(call_context* context);
+	static void abc_constructpropMultiArgs_local(call_context* context);
+	static void abc_constructpropMultiArgs_constant_localresult(call_context* context);
+	static void abc_constructpropMultiArgs_local_localresult(call_context* context);
 	static void abc_constructpropStaticName_constant(call_context* context);
 	static void abc_constructpropStaticName_local(call_context* context);
 	static void abc_constructpropStaticName_constant_localresult(call_context* context);

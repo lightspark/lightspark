@@ -2113,7 +2113,6 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 	setFramePhase(FramePhase::EXIT_FRAME);
 	handleBroadcastEvent("exitFrame");
 
-	stage->cleanupDeadHiddenObjects();
 	setFramePhase(oldPhase);
 	--innerGotoCount;
 }
@@ -2170,8 +2169,6 @@ void SystemState::tick()
 
 		/* Step 6: dispatch exitFrame event */
 		addBroadcastEvent("exitFrame");
-
-		stage->cleanupDeadHiddenObjects();
 	}
 	/* Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
 	if (stage->invalidated)

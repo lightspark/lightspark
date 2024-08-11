@@ -248,7 +248,7 @@ bool Stage::destruct()
 	nativeWindow.reset();
 	forEachHiddenObject([&](DisplayObject* obj)
 	{
-		obj->removeStoredMember();
+		obj->decRef();
 	}, true);
 	hiddenobjects.clear();
 	fullScreenSourceRect.reset();
@@ -286,7 +286,7 @@ void Stage::finalize()
 	nativeWindow.reset();
 	forEachHiddenObject([&](DisplayObject* obj)
 	{
-		obj->removeStoredMember();
+		obj->decRef();
 	}, true);
 	hiddenobjects.clear();
 	fullScreenSourceRect.reset();
@@ -314,6 +314,16 @@ void Stage::finalize()
 	}
 
 	DisplayObjectContainer::finalize();
+}
+
+bool Stage::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
+	for (auto it = hiddenobjects.begin(); it != hiddenobjects.end(); it++)
+		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void Stage::prepareShutdown()
@@ -586,7 +596,6 @@ void Stage::addHiddenObject(DisplayObject* o)
 		p=p->getParent();
 	}
 	o->incRef();
-	o->addStoredMember();
 	hiddenobjects.insert(o);
 }
 
@@ -596,7 +605,7 @@ void Stage::removeHiddenObject(DisplayObject* o)
 	if (it != hiddenobjects.end())
 	{
 		hiddenobjects.erase(it);
-		o->removeStoredMember();
+		o->decRef();
 	}
 }
 
@@ -616,11 +625,31 @@ void Stage::cleanupDeadHiddenObjects()
 	while (it != hiddenobjects.end())
 	{
 		DisplayObject* clip = *it;
-		// NOTE: Objects that are removed by ActionScript are never
-		//       removed from the hidden object list.
-		if (clip->getParent() != nullptr && !clip->placedByActionScript)
+		// NOTE: Objects that are removed by ActionScript are only
+		//       removed from the hidden object list if this is the last reference (so they are not reachable by code anymore).
+		if (clip->placedByActionScript && clip->getParent() == nullptr)
 		{
-			(*it)->removeStoredMember();
+			if (clip->isLastRef())
+			{
+				clip->decRef();
+				it = hiddenobjects.erase(it);
+			}
+			else
+			{
+				if (clip->handleGarbageCollection())
+				{
+					it = hiddenobjects.erase(it);
+				}
+				else
+				{
+					clip->incRef();
+					++it;
+				}
+			}
+		}
+		else if (clip->getParent() != nullptr)
+		{
+			clip->decRef();
 			it = hiddenobjects.erase(it);
 		}
 		else

@@ -65,6 +65,7 @@ protected:
 public:
 	void render(RenderContext& ctxt, const MATRIX* startmatrix);
 	bool destruct() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	void prepareShutdown() override;
 	void defaultEventBehavior(_R<Event> e) override;
 	ACQUIRE_RELEASE_FLAG(invalidated);

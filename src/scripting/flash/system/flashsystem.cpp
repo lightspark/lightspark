@@ -1392,6 +1392,8 @@ void ASWorker::processGarbageCollection(bool force)
 	if (!force && diff < 10) // ony execute garbagecollection every 10 seconds
 		return;
 	last_garbagecollection = currtime;
+	if (this->stage)
+		this->stage->cleanupDeadHiddenObjects();
 	inGarbageCollection=true;
 	while (!garbagecollection.empty())
 	{

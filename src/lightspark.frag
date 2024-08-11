@@ -122,7 +122,7 @@ vec4 filter_bevel()
 	vec2 shadowOffset = vec2(-filterdata[6]/filterdata[254],filterdata[7]/filterdata[255]);// last values of filterdata are always width and height
 	float alphahigh = filter_dropshadow(inner,1.0,vec4(1.0,1.0,1.0,1.0),1.0,highlightOffset).a * strength * 256.0;
 	float alphashadow = filter_dropshadow(inner,1.0,vec4(1.0,1.0,1.0,1.0),1.0,shadowOffset).a * strength * 256.0;
-	int gradientindex = 128+clamp(int(alphahigh - alphashadow)/2,-128,127);
+	int gradientindex = 128+int(clamp((alphahigh - alphashadow)/2.0,-128.0,127.0));
 	vec4 combinedpixel = gradientcolors[gradientindex];
 	vec4 dst = getDstPx(ls_TexCoords[0].xy);
 

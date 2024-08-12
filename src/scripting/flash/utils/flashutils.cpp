@@ -101,10 +101,10 @@ void IDataOutput::linkTraits(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 {
+	assert_and_throw(args && argslen==1);
 	//CHECK: what to do if ns is empty
-	ASObject* target=asAtomHandler::toObject(args[0],wrk);
 	Class_base* c;
-	switch(target->getObjectType())
+	switch(asAtomHandler::getObjectType(args[0]))
 	{
 		case T_NULL:
 			ret = asAtomHandler::fromString(wrk->getSystemState(),"null");
@@ -114,24 +114,24 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 			ret = asAtomHandler::fromString(wrk->getSystemState(),"void");
 			return;
 		case T_CLASS:
-			c=static_cast<Class_base*>(target);
+			c=asAtomHandler::as<Class_base>(args[0]);
 			break;
 		case T_NUMBER:
-			if (target->as<Number>()->isfloat)
-				c=target->getClass();
-			else if (target->toInt64() > INT32_MIN && target->toInt64()< INT32_MAX)
-				c=Class<Integer>::getRef(target->getSystemState()).getPtr();
-			else if (target->toInt64() > 0 && target->toInt64()< UINT32_MAX)
-				c=Class<UInteger>::getRef(target->getSystemState()).getPtr();
+			if (asAtomHandler::as<Number>(args[0])->isfloat)
+				c=Class<Number>::getRef(wrk->getSystemState()).getPtr();
+			else if (asAtomHandler::toInt64(args[0]) > INT32_MIN && asAtomHandler::toInt64(args[0])< INT32_MAX)
+				c=Class<Integer>::getRef(wrk->getSystemState()).getPtr();
+			else if (asAtomHandler::toInt64(args[0]) > 0 && asAtomHandler::toInt64(args[0])< UINT32_MAX)
+				c=Class<UInteger>::getRef(wrk->getSystemState()).getPtr();
 			else 
-				c=target->getClass();
+				c=asAtomHandler::getClass(args[0],wrk->getSystemState());
 			break;
 		case T_TEMPLATE:
-			ret = asAtomHandler::fromString(wrk->getSystemState(), target->as<Template_base>()->getTemplateName().getQualifiedName(wrk->getSystemState()));
+			ret = asAtomHandler::fromString(wrk->getSystemState(), asAtomHandler::as<Template_base>(args[0])->getTemplateName().getQualifiedName(wrk->getSystemState()));
 			return;
 		default:
-			assert_and_throw(target->getClass());
-			c=target->getClass();
+			assert_and_throw(asAtomHandler::getClass(args[0],wrk->getSystemState()));
+			c=asAtomHandler::getClass(args[0],wrk->getSystemState());
 			break;
 	}
 
@@ -140,16 +140,17 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 
 ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
 {
+	assert_and_throw(args && argslen==1);
 	//CHECK: what to do is ns is empty
-	ASObject* target=asAtomHandler::toObject(args[0],wrk);
 	Class_base* c;
-	if(target->getObjectType()!=T_CLASS)
+	if(asAtomHandler::getObjectType(args[0])!=T_CLASS)
 	{
-		assert_and_throw(target->getClass());
-		c=target->getClass()->super.getPtr();
+		c = asAtomHandler::getClass(args[0],wrk->getSystemState());
+		assert_and_throw(c);
+		c=c->super.getPtr();
 	}
 	else
-		c=static_cast<Class_base*>(target)->super.getPtr();
+		c=asAtomHandler::as<Class_base>(args[0])->super.getPtr();
 
 	if (!c)
 		asAtomHandler::setNull(ret);

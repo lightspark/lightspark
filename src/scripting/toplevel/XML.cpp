@@ -455,7 +455,6 @@ void XML::appendChild(_NR<XML> newChild)
 			node = node->parentNode;
 		}
 		newChild->parentNode = this;
-		newChild->incRef();
 		childrenlist->append(newChild);
 		handleNotification("nodeAdded",asAtomHandler::fromObject(newChild.getPtr()),asAtomHandler::nullAtom);
 	}
@@ -1288,28 +1287,26 @@ void XML::copy(XML* res, XML* parent)
 ASFUNCTIONBODY_ATOM(XML,_setChildren)
 {
 	XML* th=asAtomHandler::as<XML>(obj);
-	_NR<ASObject> newChildren;
+	asAtom newChildren = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(newChildren));
 
 	th->childrenlist->clear();
 
-	if (newChildren->is<XML>())
+	if (asAtomHandler::is<XML>(newChildren))
 	{
-		XML *newChildrenXML=newChildren->as<XML>();
+		XML *newChildrenXML=asAtomHandler::as<XML>(newChildren);
 		newChildrenXML->incRef();
 		th->appendChild(_NR<XML>(newChildrenXML));
 	}
-	else if (newChildren->is<XMLList>())
+	else if (asAtomHandler::is<XMLList>(newChildren))
 	{
-		XMLList *list=newChildren->as<XMLList>();
-		list->incRef();
+		XMLList *list=asAtomHandler::as<XMLList>(newChildren);
 		list->appendNodesTo(th);
 	}
-	else if (newChildren->is<ASString>())
+	else if (asAtomHandler::isString(newChildren))
 	{
-		ASString *newChildrenString=newChildren->as<ASString>();
-		XML *newChildrenXML=Class<XML>::getInstanceS(wrk,newChildrenString->toString());
-		newChildrenXML->incRef();
+		tiny_string newChildrenString=asAtomHandler::toString(newChildren,wrk);
+		XML *newChildrenXML=Class<XML>::getInstanceS(wrk,newChildrenString);
 		th->appendChild(_NR<XML>(newChildrenXML));
 	}
 	else
@@ -1777,7 +1774,7 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 		tiny_string nodeval;
 		if(asAtomHandler::is<XMLList>(o))
 		{
-			_NR<XMLList> x = _NR<XMLList>(asAtomHandler::as<XMLList>(o));
+			XMLList* x = asAtomHandler::as<XMLList>(o);
 			for (auto it2 = x->nodes.begin(); it2 != x->nodes.end(); it2++)
 			{
 				if (nodeval != "")
@@ -1820,15 +1817,17 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 			attributelist->nodes.push_back(tmp);
 			handleNotification("attributeAdded",asAtomHandler::fromStringID(tmp->nodenameID),o);
 		}
+		ASATOM_DECREF(o);
 	}
 	else if(XML::isValidMultiname(getSystemState(),name,index))
 	{
 		if (!this->parentNode)
 		{
 			createError<TypeError>(getWorker(),kXMLAssignmentToIndexedXMLNotAllowed);
+			ASATOM_DECREF(o);
 			return nullptr;
 		}
-		childrenlist->setVariableByMultinameIntern(name,o,allowConst,replacetext,alreadyset,wrk);
+		return childrenlist->setVariableByMultinameIntern(name,o,allowConst,replacetext,alreadyset,wrk);
 	}
 	else
 	{
@@ -1845,13 +1844,13 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 				{
 					if (!found)
 					{
-						_NR<XMLList> x = _NR<XMLList>(Class<XMLList>::getInstanceS(getInstanceWorker(),asAtomHandler::getObjectNoCheck(o)->as<XMLList>()->toXMLString_internal(false)));
+						_NR<XMLList> x = _NR<XMLList>(Class<XMLList>::getInstanceS(getInstanceWorker(),asAtomHandler::as<XMLList>(o)->toXMLString_internal(false)));
 						tmpnodes.insert(tmpnodes.end(), x->nodes.begin(),x->nodes.end());
 					}
 				}
 				else if(asAtomHandler::is<XML>(o))
 				{
-					if (asAtomHandler::getObjectNoCheck(o)->as<XML>()->getNodeKind() == pugi::node_pcdata)
+					if (asAtomHandler::as<XML>(o)->getNodeKind() == pugi::node_pcdata)
 					{
 						if (replacetext)
 						{
@@ -1882,7 +1881,7 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 					}
 					else
 					{
-						XML* tmp = asAtomHandler::getObjectNoCheck(o)->as<XML>();
+						XML* tmp = asAtomHandler::as<XML>(o);
 						tmp->parentNode = this;
 						if (!found)
 						{
@@ -1925,9 +1924,9 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 		}
 		if (!found)
 		{
-			if(asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<XML>())
+			if(asAtomHandler::is<XML>(o))
 			{
-				_NR<XML> tmp = _MNR(asAtomHandler::getObject(o)->as<XML>());
+				_NR<XML> tmp = _MNR(asAtomHandler::as<XML>(o));
 				tmp->parentNode = this;
 				tmpnodes.push_back(tmp);
 			}
@@ -2503,9 +2502,9 @@ ASFUNCTIONBODY_ATOM(XML,insertChildBefore)
 	{
 		if (asAtomHandler::is<XML>(child2))
 		{
+			if (incref)
+				asAtomHandler::as<XML>(child2)->incRef();
 			th->appendChild(_NR<XML>(asAtomHandler::as<XML>(child2)));
-			if (!incref)
-				asAtomHandler::as<XML>(child2)->decRef();
 		}
 		else if (asAtomHandler::is<XMLList>(child2))
 		{

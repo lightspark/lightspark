@@ -1472,6 +1472,10 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 			th->data_first.push_back(ittmp->dataAtom);
 		else
 			th->data_second[i] = ittmp->dataAtom;
+		for (auto itsv = ittmp->sortvalues.begin(); itsv != ittmp->sortvalues.end(); itsv++)
+		{
+			ASATOM_DECREF(*itsv);
+		}
 		i++;
 	}
 	// according to spec sortOn should return "nothing"(?), but it seems that the array is returned

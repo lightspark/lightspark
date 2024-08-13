@@ -4773,7 +4773,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #ifdef ENABLE_OPTIMIZATION
 				if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 				{
-					if (function->isStatic)
+					if (function->isStatic && function != function->inClass->getConstructor())
 					{
 						variable* v = function->inClass->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
 						if (v)

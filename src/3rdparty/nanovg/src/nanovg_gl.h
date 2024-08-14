@@ -1166,7 +1166,7 @@ static void glnvg__fill(GLNVGcontext* gl, GLNVGcall* call)
 	int i, npaths = call->pathCount;
 
 	int hasClipStack = (gl->clipactive && gl->clips != NULL && gl->lastClip != NULL);
-	int hasClipPaths = (call->clipCount > 0 || hasClipStack);
+	int hasClipPaths = gl->clipactive && (call->clipCount > 0 || hasClipStack);
 
 	if (npaths <= 0) return;
 	for (i = 0; i < npaths && paths[i].fillCount > 0; i++);
@@ -1224,7 +1224,7 @@ static void glnvg__convexFill(GLNVGcontext* gl, GLNVGcall* call)
 	int i, npaths = call->pathCount;
 
 	int hasClipStack = (gl->clipactive && gl->clips != NULL && gl->lastClip != NULL);
-	int hasClipPaths = (call->clipCount > 0 || hasClipStack);
+	int hasClipPaths = gl->clipactive && (call->clipCount > 0 || hasClipStack);
 
 	if (npaths <= 0) return;
 	for (i = 0; i < npaths && paths[i].fillCount > 0; i++);
@@ -1263,7 +1263,7 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 	int npaths = call->pathCount, i;
 
 	int hasClipStack = (gl->clipactive && gl->clips != NULL && gl->lastClip != NULL);
-	int hasClipPaths = (call->clipCount > 0 || hasClipStack);
+	int hasClipPaths = gl->clipactive && (call->clipCount > 0 || hasClipStack);
 
 	if (npaths <= 0) return;
 	for (i = 0; i < npaths && paths[i].strokeCount > 0; i++);
@@ -1603,7 +1603,7 @@ static void glnvg__renderFill(void* uptr, NVGpaint* paint, NVGcompositeOperation
 	GLNVGfragUniforms* frag;
 	int i, j, maxverts, maxclipverts, offset, clipOffset, clipPathOffset;
 	int hasClipPaths = (gl->clipactive && clipPaths != NULL && nclipPaths > 0);
-	int hasClipStack = (gl->clips != NULL && gl->lastClip != NULL);
+	int hasClipStack = (gl->clipactive && gl->clips != NULL && gl->lastClip != NULL);
 
 	if (call == NULL) return;
 
@@ -1739,7 +1739,7 @@ static void glnvg__renderStroke(void* uptr, NVGpaint* paint, NVGcompositeOperati
 	NVGvertex* quad;
 	int i, j, maxverts, maxclipverts, offset, clipOffset, clipPathOffset;
 	int hasClipPaths = (gl->clipactive && clipPaths != NULL && nclipPaths > 0);
-	int hasClipStack = (gl->clips != NULL && gl->lastClip != NULL);
+	int hasClipStack = (gl->clipactive && gl->clips != NULL && gl->lastClip != NULL);
 
 	if (call == NULL) return;
 

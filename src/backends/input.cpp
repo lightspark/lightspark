@@ -560,7 +560,11 @@ void InputThread::handleMouseLeave()
 {
 	if(m_sys->currentVm == nullptr)
 		return;
-
+	if(!currentMouseOver.isNull())
+	{
+		m_sys->currentVm->addIdleEvent(currentMouseOver,
+									   _MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOut",-1,-1)));
+	}
 	_NR<Stage> stage = _MR(m_sys->stage);
 	m_sys->currentVm->addIdleEvent(stage,
 		_MR(Class<Event>::getInstanceS(m_sys->worker,"mouseLeave")));

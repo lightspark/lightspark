@@ -562,9 +562,6 @@ private:
 	//Profiling support
 	static uint64_t profilingCheckpoint(uint64_t& startTime);
 
-	static bool checkPropertyException(ASObject *obj, multiname *name, asAtom &prop);
-	static bool checkPropertyExceptionInteger(ASObject *obj, int index, asAtom &prop);
-
 	// The base to assign to the next loaded context
 	ATOMIC_INT32(nextNamespaceBase);
 

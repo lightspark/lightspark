@@ -335,7 +335,7 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 		assert_and_throw (asAtomHandler::isFunction(func));
 	}
 	if (!asAtomHandler::is<AVM1Function>(func))
-		o = asAtomHandler::getClosureAtom(func);
+		o = asAtomHandler::getClosureAtom(func,asAtomHandler::nullAtom);
 	else
 	{
 		// it seems that adobe uses the ObjectReference as "this" for the callback
@@ -376,8 +376,8 @@ ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 	}
 
 	asAtom o = asAtomHandler::nullAtom;
-	if (asAtomHandler::as<IFunction>(args[0])->closure_this)
-		o = asAtomHandler::fromObject(asAtomHandler::as<IFunction>(args[0])->closure_this);
+	if (asAtomHandler::isValid(asAtomHandler::as<IFunction>(args[0])->closure_this))
+		o = asAtomHandler::as<IFunction>(args[0])->closure_this;
 
 	//incRef the function
 	ASATOM_INCREF(args[0]);

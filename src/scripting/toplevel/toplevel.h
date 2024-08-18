@@ -208,10 +208,9 @@ public:
 #endif
 	}
 	bool isEqual(ASObject* r) override;
-	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target,ASWorker* wrk) override
+	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target,ASWorker* wrk) override
 	{
-		asAtom c = asAtomHandler::fromObject(target);
-		val_atom(ret,wrk,c,nullptr,0);
+		val_atom(ret,wrk,target,nullptr,0);
 		return nullptr;
 	}
 	Class_base* getReturnType(bool opportunistic=false) override;
@@ -286,15 +285,15 @@ public:
 			func_scope = _NR<scope_entry_list>(new scope_entry_list());
 		func_scope->scope.emplace_back(s);
 	}
-	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target,ASWorker* wrk) override
+	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target,ASWorker* wrk) override
 	{
 		if (simpleGetterOrSetterName)
 		{
-			target->getVariableByMultiname(ret,*simpleGetterOrSetterName,GET_VARIABLE_OPTION::NONE,wrk);
+			bool canCache=false;
+			asAtomHandler::getVariableByMultiname(target,ret,*simpleGetterOrSetterName,wrk,canCache,GET_VARIABLE_OPTION::NONE);
 			return simpleGetterOrSetterName;
 		}
-		asAtom c = asAtomHandler::fromObject(target);
-		call(wrk,ret,c,nullptr,0,true,false);
+		call(wrk,ret,target,nullptr,0,true,false);
 		return nullptr;
 	}
 	FORCE_INLINE multiname* getSimpleName() {

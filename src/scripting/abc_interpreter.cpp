@@ -49,49 +49,6 @@ uint64_t ABCVm::profilingCheckpoint(uint64_t& startTime)
 	startTime=cur;
 	return ret;
 }
-bool ABCVm::checkPropertyException(ASObject* obj,multiname* name, asAtom& prop)
-{
-	if(asAtomHandler::isValid(prop))
-	{
-		name->resetNameIfObject();
-		return false;
-	}
-	if (name->name_type != multiname::NAME_OBJECT // avoid calling toString() of multiname object
-			&& obj->getClass() && obj->getClass()->findBorrowedSettable(*name))
-	{
-		createError<ReferenceError>(obj->getInstanceWorker(),kWriteOnlyError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
-		name->resetNameIfObject();
-		return true;
-	}
-	if (obj->getClass() && obj->getClass()->isSealed)
-	{
-		createError<ReferenceError>(obj->getInstanceWorker(),kReadSealedError, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClass()->getQualifiedClassName());
-		name->resetNameIfObject();
-		return true;
-	}
-	if (name->isEmpty() || (!name->hasEmptyNS && !name->ns.empty()))
-	{
-		createError<ReferenceError>(obj->getInstanceWorker(),kReadSealedErrorNs, name->normalizedNameUnresolved(obj->getSystemState()), obj->getClassName());
-		name->resetNameIfObject();
-		return true;
-	}
-	if (obj->is<Undefined>())
-	{
-		createError<TypeError>(obj->getInstanceWorker(),kConvertUndefinedToObjectError);
-		name->resetNameIfObject();
-		return true;
-	}
-	name->resetNameIfObject();
-	prop = asAtomHandler::undefinedAtom;
-	return false;
-}
-bool ABCVm::checkPropertyExceptionInteger(ASObject* obj,int index, asAtom& prop)
-{
-	multiname m(nullptr);
-	m.name_type = multiname::NAME_INT;
-	m.name_i = index;
-	return checkPropertyException(obj,&m, prop);
-}
 
 #ifndef NDEBUG
 std::map<abc_function,uint32_t> opcodecounter;
@@ -7079,7 +7036,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									{
 										if (canCallFunctionDirect(state.operandlist.back(),name))
 										{
-											if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this==nullptr)
+											if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::isInvalid(asAtomHandler::as<IFunction>(v->var)->closure_this))
 											{
 												ASObject* cls = state.operandlist.back().objtype;
 												if (opcode == 0x46)
@@ -7229,7 +7186,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										it++;
 										if (canCallFunctionDirect((*it),name))
 										{
-											if (!fromglobal && v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this==nullptr 
+											if (!fromglobal && v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::isInvalid(asAtomHandler::as<IFunction>(v->var)->closure_this) 
 												&& (!asAtomHandler::as<IFunction>(v->var)->inClass || !state.function->inClass
 													|| !state.function->inClass->isSubClass(asAtomHandler::as<IFunction>(v->var)->inClass))) // function is from a subclass of the caller, so it may not be setup yet if we are currently executing the constructor
 											{
@@ -7396,7 +7353,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										{
 											if (canCallFunctionDirect((*it),name))
 											{
-												if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::as<IFunction>(v->var)->closure_this==nullptr)
+												if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::isInvalid(asAtomHandler::as<IFunction>(v->var)->closure_this))
 												{
 													if (asAtomHandler::is<SyntheticFunction>(v->var) && asAtomHandler::as<SyntheticFunction>(v->var)->inClass)
 													{

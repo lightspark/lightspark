@@ -458,8 +458,7 @@ public:
 	}
 	// only use this for strings that should get an internal stringID
 	static asAtom fromString(SystemState *sys, const tiny_string& s);
-	static ASObject* getClosure(asAtom& a);
-	static asAtom getClosureAtom(asAtom& a, asAtom defaultAtom=asAtomHandler::nullAtom);
+	static asAtom getClosureAtom(asAtom& a, asAtom defaultAtom);
 	static asAtom undefinedAtom;
 	static asAtom nullAtom;
 	static asAtom invalidAtom;
@@ -472,10 +471,10 @@ public:
 	 * if coerceresult is false, the result of the function will not be coerced into the type provided by the method_info
 	 */
 	static void callFunction(asAtom& caller, ASWorker* wrk, asAtom& ret, asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true, bool coercearguments=true);
-	// returns invalidAtom for not-primitive values
-	static void getVariableByMultiname(asAtom& a, asAtom &ret, SystemState *sys, const multiname& name, ASWorker* wrk);
+	static multiname* getVariableByMultiname(asAtom& a, asAtom &ret, const multiname& name, ASWorker* wrk, bool& canCache, GET_VARIABLE_OPTION opt);
+	static void getVariableByInteger(asAtom& a, asAtom &ret, int index, ASWorker* wrk);
 	static bool hasPropertyByMultiname(const asAtom& a, const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk);
-	static Class_base* getClass(asAtom& a,SystemState *sys, bool followclass=true);
+	static Class_base* getClass(const asAtom& a,SystemState *sys, bool followclass=true);
 	static bool canCacheMethod(asAtom& a,const multiname* name);
 	static void fillMultiname(asAtom& a, ASWorker *wrk, multiname& name);
 	static void replace(asAtom& a,ASObject* obj);
@@ -540,7 +539,7 @@ public:
 	static FORCE_INLINE void setBool(asAtom& a,bool val);
 	static FORCE_INLINE void setNull(asAtom& a);
 	static FORCE_INLINE void setUndefined(asAtom& a);
-	static void setFunction(asAtom& a, ASObject* obj, ASObject* closure, ASWorker* wrk);
+	static void setFunction(asAtom& a, ASObject* obj, const asAtom& closure, ASWorker* wrk);
 	static FORCE_INLINE bool increment(asAtom& a, ASWorker* wrk, bool replace);
 	static FORCE_INLINE bool decrement(asAtom& a, ASWorker* wrk, bool refplace);
 	static FORCE_INLINE void increment_i(asAtom& a, ASWorker* wrk, int32_t amount=1);

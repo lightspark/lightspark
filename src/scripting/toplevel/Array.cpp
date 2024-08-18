@@ -302,7 +302,7 @@ ASFUNCTIONBODY_ATOM(Array,filter)
 	asAtom funcRet=asAtomHandler::invalidAtom;
 	ASATOM_INCREF(f);
 	uint32_t index = 0;
-	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
+	asAtom closure = asAtomHandler::getClosureAtom(f,asAtomHandler::nullAtom);
 	while (index < th->currentsize)
 	{
 		index++;
@@ -373,7 +373,7 @@ ASFUNCTIONBODY_ATOM(Array, some)
 
 	ASATOM_INCREF(f);
 	uint32_t index = 0;
-	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
+	asAtom closure = asAtomHandler::getClosureAtom(f,asAtomHandler::nullAtom);
 	while (index < th->currentsize)
 	{
 		index++;
@@ -436,7 +436,7 @@ ASFUNCTIONBODY_ATOM(Array, every)
 	}
 	asAtom params[3];
 	ASATOM_INCREF(f);
-	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
+	asAtom closure = asAtomHandler::getClosureAtom(f,asAtomHandler::nullAtom);
 
 	uint32_t index = 0;
 	while (index < th->currentsize)
@@ -465,6 +465,11 @@ ASFUNCTIONBODY_ATOM(Array, every)
 		}
 		else
 		{
+			if (asAtomHandler::isUndefined(args[1]) || asAtomHandler::isNull(args[1]))
+			{
+				createError<TypeError>(wrk,kCallOfNonFunctionError, asAtomHandler::toString(ret,wrk));
+				return;
+			}
 			asAtomHandler::callFunction(f,wrk,ret,args[1], params, 3,false);
 		}
 		if(asAtomHandler::isValid(ret))
@@ -519,7 +524,7 @@ ASFUNCTIONBODY_ATOM(Array,forEach)
 	asAtom params[3];
 
 	ASATOM_INCREF(f);
-	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
+	asAtom closure = asAtomHandler::getClosureAtom(f,asAtomHandler::nullAtom);
 	uint32_t index = 0;
 	uint32_t s = th->size(); // remember current size, as it may change inside the called function
 	while (index < s)
@@ -1220,7 +1225,7 @@ number_t Array::sortComparatorWrapper::compare(const asAtom& d1, const asAtom& d
 
 	assert(asAtomHandler::isFunction(comparator));
 	asAtom ret=asAtomHandler::invalidAtom;
-	asAtom obj = asAtomHandler::getClosureAtom(comparator);
+	asAtom obj = asAtomHandler::getClosureAtom(comparator,asAtomHandler::nullAtom);
 	if (asAtomHandler::is<AVM1Function>(comparator))
 		asAtomHandler::as<AVM1Function>(comparator)->call(&ret,&obj,objs,1);
 	else
@@ -1658,7 +1663,7 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 		assert_and_throw(asAtomHandler::isFunction(args[0]));
 		func=args[0];
 	}
-	asAtom closure = asAtomHandler::isValid(func) && asAtomHandler::getClosure(func) ? asAtomHandler::fromObject(asAtomHandler::getClosure(func)) : asAtomHandler::nullAtom;
+	asAtom closure = asAtomHandler::getClosureAtom(func,asAtomHandler::nullAtom);
 	
 	Array* arrayRet=Class<Array>::getInstanceSNoArgs(wrk);
 
@@ -2409,7 +2414,7 @@ tiny_string Array::toJSON(std::vector<ASObject *> &path, asAtom replacer, const 
 	bool bfirst = true;
 	tiny_string newline = (spaces.empty() ? "" : "\n");
 	uint32_t denseCount = currentsize;
-	asAtom closure = asAtomHandler::isValid(replacer) && asAtomHandler::getClosure(replacer) ? asAtomHandler::fromObject(asAtomHandler::getClosure(replacer)) : asAtomHandler::nullAtom;
+	asAtom closure = asAtomHandler::getClosureAtom(replacer,asAtomHandler::nullAtom);
 	
 	for (uint32_t i=0 ; i < denseCount; i++)
 	{

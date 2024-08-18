@@ -41,7 +41,7 @@ protected:
 	IFunction(ASWorker* wrk,Class_base *c, CLASS_SUBTYPE st);
 	virtual IFunction* clone(ASWorker* wrk)=0;
 public:
-	ASObject* closure_this;
+	asAtom closure_this;
 	static void sinit(Class_base* c);
 	/* If this is a method, inClass is the class this is defined in.
 	 * If this is a function, inClass == NULL
@@ -60,9 +60,8 @@ public:
 		clonedFrom=nullptr;
 		functionname=0;
 		length=0;
-		if (closure_this)
-			closure_this->removeStoredMember();
-		closure_this=nullptr;
+		ASATOM_REMOVESTOREDMEMBER(closure_this);
+		closure_this=asAtomHandler::invalidAtom;
 		if (prototype)
 			prototype->removeStoredMember();
 		prototype.fakeRelease();
@@ -72,9 +71,8 @@ public:
 	{
 		inClass=nullptr;
 		clonedFrom=nullptr;
-		if (closure_this)
-			closure_this->removeStoredMember();
-		closure_this=nullptr;
+		ASATOM_REMOVESTOREDMEMBER(closure_this);
+		closure_this=asAtomHandler::invalidAtom;
 		if (prototype)
 			prototype->removeStoredMember();
 		prototype.fakeRelease();
@@ -82,14 +80,13 @@ public:
 	
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
-	IFunction* bind(ASObject* c, ASWorker* wrk)
+	IFunction* bind(const asAtom& c, ASWorker* wrk)
 	{
 		IFunction* ret=nullptr;
 		ret=clone(wrk);
 		ret->setClass(getClass());
 		ret->closure_this=c;
-		ret->closure_this->incRef();
-		ret->closure_this->addStoredMember();
+		ASATOM_ADDSTOREDMEMBER(ret->closure_this);
 		ret->clonedFrom=this;
 		ret->isStatic=isStatic;
 		ret->constructIndicator = true;
@@ -113,7 +110,7 @@ public:
 	virtual method_info* getMethodInfo() const=0;
 	ASObject *describeType(ASWorker* wrk) const override;
 	uint32_t functionname;
-	virtual multiname* callGetter(asAtom& ret, ASObject* target,ASWorker* wrk) =0;
+	virtual multiname* callGetter(asAtom& ret, asAtom& target,ASWorker* wrk) =0;
 	virtual Class_base* getReturnType(bool opportunistic=false) =0;
 	std::string toDebugString() const override;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

@@ -44,6 +44,7 @@
 using namespace std;
 using namespace lightspark;
 
+extern void setCallException(const asAtom& obj, multiname* name, ASWorker* wrk);
 int32_t ABCVm::bitAnd(ASObject* val2, ASObject* val1)
 {
 	int32_t i1=val1->toInt();
@@ -398,21 +399,9 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		createError<TypeError>(th->worker,kConvertUndefinedToObjectError);
 		return;
 	}
-	bool canCache = false;
-	ASObject* pobj = asAtomHandler::getObject(obj);
 	asAtom o=asAtomHandler::invalidAtom;
-	if (!pobj)
-	{
-		// fast path for primitives to avoid creation of ASObjects
-		asAtomHandler::getVariableByMultiname(obj,o,th->sys,*name,th->worker);
-		canCache = asAtomHandler::isValid(o);
-	}
-	if(asAtomHandler::isInvalid(o))
-	{
-		pobj = asAtomHandler::toObject(obj,th->worker);
-		//We should skip the special implementation of get
-		canCache = pobj->getVariableByMultiname(o,*name, SKIP_IMPL,th->worker) & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
-	}
+	bool canCache = false;
+	asAtomHandler::getVariableByMultiname(obj,o,*name,th->worker,canCache,GET_VARIABLE_OPTION::SKIP_IMPL);
 	name->resetNameIfObject();
 	if(asAtomHandler::isInvalid(o) && asAtomHandler::is<Class_base>(obj))
 	{
@@ -477,6 +466,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 			callPropertyName.name_s_id=th->sys->getUniqueStringId("callProperty");
 			callPropertyName.ns.emplace_back(th->sys,flash_proxy,NAMESPACE);
 			asAtom oproxy=asAtomHandler::invalidAtom;
+			ASObject* pobj = asAtomHandler::getObjectNoCheck(obj);
 			pobj->getVariableByMultiname(oproxy,callPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL,th->worker);
 			if(asAtomHandler::isValid(oproxy))
 			{
@@ -521,27 +511,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 		}
 		for(int i=0;i<m;i++)
 			ASATOM_DECREF(args[i]);
-		//LOG(LOG_NOT_IMPLEMENTED,"callProperty: " << name->qualifiedString(th->sys) << " not found on " << obj->toDebugString());
-		if (pobj->hasPropertyByMultiname(*name,true,true,th->worker))
-		{
-			tiny_string clsname = pobj->getClass()->getQualifiedClassName();
-			createError<ReferenceError>(th->worker,kWriteOnlyError, name->normalizedName(th->sys), clsname);
-		}
-		if (pobj->getClass() && pobj->getClass()->isSealed)
-		{
-			tiny_string clsname = pobj->getClass()->getQualifiedClassName();
-			createError<ReferenceError>(th->worker,kReadSealedError, name->normalizedName(th->sys), clsname);
-		}
-		if (asAtomHandler::is<Class_base>(obj))
-		{
-			tiny_string clsname = asAtomHandler::as<Class_base>(obj)->class_name.getQualifiedName(th->sys);
-			createError<TypeError>(th->worker,kCallNotFoundError, name->qualifiedString(th->sys), clsname);
-		}
-		else
-		{
-			tiny_string clsname = pobj->getClassName();
-			createError<TypeError>(th->worker,kCallNotFoundError, name->qualifiedString(th->sys), clsname);
-		}
+		setCallException(obj, name, th->worker);
 
 		ASATOM_DECREF(obj);
 		if(keepReturn)
@@ -1935,7 +1905,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 		if(instrptr->cacheobj2)
 			instrptr->cacheobj2->incRef();
 		if (instrptr->cacheobj1->is<IFunction>())
-			asAtomHandler::setFunction(ret,instrptr->cacheobj1,instrptr->cacheobj2,th->worker);
+			asAtomHandler::setFunction(ret,instrptr->cacheobj1,asAtomHandler::fromObject(instrptr->cacheobj2),th->worker);
 		else
 		{
 			instrptr->cacheobj1->incRef();
@@ -1967,7 +1937,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 				// put object in cache
 				instrptr->local3.flags = ABC_OP_CACHED;
 				instrptr->cacheobj1 = asAtomHandler::toObject(ret,th->worker);
-				instrptr->cacheobj2 = asAtomHandler::getClosure(ret);
+				instrptr->cacheobj2 = asAtomHandler::getObject(asAtomHandler::getClosureAtom(ret,asAtomHandler::invalidAtom));
 				if (instrptr->cacheobj1->is<IFunction>())
 					instrptr->cacheobj1->as<IFunction>()->clonedFrom=nullptr;
 			}
@@ -2030,7 +2000,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 			// put object in cache
 			instrptr->local3.flags = ABC_OP_CACHED;
 			instrptr->cacheobj1 = asAtomHandler::toObject(ret,th->worker);
-			instrptr->cacheobj2 = asAtomHandler::getClosure(ret);
+			instrptr->cacheobj2 = asAtomHandler::getObject(asAtomHandler::getClosureAtom(ret,asAtomHandler::invalidAtom));
 			if (instrptr->cacheobj1->is<IFunction>())
 				instrptr->cacheobj1->as<IFunction>()->clonedFrom=nullptr;
 		}

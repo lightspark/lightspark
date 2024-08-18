@@ -2266,10 +2266,10 @@ void NetStream::sendClientNotification(const tiny_string& name, std::list<asAtom
 	if(asAtomHandler::isFunction(callback))
 	{
 		asAtom callbackArgs[arglist.size()];
-
-		ASObject* closure = client.getPtr();
-		if (asAtomHandler::getClosure(callback))
-			closure = asAtomHandler::getClosure(callback);
+		
+		ASObject* closure = asAtomHandler::getObject(asAtomHandler::getClosureAtom(callback,asAtomHandler::invalidAtom));
+		if (!closure)
+			closure = client.getPtr();
 		closure->incRef();
 		int i= 0;
 		for (auto it = arglist.cbegin();it != arglist.cend(); it++)

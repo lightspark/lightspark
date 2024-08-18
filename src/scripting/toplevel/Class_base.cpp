@@ -1116,7 +1116,7 @@ bool Class_base::checkExistingFunction(const multiname &name)
 	return false;
 }
 
-void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name, ASWorker* wrk)
+multiname* Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name, ASWorker* wrk, asAtom& closure)
 {
 	uint32_t nsRealId;
 	variable* obj = ASObject::findGettableImpl(getSystemState(), borrowedVariables,name,&nsRealId);
@@ -1132,7 +1132,7 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name,
 				//It seems valid for a class to redefine only the setter, so if we can't find
 				//something to get, it's ok
 				if(!(asAtomHandler::isValid(obj->getter) || asAtomHandler::isValid(obj->var)))
-					obj=NULL;
+					obj=nullptr;
 			}
 			if(obj)
 				break;
@@ -1140,7 +1140,7 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name,
 		}
 	}
 	if(!obj)
-		return;
+		return nullptr;
 
 
 	if (obj->kind == INSTANCE_TRAIT)
@@ -1148,7 +1148,7 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name,
 		if (getSystemState()->getNamespaceFromUniqueId(nsRealId).kind != STATIC_PROTECTED_NAMESPACE)
 		{
 			createError<TypeError>(wrk,kCallOfNonFunctionError,name.normalizedNameUnresolved(getSystemState()));
-			return;
+			return nullptr;
 		}
 	}
 
@@ -1157,9 +1157,10 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name,
 		//Call the getter
 		LOG_CALL("Calling the getter for " << name << " on " << asAtomHandler::toDebugString(obj->getter));
 		assert(asAtomHandler::isFunction(obj->getter));
-		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,asAtomHandler::getClosure(obj->getter) ? asAtomHandler::getClosure(obj->getter) : this,wrk);
+		asAtom closureAtom = asAtomHandler::getClosureAtom(obj->getter,asAtomHandler::isValid(closure) ? closure : asAtomHandler::fromObject(this));
+		multiname* simplegetter = asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closureAtom,wrk);
 		LOG_CALL("End of getter"<< ' ' << asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
-		return;
+		return simplegetter;
 	}
 	else
 	{
@@ -1167,7 +1168,7 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name,
 		ASATOM_INCREF(obj->var);
 		if(asAtomHandler::isFunction(obj->var) && asAtomHandler::getObject(obj->var)->as<IFunction>()->isMethod())
 		{
-			if (asAtomHandler::as<IFunction>(obj->var)->closure_this)
+			if (asAtomHandler::isValid(asAtomHandler::as<IFunction>(obj->var)->closure_this))
 			{
 				LOG_CALL("class function " << name << " is already bound to "<<asAtomHandler::toDebugString(obj->var) );
 				ret = obj->var;
@@ -1175,12 +1176,13 @@ void Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name,
 			else
 			{
 				LOG_CALL("Attaching this class " << this->toDebugString() << " to function " << name << " "<<asAtomHandler::toDebugString(obj->var));
-				asAtomHandler::setFunction(ret,asAtomHandler::getObject(obj->var),nullptr,wrk);
+				asAtomHandler::setFunction(ret,asAtomHandler::getObject(obj->var),closure,wrk);
 			}
 		}
 		else
 			ret = obj->var;
 	}
+	return nullptr;
 }
 
 bool Class_base::isInterfaceMethod(const multiname& name)

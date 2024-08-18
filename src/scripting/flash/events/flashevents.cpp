@@ -45,20 +45,19 @@ bool listener::operator==(const listener &r)
 		 */
 	if ((use_capture != r.use_capture) || (worker != r.worker))
 		return false;
-	if (asAtomHandler::getObjectNoCheck(f)->as<IFunction>()->closure_this
-			&& asAtomHandler::getObjectNoCheck(r.f)->as<IFunction>()->closure_this
-			&& asAtomHandler::getObjectNoCheck(f)->as<IFunction>()->closure_this != asAtomHandler::getObjectNoCheck(r.f)->as<IFunction>()->closure_this)
+	if (asAtomHandler::isValid(asAtomHandler::getObjectNoCheck(f)->as<IFunction>()->closure_this)
+		&& asAtomHandler::isValid(asAtomHandler::getObjectNoCheck(r.f)->as<IFunction>()->closure_this)
+		&& asAtomHandler::getObjectNoCheck(f)->as<IFunction>()->closure_this.uintval != asAtomHandler::getObjectNoCheck(r.f)->as<IFunction>()->closure_this.uintval)
 		return false;
 	return asAtomHandler::getObjectNoCheck(f)->isEqual(asAtomHandler::getObjectNoCheck(r.f));
 }
 
 void listener::resetClosure()
 {
-	if (asAtomHandler::isFunction(f) && asAtomHandler::as<IFunction>(f)->closure_this)
+	if (asAtomHandler::isFunction(f) && asAtomHandler::isValid(asAtomHandler::as<IFunction>(f)->closure_this))
 	{
-		ASObject* o = asAtomHandler::as<IFunction>(f)->closure_this;
-		asAtomHandler::as<IFunction>(f)->closure_this=nullptr;
-		o->removeStoredMember();
+		ASATOM_REMOVESTOREDMEMBER(asAtomHandler::as<IFunction>(f)->closure_this);
+		asAtomHandler::as<IFunction>(f)->closure_this=asAtomHandler::invalidAtom;
 	}
 }
 
@@ -778,7 +777,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		if (insertionPoint != listeners.end() && (*insertionPoint).use_capture == newListener.use_capture)
 		{
 			IFunction* insertPointFunc = asAtomHandler::as<IFunction>((*insertionPoint).f);
-			if (insertPointFunc == newfunc || (insertPointFunc->clonedFrom && insertPointFunc->clonedFrom == newfunc->clonedFrom && insertPointFunc->closure_this==newfunc->closure_this))
+			if (insertPointFunc == newfunc || (insertPointFunc->clonedFrom && insertPointFunc->clonedFrom == newfunc->clonedFrom
+											   && insertPointFunc->closure_this.uintval==newfunc->closure_this.uintval))
 				return; // don't register the same listener twice
 		}
 		newfunc->incRef();
@@ -946,7 +946,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 			break;
 		asAtom arg0= asAtomHandler::fromObject(e.getPtr());
 		IFunction* func = asAtomHandler::as<IFunction>(tmpListener[i].f);
-		asAtom v = asAtomHandler::fromObject(func->closure_this ? func->closure_this : this);
+		asAtom v = asAtomHandler::isValid(func->closure_this) ? func->closure_this : asAtomHandler::fromObject(this);
 		asAtom ret=asAtomHandler::invalidAtom;
 		asAtomHandler::callFunction(tmpListener[i].f,tmpListener[i].worker,ret,v,&arg0,1,false);
 		ASATOM_DECREF(ret);

@@ -35,6 +35,8 @@
 using namespace std;
 using namespace lightspark;
 
+extern bool checkPropertyException(const asAtom& obj, multiname* name, asAtom& prop, ASWorker* wrk);
+
 void ABCVm::abc_bkpt(call_context* context)
 {
 	LOG_CALL( "bkpt" );
@@ -762,7 +764,7 @@ void ABCVm::abc_getlex(call_context* context)
 		RUNTIME_STACK_PEEK_CREATE(context,v);
 
 		instrptr->cacheobj1 = asAtomHandler::getObject(*v);
-		instrptr->cacheobj2 = asAtomHandler::getClosure(*v);
+		instrptr->cacheobj2 = asAtomHandler::getObject(asAtomHandler::getClosureAtom(*v,asAtomHandler::invalidAtom));
 	}
 	++(context->exec_pos);
 }
@@ -858,12 +860,14 @@ void ABCVm::abc_getProperty(call_context* context)
 			LOG_CALL("Calling the getter for " << *context->mi->context->getMultiname(t,context) << " on " << obj->toDebugString());
 			assert(instrptr->cacheobj2->type == T_FUNCTION);
 			IFunction* f = instrptr->cacheobj2->as<IFunction>();
-			f->callGetter(prop,instrptr->cacheobj3 ? instrptr->cacheobj3 : obj,context->worker);
+			asAtom closure = asAtomHandler::fromObject(instrptr->cacheobj3 ? instrptr->cacheobj3 : obj);
+			f->callGetter(prop,closure,context->worker);
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 			if(asAtomHandler::isInvalid(prop))
 			{
 				multiname* name=context->mi->context->getMultiname(t,context);
-				if (checkPropertyException(obj,name,prop))
+				asAtom o = asAtomHandler::fromObject(obj);
+				if (checkPropertyException(o,name,prop,context->worker))
 				{
 					obj->decRef();
 					return;
@@ -892,9 +896,9 @@ void ABCVm::abc_getProperty(call_context* context)
 		LOG_CALL("Calling the getter for " << *name << " on " << obj->toDebugString());
 		assert(asAtomHandler::isFunction(prop));
 		IFunction* f = asAtomHandler::as<IFunction>(prop);
-		ASObject* closure = asAtomHandler::getClosure(prop);
+		asAtom closure = asAtomHandler::getClosureAtom(prop,asAtomHandler::fromObject(obj));
 		prop = asAtom();
-		f->callGetter(prop,closure ? closure : obj,context->worker);
+		f->callGetter(prop,closure,context->worker);
 		LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 		if(asAtomHandler::isValid(prop))
 		{
@@ -904,12 +908,13 @@ void ABCVm::abc_getProperty(call_context* context)
 			instrptr->cacheobj2 = f;
 			if (f->clonedFrom)
 				f->incRef();
-			instrptr->cacheobj3 = closure;
+			instrptr->cacheobj3 = asAtomHandler::getObject(closure);
 		}
 	}
 	if(asAtomHandler::isInvalid(prop))
 	{
-		if (checkPropertyException(obj,name,prop))
+		asAtom o = asAtomHandler::fromObject(obj);
+		if (checkPropertyException(o,name,prop,context->worker))
 		{
 			obj->decRef();
 			return;

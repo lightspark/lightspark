@@ -1502,7 +1502,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 									{
 										IFunction* f = asAtomHandler::as<IFunction>(ret);
 										ret = asAtom();
-										f->callGetter(ret,o,wrk);
+										asAtom closure = asAtomHandler::fromObject(o);
+										f->callGetter(ret,closure,wrk);
 										break;
 									}
 									else if (!asAtomHandler::isInvalid(ret))
@@ -1833,7 +1834,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						{
 							scrobj->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 							if (!asAtomHandler::isValid(func) && scrobj->is<Class_base>())
-								scrobj->as<Class_base>()->getClassVariableByMultiname(func,m,wrk);
+								scrobj->as<Class_base>()->getClassVariableByMultiname(func,m,wrk,asAtomHandler::invalidAtom);
 						}
 						if (!asAtomHandler::is<IFunction>(func))
 						{

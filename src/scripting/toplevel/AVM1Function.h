@@ -74,9 +74,9 @@ public:
 		else
 			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject);
 	}
-	FORCE_INLINE multiname* callGetter(asAtom& ret, ASObject* target, ASWorker* wrk) override
+	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target, ASWorker* wrk) override
 	{
-		asAtom obj = asAtomHandler::fromObject(target);
+		asAtom obj = target;
 		if (needsSuper())
 		{
 			asAtom newsuper = computeSuper();

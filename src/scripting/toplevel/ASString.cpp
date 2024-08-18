@@ -1044,8 +1044,8 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 				subargs.push_back(asAtomHandler::fromObject(abstract_s(wrk,data)));
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::nullAtom;
-				if (asAtomHandler::as<IFunction>(args[1])->closure_this) // use closure as "this" in function call
-					obj = asAtomHandler::fromObject(asAtomHandler::as<IFunction>(args[1])->closure_this);
+				if (asAtomHandler::isValid(asAtomHandler::as<IFunction>(args[1])->closure_this)) // use closure as "this" in function call
+					obj = asAtomHandler::as<IFunction>(args[1])->closure_this;
 				asAtomHandler::callFunction(args[1],wrk,ret,obj, subargs.data(), subargs.size(),true);
 				replaceWithTmp=asAtomHandler::toString(ret,wrk).raw_buf();
 				ASATOM_DECREF(ret);

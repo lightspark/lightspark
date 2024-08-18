@@ -32,6 +32,7 @@
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Date.h"
+#include "scripting/toplevel/Vector.h"
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Error.h"
@@ -1605,8 +1606,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		//Call the getter
 		LOG_CALL("Calling the getter intern for " << name << " on " << this->toDebugString());
 		assert(asAtomHandler::isFunction(obj->getter));
-		ASObject* closure = asAtomHandler::getClosure(obj->getter);
-		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closure ? closure : this,wrk);
+		asAtom closure = asAtomHandler::getClosureAtom(obj->getter,asAtomHandler::fromObject(this));
+		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closure,wrk);
 		LOG_CALL("End of getter"<< ' ' << asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
 	}
 	else
@@ -1614,10 +1615,10 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		assert_and_throw(asAtomHandler::isInvalid(obj->setter));
 		if(asAtomHandler::isFunction(obj->var) && asAtomHandler::as<IFunction>(obj->var)->isMethod())
 		{
-			ASObject* closure = asAtomHandler::getClosure(obj->var);
-			if (closure)
+			asAtom closure = asAtomHandler::getClosureAtom(obj->var,asAtomHandler::invalidAtom);
+			if (asAtomHandler::isValid(closure))
 			{
-				LOG_CALL("function " << name << " is already bound to "<<closure->toDebugString());
+				LOG_CALL("function " << name << " is already bound to "<<asAtomHandler::toDebugString(closure));
 				if (asAtomHandler::as<IFunction>(obj->var)->clonedFrom)
 					ASATOM_INCREF(obj->var);
 				asAtomHandler::set(ret,obj->var);
@@ -1625,7 +1626,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 			else
 			{
 				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<asAtomHandler::toDebugString(obj->var));
-				asAtomHandler::setFunction(ret,asAtomHandler::getObjectNoCheck(obj->var),this,wrk);
+				asAtomHandler::setFunction(ret,asAtomHandler::getObjectNoCheck(obj->var),asAtomHandler::fromObject(this),wrk);
 				// the function is always cloned
 				res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT);
 			}
@@ -2885,20 +2886,15 @@ bool asAtomHandler::stringcompare(asAtom& a, ASWorker* wrk, uint32_t stringID)
 }
 bool asAtomHandler::functioncompare(asAtom& a, ASWorker* wrk, asAtom& v2)
 {
-	if (getObject(a) && getObject(a)->as<IFunction>()->closure_this 
-			&& getObject(v2) && getObject(v2)->as<IFunction>()->closure_this
-			&& getObject(a)->as<IFunction>()->closure_this != getObject(v2)->as<IFunction>()->closure_this)
+	if (getObject(a) && asAtomHandler::isValid(getObject(a)->as<IFunction>()->closure_this)
+		&& getObject(v2) && asAtomHandler::isValid(getObject(v2)->as<IFunction>()->closure_this)
+		&& getObject(a)->as<IFunction>()->closure_this.uintval != getObject(v2)->as<IFunction>()->closure_this.uintval)
 		return false;
 	return toObject(v2,wrk)->isEqual(toObject(a,wrk));
 }
-ASObject* asAtomHandler::getClosure(asAtom& a)
-{
-	return (is<IFunction>(a)) ? as<IFunction>(a)->closure_this : nullptr;
-}
 asAtom asAtomHandler::getClosureAtom(asAtom& a, asAtom defaultAtom)
 {
-	ASObject* o = getClosure(a);
-	return o ? fromObject(o) : defaultAtom;
+	return (is<IFunction>(a)) && asAtomHandler::isValid(as<IFunction>(a)->closure_this) ? as<IFunction>(a)->closure_this : defaultAtom;
 }
 asAtom asAtomHandler::fromString(SystemState* sys, const tiny_string& s)
 {
@@ -2909,7 +2905,17 @@ asAtom asAtomHandler::fromString(SystemState* sys, const tiny_string& s)
 
 void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult, bool coercearguments)
 {
-	assert_and_throw(asAtomHandler::isFunction(caller));
+	if (USUALLY_FALSE(!asAtomHandler::isFunction(caller)))
+	{
+		createError<TypeError>(wrk,kCallOfNonFunctionError, asAtomHandler::toString(caller,wrk));
+		if (args_refcounted)
+		{
+			for (uint32_t i = 0; i < num_args; i++)
+				ASATOM_DECREF(args[i]);
+		}
+		ASATOM_DECREF(obj);
+		return;
+	}
 
 	asAtom c = obj;
 	if (getObjectNoCheck(caller)->is<SyntheticFunction>())
@@ -2942,41 +2948,69 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 	}
 }
 
-void asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret,SystemState* sys, const multiname &name, ASWorker* wrk)
+multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const multiname &name, ASWorker* wrk, bool& canCache,GET_VARIABLE_OPTION opt)
 {
 	// classes for primitives are final and sealed, so we only have to check the class for the variable
 	// no need to create ASObjects for the primitives
+	multiname* simplegetter = nullptr;
 	switch(a.uintval&0x7)
 	{
 		case ATOM_INTEGER:
-			Class<Integer>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk);
-			return;
 		case ATOM_UINTEGER:
-			Class<UInteger>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk);
-			return;
 		case ATOM_U_INTEGERPTR:
 		case ATOM_NUMBERPTR:
-			Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk);
-			return;
+			simplegetter = Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
+			canCache = asAtomHandler::isValid(ret);
+			break;
 		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
 		{
 			switch (a.uintval&0x70)
 			{
 				case ATOMTYPE_BOOL_BIT:
-					Class<Boolean>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk);
-					return;
+					simplegetter = Class<Boolean>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
+					canCache = asAtomHandler::isValid(ret);
+					break;
 				default:
-					return;
+					canCache = false;
+					break;
 			}
+			break;
 		}
 		case ATOM_STRINGID:
-			Class<ASString>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk);
-			return;
+			simplegetter =  Class<ASString>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
+			canCache = asAtomHandler::isValid(ret);
+			break;
 		default:
-			return;
+		{
+			GET_VARIABLE_RESULT varres = asAtomHandler::getObjectNoCheck(a)->getVariableByMultiname(ret,name, GET_VARIABLE_OPTION(opt|DONT_CALL_GETTER),wrk);
+			canCache = varres & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
+			if (varres & GET_VARIABLE_RESULT::GETVAR_ISGETTER)
+			{
+				//Call the getter
+				LOG_CALL("Calling the getter for " << name << " on " << asAtomHandler::toDebugString(a));
+				assert(asAtomHandler::isFunction(ret));
+				IFunction* f = asAtomHandler::as<IFunction>(ret);
+				asAtom closure = asAtomHandler::getClosureAtom(ret,a);
+				ret = asAtom();
+				simplegetter = f->callGetter(ret,closure,wrk);
+				LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(ret)<<" "<<(simplegetter ? " simplegetter":""));
+			}
+			break;
+		}
 	}
+	return simplegetter;
 }
-
+void asAtomHandler::getVariableByInteger(asAtom& a, asAtom &ret, int index, ASWorker* wrk)
+{
+	if (asAtomHandler::is<Vector>(a))
+	{
+		asAtomHandler::as<Vector>(a)->getVariableByIntegerDirect(ret,index,wrk);
+		ASATOM_INCREF(ret);
+	}
+	else if (asAtomHandler::isObject(a))
+		asAtomHandler::getObjectNoCheck(a)->getVariableByInteger(ret,index,GET_VARIABLE_OPTION::NONE,wrk);
+	
+}
 bool asAtomHandler::hasPropertyByMultiname(const asAtom& a, const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk)
 {
 	// we use a temporary atom here to avoid converting the source atom into an ASObject if it isn't an ASObject 
@@ -2987,7 +3021,7 @@ bool asAtomHandler::hasPropertyByMultiname(const asAtom& a, const multiname& nam
 		ASATOM_DECREF(tmp);
 	return found;
 }
-Class_base *asAtomHandler::getClass(asAtom& a,SystemState* sys,bool followclass)
+Class_base *asAtomHandler::getClass(const asAtom& a,SystemState* sys,bool followclass)
 {
 	// classes for primitives are final and sealed, so we only have to check the class for the variable
 	// no need to create ASObjects for the primitives
@@ -3789,10 +3823,10 @@ void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 			break;
 	}
 }
-void asAtomHandler::setFunction(asAtom& a, ASObject *obj, ASObject *closure, ASWorker* wrk)
+void asAtomHandler::setFunction(asAtom& a, ASObject *obj, const asAtom& closure, ASWorker* wrk)
 {
 	// type may be T_CLASS or T_FUNCTION
-	if (closure &&obj->is<IFunction>())
+	if (asAtomHandler::isValid(closure) && obj->is<IFunction>())
 	{
 		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(obj->as<IFunction>()->bind(closure,wrk))|ATOM_OBJECTPTR;
 	}

@@ -1535,11 +1535,11 @@ void MovieClip::executeFrameScript()
 			inExecuteFramescript = true;
 			this->getInstanceWorker()->rootClip->executingFrameScriptCount++;
 			asAtom v=asAtomHandler::invalidAtom;
-			ASObject* closure_this = asAtomHandler::as<IFunction>(frameScripts[f])->closure_this;
-			if (!closure_this)
-				closure_this=this;
-			closure_this->incRef();
-			asAtom obj = asAtomHandler::fromObjectNoPrimitive(closure_this);
+			asAtom closure_this = asAtomHandler::as<IFunction>(frameScripts[f])->closure_this;
+			if (asAtomHandler::isInvalid(closure_this))
+				closure_this=asAtomHandler::fromObject(this);
+			ASATOM_INCREF(closure_this);
+			asAtom obj = closure_this;
 			ASATOM_INCREF(frameScripts[f]);
 			try
 			{
@@ -1550,14 +1550,14 @@ void MovieClip::executeFrameScript()
 				setStopped();
 				ASATOM_DECREF(frameScripts[f]);
 				ASATOM_DECREF(v);
-				closure_this->decRef();
+				ASATOM_DECREF(closure_this);
 				this->getInstanceWorker()->rootClip->executingFrameScriptCount--;
 				inExecuteFramescript = false;
 				throw;
 			}
 			ASATOM_DECREF(frameScripts[f]);
 			ASATOM_DECREF(v);
-			closure_this->decRef();
+			ASATOM_DECREF(closure_this);
 			this->getInstanceWorker()->rootClip->executingFrameScriptCount--;
 			inExecuteFramescript = false;
 		}

@@ -30,7 +30,7 @@
 using namespace std;
 using namespace lightspark;
 
-IFunction::IFunction(ASWorker* wrk,Class_base* c,CLASS_SUBTYPE st):ASObject(wrk,c,T_FUNCTION,st),length(0),closure_this(nullptr),inClass(nullptr),isStatic(false),clonedFrom(nullptr),functionname(0)
+IFunction::IFunction(ASWorker* wrk,Class_base* c,CLASS_SUBTYPE st):ASObject(wrk,c,T_FUNCTION,st),length(0),closure_this(asAtomHandler::invalidAtom),inClass(nullptr),isStatic(false),clonedFrom(nullptr),functionname(0)
 {
 }
 
@@ -55,8 +55,8 @@ void IFunction::prepareShutdown()
 	ASObject::prepareShutdown();
 	if (clonedFrom)
 		clonedFrom->prepareShutdown();
-	if (closure_this)
-		closure_this->prepareShutdown();
+	if (asAtomHandler::isObject(closure_this))
+		asAtomHandler::getObjectNoCheck(closure_this)->prepareShutdown();
 	if (prototype)
 		prototype->prepareShutdown();
 }
@@ -66,8 +66,8 @@ bool IFunction::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	if (gcstate.checkAncestors(this))
 		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
-	if (closure_this)
-		ret = closure_this->countAllCylicMemberReferences(gcstate) || ret;
+	if (asAtomHandler::isObject(closure_this))
+		ret = asAtomHandler::getObjectNoCheck(closure_this)->countAllCylicMemberReferences(gcstate) || ret;
 	if (prototype)
 		ret = prototype->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
@@ -112,8 +112,8 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 	asAtom newObj=asAtomHandler::invalidAtom;
 	asAtom* newArgs=nullptr;
 	int newArgsLen=0;
-	if(th->inClass && th->closure_this)
-		newObj = asAtomHandler::fromObject(th->closure_this);
+	if(th->inClass && asAtomHandler::isValid(th->closure_this))
+		newObj = th->closure_this;
 	else
 	{
 		//Validate parameters
@@ -167,8 +167,8 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 	asAtom newObj=asAtomHandler::invalidAtom;
 	asAtom* newArgs=nullptr;
 	uint32_t newArgsLen=0;
-	if(th->inClass && th->closure_this)
-		newObj = asAtomHandler::fromObject(th->closure_this);
+	if(th->inClass && asAtomHandler::isValid(th->closure_this))
+		newObj = th->closure_this;
 	else
 	{
 		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
@@ -239,7 +239,7 @@ ASObject *IFunction::describeType(ASWorker* wrk) const
 
 std::string IFunction::toDebugString() const
 {
-	string ret = ASObject::toDebugString()+(closure_this ? "(closure:"+closure_this->toDebugString()+")":"")+(clonedFrom ?" cloned":"");
+	string ret = ASObject::toDebugString()+(asAtomHandler::isValid(closure_this) ? "(closure:"+asAtomHandler::toDebugString(closure_this)+")":"")+(clonedFrom ?" cloned":"");
 #ifndef NDEBUG
 	if (functionname)
 	{

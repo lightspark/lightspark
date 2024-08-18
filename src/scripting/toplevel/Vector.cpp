@@ -338,7 +338,7 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 	th->getClass()->getInstance(wrk,ret,true,nullptr,0);
 	Vector* res= asAtomHandler::as<Vector>(ret);
 	asAtom funcRet=asAtomHandler::invalidAtom;
-	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
+	asAtom closure = asAtomHandler::getClosureAtom(f, asAtomHandler::nullAtom);
 
 	for(unsigned int i=0;i<th->size();i++)
 	{
@@ -386,7 +386,7 @@ ASFUNCTIONBODY_ATOM(Vector, some)
 	Vector* th=static_cast<Vector*>(asAtomHandler::getObject(obj));
 	asAtom f = args[0];
 	asAtom params[3];
-	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
+	asAtom closure = asAtomHandler::getClosureAtom(f, asAtomHandler::nullAtom);
 
 	for(unsigned int i=0; i < th->size(); i++)
 	{
@@ -429,7 +429,7 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 	}
 	asAtom f = args[0];
 	asAtom params[3];
-	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
+	asAtom closure = asAtomHandler::getClosureAtom(f, asAtomHandler::nullAtom);
 
 	for(unsigned int i=0; i < th->size(); i++)
 	{
@@ -446,8 +446,15 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 		}
 		else
 		{
+			if (asAtomHandler::isUndefined(args[1]) || asAtomHandler::isNull(args[1]))
+			{
+				createError<TypeError>(wrk,kCallOfNonFunctionError, asAtomHandler::toString(ret,wrk));
+				return;
+			}
 			asAtomHandler::callFunction(f,wrk,ret,args[1], params, 3,false);
 		}
+		if (wrk->currentCallContext->exceptionthrown)
+			return;
 		if(asAtomHandler::isValid(ret))
 		{
 			if (asAtomHandler::isUndefined(ret) || asAtomHandler::isNull(ret))
@@ -626,7 +633,7 @@ ASFUNCTIONBODY_ATOM(Vector,forEach)
 	}
 	asAtom f = args[0];
 	asAtom params[3];
-	asAtom closure = asAtomHandler::getClosure(f) ? asAtomHandler::fromObject(asAtomHandler::getClosure(f)) : asAtomHandler::nullAtom;
+	asAtom closure = asAtomHandler::getClosureAtom(f, asAtomHandler::nullAtom);
 
 	for(unsigned int i=0; i < th->size(); i++)
 	{
@@ -979,7 +986,7 @@ number_t Vector::sortComparatorWrapper::compare(const asAtom& d1, const asAtom& 
 	else
 		objs[1] = asAtomHandler::nullAtom;
 	asAtom ret=asAtomHandler::invalidAtom;
-	asAtom obj = asAtomHandler::getClosureAtom(comparator);
+	asAtom obj = asAtomHandler::getClosureAtom(comparator,asAtomHandler::nullAtom);
 	// don't coerce the result, as it may be an int that would loose it's sign through coercion
 	asAtomHandler::callFunction(comparator,asAtomHandler::getObjectNoCheck(comparator)->getInstanceWorker(), ret,obj, objs, 2,false,false);
 	assert_and_throw(asAtomHandler::isValid(ret));
@@ -1658,7 +1665,7 @@ tiny_string Vector::toJSON(std::vector<ASObject *> &path, asAtom replacer, const
 	res += "[";
 	bool bfirst = true;
 	tiny_string newline = (spaces.empty() ? "" : "\n");
-	asAtom closure = asAtomHandler::isValid(replacer) && asAtomHandler::getClosure(replacer) ? asAtomHandler::fromObject(asAtomHandler::getClosure(replacer)) : asAtomHandler::nullAtom;
+	asAtom closure = asAtomHandler::getClosureAtom(replacer, asAtomHandler::nullAtom);
 	for (unsigned int i =0;  i < vec.size(); i++)
 	{
 		tiny_string subres;

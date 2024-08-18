@@ -660,18 +660,17 @@ void Stage::cleanupDeadHiddenObjects()
 void Stage::prepareForRemoval(DisplayObject* d)
 {
 	Locker l(DisplayObjectRemovedMutex);
-	removedDisplayObjects.insert(d);
+	removedDisplayObjects.push_back(d);
 }
 
 void Stage::cleanupRemovedDisplayObjects()
 {
 	Locker l(DisplayObjectRemovedMutex);
-	auto it = removedDisplayObjects.begin();
-	while (it != removedDisplayObjects.end())
+	for (auto it = removedDisplayObjects.begin();it != removedDisplayObjects.end(); it++)
 	{
 		(*it)->removeStoredMember();
-		it = removedDisplayObjects.erase(it);
 	}
+	removedDisplayObjects.clear();
 }
 
 void Stage::AVM1AddDisplayObject(DisplayObject* dobj)

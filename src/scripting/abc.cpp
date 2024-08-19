@@ -1191,6 +1191,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case IDLE_EVENT:
 			{
 				m_sys->setFramePhase(FramePhase::IDLE);
+				m_sys->stage->cleanupRemovedDisplayObjects();
 				m_sys->worker->processGarbageCollection(false);
 				// DisplayObjects that are removed from the display list keep their Parent set until all removedFromStage events are handled
 				// see http://www.senocular.com/flash/tutorials/orderofoperations/#ObjectDestruction

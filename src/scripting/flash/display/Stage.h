@@ -59,7 +59,7 @@ private:
 	bool hasAVM1Clips;
 	void executeAVM1Scripts(bool implicit);
 	Mutex DisplayObjectRemovedMutex;
-	vector<DisplayObject*> removedDisplayObjects;
+	unordered_set<DisplayObject*> removedDisplayObjects;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
 public:

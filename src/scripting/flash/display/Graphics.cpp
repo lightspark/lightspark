@@ -80,6 +80,7 @@ ASFUNCTIONBODY_ATOM(Graphics,clear)
 	th->tokensHaveChanged=false;
 	th->rendertokens.clear();
 	th->tokens.clear();
+	th->tokenBoundsRect=RECT(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN);
 	th->tokens.filltokens = _MR(new tokenListRef());
 	th->tokens.stroketokens = _MR(new tokenListRef());
 }
@@ -806,7 +807,7 @@ bool Graphics::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number
 {
 	if (!hasBounds())
 		return false;
-	RECT rc = rendertokens.empty() ? tokenBoundsRect : renderBoundsRect;
+	RECT rc = needsRefresh ? tokenBoundsRect : renderBoundsRect;
 	xmin = float(rc.Xmin)/TWIPS_FACTOR;
 	xmax = float(rc.Xmax)/TWIPS_FACTOR;
 	ymin = float(rc.Ymin)/TWIPS_FACTOR;
@@ -816,7 +817,7 @@ bool Graphics::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number
 bool Graphics::hitTest(const Vector2f& point)
 {
 	bool ret = false;
-	tokensVector* tk = rendertokens.empty() ? &tokens : &rendertokens;
+	tokensVector* tk = needsRefresh ? &tokens : &rendertokens;
 	while (tk && !ret)
 	{
 		if (tk->filltokens)

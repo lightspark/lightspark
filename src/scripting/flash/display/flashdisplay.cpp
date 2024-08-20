@@ -341,14 +341,21 @@ bool Sprite::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 	bool ret = DisplayObjectContainer::boundsRect(xmin,xmax,ymin,ymax,visibleOnly);
 	if (graphics && graphics->hasBounds())
 	{
-		number_t gxmin,gxmax,gymin,gymax;
-		if (this->graphics->boundsRect(gxmin,gxmax,gymin,gymax))
+		if (!ret)
 		{
-			xmin = min(xmin,gxmin);
-			xmax = max(xmax,gxmax);
-			ymin = min(ymin,gymin);
-			ymax = max(ymax,gymax);
-			ret=true;
+			ret = this->graphics->boundsRect(xmin,xmax,ymin,ymax);
+		}
+		else
+		{
+			number_t gxmin,gxmax,gymin,gymax;
+			if (this->graphics->boundsRect(gxmin,gxmax,gymin,gymax))
+			{
+				xmin = min(xmin,gxmin);
+				xmax = max(xmax,gxmax);
+				ymin = min(ymin,gymin);
+				ymax = max(ymax,gymax);
+				ret=true;
+			}
 		}
 	}
 	return ret;

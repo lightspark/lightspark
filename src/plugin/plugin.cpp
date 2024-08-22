@@ -1087,6 +1087,22 @@ void PluginEngineData::forceRedraw(SystemState* sys)
    NPN_ForceRedraw(((PluginEngineData*)sys->getEngineData())->instance->mInstance);
 }
 
+void PluginEngineData::runInTrueMainThread(SystemState* sys, MainThreadCallback func)
+{
+	struct tmp
+	{
+		SystemState* sys;
+		MainThreadCallback func;
+	};
+	tmp* _tmp = new tmp { sys, func };
+	NPN_PluginThreadAsyncCall(instance->mInstance, [](void* data)
+	{
+		tmp* _tmp = static_cast<tmp*>(data);
+		_tmp->func(_tmp->sys);
+		delete _tmp;
+	}, _tmp);
+}
+
 void PluginEngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
 {
 	EngineData::runInMainThread(sys,func);

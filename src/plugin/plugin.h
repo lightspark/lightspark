@@ -116,6 +116,7 @@ public:
 	void InitOpenGL() override;
 	void DeinitOpenGL() override;
 	void draw(void *event, uint32_t evx, uint32_t evy, uint32_t evwidth, uint32_t evheight);
+	void runInTrueMainThread(SystemState* sys, MainThreadCallback func) override;
 	void runInMainThread(SystemState* sys, MainThreadCallback func) override;
 	static void pluginCallHandler(void* d)
 	{

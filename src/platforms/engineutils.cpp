@@ -94,6 +94,11 @@ EngineData::~EngineData()
 #endif
 }
 
+void EngineData::runInTrueMainThread(SystemState* sys, MainThreadCallback func)
+{
+	runInMainThread(sys, func);
+}
+
 void EngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
 {
 	SDL_Event event;

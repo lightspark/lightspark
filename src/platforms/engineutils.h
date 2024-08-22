@@ -134,6 +134,8 @@ public:
 	virtual void stopMainDownload() = 0;
 	/* you may not call getWindowForGnash and showWindow on the same EngineData! */
 	virtual uint32_t getWindowForGnash()=0;
+	/* Runs `func` in the true main thread (eg. The main browser thread on the plugin versions). */
+	virtual void runInTrueMainThread(SystemState* sys, MainThreadCallback func);
 	/* Runs 'func' in the mainLoopThread */
 	virtual void runInMainThread(SystemState* sys, MainThreadCallback func);
 	static bool mainloop_handleevent(SDL_Event* event,SystemState* sys);

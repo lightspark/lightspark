@@ -201,6 +201,7 @@ public:
 	void stopMainDownload() override;
 	bool isSizable() const override { return false; }
 	uint32_t getWindowForGnash() override;
+	void runInTrueMainThread(SystemState* sys, MainThreadCallback func) override;
 	void runInMainThread(SystemState* sys, MainThreadCallback func) override;
 
 	// local storage handling

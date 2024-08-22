@@ -1775,6 +1775,13 @@ void exec_ppPluginEngineData_callback(void* userdata,int result)
 	data->func(data->sys);
 	delete data;
 }
+
+void ppPluginEngineData::runInTrueMainThread(SystemState* sys, MainThreadCallback func)
+{
+	userevent_callbackdata* ue = new userevent_callbackdata { func, sys };
+	g_core_interface->CallOnMainThread(0, PP_MakeCompletionCallback(exec_ppPluginEngineData_callback,ue), 0);
+}
+
 void ppPluginEngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
 {
 	userevent_callbackdata* ue = new userevent_callbackdata { func, sys };

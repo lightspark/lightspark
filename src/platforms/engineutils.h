@@ -102,6 +102,7 @@ protected:
 	void selectContextMenuItemIntern();
 	virtual SDL_Window* createWidget(uint32_t w,uint32_t h);
 public:
+	using MainThreadCallback = std::function<void(SystemState*)>;
 	bool incontextmenupreparing; // needed for PPAPI plugin only
 	SDL_Window* widget;
 	NVGcontext* nvgcontext;
@@ -134,7 +135,7 @@ public:
 	/* you may not call getWindowForGnash and showWindow on the same EngineData! */
 	virtual uint32_t getWindowForGnash()=0;
 	/* Runs 'func' in the mainLoopThread */
-	virtual void runInMainThread(SystemState* sys, void (*func) (SystemState*) );
+	virtual void runInMainThread(SystemState* sys, MainThreadCallback func);
 	static bool mainloop_handleevent(SDL_Event* event,SystemState* sys);
 	static void mainloop_from_plugin(SystemState* sys);
 

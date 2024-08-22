@@ -1765,7 +1765,7 @@ uint32_t ppPluginEngineData::getWindowForGnash()
 }
 struct userevent_callbackdata
 {
-	void (*func) (SystemState*);
+	EngineData::MainThreadCallback func;
 	SystemState* sys;
 };
 
@@ -1775,12 +1775,10 @@ void exec_ppPluginEngineData_callback(void* userdata,int result)
 	data->func(data->sys);
 	delete data;
 }
-void ppPluginEngineData::runInMainThread(SystemState* sys, void (*func) (SystemState*) )
+void ppPluginEngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
 {
-	userevent_callbackdata* ue = new userevent_callbackdata;
-	ue->func=func;
-	ue->sys=sys;
-	g_messageloop_interface->PostWork(this->instance->getMessageLoop(),PP_MakeCompletionCallback(exec_ppPluginEngineData_callback,ue),0);
+	userevent_callbackdata* ue = new userevent_callbackdata { func, sys };
+	g_messageloop_interface->PostWork(instance->getMessageLoop(), PP_MakeCompletionCallback(exec_ppPluginEngineData_callback,ue), 0);
 }
 
 void ppPluginEngineData::setLocalStorageAllowedMarker(bool allowed)

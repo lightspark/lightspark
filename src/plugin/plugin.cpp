@@ -1087,7 +1087,7 @@ void PluginEngineData::forceRedraw(SystemState* sys)
    NPN_ForceRedraw(((PluginEngineData*)sys->getEngineData())->instance->mInstance);
 }
 
-void PluginEngineData::runInMainThread(SystemState* sys, void (*func) (SystemState*) )
+void PluginEngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
 {
 	EngineData::runInMainThread(sys,func);
 	NPN_PluginThreadAsyncCall(instance->mInstance,pluginCallHandler,sys);

@@ -2939,6 +2939,9 @@ int32_t ppPluginEngineData::setupFontRenderer(const TextData &_textData,float a,
 	PP_Resource font = g_browserfont_interface->Create(instance->m_ppinstance,&desc);
 	if (font == 0)
 		LOG(LOG_ERROR,"couldn't create font:"<<_textData.font);
-	g_browserfont_interface->DrawTextAt(font,image_data,&text,&pos,color,nullptr,smoothing != SMOOTH_MODE::SMOOTH_NONE ? PP_TRUE : PP_FALSE);
+	runInTrueMainThread(sys, [=](SystemState* sys)
+	{
+		g_browserfont_interface->DrawTextAt(font,image_data,&text,&pos,color,nullptr,smoothing != SMOOTH_MODE::SMOOTH_NONE ? PP_TRUE : PP_FALSE);
+	});
 	return image_data;
 }

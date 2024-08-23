@@ -1765,7 +1765,7 @@ uint32_t ppPluginEngineData::getWindowForGnash()
 }
 struct userevent_callbackdata
 {
-	void (*func) (SystemState*);
+	EngineData::MainThreadCallback func;
 	SystemState* sys;
 };
 
@@ -1775,12 +1775,17 @@ void exec_ppPluginEngineData_callback(void* userdata,int result)
 	data->func(data->sys);
 	delete data;
 }
-void ppPluginEngineData::runInMainThread(SystemState* sys, void (*func) (SystemState*) )
+
+void ppPluginEngineData::runInTrueMainThread(SystemState* sys, MainThreadCallback func)
 {
-	userevent_callbackdata* ue = new userevent_callbackdata;
-	ue->func=func;
-	ue->sys=sys;
-	g_messageloop_interface->PostWork(this->instance->getMessageLoop(),PP_MakeCompletionCallback(exec_ppPluginEngineData_callback,ue),0);
+	userevent_callbackdata* ue = new userevent_callbackdata { func, sys };
+	g_core_interface->CallOnMainThread(0, PP_MakeCompletionCallback(exec_ppPluginEngineData_callback,ue), 0);
+}
+
+void ppPluginEngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
+{
+	userevent_callbackdata* ue = new userevent_callbackdata { func, sys };
+	g_messageloop_interface->PostWork(instance->getMessageLoop(), PP_MakeCompletionCallback(exec_ppPluginEngineData_callback,ue), 0);
 }
 
 void ppPluginEngineData::setLocalStorageAllowedMarker(bool allowed)
@@ -2934,6 +2939,9 @@ int32_t ppPluginEngineData::setupFontRenderer(const TextData &_textData,float a,
 	PP_Resource font = g_browserfont_interface->Create(instance->m_ppinstance,&desc);
 	if (font == 0)
 		LOG(LOG_ERROR,"couldn't create font:"<<_textData.font);
-	g_browserfont_interface->DrawTextAt(font,image_data,&text,&pos,color,nullptr,smoothing != SMOOTH_MODE::SMOOTH_NONE ? PP_TRUE : PP_FALSE);
+	runInTrueMainThread(sys, [=](SystemState* sys)
+	{
+		g_browserfont_interface->DrawTextAt(font,image_data,&text,&pos,color,nullptr,smoothing != SMOOTH_MODE::SMOOTH_NONE ? PP_TRUE : PP_FALSE);
+	});
 	return image_data;
 }

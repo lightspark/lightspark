@@ -94,12 +94,17 @@ EngineData::~EngineData()
 #endif
 }
 
-void EngineData::runInMainThread(SystemState* sys, void (*func)(SystemState*))
+void EngineData::runInTrueMainThread(SystemState* sys, MainThreadCallback func)
+{
+	runInMainThread(sys, func);
+}
+
+void EngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
 {
 	SDL_Event event;
 	SDL_zero(event);
 	event.type = LS_USEREVENT_EXEC;
-	event.user.data1 = (void*) func;
+	event.user.data1 = (void*)new MainThreadCallback(func);
 	SDL_PushEvent(&event);
 }
 bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
@@ -114,8 +119,12 @@ bool EngineData::mainloop_handleevent(SDL_Event* event,SystemState* sys)
 	}
 	else if (event->type == LS_USEREVENT_EXEC)
 	{
-		if (event->user.data1)
-			((void (*)(SystemState*))event->user.data1)(sys);
+		if (event->user.data1 != nullptr)
+		{
+			MainThreadCallback* func = (MainThreadCallback*)event->user.data1;
+			(*func)(sys);
+			delete func;
+		}
 	}
 	else if (event->type == LS_USEREVENT_QUIT)
 	{

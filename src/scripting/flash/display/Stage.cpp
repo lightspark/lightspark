@@ -241,6 +241,7 @@ void Stage::render(RenderContext &ctxt,const MATRIX* startmatrix)
 }
 bool Stage::destruct()
 {
+	cleanupDeadHiddenObjects();
 	cleanupRemovedDisplayObjects();
 	focus.reset();
 	root.reset();
@@ -322,6 +323,8 @@ bool Stage::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		return false;
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
 	for (auto it = hiddenobjects.begin(); it != hiddenobjects.end(); it++)
+		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
+	for (auto it = removedDisplayObjects.begin(); it != removedDisplayObjects.end(); it++)
 		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }

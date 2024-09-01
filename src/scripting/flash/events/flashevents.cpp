@@ -943,7 +943,10 @@ void EventDispatcher::handleEvent(_R<Event> e)
 			continue;
 		}
 		if (e->immediatePropagationStopped)
-			break;
+		{
+			ASATOM_DECREF(tmpListener[i].f);
+			continue;
+		}
 		asAtom arg0= asAtomHandler::fromObject(e.getPtr());
 		IFunction* func = asAtomHandler::as<IFunction>(tmpListener[i].f);
 		asAtom v = asAtomHandler::isValid(func->closure_this) ? func->closure_this : asAtomHandler::fromObject(this);

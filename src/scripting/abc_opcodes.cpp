@@ -3021,6 +3021,7 @@ bool ABCVm::deleteProperty(ASObject* obj, multiname* name)
 	bool ret = obj->deleteVariableByMultiname(*name,obj->getInstanceWorker());
 
 	obj->decRef();
+	name->resetNameIfObject();
 	return ret;
 }
 

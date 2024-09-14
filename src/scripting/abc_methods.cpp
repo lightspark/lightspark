@@ -908,7 +908,7 @@ void ABCVm::abc_getProperty(call_context* context)
 			instrptr->cacheobj2 = f;
 			if (f->clonedFrom)
 				f->incRef();
-			instrptr->cacheobj3 = asAtomHandler::getObject(closure);
+			instrptr->cacheobj3 = asAtomHandler::getObject(asAtomHandler::getClosureAtom(prop,asAtomHandler::invalidAtom));
 		}
 	}
 	if(asAtomHandler::isInvalid(prop))

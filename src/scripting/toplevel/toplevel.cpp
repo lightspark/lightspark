@@ -74,19 +74,19 @@ IFunction* SyntheticFunction::clone(ASWorker* wrk)
 	SyntheticFunction* ret = wrk->freelist_syntheticfunction.getObjectFromFreeList()->as<SyntheticFunction>();
 	if (!ret)
 	{
-		ret=new (getClass()->memoryAccount) SyntheticFunction(*this);
+		ret=new (getClass()->memoryAccount) SyntheticFunction(wrk,getClass(), this->getMethodInfo());
 	}
 	else
 	{
 		ret->resetCached();
 		ret->mi = mi;
-		ret->val = val;
-		ret->length = length;
-		ret->inClass = inClass;
-		ret->func_scope = func_scope;
-		ret->functionname = functionname;
-		ret->fromNewFunction = fromNewFunction;
 	}
+	ret->val = val;
+	ret->length = length;
+	ret->inClass = inClass;
+	ret->func_scope = func_scope;
+	ret->functionname = functionname;
+	ret->fromNewFunction = fromNewFunction;
 	ret->setWorker(wrk);
 	ret->objfreelist = &wrk->freelist_syntheticfunction;
 	ret->subtype = this->subtype;
@@ -1439,6 +1439,23 @@ Function_object::Function_object(ASWorker* wrk,Class_base* c, _R<ASObject> p) : 
 	traitsInitialized = true;
 	constructIndicator = true;
 	constructorCallComplete = true;
+	if (functionPrototype)
+		functionPrototype->addStoredMember();
+}
+
+void Function_object::finalize()
+{
+	if (functionPrototype)
+		functionPrototype->removeStoredMember();
+	functionPrototype.fakeRelease();
+}
+
+bool Function_object::destruct()
+{
+	if (functionPrototype)
+		functionPrototype->removeStoredMember();
+	functionPrototype.fakeRelease();
+	return destructIntern();
 }
 
 void Function_object::prepareShutdown()
@@ -1448,6 +1465,17 @@ void Function_object::prepareShutdown()
 	if (functionPrototype)
 		functionPrototype->prepareShutdown();
 	ASObject::prepareShutdown();
+}
+
+bool Function_object::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	if (functionPrototype)
+		ret = functionPrototype->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+	
 }
 
 GET_VARIABLE_RESULT Function_object::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)

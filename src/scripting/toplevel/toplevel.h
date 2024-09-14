@@ -141,8 +141,10 @@ class Function_object: public ASObject
 public:
 	Function_object(ASWorker* wrk, Class_base* c, _R<ASObject> p);
 	_NR<ASObject> functionPrototype;
-	void finalize() override { functionPrototype.reset(); }
+	void finalize() override;
+	bool destruct() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 };
 

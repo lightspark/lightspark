@@ -87,6 +87,11 @@ void IFunction::_setter_prototype(asAtom& ret,ASWorker* wrk, asAtom& obj, asAtom
 		createError<ArgumentError>(wrk,0,"Arguments provided in setter");
 		return;
 	}
+	if (th->prototype && !th->prototype->getConstant())
+	{
+		th->prototype->removeStoredMember();
+		th->prototype.fakeRelease();
+	}
 	th->prototype = _MR(asAtomHandler::toObject(args[0],wrk));
 	th->prototype->incRef();
 	th->prototype->addStoredMember();

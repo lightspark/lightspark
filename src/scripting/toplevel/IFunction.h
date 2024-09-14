@@ -62,7 +62,7 @@ public:
 		length=0;
 		ASATOM_REMOVESTOREDMEMBER(closure_this);
 		closure_this=asAtomHandler::invalidAtom;
-		if (prototype)
+		if (prototype && !prototype->getConstant())
 			prototype->removeStoredMember();
 		prototype.fakeRelease();
 		return destructIntern();
@@ -73,7 +73,7 @@ public:
 		clonedFrom=nullptr;
 		ASATOM_REMOVESTOREDMEMBER(closure_this);
 		closure_this=asAtomHandler::invalidAtom;
-		if (prototype)
+		if (prototype && !prototype->getConstant())
 			prototype->removeStoredMember();
 		prototype.fakeRelease();
 	}
@@ -91,6 +91,9 @@ public:
 		ret->isStatic=isStatic;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
+		ret->prototype=this->prototype;
+		if (ret->prototype && !ret->prototype->getConstant())
+			ret->prototype->addStoredMember();
 		return ret;
 	}
 	IFunction* createFunctionInstance(ASWorker* wrk)

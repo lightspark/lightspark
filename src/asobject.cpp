@@ -1885,7 +1885,11 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 				gcstate.incCount(o);
 				ret = true;
 			}
-			else if ((uint32_t)o->getRefCount()==o->storedmembercount && o != parent)
+			else if (o == parent)
+			{
+				gcstate.incCount(o);
+			}	
+			else if (o != parent && ((uint32_t)o->getRefCount()==o->storedmembercount))
 			{
 				if (o->countAllCylicMemberReferences(gcstate))
 				{
@@ -2081,7 +2085,8 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 			if (it != gcstate.countedobjects.end()) // object was already counted once, don't count its members again
 			{
 				gcstate.incCount(this);
-				ret = true;
+				auto itc = gcstate.checkedobjects.find(this);
+				ret = (*itc).second.hasmember;
 			}
 			else
 			{

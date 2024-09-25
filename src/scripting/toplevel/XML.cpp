@@ -2968,7 +2968,6 @@ void XML::createTree(const pugi::xml_node& rootnode,bool fromXMLList)
 					fillNode(tmp,node);
 					if(this->procinstlist.isNull())
 						this->procinstlist = _MR(Class<XMLList>::getInstanceSNoArgs(getInstanceWorker()));
-					this->procinstlist->incRef();
 					this->procinstlist->append(_MNR(tmp));
 					break;
 				}

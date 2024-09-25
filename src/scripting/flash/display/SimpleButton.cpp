@@ -52,15 +52,21 @@ void SimpleButton::sinit(Class_base* c)
 
 void SimpleButton::afterLegacyInsert()
 {
-	getSystemState()->stage->AVM1AddKeyboardListener(this);
-	getSystemState()->stage->AVM1AddMouseListener(this);
+	if (!needsActionScript3())
+	{
+		getSystemState()->stage->AVM1AddKeyboardListener(this);
+		getSystemState()->stage->AVM1AddMouseListener(this);
+	}
 	DisplayObjectContainer::afterLegacyInsert();
 }
 
 void SimpleButton::afterLegacyDelete(bool inskipping)
 {
-	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
-	getSystemState()->stage->AVM1RemoveMouseListener(this);
+	if (!needsActionScript3())
+	{
+		getSystemState()->stage->AVM1RemoveKeyboardListener(this);
+		getSystemState()->stage->AVM1RemoveMouseListener(this);
+	}
 }
 
 bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e)

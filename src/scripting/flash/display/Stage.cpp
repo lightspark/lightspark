@@ -254,27 +254,11 @@ bool Stage::destruct()
 	hiddenobjects.clear();
 	fullScreenSourceRect.reset();
 	softKeyboardRect.reset();
-
-	// erasing an avm1 listener might change the list, so we can't use clear() here
-	while (!avm1KeyboardListeners.empty())
-	{
-		avm1KeyboardListeners.back()->decRef();
-		if (!avm1KeyboardListeners.empty())
-			avm1KeyboardListeners.pop_back();
-	}
-	while (!avm1MouseListeners.empty())
-	{
-		avm1MouseListeners.back()->decRef();
-		if (!avm1MouseListeners.empty())
-			avm1MouseListeners.pop_back();
-	}
+	
+	avm1KeyboardListeners.clear();
+	avm1MouseListeners.clear();
 	avm1EventListeners.clear();
-	while (!avm1ResizeListeners.empty())
-	{
-		avm1ResizeListeners.back()->decRef();
-		if (!avm1ResizeListeners.empty())
-			avm1ResizeListeners.pop_back();
-	}
+	avm1ResizeListeners.clear();
 
 	return DisplayObjectContainer::destruct();
 }
@@ -292,27 +276,11 @@ void Stage::finalize()
 	hiddenobjects.clear();
 	fullScreenSourceRect.reset();
 	softKeyboardRect.reset();
-
-	// erasing an avm1 listener might change the list, so we can't use clear() here
-	while (!avm1KeyboardListeners.empty())
-	{
-		avm1KeyboardListeners.back()->decRef();
-		if (!avm1KeyboardListeners.empty())
-			avm1KeyboardListeners.pop_back();
-	}
-	while (!avm1MouseListeners.empty())
-	{
-		avm1MouseListeners.back()->decRef();
-		if (!avm1MouseListeners.empty())
-			avm1MouseListeners.pop_back();
-	}
+	
+	avm1KeyboardListeners.clear();
+	avm1MouseListeners.clear();
 	avm1EventListeners.clear();
-	while (!avm1ResizeListeners.empty())
-	{
-		avm1ResizeListeners.back()->decRef();
-		if (!avm1ResizeListeners.empty())
-			avm1ResizeListeners.pop_back();
-	}
+	avm1ResizeListeners.clear();
 
 	DisplayObjectContainer::finalize();
 }
@@ -350,13 +318,10 @@ void Stage::prepareShutdown()
 	{
 		obj->prepareShutdown();
 	}, true);
-	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
-		(*it)->prepareShutdown();
-	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
-		(*it)->prepareShutdown();
+	avm1KeyboardListeners.clear();
+	avm1MouseListeners.clear();
 	avm1EventListeners.clear();
-	for (auto it = avm1ResizeListeners.begin(); it != avm1ResizeListeners.end(); it++)
-		(*it)->prepareShutdown();
+	avm1ResizeListeners.clear();
 }
 
 Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
@@ -930,7 +895,6 @@ void Stage::AVM1AddKeyboardListener(ASObject *o)
 		if ((*it) == o)
 			return;
 	}
-	o->incRef();
 	avm1KeyboardListeners.push_back(o);
 }
 
@@ -942,7 +906,6 @@ void Stage::AVM1RemoveKeyboardListener(ASObject *o)
 		if ((*it) == o)
 		{
 			avm1KeyboardListeners.erase(it);
-			o->decRef();
 			break;
 		}
 	}
@@ -977,7 +940,6 @@ void Stage::AVM1AddMouseListener(ASObject *o)
 	});
 	if (it != avm1MouseListeners.end() && (*it) == o)
 		return;
-	o->incRef();
 	if (it != avm1MouseListeners.end())
 		avm1MouseListeners.insert(it, o);
 	else
@@ -992,7 +954,6 @@ void Stage::AVM1RemoveMouseListener(ASObject *o)
 		if ((*it) == o)
 		{
 			avm1MouseListeners.erase(it);
-			o->decRef();
 			break;
 		}
 	}
@@ -1028,8 +989,6 @@ void Stage::AVM1AddResizeListener(ASObject *o)
 		if ((*it) == o)
 			return;
 	}
-	o->incRef();
-	o->addStoredMember();
 	avm1ResizeListeners.push_back(o);
 }
 

@@ -72,7 +72,7 @@ private:
 	int offsetX;
 	int offsetY;
 
-	struct timeval time_s, time_d;
+	uint64_t time_s;
 
 	bool loadShaderPrograms();
 	bool tempBufferAcquired;

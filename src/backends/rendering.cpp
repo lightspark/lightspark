@@ -75,7 +75,7 @@ RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 #else
 	fontPath = "Serif";
 #endif
-	gettimeofday(&time_s, nullptr);
+	time_s=compat_msectiming();
 }
 
 void RenderThread::start(EngineData* data)
@@ -403,6 +403,23 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	if (screenshotneeded)
 		generateScreenshot();
 	engineData->DoSwapBuffers();
+	
+	if (Log::getLevel() >= LOG_INFO)
+	{
+		uint64_t time_d=compat_msectiming();
+		
+		uint64_t diff = time_d-time_s;
+		if(diff>1000) /* one second elapsed */
+		{
+			time_s=time_d;
+			LOG(LOG_INFO,"FPS: " << dec << frameCount<<" "<<(getVm(m_sys) ? getVm(m_sys)->getEventQueueSize() : 0));
+			frameCount=0;
+			secsCount++;
+		}
+		else
+			frameCount++;
+	}
+	
 	if (profile && chronometer)
 		profile->accountTime(chronometer->checkpoint());
 	canrender=false;
@@ -1332,18 +1349,6 @@ void RenderThread::draw(bool force)
 		return;
 	renderNeeded=true;
 	event.signal();
-
-	gettimeofday(&time_d, nullptr);
-	int diff = time_d.tv_sec-time_s.tv_sec;
-	if(diff>0) /* is one seconds elapsed? */
-	{
-		time_s=time_d;
-		LOG(LOG_INFO,"FPS: " << dec << frameCount<<" "<<(getVm(m_sys) ? getVm(m_sys)->getEventQueueSize() : 0));
-		frameCount=0;
-		secsCount++;
-	}
-	else
-		frameCount++;
 }
 
 void RenderThread::tick()

@@ -134,7 +134,7 @@ bool DisplayObject::belongsToMask() const
 
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),filterlistHasChanged(false),maxfilterborder(0),ClipDepth(0),
-	avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),cachedSurface(new CachedSurface()),
+	hiddenPrevDisplayObject(nullptr),hiddenNextDisplayObject(nullptr),avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),cachedSurface(new CachedSurface()),
 	constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),
 	avm1mouselistenercount(0),avm1framelistenercount(0),
@@ -163,6 +163,7 @@ DisplayObject::~DisplayObject()
 void DisplayObject::finalize()
 {
 	getSystemState()->stage->AVM1RemoveDisplayObject(this);
+	getSystemState()->stage->removeHiddenObject(this);
 	removeAVM1Listeners();
 	EventDispatcher::finalize();
 	parent=nullptr;
@@ -207,6 +208,7 @@ bool DisplayObject::destruct()
 {
 	// TODO make all DisplayObject derived classes reusable
 	getSystemState()->stage->AVM1RemoveDisplayObject(this);
+	getSystemState()->stage->removeHiddenObject(this);
 	removeAVM1Listeners();
 	ismask=false;
 	filterlistHasChanged=false;
@@ -1806,6 +1808,7 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 			// mark old parent as dirty
 			geometryChanged();
 			getSystemState()->removeFromResetParentList(this);
+			getSystemState()->stage->removeHiddenObject(this);
 		}
 		parent=p;
 		hasChanged=true;
@@ -2112,7 +2115,7 @@ void DisplayObject::beforeConstruction(bool _explicit)
 {
 	skipFrame |= needsActionScript3() && _explicit;
 	placedByActionScript |= needsActionScript3() && _explicit;
-	if (needsActionScript3() && getParent() == nullptr)
+	if (needsActionScript3() && getParent() == nullptr && this != getSystemState()->mainClip)
 		getSystemState()->stage->addHiddenObject(this);
 }
 void DisplayObject::afterConstruction(bool _explicit)

@@ -73,6 +73,9 @@ private:
 public:
 	UI16_SWF Ratio;
 	int ClipDepth;
+	// list of objects that are currently not on stage, but need to be handled in frame events
+	DisplayObject* hiddenPrevDisplayObject;
+	DisplayObject* hiddenNextDisplayObject;
 	DisplayObject* avm1PrevDisplayObject;
 	DisplayObject* avm1NextDisplayObject;
 	std::map<uint32_t,asAtom > avm1locals;

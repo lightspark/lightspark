@@ -247,11 +247,9 @@ bool Stage::destruct()
 	root.reset();
 	stage3Ds.reset();
 	nativeWindow.reset();
-	forEachHiddenObject([&](DisplayObject* obj)
-	{
-		obj->decRef();
-	}, true);
-	hiddenobjects.clear();
+	hiddenNextDisplayObject=this;
+	hiddenPrevDisplayObject=this;
+	
 	fullScreenSourceRect.reset();
 	softKeyboardRect.reset();
 	
@@ -269,11 +267,6 @@ void Stage::finalize()
 	root.reset();
 	stage3Ds.reset();
 	nativeWindow.reset();
-	forEachHiddenObject([&](DisplayObject* obj)
-	{
-		obj->decRef();
-	}, true);
-	hiddenobjects.clear();
 	fullScreenSourceRect.reset();
 	softKeyboardRect.reset();
 	
@@ -290,8 +283,6 @@ bool Stage::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	if (gcstate.checkAncestors(this))
 		return false;
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
-	for (auto it = hiddenobjects.begin(); it != hiddenobjects.end(); it++)
-		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
 	for (auto it = removedDisplayObjects.begin(); it != removedDisplayObjects.end(); it++)
 		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
@@ -314,10 +305,6 @@ void Stage::prepareShutdown()
 		focus->prepareShutdown();
 	if (root)
 		root->prepareShutdown();
-	forEachHiddenObject([&](DisplayObject* obj)
-	{
-		obj->prepareShutdown();
-	}, true);
 	avm1KeyboardListeners.clear();
 	avm1MouseListeners.clear();
 	avm1EventListeners.clear();
@@ -329,6 +316,9 @@ Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
 	,align(c->getSystemState()->getUniqueStringId("TL")), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high")
 	,stageFocusRect(false),allowsFullScreen(false),contentsScaleFactor(1.0)
 {
+	// start and end of hidden display object list point to this to ensure that every added displayobject gets a valid pointer set as its next/prev pointers
+	hiddenNextDisplayObject=this;
+	hiddenPrevDisplayObject=this;
 	subtype = SUBTYPE_STAGE;
 	RELEASE_WRITE(this->invalidated,false);
 	onStage = true;
@@ -546,82 +536,76 @@ void Stage::checkResetFocusTarget(InteractiveObject* removedtarget)
 	if (focus.getPtr() == removedtarget)
 		focus=NullRef;
 }
-
 void Stage::addHiddenObject(DisplayObject* o)
 {
 	if (!o->getInstanceWorker()->isPrimordial)
 		return;
-	auto it = hiddenobjects.find(o);
-	if (it != hiddenobjects.end())
+	if (o->hiddenPrevDisplayObject || o->hiddenNextDisplayObject || this->hiddenNextDisplayObject == o)
 		return;
+	assert(o!=this);
 	// don't add hidden object if any ancestor was already added as one
 	DisplayObject* p=o->getParent();
-	while (p)
+	while (p && p != this)
 	{
-		auto itp = hiddenobjects.find(p);
-		if (itp != hiddenobjects.end())
+		if (p->hiddenPrevDisplayObject || p->hiddenNextDisplayObject)
 			return;
 		p=p->getParent();
 	}
-	o->incRef();
-	hiddenobjects.insert(o);
+	if (this->hiddenNextDisplayObject==this)
+	{
+		this->hiddenNextDisplayObject=o;
+		o->hiddenPrevDisplayObject=this;
+		o->hiddenNextDisplayObject=this;
+	}
+	else
+	{
+		o->hiddenNextDisplayObject=this->hiddenNextDisplayObject;
+		o->hiddenPrevDisplayObject=this;
+		this->hiddenNextDisplayObject->hiddenPrevDisplayObject=o;
+		this->hiddenNextDisplayObject=o;
+	}
 }
 
 void Stage::removeHiddenObject(DisplayObject* o)
 {
-	auto it = hiddenobjects.find(o);
-	if (it != hiddenobjects.end())
+	if (!o->hiddenPrevDisplayObject || !o->hiddenNextDisplayObject || o==this)
+		return;
+	if (o->hiddenPrevDisplayObject !=this)
+		o->hiddenPrevDisplayObject->hiddenNextDisplayObject=o->hiddenNextDisplayObject;
+	else
 	{
-		hiddenobjects.erase(it);
-		o->decRef();
+		this->hiddenNextDisplayObject=o->hiddenNextDisplayObject;
+		this->hiddenNextDisplayObject->hiddenPrevDisplayObject=this;
 	}
+	if (o->hiddenNextDisplayObject!=this)
+		o->hiddenNextDisplayObject->hiddenPrevDisplayObject=o->hiddenPrevDisplayObject;
+	else
+		o->hiddenPrevDisplayObject->hiddenNextDisplayObject=this;
+	o->hiddenPrevDisplayObject=nullptr;
+	o->hiddenNextDisplayObject=nullptr;
 }
 
 void Stage::forEachHiddenObject(std::function<void(DisplayObject*)> callback, bool allowInvalid)
 {
-	unordered_set<DisplayObject*> tmp = hiddenobjects; // work on copy as hidden object list may be altered during calls
-	for (auto it : tmp)
+	DisplayObject* clip = this->hiddenNextDisplayObject;
+	while (clip && clip != this)
 	{
-		if (allowInvalid || it->getParent() == nullptr)
-			callback(it);
+		DisplayObject* nextclip = clip->hiddenNextDisplayObject;
+		if ((allowInvalid || clip->getParent() == nullptr))
+			callback(clip);
+		clip = nextclip;
 	}
 }
 
 void Stage::cleanupDeadHiddenObjects()
 {
-	auto it = hiddenobjects.begin();
-	while (it != hiddenobjects.end())
+	DisplayObject* clip = this->hiddenNextDisplayObject;
+	while (clip && clip != this)
 	{
-		DisplayObject* clip = *it;
-		// NOTE: Objects that are removed by ActionScript are only
-		//       removed from the hidden object list if this is the last reference (so they are not reachable by code anymore).
-		if (clip->placedByActionScript && clip->getParent() == nullptr)
-		{
-			if (clip->isLastRef())
-			{
-				clip->decRef();
-				it = hiddenobjects.erase(it);
-			}
-			else
-			{
-				if (clip->handleGarbageCollection())
-				{
-					it = hiddenobjects.erase(it);
-				}
-				else
-				{
-					clip->incRef();
-					++it;
-				}
-			}
-		}
-		else if (clip->getParent() != nullptr)
-		{
-			clip->decRef();
-			it = hiddenobjects.erase(it);
-		}
-		else
-			++it;
+		DisplayObject* nextclip = clip->hiddenNextDisplayObject;
+		if (clip->getParent() != nullptr)
+			this->removeHiddenObject(clip);
+		clip = nextclip;
 	}
 }
 

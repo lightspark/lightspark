@@ -1046,6 +1046,9 @@ ASWorker::ASWorker(SystemState* s):
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
 	gettimeofday(&last_garbagecollection, nullptr);
+	// start and end of gc list point to this to ensure that every added object gets a valid pointer set as its next/prev pointers
+	gcNext=this;
+	gcPrev=this;
 }
 
 ASWorker::ASWorker(Class_base* c):
@@ -1063,6 +1066,9 @@ ASWorker::ASWorker(Class_base* c):
 	stacktrace = new stacktrace_entry[limits.max_recursion];
 	loader = _MR(Class<Loader>::getInstanceS(this));
 	gettimeofday(&last_garbagecollection, nullptr);
+	// start and end of gc list point to this to ensure that every added object gets a valid pointer set as its next/prev pointers
+	gcNext=this;
+	gcPrev=this;
 }
 ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 	EventDispatcher(wrk,c),parser(nullptr),
@@ -1079,6 +1085,9 @@ ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 	stacktrace = new stacktrace_entry[limits.max_recursion];
 	loader = _MR(Class<Loader>::getInstanceS(this));
 	gettimeofday(&last_garbagecollection, nullptr);
+	// start and end of gc list point to this to ensure that every added object gets a valid pointer set as its next/prev pointers
+	gcNext=this;
+	gcPrev=this;
 }
 
 void ASWorker::finalize()
@@ -1139,9 +1148,11 @@ void ASWorker::finalize()
 		(*it)->destruct();
 		(*it)->finalize();
 	}
-	for (auto it = garbagecollection.begin(); it != garbagecollection.end(); it++)
+	ASObject* ogc = this->gcNext;
+	while (ogc && ogc != this)
 	{
-		(*it)->prepareShutdown();
+		ogc->prepareShutdown();
+		ogc=ogc->gcNext;
 	}
 	processGarbageCollection(true);
 	inShutdown=true;
@@ -1384,6 +1395,45 @@ void ASWorker::dumpStacktrace()
 	}
 	LOG(LOG_INFO,"current stacktrace:\n" << strace);
 }
+
+void ASWorker::addObjectToGarbageCollector(ASObject* o)
+{
+	if (o->gcPrev || o->gcNext || this->gcNext == o)
+		return;
+	assert(o!=this);
+	if (this->gcNext==this)
+	{
+		this->gcNext=o;
+		o->gcPrev=this;
+		o->gcNext=this;
+	}
+	else
+	{
+		o->gcNext=this->gcNext;
+		o->gcPrev=this;
+		this->gcNext->gcPrev=o;
+		this->gcNext=o;
+	}
+}
+
+void ASWorker::removeObjectFromGarbageCollector(ASObject* o)
+{
+	if (!o->gcPrev || !o->gcNext || o==this)
+		return;
+	if (o->gcPrev !=this)
+		o->gcPrev->gcNext=o->gcNext;
+	else
+	{
+		this->gcNext=o->gcNext;
+		this->gcNext->gcPrev=this;
+	}
+	if (o->gcNext!=this)
+		o->gcNext->gcPrev=o->gcPrev;
+	else
+		o->gcPrev->gcNext=this;
+	o->gcNext=nullptr;
+	o->gcPrev=nullptr;
+}
 void ASWorker::processGarbageCollection(bool force)
 {
 	struct timeval currtime;
@@ -1395,19 +1445,26 @@ void ASWorker::processGarbageCollection(bool force)
 	if (this->stage)
 		this->stage->cleanupDeadHiddenObjects();
 	inGarbageCollection=true;
-	while (!garbagecollection.empty())
+	// use two loops to make sure objects added during inner loop are handled _after_ the inner loop is complete
+	while (this->gcNext && this->gcNext != this)
 	{
-		auto it = garbagecollection.begin();
-		ASObject* o = *it;
-		garbagecollection.erase(it);
-		o->handleGarbageCollection();
-		while (!garbagecollectiondeleted.empty())
+		ASObject* ogc = this->gcNext;
+		while (ogc && ogc != this)
 		{
-			auto it = garbagecollectiondeleted.begin();
-			ASObject* o = *it;
-			garbagecollectiondeleted.erase(it);
-			o->resetRefCount();
-			o->decRef();
+			ASObject* ogcnext = ogc->gcNext;
+			ogc->removefromGarbageCollection();
+			if (ogc->deletedingarbagecollection)
+			{
+				ogc->deletedingarbagecollection=false;
+				ogc->resetRefCount();
+				ogc->decRef();
+			}
+			else
+			{
+				if (ogc->handleGarbageCollection())
+					this->addObjectToGarbageCollector(ogc);
+			}
+			ogc = ogcnext;
 		}
 	}
 	inGarbageCollection=false;

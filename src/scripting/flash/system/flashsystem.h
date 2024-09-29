@@ -342,9 +342,7 @@ private:
 	typedef std::pair<_NR<EventDispatcher>,_R<Event>> eventType;
 	std::deque<eventType> events_queue;
 	map<const Class_base*,_R<Prototype>> protoypeMap;
-	std::unordered_set<ASObject*> garbagecollection;
-	std::unordered_set<ASObject*> garbagecollectiondeleted;
-	std::unordered_set<ASObject*> constantrefs;
+	std::set<ASObject*> constantrefs;
 	struct timeval last_garbagecollection;
 	std::vector<ABCContext*> contexts;
 public:
@@ -410,25 +408,11 @@ public:
 	tiny_string getDefaultXMLNamespace() const;
 	uint32_t getDefaultXMLNamespaceID() const;
 	void dumpStacktrace();
-	void addObjectToGarbageCollector(ASObject* o)
-	{
-		garbagecollection.insert(o);
-	}
-	void removeObjectFromGarbageCollector(ASObject* o)
-	{
-		garbagecollection.erase(o);
-		garbagecollectiondeleted.erase(o);
-	}
+	Mutex gcmutex;
+	void addObjectToGarbageCollector(ASObject* o);
+	void removeObjectFromGarbageCollector(ASObject* o);
 	void processGarbageCollection(bool force);
 	FORCE_INLINE bool isInGarbageCollection() const { return inGarbageCollection; }
-	FORCE_INLINE bool isDeletedInGarbageCollection(ASObject* o) const
-	{
-		return inGarbageCollection && garbagecollectiondeleted.find(o) != garbagecollectiondeleted.end();
-	}
-	void setDeletedInGarbageCollection(ASObject* o)
-	{
-		garbagecollectiondeleted.insert(o);
-	}
 	inline bool inFinalization() const { return inFinalize; }
 	void registerConstantRef(ASObject* obj);
 	

@@ -947,6 +947,9 @@ private:
 	multiname* proxyMultiName;
 	SystemState* sys;
 	ASWorker* worker;
+	// double-linked list of objects marked for garbage collection
+	ASObject* gcNext;
+	ASObject* gcPrev;
 protected:
 	ASObject(MemoryAccount* m);
 	
@@ -962,6 +965,7 @@ protected:
 	bool constructorCallComplete:1; // indicates that the constructor including all super constructors has been called
 	bool preparedforshutdown:1;
 	bool markedforgarbagecollection:1;
+	bool deletedingarbagecollection:1;
 	static variable* findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter);
 	static FORCE_INLINE const variable* findGettableImplConst(SystemState* sys, const variables_map& map, const multiname& name, uint32_t* nsRealId = nullptr)
 	{
@@ -1001,8 +1005,7 @@ protected:
 
 	FORCE_INLINE bool destructIntern()
 	{
-		if (markedforgarbagecollection)
-			removefromGarbageCollection();
+		removefromGarbageCollection();
 		destroyContents();
 		for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
 		{

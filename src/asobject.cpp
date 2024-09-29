@@ -1878,7 +1878,7 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 	while(it!=Variables.cend())
 	{
 		ASObject* o = asAtomHandler::getObject(it->second.var);
-		if (it->second.isrefcounted && o && !o->getCached() && !o->getConstant() && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->getInstanceWorker()->isDeletedInGarbageCollection(o))
+		if (it->second.isrefcounted && o && !o->getCached() && !o->getConstant() && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
 		{
 			if (o==gcstate.startobj)
 			{
@@ -1934,8 +1934,9 @@ void ASObject::dumpObjectCounters(uint32_t threshhold)
 #endif
 ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE st):
 	objfreelist(c ? c->getFreeList(wrk) : nullptr),
-	classdef(c),proxyMultiName(nullptr),sys(c?c->sys:nullptr),worker(wrk),
-	stringId(UINT32_MAX),storedmembercount(0),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),markedforgarbagecollection(false),implEnable(true)
+	classdef(c),proxyMultiName(nullptr),sys(c?c->sys:nullptr),worker(wrk),gcNext(nullptr),gcPrev(nullptr),
+	stringId(UINT32_MAX),storedmembercount(0),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
+	markedforgarbagecollection(false),deletedingarbagecollection(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1951,8 +1952,9 @@ ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE
 	}
 #endif
 }
-ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),classdef(nullptr),proxyMultiName(nullptr),sys(o.classdef? o.classdef->sys : nullptr),worker(o.worker),
-	stringId(o.stringId),storedmembercount(o.storedmembercount),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),markedforgarbagecollection(false),implEnable(true)
+ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),classdef(nullptr),proxyMultiName(nullptr),sys(o.classdef? o.classdef->sys : nullptr),worker(o.worker),gcNext(nullptr),gcPrev(nullptr),
+	stringId(o.stringId),storedmembercount(o.storedmembercount),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
+	markedforgarbagecollection(false),deletedingarbagecollection(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1964,8 +1966,9 @@ ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),classdef(nullpt
 	assert(o.Variables.size()==0);
 }
 
-ASObject::ASObject(MemoryAccount* m):objfreelist(nullptr),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),worker(nullptr),
-	stringId(UINT32_MAX),storedmembercount(0),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),markedforgarbagecollection(false),implEnable(true)
+ASObject::ASObject(MemoryAccount* m):objfreelist(nullptr),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),worker(nullptr),gcNext(nullptr),gcPrev(nullptr),
+	stringId(UINT32_MAX),storedmembercount(0),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
+	markedforgarbagecollection(false),deletedingarbagecollection(false),implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -1996,13 +1999,14 @@ void ASObject::setClass(Class_base* c)
 
 void ASObject::removefromGarbageCollection()
 {
-	getInstanceWorker()->removeObjectFromGarbageCollector(this);
+	if (!deletedingarbagecollection)
+		getInstanceWorker()->removeObjectFromGarbageCollector(this);
 	markedforgarbagecollection=false;
 }
 
 void ASObject::removeStoredMember()
 {
-	if (getConstant() || getCached() || this->getInDestruction() || getInstanceWorker()->isDeletedInGarbageCollection(this))
+	if (getConstant() || getCached() || this->getInDestruction() || deletedingarbagecollection)
 		return;
 	assert(storedmembercount);
 	assert(storedmembercount<=uint32_t(this->getRefCount()));
@@ -2043,7 +2047,7 @@ bool ASObject::handleGarbageCollection()
 			else if ((*it).second.count!=(uint32_t)(*it).first->getRefCount() && (*it).second.hasmember)
 			{
 				c = UINT32_MAX;
-				if ((*it).first->isMarkedForGarbageCollection() && !getInstanceWorker()->isDeletedInGarbageCollection(this))
+				if ((*it).first->isMarkedForGarbageCollection() && !deletedingarbagecollection)
 				{
 					getInstanceWorker()->addObjectToGarbageCollector(this);
 				}
@@ -2053,7 +2057,8 @@ bool ASObject::handleGarbageCollection()
 		assert(c == UINT32_MAX || c <= storedmembercount || this->preparedforshutdown);
 		if (c == storedmembercount)
 		{
-			getInstanceWorker()->setDeletedInGarbageCollection(this);
+			getInstanceWorker()->addObjectToGarbageCollector(this);
+			this->deletedingarbagecollection=true;
 			this->destruct();
 			this->finalize();
 			return true;
@@ -2076,7 +2081,7 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 		gcstate.incCount(this);
 		ret = true;
 	}
-	else if (!getConstant() && !getInDestruction() && !getCached() && canHaveCyclicMemberReference() && !markedforgarbagecollection && (!getInstanceWorker() || !getInstanceWorker()->isDeletedInGarbageCollection(this)))
+	else if (!getConstant() && !getInDestruction() && !getCached() && canHaveCyclicMemberReference() && !markedforgarbagecollection && !deletedingarbagecollection)
 	{
 		if (gcstate.ancestors.find(this)==gcstate.ancestors.end())
 		{

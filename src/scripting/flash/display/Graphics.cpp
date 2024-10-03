@@ -1147,7 +1147,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineStyle)
 	LINESTYLE2 style(0xff);
 	style.Color = RGBA(color, ((int)(alpha*255.0))&0xff);
 	style.Width = th->currentLineWidth = _thickness*TWIPS_FACTOR;
-	style.PixelHintingFlag = pixelHinting? 1: 0;
+	style.PixelHintingFlag = pixelHinting;
 
 	if (scaleMode == "normal")
 	{
@@ -1346,8 +1346,8 @@ FILLSTYLE Graphics::createGradientFill(const tiny_string& type,
 	else
 		return style;
 
-	// Don't support FOCALGRADIENT for now.
-	GRADIENT grad(0xff);
+	GRADIENT grad(0xff,focalPointRatio!=0.0);
+	grad.FocalPoint=FIXED8(focalPointRatio*16384.0);
 	for(int i = 0; i < NumGradient; i ++)
 	{
 		GRADRECORD record(0xff);

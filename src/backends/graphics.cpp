@@ -186,7 +186,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 		case RADIAL_GRADIENT:
 		case FOCAL_RADIAL_GRADIENT:
 		{
-			const std::vector<GRADRECORD>& gradrecords = style.FillStyleType==FOCAL_RADIAL_GRADIENT ? style.FocalGradient.GradientRecords : style.Gradient.GradientRecords;
+			const std::vector<GRADRECORD>& gradrecords = style.Gradient.GradientRecords;
 
 			// We want an opaque black background... a gradient with no stops
 			// in cairo will give us transparency.
@@ -211,11 +211,11 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			}
 			else
 			{
-				number_t x0 =style.FillStyleType == FOCAL_RADIAL_GRADIENT ? style.FocalGradient.FocalPoint*16384.0 : 0.0;
+				number_t x0 =style.FillStyleType == FOCAL_RADIAL_GRADIENT ? style.Gradient.FocalPoint*16384.0 : 0.0;
 				pattern = cairo_pattern_create_radial(x0, 0, 0, x0, 0, 16384.0);
 			}
 
-			int spreadmode = style.FillStyleType == FOCAL_RADIAL_GRADIENT ? style.FocalGradient.SpreadMode : style.Gradient.SpreadMode;
+			int spreadmode = style.Gradient.SpreadMode;
 			if (spreadmode == 0) // PAD
 				cairo_pattern_set_extend(pattern, CAIRO_EXTEND_PAD);
 			else if (spreadmode == 1) // REFLECT

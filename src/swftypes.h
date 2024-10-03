@@ -936,13 +936,13 @@ class RECT
 	friend std::ostream& operator<<(std::ostream& s, const RECT& r);
 	friend std::istream& operator>>(std::istream& stream, RECT& v);
 public:
-	int Xmin;
-	int Xmax;
-	int Ymin;
-	int Ymax;
+	int32_t Xmin;
+	int32_t Xmax;
+	int32_t Ymin;
+	int32_t Ymax;
 public:
 	RECT();
-	RECT(int xmin, int xmax, int ymin, int ymax);
+	RECT(int32_t xmin, int32_t xmax, int32_t ymin, int32_t ymax);
 	RECT(const RECT& r):Xmin(r.Xmin),Xmax(r.Xmax),Ymin(r.Ymin),Ymax(r.Ymax) {}
 	RECT& operator=(const RECT& r)
 	{
@@ -1030,37 +1030,19 @@ class GRADIENT
 {
 	friend std::istream& operator>>(std::istream& s, GRADIENT& v);
 public:
-	GRADIENT(uint8_t v):SpreadMode(0),InterpolationMode(0),version(v) {}
-	int SpreadMode;
-	int InterpolationMode;
+	GRADIENT(uint8_t v, bool _isFocal):isFocal(_isFocal),SpreadMode(0),InterpolationMode(0),version(v) {}
 	std::vector<GRADRECORD> GradientRecords;
+	FIXED8 FocalPoint;
+	bool isFocal:1;
+	uint8_t SpreadMode:2;
+	uint8_t InterpolationMode:2;
 	uint8_t version;
 	bool operator==(const GRADIENT& g) const
 	{
 		return version == g.version 
 				&& SpreadMode == g.SpreadMode
 				&& InterpolationMode == g.InterpolationMode
-				&& GradientRecords == g.GradientRecords;
-	}
-};
-
-class FOCALGRADIENT
-{
-	friend std::istream& operator>>(std::istream& s, FOCALGRADIENT& v);
-public:
-	int version;
-	int SpreadMode;
-	int InterpolationMode;
-	int NumGradient;
-	std::vector<GRADRECORD> GradientRecords;
-	FIXED8 FocalPoint;
-	bool operator==(const FOCALGRADIENT& g) const
-	{
-		return version == g.version 
-				&& SpreadMode == g.SpreadMode
-				&& InterpolationMode == g.InterpolationMode
-				&& NumGradient == g.NumGradient
-				&& FocalPoint == g.FocalPoint
+			    && FocalPoint == g.FocalPoint
 				&& GradientRecords == g.GradientRecords;
 	}
 };
@@ -1083,7 +1065,6 @@ public:
 	virtual ~FILLSTYLE();
 	MATRIX Matrix;
 	GRADIENT Gradient;
-	FOCALGRADIENT FocalGradient;
 	_NR<BitmapContainer> bitmap;
 	RECT ShapeBounds;
 	RGBA Color;
@@ -1128,19 +1109,19 @@ public:
 class LINESTYLE2
 {
 public:
-	LINESTYLE2(uint8_t v):StartCapStyle(0),JointStyle(0),HasFillFlag(false),NoHScaleFlag(false),NoVScaleFlag(false),PixelHintingFlag(0),FillType(v),version(v){}
+	LINESTYLE2(uint8_t v):StartCapStyle(0),JointStyle(0),EndCapStyle(0),HasFillFlag(false),NoHScaleFlag(false),NoVScaleFlag(false),PixelHintingFlag(false),NoClose(false),FillType(v),version(v){}
 	LINESTYLE2(const LINESTYLE2& r);
 	LINESTYLE2& operator=(const LINESTYLE2& r);
 	bool operator==(const LINESTYLE2& r) const;
 	virtual ~LINESTYLE2();
-	int StartCapStyle;
-	int JointStyle;
-	bool HasFillFlag;
-	bool NoHScaleFlag;
-	bool NoVScaleFlag;
-	int PixelHintingFlag;
-	UB NoClose;
-	UB EndCapStyle;
+	uint8_t StartCapStyle;
+	uint8_t JointStyle;
+	uint8_t EndCapStyle;
+	bool HasFillFlag:1;
+	bool NoHScaleFlag:1;
+	bool NoVScaleFlag:1;
+	bool PixelHintingFlag:1;
+	bool NoClose:1;
 	UI16_SWF Width;
 	UI16_SWF MiterLimitFactor;
 	RGBA Color;
@@ -1160,15 +1141,15 @@ public:
 class MORPHLINESTYLE2: public MORPHLINESTYLE
 {
 public:
-	UB StartCapStyle;
+	uint8_t StartCapStyle;
 	MORPHFILLSTYLE FillType;
-	UB JoinStyle;
-	UB HasFillFlag;
-	UB NoHScaleFlag;
-	UB NoVScaleFlag;
-	UB PixelHintingFlag;
-	UB NoClose;
-	UB EndCapStyle;
+	uint8_t JoinStyle;
+	bool HasFillFlag:1;
+	bool NoHScaleFlag:1;
+	bool NoVScaleFlag:1;
+	bool PixelHintingFlag:1;
+	bool NoClose:1;
+	uint8_t EndCapStyle;
 	UI16_SWF MiterLimitFactor;
 	std::map<uint16_t,LINESTYLE2> linestylecache;
 };
@@ -1213,36 +1194,30 @@ class SHAPEWITHSTYLE;
 class SHAPERECORD
 {
 public:
-	SHAPE* parent;
-
-	uint32_t MoveBits;
-	int32_t MoveDeltaX;
-	int32_t MoveDeltaY;
-
-	unsigned int FillStyle1;
-	unsigned int FillStyle0;
-	unsigned int LineStyle;
-
-	//Edge record
-	uint32_t NumBits;
-	int32_t DeltaX;
-	int32_t DeltaY;
-
-	int32_t ControlDeltaX;
-	int32_t ControlDeltaY;
-	int32_t AnchorDeltaX;
-	int32_t AnchorDeltaY;
-
-	bool TypeFlag;
-	bool StateNewStyles;
-	bool StateLineStyle;
-	bool StateFillStyle1;
-	bool StateFillStyle0;
-	bool StateMoveTo;
-	bool StraightFlag;
-	bool GeneralLineFlag;
-	bool VertLineFlag;
-	SHAPERECORD(SHAPE* p,BitStream& bs);
+	union
+	{
+		int32_t AnchorDeltaX;
+		struct
+		{
+			uint16_t FillStyle1;
+			uint16_t FillStyle0;
+		};
+	};
+	union
+	{
+		int32_t AnchorDeltaY:18;
+		uint16_t LineStyle;
+	};
+	int32_t DeltaX:18;
+	int32_t DeltaY:18;
+	bool TypeFlag:1;
+	bool StateNewStyles:1;
+	bool StateLineStyle:1;
+	bool StateFillStyle1:1;
+	bool StateFillStyle0:1;
+	bool StateMoveTo:1;
+	bool StraightFlag:1;
+	SHAPERECORD(SHAPE* parent,BitStream& bs);
 };
 
 class TEXTRECORD;
@@ -1252,7 +1227,6 @@ class GLYPHENTRY
 public:
 	UB GlyphIndex;
 	SB GlyphAdvance;
-	TEXTRECORD* parent;
 	GLYPHENTRY(TEXTRECORD* p,BitStream& bs);
 };
 
@@ -1263,17 +1237,15 @@ class TEXTRECORD
 public:
 	std::vector <GLYPHENTRY> GlyphEntries;
 	DefineTextTag* parent;
-	UB TextRecordType;
-	UB StyleFlagsReserved;
-	UB StyleFlagsHasFont;
-	UB StyleFlagsHasColor;
-	UB StyleFlagsHasYOffset;
-	UB StyleFlagsHasXOffset;
 	RGBA TextColor;
 	SI16_SWF XOffset;
 	SI16_SWF YOffset;
 	UI16_SWF TextHeight;
 	UI16_SWF FontID;
+	bool StyleFlagsHasColor:1;
+	bool StyleFlagsHasYOffset:1;
+	bool StyleFlagsHasXOffset:1;
+	bool empty:1;
 	TEXTRECORD(DefineTextTag* p):parent(p){}
 };
 class CharacterRenderer;
@@ -1284,16 +1256,14 @@ class SHAPE
 public:
 	SHAPE(uint8_t v=0,bool _forfont=false):fillOffset(0),lineOffset(0),version(v),forfont(_forfont){}
 	virtual ~SHAPE();
-	UB NumFillBits;
-	UB NumLineBits;
-	unsigned int fillOffset;
-	unsigned int lineOffset;
-	uint8_t version; /* version of the DefineShape tag, 0 if
+	uint8_t NumFillBits:4;
+	uint8_t NumLineBits:4;
+	uint16_t fillOffset;
+	uint16_t lineOffset;
+	uint8_t version:3; /* version of the DefineShape tag, 0 if
 			  * DefineFont or other tag */
+	bool forfont:1;
 	std::vector<SHAPERECORD> ShapeRecords;
-	std::map<int,CharacterRenderer*> scaledtexturecache;
-	
-	bool forfont;
 };
 
 class SHAPEWITHSTYLE : public SHAPE
@@ -1309,17 +1279,14 @@ class CXFORMWITHALPHA
 {
 	friend std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v);
 private:
-	UB HasAddTerms;
-	UB HasMultTerms;
-	UB NBits;
-	SB RedMultTerm;
-	SB GreenMultTerm;
-	SB BlueMultTerm;
-	SB AlphaMultTerm;
-	SB RedAddTerm;
-	SB GreenAddTerm;
-	SB BlueAddTerm;
-	SB AlphaAddTerm;
+	int16_t RedMultTerm;
+	int16_t GreenMultTerm;
+	int16_t BlueMultTerm;
+	int16_t AlphaMultTerm;
+	int16_t RedAddTerm;
+	int16_t GreenAddTerm;
+	int16_t BlueAddTerm;
+	int16_t AlphaAddTerm;
 public:
 	void getParameters(number_t& redMultiplier, 
 			   number_t& greenMultiplier, 
@@ -1330,152 +1297,182 @@ public:
 			   number_t& blueOffset,
 			   number_t& alphaOffset) const;
 	float transformedAlpha(float alpha) const;
-	bool isfilled() const {return  HasAddTerms || HasMultTerms; }
-};
-
-class CXFORM
-{
+	bool isIdentity() const;
 };
 
 class DROPSHADOWFILTER
 {
 public:
-    RGBA DropShadowColor;
-    FIXED BlurX;
-    FIXED BlurY;
-    FIXED Angle;
-    FIXED Distance;
-    int Passes;
-    FIXED8 Strength;
-    bool InnerShadow;
-    bool Knockout;
-    bool CompositeSource;
+	DROPSHADOWFILTER():Passes(0){}
+	RGBA DropShadowColor;
+	FIXED BlurX;
+	FIXED BlurY;
+	FIXED Angle;
+	FIXED Distance;
+	FIXED8 Strength;
+	bool InnerShadow:1;
+	bool Knockout:1;
+	bool CompositeSource:1;
+	uint8_t Passes:4;
 };
 
 class BLURFILTER
 {
 public:
+	BLURFILTER():Passes(0){}
 	FIXED BlurX;
 	FIXED BlurY;
-	int Passes;
+	uint8_t Passes:4;
 };
 
 class GLOWFILTER
 {
 public:
-    RGBA GlowColor;
-    FIXED BlurX;
-    FIXED BlurY;
-    int Passes;
-    FIXED8 Strength;
-    bool InnerGlow;
-    bool Knockout;
-    bool CompositeSource;
+	GLOWFILTER():Passes(0){}
+	RGBA GlowColor;
+	FIXED BlurX;
+	FIXED BlurY;
+	FIXED8 Strength;
+	bool InnerGlow:1;
+	bool Knockout:1;
+	bool CompositeSource:1;
+	uint8_t Passes:4;
 };
 
 class BEVELFILTER
 {
 public:
-    RGBA ShadowColor;
-    RGBA HighlightColor;
-    FIXED BlurX;
-    FIXED BlurY;
-    FIXED Angle;
-    FIXED Distance;
-    int Passes;
-    FIXED8 Strength;
-    bool InnerShadow;
-    bool Knockout;
-    bool CompositeSource;
-    bool OnTop;
+	BEVELFILTER():Passes(0){}
+	RGBA ShadowColor;
+	RGBA HighlightColor;
+	FIXED BlurX;
+	FIXED BlurY;
+	FIXED Angle;
+	FIXED Distance;
+	FIXED8 Strength;
+	bool InnerShadow:1;
+	bool Knockout:1;
+	bool CompositeSource:1;
+	bool OnTop:1;
+	uint8_t Passes:4;
 };
 
 class GRADIENTGLOWFILTER
 {
 public:
-    std::vector<RGBA> GradientColors;
-    std::vector<UI8> GradientRatio;
-    FIXED BlurX;
-    FIXED BlurY;
-    FIXED Angle;
-    FIXED Distance;
-    int Passes;
-    FIXED8 Strength;
-    bool InnerGlow;
-    bool Knockout;
-    bool CompositeSource;
-	bool OnTop;
+	GRADIENTGLOWFILTER():Passes(0){}
+	std::vector<RGBA> GradientColors;
+	std::vector<UI8> GradientRatio;
+	FIXED BlurX;
+	FIXED BlurY;
+	FIXED Angle;
+	FIXED Distance;
+	FIXED8 Strength;
+	bool InnerGlow:1;
+	bool Knockout:1;
+	bool CompositeSource:1;
+	bool OnTop:1;
+	uint8_t Passes:4;
 };
 
 class CONVOLUTIONFILTER
 {
 public:
-    FLOAT Divisor;
-    FLOAT Bias;
-    std::vector<FLOAT> Matrix;
-    RGBA DefaultColor;
-    UI8 MatrixX;
-    UI8 MatrixY;
-    bool Clamp;
-    bool PreserveAlpha;
+	CONVOLUTIONFILTER(){}
+	FLOAT Divisor;
+	FLOAT Bias;
+	std::vector<FLOAT> Matrix;
+	RGBA DefaultColor;
+	UI8 MatrixX;
+	UI8 MatrixY;
+	bool Clamp:1;
+	bool PreserveAlpha:1;
 };
 
 class COLORMATRIXFILTER
 {
 public:
-    FLOAT Matrix[20];
+	COLORMATRIXFILTER(){}
+	FLOAT Matrix[20];
 };
 
 class GRADIENTBEVELFILTER
 {
 public:
-    std::vector<RGBA> GradientColors;
-    std::vector<UI8> GradientRatio;
-    FIXED BlurX;
-    FIXED BlurY;
-    FIXED Angle;
-    FIXED Distance;
-    int Passes;
-    FIXED8 Strength;
-    bool InnerShadow;
-    bool Knockout;
-    bool CompositeSource;
-    bool OnTop;
+	GRADIENTBEVELFILTER():Passes(0){}
+	std::vector<RGBA> GradientColors;
+	std::vector<UI8> GradientRatio;
+	FIXED BlurX;
+	FIXED BlurY;
+	FIXED Angle;
+	FIXED Distance;
+	FIXED8 Strength;
+	bool InnerShadow:1;
+	bool Knockout:1;
+	bool CompositeSource:1;
+	bool OnTop:1;
+	uint8_t Passes:4;
 };
 
 class FILTER
 {
 public:
+	FILTER() {}
+	~FILTER() {}
+	FILTER(const FILTER& f);
+	FILTER& operator=(const FILTER& f);
 	enum FILTER_ID { FILTER_DROPSHADOW = 0, FILTER_BLUR = 1, FILTER_GLOW = 2, FILTER_BEVEL = 3, FILTER_GRADIENTGLOW = 4, FILTER_CONVOLUTION = 5, FILTER_COLORMATRIX = 6, FILTER_GRADIENTBEVEL = 7 };
 	UI8 FilterID;
-	DROPSHADOWFILTER DropShadowFilter;
-	BLURFILTER BlurFilter;
-	GLOWFILTER GlowFilter;
-	BEVELFILTER BevelFilter;
-	GRADIENTGLOWFILTER GradientGlowFilter;
-	CONVOLUTIONFILTER ConvolutionFilter;
-	COLORMATRIXFILTER ColorMatrixFilter;
-	GRADIENTBEVELFILTER GradientBevelFilter;
+	union
+	{
+		DROPSHADOWFILTER DropShadowFilter;
+		BLURFILTER BlurFilter;
+		GLOWFILTER GlowFilter;
+		BEVELFILTER BevelFilter;
+		GRADIENTGLOWFILTER GradientGlowFilter;
+		CONVOLUTIONFILTER ConvolutionFilter;
+		COLORMATRIXFILTER ColorMatrixFilter;
+		GRADIENTBEVELFILTER GradientBevelFilter;
+	};
 };
 
 class FILTERLIST
 {
 public:
-	std::vector<FILTER> Filters;
+	FILTERLIST():Filters(nullptr){}
+	FILTERLIST(const FILTERLIST& r)
+	{
+		NumberOfFilters=r.NumberOfFilters;
+		if (r.Filters)
+		{
+			Filters = new FILTER[NumberOfFilters];
+			for (uint32_t i=0; i < NumberOfFilters; i++)
+				Filters[i]=r.Filters[i];
+		}
+		else
+			Filters=nullptr;
+	}
+	~FILTERLIST()
+	{
+		if (Filters)
+			delete[] Filters;
+	}
+	UI8 NumberOfFilters;
+	FILTER* Filters;
 };
 
 class BUTTONRECORD
 {
 public:
-	BUTTONRECORD(int v):buttonVersion(v){}
-	int buttonVersion;
-	UB ButtonReserved;
-	UB ButtonHasBlendMode;
-	UB ButtonHasFilterList;
-	UB ButtonStateHitTest;
-	UB ButtonStateDown;
-	UB ButtonStateOver;
-	UB ButtonStateUp;
+	BUTTONRECORD(uint8_t v):buttonVersion(v){}
+	uint8_t buttonVersion:2;
+	bool ButtonReserved:1;
+	bool ButtonHasBlendMode:1;
+	bool ButtonHasFilterList:1;
+	bool ButtonStateHitTest:1;
+	bool ButtonStateDown:1;
+	bool ButtonStateOver:1;
+	bool ButtonStateUp:1;
 	MATRIX PlaceMatrix;
 	FILTERLIST FilterList;
 	CXFORMWITHALPHA	ColorTransform;
@@ -1495,25 +1492,25 @@ private:
 	uint32_t swfversion;
 public:
 	CLIPEVENTFLAGS(uint32_t v):swfversion(v) {}
-	bool ClipEventKeyUp;
-	bool ClipEventKeyDown;
-	bool ClipEventMouseUp;
-	bool ClipEventMouseDown;
-	bool ClipEventMouseMove;
-	bool ClipEventUnload;
-	bool ClipEventEnterFrame;
-	bool ClipEventLoad;
-	bool ClipEventDragOver;
-	bool ClipEventRollOut;
-	bool ClipEventRollOver;
-	bool ClipEventReleaseOutside;
-	bool ClipEventRelease;
-	bool ClipEventPress;
-	bool ClipEventInitialize;
-	bool ClipEventData;
-	bool ClipEventConstruct;
-	bool ClipEventKeyPress;
-	bool ClipEventDragOut;
+	bool ClipEventKeyUp:1;
+	bool ClipEventKeyDown:1;
+	bool ClipEventMouseUp:1;
+	bool ClipEventMouseDown:1;
+	bool ClipEventMouseMove:1;
+	bool ClipEventUnload:1;
+	bool ClipEventEnterFrame:1;
+	bool ClipEventLoad:1;
+	bool ClipEventDragOver:1;
+	bool ClipEventRollOut:1;
+	bool ClipEventRollOver:1;
+	bool ClipEventReleaseOutside:1;
+	bool ClipEventRelease:1;
+	bool ClipEventPress:1;
+	bool ClipEventInitialize:1;
+	bool ClipEventData:1;
+	bool ClipEventConstruct:1;
+	bool ClipEventKeyPress:1;
+	bool ClipEventDragOut:1;
 	bool isNull();
 	uint32_t getSWFVersion() const { return swfversion; }
 };
@@ -1554,16 +1551,11 @@ public:
 class SOUNDINFO
 {
 public:
-	UB SyncStop;
-	UB SyncNoMultiple;
-	UB HasEnvelope;
-	UB HasLoops;
-	UB HasOutPoint;
-	UB HasInPoint;
+	bool SyncStop:1;
+	bool SyncNoMultiple:1;
 	UI32_SWF InPoint;
 	UI32_SWF OutPoint;
 	UI16_SWF LoopCount;
-	UI8 EnvPoints;
 	std::vector<SOUNDENVELOPE> SoundEnvelope;
 };
 
@@ -1612,15 +1604,15 @@ public:
 	  ,CondOverDownToOverUp(false),CondOverUpToOverDown(false),CondOverUpToIdle(false),CondIdleToOverUp(false),CondOverDownToIdle(false),startactionpos(0)
 	{}
 	UI16_SWF CondActionSize;
-	bool CondIdleToOverDown;
-	bool CondOutDownToIdle;
-	bool CondOutDownToOverDown;
-	bool CondOverDownToOutDown;
-	bool CondOverDownToOverUp;
-	bool CondOverUpToOverDown;
-	bool CondOverUpToIdle;
-	bool CondIdleToOverUp;
-	bool CondOverDownToIdle;
+	bool CondIdleToOverDown:1;
+	bool CondOutDownToIdle:1;
+	bool CondOutDownToOverDown:1;
+	bool CondOverDownToOutDown:1;
+	bool CondOverDownToOverUp:1;
+	bool CondOverUpToOverDown:1;
+	bool CondOverUpToIdle:1;
+	bool CondIdleToOverUp:1;
+	bool CondOverDownToIdle:1;
 	uint32_t CondKeyPress;
 	uint32_t startactionpos;
 	std::vector<uint8_t> actions;

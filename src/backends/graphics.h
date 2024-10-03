@@ -425,9 +425,9 @@ protected:
 	std::vector<textline> textlines;
 public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
-	TextData() : width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), background(false), backgroundColor(0xFFFFFF),
-		border(false), borderColor(0x000000), multiline(false),isBold(false),isItalic(false),
-		autoSize(AS_NONE),align(AS_NONE), fontSize(12), wordWrap(false),caretblinkstate(false),isPassword(false),
+	TextData() : width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), backgroundColor(0xFFFFFF),borderColor(0x000000),
+		background(false),border(false), multiline(false),isBold(false),isItalic(false),wordWrap(false),caretblinkstate(false),isPassword(false),
+		autoSize(AS_NONE),align(AS_NONE), fontSize(12),
 		embeddedFont(nullptr)
 	{}
 	uint32_t width;
@@ -439,21 +439,21 @@ public:
 	uint32_t fontID;
 	int32_t scrollH; // pixels, 0-based
 	int32_t scrollV; // lines, 1-based
-	bool background;
 	RGB backgroundColor;
-	bool border;
 	RGB borderColor;
-	bool multiline;
-	bool isBold;
-	bool isItalic;
+	bool background:1;
+	bool border:1;
+	bool multiline:1;
+	bool isBold:1;
+	bool isItalic:1;
+	bool wordWrap:1;
+	bool caretblinkstate:1;
+	bool isPassword:1;
 	RGB textColor;
 	enum ALIGNMENT {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
 	ALIGNMENT autoSize;
 	ALIGNMENT align;
 	uint32_t fontSize;
-	bool wordWrap;
-	bool caretblinkstate;
-	bool isPassword;
 	FontTag* embeddedFont;
 	tiny_string getText(uint32_t line=UINT32_MAX) const;
 	void setText(const char* text, bool firstlineonly=false);

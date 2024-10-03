@@ -357,22 +357,24 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	in >> CharacterID >> Bounds;
 	LOG(LOG_TRACE,"DefineEditTextTag ID " << CharacterID);
 	BitStream bs(in);
-	HasText=UB(1,bs);
-	WordWrap=UB(1,bs);
-	Multiline=UB(1,bs);
-	Password=UB(1,bs);
+	bool HasText=UB(1,bs);
+	bool WordWrap=UB(1,bs);
+	bool Multiline=UB(1,bs);
+	bool Password=UB(1,bs);
 	ReadOnly=UB(1,bs);
-	HasTextColor=UB(1,bs);
-	HasMaxLength=UB(1,bs);
+	bool HasTextColor=UB(1,bs);
+	bool HasMaxLength=UB(1,bs);
 	HasFont=UB(1,bs);
-	HasFontClass=UB(1,bs);
-	AutoSize=UB(1,bs);
-	HasLayout=UB(1,bs);
+	bool HasFontClass=UB(1,bs);
+	bool AutoSize=UB(1,bs);
+	bool HasLayout=UB(1,bs);
 	NoSelect=UB(1,bs);
-	Border=UB(1,bs);
+	bool Border=UB(1,bs);
 	WasStatic=UB(1,bs);
 	HTML=UB(1,bs);
-	UseOutlines=UB(1,bs);
+	bool UseOutlines=UB(1,bs);
+	if (UseOutlines)
+		LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag UseOutlines");
 	if(HasFont)
 	{
 		in >> FontID;
@@ -1225,7 +1227,6 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	//TODO: implment Kerning support
 	ignore(in,KerningCount* (FontFlagsWideCodes ? 6 : 4));
 	root->registerEmbeddedFont(getFontname(),this);
-
 }
 
 tokensVector* DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy)
@@ -1347,7 +1348,6 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 	int dest=in.tellg();
 	dest+=h.getLength();
 	in >> CharacterId >> BitmapFormat >> BitmapWidth >> BitmapHeight;
-
 	if(BitmapFormat==LOSSLESS_BITMAP_PALETTE)
 		in >> BitmapColorTableSize;
 
@@ -1465,7 +1465,7 @@ DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, RootMovieClip* root,in
 	while(1)
 	{
 		in >> t;
-		if(t.TextRecordType+t.StyleFlagsHasFont+t.StyleFlagsHasColor+t.StyleFlagsHasYOffset+t.StyleFlagsHasXOffset==0)
+		if(t.empty)
 			break;
 		TextRecords.push_back(t);
 	}
@@ -1516,11 +1516,13 @@ void DefineTextTag::computeCached()
 	bool emptytoken=false;// indicates "space" glyph
 	tokensVector* tk = &tokens;
 	RGBA color;
+	uint16_t textheight;
 	for(size_t i=0; i< TextRecords.size();++i)
 	{
-		if(TextRecords[i].StyleFlagsHasFont)
+		if(TextRecords[i].FontID)
 		{
 			DictionaryTag* it3=loadedFrom->dictionaryLookup(TextRecords[i].FontID);
+			textheight=TextRecords[i].TextHeight;
 			curFont=dynamic_cast<FontTag*>(it3);
 			assert_and_throw(curFont);
 		}
@@ -1541,7 +1543,7 @@ void DefineTextTag::computeCached()
 		 * to 1024*20, so curFont->scaling=20 for DefineFont2Tags and DefineFontTags.
 		 * And, of course, scale by the TextHeight.
 		 */
-		int scaling = TextRecords[i].TextHeight * curFont->scaling;
+		int scaling = textheight * curFont->scaling;
 		for(uint32_t j=0;j<TextRecords[i].GlyphEntries.size();++j)
 		{
 			const GLYPHENTRY& ge = TextRecords[i].GlyphEntries[j];
@@ -1626,11 +1628,6 @@ ASObject *DefineShapeTag::instance(Class_base *c)
 	}
 	ret->setupShape(this, 1.0f/20.0f);
 	return ret;
-}
-
-void DefineShapeTag::resizeCompleted()
-{
-	this->chunk.makeEmpty();
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DefineShapeTag(h,2,root)
@@ -1836,7 +1833,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 	if(PlaceFlagHasName)
 	{
 		//Set a variable on the parent to link this object
-		LOG(LOG_TRACE,"Registering ID " << CharacterId << " with name " << Name);
+		LOG(LOG_TRACE,"Registering ID " << CharacterId << " with name " << parent->getSystemState()->getStringFromUniqueId(NameID));
 		if(!PlaceFlagMove)
 		{
 			obj->name = NameID;
@@ -2064,6 +2061,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 
 	if(PlaceFlagHasName)
 	{
+		STRING Name;
 		in >> Name;
 		NameID =root->getSystemState()->getUniqueStringId(Name);
 	}
@@ -2097,11 +2095,13 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 	UB(1,bs); //Reserved
 	PlaceFlagOpaqueBackground=UB(1,bs);
 	PlaceFlagHasVisible=UB(1,bs);
-	PlaceFlagHasImage=UB(1,bs);
-	PlaceFlagHasClassName=UB(1,bs);
-	PlaceFlagHasCacheAsBitmap=UB(1,bs);
+	bool PlaceFlagHasImage=UB(1,bs);
+	if (PlaceFlagHasImage)
+		LOG(LOG_NOT_IMPLEMENTED,"PlaceFlagHasImage in PlaceObject3 not yet dupported");
+	bool PlaceFlagHasClassName=UB(1,bs);
+	bool PlaceFlagHasCacheAsBitmap=UB(1,bs);
 	PlaceFlagHasBlendMode=UB(1,bs);
-	PlaceFlagHasFilterList=UB(1,bs);
+	bool PlaceFlagHasFilterList=UB(1,bs);
 
 	in >> Depth;
 	if(PlaceFlagHasClassName)// || (PlaceFlagHasImage && PlaceFlagHasCharacter)) // spec is wrong here
@@ -2124,6 +2124,7 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 
 	if(PlaceFlagHasName)
 	{
+		STRING Name;
 		in >> Name;
 		NameID =root->getSystemState()->getUniqueStringId(Name);
 	}
@@ -2137,19 +2138,30 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		in >> SurfaceFilterList;
 
 	if(PlaceFlagHasBlendMode)
-		in >> BlendMode;
-
+	{
+		UI8 tmp;
+		in >> tmp;
+		BlendMode=(AS_BLENDMODE)(uint8_t)tmp;
+	}
 	if(PlaceFlagHasCacheAsBitmap)
 	{
 		uint32_t end = in.tellg();
 		// adobe seems to allow PlaceFlagHasCacheAsBitmap set without actual BitmapCache value
 		if (end-start == this->Header.getLength())
-			BitmapCache=1;
+			BitmapCache=true;
 		else
-			in >> BitmapCache;
+		{
+			UI8 tmp;
+			in >> tmp;
+			BitmapCache=tmp;
+		}
 	}
 	if(PlaceFlagHasVisible)
-		in >> Visible;
+	{
+		UI8 tmp;
+		in >> tmp;
+		Visible=tmp;
+	}
 	if(PlaceFlagOpaqueBackground)
 		in >> BackgroundColor;
 
@@ -2367,7 +2379,7 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 				state->setBlendMode(i->BlendMode);
 			if (i->ButtonHasFilterList)
 				state->setFilters(i->FilterList);
-			if (i->ColorTransform.isfilled())
+			if (!i->ColorTransform.isIdentity())
 				state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(loadedFrom->getInstanceWorker(),i->ColorTransform));
 
 			if(states[j] == nullptr)
@@ -2688,7 +2700,7 @@ void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	if (!soundTag)
 		return;
 
-	if (SoundInfo.HasOutPoint || SoundInfo.HasInPoint)
+	if (SoundInfo.OutPoint || SoundInfo.InPoint)
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "StartSoundTag: some modifiers not supported");
 	}

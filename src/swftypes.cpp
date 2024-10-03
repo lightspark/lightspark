@@ -370,7 +370,7 @@ lightspark::RECT::RECT():Xmin(0),Xmax(0),Ymin(0),Ymax(0)
 {
 }
 
-lightspark::RECT::RECT(int a, int b, int c, int d):Xmin(a),Xmax(b),Ymin(c),Ymax(d)
+lightspark::RECT::RECT(int32_t a, int32_t b, int32_t c, int32_t d):Xmin(a),Xmax(b),Ymin(c),Ymax(d)
 {
 }
 
@@ -793,7 +793,7 @@ istream& lightspark::operator>>(istream& s, MORPHLINESTYLE2& v)
 	v.EndCapStyle = UB(2,bs);
 	if(v.JoinStyle==2)
 		s >> v.MiterLimitFactor;
-	if(v.HasFillFlag==0)
+	if(!v.HasFillFlag)
 		s >> v.StartColor >> v.EndColor;
 	else
 		s >> v.FillType;
@@ -803,18 +803,21 @@ istream& lightspark::operator>>(istream& s, MORPHLINESTYLE2& v)
 std::istream& lightspark::operator>>(std::istream& in, TEXTRECORD& v)
 {
 	BitStream bs(in);
-	v.TextRecordType=UB(1,bs);
-	v.StyleFlagsReserved=UB(3,bs);
-	if(v.StyleFlagsReserved)
+	bool TextRecordType=UB(1,bs);
+	v.empty=!TextRecordType;
+	UB StyleFlagsReserved=UB(3,bs);
+	if(StyleFlagsReserved)
 		LOG(LOG_ERROR,"Reserved bits not so reserved");
-	v.StyleFlagsHasFont=UB(1,bs);
+	bool StyleFlagsHasFont=UB(1,bs);
 	v.StyleFlagsHasColor=UB(1,bs);
 	v.StyleFlagsHasYOffset=UB(1,bs);
 	v.StyleFlagsHasXOffset=UB(1,bs);
-	if(!v.TextRecordType)
+	if(!TextRecordType)
 		return in;
-	if(v.StyleFlagsHasFont)
+	if(StyleFlagsHasFont)
 		in >> v.FontID;
+	else
+		v.FontID=0;
 	if(v.StyleFlagsHasColor)
 	{
 		if(v.parent->version==1)
@@ -836,7 +839,7 @@ std::istream& lightspark::operator>>(std::istream& in, TEXTRECORD& v)
 		in >> v.XOffset;
 	if(v.StyleFlagsHasYOffset)
 		in >> v.YOffset;
-	if(v.StyleFlagsHasFont)
+	if(StyleFlagsHasFont)
 		in >> v.TextHeight;
 	UI8 GlyphCount;
 	in >> GlyphCount;
@@ -845,7 +848,6 @@ std::istream& lightspark::operator>>(std::istream& in, TEXTRECORD& v)
 	{
 		v.GlyphEntries.push_back(GLYPHENTRY(&v,bs));
 	}
-
 	return in;
 }
 
@@ -877,23 +879,8 @@ std::istream& lightspark::operator>>(std::istream& s, GRADIENT& v)
 		v.GradientRecords.push_back(gr);
 	}
 	sort(v.GradientRecords.begin(),v.GradientRecords.end());
-	return s;
-}
-
-std::istream& lightspark::operator>>(std::istream& s, FOCALGRADIENT& v)
-{
-	BitStream bs(s);
-	v.SpreadMode=UB(2,bs);
-	v.InterpolationMode=UB(2,bs);
-	v.NumGradient=UB(4,bs);
-	GRADRECORD gr(v.version);
-	for(int i=0;i<v.NumGradient;i++)
-	{
-		s >> gr;
-		v.GradientRecords.push_back(gr);
-	}
-	sort(v.GradientRecords.begin(),v.GradientRecords.end());
-	s >> v.FocalPoint;
+	if (v.isFocal)
+		s >> v.FocalPoint;
 	return s;
 }
 
@@ -924,11 +911,9 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 	else if(v.FillStyleType==LINEAR_GRADIENT || v.FillStyleType==RADIAL_GRADIENT || v.FillStyleType==FOCAL_RADIAL_GRADIENT)
 	{
 		s >> v.Matrix;
-		v.FocalGradient.version=v.version;
-		if(v.FillStyleType==FOCAL_RADIAL_GRADIENT)
-			s >> v.FocalGradient;
-		else
-			s >> v.Gradient;
+		v.Gradient.version=v.version;
+		v.Gradient.isFocal=v.FillStyleType==FOCAL_RADIAL_GRADIENT;
+		s >> v.Gradient;
 		v.bitmap = _MNR(new BitmapContainer(nullptr)); // for caching the nanoVG gradient
 	}
 	else if(v.FillStyleType==REPEATING_BITMAP || v.FillStyleType==CLIPPED_BITMAP || v.FillStyleType==NON_SMOOTHED_REPEATING_BITMAP || 
@@ -1019,23 +1004,25 @@ std::istream& lightspark::operator>>(std::istream& s, MORPHFILLSTYLE& v)
 	return s;
 }
 
-GLYPHENTRY::GLYPHENTRY(TEXTRECORD* p,BitStream& bs):parent(p)
+GLYPHENTRY::GLYPHENTRY(TEXTRECORD* p,BitStream& bs)
 {
-	GlyphIndex = UB(parent->parent->GlyphBits,bs);
-	GlyphAdvance = SB(parent->parent->AdvanceBits,bs);
+	GlyphIndex = UB(p->parent->GlyphBits,bs);
+	GlyphAdvance = SB(p->parent->AdvanceBits,bs);
 }
 
-SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveBits(0),MoveDeltaX(0),MoveDeltaY(0),FillStyle1(0),FillStyle0(0),LineStyle(0),NumBits(0),DeltaX(0),DeltaY(0),ControlDeltaX(0),ControlDeltaY(0),AnchorDeltaX(0),AnchorDeltaY(0),TypeFlag(false),StateNewStyles(false),StateLineStyle(false),StateFillStyle1(false),StateFillStyle0(false),StateMoveTo(false),StraightFlag(false),GeneralLineFlag(false),VertLineFlag(false)
+SHAPERECORD::SHAPERECORD(SHAPE* parent,BitStream& bs):AnchorDeltaX(0),AnchorDeltaY(0),DeltaX(0),DeltaY(0),
+	TypeFlag(false),StateNewStyles(false),StateLineStyle(false),StateFillStyle1(false),StateFillStyle0(false),StateMoveTo(false),StraightFlag(false)
 {
 	TypeFlag = UB(1,bs);
 	if(TypeFlag)
 	{
 		StraightFlag=UB(1,bs);
-		NumBits=UB(4,bs);
+		uint32_t NumBits=UB(4,bs);
 		if(StraightFlag)
 		{
 
-			GeneralLineFlag=UB(1,bs);
+			bool GeneralLineFlag=UB(1,bs);
+			bool VertLineFlag=false;
 			if(!GeneralLineFlag)
 				VertLineFlag=UB(1,bs);
 
@@ -1051,11 +1038,10 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveBits(0),MoveDelta
 		else
 		{
 			
-			ControlDeltaX=SB(NumBits+2,bs);
-			ControlDeltaY=SB(NumBits+2,bs);
+			DeltaX=SB(NumBits+2,bs);
+			DeltaY=SB(NumBits+2,bs);
 			AnchorDeltaX=SB(NumBits+2,bs);
 			AnchorDeltaY=SB(NumBits+2,bs);
-			
 		}
 	}
 	else
@@ -1067,9 +1053,9 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveBits(0),MoveDelta
 		StateMoveTo = UB(1,bs);
 		if(StateMoveTo)
 		{
-			MoveBits = UB(5,bs);
-			MoveDeltaX = SB(MoveBits,bs);
-			MoveDeltaY = SB(MoveBits,bs);
+			uint32_t MoveBits = UB(5,bs);
+			DeltaX = SB(MoveBits,bs);
+			DeltaY = SB(MoveBits,bs);
 		}
 		if(StateFillStyle0)
 		{
@@ -1094,7 +1080,7 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveBits(0),MoveDelta
 			bs.f >> a;
 			if (!a.FillStyles.empty())
 			{
-				p->fillOffset=ps->FillStyles.FillStyles.size();
+				parent->fillOffset=ps->FillStyles.FillStyles.size();
 				ps->FillStyles.appendStyles(a);
 			}
 
@@ -1102,18 +1088,18 @@ SHAPERECORD::SHAPERECORD(SHAPE* p,BitStream& bs):parent(p),MoveBits(0),MoveDelta
 			bs.f >> b;
 			if (!b.LineStyles2.empty())
 			{
-				p->lineOffset=ps->LineStyles.LineStyles2.size();
+				parent->lineOffset=ps->LineStyles.LineStyles2.size();
 				ps->LineStyles.appendStyles(b);
 			}
 			parent->NumFillBits=UB(4,bs);
 			parent->NumLineBits=UB(4,bs);
 		}
 		if(StateFillStyle0 && (FillStyle0 != 0))
-			FillStyle0+=p->fillOffset;
+			FillStyle0+=parent->fillOffset;
 		if(StateFillStyle1 && (FillStyle1 != 0))
-			FillStyle1+=p->fillOffset;
+			FillStyle1+=parent->fillOffset;
 		if(StateLineStyle && (LineStyle != 0))
-			LineStyle+=p->lineOffset;
+			LineStyle+=parent->lineOffset;
 	}
 }
 
@@ -1127,67 +1113,70 @@ void CXFORMWITHALPHA::getParameters(number_t& redMultiplier,
 				    number_t& alphaOffset) const
 {
 	// multipliers are stored as values from 0.0 to 1.0
-	if (HasMultTerms)
-	{
-		redMultiplier = RedMultTerm/256.0;
-		greenMultiplier = GreenMultTerm/256.0;
-		blueMultiplier = BlueMultTerm/256.0;
-		alphaMultiplier = AlphaMultTerm/256.0;
-		
-	}
-	else
-	{
-		redMultiplier = 1.0;
-		greenMultiplier = 1.0;
-		blueMultiplier = 1.0;
-		alphaMultiplier = 1.0;
-	}
+	redMultiplier = RedMultTerm/256.0;
+	greenMultiplier = GreenMultTerm/256.0;
+	blueMultiplier = BlueMultTerm/256.0;
+	alphaMultiplier = AlphaMultTerm/256.0;
 
-	if (HasAddTerms)
-	{
-		redOffset = RedAddTerm;
-		greenOffset = GreenAddTerm;
-		blueOffset = BlueAddTerm;
-		alphaOffset = AlphaAddTerm;
-	}
-	else
-	{
-		redOffset = 0;
-		greenOffset = 0;
-		blueOffset = 0;
-		alphaOffset = 0;
-	}
+	redOffset = RedAddTerm;
+	greenOffset = GreenAddTerm;
+	blueOffset = BlueAddTerm;
+	alphaOffset = AlphaAddTerm;
 }
 
 float CXFORMWITHALPHA::transformedAlpha(float alpha) const
 {
 	float ret = alpha;
-	if (HasMultTerms)
-		ret = alpha*AlphaMultTerm/256.;
-	if (HasAddTerms)
-		ret = alpha + AlphaAddTerm/256.;
+	ret = alpha*AlphaMultTerm/256.;
+	ret = alpha + AlphaAddTerm/256.;
 	return dmin(dmax(ret, 0.), 1.);
+}
+
+bool CXFORMWITHALPHA::isIdentity() const
+{
+	return (RedMultTerm==256 &&
+			GreenMultTerm==256 &&
+			BlueMultTerm==256 &&
+			AlphaMultTerm==256 &&
+			RedAddTerm==0 &&
+			GreenAddTerm==0 &&
+			BlueAddTerm==0 &&
+			AlphaAddTerm==0);
 }
 
 std::istream& lightspark::operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 {
 	BitStream bs(stream);
-	v.HasAddTerms=UB(1,bs);
-	v.HasMultTerms=UB(1,bs);
-	v.NBits=UB(4,bs);
-	if(v.HasMultTerms)
+	bool HasAddTerms=UB(1,bs);
+	bool HasMultTerms=UB(1,bs);
+	uint8_t NBits=UB(4,bs);
+	if(HasMultTerms)
 	{
-		v.RedMultTerm=SB(v.NBits,bs);
-		v.GreenMultTerm=SB(v.NBits,bs);
-		v.BlueMultTerm=SB(v.NBits,bs);
-		v.AlphaMultTerm=SB(v.NBits,bs);
+		v.RedMultTerm=SB(NBits,bs);
+		v.GreenMultTerm=SB(NBits,bs);
+		v.BlueMultTerm=SB(NBits,bs);
+		v.AlphaMultTerm=SB(NBits,bs);
 	}
-	if(v.HasAddTerms)
+	else
 	{
-		v.RedAddTerm=SB(v.NBits,bs);
-		v.GreenAddTerm=SB(v.NBits,bs);
-		v.BlueAddTerm=SB(v.NBits,bs);
-		v.AlphaAddTerm=SB(v.NBits,bs);
+		v.RedMultTerm = 256;
+		v.GreenMultTerm = 256;
+		v.BlueMultTerm = 256;
+		v.AlphaMultTerm = 256;
+	}
+	if(HasAddTerms)
+	{
+		v.RedAddTerm=SB(NBits,bs);
+		v.GreenAddTerm=SB(NBits,bs);
+		v.BlueAddTerm=SB(NBits,bs);
+		v.AlphaAddTerm=SB(NBits,bs);
+	}
+	else
+	{
+		v.RedAddTerm=0;
+		v.GreenAddTerm=0;
+		v.BlueAddTerm=0;
+		v.AlphaAddTerm=0;
 	}
 	return stream;
 }
@@ -1258,13 +1247,14 @@ std::istream& lightspark::operator>>(std::istream& stream, BUTTONRECORD& v)
 
 std::istream& lightspark::operator>>(std::istream& stream, FILTERLIST& v)
 {
-	UI8 NumberOfFilters;
-	stream >> NumberOfFilters;
-	v.Filters.resize(NumberOfFilters);
-
-	for(int i=0;i<NumberOfFilters;i++)
-		stream >> v.Filters[i];
 	
+	stream >> v.NumberOfFilters;
+	if (v.NumberOfFilters)
+	{
+		v.Filters = new FILTER[v.NumberOfFilters];
+		for(uint8_t i=0;i<v.NumberOfFilters;i++)
+			stream >> v.Filters[i];
+	}
 	return stream;
 }
 
@@ -1740,12 +1730,12 @@ QName::operator multiname() const
 	return ret;
 }
 
-FILLSTYLE::FILLSTYLE(uint8_t v):Gradient(v),version(v)
+FILLSTYLE::FILLSTYLE(uint8_t v):Gradient(v,false),FillStyleType(SOLID_FILL),version(v)
 {
 }
 
-FILLSTYLE::FILLSTYLE(const FILLSTYLE& r):Matrix(r.Matrix),Gradient(r.Gradient),FocalGradient(r.FocalGradient),
-	bitmap(r.bitmap),ShapeBounds(r.ShapeBounds),Color(r.Color),FillStyleType(r.FillStyleType),version(r.version)
+FILLSTYLE::FILLSTYLE(const FILLSTYLE& r):Matrix(r.Matrix),
+	Gradient(r.Gradient),bitmap(r.bitmap),ShapeBounds(r.ShapeBounds),Color(r.Color),FillStyleType(r.FillStyleType),version(r.version)
 {
 }
 
@@ -1757,7 +1747,6 @@ FILLSTYLE& FILLSTYLE::operator=(const FILLSTYLE& r)
 {
 	Matrix = r.Matrix;
 	Gradient = r.Gradient;
-	FocalGradient = r.FocalGradient;
 	bitmap = r.bitmap;
 	ShapeBounds = r.ShapeBounds;
 	Color = r.Color;
@@ -1778,9 +1767,8 @@ bool FILLSTYLE::operator==(const FILLSTYLE& r) const
 			return Color == r.Color;
 		case LINEAR_GRADIENT:
 		case RADIAL_GRADIENT:
-			return Matrix == r.Matrix && Gradient == r.Gradient;
 		case FOCAL_RADIAL_GRADIENT:
-			return Matrix == r.Matrix && FocalGradient == r.FocalGradient;
+			return Matrix == r.Matrix && Gradient == r.Gradient;
 		default:
 			return bitmap == r.bitmap;
 	}
@@ -1939,20 +1927,27 @@ std::istream& lightspark::operator>>(std::istream& stream, SOUNDINFO& v)
 	UB(2,bs); // reserved
 	v.SyncStop = UB(1,bs);
 	v.SyncNoMultiple = UB(1,bs);
-	v.HasEnvelope = UB(1,bs);
-	v.HasLoops = UB(1,bs);
-	v.HasOutPoint = UB(1,bs);
-	v.HasInPoint = UB(1,bs);
-	if (v.HasInPoint)
+	bool HasEnvelope = UB(1,bs);
+	bool HasLoops = UB(1,bs);
+	bool HasOutPoint = UB(1,bs);
+	bool HasInPoint = UB(1,bs);
+	if (HasInPoint)
 		stream >> v.InPoint;
-	if (v.HasOutPoint)
+	else
+		v.InPoint=0;
+	if (HasOutPoint)
 		stream >> v.OutPoint;
-	if (v.HasLoops)
+	else
+		v.OutPoint=0;
+	if (HasLoops)
 		stream >> v.LoopCount;
-	if (v.HasEnvelope)
+	else
+		v.LoopCount=0;
+	if (HasEnvelope)
 	{
-		stream >> v.EnvPoints;
-		for (unsigned int i = 0; i < v.EnvPoints;i++)
+		UI8 EnvPoints;
+		stream >> EnvPoints;
+		for (unsigned int i = 0; i < EnvPoints;i++)
 		{
 			SOUNDENVELOPE env;
 			stream >> env.Pos44;
@@ -1984,8 +1979,67 @@ std::istream& lightspark::operator>>(std::istream& stream, BUTTONCONDACTION& v)
 
 SHAPE::~SHAPE()
 {
-	for (auto it = scaledtexturecache.begin(); it != scaledtexturecache.begin(); it++)
+}
+
+FILTER::FILTER(const FILTER& f):FilterID(f.FilterID)
+{
+	switch (FilterID)
 	{
-		delete (*it).second;
+		case FILTER_DROPSHADOW:
+			DropShadowFilter = f.DropShadowFilter;
+			break;
+		case FILTER_BLUR:
+			BlurFilter = f.BlurFilter;
+			break;
+		case FILTER_GLOW:
+			GlowFilter = f.GlowFilter;
+			break;
+		case FILTER_BEVEL:
+			BevelFilter = f.BevelFilter;
+			break;
+		case FILTER_GRADIENTGLOW:
+			GradientGlowFilter = f.GradientGlowFilter;
+			break;
+		case FILTER_CONVOLUTION:
+			ConvolutionFilter = f.ConvolutionFilter;
+			break;
+		case FILTER_COLORMATRIX:
+			ColorMatrixFilter = f.ColorMatrixFilter;
+			break;
+		case FILTER_GRADIENTBEVEL:
+			GradientBevelFilter = f.GradientBevelFilter;
+			break;
 	}
+}
+FILTER& FILTER::operator=(const FILTER& f)
+{
+	FilterID = f.FilterID;
+	switch (FilterID)
+	{
+		case FILTER_DROPSHADOW:
+			DropShadowFilter = f.DropShadowFilter;
+			break;
+		case FILTER_BLUR:
+			BlurFilter = f.BlurFilter;
+			break;
+		case FILTER_GLOW:
+			GlowFilter = f.GlowFilter;
+			break;
+		case FILTER_BEVEL:
+			BevelFilter = f.BevelFilter;
+			break;
+		case FILTER_GRADIENTGLOW:
+			GradientGlowFilter = f.GradientGlowFilter;
+			break;
+		case FILTER_CONVOLUTION:
+			ConvolutionFilter = f.ConvolutionFilter;
+			break;
+		case FILTER_COLORMATRIX:
+			ColorMatrixFilter = f.ColorMatrixFilter;
+			break;
+		case FILTER_GRADIENTBEVEL:
+			GradientBevelFilter = f.GradientBevelFilter;
+			break;
+	}
+	return *this;
 }

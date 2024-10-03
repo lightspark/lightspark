@@ -355,7 +355,9 @@ ASFUNCTIONBODY_ATOM(TextField,_getdisplayAsPassword)
 ASFUNCTIONBODY_ATOM(TextField,_setdisplayAsPassword)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	ARG_CHECK(ARG_UNPACK(th->isPassword));
+	bool displayAsPassword;
+	ARG_CHECK(ARG_UNPACK(displayAsPassword));
+	th->isPassword=displayAsPassword;
 	th->setSizeAndPositionFromAutoSize();
 	th->hasChanged=true;
 	th->setNeedsTextureRecalculation();
@@ -372,7 +374,9 @@ ASFUNCTIONBODY_ATOM(TextField,_getWordWrap)
 ASFUNCTIONBODY_ATOM(TextField,_setWordWrap)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	ARG_CHECK(ARG_UNPACK(th->wordWrap));
+	bool WordWrap;
+	ARG_CHECK(ARG_UNPACK(WordWrap));
+	th->wordWrap = WordWrap;
 	th->setSizeAndPositionFromAutoSize();
 	th->hasChanged=true;
 	th->setNeedsTextureRecalculation();

@@ -541,7 +541,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 									bool isFocal = style->FillStyleType == FOCAL_RADIAL_GRADIENT;
 									bool isLinear = style->FillStyleType == LINEAR_GRADIENT;
 									MATRIX m = style->Matrix;
-									const std::vector<GRADRECORD>& gradRecords = isFocal ? style->FocalGradient.GradientRecords : style->Gradient.GradientRecords;
+									const std::vector<GRADRECORD>& gradRecords = style->Gradient.GradientRecords;
 									std::vector<NVGgradientStop> stops(gradRecords.size());
 									std::transform(gradRecords.begin(), gradRecords.end(), stops.begin(), [&](const GRADRECORD& record)
 									{
@@ -552,7 +552,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 									if (stops.back().stop != 1.0) // ensure we end gradient with ratio 1.0
 										stops.push_back(NVGgradientStop {stops.back().color,1.0});
 
-									int spreadMode = toNanoVGSpreadMode(isFocal ? style->FocalGradient.SpreadMode : style->Gradient.SpreadMode);
+									int spreadMode = toNanoVGSpreadMode(style->Gradient.SpreadMode);
 
 									NVGpaint pattern;
 									if (isLinear)
@@ -566,7 +566,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 									}
 									else
 									{
-										number_t x0 = isFocal ? style->FocalGradient.FocalPoint*16384.0 : 0.0;
+										number_t x0 = isFocal ? style->Gradient.FocalPoint*16384.0 : 0.0;
 										pattern = nvgRadialGradientStops(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), spreadMode,&style->bitmap->nanoVGGradientPattern);
 										float xform[6] =
 										{
@@ -660,7 +660,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 										bool isFocal = fill.FillStyleType == FOCAL_RADIAL_GRADIENT;
 										bool isLinear = fill.FillStyleType == LINEAR_GRADIENT;
 										MATRIX m = fill.Matrix;
-										const std::vector<GRADRECORD>& gradRecords = isFocal ? fill.FocalGradient.GradientRecords : fill.Gradient.GradientRecords;
+										const std::vector<GRADRECORD>& gradRecords = fill.Gradient.GradientRecords;
 										std::vector<NVGgradientStop> stops(gradRecords.size());
 										std::transform(gradRecords.begin(), gradRecords.end(), stops.begin(), [&](const GRADRECORD& record)
 										{
@@ -669,7 +669,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 											return NVGgradientStop { nvgRGBAf(r, g, b, a), float(record.Ratio) / 255.0f };
 										});
 
-										int spreadMode = toNanoVGSpreadMode(isFocal ? fill.FocalGradient.SpreadMode : fill.Gradient.SpreadMode);
+										int spreadMode = toNanoVGSpreadMode(fill.Gradient.SpreadMode);
 
 										NVGpaint pattern;
 										if (isLinear)
@@ -683,7 +683,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 										}
 										else
 										{
-											number_t x0 = isFocal ? fill.FocalGradient.FocalPoint*16384.0 : 0.0;
+											number_t x0 = isFocal ? fill.Gradient.FocalPoint*16384.0 : 0.0;
 											pattern = nvgRadialGradientStops(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), spreadMode,&fill.bitmap->nanoVGGradientPattern);
 											float xform[6] =
 											{

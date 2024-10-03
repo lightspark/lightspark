@@ -150,14 +150,12 @@ protected:
 	RECT ShapeBounds;
 	SHAPEWITHSTYLE Shapes;
 	tokensVector* tokens;
-	TextureChunk chunk;
 	DefineShapeTag(RECORDHEADER h,int v,RootMovieClip* root);
 public:
 	DefineShapeTag(RECORDHEADER h,std::istream& in, RootMovieClip* root);
 	~DefineShapeTag();
 	int getId() const override { return ShapeId; }
 	ASObject* instance(Class_base* c=nullptr) override;
-	void resizeCompleted() override;
 };
 
 class DefineShape2Tag: public DefineShapeTag
@@ -181,9 +179,9 @@ class DefineShape4Tag: public DefineShape3Tag
 {
 private:
 	RECT EdgeBounds;
-	UB UsesFillWindingRule;
-	UB UsesNonScalingStrokes;
-	UB UsesScalingStrokes;
+	bool UsesFillWindingRule:1;
+	bool UsesNonScalingStrokes:1;
+	bool UsesScalingStrokes:1;
 public:
 	DefineShape4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	int getId() const override { return ShapeId; }
@@ -216,8 +214,8 @@ class DefineMorphShape2Tag: public DefineMorphShapeTag
 private:
 	RECT StartEdgeBounds;
 	RECT EndEdgeBounds;
-	UB UsesNonScalingStrokes;
-	UB UsesScalingStrokes;
+	bool UsesNonScalingStrokes:1;
+	bool UsesScalingStrokes:1;
 public:
 	DefineMorphShape2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 };
@@ -228,22 +226,11 @@ friend class TextField;
 private:
 	UI16_SWF CharacterID;
 	RECT Bounds;
-	UB HasText;
-	UB WordWrap;
-	UB Multiline;
-	UB Password;
-	UB ReadOnly;
-	UB HasTextColor;
-	UB HasMaxLength;
-	UB HasFont;
-	UB HasFontClass;
-	UB AutoSize;
-	UB HasLayout;
-	UB NoSelect;
-	UB Border;
-	UB WasStatic;
-	UB HTML;
-	UB UseOutlines;
+	bool ReadOnly:1;
+	bool HasFont:1;
+	bool NoSelect:1;
+	bool WasStatic:1;
+	bool HTML:1;
 	UI16_SWF FontID;
 	STRING FontClass;
 	UI16_SWF FontHeight;
@@ -362,14 +349,14 @@ public:
 class PlaceObject2Tag: public DisplayListTag
 {
 protected:
-	bool PlaceFlagHasClipAction;
-	bool PlaceFlagHasClipDepth;
-	bool PlaceFlagHasName;
-	bool PlaceFlagHasRatio;
-	bool PlaceFlagHasColorTransform;
-	bool PlaceFlagHasMatrix;
-	bool PlaceFlagHasCharacter;
-	bool PlaceFlagMove;
+	bool PlaceFlagHasClipAction:1;
+	bool PlaceFlagHasClipDepth:1;
+	bool PlaceFlagHasName:1;
+	bool PlaceFlagHasRatio:1;
+	bool PlaceFlagHasColorTransform:1;
+	bool PlaceFlagHasMatrix:1;
+	bool PlaceFlagHasCharacter:1;
+	bool PlaceFlagMove:1;
 	UI16_SWF Depth;
 	UI16_SWF CharacterId;
 	MATRIX Matrix;
@@ -381,7 +368,6 @@ protected:
 	virtual void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
 	DictionaryTag* placedTag;
 public:
-	STRING Name;
 	uint32_t NameID;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root, AdditionalDataTag* datatag);
 	void execute(DisplayObjectContainer* parent,bool inskipping) override;
@@ -390,18 +376,14 @@ public:
 class PlaceObject3Tag: public PlaceObject2Tag
 {
 private:
-	bool PlaceFlagOpaqueBackground;
-	bool PlaceFlagHasVisible;
-	bool PlaceFlagHasImage;
-	bool PlaceFlagHasClassName;
-	bool PlaceFlagHasCacheAsBitmap;
-	bool PlaceFlagHasBlendMode;
-	bool PlaceFlagHasFilterList;
+	bool PlaceFlagOpaqueBackground:1;
+	bool PlaceFlagHasVisible:1;
+	bool PlaceFlagHasBlendMode:1;
+	bool BitmapCache:1;
+	bool Visible:1;
+	AS_BLENDMODE BlendMode;
 	STRING ClassName;
 	FILTERLIST SurfaceFilterList;
-	UI8 BlendMode;
-	UI8 BitmapCache;
-	UI8 Visible;
 	RGBA BackgroundColor;
 
 public:
@@ -447,8 +429,7 @@ class DefineButtonTag: public DictionaryTag
 {
 private:
 	UI16_SWF ButtonId;
-	UB ReservedFlags;
-	bool TrackAsMenu;
+	bool TrackAsMenu:1;
 	std::vector<BUTTONRECORD> Characters;
 public:
 	std::vector<BUTTONCONDACTION> condactions;
@@ -544,9 +525,9 @@ class DefineFont2Tag: public FontTag
 	friend class DefineTextTag; 
 private:
 	std::vector<uint32_t> OffsetTable;
-	bool FontFlagsHasLayout;
-	bool FontFlagsWideOffsets;
-	bool FontFlagsWideCodes;
+	bool FontFlagsHasLayout:1;
+	bool FontFlagsWideOffsets:1;
+	bool FontFlagsWideCodes:1;
 	LANGCODE LanguageCode;
 	UI16_SWF NumGlyphs;
 	uint32_t CodeTableOffset;
@@ -573,9 +554,9 @@ class DefineFont3Tag: public FontTag
 {
 private:
 	std::vector<uint32_t> OffsetTable;
-	UB FontFlagsHasLayout;
-	UB FontFlagsWideOffsets;
-	UB FontFlagsWideCodes;
+	bool FontFlagsHasLayout:1;
+	bool FontFlagsWideOffsets:1;
+	bool FontFlagsWideCodes:1;
 	LANGCODE LanguageCode;
 	UI16_SWF NumGlyphs;
 	uint32_t CodeTableOffset;
@@ -602,9 +583,9 @@ class DefineFont4Tag : public DictionaryTag
 {
 private:
 	UI16_SWF FontID;
-	UB FontFlagsHasFontData;
-	UB FontFlagsItalic;
-	UB FontFlagsBold;
+	bool FontFlagsHasFontData:1;
+	bool FontFlagsItalic:1;
+	bool FontFlagsBold:1;
 	STRING FontName;
 public:
 	DefineFont4Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root);

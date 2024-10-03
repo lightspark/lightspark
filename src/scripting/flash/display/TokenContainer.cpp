@@ -87,8 +87,8 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 			}
 			else
 			{
-				cursor.x += cur->ControlDeltaX;
-				cursor.y += cur->ControlDeltaY;
+				cursor.x += cur->DeltaX;
+				cursor.y += cur->DeltaY;
 				Vector2f p2(matrix.multiply2D(cursor));
 				cursor.x += cur->AnchorDeltaX;
 				cursor.y += cur->AnchorDeltaY;
@@ -104,8 +104,8 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 			shapesBuilder.endSubpathForStyles(color0, color1, linestyle,false);
 			if(cur->StateMoveTo)
 			{
-				cursor.x= cur->MoveDeltaX-shapebounds.Xmin;
-				cursor.y= cur->MoveDeltaY-shapebounds.Ymin;
+				cursor.x= cur->DeltaX-shapebounds.Xmin;
+				cursor.y= cur->DeltaY-shapebounds.Ymin;
 				Vector2f tmp(matrix.multiply2D(cursor));
 				p1.x = tmp.x;
 				p1.y = tmp.y;
@@ -164,8 +164,8 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 				}
 				else
 				{
-					controlX = curstart->DeltaX/2.0+float(curend->ControlDeltaX-curstart->DeltaX/2.0)*curratiofactor;
-					controlY = curstart->DeltaY/2.0+float(curend->ControlDeltaY-curstart->DeltaY/2.0)*curratiofactor;
+					controlX = curstart->DeltaX/2.0+float(curend->DeltaX-curstart->DeltaX/2.0)*curratiofactor;
+					controlY = curstart->DeltaY/2.0+float(curend->DeltaY-curstart->DeltaY/2.0)*curratiofactor;
 					anchorX = curstart->DeltaX/2.0+float(curend->AnchorDeltaX-curstart->DeltaX/2.0)*curratiofactor;
 					anchorY = curstart->DeltaY/2.0+float(curend->AnchorDeltaY-curstart->DeltaY/2.0)*curratiofactor;
 				}
@@ -174,15 +174,15 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 			{
 				if (curend->StraightFlag)
 				{
-					controlX = curstart->ControlDeltaX+float(curend->DeltaX/2.0-curstart->ControlDeltaX)*curratiofactor;
-					controlY = curstart->ControlDeltaY+float(curend->DeltaY/2.0-curstart->ControlDeltaY)*curratiofactor;
+					controlX = curstart->DeltaX+float(curend->DeltaX/2.0-curstart->DeltaX)*curratiofactor;
+					controlY = curstart->DeltaY+float(curend->DeltaY/2.0-curstart->DeltaY)*curratiofactor;
 					anchorX = curstart->AnchorDeltaX+float(curend->DeltaX/2.0-curstart->AnchorDeltaX)*curratiofactor;
 					anchorY = curstart->AnchorDeltaY+float(curend->DeltaY/2.0-curstart->AnchorDeltaY)*curratiofactor;
 				}
 				else
 				{
-					controlX = curstart->ControlDeltaX+float(curend->ControlDeltaX-curstart->ControlDeltaX)*curratiofactor;
-					controlY = curstart->ControlDeltaY+float(curend->ControlDeltaY-curstart->ControlDeltaY)*curratiofactor;
+					controlX = curstart->DeltaX+float(curend->DeltaX-curstart->DeltaX)*curratiofactor;
+					controlY = curstart->DeltaY+float(curend->DeltaY-curstart->DeltaY)*curratiofactor;
 					anchorX = curstart->AnchorDeltaX+float(curend->AnchorDeltaX-curstart->AnchorDeltaX)*curratiofactor;
 					anchorY = curstart->AnchorDeltaY+float(curend->AnchorDeltaY-curstart->AnchorDeltaY)*curratiofactor;
 				}
@@ -205,8 +205,8 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 			shapesBuilder.endSubpathForStyles(color0, color1, linestyle,true);
 			if(curstart->StateMoveTo)
 			{
-				cursor.x=(curstart->MoveDeltaX-boundsx)+float(curend->MoveDeltaX-curstart->MoveDeltaX)*curratiofactor;
-				cursor.y=(curstart->MoveDeltaY-boundsy)+float(curend->MoveDeltaY-curstart->MoveDeltaY)*curratiofactor;
+				cursor.x=(curstart->DeltaX-boundsx)+float(curend->DeltaX-curstart->DeltaX)*curratiofactor;
+				cursor.y=(curstart->DeltaY-boundsy)+float(curend->DeltaY-curstart->DeltaY)*curratiofactor;
 				Vector2 tmp(matrix.multiply2D(cursor));
 				p1.x = tmp.x;
 				p1.y = tmp.y;

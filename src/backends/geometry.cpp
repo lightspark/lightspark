@@ -330,7 +330,7 @@ std::map<uint16_t,LINESTYLE2>::iterator ShapesBuilder::getStrokeLineStyle(const 
 						
 						ls.FillType.Matrix = ratiomatrix;
 						ls.FillType.bitmap=_MNR(new BitmapContainer(nullptr));
-						std::vector<GRADRECORD>& gradrecords = stylesIt->FillType.FillStyleType==FOCAL_RADIAL_GRADIENT ? ls.FillType.FocalGradient.GradientRecords : ls.FillType.Gradient.GradientRecords;
+						std::vector<GRADRECORD>& gradrecords = ls.FillType.Gradient.GradientRecords;
 						gradrecords.reserve(stylesIt->FillType.StartColors.size());
 						GRADRECORD gr(0xff);
 						for (uint32_t i1=0; i1 < stylesIt->FillType.StartColors.size(); i1++)
@@ -356,9 +356,9 @@ std::map<uint16_t,LINESTYLE2>::iterator ShapesBuilder::getStrokeLineStyle(const 
 										break;
 									}
 							}
-							ls.FillType.FocalGradient.InterpolationMode=stylesIt->FillType.InterpolationMode;
-							ls.FillType.FocalGradient.SpreadMode=stylesIt->FillType.SpreadMode;
-							ls.FillType.FocalGradient.FocalPoint=stylesIt->FillType.StartFocalPoint + (stylesIt->FillType.EndFocalPoint-stylesIt->FillType.StartFocalPoint)*gradratio;
+							ls.FillType.Gradient.InterpolationMode=stylesIt->FillType.InterpolationMode;
+							ls.FillType.Gradient.SpreadMode=stylesIt->FillType.SpreadMode;
+							ls.FillType.Gradient.FocalPoint=stylesIt->FillType.StartFocalPoint + (stylesIt->FillType.EndFocalPoint-stylesIt->FillType.StartFocalPoint)*gradratio;
 							gradrecords.push_back(gr);
 							ls.FillType.ShapeBounds = boundsrc;
 						}
@@ -458,7 +458,7 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 					ratiomatrix.yy=stylesIt->StartGradientMatrix.yy*(1.0-gradratio)+stylesIt->EndGradientMatrix.yy*gradratio;
 
 					f.Matrix = ratiomatrix;
-					std::vector<GRADRECORD>& gradrecords = stylesIt->FillStyleType==FOCAL_RADIAL_GRADIENT ? f.FocalGradient.GradientRecords : f.Gradient.GradientRecords;
+					std::vector<GRADRECORD>& gradrecords = f.Gradient.GradientRecords;
 					gradrecords.reserve(stylesIt->StartColors.size());
 					GRADRECORD gr(0xff);
 					uint8_t compratio = ratio>>8;
@@ -485,9 +485,9 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 								break;
 							}
 						}
-						f.FocalGradient.InterpolationMode=stylesIt->InterpolationMode;
-						f.FocalGradient.SpreadMode=stylesIt->SpreadMode;
-						f.FocalGradient.FocalPoint=stylesIt->StartFocalPoint + (stylesIt->EndFocalPoint-stylesIt->StartFocalPoint)*gradratio;
+						f.Gradient.InterpolationMode=stylesIt->InterpolationMode;
+						f.Gradient.SpreadMode=stylesIt->SpreadMode;
+						f.Gradient.FocalPoint=stylesIt->StartFocalPoint + (stylesIt->EndFocalPoint-stylesIt->StartFocalPoint)*gradratio;
 						gradrecords.push_back(gr);
 						f.ShapeBounds = boundsrc;
 					}

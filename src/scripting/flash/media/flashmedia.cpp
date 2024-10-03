@@ -900,7 +900,7 @@ SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, uint32_t _buffertimesec
 	leftPeak(1),rightPeak(1),semSampleData(0)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
-	if (soundinfo && soundinfo->HasLoops)
+	if (soundinfo)
 		setLoops(soundinfo->LoopCount);
 	if (sampleproducer)
 	{
@@ -1473,7 +1473,7 @@ void SoundChannel::threadAbort()
 }
 void SoundChannel::checkEnvelope()
 {
-	if (soundinfo && soundinfo->HasEnvelope)
+	if (soundinfo && !soundinfo->SoundEnvelope.empty())
 	{
 		uint32_t playedtime = audioStream ? audioStream->getPlayedTime() : 0;
 		auto itprev = soundinfo->SoundEnvelope.begin();

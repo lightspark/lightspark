@@ -1045,7 +1045,7 @@ ASWorker::ASWorker(SystemState* s):
 	limits.max_recursion = s->flashMode == SystemState::AIR ? 2048 : 256;
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
-	gettimeofday(&last_garbagecollection, nullptr);
+	last_garbagecollection = compat_msectiming();
 	// start and end of gc list point to this to ensure that every added object gets a valid pointer set as its next/prev pointers
 	gcNext=this;
 	gcPrev=this;
@@ -1065,7 +1065,7 @@ ASWorker::ASWorker(Class_base* c):
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
 	loader = _MR(Class<Loader>::getInstanceS(this));
-	gettimeofday(&last_garbagecollection, nullptr);
+	last_garbagecollection = compat_msectiming();
 	// start and end of gc list point to this to ensure that every added object gets a valid pointer set as its next/prev pointers
 	gcNext=this;
 	gcPrev=this;
@@ -1084,7 +1084,7 @@ ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
 	loader = _MR(Class<Loader>::getInstanceS(this));
-	gettimeofday(&last_garbagecollection, nullptr);
+	last_garbagecollection = compat_msectiming();
 	// start and end of gc list point to this to ensure that every added object gets a valid pointer set as its next/prev pointers
 	gcNext=this;
 	gcPrev=this;
@@ -1105,6 +1105,7 @@ void ASWorker::finalize()
 	}
 	if (inShutdown)
 		return;
+	processGarbageCollection(true);
 	if (!isPrimordial)
 	{
 		threadAborting = true;
@@ -1141,18 +1142,18 @@ void ASWorker::finalize()
 	swf.reset();
 	EventDispatcher::finalize();
 	constantrefs.erase(this);
+	ASObject* ogc = this->gcNext;
+	while (ogc && ogc != this)
+	{
+		ogc->prepareShutdown();
+		ogc=ogc->gcNext;
+	}
 	// remove all references to variables as they might point to other constant reffed objects
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
 		(*it)->destroyContents();
 		(*it)->destruct();
 		(*it)->finalize();
-	}
-	ASObject* ogc = this->gcNext;
-	while (ogc && ogc != this)
-	{
-		ogc->prepareShutdown();
-		ogc=ogc->gcNext;
 	}
 	processGarbageCollection(true);
 	inShutdown=true;
@@ -1436,37 +1437,52 @@ void ASWorker::removeObjectFromGarbageCollector(ASObject* o)
 }
 void ASWorker::processGarbageCollection(bool force)
 {
-	struct timeval currtime;
-	gettimeofday(&currtime, nullptr);
-	int diff =  last_garbagecollection.tv_sec-currtime.tv_sec;
-	if (!force && diff < 10) // ony execute garbagecollection every 10 seconds
+	uint64_t currtime = compat_msectiming();
+	int64_t diff =  currtime-last_garbagecollection;
+	if (!force && diff < 10000) // ony execute garbagecollection every 10 seconds
 		return;
 	last_garbagecollection = currtime;
 	if (this->stage)
 		this->stage->cleanupDeadHiddenObjects();
 	inGarbageCollection=true;
+	bool hasEntries=this->gcNext && this->gcNext != this;
 	// use two loops to make sure objects added during inner loop are handled _after_ the inner loop is complete
-	while (this->gcNext && this->gcNext != this)
+	while (hasEntries)
 	{
 		ASObject* ogc = this->gcNext;
+		hasEntries=false;
 		while (ogc && ogc != this)
 		{
 			ASObject* ogcnext = ogc->gcNext;
-			ogc->removefromGarbageCollection();
-			if (ogc->deletedingarbagecollection)
+			if (!ogc->deletedingarbagecollection)
 			{
-				ogc->deletedingarbagecollection=false;
-				ogc->resetRefCount();
-				ogc->decRef();
-			}
-			else
-			{
+				ogc->removefromGarbageCollection();
 				if (ogc->handleGarbageCollection())
+				{
 					this->addObjectToGarbageCollector(ogc);
+					hasEntries=true;
+				}
 			}
 			ogc = ogcnext;
 		}
 	}
+	// delete all objects that were destructed during gc
+	ASObject* ogc = this->gcNext;
+	while (ogc && ogc != this)
+	{
+		ASObject* ogcnext = ogc->gcNext;
+		if (ogc->deletedingarbagecollection)
+		{
+			ogc->removefromGarbageCollection();
+			ogc->resetRefCount();
+			ogc->setConstant(false);
+			if (ogc->decRef())
+				ogc->deletedingarbagecollection=false;
+		}
+		ogc = ogcnext;
+	}
+	if (force && this->gcNext && this->gcNext != this)
+		processGarbageCollection(true);
 	inGarbageCollection=false;
 }
 

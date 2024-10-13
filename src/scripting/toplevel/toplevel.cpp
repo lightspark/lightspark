@@ -606,8 +606,11 @@ void SyntheticFunction::prepareShutdown()
 			ASObject* o = asAtomHandler::getObject(it->object);
 			if (o)
 				o->prepareShutdown();
+			if (o && !o->is<Global>())
+				o->removeStoredMember();
 		}
 	}
+	func_scope.reset();
 }
 bool SyntheticFunction::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {

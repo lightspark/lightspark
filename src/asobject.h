@@ -509,6 +509,7 @@ public:
 	static FORCE_INLINE bool isArray(const asAtom& a);
 	static FORCE_INLINE bool isClass(const asAtom& a);
 	static FORCE_INLINE bool isTemplate(const asAtom& a);
+	static FORCE_INLINE bool isAccessible(const asAtom& a);
 	static FORCE_INLINE SWFOBJECT_TYPE getObjectType(const asAtom& a);
 	static FORCE_INLINE bool checkArgumentConversion(const asAtom& a,const asAtom& obj);
 	static asAtom asTypelate(asAtom& a, asAtom& b, ASWorker* wrk);
@@ -1005,7 +1006,6 @@ protected:
 
 	FORCE_INLINE bool destructIntern()
 	{
-		removefromGarbageCollection();
 		destroyContents();
 		for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
 		{
@@ -1021,7 +1021,7 @@ protected:
 		traitsInitialized =false;
 		constructIndicator = false;
 		constructorCallComplete =false;
-		markedforgarbagecollection=false;
+		removefromGarbageCollection();
 		implEnable = true;
 		storedmembercount=0;
 #ifndef NDEBUG
@@ -1070,7 +1070,9 @@ public:
 	void setClass(Class_base* c);
 	FORCE_INLINE void addStoredMember()
 	{
-		assert(storedmembercount<=uint32_t(this->getRefCount()) || this->getConstant());
+		if (this->getConstant())
+			return;
+		assert(storedmembercount<=uint32_t(this->getRefCount()));
 		storedmembercount++;
 		if (markedforgarbagecollection)
 		{
@@ -2757,10 +2759,14 @@ FORCE_INLINE bool asAtomHandler::isNamespace(const asAtom& a) { return isObject(
 FORCE_INLINE bool asAtomHandler::isArray(const asAtom& a) { return isObject(a) && getObjectNoCheck(a)->is<Array>(); }
 FORCE_INLINE bool asAtomHandler::isClass(const asAtom& a) { return isObject(a) && getObjectNoCheck(a)->is<Class_base>(); }
 FORCE_INLINE bool asAtomHandler::isTemplate(const asAtom& a) { return isObject(a) && getObjectNoCheck(a)->getObjectType() == T_TEMPLATE; }
+FORCE_INLINE bool asAtomHandler::isAccessible(const asAtom& a)
+{
+	return !(a.uintval & ATOMTYPE_OBJECT_BIT) || !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getCached() || ((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getInDestruction();
+}
 
 FORCE_INLINE ASObject* asAtomHandler::getObject(const asAtom& a)
 {
-	assert(!(a.uintval & ATOMTYPE_OBJECT_BIT) || !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getCached() || ((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getInDestruction());
+	assert(isAccessible(a));
 	return a.uintval & ATOMTYPE_OBJECT_BIT ? (ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)) : nullptr;
 }
 FORCE_INLINE ASObject* asAtomHandler::getObjectNoCheck(const asAtom& a)

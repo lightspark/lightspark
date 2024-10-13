@@ -160,6 +160,7 @@ public:
 	void dumpDisplayList(unsigned int level=0);
 	void handleRemovedEvent(DisplayObject* child, bool keepOnStage = false, bool inskipping = false);
 	bool _removeChild(DisplayObject* child, bool direct=false, bool inskipping=false, bool keeponstage=false);
+	void _removeFromDisplayList(DisplayObject* child);
 	void _removeAllChildren();
 	void removeAVM1Listeners() override;
 	int getChildIndex(DisplayObject* child);

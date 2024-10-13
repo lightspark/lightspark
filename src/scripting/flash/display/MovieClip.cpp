@@ -307,6 +307,8 @@ void MovieClip::prepareShutdown()
 
 bool MovieClip::countCylicMemberReferences(garbagecollectorstate &gcstate)
 {
+	if (this->isOnStage() && !getSystemState()->isShuttingDown())
+		return false; // no need to count, as we have at least one reference left if this object is still on stage
 	if (gcstate.checkAncestors(this))
 		return false;
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);

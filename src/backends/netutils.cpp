@@ -844,7 +844,7 @@ bool DownloaderThreadBase::createDownloader(_R<StreamCache> cache,
 {
 	if(checkPolicyFile)
 	{
-		SecurityManager::EVALUATIONRESULT evaluationResult = \
+		SecurityManager::EVALUATIONRESULT evaluationResult = 
 			dispatcher->getSystemState()->securityManager->evaluatePoliciesURL(url, true);
 		if(threadAborting)
 			return false;

@@ -343,7 +343,7 @@ private:
 	std::deque<eventType> events_queue;
 	map<const Class_base*,_R<Prototype>> protoypeMap;
 	std::set<ASObject*> constantrefs;
-	struct timeval last_garbagecollection;
+	uint64_t last_garbagecollection;
 	std::vector<ABCContext*> contexts;
 public:
 	Stage* stage; // every worker has its own stage. In case of the primordial worker this points to the stage of the SystemState.

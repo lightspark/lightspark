@@ -1805,15 +1805,15 @@ void variables_map::destroyContents()
 		if (it->second.isrefcounted)
 		{
 			asAtom getter=it->second.getter;
-			asAtom setter=it->second.getter;
-			ASObject* o = asAtomHandler::getObject(it->second.var);
+			asAtom setter=it->second.setter;
+			ASObject* o = asAtomHandler::isAccessible(it->second.var) ? asAtomHandler::getObject(it->second.var) :nullptr;
 			Variables.erase(it);
 			if (o)
 				o->removeStoredMember();
-			o = asAtomHandler::getObject(getter);
+			o = asAtomHandler::isAccessible(getter) ? asAtomHandler::getObject(getter) :nullptr;
 			if (o)
 				o->removeStoredMember();
-			o = asAtomHandler::getObject(setter);
+			o = asAtomHandler::isAccessible(setter) ? asAtomHandler::getObject(setter) :nullptr;
 			if (o)
 				o->removeStoredMember();
 		}
@@ -1877,8 +1877,13 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 	auto it=Variables.cbegin();
 	while(it!=Variables.cend())
 	{
+		if (!asAtomHandler::isAccessible(it->second.var))
+		{
+			it++;
+			continue;
+		}
 		ASObject* o = asAtomHandler::getObject(it->second.var);
-		if (it->second.isrefcounted && o && !o->getCached() && !o->getConstant() && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
+		if (it->second.isrefcounted && o && !o->getConstant() && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
 		{
 			if (o==gcstate.startobj)
 			{
@@ -1999,7 +2004,7 @@ void ASObject::setClass(Class_base* c)
 
 void ASObject::removefromGarbageCollection()
 {
-	if (!deletedingarbagecollection)
+	if (getInstanceWorker())
 		getInstanceWorker()->removeObjectFromGarbageCollector(this);
 	markedforgarbagecollection=false;
 }
@@ -2013,15 +2018,8 @@ void ASObject::removeStoredMember()
 	storedmembercount--;
 	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1))
 	{
-		if (getInstanceWorker()->isInGarbageCollection() || this->markedforgarbagecollection)
-		{
-			handleGarbageCollection();
-		}
-		else
-		{
-			getInstanceWorker()->addObjectToGarbageCollector(this);
-			this->markedforgarbagecollection=true;
-		}
+		getInstanceWorker()->addObjectToGarbageCollector(this);
+		this->markedforgarbagecollection=true;
 		return;
 	}
 	decRef();
@@ -2030,7 +2028,7 @@ void ASObject::removeStoredMember()
 bool ASObject::handleGarbageCollection()
 {
 	if (getConstant() || getCached() || this->getInDestruction())
-		return true;
+		return false;
 	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1))
 	{
 		garbagecollectorstate gcstate(this);
@@ -2061,6 +2059,7 @@ bool ASObject::handleGarbageCollection()
 			this->deletedingarbagecollection=true;
 			this->destruct();
 			this->finalize();
+			this->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
 			return true;
 		}
 	}

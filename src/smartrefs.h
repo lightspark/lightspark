@@ -40,9 +40,9 @@ public:
 
 	int getRefCount() const { return ref_count; }
 	inline bool isLastRef() const { return !isConstant && ref_count==1; }
-	inline void setConstant()
+	inline void setConstant(bool c=true)
 	{
-		isConstant=true;
+		isConstant=c;
 	}
 	inline bool getConstant() const { return isConstant; }
 	inline bool getInDestruction() const { return inDestruction; }

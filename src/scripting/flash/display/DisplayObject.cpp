@@ -314,6 +314,8 @@ void DisplayObject::prepareShutdown()
 
 bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
+	if (this->isOnStage() && !getSystemState()->isShuttingDown())
+		return false; // no need to count, as we have at least one reference left if this object is still on stage
 	if (gcstate.checkAncestors(this))
 		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
@@ -937,7 +939,8 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 	{
 		//Remove previous mask
 		mask->ismask=false;
-		mask->maskee->removeStoredMember();
+		if (mask->maskee)
+			mask->maskee->removeStoredMember();
 		mask->maskee=nullptr;
 		mask->removeStoredMember();
 		mask=nullptr;
@@ -1803,12 +1806,16 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 	Locker locker(spinlock);
 	if(parent!=p)
 	{
+		if (parent)
+			parent->removeStoredMember();
 		if (p)
 		{
 			// mark old parent as dirty
 			geometryChanged();
 			getSystemState()->removeFromResetParentList(this);
 			getSystemState()->stage->removeHiddenObject(this);
+			p->incRef();
+			p->addStoredMember();
 		}
 		parent=p;
 		hasChanged=true;
@@ -2156,6 +2163,8 @@ string DisplayObject::toDebugString() const
 	char buf[100];
 	sprintf(buf,"%u pa=%p",getTagID(),getParent());
 	res += buf;
+	if (onStage)
+		res += " onstage";
 	return res;
 }
 IDrawable* DisplayObject::getFilterDrawable(bool smoothing)

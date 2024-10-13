@@ -30,14 +30,18 @@
 using namespace std;
 using namespace lightspark;
 
-LoaderThread::LoaderThread(_R<URLRequest> request, _R<Loader> ldr)
-  : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr), loaderInfo(ldr->getContentLoaderInfo()), source(URL)
+LoaderThread::LoaderThread(_R<URLRequest> request, Loader* ldr)
+  : DownloaderThreadBase(request, ldr), loader(ldr), loaderInfo(ldr->getContentLoaderInfo()), source(URL)
 {
+	loader->incRef();
+	loader->addStoredMember();
 }
 
-LoaderThread::LoaderThread(_R<ByteArray> _bytes, _R<Loader> ldr)
-  : DownloaderThreadBase(NullRef, ldr.getPtr()), bytes(_bytes), loader(ldr), loaderInfo(ldr->getContentLoaderInfo()), source(BYTES)
+LoaderThread::LoaderThread(_R<ByteArray> _bytes, Loader* ldr)
+  : DownloaderThreadBase(NullRef, ldr), bytes(_bytes), loader(ldr), loaderInfo(ldr->getContentLoaderInfo()), source(BYTES)
 {
+	loader->incRef();
+	loader->addStoredMember();
 }
 
 void LoaderThread::execute()
@@ -67,8 +71,8 @@ void LoaderThread::execute()
 			auto ev = Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker());
 			if (getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev)))
 				loaderInfo->addLoaderEvent(ev);
-
-			getVm(loader->getSystemState())->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
+			loader->incRef();
+			getVm(loader->getSystemState())->addEvent(_MR(loader),_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
 			delete sbuf;
 			// downloader will be deleted in jobFence
 			return;
@@ -99,7 +103,7 @@ void LoaderThread::execute()
 	}
 
 	istream s(sbuf);
-	ParseThread local_pt(s,loaderInfo->applicationDomain,loaderInfo->securityDomain,loader.getPtr(),url.getParsedURL());
+	ParseThread local_pt(s,loaderInfo->applicationDomain,loaderInfo->securityDomain,loader,url.getParsedURL());
 	local_pt.execute();
 
 	// Delete the bytes container (cache reader or bytes_buf)
@@ -128,15 +132,22 @@ void LoaderThread::execute()
 		return;
 	}
 	DisplayObject* res = obj.getPtr();
-	if (loader.getPtr() && res && (!res->is<RootMovieClip>() || res->as<RootMovieClip>()->hasFinishedLoading()))
+	if (loader && res && (!res->is<RootMovieClip>() || res->as<RootMovieClip>()->hasFinishedLoading()))
 	{
 		if (res != loader->getSystemState()->mainClip)
 		{
 			res->incRef();
-			getVm(loader->getSystemState())->addBufferEvent(NullRef,_MR(new (loader->getSystemState()->unaccountedMemory) SetLoaderContentEvent(_MR(res), loader)));
+			loader->incRef();
+			getVm(loader->getSystemState())->addBufferEvent(NullRef,_MR(new (loader->getSystemState()->unaccountedMemory) SetLoaderContentEvent(_MR(res), _MR(loader))));
 			getVm(loader->getSystemState())->addEvent(NullRef, _MR(new (loader->getSystemState()->unaccountedMemory) FlushEventBufferEvent(false,true)));
 		}
 	}
+}
+
+void LoaderThread::jobFence()
+{
+	loader->removeStoredMember();
+	DownloaderThreadBase::jobFence();
 }
 
 ASFUNCTIONBODY_ATOM(Loader,_constructor)
@@ -283,9 +294,8 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 		}
 	}
 
-	this->incRef();
 	r->incRef();
-	LoaderThread *thread=new LoaderThread(_MR(r), _MR(this));
+	LoaderThread *thread=new LoaderThread(_MR(r), this);
 
 	Locker l(this->spinlock);
 	this->jobs.push_back(thread);
@@ -325,7 +335,7 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 		b->writeBytes(bytes->getBufferNoCheck(),bytes->getLength());
 		bytes = _MR(b);
 
-		LoaderThread *thread=new LoaderThread(_MR(bytes), _MR(th));
+		LoaderThread *thread=new LoaderThread(_MR(bytes), th);
 		Locker l(th->spinlock);
 		th->jobs.push_back(thread);
 		wrk->getSystemState()->addJob(thread);

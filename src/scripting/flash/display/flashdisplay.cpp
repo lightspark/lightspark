@@ -953,6 +953,8 @@ void DisplayObjectContainer::checkClipDepth()
 
 bool DisplayObjectContainer::destruct()
 {
+	if (getParent())
+		getParent()->_removeFromDisplayList(this);
 	// clear all member variables in the display list first to properly handle cyclic reference detection
 	prepareDestruction();
 	clearDisplayList();
@@ -968,6 +970,8 @@ bool DisplayObjectContainer::destruct()
 
 void DisplayObjectContainer::finalize()
 {
+	if (getParent())
+		getParent()->_removeFromDisplayList(this);
 	// clear all member variables in the display list first to properly handle cyclic reference detection
 	prepareDestruction();
 	clearDisplayList();
@@ -995,6 +999,8 @@ void DisplayObjectContainer::prepareShutdown()
 
 bool DisplayObjectContainer::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
+	if (this->isOnStage() && !getSystemState()->isShuttingDown())
+		return false; // no need to count, as we have at least one reference left if this object is still on stage
 	if (gcstate.checkAncestors(this))
 		return false;
 	bool ret = InteractiveObject::countCylicMemberReferences(gcstate);
@@ -1105,6 +1111,8 @@ void InteractiveObject::prepareShutdown()
 
 bool InteractiveObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
+	if (this->isOnStage() && !getSystemState()->isShuttingDown())
+		return false; // no need to count, as we have at least one reference left if this object is still on stage
 	if (gcstate.checkAncestors(this))
 		return false;
 	bool ret = DisplayObject::countCylicMemberReferences(gcstate);
@@ -1400,21 +1408,13 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
 	}
-
-	{
-		Locker l(mutexDisplayList);
-		auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
-
-		if (direct || !this->isOnStage() || inskipping )
-			child->setParent(nullptr);
-		else if (!isOnStage() || !isVmThread())
-			getSystemState()->addDisplayObjectToResetParentList(child);
-		child->setMask(NullRef);
-		
-		//Erase this from the legacy child map (if it is in there)
-		umarkLegacyChild(child);
-		dynamicDisplayList.erase(it);
-	}
+	
+	if (direct || !this->isOnStage() || inskipping )
+		child->setParent(nullptr);
+	else if (!isOnStage() || !isVmThread())
+		getSystemState()->addDisplayObjectToResetParentList(child);
+	child->setMask(NullRef);
+	_removeFromDisplayList(child);
 	handleRemovedEvent(child, keeponstage, inskipping);
 	this->hasChanged=true;
 	this->requestInvalidation(getSystemState());
@@ -1422,6 +1422,15 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 	getSystemState()->stage->prepareForRemoval(child);
 	checkClipDepth();
 	return true;
+}
+void DisplayObjectContainer::_removeFromDisplayList(DisplayObject* child)
+{
+	Locker l(mutexDisplayList);
+	auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
+	
+	//Erase this from the legacy child map (if it is in there)
+	umarkLegacyChild(child);
+	dynamicDisplayList.erase(it);
 }
 
 void DisplayObjectContainer::_removeAllChildren()

@@ -321,7 +321,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	localeManager = new LocaleManager();
 	currencyManager = new CurrencyManager();
 
-	_NR<LoaderInfo> loaderInfo=_MR(Class<LoaderInfo>::getInstanceS(this->worker));
+	LoaderInfo* loaderInfo=Class<LoaderInfo>::getInstanceS(this->worker);
 	loaderInfo->applicationDomain = applicationDomain;
 	loaderInfo->setBytesLoaded(0);
 	loaderInfo->setBytesTotal(0);
@@ -632,6 +632,8 @@ SystemState::~SystemState()
 #ifdef PROFILING_SUPPORT
 	dumpFunctionCallCount();
 #endif
+	stage->_removeAllChildren();
+	this->resetParentList();
 	// finalize main worker
 	worker->finalize();
 	workerDomain->finalize();
@@ -1659,8 +1661,9 @@ void ParseThread::parseSWF(UI8 ver)
 {
 	if (loader && !loader->allowLoadingSWF())
 	{
-		_R<LoaderInfo> li=loader->getContentLoaderInfo();
-		getVm(loader->getSystemState())->addEvent(li,_MR(Class<SecurityErrorEvent>::getInstanceS(loader->getInstanceWorker(),
+		LoaderInfo* li=loader->getContentLoaderInfo();
+		li->incRef();
+		getVm(loader->getSystemState())->addEvent(_MR(li),_MR(Class<SecurityErrorEvent>::getInstanceS(loader->getInstanceWorker(),
 			"Cannot import a SWF file when LoaderContext.allowCodeImport is false."))); // 3226
 		return;
 	}
@@ -1669,7 +1672,7 @@ void ParseThread::parseSWF(UI8 ver)
 	RootMovieClip* root=nullptr;
 	if(parsedObject.isNull())
 	{
-		_R<LoaderInfo> li=loader->getContentLoaderInfo();
+		LoaderInfo* li=loader->getContentLoaderInfo();
 		root=RootMovieClip::getInstance(applicationDomain->getInstanceWorker(),li, applicationDomain, securityDomain);
 		if (!applicationDomain->getInstanceWorker()->isPrimordial)
 		{
@@ -1696,7 +1699,7 @@ void ParseThread::parseSWF(UI8 ver)
 		parseSWFHeader(root, ver);
 		if (loader)
 		{
-			_R<LoaderInfo> li=loader->getContentLoaderInfo();
+			LoaderInfo* li=loader->getContentLoaderInfo();
 			li->swfVersion = root->version;
 		}
 		
@@ -2015,7 +2018,7 @@ void ParseThread::parseExtensions(RootMovieClip* root)
 
 void ParseThread::parseBitmap()
 {
-	_R<LoaderInfo> li=loader->getContentLoaderInfo();
+	LoaderInfo* li=loader->getContentLoaderInfo();
 	switch (fileType)
 	{
 		case FILE_TYPE::FT_PNG:
@@ -2040,7 +2043,7 @@ void ParseThread::parseBitmap()
 		parsedObject=tmp;
 		tmp->setNeedsTextureRecalculation();
 	}
-	if (li.getPtr())
+	if (li)
 		li->setComplete();
 }
 

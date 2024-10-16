@@ -116,6 +116,7 @@ void Shape::prepareShutdown()
 	DisplayObject::prepareShutdown();
 	if (graphics)
 		graphics->prepareShutdown();
+	fromTag=nullptr;
 }
 
 void Shape::sinit(Class_base* c)

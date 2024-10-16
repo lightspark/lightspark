@@ -280,7 +280,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 	auto itldr = loaderlist.begin();
 	while (itldr != loaderlist.end())
 	{
-		if ((*itldr)->getContentLoaderInfo().getPtr() == dispatcher)
+		if ((*itldr)->getContentLoaderInfo() == dispatcher)
 		{
 			ldr = (*itldr);
 			break;
@@ -816,7 +816,7 @@ ASFUNCTIONBODY_ATOM(AVM1BitmapData,loadBitmap)
 		LOG(LOG_ERROR,"BitmapData.loadBitmap tag not found:"<<name);
 }
 
-AVM1Bitmap::AVM1Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li, istream* s, FILE_TYPE type):Bitmap(wrk,c,li,s,type)
+AVM1Bitmap::AVM1Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, istream* s, FILE_TYPE type):Bitmap(wrk,c,li,s,type)
 {
 }
 

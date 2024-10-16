@@ -2097,12 +2097,22 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 				ret = countCylicMemberReferences(gcstate);
 				gcstate.incCount(this);
 				gcstate.countedobjects.insert(this);
+				if (ret)
+				{
+					auto itc = gcstate.checkedobjects.find(this);
+					(*itc).second.hasmember=true;
+				}
 			}
 			gcstate.level--;
 		}
 		else
 		{
-			gcstate.incCount(this);
+			auto it = gcstate.countedobjects.find(this);
+			if (it == gcstate.countedobjects.end())
+			{
+				gcstate.incCount(this);
+				gcstate.countedobjects.insert(this);
+			}
 		}
 	}
 	return ret;

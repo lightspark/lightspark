@@ -165,7 +165,7 @@ public:
 	}
 	void applyFilters(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley);
 	_NR<DisplayObject> invalidateQueueNext;
-	_NR<LoaderInfo> loaderInfo;
+	LoaderInfo* loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
 	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,scrollRect);
 	_NR<ColorTransform> colorTransform;

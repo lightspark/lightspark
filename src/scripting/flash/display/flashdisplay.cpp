@@ -1176,8 +1176,8 @@ void InteractiveObject::onContextMenu(_NR<ASObject> oldValue)
 {
 	if (oldValue)
 	{
-		oldValue.fakeRelease();
 		oldValue->removeStoredMember();
+		oldValue.fakeRelease();
 	}
 	if (this->contextMenu->is<ContextMenu>())
 	{

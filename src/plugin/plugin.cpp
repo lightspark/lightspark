@@ -752,7 +752,7 @@ NPError nsPluginInstance::NewStream(NPMIMEType type, NPStream* stream, NPBool se
 			m_sys->setCookies(packedCookies.c_str());
 		}
 		//Now create a Downloader for this
-		dl=new NPDownloader(stream->url,m_sys->mainClip->loaderInfo.getPtr());
+		dl=new NPDownloader(stream->url,m_sys->mainClip->loaderInfo);
 		dl->setLength(stream->end);
 		mainDownloader=dl;
 		mainDownloaderStreambuf = mainDownloader->getCache()->createReader();

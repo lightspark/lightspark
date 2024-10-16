@@ -876,7 +876,7 @@ ppPluginInstance::ppPluginInstance(PP_Instance instance, int16_t argc, const cha
 	
 		//EngineData::startSDLMain();
 		EngineData::mainthread_running = true;
-		mainDownloader=new ppDownloader(swffile,m_sys->mainClip->loaderInfo.getPtr(),this);
+		mainDownloader=new ppDownloader(swffile,m_sys->mainClip->loaderInfo,this);
 		// loader is notified through parsethread
 		mainDownloader->getCache()->setNotifyLoader(false);
 	}

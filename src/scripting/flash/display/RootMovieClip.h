@@ -61,11 +61,12 @@ private:
 	unordered_map<uint32_t,_NR<IFunction>> avm1ClassConstructors;
 	unordered_map<uint32_t,AVM1InitActionTag*> avm1InitActionTags;
 public:
-	RootMovieClip(ASWorker* wrk,_NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
+	RootMovieClip(ASWorker* wrk,LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
 	~RootMovieClip();
 	void destroyTags();
 	bool destruct() override;
 	void finalize() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	void prepareShutdown() override;
 	bool hasFinishedLoading() override { return ACQUIRE_READ(finishedLoading); }
 	bool isWaitingForParser() { return waitingforparser; }
@@ -101,7 +102,7 @@ public:
 	URLInfo& getOrigin() { return origin; }
 	void DLL_PUBLIC setBaseURL(const tiny_string& url);
 	const URLInfo& getBaseURL();
-	static RootMovieClip* getInstance(ASWorker* wrk, _NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain);
+	static RootMovieClip* getInstance(ASWorker* wrk, LoaderInfo* li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain);
 	/*
 	 * The application domain for this clip
 	 */

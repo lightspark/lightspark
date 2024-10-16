@@ -33,12 +33,16 @@
 using namespace std;
 using namespace lightspark;
 
-Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li, std::istream *s, FILE_TYPE type):
+Bitmap::Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, std::istream *s, FILE_TYPE type):
 	DisplayObject(wrk,c),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	if(li)
+	{
 		loaderInfo = li;
+		loaderInfo->incRef();
+		loaderInfo->addStoredMember();
+	}
 
 	bitmapData = _MR(Class<BitmapData>::getInstanceS(wrk));
 	bitmapData->addUser(this);

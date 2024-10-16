@@ -30,7 +30,7 @@
 using namespace std;
 using namespace lightspark;
 
-RootMovieClip::RootMovieClip(ASWorker* wrk, _NR<LoaderInfo> li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
+RootMovieClip::RootMovieClip(ASWorker* wrk, LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
 	MovieClip(wrk,c),
 	parsingIsFailed(false),waitingforparser(false),Background(0xFF,0xFF,0xFF),frameRate(0),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
@@ -38,6 +38,17 @@ RootMovieClip::RootMovieClip(ASWorker* wrk, _NR<LoaderInfo> li, _NR<ApplicationD
 	this->objfreelist=nullptr; // ensure RootMovieClips aren't reused to avoid conflicts with "normal" MovieClips
 	subtype=SUBTYPE_ROOTMOVIECLIP;
 	loaderInfo=li;
+	if (li)
+	{
+		loaderInfo = li;
+		loaderInfo->incRef();
+		loaderInfo->addStoredMember();
+	}
+	if (applicationDomain)
+		applicationDomain->addStoredMember();
+	if (securityDomain)
+		securityDomain->addStoredMember();
+	
 	parsethread=nullptr;
 	hasSymbolClass=false;
 	hasMainClass=false;
@@ -75,7 +86,7 @@ void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 		tiny_string fileurl = g_path_is_absolute(filename.raw_buf()) ? g_filename_to_uri(filename.raw_buf(), nullptr,nullptr) : filename;
 		origin = origin.goToURL(fileurl);
 	}
-	if(!loaderInfo.isNull())
+	if(loaderInfo)
 	{
 		loaderInfo->setURL(origin.getParsedURL(), false);
 		loaderInfo->setLoaderURL(origin.getParsedURL());
@@ -103,7 +114,7 @@ const URLInfo& RootMovieClip::getBaseURL()
 }
 
 
-RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk,_NR<LoaderInfo> li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
+RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk, LoaderInfo* li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass(getSys());
 	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(wrk,li, appDomain, secDomain, movieClipClass);
@@ -418,7 +429,7 @@ void RootMovieClip::advanceFrame(bool implicit)
 	// ensure "complete" events are added _after_ the whole SystemState::tick() events are handled at least once
 	if (!completionHandled)
 	{
-		if (!loaderInfo.isNull())
+		if (loaderInfo)
 			loaderInfo->setComplete();
 		completionHandled=true;
 	}
@@ -433,18 +444,38 @@ void RootMovieClip::executeFrameScript()
 
 bool RootMovieClip::destruct()
 {
-	applicationDomain.reset();
-	securityDomain.reset();
+	if (applicationDomain)
+		applicationDomain->removeStoredMember();
+	applicationDomain.fakeRelease();
+	if (securityDomain)
+		securityDomain->removeStoredMember();
+	securityDomain.fakeRelease();
 	waitingforparser=false;
 	parsethread=nullptr;
 	return MovieClip::destruct();
 }
 void RootMovieClip::finalize()
 {
-	applicationDomain.reset();
-	securityDomain.reset();
+	if (applicationDomain)
+		applicationDomain->removeStoredMember();
+	applicationDomain.fakeRelease();
+	if (securityDomain)
+		securityDomain->removeStoredMember();
+	securityDomain.fakeRelease();
 	parsethread=nullptr;
 	MovieClip::finalize();
+}
+
+bool RootMovieClip::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+		return false;
+	bool ret = MovieClip::countCylicMemberReferences(gcstate);
+	if (applicationDomain)
+		ret = applicationDomain->countAllCylicMemberReferences(gcstate) || ret;
+	if (securityDomain)
+		ret = securityDomain->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void RootMovieClip::prepareShutdown()

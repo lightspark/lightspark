@@ -47,7 +47,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(tiny_string,pixelSnapping);
 	/* Call this after updating any member of 'data' */
 	void updatedData();
-	Bitmap(ASWorker* wrk, Class_base* c, _NR<LoaderInfo> li=NullRef, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
+	Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li=nullptr, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
 	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload=true);
 	~Bitmap();
 	bool destruct() override;

@@ -35,6 +35,8 @@ LoaderThread::LoaderThread(_R<URLRequest> request, Loader* ldr)
 {
 	loader->incRef();
 	loader->addStoredMember();
+	loaderInfo->incRef();
+	loaderInfo->addStoredMember();
 }
 
 LoaderThread::LoaderThread(_R<ByteArray> _bytes, Loader* ldr)
@@ -42,6 +44,8 @@ LoaderThread::LoaderThread(_R<ByteArray> _bytes, Loader* ldr)
 {
 	loader->incRef();
 	loader->addStoredMember();
+	loaderInfo->incRef();
+	loaderInfo->addStoredMember();
 }
 
 void LoaderThread::execute()
@@ -52,7 +56,8 @@ void LoaderThread::execute()
 	if(source==URL)
 	{
 		_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache(loader->getSystemState())));
-		if(!createDownloader(cache, loaderInfo, loaderInfo.getPtr(), false))
+		loaderInfo->incRef();
+		if(!createDownloader(cache, _MR(loaderInfo), loaderInfo, false))
 			return;
 
 		sbuf = cache->createReader();
@@ -69,7 +74,8 @@ void LoaderThread::execute()
 		{
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
 			auto ev = Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker());
-			if (getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev)))
+			loaderInfo->incRef();
+			if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev)))
 				loaderInfo->addLoaderEvent(ev);
 			loader->incRef();
 			getVm(loader->getSystemState())->addEvent(_MR(loader),_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
@@ -78,7 +84,8 @@ void LoaderThread::execute()
 			return;
 		}
 		auto ev = Class<Event>::getInstanceS(loader->getInstanceWorker(),"open");
-		if (getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev)))
+		loaderInfo->incRef();
+		if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev)))
 			loaderInfo->addLoaderEvent(ev);
 	}
 	else if(source==BYTES)
@@ -86,7 +93,8 @@ void LoaderThread::execute()
 		assert_and_throw(bytes->bytes);
 
 		auto ev = Class<Event>::getInstanceS(loader->getInstanceWorker(),"open");
-		if (getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev)))
+		loaderInfo->incRef();
+		if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev)))
 			loaderInfo->addLoaderEvent(ev);
 
 		loaderInfo->setBytesTotal(bytes->getLength());
@@ -126,7 +134,8 @@ void LoaderThread::execute()
 		if(!threadAborting)
 		{
 			auto ev = Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker());
-			if (getVm(loader->getSystemState())->addEvent(loaderInfo,_MR(ev)))
+			loaderInfo->incRef();
+			if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev)))
 				loaderInfo->addLoaderEvent(ev);
 		}
 		return;
@@ -147,6 +156,7 @@ void LoaderThread::execute()
 void LoaderThread::jobFence()
 {
 	loader->removeStoredMember();
+	loaderInfo->removeStoredMember();
 	DownloaderThreadBase::jobFence();
 }
 
@@ -301,14 +311,10 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 	this->jobs.push_back(thread);
 	this->getSystemState()->addJob(thread);
 }
-
 ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
-
-
 	th->unload();
-
 	_NR<ByteArray> bytes;
 	_NR<LoaderContext> context;
 	ARG_CHECK(ARG_UNPACK (bytes)(context, NullRef));
@@ -329,7 +335,6 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 
 	if(bytes->getLength()!=0)
 	{
-		th->incRef();
 		// better work on a copy of the source bytearray as it may be modified by actionscript before loading is completed
 		ByteArray* b = Class<ByteArray>::getInstanceSNoArgs(wrk);
 		b->writeBytes(bytes->getBufferNoCheck(),bytes->getLength());
@@ -380,7 +385,9 @@ void Loader::unload()
 	if(loaded)
 	{
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"unload");
-		if (getVm(getSystemState())->addEvent(getContentLoaderInfo(),_MR(ev)))
+		LoaderInfo* li = getContentLoaderInfo();
+		li->incRef();
+		if (getVm(getSystemState())->addEvent(_MR(li),_MR(ev)))
 			contentLoaderInfo->addLoaderEvent(ev);
 		loaded=false;
 	}
@@ -543,12 +550,11 @@ void Loader::setContent(DisplayObject* o)
 		content->incRef();
 		_addChildAt(content, 0);
 	}
-	if (!o->loaderInfo.isNull())
+	if (o->loaderInfo)
 		o->loaderInfo->setComplete();
 }
 
-_NR<LoaderInfo> Loader::getContentLoaderInfo() 
+LoaderInfo* Loader::getContentLoaderInfo() 
 {
-	contentLoaderInfo->incRef();
-	return _MNR(contentLoaderInfo);
+	return contentLoaderInfo;
 }

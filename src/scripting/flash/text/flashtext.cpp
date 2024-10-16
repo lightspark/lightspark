@@ -276,6 +276,7 @@ void TextField::prepareShutdown()
 		styleSheet->prepareShutdown();
 	if (tagvartarget)
 		tagvartarget->prepareShutdown();
+	tag=nullptr;
 }
 bool TextField::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {

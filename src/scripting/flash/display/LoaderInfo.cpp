@@ -51,6 +51,11 @@ LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, Loader* l):EventDispatcher(
 	loader(l),bytesData(NullRef),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
+	if (loader)
+	{
+		loader->incRef();
+		loader->addStoredMember();
+	}
 	subtype=SUBTYPE_LOADERINFO;
 	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(wrk));
 	parameters = _MR(new_asobject(wrk));
@@ -96,6 +101,8 @@ bool LoaderInfo::destruct()
 {
 	Locker l(spinlock);
 	sharedEvents.reset();
+	if (loader)
+		loader->removeStoredMember();
 	loader=nullptr;
 	applicationDomain.reset();
 	securityDomain.reset();
@@ -122,6 +129,8 @@ void LoaderInfo::finalize()
 {
 	Locker l(spinlock);
 	sharedEvents.reset();
+	if (loader)
+		loader->removeStoredMember();
 	loader=nullptr;
 	applicationDomain.reset();
 	securityDomain.reset();
@@ -153,6 +162,8 @@ void LoaderInfo::prepareShutdown()
 		parameters->prepareShutdown();
 	if (uncaughtErrorEvents)
 		uncaughtErrorEvents->prepareShutdown();
+	if (loader)
+		loader->prepareShutdown();
 }
 
 bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -160,6 +171,8 @@ bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	if (gcstate.checkAncestors(this))
 		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	if (loader)
+		ret = loader->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 
@@ -396,7 +409,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getWidth)
 
 	if(!th->loader)
 	{
-		if (th == wrk->getSystemState()->mainClip->loaderInfo.getPtr())
+		if (th == wrk->getSystemState()->mainClip->loaderInfo)
 		{
 			asAtomHandler::setInt(ret,wrk,wrk->getSystemState()->mainClip->getNominalWidth());
 			return;
@@ -420,7 +433,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getHeight)
 
 	if(!th->loader)
 	{
-		if (th == wrk->getSystemState()->mainClip->loaderInfo.getPtr())
+		if (th == wrk->getSystemState()->mainClip->loaderInfo)
 		{
 			asAtomHandler::setInt(ret,wrk,wrk->getSystemState()->mainClip->getNominalHeight());
 			return;

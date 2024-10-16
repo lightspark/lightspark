@@ -607,6 +607,7 @@ void SimpleButton::prepareShutdown()
 		soundchannel_OverUpToOverDown->prepareShutdown();
 	if(soundchannel_OverDownToOverUp)
 		soundchannel_OverDownToOverUp->prepareShutdown();
+	buttontag=nullptr;
 }
 
 bool SimpleButton::countCylicMemberReferences(garbagecollectorstate& gcstate)

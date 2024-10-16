@@ -140,7 +140,7 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	avm1mouselistenercount(0),avm1framelistenercount(0),
 	onStage(false),visible(true),
 	mask(nullptr),maskee(nullptr),clipMask(nullptr),
-	invalidateQueueNext(),loaderInfo(),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
+	invalidateQueueNext(),loaderInfo(nullptr),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
 	name(BUILTIN_STRINGS::EMPTY),
 	opaqueBackground(asAtomHandler::nullAtom)
 {
@@ -166,7 +166,7 @@ void DisplayObject::finalize()
 	getSystemState()->stage->removeHiddenObject(this);
 	removeAVM1Listeners();
 	EventDispatcher::finalize();
-	parent=nullptr;
+	setParent(nullptr);
 	eventparentmap.clear();
 	if (mask)
 		mask->removeStoredMember();
@@ -178,7 +178,9 @@ void DisplayObject::finalize()
 		clipMask->removeStoredMember();
 	clipMask=nullptr;
 	matrix.reset();
-	loaderInfo.reset();
+	if (loaderInfo)
+		loaderInfo->removeStoredMember();
+	loaderInfo=nullptr;
 	colorTransform.reset();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
@@ -213,7 +215,7 @@ bool DisplayObject::destruct()
 	ismask=false;
 	filterlistHasChanged=false;
 	maxfilterborder=0;
-	parent=nullptr;
+	setParent(nullptr);
 	eventparentmap.clear();
 	if (mask)
 		mask->removeStoredMember();
@@ -225,7 +227,9 @@ bool DisplayObject::destruct()
 		clipMask->removeStoredMember();
 	clipMask=nullptr;
 	matrix.reset();
-	loaderInfo.reset();
+	if (loaderInfo)
+		loaderInfo->removeStoredMember();
+	loaderInfo=nullptr;
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
 	colorTransform.reset();
@@ -337,6 +341,10 @@ bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		ret = maskee->countAllCylicMemberReferences(gcstate) || ret;
 	if (clipMask)
 		ret = clipMask->countAllCylicMemberReferences(gcstate) || ret;
+	if (loaderInfo)
+		ret = loaderInfo->countAllCylicMemberReferences(gcstate) || ret;
+	if (parent)
+		ret = parent->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 
@@ -1655,14 +1663,14 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getLoaderInfo)
 	 * behaviour, even though the documentation states that only
 	 * the main class should have non-null loaderInfo. */
 	_NR<RootMovieClip> r=th->getRoot();
-	if(r.isNull() || r->loaderInfo.isNull())
+	if(r.isNull() || !r->loaderInfo)
 	{
 		asAtomHandler::setNull(ret);
 		return;
 	}
 	
 	r->loaderInfo->incRef();
-	ret = asAtomHandler::fromObject(r->loaderInfo.getPtr());
+	ret = asAtomHandler::fromObject(r->loaderInfo);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getStage)

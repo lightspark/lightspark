@@ -33,7 +33,7 @@ private:
 	enum SOURCE { URL, BYTES };
 	_NR<ByteArray> bytes;
 	Loader* loader;
-	_NR<LoaderInfo> loaderInfo;
+	LoaderInfo* loaderInfo;
 	SOURCE source;
 	void execute() override;
 	void jobFence() override;
@@ -81,7 +81,7 @@ public:
 	}
 	void setContent(DisplayObject* o);
 	DisplayObject* getContent() const { return content; }
-	_NR<LoaderInfo> getContentLoaderInfo();
+	LoaderInfo* getContentLoaderInfo();
 	bool allowLoadingSWF() { return allowCodeImport; }
 	bool hasAVM1Target() const { return !avm1target.isNull(); }
 	void loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _avm1target=nullptr);

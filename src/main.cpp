@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include <glib.h>
+#include <glib/gstdio.h>
 #include "version.h"
 #include "backends/security.h"
 #include "backends/config.h"
@@ -87,13 +88,39 @@ class StandaloneEngineData: public EngineData
 public:
 	StandaloneEngineData(const tiny_string& filedatapath,const tiny_string& absolutepath)
 	{
-		sharedObjectDatapath = Config::getConfig()->getCacheDirectory();
+		sharedObjectDatapath = Config::getConfig()->getUserDataDirectory();
 		sharedObjectDatapath += G_DIR_SEPARATOR_S;
 		sharedObjectDatapath += "data";
+		// move sharedObject data from old location to new location, if new location doesn't exist yet
+		if (!g_file_test(sharedObjectDatapath.raw_buf(),G_FILE_TEST_EXISTS))
+		{
+			g_mkdir_with_parents(Config::getConfig()->getUserDataDirectory().c_str(),S_IRUSR | S_IWUSR | S_IXUSR);
+			tiny_string oldsharedObjectDatapath = Config::getConfig()->getCacheDirectory();
+			oldsharedObjectDatapath += G_DIR_SEPARATOR_S;
+			oldsharedObjectDatapath += "data";
+			if (g_file_test(oldsharedObjectDatapath.raw_buf(),G_FILE_TEST_EXISTS))
+			{
+				if (g_rename(oldsharedObjectDatapath.raw_buf(),sharedObjectDatapath.raw_buf()) != 0)
+					LOG(LOG_ERROR,"couldn't move shared object data from cache directory to user data directory");
+			}
+		}
 		sharedObjectDatapath += filedatapath;
+		
 
-		mApplicationStoragePath = Config::getConfig()->getCacheDirectory();
+		mApplicationStoragePath = Config::getConfig()->getUserDataDirectory();
 		mApplicationStoragePath += filedatapath;
+		// move ApplicationStorage data from old location to new location, if new location doesn't exist yet
+		if (!g_file_test(mApplicationStoragePath.raw_buf(),G_FILE_TEST_EXISTS))
+		{
+			g_mkdir_with_parents(Config::getConfig()->getUserDataDirectory().c_str(),S_IRUSR | S_IWUSR | S_IXUSR);
+			tiny_string oldmApplicationStoragePath = Config::getConfig()->getCacheDirectory();
+			oldmApplicationStoragePath += filedatapath;
+			if (g_file_test(oldmApplicationStoragePath.raw_buf(),G_FILE_TEST_EXISTS))
+			{
+				if (g_rename(oldmApplicationStoragePath.raw_buf(),mApplicationStoragePath.raw_buf()) != 0)
+					LOG(LOG_ERROR,"couldn't move appstorage data from cache directory to user data directory");
+			}
+		}
 		mApplicationStoragePath += G_DIR_SEPARATOR_S;
 		mApplicationStoragePath += "appstorage";
 		mBaseDir = g_path_get_dirname(absolutepath.raw_buf());

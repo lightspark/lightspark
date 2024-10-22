@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* use user data directory instead of cache directory to store user data (like savegames or settings)
 	* implement command line argument to spoof the OS lightspark is reporting to the swf
 	* add simple launch dialog that is displayed on startup if no swf file is specified
 	* add stub for flash.profiler.showRedrawRegions

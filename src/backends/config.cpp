@@ -84,7 +84,7 @@ Config::Config():
 	systemConfigDirectories(g_get_system_config_dirs()),userConfigDirectory(g_get_user_config_dir()),
 	//DEFAULT SETTINGS
 	defaultCacheDirectory((string) g_get_user_cache_dir() + G_DIR_SEPARATOR_S + "lightspark"),
-	cacheDirectory(defaultCacheDirectory),cachePrefix("cache"),
+	cacheDirectory(defaultCacheDirectory),cachePrefix("cache"),userDataDirectory((string)g_get_user_data_dir() + G_DIR_SEPARATOR_S + "lightspark"),
 	renderingEnabled(true)
 {
 #ifdef _WIN32

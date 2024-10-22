@@ -48,6 +48,7 @@ namespace lightspark
 		std::string gnashPath;
 		//Specifies the directory where the app can store files
 		std::string dataDirectory;
+		std::string userDataDirectory;
 
 		//Specifies if rendering should be done
 		bool renderingEnabled;
@@ -60,6 +61,7 @@ namespace lightspark
 		const std::string& getCacheDirectory() const { return cacheDirectory; }
 		const std::string& getCachePrefix() const { return cachePrefix; }
 		const std::string& getDataDirectory() const { return dataDirectory; }
+		const std::string& getUserDataDirectory() const { return userDataDirectory; }
 		
 		const std::string& getGnashPath() const { return gnashPath; }
 

@@ -32,35 +32,26 @@ using namespace lightspark;
 
 RootMovieClip::RootMovieClip(ASWorker* wrk, LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
 	MovieClip(wrk,c),
-	parsingIsFailed(false),waitingforparser(false),Background(0xFF,0xFF,0xFF),frameRate(0),
+	parsingIsFailed(false),waitingforparser(false),Background(0xFF,0xFF,0xFF),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
 	this->objfreelist=nullptr; // ensure RootMovieClips aren't reused to avoid conflicts with "normal" MovieClips
 	subtype=SUBTYPE_ROOTMOVIECLIP;
-	loaderInfo=li;
-	if (li)
-	{
-		loaderInfo = li;
-		loaderInfo->incRef();
-		loaderInfo->addStoredMember();
-	}
+	setLoaderInfo(li);
 	if (applicationDomain)
-		applicationDomain->addStoredMember();
+		applicationDomain->setRefConstant();
 	if (securityDomain)
-		securityDomain->addStoredMember();
-	
+		securityDomain->setRefConstant();
+	loadedFrom = applicationDomain.getPtr();
 	parsethread=nullptr;
 	hasSymbolClass=false;
 	hasMainClass=false;
-	usesActionScript3=false;
 	completionHandled=false;
 	executingFrameScriptCount=0;
 }
 
 RootMovieClip::~RootMovieClip()
 {
-	for(auto it=dictionary.begin();it!=dictionary.end();++it)
-		delete it->second;
 }
 
 void RootMovieClip::destroyTags()
@@ -77,49 +68,30 @@ void RootMovieClip::parsingFailed()
 
 void RootMovieClip::setOrigin(const tiny_string& u, const tiny_string& filename)
 {
-	//We can use this origin to implement security measures.
-	//Note that for plugins, this url is NOT the page url, but it is the swf file url.
-	origin = URLInfo(u);
-	//If this URL doesn't contain a filename, add the one passed as an argument (used in main.cpp)
-	if(origin.getPathFile() == "" && filename != "")
-	{
-		tiny_string fileurl = g_path_is_absolute(filename.raw_buf()) ? g_filename_to_uri(filename.raw_buf(), nullptr,nullptr) : filename;
-		origin = origin.goToURL(fileurl);
-	}
+	applicationDomain->setOrigin(u,filename);
 	if(loaderInfo)
 	{
-		loaderInfo->setURL(origin.getParsedURL(), false);
-		loaderInfo->setLoaderURL(origin.getParsedURL());
+		loaderInfo->setURL(getOrigin().getParsedURL(), false);
+		loaderInfo->setLoaderURL(getOrigin().getParsedURL());
 	}
+}
+
+URLInfo& RootMovieClip::getOrigin() 
+{
+	return applicationDomain->getOrigin();
 }
 
 void RootMovieClip::setBaseURL(const tiny_string& url)
 {
-	//Set the URL to be used in resolving relative paths. For the
-	//plugin this is either the value of base attribute in the
-	//OBJECT or EMBED tag or, if the attribute is not provided,
-	//the address of the hosting HTML page.
-	baseURL = URLInfo(url);
+	applicationDomain->setBaseURL(url);
 }
-
-const URLInfo& RootMovieClip::getBaseURL()
-{
-	//The plugin uses the address of the HTML page (baseURL) for
-	//resolving relative paths. AIR and the standalone Lightspark
-	//use the SWF location (origin).
-	if(baseURL.isValid())
-		return baseURL;
-	else
-		return origin;
-}
-
 
 RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk, LoaderInfo* li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass(getSys());
 	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(wrk,li, appDomain, secDomain, movieClipClass);
 	ret->constructorCallComplete = true;
-	ret->loadedFrom=ret;
+	ret->loadedFrom=appDomain.getPtr();
 	return ret;
 }
 
@@ -136,31 +108,6 @@ bool RootMovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, n
 //	return true;
 }
 
-void RootMovieClip::setFrameSize(const lightspark::RECT& f)
-{
-	frameSize=f;
-}
-
-lightspark::RECT RootMovieClip::getFrameSize() const
-{
-	return frameSize;
-}
-
-void RootMovieClip::setFrameRate(float f)
-{
-	if (frameRate != f)
-	{
-		frameRate=f;
-		if (this == getSystemState()->mainClip )
-			getSystemState()->setRenderRate(frameRate);
-	}
-}
-
-float RootMovieClip::getFrameRate() const
-{
-	return frameRate;
-}
-
 void RootMovieClip::commitFrame(bool another)
 {
 	setFramesLoaded(frames.size());
@@ -169,14 +116,14 @@ void RootMovieClip::commitFrame(bool another)
 		frames.push_back(Frame());
 	checkSound(frames.size());
 
-	if(getFramesLoaded()==1 && frameRate!=0)
+	if(getFramesLoaded()==1 && applicationDomain->getFrameRate()!=0)
 	{
 		SystemState* sys = getSys();
 		if(this==sys->mainClip || !hasMainClass)
 		{
 			/* now the frameRate is available and all SymbolClass tags have created their classes */
 			// in AS3 this is added to the stage after the construction of the main object is completed (if a main object exists)
-			if (!usesActionScript3 || !hasMainClass)
+			if (!needsActionScript3() || !hasMainClass)
 			{
 				while (!getVm(sys)->hasEverStarted()) // ensure that all builtin classes are defined
 					compat_msleep(10);
@@ -222,7 +169,7 @@ void RootMovieClip::constructionComplete(bool _explicit)
 	incRef();
 	getSystemState()->stage->_addChildAt(this,0);
 	this->setOnStage(true,true);
-	getSystemState()->addTick(1000/frameRate,getSystemState());
+	getSystemState()->addTick(1000/applicationDomain->getFrameRate(),getSystemState());
 }
 void RootMovieClip::afterConstruction(bool _explicit)
 {
@@ -234,6 +181,12 @@ void RootMovieClip::afterConstruction(bool _explicit)
 		getSystemState()->stage->advanceFrame(true);
 		initFrame();
 	}
+}
+
+bool RootMovieClip::needsActionScript3() const
+{
+	assert(getSystemState()->isShuttingDown() || applicationDomain || getInDestruction() || deletedingarbagecollection);
+	return !this->applicationDomain || this->applicationDomain->usesActionScript3;
 }
 void RootMovieClip::revertFrame()
 {
@@ -250,76 +203,6 @@ RGB RootMovieClip::getBackground()
 void RootMovieClip::setBackground(const RGB& bg)
 {
 	Background=bg;
-}
-
-/* called in parser's thread context */
-void RootMovieClip::addToDictionary(DictionaryTag* r)
-{
-	Locker l(dictSpinlock);
-	dictionary[r->getId()] = r;
-}
-
-/* called in vm's thread context */
-DictionaryTag* RootMovieClip::dictionaryLookup(int id)
-{
-	Locker l(dictSpinlock);
-	auto it = dictionary.find(id);
-	if(it==dictionary.end())
-	{
-		LOG(LOG_ERROR,"No such Id on dictionary " << id << " for " << origin);
-		//throw RunTimeException("Could not find an object on the dictionary");
-		return nullptr;
-	}
-	return it->second;
-}
-DictionaryTag* RootMovieClip::dictionaryLookupByName(uint32_t nameID)
-{
-	Locker l(dictSpinlock);
-	auto it = dictionary.begin();
-	for(;it!=dictionary.end();++it)
-	{
-		if(it->second->nameID==nameID)
-			return it->second;
-	}
-	// tag not found, also check case insensitive
-	if(it==dictionary.end())
-	{
-		
-		tiny_string namelower = getSystemState()->getStringFromUniqueId(nameID).lowercase();
-		it = dictionary.begin();
-		for(;it!=dictionary.end();++it)
-		{
-			if (it->second->nameID == UINT32_MAX)
-				continue;
-			tiny_string dictnamelower = getSystemState()->getStringFromUniqueId(it->second->nameID);
-			dictnamelower = dictnamelower.lowercase();
-			if(dictnamelower==namelower)
-				return it->second;
-		}
-	}
-	LOG(LOG_ERROR,"No such name on dictionary " << getSystemState()->getStringFromUniqueId(nameID) << " for " << origin);
-	return nullptr;
-}
-
-void RootMovieClip::addToScalingGrids(const DefineScalingGridTag* r)
-{
-	Locker l(scalinggridsmutex);
-	scalinggrids[r->CharacterId] = r->Splitter;
-}
-
-lightspark::RECT* RootMovieClip::ScalingGridsLookup(int id)
-{
-	Locker l(scalinggridsmutex);
-	auto it = scalinggrids.find(id);
-	if(it==scalinggrids.end())
-		return nullptr;
-	return &(*it).second;
-}
-
-void RootMovieClip::resizeCompleted()
-{
-	for(auto it=dictionary.begin();it!=dictionary.end();++it)
-		it->second->resizeCompleted();
 }
 
 _NR<RootMovieClip> RootMovieClip::getRoot()
@@ -424,7 +307,7 @@ void RootMovieClip::advanceFrame(bool implicit)
 	}
 	waitingforparser=false;
 
-	if (!implicit || !usesActionScript3 || !state.explicit_FP)
+	if (!implicit || !needsActionScript3() || !state.explicit_FP)
 		MovieClip::advanceFrame(implicit);
 	// ensure "complete" events are added _after_ the whole SystemState::tick() events are handled at least once
 	if (!completionHandled)
@@ -444,178 +327,29 @@ void RootMovieClip::executeFrameScript()
 
 bool RootMovieClip::destruct()
 {
-	if (applicationDomain)
-		applicationDomain->removeStoredMember();
-	applicationDomain.fakeRelease();
-	if (securityDomain)
-		securityDomain->removeStoredMember();
-	securityDomain.fakeRelease();
+	applicationDomain.reset();
+	securityDomain.reset();
 	waitingforparser=false;
 	parsethread=nullptr;
-	return MovieClip::destruct();
+	return MovieClip::destruct();;
 }
 void RootMovieClip::finalize()
 {
-	if (applicationDomain)
-		applicationDomain->removeStoredMember();
-	applicationDomain.fakeRelease();
-	if (securityDomain)
-		securityDomain->removeStoredMember();
-	securityDomain.fakeRelease();
+	applicationDomain.reset();
+	securityDomain.reset();
 	parsethread=nullptr;
 	MovieClip::finalize();
 }
 
-bool RootMovieClip::countCylicMemberReferences(garbagecollectorstate& gcstate)
-{
-	if (gcstate.checkAncestors(this))
-		return false;
-	bool ret = MovieClip::countCylicMemberReferences(gcstate);
-	if (applicationDomain)
-		ret = applicationDomain->countAllCylicMemberReferences(gcstate) || ret;
-	if (securityDomain)
-		ret = securityDomain->countAllCylicMemberReferences(gcstate) || ret;
-	return ret;
-}
-
-void RootMovieClip::prepareShutdown()
-{
-	if (preparedforshutdown)
-		return;
-	MovieClip::prepareShutdown();
-	if (applicationDomain)
-		applicationDomain->prepareShutdown();
-	if (securityDomain)
-		securityDomain->prepareShutdown();
-}
-
-void RootMovieClip::addBinding(const tiny_string& name, DictionaryTag *tag)
-{
-	// This function will be called only be the parsing thread,
-	// and will only access the last frame, so no locking needed.
-	tag->bindingclassname = name;
-	uint32_t pos = name.rfind(".");
-	if (pos== tiny_string::npos)
-		classesToBeBound[QName(getSystemState()->getUniqueStringId(name),BUILTIN_STRINGS::EMPTY)] =  tag;
-	else
-		classesToBeBound[QName(getSystemState()->getUniqueStringId(name.substr(pos+1,name.numChars()-(pos+1))),getSystemState()->getUniqueStringId(name.substr(0,pos)))] = tag;
-}
-
 void RootMovieClip::bindClass(const QName& classname, Class_inherit* cls)
 {
-	if (cls->isBinded() || classesToBeBound.empty())
-		return;
-
-	auto it=classesToBeBound.find(classname);
-	if(it!=classesToBeBound.end())
-	{
-		cls->bindToTag(it->second);
-		classesToBeBound.erase(it);
-	}
+	applicationDomain->bindClass(classname, cls);
 }
 
-void RootMovieClip::checkBinding(DictionaryTag *tag)
-{
-	if (tag->bindingclassname.empty())
-		return;
-	multiname clsname(nullptr);
-	clsname.name_type=multiname::NAME_STRING;
-	clsname.isAttribute = false;
-
-	uint32_t pos = tag->bindingclassname.rfind(".");
-	tiny_string ns;
-	tiny_string nm;
-	if (pos != tiny_string::npos)
-	{
-		nm = tag->bindingclassname.substr(pos+1,tag->bindingclassname.numBytes());
-		ns = tag->bindingclassname.substr(0,pos);
-		clsname.hasEmptyNS=false;
-	}
-	else
-	{
-		nm = tag->bindingclassname;
-		ns = "";
-	}
-	clsname.name_s_id=getSystemState()->getUniqueStringId(nm);
-	clsname.ns.push_back(nsNameAndKind(getSystemState(),ns,NAMESPACE));
-	
-	ASObject* typeObject = nullptr;
-	auto i = applicationDomain->classesBeingDefined.cbegin();
-	while (i != applicationDomain->classesBeingDefined.cend())
-	{
-		if(i->first->name_s_id == clsname.name_s_id && i->first->ns[0].nsRealId == clsname.ns[0].nsRealId)
-		{
-			typeObject = i->second;
-			break;
-		}
-		i++;
-	}
-	if (typeObject == nullptr)
-	{
-		ASObject* target;
-		asAtom o=asAtomHandler::invalidAtom;
-		applicationDomain->getVariableAndTargetByMultiname(o,clsname,target,getInstanceWorker());
-		if (asAtomHandler::isValid(o))
-			typeObject=asAtomHandler::getObject(o);
-	}
-	if (typeObject != nullptr)
-	{
-		Class_inherit* cls = typeObject->as<Class_inherit>();
-		if (cls)
-		{
-			ABCVm *vm = getVm(getSystemState());
-			vm->buildClassAndBindTag(tag->bindingclassname.raw_buf(), tag,cls);
-			tag->bindedTo=cls;
-			tag->bindingclassname = "";
-			cls->bindToTag(tag);
-		}
-	}
-}
-
-void RootMovieClip::registerEmbeddedFont(const tiny_string fontname, FontTag *tag)
-{
-	if (!fontname.empty())
-	{
-		auto it = embeddedfonts.find(fontname);
-		if (it == embeddedfonts.end())
-		{
-			embeddedfonts[fontname] = tag;
-			// it seems that adobe allows fontnames to be lowercased and stripped of spaces and numbers
-			tiny_string tmp = fontname.lowercase();
-			tiny_string fontnamenormalized;
-			for (auto it = tmp.begin();it != tmp.end(); it++)
-			{
-				if (*it == ' ' || (*it >= '0' &&  *it <= '9'))
-					continue;
-				fontnamenormalized += *it;
-			}
-			embeddedfonts[fontnamenormalized] = tag;
-		}
-	}
-	embeddedfontsByID[tag->getId()] = tag;
-}
-
-FontTag *RootMovieClip::getEmbeddedFont(const tiny_string fontname) const
-{
-	auto it = embeddedfonts.find(fontname);
-	if (it != embeddedfonts.end())
-		return it->second;
-	it = embeddedfonts.find(fontname.lowercase());
-	if (it != embeddedfonts.end())
-		return it->second;
-	return nullptr;
-}
-FontTag *RootMovieClip::getEmbeddedFontByID(uint32_t fontID) const
-{
-	auto it = embeddedfontsByID.find(fontID);
-	if (it != embeddedfontsByID.end())
-		return it->second;
-	return nullptr;
-}
 
 void RootMovieClip::setupAVM1RootMovie()
 {
-	if (!usesActionScript3)
+	if (!needsActionScript3())
 	{
 		getSystemState()->stage->AVM1RootClipAdded();
 		this->classdef = Class<AVM1MovieClip>::getRef(getSystemState()).getPtr();
@@ -631,30 +365,6 @@ void RootMovieClip::setupAVM1RootMovie()
 		if (params)
 			params->copyValues(this,getInstanceWorker());
 	}
-}
-
-bool RootMovieClip::AVM1registerTagClass(const tiny_string &name, _NR<IFunction> theClassConstructor)
-{
-	uint32_t nameID = getSystemState()->getUniqueStringId(name);
-	DictionaryTag* t = dictionaryLookupByName(nameID);
-	if (!t)
-	{
-		LOG(LOG_ERROR,"registerClass:no tag found in dictionary for "<<name);
-		return false;
-	}
-	if (theClassConstructor.isNull())
-		avm1ClassConstructors.erase(t->getId());
-	else
-		avm1ClassConstructors.insert(make_pair(t->getId(),theClassConstructor));
-	return true;
-}
-
-AVM1Function* RootMovieClip::AVM1getClassConstructor(uint32_t spriteID)
-{
-	auto it = avm1ClassConstructors.find(spriteID);
-	if (it == avm1ClassConstructors.end())
-		return nullptr;
-	return it->second->is<AVM1Function>() ? it->second->as<AVM1Function>() : nullptr;
 }
 
 void RootMovieClip::AVM1registerInitActionTag(uint32_t spriteID, AVM1InitActionTag *tag)

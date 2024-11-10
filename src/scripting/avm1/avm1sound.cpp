@@ -70,7 +70,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,attachSound)
 		return;
 	}
 	uint32_t nameID = asAtomHandler::toStringId(args[0],wrk);
-	DefineSoundTag *soundTag = dynamic_cast<DefineSoundTag *>(!th->clip || th->clip->getRoot().isNull() ? th->getSystemState()->mainClip->dictionaryLookupByName(nameID) : th->clip->getRoot()->dictionaryLookupByName(nameID));
+	DefineSoundTag *soundTag = dynamic_cast<DefineSoundTag *>(!th->clip ? th->getSystemState()->mainClip->applicationDomain->dictionaryLookupByName(nameID) : th->clip->loadedFrom->dictionaryLookupByName(nameID));
 	if (!soundTag)
 	{
 		LOG(LOG_ERROR,"AVM1:Sound.attachSound called for wrong tag:"<<asAtomHandler::toDebugString(args[0]));

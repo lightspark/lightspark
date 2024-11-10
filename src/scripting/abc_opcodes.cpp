@@ -968,7 +968,7 @@ asAtom ABCVm::constructGenericType_intern(ABCContext* context, ASObject* obj, in
 			return asAtomHandler::invalidAtom;
 		}
 	}
-	Class_base* o_class = o_template->applyType(t,context->root->applicationDomain);
+	Class_base* o_class = o_template->applyType(t,context->applicationDomain);
 	return asAtomHandler::fromObjectNoPrimitive(o_class);
 
 }
@@ -2651,8 +2651,8 @@ void ABCVm::newClass(call_context* th, int n)
 	QName className(mname->name_s_id,mname->ns[0].nsNameId);
 
 	Class_inherit* ret = nullptr;
-	auto i = th->mi->context->root->applicationDomain->classesBeingDefined.cbegin();
-	while (i != th->mi->context->root->applicationDomain->classesBeingDefined.cend())
+	auto i = th->mi->context->applicationDomain->classesBeingDefined.cbegin();
+	while (i != th->mi->context->applicationDomain->classesBeingDefined.cend())
 	{
 		if(i->first->name_s_id == mname->name_s_id && (i->first->ns.empty() || mname->ns.empty() || (i->first->ns[0].nsRealId == mname->ns[0].nsRealId)))
 		{
@@ -2666,7 +2666,7 @@ void ABCVm::newClass(call_context* th, int n)
 	if (ret == nullptr)
 	{
 		//Check if this class has been already defined
-		_NR<ApplicationDomain> domain = getCurrentApplicationDomain(th);
+		ApplicationDomain* domain = getCurrentApplicationDomain(th);
 		ASObject* target;
 		asAtom oldDefinition=asAtomHandler::invalidAtom;
 		domain->getVariableAndTargetByMultiname(oldDefinition,*mname, target,th->worker);
@@ -2678,7 +2678,7 @@ void ABCVm::newClass(call_context* th, int n)
 			RUNTIME_STACK_PUSH(th,oldDefinition);
 			// ensure that this interface is linked to all previously defined classes implementing this interface
 			if (th->mi->context->instances[n].isInterface())
-				th->mi->context->root->applicationDomain->SetAllClassLinks();
+				th->mi->context->applicationDomain->SetAllClassLinks();
 			return;
 		}
 		MemoryAccount* m = th->sys->allocateMemoryAccount(className.getQualifiedName(th->sys));
@@ -2688,8 +2688,8 @@ void ABCVm::newClass(call_context* th, int n)
 
 		LOG_CALL("add classes defined:"<<*mname<<" "<<th->mi->context);
 		//Add the class to the ones being currently defined in this context
-		th->mi->context->root->applicationDomain->classesBeingDefined.insert(make_pair(mname, ret));
-		th->mi->context->root->customClasses.insert(make_pair(mname->name_s_id,ret));
+		th->mi->context->applicationDomain->classesBeingDefined.insert(make_pair(mname, ret));
+		th->mi->context->applicationDomain->customClasses.insert(make_pair(mname->name_s_id,ret));
 	}
 	ret->isFinal = th->mi->context->instances[n].isFinal();
 	ret->isSealed = th->mi->context->instances[n].isSealed();
@@ -2702,8 +2702,8 @@ void ABCVm::newClass(call_context* th, int n)
 	if(baseClass->getObjectType()==T_NULL && th->mi->context->instances[n].supername)
 	{
 		multiname* mnsuper = th->mi->context->getMultiname(th->mi->context->instances[n].supername,nullptr);
-		auto i = th->mi->context->root->applicationDomain->classesBeingDefined.cbegin();
-		while (i != th->mi->context->root->applicationDomain->classesBeingDefined.cend())
+		auto i = th->mi->context->applicationDomain->classesBeingDefined.cbegin();
+		while (i != th->mi->context->applicationDomain->classesBeingDefined.cend())
 		{
 			if(i->first->name_s_id == mnsuper->name_s_id && i->first->ns[0].nsRealId == mnsuper->ns[0].nsRealId)
 			{
@@ -2729,7 +2729,7 @@ void ABCVm::newClass(call_context* th, int n)
 			LOG(LOG_ERROR,"resetting super class from "<<ret->super->toDebugString() <<" to "<< base->toDebugString());
 			ret->setSuper(_MR(base));
 		}
-		th->mi->context->root->applicationDomain->addSuperClassNotFilled(ret);
+		th->mi->context->applicationDomain->addSuperClassNotFilled(ret);
 	}
 
 	//Add protected namespace if needed
@@ -2738,7 +2738,7 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->use_protected=true;
 		int ns=th->mi->context->instances[n].protectedNs;
 		const namespace_info& ns_info=th->mi->context->constant_pool.namespaces[ns];
-		ret->initializeProtectedNamespace(th->mi->context->getString(ns_info.name),ns_info,th->mi->context->root);
+		ret->initializeProtectedNamespace(th->mi->context->getString(ns_info.name),ns_info,th->mi->context->applicationDomain);
 	}
 
 	IFunction* f = Class<IFunction>::getFunction(ret->getSystemState(),Class_base::_toString);
@@ -2792,7 +2792,7 @@ void ABCVm::newClass(call_context* th, int n)
 		ret->constructor=constructorFunc;
 	}
 	ret->class_index=n;
-	th->mi->context->root->bindClass(className,ret);
+	th->mi->context->applicationDomain->bindClass(className,ret);
 
 	//Add prototype variable
 	ret->prototype = _MNR(new_objectPrototype(ret->getInstanceWorker()));
@@ -2850,11 +2850,11 @@ void ABCVm::newClass(call_context* th, int n)
 	{
 		LOG_CALL("Exception during class initialization. Returning Undefined");
 		//Handle eventual exceptions from the constructor, to fix the stack
-		RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(th->mi->context->root->applicationDomain->getSystemState()->getUndefinedRef()));
+		RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(th->mi->context->applicationDomain->getSystemState()->getUndefinedRef()));
 		cinit->decRef();
 
 		//Remove the class to the ones being currently defined in this context
-		th->mi->context->root->applicationDomain->classesBeingDefined.erase(mname);
+		th->mi->context->applicationDomain->classesBeingDefined.erase(mname);
 		throw;
 	}
 	assert_and_throw(asAtomHandler::isUndefined(ret2));
@@ -2864,26 +2864,26 @@ void ABCVm::newClass(call_context* th, int n)
 	cinit->decRef();
 	if (ret->getGlobalScope()) // the variable on the Definition Object was set to null in class definition, but can be set to the real object now that the class init function was called
 		ret->getGlobalScope()->setVariableByQName(mname->name_s_id,mname->ns[0], ret,DECLARED_TRAIT);
-	th->mi->context->root->bindClass(className,ret);
+	th->mi->context->applicationDomain->bindClass(className,ret);
 	
-	th->mi->context->root->applicationDomain->copyBorrowedTraitsFromSuper(ret);
+	th->mi->context->applicationDomain->copyBorrowedTraitsFromSuper(ret);
 	
 	//If the class is not an interface itself and has no super class, link the traits here (if it has a super class, the traits are linked in copyBorrowedTraitsFromSuper
 	if(ret->super.isNull() && !th->mi->context->instances[n].isInterface())
 	{
 		//Link all the interfaces for this class and all the bases
-		if (!th->mi->context->root->applicationDomain->newClassRecursiveLink(ret, ret))
+		if (!th->mi->context->applicationDomain->newClassRecursiveLink(ret, ret))
 		{
 			// remember classes where not all interfaces are defined yet
-			th->mi->context->root->applicationDomain->AddClassLinks(ret);
+			th->mi->context->applicationDomain->AddClassLinks(ret);
 		}
 	}
 	// ensure that this interface is linked to all previously defined classes implementing this interface
 	if (th->mi->context->instances[n].isInterface())
-		th->mi->context->root->applicationDomain->SetAllClassLinks();
+		th->mi->context->applicationDomain->SetAllClassLinks();
 	ret->setConstructIndicator();
 	//Remove the class to the ones being currently defined in this context
-	th->mi->context->root->applicationDomain->classesBeingDefined.erase(mname);
+	th->mi->context->applicationDomain->classesBeingDefined.erase(mname);
 }
 
 void ABCVm::swap()

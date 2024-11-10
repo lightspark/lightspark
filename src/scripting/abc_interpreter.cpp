@@ -1522,7 +1522,7 @@ void setForceInt(preloadstate& state,memorystream& code,Class_base** resulttype)
 			break;
 	}
 	if (state.preloadedcode.back().pcode.local3.flags & ABC_OP_FORCEINT)
-		*resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+		*resulttype = Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 #endif
 }
 bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_jumpspace, Class_base* restype,int preloadpos=-1,int preloadlocalpos=-1, bool checkchanged=false,bool fromdup = false, uint32_t opcode_setslot=UINT32_MAX)
@@ -1784,7 +1784,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				break;
 			case 0x73://convert_i
 				if (argsneeded
-						|| restype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr()
+						|| restype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
 						|| code.peekbyteFromPosition(pos) == b
 						)
 				{
@@ -1796,7 +1796,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				break;
 			case 0x74://convert_u
 				if (argsneeded
-						|| restype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr()
+						|| restype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
 						|| code.peekbyteFromPosition(pos) == b
 						)
 				{
@@ -1808,9 +1808,9 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				break;
 			case 0x75://convert_d
 				if (argsneeded
-						|| restype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr()
-						|| restype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr()
-						|| restype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr()
+						|| restype == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
+						|| restype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
+						|| restype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
 						|| code.peekbyteFromPosition(pos) == b
 						)
 				{
@@ -1821,7 +1821,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					keepchecking=false;
 				break;
 			case 0x76://convert_b
-				if (argsneeded || restype == Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr()
+				if (argsneeded || restype == Class<Boolean>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
 						|| code.peekbyteFromPosition(pos) == 0x11 //iftrue
 						|| code.peekbyteFromPosition(pos) == 0x12 //iffalse
 						|| code.peekbyteFromPosition(pos) == 0x96 //not
@@ -1852,10 +1852,10 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					multiname* name =  state.mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
 					Type* tp = Type::getTypeFromMultiname(name, state.mi->context);
 					Class_base* cls =dynamic_cast<Class_base*>(tp);
-					if (cls != Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
-						cls != Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
-						cls != Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
-						cls != Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr())
+					if (cls != Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() &&
+						cls != Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() &&
+						cls != Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() &&
+						cls != Class<Boolean>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
 					{
 						pos = code.skipu30FromPosition(pos);
 						b = code.peekbyteFromPosition(pos);
@@ -1941,12 +1941,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 						bool skip = false;
 						if (restype)
 						{
-							if (restype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr() ||
-									 restype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() ||
-									 restype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr() ||
-									 restype == Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr())
-								skip = tp == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr() || tp == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() || tp == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr();
-							else if (restype != Class<ASString>::getRef(state.mi->context->root->getSystemState()).getPtr())
+							if (restype == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() ||
+									 restype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() ||
+									 restype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() ||
+									 restype == Class<Boolean>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
+								skip = tp == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || tp == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || tp == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
+							else if (restype != Class<ASString>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
 								skip = restype == tp;
 						}
 						if (skip)
@@ -2313,7 +2313,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					    && (uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
 					|| ((argsneeded==0) && (state.operandlist.size() > 1) 
 						&& (uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 1
-						&& (state.operandlist.back().objtype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr()))
+						&& (state.operandlist.back().objtype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()))
 					)
 				)
 			{
@@ -2599,28 +2599,28 @@ bool setupInstructionOneArgument(preloadstate& state,int operator_start,int opco
 		switch (code.peekbyte())
 		{
 			case 0x73://convert_i
-				if (!constantsallowed || skiptype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
+				if (!constantsallowed || skiptype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
 				{
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 					code.readbyte();
 				}
 				break;
 			case 0x74://convert_u
-				if (!constantsallowed || skiptype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr())
+				if (!constantsallowed || skiptype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
 				{
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 					code.readbyte();
 				}
 				break;
 			case 0x75://convert_d
-				if (!constantsallowed || skiptype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr()  || skiptype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() || skiptype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr())
+				if (!constantsallowed || skiptype == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()  || skiptype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || skiptype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
 				{
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 					code.readbyte();
 				}
 				break;
 			case 0x76://convert_b
-				if (!constantsallowed || skiptype == Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr())
+				if (!constantsallowed || skiptype == Class<Boolean>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
 				{
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 					code.readbyte();
@@ -2707,7 +2707,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 			state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
 			state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 			state.preloadedcode.back().pcode.arg3_uint=value;
-			state.operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(res,state.mi->context->root->getSystemState()), value,1,state.preloadedcode.size()-1));
+			state.operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(res,state.mi->context->applicationDomain->getSystemState()), value,1,state.preloadedcode.size()-1));
 			return true;
 		}
 		it = state.operandlist.end();
@@ -2732,28 +2732,28 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 			case ABC_OP_OPTIMZED_ADD:
 				// if both operands are numeric, the result is always a number, so we can skip convert_d opcode
 				skip_conversion = 
-						(op1type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() || op1type == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr() || op1type == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr()) &&
-						(op2type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() || op2type == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr() || op2type == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr());
+						(op1type == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || op1type == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || op1type == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()) &&
+						(op2type == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || op2type == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || op2type == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr());
 				if (skip_conversion)
 				{
-					if (op1type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
-						resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+					if (op1type == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
+						resulttype = Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 					else
-						resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
+						resulttype = Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				}
 				setForceInt(state,code,&resulttype);
 				break;
 			case ABC_OP_OPTIMZED_MODULO:
-				if (op1type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
-					resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				if (op1type == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() && op2type == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
+					resulttype = Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				else
-					resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
+					resulttype = Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				setForceInt(state,code,&resulttype);
 				break;
 			case ABC_OP_OPTIMZED_SUBTRACT:
 			case ABC_OP_OPTIMZED_MULTIPLY:
 			case ABC_OP_OPTIMZED_DIVIDE:
-				resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				resulttype = Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				setForceInt(state,code,&resulttype);
 				break;
 			case ABC_OP_OPTIMZED_ADD_I:
@@ -2764,13 +2764,13 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 				if (op2isconstant)
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg2_int= asAtomHandler::toInt(*state.preloadedcode.back().pcode.arg2_constant);
 				setForceInt(state,code,&resulttype);
-				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				resulttype = Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_RSHIFT:
-				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				resulttype = Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				break;
 			case ABC_OP_OPTIMZED_URSHIFT:
-				resulttype = Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				resulttype = Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				// operators are always transformed to uint, so we can do that here if the operators are constants
 				if (op1isconstant)
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_int=asAtomHandler::toUInt(*state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_constant);
@@ -2781,7 +2781,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 			case ABC_OP_OPTIMZED_BITOR:
 			case ABC_OP_OPTIMZED_BITAND:
 			case ABC_OP_OPTIMZED_BITXOR:
-				resulttype = Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				resulttype = Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				// operators are always transformed to int, so we can do that here if the operators are constants
 				if (op1isconstant)
 					state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_int=asAtomHandler::toInt(*state.preloadedcode[state.preloadedcode.size()-1].pcode.arg1_constant);
@@ -2810,12 +2810,12 @@ bool checkmatchingLastObjtype(preloadstate& state, Type* resulttype, Class_base*
 {
 	if (requiredtype == resulttype || resulttype==Type::anyType || resulttype == Type::voidType)
 		return true;
-	if (requiredtype == Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr() && 
-			(resulttype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr()
-			|| resulttype == Class<UInteger>::getRef(state.mi->context->root->getSystemState()).getPtr()))
+	if (requiredtype == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() && 
+			(resulttype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
+			|| resulttype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()))
 		return true;
-	if (resulttype== Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr() &&
-			(requiredtype == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr()))
+	if (resulttype== Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() &&
+			(requiredtype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()))
 	{
 		switch(state.preloadedcode.at(state.preloadedcode.size()-1).opcode)
 		{
@@ -2875,7 +2875,7 @@ void addCachedConstant(preloadstate& state,method_info* mi, asAtom& val,memoryst
 	state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
 	state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 	state.preloadedcode.back().pcode.arg3_uint=value;
-	state.operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(val,mi->context->root->getSystemState()),value,1,state.preloadedcode.size()-1));
+	state.operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(val,mi->context->applicationDomain->getSystemState()),value,1,state.preloadedcode.size()-1));
 }
 void addCachedSlot(preloadstate& state, uint32_t localpos, uint32_t slotid,memorystream& code,Class_base* resulttype)
 {
@@ -3122,7 +3122,7 @@ bool checkforpostfix(preloadstate& state,memorystream& code,uint32_t startpos,st
 
 void setupInstructionComparison(preloadstate& state,int operator_start,int opcode,memorystream& code, int operator_replace,int operator_replace_reverse,std::vector<typestackentry>& typestack,Class_base** lastlocalresulttype,std::map<int32_t,int32_t>& jumppositions, std::map<int32_t,int32_t>& jumpstartpositions)
 {
-	if (setupInstructionTwoArguments(state,operator_start,opcode,code,false,false,true,code.tellg(),Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr()))
+	if (setupInstructionTwoArguments(state,operator_start,opcode,code,false,false,true,code.tellg(),Class<Boolean>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()))
 	{
 #ifdef ENABLE_OPTIMIZATION
 		if (state.preloadedcode.back().opcode >= uint32_t(operator_start+4)) // has localresult
@@ -3225,7 +3225,7 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 #endif
 	}
 	removetypestack(typestack,2);
-	typestack.push_back(typestackentry(Class<Boolean>::getRef(state.mi->context->root->getSystemState()).getPtr(),false));
+	typestack.push_back(typestackentry(Class<Boolean>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr(),false));
 }
 
 
@@ -3280,7 +3280,7 @@ void setupInstructionIncDecInteger(preloadstate& state,memorystream& code,std::v
 #endif
 	setupInstructionOneArgument(state,opcode == 0xc0 ? ABC_OP_OPTIMZED_INCREMENT_I : ABC_OP_OPTIMZED_DECREMENT_I,opcode,code,false,true, Class<Integer>::getRef(state.function->getSystemState()).getPtr(),p,true,true,false,true,opcode == 0xc0 ? ABC_OP_OPTIMZED_INCREMENT_I_SETSLOT : ABC_OP_OPTIMZED_DECREMENT_I_SETSLOT);
 	dup_indicator=0;
-	typestack.push_back(typestackentry(Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr(),false));
+	typestack.push_back(typestackentry(Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr(),false));
 }
 
 bool checkInitializeLocalToConstant(preloadstate& state,int32_t value)
@@ -4350,7 +4350,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				uint32_t t = code.readu30();
 				assert_and_throw(t < mi->context->constant_pool.multiname_count);
 				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				state.preloadedcode.back().pcode.arg1_uint=t;
@@ -4653,7 +4653,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						if (name->cachedType)
 							target = name->cachedType->getGlobalScope();
 						if (!target || (target->is<Global>() && target->as<Global>()->isAVM1()))
-							mi->context->root->applicationDomain->findTargetByMultiname(*name, target,wrk);
+							mi->context->applicationDomain->findTargetByMultiname(*name, target,wrk);
 						if (target)
 						{
 							found = true;
@@ -4923,7 +4923,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					if(asAtomHandler::isInvalid(o))
 					{
 						GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF);
-						r = mi->context->root->applicationDomain->getVariableByMultiname(o,*name,opt,wrk);
+						r = mi->context->applicationDomain->getVariableByMultiname(o,*name,opt,wrk);
 					}
 					if(asAtomHandler::isInvalid(o))
 					{
@@ -4932,9 +4932,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							o = asAtomHandler::fromObjectNoPrimitive(cls);
 					}
 					// fast check for builtin classes if no custom class with same name is defined
-					if(asAtomHandler::isInvalid(o) && mi->context->root->customClasses.find(name->name_s_id) == mi->context->root->customClasses.end())
+					if(asAtomHandler::isInvalid(o) && mi->context->applicationDomain->customClasses.find(name->name_s_id) == mi->context->applicationDomain->customClasses.end())
 					{
-						ASObject* cls = mi->context->root->getSystemState()->systemDomain->getVariableByMultinameOpportunistic(*name,wrk);
+						ASObject* cls = mi->context->applicationDomain->getSystemState()->systemDomain->getVariableByMultinameOpportunistic(*name,wrk);
 						if (cls)
 							o = asAtomHandler::fromObject(cls);
 						if (cls && !cls->is<Class_base>() && cls->getConstant())
@@ -5032,7 +5032,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							if(asAtomHandler::isInvalid(o))
 							{
 								GET_VARIABLE_OPTION opt= (GET_VARIABLE_OPTION)(FROM_GETLEX | DONT_CALL_GETTER | NO_INCREF);
-								mi->context->root->applicationDomain->getVariableByMultiname(o,*name,opt,wrk);
+								mi->context->applicationDomain->getVariableByMultiname(o,*name,opt,wrk);
 							}
 							if(asAtomHandler::isInvalid(o))
 							{
@@ -5041,9 +5041,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									o = asAtomHandler::fromObjectNoPrimitive(cls);
 							}
 							// fast check for builtin classes if no custom class with same name is defined
-							if(asAtomHandler::isInvalid(o) && mi->context->root->customClasses.find(name->name_s_id) == mi->context->root->customClasses.end())
+							if(asAtomHandler::isInvalid(o) && mi->context->applicationDomain->customClasses.find(name->name_s_id) == mi->context->applicationDomain->customClasses.end())
 							{
-								ASObject* cls = mi->context->root->getSystemState()->systemDomain->getVariableByMultinameOpportunistic(*name,wrk);
+								ASObject* cls = mi->context->applicationDomain->getSystemState()->systemDomain->getVariableByMultinameOpportunistic(*name,wrk);
 								if (cls)
 									o = asAtomHandler::fromObject(cls);
 								if (cls && !cls->is<Class_base>() && cls->getConstant())
@@ -5633,22 +5633,22 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					tobj = typestack.back().obj;
 					if (tobj && tobj->is<Class_base>())
 					{
-						if (tobj == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr() ||
-								 tobj  == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() ||
-								 tobj  == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr() ||
-								 tobj  == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr())
-							skip = cls == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr() || cls == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() || cls == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr();
-						else if (tobj != Class<ASString>::getRef(mi->context->root->getSystemState()).getPtr())
+						if (tobj == Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr() ||
+								 tobj  == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr() ||
+								 tobj  == Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr() ||
+								 tobj  == Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
+							skip = cls == Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr() || cls == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr() || cls == Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr();
+						else if (tobj != Class<ASString>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
 							skip = tobj==cls;
 					}
 					if (skip || cls != nullptr)
 						tobj = (Class_base*)cls;
 				}
 				if (!skip && state.operandlist.size()>0 && state.operandlist.back().type==OP_NULL  // coerce following a pushnull can be skipped if not coercing to a numeric value
-						&& tobj != Class<Number>::getRef(mi->context->root->getSystemState()).getPtr()
-						&& tobj != Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr()
-						&& tobj != Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr()
-						&& tobj != Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr())
+						&& tobj != Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()
+						&& tobj != Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()
+						&& tobj != Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()
+						&& tobj != Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
 					skip=true;
 				if (skip)
 				{
@@ -6391,13 +6391,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					clearOperands(state,true,&lastlocalresulttype);
 				if (state.jumptargets.find(code.tellg()) != state.jumptargets.end() && code.peekbyte() == 0x74)//convert_u
 				{
-					state.operandlist.push_back(operands(OP_UINTEGER,Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr(),(uint32_t)value,1,state.preloadedcode.size()-1));
+					state.operandlist.push_back(operands(OP_UINTEGER,Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),(uint32_t)value,1,state.preloadedcode.size()-1));
 					typestack.push_back(typestackentry(Class<UInteger>::getRef(function->getSystemState()).getPtr(),false));
 					code.readbyte();
 				}
 				else
 				{
-					state.operandlist.push_back(operands(OP_BYTE,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),index,1,state.preloadedcode.size()-1));
+					state.operandlist.push_back(operands(OP_BYTE,Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),index,1,state.preloadedcode.size()-1));
 					typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
 				}
 				break;
@@ -6416,7 +6416,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.preloadedcode.back().pcode.arg3_int=value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
-				state.operandlist.push_back(operands(OP_SHORT,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),index,1,state.preloadedcode.size()-1));
+				state.operandlist.push_back(operands(OP_SHORT,Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),index,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			}
@@ -6432,7 +6432,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
-				state.operandlist.push_back(operands(OP_TRUE, Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,state.preloadedcode.size()-1));
+				state.operandlist.push_back(operands(OP_TRUE, Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),0,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			}
@@ -6448,7 +6448,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
-				state.operandlist.push_back(operands(OP_FALSE, Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,state.preloadedcode.size()-1));
+				state.operandlist.push_back(operands(OP_FALSE, Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),0,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			}
@@ -6464,7 +6464,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
-				state.operandlist.push_back(operands(OP_NAN, Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),0,1,state.preloadedcode.size()-1));
+				state.operandlist.push_back(operands(OP_NAN, Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),0,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Number>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			}
@@ -6481,7 +6481,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.preloadedcode.back().pcode.arg3_uint = value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
-				state.operandlist.push_back(operands(OP_STRING,Class<ASString>::getRef(mi->context->root->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
+				state.operandlist.push_back(operands(OP_STRING,Class<ASString>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<ASString>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			}
@@ -6498,7 +6498,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.preloadedcode.back().pcode.arg3_uint = value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
-				state.operandlist.push_back(operands(OP_INTEGER,Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
+				state.operandlist.push_back(operands(OP_INTEGER,Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			}
@@ -6515,7 +6515,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.preloadedcode.back().pcode.arg3_uint = value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
-				state.operandlist.push_back(operands(OP_UINTEGER,Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
+				state.operandlist.push_back(operands(OP_UINTEGER,Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<UInteger>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			}
@@ -6532,7 +6532,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.preloadedcode.back().pcode.arg3_uint = value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
-				state.operandlist.push_back(operands(OP_DOUBLE,Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
+				state.operandlist.push_back(operands(OP_DOUBLE,Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Number>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			}
@@ -6557,7 +6557,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.preloadedcode.back().pcode.arg3_uint = value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
-				state.operandlist.push_back(operands(OP_NAMESPACE,Class<Namespace>::getRef(mi->context->root->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
+				state.operandlist.push_back(operands(OP_NAMESPACE,Class<Namespace>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Namespace>::getRef(function->getSystemState()).getPtr(),false));
 				break;
 			}
@@ -7803,32 +7803,32 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
-				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
+				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
 					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
-						&& state.operandlist.back().objtype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr())
+						&& state.operandlist.back().objtype == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				else
 #endif
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTI,opcode,code,true,true,Class<Integer>::getRef(function->getSystemState()).getPtr(),code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTI_SETSLOT);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x74://convert_u
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
-				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr())
+				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
 					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
-						&& (state.operandlist.back().objtype == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr()
+						&& (state.operandlist.back().objtype == Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()
 							|| state.preloadedcode.back().opcode==0x24))//pushbyte
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				else
 #endif
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTU,opcode,code,true,true,Class<UInteger>::getRef(function->getSystemState()).getPtr(),code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTU_SETSLOT);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x75://convert_d
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
@@ -7836,29 +7836,29 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 &&
-						(typestack.back().obj == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr() ||
-						 typestack.back().obj == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr() ||
-						 typestack.back().obj == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr()))
+						(typestack.back().obj == Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr() ||
+						 typestack.back().obj == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr() ||
+						 typestack.back().obj == Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()))
 					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0 
-						&& (state.operandlist.back().objtype == Class<Number>::getRef(mi->context->root->getSystemState()).getPtr()
-							|| state.operandlist.back().objtype == Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr()
-							|| state.operandlist.back().objtype == Class<UInteger>::getRef(mi->context->root->getSystemState()).getPtr()))
+						&& (state.operandlist.back().objtype == Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()
+							|| state.operandlist.back().objtype == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()
+							|| state.operandlist.back().objtype == Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()))
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				else
 #endif
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTD,opcode,code,true,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTD_SETSLOT);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x76://convert_b
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
-				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr())
+				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
 					break;
 				if ((state.jumptargets.find(code.tellg()) == state.jumptargets.end()
-					 && state.operandlist.size() > 0 && state.operandlist.back().objtype == Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr()) ||
+					 && state.operandlist.size() > 0 && state.operandlist.back().objtype == Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()) ||
 					((code.peekbyte() == 0x11 || //iftrue
 					  code.peekbyte() == 0x12 || //iffalse
 					  code.peekbyte() == 0x96    //not
@@ -7868,7 +7868,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #endif
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTB,opcode,code,true,true,Class<Boolean>::getRef(function->getSystemState()).getPtr(),code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTB_SETSLOT);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x91://increment
 #ifdef ENABLE_OPTIMIZATION
@@ -7882,7 +7882,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_INCREMENT,opcode,code,false,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
 				dup_indicator=0;
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x93://decrement
 #ifdef ENABLE_OPTIMIZATION
@@ -7896,12 +7896,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DECREMENT,opcode,code,false,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
 				dup_indicator=0;
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x95: //typeof
 				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_TYPEOF,opcode,code,true,true,Class<ASString>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<ASString>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<ASString>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x96: //not
 #ifdef ENABLE_OPTIMIZATION
@@ -7918,7 +7918,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #endif
 				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_NOT,opcode,code,true,false,Class<Boolean>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0xa0://add
 			{
@@ -7935,7 +7935,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					{
 						setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_ADD_I,0xc5 //add_i
 													 ,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_ADD_I_SETSLOT);
-						typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+						typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 						break;
 					}
 					if((objtype1==Class<Integer>::getRef(function->getSystemState()).getPtr() || objtype1==Class<UInteger>::getRef(function->getSystemState()).getPtr() || objtype1==Class<Number>::getRef(function->getSystemState()).getPtr())
@@ -7951,7 +7951,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0xa1://subtract
 			{
 				removetypestack(typestack,2);
-				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				Class_base* resulttype = Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_SUBTRACT,opcode,code,false,false,true,code.tellg(),resulttype,ABC_OP_OPTIMZED_SUBTRACT_SETSLOT);
 				setForceInt(state,code,&resulttype);
 				typestack.push_back(typestackentry(resulttype,false));
@@ -7960,7 +7960,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0xa2://multiply
 			{
 				removetypestack(typestack,2);
-				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				Class_base* resulttype = Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_MULTIPLY,opcode,code,false,false,true,code.tellg(),resulttype,ABC_OP_OPTIMZED_MULTIPLY_SETSLOT);
 				setForceInt(state,code,&resulttype);
 				typestack.push_back(typestackentry(resulttype,false));
@@ -7969,7 +7969,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0xa3://divide
 			{
 				removetypestack(typestack,2);
-				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				Class_base* resulttype = Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_DIVIDE,opcode,code,false,false,true,code.tellg(),resulttype,ABC_OP_OPTIMZED_DIVIDE_SETSLOT);
 				setForceInt(state,code,&resulttype);
 				typestack.push_back(typestackentry(resulttype,false));
@@ -7978,7 +7978,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0xa4://modulo
 			{
 				removetypestack(typestack,2);
-				Class_base* resulttype = Class<Number>::getRef(state.mi->context->root->getSystemState()).getPtr();
+				Class_base* resulttype = Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_MODULO,opcode,code,true,true,true,code.tellg(),resulttype,ABC_OP_OPTIMZED_MODULO_SETSLOT);
 				setForceInt(state,code,&resulttype);
 				typestack.push_back(typestackentry(resulttype,false));
@@ -8049,7 +8049,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				else
 				{
 					removetypestack(typestack,2);
-					typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+					typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				}
 				break;
 			case 0x03://throw
@@ -8145,7 +8145,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				else
 				{
 					removetypestack(typestack,2);
-					typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+					typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				}
 				break;
 			case 0x97://bitnot
@@ -8154,17 +8154,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0xb3://istypelate
-				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_ISTYPELATE,opcode,code,false,false,true,code.tellg(),Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_ISTYPELATE,opcode,code,false,false,true,code.tellg(),Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr());
 				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0xb1://instanceof
-				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_INSTANCEOF,opcode,code,false,false,true,code.tellg(),Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr());
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_INSTANCEOF,opcode,code,false,false,true,code.tellg(),Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr());
 				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0xac://strictequals
 			case 0xb4://in
@@ -8172,7 +8172,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x1e://nextname
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_NEXTNAME,opcode,code,false,false,true,code.tellg());
@@ -8198,14 +8198,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<ASString>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<ASString>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x90://negate
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x71://esc_xelem
 			case 0x72://esc_xattr
@@ -8218,7 +8218,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0xc7://multiply_i
 				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_MULTIPLY_I,opcode,code,false,false,true,code.tellg(),nullptr,ABC_OP_OPTIMZED_MULTIPLY_I_SETSLOT);
 				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0xd4://setlocal_0
 			case 0xd5://setlocal_1
@@ -8264,17 +8264,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x50://sxi1
 				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_SXI1,opcode,code,true,true,Class<Integer>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x51://sxi8
 				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_SXI8,opcode,code,true,true,Class<Integer>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x52://sxi16
 				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_SXI16,opcode,code,true,true,Class<Integer>::getRef(function->getSystemState()).getPtr(),code.tellg(),true);
 				removetypestack(typestack,1);
-				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->root->getSystemState()).getPtr(),false));
+				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0xf3://timestamp
 				state.preloadedcode.push_back((uint32_t)opcode);

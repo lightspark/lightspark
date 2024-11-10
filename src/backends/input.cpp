@@ -202,7 +202,7 @@ int InputThread::handleEvent(SDL_Event* event)
 
 				int stageX, stageY;
 				m_sys->windowToStageCoordinates(event->button.x,event->button.y,stageX,stageY);
-				if (m_sys->mainClip->usesActionScript3)
+				if (m_sys->mainClip->needsActionScript3())
 				{
 					handleMouseDown(stageX,stageY,SDL_GetModState(),event->button.state == SDL_PRESSED);
 					if (event->button.clicks == 2)
@@ -373,8 +373,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, HIT_T
 		m_sys->setError(e.cause);
 		return NullRef;
 	}
-	assert(selected); /* atleast we hit the stage */
-	assert_and_throw(selected->is<InteractiveObject>());
+	assert_and_throw(selected.isNull() || selected->is<InteractiveObject>());
 	return selected;
 }
 

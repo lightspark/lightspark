@@ -125,7 +125,7 @@ bool DisplayObject::inMask() const
 }
 bool DisplayObject::belongsToMask() const
 {
-	if (ismask)
+	if (ismaskCount)
 		return true;
 	if (parent)
 		return parent->belongsToMask();
@@ -133,18 +133,20 @@ bool DisplayObject::belongsToMask() const
 }
 
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),ismask(false),filterlistHasChanged(false),maxfilterborder(0),ClipDepth(0),
+	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),filterlistHasChanged(false),ismaskCount(0),maxfilterborder(0),ClipDepth(0),
 	hiddenPrevDisplayObject(nullptr),hiddenNextDisplayObject(nullptr),avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),cachedSurface(new CachedSurface()),
 	constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),
 	avm1mouselistenercount(0),avm1framelistenercount(0),
 	onStage(false),visible(true),
-	mask(nullptr),maskee(nullptr),clipMask(nullptr),
-	invalidateQueueNext(),loaderInfo(nullptr),loadedFrom(wrk->rootClip.getPtr()),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
+	mask(nullptr),clipMask(nullptr),
+	invalidateQueueNext(),loaderInfo(nullptr),loadedFrom(nullptr),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
 	name(BUILTIN_STRINGS::EMPTY),
 	opaqueBackground(asAtomHandler::nullAtom)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
+	if (wrk->rootClip)
+		loadedFrom = wrk->rootClip->applicationDomain.getPtr();
 }
 
 void DisplayObject::markAsChanged()
@@ -171,9 +173,6 @@ void DisplayObject::finalize()
 	if (mask)
 		mask->removeStoredMember();
 	mask=nullptr;
-	if (maskee)
-		maskee->removeStoredMember();
-	maskee=nullptr;
 	if (clipMask)
 		clipMask->removeStoredMember();
 	clipMask=nullptr;
@@ -198,7 +197,7 @@ void DisplayObject::finalize()
 	}
 	avm1locals.clear();
 	variablebindings.clear();
-	loadedFrom=getSystemState()->mainClip;
+	loadedFrom=getSystemState()->mainClip->applicationDomain.getPtr();
 	hasChanged = true;
 	needsTextureRecalculation=true;
 	avm1mouselistenercount=0;
@@ -212,7 +211,7 @@ bool DisplayObject::destruct()
 	getSystemState()->stage->AVM1RemoveDisplayObject(this);
 	getSystemState()->stage->removeHiddenObject(this);
 	removeAVM1Listeners();
-	ismask=false;
+	ismaskCount=0;
 	filterlistHasChanged=false;
 	maxfilterborder=0;
 	setParent(nullptr);
@@ -220,9 +219,6 @@ bool DisplayObject::destruct()
 	if (mask)
 		mask->removeStoredMember();
 	mask=nullptr;
-	if (maskee)
-		maskee->removeStoredMember();
-	maskee=nullptr;
 	if (clipMask)
 		clipMask->removeStoredMember();
 	clipMask=nullptr;
@@ -235,7 +231,7 @@ bool DisplayObject::destruct()
 	colorTransform.reset();
 	scalingGrid.reset();
 	scrollRect.reset();
-	loadedFrom=getSystemState()->mainClip;
+	loadedFrom=getSystemState()->mainClip->applicationDomain.getPtr();
 	hasChanged = true;
 	needsTextureRecalculation=true;
 	tx=0;
@@ -283,8 +279,8 @@ void DisplayObject::prepareShutdown()
 
 	if (mask)
 		mask->prepareShutdown();
-	if (maskee)
-		maskee->prepareShutdown();
+	if (clipMask)
+		clipMask->prepareShutdown();
 	if (matrix)
 		matrix->prepareShutdown();;
 	if (loaderInfo)
@@ -313,14 +309,14 @@ void DisplayObject::prepareShutdown()
 		if (o)
 			o->prepareShutdown();
 	}
+	setMask(NullRef);
+	setClipMask(NullRef);
 	setParent(nullptr);
 }
 
 bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (this->isOnStage() && !getSystemState()->isShuttingDown())
-		return false; // no need to count, as we have at least one reference left if this object is still on stage
-	if (gcstate.checkAncestors(this))
+	if (skipCountCylicMemberReferences(gcstate))
 		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
@@ -337,8 +333,6 @@ bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	}
 	if (mask)
 		ret = mask->countAllCylicMemberReferences(gcstate) || ret;
-	if (maskee)
-		ret = maskee->countAllCylicMemberReferences(gcstate) || ret;
 	if (clipMask)
 		ret = clipMask->countAllCylicMemberReferences(gcstate) || ret;
 	if (loaderInfo)
@@ -883,13 +877,9 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		state->mask = this->mask->getCachedSurface();
 	else
 		state->mask.reset();
-	if (maskee)
-		state->maskee = maskee->getCachedSurface();
-	else
-		state->maskee.reset();
 	state->clipdepth = this->getClipDepth();
 	state->depth = this->getDepth();
-	state->isMask = this->ismask;
+	state->isMask = this->ismaskCount;
 	state->visible = this->visible;
 	state->alpha = this->alpha;
 	state->allowAsMask = this->allowAsMask();
@@ -946,10 +936,8 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 	if(mask)
 	{
 		//Remove previous mask
-		mask->ismask=false;
-		if (mask->maskee)
-			mask->maskee->removeStoredMember();
-		mask->maskee=nullptr;
+		assert(mask->ismaskCount);
+		mask->ismaskCount--;
 		mask->removeStoredMember();
 		mask=nullptr;
 	}
@@ -958,7 +946,7 @@ void DisplayObject::setMask(_NR<DisplayObject> m)
 	if(mask)
 	{
 		//Use new mask
-		mask->ismask=true;
+		mask->ismaskCount++;
 		mask->incRef();
 		mask->addStoredMember();
 	}
@@ -1280,7 +1268,7 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
 			// the main clip is added to stage after the builtin MovieClip is constructed, but before the constructor call is completed.
 			// So the EventListeners for "addedToStage" may not be registered yet and we can't execute the event directly
-			if(isVmThread()	&& this != getSystemState()->mainClip) 
+			if(isVmThread()	&& this != getSystemState()->mainClip)
 				ABCVm::publicHandleEvent(this,e);
 			else
 			{
@@ -1369,11 +1357,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setMask)
 		DisplayObject* newMask=asAtomHandler::as<DisplayObject>(args[0]);
 		newMask->incRef();
 		th->setMask(_MR(newMask));
-		if (newMask->maskee)
-			newMask->maskee->removeStoredMember();
-		newMask->maskee = th;
-		newMask->maskee->incRef();
-		newMask->maskee->addStoredMember();
 	}
 	else
 		th->setMask(NullRef);
@@ -1475,6 +1458,18 @@ void DisplayObject::setVisible(bool v)
 {
 	visible=v;
 	requestInvalidation(getSystemState());
+}
+
+void DisplayObject::setLoaderInfo(LoaderInfo* li)
+{
+	loaderInfo=li;
+	if (li)
+	{
+		loaderInfo = li;
+		loaderInfo->incRef();
+		loaderInfo->addStoredMember();
+		li->setContent(this);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleZ)
@@ -2106,7 +2101,7 @@ void DisplayObject::executeFrameScript()
 
 bool DisplayObject::needsActionScript3() const
 {
-	return this->loadedFrom && this->loadedFrom->usesActionScript3;
+	return !this->loadedFrom || this->loadedFrom->usesActionScript3;
 }
 
 void DisplayObject::constructionComplete(bool _explicit)
@@ -2301,6 +2296,37 @@ bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& y
 	ymax = dmax(y1, y2);
 
 	return true;
+}
+
+bool DisplayObject::skipCountCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (gcstate.checkAncestors(this))
+	{
+		return true;
+	}
+	if (!getSystemState()->isShuttingDown())
+	{
+		if ((isOnStage() || hiddenPrevDisplayObject || hiddenNextDisplayObject))
+		{
+			// no need to count as we have at least one reference left if this object is still on stage or hidden
+			gcstate.ignoreCount(this);
+			return true;
+		}
+		if(gcstate.isIgnored(this))
+			return true;
+		DisplayObject* p = parent;
+		while (p)
+		{
+			if (gcstate.isIgnored(p) || p->hiddenPrevDisplayObject || p->hiddenNextDisplayObject)
+			{
+				// no need to count as the parent is already ignored
+				gcstate.ignoreCount(this);
+				return true;
+			}
+			p = p->parent;
+		}
+	}
+	return false;
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,hitTestObject)
@@ -2935,7 +2961,7 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 		return this;
 	if (path =="_root")
 	{
-		return loadedFrom;
+		return this->getRoot().getPtr();
 	}
 	if (path =="_parent")
 	{
@@ -3006,7 +3032,7 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 	if (name.startsWith("/"))
 	{
 		tiny_string newpath = name.substr_bytes(1,name.numBytes()-1);
-		MovieClip* root = loadedFrom;
+		MovieClip* root = getRoot().getPtr();
 		if (root)
 			root->AVM1SetVariable(newpath,v);
 		else
@@ -3189,7 +3215,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 	if (loadedFrom->version > 4 && checkrootvars)
 	{
 		if (asAtomHandler::isInvalid(ret))// get Variable from root movie
-			ret = loadedFrom->AVM1GetVariable(name,false);
+			ret = getRoot()->AVM1GetVariable(name,false);
 	}
 	return ret;
 }

@@ -46,7 +46,7 @@ void ABCVm::registerClassesFlashUI(Global* builtin)
 	builtin->registerBuiltin("MultitouchInputMode","flash.ui",Class<MultitouchInputMode>::getRef(m_sys));
 
 	// contrary to specs the GameInput classes are _not_ AIR only but available for every swf file with version >= 20
-	if(m_sys->flashMode==SystemState::AIR || m_sys->mainClip->version>=20)
+	if(m_sys->flashMode==SystemState::AIR || m_sys->mainClip->applicationDomain->version>=20)
 	{
 		builtin->registerBuiltin("GameInput","flash.ui",Class<GameInput>::getRef(m_sys));
 		builtin->registerBuiltin("GameInputDevice","flash.ui",Class<GameInputDevice>::getRef(m_sys));

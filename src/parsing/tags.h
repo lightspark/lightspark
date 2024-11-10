@@ -33,6 +33,7 @@ namespace lightspark
 {
 class Class_base;
 class RootMovieClip;
+class ApplicationDomain;
 class DisplayObjectContainer;
 class DefineSpriteTag;
 class AdditionalDataTag;
@@ -83,14 +84,13 @@ public:
 	*/
 	Class_base* bindedTo;
 	tiny_string bindingclassname;
-	RootMovieClip* loadedFrom;
+	ApplicationDomain* loadedFrom;
 	uint32_t nameID;
-	DictionaryTag(RECORDHEADER h, RootMovieClip* root):Tag(h),bindedTo(nullptr),loadedFrom(root),nameID(UINT32_MAX) { }
+	DictionaryTag(RECORDHEADER h, RootMovieClip* root);
 	TAGTYPE getType() const override { return DICT_TAG; }
 	virtual int getId() const=0;
 	virtual ASObject* instance(Class_base* c=nullptr) { return nullptr; }
 	virtual MATRIX MapToBounds(const MATRIX& mat) { return mat; }
-	virtual void resizeCompleted() {}
 };
 
 /*

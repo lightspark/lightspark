@@ -43,13 +43,13 @@
 using namespace std;
 using namespace lightspark;
 
-URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const tiny_string m, _NR<ASObject> d,RootMovieClip* _root):ASObject(wrk,c,T_OBJECT,SUBTYPE_URLREQUEST),
+URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const tiny_string m, _NR<ASObject> d,ApplicationDomain* _appDomain):ASObject(wrk,c,T_OBJECT,SUBTYPE_URLREQUEST),
 	method(m=="POST" ? POST : GET),url(u),data(d),contentType("application/x-www-form-urlencoded"),
 	requestHeaders(Class<Array>::getInstanceSNoArgs(wrk)),
-	root(_root)
+	appDomain(_appDomain)
 {
-	if (_root==nullptr)
-		root = c->getSystemState()->mainClip;
+	if (_appDomain==nullptr)
+		appDomain = c->getSystemState()->mainClip->applicationDomain.getPtr();
 }
 
 void URLRequest::sinit(Class_base* c)
@@ -71,7 +71,7 @@ void URLRequest::sinit(Class_base* c)
 URLInfo URLRequest::getRequestURL() const
 {
 	tiny_string urlencoded = URLInfo::encode(url, URLInfo::ENCODE_SPACES);
-	URLInfo ret=root->getBaseURL().goToURL(urlencoded);
+	URLInfo ret=appDomain->getBaseURL().goToURL(urlencoded);
 	if(method!=GET)
 		return ret;
 
@@ -514,7 +514,7 @@ void URLLoader::threadFinished(IThreadJob *finishedJob)
 	if(finishedJob==job)
 	{
 		job=nullptr;
-	delete finishedJob;
+		delete finishedJob;
 	}
 }
 
@@ -557,7 +557,6 @@ ASFUNCTIONBODY_ATOM(URLLoader,load)
 	ASObject* arg=asAtomHandler::getObject(args[0]);
 	URLRequest* urlRequest=Class<URLRequest>::dyncast(arg);
 	assert_and_throw(urlRequest);
-
 	{
 		Locker l(th->spinlock);
 		if(th->job)
@@ -742,7 +741,7 @@ ASFUNCTIONBODY_ATOM(SharedObject,getLocal)
 	tiny_string name;
 	tiny_string localPath;
 	bool secure;
-	if (!wrk->getSystemState()->mainClip->usesActionScript3)
+	if (!wrk->getSystemState()->mainClip->needsActionScript3())
 	{
 		// contrary to spec, Adobe allows getLocal() calls with 0 arguments on AVM1
 		ARG_CHECK(ARG_UNPACK(name,"") (localPath,"") (secure,false));
@@ -817,7 +816,7 @@ ASFUNCTIONBODY_ATOM(SharedObject,flush)
 		createError<ASError>(wrk,0,"flushing SharedObject failed");
 		return;
 	}
-	if (!wrk->getSystemState()->mainClip->usesActionScript3)
+	if (!wrk->getSystemState()->mainClip->needsActionScript3())
 		ret = asAtomHandler::trueAtom;
 	else
 		ret = asAtomHandler::fromString(wrk->getSystemState(),"flushed");
@@ -1500,7 +1499,7 @@ ASFUNCTIONBODY_ATOM(NetStream,_constructor)
 	tiny_string value;
 	_NR<NetConnection> netConnection;
 
-	if (wrk->rootClip->usesActionScript3)
+	if (wrk->rootClip->needsActionScript3())
 	{
 		ARG_CHECK(ARG_UNPACK(netConnection)(value, "connectToFMS"));
 	}
@@ -2743,17 +2742,17 @@ ASFUNCTIONBODY_ATOM(lightspark,registerClassAlias)
 	const tiny_string& arg0 = asAtomHandler::toString(args[0],wrk);
 	ASATOM_INCREF(args[1]);
 	_R<Class_base> c=_MR(asAtomHandler::as<Class_base>(args[1]));
-	RootMovieClip* root = wrk->rootClip.getPtr();
-	root->aliasMap.insert(make_pair(arg0, c));
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
+	appdomain->aliasMap.insert(make_pair(arg0, c));
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getClassByAlias)
 {
 	assert_and_throw(argslen==1 && asAtomHandler::isString(args[0]));
 	const tiny_string& arg0 = asAtomHandler::toString(args[0],wrk);
-	RootMovieClip* root = wrk->rootClip.getPtr();
-	auto it=root->aliasMap.find(arg0);
-	if(it==root->aliasMap.end())
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
+	auto it=appdomain->aliasMap.find(arg0);
+	if(it==appdomain->aliasMap.end())
 	{
 		createError<ReferenceError>(wrk,kClassNotFoundError, arg0);
 		return;

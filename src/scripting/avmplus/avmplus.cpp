@@ -276,15 +276,17 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_constructor)
 	ARG_CHECK(ARG_UNPACK(parentDomain));
 	avmplusDomain* th = asAtomHandler::as<avmplusDomain>(obj);
 	if (parentDomain.isNull())
-		th->appdomain = ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
+		th->appdomain = _NR<ApplicationDomain>(ABCVm::getCurrentApplicationDomain(wrk->currentCallContext));
 	else
 		th->appdomain = _NR<ApplicationDomain>(Class<ApplicationDomain>::getInstanceS(wrk,parentDomain->appdomain));
+	th->appdomain->incRef();
 }
 
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getCurrentDomain)
 {
 	avmplusDomain* res = Class<avmplusDomain>::getInstanceSNoArgs(wrk);
-	res->appdomain = ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
+	res->appdomain = _MNR(ABCVm::getCurrentApplicationDomain(wrk->currentCallContext));
+	res->appdomain->incRef();
 	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getMinDomainMemoryLength)
@@ -312,10 +314,10 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 	mc.append(bytes->getBuffer(bytes->getLength(),false),bytes->getLength());
 	std::streambuf *sbuf = mc.createReader();
 	std::istream s(sbuf);
-	RootMovieClip* root=wrk->currentCallContext->mi->context->root;
+	RootMovieClip* root=wrk->currentCallContext->mi->context->applicationDomain->getInstanceWorker()->rootClip.getPtr();
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
-	ABCContext* context = new ABCContext(root, s, getVm(root->getSystemState()));
+	ABCContext* context = new ABCContext(root->applicationDomain.getPtr(),root->securityDomain.getPtr(), s, getVm(root->getSystemState()));
 	context->exec(false);
 	root->applicationDomain = origdomain;
 	delete sbuf;
@@ -335,10 +337,10 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,loadBytes)
 	std::istream s(sbuf);
 	
 	// execute loaded abc bytes
-	RootMovieClip* root=wrk->currentCallContext->mi->context->root;
+	RootMovieClip* root=wrk->currentCallContext->mi->context->applicationDomain->getInstanceWorker()->rootClip.getPtr();
 	_NR<ApplicationDomain> origdomain = root->applicationDomain;
 	root->applicationDomain = th->appdomain;
-	ABCContext* context = new ABCContext(root, s, getVm(root->getSystemState()));
+	ABCContext* context = new ABCContext(root->applicationDomain.getPtr(),root->securityDomain.getPtr(), s, getVm(root->getSystemState()));
 	context->exec(false);
 	root->applicationDomain = origdomain;
 	delete sbuf;

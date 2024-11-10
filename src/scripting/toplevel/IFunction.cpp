@@ -66,7 +66,7 @@ bool IFunction::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	if (gcstate.checkAncestors(this))
 		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
-	if (asAtomHandler::isObject(closure_this))
+	if (asAtomHandler::isAccessibleObject(closure_this))
 		ret = asAtomHandler::getObjectNoCheck(closure_this)->countAllCylicMemberReferences(gcstate) || ret;
 	if (prototype)
 		ret = prototype->countAllCylicMemberReferences(gcstate) || ret;

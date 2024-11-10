@@ -317,13 +317,13 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 	/* If this multiname is not cached, resolve its static parts */
 	if(m->cached==NULL)
 	{
-		m->cached=new (getVm(root->getSystemState())->vmDataMemory) multiname(getVm(root->getSystemState())->vmDataMemory);
+		m->cached=new (getVm(applicationDomain->getSystemState())->vmDataMemory) multiname(getVm(applicationDomain->getSystemState())->vmDataMemory);
 		ret=m->cached;
 		if(midx==0)
 		{
 			ret->name_s_id=BUILTIN_STRINGS::ANY;
 			ret->name_type=multiname::NAME_STRING;
-			ret->ns.emplace_back(root->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+			ret->ns.emplace_back(applicationDomain->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			ret->isAttribute=false;
 			ret->hasEmptyNS=true;
 			ret->hasBuiltinNS=false;
@@ -356,7 +356,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				{
 					ret->name_s_id=getString(m->name);
 					ret->name_type=multiname::NAME_STRING;
-					ret->isInteger=Array::isIntegerWithoutLeadingZeros(root->getSystemState()->getStringFromUniqueId(ret->name_s_id));
+					ret->isInteger=Array::isIntegerWithoutLeadingZeros(applicationDomain->getSystemState()->getStringFromUniqueId(ret->name_s_id));
 				}
 				break;
 			}
@@ -381,7 +381,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				{
 					ret->name_s_id=getString(m->name);
 					ret->name_type=multiname::NAME_STRING;
-					ret->isInteger=Array::isIntegerWithoutLeadingZeros(root->getSystemState()->getStringFromUniqueId(ret->name_s_id));
+					ret->isInteger=Array::isIntegerWithoutLeadingZeros(applicationDomain->getSystemState()->getStringFromUniqueId(ret->name_s_id));
 				}
 				break;
 			}
@@ -410,7 +410,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				ret->isStatic = false;
 				ret->name_type=multiname::NAME_STRING;
 				ret->name_s_id=getString(m->name);
-				ret->isInteger=Array::isIntegerWithoutLeadingZeros(root->getSystemState()->getStringFromUniqueId(ret->name_s_id));
+				ret->isInteger=Array::isIntegerWithoutLeadingZeros(applicationDomain->getSystemState()->getStringFromUniqueId(ret->name_s_id));
 				break;
 			}
 			case 0x11: //RTQNameL
@@ -425,7 +425,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				multiname_info* td=&constant_pool.multinames[m->type_definition];
 				//builds a name by concating the templateName$TypeName1$TypeName2...
 				//this naming scheme is defined by the ABC compiler
-				tiny_string name = root->getSystemState()->getStringFromUniqueId(getString(td->name));
+				tiny_string name = applicationDomain->getSystemState()->getStringFromUniqueId(getString(td->name));
 				for(size_t i=0;i<m->param_types.size();++i)
 				{
 					ret->templateinstancenames.push_back(getMultiname(m->param_types[i],nullptr));
@@ -437,17 +437,17 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 						// TODO there's no documentation about how to handle derived classes
 						// We just prepend the namespace to the template class, so we can find it when needed
 						namespace_info nsi = constant_pool.namespaces[p->ns];
-						nsname = root->getSystemState()->getStringFromUniqueId(getString(nsi.name));
+						nsname = applicationDomain->getSystemState()->getStringFromUniqueId(getString(nsi.name));
 						if (nsname != "")
 							name += nsname+"$";
 					}
-					name += root->getSystemState()->getStringFromUniqueId(getString(p->name));
+					name += applicationDomain->getSystemState()->getStringFromUniqueId(getString(p->name));
 				}
 				ret->ns.emplace_back(constant_pool.namespaces[td->ns].getNS(this,td->ns));
 				ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
 				ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
 				ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
-				ret->name_s_id=root->getSystemState()->getUniqueStringId(name);
+				ret->name_s_id=applicationDomain->getSystemState()->getUniqueStringId(name);
 				ret->name_type=multiname::NAME_STRING;
 				break;
 			}
@@ -490,7 +490,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				{
 					ASATOM_DECREF(n);
 				}
-				asAtomHandler::applyProxyProperty(n,root->getSystemState(),*ret);
+				asAtomHandler::applyProxyProperty(n,applicationDomain->getSystemState(),*ret);
 				break;
 			}
 			else if (asAtomHandler::isQName(n))
@@ -498,19 +498,19 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				ASQName *qname = asAtomHandler::as<ASQName>(n);
 				// don't overwrite any static parts
 				if (!m->dynamic)
-					m->dynamic=new (getVm(root->getSystemState())->vmDataMemory) multiname(getVm(root->getSystemState())->vmDataMemory);
+					m->dynamic=new (getVm(applicationDomain->getSystemState())->vmDataMemory) multiname(getVm(applicationDomain->getSystemState())->vmDataMemory);
 				ret=m->dynamic;
 				ret->isAttribute=m->cached->isAttribute;
 				ret->ns.clear();
-				ret->ns.emplace_back(root->getSystemState(),qname->getURI(),NAMESPACE);
+				ret->ns.emplace_back(applicationDomain->getSystemState(),qname->getURI(),NAMESPACE);
 				ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
 				ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
 				ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
 				ret->isStatic = false;
 			}
 			else
-				asAtomHandler::applyProxyProperty(n,root->getSystemState(),*ret);
-			ret->setName(n,root->getInstanceWorker());
+				asAtomHandler::applyProxyProperty(n,applicationDomain->getSystemState(),*ret);
+			ret->setName(n,applicationDomain->getInstanceWorker());
 			if (isrefcounted)
 			{
 				ASATOM_DECREF(n);
@@ -524,7 +524,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			assert_and_throw(asAtomHandler::isNamespace(n));
 			Namespace* tmpns=asAtomHandler::as<Namespace>(n);
 			ret->ns.clear();
-			ret->ns.emplace_back(root->getSystemState(),tmpns->uri,tmpns->nskind);
+			ret->ns.emplace_back(applicationDomain->getSystemState(),tmpns->uri,tmpns->nskind);
 			ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
 			ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
 			ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
@@ -541,11 +541,11 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 			assert_and_throw(n2->classdef==Class<Namespace>::getClass(n2->getSystemState()));
 			Namespace* tmpns=static_cast<Namespace*>(n2);
 			ret->ns.clear();
-			ret->ns.emplace_back(root->getSystemState(),tmpns->uri,tmpns->nskind);
+			ret->ns.emplace_back(applicationDomain->getSystemState(),tmpns->uri,tmpns->nskind);
 			ret->hasEmptyNS = (ret->ns.begin()->hasEmptyName());
 			ret->hasBuiltinNS=(ret->ns.begin()->hasBuiltinName());
 			ret->hasGlobalNS=(ret->ns.begin()->kind == NAMESPACE);
-			ret->setName(n,root->getInstanceWorker());
+			ret->setName(n,applicationDomain->getInstanceWorker());
 			if (isrefcounted)
 			{
 				ASATOM_DECREF(n);
@@ -559,7 +559,10 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 	}
 	return ret;
 }
-ABCContext::ABCContext(RootMovieClip* r, istream& in, ABCVm* vm):scriptsdeclared(false),root(r),constant_pool(vm->vmDataMemory),
+ABCContext::ABCContext(ApplicationDomain* appDomain,SecurityDomain* secDomain, istream& in, ABCVm* vm):scriptsdeclared(false),
+	applicationDomain(appDomain),
+	securityDomain(secDomain),
+	constant_pool(vm->vmDataMemory),
 	methods(reporter_allocator<method_info>(vm->vmDataMemory)),
 	metadata(reporter_allocator<metadata_info>(vm->vmDataMemory)),
 	instances(reporter_allocator<instance_info>(vm->vmDataMemory)),
@@ -588,7 +591,7 @@ ABCContext::ABCContext(RootMovieClip* r, istream& in, ABCVm* vm):scriptsdeclared
 	constantAtoms_doubles.resize(constant_pool.doubles.size());
 	for (uint32_t i = 0; i < constant_pool.doubles.size(); i++)
 	{
-		ASObject* res = abstract_d_constant(root->getInstanceWorker(),constant_pool.doubles[i]);
+		ASObject* res = abstract_d_constant(applicationDomain->getInstanceWorker(),constant_pool.doubles[i]);
 		constantAtoms_doubles[i] = asAtomHandler::fromObject(res);
 	}
 	constantAtoms_strings.resize(constant_pool.strings.size());
@@ -599,7 +602,7 @@ ABCContext::ABCContext(RootMovieClip* r, istream& in, ABCVm* vm):scriptsdeclared
 	constantAtoms_namespaces.resize(constant_pool.namespaces.size());
 	for (uint32_t i = 0; i < constant_pool.namespaces.size(); i++)
 	{
-		Namespace* res = Class<Namespace>::getInstanceS(root->getInstanceWorker(),getString(constant_pool.namespaces[i].name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)constant_pool.namespaces[i].kind,true);
+		Namespace* res = Class<Namespace>::getInstanceS(applicationDomain->getInstanceWorker(),getString(constant_pool.namespaces[i].name),BUILTIN_STRINGS::EMPTY,(NS_KIND)(int)constant_pool.namespaces[i].kind,true);
 		if (constant_pool.namespaces[i].kind != 0)
 			res->nskind =(NS_KIND)(int)(constant_pool.namespaces[i].kind);
 		res->setRefConstant();
@@ -638,8 +641,8 @@ ABCContext::ABCContext(RootMovieClip* r, istream& in, ABCVm* vm):scriptsdeclared
 		{
 			multiname* supermname = getMultiname(instances[i].supername,nullptr);
 			QName superclassName(supermname->name_s_id,supermname->ns[0].nsNameId);
-			auto it = root->customclassoverriddenmethods.find(superclassName);
-			if (it == root->customclassoverriddenmethods.end())
+			auto it = applicationDomain->customclassoverriddenmethods.find(superclassName);
+			if (it == applicationDomain->customclassoverriddenmethods.end())
 			{
 				// super class is builtin class
 				instances[i].overriddenmethods = new std::unordered_set<uint32_t>();
@@ -665,7 +668,7 @@ ABCContext::ABCContext(RootMovieClip* r, istream& in, ABCVm* vm):scriptsdeclared
 		}
 		multiname* mname = getMultiname(instances[i].name,nullptr);
 		QName className(mname->name_s_id,mname->ns[0].nsNameId);
-		root->customclassoverriddenmethods.insert(make_pair(className,instances[i].overriddenmethods));
+		applicationDomain->customclassoverriddenmethods.insert(make_pair(className,instances[i].overriddenmethods));
 
 		LOG(LOG_TRACE,"Class " << *getMultiname(instances[i].name,nullptr));
 		LOG(LOG_TRACE,"Flags:");
@@ -676,7 +679,7 @@ ABCContext::ABCContext(RootMovieClip* r, istream& in, ABCVm* vm):scriptsdeclared
 		if(instances[i].isInterface())
 			LOG(LOG_TRACE,"\tInterface");
 		if(instances[i].isProtectedNs())
-			LOG(LOG_TRACE,"\tProtectedNS " << root->getSystemState()->getStringFromUniqueId(getString(constant_pool.namespaces[instances[i].protectedNs].name)));
+			LOG(LOG_TRACE,"\tProtectedNS " << applicationDomain->getSystemState()->getStringFromUniqueId(getString(constant_pool.namespaces[instances[i].protectedNs].name)));
 		if(instances[i].supername)
 			LOG(LOG_TRACE,"Super " << *getMultiname(instances[i].supername,nullptr));
 		if(instances[i].interface_count)
@@ -1406,11 +1409,11 @@ bool ABCVm::prependBufferEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	return true;
 }
 
-Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)
+Class_inherit* ABCVm::findClassInherit(const string& s, ApplicationDomain* appDomain)
 {
 	LOG(LOG_CALLS,"Setting class name to " << s);
 	ASObject* target;
-	ASObject* derived_class=root->applicationDomain->getVariableByString(s,target);
+	ASObject* derived_class=appDomain->getVariableByString(s,target);
 	if(derived_class==nullptr)
 	{
 		//LOG(LOG_ERROR,"Class " << s << " not found in global for "<<root->getOrigin());
@@ -1433,7 +1436,7 @@ Class_inherit* ABCVm::findClassInherit(const string& s, RootMovieClip* root)
 
 void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
 {
-	Class_inherit* derived_class_tmp = findClassInherit(s, base.getPtr());
+	Class_inherit* derived_class_tmp = findClassInherit(s, base->applicationDomain.getPtr());
 	if(!derived_class_tmp)
 		return;
 
@@ -1581,7 +1584,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 	
 	ASObject* target;
 	asAtom ret=asAtomHandler::invalidAtom;
-	root->applicationDomain->getVariableAndTargetByMultiname(ret,*name, target,root->getInstanceWorker());
+	applicationDomain->getVariableAndTargetByMultiname(ret,*name, target,applicationDomain->getInstanceWorker());
 	if(asAtomHandler::isInvalid(ret)) //Could not retrieve type
 	{
 		LOG(LOG_ERROR,"isInstance: Cannot retrieve type:"<<*name);
@@ -1626,7 +1629,7 @@ void ABCContext::declareScripts()
 		LOG(LOG_CALLS, "Script N: " << i );
 
 		//Creating a new global for this script
-		Global* global=Class<Global>::getInstanceS(root->getInstanceWorker(),this, i,false);
+		Global* global=Class<Global>::getInstanceS(applicationDomain->getInstanceWorker(),this, i,false);
 		global->setRefConstant();
 #ifndef NDEBUG
 		global->initialized=false;
@@ -1645,7 +1648,7 @@ void ABCContext::declareScripts()
 		global->initialized=true;
 #endif
 		//Register it as one of the global scopes
-		root->applicationDomain->registerGlobalScope(global);
+		applicationDomain->registerGlobalScope(global);
 	}
 	scriptsdeclared=true;
 }
@@ -1660,7 +1663,7 @@ void ABCContext::exec(bool lazy)
 	//The last script entry has to be run
 	LOG(LOG_CALLS, "Last script (Entry Point)");
 	//Creating a new global for the last script
-	Global* global=root->applicationDomain->getLastGlobalScope();
+	Global* global=applicationDomain->getLastGlobalScope();
 
 	//the script init of the last script is the main entry point
 	if(!lazy)
@@ -1680,14 +1683,14 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 	hasRunScriptInit[i] = true;
 
 	method_info* m=get_method(scripts[i].init);
-	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(this->root->getInstanceWorker(),m,m->numArgs());
+	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(this->applicationDomain->getInstanceWorker(),m,m->numArgs());
 	entry->fromNewFunction=true;
 	
 	entry->addToScope(scope_entry(g,false));
 
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtom f =asAtomHandler::fromObject(entry);
-	asAtomHandler::callFunction(f,this->root->getInstanceWorker(),ret,g,nullptr,0,false,false,false);
+	asAtomHandler::callFunction(f,this->applicationDomain->getInstanceWorker(),ret,g,nullptr,0,false,false,false);
 
 	ASATOM_DECREF(ret);
 
@@ -1781,7 +1784,7 @@ int ABCVm::Run(void* d)
 #endif
 	}
 	th->registerClasses();
-	if (!th->m_sys->mainClip->usesActionScript3)
+	if (!th->m_sys->mainClip->needsActionScript3())
 		th->registerClassesAVM1();
 	th->status=STARTED;
 
@@ -1969,14 +1972,14 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 	}
 }
 
-_R<ApplicationDomain> ABCVm::getCurrentApplicationDomain(call_context* th)
+ApplicationDomain* ABCVm::getCurrentApplicationDomain(call_context* th)
 {
-	return th->mi->context->root->applicationDomain;
+	return th->mi->context->applicationDomain;
 }
 
-_R<SecurityDomain> ABCVm::getCurrentSecurityDomain(call_context* th)
+SecurityDomain* ABCVm::getCurrentSecurityDomain(call_context* th)
 {
-	return th->mi->context->root->securityDomain;
+	return th->mi->context->securityDomain;
 }
 
 uint32_t ABCVm::getAndIncreaseNamespaceBase(uint32_t nsNum)
@@ -2022,7 +2025,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 		//Link the methods to the implementations
 		case traits_info::Method:
 		{
-			LOG(LOG_CALLS,"Method trait: " << mname << " #" << t->method);
+//			LOG(LOG_CALLS,"Method trait: " << mname << " #" << t->method);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -2041,12 +2044,12 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				LOG(LOG_NOT_IMPLEMENTED,"Method not linkable" << ": " << mname << c->toDebugString());
 			}
 
-			LOG(LOG_TRACE,"End Method trait: " << mname);
+//			LOG(LOG_TRACE,"End Method trait: " << mname);
 			break;
 		}
 		case traits_info::Getter:
 		{
-			LOG(LOG_CALLS,"Getter trait: " << mname);
+//			LOG(LOG_CALLS,"Getter trait: " << mname);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -2063,12 +2066,12 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				LOG(LOG_NOT_IMPLEMENTED,"Getter not linkable" << ": " << mname << c->toDebugString());
 			}
 
-			LOG(LOG_TRACE,"End Getter trait: " << mname);
+//			LOG(LOG_TRACE,"End Getter trait: " << mname);
 			break;
 		}
 		case traits_info::Setter:
 		{
-			LOG(LOG_CALLS,"Setter trait: " << mname << " #" << t->method);
+//			LOG(LOG_CALLS,"Setter trait: " << mname << " #" << t->method);
 			method_info* m=&methods[t->method];
 			if(m->body!=NULL)
 				throw ParseException("Interface trait has to be a NULL body");
@@ -2085,7 +2088,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 				LOG(LOG_NOT_IMPLEMENTED,"Setter not linkable" << ": " << mname << c->toDebugString());
 			}
 			
-			LOG(LOG_TRACE,"End Setter trait: " << mname);
+//			LOG(LOG_TRACE,"End Setter trait: " << mname);
 			break;
 		}
 //		case traits_info::Class:
@@ -2169,7 +2172,7 @@ asAtom* ABCContext::getConstantAtom(OPERANDTYPES kind, int index)
 			ret = &asAtomHandler::nullAtom;
 			break;
 		case OP_NAN:
-			ret = &this->root->getSystemState()->nanAtom;
+			ret = &this->applicationDomain->getSystemState()->nanAtom;
 			break;
 		case OP_BYTE:
 			ret = &constantAtoms_byte[index];
@@ -2209,9 +2212,9 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 		for(unsigned int i=0;i<t->metadata_count;i++)
 		{
 			metadata_info& minfo = metadata[t->metadata[i]];
-			LOG(LOG_CALLS,"Metadata: " << root->getSystemState()->getStringFromUniqueId(getString(minfo.name)));
+			LOG(LOG_CALLS,"Metadata: " << applicationDomain->getSystemState()->getStringFromUniqueId(getString(minfo.name)));
 			for(unsigned int j=0;j<minfo.item_count;++j)
-				LOG(LOG_CALLS,"        : " << root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].key)) << " " << root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].value)));
+				LOG(LOG_CALLS,"        : " << applicationDomain->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].key)) << " " << applicationDomain->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].value)));
 		}
 	}
 #endif
@@ -2221,7 +2224,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 		for(unsigned int i=0;i<t->metadata_count;i++)
 		{
 			metadata_info& minfo = metadata[t->metadata[i]];
-			tiny_string name = root->getSystemState()->getStringFromUniqueId(getString(minfo.name));
+			tiny_string name = applicationDomain->getSystemState()->getStringFromUniqueId(getString(minfo.name));
 			if (name == "Transient")
  				isenumerable = false;
 			if (name == "SWF")
@@ -2231,16 +2234,16 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				uint32_t h = UINT32_MAX;
 				for(unsigned int j=0;j<minfo.item_count;++j)
 				{
-					tiny_string key =root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].key));
+					tiny_string key =applicationDomain->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].key));
 
 					if (key =="width")
-						w = atoi(root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].value)).raw_buf());
+						w = atoi(applicationDomain->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].value)).raw_buf());
 					if (key =="height")
-						h = atoi(root->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].value)).raw_buf());
+						h = atoi(applicationDomain->getSystemState()->getStringFromUniqueId(getString(minfo.items[j].value)).raw_buf());
 				}
 				if (w != UINT32_MAX || h != UINT32_MAX)
 				{
-					RenderThread* rt=root->getSystemState()->getRenderThread();
+					RenderThread* rt=applicationDomain->getSystemState()->getRenderThread();
 					rt->requestResize(w == UINT32_MAX ? rt->windowWidth : w, h == UINT32_MAX ? rt->windowHeight : h, true);
 				}
 			}
@@ -2252,13 +2255,13 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 		case traits_info::Class:
 		{
 			//Check if this already defined in upper levels
-			if(obj->hasPropertyByMultiname(*mname,false,false,root->getInstanceWorker()))
+			if(obj->hasPropertyByMultiname(*mname,false,false,applicationDomain->getInstanceWorker()))
 				return;
 
 			//Check if this already defined in parent applicationdomains
 			ASObject* target;
 			asAtom oldDefinition=asAtomHandler::invalidAtom;
-			root->applicationDomain->getVariableAndTargetByMultiname(oldDefinition,*mname, target,root->getInstanceWorker());
+			applicationDomain->getVariableAndTargetByMultiname(oldDefinition,*mname, target,applicationDomain->getInstanceWorker());
 			if(asAtomHandler::isClass(oldDefinition))
 			{
 				return;
@@ -2273,12 +2276,12 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 
 				MemoryAccount* m = obj->getSystemState()->allocateMemoryAccount(className.getQualifiedName(obj->getSystemState()));
 				Class_inherit* ci=new (m) Class_inherit(className, m,t,obj->is<Global>() ? obj->as<Global>() : nullptr);
-				root->customClasses.insert(make_pair(mname->name_s_id,ci));
+				applicationDomain->customClasses.insert(make_pair(mname->name_s_id,ci));
 				ci->isInterface = true;
 				Function* f = Class<IFunction>::getFunction(obj->getSystemState(),Class_base::_toString);
 				f->setRefConstant();
 				ci->setDeclaredMethodByQName("toString",AS3,f,NORMAL_METHOD,false);
-				LOG(LOG_CALLS,"Building class traits");
+				//LOG(LOG_CALLS,"Building class traits");
 				for(unsigned int i=0;i<classes[t->classi].trait_count;i++)
 					buildTrait(ci,additionalslots,&classes[t->classi].traits[i],false);
 				//Add protected namespace if needed
@@ -2287,9 +2290,9 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 					ci->use_protected=true;
 					int ns=instances[t->classi].protectedNs;
 					const namespace_info& ns_info=constant_pool.namespaces[ns];
-					ci->initializeProtectedNamespace(getString(ns_info.name),ns_info,root);
+					ci->initializeProtectedNamespace(getString(ns_info.name),ns_info,applicationDomain);
 				}
-				LOG(LOG_CALLS,"Adding immutable object traits to class");
+				//LOG(LOG_CALLS,"Adding immutable object traits to class");
 				//Class objects also contains all the methods/getters/setters declared for instances
 				for(unsigned int i=0;i<instances[t->classi].trait_count;i++)
 				{
@@ -2307,7 +2310,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 
 				ci->class_index=t->classi;
 				ci->context = this;
-				ci->setWorker(root->getInstanceWorker());
+				ci->setWorker(applicationDomain->getInstanceWorker());
 
 				//can an interface derive from an other interface?
 				//can an interface derive from an non interface class?
@@ -2334,21 +2337,21 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				MemoryAccount* m = obj->getSystemState()->allocateMemoryAccount(className.getQualifiedName(obj->getSystemState()));
 				Class_inherit* c=new (m) Class_inherit(className, m,t,obj->is<Global>() ? obj->as<Global>() : nullptr);
 				c->context = this;
-				c->setWorker(root->getInstanceWorker());
-				root->customClasses.insert(make_pair(mname->name_s_id,c));
+				c->setWorker(applicationDomain->getInstanceWorker());
+				applicationDomain->customClasses.insert(make_pair(mname->name_s_id,c));
 
 				if(instances[t->classi].supername)
 				{
 					// set superclass for classes that are not instantiated by newClass opcode (e.g. buttons)
 					multiname mnsuper = *getMultiname(instances[t->classi].supername,nullptr);
-					ASObject* superclass=root->applicationDomain->getVariableByMultinameOpportunistic(mnsuper,root->getInstanceWorker());
+					ASObject* superclass=applicationDomain->getVariableByMultinameOpportunistic(mnsuper,applicationDomain->getInstanceWorker());
 					if(superclass && superclass->is<Class_base>() && !superclass->is<Class_inherit>())
 					{
 						superclass->incRef();
 						c->setSuper(_MR(superclass->as<Class_base>()));
 					}
 				}
-				root->applicationDomain->classesBeingDefined.insert(make_pair(mname, c));
+				applicationDomain->classesBeingDefined.insert(make_pair(mname, c));
 				ret=c;
 				c->setIsInitialized();
 				assert(mname->isStatic);
@@ -2358,7 +2361,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			variable* v = obj->is<Global>() ? obj->setVariableAtomByQName(mname->name_s_id,mname->ns[0], asAtomHandler::nullAtom,DECLARED_TRAIT)
 											: obj->setVariableByQName(mname->name_s_id,mname->ns[0], ret,DECLARED_TRAIT);
 
-			LOG(LOG_CALLS,"Class slot "<< t->slot_id << " type Class name " << *mname << " id " << t->classi);
+			//LOG(LOG_CALLS,"Class slot "<< t->slot_id << " type Class name " << *mname << " id " << t->classi);
 			if(t->slot_id)
 				obj->initSlot(t->slot_id, v);
 			else
@@ -2370,12 +2373,12 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 		case traits_info::Method:
 		{
 			//methods can also be defined at toplevel (not only traits_info::Function!)
-			if(kind == traits_info::Getter)
-				LOG(LOG_CALLS,"Getter trait: " << *mname << " #" << t->method);
-			else if(kind == traits_info::Setter)
-				LOG(LOG_CALLS,"Setter trait: " << *mname << " #" << t->method);
-			else if(kind == traits_info::Method)
-				LOG(LOG_CALLS,"Method trait: " << *mname << " #" << t->method);
+			// if(kind == traits_info::Getter)
+			// 	LOG(LOG_CALLS,"Getter trait: " << *mname << " #" << t->method);
+			// else if(kind == traits_info::Setter)
+			// 	LOG(LOG_CALLS,"Setter trait: " << *mname << " #" << t->method);
+			// else if(kind == traits_info::Method)
+			// 	LOG(LOG_CALLS,"Method trait: " << *mname << " #" << t->method);
 			method_info* m=&methods[t->method];
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(obj->getInstanceWorker(),m,m->numArgs()-m->numOptions());
 
@@ -2420,7 +2423,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 		case traits_info::Const:
 		{
 			//Check if this already defined in upper levels
-			if(checkExisting && obj->hasPropertyByMultiname(*mname,false,false,root->getInstanceWorker()))
+			if(checkExisting && obj->hasPropertyByMultiname(*mname,false,false,applicationDomain->getInstanceWorker()))
 				return;
 
 			multiname* tname=getMultiname(t->type_name,nullptr);
@@ -2434,7 +2437,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			else
 				asAtomHandler::setNull(ret);
 
-			LOG_CALL("Const " << *mname <<" type "<< *tname<< " = " << asAtomHandler::toDebugString(ret));
+			//LOG_CALL("Const " << *mname <<" type "<< *tname<< " = " << asAtomHandler::toDebugString(ret));
 
 			obj->initializeVariableByMultiname(*mname, ret, tname, this, CONSTANT_TRAIT,t->slot_id,isenumerable);
 			break;
@@ -2442,7 +2445,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 		case traits_info::Slot:
 		{
 			//Check if this already defined in upper levels
-			if(checkExisting && obj->hasPropertyByMultiname(*mname,false,false,root->getInstanceWorker()))
+			if(checkExisting && obj->hasPropertyByMultiname(*mname,false,false,applicationDomain->getInstanceWorker()))
 				return;
 
 			multiname* tname=getMultiname(t->type_name,nullptr);
@@ -2450,11 +2453,11 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			if(t->vindex)
 			{
 				getConstant(ret,t->vkind,t->vindex);
-				LOG_CALL("Slot " << t->slot_id << ' ' << *mname <<" type "<<*tname<< " = " << asAtomHandler::toDebugString(ret) <<" "<<isBorrowed);
+				//LOG_CALL("Slot " << t->slot_id << ' ' << *mname <<" type "<<*tname<< " = " << asAtomHandler::toDebugString(ret) <<" "<<isBorrowed);
 			}
 			else
 			{
-				LOG_CALL("Slot "<< t->slot_id<<  " vindex 0 " << *mname <<" type "<<*tname<<" "<<isBorrowed);
+				//LOG_CALL("Slot "<< t->slot_id<<  " vindex 0 " << *mname <<" type "<<*tname<<" "<<isBorrowed);
 				ret = asAtomHandler::invalidAtom;
 			}
 
@@ -2465,7 +2468,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 		}
 		default:
 			LOG(LOG_ERROR,"Trait not supported " << *mname << " " << t->kind);
-			obj->setVariableByMultiname(*mname, asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED,nullptr,root->getInstanceWorker());
+			obj->setVariableByMultiname(*mname, asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED,nullptr,applicationDomain->getInstanceWorker());
 			break;
 	}
 }

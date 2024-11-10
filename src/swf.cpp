@@ -326,6 +326,7 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode):
 	loaderInfo->setBytesLoaded(0);
 	loaderInfo->setBytesTotal(0);
 	mainClip=RootMovieClip::getInstance(this->worker,loaderInfo, applicationDomain, securityDomain);
+	loaderInfo->decRef();
 	mainClip->setRefConstant();
 	worker->rootClip = _MR(mainClip);
 	workerDomain = Class<WorkerDomain>::getInstanceSNoArgs(this->worker);
@@ -632,6 +633,7 @@ SystemState::~SystemState()
 #ifdef PROFILING_SUPPORT
 	dumpFunctionCallCount();
 #endif
+	stage->prepareShutdown();
 	stage->_removeAllChildren();
 	this->resetParentList();
 	// finalize main worker
@@ -641,6 +643,8 @@ SystemState::~SystemState()
 	delete workerDomain;
 	delete stage;
 	delete objClassRef;
+	if (systemDomain)
+		delete systemDomain;
 	if (mainClip)
 		delete mainClip;
 	delete[] builtinClasses;
@@ -910,8 +914,8 @@ void SystemState::delayedCreation(SystemState* sys)
 {
 	sys->audioManager=new AudioManager(sys->engineData);
 	sys->localstorageallowed =sys->getEngineData()->getLocalStorageAllowedMarker();
-	int32_t reqWidth=((sys->mainClip->getFrameSize().Xmax-sys->mainClip->getFrameSize().Xmin)/20)*sys->engineData->startscalefactor;
-	int32_t reqHeight=((sys->mainClip->getFrameSize().Ymax-sys->mainClip->getFrameSize().Ymin)/20)*sys->engineData->startscalefactor;
+	int32_t reqWidth=((sys->mainClip->applicationDomain->getFrameSize().Xmax-sys->mainClip->applicationDomain->getFrameSize().Xmin)/20)*sys->engineData->startscalefactor;
+	int32_t reqHeight=((sys->mainClip->applicationDomain->getFrameSize().Ymax-sys->mainClip->applicationDomain->getFrameSize().Ymin)/20)*sys->engineData->startscalefactor;
 
 	if (EngineData::enablerendering)
 	{
@@ -1051,8 +1055,8 @@ void SystemState::launchGnash()
 	char bufHeight[32];
 	snprintf(bufXid,32,"%lu",(long unsigned)engineData->getWindowForGnash());
 	/* Use swf dimensions in standalone mode and window dimensions in plugin mode */
-	snprintf(bufWidth,32,"%u",standalone ? mainClip->getFrameSize().Xmax/20 : engineData->width);
-	snprintf(bufHeight,32,"%u",standalone ? mainClip->getFrameSize().Ymax/20 : engineData->height);
+	snprintf(bufWidth,32,"%u",standalone ? mainClip->applicationDomain->getFrameSize().Xmax/20 : engineData->width);
+	snprintf(bufHeight,32,"%u",standalone ? mainClip->applicationDomain->getFrameSize().Ymax/20 : engineData->height);
 	/* renderMode: 0: disable sound and rendering
 	 *             1: enable rendering and disable sound
 	 *             2: enable sound and disable rendering
@@ -1293,6 +1297,8 @@ void SystemState::flushInvalidationQueue()
 			cur->invalidateQueueNext=NullRef;
 			cur=next;
 		}
+		invalidateQueueHead.reset();
+		invalidateQueueTail.reset();
 		return;
 	}
 	Locker l(invalidateQueueLock);
@@ -1434,7 +1440,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 		return;
 
 	Locker locker(mutex);
-	RECT size=getSys()->mainClip->getFrameSize();
+	RECT size=getSys()->mainClip->applicationDomain->getFrameSize();
 	int width=(size.Xmax-size.Xmin)/20;
 	int height=(size.Ymax-size.Ymin)/20;
 	
@@ -1564,7 +1570,7 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 	UI16_SWF FrameCount;
 
 	version=ver;
-	root->version=version;
+	root->applicationDomain->version=version;
 	f >> FileLength;
 	//Enable decompression if needed
 	if(fileType==FT_SWF)
@@ -1608,9 +1614,9 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 	else
 		frameRate/=256;
 	LOG(LOG_INFO,"FrameRate " << frameRate);
-	root->setFrameRate(frameRate);
+	root->applicationDomain->setFrameRate(frameRate);
 	root->loaderInfo->setFrameRate(frameRate);
-	root->setFrameSize(FrameSize);
+	root->applicationDomain->setFrameSize(FrameSize);
 	root->totalFrames_unreliable = FrameCount;
 }
 
@@ -1672,7 +1678,7 @@ void ParseThread::parseSWF(UI8 ver)
 	RootMovieClip* root=nullptr;
 	if(parsedObject.isNull())
 	{
-		LoaderInfo* li=loader->getContentLoaderInfo();
+		LoaderInfo* li= loader->getContentLoaderInfo();
 		root=RootMovieClip::getInstance(applicationDomain->getInstanceWorker(),li, applicationDomain, securityDomain);
 		if (!applicationDomain->getInstanceWorker()->isPrimordial)
 		{
@@ -1700,18 +1706,18 @@ void ParseThread::parseSWF(UI8 ver)
 		if (loader)
 		{
 			LoaderInfo* li=loader->getContentLoaderInfo();
-			li->swfVersion = root->version;
+			li->swfVersion = root->applicationDomain->version;
 		}
 		
 		int usegnash = 0;
 		char *envvar = getenv("LIGHTSPARK_USE_GNASH");
 		if (envvar)
 			usegnash= atoi(envvar);
-		if(root->version < 9)
+		if(root->applicationDomain->version < 9)
 		{
 			if (usegnash)
 			{
-				LOG(LOG_INFO,"SWF version " << root->version << " is not handled by lightspark, falling back to gnash (if available)");
+				LOG(LOG_INFO,"SWF version " << root->applicationDomain->version << " is not handled by lightspark, falling back to gnash (if available)");
 				//Enable flash fallback
 				root->getSystemState()->needsAVM2(false);
 				return; /* no more parsing necessary, handled by fallback */
@@ -1721,7 +1727,7 @@ void ParseThread::parseSWF(UI8 ver)
 		TagFactory factory(f);
 		Tag* tag=factory.readTag(root);
 
-		if (root->version >= 8)
+		if (root->applicationDomain->version >= 8)
 		{
 			FileAttributesTag* fat = dynamic_cast<FileAttributesTag*>(tag);
 			if(!fat)
@@ -1730,11 +1736,11 @@ void ParseThread::parseSWF(UI8 ver)
 				//Official implementation is not strict in this regard. Let's continue and hope for the best.
 			}
 			//Check if this clip is the main clip then honour its FileAttributesTag
-			root->usesActionScript3 = fat ? fat->ActionScript3 : root->version>9;
+			root->applicationDomain->usesActionScript3 = fat ? fat->ActionScript3 : root->applicationDomain->version>9;
 			if(root == root->getSystemState()->mainClip)
 			{
-				root->getSystemState()->needsAVM2(!usegnash || root->usesActionScript3);
-				if (!usegnash || root->usesActionScript3)
+				root->getSystemState()->needsAVM2(!usegnash || root->applicationDomain->usesActionScript3);
+				if (!usegnash || root->applicationDomain->usesActionScript3)
 					parseExtensions(root);
 				
 				if(usegnash && fat && !fat->ActionScript3)
@@ -1790,7 +1796,7 @@ void ParseThread::parseSWF(UI8 ver)
 				case DICT_TAG:
 				{
 					DictionaryTag* d=static_cast<DictionaryTag*>(tag);
-					root->addToDictionary(d);
+					root->applicationDomain->addToDictionary(d);
 					break;
 				}
 				case DISPLAY_LIST_TAG:
@@ -2139,7 +2145,7 @@ void SystemState::tick()
 
 	currentVm->setIdle(false);
 
-	if (mainClip && mainClip->getFrameRate() > 0)
+	if (mainClip && mainClip->applicationDomain->getFrameRate() > 0)
 	{
 		if (firsttick)
 		{
@@ -2192,7 +2198,6 @@ void SystemState::tickFence()
 
 void SystemState::resizeCompleted()
 {
-	mainClip->resizeCompleted();
 	stage->hasChanged=true;
 	stage->requestInvalidation(this,true);
 	
@@ -2285,7 +2290,7 @@ void SystemState::stageCoordinateMapping(uint32_t windowWidth, uint32_t windowHe
 					 float& scaleX, float& scaleY)
 {
 	//Get the size of the content
-	RECT r=mainClip->getFrameSize();
+	RECT r=mainClip->applicationDomain->getFrameSize();
 	r.Xmin/=20;
 	r.Ymin/=20;
 	r.Xmax/=20;
@@ -2437,7 +2442,7 @@ void SystemState::waitRendering()
 
 uint32_t SystemState::getSwfVersion()
 {
-	return mainClip->version;
+	return mainClip->applicationDomain->version;
 }
 
 void SystemState::checkExternalCallEvent()

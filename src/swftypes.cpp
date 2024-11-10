@@ -926,7 +926,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 		{
 			try
 			{
-				const DictionaryTag* dict=getParseThread()->getRootMovie()->dictionaryLookup(bitmapId);
+				const DictionaryTag* dict=getParseThread()->getRootMovie()->applicationDomain->dictionaryLookup(bitmapId);
 				const BitmapTag* b = dynamic_cast<const BitmapTag*>(dict);
 				if(!b)
 				{
@@ -1843,19 +1843,19 @@ nsNameAndKind::nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind)
 	nsNameId = _nameId;
 	kind = _kind;
 }
-nsNameAndKind::nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind,RootMovieClip* root)
+nsNameAndKind::nsNameAndKind(SystemState* sys,uint32_t _nameId, NS_KIND _kind,ApplicationDomain* appDomain)
 {
 	assert(_kind==PROTECTED_NAMESPACE);
-	nsNameAndKindImpl tmp(_nameId, _kind,root);
+	nsNameAndKindImpl tmp(_nameId, _kind,appDomain);
 	sys->getUniqueNamespaceId(tmp, nsRealId, nsId);
 	nsNameId = _nameId;
 	kind = _kind;
 }
-nsNameAndKind::nsNameAndKind(SystemState* sys, uint32_t _nameId, uint32_t _baseId, NS_KIND _kind,RootMovieClip* root)
+nsNameAndKind::nsNameAndKind(SystemState* sys, uint32_t _nameId, uint32_t _baseId, NS_KIND _kind,ApplicationDomain* appDomain)
 {
 	assert(_kind==PROTECTED_NAMESPACE);
 	nsId=_baseId;
-	nsNameAndKindImpl tmp(_nameId, _kind, root, nsId);
+	nsNameAndKindImpl tmp(_nameId, _kind, appDomain, nsId);
 	uint32_t tmpId;
 	sys->getUniqueNamespaceId(tmp, nsRealId, tmpId);
 	assert(tmpId==_baseId);
@@ -1867,17 +1867,17 @@ nsNameAndKind::nsNameAndKind(ABCContext* c, uint32_t nsContextIndex)
 {
 	const namespace_info& ns=c->constant_pool.namespaces[nsContextIndex];
 	nsNameId=c->getString(ns.name);
-	nsNameAndKindImpl tmp(nsNameId, (NS_KIND)(int)ns.kind,((NS_KIND)(int)ns.kind)==PROTECTED_NAMESPACE ? c->root : nullptr);
+	nsNameAndKindImpl tmp(nsNameId, (NS_KIND)(int)ns.kind,((NS_KIND)(int)ns.kind)==PROTECTED_NAMESPACE ? c->applicationDomain : nullptr);
 	//Give an id hint, in case the namespace is created in the map
-	c->root->getSystemState()->getUniqueNamespaceId(tmp, c->namespaceBaseId+nsContextIndex, nsRealId, nsId);
+	c->applicationDomain->getSystemState()->getUniqueNamespaceId(tmp, c->namespaceBaseId+nsContextIndex, nsRealId, nsId);
 	//Special handling for private namespaces, they are always compared by id
 	if(ns.kind==PRIVATE_NAMESPACE)
 		nsId=c->namespaceBaseId+nsContextIndex;
 	kind = (NS_KIND)(int)ns.kind;
 }
 
-nsNameAndKindImpl::nsNameAndKindImpl(uint32_t _nameId, NS_KIND _kind, RootMovieClip *r, uint32_t b)
-  : nameId(_nameId),kind(_kind),baseId(b),root(r)
+nsNameAndKindImpl::nsNameAndKindImpl(uint32_t _nameId, NS_KIND _kind, ApplicationDomain* appDomain, uint32_t b)
+  : nameId(_nameId),kind(_kind),baseId(b),applicationDomain(appDomain)
 {
 	if (kind != NAMESPACE &&
 	    kind != PACKAGE_NAMESPACE &&

@@ -35,7 +35,7 @@ using namespace lightspark;
 LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(nullptr),bytesData(NullRef),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(nullptr),content(nullptr),bytesData(NullRef),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
@@ -48,7 +48,7 @@ LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),appli
 LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, Loader* l):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),bytesData(NullRef),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(l),content(nullptr),bytesData(NullRef),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	if (loader)
@@ -104,6 +104,9 @@ bool LoaderInfo::destruct()
 	if (loader)
 		loader->removeStoredMember();
 	loader=nullptr;
+	if (content)
+		content->removeStoredMember();
+	content=nullptr;
 	applicationDomain.reset();
 	securityDomain.reset();
 	bytesData.reset();
@@ -132,6 +135,9 @@ void LoaderInfo::finalize()
 	if (loader)
 		loader->removeStoredMember();
 	loader=nullptr;
+	if (content)
+		content->removeStoredMember();
+	content=nullptr;
 	applicationDomain.reset();
 	securityDomain.reset();
 	bytesData.reset();
@@ -164,6 +170,8 @@ void LoaderInfo::prepareShutdown()
 		uncaughtErrorEvents->prepareShutdown();
 	if (loader)
 		loader->prepareShutdown();
+	if (content)
+		content->prepareShutdown();
 }
 
 bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -173,6 +181,8 @@ bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	if (loader)
 		ret = loader->countAllCylicMemberReferences(gcstate) || ret;
+	if (content)
+		ret = content->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 
@@ -221,13 +231,24 @@ void LoaderInfo::setComplete()
 	{
 		sendInit();
 	}
-	else if (loader && !loader->loadedFrom->needsActionScript3())
+	else if (loader && !loader->loadedFrom->usesActionScript3)
 	{
 		this->incRef();
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"avm1_init");
 		if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
 			this->addLoaderEvent(ev);
 		
+	}
+}
+
+void LoaderInfo::setContent(DisplayObject* c)
+{
+	assert(!content);
+	content=c;
+	if (content)
+	{
+		content->incRef();
+		content->addStoredMember();
 	}
 }
 void LoaderInfo::setBytesLoaded(uint32_t b)

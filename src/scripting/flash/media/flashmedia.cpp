@@ -586,13 +586,13 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 	int32_t loops;
 	_NR<SoundTransform> soundtransform;
 	ARG_CHECK(ARG_UNPACK(startTime, 0)(loops,0)(soundtransform,NullRef));
-	if (!wrk->rootClip->usesActionScript3) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
+	if (!wrk->rootClip->needsActionScript3()) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
 		startTime *= 1000;
 	if (soundtransform.isNull())
 		soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(wrk));
 	if (th->container)
 	{
-		if (!wrk->rootClip->usesActionScript3)
+		if (!wrk->rootClip->needsActionScript3())
 		{
 			LOG(LOG_ERROR,"playing sound without attached tag, ignored");
 			return;

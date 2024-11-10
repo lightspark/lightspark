@@ -190,7 +190,7 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 
 	Type* type = asAtomHandler::as<TemplatedClass<Vector>>(o_class)->getTypes()[0];
 
-	RootMovieClip* root = wrk->rootClip.getPtr();
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
 	if(asAtomHandler::is<Array>(args[0]))
 	{
 		//create object without calling _constructor
@@ -211,7 +211,7 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 		}
 		res->setIsInitialized(true);
 	}
-	else if(asAtomHandler::getObject(args[0])->getClass()->getTemplate() == Template<Vector>::getTemplate(root))
+	else if(asAtomHandler::getObject(args[0])->getClass()->getTemplate() == Template<Vector>::getTemplate(appdomain))
 	{
 		Vector* arg = asAtomHandler::as<Vector>(args[0]);
 

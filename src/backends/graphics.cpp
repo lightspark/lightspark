@@ -33,6 +33,7 @@
 #include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "parsing/tags.h"
 #include <pango/pangocairo.h>
 
@@ -1260,10 +1261,9 @@ bool TextData::TextIsEqual(const std::vector<tiny_string>& lines) const
 
 FontTag* TextData::checkEmbeddedFont(DisplayObject* d)
 {
-	RootMovieClip* currentRoot=d->loadedFrom;
-	if (!currentRoot) currentRoot=d->getRoot().getPtr();
-	if (!currentRoot) currentRoot = d->getSystemState()->mainClip;
-	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentRoot->getEmbeddedFontByID(fontID) : currentRoot->getEmbeddedFont(font));
+	ApplicationDomain* currentDomain=d->loadedFrom;
+	if (!currentDomain) currentDomain = d->getSystemState()->mainClip->applicationDomain.getPtr();
+	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentDomain->getEmbeddedFontByID(fontID) : currentDomain->getEmbeddedFont(font));
 	if (embeddedfont)
 	{
 		for (auto it = textlines.begin(); it != textlines.end(); it++)

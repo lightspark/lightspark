@@ -119,7 +119,7 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 	ARG_CHECK(ARG_UNPACK(text));
 	if (th->fontType == "embedded")
 	{
-		FontTag* f = wrk->getSystemState()->mainClip->getEmbeddedFont(th->fontName);
+		FontTag* f = wrk->getSystemState()->mainClip->applicationDomain->getEmbeddedFont(th->fontName);
 		if (f)
 		{
 			asAtomHandler::setBool(ret,f->hasGlyphs(text));

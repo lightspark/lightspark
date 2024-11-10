@@ -1018,7 +1018,7 @@ void RenderThread::plotProfilingData()
  
 	list<ThreadProfile*>::iterator it=m_sys->profilingData.begin();
 	for(;it!=m_sys->profilingData.end();++it)
-		(*it)->plot(1000000/m_sys->mainClip->getFrameRate(),cr);
+		(*it)->plot(1000000/m_sys->mainClip->applicationDomain->getFrameRate(),cr);
 	engineData->exec_glUniform1f(directUniform, 0);
 	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
 	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);

@@ -70,9 +70,9 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	builtin->registerBuiltin("URIError","",Class<URIError>::getRef(m_sys));
 	builtin->registerBuiltin("UninitializedError","",Class<UninitializedError>::getRef(m_sys));
 	builtin->registerBuiltin("VerifyError","",Class<VerifyError>::getRef(m_sys));
-	if (m_sys->mainClip->usesActionScript3)
+	if (m_sys->mainClip->needsActionScript3())
 	{
-		builtin->registerBuiltin("Vector","__AS3__.vec",_MR(Template<Vector>::getTemplate(m_sys->mainClip)));
+		builtin->registerBuiltin("Vector","__AS3__.vec",_MR(Template<Vector>::getTemplate(m_sys->mainClip->applicationDomain.getPtr())));
 		builtin->registerBuiltin("XML","",Class<XML>::getRef(m_sys));
 		builtin->registerBuiltin("XMLList","",Class<XMLList>::getRef(m_sys));
 	}

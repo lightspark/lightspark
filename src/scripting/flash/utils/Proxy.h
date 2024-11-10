@@ -29,10 +29,8 @@ namespace lightspark
 class Proxy: public ASObject
 {
 friend class ABCVm;
-private:
-	bool proxyconstructionCompleted;
 public:
-	Proxy(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_PROXY),proxyconstructionCompleted(false){}
+	Proxy(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_PROXY){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_isAttribute);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;

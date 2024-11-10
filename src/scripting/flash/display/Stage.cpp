@@ -323,8 +323,8 @@ Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
 	RELEASE_WRITE(this->invalidated,false);
 	onStage = true;
 	asAtom v=asAtomHandler::invalidAtom;
-	RootMovieClip* root = wrk->rootClip.getPtr();
-	Template<Vector>::getInstanceS(wrk,v,root,Class<Stage3D>::getClass(getSystemState()),NullRef);
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
+	Template<Vector>::getInstanceS(wrk,v,Class<Stage3D>::getClass(getSystemState()),appdomain);
 	stage3Ds = _R<Vector>(asAtomHandler::as<Vector>(v));
 	stage3Ds->setRefConstant();
 	// according to specs, Desktop computers usually have 4 Stage3D objects available
@@ -398,7 +398,7 @@ uint32_t Stage::internalGetWidth() const
 		width=getSystemState()->getRenderThread()->windowWidth;
 	else
 	{
-		RECT size=getSystemState()->mainClip->getFrameSize();
+		RECT size=getSystemState()->mainClip->applicationDomain->getFrameSize();
 		width=(size.Xmax-size.Xmin)/20;
 	}
 	return width;
@@ -413,7 +413,7 @@ uint32_t Stage::internalGetHeight() const
 		height=getSystemState()->getRenderThread()->windowHeight;
 	else
 	{
-		RECT size=getSystemState()->mainClip->getFrameSize();
+		RECT size=getSystemState()->mainClip->applicationDomain->getFrameSize();
 		height=(size.Ymax-size.Ymin)/20;
 	}
 	return height;
@@ -490,8 +490,8 @@ ASFUNCTIONBODY_ATOM(Stage,_setScaleMode)
 ASFUNCTIONBODY_ATOM(Stage,_getStageVideos)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "Accelerated rendering through StageVideo not implemented, SWF should fall back to Video");
-	RootMovieClip* root = wrk->rootClip.getPtr();
-	Template<Vector>::getInstanceS(wrk,ret,root,Class<StageVideo>::getClass(wrk->getSystemState()),NullRef);
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
+	Template<Vector>::getInstanceS(wrk,ret,Class<StageVideo>::getClass(wrk->getSystemState()),appdomain);
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_isFocusInaccessible)
@@ -694,7 +694,7 @@ void Stage::enterFrame(bool implicit)
 
 void Stage::advanceFrame(bool implicit)
 {
-	if (getSystemState()->mainClip->usesActionScript3)
+	if (getSystemState()->mainClip->needsActionScript3())
 	{
 		forEachHiddenObject([&](DisplayObject* obj)
 		{
@@ -1027,9 +1027,9 @@ ASFUNCTIONBODY_ATOM(Stage,_getFrameRate)
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	_NR<RootMovieClip> root = th->getRoot();
 	if (root.isNull())
-		asAtomHandler::setNumber(ret,wrk,wrk->getSystemState()->mainClip->getFrameRate());
+		asAtomHandler::setNumber(ret,wrk,wrk->getSystemState()->mainClip->applicationDomain->getFrameRate());
 	else
-		asAtomHandler::setNumber(ret,wrk,root->getFrameRate());
+		asAtomHandler::setNumber(ret,wrk,root->applicationDomain->getFrameRate());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setFrameRate)
@@ -1039,7 +1039,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setFrameRate)
 	ARG_CHECK(ARG_UNPACK(frameRate));
 	_NR<RootMovieClip> root = th->getRoot();
 	if (!root.isNull())
-		root->setFrameRate(frameRate);
+		root->applicationDomain->setFrameRate(frameRate);
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_getAllowFullScreen)

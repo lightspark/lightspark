@@ -149,7 +149,7 @@ private:
 	std::unordered_set<uint32_t> overriddenmethods;
 	std::unordered_map<Class_base*,bool> subclasses_map;
 	nsNameAndKind protected_ns;
-	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns,RootMovieClip* root);
+	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns, ApplicationDomain* appdomain);
 	IFunction* constructor;
 	void describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits, std::map<varName,pugi::xml_node> &propnames, bool first) const;
 	void describeVariables(pugi::xml_node &root, const Class_base* c, std::map<tiny_string, pugi::xml_node *> &instanceNodes, const variables_map& map, bool isTemplate, bool forinstance) const;
@@ -276,7 +276,7 @@ private:
 	QName template_name;
 public:
 	Template_base(ASWorker* wrk,QName name);
-	virtual Class_base* applyType(const std::vector<Type*>& t,_NR<ApplicationDomain> appdomain)=0;
+	virtual Class_base* applyType(const std::vector<Type*>& t,ApplicationDomain* appdomain)=0;
 	QName getTemplateName() { return template_name; }
 	ASPROPERTY_GETTER(_NR<Prototype>,prototype);
 	void addPrototypeGetter(SystemState *sys);

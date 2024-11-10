@@ -44,6 +44,7 @@ private:
 	tiny_string loaderURL;
 	_NR<EventDispatcher> sharedEvents;
 	Loader* loader;
+	DisplayObject* content; // this reference is needed for garbage collection
 	_NR<ByteArray> bytesData;
 	ProgressEvent* progressEvent;
 	Mutex spinlock;
@@ -99,6 +100,7 @@ public:
 	void resetState();
 	void setFrameRate(number_t f) { frameRate=f; }
 	void setComplete();
+	void setContent(DisplayObject* c);
 };
 
 }

@@ -67,8 +67,9 @@ private:
 	AS_BLENDMODE blendMode;
 	// if true, this displayobject is the root object of a loaded file (swf or image)
 	bool isLoadedRoot;
-	bool ismask;
 	bool filterlistHasChanged;
+	uint32_t ismaskCount; // number of DisplayObjects this is mask of
+	
 	number_t maxfilterborder;
 public:
 	UI16_SWF Ratio;
@@ -115,8 +116,6 @@ protected:
 	  	The object that masks us, if any
 	*/
 	DisplayObject* mask;
-	// The object that we're masking, if any.
-	DisplayObject* maskee;
 	DisplayObject* clipMask;
 	mutable Mutex spinlock;
 	void computeBoundsForTransformedRect(number_t xmin, number_t xmax, number_t ymin, number_t ymax,
@@ -142,6 +141,7 @@ protected:
 		throw RunTimeException("DisplayObject::hitTestImpl: Derived class must implement this!");
 	}
 	virtual void afterSetLegacyMatrix() {}
+	bool skipCountCylicMemberReferences(garbagecollectorstate& gcstate);
 public:
 	virtual bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 	{
@@ -174,7 +174,7 @@ public:
 	bool getNeedsTextureRecalculation() const { return needsTextureRecalculation; }
 	bool getTextureRecalculationSkippable() const { return textureRecalculationSkippable; }
 	// this may differ from the main clip if this instance was generated from a loaded swf, not from the main clip
-	RootMovieClip* loadedFrom;
+	ApplicationDomain* loadedFrom;
 	// this is reset after the drawjob is done to ensure a changed DisplayObject is only rendered once
 	bool hasChanged;
 	// this is set to true for DisplayObjects that are placed from a tag
@@ -247,7 +247,7 @@ public:
 	_NR<DisplayObject> hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly);
 	virtual void setOnStage(bool staged, bool force, bool inskipping=false);
 	bool isOnStage() const { return onStage; }
-	bool isMask() const { return ismask; }
+	bool isMask() const { return ismaskCount; }
 	// checks for visibility depending on parent visibility 
 	bool isVisible() const;
 	bool isLoadedRootObject() const { return isLoadedRoot; }
@@ -284,11 +284,11 @@ public:
 	void setScaleY(number_t val);
 	void setScaleZ(number_t val);
 	void setVisible(bool v);
+	void setLoaderInfo(LoaderInfo* li);
 	// Nominal width and heigt are the size before scaling and rotation
 	number_t getNominalWidth();
 	number_t getNominalHeight();
 	DisplayObject* getMask() const { return mask; }
-	DisplayObject* getMaskee() const { return maskee; }
 	DisplayObject* getClipMask() const { return clipMask; }
 	bool inMask() const;
 	bool belongsToMask() const;

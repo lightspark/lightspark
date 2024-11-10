@@ -213,7 +213,7 @@ InferenceData ABCVm::earlyBindFindPropStrict(ostream& out, const SyntheticFuncti
 		return ret;
 	//Look on the application domain
 	ASObject* target;
-	bool found = f->mi->context->root->applicationDomain->findTargetByMultiname(*name, target,f->mi->context->root->getInstanceWorker());
+	bool found = f->mi->context->applicationDomain->findTargetByMultiname(*name, target,f->mi->context->applicationDomain->getInstanceWorker());
 	if(found)
 	{
 		//If we found the property on the application domain we can safely use the target verbatim
@@ -259,7 +259,7 @@ InferenceData ABCVm::earlyBindGetLex(ostream& out, const SyntheticFunction* f, c
 	//About custom domains. We can't resolve the object now. But we can output a special getLex opcode that will
 	//rewrite itself to a PUSH_EARLY when it's executed.
 	//NOTE: We use findVariableByMultiname because we don't want to actually run the init scripts now
-	bool found = f->mi->context->root->applicationDomain->findTargetByMultiname(*name, target,f->mi->context->root->getInstanceWorker());
+	bool found = f->mi->context->applicationDomain->findTargetByMultiname(*name, target,f->mi->context->applicationDomain->getInstanceWorker());
 	if(found)
 	{
 		out << (uint8_t)GET_LEX_ONCE;
@@ -1317,7 +1317,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 					const multiname* slotType = objData.type->resolveSlotTypeName(t);
 					if(slotType)
 					{
-						ASObject* ret=mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*slotType,mi->context->root->getInstanceWorker());
+						ASObject* ret=mi->context->applicationDomain->getVariableByMultinameOpportunistic(*slotType,mi->context->applicationDomain->getInstanceWorker());
 						if(ret && ret->getObjectType()==T_CLASS)
 						{
 							Class_base* c=static_cast<Class_base*>(ret);
@@ -1416,7 +1416,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				InferenceData inferredData;
 
 				//Try to resolve the type is it is already defined
-				ASObject* ret=mi->context->root->applicationDomain->getVariableByMultinameOpportunistic(*name,mi->context->root->getInstanceWorker());
+				ASObject* ret=mi->context->applicationDomain->getVariableByMultinameOpportunistic(*name,mi->context->applicationDomain->getInstanceWorker());
 				if(ret && ret->getObjectType()==T_CLASS)
 				{
 					coerceToClass=static_cast<Class_base*>(ret);

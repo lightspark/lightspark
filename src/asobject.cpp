@@ -1415,12 +1415,12 @@ ASFUNCTIONBODY_ATOM(ASObject,registerClass)
 		return;
 	if (!theClassConstructor.isNull())
 	{
-		RootMovieClip* root = nullptr;
+		ApplicationDomain* appDomain = nullptr;
 		if (theClassConstructor->is<AVM1Function>())
-			root = theClassConstructor->as<AVM1Function>()->getClip()->loadedFrom;
-		if (!root)
-			root = wrk->getSystemState()->mainClip;
-		ret = asAtomHandler::fromBool(root->AVM1registerTagClass(name,theClassConstructor));
+			appDomain = theClassConstructor->as<AVM1Function>()->getClip()->loadedFrom;
+		if (!appDomain)
+			appDomain = wrk->getSystemState()->mainClip->applicationDomain.getPtr();
+		ret = asAtomHandler::fromBool(appDomain->AVM1registerTagClass(name,theClassConstructor));
 	}
 }
 ASFUNCTIONBODY_ATOM(ASObject,AVM1_IgnoreSetter)
@@ -1702,7 +1702,6 @@ void ASObject::prepareShutdown()
 		(*it)->prepareShutdown();
 }
 
-
 void ASObject::setRefConstant()
 {
 	getInstanceWorker()->registerConstantRef(this);
@@ -1903,11 +1902,6 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 					ret = true;
 				}
 			}
-			if (parent == gcstate.startobj)
-			{
-				gcstate.ancestors.clear();
-				gcstate.ancestors.insert(parent);
-			}
 		}
 		it++;
 	}
@@ -2006,7 +2000,8 @@ void ASObject::removefromGarbageCollection()
 {
 	if (getInstanceWorker())
 		getInstanceWorker()->removeObjectFromGarbageCollector(this);
-	markedforgarbagecollection=false;
+	markedforgarbagecollection = false;
+	deletedingarbagecollection = false;
 }
 
 void ASObject::removeStoredMember()
@@ -2042,10 +2037,10 @@ bool ASObject::handleGarbageCollection()
 				if (c != UINT32_MAX)
 					c = (*it).second.count;
 			}
-			else if ((*it).second.count!=(uint32_t)(*it).first->getRefCount() && (*it).second.hasmember)
+			else if (((*it).second.ignore || (*it).second.count!=(uint32_t)(*it).first->getRefCount()) && (*it).second.hasmember)
 			{
 				c = UINT32_MAX;
-				if ((*it).first->isMarkedForGarbageCollection() && !deletedingarbagecollection)
+				if (!(*it).second.ignore && (*it).first->isMarkedForGarbageCollection() && !deletedingarbagecollection)
 				{
 					getInstanceWorker()->addObjectToGarbageCollector(this);
 				}
@@ -2055,11 +2050,30 @@ bool ASObject::handleGarbageCollection()
 		assert(c == UINT32_MAX || c <= storedmembercount || this->preparedforshutdown);
 		if (c == storedmembercount)
 		{
+			this->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
+			for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
+			{
+				if ((*it).first != this && !(*it).second.ignore && (*it).second.count==(uint32_t)(*it).first->getRefCount() && (*it).second.hasmember)
+				{
+					(*it).first->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
+				}
+			}
+			for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
+			{
+				if ((*it).first != this && !(*it).second.ignore && (*it).second.count==(uint32_t)(*it).first->getRefCount() && (*it).second.hasmember)
+				{
+					getInstanceWorker()->addObjectToGarbageCollector((*it).first);
+					(*it).first->destruct();
+					(*it).first->finalize();
+					(*it).first->deletedingarbagecollection=true;
+					(*it).first->markedforgarbagecollection=true;
+				}
+			}
 			getInstanceWorker()->addObjectToGarbageCollector(this);
-			this->deletedingarbagecollection=true;
 			this->destruct();
 			this->finalize();
-			this->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
+			this->deletedingarbagecollection=true;
+			this->markedforgarbagecollection=true;
 			return true;
 		}
 	}
@@ -2082,37 +2096,31 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 	}
 	else if (!getConstant() && !getInDestruction() && !getCached() && canHaveCyclicMemberReference() && !markedforgarbagecollection && !deletedingarbagecollection)
 	{
-		if (gcstate.ancestors.find(this)==gcstate.ancestors.end())
+		if (gcstate.checkedobjects.find(this)==gcstate.checkedobjects.end())
 		{
-			gcstate.level++;
-			auto it = gcstate.countedobjects.find(this);
-			if (it != gcstate.countedobjects.end()) // object was already counted once, don't count its members again
+			gcstate.incCount(this);
+			ret = countCylicMemberReferences(gcstate);
+			gcstate.countedobjects.insert(this);
+			if (ret)
 			{
-				gcstate.incCount(this);
 				auto itc = gcstate.checkedobjects.find(this);
-				ret = (*itc).second.hasmember;
+				(*itc).second.hasmember=true;
 			}
 			else
 			{
-				ret = countCylicMemberReferences(gcstate);
-				gcstate.incCount(this);
-				gcstate.countedobjects.insert(this);
-				if (ret)
+				auto itc = gcstate.checkedobjects.find(this);
+				if (itc != gcstate.checkedobjects.end())
 				{
-					auto itc = gcstate.checkedobjects.find(this);
-					(*itc).second.hasmember=true;
+					ret = (*itc).second.hasmember;
 				}
 			}
-			gcstate.level--;
 		}
 		else
 		{
-			auto it = gcstate.countedobjects.find(this);
-			if (it == gcstate.countedobjects.end())
-			{
-				gcstate.incCount(this);
-				gcstate.countedobjects.insert(this);
-			}
+			gcstate.incCount(this);
+			gcstate.countedobjects.insert(this);
+			auto itc = gcstate.checkedobjects.find(this);
+			ret = (*itc).second.hasmember;
 		}
 	}
 	return ret;
@@ -2481,9 +2489,9 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	assert_and_throw(type);
 
 	//Check if an alias is registered
-	RootMovieClip* root = wrk->rootClip.getPtr();
-	auto aliasIt=root->aliasMap.begin();
-	const auto aliasEnd=root->aliasMap.end();
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
+	auto aliasIt=appdomain->aliasMap.begin();
+	const auto aliasEnd=appdomain->aliasMap.end();
 	//Linear search for alias
 	tiny_string alias;
 	for(;aliasIt!=aliasEnd;++aliasIt)
@@ -2831,7 +2839,7 @@ ASObject* ASObject::getprop_prototype()
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if (var)
 		return asAtomHandler::toObject(var->var,getInstanceWorker());
-	if (!getSystemState()->mainClip->usesActionScript3)
+	if (!getSystemState()->mainClip->needsActionScript3())
 		var=Variables.findObjVar(BUILTIN_STRINGS::STRING_PROTO,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	return var ? asAtomHandler::toObject(var->var,getInstanceWorker()) : nullptr;
@@ -4544,9 +4552,26 @@ int garbagecollectorstate::incCount(ASObject* o)
 {
 	auto itc = checkedobjects.find(o);
 	if (itc == checkedobjects.end())
-		itc = checkedobjects.insert(make_pair(o,cyclicmembercount{1,false})).first;
+		itc = checkedobjects.insert(make_pair(o,cyclicmembercount{1,false,false})).first;
 	else
 		(*itc).second.count++;
 	assert((int)(*itc).second.count <= o->getRefCount());
 	return (*itc).second.count;
+}
+
+void garbagecollectorstate::ignoreCount(ASObject* o)
+{
+	auto itc = checkedobjects.find(o);
+	if (itc == checkedobjects.end())
+		itc = checkedobjects.insert(make_pair(o,cyclicmembercount{0,false,true})).first;
+	else
+		(*itc).second.ignore=true;
+}
+bool garbagecollectorstate::isIgnored(ASObject* o)
+{
+	auto itc = checkedobjects.find(o);
+	if (itc == checkedobjects.end())
+		return false;
+	else
+		return (*itc).second.ignore;
 }

@@ -44,17 +44,13 @@ void Array::finalize()
 {
 	for (auto it=data_first.begin() ; it != data_first.end(); ++it)
 	{
-		ASObject* obj = asAtomHandler::getObject(*it);
+		ASATOM_REMOVESTOREDMEMBER(*it);
 		*it = asAtomHandler::invalidAtom;
-		if (obj)
-			obj->removeStoredMember();
 	}
 	for (auto it=data_second.begin() ; it != data_second.end(); ++it)
 	{
-		ASObject* obj = asAtomHandler::getObject(it->second);
+		ASATOM_REMOVESTOREDMEMBER(it->second);
 		it->second = asAtomHandler::invalidAtom;
-		if (obj)
-			obj->removeStoredMember();
 	}
 	data_first.clear();
 	data_second.clear();
@@ -64,17 +60,13 @@ bool Array::destruct()
 {
 	for (auto it=data_first.begin() ; it != data_first.end(); ++it)
 	{
-		ASObject* obj = asAtomHandler::getObject(*it);
+		ASATOM_REMOVESTOREDMEMBER(*it);
 		*it = asAtomHandler::invalidAtom;
-		if (obj)
-			obj->removeStoredMember();
 	}
 	for (auto it=data_second.begin() ; it != data_second.end(); ++it)
 	{
-		ASObject* obj = asAtomHandler::getObject(it->second);
+		ASATOM_REMOVESTOREDMEMBER(it->second);
 		it->second = asAtomHandler::invalidAtom;
-		if (obj)
-			obj->removeStoredMember();
 	}
 	data_first.clear();
 	data_second.clear();

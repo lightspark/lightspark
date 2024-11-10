@@ -96,7 +96,7 @@ ASFUNCTIONBODY_GETTER_SETTER(ContextMenuItem,visible)
 ASFUNCTIONBODY_ATOM(ContextMenuItem,_constructor)
 {
 	ContextMenuItem* th=asAtomHandler::as<ContextMenuItem>(obj);
-	if (wrk->getSystemState()->mainClip->usesActionScript3)
+	if (wrk->getSystemState()->mainClip->needsActionScript3())
 	{
 		ARG_CHECK(ARG_UNPACK(th->label,"")(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true));
 	}

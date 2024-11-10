@@ -376,8 +376,8 @@ ASFUNCTIONBODY_ATOM(Matrix3D,decompose)
 	}
 
 	asAtom v=asAtomHandler::invalidAtom;
-	RootMovieClip* root = wrk->rootClip.getPtr();
-	Template<Vector>::getInstanceS(wrk,v,root,Class<Vector3D>::getClass(wrk->getSystemState()),NullRef);
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
+	Template<Vector>::getInstanceS(wrk,v,Class<Vector3D>::getClass(wrk->getSystemState()),appdomain);
 	Vector *result = asAtomHandler::as<Vector>(v);
 
 	// algorithm taken from openFL
@@ -1049,8 +1049,8 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_get_rawData)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
 	asAtom v=asAtomHandler::invalidAtom;
-	RootMovieClip* root = wrk->rootClip.getPtr();
-	Template<Vector>::getInstanceS(wrk,v,root,Class<Number>::getClass(wrk->getSystemState()),NullRef);
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
+	Template<Vector>::getInstanceS(wrk,v,Class<Number>::getClass(wrk->getSystemState()),appdomain);
 	Vector *result = asAtomHandler::as<Vector>(v);
 	for (uint32_t i = 0; i < 4*4; i++)
 	{

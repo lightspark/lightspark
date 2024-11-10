@@ -510,6 +510,7 @@ public:
 	static FORCE_INLINE bool isClass(const asAtom& a);
 	static FORCE_INLINE bool isTemplate(const asAtom& a);
 	static FORCE_INLINE bool isAccessible(const asAtom& a);
+	static FORCE_INLINE bool isAccessibleObject(const asAtom& a);
 	static FORCE_INLINE SWFOBJECT_TYPE getObjectType(const asAtom& a);
 	static FORCE_INLINE bool checkArgumentConversion(const asAtom& a,const asAtom& obj);
 	static asAtom asTypelate(asAtom& a, asAtom& b, ASWorker* wrk);
@@ -578,13 +579,13 @@ public:
 		return static_cast<T*>((void*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)));
 	}
 };
-#define ASATOM_INCREF(a) if (asAtomHandler::isObject(a)) asAtomHandler::getObjectNoCheck(a)->incRef()
-#define ASATOM_INCREF_POINTER(a) if (asAtomHandler::isObject(*a)) asAtomHandler::getObjectNoCheck(*a)->incRef()
-#define ASATOM_DECREF(a) if (asAtomHandler::isObject(a)) { ASObject* obj_b = asAtomHandler::getObjectNoCheck(a); if (!obj_b->getConstant() && !obj_b->getInDestruction()) obj_b->decRef(); }
-#define ASATOM_DECREF_POINTER(a) if (asAtomHandler::isObject(*a)) { ASObject* obj_b = asAtomHandler::getObject(*a); if (obj_b && !obj_b->getConstant() && !obj_b->getInDestruction()) obj_b->decRef(); }
-#define ASATOM_ADDSTOREDMEMBER(a) if (asAtomHandler::isObject(a)) { asAtomHandler::getObjectNoCheck(a)->incRef();asAtomHandler::getObjectNoCheck(a)->addStoredMember(); }
-#define ASATOM_REMOVESTOREDMEMBER(a) if (asAtomHandler::isObject(a)) { asAtomHandler::getObjectNoCheck(a)->removeStoredMember();}
-#define ASATOM_PREPARESHUTDOWN(a) if (asAtomHandler::isObject(a)) { asAtomHandler::getObjectNoCheck(a)->prepareShutdown();}
+#define ASATOM_INCREF(a) if (asAtomHandler::isAccessibleObject(a)) asAtomHandler::getObjectNoCheck(a)->incRef()
+#define ASATOM_INCREF_POINTER(a) if (asAtomHandler::isAccessibleObject(*a)) asAtomHandler::getObjectNoCheck(*a)->incRef()
+#define ASATOM_DECREF(a) if (asAtomHandler::isAccessibleObject(a)) { ASObject* obj_b = asAtomHandler::getObjectNoCheck(a); if (!obj_b->getConstant() && !obj_b->getInDestruction()) obj_b->decRef(); }
+#define ASATOM_DECREF_POINTER(a) if (asAtomHandler::isAccessibleObject(*a)) { ASObject* obj_b = asAtomHandler::getObject(*a); if (obj_b && !obj_b->getConstant() && !obj_b->getInDestruction()) obj_b->decRef(); }
+#define ASATOM_ADDSTOREDMEMBER(a) if (asAtomHandler::isAccessibleObject(a)) { asAtomHandler::getObjectNoCheck(a)->incRef();asAtomHandler::getObjectNoCheck(a)->addStoredMember(); }
+#define ASATOM_REMOVESTOREDMEMBER(a) if (asAtomHandler::isAccessibleObject(a)) { asAtomHandler::getObjectNoCheck(a)->removeStoredMember();}
+#define ASATOM_PREPARESHUTDOWN(a) if (asAtomHandler::isAccessibleObject(a)) { asAtomHandler::getObjectNoCheck(a)->prepareShutdown();}
 
 struct variable
 {
@@ -627,22 +628,24 @@ struct variable
 struct cyclicmembercount
 {
 	uint32_t count; // number of references counted
-	bool hasmember; // indicates if the member object has any references to the main object in it's members
+	bool hasmember:1; // indicates if the member object has any references to the main object in its members
+	bool ignore:1; // indicates if the member object doesn't have to be checked for cyclic member count and its count should be ignored
 };
 // struct used to keep track of entries when executing garbage collection
 struct garbagecollectorstate
 {
-	std::unordered_map<ASObject*,cyclicmembercount> checkedobjects;
-	std::unordered_set<ASObject*> ancestors;
-	std::unordered_set<ASObject*> countedobjects;
+	std::map<ASObject*,cyclicmembercount> checkedobjects;
+	std::set<ASObject*> ancestors;
+	std::set<ASObject*> countedobjects;
 	ASObject* startobj;
-	int level;
 	int incCount(ASObject* o);
+	void ignoreCount(ASObject* o);
+	bool isIgnored(ASObject* o);
 	FORCE_INLINE bool checkAncestors(ASObject* o)
 	{
 		return ancestors.find(o)!=ancestors.end();
 	}
-	garbagecollectorstate(ASObject* _startobj):startobj(_startobj),level(0)
+	garbagecollectorstate(ASObject* _startobj):startobj(_startobj)
 	{
 	}
 };
@@ -1020,7 +1023,7 @@ protected:
 		stringId = UINT32_MAX;
 		traitsInitialized =false;
 		constructIndicator = false;
-		constructorCallComplete =false;
+		constructorCallComplete = false;
 		removefromGarbageCollection();
 		implEnable = true;
 		storedmembercount=0;
@@ -2762,6 +2765,10 @@ FORCE_INLINE bool asAtomHandler::isTemplate(const asAtom& a) { return isObject(a
 FORCE_INLINE bool asAtomHandler::isAccessible(const asAtom& a)
 {
 	return !(a.uintval & ATOMTYPE_OBJECT_BIT) || !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getCached() || ((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getInDestruction();
+}
+FORCE_INLINE bool asAtomHandler::isAccessibleObject(const asAtom& a)
+{
+	return (a.uintval & ATOMTYPE_OBJECT_BIT) && !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getCached() && !((ASObject*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)))->getInDestruction();
 }
 
 FORCE_INLINE ASObject* asAtomHandler::getObject(const asAtom& a)

@@ -71,7 +71,7 @@ void SimpleButton::afterLegacyDelete(bool inskipping)
 
 bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e)
 {
-	if (!this->isOnStage() || !this->enabled || !this->isVisible() || this->loadedFrom->needsActionScript3())
+	if (!this->isOnStage() || !this->enabled || !this->isVisible() || this->loadedFrom->usesActionScript3)
 		return false;
 	if (!dispatcher->is<DisplayObject>())
 		return false;

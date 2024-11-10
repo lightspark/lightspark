@@ -284,7 +284,7 @@ ASFUNCTIONBODY_ATOM(Math,round)
 	number_t n;
 	// for unknown reasons Adobe allows round with zero arguments on AVM1.
 	// I have no idea what the return value should be in that case, for now we just use 1.0
-	if (wrk->getSystemState()->mainClip->usesActionScript3)
+	if (wrk->getSystemState()->mainClip->needsActionScript3())
 	{
 		ARG_CHECK(ARG_UNPACK (n));
 	}

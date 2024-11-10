@@ -28,12 +28,14 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/toplevel/Error.h"
 #include "scripting/flash/events/flashevents.h"
+#include "backends/urlutils.h"
 #include <sys/time.h>
 
 #define MIN_DOMAIN_MEMORY_LIMIT 1024
 namespace lightspark
 {
-
+class DefineScalingGridTag;
+class FontTag;
 class SecurityDomain;
 struct call_context;
 
@@ -91,7 +93,33 @@ private:
 	std::unordered_map<Class_base*,Class_base*> classesSuperNotFilled;
 	// list of classes where interfaces are not yet linked
 	std::vector<Class_base*> classesToLinkInterfaces;
+	
+	Mutex dictSpinlock;
+	std::unordered_map < uint32_t, DictionaryTag* > dictionary;
+	std::map < QName, DictionaryTag* > classesToBeBound;
+	std::map < tiny_string,FontTag* > embeddedfonts;
+	std::map < uint32_t,FontTag* > embeddedfontsByID;
+	unordered_map<uint32_t,_NR<IFunction>> avm1ClassConstructors;
+	Mutex scalinggridsmutex;
+	std::unordered_map < uint32_t, RECT > scalinggrids;
+	URLInfo origin;
+	//frameSize and frameRate are valid only after the header has been parsed
+	RECT frameSize;
+	float frameRate;
+	URLInfo baseURL;
 public:
+	//map of all classed defined in the swf. They own one reference to each class/template
+	//key is the stringID of the class name (without namespace)
+	std::multimap<uint32_t, Class_base*> customClasses;
+	std::map<QName,std::unordered_set<uint32_t>*> customclassoverriddenmethods;
+	/*
+	 * Support for class aliases in AMF3 serialization
+	 */
+	std::map<tiny_string, _R<Class_base> > aliasMap;
+	std::map<QName, Template_base*> templates;
+
+	uint32_t version;
+	bool usesActionScript3;
 	ByteArray* currentDomainMemory;
 	ApplicationDomain(ASWorker* wrk, Class_base* c, _NR<ApplicationDomain> p=NullRef);
 	void finalize() override;
@@ -104,6 +132,29 @@ public:
 	bool newClassRecursiveLink(Class_base* target, Class_base* c);
 	void addSuperClassNotFilled(Class_base* cls);
 	void copyBorrowedTraitsFromSuper(Class_base* cls);
+	void addToDictionary(DictionaryTag* r);
+	DictionaryTag* dictionaryLookup(int id);
+	DictionaryTag* dictionaryLookupByName(uint32_t nameID);
+	void registerEmbeddedFont(const tiny_string fontname, FontTag *tag);
+	FontTag* getEmbeddedFont(const tiny_string fontname) const;
+	FontTag* getEmbeddedFontByID(uint32_t fontID) const;
+	void addToScalingGrids(const DefineScalingGridTag* r);
+	RECT* ScalingGridsLookup(int id);
+	void addBinding(const tiny_string& name, DictionaryTag *tag);
+	void bindClass(const QName &classname, Class_inherit* cls);
+	void checkBinding(DictionaryTag* tag);
+	// map AVM1 class constructors to named tags
+	bool AVM1registerTagClass(const tiny_string& name, _NR<IFunction> theClassConstructor);
+	AVM1Function* AVM1getClassConstructor(uint32_t spriteID);
+	void setOrigin(const tiny_string& u, const tiny_string& filename="");
+	URLInfo& getOrigin() { return origin; }
+	void setFrameSize(const RECT& f);
+	RECT getFrameSize() const;
+	float getFrameRate() const;
+	void setFrameRate(float f);
+	void setBaseURL(const tiny_string& url);
+	const URLInfo& getBaseURL();
+	
 
 	static void sinit(Class_base* c);
 	void registerGlobalScope(Global* scope);

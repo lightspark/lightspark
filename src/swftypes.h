@@ -368,12 +368,12 @@ struct nsNameAndKindImpl
 	NS_KIND kind;
 	uint32_t baseId;
 	// this is null for all namespaces except kind PROTECTED_NAMESPACE, to ensure they are treated as different namespaces when declared in different swf files
-	RootMovieClip* root;
-	nsNameAndKindImpl(uint32_t _nameId, NS_KIND _kind, RootMovieClip* r=nullptr,uint32_t b=-1);
+	ApplicationDomain* applicationDomain;
+	nsNameAndKindImpl(uint32_t _nameId, NS_KIND _kind, ApplicationDomain* appDomain=nullptr,uint32_t b=-1);
 	bool operator<(const nsNameAndKindImpl& r) const
 	{
-		if(root != r.root)
-			return root<r.root;
+		if(applicationDomain != r.applicationDomain)
+			return applicationDomain<r.applicationDomain;
 		if(kind==r.kind)
 			return nameId < r.nameId;
 		else
@@ -381,8 +381,8 @@ struct nsNameAndKindImpl
 	}
 	bool operator>(const nsNameAndKindImpl& r) const
 	{
-		if(root != r.root)
-			return root>r.root;
+		if(applicationDomain != r.applicationDomain)
+			return applicationDomain>r.applicationDomain;
 		if(kind==r.kind)
 			return nameId > r.nameId;
 		else
@@ -400,13 +400,13 @@ struct nsNameAndKind
 	nsNameAndKind(SystemState *sys, const tiny_string& _name, NS_KIND _kind);
 	nsNameAndKind(SystemState* sys,const char* _name, NS_KIND _kind);
 	nsNameAndKind(SystemState* sys, uint32_t _nameId, NS_KIND _kind);
-	nsNameAndKind(SystemState* sys, uint32_t _nameId, NS_KIND _kind, RootMovieClip *root);
+	nsNameAndKind(SystemState* sys, uint32_t _nameId, NS_KIND _kind, ApplicationDomain* appDomain);
 	nsNameAndKind(ABCContext * c, uint32_t nsContextIndex);
 	/*
 	 * Special constructor for protected namespace, which have
 	 * different representationId
 	 */
-	nsNameAndKind(SystemState* sys, uint32_t _nameId, uint32_t _baseId, NS_KIND _kind, RootMovieClip *root);
+	nsNameAndKind(SystemState* sys, uint32_t _nameId, uint32_t _baseId, NS_KIND _kind, ApplicationDomain* appDomain);
 	/*
 	 * Special version to create the empty bultin namespace
 	 */

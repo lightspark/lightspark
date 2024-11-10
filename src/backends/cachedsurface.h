@@ -61,7 +61,6 @@ public:
 	tokensVector tokens;
 	std::vector<_R<CachedSurface>> childrenlist;
 	_NR<CachedSurface> mask;
-	_NR<CachedSurface> maskee;
 	std::vector<FilterData> filters;
 	RectF bounds;
 	int depth;

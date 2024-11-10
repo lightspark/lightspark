@@ -96,20 +96,20 @@ Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool opport
 	 * classesBeingDefined, but context->root->getVariableAndTargetByMultiname()
 	 * would still return "Undefined".
 	 */
-	auto i = context->root->applicationDomain->classesBeingDefined.find(mn);
-	if(i != context->root->applicationDomain->classesBeingDefined.end())
+	auto i = context->applicationDomain->classesBeingDefined.find(mn);
+	if(i != context->applicationDomain->classesBeingDefined.end())
 		typeObject = i->second;
 	else
 	{
 		if (opportunistic)
-			typeObject = context->root->applicationDomain->getVariableByMultinameOpportunistic(*mn,context->root->getInstanceWorker());
+			typeObject = context->applicationDomain->getVariableByMultinameOpportunistic(*mn,context->applicationDomain->getInstanceWorker());
 		else
 		{
 			ASObject* target;
 			asAtom o=asAtomHandler::invalidAtom;
-			context->root->applicationDomain->getVariableAndTargetByMultiname(o,*mn,target,context->root->getInstanceWorker());
+			context->applicationDomain->getVariableAndTargetByMultiname(o,*mn,target,context->applicationDomain->getInstanceWorker());
 			if (asAtomHandler::isValid(o))
-				typeObject=asAtomHandler::toObject(o,context->root->getInstanceWorker());
+				typeObject=asAtomHandler::toObject(o,context->applicationDomain->getInstanceWorker());
 		}
 	}
 	if(!typeObject)
@@ -122,8 +122,8 @@ Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool opport
 				if (instancetype==nullptr)
 				{
 					multiname* mti = mn->templateinstancenames.front();
-					auto it = context->root->applicationDomain->classesBeingDefined.begin();
-					while(it != context->root->applicationDomain->classesBeingDefined.end())
+					auto it = context->applicationDomain->classesBeingDefined.begin();
+					while(it != context->applicationDomain->classesBeingDefined.end())
 					{
 						const multiname* m = it->first;
 						if (mti->name_type == multiname::NAME_STRING && m->name_type == multiname::NAME_STRING
@@ -137,13 +137,13 @@ Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool opport
 					}
 				}
 				if (instancetype)
-					typeObject = Template<Vector>::getTemplateInstance(context->root,instancetype,context->root->applicationDomain).getPtr();
+					typeObject = Template<Vector>::getTemplateInstance(instancetype,context->applicationDomain).getPtr();
 			}
 			else
 			{
 				LOG(LOG_NOT_IMPLEMENTED,"getTypeFromMultiname with "<<mn->templateinstancenames.size()<<" instance types");
 				QName qname(mn->name_s_id,mn->ns[0].nsNameId);
-				typeObject = Template<Vector>::getTemplateInstance(context->root,qname,context,context->root->applicationDomain).getPtr();
+				typeObject = Template<Vector>::getTemplateInstance(qname,context,context->applicationDomain).getPtr();
 			}
 		}
 	}
@@ -569,7 +569,7 @@ const std::vector<Class_base*>& Class_base::getInterfaces(bool *alldefined) cons
 		{
 			ASObject* target;
 			asAtom interface_obj=asAtomHandler::invalidAtom;
-			this->context->root->applicationDomain->getVariableAndTargetByMultiname(interface_obj,*it, target,context->root->getInstanceWorker());
+			this->context->applicationDomain->getVariableAndTargetByMultiname(interface_obj,*it, target,context->applicationDomain->getInstanceWorker());
 			if (asAtomHandler::isValid(interface_obj))
 			{
 				assert_and_throw(asAtomHandler::isClass(interface_obj));
@@ -618,7 +618,7 @@ void Class_base::linkInterface(Class_base* c) const
 		asAtom v = asAtomHandler::fromObject(c);
 		asAtom ret=asAtomHandler::invalidAtom;
 		asAtom constr = asAtomHandler::fromObject(constructor);
-		asAtomHandler::callFunction(constr,context->root->getInstanceWorker(),ret,v,nullptr,0,false);
+		asAtomHandler::callFunction(constr,context->applicationDomain->getInstanceWorker(),ret,v,nullptr,0,false);
 		assert_and_throw(asAtomHandler::isInvalid(ret));
 	}
 }
@@ -1032,18 +1032,18 @@ void Class_base::describeMetadata(pugi::xml_node& root, const traits_info& trait
 	{
 		pugi::xml_node metadata_node=root.append_child("metadata");
 		metadata_info& minfo = context->metadata[trait.metadata[i]];
-		metadata_node.append_attribute("name").set_value(context->root->getSystemState()->getStringFromUniqueId(context->getString(minfo.name)).raw_buf());
+		metadata_node.append_attribute("name").set_value(context->applicationDomain->getSystemState()->getStringFromUniqueId(context->getString(minfo.name)).raw_buf());
 
 		for(unsigned int j=0;j<minfo.item_count;++j)
 		{
 			pugi::xml_node arg_node=metadata_node.append_child("arg");
-			arg_node.append_attribute("key").set_value(context->root->getSystemState()->getStringFromUniqueId(context->getString(minfo.items[j].key)).raw_buf());
-			arg_node.append_attribute("value").set_value(context->root->getSystemState()->getStringFromUniqueId(context->getString(minfo.items[j].value)).raw_buf());
+			arg_node.append_attribute("key").set_value(context->applicationDomain->getSystemState()->getStringFromUniqueId(context->getString(minfo.items[j].key)).raw_buf());
+			arg_node.append_attribute("value").set_value(context->applicationDomain->getSystemState()->getStringFromUniqueId(context->getString(minfo.items[j].value)).raw_buf());
 		}
 	}
 }
 
-void Class_base::initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns, RootMovieClip *root)
+void Class_base::initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns, ApplicationDomain *appdomain)
 {
 	Class_inherit* cur=dynamic_cast<Class_inherit*>(super.getPtr());
 	nsNameAndKind* baseNs=NULL;
@@ -1057,9 +1057,9 @@ void Class_base::initializeProtectedNamespace(uint32_t nameId, const namespace_i
 		cur=dynamic_cast<Class_inherit*>(cur->super.getPtr());
 	}
 	if(baseNs==NULL)
-		protected_ns=nsNameAndKind(getSystemState(),nameId,(NS_KIND)(int)ns.kind,root);
+		protected_ns=nsNameAndKind(getSystemState(),nameId,(NS_KIND)(int)ns.kind,appdomain);
 	else
-		protected_ns=nsNameAndKind(getSystemState(),nameId,baseNs->nsId,(NS_KIND)(int)ns.kind,root);
+		protected_ns=nsNameAndKind(getSystemState(),nameId,baseNs->nsId,(NS_KIND)(int)ns.kind,appdomain);
 }
 
 variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_getter)
@@ -1263,7 +1263,7 @@ EARLY_BIND_STATUS ActivationType::resolveMultinameStatically(const multiname& na
 		multiname* mname=mi->context->getMultiname(t->name,nullptr);
 		std::cerr << "\t in " << *mname << std::endl;
 		assert_and_throw(mname->ns.size()==1 && mname->name_type==multiname::NAME_STRING);
-		if(mname->name_s_id!=name.normalizedNameId(mi->context->root->getSystemState()))
+		if(mname->name_s_id!=name.normalizedNameId(mi->context->applicationDomain->getSystemState()))
 			continue;
 		bool found=false;
 		for (auto it = name.ns.begin(); it != name.ns.end(); it++)

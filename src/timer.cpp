@@ -224,6 +224,7 @@ void TimerThread::removeJob_noLock(ITickJob* job)
 	if(it==pendingEvents.end())
 		return;
 
+	job->tickFence();
 	TimingEvent* e=*it;
 	pendingEvents.erase(it);
 	delete e;

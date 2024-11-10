@@ -307,9 +307,7 @@ void MovieClip::prepareShutdown()
 
 bool MovieClip::countCylicMemberReferences(garbagecollectorstate &gcstate)
 {
-	if (this->isOnStage() && !getSystemState()->isShuttingDown())
-		return false; // no need to count, as we have at least one reference left if this object is still on stage
-	if (gcstate.checkAncestors(this))
+	if (skipCountCylicMemberReferences(gcstate))
 		return false;
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
 	for (auto it = frameScripts.begin(); it != frameScripts.end(); it++)
@@ -327,7 +325,7 @@ const Scene_data *MovieClip::getScene(const tiny_string &sceneName) const
 {
 	if (sceneName.empty())
 	{
-		return &scenes[getCurrentScene()];
+		return scenes.empty() ? nullptr : &scenes[getCurrentScene()];
 	}
 	else
 	{
@@ -1040,8 +1038,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		throw RunTimeException("AVM1: invalid number of arguments for attachMovie");
 	int Depth = asAtomHandler::toInt(args[2]);
 	uint32_t nameId = asAtomHandler::toStringId(args[1],wrk);
-	RootMovieClip* root = th->is<RootMovieClip>() ? th->as<RootMovieClip>() : th->loadedFrom;
-	DictionaryTag* placedTag = root->dictionaryLookupByName(asAtomHandler::toStringId(args[0],wrk));
+	DictionaryTag* placedTag = th->loadedFrom->dictionaryLookupByName(asAtomHandler::toStringId(args[0],wrk));
 	if (!placedTag)
 	{
 		ret=asAtomHandler::undefinedAtom;

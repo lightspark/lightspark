@@ -259,7 +259,6 @@ asAtom Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& s
 	}
 	asAtom v=asAtomHandler::invalidAtom;
 	Template<Vector>::getInstanceS(input->getInstanceWorker(),v,
-								   input->getInstanceWorker()->rootClip.getPtr(),
 								   type,
 								   ABCVm::getCurrentApplicationDomain(input->getInstanceWorker()->currentCallContext));
 	Vector* ret= asAtomHandler::as<Vector>(v);
@@ -432,9 +431,9 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		//Custom serialization
 		const tiny_string& className=parseStringVR(stringMap);
 		assert_and_throw(!className.empty());
-		RootMovieClip* root = input->getInstanceWorker()->rootClip.getPtr();
-		const auto it=root->aliasMap.find(className);
-		assert_and_throw(it!=root->aliasMap.end());
+		ApplicationDomain* appdomain = input->getInstanceWorker()->rootClip->applicationDomain.getPtr();
+		const auto it=appdomain->aliasMap.find(className);
+		assert_and_throw(it!=appdomain->aliasMap.end());
 
 		Class_base* type=it->second.getPtr();
 		traitsMap.push_back(TraitsRef(type));
@@ -475,9 +474,9 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		for(uint32_t i=0;i<traitsCount;i++)
 			traits.traitsNames.emplace_back(parseStringVR(stringMap));
 
-		RootMovieClip* root = input->getInstanceWorker()->rootClip.getPtr();
-		const auto it=root->aliasMap.find(className);
-		if(it!=root->aliasMap.end())
+		ApplicationDomain* appdomain = input->getInstanceWorker()->rootClip->applicationDomain.getPtr();
+		const auto it=appdomain->aliasMap.find(className);
+		if(it!=appdomain->aliasMap.end())
 			traits.type=it->second.getPtr();
 		traitsMap.emplace_back(traits);
 	}

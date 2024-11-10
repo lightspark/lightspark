@@ -202,7 +202,6 @@ ASFUNCTIONBODY_ATOM(Loader,close)
 	for (auto j=th->jobs.begin(); j!=th->jobs.end(); j++)
 		(*j)->threadAbort();
 }
-
 ASFUNCTIONBODY_ATOM(Loader,load)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
@@ -253,17 +252,19 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
 	//the passed applicationDomain is ignored
-	RootMovieClip* currentRoot=this->loadedFrom ? this->loadedFrom : getInstanceWorker()->rootClip.getPtr();
+	ApplicationDomain* appDomain=this->loadedFrom ? this->loadedFrom : getInstanceWorker()->rootClip->applicationDomain.getPtr();
 	// empty origin is possible if swf is loaded by loadBytes()
-	if(currentRoot->getOrigin().isEmpty() || currentRoot->getOrigin().getHostname()==this->url.getHostname() || secDomain)
+	if(appDomain->getOrigin().isEmpty() || appDomain->getOrigin().getHostname()==this->url.getHostname() || secDomain)
 	{
 		//Same domain
-		_NR<ApplicationDomain> parentDomain;
+		ApplicationDomain* parentDomain=nullptr;
 		if (getInstanceWorker()->currentCallContext)
 			parentDomain = ABCVm::getCurrentApplicationDomain(getInstanceWorker()->currentCallContext);
+		if (parentDomain)
+			parentDomain->incRef();
 		//Support for LoaderContext
 		if(!context || context->applicationDomain.isNull())
-			this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getInstanceWorker(),parentDomain));
+			this->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(this->getInstanceWorker(),_MNR(parentDomain)));
 		else
 			this->contentLoaderInfo->applicationDomain = context->applicationDomain;
 		curSecDomain->incRef();
@@ -319,14 +320,18 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 	_NR<LoaderContext> context;
 	ARG_CHECK(ARG_UNPACK (bytes)(context, NullRef));
 
-	_NR<ApplicationDomain> parentDomain = ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
+	ApplicationDomain* parentDomain = ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
+	if (parentDomain)
+		parentDomain->incRef();
 	if(context.isNull() || context->applicationDomain.isNull())
-		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(wrk,parentDomain));
+		th->contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS(wrk,_MNR(parentDomain)));
 	else
 		th->contentLoaderInfo->applicationDomain = context->applicationDomain;
 	//Always loaded in the current security domain
-	_NR<SecurityDomain> curSecDomain=ABCVm::getCurrentSecurityDomain(wrk->currentCallContext);
-	th->contentLoaderInfo->securityDomain = curSecDomain;
+	SecurityDomain* curSecDomain=ABCVm::getCurrentSecurityDomain(wrk->currentCallContext);
+	if (curSecDomain)
+		curSecDomain->incRef();
+	th->contentLoaderInfo->securityDomain = _MNR(curSecDomain);
 
 	th->allowCodeImport = context.isNull() || context->getAllowCodeImport();
 
@@ -433,7 +438,7 @@ bool Loader::destruct()
 
 bool Loader::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
+	if (skipCountCylicMemberReferences(gcstate))
 		return false;
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
 	if (contentLoaderInfo)
@@ -500,9 +505,10 @@ void Loader::setContent(DisplayObject* o)
 
 	{
 		Locker l(spinlock);
-		if (o->is<RootMovieClip>() && o != getSystemState()->mainClip && !o->as<RootMovieClip>()->usesActionScript3)
+		if (o->is<RootMovieClip>() && o != getSystemState()->mainClip && !o->as<RootMovieClip>()->needsActionScript3())
 		{
 			AVM1Movie* m = Class<AVM1Movie>::getInstanceS(getInstanceWorker());
+			m->setLoaderInfo(this->loaderInfo);
 			o->incRef();
 			m->_addChildAt(o,0);
 			m->addStoredMember();
@@ -518,7 +524,6 @@ void Loader::setContent(DisplayObject* o)
 		loaded=true;
 	}
 	// _addChild may cause AS code to run, release locks beforehand.
-
 	if (!avm1target.isNull())
 	{
 		o->tx = avm1target->tx;

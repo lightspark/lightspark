@@ -1376,7 +1376,7 @@ bool Launcher::start()
 					inentryediting=true;
 				}
 				ImGui::SameLine();
-				ImGui::Text((*it).attribute("name").as_string());
+				ImGui::TextUnformatted((*it).attribute("name").as_string());
 			}
 		}
 		else

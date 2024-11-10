@@ -28,6 +28,7 @@
 #include "scripting/argconv.h"
 #include "compat.h"
 #include "backends/security.h"
+#include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
@@ -364,7 +365,8 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getScreenDPI)
 	asAtomHandler::setNumber(ret,wrk,dpi);
 }
 
-ApplicationDomain::ApplicationDomain(ASWorker* wrk, Class_base* c, _NR<ApplicationDomain> p):ASObject(wrk,c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN),defaultDomainMemory(Class<ByteArray>::getInstanceSNoArgs(wrk)), parentDomain(p)
+ApplicationDomain::ApplicationDomain(ASWorker* wrk, Class_base* c, _NR<ApplicationDomain> p):ASObject(wrk,c,T_OBJECT,SUBTYPE_APPLICATIONDOMAIN)
+	,defaultDomainMemory(Class<ByteArray>::getInstanceSNoArgs(wrk)),frameRate(0),version(0),usesActionScript3(false), parentDomain(p)
 {
 	defaultDomainMemory->setLength(MIN_DOMAIN_MEMORY_LIMIT);
 	currentDomainMemory=defaultDomainMemory.getPtr();
@@ -394,6 +396,9 @@ void ApplicationDomain::cbDomainMemory(_NR<ByteArray> oldvalue)
 void ApplicationDomain::finalize()
 {
 	ASObject::finalize();
+	for(auto it=dictionary.begin();it!=dictionary.end();++it)
+		delete it->second;
+	dictionary.clear();
 	domainMemory.reset();
 	defaultDomainMemory.reset();
 	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
@@ -402,6 +407,7 @@ void ApplicationDomain::finalize()
 	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
 		it->second->decRef();
 	globalScopes.clear();
+	instantiatedTemplates.clear();
 }
 
 void ApplicationDomain::prepareShutdown()
@@ -523,6 +529,273 @@ void ApplicationDomain::copyBorrowedTraitsFromSuper(Class_base *cls)
 	}
 }
 
+void ApplicationDomain::addToDictionary(DictionaryTag* r)
+{
+	Locker l(dictSpinlock);
+	dictionary[r->getId()] = r;
+}
+
+DictionaryTag* ApplicationDomain::dictionaryLookup(int id)
+{
+	Locker l(dictSpinlock);
+	auto it = dictionary.find(id);
+	if(it==dictionary.end())
+	{
+		LOG(LOG_ERROR,"No such Id on dictionary " << id << " for " << origin);
+		//throw RunTimeException("Could not find an object on the dictionary");
+		return nullptr;
+	}
+	return it->second;
+}
+
+DictionaryTag* ApplicationDomain::dictionaryLookupByName(uint32_t nameID)
+{
+	Locker l(dictSpinlock);
+	auto it = dictionary.begin();
+	for(;it!=dictionary.end();++it)
+	{
+		if(it->second->nameID==nameID)
+			return it->second;
+	}
+	// tag not found, also check case insensitive
+	if(it==dictionary.end())
+	{
+		
+		tiny_string namelower = getSystemState()->getStringFromUniqueId(nameID).lowercase();
+		it = dictionary.begin();
+		for(;it!=dictionary.end();++it)
+		{
+			if (it->second->nameID == UINT32_MAX)
+				continue;
+			tiny_string dictnamelower = getSystemState()->getStringFromUniqueId(it->second->nameID);
+			dictnamelower = dictnamelower.lowercase();
+			if(dictnamelower==namelower)
+				return it->second;
+		}
+	}
+	LOG(LOG_ERROR,"No such name on dictionary " << getSystemState()->getStringFromUniqueId(nameID) << " for " << origin);
+	return nullptr;
+}
+
+void ApplicationDomain::registerEmbeddedFont(const tiny_string fontname, FontTag* tag)
+{
+	if (!fontname.empty())
+	{
+		auto it = embeddedfonts.find(fontname);
+		if (it == embeddedfonts.end())
+		{
+			embeddedfonts[fontname] = tag;
+			// it seems that adobe allows fontnames to be lowercased and stripped of spaces and numbers
+			tiny_string tmp = fontname.lowercase();
+			tiny_string fontnamenormalized;
+			for (auto it = tmp.begin();it != tmp.end(); it++)
+			{
+				if (*it == ' ' || (*it >= '0' &&  *it <= '9'))
+					continue;
+				fontnamenormalized += *it;
+			}
+			embeddedfonts[fontnamenormalized] = tag;
+		}
+	}
+	embeddedfontsByID[tag->getId()] = tag;
+}
+
+FontTag* ApplicationDomain::getEmbeddedFont(const tiny_string fontname) const
+{
+	auto it = embeddedfonts.find(fontname);
+	if (it != embeddedfonts.end())
+		return it->second;
+	it = embeddedfonts.find(fontname.lowercase());
+	if (it != embeddedfonts.end())
+		return it->second;
+	return nullptr;
+}
+
+FontTag* ApplicationDomain::getEmbeddedFontByID(uint32_t fontID) const
+{
+	auto it = embeddedfontsByID.find(fontID);
+	if (it != embeddedfontsByID.end())
+		return it->second;
+	return nullptr;
+}
+
+void ApplicationDomain::addToScalingGrids(const DefineScalingGridTag* r)
+{
+	Locker l(scalinggridsmutex);
+	scalinggrids[r->CharacterId] = r->Splitter;
+}
+
+RECT* ApplicationDomain::ScalingGridsLookup(int id)
+{
+	Locker l(scalinggridsmutex);
+	auto it = scalinggrids.find(id);
+	if(it==scalinggrids.end())
+		return nullptr;
+	return &(*it).second;
+}
+
+void ApplicationDomain::addBinding(const tiny_string& name, DictionaryTag *tag)
+{
+	// This function will be called only be the parsing thread,
+	// and will only access the last frame, so no locking needed.
+	tag->bindingclassname = name;
+	uint32_t pos = name.rfind(".");
+	if (pos== tiny_string::npos)
+		classesToBeBound[QName(getSystemState()->getUniqueStringId(name),BUILTIN_STRINGS::EMPTY)] =  tag;
+	else
+		classesToBeBound[QName(getSystemState()->getUniqueStringId(name.substr(pos+1,name.numChars()-(pos+1))),getSystemState()->getUniqueStringId(name.substr(0,pos)))] = tag;
+}
+
+void ApplicationDomain::bindClass(const QName& classname, Class_inherit* cls)
+{
+	if (cls->isBinded() || classesToBeBound.empty())
+		return;
+	
+	auto it=classesToBeBound.find(classname);
+	if(it!=classesToBeBound.end())
+	{
+		cls->bindToTag(it->second);
+		classesToBeBound.erase(it);
+	}
+}
+bool ApplicationDomain::AVM1registerTagClass(const tiny_string &name, _NR<IFunction> theClassConstructor)
+{
+	uint32_t nameID = getSystemState()->getUniqueStringId(name);
+	DictionaryTag* t = dictionaryLookupByName(nameID);
+	if (!t)
+	{
+		LOG(LOG_ERROR,"registerClass:no tag found in dictionary for "<<name);
+		return false;
+	}
+	if (theClassConstructor.isNull())
+		avm1ClassConstructors.erase(t->getId());
+	else
+		avm1ClassConstructors.insert(make_pair(t->getId(),theClassConstructor));
+	return true;
+}
+
+void ApplicationDomain::checkBinding(DictionaryTag *tag)
+{
+	if (tag->bindingclassname.empty())
+		return;
+	multiname clsname(nullptr);
+	clsname.name_type=multiname::NAME_STRING;
+	clsname.isAttribute = false;
+	
+	uint32_t pos = tag->bindingclassname.rfind(".");
+	tiny_string ns;
+	tiny_string nm;
+	if (pos != tiny_string::npos)
+	{
+		nm = tag->bindingclassname.substr(pos+1,tag->bindingclassname.numBytes());
+		ns = tag->bindingclassname.substr(0,pos);
+		clsname.hasEmptyNS=false;
+	}
+	else
+	{
+		nm = tag->bindingclassname;
+		ns = "";
+	}
+	clsname.name_s_id=getSystemState()->getUniqueStringId(nm);
+	clsname.ns.push_back(nsNameAndKind(getSystemState(),ns,NAMESPACE));
+	
+	ASObject* typeObject = nullptr;
+	auto i = classesBeingDefined.cbegin();
+	while (i != classesBeingDefined.cend())
+	{
+		if(i->first->name_s_id == clsname.name_s_id && i->first->ns[0].nsRealId == clsname.ns[0].nsRealId)
+		{
+			typeObject = i->second;
+			break;
+		}
+		i++;
+	}
+	if (typeObject == nullptr)
+	{
+		ASObject* target;
+		asAtom o=asAtomHandler::invalidAtom;
+		getVariableAndTargetByMultiname(o,clsname,target,getInstanceWorker());
+		if (asAtomHandler::isValid(o))
+			typeObject=asAtomHandler::getObject(o);
+	}
+	if (typeObject != nullptr)
+	{
+		Class_inherit* cls = typeObject->as<Class_inherit>();
+		if (cls)
+		{
+			ABCVm *vm = getVm(getSystemState());
+			vm->buildClassAndBindTag(tag->bindingclassname.raw_buf(), tag,cls);
+			tag->bindedTo=cls;
+			tag->bindingclassname = "";
+			cls->bindToTag(tag);
+		}
+	}
+}
+
+AVM1Function* ApplicationDomain::AVM1getClassConstructor(uint32_t spriteID)
+{
+	auto it = avm1ClassConstructors.find(spriteID);
+	if (it == avm1ClassConstructors.end())
+		return nullptr;
+	return it->second->is<AVM1Function>() ? it->second->as<AVM1Function>() : nullptr;
+}
+
+void ApplicationDomain::setOrigin(const tiny_string& u, const tiny_string& filename)
+{
+	//We can use this origin to implement security measures.
+	//Note that for plugins, this url is NOT the page url, but it is the swf file url.
+	origin = URLInfo(u);
+	//If this URL doesn't contain a filename, add the one passed as an argument (used in main.cpp)
+	if(origin.getPathFile() == "" && filename != "")
+	{
+		tiny_string fileurl = g_path_is_absolute(filename.raw_buf()) ? g_filename_to_uri(filename.raw_buf(), nullptr,nullptr) : filename;
+		origin = origin.goToURL(fileurl);
+	}
+}
+
+void ApplicationDomain::setFrameSize(const lightspark::RECT& f)
+{
+	frameSize=f;
+}
+
+RECT ApplicationDomain::getFrameSize() const
+{
+	return frameSize;
+}
+
+void ApplicationDomain::setFrameRate(float f)
+{
+	if (frameRate != f)
+	{
+		frameRate=f;
+		if (this == getSystemState()->mainClip->applicationDomain.getPtr() )
+			getSystemState()->setRenderRate(frameRate);
+	}
+}
+
+float ApplicationDomain::getFrameRate() const
+{
+	return frameRate;
+}
+
+void ApplicationDomain::setBaseURL(const tiny_string& url)
+{
+	//Set the URL to be used in resolving relative paths. For the
+	//plugin this is either the value of base attribute in the
+	//OBJECT or EMBED tag or, if the attribute is not provided,
+	//the address of the hosting HTML page.
+	baseURL = URLInfo(url);
+}
+const URLInfo& ApplicationDomain::getBaseURL()
+{
+	//The plugin uses the address of the HTML page (baseURL) for
+	//resolving relative paths. AIR and the standalone Lightspark
+	//use the SWF location (origin).
+	if(baseURL.isValid())
+		return baseURL;
+	else
+		return getOrigin();
+}
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 {
 	ApplicationDomain* th = asAtomHandler::as<ApplicationDomain>(obj);
@@ -545,9 +818,9 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,_getMinDomainMemoryLength)
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_getCurrentDomain)
 {
-	_NR<ApplicationDomain> res=ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
+	ApplicationDomain* res=ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
 	res->incRef();
-	ret = asAtomHandler::fromObject(res.getPtr());
+	ret = asAtomHandler::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,hasDefinition)
@@ -723,8 +996,7 @@ void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(a
 			if (asAtomHandler::isValid(typeobj))
 			{
 				Type* t = asAtomHandler::getObject(typeobj)->as<Type>();
-				this->incRef();
-				ret = asAtomHandler::fromObject(Template<Vector>::getTemplateInstance(wrk->rootClip.getPtr(),t,_NR<ApplicationDomain>(this)).getPtr());
+				ret = asAtomHandler::fromObject(Template<Vector>::getTemplateInstance(t,this).getPtr());
 			}
 		}
 	}
@@ -837,9 +1109,9 @@ ASFUNCTIONBODY_ATOM(SecurityDomain,_constructor)
 
 ASFUNCTIONBODY_ATOM(SecurityDomain,_getCurrentDomain)
 {
-	_NR<SecurityDomain> res=ABCVm::getCurrentSecurityDomain(wrk->currentCallContext);
+	SecurityDomain* res=ABCVm::getCurrentSecurityDomain(wrk->currentCallContext);
 	res->incRef();
-	ret = asAtomHandler::fromObject(res.getPtr());
+	ret = asAtomHandler::fromObject(res);
 }
 
 void Security::sinit(Class_base* c)
@@ -921,7 +1193,7 @@ ASFUNCTIONBODY_ATOM(Security, showSettings)
 
 ASFUNCTIONBODY_ATOM(Security, pageDomain)
 {
-	tiny_string s = wrk->getSystemState()->mainClip->getBaseURL().getProtocol()+"://"+wrk->getSystemState()->mainClip->getBaseURL().getHostname();
+	tiny_string s = wrk->getSystemState()->mainClip->applicationDomain->getBaseURL().getProtocol()+"://"+wrk->getSystemState()->mainClip->applicationDomain->getBaseURL().getHostname();
 	ret = asAtomHandler::fromString(wrk->getSystemState(),s);
 }
 
@@ -1118,15 +1390,15 @@ void ASWorker::finalize()
 		started = false;
 		if (rootClip)
 		{
-			for(auto it = rootClip->customClasses.begin(); it != rootClip->customClasses.end(); ++it)
+			for(auto it = rootClip->applicationDomain->customClasses.begin(); it != rootClip->applicationDomain->customClasses.end(); ++it)
 				it->second->finalize();
-			for(auto it = rootClip->templates.begin(); it != rootClip->templates.end(); ++it)
+			for(auto it = rootClip->applicationDomain->templates.begin(); it != rootClip->applicationDomain->templates.end(); ++it)
 				it->second->finalize();
-			for(auto i = rootClip->customClasses.begin(); i != rootClip->customClasses.end(); ++i)
+			for(auto i = rootClip->applicationDomain->customClasses.begin(); i != rootClip->applicationDomain->customClasses.end(); ++i)
 				i->second->decRef();
-			for(auto i = rootClip->templates.begin(); i != rootClip->templates.end(); ++i)
+			for(auto i = rootClip->applicationDomain->templates.begin(); i != rootClip->applicationDomain->templates.end(); ++i)
 				i->second->decRef();
-			rootClip->customClasses.clear();
+			rootClip->applicationDomain->customClasses.clear();
 			rootClip.reset();
 		}
 		for(size_t i=0;i<contexts.size();++i)
@@ -1169,6 +1441,7 @@ void ASWorker::finalize()
 				|| o == getSystemState()->stage 
 				|| o == getSystemState()->workerDomain
 				|| o == getSystemState()->mainClip
+				|| o == getSystemState()->systemDomain
 				|| o == getSystemState()->getObjectClassRef()
 				)
 		{
@@ -1193,9 +1466,9 @@ void ASWorker::prepareShutdown()
 	EventDispatcher::prepareShutdown();
 	if (rootClip)
 	{
-		for(auto it = rootClip->customClasses.begin(); it != rootClip->customClasses.end(); ++it)
+		for(auto it = rootClip->applicationDomain->customClasses.begin(); it != rootClip->applicationDomain->customClasses.end(); ++it)
 			it->second->prepareShutdown();
-		for(auto it = rootClip->templates.begin(); it != rootClip->templates.end(); ++it)
+		for(auto it = rootClip->applicationDomain->templates.begin(); it != rootClip->applicationDomain->templates.end(); ++it)
 			it->second->prepareShutdown();
 		rootClip->prepareShutdown();
 	}
@@ -1605,8 +1878,8 @@ WorkerDomain::WorkerDomain(ASWorker* wrk, Class_base* c):
 {
 	subtype = SUBTYPE_WORKERDOMAIN;
 	asAtom v=asAtomHandler::invalidAtom;
-	RootMovieClip* root = wrk->rootClip.getPtr();
-	Template<Vector>::getInstanceS(wrk,v,root,Class<ASWorker>::getClass(getSystemState()),NullRef);
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
+	Template<Vector>::getInstanceS(wrk,v,Class<ASWorker>::getClass(getSystemState()),appdomain);
 	workerlist = _R<Vector>(asAtomHandler::as<Vector>(v));
 	workerSharedObject = _MR(new_asobject(wrk));
 }

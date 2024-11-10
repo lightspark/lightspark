@@ -127,13 +127,11 @@ public:
 		return ret;
 	}
 
-	Class_base* applyType(const std::vector<Type*>& types,_NR<ApplicationDomain> applicationDomain)
+	Class_base* applyType(const std::vector<Type*>& types,ApplicationDomain* appdomain)
 	{
-		_NR<ApplicationDomain> appdomain = applicationDomain;
-		
 		// if type is a builtin class, it is handled in the systemDomain
-		if (appdomain.isNull() || (types.size() > 0 && types[0]->isBuiltin()))
-			appdomain = _MR(getSys()->systemDomain);
+		if (!appdomain || (types.size() > 0 && types[0]->isBuiltin()))
+			appdomain = getSys()->systemDomain;
 		QName instantiatedQName = getQName(appdomain->getSystemState(),types);
 
 		std::map<QName, Class_base*>::iterator it=appdomain->instantiatedTemplates.find(instantiatedQName);
@@ -160,10 +158,9 @@ public:
 		ret->incRef();
 		return ret;
 	}
-	Class_base* applyTypeByQName(const QName& qname,_NR<ApplicationDomain> applicationDomain)
+	Class_base* applyTypeByQName(const QName& qname,ApplicationDomain* appdomain)
 	{
 		const std::vector<Type*> types;
-		_NR<ApplicationDomain> appdomain = applicationDomain;
 		std::map<QName, Class_base*>::iterator it=appdomain->instantiatedTemplates.find(qname);
 		Class<T>* ret=nullptr;
 		if(it==appdomain->instantiatedTemplates.end()) //This class is not yet in the map, create it
@@ -184,41 +181,41 @@ public:
 		return ret;
 	}
 
-	static Ref<Class_base> getTemplateInstance(RootMovieClip* root,Type* type,_NR<ApplicationDomain> appdomain)
+	static Ref<Class_base> getTemplateInstance(Type* type,ApplicationDomain* appdomain)
 	{
 		std::vector<Type*> t(1,type);
-		Template<T>* templ=getTemplate(root);
+		Template<T>* templ=getTemplate(appdomain);
 		Ref<Class_base> ret=_MR(templ->applyType(t, appdomain));
 		templ->decRef();
 		return ret;
 	}
 
-	static Ref<Class_base> getTemplateInstance(RootMovieClip* root,const QName& qname, ABCContext* context,_NR<ApplicationDomain> appdomain)
+	static Ref<Class_base> getTemplateInstance(const QName& qname, ABCContext* context,ApplicationDomain* appdomain)
 	{
-		Template<T>* templ=getTemplate(root);
+		Template<T>* templ=getTemplate(appdomain);
 		Ref<Class_base> ret=_MR(templ->applyTypeByQName(qname,appdomain));
 		ret->context = context;
 		templ->decRef();
 		return ret;
 	}
-	static void getInstanceS(ASWorker* wrk,asAtom& ret, RootMovieClip* root,Type* type,_NR<ApplicationDomain> appdomain)
+	static void getInstanceS(ASWorker* wrk,asAtom& ret,Type* type,ApplicationDomain* appdomain)
 	{
-		getTemplateInstance(root,type,appdomain).getPtr()->getInstance(wrk,ret,true,nullptr,0);
+		getTemplateInstance(type,appdomain).getPtr()->getInstance(wrk,ret,true,nullptr,0);
 	}
 
-	static Template<T>* getTemplate(RootMovieClip* root,const QName& name)
+	static Template<T>* getTemplate(ApplicationDomain* appDomain,const QName& name)
 	{
-		std::map<QName, Template_base*>::iterator it=root->templates.find(name);
+		std::map<QName, Template_base*>::iterator it=appDomain->templates.find(name);
 		Template<T>* ret=nullptr;
-		if(it==root->templates.end()) //This class is not yet in the map, create it
+		if(it==appDomain->templates.end()) //This class is not yet in the map, create it
 		{
-			MemoryAccount* m = root->getSystemState()->allocateMemoryAccount(name.getQualifiedName(root->getSystemState()));
-			ASWorker* wrk = root->getInstanceWorker();
+			MemoryAccount* m = appDomain->getSystemState()->allocateMemoryAccount(name.getQualifiedName(appDomain->getSystemState()));
+			ASWorker* wrk = appDomain->getInstanceWorker();
 			ret=new (m) Template<T>(wrk,name);
 			ret->prototype = _MNR(new_objectPrototype(wrk));
-			ret->addPrototypeGetter(root->getSystemState());
+			ret->addPrototypeGetter(appDomain->getSystemState());
 			ret->setRefConstant();
-			root->templates.insert(std::make_pair(name,ret));
+			appDomain->templates.insert(std::make_pair(name,ret));
 		}
 		else
 			ret=static_cast<Template<T>*>(it->second);
@@ -227,9 +224,9 @@ public:
 		return ret;
 	}
 
-	static Template<T>* getTemplate(RootMovieClip* root)
+	static Template<T>* getTemplate(ApplicationDomain* appDomain)
 	{
-		return getTemplate(root,QName(root->getSystemState()->getUniqueStringId(ClassName<T>::name),root->getSystemState()->getUniqueStringId(ClassName<T>::ns)));
+		return getTemplate(appDomain,QName(appDomain->getSystemState()->getUniqueStringId(ClassName<T>::name),appDomain->getSystemState()->getUniqueStringId(ClassName<T>::ns)));
 	}
 };
 

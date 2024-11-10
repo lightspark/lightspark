@@ -493,61 +493,61 @@ void ABCVm::abc_hasnext2(call_context* context)
 void ABCVm::abc_li8(call_context* context)
 {
 	LOG_CALL( "li8");
-	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(), context);
+	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->applicationDomain, context);
 	++(context->exec_pos);
 }
 void ABCVm::abc_li16(call_context* context)
 {
 	LOG_CALL( "li16");
-	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(), context);
+	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->applicationDomain, context);
 	++(context->exec_pos);
 }
 void ABCVm::abc_li32(call_context* context)
 {
 	LOG_CALL( "li32");
-	ApplicationDomain::loadIntN<int32_t>(context->mi->context->root->applicationDomain.getPtr(), context);
+	ApplicationDomain::loadIntN<int32_t>(context->mi->context->applicationDomain, context);
 	++(context->exec_pos);
 }
 void ABCVm::abc_lf32(call_context* context)
 {
 	LOG_CALL( "lf32");
-	ApplicationDomain::loadFloat(context->mi->context->root->applicationDomain.getPtr(), context);
+	ApplicationDomain::loadFloat(context->mi->context->applicationDomain, context);
 	++(context->exec_pos);
 }
 void ABCVm::abc_lf64(call_context* context)
 {
 	LOG_CALL( "lf64");
-	ApplicationDomain::loadDouble(context->mi->context->root->applicationDomain.getPtr(), context);
+	ApplicationDomain::loadDouble(context->mi->context->applicationDomain, context);
 	++(context->exec_pos);
 }
 void ABCVm::abc_si8(call_context* context)
 {
 	LOG_CALL( "si8");
-	ApplicationDomain::storeIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(), context);
+	ApplicationDomain::storeIntN<uint8_t>(context->mi->context->applicationDomain, context);
 	++(context->exec_pos);
 }
 void ABCVm::abc_si16(call_context* context)
 {
 	LOG_CALL( "si16");
-	ApplicationDomain::storeIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(), context);
+	ApplicationDomain::storeIntN<uint16_t>(context->mi->context->applicationDomain, context);
 	++(context->exec_pos);
 }
 void ABCVm::abc_si32(call_context* context)
 {
 	LOG_CALL( "si32");
-	ApplicationDomain::storeIntN<uint32_t>(context->mi->context->root->applicationDomain.getPtr(), context);
+	ApplicationDomain::storeIntN<uint32_t>(context->mi->context->applicationDomain, context);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sf32(call_context* context)
 {
 	LOG_CALL( "sf32");
-	ApplicationDomain::storeFloat(context->mi->context->root->applicationDomain.getPtr(), context);
+	ApplicationDomain::storeFloat(context->mi->context->applicationDomain, context);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sf64(call_context* context)
 {
 	LOG_CALL( "sf64");
-	ApplicationDomain::storeDouble(context->mi->context->root->applicationDomain.getPtr(), context);
+	ApplicationDomain::storeDouble(context->mi->context->applicationDomain, context);
 	++(context->exec_pos);
 }
 void ABCVm::abc_newfunction(call_context* context)

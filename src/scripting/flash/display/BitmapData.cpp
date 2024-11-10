@@ -812,13 +812,13 @@ ASFUNCTIONBODY_ATOM(BitmapData,histogram)
 	}
 
 	asAtom v=asAtomHandler::invalidAtom;
-	RootMovieClip* root = wrk->rootClip.getPtr();
-	Template<Vector>::getInstanceS(wrk,v,root,Template<Vector>::getTemplateInstance(root,Class<Number>::getClass(wrk->getSystemState()),NullRef).getPtr(),NullRef);
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
+	Template<Vector>::getInstanceS(wrk,v,Template<Vector>::getTemplateInstance(Class<Number>::getClass(wrk->getSystemState()),appdomain).getPtr(),appdomain);
 	Vector *result = asAtomHandler::as<Vector>(v);
 	int channelOrder[4] = {2, 1, 0, 3}; // red, green, blue, alpha
 	for (int j=0; j<4; j++)
 	{
-		Template<Vector>::getInstanceS(wrk,v,root,Class<Number>::getClass(wrk->getSystemState()),NullRef);
+		Template<Vector>::getInstanceS(wrk,v,Class<Number>::getClass(wrk->getSystemState()),appdomain);
 		Vector *histogram = asAtomHandler::as<Vector>(v);
 		for (int level=0; level<256; level++)
 		{
@@ -926,8 +926,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,getVector)
 	}
 
 	asAtom v=asAtomHandler::invalidAtom;
-	RootMovieClip* root = wrk->rootClip.getPtr();
-	Template<Vector>::getInstanceS(wrk,v,root,Class<UInteger>::getClass(wrk->getSystemState()),NullRef);
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
+	Template<Vector>::getInstanceS(wrk,v,Class<UInteger>::getClass(wrk->getSystemState()),appdomain);
 	Vector *result = asAtomHandler::as<Vector>(v);
 	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect->getRect());
 	vector<uint32_t>::const_iterator it;

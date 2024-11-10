@@ -809,7 +809,7 @@ ASFUNCTIONBODY_ATOM(AVM1BitmapData,loadBitmap)
 {
 	tiny_string name;
 	ARG_CHECK(ARG_UNPACK(name));
-	BitmapTag* tag = dynamic_cast<BitmapTag*>( wrk->rootClip->dictionaryLookupByName(wrk->getSystemState()->getUniqueStringId(name)));
+	BitmapTag* tag = dynamic_cast<BitmapTag*>( wrk->rootClip->applicationDomain->dictionaryLookupByName(wrk->getSystemState()->getUniqueStringId(name)));
 	if (tag)
 		ret = asAtomHandler::fromObjectNoPrimitive(tag->instance());
 	else

@@ -1249,7 +1249,7 @@ ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 	tiny_string spreadMethod;
 	tiny_string interpolationMethod;
 	number_t focalPointRatio;
-	if (wrk->getSystemState()->mainClip->usesActionScript3)
+	if (wrk->getSystemState()->mainClip->needsActionScript3())
 	{
 		ARG_CHECK(ARG_UNPACK (type) (colors) (alphas) (ratiosParam) (matrix, NullRef)
 				(spreadMethod, "pad") (interpolationMethod, "rgb") (focalPointRatio, 0));
@@ -1497,8 +1497,8 @@ ASFUNCTIONBODY_ATOM(Graphics,readGraphicsData)
 	bool recurse;
 	ARG_CHECK(ARG_UNPACK(recurse,true));
 
-	RootMovieClip* root = wrk->rootClip.getPtr();
-	Template<Vector>::getInstanceS(wrk,ret,root,InterfaceClass<IGraphicsData>::getClass(wrk->getSystemState()),NullRef);
+	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
+	Template<Vector>::getInstanceS(wrk,ret,InterfaceClass<IGraphicsData>::getClass(wrk->getSystemState()),appdomain);
 	Vector *graphicsData = asAtomHandler::as<Vector>(ret);
 	th->owner->owner->fillGraphicsData(graphicsData,recurse);
 }

@@ -731,7 +731,7 @@ void ABCVm::abc_li8_constant(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li8_c");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(),ret,*instrptr->arg1_constant);
+	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->applicationDomain,ret,*instrptr->arg1_constant);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -740,7 +740,7 @@ void ABCVm::abc_li8_local(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li8_l");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -749,7 +749,7 @@ void ABCVm::abc_li8_constant_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li8_cl");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(),ret,*instrptr->arg1_constant);
+	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->applicationDomain,ret,*instrptr->arg1_constant);
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
 }
@@ -759,7 +759,7 @@ void ABCVm::abc_li8_local_localresult(call_context* context)
 	LOG_CALL( "li8_ll");
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	uint32_t addr=asAtomHandler::getUInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	ByteArray* dm = context->mi->context->root->applicationDomain->currentDomainMemory;
+	ByteArray* dm = context->mi->context->applicationDomain->currentDomainMemory;
 	if(USUALLY_FALSE(dm->getLength() <= addr))
 	{
 		createError<RangeError>(context->worker,kInvalidRangeError);
@@ -772,7 +772,7 @@ void ABCVm::abc_li8_local_localresult(call_context* context)
 void ABCVm::abc_li8_constant_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(),ret,*context->exec_pos->arg1_constant);
+	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->applicationDomain,ret,*context->exec_pos->arg1_constant);
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -783,7 +783,7 @@ void ABCVm::abc_li8_constant_setslotnocoerce(call_context* context)
 void ABCVm::abc_li8_local_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
+	ApplicationDomain::loadIntN<uint8_t>(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -797,7 +797,7 @@ void ABCVm::abc_li16_constant(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li16_c");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(),ret,*instrptr->arg1_constant);
+	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->applicationDomain,ret,*instrptr->arg1_constant);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -806,7 +806,7 @@ void ABCVm::abc_li16_local(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li16_l");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -815,7 +815,7 @@ void ABCVm::abc_li16_constant_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li16_cl");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(),ret,*instrptr->arg1_constant);
+	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->applicationDomain,ret,*instrptr->arg1_constant);
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
 }
@@ -824,14 +824,14 @@ void ABCVm::abc_li16_local_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li16_ll");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_li16_constant_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(),ret,*context->exec_pos->arg1_constant);
+	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->applicationDomain,ret,*context->exec_pos->arg1_constant);
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -842,7 +842,7 @@ void ABCVm::abc_li16_constant_setslotnocoerce(call_context* context)
 void ABCVm::abc_li16_local_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
+	ApplicationDomain::loadIntN<uint16_t>(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -855,7 +855,7 @@ void ABCVm::abc_li32_constant(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li32_c");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<int32_t>(context->mi->context->root->applicationDomain.getPtr(),ret,*instrptr->arg1_constant);
+	ApplicationDomain::loadIntN<int32_t>(context->mi->context->applicationDomain,ret,*instrptr->arg1_constant);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -864,7 +864,7 @@ void ABCVm::abc_li32_local(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li32_l");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<int32_t>(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::loadIntN<int32_t>(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -873,7 +873,7 @@ void ABCVm::abc_li32_constant_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li32_cl");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<int32_t>(context->mi->context->root->applicationDomain.getPtr(),ret,*instrptr->arg1_constant);
+	ApplicationDomain::loadIntN<int32_t>(context->mi->context->applicationDomain,ret,*instrptr->arg1_constant);
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
 }
@@ -882,14 +882,14 @@ void ABCVm::abc_li32_local_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "li32_ll");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<int32_t>(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::loadIntN<int32_t>(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_li32_constant_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<int32_t>(context->mi->context->root->applicationDomain.getPtr(),ret,*context->exec_pos->arg1_constant);
+	ApplicationDomain::loadIntN<int32_t>(context->mi->context->applicationDomain,ret,*context->exec_pos->arg1_constant);
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -900,7 +900,7 @@ void ABCVm::abc_li32_constant_setslotnocoerce(call_context* context)
 void ABCVm::abc_li32_local_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadIntN<int32_t>(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
+	ApplicationDomain::loadIntN<int32_t>(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -914,7 +914,7 @@ void ABCVm::abc_lf32_constant(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "lf32_c");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadFloat(context->mi->context->root->applicationDomain.getPtr(),ret,*instrptr->arg1_constant);
+	ApplicationDomain::loadFloat(context->mi->context->applicationDomain,ret,*instrptr->arg1_constant);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -923,7 +923,7 @@ void ABCVm::abc_lf32_local(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "lf32_l");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadFloat(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::loadFloat(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -931,20 +931,20 @@ void ABCVm::abc_lf32_constant_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "lf32_cl");
-	ApplicationDomain::loadFloat(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local3.pos),*instrptr->arg1_constant);
+	ApplicationDomain::loadFloat(context->mi->context->applicationDomain,CONTEXT_GETLOCAL(context,instrptr->local3.pos),*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_lf32_local_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "lf32_ll");
-	ApplicationDomain::loadFloat(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local3.pos),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::loadFloat(context->mi->context->applicationDomain,CONTEXT_GETLOCAL(context,instrptr->local3.pos),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	++(context->exec_pos);
 }
 void ABCVm::abc_lf32_constant_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadFloat(context->mi->context->root->applicationDomain.getPtr(),ret,*context->exec_pos->arg1_constant);
+	ApplicationDomain::loadFloat(context->mi->context->applicationDomain,ret,*context->exec_pos->arg1_constant);
 	
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -955,7 +955,7 @@ void ABCVm::abc_lf32_constant_setslotnocoerce(call_context* context)
 void ABCVm::abc_lf32_local_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadFloat(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
+	ApplicationDomain::loadFloat(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
 	
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -968,7 +968,7 @@ void ABCVm::abc_lf64_constant(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "lf64_c");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadDouble(context->mi->context->root->applicationDomain.getPtr(),ret,*instrptr->arg1_constant);
+	ApplicationDomain::loadDouble(context->mi->context->applicationDomain,ret,*instrptr->arg1_constant);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -977,7 +977,7 @@ void ABCVm::abc_lf64_local(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "lf64_l");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadDouble(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::loadDouble(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -986,7 +986,7 @@ void ABCVm::abc_lf64_constant_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "lf64_cl");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadDouble(context->mi->context->root->applicationDomain.getPtr(),ret,*instrptr->arg1_constant);
+	ApplicationDomain::loadDouble(context->mi->context->applicationDomain,ret,*instrptr->arg1_constant);
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
 }
@@ -995,14 +995,14 @@ void ABCVm::abc_lf64_local_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "lf64_ll");
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadDouble(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::loadDouble(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_lf64_constant_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadDouble(context->mi->context->root->applicationDomain.getPtr(),ret,*context->exec_pos->arg1_constant);
+	ApplicationDomain::loadDouble(context->mi->context->applicationDomain,ret,*context->exec_pos->arg1_constant);
 	
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -1013,7 +1013,7 @@ void ABCVm::abc_lf64_constant_setslotnocoerce(call_context* context)
 void ABCVm::abc_lf64_local_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
-	ApplicationDomain::loadDouble(context->mi->context->root->applicationDomain.getPtr(),ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
+	ApplicationDomain::loadDouble(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
 	
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
@@ -1025,21 +1025,21 @@ void ABCVm::abc_si8_constant_constant(call_context* context)
 {
 	LOG_CALL( "si8_cc");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(),*instrptr->arg2_constant,*instrptr->arg1_constant);
+	ApplicationDomain::storeIntN<uint8_t>(context->mi->context->applicationDomain,*instrptr->arg2_constant,*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_si8_local_constant(call_context* context)
 {
 	LOG_CALL( "si8_lc");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(),*instrptr->arg2_constant,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::storeIntN<uint8_t>(context->mi->context->applicationDomain,*instrptr->arg2_constant,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	++(context->exec_pos);
 }
 void ABCVm::abc_si8_constant_local(call_context* context)
 {
 	LOG_CALL( "si8_cl");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint8_t>(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local_pos2),*instrptr->arg1_constant);
+	ApplicationDomain::storeIntN<uint8_t>(context->mi->context->applicationDomain,CONTEXT_GETLOCAL(context,instrptr->local_pos2),*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_si8_local_local(call_context* context)
@@ -1048,7 +1048,7 @@ void ABCVm::abc_si8_local_local(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t addr=asAtomHandler::getUInt(CONTEXT_GETLOCAL(context,instrptr->local_pos2));
 	int32_t val=asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	ByteArray* dm = context->mi->context->root->applicationDomain->currentDomainMemory;
+	ByteArray* dm = context->mi->context->applicationDomain->currentDomainMemory;
 	if(USUALLY_FALSE(dm->getLength() <= addr))
 	{
 		createError<RangeError>(context->worker,kInvalidRangeError);
@@ -1062,112 +1062,112 @@ void ABCVm::abc_si16_constant_constant(call_context* context)
 {
 	LOG_CALL( "si16_cc");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(),*instrptr->arg2_constant,*instrptr->arg1_constant);
+	ApplicationDomain::storeIntN<uint16_t>(context->mi->context->applicationDomain,*instrptr->arg2_constant,*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_si16_local_constant(call_context* context)
 {
 	LOG_CALL( "si16_lc");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(),*instrptr->arg2_constant,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::storeIntN<uint16_t>(context->mi->context->applicationDomain,*instrptr->arg2_constant,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	++(context->exec_pos);
 }
 void ABCVm::abc_si16_constant_local(call_context* context)
 {
 	LOG_CALL( "si16_cl");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local_pos2),*instrptr->arg1_constant);
+	ApplicationDomain::storeIntN<uint16_t>(context->mi->context->applicationDomain,CONTEXT_GETLOCAL(context,instrptr->local_pos2),*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_si16_local_local(call_context* context)
 {
 	LOG_CALL( "si16_ll");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint16_t>(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local_pos2),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::storeIntN<uint16_t>(context->mi->context->applicationDomain,CONTEXT_GETLOCAL(context,instrptr->local_pos2),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	++(context->exec_pos);
 }
 void ABCVm::abc_si32_constant_constant(call_context* context)
 {
 	LOG_CALL( "si32_cc");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint32_t>(context->mi->context->root->applicationDomain.getPtr(),*instrptr->arg2_constant,*instrptr->arg1_constant);
+	ApplicationDomain::storeIntN<uint32_t>(context->mi->context->applicationDomain,*instrptr->arg2_constant,*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_si32_local_constant(call_context* context)
 {
 	LOG_CALL( "si32_lc");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint32_t>(context->mi->context->root->applicationDomain.getPtr(),*instrptr->arg2_constant,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::storeIntN<uint32_t>(context->mi->context->applicationDomain,*instrptr->arg2_constant,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	++(context->exec_pos);
 }
 void ABCVm::abc_si32_constant_local(call_context* context)
 {
 	LOG_CALL( "si32_cl");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint32_t>(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local_pos2),*instrptr->arg1_constant);
+	ApplicationDomain::storeIntN<uint32_t>(context->mi->context->applicationDomain,CONTEXT_GETLOCAL(context,instrptr->local_pos2),*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_si32_local_local(call_context* context)
 {
 	LOG_CALL( "si32_ll");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeIntN<uint32_t>(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local_pos2),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::storeIntN<uint32_t>(context->mi->context->applicationDomain,CONTEXT_GETLOCAL(context,instrptr->local_pos2),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	++(context->exec_pos);
 }
 void ABCVm::abc_sf32_constant_constant(call_context* context)
 {
 	LOG_CALL( "sf32_cc");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeFloat(context->mi->context->root->applicationDomain.getPtr(),*instrptr->arg2_constant,*instrptr->arg1_constant);
+	ApplicationDomain::storeFloat(context->mi->context->applicationDomain,*instrptr->arg2_constant,*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sf32_local_constant(call_context* context)
 {
 	LOG_CALL( "sf32_lc");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeFloat(context->mi->context->root->applicationDomain.getPtr(),*instrptr->arg2_constant,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::storeFloat(context->mi->context->applicationDomain,*instrptr->arg2_constant,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	++(context->exec_pos);
 }
 void ABCVm::abc_sf32_constant_local(call_context* context)
 {
 	LOG_CALL( "sf32_cl");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeFloat(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local_pos2),*instrptr->arg1_constant);
+	ApplicationDomain::storeFloat(context->mi->context->applicationDomain,CONTEXT_GETLOCAL(context,instrptr->local_pos2),*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sf32_local_local(call_context* context)
 {
 	LOG_CALL( "sf32_ll");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeFloat(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local_pos2),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::storeFloat(context->mi->context->applicationDomain,CONTEXT_GETLOCAL(context,instrptr->local_pos2),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	++(context->exec_pos);
 }
 void ABCVm::abc_sf64_constant_constant(call_context* context)
 {
 	LOG_CALL( "sf64_cc");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeDouble(context->mi->context->root->applicationDomain.getPtr(),*instrptr->arg2_constant,*instrptr->arg1_constant);
+	ApplicationDomain::storeDouble(context->mi->context->applicationDomain,*instrptr->arg2_constant,*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sf64_local_constant(call_context* context)
 {
 	LOG_CALL( "sf64_lc");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeDouble(context->mi->context->root->applicationDomain.getPtr(),*instrptr->arg2_constant,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::storeDouble(context->mi->context->applicationDomain,*instrptr->arg2_constant,CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	++(context->exec_pos);
 }
 void ABCVm::abc_sf64_constant_local(call_context* context)
 {
 	LOG_CALL( "sf64_cl");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeDouble(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local_pos2),*instrptr->arg1_constant);
+	ApplicationDomain::storeDouble(context->mi->context->applicationDomain,CONTEXT_GETLOCAL(context,instrptr->local_pos2),*instrptr->arg1_constant);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sf64_local_local(call_context* context)
 {
 	LOG_CALL( "sf64_ll");
 	preloadedcodedata* instrptr = context->exec_pos;
-	ApplicationDomain::storeDouble(context->mi->context->root->applicationDomain.getPtr(),CONTEXT_GETLOCAL(context,instrptr->local_pos2),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
+	ApplicationDomain::storeDouble(context->mi->context->applicationDomain,CONTEXT_GETLOCAL(context,instrptr->local_pos2),CONTEXT_GETLOCAL(context,instrptr->local_pos1));
 	++(context->exec_pos);
 }
 void ABCVm::construct_noargs_intern(call_context* context,asAtom& ret,asAtom& obj)
@@ -1400,7 +1400,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 			callPropertyName.ns.emplace_back(context->sys,flash_proxy,NAMESPACE);
 			asAtom oproxy=asAtomHandler::invalidAtom;
 			ASObject* pobj = asAtomHandler::getObjectNoCheck(obj);
-			pobj->getVariableByMultiname(oproxy,callPropertyName,SKIP_IMPL,context->worker);
+			GET_VARIABLE_RESULT res = pobj->getVariableByMultiname(oproxy,callPropertyName,SKIP_IMPL,context->worker);
 			if(asAtomHandler::isValid(oproxy))
 			{
 				assert_and_throw(asAtomHandler::isFunction(oproxy));
@@ -1424,6 +1424,8 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 					{
 						LOG(LOG_ERROR,"trying to call an object as a function:"<<asAtomHandler::toDebugString(o) <<" on "<<asAtomHandler::toDebugString(obj));
 						createError<TypeError>(context->worker,kCallOfNonFunctionError, "Object");
+						if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+							ASATOM_DECREF(oproxy);
 						return;
 					}
 				}
@@ -1443,8 +1445,10 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 					asAtomHandler::callFunction(oproxy,context->worker,ret,obj,proxyArgs,argsnum+1,true,needreturn && coercearguments,coercearguments);
 					ASATOM_DECREF(oproxy);
 				}
-				LOG_CALL("End of calling proxy custom caller " << *name);
-				ASATOM_DECREF(oproxy);
+				LOG_CALL("End of calling proxy custom caller " << *name << " "<<asAtomHandler::toDebugString(oproxy)<<" "<<res);
+				if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+					ASATOM_DECREF(oproxy);
+				return;
 			}
 			else if(asAtomHandler::isValid(o))
 			{

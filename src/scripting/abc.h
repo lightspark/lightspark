@@ -212,7 +212,8 @@ friend class method_info;
 private:
 	bool scriptsdeclared;
 public:
-	RootMovieClip* root;
+	ApplicationDomain* applicationDomain;
+	SecurityDomain* securityDomain;
 
 	method_info* get_method(unsigned int m);
 	uint32_t getString(unsigned int s) const;
@@ -299,7 +300,7 @@ public:
 	multiname* getMultiname(unsigned int m, call_context* th);
 	multiname* getMultinameImpl(asAtom& rt1, ASObject* rt2, unsigned int m, bool isrefcounted = true);
 	void buildInstanceTraits(ASObject* obj, int class_index);
-	ABCContext(RootMovieClip* r, std::istream& in, ABCVm* vm) DLL_PUBLIC;
+	ABCContext(ApplicationDomain* appDomain,SecurityDomain* secDomain, std::istream& in, ABCVm* vm) DLL_PUBLIC;
 	~ABCContext();
 	void declareScripts();
 	void exec(bool lazy);
@@ -557,7 +558,7 @@ private:
 	void handleFrontEvent();
 	void signalEventWaiters();
 	void buildClassAndInjectBase(const std::string& s, _R<RootMovieClip> base);
-	Class_inherit* findClassInherit(const std::string& s, RootMovieClip* r);
+	Class_inherit* findClassInherit(const std::string& s, ApplicationDomain* appDomain);
 
 	//Profiling support
 	static uint64_t profilingCheckpoint(uint64_t& startTime);
@@ -1432,8 +1433,8 @@ public:
 	static Global* getGlobalScope(call_context* th);
 	static bool strictEqualImpl(ASObject*, ASObject*);
 	static void publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event);
-	static _R<ApplicationDomain> getCurrentApplicationDomain(call_context* th);
-	static _R<SecurityDomain> getCurrentSecurityDomain(call_context* th);
+	static ApplicationDomain* getCurrentApplicationDomain(call_context* th);
+	static SecurityDomain* getCurrentSecurityDomain(call_context* th);
 
 	uint32_t getAndIncreaseNamespaceBase(uint32_t nsNum);
 

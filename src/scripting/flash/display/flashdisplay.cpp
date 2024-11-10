@@ -999,9 +999,7 @@ void DisplayObjectContainer::prepareShutdown()
 
 bool DisplayObjectContainer::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (this->isOnStage() && !getSystemState()->isShuttingDown())
-		return false; // no need to count, as we have at least one reference left if this object is still on stage
-	if (gcstate.checkAncestors(this))
+	if (skipCountCylicMemberReferences(gcstate))
 		return false;
 	bool ret = InteractiveObject::countCylicMemberReferences(gcstate);
 	Locker l(mutexDisplayList);
@@ -1111,9 +1109,7 @@ void InteractiveObject::prepareShutdown()
 
 bool InteractiveObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (this->isOnStage() && !getSystemState()->isShuttingDown())
-		return false; // no need to count, as we have at least one reference left if this object is still on stage
-	if (gcstate.checkAncestors(this))
+	if (skipCountCylicMemberReferences(gcstate))
 		return false;
 	bool ret = DisplayObject::countCylicMemberReferences(gcstate);
 	if (contextMenu)
@@ -1349,6 +1345,7 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		if(child->getParent()==this)
 		{
 			setChildIndexIntern(child,index);
+			child->decRef();
 			return;
 		}
 		else
@@ -1408,17 +1405,15 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
 	}
-	
-	if (direct || !this->isOnStage() || inskipping )
-		child->setParent(nullptr);
-	else if (!isOnStage() || !isVmThread())
+	if (!direct && !inskipping && !isVmThread())
 		getSystemState()->addDisplayObjectToResetParentList(child);
+	else
+		child->setParent(nullptr);
 	child->setMask(NullRef);
 	_removeFromDisplayList(child);
 	handleRemovedEvent(child, keeponstage, inskipping);
 	this->hasChanged=true;
 	this->requestInvalidation(getSystemState());
-	child->setParent(nullptr);
 	getSystemState()->stage->prepareForRemoval(child);
 	checkClipDepth();
 	return true;
@@ -1573,6 +1568,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChild)
 	if(!th->_removeChild(d))
 	{
 		createError<ArgumentError>(wrk,2025,"removeChild: child not in list");
+		d->decRef();
 		return;
 	}
 

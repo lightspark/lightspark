@@ -54,26 +54,22 @@ GradientBevelFilter::GradientBevelFilter(ASWorker* wrk,Class_base* c, const GRAD
 {
 	if (filter.OnTop)
 		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter onTop flag");
-	if (filter.GradientColors.size())
+	if (filter.NumColors)
 	{
 		colors = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		alphas = _MR(Class<Array>::getInstanceSNoArgs(wrk));
-		auto it = filter.GradientColors.begin();
-		while (it != filter.GradientColors.end())
+		for (uint8_t i = 0; i < filter.NumColors; i++)
 		{
-			colors->push(asAtomHandler::fromUInt(RGB(it->Red,it->Green,it->Blue).toUInt()));
-			alphas->push(asAtomHandler::fromNumber(wrk,it->af(),false));
-			it++;
+			colors->push(asAtomHandler::fromUInt(RGB(filter.GradientColors[i].Red,filter.GradientColors[i].Green,filter.GradientColors[i].Blue).toUInt()));
+			alphas->push(asAtomHandler::fromNumber(wrk,filter.GradientColors[i].af(),false));
 		}
 	}
-	if (filter.GradientRatio.size())
+	if (filter.NumColors)
 	{
 		ratios = _MR(Class<Array>::getInstanceSNoArgs(wrk));
-		auto it = filter.GradientRatio.begin();
-		while (it != filter.GradientRatio.end())
+		for (uint8_t i = 0; i < filter.NumColors; i++)
 		{
-			ratios->push(asAtomHandler::fromUInt(*it));
-			it++;
+			ratios->push(asAtomHandler::fromUInt(filter.GradientRatio[i]));
 		}
 	}
 }
@@ -160,54 +156,47 @@ bool GradientBevelFilter::compareFILTER(const FILTER& filter) const
 		   && this->type == (filter.GradientBevelFilter.InnerShadow ? "inner" : "outer");
 	if (ret)
 	{
-		if (colors.isNull() || colors->size()!=filter.GradientBevelFilter.GradientColors.size()
-			|| alphas.isNull() || alphas->size()!=filter.GradientBevelFilter.GradientColors.size()
-			|| ratios.isNull() || ratios->size()!=filter.GradientBevelFilter.GradientRatio.size())
+		if (colors.isNull() || colors->size()!=filter.GradientBevelFilter.NumColors
+			|| alphas.isNull() || alphas->size()!=filter.GradientBevelFilter.NumColors
+			|| ratios.isNull() || ratios->size()!=filter.GradientBevelFilter.NumColors)
 			ret = false;
 	}
 	if (ret)
 	{
-		if (filter.GradientBevelFilter.GradientColors.size())
+		if (filter.GradientBevelFilter.NumColors)
 		{
-			uint32_t i =0;
-			auto it = filter.GradientBevelFilter.GradientColors.begin();
-			while (it != filter.GradientBevelFilter.GradientColors.end())
+			for (uint32_t  i = 0; i < filter.GradientBevelFilter.NumColors; i++)
 			{
 				asAtom a = asAtomHandler::invalidAtom;
 				colors->at_nocheck(a,i);
-				if (RGB(it->Red,it->Green,it->Blue).toUInt() != asAtomHandler::toUInt(a))
+				if (RGB(filter.GradientBevelFilter.GradientColors[i].Red,filter.GradientBevelFilter.GradientColors[i].Green,filter.GradientBevelFilter.GradientColors[i].Blue).toUInt() != asAtomHandler::toUInt(a))
 				{
 					ret = false;
 					break;
 				}
 				alphas->at_nocheck(a,i);
-				if (it->af() != asAtomHandler::toNumber(a))
+				if (filter.GradientBevelFilter.GradientColors[i].af() != asAtomHandler::toNumber(a))
 				{
 					ret = false;
 					break;
 				}
-				i++;
-				it++;
 			}
 		}
 	}
 	if (ret)
 	{
-		if (filter.GradientBevelFilter.GradientRatio.size())
+		if (filter.GradientBevelFilter.NumColors)
 		{
-			uint32_t i =0;
-			auto it = filter.GradientBevelFilter.GradientRatio.begin();
-			while (it != filter.GradientBevelFilter.GradientRatio.end())
+			for (uint32_t  i = 0; i < filter.GradientBevelFilter.NumColors; i++)
 			{
 				asAtom a = asAtomHandler::invalidAtom;
 				ratios->at_nocheck(a,i);
-				if (*it != asAtomHandler::toUInt(a))
+				if (filter.GradientBevelFilter.GradientRatio[i] != asAtomHandler::toUInt(a))
 				{
 					ret = false;
 					break;
 				}
 				i++;
-				it++;
 			}
 		}
 	}

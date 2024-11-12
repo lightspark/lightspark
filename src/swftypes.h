@@ -1399,9 +1399,17 @@ public:
 class GRADIENTBEVELFILTER
 {
 public:
-	GRADIENTBEVELFILTER():Passes(0){}
-	std::vector<RGBA> GradientColors;
-	std::vector<UI8> GradientRatio;
+	GRADIENTBEVELFILTER():GradientColors(nullptr),GradientRatio(nullptr),Passes(0){}
+	~GRADIENTBEVELFILTER()
+	{
+		if (GradientColors)
+			delete[] GradientColors;
+		if(GradientRatio)
+			delete[] GradientRatio;
+	}
+	RGBA* GradientColors;
+	UI8* GradientRatio;
+	UI8 NumColors;
 	FIXED BlurX;
 	FIXED BlurY;
 	FIXED Angle;

@@ -1419,19 +1419,19 @@ std::istream& lightspark::operator>>(std::istream& stream, COLORMATRIXFILTER& v)
 
 std::istream& lightspark::operator>>(std::istream& stream, GRADIENTBEVELFILTER& v)
 {
-	UI8 NumColors;
-	stream >> NumColors;
-	for(int i = 0; i < NumColors; i++)
+	stream >> v.NumColors;
+	if (v.NumColors)
 	{
-		RGBA color;
-		stream >> color;
-		v.GradientColors.push_back(color);
+		v.GradientColors = new RGBA[v.NumColors];
+		v.GradientRatio = new UI8[v.NumColors];
 	}
-	for(int i = 0; i < NumColors; i++)
+	for(int i = 0; i < v.NumColors; i++)
 	{
-		UI8 ratio;
-		stream >> ratio;
-		v.GradientRatio.push_back(ratio);
+		stream >> v.GradientColors[i];
+	}
+	for(int i = 0; i < v.NumColors; i++)
+	{
+		stream >> v.GradientRatio[i];
 	}
 	stream >> v.BlurX;
 	stream >> v.BlurY;

@@ -196,7 +196,6 @@ bool GradientBevelFilter::compareFILTER(const FILTER& filter) const
 					ret = false;
 					break;
 				}
-				i++;
 			}
 		}
 	}

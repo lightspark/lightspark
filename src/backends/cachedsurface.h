@@ -58,6 +58,7 @@ public:
 	float yscale;
 	ColorTransformBase colortransform;
 	MATRIX matrix;
+	MATRIX cachedMatrix;
 	tokensVector tokens;
 	std::vector<_R<CachedSurface>> childrenlist;
 	_NR<CachedSurface> mask;

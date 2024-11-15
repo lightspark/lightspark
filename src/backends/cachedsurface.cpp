@@ -160,6 +160,9 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 	if((!state->isMask && !state->clipdepth && !state->visible) || state->alpha==0.0 || (state->isMask && !state->clipdepth))
 		return;
 	MATRIX _matrix;
+	MATRIX parentmatrix;
+	if (!ctxt.transformStack().empty())
+		parentmatrix=ctxt.transformStack().transform().matrix;
 	if (startmatrix)
 		_matrix = *startmatrix;
 	else
@@ -195,17 +198,16 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 			return;
 		}
 		bool needsFilterRefresh = state->needsFilterRefresh && needscachedtexture;
-		auto baseTransform = ctxt.transformStack().transform();
 		Vector2f scale = sys->getRenderThread()->getScale();
 		MATRIX initialMatrix;
 		initialMatrix.scale(scale.x, scale.y);
-		RectF bounds = boundsRectWithRenderTransform(baseTransform.matrix, initialMatrix);
-		Vector2f offset(bounds.min.x-baseTransform.matrix.x0,bounds.min.y-baseTransform.matrix.y0);
+		RectF bounds = boundsRectWithRenderTransform(_matrix, initialMatrix);
+		Vector2f offset(bounds.min.x-_matrix.x0,bounds.min.y-_matrix.y0);
 		Vector2f size = bounds.size();
 		
 		if (needsFilterRefresh)
 		{
-			MATRIX m = baseTransform.matrix;
+			MATRIX m=_matrix;
 			m.x0 = -offset.x;
 			m.y0 = -offset.y;
 			bool maskactive = ctxt.isMaskActive();
@@ -217,9 +219,11 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 		}
 		if (cachedFilterTextureID != UINT32_MAX)
 		{
-			MATRIX m;
-			m.x0 = std::round(baseTransform.matrix.x0+offset.x);
-			m.y0 = std::round(baseTransform.matrix.y0+offset.y);
+			MATRIX m=parentmatrix;
+			number_t x,y;
+			m.multiply2D(offset.x,offset.y,x,y);
+			m.x0=_matrix.x0+x;
+			m.y0=_matrix.y0+y;
 			if (DisplayObject::isShaderBlendMode(state->blendmode))
 			{
 				assert (!sys->getRenderThread()->filterframebufferstack.empty());

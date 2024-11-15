@@ -59,6 +59,7 @@ public:
 	~TransformStack() {}
 	void push(const Transform2D& transform);
 	void pop() { transforms.pop_back(); }
+	bool empty() const { return transforms.empty(); }
 	Transform2D& transform() { return transforms.back(); }
 	Transform2D& frontTransform() { return transforms.front(); }
 	const Transform2D& transform() const { return transforms.back(); }

@@ -1426,8 +1426,10 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 						createError<TypeError>(context->worker,kCallOfNonFunctionError, "Object");
 						if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
 							ASATOM_DECREF(oproxy);
+						ASATOM_DECREF(o);
 						return;
 					}
+					ASATOM_DECREF(o);
 				}
 				else
 				{
@@ -1442,6 +1444,8 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 					//We now suppress special handling
 					LOG_CALL("Proxy::callProperty");
 					ASATOM_INCREF(oproxy);
+					if (!refcounted)
+					 	ASATOM_INCREF(obj);
 					asAtomHandler::callFunction(oproxy,context->worker,ret,obj,proxyArgs,argsnum+1,true,needreturn && coercearguments,coercearguments);
 					ASATOM_DECREF(oproxy);
 				}

@@ -75,7 +75,6 @@ multiname *Proxy::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOW
 	asAtom args[2];
 	args[0]=asAtomHandler::fromObject(namearg);
 	args[1]=o;
-	ASATOM_INCREF(args[0]);
 	ASATOM_INCREF(o);
 	//We now suppress special handling
 	implEnable=false;
@@ -87,7 +86,7 @@ multiname *Proxy::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOW
 	assert_and_throw(asAtomHandler::isUndefined(ret));
 	implEnable=true;
 	if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
-		ASATOM_DECREF(o);
+		ASATOM_DECREF(proxySetter);
 	return nullptr;
 }
 

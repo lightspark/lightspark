@@ -592,7 +592,11 @@ void Stage::forEachHiddenObject(std::function<void(DisplayObject*)> callback, bo
 	{
 		DisplayObject* nextclip = clip->hiddenNextDisplayObject;
 		if ((allowInvalid || clip->getParent() == nullptr))
+		{
+			clip->incRef(); // clip may be destroyed inside callback, we have to delay that until callback is done
 			callback(clip);
+			clip->decRef();
+		}
 		clip = nextclip;
 	}
 }

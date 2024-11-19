@@ -26,6 +26,8 @@ namespace lightspark
 {
 
 struct InPlaceTag {};
+template<typename T>
+struct InPlaceTypeTag {};
 
 struct Unused {};
 

@@ -408,9 +408,45 @@ public:
 	}
 
 	template<typename U>
+	constexpr bool operator<(const Optional<U>& other) const
+	{
+		return other.hasValue() && (!hasValue() || getValue() < other.getValue());
+	}
+
+	template<typename U>
 	constexpr bool operator==(const U& other) const
 	{
 		return hasValue() && getValue() == other;
+	}
+
+	template<typename U>
+	constexpr bool operator<(const U& other) const
+	{
+		return hasValue() && getValue() < other;
+	}
+
+	template<typename U>
+	constexpr bool operator!=(const U& other) const
+	{
+		return !(*this == other);
+	}
+
+	template<typename U>
+	constexpr bool operator<=(const U& other) const
+	{
+		return !(other < *this);
+	}
+
+	template<typename U>
+	constexpr bool operator>(const U& other) const
+	{
+		return other < *this;
+	}
+
+	template<typename U>
+	constexpr bool operator>=(const U& other) const
+	{
+		return !(*this < other);
 	}
 private:
 	template<typename... Args>

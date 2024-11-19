@@ -20,13 +20,13 @@
 #ifndef UTILS_OPTIONAL_H
 #define UTILS_OPTIONAL_H 1
 
+#include <stdexcept>
+
 #include "utils/type_traits.h"
 #include "utils/utility.h"
 
 namespace lightspark
 {
-
-struct InPlaceTag {};
 
 template<typename T, bool = std::is_trivially_destructible<T>::value>
 struct OptionalStorage

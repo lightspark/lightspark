@@ -331,6 +331,17 @@ public:
 	template<typename F>
 	constexpr Optional<T> orElse(const F&& func) const { return hasValue() ? *this : func(); }
 
+	template<typename Pred, typename F>
+	constexpr Optional orElseIf(const Pred&& pred, const F&& func) const
+	{
+		return hasValue() ? *this : (pred() ? Optional<T>(func()) : nullOpt);
+	}
+
+	template<typename F>
+	constexpr Optional orElseIf(bool flag, const F&& func) const
+	{
+		return hasValue() ? *this : (flag ? Optional<T>(func()) : nullOpt);
+	}
 
 	template<typename... Args>
 	void emplace(Args&&... args)

@@ -28,6 +28,12 @@
 namespace lightspark
 {
 
+template<typename T>
+class Optional;
+
+template<typename T>
+using IsOptional = IsSpecializationOf<T, Optional>;
+
 template<typename T, bool = std::is_trivially_destructible<T>::value>
 struct OptionalStorage
 {
@@ -305,6 +311,7 @@ public:
 	constexpr auto andThen(const F&& func) const
 	{
 		using Result = decltype(func(getValue()));
+		static_assert(IsOptional<Result>::value, "F must return an `Optional`");
 		return hasValue() ? func(getValue()) : Result(nullOpt);
 	}
 

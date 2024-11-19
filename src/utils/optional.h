@@ -281,13 +281,13 @@ public:
 	template<typename U>
 	T valueOr(U&& _default) const
 	{
-		return exists ? getValue() : static_cast<T>(std::forward<U>(_default));
+		return hasValue() ? getValue() : static_cast<T>(std::forward<U>(_default));
 	}
 
 	template<typename U>
 	T valueOr(U&& _default)
 	{
-		return exists ? getValue() : static_cast<T>(std::forward<U>(_default));
+		return hasValue() ? getValue() : static_cast<T>(std::forward<U>(_default));
 	}
 
 	template<typename F>

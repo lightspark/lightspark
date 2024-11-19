@@ -126,6 +126,8 @@ struct NullOpt
 	constexpr explicit NullOpt() = default;
 };
 
+static constexpr NullOpt nullOpt {};
+
 // Based on `optional` from EASTL.
 template<typename T, EnableIf<!std::is_lvalue_reference<T>::value, bool> = false>
 class Optional : private OptionalStorage<T>

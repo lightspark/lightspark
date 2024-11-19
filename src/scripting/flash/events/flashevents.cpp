@@ -660,8 +660,6 @@ bool EventDispatcher::destruct()
 }
 bool EventDispatcher::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	for (auto it = handlers.begin(); it != handlers.end(); it++)
 	{

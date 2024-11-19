@@ -139,8 +139,6 @@ void XMLList::prepareShutdown()
 
 bool XMLList::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (targetobject)
 		ret = targetobject->countAllCylicMemberReferences(gcstate) || ret;

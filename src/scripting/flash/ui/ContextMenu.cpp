@@ -59,8 +59,6 @@ void ContextMenu::prepareShutdown()
 
 bool ContextMenu::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	if (customItems)
 		ret = customItems->countAllCylicMemberReferences(gcstate) || ret;

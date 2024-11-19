@@ -280,8 +280,6 @@ void TextField::prepareShutdown()
 }
 bool TextField::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = InteractiveObject::countCylicMemberReferences(gcstate);
 	if (tagvartarget)
 		ret = tagvartarget->countAllCylicMemberReferences(gcstate) || ret;

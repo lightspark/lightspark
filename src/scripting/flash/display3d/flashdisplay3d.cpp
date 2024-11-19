@@ -770,7 +770,7 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	{
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(backframebuffer[currentactionvector]);
 		engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(backframebufferID[currentactionvector]);
-	 	engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
+		engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
 	}
 	if (currentprogram)
 		engineData->exec_glUseProgram(currentprogram->gpu_program);
@@ -1062,8 +1062,6 @@ void Context3D::finalize()
 
 bool Context3D::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	for (auto it = programlist.begin(); it != programlist.end(); it++)
 		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
@@ -1146,7 +1144,7 @@ ASFUNCTIONBODY_ATOM(Context3D,configureBackBuffer)
 	uint32_t h;
 	ARG_CHECK(ARG_UNPACK(w)(h)(antiAlias)(th->enableDepthAndStencilBackbuffer, true)(wantsBestResolution,false)(wantsBestResolutionOnBrowserZoom,false));
 	if (antiAlias || wantsBestResolution || wantsBestResolutionOnBrowserZoom)
-	LOG(LOG_NOT_IMPLEMENTED,"Context3D.configureBackBuffer does not use all parameters:"<<antiAlias<<" "<<wantsBestResolution<<" "<<wantsBestResolutionOnBrowserZoom);
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.configureBackBuffer does not use all parameters:"<<antiAlias<<" "<<wantsBestResolution<<" "<<wantsBestResolutionOnBrowserZoom);
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_CONFIGUREBACKBUFFER;
 	action.udata1 = th->enableDepthAndStencilBackbuffer ? 1:0;

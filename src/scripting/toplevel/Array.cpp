@@ -2287,8 +2287,6 @@ void Array::outofbounds(unsigned int index) const
 }
 bool Array::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	for (auto it = data_first.begin(); it != data_first.end(); it++)
 	{

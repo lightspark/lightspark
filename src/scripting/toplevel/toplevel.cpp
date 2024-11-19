@@ -614,8 +614,6 @@ void SyntheticFunction::prepareShutdown()
 }
 bool SyntheticFunction::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = IFunction::countCylicMemberReferences(gcstate);
 	if (!func_scope.isNull())
 	{
@@ -1472,8 +1470,6 @@ void Function_object::prepareShutdown()
 
 bool Function_object::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (functionPrototype)
 		ret = functionPrototype->countAllCylicMemberReferences(gcstate) || ret;

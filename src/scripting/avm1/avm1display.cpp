@@ -468,8 +468,6 @@ void AVM1MovieClipLoader::prepareShutdown()
 }
 bool AVM1MovieClipLoader::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	auto itlst = listeners.begin();
 	while (itlst != listeners.end())

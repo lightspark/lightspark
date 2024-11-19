@@ -55,7 +55,7 @@ void IFunction::prepareShutdown()
 	ASObject::prepareShutdown();
 	if (clonedFrom)
 		clonedFrom->prepareShutdown();
-	if (asAtomHandler::isObject(closure_this))
+	if (asAtomHandler::isAccessibleObject(closure_this))
 		asAtomHandler::getObjectNoCheck(closure_this)->prepareShutdown();
 	if (prototype)
 		prototype->prepareShutdown();
@@ -63,8 +63,6 @@ void IFunction::prepareShutdown()
 
 bool IFunction::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (asAtomHandler::isAccessibleObject(closure_this))
 		ret = asAtomHandler::getObjectNoCheck(closure_this)->countAllCylicMemberReferences(gcstate) || ret;

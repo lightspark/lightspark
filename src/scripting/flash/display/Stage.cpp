@@ -280,8 +280,6 @@ void Stage::finalize()
 
 bool Stage::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
 	for (auto it = removedDisplayObjects.begin(); it != removedDisplayObjects.end(); it++)
 		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;

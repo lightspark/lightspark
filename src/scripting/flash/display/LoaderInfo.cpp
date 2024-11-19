@@ -176,8 +176,6 @@ void LoaderInfo::prepareShutdown()
 
 bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	if (loader)
 		ret = loader->countAllCylicMemberReferences(gcstate) || ret;

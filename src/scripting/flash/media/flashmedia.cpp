@@ -512,8 +512,6 @@ void Sound::prepareShutdown()
 
 bool Sound::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	if (soundChannel)
 		ret = soundChannel->countAllCylicMemberReferences(gcstate) || ret;
@@ -1121,8 +1119,6 @@ void SoundChannel::prepareShutdown()
 
 bool SoundChannel::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	if (sampleproducer)
 		ret = sampleproducer->countAllCylicMemberReferences(gcstate) || ret;

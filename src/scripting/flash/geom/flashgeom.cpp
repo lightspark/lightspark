@@ -324,8 +324,6 @@ void Transform::prepareShutdown()
 
 bool Transform::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (owner)
 		ret = owner->countAllCylicMemberReferences(gcstate) || ret;

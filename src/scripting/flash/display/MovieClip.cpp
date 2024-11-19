@@ -308,8 +308,8 @@ void MovieClip::prepareShutdown()
 bool MovieClip::countCylicMemberReferences(garbagecollectorstate &gcstate)
 {
 	if (skipCountCylicMemberReferences(gcstate))
-		return false;
-	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
+		return gcstate.hasMember(this);
+	bool ret = Sprite::countCylicMemberReferences(gcstate);
 	for (auto it = frameScripts.begin(); it != frameScripts.end(); it++)
 	{
 		ASObject* o = asAtomHandler::getObject(it->second);

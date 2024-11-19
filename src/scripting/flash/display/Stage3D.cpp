@@ -81,8 +81,6 @@ void Stage3D::prepareShutdown()
 
 bool Stage3D::countCylicMemberReferences(garbagecollectorstate &gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	if (context3D)
 		ret = context3D->countAllCylicMemberReferences(gcstate) || ret;

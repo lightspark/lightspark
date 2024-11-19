@@ -439,7 +439,7 @@ bool Loader::destruct()
 bool Loader::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	if (skipCountCylicMemberReferences(gcstate))
-		return false;
+		return gcstate.hasMember(this);
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
 	if (contentLoaderInfo)
 		ret = contentLoaderInfo->countAllCylicMemberReferences(gcstate) || ret;

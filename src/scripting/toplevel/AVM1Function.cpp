@@ -132,8 +132,6 @@ void AVM1Function::prepareShutdown()
 
 bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = IFunction::countCylicMemberReferences(gcstate);
 	if (activationobject)
 		ret = activationobject->countAllCylicMemberReferences(gcstate) || ret;

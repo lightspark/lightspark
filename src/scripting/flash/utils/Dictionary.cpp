@@ -410,8 +410,6 @@ void Dictionary::nextValue(asAtom& ret,uint32_t index)
 
 bool Dictionary::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	for (auto it = data.begin(); it != data.end(); it++)
 	{

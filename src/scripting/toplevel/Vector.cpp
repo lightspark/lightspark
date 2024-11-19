@@ -157,8 +157,6 @@ void Vector::prepareShutdown()
 }
 bool Vector::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	for (auto it = vec.begin(); it != vec.end(); it++)
 	{

@@ -1000,7 +1000,7 @@ void DisplayObjectContainer::prepareShutdown()
 bool DisplayObjectContainer::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	if (skipCountCylicMemberReferences(gcstate))
-		return false;
+		return gcstate.hasMember(this);
 	bool ret = InteractiveObject::countCylicMemberReferences(gcstate);
 	Locker l(mutexDisplayList);
 	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
@@ -1110,7 +1110,7 @@ void InteractiveObject::prepareShutdown()
 bool InteractiveObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	if (skipCountCylicMemberReferences(gcstate))
-		return false;
+		return gcstate.hasMember(this);
 	bool ret = DisplayObject::countCylicMemberReferences(gcstate);
 	if (contextMenu)
 		ret = contextMenu->countAllCylicMemberReferences(gcstate) || ret;

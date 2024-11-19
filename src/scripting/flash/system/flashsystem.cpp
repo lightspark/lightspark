@@ -1423,7 +1423,6 @@ void ASWorker::finalize()
 	// remove all references to variables as they might point to other constant reffed objects
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
-		(*it)->destroyContents();
 		(*it)->destruct();
 		(*it)->finalize();
 	}
@@ -1729,7 +1728,8 @@ void ASWorker::processGarbageCollection(bool force)
 			ASObject* ogcnext = ogc->gcNext;
 			if (!ogc->deletedingarbagecollection)
 			{
-				ogc->removefromGarbageCollection();
+				this->removeObjectFromGarbageCollector(ogc);
+				ogc->markedforgarbagecollection = false;
 				if (ogc->handleGarbageCollection())
 				{
 					this->addObjectToGarbageCollector(ogc);
@@ -1739,6 +1739,7 @@ void ASWorker::processGarbageCollection(bool force)
 			ogc = ogcnext;
 		}
 	}
+	inGarbageCollection=false;
 	// delete all objects that were destructed during gc
 	ASObject* ogc = this->gcNext;
 	while (ogc && ogc != this)
@@ -1746,17 +1747,16 @@ void ASWorker::processGarbageCollection(bool force)
 		ASObject* ogcnext = ogc->gcNext;
 		if (ogc->deletedingarbagecollection)
 		{
+			ogc->deletedingarbagecollection=false;
 			ogc->removefromGarbageCollection();
 			ogc->resetRefCount();
 			ogc->setConstant(false);
-			if (ogc->decRef())
-				ogc->deletedingarbagecollection=false;
+			ogc->decRef();
 		}
 		ogc = ogcnext;
 	}
 	if (force && this->gcNext && this->gcNext != this)
 		processGarbageCollection(true);
-	inGarbageCollection=false;
 }
 
 void ASWorker::registerConstantRef(ASObject* obj)

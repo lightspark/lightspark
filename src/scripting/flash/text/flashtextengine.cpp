@@ -77,8 +77,6 @@ void ContentElement::prepareShutdown()
 
 bool ContentElement::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (elementFormat)
 		ret = elementFormat->countAllCylicMemberReferences(gcstate) || ret;
@@ -183,8 +181,6 @@ void ElementFormat::prepareShutdown()
 
 bool ElementFormat::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (fontDescription)
 		ret = fontDescription->countAllCylicMemberReferences(gcstate) || ret;
@@ -985,8 +981,6 @@ void TextElement::prepareShutdown()
 
 bool TextElement::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ContentElement::countCylicMemberReferences(gcstate);
 	ASObject* o = asAtomHandler::getObject(text);
 	if (o)
@@ -1067,8 +1061,6 @@ void GroupElement::prepareShutdown()
 
 bool GroupElement::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ContentElement::countCylicMemberReferences(gcstate);
 	return ret;
 }

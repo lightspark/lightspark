@@ -59,8 +59,6 @@ void GraphicsStroke::finalize()
 
 bool GraphicsStroke::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (fill)
 		ret = fill->countAllCylicMemberReferences(gcstate) || ret;

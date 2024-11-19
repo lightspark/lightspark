@@ -312,12 +312,13 @@ void DisplayObject::prepareShutdown()
 	setMask(NullRef);
 	setClipMask(NullRef);
 	setParent(nullptr);
+	onStage=false;
 }
 
 bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	if (skipCountCylicMemberReferences(gcstate))
-		return false;
+		return gcstate.hasMember(this);
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
 	{
@@ -2300,13 +2301,11 @@ bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& y
 
 bool DisplayObject::skipCountCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-	{
+	if (gcstate.stopped)
 		return true;
-	}
 	if (!getSystemState()->isShuttingDown())
 	{
-		if ((isOnStage() || hiddenPrevDisplayObject || hiddenNextDisplayObject))
+		if (isOnStage() || hiddenPrevDisplayObject || hiddenNextDisplayObject)
 		{
 			// no need to count as we have at least one reference left if this object is still on stage or hidden
 			gcstate.ignoreCount(this);

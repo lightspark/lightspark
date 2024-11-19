@@ -612,8 +612,6 @@ void SimpleButton::prepareShutdown()
 
 bool SimpleButton::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
 	if (downState)
 		ret = downState->countAllCylicMemberReferences(gcstate) || ret;

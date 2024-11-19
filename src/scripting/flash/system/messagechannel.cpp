@@ -96,8 +96,6 @@ void MessageChannel::prepareShutdown()
 }
 bool MessageChannel::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	{
 		Locker l(messagequeuemutex);

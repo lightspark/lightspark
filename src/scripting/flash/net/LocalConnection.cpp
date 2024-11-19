@@ -134,8 +134,6 @@ bool LocalConnection::destruct()
 
 bool LocalConnection::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.checkAncestors(this))
-		return false;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	if (client)
 		ret = client->countAllCylicMemberReferences(gcstate) || ret;

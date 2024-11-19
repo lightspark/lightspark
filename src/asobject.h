@@ -630,22 +630,20 @@ struct cyclicmembercount
 	uint32_t count; // number of references counted
 	bool hasmember:1; // indicates if the member object has any references to the main object in its members
 	bool ignore:1; // indicates if the member object doesn't have to be checked for cyclic member count and its count should be ignored
+	bool isAncestor:1;
 };
 // struct used to keep track of entries when executing garbage collection
 struct garbagecollectorstate
 {
 	std::map<ASObject*,cyclicmembercount> checkedobjects;
-	std::set<ASObject*> ancestors;
-	std::set<ASObject*> countedobjects;
 	ASObject* startobj;
-	int incCount(ASObject* o);
+	bool stopped; // indicates that an object has a member and should be ignored, so we can stop gc for the startobject immediately
+	bool incCount(ASObject* o, bool hasMember);
 	void ignoreCount(ASObject* o);
 	bool isIgnored(ASObject* o);
-	FORCE_INLINE bool checkAncestors(ASObject* o)
-	{
-		return ancestors.find(o)!=ancestors.end();
-	}
-	garbagecollectorstate(ASObject* _startobj):startobj(_startobj)
+	bool hasMember(ASObject* o);
+	void setAncestor(ASObject* o);
+	garbagecollectorstate(ASObject* _startobj):startobj(_startobj),stopped(false)
 	{
 	}
 };
@@ -1024,7 +1022,7 @@ protected:
 		traitsInitialized =false;
 		constructIndicator = false;
 		constructorCallComplete = false;
-		removefromGarbageCollection();
+		bool keep = removefromGarbageCollection();
 		implEnable = true;
 		storedmembercount=0;
 #ifndef NDEBUG
@@ -1044,6 +1042,13 @@ protected:
 		}
 		if (dodestruct)
 		{
+			if (keep && canHaveCyclicMemberReference())
+			{
+				setConstant();
+				deletedingarbagecollection=true;
+				addToGarbageCollection();
+				return false;
+			}
 #ifndef NDEBUG
 			if (classdef)
 			{
@@ -1071,20 +1076,10 @@ public:
 
 	inline Class_base* getClass() const { return classdef; }
 	void setClass(Class_base* c);
-	FORCE_INLINE void addStoredMember()
-	{
-		if (this->getConstant())
-			return;
-		assert(storedmembercount<=uint32_t(this->getRefCount()));
-		storedmembercount++;
-		if (markedforgarbagecollection)
-		{
-			removefromGarbageCollection();
-			decRef();
-		}
-	}
+	void addStoredMember();
 	bool isMarkedForGarbageCollection() const { return markedforgarbagecollection; }
-	void removefromGarbageCollection();
+	bool removefromGarbageCollection();
+	void addToGarbageCollection();
 	void removeStoredMember();
 	bool handleGarbageCollection();
 	virtual bool countCylicMemberReferences(garbagecollectorstate& gcstate);

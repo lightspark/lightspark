@@ -304,13 +304,15 @@ public:
 	template<typename F>
 	constexpr auto andThen(const F&& func) const
 	{
-		return hasValue() ? func(getValue()) : decltype(func(getValue())){};
+		using Result = decltype(func(getValue()));
+		return hasValue() ? func(getValue()) : Result(nullOpt);
 	}
 
 	template<typename F>
 	constexpr auto transform(const F&& func) const
 	{
-		return hasValue() ? func(getValue()) : decltype(func(getValue())){};
+		using Result = decltype(func(getValue()));
+		return hasValue() ? func(getValue()) : Result(nullOpt);
 	}
 
 	template<typename F, typename U>

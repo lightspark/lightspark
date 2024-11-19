@@ -135,7 +135,7 @@ struct NullOpt
 static constexpr NullOpt nullOpt {};
 
 // Based on `optional` from EASTL.
-template<typename T, EnableIf<!std::is_lvalue_reference<T>::value, bool> = false>
+template<typename T>
 class Optional : private OptionalStorage<T>
 {
 	using Base = OptionalStorage<T>;
@@ -506,6 +506,243 @@ private:
 	}
 };
 
+// Based on `optional<T&>` from https://github.com/TartanLlama/optional
+template<typename T>
+class Optional<T&>
+{
+public:
+	using ValueType = T;
+
+	constexpr Optional() noexcept : data(nullptr) {}
+	constexpr Optional(NullOpt) noexcept : data(nullptr) {}
+
+	template<typename U = T, EnableIf<!IsOptional<Decay<U>>::value, bool> = false>
+	constexpr Optional(U&& value) noexcept : data(std::addressof(value))
+	{
+		static_assert(std::is_lvalue_reference<U>::value, "U must be an lvalue");
+	}
+
+	constexpr Optional(const Optional& other) noexcept = default;
+	constexpr Optional(Optional&& other) = default;
+	template<typename U>
+	constexpr explicit Optional(const Optional<U>& other) noexcept : Optional(*other) {}
+
+	~Optional() = default;
+
+
+	Optional& operator=(NullOpt) noexcept
+	{
+		data = nullptr;
+		return *this;
+	}
+
+	Optional& operator=(const Optional& other) = default;
+
+	template<typename U = T, EnableIf<!IsOptional<Decay<U>>::value, bool> = false>
+	Optional& operator=(U&& value)
+	{
+		static_assert(std::is_lvalue_reference<U>::value, "U must be an lvalue");
+		data = std::addressof(value);
+		return *this;
+	}
+
+	template<typename U>
+	Optional& operator=(const Optional<U>& other) noexcept
+	{
+		data = std::addressof(other.getValue());
+		return *this;
+	}
+
+	constexpr explicit operator bool() const noexcept { return data != nullptr; }
+	constexpr bool hasValue() const noexcept { return data != nullptr; }
+
+	T& getValue() & { return getValueRef(); }
+	const T& getValue() const& { return getValueRef(); }
+	T&& getValue() && { return getRValueRef(); }
+	const T&& getValue() const&& { return getRValueRef(); }
+
+	T& releaseValue()
+	{
+		if (data == nullptr)
+			throw BadOptionalAccess();
+		T& releasedValue = std::move(getValue());
+		reset();
+		return releasedValue;
+	}
+
+	T* operator->() { return getValuePtr(); }
+	T* operator->() const { return getValuePtr(); }
+
+	T& operator*() & { return getValue(); }
+	T& operator*() const& { return getValue(); }
+	T&& operator*() && { return getRValueRef(); }
+	T&& operator*() const&& { return getRValueRef(); }
+
+	constexpr Optional asRef() { return *this; }
+	constexpr Optional asRef() const { return *this; }
+
+	template<typename U>
+	T valueOr(U&& _default) const
+	{
+		return hasValue() ? getValue() : static_cast<T>(std::forward<U>(_default));
+	}
+
+	template<typename U>
+	T valueOr(U&& _default)
+	{
+		return hasValue() ? getValue() : static_cast<T>(std::forward<U>(_default));
+	}
+
+	template<typename F>
+	constexpr Optional filter(const F&& func) const
+	{
+		return hasValue() && func(getValue()) ? *this : nullOpt;
+	}
+
+	constexpr Optional filter(bool flag) const
+	{
+		return hasValue() && flag ? *this : nullOpt;
+	}
+
+	template<typename F>
+	constexpr auto andThen(const F&& func) const
+	{
+		using Result = decltype(func(getValue()));
+		static_assert(IsOptional<Result>::value, "F must return an `Optional`");
+		return hasValue() ? func(getValue()) : Result(nullOpt);
+	}
+
+	template<typename F>
+	constexpr auto transform(const F&& func) const
+	{
+		using Result = decltype(func(getValue()));
+		return hasValue() ? func(getValue()) : Result(nullOpt);
+	}
+
+	template<typename F, typename U>
+	constexpr U transformOr(const U& _default, const F&& func) const
+	{
+		return hasValue() ? func(getValue()) : _default;
+	}
+
+	template<typename F>
+	constexpr Optional orElse(const F&& func) const { return hasValue() ? *this : func(); }
+
+	template<typename Pred, typename F>
+	constexpr Optional orElseIf(const Pred&& pred, const F&& func) const
+	{
+		return hasValue() ? *this : (pred() ? Optional<T>(func()) : nullOpt);
+	}
+
+	template<typename F>
+	constexpr Optional orElseIf(bool flag, const F&& func) const
+	{
+		return hasValue() ? *this : (flag ? Optional<T>(func()) : nullOpt);
+	}
+
+	template<typename U = T, EnableIf<!IsOptional<Decay<U>>::value, bool> = false>
+	void emplace(U&& value) noexcept
+	{
+		return *this = std::forward<U>(value);
+	}
+
+	void swap(Optional& other) noexcept { std::swap(data, other.data); }
+
+	void reset() noexcept { data = nullptr; }
+
+	template<typename U>
+	constexpr bool operator==(const Optional<U>& other) const
+	{
+		return hasValue() == other.hasValue() && (!hasValue() || getValue() == other.getValue());
+	}
+
+	template<typename U>
+	constexpr bool operator<(const Optional<U>& other) const
+	{
+		return other.hasValue() && (!hasValue() || getValue() < other.getValue());
+	}
+
+	template<typename U>
+	constexpr bool operator==(const U& other) const
+	{
+		return hasValue() && getValue() == other;
+	}
+
+	template<typename U>
+	constexpr bool operator<(const U& other) const
+	{
+		return hasValue() && getValue() < other;
+	}
+
+	template<typename U>
+	constexpr bool operator!=(const U& other) const
+	{
+		return !(*this == other);
+	}
+
+	template<typename U>
+	constexpr bool operator<=(const U& other) const
+	{
+		return !(other < *this);
+	}
+
+	template<typename U>
+	constexpr bool operator>(const U& other) const
+	{
+		return other < *this;
+	}
+
+	template<typename U>
+	constexpr bool operator>=(const U& other) const
+	{
+		return !(*this < other);
+	}
+
+	// NOTE: These are here for code compatibility with `std::optional`.
+	constexpr bool has_value() const noexcept { return hasValue(); }
+
+	T& value() & { return getValue(); }
+	const T& value() const& { return getValue(); }
+	T&& value() && { return getValue(); }
+	const T&& value() const&& { return getValue(); }
+
+	template<typename U>
+	T value_or(U&& _default) const { return valueOr(_default); }
+	template<typename U>
+	T value_or(U&& _default) { return valueOr(_default); }
+
+	template<typename F>
+	constexpr auto and_then(const F&& func) const { return andThen(func); }
+	template<typename F>
+	constexpr Optional or_else(const F&& func) const { return orElse(func); }
+private:
+	T* data;
+
+	T* getValuePtr() noexcept { return data; }
+	const T* getValuePtr() const noexcept { return data; }
+
+	T& getValueRef()
+	{
+		if (data == nullptr)
+			throw BadOptionalAccess();
+		return *data;
+	}
+
+	const T& getValueRef() const
+	{
+		if (data == nullptr)
+			throw BadOptionalAccess();
+		return *data;
+	}
+
+	T&& getRValueRef()
+	{
+		if (data == nullptr)
+			throw BadOptionalAccess();
+		return std::move(*data);
+	}
+};
+
 template<typename T>
 constexpr Optional<Decay<T>> makeOptional(T&& value)
 {
@@ -522,6 +759,12 @@ template<typename T, typename U, typename... Args>
 constexpr Optional<T> makeOptional(const std::initializer_list<U>& list, Args&&... args)
 {
 	return Optional<T>(InPlaceTag {}, list, std::forward<Args>(args)...);
+}
+
+template<typename T>
+constexpr Optional<T&> makeOptionalRef(T& value)
+{
+	return Optional<T&>(value);
 }
 
 };

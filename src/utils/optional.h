@@ -291,6 +291,17 @@ public:
 	}
 
 	template<typename F>
+	constexpr Optional filter(const F&& func) const
+	{
+		return hasValue() && func(getValue()) ? *this : nullOpt;
+	}
+
+	constexpr Optional filter(bool flag) const
+	{
+		return hasValue() && flag ? *this : nullOpt;
+	}
+
+	template<typename F>
 	constexpr auto andThen(const F&& func) const
 	{
 		return hasValue() ? func(getValue()) : decltype(func(getValue())){};

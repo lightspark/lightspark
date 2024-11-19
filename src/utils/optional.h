@@ -78,7 +78,7 @@ struct OptionalStorage
 template<typename T>
 struct OptionalStorage<T, true>
 {
-	constexpr OptionalStorage() noexcept = default;
+	OptionalStorage() noexcept = default;
 
 	OptionalStorage(const T& value) : exists(true)
 	{
@@ -140,7 +140,7 @@ class Optional : private OptionalStorage<T>
 public:
 	using ValueType = T;
 
-	constexpr Optional() noexcept = default;
+	constexpr Optional() noexcept {}
 	constexpr Optional(NullOpt) noexcept {}
 
 	constexpr Optional(const T& value) : Base(value) {}
@@ -148,18 +148,18 @@ public:
 	constexpr Optional(T&& value) noexcept
 	(
 		std::is_nothrow_move_constructible<T>::value
-	) : Base(value) {}
+	) : Base(std::move(value)) {}
 
 	Optional(const Optional& other) : Base()
 	{
-		if (exists = other.exists)
+		if ((exists = other.exists))
 			new(&data) T(other.getValue());
 	}
 
 	Optional(Optional&& other) : Base()
 	{
-		if (exists = other.exists)
-			new(&data) T(other.releaseValue());
+		if ((exists = other.exists))
+			new(&data) T(std::move(other.getValue()));
 	}
 
 	template<typename... Args>
@@ -211,7 +211,7 @@ public:
 		else
 		{
 			constructValue(other.getValue());
-			exists = false;
+			exists = true;
 		}
 		return *this;
 	}
@@ -235,7 +235,7 @@ public:
 		else
 		{
 			constructValue(std::move(other.getValue()));
-			exists = false;
+			exists = true;
 		}
 		return *this;
 	}
@@ -257,9 +257,9 @@ public:
 	constexpr bool hasValue() const noexcept { return exists; }
 
 	T& getValue() & { return getValueRef(); }
-	T& getValue() const& { return getValueRef(); }
+	const T& getValue() const& { return getValueRef(); }
 	T&& getValue() && { return getRValueRef(); }
-	T&& getValue() const&& { return getRValueRef(); }
+	const T&& getValue() const&& { return getRValueRef(); }
 
 	T releaseValue()
 	{
@@ -274,9 +274,9 @@ public:
 	T* operator->() const { return getValuePtr(); }
 
 	T& operator*() & { return getValue(); }
-	T& operator*() const& { return getValue(); }
-	T&& operator*() && { return getValue(); }
-	T&& operator*() const&& { return getValue(); }
+	const T& operator*() const& { return getValue(); }
+	T&& operator*() && { return getRValueRef(); }
+	const T&& operator*() const&& { return getRValueRef(); }
 
 	template<typename U>
 	T valueOr(U&& _default) const

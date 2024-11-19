@@ -284,6 +284,20 @@ public:
 	T&& operator*() && { return getRValueRef(); }
 	const T&& operator*() const&& { return getRValueRef(); }
 
+	constexpr Optional<T&> asRef()
+	{
+		if (hasValue())
+			return Optional<T&>(getValue());
+		return Optional<T&>(nullOpt);
+	}
+
+	constexpr Optional<const T&> asRef() const
+	{
+		if (hasValue())
+			return Optional<const T&>(getValue());
+		return Optional<const T&>(nullOpt);
+	}
+
 	template<typename U>
 	T valueOr(U&& _default) const
 	{

@@ -506,5 +506,23 @@ private:
 	}
 };
 
+template<typename T>
+constexpr Optional<Decay<T>> makeOptional(T&& value)
+{
+	return Optional<Decay<T>>(std::forward<T>(value));
+}
+
+template<typename T, typename... Args>
+constexpr Optional<T> makeOptional(Args&&... args)
+{
+	return Optional<T>(InPlaceTag {}, std::forward<Args>(args)...);
+}
+
+template<typename T, typename U, typename... Args>
+constexpr Optional<T> makeOptional(const std::initializer_list<U>& list, Args&&... args)
+{
+	return Optional<T>(InPlaceTag {}, list, std::forward<Args>(args)...);
+}
+
 };
 #endif /* UTILS_OPTIONAL_H */

@@ -448,6 +448,24 @@ public:
 	{
 		return !(*this < other);
 	}
+
+	// NOTE: These are here for code compatibility with `std::optional`.
+	constexpr bool has_value() const noexcept { return hasValue(); }
+
+	T& value() & { return getValue(); }
+	const T& value() const& { return getValue(); }
+	T&& value() && { return getValue(); }
+	const T&& value() const&& { return getValue(); }
+
+	template<typename U>
+	T value_or(U&& _default) const { return valueOr(_default); }
+	template<typename U>
+	T value_or(U&& _default) { return valueOr(_default); }
+
+	template<typename F>
+	constexpr auto and_then(const F&& func) const { return andThen(func); }
+	template<typename F>
+	constexpr Optional or_else(const F&& func) const { return orElse(func); }
 private:
 	template<typename... Args>
 	void constructValue(Args&&... args) { new(&data) T(std::forward<Args>(args)...); }

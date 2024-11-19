@@ -313,6 +313,12 @@ public:
 		return hasValue() ? func(getValue()) : decltype(func(getValue())){};
 	}
 
+	template<typename F, typename U>
+	constexpr U transformOr(const U& _default, const F&& func) const
+	{
+		return hasValue() ? func(getValue()) : _default;
+	}
+
 	template<typename F>
 	constexpr Optional<T> orElse(const F&& func) const { return hasValue() ? *this : func(); }
 

@@ -110,35 +110,45 @@ struct Disj<T> : T {};
 template<typename T, typename... Args>
 struct Disj<T, Args...> : CondT<T::value, T, Disj<Args...>>::type {};
 
-template<size_t I, size_t... Args>
+template<typename T, T I, T... Args>
 struct StaticMin;
 
-template<size_t I>
-struct StaticMin<I>
+template<typename T, T I>
+struct StaticMin<T, I>
 {
-	static constexpr size_t value = I;
+	static constexpr T value = I;
 };
 
-template<size_t I, size_t J, size_t... Args>
-struct StaticMin<I, J, Args...>
+template<typename T, T I, T J, T... Args>
+struct StaticMin<T, I, J, Args...>
 {
-	static constexpr size_t value = StaticMin<(I <= J) ? I : J, Args...>::value;
+	static constexpr T value = StaticMin<T, (I <= J) ? I : J, Args...>::value;
 };
 
-template<size_t I, size_t... Args>
+template<typename T, T I, T... Args>
 struct StaticMax;
 
-template<size_t I>
-struct StaticMax<I>
+template<typename T, T I>
+struct StaticMax<T, I>
 {
-	static constexpr size_t value = I;
+	static constexpr T value = I;
 };
 
-template<size_t I, size_t J, size_t... Args>
-struct StaticMax<I, J, Args...>
+template<typename T, T I, T J, T... Args>
+struct StaticMax<T, I, J, Args...>
 {
-	static constexpr size_t value = StaticMax<(I >= J) ? I : J, Args...>::value;
+	static constexpr T value = StaticMax<T, (I >= J) ? I : J, Args...>::value;
 };
+
+template<size_t... Args>
+using StaticUMin = StaticMin<size_t, Args...>;
+template<size_t... Args>
+using StaticUMax = StaticMax<size_t, Args...>;
+
+template<ssize_t... Args>
+using StaticIMin = StaticMin<ssize_t, Args...>;
+template<ssize_t... Args>
+using StaticIMax = StaticMax<ssize_t, Args...>;
 
 };
 #endif /* UTILS_TYPE_TRAITS_H */

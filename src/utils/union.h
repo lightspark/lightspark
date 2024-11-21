@@ -32,7 +32,7 @@ struct UnionSize;
 template<typename... Args>
 struct UnionSize<TypeList<Args...>>
 {
-	static constexpr size_t value = StaticMax<sizeof(Args)...>::value;
+	static constexpr size_t value = StaticUMax<sizeof(Args)...>::value;
 };
 
 template<typename T>
@@ -40,7 +40,7 @@ struct UnionAlign;
 template<typename... Args>
 struct UnionAlign<TypeList<Args...>>
 {
-	static constexpr size_t value = StaticMax<alignof(Args)...>::value;
+	static constexpr size_t value = StaticUMax<alignof(Args)...>::value;
 };
 
 };

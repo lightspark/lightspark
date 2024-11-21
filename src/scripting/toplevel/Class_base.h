@@ -37,7 +37,7 @@ class IFunction;
 class Prototype;
 class ObjectConstructor;
 struct traits_info;
-class Any;
+class ASAny;
 class Void;
 class Class_object;
 
@@ -53,7 +53,7 @@ protected:
 	/* this is private because one never deletes a Type */
 	~Type() {}
 public:
-	static Any* anyType;
+	static ASAny* anyType;
 	static Void* voidType;
 	/*
 	 * This returns the Type for the given multiname.
@@ -93,12 +93,12 @@ public:
 };
 template<> inline Type* ASObject::as<Type>() { return dynamic_cast<Type*>(this); }
 
-class Any: public Type
+class ASAny: public Type
 {
 public:
 	bool coerce(ASWorker* wrk,asAtom& o) override { return false; }
 	void coerceForTemplate(ASWorker* wrk, asAtom& o) override {}
-	virtual ~Any() {}
+	virtual ~ASAny() {}
 	tiny_string getName() const override { return "any"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return CANNOT_BIND; }
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }

@@ -27,7 +27,7 @@ namespace lightspark
 
 /* forward declarations */
 class Type;
-class Any;
+class ASAny;
 class Void;
 class ActivationType;
 class Class_base;

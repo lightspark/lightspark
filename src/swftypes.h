@@ -931,6 +931,7 @@ public:
 	}
 };
 
+struct RectF;
 class RECT
 {
 	friend std::ostream& operator<<(std::ostream& s, const RECT& r);
@@ -953,6 +954,7 @@ public:
 		return *this;
 	}
 	bool operator==(const RECT& r) const;
+	operator RectF() const;
 };
 
 template<class T> class Vector2Tmpl;

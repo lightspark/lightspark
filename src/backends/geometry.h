@@ -46,7 +46,10 @@ public:
 	Vector2Tmpl<int32_t> round() const { return Vector2Tmpl<int32_t>(x,y); }
 	bool operator==(const Vector2Tmpl<T>& v)const{return v.x==x && v.y==y;}
 	bool operator!=(const Vector2Tmpl<T>& v)const{return v.x!=x || v.y!=y;}
-	bool operator<(const Vector2Tmpl<T>& v) const {return (y==v.y)?(x < v.x):(y < v.y);}
+	bool operator<(const Vector2Tmpl<T>& v) const { return x < v.x || (x == v.x && y < v.y); }
+	bool operator>(const Vector2Tmpl<T>& v) const { return v < *this; }
+	bool operator<=(const Vector2Tmpl<T>& v) const { return !(*this > v); }
+	bool operator>=(const Vector2Tmpl<T>& v) const { return !(*this < v); }
 	Vector2Tmpl<T> operator-() const { return Vector2Tmpl<T>(-x,-y); }
 	Vector2Tmpl<T> operator-(const Vector2Tmpl<T>& v)const { return Vector2Tmpl<T>(x-v.x,y-v.y);}
 	Vector2Tmpl<T> operator+(const Vector2Tmpl<T>& v)const { return Vector2Tmpl<T>(x+v.x,y+v.y);}

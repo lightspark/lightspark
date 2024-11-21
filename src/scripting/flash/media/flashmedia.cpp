@@ -673,7 +673,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 			}
 			if(!th->rawDataStreamDecoder->isValid())
 			{
-				LOG(LOG_ERROR,"invalid streamDecoder");
+				LOG(LOG_ERROR,"invalid streamDecoder in Sound.extract:"<<th->format.codec<<" "<<th->format.channels<<"/"<<th->format.sampleRate<<" "<<th->soundData->getReceivedLength());
 				delete th->rawDataStreamDecoder;
 				th->rawDataStreamDecoder=nullptr;
 			}
@@ -1210,7 +1210,7 @@ void SoundChannel::playStream()
 		streamDecoder=new FFMpegStreamDecoder(nullptr,this->getSystemState()->getEngineData(),s,buffertimeseconds,&format,stream->hasTerminated() && !forstreaming ? stream->getReceivedLength() : -1);
 		if(!streamDecoder->isValid())
 		{
-			LOG(LOG_ERROR,"invalid streamDecoder");
+			LOG(LOG_ERROR,"invalid streamDecoder:"<<format.codec<<" "<<format.channels<<"/"<<format.sampleRate<<" "<<stream->getReceivedLength());
 			threadAbort();
 			restartafterabort=false;
 		}

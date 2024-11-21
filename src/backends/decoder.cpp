@@ -1096,6 +1096,8 @@ CodecID FFMpegAudioDecoder::LSToFFMpegCodec(LS_AUDIO_CODEC LSCodec)
 			return CODEC_ID_MP3;
 		case ADPCM:
 			return CODEC_ID_ADPCM_SWF;
+		case NELLYMOSER:
+			return AV_CODEC_ID_NELLYMOSER;
 		case LINEAR_PCM_PLATFORM_ENDIAN:
 #if __BYTE_ORDER == __BIG_ENDIAN
 			return CODEC_ID_PCM_S16BE;
@@ -1781,11 +1783,15 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 				fmt = av_find_input_format("f32le");
 #endif
 				break;
+			case LS_AUDIO_CODEC::NELLYMOSER:
 			case LS_AUDIO_CODEC::ADPCM:
 				fmt = av_find_input_format("flv");
 				format=nullptr;
 				break;
 			case LS_AUDIO_CODEC::CODEC_NONE:
+				break;
+			default:
+				LOG(LOG_NOT_IMPLEMENTED,"unsupported audio codec:"<<format->codec);
 				break;
 		}
 	}

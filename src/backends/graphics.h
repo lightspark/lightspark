@@ -95,6 +95,10 @@ struct RectF
 		};
 	}
 	RectF& operator*=(const MATRIX& r) { return *this = *this * r; }
+	template<typename T>
+	RectF operator/(const T& value) { return RectF { min / value, max / value }; }
+	template<typename T>
+	RectF& operator/=(const T& value) { return *this = *this / value; }
 };
 
 class TextureChunk

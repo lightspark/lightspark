@@ -67,6 +67,16 @@ struct RectF
 
 		};
 	}
+	bool intersects(const RectF& r) const
+	{
+		return
+		(
+			min.x <= r.max.x &&
+			max.x >= r.min.x &&
+			min.y <= r.max.y &&
+			max.y >= r.min.y
+		);
+	}
 	RectF operator*(const MATRIX& r) const
 	{
 		auto p0 = r.multiply2D(tl());

@@ -34,7 +34,7 @@
 using namespace std;
 using namespace lightspark;
 
-Any* Type::anyType = new Any();
+ASAny* Type::anyType = new ASAny();
 Void* Type::voidType = new Void();
 
 Type* Type::getBuiltinType(ASWorker* wrk, multiname* mn)

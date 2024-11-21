@@ -25,6 +25,7 @@
 #include "forwards/scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/ui/keycodes.h"
 #include "utils/enum.h"
+#include "utils/impl.h"
 #include "utils/visitor.h"
 #include "utils/union.h"
 #include "swftypes.h"
@@ -41,6 +42,9 @@ enum LSModifier
 	Alt = 1 << 2,
 	Super = 1 << 3,
 };
+
+struct LSUserEvent;
+struct LSUserEventImpl;
 
 using EventTypes = TypeList
 <
@@ -62,7 +66,8 @@ using EventTypes = TypeList
 	LSOpenContextMenuEvent,
 	LSUpdateContextMenuEvent,
 	LSSelectItemContextMenuEvent,
-	LSRemovedFromStageEvent
+	LSRemovedFromStageEvent,
+	LSUserEventImpl
 >;
 
 // TODO: Write our own variant implementation, and turn this into a variant.
@@ -83,17 +88,24 @@ struct LSEvent
 		Exec,
 		ContextMenu,
 		RemovedFromStage,
+		User,
 	};
 	using EventType = Type;
 
 	constexpr LSEvent(const Type& _type = EventType::Invalid) : type(_type) {}
 	constexpr Type getType() const { return type; }
 
-	template<typename V>
+	template<typename U = LSUserEvent, typename V>
 	constexpr auto visit(V&& visitor) const;
 	template<typename T>
 	constexpr bool has() const
 	{
+		static_assert
+		(
+			std::is_base_of<LSEvent, T>::value ||
+			std::is_base_of<LSUserEvent, T>::value,
+			"T must be an LSEvent"
+		);
 		return visit(makeVisitor
 		(
 			[](const T&) { return true; },
@@ -405,7 +417,23 @@ struct LSRemovedFromStageEvent : public LSEvent
 	constexpr LSRemovedFromStageEvent() : LSEvent(EventType::RemovedFromStage) {}
 };
 
-template<typename V>
+struct LSUserEvent {};
+
+struct LSUserEventImpl : public LSEvent
+{
+	Impl<LSUserEvent> data;
+
+	constexpr LSUserEventImpl(const LSUserEvent& event) :
+	LSEvent(EventType::User),
+	data(std::move(event)) {}
+
+	template<typename T, EnableIf<std::is_base_of<LSUserEvent, T>::value, bool> = false>
+	constexpr operator const T&() const { return static_cast<const T&>(*data); }
+	template<typename T, EnableIf<std::is_base_of<LSUserEvent, T>::value, bool> = false>
+	operator T&() { return static_cast<T&>(*data); }
+};
+
+template<typename U, typename V>
 constexpr auto LSEvent::visit(V&& visitor) const
 {
 	using ContextMenuType = LSContextMenuEvent::ContextMenuType;
@@ -457,6 +485,7 @@ constexpr auto LSEvent::visit(V&& visitor) const
 			break;
 		}
 		case LSEvent::Type::RemovedFromStage: return visitor(static_cast<const LSRemovedFromStageEvent&>(*this)); break;
+		case LSEvent::Type::User: return visitor(static_cast<const LSUserEventImpl&>(*this)); break;
 		// Invalid event, should be unreachable.
 		// TODO: Add `compat_unreachable()`, and use it here.
 		default: assert(false); break;
@@ -467,7 +496,22 @@ constexpr auto LSEvent::visit(V&& visitor) const
 // Wrapper/Container for returning, and storing `LSEvent`s.
 struct LSEventStorage
 {
-	LSEventStorage(const LSEvent& event) { memcpy(data, &event, event.isInvalid() ? sizeof(LSEvent) : event.visit([](auto event) { return sizeof(event); })); }
+	LSEventStorage() : data() {}
+	LSEventStorage(const LSUserEvent& event)
+	{
+		new(&data) LSUserEventImpl(event);
+	}
+
+	LSEventStorage(const LSEvent& event)
+	{
+		if (event.isInvalid())
+			new(&data) LSEvent();
+		else
+			event.visit([&](const auto& event)
+			{
+				new(&data) RemoveCVRef<decltype(event)>(event);
+			});
+	}
 
 	constexpr const LSEvent& event() const { return reinterpret_cast<const LSEvent&>(data); }
 	LSEvent& event() { return reinterpret_cast<LSEvent&>(data); }

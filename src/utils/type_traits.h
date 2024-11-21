@@ -93,6 +93,23 @@ struct IsSpecializationOf : std::false_type {};
 template<template<typename...> typename T, typename... Args>
 struct IsSpecializationOf<T<Args...>, T> : std::true_type {};
 
+template<typename T>
+struct Neg : BoolConstant<!T::value> {};
+
+template<typename...>
+struct Conj : std::true_type {};
+template<typename T>
+struct Conj<T> : T {};
+template<typename T, typename... Args>
+struct Conj<T, Args...> : CondT<T::value, Conj<Args...>, T>::type {};
+
+template<typename...>
+struct Disj : std::false_type {};
+template<typename T>
+struct Disj<T> : T {};
+template<typename T, typename... Args>
+struct Disj<T, Args...> : CondT<T::value, T, Disj<Args...>>::type {};
+
 template<size_t I, size_t... Args>
 struct StaticMin;
 

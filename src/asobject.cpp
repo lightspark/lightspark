@@ -1884,11 +1884,13 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 			continue;
 		}
 		ASObject* o = asAtomHandler::getObject(it->second.var);
-		if (it->second.isrefcounted && o && !o->getConstant() && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
+		if (it->second.isrefcounted && o && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
 		{
 			if (o==gcstate.startobj)
 			{
 				gcstate.incCount(o,false);
+				if (gcstate.stopped)
+					return false;
 				auto itp = gcstate.checkedobjects.find(parent);
 				(*itp).second.hasmember=true;
 				ret = true;
@@ -1900,9 +1902,15 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 					gcstate.ignoreCount(o);
 					if (gcstate.stopped)
 						return false;
+					auto itc = gcstate.checkedobjects.find(o);
+					ret = (*itc).second.hasmember;
 				}
 				else
+				{
 					gcstate.incCount(o,ret);
+					if (gcstate.stopped)
+						return false;
+				}
 			}	
 			else if (o != parent && ((uint32_t)o->getRefCount()==o->storedmembercount))
 			{
@@ -1922,7 +1930,12 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 				{
 					auto itc = gcstate.checkedobjects.find(o);
 					if (itc != gcstate.checkedobjects.end())
+					{
 						ret = (*itc).second.hasmember || ret;
+						(*itc).second.hasmember=ret;
+					}
+					if (gcstate.stopped)
+						return false;
 				}
 			}
 			else
@@ -1930,6 +1943,8 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 				auto itc = gcstate.checkedobjects.find(o);
 				if (itc != gcstate.checkedobjects.end())
 					ret = (*itc).second.hasmember || ret;
+				if (gcstate.stopped)
+					return false;
 			}
 		}
 		it++;

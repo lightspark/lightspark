@@ -90,10 +90,21 @@ public:
 		);
 	}
 
+	template<typename T, EnableIf<std::is_integral<T>::value, bool> = false>
+	TimeSpec operator/(const T& other) const
+	{
+		TimeSpec ret(sec / other, nsec / other);
+		TimeSpec extra(sec % other, nsec % other);
+		ret.nsec += extra.toNs() / other;
+		return ret;
+	}
+
 	TimeSpec& operator+=(const TimeSpec& other) { return *this = *this + other; }
 	TimeSpec& operator-=(const TimeSpec& other) { return *this = *this - other; }
 	template<typename T, EnableIf<std::is_integral<T>::value, bool> = false>
 	TimeSpec& operator*=(const T& other) { return *this = *this * other; }
+	template<typename T, EnableIf<std::is_integral<T>::value, bool> = false>
+	TimeSpec& operator/=(const T& other) { return *this = *this / other; }
 
 	TimeSpec absDiff(const TimeSpec& other) { return *this >= other ? *this - other : other - *this; }
 	TimeSpec saturatingSub(const TimeSpec& other) { return *this >= other ? *this - other : TimeSpec(); }

@@ -2628,8 +2628,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getParent)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getRoot)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	th->loadedFrom->incRef();
-	ret = asAtomHandler::fromObject(th->loadedFrom);
+	th->getSystemState()->mainClip->incRef();
+	ret = asAtomHandler::fromObject(th->getSystemState()->mainClip);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getURL)
 {

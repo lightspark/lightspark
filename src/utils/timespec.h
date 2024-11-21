@@ -90,6 +90,8 @@ public:
 		return ret;
 	}
 
+	constexpr double toFloat() const { return sec + nsec / double(nsPerSec); }
+	constexpr double toSFloat() const { return int64_t(sec) + int64_t(nsec) / double(nsPerSec); }
 	constexpr uint64_t toMs() const { return toNs() / nsPerMs; }
 	constexpr uint64_t toUs() const { return toNs() / nsPerUs; }
 	constexpr uint64_t toNs() const { return (sec * nsPerSec) + nsec; }

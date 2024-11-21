@@ -40,6 +40,52 @@ template<typename T>
 using RemoveRef = typename std::remove_reference<T>::type;
 template<typename T>
 using RemoveCVRef = RemoveCV<RemoveRef<T>>;
+template<bool B>
+using BoolConstant = std::integral_constant<bool, B>;
+template<bool B, typename T, typename F>
+using CondT = typename std::conditional<B, T, F>::type;
+
+template<typename T>
+using IsVoid = std::is_void<T>;
+template<typename T>
+using IsRef = std::is_reference<T>;
+template<typename T>
+using IsArray = std::is_array<T>;
+
+template<typename T>
+using HasDtor = std::is_destructible<T>;
+template<typename T>
+using HasTrivialDtor = std::is_trivially_destructible<T>;
+template<typename T>
+using HasNothrowDtor = std::is_nothrow_destructible<T>;
+
+template<typename T, typename... Args>
+using HasCtor = std::is_constructible<T, Args...>;
+template<typename T, typename... Args>
+using HasTrivialCtor = std::is_trivially_constructible<T, Args...>;
+template<typename T, typename... Args>
+using HasNothrowCtor = std::is_nothrow_constructible<T, Args...>;
+
+template<typename T>
+using HasDefaultCtor = std::is_default_constructible<T>;
+template<typename T>
+using HasTrivialDefaultCtor = std::is_trivially_default_constructible<T>;
+template<typename T>
+using HasNothrowDefaultCtor = std::is_nothrow_default_constructible<T>;
+
+template<typename T>
+using HasCopyCtor = std::is_copy_constructible<T>;
+template<typename T>
+using HasTrivialCopyCtor = std::is_trivially_copy_constructible<T>;
+template<typename T>
+using HasNothrowCopyCtor = std::is_nothrow_copy_constructible<T>;
+
+template<typename T>
+using HasMoveCtor = std::is_move_constructible<T>;
+template<typename T>
+using HasTrivialMoveCtor = std::is_trivially_move_constructible<T>;
+template<typename T>
+using HasNothrowMoveCtor = std::is_nothrow_move_constructible<T>;
 
 template<typename T, template<typename...> typename U>
 struct IsSpecializationOf : std::false_type {};

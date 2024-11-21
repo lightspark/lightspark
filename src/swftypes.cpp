@@ -32,6 +32,7 @@
 
 #include "exceptions.h"
 #include "compat.h"
+#include "backends/geometry.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/RootMovieClip.h"
@@ -377,6 +378,11 @@ lightspark::RECT::RECT(int32_t a, int32_t b, int32_t c, int32_t d):Xmin(a),Xmax(
 bool RECT::operator==(const RECT& r) const
 {
 	return Xmin==r.Xmin && Xmax==r.Xmax && Ymin==r.Ymin && Ymax==r.Ymax;
+}
+
+RECT::operator RectF() const
+{
+	return RectF { Vector2f(Xmin, Ymin), Vector2f(Xmax, Ymax) };
 }
 
 std::ostream& lightspark::operator<<(std::ostream& s, const RECT& r)

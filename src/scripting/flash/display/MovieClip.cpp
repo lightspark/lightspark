@@ -75,13 +75,7 @@ void Scene_data::addFrameLabel(uint32_t frame, const tiny_string& label)
 		j != labels.end();++j)
 	{
 		FrameLabel_data& fl = *j;
-		if(fl.frame == frame)
-		{
-			LOG(LOG_INFO,"existing frame label found:"<<fl.name<<", new value:"<<label);
-			fl.name = label;
-			return;
-		}
-		else if(fl.frame > frame)
+		if(fl.frame > frame)
 		{
 			labels.insert(j,FrameLabel_data(frame,label));
 			return;

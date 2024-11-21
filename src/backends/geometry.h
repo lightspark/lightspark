@@ -67,12 +67,14 @@ public:
 		out.y = maxTmpl<T>(minTmpl<T>(y,r.Ymax),r.Ymin);
 		return out;
 	}
-	std::ostream& operator<<(std::ostream& s)
-	{
-		s << "{ "<< x << ',' << y << " }";
-		return s;
-	}
 };
+
+template<class T>
+std::ostream& operator<<(std::ostream& s, const Vector2Tmpl<T>& v)
+{
+	s << "{ "<< v.x << ',' << v.y << " }";
+	return s;
+}
 
 enum GEOM_TOKEN_TYPE { STRAIGHT=0, CURVE_QUADRATIC, MOVE, SET_FILL, SET_STROKE, CLEAR_FILL, CLEAR_STROKE, CURVE_CUBIC, FILL_KEEP_SOURCE, FILL_TRANSFORM_TEXTURE };
 

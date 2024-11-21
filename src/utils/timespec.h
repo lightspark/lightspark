@@ -25,10 +25,11 @@ namespace lightspark
 
 class TimeSpec
 {
+	struct DontNormalizeTag {};
 private:
 	uint64_t sec;
 	uint64_t nsec;
-	constexpr TimeSpec(uint64_t secs, uint64_t nsecs) : sec(secs), nsec(nsecs) {}
+	constexpr TimeSpec(uint64_t secs, uint64_t nsecs, DontNormalizeTag) : sec(secs), nsec(nsecs) {}
 public:
 
 	static constexpr uint64_t usPerSec = 1000000;
@@ -37,13 +38,14 @@ public:
 	static constexpr uint64_t nsPerUs = 1000;
 
 	constexpr TimeSpec() : sec(0), nsec(0) {}
+	constexpr TimeSpec(uint64_t secs, uint64_t nsecs) : sec(secs+(nsecs/nsPerSec)), nsec(nsecs%nsPerSec) {}
 
 	static constexpr TimeSpec fromFloat(float secs) { return fromNs(secs * nsPerSec); }
 	static constexpr TimeSpec fromFloatUs(float secs) { return fromUs(secs * usPerSec); }
 	static constexpr TimeSpec fromSec(uint64_t sec) { return TimeSpec(sec, 0); }
 	static constexpr TimeSpec fromMs(uint64_t ms) { return fromNs(ms * nsPerMs); }
 	static constexpr TimeSpec fromUs(uint64_t us) { return fromNs(us * nsPerUs); }
-	static constexpr TimeSpec fromNs(uint64_t ns) { return TimeSpec(ns / nsPerSec, ns % nsPerSec); }
+	static constexpr TimeSpec fromNs(uint64_t ns) { return TimeSpec(ns / nsPerSec, ns % nsPerSec, DontNormalizeTag {}); }
 
 	constexpr bool operator==(const TimeSpec& other) const { return sec == other.sec && nsec == other.nsec; }
 	constexpr bool operator!=(const TimeSpec& other) const { return sec != other.sec || nsec != other.nsec; }

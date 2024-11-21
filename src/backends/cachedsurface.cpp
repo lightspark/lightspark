@@ -151,6 +151,141 @@ int toNanoVGSpreadMode(int spreadMode)
 	}
 }
 
+void nanoVGFillStyle(NVGcontext* nvgctxt, const FILLSTYLE& style, ColorTransformBase& ct, float scaling, bool isFill)
+{
+	auto applyColorTransform = [&](const RGBA& color, ColorTransformBase& ct)
+	{
+		float r, g, b, a;
+		ct.applyTransformation(color, r, g, b, a);
+		return nvgRGBAf(r, g, b, a);
+	};
+
+	auto applyMatrixTransform = [&](NVGpaint& pattern, const MATRIX& m)
+	{
+		float xform[6] =
+		{
+			(float)m.xx,
+			(float)m.yx,
+			(float)m.xy,
+			(float)m.yy,
+			(float)m.x0/scaling - style.ShapeBounds.Xmin,
+			(float)m.y0/scaling - style.ShapeBounds.Ymin,
+		};
+		nvgTransformMultiply(pattern.xform, xform);
+	};
+
+	auto paintPattern = [&](const NVGpaint& pattern)
+	{
+		if (isFill)
+			nvgFillPaint(nvgctxt, pattern);
+		else
+			nvgStrokePaint(nvgctxt, pattern);
+	};
+
+	switch (style.FillStyleType)
+	{
+		case SOLID_FILL:
+		{
+			auto color = applyColorTransform(style.Color, ct);
+			if (isFill)
+				nvgFillColor(nvgctxt, color);
+			else
+				nvgStrokeColor(nvgctxt, color);
+			break;
+		}
+		case REPEATING_BITMAP:
+		case CLIPPED_BITMAP:
+		case NON_SMOOTHED_REPEATING_BITMAP:
+		case NON_SMOOTHED_CLIPPED_BITMAP:
+		{
+			int img = setNanoVGImage(nvgctxt,&style);
+			if (img == -1)
+				break;
+
+			MATRIX m = style.Matrix;
+			NVGpaint pattern = nvgImagePattern
+			(
+				nvgctxt,
+				0,
+				0,
+				style.bitmap->getWidth(),
+				style.bitmap->getHeight(),
+				0,
+				img,
+				1.0
+			);
+			applyMatrixTransform(pattern, m);
+			RGBA color(255, 255, 255, 255);
+			pattern.innerColor = pattern.outerColor = applyColorTransform(color, ct);
+			paintPattern(pattern);
+			break;
+		}
+		case LINEAR_GRADIENT:
+		case RADIAL_GRADIENT:
+		case FOCAL_RADIAL_GRADIENT:
+		{
+			bool isFocal = style.FillStyleType == FOCAL_RADIAL_GRADIENT;
+			bool isLinear = style.FillStyleType == LINEAR_GRADIENT;
+			MATRIX m = style.Matrix;
+			const std::vector<GRADRECORD>& gradRecords = style.Gradient.GradientRecords;
+			std::vector<NVGgradientStop> stops(gradRecords.size());
+			std::transform(gradRecords.begin(), gradRecords.end(), stops.begin(), [&](const GRADRECORD& record)
+			{
+				NVGcolor c = applyColorTransform(record.Color, ct);
+				return NVGgradientStop { c, float(record.Ratio) / 255.0f };
+			});
+			if (stops.back().stop != 1.0) // ensure we end gradient with ratio 1.0
+				stops.push_back(NVGgradientStop {stops.back().color,1.0});
+
+			int spreadMode = toNanoVGSpreadMode(style.Gradient.SpreadMode);
+
+			NVGpaint pattern;
+			if (isLinear)
+			{
+				MATRIX tmp = m;
+				tmp.x0 = m.x0/scaling - style.ShapeBounds.Xmin;
+				tmp.y0 = m.y0/scaling - style.ShapeBounds.Ymin;
+				Vector2f start = tmp.multiply2D(Vector2f(-16384.0, 0));
+				Vector2f end = tmp.multiply2D(Vector2f(16384.0, 0));
+				pattern = nvgLinearGradientStops
+				(
+					nvgctxt,
+					start.x,
+					start.y,
+					end.x,
+					end.y,
+					stops.data(),
+					stops.size(),
+					spreadMode,
+					&style.bitmap->nanoVGGradientPattern
+				);
+			}
+			else
+			{
+				number_t x0 = isFocal ? style.Gradient.FocalPoint*16384.0 : 0.0;
+				pattern = nvgRadialGradientStops
+				(
+					nvgctxt,
+					x0,
+					0,
+					0,
+					16384.0,
+					stops.data(),
+					stops.size(),
+					spreadMode,
+					&style.bitmap->nanoVGGradientPattern
+				);
+				applyMatrixTransform(pattern, m);
+			}
+			paintPattern(pattern);
+			break;
+		}
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"NanoVG Fill Style: " << hex << (int)style.FillStyleType);
+			break;
+	}
+}
+
 void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* startmatrix, RenderDisplayObjectToBitmapContainer* container)
 {
 	if (!state)
@@ -490,102 +625,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 								strokescaley = 1.0;
 							}
 							infill=true;
-							const FILLSTYLE* style = p1.fillStyle;
-							switch (style->FillStyleType)
-							{
-								case SOLID_FILL:
-								{
-									RGBA color = style->Color;
-									float r,g,b,a;
-									ct.applyTransformation(color,r,g,b,a);
-									NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
-									nvgFillColor(nvgctxt,c);
-									break;
-								}
-								case REPEATING_BITMAP:
-								case CLIPPED_BITMAP:
-								case NON_SMOOTHED_REPEATING_BITMAP:
-								case NON_SMOOTHED_CLIPPED_BITMAP:
-								{
-									int img =setNanoVGImage(nvgctxt,style);
-									if (img != -1)
-									{
-										MATRIX m = style->Matrix;
-										NVGpaint pattern = nvgImagePattern(nvgctxt,
-																		   0,
-																		   0,
-																		   style->bitmap->getWidth(),
-																		   style->bitmap->getHeight(),
-																		   0,
-																		   img,
-																		   1.0);
-										pattern.xform[0] = m.xx;
-										pattern.xform[1] = m.yx;
-										pattern.xform[2] = m.xy;
-										pattern.xform[3] = m.yy;
-										pattern.xform[4] = m.x0/state->scaling - style->ShapeBounds.Xmin;
-										pattern.xform[5] = m.y0/state->scaling - style->ShapeBounds.Ymin;
-										float r,g,b,a;
-										RGBA color(255,255,255,255);
-										ct.applyTransformation(color,r,g,b,a);
-										NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
-										pattern.innerColor = pattern.outerColor = c;
-										nvgFillPaint(nvgctxt, pattern);
-									}
-									break;
-								}
-								case LINEAR_GRADIENT:
-								case RADIAL_GRADIENT:
-								case FOCAL_RADIAL_GRADIENT:
-								{
-									bool isFocal = style->FillStyleType == FOCAL_RADIAL_GRADIENT;
-									bool isLinear = style->FillStyleType == LINEAR_GRADIENT;
-									MATRIX m = style->Matrix;
-									const std::vector<GRADRECORD>& gradRecords = style->Gradient.GradientRecords;
-									std::vector<NVGgradientStop> stops(gradRecords.size());
-									std::transform(gradRecords.begin(), gradRecords.end(), stops.begin(), [&](const GRADRECORD& record)
-									{
-										float r, g, b, a;
-										ct.applyTransformation(record.Color, r, g, b, a);
-										return NVGgradientStop { nvgRGBAf(r, g, b, a), float(record.Ratio) / 255.0f };
-									});
-									if (stops.back().stop != 1.0) // ensure we end gradient with ratio 1.0
-										stops.push_back(NVGgradientStop {stops.back().color,1.0});
-
-									int spreadMode = toNanoVGSpreadMode(style->Gradient.SpreadMode);
-
-									NVGpaint pattern;
-									if (isLinear)
-									{
-										MATRIX tmp = m;
-										tmp.x0 = m.x0/state->scaling - style->ShapeBounds.Xmin;
-										tmp.y0 = m.y0/state->scaling - style->ShapeBounds.Ymin;
-										Vector2f start = tmp.multiply2D(Vector2f(-16384.0, 0));
-										Vector2f end = tmp.multiply2D(Vector2f(16384.0, 0));
-										pattern = nvgLinearGradientStops(nvgctxt, start.x, start.y, end.x, end.y, stops.data(), stops.size(), spreadMode,&style->bitmap->nanoVGGradientPattern);
-									}
-									else
-									{
-										number_t x0 = isFocal ? style->Gradient.FocalPoint*16384.0 : 0.0;
-										pattern = nvgRadialGradientStops(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), spreadMode,&style->bitmap->nanoVGGradientPattern);
-										float xform[6] =
-										{
-											(float)m.xx,
-											(float)m.yx,
-											(float)m.xy,
-											(float)m.yy,
-											(float)m.x0/state->scaling - style->ShapeBounds.Xmin,
-											(float)m.y0/state->scaling - style->ShapeBounds.Ymin,
-										};
-										nvgTransformMultiply(pattern.xform, xform);
-									}
-									nvgFillPaint(nvgctxt, pattern);
-									break;
-								}
-								default:
-									LOG(LOG_NOT_IMPLEMENTED,"nanovg fillstyle:"<<hex<<(int)style->FillStyleType);
-									break;
-							}
+							nanoVGFillStyle(nvgctxt, *p1.fillStyle, ct, state->scaling, true);
 							break;
 						}
 						case SET_STROKE:
@@ -608,102 +648,7 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 							instroke = true;
 							const LINESTYLE2* style = p1.lineStyle;
 							if (style->HasFillFlag)
-							{
-								switch (style->FillType.FillStyleType)
-								{
-									case SOLID_FILL:
-									{
-										RGBA color = style->FillType.Color;
-										float r,g,b,a;
-										ct.applyTransformation(color,r,g,b,a);
-										NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
-										nvgStrokeColor(nvgctxt,c);
-										break;
-									}
-									case REPEATING_BITMAP:
-									case CLIPPED_BITMAP:
-									case NON_SMOOTHED_REPEATING_BITMAP:
-									case NON_SMOOTHED_CLIPPED_BITMAP:
-									{
-										int img =setNanoVGImage(nvgctxt,&style->FillType);
-										if (img != -1)
-										{
-											MATRIX m = style->FillType.Matrix;
-											NVGpaint pattern = nvgImagePattern(nvgctxt,
-																			   0,
-																			   0,
-																			   style->FillType.bitmap->getWidth(),
-																			   style->FillType.bitmap->getHeight(),
-																			   0,
-																			   img,
-																			   1.0);
-											pattern.xform[0] = m.xx;
-											pattern.xform[1] = m.yx;
-											pattern.xform[2] = m.xy;
-											pattern.xform[3] = m.yy;
-											pattern.xform[4] = m.x0/state->scaling - style->FillType.ShapeBounds.Xmin;
-											pattern.xform[5] = m.y0/state->scaling - style->FillType.ShapeBounds.Ymin;
-											float r,g,b,a;
-											RGBA color(255,255,255,255);
-											ct.applyTransformation(color,r,g,b,a);
-											NVGcolor c = nvgRGBA(r*255.0,g*255.0,b*255.0,a*255.0);
-											pattern.innerColor = pattern.outerColor = c;
-											nvgStrokePaint(nvgctxt, pattern);
-										}
-										break;
-									}
-									case LINEAR_GRADIENT:
-									case RADIAL_GRADIENT:
-									case FOCAL_RADIAL_GRADIENT:
-									{
-										auto fill = style->FillType;
-										bool isFocal = fill.FillStyleType == FOCAL_RADIAL_GRADIENT;
-										bool isLinear = fill.FillStyleType == LINEAR_GRADIENT;
-										MATRIX m = fill.Matrix;
-										const std::vector<GRADRECORD>& gradRecords = fill.Gradient.GradientRecords;
-										std::vector<NVGgradientStop> stops(gradRecords.size());
-										std::transform(gradRecords.begin(), gradRecords.end(), stops.begin(), [&](const GRADRECORD& record)
-										{
-											float r, g, b, a;
-											ct.applyTransformation(record.Color, r, g, b, a);
-											return NVGgradientStop { nvgRGBAf(r, g, b, a), float(record.Ratio) / 255.0f };
-										});
-
-										int spreadMode = toNanoVGSpreadMode(fill.Gradient.SpreadMode);
-
-										NVGpaint pattern;
-										if (isLinear)
-										{
-											MATRIX tmp = m;
-											tmp.x0 = m.x0/state->scaling - fill.ShapeBounds.Xmin;
-											tmp.y0 = m.y0/state->scaling - fill.ShapeBounds.Ymin;
-											Vector2f start = tmp.multiply2D(Vector2f(-16384.0, 0));
-											Vector2f end = tmp.multiply2D(Vector2f(16384.0, 0));
-											pattern = nvgLinearGradientStops(nvgctxt, start.x, start.y, end.x, end.y, stops.data(), stops.size(), spreadMode,&fill.bitmap->nanoVGGradientPattern);
-										}
-										else
-										{
-											number_t x0 = isFocal ? fill.Gradient.FocalPoint*16384.0 : 0.0;
-											pattern = nvgRadialGradientStops(nvgctxt, x0, 0, 0, 16384.0, stops.data(), stops.size(), spreadMode,&fill.bitmap->nanoVGGradientPattern);
-											float xform[6] =
-											{
-												(float)m.xx,
-												(float)m.yx,
-												(float)m.xy,
-												(float)m.yy,
-												(float)m.x0/state->scaling - fill.ShapeBounds.Xmin,
-												(float)m.y0/state->scaling - fill.ShapeBounds.Ymin,
-											};
-											nvgTransformMultiply(pattern.xform, xform);
-										}
-										nvgStrokePaint(nvgctxt, pattern);
-										break;
-									}
-									default:
-										LOG(LOG_NOT_IMPLEMENTED,"nanovg linestyle fillType:"<<hex<<(int)style->FillType.FillStyleType);
-										break;
-								}
-							}
+								nanoVGFillStyle(nvgctxt, style->FillType, ct, state->scaling, false);
 							else
 							{
 								RGBA color = style->Color;

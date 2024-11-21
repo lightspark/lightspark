@@ -30,7 +30,7 @@ template<typename... Ts>
 using CommonType = typename std::common_type<Ts...>::type;
 template<typename T>
 using ResultOf = typename std::result_of<T>::type;
-template<bool B, typename T>
+template<bool B, typename T = void>
 using EnableIf = typename std::enable_if<B, T>::type;
 template<typename T>
 using Decay = typename std::decay<T>::type;

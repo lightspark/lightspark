@@ -26,7 +26,6 @@ namespace lightspark
 {
 
 /* forward declarations */
-struct SizeVisitor;
 struct LSEvent;
 struct LSMouseEvent;
 struct LSMouseMoveEvent;
@@ -47,6 +46,7 @@ struct LSOpenContextMenuEvent;
 struct LSUpdateContextMenuEvent;
 struct LSSelectItemContextMenuEvent;
 struct LSRemovedFromStageEvent;
+struct LSUserEventImpl;
 struct LSEventStorage;
 
 };

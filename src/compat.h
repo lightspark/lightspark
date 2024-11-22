@@ -156,6 +156,15 @@ inline T maxTmpl(T a, T b)
 #define dmin minTmpl<double>
 #define dmax maxTmpl<double>
 
+/* clamp */
+template<class T>
+inline T clampTmpl(T a, T b, T c)
+{
+	return maxTmpl(b, minTmpl(c, a));
+}
+#define iclamp clampTmpl<int>
+#define dclamp clampTmpl<double>
+
 /* gcd */
 template<class T>
 inline T gcdTmpl(T a, T b)

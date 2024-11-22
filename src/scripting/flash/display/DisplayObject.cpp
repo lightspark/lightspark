@@ -2628,8 +2628,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getParent)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getRoot)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	th->getSystemState()->mainClip->incRef();
-	ret = asAtomHandler::fromObject(th->getSystemState()->mainClip);
+	DisplayObject* root=th->AVM1getRoot();
+	root->incRef();
+	ret = asAtomHandler::fromObject(root);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getURL)
 {
@@ -2877,7 +2878,7 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	// setup all methods and properties available for MovieClips in AVM1
 	
 	c->destroyContents();
-	c->borrowedVariables.destroyContents();
+	c->borrowedVariables.destroyContents(c);
 	c->setDeclaredMethodByQName("_x","",c->getSystemState()->getBuiltinFunction(_getX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_x","",c->getSystemState()->getBuiltinFunction(_setX),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_y","",c->getSystemState()->getBuiltinFunction(_getY),GETTER_METHOD,true);
@@ -3315,3 +3316,20 @@ AVM1Function* DisplayObject::AVM1GetFunction(uint32_t nameID)
 	return nullptr;
 }
 
+DisplayObject* DisplayObject::AVM1getRoot()
+{
+	if (this->needsActionScript3())
+		return getSystemState()->mainClip;
+	if (parent && parent->needsActionScript3())
+		return this;
+	multiname m(nullptr);
+	m.name_type=multiname::NAME_STRING;
+	m.name_s_id=getSystemState()->getUniqueStringId("_lockroot");
+	m.isAttribute = false;
+	asAtom l= asAtomHandler::undefinedAtom;
+	getVariableByMultiname(l,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
+	bool lockroot = asAtomHandler::AVM1toBool(l);
+	if (!lockroot && parent)
+		return parent->AVM1getRoot();
+	return getSystemState()->mainClip;
+}

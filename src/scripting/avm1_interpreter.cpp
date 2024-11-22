@@ -152,8 +152,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	}
 	if (preloadRoot)
 	{
-		clip->getSystemState()->mainClip->incRef();
-		registers[currRegister++] = asAtomHandler::fromObject(clip->getSystemState()->mainClip);
+		DisplayObject* root=clip->AVM1getRoot();
+		root->incRef();
+		registers[currRegister++] = asAtomHandler::fromObject(root);
 	}
 	if (preloadParent)
 	{

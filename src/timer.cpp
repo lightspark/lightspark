@@ -249,8 +249,19 @@ TimeSpec LSTimers::updateTimers(const TimeSpec& delta)
 	auto push = [&](const LSTimer& timer) { return pushTimerNoLock(timer); };
 	auto pop = [&] { return popTimerNoLock(); };
 	auto peek = [&] { return peekTimerNoLock(); };
-	int tickCount = 0;
 
+	auto getFrameJobs = [&]
+	{
+		int ret = 0;
+		for (auto timer : timers)
+			ret += timer.isFrame();
+		return ret;
+	};
+
+	int tickCount = 0;
+	int frameTickCount = 0;
+
+	const auto maxFrameTicks = LSTimers::maxFrames * getFrameJobs();
 	while (!timers.empty() && peek().deadline() < currentTime)
 	{
 		if (nextFrameTime < currentTime)
@@ -263,6 +274,13 @@ TimeSpec LSTimers::updateTimers(const TimeSpec& delta)
 		{
 			// Reset current time to a bit before the most recent timer.
 			currentTime -= TimeSpec::fromMs(100);
+			break;
+		}
+
+		if (peek().isFrame() && ++frameTickCount > maxFrameTicks)
+		{
+			// Reset current time to a bit before the most recent frame timer.
+			currentTime -= TimeSpec::fromMs(1);
 			break;
 		}
 

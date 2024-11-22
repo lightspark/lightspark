@@ -129,6 +129,8 @@ private:
 
 	// Maximum timer ticks per call to `updateTimers()`.
 	static constexpr int maxTicks = 10;
+	// Maximum frames per call to `updateTimers()`.
+	static constexpr int maxFrames = 5;
 
 	void pushTimer(const LSTimer& timer);
 	void pushTimerNoLock(const LSTimer& timer);

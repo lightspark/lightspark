@@ -264,6 +264,9 @@ TimeSpec LSTimers::updateTimers(const TimeSpec& delta)
 	const auto maxFrameTicks = LSTimers::maxFrames * getFrameJobs();
 	while (!timers.empty() && peek().deadline() < currentTime)
 	{
+		if (peek().fakeDeadline() > fakeCurrentTime)
+			fakeCurrentTime = peek().fakeDeadline();
+
 		if (nextFrameTime < currentTime)
 		{
 			curFrameTime = nextFrameTime;
@@ -294,6 +297,7 @@ TimeSpec LSTimers::updateTimers(const TimeSpec& delta)
 		{
 			// Reset tick/interval timer.
 			timer.startTime += timer.timeout;
+			timer.fakeStartTime += timer.timeout;
 			push(timer);
 		}
 
@@ -354,7 +358,7 @@ const LSTimer& LSTimers::peekTimerNoLock() const
 void LSTimers::addJob(const TimeSpec& time, const LSTimer::Type& type, ITickJob* job)
 {
 	bool isFrame = type == TimerType::Frame;
-	pushTimer(LSTimer { type, isFrame ? curFrameTime : currentTime, time, job });
+	pushTimer(LSTimer { type, isFrame ? curFrameTime : currentTime, fakeCurrentTime, time, job });
 }
 TimeSpec LSTimers::getFrameRate() const
 {

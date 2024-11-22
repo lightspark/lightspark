@@ -100,10 +100,13 @@ struct LSTimer
 	};
 	Type type;
 	TimeSpec startTime;
+	// Fake/Ideal starting time, useful for deterministic timing.
+	TimeSpec fakeStartTime;
 	TimeSpec timeout;
 	ITickJob* job;
 
 	TimeSpec deadline() const { return startTime + timeout; }
+	TimeSpec fakeDeadline() const { return fakeStartTime + timeout; }
 	bool isWait() const { return type == Type::Wait; }
 	bool isTick() const { return type == Type::Tick; }
 	bool isFrame() const { return type == Type::Frame; }
@@ -123,6 +126,8 @@ private:
 	Mutex timerMutex;
 	std::multiset<LSTimer> timers;
 	TimeSpec currentTime;
+	// Fake/Ideal current time, useful for deterministic timing.
+	TimeSpec fakeCurrentTime;
 	TimeSpec curFrameTime;
 	TimeSpec nextFrameTime;
 	SystemState* sys;
@@ -150,6 +155,8 @@ public:
 	void removeJob(ITickJob* job);
 	void removeJobNoLock(ITickJob* job);
 	TimeSpec updateTimers(const TimeSpec& delta);
+	TimeSpec getFakeCurrentTime() const { return fakeCurrentTime; }
+	void setFakeCurrentTime(const TimeSpec& time) { fakeCurrentTime = time; }
 	const LSTimer& getCurrentTimer() { return peekTimer(); }
 };
 

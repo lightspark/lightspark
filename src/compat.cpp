@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include "logger.h"
 #include <unistd.h>
+#include "utils/timespec.h"
 
 #ifdef _WIN32
 #	ifndef NOMINMAX
@@ -47,6 +48,7 @@
 #endif
 
 using namespace std;
+using namespace lightspark;
 
 uint64_t compat_perfcount()
 {
@@ -74,46 +76,32 @@ uint64_t compat_perffreq()
 
 uint64_t compat_msectiming()
 {
-#ifdef _WIN32
-	return GetTickCount(); //TODO: use GetTickCount64
-#else
-	timespec t;
-	clock_gettime(CLOCK_MONOTONIC,&t);
-	return (t.tv_sec*1000 + t.tv_nsec/1000000);
-#endif
+	return compat_now().toMs();
 }
 
 uint64_t compat_usectiming()
 {
-#ifdef _WIN32
-	// Based on Windows version of SDL_GetTicksNS().
-	uint64_t counter = compat_perfcount();
-	uint64_t frequency = compat_perffreq();
-	const uint64_t gcd = gcdTmpl(counter, frequency);
-	const uint64_t numerator = 1000000 / gcd;
-	const uint64_t denominator = frequency / gcd;
-	return (counter * numerator) / denominator;
-#else
-	timespec t;
-	clock_gettime(CLOCK_MONOTONIC,&t);
-	return (t.tv_sec*1000000 + t.tv_nsec/1000);
-#endif
+	return compat_now().toUs();
 }
 
 uint64_t compat_nsectiming()
 {
+	return compat_now().toNs();
+}
+
+TimeSpec compat_now()
+{
 #ifdef _WIN32
-	// Based on Windows version of SDL_GetTicksNS().
+	// Based on the Windows version of Rust's `Instant::now()`.
 	uint64_t counter = compat_perfcount();
 	uint64_t frequency = compat_perffreq();
-	const uint64_t gcd = gcdTmpl(counter, frequency);
-	const uint64_t numerator = 1000000000 / gcd;
-	const uint64_t denominator = frequency / gcd;
-	return (counter * numerator) / denominator;
+	const uint64_t q = counter / frequency;
+	const uint64_t r = counter % frequency;
+	return TimeSpec(q, r * TimeSpec::nsPerSec / frequency);
 #else
 	timespec t;
 	clock_gettime(CLOCK_MONOTONIC,&t);
-	return (t.tv_sec*1000000000 + t.tv_nsec);
+	return TimeSpec(t.tv_sec, t.tv_nsec);
 #endif
 }
 

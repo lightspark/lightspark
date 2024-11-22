@@ -176,11 +176,17 @@ inline T gcdTmpl(T a, T b)
 
 /* timing */
 
+namespace lightspark
+{
+	class TimeSpec;
+};
+
 uint64_t compat_perfcount();
 uint64_t compat_perffreq();
 DLL_PUBLIC uint64_t compat_msectiming();
 DLL_PUBLIC uint64_t compat_usectiming();
 DLL_PUBLIC uint64_t compat_nsectiming();
+DLL_PUBLIC lightspark::TimeSpec compat_now();
 DLL_PUBLIC void compat_msleep(unsigned int time);
 DLL_PUBLIC void compat_usleep(uint64_t us);
 DLL_PUBLIC void compat_nsleep(uint64_t ns);

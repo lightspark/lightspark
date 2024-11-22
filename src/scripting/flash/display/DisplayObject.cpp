@@ -2878,7 +2878,7 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	// setup all methods and properties available for MovieClips in AVM1
 	
 	c->destroyContents();
-	c->borrowedVariables.destroyContents(c);
+	c->borrowedVariables.destroyContents();
 	c->setDeclaredMethodByQName("_x","",c->getSystemState()->getBuiltinFunction(_getX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_x","",c->getSystemState()->getBuiltinFunction(_setX),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("_y","",c->getSystemState()->getBuiltinFunction(_getY),GETTER_METHOD,true);

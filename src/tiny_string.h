@@ -202,6 +202,13 @@ public:
 			numchars = stringSize-1;
 		}
 	}
+
+	// Returns a string with the supplied prefix removed, if found,
+	// otherwise it returns the original string.
+	tiny_string stripPrefix(const tiny_string& prefix, size_t offset = 0) const;
+	// Returns a string with the supplied sufffix removed, if found,
+	// otherwise it returns the original string.
+	tiny_string stripSuffix(const tiny_string& suffix, size_t offset = 0) const;
 	
 	/* start and len are indices of utf8-characters */
 	tiny_string substr(uint32_t start, uint32_t len) const;

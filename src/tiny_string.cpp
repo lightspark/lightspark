@@ -638,6 +638,16 @@ tiny_string tiny_string::substr(uint32_t start, const CharIterator& end) const
 	return substr_bytes(bytestart, byteend-bytestart);
 }
 
+tiny_string tiny_string::stripPrefix(const tiny_string& prefix, size_t offset) const
+{
+	return startsWith(prefix) ? substr(prefix.numChars() + offset, npos) : *this;
+}
+
+tiny_string tiny_string::stripSuffix(const tiny_string& suffix, size_t offset) const
+{
+	return endsWith(suffix) ? substr(0, numChars() - suffix.numChars() - offset) : *this;
+}
+
 std::list<tiny_string> tiny_string::split(uint32_t delimiter) const
 {
 	std::list<tiny_string> res;

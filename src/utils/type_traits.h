@@ -87,10 +87,10 @@ using HasTrivialMoveCtor = std::is_trivially_move_constructible<T>;
 template<typename T>
 using HasNothrowMoveCtor = std::is_nothrow_move_constructible<T>;
 
-template<typename T, template<typename...> typename U>
+template<typename T, template<typename...> class U>
 struct IsSpecializationOf : std::false_type {};
 
-template<template<typename...> typename T, typename... Args>
+template<template<typename...> class T, typename... Args>
 struct IsSpecializationOf<T<Args...>, T> : std::true_type {};
 
 template<typename T>

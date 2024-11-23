@@ -23,6 +23,7 @@
 #include "asobject.h"
 #include "interfaces/threading.h"
 #include "interfaces/timer.h"
+#include "utils/optional.h"
 #include "utils/timespec.h"
 #include "interfaces/backends/event_loop.h"
 #include "backends/graphics.h"
@@ -132,7 +133,7 @@ private:
 	ThreadPool* threadPool;
 	ThreadPool* downloadThreadPool;
 	LSTimers timers;
-	TimeSpec _timeUntilNextTick;
+	Optional<TimeSpec> _timeUntilNextTick;
 	TimerThread* timerThread;
 	TimerThread* frameTimerThread;
 	IEventLoop* eventLoop;
@@ -413,7 +414,7 @@ public:
 	void removeJob(ITickJob* job);
 	void updateTimers(const TimeSpec& delta, bool allowFrameTimers = true);
 	const LSTimer& getCurrentTimer() { return timers.getCurrentTimer(); }
-	const TimeSpec& timeUntilNextTick() const { return _timeUntilNextTick; }
+	Optional<const TimeSpec&> timeUntilNextTick() const { return _timeUntilNextTick.asRef(); }
 
 	void setRenderRate(float rate);
 	float getRenderRate();

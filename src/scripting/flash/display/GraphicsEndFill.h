@@ -32,7 +32,7 @@ class GraphicsEndFill: public ASObject, public IGraphicsFill, public IGraphicsDa
 public:
 	GraphicsEndFill(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
-	FILLSTYLE toFillStyle();
+	FILLSTYLE toFillStyle() override;
 	void appendToTokens(tokensVector& tokens, Graphics* graphics) override;
 };
 

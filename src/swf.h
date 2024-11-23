@@ -411,7 +411,7 @@ public:
 	void addFrameTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
 	void removeJob(ITickJob* job);
-	void updateTimers(const TimeSpec& delta);
+	void updateTimers(const TimeSpec& delta, bool allowFrameTimers = true);
 	const LSTimer& getCurrentTimer() { return timers.getCurrentTimer(); }
 	const TimeSpec& timeUntilNextTick() const { return _timeUntilNextTick; }
 

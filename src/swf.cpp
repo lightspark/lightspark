@@ -1299,9 +1299,9 @@ void SystemState::removeJob(ITickJob* job)
 	}
 }
 
-void SystemState::updateTimers(const TimeSpec& delta)
+void SystemState::updateTimers(const TimeSpec& delta, bool allowFrameTimers)
 {
-	_timeUntilNextTick = timers.updateTimers(delta);
+	_timeUntilNextTick = timers.updateTimers(delta, allowFrameTimers);
 }
 
 ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)

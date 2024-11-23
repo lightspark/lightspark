@@ -567,17 +567,20 @@ std::pair<bool, bool> SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 	SDLEvent& ev = static_cast<SDLEvent&>(event);
 	bool hasSys = sys != nullptr;
 
-	if (!deadline.hasValue() && hasSys)
+	auto getNewDeadline = [&]
+	{
+		return time->now() + sys->timeUntilNextTick().valueOr(TimeSpec());
+	};
+
+	deadline = deadline.orElseIf(hasSys, [&]
 	{
 		startTime = time->now();
-		deadline = time->now() + sys->timeUntilNextTick();
-	}
+		return getNewDeadline();
+	});
 
 	for (;;)
 	{
-		int64_t delay = -1;
-		if (hasSys)
-			delay = deadline->saturatingSub(time->now()).toMsRound();
+		int64_t delay = hasSys ? deadline->saturatingSub(time->now()).toMsRound() : -1;
 		if (SDL_WaitEventTimeout(&ev.event, delay) && ev.event.type != LS_USEREVENT_NEW_TIMER)
 			return std::make_pair
 			(
@@ -596,7 +599,7 @@ std::pair<bool, bool> SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 				auto delta = endTime.absDiff(startTime);
 				startTime = time->now();
 				sys->updateTimers(delta, true);
-				deadline = time->now() + sys->timeUntilNextTick();
+				deadline = getNewDeadline();
 			}
 		}
 	}

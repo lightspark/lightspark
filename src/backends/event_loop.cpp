@@ -595,7 +595,7 @@ std::pair<bool, bool> SDLEventLoop::waitEvent(IEvent& event, SystemState* sys)
 			{
 				auto delta = endTime.absDiff(startTime);
 				startTime = time->now();
-				sys->updateTimers(delta);
+				sys->updateTimers(delta, true);
 				deadline = time->now() + sys->timeUntilNextTick();
 			}
 		}

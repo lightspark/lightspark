@@ -23,17 +23,30 @@
 #include <cstring>
 #include <cstdint>
 #include <ostream>
+#include <limits>
 #include <list>
 /* for utf8 handling */
 #include <glib.h>
 #include "compat.h"
 #include <functional>
 
+#include "utils/optional.h"
+#include "utils/type_traits.h"
+
 /* forward declare for tiny_string conversion */
 typedef unsigned char xmlChar;
 
 namespace lightspark
 {
+
+class tiny_string;
+
+template<typename T, EnableIf<std::is_unsigned<T>::value, bool> = false>
+inline T convertToNumber(const tiny_string& str);
+template<typename T, EnableIf<std::is_signed<T>::value, bool> = false>
+inline T convertToNumber(const tiny_string& str);
+template<typename T, EnableIf<std::is_floating_point<T>::value, bool> = false>
+inline T convertToNumber(const tiny_string& str);
 
 /* Iterates over utf8 characters */
 class CharIterator /*: public forward_iterator<uint32_t>*/
@@ -301,6 +314,31 @@ public:
 	CharIterator end();
 	CharIterator end() const;
 	int compare(const tiny_string& r) const;
+	template<typename T, EnableIf<std::is_arithmetic<T>::value, bool> = false>
+	bool toNumber(T& value) const
+	{
+		try
+		{
+			value = convertToNumber<T>(*this);
+			return true;
+		}
+		catch (std::exception&)
+		{
+			return false;
+		}
+	}
+	template<typename T, EnableIf<std::is_arithmetic<T>::value, bool> = false>
+	Optional<T> tryToNumber() const
+	{
+		try
+		{
+			return convertToNumber<T>(*this);
+		}
+		catch (std::exception&)
+		{
+			return {};
+		}
+	}
 	tiny_string toQuotedString() const;
 	// returns string that has whitespace characters removed at begin and end 
 	tiny_string removeWhitespace() const;
@@ -309,6 +347,38 @@ public:
 	// encodes all null bytes instring to xml notation ("&#x0;")
 	tiny_string encodeNull() const;
 };
+
+template<typename T, EnableIf<std::is_unsigned<T>::value, bool>>
+inline T convertToNumber(const tiny_string& str)
+{
+	auto num = std::stoull(str);
+	if (num > std::numeric_limits<T>::max())
+		throw std::out_of_range("Converted number is too big for T");
+	return num;
+}
+
+template<typename T, EnableIf<std::is_signed<T>::value, bool>>
+inline T convertToNumber(const tiny_string& str)
+{
+	auto num = std::stoll(str);
+	if (num > std::numeric_limits<T>::max())
+		throw std::out_of_range("Converted number is too big for T");
+	if (num < std::numeric_limits<T>::min())
+		throw std::out_of_range("Converted number is too small for T");
+	return num;
+}
+
+template<typename T, EnableIf<std::is_floating_point<T>::value, bool>>
+inline T convertToNumber(const tiny_string& str)
+{
+	auto num = std::stold(str);
+	if (num > std::numeric_limits<T>::max())
+		throw std::out_of_range("Converted number is too big for T");
+	if (num < std::numeric_limits<T>::lowest())
+		throw std::out_of_range("Converted number is too small for T");
+	return num;
+}
+
 }
 namespace std
 {

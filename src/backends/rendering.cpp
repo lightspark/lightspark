@@ -1357,6 +1357,11 @@ void RenderThread::draw(bool force)
 	event.signal();
 }
 
+void RenderThread::runTick()
+{
+	tick();
+}
+
 void RenderThread::tick()
 {
 	draw(false);

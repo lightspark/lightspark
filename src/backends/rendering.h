@@ -130,6 +130,8 @@ public:
 	void wait();
 	void draw(bool force);
 
+	void runTick();
+
 	void init();
 	void deinit();
 	bool doRender(ThreadProfile *profile=nullptr, Chronometer *chronometer=nullptr);

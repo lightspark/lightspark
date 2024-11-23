@@ -134,6 +134,8 @@ private:
 	ThreadPool* downloadThreadPool;
 	LSTimers timers;
 	Optional<TimeSpec> _timeUntilNextTick;
+	TimeSpec frameAccumulator;
+	std::list<TimeSpec> recentFrameTimings;
 	TimerThread* timerThread;
 	TimerThread* frameTimerThread;
 	IEventLoop* eventLoop;
@@ -304,6 +306,10 @@ public:
 	void sleep_ms(uint32_t ms) { return time->sleep_ms(ms); }
 	void sleep_us(uint32_t us) { return time->sleep_us(us); }
 	void sleep_ns(uint64_t ns) { return time->sleep_ns(ns); }
+	size_t maxFramesPerTick() const;
+	void addFrameTiming(const TimeSpec& elapsed);
+	void runTick(const TimeSpec& delta);
+	TimeSpec timeUntilNextFrame() const;
 	void tick() override;
 	void tickFence() override;
 	RenderThread* getRenderThread() const { return renderThread; }
@@ -413,6 +419,7 @@ public:
 	void addWait(uint32_t waitTime, ITickJob* job);
 	void removeJob(ITickJob* job);
 	void updateTimers(const TimeSpec& delta, bool allowFrameTimers = true);
+	TimeSpec getFakeCurrentTime() const { return timers.getFakeCurrentTime(); }
 	const LSTimer& getCurrentTimer() { return timers.getCurrentTimer(); }
 	Optional<const TimeSpec&> timeUntilNextTick() const { return _timeUntilNextTick.asRef(); }
 

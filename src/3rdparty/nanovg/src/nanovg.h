@@ -53,6 +53,8 @@ struct NVGpaint {
 	int spreadMode;
 	int isGradient;
 	int image;
+	int interpolationmode;
+	float focalpoint;
 	float* gradientcolors;
 };
 typedef struct NVGpaint NVGpaint;
@@ -427,7 +429,7 @@ NVGpaint nvgLinearGradient(NVGcontext* ctx, float sx, float sy, float ex, float 
 NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 								float sx, float sy, float ex, float ey,
 								NVGgradientStop* stops, int count,
-								int spreadMode, float** gradientcolors);
+								int spreadMode, int interpolationmode, float** gradientcolors);
 
 // Creates and returns a box gradient. Box gradient is a feathered rounded rectangle, it is useful for rendering
 // drop shadows or highlights for boxes. Parameters (x,y) define the top-left corner of the rectangle,
@@ -453,7 +455,7 @@ NVGpaint nvgRadialGradient(NVGcontext* ctx, float cx, float cy, float inr, float
 NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
 								float cx, float cy, float inr, float outr,
 								NVGgradientStop* stops, int count,
-								int spreadMode, float** gradientcolors);
+								int spreadMode, int interpolationmode, float focalpoint, float** gradientcolors);
 
 // Creates and returns an image pattern. Parameters (ox,oy) specify the left-top location of the image pattern,
 // (ex,ey) the size of one image, angle rotation around the top-left corner, image is handle to the image to render.

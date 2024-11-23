@@ -126,7 +126,8 @@ enum GLNVGshaderType {
 	NSVG_SHADER_FILLIMG,
 	NSVG_SHADER_SIMPLE,
 	NSVG_SHADER_IMG,
-	NSVG_SHADER_FILLGRADIMG
+	NSVG_SHADER_FILLGRADIMG,
+	NSVG_SHADER_FILLGRADIMGFOCAL
 };
 
 #if NANOVG_GL_USE_UNIFORMBUFFER
@@ -208,6 +209,8 @@ struct GLNVGfragUniforms {
 		int texType;
 		int type;
 		int spreadMode;
+		int interpolationmode;
+		float focalpoint;
 	#else
 		// note: after modifying layout or size of uniform array,
 		// don't forget to also update the fragment shader source!
@@ -228,6 +231,8 @@ struct GLNVGfragUniforms {
 				float texType;
 				float type;
 				float spreadMode;
+				float interpolationmode;
+				float focalpoint;
 			};
 			float uniformArray[NANOVG_GL_UNIFORMARRAY_SIZE][4];
 		};
@@ -590,6 +595,8 @@ static int glnvg__renderCreate(void* uptr)
 		"		int texType;\n"
 		"		int type;\n"
 		"		int spreadMode;\n"
+		"		int interpolationmode;\n"
+		"		float focalpoint;\n"
 		"	};\n"
 		"#else\n" // NANOVG_GL3 && !USE_UNIFORMBUFFER
 		"	uniform vec4 frag[UNIFORMARRAY_SIZE];\n"
@@ -619,6 +626,8 @@ static int glnvg__renderCreate(void* uptr)
 		"	#define texType int(frag[10].z)\n"
 		"	#define type int(frag[10].w)\n"
 		"	#define spreadMode int(frag[11].x)\n"
+		"	#define interpolationmode int(frag[11].y)\n"
+		"	#define focalpoint frag[11].z\n"
 		"#endif\n"
 		"	uniform vec4 gradientcolors[256];\n"
 		"\n"
@@ -651,6 +660,13 @@ static int glnvg__renderCreate(void* uptr)
 		"	sc = vec2(0.5,0.5) - sc * scissorScale;\n"
 		"	return clamp(sc.x,0.0,1.0) * clamp(sc.y,0.0,1.0);\n"
 		"}\n"
+		"// linear RGB conversion (taken from ruffle)\n"
+		"vec3 linear_to_srgb(vec3 linear) {\n"
+		"	vec3 a = 12.92 * linear;\n"
+		"	vec3 b = 1.055 * pow(linear, vec3(1.0 / 2.4)) - 0.055;\n"
+		"	vec3 c = step(vec3(0.0031308), linear);\n"
+		"	return mix(a, b, c);\n"
+		"}\n"
 		"#ifdef EDGE_AA\n"
 		"// Stroke - from [0..1] to clipped pyramid, where the slope is 1px.\n"
 		"float strokeMask() {\n"
@@ -672,11 +688,12 @@ static int glnvg__renderCreate(void* uptr)
 		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
 		"		float d = applySpread((sdroundrect(pt, extent, radius) + feather*0.5) / feather);\n"
 		"		vec4 color = mix(innerCol,outerCol,d);\n"
+		"		color.rgb = mix(color.rgb,linear_to_srgb(color.rgb),float(interpolationmode));\n"
 		"		// Combine alpha\n"
 		"		color *= strokeAlpha * scissor;\n"
 		"		result = color;\n"
 		"	} else if (type == 1) {		// Image\n"
-		"		// Calculate color fron texture\n"
+		"		// Calculate color from texture\n"
 		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy / extent;\n"
 		"#ifdef NANOVG_GL3\n"
 		"		vec4 color = texture(tex, pt);\n"
@@ -707,6 +724,19 @@ static int glnvg__renderCreate(void* uptr)
 		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
 		"		float d = applySpread((sdroundrect(pt, extent, radius) + feather*0.5) / feather);\n"
 		"		vec4 color = gradientcolors[int(d*255.0)];\n"
+		"		color.rgb = mix(color.rgb,linear_to_srgb(color.rgb),float(interpolationmode));\n"
+		"		// Combine alpha\n"
+		"		color *= strokeAlpha * scissor;\n"
+		"		result = color;\n"
+		"	} else if (type == 5) { // gradientcolor based gradient with focal point, algorithm taken from ruffle\n"
+		"		vec2 pt = (paintMat * vec3(fpos,1.0)).xy;\n"
+		"		vec2 pt2 = vec2(focalpoint,0.0)-pt;\n"
+		"		float l = length(pt2);\n"
+		"		pt2 /= l;\n"
+		"		pt2.x = l/(sqrt(1.0-focalpoint*focalpoint*pt2.y*pt2.y) + focalpoint*pt2.x);\n"
+		"		float d = applySpread((sdroundrect(pt2, extent, radius) + feather*0.5) / feather);\n"
+		"		vec4 color = gradientcolors[int(d*255.0)];\n"
+		"		color.rgb = mix(color.rgb,linear_to_srgb(color.rgb),float(interpolationmode));\n"
 		"		// Combine alpha\n"
 		"		color *= strokeAlpha * scissor;\n"
 		"		result = color;\n"
@@ -1019,10 +1049,12 @@ static int glnvg__convertPaint(GLNVGcontext* gl, GLNVGfragUniforms* frag, NVGpai
 #endif
 //		printf("frag->texType = %d\n", frag->texType);
 	} else {
-		frag->type = paint->gradientcolors ? NSVG_SHADER_FILLGRADIMG : NSVG_SHADER_FILLGRAD;
+		frag->type = paint->gradientcolors ? (paint->isGradient == 2 ? NSVG_SHADER_FILLGRADIMGFOCAL : NSVG_SHADER_FILLGRADIMG) : NSVG_SHADER_FILLGRAD;
 		frag->radius = paint->radius;
 		frag->feather = paint->feather;
 		frag->spreadMode = paint->spreadMode;
+		frag->focalpoint = paint->focalpoint;
+		frag->interpolationmode = paint->interpolationmode;
 		nvgTransformInverse(invxform, paint->xform);
 	}
 

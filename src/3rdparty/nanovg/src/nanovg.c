@@ -895,7 +895,6 @@ static void nvg__gradientSpan(float* gradientcolors,
 		gradientcolors[(i*4)+1] = lerpColor.g;
 		gradientcolors[(i*4)+2] = lerpColor.b;
 		gradientcolors[(i*4)+3] = lerpColor.a;
-
 		u += du;
 	}
 }
@@ -984,7 +983,7 @@ NVGpaint nvgLinearGradient(NVGcontext* ctx,
 NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 								float sx, float sy, float ex, float ey,
 								NVGgradientStop* stops, int count,
-								int spreadMode, float** gradientcolors)
+								int spreadMode, int interpolationmode, float** gradientcolors)
 {
 	NVGpaint p;
 
@@ -1032,6 +1031,7 @@ NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 	nvg__linearGradientStops(ctx, stops, count, spreadMode, p.gradientcolors);
 
 	p.spreadMode = spreadMode;
+	p.interpolationmode = interpolationmode;
 
 	p.isGradient = 1;
 	return p;
@@ -1072,7 +1072,7 @@ NVGpaint nvgRadialGradient(NVGcontext* ctx,
 NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
 								float cx, float cy, float inr, float outr,
 								NVGgradientStop* stops, int count,
-								int spreadMode, float** gradientcolors)
+								int spreadMode, int interpolationmode, float focalpoint, float** gradientcolors)
 {
 	NVGpaint p;
 
@@ -1080,7 +1080,7 @@ NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
 		// Return a solid color (one stop), or black (no stops).
 		nvg__setPaintColor(&p, (stops == NULL || count <= 0) ? nvgRGB(0, 0, 0) : stops[0].color);
 		return p;
-	} else if (count == 2 && stops[0].stop <= 0.0 && stops[1].stop >= 1.0) {
+	} else if (focalpoint == 0.0 && count == 2 && stops[0].stop <= 0.0 && stops[1].stop >= 1.0) {
 		// Two stop gradients take the normal path, if both stops are at
 		// the extents. Treat it as a multi-stop gradient otherwise.
 		return nvgRadialGradient(ctx, cx, cy, inr, outr, stops[0].color, stops[1].color, spreadMode);
@@ -1108,8 +1108,10 @@ NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
 	nvg__linearGradientStops(ctx, stops, count, spreadMode, p.gradientcolors);
 
 	p.spreadMode = spreadMode;
+	p.interpolationmode = interpolationmode;
+	p.focalpoint = focalpoint;
 
-	p.isGradient = 1;
+	p.isGradient = focalpoint==0.0 ? 1 : 2;
 	return p;
 }
 

@@ -487,7 +487,7 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 						}
 						f.Gradient.InterpolationMode=stylesIt->InterpolationMode;
 						f.Gradient.SpreadMode=stylesIt->SpreadMode;
-						f.Gradient.FocalPoint=stylesIt->StartFocalPoint + (stylesIt->EndFocalPoint-stylesIt->StartFocalPoint)*gradratio;
+						f.Gradient.FocalPoint=stylesIt->StartFocalPoint*256.0 + (stylesIt->EndFocalPoint-stylesIt->StartFocalPoint)*gradratio*256.0;
 						gradrecords.push_back(gr);
 						f.ShapeBounds = boundsrc;
 					}

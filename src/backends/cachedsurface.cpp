@@ -257,22 +257,29 @@ void nanoVGFillStyle(NVGcontext* nvgctxt, const FILLSTYLE& style, ColorTransform
 					stops.data(),
 					stops.size(),
 					spreadMode,
+					style.Gradient.InterpolationMode,
 					&style.bitmap->nanoVGGradientPattern
 				);
 			}
 			else
 			{
-				number_t x0 = isFocal ? style.Gradient.FocalPoint*16384.0 : 0.0;
+				//TODO: it seems that there is a threshold for scaling where focal gradient computation doesn't work (in glsl)
+				//HACK: we scale the matrix by 2 and divide points by 2 (fixes clip 1566 in "echoes" staying completely white)
+				number_t scalefactor= abs(m.getScaleX()) < 0.02 || abs(m.getScaleY()) < 0.02 ? 2.0 : 1.0;
+				m.scale(scalefactor,scalefactor);
+				number_t x0 = isFocal ? style.Gradient.FocalPoint*16384.0/scalefactor : 0.0;
 				pattern = nvgRadialGradientStops
 				(
 					nvgctxt,
 					x0,
 					0,
 					0,
-					16384.0,
+					16384.0/scalefactor,
 					stops.data(),
 					stops.size(),
 					spreadMode,
+					style.Gradient.InterpolationMode,
+					style.Gradient.FocalPoint,
 					&style.bitmap->nanoVGGradientPattern
 				);
 				applyMatrixTransform(pattern, m);

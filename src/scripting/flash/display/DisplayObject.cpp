@@ -2336,6 +2336,11 @@ bool DisplayObject::skipCountCylicMemberReferences(garbagecollectorstate& gcstat
 	return false;
 }
 
+bool DisplayObject::boundsRectGlobal(RectF& rect, bool fromcurrentrendering)
+{
+	return boundsRectGlobal(rect.min.x, rect.max.y, rect.min.y, rect.max.y, fromcurrentrendering);
+}
+
 ASFUNCTIONBODY_ATOM(DisplayObject,hitTestObject)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);

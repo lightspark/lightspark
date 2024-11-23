@@ -259,6 +259,8 @@ public:
 		numchars = 1;
 	}
 	
+	bool startsWith(const tiny_string& str) const;
+	bool endsWith(const tiny_string& str) const;
 	bool startsWith(const char* o) const;
 	bool endsWith(const char* o) const;
 	/* idx is an index of utf-8 characters */

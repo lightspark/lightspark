@@ -143,6 +143,7 @@ protected:
 	virtual void afterSetLegacyMatrix() {}
 	bool skipCountCylicMemberReferences(garbagecollectorstate& gcstate);
 public:
+	bool boundsRectGlobal(RectF& rect, bool fromcurrentrendering=true);
 	virtual bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 	{
 		return boundsRect(xmin, xmax, ymin, ymax, visibleOnly);

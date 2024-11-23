@@ -336,11 +336,15 @@ inline void lightspark::ArgumentConversionAtom<Vector2f>::toAbstract(asAtom& ret
 }
 #define ARG_CHECK(u) if (u.isInvalid()) return;
 #ifndef NDEBUG
-#define ARG_UNPACK ArgUnpackAtom(wrk,args,argslen,false)
-#define ARG_UNPACK_MORE_ALLOWED ArgUnpackAtom(wrk,args,argslen,true)
+#define ARG_UNPACK ArgUnpackAtom(wrk,args,argslen,true,false)
+#define ARG_UNPACK_NO_ERROR ArgUnpackAtom(wrk,args,argslen,false,false)
+#define ARG_UNPACK_MORE_ALLOWED ArgUnpackAtom(wrk,args,argslen,true,true)
+#define ARG_UNPACK_NO_ERROR_MORE_ALLOWED ArgUnpackAtom(wrk,args,argslen,false,true)
 #else
-#define ARG_UNPACK ArgUnpackAtom(wrk,args,argslen)
-#define ARG_UNPACK_MORE_ALLOWED ArgUnpackAtom(wrk,args,argslen)
+#define ARG_UNPACK ArgUnpackAtom(wrk,args,argslen,true)
+#define ARG_UNPACK_NO_ERROR ArgUnpackAtom(wrk,args,argslen,false)
+#define ARG_UNPACK_MORE_ALLOWED ArgUnpackAtom(wrk,args,argslen,true)
+#define ARG_UNPACK_NO_ERROR_MORE_ALLOWED ArgUnpackAtom(wrk,args,argslen,false)
 #endif
 class ArgUnpackAtom
 {
@@ -349,14 +353,15 @@ private:
 	asAtom* args;
 	int argslen;
 	bool invalid;
+	bool canError;
 #ifndef NDEBUG
 	bool moreAllowed;
 #endif
 public:
 #ifndef NDEBUG
-	ArgUnpackAtom(ASWorker* _w,asAtom* _args, int _argslen, bool _moreAllowed) : wrk(_w),args(_args), argslen(_argslen),invalid(false), moreAllowed(_moreAllowed)
+	ArgUnpackAtom(ASWorker* _w,asAtom* _args, int _argslen, bool _canError, bool _moreAllowed) : wrk(_w),args(_args), argslen(_argslen),invalid(false), canError(_canError), moreAllowed(_moreAllowed)
 #else
-	ArgUnpackAtom(ASWorker* _w,asAtom* _args, int _argslen) : wrk(_w),args(_args), argslen(_argslen),invalid(false)
+	ArgUnpackAtom(ASWorker* _w,asAtom* _args, int _argslen, bool _canError) : wrk(_w),args(_args), argslen(_argslen),invalid(false), canError(_canError)
 #endif
 	{
 		
@@ -368,7 +373,8 @@ public:
 		if(argslen == 0)
 		{
 			v = ArgumentConversionAtom<T>::failValue();
-			createError<ArgumentError>(wrk,kWrongArgumentCountError, "object", "?", "?");
+			if (canError)
+				createError<ArgumentError>(wrk,kWrongArgumentCountError, "object", "?", "?");
 			invalid=true;
 		}
 		if(!invalid)

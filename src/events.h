@@ -513,9 +513,9 @@ struct LSEventStorage
 			});
 	}
 
-	constexpr const LSEvent& event() const { return reinterpret_cast<const LSEvent&>(data); }
+	const LSEvent& event() const { return reinterpret_cast<const LSEvent&>(data); }
 	LSEvent& event() { return reinterpret_cast<LSEvent&>(data); }
-	constexpr operator const LSEvent&() const { return event(); }
+	operator const LSEvent&() const { return event(); }
 	operator LSEvent&() { return event(); }
 private:
 	static constexpr size_t dataSize = UnionSize<EventTypes>::value;

@@ -19,6 +19,7 @@
 
 #include <string>
 #include <algorithm>
+#include <numeric>
 #include "backends/security.h"
 #include "scripting/abc.h"
 #include "scripting/flash/events/flashevents.h"
@@ -2172,6 +2173,96 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 
 	setFramePhase(oldPhase);
 	--innerGotoCount;
+}
+
+// Based on Ruffle's `Player::max_frames_per_tick()`.
+size_t SystemState::maxFramesPerTick() const
+{
+	constexpr size_t MAX_FRAMES_PER_TICK = 5;
+
+	if (recentFrameTimings.empty())
+		return MAX_FRAMES_PER_TICK;
+
+	auto frameTime = TimeSpec::fromFloat(1.0 / mainClip->getFrameRate());
+	auto averageFrameTiming = std::accumulate
+	(
+		recentFrameTimings.cbegin(),
+		recentFrameTimings.cend(),
+		TimeSpec()
+	) / recentFrameTimings.size();
+
+	return clampTmpl
+	(
+		size_t(frameTime.toFloat() / averageFrameTiming.toFloat()),
+		size_t(1),
+		MAX_FRAMES_PER_TICK
+	);
+}
+
+// Based on Ruffle's `Player::add_frame_timing()`.
+void SystemState::addFrameTiming(const TimeSpec& elapsed)
+{
+	recentFrameTimings.push_back(elapsed);
+	if (recentFrameTimings.size() >= 10)
+		recentFrameTimings.pop_front();
+}
+
+// Based on Ruffle's `Player::tick()`.
+void SystemState::runTick(const TimeSpec& delta)
+{
+	if (mainClip == nullptr || mainClip->state.stop_FP)
+		return;
+
+	frameAccumulator += delta;
+
+	auto frameTime = TimeSpec::fromFloat(1.0 / mainClip->getFrameRate());
+
+	auto maxFramesPerTick = this->maxFramesPerTick();
+	size_t numFrames;
+	for (numFrames = 0; numFrames < maxFramesPerTick && frameAccumulator >= frameTime; ++numFrames)
+	{
+		auto _startTime = time->now();
+		tick();
+		addFrameTiming(time->now().absDiff(_startTime));
+		frameAccumulator -= frameTime;
+	}
+
+	// Only run the renderer once, if we ran `SystemState::tick()`
+	// multiple times.
+	if (numFrames > 0)
+		renderThread->runTick();
+
+	// In order to prevent running at max speed, reset the accumulator
+	// if there were too many frames in a single tick.
+	frameAccumulator = frameAccumulator < frameTime ? frameAccumulator : TimeSpec();
+
+	// TODO: Sync audio playback here.
+
+	auto fakeTime = timers.getFakeCurrentTime();
+	updateTimers(delta, false);
+
+	// Add N frames worth of time to the fake/ideal time.
+	//
+	// NOTE: We use the fake/ideal time from before calling `updateTimers()`
+	// because we'd otherwise be off by roughly N frames worth of time,
+	// if we have any timers.
+	timers.setFakeCurrentTime(fakeTime + frameTime * numFrames);
+}
+
+// Based on Ruffle's `Player::time_til_next_frame()`.
+TimeSpec SystemState::timeUntilNextFrame() const
+{
+	auto frameTime = TimeSpec::fromFloat(1.0 / mainClip->getFrameRate());
+	TimeSpec delta = frameAccumulator.toSNs() <= 0 ? frameTime : frameTime.saturatingSub(frameAccumulator);
+
+	return maxTmpl
+	(
+		_timeUntilNextTick.transformOr(delta, [&](const TimeSpec& timeUntilNextTick)
+		{
+			return minTmpl(delta, timeUntilNextTick);
+		}),
+		TimeSpec()
+	);
 }
 
 void SystemState::tick()

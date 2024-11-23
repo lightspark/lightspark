@@ -134,6 +134,7 @@ public:
 	tiny_string(const std::string& r);
 	tiny_string(std::istream& in, int len);
 	~tiny_string();
+	uint32_t operator[](size_t i) const { return charAt(i); }
 	tiny_string& operator=(const tiny_string& s);
 	tiny_string& operator=(const std::string& s);
 	tiny_string& operator=(const char* s);

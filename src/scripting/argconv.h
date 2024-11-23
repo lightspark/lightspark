@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2011-2013  Matthias Gehre (M.Gehre@gmx.de)
+    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -20,9 +21,13 @@
 #ifndef SCRIPTING_ARGCONV_H
 #define SCRIPTING_ARGCONV_H 1
 
+#include "backends/geometry.h"
+#include "scripting/flash/geom/Point.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Error.h"
+#include "swf.h"
 
 /* Usage of ARG_UNPACK:
  * You have to use it within a ASFUNCTIONBODY_ATOM() { }, because it uses the implicit arguments 'args' and 'argslen'.
@@ -242,6 +247,47 @@ template<>
 inline AS3KeyCode lightspark::ArgumentConversionAtom<AS3KeyCode>::failValue() { return AS3KEYCODE_UNKNOWN; }
 
 template<>
+inline Vector2f lightspark::ArgumentConversionAtom<Vector2f>::toConcrete(ASWorker* wrk, asAtom obj, const Vector2f& v)
+{
+	bool needsAS3 = wrk->getSystemState()->mainClip->needsActionScript3();
+	auto swfVersion = wrk->getSystemState()->mainClip->version;
+	if (needsAS3 || asAtomHandler::is<Point>(obj))
+	{
+		auto point = asAtomHandler::as<Point>(obj);
+		return Vector2f(point->getX(), point->getY());
+	}
+	else if (asAtomHandler::isObject(obj))
+	{
+		auto _obj = asAtomHandler::getObjectNoCheck(obj);
+		asAtom x = asAtomHandler::undefinedAtom;
+		asAtom y = asAtomHandler::undefinedAtom;
+
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("x");
+		_obj->getVariableByMultiname(x, m, GET_VARIABLE_OPTION::NONE, wrk);
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("y");
+		_obj->getVariableByMultiname(y, m, GET_VARIABLE_OPTION::NONE, wrk);
+
+		return Vector2f
+		(
+			asAtomHandler::AVM1toNumber(x, swfVersion),
+			asAtomHandler::AVM1toNumber(y, swfVersion)
+		);
+	}
+	auto _default = asAtomHandler::AVM1toNumber(asAtomHandler::undefinedAtom, swfVersion);
+	return Vector2f(_default, _default);
+}
+template<>
+inline Vector2f lightspark::ArgumentConversionAtom<Vector2f>::failValue()
+{
+	auto _default = asAtomHandler::toNumber(asAtomHandler::undefinedAtom);
+	return Vector2f(_default, _default);
+}
+
+template<>
 inline void lightspark::ArgumentConversionAtom<int32_t>::toAbstract(asAtom& ret, ASWorker* wrk,const int32_t& val)
 {
 	asAtomHandler::setInt(ret,wrk,val);
@@ -281,6 +327,12 @@ template<>
 inline void lightspark::ArgumentConversionAtom<AS3KeyCode>::toAbstract(asAtom& ret, ASWorker* wrk,const AS3KeyCode& val)
 {
 	asAtomHandler::setUInt(ret,wrk,val);
+}
+
+template<>
+inline void lightspark::ArgumentConversionAtom<Vector2f>::toAbstract(asAtom& ret, ASWorker* wrk, const Vector2f& val)
+{
+	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk, val.x, val.y));
 }
 #define ARG_CHECK(u) if (u.isInvalid()) return;
 #ifndef NDEBUG

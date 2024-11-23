@@ -277,6 +277,30 @@ tiny_string::operator std::string() const
 	return std::string(buf,stringSize-1);
 }
 
+bool tiny_string::startsWith(const tiny_string& str) const
+{
+	auto strSize = str.numBytes();
+	// NOTE: `memcmp()` is used here to handle `\0`s in the middle of
+	// the string gracefully.
+	return
+	(
+		numBytes() >= strSize &&
+		!memcmp(buf, str.raw_buf(), strSize)
+	);
+}
+
+bool tiny_string::endsWith(const tiny_string& str) const
+{
+	auto strSize = str.numBytes();
+	// NOTE: `memcmp()` is used here to handle `\0`s in the middle of
+	// the string gracefully.
+	return
+	(
+		numBytes() >= strSize &&
+		!memcmp(&buf[numBytes() - strSize], str.raw_buf(), strSize)
+	);
+}
+
 bool tiny_string::startsWith(const char* o) const
 {
 	return strncmp(buf,o,strlen(o)) == 0;

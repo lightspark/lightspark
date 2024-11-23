@@ -40,7 +40,7 @@ public:
 	getter([](Any& data) -> T& { return data.unsafeAs<T&>(); }) {}
 
 	constexpr T& operator*() { return getter(data); }
-	constexpr const T& operator*() const { return getter(data); }
+	constexpr const T& operator*() const { return getter(const_cast<Any&>(data)); }
 	constexpr T* operator->() { return &getter(data); }
 	constexpr const T* operator->() const { return &getter(data); }
 	constexpr operator T&() { return getter(data); }

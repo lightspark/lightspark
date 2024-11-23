@@ -29,6 +29,8 @@ LOG_LEVEL Log::log_level=LOG_INFO;
 const char* Log::level_names[]={"ERROR", "INFO","NOT_IMPLEMENTED","CALLS","TRACE"};
 int Log::calls_indent = 0;
 asAtom logAtom = asAtomHandler::invalidAtom;
+std::ostream* outStream = &std::cout;
+std::ostream* errorStream = &std::cerr;
 Log::Log(LOG_LEVEL l)
 {
 	if(l<=log_level)
@@ -48,9 +50,9 @@ Log::~Log()
 	{
 		Locker l(logmutex);
 #ifndef NDEBUG
-		std::cerr << level_names[cur_level] << ": " << asAtomHandler::toDebugString(logAtom)<<" " << message.str();
+		*errorStream << level_names[cur_level] << ": " << asAtomHandler::toDebugString(logAtom)<<" " << message.str();
 #else
-		std::cerr << level_names[cur_level] << ": " << message.str();
+		*errorStream << level_names[cur_level] << ": " << message.str();
 #endif
 	}
 }
@@ -63,13 +65,25 @@ std::ostream& Log::operator()()
 void Log::print(const std::string& s)
 {
 	Locker l(logmutex);
-	std::cout << s << std::endl;
+	*outStream << s << std::endl;
 }
 
 void Log::redirect(std::string filename)
 {
 	Locker l(logmutex);
 	static std::ofstream file(filename);
-	std::cout.rdbuf(file.rdbuf());
-	std::cerr.rdbuf(file.rdbuf());
+	outStream = &file;
+	errorStream = &file;
+}
+
+void Log::setOutStream(std::ostream* stream)
+{
+	Locker l(logmutex);
+	outStream = stream;
+}
+
+void Log::setErrorStream(std::ostream* stream)
+{
+	Locker l(logmutex);
+	errorStream = stream;
 }

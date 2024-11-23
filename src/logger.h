@@ -71,6 +71,8 @@ public:
 	static int calls_indent;
 	/* redirect logging and print() to that file */
 	static void redirect(std::string filename) DLL_PUBLIC;
+	static void setOutStream(std::ostream* stream);
+	static void setErrorStream(std::ostream* stream);
 
 };
 

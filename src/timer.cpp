@@ -238,7 +238,7 @@ void TimerThread::removeJob_noLock(ITickJob* job)
 		newEvent.signal();
 }
 
-TimeSpec LSTimers::updateTimers(const TimeSpec& delta)
+TimeSpec LSTimers::updateTimers(const TimeSpec& delta, bool allowFrameTimers)
 {
 	Locker l(timerMutex);
 	currentTime += delta;
@@ -249,6 +249,13 @@ TimeSpec LSTimers::updateTimers(const TimeSpec& delta)
 	auto push = [&](const LSTimer& timer) { return pushTimerNoLock(timer); };
 	auto pop = [&] { return popTimerNoLock(); };
 	auto peek = [&] { return peekTimerNoLock(); };
+
+	auto resetTimer = [&](LSTimer&& timer)
+	{
+		timer.startTime += timer.timeout;
+		timer.fakeStartTime += timer.timeout;
+		push(timer);
+	};
 
 	auto getFrameJobs = [&]
 	{
@@ -264,6 +271,13 @@ TimeSpec LSTimers::updateTimers(const TimeSpec& delta)
 	const auto maxFrameTicks = LSTimers::maxFrames * getFrameJobs();
 	while (!timers.empty() && peek().deadline() < currentTime)
 	{
+		if (!allowFrameTimers && peek().isFrame())
+		{
+			// Reset frame timer.
+			resetTimer(pop());
+			continue;
+		}
+
 		if (peek().fakeDeadline() > fakeCurrentTime)
 			fakeCurrentTime = peek().fakeDeadline();
 
@@ -296,9 +310,7 @@ TimeSpec LSTimers::updateTimers(const TimeSpec& delta)
 		if (!timer.isWait())
 		{
 			// Reset tick/interval timer.
-			timer.startTime += timer.timeout;
-			timer.fakeStartTime += timer.timeout;
-			push(timer);
+			resetTimer(std::move(timer));
 		}
 
 		// Run the timer's tick job.

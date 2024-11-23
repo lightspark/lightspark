@@ -154,7 +154,7 @@ public:
 	void addWait(const TimeSpec& waitTime, ITickJob* job) { addJob(waitTime, TimerType::Wait, job); }
 	void removeJob(ITickJob* job);
 	void removeJobNoLock(ITickJob* job);
-	TimeSpec updateTimers(const TimeSpec& delta);
+	TimeSpec updateTimers(const TimeSpec& delta, bool allowFrameTimers = true);
 	TimeSpec getFakeCurrentTime() const { return fakeCurrentTime; }
 	void setFakeCurrentTime(const TimeSpec& time) { fakeCurrentTime = time; }
 	const LSTimer& getCurrentTimer() { return peekTimer(); }

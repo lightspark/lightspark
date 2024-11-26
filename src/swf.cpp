@@ -2294,19 +2294,10 @@ void SystemState::tick()
 
 	if (mainClip && mainClip->applicationDomain->getFrameRate() > 0)
 	{
-		if (firsttick)
-		{
-			// the first AdvanceFrame is done during the construction of the RootMovieClip,
-			// so we skip it here
-			firsttick = false;
-		}
-		else
-		{
-			/* Step 0: Set current frame number to the next frame 
-			 * Step 1: declare new objects */
-			_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
-			currentVm->addEvent(NullRef, advFrame);
-		}
+		/* Step 0: Set current frame number to the next frame
+		 * Step 1: declare new objects */
+		_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
+		currentVm->addEvent(NullRef, advFrame);
 
 		/* Step 2: Send enterFrame events, if needed */
 		addBroadcastEvent("enterFrame");

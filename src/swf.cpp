@@ -1020,7 +1020,8 @@ void SystemState::createEngines()
 
 	//Wait for delayedCreation to finish so it is protected by our 'mutex'
 	//Otherwise SystemState::destroy may delete this object before delayedCreation is scheduled.
-	renderThread->waitForInitialization();
+	if (EngineData::enablerendering)
+		renderThread->waitForInitialization();
 
 	// If the SWF file is AVM1 and Gnash fallback isn't enabled, just shut down.
 

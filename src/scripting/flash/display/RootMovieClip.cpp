@@ -176,11 +176,6 @@ void RootMovieClip::afterConstruction(bool _explicit)
 	DisplayObject::afterConstruction(_explicit);
 	if (this!=getSystemState()->mainClip)
 		return;
-	if (!needsActionScript3())
-	{
-		getSystemState()->stage->advanceFrame(true);
-		initFrame();
-	}
 }
 
 bool RootMovieClip::needsActionScript3() const

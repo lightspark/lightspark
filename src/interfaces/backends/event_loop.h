@@ -53,7 +53,7 @@ protected:
 	ITime* time;
 public:
 	IEventLoop(ITime* _time) : time(_time) {}
-	virtual ~IEventLoop() {}
+	virtual ~IEventLoop() { delete time; }
 	// Wait indefinitely for an event.
 	// First bool returns true if we got an event, or false if an
 	// error occured.

@@ -775,6 +775,7 @@ void SystemState::destroy()
 	delete engineData;
 	engineData=nullptr;
 	eventLoop = nullptr;
+	time = nullptr;
 
 	for(auto it=profilingData.begin();it!=profilingData.end();it++)
 		delete *it;

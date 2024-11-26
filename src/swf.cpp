@@ -200,7 +200,14 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 
 extern uint32_t asClassCount;
 
-SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode, IEventLoop* _eventLoop, ITime* _time):
+SystemState::SystemState
+(
+	uint32_t fileSize,
+	FLASH_MODE mode,
+	IEventLoop* _eventLoop,
+	ITime* _time,
+	size_t threads
+) :
 	timers(LSTimers(this)), eventLoop(_eventLoop),time(_time != nullptr ? _time : eventLoop != nullptr ? eventLoop->getTime() : new Time()),terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
@@ -311,8 +318,9 @@ SystemState::SystemState(uint32_t fileSize, FLASH_MODE mode, IEventLoop* _eventL
 
 	static_SoundMixer_soundTransform  = _MR(Class<SoundTransform>::getInstanceS(this->worker));
 	static_SoundMixer_soundTransform->setRefConstant();
-	threadPool=new ThreadPool(this);
-	downloadThreadPool=new ThreadPool(this);
+	threads = std::min(size_t(NUM_THREADS), threads);
+	threadPool=new ThreadPool(this, threads);
+	downloadThreadPool=new ThreadPool(this, threads);
 
 	if (eventLoop == nullptr || !eventLoop->timersInEventLoop())
 	{

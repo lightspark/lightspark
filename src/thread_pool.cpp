@@ -30,15 +30,17 @@
 
 using namespace lightspark;
 
-ThreadPool::ThreadPool(SystemState* s):num_jobs(0),stopFlag(false),runcount(0)
+ThreadPool::ThreadPool(SystemState* s, size_t threads):threadPool(threads),num_jobs(0),stopFlag(false),runcount(0)
 {
 	m_sys=s;
-	for(uint32_t i=0;i<NUM_THREADS;i++)
+	size_t i = 0;
+	for (auto& thread : threadPool)
 	{
-		curJobs[i]=nullptr;
-		data[i].index=i;
-		data[i].pool = this;
-		threads[i] = SDL_CreateThread(job_worker,"ThreadPool",&data[i]);
+		thread.sys = s;
+		thread.pool = this;
+		thread.index = i++;
+		thread.job = nullptr;
+		thread.thread = SDL_CreateThread(job_worker,"ThreadPool",&thread);
 	}
 }
 
@@ -48,31 +50,27 @@ void ThreadPool::forceStop()
 	{
 		stopFlag=true;
 		//Signal an event for all the threads
-		for(int i=0;i<NUM_THREADS;i++)
+		for (size_t i = 0; i < threadPool.size(); ++i)
 			num_jobs.signal();
 
 		{
 			Locker l(mutex);
 			//Now abort any job that is still executing
-			for(int i=0;i<NUM_THREADS;i++)
+			for (auto thread : threadPool)
 			{
-				if(curJobs[i])
+				if (thread.job != nullptr)
 				{
-					curJobs[i]->threadAborting = true;
-					curJobs[i]->threadAbort();
+					thread.job->threadAborting = true;
+					thread.job->threadAbort();
 				}
 			}
 			//Fence all the non executed jobs
-			std::deque<IThreadJob*>::iterator it=jobs.begin();
-			for(;it!=jobs.end();++it)
-				(*it)->jobFence();
+			for (auto job : jobs)
+				job->jobFence();
 			jobs.clear();
 		}
-
-		for(int i=0;i<NUM_THREADS;i++)
-		{
-			SDL_WaitThread(threads[i],nullptr);
-		}
+		for (auto thread : threadPool)
+			SDL_WaitThread(thread.thread, nullptr);
 	}
 }
 
@@ -83,25 +81,25 @@ ThreadPool::~ThreadPool()
 
 int ThreadPool::job_worker(void *d)
 {
-	ThreadPoolData* data = (ThreadPoolData*)d;
-	setTLSSys(data->pool->m_sys);
+	Thread* thread = (Thread*)d;
+	setTLSSys(thread->sys);
 
-	ThreadProfile* profile=data->pool->m_sys->allocateProfiler(RGB(200,200,0));
+	ThreadProfile* profile=thread->sys->allocateProfiler(RGB(200,200,0));
 	char buf[16];
-	snprintf(buf,16,"Thread %u",data->index);
+	snprintf(buf,16,"Thread %u",(uint32_t)thread->index);
 	profile->setTag(buf);
 
 	Chronometer chronometer;
 	while(1)
 	{
-		data->pool->num_jobs.wait();
-		if(data->pool->stopFlag)
+		thread->pool->num_jobs.wait();
+		if(thread->pool->stopFlag)
 			return 0;
-		Locker l(data->pool->mutex);
-		IThreadJob* myJob=data->pool->jobs.front();
-		data->pool->jobs.pop_front();
-		data->pool->curJobs[data->index]=myJob;
-		data->pool->runcount++;
+		Locker l(thread->pool->mutex);
+		IThreadJob* myJob = thread->pool->jobs.front();
+		thread->pool->jobs.pop_front();
+		thread->job = myJob;
+		thread->pool->runcount++;
 		l.release();
 
 		setTLSWorker(myJob->fromWorker);
@@ -109,7 +107,7 @@ int ThreadPool::job_worker(void *d)
 		try
 		{
 			// it's possible that a job was added and will be executed while forcestop() has been called
-			if(data->pool->stopFlag)
+			if(thread->pool->stopFlag)
 				return 0;
 			myJob->execute();
 		}
@@ -120,19 +118,19 @@ int ThreadPool::job_worker(void *d)
 		catch(LightsparkException& e)
 		{
 			LOG(LOG_ERROR,"Exception in ThreadPool " << e.what());
-			data->pool->m_sys->setError(e.cause);
+			thread->sys->setError(e.cause);
 		}
 		catch(std::exception& e)
 		{
 			LOG(LOG_ERROR,"std Exception in ThreadPool:"<<myJob<<" "<<e.what());
-			data->pool->m_sys->setError(e.what());
+			thread->sys->setError(e.what());
 		}
 		
 		profile->accountTime(chronometer.checkpoint());
 
 		l.acquire();
-		data->pool->curJobs[data->index]=nullptr;
-		data->pool->runcount--;
+		thread->job = nullptr;
+		thread->pool->runcount--;
 		l.release();
 
 		//jobFencing is allowed to happen outside the mutex
@@ -151,7 +149,7 @@ void ThreadPool::addJob(IThreadJob* j)
 		return;
 	}
 	assert(j);
-	if (runcount == NUM_THREADS)
+	if (runcount == threadPool.size())
 	{
 		// no slot available, we create an additional thread
 		runAdditionalThread(j);

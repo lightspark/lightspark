@@ -927,17 +927,6 @@ void SystemState::startRenderTicks()
 	addFrameTick(renderThread);
 }
 
-void SystemState::EngineCreator::execute()
-{
-	getSys()->createEngines();
-}
-
-void SystemState::EngineCreator::threadAbort()
-{
-	getSys()->dumpedSWFPathAvailable.signal();
-	getSys()->getRenderThread()->forceInitialization();
-}
-
 /*
  * This is run from mainLoopThread
  */
@@ -1214,7 +1203,7 @@ void SystemState::needsAVM2(bool avm2)
 		vmVersion=AVM1;
 
 	if(engineData)
-		addJob(new EngineCreator);
+		createEngines();
 }
 
 void SystemState::setParamsAndEngine(EngineData* e, bool s)
@@ -1235,7 +1224,7 @@ void SystemState::setParamsAndEngine(EngineData* e, bool s)
 	if (EngineData::needinit && !runSingleThreaded && !isEventLoopThread())
 		getEngineData()->pushEvent(LSInitEvent(this));
 	if(vmVersion)
-		addJob(new EngineCreator);
+		createEngines();
 }
 
 void SystemState::setRenderRate(float rate)

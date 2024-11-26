@@ -122,14 +122,6 @@ public:
 class DLL_PUBLIC SystemState: public ITickJob, public InvalidateQueue
 {
 private:
-	class EngineCreator: public IThreadJob
-	{
-	public:
-		void execute();
-		void threadAbort();
-		void jobFence() { delete this; }
-	};
-	friend class SystemState::EngineCreator;
 	ThreadPool* threadPool;
 	ThreadPool* downloadThreadPool;
 	LSTimers timers;

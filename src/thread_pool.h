@@ -35,15 +35,16 @@ class SystemState;
 class ThreadPool
 {
 private:
-	struct ThreadPoolData
+	struct Thread
 	{
+		SystemState* sys;
+		SDL_Thread* thread;
 		ThreadPool* pool;
-		int index;
+		size_t index;
+		IThreadJob* job;
 	};
 	Mutex mutex;
-	SDL_Thread* threads[NUM_THREADS];
-	ThreadPoolData data[NUM_THREADS];
-	IThreadJob* volatile curJobs[NUM_THREADS];
+	std::vector<Thread> threadPool;
 	std::deque<IThreadJob*> jobs;
 	Semaphore num_jobs;
 	static int job_worker(void* d);
@@ -53,7 +54,7 @@ private:
 	void runAdditionalThread(IThreadJob* j);
 	static int additional_job_worker(void* d);
 public:
-	ThreadPool(SystemState* s);
+	ThreadPool(SystemState* s, size_t threads = NUM_THREADS);
 	~ThreadPool();
 	void addJob(IThreadJob* j);
 	void forceStop();

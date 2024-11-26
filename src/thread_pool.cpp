@@ -30,7 +30,11 @@
 
 using namespace lightspark;
 
-ThreadPool::ThreadPool(SystemState* s, size_t threads):threadPool(threads),num_jobs(0),stopFlag(false),runcount(0)
+ThreadPool::ThreadPool(SystemState* s, size_t threads) :
+threadPool(!s->runSingleThreaded ? threads : 0),
+num_jobs(0),
+stopFlag(false),
+runcount(0)
 {
 	m_sys=s;
 	size_t i = 0;

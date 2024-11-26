@@ -138,7 +138,7 @@ void RootMovieClip::constructionComplete(bool _explicit)
 {
 	if(isConstructed())
 		return;
-	if (!isVmThread() && !getInstanceWorker()->isPrimordial)
+	if (!getSystemState()->runSingleThreaded && !isVmThread() && !getInstanceWorker()->isPrimordial)
 	{
 		this->incRef();
 		getVm(getSystemState())->prependEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this), _explicit)));
@@ -147,7 +147,7 @@ void RootMovieClip::constructionComplete(bool _explicit)
 	getSystemState()->stage->AVM1AddDisplayObject(this);
 	if (this!=getSystemState()->mainClip)
 	{
-		if (!isVmThread())
+		if (!getSystemState()->runSingleThreaded && !isVmThread())
 		{
 			this->incRef();
 			getVm(getSystemState())->addBufferEvent(NullRef,_MR(new (getSystemState()->unaccountedMemory) RootConstructedEvent(_MR(this), _explicit)));

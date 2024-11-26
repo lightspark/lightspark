@@ -375,5 +375,7 @@ public:
 									 AS_BLENDMODE _blendmode);
 };
 
+bool isEventLoopThread() DLL_PUBLIC;
+
 }
 #endif /* PLATFORMS_ENGINEUTILS_H */

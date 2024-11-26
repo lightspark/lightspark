@@ -346,6 +346,7 @@ public:
 		uint32_t fileSize,
 		FLASH_MODE mode, IEventLoop* _eventLoop = nullptr,
 		ITime* _time = nullptr,
+		bool _runSingleThreaded = false,
 		size_t threads = SIZE_MAX
 	) DLL_PUBLIC;
 	~SystemState();
@@ -401,6 +402,7 @@ public:
 	bool useFastInterpreter;
 	bool useJit;
 	bool ignoreUnhandledExceptions;
+	bool runSingleThreaded;
 	ERROR_TYPE exitOnError;
 
 	//Parameters/FlashVars
@@ -598,6 +600,9 @@ private:
 	void setRootMovie(RootMovieClip *root);
 	void parseExtensions(RootMovieClip* root);
 };
+
+// Returns true if we're currently running in the main thread.
+bool isMainThread() DLL_PUBLIC;
 
 /* Returns the thread-specific SystemState */
 SystemState* getSys() DLL_PUBLIC;

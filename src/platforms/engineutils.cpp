@@ -71,6 +71,16 @@ SDL_Cursor* EngineData::ibeamCursor = nullptr;
 Semaphore EngineData::mainthread_initialized(0);
 Mutex EngineData::eventMutex;
 std::list<LSEventStorage> EngineData::events;
+
+bool lightspark::isEventLoopThread()
+{
+	auto thread = EngineData::mainLoopThread;
+	if (thread != nullptr)
+		return SDL_GetThreadID(thread) == SDL_ThreadID();
+	else
+		return isMainThread();
+}
+
 EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr),
 	nvgcontext(nullptr),
 	width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false),
@@ -104,7 +114,10 @@ void EngineData::runInTrueMainThread(SystemState* sys, MainThreadCallback func)
 
 void EngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
 {
-	pushEvent(LSExecEvent(func));
+	if (!isEventLoopThread())
+		pushEvent(LSExecEvent(func));
+	else
+		func(sys);
 }
 
 void EngineData::handleQuit()
@@ -621,8 +634,16 @@ void EngineData::checkForNativeAIRExtensions(std::vector<tiny_string>& extension
 
 void EngineData::addQuitEvent()
 {
-	pushEvent(LSQuitEvent(LSQuitEvent::QuitType::User));
-	SDL_WaitThread(EngineData::mainLoopThread,nullptr);
+	if (getSys()->runSingleThreaded || !isEventLoopThread())
+	{
+		pushEvent(LSQuitEvent(LSQuitEvent::QuitType::User));
+		SDL_WaitThread(EngineData::mainLoopThread,nullptr);
+	}
+	else
+	{
+		setTLSSys(nullptr);
+		handleQuit();
+	}
 }
 
 void EngineData::pushEvent(const LSEvent& event)

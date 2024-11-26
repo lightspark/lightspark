@@ -768,22 +768,33 @@ ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(t
 
 void ABCVm::start()
 {
-	t = SDL_CreateThread(Run,"ABCVm",this);
+	if (!m_sys->runSingleThreaded)
+		t = SDL_CreateThread(Run,"ABCVm",this);
+	else
+	{
+		tls_set(is_vm_thread, GINT_TO_POINTER(1));
+		initVM();
+	}
 }
 
 void ABCVm::shutdown()
 {
 	if(status==STARTED)
 	{
-		//Signal the Vm thread
-		event_queue_mutex.lock();
-		shuttingdown=true;
-		sem_event_cond.signal();
-		event_queue_mutex.unlock();
-		//Wait for the vm thread
-		SDL_WaitThread(t,0);
-		status=TERMINATED;
-		signalEventWaiters();
+		if (!m_sys->runSingleThreaded)
+		{
+			//Signal the Vm thread
+			event_queue_mutex.lock();
+			shuttingdown=true;
+			sem_event_cond.signal();
+			event_queue_mutex.unlock();
+			//Wait for the vm thread
+			SDL_WaitThread(t,0);
+			status=TERMINATED;
+			signalEventWaiters();
+		}
+		else
+			shutdownVM();
 	}
 }
 
@@ -825,6 +836,17 @@ ABCVm::~ABCVm()
 int ABCVm::getEventQueueSize()
 {
 	return events_queue.size();
+}
+
+void ABCVm::handleQueuedEvents()
+{
+	event_queue_mutex.lock();
+	while (!events_queue.empty())
+	{
+		handleFrontEvent();
+		event_queue_mutex.lock();
+	}
+	event_queue_mutex.unlock();
 }
 
 void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
@@ -1021,6 +1043,54 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	if (event->is<ProgressEvent>())
 		event->as<ProgressEvent>()->accesmutex.unlock();
 }
+
+template<typename F, typename F2>
+void ABCVm::tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e)
+{
+	try
+	{
+		beforeCB(std::forward<eventType>(e));
+		handleEvent(e);
+		afterCB(std::forward<eventType>(e));
+	}
+	catch(LightsparkException& e)
+	{
+		LOG(LOG_ERROR,"Error in VM " << e.cause);
+		m_sys->setError(e.cause);
+		/* do not allow any more event to be enqueued */
+		signalEventWaiters();
+	}
+	catch(ASObject*& e)
+	{
+		ASWorker* wrk = e->getInstanceWorker();
+		if (!wrk->callStack.empty())
+		{
+			call_context* saved_cc = wrk->callStack.back();
+			wrk->callStack.pop_back();
+			wrk->decStack(saved_cc);
+		}
+		if(e->getClass())
+			LOG(LOG_ERROR,"Unhandled ActionScript exception in VM " << e->toString());
+		else
+			LOG(LOG_ERROR,"Unhandled ActionScript exception in VM (no type)");
+		if (e->is<ASError>())
+		{
+			LOG(LOG_ERROR,"Unhandled ActionScript exception in VM " << e->as<ASError>()->getStackTraceString());
+			if (m_sys->ignoreUnhandledExceptions)
+				return;
+			m_sys->setError(e->as<ASError>()->getStackTraceString());
+		}
+		else
+			m_sys->setError("Unhandled ActionScript exception");
+		if (!m_sys->isShuttingDown())
+		{
+			/* do not allow any more event to be enqueued */
+			shuttingdown = true;
+			signalEventWaiters();
+		}
+	}
+}
+
 void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 {
 	//LOG(LOG_INFO,"handleEvent:"<<e.second->type);
@@ -1047,7 +1117,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			{
 				//no need to lock as this is the vm thread
 				shuttingdown=true;
-				getSys()->signalTerminated();
+				m_sys->signalTerminated();
 				break;
 			}
 			case FUNCTION:
@@ -1203,7 +1273,10 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					Locker l(event_queue_mutex);
 					while (!idleevents_queue.empty())
 					{
-						events_queue.push_back(idleevents_queue.front());
+						if (!m_sys->runSingleThreaded)
+							events_queue.push_back(idleevents_queue.front());
+						else
+							handleEvent(idleevents_queue.front());
 						idleevents_queue.pop_front();
 					}
 					isIdle = true;
@@ -1225,11 +1298,24 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			{
 				FlushEventBufferEvent* ev=static_cast<FlushEventBufferEvent*>(e.second.getPtr());
 				Locker l(event_queue_mutex);
-				events_queue.insert(
-					ev->append ? events_queue.end() : events_queue.begin(),
-					ev->reverse ? event_buffer.rend().base() : event_buffer.begin(),
-					ev->reverse ? event_buffer.rbegin().base() : event_buffer.end()
-				);
+				if (!m_sys->runSingleThreaded)
+				{
+					events_queue.insert
+					(
+						ev->append ? events_queue.end() : events_queue.begin(),
+						ev->reverse ? event_buffer.rend().base() : event_buffer.begin(),
+						ev->reverse ? event_buffer.rbegin().base() : event_buffer.end()
+					);
+				}
+				else
+				{
+					std::for_each
+					(
+						ev->reverse ? event_buffer.rend().base() : event_buffer.begin(),
+						ev->reverse ? event_buffer.rbegin().base() : event_buffer.end(),
+						[&](const eventType& ev) { handleEvent(ev); }
+					);
+				}
 				event_buffer.clear();
 				break;
 			}
@@ -1281,8 +1367,18 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
 	 * because otherwise waiting on them in the vm thread
 	 * will block the vm thread from executing them.
 	 */
-	if(isVmThread() && ev->is<WaitableEvent>())
+	if(m_sys->runSingleThreaded || (isVmThread() && ev->is<WaitableEvent>()))
 	{
+		if (m_sys->runSingleThreaded)
+		{
+			tryHandleEvent
+			(
+				[&](const eventType& ev) {},
+				[&](const eventType& ev) {},
+				std::make_pair(obj, ev)
+			);
+		}
+		else
 		handleEvent( make_pair(obj,ev) );
 		if (obj)
 			obj->afterHandleEvent(ev.getPtr());
@@ -1319,10 +1415,20 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool isGlobalMessag
 	 * because otherwise waiting on them in the vm thread
 	 * will block the vm thread from executing them.
 	 */
-	if(isVmThread() && ev->is<WaitableEvent>())
+	if(m_sys->runSingleThreaded || (isVmThread() && ev->is<WaitableEvent>()))
 	{
 		RELEASE_WRITE(ev->queued,true);
-		handleEvent( make_pair(obj,ev) );
+		if (m_sys->runSingleThreaded)
+		{
+			tryHandleEvent
+			(
+				[&](const eventType& ev) {},
+				[&](const eventType& ev) {},
+				std::make_pair(obj, ev)
+			);
+		}
+		else
+			handleEvent( make_pair(obj,ev) );
 		if (obj)
 			obj->afterHandleEvent(ev.getPtr());
 		return true;
@@ -1489,66 +1595,35 @@ void ABCVm::handleFrontEvent()
 	events_queue.pop_front();
 
 	event_queue_mutex.unlock();
-	try
-	{
-		if (e.first)
-			e.first->addStoredMember();// member will be removed after event is handled
-		//handle event without lock
-		handleEvent(e);
-		if (e.second->getEventType() == INIT_FRAME) // don't flush between initFrame and executeFrameScript
-			canFlushInvalidationQueue=false;
-		if (e.second->getEventType() == EXECUTE_FRAMESCRIPT) // don't flush between initFrame and executeFrameScript
-			canFlushInvalidationQueue=true;
-		//Flush the invalidation queue
-		if (canFlushInvalidationQueue && (!e.first.isNull() || 
-				(e.second->getEventType() != EXTERNAL_CALL)
-				))
-			m_sys->flushInvalidationQueue();
-		if (!e.first.isNull())
+	tryHandleEvent
+	(
+		[&](eventType&& e)
 		{
-			e.first->afterHandleEvent(e.second.getPtr());
-			// ensure that test for garbage collection is done for event dispatcher
-			ASObject* o = e.first.getPtr();
-			e.first.fakeRelease();
-			o->removeStoredMember();
-		}
-	}
-	catch(LightsparkException& e)
-	{
-		LOG(LOG_ERROR,"Error in VM " << e.cause);
-		m_sys->setError(e.cause);
-		/* do not allow any more event to be enqueued */
-		signalEventWaiters();
-	}
-	catch(ASObject*& e)
-	{
-		ASWorker* wrk = e->getInstanceWorker();
-		if (!wrk->callStack.empty())
+			if (e.first)
+				e.first->addStoredMember();// member will be removed after event is handled
+		},
+		[&](eventType&& e)
 		{
-			call_context* saved_cc = wrk->callStack.back();
-			wrk->callStack.pop_back();
-			wrk->decStack(saved_cc);
-		}
-		if(e->getClass())
-			LOG(LOG_ERROR,"Unhandled ActionScript exception in VM " << e->toString());
-		else
-			LOG(LOG_ERROR,"Unhandled ActionScript exception in VM (no type)");
-		if (e->is<ASError>())
-		{
-			LOG(LOG_ERROR,"Unhandled ActionScript exception in VM " << e->as<ASError>()->getStackTraceString());
-			if (m_sys->ignoreUnhandledExceptions)
-				return;
-			m_sys->setError(e->as<ASError>()->getStackTraceString());
-		}
-		else
-			m_sys->setError("Unhandled ActionScript exception");
-		if (!m_sys->isShuttingDown())
-		{
-			/* do not allow any more event to be enqueued */
-			shuttingdown = true;
-			signalEventWaiters();
-		}
-	}
+			if (e.second->getEventType() == INIT_FRAME) // don't flush between initFrame and executeFrameScript
+				canFlushInvalidationQueue=false;
+			if (e.second->getEventType() == EXECUTE_FRAMESCRIPT) // don't flush between initFrame and executeFrameScript
+				canFlushInvalidationQueue=true;
+			//Flush the invalidation queue
+			if (canFlushInvalidationQueue && (!e.first.isNull() ||
+					(e.second->getEventType() != EXTERNAL_CALL)
+					))
+				m_sys->flushInvalidationQueue();
+			if (!e.first.isNull())
+			{
+				e.first->afterHandleEvent(e.second.getPtr());
+				// ensure that test for garbage collection is done for event dispatcher
+				ASObject* o = e.first.getPtr();
+				e.first.fakeRelease();
+				o->removeStoredMember();
+			}
+		},
+		std::move(e)
+	);
 }
 
 method_info* ABCContext::get_method(unsigned int m)
@@ -1698,21 +1773,12 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 	LOG(LOG_CALLS, "Finished script init for script " << i );
 }
 
-int ABCVm::Run(void* d)
+void ABCVm::initVM(std::string* errStr)
 {
-	ABCVm* th = (ABCVm*)d;
-	//Spin wait until the VM is aknowledged by the SystemState
-	setTLSSys(th->m_sys);
-	setTLSWorker(th->m_sys->worker);
-	while(getVm(th->m_sys)!=th)
-		;
-
-	/* set TLS variable for isVmThread() */
-	tls_set(is_vm_thread, GINT_TO_POINTER(1));
 #ifndef NDEBUG
 	inStartupOrClose= false;
 #endif
-	if(th->m_sys->useJit)
+	if(m_sys->useJit)
 	{
 #ifdef LLVM_ENABLED
 #ifdef LLVM_31
@@ -1735,58 +1801,91 @@ int ABCVm::Run(void* d)
 		llvm::InitializeNativeTargetAsmPrinter();
 		llvm::InitializeNativeTargetAsmParser();
 #endif
-		th->module=new llvm::Module(llvm::StringRef("abc jit"),th->llvm_context());
+		module=new llvm::Module(llvm::StringRef("abc jit"),llvm_context());
 #ifdef LLVM_36
-		llvm::EngineBuilder eb(std::unique_ptr<llvm::Module>(th->module));
+		llvm::EngineBuilder eb(std::unique_ptr<llvm::Module>(module));
 #else
-		llvm::EngineBuilder eb(th->module);
+		llvm::EngineBuilder eb(module);
 #endif
 		eb.setEngineKind(llvm::EngineKind::JIT);
-		std::string errStr;
-		eb.setErrorStr(&errStr);
+		if (errStr != nullptr)
+			eb.setErrorStr(errStr);
 #ifdef LLVM_31
 		eb.setTargetOptions(Opts);
 #endif
 		eb.setOptLevel(llvm::CodeGenOpt::Default);
-		th->ex=eb.create();
-		if (th->ex == NULL)
+		ex=eb.create();
+		if (ex == NULL)
 			LOG(LOG_ERROR,"could not create llvm engine:"<<errStr);
-		assert_and_throw(th->ex);
+		assert_and_throw(ex);
 
 #ifdef LLVM_36
-		th->FPM=new llvm::legacy::FunctionPassManager(th->module);
+		FPM=new llvm::legacy::FunctionPassManager(module);
 #ifndef LLVM_37
-		th->FPM->add(new llvm::DataLayoutPass());
+		FPM->add(new llvm::DataLayoutPass());
 #endif
 #else
-		th->FPM=new llvm::FunctionPassManager(th->module);
+		FPM=new llvm::FunctionPassManager(module);
 #ifdef LLVM_35
-		th->FPM->add(new llvm::DataLayoutPass(*th->ex->getDataLayout()));
+		FPM->add(new llvm::DataLayoutPass(*ex->getDataLayout()));
 #elif defined HAVE_DATALAYOUT_H || defined HAVE_IR_DATALAYOUT_H
-		th->FPM->add(new llvm::DataLayout(*th->ex->getDataLayout()));
+		FPM->add(new llvm::DataLayout(*ex->getDataLayout()));
 #else
-		th->FPM->add(new llvm::TargetData(*th->ex->getTargetData()));
+		FPM->add(new llvm::TargetData(*ex->getTargetData()));
 #endif
 #endif
 #ifdef EXPENSIVE_DEBUG
 		//This is pretty heavy, do not enable in release
-		th->FPM->add(llvm::createVerifierPass());
+		FPM->add(llvm::createVerifierPass());
 #endif
-		th->FPM->add(llvm::createPromoteMemoryToRegisterPass());
-		th->FPM->add(llvm::createReassociatePass());
-		th->FPM->add(llvm::createCFGSimplificationPass());
-		th->FPM->add(llvm::createGVNPass());
-		th->FPM->add(llvm::createInstructionCombiningPass());
-		th->FPM->add(llvm::createLICMPass());
-		th->FPM->add(llvm::createDeadStoreEliminationPass());
+		FPM->add(llvm::createPromoteMemoryToRegisterPass());
+		FPM->add(llvm::createReassociatePass());
+		FPM->add(llvm::createCFGSimplificationPass());
+		FPM->add(llvm::createGVNPass());
+		FPM->add(llvm::createInstructionCombiningPass());
+		FPM->add(llvm::createLICMPass());
+		FPM->add(llvm::createDeadStoreEliminationPass());
 
-		th->registerFunctions();
+		registerFunctions();
 #endif
 	}
-	th->registerClasses();
-	if (!th->m_sys->mainClip->needsActionScript3())
-		th->registerClassesAVM1();
-	th->status=STARTED;
+	registerClasses();
+	if (!m_sys->mainClip->usesActionScript3)
+		registerClassesAVM1();
+	status=STARTED;
+}
+
+void ABCVm::shutdownVM()
+{
+	status = TERMINATED;
+	if (!m_sys->runSingleThreaded && m_sys->isShuttingDown())
+		m_sys->signalTerminated();
+#ifdef LLVM_ENABLED
+	if(m_sys->useJit)
+	{
+		ex->clearAllGlobalMappings();
+		delete module;
+	}
+#endif
+#ifndef NDEBUG
+	inStartupOrClose= true;
+#endif
+}
+
+int ABCVm::Run(void* d)
+{
+	ABCVm* th = (ABCVm*)d;
+	//Spin wait until the VM is aknowledged by the SystemState
+	setTLSSys(th->m_sys);
+	setTLSWorker(th->m_sys->worker);
+	while(getVm(th->m_sys)!=th)
+		;
+
+	/* set TLS variable for isVmThread() */
+	tls_set(is_vm_thread, GINT_TO_POINTER(1));
+
+	std::string errStr;
+	th->initVM(&errStr);
 
 	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(0,200,0));
 	profile->setTag("VM");
@@ -1834,16 +1933,8 @@ int ABCVm::Run(void* d)
 		snapshotCount++;
 #endif
 	}
-#ifdef LLVM_ENABLED
-	if(th->m_sys->useJit)
-	{
-		th->ex->clearAllGlobalMappings();
-		delete th->module;
-	}
-#endif
-#ifndef NDEBUG
-	inStartupOrClose= true;
-#endif
+
+	th->shutdownVM();
 	return 0;
 }
 

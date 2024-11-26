@@ -236,6 +236,8 @@ ASFUNCTIONBODY_ATOM(Event,stopImmediatePropagation)
 
 void WaitableEvent::wait()
 {
+	if (getSys()->runSingleThreaded || isVmThread())
+		return;
 	while (!handled)
 		getSys()->waitMainSignal();
 }

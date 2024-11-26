@@ -341,7 +341,13 @@ public:
 	 * \param fileSize The size of the SWF being parsed, if known
 	 * \param mode FLASH or AIR
 	 */
-	SystemState(uint32_t fileSize, FLASH_MODE mode, IEventLoop* _eventLoop = nullptr, ITime* _time = nullptr) DLL_PUBLIC;
+	SystemState
+	(
+		uint32_t fileSize,
+		FLASH_MODE mode, IEventLoop* _eventLoop = nullptr,
+		ITime* _time = nullptr,
+		size_t threads = SIZE_MAX
+	) DLL_PUBLIC;
 	~SystemState();
 	/* Stop engines, threads and free classes and objects.
 	 * This call will decRef this object in the end,

@@ -1018,8 +1018,6 @@ void SystemState::createEngines()
 	//As we lost the lock the shutdown procesure might have started
 	if(shutdown)
 		return;
-	if(currentVm)
-		currentVm->start();
 }
 
 void SystemState::launchGnash()
@@ -1819,6 +1817,9 @@ void ParseThread::parseSWF(UI8 ver)
 			parseExtensions(root);
 		}
 		root->setupAVM1RootMovie();
+		auto vm = root->getSystemState()->currentVm;
+		if (vm != nullptr && !vm->hasEverStarted())
+			vm->start();
 
 		bool done=false;
 		bool empty=true;

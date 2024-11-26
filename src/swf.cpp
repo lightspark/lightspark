@@ -809,8 +809,8 @@ void SystemState::setError(const string& c, ERROR_TYPE type)
 	//We record only the first error for easier fix and reporting
 	if(!error)
 	{
-		error=true;
 		errorCause=c;
+		error=true;
 		if (timerThread != nullptr)
 			timerThread->stop();
 		if (frameTimerThread != nullptr)

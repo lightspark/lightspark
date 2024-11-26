@@ -71,6 +71,20 @@ void ThreadPool::forceStop()
 		}
 		for (auto thread : threadPool)
 			SDL_WaitThread(thread.thread, nullptr);
+
+		for (auto pair : additionalThreads)
+		{
+			auto thread = pair.first;
+			auto job = pair.second;
+
+			if (job != nullptr)
+			{
+				job->threadAborting = true;
+				job->threadAbort();
+			}
+
+			SDL_WaitThread(thread, nullptr);
+		}
 	}
 }
 
@@ -162,13 +176,16 @@ void ThreadPool::addJob(IThreadJob* j)
 }
 void ThreadPool::runAdditionalThread(IThreadJob* j)
 {
-	SDL_Thread* t = SDL_CreateThread(additional_job_worker,"additionalThread",j);
-	SDL_DetachThread(t);
+	additionalThreads.emplace_back(nullptr, nullptr);
+	auto& thread = additionalThreads.back();
+	thread.second = j;
+	thread.first = SDL_CreateThread(additional_job_worker,"additionalThread",&thread);
 }
 
 int ThreadPool::additional_job_worker(void* d)
 {
-	IThreadJob* myJob=(IThreadJob*)d;
+	ThreadPair* pair = (ThreadPair*)d;
+	IThreadJob* myJob = pair->second;
 
 	setTLSSys(myJob->fromWorker->getSystemState());
 	setTLSWorker(myJob->fromWorker);
@@ -191,5 +208,6 @@ int ThreadPool::additional_job_worker(void* d)
 		myJob->fromWorker->getSystemState()->setError(e.what());
 	}
 	myJob->jobFence();
+	pair->second = nullptr;
 	return 0;
 }

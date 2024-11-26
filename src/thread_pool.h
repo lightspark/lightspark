@@ -45,6 +45,8 @@ private:
 	};
 	Mutex mutex;
 	std::vector<Thread> threadPool;
+	using ThreadPair = std::pair<SDL_Thread*, IThreadJob*>;
+	std::deque<ThreadPair> additionalThreads;
 	std::deque<IThreadJob*> jobs;
 	Semaphore num_jobs;
 	static int job_worker(void* d);

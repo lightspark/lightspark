@@ -554,6 +554,8 @@ private:
 	std::deque<eventType, reporter_allocator<eventType>> events_queue;
 	std::list<eventType, reporter_allocator<eventType>> idleevents_queue;
 	std::list<eventType, reporter_allocator<eventType>> event_buffer;
+	template<typename F, typename F2>
+	void tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e);
 	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
 	void handleFrontEvent();
 	void signalEventWaiters();
@@ -1397,6 +1399,8 @@ public:
 	void start() DLL_PUBLIC;
 	void finalize();
 	void registerClassesAVM1();
+	void initVM(std::string* errStr = nullptr);
+	void shutdownVM();
 	static int Run(void* d);
 	static void executeFunction(call_context* context);
 	static void dumpOpcodeCounters(uint32_t threshhold);
@@ -1426,8 +1430,10 @@ public:
 	bool addBufferEvent(_NR<EventDispatcher>, _R<Event>) DLL_PUBLIC;
 	bool prependBufferEvent(_NR<EventDispatcher>, _R<Event>) DLL_PUBLIC;
 	int getEventQueueSize();
+	void handleQueuedEvents() DLL_PUBLIC;
 	void shutdown();
 	bool hasEverStarted() const { return status!=CREATED; }
+	bool hasTerminated() const { return status == TERMINATED; }
 	void addDeletableObject(ASObject *obj);
 
 	static Global* getGlobalScope(call_context* th);

@@ -52,7 +52,8 @@ void InputThread::start(EngineData* e)
 {
 	status = STARTED;
 	engineData = e;
-	t = SDL_CreateThread(InputThread::worker,"InputThread",this);
+	if (!m_sys->runSingleThreaded)
+		t = SDL_CreateThread(InputThread::worker,"InputThread",this);
 }
 
 InputThread::~InputThread()
@@ -65,9 +66,14 @@ void InputThread::wait()
 {
 	if(status==STARTED)
 	{
-		inputEventQueue.push_back(LSQuitEvent(LSQuitEvent::QuitType::System));
-		eventCond.signal();
-		SDL_WaitThread(t,nullptr);
+		if (!m_sys->runSingleThreaded)
+		{
+			inputEventQueue.push_back(LSQuitEvent(LSQuitEvent::QuitType::System));
+			eventCond.signal();
+			SDL_WaitThread(t,nullptr);
+		}
+		else
+			handleEvent(LSQuitEvent(LSQuitEvent::QuitType::System));
 	}
 }
 
@@ -114,6 +120,11 @@ bool InputThread::queueEvent(const LSEvent& event)
 	));
 	if (!queueable)
 		return false;
+	else if (m_sys->runSingleThreaded)
+	{
+		handleEvent(event);
+		return true;
+	}
 	else
 	{
 		Locker l(mutexQueue);

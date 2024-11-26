@@ -75,6 +75,12 @@ extern "C" {
 using namespace std;
 using namespace lightspark;
 
+DEFINE_AND_INITIALIZE_TLS(tlsIsMainThread);
+bool lightspark::isMainThread()
+{
+	return (bool)tls_get(tlsIsMainThread);
+}
+
 DEFINE_AND_INITIALIZE_TLS(tls_system);
 SystemState* lightspark::getSys()
 {
@@ -176,6 +182,9 @@ void SystemState::staticInit()
 	}
 	else
 		srand(::time(nullptr));
+
+	// Set TLS variable for `isMainThread()`.
+	tls_set(tlsIsMainThread, (void*)true);
 }
 
 void SystemState::staticDeinit()
@@ -206,6 +215,7 @@ SystemState::SystemState
 	FLASH_MODE mode,
 	IEventLoop* _eventLoop,
 	ITime* _time,
+	bool _runSingleThreaded,
 	size_t threads
 ) :
 	timers(LSTimers(this)), eventLoop(_eventLoop),time(_time != nullptr ? _time : eventLoop != nullptr ? eventLoop->getTime() : new Time()),terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
@@ -214,7 +224,7 @@ SystemState::SystemState
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),framePhase(FramePhase::IDLE),
 	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),instanceCounter(0),avm1global(nullptr),
-	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),exitOnError(ERROR_NONE),
+	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),runSingleThreaded(_runSingleThreaded),exitOnError(ERROR_NONE),
 	systemDomain(nullptr),worker(nullptr),workerDomain(nullptr),singleworker(true),
 	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
 	static_SoundMixer_bufferTime(0),static_Multitouch_inputMode("gesture"),isinitialized(false)
@@ -674,23 +684,21 @@ void SystemState::destroy()
 #ifdef PROFILING_SUPPORT
 	saveProfilingInformation();
 #endif
-	terminated.wait();
-	//Acquire the mutex to sure that the engines are not being started right now
-	Locker l(rootMutex);
+	if (!runSingleThreaded)
+		terminated.wait();
 	renderThread->wait();
 	inputThread->wait();
-	if(currentVm)
-	{
-		//If the VM exists it MUST be started to flush pending events.
-		//In some cases it will not be started by regular means, if so
-		//we will start it here.
-		if(!currentVm->hasEverStarted())
-			currentVm->start();
-		l.release();
-		currentVm->shutdown();
-	}
 
-	l.release();
+	if (currentVm != nullptr && !currentVm->hasTerminated())
+	{
+		currentVm->shutdown();
+
+		_R<ShutdownEvent> e(new (unaccountedMemory) ShutdownEvent);
+		currentVm->addEvent(NullRef,e);
+
+		if (!runSingleThreaded)
+			terminated.wait();
+	}
 
 	//Kill our child process if any
 	if(childPid)
@@ -1222,7 +1230,7 @@ void SystemState::setParamsAndEngine(EngineData* e, bool s)
 		static_NativeApplication_nativeApplication->setRefConstant();
 	}
 	
-	if (EngineData::needinit)
+	if (EngineData::needinit && !runSingleThreaded && !isEventLoopThread())
 		getEngineData()->pushEvent(LSInitEvent(this));
 	if(vmVersion)
 		addJob(new EngineCreator);
@@ -1254,7 +1262,8 @@ void SystemState::addJob(IThreadJob* j)
 }
 void SystemState::addDownloadJob(IThreadJob* j)
 {
-	downloadThreadPool->addJob(j);
+	if (downloadThreadPool != nullptr)
+		downloadThreadPool->addJob(j);
 }
 
 void SystemState::addTick(uint32_t tickTime, ITickJob* job)
@@ -2335,8 +2344,10 @@ void SystemState::tick()
 
 	/* Step 9: we are idle now, so we can handle all input events */
 	_R<IdleEvent> idle = _MR(new (unaccountedMemory) IdleEvent());
-	if (currentVm->addEvent(NullRef, idle))
+	if (currentVm->addEvent(NullRef, idle) && !runSingleThreaded)
 		idle->wait();
+	if (runSingleThreaded)
+		currentVm->handleQueuedEvents();
 }
 
 void SystemState::tickFence()

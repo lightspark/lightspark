@@ -496,7 +496,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		next_FP=dest;
 		while(next_FP >= getFramesLoaded())
 		{
-			if (hasFinishedLoading())
+			if (hasFinishedLoading() || getSystemState()->runSingleThreaded || isMainThread())
 			{
 				if (next_FP >= getFramesLoaded())
 				{

@@ -18,12 +18,6 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-# Dependencies
-INCLUDE_DIRECTORIES("include")
-INCLUDE_DIRECTORIES("..")
-INCLUDE_DIRECTORIES("include/npapi")
-
-INCLUDE_DIRECTORIES(${SDL2_INCLUDE_DIRS})
 IF(WIN32)
 	ADD_DEFINITIONS(-DXP_WIN)
 ELSE()
@@ -50,6 +44,15 @@ ADD_LIBRARY(lightsparkplugin MODULE ${PLUGIN_SOURCES})
 IF(NOT STATICDEPS)
 TARGET_LINK_LIBRARIES(lightsparkplugin spark)
 ENDIF()
+
+# Dependencies
+TARGET_INCLUDE_DIRECTORIES(
+	lightsparkplugin
+	PRIVATE "$<TARGET_PROPERTY:spark,INTERFACE_INCLUDE_DIRECTORIES>"
+	PRIVATE include
+	PRIVATE include/npapi
+	PRIVATE ${SDL2_INCLUDE_DIRS}
+)
 
 IF(WIN32)
   #For win32 firefox, plugins have to start with 'np'

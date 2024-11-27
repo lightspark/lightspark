@@ -880,7 +880,7 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		state->mask.reset();
 	state->clipdepth = this->getClipDepth();
 	state->depth = this->getDepth();
-	state->isMask = this->ismaskCount;
+	state->isMask = this->ismaskCount || this->getClipDepth();
 	state->visible = this->visible;
 	state->alpha = this->alpha;
 	state->allowAsMask = this->allowAsMask();

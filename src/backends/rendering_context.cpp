@@ -69,7 +69,7 @@ void TransformStack::push(const Transform2D& _transform)
 }
 
 RenderContext::RenderContext():
-	inMaskRendering(false),maskActive(false)
+	inMaskRendering(false),maskActive(0)
 {
 	lsglLoadIdentity();
 }

@@ -81,7 +81,7 @@ protected:
 	std::vector<TransformStack> transformStacks;
 private:
 	bool inMaskRendering;
-	bool maskActive;
+	uint32_t maskActive;
 public:
 	RenderContext();
 	TransformStack& transformStack()
@@ -121,11 +121,15 @@ public:
 	virtual const CachedSurface* getCachedSurface(const DisplayObject* obj) const=0;
 	virtual void pushMask() { inMaskRendering=true; }
 	virtual void popMask() {}
-	virtual void deactivateMask() { maskActive=false; }
+	virtual void deactivateMask()
+	{
+		assert(maskActive);
+		maskActive--;
+	}
 	virtual void activateMask()
 	{
 		inMaskRendering=false;
-		maskActive=true;
+		maskActive++;
 	}
 	bool isDrawingMask() const { return inMaskRendering; }
 	bool isMaskActive() const { return maskActive; }

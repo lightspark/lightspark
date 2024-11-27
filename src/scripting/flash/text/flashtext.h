@@ -160,7 +160,6 @@ public:
 	void tickFence() override;
 	uint32_t getTagID() const override;
 	float getScaleFactor() const override { return this->scaling; }
-	bool allowAsMask() const override { return false; }
 	bool isInUpdateVarBinding() const { return inUpdateVarBinding; }
 	
 	ASFUNCTION_ATOM(appendText);
@@ -307,7 +306,6 @@ public:
 	IDrawable* invalidate(bool smoothing) override;
 	uint32_t getTagID() const override { return tagID; }
 	float getScaleFactor() const override { return this->scaling; }
-	bool allowAsMask() const override { return false; }
 };
 
 class FontStyle: public ASObject

@@ -1317,6 +1317,9 @@ static void glnvg__stroke(GLNVGcontext* gl, GLNVGcall* call)
 
 	glnvg__checkError(gl, "stroke fill");
 	// Draw Strokes
+	glnvg__stencilFunc(gl, GL_NOTEQUAL, 0x0, 0x7f);
+	glnvg__stencilMask(gl, 0x7f);
+	glStencilOp(GL_ZERO, GL_ZERO, GL_ZERO);
 	for (i = 0; i < npaths; i++)
 		glDrawArrays(GL_TRIANGLE_STRIP, paths[i].strokeOffset, paths[i].strokeCount);
 

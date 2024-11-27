@@ -101,6 +101,8 @@ void SurfaceState::setupChildrenList(std::vector<DisplayObject*>& dynamicDisplay
 	needsLayer=false;
 	for (auto it=dynamicDisplayList.cbegin(); it != dynamicDisplayList.cend(); it++)
 	{
+		if ((*it)->isMask())
+			continue;
 		childrenlist.push_back((*it)->getCachedSurface());
 		if (DisplayObject::isShaderBlendMode((*it)->getBlendMode()))
 			needsLayer=true;
@@ -299,7 +301,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 		return;
 	if (!state->mask.isNull() && !state->mask->state)
 		return;
-	if((!state->isMask && !state->clipdepth && !state->visible) || state->alpha==0.0 || (state->isMask && !state->clipdepth))
+	if((!state->isMask && !state->clipdepth && !state->visible) || state->alpha==0.0)
 		return;
 	MATRIX _matrix;
 	if (startmatrix)
@@ -307,22 +309,10 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 	else
 		_matrix = state->matrix;
 	_matrix.translate(-state->scrollRect.Xmin,-state->scrollRect.Ymin);
-	if (container)
-	{
-		ctxt.transformStack().push(Transform2D(
-			_matrix,
-			container->ct ? *container->ct : state->colortransform,
-			container->blendMode
-			));
-	}
-	else
-	{
-		ctxt.transformStack().push(Transform2D(
-			_matrix,
-			state->colortransform,
-			state->blendmode
-			));
-	}
+	AS_BLENDMODE bl = container ? container->blendMode : state->blendmode;
+	ColorTransformBase ct = container && container->ct ? *container->ct : state->colortransform;
+	Transform2D currenttransform(_matrix,ct,bl);
+	ctxt.transformStack().push(currenttransform);
 	EngineData* engineData = sys->getEngineData();
 	bool needscachedtexture = (!container && state->cacheAsBitmap)
 							  || ctxt.transformStack().transform().blendmode == BLENDMODE_LAYER
@@ -409,16 +399,22 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 	}
 	
 	SurfaceState* maskstate = state->mask.isNull() ? nullptr : state->mask->getState();
-	if (maskstate && maskstate->clipdepth)
+	if (maskstate)
 	{
+		// remove maskee matrix
+		ctxt.transformStack().pop();
+		
 		ctxt.transformStack().push(Transform2D(maskstate->matrix, ColorTransformBase(),AS_BLENDMODE::BLENDMODE_NORMAL));
 		ctxt.pushMask();
 		state->mask->renderImpl(sys,ctxt);
 		ctxt.transformStack().pop();
 		ctxt.activateMask();
+		
+		// re-add maskee matrix
+		ctxt.transformStack().push(currenttransform);
 	}
 	renderImpl(sys,ctxt);
-	if (maskstate && maskstate->clipdepth)
+	if (maskstate)
 	{
 		ctxt.deactivateMask();
 		ctxt.popMask();

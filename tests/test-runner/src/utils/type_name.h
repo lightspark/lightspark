@@ -28,45 +28,52 @@
 #include <nameof.hpp>
 #include <string_hash.hpp>
 
-using type_name_t = std::string_view;
-using typename_hash = shash32;
-using typename_hash_t = typename_hash::value_type;
+using TypeName = std::string_view;
+using TypeNameHash = shash32;
+using TypeNameHashValue = TypeNameHash::value_type;
 
 template<typename T>
-constexpr type_name_t type_name() {
+constexpr TypeName typeName()
+{
 	return NAMEOF_SHORT_TYPE(T);
 }
 
 template<typename T>
-constexpr type_name_t type_name(const T &) {
-	return type_name<T>();
+constexpr TypeName typeName(const T&)
+{
+	return typeName<T>();
 }
 
-template<class T>
-constexpr typename_hash_t type_name_hash() {
-	return typename_hash(type_name<T>()).value();
+template<typename T>
+constexpr TypeNameHashValue typeNameHash()
+{
+	return TypeNameHash(typeName<T>()).value();
 }
 
-template<class T>
-constexpr typename_hash_t type_name_hash(const T &) {
-	return type_name_hash<T>();
+template<typename T>
+constexpr TypeNameHashValue typeNameHash(const T &)
+{
+	return typeNameHash<T>();
 }
 
-constexpr typename_hash_t name_hash(const type_name_t &name) {
-	return typename_hash(name).value();
+constexpr TypeNameHashValue nameHash(const TypeName& name)
+{
+	return TypeNameHash(name).value();
 }
 
-template<class... Args>
-using type_names_hash_seq = std::integer_sequence<typename_hash_t, type_name_hash<Args>()...>;
+template<typename... Args>
+using TypeNameHashSeq = std::integer_sequence<TypeNameHashValue, typeNameHash<Args>()...>;
 
-template<class... Args>
-constexpr auto make_type_names() {
-	return std::array { type_name<Args>()... };
+template<typename... Args>
+constexpr auto makeTypeNames()
+{
+	return std::array { typeName<Args>()... };
 }
 
-template<class... Args>
-constexpr auto make_type_names(Args...) {
-	return make_type_names<Args...>();
+template<typename... Args>
+constexpr auto makeTypeNames(Args...)
+{
+	return makeTypeNames<Args...>();
 }
 
 #endif /* UTILS_TYPE_NAME_H */

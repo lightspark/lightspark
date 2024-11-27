@@ -29,24 +29,28 @@
 #include "type_name.h"
 
 template<class... Args>
-constexpr auto make_variant_names(const std::variant<Args...> &) {
-	return make_type_names<Args...>();
+constexpr auto makeVariantNames(const std::variant<Args...>&)
+{
+	return makeTypeNames<Args...>();
 }
 
 template<class... Args>
-constexpr size_t from_variant_name(const std::variant<Args...> &, const type_name_t &name) {
-	return compile_switch_idx(name_hash(name), -1, type_names_hash_seq<Args...>{});
+constexpr size_t fromVariantName(const std::variant<Args...>&, const TypeName& name)
+{
+	return compileSwitchIdx(nameHash(name), -1, TypeNameHashSeq<Args...>{});
 }
 
 template<class... Args>
-constexpr type_name_t to_variant_name(const std::variant<Args...> &, size_t target) {
-	constexpr auto names = make_type_names<Args...>();
-	return (target < names.size()) ? names[target] : type_name_t("invalid target");
+constexpr TypeName toVariantName(const std::variant<Args...>&, size_t target)
+{
+	constexpr auto names = makeTypeNames<Args...>();
+	return target < names.size() ? names[target] : TypeName("invalid target");
 }
 
 template<typename Variant>
-constexpr type_name_t to_variant_name(const Variant &variant) {
-	return to_variant_name(variant, variant.index());
+constexpr TypeName toVariantName(const Variant& variant)
+{
+	return toVariantName(variant, variant.index());
 }
 
 #endif /* UTILS_VARIANT_NAME_H */

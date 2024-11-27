@@ -27,51 +27,128 @@ template<typename T, T value>
 struct TypeContainer {};
 
 template<size_t I>
-using size_t_ = TypeContainer<size_t, I>;
+using Size = TypeContainer<size_t, I>;
 
-template<size_t N = 0, typename T, T I>
-constexpr size_t get_sequence_index(const T &value, size_t fallback, std::integer_sequence<T, I>) {
-	return (value == I) ? N : fallback;
+template<size_t N, typename T, T... Is>
+struct GetSequenceIndexImpl;
+template<size_t N, typename T, T... Is>
+struct ConstexprSwitchImpl;
+template<typename T, T... Is>
+struct CompileSwitchImpl;
+
+template<size_t N, typename T, T I>
+struct GetSequenceIndexImpl<N, T, I>
+{
+	static constexpr size_t call(const T& value, size_t fallback)
+	{
+		return (value == I) ? N : fallback;
+	}
+};
+
+template<size_t N, typename T, T I, T... Is>
+struct GetSequenceIndexImpl<N, T, I, Is...>
+{
+	static constexpr size_t call(const T& value, size_t fallback)
+	{
+		return (value == I) ? N : GetSequenceIndexImpl<N + 1, T, Is...>::call
+		(
+			value,
+			fallback
+		);
+	}
+};
+
+template<size_t N, typename T, T I>
+struct ConstexprSwitchImpl<N, T, I>
+{
+	template<typename F, typename F2>
+	static constexpr T call(const T& value, F&& f, F2&& fallback)
+	{
+		return (value == I) ? f(Size<I>(), Size<N>()) : fallback();
+	}
+};
+
+template<size_t N, typename T, T I, T... Is>
+struct ConstexprSwitchImpl<N, T, I, Is...>
+{
+	template<typename F, typename F2>
+	static constexpr T call(const T& value, F&& f, F2&& fallback)
+	{
+		return (value == I) ? f(Size<I>(), Size<N>()) : ConstexprSwitchImpl<N + 1, T, Is...>::call
+		(
+			value,
+			std::forward<F>(f),
+			std::forward<F2>(fallback)
+		);
+	}
+};
+
+template<typename T, T I>
+struct CompileSwitchImpl<T, I>
+{
+	template<typename F, typename F2>
+	static constexpr T call(const T& value, F&& f, F2&& fallback)
+	{
+		return (value == I) ? f(I) : fallback();
+	}
+};
+
+template<typename T, T I, T... Is>
+struct CompileSwitchImpl<T, I, Is...>
+{
+	template<typename F, typename F2>
+	static constexpr T call(const T& value, F&& f, F2&& fallback)
+	{
+		return (value == I) ? f(I) : CompileSwitchImpl<T, Is...>::call
+		(
+			value,
+			std::forward<F>(f),
+			std::forward<F2>(fallback)
+		);
+	}
+};
+
+
+template<typename T, T... Is>
+constexpr size_t getSequenceIndex(const T& value, size_t fallback, std::integer_sequence<T, Is...> seq)
+{
+	return GetSequenceIndexImpl<0, T, Is...>::call(value, fallback);
 }
 
-template<size_t N = 0, typename T, T I, T... Is>
-constexpr size_t get_sequence_index(const T &value, size_t fallback, std::integer_sequence<T, I, Is...>) {
-	return (value == I) ? N : get_sequence_index<N + 1>(value, fallback, std::integer_sequence<T, Is...>{});
-}
-
-template <size_t N = 0, class T, T I, class F, class F2>
-constexpr std::result_of_t<F(T)> constexpr_switch_impl(const T &value, std::integer_sequence<T, I>, F f, F2 fallback) {
-	return (value == I) ? f(size_t_<I>(), size_t_<N>()) : fallback();
-}
-
-template <size_t N = 0, class T, T I, T ... Is, class F, class F2>
-constexpr std::result_of_t<F(T)> constexpr_switch_impl(const T &value, std::integer_sequence<T, I, Is...>, F f, F2 fallback) {
-	return (value == I) ? f(size_t_<I>(), size_t_<N>()) : constexpr_switch_impl<N + 1>(value, std::integer_sequence<T, Is...>{}, f, fallback);
-}
-
-template <class T, T I, class F, class F2>
-constexpr std::result_of_t<F(T)> compile_switch_impl(const T &value, std::integer_sequence<T, I>, F f, F2 fallback) {
+template<typename T, T I, typename F, typename F2>
+constexpr T compileSwitchImpl(const T &value, std::integer_sequence<T, I>, F&& f, F2&& fallback)
+{
 	return (value == I) ? f(I) : fallback();
 }
 
-template <class T, T I, T ... Is, class F, class F2>
-constexpr std::result_of_t<F(T)> compile_switch_impl(const T &value, std::integer_sequence<T, I, Is...>, F f, F2 fallback) {
-	return (value == I) ? f(I) : compile_switch_impl(value, std::integer_sequence<T, Is...>{}, f, fallback);
+template<typename T, T I, T ... Is, typename F, typename F2>
+constexpr T compileSwitchImpl(const T& value, std::integer_sequence<T, I, Is...>, F&& f, F2&& fallback)
+{
+	return (value == I) ? f(I) : compileSwitchImpl
+	(
+		value,
+		std::integer_sequence<T, Is...>{},
+		std::forward<F>(f),
+		std::forward<F2>(fallback)
+	);
 }
 
-template <class T, T ... Is>
-constexpr size_t compile_switch_idx(const T &i, size_t fallback, std::integer_sequence<T, Is...> seq) {
-	return get_sequence_index(i, fallback, seq);
+template<typename T, T... Is>
+constexpr size_t compileSwitchIdx(const T& i, size_t fallback, std::integer_sequence<T, Is...> seq)
+{
+	return getSequenceIndex<>(i, fallback, seq);
 }
 
-template <class T, T ... Is, class F, class F2>
-constexpr std::result_of_t<F(const T &)> constexpr_switch(const T &value, std::integer_sequence<T, Is...> seq, F f, F2 fallback) {
-	return constexpr_switch_impl(value, seq, f, fallback);
+template<typename T, T... Is, typename F, typename F2>
+constexpr T constexprSwitch(const T& value, std::integer_sequence<T, Is...>, F&& f, F2&& fallback)
+{
+	return ConstexprSwitchImpl<0, T, Is...>::call(value, std::forward<F>(f), std::forward<F2>(fallback));
 }
 
-template <class T, T ... Is, class F, class F2>
-constexpr std::result_of_t<F(const T &)> compile_switch(const T &value, std::integer_sequence<T, Is...> seq, F f, F2 fallback) {
-	return compile_switch_impl(value, seq, f, fallback);
+template<typename T, T... Is, typename F, typename F2>
+constexpr T compileSwitch(const T& value, std::integer_sequence<T, Is...> seq, F&& f, F2&& fallback)
+{
+	return compileSwitchImpl(value, seq, std::forward<F>(f), std::forward<F2>(fallback));
 }
 
 #endif /* UTILS_COMP_TIME_SWITCH_H */

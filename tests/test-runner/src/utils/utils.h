@@ -25,12 +25,14 @@
 #include <string>
 
 template<typename T>
-constexpr std::string from_wstring(const std::basic_string<T> &str) {
+std::string fromWString(const std::basic_string<T>& str)
+{
 	return std::wstring_convert<std::codecvt_utf8<T>, T>().to_bytes(str);
 }
 
 template<typename T = wchar_t>
-constexpr std::basic_string<T> to_wstring(const std::string &str) {
+std::basic_string<T> toWString(const std::string& str)
+{
 	return std::wstring_convert<std::codecvt_utf8<T>, T>().from_bytes(str);
 }
 

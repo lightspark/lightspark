@@ -32,23 +32,28 @@
 #include "variant_name.h"
 #include "utils.h"
 
+using namespace lightspark;
+
 template<class Archive>
-struct save_visitor {
-	Archive &archive;
-	save_visitor(Archive &_archive) : archive(_archive) {}
+struct SaveVisitor
+{
+	Archive& archive;
+	SaveVisitor(Archive& _archive) : archive(_archive) {}
 
 	template<typename T, std::enable_if_t<!std::is_empty<T>::value, bool> = false>
-	void operator()(T &data) { cereal::save_inline(archive, data); }
+	void operator()(T& data) { cereal::save_inline(archive, data); }
 	template<typename T, std::enable_if_t<std::is_empty<T>::value, bool> = false>
-	void operator()(T &data) {}
+	void operator()(T& data) {}
 };
 
 template<class Archive, typename Variant>
-struct load_variant_cb {
-	Archive &archive;
-	Variant &variant;
+struct LoadVariantImpl
+{
+	Archive& archive;
+	Variant& variant;
 	template<size_t I, size_t N>
-	size_t operator()(size_t_<I>, size_t_<N>) {
+	size_t operator()(Size<I>, Size<N>)
+	{
 		variant.template emplace<N>();
 		cereal::load_inline(archive, std::get<N>(variant));
 		return N;
@@ -56,69 +61,119 @@ struct load_variant_cb {
 };
 
 template<typename Variant, class Archive>
-void load_variant(Archive &archive, Variant &variant, size_t target) {
-	constexpr size_t variant_size = std::variant_size_v<Variant>;
-	(void)constexpr_switch(target, std::make_index_sequence<variant_size>{}, load_variant_cb { archive, variant }, [] { return -1; });
+void loadVariant(Archive& archive, Variant& variant, size_t target)
+{
+	constexpr size_t variantSize = std::variant_size_v<Variant>;
+	(void)constexprSwitch(target, std::make_index_sequence<variantSize>{}, LoadVariantImpl<Archive, Variant> { archive, variant }, [] { return -1; });
 }
 
-namespace cereal {
+namespace cereal
+{
 	using namespace traits;
 
 	template<class Archive, class T, class U>
-	void serialize(Archive &archive, std::pair<T, U> &pair) {
+	void save(Archive& archive, const std::pair<T, U>& pair)
+	{
 		archive(cereal::make_size_tag(2));
 		archive(pair.first, pair.second);
 	}
 
+	template<class Archive, class T, class U>
+	void load(Archive& archive, std::pair<T, U>& pair)
+	{
+		size_t size;
+		archive(cereal::make_size_tag(size));
+		archive(pair.first, pair.second);
+	}
+
 	template<class Archive>
-	std::string CEREAL_SAVE_MINIMAL_FUNCTION_NAME(const Archive &archive, const std::wstring &wstr) {
-		return from_wstring<wchar_t>(wstr);
+	std::string CEREAL_SAVE_MINIMAL_FUNCTION_NAME(const Archive& archive, const std::wstring& wstr)
+	{
+		return fromWString<wchar_t>(wstr);
 	}
 	template<class Archive>
-	void CEREAL_LOAD_MINIMAL_FUNCTION_NAME(const Archive &archive, std::wstring &wstr, const std::string &str) {
-		wstr = to_wstring<wchar_t>(str);
+	void CEREAL_LOAD_MINIMAL_FUNCTION_NAME(const Archive& archive, std::wstring& wstr, const std::string& str)
+	{
+		wstr = toWString<wchar_t>(str);
 	}
+
 	template<class Archive, class T, std::enable_if_t<std::is_enum<T>::value, bool> = false>
-	std::string save_minimal(Archive &archive, const T &type) {
-		return std::string(enum_name(type));
+	std::string save_minimal(Archive& archive, const T& type)
+	{
+		return std::string(enumName(type));
 	}
 	
 	template<class Archive, class T, std::enable_if_t<std::is_enum<T>::value, bool> = false>
-	void load_minimal(const Archive &archive, T &type, const std::string &str) {
-		type = enum_cast<T>(str).value();
+	void load_minimal(const Archive& archive, T& type, const std::string& str)
+	{
+		type = enumCast<T>(str);
 	}
 
-	template<class Archive, class T>
-	std::basic_string<T> save_minimal(Archive &archive, const std::basic_string_view<T> &view) {
+	template<class Archive>
+	std::string save_minimal(const Archive&, const std::string_view& view)
+	{
+		return std::string(view.data(), view.size());
+	}
+
+	template<class Archive>
+	void load_minimal(const Archive&, std::string_view& view, const std::string& str)
+	{
+		view = str;
+	}
+
+	template<class Archive, typename T>
+	std::basic_string<T> save_minimal(Archive& archive, const std::basic_string_view<T>& view)
+	{
 		return std::basic_string<T>(view.data(), view.size());
 	}
 
-	template<class Archive, class T>
-	void load_minimal(Archive &archive, std::basic_string_view<T> &view, const std::basic_string<T> &str) {	
+	template<class Archive, typename T>
+	void load_minimal(Archive& archive, std::basic_string_view<T>& view, const std::basic_string<T>& str)
+	{
 		view = str;
 	}
 
 	template<class Archive, typename... Types>
-	void save(Archive &archive, const std::variant<Types...> &variant) {
-		type_name_t type = to_variant_name(variant);
+	void save(Archive& archive, const std::variant<Types...>& variant)
+	{
+		TypeName type = toVariantName(variant);
 		archive(CEREAL_NVP(type));
-		save_visitor<Archive> visitor(archive);
+		SaveVisitor<Archive> visitor(archive);
 		std::visit(visitor, variant);
 	}
 
 	template<class Archive, typename... Types>
-	void load(Archive &archive, std::variant<Types...> &variant) {
-		type_name_t type;
+	void load(Archive& archive, std::variant<Types...>& variant)
+	{
+		TypeName type;
 		archive(CEREAL_NVP(type));
-		load_variant(archive, variant, from_variant_name(variant, type));
+		loadVariant(archive, variant, fromVariantName(variant, type));
+	}
+
+	template<class Archive, typename T>
+	void save(Archive& archive, const std::optional<T>& optional)
+	{
+		if (optional.has_value())
+			cereal::save_inline(archive, *optional);
+	}
+	template<class Archive, typename T>
+	void load(Archive& archive, std::optional<T>& optional)
+	{
+		try
+		{
+			optional.emplace();
+			cereal::load_inline(archive, *optional);
+		}
+		catch (std::exception& e)
+		{
+			optional.reset();
+		}
 	}
 };
 
-CEREAL_SPECIALIZE_FOR_ALL_ARCHIVES(std::wstring, cereal::specialization::non_member_load_save_minimal);
-
 template<class Archive, class T>
-void prologue(Archive &, T &) {}
+void prologue(Archive&, std::vector<T>&) {}
 template<class Archive, class T>
-void epilogue(Archive &, T &) {}
+void epilogue(Archive&, std::vector<T>&) {}
 
 #endif /* UTILS_CEREAL_OVERLOADS_H */

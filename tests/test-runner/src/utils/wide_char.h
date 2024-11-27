@@ -30,22 +30,33 @@
 #include "utils.h"
 
 template<typename T = wchar_t, std::enable_if_t<is_wchar<T>::value, bool> = false>
-struct WChar {
+struct WChar
+{
+	using StringType = std::basic_string<T>;
 	T ch;
 	
 	template<class Archive>
-	void save(Archive &archive) const {
-		archive(from_wstring(std::basic_string<T>(1, ch)));
+	void save(Archive& archive) const
+	{
+		archive(fromWString((StringType)*this));
 	}
 
 	template<class Archive>
-	void load(Archive &archive) {
+	void load(Archive& archive)
+	{
 		std::string str;
 		archive(str);
-		ch = to_wstring<T>(str)[0];
+		ch = toWString<T>(str)[0];
 	}
 
-	WChar &operator=(const T &c) { ch = c; return *this; }
+	WChar& operator=(const T& c)
+	{
+		ch = c;
+		return *this;
+	}
+
+	operator StringType() const { return StringType(1, ch); }
+	operator std::string() const { return fromWString(StringType(1, ch)); }
 	operator T() const { return ch; }
 };
 

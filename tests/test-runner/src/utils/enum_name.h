@@ -22,34 +22,32 @@
 
 #ifdef USE_MAGIC_ENUM
 #include <magic_enum/magic_enum.hpp>
-
 template<typename T>
-using enum_name_t = decltype(magic_enum::enum_name<T>(T()));
-
-template<typename T>
-enum_name_t<T> enum_name(const T &value) {
-	return magic_enum::enum_name<T>(value);
-}
-
-template<typename T, typename U>
-T enum_cast(const U &value) {
-	return magic_enum::enum_cast<T>(value);
-}
+using EnumName = decltype(magic_enum::enum_name<T>(T()));
 #else
 #include <enum_name.hpp>
+template<typename T>
+using EnumName = decltype(mgutility::enum_name<T>(T()));
+#endif
 
 template<typename T>
-using enum_name_t = decltype(mgutility::enum_name<T>(T()));
-
-template<typename T>
-enum_name_t<T> enum_name(const T &value) {
+EnumName<T> enumName(const T& value)
+{
+	#ifdef USE_MAGIC_ENUM
+	return magic_enum::enum_name<T>(value);
+	#else
 	return mgutility::enum_name<T>(value);
+	#endif
 }
 
 template<typename T, typename U>
-T enum_cast(const U &value) {
-	return mgutility::to_enum<T>(value);
+T enumCast(const U &value)
+{
+	#ifdef USE_MAGIC_ENUM
+	return magic_enum::enum_cast<T>(value);
+	#else
+	return *mgutility::to_enum<T>(value);
+	#endif
 }
-#endif
 
 #endif /* UTILS_ENUM_NAME_H */

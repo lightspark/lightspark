@@ -33,6 +33,8 @@
 
 #include "utils/option_parser.h"
 
+using namespace lightspark;
+
 // Based on SerenityOS' ArgsParser from LibCore.
 
 class ArgsParser
@@ -82,6 +84,10 @@ public:
 				default: return OptionParser::ArgumentRequirement::None; break;
 			}
 		}
+
+		constexpr bool hasArg() const { return argMode != ArgumentMode::None; }
+		constexpr bool hasOptionalArg() const { return argMode == ArgumentMode::Optional; }
+		constexpr bool hasRequiredArg() const { return argMode == ArgumentMode::Required; }
 	};
 
 	struct Arg
@@ -104,15 +110,18 @@ private:
 	const char* generalHelp;
 	bool stopOnFirstNonOption;
 public:
+	ArgsParser() = default;
 	ArgsParser(const tiny_string& _appName, const tiny_string& _appVersion, const tiny_string& _appAdditional = "");
 
 	bool parse(const tcb::span<tiny_string>& args, FailureMode failureMode = FailureMode::PrintUsageAndExit);
 	bool parse(int argc, char* argv[], FailureMode failureMode = FailureMode::PrintUsageAndExit)
 	{
-		parse(tcb::span(argv, argc), failureMode);
+		tcb::span<char*> argsSpan(argv, argc);
+		std::vector<tiny_string> args(argsSpan.begin(), argsSpan.end());
+		return parse(tcb::make_span(args), failureMode);
 	}
 
-	void setGeneralHelp(const char* help) { generalHelp = help }
+	void setGeneralHelp(const char* help) { generalHelp = help; }
 	void setStopOnFirstNonOption(bool flag) { stopOnFirstNonOption = flag; }
 	template<typename CharT>
 	void printUsage(std::basic_ostream<CharT>& stream, const tiny_string& argv0);
@@ -134,13 +143,13 @@ public:
 			.shortName = shortName,
 			.acceptValue = [&](const tiny_string&)
 			{
-				value = newValue,
+				value = newValue;
 				return true;
-			},
+			}
 		});
 	}
 
-	template<typename T, std::enable_if_t<std::is_arithmetic<T>::value, bool> = false>
+	template<typename T, std::enable_if_t<std::is_arithmetic<std::underlying_type_t<T>>::value, bool> = false>
 	void addOption(T& value, const char* help, const char* longName, char shortName, const char* valueName)
 	{
 		Option option
@@ -152,8 +161,8 @@ public:
 			.valueName = valueName,
 			.acceptValue = [&value](const tiny_string& str)
 			{
-				return str.toNumber<T>(value);
-			},
+				return str.toNumber<std::underlying_type_t<T>>((std::underlying_type_t<T>&)value);
+			}
 		};
 		addOption(std::move(option));
 	}
@@ -172,22 +181,27 @@ public:
 			{
 				bool parsedAllValues = true;
 				auto strings = s.split(delim);
-				values.reserve(values.size() + strings.size());
-				std::transform(strings.cbegin(), strings.cend(), std::back_inserter(values), [&](const tiny_string& str)
+				for (auto str : strings)
 				{
-					T value;
-					parsedAllValues &= str.toNumber<T>(value);
-					return value;
-				});
+					str.tryToNumber<T>().andThen([&](const T& value)
+					{
+						values.push_back(value);
+						return Optional<T>(value);
+					}).orElse([&]
+					{
+						parsedAllValues = false;
+						return nullOpt;
+					});
+				}
 				return parsedAllValues;
-			},
+			}
 		};
 
 		addOption(std::move(option));
 	}
 	void addOption(tiny_string& value, const char* help, const char* longName, char shortName, const char* valueName);
-	
-	void addOption(std:;vector<tiny_string>& values, const char* help, const char* longName, char shortName, const char* valueName);
+
+	void addOption(std::vector<tiny_string>& values, const char* help, const char* longName, char shortName, const char* valueName);
 
 	void addPositionalArgument(Arg&& arg);
 	void addPositionalArgument(tiny_string& value, const char* help, const char* name, bool required = true);
@@ -203,7 +217,7 @@ public:
 			.acceptValue = [&value](const tiny_string& str)
 			{
 				return str.toNumber<T>(value);
-			},
+			}
 		};
 		addPositionalArgument(std::move(arg));
 	}

@@ -45,9 +45,12 @@ bool ArgsParser::parse(const tcb::span<tiny_string>& args, FailureMode failureMo
 	{
 		switch (failureMode)
 		{
-
 			case FailureMode::PrintUsageAndExit:
-			case FailureMode::PrintUsage: printUsage(std::cerr, name); if (failureMode == FailureMode::PrintUsage) { break; }
+			case FailureMode::PrintUsage:
+				printUsage(std::cerr, name);
+				if (failureMode == FailureMode::PrintUsage)
+					break;
+				// Falls through
 			case FailureMode::Exit: exit(1); break;
 			case FailureMode::Ignore: break;
 		}
@@ -59,7 +62,7 @@ bool ArgsParser::parse(const tcb::span<tiny_string>& args, FailureMode failureMo
 		return false;
 	}
 
-	auto fail = [name = args[0], &failImpl] { failImpl(name) };
+	auto fail = [name = args[0], &failImpl] { failImpl(name); };
 
 	OptionParser parser;
 	std::vector<OptionParser::Option> longOptions;
@@ -97,7 +100,7 @@ bool ArgsParser::parse(const tcb::span<tiny_string>& args, FailureMode failureMo
 	while (true)
 	{
 		auto result = parser.getOption(args.subspan(1), shortOptions, longOptions);
-		optionIndex = result.parsedArgs;
+		optionIndex += result.parsedArgs;
 		auto c = result.result;
 		if (c < 0)
 		{
@@ -124,7 +127,7 @@ bool ArgsParser::parse(const tcb::span<tiny_string>& args, FailureMode failureMo
 		else
 		{
 			// Got a short option, figure out which one it is.
-			auto it = std::find_if(options.begin(), options.end(), [c](Option& option) { return c == option.shortName });
+			auto it = std::find_if(options.begin(), options.end(), [c](Option& option) { return c == option.shortName; });
 			assert(it != options.end());
 			foundOption = &*it;
 		}
@@ -158,7 +161,7 @@ bool ArgsParser::parse(const tcb::span<tiny_string>& args, FailureMode failureMo
 	// Parse positional arguments.
 	int remainingValues = args.size() - optionIndex;
 	int totalValuesRequired = 0;
-	std::vector<int> valuesForArg();
+	std::vector<int> valuesForArg;
 
 	valuesForArg.reserve(positionalArgs.size());
 	std::transform(positionalArgs.begin(), positionalArgs.end(), std::back_inserter(valuesForArg), [&](const Arg& arg)
@@ -224,7 +227,7 @@ void ArgsParser::printUsage(std::basic_ostream<CharT>& stream, const tiny_string
 			bool hasLongName = option.longName != nullptr;
 			CharT beginChar = required ? '<' : '[';
 			CharT endChar = required ? '>' : ']';
-			stream << ' ' << beginChar << required && hasLongName ? "=" : "" << option.valueName << endChar;
+			stream << ' ' << beginChar << (required && hasLongName ? "=" : "") << option.valueName << endChar;
 		}
 		stream << ']';
 	}
@@ -234,7 +237,7 @@ void ArgsParser::printUsage(std::basic_ostream<CharT>& stream, const tiny_string
 		bool repeated = arg.maxValues > 1;
 		CharT beginChar = required ? '<' : '[';
 		CharT endChar = required ? '>' : ']';
-		stream << ' ' << beginChar << arg.name << repeated ? "..." : "" << endChar;
+		stream << ' ' << beginChar << arg.name << (repeated ? "..." : "") << endChar;
 	}
 	stream << std::endl;
 
@@ -263,7 +266,7 @@ void ArgsParser::printUsage(std::basic_ostream<CharT>& stream, const tiny_string
 
 		if (option.help != nullptr)
 			stream << '\t' << option.help;
-		stream << std::end;
+		stream << std::endl;
 	}
 
 	if (!positionalArgs.empty())
@@ -282,7 +285,7 @@ template<typename CharT>
 void ArgsParser::printVersion(std::basic_ostream<CharT>& stream)
 {
 	stream << appName << " version " << appVersion;
-	if (!appAdditional)
+	if (!appAdditional.empty())
 		stream << appAdditional;
 	stream << std::endl;
 }
@@ -293,13 +296,13 @@ void ArgsParser::addOption(Option&& option)
 	{
 		if (option.longName != nullptr && existingOption.longName == option.longName)
 		{
-			std::cerr << "Error: Multiple options have the same long name \"--" <<option.longName << "\"" << std::endl;
+			std::cerr << "Error: Multiple options have the same long name \"--" << option.longName << "\"" << std::endl;
 			assert(false);
 		}
 
-		if (option.shortName != '\0' && existingOption.shortName == option.shortName)
+		if (option.shortName != nullptr && existingOption.shortName == option.shortName)
 		{
-			std::cerr << "Error: Multiple options have the same short name \"-" <<option.shortName << "\"" << std::endl;
+			std::cerr << "Error: Multiple options have the same short name \"-" << option.shortName << "\"" << std::endl;
 			assert(false);
 		}
 	}
@@ -348,7 +351,7 @@ void ArgsParser::addOption(tiny_string& value, const char* help, const char* lon
 		.longName = longName,
 		.shortName = shortName,
 		.valueName = valueName,
-		.acceptValue = &[](const tiny_string& str)
+		.acceptValue = [&](const tiny_string& str)
 		{
 			value = str;
 			return true;
@@ -387,9 +390,9 @@ void ArgsParser::addPositionalArgument(tiny_string& value, const char* help, con
 	{
 		.help = help,
 		.name = name,
-		.required = required,
-		.minValues = 1,
-		.acceptedValue = [&](const tiny_string& str)
+		.minValues = required,
+		.maxValues = 1,
+		.acceptValue = [&](const tiny_string& str)
 		{
 			value = str;
 			return true;
@@ -404,9 +407,9 @@ void ArgsParser::addPositionalArgument(std::vector<tiny_string>& values, const c
 	{
 		.help = help,
 		.name = name,
-		.required = required,
-		.minValues = INT_MAX,
-		.acceptedValue = [&](const tiny_string& str)
+		.minValues = required,
+		.maxValues = INT_MAX,
+		.acceptValue = [&](const tiny_string& str)
 		{
 			values.push_back(str);
 			return true;

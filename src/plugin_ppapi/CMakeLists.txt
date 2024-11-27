@@ -17,8 +17,6 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-include_directories(.)
-
 # PPAPI plugin target
 SET(PPAPI_PLUGIN_SOURCES ${PPAPI_PLUGIN_SOURCES}
 	plugin.cpp
@@ -26,6 +24,12 @@ SET(PPAPI_PLUGIN_SOURCES ${PPAPI_PLUGIN_SOURCES}
 	)
 
 ADD_LIBRARY(pepflashplayer MODULE ${PPAPI_PLUGIN_SOURCES})
+
+TARGET_INCLUDE_DIRECTORIES(
+	pepflashplayer
+	PRIVATE "$<TARGET_PROPERTY:spark,INTERFACE_INCLUDE_DIRECTORIES>"
+	PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
 TARGET_LINK_LIBRARIES(pepflashplayer spark)
 

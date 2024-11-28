@@ -1,0 +1,20 @@
+saved: true
+num: 10
+str: hello
+array: elem0,undefined,undefined,undefined,elem4
+array.length: 5
+array.hasOwnProperty('0'): true
+array.hasOwnProperty('1'): false
+array['prop']: property
+array[-1]: elem negative one
+array.denseArray: 1,2,3
+array.textxml: <test>Test</test>
+typeof(array.textxml): object
+array.date: 2147483647
+typeof(array.date): object
+o.a: a
+o.b: b
+delete
+false
+saved: true
+size: 279

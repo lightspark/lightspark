@@ -1,0 +1,58 @@
+//x is Object
+true
+//x is Test2
+true
+//x is ITest2
+true
+//x is Test3
+true
+//x is ITest3
+true
+//x is Test4
+false
+//y is Object
+true
+//y is Test2
+true
+//y is ITest2
+true
+//y is Test3
+true
+//y is ITest3
+true
+//y is Test4
+true
+//Test3.prototype is Object
+true
+//Test3.prototype is Test2
+false
+//Test3.prototype is ITest2
+false
+//Test3.prototype is Test3
+false
+//Test3.prototype is ITest3
+false
+//Test3.prototype is Test4
+false
+//Test4.prototype is Object
+true
+//Test4.prototype is Test2
+false
+//Test4.prototype is ITest2
+false
+//Test4.prototype is Test3
+false
+//Test4.prototype is ITest3
+false
+//Test4.prototype is Test4
+false
+//Object.prototype is Object
+true
+//Function.prototype is Object
+true
+//Function.prototype is Function
+true
+//Class.prototype is Object
+true
+//Class.prototype is Class
+false

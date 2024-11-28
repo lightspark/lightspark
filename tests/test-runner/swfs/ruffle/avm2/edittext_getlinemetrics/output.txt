@@ -1,0 +1,147 @@
+//1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
+/// Text lines:  1
+/// ...ascent: 
+16.15
+/// ...descent: 
+4.7
+/// ...width: 
+195.9
+/// ...height: 
+22.85
+/// ...leading: 
+2
+/// ...x: 
+2
+
+//Lorem ipsum dolor sit amet!!
+/// Text lines:  1
+/// ...ascent: 
+16.15
+/// ...descent: 
+4.7
+/// ...width: 
+161.75
+/// ...height: 
+22.85
+/// ...leading: 
+2
+/// ...x: 
+2
+
+//(Empty string...)
+/// Text lines:  1
+/// ...ascent: 
+16.15
+/// ...descent: 
+4.7
+/// ...width: 
+0
+/// ...height: 
+22.85
+/// ...leading: 
+2
+/// ...x: 
+2
+
+//(Several newlines)
+/// Text lines:  4
+/// ...ascent: 
+16.15
+/// ...descent: 
+4.7
+/// ...width: 
+0
+/// ...height: 
+22.85
+/// ...leading: 
+2
+/// ...x: 
+2
+/// ...ascent: 
+16.15
+/// ...descent: 
+4.7
+/// ...width: 
+0
+/// ...height: 
+22.85
+/// ...leading: 
+2
+/// ...x: 
+2
+/// ...ascent: 
+16.15
+/// ...descent: 
+4.7
+/// ...width: 
+0
+/// ...height: 
+22.85
+/// ...leading: 
+2
+/// ...x: 
+2
+/// ...ascent: 
+16.15
+/// ...descent: 
+4.7
+/// ...width: 
+0
+/// ...height: 
+22.85
+/// ...leading: 
+2
+/// ...x: 
+2
+
+//Lorem ipsum\n\ndolor sit\n amet
+/// Text lines:  4
+/// ...ascent: 
+16.15
+/// ...descent: 
+4.7
+/// ...width: 
+74.2
+/// ...height: 
+22.85
+/// ...leading: 
+2
+/// ...x: 
+2
+/// ...ascent: 
+16.15
+/// ...descent: 
+4.7
+/// ...width: 
+0
+/// ...height: 
+22.85
+/// ...leading: 
+2
+/// ...x: 
+2
+/// ...ascent: 
+16.15
+/// ...descent: 
+4.7
+/// ...width: 
+46
+/// ...height: 
+22.85
+/// ...leading: 
+2
+/// ...x: 
+2
+/// ...ascent: 
+16.15
+/// ...descent: 
+4.7
+/// ...width: 
+32.05
+/// ...height: 
+22.85
+/// ...leading: 
+2
+/// ...x: 
+2
+

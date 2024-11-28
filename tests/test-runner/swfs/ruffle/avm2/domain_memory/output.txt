@@ -1,0 +1,133 @@
+// ApplicationDomain.currentDomain.domainMemory
+null
+// ApplicationDomain.currentDomain.domainMemory after si8(65, 0)
+null
+// li8(0) after si8(65, 0)
+65
+// ApplicationDomain.currentDomain.domainMemory after li8(0)
+null
+// li8(0) after si8(255, 0)
+255
+// li8(0) after si8(0xFFFFFFFF, 0)
+255
+// li8(1) after si8(0xFFFFFFFF, 0)
+0
+// li8(1) after si8(0xFFFFFFFF, 0)
+0
+// li8(1) after si8(0xFFFFFFFF, 0)
+0
+// li8(0) after si16(256, 0)
+0
+// li8(1) after si16(256, 0)
+1
+// li16(0) after si16(256, 0)
+256
+// li8(0) after si16(0xFFFF, 0)
+255
+// li8(1) after si16(0xFFFF, 0)
+255
+// li16(0) after si16(0xFFFF, 0)
+65535
+// li8(0) after si16(0xFFFFFFFF, 0)
+255
+// li8(1) after si16(0xFFFFFFFF, 0)
+255
+// li8(1) after si16(0xFFFFFFFF, 0)
+0
+// li8(1) after si16(0xFFFFFFFF, 0)
+0
+// li8(0) after si32(0xFFFFFFFF, 0)
+255
+// li8(1) after si32(0xFFFFFFFF, 0)
+255
+// li8(2) after si32(0xFFFFFFFF, 0)
+255
+// li8(3) after si32(0xFFFFFFFF, 0)
+255
+// li32(0) after si32(0xFFFFFFFF, 0)
+-1
+// li8(0) after sf32(0xFFFFFFFF, 0)
+0
+// li8(1) after sf32(0xFFFFFFFF, 0)
+0
+// li8(2) after sf32(0xFFFFFFFF, 0)
+128
+// li8(3) after sf32(0xFFFFFFFF, 0)
+79
+// li32(0) after sf32(0xFFFFFFFF, 0)
+1333788672
+// lf32(0) after sf32(0xFFFFFFFF, 0)
+4294967296
+// li8(0) after sf32(1234.7654321, 0)
+126
+// li8(1) after sf32(1234.7654321, 0)
+88
+// li8(2) after sf32(1234.7654321, 0)
+154
+// li8(3) after sf32(1234.7654321, 0)
+68
+// li32(0) after sf32(1234.7654321, 0)
+1150965886
+// lf32(0) after sf32(1234.7654321, 0)
+1234.765380859375
+// li8(0) after sf64(999999.9999999999, 0)
+255
+// li8(1) after sf64(999999.9999999999, 0)
+255
+// li8(2) after sf64(999999.9999999999, 0)
+255
+// li8(3) after sf64(999999.9999999999, 0)
+255
+// li8(4) after sf64(999999.9999999999, 0)
+127
+// li8(5) after sf64(999999.9999999999, 0)
+132
+// li8(6) after sf64(999999.9999999999, 0)
+46
+// li8(7) after sf64(999999.9999999999, 0)
+65
+// li32(0) after sf64(999999.9999999999, 0)
+-1
+// li32(4) after sf64(999999.9999999999, 0)
+1093567615
+// lf32(0) after sf64(999999.9999999999, 0)
+NaN
+// lf32(4) after sf64(999999.9999999999, 0)
+NaN
+// lf64(0) after sf64(999999.9999999999, 0)
+999999.9999999999
+// sxi1(0)
+0
+// sxi1(1)
+-1
+// sxi1(10)
+0
+// sxi1(255)
+-1
+// sxi8(0)
+0
+// sxi8(1)
+1
+// sxi8(10)
+10
+// sxi8(255)
+-1
+// sxi16(0)
+0
+// sxi16(1)
+1
+// sxi16(10)
+10
+// sxi16(255)
+255
+// si8(42, 0)
+// ApplicationDomain.currentDomain.domainMemory = bytes
+// li8(0) after explicit overwrite
+0
+// si8(45, 0)
+// ApplicationDomain.currentDomain.domainMemory = null
+// li8(0)
+42
+// ApplicationDomain.MIN_DOMAIN_MEMORY_LENGTH
+1024
+Caught error: Error: Error #1504: End of file.

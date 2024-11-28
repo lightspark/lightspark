@@ -1,0 +1,4 @@
+num_frames = 240
+
+[player_options]
+with_audio = true

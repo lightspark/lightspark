@@ -1,0 +1,17 @@
+child("foo") length: 2
+child("bar") length: 1
+child("XXXXX") length: 0
+child("foo") toString: foo1
+child("foo") toString: foo2
+child("bar") toString: bar1
+child("a").length: 1
+child("b").length: 0
+child("a").@b: c
+xml_list.child("b").length(): 3
+xml_list.child("c").length(): 1
+xml_list.child("unknown").length(): 0
+xml_list.child("b"): <b>a1-b1</b>
+<b>a1-b2</b>
+<b>a2-b</b>
+xml_list.child("c"): a2-c
+xml_list.child("unknown"): 

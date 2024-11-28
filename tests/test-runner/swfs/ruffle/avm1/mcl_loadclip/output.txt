@@ -1,0 +1,150 @@
+// loader.loadClip()
+undefined
+
+// loader.loadClip("target.swf")
+undefined
+
+// loader.loadClip(0, 0)
+false
+
+// loader.loadClip(obj, 0)
+false
+
+// loader.loadClip("target.swf", "mc1")
+true
+
+// loader.loadClip("target.swf", "doesNotExist")
+false
+
+// loader.loadClip("target.swf", 1)
+true
+
+// loader.loadClip("target.swf", 2.9)
+true
+
+// loader.loadClip("target.swf", mc2)
+true
+
+// loader.loadClip("target.swf", {})
+false
+
+// loader.loadClip("target.swf", null)
+false
+
+// loader.loadClip("invalid.txt", mc3)
+true
+
+In loader.onLoadStart
+// mc
+_level0.mc1
+
+In loader.onLoadProgress
+// mc
+_level0.mc1
+// loadedBytes
+68
+// totalBytes
+68
+
+In loader.onLoadComplete
+// mc
+_level0.mc1
+// httpStatus
+0
+
+In loader.onLoadStart
+// mc
+_level1
+
+In loader.onLoadProgress
+// mc
+_level1
+// loadedBytes
+68
+// totalBytes
+68
+
+In loader.onLoadComplete
+// mc
+_level1
+// httpStatus
+0
+
+In loader.onLoadStart
+// mc
+_level2
+
+In loader.onLoadProgress
+// mc
+_level2
+// loadedBytes
+68
+// totalBytes
+68
+
+In loader.onLoadComplete
+// mc
+_level2
+// httpStatus
+0
+
+In loader.onLoadStart
+// mc
+_level0.mc2
+
+In loader.onLoadProgress
+// mc
+_level0.mc2
+// loadedBytes
+68
+// totalBytes
+68
+
+In loader.onLoadComplete
+// mc
+_level0.mc2
+// httpStatus
+0
+
+In loader.onLoadStart
+// mc
+_level0.mc3
+
+In loader.onLoadProgress
+// mc
+_level0.mc3
+// loadedBytes
+0
+// totalBytes
+0
+
+In loader.onLoadComplete
+// mc
+_level0.mc3
+// httpStatus
+0
+
+Child movie loaded!
+Child movie loaded!
+Child movie loaded!
+Child movie loaded!
+In loader.onLoadInit
+// mc
+_level0.mc3
+
+In loader.onLoadInit
+// mc
+_level0.mc2
+
+In loader.onLoadInit
+// mc
+_level2
+
+In loader.onLoadInit
+// mc
+_level1
+
+In loader.onLoadInit
+// mc
+_level0.mc1
+

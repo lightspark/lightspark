@@ -1,0 +1,93 @@
+// Top left just outside of circle. Within BB, but not the actual shape.
+// circle.hitTest(234, 122)
+true
+
+
+// Bottom right just outside of circle. Within BB, but not the actual shape.
+// circle.hitTest(348, 233)
+true
+
+
+// Inside the circle.
+// circle.hitTest(269, 181)
+true
+
+
+// In the gap inside the circle.
+// circle.hitTest(313, 183)
+true
+
+
+// Outside of the circles BB, to the left.
+// circle.hitTest(216, 229)
+false
+
+
+// Outside of the circles BB, to the right.
+// circle.hitTest(377, 131)
+false
+
+
+// Inside the circle within the gap of the big circle.
+// circle.hitTest(340, 184)
+true
+
+
+// Square
+// square.hitTest(50, 50)
+true
+
+// Square, no scale
+// square.hitTest(50, 50)
+true
+
+
+// Above and to the right of the circle, not overlapping at all.
+// circle.hitTest(upper)
+false
+
+// upper.hitTest(circle)
+false
+
+
+// Below and to the right of the circle, overlapping only with BB.
+// circle.hitTest(lower)
+true
+
+// lower.hitTest(circle)
+true
+
+
+// Transforming _root
+// Inside upper in stage coordinates, but false because hitTest uses root coordinates.
+// circle.hitTest(335, 290)
+false
+
+// Just above circle, inside now because of _root._rotation.
+// circle.hitTest(234, 105)
+true
+
+// Bottom right just outside of circle. Inside now because of _root._rotation.
+// circle.hitTest(348, 233)
+true
+
+// Above and to the right of the circle, Inside now because of _root._rotation.
+// circle.hitTest(upper)
+true
+
+// String path, below and to the right of the circle, overlapping only with BB.
+// circle.hitTest('_root.lower')
+true
+
+// String path, above and to the right of the circle.
+// circle.hitTest('../upper')
+true
+
+// String path, /
+// circle.hitTest('/')
+true
+
+// String path, ''
+// circle.hitTest('')
+false
+

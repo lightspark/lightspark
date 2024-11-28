@@ -1,0 +1,15 @@
+# Note - this test runs the 'RayTracing' example
+# from the https://github.com/saharan/OGSL repository
+# All of the necessary files were copied into this directory.
+
+num_frames = 80
+
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 10
+
+[player_options]
+# This test runs very slowly on unoptimized `test` builds,
+# so give it plenty of time.
+max_execution_duration = { secs = 1000, nanos = 0 }
+with_renderer = { optional = false, sample_count = 1 }

@@ -253,12 +253,13 @@ void ArgsParser::printUsage(std::basic_ostream<CharT>& stream, const tiny_string
 	{
 		auto printArg = [&](const tiny_string& valueDelimiter)
 		{
-			if (option.valueName != nullptr)
+			if (option.valueName != nullptr || option.makeValueName != nullptr)
 			{
+				auto valueName = option.valueName != nullptr ? option.valueName : option.makeValueName();
 				if (option.hasRequiredArg())
-					stream << ' ' << option.valueName;
+					stream << ' ' << valueName;
 				if (option.hasOptionalArg())
-					stream << '[' << valueDelimiter << option.valueName << ']';
+					stream << '[' << valueDelimiter << valueName << ']';
 			}
 		};
 		stream << '\t' << option.nameForDisplay(", ");

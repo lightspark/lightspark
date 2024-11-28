@@ -26,6 +26,7 @@
 #include <functional>
 #include <lightspark/tiny_string.h>
 #include <list>
+#include <map>
 #include <sstream>
 #include <tcb/span.hpp>
 #include <type_traits>
@@ -62,8 +63,9 @@ public:
 		const char* longName { nullptr };
 		const char shortName { '\0' };
 		const char* valueName { nullptr };
-		std::function<bool(const tiny_string&)> acceptValue;
-		tiny_string nameForDisplay(const tiny_string& delim) const
+		std::function<tiny_string()> makeValueName {};
+		std::function<bool(const tiny_string&)> acceptValue {};
+		tiny_string nameForDisplay(const tiny_string& delim = ", ") const
 		{
 			std::stringstream s;
 			bool needsDelim = shortName != '\0' && longName != nullptr;
@@ -145,6 +147,90 @@ public:
 			{
 				value = newValue;
 				return true;
+			}
+		});
+	}
+
+	template<typename T, std::enable_if_t<(std::is_enum<T>::value || std::is_arithmetic<T>::value), bool> = false>
+	void addOption
+	(
+		T& value,
+		const std::vector<tiny_string>& nameList,
+		const char* help,
+		const char* longName,
+		char shortName = '\0',
+		const char* valueName = nullptr,
+		char listDelim = '|'
+	)
+	{
+		addOption
+		({
+			.argMode = ArgumentMode::None,
+			.help = help,
+			.longName = longName,
+			.shortName = shortName,
+			.makeValueName = [nameList, listDelim]
+			{
+				std::stringstream s;
+				for (auto it = nameList.cbegin(); it != nameList.cend(); ++it)
+				{
+					if (it != nameList.cbegin())
+						s << listDelim;
+					s << *it;
+				}
+				return s.str();
+			},
+			.acceptValue = [&value, nameList](const tiny_string& str)
+			{
+				auto it = std::find(nameList.cbegin(), nameList.cend(), str);
+				if (it != nameList.cend())
+				{
+					value = T(std::distance(nameList.cbegin(), it));
+					return true;
+				}
+				return false;
+			}
+		});
+	}
+
+	template<typename T, std::enable_if_t<(std::is_enum<T>::value || std::is_arithmetic<T>::value), bool> = false>
+	void addOption
+	(
+		T& value,
+		const std::map<tiny_string, T>& nameList,
+		const char* help,
+		const char* longName,
+		char shortName = '\0',
+		const char* valueName = nullptr,
+		char listDelim = '|'
+	)
+	{
+		addOption
+		({
+			.argMode = ArgumentMode::None,
+			.help = help,
+			.longName = longName,
+			.shortName = shortName,
+			.makeValueName = [nameList, listDelim]
+			{
+				std::stringstream s;
+				for (auto it = nameList.cbegin(); it != nameList.cend(); ++it)
+				{
+					if (it != nameList.cbegin())
+						s << listDelim;
+					s << (*it).first;
+				}
+				return s.str();
+			},
+			.acceptValue = [&value, nameList](const tiny_string& str)
+			{
+				auto it = nameList.find(str);
+				if (it != nameList.cend())
+				{
+					value = (*it).second;
+					return true;
+				}
+				return false;
 			}
 		});
 	}

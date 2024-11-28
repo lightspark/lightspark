@@ -104,7 +104,7 @@ OptionParser::ArgumentRequirement OptionParser::lookupShortOptionRequirement(cha
 		return ArgumentRequirement::Invalid;
 	}
 
-	auto& part = parts[1];
+	auto& part = *std::next(parts.begin(), 1);
 	if (part[0] == ':')
 	{
 		// Two colons = optional argument.
@@ -123,7 +123,7 @@ int OptionParser::handleShortOption()
 
 	// Skip the "-", if we just started parsing this argument.
 	currentMultiOptArgIndex += !currentMultiOptArgIndex;
-	char option = arg[currentMultiOptArgIndex++];
+	uint32_t option = arg[currentMultiOptArgIndex++];
 
 	auto requirement = lookupShortOptionRequirement(option);
 	if (requirement == ArgumentRequirement::Invalid)
@@ -144,7 +144,7 @@ int OptionParser::handleShortOption()
 		else
 		{
 			// Treat everything after the first character as the value, i.e. "-ovalue".
-			argValue = args[argIndex].substr_bytes(currentMultiOptArgIndex, UINT32_MAX);
+			argValue = args[argIndex].substr(currentMultiOptArgIndex, UINT32_MAX);
 			// Process the next argument, next time.
 			currentMultiOptArgIndex = 0;
 			parsedArgs = 1;
@@ -174,7 +174,7 @@ int OptionParser::handleShortOption()
 	return option;
 }
 
-Option* OptionParser::lookupLongOption(const tiny_string& arg) const
+const OptionParser::Option* OptionParser::lookupLongOption(const tiny_string& arg) const
 {
 	for (size_t i = 0; i < longOptions.size(); ++i)
 	{
@@ -182,10 +182,13 @@ Option* OptionParser::lookupLongOption(const tiny_string& arg) const
 		if (!arg.startsWith(option.name))
 			continue;
 
-		if (arg.numBytes() >= option.name.numBytes())
+		setLongOptionIndex(i);
+		bool sameSize = arg.numChars() == option.name.numChars();
+		bool hasEquals = arg[option.name.numChars()] == '=';
+
+		if (sameSize || hasEquals)
 		{
-			setLongOptionIndex(i);
-			argValue = arg[option.name.numBytes()] == '=' ? arg.substr_bytes(option.name.numBytes() + 1, UINT32_MAX) : "";
+			argValue = sameSize ? "" : arg.substr_bytes(option.name.numChars() + 1, UINT32_MAX);
 			return &option;
 		}
 	}
@@ -209,7 +212,7 @@ int OptionParser::handleLongOption()
 	assert(option->requirement != ArgumentRequirement::Invalid);
 	switch (option->requirement)
 	{
-		case ArgumentRequirement::None;
+		case ArgumentRequirement::None:
 			if (!argValue.empty())
 			{
 				std::cerr << "Option --" << option->name << " doesn't accept an argument" << std::endl;
@@ -234,7 +237,7 @@ int OptionParser::handleLongOption()
 			}
 			else
 			{
-				std::cerr << "Missing value for option --" << option->name << " doesn't accept an argument" << std::endl;
+				std::cerr << "Missing value for option --" << option->name << std::endl;
 				return '?';
 			}
 			break;

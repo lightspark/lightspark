@@ -307,7 +307,7 @@ namespace mgutility
             }
         };
 
-        auto nullopt = nullopt_t{};
+        static constexpr auto nullopt = nullopt_t{};
 
 #else
 

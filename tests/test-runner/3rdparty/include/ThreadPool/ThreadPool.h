@@ -11,12 +11,16 @@
 #include <functional>
 #include <stdexcept>
 
+struct NoFutureTag {};
+
 class ThreadPool {
 public:
     ThreadPool(size_t);
     template<class F, class... Args>
     auto enqueue(F&& f, Args&&... args) 
         -> std::future<typename std::result_of<F(Args...)>::type>;
+    template<class F, class... Args>
+    void enqueue(const NoFutureTag&, F&& f, Args&&... args);
     ~ThreadPool();
 private:
     // need to keep track of threads so we can join them
@@ -81,6 +85,28 @@ auto ThreadPool::enqueue(F&& f, Args&&... args)
     }
     condition.notify_one();
     return res;
+}
+
+// add new work item to the pool, without returning a future
+template<class F, class... Args>
+void ThreadPool::enqueue(const NoFutureTag&, F&& f, Args&&... args)
+{
+    using return_type = typename std::result_of<F(Args...)>::type;
+
+    auto task = std::make_shared< std::packaged_task<return_type()> >(
+            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+        );
+        
+    {
+        std::unique_lock<std::mutex> lock(queue_mutex);
+
+        // don't allow enqueueing after stopping the pool
+        if(stop)
+            throw std::runtime_error("enqueue on stopped ThreadPool");
+
+        tasks.emplace([f, args...](){ f(args...); });
+    }
+    condition.notify_one();
 }
 
 // the destructor joins all threads

@@ -1,0 +1,24 @@
+//var a = new Array(5);
+//a[2] = "test";
+//Array.prototype[3] = "works";
+undefined
+undefined
+test
+works
+undefined
+//a.unshift("hi", "bye");
+hi
+bye
+undefined
+works
+test
+undefined
+undefined
+//a.unshift();
+hi
+bye
+undefined
+works
+test
+undefined
+undefined

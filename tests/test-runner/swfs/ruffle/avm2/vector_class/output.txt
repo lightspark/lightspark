@@ -1,0 +1,36 @@
+Vector.<int> name: __AS3__.vec::Vector.<int>
+Vector.<int>: [class Vector.<int>]
+ApplicationDomain.hasDefinition Vector.<int>: true
+ApplicationDomain.getDefinition Vector.<int>: [class Vector.<int>]
+Vector.<uint> name: __AS3__.vec::Vector.<uint>
+Vector.<uint>: [class Vector.<uint>]
+ApplicationDomain.hasDefinition Vector.<uint>: true
+ApplicationDomain.getDefinition Vector.<uint>: [class Vector.<uint>]
+Vector.<Number> name: __AS3__.vec::Vector.<Number>
+Vector.<Number>: [class Vector.<Number>]
+ApplicationDomain.hasDefinition Vector.<Number>: true
+ApplicationDomain.getDefinition Vector.<Number>: [class Vector.<Number>]
+Early lookup: true
+Vector.<Object> name: __AS3__.vec::Vector.<Object>
+Vector.<Object>: [class Vector.<Object>]
+ApplicationDomain.hasDefinition Vector.<Object>: true
+ApplicationDomain.getDefinition Vector.<Object>: [class Vector.<Object>]
+Vector.<Test> name: __AS3__.vec::Vector.<Test>
+Vector.<Test>: [class Vector.<Test>]
+ApplicationDomain.hasDefinition Vector.<Test>: true
+ApplicationDomain.getDefinition Vector.<Test>: [class Vector.<Test>]
+Vector.<rs.ruffle.CustomClass>: [class Vector.<rs.ruffle::CustomClass>]
+__AS3__.vec::Vector.<rs.ruffle.CustomClass>: [class Vector.<rs.ruffle::CustomClass>]
+Vector.<CustomClass> name: __AS3__.vec::Vector.<rs.ruffle::CustomClass>
+Vector.<CustomClass>: [class Vector.<rs.ruffle::CustomClass>]
+ApplicationDomain.hasDefinition Vector.<CustomClass>: true
+ApplicationDomain.getDefinition Vector.<CustomClass>: [class Vector.<rs.ruffle::CustomClass>]
+Vector.<Vector.<int>> name: __AS3__.vec::Vector.<__AS3__.vec::Vector.<int>>
+__AS3__.vec::Vector.<__AS3__.vec::Vector.<int>>: [class Vector.<__AS3__.vec::Vector.<int>>]
+ApplicationDomain.hasDefinition __AS3__.vec::Vector.<__AS3__.vec::Vector.<int>>: true
+ApplicationDomain.getDefinition __AS3__.vec::Vector.<__AS3__.vec::Vector.<int>>: [class Vector.<__AS3__.vec::Vector.<int>>]
+Vector.<Vector.<int>>: [class Vector.<__AS3__.vec::Vector.<int>>]
+ApplicationDomain.hasDefinition Vector.<Vector.<int>>: true
+ApplicationDomain.getDefinition Vector.<Vector.<int>>: [class Vector.<__AS3__.vec::Vector.<int>>]
+Vector.<Number> without namespace[class Vector.<Number>]
+Caught error: ReferenceError: Error #1065: Variable Vector is not defined.

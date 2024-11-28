@@ -1,0 +1,52 @@
+// call foo() from with (this)
+_root.foot() called
+Foo
+Foo
+// call foo from with(mc)
+// mc.foo() called
+// self.bar
+Foo
+// this.bar
+Bar
+// bar
+Foo
+// call bar() from with(mc)
+// typeof(bar)
+string
+// mc2.foo() called
+// self.foobar
+undefined
+// foobar
+undefined
+// foobar
+foobar
+// nested scopes
+bar
+BarFoo
+A Test called
+foo
+BarFoo
+A Test called
+// _currentframe
+1
+// instance1._currentframe
+1
+// _currentframe
+1
+// instance1._currentframe
+3
+// instance1._currentframe
+3
+// get('_root.instance1.gotoAndStop')(4)
+// instance1._currentframe
+4
+// instance1._currentframe
+4
+// '_root.instance1.gotoAndStop'(5)
+// instance1._currentframe
+5
+// instance1._currentframe
+5
+// '_root/instance1.gotoAndStop'(6)
+// instance1._currentframe
+6

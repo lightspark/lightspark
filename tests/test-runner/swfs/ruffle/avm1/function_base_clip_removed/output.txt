@@ -1,0 +1,26 @@
+clip1.f():
+this: _level0.clip1
+base: /functionDefiner
+_root: _level0
+_parent: _level0
+
+clip2.obj.f():
+this: [object Object]
+base: /functionDefiner
+_root: _level0
+_parent: _level0
+
+functionDefiner removed
+
+clip1.f():
+this: _level0.clip1
+base: /clip1
+_root: _level0
+_parent: _level0
+
+clip2.obj.f():
+this: [object Object]
+base: /
+_root: _level0
+_parent: undefined
+

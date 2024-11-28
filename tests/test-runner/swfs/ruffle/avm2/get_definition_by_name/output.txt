@@ -1,0 +1,11 @@
+[class int]
+[class Test]
+function Function() {}
+[class example]
+[class example]
+[class ByteArray]
+[class Object]
+littleEndian
+Hello World
+[class Object]
+[class String]

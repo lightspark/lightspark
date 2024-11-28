@@ -1,0 +1,19 @@
+// uint doesn't exist
+int
+true
+int
+// int overflow => Number
+int
+int
+Number
+// int underflow => Number
+int
+int
+int
+Number
+// properties declared 'uint' don't underflow at 0
+-1
+// `as uint` also doesn't underflow, returns null
+null
+// uint type conversions _do_ underflow at 0
+4294967295

@@ -1,0 +1,77 @@
+///p.flash_proxy::getProperty("via direct call")
+///attempted to get property: via direct call
+///type of name is String
+This is a proxy var
+///p.via_getproperty
+///attempted to get property: via_getproperty
+///type of name is QName
+///name.localName
+via_getproperty
+///name.uri
+
+This is a proxy var
+///p.my_ns::via_namespace
+///attempted to get property: my_ns::via_namespace
+///type of name is QName
+///name.localName
+via_namespace
+///name.uri
+my_ns
+This is a proxy var
+///p.normal_var
+This is a normal var
+///p.proxy_var
+///attempted to get property: proxy_var
+///type of name is QName
+///name.localName
+proxy_var
+///name.uri
+
+This is a proxy var
+///p.flash_proxy::proxy_var (QName)
+This is a normal var in the proxy ns
+///p.flash_proxy::proxy_var (RTQName)
+This is a normal var in the proxy ns
+///p.flash_proxy::proxy_var (RTQNameL)
+This is a normal var in the proxy ns
+///p.flash_proxy::proxy_var (Multiname)
+This is a normal var in the proxy ns
+///p.flash_proxy::proxy_var (MultinameL)
+This is a normal var in the proxy ns
+///(p.normal_fn)()
+///called normal_fn
+undefined
+///p.flash_proxy::proxy_fn
+function Function() {}
+///p.proxy_var
+///attempted to get property: proxy_var
+///type of name is QName
+///name.localName
+proxy_var
+///name.uri
+
+This is a proxy var
+///p.*
+///attempted to get property: *::*
+///type of name is QName
+///name.localName
+*
+///name.uri
+null
+This is a proxy var
+///p.*::proxy_var
+///attempted to get property: *::proxy_var
+///type of name is QName
+///name.localName
+proxy_var
+///name.uri
+null
+This is a proxy var
+///p.proxy_fn
+///attempted to get property: proxy_fn
+///type of name is QName
+///name.localName
+proxy_fn
+///name.uri
+
+This is a proxy var

@@ -1,0 +1,41 @@
+// string replacements
+ a a
+b a a
+aaa
+xa a a
+// regex
+  x
+x  
+  x  
+123x123
+x  x
+xx
+// empty regex
+xaxaxax
+// lastIndex should not be modified
+xxxx
+1
+// $ with non-special successor char
+a$kaa
+// $& 
+a|b|aa
+// $` 
+axaxfg
+// $' 
+axfgfg
+// $1
+a<b>c
+// not enough groups
+a<$2>c
+// two-digit capture group number, but not enough groups
+a<b0>c
+// Two-digit capture group number
+<b>#bbc
+// replace function
+foobbbb
+// replace with functions returning non-string values
+2bbbb
+undefinedbbbb
+// replace a regex with function, check arguments
+<<a,a,,,2,<<a>>>>
+<<a,2,<<a>>>>

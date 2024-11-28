@@ -1,0 +1,66 @@
+/// var evt = new MouseEvent('FakeEvent');
+/// evt.type
+FakeEvent
+///evt.bubbles
+true
+///evt.cancelable
+false
+/// evt.altKey
+false
+/// evt.buttonDown
+false
+/// evt.ctrlKey
+false
+/// evt.delta
+0
+/// evt.isRelatedObjectInaccessible
+false
+/// evt.localX
+NaN
+/// evt.localY
+NaN
+/// evt.movementX
+0
+/// evt.movementY
+0
+/// evt.relatedObject
+null
+/// evt.shiftKey
+false
+/// evt.stageX
+NaN
+/// evt.stageY
+NaN
+/// var evt = new MouseEvent(MouseEvent.CLICK, false, true, 50, 50, null, false, false, false, true, 12);
+/// evt.type
+click
+///evt.bubbles
+false
+///evt.cancelable
+true
+/// evt.altKey
+false
+/// evt.buttonDown
+true
+/// evt.ctrlKey
+false
+/// evt.delta
+12
+/// evt.isRelatedObjectInaccessible
+false
+/// evt.localX
+50
+/// evt.localY
+50
+/// evt.movementX
+0
+/// evt.movementY
+0
+/// evt.relatedObject
+null
+/// evt.shiftKey
+false
+/// evt.stageX
+0
+/// evt.stageY
+0

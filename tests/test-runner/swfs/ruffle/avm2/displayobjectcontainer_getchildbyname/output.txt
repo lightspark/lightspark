@@ -1,0 +1,9 @@
+//this.getChildByName("child_clip")
+[object ChildClip_1]
+//this.getChildByName("child_clip").child_method()
+//Child method called
+//this.addChild(newChild)
+//this.getChildByName("new_child")
+[object Sprite]
+//this.getChildByName("nonexistent_child")
+null

@@ -1,0 +1,4 @@
+getBytesLoaded(): 356
+getBytesTotal(): 356
+clip.getBytesLoaded(): 12
+clip.getBytesTotal(): 12

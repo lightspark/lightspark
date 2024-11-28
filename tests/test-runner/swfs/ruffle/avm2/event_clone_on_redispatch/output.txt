@@ -1,0 +1,10 @@
+recursive redispatch test
+first handler called
+CustomEvent cloned!
+second handler called
+non-recursive redispatch test
+handler 1
+CustomEvent cloned!
+handler 2
+dispatcher without handler should not cause a clone
+handler called

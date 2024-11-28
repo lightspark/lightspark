@@ -1,0 +1,24 @@
+//var a = new Array(5);
+//a[2] = "test";
+//Array.prototype[3] = "works";
+undefined
+undefined
+test
+works
+undefined
+//a.push("hi", "bye");
+undefined
+undefined
+test
+works
+undefined
+hi
+bye
+//a.push();
+undefined
+undefined
+test
+works
+undefined
+hi
+bye

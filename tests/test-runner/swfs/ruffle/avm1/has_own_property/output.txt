@@ -1,0 +1,33 @@
+// base.hasOwnProperty("name")
+true
+
+// base.hasOwnProperty()
+false
+
+// base.hasOwnProperty("")
+false
+
+// base.hasOwnProperty(undefined)
+true
+
+// base.hasOwnProperty(true)
+true
+
+// base.hasOwnProperty(NaN)
+true
+
+// child.hasOwnProperty("name")
+false
+
+// base.hasOwnProperty("__proto__")
+true
+
+// child.hasOwnProperty("__proto__")
+true
+
+// base.hasOwnProperty("prototype")
+false
+
+// child.hasOwnProperty("prototype")
+false
+

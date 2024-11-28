@@ -1,0 +1,42 @@
+///var a = new Dictionary()
+Different string: The value
+Is existent property enumerable: true
+Is nonexistent property enumerable false
+Showing first key
+Keys: 1234567,[object Object],foo
+///a["key"] = 5
+///a["key"]
+5
+///a["key"] = 6
+///var key2 = new Test()
+///a[key2] = 23
+///var key3 = new Test()
+///a[key3] = "Key3 True Value"
+///a["key3"] = "Key3 False Value"
+///var key4 = {"toString": function() { return "key4"; }}
+///a[key4] = "Key4 True Value"
+///a["key4"] = "Key4 False Value"
+///a[13] = "i've been found!"
+///a["13"] = "no I haven't"
+///a[1.123] = "this violates Rust!"
+///a["1.123"] = "this is perfectly acceptable"
+///a[undefined] = "oh no"
+///a["undefined"] = "uh huh..."
+///a[null] = "oh YES!"
+///a["null"] = "yeah sure"
+///a[true] = "true"
+///a["true"] = "stringy true"
+///a[false] = "false"
+///a["false"] = "stringy false"
+///a[a] = a
+/// (enumerating object keys...)
+Keys: 1.123,1234567,13,[object Dictionary],[object Object],[object Test],[object Test],false,foo,key,key3,key4,key4,null,true,undefined
+/// (enumerating object values...)
+Values: 23,6,Key3 False Value,Key3 True Value,Key4 False Value,Key4 True Value,Testing,The value,[object Dictionary],no I haven't,stringy false,stringy true,this is perfectly acceptable,true,uh huh...,yeah sure
+///a.setPropertyIsEnumerable(key2, false);
+///a.setPropertyIsEnumerable(key3, false);
+///a.setPropertyIsEnumerable(key4, false);
+/// (enumerating object keys...)
+Keys: 1.123,1234567,13,[object Dictionary],[object Object],[object Test],[object Test],false,foo,key,key3,key4,key4,null,true,undefined
+/// (enumerating object values...)
+Values: 23,6,Key3 False Value,Key3 True Value,Key4 False Value,Key4 True Value,Testing,The value,[object Dictionary],no I haven't,stringy false,stringy true,this is perfectly acceptable,true,uh huh...,yeah sure

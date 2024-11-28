@@ -1,0 +1,49 @@
+netStatus
+code: NetStream.Play.Start
+level: status
+netStatus
+code: NetStream.Buffer.Full
+level: status
+netStatusOnMetaData
+//ns.seek(0.5);
+netStatus
+code: NetStream.SeekStart.Notify
+description: Start Seeking 500
+level: status
+netStatus
+code: NetStream.Seek.Notify
+level: status
+netStatus
+code: NetStream.Seek.Complete
+description: Seek Complete -1
+level: status
+//ns.seek(1.5);
+netStatus
+code: NetStream.SeekStart.Notify
+description: Start Seeking 1500
+level: status
+netStatus
+code: NetStream.Seek.Notify
+level: status
+netStatus
+code: NetStream.Seek.Complete
+description: Seek Complete -1
+level: status
+//ns.pause();
+netStatus
+code: NetStream.Pause.Notify
+description: Pausing
+level: status
+undefined
+//ns.seek(0.5);
+netStatus
+code: NetStream.SeekStart.Notify
+description: Start Seeking 500
+level: status
+netStatus
+code: NetStream.Seek.Notify
+level: status
+netStatus
+code: NetStream.Seek.Complete
+description: Seek Complete -1
+level: status

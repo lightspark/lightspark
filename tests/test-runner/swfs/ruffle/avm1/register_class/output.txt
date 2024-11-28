@@ -1,0 +1,67 @@
+// typeof mc
+movieclip
+Prototype check passed
+
+In CustomClass constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+In CustomClass2 constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+object
+Prototype check passed
+
+In child
+In CustomClass constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+In ChildCustomClass constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+In child_swf6
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+
+In ChildCustomClass constructor
+// typeof mc
+movieclip
+Prototype check passed
+
+// typeof mc
+movieclip
+Prototype check passed
+

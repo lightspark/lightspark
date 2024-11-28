@@ -1,0 +1,286 @@
+// length
+// "foo".length
+3
+// "".length
+0
+// "😋".length
+2
+// "😋Спасибо𝌆𝌆hello".length
+18
+
+// charAt
+// s.charAt(0)
+f
+// s.charAt(1)
+o
+// s.charAt(3)
+�
+// s.charAt(4)
+�
+// s.charAt(5)
+f
+// s.charAt(-100)
+
+// s.charAt(4294967297)
+o
+
+// concat
+// s.concat(s)
+foofoo
+// s.concat(s, s, s)
+foofoofoofoo
+// s.concat()
+foo
+// s.concat(null, s, undefined, 0, objToString, true)
+foonullfooundefined0toStringtrue
+
+// fromCharCode
+// String.fromCharCode(80)
+P
+// String.fromCharCode(12345)
+〹
+// String.fromCharCode(65616)
+P
+// String.fromCharCode(-65456)
+P
+// String.fromCharCode(0xd801)
+�
+// String.fromCharCode("BAD")
+
+// String.fromCharCode(NaN)
+
+// String.fromCharCode()
+
+// String.fromCharCode(80, 81, 82)
+PQR
+// String.fromCharCode(80, 0, 82)
+P
+
+// charCodeAt
+// s.charCodeAt(0)
+102
+// s.charCodeAt(3)
+55357
+// s.charCodeAt(4)
+56843
+// s.charCodeAt(5)
+102
+// s.charCodeAt(6)
+111
+// s.charCodeAt()
+102
+// s.charCodeAt(-1)
+NaN
+// s.charCodeAt(9)
+NaN
+// s.charCodeAt("1")
+111
+// s.charCodeAt(undefined)
+102
+// s.charCodeAt(NaN)
+102
+
+// indexOf 
+// s.indexOf("a")
+0
+// s.indexOf("a", 16)
+16
+// s.indexOf("a", 14)
+14
+// s.indexOf("a", 13)
+14
+// s.indexOf("a", 0)
+0
+// s.indexOf("test")
+3
+// s.indexOf("test", 4)
+10
+// s.indexOf("test", 100)
+-1
+// s.indexOf("test", -1)
+3
+// s.indexOf("test", 4294967300))
+10
+// s.indexOf("test", null)
+3
+// s.indexOf("test", undefined)
+3
+// s.indexOf("")
+0
+// s.indexOf("", 5)
+5
+// s.indexOf("", 100)
+-1
+// s.indexOf()
+undefined
+// s.indexOf(null)
+17
+
+// s.indexOf(undefined)
+-1
+
+// "hello undefined hi".indexOf(undefined)
+6
+
+// lastIndexOf
+// s.lastIndexOf("a")
+16
+// s.lastIndexOf("a", 16)
+16
+// s.lastIndexOf("a", 14)
+14
+// s.lastIndexOf("a", 13)
+2
+// s.lastIndexOf("a", 0)
+0
+// s.lastIndexOf("test")
+10
+// s.lastIndexOf("test", 11)
+10
+// s.lastIndexOf("test", 100)
+10
+// s.lastIndexOf("test", -1)
+-1
+// s.lastIndexOf("test", 4294967300)
+3
+// s.lastIndexOf("test", null)
+-1
+// s.lastIndexOf("test", undefined)
+10
+// s.lastIndexOf("")
+21
+// s.lastIndexOf("", 3)
+3
+// s.lastIndexOf("", 21)
+21
+// s.lastIndexOf("", 0)
+0
+// s.lastIndexOf()
+undefined
+// s.lastIndexOf(null)
+17
+
+// s.lastIndexOf(undefined)
+-1
+
+// "hello undefined hi".lastIndexOf(undefined)
+6
+
+// slice
+// s.slice(1, 4)
+ell
+// s.slice(3, 1)
+
+// s.slice(-3, -1)
+23
+// s.slice(-1, -3)
+
+// s.slice(4294967296, 4294967298)
+He
+// s.slice()
+undefined
+// s.slice(null, null)
+
+// s.slice(undefined, undefined)
+Hello1234
+
+// substr
+// s.substr(1, 2)
+EL
+// s.substr(1)
+ELLO𝔄hello
+// s.substr(-5)
+hello
+// s.substr(6, 3)
+�he
+// s.substr(3, 0)
+
+// s.substr(3, undefined)
+LO𝔄hello
+// s.substr(3, null)
+
+// s.substr(null, 4)
+HELL
+// s.substr(4294967296, -4294967294)
+HE
+// s.substr()
+undefined
+// s.substr(undefined, undefined)
+HELLO𝔄hello
+// s.substr(null, undefined)
+HELLO𝔄hello
+// s.substr(null, null)
+
+
+// substring
+// s.substring(1, 2)
+E
+// s.substring(1)
+ELLO𝔄hello
+// s.substring(-5)
+HELLO𝔄hello
+// s.substring(6, 3)
+LO�
+// s.substring(3, 0)
+HEL
+// s.substring(3, undefined)
+LO𝔄hello
+// s.substring(3, null)
+HEL
+// s.substring(null, 4)
+HELL
+// s.substring(4294967296, -4294967294)
+HE
+// s.substring(
+undefined
+// s.substring(undefined, undefined)
+HELLO𝔄hello
+// s.substring(null, undefined)
+HELLO𝔄hello
+// s.substring(null, null)
+
+
+// split
+// s.split(",")
+6
+A,,b,undefined0,c,
+// s.split(",", 2)
+2
+A,
+// s.split(",", 0)
+0
+
+// s.split(",", -100)
+0
+
+// s.split(",", undefined)
+6
+A,,b,undefined0,c,
+// s.split(",", null)
+0
+
+// s.split("")
+18
+A,,,,,b,,,u,n,d,e,f,i,n,e,d,0,,,c,,
+// s.split(undefined)
+1
+A,,b,undefined0,c,
+// s.split(undefined, 0)
+1
+A,,b,undefined0,c,
+// s.split()
+1
+A,,b,undefined0,c,
+
+// toLowerCase
+// "teST😋".toLowerCase()
+test😋
+// All uppercase chars
+abcdefghijklmnopqrstuvwxyzàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþāăąćĉċčďđēĕėęěĝğġģĥħĩīĭįiĳĵķĺļľŀłńņňŋōŏőœŕŗřśŝşšţťŧũūŭůűųŵŷÿźżžɓƃƅɔƈɖɗƌǝəɛƒɠɣɩɨƙɯɲɵơƣƥʀƨʃƭʈưʊʋƴƶʒƹƽǆǆǉǉǌǌǎǐǒǔǖǘǚǜǟǡǣǥǧǩǫǭǯǳǳǵƕƿǹǻǽǿȁȃȅȇȉȋȍȏȑȓȕȗșțȝȟȣȥȧȩȫȭȯȱȳάέήίόύώαβγδεζηθικλμνξοπρςστυφχψωϊϋϙϛϝϟϡϣϥϧϩϫϭϯθѐёђѓєѕіїјљњћќѝўџабвгдежзийклмнопрстуфхцчшщъыьэюяѡѣѥѧѩѫѭѯѱѳѵѷѹѻѽѿҁҋҍҏґғҕҗҙқҝҟҡңҥҧҩҫҭүұҳҵҷҹһҽҿӂӄӈӌӑӓӕӗәӛӝӟӡӣӥӧөӫӭӯӱӳӵӷӹաբգդեզէըթժիլխծկհձղճմյնշոչպջռսվտրցւփքօֆაბგდევზთიკლმნოპჟრსტუფქღყშჩცძწჭხჯჰჱჲჳჴჵḁḃḅḇḉḋḍḏḑḓḕḗḙḛḝḟḡḣḥḧḩḫḭḯḱḳḵḷḹḻḽḿṁṃṅṇṉṋṍṏṑṓṕṗṙṛṝṟṡṣṥṧṩṫṭṯṱṳṵṷṹṻṽṿẁẃẅẇẉẋẍẏẑẓẕạảấầẩẫậắằẳẵặẹẻẽếềểễệỉịọỏốồổỗộớờởỡợụủứừửữựỳỵỷỹἀἁἂἃἄἅἆἇἐἑἒἓἔἕἠἡἢἣἤἥἦἧἰἱἲἳἴἵἶἷὀὁὂὃὄὅὑὓὕὗὠὡὢὣὤὥὦὧᾀᾁᾂᾃᾄᾅᾆᾇᾐᾑᾒᾓᾔᾕᾖᾗᾠᾡᾢᾣᾤᾥᾦᾧᾰᾱὰάᾳὲέὴήῃῐῑὶίῠῡὺύῥὸόὼώῳωkåⅰⅱⅲⅳⅴⅵⅶⅷⅸⅹⅺⅻⅼⅽⅾⅿⓐⓑⓒⓓⓔⓕⓖⓗⓘⓙⓚⓛⓜⓝⓞⓟⓠⓡⓢⓣⓤⓥⓦⓧⓨⓩａｂｃｄｅｆｇｈｉｊｋｌｍｎｏｐｑｒｓｔｕｖｗｘｙｚ
+
+// toUpperCase
+// "teST😋".toUpperCase()
+TEST😋
+// All lowercase chars
+ABCDEFGHIJKLMNOPQRSTUVWXYZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞŸĀĂĄĆĈĊČĎĐĒĔĖĘĚĜĞĠĢĤĦĨĪĬĮIĲĴĶĹĻĽĿŁŃŅŇŊŌŎŐŒŔŖŘŚŜŞŠŢŤŦŨŪŬŮŰŲŴŶŹŻŽSƂƄƇƋƑǶƘƠƢƤƧƬƯƳƵƸƼǷǄǄǇǇǊǊǍǏǑǓǕǗǙǛƎǞǠǢǤǦǨǪǬǮǱǱǴǸǺǼǾȀȂȄȆȈȊȌȎȐȒȔȖȘȚȜȞȢȤȦȨȪȬȮȰȲƁƆƉƊƏƐƓƔƗƖƜƝƟƦƩƮƱƲƷΙΆΈΉΊΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡ΢ΣΤΥΦΧΨΩΪΫΌΎΏΒΘΦΠϘϚϜϞϠϢϤϦϨϪϬϮΚΡΣΕАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯЀЁЂЃЄЅІЇЈЉЊЋЌЍЎЏѠѢѤѦѨѪѬѮѰѲѴѶѸѺѼѾҀҊҌҎҐҒҔҖҘҚҜҞҠҢҤҦҨҪҬҮҰҲҴҶҸҺҼҾӁӃӇӋӐӒӔӖӘӚӜӞӠӢӤӦӨӪӬӮӰӲӴӶӸԱԲԳԴԵԶԷԸԹԺԻԼԽԾԿՀՁՂՃՄՅՆՇՈՉՊՋՌՍՎՏՐՑՒՓՔՕՖḀḂḄḆḈḊḌḎḐḒḔḖḘḚḜḞḠḢḤḦḨḪḬḮḰḲḴḶḸḺḼḾṀṂṄṆṈṊṌṎṐṒṔṖṘṚṜṞṠṢṤṦṨṪṬṮṰṲṴṶṸṺṼṾẀẂẄẆẈẊẌẎẐẒẔṠẠẢẤẦẨẪẬẮẰẲẴẶẸẺẼẾỀỂỄỆỈỊỌỎỐỒỔỖỘỚỜỞỠỢỤỦỨỪỬỮỰỲỴỶỸἈἉἊἋἌἍἎἏἘἙἚἛἜἝἨἩἪἫἬἭἮἯἸἹἺἻἼἽἾἿὈὉὊὋὌὍὙὛὝὟὨὩὪὫὬὭὮὯᾺΆῈΈῊΉῚΊῸΌῪΎῺΏᾈᾉᾊᾋᾌᾍᾎᾏᾘᾙᾚᾛᾜᾝᾞᾟᾨᾩᾪᾫᾬᾭᾮᾯᾸᾹᾼΙῌῘῙῨῩῬῼⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫⅬⅭⅮⅯⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿⓀⓁⓂⓃⓄⓅⓆⓇⓈⓉⓊⓋⓌⓍⓎⓏＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴＵＶＷＸＹＺ
+

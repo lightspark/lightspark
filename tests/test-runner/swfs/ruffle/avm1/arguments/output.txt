@@ -1,0 +1,130 @@
+// dump()
+// arguments
+
+
+// arguments.length
+0
+
+// arguments instanceof Array
+true
+
+// arguments.__proto__ === Array.prototype
+true
+
+// arguments.callee
+[type Function]
+
+// arguments.callee === dump
+true
+
+// arguments.caller
+null
+
+// arguments.caller === indirectDump
+false
+
+
+
+// dump("a")
+// arguments
+a
+
+// arguments.length
+1
+
+// arguments instanceof Array
+true
+
+// arguments.__proto__ === Array.prototype
+true
+
+// arguments.callee
+[type Function]
+
+// arguments.callee === dump
+true
+
+// arguments.caller
+null
+
+// arguments.caller === indirectDump
+false
+
+// arguments[0]
+a
+
+
+
+// dump("a", "b")
+// arguments
+a,b
+
+// arguments.length
+2
+
+// arguments instanceof Array
+true
+
+// arguments.__proto__ === Array.prototype
+true
+
+// arguments.callee
+[type Function]
+
+// arguments.callee === dump
+true
+
+// arguments.caller
+null
+
+// arguments.caller === indirectDump
+false
+
+// arguments[1]
+b
+
+// arguments[0]
+a
+
+
+
+// indirectDump("a", "b", undefined, "d")
+// dump.apply(dump, arguments)
+// arguments
+a,b,undefined,d
+
+// arguments.length
+4
+
+// arguments instanceof Array
+true
+
+// arguments.__proto__ === Array.prototype
+true
+
+// arguments.callee
+[type Function]
+
+// arguments.callee === dump
+true
+
+// arguments.caller
+[type Function]
+
+// arguments.caller === indirectDump
+true
+
+// arguments[3]
+d
+
+// arguments[2]
+undefined
+
+// arguments[1]
+b
+
+// arguments[0]
+a
+
+
+

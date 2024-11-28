@@ -1,0 +1,43 @@
+New child: Custom child
+Equal: true
+Children length: 4
+'child' in outer: true
+Child kind= A
+Child kind= B
+Child kind= A
+Child kind= D
+Inner child localName null
+Inner child localName null
+Inner child localName null
+Inner child localName p
+Inner child localName null
+Empty children: 0
+filterA.length() = 2
+filterA[0].toString() = First Child
+filterA[1].name() = child
+filterB.length() = 1
+filterB[0].toString() = Second Child
+filterC.length() = 0
+filterB.split(' ') = Second,Child
+filterB.indexOf('e') = 1
+normalList.nested = Normal Child
+weirdList.name = Weird child
+weirdList.name() = child
+weirdList.split.length() = 0
+weirdList.name = Weird child
+weirdList.name() = child
+getQualifiedClassName(filterB.split) = XMLList
+simpleXML.split(' ') = My,simple,text
+getQualifiedClassName(simpleXML.split) = XMLList
+xmlElement.split(' ') = Inner,content
+sameName.child.@attr = Inner
+weirdXMl.split(' ') = Weird,content
+emptyList.name() threw: TypeError: Error #1086: The name method only works on lists containing one item.
+multiList.name() threw: TypeError: Error #1086: The name method only works on lists containing one item.
+Before delete: <child name="First child"/>
+<child name="Second child"/>
+childList[0].parent().name() = outer
+After delete: <child name="First child"/>
+<child name="Second child"/>
+childList[0].parent() = undefined
+multiChild after delete: <outer><inner name="Hi"/></outer>

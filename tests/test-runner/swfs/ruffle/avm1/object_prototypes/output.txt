@@ -1,0 +1,75 @@
+Base constructed!
+Base constructed!
+// a.name
+foo
+
+// b.name
+foo
+
+// c.name
+foo
+
+
+// a.name = "bar"
+
+// a.name
+bar
+
+// b.name
+bar
+
+// c.name
+foo
+
+// obj.__proto__
+123
+
+// typeof obj.__proto__
+number
+
+// obj.__proto__
+true
+
+// typeof obj.__proto__
+boolean
+
+// obj.__proto__
+abc
+
+// typeof obj.__proto__
+string
+
+// obj.__proto__
+null
+
+// typeof obj.__proto__
+null
+
+// obj.__proto__
+undefined
+
+// typeof obj.__proto__
+undefined
+
+// obj.__proto__
+[object Object]
+
+// typeof obj.__proto__
+object
+
+// Object.prototype.hasOwnProperty("__proto__")
+false
+
+// o.__proto__ = "foo";
+watcher called
+
+// delete o.__proto__;
+// o.__proto__
+undefined
+
+// o.__PROTO__
+[object Object]
+
+// o.__Proto__
+[object Object]
+

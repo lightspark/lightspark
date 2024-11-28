@@ -1,0 +1,54 @@
+up_child: Constructed
+up_child:[Event type="added" bubbles=true cancelable=false eventPhase=2]
+up_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+instance2: Constructed
+//Constructed UpButtonShape ( instance2 )!
+over_child: Constructed
+over_child:[Event type="added" bubbles=true cancelable=false eventPhase=2]
+over_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+instance5: Constructed
+//Constructed OverButtonShape ( instance5 )!
+down_child: Constructed
+down_child:[Event type="added" bubbles=true cancelable=false eventPhase=2]
+down_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+instance8: Constructed
+//Constructed DownButtonShape ( instance8 )!
+instance2:[Event type="added" bubbles=true cancelable=false eventPhase=2]
+instance2:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+up_child:[Event type="addedToStage" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 1
+//my_button
+[object SimpleButton]
+//my_button.upState
+[object Sprite] - instance12
+// numChildren:  2
+[object Shape] - instance1
+[object UpButtonShape] - instance2
+// numChildren:  2
+[object Shape] - instance3
+[object EventWatcher] - up_child
+// numChildren:  1
+[object Shape] - instance4
+//my_button.overState
+[object OverButtonShape] - instance5
+// numChildren:  2
+[object Shape] - instance6
+[object EventWatcher] - over_child
+// numChildren:  1
+[object Shape] - instance7
+//my_button.downState
+[object DownButtonShape] - instance8
+// numChildren:  2
+[object Shape] - instance9
+[object EventWatcher] - down_child
+// numChildren:  1
+[object Shape] - instance10
+//my_button.hitTestState
+[object Shape] - instance11
+up_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+instance2:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+over_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+instance5:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+down_child:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+instance8:[Event type="enterFrame" bubbles=false cancelable=false eventPhase=2]
+//MainTimeline frame 2

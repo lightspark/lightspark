@@ -1,0 +1,58 @@
+//x instanceof Object
+true
+//x instanceof Test2
+true
+//x instanceof ITest2
+false
+//x instanceof Test3
+true
+//x instanceof ITest3
+false
+//x instanceof Test4
+false
+//y instanceof Object
+true
+//y instanceof Test2
+true
+//y instanceof ITest2
+false
+//y instanceof Test3
+true
+//y instanceof ITest3
+false
+//y instanceof Test4
+true
+//Test3.prototype instanceof Object
+true
+//Test3.prototype instanceof Test2
+true
+//Test3.prototype instanceof ITest2
+false
+//Test3.prototype instanceof Test3
+false
+//Test3.prototype instanceof ITest3
+false
+//Test3.prototype instanceof Test4
+false
+//Test4.prototype instanceof Object
+true
+//Test4.prototype instanceof Test2
+true
+//Test4.prototype instanceof ITest2
+false
+//Test4.prototype instanceof Test3
+true
+//Test4.prototype instanceof ITest3
+false
+//Test4.prototype instanceof Test4
+false
+//Object.prototype instanceof Object
+false
+//Function.prototype instanceof Object
+true
+//Function.prototype instanceof Function
+false
+//Class.prototype instanceof Object
+true
+//Class.prototype instanceof Class
+false

@@ -1,0 +1,7 @@
+xml.*::foo.toString() abc
+xml.*::hello.toString() world
+xml.foo.toString() abc
+xml.example::foo.toString() 
+xml.hello.toString() 
+xml.example::hello.toString() world
+xml.example::test abc

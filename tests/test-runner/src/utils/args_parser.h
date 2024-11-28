@@ -36,6 +36,12 @@
 
 using namespace lightspark;
 
+namespace lightspark
+{
+	template<typename T>
+	class Optional;
+};
+
 // Based on SerenityOS' ArgsParser from LibCore.
 
 class ArgsParser
@@ -235,6 +241,90 @@ public:
 		});
 	}
 
+	template<typename T, std::enable_if_t<(std::is_enum<T>::value || std::is_arithmetic<T>::value), bool> = false>
+	void addOption
+	(
+		Optional<T>& value,
+		const std::vector<tiny_string>& nameList,
+		const char* help,
+		const char* longName,
+		char shortName = '\0',
+		const char* valueName = nullptr,
+		char listDelim = '|'
+	)
+	{
+		addOption
+		({
+			.argMode = ArgumentMode::None,
+			.help = help,
+			.longName = longName,
+			.shortName = shortName,
+			.makeValueName = [nameList, listDelim]
+			{
+				std::stringstream s;
+				for (auto it = nameList.cbegin(); it != nameList.cend(); ++it)
+				{
+					if (it != nameList.cbegin())
+						s << listDelim;
+					s << *it;
+				}
+				return s.str();
+			},
+			.acceptValue = [&value, nameList](const tiny_string& str)
+			{
+				auto it = std::find(nameList.cbegin(), nameList.cend(), str);
+				if (it != nameList.cend())
+				{
+					value = T(std::distance(nameList.cbegin(), it));
+					return true;
+				}
+				return false;
+			}
+		});
+	}
+
+	template<typename T, std::enable_if_t<(std::is_enum<T>::value || std::is_arithmetic<T>::value), bool> = false>
+	void addOption
+	(
+		Optional<T>& value,
+		const std::map<tiny_string, T>& nameList,
+		const char* help,
+		const char* longName,
+		char shortName = '\0',
+		const char* valueName = nullptr,
+		char listDelim = '|'
+	)
+	{
+		addOption
+		({
+			.argMode = ArgumentMode::None,
+			.help = help,
+			.longName = longName,
+			.shortName = shortName,
+			.makeValueName = [nameList, listDelim]
+			{
+				std::stringstream s;
+				for (auto it = nameList.cbegin(); it != nameList.cend(); ++it)
+				{
+					if (it != nameList.cbegin())
+						s << listDelim;
+					s << (*it).first;
+				}
+				return s.str();
+			},
+			.acceptValue = [&value, nameList](const tiny_string& str)
+			{
+				auto it = nameList.find(str);
+				if (it != nameList.cend())
+				{
+					value = (*it).second;
+					return true;
+				}
+				return false;
+			}
+		});
+	}
+
 	template<typename T, std::enable_if_t<std::is_arithmetic<std::underlying_type_t<T>>::value, bool> = false>
 	void addOption(T& value, const char* help, const char* longName, char shortName, const char* valueName)
 	{
@@ -248,6 +338,25 @@ public:
 			.acceptValue = [&value](const tiny_string& str)
 			{
 				return str.toNumber<std::underlying_type_t<T>>((std::underlying_type_t<T>&)value);
+			}
+		};
+		addOption(std::move(option));
+	}
+
+	template<typename T, std::enable_if_t<std::is_arithmetic<T>::value, bool> = false>
+	void addOption(Optional<T>& value, const char* help, const char* longName, char shortName, const char* valueName)
+	{
+		Option option
+		{
+			.argMode = ArgumentMode::Required,
+			.help = help,
+			.longName = longName,
+			.shortName = shortName,
+			.valueName = valueName,
+			.acceptValue = [&value](const tiny_string& str)
+			{
+				value = str.tryToNumber<T>();
+				return value.hasValue();
 			}
 		};
 		addOption(std::move(option));
@@ -286,11 +395,13 @@ public:
 		addOption(std::move(option));
 	}
 	void addOption(tiny_string& value, const char* help, const char* longName, char shortName, const char* valueName);
+	void addOption(Optional<tiny_string>& value, const char* help, const char* longName, char shortName, const char* valueName);
 
 	void addOption(std::vector<tiny_string>& values, const char* help, const char* longName, char shortName, const char* valueName);
 
 	void addPositionalArgument(Arg&& arg);
 	void addPositionalArgument(tiny_string& value, const char* help, const char* name, bool required = true);
+	void addPositionalArgument(Optional<tiny_string>& value, const char* help, const char* name, bool required = true);
 	template<typename T, std::enable_if_t<std::is_arithmetic<T>::value, bool> = false>
 	void addPositionalArgument(T& value, const char* help, const char* name, bool required = true)
 	{

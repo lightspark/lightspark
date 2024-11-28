@@ -22,6 +22,7 @@
 
 #include "compat.h"
 #include "backends/geometry.h"
+#include "events.h"
 #include "threading.h"
 #include "platforms/engineutils.h"
 #include "swftypes.h"

@@ -164,6 +164,8 @@ public:
 	void pushEventNoLock(const LSEvent& event);
 	static LSEventStorage popEvent();
 	static LSEventStorage popEventNoLock();
+	static void clearEvents();
+	static void clearEventsNoLock();
 	// local storage handling
 	virtual void setLocalStorageAllowedMarker(bool allowed);
 	virtual bool getLocalStorageAllowedMarker();

@@ -32,6 +32,8 @@ namespace lightspark
 {
 	struct LSEvent;
 	struct LSEventStorage;
+	template<typename T>
+	class Optional;
 };
 
 using InjectorCallback = std::function<void(const LSEvent&)>;
@@ -44,6 +46,10 @@ private:
 public:
 	InputInjector() : events(), eventIndex(0) {}
 	InputInjector(InputParser& parser) : events(parser.parse()), eventIndex(0) {}
+	bool hasEvents() const { return !events.empty(); }
+	bool endOfInput() const { return eventIndex >= events.size(); }
+	Optional<LSEventStorage> popEvent();
+	Optional<LSEventStorage> getCurrentEvent() const;
 	// Run all events for this frame.
 	void runFrame(InjectorCallback callback);
 };

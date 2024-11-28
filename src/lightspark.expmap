@@ -19,6 +19,7 @@ global:
 		*lightspark::ExtBuiltinCallback*;
 		*lightspark::ExtScriptObject*;
 		*lightspark::EngineData*;
+		*lightspark::FileStreamCache*;
 		*lightspark::SDLEventLoop*;
 		rt;
 		sys;

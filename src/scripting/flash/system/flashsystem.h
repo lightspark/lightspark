@@ -149,7 +149,7 @@ public:
 	void setOrigin(const tiny_string& u, const tiny_string& filename="");
 	URLInfo& getOrigin() { return origin; }
 	void setFrameSize(const RECT& f);
-	RECT getFrameSize() const;
+	RECT getFrameSize() const DLL_PUBLIC;
 	float getFrameRate() const;
 	void setFrameRate(float f);
 	void setBaseURL(const tiny_string& url);

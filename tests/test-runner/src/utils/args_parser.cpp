@@ -21,6 +21,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
+#include <lightspark/utils/optional.h>
 #include <list>
 #include <sstream>
 #include <tcb/span.hpp>
@@ -361,6 +362,24 @@ void ArgsParser::addOption(tiny_string& value, const char* help, const char* lon
 	addOption(std::move(option));
 }
 
+void ArgsParser::addOption(Optional<tiny_string>& value, const char* help, const char* longName, char shortName, const char* valueName)
+{
+	Option option
+	{
+		.argMode = ArgumentMode::Required,
+		.help = help,
+		.longName = longName,
+		.shortName = shortName,
+		.valueName = valueName,
+		.acceptValue = [&](const tiny_string& str)
+		{
+			value = str;
+			return true;
+		},
+	};
+	addOption(std::move(option));
+}
+
 void ArgsParser::addOption(std::vector<tiny_string>& values, const char* help, const char* longName, char shortName, const char* valueName)
 {
 	Option option
@@ -386,6 +405,23 @@ void ArgsParser::addPositionalArgument(Arg&& arg)
 
 
 void ArgsParser::addPositionalArgument(tiny_string& value, const char* help, const char* name, bool required)
+{
+	Arg arg
+	{
+		.help = help,
+		.name = name,
+		.minValues = required,
+		.maxValues = 1,
+		.acceptValue = [&](const tiny_string& str)
+		{
+			value = str;
+			return true;
+		},
+	};
+	addPositionalArgument(std::move(arg));
+}
+
+void ArgsParser::addPositionalArgument(Optional<tiny_string>& value, const char* help, const char* name, bool required)
 {
 	Arg arg
 	{

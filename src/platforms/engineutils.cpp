@@ -671,6 +671,17 @@ LSEventStorage EngineData::popEventNoLock()
 	return ret;
 }
 
+void EngineData::clearEvents()
+{
+	Locker l(EngineData::eventMutex);
+	return clearEventsNoLock();
+}
+
+void EngineData::clearEventsNoLock()
+{
+	EngineData::events.clear();
+}
+
 void EngineData::notifyEventLoop()
 {
 	SDL_Event event;

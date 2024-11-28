@@ -123,7 +123,7 @@ IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^i[3-6]86$|^x86$")
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 32")
 	# nasm for assembly optimizations
 	IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	   ENABLE_LANGUAGE(ASM-NASM)
+	   ENABLE_LANGUAGE(ASM ASM-NASM)
 	ENDIF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "unknown" AND ${CMAKE_SYSTEM} MATCHES "GNU-0.3")
 	# GNU Hurd is i386
@@ -131,14 +131,14 @@ ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "unknown" AND ${CMAKE_SYSTEM} MATCHES "
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 32")
 	# nasm for assembly optimizations
 	IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	   ENABLE_LANGUAGE(ASM-NASM)
+	   ENABLE_LANGUAGE(ASM ASM-NASM)
 	ENDIF ()
 ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "^x86_64$|^amd64$")
 	SET(x86_64 1)
 	SET(LIB_SUFFIX "" CACHE STRING "Choose the suffix of the lib folder (if any) : None 64")
 	# nasm for assembly optimizations
 	IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-	  ENABLE_LANGUAGE(ASM-NASM)
+	  ENABLE_LANGUAGE(ASM ASM-NASM)
 	ENDIF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 ELSEIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc")
 	SET(ppc 1)
@@ -505,7 +505,7 @@ ELSE()
   INSTALL(FILES COPYING.LESSER DESTINATION "." RENAME COPYING.LESSER.txt)
 endif(UNIX)
 
-SUBDIRS(src)
+SUBDIRS(src EXCLUDE_FROM_ALL tests/test-runner)
 
 #-- CPack setup - use 'make package' to build
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Lightspark is an LGPLv3 licensed cross-platform Flash player and browser plugin")

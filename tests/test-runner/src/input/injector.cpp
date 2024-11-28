@@ -17,6 +17,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <lightspark/utils/optional.h>
+
 #include "input/events.h"
 #include "input/injector.h"
 
@@ -35,4 +37,18 @@ void InputInjector::runFrame(InjectorCallback callback)
 		callback(event);
 	}
 	eventIndex = i;
+}
+
+Optional<LSEventStorage> InputInjector::popEvent()
+{
+	if (!hasEvents() || endOfInput())
+		return nullOpt;
+	return events[eventIndex++];
+}
+
+Optional<LSEventStorage> InputInjector::getCurrentEvent() const
+{
+	if (!hasEvents() || endOfInput())
+		return nullOpt;
+	return events[eventIndex];
 }

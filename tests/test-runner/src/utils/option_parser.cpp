@@ -24,6 +24,7 @@
 #include <iostream>
 #include <sstream>
 #include <list>
+#include <map>
 #include <tcb/span.hpp>
 #include <vector>
 
@@ -39,12 +40,22 @@ void OptionParser::resetState()
 	stopOnFirstNonOption = false;
 }
 
-GetOptionResult OptionParser::getOption(const tcb::span<tiny_string>& args, const tiny_string& shortOptions, const tcb::span<const Option>& longOptions, int* outLongOptionIndex)
+OptionParser::GetOptionResult OptionParser::getOption
+(
+	const tcb::span<tiny_string>& args,
+	const tiny_string& shortOptions,
+	const tcb::span<const Option>& longOptions,
+	const tcb::span<const Option>& mediumOptions,
+	int* outLongOptionIndex,
+	int* outMediumOptionIndex
+)
 {
 	this->args = args;
 	this->shortOptions = shortOptions;
 	this->longOptions = longOptions;
+	this->mediumOptions = mediumOptions;
 	this->outLongOptionIndex = outLongOptionIndex;
+	this->outMediumOptionIndex = outMediumOptionIndex;
 
 	stopOnFirstNonOption = shortOptions.startsWith("+");
 
@@ -92,7 +103,6 @@ GetOptionResult OptionParser::getOption(const tcb::span<tiny_string>& args, cons
 	};
 }
 
-// TODO: support multi-character short options.
 OptionParser::ArgumentRequirement OptionParser::lookupShortOptionRequirement(char option) const
 {
 	auto parts = shortOptions.split(option);
@@ -121,6 +131,17 @@ int OptionParser::handleShortOption()
 	tiny_string arg = currentArg();
 	assert(arg.startsWith("-"));
 
+	if (arg.numChars()-1 >= 2)
+	{
+		// Check if we have a medium option.
+		int ret = handleMediumOption();
+		if (ret != '?')
+		{
+			// Got one, return immediately.
+			return ret;
+		}
+	}
+
 	// Skip the "-", if we just started parsing this argument.
 	currentMultiOptArgIndex += !currentMultiOptArgIndex;
 	uint32_t option = arg[currentMultiOptArgIndex++];
@@ -129,7 +150,12 @@ int OptionParser::handleShortOption()
 	if (requirement == ArgumentRequirement::Invalid)
 	{
 		optValue = option;
-		std::cerr << "Unrecognized option -" << option << std::endl;
+		std::cerr << "Unrecognized option ";
+		if (currentMultiOptArgIndex != 1)
+			std::cerr << arg;
+		else
+			std::cerr << '-' << option;
+		std::cerr << std::endl;
 		return '?';
 	}
 
@@ -172,6 +198,118 @@ int OptionParser::handleShortOption()
 	}
 
 	return option;
+}
+
+// NOTE: A medium option is a multi-character short option.
+const OptionParser::Option* OptionParser::lookupMediumOption(const tiny_string& arg) const
+{
+	if (arg.numChars() < 2)
+		return nullptr;
+
+	constexpr size_t npos = size_t(-1);
+
+	std::map<tiny_string, size_t> map;
+	size_t idx = npos;
+
+	for (size_t i = 0; i < mediumOptions.size(); ++i)
+	{
+		const auto& name = mediumOptions[i].name;
+		const std::array<uint32_t, 2> a = { arg[0], arg[1] };
+		const std::array<uint32_t, 2> b = { name[0], name[1] };
+		if (a == b)
+		{
+			if (arg.numChars() == 2 && name.numChars() == 2)
+			{
+				idx = i;
+				break;
+			}
+			else if (arg.numChars() > 2 && name.numChars() > 2)
+				map.insert(std::make_pair(name.substr(2, UINT32_MAX), i));
+		}
+	}
+
+	for (auto it = map.rbegin(); idx == npos && it != map.rend(); ++it)
+	{
+		const auto& pair = *it;
+		if (arg.find(pair.first, 2) == tiny_string::npos)
+			continue;
+
+		idx = pair.second;
+	}
+
+	if (idx == npos)
+		return nullptr;
+
+	setMediumOptionIndex(idx);
+	auto& option = mediumOptions[idx];
+
+	bool sameSize = arg.numChars() == option.name.numChars();
+	bool hasEquals = arg[option.name.numChars()] == '=';
+
+	if (sameSize || hasEquals)
+	{
+		argValue = sameSize ? "" : arg.substr_bytes(option.name.numChars() + 1, UINT32_MAX);
+		return &option;
+	}
+
+	return nullptr;
+}
+
+int OptionParser::handleMediumOption()
+{
+	tiny_string arg = currentArg();
+	assert(arg.startsWith("-") && arg.numChars()-1 >= 2);
+
+	optValue = 0;
+
+	auto option = lookupMediumOption(arg.substr(1, UINT32_MAX));
+
+	if (option == nullptr)
+		return '?';
+
+	assert(option->requirement != ArgumentRequirement::Invalid);
+	switch (option->requirement)
+	{
+		case ArgumentRequirement::None:
+			if (!argValue.empty())
+			{
+				std::cerr << "Option -" << option->name << " doesn't accept an argument" << std::endl;
+				return '?';
+			}
+			parsedArgs = 1;
+			break;
+		case ArgumentRequirement::Optional:
+			parsedArgs = 1;
+			break;
+		case ArgumentRequirement::Required:
+			if (!argValue.empty())
+			{
+				// Value was given in the form "-option=value".
+				parsedArgs = 1;
+			}
+			else if (argIndex + 1 < args.size())
+			{
+				// Treat the next argument as the value, in the form "-option value".
+				argValue = args[argIndex + 1];
+				parsedArgs = 2;
+			}
+			else
+			{
+				std::cerr << "Missing value for option -" << option->name << std::endl;
+				return '?';
+			}
+			break;
+		default:
+			break;
+	}
+
+	// Should we not report this option to our caller?
+	if (option->flag != nullptr)
+	{
+		*option->flag = option->val;
+		return '"';
+	}
+	return option->val;
 }
 
 const OptionParser::Option* OptionParser::lookupLongOption(const tiny_string& arg) const

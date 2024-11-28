@@ -67,15 +67,15 @@ public:
 		ArgumentMode argMode { ArgumentMode::Required };
 		const char* help { nullptr };
 		const char* longName { nullptr };
-		const char shortName { '\0' };
+		const char* shortName { nullptr };
 		const char* valueName { nullptr };
 		std::function<tiny_string()> makeValueName {};
 		std::function<bool(const tiny_string&)> acceptValue {};
 		tiny_string nameForDisplay(const tiny_string& delim = ", ") const
 		{
 			std::stringstream s;
-			bool needsDelim = shortName != '\0' && longName != nullptr;
-			if (shortName != '\0')
+			bool needsDelim = shortName != nullptr && longName != nullptr;
+			if (shortName != nullptr)
 				s << '-' << shortName;
 			if (needsDelim)
 				s << delim;
@@ -137,11 +137,11 @@ public:
 	void printVersion(std::basic_ostream<CharT>& stream);
 
 	void addOption(Option&& option);
-	void addIgnored(const char* longName, char shortName);
-	void addOption(bool& value, const char* help, const char* longName, char shortName = '\0');
+	void addIgnored(const char* longName, const char* shortName);
+	void addOption(bool& value, const char* help, const char* longName, const char* shortName = nullptr);
 
 	template<typename T, std::enable_if_t<std::is_enum<T>::value, bool> = false>
-	void addOption(T& value, T newValue, const char* help, const char* longName, char shortName = '\0')
+	void addOption(T& value, T newValue, const char* help, const char* longName, const char* shortName = nullptr)
 	{
 		addOption
 		({
@@ -164,7 +164,7 @@ public:
 		const std::vector<tiny_string>& nameList,
 		const char* help,
 		const char* longName,
-		char shortName = '\0',
+		const char* shortName = nullptr,
 		const char* valueName = nullptr,
 		char listDelim = '|'
 	)
@@ -206,7 +206,7 @@ public:
 		const std::map<tiny_string, T>& nameList,
 		const char* help,
 		const char* longName,
-		char shortName = '\0',
+		const char* shortName = nullptr,
 		const char* valueName = nullptr,
 		char listDelim = '|'
 	)
@@ -248,7 +248,7 @@ public:
 		const std::vector<tiny_string>& nameList,
 		const char* help,
 		const char* longName,
-		char shortName = '\0',
+		const char* shortName = nullptr,
 		const char* valueName = nullptr,
 		char listDelim = '|'
 	)
@@ -290,7 +290,7 @@ public:
 		const std::map<tiny_string, T>& nameList,
 		const char* help,
 		const char* longName,
-		char shortName = '\0',
+		const char* shortName = nullptr,
 		const char* valueName = nullptr,
 		char listDelim = '|'
 	)
@@ -326,7 +326,7 @@ public:
 	}
 
 	template<typename T, std::enable_if_t<std::is_arithmetic<std::underlying_type_t<T>>::value, bool> = false>
-	void addOption(T& value, const char* help, const char* longName, char shortName, const char* valueName)
+	void addOption(T& value, const char* help, const char* longName, const char* shortName, const char* valueName)
 	{
 		Option option
 		{
@@ -344,7 +344,7 @@ public:
 	}
 
 	template<typename T, std::enable_if_t<std::is_arithmetic<T>::value, bool> = false>
-	void addOption(Optional<T>& value, const char* help, const char* longName, char shortName, const char* valueName)
+	void addOption(Optional<T>& value, const char* help, const char* longName, const char* shortName, const char* valueName)
 	{
 		Option option
 		{
@@ -363,7 +363,7 @@ public:
 	}
 
 	template<typename T, std::enable_if_t<std::is_arithmetic<T>::value, bool> = false>
-	void addOption(std::vector<T>& values, const char* help, const char* longName, char shortName, const char* valueName, char delim = ',')
+	void addOption(std::vector<T>& values, const char* help, const char* longName, const char* shortName, const char* valueName, char delim = ',')
 	{
 		Option option
 		{
@@ -394,10 +394,10 @@ public:
 
 		addOption(std::move(option));
 	}
-	void addOption(tiny_string& value, const char* help, const char* longName, char shortName, const char* valueName);
-	void addOption(Optional<tiny_string>& value, const char* help, const char* longName, char shortName, const char* valueName);
+	void addOption(tiny_string& value, const char* help, const char* longName, const char* shortName, const char* valueName);
+	void addOption(Optional<tiny_string>& value, const char* help, const char* longName, const char* shortName, const char* valueName);
 
-	void addOption(std::vector<tiny_string>& values, const char* help, const char* longName, char shortName, const char* valueName);
+	void addOption(std::vector<tiny_string>& values, const char* help, const char* longName, const char* shortName, const char* valueName);
 
 	void addPositionalArgument(Arg&& arg);
 	void addPositionalArgument(tiny_string& value, const char* help, const char* name, bool required = true);

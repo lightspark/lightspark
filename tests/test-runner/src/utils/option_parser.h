@@ -58,6 +58,8 @@ public:
 private:
 	ArgumentRequirement lookupShortOptionRequirement(char option) const;
 	int handleShortOption();
+	const Option* lookupMediumOption(const tiny_string& arg) const;
+	int handleMediumOption();
 	const Option* lookupLongOption(const tiny_string& arg) const;
 	int handleLongOption();
 
@@ -77,10 +79,18 @@ private:
 			*outLongOptionIndex = index;
 	}
 
+	void setMediumOptionIndex(int index) const
+	{
+		if (outMediumOptionIndex != nullptr)
+			*outMediumOptionIndex = index;
+	}
+
 	tcb::span<tiny_string> args;
 	tiny_string shortOptions;
 	tcb::span<const Option> longOptions;
+	tcb::span<const Option> mediumOptions;
 	mutable int* outLongOptionIndex { nullptr };
+	mutable int* outMediumOptionIndex { nullptr };
 	mutable int optValue;
 	mutable tiny_string argValue;
 
@@ -90,7 +100,15 @@ private:
 	size_t currentMultiOptArgIndex { 0 };
 	bool stopOnFirstNonOption { false };
 public:
-	GetOptionResult getOption(const tcb::span<tiny_string>& args, const tiny_string& shortOptions, const tcb::span<const Option>& longOptions, int* outLongOptionIndex);
+	GetOptionResult getOption
+	(
+		const tcb::span<tiny_string>& args,
+		const tiny_string& shortOptions,
+		const tcb::span<const Option>& longOptions,
+		const tcb::span<const Option>& mediumOptions,
+		int* outLongOptionIndex,
+		int* outMediumOptionIndex
+	);
 	void resetState();
 };
 

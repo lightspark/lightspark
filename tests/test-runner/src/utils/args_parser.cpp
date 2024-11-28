@@ -32,12 +32,12 @@
 
 // Based on SerenityOS' ArgsParser from LibCore.
 
-ArgsParser::ArgsParser(const tiny_string& _appName, const tiny_string& _appVersion, const tiny_string& _appAdditional = ""):
+ArgsParser::ArgsParser(const tiny_string& _appName, const tiny_string& _appVersion, const tiny_string& _appAdditional) :
 	appName(_appName), appVersion(_appVersion), appAdditional(_appAdditional),
 	showHelp(false), showVersion(false), generalHelp(nullptr), stopOnFirstNonOption(false)
 {
-	addOption(showHelp, "Display this help message, and exit", "help", 'h');
-	addOption(showVersion, "Show version", "version", 'v');
+	addOption(showHelp, "Display this help message, and exit", "help", "h");
+	addOption(showVersion, "Show version", "version", "v");
 }
 
 bool ArgsParser::parse(const tcb::span<tiny_string>& args, FailureMode failureMode)
@@ -67,12 +67,14 @@ bool ArgsParser::parse(const tcb::span<tiny_string>& args, FailureMode failureMo
 
 	OptionParser parser;
 	std::vector<OptionParser::Option> longOptions;
+	std::vector<OptionParser::Option> mediumOptions;
 	std::stringstream shortOptionsBuilder;
 
 	if (stopOnFirstNonOption)
 		shortOptionsBuilder << '+';
 
 	int longOptionFoundIndex = -1;
+	int mediumOptionFoundIndex = -1;
 	for (size_t i = 0; i < options.size(); ++i)
 	{
 		auto& option = options[i];
@@ -87,20 +89,35 @@ bool ArgsParser::parse(const tcb::span<tiny_string>& args, FailureMode failureMo
 			};
 			longOptions.push_back(longOption);
 		}
-		if (option.shortName != '\0')
+		if (option.shortName == nullptr || *option.shortName == '\0')
+			continue;
+		if (strlen(option.shortName) == 1)
 		{
+			// It's a short option.
 			shortOptionsBuilder << option.shortName;
 			if (option.argMode != ArgumentMode::None)
 				shortOptionsBuilder << ':';
 			if (option.argMode == ArgumentMode::Optional)
 				shortOptionsBuilder << ':';
 		}
+		else
+		{
+			// It's a medium option.
+			OptionParser::Option mediumOption
+			{
+				.name = option.shortName,
+				.requirement = Option::toArgumentRequirement(option.argMode),
+				.flag = &mediumOptionFoundIndex,
+				.val = static_cast<int>(i),
+			};
+			mediumOptions.push_back(mediumOption);
+		}
 	}
 	tiny_string shortOptions = shortOptionsBuilder.str();
 	size_t optionIndex = 1;
 	while (true)
 	{
-		auto result = parser.getOption(args.subspan(1), shortOptions, longOptions);
+		auto result = parser.getOption(args.subspan(1), shortOptions, longOptions, mediumOptions, nullptr, nullptr);
 		optionIndex += result.parsedArgs;
 		auto c = result.result;
 		if (c < 0)
@@ -125,10 +142,17 @@ bool ArgsParser::parse(const tcb::span<tiny_string>& args, FailureMode failureMo
 			foundOption = &options[longOptionFoundIndex];
 			longOptionFoundIndex = -1;
 		}
+		else if (c == '"')
+		{
+			// Got a medium option.
+			assert(mediumOptionFoundIndex >= 0);
+			foundOption = &options[mediumOptionFoundIndex];
+			mediumOptionFoundIndex = -1;
+		}
 		else
 		{
 			// Got a short option, figure out which one it is.
-			auto it = std::find_if(options.begin(), options.end(), [c](Option& option) { return c == option.shortName; });
+			auto it = std::find_if(options.begin(), options.end(), [c](Option& option) { return c == *option.shortName; });
 			assert(it != options.end());
 			foundOption = &*it;
 		}
@@ -311,7 +335,7 @@ void ArgsParser::addOption(Option&& option)
 	options.push_back(std::move(option));
 }
 
-void ArgsParser::addIgnored(const char* longName, char shortName)
+void ArgsParser::addIgnored(const char* longName, const char* shortName)
 {
 	Option option
 	{
@@ -325,7 +349,7 @@ void ArgsParser::addIgnored(const char* longName, char shortName)
 	addOption(std::move(option));
 }
 
-void ArgsParser::addOption(bool& value, const char* help, const char* longName, char shortName)
+void ArgsParser::addOption(bool& value, const char* help, const char* longName, const char* shortName)
 {
 	Option option
 	{
@@ -344,7 +368,7 @@ void ArgsParser::addOption(bool& value, const char* help, const char* longName, 
 	addOption(std::move(option));
 }
 
-void ArgsParser::addOption(tiny_string& value, const char* help, const char* longName, char shortName, const char* valueName)
+void ArgsParser::addOption(tiny_string& value, const char* help, const char* longName, const char* shortName, const char* valueName)
 {
 	Option option
 	{
@@ -362,7 +386,7 @@ void ArgsParser::addOption(tiny_string& value, const char* help, const char* lon
 	addOption(std::move(option));
 }
 
-void ArgsParser::addOption(Optional<tiny_string>& value, const char* help, const char* longName, char shortName, const char* valueName)
+void ArgsParser::addOption(Optional<tiny_string>& value, const char* help, const char* longName, const char* shortName, const char* valueName)
 {
 	Option option
 	{
@@ -380,7 +404,7 @@ void ArgsParser::addOption(Optional<tiny_string>& value, const char* help, const
 	addOption(std::move(option));
 }
 
-void ArgsParser::addOption(std::vector<tiny_string>& values, const char* help, const char* longName, char shortName, const char* valueName)
+void ArgsParser::addOption(std::vector<tiny_string>& values, const char* help, const char* longName, const char* shortName, const char* valueName)
 {
 	Option option
 	{

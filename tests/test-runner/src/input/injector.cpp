@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "input/events.h"
 #include "input/injector.h"
 
 void InputInjector::runFrame(InjectorCallback callback)
@@ -25,8 +26,8 @@ void InputInjector::runFrame(InjectorCallback callback)
 	bool done = false;
 	for (i = eventIndex; i < events.size() && !done; ++i)
 	{
-		auto event = events[i];
-		if (event.type == EventType::NextFrame)
+		const LSEvent& event = events[i];
+		if (event.has<TestRunnerNextFrameEvent>())
 		{
 			done = true;
 			continue;

@@ -20,17 +20,22 @@
 
 #include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
+#include <fstream>
 
-#include "input/formats/ruffle/events.h"
 #include "input/formats/ruffle/parser.h"
-#include "utils/cereal_overloads.h"
-#include "utils/enum_name.h"
-#include "utils/variant_name.h"
+#include "input/formats/ruffle/events.h"
 
 
-const std::vector<InputEvent> RuffleInputParser::parse()
+std::vector<LSEventStorage> RuffleInputParser::parse()
 {
+	std::ifstream input(path);
+	cereal::JSONInputArchive archive(input);
 	std::vector<AutomatedEvent> events;
 	archive(events);
-	return std::vector<InputEvent> { events.begin(), events.end() };
+
+	std::vector<LSEventStorage> ret;
+	ret.reserve(events.size());
+	for (auto event : events)
+		std::visit([&](const auto& ev) { ret.push_back(ev); }, event);
+	return ret;
 }

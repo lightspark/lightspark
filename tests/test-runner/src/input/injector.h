@@ -25,17 +25,24 @@
 #include <vector>
 
 #include "input/parser.h"
-#include "input/events.h"
 
-using InjectorCallback = std::function<void(const InputEvent &)>;
+using namespace lightspark;
+
+namespace lightspark
+{
+	struct LSEvent;
+	struct LSEventStorage;
+};
+
+using InjectorCallback = std::function<void(const LSEvent&)>;
 
 class InputInjector
 {
 private:
-	//InputParser* parser;
-	std::vector<InputEvent> events;
+	std::vector<LSEventStorage> events;
 	size_t eventIndex;
 public:
+	InputInjector() : events(), eventIndex(0) {}
 	InputInjector(InputParser& parser) : events(parser.parse()), eventIndex(0) {}
 	// Run all events for this frame.
 	void runFrame(InjectorCallback callback);

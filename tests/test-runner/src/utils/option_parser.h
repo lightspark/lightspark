@@ -25,6 +25,8 @@
 #include <tcb/span.hpp>
 #include <type_traits>
 
+using namespace lightspark;
+
 // Based on SerenityOS' OptionParser from AK.
 
 class OptionParser
@@ -56,7 +58,7 @@ public:
 private:
 	ArgumentRequirement lookupShortOptionRequirement(char option) const;
 	int handleShortOption();
-	Option lookupLongOption(const tiny_string& arg) const;
+	const Option* lookupLongOption(const tiny_string& arg) const;
 	int handleLongOption();
 
 	void shiftArgv();
@@ -69,7 +71,7 @@ private:
 		return args[argIndex];
 	}
 
-	void setLongOptionIndex(int index)
+	void setLongOptionIndex(int index) const
 	{
 		if (outLongOptionIndex != nullptr)
 			*outLongOptionIndex = index;

@@ -20,19 +20,20 @@
 #ifndef INPUT_PARSER_H
 #define INPUT_PARSER_H 1
 
-#include <iostream>
 #include <vector>
 
 #include "input/events.h"
+#include "utils/filesystem_overloads.h"
 
 class InputParser
 {
 protected:
-	std::istream input;
+	path_t path;
 public:
-	InputParser(const std::istream& _input) : input(_input) {}
+	InputParser(const path_t& _path) : path(_path) {}
+	virtual ~InputParser() {}
 	// Parse input data.
-	virtual const std::vector<InputEvent> parse() const = 0;
+	virtual std::vector<LSEventStorage> parse() = 0;
 };
 
 #endif /* INPUT_PARSER_H */

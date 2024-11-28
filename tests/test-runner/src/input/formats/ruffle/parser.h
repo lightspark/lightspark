@@ -22,16 +22,20 @@
 
 #include <cereal/archives/json.hpp>
 
-#include "input/events.h"
 #include "input/parser.h"
+
+using namespace lightspark;
+
+namespace lightspark
+{
+	struct LSEventStorage;
+};
 
 class RuffleInputParser : public InputParser
 {
-private:
-	cereal::JSONInputArchive archive;
 public:
-	RuffleInputParser(const std::istream& input) : InputParser(input), archive(input) {}
-	const std::vector<InputEvent> parse() const override;
+	RuffleInputParser(const path_t& path) : InputParser(path) {}
+	std::vector<LSEventStorage> parse() override;
 };
 
 #endif /* INPUT_FORMATS_RUFFLE_PARSER_H */

@@ -1708,6 +1708,14 @@ void ParseThread::execute()
 			getSys()->setError(e.cause, SystemState::ERROR_PARSING);
 		}
 	}
+	catch(ScriptLimitException& e)
+	{
+		auto vm = getRootMovie()->getSystemState()->currentVm;
+		if (vm != nullptr)
+			vm->halted = true;
+		LOG(LOG_ERROR, "Script limit error in ParseThread. Reason: " << e.cause);
+		LOG(LOG_ERROR, "Ending action execution for this movie.");
+	}
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR,"Exception in ParseThread " << e.cause);
@@ -2286,6 +2294,8 @@ void SystemState::tick()
 	if(currentVm==nullptr)
 		return;
 	if (this->isShuttingDown())
+		return;
+	if (currentVm->halted)
 		return;
 	/* See http://www.senocular.com/flash/tutorials/orderofoperations/
 	 * for the description of steps.

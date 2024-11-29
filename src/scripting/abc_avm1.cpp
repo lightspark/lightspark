@@ -26,6 +26,7 @@
 #include "scripting/avm1/avm1ui.h"
 #include "scripting/avm1/avm1xml.h"
 #include "scripting/avm1/avm1array.h"
+#include "scripting/avm1/avm1date.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Rectangle.h"
@@ -69,6 +70,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("Button","",Class<SimpleButton>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Array","",Class<AVM1Array>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Color","",Class<AVM1Color>::getRef(m_sys));
+	builtinavm1->registerBuiltin("Date","",Class<AVM1Date>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Mouse","",Class<AVM1Mouse>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Sound","",Class<AVM1Sound>::getRef(m_sys));
 	builtinavm1->registerBuiltin("MovieClip","",Class<AVM1MovieClip>::getRef(m_sys));

@@ -168,7 +168,7 @@ ASFUNCTIONBODY_ATOM(Date,_constructor)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	for (uint32_t i = 0; i < argslen; i++) {
-		if(asAtomHandler::isNumeric(args[i]) && std::isnan(asAtomHandler::toNumber(args[i]))) {
+		if(asAtomHandler::isNumeric(args[i]) && !std::isfinite(asAtomHandler::toNumber(args[i]))) {
 			th->nan = true;
 			return;
 		}
@@ -872,6 +872,11 @@ tiny_string Date::toString()
 int Date::getYear()
 {
 	return this->extrayears + g_date_time_get_year(this->datetime);
+}
+
+int Date::getUTCYear()
+{
+	return extrayears + g_date_time_get_year(datetimeUTC);
 }
 
 tiny_string Date::toFormat(bool utc, tiny_string format)

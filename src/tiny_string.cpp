@@ -312,7 +312,7 @@ bool tiny_string::getLine(uint32_t& byteindex, tiny_string& line)
 	uint32_t startindex = byteindex;
 	uint32_t endindex = stringSize-byteindex-1;
 	if (endindex < startindex)
-		endindex = stringSize-endindex;
+		endindex = stringSize-1;
 	line.isASCII = true;
 	line.isInteger = true;
 	while (!res && byteindex < stringSize-1)

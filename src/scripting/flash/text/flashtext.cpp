@@ -1803,6 +1803,11 @@ IDrawable* TextField::invalidate(bool smoothing)
 		bool first = tk->empty();
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{
+			if ((*it).text.empty())
+			{
+				startposy += this->leading+(embeddedFont->getAscent()+embeddedFont->getDescent()+embeddedFont->getLeading())*fontSize/1024;
+				continue;
+			}
 			if (!first)
 				tk = tk->next = new tokensVector();
 			first = false;

@@ -221,13 +221,13 @@ ASFUNCTIONBODY_ATOM(Rectangle,_getBottomRight)
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setBottomRight)
 {
-	assert_and_throw(argslen == 1);
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	Point* br = asAtomHandler::as<Point>(args[0]);
-	if (th->width != br->getX() - th->x || th->height != br->getY() - th->y)
+	Vector2f point;
+	ARG_CHECK(ARG_UNPACK(point));
+	if (th->width != point.x - th->x || th->y != point.y - th->y)
 	{
-		th->width = br->getX() - th->x;
-		th->height = br->getY() - th->y;
+		th->width = point.x - th->x;
+		th->height = point.y - th->y;
 		th->notifyUsers();
 	}
 }
@@ -242,13 +242,13 @@ ASFUNCTIONBODY_ATOM(Rectangle,_getTopLeft)
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setTopLeft)
 {
-	assert_and_throw(argslen == 1);
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	Point* br = asAtomHandler::as<Point>(args[0]);
-	if (th->x != br->getX()|| th->y != br->getY())
+	Vector2f point;
+	ARG_CHECK(ARG_UNPACK(point));
+	if (th->x != point.x || th->y != point.y)
 	{
-		th->x = br->getX();
-		th->y = br->getY();
+		th->x = point.x;
+		th->y = point.y;
 		th->notifyUsers();
 	}
 }
@@ -263,13 +263,13 @@ ASFUNCTIONBODY_ATOM(Rectangle,_getSize)
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setSize)
 {
-	assert_and_throw(argslen == 1);
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	Point* br = asAtomHandler::as<Point>(args[0]);
-	if (th->width != br->getX()|| th->height != br->getY())
+	Vector2f point;
+	ARG_CHECK(ARG_UNPACK(point));
+	if (th->width != point.x || th->height != point.y)
 	{
-		th->width = br->getX();
-		th->height = br->getY();
+		th->width = point.x;
+		th->height = point.y;
 		th->notifyUsers();
 	}
 }

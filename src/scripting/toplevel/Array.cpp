@@ -2229,12 +2229,11 @@ uint32_t Array::nextNameIndex(uint32_t cur_index)
 		if(cur_index<firstsize)
 			return cur_index+1;
 		
-		while (!data_second.count(cur_index) && cur_index<s)
+		for (auto it : data_second)
 		{
-			cur_index++;
+			if ((it.first + 1) > cur_index && (it.first) < s)
+				return it.first+1;
 		}
-		if(cur_index<s)
-			return cur_index+1;
 	}
 	//Fall back on object properties
 	uint32_t ret=ASObject::nextNameIndex(cur_index-s);

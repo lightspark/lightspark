@@ -103,7 +103,7 @@ friend class AVM1Function;
 private:
 	std::vector<uint32_t> avm1strings;
 public:
-	AVM1context():keepLocals(true) {}
+	AVM1context():keepLocals(true), callDepth(0) {}
 	void AVM1ClearConstants()
 	{
 		avm1strings.clear();
@@ -120,6 +120,7 @@ public:
 		return asAtomHandler::undefinedAtom;
 	}
 	bool keepLocals;
+	size_t callDepth;
 };
 
 

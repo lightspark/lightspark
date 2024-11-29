@@ -4015,6 +4015,8 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 					if(std::isnan(toNumber(v2)))
 						return TUNDEFINED;
 					return ((a.intval>>3) < toNumber(v2))?TTRUE:TFALSE;
+				case ATOM_STRINGID:
+					return ((a.intval>>3) < toNumber(v2))?TTRUE:TFALSE;
 				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
 				{
 					switch (v2.uintval&0x70)
@@ -4045,6 +4047,8 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				case ATOM_NUMBERPTR:
 					if(std::isnan(toNumber(v2)))
 						return TUNDEFINED;
+					return ((a.uintval>>3) < toNumber(v2))?TTRUE:TFALSE;
+				case ATOM_STRINGID:
 					return ((a.uintval>>3) < toNumber(v2))?TTRUE:TFALSE;
 				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
 				{
@@ -4142,6 +4146,8 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				{
 					switch (v2.uintval&0x7)
 					{
+						case ATOM_STRINGID:
+							return (toInt(a) < toNumber(v2))?TTRUE:TFALSE;
 						case ATOM_INTEGER:
 							return ((int32_t)(a.uintval&0x80)>>7 < (v2.intval>>3))?TTRUE:TFALSE;
 						case ATOM_UINTEGER:

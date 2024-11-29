@@ -52,6 +52,7 @@ public:
 	enum Type
 	{
 		MaxFunctionRecursion,
+		MaxPrototypeRecursion,
 		ScriptTimeout,
 	};
 

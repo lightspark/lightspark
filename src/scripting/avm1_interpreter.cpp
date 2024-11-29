@@ -1502,9 +1502,19 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							if (!asAtomHandler::isValid(ret))
 							{
 								ASObject* pr = o->is<Class_base>() && o->as<Class_base>()->getPrototype(wrk) ? o->as<Class_base>()->getPrototype(wrk)->getObj() : o->getprop_prototype();
+								size_t depth = 0;
 								// search the prototype before searching the AS3 class
 								while (pr)
 								{
+									if (depth >= 255)
+									{
+										throw ScriptLimitException
+										(
+											"Reached maximum prototype recursion limit",
+
+											ScriptLimitException::MaxPrototypeRecursion
+										);
+									}
 									bool isGetter = pr->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CALL_GETTER,wrk) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 									if (isGetter) // getter from prototype has to be called with o as target
 									{
@@ -1517,6 +1527,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 									else if (!asAtomHandler::isInvalid(ret))
 										break;
 									pr = pr->getprop_prototype();
+									depth++;
 								}
 							}
 							if (!asAtomHandler::isValid(ret))

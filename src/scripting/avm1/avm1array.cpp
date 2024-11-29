@@ -38,6 +38,9 @@ bool AVM1Array::destruct()
 	return Array::destruct();
 }
 
+// TODO: It appears that in AVM1, most of `Array`'s methods will treat a
+// non-array `this` object with numeric properties as if it were an array.
+
 ASFUNCTIONBODY_ATOM(AVM1Array,AVM1_getLength)
 {
 	AVM1Array* th=asAtomHandler::as<AVM1Array>(obj);

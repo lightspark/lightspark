@@ -80,17 +80,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	uint32_t currRegister = 1; // spec is not clear, but gnash starts at register 1
 	if (!suppressThis || preloadThis)
 	{
-		ASATOM_INCREF(scopestack[0]);
-		if (preloadThis)
-		{
-			LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" preload this:"<<asAtomHandler::toDebugString(scopestack[0]));
-			registers[currRegister++] = scopestack[0];
-		}
-		else
-		{
-			ASATOM_DECREF(locals[paramnames[currRegister]]);
-			locals[paramnames[currRegister++]] = scopestack[0];
-		}
+		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" preload this:"<<asAtomHandler::toDebugString(scopestack[0]));
+		if (!suppressThis)
+			ASATOM_INCREF(scopestack[0]);
+		registers[currRegister++] = !suppressThis ? scopestack[0] : asAtomHandler::undefinedAtom;
 	}
 	if (!suppressArguments)
 	{
@@ -146,8 +139,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			registers[currRegister++] = super;
 		else
 		{
-			ASATOM_DECREF(locals[paramnames[currRegister]]);
-			locals[paramnames[currRegister++]] = super;
+			auto superStr = clip->getSystemState()->getUniqueStringId("super");
+			if (locals.find(superStr) != locals.end())
+				ASATOM_DECREF(locals[superStr]);
+			locals[superStr] = super;
 		}
 	}
 	if (preloadRoot)

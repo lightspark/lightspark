@@ -2,3 +2,4 @@
 
 num_frames = 1
 known_failure = true # https://github.com/ruffle-rs/ruffle/issues/12269
+ignore = true

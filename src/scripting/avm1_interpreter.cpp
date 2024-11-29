@@ -60,6 +60,18 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	bool clip_isTarget=false;
 	assert(!clip->needsActionScript3());
 	ASWorker* wrk = clip->getSystemState()->worker;
+	if (context->callDepth >= wrk->limits.max_recursion - 1)
+	{
+		std::stringstream s;
+		s << "Reached maximum function recursion limit of " << wrk->limits.max_recursion;
+		throw ScriptLimitException
+		(
+			s.str(),
+			ScriptLimitException::MaxFunctionRecursion
+		);
+	}
+
+	context->callDepth++;
 	Log::calls_indent++;
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" executeActions "<<preloadParent<<preloadRoot<<suppressSuper<<preloadSuper<<suppressArguments<<preloadArguments<<suppressThis<<preloadThis<<preloadGlobal<<" "<<startactionpos<<" "<<num_args);
 	if (result)
@@ -2670,4 +2682,5 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		argarray->decRef();
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" executeActions done");
 	Log::calls_indent--;
+	context->callDepth--;
 }

@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/geom/Point.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
@@ -116,44 +117,63 @@ ASFUNCTIONBODY_ATOM(Point,_getlength)
 
 ASFUNCTIONBODY_ATOM(Point,interpolate)
 {
-	assert_and_throw(argslen==3);
-	Point* pt1=asAtomHandler::as<Point>(args[0]);
-	Point* pt2=asAtomHandler::as<Point>(args[1]);
-	number_t f=asAtomHandler::toNumber(args[2]);
+	Vector2f pt1;
+	Vector2f pt2;
+	number_t f;
+
+	if (wrk->getSystemState()->mainClip->needsActionScript3())
+	{
+		ARG_CHECK(ARG_UNPACK(pt1)(pt2)(f));
+	}
+	else
+	{
+		ARG_CHECK(ARG_UNPACK_NO_ERROR(pt1)(pt2)(f, Number::NaN));
+	}
 	Point* res=Class<Point>::getInstanceS(wrk);
-	res->x = pt2->x - (pt2->x - pt1->x) * f;
-	res->y = pt2->y - (pt2->y - pt1->y) * f;
+	Vector2f interpPoint = pt2 - (pt2 - pt1) * f;
+	res->x = interpPoint.x;
+	res->y = interpPoint.y;
 	ret = asAtomHandler::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Point,distance)
 {
-	assert_and_throw(argslen==2);
-	Point* pt1=asAtomHandler::as<Point>(args[0]);
-	Point* pt2=asAtomHandler::as<Point>(args[1]);
-	number_t res=lenImpl(pt2->x - pt1->x, pt2->y - pt1->y);
+	Vector2f pt1;
+	Vector2f pt2;
+
+	if (wrk->getSystemState()->mainClip->needsActionScript3())
+	{
+		ARG_CHECK(ARG_UNPACK(pt1)(pt2));
+	}
+	else
+	{
+		ARG_CHECK(ARG_UNPACK_NO_ERROR(pt1)(pt2));
+	}
+
+	Vector2f diff = pt2 - pt1;
+	number_t res=lenImpl(diff.x, diff.y);
 	asAtomHandler::setNumber(ret,wrk,res);
 }
 
 ASFUNCTIONBODY_ATOM(Point,add)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
-	assert_and_throw(argslen==1);
-	Point* v=asAtomHandler::as<Point>(args[0]);
+	Vector2f v;
+	ARG_CHECK(ARG_UNPACK(v))
 	Point* res=Class<Point>::getInstanceS(wrk);
-	res->x = th->x + v->x;
-	res->y = th->y + v->y;
+	res->x = th->x + v.x;
+	res->y = th->y + v.y;
 	ret = asAtomHandler::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(Point,subtract)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
-	assert_and_throw(argslen==1);
-	Point* v=asAtomHandler::as<Point>(args[0]);
+	Vector2f v;
+	ARG_CHECK(ARG_UNPACK(v))
 	Point* res=Class<Point>::getInstanceS(wrk);
-	res->x = th->x - v->x;
-	res->y = th->y - v->y;
+	res->x = th->x - v.x;
+	res->y = th->y - v.y;
 	ret = asAtomHandler::fromObject(res);
 }
 

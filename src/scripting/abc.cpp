@@ -761,7 +761,7 @@ void ABCContext::dumpProfilingData(ostream& f) const
  */
 ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(true),canFlushInvalidationQueue(true),shuttingdown(false),
 	events_queue(reporter_allocator<eventType>(m)),idleevents_queue(reporter_allocator<eventType>(m)),event_buffer(reporter_allocator<eventType>(m)),nextNamespaceBase(2),
-	vmDataMemory(m)
+	vmDataMemory(m), halted(false)
 {
 	m_sys=s;
 }
@@ -1052,6 +1052,12 @@ void ABCVm::tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e)
 		beforeCB(std::forward<eventType>(e));
 		handleEvent(e);
 		afterCB(std::forward<eventType>(e));
+	}
+	catch(ScriptLimitException& e)
+	{
+		halted = true;
+		LOG(LOG_ERROR, "Script limit error in VM. Reason: " << e.cause);
+		LOG(LOG_ERROR, "Ending action execution for this movie.");
 	}
 	catch(LightsparkException& e)
 	{
@@ -1595,6 +1601,9 @@ void ABCVm::handleFrontEvent()
 	events_queue.pop_front();
 
 	event_queue_mutex.unlock();
+	if (e.second->getEventType() != SHUTDOWN && !e.second->is<WaitableEvent>() && halted)
+		return;
+
 	tryHandleEvent
 	(
 		[&](eventType&& e)

@@ -1385,6 +1385,7 @@ public:
 #endif
 	llvm::LLVMContext& llvm_context();
 #endif
+	bool halted;
 
 	ABCVm(SystemState* s, MemoryAccount* m) DLL_PUBLIC;
 	/**

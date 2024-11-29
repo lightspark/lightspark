@@ -31,14 +31,21 @@ private:
 	int64_t milliseconds;
 	int extrayears;
 	bool nan;
-	~Date();
 	GDateTime *datetime;
 	GDateTime *datetimeUTC;
-	asAtom msSinceEpoch();
 	int64_t getMsSinceEpoch();
 	tiny_string toString_priv(bool utc, const char* formatstr) const;
-	void MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t millisecond, bool bIsLocalTime);
 	static number_t parse(tiny_string str);
+protected:
+	bool isValid() const { return !nan; }
+	int64_t getMs() const { return milliseconds; }
+	GDateTime* getDateTime() const { return datetime; }
+	GDateTime* getDateTime() { return datetime; }
+	GDateTime* getDateTimeUTC() { return datetimeUTC; }
+
+	asAtom msSinceEpoch();
+	void MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t millisecond, bool bIsLocalTime);
+	~Date();
 public:
 	Date(ASWorker* wrk,Class_base* c);
 	bool destruct()
@@ -117,6 +124,7 @@ public:
 	ASFUNCTION_ATOM(toLocaleTimeString);
 
 	int getYear();
+	int getUTCYear();
 
 	
 	void MakeDateFromMilliseconds(int64_t ms);

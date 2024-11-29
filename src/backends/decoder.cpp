@@ -913,7 +913,7 @@ void AudioDecoder::skipAll()
 }
 
 #ifdef ENABLE_LIBAVCODEC
-FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng, LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen, uint32_t buffertime):AudioDecoder(buffertime+1,eng),ownedContext(true)
+FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng, LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen, uint32_t buffertime):AudioDecoder(buffertime+1,eng),ownedContext(true),codecContext(nullptr)
 {
 	switchCodec(audioCodec,initdata,datalen);
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)

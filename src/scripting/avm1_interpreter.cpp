@@ -1251,9 +1251,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			{
 				asAtom name = PopStack(stack);
 				asAtom na = PopStack(stack);
-				uint32_t numargs = asAtomHandler::toUInt(na);
+				size_t numargs = std::min((size_t)asAtomHandler::toUInt(na), stack.size());
 				asAtom* args = g_newa(asAtom, numargs);
-				for (uint32_t i = 0; i < numargs; i++)
+				for (size_t i = 0; i < numargs; i++)
 					args[i] = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				AVM1Function* f =nullptr;

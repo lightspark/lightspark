@@ -1713,12 +1713,23 @@ GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const mult
 	if (asAtomHandler::isInvalid(ret))
 	{
 		ASObject* pr = getprop_prototype();
+		size_t depth = 0;
 		while (pr)
 		{
+			if (depth >= 255)
+			{
+				throw ScriptLimitException
+				(
+					"Reached maximum prototype recursion limit",
+
+					ScriptLimitException::MaxPrototypeRecursion
+				);
+			}
 			res = pr->getVariableByMultiname(ret,name,opt,wrk);
 			if (asAtomHandler::isValid(ret))
 				break;
 			pr = pr->getprop_prototype();
+			depth++;
 		}
 	}
 	return res;

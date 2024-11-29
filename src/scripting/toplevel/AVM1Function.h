@@ -105,7 +105,7 @@ public:
 	}
 	FORCE_INLINE bool needsSuper() const
 	{
-		return preloadSuper && !suppressSuper;
+		return !suppressSuper;
 	}
 	FORCE_INLINE asAtom getSuper() const
 	{

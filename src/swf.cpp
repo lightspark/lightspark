@@ -34,6 +34,7 @@
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/Stage.h"
 #include "scripting/flash/geom/Rectangle.h"
+#include "scripting/flash/text/flashtext.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Null.h"
@@ -630,6 +631,13 @@ void SystemState::systemFinalize()
 	invalidateQueueTail.reset();
 	parameters.reset();
 	static_SoundMixer_soundTransform.reset();
+	forEachEmbeddedFont([&](ASFont* font)
+	{
+		if (!font->isLastRef())
+			font->resetRefCount();
+		font->decRef();
+	});
+	globalEmbeddedFontList.clear();
 	frameListeners.clear();
 	auto it = sharedobjectmap.begin();
 	while (it != sharedobjectmap.end())
@@ -2378,6 +2386,20 @@ void SystemState::resizeCompleted()
 	getEngineData()->old_y = getEngineData()->y;
 	getEngineData()->old_width = getEngineData()->width;
 	getEngineData()->old_height = getEngineData()->height;
+}
+
+void SystemState::forEachEmbeddedFont(FontListCallback callback) const
+{
+	Locker l(fontListMutex);
+	for (auto it : globalEmbeddedFontList)
+		callback(it);
+}
+
+void SystemState::registerGlobalFont(ASFont* font)
+{
+	if (font == nullptr)
+		return;
+	globalEmbeddedFontList.push_back(font);
 }
 
 const tiny_string& SystemState::getStringFromUniqueId(uint32_t id) const

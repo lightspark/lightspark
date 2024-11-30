@@ -21,6 +21,7 @@
 #define SWF_H 1
 
 #include "asobject.h"
+#include "forwards/scripting/flash/text/flashtext.h"
 #include "interfaces/threading.h"
 #include "interfaces/timer.h"
 #include "utils/optional.h"
@@ -228,6 +229,12 @@ private:
 	mutable Mutex memoryAccountsMutex;
 	std::list<MemoryAccount> memoryAccounts;
 #endif
+	mutable Mutex fontListMutex;
+	// TODO: Make this a map, once we support proper HTML formatting.
+	// A global list of all fonts registered via the AS3 API
+	// `Font.registerFont()`.
+	std::vector<ASFont*> globalEmbeddedFontList;
+
 	/*
 	 * Pooling support
 	 */
@@ -495,6 +502,10 @@ public:
 #ifdef MEMORY_USAGE_PROFILING
 	void saveMemoryUsageInformation(std::ofstream& out, int snapshotCount) const;
 #endif
+	using FontListCallback = std::function<void(ASFont*)>;
+	void forEachEmbeddedFont(FontListCallback callback) const;
+	void registerGlobalFont(ASFont* font);
+
 	/*
 	 * Pooling support
 	 */

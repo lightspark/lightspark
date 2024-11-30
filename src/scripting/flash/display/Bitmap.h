@@ -41,6 +41,7 @@ private:
 	void onBitmapData(_NR<BitmapData>);
 	void onSmoothingChanged(bool);
 	void onPixelSnappingChanged(tiny_string snapping);
+	Vector2 size;
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
@@ -63,6 +64,8 @@ public:
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(bool smoothing) override;
 	void invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container) override;
+	void setSize(const Vector2& _size) { size = _size; }
+	void setSize(int32_t width, int32_t height) { size = Vector2(width, height); }
 };
 
 }

@@ -36,6 +36,7 @@ public:
 	bool destruct() override;
 	void prepareShutdown() override;
 	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(createTextNode);
 	ASFUNCTION_ATOM(load);
 	ASFUNCTION_ATOM(_getter_status);
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;

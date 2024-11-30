@@ -51,11 +51,31 @@ void AVM1XMLDocument::sinit(Class_base* c)
 {
 	XMLDocument::sinit(c);
 	c->isSealed = false;
+	c->setDeclaredMethodByQName("createTextNode","",c->getSystemState()->getBuiltinFunction(createTextNode),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,true);
 	REGISTER_GETTER(c, status);
 }
 
 ASFUNCTIONBODY_GETTER(AVM1XMLDocument,status)
+
+ASFUNCTIONBODY_ATOM(AVM1XMLDocument,createTextNode)
+{
+	ret = asAtomHandler::undefinedAtom;
+
+	if (!asAtomHandler::is<AVM1XMLDocument>(obj))
+		return;
+
+	AVM1XMLDocument* th = asAtomHandler::as<AVM1XMLDocument>(obj);
+	tiny_string text;
+	ARG_CHECK(ARG_UNPACK(text));
+
+	pugi::xml_node node;
+	node.set_value(text.raw_buf());
+
+	th->incRef();
+	ret = asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(wrk, _MR(th), node));
+	return;
+}
 
 ASFUNCTIONBODY_ATOM(AVM1XMLDocument,load)
 {

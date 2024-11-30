@@ -263,6 +263,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 				progressEvent = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal);
 				this->addLoaderEvent(progressEvent);
 				this->incRef();
+				progressEvent->incRef();
 				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(progressEvent));
 			}
 			else

@@ -2184,15 +2184,7 @@ FORCE_INLINE bool asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool replac
 		case ATOM_NUMBERPTR:
 		{
 			number_t n = getObjectNoCheck(a)->toNumber();
-			if (std::isnan(n) || std::isinf(n))
-				setNumber(a,wrk,n);
-			else if(trunc(n) == n && n > INT32_MIN)
-			{
-				if (replace)
-					ASATOM_DECREF(a);
-				asAtomHandler::setInt(a,wrk,n-1);
-			}
-			else if (replace)
+			if (replace)
 				return replaceNumber(a,wrk,n-1);
 			else
 				setNumber(a,wrk,n-1);

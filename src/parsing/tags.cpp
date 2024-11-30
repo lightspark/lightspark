@@ -3364,8 +3364,14 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 		}
 		else
 		{
-			DictionaryTag* tag = root->loadedFrom->dictionaryLookup(Tags[i]);
-			root->applicationDomain->addBinding(className, tag);
+			DictionaryTag* tag = root->dictionaryLookup(Tags[i]);
+			// TODO: Bailing on a null tag is a hack, and we should
+			// probably find a better solution. For now, it's fine, and
+			// prevents a crash with Ruffle's
+			// `avm2/doabc_and_symbolclass_script_init_goto` test.
+			if (tag == nullptr)
+				return;
+			root->addBinding(className, tag);
 			if (!isSysRoot)
 				getVm(root->getSystemState())->addBufferEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(tag,className)));
 			else

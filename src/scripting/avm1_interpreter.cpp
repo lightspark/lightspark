@@ -60,6 +60,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	bool clip_isTarget=false;
 	assert(!clip->needsActionScript3());
 	ASWorker* wrk = clip->getSystemState()->worker;
+	if (context->callDepth == 0)
+		context->startTime = compat_now();
 	if (context->callDepth >= wrk->limits.max_recursion - 1)
 	{
 		std::stringstream s;
@@ -199,6 +201,20 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	auto it = actionlist.begin()+startactionpos;
 	while (it != actionlist.end())
 	{
+		if (!(context->actionsExecuted % 2000))
+		{
+			auto delta = compat_now() - context->startTime;
+			if (delta.getSecs() >= wrk->limits.script_timeout)
+			{
+				std::stringstream s;
+				s << "Reached maximum script execution time of " << wrk->limits.script_timeout << " seconds";
+				throw ScriptLimitException
+				(
+					s.str(),
+					ScriptLimitException::ScriptTimeout
+				);
+			}
+		}
 		if (curdepth > 0 && it == scopestackstop[curdepth])
 		{
 			LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" end with "<<asAtomHandler::toDebugString(scopestack[curdepth]));
@@ -2671,6 +2687,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				throw RunTimeException("invalid AVM1 tag");
 				break;
 		}
+		++context->actionsExecuted;
 	}
 	for (int i = 0; i <= curdepth; i++)
 	{

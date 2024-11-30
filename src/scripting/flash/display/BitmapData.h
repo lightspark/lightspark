@@ -50,8 +50,8 @@ public:
 	void finalize() override;
 	void prepareShutdown() override;
 	_NR<BitmapContainer> getBitmapContainer() const { return pixels; }
-	int getWidth() const { return pixels->getWidth(); }
-	int getHeight() const { return pixels->getHeight(); }
+	int getWidth() const { return !pixels.isNull() ? pixels->getWidth() : 0; }
+	int getHeight() const { return !pixels.isNull() ? pixels->getHeight() : 0; }
 	void addUser(Bitmap* b, bool startupload=true);
 	void removeUser(Bitmap* b);
 	void checkForUpload();

@@ -23,6 +23,7 @@
 #include "asobject.h"
 #include "smartrefs.h"
 #include "errorconstants.h"
+#include "utils/timespec.h"
 
 namespace lightspark
 {
@@ -103,7 +104,7 @@ friend class AVM1Function;
 private:
 	std::vector<uint32_t> avm1strings;
 public:
-	AVM1context():keepLocals(true), callDepth(0) {}
+	AVM1context():keepLocals(true), callDepth(0), actionsExecuted(0) {}
 	void AVM1ClearConstants()
 	{
 		avm1strings.clear();
@@ -121,6 +122,8 @@ public:
 	}
 	bool keepLocals;
 	size_t callDepth;
+	size_t actionsExecuted;
+	TimeSpec startTime;
 };
 
 

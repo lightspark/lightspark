@@ -331,62 +331,55 @@ ASFUNCTIONBODY_ATOM(FontDescription, isFontCompatible)
 		return;
 	}
 	tiny_string fontStyle = bold ? (italic ? "boldItalic" : "bold") : (italic ? "italic" : "regular");
-	std::vector<asAtom>* flist = ASFont::getFontList();
-	auto it = flist->begin();
-	while (it != flist->end())
+	
+	bool foundCompatibleFont = false;
+	wrk->getSystemState()->forEachEmbeddedFont([&](ASFont* f)
 	{
-		ASFont* f = asAtomHandler::as<ASFont>(*it);
-		if (f->fontName == fontName &&
+		foundCompatibleFont |=
+		(
+			f->fontName == fontName &&
 			f->fontType == "embeddedCFF" &&
-			f->fontStyle == fontStyle)
-		{
-			asAtomHandler::setBool(ret,true);
-			return;
-		}
-		it++;
-	}
-	asAtomHandler::setBool(ret,false);
+			f->fontStyle == fontStyle
+		);
+	});
+	asAtomHandler::setBool(ret, foundCompatibleFont);
 }
 
 ASFUNCTIONBODY_ATOM(FontDescription,isDeviceFontCompatible)
 {
 	// Similar to isFontCompatible but without embeddedCFF check.
 
-    tiny_string fontName;
-    tiny_string fontWeight;
-    tiny_string fontPosture;
-    ARG_CHECK(ARG_UNPACK(fontName)(fontWeight)(fontPosture));
-    bool italic = false;
-    bool bold = false;
-    if (fontWeight == "bold")
-        bold = true;
-    else if (fontWeight != "normal")
+	tiny_string fontName;
+	tiny_string fontWeight;
+	tiny_string fontPosture;
+	ARG_CHECK(ARG_UNPACK(fontName)(fontWeight)(fontPosture));
+	bool italic = false;
+	bool bold = false;
+	if (fontWeight == "bold")
+		bold = true;
+	else if (fontWeight != "normal")
 	{
-        createError<ArgumentError>(wrk,kInvalidArgumentError,"fontWeight");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"fontWeight");
 		return;
 	}
-    if (fontPosture == "italic")
-        italic = true;
-    else if (fontPosture != "normal")
+	if (fontPosture == "italic")
+		italic = true;
+	else if (fontPosture != "normal")
 	{
-        createError<ArgumentError>(wrk,kInvalidArgumentError,"fontPosture");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"fontPosture");
 		return;
 	}
-    tiny_string fontStyle = bold ? (italic ? "boldItalic" : "bold") : (italic ? "italic" : "regular");
-    std::vector<asAtom>* flist = ASFont::getFontList();
-    auto it = flist->begin();
-    while (it != flist->end())
-    {
-        ASFont* f = asAtomHandler::as<ASFont>(*it);
-        if (f->fontName == fontName &&
-            f->fontStyle == fontStyle)
-        {
-            asAtomHandler::setBool(ret,true);
-            return;
-        }
-        it++;
-    }
-    asAtomHandler::setBool(ret,false);
+	tiny_string fontStyle = bold ? (italic ? "boldItalic" : "bold") : (italic ? "italic" : "regular");
+	bool foundCompatibleFont = false;
+	wrk->getSystemState()->forEachEmbeddedFont([&](ASFont* f)
+	{
+		foundCompatibleFont |=
+		(
+			f->fontName == fontName &&
+			f->fontStyle == fontStyle
+		);
+	});
+	asAtomHandler::setBool(ret, foundCompatibleFont);
 }
 
 ASFUNCTIONBODY_ATOM(FontDescription,_getLocked)

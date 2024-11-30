@@ -70,11 +70,6 @@ void ASFont::SetFont(tiny_string& fontname,bool is_bold,bool is_italic, bool is_
 					"device");
 }
 
-std::vector<asAtom> *ASFont::getFontList()
-{
-	static std::vector<asAtom> fontlist;
-	return &fontlist;
-}
 ASFUNCTIONBODY_GETTER(ASFont, fontName)
 ASFUNCTIONBODY_GETTER(ASFont, fontStyle)
 ASFUNCTIONBODY_GETTER(ASFont, fontType)
@@ -87,12 +82,11 @@ ASFUNCTIONBODY_ATOM(ASFont,enumerateFonts)
 	if (enumerateDeviceFonts)
 		LOG(LOG_NOT_IMPLEMENTED,"Font::enumerateFonts: flag enumerateDeviceFonts is not handled");
 	Array* res = Class<Array>::getInstanceSNoArgs(wrk);
-	std::vector<asAtom>* fontlist = getFontList();
-	for(auto i = fontlist->begin(); i != fontlist->end(); ++i)
+	wrk->getSystemState()->forEachEmbeddedFont([&](ASFont* font)
 	{
-		ASATOM_INCREF((*i));
-		res->push(*i);
-	}
+		font->incRef();
+		res->push(asAtomHandler::fromObject(font));
+	});
 	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(ASFont,registerFont)
@@ -110,7 +104,7 @@ ASFUNCTIONBODY_ATOM(ASFont,registerFont)
 	fontclass->as<Class_base>()->setupDeclaredTraits(font);
 	font->constructionComplete();
 	font->setConstructIndicator();
-	getFontList()->push_back(asAtomHandler::fromObject(font));
+	wrk->getSystemState()->registerGlobalFont(font);
 }
 ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 {

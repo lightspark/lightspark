@@ -38,26 +38,22 @@ GradientGlowFilter::GradientGlowFilter(ASWorker* wrk, Class_base* c, const GRADI
 	type(filter.InnerGlow ? "inner": "outer"),// TODO: is type set based on "onTop" ?
 	knockout(filter.Knockout)
 {
-	if (filter.GradientColors.size())
+	if (filter.NumColors)
 	{
 		colors = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		alphas = _MR(Class<Array>::getInstanceSNoArgs(wrk));
-		auto it = filter.GradientColors.begin();
-		while (it != filter.GradientColors.end())
+		for (uint8_t i = 0; i < filter.NumColors; i++)
 		{
-			colors->push(asAtomHandler::fromUInt(RGB(it->Red,it->Green,it->Blue).toUInt()));
-			alphas->push(asAtomHandler::fromNumber(wrk,it->af(),false));
-			it++;
+			colors->push(asAtomHandler::fromUInt(RGB(filter.GradientColors[i].Red,filter.GradientColors[i].Green,filter.GradientColors[i].Blue).toUInt()));
+			alphas->push(asAtomHandler::fromNumber(wrk,filter.GradientColors[i].af(),false));
 		}
 	}
-	if (filter.GradientRatio.size())
+	if (filter.NumColors)
 	{
 		ratios = _MR(Class<Array>::getInstanceSNoArgs(wrk));
-		auto it = filter.GradientRatio.begin();
-		while (it != filter.GradientRatio.end())
+		for (uint8_t i = 0; i < filter.NumColors; i++)
 		{
-			ratios->push(asAtomHandler::fromUInt(*it));
-			it++;
+			ratios->push(asAtomHandler::fromUInt(filter.GradientRatio[i]));
 		}
 	}
 }
@@ -144,8 +140,63 @@ ASFUNCTIONBODY_ATOM(GradientGlowFilter,_constructor)
 
 bool GradientGlowFilter::compareFILTER(const FILTER& filter) const
 {
-	LOG(LOG_NOT_IMPLEMENTED, "comparing GradientGlowFilter");
-	return false;
+	if (filter.GradientGlowFilter.OnTop)
+		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter onTop flag");
+	bool ret = filter.FilterID == FILTER::FILTER_GRADIENTGLOW
+			   && filter.GradientGlowFilter.Angle == this->angle
+			   && filter.GradientGlowFilter.BlurX == this->blurX
+			   && filter.GradientGlowFilter.BlurY == this->blurY
+			   && filter.GradientGlowFilter.Distance == this->distance
+			   && filter.GradientGlowFilter.Knockout == this->knockout
+			   && filter.GradientGlowFilter.Passes == this->quality
+			   && filter.GradientGlowFilter.Strength == this->strength
+			   && this->type == (filter.GradientGlowFilter.InnerGlow ? "inner" : "outer");
+	if (ret)
+	{
+		if (colors.isNull() || colors->size()!=filter.GradientGlowFilter.NumColors
+			|| alphas.isNull() || alphas->size()!=filter.GradientGlowFilter.NumColors
+			|| ratios.isNull() || ratios->size()!=filter.GradientGlowFilter.NumColors)
+			ret = false;
+	}
+	if (ret)
+	{
+		if (filter.GradientGlowFilter.NumColors)
+		{
+			for (uint32_t  i = 0; i < filter.GradientGlowFilter.NumColors; i++)
+			{
+				asAtom a = asAtomHandler::invalidAtom;
+				colors->at_nocheck(a,i);
+				if (RGB(filter.GradientGlowFilter.GradientColors[i].Red,filter.GradientGlowFilter.GradientColors[i].Green,filter.GradientGlowFilter.GradientColors[i].Blue).toUInt() != asAtomHandler::toUInt(a))
+				{
+					ret = false;
+					break;
+				}
+				alphas->at_nocheck(a,i);
+				if (filter.GradientGlowFilter.GradientColors[i].af() != asAtomHandler::toNumber(a))
+				{
+					ret = false;
+					break;
+				}
+			}
+		}
+	}
+	if (ret)
+	{
+		if (filter.GradientGlowFilter.NumColors)
+		{
+			for (uint32_t  i = 0; i < filter.GradientGlowFilter.NumColors; i++)
+			{
+				asAtom a = asAtomHandler::invalidAtom;
+				ratios->at_nocheck(a,i);
+				if (filter.GradientGlowFilter.GradientRatio[i] != asAtomHandler::toUInt(a))
+				{
+					ret = false;
+					break;
+				}
+			}
+		}
+	}
+	return ret;
 }
 void GradientGlowFilter::getRenderFilterArgs(uint32_t step,float* args) const
 {

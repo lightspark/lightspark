@@ -1288,7 +1288,7 @@ std::istream& lightspark::operator>>(std::istream& stream, FILTER& v)
 			stream >> v.GradientBevelFilter;
 			break;
 		default:
-			LOG(LOG_ERROR,"Unsupported Filter Id " << (int)v.FilterID);
+			LOG(LOG_ERROR,"Unsupported Filter Id " << (int)v.FilterID<<" "<<stream.tellg());
 			throw ParseException("Unsupported Filter Id");
 	}
 	return stream;
@@ -1359,19 +1359,19 @@ std::istream& lightspark::operator>>(std::istream& stream, BEVELFILTER& v)
 
 std::istream& lightspark::operator>>(std::istream& stream, GRADIENTGLOWFILTER& v)
 {
-	UI8 NumColors;
-	stream >> NumColors;
-	for(int i = 0; i < NumColors; i++)
+	stream >> v.NumColors;
+	if (v.NumColors)
 	{
-		RGBA color;
-		stream >> color;
-		v.GradientColors.push_back(color);
+		v.GradientColors = new RGBA[v.NumColors];
+		v.GradientRatio = new UI8[v.NumColors];
 	}
-	for(int i = 0; i < NumColors; i++)
+	for(int i = 0; i < v.NumColors; i++)
 	{
-		UI8 ratio;
-		stream >> ratio;
-		v.GradientRatio.push_back(ratio);
+		stream >> v.GradientColors[i];
+	}
+	for(int i = 0; i < v.NumColors; i++)
+	{
+		stream >> v.GradientRatio[i];
 	}
 	stream >> v.BlurX;
 	stream >> v.BlurY;
@@ -1394,11 +1394,13 @@ std::istream& lightspark::operator>>(std::istream& stream, CONVOLUTIONFILTER& v)
 	stream >> v.MatrixY;
 	stream >> v.Divisor;
 	stream >> v.Bias;
+	if (v.MatrixX * v.MatrixY > 0)
+	{
+		v.Matrix = new FLOAT[v.MatrixX * v.MatrixY];
+	}
 	for(int i = 0; i < v.MatrixX * v.MatrixY; i++)
 	{
-		FLOAT f;
-		stream >> f;
-		v.Matrix.push_back(f);
+		stream >> v.Matrix[i];
 	}
 	stream >> v.DefaultColor;
 	BitStream bs(stream);

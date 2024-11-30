@@ -54,14 +54,12 @@ ConvolutionFilter::ConvolutionFilter(ASWorker* wrk,Class_base* c, const CONVOLUT
 	preserveAlpha(filter.PreserveAlpha)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ConvolutionFilter from Tag");
-	if (filter.Matrix.size())
+	if (filter.MatrixX * filter.MatrixY > 0)
 	{
 		matrix = _MR(Class<Array>::getInstanceSNoArgs(wrk));
-		auto it = filter.Matrix.begin();
-		while (it != filter.Matrix.end())
+		for (uint8_t i = 0; i < filter.MatrixX * filter.MatrixY; i++)
 		{
-			matrix->push(asAtomHandler::fromNumber(wrk,(FLOAT)*it,false));
-			it++;
+			matrix->push(asAtomHandler::fromNumber(wrk,(FLOAT)filter.Matrix[i],false));
 		}
 	}
 }
@@ -198,8 +196,35 @@ ASFUNCTIONBODY_ATOM(ConvolutionFilter,_constructor)
 
 bool ConvolutionFilter::compareFILTER(const FILTER& filter) const
 {
-	LOG(LOG_NOT_IMPLEMENTED, "comparing ConvolutionFilter");
-	return false;
+	bool ret = filter.FilterID == FILTER::FILTER_CONVOLUTION
+			   && (FLOAT)filter.ConvolutionFilter.Bias == this->bias
+			   && filter.ConvolutionFilter.Clamp == this->clamp
+			   && (FLOAT)filter.ConvolutionFilter.Divisor == this->divisor
+			   && filter.ConvolutionFilter.MatrixX == this->matrixX
+			   && filter.ConvolutionFilter.MatrixY == this->matrixY
+			   && filter.ConvolutionFilter.PreserveAlpha == this->preserveAlpha;
+	if (ret)
+	{
+		if (matrix.isNull() || matrix->size()!=filter.ConvolutionFilter.MatrixX*filter.ConvolutionFilter.MatrixY)
+			ret = false;
+	}
+	if (ret)
+	{
+		if (filter.ConvolutionFilter.MatrixX*filter.ConvolutionFilter.MatrixY > 0)
+		{
+			for (uint32_t  i = 0; i < filter.ConvolutionFilter.MatrixX*filter.ConvolutionFilter.MatrixY; i++)
+			{
+				asAtom a = asAtomHandler::invalidAtom;
+				matrix->at_nocheck(a,i);
+				if ((float)filter.ConvolutionFilter.Matrix[i] != asAtomHandler::toNumber(a))
+				{
+					ret = false;
+					break;
+				}
+			}
+		}
+	}
+	return ret;
 }
 void ConvolutionFilter::getRenderFilterArgs(uint32_t step,float* args) const
 {

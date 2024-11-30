@@ -1360,9 +1360,17 @@ public:
 class GRADIENTGLOWFILTER
 {
 public:
-	GRADIENTGLOWFILTER():Passes(0){}
-	std::vector<RGBA> GradientColors;
-	std::vector<UI8> GradientRatio;
+	GRADIENTGLOWFILTER():GradientColors(nullptr),GradientRatio(nullptr),Passes(0){}
+	~GRADIENTGLOWFILTER()
+	{
+		if (GradientColors)
+			delete[] GradientColors;
+		if(GradientRatio)
+			delete[] GradientRatio;
+	}
+	RGBA* GradientColors;
+	UI8* GradientRatio;
+	UI8 NumColors;
 	FIXED BlurX;
 	FIXED BlurY;
 	FIXED Angle;
@@ -1378,10 +1386,15 @@ public:
 class CONVOLUTIONFILTER
 {
 public:
-	CONVOLUTIONFILTER(){}
+	CONVOLUTIONFILTER():Matrix(nullptr){}
+	~CONVOLUTIONFILTER()
+	{
+		if (Matrix)
+			delete[] Matrix;
+	}
 	FLOAT Divisor;
 	FLOAT Bias;
-	std::vector<FLOAT> Matrix;
+	FLOAT* Matrix;
 	RGBA DefaultColor;
 	UI8 MatrixX;
 	UI8 MatrixY;

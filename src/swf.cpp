@@ -1729,6 +1729,22 @@ void ParseThread::execute()
 		LOG(LOG_ERROR,"Exception in ParseThread " << e.cause);
 		getSys()->setError(e.cause, SystemState::ERROR_PARSING);
 	}
+	catch(ASObject* e)
+	{
+		std::stringstream s;
+		ASWorker* wrk = e->getInstanceWorker();
+		if (!wrk->callStack.empty())
+		{
+			call_context* saved_cc = wrk->callStack.back();
+			wrk->callStack.pop_back();
+			wrk->decStack(saved_cc);
+		}
+		if(e->getClass())
+			s << "Unhandled ActionScript exception in ParseThread " << e->toString();
+		else
+			s << "Unhandled ActionScript exception in ParseThread (no type)";
+		getSys()->setError(s.str(), SystemState::ERROR_PARSING);
+	}
 	catch(std::exception& e)
 	{
 		LOG(LOG_ERROR,"Stream exception in ParseThread " << e.what());

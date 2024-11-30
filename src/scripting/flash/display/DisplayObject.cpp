@@ -554,12 +554,15 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_filters)
 	th->filters =ArgumentConversionAtom<_NR<Array>>::toConcrete(wrk,args[0],th->filters);
 	th->maxfilterborder=0;
 	th->filterlistHasChanged=true;
-	for (uint32_t i = 0; i < th->filters->size(); i++)
+	if (!th->filters.isNull())
 	{
-		asAtom f = asAtomHandler::invalidAtom;
-		th->filters->at_nocheck(f,i);
-		if (asAtomHandler::is<BitmapFilter>(f))
-			th->maxfilterborder = max(th->maxfilterborder,asAtomHandler::as<BitmapFilter>(f)->getMaxFilterBorder());
+		for (uint32_t i = 0; i < th->filters->size(); i++)
+		{
+			asAtom f = asAtomHandler::invalidAtom;
+			th->filters->at_nocheck(f,i);
+			if (asAtomHandler::is<BitmapFilter>(f))
+				th->maxfilterborder = max(th->maxfilterborder,asAtomHandler::as<BitmapFilter>(f)->getMaxFilterBorder());
+		}
 	}
 	th->requestInvalidation(wrk->getSystemState());
 }

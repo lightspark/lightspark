@@ -70,11 +70,12 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, std::istream *s, FI
 			LOG(LOG_ERROR,"Unsupported image type");
 			break;
 	}
+	setSize(bitmapData->getWidth(), bitmapData->getHeight());
 	Bitmap::updatedData();
 	afterConstruction();
 }
 
-Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload) : DisplayObject(wrk,c),smoothing(false)
+Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload) : DisplayObject(wrk,c),size(data->getWidth(), data->getHeight()),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	bitmapData = data;
@@ -141,6 +142,7 @@ ASFUNCTIONBODY_ATOM(Bitmap,_constructor)
 	{
 		th->bitmapData=_bitmapData;
 		th->bitmapData->addUser(th);
+		th->setSize(_bitmapData->getWidth(), _bitmapData->getHeight());
 		th->updatedData();
 	}
 }
@@ -150,7 +152,12 @@ void Bitmap::onBitmapData(_NR<BitmapData> old)
 	if(!old.isNull())
 		old->removeUser(this);
 	if(!bitmapData.isNull())
+	{
 		bitmapData->addUser(this);
+		setSize(bitmapData->getWidth(), bitmapData->getHeight());
+	}
+	else
+		setSize(Vector2());
 	geometryChanged();
 	Bitmap::updatedData();
 }
@@ -201,8 +208,8 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 		return false;
 	xmin = 0;
 	ymin = 0;
-	xmax = bitmapData->getWidth();
-	ymax = bitmapData->getHeight();
+	xmax = size.x;
+	ymax = size.y;
 	return true;
 }
 

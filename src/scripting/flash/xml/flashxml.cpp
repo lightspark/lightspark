@@ -278,7 +278,8 @@ ASFUNCTIONBODY_ATOM(XMLNode,appendChild)
 	if (th->is<XMLDocument>())
 	{
 		th->incRef();
-		c->root = _MR(th->as<XMLDocument>());
+		if (c->root != th)
+			c->root = _MR(th->as<XMLDocument>());
 	}
 	else
 	{

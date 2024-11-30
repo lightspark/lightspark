@@ -1604,8 +1604,24 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildren)
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
 	{
 		Locker l(th->mutexDisplayList);
+		bool inRange =
+		(
+			beginindex < th->dynamicDisplayList.size() && (int)beginindex >= 0 &&
+			endindex < th->dynamicDisplayList.size() && (int)endindex >= 0
+		);
+		// NOTE: `endindex == INT32_MAX` is a special case, since it's
+		// the default value of `endindex`.
+		if ((!inRange && endindex != 0x7fffffff) || beginindex > endindex)
+		{
+			createError<RangeError>(wrk,kParamRangeError);
+			return;
+		}
 		if (endindex > th->dynamicDisplayList.size())
 			endindex = (uint32_t)th->dynamicDisplayList.size();
+
+		if (beginindex > endindex)
+			return;
+
 		auto it = th->dynamicDisplayList.begin()+beginindex;
 		while (it != th->dynamicDisplayList.begin()+endindex)
 		{

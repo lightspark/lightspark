@@ -1013,6 +1013,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 		int offset=0;
 		int retDiff=0;
 		tiny_string prevsubstring = "";
+		int dataLength = data.numChars();
 		do
 		{
 			tiny_string replaceWithTmp = replaceWith;
@@ -1091,6 +1092,8 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 					replaceWithTmp.replace(pos, ipos-pos, group);
 				}
 			}
+			if (ovector[0] >= dataLength)
+				break;
 			prevsubstring += res->getData().substr_bytes(ovector[0],ovector[1]-ovector[0]);
 			res->hasId = false;
 			res->getData().replace_bytes(ovector[0],ovector[1]-ovector[0],replaceWithTmp);

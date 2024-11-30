@@ -1082,13 +1082,29 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 ASFUNCTIONBODY_ATOM(BitmapData,compare)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
+	bool isAS3 = th->getSystemState()->mainClip->needsActionScript3();
 	
 	_NR<BitmapData> otherBitmapData;
 	ARG_CHECK(ARG_UNPACK(otherBitmapData));
 
+	if (!isAS3 && th->pixels.isNull())
+	{
+		asAtomHandler::setInt(ret,wrk,-1);
+		return;
+	}
+
 	if (otherBitmapData.isNull())
 	{
-		createError<TypeError>(wrk,kNullPointerError, "otherBitmapData");
+		if (isAS3)
+			createError<TypeError>(wrk,kNullPointerError, "otherBitmapData");
+		else
+			asAtomHandler::setInt(ret,wrk,-2);
+		return;
+	}
+
+	if (!isAS3 && otherBitmapData->pixels.isNull())
+	{
+		asAtomHandler::setInt(ret,wrk,-2);
 		return;
 	}
 

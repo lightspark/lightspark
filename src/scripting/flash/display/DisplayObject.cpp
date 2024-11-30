@@ -584,6 +584,8 @@ bool DisplayObject::hasFilters() const
 
 void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 {
+	if (mask == this)
+		return;
 	if (cachedSurface->cachedFilterTextureID != UINT32_MAX
 		|| (!cachedSurface->isInitialized && (this->hasFilters()
 											 || this->inMask()
@@ -1197,7 +1199,7 @@ void DisplayObject::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapConta
 void DisplayObject::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	//Let's invalidate also the mask
-	if(mask && (mask->hasChanged || forceTextureRefresh))
+	if(mask && mask != this && (mask->hasChanged || forceTextureRefresh))
 		mask->requestInvalidation(q,forceTextureRefresh);
 }
 

@@ -2618,8 +2618,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			}
 			case 0x33: // ActionAsciiToChar
 			{
+				SystemState* sys = clip->getSystemState();
 				asAtom a = PopStack(stack);
-				asAtom ret = asAtomHandler::fromStringID(asAtomHandler::toInt(a));
+				uint16_t c = asAtomHandler::toUInt(a);
+				auto id = sys->getUniqueStringId(tiny_string::fromChar(c));
+				asAtom ret = asAtomHandler::fromStringID(id);
 				ASATOM_DECREF(a);
 				PushStack(stack,ret);
 				break;

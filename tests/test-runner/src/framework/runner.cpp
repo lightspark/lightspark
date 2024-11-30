@@ -26,6 +26,7 @@
 #include <lightspark/logger.h>
 #include <lightspark/scripting/abc.h>
 #include <lightspark/scripting/flash/display/RootMovieClip.h>
+#include <lightspark/scripting/flash/system/flashsystem.h>
 #include <lightspark/swf.h>
 #include <lightspark/tiny_string.h>
 #include <lightspark/utils/visitor.h>
@@ -101,6 +102,13 @@ swfFile(test.swfPath)
 	sys->downloadManager = new TestRunnerDownloadManager(rootPath);
 
 	pt->execute();
+
+	(void)options.playerOptions.maxExecution.andThen([&](const TimeSpec& maxExecution)
+	{
+		// TODO: Make `script_timeout` a `TimeSpec`.
+		sys->worker->limits.script_timeout = maxExecution.toFloat();
+		return makeOptional(maxExecution);
+	});
 
 	auto delta = 1.0 / options.tickRate.valueOr(sys->mainClip->getFrameRate());
 	frameTime = TimeSpec::fromFloat(delta);

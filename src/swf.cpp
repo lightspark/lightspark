@@ -127,16 +127,20 @@ void SystemState::unregisterFrameListener(DisplayObject* obj)
 
 void SystemState::addBroadcastEvent(const tiny_string& event)
 {
-	Locker l(mutexFrameListeners);
-	if(!frameListeners.empty())
+	// NOTE: We make a copy here, since in single threaded mode, a
+	// listener may be removed while calling `addEvent()`.
+	std::set<DisplayObject*> tmpListeners = frameListeners;
 	{
-		_R<Event> e(Class<Event>::getInstanceS(this->worker,event));
-		auto it=frameListeners.begin();
-		for(;it!=frameListeners.end();it++)
-		{
-			(*it)->incRef();
-			getVm(this)->addEvent(_MR(*it),e);
-		}
+		Locker l(mutexFrameListeners);
+		if (frameListeners.empty())
+			return;
+		tmpListeners = frameListeners;
+	}
+	_R<Event> e(Class<Event>::getInstanceS(this->worker,event));
+	for (auto it : tmpListeners)
+	{
+		it->incRef();
+		getVm(this)->addEvent(_MR(it),e);
 	}
 }
 

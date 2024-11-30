@@ -678,7 +678,11 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	}
 	else
 	{
-		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
+		// TODO: Checking for dynamic variables works, but in the future,
+		// we should probably look into finding a better solution for
+		// this. For now, it's fine, and prevents a crash with Ruffle's
+		// `avm1/watch_property_proto` test.
+		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT|DYNAMIC_TRAIT);
 	}
 	if(this->is<Class_base>())
 	{

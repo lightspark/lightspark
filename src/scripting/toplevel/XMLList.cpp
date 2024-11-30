@@ -1074,6 +1074,8 @@ bool XMLList::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 	
 	if(XML::isValidMultiname(getSystemState(),name,index))
 	{
+		if (index >= nodes.size())
+			return true;
 		_NR<XML> node = nodes[index];
 		if (node->parentNode && node->parentNode->childrenlist.getPtr() != this)
 		{

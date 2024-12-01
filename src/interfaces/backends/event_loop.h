@@ -21,16 +21,19 @@
 #define INTERFACES_BACKENDS_EVENT_LOOP_H 1
 
 #include "forwards/backends/event_loop.h"
+#include "forwards/events.h"
 #include "forwards/swf.h"
 #include "forwards/threading.h"
 #include "forwards/timer.h"
 #include "interfaces/timer.h"
-#include "events.h"
 #include <cstdint>
-#include <list>
+#include <utility>
 
 namespace lightspark
 {
+
+template<typename T>
+class Optional;
 
 // Platform/Application specific event.
 class IEvent
@@ -55,11 +58,8 @@ public:
 	IEventLoop(ITime* _time) : time(_time) {}
 	virtual ~IEventLoop() { delete time; }
 	// Wait indefinitely for an event.
-	// First bool returns true if we got an event, or false if an
-	// error occured.
-	// Second bool returns true if we've been notified of a
-	// non-platform event (if supported), and false otherwise.
-	virtual std::pair<bool, bool> waitEvent(IEvent& event, SystemState* sys) = 0;
+	// Optionally returns an event, if one was received.
+	virtual Optional<LSEventStorage> waitEvent(SystemState* sys) = 0;
 	// Returns true if the platform supports handling timers in the
 	// event loop.
 	virtual bool timersInEventLoop() const = 0;

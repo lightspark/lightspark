@@ -21,12 +21,12 @@
 #define SWF_H 1
 
 #include "asobject.h"
+#include "forwards/events.h"
 #include "forwards/scripting/flash/text/flashtext.h"
 #include "interfaces/threading.h"
 #include "interfaces/timer.h"
 #include "utils/optional.h"
 #include "utils/timespec.h"
-#include "interfaces/backends/event_loop.h"
 #include "backends/graphics.h"
 #include "backends/urlutils.h"
 #include "timer.h"
@@ -56,6 +56,7 @@ class ControlTag;
 class DisplayListTag;
 class DictionaryTag;
 class DefineScalingGridTag;
+class EventLoop;
 class ExtScriptObject;
 class InputThread;
 class IntervalManager;
@@ -131,7 +132,7 @@ private:
 	std::list<TimeSpec> recentFrameTimings;
 	TimerThread* timerThread;
 	TimerThread* frameTimerThread;
-	IEventLoop* eventLoop;
+	EventLoop* eventLoop;
 	ITime* time;
 	Semaphore terminated;
 	float renderRate;
@@ -343,7 +344,7 @@ public:
 	SystemState
 	(
 		uint32_t fileSize,
-		FLASH_MODE mode, IEventLoop* _eventLoop = nullptr,
+		FLASH_MODE mode, EventLoop* _eventLoop = nullptr,
 		ITime* _time = nullptr,
 		bool _runSingleThreaded = false,
 		size_t threads = SIZE_MAX
@@ -425,6 +426,7 @@ public:
 	void addFrameTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
 	void removeJob(ITickJob* job);
+	void pushEvent(const LSEvent& event);
 	void updateTimers(const TimeSpec& delta, bool allowFrameTimers = true);
 	TimeSpec getFakeCurrentTime() const { return timers.getFakeCurrentTime(); }
 	const LSTimer& getCurrentTimer() { return timers.getCurrentTimer(); }

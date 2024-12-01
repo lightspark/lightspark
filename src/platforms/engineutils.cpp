@@ -20,11 +20,11 @@
 
 #include "platforms/engineutils.h"
 #include "swf.h"
-#include "backends/event_loop.h"
-#include "backends/input.h"
-#include "backends/rendering.h"
-#include "backends/lsopengl.h"
 #include "backends/audio.h"
+#include "backends/input.h"
+#include "backends/lsopengl.h"
+#include "backends/rendering.h"
+#include "backends/sdl/event_loop.h"
 #include <pango/pangocairo.h>
 #include "version.h"
 #include "abc.h"
@@ -69,8 +69,6 @@ SDL_Cursor* EngineData::handCursor = nullptr;
 SDL_Cursor* EngineData::arrowCursor = nullptr;
 SDL_Cursor* EngineData::ibeamCursor = nullptr;
 Semaphore EngineData::mainthread_initialized(0);
-Mutex EngineData::eventMutex;
-std::list<LSEventStorage> EngineData::events;
 
 bool lightspark::isEventLoopThread()
 {
@@ -115,7 +113,7 @@ void EngineData::runInTrueMainThread(SystemState* sys, MainThreadCallback func)
 void EngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
 {
 	if (!isEventLoopThread())
-		pushEvent(LSExecEvent(func));
+		getSys()->pushEvent(LSExecEvent(func));
 	else
 		func(sys);
 }
@@ -306,15 +304,12 @@ static int mainloop_runner(void* d)
 	{
 		EngineData::mainthread_running = true;
 		EngineData::mainthread_initialized.signal();
-		SDLEvent ev;
-		bool gotEvent;
-		bool notified;
-		auto pair = std::tie(gotEvent, notified);
-		while (pair = th->waitEvent(ev, getSys()), gotEvent)
+		Optional<LSEventStorage> event;
+		while (event = th->waitEvent(getSys()), event.hasValue())
 		{
 			SystemState* sys = getSys();
 
-			if (EngineData::mainloop_handleevent(notified ? EngineData::popEvent() : ev.toLSEvent(sys), sys))
+			if (EngineData::mainloop_handleevent(*event, sys))
 			{
 				delete th;
 				EngineData::mainthread_running = false;
@@ -332,7 +327,7 @@ void EngineData::mainloop_from_plugin(SystemState* sys)
 	setTLSSys(sys);
 	while (SDL_PollEvent(&event))
 	{
-		mainloop_handleevent(SDLEvent(event).toLSEvent(sys),sys);
+		mainloop_handleevent(SDLEventLoop::toLSEvent(sys, event),sys);
 	}
 	setTLSSys(nullptr);
 }
@@ -368,7 +363,7 @@ void EngineData::startSDLEventTicker(SystemState* sys)
 /* This is not run in the linux plugin, as firefox
  * runs its own gtk_main, which we must not interfere with.
  */
-bool EngineData::startSDLMain(SDLEventLoop* eventLoop)
+bool EngineData::startSDLMain(EventLoop* eventLoop)
 {
 	assert(!mainLoopThread);
 	mainLoopThread = SDL_CreateThread(mainloop_runner,"mainloop",eventLoop);
@@ -636,7 +631,7 @@ void EngineData::addQuitEvent()
 {
 	if (getSys()->runSingleThreaded || !isEventLoopThread())
 	{
-		pushEvent(LSQuitEvent(LSQuitEvent::QuitType::User));
+		getSys()->pushEvent(LSQuitEvent(LSQuitEvent::QuitType::User));
 		SDL_WaitThread(EngineData::mainLoopThread,nullptr);
 	}
 	else
@@ -644,50 +639,6 @@ void EngineData::addQuitEvent()
 		setTLSSys(nullptr);
 		handleQuit();
 	}
-}
-
-void EngineData::pushEvent(const LSEvent& event)
-{
-	Locker l(EngineData::eventMutex);
-	pushEventNoLock(event);
-}
-
-void EngineData::pushEventNoLock(const LSEvent& event)
-{
-	EngineData::events.push_back(event);
-	notifyEventLoop();
-}
-
-LSEventStorage EngineData::popEvent()
-{
-	Locker l(EngineData::eventMutex);
-	return popEventNoLock();
-}
-
-LSEventStorage EngineData::popEventNoLock()
-{
-	LSEventStorage ret = EngineData::events.front();
-	EngineData::events.pop_front();
-	return ret;
-}
-
-void EngineData::clearEvents()
-{
-	Locker l(EngineData::eventMutex);
-	return clearEventsNoLock();
-}
-
-void EngineData::clearEventsNoLock()
-{
-	EngineData::events.clear();
-}
-
-void EngineData::notifyEventLoop()
-{
-	SDL_Event event;
-	SDL_zero(event);
-	event.type = LS_USEREVENT_NOTIFY;
-	SDL_PushEvent(&event);
 }
 
 void EngineData::notifyTimer()
@@ -856,16 +807,16 @@ void EngineData::updateContextMenuFromMouse(uint32_t windowID, int mousey)
 			}
 		}
 	}
-	pushEvent(LSUpdateContextMenuEvent(newselecteditem));
+	getSys()->pushEvent(LSUpdateContextMenuEvent(newselecteditem));
 }
 
 void EngineData::selectContextMenuItem()
 {
-	pushEvent(LSSelectItemContextMenuEvent());
+	getSys()->pushEvent(LSSelectItemContextMenuEvent());
 }
 void EngineData::InteractiveObjectRemovedFromStage()
 {
-	pushEvent(LSRemovedFromStageEvent());
+	getSys()->pushEvent(LSRemovedFromStageEvent());
 }
 
 void EngineData::selectContextMenuItemIntern()

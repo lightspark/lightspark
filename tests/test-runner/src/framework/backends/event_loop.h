@@ -21,8 +21,7 @@
 #define FRAMEWORK_BACKENDS_EVENT_LOOP_H 1
 
 #include <atomic>
-#include <lightspark/events.h>
-#include <lightspark/interfaces/backends/event_loop.h>
+#include <lightspark/backends/event_loop.h>
 #include <utility>
 
 #include "framework/backends/timer.h"
@@ -37,44 +36,21 @@ namespace lightspark
 
 struct TestRunner;
 
-class TestRunnerEvent : public IEvent
-{
-friend class TestRunnerEventLoop;
-private:
-	LSEventStorage event;
-public:
-	TestRunnerEvent() {};
-	TestRunnerEvent(const LSEvent& ev) : event(ev) {}
-
-	LSEventStorage toLSEvent(SystemState* sys) const override { return event; }
-	IEvent& fromLSEvent(const LSEvent& _event) override
-	{
-		event = _event;
-		return *this;
-	}
-	void* getEvent() const override { return (void*)&event; }
-};
-
-class TestRunnerEventLoop : public IEventLoop
+class TestRunnerEventLoop : public EventLoop
 {
 private:
-	bool sendInputEvents;
 	std::atomic_bool notified;
 	TestRunner* runner;
+
+	Optional<LSEventStorage> waitEventImpl(SystemState* sys) override;
+	void notify() override { notified = true; }
 public:
 	TestRunnerEventLoop(TestRunner* _runner) :
-	IEventLoop(new TestRunnerTime(_runner)),
-	sendInputEvents(true),
+	EventLoop(new TestRunnerTime(_runner)),
 	notified(false),
 	runner(_runner) {}
 
-	std::pair<bool, bool> waitEvent(IEvent& event, SystemState* sys) override;
 	bool timersInEventLoop() const override { return true; }
-
-	bool getSendInputEvents() const { return sendInputEvents; }
-	void setSendInputEvents(bool _sendInputEvents) { sendInputEvents = _sendInputEvents; }
-	void setNotified(bool _notified) { notified = _notified; }
-
 };
 
 #endif /* FRAMEWORK_BACKENDS_EVENT_LOOP_H */

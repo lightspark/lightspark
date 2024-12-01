@@ -27,7 +27,6 @@
 #include "forwards/threading.h"
 #include "forwards/timer.h"
 #include "forwards/swftypes.h"
-#include "forwards/backends/event_loop.h"
 #include "forwards/events.h"
 #include "forwards/backends/graphics.h"
 #include "interfaces/threading.h"
@@ -55,6 +54,7 @@ class ITickJob;
 class ByteArray;
 class NativeMenuItem;
 class InteractiveObject;
+class EventLoop;
 
 // this is only used for font rendering in PPAPI plugin
 class externalFontRenderer : public IDrawable
@@ -90,10 +90,6 @@ private:
 	ITickJob* sdleventtickjob;
 	std::string getsharedobjectfilename(const tiny_string &name);
 	virtual void glTexImage2Dintern(uint32_t type,int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize);
-
-	static Mutex eventMutex;
-	static std::list<LSEventStorage> events;
-	virtual void notifyEventLoop();
 protected:
 	tiny_string sharedObjectDatapath;
 	int32_t contextmenucurrentitem;
@@ -160,12 +156,6 @@ public:
 
 	static void checkForNativeAIRExtensions(std::vector<tiny_string>& extensions, char* fileName);
 	void addQuitEvent();
-	void pushEvent(const LSEvent& event);
-	void pushEventNoLock(const LSEvent& event);
-	static LSEventStorage popEvent();
-	static LSEventStorage popEventNoLock();
-	static void clearEvents();
-	static void clearEventsNoLock();
 	// local storage handling
 	virtual void setLocalStorageAllowedMarker(bool allowed);
 	virtual bool getLocalStorageAllowedMarker();
@@ -200,7 +190,7 @@ public:
 	static bool enablerendering;
 	static bool mainthread_running;
 	static Semaphore mainthread_initialized;
-	static bool startSDLMain(SDLEventLoop* eventLoop);
+	static bool startSDLMain(EventLoop* eventLoop);
 
 	virtual bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath);
 	virtual bool FileIsHidden(SystemState* sys,const tiny_string& filename, bool isfullpath);

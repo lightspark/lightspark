@@ -1124,7 +1124,7 @@ bool InteractiveObject::countCylicMemberReferences(garbagecollectorstate& gcstat
 void InteractiveObject::defaultEventBehavior(Ref<Event> e)
 {
 	if(mouseEnabled && e->type == "contextMenu")
-		getSystemState()->getEngineData()->pushEvent(LSOpenContextMenuEvent(this));
+		getSystemState()->pushEvent(LSOpenContextMenuEvent(this));
 }
 
 _NR<InteractiveObject> InteractiveObject::getCurrentContextMenuItems(std::vector<_R<NativeMenuItem>>& items)

@@ -23,7 +23,7 @@
 #include "backends/security.h"
 #include "backends/config.h"
 #include "backends/streamcache.h"
-#include "backends/event_loop.h"
+#include "backends/sdl/event_loop.h"
 #include "swf.h"
 #include "logger.h"
 #include "platforms/engineutils.h"

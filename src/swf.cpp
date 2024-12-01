@@ -20,6 +20,7 @@
 #include <string>
 #include <algorithm>
 #include <numeric>
+#include "backends/event_loop.h"
 #include "backends/security.h"
 #include "scripting/abc.h"
 #include "scripting/flash/events/flashevents.h"
@@ -218,12 +219,12 @@ SystemState::SystemState
 (
 	uint32_t fileSize,
 	FLASH_MODE mode,
-	IEventLoop* _eventLoop,
+	EventLoop* _eventLoop,
 	ITime* _time,
 	bool _runSingleThreaded,
 	size_t threads
 ) :
-	timers(LSTimers(this)), eventLoop(_eventLoop),time(_time != nullptr ? _time : eventLoop != nullptr ? eventLoop->getTime() : new Time()),terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
+	timers(this), eventLoop(_eventLoop),time(_time != nullptr ? _time : eventLoop != nullptr ? eventLoop->getTime() : new Time()),terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -1232,7 +1233,7 @@ void SystemState::setParamsAndEngine(EngineData* e, bool s)
 	}
 	
 	if (EngineData::needinit && !runSingleThreaded && !isEventLoopThread())
-		getEngineData()->pushEvent(LSInitEvent(this));
+		pushEvent(LSInitEvent(this));
 	if(vmVersion)
 		createEngines();
 }
@@ -1316,6 +1317,11 @@ void SystemState::removeJob(ITickJob* job)
 		else
 			timers.removeJob(job);
 	}
+}
+
+void SystemState::pushEvent(const LSEvent& event)
+{
+	eventLoop->pushEvent(event);
 }
 
 void SystemState::updateTimers(const TimeSpec& delta, bool allowFrameTimers)

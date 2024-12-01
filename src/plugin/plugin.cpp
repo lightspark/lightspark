@@ -20,7 +20,7 @@
 **************************************************************************/
 
 #include "version.h"
-#include "backends/event_loop.h"
+#include "backends/sdl/event_loop.h"
 #include "backends/security.h"
 #include "backends/streamcache.h"
 #include "backends/config.h"
@@ -913,7 +913,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 				if (nsEvent->xkey.state & ShiftMask)
 					ev.key.keysym.mod |= KMOD_SHIFT;
 				ev.key.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(SDLEvent(ev).toLSEvent(m_sys),m_sys);
+				return EngineData::mainloop_handleevent(SDLEventLoop::toLSEvent(m_sys, ev),m_sys);
 			}
 			break;
 		case MotionNotify: 
@@ -926,7 +926,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 				ev.motion.x = event->x;
 				ev.motion.y = event->y;
 				ev.motion.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(SDLEvent(ev).toLSEvent(m_sys),m_sys);
+				return EngineData::mainloop_handleevent(SDLEventLoop::toLSEvent(m_sys, ev),m_sys);
 			}
 			break;
 		case ButtonPress:
@@ -964,7 +964,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 				}
 
 				ev.button.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(SDLEvent(ev).toLSEvent(m_sys),m_sys);
+				return EngineData::mainloop_handleevent(SDLEventLoop::toLSEvent(m_sys, ev),m_sys);
 			}
 			break;
 		case FocusOut:
@@ -973,7 +973,7 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 				SDL_Event ev;
 				ev.type = SDL_WINDOWEVENT_FOCUS_LOST;
 				ev.window.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(SDLEvent(ev).toLSEvent(m_sys),m_sys);
+				return EngineData::mainloop_handleevent(SDLEventLoop::toLSEvent(m_sys, ev),m_sys);
 			}
 			break;
 	}

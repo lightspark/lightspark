@@ -41,8 +41,6 @@ class TestRunnerEngineData : public EngineData
 private:
 	path_t basePath;
 	TestRunner* runner;
-
-	void notifyEventLoop() override;
 protected:
 	SDL_Window* createWidget(uint32_t w, uint32_t h) override { return nullptr; }
 	void notifyTimer() override {}

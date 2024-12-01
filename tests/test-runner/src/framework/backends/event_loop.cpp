@@ -26,26 +26,12 @@
 
 #include "input/injector.h"
 
-std::pair<bool, bool> TestRunnerEventLoop::waitEvent(IEvent& event, SystemState* sys)
+Optional<LSEventStorage> TestRunnerEventLoop::waitEventImpl(SystemState* sys)
 {
-	if (notified)
+	if (notified && peekEvent().hasValue())
+		return popEvent();
+	return runner->injector.popEvent().filter([&](const LSEvent& event)
 	{
-		notified = false;
-		return std::make_pair(true, true);
-	}
-
-	if (sendInputEvents)
-	{
-		auto& ev = static_cast<TestRunnerEvent&>(event);
-		ev.event = runner->injector.popEvent().filter([&](const LSEvent& event)
-		{
-			return !event.has<TestRunnerNextFrameEvent>();
-		}).valueOr(LSEvent());
-		return std::make_pair
-		(
-			!static_cast<const LSEvent&>(ev.event).isInvalid(),
-			false
-		);
-	}
-	return std::make_pair(false, false);
+		return !event.has<TestRunnerNextFrameEvent>();
+	});
 }

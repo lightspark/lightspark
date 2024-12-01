@@ -32,6 +32,7 @@
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
 #	include <winnt.h> // for Nt{Set,Query}TimerResolution()
+#	include <versionhelpers.h> // for `IsWindowsVistaOrGreater()`
 #	undef DOUBLE_CLICK
 #	undef RGB
 #	undef VOID
@@ -54,7 +55,7 @@ uint64_t compat_perfcount()
 {
 #ifdef _WIN32
 	LARGE_INTEGER counter;
-	const BOOL rc = QueryPerformanceCounter(&counter);
+	(void)QueryPerformanceCounter(&counter);
 	return (uint64_t)counter.QuadPart;
 #else
 	timespec t;
@@ -67,7 +68,7 @@ uint64_t compat_perffreq()
 {
 #ifdef _WIN32
 	LARGE_INTEGER frequency;
-	const BOOL rc = QueryPerformanceFrequency(&frequency);
+	(void)QueryPerformanceFrequency(&frequency);
 	return (uint64_t)frequency.QuadPart;
 #else
 	return 1000000000;
@@ -133,10 +134,9 @@ static void initTimerRes()
 			typedef long(NTAPI* pNtQueryTimerResolution)(unsigned long* MinimumResolution, unsigned long* MaximumResolution, unsigned long* CurrentResolution);
 			typedef long(NTAPI* pNtSetTimerResolution)(unsigned long RequestedResolution, char SetResolution, unsigned long* ActualResolution);
 
-			pNtQueryTimerResolution NtQueryTimerResolution = (pNtQueryTimerResolution)GetProcAddress(ntdll, "NtQueryTimerResolution");
-			pNtSetTimerResolution   NtSetTimerResolution   = (pNtSetTimerResolution)  GetProcAddress(ntdll, "NtSetTimerResolution");
-			if (NtQueryTimerResolution != NULL &&
-			    NtSetTimerResolution   != NULL)
+			pNtQueryTimerResolution NtQueryTimerResolution = (pNtQueryTimerResolution)(void*)GetProcAddress(ntdll, "NtQueryTimerResolution");
+			pNtSetTimerResolution NtSetTimerResolution = (pNtSetTimerResolution)(void*)GetProcAddress(ntdll, "NtSetTimerResolution");
+			if (NtQueryTimerResolution != nullptr && NtSetTimerResolution != nullptr)
 			{
 				// Query for the highest accuracy timer resolution.
 				unsigned long minimum, maximum, current;

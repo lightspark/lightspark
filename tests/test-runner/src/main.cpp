@@ -18,12 +18,12 @@
 **************************************************************************/
 
 #include <algorithm>
+#include <csignal>
 #include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <regex>
-#include <sys/wait.h>
 #include <vector>
 #include <thread>
 #include <condition_variable>
@@ -47,11 +47,8 @@
 #include "utils/args_parser.h"
 #include "utils/filesystem_overloads.h"
 
-
-namespace fs = std::filesystem;
 using namespace lightspark;
 using namespace libtestpp;
-using path_t = fs::path;
 
 static TestFormat fromStr(const tiny_string& name)
 {
@@ -239,7 +236,7 @@ Optional<Trial> lookUpTest(const path_t& root, const Options& options)
 	// Make sure that:
 	//	1. There's no path traversal (e.g. `../../test`)
 	//	2. The path is still exact (e.g. `foo/../foo/test`)
-	if (stripPrefix(path, absRoot) != (path_t(dirName)/realName/infoFile) || !fs::is_regular_file(path))
+	if (stripPrefix(path, absRoot) != (path_t((std::string)dirName)/realName/infoFile) || !fs::is_regular_file(path))
 		return nullOpt;
 	return runTest
 	(
@@ -261,7 +258,7 @@ cpptrace::safe_object_frame safeFrames[128];
 
 void initCppTrace()
 {
-	auto crashHandler = [](int sigNum, siginfo_t* info, void* context)
+	auto crashHandler = [](int sigNum)
 	{
 		signalOccured = true;
 		auto printStr = [](const char* str)
@@ -304,15 +301,22 @@ void initCppTrace()
 	cpptrace::safe_object_frame frame;
 	cpptrace::get_safe_object_frame(buffer[0], &frame);
 
+	#ifndef _WIN32
 	struct sigaction segFaultAction {};
 	struct sigaction abortAction {};
-	segFaultAction.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_NODEFER | SA_RESETHAND;
-	segFaultAction.sa_sigaction = crashHandler;
-	abortAction.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_NODEFER | SA_RESETHAND;
-	abortAction.sa_sigaction = crashHandler;
+	segFaultAction.sa_flags = SA_ONSTACK | SA_NODEFER | SA_RESETHAND;
+	segFaultAction.sa_handler = crashHandler;
+	abortAction.sa_flags = SA_ONSTACK | SA_NODEFER | SA_RESETHAND;
+	abortAction.sa_handler = crashHandler;
 
 	sigaction(SIGSEGV, &segFaultAction, nullptr);
 	sigaction(SIGABRT, &abortAction, nullptr);
+	#else
+	// Windows doesn't support `sigaction()`, so fallback to using
+	// `signal()`.
+	signal(SIGSEGV, crashHandler);
+	signal(SIGABRT, crashHandler);
+	#endif
 }
 
 int main(int argc, char* argv[])

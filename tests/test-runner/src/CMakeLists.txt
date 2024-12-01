@@ -44,7 +44,10 @@ FetchContent_Declare(
 	GIT_TAG 4354eb21ea3565a73afdf32ec0ba768fd648c425
 )
 
-SET(CPPTRACE_UNWIND_WITH_LIBUNWIND ON)
+if (NOT WIN32)
+	SET(CPPTRACE_UNWIND_WITH_LIBUNWIND ON)
+endif()
+
 FetchContent_MakeAvailable(cpptrace)
 
 SET(CMAKE_CXX_FLAGS "-Wall -pipe -std=c++17")
@@ -65,8 +68,12 @@ TARGET_LINK_LIBRARIES(test-runner test++ spark cpptrace::cpptrace)
 CONFIGURE_FILE("config.h.in" "${PROJECT_BINARY_DIR}/config.h" @ONLY)
 
 if (WIN32)
+	TARGET_LINK_OPTIONS(
+		test-runner
+		PUBLIC "-Wl,--allow-multiple-definition"
+	)
 	add_custom_command(
-		TARGET your_target POST_BUILD
+		TARGET test-runner POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different
 		$<TARGET_FILE:cpptrace::cpptrace>
 		$<TARGET_FILE_DIR:test-runner>

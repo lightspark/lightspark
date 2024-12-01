@@ -151,7 +151,7 @@ void TestRunnerDownloader::run(const path_t& basePath, bool dataGeneration)
 	{
 		std::ifstream file
 		(
-			path_t(URLInfo::decode(path, URLInfo::ENCODE_ESCAPE)),
+			path_t((std::string)URLInfo::decode(path, URLInfo::ENCODE_ESCAPE)),
 			std::ios::in | std::ios::binary
 		);
 

@@ -50,7 +50,7 @@ void AntiAliasType::sinit(Class_base* c)
 void ASFont::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
-	c->setDeclaredMethodByQName("enumerateFonts","",c->getSystemState()->getBuiltinFunction(enumerateFonts,1,Class<Array>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("enumerateFonts","",c->getSystemState()->getBuiltinFunction(enumerateFonts,0,Class<Array>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("registerFont","",c->getSystemState()->getBuiltinFunction(registerFont),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("hasGlyphs","",c->getSystemState()->getBuiltinFunction(hasGlyphs,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 

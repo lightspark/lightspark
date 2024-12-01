@@ -1285,7 +1285,7 @@ void SystemState::addFrameTick(ITickJob* job)
 {
 	// TODO: Use LSTimers in `TimerThread`.
 	if (timerThread != nullptr)
-		timerThread->addTick(1000/mainClip->getFrameRate(),job);
+		timerThread->addTick(1000/mainClip->applicationDomain->getFrameRate(),job);
 	else
 		timers.addFrameTick(job);
 }
@@ -2228,7 +2228,7 @@ size_t SystemState::maxFramesPerTick() const
 	if (recentFrameTimings.empty())
 		return MAX_FRAMES_PER_TICK;
 
-	auto frameTime = TimeSpec::fromFloat(1.0 / mainClip->getFrameRate());
+	auto frameTime = TimeSpec::fromFloat(1.0 / mainClip->applicationDomain->getFrameRate());
 	auto averageFrameTiming = std::accumulate
 	(
 		recentFrameTimings.cbegin(),
@@ -2260,7 +2260,7 @@ void SystemState::runTick(const TimeSpec& delta)
 
 	frameAccumulator += delta;
 
-	auto frameTime = TimeSpec::fromFloat(1.0 / mainClip->getFrameRate());
+	auto frameTime = TimeSpec::fromFloat(1.0 / mainClip->applicationDomain->getFrameRate());
 
 	auto maxFramesPerTick = this->maxFramesPerTick();
 	size_t numFrames;
@@ -2297,7 +2297,7 @@ void SystemState::runTick(const TimeSpec& delta)
 // Based on Ruffle's `Player::time_til_next_frame()`.
 TimeSpec SystemState::timeUntilNextFrame() const
 {
-	auto frameTime = TimeSpec::fromFloat(1.0 / mainClip->getFrameRate());
+	auto frameTime = TimeSpec::fromFloat(1.0 / mainClip->applicationDomain->getFrameRate());
 	TimeSpec delta = frameAccumulator.toSNs() <= 0 ? frameTime : frameTime.saturatingSub(frameAccumulator);
 
 	return maxTmpl

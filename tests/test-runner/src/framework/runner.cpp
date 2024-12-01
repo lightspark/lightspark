@@ -110,7 +110,7 @@ swfFile(test.swfPath)
 		return makeOptional(maxExecution);
 	});
 
-	auto delta = 1.0 / options.tickRate.valueOr(sys->mainClip->getFrameRate());
+	auto delta = 1.0 / options.tickRate.valueOr(sys->mainClip->loadedFrom->getFrameRate());
 	frameTime = TimeSpec::fromFloat(delta);
 	remainingTicks = options.numFrames.valueOr(-1);
 }

@@ -51,6 +51,7 @@ SET(LIBSPARK_SOURCES
   backends/rendering_context.cpp
   backends/rtmputils.cpp
   backends/security.cpp
+  backends/sdl/event_loop.cpp
   backends/streamcache.cpp
   backends/urlutils.cpp
   backends/xml_support.cpp

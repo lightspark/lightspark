@@ -53,11 +53,10 @@ static SystemState::FLASH_MODE fromFlashMode(const FlashMode& mode)
 
 static bool runEventLoop(TestRunnerEventLoop& eventLoop, SystemState* sys, bool sendInputEvents = true)
 {
-	TestRunnerEvent ev;
-	bool gotEvent, notified;
-	while (std::tie(gotEvent, notified) = eventLoop.waitEvent(ev, sys), gotEvent)
+	Optional<LSEventStorage> ev;
+	while (ev = eventLoop.waitEvent(sys), ev.hasValue())
 	{
-		if (EngineData::mainloop_handleevent(notified ? EngineData::popEvent() : ev.toLSEvent(sys), sys))
+		if (EngineData::mainloop_handleevent(*ev, sys))
 			return true;
 	}
 	return false;
@@ -70,7 +69,7 @@ options(test.options),
 sys(nullptr),
 pt(nullptr),
 injector(_injector),
-eventLoop(TestRunnerEventLoop(this)),
+eventLoop(this),
 remainingTicks(-1),
 currentTick(0),
 swfFile(test.swfPath)
@@ -122,7 +121,6 @@ TestRunner::~TestRunner()
 	sys->destroy();
 	delete pt;
 	delete sys;
-	EngineData::clearEvents();
 }
 
 void TestRunner::tick()

@@ -28,11 +28,6 @@
 #include "framework/options.h"
 #include "framework/runner.h"
 
-void TestRunnerEngineData::notifyEventLoop()
-{
-	runner->eventLoop.setNotified(true);
-}
-
 bool TestRunnerEngineData::FileExists(SystemState* sys, const tiny_string& filename, bool isfullpath)
 {
 	return fs::exists(path_t((std::string)filename));

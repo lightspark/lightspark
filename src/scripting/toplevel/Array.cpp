@@ -2234,6 +2234,8 @@ uint32_t Array::nextNameIndex(uint32_t cur_index)
 			if ((it.first + 1) > cur_index && (it.first) < s)
 				return it.first+1;
 		}
+		// no matching index found, set to size and search on object properties
+		cur_index=s;
 	}
 	//Fall back on object properties
 	uint32_t ret=ASObject::nextNameIndex(cur_index-s);

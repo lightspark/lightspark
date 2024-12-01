@@ -1859,7 +1859,7 @@ void ABCVm::initVM(std::string* errStr)
 #endif
 	}
 	registerClasses();
-	if (!m_sys->mainClip->usesActionScript3)
+	if (!m_sys->mainClip->needsActionScript3())
 		registerClassesAVM1();
 	status=STARTED;
 }

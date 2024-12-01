@@ -1013,10 +1013,10 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 		int offset=0;
 		int retDiff=0;
 		tiny_string prevsubstring = "";
-		int dataLength = data.numChars();
 		do
 		{
 			tiny_string replaceWithTmp = replaceWith;
+			int dataLength = res->getData().numBytes();
 			int rc=pcre_exec(pcreRE, &extra, res->getData().raw_buf(), res->getData().numBytes(), offset, PCRE_NO_UTF8_CHECK, ovector, (capturingGroups+1)*3);
 			if(rc<0)
 			{
@@ -1092,7 +1092,7 @@ ASFUNCTIONBODY_ATOM(ASString,replace)
 					replaceWithTmp.replace(pos, ipos-pos, group);
 				}
 			}
-			if (ovector[0] >= dataLength)
+			if (ovector[0] > dataLength)
 				break;
 			prevsubstring += res->getData().substr_bytes(ovector[0],ovector[1]-ovector[0]);
 			res->hasId = false;

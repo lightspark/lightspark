@@ -93,7 +93,7 @@ namespace cereal
 	template<class Archive, typename T>
 	void load(Archive& archive, Vector2Tmpl<T>& vec)
 	{
-		size_t size;
+		cereal::size_type size;
 		archive(cereal::make_size_tag(size));
 		archive(vec.x, vec.y);
 	}

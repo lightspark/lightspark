@@ -19,6 +19,7 @@
 **************************************************************************/
 
 #include "swf.h"
+#include <algorithm>
 #include <cstdlib>
 #include <cassert>
 

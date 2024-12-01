@@ -35,23 +35,23 @@ void TestRunnerEngineData::notifyEventLoop()
 
 bool TestRunnerEngineData::FileExists(SystemState* sys, const tiny_string& filename, bool isfullpath)
 {
-	return fs::exists(path_t(filename));
+	return fs::exists(path_t((std::string)filename));
 }
 
 bool TestRunnerEngineData::FileIsHidden(SystemState* sys, const tiny_string& filename, bool isfullpath)
 {
-	path_t path(filename);
+	path_t path((std::string)filename);
 	return fs::exists(path) && path.filename().generic_string()[0] == '.';
 }
 
 bool TestRunnerEngineData::FileIsDirectory(SystemState* sys, const tiny_string& filename, bool isfullpath)
 {
-	return fs::is_directory(path_t(filename));
+	return fs::is_directory(path_t((std::string)filename));
 }
 
 uint32_t TestRunnerEngineData::FileSize(SystemState* sys,const tiny_string& filename, bool isfullpath)
 {
-	path_t path(filename);
+	path_t path((std::string)filename);
 	return fs::is_regular_file(path) ? fs::file_size(path) : 0;
 }
 
@@ -62,12 +62,12 @@ tiny_string TestRunnerEngineData::FileFullPath(SystemState* sys, const tiny_stri
 
 tiny_string TestRunnerEngineData::FileBasename(SystemState* sys, const tiny_string& filename, bool isfullpath)
 {
-	return path_t(filename).parent_path().string();
+	return path_t((std::string)filename).parent_path().string();
 }
 
 tiny_string TestRunnerEngineData::FileRead(SystemState* sys, const tiny_string& filename, bool isfullpath)
 {
-	path_t path(filename);
+	path_t path((std::string)filename);
 	if (!fs::is_regular_file(path))
 		return "";
 
@@ -77,7 +77,7 @@ tiny_string TestRunnerEngineData::FileRead(SystemState* sys, const tiny_string& 
 
 void TestRunnerEngineData::FileWrite(SystemState* sys, const tiny_string& filename, const tiny_string& data, bool isfullpath)
 {
-	path_t path(filename);
+	path_t path((std::string)filename);
 	if (!fs::is_regular_file(path))
 		return;
 	std::ofstream file(path, std::ios::out | std::ios::binary);
@@ -87,7 +87,7 @@ void TestRunnerEngineData::FileWrite(SystemState* sys, const tiny_string& filena
 
 uint8_t TestRunnerEngineData::FileReadUnsignedByte(SystemState* sys, const tiny_string &filename, uint32_t startpos, bool isfullpath)
 {
-	path_t path(filename);
+	path_t path((std::string)filename);
 	if (!fs::is_regular_file(path))
 		return 0;
 	uint8_t ret;
@@ -99,7 +99,7 @@ uint8_t TestRunnerEngineData::FileReadUnsignedByte(SystemState* sys, const tiny_
 
 void TestRunnerEngineData::FileReadByteArray(SystemState* sys, const tiny_string &filename, ByteArray* res, uint32_t startpos, uint32_t length, bool isfullpath)
 {
-	path_t path(filename);
+	path_t path((std::string)filename);
 	if (!fs::is_regular_file(path))
 		return;
 	size_t len = std::min<decltype(fs::file_size(path))>(length, fs::file_size(path) - startpos);
@@ -113,7 +113,7 @@ void TestRunnerEngineData::FileReadByteArray(SystemState* sys, const tiny_string
 
 void TestRunnerEngineData::FileWriteByteArray(SystemState* sys, const tiny_string& filename, ByteArray* data, uint32_t startpos, uint32_t length, bool isfullpath)
 {
-	path_t path(filename);
+	path_t path((std::string)filename);
 	if (!fs::is_regular_file(path))
 		return;
 	size_t len =
@@ -128,7 +128,7 @@ void TestRunnerEngineData::FileWriteByteArray(SystemState* sys, const tiny_strin
 
 bool TestRunnerEngineData::FileCreateDirectory(SystemState* sys, const tiny_string& filename, bool isfullpath)
 {
-	path_t path(filename);
+	path_t path((std::string)filename);
 	bool ret = fs::create_directory(path);
 	fs::permissions
 	(
@@ -141,7 +141,7 @@ bool TestRunnerEngineData::FileCreateDirectory(SystemState* sys, const tiny_stri
 
 bool TestRunnerEngineData::FilGetDirectoryListing(SystemState* sys, const tiny_string &filename, bool isfullpath, std::vector<tiny_string>& filelist)
 {
-	path_t path(filename);
+	path_t path((std::string)filename);
 	if (!fs::is_directory(path))
 		return false;
 
@@ -160,7 +160,7 @@ bool TestRunnerEngineData::FilGetDirectoryListing(SystemState* sys, const tiny_s
 
 bool TestRunnerEngineData::FilePathIsAbsolute(const tiny_string& filename)
 {
-	return path_t(filename).is_absolute();
+	return path_t((std::string)filename).is_absolute();
 }
 
 void TestRunnerEngineData::setClipboardText(const std::string txt)

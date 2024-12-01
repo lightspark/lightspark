@@ -21,6 +21,8 @@
 #define UTILS_FILESYSTEM_OVERLOADS_H 1
 
 #include <filesystem>
+#include <string>
+
 #include <lightspark/tiny_string.h>
 
 namespace fs = std::filesystem;
@@ -34,7 +36,7 @@ static inline path_t operator/(const path_t& path, const tiny_string& str)
 
 static inline path_t operator/(const tiny_string& str, const path_t& path)
 {
-	return path_t(str) / path;
+	return path_t((std::string)str) / path;
 }
 
 static inline path_t& operator/=(path_t& path, const tiny_string& str)
@@ -44,12 +46,12 @@ static inline path_t& operator/=(path_t& path, const tiny_string& str)
 
 static inline bool operator!=(const path_t& path, const tiny_string& str)
 {
-	return path != path_t(str);
+	return path != path_t((std::string)str);
 }
 
 static inline bool operator!=(const tiny_string& str, const path_t& path)
 {
-	return path_t(str) != path;
+	return path_t((std::string)str) != path;
 }
 
 #endif /* UTILS_FILESYSTEM_OVERLOADS_H */

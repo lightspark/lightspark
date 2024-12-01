@@ -27,6 +27,7 @@
 #include "interfaces/timer.h"
 #include "platforms/engineutils.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/flash/system/flashsystem.h"
 
 using namespace lightspark;
 using namespace std;
@@ -374,7 +375,7 @@ void LSTimers::addJob(const TimeSpec& time, const LSTimer::Type& type, ITickJob*
 }
 TimeSpec LSTimers::getFrameRate() const
 {
-	return TimeSpec::fromFloat(1.0f / sys->mainClip->getFrameRate());
+	return TimeSpec::fromFloat(1.0f / sys->mainClip->applicationDomain->getFrameRate());
 }
 
 void LSTimers::removeJob(ITickJob* job)

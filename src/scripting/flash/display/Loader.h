@@ -35,10 +35,11 @@ private:
 	Loader* loader;
 	LoaderInfo* loaderInfo;
 	SOURCE source;
+	void jobFence() override;
 public:
 	void execute() override;
-	LoaderThread(_R<URLRequest> request, _R<Loader> loader);
-	LoaderThread(_R<ByteArray> bytes, _R<Loader> loader);
+	LoaderThread(_R<URLRequest> request, Loader* loader);
+	LoaderThread(_R<ByteArray> bytes, Loader* loader);
 };
 
 class Loader: public DisplayObjectContainer, public IDownloaderThreadListener

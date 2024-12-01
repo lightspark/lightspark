@@ -223,7 +223,7 @@ int InputThread::handleEvent(const LSEvent& event)
 					//Grab focus, to receive keypresses
 					engineData->grabFocus();
 
-					if (m_sys->mainClip->usesActionScript3)
+					if (m_sys->mainClip->needsActionScript3())
 					{
 						handleMouseDown(mouseButton);
 						if (mouseButton.buttonType == ButtonType::DoubleClick)

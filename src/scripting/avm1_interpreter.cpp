@@ -2215,7 +2215,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				else
 				{
 					auto newTarget = clip->AVM1GetClipFromPath(s);
-					clip = newTarget != nullptr ? newTarget : clip->loadedFrom;
+					clip = newTarget != nullptr ? newTarget : clip->AVM1getRoot();
 					if (newTarget == nullptr)
 						LOG(LOG_ERROR,"AVM1: ActionSetTarget clip not found:"<<s);
 				}

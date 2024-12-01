@@ -27,6 +27,7 @@
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Error.h"
+#include "scripting/toplevel/Number.h"
 #include "swf.h"
 
 /* Usage of ARG_UNPACK:
@@ -249,8 +250,8 @@ inline AS3KeyCode lightspark::ArgumentConversionAtom<AS3KeyCode>::failValue() { 
 template<>
 inline Vector2f lightspark::ArgumentConversionAtom<Vector2f>::toConcrete(ASWorker* wrk, asAtom obj, const Vector2f& v)
 {
-	bool needsAS3 = wrk->getSystemState()->mainClip->needsActionScript3();
-	auto swfVersion = wrk->getSystemState()->mainClip->version;
+	bool needsAS3 = wrk->rootClip->needsActionScript3();
+	auto swfVersion = wrk->rootClip->applicationDomain->version;
 	if (needsAS3 || asAtomHandler::is<Point>(obj))
 	{
 		auto point = asAtomHandler::as<Point>(obj);
@@ -283,7 +284,7 @@ inline Vector2f lightspark::ArgumentConversionAtom<Vector2f>::toConcrete(ASWorke
 template<>
 inline Vector2f lightspark::ArgumentConversionAtom<Vector2f>::failValue()
 {
-	auto _default = asAtomHandler::toNumber(asAtomHandler::undefinedAtom);
+	auto _default = Number::NaN;
 	return Vector2f(_default, _default);
 }
 

@@ -20,53 +20,44 @@
 #ifndef BACKENDS_EVENT_LOOP_H
 #define BACKENDS_EVENT_LOOP_H 1
 
+#include "forwards/events.h"
 #include "interfaces/backends/event_loop.h"
 #include "interfaces/timer.h"
 #include "utils/optional.h"
 #include "utils/timespec.h"
-#include "events.h"
 #include "threading.h"
 #include <list>
 #include <utility>
-#include <SDL.h>
 
 namespace lightspark
 {
 
-// SDL event.
-class SDLEvent : public IEvent
-{
-friend class SDLEventLoop;
-protected:
-	SDL_Event event;
-public:
-	SDLEvent() = default;
-	SDLEvent(const SDL_Event& ev) : event(ev) {}
-	// Converts a platform/application specific event into an LSEvent.
-	LSEventStorage toLSEvent(SystemState* sys) const override;
-	// Converts an LSEvent into a platform/application specific event.
-	IEvent& fromLSEvent(const LSEvent& event) override;
-	// Returns the underlying platform/application specific event.
-	void* getEvent() const override { return (void*)&event; }
-};
-
-// SDL event loop.
-class DLL_PUBLIC SDLEventLoop : public IEventLoop
+// Generic event loop.
+class DLL_PUBLIC EventLoop : public IEventLoop
 {
 private:
+	std::list<LSEventStorage> events;
+	mutable Mutex eventMutex;
+
+	// Platform specific implementation of `waitEvent()`, used when the
+	// generic event queue is empty.
+	virtual Optional<LSEventStorage> waitEventImpl(SystemState* sys) = 0;
+
+	// Notifies the platform event loop that an event was pushed.
+	virtual void notify() = 0;
+protected:
 	Optional<TimeSpec> deadline;
 	TimeSpec startTime;
+
+	Optional<LSEventStorage> popEvent();
+	Optional<LSEventStorage> peekEvent() const;
 public:
-	SDLEventLoop(ITime* time) : IEventLoop(time) {}
+	EventLoop(ITime* time) : IEventLoop(time) {}
+	void pushEventNoLock(const LSEvent& event);
+	void pushEvent(const LSEvent& event);
 	// Wait indefinitely for an event.
-	// First bool returns true if we got an event, or false if an
-	// error occured.
-	// Second bool returns true if we've been notified of a
-	// non-platform event (if supported), and false otherwise.
-	std::pair<bool, bool> waitEvent(IEvent& event, SystemState* sys) override;
-	// Returns true if the platform supports handling timers in the
-	// event loop.
-	bool timersInEventLoop() const override { return true; }
+	// Optionally returns an event, if one was received.
+	Optional<LSEventStorage> waitEvent(SystemState* sys) override;
 };
 
 };

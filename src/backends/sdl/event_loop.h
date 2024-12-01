@@ -17,40 +17,34 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef FRAMEWORK_BACKENDS_EVENT_LOOP_H
-#define FRAMEWORK_BACKENDS_EVENT_LOOP_H 1
+#ifndef BACKENDS_SDL_EVENT_LOOP_H
+#define BACKENDS_SDL_EVENT_LOOP_H 1
 
-#include <atomic>
-#include <lightspark/backends/event_loop.h>
-#include <utility>
+#include "backends/event_loop.h"
 
-#include "framework/backends/timer.h"
-
-using namespace lightspark;
+union SDL_Event;
 
 namespace lightspark
 {
-	struct LSEventStorage;
-	class SystemState;
-};
 
-struct TestRunner;
-
-class TestRunnerEventLoop : public EventLoop
+class DLL_PUBLIC SDLEventLoop : public EventLoop
 {
 private:
-	std::atomic_bool notified;
-	TestRunner* runner;
-
+	// Wait indefinitely for an event.
+	// Optionally returns an event, if one was received.
 	Optional<LSEventStorage> waitEventImpl(SystemState* sys) override;
-	void notify() override { notified = true; }
-public:
-	TestRunnerEventLoop(TestRunner* _runner) :
-	EventLoop(new TestRunnerTime(_runner)),
-	notified(false),
-	runner(_runner) {}
 
+	// Notifies the platform event loop that an event was pushed.
+	void notify() override;
+	bool notified(const SDL_Event& event) const;
+public:
+	SDLEventLoop(ITime* time) : EventLoop(time) {}
+	// Returns true if the platform supports handling timers in the
+	// event loop.
 	bool timersInEventLoop() const override { return true; }
+
+	static LSEventStorage toLSEvent(SystemState* sys, const SDL_Event& event);
 };
 
-#endif /* FRAMEWORK_BACKENDS_EVENT_LOOP_H */
+}
+#endif /* BACKENDS_SDL_EVENT_LOOP_H */

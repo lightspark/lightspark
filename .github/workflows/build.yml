@@ -122,14 +122,11 @@ jobs:
         run: |
           brew install \
             nasm \
-            libedit \
-            zlib \
             mesa \
             xquartz \
             mesa-glu \
             glew \
             pango \
-            libjpeg \
             ffmpeg \
             sdl2 \
       - name: Run Build

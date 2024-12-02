@@ -184,7 +184,7 @@ Config::Config():
 	}
 #else
 #	ifdef __APPLE__
-#	define GNASH_PATH dummy
+#	define GNASH_PATH "/usr/bin/gnash"
 #	endif
 # 	ifndef GNASH_PATH
 # 	error No GNASH_PATH defined

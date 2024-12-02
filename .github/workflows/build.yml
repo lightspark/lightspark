@@ -121,6 +121,7 @@ jobs:
       - name: Install Dependencies
         run: |
           brew install \
+            ninja \
             nasm \
             libedit \
             zlib \
@@ -133,4 +134,6 @@ jobs:
             ffmpeg \
             sdl2 \
       - name: Run Build
-        run: ./build.sh
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Release -B obj-release -G Ninja
+          cmake --build obj-release --parallel

@@ -32,6 +32,8 @@ version.h
 # SWF files
 
 *.swf
+# Exception for test runner SWFs.
+!tests/test-runner/swfs/**/*.swf
 
 # Cscope
 cscope*

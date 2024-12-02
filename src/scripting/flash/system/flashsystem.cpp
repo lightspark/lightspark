@@ -38,7 +38,11 @@
 #include "scripting/toplevel/Undefined.h"
 #include "parsing/streams.h"
 #include "platforms/engineutils.h"
+#ifdef __APPLE__
+#include <stdlib.h>
+#else
 #include <malloc.h>
+#endif
 #include "3rdparty/pugixml/src/pugixml.hpp"
 
 #include <istream>

@@ -183,9 +183,12 @@ Config::Config():
 		gnashPath = regGnashPath;
 	}
 #else
- 	//ifndef GNASH_PATH
- 	//error No GNASH_PATH defined
-	//endif
+#	ifdef __APPLE__
+#	define GNASH_PATH dummy
+#	endif
+# 	ifndef GNASH_PATH
+# 	error No GNASH_PATH defined
+#	endif
 	gnashPath = GNASH_PATH;
 #endif
 }

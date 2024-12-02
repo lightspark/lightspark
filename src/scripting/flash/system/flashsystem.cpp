@@ -1238,7 +1238,11 @@ ASFUNCTIONBODY_ATOM(System,totalMemory)
 	char* buf=nullptr;
 	size_t size=0;
 	FILE* f = open_memstream(&buf, &size);
+	#ifdef __APPLE__ // Apple lacks malloc_info
+	if (!f)
+	#else
 	if (!f || malloc_info(0,f)!=0)
+	#endif
 	{
 		LOG(LOG_ERROR,"System.totalMemory failed");
 		asAtomHandler::setUInt(ret,wrk,1024);

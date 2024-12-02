@@ -23,7 +23,7 @@
 #include "compat.h"
 #include "tiny_string.h"
 #ifdef __APPLE__
-#include <malloc/malloc.h>
+#include <stdlib.h>
 #else
 #include <malloc.h>
 #endif

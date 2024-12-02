@@ -39,7 +39,7 @@
 #include "parsing/streams.h"
 #include "platforms/engineutils.h"
 #ifdef __APPLE__
-#include <malloc/malloc.h>
+#include <stdlib.h>
 #else
 #include <malloc.h>
 #endif
@@ -1238,7 +1238,11 @@ ASFUNCTIONBODY_ATOM(System,totalMemory)
 	char* buf=nullptr;
 	size_t size=0;
 	FILE* f = open_memstream(&buf, &size);
+	#ifndef __APPLE__
 	if (!f || malloc_info(0,f)!=0)
+	#else
+	if (!f)
+	#endif
 	{
 		LOG(LOG_ERROR,"System.totalMemory failed");
 		asAtomHandler::setUInt(ret,wrk,1024);

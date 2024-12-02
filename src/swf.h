@@ -543,14 +543,14 @@ public:
 	void waitMainSignal() DLL_PUBLIC;
 	void sendMainSignal() DLL_PUBLIC;
 
-	// static class properties are named static_<classname>_<propertyname>
-	_NR<SoundTransform> static_SoundMixer_soundTransform;
-	int static_SoundMixer_bufferTime;
-	_NR<ASObject> static_ObjectEncoding_dynamicPropertyWriter;
-	tiny_string static_Multitouch_inputMode;
-	_NR<ASFile> static_ASFile_applicationDirectory;
-	_NR<ASFile> static_ASFile_applicationStorageDirectory;
-	_NR<NativeApplication> static_NativeApplication_nativeApplication;
+	// Declare static class properties with `ASPROPERTY_STATIC(type, class, name)`.
+	ASPROPERTY_STATIC(_NR<SoundTransform>, SoundMixer, soundTransform);
+	ASPROPERTY_STATIC(int, SoundMixer, bufferTime);
+	ASPROPERTY_STATIC(_NR<ASObject>, ObjectEncoding, dynamicPropertyWriter);
+	ASPROPERTY_STATIC(tiny_string, Multitouch, inputMode);
+	ASPROPERTY_STATIC(_NR<ASFile>, ASFile, applicationDirectory);
+	ASPROPERTY_STATIC(_NR<ASFile>, ASFile, applicationStorageDirectory);
+	ASPROPERTY_STATIC(_NR<NativeApplication>, NativeApplication, nativeApplication);
 
 	ACQUIRE_RELEASE_FLAG(isinitialized);
 	Mutex initializedMutex;

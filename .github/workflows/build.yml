@@ -121,24 +121,16 @@ jobs:
       - name: Install Dependencies
         run: |
           brew install \
-            curl \
-            cmake \
             nasm \
-            gettext \
             libedit \
             zlib \
             mesa \
             xquartz \
             mesa-glu \
             glew \
-            cairo \
             pango \
-            libpng \
             libjpeg \
             ffmpeg \
-            rtmpdump \
             sdl2 \
-            gnutls \
-            xz
       - name: Run Build
         run: ./build.sh

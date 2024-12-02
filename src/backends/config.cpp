@@ -183,9 +183,6 @@ Config::Config():
 		gnashPath = regGnashPath;
 	}
 #else
-#	ifdef __APPLE__
-#	define GNASH_PATH "/usr/bin/gnash"
-#	endif
 # 	ifndef GNASH_PATH
 # 	error No GNASH_PATH defined
 #	endif

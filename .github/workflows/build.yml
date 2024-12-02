@@ -135,4 +135,4 @@ jobs:
       - name: Run Build
         run: |
           cmake -DCMAKE_BUILD_TYPE=Release -B obj-release
-          cmake --build obj-release --parallel
+          cmake --build obj-release

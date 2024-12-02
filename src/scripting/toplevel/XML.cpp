@@ -38,19 +38,13 @@
 using namespace std;
 using namespace lightspark;
 
-static bool ignoreComments;
-static bool ignoreProcessingInstructions;
-static bool ignoreWhitespace;
-static int32_t prettyIndent;
-static bool prettyPrinting;
-
-void setDefaultXMLSettings()
+void setDefaultXMLSettings(SystemState* sys)
 {
-	ignoreComments = true;
-	ignoreProcessingInstructions = true;
-	ignoreWhitespace = true;
-	prettyIndent = 2;
-	prettyPrinting = true;
+	sys->static_XML_ignoreComments = true;
+	sys->static_XML_ignoreProcessingInstructions = true;
+	sys->static_XML_ignoreWhitespace = true;
+	sys->static_XML_prettyIndent = 2;
+	sys->static_XML_prettyPrinting = true;
 }
 
 XML::XML(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_XML),parentNode(nullptr),nodetype((pugi::xml_node_type)0),isAttribute(false),nodenameID(BUILTIN_STRINGS::EMPTY),nodenamespace_uri(BUILTIN_STRINGS::EMPTY),nodenamespace_prefix(BUILTIN_STRINGS::EMPTY),constructed(false)
@@ -114,19 +108,15 @@ void XML::prepareShutdown()
 void XML::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
-	setDefaultXMLSettings();
+	setDefaultXMLSettings(c->getSystemState());
 	c->isReusable=true;
 
-	c->setDeclaredMethodByQName("ignoreComments","",c->getSystemState()->getBuiltinFunction(_getIgnoreComments),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("ignoreComments","",c->getSystemState()->getBuiltinFunction(_setIgnoreComments),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("ignoreProcessingInstructions","",c->getSystemState()->getBuiltinFunction(_getIgnoreProcessingInstructions),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("ignoreProcessingInstructions","",c->getSystemState()->getBuiltinFunction(_setIgnoreProcessingInstructions),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("ignoreWhitespace","",c->getSystemState()->getBuiltinFunction(_getIgnoreWhitespace),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("ignoreWhitespace","",c->getSystemState()->getBuiltinFunction(_setIgnoreWhitespace),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("prettyIndent","",c->getSystemState()->getBuiltinFunction(_getPrettyIndent),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("prettyIndent","",c->getSystemState()->getBuiltinFunction(_setPrettyIndent),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("prettyPrinting","",c->getSystemState()->getBuiltinFunction(_getPrettyPrinting),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("prettyPrinting","",c->getSystemState()->getBuiltinFunction(_setPrettyPrinting),SETTER_METHOD,false);
+	REGISTER_GETTER_SETTER_STATIC(c, ignoreComments);
+	REGISTER_GETTER_SETTER_STATIC(c, ignoreProcessingInstructions);
+	REGISTER_GETTER_SETTER_STATIC(c, ignoreWhitespace);
+	REGISTER_GETTER_SETTER_STATIC(c, prettyIndent);
+	REGISTER_GETTER_SETTER_STATIC(c, prettyPrinting);
+
 	c->setDeclaredMethodByQName("settings",AS3,c->getSystemState()->getBuiltinFunction(_getSettings),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("setSettings",AS3,c->getSystemState()->getBuiltinFunction(_setSettings),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("defaultSettings",AS3,c->getSystemState()->getBuiltinFunction(_getDefaultSettings),NORMAL_METHOD,false);
@@ -190,6 +180,12 @@ void XML::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("prependChild",AS3,c->getSystemState()->getBuiltinFunction(_prependChild),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("replace",AS3,c->getSystemState()->getBuiltinFunction(_replace),NORMAL_METHOD,true);
 }
+
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(XML, ignoreComments);
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(XML, ignoreProcessingInstructions);
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(XML, ignoreWhitespace);
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(XML, prettyIndent);
+ASFUNCTIONBODY_GETTER_SETTER_STATIC(XML, prettyPrinting);
 
 ASFUNCTIONBODY_ATOM(XML,generator)
 {
@@ -772,11 +768,21 @@ const tiny_string XML::toXMLString_internal(bool pretty, uint32_t defaultnsprefi
 				}
 				res += ">";
 				tiny_string newindent;
-				bool bindent = (pretty && prettyPrinting && prettyIndent >=0 && 
-								!childrenlist.isNull() &&
-								(childrenlist->nodes.size() >1 || 
-								 (!childrenlist->nodes[0]->procinstlist.isNull()) ||
-								 (childrenlist->nodes[0]->nodetype != pugi::node_pcdata && childrenlist->nodes[0]->nodetype != pugi::node_cdata)));
+				bool bindent =
+				(
+					pretty &&
+					getSystemState()->static_XML_prettyPrinting &&
+					getSystemState()->static_XML_prettyIndent >= 0 &&
+					!childrenlist.isNull() &&
+					(
+						childrenlist->nodes.size() > 1 ||
+						!childrenlist->nodes[0]->procinstlist.isNull() ||
+						(
+							childrenlist->nodes[0]->nodetype != pugi::node_pcdata &&
+							childrenlist->nodes[0]->nodetype != pugi::node_cdata
+						)
+					)
+				);
 				if (bindent)
 				{
 					newindent = indent;
@@ -2177,51 +2183,6 @@ ASFUNCTIONBODY_ATOM(XML,_toString)
 		ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv()));
 }
 
-ASFUNCTIONBODY_ATOM(XML,_getIgnoreComments)
-{
-	asAtomHandler::setBool(ret,ignoreComments);
-}
-ASFUNCTIONBODY_ATOM(XML,_setIgnoreComments)
-{
-	assert(args && argslen==1);
-	ignoreComments = asAtomHandler::Boolean_concrete(args[0]);
-}
-ASFUNCTIONBODY_ATOM(XML,_getIgnoreProcessingInstructions)
-{
-	asAtomHandler::setBool(ret,ignoreProcessingInstructions);
-}
-ASFUNCTIONBODY_ATOM(XML,_setIgnoreProcessingInstructions)
-{
-	assert(args && argslen==1);
-	ignoreProcessingInstructions = asAtomHandler::Boolean_concrete(args[0]);
-}
-ASFUNCTIONBODY_ATOM(XML,_getIgnoreWhitespace)
-{
-	asAtomHandler::setBool(ret,ignoreWhitespace);
-}
-ASFUNCTIONBODY_ATOM(XML,_setIgnoreWhitespace)
-{
-	assert(args && argslen==1);
-	ignoreWhitespace = asAtomHandler::Boolean_concrete(args[0]);
-}
-ASFUNCTIONBODY_ATOM(XML,_getPrettyIndent)
-{
-	asAtomHandler::setInt(ret,wrk,prettyIndent);
-}
-ASFUNCTIONBODY_ATOM(XML,_setPrettyIndent)
-{
-	assert(args && argslen==1);
-	prettyIndent = asAtomHandler::toInt(args[0]);
-}
-ASFUNCTIONBODY_ATOM(XML,_getPrettyPrinting)
-{
-	asAtomHandler::setBool(ret,prettyPrinting);
-}
-ASFUNCTIONBODY_ATOM(XML,_setPrettyPrinting)
-{
-	assert(args && argslen==1);
-	prettyPrinting = asAtomHandler::Boolean_concrete(args[0]);
-}
 ASFUNCTIONBODY_ATOM(XML,_getSettings)
 {
 	ASObject* res = new_asobject(wrk);
@@ -2233,19 +2194,19 @@ ASFUNCTIONBODY_ATOM(XML,_getSettings)
 
 	mn.name_s_id=wrk->getSystemState()->getUniqueStringId("ignoreComments");
 	asAtom v=asAtomHandler::invalidAtom;
-	v = asAtomHandler::fromBool(ignoreComments);
+	v = asAtomHandler::fromBool(wrk->getSystemState()->static_XML_ignoreComments);
 	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	mn.name_s_id=wrk->getSystemState()->getUniqueStringId("ignoreProcessingInstructions");
-	v = asAtomHandler::fromBool(ignoreProcessingInstructions);
+	v = asAtomHandler::fromBool(wrk->getSystemState()->static_XML_ignoreProcessingInstructions);
 	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	mn.name_s_id=wrk->getSystemState()->getUniqueStringId("ignoreWhitespace");
-	v = asAtomHandler::fromBool(ignoreWhitespace);
+	v = asAtomHandler::fromBool(wrk->getSystemState()->static_XML_ignoreWhitespace);
 	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	mn.name_s_id=wrk->getSystemState()->getUniqueStringId("prettyIndent");
-	v = asAtomHandler::fromInt(prettyIndent);
+	v = asAtomHandler::fromInt(wrk->getSystemState()->static_XML_prettyIndent);
 	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	mn.name_s_id=wrk->getSystemState()->getUniqueStringId("prettyPrinting");
-	v = asAtomHandler::fromBool(prettyPrinting);
+	v = asAtomHandler::fromBool(wrk->getSystemState()->static_XML_prettyPrinting);
 	res->setVariableByMultiname(mn,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	ret = asAtomHandler::fromObject(res);
 }
@@ -2253,7 +2214,7 @@ ASFUNCTIONBODY_ATOM(XML,_setSettings)
 {
 	if (argslen == 0)
 	{
-		setDefaultXMLSettings();
+		setDefaultXMLSettings(wrk->getSystemState());
 		asAtomHandler::setNull(ret);
 		return;
 	}
@@ -2261,7 +2222,7 @@ ASFUNCTIONBODY_ATOM(XML,_setSettings)
 	ARG_CHECK(ARG_UNPACK(arg0));
 	if (arg0->is<Null>() || arg0->is<Undefined>())
 	{
-		setDefaultXMLSettings();
+		setDefaultXMLSettings(wrk->getSystemState());
 		asAtomHandler::setNull(ret);
 		return;
 	}
@@ -2276,35 +2237,35 @@ ASFUNCTIONBODY_ATOM(XML,_setSettings)
 	if (arg0->hasPropertyByMultiname(mn,true,true,wrk))
 	{
 		arg0->getVariableByMultiname(o,mn,SKIP_IMPL,wrk);
-		ignoreComments = asAtomHandler::toInt(o);
+		wrk->getSystemState()->static_XML_ignoreComments = asAtomHandler::toInt(o);
 	}
 
 	mn.name_s_id=wrk->getSystemState()->getUniqueStringId("ignoreProcessingInstructions");
 	if (arg0->hasPropertyByMultiname(mn,true,true,wrk))
 	{
 		arg0->getVariableByMultiname(o,mn,SKIP_IMPL,wrk);
-		ignoreProcessingInstructions = asAtomHandler::toInt(o);
+		wrk->getSystemState()->static_XML_ignoreProcessingInstructions = asAtomHandler::toInt(o);
 	}
 
 	mn.name_s_id=wrk->getSystemState()->getUniqueStringId("ignoreWhitespace");
 	if (arg0->hasPropertyByMultiname(mn,true,true,wrk))
 	{
 		arg0->getVariableByMultiname(o,mn,SKIP_IMPL,wrk);
-		ignoreWhitespace = asAtomHandler::toInt(o);
+		wrk->getSystemState()->static_XML_ignoreWhitespace = asAtomHandler::toInt(o);
 	}
 
 	mn.name_s_id=wrk->getSystemState()->getUniqueStringId("prettyIndent");
 	if (arg0->hasPropertyByMultiname(mn,true,true,wrk))
 	{
 		arg0->getVariableByMultiname(o,mn,SKIP_IMPL,wrk);
-		prettyIndent = asAtomHandler::toInt(o);
+		wrk->getSystemState()->static_XML_prettyIndent = asAtomHandler::toInt(o);
 	}
 
 	mn.name_s_id=wrk->getSystemState()->getUniqueStringId("prettyPrinting");
 	if (arg0->hasPropertyByMultiname(mn,true,true,wrk))
 	{
 		arg0->getVariableByMultiname(o,mn,SKIP_IMPL,wrk);
-		prettyPrinting = asAtomHandler::toInt(o);
+		wrk->getSystemState()->static_XML_prettyPrinting = asAtomHandler::toInt(o);
 	}
 	asAtomHandler::setNull(ret);
 }
@@ -2734,21 +2695,12 @@ tiny_string XML::toString_priv()
 	return ret;
 }
 
-bool XML::getPrettyPrinting()
-{
-	return prettyPrinting;
-}
-bool XML::getIgnoreComments()
-{
-	return ignoreComments;
-}
-
 unsigned int XML::getParseMode()
 {
 	unsigned int parsemode = pugi::parse_cdata | pugi::parse_escapes|pugi::parse_fragment | pugi::parse_doctype |pugi::parse_pi|pugi::parse_declaration|pugi::parse_validate_closing_tags;
-	if (!ignoreWhitespace) parsemode |= pugi::parse_ws_pcdata;
+	if (!getSys()->static_XML_ignoreWhitespace) parsemode |= pugi::parse_ws_pcdata;
 	//if (!ignoreProcessingInstructions) parsemode |= pugi::parse_pi|pugi::parse_declaration;
-	if (!ignoreComments) parsemode |= pugi::parse_comments;
+	if (!getSys()->static_XML_ignoreComments) parsemode |= pugi::parse_comments;
 	return parsemode;
 }
 
@@ -2825,7 +2777,7 @@ bool XML::nodesEqual(XML *a, XML *b) const
 		if (!bequal)
 			return false;
 	}
-	if (!ignoreProcessingInstructions && (!a->procinstlist.isNull() || !b->procinstlist.isNull()))
+	if (!getSystemState()->static_XML_ignoreProcessingInstructions && (!a->procinstlist.isNull() || !b->procinstlist.isNull()))
 	{
 		if (a->procinstlist.isNull() || b->procinstlist.isNull())
 			return false;
@@ -3061,7 +3013,7 @@ void XML::fillNode(XML* node, const pugi::xml_node &srcnode)
 		node->nodenamespace_uri = node->parentNode->nodenamespace_uri;
 	else
 		node->nodenamespace_uri = node->getInstanceWorker()->getDefaultXMLNamespaceID();
-	if (ignoreWhitespace && node->nodetype == pugi::node_pcdata)
+	if (node->getSystemState()->static_XML_ignoreWhitespace && node->nodetype == pugi::node_pcdata)
 		node->nodevalue = node->nodevalue.removeWhitespace();
 	node->attributelist = _MR(Class<XMLList>::getInstanceSNoArgs(node->getInstanceWorker()));
 	pugi::xml_attribute_iterator itattr;

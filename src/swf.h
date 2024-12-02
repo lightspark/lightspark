@@ -551,6 +551,11 @@ public:
 	ASPROPERTY_STATIC(_NR<ASFile>, ASFile, applicationDirectory);
 	ASPROPERTY_STATIC(_NR<ASFile>, ASFile, applicationStorageDirectory);
 	ASPROPERTY_STATIC(_NR<NativeApplication>, NativeApplication, nativeApplication);
+	ASPROPERTY_STATIC(bool, XML, ignoreComments);
+	ASPROPERTY_STATIC(bool, XML, ignoreProcessingInstructions);
+	ASPROPERTY_STATIC(bool, XML, ignoreWhitespace);
+	ASPROPERTY_STATIC(int, XML, prettyIndent);
+	ASPROPERTY_STATIC(bool, XML, prettyPrinting);
 
 	ACQUIRE_RELEASE_FLAG(isinitialized);
 	Mutex initializedMutex;

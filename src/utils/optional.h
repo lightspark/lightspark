@@ -21,6 +21,7 @@
 #define UTILS_OPTIONAL_H 1
 
 #include <stdexcept>
+#include <cstdint>
 
 #include "utils/type_traits.h"
 #include "utils/utility.h"

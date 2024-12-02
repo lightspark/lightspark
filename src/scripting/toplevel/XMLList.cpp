@@ -578,7 +578,7 @@ void XMLList::copy(XMLList* res, XML* parent)
 	auto it=nodes.begin();
 	for(; it!=nodes.end(); ++it)
 	{
-		if (XML::getIgnoreComments() && (*it)->nodetype == pugi::node_comment)
+		if (getSystemState()->static_XML_ignoreComments && (*it)->nodetype == pugi::node_comment)
 			continue;
 		_NR<XML> node = _MR(Class<XML>::getInstanceSNoArgs(getInstanceWorker()));
 		(*it)->copy(node.getPtr(),parent);

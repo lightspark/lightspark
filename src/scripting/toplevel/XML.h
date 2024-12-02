@@ -118,16 +118,11 @@ public:
 	ASFUNCTION_ATOM(_setNamespace);
 	ASFUNCTION_ATOM(_setChildren);
 
-	ASFUNCTION_ATOM(_getIgnoreComments);
-	ASFUNCTION_ATOM(_setIgnoreComments);
-	ASFUNCTION_ATOM(_getIgnoreProcessingInstructions);
-	ASFUNCTION_ATOM(_setIgnoreProcessingInstructions);
-	ASFUNCTION_ATOM(_getIgnoreWhitespace);
-	ASFUNCTION_ATOM(_setIgnoreWhitespace);
-	ASFUNCTION_ATOM(_getPrettyIndent);
-	ASFUNCTION_ATOM(_setPrettyIndent);
-	ASFUNCTION_ATOM(_getPrettyPrinting);
-	ASFUNCTION_ATOM(_setPrettyPrinting);
+	ASPROPERTY_GETTER_SETTER(bool, ignoreComments);
+	ASPROPERTY_GETTER_SETTER(bool, ignoreProcessingInstructions);
+	ASPROPERTY_GETTER_SETTER(bool, ignoreWhitespace);
+	ASPROPERTY_GETTER_SETTER(int, prettyIndent);
+	ASPROPERTY_GETTER_SETTER(bool, prettyPrinting);
 	ASFUNCTION_ATOM(_getSettings);
 	ASFUNCTION_ATOM(_setSettings);
 	ASFUNCTION_ATOM(_getDefaultSettings);
@@ -147,8 +142,6 @@ public:
 
 	static void sinit(Class_base* c);
 	
-	static bool getPrettyPrinting();
-	static bool getIgnoreComments();
 	static unsigned int getParseMode();
 	static XML* createFromString(ASWorker* wrk, const tiny_string& s, bool usefirstchild=false);
 	static XML* createFromNode(ASWorker* wrk,const pugi::xml_node& _n, XML* parent=nullptr, bool fromXMLList=false);

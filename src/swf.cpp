@@ -233,7 +233,14 @@ SystemState::SystemState
 	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),runSingleThreaded(_runSingleThreaded),exitOnError(ERROR_NONE),
 	systemDomain(nullptr),worker(nullptr),workerDomain(nullptr),singleworker(true),
 	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
-	static_SoundMixer_bufferTime(0),static_Multitouch_inputMode("gesture"),isinitialized(false)
+	static_SoundMixer_bufferTime(0),
+	static_Multitouch_inputMode("gesture"),
+	static_XML_ignoreComments(true),
+	static_XML_ignoreProcessingInstructions(true),
+	static_XML_ignoreWhitespace(true),
+	static_XML_prettyIndent(2),
+	static_XML_prettyPrinting(true),
+	isinitialized(false)
 {
 	//Forge the builtin strings
 	uniqueStringIDMap.reserve(LAST_BUILTIN_STRING);

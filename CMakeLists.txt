@@ -299,7 +299,7 @@ INCLUDE_DIRECTORIES(${LZMA_INCLUDE_DIRS})
 SET(OPTIONAL_LIBRARIES ${OPTIONAL_LIBRARIES} ${LZMA_LIBRARIES})
 
 IF(APPLE)
-pkg_check_modules(CAIRO REQUIRED cairo)
+pkg_check_modules(CAIRO REQUIRED cairo pango)
 ELSE()
 pkg_check_modules(CAIRO REQUIRED cairo pangocairo)
 ENDIF()

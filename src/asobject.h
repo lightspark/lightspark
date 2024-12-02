@@ -51,6 +51,9 @@
 	ASFUNCTION_ATOM( _getter_##name); \
 	ASFUNCTION_ATOM( _setter_##name)
 
+#define ASPROPERTY_STATIC(type, class, name) \
+	type static_##class##_##name;
+
 /* declare setter/getter for already existing member variable */
 #define ASFUNCTION_GETTER(name) \
 	ASFUNCTION_ATOM( _getter_##name)

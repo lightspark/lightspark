@@ -120,6 +120,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Dependencies
         run: |
+          brew unlink cairo # HACK
           brew install \
             ninja \
             nasm \

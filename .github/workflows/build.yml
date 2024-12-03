@@ -137,5 +137,5 @@ jobs:
             sdl2 \
       - name: Run Build
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release -B obj-release -G Ninja
+          cmake -DCMAKE_BUILD_TYPE=Release -B obj-release -G Xcode
           cmake --build obj-release --parallel

@@ -1489,7 +1489,6 @@ class BUTTONRECORD
 public:
 	BUTTONRECORD(uint8_t v):buttonVersion(v){}
 	uint8_t buttonVersion:2;
-	bool ButtonReserved:1;
 	bool ButtonHasBlendMode:1;
 	bool ButtonHasFilterList:1;
 	bool ButtonStateHitTest:1;
@@ -1505,7 +1504,7 @@ public:
 
 	bool isNull() const
 	{
-		return !(ButtonReserved | ButtonHasBlendMode | ButtonHasFilterList | ButtonStateHitTest | ButtonStateDown | ButtonStateOver | ButtonStateUp);
+		return !(ButtonHasBlendMode | ButtonHasFilterList | ButtonStateHitTest | ButtonStateDown | ButtonStateOver | ButtonStateUp);
 	}
 };
 

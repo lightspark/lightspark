@@ -41,7 +41,7 @@ static constexpr bool tomlIsNative =
 	toml::impl::is_native<T> ||
 	toml::impl::can_represent_native<T> ||
 	toml::impl::can_partially_represent_native<T>
-);
+) && !std::is_enum<T>::value;
 
 template<typename T, typename V, typename K, typename... Ks>
 static T tomlFindFlat(const V& value, const K& key, Ks&&... keys);

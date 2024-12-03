@@ -45,7 +45,12 @@ FetchContent_Declare(
 )
 
 if (NOT WIN32)
-	SET(CPPTRACE_UNWIND_WITH_LIBUNWIND ON)
+	FIND_PACKAGE(LibUnwind)
+	if (${LibUnwind_FOUND})
+		MESSAGE(STATUS "Found libunwind")
+		SET(CPPTRACE_UNWIND_WITH_LIBUNWIND ON)
+		SET(SIGNAL_BACKTRACE ON)
+	endif()
 endif()
 
 FetchContent_MakeAvailable(cpptrace)

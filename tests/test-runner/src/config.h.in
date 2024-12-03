@@ -1,2 +1,3 @@
 #define TESTS_DIR "@TESTS_DIR@"
 #define VERSION "@RUNNER_VERSION@"
+#cmakedefine SIGNAL_BACKTRACE

@@ -247,6 +247,7 @@ Optional<Trial> lookUpTest(const path_t& root, const Options& options)
 	);
 }
 
+#ifdef SIGNAL_BACKTRACE
 std::thread thr;
 std::mutex m;
 std::condition_variable readCond;
@@ -255,9 +256,11 @@ std::atomic<bool> signalOccured = false;
 
 size_t numSafeFrames = 0;
 cpptrace::safe_object_frame safeFrames[128];
+#endif
 
 void initCppTrace()
 {
+	#ifdef SIGNAL_BACKTRACE
 	auto crashHandler = [](int sigNum)
 	{
 		signalOccured = true;
@@ -291,6 +294,7 @@ void initCppTrace()
 		thr.join();
 		_exit(1);
 	};
+	#endif
 
 	cpptrace::absorb_trace_exceptions(false);
 	cpptrace::register_terminate_handler();
@@ -301,6 +305,7 @@ void initCppTrace()
 	cpptrace::safe_object_frame frame;
 	cpptrace::get_safe_object_frame(buffer[0], &frame);
 
+	#ifdef SIGNAL_BACKTRACE
 	#ifndef _WIN32
 	struct sigaction segFaultAction {};
 	struct sigaction abortAction {};
@@ -316,6 +321,7 @@ void initCppTrace()
 	// `signal()`.
 	signal(SIGSEGV, crashHandler);
 	signal(SIGABRT, crashHandler);
+	#endif
 	#endif
 }
 
@@ -377,6 +383,7 @@ int main(int argc, char* argv[])
 		}
 	);
 
+	#ifdef SIGNAL_BACKTRACE
 	thr = std::thread([]
 	{
 		cpptrace::object_trace trace;
@@ -393,10 +400,12 @@ int main(int argc, char* argv[])
 
 		trace.resolve().print();
 	});
+	#endif
 
 	SystemState::staticInit();
 	auto conclusion = libtestpp::run(options, tests);
 
+	#ifdef SIGNAL_BACKTRACE
 	if (!signalOccured)
 	{
 		std::lock_guard l(m);
@@ -405,6 +414,7 @@ int main(int argc, char* argv[])
 		readCond.notify_one();
 	}
 	thr.join();
+	#endif
 
 	SystemState::staticDeinit();
 	conclusion.exit();

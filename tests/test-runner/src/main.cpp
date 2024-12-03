@@ -186,6 +186,12 @@ Trial runTest(const Options& options, const path_t& file, const tiny_string& nam
 	bool ignore = !test.shouldRun();
 	return Trial::test(test.name, [=]
 	{
+		auto knownFailType = test.options.knownFailType;
+
+		// Ignore known crashing tests.
+		if (knownFailType == FailureType::Crash)
+			return Outcome(OutcomeType::Ignored);
+
 		// TODO: Support non-trace based tests.
 		if (test.type != Test::Type::Trace)
 			return Outcome(OutcomeType::Ignored);
@@ -210,7 +216,8 @@ Trial runTest(const Options& options, const path_t& file, const tiny_string& nam
 			}
 		}
 
-		return failReason.orElseIf(test.options.knownFailure, [&]
+		bool knownFailure = knownFailType == FailureType::Fail;
+		return failReason.orElseIf(knownFailure, [&]
 		{
 			std::stringstream s;
 			s << test.name << " was a known failure, but passes now. Please mark it as passing!";

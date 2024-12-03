@@ -79,6 +79,12 @@ struct PlayerOptions
 	FlashMode flashMode { FlashMode::AvmPlus };
 };
 
+enum class FailureType
+{
+	Fail,
+	Crash,
+};
+
 struct TestOptions
 {
 	tiny_string name;
@@ -87,11 +93,12 @@ struct TestOptions
 	Optional<double> tickRate;
 	tiny_string outputPath;
 	bool ignore;
-	bool knownFailure;
+	Optional<FailureType> knownFailType;
 	PlayerOptions playerOptions;
 	bool logFetch;
 	Optional<Approximations> approximations;
 	Optional<double> screenDPI;
+	bool usesAssert;
 
 	TestOptions(const tiny_string& _name, const path_t& path, const TestFormat& testFormat);
 

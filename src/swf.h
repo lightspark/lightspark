@@ -23,6 +23,7 @@
 #include "asobject.h"
 #include "forwards/events.h"
 #include "forwards/scripting/flash/text/flashtext.h"
+#include "interfaces/logger.h"
 #include "interfaces/threading.h"
 #include "interfaces/timer.h"
 #include "utils/optional.h"
@@ -134,6 +135,7 @@ private:
 	TimerThread* frameTimerThread;
 	EventLoop* eventLoop;
 	ITime* time;
+	Optional<ILogger&> logger;
 	Semaphore terminated;
 	float renderRate;
 	bool error;
@@ -299,6 +301,10 @@ public:
 	void setLocalStorageAllowed(bool allowed);
 	bool inInnerGoto() const { return innerGotoCount;}
 	void runInnerGotoFrame(DisplayObject* innerClip, const std::vector<_R<DisplayObject>>& removedFrameScripts = {});
+
+	void trace(const tiny_string& str);
+	Optional<ILogger&> getLogger() { return logger; }
+
 	uint64_t getCurrentTime_ms() const { return time->getCurrentTime_ms(); }
 	uint64_t getCurrentTime_us() const { return time->getCurrentTime_us(); }
 	uint64_t getCurrentTime_ns() const { return time->getCurrentTime_ns(); }
@@ -306,12 +312,14 @@ public:
 	void sleep_ms(uint32_t ms) { return time->sleep_ms(ms); }
 	void sleep_us(uint32_t us) { return time->sleep_us(us); }
 	void sleep_ns(uint64_t ns) { return time->sleep_ns(ns); }
+
 	size_t maxFramesPerTick() const;
 	void addFrameTiming(const TimeSpec& elapsed);
 	void runTick(const TimeSpec& delta);
 	TimeSpec timeUntilNextFrame() const;
 	void tick() override;
 	void tickFence() override;
+
 	RenderThread* getRenderThread() const { return renderThread; }
 	InputThread* getInputThread() const { return inputThread; }
 	void setParamsAndEngine(EngineData* e, bool s) DLL_PUBLIC;
@@ -344,8 +352,10 @@ public:
 	SystemState
 	(
 		uint32_t fileSize,
-		FLASH_MODE mode, EventLoop* _eventLoop = nullptr,
+		FLASH_MODE mode,
+		EventLoop* _eventLoop = nullptr,
 		ITime* _time = nullptr,
+		Optional<ILogger&> _logger = {},
 		bool _runSingleThreaded = false,
 		size_t threads = SIZE_MAX
 	) DLL_PUBLIC;

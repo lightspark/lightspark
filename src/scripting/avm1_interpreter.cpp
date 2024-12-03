@@ -924,7 +924,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x26: // ActionTrace
 			{
 				asAtom value = PopStack(stack);
-				Log::print(asAtomHandler::toString(value,wrk));
+				clip->getSystemState()->trace(asAtomHandler::toString(value,wrk));
 				ASATOM_DECREF(value);
 				break;
 			}

@@ -17,9 +17,24 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "framework/backends/logger.h"
+#ifndef INTERFACES_LOGGER_H
+#define INTERFACES_LOGGER_H 1
 
-void TestLog::trace(const tiny_string& str)
+namespace lightspark
 {
-	traceStr += str + tiny_string::fromChar('\n');
+
+class tiny_string;
+
+class ILogger
+{
+public:
+	ILogger() {}
+	virtual ~ILogger() {}
+
+	// Traces/Prints the supplied string.
+	virtual void trace(const tiny_string& str) = 0;
+};
+
 }
+
+#endif /* INTERFACES_LOGGER_H */

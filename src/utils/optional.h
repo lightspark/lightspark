@@ -597,15 +597,15 @@ public:
 	constexpr Optional asRef() const { return *this; }
 
 	template<typename U>
-	T valueOr(U&& _default) const
+	T& valueOr(U&& _default) const
 	{
-		return hasValue() ? getValue() : static_cast<T>(std::forward<U>(_default));
+		return hasValue() ? getValue() : static_cast<T&>(std::forward<U>(_default));
 	}
 
 	template<typename U>
-	T valueOr(U&& _default)
+	T& valueOr(U&& _default)
 	{
-		return hasValue() ? getValue() : static_cast<T>(std::forward<U>(_default));
+		return hasValue() ? getValue() : static_cast<T&>(std::forward<U>(_default));
 	}
 
 	template<typename F>

@@ -965,7 +965,7 @@ ASFUNCTIONBODY_ATOM(lightspark,unescape)
 
 ASFUNCTIONBODY_ATOM(lightspark,print)
 {
-	Log::print(asAtomHandler::toString(args[0],wrk));
+	wrk->getSystemState()->trace(asAtomHandler::toString(args[0],wrk));
 	ret = asAtomHandler::undefinedAtom;
 }
 
@@ -979,7 +979,7 @@ ASFUNCTIONBODY_ATOM(lightspark,trace)
 
 		s << asAtomHandler::toString(args[i],wrk);
 	}
-	Log::print(s.str());
+	wrk->getSystemState()->trace(s.str());
 	ret = asAtomHandler::undefinedAtom;
 }
 ASFUNCTIONBODY_ATOM(lightspark,AVM1_updateAfterEvent)

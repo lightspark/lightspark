@@ -21,6 +21,7 @@
 #define LOGGER_H 1
 
 #include "compat.h"
+#include "interfaces/logger.h"
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -61,7 +62,6 @@ private:
 	LOG_LEVEL cur_level;
 	bool valid;
 public:
-	static void print(const std::string& s);
 	Log(LOG_LEVEL l) DLL_PUBLIC;
 	~Log() DLL_PUBLIC;
 	std::ostream& operator()() DLL_PUBLIC;
@@ -71,10 +71,28 @@ public:
 	static int calls_indent;
 	/* redirect logging and print() to that file */
 	static void redirect(std::string filename) DLL_PUBLIC;
-	static void setOutStream(std::ostream* stream) DLL_PUBLIC;
-	static void setErrorStream(std::ostream* stream) DLL_PUBLIC;
+	static void setLogStream(std::ostream* stream) DLL_PUBLIC;
 
 };
+
+namespace lightspark
+{
+
+// Generic logger.
+class DLL_PUBLIC Logger : public ILogger
+{
+private:
+	std::ostream* outStream;
+public:
+	Logger() : ILogger(), outStream(&std::cout) {}
+
+	// Traces/Prints the supplied string.
+	void trace(const tiny_string& str) override;
+
+	void setStream(std::ostream* stream);
+};
+
+}
 
 template<typename T>
 std::ostream& printContainer(std::ostream& os, const T& v)

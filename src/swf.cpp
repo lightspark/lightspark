@@ -221,10 +221,20 @@ SystemState::SystemState
 	FLASH_MODE mode,
 	EventLoop* _eventLoop,
 	ITime* _time,
+	Optional<ILogger&> _logger,
 	bool _runSingleThreaded,
 	size_t threads
 ) :
-	timers(this), eventLoop(_eventLoop),time(_time != nullptr ? _time : eventLoop != nullptr ? eventLoop->getTime() : new Time()),terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
+	timers(this),
+	eventLoop(_eventLoop),
+	time
+	(
+		_time != nullptr ? _time :
+		eventLoop != nullptr ? eventLoop->getTime() :
+		new Time()
+	),
+	logger(_logger),
+	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
@@ -2231,6 +2241,12 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 
 	setFramePhase(oldPhase);
 	--innerGotoCount;
+}
+
+void SystemState::trace(const tiny_string& str)
+{
+	Logger genericLogger;
+	logger.valueOr(genericLogger).trace(str);
 }
 
 // Based on Ruffle's `Player::max_frames_per_tick()`.

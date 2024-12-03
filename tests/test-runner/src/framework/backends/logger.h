@@ -20,18 +20,21 @@
 #ifndef FRAMEWORK_BACKENDS_LOGGER_H
 #define FRAMEWORK_BACKENDS_LOGGER_H 1
 
-#include <sstream>
-#include <string>
+#include <lightspark/interfaces/logger.h>
+#include <lightspark/tiny_string.h>
 
-struct TestLog
+using namespace lightspark;
+
+struct TestLog : public ILogger
 {
-	std::stringstream outStream;
-	std::stringstream errorStream;
+private:
+	tiny_string traceStr;
+public:
+	TestLog() : ILogger() {}
 
-	TestLog();
+	void trace(const tiny_string& str) override;
 
-	std::string traceOutput() const { return outStream.str(); }
-	std::string errorOutput() const { return errorStream.str(); }
+	std::string traceOutput() const { return traceStr; }
 };
 
 #endif /* FRAMEWORK_BACKENDS_LOGGER_H */

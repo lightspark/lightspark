@@ -87,6 +87,7 @@ swfFile(test.swfPath)
 		fromFlashMode(options.playerOptions.flashMode),
 		&eventLoop,
 		nullptr,
+		log,
 		true
 	);
 	pt = new ParseThread(swfFile, sys->mainClip);

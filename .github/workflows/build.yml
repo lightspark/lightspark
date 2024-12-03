@@ -125,6 +125,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Dependencies
         run: |
+          brew reinstall cairo
           brew install \
             ninja \
             nasm \
@@ -137,5 +138,5 @@ jobs:
             sdl2 \
       - name: Run Build
         run: |
-          cmake -DCMAKE_BUILD_TYPE=Release -B obj-release -G Xcode
-          cmake --build obj-release --parallel
+          cmake -DCMAKE_BUILD_TYPE=Release -B obj-release -G Ninja
+          cmake --build obj-release

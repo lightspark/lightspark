@@ -139,7 +139,10 @@ jobs:
       - name: Run Build
         run: |
           uname -a
-          ls /lib
+          echo  
+          ls /usr/lib
+          echo 
           ls /opt/homebrew/Cellar/
+          echo 
           cmake -DCMAKE_BUILD_TYPE=Release -B obj-release -G Ninja
           cmake --build obj-release

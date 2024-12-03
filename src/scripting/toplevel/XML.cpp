@@ -562,7 +562,7 @@ const tiny_string XML::toXMLString_internal(bool pretty, uint32_t defaultnsprefi
 				break;
 			case pugi::node_declaration:
 			case pugi::node_pi:
-				if (ignoreProcessingInstructions)
+				if (getSystemState()->static_XML_ignoreProcessingInstructions)
 					break;
 				res += indent;
 				res += "<?";
@@ -786,7 +786,7 @@ const tiny_string XML::toXMLString_internal(bool pretty, uint32_t defaultnsprefi
 				if (bindent)
 				{
 					newindent = indent;
-					for (int32_t j = 0; j < prettyIndent; j++)
+					for (int32_t j = 0; j < getSystemState()->static_XML_prettyIndent; j++)
 					{
 						newindent += " ";
 					}

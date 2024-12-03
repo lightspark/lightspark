@@ -118,11 +118,11 @@ public:
 	ASFUNCTION_ATOM(_setNamespace);
 	ASFUNCTION_ATOM(_setChildren);
 
-	ASPROPERTY_GETTER_SETTER(bool, ignoreComments);
-	ASPROPERTY_GETTER_SETTER(bool, ignoreProcessingInstructions);
-	ASPROPERTY_GETTER_SETTER(bool, ignoreWhitespace);
-	ASPROPERTY_GETTER_SETTER(int, prettyIndent);
-	ASPROPERTY_GETTER_SETTER(bool, prettyPrinting);
+	ASFUNCTION_GETTER_SETTER(ignoreComments);
+	ASFUNCTION_GETTER_SETTER(ignoreProcessingInstructions);
+	ASFUNCTION_GETTER_SETTER(ignoreWhitespace);
+	ASFUNCTION_GETTER_SETTER(prettyIndent);
+	ASFUNCTION_GETTER_SETTER(prettyPrinting);
 	ASFUNCTION_ATOM(_getSettings);
 	ASFUNCTION_ATOM(_setSettings);
 	ASFUNCTION_ATOM(_getDefaultSettings);

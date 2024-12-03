@@ -114,22 +114,20 @@ jobs:
 
   macos:
     name: macOS 14
-    runs-on: macos-latest
+    runs-on: macos-14
     continue-on-error: false
     steps:
       - uses: actions/checkout@v4
       - name: Install Dependencies
         run: |
-          brew unlink cairo # HACK
           brew install \
             ninja \
             nasm \
             mesa \
-            xquartz \
             mesa-glu \
+            xquartz \
             glew \
             pango \
-            cairo \
             ffmpeg \
             sdl2 \
       - name: Run Build

@@ -183,8 +183,8 @@ Config::Config():
 		gnashPath = regGnashPath;
 	}
 #else
-# 	ifndef GNASH_PATH
-# 	error No GNASH_PATH defined
+#	ifndef GNASH_PATH
+#	error No GNASH_PATH defined
 #	endif
 	gnashPath = GNASH_PATH;
 #endif

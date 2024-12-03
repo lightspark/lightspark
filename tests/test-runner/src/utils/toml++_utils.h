@@ -35,6 +35,8 @@
 
 using namespace lightspark;
 
+enum class TestFormat;
+
 template<typename T>
 static constexpr bool tomlIsNative =
 (
@@ -61,6 +63,14 @@ static Optional<T> tomlValue(const V& v)
 {
 	if (v.type() != toml::node_type::none)
 		try { return TomlFrom<T>::get(v); } catch (std::exception&) {}
+	return nullOpt;
+}
+
+template<typename T, typename V, std::enable_if_t<!tomlIsNative<T>, bool> = false>
+static Optional<T> tomlValue(const TestFormat& format, const V& v)
+{
+	if (v.type() != toml::node_type::none)
+		try { return TomlFrom<T>::get(v, format); } catch (std::exception&) {}
 	return nullOpt;
 }
 
@@ -125,6 +135,33 @@ struct TomlFrom<TimeSpec>
 		);
 	}
 };
+
+template<typename T, typename V, typename K>
+static Optional<T> tomlTryFind(const TestFormat& format, const V& value, const K& key)
+{
+	return tomlValue<T>(format, value[key]);
+}
+
+template<typename T, typename V, typename K, typename... Ks>
+static Optional<T> tomlTryFind(const TestFormat& format, const V& value, const K& key, Ks&&... keys)
+{
+	return tomlTryFind<T>(value[key], std::forward<Ks>(keys)...);
+}
+
+template<typename T, typename V, typename K>
+static Optional<T> tomlTryFindFlat(const TestFormat& format, const V& value, const K& key)
+{
+	return tomlTryFind<T>(format, value, key);
+}
+
+template<typename T, typename V, typename K, typename... Ks>
+static Optional<T> tomlTryFindFlat(const TestFormat& format, const V& value, const K& key, Ks&&... keys)
+{
+	return tomlTryFind<T>(format, value, key).orElse([&]
+	{
+		return tomlTryFindFlat<T>(format, value, std::forward<Ks>(keys)...);
+	});
+}
 
 template<typename T, typename V, typename K>
 static Optional<T> tomlTryFind(const V& value, const K& key)

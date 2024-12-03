@@ -29,19 +29,30 @@ template<>
 struct TomlFrom<Approximations>
 {
 	template<typename V>
-	static Approximations get(const V& v)
+	static Approximations get(const V& view, const TestFormat& testFormat)
 	{
+		bool isRuffle = testFormat == TestFormat::Ruffle;
 		return Approximations
 		{
 			// numberPatterns
 			tomlValue<std::vector<tiny_string>>
 			(
-				v["number_patterns"]
+				view
+				[
+					isRuffle ?
+					"number_patterns" :
+					"numberPatterns"
+				]
 			).valueOr(std::vector<tiny_string> {}),
 			// epsilon
-			v["epsilon"].template value<double>(),
+			view["epsilon"].template value<double>(),
 			// maxRelative
-			v["max_relative"].template value<double>()
+			view
+			[
+				isRuffle ?
+				"max_relative" :
+				"maxRelative"
+			].template value<double>()
 		};
 	}
 };
@@ -52,8 +63,15 @@ struct TomlFrom<FlashMode>
 	template<typename V>
 	static FlashMode get(const V& v)
 	{
-		auto str = v.template value<std::string>();
-		return *str == "AIR" ? FlashMode::AIR : FlashMode::AvmPlus;
+		auto str = tiny_string(*v.template value<std::string>()).lowercase();
+		if (str == "air")
+			return FlashMode::AIR;
+		if (str == "flash")
+			return FlashMode::Flash;
+		if (str == "avmplus")
+			return FlashMode::AvmPlus;
+
+		throw std::bad_cast();
 	}
 };
 
@@ -61,8 +79,9 @@ template<>
 struct TomlFrom<ViewportDimensions>
 {
 	template<typename V>
-	static ViewportDimensions get(const V& view)
+	static ViewportDimensions get(const V& view, const TestFormat& testFormat)
 	{
+		bool isRuffle = testFormat == TestFormat::Ruffle;
 		return ViewportDimensions
 		{
 			// size
@@ -72,7 +91,12 @@ struct TomlFrom<ViewportDimensions>
 				*view["height"].template value<int>()
 			),
 			// scale
-			*view["scale_factor"].template value<double>()
+			*view
+			[
+				isRuffle ?
+				"scale_factor" :
+				"scale"
+			].template value<double>()
 		};
 	}
 };
@@ -81,14 +105,26 @@ template<>
 struct TomlFrom<RenderOptions>
 {
 	template<typename V>
-	static RenderOptions get(const V& view)
+	static RenderOptions get(const V& view, const TestFormat& testFormat)
 	{
+		bool isRuffle = testFormat == TestFormat::Ruffle;
+		bool required = view
+		[
+			isRuffle ?
+			"optional" :
+			"required"
+		].value_or(false);
 		return RenderOptions
 		{
 			// required
-			!view["optional"].value_or(false),
+			isRuffle ? !required : required,
 			// sampleCount
-			view["sample_count"].value_or(size_t(1))
+			view
+			[
+				isRuffle ?
+				"sample_count" :
+				"sampleCount"
+			].value_or(size_t(1))
 		};
 	}
 };
@@ -97,23 +133,70 @@ template<>
 struct TomlFrom<PlayerOptions>
 {
 	template<typename V>
-	static PlayerOptions get(const V& view)
+	static PlayerOptions get(const V& view, const TestFormat& testFormat)
 	{
+		bool isRuffle = testFormat == TestFormat::Ruffle;
 		return PlayerOptions
 		{
 			// maxExecution
-			tomlValue<TimeSpec>(view["max_execution_duration"]),
+			tomlTryFindFlat<TimeSpec>
+			(
+				view,
+				// Lightspark.
+				"maxExecution",
+				"timeout",
+				// Ruffle.
+				"max_execution_duration"
+			),
 			// viewportDimensions
-			tomlValue<ViewportDimensions>(view["viewport_dimensions"]),
+			tomlTryFindFlat<ViewportDimensions>
+			(
+				testFormat,
+				view,
+				// Lightspark.
+				"viewportDimensions",
+				"viewport"
+				// Ruffle.
+				"viewport_dimensions"
+			),
 			// renderOptions
-			tomlValue<RenderOptions>(view["with_renderer"]),
+			tomlValue<RenderOptions>
+			(
+				testFormat,
+				view[isRuffle ? "with_renderer" : "renderOptions"]
+			),
 			// hasAudio
-			view["with_audio"].value_or(false),
+			view[isRuffle ? "with_audio" : "hasAudio"].value_or(false),
 			// hasVideo
-			view["with_video"].value_or(false),
+			view[isRuffle ? "with_video" : "hasVideo"].value_or(false),
 			// flashMode
-			tomlValue<FlashMode>(view["runtime"]).valueOr(FlashMode::AvmPlus)
+			tomlValue<FlashMode>
+			(
+				view[isRuffle ? "runtime" : "flashMode"]
+			).valueOr(isRuffle ? FlashMode::AvmPlus : FlashMode::Flash)
 		};
+	}
+};
+
+template<>
+struct TomlFrom<FailureType>
+{
+	template<typename V>
+	static FailureType get(const V& view, const TestFormat& testFormat)
+	{
+		bool isRuffle = testFormat == TestFormat::Ruffle;
+		bool knownCrash = !isRuffle ? view["knownCrash"].value_or(false) : false;
+		bool knownFailure = view
+		[
+			isRuffle ?
+			"known_failure" :
+			"knownFailure"
+		].value_or(false);
+
+		if (!knownFailure && !knownCrash)
+			throw std::bad_cast();
+
+		return knownCrash ? FailureType::Crash : FailureType::Fail;
 	}
 };
 
@@ -210,8 +293,8 @@ TestOptions::TestOptions
 name(_name),
 outputPath(toOutputFileName(testFormat)),
 ignore(false),
-knownFailure(false),
-logFetch(false)
+logFetch(false),
+usesAssert(false)
 {
 	switch (testFormat)
 	{
@@ -219,7 +302,48 @@ logFetch(false)
 		case TestFormat::Unknown:
 		case TestFormat::Lightspark:
 		{
-			// TODO: Implement this.
+			try
+			{
+				auto data = toml::parse_file(path.string());
+				description = tomlTryFindFlat<tiny_string>
+				(
+					data,
+					"description",
+					"desc"
+				).valueOr("");
+
+				numFrames = tomlTryFind<size_t>
+				(
+					data,
+					"numFrames",
+					"frames"
+				);
+				tickRate = data["tickRate"].template value<double>();
+
+				outputPath = data["outputPath"].value_or("expected_output");
+				ignore = data["ignore"].value_or(false);
+				knownFailType = tomlValue<FailureType>(testFormat, data);
+
+				playerOptions = tomlValue<PlayerOptions>
+				(
+					testFormat,
+					data
+				).valueOr(PlayerOptions());
+				logFetch = data["logFetch"].value_or(false);
+				approximations = tomlValue<Approximations>(testFormat, data);
+				screenDPI = data["screenDPI"].template value<double>();
+				usesAssert = data["usesAssert"].value_or(false);
+			}
+			catch (const toml::parse_error& e)
+			{
+				auto source = e.source();
+				auto _path = source.path != nullptr ? *source.path : path.string();
+				std::cerr << "Error parsing file " << _path << ':' <<
+				std::endl << "reason: " << e.description() <<
+				std::endl << '(' << source.begin << ')' <<
+				std::endl;
+				std::exit(1);
+			}
 			break;
 		}
 		case TestFormat::Ruffle:
@@ -244,16 +368,18 @@ logFetch(false)
 
 				outputPath = data["output_path"].value_or("output.txt");
 				ignore = data["ignore"].value_or(false);
-				knownFailure = data["known_failure"].value_or(false);
+				knownFailType = tomlValue<FailureType>(testFormat, data);
 
 				approximations = tomlTryFind<Approximations>
 				(
+					testFormat,
 					data,
 					"approximations"
 				);
 
 				playerOptions = tomlValue<PlayerOptions>
 				(
+					testFormat,
 					data["player_options"]
 				).valueOr(PlayerOptions());
 

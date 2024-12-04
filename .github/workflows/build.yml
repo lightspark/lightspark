@@ -119,8 +119,8 @@ jobs:
     strategy:
       matrix:
         os:
-          - 14
-          - 14-large # x64 Runner
+          - macos-14
+          - macos-14-large # x64 Runner
     steps:
       - uses: actions/checkout@v4
       - name: Install Dependencies

@@ -113,14 +113,14 @@ jobs:
         run: ./build.sh
 
   macos:
-    name: macOS ${{ matrix.ver }}
-    runs-on: macos-${{ matrix.ver }}
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     continue-on-error: false
     strategy:
       matrix:
-        ver:
-          - 13
+        os:
           - 14
+          - 14-large # x64 Runner
     steps:
       - uses: actions/checkout@v4
       - name: Install Dependencies

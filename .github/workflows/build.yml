@@ -110,7 +110,7 @@ jobs:
             libsdl2-dev \
             libgnutls28-dev \
             liblzma-dev \
-            libunwind-dev
+            libunwind-dev \
             ninja-build
       - name: Run Build
         run: |

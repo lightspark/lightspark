@@ -116,6 +116,4 @@ jobs:
         run: |
           cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
           cmake --build obj-debug -t test-runner
-          cd obj-debug
-          ls
-          ./test-runner
+          ./obj-debug/x86_64/Debug/bin/test-runner

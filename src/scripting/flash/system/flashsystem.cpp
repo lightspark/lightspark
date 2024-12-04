@@ -1230,19 +1230,15 @@ void System::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(System,totalMemory)
 {
-#ifdef _WIN32
-	LOG(LOG_NOT_IMPLEMENTED,"System.totalMemory not implemented for Windows");
+#if defined (_WIN32) || defined (__APPLE__)
+	LOG(LOG_NOT_IMPLEMENTED,"System.totalMemory not implemented for this platform");
 	asAtomHandler::setUInt(ret,wrk,1024);
 	return;
 #else
 	char* buf=nullptr;
 	size_t size=0;
 	FILE* f = open_memstream(&buf, &size);
-	#ifndef __APPLE__
 	if (!f || malloc_info(0,f)!=0)
-	#else
-	if (!f)
-	#endif
 	{
 		LOG(LOG_ERROR,"System.totalMemory failed");
 		asAtomHandler::setUInt(ret,wrk,1024);

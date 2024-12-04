@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - test-runner-ci
   pull_request:
     branches:
       - master
@@ -108,6 +109,12 @@ jobs:
             librtmp-dev \
             libsdl2-dev \
             libgnutls28-dev \
-            liblzma-dev
+            liblzma-dev \
+            ninja-build
       - name: Run Build
-        run: ./build.sh
+        run: |
+          cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
+          cmake --build obj-debug -t test-runner
+          cd obj-debug
+          ls
+          ./test-runner

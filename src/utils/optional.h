@@ -722,9 +722,9 @@ public:
 	const T&& value() const&& { return getValue(); }
 
 	template<typename U>
-	T value_or(U&& _default) const { return valueOr(_default); }
+	T& value_or(U&& _default) const { return valueOr(_default); }
 	template<typename U>
-	T value_or(U&& _default) { return valueOr(_default); }
+	T& value_or(U&& _default) { return valueOr(_default); }
 
 	template<typename F>
 	constexpr auto and_then(const F&& func) const { return andThen(func); }

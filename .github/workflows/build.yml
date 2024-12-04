@@ -120,7 +120,6 @@ jobs:
       matrix:
         os:
           - macos-14
-          - macos-14-large # x64 Runner
     steps:
       - uses: actions/checkout@v4
       - name: Install Dependencies

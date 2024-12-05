@@ -865,7 +865,12 @@ ASFUNCTIONBODY_ATOM(ASString,indexOf)
 
 ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 {
-	assert_and_throw(argslen==1 || argslen==2);
+	if (argslen < 1)
+	{
+		LOG(LOG_ERROR,"not enough arguments in String.lastIndexOf");
+		asAtomHandler::setInt(ret,wrk,-1);
+		return;
+	}
 	tiny_string data;
 	asAtomHandler::getStringView(data,obj,wrk);
 	tiny_string val=asAtomHandler::toString(args[0],wrk);

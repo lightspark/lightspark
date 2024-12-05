@@ -119,11 +119,17 @@ ASFUNCTIONBODY_ATOM(XMLNode,childNodes)
 		ret = asAtomHandler::fromObject(res);
 		return;
 	}
-	auto it = th->node.begin();
-	for(;it!=th->node.end();++it)
+	_NR<XMLDocument> r = th->root;
+	if (th->is<XMLDocument>())
 	{
-		if(it->type()!=pugi::node_pcdata && it->type()!=pugi::node_declaration) {
-			res->push(asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(wrk,th->root, *it)));
+		th->incRef();
+		r = _MR(th->as<XMLDocument>());
+	}
+	auto range = th->node.children();
+	for(auto it = range.begin();it!=range.end();++it)
+	{
+		if(it->type()!=pugi::node_declaration) {
+			res->push(asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(wrk,r, *it)));
 		}
 	}
 	ret = asAtomHandler::fromObject(res);
